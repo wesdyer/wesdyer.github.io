@@ -25,7 +25,10 @@
     font-weight:bold;
     border-radius: 10px;
     display: block;
-    width: 100px;
+    width: 150px;
+    height: 40px;
+    line-height: 40px;
+    font-size: 20pt;
     user-select: none;
 }
 
@@ -38,7 +41,7 @@
 }
 
 #next {
-    margin-right: 10px;
+    margin-right: 30px;
 }
 
 #reset {
@@ -79,8 +82,15 @@ tr.heading {
 
 .buttons {
     display: flex;
+    margin-top: 30px;
 }
 
 div {
     display: inline-block;
+}
+
+.skill, .approach, .corner {
+    border-right-style: dashed;
+    border-right-width: 2px;
+    border-right-color:rgb(173, 173, 173)
 }
