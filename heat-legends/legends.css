@@ -5,7 +5,7 @@
 }
 
 .car {
-    width: 140px
+    width: 100px
 }
 
 #blue.car {
@@ -44,15 +44,15 @@
     margin-right: 30px;
 }
 
-#reset {
-    background-color: rgb(190, 32, 53)
+#reset, .remove {
+    background-color: rgb(190, 32, 53);
 }
 
-#reset:hover {
+#reset:hover, .remove:hover {
     background-color: rgb(149, 20, 37)
 }
 
-#reset:active {
+#reset:active, .remove:active {
     background-color: rgb(190, 32, 53)
 }
 
@@ -62,35 +62,98 @@ table {
 
 td {
     text-align: center;
-    padding: 20px;
+    padding: 10px;
     border: none;
 }
 
-tr:nth-child(odd) {
+#drivers tr:nth-child(odd) {
     background-color: white;
 }
 
-tr:nth-child(even) {
+#drivers tr:nth-child(even) {
     background-color: rgb(230, 230, 230);
 }
 
-tr.heading {
+#drivers tr.heading {
     background-color:rgb(7, 58, 117);
     color: white;
     font-weight:bold;
-}
-
-.buttons {
-    display: flex;
-    margin-top: 30px;
 }
 
 div {
     display: inline-block;
 }
 
-.skill, .approach, .corner {
+.skill, .approach, .corner, .td-flag {
     border-right-style: dashed;
-    border-right-width: 2px;
+    border-right-width: 3px;
     border-right-color:rgb(173, 173, 173)
+}
+
+td.empty {
+    background-color: white;
+}
+
+.flag {
+    width: 50px;
+}
+
+.add {
+    margin-top: 40px;
+}
+
+body {
+    background-color: white;
+}
+
+.selector {
+    background-color: white;
+    border: 3px solid white;
+    border-radius: 10px;
+}
+
+.selector:hover {
+    cursor: pointer;
+}
+
+.selector.added {
+    visibility: hidden;
+}
+
+.selected {
+    background-color: rgb(212, 238, 255);
+    border: 3px solid rgb(70, 181, 255);
+    cursor: pointer;
+}
+
+#add {
+    margin-top: 40px;
+    display: none;
+}
+
+.buttons {
+    display: none;
+    margin-top: 30px;
+}
+
+.buttons.enabled {
+    display: flex;
+}
+
+#inputs {
+    margin-top: 40px;
+    display: none;
+}
+
+input {
+    width: 600px;
+}
+
+td.label {
+    text-align: right;
+}
+
+#error {
+    margin-top: 40px;
+    color: red;
 }
