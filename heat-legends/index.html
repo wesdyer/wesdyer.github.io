@@ -4,7 +4,7 @@
   src="https://code.jquery.com/jquery-3.6.3.slim.min.js"
   integrity="sha256-ZwqZIVdD3iXNyGHbSYdsmWP//UBokj2FHAxKuSBKDSo="
   crossorigin="anonymous"></script>
-<script src="legends.js"></script>
+<script src="legends.js" charset="utf-8"></script>
 <head>
     <link rel="stylesheet" href="legends.css" />
     <title>Heat Legends</title>
@@ -12,8 +12,29 @@
 </head>
 <body>
     <table id="drivers">
-        <tr class="heading"><td>Car</td><td>Name</td><td>Skill</td><td>Speed</td><td>Over</td><td>Corner</td><td>&nbsp;</td></tr>
+        <tr class="heading"><td>Car</td><td>Name</td><td></td><td>Speed</td><td>Over</td><td>Corner</td><td>&nbsp;</td></tr>
+        <tr><td colspan=6 class='empty'>Add Legends Below</td></tr>
     </table>
     <div class="buttons"><div id="next" class="button">Next</div><div id="reset" class="button">Reset</div></div>
+    <div class="add">
+        <div class="red selector" color="red"><img src="red.png" class="car" /></div>
+        <div class="blue selector" color="blue"><img src="blue.png" class="car"/></div>
+        <div class="green selector" color="green"><img src="green.png" class="car"/></div>
+        <div class="yellow selector" color="yellow"><img src="yellow.png" class="car"/></div>
+        <div class="gray selector" color="gray"><img src="gray.png" class="car"/></div>
+        <div class="black selector" color="black"><img src="black.png" class="car"/></div>
+    </div>
+    <br />
+    <div id="inputs">
+        <table>
+            <tr><td class="label">Speed</td><td><input id="speed" /></td></tr>
+            <tr><td class="label">Over</td><td><input id="over" /></td></tr>
+            <tr><td class="label">Corner</td><td><input id="corner" /></td></tr>
+        </table>
+    </div>
+    <br />
+    <div id="add" class="button">Add</div>
+    <br />
+    <div id="error"></div>
 </body>
 </html>
