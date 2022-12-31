@@ -234,7 +234,7 @@ function create_driver(driver) {
         var index = drivers.indexOf(driver);
         if (index !== -1) drivers.splice(index, 1);
         if (drivers.length === 0) {
-            $('.empty').show();
+            $('#drivers').hide();
             $(".buttons").removeClass('enabled');
             drivers = [];
         }
@@ -299,7 +299,7 @@ $(document).ready(() => {
     $("#reset").click(function() {
         $('.driver').remove();
         $('.selector').removeClass("added");
-        $('.empty').show();
+        $('#drivers').hide();
         $(".buttons").removeClass('enabled');
         $('.selected').removeClass("selected");
         $("#add").hide();
@@ -340,7 +340,7 @@ $(document).ready(() => {
         const color = $(".selected").attr("color");
         $(".selector." + color).addClass("added");
         drivers.push(create_driver(custom_driver(color, speed, over, corner)));
-        $(".empty").hide();
+        $("#drivers").show();
         $(".buttons").addClass('enabled');
         $("#add").hide();
         $("#inputs").hide();
