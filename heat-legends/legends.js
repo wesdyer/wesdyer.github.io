@@ -44,8 +44,6 @@ function select(xs) {
     return xs[Math.floor(xs.length * Math.random())];
 }
 
-
-
 var nationalities = [
     {
         country: "USA",
@@ -93,7 +91,7 @@ var nationalities = [
         country: "Belgium",
         citizen: "Belgian",
         flag: "belgium.png",
-        names: ['Johnny','André','Jacques','Georges','Arthur','Charles','Paul','Olivier','Christian','Lucien','Alain','Willy','Jacky','Teddy','Louis','Lucas','Daniel','Thomas','Victor','Simon','Hugo','Gabriel','Jules','Finn','André','Pierre','Adrien','Achille','Matteo']
+        names: ['Johnny','André','Jacques','Georges','Arthur','Charles','Paul','Olivier','Christian','Lucien','Alain','Willy','Jacky','Teddy','Thomas','Julien','Maxime','Alexandre','Nicolas','Kevin','Robin','Martin','Simon','Jonathan','Benjamin','Adrien']
     },
     {
         country: "Brazil",
@@ -105,7 +103,7 @@ var nationalities = [
         country: "Australia",
         citizen: "Australian",
         flag: "australia.png",
-        names: ['Tony','Jack','Paul','Ken','Frank','Tim','Vern','Larry','Oliver','Noah','William','Henry','James','Gabriel','Caleb','Leo','Liam','Elijah','Levi','Alexander','Sebastian','Xavier']
+        names: ['Tony','Jack','Paul','Ken','Frank','Tim','Vern','Larry','Oliver','Peter','John','Robert','David','Michael','Stephen','Ian','Gregory','Paul','Gary','Anthony','Wayne','Brian','Kevin']
     },
     {
         country: "Austria",
@@ -117,19 +115,19 @@ var nationalities = [
         country: "Netherlands",
         citizen: "Dutch",
         flag: "netherlands.png",
-        names: ['Dries','Carel','Gijs','Roelof','Boy','Jan','Hendrik','Pieter','Willem','Jacob','Dirk','Arie','Johan','Michael','Jeffrey','Johannes','Thomas']
+        names: ['Dries','Carel','Gijs','Roelof','Boy','Jan','Hendrik','Pieter','Willem','Jacob','Dirk','Arie','Johan','Michael','Jeffrey','Johannes','Thomas','Cornelis','Adriaan']
     },
     {
         country: "Canada",
         citizen: "Canadian",
         flag: "canada.png",
-        names: ['Peter','Eppie','Al','Bill','John','George','Eppie','James','Logan','Oliver','Nicholas','Benjamin','Leo','Nathan','Theodore','Liam','Alexander','Owen']
+        names: ['Eppie','Al','Bill','John','Eppie','Robert','John','Joseph','David','William','James','Richard','Michael','Donald','Ronald','Brian','Kenneth','Douglas','Thomas','Paul','Gary','Peter','George','Wayne','Larry']
     },
     {
         country: "Sweden",
         citizen: "Swedish",
         flag: "sweden.png",
-        names: ['Jo','Ronnie','Reine','Torsten','Gunnar','Lucas','Liam','William','Elias','Noah','Hugo','Oliver','Oscar','Adam','Matteo','Lars','Mikael','Anders','Erik','Per','Karl','Jan']
+        names: ['Jo','Ronnie','Reine','Torsten','Gunnar','Lucas','Liam','William','Elias','Noah','Hugo','Oliver','Oscar','Adam','Matteo','Lars','Mikael','Anders','Erik','Per','Karl','Jan','Bo']
     },
     {
         country: "Spain",
@@ -141,13 +139,13 @@ var nationalities = [
         country: "New Zealand",
         citizen: "Kiwi",
         flag: "new-zealand.png",
-        names: ['Bruce','Tony','Chris','Denny','Howden','Oliver','Noah','Jack','Leo','George','Charlie','Lucas','Theodore','William','Luca','Elijah','Liam','Mason']
+        names: ['Bruce','Tony','Chris','Denny','Howden','David','Peter','Michael','John','Stephen','Mark','Paul','Robert','Christopher','Kevin','Anthony','Richard','Ian','Craig','William','Gregory','Wayne','Andrew','Grant','James']
     },
     {
         country: "Mexico",
         citizen: "Mexican",
         flag: "mexico.png",
-        names: ['Ricardo','Pedro','Moisés','Jose','Luis','Juan','Jesus','Jorge','Miguel','Antonio','Roberto','Ricardo','Fernando','Javier','Sergio','Martin']
+        names: ['Ricardo','Pedro','Moisés','José','Luis','Juan','Jesús','Jorge','Miguel','Antonio','Roberto','Ricardo','Fernando','Javier','Sergio','Martin']
     },
     {
         country: "Finland",
@@ -161,94 +159,13 @@ var nationalities = [
         flag: "south-africa.png",
         names: ['Tony','Doug','Neville','Ernie','Bruce','Trevor','Brausch','Peter','Paddy','Jackie','Dave','Luki','Basil','Jody','William','Eddie','Ian','Guy']
     },
+    {
+        country: "Denmark",
+        citizen: "Danish",
+        flag: "denmark.png",
+        names: ["Tom", "Harald", "Peter", "Michael", "Lars", "Jens", "Thomas", "Henrik", "Søren", "Christian", "Martin", "Jan", "Morten", "Anders", "Jesper", "Niels", "Mads", "Rasmus", "Per", "Hans", "Mikkel", "Jørgen"]
+    }
 ]
-
-function create_name(color) {
-    return select(names);
-}
-
-function corner_basic() {
-    return [0, 0, 1, 1, 1, 2, 2, 2, 3, 3];
-}
-
-function driver_a() {
-    let s = 0;
-    let c = 0;
-    let a = 0;
-    let result = {
-        max_speed: () => 9 + rolln(1, 10) + s,
-        over: () => Math.max(0, select(corner_basic()) - a),
-        corner: () => select(corner_basic()) + c,
-        upgrade: () => {
-            let r = roll(6);
-            if (r <= 3) {
-                s++;
-            } else if (r <= 5) {
-                c++;
-            } else {
-                a--;
-            }
-            result.skill++;
-        }
-    };
-    return result;
-}
-
-function driver_b() {
-    let base = 6 + select([2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 6]);
-    let s = select([7, 8, 8, 9, 9, 9, 9, 10, 10, 10, 10, 11, 11, 12]);
-    let c = select([0, 0, 0, 1]);
-    let a = select([0, 0, 0, 1]);
-    var result = {
-        max_speed: () => base + rolln(1, s),
-        over: () => Math.max(0, select(corner_basic()) - a) ,
-        corner: () => select(corner_basic()) + c,
-        upgrade: () => {
-            result.skill++;
-            const r = roll(8);
-            if (r <= 3) {
-                s++;
-            } else if (r <= 5) {
-                base++;
-            } else if (r == 7) {
-                c++;
-            } else {
-                a++;
-            }
-        }
-    };
-
-    return result;
-}
-
-function driver_c() {
-    let s = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
-    let c = corner_basic();
-    let a = corner_basic();
-    let result = {
-        max_speed: () => select(s),
-        over: () => select(a),
-        corner: () => select(c),
-        upgrade: () => {
-            let r = roll(6);
-            if (r <= 3) {
-                s.push(14 + roll(6));
-                s.push(14 + roll(6));
-                s.push(14 + roll(6));
-            } else if (r <= 5) {
-                c.push(1 + roll(3));
-                c.push(1 + roll(3));
-                c.push(1 + roll(3));
-            } else {
-                a.push(roll(2) - 1);
-                a.push(roll(2) - 1);
-                a.push(roll(2) - 1);
-            }
-            result.skill++;
-        }
-    };
-    return result;
-}
 
 function draw(deck, hand) {
     if (hand.length === 0) {
@@ -260,11 +177,20 @@ function draw(deck, hand) {
     return hand.splice(index, 1)[0];
 }
 
-function custom_driver(color, speedDeck, overDeck, cornerDeck) {
+function select_name(nationality) {
+    return select(nationality.names);
+}
+
+function select_name_and_nationality() {
     const nationality = select(nationalities);
     const name = select(nationality.names);
-    console.log(speedDeck);
+    return {
+        name: name,
+        nationality: nationality
+    };
+}
 
+function custom_driver(color, name, nationality, speedDeck, overDeck, cornerDeck) {
     let driver = {};
     driver.skill = 1;
     driver.color = color;
@@ -298,7 +224,7 @@ function create_driver(driver) {
 
     const img = $("<img />");
     img.addClass("car");
-    img.attr("src", driver.color + ".png");
+    img.attr("src", "cars/" + driver.color + ".png");
     e.find('.car').append(img);
 
     const flag = e.find('.flag');
@@ -312,14 +238,15 @@ function create_driver(driver) {
     e.find(".name").text(driver.name);
 
     remove.click(() => {
+        if ($(this).hasClass("disabled")) return;
         $('.selector.' + driver.color).removeClass("added");
         $("#inputs").hide();
         $('.selected').removeClass("selected");
-        $("#add").hide();
         e.remove();
         var index = drivers.indexOf(driver);
         if (index !== -1) drivers.splice(index, 1);
         if (drivers.length === 0) {
+            $('.add .prompt').show();
             $('#drivers').hide();
             $(".buttons").removeClass('enabled');
             drivers = [];
@@ -336,11 +263,25 @@ function create_driver(driver) {
 }
 
 var drivers = [];
+var chosen_nationality = null;
+var chosen_name = null;
 
-function initialize() {
+function initializeDeck() {
     $("#speed").val("10, 11, 12, 13, 14, 15, 16, 17, 18, 19");
     $("#over").val("0, 0, 1, 1, 1, 2, 2, 2, 3, 3");
     $("#corner").val("0, 0, 1, 1, 1, 2, 2, 2, 3, 3");
+
+}
+
+function initialize() {
+    initializeDeck();
+
+    const nn = select_name_and_nationality();
+    $("#name").val(nn.name);
+    $(".flag-selector").removeClass("selected");
+    $("#flag-" + nn.nationality.country).addClass("selected");
+    chosen_nationality = nn.nationality;
+    chosen_name = nn.name;
 }
 
 function parse(name, s) {
@@ -369,33 +310,50 @@ function parse(name, s) {
 }
 
 $(document).ready(() => {
-    // drivers.push(create_driver(make_driver, "blue"));
-    // drivers.push(create_driver(make_driver, "red"));
-    // drivers.push(create_driver(make_driver, "yellow"));
-    // drivers.push(create_driver(make_driver, "green"));
-    // drivers.push(create_driver(make_driver, "gray"));
-    // drivers.push(create_driver(make_driver, "black"));
+    const flags = $(".flag-select-holder");
+    let i = 0;
+    for (let nationality of nationalities) {
+        const n = nationality;
+        const e = $("<div class='flag-selector'><img class='flag-select'/></div>")
+        e.attr("id", "flag-" + nationality.country);
+        e.find("img").attr("src", "flags/" + nationality.flag);
+        e.click(function () {
+            chosen_nationality = n;
+            $('.flag-selector').removeClass('selected');
+            $(this).addClass('selected');
+            const name_input = $("#name");
+            if (name_input.val() === chosen_name || name_input.val() === "") {
+                const name = select_name(n);
+                $("#name").val(name);
+                chosen_name = name;
+            }
+        });
+        flags.append(e);
+        ++i;
+    }
 
     $("#next").click(function () {
+        if ($(this).hasClass("disabled")) return;
+
         $('.selected').removeClass("selected");
-        $("#add").hide();
         $("#inputs").hide();
         for (var driver of drivers) driver.next();
-    });
-    $("#reset").click(function() {
-        $('.driver').remove();
-        $('.selector').removeClass("added");
-        $('#drivers').hide();
-        $(".buttons").removeClass('enabled');
-        $('.selected').removeClass("selected");
-        $("#add").hide();
-        $("#inputs").hide();
-        drivers = [];
+
+        $("#next").addClass('disabled');
+        $(".remove").addClass('disabled');
+
+        const speed = 200;
+        $('.max-speed, .corner, .approach').addClass('highlighted', speed, function () {
+            $(this).removeClass('highlighted', speed, function () {
+                $("#next").removeClass('disabled');
+                $(".remove").removeClass('disabled');
+            });
+        });
     });
     $(".selector").click(function () {
+        $(".add .prompt").hide();
         $(".selected").removeClass("selected");
         $(this).addClass("selected");
-        $("#add").show();
         $("#inputs").show();
         initialize();
     });
@@ -425,10 +383,51 @@ $(document).ready(() => {
 
         const color = $(".selected").attr("color");
         $(".selector." + color).addClass("added");
-        drivers.push(create_driver(custom_driver(color, speed, over, corner)));
+        const name = $("#name").val();
+        drivers.push(create_driver(custom_driver(color, name, chosen_nationality, speed, over, corner)));
         $("#drivers").show();
         $(".buttons").addClass('enabled');
-        $("#add").hide();
         $("#inputs").hide();
-    })
+    });
+    $("#speed-plus,#speed-minus").click(function () {
+        var speed;
+        try {
+            speed = parse("Speed", $("#speed").val());
+        } catch (e) {
+            $("#error").text(e);
+            return;
+        }
+        $("#error").text("");
+        const id = $(this).attr("id");
+        let mod = 1;
+        if (id === "speed-minus") mod = -1;
+        for (var i = 0; i < speed.length; ++i) {
+            speed[i] += mod;
+            if (speed[i] >= 100) speed[i] = 99;
+            if (speed[i] < 0) speed[i] = 0;
+        }
+        $("#speed").val(speed.join(", "));
+    });
+    $("#corner-plus,#corner-minus").click(function () {
+        var corner;
+        try {
+            corner = parse("Corner", $("#corner").val());
+        } catch (e) {
+            $("#error").text(e);
+            return;
+        }
+        $("#error").text("");
+        const id = $(this).attr("id");
+        let mod = 1;
+        if (id === "corner-minus") mod = -1;
+        for (var i = 0; i < corner.length; ++i) {
+            corner[i] += mod;
+            if (corner[i] >= 100) corner[i] = 99;
+            if (corner[i] < 0) corner[i] = 0;
+        }
+        $("#corner").val(corner.join(", "));
+    });
+    $("#reset").click(function () {
+        initializeDeck();
+    });
 });
