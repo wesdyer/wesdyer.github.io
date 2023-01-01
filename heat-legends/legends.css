@@ -68,11 +68,11 @@ td {
 }
 
 #drivers tr:nth-child(odd) {
-    background-color: white;
+    background-color: rgb(230, 230, 230);
 }
 
 #drivers tr:nth-child(even) {
-    background-color: rgb(230, 230, 230);
+    background-color: white;
 }
 
 #drivers tr.heading {
@@ -81,14 +81,20 @@ td {
     font-weight:bold;
 }
 
-div {
+.add .selector {
     display: inline-block;
 }
 
-.skill, .approach, .corner, .td-flag {
+.approach, .corner {
     border-right-style: dashed;
     border-right-width: 3px;
     border-right-color:rgb(173, 173, 173)
+}
+
+.max-speed {
+    border-left-style: dashed;
+    border-left-width: 3px;
+    border-left-color:rgb(173, 173, 173)
 }
 
 td.empty {
@@ -96,7 +102,14 @@ td.empty {
 }
 
 .flag {
-    width: 50px;
+    height: 50px;
+}
+
+.flag-select-holder {
+    margin: 0;
+    width: 800px;
+    margin-bottom: 20px;
+    margin-top: 20px;
 }
 
 .add {
@@ -121,15 +134,25 @@ body {
     visibility: hidden;
 }
 
-.selected {
-    background-color: rgb(212, 238, 255);
-    border: 3px solid rgb(70, 181, 255);
+.flag-selector {
+    background-color: white;
+    border: 3px solid white;
+    border-radius: 10px;
+    width: 150px;
+    height: 80px;
+    text-align: center;
+    padding: 10px;
+    display: inline-block;
+    position: relative;
+}
+
+.flag-selector:hover {
     cursor: pointer;
 }
 
-#add {
-    margin-top: 40px;
-    display: none;
+.selected {
+    background-color: rgb(212, 238, 255);
+    border: 3px solid rgb(70, 181, 255);
 }
 
 .buttons {
@@ -142,7 +165,6 @@ body {
 }
 
 #inputs {
-    margin-top: 40px;
     display: none;
 }
 
@@ -157,4 +179,59 @@ td.label {
 #error {
     margin-top: 40px;
     color: red;
+}
+
+.helper {
+    display: inline-block;
+    height: 100%;
+    vertical-align: middle;
+}
+
+img {
+    vertical-align: middle;
+}
+
+.flag-selector img {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    height: 50px;
+}
+
+#add {
+    margin-top: 30px;
+}
+
+.add .prompt {
+    margin-bottom: 20px;
+}
+
+.disabled, .disabled:hover, .disabled:active {
+    background-color: gray;
+    cursor:default;
+}
+
+#drivers tr:nth-child(odd) .highlighted {
+    background-color: rgb(212, 212, 100);
+}
+
+#drivers tr:nth-child(even) .highlighted {
+    background-color: rgb(250, 250, 126);
+}
+
+#speed-plus, #corner-plus, #speed-minus, #corner-minus {
+    margin-bottom: 10px;
+    display: inline-block;
+    background-color: rgb(24, 116, 197);
+}
+
+#speed-plus:hover, #corner-plus:hover {
+    background-color: rgb(17, 91, 155);
+}
+
+#speed-plus:active, #corner-plus:active {
+    background-color: rgb(24, 116, 197);
 }
