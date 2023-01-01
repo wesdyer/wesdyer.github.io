@@ -1,9 +1,7 @@
 <!DOCTYPE html>
 <html>
-<script
-  src="https://code.jquery.com/jquery-3.6.3.slim.min.js"
-  integrity="sha256-ZwqZIVdD3iXNyGHbSYdsmWP//UBokj2FHAxKuSBKDSo="
-  crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-3.6.3.min.js" integrity="sha256-pvPw+upLPUjgMXY0G+8O0xUf+/Im1MZjXxxgOcBQBXU=" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
 <script src="legends.js" charset="utf-8"></script>
 <head>
     <link rel="stylesheet" href="legends.css" />
@@ -14,26 +12,36 @@
     <table id="drivers">
         <tr class="heading"><td>Car</td><td>Driver</td><td></td><td>Speed</td><td>Over</td><td>Corner</td><td>&nbsp;</td></tr>
     </table>
-    <div class="buttons"><div id="next" class="button">Next</div><div id="reset" class="button">Reset</div></div>
+    <div class="buttons"><div id="next" class="button">Move</div></div>
     <div class="add">
-        <div class="red selector" color="red"><img src="red.png" class="car" /></div>
-        <div class="blue selector" color="blue"><img src="blue.png" class="car"/></div>
-        <div class="green selector" color="green"><img src="green.png" class="car"/></div>
-        <div class="yellow selector" color="yellow"><img src="yellow.png" class="car"/></div>
-        <div class="gray selector" color="gray"><img src="gray.png" class="car"/></div>
-        <div class="black selector" color="black"><img src="black.png" class="car"/></div>
+        <div class="prompt">Select a car</div>
+        <div class="red selector" color="red"><img src="cars/red.png" class="car" /></div>
+        <div class="blue selector" color="blue"><img src="cars/blue.png" class="car"/></div>
+        <div class="green selector" color="green"><img src="cars/green.png" class="car"/></div>
+        <div class="yellow selector" color="yellow"><img src="cars/yellow.png" class="car"/></div>
+        <div class="gray selector" color="gray"><img src="cars/gray.png" class="car"/></div>
+        <div class="black selector" color="black"><img src="cars/black.png" class="car"/></div>
     </div>
-    <br />
     <div id="inputs">
+        <div class="flag-select-holder"></div>
         <table>
+            <tr><td class="label">Name</td><td><input id="name" /></td></tr>
             <tr><td class="label">Speed</td><td><input id="speed" /></td></tr>
             <tr><td class="label">Over</td><td><input id="over" /></td></tr>
             <tr><td class="label">Corner</td><td><input id="corner" /></td></tr>
         </table>
-    </div>
-    <br />
-    <div id="add" class="button">Add</div>
-    <br />
-    <div id="error"></div>
+        <br />
+        <div id="speed-plus" class="button">+1 Speed</div>
+        <div id="speed-minus" class="button">-1 Speed</div>
+        <br />
+        <div id="corner-plus" class="button">+1 Corner</div>
+        <div id="corner-minus" class="button">-1 Corner</div>
+        <br />
+        <div id="reset" class="button">Reset</div>
+        <br />
+        <div id="add" class="button">Add</div>
+        <br />
+        <div id="error"></div>
+     </div>
 </body>
 </html>
