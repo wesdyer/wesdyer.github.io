@@ -44,36 +44,122 @@ function select(xs) {
     return xs[Math.floor(xs.length * Math.random())];
 }
 
+
+
 var nationalities = [
     {
         country: "USA",
         citizen: "American",
         flag: "usa.png",
-        names: ["James", "Robert", "John", "William", "Richard", "David", "Charles", "Thomas", "Michael", "Ronald", "Larry", "Donald", "Joseph", "Gary", "George", "Kenneth", "Paul", "Edward", "Jerry", "Dennis", "Mario", "Dan", "Phil", "Bill", "Peter", "Johnnie", "Lee", "Troy", "Bob", "Pat", "Sam", "Jimmy", "Rodger", "Jim", "Richie"]
+        names: ['Alfonso','Bob','Bobby','Brett','Bruce','Carroll','Chuck','Dan','Frank','Fred','George','Gus','Hap','Harry','Herbert','Jay','Jim','John','Lance','Lloyd','Mario','Mark','Masten','Pete','Peter','Phil','Richie','Robert','Rodger','Roger','Ronnie','Sam','Skip','Timmy','Tom','Tony','Troy','Walt']
     },
     {
         country: "France",
         citizen: "French",
         flag: "france.png",
-        names: ["Jean", "Michel", "Claude", "André", "Pierre", "Jacques", "Bernard", "Gérard", "Daniel", "René", "Robert", "Guy", "Roger", "Marcel", "Georges", "Alain", "Maurice", "Henri", "Joseph", "Paul", "Alain", "René", "Jacques", "Didier", "Maurice", "Patrick", "Jean-Pierre", "Patrick", "François", "Jean-Pierre", "Jean", "Olivier", "Pierre", "Esteban"]
+        names: ['Yves','Louis','Philippe','Eugène','Raymond','Robert','Maurice','Henri','Pierre','Charles','Guy','Georges','Élie','Marcel','André','Roger','Jean','François','Bernard','Jo','Johnny','Patrick','José','Gérard','Michel']
     },
     {
         country: "UK",
         citizen: "British",
         flag: "uk.png",
-        names: ["John", "David", "Michael", "Peter", "Robert", "Anthony", "Brian", "Alan", "William", "James", "Richard", "Kenneth", "Roger", "Keith", "Colin", "Christopher", "Raymond", "Terence", "Thomas", "Barry", "Lewis", "Nigel", "Jackie", "Jim", "Damon", "Stirling", "Jenson", "Graham", "David", "James", "Tony", "John", "John", "Eddie", "Mike", "Peter", "Johnny", "Innes", "Peter", "George"]
+        names: ['Reg','David','Leslie','Peter','Tony','Joe','Brian','Cuth','Bob','Geoffrey','Duncan','Stirling','George','Ken','John','Phillip','Lance','Eric','Alan','Mike','Robin','Graham','Bill','Dennis','Roy','Jack','Ian','Jimmy','Rodney','Ron','Don','Horace','Ted','Colin','Archie','Desmond','Bruce','Paul','Dick','Ivor','Bernie','Cliff','Stuart','Tom','Chris','Innes','Trevor','Keith','Tim','Vic','Henry','Jackie','Piers','Jonathan','Derek','Damien','Divina']
     },
     {
         country: "Italy",
         citizen: "Italian",
         flag: "italy.png",
-        names: ["Antonio", "Mario", "Roberto", "Leonardo", "Angelo", "Sergio", "Marco", "Arturo", "Luca", "Emilio", "Rodolfo", "Rocco", "Matteo", "Enzo", "Rico", "DeAngelo", "Carmelo", "Donte", "Emiliano", "Gian", "Alberto", "Riccardo", "Guiseppe", "Michele", "Giancarlo", "Elio", "Luigi", "Piero", "Luigi", "Giancarlo", "Lorenzo", "Ludovico", "Vittorio", "Alessandro", "Jarno"]
+        names: ['Guiseppe','Luigi','Consalvo','Piero','Franco','Nello','Alberto','Dorino','Felice','Clemente','Sergio','Umberto','Guerino','Gerino','Eugenio','Giorgio','Cesare','Guilio','Maria','Gino','Gaetano','Nino','Lorenzo','Massimo','Roberto','Ernesto','Ludovico','Geki','Andrea','Ignazio','Nanni','Arturo','Vittorio','Lella','Renzo']
     },
     {
         country: "Germany",
         citizen: "German",
         flag: "germany.png",
-        names: ["Hans", "Peter", "Klaus", "Wolfgang", "Jyrgen", "Dieter", "Manfred", "Uwe", "Gunter", "Horst", "Berndt", "Karl", "Werner", "Heinz", "Rolf", "Rainer", "Gerhard", "Helmut", "Michael", "Gert", "Michael", "Sebastian", "Nico", "Ralf", "Heinz-Harald", "Wolfgang", "Jochen"]
+        names: ['Paul','Hans','Toni','Fritz','Theo','Willi','Helmut','Adolf','Josef','Günther','Ludwig','Harry','Ernst','Rudolf','Oswald','Erwin','Kurt','Edgar','Hermann','Karl','Gerhard','Hubert','Rolf','Jochen']
+    },
+    {
+        country: "Switzerland",
+        citizen: "Swiss",
+        flag: "switzerland.png",
+        names: ['Toulo','Toni','Rudi','Peter','Rudolf','Albert','Max','Ottorino','Michael','Jo','Heinz','Heini','Jean-Claude','Silvio','Xavier','Clay','Hans','Marco','Andreas','Lars','Vincent','Bruno','Emil','Simon']
+    },
+    {
+        country: "Argentina",
+        citizen: "Argentine",
+        flag: "argentina.png",
+        names: ['Juan Manuel','José','Alfredo','Onofre','Oscar','Adolfo','Carlos','Pablo','Roberto','Clemar','Jorge','Jesús','Alejandro','Nasif','Alberto','Nestor','Franco','Matias','Joaquin','Martin','Mauro','Tomas','Lucas','Federico','Santiago','Nicolas']
+    },
+    {
+        country: "Belgium",
+        citizen: "Belgian",
+        flag: "belgium.png",
+        names: ['Johnny','André','Jacques','Georges','Arthur','Charles','Paul','Olivier','Christian','Lucien','Alain','Willy','Jacky','Teddy','Louis','Lucas','Daniel','Thomas','Victor','Simon','Hugo','Gabriel','Jules','Finn','André','Pierre','Adrien','Achille','Matteo']
+    },
+    {
+        country: "Brazil",
+        citizen: "Brazilian",
+        flag: "brazil.png",
+        names: ['Chico','Gino','Fritz','Emerson','Wilson','Carlos','Luiz','Alex','Ingo','Lucas','Ricardo','Pedro','Santos','Afonso','Joaquim','Duarte','André','Luiz','Julio','Enzo','Mateo','Salvador']
+    },
+    {
+        country: "Australia",
+        citizen: "Australian",
+        flag: "australia.png",
+        names: ['Tony','Jack','Paul','Ken','Frank','Tim','Vern','Larry','Oliver','Noah','William','Henry','James','Gabriel','Caleb','Leo','Liam','Elijah','Levi','Alexander','Sebastian','Xavier']
+    },
+    {
+        country: "Austria",
+        citizen: "Austrian",
+        flag: "austria.png",
+        names: ['Jochen','Dieter','Niki','Helmut','Helmuth','Hans','Otto','Daniel','Andreas','Paul','Georg','Thomas','Emil','Simon','Wolfgang','Richard','Manfred']
+    },
+    {
+        country: "Netherlands",
+        citizen: "Dutch",
+        flag: "netherlands.png",
+        names: ['Dries','Carel','Gijs','Roelof','Boy','Jan','Hendrik','Pieter','Willem','Jacob','Dirk','Arie','Johan','Michael','Jeffrey','Johannes','Thomas']
+    },
+    {
+        country: "Canada",
+        citizen: "Canadian",
+        flag: "canada.png",
+        names: ['Peter','Eppie','Al','Bill','John','George','Eppie','James','Logan','Oliver','Nicholas','Benjamin','Leo','Nathan','Theodore','Liam','Alexander','Owen']
+    },
+    {
+        country: "Sweden",
+        citizen: "Swedish",
+        flag: "sweden.png",
+        names: ['Jo','Ronnie','Reine','Torsten','Gunnar','Lucas','Liam','William','Elias','Noah','Hugo','Oliver','Oscar','Adam','Matteo','Lars','Mikael','Anders','Erik','Per','Karl','Jan']
+    },
+    {
+        country: "Spain",
+        citizen: "Spanish",
+        flag: "spain.png",
+        names: ['Paco','Juan','Paco','Alfonso','Antonio','Alex','Pablo','Martin','Alejandro','Lucas','Alvaro','Adrian','Mateo','David','Santiago','Felipe','Tomas','Diego']
+    },
+    {
+        country: "New Zealand",
+        citizen: "Kiwi",
+        flag: "new-zealand.png",
+        names: ['Bruce','Tony','Chris','Denny','Howden','Oliver','Noah','Jack','Leo','George','Charlie','Lucas','Theodore','William','Luca','Elijah','Liam','Mason']
+    },
+    {
+        country: "Mexico",
+        citizen: "Mexican",
+        flag: "mexico.png",
+        names: ['Ricardo','Pedro','Moisés','Jose','Luis','Juan','Jesus','Jorge','Miguel','Antonio','Roberto','Ricardo','Fernando','Javier','Sergio','Martin']
+    },
+    {
+        country: "Finland",
+        citizen: "Finish",
+        flag: "finland.png",
+        names: ['Leo', 'Antero','Tapani','Johannes','Tapio','Mikael','Kalevi','Matti','Pekka','Juhani','Olavi','Onni','Elno','Matias']
+    },
+    {
+        country: "South Africa",
+        citizen: "South African",
+        flag: "south-africa.png",
+        names: ['Tony','Doug','Neville','Ernie','Bruce','Trevor','Brausch','Peter','Paddy','Jackie','Dave','Luki','Basil','Jody','William','Eddie','Ian','Guy']
     },
 ]
 
