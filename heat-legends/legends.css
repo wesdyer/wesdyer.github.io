@@ -80,16 +80,8 @@ td {
     font-weight:bold;
 }
 
-.add {
-    display: flex; /* Make the container a flex container */
-    flex-wrap: wrap; /* Allow items to wrap */
-    gap: 10px; /* Add some space between wrapped items */
-    margin-top: 40px; /* Keep the original margin */
-}
-
-/* Removed display: inline-block from .add .selector */
 .add .selector {
-    /* inline-block removed */
+    display: inline-block;
 }
 
 .approach, .corner {
@@ -113,18 +105,15 @@ td.empty {
 }
 
 .flag-select-holder {
-    /* margin: 0; Removed */
-    /* width: 800px; Removed fixed width */
-    display: flex; /* Make it a flex container */
-    flex-wrap: wrap; /* Allow wrapping */
-    gap: 10px; /* Add spacing */
-    justify-content: center; /* Center items horizontally */
+    margin: 0;
+    width: 800px;
     margin-bottom: 20px;
     margin-top: 20px;
 }
 
 .add {
-/* Removed margin-top from .add as it's defined above */
+    margin-top: 40px;
+}
 
 body {
     background-color: white;
@@ -152,13 +141,8 @@ body {
     height: 80px;
     text-align: center;
     padding: 10px;
-    /* display: inline-block; Removed for flex */
+    display: inline-block;
     position: relative;
-    flex-basis: 150px; /* Suggest a base width, allowing shrinking */
-    flex-grow: 1; /* Allow growing to fill space */
-    max-width: 170px; /* Limit max width to prevent excessive stretching */
-    height: 80px; /* Keep original height */
-    text-align: center; /* Keep original text align */
 }
 
 .flag-selector:hover {
@@ -181,17 +165,10 @@ body {
 
 #inputs {
     display: none;
-    /* Consider adding max-width: 100%; or similar if needed later */
-}
-
-#inputs table { /* Style the table within inputs */
-    width: 100%; /* Make table take full width */
 }
 
 input {
-    width: 600px; /* Default width for larger screens */
-    max-width: 100%; /* Ensure input doesn't overflow container */
-    box-sizing: border-box; /* Include padding/border in width */
+    width: 600px;
 }
 
 td.label {
@@ -248,133 +225,6 @@ img {
     margin-bottom: 10px;
     display: inline-block;
     background-color: rgb(24, 116, 197);
-}
-
-/* Media Query for smaller screens */
-@media (max-width: 768px) {
-    input {
-        width: 95%; /* Use percentage width on smaller screens */
-    }
-
-    #inputs table td { /* Stack table cells vertically */
-        display: block;
-        width: 100%;
-        text-align: left; /* Adjust text alignment */
-        box-sizing: border-box;
-    }
-
-    #inputs table td.label {
-        text-align: left; /* Ensure labels are also left-aligned */
-        padding-bottom: 0; /* Adjust spacing */
-    }
-
-     #inputs table input {
-        width: 100%; /* Make input take full width of the cell */
-     }
-
-    /* --- Button Adjustments --- */
-    .button {
-        width: auto; /* Let button size adapt to content + padding */
-        padding-left: 30px; /* Increase padding */
-        padding-right: 30px;
-        margin-left: auto; /* Center buttons */
-        margin-right: auto;
-        margin-bottom: 10px; /* Add spacing below */
-        max-width: 300px; /* Prevent buttons from becoming excessively wide */
-    }
-
-    /* Ensure the container for #next allows centering */
-    .buttons.enabled {
-        justify-content: center; /* Center the #next button */
-        flex-direction: column; /* Stack if more buttons were added */
-        align-items: center;
-    }
-
-    /* Stack +/- buttons */
-    #speed-plus, #speed-minus, #corner-plus, #corner-minus {
-        display: block; /* Stack vertically */
-        width: auto; /* Adapt width */
-        padding-left: 30px;
-        padding-right: 30px;
-        margin-left: auto; /* Center */
-        margin-right: auto;
-        max-width: 300px;
-        /* margin-bottom: 10px; Inherited or set by .button */
-    }
-
-    /* Adjust spacing specifically if needed */
-    #add {
-        margin-top: 20px; /* Adjust spacing above add button */
-    }
-
-    /* --- Driver Table Adjustments --- */
-    #drivers table,
-    #drivers thead,
-    #drivers tbody,
-    #drivers th,
-    #drivers td,
-    #drivers tr {
-        display: block; /* Force table elements to stack */
-    }
-
-    #drivers thead tr { /* Hide table header row */
-        position: absolute;
-        top: -9999px;
-        left: -9999px;
-    }
-
-    #drivers tr {
-        border: 1px solid #ccc; /* Add border around each "card" */
-        margin-bottom: 15px; /* Space out driver cards */
-    }
-
-    #drivers td {
-        border: none; /* Remove internal cell borders */
-        border-bottom: 1px solid #eee; /* Add subtle line between "fields" */
-        position: relative;
-        padding-left: 50%; /* Create space for label */
-        text-align: right; /* Align content to the right */
-        white-space: normal; /* Allow wrapping */
-    }
-
-    #drivers td:before { /* Add labels using ::before pseudo-element */
-        content: attr(data-label); /* Use data-label attribute (needs HTML change - simulate for now) */
-        position: absolute;
-        left: 10px;
-        width: 45%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left; /* Align label to the left */
-        font-weight: bold;
-    }
-
-    /* Assign pseudo-labels based on column index (LESS IDEAL than data-label) */
-    #drivers td:nth-of-type(1):before { content: "Car"; }
-    #drivers td:nth-of-type(2):before { content: "Driver"; }
-    #drivers td:nth-of-type(3):before { content: "Flag"; }
-    #drivers td:nth-of-type(4):before { content: "Speed"; }
-    #drivers td:nth-of-type(5):before { content: "Over"; }
-    #drivers td:nth-of-type(6):before { content: "Corner"; }
-    #drivers td:nth-of-type(7):before { content: "Action"; } /* For the remove button */
-
-    /* Adjust specific cells like image/button */
-     #drivers td.car, #drivers td.td-flag {
-        padding-left: 10px; /* Remove pseudo-label padding */
-        text-align: center; /* Center image */
-     }
-    #drivers td.car:before, #drivers td.td-flag:before {
-        content: ""; /* Remove label for image cells */
-    }
-    #drivers td:last-child { /* Adjust button cell */
-        padding-left: 10px; /* Remove label padding */
-        text-align: center; /* Center button */
-    }
-     #drivers td:last-child .button { /* Make button width auto in this view */
-        margin-left:auto;
-        margin-right:auto;
-     }
-
-
 }
 
 #speed-plus:hover, #corner-plus:hover {
