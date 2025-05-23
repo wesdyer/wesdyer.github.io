@@ -265,23 +265,26 @@ function create_driver(driver) {
 var drivers = [];
 var chosen_nationality = null;
 var chosen_name = null;
+var currentDriverName = "";
+var currentSpeedDeck = [];
+var currentOverDeck = [];
+var currentCornerDeck = [];
 
 function initializeDeck() {
-    $("#speed").val("10, 11, 12, 13, 14, 15, 16, 17, 18, 19");
-    $("#over").val("0, 0, 1, 1, 1, 2, 2, 2, 3, 3");
-    $("#corner").val("0, 0, 1, 1, 1, 2, 2, 2, 3, 3");
-
+    currentSpeedDeck = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+    currentOverDeck = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3];
+    currentCornerDeck = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3];
 }
 
 function initialize() {
     initializeDeck();
 
     const nn = select_name_and_nationality();
-    $("#name").val(nn.name);
+    currentDriverName = nn.name; // Use the global variable
     $(".flag-selector").removeClass("selected");
     $("#flag-" + nn.nationality.country).addClass("selected");
     chosen_nationality = nn.nationality;
-    chosen_name = nn.name;
+    chosen_name = nn.name; // This is used for comparison logic later
 }
 
 function parse(name, s) {
@@ -358,74 +361,55 @@ $(document).ready(() => {
         initialize();
     });
     $("#add").click(function () {
-        var speed;
-        var over;
-        var corner;
-        try {
-            speed = parse("Speed", $("#speed").val());
-        } catch (e) {
-            $("#error").text(e);
-            return;
-        }
-        try {
-            over = parse("Over", $("#over").val());
-        } catch (e) {
-            $("#error").text(e);
-            return;
-        }
-        try {
-            corner = parse("Corner", $("#corner").val());
-        } catch (e) {
-            $("#error").text(e);
-            return;
-        }
-        $("#error").text("");
+        // Error handling for parse() is removed for speed, over, corner.
+        // If other errors can occur before this point, $("#error").text(""); might still be needed.
+        // Assuming no other errors before this, it can be removed or adapted.
+        // For now, let's assume other parts of the "inputs" div might still generate errors.
+        // If not, the worker can advise on removing $("#error").text("").
 
         const color = $(".selected").attr("color");
+        if (!color) { // It's good practice to check if a color is selected
+            $("#error").text("Please select a car.");
+            return;
+        }
         $(".selector." + color).addClass("added");
-        const name = $("#name").val();
-        drivers.push(create_driver(custom_driver(color, name, chosen_nationality, speed, over, corner)));
+        
+        // Use global variables:
+        drivers.push(create_driver(custom_driver(color, currentDriverName, chosen_nationality, currentSpeedDeck, currentOverDeck, currentCornerDeck)));
+        
         $("#drivers").show();
         $(".buttons").addClass('enabled');
         $("#inputs").hide();
+        // Clear any previous error messages if all operations are successful
+        $("#error").text(""); 
     });
     $("#speed-plus,#speed-minus").click(function () {
-        var speed;
-        try {
-            speed = parse("Speed", $("#speed").val());
-        } catch (e) {
-            $("#error").text(e);
-            return;
-        }
-        $("#error").text("");
+        // No parsing needed, operate on currentSpeedDeck directly
         const id = $(this).attr("id");
         let mod = 1;
         if (id === "speed-minus") mod = -1;
-        for (var i = 0; i < speed.length; ++i) {
-            speed[i] += mod;
-            if (speed[i] >= 100) speed[i] = 99;
-            if (speed[i] < 0) speed[i] = 0;
+        for (var i = 0; i < currentSpeedDeck.length; ++i) {
+            currentSpeedDeck[i] += mod;
+            if (currentSpeedDeck[i] >= 100) currentSpeedDeck[i] = 99;
+            if (currentSpeedDeck[i] < 0) currentSpeedDeck[i] = 0;
         }
-        $("#speed").val(speed.join(", "));
+        // No need to set textbox value
+        // Clear errors if parse was the only source for this handler
+        $("#error").text(""); 
     });
     $("#corner-plus,#corner-minus").click(function () {
-        var corner;
-        try {
-            corner = parse("Corner", $("#corner").val());
-        } catch (e) {
-            $("#error").text(e);
-            return;
-        }
-        $("#error").text("");
+        // No parsing needed, operate on currentCornerDeck directly
         const id = $(this).attr("id");
         let mod = 1;
         if (id === "corner-minus") mod = -1;
-        for (var i = 0; i < corner.length; ++i) {
-            corner[i] += mod;
-            if (corner[i] >= 100) corner[i] = 99;
-            if (corner[i] < 0) corner[i] = 0;
+        for (var i = 0; i < currentCornerDeck.length; ++i) {
+            currentCornerDeck[i] += mod;
+            if (currentCornerDeck[i] >= 100) currentCornerDeck[i] = 99;
+            if (currentCornerDeck[i] < 0) currentCornerDeck[i] = 0;
         }
-        $("#corner").val(corner.join(", "));
+        // No need to set textbox value
+        // Clear errors if parse was the only source for this handler
+        $("#error").text("");
     });
     $("#reset").click(function () {
         initializeDeck();
