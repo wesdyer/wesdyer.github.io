@@ -213,11 +213,14 @@ function custom_driver(color, name, nationality, speedDeck, overDeck, cornerDeck
         return draw(cornerDeck, cornerHand);
     };
 
+    driver.speedDeck = [...speedDeck]; // Create a copy
+    driver.cornerDeck = [...cornerDeck]; // Create a copy
+
     return driver;
 }
 
 function create_driver(driver) {
-    const e = $("<tr><td class='car'></td><td class='name'></td><td class='td-flag'><img class='flag'/></td><td class='max-speed'></td><td class='approach'></td><td class='corner'></td><td><div class='button remove'>Remove</div></td></tr>");
+    const e = $("<tr><td class='car'></td><td class='name'></td><td class='td-flag'><img class='flag'/></td><td class='max-speed'></td><td class='approach'></td><td class='corner'></td><td class='total-speed'></td><td class='total-corner'></td><td><div class='button remove'>Remove</div></td></tr>");
     e.attr("id", driver.color);
     e.addClass("driver");
     $('#drivers').append(e);
@@ -236,6 +239,14 @@ function create_driver(driver) {
     const remove = e.find(".remove");
 
     e.find(".name").text(driver.name);
+
+    // Calculate and display total speed
+    const totalSpeed = driver.speedDeck.reduce((sum, val) => sum + val, 0);
+    e.find(".total-speed").text(totalSpeed);
+
+    // Calculate and display total corner
+    const totalCorner = driver.cornerDeck.reduce((sum, val) => sum + val, 0);
+    e.find(".total-corner").text(totalCorner);
 
     remove.click(() => {
         if ($(this).hasClass("disabled")) return;
