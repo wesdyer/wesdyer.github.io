@@ -234,3 +234,8 @@ img {
 #speed-plus:active, #corner-plus:active {
     background-color: rgb(24, 116, 197);
 }
+
+.total-speed, .total-corner {
+    text-align: center;
+    padding: 10px;
+}
