@@ -249,7 +249,7 @@ function create_driver(driver) {
         var index = drivers.indexOf(driver);
         if (index !== -1) drivers.splice(index, 1);
         if (drivers.length === 0) {
-            $('.add .prompt').show();
+            $('.prompt').show();
             $('#drivers').hide();
             $(".buttons").removeClass('enabled');
             drivers = [];
@@ -357,7 +357,7 @@ $(document).ready(() => {
         });
     });
     $(".selector").click(function () {
-        $(".add .prompt").hide();
+        $(".prompt").hide();
         $(".selected").removeClass("selected");
         $(this).addClass("selected");
         $("#inputs").show();

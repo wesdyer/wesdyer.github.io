@@ -4,17 +4,20 @@
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js" integrity="sha256-lSjKY0/srUM9BE3dPm+c4fBo1dky2v27Gdjm2uoZaL0=" crossorigin="anonymous"></script>
 <script src="legends.js" charset="utf-8"></script>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="legends.css" />
     <title>Heat Legends</title>
     <link rel="icon" type="image/png" href="legend.png" />
 </head>
 <body>
-    <table id="drivers">
-        <tr class="heading"><td>Car</td><td>Driver</td><td></td><td>Speed</td><td>Over</td><td>Corner</td><td>&nbsp;</td></tr>
-    </table>
+    <div class="table-responsive">
+        <table id="drivers">
+            <tr class="heading"><td>Car</td><td>Driver</td><td></td><td>Speed</td><td>Over</td><td>Corner</td><td>&nbsp;</td></tr>
+        </table>
+    </div>
     <div class="buttons"><div id="next" class="button">Move</div></div>
+    <div class="prompt">Select a car</div>
     <div class="add">
-        <div class="prompt">Select a car</div>
         <div class="red selector" color="red"><img src="cars/red.png" class="car" /></div>
         <div class="blue selector" color="blue"><img src="cars/blue.png" class="car"/></div>
         <div class="green selector" color="green"><img src="cars/green.png" class="car"/></div>
@@ -26,17 +29,18 @@
     </div>
     <div id="inputs">
         <div class="flag-select-holder"></div>
-        <br />
-        <div id="speed-plus" class="button">+1 Speed</div>
-        <div id="speed-minus" class="button">-1 Speed</div>
-        <br />
-        <div id="corner-plus" class="button">+1 Corner</div>
-        <div id="corner-minus" class="button">-1 Corner</div>
-        <br />
-        <div id="add" class="button">Add</div>
-        <br />
-        <div id="reset" class="button">Reset</div>
-        <br />
+        <div class="input-group">
+            <div id="speed-plus" class="button">+1 Speed</div>
+            <div id="speed-minus" class="button">-1 Speed</div>
+        </div>
+        <div class="input-group">
+            <div id="corner-plus" class="button">+1 Corner</div>
+            <div id="corner-minus" class="button">-1 Corner</div>
+        </div>
+        <div class="input-actions">
+            <div id="add" class="button">Add</div>
+            <div id="reset" class="button">Reset</div>
+        </div>
         <div id="error"></div>
      </div>
 </body>
