@@ -215,6 +215,7 @@ function onSuggestionClick(word) {
     state.currentCol = 0;
 
     renderGrid();
+    updateSuggestions();
 }
 
 function calculateBestGuesses(possibleWords) {
