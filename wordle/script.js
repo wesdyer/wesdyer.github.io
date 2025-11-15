@@ -253,7 +253,7 @@ function calculateBestGuesses(possibleWords) {
 
   const wordScores = {};
 
-  words.forEach(word => {
+  wordsToAnalyze.forEach(word => {
     const uniqueLetters = new Set(word.split(''));
     let score = 0;
     for (let i = 0; i < 5; i++) {
