@@ -1,0 +1,16 @@
+body {
+    min-height: max(884px, 100dvh);
+  }
+
+  .grid.invalid {
+    animation: shake 0.5s;
+  }
+
+  @keyframes shake {
+    0% { transform: translateX(0); }
+    10% { transform: translateX(-10px); }
+    20% { transform: translateX(10px); }
+    30% { transform: translateX(-10px); }
+    40% { transform: translateX(10px); }
+    50% { transform: translateX(0); }
+  }

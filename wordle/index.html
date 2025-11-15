@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle Solver</title>
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              colors: {
+                "wordle-gray": "#787c7e",
+                "wordle-yellow": "#c9b458",
+                "wordle-green": "#6aaa64",
+                'charcoal-text': '#2A2A2A',
+                'subtle-warm-gray': '#F2F2F2',
+                'light-warm-gray': '#F8F8F8',
+                'elegant-teal': '#4CAF50',
+                'border-subtle': '#D3D3D3',
+              },
+              fontFamily: {
+                sans: ["Inter", "sans-serif"],
+              },
+            },
+          },
+        };
+      </script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="font-sans antialiased bg-subtle-warm-gray text-charcoal-text">
+    <div class="flex flex-col h-screen max-w-md mx-auto py-6 px-4">
+        <header class="pb-6 mb-6 border-b border-border-subtle text-center">
+            <h1 class="font-bold text-3xl tracking-tight text-charcoal-text">Wordle Solver</h1>
+        </header>
+        <main class="flex-grow flex flex-col justify-between">
+            <div class="flex-1 flex flex-col items-center justify-center pt-4 pb-8">
+                <div class="grid grid-rows-6 gap-2 w-full max-w-xs mx-auto" id="wordle-grid">
+                </div>
+            </div>
+            <section class="flex flex-col flex-grow min-h-0 bg-light-warm-gray rounded-lg shadow-sm p-4 border border-border-subtle">
+                <div class="flex justify-between items-baseline mb-4">
+                    <h2 class="text-xl font-semibold text-charcoal-text">Best Guesses</h2>
+                    <p class="text-sm text-charcoal-text opacity-75">
+                        <span class="font-bold" id="word-count">0</span> possible words
+                    </p>
+                </div>
+                <ul class="space-y-3 overflow-y-auto pr-2" id="suggestions-list">
+                </ul>
+            </section>
+        </main>
+    </div>
+    <script src="words.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
