@@ -85,9 +85,21 @@ document.addEventListener('keydown', (e) => {
         state.grid[state.currentRow][state.currentCol] = { letter: e.key.toUpperCase(), color: 'default' };
         state.currentCol = Math.min(4, state.currentCol + 1);
     } else if (e.key === 'Backspace') {
-        const newCol = Math.max(0, state.currentCol - 1);
-        state.grid[state.currentRow][newCol] = { letter: '', color: 'default' };
-        state.currentCol = newCol;
+        if (state.currentCol > 0) {
+            if (state.grid[state.currentRow][state.currentCol].letter === '') {
+                // Empty cell, delete previous. Cursor moves to that cell.
+                const newCol = state.currentCol - 1;
+                state.grid[state.currentRow][newCol] = { letter: '', color: 'default' };
+                state.currentCol = newCol;
+            } else {
+                // Letter in cell. Delete it. Move cursor left.
+                state.grid[state.currentRow][state.currentCol] = { letter: '', color: 'default' };
+                state.currentCol = state.currentCol - 1;
+            }
+        } else { // currentCol is 0
+            // We are at the first cell. Just delete its content.
+            state.grid[state.currentRow][state.currentCol] = { letter: '', color: 'default' };
+        }
     } else if (e.key === 'Enter') {
         if (row.every(cell => cell.letter)) {
             state.currentRow++;
