@@ -6,12 +6,8 @@ body {
     animation: shake 0.5s;
   }
 
-  .is-active {
+  .is-active-cell {
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-  }
-
-  .is-active .cell:not(.filled) {
-    background-color: #f0f0f0;
   }
 
   @keyframes shake {

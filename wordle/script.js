@@ -5,11 +5,12 @@ const hiddenInput = document.getElementById('hidden-input');
 
 const state = {
   currentRow: 0,
+  currentCol: 0,
   grid: Array(6).fill(null).map(() => Array(5).fill({ letter: '', color: 'default' })),
 };
 
 const colorClasses = {
-    default: 'bg-wordle-gray border-wordle-gray text-white',
+    default: 'bg-gray-200 border-gray-200 text-charcoal-text',
     yellow: 'bg-wordle-yellow border-wordle-yellow text-white',
     green: 'bg-wordle-green border-wordle-green text-white',
     gray: 'bg-wordle-gray border-wordle-gray text-white',
@@ -22,9 +23,6 @@ function renderGrid() {
     const rowEl = document.createElement('div');
     rowEl.className = 'grid grid-cols-5 gap-2';
     rowEl.dataset.row = i;
-    if (i === state.currentRow) {
-      rowEl.classList.add('is-active');
-    }
     if (state.grid[i].some(cell => cell.letter)) {
         rowEl.classList.add('filled');
     }
@@ -33,6 +31,9 @@ function renderGrid() {
       const cell = document.createElement('div');
       const colorClass = cellData.letter ? colorClasses[cellData.color] : colorClasses.white;
       cell.className = `cell aspect-square w-full flex items-center justify-center text-3xl font-bold uppercase border-2 rounded-md transition-colors duration-100 ${colorClass}`;
+      if (i === state.currentRow && j === state.currentCol) {
+        cell.classList.add('is-active-cell');
+      }
       cell.dataset.row = i;
       cell.dataset.col = j;
       cell.textContent = cellData.letter;
@@ -60,6 +61,7 @@ function onCellRightClick(row, col) {
 
 function onCellClick(row, col) {
   state.currentRow = row;
+  state.currentCol = col;
   hiddenInput.focus();
   currentInput = state.grid[row].map(cell => cell.letter).join('');
 
@@ -74,35 +76,33 @@ function onCellClick(row, col) {
   updateSuggestions();
 }
 
-let currentInput = '';
 document.addEventListener('keydown', (e) => {
     if (state.currentRow >= 6) return;
     const row = state.grid[state.currentRow];
-    if (e.key === 'Enter') {
-      if (currentInput.length === 5) {
-        for (let i = 0; i < 5; i++) {
-          row[i] = { letter: currentInput[i], color: 'gray' };
-        }
-        state.currentRow++;
-        currentInput = '';
-        hiddenInput.value = '';
-        renderGrid();
-        updateSuggestions();
-      }
-    } else if (e.key === 'Backspace') {
-      currentInput = currentInput.slice(0, -1);
-      hiddenInput.value = currentInput;
-    }
-});
+    const col = state.currentCol;
 
-hiddenInput.addEventListener('input', (e) => {
-    currentInput = e.target.value.toUpperCase();
-    for (let i = 0; i < 5; i++) {
-        const letter = currentInput[i] || '';
-        if (state.grid[state.currentRow][i].letter !== letter) {
-            state.grid[state.currentRow][i] = { letter, color: 'default' };
+    if (e.key.length === 1 && e.key.match(/[a-z]/i)) {
+        state.grid[state.currentRow][state.currentCol] = { letter: e.key.toUpperCase(), color: 'default' };
+        state.currentCol = Math.min(4, state.currentCol + 1);
+    } else if (e.key === 'Backspace') {
+        const newCol = Math.max(0, state.currentCol - 1);
+        state.grid[state.currentRow][newCol] = { letter: '', color: 'default' };
+        state.currentCol = newCol;
+    } else if (e.key === 'Enter') {
+        if (row.every(cell => cell.letter)) {
+            state.currentRow++;
+            state.currentCol = 0;
         }
+    } else if (e.key === 'ArrowLeft') {
+        state.currentCol = Math.max(0, state.currentCol - 1);
+    } else if (e.key === 'ArrowRight') {
+        state.currentCol = Math.min(4, state.currentCol + 1);
+    } else if (e.key === 'ArrowUp') {
+        state.currentRow = Math.max(0, state.currentRow - 1);
+    } else if (e.key === 'ArrowDown') {
+        state.currentRow = Math.min(5, state.currentRow + 1);
     }
+
     renderGrid();
     updateSuggestions();
 });
