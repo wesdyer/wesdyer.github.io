@@ -8,7 +8,7 @@ const state = {
 };
 
 const colorClasses = {
-    default: 'bg-white border-border-subtle text-charcoal-text',
+    default: 'bg-wordle-gray border-wordle-gray text-white',
     yellow: 'bg-wordle-yellow border-wordle-yellow text-white',
     green: 'bg-wordle-green border-wordle-green text-white',
     gray: 'bg-wordle-gray border-wordle-gray text-white'
@@ -20,9 +20,6 @@ function renderGrid() {
     const rowEl = document.createElement('div');
     rowEl.className = 'grid grid-cols-5 gap-2';
     rowEl.dataset.row = i;
-    if (i === state.currentRow) {
-      rowEl.classList.add('is-active');
-    }
     if (state.grid[i].some(cell => cell.letter)) {
         rowEl.classList.add('filled');
     }
@@ -196,7 +193,9 @@ function calculateBestGuesses(possibleWords) {
   });
 
   const wordScores = {};
-  words.forEach(word => {
+  const wordsToScore = possibleWords.length > 0 ? possibleWords : words;
+
+  wordsToScore.forEach(word => {
     const uniqueLetters = new Set(word.split(''));
     let score = 0;
     uniqueLetters.forEach(letter => {
