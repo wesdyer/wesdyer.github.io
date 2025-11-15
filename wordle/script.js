@@ -201,6 +201,10 @@ function updateSuggestions() {
 
   wordCount.textContent = possibleWords.length;
 
+  if (hasUserInput && possibleWords.length === 0) {
+    return;
+  }
+
   const bestGuesses = calculateBestGuesses(possibleWords);
   bestGuesses.forEach(word => {
       const li = document.createElement('li');
