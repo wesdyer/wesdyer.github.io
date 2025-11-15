@@ -1,6 +1,7 @@
 const grid = document.getElementById('wordle-grid');
 const suggestionsList = document.getElementById('suggestions-list');
 const wordCount = document.getElementById('word-count');
+const wordPlural = document.getElementById('word-plural');
 const hiddenInput = document.getElementById('hidden-input');
 const clearButton = document.getElementById('clear-button');
 
@@ -200,6 +201,7 @@ function updateSuggestions() {
   }
 
   wordCount.textContent = possibleWords.length;
+  wordPlural.textContent = possibleWords.length === 1 ? ' possible word' : ' possible words';
 
   if (hasUserInput && possibleWords.length === 0) {
     return;
