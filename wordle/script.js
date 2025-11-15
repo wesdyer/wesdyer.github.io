@@ -11,7 +11,8 @@ const colorClasses = {
     default: 'bg-wordle-gray border-wordle-gray text-white',
     yellow: 'bg-wordle-yellow border-wordle-yellow text-white',
     green: 'bg-wordle-green border-wordle-green text-white',
-    gray: 'bg-wordle-gray border-wordle-gray text-white'
+    gray: 'bg-wordle-gray border-wordle-gray text-white',
+    white: 'bg-white border-border-subtle text-charcoal-text'
   };
 
 function renderGrid() {
@@ -26,7 +27,8 @@ function renderGrid() {
     for (let j = 0; j < 5; j++) {
       const cellData = state.grid[i][j];
       const cell = document.createElement('div');
-      cell.className = `cell aspect-square w-full flex items-center justify-center text-3xl font-bold uppercase border-2 rounded-md transition-colors duration-100 ${colorClasses[cellData.color]}`;
+      const colorClass = cellData.letter ? colorClasses[cellData.color] : colorClasses.white;
+      cell.className = `cell aspect-square w-full flex items-center justify-center text-3xl font-bold uppercase border-2 rounded-md transition-colors duration-100 ${colorClass}`;
       cell.dataset.row = i;
       cell.dataset.col = j;
       cell.textContent = cellData.letter;
@@ -94,6 +96,7 @@ document.addEventListener('keydown', (e) => {
         }
     }
     renderGrid();
+    updateSuggestions();
 });
 
 function updateSuggestions() {
@@ -117,7 +120,7 @@ function updateSuggestions() {
         }
         yellowLetters[letter].add(j);
         hasUserInput = true;
-      } else if (cell.color === 'gray') {
+      } else if (cell.color === 'gray' || cell.color === 'default') {
         grayLetters.add(letter);
         hasUserInput = true;
       }
