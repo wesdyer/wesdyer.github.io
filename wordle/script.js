@@ -2,6 +2,7 @@ const grid = document.getElementById('wordle-grid');
 const suggestionsList = document.getElementById('suggestions-list');
 const wordCount = document.getElementById('word-count');
 const hiddenInput = document.getElementById('hidden-input');
+const clearButton = document.getElementById('clear-button');
 
 const state = {
   currentRow: 0,
@@ -45,6 +46,13 @@ function renderGrid() {
     }
     grid.appendChild(rowEl);
   }
+
+  const hasText = state.grid.some(row => row.some(cell => cell.letter));
+    if (hasText) {
+        clearButton.classList.remove('hidden');
+    } else {
+        clearButton.classList.add('hidden');
+    }
 }
 
 function onCellRightClick(row, col) {
@@ -251,6 +259,16 @@ function calculateBestGuesses(possibleWords) {
   const sortedWords = Object.keys(wordScores).sort((a, b) => wordScores[b] - wordScores[a]);
   return sortedWords.slice(0, 10);
 }
+
+function clearGrid() {
+    state.currentRow = 0;
+    state.currentCol = 0;
+    state.grid = Array(6).fill(null).map(() => Array(5).fill({ letter: '', color: 'default' }));
+    renderGrid();
+    updateSuggestions();
+}
+
+clearButton.addEventListener('click', clearGrid);
 
 renderGrid();
 updateSuggestions();
