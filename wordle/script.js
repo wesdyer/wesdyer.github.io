@@ -20,6 +20,9 @@ function renderGrid() {
     const rowEl = document.createElement('div');
     rowEl.className = 'grid grid-cols-5 gap-2';
     rowEl.dataset.row = i;
+    if (i === state.currentRow) {
+      rowEl.classList.add('is-active');
+    }
     if (state.grid[i].some(cell => cell.letter)) {
         rowEl.classList.add('filled');
     }
@@ -31,13 +34,17 @@ function renderGrid() {
       cell.dataset.col = j;
       cell.textContent = cellData.letter;
       cell.addEventListener('click', () => onCellClick(i, j));
+      cell.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        onCellRightClick(i, j);
+      });
       rowEl.appendChild(cell);
     }
     grid.appendChild(rowEl);
   }
 }
 
-function onCellClick(row, col) {
+function onCellRightClick(row, col) {
   if (!state.grid[row][col].letter) return;
 
   const colors = ['default', 'yellow', 'green', 'gray'];
@@ -48,27 +55,34 @@ function onCellClick(row, col) {
   updateSuggestions();
 }
 
+function onCellClick(row, col) {
+  state.currentRow = row;
+  currentInput = state.grid[row].map(cell => cell.letter).join('');
+
+  if (state.grid[row][col].letter) {
+    const colors = ['default', 'yellow', 'green', 'gray'];
+    const currentColorIndex = colors.indexOf(state.grid[row][col].color);
+    const nextColorIndex = (currentColorIndex + 1) % colors.length;
+    state.grid[row][col].color = colors[nextColorIndex];
+  }
+
+  renderGrid();
+  updateSuggestions();
+}
+
 let currentInput = '';
 document.addEventListener('keydown', (e) => {
     if (state.currentRow >= 6) return;
     const row = state.grid[state.currentRow];
     if (e.key === 'Enter') {
       if (currentInput.length === 5) {
-        if (words.includes(currentInput.toLowerCase()) || solutionWords.includes(currentInput.toLowerCase())) {
-          for (let i = 0; i < 5; i++) {
-            row[i] = { letter: currentInput[i], color: 'gray' };
-          }
-          state.currentRow++;
-          currentInput = '';
-          renderGrid();
-          updateSuggestions();
-        } else {
-          const rowEl = grid.children[state.currentRow];
-          rowEl.classList.add('invalid');
-          setTimeout(() => {
-            rowEl.classList.remove('invalid');
-          }, 500);
+        for (let i = 0; i < 5; i++) {
+          row[i] = { letter: currentInput[i], color: 'gray' };
         }
+        state.currentRow++;
+        currentInput = '';
+        renderGrid();
+        updateSuggestions();
       }
     } else if (e.key === 'Backspace') {
       currentInput = currentInput.slice(0, -1);
@@ -115,27 +129,14 @@ function updateSuggestions() {
 
   suggestionsList.innerHTML = '';
 
-  if (!hasUserInput) {
-    wordCount.textContent = solutionWords.length;
-    suggestionsList.innerHTML = `
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs">
-          <span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">RAISE</span>
-          <span class="text-sm font-medium text-elegant-teal px-2 py-1 rounded-full bg-elegant-teal bg-opacity-10">Best Opener</span>
-      </li>
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs"><span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">ARISE</span></li>
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs"><span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">SLATE</span></li>
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs"><span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">CRANE</span></li>
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs"><span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">SOARE</span></li>
-    `;
-    return;
-  }
-
-  const filteredWords = solutionWords.filter(word => {
-    for (const pos in greenLetters) {
-      if (word[pos] !== greenLetters[pos]) {
-        return false;
+  let possibleWords = [];
+  if (hasUserInput) {
+    possibleWords = solutionWords.filter(word => {
+      for (const pos in greenLetters) {
+        if (word[pos] !== greenLetters[pos]) {
+          return false;
+        }
       }
-    }
 
     for (const letter in yellowLetters) {
       if (!word.includes(letter)) {
@@ -166,17 +167,46 @@ function updateSuggestions() {
       }
     }
     return true;
+    });
+  } else {
+    possibleWords = solutionWords;
+  }
+
+  wordCount.textContent = possibleWords.length;
+
+  const bestGuesses = calculateBestGuesses(possibleWords);
+  bestGuesses.forEach(word => {
+      const li = document.createElement('li');
+      li.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs';
+      li.innerHTML = `<span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">${word.toUpperCase()}</span>`;
+      suggestionsList.appendChild(li);
+  });
+}
+
+function calculateBestGuesses(possibleWords) {
+  const letterFrequency = {};
+  'abcdefghijklmnopqrstuvwxyz'.split('').forEach(letter => {
+    letterFrequency[letter] = 0;
   });
 
-  wordCount.textContent = filteredWords.length;
+  possibleWords.forEach(word => {
+    for (const letter of word) {
+      letterFrequency[letter]++;
+    }
+  });
 
-  const bestGuesses = filteredWords.slice(0, 10);
-    bestGuesses.forEach(word => {
-        const li = document.createElement('li');
-        li.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs';
-        li.innerHTML = `<span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">${word.toUpperCase()}</span>`;
-        suggestionsList.appendChild(li);
+  const wordScores = {};
+  words.forEach(word => {
+    const uniqueLetters = new Set(word.split(''));
+    let score = 0;
+    uniqueLetters.forEach(letter => {
+      score += letterFrequency[letter];
     });
+    wordScores[word] = score;
+  });
+
+  const sortedWords = Object.keys(wordScores).sort((a, b) => wordScores[b] - wordScores[a]);
+  return sortedWords.slice(0, 10);
 }
 
 renderGrid();
