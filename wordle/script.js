@@ -13,7 +13,6 @@ const colorClasses = {
     default: 'bg-gray-200 border-gray-200 text-charcoal-text',
     yellow: 'bg-wordle-yellow border-wordle-yellow text-white',
     green: 'bg-wordle-green border-wordle-green text-white',
-    gray: 'bg-wordle-gray border-wordle-gray text-white',
     white: 'bg-white border-border-subtle text-charcoal-text'
   };
 
@@ -51,7 +50,7 @@ function renderGrid() {
 function onCellRightClick(row, col) {
   if (!state.grid[row][col].letter) return;
 
-  const colors = ['default', 'yellow', 'green', 'gray'];
+  const colors = ['default', 'yellow', 'green'];
   const currentColorIndex = colors.indexOf(state.grid[row][col].color);
   const nextColorIndex = (currentColorIndex + 1) % colors.length;
   state.grid[row][col].color = colors[nextColorIndex];
@@ -66,7 +65,7 @@ function onCellClick(row, col) {
   currentInput = state.grid[row].map(cell => cell.letter).join('');
 
   if (state.grid[row][col].letter) {
-    const colors = ['default', 'yellow', 'green', 'gray'];
+    const colors = ['default', 'yellow', 'green'];
     const currentColorIndex = colors.indexOf(state.grid[row][col].color);
     const nextColorIndex = (currentColorIndex + 1) % colors.length;
     state.grid[row][col].color = colors[nextColorIndex];
@@ -140,7 +139,7 @@ function updateSuggestions() {
         }
         yellowLetters[letter].add(j);
         hasUserInput = true;
-      } else if (cell.color === 'gray' || cell.color === 'default') {
+      } else if (cell.color === 'default') {
         grayLetters.add(letter);
         hasUserInput = true;
       }
