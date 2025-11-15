@@ -219,26 +219,32 @@ function onSuggestionClick(word) {
 }
 
 function calculateBestGuesses(possibleWords) {
-  const letterFrequency = {};
+  const positionalLetterFrequency = Array(5).fill(null).map(() => ({}));
+
   'abcdefghijklmnopqrstuvwxyz'.split('').forEach(letter => {
-    letterFrequency[letter] = 0;
+    for (let i = 0; i < 5; i++) {
+      positionalLetterFrequency[i][letter] = 0;
+    }
   });
 
-  possibleWords.forEach(word => {
-    for (const letter of word) {
-      letterFrequency[letter]++;
+  const wordsToAnalyze = possibleWords.length > 0 ? possibleWords : words;
+
+  wordsToAnalyze.forEach(word => {
+    for (let i = 0; i < 5; i++) {
+      positionalLetterFrequency[i][word[i]]++;
     }
   });
 
   const wordScores = {};
-  const wordsToScore = possibleWords.length > 0 ? possibleWords : words;
 
-  wordsToScore.forEach(word => {
+  words.forEach(word => {
     const uniqueLetters = new Set(word.split(''));
     let score = 0;
-    uniqueLetters.forEach(letter => {
-      score += letterFrequency[letter];
-    });
+    for (let i = 0; i < 5; i++) {
+      score += positionalLetterFrequency[i][word[i]];
+    }
+
+    score *= (uniqueLetters.size / 5);
     wordScores[word] = score;
   });
 
