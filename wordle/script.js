@@ -196,10 +196,25 @@ function updateSuggestions() {
   const bestGuesses = calculateBestGuesses(possibleWords);
   bestGuesses.forEach(word => {
       const li = document.createElement('li');
-      li.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs';
+      li.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs cursor-pointer hover:bg-gray-100';
       li.innerHTML = `<span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">${word.toUpperCase()}</span>`;
+      li.addEventListener('click', () => onSuggestionClick(word));
       suggestionsList.appendChild(li);
   });
+}
+
+function onSuggestionClick(word) {
+    if (state.currentRow >= 6) return;
+
+    const letters = word.toUpperCase().split('');
+    for (let i = 0; i < 5; i++) {
+        state.grid[state.currentRow][i] = { letter: letters[i], color: 'default' };
+    }
+
+    state.currentRow++;
+    state.currentCol = 0;
+
+    renderGrid();
 }
 
 function calculateBestGuesses(possibleWords) {
