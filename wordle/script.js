@@ -212,14 +212,18 @@ function updateSuggestions() {
 }
 
 function onSuggestionClick(word) {
-    if (state.currentRow >= 6) return;
+    const targetRow = state.grid.findIndex(row => !row.some(cell => cell.letter));
+
+    if (targetRow === -1) return;
 
     const letters = word.toUpperCase().split('');
     for (let i = 0; i < 5; i++) {
-        state.grid[state.currentRow][i] = { letter: letters[i], color: 'default' };
+        state.grid[targetRow][i] = { letter: letters[i], color: 'default' };
     }
 
-    state.currentRow++;
+    const nextEmptyRow = state.grid.findIndex(row => !row.some(cell => cell.letter));
+
+    state.currentRow = nextEmptyRow !== -1 ? nextEmptyRow : 6;
     state.currentCol = 0;
 
     renderGrid();
