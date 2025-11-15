@@ -20,9 +20,6 @@ function renderGrid() {
     const rowEl = document.createElement('div');
     rowEl.className = 'grid grid-cols-5 gap-2';
     rowEl.dataset.row = i;
-    if (state.grid[i].some(cell => cell.letter)) {
-        rowEl.classList.add('filled');
-    }
     for (let j = 0; j < 5; j++) {
       const cellData = state.grid[i][j];
       const cell = document.createElement('div');
@@ -38,12 +35,20 @@ function renderGrid() {
 }
 
 function onCellClick(row, col) {
-  if (!state.grid[row][col].letter) return;
+  state.currentRow = row;
+  currentInput = state.grid[row].map(c => c.letter).join('');
 
-  const colors = ['default', 'yellow', 'green', 'gray'];
-  const currentColorIndex = colors.indexOf(state.grid[row][col].color);
+  if (!state.grid[row][col].letter) {
+    renderGrid();
+    return;
+  }
+
+  const colors = ['gray', 'yellow', 'green'];
+  const currentColor = state.grid[row][col].color;
+  const currentColorIndex = colors.indexOf(currentColor);
   const nextColorIndex = (currentColorIndex + 1) % colors.length;
   state.grid[row][col].color = colors[nextColorIndex];
+
   renderGrid();
   updateSuggestions();
 }
@@ -51,39 +56,61 @@ function onCellClick(row, col) {
 let currentInput = '';
 document.addEventListener('keydown', (e) => {
     if (state.currentRow >= 6) return;
-    const row = state.grid[state.currentRow];
+
     if (e.key === 'Enter') {
-      if (currentInput.length === 5) {
-        if (words.includes(currentInput.toLowerCase()) || solutionWords.includes(currentInput.toLowerCase())) {
-          for (let i = 0; i < 5; i++) {
-            row[i] = { letter: currentInput[i], color: 'gray' };
-          }
-          state.currentRow++;
-          currentInput = '';
-          renderGrid();
-          updateSuggestions();
-        } else {
-          const rowEl = grid.children[state.currentRow];
-          rowEl.classList.add('invalid');
-          setTimeout(() => {
-            rowEl.classList.remove('invalid');
-          }, 500);
+        if (currentInput.length === 5) {
+            if (state.currentRow < 5) {
+                state.currentRow++;
+            }
+            currentInput = '';
+            renderGrid();
+            updateSuggestions();
         }
-      }
     } else if (e.key === 'Backspace') {
-      currentInput = currentInput.slice(0, -1);
+        currentInput = currentInput.slice(0, -1);
     } else if (currentInput.length < 5 && e.key.match(/^[a-zA-Z]$/)) {
-      currentInput += e.key.toUpperCase();
+        currentInput += e.key.toUpperCase();
     }
 
     for (let i = 0; i < 5; i++) {
         const letter = currentInput[i] || '';
-        if (state.grid[state.currentRow][i].letter !== letter) {
-            state.grid[state.currentRow][i] = { letter, color: 'default' };
-        }
+        const color = letter ? 'gray' : 'default';
+        state.grid[state.currentRow][i] = { letter, color };
     }
     renderGrid();
 });
+
+function getBestGuesses(possibleWords) {
+    if (possibleWords.length <= 2) {
+      return possibleWords;
+    }
+
+    const letterFrequencies = {};
+    for (const word of possibleWords) {
+      for (const letter of new Set(word)) {
+        letterFrequencies[letter] = (letterFrequencies[letter] || 0) + 1;
+      }
+    }
+
+    let bestGuesses = [];
+    let maxScore = -1;
+
+    for (const word of words) {
+      let score = 0;
+      for (const letter of new Set(word)) {
+        score += letterFrequencies[letter] || 0;
+      }
+      if (score > maxScore) {
+        maxScore = score;
+        bestGuesses = [word];
+      } else if (score === maxScore) {
+        bestGuesses.push(word);
+      }
+    }
+
+    return bestGuesses;
+  }
+
 
 function updateSuggestions() {
   const greenLetters = {};
@@ -114,21 +141,6 @@ function updateSuggestions() {
   }
 
   suggestionsList.innerHTML = '';
-
-  if (!hasUserInput) {
-    wordCount.textContent = solutionWords.length;
-    suggestionsList.innerHTML = `
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs">
-          <span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">RAISE</span>
-          <span class="text-sm font-medium text-elegant-teal px-2 py-1 rounded-full bg-elegant-teal bg-opacity-10">Best Opener</span>
-      </li>
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs"><span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">ARISE</span></li>
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs"><span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">SLATE</span></li>
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs"><span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">CRANE</span></li>
-      <li class="flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs"><span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">SOARE</span></li>
-    `;
-    return;
-  }
 
   const filteredWords = solutionWords.filter(word => {
     for (const pos in greenLetters) {
@@ -170,13 +182,14 @@ function updateSuggestions() {
 
   wordCount.textContent = filteredWords.length;
 
-  const bestGuesses = filteredWords.slice(0, 10);
-    bestGuesses.forEach(word => {
-        const li = document.createElement('li');
-        li.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs';
-        li.innerHTML = `<span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">${word.toUpperCase()}</span>`;
-        suggestionsList.appendChild(li);
-    });
+  const bestGuesses = getBestGuesses(filteredWords);
+
+  bestGuesses.slice(0,10).forEach(word => {
+      const li = document.createElement('li');
+      li.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs';
+      li.innerHTML = `<span class="text-lg font-bold tracking-wide uppercase text-charcoal-text">${word.toUpperCase()}</span>`;
+      suggestionsList.appendChild(li);
+  });
 }
 
 renderGrid();
