@@ -1,6 +1,7 @@
 const grid = document.getElementById('wordle-grid');
 const suggestionsList = document.getElementById('suggestions-list');
 const wordCount = document.getElementById('word-count');
+const hiddenInput = document.getElementById('hidden-input');
 
 const state = {
   currentRow: 0,
@@ -21,6 +22,9 @@ function renderGrid() {
     const rowEl = document.createElement('div');
     rowEl.className = 'grid grid-cols-5 gap-2';
     rowEl.dataset.row = i;
+    if (i === state.currentRow) {
+      rowEl.classList.add('is-active');
+    }
     if (state.grid[i].some(cell => cell.letter)) {
         rowEl.classList.add('filled');
     }
@@ -56,6 +60,7 @@ function onCellRightClick(row, col) {
 
 function onCellClick(row, col) {
   state.currentRow = row;
+  hiddenInput.focus();
   currentInput = state.grid[row].map(cell => cell.letter).join('');
 
   if (state.grid[row][col].letter) {
@@ -80,15 +85,18 @@ document.addEventListener('keydown', (e) => {
         }
         state.currentRow++;
         currentInput = '';
+        hiddenInput.value = '';
         renderGrid();
         updateSuggestions();
       }
     } else if (e.key === 'Backspace') {
       currentInput = currentInput.slice(0, -1);
-    } else if (currentInput.length < 5 && e.key.match(/^[a-zA-Z]$/)) {
-      currentInput += e.key.toUpperCase();
+      hiddenInput.value = currentInput;
     }
+});
 
+hiddenInput.addEventListener('input', (e) => {
+    currentInput = e.target.value.toUpperCase();
     for (let i = 0; i < 5; i++) {
         const letter = currentInput[i] || '';
         if (state.grid[state.currentRow][i].letter !== letter) {
