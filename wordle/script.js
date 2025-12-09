@@ -237,37 +237,100 @@ function onSuggestionClick(word) {
 }
 
 function calculateBestGuesses(possibleWords) {
-  const positionalLetterFrequency = Array(5).fill(null).map(() => ({}));
+  if (possibleWords.length === 1) return possibleWords;
+  if (possibleWords.length === 2) return possibleWords;
 
-  'abcdefghijklmnopqrstuvwxyz'.split('').forEach(letter => {
-    for (let i = 0; i < 5; i++) {
-      positionalLetterFrequency[i][letter] = 0;
-    }
+  const letterFreq = {};
+  const total = possibleWords.length;
+  possibleWords.forEach(w => {
+    const unique = new Set(w.split(''));
+    unique.forEach(l => {
+      letterFreq[l] = (letterFreq[l] || 0) + 1;
+    });
   });
 
-  const wordsToAnalyze = possibleWords.length > 0 ? possibleWords : words;
-
-  wordsToAnalyze.forEach(word => {
-    for (let i = 0; i < 5; i++) {
-      positionalLetterFrequency[i][word[i]]++;
-    }
-  });
-
-  const wordScores = {};
-
-  wordsToAnalyze.forEach(word => {
-    const uniqueLetters = new Set(word.split(''));
+  const candidateScores = words.map(word => {
     let score = 0;
-    for (let i = 0; i < 5; i++) {
-      score += positionalLetterFrequency[i][word[i]];
-    }
-
-    score *= (uniqueLetters.size / 5);
-    wordScores[word] = score;
+    const unique = new Set(word.split(''));
+    unique.forEach(l => {
+      const count = letterFreq[l] || 0;
+      const p = count / total;
+      if (p > 0 && p < 1) {
+        score += p * (1 - p);
+      }
+    });
+    return { word, score };
   });
 
-  const sortedWords = Object.keys(wordScores).sort((a, b) => wordScores[b] - wordScores[a]);
-  return sortedWords.slice(0, 10);
+  candidateScores.sort((a, b) => b.score - a.score);
+
+  // Take top K candidates
+  const TOP_K = 20;
+  let candidates = candidateScores.slice(0, TOP_K).map(c => c.word);
+
+  const sortedPossible = possibleWords.map(word => {
+    let score = 0;
+    const unique = new Set(word.split(''));
+    unique.forEach(l => {
+      const count = letterFreq[l] || 0;
+      const p = count / total;
+      if (p > 0 && p < 1) score += p * (1 - p);
+    });
+    return { word, score };
+  }).sort((a, b) => b.score - a.score).slice(0, 5).map(c => c.word);
+
+  candidates = [...new Set([...candidates, ...sortedPossible])];
+
+  const bestGuesses = candidates.map(guess => {
+    const groups = {};
+
+    for (const target of possibleWords) {
+      const result = Array(5).fill('gray');
+      const targetArr = target.split('');
+      const guessArr = guess.split('');
+      const targetCounts = {};
+
+      for (let i = 0; i < 5; i++) {
+        if (targetArr[i] === guessArr[i]) {
+          result[i] = 'green';
+          targetArr[i] = null;
+          guessArr[i] = null;
+        } else {
+          const letter = targetArr[i];
+          targetCounts[letter] = (targetCounts[letter] || 0) + 1;
+        }
+      }
+
+      for (let i = 0; i < 5; i++) {
+        if (result[i] !== 'green') {
+          const letter = guessArr[i];
+          if (letter && targetCounts[letter]) {
+            result[i] = 'yellow';
+            targetCounts[letter]--;
+          }
+        }
+      }
+      const fb = result.map(c => c === 'green' ? 'G' : (c === 'yellow' ? 'Y' : 'X')).join('');
+      groups[fb] = (groups[fb] || 0) + 1;
+    }
+
+    let sumSq = 0;
+    for (const key in groups) {
+      const size = groups[key];
+      sumSq += size * size;
+    }
+
+    const isPossible = possibleWords.includes(guess);
+    return { word: guess, sumSq, isPossible };
+  });
+
+  bestGuesses.sort((a, b) => {
+    if (a.sumSq !== b.sumSq) return a.sumSq - b.sumSq;
+    if (a.isPossible !== b.isPossible) return a.isPossible ? -1 : 1;
+    return 0;
+  });
+
+  return bestGuesses.map(bg => bg.word).slice(0, 10);
 }
 
 function clearGrid() {
