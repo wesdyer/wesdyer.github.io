@@ -240,6 +240,16 @@ function calculateBestGuesses(possibleWords) {
   if (possibleWords.length === 1) return possibleWords;
   if (possibleWords.length === 2) return possibleWords;
 
+  // If the search space is small enough, we can afford a more expensive check.
+  // However, checking ALL 12k words against ~500 targets is ~6M ops, which can freeze the UI.
+  // Instead, we use a hybrid approach:
+  // 1. Always check the top heuristic candidates (e.g. 100).
+  // 2. Always check the possible words themselves (because winning is good).
+  // This keeps the complexity to roughly O(N_possible * (N_possible + K_candidates)), which is fast.
+
+  // Explicitly add known good openers to candidates so they are evaluated (and skipped if already used)
+  const openers = ['salet', 'trace', 'crate', 'slate', 'reast'];
+
   const letterFreq = {};
   const total = possibleWords.length;
   possibleWords.forEach(w => {
@@ -255,6 +265,7 @@ function calculateBestGuesses(possibleWords) {
     unique.forEach(l => {
       const count = letterFreq[l] || 0;
       const p = count / total;
+      // Prioritize letters that are present in ~50% of words (maximize variance)
       if (p > 0 && p < 1) {
         score += p * (1 - p);
       }
@@ -263,26 +274,35 @@ function calculateBestGuesses(possibleWords) {
   });
 
   candidateScores.sort((a, b) => b.score - a.score);
-
-  // Take top K candidates
-  const TOP_K = 20;
+  // Select top K candidates from the full dictionary based on heuristic
+  // K can be higher when N is small, but 100 is generally sufficient for good "helper" words.
+  const TOP_K = 100;
   let candidates = candidateScores.slice(0, TOP_K).map(c => c.word);
 
-  const sortedPossible = possibleWords.map(word => {
-    let score = 0;
-    const unique = new Set(word.split(''));
-    unique.forEach(l => {
-      const count = letterFreq[l] || 0;
-      const p = count / total;
-      if (p > 0 && p < 1) score += p * (1 - p);
-    });
-    return { word, score };
-  }).sort((a, b) => b.score - a.score).slice(0, 5).map(c => c.word);
+  // Always include ALL possible words if N is small, or top subset if N is large.
+  // If N <= 500, we include all possible words as candidates.
+  // If N > 500, we include top 20 possible words.
+  let possibleCandidates = [];
+  if (possibleWords.length <= 500) {
+      possibleCandidates = possibleWords;
+  } else {
+      possibleCandidates = possibleWords.map(word => {
+        let score = 0;
+        const unique = new Set(word.split(''));
+        unique.forEach(l => {
+          const count = letterFreq[l] || 0;
+          const p = count / total;
+          if (p > 0 && p < 1) score += p * (1 - p);
+        });
+        return { word, score };
+      }).sort((a, b) => b.score - a.score).slice(0, 20).map(c => c.word);
+  }
 
-  candidates = [...new Set([...candidates, ...sortedPossible])];
+  candidates = [...new Set([...openers, ...candidates, ...possibleCandidates])];
 
   const bestGuesses = candidates.map(guess => {
     const groups = {};
+    let maxGroupSize = 0;
 
     for (const target of possibleWords) {
       const result = Array(5).fill('gray');
@@ -290,6 +310,9 @@ function calculateBestGuesses(possibleWords) {
       const guessArr = guess.split('');
       const targetCounts = {};
 
+      // First pass: Green
+      // First pass: Green
+      // Note: targetCounts is populated here for non-green letters.
       for (let i = 0; i < 5; i++) {
         if (targetArr[i] === guessArr[i]) {
           result[i] = 'green';
@@ -301,6 +324,7 @@ function calculateBestGuesses(possibleWords) {
         }
       }
 
+      // Second pass: Yellow
       for (let i = 0; i < 5; i++) {
         if (result[i] !== 'green') {
           const letter = guessArr[i];
@@ -312,6 +336,7 @@ function calculateBestGuesses(possibleWords) {
       }
       const fb = result.map(c => c === 'green' ? 'G' : (c === 'yellow' ? 'Y' : 'X')).join('');
       groups[fb] = (groups[fb] || 0) + 1;
+      if (groups[fb] > maxGroupSize) maxGroupSize = groups[fb];
     }
 
     let sumSq = 0;
@@ -321,12 +346,19 @@ function calculateBestGuesses(possibleWords) {
     }
 
     const isPossible = possibleWords.includes(guess);
-    return { word: guess, sumSq, isPossible };
+    return { word: guess, sumSq, maxGroupSize, isPossible };
   });
 
   bestGuesses.sort((a, b) => {
+    // Primary: Minimize Expected Group Size (SumSq) - equivalent to maximizing Entropy
     if (a.sumSq !== b.sumSq) return a.sumSq - b.sumSq;
+
+    // Secondary: If SumSq is equal (or very close), prefer minimizing the Worst Case (Max Group Size)
+    if (a.maxGroupSize !== b.maxGroupSize) return a.maxGroupSize - b.maxGroupSize;
+
+    // Tertiary: Prefer words that are possible solutions
     if (a.isPossible !== b.isPossible) return a.isPossible ? -1 : 1;
+
     return 0;
   });
 
