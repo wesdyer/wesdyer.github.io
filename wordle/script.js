@@ -207,7 +207,9 @@ function updateSuggestions() {
     return;
   }
 
-  const bestGuesses = calculateBestGuesses(possibleWords);
+  const usedGuesses = state.grid.filter(row => row.every(cell => cell.letter)).length;
+  const remainingGuesses = 6 - usedGuesses;
+  const bestGuesses = calculateBestGuesses(possibleWords, remainingGuesses);
   bestGuesses.forEach(word => {
       const li = document.createElement('li');
       li.className = 'flex items-center justify-between bg-white p-3 rounded-lg border border-border-subtle shadow-xs cursor-pointer hover:bg-gray-100';
@@ -236,7 +238,10 @@ function onSuggestionClick(word) {
     updateSuggestions();
 }
 
-function calculateBestGuesses(possibleWords) {
+function calculateBestGuesses(possibleWords, remainingGuesses = 0) {
+  if (possibleWords.length < remainingGuesses) {
+    return possibleWords;
+  }
   if (possibleWords.length === 1) return possibleWords;
   if (possibleWords.length === 2) return possibleWords;
 
