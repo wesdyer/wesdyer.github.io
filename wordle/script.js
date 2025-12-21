@@ -362,6 +362,16 @@ function calculateBestGuesses(possibleWords) {
     return 0;
   });
 
+  // If no guesses have been made yet (possibleWords is still the full list),
+  // force 'salet' to be the top suggestion.
+  if (possibleWords.length === solutionWords.length) {
+    const saletIndex = bestGuesses.findIndex(bg => bg.word === 'salet');
+    if (saletIndex > -1) {
+      const salet = bestGuesses.splice(saletIndex, 1)[0];
+      bestGuesses.unshift(salet);
+    }
+  }
+
   return bestGuesses.map(bg => bg.word).slice(0, 10);
 }
 
