@@ -682,12 +682,12 @@ function update(dt) {
     if (state.boat.manualTrim) {
         const trimRate = 0.8 * dt; // Rad/sec (approx 45 deg per second)
         if (state.keys.ArrowUp) {
-            // Trim IN (decrease angle)
-            state.boat.manualSailAngle = Math.max(0, state.boat.manualSailAngle - trimRate);
-        }
-        if (state.keys.ArrowDown) {
             // Let OUT (increase angle)
             state.boat.manualSailAngle = Math.min(Math.PI / 1.5, state.boat.manualSailAngle + trimRate); // Limit max let out to reasonable bounds
+        }
+        if (state.keys.ArrowDown) {
+            // Trim IN (decrease angle)
+            state.boat.manualSailAngle = Math.max(0, state.boat.manualSailAngle - trimRate);
         }
         // Set actual sail angle based on manual setting
         state.boat.sailAngle = state.boat.manualSailAngle * state.boat.boomSide;
