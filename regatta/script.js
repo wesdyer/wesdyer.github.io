@@ -1514,7 +1514,12 @@ function drawLayLines(ctx) {
     ctx.save();
     ctx.setLineDash([]);
     ctx.lineWidth = 5; // Thicker
-    const zoneRadius = 165;
+
+    let zoneRadius = 165;
+    // For Start (Leg 0) and Finish (Leg 4), there are no mark zones, so laylines should start closer to mark.
+    if (state.race.leg === 0 || state.race.leg === 4) {
+        zoneRadius = 20; // Enough to clear mark visual radius (12)
+    }
 
     for (const idx of targets) {
         if (idx >= state.course.marks.length) continue;
