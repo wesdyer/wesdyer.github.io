@@ -1403,7 +1403,100 @@ function drawMarkZones(ctx) {
 
     const zoneRadius = 165;
 
-    for (const m of state.course.marks) {
+    // Helper to draw rounding arrow
+    const drawRoundingArrow = (mx, my, clockwise) => {
+         ctx.save();
+         ctx.translate(mx, my);
+
+         const radius = 60;
+         const color = '#bfdbfe'; // Blue-200
+         ctx.strokeStyle = color;
+         ctx.fillStyle = color;
+         ctx.lineWidth = 12;
+         ctx.lineCap = 'round';
+         ctx.lineJoin = 'round';
+
+         // Rotate slowly to indicate "Action"
+         // If CW, rotate CW (positive). If CCW, rotate CCW (negative).
+         const rotation = state.time * 0.5 * (clockwise ? 1 : -1);
+         ctx.rotate(rotation);
+         ctx.setLineDash([]); // Solid lines for arrows
+
+         // Draw 3 curved arrows in a circle
+         const count = 3;
+         const arcLen = (Math.PI * 2) / count - 0.5; // Gap of 0.5 rad
+
+         for(let k=0; k<count; k++) {
+             const angleStep = (Math.PI * 2) / count;
+             const offset = k * angleStep;
+
+             // Define segment angles
+             const segStart = offset;
+             const segEnd = offset + angleStep - 0.4; // Gap
+
+             ctx.beginPath();
+
+             if (clockwise) {
+                 // Draw CW: Start -> End. Head at End.
+                 ctx.arc(0, 0, radius, segStart, segEnd, false);
+                 ctx.stroke();
+
+                 // Head at segEnd
+                 // Tangent for CW arc at angle T is T + PI/2
+                 const headAngle = segEnd;
+                 const hx = Math.cos(headAngle) * radius;
+                 const hy = Math.sin(headAngle) * radius;
+                 const tangent = headAngle + Math.PI/2;
+
+                 const size = 15;
+                 ctx.save();
+                 ctx.translate(hx, hy);
+                 ctx.rotate(tangent);
+                 ctx.beginPath();
+                 ctx.moveTo(-size, -size/2);
+                 ctx.lineTo(0, 0);
+                 ctx.lineTo(-size, size/2);
+                 ctx.fill(); // Fill arrow head
+                 ctx.restore();
+
+             } else {
+                 // Draw CCW: End -> Start (using true for counterclockwise)
+                 // Head at segEnd (which is the "start" of the draw, but "end" of movement)
+                 // Wait. CCW movement is Decreasing Angle.
+                 // So we move from segEnd down to segStart?
+                 // Or we draw from segEnd to segStart using CCW=true.
+                 // Direction of motion is segEnd -> segStart.
+                 // So head should be at segStart.
+
+                 ctx.arc(0, 0, radius, segEnd, segStart, true);
+                 ctx.stroke();
+
+                 // Head at segStart
+                 // Tangent for CCW arc at angle T is T - PI/2
+                 const headAngle = segStart;
+                 const hx = Math.cos(headAngle) * radius;
+                 const hy = Math.sin(headAngle) * radius;
+                 const tangent = headAngle - Math.PI/2;
+
+                 const size = 15;
+                 ctx.save();
+                 ctx.translate(hx, hy);
+                 ctx.rotate(tangent);
+                 ctx.beginPath();
+                 ctx.moveTo(-size, -size/2);
+                 ctx.lineTo(0, 0);
+                 ctx.lineTo(-size, size/2);
+                 ctx.fill();
+                 ctx.restore();
+             }
+         }
+
+         ctx.restore();
+    };
+
+    for (let i = 0; i < state.course.marks.length; i++) {
+        const m = state.course.marks[i];
+
         // Only skip mark zones for start/finish marks if we are in Start (Leg 0) or Finish (Leg 4) phase
         if (m.type === 'start' && (state.race.leg === 0 || state.race.leg === 4)) continue;
 
@@ -1420,6 +1513,31 @@ function drawMarkZones(ctx) {
         ctx.beginPath();
         ctx.arc(m.x, m.y, zoneRadius, 0, Math.PI * 2);
         ctx.stroke();
+
+        // Draw Rounding Arrows
+        let showArrow = false;
+        let arrowCW = false;
+
+        // Logic:
+        // Leg 1 & 3: Upwind -> Target Marks 2 (Left/CCW) & 3 (Right/CW)
+        if (state.race.leg === 1 || state.race.leg === 3) {
+            if (i === 2) { showArrow = true; arrowCW = false; } // Left -> CCW
+            if (i === 3) { showArrow = true; arrowCW = true; }  // Right -> CW
+        }
+        // Leg 2: Downwind -> Target Marks 0 (Left/CW) & 1 (Right/CCW)
+        else if (state.race.leg === 2) {
+            if (i === 0) { showArrow = true; arrowCW = true; }  // Left -> CW
+            if (i === 1) { showArrow = true; arrowCW = false; } // Right -> CCW
+        }
+
+        if (showArrow) {
+            // Restore context for solid lines before calling helper?
+            // Helper saves/restores and sets dash to empty.
+            drawRoundingArrow(m.x, m.y, arrowCW);
+            // Reset dash for next mark zone
+            ctx.setLineDash([15, 15]);
+            ctx.lineDashOffset = -state.time * 5;
+        }
     }
     ctx.restore();
 }
