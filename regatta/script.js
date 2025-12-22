@@ -678,11 +678,20 @@ function drawMarks(ctx) {
         ctx.save();
         ctx.translate(m.x, m.y);
 
+        // Bobbing animation
+        // Use mark position for phase to desynchronize
+        const phase = m.x * 0.01 + m.y * 0.01;
+        const bobFreq = 2.0;
+        const bobAmp = 0.05; // 5% scale variation
+        const scale = 1.0 + Math.sin(state.time * bobFreq + phase) * bobAmp;
+
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.beginPath();
         ctx.arc(3, 3, 12, 0, Math.PI * 2);
         ctx.fill();
+
+        ctx.scale(scale, scale);
 
         // Buoy body (Top down)
         const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 12);
