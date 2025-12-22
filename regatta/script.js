@@ -77,6 +77,7 @@ const state = {
         speed: 10, // Knots
         baseSpeed: 10
     },
+    showNavAids: true,
     particles: [], // For wake and wind effects
     keys: {
         ArrowLeft: false,
@@ -186,6 +187,9 @@ window.addEventListener('keydown', (e) => {
                 link.click();
             });
         }
+    }
+    if (e.key === '`' || e.code === 'Backquote') {
+        state.showNavAids = !state.showNavAids;
     }
 });
 
@@ -1176,6 +1180,7 @@ function drawActiveGateLine(ctx) {
 }
 
 function drawLadderLines(ctx) {
+    if (!state.showNavAids) return;
     if (state.race.status === 'prestart' || state.race.status === 'finished') return;
     if (!state.course || !state.course.marks) return;
 
@@ -1250,6 +1255,7 @@ function drawLadderLines(ctx) {
 }
 
 function drawLayLines(ctx) {
+    if (!state.showNavAids) return;
     if (state.race.status === 'finished') return;
     if (!state.course || !state.course.marks) return;
 
@@ -1334,6 +1340,7 @@ function drawLayLines(ctx) {
 }
 
 function drawMarkZones(ctx) {
+    if (!state.showNavAids) return;
     if (!state.course || !state.course.marks) return;
 
     let indices = [];
