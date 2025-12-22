@@ -356,25 +356,50 @@ function drawWater(ctx) {
 
     const gridSize = 80;
     const range = Math.max(canvas.width, canvas.height) * 1.5;
-    const startX = Math.floor((state.camera.x - range) / gridSize) * gridSize;
-    const startY = Math.floor((state.camera.y - range) / gridSize) * gridSize;
+
+    // Wave movement
+    const waveSpeed = 20;
+    const dist = state.time * waveSpeed;
+    const shiftX = Math.sin(state.wind.direction) * dist;
+    const shiftY = -Math.cos(state.wind.direction) * dist;
+
+    // Calculate grid start based on camera position minus shift, snapped to grid
+    // This ensures we iterate a "stable" grid that moves with the shift
+    const startX = Math.floor((state.camera.x - range - shiftX) / gridSize) * gridSize;
+    const startY = Math.floor((state.camera.y - range - shiftY) / gridSize) * gridSize;
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 2.5;
 
-    for (let x = startX; x < state.camera.x + range; x += gridSize) {
-        for (let y = startY; y < state.camera.y + range; y += gridSize) {
+    // Iterate enough grid points to cover the view range
+    // We add extra buffer to handle the shift wrapping
+    for (let x = startX; x < startX + range * 2.5; x += gridSize) {
+        for (let y = startY; y < startY + range * 2.5; y += gridSize) {
+             let wx = x + shiftX;
+             let wy = y + shiftY;
+
+             // Optimization: Skip if far outside camera view
+             if (wx < state.camera.x - range || wx > state.camera.x + range ||
+                 wy < state.camera.y - range || wy > state.camera.y + range) {
+                 continue;
+             }
+
              // Draw little wave glyphs
+             // Use unshifted 'x' and 'y' for noise so the shape travels with the wave
              const noise = Math.sin(x * 0.12 + y * 0.17);
              const bob = Math.sin(state.time * 2 + noise * 10) * 3;
 
-             let wx = x + gridSize/2;
-             let wy = y + gridSize/2;
+             ctx.save();
+             ctx.translate(wx + gridSize/2, wy + gridSize/2);
+             // Rotate to align perpendicular to wind
+             ctx.rotate(state.wind.direction);
 
              ctx.beginPath();
-             ctx.moveTo(wx - 8, wy + bob);
-             ctx.quadraticCurveTo(wx, wy + bob - 6, wx + 8, wy + bob);
+             // Draw relative to rotated center
+             ctx.moveTo(-8, bob);
+             ctx.quadraticCurveTo(0, bob - 6, 8, bob);
              ctx.stroke();
+             ctx.restore();
         }
     }
 }
