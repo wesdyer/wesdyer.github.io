@@ -57,6 +57,7 @@ const state = {
         boomSide: 1, // 1 for right, -1 for left
         targetBoomSide: 1,
         luffing: false,
+        luffIntensity: 0,
         spinnaker: false, // Default to Performance Mode
     },
     camera: {
@@ -282,6 +283,15 @@ function update() {
         state.boat.luffing = false;
     }
 
+    // Determine Visual Luffing Intensity
+    // Luff more when pointed closer to the wind (0 intensity at > 45 deg, 1.0 at 0 deg)
+    const luffThreshold = 0.8; // Approx 45 degrees
+    if (angleToWind < luffThreshold) {
+        state.boat.luffIntensity = Math.max(0, 1.0 - (angleToWind / luffThreshold));
+    } else {
+        state.boat.luffIntensity = 0;
+    }
+
     // Smoothly interpolate current speed to target speed (acceleration/deceleration)
     // Momentum factor: 0.98 (retains 98% of old speed), 0.02 (adds 2% of new)
     state.boat.speed = state.boat.speed * 0.99 + targetGameSpeed * 0.01;
@@ -439,15 +449,31 @@ function drawBoat(ctx) {
         ctx.strokeStyle = '#94a3b8';
         ctx.lineWidth = 1;
 
+        // Calculate dynamic shape for luffing
+        const luff = state.boat.luffIntensity || 0;
+        const baseDepth = isJib ? 11 : 15;
+        let controlX = -state.boat.boomSide * baseDepth;
+
+        if (luff > 0) {
+             // Reduce static depth as luff increases (sail loses shape)
+             const currentDepth = baseDepth * (1.0 - luff * 0.8);
+
+             // Add flutter
+             const time = state.time * 100; // Fast flutter frequency
+             const flutterAmt = Math.sin(time) * baseDepth * 1.5 * luff;
+
+             controlX = (-state.boat.boomSide * currentDepth) + flutterAmt;
+        }
+
         ctx.beginPath();
         if (isJib) {
              ctx.moveTo(0, 0);
              ctx.lineTo(0, 28);
-             ctx.quadraticCurveTo(-state.boat.boomSide * 11, 14, 0, 0);
+             ctx.quadraticCurveTo(controlX, 14, 0, 0);
         } else {
              ctx.moveTo(0, 0);
              ctx.lineTo(0, 45);
-             ctx.quadraticCurveTo(-state.boat.boomSide * 15, 20, 0, 0);
+             ctx.quadraticCurveTo(controlX, 20, 0, 0);
         }
         ctx.fill();
         ctx.stroke();
@@ -456,8 +482,14 @@ function drawBoat(ctx) {
         if (!isJib) {
             ctx.strokeStyle = 'rgba(0,0,0,0.1)';
             ctx.beginPath();
-            ctx.moveTo(0, 15); ctx.lineTo(-state.boat.boomSide * 5, 12);
-            ctx.moveTo(0, 30); ctx.lineTo(-state.boat.boomSide * 9, 24);
+
+            // Calculate batten endpoints based on current controlX (approximately 1/3 and 2/3 down the curve)
+            // Original ratios: 5/15 = 0.33, 9/15 = 0.6
+            const batten1X = controlX * 0.33;
+            const batten2X = controlX * 0.6;
+
+            ctx.moveTo(0, 15); ctx.lineTo(batten1X, 12);
+            ctx.moveTo(0, 30); ctx.lineTo(batten2X, 24);
             ctx.stroke();
         }
 
@@ -485,11 +517,23 @@ function drawBoat(ctx) {
         ctx.strokeStyle = '#b91c1c'; // Tailwind red-700
         ctx.lineWidth = 1;
 
+        // Calculate dynamic shape for luffing
+        const luff = state.boat.luffIntensity || 0;
+        const baseDepth = 40;
+        let controlX = -state.boat.boomSide * baseDepth;
+
+        if (luff > 0) {
+             const currentDepth = baseDepth * (1.0 - luff * 0.9); // Spinnaker collapses more easily
+             const time = state.time * 80; // Slightly slower, bigger heavy flutter
+             const flutterAmt = Math.sin(time) * baseDepth * 1.2 * luff;
+             controlX = (-state.boat.boomSide * currentDepth) + flutterAmt;
+        }
+
         ctx.beginPath();
         ctx.moveTo(0, 0);
         ctx.lineTo(0, 50);
         // Larger curve for spinnaker
-        ctx.quadraticCurveTo(-state.boat.boomSide * 40, 25, 0, 0);
+        ctx.quadraticCurveTo(controlX, 25, 0, 0);
 
         ctx.fill();
         ctx.stroke();
