@@ -3,7 +3,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const grid = document.querySelector('.grid');
     const timeElement = document.querySelector('.font-mono.text-3xl.text-white');
     const minesElement = document.querySelector('.font-mono.text-3xl.text-red-400');
-    const smileyButton = document.querySelector('.z-10.size-16.rounded-2xl');
+    const smileyButton = document.getElementById('smiley-button');
+    const cascadeButton = document.getElementById('cascade-button');
     const difficultyRadios = document.querySelectorAll('input[name="difficulty"]');
 
     let width = 9;
@@ -385,6 +386,133 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkedRadio = document.querySelector('input[name="difficulty"]:checked');
         updateDifficulty(checkedRadio.nextElementSibling.textContent);
     });
+
+    cascadeButton.addEventListener('click', () => {
+        if (isGameOver) return;
+
+        let bestIndex = -1;
+        let maxRevealed = -1;
+
+        // Find all unrevealed 0-cells
+        for (let i = 0; i < squares.length; i++) {
+            const square = squares[i];
+            // Must be valid 0-cell, unrevealed, unflagged
+            if (square.getAttribute('data') === '0' &&
+                square.getAttribute('data-type') === 'valid' &&
+                !square.classList.contains('checked') &&
+                !square.classList.contains('flag')) {
+
+                const count = calculateCascadeSize(i);
+                if (count > maxRevealed) {
+                    maxRevealed = count;
+                    bestIndex = i;
+                }
+            }
+        }
+
+        if (bestIndex !== -1) {
+            click(squares[bestIndex]);
+        } else {
+             // Optional: visual feedback if no 0-cells available
+             // For now, we do nothing as per request "cascade the largest remaining area"
+             // If there is no such area, we might want to just click a random safe cell?
+             // But the user said "as if... tapped on a cell with zero bomb neighbors".
+             // So if no such cell exists, we do nothing.
+        }
+    });
+
+    function getNeighbors(i) {
+        const neighbors = [];
+        const isLeftEdge = (i % width === 0);
+        const isRightEdge = (i % width === width - 1);
+
+        // Standard 8-way neighbors checks
+        // North
+        if (i >= width) neighbors.push(i - width);
+        // South
+        if (i < width * height - width) neighbors.push(i + width);
+        // East
+        if (!isRightEdge) neighbors.push(i + 1);
+        // West
+        if (!isLeftEdge) neighbors.push(i - 1);
+
+        // NE
+        if (i >= width && !isRightEdge) neighbors.push(i - width + 1);
+        // NW
+        if (i >= width && !isLeftEdge) neighbors.push(i - width - 1);
+        // SE
+        if (i < width * height - width && !isRightEdge) neighbors.push(i + width + 1);
+        // SW
+        if (i < width * height - width && !isLeftEdge) neighbors.push(i + width - 1);
+
+        return neighbors;
+    }
+
+    function calculateCascadeSize(startIndex) {
+        const visited = new Set();
+        const queue = [startIndex];
+        visited.add(startIndex);
+
+        let count = 0;
+
+        // Using BFS to simulate the flood fill
+        // The real flood fill reveals 0s and their neighbors.
+        // It recursively calls click on 0s.
+        // It reveals non-0 neighbors but stops there.
+
+        // So we need to count:
+        // 1. All connected 0s in this component.
+        // 2. All immediate neighbors of those 0s (which will be numbers).
+
+        // We will process the queue of 0s.
+        // For each 0, we count it.
+        // We also check its neighbors.
+        // If a neighbor is 0 and not visited, add to queue.
+        // If a neighbor is not 0 (number), we just count it as revealed (if not already counted).
+
+        // Wait, 'visited' tracks cells we have processed or queued as 0s?
+        // Let's use two sets:
+        // 'processedZeros': 0s that we have visited in the BFS.
+        // 'revealedCells': all cells (0s or numbers) that would be revealed.
+
+        const processedZeros = new Set();
+        const revealedCells = new Set();
+
+        const q = [startIndex];
+        processedZeros.add(startIndex);
+        revealedCells.add(startIndex);
+
+        while(q.length > 0) {
+            const curr = q.shift();
+            const neighbors = getNeighbors(curr);
+
+            for (const n of neighbors) {
+                const neighborSquare = squares[n];
+                // If it's flagged or already checked in the real game, we shouldn't count it?
+                // The cascade "reveals" them. If they are already revealed, the gain is 0.
+                // But the user wants "largest remaining area".
+                // So we only count unrevealed, unflagged cells.
+
+                if (neighborSquare.classList.contains('checked') || neighborSquare.classList.contains('flag')) {
+                    continue;
+                }
+
+                if (!revealedCells.has(n)) {
+                    revealedCells.add(n);
+
+                    // If it is a 0-cell, we continue the flood fill
+                    if (neighborSquare.getAttribute('data') === '0' && neighborSquare.getAttribute('data-type') === 'valid') {
+                         if (!processedZeros.has(n)) {
+                             processedZeros.add(n);
+                             q.push(n);
+                         }
+                    }
+                }
+            }
+        }
+
+        return revealedCells.size;
+    }
 
     const isMobile = window.innerWidth < 768;
     const initialDifficulty = isMobile ? 'Easy' : 'Medium';
