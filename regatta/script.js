@@ -92,6 +92,8 @@ const state = {
         penalty: false,
         penaltyProgress: 0,
         finishTime: 0,
+        startTimeDisplay: 0,
+        startTimeDisplayTimer: 0,
         lastPos: { x: 0, y: 0 },
         nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 }
     }
@@ -110,6 +112,7 @@ const UI = {
     windSpeed: document.getElementById('hud-wind-speed'),
     windAngle: document.getElementById('hud-wind-angle'),
     timer: document.getElementById('hud-timer'),
+    startTime: document.getElementById('hud-start-time'),
     message: document.getElementById('hud-message'),
     waypointArrow: document.getElementById('hud-waypoint-arrow')
 };
@@ -345,6 +348,8 @@ function updateRace(dt) {
                                 // If we are here, we just crossed Upwind.
                                 // To start correctly, we must have been on Downwind side.
                                 // So this crossing is valid.
+                                state.race.startTimeDisplay = state.race.timer;
+                                state.race.startTimeDisplayTimer = 5.0;
                             }
                         } else if (crossingDir === -1) {
                              // Dipping back
@@ -375,6 +380,11 @@ function updateRace(dt) {
                 }
             }
         }
+    }
+
+    // 2.5 Start Time Display Timer
+    if (state.race.startTimeDisplayTimer > 0) {
+        state.race.startTimeDisplayTimer -= dt;
     }
 
     // 3. Penalty Logic
@@ -1567,6 +1577,18 @@ function draw() {
                  UI.timer.textContent = formatTime(state.race.timer);
                  UI.timer.classList.remove('text-orange-400');
                  UI.timer.classList.remove('text-green-400');
+            }
+        }
+
+        if (UI.startTime) {
+            if (state.race.startTimeDisplayTimer > 0) {
+                // Show start time with + sign and milliseconds (3 decimal places)
+                const t = state.race.startTimeDisplay;
+                // Since racing starts at 0, t is always positive
+                UI.startTime.textContent = '+' + t.toFixed(3) + 's';
+                UI.startTime.classList.remove('hidden');
+            } else {
+                UI.startTime.classList.add('hidden');
             }
         }
     }
