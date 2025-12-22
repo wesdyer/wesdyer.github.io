@@ -389,10 +389,17 @@ function drawWater(ctx) {
              const noise = Math.sin(x * 0.12 + y * 0.17);
              const bob = Math.sin(state.time * 2 + noise * 10) * 3;
 
+             // Add some randomness
+             const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+             const randX = (seed - Math.floor(seed)) * 40 - 20;
+             const randY = (Math.cos(seed) * 0.5 + 0.5) * 40 - 20;
+             const scale = 0.8 + ((seed * 10) % 1) * 0.4; // 0.8 to 1.2
+
              ctx.save();
-             ctx.translate(wx + gridSize/2, wy + gridSize/2);
+             ctx.translate(wx + gridSize/2 + randX, wy + gridSize/2 + randY);
              // Rotate to align perpendicular to wind
              ctx.rotate(state.wind.direction);
+             ctx.scale(scale, scale);
 
              ctx.beginPath();
              // Draw relative to rotated center
