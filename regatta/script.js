@@ -1,6 +1,6 @@
 // Game Configuration
 const CONFIG = {
-    turnSpeed: 0.01,
+    turnSpeed: 0.0017,
     turnPenalty: 0.995,
     cameraPanSpeed: 1.25,
     cameraRotateSpeed: 0.01,
@@ -9,6 +9,12 @@ const CONFIG = {
     boatColor: '#f8fafc',
     sailColor: '#f1f5f9',
 };
+
+// Physics Constants
+const METERS_PER_PIXEL = 0.2;
+const KNOTS_TO_MPS = 0.514444;
+const FPS = 60;
+const SPEED_SCALE = (KNOTS_TO_MPS / METERS_PER_PIXEL) / FPS; // Approx 0.04287
 
 // J/111 Polar Data (Various Wind Speeds)
 // Source: ORC Certificate data & Scaled Estimations based on VMG ratios
@@ -502,7 +508,7 @@ function updateParticles(dt) {
             p.alpha = p.life * 0.25;
         } else if (p.type === 'wind') {
              // Move with wind
-             const speed = 1;
+             const speed = state.wind.speed * SPEED_SCALE;
              p.x -= Math.sin(state.wind.direction) * speed * timeScale;
              p.y += Math.cos(state.wind.direction) * speed * timeScale;
         }
@@ -601,7 +607,7 @@ function update(dt) {
     let targetKnotsSpin = getTargetSpeed(angleToWind, true, state.wind.speed);
 
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
-    let targetGameSpeed = targetKnots * 0.25;
+    let targetGameSpeed = targetKnots * SPEED_SCALE;
 
     // Determine Luffing state (for visual/logic flags, not speed as speed comes from polar now)
     // Polar says 0 speed at < 30 deg, so checks match
@@ -720,7 +726,7 @@ function update(dt) {
     state.boat.prevHeading = state.boat.heading;
 
     // Wake Particles
-    if (state.boat.speed > 0.25) {
+    if (state.boat.speed > 0.04) {
         // Constants for wake geometry
         const sternOffset = 30;
         const sternWidth = 10;
@@ -1493,8 +1499,8 @@ function draw() {
     }
 
     if (UI.speed) {
-        // Convert to "knots" (internal speed * 2)
-        UI.speed.textContent = (state.boat.speed * 4).toFixed(1);
+        // Convert to "knots" (internal speed / SPEED_SCALE)
+        UI.speed.textContent = (state.boat.speed / SPEED_SCALE).toFixed(1);
     }
 
     if (UI.windSpeed) {
