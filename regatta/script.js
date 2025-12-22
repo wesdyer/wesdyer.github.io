@@ -1385,15 +1385,30 @@ function drawMarkZones(ctx) {
     if (!state.course || !state.course.marks) return;
 
     ctx.save();
-    ctx.lineWidth = 5; // Thicker
-    ctx.setLineDash([15, 15]);
-    // Rotate slowly with the dashes
-    ctx.lineDashOffset = -state.time * 5;
-
     const zoneRadius = 165;
 
-    for (const m of state.course.marks) {
-        if (m.type === 'start') continue;
+    for (let i = 0; i < state.course.marks.length; i++) {
+        const m = state.course.marks[i];
+
+        // Determine if we should show zone/arrows for this mark
+        let show = false;
+        if (i === 0 || i === 1) {
+            // Leeward Gate / Start / Finish (Marks 0 & 1)
+            // Show only during active racing legs (1, 2, 3), not Start (0) or Finish (4)
+            if (state.race.leg >= 1 && state.race.leg < 4) show = true;
+        } else {
+            // Upwind Gate (Marks 2 & 3)
+            // Always show as they are primarily rounding marks
+            show = true;
+        }
+
+        if (!show) continue;
+
+        // --- Draw Zone Circle ---
+        ctx.save();
+        ctx.lineWidth = 5;
+        ctx.setLineDash([15, 15]);
+        ctx.lineDashOffset = -state.time * 5;
 
         const dx = state.boat.x - m.x;
         const dy = state.boat.y - m.y;
@@ -1402,12 +1417,67 @@ function drawMarkZones(ctx) {
         if (dist < zoneRadius) {
             ctx.strokeStyle = '#facc15'; // Bright Yellow
         } else {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; // More opaque
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; // White
         }
 
         ctx.beginPath();
         ctx.arc(m.x, m.y, zoneRadius, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.restore();
+
+        // --- Draw Rounding Arrow ---
+        ctx.save();
+        ctx.strokeStyle = '#bfdbfe'; // Blue-200 (Light Blue for contrast on Blue-500 water)
+        ctx.fillStyle = '#bfdbfe';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        ctx.shadowBlur = 10;
+        ctx.lineWidth = 20;
+        ctx.lineCap = 'round';
+
+        const arrowRadius = 100;
+        let startAngle, endAngle, counterClockwise;
+
+        // 0: Leeward Left (West) -> CW (Bottom)
+        // 1: Leeward Right (East) -> CCW (Bottom)
+        // 2: Upwind Left (West) -> CCW (Top)
+        // 3: Upwind Right (East) -> CW (Top)
+
+        if (i === 0) {
+             startAngle = 0; endAngle = Math.PI; counterClockwise = false;
+        } else if (i === 1) {
+             startAngle = Math.PI; endAngle = 0; counterClockwise = true;
+        } else if (i === 2) {
+             startAngle = 0; endAngle = Math.PI; counterClockwise = true;
+        } else if (i === 3) {
+             startAngle = Math.PI; endAngle = 0; counterClockwise = false;
+        }
+
+        // Draw Arc
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, arrowRadius, startAngle, endAngle, counterClockwise);
+        ctx.stroke();
+
+        // Draw Arrowhead
+        const headX = m.x + Math.cos(endAngle) * arrowRadius;
+        const headY = m.y + Math.sin(endAngle) * arrowRadius;
+
+        let tangentAngle;
+        if (counterClockwise) {
+             tangentAngle = endAngle - Math.PI / 2;
+        } else {
+             tangentAngle = endAngle + Math.PI / 2;
+        }
+
+        ctx.translate(headX, headY);
+        ctx.rotate(tangentAngle);
+
+        ctx.beginPath();
+        ctx.moveTo(-15, -15);
+        ctx.lineTo(20, 0);
+        ctx.lineTo(-15, 15);
+        ctx.fill();
+
+        ctx.restore();
     }
     ctx.restore();
 }
