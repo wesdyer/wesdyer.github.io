@@ -129,8 +129,27 @@ const UI = {
     helpScreen: document.getElementById('help-screen'),
     helpButton: document.getElementById('help-button'),
     closeHelp: document.getElementById('close-help'),
-    resumeHelp: document.getElementById('resume-help')
+    resumeHelp: document.getElementById('resume-help'),
+    pauseButton: document.getElementById('pause-button'),
+    resumeButton: document.getElementById('resume-button'),
+    restartButton: document.getElementById('restart-button')
 };
+
+function togglePause(show) {
+    const isPaused = state.paused;
+    const shouldPause = show !== undefined ? show : !isPaused;
+
+    if (shouldPause) {
+        state.paused = true;
+        if (UI.pauseScreen) UI.pauseScreen.classList.remove('hidden');
+        if (UI.helpScreen) UI.helpScreen.classList.add('hidden');
+    } else {
+        state.paused = false;
+        if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
+        // Reset lastTime to avoid huge dt jump on resume
+        lastTime = 0;
+    }
+}
 
 function toggleHelp(show) {
     if (!UI.helpScreen) return;
@@ -160,6 +179,25 @@ if (UI.closeHelp) {
 }
 if (UI.resumeHelp) {
     UI.resumeHelp.addEventListener('click', () => toggleHelp(false));
+}
+if (UI.pauseButton) {
+    UI.pauseButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        togglePause(true);
+        UI.pauseButton.blur();
+    });
+}
+if (UI.resumeButton) {
+    UI.resumeButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        togglePause(false);
+    });
+}
+if (UI.restartButton) {
+    UI.restartButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        restartRace();
+    });
 }
 
 let minimapCtx = null;
@@ -205,16 +243,7 @@ window.addEventListener('keydown', (e) => {
         if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) {
             toggleHelp(false);
         } else {
-            state.paused = !state.paused;
-            if (UI.pauseScreen) {
-                if (state.paused) {
-                    UI.pauseScreen.classList.remove('hidden');
-                } else {
-                    UI.pauseScreen.classList.add('hidden');
-                    // Reset lastTime to avoid huge dt jump on resume
-                    lastTime = 0;
-                }
-            }
+            togglePause();
         }
     }
     if (e.key === 'F1') {
@@ -2025,22 +2054,60 @@ function initCourse() {
     };
 }
 
+function resetGame() {
+    state.camera.target = 'boat';
+    state.wind.baseSpeed = 8 + Math.random() * 10;
+    state.wind.speed = state.wind.baseSpeed;
+    state.wind.baseDirection = (Math.random() - 0.5) * 0.5;
+    state.wind.direction = state.wind.baseDirection;
+
+    state.time = 0;
+    state.boat.velocity = { x: 0, y: 0 };
+    state.boat.speed = 0;
+    state.boat.sailAngle = 0;
+    state.boat.manualTrim = false;
+    state.boat.manualSailAngle = 0;
+    state.boat.boomSide = 1;
+    state.boat.targetBoomSide = 1;
+    state.boat.luffing = false;
+    state.boat.luffIntensity = 0;
+    state.boat.spinnaker = false;
+    state.boat.spinnakerDeployProgress = 0;
+
+    state.race.status = 'prestart';
+    state.race.timer = 30.0;
+    state.race.leg = 0;
+    state.race.ocs = false;
+    state.race.penalty = false;
+    state.race.penaltyProgress = 0;
+    state.race.finishTime = 0;
+    state.race.startTimeDisplay = 0;
+    state.race.startTimeDisplayTimer = 0;
+    state.race.legStartTime = 0;
+    state.race.lastLegDuration = 0;
+    state.race.legSplitTimer = 0;
+    state.race.trace = [];
+    state.particles = [];
+
+    initCourse();
+
+    const startDist = 150;
+    state.boat.x = -Math.sin(state.wind.direction) * 450;
+    state.boat.y = Math.cos(state.wind.direction) * 450;
+    state.boat.heading = state.wind.direction;
+
+    state.race.lastPos.x = state.boat.x;
+    state.race.lastPos.y = state.boat.y;
+    state.boat.prevHeading = state.boat.heading;
+
+    hideRaceMessage();
+}
+
+function restartRace() {
+    resetGame();
+    togglePause(false);
+}
+
 // Init
-state.camera.target = 'boat';
-state.wind.baseSpeed = 8 + Math.random() * 10;
-state.wind.speed = state.wind.baseSpeed;
-state.wind.baseDirection = (Math.random() - 0.5) * 0.5;
-state.wind.direction = state.wind.baseDirection;
-
-initCourse();
-
-const startDist = 150;
-state.boat.x = -Math.sin(state.wind.direction) * 450;
-state.boat.y = Math.cos(state.wind.direction) * 450;
-state.boat.heading = state.wind.direction;
-
-state.race.lastPos.x = state.boat.x;
-state.race.lastPos.y = state.boat.y;
-state.boat.prevHeading = state.boat.heading;
-
+resetGame();
 requestAnimationFrame(loop);
