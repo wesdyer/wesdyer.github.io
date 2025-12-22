@@ -92,7 +92,8 @@ const state = {
         penalty: false,
         penaltyProgress: 0,
         finishTime: 0,
-        lastPos: { x: 0, y: 0 }
+        lastPos: { x: 0, y: 0 },
+        nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 }
     }
 };
 
@@ -109,7 +110,8 @@ const UI = {
     windSpeed: document.getElementById('hud-wind-speed'),
     windAngle: document.getElementById('hud-wind-angle'),
     timer: document.getElementById('hud-timer'),
-    message: document.getElementById('hud-message')
+    message: document.getElementById('hud-message'),
+    waypointArrow: document.getElementById('hud-waypoint-arrow')
 };
 
 let minimapCtx = null;
@@ -159,6 +161,20 @@ function formatTime(seconds) {
     // If negative (pre-start), show countdown
     const sign = seconds < 0 ? "-" : "";
     return `${sign}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function getClosestPointOnSegment(px, py, ax, ay, bx, by) {
+    const atobX = bx - ax;
+    const atobY = by - ay;
+    const atopX = px - ax;
+    const atopY = py - ay;
+    const lenSq = atobX * atobX + atobY * atobY;
+    let dot = atopX * atobX + atopY * atobY;
+    let t = Math.min(1, Math.max(0, dot / lenSq));
+    return {
+        x: ax + atobX * t,
+        y: ay + atobY * t
+    };
 }
 
 // Check intersection of Line Segment AB and Line Segment CD
@@ -370,6 +386,36 @@ function updateRace(dt) {
         // Actually update() doesn't store lastHeading explicitly yet.
         // We can access state.boat.prevHeading if we add it.
         // Or we calculate it here if we call updateRace at end of update.
+    }
+
+    // 4. Update Next Waypoint
+    // This logic runs every frame to keep the indicator accurate
+    const courseMarks = state.course.marks; // Renamed to avoid shadowing 'marks' if defined above
+    if (courseMarks && courseMarks.length >= 4) {
+        let waypointGateIndices = [];
+        if (state.race.leg === 0 || state.race.leg === 2 || state.race.leg === 4) {
+            waypointGateIndices = [0, 1];
+        } else {
+            waypointGateIndices = [2, 3];
+        }
+
+        const m1 = courseMarks[waypointGateIndices[0]];
+        const m2 = courseMarks[waypointGateIndices[1]];
+
+        const closest = getClosestPointOnSegment(
+            state.boat.x, state.boat.y,
+            m1.x, m1.y, m2.x, m2.y
+        );
+
+        const dx = closest.x - state.boat.x;
+        const dy = closest.y - state.boat.y;
+        const distUnits = Math.sqrt(dx * dx + dy * dy);
+
+        // 55 pixels approx 11m => 1 pixel approx 0.2m
+        state.race.nextWaypoint.dist = distUnits * 0.2;
+        state.race.nextWaypoint.x = closest.x;
+        state.race.nextWaypoint.y = closest.y;
+        state.race.nextWaypoint.angle = Math.atan2(dx, -dy); // 0 is North (Up, -y)
     }
 }
 
@@ -1249,6 +1295,36 @@ function draw() {
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
 
+    // Draw Waypoint Indicator
+    if (state.race.status !== 'finished') {
+        ctx.save();
+        const wx = state.race.nextWaypoint.x;
+        const wy = state.race.nextWaypoint.y;
+
+        ctx.translate(wx, wy);
+
+        // Draw green target circle
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#22c55e';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Draw Distance Text
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        // Add text shadow for visibility
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(Math.round(state.race.nextWaypoint.dist) + 'm', 0, -12);
+
+        ctx.restore();
+    }
+
     // Draw Boat
     ctx.save();
     ctx.translate(state.boat.x, state.boat.y);
@@ -1270,6 +1346,22 @@ function draw() {
     if (UI.windArrow) {
         // Wind arrow is inside the compass rose, so we just rotate it to the absolute wind direction
         UI.windArrow.style.transform = `rotate(${state.wind.direction}rad)`;
+    }
+
+    if (UI.waypointArrow) {
+        // Waypoint arrow logic:
+        // The compass rose rotates by -camera.rotation.
+        // We want the arrow to point to the absolute bearing of the waypoint.
+        // If the arrow is a child of the compass rose, we just set its rotation to the absolute bearing.
+        // Bearing 0 is North (Up).
+        // Let's verify.
+        // Compass rose rotation: -camera.rotation.
+        // If camera is 0, compass is 0. North is Up.
+        // If waypoint is North (0), arrow should be 0 (Up).
+        // If waypoint is East (PI/2), arrow should be PI/2 (Right).
+        // The arrow is inside the compass rose container.
+        // So yes, we just set it to the absolute angle.
+        UI.waypointArrow.style.transform = `rotate(${state.race.nextWaypoint.angle}rad)`;
     }
 
     if (UI.headingArrow) {
