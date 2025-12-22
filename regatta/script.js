@@ -695,6 +695,11 @@ function drawMarkBodies(ctx) {
         ctx.save();
         ctx.translate(m.x, m.y);
 
+        // Bobbing animation
+        const bobPhase = state.time * 5 + (m.x * 0.01 + m.y * 0.01);
+        const bobScale = 1.0 + Math.sin(bobPhase) * 0.05;
+        ctx.scale(bobScale, bobScale);
+
         // Buoy body (Top down)
         const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 12);
         grad.addColorStop(0, '#fdba74'); // Light Orange highlight
