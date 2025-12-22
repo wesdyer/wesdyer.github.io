@@ -851,6 +851,13 @@ function draw() {
         hudWindArrow.style.transform = `rotate(${state.wind.direction}rad)`;
     }
 
+    const hudHeadingArrow = document.getElementById('hud-heading-arrow');
+    if (hudHeadingArrow) {
+        // Heading arrow (Red) rotates to show boat heading relative to camera
+        const rot = state.boat.heading - state.camera.rotation;
+        hudHeadingArrow.style.transform = `rotate(${rot}rad)`;
+    }
+
     const hudSpeed = document.getElementById('hud-speed');
     if (hudSpeed) {
         // Convert to "knots" (internal speed * 2)
