@@ -542,7 +542,7 @@ function draw() {
     const hudCompassRose = document.getElementById('hud-compass-rose');
     if (hudCompassRose) {
         // Rotate compass rose opposite to camera/boat heading so "North" points to actual North
-        hudCompassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
+        hudCompassRose.style.transform = `rotate(${-state.boat.heading}rad)`;
     }
 
     const hudWindArrow = document.getElementById('hud-wind-arrow');
