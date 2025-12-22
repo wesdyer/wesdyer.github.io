@@ -1350,10 +1350,10 @@ function drawActiveGateLine(ctx) {
     ctx.moveTo(m1.x, m1.y);
     ctx.lineTo(m2.x, m2.y);
 
-    // Default Styling: Glowing dashed orange line
-    let shadowColor = '#fef08a'; // Yellow-200
-    let strokeColor = 'rgba(250, 204, 21, 0.9)'; // Yellow-400
-    let lineDash = [20, 15];
+    // Default Styling: Solid white line (for non-start and finish)
+    let shadowColor = '#ffffff';
+    let strokeColor = '#ffffff';
+    let lineDash = [];
 
     // Start Line Logic (Leg 0)
     if (state.race.leg === 0) {
