@@ -1447,6 +1447,26 @@ function drawLadderLines(ctx) {
 
     const isUpwindTarget = (nextIndex === 2); // Target is Marks 2,3 (Upwind)
 
+    // Calculate dynamic slopes based on current wind deviation
+    const delta = normalizeAngle(state.wind.direction - state.wind.baseDirection);
+    let slopeLeft, slopeRight;
+
+    if (isUpwindTarget) {
+        // Upwind Target: Laylines extend downwind
+        // Left Mark layline angle: Wind + 45. Relative to Base: Delta + 45.
+        // Slope = tan(Delta + 45)
+        slopeLeft = Math.tan(delta + Math.PI / 4);
+        // Right Mark layline angle: Wind - 45. Relative to Base: Delta - 45.
+        // Slope = tan(Delta - 45)
+        slopeRight = Math.tan(delta - Math.PI / 4);
+    } else {
+        // Downwind Target: Laylines extend upwind
+        // Left Mark layline uses angle2 (Wind - 45). Slope = tan(Delta - 45).
+        slopeLeft = Math.tan(delta - Math.PI / 4);
+        // Right Mark layline uses angle1 (Wind + 45). Slope = tan(Delta + 45).
+        slopeRight = Math.tan(delta + Math.PI / 4);
+    }
+
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // Increased opacity
     ctx.lineWidth = 4; // Thicker lines
@@ -1460,10 +1480,12 @@ function drawLadderLines(ctx) {
 
         // 1. Calculate Layline Bounds at this U (p)
         // Ladder lines are only drawn between gates, so we are always on the "course side" of the target.
-        // Laylines extend away from the target gate, so the valid width increases as we move away.
-        const dist = Math.abs(p - uL);
-        const vMin = vL - dist;
-        const vMax = vR + dist;
+        // dist is signed distance along U axis from Mark.
+        const dist = p - uL;
+        const distR = p - uR;
+
+        const vMin = vL + dist * slopeLeft;
+        const vMax = vR + distR * slopeRight;
 
         // 2. Clip to Boundary
         // Circle at uC, vC with radius R
