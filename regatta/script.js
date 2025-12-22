@@ -370,6 +370,23 @@ function update() {
         }
     }
 
+    // Boundary Check
+    if (state.course && state.course.boundary) {
+        const dx = state.boat.x - state.course.boundary.x;
+        const dy = state.boat.y - state.course.boundary.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > state.course.boundary.radius) {
+             // Clamp position
+             const angle = Math.atan2(dy, dx);
+             state.boat.x = state.course.boundary.x + Math.cos(angle) * state.course.boundary.radius;
+             state.boat.y = state.course.boundary.y + Math.sin(angle) * state.course.boundary.radius;
+
+             // Stop boat
+             state.boat.speed = 0;
+        }
+    }
+
     // Wake Particles
     if (state.boat.speed > 0.25) {
         // Constants for wake geometry
@@ -754,6 +771,32 @@ function drawMarkBodies(ctx) {
     }
 }
 
+function drawBoundary(ctx) {
+    if (!state.course || !state.course.boundary) return;
+
+    const b = state.course.boundary;
+
+    ctx.save();
+    ctx.translate(b.x, b.y);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+
+    // Dashed line
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 15;
+    ctx.setLineDash([40, 40]);
+    ctx.stroke();
+
+    // Inner glow/edge
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
 function drawMinimap() {
     // Lazy init context
     if (!minimapCtx) {
@@ -867,8 +910,9 @@ function draw() {
 
     // Draw World
     drawWater(ctx);
-    drawMarkShadows(ctx);
+    drawBoundary(ctx);
     drawParticles(ctx);
+    drawMarkShadows(ctx);
     drawMarkBodies(ctx);
 
     // Draw Boat
@@ -952,7 +996,12 @@ function initCourse() {
             // Upwind Gate (Left/Right)
             { x: (ux * courseDist) - (rx * gateWidth/2), y: (uy * courseDist) - (ry * gateWidth/2), type: 'mark' },
             { x: (ux * courseDist) + (rx * gateWidth/2), y: (uy * courseDist) + (ry * gateWidth/2), type: 'mark' }
-        ]
+        ],
+        boundary: {
+            x: ux * (courseDist / 2),
+            y: uy * (courseDist / 2),
+            radius: 3500 // Generous radius around course center
+        }
     };
 }
 
