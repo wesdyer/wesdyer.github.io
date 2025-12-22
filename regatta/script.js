@@ -81,6 +81,7 @@ const state = {
         ArrowRight: false,
         ArrowUp: false,
         ArrowDown: false,
+        Shift: false,
     },
     time: 0
 };
@@ -272,12 +273,14 @@ function update() {
 
     // Boat Steering
     let isTurning = false;
+    const turnRate = state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed;
+
     if (state.keys.ArrowLeft) {
-        state.boat.heading -= CONFIG.turnSpeed;
+        state.boat.heading -= turnRate;
         isTurning = true;
     }
     if (state.keys.ArrowRight) {
-        state.boat.heading += CONFIG.turnSpeed;
+        state.boat.heading += turnRate;
         isTurning = true;
     }
 
