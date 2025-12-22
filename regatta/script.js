@@ -894,7 +894,7 @@ function initCourse() {
 
     const boatLength = 55; // Approx length in pixels
     const gateWidth = 5 * boatLength;
-    const courseDist = 1000; // Approx 200m scale
+    const courseDist = 5500; // Approx 1.1km scale (~2 min round trip)
 
     // Start/Finish Line (Downwind) centered at 0,0
     // Marks are perpendicular to wind
