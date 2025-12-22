@@ -417,57 +417,6 @@ function updateRace(dt) {
             }
         }
 
-        // Check for Reverse Crossing of Previous Gate (Rounding Enforcement)
-        // If we are on Leg 2, 3, or 4, we must not cross the PREVIOUS gate in the reverse direction.
-        // Leg 2 (Downwind): Prev was Upwind Gate (2-3). Cleared Upwind(1). Forbidden is Downwind(-1).
-        // Leg 3 (Upwind): Prev was Leeward Gate (0-1). Cleared Downwind(-1). Forbidden is Upwind(1).
-        // Leg 4 (Finish): Prev was Upwind Gate (2-3). Cleared Upwind(1). Forbidden is Downwind(-1).
-
-        let prevGateIndices = [];
-        let forbiddenDirection = 0;
-
-        if (state.race.leg === 2) {
-             prevGateIndices = [2, 3];
-             forbiddenDirection = -1;
-        } else if (state.race.leg === 3) {
-             prevGateIndices = [0, 1];
-             forbiddenDirection = 1;
-        } else if (state.race.leg === 4) {
-             prevGateIndices = [2, 3];
-             forbiddenDirection = -1;
-        }
-
-        if (prevGateIndices.length > 0) {
-            const pm1 = marks[prevGateIndices[0]];
-            const pm2 = marks[prevGateIndices[1]];
-
-            const pIntersect = checkLineIntersection(
-                state.race.lastPos.x, state.race.lastPos.y, state.boat.x, state.boat.y,
-                pm1.x, pm1.y, pm2.x, pm2.y
-            );
-
-            if (pIntersect) {
-                const gateDx = pm2.x - pm1.x;
-                const gateDy = pm2.y - pm1.y;
-                const nx = gateDy;
-                const ny = -gateDx;
-                const moveDx = state.boat.x - state.race.lastPos.x;
-                const moveDy = state.boat.y - state.race.lastPos.y;
-                const dot = moveDx * nx + moveDy * ny;
-                const crossingDir = dot > 0 ? 1 : -1;
-
-                if (crossingDir === forbiddenDirection) {
-                    // Revert Leg!
-                    state.race.leg--;
-                    showRaceMessage("MUST ROUND MARK!", "text-red-500", "border-red-500/50");
-                    // Reset Split time logic if needed?
-                    // Maybe clear split display
-                    state.race.legSplitTimer = 0;
-                    // Reset start time? Ideally we go back to previous state.
-                    // But timer keeps running.
-                }
-            }
-        }
     }
 
     // 2.5 Start Time Display Timer
