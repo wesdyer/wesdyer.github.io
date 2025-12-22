@@ -331,6 +331,45 @@ function update() {
     state.boat.x += boatDirX * state.boat.speed;
     state.boat.y += boatDirY * state.boat.speed;
 
+    // Collision Check with Marks
+    if (state.course && state.course.marks) {
+        const boatRadius = 20; // Approx half width of hull + buffer
+        const markRadius = 12; // Visual radius of mark
+        const collisionDist = boatRadius + markRadius;
+
+        for (const mark of state.course.marks) {
+            const dx = state.boat.x - mark.x;
+            const dy = state.boat.y - mark.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist < collisionDist) {
+                // Collision detected
+                // Calculate push-out vector (normal)
+                // If centers are exactly same, pick random direction
+                let nx = dx;
+                let ny = dy;
+                if (dist === 0) {
+                    nx = 1;
+                    ny = 0;
+                } else {
+                    nx /= dist;
+                    ny /= dist;
+                }
+
+                // Resolve overlap
+                const overlap = collisionDist - dist;
+                // Add a small extra "bounce" buffer (20% of overlap)
+                const pushAmt = overlap + 2.0;
+
+                state.boat.x += nx * pushAmt;
+                state.boat.y += ny * pushAmt;
+
+                // Subtly bounce: Reduce speed
+                state.boat.speed *= 0.5;
+            }
+        }
+    }
+
     // Boundary Check
     if (state.course && state.course.boundary) {
         const dx = state.boat.x - state.course.boundary.x;
