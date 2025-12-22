@@ -1179,6 +1179,15 @@ function drawLadderLines(ctx) {
     const startProj = mPrev.x * wx + mPrev.y * wy;
     const endProj = mNext.x * wx + mNext.y * wy;
 
+    // We want to calculate distance to the NEXT gate
+    // Upwind Leg (Leg 1,3): endProj is Upwind (higher value? or lower depending on wind)
+    // Wind is direction FROM. 0 = North blowing South.
+    // wx = 0, wy = -1.
+    // Upwind is -wy -> +y.
+    // wait, 0 is blowing SOUTH. So vectors move south.
+    // Upwind means moving AGAINST wind. So North.
+    // Let's use absolute distance math.
+
     // Sort
     let minP = Math.min(startProj, endProj);
     let maxP = Math.max(startProj, endProj);
@@ -1188,8 +1197,12 @@ function drawLadderLines(ctx) {
     const lineLen = 4000;
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; // Increased opacity
+    ctx.lineWidth = 2; // Thicker lines
+    ctx.font = 'bold 24px monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
 
     for (let p = firstLine; p <= maxP; p += interval) {
         if (p < minP) continue;
@@ -1200,6 +1213,14 @@ function drawLadderLines(ctx) {
         ctx.moveTo(cx - px * lineLen, cy - py * lineLen);
         ctx.lineTo(cx + px * lineLen, cy + py * lineLen);
         ctx.stroke();
+
+        // Label: Distance to NEXT gate
+        // Distance is simply |p - endProj| scaled by meters
+        const dist = Math.abs(endProj - p) * 0.2; // 0.2 meters per unit
+        if (dist > 50) { // Don't draw label right on top of gate
+            ctx.fillText(Math.round(dist) + 'm', cx + px * 1000, cy + py * 1000);
+            ctx.fillText(Math.round(dist) + 'm', cx - px * 1000, cy - py * 1000);
+        }
     }
     ctx.restore();
 }
@@ -1220,8 +1241,8 @@ function drawLayLines(ctx) {
 
     ctx.save();
     ctx.setLineDash([10, 10]);
-    ctx.lineWidth = 2;
-    const length = 2000;
+    ctx.lineWidth = 3; // Thicker
+    const length = 3000;
 
     for (const idx of targets) {
         if (idx >= state.course.marks.length) continue;
@@ -1230,6 +1251,38 @@ function drawLayLines(ctx) {
         // Laylines at 45 degrees relative to wind
         const ang1 = windDir + Math.PI / 4;
         const ang2 = windDir - Math.PI / 4;
+
+        // Logic:
+        // Indices 0, 2 are "Left" Marks (relative to course axis)
+        // Indices 1, 3 are "Right" Marks
+        const isLeftMark = (idx % 2 === 0);
+
+        // "Left mark uses layline that extends to the left"
+        // Relative to wind (coming from top/north usually), "Left" is West (-x).
+        // ang1 = dir + 45. ang2 = dir - 45.
+        // If dir = 0 (South wind), ang1 = +45 (SE), ang2 = -45 (SW).
+        // If we are looking UPWIND (North), Left is West.
+        // The layline extending to the left (West) corresponds to the one pointing roughly -90 relative to wind? No.
+        // Standard Diagram:
+        //      Wind
+        //       |
+        //   \   |   /
+        //    \  |  /
+        //     \ | /
+        //      \|/
+        //     Mark
+        //
+        // If looking Upwind:
+        // Starboard Tack layline comes from Right. Port Tack layline comes from Left.
+        // Left Mark (Port Gate): We usually round it to Port? Or Starboard?
+        // Usually gates are rounded inside-out.
+        // User request: "Left mark uses layline that extends to the left".
+        // Assuming "extends to the left" means visually on screen left relative to the wind axis.
+        // If wind is 0, Left is negative X.
+        // ang2 (dir - 45) has sin(-45) = -0.7 (Negative X). This points Left.
+        // ang1 (dir + 45) has sin(45) = +0.7 (Positive X). This points Right.
+
+        // So Left Mark -> ang2. Right Mark -> ang1.
 
         const drawRay = (angle, color) => {
              let drawAngle = angle;
@@ -1247,8 +1300,11 @@ function drawLayLines(ctx) {
              ctx.stroke();
         };
 
-        drawRay(ang1, 'rgba(239, 68, 68, 0.6)'); // Red
-        drawRay(ang2, 'rgba(34, 197, 94, 0.6)'); // Green
+        if (isLeftMark) {
+            drawRay(ang2, 'rgba(34, 197, 94, 0.8)'); // Green (Starboard Tack approach?)
+        } else {
+            drawRay(ang1, 'rgba(239, 68, 68, 0.8)'); // Red (Port Tack approach?)
+        }
     }
     ctx.restore();
 }
@@ -1266,9 +1322,9 @@ function drawMarkZones(ctx) {
     }
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([10, 10]);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // More opaque
+    ctx.lineWidth = 3; // Thicker
+    ctx.setLineDash([15, 15]);
 
     for (const i of indices) {
         if (i >= state.course.marks.length) continue;
