@@ -552,6 +552,19 @@ function draw() {
         hudWindArrow.style.transform = `rotate(${state.wind.direction}rad)`;
     }
 
+    const hudHeading = document.getElementById('hud-heading');
+    if (hudHeading) {
+        let deg = state.boat.heading * (180 / Math.PI);
+        if (deg < 0) deg += 360;
+        hudHeading.textContent = Math.round(deg).toString().padStart(3, '0');
+    }
+
+    const hudWindAngle = document.getElementById('hud-wind-angle');
+    if (hudWindAngle) {
+        let twa = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction)) * (180 / Math.PI);
+        hudWindAngle.textContent = Math.round(twa).toString().padStart(3, '0');
+    }
+
     const hudSpeed = document.getElementById('hud-speed');
     if (hudSpeed) {
         // Convert to "knots" (internal speed * 2)
