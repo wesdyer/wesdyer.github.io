@@ -279,8 +279,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateMines(excludeIndex) {
         const totalSquares = width * height;
         const indices = [];
+
+        const excluded = new Set();
+        if (excludeIndex !== -1) {
+            excluded.add(excludeIndex);
+            const neighbors = getNeighbors(excludeIndex);
+            neighbors.forEach(n => excluded.add(n));
+        }
+
         for (let i = 0; i < totalSquares; i++) {
-            if (i !== excludeIndex) {
+            if (!excluded.has(i)) {
                 indices.push(i);
             }
         }
