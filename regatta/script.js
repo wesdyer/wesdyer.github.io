@@ -224,7 +224,7 @@ function update() {
     const dt = 1/60; // Assume 60fps for switch timing
 
     // Sail Switching Logic
-    const switchSpeed = dt / 2.0; // 2.0 seconds switch time
+    const switchSpeed = dt / 5.0; // 5.0 seconds switch time
     if (state.boat.spinnaker) {
         state.boat.spinnakerDeployProgress = Math.min(1, state.boat.spinnakerDeployProgress + switchSpeed);
     } else {
