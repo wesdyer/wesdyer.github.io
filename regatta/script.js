@@ -1343,28 +1343,27 @@ function drawMarkZones(ctx) {
     if (!state.showNavAids) return;
     if (!state.course || !state.course.marks) return;
 
-    let indices = [];
-    if (state.race.status !== 'finished') {
-         if (state.race.leg % 2 === 0) {
-             indices = [0, 1];
-         } else {
-             indices = [2, 3];
-         }
-    }
-
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; // More opaque
     ctx.lineWidth = 5; // Thicker
     ctx.setLineDash([15, 15]);
     // Rotate slowly with the dashes
     ctx.lineDashOffset = -state.time * 5;
 
-    for (const i of indices) {
-        if (i >= state.course.marks.length) continue;
-        const m = state.course.marks[i];
+    const zoneRadius = 165;
+
+    for (const m of state.course.marks) {
+        const dx = state.boat.x - m.x;
+        const dy = state.boat.y - m.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < zoneRadius) {
+            ctx.strokeStyle = '#facc15'; // Bright Yellow
+        } else {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; // More opaque
+        }
 
         ctx.beginPath();
-        ctx.arc(m.x, m.y, 165, 0, Math.PI * 2);
+        ctx.arc(m.x, m.y, zoneRadius, 0, Math.PI * 2);
         ctx.stroke();
     }
     ctx.restore();
