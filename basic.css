@@ -7,6 +7,20 @@ body {
   min-height: 100%;
 }
 
+nav {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 10px;
+  background-color: #f0f0f0;
+}
+
+nav a {
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+}
+
 #me {
   font: 12px/6px monospace;
   color: black;
