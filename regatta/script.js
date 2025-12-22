@@ -586,7 +586,7 @@ function drawWater(ctx) {
     const startX = Math.floor((state.camera.x - range - shiftX) / gridSize) * gridSize;
     const startY = Math.floor((state.camera.y - range - shiftY) / gridSize) * gridSize;
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 2.5;
 
     // Iterate enough grid points to cover the view range
@@ -619,12 +619,6 @@ function drawWater(ctx) {
              ctx.rotate(state.wind.direction + Math.PI);
              ctx.scale(scale, scale);
 
-             // Draw subtle water patch/glint for depth
-             ctx.fillStyle = `rgba(255, 255, 255, ${0.03 + (Math.sin(state.time * 2 + noise * 10) + 1) * 0.015})`;
-             ctx.beginPath();
-             ctx.arc(0, bob, 12 + scale * 8, 0, Math.PI * 2);
-             ctx.fill();
-
              ctx.beginPath();
              // Draw relative to rotated center
              ctx.moveTo(-8, bob);
@@ -636,11 +630,8 @@ function drawWater(ctx) {
 }
 
 function draw() {
-    // Clear with Gradient
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    gradient.addColorStop(0, '#0ea5e9'); // Sky-500
-    gradient.addColorStop(1, '#1e3a8a'); // Blue-900
-    ctx.fillStyle = gradient;
+    // Clear
+    ctx.fillStyle = CONFIG.waterColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
