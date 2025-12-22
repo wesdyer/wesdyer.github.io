@@ -726,6 +726,32 @@ function drawMarks(ctx) {
     }
 }
 
+function drawBoundary(ctx) {
+    if (!state.course || !state.course.boundary) return;
+
+    const b = state.course.boundary;
+
+    ctx.save();
+    ctx.translate(b.x, b.y);
+
+    ctx.beginPath();
+    ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+
+    // Dashed line
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.lineWidth = 15;
+    ctx.setLineDash([40, 40]);
+    ctx.stroke();
+
+    // Inner glow/edge
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([]);
+    ctx.stroke();
+
+    ctx.restore();
+}
+
 function drawMinimap() {
     // Lazy init context
     if (!minimapCtx) {
@@ -839,6 +865,7 @@ function draw() {
 
     // Draw World
     drawWater(ctx);
+    drawBoundary(ctx);
     drawMarks(ctx); // Added back in
     drawParticles(ctx);
 
