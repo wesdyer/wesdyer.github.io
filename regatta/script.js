@@ -670,40 +670,27 @@ function drawMarks(ctx) {
         ctx.save();
         ctx.translate(m.x, m.y);
 
-        // Bobbing effect
-        const bob = Math.sin(state.time * 2.5 + m.x * 0.01) * 2;
-
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.beginPath();
-        ctx.ellipse(0, 0, 14, 7, 0, 0, Math.PI * 2);
+        ctx.arc(3, 3, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        // Buoy body
-        ctx.translate(0, bob - 5);
-
-        // Gradient
-        const grad = ctx.createLinearGradient(-12, 0, 12, 0);
-        grad.addColorStop(0, '#c2410c'); // Dark Orange
-        grad.addColorStop(0.4, '#f97316'); // Orange
-        grad.addColorStop(0.8, '#c2410c'); // Dark Orange
+        // Buoy body (Top down)
+        const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 12);
+        grad.addColorStop(0, '#fdba74'); // Light Orange highlight
+        grad.addColorStop(0.5, '#f97316'); // Orange
+        grad.addColorStop(1, '#c2410c'); // Dark Orange
 
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.moveTo(-12, 0);
-        ctx.lineTo(-12, -22);
-        ctx.bezierCurveTo(-12, -28, 12, -28, 12, -22);
-        ctx.lineTo(12, 0);
-        ctx.bezierCurveTo(12, 6, -12, 6, -12, 0);
+        ctx.arc(0, 0, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        // Top Highlight
-        ctx.fillStyle = '#fdba74'; // Light Orange
-        ctx.beginPath();
-        ctx.ellipse(0, -22, 12, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Start Line Checkered Flag Effect (optional, keeps it simple for now)
+        // Outline
+        ctx.strokeStyle = '#c2410c';
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
         ctx.restore();
     }
