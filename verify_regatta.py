@@ -1,37 +1,37 @@
 
 import os
-import sys
 from playwright.sync_api import sync_playwright
 
-def run():
+def test_regatta_no_spinnaker():
     with sync_playwright() as p:
         browser = p.chromium.launch()
         page = browser.new_page()
 
-        # Calculate absolute path to index.html
-        cwd = os.getcwd()
-        file_path = os.path.join(cwd, 'regatta/index.html')
-        url = f'file://{file_path}'
+        # Determine the absolute path to the file
+        filepath = os.path.abspath("regatta/index.html")
+        page.goto(f"file://{filepath}")
 
-        print(f"Navigating to {url}")
-        page.goto(url)
+        # Check if #spinnaker-status is gone
+        spinnaker_status = page.locator("#spinnaker-status")
+        if spinnaker_status.count() > 0:
+            print("FAILED: #spinnaker-status element still exists")
+        else:
+            print("PASSED: #spinnaker-status element is gone")
 
-        # Wait for canvas
-        page.wait_for_selector('#gameCanvas')
-
-        # Wait a bit for animation to run
-        page.wait_for_timeout(2000)
-
-        # Take screenshot
-        screenshot_path = os.path.join(cwd, 'verification/regatta_screenshot.png')
-        os.makedirs(os.path.dirname(screenshot_path), exist_ok=True)
-        page.screenshot(path=screenshot_path)
-        print(f"Screenshot saved to {screenshot_path}")
+        # Check if instruction is gone
+        content = page.content()
+        if "Toggle Spinnaker" in content:
+            print("FAILED: 'Toggle Spinnaker' instruction text found")
+        else:
+            print("PASSED: 'Toggle Spinnaker' instruction text is gone")
 
         # Check for console errors
-        # (This is a basic check, in a real scenario we'd attach a listener)
+        page.on("console", lambda msg: print(f"CONSOLE: {msg.text}"))
+
+        # Wait a bit to ensure script runs without error
+        page.wait_for_timeout(1000)
 
         browser.close()
 
-if __name__ == '__main__':
-    run()
+if __name__ == "__main__":
+    test_regatta_no_spinnaker()

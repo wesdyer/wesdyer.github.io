@@ -59,7 +59,7 @@ const state = {
         boomSide: 1, // 1 for right, -1 for left
         targetBoomSide: 1,
         luffing: false,
-        spinnaker: true, // Default to Performance Mode
+        spinnaker: false, // Default to Performance Mode
     },
     camera: {
         x: 0,
@@ -107,9 +107,6 @@ window.addEventListener('keydown', (e) => {
         state.camera.x = state.boat.x;
         state.camera.y = state.boat.y;
         state.camera.rotation = 0;
-    }
-    if (e.key === ' ' || e.code === 'Space') {
-        state.boat.spinnaker = !state.boat.spinnaker;
     }
 });
 
