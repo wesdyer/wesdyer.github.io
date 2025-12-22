@@ -1346,9 +1346,32 @@ function drawActiveGateLine(ctx) {
     const dashSpeed = 20;
     const dashOffset = -state.time * dashSpeed;
 
+    // Determine offset for occlusion
+    let gap = 0;
+    // Apply gap for intermediate legs (where 165 unit mark zone is visible)
+    if (state.race.leg >= 1 && state.race.leg <= 3) {
+        gap = 165;
+    }
+
+    // Calculate line segment
+    const dx = m2.x - m1.x;
+    const dy = m2.y - m1.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
     ctx.beginPath();
-    ctx.moveTo(m1.x, m1.y);
-    ctx.lineTo(m2.x, m2.y);
+
+    if (dist > 2 * gap) {
+        // Normalize direction
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        ctx.moveTo(m1.x + ux * gap, m1.y + uy * gap);
+        ctx.lineTo(m2.x - ux * gap, m2.y - uy * gap);
+    } else {
+        // Fallback if gates are somehow too close (should not happen)
+        ctx.moveTo(m1.x, m1.y);
+        ctx.lineTo(m2.x, m2.y);
+    }
 
     // Default Styling: Solid white line (for non-start and finish)
     let shadowColor = '#ffffff';
