@@ -158,13 +158,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (gameArray[i] === 'valid') {
                 if (i > 0 && !isLeftEdge && gameArray[i - 1] === 'bomb') total++;
-                if (i > width -1 && !isRightEdge && gameArray[i + 1 - width] === 'bomb') total++;
-                if (i > width && gameArray[i - width] === 'bomb') total++;
-                if (i > width + 1 && !isLeftEdge && gameArray[i - 1 - width] === 'bomb') total++;
-                if (i < width * height - 2 && !isRightEdge && gameArray[i + 1] === 'bomb') total++;
+                if (i > width - 1 && !isRightEdge && gameArray[i + 1 - width] === 'bomb') total++;
+                if (i >= width && gameArray[i - width] === 'bomb') total++;
+                if (i >= width + 1 && !isLeftEdge && gameArray[i - 1 - width] === 'bomb') total++;
+                if (i < width * height - 1 && !isRightEdge && gameArray[i + 1] === 'bomb') total++;
                 if (i < width * height - width && !isLeftEdge && gameArray[i - 1 + width] === 'bomb') total++;
-                if (i < width * height - width - 2 && !isRightEdge && gameArray[i + 1 + width] === 'bomb') total++;
-                if (i < width * height - width - 1 && gameArray[i + width] === 'bomb') total++;
+                if (i < width * height - width - 1 && !isRightEdge && gameArray[i + 1 + width] === 'bomb') total++;
+                if (i < width * height - width && gameArray[i + width] === 'bomb') total++;
                 squares[i].setAttribute('data', total);
             }
              squares[i].setAttribute('data-type', gameArray[i]);
@@ -260,17 +260,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newSquare = document.getElementById(newId);
                 click(newSquare, true);
             }
-            if (currentId > width) {
+            if (currentId >= width) {
                 const newId = squares[parseInt(currentId - width)].getAttribute('id');
                 const newSquare = document.getElementById(newId);
                 click(newSquare, true);
             }
-            if (currentId > width + 1 && !isLeftEdge) {
+            if (currentId >= width + 1 && !isLeftEdge) {
                 const newId = squares[parseInt(currentId) - 1 - width].getAttribute('id');
                 const newSquare = document.getElementById(newId);
                 click(newSquare, true);
             }
-            if (currentId < width * height - 2 && !isRightEdge) {
+            if (currentId < width * height - 1 && !isRightEdge) {
                 const newId = squares[parseInt(currentId) + 1].getAttribute('id');
                 const newSquare = document.getElementById(newId);
                 click(newSquare, true);
@@ -280,12 +280,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const newSquare = document.getElementById(newId);
                 click(newSquare, true);
             }
-            if (currentId < width * height - width - 2 && !isRightEdge) {
+            if (currentId < width * height - width - 1 && !isRightEdge) {
                 const newId = squares[parseInt(currentId) + 1 + width].getAttribute('id');
                 const newSquare = document.getElementById(newId);
                 click(newSquare, true);
             }
-            if (currentId < width * height - width - 1) {
+            if (currentId < width * height - width) {
                 const newId = squares[parseInt(currentId) + width].getAttribute('id');
                 const newSquare = document.getElementById(newId);
                 click(newSquare, true);
