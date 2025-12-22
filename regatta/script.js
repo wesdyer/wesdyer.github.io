@@ -94,6 +94,9 @@ const state = {
         finishTime: 0,
         startTimeDisplay: 0,
         startTimeDisplayTimer: 0,
+        legStartTime: 0,
+        lastLegDuration: 0,
+        legSplitTimer: 0,
         lastPos: { x: 0, y: 0 },
         nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 }
     }
@@ -165,6 +168,13 @@ function formatTime(seconds) {
     // If negative (pre-start), show countdown
     const sign = seconds < 0 ? "-" : "";
     return `${sign}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatSplitTime(seconds) {
+    const mins = Math.floor(Math.abs(seconds) / 60);
+    const secs = Math.floor(Math.abs(seconds) % 60);
+    const ms = Math.floor((Math.abs(seconds) % 1) * 1000);
+    return `${mins}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
 }
 
 function getClosestPointOnSegment(px, py, ax, ay, bx, by) {
@@ -351,6 +361,7 @@ function updateRace(dt) {
                                 // So this crossing is valid.
                                 state.race.startTimeDisplay = state.race.timer;
                                 state.race.startTimeDisplayTimer = 5.0;
+                            state.race.legStartTime = state.race.timer;
                             }
                         } else if (crossingDir === -1) {
                              // Dipping back
@@ -362,6 +373,13 @@ function updateRace(dt) {
                         // Must match required direction
                         if (crossingDir === requiredDirection) {
                             state.race.leg++;
+
+                            // Calculate split
+                            const split = state.race.timer - state.race.legStartTime;
+                            state.race.lastLegDuration = split;
+                            state.race.legSplitTimer = 5.0;
+                            state.race.legStartTime = state.race.timer;
+
                             if (state.race.leg > 4) {
                                 state.race.finished = true;
                                 state.race.status = 'finished';
@@ -386,6 +404,9 @@ function updateRace(dt) {
     // 2.5 Start Time Display Timer
     if (state.race.startTimeDisplayTimer > 0) {
         state.race.startTimeDisplayTimer -= dt;
+    }
+    if (state.race.legSplitTimer > 0) {
+        state.race.legSplitTimer -= dt;
     }
 
     // 3. Penalty Logic
@@ -1592,7 +1613,10 @@ function draw() {
         }
 
         if (UI.startTime) {
-            if (state.race.startTimeDisplayTimer > 0) {
+            if (state.race.legSplitTimer > 0) {
+                UI.startTime.textContent = formatSplitTime(state.race.lastLegDuration);
+                UI.startTime.classList.remove('hidden');
+            } else if (state.race.startTimeDisplayTimer > 0) {
                 // Show start time with + sign and milliseconds (3 decimal places)
                 const t = state.race.startTimeDisplay;
                 // Since racing starts at 0, t is always positive
