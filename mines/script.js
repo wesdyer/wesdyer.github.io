@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < width * height; i++) {
             const square = document.createElement('div');
             square.setAttribute('id', i);
-            square.classList.add('w-10', 'h-10', 'md:w-12', 'md:h-12', 'cell-covered-gradient', 'rounded-xl', 'cursor-pointer', 'transition-all', 'cell-shadow', 'select-none', 'flex', 'items-center', 'justify-center');
+            square.classList.add('w-8', 'h-8', 'md:w-12', 'md:h-12', 'cell-covered-gradient', 'rounded-xl', 'cursor-pointer', 'transition-all', 'cell-shadow', 'select-none', 'flex', 'items-center', 'justify-center');
             grid.appendChild(square);
             squares.push(square);
 
@@ -83,8 +83,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
             square.oncontextmenu = function(e) {
                 e.preventDefault();
+                // If this event was triggered by our long press simulation (or right after),
+                // we want to avoid double-toggling.
+                // However, distinguishing them can be tricky.
+                // Simplified strategy: Rely on the timer for mobile long-press flag,
+                // and normal right-click for desktop.
+                // If 'isLongPress' is true, it means we just handled it via touch.
+                if (isLongPress) return;
                 addFlag(square);
             }
+
+            // Touch events for mobile
+            let touchTimer;
+            let isLongPress = false;
+            let startX, startY;
+
+            square.addEventListener('touchstart', (e) => {
+                isLongPress = false;
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+
+                touchTimer = setTimeout(() => {
+                    isLongPress = true;
+                    addFlag(square);
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }, 500); // 500ms for long press
+            }, { passive: false });
+
+            square.addEventListener('touchend', (e) => {
+                clearTimeout(touchTimer);
+                if (!isLongPress) {
+                    // It was a tap
+                    click(square);
+                }
+                e.preventDefault(); // Prevent ghost click/mouse events
+
+                // Reset isLongPress after a short delay to allow contextmenu to fire and be ignored
+                setTimeout(() => { isLongPress = false; }, 100);
+            });
+
+            square.addEventListener('touchmove', (e) => {
+                const currentX = e.touches[0].clientX;
+                const currentY = e.touches[0].clientY;
+                const diffX = Math.abs(currentX - startX);
+                const diffY = Math.abs(currentY - startY);
+
+                // If moved significantly (>10px), cancel long press
+                if (diffX > 10 || diffY > 10) {
+                    clearTimeout(touchTimer);
+                    // We set isLongPress to true (or a new state 'cancelled') to prevent tap action
+                    // reusing isLongPress = true effectively prevents the tap in touchend
+                    isLongPress = true;
+                }
+            });
         }
 
         for (let i = 0; i < squares.length; i++) {
@@ -264,6 +315,18 @@ document.addEventListener('DOMContentLoaded', () => {
         updateDifficulty(checkedRadio.nextElementSibling.textContent);
     });
 
-    updateDifficulty('Medium');
+    const isMobile = window.innerWidth < 768;
+    const initialDifficulty = isMobile ? 'Easy' : 'Medium';
+
+    // Set initial radio checked state
+    difficultyRadios.forEach(radio => {
+        if (radio.nextElementSibling.textContent === initialDifficulty) {
+            radio.checked = true;
+        } else {
+            radio.checked = false;
+        }
+    });
+
+    updateDifficulty(initialDifficulty);
     updateDifficultyUI();
 });
