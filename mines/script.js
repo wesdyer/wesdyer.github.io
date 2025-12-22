@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const grid = document.querySelector('.grid');
     const timeElement = document.querySelector('.font-mono.text-3xl.text-white');
+    const bestTimeElement = document.getElementById('best-time-display');
     const minesElement = document.querySelector('.font-mono.text-3xl.text-red-400');
     const smileyButton = document.getElementById('smiley-button');
     const cascadeButton = document.getElementById('cascade-button');
@@ -15,12 +16,37 @@ document.addEventListener('DOMContentLoaded', () => {
     let flags = 0;
     let timer;
     let time = 0;
+    let currentDifficulty = 'Medium';
 
     const difficultySettings = {
         'Easy': { width: 9, height: 9, bombAmount: 10 },
         'Medium': { width: 16, height: 16, bombAmount: 40 },
         'Hard': { width: 30, height: 16, bombAmount: 99 }
     };
+
+    function getBestTime(difficulty) {
+        const stored = localStorage.getItem(`minesweeper_best_${difficulty}`);
+        return stored ? parseInt(stored, 10) : null;
+    }
+
+    function setBestTime(difficulty, newTime) {
+        localStorage.setItem(`minesweeper_best_${difficulty}`, newTime);
+    }
+
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const secs = (seconds % 60).toString().padStart(2, '0');
+        return `${mins}:${secs}`;
+    }
+
+    function updateBestTimeDisplay() {
+        const best = getBestTime(currentDifficulty);
+        if (best !== null) {
+            bestTimeElement.textContent = formatTime(best);
+        } else {
+            bestTimeElement.textContent = '--:--';
+        }
+    }
 
     const numberColors = {
         1: 'text-blue-400',
@@ -111,11 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateDifficulty(difficulty) {
+        currentDifficulty = difficulty;
         const settings = difficultySettings[difficulty];
         width = settings.width;
         height = settings.height;
         bombAmount = settings.bombAmount;
         grid.style.gridTemplateColumns = `repeat(${width}, 1fr)`;
+        updateBestTimeDisplay();
         createBoard();
     }
 
@@ -372,6 +400,13 @@ document.addEventListener('DOMContentLoaded', () => {
              smileyButton.querySelector('span').textContent = 'sentiment_very_satisfied';
              isGameOver = true;
              clearInterval(timer);
+
+             // Check for best time
+             const currentBest = getBestTime(currentDifficulty);
+             if (currentBest === null || time < currentBest) {
+                 setBestTime(currentDifficulty, time);
+                 updateBestTimeDisplay();
+             }
         }
     }
 
