@@ -79,8 +79,10 @@
                     </div>
                 </div>
 
-                <!-- Static Lubber Line -->
-                <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-2 h-3 bg-red-500 clip-path-triangle z-10" style="clip-path: polygon(50% 100%, 0 0, 100% 0);"></div>
+                <!-- Heading Arrow Container (Rotates with boat heading relative to camera) -->
+                <div id="hud-heading-arrow" class="absolute inset-0 transition-transform duration-75 ease-linear will-change-transform z-10 pointer-events-none">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-2 h-3 bg-red-500 clip-path-triangle" style="clip-path: polygon(50% 100%, 0 0, 100% 0);"></div>
+                </div>
 
                 <!-- Center Display (Static) -->
                 <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
