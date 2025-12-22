@@ -88,6 +88,8 @@ const state = {
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+let minimapCtx = null;
+
 function resize() {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
@@ -661,6 +663,151 @@ function drawWater(ctx) {
     }
 }
 
+function drawMarks(ctx) {
+    if (!state.course || !state.course.marks) return;
+
+    for (const m of state.course.marks) {
+        ctx.save();
+        ctx.translate(m.x, m.y);
+
+        // Bobbing effect
+        const bob = Math.sin(state.time * 2.5 + m.x * 0.01) * 2;
+
+        // Shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 14, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Buoy body
+        ctx.translate(0, bob - 5);
+
+        // Gradient
+        const grad = ctx.createLinearGradient(-12, 0, 12, 0);
+        grad.addColorStop(0, '#c2410c'); // Dark Orange
+        grad.addColorStop(0.4, '#f97316'); // Orange
+        grad.addColorStop(0.8, '#c2410c'); // Dark Orange
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(-12, 0);
+        ctx.lineTo(-12, -22);
+        ctx.bezierCurveTo(-12, -28, 12, -28, 12, -22);
+        ctx.lineTo(12, 0);
+        ctx.bezierCurveTo(12, 6, -12, 6, -12, 0);
+        ctx.fill();
+
+        // Top Highlight
+        ctx.fillStyle = '#fdba74'; // Light Orange
+        ctx.beginPath();
+        ctx.ellipse(0, -22, 12, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Start Line Checkered Flag Effect (optional, keeps it simple for now)
+
+        ctx.restore();
+    }
+}
+
+function drawMinimap() {
+    // Lazy init context
+    if (!minimapCtx) {
+        const mCanvas = document.getElementById('minimap');
+        if (mCanvas) minimapCtx = mCanvas.getContext('2d');
+    }
+    const ctx = minimapCtx;
+
+    if (!ctx || !state.course || !state.course.marks) return;
+
+    const width = ctx.canvas.width;
+    const height = ctx.canvas.height;
+
+    // Clear
+    ctx.clearRect(0, 0, width, height);
+
+    // Determine bounds
+    let minX = state.boat.x;
+    let maxX = state.boat.x;
+    let minY = state.boat.y;
+    let maxY = state.boat.y;
+
+    for (const m of state.course.marks) {
+        if (m.x < minX) minX = m.x;
+        if (m.x > maxX) maxX = m.x;
+        if (m.y < minY) minY = m.y;
+        if (m.y > maxY) maxY = m.y;
+    }
+
+    // Add padding
+    const padding = 200;
+    minX -= padding;
+    maxX += padding;
+    minY -= padding;
+    maxY += padding;
+
+    // Determine scale to fit
+    const spanX = maxX - minX;
+    const spanY = maxY - minY;
+    const maxSpan = Math.max(spanX, spanY);
+    const scale = (width - 20) / maxSpan; // Keep 20px margin in canvas
+
+    // Center of the bounding box
+    const cx = (minX + maxX) / 2;
+    const cy = (minY + maxY) / 2;
+
+    const transform = (x, y) => {
+        return {
+            x: (x - cx) * scale + width / 2,
+            y: (y - cy) * scale + height / 2
+        };
+    };
+
+    // Draw Marks
+    ctx.fillStyle = '#22c55e'; // Green for high visibility
+    for (const m of state.course.marks) {
+        const pos = transform(m.x, m.y);
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Draw Course Lines (Start/Finish and Gate)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    // Start Line (first two marks)
+    if (state.course.marks.length >= 2) {
+        const p1 = transform(state.course.marks[0].x, state.course.marks[0].y);
+        const p2 = transform(state.course.marks[1].x, state.course.marks[1].y);
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+    }
+    // Upwind Gate (next two)
+    if (state.course.marks.length >= 4) {
+        const p3 = transform(state.course.marks[2].x, state.course.marks[2].y);
+        const p4 = transform(state.course.marks[3].x, state.course.marks[3].y);
+        ctx.moveTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+    }
+    ctx.stroke();
+
+    // Draw Boat
+    const boatPos = transform(state.boat.x, state.boat.y);
+    ctx.save();
+    ctx.translate(boatPos.x, boatPos.y);
+    ctx.rotate(state.boat.heading);
+
+    // Simple Boat Shape
+    ctx.fillStyle = '#facc15'; // Yellow
+    ctx.beginPath();
+    ctx.moveTo(0, -8);
+    ctx.lineTo(5, 6);
+    ctx.lineTo(-5, 6);
+    ctx.fill();
+
+    ctx.restore();
+}
+
 function draw() {
     // Clear
     ctx.fillStyle = CONFIG.waterColor;
@@ -675,6 +822,7 @@ function draw() {
 
     // Draw World
     drawWater(ctx);
+    drawMarks(ctx); // Added back in
     drawParticles(ctx);
 
     // Draw Boat
@@ -685,6 +833,9 @@ function draw() {
     ctx.restore();
 
     ctx.restore();
+
+    // Minimap
+    drawMinimap(); // Added back in
 
     // UI Updates
     const hudCompassRose = document.getElementById('hud-compass-rose');
@@ -718,6 +869,40 @@ function loop() {
     requestAnimationFrame(loop);
 }
 
+// Course Management
+function initCourse() {
+    const windDir = state.wind.baseDirection;
+    // Wind comes FROM windDir.
+    // Upwind vector (into the wind) is opposite to wind flow.
+    // Flow is South if windDir=0. So Upwind is North (0, -1).
+    // sin(0)=0, -cos(0)=-1. So (sin(dir), -cos(dir)) is UPWIND vector.
+    const ux = Math.sin(windDir);
+    const uy = -Math.cos(windDir);
+
+    // Perpendicular vector (Right side looking upwind)
+    // dir=0, u=(0,-1). Right is East (1,0).
+    // (-uy, ux) => (-(-1), 0) = (1, 0). Correct.
+    const rx = -uy;
+    const ry = ux;
+
+    const boatLength = 55; // Approx length in pixels
+    const gateWidth = 5 * boatLength;
+    const courseDist = 1000; // Approx 200m scale
+
+    // Start/Finish Line (Downwind) centered at 0,0
+    // Marks are perpendicular to wind
+    state.course = {
+        marks: [
+            // Start Line (Left/Right)
+            { x: -rx * gateWidth/2, y: -ry * gateWidth/2, type: 'start' },
+            { x: rx * gateWidth/2, y: ry * gateWidth/2, type: 'start' },
+            // Upwind Gate (Left/Right)
+            { x: (ux * courseDist) - (rx * gateWidth/2), y: (uy * courseDist) - (ry * gateWidth/2), type: 'mark' },
+            { x: (ux * courseDist) + (rx * gateWidth/2), y: (uy * courseDist) + (ry * gateWidth/2), type: 'mark' }
+        ]
+    };
+}
+
 // Init
 state.camera.target = 'boat';
 // Randomize wind
@@ -725,4 +910,34 @@ state.wind.baseSpeed = 8 + Math.random() * 10; // Base between 8 and 18
 state.wind.speed = state.wind.baseSpeed;
 state.wind.baseDirection = (Math.random() - 0.5) * 0.5; // Slight variation from North (0)
 state.wind.direction = state.wind.baseDirection;
+
+initCourse();
+
+// Start Boat near the start line (Downwind of it, facing upwind)
+// Start line is at (0,0) relative to course logic if initCourse sets it there.
+// Marks are perpendicular to wind.
+// We want to be 'below' the line (downwind).
+// Wind comes from 'direction'.
+// Downwind is direction. Upwind is direction + PI.
+// Move boat in direction of wind (downwind) from 0,0.
+const startDist = 150;
+state.boat.x = Math.sin(state.wind.direction) * startDist;
+state.boat.y = -Math.cos(state.wind.direction) * startDist;
+// Actually wind direction 0 means FROM North (blowing South).
+// Vector (sin(0), -cos(0)) is (0, -1) which is North.
+// Wait, standard math:
+// Wind Dir 0 = North Wind (Blows South).
+// Force vector: x += sin(0), y += cos(0) ??
+// In update(): x -= sin(dir), y += cos(dir) for wind particles?
+// Let's rely on initCourse vectors.
+// ux, uy was UPWIND (into the wind).
+// If we want to start DOWNWIND, we go -UPWIND.
+// ux = sin(dir), uy = -cos(dir).
+// So start pos = (-ux * 150, -uy * 150).
+state.boat.x = -Math.sin(state.wind.direction) * 150;
+state.boat.y = Math.cos(state.wind.direction) * 150;
+
+// Face Upwind
+state.boat.heading = state.wind.direction;
+
 loop();
