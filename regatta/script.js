@@ -124,6 +124,8 @@ const UI = {
     timer: document.getElementById('hud-timer'),
     startTime: document.getElementById('hud-start-time'),
     message: document.getElementById('hud-message'),
+    legInfo: document.getElementById('hud-leg-info'),
+    legTimes: document.getElementById('hud-leg-times'),
     waypointArrow: document.getElementById('hud-waypoint-arrow'),
     pauseScreen: document.getElementById('pause-screen'),
     helpScreen: document.getElementById('help-screen'),
@@ -496,6 +498,9 @@ function updateRace(dt) {
                             // Calculate split
                             const split = state.race.timer - state.race.legStartTime;
                             state.race.lastLegDuration = split;
+                            if (state.race.leg > 1) { // Leg 1 finished (start->mark1)
+                                state.race.legTimes.push(split);
+                            }
                             state.race.legSplitTimer = 5.0;
                             state.race.legStartTime = state.race.timer;
 
@@ -1992,6 +1997,37 @@ function draw() {
                 UI.startTime.classList.add('hidden');
             }
         }
+
+        // Update Leg Info
+        if (UI.legInfo) {
+            let info = "";
+            if (state.race.status === 'prestart') {
+                info = "PRESTART";
+            } else if (state.race.status === 'finished') {
+                info = "FINISHED";
+            } else {
+                if (state.race.leg === 0) {
+                    info = "START";
+                } else {
+                    const legType = (state.race.leg % 2 !== 0) ? "UPWIND" : "DOWNWIND";
+                    info = `LEG ${state.race.leg} OF 4: ${legType}`;
+                }
+            }
+            UI.legInfo.textContent = info;
+        }
+
+        // Update Leg Times List
+        if (UI.legTimes) {
+             let html = "";
+             if (state.race.legTimes) {
+                 for (let i = 0; i < state.race.legTimes.length; i++) {
+                      const legNum = i + 1;
+                      const timeStr = formatSplitTime(state.race.legTimes[i]);
+                      html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md">Leg ${legNum}: ${timeStr}</div>`;
+                 }
+             }
+             UI.legTimes.innerHTML = html;
+        }
     }
 }
 
@@ -2069,6 +2105,7 @@ function resetGame() {
     state.race.legStartTime = 0;
     state.race.lastLegDuration = 0;
     state.race.legSplitTimer = 0;
+    state.race.legTimes = [];
     state.race.trace = [];
     state.particles = [];
 
