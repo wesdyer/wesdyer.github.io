@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Modern Minesweeper</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#FFD700","primary-dark": "#e6c200",
+              "background-light": "#e0f2fe","background-dark": "#1a1c29","surface-dark": "#2d2f45","cell-covered-start": "#a855f7","cell-covered-end": "#6366f1","cell-revealed": "#1e2030","accent-green": "#4ade80",
+              "accent-red": "#f87171",
+              "accent-blue": "#60a5fa",
+            },
+            fontFamily: {
+              "display": ["Spline Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+            boxShadow: {
+                'cell': '0 6px 0 0 rgba(76, 29, 149, 0.4)','cell-active': '0 0 0 0 rgba(0,0,0,0)',
+            }
+          },
+        },
+      }
+    </script>
+<style>.cell-covered-gradient {
+            background: linear-gradient(135deg, #a855f7, #6366f1);
+        }
+        .cell-covered-gradient:hover {
+            filter: brightness(1.1);
+        }
+        .cell-shadow {
+            box-shadow: 0 5px 0 0 #4c1d95;}
+        .cell-shadow:active {
+            transform: translateY(5px);
+            box-shadow: none !important;
+        }
+        .dark .bg-surface-dark {
+             background-color: #232538;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display min-h-screen flex flex-col overflow-x-hidden">
+<header class="w-full border-b border-indigo-900/30 bg-white/10 dark:bg-surface-dark/80 backdrop-blur-md sticky top-0 z-50">
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+<div class="flex items-center justify-between h-16">
+<div class="flex items-center gap-3">
+<div class="size-10 rounded-xl bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-orange-500/30 transform rotate-3 hover:rotate-6 transition-transform">
+<span class="material-symbols-outlined font-bold drop-shadow-sm" style="font-size: 24px;">bomb</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-500 dark:from-indigo-300 dark:to-purple-300">Minesweeper</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-indigo-500/20 transition-colors text-slate-400 hover:text-indigo-400">
+<span class="material-symbols-outlined">leaderboard</span>
+</button>
+<button class="flex items-center justify-center size-10 rounded-full hover:bg-indigo-500/20 transition-colors text-slate-400 hover:text-indigo-400">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-9 w-9 rounded-full bg-cover bg-center border-2 border-indigo-500/50 shadow-md" data-alt="User profile avatar gradient" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuANXnHUCVnW166omL9DfBmt8gIBUPKBISuGg8FppXa4--A-T42OZ8RiEYM6Ra5aC9LQmYNalXtrB5VeLsNbjEnIfvhrcjQwiWoUEDerq_p9RMVQu_iMdva-4tCl6Srzoif82dEXq_YGrvLs4K5PLy3NTAVwwg-6UNAhq1I9dkpCo7LflDyGpvgb6kHDh_cdPyLN9iO0pBpxryWDFjP8WXtV017r5BvzYQNrFFJRKiE70WN_bHuVn-gvvJg_pefl5pFZlZCKWDOHUckV");'></div>
+</div>
+</div>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center justify-start py-8 px-4 w-full max-w-5xl mx-auto space-y-8">
+<div class="w-full max-w-2xl flex flex-col md:flex-row gap-6 items-center justify-between">
+<div class="bg-surface-dark p-1.5 rounded-2xl inline-flex shadow-xl shadow-indigo-900/10 border border-indigo-500/20">
+<label class="cursor-pointer relative px-6 py-2 rounded-xl transition-all duration-200 hover:text-indigo-300 text-slate-400 font-medium text-sm">
+<input class="peer sr-only" name="difficulty" type="radio"/>
+<span class="relative z-10">Easy</span>
+</label>
+<label class="cursor-pointer relative px-6 py-2 rounded-xl transition-all duration-200 text-white font-bold text-sm bg-gradient-to-r from-indigo-500 to-purple-600 shadow-md transform hover:scale-105">
+<input checked="" class="peer sr-only" name="difficulty" type="radio"/>
+<span class="relative z-10">Medium</span>
+</label>
+<label class="cursor-pointer relative px-6 py-2 rounded-xl transition-all duration-200 hover:text-indigo-300 text-slate-400 font-medium text-sm">
+<input class="peer sr-only" name="difficulty" type="radio"/>
+<span class="relative z-10">Hard</span>
+</label>
+</div>
+<div class="text-indigo-200 text-sm font-medium flex items-center gap-2 bg-indigo-900/30 px-5 py-2.5 rounded-full border border-indigo-500/30">
+<span class="material-symbols-outlined text-yellow-400 text-lg">info</span>
+<span>Flag mines with right-click</span>
+</div>
+</div>
+<div class="w-full max-w-[480px] bg-surface-dark rounded-3xl p-5 shadow-2xl border border-indigo-500/20 flex items-center justify-between relative overflow-hidden ring-1 ring-white/5">
+<div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-32 bg-indigo-600 blur-[80px] opacity-20 pointer-events-none"></div>
+<div class="flex flex-col items-center min-w-[80px] z-10">
+<span class="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-2">Time</span>
+<div class="font-mono text-3xl font-bold text-white tracking-widest bg-black/40 px-4 py-2 rounded-xl border border-indigo-500/20 shadow-inner">00:42</div>
+</div>
+<button class="z-10 size-16 rounded-2xl bg-gradient-to-b from-yellow-400 to-orange-500 hover:from-yellow-300 hover:to-orange-400 border-t border-yellow-200 shadow-[0_4px_0_0_#b45309] active:shadow-none active:translate-y-1 active:border-none flex items-center justify-center transform transition-all group">
+<span class="material-symbols-outlined text-4xl text-white drop-shadow-md">sentiment_satisfied</span>
+</button>
+<div class="flex flex-col items-center min-w-[80px] z-10">
+<span class="text-xs font-bold text-indigo-300 uppercase tracking-wider mb-2">Mines</span>
+<div class="font-mono text-3xl font-bold text-red-400 tracking-widest bg-black/40 px-4 py-2 rounded-xl border border-red-500/20 shadow-[0_0_15px_rgba(248,113,113,0.1)]">08</div>
+</div>
+</div>
+<div class="bg-surface-dark p-4 rounded-3xl shadow-2xl shadow-indigo-900/50 border-4 border-indigo-500/20 inline-block relative">
+<div class="grid grid-cols-9 gap-2">
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-red-400 font-black text-xl select-none ring-1 ring-white/5">3</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow flex items-center justify-center group select-none">
+<span class="material-symbols-outlined text-yellow-300 text-2xl drop-shadow-md scale-90 group-hover:scale-110 transition-transform fill-current animate-pulse">flag</span>
+</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow flex items-center justify-center group select-none">
+<span class="material-symbols-outlined text-yellow-300 text-2xl drop-shadow-md scale-90 group-hover:scale-110 transition-transform fill-current animate-pulse">flag</span>
+</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-green-400 font-black text-xl select-none ring-1 ring-white/5">2</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow flex items-center justify-center group select-none">
+<span class="material-symbols-outlined text-yellow-300 text-2xl drop-shadow-md scale-90 group-hover:scale-110 transition-transform fill-current animate-pulse">flag</span>
+</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center select-none ring-1 ring-white/5"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 bg-cell-revealed rounded-xl flex items-center justify-center text-blue-400 font-black text-xl select-none ring-1 ring-white/5">1</div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+<div class="w-10 h-10 md:w-12 md:h-12 cell-covered-gradient rounded-xl cursor-pointer transition-all cell-shadow select-none"></div>
+</div>
+</div>
+</main>
+<script src="script.js"></script>
+</body></html>
