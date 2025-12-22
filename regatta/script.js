@@ -151,6 +151,12 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
+window.addEventListener('focus', () => {
+    for (const key in state.keys) {
+        state.keys[key] = false;
+    }
+});
+
 // Physics Helper Functions
 function normalizeAngle(angle) {
     while (angle > Math.PI) angle -= 2 * Math.PI;
