@@ -441,9 +441,9 @@ function drawBoat(ctx) {
 
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(0, 35);
+        ctx.lineTo(0, 50);
         // Larger curve for spinnaker
-        ctx.quadraticCurveTo(-state.boat.boomSide * 25, 18, 0, 0);
+        ctx.quadraticCurveTo(-state.boat.boomSide * 40, 25, 0, 0);
 
         ctx.fill();
         ctx.stroke();
