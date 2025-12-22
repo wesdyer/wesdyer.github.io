@@ -67,7 +67,9 @@ const state = {
     },
     wind: {
         direction: 0, // Blowing Down (South)
-        speed: 10 // Knots
+        baseDirection: 0,
+        speed: 10, // Knots
+        baseSpeed: 10
     },
     particles: [], // For wake and wind effects
     keys: {
@@ -223,6 +225,17 @@ function updateParticles() {
 // Update Loop
 function update() {
     state.time += 0.008;
+
+    // Update Wind (Vary over time)
+    // Direction: Slow drift + subtle gusts
+    const dirDrift = Math.sin(state.time * 0.05) * 0.2; // ~12 deg swing
+    const dirGust = Math.sin(state.time * 0.3 + 123.4) * 0.05; // ~3 deg jitter
+    state.wind.direction = state.wind.baseDirection + dirDrift + dirGust;
+
+    // Speed: Surge + gusts
+    const speedSurge = Math.sin(state.time * 0.1) * 2.0;
+    const speedGust = Math.sin(state.time * 0.5 + 456.7) * 1.5;
+    state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
 
     // Camera Controls
     if (state.keys.w) { state.camera.y -= CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.x += CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
@@ -631,6 +644,9 @@ function loop() {
 
 // Init
 state.camera.target = 'boat';
-// Randomize wind speed (6 to 20 knots)
-state.wind.speed = 6 + Math.random() * 14;
+// Randomize wind
+state.wind.baseSpeed = 8 + Math.random() * 10; // Base between 8 and 18
+state.wind.speed = state.wind.baseSpeed;
+state.wind.baseDirection = (Math.random() - 0.5) * 0.5; // Slight variation from North (0)
+state.wind.direction = state.wind.baseDirection;
 loop();
