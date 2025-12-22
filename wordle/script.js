@@ -240,7 +240,12 @@ function onSuggestionClick(word) {
 
 function calculateBestGuesses(possibleWords, remainingGuesses = 0) {
   if (possibleWords.length < remainingGuesses) {
-    return possibleWords;
+    // Sort by frequency (most common first)
+    return possibleWords.sort((a, b) => {
+        const freqA = wordFrequencies[a] || 0;
+        const freqB = wordFrequencies[b] || 0;
+        return freqB - freqA;
+    });
   }
   if (possibleWords.length === 1) return possibleWords;
   if (possibleWords.length === 2) return possibleWords;
