@@ -154,18 +154,32 @@ function createParticle(x, y, type, properties = {}) {
 function updateParticles() {
     for (let i = state.particles.length - 1; i >= 0; i--) {
         const p = state.particles[i];
-        p.life -= 0.005;
+
+        // Apply velocity if present
+        if (p.vx) p.x += p.vx;
+        if (p.vy) p.y += p.vy;
+
+        // Default decay
+        let decay = 0.005;
 
         if (p.type === 'wake') {
-            p.scale = 1 + (1 - p.life) * 2;
-            p.alpha = p.life * 0.5;
+            // Central turbulent wake
+            decay = 0.01;
+            p.scale = 1 + (1 - p.life) * 1.5;
+            p.alpha = p.life * 0.4;
+        } else if (p.type === 'wake-wave') {
+            // V-Wake waves
+            decay = 0.003;
+            p.scale = 0.5 + (1 - p.life) * 3.0;
+            p.alpha = p.life * 0.25;
         } else if (p.type === 'wind') {
              // Move with wind
              const speed = 2;
              p.x += Math.sin(state.wind.direction) * speed;
              p.y -= Math.cos(state.wind.direction) * speed;
-             p.life -= 0.005;
         }
+
+        p.life -= decay;
 
         if (p.life <= 0) {
             state.particles.splice(i, 1);
@@ -231,8 +245,52 @@ function update() {
     state.boat.y += boatDirY * state.boat.speed;
 
     // Wake Particles
-    if (state.boat.speed > 0.5 && Math.random() < 0.15) {
-        createParticle(state.boat.x - boatDirX * 20, state.boat.y - boatDirY * 20, 'wake');
+    if (state.boat.speed > 0.5) {
+        // Constants for wake geometry
+        const sternOffset = 30;
+        const sternWidth = 10;
+
+        // Stern center position
+        const sternX = state.boat.x - boatDirX * sternOffset;
+        const sternY = state.boat.y - boatDirY * sternOffset;
+
+        // Central Turbulence (Prop wash / drag)
+        if (Math.random() < 0.4) {
+            // Add some randomness to position
+            const jitterX = (Math.random() - 0.5) * 4;
+            const jitterY = (Math.random() - 0.5) * 4;
+            createParticle(sternX + jitterX, sternY + jitterY, 'wake');
+        }
+
+        // V-Wake (Kelvin Wake)
+        // Emit from corners of the stern, moving outwards
+        if (Math.random() < 0.5) {
+            // Right Vector (Perpendicular to Heading)
+            const rightX = Math.cos(state.boat.heading);
+            const rightY = Math.sin(state.boat.heading);
+
+            // Stern Corners
+            const leftSternX = sternX - rightX * sternWidth;
+            const leftSternY = sternY - rightY * sternWidth;
+
+            const rightSternX = sternX + rightX * sternWidth;
+            const rightSternY = sternY + rightY * sternWidth;
+
+            // Wave Velocity (Spreading out)
+            const spreadSpeed = 0.2;
+
+            // Left Wave
+            createParticle(leftSternX, leftSternY, 'wake-wave', {
+                vx: -rightX * spreadSpeed,
+                vy: -rightY * spreadSpeed
+            });
+
+            // Right Wave
+            createParticle(rightSternX, rightSternY, 'wake-wave', {
+                vx: rightX * spreadSpeed,
+                vy: rightY * spreadSpeed
+            });
+        }
     }
 
     // Camera follow boat if locked
@@ -378,7 +436,7 @@ function drawBoat(ctx) {
 
 function drawParticles(ctx) {
     for (const p of state.particles) {
-        if (p.type === 'wake') {
+        if (p.type === 'wake' || p.type === 'wake-wave') {
             ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
             ctx.beginPath();
             ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
