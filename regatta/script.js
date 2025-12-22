@@ -2279,6 +2279,15 @@ function draw() {
                       html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md">Leg ${legNum}: ${timeStr}</div>`;
                  }
              }
+
+             // Display Current Leg Time if Racing
+             if (state.race.status === 'racing' && state.race.leg >= 1) {
+                 const currentLegNum = state.race.leg;
+                 const currentLegTime = state.race.timer - state.race.legStartTime;
+                 const timeStr = formatSplitTime(currentLegTime);
+                 html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md">Leg ${currentLegNum}: ${timeStr}</div>`;
+             }
+
              UI.legTimes.innerHTML = html;
         }
     }
