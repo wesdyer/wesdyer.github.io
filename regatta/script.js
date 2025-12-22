@@ -1,8 +1,8 @@
 // Game Configuration
 const CONFIG = {
-    turnSpeed: 0.04,
-    cameraPanSpeed: 5,
-    cameraRotateSpeed: 0.04,
+    turnSpeed: 0.02,
+    cameraPanSpeed: 2.5,
+    cameraRotateSpeed: 0.02,
     windSpeed: 5,
     waterColor: '#3b82f6',
     boatColor: '#f8fafc',
@@ -97,17 +97,17 @@ function createParticle(x, y, type, properties = {}) {
 function updateParticles() {
     for (let i = state.particles.length - 1; i >= 0; i--) {
         const p = state.particles[i];
-        p.life -= 0.01;
+        p.life -= 0.005;
 
         if (p.type === 'wake') {
             p.scale = 1 + (1 - p.life) * 2;
             p.alpha = p.life * 0.5;
         } else if (p.type === 'wind') {
              // Move with wind
-             const speed = 4;
+             const speed = 2;
              p.x += Math.sin(state.wind.direction) * speed;
              p.y -= Math.cos(state.wind.direction) * speed;
-             p.life -= 0.01;
+             p.life -= 0.005;
         }
 
         if (p.life <= 0) {
@@ -118,7 +118,7 @@ function updateParticles() {
 
 // Update Loop
 function update() {
-    state.time += 0.016;
+    state.time += 0.008;
 
     // Camera Controls
     if (state.keys.w) { state.camera.y -= CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.x += CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
@@ -177,17 +177,17 @@ function update() {
 
     // Apply simplified drag
     state.boat.speed *= 0.99; // Water friction
-    state.boat.speed += thrust * 0.03; // Acceleration
+    state.boat.speed += thrust * 0.015; // Acceleration
 
     // Cap speed
-    if (state.boat.speed > 6) state.boat.speed = 6;
+    if (state.boat.speed > 3) state.boat.speed = 3;
 
     // Move Boat
     state.boat.x += boatDirX * state.boat.speed;
     state.boat.y += boatDirY * state.boat.speed;
 
     // Wake Particles
-    if (state.boat.speed > 1 && Math.random() < 0.3) {
+    if (state.boat.speed > 0.5 && Math.random() < 0.15) {
         createParticle(state.boat.x - boatDirX * 20, state.boat.y - boatDirY * 20, 'wake');
     }
 
@@ -210,7 +210,7 @@ function update() {
     // Move boomSide towards targetBoomSide
     if (state.boat.boomSide !== state.boat.targetBoomSide) {
         // Swing speed
-        let swingSpeed = 0.1;
+        let swingSpeed = 0.05;
         state.boat.boomSide += (state.boat.targetBoomSide - state.boat.boomSide) * swingSpeed;
         if (Math.abs(state.boat.targetBoomSide - state.boat.boomSide) < 0.01) {
             state.boat.boomSide = state.boat.targetBoomSide;
