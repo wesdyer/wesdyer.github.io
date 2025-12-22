@@ -1,4 +1,4 @@
-const wordFrequencies = {
+window.wordFrequencies = {
   "about": 1226734006,
   "other": 978481319,
   "which": 810514085,
