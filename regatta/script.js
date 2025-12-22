@@ -1,8 +1,8 @@
 // Game Configuration
 const CONFIG = {
-    turnSpeed: 0.02,
-    cameraPanSpeed: 2.5,
-    cameraRotateSpeed: 0.02,
+    turnSpeed: 0.01,
+    cameraPanSpeed: 1.25,
+    cameraRotateSpeed: 0.01,
     windSpeed: 5,
     waterColor: '#3b82f6',
     boatColor: '#f8fafc',
@@ -193,21 +193,21 @@ function updateParticles() {
         if (p.vy) p.y += p.vy;
 
         // Default decay
-        let decay = 0.005;
+        let decay = 0.0025;
 
         if (p.type === 'wake') {
             // Central turbulent wake
-            decay = 0.01;
+            decay = 0.005;
             p.scale = 1 + (1 - p.life) * 1.5;
             p.alpha = p.life * 0.4;
         } else if (p.type === 'wake-wave') {
             // V-Wake waves
-            decay = 0.003;
+            decay = 0.0015;
             p.scale = 0.5 + (1 - p.life) * 3.0;
             p.alpha = p.life * 0.25;
         } else if (p.type === 'wind') {
              // Move with wind
-             const speed = 2;
+             const speed = 1;
              p.x -= Math.sin(state.wind.direction) * speed;
              p.y += Math.cos(state.wind.direction) * speed;
         }
@@ -222,7 +222,7 @@ function updateParticles() {
 
 // Update Loop
 function update() {
-    state.time += 0.008;
+    state.time += 0.004;
 
     // Camera Controls
     if (state.keys.w) { state.camera.y -= CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.x += CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
@@ -259,7 +259,7 @@ function update() {
     // Determine target speed from polars
     // Note: Polars are in Knots. We scale down to game units (approx 0.5 ratio)
     let targetKnots = getTargetSpeed(angleToWind, state.boat.spinnaker, state.wind.speed);
-    let targetGameSpeed = targetKnots * 0.5;
+    let targetGameSpeed = targetKnots * 0.25;
 
     // Determine Luffing state (for visual/logic flags, not speed as speed comes from polar now)
     // Polar says 0 speed at < 30 deg, so checks match
@@ -271,14 +271,14 @@ function update() {
 
     // Smoothly interpolate current speed to target speed (acceleration/deceleration)
     // Momentum factor: 0.98 (retains 98% of old speed), 0.02 (adds 2% of new)
-    state.boat.speed = state.boat.speed * 0.98 + targetGameSpeed * 0.02;
+    state.boat.speed = state.boat.speed * 0.99 + targetGameSpeed * 0.01;
 
     // Move Boat
     state.boat.x += boatDirX * state.boat.speed;
     state.boat.y += boatDirY * state.boat.speed;
 
     // Wake Particles
-    if (state.boat.speed > 0.5) {
+    if (state.boat.speed > 0.25) {
         // Constants for wake geometry
         const sternOffset = 30;
         const sternWidth = 10;
@@ -288,7 +288,7 @@ function update() {
         const sternY = state.boat.y - boatDirY * sternOffset;
 
         // Central Turbulence (Prop wash / drag)
-        if (Math.random() < 0.4) {
+        if (Math.random() < 0.2) {
             // Add some randomness to position
             const jitterX = (Math.random() - 0.5) * 4;
             const jitterY = (Math.random() - 0.5) * 4;
@@ -297,7 +297,7 @@ function update() {
 
         // V-Wake (Kelvin Wake)
         // Emit from corners of the stern, moving outwards
-        if (Math.random() < 0.5) {
+        if (Math.random() < 0.25) {
             // Right Vector (Perpendicular to Heading)
             const rightX = Math.cos(state.boat.heading);
             const rightY = Math.sin(state.boat.heading);
@@ -310,7 +310,7 @@ function update() {
             const rightSternY = sternY + rightY * sternWidth;
 
             // Wave Velocity (Spreading out)
-            const spreadSpeed = 0.2;
+            const spreadSpeed = 0.1;
 
             // Left Wave
             createParticle(leftSternX, leftSternY, 'wake-wave', {
@@ -345,7 +345,7 @@ function update() {
     // Move boomSide towards targetBoomSide
     if (state.boat.boomSide !== state.boat.targetBoomSide) {
         // Swing speed
-        let swingSpeed = 0.05;
+        let swingSpeed = 0.025;
         state.boat.boomSide += (state.boat.targetBoomSide - state.boat.boomSide) * swingSpeed;
         if (Math.abs(state.boat.targetBoomSide - state.boat.boomSide) < 0.01) {
             state.boat.boomSide = state.boat.targetBoomSide;
@@ -360,7 +360,7 @@ function update() {
     state.boat.sailAngle = optimalSailAngle * state.boat.boomSide;
 
     // Wind Particles
-    if (Math.random() < 0.4) {
+    if (Math.random() < 0.2) {
         // Spawn around camera
         let range = Math.max(canvas.width, canvas.height) * 1.5;
         let px = state.camera.x + (Math.random() - 0.5) * range;
@@ -614,7 +614,7 @@ function draw() {
     const hudSpeed = document.getElementById('hud-speed');
     if (hudSpeed) {
         // Convert to "knots" (internal speed * 2)
-        hudSpeed.textContent = (state.boat.speed * 2).toFixed(1);
+        hudSpeed.textContent = (state.boat.speed * 4).toFixed(1);
     }
 
     const hudWindSpeed = document.getElementById('hud-wind-speed');
