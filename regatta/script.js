@@ -59,6 +59,7 @@ const state = {
         luffing: false,
         luffIntensity: 0,
         spinnaker: false, // Default to Performance Mode
+        spinnakerDeployProgress: 0, // 0 = Jib, 1 = Spinnaker
     },
     camera: {
         x: 0,
@@ -220,6 +221,15 @@ function updateParticles() {
 // Update Loop
 function update() {
     state.time += 0.004;
+    const dt = 1/60; // Assume 60fps for switch timing
+
+    // Sail Switching Logic
+    const switchSpeed = dt / 2.0; // 2.0 seconds switch time
+    if (state.boat.spinnaker) {
+        state.boat.spinnakerDeployProgress = Math.min(1, state.boat.spinnakerDeployProgress + switchSpeed);
+    } else {
+        state.boat.spinnakerDeployProgress = Math.max(0, state.boat.spinnakerDeployProgress - switchSpeed);
+    }
 
     // Update Wind (Vary over time)
     // Direction: Slow drift + subtle gusts
@@ -273,7 +283,17 @@ function update() {
 
     // Determine target speed from polars
     // Note: Polars are in Knots. We scale down to game units (approx 0.5 ratio)
-    let targetKnots = getTargetSpeed(angleToWind, state.boat.spinnaker, state.wind.speed);
+    // Interpolate power based on sail state
+    // 0.0-0.5: Jib fading out (100% to 0% power)
+    // 0.5-1.0: Spinnaker fading in (0% to 100% power)
+    const progress = state.boat.spinnakerDeployProgress;
+    const jibFactor = Math.max(0, 1 - progress * 2);
+    const spinFactor = Math.max(0, (progress - 0.5) * 2);
+
+    let targetKnotsJib = getTargetSpeed(angleToWind, false, state.wind.speed);
+    let targetKnotsSpin = getTargetSpeed(angleToWind, true, state.wind.speed);
+
+    let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
     let targetGameSpeed = targetKnots * 0.25;
 
     // Determine Luffing state (for visual/logic flags, not speed as speed comes from polar now)
@@ -436,7 +456,7 @@ function drawBoat(ctx) {
     ctx.fill();
 
     // Sails
-    const drawSail = (isJib) => {
+    const drawSail = (isJib, scale = 1.0) => {
         ctx.save();
         if (isJib) {
              ctx.translate(0, -25);
@@ -452,7 +472,7 @@ function drawBoat(ctx) {
 
         // Calculate dynamic shape for luffing
         const luff = state.boat.luffIntensity || 0;
-        const baseDepth = isJib ? 11 : 15;
+        const baseDepth = (isJib ? 11 : 15) * scale;
         let controlX = -state.boat.boomSide * baseDepth;
 
         if (luff > 0) {
@@ -469,8 +489,8 @@ function drawBoat(ctx) {
         ctx.beginPath();
         if (isJib) {
              ctx.moveTo(0, 0);
-             ctx.lineTo(0, 28);
-             ctx.quadraticCurveTo(controlX, 14, 0, 0);
+             ctx.lineTo(0, 28 * scale);
+             ctx.quadraticCurveTo(controlX, 14 * scale, 0, 0);
         } else {
              ctx.moveTo(0, 0);
              ctx.lineTo(0, 45);
@@ -507,7 +527,7 @@ function drawBoat(ctx) {
         ctx.restore();
     };
 
-    const drawSpinnaker = () => {
+    const drawSpinnaker = (scale = 1.0) => {
         ctx.save();
         // Start from bow/sprit
         ctx.translate(0, -28);
@@ -520,7 +540,7 @@ function drawBoat(ctx) {
 
         // Calculate dynamic shape for luffing
         const luff = state.boat.luffIntensity || 0;
-        const baseDepth = 40;
+        const baseDepth = 40 * scale;
         let controlX = -state.boat.boomSide * baseDepth;
 
         if (luff > 0) {
@@ -532,9 +552,9 @@ function drawBoat(ctx) {
 
         ctx.beginPath();
         ctx.moveTo(0, 0);
-        ctx.lineTo(0, 50);
+        ctx.lineTo(0, 50 * scale);
         // Larger curve for spinnaker
-        ctx.quadraticCurveTo(controlX, 25, 0, 0);
+        ctx.quadraticCurveTo(controlX, 25 * scale, 0, 0);
 
         ctx.fill();
         ctx.stroke();
@@ -542,10 +562,17 @@ function drawBoat(ctx) {
     };
 
     drawSail(false); // Main
-    if (state.boat.spinnaker) {
-        drawSpinnaker();
-    } else {
-        drawSail(true);  // Jib
+
+    // Animation Logic
+    const progress = state.boat.spinnakerDeployProgress;
+    const jibScale = Math.max(0, 1 - progress * 2);
+    const spinScale = Math.max(0, (progress - 0.5) * 2);
+
+    if (jibScale > 0.01) {
+        drawSail(true, jibScale);
+    }
+    if (spinScale > 0.01) {
+        drawSpinnaker(spinScale);
     }
 
     ctx.restore();
