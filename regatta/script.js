@@ -1,6 +1,7 @@
 // Game Configuration
 const CONFIG = {
     turnSpeed: 0.01,
+    turnPenalty: 0.995,
     cameraPanSpeed: 1.25,
     cameraRotateSpeed: 0.01,
     windSpeed: 5,
@@ -260,11 +261,14 @@ function update() {
     }
 
     // Boat Steering
+    let isTurning = false;
     if (state.keys.ArrowLeft) {
         state.boat.heading -= CONFIG.turnSpeed;
+        isTurning = true;
     }
     if (state.keys.ArrowRight) {
         state.boat.heading += CONFIG.turnSpeed;
+        isTurning = true;
     }
 
     // Normalize Heading
@@ -318,6 +322,10 @@ function update() {
     // Smoothly interpolate current speed to target speed (acceleration/deceleration)
     // Momentum factor: 0.98 (retains 98% of old speed), 0.02 (adds 2% of new)
     state.boat.speed = state.boat.speed * 0.99 + targetGameSpeed * 0.01;
+
+    if (isTurning) {
+        state.boat.speed *= CONFIG.turnPenalty;
+    }
 
     // Move Boat
     state.boat.x += boatDirX * state.boat.speed;
@@ -680,47 +688,45 @@ function drawWater(ctx) {
     }
 }
 
-function drawMarks(ctx) {
+function drawMarkShadows(ctx) {
     if (!state.course || !state.course.marks) return;
 
     for (const m of state.course.marks) {
         ctx.save();
         ctx.translate(m.x, m.y);
 
-        // Bobbing effect
-        const bob = Math.sin(state.time * 2.5 + m.x * 0.01) * 2;
-
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.beginPath();
-        ctx.ellipse(0, 0, 14, 7, 0, 0, Math.PI * 2);
+        ctx.arc(3, 3, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        // Buoy body
-        ctx.translate(0, bob - 5);
+        ctx.restore();
+    }
+}
 
-        // Gradient
-        const grad = ctx.createLinearGradient(-12, 0, 12, 0);
-        grad.addColorStop(0, '#c2410c'); // Dark Orange
-        grad.addColorStop(0.4, '#f97316'); // Orange
-        grad.addColorStop(0.8, '#c2410c'); // Dark Orange
+function drawMarkBodies(ctx) {
+    if (!state.course || !state.course.marks) return;
+
+    for (const m of state.course.marks) {
+        ctx.save();
+        ctx.translate(m.x, m.y);
+
+        // Buoy body (Top down)
+        const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 12);
+        grad.addColorStop(0, '#fdba74'); // Light Orange highlight
+        grad.addColorStop(0.5, '#f97316'); // Orange
+        grad.addColorStop(1, '#c2410c'); // Dark Orange
 
         ctx.fillStyle = grad;
         ctx.beginPath();
-        ctx.moveTo(-12, 0);
-        ctx.lineTo(-12, -22);
-        ctx.bezierCurveTo(-12, -28, 12, -28, 12, -22);
-        ctx.lineTo(12, 0);
-        ctx.bezierCurveTo(12, 6, -12, 6, -12, 0);
+        ctx.arc(0, 0, 12, 0, Math.PI * 2);
         ctx.fill();
 
-        // Top Highlight
-        ctx.fillStyle = '#fdba74'; // Light Orange
-        ctx.beginPath();
-        ctx.ellipse(0, -22, 12, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Start Line Checkered Flag Effect (optional, keeps it simple for now)
+        // Outline
+        ctx.strokeStyle = '#c2410c';
+        ctx.lineWidth = 1;
+        ctx.stroke();
 
         ctx.restore();
     }
@@ -866,8 +872,9 @@ function draw() {
     // Draw World
     drawWater(ctx);
     drawBoundary(ctx);
-    drawMarks(ctx); // Added back in
     drawParticles(ctx);
+    drawMarkShadows(ctx);
+    drawMarkBodies(ctx);
 
     // Draw Boat
     ctx.save();
