@@ -459,7 +459,7 @@ function drawBoat(ctx) {
              const currentDepth = baseDepth * (1.0 - luff * 0.8);
 
              // Add flutter
-             const time = state.time * 100; // Fast flutter frequency
+             const time = state.time * 30; // Fast flutter frequency
              const flutterAmt = Math.sin(time) * baseDepth * 1.5 * luff;
 
              controlX = (-state.boat.boomSide * currentDepth) + flutterAmt;
@@ -524,7 +524,7 @@ function drawBoat(ctx) {
 
         if (luff > 0) {
              const currentDepth = baseDepth * (1.0 - luff * 0.9); // Spinnaker collapses more easily
-             const time = state.time * 80; // Slightly slower, bigger heavy flutter
+             const time = state.time * 25; // Slightly slower, bigger heavy flutter
              const flutterAmt = Math.sin(time) * baseDepth * 1.2 * luff;
              controlX = (-state.boat.boomSide * currentDepth) + flutterAmt;
         }
