@@ -322,6 +322,25 @@ function getClosestPointOnSegment(px, py, ax, ay, bx, by) {
 }
 
 // Check intersection of Line Segment AB and Line Segment CD
+function rayCircleIntersection(ox, oy, dx, dy, cx, cy, r) {
+    const lx = ox - cx;
+    const ly = oy - cy;
+    // t^2 + 2(L.D)t + (L.L - R^2) = 0
+    // a = 1 since D is normalized
+    const b = 2 * (lx * dx + ly * dy);
+    const c = (lx * lx + ly * ly) - (r * r);
+
+    const disc = b * b - 4 * c;
+    if (disc < 0) return null;
+
+    const t1 = (-b - Math.sqrt(disc)) / 2;
+    const t2 = (-b + Math.sqrt(disc)) / 2;
+
+    if (t1 >= 0) return t1;
+    if (t2 >= 0) return t2;
+    return null;
+}
+
 function checkLineIntersection(Ax, Ay, Bx, By, Cx, Cy, Dx, Dy) {
     const rX = Bx - Ax;
     const rY = By - Ay;
@@ -1293,7 +1312,24 @@ function drawLadderLines(ctx) {
 
     const interval = 500;
     const firstLine = Math.floor(minP / interval) * interval;
-    const lineLen = 4000;
+
+    // Layline Clipping Logic
+    // Project Marks to U,V space (U = Wind Axis, V = Cross Axis)
+    // U axis is defined by (wx, wy). V axis is (px, py).
+    // V = x * px + y * py
+    const uL = mNext.x * wx + mNext.y * wy;
+    const vL = mNext.x * px + mNext.y * py;
+    const mNextRight = state.course.marks[nextIndex + 1];
+    const uR = mNextRight.x * wx + mNextRight.y * wy;
+    const vR = mNextRight.x * px + mNextRight.y * py;
+
+    // Boundary Projection
+    const b = state.course.boundary;
+    const uC = b.x * wx + b.y * wy;
+    const vC = b.x * px + b.y * py;
+    const R = b.radius;
+
+    const isUpwindTarget = (nextIndex === 2); // Target is Marks 2,3 (Upwind)
 
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // Increased opacity
@@ -1305,20 +1341,58 @@ function drawLadderLines(ctx) {
 
     for (let p = firstLine; p <= maxP; p += interval) {
         if (p < minP) continue;
-        const cx = p * wx;
-        const cy = p * wy;
 
-        ctx.beginPath();
-        ctx.moveTo(cx - px * lineLen, cy - py * lineLen);
-        ctx.lineTo(cx + px * lineLen, cy + py * lineLen);
-        ctx.stroke();
+        // 1. Calculate Layline Bounds at this U (p)
+        // Ladder lines are only drawn between gates, so we are always on the "course side" of the target.
+        // Laylines extend away from the target gate, so the valid width increases as we move away.
+        const dist = Math.abs(p - uL);
+        const vMin = vL - dist;
+        const vMax = vR + dist;
 
-        // Label: Distance to NEXT gate
-        // Distance is simply |p - endProj| scaled by meters
-        const dist = Math.abs(endProj - p) * 0.2; // 0.2 meters per unit
-        if (dist > 50) { // Don't draw label right on top of gate
-            ctx.fillText(Math.round(dist) + 'm', cx + px * 1000, cy + py * 1000);
-            ctx.fillText(Math.round(dist) + 'm', cx - px * 1000, cy - py * 1000);
+        // 2. Clip to Boundary
+        // Circle at uC, vC with radius R
+        // Chord at U = p
+        const du = p - uC;
+        if (Math.abs(du) >= R) continue; // Outside circle
+
+        const dv = Math.sqrt(R*R - du*du);
+        const cMin = vC - dv;
+        const cMax = vC + dv;
+
+        // Intersection
+        const finalMin = Math.max(vMin, cMin);
+        const finalMax = Math.min(vMax, cMax);
+
+        if (finalMin < finalMax) {
+            const cx = p * wx;
+            const cy = p * wy;
+
+            // Convert start/end V back to world space relative to center (cx, cy)
+            // Center is at V=0? No.
+            // P = (cx, cy) + v * (px, py)
+            const x1 = cx + finalMin * px;
+            const y1 = cy + finalMin * py;
+            const x2 = cx + finalMax * px;
+            const y2 = cy + finalMax * py;
+
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+
+            // Label: Distance to NEXT gate
+            const distToGate = Math.abs(endProj - p) * 0.2;
+            if (distToGate > 50) {
+                // Draw label at some offset, clamped to line
+                // Center of line
+                const midX = (x1 + x2) / 2;
+                const midY = (y1 + y2) / 2;
+
+                // If line is too short, maybe don't draw label?
+                if (finalMax - finalMin > 200) {
+                     ctx.fillText(Math.round(distToGate) + 'm', midX, midY);
+                }
+            }
         }
     }
     ctx.restore();
@@ -1338,11 +1412,12 @@ function drawLayLines(ctx) {
 
     const windDir = state.wind.direction;
     const isUpwindLeg = (state.race.leg % 2 !== 0) || (state.race.leg === 0);
+    const boundary = state.course.boundary;
 
     ctx.save();
-    ctx.setLineDash([10, 10]);
+    ctx.setLineDash([]);
     ctx.lineWidth = 5; // Thicker
-    const length = 3000;
+    const zoneRadius = 165;
 
     for (const idx of targets) {
         if (idx >= state.course.marks.length) continue;
@@ -1357,34 +1432,43 @@ function drawLayLines(ctx) {
         // Indices 1, 3 are "Right" Marks
         const isLeftMark = (idx % 2 === 0);
 
-        const drawRay = (angle, color) => {
+        const drawRay = (angle) => {
              let drawAngle = angle;
              if (isUpwindLeg) {
                  drawAngle += Math.PI; // Extend downwind
              }
 
-             const rdx = Math.sin(drawAngle) * length;
-             const rdy = -Math.cos(drawAngle) * length;
+             const dx = Math.sin(drawAngle);
+             const dy = -Math.cos(drawAngle);
 
-             ctx.strokeStyle = color;
-             ctx.beginPath();
-             ctx.moveTo(m.x, m.y);
-             ctx.lineTo(m.x + rdx, m.y + rdy);
-             ctx.stroke();
+             // Start from outside zone radius
+             const startX = m.x + dx * zoneRadius;
+             const startY = m.y + dy * zoneRadius;
+
+             // Find intersection with boundary
+             const t = rayCircleIntersection(startX, startY, dx, dy, boundary.x, boundary.y, boundary.radius);
+
+             if (t !== null) {
+                 ctx.strokeStyle = '#facc15'; // Solid Yellow
+                 ctx.beginPath();
+                 ctx.moveTo(startX, startY);
+                 ctx.lineTo(startX + dx * t, startY + dy * t);
+                 ctx.stroke();
+             }
         };
 
         if (isUpwindLeg) {
             if (isLeftMark) {
-                drawRay(ang1, 'rgba(239, 68, 68, 0.8)'); // Red
+                drawRay(ang1);
             } else {
-                drawRay(ang2, 'rgba(34, 197, 94, 0.8)'); // Green
+                drawRay(ang2);
             }
         } else {
             // Downwind - swap angles
             if (isLeftMark) {
-                drawRay(ang2, 'rgba(239, 68, 68, 0.8)'); // Red
+                drawRay(ang2);
             } else {
-                drawRay(ang1, 'rgba(34, 197, 94, 0.8)'); // Green
+                drawRay(ang1);
             }
         }
     }
@@ -1412,9 +1496,8 @@ function drawMarkZones(ctx) {
 
     ctx.save();
     ctx.lineWidth = 5; // Thicker
-    ctx.setLineDash([15, 15]);
-    // Rotate slowly with the dashes
-    ctx.lineDashOffset = -state.time * 5;
+    ctx.setLineDash([]);
+    // Solid line, no rotation needed
 
     const zoneRadius = 165;
 
