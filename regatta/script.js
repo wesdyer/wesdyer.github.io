@@ -1151,6 +1151,136 @@ function drawActiveGateLine(ctx) {
     ctx.restore();
 }
 
+function drawLadderLines(ctx) {
+    if (state.race.status === 'prestart' || state.race.status === 'finished') return;
+    if (!state.course || !state.course.marks) return;
+
+    // Use base direction for the grid to keep it stable
+    const windDir = state.wind.baseDirection;
+    const wx = Math.sin(windDir);
+    const wy = -Math.cos(windDir);
+    const px = -wy;
+    const py = wx;
+
+    // Determine range based on leg
+    let prevIndex, nextIndex;
+    if (state.race.leg === 0 || state.race.leg % 2 !== 0) {
+        prevIndex = 0; // Start/Leeward (Marks 0,1)
+        nextIndex = 2; // Upwind (Marks 2,3)
+    } else {
+        prevIndex = 2;
+        nextIndex = 0;
+    }
+
+    const mPrev = state.course.marks[prevIndex];
+    const mNext = state.course.marks[nextIndex];
+
+    // Project onto wind axis
+    const startProj = mPrev.x * wx + mPrev.y * wy;
+    const endProj = mNext.x * wx + mNext.y * wy;
+
+    // Sort
+    let minP = Math.min(startProj, endProj);
+    let maxP = Math.max(startProj, endProj);
+
+    const interval = 500;
+    const firstLine = Math.floor(minP / interval) * interval;
+    const lineLen = 4000;
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.lineWidth = 1;
+
+    for (let p = firstLine; p <= maxP; p += interval) {
+        if (p < minP) continue;
+        const cx = p * wx;
+        const cy = p * wy;
+
+        ctx.beginPath();
+        ctx.moveTo(cx - px * lineLen, cy - py * lineLen);
+        ctx.lineTo(cx + px * lineLen, cy + py * lineLen);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+function drawLayLines(ctx) {
+    if (state.race.status === 'finished') return;
+    if (!state.course || !state.course.marks) return;
+
+    let targets = [];
+    if (state.race.leg % 2 === 0) {
+        targets = [0, 1]; // Leeward/Start
+    } else {
+        targets = [2, 3]; // Upwind
+    }
+
+    const windDir = state.wind.direction;
+    const isUpwindLeg = (state.race.leg % 2 !== 0) || (state.race.leg === 0);
+
+    ctx.save();
+    ctx.setLineDash([10, 10]);
+    ctx.lineWidth = 2;
+    const length = 2000;
+
+    for (const idx of targets) {
+        if (idx >= state.course.marks.length) continue;
+        const m = state.course.marks[idx];
+
+        // Laylines at 45 degrees relative to wind
+        const ang1 = windDir + Math.PI / 4;
+        const ang2 = windDir - Math.PI / 4;
+
+        const drawRay = (angle, color) => {
+             let drawAngle = angle;
+             if (isUpwindLeg) {
+                 drawAngle += Math.PI; // Extend downwind
+             }
+
+             const rdx = Math.sin(drawAngle) * length;
+             const rdy = -Math.cos(drawAngle) * length;
+
+             ctx.strokeStyle = color;
+             ctx.beginPath();
+             ctx.moveTo(m.x, m.y);
+             ctx.lineTo(m.x + rdx, m.y + rdy);
+             ctx.stroke();
+        };
+
+        drawRay(ang1, 'rgba(239, 68, 68, 0.6)'); // Red
+        drawRay(ang2, 'rgba(34, 197, 94, 0.6)'); // Green
+    }
+    ctx.restore();
+}
+
+function drawMarkZones(ctx) {
+    if (!state.course || !state.course.marks) return;
+
+    let indices = [];
+    if (state.race.status !== 'finished') {
+         if (state.race.leg % 2 === 0) {
+             indices = [0, 1];
+         } else {
+             indices = [2, 3];
+         }
+    }
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 10]);
+
+    for (const i of indices) {
+        if (i >= state.course.marks.length) continue;
+        const m = state.course.marks[i];
+
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, 165, 0, Math.PI * 2);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
 function drawParticles(ctx, layer) {
     if (layer === 'surface') {
         // Batch wake particles
@@ -1550,6 +1680,9 @@ function draw() {
     drawBoundary(ctx);
     drawParticles(ctx, 'surface'); // Wake
     drawActiveGateLine(ctx);
+    drawLadderLines(ctx);
+    drawLayLines(ctx);
+    drawMarkZones(ctx);
     drawParticles(ctx, 'air'); // Wind
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
