@@ -430,11 +430,11 @@ function drawBoat(ctx) {
         if (isJib) {
              ctx.moveTo(0, 0);
              ctx.lineTo(0, 28);
-             ctx.quadraticCurveTo(-Math.abs(state.boat.boomSide) * 11, 14, 0, 0);
+             ctx.quadraticCurveTo(-state.boat.boomSide * 11, 14, 0, 0);
         } else {
              ctx.moveTo(0, 0);
              ctx.lineTo(0, 45);
-             ctx.quadraticCurveTo(-Math.abs(state.boat.boomSide) * 15, 20, 0, 0);
+             ctx.quadraticCurveTo(-state.boat.boomSide * 15, 20, 0, 0);
         }
         ctx.fill();
         ctx.stroke();
@@ -443,8 +443,8 @@ function drawBoat(ctx) {
         if (!isJib) {
             ctx.strokeStyle = 'rgba(0,0,0,0.1)';
             ctx.beginPath();
-            ctx.moveTo(0, 15); ctx.lineTo(-Math.abs(state.boat.boomSide) * 5, 12);
-            ctx.moveTo(0, 30); ctx.lineTo(-Math.abs(state.boat.boomSide) * 9, 24);
+            ctx.moveTo(0, 15); ctx.lineTo(-state.boat.boomSide * 5, 12);
+            ctx.moveTo(0, 30); ctx.lineTo(-state.boat.boomSide * 9, 24);
             ctx.stroke();
         }
 
