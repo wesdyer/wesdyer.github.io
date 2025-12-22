@@ -1348,14 +1348,37 @@ function drawActiveGateLine(ctx) {
     const dashSpeed = 20;
     const dashOffset = -state.time * dashSpeed;
 
-    ctx.beginPath();
-    ctx.moveTo(m1.x, m1.y);
-    ctx.lineTo(m2.x, m2.y);
+    // Determine offset for occlusion
+    let gap = 0;
+    // Apply gap for intermediate legs (where 165 unit mark zone is visible)
+    if (state.race.leg >= 1 && state.race.leg <= 3) {
+        gap = 165;
+    }
 
-    // Default Styling: Glowing dashed orange line
-    let shadowColor = '#fef08a'; // Yellow-200
-    let strokeColor = 'rgba(250, 204, 21, 0.9)'; // Yellow-400
-    let lineDash = [20, 15];
+    // Calculate line segment
+    const dx = m2.x - m1.x;
+    const dy = m2.y - m1.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    ctx.beginPath();
+
+    if (dist > 2 * gap) {
+        // Normalize direction
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        ctx.moveTo(m1.x + ux * gap, m1.y + uy * gap);
+        ctx.lineTo(m2.x - ux * gap, m2.y - uy * gap);
+    } else {
+        // Fallback if gates are somehow too close (should not happen)
+        ctx.moveTo(m1.x, m1.y);
+        ctx.lineTo(m2.x, m2.y);
+    }
+
+    // Default Styling: Solid white line (for non-start and finish)
+    let shadowColor = '#ffffff';
+    let strokeColor = '#ffffff';
+    let lineDash = [];
 
     // Start Line Logic (Leg 0)
     if (state.race.leg === 0) {
