@@ -89,6 +89,16 @@ const state = {
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// UI Elements Cache
+const UI = {
+    compassRose: document.getElementById('hud-compass-rose'),
+    windArrow: document.getElementById('hud-wind-arrow'),
+    headingArrow: document.getElementById('hud-heading-arrow'),
+    speed: document.getElementById('hud-speed'),
+    windSpeed: document.getElementById('hud-wind-speed'),
+    windAngle: document.getElementById('hud-wind-angle')
+};
+
 let minimapCtx = null;
 
 function resize() {
@@ -932,36 +942,37 @@ function draw() {
     // Minimap
     drawMinimap(); // Added back in
 
-    // UI Updates
-    const hudCompassRose = document.getElementById('hud-compass-rose');
-    if (hudCompassRose) {
+    // UI Updates - Using cached elements
+    if (UI.compassRose) {
         // Rotate compass rose opposite to camera rotation so "North" points to actual North
-        hudCompassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
+        UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
     }
 
-    const hudWindArrow = document.getElementById('hud-wind-arrow');
-    if (hudWindArrow) {
+    if (UI.windArrow) {
         // Wind arrow is inside the compass rose, so we just rotate it to the absolute wind direction
-        // The compass rose rotation handles the camera relative adjustment
-        hudWindArrow.style.transform = `rotate(${state.wind.direction}rad)`;
+        UI.windArrow.style.transform = `rotate(${state.wind.direction}rad)`;
     }
 
-    const hudHeadingArrow = document.getElementById('hud-heading-arrow');
-    if (hudHeadingArrow) {
+    if (UI.headingArrow) {
         // Heading arrow (Red) rotates to show boat heading relative to camera
         const rot = state.boat.heading - state.camera.rotation;
-        hudHeadingArrow.style.transform = `rotate(${rot}rad)`;
+        UI.headingArrow.style.transform = `rotate(${rot}rad)`;
     }
 
-    const hudSpeed = document.getElementById('hud-speed');
-    if (hudSpeed) {
+    if (UI.speed) {
         // Convert to "knots" (internal speed * 2)
-        hudSpeed.textContent = (state.boat.speed * 4).toFixed(1);
+        UI.speed.textContent = (state.boat.speed * 4).toFixed(1);
     }
 
-    const hudWindSpeed = document.getElementById('hud-wind-speed');
-    if (hudWindSpeed) {
-        hudWindSpeed.textContent = state.wind.speed.toFixed(1);
+    if (UI.windSpeed) {
+        UI.windSpeed.textContent = state.wind.speed.toFixed(1);
+    }
+
+    if (UI.windAngle) {
+        // Calculate TWA in degrees
+        const angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
+        const twaDeg = Math.round(angleToWind * (180 / Math.PI));
+        UI.windAngle.textContent = twaDeg + '°';
     }
 }
 
