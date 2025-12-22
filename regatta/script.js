@@ -1207,6 +1207,98 @@ function drawBoat(ctx) {
     ctx.restore();
 }
 
+function drawRoundingArrows(ctx) {
+    if (!state.showNavAids) return;
+    if (!state.course || !state.course.marks) return;
+    if (state.race.status === 'finished') return;
+
+    // Determine active marks and direction
+    let activeMarks = [];
+    if (state.race.leg === 1 || state.race.leg === 3) {
+        // Upwind Gate (Marks 2 & 3)
+        activeMarks = [
+            { index: 2, ccw: true },
+            { index: 3, ccw: false }
+        ];
+    } else if (state.race.leg === 2) {
+        // Leeward Gate (Marks 0 & 1)
+        activeMarks = [
+            { index: 0, ccw: false },
+            { index: 1, ccw: true }
+        ];
+    } else {
+        return;
+    }
+
+    ctx.save();
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = '#bfdbfe'; // Blue-200 (High contrast light blue)
+    ctx.fillStyle = '#bfdbfe';
+    ctx.lineCap = 'round';
+
+    // Use base direction to align with course
+    const windDir = state.wind.baseDirection;
+    const radius = 80;
+
+    for (const item of activeMarks) {
+        if (item.index >= state.course.marks.length) continue;
+        const m = state.course.marks[item.index];
+
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        ctx.rotate(windDir); // Rotate to align with wind (North Up in local space)
+
+        let startAngle, endAngle, counterClockwise;
+
+        // Upwind Leg (Sailing North relative to wind):
+        // Mark 2 (Left): Round CCW. 0 -> PI.
+        // Mark 3 (Right): Round CW. PI -> 0.
+        // Downwind Leg (Sailing South relative to wind):
+        // Mark 0 (Left/West): Round CW. 0 -> PI.
+        // Mark 1 (Right/East): Round CCW. PI -> 0.
+
+        if (state.race.leg === 1 || state.race.leg === 3) {
+             if (item.index === 2) {
+                 startAngle = 0; endAngle = Math.PI; counterClockwise = true;
+             } else {
+                 startAngle = Math.PI; endAngle = 0; counterClockwise = false;
+             }
+        } else {
+             if (item.index === 0) {
+                 startAngle = 0; endAngle = Math.PI; counterClockwise = false;
+             } else {
+                 startAngle = Math.PI; endAngle = 0; counterClockwise = true;
+             }
+        }
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, startAngle, endAngle, counterClockwise);
+        ctx.stroke();
+
+        // Arrowhead
+        const tipX = radius * Math.cos(endAngle);
+        const tipY = radius * Math.sin(endAngle);
+
+        // Tangent angle for arrowhead rotation
+        // If CW (positive delta), tangent is Angle + PI/2
+        // If CCW (negative delta), tangent is Angle - PI/2
+        let tangent = endAngle + (counterClockwise ? -Math.PI/2 : Math.PI/2);
+
+        ctx.translate(tipX, tipY);
+        ctx.rotate(tangent);
+
+        ctx.beginPath();
+        ctx.moveTo(-10, -10); // Back Left
+        ctx.lineTo(10, 0);    // Tip
+        ctx.lineTo(-10, 10);  // Back Right
+        ctx.lineTo(-6, 0);    // Notch
+        ctx.fill();
+
+        ctx.restore();
+    }
+    ctx.restore();
+}
+
 function drawActiveGateLine(ctx) {
     if (state.race.status === 'finished') return;
     if (!state.course || !state.course.marks) return;
@@ -1857,6 +1949,7 @@ function draw() {
     drawLadderLines(ctx);
     drawLayLines(ctx);
     drawMarkZones(ctx);
+    drawRoundingArrows(ctx);
     drawParticles(ctx, 'air'); // Wind
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
