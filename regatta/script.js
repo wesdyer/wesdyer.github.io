@@ -1306,13 +1306,95 @@ function draw() {
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
 
-    // Draw Waypoint Indicator
+    // Draw Boat
+    ctx.save();
+    ctx.translate(state.boat.x, state.boat.y);
+    ctx.rotate(state.boat.heading);
+    drawBoat(ctx);
+    ctx.restore();
+
+    ctx.restore();
+
+    // Draw Waypoint Indicator (Screen Space with Clamping)
     if (state.race.status !== 'finished') {
-        ctx.save();
         const wx = state.race.nextWaypoint.x;
         const wy = state.race.nextWaypoint.y;
 
-        ctx.translate(wx, wy);
+        // 1. World to Screen Transformation
+        // Translate relative to camera
+        const dx = wx - state.camera.x;
+        const dy = wy - state.camera.y;
+
+        // Rotate (inverse of camera rotation)
+        const rot = -state.camera.rotation;
+        const cos = Math.cos(rot);
+        const sin = Math.sin(rot);
+
+        const rx = dx * cos - dy * sin;
+        const ry = dx * sin + dy * cos;
+
+        // 2. Clamping Logic
+        const margin = 40;
+        const halfW = Math.max(10, canvas.width / 2 - margin);
+        const halfH = Math.max(10, canvas.height / 2 - margin);
+
+        // Calculate initial clamp factor to screen edges
+        let t = 1.0;
+        if (Math.abs(rx) > 0.1 || Math.abs(ry) > 0.1) {
+            const tx = halfW / Math.abs(rx);
+            const ty = halfH / Math.abs(ry);
+            t = Math.min(tx, ty);
+        }
+
+        const factor = Math.min(t, 1.0);
+
+        let screenX = canvas.width / 2 + rx * factor;
+        let screenY = canvas.height / 2 + ry * factor;
+
+        // 3. HUD Avoidance (Top Right Corner)
+        // HUD is roughly 180px wide (160px + padding) and 350px tall (Compass + Minimap)
+        const hudWidth = 200;
+        const hudHeight = 400;
+
+        // Check if we are in the Top-Right danger zone
+        // Danger Zone: x > width - hudWidth AND y < hudHeight
+        if (screenX > canvas.width - hudWidth && screenY < hudHeight) {
+            // We need to push it out of this box.
+            // Find the closest point on the boundary of the HUD box that is "towards" the target?
+            // Or just snap to the edges of the exclusion zone.
+
+            // If the target is primarily "Right", keep it on the Right edge but push Y down.
+            // If the target is primarily "Top", keep it on Top edge but push X left.
+
+            // Current clamped pos is on the screen edge (Top or Right).
+            // If on Top Edge (y approx margin):
+            if (screenY < margin + 10) {
+                 // Push X to the left of HUD
+                 screenX = canvas.width - hudWidth - 20;
+            }
+            // If on Right Edge (x approx width - margin):
+            else if (screenX > canvas.width - margin - 10) {
+                 // Push Y below HUD
+                 screenY = hudHeight + 20;
+            }
+            // If it's somewhere inside (shouldn't happen with edge clamping unless corner), push to closest safe edge.
+            else {
+                 // It's inside the corner zone.
+                 // Simple heuristic:
+                 const distToLeft = screenX - (canvas.width - hudWidth);
+                 const distToBottom = hudHeight - screenY;
+
+                 if (distToLeft < distToBottom) {
+                     screenX = canvas.width - hudWidth - 20;
+                 } else {
+                     screenY = hudHeight + 20;
+                 }
+            }
+        }
+
+        // Draw
+        ctx.save();
+        ctx.translate(screenX, screenY);
 
         // Draw green target circle
         ctx.beginPath();
@@ -1335,15 +1417,6 @@ function draw() {
 
         ctx.restore();
     }
-
-    // Draw Boat
-    ctx.save();
-    ctx.translate(state.boat.x, state.boat.y);
-    ctx.rotate(state.boat.heading);
-    drawBoat(ctx);
-    ctx.restore();
-
-    ctx.restore();
 
     // Minimap
     drawMinimap(); // Added back in
