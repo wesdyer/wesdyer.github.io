@@ -293,8 +293,8 @@ function drawBoat(ctx) {
         ctx.beginPath();
         if (isJib) {
              ctx.moveTo(0, 0);
-             ctx.lineTo(0, 20);
-             ctx.quadraticCurveTo(state.boat.boomSide * 8, 10, 0, 0);
+             ctx.lineTo(0, 28);
+             ctx.quadraticCurveTo(state.boat.boomSide * 11, 14, 0, 0);
         } else {
              ctx.moveTo(0, 0);
              ctx.lineTo(0, 45);
