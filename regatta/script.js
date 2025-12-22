@@ -169,6 +169,18 @@ window.addEventListener('keydown', (e) => {
             }
         }
     }
+    if (e.key === 'F1') {
+        e.preventDefault();
+        // Capture screenshot of the entire body (including canvas + HUD)
+        if (window.html2canvas) {
+            window.html2canvas(document.body).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'regatta-screenshot.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+    }
 });
 
 window.addEventListener('keyup', (e) => {
