@@ -1014,8 +1014,8 @@ function drawActiveGateLine(ctx) {
 
     // Use a different color for the start line before the race starts
     if (state.race.leg === 0 && state.race.status === 'prestart') {
-        shadowColor = '#fde047'; // Yellow-300
-        strokeColor = 'rgba(234, 179, 8, 0.7)'; // Yellow-600
+        shadowColor = '#cbd5e1'; // Slate-300 (Gray)
+        strokeColor = 'rgba(148, 163, 184, 0.7)'; // Slate-400 (Gray)
     }
 
     ctx.shadowColor = shadowColor;
