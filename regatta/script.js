@@ -9,42 +9,40 @@ const CONFIG = {
     sailColor: '#f1f5f9',
 };
 
-// J/111 Polar Data (10 Knots Wind)
-// Source: ORC Certificate data & Estimations for Non-Spinnaker
+// J/111 Polar Data (Various Wind Speeds)
+// Source: ORC Certificate data & Scaled Estimations based on VMG ratios
 const J111_POLARS = {
-    windSpeed: 10,
     angles: [0, 30, 38, 45, 52, 60, 75, 90, 110, 120, 135, 150, 180],
-    // Speeds in Knots
-    spinnaker: [
-        0.00, // 0
-        0.00, // 30 (Pinch/Luff)
-        6.66, // 38 (Beat)
-        7.00, // 45
-        7.38, // 52
-        7.56, // 60
-        7.70, // 75
-        7.89, // 90 (Reach)
-        8.01, // 110
-        8.01, // 120
-        7.72, // 135
-        6.99, // 150
-        6.00  // 180 (Run)
-    ],
-    nonSpinnaker: [
-        0.00, // 0
-        0.00, // 30
-        6.66, // 38
-        7.00, // 45
-        7.38, // 52
-        7.56, // 60
-        7.70, // 75
-        7.89, // 90
-        7.20, // 110 (Est)
-        6.80, // 120 (Est)
-        6.00, // 135 (Est)
-        5.20, // 150 (Est)
-        4.50  // 180 (Est)
-    ]
+    speeds: {
+        6: {
+            spinnaker: [0.0, 0.0, 4.7, 4.93, 5.18, 5.29, 5.36, 5.46, 5.5, 5.48, 5.25, 4.72, 4.01],
+            nonSpinnaker: [0.0, 0.0, 4.7, 4.93, 5.18, 5.29, 5.36, 5.46, 4.94, 4.65, 4.08, 3.51, 3.01]
+        },
+        8: {
+            spinnaker: [0.0, 0.0, 5.8, 6.09, 6.41, 6.55, 6.65, 6.79, 6.87, 6.85, 6.58, 5.94, 5.06],
+            nonSpinnaker: [0.0, 0.0, 5.8, 6.09, 6.41, 6.55, 6.65, 6.79, 6.17, 5.82, 5.12, 4.42, 3.8]
+        },
+        10: {
+            spinnaker: [0.0, 0.0, 6.66, 7.0, 7.38, 7.56, 7.7, 7.89, 8.01, 8.01, 7.72, 6.99, 6.0],
+            nonSpinnaker: [0.0, 0.0, 6.66, 7.0, 7.38, 7.56, 7.7, 7.89, 7.2, 6.8, 6.0, 5.2, 4.5]
+        },
+        12: {
+            spinnaker: [0.0, 0.0, 7.23, 7.6, 8.02, 8.22, 8.38, 8.6, 8.74, 8.75, 8.44, 7.65, 6.58],
+            nonSpinnaker: [0.0, 0.0, 7.23, 7.6, 8.02, 8.22, 8.38, 8.6, 7.85, 7.42, 6.56, 5.69, 4.93]
+        },
+        14: {
+            spinnaker: [0.0, 0.0, 7.52, 7.91, 8.36, 8.57, 8.76, 9.01, 9.18, 9.2, 8.89, 8.08, 6.98],
+            nonSpinnaker: [0.0, 0.0, 7.52, 7.91, 8.36, 8.57, 8.76, 9.01, 8.25, 7.81, 6.91, 6.01, 5.23]
+        },
+        16: {
+            spinnaker: [0.0, 0.0, 7.76, 8.18, 8.66, 8.9, 9.13, 9.42, 9.66, 9.7, 9.42, 8.59, 7.47],
+            nonSpinnaker: [0.0, 0.0, 7.76, 8.18, 8.66, 8.9, 9.13, 9.42, 8.68, 8.24, 7.32, 6.39, 5.61]
+        },
+        20: {
+            spinnaker: [0.0, 0.0, 8.2, 8.7, 9.26, 9.6, 9.98, 10.43, 10.87, 11.01, 10.81, 9.98, 8.88],
+            nonSpinnaker: [0.0, 0.0, 8.2, 8.7, 9.26, 9.6, 9.98, 10.43, 9.77, 9.35, 8.4, 7.42, 6.66]
+        }
+    }
 };
 
 // Game State
@@ -68,7 +66,8 @@ const state = {
         target: null // 'boat' or null (free)
     },
     wind: {
-        direction: 0 // Blowing Down (South)
+        direction: 0, // Blowing Down (South)
+        speed: 10 // Knots
     },
     particles: [], // For wake and wind effects
     keys: {
@@ -126,19 +125,53 @@ function normalizeAngle(angle) {
     return angle;
 }
 
-function getTargetSpeed(twaRadians, useSpinnaker) {
+function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
     const angles = J111_POLARS.angles;
-    const speeds = useSpinnaker ? J111_POLARS.spinnaker : J111_POLARS.nonSpinnaker;
 
-    // Find interpolation interval
-    for (let i = 0; i < angles.length - 1; i++) {
-        if (twaDeg >= angles[i] && twaDeg <= angles[i+1]) {
-            const t = (twaDeg - angles[i]) / (angles[i+1] - angles[i]);
-            return speeds[i] + t * (speeds[i+1] - speeds[i]);
+    // Available wind speeds in data
+    const availableSpeeds = [6, 8, 10, 12, 14, 16, 20];
+
+    // Find lower and upper bound for windSpeed
+    let lower = 6;
+    let upper = 20;
+
+    if (windSpeed <= 6) {
+        lower = 6; upper = 6;
+    } else if (windSpeed >= 20) {
+        lower = 20; upper = 20;
+    } else {
+        for (let i = 0; i < availableSpeeds.length - 1; i++) {
+            if (windSpeed >= availableSpeeds[i] && windSpeed <= availableSpeeds[i+1]) {
+                lower = availableSpeeds[i];
+                upper = availableSpeeds[i+1];
+                break;
+            }
         }
     }
-    return speeds[speeds.length - 1]; // Clamp to last value
+
+    // Helper to get interpolated speed for a specific polar wind speed
+    const getPolarSpeed = (ws) => {
+        const data = J111_POLARS.speeds[ws];
+        const speeds = useSpinnaker ? data.spinnaker : data.nonSpinnaker;
+
+        // Interpolate angle
+        for (let i = 0; i < angles.length - 1; i++) {
+            if (twaDeg >= angles[i] && twaDeg <= angles[i+1]) {
+                const t = (twaDeg - angles[i]) / (angles[i+1] - angles[i]);
+                return speeds[i] + t * (speeds[i+1] - speeds[i]);
+            }
+        }
+        return speeds[speeds.length - 1];
+    };
+
+    const speedLower = getPolarSpeed(lower);
+    const speedUpper = getPolarSpeed(upper);
+
+    if (lower === upper) return speedLower;
+
+    const t = (windSpeed - lower) / (upper - lower);
+    return speedLower + t * (speedUpper - speedLower);
 }
 
 // Particle System
@@ -225,7 +258,7 @@ function update() {
 
     // Determine target speed from polars
     // Note: Polars are in Knots. We scale down to game units (approx 0.5 ratio)
-    let targetKnots = getTargetSpeed(angleToWind, state.boat.spinnaker);
+    let targetKnots = getTargetSpeed(angleToWind, state.boat.spinnaker, state.wind.speed);
     let targetGameSpeed = targetKnots * 0.5;
 
     // Determine Luffing state (for visual/logic flags, not speed as speed comes from polar now)
@@ -560,7 +593,7 @@ function draw() {
 
     const hudWindSpeed = document.getElementById('hud-wind-speed');
     if (hudWindSpeed) {
-        hudWindSpeed.textContent = J111_POLARS.windSpeed;
+        hudWindSpeed.textContent = state.wind.speed.toFixed(1);
     }
 }
 
@@ -572,4 +605,6 @@ function loop() {
 
 // Init
 state.camera.target = 'boat';
+// Randomize wind speed (6 to 20 knots)
+state.wind.speed = 6 + Math.random() * 14;
 loop();
