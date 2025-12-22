@@ -104,9 +104,10 @@ function updateParticles() {
             p.alpha = p.life * 0.5;
         } else if (p.type === 'wind') {
              // Move with wind
-             p.x += Math.sin(state.wind.direction) * 2;
-             p.y -= Math.cos(state.wind.direction) * 2;
-             p.life -= 0.005; // Last longer
+             const speed = 4;
+             p.x += Math.sin(state.wind.direction) * speed;
+             p.y -= Math.cos(state.wind.direction) * speed;
+             p.life -= 0.01;
         }
 
         if (p.life <= 0) {
@@ -224,12 +225,12 @@ function update() {
     state.boat.sailAngle = optimalSailAngle * state.boat.boomSide;
 
     // Wind Particles
-    if (Math.random() < 0.1) {
+    if (Math.random() < 0.4) {
         // Spawn around camera
-        let range = 1000;
+        let range = Math.max(canvas.width, canvas.height) * 1.5;
         let px = state.camera.x + (Math.random() - 0.5) * range;
         let py = state.camera.y + (Math.random() - 0.5) * range;
-        createParticle(px, py, 'wind', { life: Math.random() * 2 + 1 });
+        createParticle(px, py, 'wind', { life: Math.random() * 1.0 + 0.5 });
     }
 
     updateParticles();
@@ -339,11 +340,12 @@ function drawParticles(ctx) {
             ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
             ctx.fill();
         } else if (p.type === 'wind') {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            const opacity = Math.min(p.life, 1.0) * 0.15;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x + Math.sin(state.wind.direction) * 20, p.y - Math.cos(state.wind.direction) * 20);
+            ctx.lineTo(p.x + Math.sin(state.wind.direction) * 40, p.y - Math.cos(state.wind.direction) * 40);
             ctx.stroke();
         }
     }
@@ -352,23 +354,27 @@ function drawParticles(ctx) {
 function drawWater(ctx) {
     // Background already filled
 
-    // Draw simple waves or grid?
-    // Let's keep it clean, the particles add detail.
-    // Maybe a subtle grid
-
-    const gridSize = 200;
-    const range = Math.max(canvas.width, canvas.height);
+    const gridSize = 80;
+    const range = Math.max(canvas.width, canvas.height) * 1.5;
     const startX = Math.floor((state.camera.x - range) / gridSize) * gridSize;
     const startY = Math.floor((state.camera.y - range) / gridSize) * gridSize;
 
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+    ctx.lineWidth = 1.5;
 
     for (let x = startX; x < state.camera.x + range; x += gridSize) {
         for (let y = startY; y < state.camera.y + range; y += gridSize) {
              // Draw little wave glyphs
+             const noise = Math.sin(x * 0.12 + y * 0.17);
+             const bob = Math.sin(state.time * 2 + noise * 10) * 3;
+
+             let wx = x + gridSize/2;
+             let wy = y + gridSize/2;
+
              ctx.beginPath();
-             ctx.arc(x, y, 2, 0, Math.PI * 2);
-             ctx.fill();
+             ctx.moveTo(wx - 4, wy + bob);
+             ctx.quadraticCurveTo(wx, wy + bob - 3, wx + 4, wy + bob);
+             ctx.stroke();
         }
     }
 }
