@@ -605,7 +605,11 @@ function update(dt) {
     let targetKnotsSpin = getTargetSpeed(angleToWind, true, state.wind.speed);
 
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
-    let targetGameSpeed = targetKnots * 0.25;
+
+    // Scale matching: 1 Unit = 0.2 Meters. 1 Knot = 0.5144 m/s.
+    // 1 Knot = 0.5144 / 0.2 units/s = 2.572 units/s.
+    // At 60fps, units/frame = 2.572 / 60 = 0.04287.
+    let targetGameSpeed = targetKnots * 0.04287;
 
     // Determine Luffing state (for visual/logic flags, not speed as speed comes from polar now)
     // Polar says 0 speed at < 30 deg, so checks match
@@ -720,7 +724,7 @@ function update(dt) {
     state.boat.prevHeading = state.boat.heading;
 
     // Wake Particles
-    if (state.boat.speed > 0.25) {
+    if (state.boat.speed > 0.04) { // > ~1 knot
         // Constants for wake geometry
         const sternOffset = 30;
         const sternWidth = 10;
@@ -752,7 +756,7 @@ function update(dt) {
             const rightSternY = sternY + rightY * sternWidth;
 
             // Wave Velocity (Spreading out)
-            const spreadSpeed = 0.1;
+            const spreadSpeed = 0.017;
 
             // Left Wave
             createParticle(leftSternX, leftSternY, 'wake-wave', {
@@ -1538,8 +1542,8 @@ function draw() {
     // Throttle text updates to every 10 frames (~6Hz)
     if (frameCount % 10 === 0) {
         if (UI.speed) {
-            // Convert to "knots" (internal speed * 2)
-            UI.speed.textContent = (state.boat.speed * 4).toFixed(1);
+            // Convert to "knots" (speed / 0.04287)
+            UI.speed.textContent = (state.boat.speed / 0.04287).toFixed(1);
         }
 
         if (UI.windSpeed) {
