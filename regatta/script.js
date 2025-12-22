@@ -1171,7 +1171,7 @@ function drawActiveGateLine(ctx) {
     ctx.shadowColor = shadowColor;
     ctx.shadowBlur = 15;
     ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 5;
     ctx.setLineDash([20, 15]);
     ctx.lineDashOffset = dashOffset;
 
@@ -1226,10 +1226,10 @@ function drawLadderLines(ctx) {
     const lineLen = 4000;
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; // Increased opacity
-    ctx.lineWidth = 2; // Thicker lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // Increased opacity
+    ctx.lineWidth = 4; // Thicker lines
     ctx.font = 'bold 24px monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -1271,7 +1271,7 @@ function drawLayLines(ctx) {
 
     ctx.save();
     ctx.setLineDash([10, 10]);
-    ctx.lineWidth = 3; // Thicker
+    ctx.lineWidth = 5; // Thicker
     const length = 3000;
 
     for (const idx of targets) {
@@ -1353,9 +1353,11 @@ function drawMarkZones(ctx) {
     }
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // More opaque
-    ctx.lineWidth = 3; // Thicker
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; // More opaque
+    ctx.lineWidth = 5; // Thicker
     ctx.setLineDash([15, 15]);
+    // Rotate slowly with the dashes
+    ctx.lineDashOffset = -state.time * 5;
 
     for (const i of indices) {
         if (i >= state.course.marks.length) continue;
