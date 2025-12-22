@@ -340,12 +340,12 @@ function drawParticles(ctx) {
             ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
             ctx.fill();
         } else if (p.type === 'wind') {
-            const opacity = Math.min(p.life, 1.0) * 0.15;
+            const opacity = Math.min(p.life, 1.0) * 0.35;
             ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x + Math.sin(state.wind.direction) * 40, p.y - Math.cos(state.wind.direction) * 40);
+            ctx.lineTo(p.x + Math.sin(state.wind.direction) * 60, p.y - Math.cos(state.wind.direction) * 60);
             ctx.stroke();
         }
     }
@@ -359,8 +359,8 @@ function drawWater(ctx) {
     const startX = Math.floor((state.camera.x - range) / gridSize) * gridSize;
     const startY = Math.floor((state.camera.y - range) / gridSize) * gridSize;
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 2.5;
 
     for (let x = startX; x < state.camera.x + range; x += gridSize) {
         for (let y = startY; y < state.camera.y + range; y += gridSize) {
@@ -372,8 +372,8 @@ function drawWater(ctx) {
              let wy = y + gridSize/2;
 
              ctx.beginPath();
-             ctx.moveTo(wx - 4, wy + bob);
-             ctx.quadraticCurveTo(wx, wy + bob - 3, wx + 4, wy + bob);
+             ctx.moveTo(wx - 8, wy + bob);
+             ctx.quadraticCurveTo(wx, wy + bob - 6, wx + 8, wy + bob);
              ctx.stroke();
         }
     }
