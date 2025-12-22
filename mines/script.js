@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const minesElement = document.querySelector('.font-mono.text-3xl.text-red-400');
     const smileyButton = document.getElementById('smiley-button');
     const cascadeButton = document.getElementById('cascade-button');
+    const musicButton = document.getElementById('music-toggle');
+    const soundButton = document.getElementById('sound-toggle');
     const difficultyRadios = document.querySelectorAll('input[name="difficulty"]');
 
     let width = 9;
@@ -35,17 +37,143 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Sound System
     let audioCtx;
+    let musicGainNode;
+    let musicEnabled = false;
+    let soundEnabled = true;
+    let musicInterval;
+    let isPlaying = false;
 
     function initAudio() {
         if (!audioCtx) {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            musicGainNode = audioCtx.createGain();
+            musicGainNode.connect(audioCtx.destination);
         }
         if (audioCtx.state === 'suspended') {
             audioCtx.resume();
         }
     }
 
+    function toggleMusic() {
+        initAudio();
+        musicEnabled = !musicEnabled;
+        const icon = musicButton.querySelector('span');
+
+        if (musicEnabled) {
+            icon.textContent = 'music_note';
+            musicButton.classList.add('bg-indigo-500/20', 'text-indigo-300');
+            startMusic();
+        } else {
+            icon.textContent = 'music_off';
+            musicButton.classList.remove('bg-indigo-500/20', 'text-indigo-300');
+            stopMusic();
+        }
+    }
+
+    function toggleSound() {
+        initAudio();
+        soundEnabled = !soundEnabled;
+        const icon = soundButton.querySelector('span');
+
+        if (soundEnabled) {
+            icon.textContent = 'volume_up';
+            soundButton.classList.add('bg-indigo-500/20', 'text-indigo-300');
+        } else {
+            icon.textContent = 'volume_off';
+            soundButton.classList.remove('bg-indigo-500/20', 'text-indigo-300');
+        }
+    }
+
+    musicButton.addEventListener('click', toggleMusic);
+    soundButton.addEventListener('click', toggleSound);
+
+    function startMusic() {
+        if (isPlaying) return;
+
+        // Restore volume
+        if (musicGainNode) {
+            musicGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+            musicGainNode.gain.setValueAtTime(1, audioCtx.currentTime);
+        }
+
+        isPlaying = true;
+        playMusicLoop();
+        musicInterval = setInterval(playMusicLoop, 4000); // 4 bars * 2 beats/bar * 0.5s/beat = 4s
+    }
+
+    function stopMusic() {
+        isPlaying = false;
+        clearInterval(musicInterval);
+
+        // Mute music immediately
+        if (musicGainNode) {
+            const now = audioCtx.currentTime;
+            musicGainNode.gain.cancelScheduledValues(now);
+            musicGainNode.gain.setValueAtTime(musicGainNode.gain.value, now);
+            musicGainNode.gain.linearRampToValueAtTime(0, now + 0.1);
+        }
+    }
+
+    function playMusicLoop() {
+        if (!musicEnabled || !audioCtx) return;
+        const now = audioCtx.currentTime;
+        const tempo = 120;
+        const beatTime = 60 / tempo;
+
+        // Bass Line (Triangle)
+        // Simple C-G-A-F progression
+        const bassNotes = [
+            { freq: 130.81, time: 0, dur: 2 }, // C3
+            { freq: 196.00, time: 2, dur: 2 }, // G3
+            { freq: 220.00, time: 4, dur: 2 }, // A3
+            { freq: 174.61, time: 6, dur: 2 }  // F3
+        ];
+
+        bassNotes.forEach(note => {
+            playTone(note.freq, now + note.time * beatTime, note.dur * beatTime, 'triangle', 0.15);
+        });
+
+        // Melody (Square) - Arpeggios
+        // C Major: C E G E
+        // G Major: B D G D
+        // A Minor: A C E C
+        // F Major: F A C A
+        const melodyNotes = [
+            // Bar 1: C Major
+            { freq: 523.25, time: 0 }, { freq: 659.25, time: 0.5 }, { freq: 783.99, time: 1 }, { freq: 659.25, time: 1.5 },
+            // Bar 2: G Major (B3 D4 G4 D4)
+            { freq: 493.88, time: 2 }, { freq: 587.33, time: 2.5 }, { freq: 783.99, time: 3 }, { freq: 587.33, time: 3.5 },
+            // Bar 3: A Minor
+            { freq: 440.00, time: 4 }, { freq: 523.25, time: 4.5 }, { freq: 659.25, time: 5 }, { freq: 523.25, time: 5.5 },
+            // Bar 4: F Major
+            { freq: 349.23, time: 6 }, { freq: 440.00, time: 6.5 }, { freq: 523.25, time: 7 }, { freq: 440.00, time: 7.5 },
+        ];
+
+        melodyNotes.forEach(note => {
+            playTone(note.freq, now + note.time * beatTime, 0.25 * beatTime, 'square', 0.05);
+        });
+    }
+
+    function playTone(freq, time, duration, type, vol) {
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        // Connect to master music gain node instead of destination
+        osc.connect(gainNode);
+        gainNode.connect(musicGainNode);
+
+        osc.type = type;
+        osc.frequency.value = freq;
+
+        gainNode.gain.setValueAtTime(vol, time);
+        gainNode.gain.linearRampToValueAtTime(0, time + duration); // decay
+
+        osc.start(time);
+        osc.stop(time + duration);
+    }
+
     function playSound(type) {
+        if (!soundEnabled) return;
         initAudio();
         const osc = audioCtx.createOscillator();
         const gainNode = audioCtx.createGain();
