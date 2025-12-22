@@ -86,7 +86,7 @@ const state = {
     time: 0,
     race: {
         status: 'prestart', // 'prestart', 'racing', 'finished'
-        timer: 60.0,
+        timer: 30.0,
         leg: 0, // 0=Start, 1=Upwind, 2=Downwind, 3=Upwind, 4=Finish
         ocs: false,
         penalty: false,
@@ -1656,8 +1656,8 @@ state.boat.y = -Math.cos(state.wind.direction) * startDist;
 // If we want to start DOWNWIND, we go -UPWIND.
 // ux = sin(dir), uy = -cos(dir).
 // So start pos = (-ux * 150, -uy * 150).
-state.boat.x = -Math.sin(state.wind.direction) * 150;
-state.boat.y = Math.cos(state.wind.direction) * 150;
+state.boat.x = -Math.sin(state.wind.direction) * 450;
+state.boat.y = Math.cos(state.wind.direction) * 450;
 
 // Face Upwind
 state.boat.heading = state.wind.direction;
