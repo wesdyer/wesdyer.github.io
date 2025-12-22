@@ -405,17 +405,27 @@ function draw() {
     ctx.restore();
 
     // UI Updates
-    const windArrow = document.getElementById('wind-indicator');
-    if (windArrow) {
-        // Arrow icon points Down by default. We want it to point Up at 0 rotation.
-        // So we add PI (180 deg) to the rotation.
-        let visualDir = state.wind.direction - state.camera.rotation + Math.PI;
-        windArrow.style.transform = `rotate(${visualDir}rad)`;
+    const compassRose = document.getElementById('hud-compass-rose');
+    if (compassRose) {
+        compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
     }
-    const speedDisplay = document.getElementById('speed-display');
-    if (speedDisplay) {
-        // Convert to "knots" (just a scalar of internal speed)
-        speedDisplay.textContent = (state.boat.speed * 2).toFixed(1);
+
+    const windArrow = document.getElementById('hud-wind-arrow');
+    if (windArrow) {
+        windArrow.style.transform = `rotate(${state.wind.direction}rad)`;
+    }
+
+    const speedEl = document.getElementById('hud-speed');
+    if (speedEl) speedEl.textContent = (state.boat.speed * 2).toFixed(1);
+
+    const windSpeedEl = document.getElementById('hud-wind-speed');
+    if (windSpeedEl) windSpeedEl.textContent = CONFIG.windSpeed.toFixed(1);
+
+    const headingEl = document.getElementById('hud-heading');
+    if (headingEl) {
+        let deg = (state.boat.heading * 180 / Math.PI) % 360;
+        if (deg < 0) deg += 360;
+        headingEl.textContent = Math.round(deg).toString().padStart(3, '0') + '°';
     }
 }
 
