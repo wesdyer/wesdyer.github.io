@@ -83,6 +83,7 @@ const state = {
         ArrowDown: false,
         Shift: false,
     },
+    paused: false,
     time: 0,
     race: {
         status: 'prestart', // 'prestart', 'racing', 'finished'
@@ -118,7 +119,8 @@ const UI = {
     timer: document.getElementById('hud-timer'),
     startTime: document.getElementById('hud-start-time'),
     message: document.getElementById('hud-message'),
-    waypointArrow: document.getElementById('hud-waypoint-arrow')
+    waypointArrow: document.getElementById('hud-waypoint-arrow'),
+    pauseScreen: document.getElementById('pause-screen')
 };
 
 let minimapCtx = null;
@@ -142,6 +144,18 @@ window.addEventListener('keydown', (e) => {
     }
     if (e.key === ' ' || e.code === 'Space') {
         state.boat.spinnaker = !state.boat.spinnaker;
+    }
+    if (e.key === 'Escape') {
+        state.paused = !state.paused;
+        if (UI.pauseScreen) {
+            if (state.paused) {
+                UI.pauseScreen.classList.remove('hidden');
+            } else {
+                UI.pauseScreen.classList.add('hidden');
+                // Reset lastTime to avoid huge dt jump on resume
+                lastTime = 0;
+            }
+        }
     }
 });
 
@@ -1648,8 +1662,10 @@ function loop(timestamp) {
     // Clamp dt to avoid huge jumps (e.g. max 0.1s)
     const safeDt = Math.min(dt, 0.1);
 
-    update(safeDt);
-    draw();
+    if (!state.paused) {
+        update(safeDt);
+        draw();
+    }
     requestAnimationFrame(loop);
 }
 
