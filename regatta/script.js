@@ -125,8 +125,42 @@ const UI = {
     startTime: document.getElementById('hud-start-time'),
     message: document.getElementById('hud-message'),
     waypointArrow: document.getElementById('hud-waypoint-arrow'),
-    pauseScreen: document.getElementById('pause-screen')
+    pauseScreen: document.getElementById('pause-screen'),
+    helpScreen: document.getElementById('help-screen'),
+    helpButton: document.getElementById('help-button'),
+    closeHelp: document.getElementById('close-help'),
+    resumeHelp: document.getElementById('resume-help')
 };
+
+function toggleHelp(show) {
+    if (!UI.helpScreen) return;
+    const isVisible = !UI.helpScreen.classList.contains('hidden');
+    const shouldShow = show !== undefined ? show : !isVisible;
+
+    if (shouldShow) {
+        state.paused = true;
+        UI.helpScreen.classList.remove('hidden');
+        if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
+    } else {
+        UI.helpScreen.classList.add('hidden');
+        state.paused = false;
+        lastTime = 0;
+    }
+}
+
+if (UI.helpButton) {
+    UI.helpButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleHelp(true);
+        UI.helpButton.blur();
+    });
+}
+if (UI.closeHelp) {
+    UI.closeHelp.addEventListener('click', () => toggleHelp(false));
+}
+if (UI.resumeHelp) {
+    UI.resumeHelp.addEventListener('click', () => toggleHelp(false));
+}
 
 let minimapCtx = null;
 
@@ -164,15 +198,22 @@ window.addEventListener('keydown', (e) => {
             state.boat.manualSailAngle = Math.abs(state.boat.sailAngle);
         }
     }
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+        toggleHelp();
+    }
     if (e.key === 'Escape') {
-        state.paused = !state.paused;
-        if (UI.pauseScreen) {
-            if (state.paused) {
-                UI.pauseScreen.classList.remove('hidden');
-            } else {
-                UI.pauseScreen.classList.add('hidden');
-                // Reset lastTime to avoid huge dt jump on resume
-                lastTime = 0;
+        if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) {
+            toggleHelp(false);
+        } else {
+            state.paused = !state.paused;
+            if (UI.pauseScreen) {
+                if (state.paused) {
+                    UI.pauseScreen.classList.remove('hidden');
+                } else {
+                    UI.pauseScreen.classList.add('hidden');
+                    // Reset lastTime to avoid huge dt jump on resume
+                    lastTime = 0;
+                }
             }
         }
     }
