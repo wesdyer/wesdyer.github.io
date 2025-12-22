@@ -539,26 +539,28 @@ function draw() {
     ctx.restore();
 
     // UI Updates
-    const windArrow = document.getElementById('wind-indicator');
-    if (windArrow) {
-        // Arrow icon points Down by default. We want it to point Up at 0 rotation.
-        // So we add PI (180 deg) to the rotation.
-        let visualDir = state.wind.direction - state.camera.rotation + Math.PI;
-        windArrow.style.transform = `rotate(${visualDir}rad)`;
-    }
-    const speedDisplay = document.getElementById('speed-display');
-    if (speedDisplay) {
-        // Convert to "knots" (just a scalar of internal speed)
-        // Since we are now deriving speed from knots, and internal is knots * 0.5
-        // Display should be speed * 2
-        speedDisplay.textContent = (state.boat.speed * 2).toFixed(1);
+    const hudCompassRose = document.getElementById('hud-compass-rose');
+    if (hudCompassRose) {
+        // Rotate compass rose opposite to camera/boat heading so "North" points to actual North
+        hudCompassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
     }
 
-    // Update Spinnaker Status
-    const spinStatus = document.getElementById('spinnaker-status');
-    if (spinStatus) {
-        spinStatus.textContent = state.boat.spinnaker ? "SPINNAKER: ON" : "SPINNAKER: OFF";
-        spinStatus.className = state.boat.spinnaker ? "font-bold text-green-600 text-xs" : "font-bold text-slate-400 text-xs";
+    const hudWindArrow = document.getElementById('hud-wind-arrow');
+    if (hudWindArrow) {
+        // Wind arrow is inside the compass rose, so we just rotate it to the absolute wind direction
+        // The compass rose rotation handles the camera relative adjustment
+        hudWindArrow.style.transform = `rotate(${state.wind.direction}rad)`;
+    }
+
+    const hudSpeed = document.getElementById('hud-speed');
+    if (hudSpeed) {
+        // Convert to "knots" (internal speed * 2)
+        hudSpeed.textContent = (state.boat.speed * 2).toFixed(1);
+    }
+
+    const hudWindSpeed = document.getElementById('hud-wind-speed');
+    if (hudWindSpeed) {
+        hudWindSpeed.textContent = J111_POLARS.windSpeed;
     }
 }
 
