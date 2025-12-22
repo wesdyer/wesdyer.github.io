@@ -514,12 +514,14 @@ function drawParticles(ctx) {
             ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
             ctx.fill();
         } else if (p.type === 'wind') {
-            const opacity = Math.min(p.life, 1.0) * 0.35;
+            const windFactor = state.wind.speed / 10;
+            const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
             ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1 + windFactor;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x - Math.sin(state.wind.direction) * 60, p.y + Math.cos(state.wind.direction) * 60);
+            const tailLength = 30 + state.wind.speed * 4;
+            ctx.lineTo(p.x - Math.sin(state.wind.direction) * tailLength, p.y + Math.cos(state.wind.direction) * tailLength);
             ctx.stroke();
         }
     }
@@ -561,13 +563,15 @@ function drawWater(ctx) {
              // Draw little wave glyphs
              // Use unshifted 'x' and 'y' for noise so the shape travels with the wave
              const noise = Math.sin(x * 0.12 + y * 0.17);
-             const bob = Math.sin(state.time * 2 + noise * 10) * 3;
+             const windScale = Math.max(0.5, state.wind.speed / 10);
+             const bob = Math.sin(state.time * 2 + noise * 10) * (3 * windScale);
 
              // Add some randomness
              const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
              const randX = (seed - Math.floor(seed)) * 40 - 20;
              const randY = (Math.cos(seed) * 0.5 + 0.5) * 40 - 20;
-             const scale = 0.8 + ((seed * 10) % 1) * 0.4; // 0.8 to 1.2
+             let scale = (0.8 + ((seed * 10) % 1) * 0.4); // 0.8 to 1.2
+             scale *= windScale;
 
              ctx.save();
              ctx.translate(wx + gridSize/2 + randX, wy + gridSize/2 + randY);
