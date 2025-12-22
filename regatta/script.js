@@ -998,9 +998,18 @@ function drawActiveGateLine(ctx) {
     ctx.lineTo(m2.x, m2.y);
 
     // Styling: Glowing dashed orange line
-    ctx.shadowColor = '#fdba74'; // Orange-300
+    let shadowColor = '#fdba74'; // Orange-300
+    let strokeColor = 'rgba(249, 115, 22, 0.7)'; // Orange-500
+
+    // Use a different color for the start line before the race starts
+    if (state.race.leg === 0 && state.race.status === 'prestart') {
+        shadowColor = '#fde047'; // Yellow-300
+        strokeColor = 'rgba(234, 179, 8, 0.7)'; // Yellow-600
+    }
+
+    ctx.shadowColor = shadowColor;
     ctx.shadowBlur = 8;
-    ctx.strokeStyle = 'rgba(249, 115, 22, 0.7)'; // Orange-500
+    ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 3;
     ctx.setLineDash([20, 15]);
     ctx.lineDashOffset = dashOffset;
