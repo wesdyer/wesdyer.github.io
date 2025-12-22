@@ -9,6 +9,44 @@ const CONFIG = {
     sailColor: '#f1f5f9',
 };
 
+// J/111 Polar Data (10 Knots Wind)
+// Source: ORC Certificate data & Estimations for Non-Spinnaker
+const J111_POLARS = {
+    windSpeed: 10,
+    angles: [0, 30, 38, 45, 52, 60, 75, 90, 110, 120, 135, 150, 180],
+    // Speeds in Knots
+    spinnaker: [
+        0.00, // 0
+        0.00, // 30 (Pinch/Luff)
+        6.66, // 38 (Beat)
+        7.00, // 45
+        7.38, // 52
+        7.56, // 60
+        7.70, // 75
+        7.89, // 90 (Reach)
+        8.01, // 110
+        8.01, // 120
+        7.72, // 135
+        6.99, // 150
+        6.00  // 180 (Run)
+    ],
+    nonSpinnaker: [
+        0.00, // 0
+        0.00, // 30
+        6.66, // 38
+        7.00, // 45
+        7.38, // 52
+        7.56, // 60
+        7.70, // 75
+        7.89, // 90
+        7.20, // 110 (Est)
+        6.80, // 120 (Est)
+        6.00, // 135 (Est)
+        5.20, // 150 (Est)
+        4.50  // 180 (Est)
+    ]
+};
+
 // Game State
 const state = {
     boat: {
@@ -16,11 +54,12 @@ const state = {
         y: 0,
         heading: 0, // Radians, 0 = North (Up)
         velocity: { x: 0, y: 0 },
-        speed: 0,
+        speed: 0, // Internal units (approx Knots / 2)
         sailAngle: 0, // Radians relative to boat
         boomSide: 1, // 1 for right, -1 for left
         targetBoomSide: 1,
         luffing: false,
+        spinnaker: true, // Default to Performance Mode
     },
     camera: {
         x: 0,
@@ -69,6 +108,9 @@ window.addEventListener('keydown', (e) => {
         state.camera.y = state.boat.y;
         state.camera.rotation = 0;
     }
+    if (e.key === ' ' || e.code === 'Space') {
+        state.boat.spinnaker = !state.boat.spinnaker;
+    }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -82,6 +124,21 @@ function normalizeAngle(angle) {
     while (angle > Math.PI) angle -= 2 * Math.PI;
     while (angle < -Math.PI) angle += 2 * Math.PI;
     return angle;
+}
+
+function getTargetSpeed(twaRadians, useSpinnaker) {
+    const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
+    const angles = J111_POLARS.angles;
+    const speeds = useSpinnaker ? J111_POLARS.spinnaker : J111_POLARS.nonSpinnaker;
+
+    // Find interpolation interval
+    for (let i = 0; i < angles.length - 1; i++) {
+        if (twaDeg >= angles[i] && twaDeg <= angles[i+1]) {
+            const t = (twaDeg - angles[i]) / (angles[i+1] - angles[i]);
+            return speeds[i] + t * (speeds[i+1] - speeds[i]);
+        }
+    }
+    return speeds[speeds.length - 1]; // Clamp to last value
 }
 
 // Particle System
@@ -152,35 +209,22 @@ function update() {
     // Angle of Attack (0 to PI)
     let angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
 
-    // Thrust Calculation
-    let thrust = 0;
-    // Irons: +/- 40 degrees
-    const ironsLimit = 40 * (Math.PI / 180);
+    // Determine target speed from polars
+    // Note: Polars are in Knots. We scale down to game units (approx 0.5 ratio)
+    let targetKnots = getTargetSpeed(angleToWind, state.boat.spinnaker);
+    let targetGameSpeed = targetKnots * 0.5;
 
-    if (angleToWind < ironsLimit) {
-        // In irons - slow down fast
-        thrust = 0;
+    // Determine Luffing state (for visual/logic flags, not speed as speed comes from polar now)
+    // Polar says 0 speed at < 30 deg, so checks match
+    if (targetKnots < 1.0) {
         state.boat.luffing = true;
     } else {
         state.boat.luffing = false;
-        // Simple thrust curve: Max at 90 (Beam Reach), Decent at 180 (Run), Poor at 45 (Close Haul)
-        if (angleToWind > Math.PI / 2) {
-             // 90 to 180
-             let t = (angleToWind - Math.PI/2) / (Math.PI/2);
-             thrust = 1.0 - (t * 0.4);
-        } else {
-            // 40 to 90
-             let t = (angleToWind - ironsLimit) / (Math.PI/2 - ironsLimit);
-             thrust = 0.3 + (t * 0.7);
-        }
     }
 
-    // Apply simplified drag
-    state.boat.speed *= 0.99; // Water friction
-    state.boat.speed += thrust * 0.03; // Acceleration
-
-    // Cap speed
-    if (state.boat.speed > 6) state.boat.speed = 6;
+    // Smoothly interpolate current speed to target speed (acceleration/deceleration)
+    // Momentum factor: 0.98 (retains 98% of old speed), 0.02 (adds 2% of new)
+    state.boat.speed = state.boat.speed * 0.98 + targetGameSpeed * 0.02;
 
     // Move Boat
     state.boat.x += boatDirX * state.boat.speed;
@@ -415,7 +459,16 @@ function draw() {
     const speedDisplay = document.getElementById('speed-display');
     if (speedDisplay) {
         // Convert to "knots" (just a scalar of internal speed)
+        // Since we are now deriving speed from knots, and internal is knots * 0.5
+        // Display should be speed * 2
         speedDisplay.textContent = (state.boat.speed * 2).toFixed(1);
+    }
+
+    // Update Spinnaker Status
+    const spinStatus = document.getElementById('spinnaker-status');
+    if (spinStatus) {
+        spinStatus.textContent = state.boat.spinnaker ? "SPINNAKER: ON" : "SPINNAKER: OFF";
+        spinStatus.className = state.boat.spinnaker ? "font-bold text-green-600 text-xs" : "font-bold text-slate-400 text-xs";
     }
 }
 
