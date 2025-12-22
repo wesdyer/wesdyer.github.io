@@ -359,7 +359,8 @@ function checkLineIntersection(Ax, Ay, Bx, By, Cx, Cy, Dx, Dy) {
     const t = (qpx * sY - qpy * sX) / rxs;
     const u = (qpx * rY - qpy * rX) / rxs;
 
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+    const epsilon = 1e-5;
+    if (t >= -epsilon && t <= 1 + epsilon && u >= -epsilon && u <= 1 + epsilon) {
         return { t, u };
     }
     return null;
