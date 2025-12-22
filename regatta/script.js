@@ -1389,6 +1389,67 @@ function drawLadderLines(ctx) {
     if (state.race.status === 'prestart' || state.race.status === 'finished') return;
     if (!state.course || !state.course.marks) return;
 
+    // Helper to transform World Point to Screen Point
+    const cx = state.camera.x;
+    const cy = state.camera.y;
+    const rot = -state.camera.rotation;
+    const cosR = Math.cos(rot);
+    const sinR = Math.sin(rot);
+    const hw = canvas.width / 2;
+    const hh = canvas.height / 2;
+
+    const worldToScreen = (wx, wy) => {
+        const dx = wx - cx;
+        const dy = wy - cy;
+        return {
+            x: dx * cosR - dy * sinR + hw,
+            y: dx * sinR + dy * cosR + hh
+        };
+    };
+
+    const screenToWorld = (sx, sy) => {
+        const dx = sx - hw;
+        const dy = sy - hh;
+        return {
+            x: dx * cosR + dy * sinR + cx,
+            y: -dx * sinR + dy * cosR + cy
+        };
+    };
+
+    const clipLineToRect = (p1, p2, minX, minY, maxX, maxY) => {
+        let t0 = 0.0;
+        let t1 = 1.0;
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+
+        const checks = [
+            { p: -dx, q: p1.x - minX }, // Left
+            { p: dx,  q: maxX - p1.x }, // Right
+            { p: -dy, q: p1.y - minY }, // Top
+            { p: dy,  q: maxY - p1.y }  // Bottom
+        ];
+
+        for (const {p, q} of checks) {
+            if (p === 0) {
+                if (q < 0) return null;
+            } else {
+                const t = q / p;
+                if (p < 0) {
+                    if (t > t1) return null;
+                    if (t > t0) t0 = t;
+                } else {
+                    if (t < t0) return null;
+                    if (t < t1) t1 = t;
+                }
+            }
+        }
+        if (t0 > t1) return null;
+        return {
+            p1: { x: p1.x + t0 * dx, y: p1.y + t0 * dy },
+            p2: { x: p1.x + t1 * dx, y: p1.y + t1 * dy }
+        };
+    };
+
     // Use base direction for the grid to keep it stable
     const windDir = state.wind.baseDirection;
     const wx = Math.sin(windDir);
@@ -1521,14 +1582,21 @@ function drawLadderLines(ctx) {
             // Label: Distance to NEXT gate
             const distToGate = Math.abs(endProj - p) * 0.2;
             if (distToGate > 50) {
-                // Draw label at some offset, clamped to line
-                // Center of line
-                const midX = (x1 + x2) / 2;
-                const midY = (y1 + y2) / 2;
-
-                // If line is too short, maybe don't draw label?
                 if (finalMax - finalMin > 200) {
-                     ctx.fillText(Math.round(distToGate) + 'm', midX, midY);
+                    // Calculate visible segment on screen
+                    const s1 = worldToScreen(x1, y1);
+                    const s2 = worldToScreen(x2, y2);
+                    const padding = 50;
+
+                    const clipped = clipLineToRect(s1, s2, padding, padding, canvas.width - padding, canvas.height - padding);
+
+                    if (clipped) {
+                        const smidX = (clipped.p1.x + clipped.p2.x) / 2;
+                        const smidY = (clipped.p1.y + clipped.p2.y) / 2;
+                        const wmid = screenToWorld(smidX, smidY);
+
+                        ctx.fillText(Math.round(distToGate) + 'm', wmid.x, wmid.y);
+                    }
                 }
             }
         }
