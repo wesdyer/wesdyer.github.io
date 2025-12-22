@@ -1592,12 +1592,10 @@ function draw() {
         }
 
         if (UI.vmg) {
-            // Calculate VMG = Speed * cos(Heading - Bearing to Waypoint)
-            // state.race.nextWaypoint.angle is the bearing (in radians)
-            // state.boat.heading is boat heading (in radians)
-            const bearing = state.race.nextWaypoint.angle;
-            const diff = normalizeAngle(state.boat.heading - bearing);
-            const vmg = (state.boat.speed * 4) * Math.cos(diff); // Convert speed to knots first
+            // Calculate VMG = Speed * cos(True Wind Angle)
+            // VMG is velocity made good directly upwind or downwind
+            const angleToWind = normalizeAngle(state.boat.heading - state.wind.direction);
+            const vmg = (state.boat.speed * 4) * Math.cos(angleToWind);
             UI.vmg.textContent = vmg.toFixed(1);
         }
 
