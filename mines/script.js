@@ -32,6 +32,19 @@ document.addEventListener('DOMContentLoaded', () => {
         8: 'text-teal-400'
     };
 
+    function updateDifficultyUI() {
+        difficultyRadios.forEach(radio => {
+            const label = radio.parentElement;
+            if (radio.checked) {
+                label.classList.remove('hover:text-indigo-300', 'text-slate-400', 'font-medium');
+                label.classList.add('text-white', 'font-bold', 'bg-gradient-to-r', 'from-indigo-500', 'to-purple-600', 'shadow-md', 'transform', 'hover:scale-105');
+            } else {
+                label.classList.add('hover:text-indigo-300', 'text-slate-400', 'font-medium');
+                label.classList.remove('text-white', 'font-bold', 'bg-gradient-to-r', 'from-indigo-500', 'to-purple-600', 'shadow-md', 'transform', 'hover:scale-105');
+            }
+        });
+    }
+
     function updateDifficulty(difficulty) {
         const settings = difficultySettings[difficulty];
         width = settings.width;
@@ -255,6 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     difficultyRadios.forEach(radio => {
         radio.addEventListener('change', (e) => {
+            updateDifficultyUI();
             updateDifficulty(e.target.nextElementSibling.textContent);
         });
     });
@@ -265,4 +279,5 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     updateDifficulty('Medium');
+    updateDifficultyUI();
 });
