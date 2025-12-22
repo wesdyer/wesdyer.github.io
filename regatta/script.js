@@ -138,8 +138,14 @@ resize();
 
 // Input Handling
 window.addEventListener('keydown', (e) => {
-    if (state.keys.hasOwnProperty(e.key)) {
-        state.keys[e.key] = true;
+    let key = e.key;
+    if (key === 'a' || key === 'A') key = 'ArrowLeft';
+    if (key === 'd' || key === 'D') key = 'ArrowRight';
+    if (key === 'w' || key === 'W') key = 'ArrowUp';
+    if (key === 's' || key === 'S') key = 'ArrowDown';
+
+    if (state.keys.hasOwnProperty(key)) {
+        state.keys[key] = true;
     }
     if (e.key === 'Enter') {
         const modes = ['heading', 'north', 'wind'];
@@ -184,8 +190,14 @@ window.addEventListener('keydown', (e) => {
 });
 
 window.addEventListener('keyup', (e) => {
-    if (state.keys.hasOwnProperty(e.key)) {
-        state.keys[e.key] = false;
+    let key = e.key;
+    if (key === 'a' || key === 'A') key = 'ArrowLeft';
+    if (key === 'd' || key === 'D') key = 'ArrowRight';
+    if (key === 'w' || key === 'W') key = 'ArrowUp';
+    if (key === 's' || key === 'S') key = 'ArrowDown';
+
+    if (state.keys.hasOwnProperty(key)) {
+        state.keys[key] = false;
     }
 });
 
