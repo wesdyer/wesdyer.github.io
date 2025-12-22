@@ -320,8 +320,8 @@ function update() {
     }
 
     // Smoothly interpolate current speed to target speed (acceleration/deceleration)
-    // Momentum factor: 0.98 (retains 98% of old speed), 0.02 (adds 2% of new)
-    state.boat.speed = state.boat.speed * 0.99 + targetGameSpeed * 0.01;
+    // Momentum factor: 0.995 (retains 99.5% of old speed), 0.005 (adds 0.5% of new)
+    state.boat.speed = state.boat.speed * 0.995 + targetGameSpeed * 0.005;
 
     if (isTurning) {
         state.boat.speed *= CONFIG.turnPenalty;
