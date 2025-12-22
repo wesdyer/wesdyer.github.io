@@ -570,7 +570,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (flags === bombAmount && revealedCount === (width * height - bombAmount)) {
-             if (!isGameOver) playSound('win'); // Ensure it plays only once when transitioning to win
+             if (!isGameOver) {
+                 playSound('win'); // Ensure it plays only once when transitioning to win
+                 confetti({
+                    particleCount: 100,
+                    spread: 70,
+                    origin: { y: 0.6 }
+                 });
+             }
              smileyButton.querySelector('span').textContent = 'sentiment_very_satisfied';
              isGameOver = true;
              clearInterval(timer);
