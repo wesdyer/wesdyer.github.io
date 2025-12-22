@@ -1394,6 +1394,21 @@ function drawLayLines(ctx) {
 function drawMarkZones(ctx) {
     if (!state.showNavAids) return;
     if (!state.course || !state.course.marks) return;
+    if (state.race.status === 'finished') return;
+
+    // Determine active mark indices for zones
+    // Leg 1 (Upwind) -> 2, 3
+    // Leg 2 (Downwind) -> 0, 1
+    // Leg 3 (Upwind) -> 2, 3
+    // Others (0, 4) -> None
+    let activeIndices = [];
+    if (state.race.leg === 1 || state.race.leg === 3) {
+        activeIndices = [2, 3];
+    } else if (state.race.leg === 2) {
+        activeIndices = [0, 1];
+    }
+
+    if (activeIndices.length === 0) return;
 
     ctx.save();
     ctx.lineWidth = 5; // Thicker
@@ -1403,15 +1418,31 @@ function drawMarkZones(ctx) {
 
     const zoneRadius = 165;
 
-    for (const m of state.course.marks) {
-        // Only skip mark zones for start/finish marks if we are in Start (Leg 0) or Finish (Leg 4) phase
-        if (m.type === 'start' && (state.race.leg === 0 || state.race.leg === 4)) continue;
+    // Calculate Boat Segment (Centerline from Bow to Stern)
+    const h = state.boat.heading;
+    const sinH = Math.sin(h);
+    const cosH = Math.cos(h);
 
-        const dx = state.boat.x - m.x;
-        const dy = state.boat.y - m.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+    // Bow (0, -25) relative
+    const bowX = state.boat.x + 25 * sinH;
+    const bowY = state.boat.y - 25 * cosH;
 
-        if (dist < zoneRadius) {
+    // Stern (0, 30) relative
+    const sternX = state.boat.x - 30 * sinH;
+    const sternY = state.boat.y + 30 * cosH;
+
+    for (const idx of activeIndices) {
+        if (idx >= state.course.marks.length) continue;
+        const m = state.course.marks[idx];
+
+        // Check if ANY part of the boat is in the zone
+        // We approximate the boat as a line segment from Bow to Stern
+        const closest = getClosestPointOnSegment(m.x, m.y, bowX, bowY, sternX, sternY);
+        const dx = closest.x - m.x;
+        const dy = closest.y - m.y;
+        const distSq = dx * dx + dy * dy;
+
+        if (distSq < zoneRadius * zoneRadius) {
             ctx.strokeStyle = '#facc15'; // Bright Yellow
         } else {
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; // More opaque
