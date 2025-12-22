@@ -6,6 +6,87 @@ document.addEventListener('DOMContentLoaded', () => {
     const smileyButton = document.querySelector('.z-10.size-16.rounded-2xl');
     const difficultyRadios = document.querySelectorAll('input[name="difficulty"]');
 
+    let audioCtx;
+    try {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+        console.warn('AudioContext not supported');
+    }
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume().catch(() => {});
+        }
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+
+            gain.gain.setValueAtTime(0.1, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+
+            osc.start(now);
+            osc.stop(now + 0.1);
+        } else if (type === 'bomb') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(150, now);
+            osc.frequency.exponentialRampToValueAtTime(40, now + 0.8);
+
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+
+            osc.start(now);
+            osc.stop(now + 0.8);
+        } else if (type === 'flag') {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(400, now);
+
+            gain.gain.setValueAtTime(0.05, now);
+            gain.gain.linearRampToValueAtTime(0, now + 0.05);
+
+            osc.start(now);
+            osc.stop(now + 0.05);
+        } else if (type === 'win') {
+            const notes = [261.63, 329.63, 392.00, 523.25]; // C Major
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+
+                const startTime = now + (i * 0.1);
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.1, startTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.4);
+
+                osc.start(startTime);
+                osc.stop(startTime + 0.4);
+            });
+        }
+    }
+
     let width = 9;
     let height = 9;
     let bombAmount = 10;
@@ -148,10 +229,12 @@ document.addEventListener('DOMContentLoaded', () => {
             let total = square.getAttribute('data');
             if (total != 0) {
                 reveal(square);
+                playSound('click');
                 checkForWin();
                 return;
             }
             reveal(square);
+            playSound('click');
             checkSquare(square, currentId);
         }
         checkForWin();
@@ -159,19 +242,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function addFlag(square) {
         if (isGameOver) return;
-        if (!square.classList.contains('checked') && (flags < bombAmount)) {
-            if (!square.classList.contains('flag')) {
+        if (square.classList.contains('checked')) return;
+
+        if (!square.classList.contains('flag')) {
+            if (flags < bombAmount) {
                 square.classList.add('flag');
                 square.innerHTML = '<span class="material-symbols-outlined text-yellow-300 text-2xl drop-shadow-md scale-90 group-hover:scale-110 transition-transform fill-current animate-pulse">flag</span>';
                 flags++;
                 minesElement.textContent = (bombAmount - flags).toString().padStart(2, '0');
                 checkForWin();
-            } else {
-                square.classList.remove('flag');
-                square.innerHTML = '';
-                flags--;
-                minesElement.textContent = (bombAmount - flags).toString().padStart(2, '0');
+                playSound('flag');
             }
+        } else {
+            square.classList.remove('flag');
+            square.innerHTML = '';
+            flags--;
+            minesElement.textContent = (bombAmount - flags).toString().padStart(2, '0');
+            playSound('flag');
         }
     }
 
@@ -224,6 +311,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function gameOver(square) {
+        playSound('bomb');
         smileyButton.querySelector('span').textContent = 'sentiment_very_dissatisfied';
         isGameOver = true;
         clearInterval(timer);
@@ -246,6 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (matches === bombAmount) {
                 smileyButton.querySelector('span').textContent = 'sentiment_very_satisfied';
+                playSound('win');
                 isGameOver = true;
                 clearInterval(timer);
             }
@@ -260,6 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (revealedCount === (width * height - bombAmount)) {
              smileyButton.querySelector('span').textContent = 'sentiment_very_satisfied';
+             playSound('win');
              isGameOver = true;
              clearInterval(timer);
         }
