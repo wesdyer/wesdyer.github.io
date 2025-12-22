@@ -340,12 +340,12 @@ function drawParticles(ctx) {
             ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
             ctx.fill();
         } else if (p.type === 'wind') {
-            const opacity = Math.min(p.life, 1.0) * 0.15;
+            const opacity = Math.min(p.life, 1.0) * 0.5;
             ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 2.5;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x + Math.sin(state.wind.direction) * 40, p.y - Math.cos(state.wind.direction) * 40);
+            ctx.lineTo(p.x + Math.sin(state.wind.direction) * 60, p.y - Math.cos(state.wind.direction) * 60);
             ctx.stroke();
         }
     }
