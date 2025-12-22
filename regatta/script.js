@@ -844,14 +844,6 @@ function drawMinimap() {
         if (m.y > maxY) maxY = m.y;
     }
 
-    // Include Boundary in bounds
-    if (state.course.boundary) {
-        const b = state.course.boundary;
-        if (b.x - b.radius < minX) minX = b.x - b.radius;
-        if (b.x + b.radius > maxX) maxX = b.x + b.radius;
-        if (b.y - b.radius < minY) minY = b.y - b.radius;
-        if (b.y + b.radius > maxY) maxY = b.y + b.radius;
-    }
 
     // Add padding
     const padding = 200;
