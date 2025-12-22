@@ -55,6 +55,8 @@ const state = {
         velocity: { x: 0, y: 0 },
         speed: 0, // Internal units (approx Knots / 2)
         sailAngle: 0, // Radians relative to boat
+        manualTrim: false,
+        manualSailAngle: 0, // Absolute value (magnitude) of sail angle
         boomSide: 1, // 1 for right, -1 for left
         targetBoomSide: 1,
         luffing: false,
@@ -115,6 +117,7 @@ const UI = {
     speed: document.getElementById('hud-speed'),
     windSpeed: document.getElementById('hud-wind-speed'),
     windAngle: document.getElementById('hud-wind-angle'),
+    trimMode: document.getElementById('hud-trim-mode'),
     vmg: document.getElementById('hud-vmg'),
     timer: document.getElementById('hud-timer'),
     startTime: document.getElementById('hud-start-time'),
@@ -144,6 +147,14 @@ window.addEventListener('keydown', (e) => {
     }
     if (e.key === ' ' || e.code === 'Space') {
         state.boat.spinnaker = !state.boat.spinnaker;
+    }
+    if (e.key === 'Tab') {
+        e.preventDefault();
+        state.boat.manualTrim = !state.boat.manualTrim;
+        if (state.boat.manualTrim) {
+            // Initialize manual angle to current actual angle magnitude to avoid jumps
+            state.boat.manualSailAngle = Math.abs(state.boat.sailAngle);
+        }
     }
     if (e.key === 'Escape') {
         state.paused = !state.paused;
@@ -631,7 +642,7 @@ function update(dt) {
     // Normalize Heading
     state.boat.heading = normalizeAngle(state.boat.heading);
 
-    // --- Physics ---
+    // --- Physics & Sail Logic ---
 
     // Wind Direction (Vector)
     const windDirX = Math.sin(state.wind.direction);
@@ -644,11 +655,49 @@ function update(dt) {
     // Angle of Attack (0 to PI)
     let angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
 
+    // -- Sail Trim Logic --
+
+    // Determine wind side relative to boat
+    let relWind = normalizeAngle(state.wind.direction - state.boat.heading);
+
+    // Determine target boom side
+    if (Math.abs(relWind) > 0.1) {
+        state.boat.targetBoomSide = relWind > 0 ? 1 : -1;
+    }
+
+    // Smooth Boom Transition (Gybe/Tack animation)
+    if (state.boat.boomSide !== state.boat.targetBoomSide) {
+        let swingSpeed = 0.025; // Adjusted for physics updates?
+        state.boat.boomSide += (state.boat.targetBoomSide - state.boat.boomSide) * swingSpeed;
+        if (Math.abs(state.boat.targetBoomSide - state.boat.boomSide) < 0.01) {
+            state.boat.boomSide = state.boat.targetBoomSide;
+        }
+    }
+
+    // Optimal Angle Calculation
+    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
+    if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
+
+    // Manual Trim Controls
+    if (state.boat.manualTrim) {
+        const trimRate = 0.8 * dt; // Rad/sec (approx 45 deg per second)
+        if (state.keys.ArrowUp) {
+            // Trim IN (decrease angle)
+            state.boat.manualSailAngle = Math.max(0, state.boat.manualSailAngle - trimRate);
+        }
+        if (state.keys.ArrowDown) {
+            // Let OUT (increase angle)
+            state.boat.manualSailAngle = Math.min(Math.PI / 1.5, state.boat.manualSailAngle + trimRate); // Limit max let out to reasonable bounds
+        }
+        // Set actual sail angle based on manual setting
+        state.boat.sailAngle = state.boat.manualSailAngle * state.boat.boomSide;
+    } else {
+        // Auto: sync manual angle for smoothness if user switches
+        state.boat.manualSailAngle = optimalSailAngle;
+        state.boat.sailAngle = optimalSailAngle * state.boat.boomSide;
+    }
+
     // Determine target speed from polars
-    // Note: Polars are in Knots. We scale down to game units (approx 0.5 ratio)
-    // Interpolate power based on sail state
-    // 0.0-0.5: Jib fading out (100% to 0% power)
-    // 0.5-1.0: Spinnaker fading in (0% to 100% power)
     const progress = state.boat.spinnakerDeployProgress;
     const jibFactor = Math.max(0, 1 - progress * 2);
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
@@ -657,39 +706,55 @@ function update(dt) {
     let targetKnotsSpin = getTargetSpeed(angleToWind, true, state.wind.speed);
 
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
+
+    // Apply Trim Efficiency Penalty
+    // Calculate difference between actual and optimal
+    const actualMagnitude = Math.abs(state.boat.sailAngle);
+    const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
+
+    // Penalty curve: 1.0 - (diff * factor)
+    // 0.2 rad diff (~11 deg) -> 1.0 - 0.4 = 0.6 (40% loss)
+    // 0.5 rad diff (~28 deg) -> 1.0 - 1.0 = 0 (Stop)
+    const penaltyFactor = 2.0;
+    const trimEfficiency = Math.max(0, 1.0 - angleDiff * penaltyFactor);
+
+    targetKnots *= trimEfficiency;
+
     let targetGameSpeed = targetKnots * 0.25;
 
-    // Determine Luffing state (for visual/logic flags, not speed as speed comes from polar now)
-    // Polar says 0 speed at < 30 deg, so checks match
-    if (targetKnots < 1.0) {
+    // Determine Luffing state
+    // Old logic: just based on targetKnots < 1.0
+    // New logic: Based on effective angle of attack (AoA)
+    // Effective AoA = angleToWind - sailAngle (magnitude)
+    // If Eff AoA is too small (sail aligned with wind), it luffs.
+    const effectiveAoA = angleToWind - actualMagnitude;
+
+    // Thresholds:
+    // Ideally AoA is ~45 deg (0.78 rad).
+    // If AoA < 20 deg (0.35 rad), start luffing intensity.
+    const luffStartThreshold = 0.5; // rad
+
+    // Also consider standard "Too close to wind" (Heading) which also produces low AoA naturally
+    // If angleToWind is small, optimalSailAngle is 0. So effectiveAoA = angleToWind.
+    // So this unified logic works for both "Pointing too high" and "Letting sail out too much".
+
+    if (effectiveAoA < luffStartThreshold) {
+        state.boat.luffIntensity = Math.max(0, 1.0 - (effectiveAoA / luffStartThreshold));
         state.boat.luffing = true;
     } else {
+        state.boat.luffIntensity = 0;
         state.boat.luffing = false;
     }
 
-    // Determine Visual Luffing Intensity
-    // Luff more when pointed closer to the wind (0 intensity at > 45 deg, 1.0 at 0 deg)
-    const luffThreshold = 0.8; // Approx 45 degrees
-    if (angleToWind < luffThreshold) {
-        state.boat.luffIntensity = Math.max(0, 1.0 - (angleToWind / luffThreshold));
-    } else {
-        state.boat.luffIntensity = 0;
-    }
-
     // Smoothly interpolate current speed to target speed (acceleration/deceleration)
-    // Momentum factor: 0.995 (retains 99.5% of old speed)
-    // alpha = 1 - pow(0.995, timeScale)
     const speedAlpha = 1 - Math.pow(0.995, timeScale);
     state.boat.speed = state.boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
 
     if (isTurning) {
-        // Apply turn penalty scaled by time
-        // speed *= pow(penalty, timeScale)
         state.boat.speed *= Math.pow(CONFIG.turnPenalty, timeScale);
     }
 
     // Move Boat
-    // Speed is in "pixels per frame @ 60fps", so scale by timeScale
     state.boat.x += boatDirX * state.boat.speed * timeScale;
     state.boat.y += boatDirY * state.boat.speed * timeScale;
 
@@ -709,7 +774,6 @@ function update(dt) {
                 triggerPenalty();
 
                 // Calculate push-out vector (normal)
-                // If centers are exactly same, pick random direction
                 let nx = dx;
                 let ny = dy;
                 if (dist === 0) {
@@ -722,7 +786,6 @@ function update(dt) {
 
                 // Resolve overlap
                 const overlap = collisionDist - dist;
-                // Add a small extra "bounce" buffer (20% of overlap)
                 const pushAmt = overlap + 2.0;
 
                 state.boat.x += nx * pushAmt;
@@ -757,11 +820,10 @@ function update(dt) {
 
     // Penalty Tracking
     if (state.race.penalty) {
-         // Use signed difference to ensure 720 in ONE direction
          const diff = normalizeAngle(state.boat.heading - state.boat.prevHeading);
          state.race.penaltyProgress += diff;
 
-         if (Math.abs(state.race.penaltyProgress) >= 4 * Math.PI - 0.1) { // 720 deg (minus small tolerance)
+         if (Math.abs(state.race.penaltyProgress) >= 4 * Math.PI - 0.1) {
              state.race.penalty = false;
              state.race.penaltyProgress = 0;
              hideRaceMessage();
@@ -773,46 +835,31 @@ function update(dt) {
 
     // Wake Particles
     if (state.boat.speed > 0.25) {
-        // Constants for wake geometry
         const sternOffset = 30;
         const sternWidth = 10;
-
-        // Stern center position
         const sternX = state.boat.x - boatDirX * sternOffset;
         const sternY = state.boat.y - boatDirY * sternOffset;
 
-        // Central Turbulence (Prop wash / drag)
         if (Math.random() < 0.2) {
-            // Add some randomness to position
             const jitterX = (Math.random() - 0.5) * 4;
             const jitterY = (Math.random() - 0.5) * 4;
             createParticle(sternX + jitterX, sternY + jitterY, 'wake');
         }
 
-        // V-Wake (Kelvin Wake)
-        // Emit from corners of the stern, moving outwards
         if (Math.random() < 0.25) {
-            // Right Vector (Perpendicular to Heading)
             const rightX = Math.cos(state.boat.heading);
             const rightY = Math.sin(state.boat.heading);
-
-            // Stern Corners
             const leftSternX = sternX - rightX * sternWidth;
             const leftSternY = sternY - rightY * sternWidth;
-
             const rightSternX = sternX + rightX * sternWidth;
             const rightSternY = sternY + rightY * sternWidth;
-
-            // Wave Velocity (Spreading out)
             const spreadSpeed = 0.1;
 
-            // Left Wave
             createParticle(leftSternX, leftSternY, 'wake-wave', {
                 vx: -rightX * spreadSpeed,
                 vy: -rightY * spreadSpeed
             });
 
-            // Right Wave
             createParticle(rightSternX, rightSternY, 'wake-wave', {
                 vx: rightX * spreadSpeed,
                 vy: rightY * spreadSpeed
@@ -826,36 +873,8 @@ function update(dt) {
         state.camera.y += (state.boat.y - state.camera.y) * 0.1;
     }
 
-    // Sail Logic
-    // Determine wind side relative to boat
-    let relWind = normalizeAngle(state.wind.direction - state.boat.heading);
-
-    // Determine target boom side
-    if (Math.abs(relWind) > 0.1) {
-        state.boat.targetBoomSide = relWind > 0 ? 1 : -1;
-    }
-
-    // Smooth Boom Transition (Gybe/Tack animation)
-    // Move boomSide towards targetBoomSide
-    if (state.boat.boomSide !== state.boat.targetBoomSide) {
-        // Swing speed
-        let swingSpeed = 0.025;
-        state.boat.boomSide += (state.boat.targetBoomSide - state.boat.boomSide) * swingSpeed;
-        if (Math.abs(state.boat.targetBoomSide - state.boat.boomSide) < 0.01) {
-            state.boat.boomSide = state.boat.targetBoomSide;
-        }
-    }
-
-    // Sail Angle visual
-    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
-    // Clamp to max 80 degrees
-    if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
-
-    state.boat.sailAngle = optimalSailAngle * state.boat.boomSide;
-
     // Wind Particles
     if (Math.random() < 0.2) {
-        // Spawn around camera
         let range = Math.max(canvas.width, canvas.height) * 1.5;
         let px = state.camera.x + (Math.random() - 0.5) * range;
         let py = state.camera.y + (Math.random() - 0.5) * range;
@@ -1079,8 +1098,6 @@ function drawActiveGateLine(ctx) {
 function drawParticles(ctx, layer) {
     if (layer === 'surface') {
         // Batch wake particles
-        // Avoid changing fillStyle repeatedly if possible, but particles have different alphas.
-        // However, we can use globalAlpha.
         ctx.fillStyle = '#ffffff';
         for (const p of state.particles) {
             if (p.type === 'wake' || p.type === 'wake-wave') {
@@ -1157,7 +1174,6 @@ function drawWater(ctx) {
              let wy = y + shiftY;
 
              // Draw little wave glyphs
-             // Use unshifted 'x' and 'y' for noise so the shape travels with the wave
              const noise = Math.sin(x * 0.12 + y * 0.17);
              const windScale = Math.max(0.5, state.wind.speed / 10);
              const bob = Math.sin(state.time * 2 + noise * 10) * (3 * windScale);
@@ -1174,7 +1190,6 @@ function drawWater(ctx) {
              const cy = wy + gridSize/2 + randY;
 
              // Manual Transform of 3 points: Start(-8, bob), Control(0, bob-6), End(8, bob)
-             // Apply scale
              const s_p1x = -8 * scale;
              const s_p1y = bob * scale;
 
@@ -1185,9 +1200,6 @@ function drawWater(ctx) {
              const s_p2y = bob * scale;
 
              // Apply rotation and translation
-             // x' = x*cos - y*sin + cx
-             // y' = x*sin + y*cos + cy
-
              const p1x = s_p1x * cosA - s_p1y * sinA + cx;
              const p1y = s_p1x * sinA + s_p1y * cosA + cy;
 
@@ -1235,24 +1247,13 @@ function drawMarkBodies(ctx) {
         ctx.scale(bobScale, bobScale);
 
         // Determine if Active
-        // Find mark index
         const markIndex = state.course.marks.indexOf(m);
 
         let isActive = false;
-        // Determine active marks based on Leg
-        // Leg 0: Marks 0,1 (Start)
-        // Leg 1: Marks 2,3 (Upwind)
-        // Leg 2: Marks 0,1 (Downwind)
-        // Leg 3: Marks 2,3 (Upwind)
-        // Leg 4: Marks 0,1 (Finish)
-
-        // Also check Race Status. Only highlight if Prestart or Racing.
         if (state.race.status !== 'finished') {
              if (state.race.leg % 2 === 0) {
-                 // Even legs (0, 2, 4) -> Marks 0,1
                  if (markIndex === 0 || markIndex === 1) isActive = true;
              } else {
-                 // Odd legs (1, 3) -> Marks 2,3
                  if (markIndex === 2 || markIndex === 3) isActive = true;
              }
         }
@@ -1465,17 +1466,13 @@ function draw() {
 
     ctx.restore();
 
-    // Draw Waypoint Indicator (Screen Space with Clamping)
+    // Draw Waypoint Indicator
     if (state.race.status !== 'finished') {
         const wx = state.race.nextWaypoint.x;
         const wy = state.race.nextWaypoint.y;
 
-        // 1. World to Screen Transformation
-        // Translate relative to camera
         const dx = wx - state.camera.x;
         const dy = wy - state.camera.y;
-
-        // Rotate (inverse of camera rotation)
         const rot = -state.camera.rotation;
         const cos = Math.cos(rot);
         const sin = Math.sin(rot);
@@ -1483,12 +1480,10 @@ function draw() {
         const rx = dx * cos - dy * sin;
         const ry = dx * sin + dy * cos;
 
-        // 2. Clamping Logic
         const margin = 40;
         const halfW = Math.max(10, canvas.width / 2 - margin);
         const halfH = Math.max(10, canvas.height / 2 - margin);
 
-        // Calculate initial clamp factor to screen edges
         let t = 1.0;
         if (Math.abs(rx) > 0.1 || Math.abs(ry) > 0.1) {
             const tx = halfW / Math.abs(rx);
@@ -1501,36 +1496,17 @@ function draw() {
         let screenX = canvas.width / 2 + rx * factor;
         let screenY = canvas.height / 2 + ry * factor;
 
-        // 3. HUD Avoidance (Top Right Corner)
-        // HUD is roughly 180px wide (160px + padding) and 350px tall (Compass + Minimap)
         const hudWidth = 200;
         const hudHeight = 400;
 
-        // Check if we are in the Top-Right danger zone
-        // Danger Zone: x > width - hudWidth AND y < hudHeight
         if (screenX > canvas.width - hudWidth && screenY < hudHeight) {
-            // We need to push it out of this box.
-            // Find the closest point on the boundary of the HUD box that is "towards" the target?
-            // Or just snap to the edges of the exclusion zone.
-
-            // If the target is primarily "Right", keep it on the Right edge but push Y down.
-            // If the target is primarily "Top", keep it on Top edge but push X left.
-
-            // Current clamped pos is on the screen edge (Top or Right).
-            // If on Top Edge (y approx margin):
             if (screenY < margin + 10) {
-                 // Push X to the left of HUD
                  screenX = canvas.width - hudWidth - 20;
             }
-            // If on Right Edge (x approx width - margin):
             else if (screenX > canvas.width - margin - 10) {
-                 // Push Y below HUD
                  screenY = hudHeight + 20;
             }
-            // If it's somewhere inside (shouldn't happen with edge clamping unless corner), push to closest safe edge.
             else {
-                 // It's inside the corner zone.
-                 // Simple heuristic:
                  const distToLeft = screenX - (canvas.width - hudWidth);
                  const distToBottom = hudHeight - screenY;
 
@@ -1542,11 +1518,9 @@ function draw() {
             }
         }
 
-        // Draw
         ctx.save();
         ctx.translate(screenX, screenY);
 
-        // Draw green target circle
         ctx.beginPath();
         ctx.arc(0, 0, 8, 0, Math.PI * 2);
         ctx.fillStyle = '#22c55e';
@@ -1555,12 +1529,10 @@ function draw() {
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Draw Distance Text
         ctx.fillStyle = '#ffffff';
         ctx.font = 'bold 16px monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        // Add text shadow for visibility
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 4;
         ctx.fillText(Math.round(state.race.nextWaypoint.dist) + 'm', 0, -12);
@@ -1568,35 +1540,28 @@ function draw() {
         ctx.restore();
     }
 
-    // Minimap
-    drawMinimap(); // Added back in
+    drawMinimap();
 
-    // UI Updates - Using cached elements
+    // UI Updates
     if (UI.compassRose) {
-        // Rotate compass rose opposite to camera rotation so "North" points to actual North
         UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
     }
 
     if (UI.windArrow) {
-        // Wind arrow is inside the compass rose, so we just rotate it to the absolute wind direction
         UI.windArrow.style.transform = `rotate(${state.wind.direction}rad)`;
     }
 
     if (UI.waypointArrow) {
-        // Waypoint arrow logic:
         UI.waypointArrow.style.transform = `rotate(${state.race.nextWaypoint.angle}rad)`;
     }
 
     if (UI.headingArrow) {
-        // Heading arrow (Red) rotates to show boat heading relative to camera
         const rot = state.boat.heading - state.camera.rotation;
         UI.headingArrow.style.transform = `rotate(${rot}rad)`;
     }
 
-    // Throttle text updates to every 10 frames (~6Hz)
     if (frameCount % 10 === 0) {
         if (UI.speed) {
-            // Convert to "knots" (internal speed * 2)
             UI.speed.textContent = (state.boat.speed * 4).toFixed(1);
         }
 
@@ -1605,18 +1570,26 @@ function draw() {
         }
 
         if (UI.windAngle) {
-            // Calculate TWA in degrees
             const angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
             const twaDeg = Math.round(angleToWind * (180 / Math.PI));
             UI.windAngle.textContent = twaDeg + '°';
         }
 
         if (UI.vmg) {
-            // Calculate VMG = Speed * cos(True Wind Angle)
-            // VMG is velocity made good directly upwind or downwind
             const angleToWind = normalizeAngle(state.boat.heading - state.wind.direction);
             const vmg = (state.boat.speed * 4) * Math.cos(angleToWind);
             UI.vmg.textContent = Math.abs(vmg).toFixed(1);
+        }
+
+        // Update Trim Mode Indicator
+        if (UI.trimMode) {
+            if (state.boat.manualTrim) {
+                UI.trimMode.textContent = "MANUAL";
+                UI.trimMode.className = "mt-1 text-[10px] font-bold text-yellow-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-yellow-500/50 uppercase tracking-wider";
+            } else {
+                UI.trimMode.textContent = "AUTO";
+                UI.trimMode.className = "mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider";
+            }
         }
 
         if (UI.timer) {
@@ -1625,11 +1598,9 @@ function draw() {
                  UI.timer.classList.add('text-green-400');
             } else if (state.race.status === 'prestart') {
                  UI.timer.textContent = formatTime(-state.race.timer);
-                 // Warn if < 10s
                  if (state.race.timer < 10) UI.timer.classList.add('text-orange-400');
                  else UI.timer.classList.remove('text-orange-400');
             } else {
-                 // Racing
                  UI.timer.textContent = formatTime(state.race.timer);
                  UI.timer.classList.remove('text-orange-400');
                  UI.timer.classList.remove('text-green-400');
@@ -1641,9 +1612,7 @@ function draw() {
                 UI.startTime.textContent = formatSplitTime(state.race.lastLegDuration);
                 UI.startTime.classList.remove('hidden');
             } else if (state.race.startTimeDisplayTimer > 0) {
-                // Show start time with + sign and milliseconds (3 decimal places)
                 const t = state.race.startTimeDisplay;
-                // Since racing starts at 0, t is always positive
                 UI.startTime.textContent = '+' + t.toFixed(3) + 's';
                 UI.startTime.classList.remove('hidden');
             } else {
@@ -1659,7 +1628,6 @@ function loop(timestamp) {
     const dt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
 
-    // Clamp dt to avoid huge jumps (e.g. max 0.1s)
     const safeDt = Math.min(dt, 0.1);
 
     if (!state.paused) {
@@ -1672,80 +1640,44 @@ function loop(timestamp) {
 // Course Management
 function initCourse() {
     const windDir = state.wind.baseDirection;
-    // Wind comes FROM windDir.
-    // Upwind vector (into the wind) is opposite to wind flow.
-    // Flow is South if windDir=0. So Upwind is North (0, -1).
-    // sin(0)=0, -cos(0)=-1. So (sin(dir), -cos(dir)) is UPWIND vector.
     const ux = Math.sin(windDir);
     const uy = -Math.cos(windDir);
-
-    // Perpendicular vector (Right side looking upwind)
-    // dir=0, u=(0,-1). Right is East (1,0).
-    // (-uy, ux) => (-(-1), 0) = (1, 0). Correct.
     const rx = -uy;
     const ry = ux;
 
-    const boatLength = 55; // Approx length in pixels
+    const boatLength = 55;
     const gateWidth = 10 * boatLength;
-    const courseDist = 4000; // Approx 200m scale
+    const courseDist = 4000;
 
-    // Start/Finish Line (Downwind) centered at 0,0
-    // Marks are perpendicular to wind
     state.course = {
         marks: [
-            // Start Line (Left/Right)
             { x: -rx * gateWidth/2, y: -ry * gateWidth/2, type: 'start' },
             { x: rx * gateWidth/2, y: ry * gateWidth/2, type: 'start' },
-            // Upwind Gate (Left/Right)
             { x: (ux * courseDist) - (rx * gateWidth/2), y: (uy * courseDist) - (ry * gateWidth/2), type: 'mark' },
             { x: (ux * courseDist) + (rx * gateWidth/2), y: (uy * courseDist) + (ry * gateWidth/2), type: 'mark' }
         ],
         boundary: {
             x: ux * (courseDist / 2),
             y: uy * (courseDist / 2),
-            radius: 3500 // Generous radius around course center
+            radius: 3500
         }
     };
 }
 
 // Init
 state.camera.target = 'boat';
-// Randomize wind
-state.wind.baseSpeed = 8 + Math.random() * 10; // Base between 8 and 18
+state.wind.baseSpeed = 8 + Math.random() * 10;
 state.wind.speed = state.wind.baseSpeed;
-state.wind.baseDirection = (Math.random() - 0.5) * 0.5; // Slight variation from North (0)
+state.wind.baseDirection = (Math.random() - 0.5) * 0.5;
 state.wind.direction = state.wind.baseDirection;
 
 initCourse();
 
-// Start Boat near the start line (Downwind of it, facing upwind)
-// Start line is at (0,0) relative to course logic if initCourse sets it there.
-// Marks are perpendicular to wind.
-// We want to be 'below' the line (downwind).
-// Wind comes from 'direction'.
-// Downwind is direction. Upwind is direction + PI.
-// Move boat in direction of wind (downwind) from 0,0.
 const startDist = 150;
-state.boat.x = Math.sin(state.wind.direction) * startDist;
-state.boat.y = -Math.cos(state.wind.direction) * startDist;
-// Actually wind direction 0 means FROM North (blowing South).
-// Vector (sin(0), -cos(0)) is (0, -1) which is North.
-// Wait, standard math:
-// Wind Dir 0 = North Wind (Blows South).
-// Force vector: x += sin(0), y += cos(0) ??
-// In update(): x -= sin(dir), y += cos(dir) for wind particles?
-// Let's rely on initCourse vectors.
-// ux, uy was UPWIND (into the wind).
-// If we want to start DOWNWIND, we go -UPWIND.
-// ux = sin(dir), uy = -cos(dir).
-// So start pos = (-ux * 150, -uy * 150).
 state.boat.x = -Math.sin(state.wind.direction) * 450;
 state.boat.y = Math.cos(state.wind.direction) * 450;
-
-// Face Upwind
 state.boat.heading = state.wind.direction;
 
-// Init Race History
 state.race.lastPos.x = state.boat.x;
 state.race.lastPos.y = state.boat.y;
 state.boat.prevHeading = state.boat.heading;
