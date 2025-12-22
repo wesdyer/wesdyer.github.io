@@ -1256,8 +1256,8 @@ function drawRoundingArrows(ctx) {
 
     ctx.save();
     ctx.lineWidth = 10;
-    ctx.strokeStyle = '#bfdbfe'; // Blue-200 (High contrast light blue)
-    ctx.fillStyle = '#bfdbfe';
+    ctx.strokeStyle = '#facc15'; // Yellow-400
+    ctx.fillStyle = '#facc15';
     ctx.lineCap = 'round';
 
     // Use base direction to align with course
@@ -1270,7 +1270,6 @@ function drawRoundingArrows(ctx) {
 
         ctx.save();
         ctx.translate(m.x, m.y);
-        ctx.rotate(windDir); // Rotate to align with wind (North Up in local space)
 
         let startAngle, endAngle, counterClockwise;
 
@@ -1294,6 +1293,13 @@ function drawRoundingArrows(ctx) {
                  startAngle = Math.PI; endAngle = 0; counterClockwise = true;
              }
         }
+
+        // Apply Rotation
+        // Base alignment (windDir) + Animation
+        // Rotate in the direction of the arrow (CW or CCW)
+        const rotationSpeed = 8.0;
+        const animRotation = state.time * rotationSpeed * (counterClockwise ? -1 : 1);
+        ctx.rotate(windDir + animRotation);
 
         ctx.beginPath();
         ctx.arc(0, 0, radius, startAngle, endAngle, counterClockwise);
