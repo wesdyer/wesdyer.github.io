@@ -64,7 +64,8 @@ const state = {
         x: 0,
         y: 0,
         rotation: 0,
-        target: null // 'boat' or null (free)
+        target: 'boat', // Always follow boat now
+        mode: 'heading' // 'heading', 'north', 'wind'
     },
     wind: {
         direction: 0, // Blowing Down (South)
@@ -78,12 +79,6 @@ const state = {
         ArrowRight: false,
         ArrowUp: false,
         ArrowDown: false,
-        w: false,
-        a: false,
-        s: false,
-        d: false,
-        q: false,
-        e: false,
     },
     time: 0
 };
@@ -105,10 +100,9 @@ window.addEventListener('keydown', (e) => {
         state.keys[e.key] = true;
     }
     if (e.key === 'Enter') {
-        state.camera.target = 'boat';
-        state.camera.x = state.boat.x;
-        state.camera.y = state.boat.y;
-        state.camera.rotation = 0;
+        const modes = ['heading', 'north', 'wind'];
+        const currentIndex = modes.indexOf(state.camera.mode);
+        state.camera.mode = modes[(currentIndex + 1) % modes.length];
     }
     if (e.key === ' ' || e.code === 'Space') {
         state.boat.spinnaker = !state.boat.spinnaker;
@@ -238,13 +232,20 @@ function update() {
     const speedGust = Math.sin(state.time * 0.5 + 456.7) * 1.5;
     state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
 
-    // Camera Controls
-    if (state.keys.w) { state.camera.y -= CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.x += CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
-    if (state.keys.s) { state.camera.y += CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.x -= CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
-    if (state.keys.a) { state.camera.x -= CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.y -= CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
-    if (state.keys.d) { state.camera.x += CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.y += CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
-    if (state.keys.q) { state.camera.rotation -= CONFIG.cameraRotateSpeed; }
-    if (state.keys.e) { state.camera.rotation += CONFIG.cameraRotateSpeed; }
+    // Camera Rotation Logic
+    if (state.camera.mode === 'heading') {
+        // Smoothly rotate towards boat heading
+        let diff = normalizeAngle(state.boat.heading - state.camera.rotation);
+        state.camera.rotation += diff * 0.1;
+    } else if (state.camera.mode === 'north') {
+        // Rotate towards 0
+        let diff = normalizeAngle(0 - state.camera.rotation);
+        state.camera.rotation += diff * 0.1;
+    } else if (state.camera.mode === 'wind') {
+        // Rotate towards wind direction (so wind comes from top)
+        let diff = normalizeAngle(state.wind.direction - state.camera.rotation);
+        state.camera.rotation += diff * 0.1;
+    }
 
     // Boat Steering
     if (state.keys.ArrowLeft) {
@@ -657,8 +658,8 @@ function draw() {
     // UI Updates
     const hudCompassRose = document.getElementById('hud-compass-rose');
     if (hudCompassRose) {
-        // Rotate compass rose opposite to camera/boat heading so "North" points to actual North
-        hudCompassRose.style.transform = `rotate(${-state.boat.heading}rad)`;
+        // Rotate compass rose opposite to camera rotation so "North" points to actual North
+        hudCompassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
     }
 
     const hudWindArrow = document.getElementById('hud-wind-arrow');
