@@ -510,7 +510,11 @@ function updateParticles(dt) {
         p.life -= decay * timeScale;
 
         if (p.life <= 0) {
-            state.particles.splice(i, 1);
+            // Swap with last element and pop (O(1) removal)
+            state.particles[i] = state.particles[state.particles.length - 1];
+            state.particles.pop();
+            // Since we iterate backwards, the swapped element (from end) has already been processed this frame.
+            // So we can safely continue.
         }
     }
 }
@@ -1006,26 +1010,41 @@ function drawActiveGateLine(ctx) {
 }
 
 function drawParticles(ctx, layer) {
-    for (const p of state.particles) {
-        const isWake = (p.type === 'wake' || p.type === 'wake-wave');
-        const isWind = (p.type === 'wind');
-
-        if (layer === 'surface' && isWake) {
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (layer === 'air' && isWind) {
-            const windFactor = state.wind.speed / 10;
-            const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-            ctx.lineWidth = 1 + windFactor;
-            ctx.beginPath();
-            ctx.moveTo(p.x, p.y);
-            const tailLength = 30 + state.wind.speed * 4;
-            ctx.lineTo(p.x - Math.sin(state.wind.direction) * tailLength, p.y + Math.cos(state.wind.direction) * tailLength);
-            ctx.stroke();
+    if (layer === 'surface') {
+        // Batch wake particles
+        // Avoid changing fillStyle repeatedly if possible, but particles have different alphas.
+        // However, we can use globalAlpha.
+        ctx.fillStyle = '#ffffff';
+        for (const p of state.particles) {
+            if (p.type === 'wake' || p.type === 'wake-wave') {
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
+        ctx.globalAlpha = 1.0;
+    } else if (layer === 'air') {
+        // Batch wind particles
+        const windFactor = state.wind.speed / 10;
+        const tailLength = 30 + state.wind.speed * 4;
+        const dx = -Math.sin(state.wind.direction) * tailLength;
+        const dy = Math.cos(state.wind.direction) * tailLength;
+
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1 + windFactor;
+
+        for (const p of state.particles) {
+            if (p.type === 'wind') {
+                const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
+                ctx.globalAlpha = opacity;
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x + dx, p.y + dy);
+                ctx.stroke();
+            }
+        }
+        ctx.globalAlpha = 1.0;
     }
 }
 
@@ -1056,6 +1075,14 @@ function drawWater(ctx) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 2.5;
 
+    // Pre-calculate rotation math
+    const angle = state.wind.direction + Math.PI;
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+
+    // Batch all waves into one path
+    ctx.beginPath();
+
     // Iterate only over visible grid points
     for (let x = startX; x < endX; x += gridSize) {
         for (let y = startY; y < endY; y += gridSize) {
@@ -1075,20 +1102,40 @@ function drawWater(ctx) {
              let scale = (0.8 + ((seed * 10) % 1) * 0.4); // 0.8 to 1.2
              scale *= windScale;
 
-             ctx.save();
-             ctx.translate(wx + gridSize/2 + randX, wy + gridSize/2 + randY);
-             // Rotate to align perpendicular to wind
-             ctx.rotate(state.wind.direction + Math.PI);
-             ctx.scale(scale, scale);
+             // Center of the wave glyph in world space
+             const cx = wx + gridSize/2 + randX;
+             const cy = wy + gridSize/2 + randY;
 
-             ctx.beginPath();
-             // Draw relative to rotated center
-             ctx.moveTo(-8, bob);
-             ctx.quadraticCurveTo(0, bob - 6, 8, bob);
-             ctx.stroke();
-             ctx.restore();
+             // Manual Transform of 3 points: Start(-8, bob), Control(0, bob-6), End(8, bob)
+             // Apply scale
+             const s_p1x = -8 * scale;
+             const s_p1y = bob * scale;
+
+             const s_cpx = 0;
+             const s_cpy = (bob - 6) * scale;
+
+             const s_p2x = 8 * scale;
+             const s_p2y = bob * scale;
+
+             // Apply rotation and translation
+             // x' = x*cos - y*sin + cx
+             // y' = x*sin + y*cos + cy
+
+             const p1x = s_p1x * cosA - s_p1y * sinA + cx;
+             const p1y = s_p1x * sinA + s_p1y * cosA + cy;
+
+             const cpx = s_cpx * cosA - s_cpy * sinA + cx;
+             const cpy = s_cpx * sinA + s_cpy * cosA + cy;
+
+             const p2x = s_p2x * cosA - s_p2y * sinA + cx;
+             const p2y = s_p2x * sinA + s_p2y * cosA + cy;
+
+             ctx.moveTo(p1x, p1y);
+             ctx.quadraticCurveTo(cpx, cpy, p2x, p2y);
         }
     }
+    // Single stroke for all waves
+    ctx.stroke();
 }
 
 function drawMarkShadows(ctx) {
@@ -1319,7 +1366,9 @@ function drawMinimap() {
     ctx.restore();
 }
 
+let frameCount = 0;
 function draw() {
+    frameCount++;
     // Clear
     ctx.fillStyle = CONFIG.waterColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1468,17 +1517,6 @@ function draw() {
 
     if (UI.waypointArrow) {
         // Waypoint arrow logic:
-        // The compass rose rotates by -camera.rotation.
-        // We want the arrow to point to the absolute bearing of the waypoint.
-        // If the arrow is a child of the compass rose, we just set its rotation to the absolute bearing.
-        // Bearing 0 is North (Up).
-        // Let's verify.
-        // Compass rose rotation: -camera.rotation.
-        // If camera is 0, compass is 0. North is Up.
-        // If waypoint is North (0), arrow should be 0 (Up).
-        // If waypoint is East (PI/2), arrow should be PI/2 (Right).
-        // The arrow is inside the compass rose container.
-        // So yes, we just set it to the absolute angle.
         UI.waypointArrow.style.transform = `rotate(${state.race.nextWaypoint.angle}rad)`;
     }
 
@@ -1488,41 +1526,39 @@ function draw() {
         UI.headingArrow.style.transform = `rotate(${rot}rad)`;
     }
 
-    if (UI.speed) {
-        // Convert to "knots" (internal speed * 2)
-        UI.speed.textContent = (state.boat.speed * 4).toFixed(1);
-    }
+    // Throttle text updates to every 10 frames (~6Hz)
+    if (frameCount % 10 === 0) {
+        if (UI.speed) {
+            // Convert to "knots" (internal speed * 2)
+            UI.speed.textContent = (state.boat.speed * 4).toFixed(1);
+        }
 
-    if (UI.windSpeed) {
-        UI.windSpeed.textContent = state.wind.speed.toFixed(1);
-    }
+        if (UI.windSpeed) {
+            UI.windSpeed.textContent = state.wind.speed.toFixed(1);
+        }
 
-    if (UI.windAngle) {
-        // Calculate TWA in degrees
-        const angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
-        const twaDeg = Math.round(angleToWind * (180 / Math.PI));
-        UI.windAngle.textContent = twaDeg + '°';
-    }
+        if (UI.windAngle) {
+            // Calculate TWA in degrees
+            const angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
+            const twaDeg = Math.round(angleToWind * (180 / Math.PI));
+            UI.windAngle.textContent = twaDeg + '°';
+        }
 
-    if (UI.timer) {
-        if (state.race.status === 'finished') {
-             UI.timer.textContent = formatTime(state.race.finishTime);
-             UI.timer.classList.add('text-green-400');
-        } else if (state.race.status === 'prestart') {
-             // Countdown
-             // Negate so we count down nicely? Or just display logic.
-             // formatTime handles negative. But here timer > 0.
-             // We want to show -00:59 etc?
-             // formatTime( -state.race.timer )
-             UI.timer.textContent = formatTime(-state.race.timer);
-             // Warn if < 10s
-             if (state.race.timer < 10) UI.timer.classList.add('text-orange-400');
-             else UI.timer.classList.remove('text-orange-400');
-        } else {
-             // Racing
-             UI.timer.textContent = formatTime(state.race.timer);
-             UI.timer.classList.remove('text-orange-400');
-             UI.timer.classList.remove('text-green-400');
+        if (UI.timer) {
+            if (state.race.status === 'finished') {
+                 UI.timer.textContent = formatTime(state.race.finishTime);
+                 UI.timer.classList.add('text-green-400');
+            } else if (state.race.status === 'prestart') {
+                 UI.timer.textContent = formatTime(-state.race.timer);
+                 // Warn if < 10s
+                 if (state.race.timer < 10) UI.timer.classList.add('text-orange-400');
+                 else UI.timer.classList.remove('text-orange-400');
+            } else {
+                 // Racing
+                 UI.timer.textContent = formatTime(state.race.timer);
+                 UI.timer.classList.remove('text-orange-400');
+                 UI.timer.classList.remove('text-green-400');
+            }
         }
     }
 }
