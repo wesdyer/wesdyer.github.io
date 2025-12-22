@@ -1256,8 +1256,8 @@ function drawRoundingArrows(ctx) {
 
     ctx.save();
     ctx.lineWidth = 10;
-    ctx.strokeStyle = '#facc15'; // Yellow-400
-    ctx.fillStyle = '#facc15';
+    ctx.strokeStyle = '#1e3a8a'; // Dark Blue (Blue-900)
+    ctx.fillStyle = '#1e3a8a';
     ctx.lineCap = 'round';
 
     // Use base direction to align with course
