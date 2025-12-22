@@ -323,6 +323,23 @@ function update() {
     state.boat.x += boatDirX * state.boat.speed;
     state.boat.y += boatDirY * state.boat.speed;
 
+    // Boundary Check
+    if (state.course && state.course.boundary) {
+        const dx = state.boat.x - state.course.boundary.x;
+        const dy = state.boat.y - state.course.boundary.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist > state.course.boundary.radius) {
+             // Clamp position
+             const angle = Math.atan2(dy, dx);
+             state.boat.x = state.course.boundary.x + Math.cos(angle) * state.course.boundary.radius;
+             state.boat.y = state.course.boundary.y + Math.sin(angle) * state.course.boundary.radius;
+
+             // Stop boat
+             state.boat.speed = 0;
+        }
+    }
+
     // Wake Particles
     if (state.boat.speed > 0.25) {
         // Constants for wake geometry
@@ -906,7 +923,12 @@ function initCourse() {
             // Upwind Gate (Left/Right)
             { x: (ux * courseDist) - (rx * gateWidth/2), y: (uy * courseDist) - (ry * gateWidth/2), type: 'mark' },
             { x: (ux * courseDist) + (rx * gateWidth/2), y: (uy * courseDist) + (ry * gateWidth/2), type: 'mark' }
-        ]
+        ],
+        boundary: {
+            x: ux * (courseDist / 2),
+            y: uy * (courseDist / 2),
+            radius: 3500 // Generous radius around course center
+        }
     };
 }
 
