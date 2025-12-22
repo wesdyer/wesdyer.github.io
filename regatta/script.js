@@ -325,7 +325,7 @@ function drawBoat(ctx) {
         ctx.save();
         if (isJib) {
              ctx.translate(0, -25);
-             ctx.rotate(state.boat.sailAngle * 0.7);
+             ctx.rotate(state.boat.sailAngle);
         } else {
              ctx.translate(0, -5);
              ctx.rotate(state.boat.sailAngle);
