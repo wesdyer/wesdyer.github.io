@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let time = 0;
     let currentDifficulty = 'Medium';
     let boardGenerated = false;
+    let cascadeUsed = false;
 
     const difficultySettings = {
         'Easy': { width: 9, height: 9, bombAmount: 10 },
@@ -337,8 +338,11 @@ document.addEventListener('DOMContentLoaded', () => {
         flags = 0;
         time = 0;
         boardGenerated = false;
+        cascadeUsed = false;
         clearInterval(timer);
         timeElement.textContent = '00:00';
+        timeElement.classList.remove('text-yellow-400');
+        timeElement.classList.add('text-white');
         minesElement.textContent = bombAmount.toString().padStart(2, '0');
         smileyButton.querySelector('span').textContent = 'sentiment_satisfied';
 
@@ -573,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
              // Check for best time
              const currentBest = getBestTime(currentDifficulty);
-             if (currentBest === null || time < currentBest) {
+             if ((currentBest === null || time < currentBest) && !cascadeUsed) {
                  setBestTime(currentDifficulty, time);
                  updateBestTimeDisplay();
              }
@@ -594,6 +598,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cascadeButton.addEventListener('click', () => {
         if (isGameOver) return;
+
+        if (!cascadeUsed) {
+            cascadeUsed = true;
+            timeElement.classList.remove('text-white');
+            timeElement.classList.add('text-yellow-400');
+        }
 
         if (!boardGenerated) {
             generateMines(-1);
