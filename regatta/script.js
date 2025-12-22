@@ -1616,7 +1616,7 @@ function draw() {
             // VMG is velocity made good directly upwind or downwind
             const angleToWind = normalizeAngle(state.boat.heading - state.wind.direction);
             const vmg = (state.boat.speed * 4) * Math.cos(angleToWind);
-            UI.vmg.textContent = vmg.toFixed(1);
+            UI.vmg.textContent = Math.abs(vmg).toFixed(1);
         }
 
         if (UI.timer) {
