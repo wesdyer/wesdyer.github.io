@@ -59,7 +59,7 @@ const state = {
         boomSide: 1, // 1 for right, -1 for left
         targetBoomSide: 1,
         luffing: false,
-        spinnaker: true, // Default to Performance Mode
+        spinnaker: false, // Default to Performance Mode
     },
     camera: {
         x: 0,
