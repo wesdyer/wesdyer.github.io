@@ -976,14 +976,50 @@ function drawBoat(ctx) {
     ctx.restore();
 }
 
-function drawParticles(ctx) {
+function drawActiveGateLine(ctx) {
+    if (state.race.status === 'finished') return;
+    if (!state.course || !state.course.marks) return;
+
+    // Determine marks based on leg
+    const indices = (state.race.leg % 2 === 0) ? [0, 1] : [2, 3];
+    if (indices[1] >= state.course.marks.length) return;
+
+    const m1 = state.course.marks[indices[0]];
+    const m2 = state.course.marks[indices[1]];
+
+    ctx.save();
+
+    // Animate dashed line
+    const dashSpeed = 20;
+    const dashOffset = -state.time * dashSpeed;
+
+    ctx.beginPath();
+    ctx.moveTo(m1.x, m1.y);
+    ctx.lineTo(m2.x, m2.y);
+
+    // Styling: Glowing dashed orange line
+    ctx.shadowColor = '#fdba74'; // Orange-300
+    ctx.shadowBlur = 8;
+    ctx.strokeStyle = 'rgba(249, 115, 22, 0.7)'; // Orange-500
+    ctx.lineWidth = 3;
+    ctx.setLineDash([20, 15]);
+    ctx.lineDashOffset = dashOffset;
+
+    ctx.stroke();
+    ctx.restore();
+}
+
+function drawParticles(ctx, layer) {
     for (const p of state.particles) {
-        if (p.type === 'wake' || p.type === 'wake-wave') {
+        const isWake = (p.type === 'wake' || p.type === 'wake-wave');
+        const isWind = (p.type === 'wind');
+
+        if (layer === 'surface' && isWake) {
             ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
             ctx.beginPath();
             ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
             ctx.fill();
-        } else if (p.type === 'wind') {
+        } else if (layer === 'air' && isWind) {
             const windFactor = state.wind.speed / 10;
             const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
             ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
@@ -1302,7 +1338,9 @@ function draw() {
     // Draw World
     drawWater(ctx);
     drawBoundary(ctx);
-    drawParticles(ctx);
+    drawParticles(ctx, 'surface'); // Wake
+    drawActiveGateLine(ctx);
+    drawParticles(ctx, 'air'); // Wind
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
 
