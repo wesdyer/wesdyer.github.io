@@ -1357,33 +1357,6 @@ function drawLayLines(ctx) {
         // Indices 1, 3 are "Right" Marks
         const isLeftMark = (idx % 2 === 0);
 
-        // "Left mark uses layline that extends to the left"
-        // Relative to wind (coming from top/north usually), "Left" is West (-x).
-        // ang1 = dir + 45. ang2 = dir - 45.
-        // If dir = 0 (South wind), ang1 = +45 (SE), ang2 = -45 (SW).
-        // If we are looking UPWIND (North), Left is West.
-        // The layline extending to the left (West) corresponds to the one pointing roughly -90 relative to wind? No.
-        // Standard Diagram:
-        //      Wind
-        //       |
-        //   \   |   /
-        //    \  |  /
-        //     \ | /
-        //      \|/
-        //     Mark
-        //
-        // If looking Upwind:
-        // Starboard Tack layline comes from Right. Port Tack layline comes from Left.
-        // Left Mark (Port Gate): We usually round it to Port? Or Starboard?
-        // Usually gates are rounded inside-out.
-        // User request: "Left mark uses layline that extends to the left".
-        // Assuming "extends to the left" means visually on screen left relative to the wind axis.
-        // If wind is 0, Left is negative X.
-        // ang2 (dir - 45) has sin(-45) = -0.7 (Negative X). This points Left.
-        // ang1 (dir + 45) has sin(45) = +0.7 (Positive X). This points Right.
-
-        // So Left Mark -> ang1. Right Mark -> ang2.
-
         const drawRay = (angle, color) => {
              let drawAngle = angle;
              if (isUpwindLeg) {
@@ -1400,10 +1373,19 @@ function drawLayLines(ctx) {
              ctx.stroke();
         };
 
-        if (isLeftMark) {
-            drawRay(ang1, 'rgba(239, 68, 68, 0.8)'); // Red (Port Tack approach?)
+        if (isUpwindLeg) {
+            if (isLeftMark) {
+                drawRay(ang1, 'rgba(239, 68, 68, 0.8)'); // Red
+            } else {
+                drawRay(ang2, 'rgba(34, 197, 94, 0.8)'); // Green
+            }
         } else {
-            drawRay(ang2, 'rgba(34, 197, 94, 0.8)'); // Green (Starboard Tack approach?)
+            // Downwind - swap angles
+            if (isLeftMark) {
+                drawRay(ang2, 'rgba(239, 68, 68, 0.8)'); // Red
+            } else {
+                drawRay(ang1, 'rgba(34, 197, 94, 0.8)'); // Green
+            }
         }
     }
     ctx.restore();
@@ -1422,7 +1404,8 @@ function drawMarkZones(ctx) {
     const zoneRadius = 165;
 
     for (const m of state.course.marks) {
-        if (m.type === 'start') continue;
+        // Only skip mark zones for start/finish marks if we are in Start (Leg 0) or Finish (Leg 4) phase
+        if (m.type === 'start' && (state.race.leg === 0 || state.race.leg === 4)) continue;
 
         const dx = state.boat.x - m.x;
         const dy = state.boat.y - m.y;
