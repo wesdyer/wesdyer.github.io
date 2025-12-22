@@ -335,13 +335,6 @@ function updateRace(dt) {
                 const gateDy = m2.y - m1.y;
 
                 // Normal pointing "Upwind" relative to gate
-                // If Gate is Left->Right (Crosswind), Normal is Upwind.
-                // In initCourse: M0->M1 is Left->Right. Upwind is -Y (ish).
-                // Normal vector N = (dy, -dx) (Rotated 90 deg CCW in screen coords?)
-                // M0(Left) -> M1(Right). Vector is Right.
-                // Upwind is North (-Y).
-                // Right -> North is 90 deg CCW.
-                // (x, y) -> (y, -x).
                 const nx = gateDy;
                 const ny = -gateDx;
 
@@ -349,10 +342,6 @@ function updateRace(dt) {
                 const moveDx = state.boat.x - state.race.lastPos.x;
                 const moveDy = state.boat.y - state.race.lastPos.y;
                 const dot = moveDx * nx + moveDy * ny;
-
-                // Check consistency
-                // If dot > 0, we moved in direction of Normal (Upwind)
-                // If dot < 0, we moved opposite (Downwind)
 
                 const crossingDir = dot > 0 ? 1 : -1;
 
@@ -421,13 +410,61 @@ function updateRace(dt) {
                         } else {
                             // Wrong way!
                             showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50");
-                            // Set timeout to hide? Or keep until corrected?
-                            // Let's keep it brief or until corrected (crossing back)
-                            // If they cross back, they are "correcting" so hide it?
-                            // Simplification: Just show it.
                             setTimeout(hideRaceMessage, 2000);
                         }
                     }
+                }
+            }
+        }
+
+        // Check for Reverse Crossing of Previous Gate (Rounding Enforcement)
+        // If we are on Leg 2, 3, or 4, we must not cross the PREVIOUS gate in the reverse direction.
+        // Leg 2 (Downwind): Prev was Upwind Gate (2-3). Cleared Upwind(1). Forbidden is Downwind(-1).
+        // Leg 3 (Upwind): Prev was Leeward Gate (0-1). Cleared Downwind(-1). Forbidden is Upwind(1).
+        // Leg 4 (Finish): Prev was Upwind Gate (2-3). Cleared Upwind(1). Forbidden is Downwind(-1).
+
+        let prevGateIndices = [];
+        let forbiddenDirection = 0;
+
+        if (state.race.leg === 2) {
+             prevGateIndices = [2, 3];
+             forbiddenDirection = -1;
+        } else if (state.race.leg === 3) {
+             prevGateIndices = [0, 1];
+             forbiddenDirection = 1;
+        } else if (state.race.leg === 4) {
+             prevGateIndices = [2, 3];
+             forbiddenDirection = -1;
+        }
+
+        if (prevGateIndices.length > 0) {
+            const pm1 = marks[prevGateIndices[0]];
+            const pm2 = marks[prevGateIndices[1]];
+
+            const pIntersect = checkLineIntersection(
+                state.race.lastPos.x, state.race.lastPos.y, state.boat.x, state.boat.y,
+                pm1.x, pm1.y, pm2.x, pm2.y
+            );
+
+            if (pIntersect) {
+                const gateDx = pm2.x - pm1.x;
+                const gateDy = pm2.y - pm1.y;
+                const nx = gateDy;
+                const ny = -gateDx;
+                const moveDx = state.boat.x - state.race.lastPos.x;
+                const moveDy = state.boat.y - state.race.lastPos.y;
+                const dot = moveDx * nx + moveDy * ny;
+                const crossingDir = dot > 0 ? 1 : -1;
+
+                if (crossingDir === forbiddenDirection) {
+                    // Revert Leg!
+                    state.race.leg--;
+                    showRaceMessage("MUST ROUND MARK!", "text-red-500", "border-red-500/50");
+                    // Reset Split time logic if needed?
+                    // Maybe clear split display
+                    state.race.legSplitTimer = 0;
+                    // Reset start time? Ideally we go back to previous state.
+                    // But timer keeps running.
                 }
             }
         }
