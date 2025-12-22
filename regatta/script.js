@@ -175,8 +175,8 @@ function updateParticles() {
         } else if (p.type === 'wind') {
              // Move with wind
              const speed = 2;
-             p.x += Math.sin(state.wind.direction) * speed;
-             p.y -= Math.cos(state.wind.direction) * speed;
+             p.x -= Math.sin(state.wind.direction) * speed;
+             p.y += Math.cos(state.wind.direction) * speed;
         }
 
         p.life -= decay;
@@ -305,7 +305,7 @@ function update() {
 
     // Determine target boom side
     if (Math.abs(relWind) > 0.1) {
-        state.boat.targetBoomSide = relWind > 0 ? 1 : -1;
+        state.boat.targetBoomSide = relWind > 0 ? -1 : 1;
     }
 
     // Smooth Boom Transition (Gybe/Tack animation)
@@ -447,7 +447,7 @@ function drawParticles(ctx) {
             ctx.lineWidth = 2;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
-            ctx.lineTo(p.x + Math.sin(state.wind.direction) * 60, p.y - Math.cos(state.wind.direction) * 60);
+            ctx.lineTo(p.x - Math.sin(state.wind.direction) * 60, p.y + Math.cos(state.wind.direction) * 60);
             ctx.stroke();
         }
     }
@@ -462,8 +462,8 @@ function drawWater(ctx) {
     // Wave movement
     const waveSpeed = 20;
     const dist = state.time * waveSpeed;
-    const shiftX = Math.sin(state.wind.direction) * dist;
-    const shiftY = -Math.cos(state.wind.direction) * dist;
+    const shiftX = -Math.sin(state.wind.direction) * dist;
+    const shiftY = Math.cos(state.wind.direction) * dist;
 
     // Calculate grid start based on camera position minus shift, snapped to grid
     // This ensures we iterate a "stable" grid that moves with the shift
