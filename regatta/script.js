@@ -1350,22 +1350,35 @@ function drawActiveGateLine(ctx) {
     ctx.moveTo(m1.x, m1.y);
     ctx.lineTo(m2.x, m2.y);
 
-    // Styling: Glowing dashed orange line
+    // Default Styling: Glowing dashed orange line
     let shadowColor = '#fef08a'; // Yellow-200
     let strokeColor = 'rgba(250, 204, 21, 0.9)'; // Yellow-400
+    let lineDash = [20, 15];
 
-    // Use a different color for the start line before the race starts
-    if (state.race.leg === 0 && state.race.status === 'prestart') {
-        shadowColor = '#cbd5e1'; // Slate-300 (Gray)
-        strokeColor = 'rgba(148, 163, 184, 0.7)'; // Slate-400 (Gray)
+    // Start Line Logic (Leg 0)
+    if (state.race.leg === 0) {
+        if (state.race.status === 'prestart') {
+            // Red Solid
+            shadowColor = '#ef4444'; // Red-500
+            strokeColor = '#ef4444';
+            lineDash = [];
+        } else {
+            // White Solid (After start signal, before crossing)
+            shadowColor = '#ffffff';
+            strokeColor = '#ffffff';
+            lineDash = [];
+        }
     }
 
     ctx.shadowColor = shadowColor;
     ctx.shadowBlur = 15;
     ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 5;
-    ctx.setLineDash([20, 15]);
-    ctx.lineDashOffset = dashOffset;
+    ctx.setLineDash(lineDash);
+
+    if (lineDash.length > 0) {
+        ctx.lineDashOffset = dashOffset;
+    }
 
     ctx.stroke();
     ctx.restore();
