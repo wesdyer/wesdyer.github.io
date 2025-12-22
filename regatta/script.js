@@ -671,7 +671,7 @@ function drawWater(ctx) {
     }
 }
 
-function drawMarks(ctx) {
+function drawMarkShadows(ctx) {
     if (!state.course || !state.course.marks) return;
 
     for (const m of state.course.marks) {
@@ -683,6 +683,17 @@ function drawMarks(ctx) {
         ctx.beginPath();
         ctx.arc(3, 3, 12, 0, Math.PI * 2);
         ctx.fill();
+
+        ctx.restore();
+    }
+}
+
+function drawMarkBodies(ctx) {
+    if (!state.course || !state.course.marks) return;
+
+    for (const m of state.course.marks) {
+        ctx.save();
+        ctx.translate(m.x, m.y);
 
         // Buoy body (Top down)
         const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 12);
@@ -817,8 +828,9 @@ function draw() {
 
     // Draw World
     drawWater(ctx);
-    drawMarks(ctx); // Added back in
+    drawMarkShadows(ctx);
     drawParticles(ctx);
+    drawMarkBodies(ctx);
 
     // Draw Boat
     ctx.save();
