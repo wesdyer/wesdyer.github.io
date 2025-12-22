@@ -464,7 +464,22 @@ function updateParticles(dt) {
         p.life -= decay * timeScale;
 
         if (p.life <= 0) {
-            state.particles.splice(i, 1);
+             // Fast remove (Swap with last and pop)
+             // This changes the order, but for particles it is visually acceptable.
+             // We are iterating backwards, so if we swap with last and pop,
+             // the element at 'i' is replaced by what was at the end.
+             // We have already processed the end element (since we go from end to start),
+             // so we don't need to re-process 'i'.
+
+             // Wait. If i is last, we swap with self and pop. Fine.
+             // If i < last, we swap. The element at 'last' was ALREADY processed in this frame.
+             // So placing it at 'i' (which we are leaving) means it stays until next frame.
+             // Correct.
+
+             if (i < state.particles.length - 1) {
+                state.particles[i] = state.particles[state.particles.length - 1];
+             }
+             state.particles.pop();
         }
     }
 }
@@ -931,16 +946,19 @@ function drawBoat(ctx) {
 }
 
 function drawParticles(ctx) {
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#ffffff';
+
     for (const p of state.particles) {
         if (p.type === 'wake' || p.type === 'wake-wave') {
-            ctx.fillStyle = `rgba(255, 255, 255, ${p.alpha})`;
+            ctx.globalAlpha = p.alpha;
             ctx.beginPath();
             ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
             ctx.fill();
         } else if (p.type === 'wind') {
             const windFactor = state.wind.speed / 10;
             const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
-            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+            ctx.globalAlpha = opacity;
             ctx.lineWidth = 1 + windFactor;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
@@ -949,6 +967,7 @@ function drawParticles(ctx) {
             ctx.stroke();
         }
     }
+    ctx.globalAlpha = 1.0;
 }
 
 function drawWater(ctx) {
@@ -977,40 +996,71 @@ function drawWater(ctx) {
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 2.5;
+    ctx.beginPath(); // Start one big path for all waves
+
+    // Precalculate rotation constants
+    const angle = state.wind.direction + Math.PI;
+    const cosA = Math.cos(angle);
+    const sinA = Math.sin(angle);
+
+    // Constant for loop
+    const windScaleBase = Math.max(0.5, state.wind.speed / 10);
+    const timeRef = state.time * 2;
 
     // Iterate only over visible grid points
     for (let x = startX; x < endX; x += gridSize) {
         for (let y = startY; y < endY; y += gridSize) {
-             let wx = x + shiftX;
-             let wy = y + shiftY;
-
-             // Draw little wave glyphs
-             // Use unshifted 'x' and 'y' for noise so the shape travels with the wave
+             // Noise and randoms
+             // Use x,y (unshifted) for noise consistency
              const noise = Math.sin(x * 0.12 + y * 0.17);
-             const windScale = Math.max(0.5, state.wind.speed / 10);
-             const bob = Math.sin(state.time * 2 + noise * 10) * (3 * windScale);
+             const bob = Math.sin(timeRef + noise * 10) * (3 * windScaleBase);
 
-             // Add some randomness
              const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-             const randX = (seed - Math.floor(seed)) * 40 - 20;
+             // floor is faster with bitwise OR 0 if positive, but seed can be negative. Math.floor is fine.
+             const floorSeed = seed > 0 ? (seed | 0) : Math.ceil(seed);
+             // actually Math.floor is fast enough
+
+             const decimal = seed - Math.floor(seed);
+             const randX = decimal * 40 - 20;
              const randY = (Math.cos(seed) * 0.5 + 0.5) * 40 - 20;
-             let scale = (0.8 + ((seed * 10) % 1) * 0.4); // 0.8 to 1.2
-             scale *= windScale;
+             let scale = (0.8 + ((seed * 10) % 1) * 0.4) * windScaleBase;
 
-             ctx.save();
-             ctx.translate(wx + gridSize/2 + randX, wy + gridSize/2 + randY);
-             // Rotate to align perpendicular to wind
-             ctx.rotate(state.wind.direction + Math.PI);
-             ctx.scale(scale, scale);
+             // Center position
+             const cx = x + shiftX + gridSize/2 + randX;
+             const cy = y + shiftY + gridSize/2 + randY;
 
-             ctx.beginPath();
-             // Draw relative to rotated center
-             ctx.moveTo(-8, bob);
-             ctx.quadraticCurveTo(0, bob - 6, 8, bob);
-             ctx.stroke();
-             ctx.restore();
+             // Transform the 3 control points manually
+             // Shape: MoveTo(-8, bob), QuadTo(0, bob-6), LineTo(8, bob) relative to (0,0) center
+             // Scaled: (-8*s, bob*s), (0, (bob-6)*s), (8*s, bob*s)
+
+             // P1 (Start)
+             const p1x_loc = -8 * scale;
+             const p1y_loc = bob * scale;
+
+             // C (Control)
+             const cx_loc = 0;
+             const cy_loc = (bob - 6) * scale;
+
+             // P2 (End)
+             const p2x_loc = 8 * scale;
+             const p2y_loc = bob * scale;
+
+             // Rotate and Translate
+             const p1x = cx + (p1x_loc * cosA - p1y_loc * sinA);
+             const p1y = cy + (p1x_loc * sinA + p1y_loc * cosA);
+
+             const cpx = cx + (cx_loc * cosA - cy_loc * sinA);
+             const cpy = cy + (cx_loc * sinA + cy_loc * cosA);
+
+             const p2x = cx + (p2x_loc * cosA - p2y_loc * sinA);
+             const p2y = cy + (p2x_loc * sinA + p2y_loc * cosA);
+
+             ctx.moveTo(p1x, p1y);
+             ctx.quadraticCurveTo(cpx, cpy, p2x, p2y);
         }
     }
+
+    ctx.stroke();
 }
 
 function drawMarkShadows(ctx) {
@@ -1241,6 +1291,8 @@ function drawMinimap() {
     ctx.restore();
 }
 
+let frameCount = 0; // Global frame counter for throttling
+
 function draw() {
     // Clear
     ctx.fillStyle = CONFIG.waterColor;
@@ -1269,8 +1321,10 @@ function draw() {
 
     ctx.restore();
 
-    // Minimap
-    drawMinimap(); // Added back in
+    // Minimap - Throttle to 30fps (every 2nd frame)
+    if (frameCount % 2 === 0) {
+        drawMinimap();
+    }
 
     // UI Updates - Using cached elements
     if (UI.compassRose) {
@@ -1339,6 +1393,8 @@ function loop(timestamp) {
 
     update(safeDt);
     draw();
+
+    frameCount++;
     requestAnimationFrame(loop);
 }
 
