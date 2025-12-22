@@ -1,6 +1,7 @@
 // Game Configuration
 const CONFIG = {
     turnSpeed: 0.01,
+    turnPenalty: 0.995,
     cameraPanSpeed: 1.25,
     cameraRotateSpeed: 0.01,
     windSpeed: 5,
@@ -260,11 +261,14 @@ function update() {
     }
 
     // Boat Steering
+    let isTurning = false;
     if (state.keys.ArrowLeft) {
         state.boat.heading -= CONFIG.turnSpeed;
+        isTurning = true;
     }
     if (state.keys.ArrowRight) {
         state.boat.heading += CONFIG.turnSpeed;
+        isTurning = true;
     }
 
     // Normalize Heading
@@ -318,6 +322,10 @@ function update() {
     // Smoothly interpolate current speed to target speed (acceleration/deceleration)
     // Momentum factor: 0.98 (retains 98% of old speed), 0.02 (adds 2% of new)
     state.boat.speed = state.boat.speed * 0.99 + targetGameSpeed * 0.01;
+
+    if (isTurning) {
+        state.boat.speed *= CONFIG.turnPenalty;
+    }
 
     // Move Boat
     state.boat.x += boatDirX * state.boat.speed;
