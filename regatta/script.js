@@ -833,7 +833,7 @@ function update(dt) {
     }
 
     // Sail Angle visual
-    let optimalSailAngle = (angleToWind / 2);
+    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
     // Clamp to max 80 degrees
     if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
 
@@ -908,7 +908,13 @@ function drawBoat(ctx) {
 
         // Calculate dynamic shape for luffing
         const luff = state.boat.luffIntensity || 0;
-        const baseDepth = (isJib ? 11 : 15) * scale;
+
+        // Flatten sail when sheeted in (Close Hauled)
+        // Full depth at > 45 degrees sail angle, reduced depth at 0 degrees
+        const angleRatio = Math.min(1.0, Math.abs(state.boat.sailAngle) / (Math.PI / 4));
+        const flattenFactor = 0.6 + 0.4 * angleRatio;
+
+        const baseDepth = (isJib ? 11 : 15) * scale * flattenFactor;
         let controlX = -state.boat.boomSide * baseDepth;
 
         if (luff > 0) {
