@@ -109,6 +109,7 @@ const UI = {
     speed: document.getElementById('hud-speed'),
     windSpeed: document.getElementById('hud-wind-speed'),
     windAngle: document.getElementById('hud-wind-angle'),
+    vmg: document.getElementById('hud-vmg'),
     timer: document.getElementById('hud-timer'),
     message: document.getElementById('hud-message'),
     waypointArrow: document.getElementById('hud-waypoint-arrow')
@@ -1551,6 +1552,16 @@ function draw() {
             const angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
             const twaDeg = Math.round(angleToWind * (180 / Math.PI));
             UI.windAngle.textContent = twaDeg + '°';
+        }
+
+        if (UI.vmg) {
+            // Calculate VMG = Speed * cos(Heading - Bearing to Waypoint)
+            // state.race.nextWaypoint.angle is the bearing (in radians)
+            // state.boat.heading is boat heading (in radians)
+            const bearing = state.race.nextWaypoint.angle;
+            const diff = normalizeAngle(state.boat.heading - bearing);
+            const vmg = (state.boat.speed * 4) * Math.cos(diff); // Convert speed to knots first
+            UI.vmg.textContent = vmg.toFixed(1);
         }
 
         if (UI.timer) {
