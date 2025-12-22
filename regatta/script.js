@@ -83,7 +83,17 @@ const state = {
         ArrowDown: false,
         Shift: false,
     },
-    time: 0
+    time: 0,
+    race: {
+        status: 'prestart', // 'prestart', 'racing', 'finished'
+        timer: 60.0,
+        leg: 0, // 0=Start, 1=Upwind, 2=Downwind, 3=Upwind, 4=Finish
+        ocs: false,
+        penalty: false,
+        penaltyProgress: 0,
+        finishTime: 0,
+        lastPos: { x: 0, y: 0 }
+    }
 };
 
 // Canvas Setup
@@ -97,7 +107,9 @@ const UI = {
     headingArrow: document.getElementById('hud-heading-arrow'),
     speed: document.getElementById('hud-speed'),
     windSpeed: document.getElementById('hud-wind-speed'),
-    windAngle: document.getElementById('hud-wind-angle')
+    windAngle: document.getElementById('hud-wind-angle'),
+    timer: document.getElementById('hud-timer'),
+    message: document.getElementById('hud-message')
 };
 
 let minimapCtx = null;
@@ -135,6 +147,230 @@ function normalizeAngle(angle) {
     while (angle > Math.PI) angle -= 2 * Math.PI;
     while (angle < -Math.PI) angle += 2 * Math.PI;
     return angle;
+}
+
+// Race Helper Functions
+function formatTime(seconds) {
+    const mins = Math.floor(Math.abs(seconds) / 60);
+    const secs = Math.floor(Math.abs(seconds) % 60);
+    const ms = Math.floor((Math.abs(seconds) % 1) * 10);
+
+    // During countdown, we don't show ms usually, but let's keep it clean
+    // If negative (pre-start), show countdown
+    const sign = seconds < 0 ? "-" : "";
+    return `${sign}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Check intersection of Line Segment AB and Line Segment CD
+function checkLineIntersection(Ax, Ay, Bx, By, Cx, Cy, Dx, Dy) {
+    const rX = Bx - Ax;
+    const rY = By - Ay;
+    const sX = Dx - Cx;
+    const sY = Dy - Cy;
+
+    const rxs = rX * sY - rY * sX;
+    const qpx = Cx - Ax;
+    const qpy = Cy - Ay;
+
+    // Collinear or parallel handling omitted for simplicity (rare in game physics frame)
+    if (Math.abs(rxs) < 1e-5) return null;
+
+    const t = (qpx * sY - qpy * sX) / rxs;
+    const u = (qpx * rY - qpy * rX) / rxs;
+
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+        return { t, u };
+    }
+    return null;
+}
+
+function triggerPenalty() {
+    if (state.race.finished) return;
+    if (!state.race.penalty) {
+        state.race.penalty = true;
+        state.race.penaltyProgress = 0;
+        showRaceMessage("PENALTY! DO 720° TURN", "text-red-500", "border-red-500/50");
+    }
+}
+
+function showRaceMessage(text, textColorClass, borderColorClass) {
+    if (UI.message) {
+        UI.message.textContent = text;
+        UI.message.className = `mt-2 text-lg font-bold bg-slate-900/80 px-4 py-1 rounded-full border shadow-lg ${textColorClass} ${borderColorClass}`;
+        UI.message.classList.remove('hidden');
+    }
+}
+
+function hideRaceMessage() {
+    if (UI.message) {
+        UI.message.classList.add('hidden');
+    }
+}
+
+function updateRace(dt) {
+    // 1. Timer Logic
+    if (state.race.status === 'prestart') {
+        state.race.timer -= dt;
+        if (state.race.timer <= 0) {
+            state.race.status = 'racing';
+            state.race.timer = 0;
+            // Check OCS at start moment
+            // OCS if boat is Upwind of Start Line
+            // Start Line Normal (Upwind)
+            // Start Line is M0->M1. Normal is (-dy, dx).
+            // We need to check which side we are on.
+            // But simpler: Just check crossing logic below.
+            // If we are on course side, we are OCS.
+            // Logic handled continuously below.
+        }
+    } else if (state.race.status === 'racing') {
+        state.race.timer += dt;
+    }
+
+    // 2. Gate Crossing Logic
+    const marks = state.course.marks;
+    if (marks && marks.length >= 4) {
+        // Define Gates
+        // Gate 1: Start/Finish (M0-M1). Correct crossing: Upwind (Start), Downwind (Finish/Gate)
+        // Gate 2: Upwind Gate (M2-M3). Correct crossing: Upwind.
+
+        // Define Active Gate based on Leg
+        let gateIndices = [];
+        let requiredDirection = 1; // 1 = Upwind, -1 = Downwind
+
+        if (state.race.leg === 0) { // Start
+            gateIndices = [0, 1];
+            requiredDirection = 1; // Must cross Upwind
+        } else if (state.race.leg === 1) { // To Upwind Gate
+            gateIndices = [2, 3];
+            requiredDirection = 1;
+        } else if (state.race.leg === 2) { // To Leeward Gate
+            gateIndices = [0, 1];
+            requiredDirection = -1;
+        } else if (state.race.leg === 3) { // To Upwind Gate
+            gateIndices = [2, 3];
+            requiredDirection = 1;
+        } else if (state.race.leg === 4) { // Finish
+            gateIndices = [0, 1];
+            requiredDirection = -1;
+        }
+
+        if (gateIndices.length > 0) {
+            const m1 = marks[gateIndices[0]];
+            const m2 = marks[gateIndices[1]];
+
+            // Check crossing
+            // Boat Segment: lastPos -> currPos
+            const intersect = checkLineIntersection(
+                state.race.lastPos.x, state.race.lastPos.y, state.boat.x, state.boat.y,
+                m1.x, m1.y, m2.x, m2.y
+            );
+
+            if (intersect) {
+                // Determine direction of crossing
+                // Gate Vector
+                const gateDx = m2.x - m1.x;
+                const gateDy = m2.y - m1.y;
+
+                // Normal pointing "Upwind" relative to gate
+                // If Gate is Left->Right (Crosswind), Normal is Upwind.
+                // In initCourse: M0->M1 is Left->Right. Upwind is -Y (ish).
+                // Normal vector N = (dy, -dx) (Rotated 90 deg CCW in screen coords?)
+                // M0(Left) -> M1(Right). Vector is Right.
+                // Upwind is North (-Y).
+                // Right -> North is 90 deg CCW.
+                // (x, y) -> (y, -x).
+                const nx = gateDy;
+                const ny = -gateDx;
+
+                // Dot product of Boat Movement with Normal
+                const moveDx = state.boat.x - state.race.lastPos.x;
+                const moveDy = state.boat.y - state.race.lastPos.y;
+                const dot = moveDx * nx + moveDy * ny;
+
+                // Check consistency
+                // If dot > 0, we moved in direction of Normal (Upwind)
+                // If dot < 0, we moved opposite (Downwind)
+
+                const crossingDir = dot > 0 ? 1 : -1;
+
+                if (state.race.status === 'prestart') {
+                    // Start Line Logic during pre-start
+                    // If we cross Start Line (Gate 0-1)
+                    if (gateIndices[0] === 0) {
+                         // If we cross Upwind (1), we are OCS
+                         if (crossingDir === 1) {
+                             state.race.ocs = true;
+                             showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
+                         }
+                         // If we cross Downwind (-1), we cleared OCS
+                         else if (crossingDir === -1) {
+                             state.race.ocs = false;
+                             hideRaceMessage();
+                         }
+                    }
+                } else if (state.race.status === 'racing' && !state.race.finished) {
+                    // Racing Logic
+
+                    // Special Case: Start (Leg 0)
+                    // We transition from Leg 0 to Leg 1 ONLY if we cross Start Line Upwind AFTER T=0
+                    if (state.race.leg === 0) {
+                        // We assume we are checking Start Line
+                        if (crossingDir === 1) {
+                            if (state.race.ocs) {
+                                // Crossed upwind but was OCS? Still OCS unless we dipped back first.
+                                // Logic above handles OCS set/clear.
+                                // If OCS is true, we cannot start.
+                            } else {
+                                // Clean start!
+                                state.race.leg++;
+                                // Check if we were OCS just now?
+                                // If we were OCS, we must have cleared it.
+                                // If we are here, we just crossed Upwind.
+                                // To start correctly, we must have been on Downwind side.
+                                // So this crossing is valid.
+                            }
+                        } else if (crossingDir === -1) {
+                             // Dipping back
+                             state.race.ocs = false;
+                             hideRaceMessage();
+                        }
+                    } else {
+                        // Normal Legs
+                        // Must match required direction
+                        if (crossingDir === requiredDirection) {
+                            state.race.leg++;
+                            if (state.race.leg > 4) {
+                                state.race.finished = true;
+                                state.race.status = 'finished';
+                                state.race.finishTime = state.race.timer;
+                                showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
+                            }
+                        } else {
+                            // Wrong way!
+                            showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50");
+                            // Set timeout to hide? Or keep until corrected?
+                            // Let's keep it brief or until corrected (crossing back)
+                            // If they cross back, they are "correcting" so hide it?
+                            // Simplification: Just show it.
+                            setTimeout(hideRaceMessage, 2000);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. Penalty Logic
+    if (state.race.penalty) {
+        // Track rotation
+        // We need previous heading vs current heading
+        // Calculated in main update() loop or passed here?
+        // Let's rely on update() to call us AFTER position update but BEFORE storing lastPos/lastHeading
+        // Actually update() doesn't store lastHeading explicitly yet.
+        // We can access state.boat.prevHeading if we add it.
+        // Or we calculate it here if we call updateRace at end of update.
+    }
 }
 
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
@@ -357,6 +593,8 @@ function update() {
 
             if (dist < collisionDist) {
                 // Collision detected
+                triggerPenalty();
+
                 // Calculate push-out vector (normal)
                 // If centers are exactly same, pick random direction
                 let nx = dx;
@@ -397,8 +635,32 @@ function update() {
 
              // Stop boat
              state.boat.speed = 0;
+             triggerPenalty();
         }
     }
+
+    // Update Race Logic
+    updateRace(dt);
+
+    // Store history
+    state.race.lastPos.x = state.boat.x;
+    state.race.lastPos.y = state.boat.y;
+
+    // Penalty Tracking
+    if (state.race.penalty) {
+         // Use signed difference to ensure 720 in ONE direction
+         const diff = normalizeAngle(state.boat.heading - state.boat.prevHeading);
+         state.race.penaltyProgress += diff;
+
+         if (Math.abs(state.race.penaltyProgress) >= 4 * Math.PI - 0.1) { // 720 deg (minus small tolerance)
+             state.race.penalty = false;
+             state.race.penaltyProgress = 0;
+             hideRaceMessage();
+         }
+    }
+
+    // Store prevHeading for next frame
+    state.boat.prevHeading = state.boat.heading;
 
     // Wake Particles
     if (state.boat.speed > 0.25) {
@@ -769,11 +1031,49 @@ function drawMarkBodies(ctx) {
         const bobScale = 1.0 + Math.sin(bobPhase) * 0.05;
         ctx.scale(bobScale, bobScale);
 
+        // Determine if Active
+        // Find mark index
+        const markIndex = state.course.marks.indexOf(m);
+
+        let isActive = false;
+        // Determine active marks based on Leg
+        // Leg 0: Marks 0,1 (Start)
+        // Leg 1: Marks 2,3 (Upwind)
+        // Leg 2: Marks 0,1 (Downwind)
+        // Leg 3: Marks 2,3 (Upwind)
+        // Leg 4: Marks 0,1 (Finish)
+
+        // Also check Race Status. Only highlight if Prestart or Racing.
+        if (state.race.status !== 'finished') {
+             if (state.race.leg % 2 === 0) {
+                 // Even legs (0, 2, 4) -> Marks 0,1
+                 if (markIndex === 0 || markIndex === 1) isActive = true;
+             } else {
+                 // Odd legs (1, 3) -> Marks 2,3
+                 if (markIndex === 2 || markIndex === 3) isActive = true;
+             }
+        }
+
+        // Colors
+        let cHighlight, cMid, cDark, cStroke;
+
+        if (isActive) {
+            cHighlight = '#fdba74'; // Light Orange
+            cMid = '#f97316'; // Orange
+            cDark = '#c2410c'; // Dark Orange
+            cStroke = '#c2410c';
+        } else {
+            cHighlight = '#e2e8f0'; // Light Gray
+            cMid = '#94a3b8'; // Gray
+            cDark = '#64748b'; // Dark Gray
+            cStroke = '#475569';
+        }
+
         // Buoy body (Top down)
         const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 12);
-        grad.addColorStop(0, '#fdba74'); // Light Orange highlight
-        grad.addColorStop(0.5, '#f97316'); // Orange
-        grad.addColorStop(1, '#c2410c'); // Dark Orange
+        grad.addColorStop(0, cHighlight);
+        grad.addColorStop(0.5, cMid);
+        grad.addColorStop(1, cDark);
 
         ctx.fillStyle = grad;
         ctx.beginPath();
@@ -781,7 +1081,7 @@ function drawMarkBodies(ctx) {
         ctx.fill();
 
         // Outline
-        ctx.strokeStyle = '#c2410c';
+        ctx.strokeStyle = cStroke;
         ctx.lineWidth = 1;
         ctx.stroke();
 
@@ -993,6 +1293,28 @@ function draw() {
         const twaDeg = Math.round(angleToWind * (180 / Math.PI));
         UI.windAngle.textContent = twaDeg + '°';
     }
+
+    if (UI.timer) {
+        if (state.race.status === 'finished') {
+             UI.timer.textContent = formatTime(state.race.finishTime);
+             UI.timer.classList.add('text-green-400');
+        } else if (state.race.status === 'prestart') {
+             // Countdown
+             // Negate so we count down nicely? Or just display logic.
+             // formatTime handles negative. But here timer > 0.
+             // We want to show -00:59 etc?
+             // formatTime( -state.race.timer )
+             UI.timer.textContent = formatTime(-state.race.timer);
+             // Warn if < 10s
+             if (state.race.timer < 10) UI.timer.classList.add('text-orange-400');
+             else UI.timer.classList.remove('text-orange-400');
+        } else {
+             // Racing
+             UI.timer.textContent = formatTime(state.race.timer);
+             UI.timer.classList.remove('text-orange-400');
+             UI.timer.classList.remove('text-green-400');
+        }
+    }
 }
 
 function loop() {
@@ -1076,5 +1398,10 @@ state.boat.y = Math.cos(state.wind.direction) * 150;
 
 // Face Upwind
 state.boat.heading = state.wind.direction;
+
+// Init Race History
+state.race.lastPos.x = state.boat.x;
+state.race.lastPos.y = state.boat.y;
+state.boat.prevHeading = state.boat.heading;
 
 loop();
