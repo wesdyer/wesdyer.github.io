@@ -432,13 +432,14 @@ function createParticle(x, y, type, properties = {}) {
     });
 }
 
-function updateParticles() {
+function updateParticles(dt) {
+    const timeScale = dt * 60;
     for (let i = state.particles.length - 1; i >= 0; i--) {
         const p = state.particles[i];
 
         // Apply velocity if present
-        if (p.vx) p.x += p.vx;
-        if (p.vy) p.y += p.vy;
+        if (p.vx) p.x += p.vx * timeScale;
+        if (p.vy) p.y += p.vy * timeScale;
 
         // Default decay
         let decay = 0.0025;
@@ -456,11 +457,11 @@ function updateParticles() {
         } else if (p.type === 'wind') {
              // Move with wind
              const speed = 1;
-             p.x -= Math.sin(state.wind.direction) * speed;
-             p.y += Math.cos(state.wind.direction) * speed;
+             p.x -= Math.sin(state.wind.direction) * speed * timeScale;
+             p.y += Math.cos(state.wind.direction) * speed * timeScale;
         }
 
-        p.life -= decay;
+        p.life -= decay * timeScale;
 
         if (p.life <= 0) {
             state.particles.splice(i, 1);
@@ -469,12 +470,14 @@ function updateParticles() {
 }
 
 // Update Loop
-function update() {
-    state.time += 0.004;
-    const dt = 1/60; // Assume 60fps for switch timing
+function update(dt) {
+    // Standardize time step logic
+    // Original: state.time += 0.004 per frame (at 60fps) -> 0.24 per second
+    state.time += 0.24 * dt;
+    const timeScale = dt * 60; // Scaling factor for logic designed for 60 FPS
 
     // Sail Switching Logic
-    const switchSpeed = dt / 5.0; // 5.0 seconds switch time
+    const switchSpeed = dt / 5.0; // 5.0 seconds switch time (dt is in seconds)
     if (state.boat.spinnaker) {
         state.boat.spinnakerDeployProgress = Math.min(1, state.boat.spinnakerDeployProgress + switchSpeed);
     } else {
@@ -493,23 +496,26 @@ function update() {
     state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
 
     // Camera Rotation Logic
+    // Damping factor adapted for time delta
+    const camLerp = 1 - Math.pow(0.9, timeScale); // approx 0.1 at 60fps
+
     if (state.camera.mode === 'heading') {
         // Smoothly rotate towards boat heading
         let diff = normalizeAngle(state.boat.heading - state.camera.rotation);
-        state.camera.rotation += diff * 0.1;
+        state.camera.rotation += diff * camLerp;
     } else if (state.camera.mode === 'north') {
         // Rotate towards 0
         let diff = normalizeAngle(0 - state.camera.rotation);
-        state.camera.rotation += diff * 0.1;
+        state.camera.rotation += diff * camLerp;
     } else if (state.camera.mode === 'wind') {
         // Rotate towards wind direction (so wind comes from top)
         let diff = normalizeAngle(state.wind.direction - state.camera.rotation);
-        state.camera.rotation += diff * 0.1;
+        state.camera.rotation += diff * camLerp;
     }
 
     // Boat Steering
     let isTurning = false;
-    const turnRate = state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed;
+    const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale;
 
     if (state.keys.ArrowLeft) {
         state.boat.heading -= turnRate;
@@ -569,16 +575,21 @@ function update() {
     }
 
     // Smoothly interpolate current speed to target speed (acceleration/deceleration)
-    // Momentum factor: 0.995 (retains 99.5% of old speed), 0.005 (adds 0.5% of new)
-    state.boat.speed = state.boat.speed * 0.995 + targetGameSpeed * 0.005;
+    // Momentum factor: 0.995 (retains 99.5% of old speed)
+    // alpha = 1 - pow(0.995, timeScale)
+    const speedAlpha = 1 - Math.pow(0.995, timeScale);
+    state.boat.speed = state.boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
 
     if (isTurning) {
-        state.boat.speed *= CONFIG.turnPenalty;
+        // Apply turn penalty scaled by time
+        // speed *= pow(penalty, timeScale)
+        state.boat.speed *= Math.pow(CONFIG.turnPenalty, timeScale);
     }
 
     // Move Boat
-    state.boat.x += boatDirX * state.boat.speed;
-    state.boat.y += boatDirY * state.boat.speed;
+    // Speed is in "pixels per frame @ 60fps", so scale by timeScale
+    state.boat.x += boatDirX * state.boat.speed * timeScale;
+    state.boat.y += boatDirY * state.boat.speed * timeScale;
 
     // Collision Check with Marks
     if (state.course && state.course.marks) {
@@ -753,7 +764,7 @@ function update() {
         createParticle(px, py, 'wind', { life: Math.random() * 1.0 + 0.5 });
     }
 
-    updateParticles();
+    updateParticles(dt);
 }
 
 // Drawing Functions
@@ -944,7 +955,6 @@ function drawWater(ctx) {
     // Background already filled
 
     const gridSize = 80;
-    const range = Math.max(canvas.width, canvas.height) * 1.5;
 
     // Wave movement
     const waveSpeed = 20;
@@ -952,26 +962,27 @@ function drawWater(ctx) {
     const shiftX = -Math.sin(state.wind.direction) * dist;
     const shiftY = Math.cos(state.wind.direction) * dist;
 
+    // Viewport bounds for culling
+    const pad = gridSize * 2;
+    const left = state.camera.x - canvas.width / 2 - pad;
+    const right = state.camera.x + canvas.width / 2 + pad;
+    const top = state.camera.y - canvas.height / 2 - pad;
+    const bottom = state.camera.y + canvas.height / 2 + pad;
+
     // Calculate grid start based on camera position minus shift, snapped to grid
-    // This ensures we iterate a "stable" grid that moves with the shift
-    const startX = Math.floor((state.camera.x - range - shiftX) / gridSize) * gridSize;
-    const startY = Math.floor((state.camera.y - range - shiftY) / gridSize) * gridSize;
+    const startX = Math.floor((left - shiftX) / gridSize) * gridSize;
+    const endX = Math.ceil((right - shiftX) / gridSize) * gridSize;
+    const startY = Math.floor((top - shiftY) / gridSize) * gridSize;
+    const endY = Math.ceil((bottom - shiftY) / gridSize) * gridSize;
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 2.5;
 
-    // Iterate enough grid points to cover the view range
-    // We add extra buffer to handle the shift wrapping
-    for (let x = startX; x < startX + range * 2.5; x += gridSize) {
-        for (let y = startY; y < startY + range * 2.5; y += gridSize) {
+    // Iterate only over visible grid points
+    for (let x = startX; x < endX; x += gridSize) {
+        for (let y = startY; y < endY; y += gridSize) {
              let wx = x + shiftX;
              let wy = y + shiftY;
-
-             // Optimization: Skip if far outside camera view
-             if (wx < state.camera.x - range || wx > state.camera.x + range ||
-                 wy < state.camera.y - range || wy > state.camera.y + range) {
-                 continue;
-             }
 
              // Draw little wave glyphs
              // Use unshifted 'x' and 'y' for noise so the shape travels with the wave
@@ -1317,8 +1328,16 @@ function draw() {
     }
 }
 
-function loop() {
-    update();
+let lastTime = 0;
+function loop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    const dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+
+    // Clamp dt to avoid huge jumps (e.g. max 0.1s)
+    const safeDt = Math.min(dt, 0.1);
+
+    update(safeDt);
     draw();
     requestAnimationFrame(loop);
 }
@@ -1404,4 +1423,4 @@ state.race.lastPos.x = state.boat.x;
 state.race.lastPos.y = state.boat.y;
 state.boat.prevHeading = state.boat.heading;
 
-loop();
+requestAnimationFrame(loop);
