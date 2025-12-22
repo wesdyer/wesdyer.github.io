@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let timer;
     let time = 0;
     let currentDifficulty = 'Medium';
+    let boardGenerated = false;
 
     const difficultySettings = {
         'Easy': { width: 9, height: 9, bombAmount: 10 },
@@ -275,18 +276,63 @@ document.addEventListener('DOMContentLoaded', () => {
         createBoard();
     }
 
+    function generateMines(excludeIndex) {
+        const totalSquares = width * height;
+        const indices = [];
+        for (let i = 0; i < totalSquares; i++) {
+            if (i !== excludeIndex) {
+                indices.push(i);
+            }
+        }
+
+        // Fisher-Yates shuffle
+        for (let i = indices.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [indices[i], indices[j]] = [indices[j], indices[i]];
+        }
+
+        const bombIndices = new Set(indices.slice(0, bombAmount));
+
+        // Assign types
+        for (let i = 0; i < totalSquares; i++) {
+            const square = squares[i];
+            if (bombIndices.has(i)) {
+                square.setAttribute('data-type', 'bomb');
+            } else {
+                square.setAttribute('data-type', 'valid');
+            }
+        }
+
+        // Calculate numbers
+        for (let i = 0; i < squares.length; i++) {
+            let total = 0;
+            const isLeftEdge = (i % width === 0);
+            const isRightEdge = (i % width === width - 1);
+            const square = squares[i];
+
+            if (square.getAttribute('data-type') === 'valid') {
+                if (i > 0 && !isLeftEdge && squares[i - 1].getAttribute('data-type') === 'bomb') total++;
+                if (i > width - 1 && !isRightEdge && squares[i + 1 - width].getAttribute('data-type') === 'bomb') total++;
+                if (i >= width && squares[i - width].getAttribute('data-type') === 'bomb') total++;
+                if (i >= width + 1 && !isLeftEdge && squares[i - 1 - width].getAttribute('data-type') === 'bomb') total++;
+                if (i < width * height - 1 && !isRightEdge && squares[i + 1].getAttribute('data-type') === 'bomb') total++;
+                if (i < width * height - width && !isLeftEdge && squares[i - 1 + width].getAttribute('data-type') === 'bomb') total++;
+                if (i < width * height - width - 1 && !isRightEdge && squares[i + 1 + width].getAttribute('data-type') === 'bomb') total++;
+                if (i < width * height - width && squares[i + width].getAttribute('data-type') === 'bomb') total++;
+                square.setAttribute('data', total);
+            }
+        }
+    }
+
     function createBoard() {
         isGameOver = false;
         flags = 0;
         time = 0;
+        boardGenerated = false;
         clearInterval(timer);
         timeElement.textContent = '00:00';
         minesElement.textContent = bombAmount.toString().padStart(2, '0');
         smileyButton.querySelector('span').textContent = 'sentiment_satisfied';
-
-        const bombsArray = Array(bombAmount).fill('bomb');
-        const emptyArray = Array(width * height - bombAmount).fill('valid');
-        const gameArray = emptyArray.concat(bombsArray).sort(() => Math.random() - 0.5);
 
         grid.innerHTML = '';
         squares = [];
@@ -295,6 +341,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const square = document.createElement('div');
             square.setAttribute('id', i);
             square.classList.add('w-8', 'h-8', 'md:w-12', 'md:h-12', 'cell-covered-gradient', 'rounded-xl', 'cursor-pointer', 'transition-all', 'cell-shadow', 'select-none', 'flex', 'items-center', 'justify-center');
+            square.setAttribute('data-type', 'valid'); // Default until generated
+            square.setAttribute('data', '0'); // Default until generated
             grid.appendChild(square);
             squares.push(square);
 
@@ -358,25 +406,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
-
-        for (let i = 0; i < squares.length; i++) {
-            let total = 0;
-            const isLeftEdge = (i % width === 0);
-            const isRightEdge = (i % width === width - 1);
-
-            if (gameArray[i] === 'valid') {
-                if (i > 0 && !isLeftEdge && gameArray[i - 1] === 'bomb') total++;
-                if (i > width - 1 && !isRightEdge && gameArray[i + 1 - width] === 'bomb') total++;
-                if (i >= width && gameArray[i - width] === 'bomb') total++;
-                if (i >= width + 1 && !isLeftEdge && gameArray[i - 1 - width] === 'bomb') total++;
-                if (i < width * height - 1 && !isRightEdge && gameArray[i + 1] === 'bomb') total++;
-                if (i < width * height - width && !isLeftEdge && gameArray[i - 1 + width] === 'bomb') total++;
-                if (i < width * height - width - 1 && !isRightEdge && gameArray[i + 1 + width] === 'bomb') total++;
-                if (i < width * height - width && gameArray[i + width] === 'bomb') total++;
-                squares[i].setAttribute('data', total);
-            }
-             squares[i].setAttribute('data-type', gameArray[i]);
-        }
     }
 
     function startTimer() {
@@ -412,6 +441,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (time === 0) {
             startTimer();
+        }
+
+        if (!boardGenerated) {
+            generateMines(parseInt(currentId));
+            boardGenerated = true;
         }
 
         if (square.getAttribute('data-type') === 'bomb') {
@@ -552,6 +586,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cascadeButton.addEventListener('click', () => {
         if (isGameOver) return;
+
+        if (!boardGenerated) {
+            generateMines(-1);
+            boardGenerated = true;
+        }
 
         let bestIndex = -1;
         let maxRevealed = -1;
