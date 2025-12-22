@@ -101,7 +101,8 @@ const state = {
         lastLegDuration: 0,
         legSplitTimer: 0,
         lastPos: { x: 0, y: 0 },
-        nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 }
+        nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 },
+        trace: []
     }
 };
 
@@ -479,6 +480,24 @@ function updateRace(dt) {
         state.race.nextWaypoint.x = closest.x;
         state.race.nextWaypoint.y = closest.y;
         state.race.nextWaypoint.angle = Math.atan2(dx, -dy); // 0 is North (Up, -y)
+    }
+
+    // 5. Trace Recording
+    // Record trace if race has started (Leg >= 1) and not finished
+    if (state.race.leg >= 1 && state.race.status !== 'finished') {
+        const trace = state.race.trace;
+        const minRecordDistSq = 50 * 50; // Record every 50 units
+
+        if (trace.length === 0) {
+            trace.push({ x: state.boat.x, y: state.boat.y });
+        } else {
+            const last = trace[trace.length - 1];
+            const dx = state.boat.x - last.x;
+            const dy = state.boat.y - last.y;
+            if (dx * dx + dy * dy > minRecordDistSq) {
+                trace.push({ x: state.boat.x, y: state.boat.y });
+            }
+        }
     }
 }
 
@@ -1388,34 +1407,75 @@ function drawMinimap() {
         ctx.setLineDash([]);
     }
 
-    // Draw Marks
-    ctx.fillStyle = '#22c55e'; // Green for high visibility
-    for (const m of state.course.marks) {
-        const pos = transform(m.x, m.y);
+    // Draw Trace
+    if (state.race.trace && state.race.trace.length > 0) {
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.6)'; // Yellow-400, semi-transparent
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
-        ctx.fill();
+
+        const startPos = transform(state.race.trace[0].x, state.race.trace[0].y);
+        ctx.moveTo(startPos.x, startPos.y);
+
+        for (let i = 1; i < state.race.trace.length; i++) {
+            const p = transform(state.race.trace[i].x, state.race.trace[i].y);
+            ctx.lineTo(p.x, p.y);
+        }
+        // Draw to current boat position
+        const currentPos = transform(state.boat.x, state.boat.y);
+        ctx.lineTo(currentPos.x, currentPos.y);
+
+        ctx.stroke();
     }
 
-    // Draw Course Lines (Start/Finish and Gate)
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    // Start Line (first two marks)
-    if (state.course.marks.length >= 2) {
-        const p1 = transform(state.course.marks[0].x, state.course.marks[0].y);
-        const p2 = transform(state.course.marks[1].x, state.course.marks[1].y);
+    // Determine Active Gate Index
+    // Leg 0, 2, 4 -> Start/Finish (Indices 0,1)
+    // Leg 1, 3 -> Upwind (Indices 2,3)
+    let activeIndices = (state.race.leg % 2 === 0) ? [0, 1] : [2, 3];
+    if (state.race.status === 'finished') activeIndices = [];
+
+    // Draw Gate Lines
+    const gate1Active = activeIndices.includes(0);
+    const gate2Active = activeIndices.includes(2);
+
+    const drawGate = (i1, i2, isActive) => {
+        if (i1 >= state.course.marks.length || i2 >= state.course.marks.length) return;
+
+        const p1 = transform(state.course.marks[i1].x, state.course.marks[i1].y);
+        const p2 = transform(state.course.marks[i2].x, state.course.marks[i2].y);
+
+        ctx.beginPath();
         ctx.moveTo(p1.x, p1.y);
         ctx.lineTo(p2.x, p2.y);
+
+        if (isActive) {
+             ctx.strokeStyle = '#facc15'; // Yellow
+             ctx.lineWidth = 2;
+        } else {
+             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; // Faint gray
+             ctx.lineWidth = 1;
+        }
+        ctx.stroke();
+    };
+
+    drawGate(0, 1, gate1Active);
+    drawGate(2, 3, gate2Active);
+
+    // Draw Marks
+    for (let i = 0; i < state.course.marks.length; i++) {
+        const m = state.course.marks[i];
+        const pos = transform(m.x, m.y);
+        const isActive = activeIndices.includes(i);
+
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, isActive ? 4 : 3, 0, Math.PI * 2);
+
+        if (isActive) {
+            ctx.fillStyle = '#f97316'; // Orange
+        } else {
+            ctx.fillStyle = '#94a3b8'; // Slate-400
+        }
+        ctx.fill();
     }
-    // Upwind Gate (next two)
-    if (state.course.marks.length >= 4) {
-        const p3 = transform(state.course.marks[2].x, state.course.marks[2].y);
-        const p4 = transform(state.course.marks[3].x, state.course.marks[3].y);
-        ctx.moveTo(p3.x, p3.y);
-        ctx.lineTo(p4.x, p4.y);
-    }
-    ctx.stroke();
 
     // Draw Boat
     const boatPos = transform(state.boat.x, state.boat.y);
