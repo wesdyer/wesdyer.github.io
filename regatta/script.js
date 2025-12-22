@@ -120,13 +120,8 @@ function updateParticles() {
 function update() {
     state.time += 0.016;
 
-    // Camera Controls
-    if (state.keys.w) { state.camera.y -= CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.x += CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
-    if (state.keys.s) { state.camera.y += CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.x -= CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
-    if (state.keys.a) { state.camera.x -= CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.y -= CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
-    if (state.keys.d) { state.camera.x += CONFIG.cameraPanSpeed * Math.cos(state.camera.rotation); state.camera.y += CONFIG.cameraPanSpeed * Math.sin(state.camera.rotation); state.camera.target = null; }
-    if (state.keys.q) { state.camera.rotation -= CONFIG.cameraRotateSpeed; }
-    if (state.keys.e) { state.camera.rotation += CONFIG.cameraRotateSpeed; }
+    // Camera Controls - Disabled
+    // if (state.keys.w) { ... }
 
     // Boat Steering
     if (state.keys.ArrowLeft) {
@@ -191,11 +186,10 @@ function update() {
         createParticle(state.boat.x - boatDirX * 20, state.boat.y - boatDirY * 20, 'wake');
     }
 
-    // Camera follow boat if locked
-    if (state.camera.target === 'boat') {
-        state.camera.x += (state.boat.x - state.camera.x) * 0.1;
-        state.camera.y += (state.boat.y - state.camera.y) * 0.1;
-    }
+    // Camera locked to boat
+    state.camera.x = state.boat.x;
+    state.camera.y = state.boat.y;
+    state.camera.rotation = state.boat.heading;
 
     // Sail Logic
     // Determine wind side relative to boat
