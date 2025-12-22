@@ -841,6 +841,15 @@ function drawMinimap() {
         if (m.y > maxY) maxY = m.y;
     }
 
+    // Include Boundary in bounds
+    if (state.course.boundary) {
+        const b = state.course.boundary;
+        if (b.x - b.radius < minX) minX = b.x - b.radius;
+        if (b.x + b.radius > maxX) maxX = b.x + b.radius;
+        if (b.y - b.radius < minY) minY = b.y - b.radius;
+        if (b.y + b.radius > maxY) maxY = b.y + b.radius;
+    }
+
     // Add padding
     const padding = 200;
     minX -= padding;
@@ -864,6 +873,21 @@ function drawMinimap() {
             y: (y - cy) * scale + height / 2
         };
     };
+
+    // Draw Boundary
+    if (state.course.boundary) {
+        const b = state.course.boundary;
+        const pos = transform(b.x, b.y);
+        const r = b.radius * scale;
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([5, 5]);
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+    }
 
     // Draw Marks
     ctx.fillStyle = '#22c55e'; // Green for high visibility
