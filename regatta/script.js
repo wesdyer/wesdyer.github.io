@@ -100,6 +100,7 @@ const state = {
         startTimeDisplayTimer: 0,
         legStartTime: 0,
         lastLegDuration: 0,
+        startLegDuration: null,
         legSplitTimer: 0,
         lastPos: { x: 0, y: 0 },
         nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 },
@@ -501,7 +502,8 @@ function updateRace(dt) {
                                 // So this crossing is valid.
                                 state.race.startTimeDisplay = state.race.timer;
                                 state.race.startTimeDisplayTimer = 5.0;
-                            state.race.legStartTime = state.race.timer;
+                                state.race.startLegDuration = state.race.timer;
+                                state.race.legStartTime = state.race.timer;
                             }
                         } else if (crossingDir === -1) {
                              // Dipping back
@@ -2272,6 +2274,12 @@ function draw() {
         // Update Leg Times List
         if (UI.legTimes) {
              let html = "";
+
+             if (state.race.startLegDuration !== null && state.race.startLegDuration !== undefined) {
+                 const timeStr = formatSplitTime(state.race.startLegDuration);
+                 html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md">Start: ${timeStr}</div>`;
+             }
+
              if (state.race.legTimes) {
                  for (let i = 0; i < state.race.legTimes.length; i++) {
                       const legNum = i + 1;
@@ -2366,6 +2374,7 @@ function resetGame() {
     state.race.startTimeDisplayTimer = 0;
     state.race.legStartTime = 0;
     state.race.lastLegDuration = 0;
+    state.race.startLegDuration = null;
     state.race.legSplitTimer = 0;
     state.race.legTimes = [];
     state.race.trace = [];
