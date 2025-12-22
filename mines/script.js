@@ -21,6 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
         'Hard': { width: 30, height: 16, bombAmount: 99 }
     };
 
+    const numberColors = {
+        1: 'text-blue-400',
+        2: 'text-green-400',
+        3: 'text-red-400',
+        4: 'text-purple-400',
+        5: 'text-orange-400',
+        6: 'text-pink-400',
+        7: 'text-yellow-400',
+        8: 'text-teal-400'
+    };
+
     function updateDifficulty(difficulty) {
         const settings = difficultySettings[difficulty];
         width = settings.width;
@@ -49,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let i = 0; i < width * height; i++) {
             const square = document.createElement('div');
             square.setAttribute('id', i);
-            square.classList.add('w-10', 'h-10', 'md:w-12', 'md:h-12', 'cell-covered-gradient', 'rounded-xl', 'cursor-pointer', 'transition-all', 'cell-shadow', 'select-none');
+            square.classList.add('w-10', 'h-10', 'md:w-12', 'md:h-12', 'cell-covered-gradient', 'rounded-xl', 'cursor-pointer', 'transition-all', 'cell-shadow', 'select-none', 'flex', 'items-center', 'justify-center');
             grid.appendChild(square);
             squares.push(square);
 
@@ -93,6 +104,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     }
 
+    function reveal(square) {
+        if (square.classList.contains('checked')) return;
+
+        square.classList.remove('cell-covered-gradient', 'cell-shadow', 'cursor-pointer');
+        square.classList.add('bg-cell-revealed', 'cursor-default', 'checked', 'ring-1', 'ring-white/5');
+
+        let total = square.getAttribute('data');
+        if (total != 0) {
+            square.textContent = total;
+            square.classList.add('font-black', 'text-xl');
+            if (numberColors[total]) {
+                square.classList.add(numberColors[total]);
+            }
+        }
+    }
+
     function click(square) {
         let currentId = square.getAttribute('id');
         if (isGameOver) return;
@@ -107,14 +134,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             let total = square.getAttribute('data');
             if (total != 0) {
-                square.classList.add('checked');
-                square.textContent = total;
+                reveal(square);
                 checkForWin();
                 return;
             }
+            reveal(square);
             checkSquare(square, currentId);
         }
-        square.classList.add('checked');
         checkForWin();
     }
 
