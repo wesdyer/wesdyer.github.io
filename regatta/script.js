@@ -689,10 +689,6 @@ function update(dt) {
              const angle = Math.atan2(dy, dx);
              state.boat.x = state.course.boundary.x + Math.cos(angle) * state.course.boundary.radius;
              state.boat.y = state.course.boundary.y + Math.sin(angle) * state.course.boundary.radius;
-
-             // Stop boat
-             state.boat.speed = 0;
-             triggerPenalty();
         }
     }
 
