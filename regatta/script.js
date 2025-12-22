@@ -1352,6 +1352,8 @@ function drawMarkZones(ctx) {
     const zoneRadius = 165;
 
     for (const m of state.course.marks) {
+        if (m.type === 'start') continue;
+
         const dx = state.boat.x - m.x;
         const dy = state.boat.y - m.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
