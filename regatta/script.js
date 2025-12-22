@@ -68,7 +68,7 @@ const state = {
         target: null // 'boat' or null (free)
     },
     wind: {
-        direction: Math.PI / 2 // Blowing TO the Right (East)
+        direction: Math.PI // Blowing Down (South)
     },
     particles: [], // For wake and wind effects
     keys: {
