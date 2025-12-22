@@ -500,7 +500,7 @@ function drawWater(ctx) {
              ctx.save();
              ctx.translate(wx + gridSize/2 + randX, wy + gridSize/2 + randY);
              // Rotate to align perpendicular to wind
-             ctx.rotate(state.wind.direction);
+             ctx.rotate(state.wind.direction + Math.PI);
              ctx.scale(scale, scale);
 
              ctx.beginPath();
