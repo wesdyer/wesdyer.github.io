@@ -238,19 +238,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function checkForWin() {
-        let matches = 0;
-
-        for (let i = 0; i < squares.length; i++) {
-            if (squares[i].classList.contains('flag') && squares[i].getAttribute('data-type') === 'bomb') {
-                matches++;
-            }
-            if (matches === bombAmount) {
-                smileyButton.querySelector('span').textContent = 'sentiment_very_satisfied';
-                isGameOver = true;
-                clearInterval(timer);
-            }
-        }
-
         let revealedCount = 0;
         squares.forEach(square => {
             if(square.classList.contains('checked')) {
@@ -258,12 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        if (revealedCount === (width * height - bombAmount)) {
+        if (flags === bombAmount && revealedCount === (width * height - bombAmount)) {
              smileyButton.querySelector('span').textContent = 'sentiment_very_satisfied';
              isGameOver = true;
              clearInterval(timer);
         }
-
     }
 
     difficultyRadios.forEach(radio => {
