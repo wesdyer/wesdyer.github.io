@@ -32,6 +32,70 @@ document.addEventListener('DOMContentLoaded', () => {
         8: 'text-teal-400'
     };
 
+    // Sound System
+    let audioCtx;
+
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    }
+
+    function playSound(type) {
+        initAudio();
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+            gainNode.gain.setValueAtTime(0.1, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        } else if (type === 'flag') {
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, now);
+            gainNode.gain.setValueAtTime(0.1, now);
+            gainNode.gain.linearRampToValueAtTime(0, now + 0.1);
+            osc.start(now);
+            osc.stop(now + 0.1);
+        } else if (type === 'bomb') {
+             osc.type = 'sawtooth';
+             osc.frequency.setValueAtTime(100, now);
+             osc.frequency.exponentialRampToValueAtTime(10, now + 0.5);
+             gainNode.gain.setValueAtTime(0.2, now);
+             gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+             osc.start(now);
+             osc.stop(now + 0.5);
+        } else if (type === 'win') {
+            playNote(523.25, now, 0.1); // C5
+            playNote(659.25, now + 0.1, 0.1); // E5
+            playNote(783.99, now + 0.2, 0.1); // G5
+            playNote(1046.50, now + 0.3, 0.4); // C6
+        }
+    }
+
+    function playNote(freq, time, duration) {
+        const osc = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.frequency.value = freq;
+        gainNode.gain.setValueAtTime(0.1, time);
+        gainNode.gain.linearRampToValueAtTime(0, time + duration);
+        osc.start(time);
+        osc.stop(time + duration);
+    }
+
     function updateDifficultyUI() {
         difficultyRadios.forEach(radio => {
             const label = radio.parentElement;
@@ -133,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function click(square) {
+    function click(square, isRecursion = false) {
         let currentId = square.getAttribute('id');
         if (isGameOver) return;
         if (square.classList.contains('checked') || square.classList.contains('flag')) return;
@@ -143,8 +207,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (square.getAttribute('data-type') === 'bomb') {
+            if (!isRecursion) playSound('bomb');
             gameOver(square);
         } else {
+            if (!isRecursion) playSound('click');
             let total = square.getAttribute('data');
             if (total != 0) {
                 reveal(square);
@@ -159,19 +225,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function addFlag(square) {
         if (isGameOver) return;
-        if (!square.classList.contains('checked') && (flags < bombAmount)) {
-            if (!square.classList.contains('flag')) {
+        if (square.classList.contains('checked')) return;
+
+        if (!square.classList.contains('flag')) {
+            if (flags < bombAmount) {
+                playSound('flag');
                 square.classList.add('flag');
                 square.innerHTML = '<span class="material-symbols-outlined text-yellow-300 text-2xl drop-shadow-md scale-90 group-hover:scale-110 transition-transform fill-current animate-pulse">flag</span>';
                 flags++;
                 minesElement.textContent = (bombAmount - flags).toString().padStart(2, '0');
                 checkForWin();
-            } else {
-                square.classList.remove('flag');
-                square.innerHTML = '';
-                flags--;
-                minesElement.textContent = (bombAmount - flags).toString().padStart(2, '0');
             }
+        } else {
+            playSound('flag');
+            square.classList.remove('flag');
+            square.innerHTML = '';
+            flags--;
+            minesElement.textContent = (bombAmount - flags).toString().padStart(2, '0');
         }
     }
 
@@ -183,42 +253,42 @@ document.addEventListener('DOMContentLoaded', () => {
             if (currentId > 0 && !isLeftEdge) {
                 const newId = squares[parseInt(currentId) - 1].getAttribute('id');
                 const newSquare = document.getElementById(newId);
-                click(newSquare);
+                click(newSquare, true);
             }
             if (currentId > width - 1 && !isRightEdge) {
                 const newId = squares[parseInt(currentId) + 1 - width].getAttribute('id');
                 const newSquare = document.getElementById(newId);
-                click(newSquare);
+                click(newSquare, true);
             }
             if (currentId > width) {
                 const newId = squares[parseInt(currentId - width)].getAttribute('id');
                 const newSquare = document.getElementById(newId);
-                click(newSquare);
+                click(newSquare, true);
             }
             if (currentId > width + 1 && !isLeftEdge) {
                 const newId = squares[parseInt(currentId) - 1 - width].getAttribute('id');
                 const newSquare = document.getElementById(newId);
-                click(newSquare);
+                click(newSquare, true);
             }
             if (currentId < width * height - 2 && !isRightEdge) {
                 const newId = squares[parseInt(currentId) + 1].getAttribute('id');
                 const newSquare = document.getElementById(newId);
-                click(newSquare);
+                click(newSquare, true);
             }
             if (currentId < width * height - width && !isLeftEdge) {
                 const newId = squares[parseInt(currentId) - 1 + width].getAttribute('id');
                 const newSquare = document.getElementById(newId);
-                click(newSquare);
+                click(newSquare, true);
             }
             if (currentId < width * height - width - 2 && !isRightEdge) {
                 const newId = squares[parseInt(currentId) + 1 + width].getAttribute('id');
                 const newSquare = document.getElementById(newId);
-                click(newSquare);
+                click(newSquare, true);
             }
             if (currentId < width * height - width - 1) {
                 const newId = squares[parseInt(currentId) + width].getAttribute('id');
                 const newSquare = document.getElementById(newId);
-                click(newSquare);
+                click(newSquare, true);
             }
         }, 10);
     }
@@ -246,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if (flags === bombAmount && revealedCount === (width * height - bombAmount)) {
+             if (!isGameOver) playSound('win'); // Ensure it plays only once when transitioning to win
              smileyButton.querySelector('span').textContent = 'sentiment_very_satisfied';
              isGameOver = true;
              clearInterval(timer);
