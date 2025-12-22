@@ -1306,7 +1306,7 @@ function drawLayLines(ctx) {
         // ang2 (dir - 45) has sin(-45) = -0.7 (Negative X). This points Left.
         // ang1 (dir + 45) has sin(45) = +0.7 (Positive X). This points Right.
 
-        // So Left Mark -> ang2. Right Mark -> ang1.
+        // So Left Mark -> ang1. Right Mark -> ang2.
 
         const drawRay = (angle, color) => {
              let drawAngle = angle;
@@ -1325,9 +1325,9 @@ function drawLayLines(ctx) {
         };
 
         if (isLeftMark) {
-            drawRay(ang2, 'rgba(34, 197, 94, 0.8)'); // Green (Starboard Tack approach?)
-        } else {
             drawRay(ang1, 'rgba(239, 68, 68, 0.8)'); // Red (Port Tack approach?)
+        } else {
+            drawRay(ang2, 'rgba(34, 197, 94, 0.8)'); // Green (Starboard Tack approach?)
         }
     }
     ctx.restore();
