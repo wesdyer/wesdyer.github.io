@@ -2098,7 +2098,7 @@ function draw() {
     ctx.restore();
 
     // Draw Waypoint Indicator
-    if (state.race.status !== 'finished') {
+    if (state.race.status !== 'finished' && state.showNavAids) {
         const wx = state.race.nextWaypoint.x;
         const wy = state.race.nextWaypoint.y;
 
@@ -2126,28 +2126,6 @@ function draw() {
 
         let screenX = canvas.width / 2 + rx * factor;
         let screenY = canvas.height / 2 + ry * factor;
-
-        const hudWidth = 200;
-        const hudHeight = 400;
-
-        if (screenX > canvas.width - hudWidth && screenY < hudHeight) {
-            if (screenY < margin + 10) {
-                 screenX = canvas.width - hudWidth - 20;
-            }
-            else if (screenX > canvas.width - margin - 10) {
-                 screenY = hudHeight + 20;
-            }
-            else {
-                 const distToLeft = screenX - (canvas.width - hudWidth);
-                 const distToBottom = hudHeight - screenY;
-
-                 if (distToLeft < distToBottom) {
-                     screenX = canvas.width - hudWidth - 20;
-                 } else {
-                     screenY = hudHeight + 20;
-                 }
-            }
-        }
 
         ctx.save();
         ctx.translate(screenX, screenY);
