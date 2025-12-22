@@ -428,8 +428,34 @@ function drawBoat(ctx) {
         ctx.restore();
     };
 
+    const drawSpinnaker = () => {
+        ctx.save();
+        // Start from bow/sprit
+        ctx.translate(0, -28);
+        ctx.rotate(state.boat.sailAngle);
+
+        // Bright Red
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)'; // Tailwind red-500
+        ctx.strokeStyle = '#b91c1c'; // Tailwind red-700
+        ctx.lineWidth = 1;
+
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(0, 35);
+        // Larger curve for spinnaker
+        ctx.quadraticCurveTo(-state.boat.boomSide * 25, 18, 0, 0);
+
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    };
+
     drawSail(false); // Main
-    drawSail(true);  // Jib
+    if (state.boat.spinnaker) {
+        drawSpinnaker();
+    } else {
+        drawSail(true);  // Jib
+    }
 
     ctx.restore();
 }
