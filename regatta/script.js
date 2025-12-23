@@ -2596,10 +2596,8 @@ function updateLeaderboard() {
             // Name update for penalty
             let nameText = boat.name;
             if (boat.raceState.penalty) {
-                 nameText += " (!)";
                  nameDiv.classList.add("text-red-400");
-                 if (boat.isPlayer) nameDiv.classList.remove("text-yellow-300"); // Override player color? Or keep?
-                 // Let's keep player color or flash. Red is clearer for penalty.
+                 if (boat.isPlayer) nameDiv.classList.remove("text-yellow-300");
             } else {
                  nameDiv.classList.remove("text-red-400");
                  if (boat.isPlayer) nameDiv.classList.add("text-yellow-300");
@@ -2648,8 +2646,7 @@ function drawBoatIndicator(ctx, boat) {
     const speed = (boat.speed * 4).toFixed(1);
     const name = boat.name.toUpperCase();
     const line1 = `${rank} ${name}`;
-    let line2 = `${speed}kn`;
-    if (boat.raceState.penalty) line2 = "PENALTY " + line2;
+    const line2 = `${speed}kn`;
 
     ctx.save();
     ctx.translate(boat.x, boat.y);
