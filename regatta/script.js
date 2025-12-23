@@ -185,53 +185,74 @@ class Boat {
         };
 
         this.badAirIntensity = 0;
+        this.turbulence = [];
+        this.turbulenceTimer = 0;
     }
 }
 
+function updateTurbulence(boat, dt) {
+    if (boat.raceState.finished) return;
+
+    // Spawn
+    boat.turbulenceTimer -= dt;
+    if (boat.turbulenceTimer <= 0) {
+        boat.turbulenceTimer = 0.05 + Math.random() * 0.05; // spawn every ~0.05s
+        // Init properties relative to cone (d=0)
+        // Cross offset ratio: -0.5 to 0.5
+        boat.turbulence.push({
+            d: 0,
+            crossRatio: (Math.random() - 0.5),
+            speed: state.wind.speed * 4 + (Math.random()-0.5)*10, // px per sec
+            phase: Math.random() * Math.PI * 2,
+            life: 1.0
+        });
+    }
+
+    // Update
+    const maxDist = 350;
+    for (let i = boat.turbulence.length - 1; i >= 0; i--) {
+        const p = boat.turbulence[i];
+        p.d += p.speed * dt;
+        p.life -= dt * 0.3; // fade out
+
+        if (p.d > maxDist || p.life <= 0) {
+            boat.turbulence[i] = boat.turbulence[boat.turbulence.length - 1];
+            boat.turbulence.pop();
+        }
+    }
+}
 
 function drawDisturbedAir(ctx) {
     const windDir = state.wind.direction;
-    // Wind Flow Vector (Where wind is going)
     const wx = -Math.sin(windDir);
     const wy = Math.cos(windDir);
-    const length = 350;
-    const startWidth = 20;
-    const endWidth = 100;
-    // Cross Vector (Right relative to flow)
-    const crx = -wy;
-    const cry = wx;
+    // Right Vector
+    const rx = -wy;
+    const ry = wx;
 
     ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+
     for (const boat of state.boats) {
-        if (boat.raceState.finished) continue;
+        if (boat.raceState.finished || !boat.turbulence) continue;
 
-        // Calculate cone
-        const cx = boat.x;
-        const cy = boat.y;
-        const ex = cx + wx * length;
-        const ey = cy + wy * length;
+        for (const p of boat.turbulence) {
+             const coneWidth = 20 + (p.d / 350) * 80;
+             // Zigzag effect
+             const zig = Math.sin(p.d * 0.05 + state.time * 5 + p.phase) * 5;
+             const crossOffset = p.crossRatio * coneWidth + zig;
 
-        const s1x = cx - crx * (startWidth / 2);
-        const s1y = cy - cry * (startWidth / 2);
-        const s2x = cx + crx * (startWidth / 2);
-        const s2y = cy + cry * (startWidth / 2);
+             const px = boat.x + wx * p.d + rx * crossOffset;
+             const py = boat.y + wy * p.d + ry * crossOffset;
 
-        const e1x = ex - crx * (endWidth / 2);
-        const e1y = ey - cry * (endWidth / 2);
-        const e2x = ex + crx * (endWidth / 2);
-        const e2y = ey + cry * (endWidth / 2);
+             const size = 1.5 + (p.d/350)*1.5;
+             const alpha = Math.max(0, Math.min(1, (1.0 - p.d/350) * 0.4));
 
-        const grad = ctx.createLinearGradient(cx, cy, ex, ey);
-        grad.addColorStop(0, 'rgba(0, 0, 0, 0.15)');
-        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.moveTo(s1x, s1y);
-        ctx.lineTo(e1x, e1y);
-        ctx.lineTo(e2x, e2y);
-        ctx.lineTo(s2x, s2y);
-        ctx.fill();
+             ctx.globalAlpha = alpha;
+             ctx.beginPath();
+             ctx.arc(px, py, size, 0, Math.PI * 2);
+             ctx.fill();
+        }
     }
     ctx.restore();
 }
@@ -871,6 +892,9 @@ function updateBoat(boat, dt) {
 
     // Physics
     const angleToWind = Math.abs(normalizeAngle(boat.heading - state.wind.direction));
+
+    // Update Turbulence Particles
+    updateTurbulence(boat, dt);
 
     // Disturbed Air
     boat.badAirIntensity = 0;
