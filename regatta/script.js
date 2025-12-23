@@ -1262,7 +1262,7 @@ function update(dt) {
     }
 
     // Update Leg Stats
-    if (state.race.status !== 'finished' && state.race.leg < 5) {
+    if (state.race.status === 'racing' && state.race.leg < 5) {
         const leg = state.race.leg;
         // Dist = speed (units/frame) * timeScale (frames) * 0.2 (meters/unit)
         const distMoved = state.boat.speed * timeScale * 0.2;
