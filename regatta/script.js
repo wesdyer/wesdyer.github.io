@@ -159,20 +159,28 @@ const UI = {
 
 // Settings Logic
 function loadSettings() {
-    const stored = localStorage.getItem('regatta_settings');
-    if (stored) {
-        try {
-            const parsed = JSON.parse(stored);
-            settings = { ...DEFAULT_SETTINGS, ...parsed };
-        } catch (e) {
-            console.error("Failed to parse settings", e);
+    try {
+        const stored = localStorage.getItem('regatta_settings');
+        if (stored) {
+            try {
+                const parsed = JSON.parse(stored);
+                settings = { ...DEFAULT_SETTINGS, ...parsed };
+            } catch (e) {
+                console.error("Failed to parse settings", e);
+            }
         }
+    } catch (e) {
+        console.warn("LocalStorage access denied", e);
     }
     applySettings();
 }
 
 function saveSettings() {
-    localStorage.setItem('regatta_settings', JSON.stringify(settings));
+    try {
+        localStorage.setItem('regatta_settings', JSON.stringify(settings));
+    } catch (e) {
+        console.warn("LocalStorage save failed", e);
+    }
     applySettings();
 }
 
