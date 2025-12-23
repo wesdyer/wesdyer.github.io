@@ -15,7 +15,7 @@ const DEFAULT_SETTINGS = {
     navAids: true,
     manualTrim: false,
     hullColor: '#f1f5f9',
-    accentColor: '#cbd5e1'
+    spinnakerColor: '#ef4444'
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -154,7 +154,7 @@ const UI = {
     settingNavAids: document.getElementById('setting-navaids'),
     settingTrim: document.getElementById('setting-trim'),
     settingHullColor: document.getElementById('setting-color-hull'),
-    settingAccentColor: document.getElementById('setting-color-accent')
+    settingSpinnakerColor: document.getElementById('setting-color-spinnaker')
 };
 
 // Settings Logic
@@ -186,7 +186,7 @@ function applySettings() {
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
     if (UI.settingHullColor) UI.settingHullColor.value = settings.hullColor;
-    if (UI.settingAccentColor) UI.settingAccentColor.value = settings.accentColor;
+    if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.value = settings.spinnakerColor;
 }
 
 function togglePause(show) {
@@ -305,9 +305,9 @@ if (UI.settingHullColor) {
         saveSettings();
     });
 }
-if (UI.settingAccentColor) {
-    UI.settingAccentColor.addEventListener('input', (e) => {
-        settings.accentColor = e.target.value;
+if (UI.settingSpinnakerColor) {
+    UI.settingSpinnakerColor.addEventListener('input', (e) => {
+        settings.spinnakerColor = e.target.value;
         saveSettings();
     });
 }
@@ -1323,9 +1323,8 @@ function drawBoat(ctx) {
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Deck detail (Cockpit) -> Accent Color
-    const accentColor = settings.accentColor || '#cbd5e1';
-    ctx.fillStyle = accentColor;
+    // Deck detail (Cockpit)
+    ctx.fillStyle = '#cbd5e1';
     ctx.beginPath();
     ctx.roundRect(-8, 10, 16, 15, 4);
     ctx.fill();
@@ -1420,9 +1419,17 @@ function drawBoat(ctx) {
         ctx.translate(0, -28);
         ctx.rotate(state.boat.sailAngle);
 
-        // Bright Red
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.9)'; // Tailwind red-500
-        ctx.strokeStyle = '#b91c1c'; // Tailwind red-700
+        // Custom Spinnaker Color
+        const spinColor = settings.spinnakerColor || '#ef4444';
+
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = spinColor;
+        ctx.strokeStyle = spinColor;
+        // Stroke is implicitly 100% alpha unless we set globalAlpha.
+        // We set globalAlpha to 0.9, so stroke is also 0.9 alpha.
+        // It might be better to keep stroke distinct, but without a darken helper,
+        // using the same color is the safest option for arbitrary user colors.
+
         ctx.lineWidth = 1;
 
         // Calculate dynamic shape for luffing
