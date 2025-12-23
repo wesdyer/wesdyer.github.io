@@ -1292,7 +1292,25 @@ function checkBoatCollisions(dt) {
                 const ty = res.axis.y * res.overlap * 0.5;
                 b1.x -= tx; b1.y -= ty;
                 b2.x += tx; b2.y += ty;
-                b1.speed *= 0.5; b2.speed *= 0.5;
+
+                // Physics Response: Angle dependent friction
+                const nx = res.axis.x, ny = res.axis.y;
+
+                // B1: Normal points AWAY from B1? No, B1->B2. So points AWAY from B1.
+                // If B1 moves TOWARDS B2, dot(h1, n) > 0.
+                const h1x = Math.sin(b1.heading), h1y = -Math.cos(b1.heading);
+                const impact1 = Math.max(0, h1x * nx + h1y * ny);
+
+                // B2: Normal points INTO B2. We want normal pointing AWAY from B2 for impact calc. So -n.
+                const h2x = Math.sin(b2.heading), h2y = -Math.cos(b2.heading);
+                const impact2 = Math.max(0, h2x * (-nx) + h2y * (-ny));
+
+                const friction = 0.99;
+                const impactFactor = 0.5; // Multiplier at max impact (0.5 means lose 50%)
+
+                b1.speed *= (friction - (friction - impactFactor) * impact1);
+                b2.speed *= (friction - (friction - impactFactor) * impact2);
+
                 if (state.race.status === 'racing') {
                     triggerPenalty(b1);
                     triggerPenalty(b2);
@@ -1321,7 +1339,18 @@ function checkMarkCollisions(dt) {
                 // We want to move Poly away from Circle, so move opposite to axis
                 boat.x -= res.axis.x * res.overlap;
                 boat.y -= res.axis.y * res.overlap;
-                boat.speed *= 0.5;
+
+                // Physics
+                const nx = res.axis.x, ny = res.axis.y;
+                const hx = Math.sin(boat.heading), hy = -Math.cos(boat.heading);
+                // Impact: Heading vs Normal (Boat -> Mark)
+                const impact = Math.max(0, hx * nx + hy * ny);
+
+                const friction = 0.99;
+                const impactFactor = 0.5;
+
+                boat.speed *= (friction - (friction - impactFactor) * impact);
+
                 if (state.race.status === 'racing') triggerPenalty(boat);
             }
         }
