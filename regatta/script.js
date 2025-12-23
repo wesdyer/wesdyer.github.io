@@ -1079,6 +1079,7 @@ function checkMarkCollisions(dt) {
 
                 // Penalty
                 boat.speed *= 0.5;
+                triggerPenalty(boat);
             }
         }
     }
