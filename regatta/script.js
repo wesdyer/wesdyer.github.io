@@ -181,7 +181,10 @@ class Boat {
         this.ai = {
             targetHeading: 0,
             state: 'start',
-            tackCooldown: 0
+            tackCooldown: 0,
+            stuckTimer: 0,
+            recoveryMode: false,
+            recoveryTarget: 0
         };
     }
 }
@@ -671,6 +674,34 @@ function updateAI(boat, dt) {
     const dy = targetY - boat.y;
     let targetAngle = Math.atan2(dx, -dy);
 
+    // Stuck Detection & Recovery
+    if (state.race.status === 'racing') {
+        if (boat.speed < 0.25) { // < ~1 kt
+            boat.ai.stuckTimer += dt;
+        } else {
+            boat.ai.stuckTimer = Math.max(0, boat.ai.stuckTimer - dt);
+        }
+
+        if (boat.ai.stuckTimer > 2.0 && !boat.ai.recoveryMode) {
+             boat.ai.recoveryMode = true;
+             // Pick Beam Reach (90 deg to wind)
+             // Use current wind side, or random if head to wind
+             const currentWindAngle = normalizeAngle(boat.heading - windDir);
+             let side = Math.sign(currentWindAngle);
+             if (side === 0) side = (Math.random() > 0.5) ? 1 : -1;
+             boat.ai.recoveryTarget = normalizeAngle(windDir + side * Math.PI * 0.5);
+        }
+
+        if (boat.ai.recoveryMode) {
+             if (boat.speed > 1.0) { // Recovered (> 4 kts)
+                 boat.ai.recoveryMode = false;
+                 boat.ai.stuckTimer = 0;
+             } else {
+                 targetAngle = boat.ai.recoveryTarget;
+             }
+        }
+    }
+
     // PRESTART Special Logic
     if (state.race.status === 'prestart') {
         // Zig Zag in start area
@@ -775,6 +806,16 @@ function updateAI(boat, dt) {
          const desiredX = Math.sin(desiredHeading);
          const desiredY = -Math.cos(desiredHeading);
          desiredHeading = Math.atan2(desiredX + avoidX, -(desiredY + avoidY));
+    }
+
+    // If recovering, ensure we don't get pushed back into irons
+    if (boat.ai.recoveryMode) {
+        const angleToWindFinal = normalizeAngle(desiredHeading - windDir);
+        if (Math.abs(angleToWindFinal) < Math.PI / 4) {
+             // Force it out of irons towards recovery target side
+             const side = Math.sign(normalizeAngle(boat.ai.recoveryTarget - windDir)) || 1;
+             desiredHeading = normalizeAngle(windDir + side * Math.PI * 0.4);
+        }
     }
 
     boat.ai.targetHeading = normalizeAngle(desiredHeading);
