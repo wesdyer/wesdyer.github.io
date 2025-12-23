@@ -2101,8 +2101,21 @@ function draw() {
         }
 
         if (UI.timer) {
-            UI.timer.textContent = (state.race.status==='prestart') ? formatTime(-state.race.timer) : formatTime(state.race.timer);
-            UI.timer.className = `font-mono text-4xl font-black tabular-nums tracking-widest drop-shadow-md ${state.race.status==='finished' ? 'text-green-400' : (state.race.status==='prestart' && state.race.timer < 10 ? 'text-orange-400' : 'text-white')}`;
+            let displayTime = state.race.timer;
+            let timerClass = 'text-white';
+
+            if (state.race.status === 'prestart') {
+                displayTime = -state.race.timer;
+                if (state.race.timer < 10) timerClass = 'text-orange-400';
+            } else if (player.raceState.finished) {
+                displayTime = player.raceState.finishTime;
+                timerClass = 'text-green-400';
+            } else if (state.race.status === 'finished') {
+                timerClass = 'text-green-400';
+            }
+
+            UI.timer.textContent = formatTime(displayTime);
+            UI.timer.className = `font-mono text-4xl font-black tabular-nums tracking-widest drop-shadow-md ${timerClass}`;
         }
 
         if (UI.startTime) {
