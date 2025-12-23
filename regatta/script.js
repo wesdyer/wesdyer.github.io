@@ -167,7 +167,8 @@ class Boat {
             zoneEnterTime: 0,
             ocs: false,
             penalty: false,
-            penaltyProgress: 0,
+            penaltyProgress: 0, // Deprecated but kept for compatibility if needed
+            penaltyTimer: 0,
             finished: false,
             finishTime: 0,
             startTimeDisplay: 0,
@@ -1070,13 +1071,18 @@ function triggerPenalty(boat) {
     if (boat.raceState.finished) return;
     if (!settings.penaltiesEnabled) return;
 
+    // Reset timer if already penalized? Or just ignore?
+    // Usually penalties stack or reset. Let's reset the timer to 10s.
     if (!boat.raceState.penalty) {
         boat.raceState.penalty = true;
-        boat.raceState.penaltyProgress = 0;
-        if (boat.isPlayer) {
-            Sound.playPenalty();
-            showRaceMessage("PENALTY! DO 720° TURN", "text-red-500", "border-red-500/50");
-        }
+        if (boat.isPlayer) Sound.playPenalty();
+    }
+
+    // Always reset timer to 10s on new penalty trigger
+    boat.raceState.penaltyTimer = 10.0;
+
+    if (boat.isPlayer) {
+        showRaceMessage("PENALTY! SPEED REDUCED 50% FOR 10s", "text-red-500", "border-red-500/50");
     }
 }
 
@@ -1187,6 +1193,11 @@ function updateBoat(boat, dt) {
     targetKnots *= trimEfficiency;
 
     let targetGameSpeed = targetKnots * 0.25;
+
+    // Apply Penalty Speed Reduction
+    if (boat.raceState.penalty) {
+        targetGameSpeed *= 0.5;
+    }
 
     const effectiveAoA = angleToWind - actualMagnitude;
     const luffStartThreshold = 0.5;
@@ -1420,14 +1431,16 @@ function updateBoatRaceState(boat, dt) {
         }
     }
 
-    // Penalty
+    // Penalty Timer
     if (boat.raceState.penalty) {
-         const diff = normalizeAngle(boat.heading - boat.prevHeading);
-         boat.raceState.penaltyProgress += diff;
-         if (Math.abs(boat.raceState.penaltyProgress) >= 4 * Math.PI - 0.1) {
+         boat.raceState.penaltyTimer -= dt;
+         if (boat.raceState.penaltyTimer <= 0) {
              boat.raceState.penalty = false;
-             boat.raceState.penaltyProgress = 0;
+             boat.raceState.penaltyTimer = 0;
              if (boat.isPlayer) hideRaceMessage();
+         } else if (boat.isPlayer) {
+             // Update countdown message
+             showRaceMessage(`PENALTY! SPEED REDUCED: ${boat.raceState.penaltyTimer.toFixed(1)}s`, "text-red-500", "border-red-500/50");
          }
     }
 
@@ -2542,7 +2555,7 @@ function updateLeaderboard() {
 
                 // Name
                 const nameDiv = document.createElement('div');
-                nameDiv.className = "text-xs font-bold text-white tracking-wide flex-1 truncate";
+                nameDiv.className = "lb-name text-xs font-bold text-white tracking-wide flex-1 truncate";
                 nameDiv.textContent = boat.name;
                 if (boat.isPlayer) nameDiv.className += " text-yellow-300";
 
@@ -2565,17 +2578,33 @@ function updateLeaderboard() {
             // Update Content
             const rankDiv = row.querySelector('.lb-rank');
             const distDiv = row.querySelector('.lb-dist');
+            const nameDiv = row.querySelector('.lb-name');
 
-            // Apply finished styling
+            // Apply finished/penalty styling
+            let rowClass = "lb-row flex items-center px-3 border-b border-slate-700/50 transition-colors duration-500 ";
             if (boat.raceState.finished) {
-                row.className = "lb-row flex items-center px-3 border-b border-slate-700/50 bg-emerald-900/60 transition-colors duration-500";
+                rowClass += "bg-emerald-900/60";
                 rankDiv.className = "lb-rank w-4 text-xs font-black italic text-white mr-2";
                 distDiv.className = "lb-dist text-[10px] font-mono text-white text-right min-w-[32px]";
             } else {
-                row.className = "lb-row flex items-center px-3 border-b border-slate-700/50 bg-slate-800/40 transition-colors duration-500";
+                rowClass += "bg-slate-800/40";
                 rankDiv.className = "lb-rank w-4 text-xs font-black italic text-slate-400 mr-2";
                 distDiv.className = "lb-dist text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
             }
+            row.className = rowClass;
+
+            // Name update for penalty
+            let nameText = boat.name;
+            if (boat.raceState.penalty) {
+                 nameText += " (!)";
+                 nameDiv.classList.add("text-red-400");
+                 if (boat.isPlayer) nameDiv.classList.remove("text-yellow-300"); // Override player color? Or keep?
+                 // Let's keep player color or flash. Red is clearer for penalty.
+            } else {
+                 nameDiv.classList.remove("text-red-400");
+                 if (boat.isPlayer) nameDiv.classList.add("text-yellow-300");
+            }
+            nameDiv.textContent = nameText;
 
             rankDiv.textContent = index + 1;
             if (index === 0) {
@@ -2619,7 +2648,8 @@ function drawBoatIndicator(ctx, boat) {
     const speed = (boat.speed * 4).toFixed(1);
     const name = boat.name.toUpperCase();
     const line1 = `${rank} ${name}`;
-    const line2 = `${speed}kn`;
+    let line2 = `${speed}kn`;
+    if (boat.raceState.penalty) line2 = "PENALTY " + line2;
 
     ctx.save();
     ctx.translate(boat.x, boat.y);
@@ -2655,7 +2685,7 @@ function drawBoatIndicator(ctx, boat) {
     ctx.fill();
 
     // Text
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = boat.raceState.penalty ? '#ef4444' : '#ffffff';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(line1, x + 10, y + 5);
