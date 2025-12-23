@@ -2716,9 +2716,7 @@ function draw() {
              let html = "";
 
              const getMoveLabel = (legIdx) => {
-                 if (legIdx === 0) return "Moves"; // Start
-                 if (legIdx % 2 !== 0) return "Tacks"; // 1, 3 (Upwind)
-                 return "Gybes"; // 2, 4 (Downwind)
+                 return "Moves";
              };
 
              if (state.race.startLegDuration !== null && state.race.startLegDuration !== undefined) {
