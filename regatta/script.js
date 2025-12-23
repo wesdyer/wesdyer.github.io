@@ -2251,7 +2251,7 @@ function drawBoatIndicator(ctx, boat) {
     ctx.shadowOffsetY = 2;
 
     // Main Box
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
     ctx.beginPath();
     ctx.roundRect(x, y, boxWidth, boxHeight, 4);
     ctx.fill();
