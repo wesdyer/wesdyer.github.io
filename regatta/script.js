@@ -1046,6 +1046,24 @@ function update(dt) {
     // Normalize Heading
     state.boat.heading = normalizeAngle(state.boat.heading);
 
+    // Maneuver Counter Logic
+    const relWindAngle = normalizeAngle(state.wind.direction - state.boat.heading);
+    const currentWindSide = Math.sign(relWindAngle);
+
+    if (state.boat.lastWindSide === undefined) {
+        state.boat.lastWindSide = currentWindSide;
+    }
+
+    if (currentWindSide !== 0) {
+        if (state.boat.lastWindSide !== 0 && currentWindSide !== state.boat.lastWindSide) {
+            // Maneuver detected
+            if (state.race.leg >= 0 && state.race.leg < 5) {
+                state.race.legManeuvers[state.race.leg]++;
+            }
+        }
+        state.boat.lastWindSide = currentWindSide;
+    }
+
     // --- Physics & Sail Logic ---
 
     // Wind Direction (Vector)
@@ -2638,14 +2656,16 @@ function draw() {
 
              if (state.race.startLegDuration !== null && state.race.startLegDuration !== undefined) {
                  const timeStr = formatSplitTime(state.race.startLegDuration);
-                 html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md">Start: ${timeStr}</div>`;
+                 const moves = state.race.legManeuvers ? state.race.legManeuvers[0] : 0;
+                 html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Start: ${timeStr}</span> <span class="text-slate-500">(${moves})</span></div>`;
              }
 
              if (state.race.legTimes) {
                  for (let i = 0; i < state.race.legTimes.length; i++) {
                       const legNum = i + 1;
                       const timeStr = formatSplitTime(state.race.legTimes[i]);
-                      html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md">Leg ${legNum}: ${timeStr}</div>`;
+                      const moves = state.race.legManeuvers ? state.race.legManeuvers[legNum] : 0;
+                      html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Leg ${legNum}: ${timeStr}</span> <span class="text-slate-500">(${moves})</span></div>`;
                  }
              }
 
@@ -2654,7 +2674,8 @@ function draw() {
                  const currentLegNum = state.race.leg;
                  const currentLegTime = state.race.timer - state.race.legStartTime;
                  const timeStr = formatSplitTime(currentLegTime);
-                 html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md">Leg ${currentLegNum}: ${timeStr}</div>`;
+                 const moves = state.race.legManeuvers ? state.race.legManeuvers[currentLegNum] : 0;
+                 html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md flex justify-between gap-4"><span>Leg ${currentLegNum}: ${timeStr}</span> <span class="text-white/50">(${moves})</span></div>`;
              }
 
              UI.legTimes.innerHTML = html;
@@ -2745,6 +2766,7 @@ function resetGame() {
     state.race.startLegDuration = null;
     state.race.legSplitTimer = 0;
     state.race.legTimes = [];
+    state.race.legManeuvers = [0, 0, 0, 0, 0];
     state.race.trace = [];
     state.particles = [];
 
@@ -2754,6 +2776,7 @@ function resetGame() {
     state.boat.x = -Math.sin(state.wind.direction) * 450;
     state.boat.y = Math.cos(state.wind.direction) * 450;
     state.boat.heading = state.wind.direction;
+    state.boat.lastWindSide = Math.sign(normalizeAngle(state.wind.direction - state.boat.heading));
 
     state.race.lastPos.x = state.boat.x;
     state.race.lastPos.y = state.boat.y;
