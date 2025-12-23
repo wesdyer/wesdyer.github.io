@@ -1068,38 +1068,130 @@ function updateBoatRaceState(boat, dt) {
     }
 }
 
+// Collision Helpers
+function getHullPolygon(boat) {
+    const locals = [
+        {x: 0, y: -25}, {x: 15, y: -5}, {x: 15, y: 20},
+        {x: 12, y: 30}, {x: -12, y: 30}, {x: -15, y: 20}, {x: -15, y: -5}
+    ];
+    const cos = Math.cos(boat.heading), sin = Math.sin(boat.heading);
+    return locals.map(p => ({
+        x: boat.x + (p.x * cos - p.y * sin),
+        y: boat.y + (p.x * sin + p.y * cos)
+    }));
+}
+
+function projectPolygon(axis, poly) {
+    let min = Infinity, max = -Infinity;
+    for (const p of poly) {
+        const dot = p.x * axis.x + p.y * axis.y;
+        if (dot < min) min = dot;
+        if (dot > max) max = dot;
+    }
+    return { min, max };
+}
+
+function projectCircle(axis, center, radius) {
+    const dot = center.x * axis.x + center.y * axis.y;
+    return { min: dot - radius, max: dot + radius };
+}
+
+function getAxes(poly) {
+    const axes = [];
+    for (let i = 0; i < poly.length; i++) {
+        const p1 = poly[i];
+        const p2 = poly[(i + 1) % poly.length];
+        const edge = { x: p2.x - p1.x, y: p2.y - p1.y };
+        const len = Math.sqrt(edge.x * edge.x + edge.y * edge.y);
+        axes.push({ x: -edge.y / len, y: edge.x / len });
+    }
+    return axes;
+}
+
+function satPolygonPolygon(polyA, polyB) {
+    let overlap = Infinity;
+    let smallestAxis = null;
+    const axes = [...getAxes(polyA), ...getAxes(polyB)];
+
+    for (const axis of axes) {
+        const p1 = projectPolygon(axis, polyA);
+        const p2 = projectPolygon(axis, polyB);
+        if (p1.max < p2.min || p2.max < p1.min) return null;
+        const o = Math.min(p1.max, p2.max) - Math.max(p1.min, p2.min);
+        if (o < overlap) {
+            overlap = o;
+            smallestAxis = axis;
+        }
+    }
+
+    const centerA = polyA.reduce((a, b) => ({x: a.x+b.x, y: a.y+b.y}), {x:0, y:0});
+    const centerB = polyB.reduce((a, b) => ({x: a.x+b.x, y: a.y+b.y}), {x:0, y:0});
+    const dirX = (centerB.x/polyB.length) - (centerA.x/polyA.length);
+    const dirY = (centerB.y/polyB.length) - (centerA.y/polyA.length);
+
+    if (dirX * smallestAxis.x + dirY * smallestAxis.y < 0) {
+        smallestAxis.x = -smallestAxis.x;
+        smallestAxis.y = -smallestAxis.y;
+    }
+    return { overlap, axis: smallestAxis };
+}
+
+function satPolygonCircle(poly, circleCenter, radius) {
+    let overlap = Infinity;
+    let smallestAxis = null;
+    let axes = getAxes(poly);
+
+    let minDistSq = Infinity;
+    let closestVertex = null;
+    for(const p of poly) {
+        const dSq = (p.x - circleCenter.x)**2 + (p.y - circleCenter.y)**2;
+        if(dSq < minDistSq) { minDistSq = dSq; closestVertex = p; }
+    }
+    const axisToCenter = { x: circleCenter.x - closestVertex.x, y: circleCenter.y - closestVertex.y };
+    const len = Math.sqrt(axisToCenter.x**2 + axisToCenter.y**2);
+    if (len > 1e-5) axes.push({ x: axisToCenter.x / len, y: axisToCenter.y / len });
+
+    for (const axis of axes) {
+        const p1 = projectPolygon(axis, poly);
+        const p2 = projectCircle(axis, circleCenter, radius);
+        if (p1.max < p2.min || p2.max < p1.min) return null;
+        const o = Math.min(p1.max, p2.max) - Math.max(p1.min, p2.min);
+        if (o < overlap) { overlap = o; smallestAxis = axis; }
+    }
+
+    const centerA = poly.reduce((a, b) => ({x: a.x+b.x, y: a.y+b.y}), {x:0, y:0});
+    const dirX = circleCenter.x - (centerA.x/poly.length);
+    const dirY = circleCenter.y - (centerA.y/poly.length);
+
+    if (dirX * smallestAxis.x + dirY * smallestAxis.y < 0) {
+        smallestAxis.x = -smallestAxis.x;
+        smallestAxis.y = -smallestAxis.y;
+    }
+    return { overlap, axis: smallestAxis };
+}
+
 function checkBoatCollisions(dt) {
-    const boatRadius = 25; // Approximate radius
+    const broadRadius = 40;
     for (let i = 0; i < state.boats.length; i++) {
+        const b1 = state.boats[i];
+        const poly1 = getHullPolygon(b1);
         for (let j = i + 1; j < state.boats.length; j++) {
-            const b1 = state.boats[i];
             const b2 = state.boats[j];
+            const dx = b2.x - b1.x, dy = b2.y - b1.y;
+            if (dx*dx + dy*dy > (broadRadius*2)**2) continue;
 
-            const dx = b2.x - b1.x;
-            const dy = b2.y - b1.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
+            const poly2 = getHullPolygon(b2);
+            const res = satPolygonPolygon(poly1, poly2);
 
-            if (dist < boatRadius * 2) {
-                // Collision
-                const overlap = (boatRadius * 2 - dist) / 2;
-                const nx = dx / dist;
-                const ny = dy / dist;
-
-                // Displace
-                b1.x -= nx * overlap;
-                b1.y -= ny * overlap;
-                b2.x += nx * overlap;
-                b2.y += ny * overlap;
-
-                // Slow down
-                b1.speed *= 0.5;
-                b2.speed *= 0.5;
-
-                // Penalties?
-                // Only if racing
+            if (res) {
+                const tx = res.axis.x * res.overlap * 0.5;
+                const ty = res.axis.y * res.overlap * 0.5;
+                b1.x -= tx; b1.y -= ty;
+                b2.x += tx; b2.y += ty;
+                b1.speed *= 0.5; b2.speed *= 0.5;
                 if (state.race.status === 'racing') {
-                     // Determine fault? Too complex.
-                     // Just slow down for now.
+                    triggerPenalty(b1);
+                    triggerPenalty(b2);
                 }
             }
         }
@@ -1107,33 +1199,26 @@ function checkBoatCollisions(dt) {
 }
 
 function checkMarkCollisions(dt) {
-    const boatRadius = 25;
-    const markRadius = 15; // Visual radius is ~12-15
-
     if (!state.course || !state.course.marks) return;
+    const markRadius = 12;
 
     for (const boat of state.boats) {
+        let close = false;
         for (const mark of state.course.marks) {
-            const dx = boat.x - mark.x;
-            const dy = boat.y - mark.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            const minDist = boatRadius + markRadius;
+             if ((boat.x-mark.x)**2 + (boat.y-mark.y)**2 < (50)**2) { close = true; break; }
+        }
+        if (!close) continue;
 
-            if (dist < minDist) {
-                // Collision with static mark
-                const overlap = minDist - dist;
-                // Normal from Mark to Boat
-                let nx = dx / dist;
-                let ny = dy / dist;
-
-                if (dist === 0) { nx = 1; ny = 0; }
-
-                // Displace boat away from mark
-                boat.x += nx * overlap;
-                boat.y += ny * overlap;
-
-                // Penalty
+        const poly = getHullPolygon(boat);
+        for (const mark of state.course.marks) {
+            const res = satPolygonCircle(poly, mark, markRadius);
+            if (res) {
+                // Direction: axis points from Poly to Circle
+                // We want to move Poly away from Circle, so move opposite to axis
+                boat.x -= res.axis.x * res.overlap;
+                boat.y -= res.axis.y * res.overlap;
                 boat.speed *= 0.5;
+                if (state.race.status === 'racing') triggerPenalty(boat);
             }
         }
     }
