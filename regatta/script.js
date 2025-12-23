@@ -650,13 +650,13 @@ function updateRace(dt) {
         const minRecordDistSq = 50 * 50; // Record every 50 units
 
         if (trace.length === 0) {
-            trace.push({ x: state.boat.x, y: state.boat.y });
+            trace.push({ x: state.boat.x, y: state.boat.y, leg: state.race.leg });
         } else {
             const last = trace[trace.length - 1];
             const dx = state.boat.x - last.x;
             const dy = state.boat.y - last.y;
             if (dx * dx + dy * dy > minRecordDistSq) {
-                trace.push({ x: state.boat.x, y: state.boat.y });
+                trace.push({ x: state.boat.x, y: state.boat.y, leg: state.race.leg });
             }
         }
     }
@@ -2069,14 +2069,41 @@ function drawMinimap() {
 
     // Draw Trace
     if (state.race.trace && state.race.trace.length > 0) {
-        ctx.strokeStyle = 'rgba(250, 204, 21, 0.6)'; // Yellow-400, semi-transparent
         ctx.lineWidth = 1.5;
+
+        let splitIndex = 0;
+        // Find first point belonging to current leg
+        while (splitIndex < state.race.trace.length) {
+            const p = state.race.trace[splitIndex];
+            if (p.leg !== undefined && p.leg >= state.race.leg) {
+                break;
+            }
+            splitIndex++;
+        }
+
+        // Draw Previous Legs (Subtle)
+        if (splitIndex > 0) {
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            const startP = transform(state.race.trace[0].x, state.race.trace[0].y);
+            ctx.moveTo(startP.x, startP.y);
+            for (let i = 1; i < splitIndex; i++) {
+                const p = transform(state.race.trace[i].x, state.race.trace[i].y);
+                ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+        }
+
+        // Draw Current Leg (Active)
+        // Start from previous point to connect the lines
+        const startIndex = Math.max(0, splitIndex - 1);
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.6)'; // Yellow-400, semi-transparent
         ctx.beginPath();
 
-        const startPos = transform(state.race.trace[0].x, state.race.trace[0].y);
-        ctx.moveTo(startPos.x, startPos.y);
+        const startCurr = transform(state.race.trace[startIndex].x, state.race.trace[startIndex].y);
+        ctx.moveTo(startCurr.x, startCurr.y);
 
-        for (let i = 1; i < state.race.trace.length; i++) {
+        for (let i = startIndex + 1; i < state.race.trace.length; i++) {
             const p = transform(state.race.trace[i].x, state.race.trace[i].y);
             ctx.lineTo(p.x, p.y);
         }
