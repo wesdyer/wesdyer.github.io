@@ -644,9 +644,27 @@ function updateAI(boat, dt) {
     if (marks && marks.length >= 4) {
         // Identify active gate based on leg
         let indices = (boat.raceState.leg === 0 || boat.raceState.leg === 2 || boat.raceState.leg === 4) ? [0, 1] : [2, 3];
-        // Aim for the midpoint to ensure passing between marks
-        targetX = (marks[indices[0]].x + marks[indices[1]].x) / 2;
-        targetY = (marks[indices[0]].y + marks[indices[1]].y) / 2;
+
+        if (boat.raceState.isRounding) {
+            const m1 = marks[indices[0]];
+            const m2 = marks[indices[1]];
+            const d1 = (boat.x - m1.x) ** 2 + (boat.y - m1.y) ** 2;
+            const d2 = (boat.x - m2.x) ** 2 + (boat.y - m2.y) ** 2;
+            const targetMark = (d1 < d2) ? m1 : m2;
+
+            const cx = (m1.x + m2.x) / 2;
+            const cy = (m1.y + m2.y) / 2;
+            // Aim wide of the mark to ensure crossing the extension line
+            const vx = targetMark.x - cx;
+            const vy = targetMark.y - cy;
+
+            targetX = targetMark.x + vx;
+            targetY = targetMark.y + vy;
+        } else {
+            // Aim for the midpoint to ensure passing between marks
+            targetX = (marks[indices[0]].x + marks[indices[1]].x) / 2;
+            targetY = (marks[indices[0]].y + marks[indices[1]].y) / 2;
+        }
     }
 
     const dx = targetX - boat.x;
