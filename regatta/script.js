@@ -636,8 +636,22 @@ function updateAI(boat, dt) {
     const windDir = state.wind.direction;
     const waypoint = boat.raceState.nextWaypoint;
 
-    // Default target: Waypoint
-    let targetAngle = waypoint.angle;
+    // Default target: Center of Gate (Pass between marks)
+    let targetX = waypoint.x;
+    let targetY = waypoint.y;
+
+    const marks = state.course.marks;
+    if (marks && marks.length >= 4) {
+        // Identify active gate based on leg
+        let indices = (boat.raceState.leg === 0 || boat.raceState.leg === 2 || boat.raceState.leg === 4) ? [0, 1] : [2, 3];
+        // Aim for the midpoint to ensure passing between marks
+        targetX = (marks[indices[0]].x + marks[indices[1]].x) / 2;
+        targetY = (marks[indices[0]].y + marks[indices[1]].y) / 2;
+    }
+
+    const dx = targetX - boat.x;
+    const dy = targetY - boat.y;
+    let targetAngle = Math.atan2(dx, -dy);
 
     // PRESTART Special Logic
     if (state.race.status === 'prestart') {
@@ -718,15 +732,20 @@ function updateAI(boat, dt) {
 
     // Mark Avoidance
     if (state.course && state.course.marks) {
+        const markDetectRadius = 200; // Increased radius for marks
         for (const m of state.course.marks) {
              const dx = m.x - boat.x;
              const dy = m.y - boat.y;
              const distSq = dx*dx + dy*dy;
-             if (distSq < detectRadius * detectRadius) {
+             if (distSq < markDetectRadius * markDetectRadius) {
                  const dist = Math.sqrt(distSq);
                  const bx = Math.sin(boat.heading), by = -Math.cos(boat.heading);
-                 if (dx * bx + dy * by > 0) { // Ahead
-                      const strength = (1.0 - dist / detectRadius) * 3.0; // Stronger for marks
+
+                 // Check if mark is generally ahead (allow wider angle)
+                 if (dx * bx + dy * by > -50) {
+                      // Calculate strong repulsion
+                      // Strength increases dramatically as we get closer
+                      const strength = Math.pow((1.0 - dist / markDetectRadius), 2) * 8.0;
                       avoidX -= (dx / dist) * strength;
                       avoidY -= (dy / dist) * strength;
                  }
