@@ -2187,8 +2187,21 @@ function updateLeaderboard() {
             }
 
             // Update Content
-            row.querySelector('.lb-rank').textContent = index + 1;
+            const rankDiv = row.querySelector('.lb-rank');
             const distDiv = row.querySelector('.lb-dist');
+
+            // Apply finished styling
+            if (boat.raceState.finished) {
+                row.className = "lb-row flex items-center px-3 border-b border-slate-700/50 bg-emerald-900/60 transition-colors duration-500";
+                rankDiv.className = "lb-rank w-4 text-xs font-black italic text-white mr-2";
+                distDiv.className = "lb-dist text-[10px] font-mono text-white text-right min-w-[32px]";
+            } else {
+                row.className = "lb-row flex items-center px-3 border-b border-slate-700/50 bg-slate-800/40 transition-colors duration-500";
+                rankDiv.className = "lb-rank w-4 text-xs font-black italic text-slate-400 mr-2";
+                distDiv.className = "lb-dist text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
+            }
+
+            rankDiv.textContent = index + 1;
             if (index === 0) {
                  distDiv.textContent = "";
             } else {
