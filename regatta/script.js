@@ -183,7 +183,57 @@ class Boat {
             state: 'start',
             tackCooldown: 0
         };
+
+        this.badAirIntensity = 0;
     }
+}
+
+
+function drawDisturbedAir(ctx) {
+    const windDir = state.wind.direction;
+    // Wind Flow Vector (Where wind is going)
+    const wx = -Math.sin(windDir);
+    const wy = Math.cos(windDir);
+    const length = 350;
+    const startWidth = 20;
+    const endWidth = 100;
+    // Cross Vector (Right relative to flow)
+    const crx = -wy;
+    const cry = wx;
+
+    ctx.save();
+    for (const boat of state.boats) {
+        if (boat.raceState.finished) continue;
+
+        // Calculate cone
+        const cx = boat.x;
+        const cy = boat.y;
+        const ex = cx + wx * length;
+        const ey = cy + wy * length;
+
+        const s1x = cx - crx * (startWidth / 2);
+        const s1y = cy - cry * (startWidth / 2);
+        const s2x = cx + crx * (startWidth / 2);
+        const s2y = cy + cry * (startWidth / 2);
+
+        const e1x = ex - crx * (endWidth / 2);
+        const e1y = ey - cry * (endWidth / 2);
+        const e2x = ex + crx * (endWidth / 2);
+        const e2y = ey + cry * (endWidth / 2);
+
+        const grad = ctx.createLinearGradient(cx, cy, ex, ey);
+        grad.addColorStop(0, 'rgba(0, 0, 0, 0.15)');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(s1x, s1y);
+        ctx.lineTo(e1x, e1y);
+        ctx.lineTo(e2x, e2y);
+        ctx.lineTo(s2x, s2y);
+        ctx.fill();
+    }
+    ctx.restore();
 }
 
 
@@ -822,6 +872,37 @@ function updateBoat(boat, dt) {
     // Physics
     const angleToWind = Math.abs(normalizeAngle(boat.heading - state.wind.direction));
 
+    // Disturbed Air
+    boat.badAirIntensity = 0;
+    const windDir = state.wind.direction;
+    const wx = -Math.sin(windDir); // Flow X
+    const wy = Math.cos(windDir);  // Flow Y
+    const crx = -wy; // Right X
+    const cry = wx;  // Right Y
+    const shadowLength = 350;
+    const startW = 20;
+    const endW = 100;
+
+    for (const other of state.boats) {
+        if (other === boat) continue;
+        const dx = boat.x - other.x;
+        const dy = boat.y - other.y;
+
+        // Project onto flow (Downwind distance)
+        const dDown = dx * wx + dy * wy;
+        if (dDown <= 10 || dDown > shadowLength) continue;
+
+        const widthAtDist = startW + (dDown / shadowLength) * (endW - startW);
+        const dCross = Math.abs(dx * crx + dy * cry);
+
+        if (dCross < widthAtDist * 0.6) {
+             const centerFactor = 1.0 - (dCross / (widthAtDist * 0.6));
+             const distFactor = 1.0 - (dDown / shadowLength);
+             const intensity = 0.4 * centerFactor * distFactor;
+             if (intensity > boat.badAirIntensity) boat.badAirIntensity = intensity;
+        }
+    }
+
     // Sail Logic
     let relWind = normalizeAngle(state.wind.direction - boat.heading);
     if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
@@ -851,8 +932,9 @@ function updateBoat(boat, dt) {
     const jibFactor = Math.max(0, 1 - progress * 2);
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
-    let targetKnotsJib = getTargetSpeed(angleToWind, false, state.wind.speed);
-    let targetKnotsSpin = getTargetSpeed(angleToWind, true, state.wind.speed);
+    const effectiveWind = state.wind.speed * (1.0 - boat.badAirIntensity);
+    let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveWind);
+    let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveWind);
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
 
     const actualMagnitude = Math.abs(boat.sailAngle);
@@ -2032,6 +2114,7 @@ function draw() {
 
     drawWater(ctx);
     drawBoundary(ctx);
+    drawDisturbedAir(ctx);
     drawParticles(ctx, 'surface');
     drawActiveGateLine(ctx);
     drawLadderLines(ctx);
@@ -2099,7 +2182,15 @@ function draw() {
     if (frameCount % 10 === 0) {
         updateLeaderboard();
         if (UI.speed) UI.speed.textContent = (player.speed*4).toFixed(1);
-        if (UI.windSpeed) UI.windSpeed.textContent = state.wind.speed.toFixed(1);
+        if (UI.windSpeed) {
+             UI.windSpeed.textContent = state.wind.speed.toFixed(1);
+             if (player.badAirIntensity > 0.05) {
+                 UI.windSpeed.classList.add('text-red-400');
+                 if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
+             } else {
+                 UI.windSpeed.classList.remove('text-red-400');
+             }
+        }
         if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - state.wind.direction))*(180/Math.PI)) + '°';
         if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - state.wind.direction))).toFixed(1);
 
