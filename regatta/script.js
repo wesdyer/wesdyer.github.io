@@ -2018,6 +2018,55 @@ function updateLeaderboard() {
 
 
 
+function drawBoatIndicator(ctx, boat) {
+    if (boat.isPlayer) return;
+
+    const rank = (boat.lbRank !== undefined) ? (boat.lbRank + 1) : "-";
+    const speed = (boat.speed * 4).toFixed(1);
+    const name = boat.name.toUpperCase();
+    const text = `${rank} ${name} ${speed}kn`;
+
+    ctx.save();
+    ctx.translate(boat.x, boat.y);
+    ctx.rotate(state.camera.rotation);
+    ctx.translate(0, 50); // Below boat
+
+    ctx.font = "bold 11px monospace";
+    const paddingX = 8;
+    const textMetrics = ctx.measureText(text);
+    const boxWidth = textMetrics.width + paddingX * 2 + 6;
+    const boxHeight = 18;
+
+    const x = -boxWidth / 2;
+    const y = 0;
+
+    // Shadow
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2;
+
+    // Main Box
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+    ctx.beginPath();
+    ctx.roundRect(x, y, boxWidth, boxHeight, 4);
+    ctx.fill();
+
+    // Colored Bar
+    ctx.shadowColor = 'transparent';
+    ctx.fillStyle = boat.colors.hull;
+    ctx.beginPath();
+    ctx.roundRect(x + 2, y + 2, 4, boxHeight - 4, 2);
+    ctx.fill();
+
+    // Text
+    ctx.fillStyle = '#ffffff';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, x + 10, y + boxHeight/2 + 1);
+
+    ctx.restore();
+}
+
 function draw() {
     frameCount++;
     ctx.fillStyle = CONFIG.waterColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -2049,6 +2098,11 @@ function draw() {
         ctx.rotate(boat.heading);
         drawBoat(ctx, boat);
         ctx.restore();
+    }
+
+    // Draw Indicators
+    for (const boat of state.boats) {
+        drawBoatIndicator(ctx, boat);
     }
 
     ctx.restore();
