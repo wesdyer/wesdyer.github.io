@@ -8,19 +8,26 @@ def run():
         context = browser.new_context()
         page = context.new_page()
 
-        # Determine path
+        # Determine the absolute path to regatta/index.html
         cwd = os.getcwd()
-        path = f'file://{cwd}/regatta/index.html'
-        print(f'Navigating to {path}')
+        url = f'file://{cwd}/regatta/index.html'
 
-        page.goto(path)
+        print(f'Navigating to {url}')
+        page.goto(url)
 
-        # Wait for game to initialize
-        page.wait_for_timeout(2000)
+        # Wait for canvas to be present
+        page.wait_for_selector('#gameCanvas')
+
+        # Wait a bit for the game to initialize and render
+        # We want to see boats, so we need the game to start.
+        # regatta/script.js auto-starts (calls resetGame and loop).
+        # We need to wait for frames to render.
+
+        page.wait_for_timeout(2000) # Wait 2 seconds
 
         # Take screenshot
-        page.screenshot(path='verification/regatta.png')
-        print('Screenshot taken')
+        page.screenshot(path='verification/regatta_screenshot.png')
+        print('Screenshot saved to verification/regatta_screenshot.png')
 
         browser.close()
 
