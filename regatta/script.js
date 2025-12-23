@@ -651,6 +651,14 @@ function updateRace(dt) {
                                 state.race.finishTime = state.race.timer;
                                 state.race.trace.push({ x: state.boat.x, y: state.boat.y, leg: 4 });
                                 showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
+
+                                if (window.confetti) {
+                                    window.confetti({
+                                        particleCount: 150,
+                                        spread: 70,
+                                        origin: { y: 0.6 }
+                                    });
+                                }
                             }
                         };
 
@@ -714,6 +722,14 @@ function updateRace(dt) {
                         state.race.status = 'finished';
                         state.race.finishTime = state.race.timer;
                         showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
+
+                        if (window.confetti) {
+                            window.confetti({
+                                particleCount: 150,
+                                spread: 70,
+                                origin: { y: 0.6 }
+                            });
+                        }
                     }
                 };
 
@@ -1582,13 +1598,17 @@ function drawRoundingArrows(ctx) {
 }
 
 function drawActiveGateLine(ctx) {
-    if (state.race.status === 'finished') return;
-    // Only draw line for Start (Leg 0) and Finish (Leg 4)
-    if (state.race.leg !== 0 && state.race.leg !== 4) return;
-    if (!state.course || !state.course.marks) return;
-
     // Determine marks based on leg
-    const indices = (state.race.leg % 2 === 0) ? [0, 1] : [2, 3];
+    let indices;
+    if (state.race.status === 'finished') {
+        indices = [0, 1];
+    } else {
+        // Only draw line for Start (Leg 0) and Finish (Leg 4)
+        if (state.race.leg !== 0 && state.race.leg !== 4) return;
+        indices = (state.race.leg % 2 === 0) ? [0, 1] : [2, 3];
+    }
+
+    if (!state.course || !state.course.marks) return;
     if (indices[1] >= state.course.marks.length) return;
 
     const m1 = state.course.marks[indices[0]];
@@ -1609,8 +1629,13 @@ function drawActiveGateLine(ctx) {
     let strokeColor = '#ffffff';
     let lineDash = [];
 
-    // Start Line Logic (Leg 0)
-    if (state.race.leg === 0) {
+    if (state.race.status === 'finished') {
+         // Bright Green
+         shadowColor = '#4ade80'; // Green-400
+         strokeColor = '#4ade80';
+         lineDash = [];
+    } else if (state.race.leg === 0) {
+        // Start Line Logic (Leg 0)
         if (state.race.status === 'prestart') {
             // Red Solid
             shadowColor = '#ef4444'; // Red-500
