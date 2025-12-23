@@ -2112,12 +2112,11 @@ function resetGame() {
         }
         const name = AI_NAMES[(i - 1) % AI_NAMES.length];
         const ai = new Boat(i, false, pos.x, pos.y, name);
-        // Start on a reach
-        const side = (i % 2 === 0) ? 1 : -1;
-        ai.heading = normalizeAngle(state.wind.direction + side * Math.PI / 2);
+        // Start head to wind
+        ai.heading = state.wind.direction;
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
-        ai.speed = 3.0; // Initial speed
+        ai.speed = 0; // Initial speed
         state.boats.push(ai);
     }
 
