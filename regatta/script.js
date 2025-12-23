@@ -14,6 +14,7 @@ const CONFIG = {
 const DEFAULT_SETTINGS = {
     navAids: true,
     manualTrim: false,
+    cameraMode: 'heading',
     hullColor: '#f1f5f9',
     spinnakerColor: '#ef4444'
 };
@@ -153,6 +154,7 @@ const UI = {
     saveSettings: document.getElementById('save-settings'),
     settingNavAids: document.getElementById('setting-navaids'),
     settingTrim: document.getElementById('setting-trim'),
+    settingCameraMode: document.getElementById('setting-camera-mode'),
     settingHullColor: document.getElementById('setting-color-hull'),
     settingSpinnakerColor: document.getElementById('setting-color-spinnaker')
 };
@@ -181,10 +183,12 @@ function applySettings() {
     // We update manualTrim only if it's different to prevent resetting if user didn't change it via settings
     // But requirement says toggle from settings.
     state.boat.manualTrim = settings.manualTrim;
+    state.camera.mode = settings.cameraMode;
 
     // Sync UI to settings state
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
+    if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     if (UI.settingHullColor) UI.settingHullColor.value = settings.hullColor;
     if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.value = settings.spinnakerColor;
 }
@@ -299,6 +303,12 @@ if (UI.settingTrim) {
         saveSettings();
     });
 }
+if (UI.settingCameraMode) {
+    UI.settingCameraMode.addEventListener('change', (e) => {
+        settings.cameraMode = e.target.value;
+        saveSettings();
+    });
+}
 if (UI.settingHullColor) {
     UI.settingHullColor.addEventListener('input', (e) => {
         settings.hullColor = e.target.value;
@@ -337,6 +347,8 @@ window.addEventListener('keydown', (e) => {
         const modes = ['heading', 'north', 'wind'];
         const currentIndex = modes.indexOf(state.camera.mode);
         state.camera.mode = modes[(currentIndex + 1) % modes.length];
+        settings.cameraMode = state.camera.mode;
+        saveSettings();
     }
     if (e.key === ' ' || e.code === 'Space') {
         state.boat.spinnaker = !state.boat.spinnaker;
