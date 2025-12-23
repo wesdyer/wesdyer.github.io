@@ -938,15 +938,12 @@ function updateAI(boat, dt) {
 
     // PRESTART Special Logic
     if (state.race.status === 'prestart') {
-        // Zig Zag in start area
+        // Hold position (Head to Wind) until 10 seconds
         if (state.race.timer > 10) {
-             const holdingY = 400;
-             const holdingX = (boat.id % 2 === 0) ? 300 : -300;
-             const dx = holdingX - boat.x;
-             const dy = holdingY - boat.y;
-             targetAngle = Math.atan2(dx, -dy);
+             targetAngle = state.wind.direction;
         } else {
-             // Go for line center
+             // Go for line center (or just sail upwind towards line)
+             // Simple logic: Sail towards 0,0
              const dx = 0 - boat.x;
              const dy = 0 - boat.y;
              targetAngle = Math.atan2(dx, -dy);
@@ -998,44 +995,47 @@ function updateAI(boat, dt) {
     const detectRadius = 200;
     const collisionRadius = 60;
 
-    for (const other of state.boats) {
-        if (other === boat) continue;
-        const dx = other.x - boat.x;
-        const dy = other.y - boat.y;
-        const distSq = dx*dx + dy*dy;
+    // Skip collision avoidance during prestart hold to maintain line
+    if (!(state.race.status === 'prestart' && state.race.timer > 10)) {
+        for (const other of state.boats) {
+            if (other === boat) continue;
+            const dx = other.x - boat.x;
+            const dy = other.y - boat.y;
+            const distSq = dx*dx + dy*dy;
 
-        if (distSq < detectRadius * detectRadius) {
-             const dist = Math.sqrt(distSq);
-             // Check if in front (or slightly abeam)
-             const bx = Math.sin(boat.heading), by = -Math.cos(boat.heading);
-             const dotFront = dx * bx + dy * by;
+            if (distSq < detectRadius * detectRadius) {
+                 const dist = Math.sqrt(distSq);
+                 // Check if in front (or slightly abeam)
+                 const bx = Math.sin(boat.heading), by = -Math.cos(boat.heading);
+                 const dotFront = dx * bx + dy * by;
 
-             // Don't avoid boats that are well behind us
-             if (dotFront > -30) {
-                  const rowBoat = getRightOfWay(boat, other);
-                  const iHaveROW = (rowBoat === boat);
+                 // Don't avoid boats that are well behind us
+                 if (dotFront > -30) {
+                      const rowBoat = getRightOfWay(boat, other);
+                      const iHaveROW = (rowBoat === boat);
 
-                  let shouldAvoid = false;
-                  let strength = 0;
+                      let shouldAvoid = false;
+                      let strength = 0;
 
-                  if (iHaveROW) {
-                      // Rule 14: Avoid contact if collision is imminent, even if we have ROW
-                      if (dist < collisionRadius) {
+                      if (iHaveROW) {
+                          // Rule 14: Avoid contact if collision is imminent, even if we have ROW
+                          if (dist < collisionRadius) {
+                              shouldAvoid = true;
+                              strength = (1.0 - dist / collisionRadius) * 5.0; // Panic mode
+                          }
+                      } else {
+                          // Give Way: Yield early
                           shouldAvoid = true;
-                          strength = (1.0 - dist / collisionRadius) * 5.0; // Panic mode
+                          strength = (1.0 - dist / detectRadius) * 3.0;
+                          if (dist < collisionRadius) strength *= 2.0; // Urgency
                       }
-                  } else {
-                      // Give Way: Yield early
-                      shouldAvoid = true;
-                      strength = (1.0 - dist / detectRadius) * 3.0;
-                      if (dist < collisionRadius) strength *= 2.0; // Urgency
-                  }
 
-                  if (shouldAvoid) {
-                      avoidX -= (dx / dist) * strength;
-                      avoidY -= (dy / dist) * strength;
-                  }
-             }
+                      if (shouldAvoid) {
+                          avoidX -= (dx / dist) * strength;
+                          avoidY -= (dy / dist) * strength;
+                      }
+                 }
+            }
         }
     }
 
@@ -2907,32 +2907,70 @@ function resetGame() {
     if (UI.lbRows) UI.lbRows.innerHTML = '';
     UI.boatRows = {};
 
-    // Player
-    // Start area: At least 50m from start line.
-    // Start Line at (0,0). Wind from 0 (North).
-    // Start area is "below" (downwind) of line. Positive Y.
-    // 50m = 250 units.
-    // Random spots in start area.
+    // Calculate Start Line Positions
+    // 100m back = 500 units.
+    const distBack = 500;
 
-    const startYMin = 300;
-    const startYMax = 800;
-    const startXSpan = 800;
+    // Wind Vectors
+    const wd = state.wind.direction;
+    const ux = Math.sin(wd);
+    const uy = -Math.cos(wd);
 
-    // Helper for random pos
-    const getPos = () => ({
-        x: (Math.random() - 0.5) * startXSpan,
-        y: startYMin + Math.random() * (startYMax - startYMin)
-    });
+    // Downwind Vector (Back from line)
+    const backX = -ux;
+    const backY = -uy;
 
-    // Player
-    const pPos = getPos();
+    // Right Vector (Crosswind)
+    const rx = -uy;
+    const ry = ux;
+
+    // Start Line Center
+    const m0 = state.course.marks[0];
+    const m1 = state.course.marks[1];
+    const cx = (m0.x + m1.x) / 2;
+    const cy = (m0.y + m1.y) / 2;
+
+    // Center of Boat Line
+    const lineCx = cx + backX * distBack;
+    const lineCy = cy + backY * distBack;
+
+    // Width Calculation
+    // Start Width
+    const startWidth = Math.sqrt((m1.x - m0.x)**2 + (m1.y - m0.y)**2);
+    // Layline width at distance: StartWidth + 2 * Distance (assuming 45 deg laylines)
+    const totalWidth = startWidth + 2 * distBack;
+
+    // Generate Evenly Spaced Positions
+    const totalBoats = 10; // Player + 9 AI
+    const positions = [];
+    const step = totalWidth / (totalBoats - 1);
+    const startOffset = -totalWidth / 2;
+
+    for (let i = 0; i < totalBoats; i++) {
+        const offset = startOffset + i * step;
+        positions.push({
+            x: lineCx + rx * offset,
+            y: lineCy + ry * offset
+        });
+    }
+
+    // Shuffle Positions (Fisher-Yates)
+    for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+
+    let posIndex = 0;
+
+    // Create Player
+    const pPos = positions[posIndex++];
     const player = new Boat(0, true, pPos.x, pPos.y, "Player");
     player.heading = state.wind.direction; // Head to wind
     player.prevHeading = player.heading;
     player.lastWindSide = 0;
     state.boats.push(player);
 
-    // AI Boats
+    // Create AI Boats
     const opponents = [];
     const available = [...AI_CONFIG];
     for (let i = 0; i < 9 && available.length > 0; i++) {
@@ -2942,19 +2980,8 @@ function resetGame() {
     }
 
     for (let i = 0; i < opponents.length; i++) {
-        // Ensure no collision at start
-        let pos, ok = false, tries = 0;
-        while (!ok && tries < 100) {
-            pos = getPos();
-            ok = true;
-            for (const b of state.boats) {
-                if ((pos.x - b.x)**2 + (pos.y - b.y)**2 < 60*60) {
-                    ok = false; break;
-                }
-            }
-            tries++;
-        }
         const config = opponents[i];
+        const pos = positions[posIndex++];
         const ai = new Boat(i + 1, false, pos.x, pos.y, config.name, config);
         // Start head to wind
         ai.heading = state.wind.direction;
