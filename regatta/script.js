@@ -119,6 +119,9 @@ const state = {
     course: {}
 };
 
+const burgeeImg = new Image();
+burgeeImg.src = 'salty-crew-yacht-club-burgee.png';
+
 class Boat {
     constructor(id, isPlayer, startX, startY, name="USA", config=null) {
         this.id = id;
@@ -2165,10 +2168,57 @@ function drawMarkBodies(ctx) {
 
 function drawBoundary(ctx) {
     const b = state.course.boundary;
+    if (!b) return;
     ctx.save(); ctx.translate(b.x, b.y);
-    ctx.beginPath(); ctx.arc(0, 0, b.radius, 0, Math.PI*2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 15; ctx.setLineDash([40, 40]); ctx.stroke();
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)'; ctx.lineWidth = 2; ctx.setLineDash([]); ctx.stroke();
+
+    // Glow
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+
+    // Solid thick white line
+    ctx.beginPath(); ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 80; ctx.setLineDash([]); ctx.stroke();
+
+    ctx.shadowBlur = 0; // Reset for text/images
+
+    // Text & Burgee
+    const text = "Salty Critter Yacht Club";
+    ctx.font = 'bold 50px sans-serif';
+    ctx.textBaseline = 'middle';
+    const textWidth = ctx.measureText(text).width;
+
+    // Image
+    const imgH = 40;
+    const imgW = imgH * (649 / 462);
+
+    const gap = 60;
+    const segmentLen = imgW + gap + textWidth + gap;
+
+    const circumference = 2 * Math.PI * b.radius;
+    const count = Math.ceil(circumference / segmentLen);
+    const angleStep = (Math.PI * 2) / count;
+
+    for (let i = 0; i < count; i++) {
+        const angle = i * angleStep;
+        ctx.save();
+        ctx.rotate(angle);
+        ctx.translate(b.radius, 0);
+        ctx.rotate(Math.PI / 2); // Tangent
+
+        const contentWidth = imgW + gap + textWidth;
+        const startX = -contentWidth / 2;
+
+        if (burgeeImg.complete && burgeeImg.naturalWidth > 0) {
+            ctx.drawImage(burgeeImg, startX, -imgH / 2, imgW, imgH);
+        }
+
+        ctx.fillStyle = '#0f172a'; // Slate-900 (Dark Blue)
+        ctx.textAlign = 'left';
+        ctx.fillText(text, startX + imgW + gap, 0);
+
+        ctx.restore();
+    }
+
     ctx.restore();
 }
 
