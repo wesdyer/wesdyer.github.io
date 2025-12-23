@@ -1,29 +1,28 @@
+import os
+from playwright.sync_api import sync_playwright
 
-import asyncio
-from playwright.async_api import async_playwright
+def verify_boundary_rendering():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-async def run():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-        await page.goto("http://localhost:8000/regatta/index.html")
+        # Navigate to the regatta application
+        # Using realpath to get absolute path
+        file_path = os.path.abspath("regatta/index.html")
+        page.goto(f"file://{file_path}")
 
-        # Wait for game to initialize
-        await page.wait_for_timeout(1000)
+        # Wait for canvas to be present
+        page.wait_for_selector("#gameCanvas")
 
-        # Inject code to move camera to boundary and pause game
-        await page.evaluate("""
-            state.paused = true;
-            const b = state.course.boundary;
-            state.camera.x = b.x + b.radius;
-            state.camera.y = b.y;
-            state.camera.rotation = -Math.PI / 2;
-        """)
+        # Wait a bit for the game to initialize and render a few frames
+        page.wait_for_timeout(2000)
 
-        await page.wait_for_timeout(500)
-        await page.screenshot(path="verification/boundary_fixed.png")
-        print("Screenshot saved to verification/boundary_fixed.png")
+        # Take a screenshot
+        screenshot_path = "verification/regatta_boundary.png"
+        page.screenshot(path=screenshot_path)
+        print(f"Screenshot saved to {screenshot_path}")
 
-        await browser.close()
+        browser.close()
 
-asyncio.run(run())
+if __name__ == "__main__":
+    verify_boundary_rendering()
