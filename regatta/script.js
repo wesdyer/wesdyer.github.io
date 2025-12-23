@@ -1714,12 +1714,9 @@ function draw() {
         ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fillStyle = '#22c55e'; ctx.fill();
         ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
 
-        const hideText = (player.raceState.leg === 0 && player.raceState.nextWaypoint.dist < 200);
-        if (!hideText) {
-             ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-             ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
-             ctx.fillText(Math.round(player.raceState.nextWaypoint.dist) + 'm', 0, -12);
-        }
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
+        ctx.fillText(Math.round(player.raceState.nextWaypoint.dist) + 'm', 0, -12);
         ctx.restore();
     }
 
