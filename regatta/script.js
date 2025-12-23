@@ -1994,7 +1994,7 @@ function drawLayLines(ctx) {
     let zoneRadius = 165;
     // For Start (Leg 0) and Finish (Leg 4), there are no mark zones, so laylines should start closer to mark.
     if (state.race.leg === 0 || state.race.leg === 4) {
-        zoneRadius = 20; // Enough to clear mark visual radius (12)
+        zoneRadius = 0; // Reach all the way to the mark center (covered by mark body)
     }
 
     for (const idx of targets) {
