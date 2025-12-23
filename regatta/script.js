@@ -80,7 +80,9 @@ const state = {
         y: 0,
         rotation: 0,
         target: 'boat', // Always follow boat now
-        mode: 'heading' // 'heading', 'north', 'wind'
+        mode: 'heading', // 'heading', 'north', 'wind', 'gate'
+        message: '',
+        messageTimer: 0
     },
     wind: {
         direction: 0, // Blowing Down (South)
@@ -344,10 +346,12 @@ window.addEventListener('keydown', (e) => {
         state.keys[key] = true;
     }
     if (e.key === 'Enter') {
-        const modes = ['heading', 'north', 'wind'];
+        const modes = ['heading', 'north', 'wind', 'gate'];
         const currentIndex = modes.indexOf(state.camera.mode);
         state.camera.mode = modes[(currentIndex + 1) % modes.length];
         settings.cameraMode = state.camera.mode;
+        state.camera.message = state.camera.mode.toUpperCase();
+        state.camera.messageTimer = 1.5;
         saveSettings();
     }
     if (e.key === ' ' || e.code === 'Space') {
@@ -1056,6 +1060,21 @@ function update(dt) {
         // Rotate towards wind direction (so wind comes from top)
         let diff = normalizeAngle(state.wind.direction - state.camera.rotation);
         state.camera.rotation += diff * camLerp;
+    } else if (state.camera.mode === 'gate') {
+        // Rotate towards next waypoint
+        if (state.race.status !== 'finished') {
+            let diff = normalizeAngle(state.race.nextWaypoint.angle - state.camera.rotation);
+            state.camera.rotation += diff * camLerp;
+        } else {
+            // If finished, fallback to heading mode behavior
+            let diff = normalizeAngle(state.boat.heading - state.camera.rotation);
+            state.camera.rotation += diff * camLerp;
+        }
+    }
+
+    // Camera Message Timer
+    if (state.camera.messageTimer > 0) {
+        state.camera.messageTimer -= dt;
     }
 
     // Boat Steering
@@ -2543,6 +2562,48 @@ function draw() {
     ctx.restore();
 
     ctx.restore();
+
+    // Draw Camera Mode Message
+    if (state.camera.messageTimer > 0) {
+        ctx.save();
+        const alpha = Math.min(1.0, state.camera.messageTimer * 2);
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 32px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const text = "CAMERA: " + state.camera.message;
+        const metrics = ctx.measureText(text);
+        const padding = 20;
+        const w = metrics.width + padding * 2;
+        const h = 60;
+        const x = canvas.width / 2;
+        const y = canvas.height / 3;
+
+        ctx.beginPath();
+        const r = 10;
+        const rx = x - w/2;
+        const ry = y - h/2;
+        ctx.moveTo(rx + r, ry);
+        ctx.lineTo(rx + w - r, ry);
+        ctx.quadraticCurveTo(rx + w, ry, rx + w, ry + r);
+        ctx.lineTo(rx + w, ry + h - r);
+        ctx.quadraticCurveTo(rx + w, ry + h, rx + w - r, ry + h);
+        ctx.lineTo(rx + r, ry + h);
+        ctx.quadraticCurveTo(rx, ry + h, rx, ry + h - r);
+        ctx.lineTo(rx, ry + r);
+        ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = 'white';
+        ctx.fillText(text, x, y);
+        ctx.restore();
+    }
 
     // Draw Waypoint Indicator
     if (state.race.status !== 'finished' && state.showNavAids) {
