@@ -2396,6 +2396,12 @@ function drawMinimap() {
     if (player) {
         const pos = t(player.x, player.y);
         ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(player.heading);
+
+        // Pulse Glow
+        const glow = 10 + Math.sin(state.time * 8) * 5;
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = '#facc15';
+
         ctx.fillStyle = '#facc15';
         ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(8, 9); ctx.lineTo(-8, 9); ctx.fill();
         ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff'; ctx.stroke();
