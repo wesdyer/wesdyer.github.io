@@ -7,7 +7,8 @@ const CONFIG = {
     windSpeed: 5,
     waterColor: '#3b82f6',
     boatColor: '#f8fafc',
-    sailColor: '#f1f5f9',
+    sailColor: '#ffffff',
+    cockpitColor: '#cbd5e1',
 };
 
 // Settings
@@ -16,6 +17,8 @@ const DEFAULT_SETTINGS = {
     manualTrim: false,
     cameraMode: 'heading',
     hullColor: '#f1f5f9',
+    sailColor: '#ffffff',
+    cockpitColor: '#cbd5e1',
     spinnakerColor: '#ef4444'
 };
 
@@ -158,6 +161,8 @@ const UI = {
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
     settingHullColor: document.getElementById('setting-color-hull'),
+    settingSailColor: document.getElementById('setting-color-sail'),
+    settingCockpitColor: document.getElementById('setting-color-cockpit'),
     settingSpinnakerColor: document.getElementById('setting-color-spinnaker')
 };
 
@@ -192,6 +197,8 @@ function applySettings() {
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     if (UI.settingHullColor) UI.settingHullColor.value = settings.hullColor;
+    if (UI.settingSailColor) UI.settingSailColor.value = settings.sailColor;
+    if (UI.settingCockpitColor) UI.settingCockpitColor.value = settings.cockpitColor;
     if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.value = settings.spinnakerColor;
 }
 
@@ -314,6 +321,18 @@ if (UI.settingCameraMode) {
 if (UI.settingHullColor) {
     UI.settingHullColor.addEventListener('input', (e) => {
         settings.hullColor = e.target.value;
+        saveSettings();
+    });
+}
+if (UI.settingSailColor) {
+    UI.settingSailColor.addEventListener('input', (e) => {
+        settings.sailColor = e.target.value;
+        saveSettings();
+    });
+}
+if (UI.settingCockpitColor) {
+    UI.settingCockpitColor.addEventListener('input', (e) => {
+        settings.cockpitColor = e.target.value;
         saveSettings();
     });
 }
@@ -1406,7 +1425,8 @@ function drawBoat(ctx) {
     ctx.stroke();
 
     // Deck detail (Cockpit)
-    ctx.fillStyle = '#cbd5e1';
+    const cockpitColor = settings.cockpitColor || '#cbd5e1';
+    ctx.fillStyle = cockpitColor;
     ctx.beginPath();
     ctx.roundRect(-8, 10, 16, 15, 4);
     ctx.fill();
@@ -1428,7 +1448,11 @@ function drawBoat(ctx) {
              ctx.rotate(state.boat.sailAngle);
         }
 
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        const sailColor = settings.sailColor || '#ffffff';
+        ctx.globalAlpha = 0.9;
+        ctx.fillStyle = sailColor;
+        // Stroke should probably be darker version or standard.
+        // Let's keep standard stroke for now.
         ctx.strokeStyle = '#94a3b8';
         ctx.lineWidth = 1;
 
