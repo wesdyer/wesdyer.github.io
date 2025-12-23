@@ -1739,6 +1739,44 @@ function drawActiveGateLine(ctx) {
     }
 
     ctx.stroke();
+
+    // Label
+    ctx.save();
+    ctx.fillStyle = strokeColor;
+    ctx.font = 'bold 24px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const midX = (m1.x + m2.x) / 2;
+    const midY = (m1.y + m2.y) / 2;
+
+    let label = "";
+    if (state.race.leg === 0) label = "START";
+    else if (state.race.leg === 4 || state.race.status === 'finished') label = "FINISH";
+
+    if (label) {
+        // Rotate text to match line angle
+        const angle = Math.atan2(m2.y - m1.y, m2.x - m1.x);
+
+        ctx.translate(midX, midY);
+        // Ensure text is readable (not upside down)
+        let textRotation = angle;
+        if (Math.abs(normalizeAngle(textRotation)) > Math.PI / 2) {
+             textRotation += Math.PI;
+        }
+        ctx.rotate(textRotation);
+
+        // Draw background for legibility?
+        // Or just shadow/stroke.
+        ctx.shadowColor = 'rgba(0,0,0,0.8)';
+        ctx.shadowBlur = 4;
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.strokeText(label, 0, 0);
+        ctx.fillText(label, 0, 0);
+    }
+
+    ctx.restore();
     ctx.restore();
 }
 
