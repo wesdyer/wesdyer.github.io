@@ -2671,12 +2671,18 @@ function draw() {
         if (UI.legTimes) {
              let html = "";
 
+             const getMoveLabel = (legIdx) => {
+                 if (legIdx === 0) return "Moves"; // Start
+                 if (legIdx % 2 !== 0) return "Tacks"; // 1, 3 (Upwind)
+                 return "Gybes"; // 2, 4 (Downwind)
+             };
+
              if (state.race.startLegDuration !== null && state.race.startLegDuration !== undefined) {
                  const timeStr = formatSplitTime(state.race.startLegDuration);
                  const moves = state.race.legManeuvers ? state.race.legManeuvers[0] : 0;
                  const dist = state.race.legDistances ? Math.round(state.race.legDistances[0]) : 0;
                  const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[0].toFixed(1) : "0.0";
-                 html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Start: ${timeStr}</span> <span class="text-slate-500">Top:${top}kn Dist:${dist}m (${moves})</span></div>`;
+                 html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Start: ${timeStr}</span> <span class="text-slate-500">Top:${top}kn Dist:${dist}m ${getMoveLabel(0)}:${moves}</span></div>`;
              }
 
              if (state.race.legTimes) {
@@ -2686,7 +2692,7 @@ function draw() {
                       const moves = state.race.legManeuvers ? state.race.legManeuvers[legNum] : 0;
                       const dist = state.race.legDistances ? Math.round(state.race.legDistances[legNum]) : 0;
                       const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[legNum].toFixed(1) : "0.0";
-                      html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Leg ${legNum}: ${timeStr}</span> <span class="text-slate-500">Top:${top}kn Dist:${dist}m (${moves})</span></div>`;
+                      html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Leg ${legNum}: ${timeStr}</span> <span class="text-slate-500">Top:${top}kn Dist:${dist}m ${getMoveLabel(legNum)}:${moves}</span></div>`;
                  }
              }
 
@@ -2694,23 +2700,9 @@ function draw() {
              if ((state.race.status === 'racing' || state.race.status === 'prestart') && state.race.leg < 5) {
                  const currentLegNum = state.race.leg;
                  // For Leg 0 (Start), time is simpler (duration so far)
-                 // But state.race.legStartTime is 0 for Leg 0?
-                 // No, updateRace sets legStartTime to timer when transitioning to next leg.
-                 // For Leg 0, it starts at 0. But race timer can be negative during prestart.
-                 // "Duration" for Leg 0 is typically from T=0? Or T=-30?
-                 // The "Start" leg duration reported in history is 'state.race.timer' at moment of crossing.
-                 // So "current time" for Leg 0 is just state.race.timer. But it can be negative.
-                 // Let's just show Timer value if Leg 0, or timer - legStartTime if Leg > 0.
 
                  let currentLegTime = 0;
                  if (currentLegNum === 0) {
-                     // For start, maybe just show elapsed since -30? Or just current timer?
-                     // The history shows 'startLegDuration' which is the timer value when crossing line.
-                     // So we should show 'state.race.timer'. But that's the main timer.
-                     // Let's show elapsed time since Prestart begin (-30)?
-                     // Actually, usually Start Leg Duration is "Time crossed after gun".
-                     // So showing just the main timer is redundant.
-                     // But user asked for stats. I'll just show the stats and label it "Start".
                      // Time: "Running..."
                      currentLegTime = state.race.timer;
                  } else {
@@ -2723,10 +2715,7 @@ function draw() {
                  const dist = state.race.legDistances ? Math.round(state.race.legDistances[currentLegNum]) : 0;
                  const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[currentLegNum].toFixed(1) : "0.0";
 
-                 // For Leg 0, if status is 'prestart', we might want to suppress it if it crowds the UI,
-                 // but request said "for each leg (including current one)".
-
-                 html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md flex justify-between gap-4"><span>${label}: ${timeStr}</span> <span class="text-white/50">Top:${top}kn Dist:${dist}m (${moves})</span></div>`;
+                 html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md flex justify-between gap-4"><span>${label}: ${timeStr}</span> <span class="text-white/50">Top:${top}kn Dist:${dist}m ${getMoveLabel(currentLegNum)}:${moves}</span></div>`;
              }
 
              UI.legTimes.innerHTML = html;
