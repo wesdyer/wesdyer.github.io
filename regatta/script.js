@@ -265,7 +265,7 @@ const Sound = {
         }
 
         // Ensure context is running and wind sound is initialized
-        if (this.ctx && this.ctx.state === 'running') {
+        if (this.ctx) {
             if (!this.windSource) {
                 this.initWindSound();
             }
@@ -274,12 +274,12 @@ const Sound = {
                  // Map wind speed (approx 5-25 knots) to audio params
                  const clampedSpeed = Math.max(5, Math.min(25, speed));
 
-                 // Volume: 0.02 to 0.1
-                 const volume = 0.02 + ((clampedSpeed - 5) / 20) * 0.08;
+                 // Volume: 0.05 to 0.3 (Louder max)
+                 const volume = 0.05 + ((clampedSpeed - 5) / 20) * 0.25;
 
-                 // Lowpass Freq: 200Hz to 800Hz
+                 // Lowpass Freq: 300Hz to 1200Hz (Brighter at high speed)
                  // Simulates the "roar" of wind increasing
-                 const freq = 200 + ((clampedSpeed - 5) / 20) * 600;
+                 const freq = 300 + ((clampedSpeed - 5) / 20) * 900;
 
                  const now = this.ctx.currentTime;
                  this.windGain.gain.setTargetAtTime(volume, now, 0.1);
@@ -471,6 +471,7 @@ if (UI.settingSound) {
         settings.soundEnabled = e.target.checked;
         saveSettings();
         if (settings.soundEnabled) Sound.init();
+        Sound.updateWindSound(state.wind.speed);
     });
 }
 if (UI.settingNavAids) {
@@ -596,6 +597,7 @@ window.addEventListener('keydown', (e) => {
         settings.soundEnabled = !settings.soundEnabled;
         saveSettings();
         if (settings.soundEnabled) Sound.init();
+        Sound.updateWindSound(state.wind.speed);
     }
     if (e.key === '`' || e.code === 'Backquote') {
         state.showNavAids = !state.showNavAids;
