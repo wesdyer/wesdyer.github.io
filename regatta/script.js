@@ -10,6 +10,16 @@ const CONFIG = {
     sailColor: '#f1f5f9',
 };
 
+// Settings
+const DEFAULT_SETTINGS = {
+    navAids: true,
+    manualTrim: false,
+    hullColor: '#f1f5f9',
+    accentColor: '#cbd5e1'
+};
+
+let settings = { ...DEFAULT_SETTINGS };
+
 // J/111 Polar Data (Various Wind Speeds)
 // Source: ORC Certificate data & Scaled Estimations based on VMG ratios
 const J111_POLARS = {
@@ -131,13 +141,53 @@ const UI = {
     waypointArrow: document.getElementById('hud-waypoint-arrow'),
     pauseScreen: document.getElementById('pause-screen'),
     helpScreen: document.getElementById('help-screen'),
+    settingsScreen: document.getElementById('settings-screen'),
     helpButton: document.getElementById('help-button'),
     closeHelp: document.getElementById('close-help'),
     resumeHelp: document.getElementById('resume-help'),
     pauseButton: document.getElementById('pause-button'),
     resumeButton: document.getElementById('resume-button'),
-    restartButton: document.getElementById('restart-button')
+    restartButton: document.getElementById('restart-button'),
+    settingsButton: document.getElementById('settings-button'),
+    closeSettings: document.getElementById('close-settings'),
+    saveSettings: document.getElementById('save-settings'),
+    settingNavAids: document.getElementById('setting-navaids'),
+    settingTrim: document.getElementById('setting-trim'),
+    settingHullColor: document.getElementById('setting-color-hull'),
+    settingAccentColor: document.getElementById('setting-color-accent')
 };
+
+// Settings Logic
+function loadSettings() {
+    const stored = localStorage.getItem('regatta_settings');
+    if (stored) {
+        try {
+            const parsed = JSON.parse(stored);
+            settings = { ...DEFAULT_SETTINGS, ...parsed };
+        } catch (e) {
+            console.error("Failed to parse settings", e);
+        }
+    }
+    applySettings();
+}
+
+function saveSettings() {
+    localStorage.setItem('regatta_settings', JSON.stringify(settings));
+    applySettings();
+}
+
+function applySettings() {
+    state.showNavAids = settings.navAids;
+    // We update manualTrim only if it's different to prevent resetting if user didn't change it via settings
+    // But requirement says toggle from settings.
+    state.boat.manualTrim = settings.manualTrim;
+
+    // Sync UI to settings state
+    if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
+    if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
+    if (UI.settingHullColor) UI.settingHullColor.value = settings.hullColor;
+    if (UI.settingAccentColor) UI.settingAccentColor.value = settings.accentColor;
+}
 
 function togglePause(show) {
     const isPaused = state.paused;
@@ -147,6 +197,7 @@ function togglePause(show) {
         state.paused = true;
         if (UI.pauseScreen) UI.pauseScreen.classList.remove('hidden');
         if (UI.helpScreen) UI.helpScreen.classList.add('hidden');
+        if (UI.settingsScreen) UI.settingsScreen.classList.add('hidden');
     } else {
         state.paused = false;
         if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
@@ -164,8 +215,26 @@ function toggleHelp(show) {
         state.paused = true;
         UI.helpScreen.classList.remove('hidden');
         if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
+        if (UI.settingsScreen) UI.settingsScreen.classList.add('hidden');
     } else {
         UI.helpScreen.classList.add('hidden');
+        state.paused = false;
+        lastTime = 0;
+    }
+}
+
+function toggleSettings(show) {
+    if (!UI.settingsScreen) return;
+    const isVisible = !UI.settingsScreen.classList.contains('hidden');
+    const shouldShow = show !== undefined ? show : !isVisible;
+
+    if (shouldShow) {
+        state.paused = true;
+        UI.settingsScreen.classList.remove('hidden');
+        if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
+        if (UI.helpScreen) UI.helpScreen.classList.add('hidden');
+    } else {
+        UI.settingsScreen.classList.add('hidden');
         state.paused = false;
         lastTime = 0;
     }
@@ -203,6 +272,46 @@ if (UI.restartButton) {
         restartRace();
     });
 }
+if (UI.settingsButton) {
+    UI.settingsButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        toggleSettings(true);
+        UI.settingsButton.blur();
+    });
+}
+if (UI.closeSettings) {
+    UI.closeSettings.addEventListener('click', () => toggleSettings(false));
+}
+if (UI.saveSettings) {
+    UI.saveSettings.addEventListener('click', () => toggleSettings(false));
+}
+
+// Settings Listeners
+if (UI.settingNavAids) {
+    UI.settingNavAids.addEventListener('change', (e) => {
+        settings.navAids = e.target.checked;
+        saveSettings();
+    });
+}
+if (UI.settingTrim) {
+    UI.settingTrim.addEventListener('change', (e) => {
+        settings.manualTrim = e.target.checked;
+        saveSettings();
+    });
+}
+if (UI.settingHullColor) {
+    UI.settingHullColor.addEventListener('input', (e) => {
+        settings.hullColor = e.target.value;
+        saveSettings();
+    });
+}
+if (UI.settingAccentColor) {
+    UI.settingAccentColor.addEventListener('input', (e) => {
+        settings.accentColor = e.target.value;
+        saveSettings();
+    });
+}
+
 
 let minimapCtx = null;
 
@@ -235,6 +344,8 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
         e.preventDefault();
         state.boat.manualTrim = !state.boat.manualTrim;
+        settings.manualTrim = state.boat.manualTrim;
+        saveSettings();
         if (state.boat.manualTrim) {
             // Initialize manual angle to current actual angle magnitude to avoid jumps
             state.boat.manualSailAngle = Math.abs(state.boat.sailAngle);
@@ -246,6 +357,8 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) {
             toggleHelp(false);
+        } else if (UI.settingsScreen && !UI.settingsScreen.classList.contains('hidden')) {
+            toggleSettings(false);
         } else {
             togglePause();
         }
@@ -262,8 +375,14 @@ window.addEventListener('keydown', (e) => {
             });
         }
     }
+    if (e.key === 'F2') {
+        e.preventDefault();
+        toggleSettings();
+    }
     if (e.key === '`' || e.code === 'Backquote') {
         state.showNavAids = !state.showNavAids;
+        settings.navAids = state.showNavAids;
+        saveSettings();
     }
 });
 
@@ -1179,11 +1298,18 @@ function drawBoat(ctx) {
     ctx.fill();
 
     // Hull
-    const hullGradient = ctx.createLinearGradient(-15, 0, 15, 0);
-    hullGradient.addColorStop(0, '#f1f5f9');
-    hullGradient.addColorStop(1, '#e2e8f0');
+    // Custom Hull Color from Settings
+    const hullColor = settings.hullColor || '#f1f5f9';
+    // Create gradient based on base color?
+    // Let's just use the solid color for simplicity or a simple gradient if needed.
+    // To match previous style: light to dark.
+    // Since we only have one hex, we can just use it solid or try to use a generic darkening.
+    // Let's stick to solid + stroke to respect user choice.
+    ctx.fillStyle = hullColor;
 
-    ctx.fillStyle = hullGradient;
+    // We can also try a gradient if we want to emulate shading.
+    // But solid is safer for arbitrary user colors.
+
     ctx.beginPath();
     ctx.moveTo(0, -25); // Bow
     ctx.bezierCurveTo(18, -10, 18, 20, 12, 30); // Starboard
@@ -1192,12 +1318,13 @@ function drawBoat(ctx) {
     ctx.fill();
 
     // Outline
-    ctx.strokeStyle = '#64748b';
+    ctx.strokeStyle = '#64748b'; // Keep generic outline
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Deck detail (Cockpit)
-    ctx.fillStyle = '#cbd5e1';
+    // Deck detail (Cockpit) -> Accent Color
+    const accentColor = settings.accentColor || '#cbd5e1';
+    ctx.fillStyle = accentColor;
     ctx.beginPath();
     ctx.roundRect(-8, 10, 16, 15, 4);
     ctx.fill();
@@ -2575,6 +2702,8 @@ function initCourse() {
 }
 
 function resetGame() {
+    loadSettings(); // Load settings on reset/init
+
     state.camera.target = 'boat';
     state.wind.baseSpeed = 8 + Math.random() * 10;
     state.wind.speed = state.wind.baseSpeed;
@@ -2585,7 +2714,11 @@ function resetGame() {
     state.boat.velocity = { x: 0, y: 0 };
     state.boat.speed = 0;
     state.boat.sailAngle = 0;
-    state.boat.manualTrim = false;
+    state.boat.manualTrim = false; // Reset to default? Or keep setting?
+    // Requirement implies "Toggle trim mode from manual to automatic" in settings.
+    // If settings are persistent, we should respect them.
+    // loadSettings called above handles this via applySettings().
+
     state.boat.manualSailAngle = 0;
     state.boat.boomSide = 1;
     state.boat.targetBoomSide = 1;

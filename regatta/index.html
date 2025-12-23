@@ -59,6 +59,17 @@
             </button>
         </div>
 
+        <!-- Settings Button -->
+        <div class="absolute top-56 left-4 z-30 pointer-events-auto">
+            <button id="settings-button" class="bg-slate-800/80 hover:bg-slate-700 text-white font-bold py-2 px-3 rounded-full border border-slate-600/50 shadow-lg transition-colors flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span class="leading-none pt-0.5">Settings</span>
+            </button>
+        </div>
+
         <!-- Help Screen -->
         <div id="help-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
             <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative">
@@ -127,6 +138,60 @@
                 </div>
 
                 <div class="text-slate-400 text-sm font-mono mt-2">Press ESC to Resume</div>
+            </div>
+        </div>
+
+        <!-- Settings Screen -->
+        <div id="settings-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
+            <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
+                <button id="close-settings" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <h2 class="text-3xl font-black text-white mb-6 uppercase tracking-wider text-center">Settings</h2>
+
+                <div class="space-y-6">
+                    <!-- Nav Aids -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-200 font-bold">Navigational Aids</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="setting-navaids" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Trim Mode -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-200 font-bold">Manual Trim</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="setting-trim" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                        </label>
+                    </div>
+
+                    <!-- Colors -->
+                    <div class="border-t border-slate-700 pt-6">
+                        <h3 class="text-blue-400 font-bold uppercase text-sm mb-4 tracking-wide">Boat Customization</h3>
+
+                        <div class="flex items-center justify-between mb-4">
+                            <span class="text-slate-200 font-bold">Hull Color</span>
+                            <input type="color" id="setting-color-hull" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#f1f5f9">
+                        </div>
+
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-200 font-bold">Accent Color</span>
+                            <input type="color" id="setting-color-accent" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#cbd5e1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button id="save-settings" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-8 rounded-full transition-colors shadow-lg">
+                        Close
+                    </button>
+                </div>
             </div>
         </div>
 
