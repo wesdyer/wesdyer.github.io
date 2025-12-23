@@ -51,6 +51,18 @@
             </div>
         </div>
 
+        <!-- Leaderboard -->
+        <div id="leaderboard" class="absolute top-24 left-4 z-10 flex flex-col gap-0 pointer-events-none transition-opacity duration-300 w-48 hidden">
+           <!-- Header -->
+           <div id="lb-header" class="bg-slate-900/90 text-white font-bold px-3 py-1.5 rounded-t-lg border-b border-slate-700 text-sm font-mono flex justify-between items-center shadow-lg">
+               <span class="tracking-widest text-xs text-slate-300">LEG <span id="lb-leg" class="text-white">1/4</span></span>
+           </div>
+           <!-- Rows -->
+           <div id="lb-rows" class="flex flex-col bg-slate-900/70 backdrop-blur-md rounded-b-lg overflow-hidden border border-slate-700 shadow-xl">
+               <!-- Items injected via JS -->
+           </div>
+        </div>
+
         <!-- Pause Button -->
         <div class="absolute bottom-4 right-4 z-30 pointer-events-auto">
             <button id="pause-button" class="bg-slate-800/80 hover:bg-slate-700 text-white font-bold py-2 px-3 rounded-full border border-slate-600/50 shadow-lg transition-colors flex items-center gap-2">
