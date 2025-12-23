@@ -743,8 +743,6 @@ function checkBoundaryExiting(boat) {
 }
 
 function getRightOfWay(b1, b2) {
-    if (!settings.penaltiesEnabled) return null;
-
     // 0. Tacking (Rule 13) - Keep Clear while tacking
     if (b1.raceState.isTacking && !b2.raceState.isTacking) return b2;
     if (!b1.raceState.isTacking && b2.raceState.isTacking) return b1;
@@ -967,26 +965,46 @@ function updateAI(boat, dt) {
 
     // Collision Avoidance
     let avoidX = 0, avoidY = 0;
-    const detectRadius = 120;
+    const detectRadius = 200;
+    const collisionRadius = 60;
+
     for (const other of state.boats) {
         if (other === boat) continue;
         const dx = other.x - boat.x;
         const dy = other.y - boat.y;
         const distSq = dx*dx + dy*dy;
+
         if (distSq < detectRadius * detectRadius) {
              const dist = Math.sqrt(distSq);
-             // Check if in front
+             // Check if in front (or slightly abeam)
              const bx = Math.sin(boat.heading), by = -Math.cos(boat.heading);
-             if (dx * bx + dy * by > 0) {
+             const dotFront = dx * bx + dy * by;
+
+             // Don't avoid boats that are well behind us
+             if (dotFront > -30) {
                   const rowBoat = getRightOfWay(boat, other);
-                  let strength = (1.0 - dist / detectRadius) * 2.5;
+                  const iHaveROW = (rowBoat === boat);
 
-                  // Modify strength based on ROW
-                  if (rowBoat === boat) strength *= 0.2; // I have ROW, hold course (mostly)
-                  else if (rowBoat === other) strength *= 2.0; // Give way!
+                  let shouldAvoid = false;
+                  let strength = 0;
 
-                  avoidX -= (dx / dist) * strength;
-                  avoidY -= (dy / dist) * strength;
+                  if (iHaveROW) {
+                      // Rule 14: Avoid contact if collision is imminent, even if we have ROW
+                      if (dist < collisionRadius) {
+                          shouldAvoid = true;
+                          strength = (1.0 - dist / collisionRadius) * 5.0; // Panic mode
+                      }
+                  } else {
+                      // Give Way: Yield early
+                      shouldAvoid = true;
+                      strength = (1.0 - dist / detectRadius) * 3.0;
+                      if (dist < collisionRadius) strength *= 2.0; // Urgency
+                  }
+
+                  if (shouldAvoid) {
+                      avoidX -= (dx / dist) * strength;
+                      avoidY -= (dy / dist) * strength;
+                  }
              }
         }
     }
