@@ -36,6 +36,20 @@
             transform-origin: left center;
             animation: flutter 1.0s infinite linear;
         }
+        .lb-row {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 36px;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes highlight-flash {
+            0% { background-color: rgba(234, 179, 8, 0.5); }
+            100% { background-color: rgba(30, 41, 59, 0.4); }
+        }
+        .row-highlight {
+            animation: highlight-flash 1s ease-out;
+        }
     </style>
 </head>
 <body>
@@ -58,7 +72,7 @@
                <span class="tracking-widest text-xs text-slate-300">LEG <span id="lb-leg" class="text-white">1/4</span></span>
            </div>
            <!-- Rows -->
-           <div id="lb-rows" class="flex flex-col bg-slate-900/70 backdrop-blur-md rounded-b-lg overflow-hidden border border-slate-700 shadow-xl">
+           <div id="lb-rows" class="relative bg-slate-900/70 backdrop-blur-md rounded-b-lg overflow-hidden border border-slate-700 shadow-xl">
                <!-- Items injected via JS -->
            </div>
         </div>
