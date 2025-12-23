@@ -286,7 +286,7 @@
         </div>
 
         <!-- Top Right Container -->
-        <div class="absolute top-4 right-4 flex flex-col items-end pointer-events-none">
+        <div class="absolute top-4 right-4 flex flex-col items-center pointer-events-none">
 
             <div class="relative w-40 h-40">
                 <!-- Main Background -->
@@ -377,18 +377,19 @@
                             <span id="hud-wind-angle" class="text-xs font-mono text-blue-200">0</span>
                         </div>
                     </div>
-                    <div id="hud-trim-mode" class="mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider">
-                        AUTO
-                    </div>
-                    <div id="hud-rules-status" class="mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider">
-                        RULES: ON
-                    </div>
                 </div>
             </div>
 
             <!-- Minimap -->
             <div class="mt-4 relative w-40 h-40 bg-slate-900/60 backdrop-blur-sm rounded-lg border-2 border-slate-400/30 shadow-2xl overflow-hidden">
                 <canvas id="minimap" width="160" height="160" class="w-full h-full"></canvas>
+            </div>
+
+            <div id="hud-trim-mode" class="mt-2 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider">
+                AUTO TRIM
+            </div>
+            <div id="hud-rules-status" class="mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider">
+                RULES: ON
             </div>
 
         </div>

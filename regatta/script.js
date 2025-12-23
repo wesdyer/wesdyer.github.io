@@ -2742,7 +2742,7 @@ function draw() {
         if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - state.wind.direction))).toFixed(1);
 
         if (UI.trimMode) {
-             UI.trimMode.textContent = player.manualTrim ? "MANUAL" : "AUTO";
+             UI.trimMode.textContent = player.manualTrim ? "MANUAL TRIM" : "AUTO TRIM";
              UI.trimMode.className = `mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider bg-slate-900/80 ${player.manualTrim ? "text-yellow-300 border-yellow-500/50" : "text-emerald-300 border-emerald-500/50"}`;
         }
 
