@@ -2515,7 +2515,6 @@ function draw() {
     drawBoundary(ctx);
     drawParticles(ctx, 'surface'); // Wake
     drawActiveGateLine(ctx);
-    drawLadderLines(ctx);
     drawLayLines(ctx);
     drawMarkZones(ctx);
     drawRoundingArrows(ctx);
