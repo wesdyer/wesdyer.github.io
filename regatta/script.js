@@ -2250,7 +2250,15 @@ function drawBoundary(ctx) {
     const text = "Salty Critter Yacht Club";
     ctx.font = 'bold 50px sans-serif';
     ctx.textBaseline = 'middle';
-    const textWidth = ctx.measureText(text).width;
+
+    // Measure char by char for curvature
+    const charWidths = [];
+    let textWidth = 0;
+    for (const char of text) {
+        const w = ctx.measureText(char).width;
+        charWidths.push(w);
+        textWidth += w;
+    }
 
     // Image
     const imgH = 40;
@@ -2265,23 +2273,43 @@ function drawBoundary(ctx) {
 
     for (let i = 0; i < count; i++) {
         const angle = i * angleStep;
-        ctx.save();
-        ctx.rotate(angle);
-        ctx.translate(b.radius, 0);
-        ctx.rotate(Math.PI / 2); // Tangent
 
         const contentWidth = imgW + gap + textWidth;
         const startX = -contentWidth / 2;
 
+        // Draw Image (Curved)
+        const imgCenterLinear = startX + imgW / 2;
+        const imgAngleOffset = imgCenterLinear / b.radius;
+
+        ctx.save();
+        ctx.rotate(angle + imgAngleOffset);
+        ctx.translate(b.radius, 0);
+        ctx.rotate(Math.PI / 2);
         if (burgeeImg.complete && burgeeImg.naturalWidth > 0) {
-            ctx.drawImage(burgeeImg, startX, -imgH / 2, imgW, imgH);
+            ctx.drawImage(burgeeImg, -imgW / 2, -imgH / 2, imgW, imgH);
         }
-
-        ctx.fillStyle = '#0f172a'; // Slate-900 (Dark Blue)
-        ctx.textAlign = 'left';
-        ctx.fillText(text, startX + imgW + gap, 0);
-
         ctx.restore();
+
+        // Draw Text (Curved)
+        ctx.fillStyle = '#0f172a';
+        ctx.textAlign = 'center';
+
+        let currentLinear = startX + imgW + gap;
+        for (let j = 0; j < text.length; j++) {
+            const char = text[j];
+            const w = charWidths[j];
+            const charCenterLinear = currentLinear + w / 2;
+            const charAngleOffset = charCenterLinear / b.radius;
+
+            ctx.save();
+            ctx.rotate(angle + charAngleOffset);
+            ctx.translate(b.radius, 0);
+            ctx.rotate(Math.PI / 2);
+            ctx.fillText(char, 0, 0);
+            ctx.restore();
+
+            currentLinear += w;
+        }
     }
 
     ctx.restore();
