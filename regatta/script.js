@@ -1261,6 +1261,23 @@ function update(dt) {
         }
     }
 
+    // Update Leg Stats
+    if (state.race.status !== 'finished' && state.race.leg < 5) {
+        const leg = state.race.leg;
+        // Dist = speed (units/frame) * timeScale (frames) * 0.2 (meters/unit)
+        const distMoved = state.boat.speed * timeScale * 0.2;
+        const currentKnots = state.boat.speed * 4;
+
+        if (state.race.legDistances) {
+             state.race.legDistances[leg] += distMoved;
+        }
+        if (state.race.legTopSpeeds) {
+             if (currentKnots > state.race.legTopSpeeds[leg]) {
+                 state.race.legTopSpeeds[leg] = currentKnots;
+             }
+        }
+    }
+
     // Update Race Logic
     updateRace(dt);
 
@@ -2698,10 +2715,18 @@ function draw() {
         if (UI.legTimes) {
              let html = "";
 
+             const getMoveLabel = (legIdx) => {
+                 if (legIdx === 0) return "Moves"; // Start
+                 if (legIdx % 2 !== 0) return "Tacks"; // 1, 3 (Upwind)
+                 return "Gybes"; // 2, 4 (Downwind)
+             };
+
              if (state.race.startLegDuration !== null && state.race.startLegDuration !== undefined) {
                  const timeStr = formatSplitTime(state.race.startLegDuration);
                  const moves = state.race.legManeuvers ? state.race.legManeuvers[0] : 0;
-                 html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Start: ${timeStr}</span> <span class="text-slate-500">(${moves})</span></div>`;
+                 const dist = state.race.legDistances ? Math.round(state.race.legDistances[0]) : 0;
+                 const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[0].toFixed(1) : "0.0";
+                 html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Start: ${timeStr}</span> <span class="text-slate-500">Top:${top}kn Dist:${dist}m ${getMoveLabel(0)}:${moves}</span></div>`;
              }
 
              if (state.race.legTimes) {
@@ -2709,17 +2734,32 @@ function draw() {
                       const legNum = i + 1;
                       const timeStr = formatSplitTime(state.race.legTimes[i]);
                       const moves = state.race.legManeuvers ? state.race.legManeuvers[legNum] : 0;
-                      html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Leg ${legNum}: ${timeStr}</span> <span class="text-slate-500">(${moves})</span></div>`;
+                      const dist = state.race.legDistances ? Math.round(state.race.legDistances[legNum]) : 0;
+                      const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[legNum].toFixed(1) : "0.0";
+                      html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Leg ${legNum}: ${timeStr}</span> <span class="text-slate-500">Top:${top}kn Dist:${dist}m ${getMoveLabel(legNum)}:${moves}</span></div>`;
                  }
              }
 
-             // Display Current Leg Time if Racing
-             if (state.race.status === 'racing' && state.race.leg >= 1) {
+             // Display Current Leg Time if Racing (or Start)
+             if ((state.race.status === 'racing' || state.race.status === 'prestart') && state.race.leg < 5) {
                  const currentLegNum = state.race.leg;
-                 const currentLegTime = state.race.timer - state.race.legStartTime;
-                 const timeStr = formatSplitTime(currentLegTime);
+                 // For Leg 0 (Start), time is simpler (duration so far)
+
+                 let currentLegTime = 0;
+                 if (currentLegNum === 0) {
+                     // Time: "Running..."
+                     currentLegTime = state.race.timer;
+                 } else {
+                     currentLegTime = state.race.timer - state.race.legStartTime;
+                 }
+
+                 const timeStr = currentLegNum === 0 ? (state.race.status === 'prestart' ? "Prestart" : formatSplitTime(currentLegTime)) : formatSplitTime(currentLegTime);
                  const moves = state.race.legManeuvers ? state.race.legManeuvers[currentLegNum] : 0;
-                 html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md flex justify-between gap-4"><span>Leg ${currentLegNum}: ${timeStr}</span> <span class="text-white/50">(${moves})</span></div>`;
+                 const label = currentLegNum === 0 ? "Start" : `Leg ${currentLegNum}`;
+                 const dist = state.race.legDistances ? Math.round(state.race.legDistances[currentLegNum]) : 0;
+                 const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[currentLegNum].toFixed(1) : "0.0";
+
+                 html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md flex justify-between gap-4"><span>${label}: ${timeStr}</span> <span class="text-white/50">Top:${top}kn Dist:${dist}m ${getMoveLabel(currentLegNum)}:${moves}</span></div>`;
              }
 
              UI.legTimes.innerHTML = html;
@@ -2811,6 +2851,8 @@ function resetGame() {
     state.race.legSplitTimer = 0;
     state.race.legTimes = [];
     state.race.legManeuvers = [0, 0, 0, 0, 0];
+    state.race.legTopSpeeds = [0, 0, 0, 0, 0];
+    state.race.legDistances = [0, 0, 0, 0, 0];
     state.race.trace = [];
     state.particles = [];
 
