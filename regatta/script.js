@@ -1123,7 +1123,7 @@ function update(dt) {
     if (currentWindSide !== 0) {
         if (state.boat.lastWindSide !== 0 && currentWindSide !== state.boat.lastWindSide) {
             // Maneuver detected
-            if (state.race.leg >= 0 && state.race.leg < 5) {
+            if (state.race.status === 'racing' && state.race.leg >= 0 && state.race.leg < 5) {
                 state.race.legManeuvers[state.race.leg]++;
             }
         }
