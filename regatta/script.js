@@ -1898,6 +1898,9 @@ function drawLadderLines(ctx) {
     for (let p = firstLine; p <= maxP; p += interval) {
         if (p < minP) continue;
 
+        // Skip the line at the active gate
+        if (Math.abs(p - endProj) < 1.0) continue;
+
         // 1. Calculate Layline Bounds at this U (p)
         // Ladder lines are only drawn between gates, so we are always on the "course side" of the target.
         // dist is signed distance along U axis from Mark.
