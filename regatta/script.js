@@ -1920,9 +1920,42 @@ function drawRulesOverlay(ctx) {
     if (!state.showNavAids || !settings.penaltiesEnabled || state.race.status === 'finished') return;
 
     const checkDist = 400; // Increased range for visibility
-    const statusMap = new Map(); // id -> 2 (Red/GiveWay), 1 (Green/ROW)
 
-    // Pass 1: Determine Status
+    // Helper to draw triangle
+    const drawTriangle = (boat, target, color) => {
+        const dx = target.x - boat.x;
+        const dy = target.y - boat.y;
+        const angle = Math.atan2(dy, dx);
+        const dist = 50; // Distance from center. Boat is roughly 30-40 units long/wide.
+
+        const tx = boat.x + Math.cos(angle) * dist;
+        const ty = boat.y + Math.sin(angle) * dist;
+
+        ctx.save();
+        ctx.translate(tx, ty);
+        ctx.rotate(angle);
+
+        ctx.fillStyle = color;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+        // Pointing right (towards target)
+        ctx.moveTo(10, 0);
+        ctx.lineTo(-6, 7);
+        ctx.lineTo(-6, -7);
+        ctx.closePath();
+
+        ctx.fill();
+        // Optional stroke for contrast
+        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+        ctx.lineWidth = 1;
+        ctx.shadowBlur = 0; // Don't blur stroke
+        ctx.stroke();
+
+        ctx.restore();
+    };
+
     for (let i = 0; i < state.boats.length; i++) {
         const b1 = state.boats[i];
         for (let j = i + 1; j < state.boats.length; j++) {
@@ -1935,43 +1968,15 @@ function drawRulesOverlay(ctx) {
                     const winner = rowBoat;
                     const loser = (rowBoat === b1) ? b2 : b1;
 
-                    // Loser gets RED (High priority)
-                    statusMap.set(loser.id, 2);
+                    // Winner (Green) - pointing at Loser
+                    drawTriangle(winner, loser, '#4ade80');
 
-                    // Winner gets GREEN (Low priority - only if not already RED)
-                    if ((statusMap.get(winner.id) || 0) < 2) {
-                        statusMap.set(winner.id, 1);
-                    }
+                    // Loser (Red) - pointing at Winner
+                    drawTriangle(loser, winner, '#ef4444');
                 }
             }
         }
     }
-
-    // Pass 2: Draw
-    ctx.save();
-    ctx.lineWidth = 10; // Thick lines like SailGP
-    ctx.lineCap = 'round';
-
-    for (const boat of state.boats) {
-        const status = statusMap.get(boat.id);
-        if (status) {
-            ctx.beginPath();
-            // Radius ~45 units (approx 9m radius) covers the boat
-            ctx.arc(boat.x, boat.y, 45, 0, Math.PI*2);
-
-            if (status === 2) { // Red / Give Way
-                ctx.strokeStyle = '#ef4444';
-                ctx.shadowColor = 'rgba(239, 68, 68, 0.5)';
-            } else { // Green / ROW
-                ctx.strokeStyle = '#4ade80';
-                ctx.shadowColor = 'rgba(74, 222, 128, 0.5)';
-            }
-
-            ctx.shadowBlur = 15;
-            ctx.stroke();
-        }
-    }
-    ctx.restore();
 }
 
 function drawRoundingArrows(ctx) {
