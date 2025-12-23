@@ -2409,7 +2409,6 @@ function drawMinimap() {
 
         ctx.fillStyle = settings.hullColor || '#facc15';
         ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(8, 9); ctx.lineTo(-8, 9); ctx.fill();
-        ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff'; ctx.stroke();
         ctx.restore();
     }
 }
