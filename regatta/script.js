@@ -530,6 +530,7 @@ function updateRace(dt) {
                                 state.race.finished = true;
                                 state.race.status = 'finished';
                                 state.race.finishTime = state.race.timer;
+                                state.race.trace.push({ x: state.boat.x, y: state.boat.y, leg: 4 });
                                 showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                             }
                         };
@@ -2243,8 +2244,10 @@ function drawMinimap() {
             ctx.lineTo(p.x, p.y);
         }
         // Draw to current boat position
-        const currentPos = transform(state.boat.x, state.boat.y);
-        ctx.lineTo(currentPos.x, currentPos.y);
+        if (state.race.status !== 'finished') {
+            const currentPos = transform(state.boat.x, state.boat.y);
+            ctx.lineTo(currentPos.x, currentPos.y);
+        }
 
         ctx.stroke();
     }
