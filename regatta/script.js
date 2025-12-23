@@ -11,20 +11,19 @@ const CONFIG = {
     cockpitColor: '#cbd5e1',
 };
 
-// AI Colors
-const AI_COLORS = [
-    { hull: '#ef4444', sail: '#ffffff', spinnaker: '#3b82f6' }, // Red/White/Blue
-    { hull: '#22c55e', sail: '#f0fdf4', spinnaker: '#eab308' }, // Green/White/Yellow
-    { hull: '#eab308', sail: '#171717', spinnaker: '#171717' }, // Yellow/Black/Black
-    { hull: '#171717', sail: '#ffffff', spinnaker: '#ec4899' }, // Black/White/Pink
-    { hull: '#ffffff', sail: '#3b82f6', spinnaker: '#3b82f6' }, // White/Blue/Blue
-    { hull: '#f97316', sail: '#ffffff', spinnaker: '#a855f7' }, // Orange/White/Purple
-    { hull: '#a855f7', sail: '#ffffff', spinnaker: '#22c55e' }, // Purple/White/Green
-    { hull: '#14b8a6', sail: '#ffffff', spinnaker: '#f97316' }, // Teal/White/Orange
-    { hull: '#6366f1', sail: '#e0e7ff', spinnaker: '#f43f5e' }, // Indigo/White/Rose
+// AI Configuration
+const AI_CONFIG = [
+    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6' },
+    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF' },
+    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0' },
+    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A' },
+    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A' },
+    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5' },
+    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2' },
+    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A' },
+    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0' },
+    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6' }
 ];
-
-const AI_NAMES = ['Apex', 'Chomp', 'Bixby', 'Gasket', 'Strut', 'Wobble', 'Whiskers', 'Bruce', 'Pinch'];
 
 
 // Settings
@@ -120,7 +119,7 @@ const state = {
 };
 
 class Boat {
-    constructor(id, isPlayer, startX, startY, name="USA") {
+    constructor(id, isPlayer, startX, startY, name="USA", config=null) {
         this.id = id;
         this.isPlayer = isPlayer;
         this.name = name;
@@ -143,14 +142,15 @@ class Boat {
         this.spinnakerDeployProgress = 0;
 
         // Colors
-        if (!isPlayer) {
-             const palette = AI_COLORS[(id - 1) % AI_COLORS.length];
+        if (config) {
              this.colors = {
-                 hull: palette.hull,
-                 sail: palette.sail,
-                 cockpit: '#cbd5e1',
-                 spinnaker: palette.spinnaker
+                 hull: config.hull,
+                 sail: config.sail,
+                 cockpit: config.cockpit,
+                 spinnaker: config.spinnaker
              };
+        } else if (!isPlayer) {
+             this.colors = { hull: '#fff', sail: '#fff', cockpit: '#ccc', spinnaker: '#f00' };
         }
 
         // Race State
@@ -1936,14 +1936,28 @@ function updateLeaderboard() {
                 const rank = document.createElement('div');
                 rank.className = "lb-rank w-4 text-xs font-black italic text-slate-400 mr-2";
 
-                // Swatch
-                const swatch = document.createElement('div');
-                swatch.className = "w-6 h-3 rounded-sm mr-2 flex overflow-hidden shadow-sm border border-slate-600/50";
-                const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
-                const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
-                const s1 = document.createElement('div'); s1.className="w-1/2 h-full"; s1.style.backgroundColor = hullColor;
-                const s2 = document.createElement('div'); s2.className="w-1/2 h-full"; s2.style.backgroundColor = spinColor;
-                swatch.appendChild(s1); swatch.appendChild(s2);
+                // Portrait / Icon
+                const iconContainer = document.createElement('div');
+                iconContainer.className = "w-9 h-9 mr-2 flex items-center justify-center shrink-0";
+
+                if (boat.isPlayer) {
+                    // Star Icon
+                    const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                    star.setAttribute("viewBox", "0 0 24 24");
+                    star.setAttribute("class", "w-7 h-7 drop-shadow-md");
+                    star.setAttribute("fill", settings.hullColor);
+                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                    path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
+                    star.appendChild(path);
+                    iconContainer.appendChild(star);
+                } else {
+                    // Portrait
+                    const img = document.createElement('img');
+                    img.src = boat.name.toLowerCase() + ".png";
+                    img.className = "w-8 h-8 rounded-full border-2 object-cover bg-slate-900";
+                    img.style.borderColor = boat.colors.hull;
+                    iconContainer.appendChild(img);
+                }
 
                 // Name
                 const nameDiv = document.createElement('div');
@@ -1956,7 +1970,7 @@ function updateLeaderboard() {
                 distDiv.className = "lb-dist text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
 
                 row.appendChild(rank);
-                row.appendChild(swatch);
+                row.appendChild(iconContainer);
                 row.appendChild(nameDiv);
                 row.appendChild(distDiv);
 
@@ -2231,8 +2245,8 @@ function resetGame() {
     player.lastWindSide = 0;
     state.boats.push(player);
 
-    // 9 AI Boats
-    for (let i = 1; i <= 9; i++) {
+    // AI Boats
+    for (let i = 0; i < AI_CONFIG.length; i++) {
         // Ensure no collision at start
         let pos, ok = false, tries = 0;
         while (!ok && tries < 100) {
@@ -2245,8 +2259,8 @@ function resetGame() {
             }
             tries++;
         }
-        const name = AI_NAMES[(i - 1) % AI_NAMES.length];
-        const ai = new Boat(i, false, pos.x, pos.y, name);
+        const config = AI_CONFIG[i];
+        const ai = new Boat(i + 1, false, pos.x, pos.y, config.name, config);
         // Start head to wind
         ai.heading = state.wind.direction;
         ai.prevHeading = ai.heading;
