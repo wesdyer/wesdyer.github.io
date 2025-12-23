@@ -196,7 +196,8 @@ function updateTurbulence(boat, dt) {
     // Spawn
     boat.turbulenceTimer -= dt;
     if (boat.turbulenceTimer <= 0) {
-        boat.turbulenceTimer = 0.05 + Math.random() * 0.05; // spawn every ~0.05s
+        // Increase spawn rate: 0.02 - 0.05s
+        boat.turbulenceTimer = 0.02 + Math.random() * 0.03;
         // Init properties relative to cone (d=0)
         // Cross offset ratio: -0.5 to 0.5
         boat.turbulence.push({
@@ -238,15 +239,17 @@ function drawDisturbedAir(ctx) {
 
         for (const p of boat.turbulence) {
              const coneWidth = 20 + (p.d / 350) * 80;
-             // Zigzag effect
-             const zig = Math.sin(p.d * 0.05 + state.time * 5 + p.phase) * 5;
+             // Zigzag effect: Increased frequency (0.05 -> 0.08) and amplitude (5 -> 12)
+             const zig = Math.sin(p.d * 0.08 + state.time * 8 + p.phase) * 12;
              const crossOffset = p.crossRatio * coneWidth + zig;
 
              const px = boat.x + wx * p.d + rx * crossOffset;
              const py = boat.y + wy * p.d + ry * crossOffset;
 
-             const size = 1.5 + (p.d/350)*1.5;
-             const alpha = Math.max(0, Math.min(1, (1.0 - p.d/350) * 0.4));
+             // Slightly larger size
+             const size = 2.0 + (p.d/350)*2.0;
+             // More opaque: 0.4 -> 0.6 max alpha
+             const alpha = Math.max(0, Math.min(1, (1.0 - p.d/350) * 0.6));
 
              ctx.globalAlpha = alpha;
              ctx.beginPath();
