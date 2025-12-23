@@ -1707,38 +1707,59 @@ function drawBoat(ctx, boat) {
 function drawRulesOverlay(ctx) {
     if (!state.showNavAids || !settings.penaltiesEnabled || state.race.status === 'finished') return;
 
-    // Check interactions
-    const checkDist = 300;
+    const checkDist = 400; // Increased range for visibility
+    const statusMap = new Map(); // id -> 2 (Red/GiveWay), 1 (Green/ROW)
+
+    // Pass 1: Determine Status
     for (let i = 0; i < state.boats.length; i++) {
         const b1 = state.boats[i];
         for (let j = i + 1; j < state.boats.length; j++) {
             const b2 = state.boats[j];
             const distSq = (b1.x - b2.x)**2 + (b1.y - b2.y)**2;
+
             if (distSq < checkDist * checkDist) {
                 const rowBoat = getRightOfWay(b1, b2);
                 if (rowBoat) {
-                    const giveWayBoat = (rowBoat === b1) ? b2 : b1;
+                    const winner = rowBoat;
+                    const loser = (rowBoat === b1) ? b2 : b1;
 
-                    ctx.save();
-                    ctx.lineWidth = 3;
+                    // Loser gets RED (High priority)
+                    statusMap.set(loser.id, 2);
 
-                    // Green for ROW
-                    ctx.beginPath();
-                    ctx.arc(rowBoat.x, rowBoat.y, 40, 0, Math.PI*2);
-                    ctx.strokeStyle = '#22c55e'; // Green
-                    ctx.stroke();
-
-                    // Red for Give Way
-                    ctx.beginPath();
-                    ctx.arc(giveWayBoat.x, giveWayBoat.y, 40, 0, Math.PI*2);
-                    ctx.strokeStyle = '#ef4444'; // Red
-                    ctx.stroke();
-
-                    ctx.restore();
+                    // Winner gets GREEN (Low priority - only if not already RED)
+                    if ((statusMap.get(winner.id) || 0) < 2) {
+                        statusMap.set(winner.id, 1);
+                    }
                 }
             }
         }
     }
+
+    // Pass 2: Draw
+    ctx.save();
+    ctx.lineWidth = 10; // Thick lines like SailGP
+    ctx.lineCap = 'round';
+
+    for (const boat of state.boats) {
+        const status = statusMap.get(boat.id);
+        if (status) {
+            ctx.beginPath();
+            // Radius ~45 units (approx 9m radius) covers the boat
+            ctx.arc(boat.x, boat.y, 45, 0, Math.PI*2);
+
+            if (status === 2) { // Red / Give Way
+                ctx.strokeStyle = '#ef4444';
+                ctx.shadowColor = 'rgba(239, 68, 68, 0.5)';
+            } else { // Green / ROW
+                ctx.strokeStyle = '#4ade80';
+                ctx.shadowColor = 'rgba(74, 222, 128, 0.5)';
+            }
+
+            ctx.shadowBlur = 15;
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
 }
 
 function drawRoundingArrows(ctx) {
