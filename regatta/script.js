@@ -24,6 +24,9 @@ const AI_COLORS = [
     { hull: '#6366f1', sail: '#e0e7ff', spinnaker: '#f43f5e' }, // Indigo/White/Rose
 ];
 
+const AI_NAMES = ['GBR', 'AUS', 'NZL', 'DEN', 'ESP', 'FRA', 'CAN', 'SUI', 'GER'];
+
+
 // Settings
 const DEFAULT_SETTINGS = {
     navAids: true,
@@ -117,9 +120,10 @@ const state = {
 };
 
 class Boat {
-    constructor(id, isPlayer, startX, startY) {
+    constructor(id, isPlayer, startX, startY, name="USA") {
         this.id = id;
         this.isPlayer = isPlayer;
+        this.name = name;
         this.x = startX;
         this.y = startY;
         this.heading = 0; // Will be set during reset
@@ -349,7 +353,10 @@ const UI = {
     settingHullColor: document.getElementById('setting-color-hull'),
     settingSailColor: document.getElementById('setting-color-sail'),
     settingCockpitColor: document.getElementById('setting-color-cockpit'),
-    settingSpinnakerColor: document.getElementById('setting-color-spinnaker')
+    settingSpinnakerColor: document.getElementById('setting-color-spinnaker'),
+    leaderboard: document.getElementById('leaderboard'),
+    lbLeg: document.getElementById('lb-leg'),
+    lbRows: document.getElementById('lb-rows')
 };
 
 // Settings Functions
@@ -1616,6 +1623,283 @@ function drawMinimap() {
 }
 
 let frameCount = 0;
+
+function getBoatProgress(boat) {
+    if (boat.raceState.finished) {
+        // Finished boats are ranked by finish time, but for progress calculation we can assume they are at the end.
+        // Or better, handle them separately in sorting.
+        return 16000 + (1000000 - boat.raceState.finishTime); // Higher is better (lower time = higher score)
+    }
+
+    const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
+    const c1x = (m0.x+m1.x)/2, c1y = (m0.y+m1.y)/2;
+    const c2x = (m2.x+m3.x)/2, c2y = (m2.y+m3.y)/2;
+    const dx = c2x-c1x, dy = c2y-c1y;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const wx = dx/len, wy = dy/len;
+
+    // Project onto course axis (Start -> Upwind)
+    const p = boat.x*wx + boat.y*wy;
+    const startP = c1x*wx + c1y*wy;
+    const relP = p - startP;
+
+    // Leg Progress
+    // Leg 0: relP (Starts neg, target 0).
+    // Leg 1: relP (0 to L).
+    // Leg 2: 2L - relP (L to 0).
+    // Leg 3: 2L + relP (0 to L).
+    // Leg 4: 4L - relP (L to 0).
+
+    const L = len; // Approx 4000
+
+    let progress = 0;
+    switch(boat.raceState.leg) {
+        case 0: progress = relP; break;
+        case 1: progress = relP; break;
+        case 2: progress = 2*L - relP; break;
+        case 3: progress = 2*L + relP; break;
+        case 4: progress = 4*L - relP; break;
+        default: progress = 0; // Should be covered by finished check
+    }
+
+    return progress;
+}
+
+function updateLeaderboard() {
+    if (!UI.leaderboard || !state.boats.length) return;
+
+    if (state.race.status === 'prestart') {
+         UI.leaderboard.classList.add('hidden');
+         return;
+    }
+    UI.leaderboard.classList.remove('hidden');
+
+    // Sort boats
+    const sorted = [...state.boats].sort((a, b) => {
+        // 1. Finished status
+        if (a.raceState.finished && !b.raceState.finished) return -1;
+        if (!a.raceState.finished && b.raceState.finished) return 1;
+        if (a.raceState.finished && b.raceState.finished) return a.raceState.finishTime - b.raceState.finishTime;
+
+        // 2. Leg
+        if (a.raceState.leg !== b.raceState.leg) return b.raceState.leg - a.raceState.leg;
+
+        // 3. Progress within leg
+        const pA = getBoatProgress(a);
+        const pB = getBoatProgress(b);
+        return pB - pA;
+    });
+
+    const leader = sorted[0];
+    const leaderProgress = getBoatProgress(leader);
+
+    // Update Header
+    if (UI.lbLeg) {
+        if (leader.raceState.finished) UI.lbLeg.textContent = "FINISH";
+        else UI.lbLeg.textContent = `${Math.max(1, leader.raceState.leg)}/4`;
+    }
+
+    // Render Rows
+    if (UI.lbRows) {
+        UI.lbRows.innerHTML = '';
+        sorted.forEach((boat, index) => {
+            const row = document.createElement('div');
+            row.className = "flex items-center px-3 py-1 border-b border-slate-700/50 last:border-0 bg-slate-800/40";
+
+            // Rank
+            const rank = document.createElement('div');
+            rank.className = "w-4 text-xs font-black italic text-slate-400 mr-2";
+            rank.textContent = index + 1;
+
+            // Swatch
+            const swatch = document.createElement('div');
+            swatch.className = "w-6 h-3 rounded-sm mr-2 flex overflow-hidden shadow-sm border border-slate-600/50";
+
+            const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
+            const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+
+            const s1 = document.createElement('div'); s1.className="w-1/2 h-full"; s1.style.backgroundColor = hullColor;
+            const s2 = document.createElement('div'); s2.className="w-1/2 h-full"; s2.style.backgroundColor = spinColor;
+            swatch.appendChild(s1); swatch.appendChild(s2);
+
+            // Name
+            const nameDiv = document.createElement('div');
+            nameDiv.className = "text-xs font-bold text-white tracking-wide flex-1 truncate";
+            nameDiv.textContent = boat.name;
+            if (boat.isPlayer) nameDiv.className += " text-yellow-300";
+
+            // Meters Back
+            const distDiv = document.createElement('div');
+            distDiv.className = "text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
+
+            if (index === 0) {
+                 // Leader
+                 distDiv.textContent = "";
+            } else {
+                 if (leader.raceState.finished) {
+                     if (boat.raceState.finished) {
+                         const tDiff = boat.raceState.finishTime - leader.raceState.finishTime;
+                         distDiv.textContent = "+" + tDiff.toFixed(1) + "s";
+                     } else {
+                         // Distance to finish?
+                         // Leader is at 16000.
+                         const myP = getBoatProgress(boat);
+                         const diff = Math.max(0, 16000 - myP);
+                         distDiv.textContent = "+" + Math.round(diff) + "m";
+                     }
+                 } else {
+                     const myP = getBoatProgress(boat);
+                     const diff = Math.max(0, leaderProgress - myP);
+                     distDiv.textContent = "+" + Math.round(diff) + "m";
+                 }
+            }
+
+            row.appendChild(rank);
+            row.appendChild(swatch);
+            row.appendChild(nameDiv);
+            row.appendChild(distDiv);
+
+            UI.lbRows.appendChild(row);
+        });
+    }
+}
+
+
+
+function getBoatProgress(boat) {
+    if (boat.raceState.finished) {
+        // Finished boats are ranked by finish time, but for progress calculation we can assume they are at the end.
+        return 16000 + (1000000 - boat.raceState.finishTime); // Higher is better (lower time = higher score)
+    }
+
+    const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
+    const c1x = (m0.x+m1.x)/2, c1y = (m0.y+m1.y)/2;
+    const c2x = (m2.x+m3.x)/2, c2y = (m2.y+m3.y)/2;
+    const dx = c2x-c1x, dy = c2y-c1y;
+    const len = Math.sqrt(dx*dx+dy*dy);
+    const wx = dx/len, wy = dy/len;
+
+    // Project onto course axis (Start -> Upwind)
+    const p = boat.x*wx + boat.y*wy;
+    const startP = c1x*wx + c1y*wy;
+    const relP = p - startP;
+
+    // Leg Progress
+    const L = len; // Approx 4000
+
+    let progress = 0;
+    switch(boat.raceState.leg) {
+        case 0: progress = relP; break;
+        case 1: progress = relP; break;
+        case 2: progress = 2*L - relP; break;
+        case 3: progress = 2*L + relP; break;
+        case 4: progress = 4*L - relP; break;
+        default: progress = 0;
+    }
+
+    return progress;
+}
+
+function updateLeaderboard() {
+    if (!UI.leaderboard || !state.boats.length) return;
+
+    if (state.race.status === 'prestart') {
+         UI.leaderboard.classList.add('hidden');
+         return;
+    }
+    UI.leaderboard.classList.remove('hidden');
+
+    // Sort boats
+    const sorted = [...state.boats].sort((a, b) => {
+        // 1. Finished status
+        if (a.raceState.finished && !b.raceState.finished) return -1;
+        if (!a.raceState.finished && b.raceState.finished) return 1;
+        if (a.raceState.finished && b.raceState.finished) return a.raceState.finishTime - b.raceState.finishTime;
+
+        // 2. Leg
+        if (a.raceState.leg !== b.raceState.leg) return b.raceState.leg - a.raceState.leg;
+
+        // 3. Progress within leg
+        const pA = getBoatProgress(a);
+        const pB = getBoatProgress(b);
+        return pB - pA;
+    });
+
+    const leader = sorted[0];
+    const leaderProgress = getBoatProgress(leader);
+
+    // Update Header
+    if (UI.lbLeg) {
+        if (leader.raceState.finished) UI.lbLeg.textContent = "FINISH";
+        else UI.lbLeg.textContent = `${Math.max(1, leader.raceState.leg)}/4`;
+    }
+
+    // Render Rows
+    if (UI.lbRows) {
+        UI.lbRows.innerHTML = '';
+        sorted.forEach((boat, index) => {
+            const row = document.createElement('div');
+            row.className = "flex items-center px-3 py-1 border-b border-slate-700/50 last:border-0 bg-slate-800/40";
+
+            // Rank
+            const rank = document.createElement('div');
+            rank.className = "w-4 text-xs font-black italic text-slate-400 mr-2";
+            rank.textContent = index + 1;
+
+            // Swatch
+            const swatch = document.createElement('div');
+            swatch.className = "w-6 h-3 rounded-sm mr-2 flex overflow-hidden shadow-sm border border-slate-600/50";
+
+            const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
+            const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+
+            const s1 = document.createElement('div'); s1.className="w-1/2 h-full"; s1.style.backgroundColor = hullColor;
+            const s2 = document.createElement('div'); s2.className="w-1/2 h-full"; s2.style.backgroundColor = spinColor;
+            swatch.appendChild(s1); swatch.appendChild(s2);
+
+            // Name
+            const nameDiv = document.createElement('div');
+            nameDiv.className = "text-xs font-bold text-white tracking-wide flex-1 truncate";
+            nameDiv.textContent = boat.name;
+            if (boat.isPlayer) nameDiv.className += " text-yellow-300";
+
+            // Meters Back
+            const distDiv = document.createElement('div');
+            distDiv.className = "text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
+
+            if (index === 0) {
+                 // Leader
+                 distDiv.textContent = "";
+            } else {
+                 if (leader.raceState.finished) {
+                     if (boat.raceState.finished) {
+                         const tDiff = boat.raceState.finishTime - leader.raceState.finishTime;
+                         distDiv.textContent = "+" + tDiff.toFixed(1) + "s";
+                     } else {
+                         // Distance to finish?
+                         // Leader is at 16000.
+                         const myP = getBoatProgress(boat);
+                         const diff = Math.max(0, 16000 - myP);
+                         distDiv.textContent = "+" + Math.round(diff) + "m";
+                     }
+                 } else {
+                     const myP = getBoatProgress(boat);
+                     const diff = Math.max(0, leaderProgress - myP);
+                     distDiv.textContent = "+" + Math.round(diff) + "m";
+                 }
+            }
+
+            row.appendChild(rank);
+            row.appendChild(swatch);
+            row.appendChild(nameDiv);
+            row.appendChild(distDiv);
+
+            UI.lbRows.appendChild(row);
+        });
+    }
+}
+
+
 function draw() {
     frameCount++;
     ctx.fillStyle = CONFIG.waterColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1698,6 +1982,7 @@ function draw() {
     if (UI.headingArrow) UI.headingArrow.style.transform = `rotate(${player.heading - state.camera.rotation}rad)`;
 
     if (frameCount % 10 === 0) {
+        updateLeaderboard();
         if (UI.speed) UI.speed.textContent = (player.speed*4).toFixed(1);
         if (UI.windSpeed) UI.windSpeed.textContent = state.wind.speed.toFixed(1);
         if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - state.wind.direction))*(180/Math.PI)) + '°';
@@ -1818,7 +2103,7 @@ function resetGame() {
 
     // Player
     const pPos = getPos();
-    const player = new Boat(0, true, pPos.x, pPos.y);
+    const player = new Boat(0, true, pPos.x, pPos.y, "USA");
     player.heading = state.wind.direction; // Head to wind
     player.prevHeading = player.heading;
     player.lastWindSide = 0;
@@ -1838,7 +2123,8 @@ function resetGame() {
             }
             tries++;
         }
-        const ai = new Boat(i, false, pos.x, pos.y);
+        const name = AI_NAMES[(i - 1) % AI_NAMES.length];
+        const ai = new Boat(i, false, pos.x, pos.y, name);
         ai.heading = state.wind.direction;
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
@@ -1853,3 +2139,4 @@ function restartRace() { resetGame(); togglePause(false); }
 
 resetGame();
 requestAnimationFrame(loop);
+window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard;
