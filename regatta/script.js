@@ -2930,7 +2930,13 @@ function draw() {
 
         // Update Leg Times List
         if (UI.legTimes) {
-             let html = "";
+             if (state.race.status === 'prestart') {
+                 UI.legTimes.classList.add('hidden');
+             } else {
+                 UI.legTimes.classList.remove('hidden');
+             }
+
+            let html = "";
 
              const getMoveLabel = (legIdx) => {
                  return "Moves";
