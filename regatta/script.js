@@ -825,14 +825,14 @@ function getRightOfWay(b1, b2) {
 
     if (t1 === 1) { // Starboard Tack
         // Windward Side is Right (Starboard). Leeward Side is Left (Port).
-        // If cp > 0 (b2 is Right/Windward), b1 (Leeward) ROW.
-        // If cp < 0 (b2 is Left/Leeward), b2 (Leeward) ROW.
-        return (cp > 0) ? b1 : b2;
+        // If cp > 0 (b2 is Right of Flow -> West -> Leeward), b2 (Leeward) ROW.
+        // If cp < 0 (b2 is Left of Flow -> East -> Windward), b1 (Leeward) ROW.
+        return (cp > 0) ? b2 : b1;
     } else { // Port Tack
         // Windward Side is Left (Port). Leeward Side is Right (Starboard).
-        // If cp > 0 (b2 is Right/Leeward), b2 (Leeward) ROW.
-        // If cp < 0 (b2 is Left/Windward), b1 (Leeward) ROW.
-        return (cp > 0) ? b2 : b1;
+        // If cp > 0 (b2 is Right of Flow -> West -> Windward), b1 (Leeward) ROW.
+        // If cp < 0 (b2 is Left of Flow -> East -> Leeward), b2 (Leeward) ROW.
+        return (cp > 0) ? b1 : b2;
     }
 }
 
