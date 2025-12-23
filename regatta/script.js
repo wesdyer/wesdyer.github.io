@@ -2912,24 +2912,33 @@ function draw() {
 
         // Update Leg Info
         if (UI.legInfo) {
-            let info = "";
             if (state.race.status === 'prestart') {
-                info = "PRESTART";
-            } else if (state.race.status === 'finished') {
-                info = "FINISHED";
+                UI.legInfo.classList.add('hidden');
             } else {
-                if (state.race.leg === 0) {
-                    info = "START";
+                UI.legInfo.classList.remove('hidden');
+                let info = "";
+                if (state.race.status === 'finished') {
+                    info = "FINISHED";
                 } else {
-                    const legType = (state.race.leg % 2 !== 0) ? "UPWIND" : "DOWNWIND";
-                    info = `LEG ${state.race.leg} OF 4: ${legType}`;
+                    if (state.race.leg === 0) {
+                        info = "START";
+                    } else {
+                        const legType = (state.race.leg % 2 !== 0) ? "UPWIND" : "DOWNWIND";
+                        info = `LEG ${state.race.leg} OF 4: ${legType}`;
+                    }
                 }
+                UI.legInfo.textContent = info;
             }
-            UI.legInfo.textContent = info;
         }
 
         // Update Leg Times List
         if (UI.legTimes) {
+             if (state.race.status === 'prestart') {
+                 UI.legTimes.classList.add('hidden');
+             } else {
+                 UI.legTimes.classList.remove('hidden');
+             }
+
              let html = "";
 
              const getMoveLabel = (legIdx) => {
