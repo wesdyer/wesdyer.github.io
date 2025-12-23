@@ -2229,7 +2229,8 @@ function drawBoatIndicator(ctx, boat) {
     const rank = (boat.lbRank !== undefined) ? (boat.lbRank + 1) : "-";
     const speed = (boat.speed * 4).toFixed(1);
     const name = boat.name.toUpperCase();
-    const text = `${rank} ${name} ${speed}kn`;
+    const line1 = `${rank} ${name}`;
+    const line2 = `${speed}kn`;
 
     ctx.save();
     ctx.translate(boat.x, boat.y);
@@ -2238,9 +2239,10 @@ function drawBoatIndicator(ctx, boat) {
 
     ctx.font = "bold 11px monospace";
     const paddingX = 8;
-    const textMetrics = ctx.measureText(text);
-    const boxWidth = textMetrics.width + paddingX * 2 + 6;
-    const boxHeight = 18;
+    const m1 = ctx.measureText(line1);
+    const m2 = ctx.measureText(line2);
+    const boxWidth = Math.max(m1.width, m2.width) + paddingX * 2 + 6;
+    const boxHeight = 32;
 
     const x = -boxWidth / 2;
     const y = 0;
@@ -2266,8 +2268,9 @@ function drawBoatIndicator(ctx, boat) {
     // Text
     ctx.fillStyle = '#ffffff';
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, x + 10, y + boxHeight/2 + 1);
+    ctx.textBaseline = 'top';
+    ctx.fillText(line1, x + 10, y + 5);
+    ctx.fillText(line2, x + 10, y + 17);
 
     ctx.restore();
 }
