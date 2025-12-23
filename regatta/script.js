@@ -1926,7 +1926,13 @@ function drawRulesOverlay(ctx) {
         const dx = target.x - boat.x;
         const dy = target.y - boat.y;
         const angle = Math.atan2(dy, dx);
-        const dist = 35; // Distance from center. Reduced to be closer to boat.
+
+        // Calculate distance based on hull shape (elliptical approx)
+        // Hull is roughly width=15 (rx=25 w/ pad), length=30 (ry=40 w/ pad)
+        const dAngle = angle - boat.heading;
+        const rx = 25, ry = 40;
+        const lx = Math.cos(dAngle), ly = Math.sin(dAngle);
+        const dist = (rx * ry) / Math.sqrt((ry * lx) ** 2 + (rx * ly) ** 2);
 
         const tx = boat.x + Math.cos(angle) * dist;
         const ty = boat.y + Math.sin(angle) * dist;
