@@ -167,15 +167,45 @@ const Sound = {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        const osc = this.ctx.createOscillator();
-        const gain = this.ctx.createGain();
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, now);
-        osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        // 1. Noise Component (The "Crack" and "Rumble")
+        const bufferSize = this.ctx.sampleRate * 2.0;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
 
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.linearRampToValueAtTime(0, now + 1.0);
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const noiseFilter = this.ctx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(1000, now);
+        noiseFilter.frequency.exponentialRampToValueAtTime(50, now + 1.0);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.8, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 1.5);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        noise.start(now);
+        noise.stop(now + 2.0);
+
+        // 2. Low Thump Component (Body)
+        const osc = this.ctx.createOscillator();
+        const oscGain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(120, now);
+        osc.frequency.exponentialRampToValueAtTime(40, now + 0.5);
+
+        oscGain.gain.setValueAtTime(1.0, now);
+        oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.ctx.destination);
 
         osc.start(now);
         osc.stop(now + 1.0);
