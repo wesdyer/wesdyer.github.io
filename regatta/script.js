@@ -690,15 +690,6 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
     const angles = J111_POLARS.angles;
     const speeds = [6, 8, 10, 12, 14, 16, 20];
-    let lower = 6, upper = 20;
-
-    if (windSpeed <= 6) { lower = 6; upper = 6; }
-    else if (windSpeed >= 20) { lower = 20; upper = 20; }
-    else {
-        for (let i = 0; i < speeds.length - 1; i++) {
-            if (windSpeed >= speeds[i] && windSpeed <= speeds[i+1]) { lower = speeds[i]; upper = speeds[i+1]; break; }
-        }
-    }
 
     const getPolarSpeed = (ws) => {
         const data = J111_POLARS.speeds[ws];
@@ -711,6 +702,21 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
         }
         return sData[sData.length - 1];
     };
+
+    if (windSpeed <= 0) return 0;
+    if (windSpeed < 6) {
+         // Linearly interpolate from 0 to Speed@6
+         return getPolarSpeed(6) * (windSpeed / 6.0);
+    }
+
+    let lower = 6, upper = 20;
+    if (windSpeed >= 20) { lower = 20; upper = 20; }
+    else {
+        for (let i = 0; i < speeds.length - 1; i++) {
+            if (windSpeed >= speeds[i] && windSpeed <= speeds[i+1]) { lower = speeds[i]; upper = speeds[i+1]; break; }
+        }
+    }
+
     const s1 = getPolarSpeed(lower), s2 = getPolarSpeed(upper);
     return lower === upper ? s1 : s1 + (windSpeed - lower) / (upper - lower) * (s2 - s1);
 }
@@ -992,7 +998,7 @@ function updateBoat(boat, dt) {
         if (dCross < widthAtDist * 0.6) {
              const centerFactor = 1.0 - (dCross / (widthAtDist * 0.6));
              const distFactor = 1.0 - (dDown / shadowLength);
-             const intensity = 0.4 * centerFactor * distFactor;
+             const intensity = 0.8 * centerFactor * distFactor;
              if (intensity > boat.badAirIntensity) boat.badAirIntensity = intensity;
         }
     }
