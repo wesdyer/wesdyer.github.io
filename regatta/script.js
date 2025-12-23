@@ -2382,11 +2382,29 @@ function drawMinimap() {
     }
 
     // Boats
+    // Draw AI boats first
     for (const boat of state.boats) {
+        if (boat.isPlayer) continue;
         const pos = t(boat.x, boat.y);
         ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(boat.heading);
-        ctx.fillStyle = boat.isPlayer ? '#facc15' : boat.colors.hull;
+        ctx.fillStyle = boat.colors.hull;
         ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(5, 6); ctx.lineTo(-5, 6); ctx.fill();
+        ctx.restore();
+    }
+
+    // Draw Player last (larger and with stroke)
+    if (player) {
+        const pos = t(player.x, player.y);
+        ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(player.heading);
+
+        // Pulse Glow
+        const glow = 10 + Math.sin(state.time * 8) * 5;
+        ctx.shadowBlur = glow;
+        ctx.shadowColor = '#facc15';
+
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(8, 9); ctx.lineTo(-8, 9); ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = '#ffffff'; ctx.stroke();
         ctx.restore();
     }
 }
