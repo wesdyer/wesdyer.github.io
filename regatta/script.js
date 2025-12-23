@@ -356,7 +356,8 @@ const UI = {
     settingSpinnakerColor: document.getElementById('setting-color-spinnaker'),
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
-    lbRows: document.getElementById('lb-rows')
+    lbRows: document.getElementById('lb-rows'),
+    boatRows: {}
 };
 
 // Settings Functions
@@ -1743,39 +1744,57 @@ function updateLeaderboard() {
 
     // Render Rows
     if (UI.lbRows) {
-        UI.lbRows.innerHTML = '';
+        const ROW_HEIGHT = 36;
+        UI.lbRows.style.height = (sorted.length * ROW_HEIGHT) + 'px';
+
         sorted.forEach((boat, index) => {
-            const row = document.createElement('div');
-            row.className = "flex items-center px-3 py-1 border-b border-slate-700/50 last:border-0 bg-slate-800/40";
+            let row = UI.boatRows[boat.id];
 
-            // Rank
-            const rank = document.createElement('div');
-            rank.className = "w-4 text-xs font-black italic text-slate-400 mr-2";
-            rank.textContent = index + 1;
+            // Create if missing
+            if (!row) {
+                row = document.createElement('div');
+                row.className = "lb-row flex items-center px-3 border-b border-slate-700/50 bg-slate-800/40";
 
-            // Swatch
-            const swatch = document.createElement('div');
-            swatch.className = "w-6 h-3 rounded-sm mr-2 flex overflow-hidden shadow-sm border border-slate-600/50";
+                // Construct inner HTML once
+                // Rank
+                const rank = document.createElement('div');
+                rank.className = "lb-rank w-4 text-xs font-black italic text-slate-400 mr-2";
 
-            const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
-            const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+                // Swatch
+                const swatch = document.createElement('div');
+                swatch.className = "w-6 h-3 rounded-sm mr-2 flex overflow-hidden shadow-sm border border-slate-600/50";
+                const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
+                const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+                const s1 = document.createElement('div'); s1.className="w-1/2 h-full"; s1.style.backgroundColor = hullColor;
+                const s2 = document.createElement('div'); s2.className="w-1/2 h-full"; s2.style.backgroundColor = spinColor;
+                swatch.appendChild(s1); swatch.appendChild(s2);
 
-            const s1 = document.createElement('div'); s1.className="w-1/2 h-full"; s1.style.backgroundColor = hullColor;
-            const s2 = document.createElement('div'); s2.className="w-1/2 h-full"; s2.style.backgroundColor = spinColor;
-            swatch.appendChild(s1); swatch.appendChild(s2);
+                // Name
+                const nameDiv = document.createElement('div');
+                nameDiv.className = "text-xs font-bold text-white tracking-wide flex-1 truncate";
+                nameDiv.textContent = boat.name;
+                if (boat.isPlayer) nameDiv.className += " text-yellow-300";
 
-            // Name
-            const nameDiv = document.createElement('div');
-            nameDiv.className = "text-xs font-bold text-white tracking-wide flex-1 truncate";
-            nameDiv.textContent = boat.name;
-            if (boat.isPlayer) nameDiv.className += " text-yellow-300";
+                // Meters Back
+                const distDiv = document.createElement('div');
+                distDiv.className = "lb-dist text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
 
-            // Meters Back
-            const distDiv = document.createElement('div');
-            distDiv.className = "text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
+                row.appendChild(rank);
+                row.appendChild(swatch);
+                row.appendChild(nameDiv);
+                row.appendChild(distDiv);
 
+                UI.lbRows.appendChild(row);
+                UI.boatRows[boat.id] = row;
+
+                // Init rank
+                boat.lbRank = index;
+            }
+
+            // Update Content
+            row.querySelector('.lb-rank').textContent = index + 1;
+            const distDiv = row.querySelector('.lb-dist');
             if (index === 0) {
-                 // Leader
                  distDiv.textContent = "";
             } else {
                  if (leader.raceState.finished) {
@@ -1796,12 +1815,19 @@ function updateLeaderboard() {
                  }
             }
 
-            row.appendChild(rank);
-            row.appendChild(swatch);
-            row.appendChild(nameDiv);
-            row.appendChild(distDiv);
+            // Update Position
+            row.style.transform = `translate3d(0, ${index * ROW_HEIGHT}px, 0)`;
 
-            UI.lbRows.appendChild(row);
+            // Handle Rank Change Animation
+            if (boat.lbRank !== index) {
+                // Remove class to reset animation
+                row.classList.remove('row-highlight');
+                // Trigger reflow
+                void row.offsetWidth;
+                // Add class
+                row.classList.add('row-highlight');
+                boat.lbRank = index;
+            }
         });
     }
 }
@@ -1988,6 +2014,8 @@ function resetGame() {
     initCourse();
 
     state.boats = [];
+    if (UI.lbRows) UI.lbRows.innerHTML = '';
+    UI.boatRows = {};
 
     // Player
     // Start area: At least 50m from start line.
