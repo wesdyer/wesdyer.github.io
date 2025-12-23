@@ -226,6 +226,14 @@ const Sound = {
         this.playTone(100, 0.5, 'sawtooth');
     },
 
+    playGateClear: function() {
+        if (!settings.soundEnabled) return;
+        this.init();
+        // Positive chime: E5 -> A5
+        this.playTone(659.25, 0.1, 'sine', 0);
+        this.playTone(880.00, 0.4, 'sine', 0.1);
+    },
+
     initWindSound: function() {
         if (!this.ctx || this.windSource) return;
 
@@ -837,6 +845,7 @@ function updateRace(dt) {
                             } else {
                                 // Clean start!
                                 state.race.leg++;
+                                Sound.playGateClear();
                                 // Check if we were OCS just now?
                                 // If we were OCS, we must have cleared it.
                                 // If we are here, we just crossed Upwind.
@@ -882,6 +891,8 @@ function updateRace(dt) {
                                         origin: { y: 0.6 }
                                     });
                                 }
+                            } else {
+                                Sound.playGateClear();
                             }
                         };
 
@@ -954,6 +965,8 @@ function updateRace(dt) {
                                 origin: { y: 0.6 }
                             });
                         }
+                    } else {
+                        Sound.playGateClear();
                     }
                 };
 
