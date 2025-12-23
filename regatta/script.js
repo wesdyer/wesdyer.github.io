@@ -2168,6 +2168,9 @@ function drawLadderLines(ctx) {
         // Skip the line at the active gate
         if (Math.abs(p - endProj) < 1.0) continue;
 
+        // Avoid overlap with "START" label (Leg 0)
+        if (state.race.leg === 0 && Math.abs(p - startProj) < 1.0) continue;
+
         // 1. Calculate Layline Bounds at this U (p)
         // Ladder lines are only drawn between gates, so we are always on the "course side" of the target.
         // dist is signed distance along U axis from Mark.
@@ -2939,7 +2942,15 @@ function draw() {
         ctx.textBaseline = 'bottom';
         ctx.shadowColor = 'rgba(0,0,0,0.8)';
         ctx.shadowBlur = 4;
-        ctx.fillText(Math.round(state.race.nextWaypoint.dist) + 'm', 0, -12);
+
+        // Avoid overlap with START label (Leg 0)
+        // If we are starting and close to the line, the "START" text is visible.
+        // Hiding the waypoint text prevents clutter/overlap.
+        const hideText = (state.race.leg === 0 && state.race.nextWaypoint.dist < 200);
+
+        if (!hideText) {
+            ctx.fillText(Math.round(state.race.nextWaypoint.dist) + 'm', 0, -12);
+        }
 
         ctx.restore();
     }
