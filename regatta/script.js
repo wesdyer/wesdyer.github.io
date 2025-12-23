@@ -1659,18 +1659,18 @@ function drawMinimap() {
 let frameCount = 0;
 
 function getBoatProgress(boat) {
-    if (boat.raceState.finished) {
-        // Finished boats are ranked by finish time, but for progress calculation we can assume they are at the end.
-        // Or better, handle them separately in sorting.
-        return 4*len + (1000000 - boat.raceState.finishTime); // Higher is better (lower time = higher score)
-    }
-
     const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
     const c1x = (m0.x+m1.x)/2, c1y = (m0.y+m1.y)/2;
     const c2x = (m2.x+m3.x)/2, c2y = (m2.y+m3.y)/2;
     const dx = c2x-c1x, dy = c2y-c1y;
     const len = Math.sqrt(dx*dx+dy*dy);
     const wx = dx/len, wy = dy/len;
+
+    if (boat.raceState.finished) {
+        // Finished boats are ranked by finish time, but for progress calculation we can assume they are at the end.
+        // Or better, handle them separately in sorting.
+        return 4*len + (1000000 - boat.raceState.finishTime); // Higher is better (lower time = higher score)
+    }
 
     // Project onto course axis (Start -> Upwind)
     const p = boat.x*wx + boat.y*wy;
