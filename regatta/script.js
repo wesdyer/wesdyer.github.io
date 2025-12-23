@@ -2659,6 +2659,9 @@ function drawBoatIndicator(ctx, boat) {
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
     ctx.fillText(line1, x + 10, y + 5);
+
+    if (boat.badAirIntensity > 0.05) ctx.fillStyle = '#ef4444';
+    else ctx.fillStyle = '#ffffff';
     ctx.fillText(line2, x + 10, y + 17);
 
     ctx.restore();
@@ -2751,7 +2754,11 @@ function draw() {
 
     if (frameCount % 10 === 0) {
         updateLeaderboard();
-        if (UI.speed) UI.speed.textContent = (player.speed*4).toFixed(1);
+        if (UI.speed) {
+            UI.speed.textContent = (player.speed*4).toFixed(1);
+            if (player.badAirIntensity > 0.05) UI.speed.classList.add('text-red-400');
+            else UI.speed.classList.remove('text-red-400');
+        }
         if (UI.windSpeed) {
              UI.windSpeed.textContent = state.wind.speed.toFixed(1);
              if (player.badAirIntensity > 0.05) {
