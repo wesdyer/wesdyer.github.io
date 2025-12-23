@@ -1358,7 +1358,7 @@ function drawRoundingArrows(ctx) {
 function drawActiveGateLine(ctx) {
     const player = state.boats[0];
     let indices;
-    if (state.race.status === 'finished') indices = [0, 1];
+    if (state.race.status === 'finished' || player.raceState.finished) indices = [0, 1];
     else {
         if (player.raceState.leg !== 0 && player.raceState.leg !== 4) return;
         indices = (player.raceState.leg % 2 === 0) ? [0, 1] : [2, 3];
@@ -1369,7 +1369,7 @@ function drawActiveGateLine(ctx) {
     ctx.beginPath(); ctx.moveTo(m1.x, m1.y); ctx.lineTo(m2.x, m2.y);
 
     let color = '#ffffff';
-    if (state.race.status === 'finished') color = '#4ade80';
+    if (state.race.status === 'finished' || player.raceState.finished) color = '#4ade80';
     else if (player.raceState.leg === 0 && state.race.status === 'prestart') color = '#ef4444';
 
     ctx.shadowColor = color; ctx.shadowBlur = 15; ctx.strokeStyle = color; ctx.lineWidth = 5;
@@ -1377,7 +1377,7 @@ function drawActiveGateLine(ctx) {
 
     ctx.save(); ctx.fillStyle = color; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const midX = (m1.x+m2.x)/2, midY = (m1.y+m2.y)/2;
-    let label = (player.raceState.leg === 0) ? "START" : ((player.raceState.leg === 4 || state.race.status === 'finished') ? "FINISH" : "");
+    let label = (player.raceState.leg === 0) ? "START" : ((player.raceState.leg === 4 || state.race.status === 'finished' || player.raceState.finished) ? "FINISH" : "");
     if (label) {
         const angle = Math.atan2(m2.y - m1.y, m2.x - m1.x);
         ctx.translate(midX, midY);
@@ -1389,8 +1389,8 @@ function drawActiveGateLine(ctx) {
 }
 
 function drawLadderLines(ctx) {
-    if (!state.showNavAids || state.race.status === 'prestart' || state.race.status === 'finished') return;
     const player = state.boats[0];
+    if (!state.showNavAids || state.race.status === 'prestart' || state.race.status === 'finished' || player.raceState.finished) return;
 
     const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
     const c1x = (m0.x+m1.x)/2, c1y = (m0.y+m1.y)/2, c2x = (m2.x+m3.x)/2, c2y = (m2.y+m3.y)/2;
@@ -1918,7 +1918,7 @@ function draw() {
         if (UI.legInfo) {
              let txt = "";
              if (state.race.status === 'prestart') txt = "PRESTART";
-             else if (state.race.status === 'finished') txt = "FINISHED";
+             else if (state.race.status === 'finished' || player.raceState.finished) txt = "FINISHED";
              else txt = (player.raceState.leg === 0) ? "START" : `LEG ${player.raceState.leg} OF 4: ${(player.raceState.leg%2!==0)?"UPWIND":"DOWNWIND"}`;
              UI.legInfo.textContent = txt;
         }
