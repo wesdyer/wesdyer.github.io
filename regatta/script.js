@@ -2733,7 +2733,6 @@ function draw() {
     ctx.translate(-state.camera.x, -state.camera.y);
 
     drawWater(ctx);
-    drawBoundary(ctx);
     drawDisturbedAir(ctx);
     drawParticles(ctx, 'surface');
     drawActiveGateLine(ctx);
@@ -2741,6 +2740,7 @@ function draw() {
     drawLayLines(ctx);
     drawMarkZones(ctx);
     drawRoundingArrows(ctx);
+    drawBoundary(ctx);
     drawParticles(ctx, 'air');
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
