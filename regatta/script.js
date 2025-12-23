@@ -1720,11 +1720,38 @@ function drawLadderLines(ctx) {
                     const clipped = clipLineToRect(s1, s2, padding, padding, canvas.width - padding, canvas.height - padding);
 
                     if (clipped) {
-                        const smidX = (clipped.p1.x + clipped.p2.x) / 2;
-                        const smidY = (clipped.p1.y + clipped.p2.y) / 2;
-                        const wmid = screenToWorld(smidX, smidY);
+                        // Project center of full line to screen
+                        const sCenterX = (s1.x + s2.x) / 2;
+                        const sCenterY = (s1.y + s2.y) / 2;
 
-                        ctx.fillText(Math.round(distToGate) + 'm', wmid.x, wmid.y);
+                        const c1 = clipped.p1;
+                        const c2 = clipped.p2;
+
+                        // Project sCenter onto the clipped segment [c1, c2]
+                        // Vector c1 -> c2
+                        const vx = c2.x - c1.x;
+                        const vy = c2.y - c1.y;
+                        const lenSq = vx * vx + vy * vy;
+
+                        let rX, rY;
+                        if (lenSq < 0.001) {
+                            rX = c1.x;
+                            rY = c1.y;
+                        } else {
+                            // Vector c1 -> sCenter
+                            const wx = sCenterX - c1.x;
+                            const wy = sCenterY - c1.y;
+
+                            // Project
+                            let t = (wx * vx + wy * vy) / lenSq;
+                            t = Math.max(0, Math.min(1, t));
+
+                            rX = c1.x + t * vx;
+                            rY = c1.y + t * vy;
+                        }
+
+                        const wPos = screenToWorld(rX, rY);
+                        ctx.fillText(Math.round(distToGate) + 'm', wPos.x, wPos.y);
                     }
                 }
             }
