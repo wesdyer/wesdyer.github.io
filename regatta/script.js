@@ -1579,12 +1579,45 @@ function drawLadderLines(ctx) {
         };
     };
 
-    // Use base direction for the grid to keep it stable
-    const windDir = state.wind.baseDirection;
-    const wx = Math.sin(windDir);
-    const wy = -Math.cos(windDir);
+    // Use Course Axis (Rhumb Line) for the grid to keep it stable relative to the course
+    // Gate 1: Marks 0 & 1 (Start/Leeward)
+    // Gate 2: Marks 2 & 3 (Upwind)
+    if (state.course.marks.length < 4) return;
+
+    const m0 = state.course.marks[0];
+    const m1 = state.course.marks[1];
+    const m2 = state.course.marks[2];
+    const m3 = state.course.marks[3];
+
+    // Calculate gate centers
+    const c1x = (m0.x + m1.x) / 2;
+    const c1y = (m0.y + m1.y) / 2;
+    const c2x = (m2.x + m3.x) / 2;
+    const c2y = (m2.y + m3.y) / 2;
+
+    // Course Axis Vector (From Start to Upwind)
+    const dx = c2x - c1x;
+    const dy = c2y - c1y;
+    const len = Math.sqrt(dx * dx + dy * dy);
+
+    // Unit vector for course axis (Upwind)
+    // Corresponds to wx, wy in previous logic (though previous logic used 'wind direction' as base)
+    // NOTE: 'wind direction' 0 means wind comes FROM North. Vector (0, -1) points North (Upwind).
+    // Here we calculate Upwind vector directly.
+    const wx = dx / len;
+    const wy = dy / len;
+
+    // Perpendicular vector
     const px = -wy;
     const py = wx;
+
+    // Calculate Course Angle (Upwind direction)
+    // wx = sin(angle), wy = -cos(angle) matches the wind convention used elsewhere
+    // But atan2(y, x) gives angle from X axis.
+    // In our coordinate system (North Up, Y Down):
+    // Angle 0 (North) -> (0, -1).
+    // We want angle such that sin(a)=wx, -cos(a)=wy.
+    const courseAngle = Math.atan2(wx, -wy);
 
     // Determine range based on leg
     let prevIndex, nextIndex;
@@ -1599,18 +1632,9 @@ function drawLadderLines(ctx) {
     const mPrev = state.course.marks[prevIndex];
     const mNext = state.course.marks[nextIndex];
 
-    // Project onto wind axis
+    // Project onto Course axis
     const startProj = mPrev.x * wx + mPrev.y * wy;
     const endProj = mNext.x * wx + mNext.y * wy;
-
-    // We want to calculate distance to the NEXT gate
-    // Upwind Leg (Leg 1,3): endProj is Upwind (higher value? or lower depending on wind)
-    // Wind is direction FROM. 0 = North blowing South.
-    // wx = 0, wy = -1.
-    // Upwind is -wy -> +y.
-    // wait, 0 is blowing SOUTH. So vectors move south.
-    // Upwind means moving AGAINST wind. So North.
-    // Let's use absolute distance math.
 
     // Sort
     let minP = Math.min(startProj, endProj);
@@ -1620,7 +1644,7 @@ function drawLadderLines(ctx) {
     const firstLine = Math.floor(minP / interval) * interval;
 
     // Layline Clipping Logic
-    // Project Marks to U,V space (U = Wind Axis, V = Cross Axis)
+    // Project Marks to U,V space (U = Course Axis, V = Cross Axis)
     // U axis is defined by (wx, wy). V axis is (px, py).
     // V = x * px + y * py
     const uL = mNext.x * wx + mNext.y * wy;
@@ -1637,8 +1661,9 @@ function drawLadderLines(ctx) {
 
     const isUpwindTarget = (nextIndex === 2); // Target is Marks 2,3 (Upwind)
 
-    // Calculate dynamic slopes based on current wind deviation
-    const delta = normalizeAngle(state.wind.direction - state.wind.baseDirection);
+    // Calculate dynamic slopes based on current wind deviation relative to Course Axis
+    // delta is angle between Wind and Course Axis
+    const delta = normalizeAngle(state.wind.direction - courseAngle);
     let slopeLeft, slopeRight;
 
     if (isUpwindTarget) {
