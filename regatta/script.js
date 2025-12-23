@@ -1926,7 +1926,7 @@ function drawRulesOverlay(ctx) {
         const dx = target.x - boat.x;
         const dy = target.y - boat.y;
         const angle = Math.atan2(dy, dx);
-        const dist = 50; // Distance from center. Boat is roughly 30-40 units long/wide.
+        const dist = 35; // Distance from center. Reduced to be closer to boat.
 
         const tx = boat.x + Math.cos(angle) * dist;
         const ty = boat.y + Math.sin(angle) * dist;
@@ -1947,12 +1947,6 @@ function drawRulesOverlay(ctx) {
         ctx.closePath();
 
         ctx.fill();
-        // Optional stroke for contrast
-        ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-        ctx.lineWidth = 1;
-        ctx.shadowBlur = 0; // Don't blur stroke
-        ctx.stroke();
-
         ctx.restore();
     };
 
