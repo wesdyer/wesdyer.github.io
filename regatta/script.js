@@ -194,6 +194,68 @@ const Sound = {
         if (!settings.soundEnabled) return;
         this.init();
         this.playTone(100, 0.5, 'sawtooth');
+    },
+
+    initWindSound: function() {
+        if (!this.ctx || this.windSource) return;
+
+        // White noise buffer for wind/water
+        const bufferSize = this.ctx.sampleRate * 2;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = Math.random() * 2 - 1;
+        }
+
+        this.windSource = this.ctx.createBufferSource();
+        this.windSource.buffer = buffer;
+        this.windSource.loop = true;
+
+        this.windFilter = this.ctx.createBiquadFilter();
+        this.windFilter.type = 'lowpass';
+
+        this.windGain = this.ctx.createGain();
+        this.windGain.gain.value = 0;
+
+        this.windSource.connect(this.windFilter);
+        this.windFilter.connect(this.windGain);
+        this.windGain.connect(this.ctx.destination);
+
+        this.windSource.start(0);
+    },
+
+    updateWindSound: function(speed) {
+        if (!settings.soundEnabled) {
+            if (this.windGain) {
+                // Fade out if disabled
+                this.windGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
+            }
+            return;
+        }
+
+        // Ensure context is running and wind sound is initialized
+        if (this.ctx && this.ctx.state === 'running') {
+            if (!this.windSource) {
+                this.initWindSound();
+            }
+
+            if (this.windGain && this.windFilter) {
+                 // Map wind speed (approx 5-25 knots) to audio params
+                 const clampedSpeed = Math.max(5, Math.min(25, speed));
+
+                 // Volume: 0.02 to 0.1
+                 const volume = 0.02 + ((clampedSpeed - 5) / 20) * 0.08;
+
+                 // Lowpass Freq: 200Hz to 800Hz
+                 // Simulates the "roar" of wind increasing
+                 const freq = 200 + ((clampedSpeed - 5) / 20) * 600;
+
+                 const now = this.ctx.currentTime;
+                 this.windGain.gain.setTargetAtTime(volume, now, 0.1);
+                 this.windFilter.frequency.setTargetAtTime(freq, now, 0.1);
+            }
+        }
     }
 };
 
@@ -436,6 +498,10 @@ resize();
 
 // Input Handling
 window.addEventListener('keydown', (e) => {
+    if (settings.soundEnabled && (!Sound.ctx || Sound.ctx.state !== 'running')) {
+        Sound.init();
+    }
+
     let key = e.key;
     if (key === 'a' || key === 'A') key = 'ArrowLeft';
     if (key === 'd' || key === 'D') key = 'ArrowRight';
@@ -1134,6 +1200,9 @@ function update(dt) {
     // Original: state.time += 0.004 per frame (at 60fps) -> 0.24 per second
     state.time += 0.24 * dt;
     const timeScale = dt * 60; // Scaling factor for logic designed for 60 FPS
+
+    // Update Wind Sound
+    Sound.updateWindSound(state.wind.speed);
 
     // Sail Switching Logic
     const switchSpeed = dt / 5.0; // 5.0 seconds switch time (dt is in seconds)
