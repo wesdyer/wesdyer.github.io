@@ -90,6 +90,7 @@ const state = {
     time: 0,
     race: {
         status: 'prestart', // 'prestart', 'racing', 'finished'
+        isRounding: false,
         timer: 30.0,
         leg: 0, // 0=Start, 1=Upwind, 2=Downwind, 3=Upwind, 4=Finish
         ocs: false,
@@ -511,10 +512,10 @@ function updateRace(dt) {
                              hideRaceMessage();
                         }
                     } else {
-                        // Normal Legs
-                        // Must match required direction
-                        if (crossingDir === requiredDirection) {
+                        // Normal Legs logic
+                        const completeLeg = () => {
                             state.race.leg++;
+                            state.race.isRounding = false;
 
                             // Calculate split
                             const split = state.race.timer - state.race.legStartTime;
@@ -531,12 +532,115 @@ function updateRace(dt) {
                                 state.race.finishTime = state.race.timer;
                                 showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                             }
+                        };
+
+                        if (state.race.leg === 4) {
+                            // Finish Line (Leg 4) - Simple Crossing
+                            if (crossingDir === requiredDirection) {
+                                completeLeg();
+                            } else {
+                                // Wrong way for finish!
+                                showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50");
+                                setTimeout(hideRaceMessage, 2000);
+                            }
                         } else {
-                            // Wrong way!
-                            showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50");
-                            setTimeout(hideRaceMessage, 2000);
+                            // Legs 1, 2, 3 - Gate Rounding Logic
+                            // 1. Must cross Gate Line (Enter)
+                            // 2. Must cross Extension Line (Exit/Round)
+
+                            if (!state.race.isRounding) {
+                                if (crossingDir === requiredDirection) {
+                                    state.race.isRounding = true;
+                                } else {
+                                    // Wrong way!
+                                    showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50");
+                                    setTimeout(hideRaceMessage, 2000);
+                                }
+                            } else {
+                                // Already entered gate, checking for completion or abort
+                                if (crossingDir === -requiredDirection) {
+                                    // Crossed back through gate! Abort rounding.
+                                    state.race.isRounding = false;
+                                    showRaceMessage("ROUNDING ABORTED", "text-orange-500", "border-orange-500/50");
+                                    setTimeout(hideRaceMessage, 2000);
+                                }
+                            }
+
+                            // Check Extensions if Rounding - MOVED OUTSIDE intersect BLOCK
+                            // Logic was here previously but it belongs outside the gate intersection check
                         }
                     }
+                }
+            }
+
+            // Check Extensions if Rounding (Independent of Gate Intersection)
+            if (state.race.isRounding && state.race.status === 'racing') {
+                // Determine completion logic similar to above
+                const completeLeg = () => {
+                    state.race.leg++;
+                    state.race.isRounding = false;
+
+                    // Calculate split
+                    const split = state.race.timer - state.race.legStartTime;
+                    state.race.lastLegDuration = split;
+                    if (state.race.leg > 1) {
+                        state.race.legTimes.push(split);
+                    }
+                    state.race.legSplitTimer = 5.0;
+                    state.race.legStartTime = state.race.timer;
+
+                    if (state.race.leg > 4) {
+                        state.race.finished = true;
+                        state.race.status = 'finished';
+                        state.race.finishTime = state.race.timer;
+                        showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
+                    }
+                };
+
+                // Re-calculate geometry
+                const gDx = m2.x - m1.x;
+                const gDy = m2.y - m1.y;
+                const len = Math.sqrt(gDx*gDx + gDy*gDy);
+                const ux = gDx / len;
+                const uy = gDy / len;
+
+                // Normal pointing "Upwind" relative to gate
+                const nx = gDy;
+                const ny = -gDx;
+
+                const extLen = 10000;
+
+                // Left Extension (from m1 away from m2)
+                const l1x = m1.x;
+                const l1y = m1.y;
+                const l2x = m1.x - ux * extLen;
+                const l2y = m1.y - uy * extLen;
+
+                // Right Extension (from m2 away from m1)
+                const r1x = m2.x;
+                const r1y = m2.y;
+                const r2x = m2.x + ux * extLen;
+                const r2y = m2.y + uy * extLen;
+
+                const checkExt = (ax, ay, bx, by) => {
+                    const intersect = checkLineIntersection(
+                        state.race.lastPos.x, state.race.lastPos.y, state.boat.x, state.boat.y,
+                        ax, ay, bx, by
+                    );
+                    if (intersect) {
+                        const moveDx = state.boat.x - state.race.lastPos.x;
+                        const moveDy = state.boat.y - state.race.lastPos.y;
+                        const dot = moveDx * nx + moveDy * ny;
+                        return dot > 0 ? 1 : -1;
+                    }
+                    return 0;
+                };
+
+                const dirL = checkExt(l1x, l1y, l2x, l2y);
+                const dirR = checkExt(r1x, r1y, r2x, r2y);
+
+                if (dirL === -requiredDirection || dirR === -requiredDirection) {
+                    completeLeg();
                 }
             }
         }
@@ -2435,6 +2539,7 @@ function resetGame() {
     state.race.status = 'prestart';
     state.race.timer = 30.0;
     state.race.leg = 0;
+    state.race.isRounding = false;
     state.race.ocs = false;
     state.race.penalty = false;
     state.race.penaltyProgress = 0;
