@@ -158,6 +158,9 @@ class Boat {
         this.raceState = {
             leg: 0,
             isRounding: false,
+            isTacking: false, // Rule 13
+            inZone: false,
+            zoneEnterTime: 0,
             ocs: false,
             penalty: false,
             penaltyProgress: 0,
@@ -736,6 +739,102 @@ function checkBoundaryExiting(boat) {
     return false;
 }
 
+function getRightOfWay(b1, b2) {
+    if (!settings.penaltiesEnabled) return null;
+
+    // 0. Tacking (Rule 13) - Keep Clear while tacking
+    if (b1.raceState.isTacking && !b2.raceState.isTacking) return b2;
+    if (!b1.raceState.isTacking && b2.raceState.isTacking) return b1;
+    // If both tacking, standard collision rules (or both keep clear of each other? Rule 13 only says keep clear of other boats)
+
+    // 1. Mark Room (Rule 18) - First in zone has rights
+    if (b1.raceState.inZone && !b2.raceState.inZone) return b1;
+    if (!b1.raceState.inZone && b2.raceState.inZone) return b2;
+    if (b1.raceState.inZone && b2.raceState.inZone) {
+         if (b1.raceState.zoneEnterTime < b2.raceState.zoneEnterTime) return b1;
+         if (b2.raceState.zoneEnterTime < b1.raceState.zoneEnterTime) return b2;
+    }
+
+    // 2. Opposite Tacks (Rule 10)
+    // boomSide > 0 (Left Boom) => Starboard Tack
+    const t1 = b1.boomSide > 0 ? 1 : -1;
+    const t2 = b2.boomSide > 0 ? 1 : -1;
+
+    if (t1 !== t2) {
+        return (t1 === 1) ? b1 : b2; // Starboard (1) wins
+    }
+
+    // 3. Same Tack (Rule 11: Windward/Leeward & Rule 12: Clear Astern)
+    // Check Clear Astern (Rule 12)
+    // A boat is Clear Astern if its hull is behind a line abeam from the aftermost point of the other boat.
+    // Overlap exists if neither is clear astern.
+    // If NOT overlapped, Clear Astern keeps clear.
+
+    const h1 = b1.heading, h2 = b2.heading;
+    // We assume courses are roughly similar if same tack.
+
+    // Helper: isClearAstern(behind, ahead)
+    const isClearAstern = (behind, ahead) => {
+        // Line abeam of ahead's stern.
+        // Ahead stern pos:
+        const sternOffset = 30;
+        const ahX = Math.sin(ahead.heading), ahY = -Math.cos(ahead.heading);
+        const sternX = ahead.x - ahX * sternOffset;
+        const sternY = ahead.y - ahY * sternOffset;
+
+        // Vector from stern to behind boat
+        const dx = behind.x - sternX;
+        const dy = behind.y - sternY;
+
+        // Project onto Ahead's forward vector. If < 0, it is behind the stern line.
+        // Forward vector (ahX, ahY).
+        // Actually, "Behind the line abeam".
+        // Abeam line is perpendicular to centerline.
+        // So dot product with Forward vector < 0 means behind the abeam line.
+        const dot = dx * ahX + dy * ahY;
+
+        // Also check if "Clear" (not overlapping laterally?)
+        // Rule definition: "hull is behind a line abeam from the aftermost point..."
+        // If dot < 0, it IS clear astern. Even if laterally far.
+        // (Assuming "abeam" line extends infinitely).
+        return dot < -10; // Buffer
+    };
+
+    const b1Astern = isClearAstern(b1, b2);
+    const b2Astern = isClearAstern(b2, b1);
+
+    if (b1Astern && !b2Astern) return b2; // b1 Clear Astern -> Keeps Clear -> b2 ROW
+    if (b2Astern && !b1Astern) return b1; // b2 Clear Astern -> Keeps Clear -> b1 ROW
+
+    // If Overlapped (Rule 11): Windward gives way to Leeward.
+    // Determine Windward side based on Tack.
+    const dx = b2.x - b1.x;
+    const dy = b2.y - b1.y;
+    const wDir = state.wind.direction;
+
+    // Wind Flow Vector (To Direction)
+    // wDir 0 is From North (Flow South: 0, 1)
+    const fx = -Math.sin(wDir);
+    const fy = Math.cos(wDir);
+
+    // Cross Product (Flow x RelPos) to determine Left/Right
+    // cp > 0 => Right of Flow (Starboard Side)
+    // cp < 0 => Left of Flow (Port Side)
+    const cp = fx * dy - fy * dx;
+
+    if (t1 === 1) { // Starboard Tack
+        // Windward Side is Right (Starboard). Leeward Side is Left (Port).
+        // If cp > 0 (b2 is Right/Windward), b1 (Leeward) ROW.
+        // If cp < 0 (b2 is Left/Leeward), b2 (Leeward) ROW.
+        return (cp > 0) ? b1 : b2;
+    } else { // Port Tack
+        // Windward Side is Left (Port). Leeward Side is Right (Starboard).
+        // If cp > 0 (b2 is Right/Leeward), b2 (Leeward) ROW.
+        // If cp < 0 (b2 is Left/Windward), b1 (Leeward) ROW.
+        return (cp > 0) ? b2 : b1;
+    }
+}
+
 function updateAI(boat, dt) {
     if (boat.isPlayer) return;
 
@@ -876,7 +975,13 @@ function updateAI(boat, dt) {
              // Check if in front
              const bx = Math.sin(boat.heading), by = -Math.cos(boat.heading);
              if (dx * bx + dy * by > 0) {
-                  const strength = (1.0 - dist / detectRadius) * 2.5;
+                  const rowBoat = getRightOfWay(boat, other);
+                  let strength = (1.0 - dist / detectRadius) * 2.5;
+
+                  // Modify strength based on ROW
+                  if (rowBoat === boat) strength *= 0.2; // I have ROW, hold course (mostly)
+                  else if (rowBoat === other) strength *= 2.0; // Give way!
+
                   avoidX -= (dx / dist) * strength;
                   avoidY -= (dy / dist) * strength;
              }
@@ -1007,6 +1112,20 @@ function updateBoat(boat, dt) {
     let relWind = normalizeAngle(state.wind.direction - boat.heading);
     if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
 
+    // Check Tacking (Rule 13)
+    // Tacking is defined as "from the moment she is beyond head to wind until she is on a close-hauled course".
+    // "Head to wind" means pointing directly into wind (angleToWind ~ 0).
+    // Close-hauled is ~45 deg.
+    // Simplified: If angleToWind is small (in irons), we are tacking.
+    if (angleToWind < Math.PI / 6) { // < 30 degrees
+        boat.raceState.isTacking = true;
+    } else {
+        // If we were tacking, check if we are on a close-hauled course (e.g. > 40 deg).
+        if (boat.raceState.isTacking && angleToWind > Math.PI / 4.5) {
+             boat.raceState.isTacking = false;
+        }
+    }
+
     let swingSpeed = 0.025;
     boat.boomSide += (boat.targetBoomSide - boat.boomSide) * swingSpeed;
     if (Math.abs(boat.targetBoomSide - boat.boomSide) < 0.01) boat.boomSide = boat.targetBoomSide;
@@ -1108,6 +1227,28 @@ function updateBoatRaceState(boat, dt) {
             dist: Math.sqrt(dx*dx + dy*dy) * 0.2,
             angle: Math.atan2(dx, -dy)
         };
+
+        // Zone Check
+        let inZone = false;
+        let zoneMarks = [];
+        if (boat.raceState.leg === 1 || boat.raceState.leg === 3) zoneMarks = [2, 3];
+        else if (boat.raceState.leg === 2) zoneMarks = [0, 1];
+
+        for (const idx of zoneMarks) {
+             const m = marks[idx];
+             const d2 = (boat.x - m.x)**2 + (boat.y - m.y)**2;
+             if (d2 < 165*165) {
+                 inZone = true;
+                 break;
+             }
+        }
+
+        if (inZone && !boat.raceState.inZone) {
+            boat.raceState.inZone = true;
+            boat.raceState.zoneEnterTime = state.time;
+        } else if (!inZone) {
+            boat.raceState.inZone = false;
+        }
     }
 
     // Crossing Logic
@@ -1427,8 +1568,13 @@ function checkBoatCollisions(dt) {
                 b2.speed *= (friction - (friction - impactFactor) * impact2);
 
                 if (state.race.status === 'racing') {
-                    triggerPenalty(b1);
-                    triggerPenalty(b2);
+                    const rowBoat = getRightOfWay(b1, b2);
+                    if (rowBoat === b1) triggerPenalty(b2);
+                    else if (rowBoat === b2) triggerPenalty(b1);
+                    else {
+                        triggerPenalty(b1);
+                        triggerPenalty(b2);
+                    }
                 }
             }
         }
@@ -1699,6 +1845,64 @@ function drawBoat(ctx, boat) {
     const spinScale = Math.max(0, (progress - 0.5) * 2);
     if (jibScale > 0.01) drawSailFunc(true, jibScale);
     if (spinScale > 0.01) drawSpinnaker(spinScale);
+    ctx.restore();
+}
+
+function drawRulesOverlay(ctx) {
+    if (!state.showNavAids || !settings.penaltiesEnabled || state.race.status === 'finished') return;
+
+    const checkDist = 400; // Increased range for visibility
+    const statusMap = new Map(); // id -> 2 (Red/GiveWay), 1 (Green/ROW)
+
+    // Pass 1: Determine Status
+    for (let i = 0; i < state.boats.length; i++) {
+        const b1 = state.boats[i];
+        for (let j = i + 1; j < state.boats.length; j++) {
+            const b2 = state.boats[j];
+            const distSq = (b1.x - b2.x)**2 + (b1.y - b2.y)**2;
+
+            if (distSq < checkDist * checkDist) {
+                const rowBoat = getRightOfWay(b1, b2);
+                if (rowBoat) {
+                    const winner = rowBoat;
+                    const loser = (rowBoat === b1) ? b2 : b1;
+
+                    // Loser gets RED (High priority)
+                    statusMap.set(loser.id, 2);
+
+                    // Winner gets GREEN (Low priority - only if not already RED)
+                    if ((statusMap.get(winner.id) || 0) < 2) {
+                        statusMap.set(winner.id, 1);
+                    }
+                }
+            }
+        }
+    }
+
+    // Pass 2: Draw
+    ctx.save();
+    ctx.lineWidth = 10; // Thick lines like SailGP
+    ctx.lineCap = 'round';
+
+    for (const boat of state.boats) {
+        const status = statusMap.get(boat.id);
+        if (status) {
+            ctx.beginPath();
+            // Radius ~45 units (approx 9m radius) covers the boat
+            ctx.arc(boat.x, boat.y, 45, 0, Math.PI*2);
+
+            if (status === 2) { // Red / Give Way
+                ctx.strokeStyle = '#ef4444';
+                ctx.shadowColor = 'rgba(239, 68, 68, 0.5)';
+            } else { // Green / ROW
+                ctx.strokeStyle = '#4ade80';
+                ctx.shadowColor = 'rgba(74, 222, 128, 0.5)';
+            }
+
+            ctx.shadowBlur = 15;
+            ctx.stroke();
+        }
+    }
     ctx.restore();
 }
 
@@ -2318,6 +2522,7 @@ function draw() {
     drawParticles(ctx, 'air');
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
+    drawRulesOverlay(ctx);
 
     // Draw All Boats
     for (const boat of state.boats) {
