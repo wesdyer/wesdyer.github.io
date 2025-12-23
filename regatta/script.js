@@ -15,6 +15,7 @@ const CONFIG = {
 const DEFAULT_SETTINGS = {
     navAids: true,
     manualTrim: false,
+    soundEnabled: true,
     cameraMode: 'heading',
     hullColor: '#f1f5f9',
     sailColor: '#ffffff',
@@ -125,6 +126,77 @@ const state = {
     }
 };
 
+// Sound System
+const Sound = {
+    ctx: null,
+
+    init: function() {
+        if (!this.ctx) {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (AudioContext) {
+                this.ctx = new AudioContext();
+            }
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+        }
+    },
+
+    playTone: function(freq, duration, type='sine', startTime=0) {
+        if (!settings.soundEnabled || !this.ctx) return;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = type;
+        osc.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        const now = this.ctx.currentTime + startTime;
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+        osc.start(now);
+        osc.stop(now + duration);
+    },
+
+    playStart: function() {
+        if (!settings.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(150, now);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.linearRampToValueAtTime(0, now + 1.0);
+
+        osc.start(now);
+        osc.stop(now + 1.0);
+    },
+
+    playFinish: function() {
+        if (!settings.soundEnabled) return;
+        this.init();
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+        notes.forEach((freq, i) => {
+            this.playTone(freq, 0.4, 'square', i * 0.15);
+        });
+    },
+
+    playPenalty: function() {
+        if (!settings.soundEnabled) return;
+        this.init();
+        this.playTone(100, 0.5, 'sawtooth');
+    }
+};
+
 // Canvas Setup
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -157,6 +229,7 @@ const UI = {
     settingsButton: document.getElementById('settings-button'),
     closeSettings: document.getElementById('close-settings'),
     saveSettings: document.getElementById('save-settings'),
+    settingSound: document.getElementById('setting-sound'),
     settingNavAids: document.getElementById('setting-navaids'),
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
@@ -193,6 +266,7 @@ function applySettings() {
     state.camera.mode = settings.cameraMode;
 
     // Sync UI to settings state
+    if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
@@ -300,6 +374,13 @@ if (UI.saveSettings) {
 }
 
 // Settings Listeners
+if (UI.settingSound) {
+    UI.settingSound.addEventListener('change', (e) => {
+        settings.soundEnabled = e.target.checked;
+        saveSettings();
+        if (settings.soundEnabled) Sound.init();
+    });
+}
 if (UI.settingNavAids) {
     UI.settingNavAids.addEventListener('change', (e) => {
         settings.navAids = e.target.checked;
@@ -414,6 +495,12 @@ window.addEventListener('keydown', (e) => {
         e.preventDefault();
         toggleSettings();
     }
+    if (e.key === 'F3') {
+        e.preventDefault();
+        settings.soundEnabled = !settings.soundEnabled;
+        saveSettings();
+        if (settings.soundEnabled) Sound.init();
+    }
     if (e.key === '`' || e.code === 'Backquote') {
         state.showNavAids = !state.showNavAids;
         settings.navAids = state.showNavAids;
@@ -526,6 +613,7 @@ function triggerPenalty() {
     if (!state.race.penalty) {
         state.race.penalty = true;
         state.race.penaltyProgress = 0;
+        Sound.playPenalty();
         showRaceMessage("PENALTY! DO 720° TURN", "text-red-500", "border-red-500/50");
     }
 }
@@ -551,6 +639,7 @@ function updateRace(dt) {
         if (state.race.timer <= 0) {
             state.race.status = 'racing';
             state.race.timer = 0;
+            Sound.playStart();
             // Check OCS at start moment
             // OCS if boat is Upwind of Start Line
             // Start Line Normal (Upwind)
@@ -686,6 +775,7 @@ function updateRace(dt) {
                                 state.race.finishTime = state.race.timer;
                                 state.race.trace.push({ x: state.boat.x, y: state.boat.y, leg: 4 });
                                 showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
+                                Sound.playFinish();
 
                                 if (window.confetti) {
                                     window.confetti({
@@ -757,6 +847,7 @@ function updateRace(dt) {
                         state.race.status = 'finished';
                         state.race.finishTime = state.race.timer;
                         showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
+                        Sound.playFinish();
 
                         if (window.confetti) {
                             window.confetti({

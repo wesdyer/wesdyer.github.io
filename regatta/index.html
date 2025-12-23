@@ -82,6 +82,8 @@
                             <li class="flex justify-between"><span>Toggle Nav Aids</span> <span class="text-white font-bold">` (Backtick)</span></li>
                             <li class="flex justify-between"><span>Pause Game</span> <span class="text-white font-bold">Esc</span></li>
                             <li class="flex justify-between"><span>Screenshot</span> <span class="text-white font-bold">F1</span></li>
+                            <li class="flex justify-between"><span>Settings</span> <span class="text-white font-bold">F2</span></li>
+                            <li class="flex justify-between"><span>Toggle Sound</span> <span class="text-white font-bold">F3</span></li>
                             <li class="flex justify-between"><span>Help</span> <span class="text-white font-bold">?</span></li>
                         </ul>
                     </div>
@@ -148,6 +150,15 @@
                 <h2 class="text-3xl font-black text-white mb-6 uppercase tracking-wider text-center">Settings</h2>
 
                 <div class="space-y-6">
+                    <!-- Sound Effects -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-200 font-bold">Sound Effects</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="setting-sound" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+
                     <!-- Nav Aids -->
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Navigational Aids</span>
