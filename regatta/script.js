@@ -110,6 +110,32 @@ function normalizeAngle(angle) {
     return angle;
 }
 
+function isVeryDark(color) {
+    if (!color) return false;
+    let r = 0, g = 0, b = 0;
+    if (color.startsWith('#')) {
+        const hex = color.substring(1);
+        if (hex.length === 3) {
+            r = parseInt(hex[0] + hex[0], 16);
+            g = parseInt(hex[1] + hex[1], 16);
+            b = parseInt(hex[2] + hex[2], 16);
+        } else if (hex.length === 6) {
+            r = parseInt(hex.substring(0, 2), 16);
+            g = parseInt(hex.substring(2, 4), 16);
+            b = parseInt(hex.substring(4, 6), 16);
+        }
+    } else if (color.startsWith('rgb')) {
+        const parts = color.match(/\d+/g);
+        if (parts && parts.length >= 3) {
+            r = parseInt(parts[0]);
+            g = parseInt(parts[1]);
+            b = parseInt(parts[2]);
+        }
+    }
+    const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+    return luma < 60;
+}
+
 // Game State
 const state = {
     boats: [], // Array of Boat instances. boats[0] is Player.
@@ -2551,7 +2577,8 @@ function updateLeaderboard() {
                     const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
                     star.setAttribute("viewBox", "0 0 24 24");
                     star.setAttribute("class", "w-7 h-7 drop-shadow-md");
-                    star.setAttribute("fill", settings.hullColor);
+                    const color = isVeryDark(settings.hullColor) ? settings.spinnakerColor : settings.hullColor;
+                    star.setAttribute("fill", color);
                     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
                     path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
                     star.appendChild(path);
@@ -2561,7 +2588,8 @@ function updateLeaderboard() {
                     const img = document.createElement('img');
                     img.src = boat.name.toLowerCase() + ".png";
                     img.className = "w-8 h-8 rounded-full border-2 object-cover bg-slate-900";
-                    img.style.borderColor = boat.colors.hull;
+                    const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
+                    img.style.borderColor = color;
                     iconContainer.appendChild(img);
                 }
 
@@ -2674,7 +2702,7 @@ function drawBoatIndicator(ctx, boat) {
 
     // Colored Bar
     ctx.shadowColor = 'transparent';
-    ctx.fillStyle = boat.colors.hull;
+    ctx.fillStyle = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
     ctx.beginPath();
     ctx.roundRect(x + 2, y + 2, 4, boxHeight - 4, 2);
     ctx.fill();
