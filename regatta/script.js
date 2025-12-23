@@ -613,6 +613,146 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     return lower === upper ? s1 : s1 + (windSpeed - lower) / (upper - lower) * (s2 - s1);
 }
 
+function checkBoundaryExiting(boat) {
+    if (!state.course.boundary) return false;
+    const b = state.course.boundary;
+    const dx = boat.x - b.x, dy = boat.y - b.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist > b.radius - 200) {
+        // Check if heading away
+        const hx = Math.sin(boat.heading), hy = -Math.cos(boat.heading);
+        // Normal vector at boundary is (dx, dy) relative to center.
+        // We want dot product of heading and normal.
+        if (hx * dx + hy * dy > 0) return true;
+    }
+    return false;
+}
+
+function updateAI(boat, dt) {
+    if (boat.isPlayer) return;
+
+    const timeScale = dt * 60;
+    const windDir = state.wind.direction;
+    const waypoint = boat.raceState.nextWaypoint;
+
+    // Default target: Waypoint
+    let targetAngle = waypoint.angle;
+
+    // PRESTART Special Logic
+    if (state.race.status === 'prestart') {
+        // Zig Zag in start area
+        if (state.race.timer > 10) {
+             const holdingY = 400;
+             const holdingX = (boat.id % 2 === 0) ? 300 : -300;
+             const dx = holdingX - boat.x;
+             const dy = holdingY - boat.y;
+             targetAngle = Math.atan2(dx, -dy);
+        } else {
+             // Go for line center
+             const dx = 0 - boat.x;
+             const dy = 0 - boat.y;
+             targetAngle = Math.atan2(dx, -dy);
+        }
+    }
+
+    // Determine Sailing Mode
+    const angleToTarget = targetAngle;
+    const angleToWind = normalizeAngle(angleToTarget - windDir);
+    const absAngleToWind = Math.abs(angleToWind);
+
+    let mode = 'reach';
+    const noGoLimit = Math.PI / 4.0;
+    const downwindLimit = Math.PI * 0.75;
+
+    if (absAngleToWind < noGoLimit) mode = 'upwind';
+    else if (absAngleToWind > downwindLimit) mode = 'downwind';
+
+    if (boat.ai.tackCooldown > 0) boat.ai.tackCooldown -= dt;
+
+    let desiredHeading = boat.heading;
+
+    if (mode === 'reach') {
+        desiredHeading = angleToTarget;
+    } else {
+        const currentTack = (normalizeAngle(boat.heading - windDir) > 0) ? 1 : -1;
+        const bestTWA = (mode === 'upwind') ? (Math.PI/4) : (Math.PI * 0.8);
+
+        const headingOnTack = normalizeAngle(windDir + currentTack * bestTWA);
+        const headingOnSwap = normalizeAngle(windDir - currentTack * bestTWA);
+
+        const vmgCurrent = Math.cos(normalizeAngle(headingOnTack - angleToTarget));
+        const vmgSwap = Math.cos(normalizeAngle(headingOnSwap - angleToTarget));
+
+        let shouldSwap = false;
+        if (checkBoundaryExiting(boat)) shouldSwap = true;
+        else if (boat.ai.tackCooldown <= 0 && vmgSwap > vmgCurrent + 0.15) shouldSwap = true;
+
+        if (shouldSwap && boat.ai.tackCooldown <= 0) {
+            desiredHeading = headingOnSwap;
+            boat.ai.tackCooldown = 15.0 + Math.random() * 5.0;
+        } else {
+            desiredHeading = headingOnTack;
+        }
+    }
+
+    // Collision Avoidance
+    let avoidX = 0, avoidY = 0;
+    const detectRadius = 120;
+    for (const other of state.boats) {
+        if (other === boat) continue;
+        const dx = other.x - boat.x;
+        const dy = other.y - boat.y;
+        const distSq = dx*dx + dy*dy;
+        if (distSq < detectRadius * detectRadius) {
+             const dist = Math.sqrt(distSq);
+             // Check if in front
+             const bx = Math.sin(boat.heading), by = -Math.cos(boat.heading);
+             if (dx * bx + dy * by > 0) {
+                  const strength = (1.0 - dist / detectRadius) * 2.5;
+                  avoidX -= (dx / dist) * strength;
+                  avoidY -= (dy / dist) * strength;
+             }
+        }
+    }
+
+    // Mark Avoidance
+    if (state.course && state.course.marks) {
+        for (const m of state.course.marks) {
+             const dx = m.x - boat.x;
+             const dy = m.y - boat.y;
+             const distSq = dx*dx + dy*dy;
+             if (distSq < detectRadius * detectRadius) {
+                 const dist = Math.sqrt(distSq);
+                 const bx = Math.sin(boat.heading), by = -Math.cos(boat.heading);
+                 if (dx * bx + dy * by > 0) { // Ahead
+                      const strength = (1.0 - dist / detectRadius) * 3.0; // Stronger for marks
+                      avoidX -= (dx / dist) * strength;
+                      avoidY -= (dy / dist) * strength;
+                 }
+             }
+        }
+    }
+
+    if (Math.abs(avoidX) > 0.01 || Math.abs(avoidY) > 0.01) {
+         const desiredX = Math.sin(desiredHeading);
+         const desiredY = -Math.cos(desiredHeading);
+         desiredHeading = Math.atan2(desiredX + avoidX, -(desiredY + avoidY));
+    }
+
+    boat.ai.targetHeading = normalizeAngle(desiredHeading);
+
+    // Steering
+    let diff = normalizeAngle(boat.ai.targetHeading - boat.heading);
+    const aiTurnRate = CONFIG.turnSpeed * timeScale;
+    if (Math.abs(diff) > aiTurnRate) boat.heading += Math.sign(diff) * aiTurnRate;
+    else boat.heading = boat.ai.targetHeading;
+
+    // Trim
+    const windAngle = Math.abs(normalizeAngle(windDir - boat.heading));
+    boat.spinnaker = (windAngle > Math.PI * 0.6);
+    boat.manualTrim = false;
+}
+
 function triggerPenalty(boat) {
     if (boat.raceState.finished) return;
     if (!boat.raceState.penalty) {
@@ -631,93 +771,7 @@ function updateBoat(boat, dt) {
 
     // AI Logic
     if (!boat.isPlayer) {
-        // Simple AI
-        const waypoint = boat.raceState.nextWaypoint;
-        const distSq = (waypoint.x - boat.x)**2 + (waypoint.y - boat.y)**2;
-
-        let targetAngle = waypoint.angle; // Direction to mark
-
-        // Wind Aware Steering
-        const angleToWind = normalizeAngle(state.wind.direction - boat.heading);
-        const absAngleToWind = Math.abs(angleToWind);
-        const desiredAngleToWind = normalizeAngle(state.wind.direction - targetAngle);
-        const absDesired = Math.abs(desiredAngleToWind);
-
-        const noGoZone = Math.PI / 4.5; // ~40 deg
-
-        // Update Tack Timer
-        if (boat.ai.tackCooldown > 0) boat.ai.tackCooldown -= dt;
-
-        if (absDesired < noGoZone) {
-            // Target is Upwind (in no go zone)
-            // Decide which tack
-            const leftTack = normalizeAngle(state.wind.direction + Math.PI/4);
-            const rightTack = normalizeAngle(state.wind.direction - Math.PI/4);
-
-            // Heuristic: If we are already sailing one tack, stick to it until layline or boundary
-            if (boat.ai.tackCooldown <= 0) {
-                 // Check cross track error or simple timer based toggling?
-                 // Let's use current heading to decide "current tack"
-                 const currentTack = angleToWind > 0 ? 1 : -1;
-                 // If we are far off course, tack.
-                 // Simple approach: Choose tack that minimizes angle to target (which is impossible here as target is upwind)
-                 // Actually, we zig zag.
-                 // Maintain current tack if reasonable.
-
-                 // If we are heading into wind, pick a tack
-                 if (absAngleToWind < noGoZone) {
-                     boat.ai.targetHeading = Math.random() > 0.5 ? leftTack : rightTack;
-                 } else {
-                     // Keep sailing unless we hit layline
-                     // Check if we can lay the mark on the OTHER tack?
-                     // Simple random tacking for now to create diversity
-                     if (Math.random() < 0.005) { // Occasional tack
-                         boat.ai.targetHeading = (angleToWind > 0) ? rightTack : leftTack;
-                         boat.ai.tackCooldown = 20; // Seconds
-                     } else {
-                         // Maintain optimal angle
-                         boat.ai.targetHeading = (angleToWind > 0) ? leftTack : rightTack;
-                     }
-                 }
-            }
-        } else if (absDesired > Math.PI - noGoZone) {
-            // Target is Downwind (dead run is slow)
-            // Gybe angles
-            const leftGybe = normalizeAngle(state.wind.direction + Math.PI * 0.8);
-            const rightGybe = normalizeAngle(state.wind.direction - Math.PI * 0.8);
-
-            if (boat.ai.tackCooldown <= 0) {
-                 if (Math.random() < 0.005) {
-                     boat.ai.targetHeading = (Math.abs(normalizeAngle(boat.heading - leftGybe)) < 1) ? rightGybe : leftGybe;
-                     boat.ai.tackCooldown = 20;
-                 } else {
-                     // Stick to current gybe side roughly
-                     const currentSide = angleToWind > 0 ? 1 : -1;
-                     boat.ai.targetHeading = currentSide > 0 ? leftGybe : rightGybe;
-                 }
-            }
-        } else {
-            // Reaching - Sail direct
-            boat.ai.targetHeading = targetAngle;
-        }
-
-        // Steering
-        let diff = normalizeAngle(boat.ai.targetHeading - boat.heading);
-        const aiTurnRate = CONFIG.turnSpeed * timeScale; // Match player turn speed
-        if (Math.abs(diff) > aiTurnRate) {
-            boat.heading += Math.sign(diff) * aiTurnRate;
-        } else {
-            boat.heading = boat.ai.targetHeading;
-        }
-
-        // Auto Trim & Spinnaker
-        boat.manualTrim = false;
-        // Deploy spinnaker if downwind
-        if (absAngleToWind > Math.PI * 0.6) {
-            boat.spinnaker = true;
-        } else {
-            boat.spinnaker = false;
-        }
+        updateAI(boat, dt);
     } else {
         // Player Input
         const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale;
@@ -2030,9 +2084,12 @@ function resetGame() {
         }
         const name = AI_NAMES[(i - 1) % AI_NAMES.length];
         const ai = new Boat(i, false, pos.x, pos.y, name);
-        ai.heading = state.wind.direction;
+        // Start on a reach
+        const side = (i % 2 === 0) ? 1 : -1;
+        ai.heading = normalizeAngle(state.wind.direction + side * Math.PI / 2);
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
+        ai.speed = 3.0; // Initial speed
         state.boats.push(ai);
     }
 
