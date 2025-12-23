@@ -1044,6 +1044,39 @@ function checkBoatCollisions(dt) {
     }
 }
 
+function checkMarkCollisions(dt) {
+    const boatRadius = 25;
+    const markRadius = 15; // Visual radius is ~12-15
+
+    if (!state.course || !state.course.marks) return;
+
+    for (const boat of state.boats) {
+        for (const mark of state.course.marks) {
+            const dx = boat.x - mark.x;
+            const dy = boat.y - mark.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            const minDist = boatRadius + markRadius;
+
+            if (dist < minDist) {
+                // Collision with static mark
+                const overlap = minDist - dist;
+                // Normal from Mark to Boat
+                let nx = dx / dist;
+                let ny = dy / dist;
+
+                if (dist === 0) { nx = 1; ny = 0; }
+
+                // Displace boat away from mark
+                boat.x += nx * overlap;
+                boat.y += ny * overlap;
+
+                // Penalty
+                boat.speed *= 0.5;
+            }
+        }
+    }
+}
+
 function update(dt) {
     state.time += 0.24 * dt;
     const timeScale = dt * 60;
@@ -1077,6 +1110,7 @@ function update(dt) {
 
     // Collisions
     checkBoatCollisions(dt);
+    checkMarkCollisions(dt);
 
     // Player Cam
     const player = state.boats[0];
