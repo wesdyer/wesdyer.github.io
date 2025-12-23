@@ -13,18 +13,19 @@ const CONFIG = {
 
 // AI Colors
 const AI_COLORS = [
-    { hull: '#ef4444', sail: '#ffffff', spinnaker: '#3b82f6' }, // Red/White/Blue
-    { hull: '#22c55e', sail: '#f0fdf4', spinnaker: '#eab308' }, // Green/White/Yellow
-    { hull: '#eab308', sail: '#171717', spinnaker: '#171717' }, // Yellow/Black/Black
-    { hull: '#171717', sail: '#ffffff', spinnaker: '#ec4899' }, // Black/White/Pink
-    { hull: '#ffffff', sail: '#3b82f6', spinnaker: '#3b82f6' }, // White/Blue/Blue
-    { hull: '#f97316', sail: '#ffffff', spinnaker: '#a855f7' }, // Orange/White/Purple
-    { hull: '#a855f7', sail: '#ffffff', spinnaker: '#22c55e' }, // Purple/White/Green
-    { hull: '#14b8a6', sail: '#ffffff', spinnaker: '#f97316' }, // Teal/White/Orange
-    { hull: '#6366f1', sail: '#e0e7ff', spinnaker: '#f43f5e' }, // Indigo/White/Rose
+    { hull: '#1E2A44', sail: '#F4F4F2', spinnaker: '#E1B12C', cockpit: '#8B6B4F' }, // Bixby
+    { hull: '#8B1E2D', sail: '#FFFFFF', spinnaker: '#FFFFFF', cockpit: '#4A4F55' }, // Pinch
+    { hull: '#1F7A5C', sail: '#F6F6F0', spinnaker: '#C9CCD1', cockpit: '#9DA3A6' }, // Vex
+    { hull: '#5A3A1E', sail: '#EFEDE7', spinnaker: '#FFD200', cockpit: '#D6C8A8' }, // Gasket
+    { hull: '#59636E', sail: '#0E0E10', spinnaker: '#7A0C16', cockpit: '#2A2E33' }, // Bruce
+    { hull: '#556B2F', sail: '#EFEDE7', spinnaker: '#D2B48C', cockpit: '#B6A97A' }, // Chomp
+    { hull: '#B87333', sail: '#F3EED9', spinnaker: '#2EC4B6', cockpit: '#9E9A95' }, // Wobble
+    { hull: '#9FB7C9', sail: '#FFFFFF', spinnaker: '#E6007E', cockpit: '#9AA3AD' }, // Skim
+    { hull: '#FF4FA3', sail: '#FFFFFF', spinnaker: '#0E0E10', cockpit: '#A6ADB4' }, // Strut
+    { hull: '#8B6F4E', sail: '#F3EED9', spinnaker: '#6A1F2B', cockpit: '#6E5A44' }, // Whiskers
 ];
 
-const AI_NAMES = ['Apex', 'Chomp', 'Bixby', 'Gasket', 'Strut', 'Wobble', 'Whiskers', 'Bruce', 'Pinch'];
+const AI_NAMES = ['Bixby', 'Pinch', 'Vex', 'Gasket', 'Bruce', 'Chomp', 'Wobble', 'Skim', 'Strut', 'Whiskers'];
 
 
 // Settings
@@ -148,7 +149,7 @@ class Boat {
              this.colors = {
                  hull: palette.hull,
                  sail: palette.sail,
-                 cockpit: '#cbd5e1',
+                 cockpit: palette.cockpit,
                  spinnaker: palette.spinnaker
              };
         }
@@ -1807,16 +1808,21 @@ function updateLeaderboard() {
             rank.className = "w-4 text-xs font-black italic text-slate-400 mr-2";
             rank.textContent = index + 1;
 
-            // Swatch
-            const swatch = document.createElement('div');
-            swatch.className = "w-6 h-3 rounded-sm mr-2 flex overflow-hidden shadow-sm border border-slate-600/50";
-
-            const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
-            const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
-
-            const s1 = document.createElement('div'); s1.className="w-1/2 h-full"; s1.style.backgroundColor = hullColor;
-            const s2 = document.createElement('div'); s2.className="w-1/2 h-full"; s2.style.backgroundColor = spinColor;
-            swatch.appendChild(s1); swatch.appendChild(s2);
+            // Visual Identifier (Swatch or Portrait)
+            let visualId;
+            if (boat.isPlayer) {
+                visualId = document.createElement('div');
+                visualId.className = "w-6 h-3 rounded-sm mr-2 flex overflow-hidden shadow-sm border border-slate-600/50";
+                const hullColor = settings.hullColor;
+                const spinColor = settings.spinnakerColor;
+                const s1 = document.createElement('div'); s1.className="w-1/2 h-full"; s1.style.backgroundColor = hullColor;
+                const s2 = document.createElement('div'); s2.className="w-1/2 h-full"; s2.style.backgroundColor = spinColor;
+                visualId.appendChild(s1); visualId.appendChild(s2);
+            } else {
+                visualId = document.createElement('img');
+                visualId.src = boat.name.toLowerCase() + ".png";
+                visualId.className = "w-8 h-8 rounded-full mr-2 object-cover border border-slate-600/50 bg-slate-800";
+            }
 
             // Name
             const nameDiv = document.createElement('div');
@@ -1851,7 +1857,7 @@ function updateLeaderboard() {
             }
 
             row.appendChild(rank);
-            row.appendChild(swatch);
+            row.appendChild(visualId);
             row.appendChild(nameDiv);
             row.appendChild(distDiv);
 
@@ -2068,8 +2074,8 @@ function resetGame() {
     player.lastWindSide = 0;
     state.boats.push(player);
 
-    // 9 AI Boats
-    for (let i = 1; i <= 9; i++) {
+    // 10 AI Boats
+    for (let i = 1; i <= 10; i++) {
         // Ensure no collision at start
         let pos, ok = false, tries = 0;
         while (!ok && tries < 100) {
