@@ -11,6 +11,19 @@ const CONFIG = {
     cockpitColor: '#cbd5e1',
 };
 
+// AI Boat Colors
+const AI_COLORS = [
+    { hull: '#ef4444', sail: '#ffffff', spinnaker: '#fca5a5' }, // Red
+    { hull: '#3b82f6', sail: '#fef08a', spinnaker: '#93c5fd' }, // Blue/Yellow
+    { hull: '#22c55e', sail: '#ffffff', spinnaker: '#86efac' }, // Green
+    { hull: '#1e293b', sail: '#ef4444', spinnaker: '#cbd5e1' }, // Black/Red
+    { hull: '#f97316', sail: '#ffffff', spinnaker: '#fdba74' }, // Orange
+    { hull: '#a855f7', sail: '#86efac', spinnaker: '#d8b4fe' }, // Purple/Green
+    { hull: '#eab308', sail: '#000000', spinnaker: '#fde047' }, // Yellow/Black
+    { hull: '#14b8a6', sail: '#ffffff', spinnaker: '#5eead4' }, // Teal
+    { hull: '#64748b', sail: '#f97316', spinnaker: '#94a3b8' }, // Gray/Orange
+];
+
 // Settings
 const DEFAULT_SETTINGS = {
     navAids: true,
@@ -26,7 +39,6 @@ const DEFAULT_SETTINGS = {
 let settings = { ...DEFAULT_SETTINGS };
 
 // J/111 Polar Data (Various Wind Speeds)
-// Source: ORC Certificate data & Scaled Estimations based on VMG ratios
 const J111_POLARS = {
     angles: [0, 30, 38, 45, 52, 60, 75, 90, 110, 120, 135, 150, 180],
     speeds: {
@@ -61,41 +73,85 @@ const J111_POLARS = {
     }
 };
 
+class Boat {
+    constructor(id, isPlayer, config) {
+        this.id = id;
+        this.isPlayer = isPlayer;
+        this.config = config || {}; // Contains color overrides
+
+        // Physics State
+        this.x = 0;
+        this.y = 0;
+        this.heading = 0;
+        this.velocity = { x: 0, y: 0 };
+        this.speed = 0;
+        this.sailAngle = 0;
+        this.manualTrim = false;
+        this.manualSailAngle = 0;
+        this.boomSide = 1;
+        this.targetBoomSide = 1;
+        this.luffing = false;
+        this.luffIntensity = 0;
+        this.spinnaker = false;
+        this.spinnakerDeployProgress = 0;
+        this.prevHeading = 0;
+        this.lastWindSide = undefined;
+
+        // Race State
+        this.race = {
+            leg: 0,
+            finished: false,
+            ocs: false,
+            penalty: false,
+            penaltyProgress: 0,
+            finishTime: 0,
+            startTimeDisplay: 0,
+            startTimeDisplayTimer: 0,
+            legStartTime: 0,
+            lastLegDuration: 0,
+            startLegDuration: null,
+            legSplitTimer: 0,
+            lastPos: { x: 0, y: 0 },
+            nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 },
+            trace: [],
+            isRounding: false,
+            legTimes: [],
+            legManeuvers: [0, 0, 0, 0, 0],
+            legDistances: [0, 0, 0, 0, 0],
+            legTopSpeeds: [0, 0, 0, 0, 0],
+        };
+
+        // AI State
+        this.ai = {
+            targetHeading: 0,
+            tackState: 'none',
+            lastTackTime: -100,
+            strategy: 'race'
+        };
+    }
+}
+
 // Game State
 const state = {
-    boat: {
-        x: 0,
-        y: 0,
-        heading: 0, // Radians, 0 = North (Up)
-        velocity: { x: 0, y: 0 },
-        speed: 0, // Internal units (approx Knots / 2)
-        sailAngle: 0, // Radians relative to boat
-        manualTrim: false,
-        manualSailAngle: 0, // Absolute value (magnitude) of sail angle
-        boomSide: 1, // 1 for right, -1 for left
-        targetBoomSide: 1,
-        luffing: false,
-        luffIntensity: 0,
-        spinnaker: false, // Default to Performance Mode
-        spinnakerDeployProgress: 0, // 0 = Jib, 1 = Spinnaker
-    },
+    boats: [],
+    player: null, // Reference to state.boats[0]
     camera: {
         x: 0,
         y: 0,
         rotation: 0,
-        target: 'boat', // Always follow boat now
-        mode: 'heading', // 'heading', 'north', 'wind', 'gate'
+        target: 'boat',
+        mode: 'heading',
         message: '',
         messageTimer: 0
     },
     wind: {
-        direction: 0, // Blowing Down (South)
+        direction: 0,
         baseDirection: 0,
-        speed: 10, // Knots
+        speed: 10,
         baseSpeed: 10
     },
     showNavAids: true,
-    particles: [], // For wake and wind effects
+    particles: [],
     keys: {
         ArrowLeft: false,
         ArrowRight: false,
@@ -106,23 +162,8 @@ const state = {
     paused: false,
     time: 0,
     race: {
-        status: 'prestart', // 'prestart', 'racing', 'finished'
-        isRounding: false,
-        timer: 30.0,
-        leg: 0, // 0=Start, 1=Upwind, 2=Downwind, 3=Upwind, 4=Finish
-        ocs: false,
-        penalty: false,
-        penaltyProgress: 0,
-        finishTime: 0,
-        startTimeDisplay: 0,
-        startTimeDisplayTimer: 0,
-        legStartTime: 0,
-        lastLegDuration: 0,
-        startLegDuration: null,
-        legSplitTimer: 0,
-        lastPos: { x: 0, y: 0 },
-        nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 },
-        trace: []
+        status: 'prestart', // Global race status
+        timer: 30.0
     }
 };
 
@@ -167,7 +208,6 @@ const Sound = {
         if (!this.ctx) return;
         const now = this.ctx.currentTime;
 
-        // 1. Noise Component (The "Crack" and "Rumble")
         const bufferSize = this.ctx.sampleRate * 2.0;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -193,7 +233,6 @@ const Sound = {
         noise.start(now);
         noise.stop(now + 2.0);
 
-        // 2. Low Thump Component (Body)
         const osc = this.ctx.createOscillator();
         const oscGain = this.ctx.createGain();
 
@@ -214,7 +253,7 @@ const Sound = {
     playFinish: function() {
         if (!settings.soundEnabled) return;
         this.init();
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C E G C
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, i) => {
             this.playTone(freq, 0.4, 'square', i * 0.15);
         });
@@ -229,7 +268,6 @@ const Sound = {
     playGateClear: function() {
         if (!settings.soundEnabled) return;
         this.init();
-        // Positive chime: E5 -> A5
         this.playTone(659.25, 0.1, 'sine', 0);
         this.playTone(880.00, 0.4, 'sine', 0.1);
     },
@@ -237,7 +275,6 @@ const Sound = {
     initWindSound: function() {
         if (!this.ctx || this.windSource) return;
 
-        // White noise buffer for wind/water
         const bufferSize = this.ctx.sampleRate * 2;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -266,27 +303,19 @@ const Sound = {
     updateWindSound: function(speed) {
         if (!settings.soundEnabled) {
             if (this.windGain) {
-                // Fade out if disabled
                 this.windGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
             }
             return;
         }
 
-        // Ensure context is running and wind sound is initialized
         if (this.ctx) {
             if (!this.windSource) {
                 this.initWindSound();
             }
 
             if (this.windGain && this.windFilter) {
-                 // Map wind speed (approx 5-25 knots) to audio params
                  const clampedSpeed = Math.max(5, Math.min(25, speed));
-
-                 // Volume: 0.05 to 0.3 (Louder max)
                  const volume = 0.05 + ((clampedSpeed - 5) / 20) * 0.25;
-
-                 // Lowpass Freq: 300Hz to 1200Hz (Brighter at high speed)
-                 // Simulates the "roar" of wind increasing
                  const freq = 300 + ((clampedSpeed - 5) / 20) * 900;
 
                  const now = this.ctx.currentTime;
@@ -360,12 +389,11 @@ function saveSettings() {
 
 function applySettings() {
     state.showNavAids = settings.navAids;
-    // We update manualTrim only if it's different to prevent resetting if user didn't change it via settings
-    // But requirement says toggle from settings.
-    state.boat.manualTrim = settings.manualTrim;
+    if (state.player) {
+        state.player.manualTrim = settings.manualTrim;
+    }
     state.camera.mode = settings.cameraMode;
 
-    // Sync UI to settings state
     if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
@@ -388,7 +416,6 @@ function togglePause(show) {
     } else {
         state.paused = false;
         if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
-        // Reset lastTime to avoid huge dt jump on resume
         lastTime = 0;
     }
 }
@@ -560,16 +587,17 @@ window.addEventListener('keydown', (e) => {
         saveSettings();
     }
     if (e.key === ' ' || e.code === 'Space') {
-        state.boat.spinnaker = !state.boat.spinnaker;
+        if (state.player) state.player.spinnaker = !state.player.spinnaker;
     }
     if (e.key === 'Tab') {
         e.preventDefault();
-        state.boat.manualTrim = !state.boat.manualTrim;
-        settings.manualTrim = state.boat.manualTrim;
-        saveSettings();
-        if (state.boat.manualTrim) {
-            // Initialize manual angle to current actual angle magnitude to avoid jumps
-            state.boat.manualSailAngle = Math.abs(state.boat.sailAngle);
+        if (state.player) {
+            state.player.manualTrim = !state.player.manualTrim;
+            settings.manualTrim = state.player.manualTrim;
+            saveSettings();
+            if (state.player.manualTrim) {
+                state.player.manualSailAngle = Math.abs(state.player.sailAngle);
+            }
         }
     }
     if (e.key === '?' || (e.shiftKey && e.key === '/')) {
@@ -586,7 +614,6 @@ window.addEventListener('keydown', (e) => {
     }
     if (e.key === 'F1') {
         e.preventDefault();
-        // Capture screenshot of the entire body (including canvas + HUD)
         if (window.html2canvas) {
             window.html2canvas(document.body).then(canvas => {
                 const link = document.createElement('a');
@@ -643,10 +670,6 @@ function normalizeAngle(angle) {
 function formatTime(seconds) {
     const mins = Math.floor(Math.abs(seconds) / 60);
     const secs = Math.floor(Math.abs(seconds) % 60);
-    const ms = Math.floor((Math.abs(seconds) % 1) * 10);
-
-    // During countdown, we don't show ms usually, but let's keep it clean
-    // If negative (pre-start), show countdown
     const sign = seconds < 0 ? "-" : "";
     return `${sign}${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
@@ -672,21 +695,15 @@ function getClosestPointOnSegment(px, py, ax, ay, bx, by) {
     };
 }
 
-// Check intersection of Line Segment AB and Line Segment CD
 function rayCircleIntersection(ox, oy, dx, dy, cx, cy, r) {
     const lx = ox - cx;
     const ly = oy - cy;
-    // t^2 + 2(L.D)t + (L.L - R^2) = 0
-    // a = 1 since D is normalized
     const b = 2 * (lx * dx + ly * dy);
     const c = (lx * lx + ly * ly) - (r * r);
-
     const disc = b * b - 4 * c;
     if (disc < 0) return null;
-
     const t1 = (-b - Math.sqrt(disc)) / 2;
     const t2 = (-b + Math.sqrt(disc)) / 2;
-
     if (t1 >= 0) return t1;
     if (t2 >= 0) return t2;
     return null;
@@ -697,30 +714,25 @@ function checkLineIntersection(Ax, Ay, Bx, By, Cx, Cy, Dx, Dy) {
     const rY = By - Ay;
     const sX = Dx - Cx;
     const sY = Dy - Cy;
-
     const rxs = rX * sY - rY * sX;
     const qpx = Cx - Ax;
     const qpy = Cy - Ay;
-
-    // Collinear or parallel handling omitted for simplicity (rare in game physics frame)
     if (Math.abs(rxs) < 1e-5) return null;
-
     const t = (qpx * sY - qpy * sX) / rxs;
     const u = (qpx * rY - qpy * rX) / rxs;
-
-    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-        return { t, u };
-    }
+    if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return { t, u };
     return null;
 }
 
-function triggerPenalty() {
-    if (state.race.finished) return;
-    if (!state.race.penalty) {
-        state.race.penalty = true;
-        state.race.penaltyProgress = 0;
-        Sound.playPenalty();
-        showRaceMessage("PENALTY! DO 720° TURN", "text-red-500", "border-red-500/50");
+function triggerPenalty(boat) {
+    if (boat.race.finished) return;
+    if (!boat.race.penalty) {
+        boat.race.penalty = true;
+        boat.race.penaltyProgress = 0;
+        if (boat.isPlayer) {
+            Sound.playPenalty();
+            showRaceMessage("PENALTY! DO 720° TURN", "text-red-500", "border-red-500/50");
+        }
     }
 }
 
@@ -739,401 +751,214 @@ function hideRaceMessage() {
 }
 
 function updateRace(dt) {
-    // 1. Timer Logic
+    // 1. Global Timer Logic
     if (state.race.status === 'prestart') {
         state.race.timer -= dt;
         if (state.race.timer <= 0) {
             state.race.status = 'racing';
             state.race.timer = 0;
             Sound.playStart();
-            // Check OCS at start moment
-            // OCS if boat is Upwind of Start Line
-            // Start Line Normal (Upwind)
-            // Start Line is M0->M1. Normal is (-dy, dx).
-            // We need to check which side we are on.
-            // But simpler: Just check crossing logic below.
-            // If we are on course side, we are OCS.
-            // Logic handled continuously below.
         }
     } else if (state.race.status === 'racing') {
         state.race.timer += dt;
     }
 
-    // 2. Gate Crossing Logic
+    // 2. Per-Boat Logic
+    for (const boat of state.boats) {
+        updateBoatRaceState(boat, dt);
+    }
+}
+
+function updateBoatRaceState(boat, dt) {
     const marks = state.course.marks;
-    if (marks && marks.length >= 4) {
-        // Define Gates
-        // Gate 1: Start/Finish (M0-M1). Correct crossing: Upwind (Start), Downwind (Finish/Gate)
-        // Gate 2: Upwind Gate (M2-M3). Correct crossing: Upwind.
+    if (!marks || marks.length < 4) return;
 
-        // Define Active Gate based on Leg
-        let gateIndices = [];
-        let requiredDirection = 1; // 1 = Upwind, -1 = Downwind
+    // Gate Logic
+    let gateIndices = [];
+    let requiredDirection = 1;
 
-        if (state.race.leg === 0) { // Start
-            gateIndices = [0, 1];
-            requiredDirection = 1; // Must cross Upwind
-        } else if (state.race.leg === 1) { // To Upwind Gate
-            gateIndices = [2, 3];
-            requiredDirection = 1;
-        } else if (state.race.leg === 2) { // To Leeward Gate
-            gateIndices = [0, 1];
-            requiredDirection = -1;
-        } else if (state.race.leg === 3) { // To Upwind Gate
-            gateIndices = [2, 3];
-            requiredDirection = 1;
-        } else if (state.race.leg === 4) { // Finish
-            gateIndices = [0, 1];
-            requiredDirection = -1;
-        }
+    if (boat.race.leg === 0) { gateIndices = [0, 1]; requiredDirection = 1; }
+    else if (boat.race.leg === 1) { gateIndices = [2, 3]; requiredDirection = 1; }
+    else if (boat.race.leg === 2) { gateIndices = [0, 1]; requiredDirection = -1; }
+    else if (boat.race.leg === 3) { gateIndices = [2, 3]; requiredDirection = 1; }
+    else if (boat.race.leg === 4) { gateIndices = [0, 1]; requiredDirection = -1; }
 
-        if (gateIndices.length > 0) {
-            const m1 = marks[gateIndices[0]];
-            const m2 = marks[gateIndices[1]];
+    if (gateIndices.length > 0) {
+        const m1 = marks[gateIndices[0]];
+        const m2 = marks[gateIndices[1]];
 
-            // Check crossing
-            // Boat Segment: lastPos -> currPos
-            const intersect = checkLineIntersection(
-                state.race.lastPos.x, state.race.lastPos.y, state.boat.x, state.boat.y,
-                m1.x, m1.y, m2.x, m2.y
-            );
+        const intersect = checkLineIntersection(
+            boat.race.lastPos.x, boat.race.lastPos.y, boat.x, boat.y,
+            m1.x, m1.y, m2.x, m2.y
+        );
 
-            if (intersect) {
-                // Determine direction of crossing
-                // Gate Vector
-                const gateDx = m2.x - m1.x;
-                const gateDy = m2.y - m1.y;
+        if (intersect) {
+            const gateDx = m2.x - m1.x;
+            const gateDy = m2.y - m1.y;
+            const nx = gateDy;
+            const ny = -gateDx;
+            const moveDx = boat.x - boat.race.lastPos.x;
+            const moveDy = boat.y - boat.race.lastPos.y;
+            const dot = moveDx * nx + moveDy * ny;
+            const crossingDir = dot > 0 ? 1 : -1;
 
-                // Normal pointing "Upwind" relative to gate
-                const nx = gateDy;
-                const ny = -gateDx;
-
-                // Dot product of Boat Movement with Normal
-                const moveDx = state.boat.x - state.race.lastPos.x;
-                const moveDy = state.boat.y - state.race.lastPos.y;
-                const dot = moveDx * nx + moveDy * ny;
-
-                const crossingDir = dot > 0 ? 1 : -1;
-
-                if (state.race.status === 'prestart') {
-                    // Start Line Logic during pre-start
-                    // If we cross Start Line (Gate 0-1)
-                    if (gateIndices[0] === 0) {
-                         // If we cross Upwind (1), we are OCS
-                         if (crossingDir === 1) {
-                             state.race.ocs = true;
-                             showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
-                         }
-                         // If we cross Downwind (-1), we cleared OCS
-                         else if (crossingDir === -1) {
-                             state.race.ocs = false;
-                             hideRaceMessage();
-                         }
+            if (state.race.status === 'prestart') {
+                if (gateIndices[0] === 0) {
+                     if (crossingDir === 1) {
+                         boat.race.ocs = true;
+                         if (boat.isPlayer) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
+                     } else if (crossingDir === -1) {
+                         boat.race.ocs = false;
+                         if (boat.isPlayer) hideRaceMessage();
+                     }
+                }
+            } else if (state.race.status === 'racing' && !boat.race.finished) {
+                if (boat.race.leg === 0) {
+                    if (crossingDir === 1 && !boat.race.ocs) {
+                        boat.race.leg++;
+                        if (boat.isPlayer) Sound.playGateClear();
+                        boat.race.startTimeDisplay = state.race.timer;
+                        boat.race.startTimeDisplayTimer = 5.0;
+                        boat.race.startLegDuration = state.race.timer;
+                        boat.race.legStartTime = state.race.timer;
+                    } else if (crossingDir === -1) {
+                         boat.race.ocs = false;
+                         if (boat.isPlayer) hideRaceMessage();
                     }
-                } else if (state.race.status === 'racing' && !state.race.finished) {
-                    // Racing Logic
+                } else {
+                    const completeLeg = () => {
+                        boat.race.leg++;
+                        boat.race.isRounding = false;
+                        const split = state.race.timer - boat.race.legStartTime;
+                        boat.race.lastLegDuration = split;
+                        if (boat.race.leg > 1) boat.race.legTimes.push(split);
+                        boat.race.legSplitTimer = 5.0;
+                        boat.race.legStartTime = state.race.timer;
 
-                    // Special Case: Start (Leg 0)
-                    // We transition from Leg 0 to Leg 1 ONLY if we cross Start Line Upwind AFTER T=0
-                    if (state.race.leg === 0) {
-                        // We assume we are checking Start Line
-                        if (crossingDir === 1) {
-                            if (state.race.ocs) {
-                                // Crossed upwind but was OCS? Still OCS unless we dipped back first.
-                                // Logic above handles OCS set/clear.
-                                // If OCS is true, we cannot start.
-                            } else {
-                                // Clean start!
-                                state.race.leg++;
-                                Sound.playGateClear();
-                                // Check if we were OCS just now?
-                                // If we were OCS, we must have cleared it.
-                                // If we are here, we just crossed Upwind.
-                                // To start correctly, we must have been on Downwind side.
-                                // So this crossing is valid.
-                                state.race.startTimeDisplay = state.race.timer;
-                                state.race.startTimeDisplayTimer = 5.0;
-                                state.race.startLegDuration = state.race.timer;
-                                state.race.legStartTime = state.race.timer;
-                            }
-                        } else if (crossingDir === -1) {
-                             // Dipping back
-                             state.race.ocs = false;
-                             hideRaceMessage();
-                        }
-                    } else {
-                        // Normal Legs logic
-                        const completeLeg = () => {
-                            state.race.leg++;
-                            state.race.isRounding = false;
-
-                            // Calculate split
-                            const split = state.race.timer - state.race.legStartTime;
-                            state.race.lastLegDuration = split;
-                            if (state.race.leg > 1) { // Leg 1 finished (start->mark1)
-                                state.race.legTimes.push(split);
-                            }
-                            state.race.legSplitTimer = 5.0;
-                            state.race.legStartTime = state.race.timer;
-
-                            if (state.race.leg > 4) {
-                                state.race.finished = true;
-                                state.race.status = 'finished';
-                                state.race.finishTime = state.race.timer;
-                                state.race.trace.push({ x: state.boat.x, y: state.boat.y, leg: 4 });
+                        if (boat.race.leg > 4) {
+                            boat.race.finished = true;
+                            boat.race.finishTime = state.race.timer;
+                            boat.race.trace.push({ x: boat.x, y: boat.y, leg: 4 });
+                            if (boat.isPlayer) {
                                 showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                                 Sound.playFinish();
-
-                                if (window.confetti) {
-                                    window.confetti({
-                                        particleCount: 150,
-                                        spread: 70,
-                                        origin: { y: 0.6 }
-                                    });
-                                }
-                            } else {
-                                Sound.playGateClear();
+                                if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
                             }
-                        };
+                        } else {
+                            if (boat.isPlayer) Sound.playGateClear();
+                        }
+                    };
 
-                        if (state.race.leg === 4) {
-                            // Finish Line (Leg 4) - Simple Crossing
-                            if (crossingDir === requiredDirection) {
-                                completeLeg();
-                            } else {
-                                // Wrong way for finish!
+                    if (boat.race.leg === 4) {
+                        if (crossingDir === requiredDirection) completeLeg();
+                        else if (boat.isPlayer) {
+                            showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50");
+                            setTimeout(hideRaceMessage, 2000);
+                        }
+                    } else {
+                        if (!boat.race.isRounding) {
+                            if (crossingDir === requiredDirection) boat.race.isRounding = true;
+                            else if (boat.isPlayer) {
                                 showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50");
                                 setTimeout(hideRaceMessage, 2000);
                             }
                         } else {
-                            // Legs 1, 2, 3 - Gate Rounding Logic
-                            // 1. Must cross Gate Line (Enter)
-                            // 2. Must cross Extension Line (Exit/Round)
-
-                            if (!state.race.isRounding) {
-                                if (crossingDir === requiredDirection) {
-                                    state.race.isRounding = true;
-                                } else {
-                                    // Wrong way!
-                                    showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50");
-                                    setTimeout(hideRaceMessage, 2000);
-                                }
-                            } else {
-                                // Already entered gate, checking for completion or abort
-                                if (crossingDir === -requiredDirection) {
-                                    // Crossed back through gate! Abort rounding.
-                                    state.race.isRounding = false;
+                            if (crossingDir === -requiredDirection) {
+                                boat.race.isRounding = false;
+                                if (boat.isPlayer) {
                                     showRaceMessage("ROUNDING ABORTED", "text-orange-500", "border-orange-500/50");
                                     setTimeout(hideRaceMessage, 2000);
                                 }
                             }
-
-                            // Check Extensions if Rounding - MOVED OUTSIDE intersect BLOCK
-                            // Logic was here previously but it belongs outside the gate intersection check
                         }
                     }
                 }
             }
+        }
 
-            // Check Extensions if Rounding (Independent of Gate Intersection)
-            if (state.race.isRounding && state.race.status === 'racing') {
-                // Determine completion logic similar to above
-                const completeLeg = () => {
-                    state.race.leg++;
-                    state.race.isRounding = false;
-
-                    // Calculate split
-                    const split = state.race.timer - state.race.legStartTime;
-                    state.race.lastLegDuration = split;
-                    if (state.race.leg > 1) {
-                        state.race.legTimes.push(split);
-                    }
-                    state.race.legSplitTimer = 5.0;
-                    state.race.legStartTime = state.race.timer;
-
-                    if (state.race.leg > 4) {
-                        state.race.finished = true;
-                        state.race.status = 'finished';
-                        state.race.finishTime = state.race.timer;
+        // Extension check for roundings
+        if (boat.race.isRounding && state.race.status === 'racing') {
+            const completeLeg = () => {
+                boat.race.leg++;
+                boat.race.isRounding = false;
+                const split = state.race.timer - boat.race.legStartTime;
+                boat.race.lastLegDuration = split;
+                if (boat.race.leg > 1) boat.race.legTimes.push(split);
+                boat.race.legSplitTimer = 5.0;
+                boat.race.legStartTime = state.race.timer;
+                if (boat.race.leg > 4) {
+                    boat.race.finished = true;
+                    boat.race.finishTime = state.race.timer;
+                    if (boat.isPlayer) {
                         showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                         Sound.playFinish();
-
-                        if (window.confetti) {
-                            window.confetti({
-                                particleCount: 150,
-                                spread: 70,
-                                origin: { y: 0.6 }
-                            });
-                        }
-                    } else {
-                        Sound.playGateClear();
+                        if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
                     }
-                };
-
-                // Re-calculate geometry
-                const gDx = m2.x - m1.x;
-                const gDy = m2.y - m1.y;
-                const len = Math.sqrt(gDx*gDx + gDy*gDy);
-                const ux = gDx / len;
-                const uy = gDy / len;
-
-                // Normal pointing "Upwind" relative to gate
-                const nx = gDy;
-                const ny = -gDx;
-
-                const extLen = 10000;
-
-                // Left Extension (from m1 away from m2)
-                const l1x = m1.x;
-                const l1y = m1.y;
-                const l2x = m1.x - ux * extLen;
-                const l2y = m1.y - uy * extLen;
-
-                // Right Extension (from m2 away from m1)
-                const r1x = m2.x;
-                const r1y = m2.y;
-                const r2x = m2.x + ux * extLen;
-                const r2y = m2.y + uy * extLen;
-
-                const checkExt = (ax, ay, bx, by) => {
-                    const intersect = checkLineIntersection(
-                        state.race.lastPos.x, state.race.lastPos.y, state.boat.x, state.boat.y,
-                        ax, ay, bx, by
-                    );
-                    if (intersect) {
-                        const moveDx = state.boat.x - state.race.lastPos.x;
-                        const moveDy = state.boat.y - state.race.lastPos.y;
-                        const dot = moveDx * nx + moveDy * ny;
-                        return dot > 0 ? 1 : -1;
-                    }
-                    return 0;
-                };
-
-                const dirL = checkExt(l1x, l1y, l2x, l2y);
-                const dirR = checkExt(r1x, r1y, r2x, r2y);
-
-                if (dirL === -requiredDirection || dirR === -requiredDirection) {
-                    completeLeg();
+                } else {
+                    if (boat.isPlayer) Sound.playGateClear();
                 }
-            }
-        }
+            };
 
-        // Check for Reverse Crossing of Previous Gate (Rounding Enforcement)
-        // If we are on Leg 2, 3, or 4, we must not cross the PREVIOUS gate in the reverse direction.
-        // Leg 2 (Downwind): Prev was Upwind Gate (2-3). Cleared Upwind(1). Forbidden is Downwind(-1).
-        // Leg 3 (Upwind): Prev was Leeward Gate (0-1). Cleared Downwind(-1). Forbidden is Upwind(1).
-        // Leg 4 (Finish): Prev was Upwind Gate (2-3). Cleared Upwind(1). Forbidden is Downwind(-1).
+            const gDx = m2.x - m1.x;
+            const gDy = m2.y - m1.y;
+            const len = Math.sqrt(gDx*gDx + gDy*gDy);
+            const ux = gDx / len;
+            const uy = gDy / len;
+            const nx = gDy;
+            const ny = -gDx;
+            const extLen = 10000;
 
-        let prevGateIndices = [];
-        let forbiddenDirection = 0;
-
-        if (state.race.leg === 2) {
-             prevGateIndices = [2, 3];
-             forbiddenDirection = -1;
-        } else if (state.race.leg === 3) {
-             prevGateIndices = [0, 1];
-             forbiddenDirection = 1;
-        } else if (state.race.leg === 4) {
-             prevGateIndices = [2, 3];
-             forbiddenDirection = -1;
-        }
-
-        if (prevGateIndices.length > 0) {
-            const pm1 = marks[prevGateIndices[0]];
-            const pm2 = marks[prevGateIndices[1]];
-
-            const pIntersect = checkLineIntersection(
-                state.race.lastPos.x, state.race.lastPos.y, state.boat.x, state.boat.y,
-                pm1.x, pm1.y, pm2.x, pm2.y
-            );
-
-            if (pIntersect) {
-                const gateDx = pm2.x - pm1.x;
-                const gateDy = pm2.y - pm1.y;
-                const nx = gateDy;
-                const ny = -gateDx;
-                const moveDx = state.boat.x - state.race.lastPos.x;
-                const moveDy = state.boat.y - state.race.lastPos.y;
-                const dot = moveDx * nx + moveDy * ny;
-                const crossingDir = dot > 0 ? 1 : -1;
-
-                if (crossingDir === forbiddenDirection) {
-                    // Revert Leg!
-                    state.race.leg--;
-                    showRaceMessage("MUST ROUND MARK!", "text-red-500", "border-red-500/50");
-                    // Reset Split time logic if needed?
-                    // Maybe clear split display
-                    state.race.legSplitTimer = 0;
-                    // Reset start time? Ideally we go back to previous state.
-                    // But timer keeps running.
+            const checkExt = (ax, ay, bx, by) => {
+                const intersect = checkLineIntersection(
+                    boat.race.lastPos.x, boat.race.lastPos.y, boat.x, boat.y,
+                    ax, ay, bx, by
+                );
+                if (intersect) {
+                    const moveDx = boat.x - boat.race.lastPos.x;
+                    const moveDy = boat.y - boat.race.lastPos.y;
+                    const dot = moveDx * nx + moveDy * ny;
+                    return dot > 0 ? 1 : -1;
                 }
-            }
+                return 0;
+            };
+
+            const dirL = checkExt(m1.x, m1.y, m1.x - ux * extLen, m1.y - uy * extLen);
+            const dirR = checkExt(m2.x, m2.y, m2.x + ux * extLen, m2.y + uy * extLen);
+            if (dirL === -requiredDirection || dirR === -requiredDirection) completeLeg();
         }
     }
 
-    // 2.5 Start Time Display Timer
-    if (state.race.startTimeDisplayTimer > 0) {
-        state.race.startTimeDisplayTimer -= dt;
-    }
-    if (state.race.legSplitTimer > 0) {
-        state.race.legSplitTimer -= dt;
-    }
+    // Timers
+    if (boat.race.startTimeDisplayTimer > 0) boat.race.startTimeDisplayTimer -= dt;
+    if (boat.race.legSplitTimer > 0) boat.race.legSplitTimer -= dt;
 
-    // 3. Penalty Logic
-    if (state.race.penalty) {
-        // Track rotation
-        // We need previous heading vs current heading
-        // Calculated in main update() loop or passed here?
-        // Let's rely on update() to call us AFTER position update but BEFORE storing lastPos/lastHeading
-        // Actually update() doesn't store lastHeading explicitly yet.
-        // We can access state.boat.prevHeading if we add it.
-        // Or we calculate it here if we call updateRace at end of update.
-    }
-
-    // 4. Update Next Waypoint
-    // This logic runs every frame to keep the indicator accurate
-    const courseMarks = state.course.marks; // Renamed to avoid shadowing 'marks' if defined above
+    // Next Waypoint Update
+    const courseMarks = state.course.marks;
     if (courseMarks && courseMarks.length >= 4) {
-        let waypointGateIndices = [];
-        if (state.race.leg === 0 || state.race.leg === 2 || state.race.leg === 4) {
-            waypointGateIndices = [0, 1];
-        } else {
-            waypointGateIndices = [2, 3];
-        }
-
-        const m1 = courseMarks[waypointGateIndices[0]];
-        const m2 = courseMarks[waypointGateIndices[1]];
-
-        const closest = getClosestPointOnSegment(
-            state.boat.x, state.boat.y,
-            m1.x, m1.y, m2.x, m2.y
-        );
-
-        const dx = closest.x - state.boat.x;
-        const dy = closest.y - state.boat.y;
-        const distUnits = Math.sqrt(dx * dx + dy * dy);
-
-        // 55 pixels approx 11m => 1 pixel approx 0.2m
-        state.race.nextWaypoint.dist = distUnits * 0.2;
-        state.race.nextWaypoint.x = closest.x;
-        state.race.nextWaypoint.y = closest.y;
-        state.race.nextWaypoint.angle = Math.atan2(dx, -dy); // 0 is North (Up, -y)
+        let wpIndices = (boat.race.leg === 0 || boat.race.leg === 2 || boat.race.leg === 4) ? [0, 1] : [2, 3];
+        const m1 = courseMarks[wpIndices[0]];
+        const m2 = courseMarks[wpIndices[1]];
+        const closest = getClosestPointOnSegment(boat.x, boat.y, m1.x, m1.y, m2.x, m2.y);
+        const dx = closest.x - boat.x;
+        const dy = closest.y - boat.y;
+        boat.race.nextWaypoint.dist = Math.sqrt(dx*dx + dy*dy) * 0.2;
+        boat.race.nextWaypoint.x = closest.x;
+        boat.race.nextWaypoint.y = closest.y;
+        boat.race.nextWaypoint.angle = Math.atan2(dx, -dy);
     }
 
-    // 5. Trace Recording
-    // Record trace if race has started (Leg >= 1) and not finished
-    if (state.race.leg >= 1 && state.race.status !== 'finished') {
-        const trace = state.race.trace;
-        const minRecordDistSq = 50 * 50; // Record every 50 units
-
+    // Trace
+    if (boat.race.leg >= 1 && !boat.race.finished) {
+        const trace = boat.race.trace;
+        const minRecordDistSq = 50 * 50;
         if (trace.length === 0) {
-            trace.push({ x: state.boat.x, y: state.boat.y, leg: state.race.leg });
+            trace.push({ x: boat.x, y: boat.y, leg: boat.race.leg });
         } else {
             const last = trace[trace.length - 1];
-            const dx = state.boat.x - last.x;
-            const dy = state.boat.y - last.y;
+            const dx = boat.x - last.x;
+            const dy = boat.y - last.y;
             if (dx * dx + dy * dy > minRecordDistSq) {
-                trace.push({ x: state.boat.x, y: state.boat.y, leg: state.race.leg });
+                trace.push({ x: boat.x, y: boat.y, leg: boat.race.leg });
             }
         }
     }
@@ -1142,19 +967,12 @@ function updateRace(dt) {
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
     const angles = J111_POLARS.angles;
-
-    // Available wind speeds in data
     const availableSpeeds = [6, 8, 10, 12, 14, 16, 20];
+    let lower = 6, upper = 20;
 
-    // Find lower and upper bound for windSpeed
-    let lower = 6;
-    let upper = 20;
-
-    if (windSpeed <= 6) {
-        lower = 6; upper = 6;
-    } else if (windSpeed >= 20) {
-        lower = 20; upper = 20;
-    } else {
+    if (windSpeed <= 6) { lower = 6; upper = 6; }
+    else if (windSpeed >= 20) { lower = 20; upper = 20; }
+    else {
         for (let i = 0; i < availableSpeeds.length - 1; i++) {
             if (windSpeed >= availableSpeeds[i] && windSpeed <= availableSpeeds[i+1]) {
                 lower = availableSpeeds[i];
@@ -1164,12 +982,9 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
         }
     }
 
-    // Helper to get interpolated speed for a specific polar wind speed
     const getPolarSpeed = (ws) => {
         const data = J111_POLARS.speeds[ws];
         const speeds = useSpinnaker ? data.spinnaker : data.nonSpinnaker;
-
-        // Interpolate angle
         for (let i = 0; i < angles.length - 1; i++) {
             if (twaDeg >= angles[i] && twaDeg <= angles[i+1]) {
                 const t = (twaDeg - angles[i]) / (angles[i+1] - angles[i]);
@@ -1181,14 +996,11 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
 
     const speedLower = getPolarSpeed(lower);
     const speedUpper = getPolarSpeed(upper);
-
     if (lower === upper) return speedLower;
-
     const t = (windSpeed - lower) / (upper - lower);
     return speedLower + t * (speedUpper - speedLower);
 }
 
-// Particle System
 function createParticle(x, y, type, properties = {}) {
     state.particles.push({
         x, y,
@@ -1202,388 +1014,430 @@ function updateParticles(dt) {
     const timeScale = dt * 60;
     for (let i = state.particles.length - 1; i >= 0; i--) {
         const p = state.particles[i];
-
-        // Apply velocity if present
         if (p.vx) p.x += p.vx * timeScale;
         if (p.vy) p.y += p.vy * timeScale;
 
-        // Default decay
         let decay = 0.0025;
-
         if (p.type === 'wake') {
-            // Central turbulent wake
             decay = 0.005;
             p.scale = 1 + (1 - p.life) * 1.5;
             p.alpha = p.life * 0.4;
         } else if (p.type === 'wake-wave') {
-            // V-Wake waves
             decay = 0.0015;
             p.scale = 0.5 + (1 - p.life) * 3.0;
             p.alpha = p.life * 0.25;
         } else if (p.type === 'wind') {
-             // Move with wind
              const speed = 1;
              p.x -= Math.sin(state.wind.direction) * speed * timeScale;
              p.y += Math.cos(state.wind.direction) * speed * timeScale;
         }
-
         p.life -= decay * timeScale;
-
         if (p.life <= 0) {
-            // Swap with last element and pop (O(1) removal)
             state.particles[i] = state.particles[state.particles.length - 1];
             state.particles.pop();
-            // Since we iterate backwards, the swapped element (from end) has already been processed this frame.
-            // So we can safely continue.
         }
     }
 }
 
-// Update Loop
-function update(dt) {
-    // Standardize time step logic
-    // Original: state.time += 0.004 per frame (at 60fps) -> 0.24 per second
-    state.time += 0.24 * dt;
-    const timeScale = dt * 60; // Scaling factor for logic designed for 60 FPS
+function updateAI(boat, dt) {
+    if (boat.isPlayer || boat.race.finished) return;
 
-    // Update Wind Sound
-    Sound.updateWindSound(state.wind.speed);
+    // Time scaling for consistent behavior
+    const timeScale = dt * 60;
 
-    // Sail Switching Logic
-    const switchSpeed = dt / 5.0; // 5.0 seconds switch time (dt is in seconds)
-    if (state.boat.spinnaker) {
-        state.boat.spinnakerDeployProgress = Math.min(1, state.boat.spinnakerDeployProgress + switchSpeed);
+    // AI Strategy: Simple Waypoint Following + Prestart Logic
+
+    // 1. Determine Target Heading
+    const target = boat.race.nextWaypoint;
+    let desiredHeading = target.angle;
+
+    // Upwind/Downwind Optimization
+    const twaToTarget = Math.abs(normalizeAngle(target.angle - state.wind.direction));
+    const isUpwind = twaToTarget < (Math.PI / 3); // < 60 degrees
+    const isDownwind = twaToTarget > (2 * Math.PI / 3); // > 120 degrees
+
+    if (state.race.status === 'prestart') {
+        // Prestart Strategy: Stay near line but don't cross.
+        // Simple: Stay in a holding area behind the line.
+        // Wait until T=-10s, then aim for line.
+        if (state.race.timer < 15.0) {
+             // Go for start
+             desiredHeading = target.angle;
+        } else {
+             // Mill about. Luff up into wind or sail slowly.
+             // Just face wind to stop?
+             desiredHeading = state.wind.direction;
+             // If too far back, sail forward. If too close, turn away?
+             if (target.dist > 300) {
+                 desiredHeading = target.angle;
+             }
+        }
     } else {
-        state.boat.spinnakerDeployProgress = Math.max(0, state.boat.spinnakerDeployProgress - switchSpeed);
+        // Racing Strategy
+        if (isUpwind) {
+             // Upwind Tacking
+             // Optimal TWA is approx 45 deg
+             const optTWA = 45 * (Math.PI / 180);
+             const portTackHdg = normalizeAngle(state.wind.direction + optTWA);
+             const stbdTackHdg = normalizeAngle(state.wind.direction - optTWA);
+
+             // Decide which tack
+             // Stick to current tack unless we hit a "boundary" (layline approx)
+             // Simple corridor logic:
+             // Cross track error?
+             // Or just pick the one closer to target?
+             // Closer to target is always the one that points more towards target.
+
+             // Current Heading
+             const diffPort = Math.abs(normalizeAngle(portTackHdg - target.angle));
+             const diffStbd = Math.abs(normalizeAngle(stbdTackHdg - target.angle));
+
+             // Hysteresis: Don't tack unless the other tack is significantly better
+             const currentDiff = Math.abs(normalizeAngle(boat.heading - target.angle));
+
+             // If we are way off, pick best.
+             if (diffPort < diffStbd) desiredHeading = portTackHdg;
+             else desiredHeading = stbdTackHdg;
+
+             // Add randomness/slop so they don't all tack exactly same time?
+        } else if (isDownwind) {
+             // Downwind Gybing
+             // Optimal TWA approx 145 deg
+             const optTWA = 145 * (Math.PI / 180);
+             const portGybeHdg = normalizeAngle(state.wind.direction + optTWA);
+             const stbdGybeHdg = normalizeAngle(state.wind.direction - optTWA);
+
+             const diffPort = Math.abs(normalizeAngle(portGybeHdg - target.angle));
+             const diffStbd = Math.abs(normalizeAngle(stbdGybeHdg - target.angle));
+
+             if (diffPort < diffStbd) desiredHeading = portGybeHdg;
+             else desiredHeading = stbdGybeHdg;
+        }
     }
 
-    // Update Wind (Vary over time)
-    // Direction: Slow drift + subtle gusts
-    const dirDrift = Math.sin(state.time * 0.05) * 0.2; // ~12 deg swing
-    const dirGust = Math.sin(state.time * 0.3 + 123.4) * 0.05; // ~3 deg jitter
-    state.wind.direction = state.wind.baseDirection + dirDrift + dirGust;
+    // Steering
+    // Smooth turn towards desired
+    let diff = normalizeAngle(desiredHeading - boat.heading);
+    const turnRate = CONFIG.turnSpeed * timeScale;
 
-    // Speed: Surge + gusts
+    // AI turns slightly slower to be safe? Or same.
+    if (Math.abs(diff) > turnRate) {
+        boat.heading += Math.sign(diff) * turnRate;
+    } else {
+        boat.heading = desiredHeading;
+    }
+    boat.heading = normalizeAngle(boat.heading);
+
+    // Auto Trim for AI
+    // Same logic as player auto
+    let angleToWind = Math.abs(normalizeAngle(boat.heading - state.wind.direction));
+    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
+    if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
+
+    // Determine wind side
+    let relWind = normalizeAngle(state.wind.direction - boat.heading);
+    if (Math.abs(relWind) > 0.1) {
+        boat.targetBoomSide = relWind > 0 ? 1 : -1;
+    }
+
+    // Spinnaker Logic
+    // If TWA > 110, hoist. If < 100, drop.
+    const twaDeg = angleToWind * 180 / Math.PI;
+    if (twaDeg > 110) boat.spinnaker = true;
+    else if (twaDeg < 100) boat.spinnaker = false;
+
+    // Apply
+    boat.sailAngle = optimalSailAngle * boat.boomSide;
+    boat.manualSailAngle = optimalSailAngle;
+}
+
+function checkBoatCollisions(dt) {
+    const boatRadius = 20;
+    const minDist = boatRadius * 2;
+    const minDistSq = minDist * minDist;
+
+    for (let i = 0; i < state.boats.length; i++) {
+        for (let j = i + 1; j < state.boats.length; j++) {
+            const b1 = state.boats[i];
+            const b2 = state.boats[j];
+
+            const dx = b2.x - b1.x;
+            const dy = b2.y - b1.y;
+            const distSq = dx * dx + dy * dy;
+
+            if (distSq < minDistSq && distSq > 0.0001) {
+                const dist = Math.sqrt(distSq);
+                const overlap = minDist - dist;
+
+                // Normal from b1 to b2
+                const nx = dx / dist;
+                const ny = dy / dist;
+
+                // Push apart (0.5 overlap each)
+                const push = overlap * 0.5;
+                b1.x -= nx * push;
+                b1.y -= ny * push;
+                b2.x += nx * push;
+                b2.y += ny * push;
+
+                // Transfer momentum / Friction
+                // Simple: Average speeds? Or elastic bounce?
+                // Just damp speeds significantly to simulate crunch
+                b1.speed *= 0.8;
+                b2.speed *= 0.8;
+
+                // Penalty logic?
+                // If racing, maybe penalty for one boat.
+                // For now, just collision response.
+            }
+        }
+    }
+}
+
+function update(dt) {
+    state.time += 0.24 * dt;
+    const timeScale = dt * 60;
+
+    Sound.updateWindSound(state.wind.speed);
+
+    // Wind Dynamics
+    const dirDrift = Math.sin(state.time * 0.05) * 0.2;
+    const dirGust = Math.sin(state.time * 0.3 + 123.4) * 0.05;
+    state.wind.direction = state.wind.baseDirection + dirDrift + dirGust;
     const speedSurge = Math.sin(state.time * 0.1) * 2.0;
     const speedGust = Math.sin(state.time * 0.5 + 456.7) * 1.5;
     state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
 
-    // Camera Rotation Logic
-    // Damping factor adapted for time delta
-    const camLerp = 1 - Math.pow(0.9, timeScale); // approx 0.1 at 60fps
+    // Update All Boats
+    for (const boat of state.boats) {
+        // Controls / AI
+        if (boat.isPlayer) {
+            // Player Inputs
+            const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale;
+            let isTurning = false;
+            if (state.keys.ArrowLeft) { boat.heading -= turnRate; isTurning = true; }
+            if (state.keys.ArrowRight) { boat.heading += turnRate; isTurning = true; }
+            boat.heading = normalizeAngle(boat.heading);
 
-    if (state.camera.mode === 'heading') {
-        // Smoothly rotate towards boat heading
-        let diff = normalizeAngle(state.boat.heading - state.camera.rotation);
-        state.camera.rotation += diff * camLerp;
-    } else if (state.camera.mode === 'north') {
-        // Rotate towards 0
-        let diff = normalizeAngle(0 - state.camera.rotation);
-        state.camera.rotation += diff * camLerp;
-    } else if (state.camera.mode === 'wind') {
-        // Rotate towards wind direction (so wind comes from top)
-        let diff = normalizeAngle(state.wind.direction - state.camera.rotation);
-        state.camera.rotation += diff * camLerp;
-    } else if (state.camera.mode === 'gate') {
-        // Rotate towards next waypoint
-        if (state.race.status !== 'finished') {
-            let diff = normalizeAngle(state.race.nextWaypoint.angle - state.camera.rotation);
-            state.camera.rotation += diff * camLerp;
+            // Spinnaker deploy anim
+            const switchSpeed = dt / 5.0;
+            if (boat.spinnaker) boat.spinnakerDeployProgress = Math.min(1, boat.spinnakerDeployProgress + switchSpeed);
+            else boat.spinnakerDeployProgress = Math.max(0, boat.spinnakerDeployProgress - switchSpeed);
+
+            // Trim
+            let relWind = normalizeAngle(state.wind.direction - boat.heading);
+            if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
+
+            let angleToWind = Math.abs(normalizeAngle(boat.heading - state.wind.direction));
+            let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
+            if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
+
+            if (boat.manualTrim) {
+                const trimRate = 0.8 * dt;
+                if (state.keys.ArrowUp) boat.manualSailAngle = Math.min(Math.PI / 1.5, boat.manualSailAngle + trimRate);
+                if (state.keys.ArrowDown) boat.manualSailAngle = Math.max(0, boat.manualSailAngle - trimRate);
+                boat.sailAngle = boat.manualSailAngle * boat.boomSide;
+            } else {
+                boat.manualSailAngle = optimalSailAngle;
+                boat.sailAngle = optimalSailAngle * boat.boomSide;
+            }
+
+            // Turning penalty flag for physics
+            boat.isTurning = isTurning;
         } else {
-            // If finished, fallback to heading mode behavior
-            let diff = normalizeAngle(state.boat.heading - state.camera.rotation);
-            state.camera.rotation += diff * camLerp;
+            // AI Logic
+            updateAI(boat, dt);
+            const switchSpeed = dt / 5.0;
+            if (boat.spinnaker) boat.spinnakerDeployProgress = Math.min(1, boat.spinnakerDeployProgress + switchSpeed);
+            else boat.spinnakerDeployProgress = Math.max(0, boat.spinnakerDeployProgress - switchSpeed);
         }
-    }
 
-    // Camera Message Timer
-    if (state.camera.messageTimer > 0) {
-        state.camera.messageTimer -= dt;
-    }
-
-    // Boat Steering
-    let isTurning = false;
-    const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale;
-
-    if (state.keys.ArrowLeft) {
-        state.boat.heading -= turnRate;
-        isTurning = true;
-    }
-    if (state.keys.ArrowRight) {
-        state.boat.heading += turnRate;
-        isTurning = true;
-    }
-
-    // Normalize Heading
-    state.boat.heading = normalizeAngle(state.boat.heading);
-
-    // Maneuver Counter Logic
-    const relWindAngle = normalizeAngle(state.wind.direction - state.boat.heading);
-    const currentWindSide = Math.sign(relWindAngle);
-
-    if (state.boat.lastWindSide === undefined) {
-        state.boat.lastWindSide = currentWindSide;
-    }
-
-    if (currentWindSide !== 0) {
-        if (state.boat.lastWindSide !== 0 && currentWindSide !== state.boat.lastWindSide) {
-            // Maneuver detected
-            if (state.race.status === 'racing' && state.race.leg >= 0 && state.race.leg < 5) {
-                state.race.legManeuvers[state.race.leg]++;
-            }
+        // Common Physics
+        // Boom Animation
+        if (boat.boomSide !== boat.targetBoomSide) {
+            let swingSpeed = 0.025;
+            boat.boomSide += (boat.targetBoomSide - boat.boomSide) * swingSpeed;
+            if (Math.abs(boat.targetBoomSide - boat.boomSide) < 0.01) boat.boomSide = boat.targetBoomSide;
         }
-        state.boat.lastWindSide = currentWindSide;
-    }
 
-    // --- Physics & Sail Logic ---
+        // Speed Calculation
+        let angleToWind = Math.abs(normalizeAngle(boat.heading - state.wind.direction));
+        let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
+        if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
 
-    // Wind Direction (Vector)
-    const windDirX = Math.sin(state.wind.direction);
-    const windDirY = -Math.cos(state.wind.direction);
+        const progress = boat.spinnakerDeployProgress;
+        const jibFactor = Math.max(0, 1 - progress * 2);
+        const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
-    // Boat Heading Vector
-    const boatDirX = Math.sin(state.boat.heading);
-    const boatDirY = -Math.cos(state.boat.heading);
+        let targetKnotsJib = getTargetSpeed(angleToWind, false, state.wind.speed);
+        let targetKnotsSpin = getTargetSpeed(angleToWind, true, state.wind.speed);
+        let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
 
-    // Angle of Attack (0 to PI)
-    let angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
+        // Trim Efficiency
+        const actualMagnitude = Math.abs(boat.sailAngle);
+        const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
+        const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
+        targetKnots *= trimEfficiency;
 
-    // -- Sail Trim Logic --
+        let targetGameSpeed = targetKnots * 0.25;
 
-    // Determine wind side relative to boat
-    let relWind = normalizeAngle(state.wind.direction - state.boat.heading);
-
-    // Determine target boom side
-    if (Math.abs(relWind) > 0.1) {
-        state.boat.targetBoomSide = relWind > 0 ? 1 : -1;
-    }
-
-    // Smooth Boom Transition (Gybe/Tack animation)
-    if (state.boat.boomSide !== state.boat.targetBoomSide) {
-        let swingSpeed = 0.025; // Adjusted for physics updates?
-        state.boat.boomSide += (state.boat.targetBoomSide - state.boat.boomSide) * swingSpeed;
-        if (Math.abs(state.boat.targetBoomSide - state.boat.boomSide) < 0.01) {
-            state.boat.boomSide = state.boat.targetBoomSide;
+        // Luffing
+        const effectiveAoA = angleToWind - actualMagnitude;
+        const luffStartThreshold = 0.5;
+        if (effectiveAoA < luffStartThreshold) {
+            boat.luffIntensity = Math.max(0, 1.0 - (effectiveAoA / luffStartThreshold));
+            boat.luffing = true;
+        } else {
+            boat.luffIntensity = 0;
+            boat.luffing = false;
         }
-    }
 
-    // Optimal Angle Calculation
-    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
-    if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
+        // Inertia
+        const speedAlpha = 1 - Math.pow(0.995, timeScale);
+        boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
 
-    // Manual Trim Controls
-    if (state.boat.manualTrim) {
-        const trimRate = 0.8 * dt; // Rad/sec (approx 45 deg per second)
-        if (state.keys.ArrowUp) {
-            // Let OUT (increase angle)
-            state.boat.manualSailAngle = Math.min(Math.PI / 1.5, state.boat.manualSailAngle + trimRate); // Limit max let out to reasonable bounds
+        if (boat.isTurning) {
+            boat.speed *= Math.pow(CONFIG.turnPenalty, timeScale);
         }
-        if (state.keys.ArrowDown) {
-            // Trim IN (decrease angle)
-            state.boat.manualSailAngle = Math.max(0, state.boat.manualSailAngle - trimRate);
-        }
-        // Set actual sail angle based on manual setting
-        state.boat.sailAngle = state.boat.manualSailAngle * state.boat.boomSide;
-    } else {
-        // Auto: sync manual angle for smoothness if user switches
-        state.boat.manualSailAngle = optimalSailAngle;
-        state.boat.sailAngle = optimalSailAngle * state.boat.boomSide;
-    }
 
-    // Determine target speed from polars
-    const progress = state.boat.spinnakerDeployProgress;
-    const jibFactor = Math.max(0, 1 - progress * 2);
-    const spinFactor = Math.max(0, (progress - 0.5) * 2);
+        // Move
+        const boatDirX = Math.sin(boat.heading);
+        const boatDirY = -Math.cos(boat.heading);
+        boat.x += boatDirX * boat.speed * timeScale;
+        boat.y += boatDirY * boat.speed * timeScale;
 
-    let targetKnotsJib = getTargetSpeed(angleToWind, false, state.wind.speed);
-    let targetKnotsSpin = getTargetSpeed(angleToWind, true, state.wind.speed);
-
-    let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
-
-    // Apply Trim Efficiency Penalty
-    // Calculate difference between actual and optimal
-    const actualMagnitude = Math.abs(state.boat.sailAngle);
-    const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
-
-    // Penalty curve: 1.0 - (diff * factor)
-    // 0.2 rad diff (~11 deg) -> 1.0 - 0.4 = 0.6 (40% loss)
-    // 0.5 rad diff (~28 deg) -> 1.0 - 1.0 = 0 (Stop)
-    const penaltyFactor = 2.0;
-    const trimEfficiency = Math.max(0, 1.0 - angleDiff * penaltyFactor);
-
-    targetKnots *= trimEfficiency;
-
-    let targetGameSpeed = targetKnots * 0.25;
-
-    // Determine Luffing state
-    // Old logic: just based on targetKnots < 1.0
-    // New logic: Based on effective angle of attack (AoA)
-    // Effective AoA = angleToWind - sailAngle (magnitude)
-    // If Eff AoA is too small (sail aligned with wind), it luffs.
-    const effectiveAoA = angleToWind - actualMagnitude;
-
-    // Thresholds:
-    // Ideally AoA is ~45 deg (0.78 rad).
-    // If AoA < 20 deg (0.35 rad), start luffing intensity.
-    const luffStartThreshold = 0.5; // rad
-
-    // Also consider standard "Too close to wind" (Heading) which also produces low AoA naturally
-    // If angleToWind is small, optimalSailAngle is 0. So effectiveAoA = angleToWind.
-    // So this unified logic works for both "Pointing too high" and "Letting sail out too much".
-
-    if (effectiveAoA < luffStartThreshold) {
-        state.boat.luffIntensity = Math.max(0, 1.0 - (effectiveAoA / luffStartThreshold));
-        state.boat.luffing = true;
-    } else {
-        state.boat.luffIntensity = 0;
-        state.boat.luffing = false;
-    }
-
-    // Smoothly interpolate current speed to target speed (acceleration/deceleration)
-    const speedAlpha = 1 - Math.pow(0.995, timeScale);
-    state.boat.speed = state.boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
-
-    if (isTurning) {
-        state.boat.speed *= Math.pow(CONFIG.turnPenalty, timeScale);
-    }
-
-    // Move Boat
-    state.boat.x += boatDirX * state.boat.speed * timeScale;
-    state.boat.y += boatDirY * state.boat.speed * timeScale;
-
-    // Collision Check with Marks
-    if (state.course && state.course.marks) {
-        const boatRadius = 20; // Approx half width of hull + buffer
-        const markRadius = 12; // Visual radius of mark
-        const collisionDist = boatRadius + markRadius;
-
-        for (const mark of state.course.marks) {
-            const dx = state.boat.x - mark.x;
-            const dy = state.boat.y - mark.y;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-
-            if (dist < collisionDist) {
-                // Collision detected
-                triggerPenalty();
-
-                // Calculate push-out vector (normal)
-                let nx = dx;
-                let ny = dy;
-                if (dist === 0) {
-                    nx = 1;
-                    ny = 0;
-                } else {
-                    nx /= dist;
-                    ny /= dist;
+        // Mark Collision
+        if (state.course && state.course.marks) {
+            const boatRadius = 20;
+            const markRadius = 12;
+            const collisionDist = boatRadius + markRadius;
+            for (const mark of state.course.marks) {
+                const dx = boat.x - mark.x;
+                const dy = boat.y - mark.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < collisionDist) {
+                    triggerPenalty(boat);
+                    let nx = dx, ny = dy;
+                    if (dist === 0) { nx = 1; ny = 0; } else { nx /= dist; ny /= dist; }
+                    const pushAmt = (collisionDist - dist) + 2.0;
+                    boat.x += nx * pushAmt;
+                    boat.y += ny * pushAmt;
+                    boat.speed *= 0.5;
                 }
+            }
+        }
 
-                // Resolve overlap
-                const overlap = collisionDist - dist;
-                const pushAmt = overlap + 2.0;
+        // Boundary Check
+        if (state.course && state.course.boundary) {
+            const dx = boat.x - state.course.boundary.x;
+            const dy = boat.y - state.course.boundary.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist > state.course.boundary.radius) {
+                 const angle = Math.atan2(dy, dx);
+                 boat.x = state.course.boundary.x + Math.cos(angle) * state.course.boundary.radius;
+                 boat.y = state.course.boundary.y + Math.sin(angle) * state.course.boundary.radius;
+            }
+        }
 
-                state.boat.x += nx * pushAmt;
-                state.boat.y += ny * pushAmt;
+        // Maneuver Logic
+        const currentWindSide = Math.sign(normalizeAngle(state.wind.direction - boat.heading));
+        if (boat.lastWindSide === undefined) boat.lastWindSide = currentWindSide;
+        if (currentWindSide !== 0) {
+            if (boat.lastWindSide !== 0 && currentWindSide !== boat.lastWindSide) {
+                if (state.race.status === 'racing' && boat.race.leg >= 0 && boat.race.leg < 5) {
+                    boat.race.legManeuvers[boat.race.leg]++;
+                }
+            }
+            boat.lastWindSide = currentWindSide;
+        }
 
-                // Subtly bounce: Reduce speed
-                state.boat.speed *= 0.5;
+        // Leg Stats
+        if (state.race.status === 'racing' && boat.race.leg < 5) {
+            const distMoved = boat.speed * timeScale * 0.2;
+            const currentKnots = boat.speed * 4;
+            if (boat.race.legDistances) boat.race.legDistances[boat.race.leg] += distMoved;
+            if (boat.race.legTopSpeeds) {
+                if (currentKnots > boat.race.legTopSpeeds[boat.race.leg]) {
+                    boat.race.legTopSpeeds[boat.race.leg] = currentKnots;
+                }
+            }
+        }
+
+        // Update Prev Heading
+        // (After Penalty calc in updateRace, but let's do penalty calc logic inside updateRaceBoatState if possible or here)
+        if (boat.race.penalty) {
+            const hDiff = normalizeAngle(boat.heading - boat.prevHeading);
+            boat.race.penaltyProgress += hDiff;
+            if (Math.abs(boat.race.penaltyProgress) >= 4 * Math.PI - 0.1) {
+                boat.race.penalty = false;
+                boat.race.penaltyProgress = 0;
+                if (boat.isPlayer) hideRaceMessage();
+            }
+        }
+        boat.prevHeading = boat.heading;
+
+        // Store History for next frame (done inside updateRace loop usually, but we need it per boat)
+        boat.race.lastPos.x = boat.x;
+        boat.race.lastPos.y = boat.y;
+
+        // Wake Particles
+        if (boat.speed > 0.25) {
+            const sternOffset = 30;
+            const sternWidth = 10;
+            const sternX = boat.x - boatDirX * sternOffset;
+            const sternY = boat.y - boatDirY * sternOffset;
+
+            if (Math.random() < 0.2) {
+                const jitterX = (Math.random() - 0.5) * 4;
+                const jitterY = (Math.random() - 0.5) * 4;
+                createParticle(sternX + jitterX, sternY + jitterY, 'wake');
+            }
+            if (Math.random() < 0.25) {
+                const rightX = Math.cos(boat.heading);
+                const rightY = Math.sin(boat.heading);
+                const spreadSpeed = 0.1;
+                createParticle(sternX - rightX*sternWidth, sternY - rightY*sternWidth, 'wake-wave', { vx: -rightX*spreadSpeed, vy: -rightY*spreadSpeed });
+                createParticle(sternX + rightX*sternWidth, sternY + rightY*sternWidth, 'wake-wave', { vx: rightX*spreadSpeed, vy: rightY*spreadSpeed });
             }
         }
     }
 
-    // Boundary Check
-    if (state.course && state.course.boundary) {
-        const dx = state.boat.x - state.course.boundary.x;
-        const dy = state.boat.y - state.course.boundary.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+    // Check Boat-Boat Collisions
+    checkBoatCollisions(dt);
 
-        if (dist > state.course.boundary.radius) {
-             // Clamp position
-             const angle = Math.atan2(dy, dx);
-             state.boat.x = state.course.boundary.x + Math.cos(angle) * state.course.boundary.radius;
-             state.boat.y = state.course.boundary.y + Math.sin(angle) * state.course.boundary.radius;
-        }
-    }
-
-    // Update Leg Stats
-    if (state.race.status === 'racing' && state.race.leg < 5) {
-        const leg = state.race.leg;
-        // Dist = speed (units/frame) * timeScale (frames) * 0.2 (meters/unit)
-        const distMoved = state.boat.speed * timeScale * 0.2;
-        const currentKnots = state.boat.speed * 4;
-
-        if (state.race.legDistances) {
-             state.race.legDistances[leg] += distMoved;
-        }
-        if (state.race.legTopSpeeds) {
-             if (currentKnots > state.race.legTopSpeeds[leg]) {
-                 state.race.legTopSpeeds[leg] = currentKnots;
-             }
-        }
-    }
-
-    // Update Race Logic
+    // Update Global Race Timer & Triggers
     updateRace(dt);
 
-    // Store history
-    state.race.lastPos.x = state.boat.x;
-    state.race.lastPos.y = state.boat.y;
+    // Camera
+    const player = state.player;
+    if (state.camera.target === 'boat' && player) {
+        // Damping
+        const camLerp = 1 - Math.pow(0.9, timeScale);
+        state.camera.x += (player.x - state.camera.x) * 0.1;
+        state.camera.y += (player.y - state.camera.y) * 0.1;
 
-    // Penalty Tracking
-    if (state.race.penalty) {
-         const diff = normalizeAngle(state.boat.heading - state.boat.prevHeading);
-         state.race.penaltyProgress += diff;
-
-         if (Math.abs(state.race.penaltyProgress) >= 4 * Math.PI - 0.1) {
-             state.race.penalty = false;
-             state.race.penaltyProgress = 0;
-             hideRaceMessage();
-         }
-    }
-
-    // Store prevHeading for next frame
-    state.boat.prevHeading = state.boat.heading;
-
-    // Wake Particles
-    if (state.boat.speed > 0.25) {
-        const sternOffset = 30;
-        const sternWidth = 10;
-        const sternX = state.boat.x - boatDirX * sternOffset;
-        const sternY = state.boat.y - boatDirY * sternOffset;
-
-        if (Math.random() < 0.2) {
-            const jitterX = (Math.random() - 0.5) * 4;
-            const jitterY = (Math.random() - 0.5) * 4;
-            createParticle(sternX + jitterX, sternY + jitterY, 'wake');
-        }
-
-        if (Math.random() < 0.25) {
-            const rightX = Math.cos(state.boat.heading);
-            const rightY = Math.sin(state.boat.heading);
-            const leftSternX = sternX - rightX * sternWidth;
-            const leftSternY = sternY - rightY * sternWidth;
-            const rightSternX = sternX + rightX * sternWidth;
-            const rightSternY = sternY + rightY * sternWidth;
-            const spreadSpeed = 0.1;
-
-            createParticle(leftSternX, leftSternY, 'wake-wave', {
-                vx: -rightX * spreadSpeed,
-                vy: -rightY * spreadSpeed
-            });
-
-            createParticle(rightSternX, rightSternY, 'wake-wave', {
-                vx: rightX * spreadSpeed,
-                vy: rightY * spreadSpeed
-            });
+        if (state.camera.mode === 'heading') {
+            let diff = normalizeAngle(player.heading - state.camera.rotation);
+            state.camera.rotation += diff * camLerp;
+        } else if (state.camera.mode === 'north') {
+            let diff = normalizeAngle(0 - state.camera.rotation);
+            state.camera.rotation += diff * camLerp;
+        } else if (state.camera.mode === 'wind') {
+            let diff = normalizeAngle(state.wind.direction - state.camera.rotation);
+            state.camera.rotation += diff * camLerp;
+        } else if (state.camera.mode === 'gate') {
+            if (state.race.status !== 'finished') {
+                let diff = normalizeAngle(player.race.nextWaypoint.angle - state.camera.rotation);
+                state.camera.rotation += diff * camLerp;
+            } else {
+                let diff = normalizeAngle(player.heading - state.camera.rotation);
+                state.camera.rotation += diff * camLerp;
+            }
         }
     }
+    if (state.camera.messageTimer > 0) state.camera.messageTimer -= dt;
 
-    // Camera follow boat if locked
-    if (state.camera.target === 'boat') {
-        state.camera.x += (state.boat.x - state.camera.x) * 0.1;
-        state.camera.y += (state.boat.y - state.camera.y) * 0.1;
-    }
-
-    // Wind Particles
+    // Wind Particles (visual only)
     if (Math.random() < 0.2) {
         let range = Math.max(canvas.width, canvas.height) * 1.5;
         let px = state.camera.x + (Math.random() - 0.5) * range;
@@ -1595,7 +1449,7 @@ function update(dt) {
 }
 
 // Drawing Functions
-function drawBoat(ctx) {
+function drawBoat(ctx, boat) {
     ctx.save();
 
     // Shadow
@@ -1605,38 +1459,29 @@ function drawBoat(ctx) {
     ctx.fill();
 
     // Hull
-    // Custom Hull Color from Settings
-    const hullColor = settings.hullColor || '#f1f5f9';
-    // Create gradient based on base color?
-    // Let's just use the solid color for simplicity or a simple gradient if needed.
-    // To match previous style: light to dark.
-    // Since we only have one hex, we can just use it solid or try to use a generic darkening.
-    // Let's stick to solid + stroke to respect user choice.
+    let hullColor = boat.config.hull || (settings.hullColor || '#f1f5f9');
+    if (boat.isPlayer) hullColor = settings.hullColor || '#f1f5f9';
+
     ctx.fillStyle = hullColor;
-
-    // We can also try a gradient if we want to emulate shading.
-    // But solid is safer for arbitrary user colors.
-
     ctx.beginPath();
-    ctx.moveTo(0, -25); // Bow
-    ctx.bezierCurveTo(18, -10, 18, 20, 12, 30); // Starboard
-    ctx.lineTo(-12, 30); // Stern
-    ctx.bezierCurveTo(-18, 20, -18, -10, 0, -25); // Port
+    ctx.moveTo(0, -25);
+    ctx.bezierCurveTo(18, -10, 18, 20, 12, 30);
+    ctx.lineTo(-12, 30);
+    ctx.bezierCurveTo(-18, 20, -18, -10, 0, -25);
     ctx.fill();
 
-    // Outline
-    ctx.strokeStyle = '#64748b'; // Keep generic outline
+    ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 1.5;
     ctx.stroke();
 
-    // Deck detail (Cockpit)
-    const cockpitColor = settings.cockpitColor || '#cbd5e1';
+    // Deck
+    const cockpitColor = boat.isPlayer ? (settings.cockpitColor || '#cbd5e1') : '#cbd5e1';
     ctx.fillStyle = cockpitColor;
     ctx.beginPath();
     ctx.roundRect(-8, 10, 16, 15, 4);
     ctx.fill();
 
-    // Mast base
+    // Mast
     ctx.fillStyle = '#475569';
     ctx.beginPath();
     ctx.arc(0, -5, 3, 0, Math.PI * 2);
@@ -1645,352 +1490,216 @@ function drawBoat(ctx) {
     // Sails
     const drawSail = (isJib, scale = 1.0) => {
         ctx.save();
-        if (isJib) {
-             ctx.translate(0, -25);
-             ctx.rotate(state.boat.sailAngle);
-        } else {
-             ctx.translate(0, -5);
-             ctx.rotate(state.boat.sailAngle);
-        }
+        if (isJib) { ctx.translate(0, -25); ctx.rotate(boat.sailAngle); }
+        else { ctx.translate(0, -5); ctx.rotate(boat.sailAngle); }
 
-        const sailColor = settings.sailColor || '#ffffff';
+        let sailColor = boat.isPlayer ? (settings.sailColor || '#ffffff') : (boat.config.sail || '#ffffff');
         ctx.globalAlpha = 0.9;
         ctx.fillStyle = sailColor;
-        // Stroke should probably be darker version or standard.
-        // Let's keep standard stroke for now.
         ctx.strokeStyle = '#94a3b8';
         ctx.lineWidth = 1;
 
-        // Calculate dynamic shape for luffing
-        const luff = state.boat.luffIntensity || 0;
-
-        // Flatten sail when sheeted in (Close Hauled)
-        // Full depth at > 45 degrees sail angle, reduced depth at 0 degrees
-        const angleRatio = Math.min(1.0, Math.abs(state.boat.sailAngle) / (Math.PI / 4));
+        const luff = boat.luffIntensity || 0;
+        const angleRatio = Math.min(1.0, Math.abs(boat.sailAngle) / (Math.PI / 4));
         const flattenFactor = 0.6 + 0.4 * angleRatio;
-
         const baseDepth = (isJib ? 11 : 15) * scale * flattenFactor;
-        let controlX = -state.boat.boomSide * baseDepth;
+        let controlX = -boat.boomSide * baseDepth;
 
         if (luff > 0) {
-             // Reduce static depth as luff increases (sail loses shape)
              const currentDepth = baseDepth * (1.0 - luff * 0.8);
-
-             // Add flutter
-             const time = state.time * 30; // Fast flutter frequency
+             const time = state.time * 30;
              const flutterAmt = Math.sin(time) * baseDepth * 1.5 * luff;
-
-             controlX = (-state.boat.boomSide * currentDepth) + flutterAmt;
+             controlX = (-boat.boomSide * currentDepth) + flutterAmt;
         }
 
         ctx.beginPath();
         if (isJib) {
-             ctx.moveTo(0, 0);
-             ctx.lineTo(0, 28 * scale);
-             ctx.quadraticCurveTo(controlX, 14 * scale, 0, 0);
+             ctx.moveTo(0, 0); ctx.lineTo(0, 28 * scale); ctx.quadraticCurveTo(controlX, 14 * scale, 0, 0);
         } else {
-             ctx.moveTo(0, 0);
-             ctx.lineTo(0, 45);
-             ctx.quadraticCurveTo(controlX, 20, 0, 0);
+             ctx.moveTo(0, 0); ctx.lineTo(0, 45); ctx.quadraticCurveTo(controlX, 20, 0, 0);
         }
-        ctx.fill();
-        ctx.stroke();
+        ctx.fill(); ctx.stroke();
 
-        // Batten lines for detail
         if (!isJib) {
             ctx.strokeStyle = 'rgba(0,0,0,0.1)';
             ctx.beginPath();
-
-            // Calculate batten endpoints based on current controlX (approximately 1/3 and 2/3 down the curve)
-            // Original ratios: 5/15 = 0.33, 9/15 = 0.6
             const batten1X = controlX * 0.33;
             const batten2X = controlX * 0.6;
-
             ctx.moveTo(0, 15); ctx.lineTo(batten1X, 12);
             ctx.moveTo(0, 30); ctx.lineTo(batten2X, 24);
             ctx.stroke();
-        }
 
-        // Boom
-        if (!isJib) {
             ctx.strokeStyle = '#475569';
             ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, 45);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 45); ctx.stroke();
         }
-
         ctx.restore();
     };
 
     const drawSpinnaker = (scale = 1.0) => {
         ctx.save();
-        // Start from bow/sprit
         ctx.translate(0, -28);
-        ctx.rotate(state.boat.sailAngle);
+        ctx.rotate(boat.sailAngle);
 
-        // Custom Spinnaker Color
-        const spinColor = settings.spinnakerColor || '#ef4444';
-
+        let spinColor = boat.isPlayer ? (settings.spinnakerColor || '#ef4444') : (boat.config.spinnaker || '#ef4444');
         ctx.globalAlpha = 0.9;
         ctx.fillStyle = spinColor;
         ctx.strokeStyle = spinColor;
-        // Stroke is implicitly 100% alpha unless we set globalAlpha.
-        // We set globalAlpha to 0.9, so stroke is also 0.9 alpha.
-        // It might be better to keep stroke distinct, but without a darken helper,
-        // using the same color is the safest option for arbitrary user colors.
-
         ctx.lineWidth = 1;
 
-        // Calculate dynamic shape for luffing
-        const luff = state.boat.luffIntensity || 0;
+        const luff = boat.luffIntensity || 0;
         const baseDepth = 40 * scale;
-        let controlX = -state.boat.boomSide * baseDepth;
+        let controlX = -boat.boomSide * baseDepth;
 
         if (luff > 0) {
-             const currentDepth = baseDepth * (1.0 - luff * 0.9); // Spinnaker collapses more easily
-             const time = state.time * 25; // Slightly slower, bigger heavy flutter
+             const currentDepth = baseDepth * (1.0 - luff * 0.9);
+             const time = state.time * 25;
              const flutterAmt = Math.sin(time) * baseDepth * 1.2 * luff;
-             controlX = (-state.boat.boomSide * currentDepth) + flutterAmt;
+             controlX = (-boat.boomSide * currentDepth) + flutterAmt;
         }
 
         ctx.beginPath();
-        ctx.moveTo(0, 0);
-        ctx.lineTo(0, 50 * scale);
-        // Larger curve for spinnaker
-        ctx.quadraticCurveTo(controlX, 25 * scale, 0, 0);
-
-        ctx.fill();
-        ctx.stroke();
+        ctx.moveTo(0, 0); ctx.lineTo(0, 50 * scale); ctx.quadraticCurveTo(controlX, 25 * scale, 0, 0);
+        ctx.fill(); ctx.stroke();
         ctx.restore();
     };
 
-    drawSail(false); // Main
-
-    // Animation Logic
-    const progress = state.boat.spinnakerDeployProgress;
+    drawSail(false);
+    const progress = boat.spinnakerDeployProgress;
     const jibScale = Math.max(0, 1 - progress * 2);
     const spinScale = Math.max(0, (progress - 0.5) * 2);
-
-    if (jibScale > 0.01) {
-        drawSail(true, jibScale);
-    }
-    if (spinScale > 0.01) {
-        drawSpinnaker(spinScale);
-    }
+    if (jibScale > 0.01) drawSail(true, jibScale);
+    if (spinScale > 0.01) drawSpinnaker(spinScale);
 
     ctx.restore();
 }
+
+// ... drawWater, drawMarkBodies, drawBoundary, drawLadderLines, drawLayLines, drawMarkZones, drawRoundingArrows, drawParticles same as before ...
+// I will reuse the previous implementations but ensure they reference `state.player` if they need boat specific info (like zones which uses boat position)
+// Actually zones use `state.boat` in previous code. I need to update them to `state.player`.
 
 function drawRoundingArrows(ctx) {
     if (!state.showNavAids) return;
     if (!state.course || !state.course.marks) return;
     if (state.race.status === 'finished') return;
+    if (!state.player) return;
 
-    // Determine active marks and direction
+    // Based on PLAYER leg
+    const leg = state.player.race.leg;
+
     let activeMarks = [];
-    if (state.race.leg === 1 || state.race.leg === 3) {
-        // Upwind Gate (Marks 2 & 3)
-        activeMarks = [
-            { index: 2, ccw: true },
-            { index: 3, ccw: false }
-        ];
-    } else if (state.race.leg === 2) {
-        // Leeward Gate (Marks 0 & 1)
-        activeMarks = [
-            { index: 0, ccw: false },
-            { index: 1, ccw: true }
-        ];
-    } else {
-        return;
-    }
+    if (leg === 1 || leg === 3) {
+        activeMarks = [ { index: 2, ccw: true }, { index: 3, ccw: false } ];
+    } else if (leg === 2) {
+        activeMarks = [ { index: 0, ccw: false }, { index: 1, ccw: true } ];
+    } else { return; }
 
     ctx.save();
     ctx.lineWidth = 10;
-    ctx.strokeStyle = '#22d3ee'; // Bright Cyan (Cyan-400)
+    ctx.strokeStyle = '#22d3ee';
     ctx.fillStyle = '#22d3ee';
     ctx.lineCap = 'round';
-
-    // Use base direction to align with course
     const windDir = state.wind.baseDirection;
     const radius = 80;
 
     for (const item of activeMarks) {
         if (item.index >= state.course.marks.length) continue;
         const m = state.course.marks[item.index];
-
         ctx.save();
         ctx.translate(m.x, m.y);
-
         let startAngle, endAngle, counterClockwise;
-
-        // Upwind Leg (Sailing North relative to wind):
-        // Mark 2 (Left): Round CCW. 0 -> PI.
-        // Mark 3 (Right): Round CW. PI -> 0.
-        // Downwind Leg (Sailing South relative to wind):
-        // Mark 0 (Left/West): Round CW. 0 -> PI.
-        // Mark 1 (Right/East): Round CCW. PI -> 0.
-
-        if (state.race.leg === 1 || state.race.leg === 3) {
-             if (item.index === 2) {
-                 startAngle = 0; endAngle = Math.PI; counterClockwise = true;
-             } else {
-                 startAngle = Math.PI; endAngle = 0; counterClockwise = false;
-             }
+        if (leg === 1 || leg === 3) {
+             if (item.index === 2) { startAngle = 0; endAngle = Math.PI; counterClockwise = true; }
+             else { startAngle = Math.PI; endAngle = 0; counterClockwise = false; }
         } else {
-             if (item.index === 0) {
-                 startAngle = 0; endAngle = Math.PI; counterClockwise = false;
-             } else {
-                 startAngle = Math.PI; endAngle = 0; counterClockwise = true;
-             }
+             if (item.index === 0) { startAngle = 0; endAngle = Math.PI; counterClockwise = false; }
+             else { startAngle = Math.PI; endAngle = 0; counterClockwise = true; }
         }
-
-        // Apply Rotation
-        // Base alignment (windDir) + Animation
-        // Rotate in the direction of the arrow (CW or CCW)
         const rotationSpeed = 8.0;
         const animRotation = state.time * rotationSpeed * (counterClockwise ? -1 : 1);
         ctx.rotate(windDir + animRotation);
-
         ctx.beginPath();
         ctx.arc(0, 0, radius, startAngle, endAngle, counterClockwise);
         ctx.stroke();
-
-        // Arrowhead
         const tipX = radius * Math.cos(endAngle);
         const tipY = radius * Math.sin(endAngle);
-
-        // Tangent angle for arrowhead rotation
-        // If CW (positive delta), tangent is Angle + PI/2
-        // If CCW (negative delta), tangent is Angle - PI/2
         let tangent = endAngle + (counterClockwise ? -Math.PI/2 : Math.PI/2);
-
         ctx.translate(tipX, tipY);
         ctx.rotate(tangent);
-
         ctx.beginPath();
-        ctx.moveTo(-10, -10); // Back Left
-        ctx.lineTo(10, 0);    // Tip
-        ctx.lineTo(-10, 10);  // Back Right
-        ctx.lineTo(-6, 0);    // Notch
-        ctx.fill();
-
+        ctx.moveTo(-10, -10); ctx.lineTo(10, 0); ctx.lineTo(-10, 10); ctx.lineTo(-6, 0); ctx.fill();
         ctx.restore();
     }
     ctx.restore();
 }
 
 function drawActiveGateLine(ctx) {
-    // Determine marks based on leg
+    if (!state.player) return;
+    const leg = state.player.race.leg;
     let indices;
-    if (state.race.status === 'finished') {
-        indices = [0, 1];
-    } else {
-        // Only draw line for Start (Leg 0) and Finish (Leg 4)
-        if (state.race.leg !== 0 && state.race.leg !== 4) return;
-        indices = (state.race.leg % 2 === 0) ? [0, 1] : [2, 3];
+    if (state.race.status === 'finished') { indices = [0, 1]; }
+    else {
+        if (leg !== 0 && leg !== 4) return;
+        indices = (leg % 2 === 0) ? [0, 1] : [2, 3];
     }
-
     if (!state.course || !state.course.marks) return;
-    if (indices[1] >= state.course.marks.length) return;
-
     const m1 = state.course.marks[indices[0]];
     const m2 = state.course.marks[indices[1]];
 
     ctx.save();
-
-    // Animate dashed line
     const dashSpeed = 20;
     const dashOffset = -state.time * dashSpeed;
+    ctx.beginPath(); ctx.moveTo(m1.x, m1.y); ctx.lineTo(m2.x, m2.y);
 
-    ctx.beginPath();
-    ctx.moveTo(m1.x, m1.y);
-    ctx.lineTo(m2.x, m2.y);
-
-    // Default Styling: Solid white line (for non-start and finish)
     let shadowColor = '#ffffff';
     let strokeColor = '#ffffff';
     let lineDash = [];
 
     if (state.race.status === 'finished') {
-         // Bright Green
-         shadowColor = '#4ade80'; // Green-400
-         strokeColor = '#4ade80';
-         lineDash = [];
-    } else if (state.race.leg === 0) {
-        // Start Line Logic (Leg 0)
+         shadowColor = '#4ade80'; strokeColor = '#4ade80';
+    } else if (leg === 0) {
         if (state.race.status === 'prestart') {
-            // Red Solid
-            shadowColor = '#ef4444'; // Red-500
-            strokeColor = '#ef4444';
-            lineDash = [];
+            shadowColor = '#ef4444'; strokeColor = '#ef4444';
         } else {
-            // White Solid (After start signal, before crossing)
-            shadowColor = '#ffffff';
-            strokeColor = '#ffffff';
-            lineDash = [];
+            shadowColor = '#ffffff'; strokeColor = '#ffffff';
         }
     }
-
-    ctx.shadowColor = shadowColor;
-    ctx.shadowBlur = 15;
-    ctx.strokeStyle = strokeColor;
-    ctx.lineWidth = 5;
+    ctx.shadowColor = shadowColor; ctx.shadowBlur = 15;
+    ctx.strokeStyle = strokeColor; ctx.lineWidth = 5;
     ctx.setLineDash(lineDash);
-
-    if (lineDash.length > 0) {
-        ctx.lineDashOffset = dashOffset;
-    }
-
+    if (lineDash.length > 0) ctx.lineDashOffset = dashOffset;
     ctx.stroke();
 
-    // Label
     ctx.save();
     ctx.fillStyle = strokeColor;
     ctx.font = 'bold 24px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const midX = (m1.x + m2.x) / 2;
     const midY = (m1.y + m2.y) / 2;
-
     let label = "";
-    if (state.race.leg === 0) label = "START";
-    else if (state.race.leg === 4 || state.race.status === 'finished') label = "FINISH";
+    if (leg === 0) label = "START";
+    else if (leg === 4 || state.race.status === 'finished') label = "FINISH";
 
     if (label) {
-        // Rotate text to match line angle
         const angle = Math.atan2(m2.y - m1.y, m2.x - m1.x);
-
         ctx.translate(midX, midY);
-        // Ensure text is readable (not upside down)
         let textRotation = angle;
-        if (Math.abs(normalizeAngle(textRotation)) > Math.PI / 2) {
-             textRotation += Math.PI;
-        }
+        if (Math.abs(normalizeAngle(textRotation)) > Math.PI / 2) textRotation += Math.PI;
         ctx.rotate(textRotation);
-
-        // Draw background for legibility?
-        // Or just shadow/stroke.
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 4;
-        ctx.lineWidth = 3;
-        ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.strokeText(label, 0, 0);
-        ctx.fillText(label, 0, 0);
+        ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.strokeText(label, 0, 0); ctx.fillText(label, 0, 0);
     }
-
     ctx.restore();
     ctx.restore();
 }
 
 function drawLadderLines(ctx) {
-    if (!state.showNavAids) return;
+    if (!state.showNavAids || !state.player) return;
     if (state.race.status === 'prestart' || state.race.status === 'finished') return;
     if (!state.course || !state.course.marks) return;
 
-    // Helper to transform World Point to Screen Point
+    // Helper functions need closure over current camera state
     const cx = state.camera.x;
     const cy = state.camera.y;
     const rot = -state.camera.rotation;
@@ -1998,261 +1707,114 @@ function drawLadderLines(ctx) {
     const sinR = Math.sin(rot);
     const hw = canvas.width / 2;
     const hh = canvas.height / 2;
-
     const worldToScreen = (wx, wy) => {
-        const dx = wx - cx;
-        const dy = wy - cy;
-        return {
-            x: dx * cosR - dy * sinR + hw,
-            y: dx * sinR + dy * cosR + hh
-        };
+        const dx = wx - cx; const dy = wy - cy;
+        return { x: dx * cosR - dy * sinR + hw, y: dx * sinR + dy * cosR + hh };
     };
-
     const screenToWorld = (sx, sy) => {
-        const dx = sx - hw;
-        const dy = sy - hh;
-        return {
-            x: dx * cosR + dy * sinR + cx,
-            y: -dx * sinR + dy * cosR + cy
-        };
+        const dx = sx - hw; const dy = sy - hh;
+        return { x: dx * cosR + dy * sinR + cx, y: -dx * sinR + dy * cosR + cy };
     };
-
     const clipLineToRect = (p1, p2, minX, minY, maxX, maxY) => {
-        let t0 = 0.0;
-        let t1 = 1.0;
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-
-        const checks = [
-            { p: -dx, q: p1.x - minX }, // Left
-            { p: dx,  q: maxX - p1.x }, // Right
-            { p: -dy, q: p1.y - minY }, // Top
-            { p: dy,  q: maxY - p1.y }  // Bottom
-        ];
-
+        let t0 = 0.0; let t1 = 1.0;
+        const dx = p2.x - p1.x; const dy = p2.y - p1.y;
+        const checks = [{p: -dx, q: p1.x - minX}, {p: dx, q: maxX - p1.x}, {p: -dy, q: p1.y - minY}, {p: dy, q: maxY - p1.y}];
         for (const {p, q} of checks) {
-            if (p === 0) {
-                if (q < 0) return null;
-            } else {
+            if (p === 0) { if (q < 0) return null; }
+            else {
                 const t = q / p;
-                if (p < 0) {
-                    if (t > t1) return null;
-                    if (t > t0) t0 = t;
-                } else {
-                    if (t < t0) return null;
-                    if (t < t1) t1 = t;
-                }
+                if (p < 0) { if (t > t1) return null; if (t > t0) t0 = t; }
+                else { if (t < t0) return null; if (t < t1) t1 = t; }
             }
         }
         if (t0 > t1) return null;
-        return {
-            p1: { x: p1.x + t0 * dx, y: p1.y + t0 * dy },
-            p2: { x: p1.x + t1 * dx, y: p1.y + t1 * dy }
-        };
+        return { p1: {x: p1.x + t0*dx, y: p1.y + t0*dy}, p2: {x: p1.x + t1*dx, y: p1.y + t1*dy} };
     };
-
-    // Use Course Axis (Rhumb Line) for the grid to keep it stable relative to the course
-    // Gate 1: Marks 0 & 1 (Start/Leeward)
-    // Gate 2: Marks 2 & 3 (Upwind)
-    if (state.course.marks.length < 4) return;
 
     const m0 = state.course.marks[0];
     const m1 = state.course.marks[1];
     const m2 = state.course.marks[2];
     const m3 = state.course.marks[3];
-
-    // Calculate gate centers
-    const c1x = (m0.x + m1.x) / 2;
-    const c1y = (m0.y + m1.y) / 2;
-    const c2x = (m2.x + m3.x) / 2;
-    const c2y = (m2.y + m3.y) / 2;
-
-    // Course Axis Vector (From Start to Upwind)
-    const dx = c2x - c1x;
-    const dy = c2y - c1y;
+    const c1x = (m0.x + m1.x) / 2; const c1y = (m0.y + m1.y) / 2;
+    const c2x = (m2.x + m3.x) / 2; const c2y = (m2.y + m3.y) / 2;
+    const dx = c2x - c1x; const dy = c2y - c1y;
     const len = Math.sqrt(dx * dx + dy * dy);
-
-    // Unit vector for course axis (Upwind)
-    // Corresponds to wx, wy in previous logic (though previous logic used 'wind direction' as base)
-    // NOTE: 'wind direction' 0 means wind comes FROM North. Vector (0, -1) points North (Upwind).
-    // Here we calculate Upwind vector directly.
-    const wx = dx / len;
-    const wy = dy / len;
-
-    // Perpendicular vector
-    const px = -wy;
-    const py = wx;
-
-    // Calculate Course Angle (Upwind direction)
-    // wx = sin(angle), wy = -cos(angle) matches the wind convention used elsewhere
-    // But atan2(y, x) gives angle from X axis.
-    // In our coordinate system (North Up, Y Down):
-    // Angle 0 (North) -> (0, -1).
-    // We want angle such that sin(a)=wx, -cos(a)=wy.
+    const wx = dx / len; const wy = dy / len;
+    const px = -wy; const py = wx;
     const courseAngle = Math.atan2(wx, -wy);
 
-    // Determine range based on leg
     let prevIndex, nextIndex;
-    if (state.race.leg === 0 || state.race.leg % 2 !== 0) {
-        prevIndex = 0; // Start/Leeward (Marks 0,1)
-        nextIndex = 2; // Upwind (Marks 2,3)
-    } else {
-        prevIndex = 2;
-        nextIndex = 0;
-    }
+    if (state.player.race.leg === 0 || state.player.race.leg % 2 !== 0) { prevIndex = 0; nextIndex = 2; }
+    else { prevIndex = 2; nextIndex = 0; }
 
     const mPrev = state.course.marks[prevIndex];
     const mNext = state.course.marks[nextIndex];
-
-    // Project onto Course axis
     const startProj = mPrev.x * wx + mPrev.y * wy;
     const endProj = mNext.x * wx + mNext.y * wy;
-
-    // Sort
     let minP = Math.min(startProj, endProj);
     let maxP = Math.max(startProj, endProj);
-
     const interval = 500;
     const firstLine = Math.floor(minP / interval) * interval;
 
-    // Layline Clipping Logic
-    // Project Marks to U,V space (U = Course Axis, V = Cross Axis)
-    // U axis is defined by (wx, wy). V axis is (px, py).
-    // V = x * px + y * py
     const uL = mNext.x * wx + mNext.y * wy;
     const vL = mNext.x * px + mNext.y * py;
     const mNextRight = state.course.marks[nextIndex + 1];
     const uR = mNextRight.x * wx + mNextRight.y * wy;
     const vR = mNextRight.x * px + mNextRight.y * py;
-
-    // Boundary Projection
     const b = state.course.boundary;
     const uC = b.x * wx + b.y * wy;
     const vC = b.x * px + b.y * py;
     const R = b.radius;
-
-    const isUpwindTarget = (nextIndex === 2); // Target is Marks 2,3 (Upwind)
-
-    // Calculate dynamic slopes based on current wind deviation relative to Course Axis
-    // delta is angle between Wind and Course Axis
+    const isUpwindTarget = (nextIndex === 2);
     const delta = normalizeAngle(state.wind.direction - courseAngle);
     let slopeLeft, slopeRight;
-
     if (isUpwindTarget) {
-        // Upwind Target: Laylines extend downwind
-        // Left Mark layline angle: Wind + 45. Relative to Base: Delta + 45.
-        // Slope = tan(Delta + 45)
         slopeLeft = Math.tan(delta + Math.PI / 4);
-        // Right Mark layline angle: Wind - 45. Relative to Base: Delta - 45.
-        // Slope = tan(Delta - 45)
         slopeRight = Math.tan(delta - Math.PI / 4);
     } else {
-        // Downwind Target: Laylines extend upwind
-        // Left Mark layline uses angle2 (Wind - 45). Slope = tan(Delta - 45).
         slopeLeft = Math.tan(delta - Math.PI / 4);
-        // Right Mark layline uses angle1 (Wind + 45). Slope = tan(Delta + 45).
         slopeRight = Math.tan(delta + Math.PI / 4);
     }
 
     ctx.save();
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; // Increased opacity
-    ctx.lineWidth = 4; // Thicker lines
-    ctx.font = 'bold 24px monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 4;
+    ctx.font = 'bold 24px monospace'; ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
     for (let p = firstLine; p <= maxP; p += interval) {
         if (p < minP) continue;
-
-        // Skip the line at the active gate
         if (Math.abs(p - endProj) < 1.0) continue;
-
-        // 1. Calculate Layline Bounds at this U (p)
-        // Ladder lines are only drawn between gates, so we are always on the "course side" of the target.
-        // dist is signed distance along U axis from Mark.
-        const dist = p - uL;
-        const distR = p - uR;
-
+        const dist = p - uL; const distR = p - uR;
         const vMin = vL + dist * slopeLeft;
         const vMax = vR + distR * slopeRight;
-
-        // 2. Clip to Boundary
-        // Circle at uC, vC with radius R
-        // Chord at U = p
         const du = p - uC;
-        if (Math.abs(du) >= R) continue; // Outside circle
-
+        if (Math.abs(du) >= R) continue;
         const dv = Math.sqrt(R*R - du*du);
-        const cMin = vC - dv;
-        const cMax = vC + dv;
-
-        // Intersection
-        const finalMin = Math.max(vMin, cMin);
-        const finalMax = Math.min(vMax, cMax);
-
+        const cMin = vC - dv; const cMax = vC + dv;
+        const finalMin = Math.max(vMin, cMin); const finalMax = Math.min(vMax, cMax);
         if (finalMin < finalMax) {
-            const cx = p * wx;
-            const cy = p * wy;
-
-            // Convert start/end V back to world space relative to center (cx, cy)
-            // Center is at V=0? No.
-            // P = (cx, cy) + v * (px, py)
-            const x1 = cx + finalMin * px;
-            const y1 = cy + finalMin * py;
-            const x2 = cx + finalMax * px;
-            const y2 = cy + finalMax * py;
-
-            ctx.beginPath();
-            ctx.moveTo(x1, y1);
-            ctx.lineTo(x2, y2);
-            ctx.stroke();
-
-            // Label: Distance to NEXT gate
+            const cx = p * wx; const cy = p * wy;
+            const x1 = cx + finalMin * px; const y1 = cy + finalMin * py;
+            const x2 = cx + finalMax * px; const y2 = cy + finalMax * py;
+            ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
             const distToGate = Math.abs(endProj - p) * 0.2;
-            if (distToGate > 50) {
-                if (finalMax - finalMin > 200) {
-                    // Calculate visible segment on screen
-                    const s1 = worldToScreen(x1, y1);
-                    const s2 = worldToScreen(x2, y2);
-                    const padding = 50;
-
-                    const clipped = clipLineToRect(s1, s2, padding, padding, canvas.width - padding, canvas.height - padding);
-
-                    if (clipped) {
-                        // Project center of full line to screen
-                        const sCenterX = (s1.x + s2.x) / 2;
-                        const sCenterY = (s1.y + s2.y) / 2;
-
-                        const c1 = clipped.p1;
-                        const c2 = clipped.p2;
-
-                        // Project sCenter onto the clipped segment [c1, c2]
-                        // Vector c1 -> c2
-                        const vx = c2.x - c1.x;
-                        const vy = c2.y - c1.y;
-                        const lenSq = vx * vx + vy * vy;
-
-                        let rX, rY;
-                        if (lenSq < 0.001) {
-                            rX = c1.x;
-                            rY = c1.y;
-                        } else {
-                            // Vector c1 -> sCenter
-                            const wx = sCenterX - c1.x;
-                            const wy = sCenterY - c1.y;
-
-                            // Project
-                            let t = (wx * vx + wy * vy) / lenSq;
-                            t = Math.max(0, Math.min(1, t));
-
-                            rX = c1.x + t * vx;
-                            rY = c1.y + t * vy;
-                        }
-
-                        const wPos = screenToWorld(rX, rY);
-                        ctx.fillText(Math.round(distToGate) + 'm', wPos.x, wPos.y);
+            if (distToGate > 50 && finalMax - finalMin > 200) {
+                const s1 = worldToScreen(x1, y1); const s2 = worldToScreen(x2, y2);
+                const clipped = clipLineToRect(s1, s2, 50, 50, canvas.width - 50, canvas.height - 50);
+                if (clipped) {
+                    const sCenterX = (s1.x + s2.x) / 2; const sCenterY = (s1.y + s2.y) / 2;
+                    const c1 = clipped.p1; const c2 = clipped.p2;
+                    const vx = c2.x - c1.x; const vy = c2.y - c1.y;
+                    const lenSq = vx * vx + vy * vy;
+                    let rX, rY;
+                    if (lenSq < 0.001) { rX = c1.x; rY = c1.y; }
+                    else {
+                        const wx = sCenterX - c1.x; const wy = sCenterY - c1.y;
+                        let t = (wx * vx + wy * vy) / lenSq; t = Math.max(0, Math.min(1, t));
+                        rX = c1.x + t * vx; rY = c1.y + t * vy;
                     }
+                    const wPos = screenToWorld(rX, rY);
+                    ctx.fillText(Math.round(distToGate) + 'm', wPos.x, wPos.y);
                 }
             }
         }
@@ -2261,596 +1823,323 @@ function drawLadderLines(ctx) {
 }
 
 function drawLayLines(ctx) {
-    if (!state.showNavAids) return;
+    if (!state.showNavAids || !state.player) return;
     if (state.race.status === 'finished') return;
     if (!state.course || !state.course.marks) return;
 
     let targets = [];
-    if (state.race.leg % 2 === 0) {
-        targets = [0, 1]; // Leeward/Start
-    } else {
-        targets = [2, 3]; // Upwind
-    }
+    if (state.player.race.leg % 2 === 0) targets = [0, 1];
+    else targets = [2, 3];
 
     const windDir = state.wind.direction;
-    const isUpwindLeg = (state.race.leg % 2 !== 0) || (state.race.leg === 0);
+    const isUpwindLeg = (state.player.race.leg % 2 !== 0) || (state.player.race.leg === 0);
     const boundary = state.course.boundary;
 
-    ctx.save();
-    ctx.setLineDash([]);
-    ctx.lineWidth = 5; // Thicker
-
+    ctx.save(); ctx.setLineDash([]); ctx.lineWidth = 5;
     let zoneRadius = 165;
-    // For Start (Leg 0) and Finish (Leg 4), there are no mark zones, so laylines should start closer to mark.
-    if (state.race.leg === 0 || state.race.leg === 4) {
-        zoneRadius = 0; // Reach all the way to the mark center (covered by mark body)
-    }
+    if (state.player.race.leg === 0 || state.player.race.leg === 4) zoneRadius = 0;
 
     for (const idx of targets) {
         if (idx >= state.course.marks.length) continue;
         const m = state.course.marks[idx];
-
-        // Laylines at 45 degrees relative to wind
         const ang1 = windDir + Math.PI / 4;
         const ang2 = windDir - Math.PI / 4;
-
-        // Logic:
-        // Indices 0, 2 are "Left" Marks (relative to course axis)
-        // Indices 1, 3 are "Right" Marks
         const isLeftMark = (idx % 2 === 0);
-
         const drawRay = (angle) => {
              let drawAngle = angle;
-             if (isUpwindLeg) {
-                 drawAngle += Math.PI; // Extend downwind
-             }
-
-             const dx = Math.sin(drawAngle);
-             const dy = -Math.cos(drawAngle);
-
-             // Start from outside zone radius
-             const startX = m.x + dx * zoneRadius;
-             const startY = m.y + dy * zoneRadius;
-
-             // Find intersection with boundary
+             if (isUpwindLeg) drawAngle += Math.PI;
+             const dx = Math.sin(drawAngle); const dy = -Math.cos(drawAngle);
+             const startX = m.x + dx * zoneRadius; const startY = m.y + dy * zoneRadius;
              const t = rayCircleIntersection(startX, startY, dx, dy, boundary.x, boundary.y, boundary.radius);
-
              if (t !== null) {
-                 ctx.strokeStyle = '#facc15'; // Solid Yellow
-                 ctx.beginPath();
-                 ctx.moveTo(startX, startY);
-                 ctx.lineTo(startX + dx * t, startY + dy * t);
-                 ctx.stroke();
+                 ctx.strokeStyle = '#facc15'; ctx.beginPath();
+                 ctx.moveTo(startX, startY); ctx.lineTo(startX + dx * t, startY + dy * t); ctx.stroke();
              }
         };
-
-        if (isUpwindLeg) {
-            if (isLeftMark) {
-                drawRay(ang1);
-            } else {
-                drawRay(ang2);
-            }
-        } else {
-            // Downwind - swap angles
-            if (isLeftMark) {
-                drawRay(ang2);
-            } else {
-                drawRay(ang1);
-            }
-        }
+        if (isUpwindLeg) { if (isLeftMark) drawRay(ang1); else drawRay(ang2); }
+        else { if (isLeftMark) drawRay(ang2); else drawRay(ang1); }
     }
     ctx.restore();
 }
 
 function drawMarkZones(ctx) {
-    if (!state.showNavAids) return;
+    if (!state.showNavAids || !state.player) return;
     if (!state.course || !state.course.marks) return;
     if (state.race.status === 'finished') return;
 
-    // Determine active mark indices for zones
-    // Leg 1 (Upwind) -> 2, 3
-    // Leg 2 (Downwind) -> 0, 1
-    // Leg 3 (Upwind) -> 2, 3
-    // Others (0, 4) -> None
+    const leg = state.player.race.leg;
     let activeIndices = [];
-    if (state.race.leg === 1 || state.race.leg === 3) {
-        activeIndices = [2, 3];
-    } else if (state.race.leg === 2) {
-        activeIndices = [0, 1];
-    }
-
+    if (leg === 1 || leg === 3) activeIndices = [2, 3];
+    else if (leg === 2) activeIndices = [0, 1];
     if (activeIndices.length === 0) return;
 
-    ctx.save();
-    ctx.lineWidth = 5; // Thicker
-    ctx.setLineDash([]);
-    // Solid line, no rotation needed
-
+    ctx.save(); ctx.lineWidth = 5; ctx.setLineDash([]);
     const zoneRadius = 165;
-
-    // Calculate Boat Segment (Centerline from Bow to Stern)
-    const h = state.boat.heading;
-    const sinH = Math.sin(h);
-    const cosH = Math.cos(h);
-
-    // Bow (0, -25) relative
-    const bowX = state.boat.x + 25 * sinH;
-    const bowY = state.boat.y - 25 * cosH;
-
-    // Stern (0, 30) relative
-    const sternX = state.boat.x - 30 * sinH;
-    const sternY = state.boat.y + 30 * cosH;
+    const h = state.player.heading;
+    const sinH = Math.sin(h); const cosH = Math.cos(h);
+    const bowX = state.player.x + 25 * sinH; const bowY = state.player.y - 25 * cosH;
+    const sternX = state.player.x - 30 * sinH; const sternY = state.player.y + 30 * cosH;
 
     for (const idx of activeIndices) {
         if (idx >= state.course.marks.length) continue;
         const m = state.course.marks[idx];
-
-        // Check if ANY part of the boat is in the zone
-        // We approximate the boat as a line segment from Bow to Stern
         const closest = getClosestPointOnSegment(m.x, m.y, bowX, bowY, sternX, sternY);
-        const dx = closest.x - m.x;
-        const dy = closest.y - m.y;
-        const distSq = dx * dx + dy * dy;
-
-        if (distSq < zoneRadius * zoneRadius) {
-            ctx.strokeStyle = '#facc15'; // Bright Yellow
-        } else {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)'; // More opaque
-        }
-
-        ctx.beginPath();
-        ctx.arc(m.x, m.y, zoneRadius, 0, Math.PI * 2);
-        ctx.stroke();
+        const dx = closest.x - m.x; const dy = closest.y - m.y;
+        if (dx*dx + dy*dy < zoneRadius*zoneRadius) ctx.strokeStyle = '#facc15';
+        else ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.beginPath(); ctx.arc(m.x, m.y, zoneRadius, 0, Math.PI * 2); ctx.stroke();
     }
     ctx.restore();
 }
 
-function drawParticles(ctx, layer) {
-    if (layer === 'surface') {
-        // Batch wake particles
-        ctx.fillStyle = '#ffffff';
-        for (const p of state.particles) {
-            if (p.type === 'wake' || p.type === 'wake-wave') {
-                ctx.globalAlpha = p.alpha;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        ctx.globalAlpha = 1.0;
-    } else if (layer === 'air') {
-        // Batch wind particles
-        const windFactor = state.wind.speed / 10;
-        const tailLength = 30 + state.wind.speed * 4;
-        const dx = -Math.sin(state.wind.direction) * tailLength;
-        const dy = Math.cos(state.wind.direction) * tailLength;
-
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 1 + windFactor;
-
-        for (const p of state.particles) {
-            if (p.type === 'wind') {
-                const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
-                ctx.globalAlpha = opacity;
-                ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x + dx, p.y + dy);
-                ctx.stroke();
-            }
-        }
-        ctx.globalAlpha = 1.0;
-    }
-}
-
+// ... drawWater, drawMarkBodies, drawBoundary, drawParticles are static/global enough ...
+// Need to insert them back or ensure they are present.
+// I pasted the previous full versions above or referenced them.
+// Let's ensure drawWater etc are defined.
 function drawWater(ctx) {
-    // Background already filled
-
     const gridSize = 80;
-
-    // Wave movement
     const waveSpeed = 20;
     const dist = state.time * waveSpeed;
     const shiftX = -Math.sin(state.wind.direction) * dist;
     const shiftY = Math.cos(state.wind.direction) * dist;
-
-    // Viewport bounds for culling
     const pad = gridSize * 2;
     const left = state.camera.x - canvas.width / 2 - pad;
     const right = state.camera.x + canvas.width / 2 + pad;
     const top = state.camera.y - canvas.height / 2 - pad;
     const bottom = state.camera.y + canvas.height / 2 + pad;
-
-    // Calculate grid start based on camera position minus shift, snapped to grid
     const startX = Math.floor((left - shiftX) / gridSize) * gridSize;
     const endX = Math.ceil((right - shiftX) / gridSize) * gridSize;
     const startY = Math.floor((top - shiftY) / gridSize) * gridSize;
     const endY = Math.ceil((bottom - shiftY) / gridSize) * gridSize;
-
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
     ctx.lineWidth = 2.5;
-
-    // Pre-calculate rotation math
     const angle = state.wind.direction + Math.PI;
     const cosA = Math.cos(angle);
     const sinA = Math.sin(angle);
-
-    // Batch all waves into one path
     ctx.beginPath();
-
-    // Iterate only over visible grid points
     for (let x = startX; x < endX; x += gridSize) {
         for (let y = startY; y < endY; y += gridSize) {
-             let wx = x + shiftX;
-             let wy = y + shiftY;
-
-             // Draw little wave glyphs
+             let wx = x + shiftX; let wy = y + shiftY;
              const noise = Math.sin(x * 0.12 + y * 0.17);
              const windScale = Math.max(0.5, state.wind.speed / 10);
              const bob = Math.sin(state.time * 2 + noise * 10) * (3 * windScale);
-
-             // Add some randomness
              const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
              const randX = (seed - Math.floor(seed)) * 40 - 20;
              const randY = (Math.cos(seed) * 0.5 + 0.5) * 40 - 20;
-             let scale = (0.8 + ((seed * 10) % 1) * 0.4); // 0.8 to 1.2
-             scale *= windScale;
-
-             // Center of the wave glyph in world space
-             const cx = wx + gridSize/2 + randX;
-             const cy = wy + gridSize/2 + randY;
-
-             // Manual Transform of 3 points: Start(-8, bob), Control(0, bob-6), End(8, bob)
-             const s_p1x = -8 * scale;
-             const s_p1y = bob * scale;
-
-             const s_cpx = 0;
-             const s_cpy = (bob - 6) * scale;
-
-             const s_p2x = 8 * scale;
-             const s_p2y = bob * scale;
-
-             // Apply rotation and translation
-             const p1x = s_p1x * cosA - s_p1y * sinA + cx;
-             const p1y = s_p1x * sinA + s_p1y * cosA + cy;
-
-             const cpx = s_cpx * cosA - s_cpy * sinA + cx;
-             const cpy = s_cpx * sinA + s_cpy * cosA + cy;
-
-             const p2x = s_p2x * cosA - s_p2y * sinA + cx;
-             const p2y = s_p2x * sinA + s_p2y * cosA + cy;
-
-             ctx.moveTo(p1x, p1y);
-             ctx.quadraticCurveTo(cpx, cpy, p2x, p2y);
+             let scale = (0.8 + ((seed * 10) % 1) * 0.4) * windScale;
+             const cx = wx + gridSize/2 + randX; const cy = wy + gridSize/2 + randY;
+             const s_p1x = -8 * scale; const s_p1y = bob * scale;
+             const s_cpx = 0; const s_cpy = (bob - 6) * scale;
+             const s_p2x = 8 * scale; const s_p2y = bob * scale;
+             const p1x = s_p1x * cosA - s_p1y * sinA + cx; const p1y = s_p1x * sinA + s_p1y * cosA + cy;
+             const cpx = s_cpx * cosA - s_cpy * sinA + cx; const cpy = s_cpx * sinA + s_cpy * cosA + cy;
+             const p2x = s_p2x * cosA - s_p2y * sinA + cx; const p2y = s_p2x * sinA + s_p2y * cosA + cy;
+             ctx.moveTo(p1x, p1y); ctx.quadraticCurveTo(cpx, cpy, p2x, p2y);
         }
     }
-    // Single stroke for all waves
     ctx.stroke();
-}
-
-function drawMarkShadows(ctx) {
-    if (!state.course || !state.course.marks) return;
-
-    for (const m of state.course.marks) {
-        ctx.save();
-        ctx.translate(m.x, m.y);
-
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.2)';
-        ctx.beginPath();
-        ctx.arc(3, 3, 12, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-    }
 }
 
 function drawMarkBodies(ctx) {
     if (!state.course || !state.course.marks) return;
-
+    const playerLeg = state.player ? state.player.race.leg : 0;
     for (const m of state.course.marks) {
-        ctx.save();
-        ctx.translate(m.x, m.y);
-
-        // Bobbing animation
+        ctx.save(); ctx.translate(m.x, m.y);
         const bobPhase = state.time * 5 + (m.x * 0.01 + m.y * 0.01);
         const bobScale = 1.0 + Math.sin(bobPhase) * 0.05;
         ctx.scale(bobScale, bobScale);
-
-        // Determine if Active
         const markIndex = state.course.marks.indexOf(m);
-
         let isActive = false;
         if (state.race.status !== 'finished') {
-             if (state.race.leg % 2 === 0) {
-                 if (markIndex === 0 || markIndex === 1) isActive = true;
-             } else {
-                 if (markIndex === 2 || markIndex === 3) isActive = true;
-             }
+             if (playerLeg % 2 === 0) { if (markIndex === 0 || markIndex === 1) isActive = true; }
+             else { if (markIndex === 2 || markIndex === 3) isActive = true; }
         }
-
-        // Colors
         let cHighlight, cMid, cDark, cStroke;
-
-        if (isActive) {
-            cHighlight = '#fdba74'; // Light Orange
-            cMid = '#f97316'; // Orange
-            cDark = '#c2410c'; // Dark Orange
-            cStroke = '#c2410c';
-        } else {
-            cHighlight = '#e2e8f0'; // Light Gray
-            cMid = '#94a3b8'; // Gray
-            cDark = '#64748b'; // Dark Gray
-            cStroke = '#475569';
-        }
-
-        // Buoy body (Top down)
+        if (isActive) { cHighlight = '#fdba74'; cMid = '#f97316'; cDark = '#c2410c'; cStroke = '#c2410c'; }
+        else { cHighlight = '#e2e8f0'; cMid = '#94a3b8'; cDark = '#64748b'; cStroke = '#475569'; }
         const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 12);
-        grad.addColorStop(0, cHighlight);
-        grad.addColorStop(0.5, cMid);
-        grad.addColorStop(1, cDark);
+        grad.addColorStop(0, cHighlight); grad.addColorStop(0.5, cMid); grad.addColorStop(1, cDark);
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = cStroke; ctx.lineWidth = 1; ctx.stroke();
+        ctx.restore();
+    }
+}
 
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(0, 0, 12, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Outline
-        ctx.strokeStyle = cStroke;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-
+function drawMarkShadows(ctx) {
+    if (!state.course || !state.course.marks) return;
+    for (const m of state.course.marks) {
+        ctx.save(); ctx.translate(m.x, m.y);
+        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(3, 3, 12, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
     }
 }
 
 function drawBoundary(ctx) {
     if (!state.course || !state.course.boundary) return;
-
     const b = state.course.boundary;
-
-    ctx.save();
-    ctx.translate(b.x, b.y);
-
-    ctx.beginPath();
-    ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
-
-    // Dashed line
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 15;
-    ctx.setLineDash([40, 40]);
-    ctx.stroke();
-
-    // Inner glow/edge
-    ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([]);
-    ctx.stroke();
-
+    ctx.save(); ctx.translate(b.x, b.y);
+    ctx.beginPath(); ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; ctx.lineWidth = 15; ctx.setLineDash([40, 40]); ctx.stroke();
+    ctx.strokeStyle = 'rgba(255, 0, 0, 0.2)'; ctx.lineWidth = 2; ctx.setLineDash([]); ctx.stroke();
     ctx.restore();
 }
 
+function drawParticles(ctx, layer) {
+    if (layer === 'surface') {
+        ctx.fillStyle = '#ffffff';
+        for (const p of state.particles) {
+            if (p.type === 'wake' || p.type === 'wake-wave') {
+                ctx.globalAlpha = p.alpha; ctx.beginPath(); ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2); ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1.0;
+    } else if (layer === 'air') {
+        const windFactor = state.wind.speed / 10;
+        const tailLength = 30 + state.wind.speed * 4;
+        const dx = -Math.sin(state.wind.direction) * tailLength;
+        const dy = Math.cos(state.wind.direction) * tailLength;
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1 + windFactor;
+        for (const p of state.particles) {
+            if (p.type === 'wind') {
+                const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
+                ctx.globalAlpha = opacity; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + dx, p.y + dy); ctx.stroke();
+            }
+        }
+        ctx.globalAlpha = 1.0;
+    }
+}
+
 function drawMinimap() {
-    // Lazy init context
     if (!minimapCtx) {
         const mCanvas = document.getElementById('minimap');
         if (mCanvas) minimapCtx = mCanvas.getContext('2d');
     }
     const ctx = minimapCtx;
-
-    if (!ctx || !state.course || !state.course.marks) return;
+    if (!ctx || !state.course || !state.course.marks || !state.player) return;
 
     const width = ctx.canvas.width;
     const height = ctx.canvas.height;
-
-    // Clear
     ctx.clearRect(0, 0, width, height);
 
-    // Determine bounds
-    let minX = state.boat.x;
-    let maxX = state.boat.x;
-    let minY = state.boat.y;
-    let maxY = state.boat.y;
-
+    let minX = state.player.x; let maxX = state.player.x;
+    let minY = state.player.y; let maxY = state.player.y;
     for (const m of state.course.marks) {
-        if (m.x < minX) minX = m.x;
-        if (m.x > maxX) maxX = m.x;
-        if (m.y < minY) minY = m.y;
-        if (m.y > maxY) maxY = m.y;
+        if (m.x < minX) minX = m.x; if (m.x > maxX) maxX = m.x;
+        if (m.y < minY) minY = m.y; if (m.y > maxY) maxY = m.y;
     }
 
-
-    // Add padding
     const padding = 200;
-    minX -= padding;
-    maxX += padding;
-    minY -= padding;
-    maxY += padding;
-
-    // Determine scale to fit
-    const spanX = maxX - minX;
-    const spanY = maxY - minY;
+    minX -= padding; maxX += padding; minY -= padding; maxY += padding;
+    const spanX = maxX - minX; const spanY = maxY - minY;
     const maxSpan = Math.max(spanX, spanY);
-    const scale = (width - 20) / maxSpan; // Keep 20px margin in canvas
+    const scale = (width - 20) / maxSpan;
+    const cx = (minX + maxX) / 2; const cy = (minY + maxY) / 2;
+    const transform = (x, y) => { return { x: (x - cx) * scale + width / 2, y: (y - cy) * scale + height / 2 }; };
 
-    // Center of the bounding box
-    const cx = (minX + maxX) / 2;
-    const cy = (minY + maxY) / 2;
-
-    const transform = (x, y) => {
-        return {
-            x: (x - cx) * scale + width / 2,
-            y: (y - cy) * scale + height / 2
-        };
-    };
-
-    // Draw Boundary
     if (state.course.boundary) {
-        const b = state.course.boundary;
-        const pos = transform(b.x, b.y);
-        const r = b.radius * scale;
-
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.lineWidth = 1;
-        ctx.setLineDash([5, 5]);
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        const b = state.course.boundary; const pos = transform(b.x, b.y); const r = b.radius * scale;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 1; ctx.setLineDash([5, 5]);
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
     }
 
-    // Draw Trace
-    if (state.race.trace && state.race.trace.length > 0) {
+    if (state.player.race.trace && state.player.race.trace.length > 0) {
         ctx.lineWidth = 1.5;
-
         let splitIndex = 0;
-        // Find first point belonging to current leg
-        while (splitIndex < state.race.trace.length) {
-            const p = state.race.trace[splitIndex];
-            if (p.leg !== undefined && p.leg >= state.race.leg) {
-                break;
-            }
+        while (splitIndex < state.player.race.trace.length) {
+            const p = state.player.race.trace[splitIndex];
+            if (p.leg !== undefined && p.leg >= state.player.race.leg) break;
             splitIndex++;
         }
-
-        // Draw Previous Legs (Subtle)
         if (splitIndex > 0) {
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.beginPath();
-            const startP = transform(state.race.trace[0].x, state.race.trace[0].y);
-            ctx.moveTo(startP.x, startP.y);
-            for (let i = 1; i < splitIndex; i++) {
-                const p = transform(state.race.trace[i].x, state.race.trace[i].y);
-                ctx.lineTo(p.x, p.y);
-            }
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.beginPath();
+            const startP = transform(state.player.race.trace[0].x, state.player.race.trace[0].y); ctx.moveTo(startP.x, startP.y);
+            for (let i = 1; i < splitIndex; i++) { const p = transform(state.player.race.trace[i].x, state.player.race.trace[i].y); ctx.lineTo(p.x, p.y); }
             ctx.stroke();
         }
-
-        // Draw Current Leg (Active)
-        // Start from previous point to connect the lines
         const startIndex = Math.max(0, splitIndex - 1);
-        ctx.strokeStyle = 'rgba(250, 204, 21, 0.6)'; // Yellow-400, semi-transparent
-        ctx.beginPath();
-
-        const startCurr = transform(state.race.trace[startIndex].x, state.race.trace[startIndex].y);
-        ctx.moveTo(startCurr.x, startCurr.y);
-
-        for (let i = startIndex + 1; i < state.race.trace.length; i++) {
-            const p = transform(state.race.trace[i].x, state.race.trace[i].y);
-            ctx.lineTo(p.x, p.y);
-        }
-        // Draw to current boat position
-        if (state.race.status !== 'finished') {
-            const currentPos = transform(state.boat.x, state.boat.y);
-            ctx.lineTo(currentPos.x, currentPos.y);
-        }
-
+        ctx.strokeStyle = 'rgba(250, 204, 21, 0.6)'; ctx.beginPath();
+        const startCurr = transform(state.player.race.trace[startIndex].x, state.player.race.trace[startIndex].y); ctx.moveTo(startCurr.x, startCurr.y);
+        for (let i = startIndex + 1; i < state.player.race.trace.length; i++) { const p = transform(state.player.race.trace[i].x, state.player.race.trace[i].y); ctx.lineTo(p.x, p.y); }
+        if (state.race.status !== 'finished') { const currentPos = transform(state.player.x, state.player.y); ctx.lineTo(currentPos.x, currentPos.y); }
         ctx.stroke();
     }
 
-    // Determine Active Gate Index
-    // Leg 0, 2, 4 -> Start/Finish (Indices 0,1)
-    // Leg 1, 3 -> Upwind (Indices 2,3)
-    let activeIndices = (state.race.leg % 2 === 0) ? [0, 1] : [2, 3];
+    let activeIndices = (state.player.race.leg % 2 === 0) ? [0, 1] : [2, 3];
     if (state.race.status === 'finished') activeIndices = [];
-
-    // Draw Gate Lines
     const gate1Active = activeIndices.includes(0);
     const gate2Active = activeIndices.includes(2);
-
     const drawGate = (i1, i2, isActive) => {
         if (i1 >= state.course.marks.length || i2 >= state.course.marks.length) return;
-
         const p1 = transform(state.course.marks[i1].x, state.course.marks[i1].y);
         const p2 = transform(state.course.marks[i2].x, state.course.marks[i2].y);
-
-        ctx.beginPath();
-        ctx.moveTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-
-        if (isActive) {
-             ctx.strokeStyle = '#facc15'; // Yellow
-             ctx.lineWidth = 2;
-        } else {
-             ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; // Faint gray
-             ctx.lineWidth = 1;
-        }
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+        if (isActive) { ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2; }
+        else { ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 1; }
         ctx.stroke();
     };
+    drawGate(0, 1, gate1Active); drawGate(2, 3, gate2Active);
 
-    drawGate(0, 1, gate1Active);
-    drawGate(2, 3, gate2Active);
-
-    // Draw Marks
     for (let i = 0; i < state.course.marks.length; i++) {
-        const m = state.course.marks[i];
-        const pos = transform(m.x, m.y);
-        const isActive = activeIndices.includes(i);
-
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, isActive ? 4 : 3, 0, Math.PI * 2);
-
-        if (isActive) {
-            ctx.fillStyle = '#f97316'; // Orange
-        } else {
-            ctx.fillStyle = '#94a3b8'; // Slate-400
-        }
+        const m = state.course.marks[i]; const pos = transform(m.x, m.y); const isActive = activeIndices.includes(i);
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, isActive ? 4 : 3, 0, Math.PI * 2);
+        if (isActive) ctx.fillStyle = '#f97316'; else ctx.fillStyle = '#94a3b8';
         ctx.fill();
     }
 
-    // Draw Boat
-    const boatPos = transform(state.boat.x, state.boat.y);
-    ctx.save();
-    ctx.translate(boatPos.x, boatPos.y);
-    ctx.rotate(state.boat.heading);
+    // Draw ALL Boats
+    for (const boat of state.boats) {
+        const boatPos = transform(boat.x, boat.y);
+        ctx.save();
+        ctx.translate(boatPos.x, boatPos.y);
+        ctx.rotate(boat.heading);
 
-    // Simple Boat Shape
-    ctx.fillStyle = '#facc15'; // Yellow
-    ctx.beginPath();
-    ctx.moveTo(0, -8);
-    ctx.lineTo(5, 6);
-    ctx.lineTo(-5, 6);
-    ctx.fill();
-
-    ctx.restore();
+        ctx.beginPath();
+        if (boat.isPlayer) {
+             ctx.fillStyle = '#facc15'; // Player Yellow
+             ctx.moveTo(0, -10); ctx.lineTo(6, 8); ctx.lineTo(-6, 8);
+        } else {
+             ctx.fillStyle = boat.config.hull || '#ffffff';
+             ctx.moveTo(0, -8); ctx.lineTo(5, 6); ctx.lineTo(-5, 6);
+        }
+        ctx.fill();
+        ctx.restore();
+    }
 }
 
 let frameCount = 0;
 function draw() {
     frameCount++;
-    // Clear
     ctx.fillStyle = CONFIG.waterColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-
-    // Camera Transform
     ctx.translate(canvas.width / 2, canvas.height / 2);
     ctx.rotate(-state.camera.rotation);
     ctx.translate(-state.camera.x, -state.camera.y);
 
-    // Draw World
     drawWater(ctx);
     drawBoundary(ctx);
-    drawParticles(ctx, 'surface'); // Wake
+    drawParticles(ctx, 'surface');
     drawActiveGateLine(ctx);
     drawLadderLines(ctx);
     drawLayLines(ctx);
     drawMarkZones(ctx);
     drawRoundingArrows(ctx);
-    drawParticles(ctx, 'air'); // Wind
+    drawParticles(ctx, 'air');
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
 
-    // Draw Boat
-    ctx.save();
-    ctx.translate(state.boat.x, state.boat.y);
-    ctx.rotate(state.boat.heading);
-    drawBoat(ctx);
-    ctx.restore();
+    // Draw All Boats
+    for (const boat of state.boats) {
+        ctx.save();
+        ctx.translate(boat.x, boat.y);
+        ctx.rotate(boat.heading);
+        drawBoat(ctx, boat);
+        ctx.restore();
+    }
 
     ctx.restore();
 
-    // Draw Camera Mode Message
     if (state.camera.messageTimer > 0) {
         ctx.save();
         const alpha = Math.min(1.0, state.camera.messageTimer * 2);
@@ -2861,133 +2150,74 @@ function draw() {
         ctx.font = 'bold 32px monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-
         const text = "CAMERA: " + state.camera.message;
         const metrics = ctx.measureText(text);
-        const padding = 20;
-        const w = metrics.width + padding * 2;
-        const h = 60;
-        const x = canvas.width / 2;
-        const y = canvas.height / 3;
-
-        ctx.beginPath();
-        const r = 10;
-        const rx = x - w/2;
-        const ry = y - h/2;
-        ctx.moveTo(rx + r, ry);
-        ctx.lineTo(rx + w - r, ry);
-        ctx.quadraticCurveTo(rx + w, ry, rx + w, ry + r);
-        ctx.lineTo(rx + w, ry + h - r);
-        ctx.quadraticCurveTo(rx + w, ry + h, rx + w - r, ry + h);
-        ctx.lineTo(rx + r, ry + h);
-        ctx.quadraticCurveTo(rx, ry + h, rx, ry + h - r);
-        ctx.lineTo(rx, ry + r);
-        ctx.quadraticCurveTo(rx, ry, rx + r, ry);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.fillStyle = 'white';
-        ctx.fillText(text, x, y);
+        const padding = 20; const w = metrics.width + padding * 2; const h = 60;
+        const x = canvas.width / 2; const y = canvas.height / 3;
+        ctx.beginPath(); const r = 10; const rx = x - w/2; const ry = y - h/2;
+        ctx.moveTo(rx + r, ry); ctx.lineTo(rx + w - r, ry); ctx.quadraticCurveTo(rx + w, ry, rx + w, ry + r);
+        ctx.lineTo(rx + w, ry + h - r); ctx.quadraticCurveTo(rx + w, ry + h, rx + w - r, ry + h);
+        ctx.lineTo(rx + r, ry + h); ctx.quadraticCurveTo(rx, ry + h, rx, ry + h - r);
+        ctx.lineTo(rx, ry + r); ctx.quadraticCurveTo(rx, ry, rx + r, ry);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = 'white'; ctx.fillText(text, x, y);
         ctx.restore();
     }
 
-    // Draw Waypoint Indicator
-    if (state.race.status !== 'finished' && state.showNavAids) {
-        const wx = state.race.nextWaypoint.x;
-        const wy = state.race.nextWaypoint.y;
-
-        const dx = wx - state.camera.x;
-        const dy = wy - state.camera.y;
+    if (state.race.status !== 'finished' && state.showNavAids && state.player) {
+        const wx = state.player.race.nextWaypoint.x;
+        const wy = state.player.race.nextWaypoint.y;
+        const dx = wx - state.camera.x; const dy = wy - state.camera.y;
         const rot = -state.camera.rotation;
-        const cos = Math.cos(rot);
-        const sin = Math.sin(rot);
-
-        const rx = dx * cos - dy * sin;
-        const ry = dx * sin + dy * cos;
-
+        const cos = Math.cos(rot); const sin = Math.sin(rot);
+        const rx = dx * cos - dy * sin; const ry = dx * sin + dy * cos;
         const margin = 40;
         const halfW = Math.max(10, canvas.width / 2 - margin);
         const halfH = Math.max(10, canvas.height / 2 - margin);
-
         let t = 1.0;
         if (Math.abs(rx) > 0.1 || Math.abs(ry) > 0.1) {
-            const tx = halfW / Math.abs(rx);
-            const ty = halfH / Math.abs(ry);
+            const tx = halfW / Math.abs(rx); const ty = halfH / Math.abs(ry);
             t = Math.min(tx, ty);
         }
-
         const factor = Math.min(t, 1.0);
-
         let screenX = canvas.width / 2 + rx * factor;
         let screenY = canvas.height / 2 + ry * factor;
-
-        ctx.save();
-        ctx.translate(screenX, screenY);
-
-        ctx.beginPath();
-        ctx.arc(0, 0, 8, 0, Math.PI * 2);
-        ctx.fillStyle = '#22c55e';
-        ctx.fill();
-        ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 16px monospace';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 4;
-        ctx.fillText(Math.round(state.race.nextWaypoint.dist) + 'm', 0, -12);
-
+        ctx.save(); ctx.translate(screenX, screenY);
+        ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.fillStyle = '#22c55e'; ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px monospace';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
+        ctx.fillText(Math.round(state.player.race.nextWaypoint.dist) + 'm', 0, -12);
         ctx.restore();
     }
 
     drawMinimap();
 
     // UI Updates
-    if (UI.compassRose) {
-        UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
-    }
-
-    if (UI.windArrow) {
-        UI.windArrow.style.transform = `rotate(${state.wind.direction}rad)`;
-    }
-
-    if (UI.waypointArrow) {
-        UI.waypointArrow.style.transform = `rotate(${state.race.nextWaypoint.angle}rad)`;
-    }
-
-    if (UI.headingArrow) {
-        const rot = state.boat.heading - state.camera.rotation;
+    if (UI.compassRose) UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
+    if (UI.windArrow) UI.windArrow.style.transform = `rotate(${state.wind.direction}rad)`;
+    if (UI.waypointArrow && state.player) UI.waypointArrow.style.transform = `rotate(${state.player.race.nextWaypoint.angle}rad)`;
+    if (UI.headingArrow && state.player) {
+        const rot = state.player.heading - state.camera.rotation;
         UI.headingArrow.style.transform = `rotate(${rot}rad)`;
     }
 
-    if (frameCount % 10 === 0) {
-        if (UI.speed) {
-            UI.speed.textContent = (state.boat.speed * 4).toFixed(1);
-        }
-
-        if (UI.windSpeed) {
-            UI.windSpeed.textContent = state.wind.speed.toFixed(1);
-        }
-
+    if (frameCount % 10 === 0 && state.player) {
+        if (UI.speed) UI.speed.textContent = (state.player.speed * 4).toFixed(1);
+        if (UI.windSpeed) UI.windSpeed.textContent = state.wind.speed.toFixed(1);
         if (UI.windAngle) {
-            const angleToWind = Math.abs(normalizeAngle(state.boat.heading - state.wind.direction));
+            const angleToWind = Math.abs(normalizeAngle(state.player.heading - state.wind.direction));
             const twaDeg = Math.round(angleToWind * (180 / Math.PI));
             UI.windAngle.textContent = twaDeg + '°';
         }
-
         if (UI.vmg) {
-            const angleToWind = normalizeAngle(state.boat.heading - state.wind.direction);
-            const vmg = (state.boat.speed * 4) * Math.cos(angleToWind);
+            const angleToWind = normalizeAngle(state.player.heading - state.wind.direction);
+            const vmg = (state.player.speed * 4) * Math.cos(angleToWind);
             UI.vmg.textContent = Math.abs(vmg).toFixed(1);
         }
-
-        // Update Trim Mode Indicator
         if (UI.trimMode) {
-            if (state.boat.manualTrim) {
+            if (state.player.manualTrim) {
                 UI.trimMode.textContent = "MANUAL";
                 UI.trimMode.className = "mt-1 text-[10px] font-bold text-yellow-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-yellow-500/50 uppercase tracking-wider";
             } else {
@@ -2995,11 +2225,14 @@ function draw() {
                 UI.trimMode.className = "mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider";
             }
         }
-
         if (UI.timer) {
             if (state.race.status === 'finished') {
-                 UI.timer.textContent = formatTime(state.race.finishTime);
-                 UI.timer.classList.add('text-green-400');
+                 if (state.player.race.finished) {
+                     UI.timer.textContent = formatTime(state.player.race.finishTime);
+                     UI.timer.classList.add('text-green-400');
+                 } else {
+                     UI.timer.textContent = formatTime(state.race.timer);
+                 }
             } else if (state.race.status === 'prestart') {
                  UI.timer.textContent = formatTime(-state.race.timer);
                  if (state.race.timer < 10) UI.timer.classList.add('text-orange-400');
@@ -3010,93 +2243,70 @@ function draw() {
                  UI.timer.classList.remove('text-green-400');
             }
         }
-
         if (UI.startTime) {
-            if (state.race.legSplitTimer > 0) {
-                UI.startTime.textContent = formatSplitTime(state.race.lastLegDuration);
+            if (state.player.race.legSplitTimer > 0) {
+                UI.startTime.textContent = formatSplitTime(state.player.race.lastLegDuration);
                 UI.startTime.classList.remove('hidden');
-            } else if (state.race.startTimeDisplayTimer > 0) {
-                const t = state.race.startTimeDisplay;
+            } else if (state.player.race.startTimeDisplayTimer > 0) {
+                const t = state.player.race.startTimeDisplay;
                 UI.startTime.textContent = '+' + t.toFixed(3) + 's';
                 UI.startTime.classList.remove('hidden');
             } else {
                 UI.startTime.classList.add('hidden');
             }
         }
-
-        // Update Leg Info
         if (UI.legInfo) {
             let info = "";
-            if (state.race.status === 'prestart') {
-                info = "PRESTART";
-            } else if (state.race.status === 'finished') {
-                info = "FINISHED";
-            } else {
-                if (state.race.leg === 0) {
-                    info = "START";
-                } else {
-                    const legType = (state.race.leg % 2 !== 0) ? "UPWIND" : "DOWNWIND";
-                    info = `LEG ${state.race.leg} OF 4: ${legType}`;
+            if (state.race.status === 'prestart') info = "PRESTART";
+            else if (state.player.race.finished) info = "FINISHED";
+            else {
+                if (state.player.race.leg === 0) info = "START";
+                else {
+                    const legType = (state.player.race.leg % 2 !== 0) ? "UPWIND" : "DOWNWIND";
+                    info = `LEG ${state.player.race.leg} OF 4: ${legType}`;
                 }
             }
             UI.legInfo.textContent = info;
         }
-
-        // Update Leg Times List
         if (UI.legTimes) {
-             if (state.race.status === 'prestart') {
-                 UI.legTimes.classList.add('hidden');
-             } else {
-                 UI.legTimes.classList.remove('hidden');
-             }
+             if (state.race.status === 'prestart') UI.legTimes.classList.add('hidden');
+             else UI.legTimes.classList.remove('hidden');
 
-            let html = "";
+             let html = "";
+             const getMoveLabel = (legIdx) => "Moves";
 
-             const getMoveLabel = (legIdx) => {
-                 return "Moves";
-             };
-
-             if (state.race.startLegDuration !== null && state.race.startLegDuration !== undefined) {
-                 const timeStr = formatSplitTime(state.race.startLegDuration);
-                 const moves = state.race.legManeuvers ? state.race.legManeuvers[0] : 0;
-                 const dist = state.race.legDistances ? Math.round(state.race.legDistances[0]) : 0;
-                 const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[0].toFixed(1) : "0.0";
+             if (state.player.race.startLegDuration !== null && state.player.race.startLegDuration !== undefined) {
+                 const timeStr = formatSplitTime(state.player.race.startLegDuration);
+                 const moves = state.player.race.legManeuvers ? state.player.race.legManeuvers[0] : 0;
+                 const dist = state.player.race.legDistances ? Math.round(state.player.race.legDistances[0]) : 0;
+                 const top = state.player.race.legTopSpeeds ? state.player.race.legTopSpeeds[0].toFixed(1) : "0.0";
                  html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Start: ${timeStr}</span> <span class="text-slate-500">Top:${top}kn Dist:${dist}m ${getMoveLabel(0)}:${moves}</span></div>`;
              }
 
-             if (state.race.legTimes) {
-                 for (let i = 0; i < state.race.legTimes.length; i++) {
+             if (state.player.race.legTimes) {
+                 for (let i = 0; i < state.player.race.legTimes.length; i++) {
                       const legNum = i + 1;
-                      const timeStr = formatSplitTime(state.race.legTimes[i]);
-                      const moves = state.race.legManeuvers ? state.race.legManeuvers[legNum] : 0;
-                      const dist = state.race.legDistances ? Math.round(state.race.legDistances[legNum]) : 0;
-                      const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[legNum].toFixed(1) : "0.0";
+                      const timeStr = formatSplitTime(state.player.race.legTimes[i]);
+                      const moves = state.player.race.legManeuvers ? state.player.race.legManeuvers[legNum] : 0;
+                      const dist = state.player.race.legDistances ? Math.round(state.player.race.legDistances[legNum]) : 0;
+                      const top = state.player.race.legTopSpeeds ? state.player.race.legTopSpeeds[legNum].toFixed(1) : "0.0";
                       html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Leg ${legNum}: ${timeStr}</span> <span class="text-slate-500">Top:${top}kn Dist:${dist}m ${getMoveLabel(legNum)}:${moves}</span></div>`;
                  }
              }
 
-             // Display Current Leg Time if Racing (or Start)
-             if ((state.race.status === 'racing' || state.race.status === 'prestart') && state.race.leg < 5) {
-                 const currentLegNum = state.race.leg;
-                 // For Leg 0 (Start), time is simpler (duration so far)
-
+             if ((state.race.status === 'racing' || state.race.status === 'prestart') && state.player.race.leg < 5) {
+                 const currentLegNum = state.player.race.leg;
                  let currentLegTime = 0;
-                 if (currentLegNum === 0) {
-                     // Time: "Running..."
-                     currentLegTime = state.race.timer;
-                 } else {
-                     currentLegTime = state.race.timer - state.race.legStartTime;
-                 }
+                 if (currentLegNum === 0) currentLegTime = state.race.timer;
+                 else currentLegTime = state.race.timer - state.player.race.legStartTime;
 
                  const timeStr = currentLegNum === 0 ? (state.race.status === 'prestart' ? "Prestart" : formatSplitTime(currentLegTime)) : formatSplitTime(currentLegTime);
-                 const moves = state.race.legManeuvers ? state.race.legManeuvers[currentLegNum] : 0;
+                 const moves = state.player.race.legManeuvers ? state.player.race.legManeuvers[currentLegNum] : 0;
                  const label = currentLegNum === 0 ? "Start" : `Leg ${currentLegNum}`;
-                 const dist = state.race.legDistances ? Math.round(state.race.legDistances[currentLegNum]) : 0;
-                 const top = state.race.legTopSpeeds ? state.race.legTopSpeeds[currentLegNum].toFixed(1) : "0.0";
-
+                 const dist = state.player.race.legDistances ? Math.round(state.player.race.legDistances[currentLegNum]) : 0;
+                 const top = state.player.race.legTopSpeeds ? state.player.race.legTopSpeeds[currentLegNum].toFixed(1) : "0.0";
                  html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md flex justify-between gap-4"><span>${label}: ${timeStr}</span> <span class="text-white/50">Top:${top}kn Dist:${dist}m ${getMoveLabel(currentLegNum)}:${moves}</span></div>`;
              }
-
              UI.legTimes.innerHTML = html;
         }
     }
@@ -3107,9 +2317,7 @@ function loop(timestamp) {
     if (!lastTime) lastTime = timestamp;
     const dt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
-
     const safeDt = Math.min(dt, 0.1);
-
     if (!state.paused) {
         update(safeDt);
         draw();
@@ -3117,18 +2325,15 @@ function loop(timestamp) {
     requestAnimationFrame(loop);
 }
 
-// Course Management
 function initCourse() {
     const windDir = state.wind.baseDirection;
     const ux = Math.sin(windDir);
     const uy = -Math.cos(windDir);
     const rx = -uy;
     const ry = ux;
-
     const boatLength = 55;
     const gateWidth = 10 * boatLength;
     const courseDist = 4000;
-
     state.course = {
         marks: [
             { x: -rx * gateWidth/2, y: -ry * gateWidth/2, type: 'start' },
@@ -3136,73 +2341,69 @@ function initCourse() {
             { x: (ux * courseDist) - (rx * gateWidth/2), y: (uy * courseDist) - (ry * gateWidth/2), type: 'mark' },
             { x: (ux * courseDist) + (rx * gateWidth/2), y: (uy * courseDist) + (ry * gateWidth/2), type: 'mark' }
         ],
-        boundary: {
-            x: ux * (courseDist / 2),
-            y: uy * (courseDist / 2),
-            radius: 3500
-        }
+        boundary: { x: ux * (courseDist / 2), y: uy * (courseDist / 2), radius: 3500 }
     };
 }
 
 function resetGame() {
-    loadSettings(); // Load settings on reset/init
-
+    loadSettings();
     state.camera.target = 'boat';
     state.wind.baseSpeed = 8 + Math.random() * 10;
     state.wind.speed = state.wind.baseSpeed;
     state.wind.baseDirection = (Math.random() - 0.5) * 0.5;
     state.wind.direction = state.wind.baseDirection;
-
     state.time = 0;
-    state.boat.velocity = { x: 0, y: 0 };
-    state.boat.speed = 0;
-    state.boat.sailAngle = 0;
-    state.boat.manualTrim = false; // Reset to default? Or keep setting?
-    // Requirement implies "Toggle trim mode from manual to automatic" in settings.
-    // If settings are persistent, we should respect them.
-    // loadSettings called above handles this via applySettings().
-
-    state.boat.manualSailAngle = 0;
-    state.boat.boomSide = 1;
-    state.boat.targetBoomSide = 1;
-    state.boat.luffing = false;
-    state.boat.luffIntensity = 0;
-    state.boat.spinnaker = false;
-    state.boat.spinnakerDeployProgress = 0;
-
     state.race.status = 'prestart';
     state.race.timer = 30.0;
-    state.race.leg = 0;
-    state.race.isRounding = false;
-    state.race.ocs = false;
-    state.race.penalty = false;
-    state.race.penaltyProgress = 0;
-    state.race.finishTime = 0;
-    state.race.startTimeDisplay = 0;
-    state.race.startTimeDisplayTimer = 0;
-    state.race.legStartTime = 0;
-    state.race.lastLegDuration = 0;
-    state.race.startLegDuration = null;
-    state.race.legSplitTimer = 0;
-    state.race.legTimes = [];
-    state.race.legManeuvers = [0, 0, 0, 0, 0];
-    state.race.legTopSpeeds = [0, 0, 0, 0, 0];
-    state.race.legDistances = [0, 0, 0, 0, 0];
-    state.race.trace = [];
     state.particles = [];
-
     initCourse();
 
-    const startDist = 150;
-    state.boat.x = -Math.sin(state.wind.direction) * 450;
-    state.boat.y = Math.cos(state.wind.direction) * 450;
-    state.boat.heading = state.wind.direction;
-    state.boat.lastWindSide = Math.sign(normalizeAngle(state.wind.direction - state.boat.heading));
+    // Init Boats
+    state.boats = [];
 
-    state.race.lastPos.x = state.boat.x;
-    state.race.lastPos.y = state.boat.y;
-    state.boat.prevHeading = state.boat.heading;
+    // Wind Vector (blowing towards)
+    const windDir = state.wind.direction;
+    const downwindX = Math.sin(windDir + Math.PI);
+    const downwindY = -Math.cos(windDir + Math.PI);
 
+    // Helper to check dist
+    const checkDist = (x, y) => {
+        for (const b of state.boats) {
+            const dx = b.x - x; const dy = b.y - y;
+            if (dx*dx + dy*dy < 60*60) return false;
+        }
+        return true;
+    };
+
+    for (let i = 0; i < 10; i++) {
+        let x, y, tries = 0;
+        do {
+            const distDownwind = 250 + Math.random() * 500;
+            const distCrosswind = (Math.random() - 0.5) * 800;
+            const wx = Math.sin(windDir);
+            const wy = -Math.cos(windDir);
+            const rx = -wy;
+            const ry = wx;
+            x = -wx * distDownwind + rx * distCrosswind;
+            y = -wy * distDownwind + ry * distCrosswind;
+            tries++;
+        } while (!checkDist(x, y) && tries < 100);
+
+        const isPlayer = (i === 0);
+        const color = isPlayer ? {} : AI_COLORS[i - 1];
+
+        const boat = new Boat(i, isPlayer, color);
+        boat.x = x;
+        boat.y = y;
+        boat.heading = windDir;
+        boat.prevHeading = boat.heading;
+        boat.race.lastPos.x = boat.x;
+        boat.race.lastPos.y = boat.y;
+
+        state.boats.push(boat);
+    }
+
+    state.player = state.boats[0];
     hideRaceMessage();
 }
 
