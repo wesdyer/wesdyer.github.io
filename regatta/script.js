@@ -1848,6 +1848,49 @@ function drawBoat(ctx, boat) {
     ctx.restore();
 }
 
+function isConflictSoon(b1, b2) {
+    const distSq = (b1.x - b2.x)**2 + (b1.y - b2.y)**2;
+    if (distSq < 80*80) return true; // Very close/overlapping
+
+    // Relative velocity
+    // velocity is units per frame (1/60s)
+    const vx = b1.velocity.x - b2.velocity.x; // Velocity of B1 relative to B2
+    const vy = b1.velocity.y - b2.velocity.y;
+
+    // Relative position of B1 from B2
+    const px = b1.x - b2.x;
+    const py = b1.y - b2.y;
+
+    // Check if moving closer
+    // d/dt (P.P) = 2 P.V
+    const dot = px * vx + py * vy;
+
+    // If dot > 0, distance is increasing (moving apart)
+    if (dot >= 0) return false;
+
+    // Time to CPA
+    const vSq = vx*vx + vy*vy;
+    if (vSq < 0.0001) return false;
+
+    // t_cpa = -(P.V) / (V.V)
+    const t = -dot / vSq;
+
+    // Thresholds
+    // 10 seconds = 600 frames at 60fps
+    if (t > 600) return false;
+
+    // CPA Distance
+    // P_cpa = P + V*t
+    const cpaX = px + vx * t;
+    const cpaY = py + vy * t;
+    const cpaDistSq = cpaX*cpaX + cpaY*cpaY;
+
+    // 120 units is approx 3-4 boat lengths (safety margin)
+    if (cpaDistSq < 120*120) return true;
+
+    return false;
+}
+
 function drawRulesOverlay(ctx) {
     if (!state.showNavAids || !settings.penaltiesEnabled || state.race.status === 'finished') return;
 
@@ -1861,7 +1904,7 @@ function drawRulesOverlay(ctx) {
             const b2 = state.boats[j];
             const distSq = (b1.x - b2.x)**2 + (b1.y - b2.y)**2;
 
-            if (distSq < checkDist * checkDist) {
+            if (distSq < checkDist * checkDist && isConflictSoon(b1, b2)) {
                 const rowBoat = getRightOfWay(b1, b2);
                 if (rowBoat) {
                     const winner = rowBoat;
