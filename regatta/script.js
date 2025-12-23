@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS = {
     navAids: true,
     manualTrim: false,
     soundEnabled: true,
+    penaltiesEnabled: true,
     cameraMode: 'heading',
     hullColor: '#f1f5f9',
     sailColor: '#ffffff',
@@ -347,6 +348,7 @@ const UI = {
     closeSettings: document.getElementById('close-settings'),
     saveSettings: document.getElementById('save-settings'),
     settingSound: document.getElementById('setting-sound'),
+    settingPenalties: document.getElementById('setting-penalties'),
     settingNavAids: document.getElementById('setting-navaids'),
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
@@ -357,6 +359,7 @@ const UI = {
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
+    rulesStatus: document.getElementById('hud-rules-status'),
     boatRows: {}
 };
 
@@ -385,6 +388,7 @@ function applySettings() {
     state.camera.mode = settings.cameraMode;
 
     if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
+    if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
@@ -392,6 +396,16 @@ function applySettings() {
     if (UI.settingSailColor) UI.settingSailColor.value = settings.sailColor;
     if (UI.settingCockpitColor) UI.settingCockpitColor.value = settings.cockpitColor;
     if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.value = settings.spinnakerColor;
+
+    if (UI.rulesStatus) {
+        if (settings.penaltiesEnabled) {
+            UI.rulesStatus.textContent = "RULES: ON";
+            UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider`;
+        } else {
+            UI.rulesStatus.textContent = "RULES: OFF";
+            UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-red-400 bg-slate-900/80 px-2 py-0.5 rounded-full border border-red-500/50 uppercase tracking-wider`;
+        }
+    }
 }
 
 function togglePause(show) {
@@ -453,6 +467,7 @@ if (UI.closeSettings) UI.closeSettings.addEventListener('click', () => toggleSet
 if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSettings(false));
 
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(state.wind.speed); });
+if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => { settings.penaltiesEnabled = e.target.checked; saveSettings(); });
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.manualTrim = e.target.checked; saveSettings(); });
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
@@ -519,6 +534,15 @@ window.addEventListener('keydown', (e) => {
         saveSettings();
         if (settings.soundEnabled) Sound.init();
         Sound.updateWindSound(state.wind.speed);
+    }
+    if (e.key === 'F4') {
+        e.preventDefault();
+        settings.penaltiesEnabled = !settings.penaltiesEnabled;
+        saveSettings();
+        const msg = settings.penaltiesEnabled ? "RULES ENABLED" : "RULES DISABLED";
+        const col = settings.penaltiesEnabled ? "text-green-400" : "text-red-400";
+        showRaceMessage(msg, col, `border-${settings.penaltiesEnabled ? 'green' : 'red'}-400/50`);
+        setTimeout(hideRaceMessage, 1500);
     }
     if (e.key === '`' || e.code === 'Backquote') {
         state.showNavAids = !state.showNavAids;
@@ -793,6 +817,8 @@ function updateAI(boat, dt) {
 
 function triggerPenalty(boat) {
     if (boat.raceState.finished) return;
+    if (!settings.penaltiesEnabled) return;
+
     if (!boat.raceState.penalty) {
         boat.raceState.penalty = true;
         boat.raceState.penaltyProgress = 0;

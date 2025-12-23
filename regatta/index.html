@@ -121,6 +121,7 @@
                             <li class="flex justify-between"><span>Screenshot</span> <span class="text-white font-bold">F1</span></li>
                             <li class="flex justify-between"><span>Settings</span> <span class="text-white font-bold">F2</span></li>
                             <li class="flex justify-between"><span>Toggle Sound</span> <span class="text-white font-bold">F3</span></li>
+                            <li class="flex justify-between"><span>Toggle Penalties</span> <span class="text-white font-bold">F4</span></li>
                             <li class="flex justify-between"><span>Help</span> <span class="text-white font-bold">?</span></li>
                         </ul>
                     </div>
@@ -192,6 +193,15 @@
                         <span class="text-slate-200 font-bold">Sound Effects</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="setting-sound" class="sr-only peer">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+
+                    <!-- Penalties -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-slate-200 font-bold">Penalties</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="setting-penalties" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -360,6 +370,9 @@
                     </div>
                     <div id="hud-trim-mode" class="mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider">
                         AUTO
+                    </div>
+                    <div id="hud-rules-status" class="mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider">
+                        RULES: ON
                     </div>
                 </div>
             </div>
