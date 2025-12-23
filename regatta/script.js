@@ -2010,12 +2010,6 @@ function updateLeaderboard() {
 
             // Handle Rank Change Animation
             if (boat.lbRank !== index) {
-                // Remove class to reset animation
-                row.classList.remove('row-highlight');
-                // Trigger reflow
-                void row.offsetWidth;
-                // Add class
-                row.classList.add('row-highlight');
                 boat.lbRank = index;
             }
         });
