@@ -31,6 +31,7 @@ const DEFAULT_SETTINGS = {
     navAids: true,
     manualTrim: false,
     soundEnabled: true,
+    bgSoundEnabled: true,
     penaltiesEnabled: true,
     cameraMode: 'heading',
     hullColor: '#f1f5f9',
@@ -380,7 +381,7 @@ const Sound = {
     },
 
     updateWindSound: function(speed) {
-        if (!settings.soundEnabled) {
+        if (!settings.soundEnabled || !settings.bgSoundEnabled) {
             if (this.windGain) this.windGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
             return;
         }
@@ -431,6 +432,7 @@ const UI = {
     closeSettings: document.getElementById('close-settings'),
     saveSettings: document.getElementById('save-settings'),
     settingSound: document.getElementById('setting-sound'),
+    settingBgSound: document.getElementById('setting-bg-sound'),
     settingPenalties: document.getElementById('setting-penalties'),
     settingNavAids: document.getElementById('setting-navaids'),
     settingTrim: document.getElementById('setting-trim'),
@@ -471,6 +473,7 @@ function applySettings() {
     state.camera.mode = settings.cameraMode;
 
     if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
+    if (UI.settingBgSound) UI.settingBgSound.checked = settings.bgSoundEnabled;
     if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
@@ -550,6 +553,7 @@ if (UI.closeSettings) UI.closeSettings.addEventListener('click', () => toggleSet
 if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSettings(false));
 
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(state.wind.speed); });
+if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { settings.bgSoundEnabled = e.target.checked; saveSettings(); Sound.updateWindSound(state.wind.speed); });
 if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => { settings.penaltiesEnabled = e.target.checked; saveSettings(); });
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.manualTrim = e.target.checked; saveSettings(); });
