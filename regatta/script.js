@@ -1154,7 +1154,7 @@ function updateBoat(boat, dt) {
         if (dCross < widthAtDist * 0.6) {
              const centerFactor = 1.0 - (dCross / (widthAtDist * 0.6));
              const distFactor = 1.0 - (dDown / shadowLength);
-             const intensity = 0.8 * centerFactor * distFactor;
+             const intensity = 0.95 * centerFactor * distFactor;
              if (intensity > boat.badAirIntensity) boat.badAirIntensity = intensity;
         }
     }
