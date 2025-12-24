@@ -4184,7 +4184,15 @@ function loop(timestamp) {
     const dt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
     if (!state.paused) {
-        update(Math.min(dt, 0.1));
+        let iterations = 1;
+        if (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')) {
+            iterations = 10;
+        }
+
+        const step = Math.min(dt, 0.1);
+        for (let i = 0; i < iterations; i++) {
+            update(step);
+        }
         draw();
     }
     requestAnimationFrame(loop);
