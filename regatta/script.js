@@ -2750,8 +2750,8 @@ function drawGusts(ctx) {
 
         // Colors
         if (g.type === 'gust') {
-            grad.addColorStop(0, `rgba(0, 0, 70, ${0.6 * lifeFade})`);
-            grad.addColorStop(0.5, `rgba(0, 0, 80, ${0.3 * lifeFade})`);
+            grad.addColorStop(0, `rgba(0, 0, 70, ${0.45 * lifeFade})`);
+            grad.addColorStop(0.5, `rgba(0, 0, 80, ${0.25 * lifeFade})`);
             grad.addColorStop(1, 'rgba(0, 0, 80, 0)');
         } else {
             grad.addColorStop(0, `rgba(255, 255, 255, ${0.5 * lifeFade})`);
