@@ -2693,10 +2693,12 @@ function drawGusts(ctx) {
 
         // Colors
         if (g.type === 'gust') {
-            grad.addColorStop(0, `rgba(0, 0, 50, ${0.4 * lifeFade})`);
-            grad.addColorStop(1, 'rgba(0, 0, 50, 0)');
+            grad.addColorStop(0, `rgba(0, 0, 70, ${0.6 * lifeFade})`);
+            grad.addColorStop(0.5, `rgba(0, 0, 80, ${0.3 * lifeFade})`);
+            grad.addColorStop(1, 'rgba(0, 0, 80, 0)');
         } else {
-            grad.addColorStop(0, `rgba(255, 255, 255, ${0.3 * lifeFade})`);
+            grad.addColorStop(0, `rgba(255, 255, 255, ${0.5 * lifeFade})`);
+            grad.addColorStop(0.5, `rgba(255, 255, 255, ${0.25 * lifeFade})`);
             grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
         }
 
@@ -2851,6 +2853,26 @@ function drawMinimap() {
     const b = state.course.boundary;
     const bp = t(b.x, b.y);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+
+    // Gusts
+    for (const g of state.gusts) {
+        const pos = t(g.x, g.y);
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(g.rotation);
+        ctx.scale(1, g.radiusY / g.radiusX);
+
+        ctx.beginPath();
+        ctx.arc(0, 0, g.radiusX * scale, 0, Math.PI * 2);
+
+        if (g.type === 'gust') {
+             ctx.fillStyle = 'rgba(0, 0, 50, 0.4)';
+        } else {
+             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        }
+        ctx.fill();
+        ctx.restore();
+    }
 
     // Trace (Player Only)
     if (player.raceState.trace.length) {
