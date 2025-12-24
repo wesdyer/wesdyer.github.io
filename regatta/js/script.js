@@ -3635,8 +3635,12 @@ function showResults() {
 
         const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
         const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
-        const useSpin = isVeryDark(hullColor);
+
+        // Color Logic: Use Spinnaker if Hull is Very Light OR Very Dark
+        const hullLuma = getLuma(hullColor);
+        const useSpin = hullLuma < 50 || hullLuma > 200;
         const bgColor = useSpin ? spinColor : hullColor;
+
         const luma = getLuma(bgColor);
         const isLight = luma > 128;
 
@@ -3644,7 +3648,7 @@ function showResults() {
         const subTextCol = isLight ? "text-slate-800/70" : "text-white/70";
 
         const row = document.createElement('div');
-        row.className = `flex items-center px-4 py-2 mb-2 rounded-r-lg shadow-md transition-transform hover:scale-[1.01] gap-4`;
+        row.className = `flex items-center px-4 py-4 mb-3 rounded-r-lg shadow-lg transition-transform hover:scale-[1.01] gap-6`;
         row.style.backgroundColor = bgColor;
 
         // Rank
@@ -3658,24 +3662,24 @@ function showResults() {
                  "text-amber-900 bg-amber-600 border-amber-400"    // Bronze
              ];
              const medal = document.createElement('div');
-             medal.className = `w-8 h-8 rounded-full flex items-center justify-center text-sm font-black border-2 shadow-sm ${colors[index]}`;
+             medal.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg font-black border-2 shadow-md ${colors[index]}`;
              medal.textContent = index + 1;
              rankDiv.appendChild(medal);
         } else {
              const txt = document.createElement('div');
-             txt.className = `text-xl font-black italic ${textCol}`;
+             txt.className = `text-2xl font-black italic ${textCol}`;
              txt.textContent = index + 1;
              rankDiv.appendChild(txt);
         }
 
-        // Image
+        // Image (Square)
         const imgDiv = document.createElement('div');
-        imgDiv.className = "w-12 h-12 shrink-0";
+        imgDiv.className = "w-14 h-14 shrink-0";
         if (boat.isPlayer) {
              const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
              star.setAttribute("viewBox", "0 0 24 24");
-             star.setAttribute("class", "w-full h-full drop-shadow-sm");
-             star.setAttribute("fill", isLight ? "#0f172a" : "#ffffff"); // Contrast star
+             star.setAttribute("class", "w-full h-full drop-shadow-md");
+             star.setAttribute("fill", isLight ? "#0f172a" : "#ffffff");
              const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
              path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
              star.appendChild(path);
@@ -3683,13 +3687,14 @@ function showResults() {
         } else {
              const img = document.createElement('img');
              img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
-             img.className = "w-full h-full rounded border-2 border-white/20 object-cover bg-slate-900";
+             img.className = "w-full h-full rounded-md border-2 border-white/20 object-cover bg-slate-900 shadow-md";
              imgDiv.appendChild(img);
         }
 
         // Name
         const nameDiv = document.createElement('div');
-        nameDiv.className = `flex-1 font-bold text-lg uppercase tracking-wide truncate ${textCol}`;
+        nameDiv.className = `flex-1 font-black text-3xl italic uppercase tracking-tighter truncate ${textCol}`;
+        nameDiv.style.textShadow = isLight ? 'none' : '0 2px 4px rgba(0,0,0,0.3)';
         nameDiv.textContent = boat.name;
 
         // Stats
@@ -3708,14 +3713,14 @@ function showResults() {
 
         const createStat = (val, w, align='text-right') => {
             const d = document.createElement('div');
-            d.className = `${w} ${align} font-mono font-bold ${textCol}`;
+            d.className = `${w} ${align} font-mono font-bold text-lg ${textCol}`;
             d.textContent = val;
             return d;
         };
 
         const timeDiv = createStat(finishTime, "w-24");
         const deltaDiv = document.createElement('div');
-        deltaDiv.className = `w-20 text-right font-mono text-sm ${subTextCol}`;
+        deltaDiv.className = `w-20 text-right font-mono font-bold text-lg ${subTextCol}`;
         deltaDiv.textContent = delta;
 
         const topDiv = createStat(topSpeed, "w-16");
@@ -3723,14 +3728,14 @@ function showResults() {
         const distDiv = createStat(totalDist, "w-16");
 
         const penDiv = document.createElement('div');
-        penDiv.className = `w-12 text-center font-bold rounded ${penalties > 0 ? 'bg-white text-red-600 shadow-sm' : subTextCol}`;
-        penDiv.textContent = penalties;
+        penDiv.className = `w-12 text-center font-bold text-lg rounded flex items-center justify-center h-8 mx-auto ${penalties > 0 ? 'bg-white text-red-600 shadow-sm' : subTextCol}`;
+        penDiv.textContent = penalties > 0 ? penalties : "-";
 
-        // Points
+        // Points (SailGP Style: Skewed, White, Black text)
         const ptsDiv = document.createElement('div');
         ptsDiv.className = "w-16 flex justify-center";
         const ptsBox = document.createElement('div');
-        ptsBox.className = "bg-white text-slate-900 font-black text-xl w-10 h-10 flex items-center justify-center transform -skew-x-12 shadow-sm";
+        ptsBox.className = "bg-white text-slate-900 font-black text-2xl w-12 h-10 flex items-center justify-center transform -skew-x-12 shadow-md border-l-4 border-slate-200";
         ptsBox.textContent = points;
         ptsDiv.appendChild(ptsBox);
 
