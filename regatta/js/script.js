@@ -3601,37 +3601,81 @@ function showResults() {
     const leader = sorted[0];
     UI.resultsList.innerHTML = '';
 
+    // Header
+    const header = document.createElement('div');
+    header.className = "flex items-center px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 gap-4";
+    header.innerHTML = `
+        <div class="w-12 text-center">Pos</div>
+        <div class="w-12"></div>
+        <div class="flex-1">Team</div>
+        <div class="w-24 text-right">Time</div>
+        <div class="w-20 text-right">Delta</div>
+        <div class="w-16 text-right">Top</div>
+        <div class="w-16 text-right">Avg</div>
+        <div class="w-16 text-right">Dist</div>
+        <div class="w-12 text-center">Pen</div>
+        <div class="w-16 text-center text-white">Pts</div>
+    `;
+    UI.resultsList.appendChild(header);
+
+    const getLuma = (c) => {
+        let r=0, g=0, b=0;
+        if(c.startsWith('#')) {
+            const hex = c.substring(1);
+            if(hex.length===3) { r=parseInt(hex[0]+hex[0],16); g=parseInt(hex[1]+hex[1],16); b=parseInt(hex[2]+hex[2],16); }
+            else { r=parseInt(hex.substring(0,2),16); g=parseInt(hex.substring(2,4),16); b=parseInt(hex.substring(4,6),16); }
+        }
+        return 0.299*r + 0.587*g + 0.114*b;
+    };
+
+    const totalBoats = state.boats.length;
+
     sorted.forEach((boat, index) => {
-        // Show all boats
+        const points = totalBoats - index;
+
+        const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
+        const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+        const useSpin = isVeryDark(hullColor);
+        const bgColor = useSpin ? spinColor : hullColor;
+        const luma = getLuma(bgColor);
+        const isLight = luma > 128;
+
+        const textCol = isLight ? "text-slate-900" : "text-white";
+        const subTextCol = isLight ? "text-slate-800/70" : "text-white/70";
+
         const row = document.createElement('div');
-        row.className = "flex items-center p-4 bg-slate-700/50 rounded-xl border border-slate-600/50 backdrop-blur-sm shadow-lg gap-6";
+        row.className = `flex items-center px-4 py-2 mb-2 rounded-r-lg shadow-md transition-transform hover:scale-[1.01] gap-4`;
+        row.style.backgroundColor = bgColor;
 
         // Rank
         const rankDiv = document.createElement('div');
-        if (index === 0) {
-            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-yellow-900 bg-gradient-to-br from-yellow-300 to-yellow-600 border-2 border-yellow-200 shadow-lg";
-            rankDiv.textContent = "1";
-        } else if (index === 1) {
-            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-slate-900 bg-gradient-to-br from-slate-300 to-slate-500 border-2 border-slate-200 shadow-lg";
-            rankDiv.textContent = "2";
-        } else if (index === 2) {
-            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-amber-100 bg-gradient-to-br from-amber-600 to-amber-800 border-2 border-amber-400 shadow-lg";
-            rankDiv.textContent = "3";
+        rankDiv.className = "w-12 shrink-0 flex justify-center";
+
+        if (index <= 2) {
+             const colors = [
+                 "text-yellow-900 bg-yellow-400 border-yellow-200", // Gold
+                 "text-slate-900 bg-slate-300 border-slate-200",   // Silver
+                 "text-amber-900 bg-amber-600 border-amber-400"    // Bronze
+             ];
+             const medal = document.createElement('div');
+             medal.className = `w-8 h-8 rounded-full flex items-center justify-center text-sm font-black border-2 shadow-sm ${colors[index]}`;
+             medal.textContent = index + 1;
+             rankDiv.appendChild(medal);
         } else {
-            rankDiv.className = "w-12 text-center text-4xl font-black text-slate-500 italic";
-            rankDiv.textContent = index + 1;
+             const txt = document.createElement('div');
+             txt.className = `text-xl font-black italic ${textCol}`;
+             txt.textContent = index + 1;
+             rankDiv.appendChild(txt);
         }
 
         // Image
         const imgDiv = document.createElement('div');
-        imgDiv.className = "w-24 h-24 shrink-0";
+        imgDiv.className = "w-12 h-12 shrink-0";
         if (boat.isPlayer) {
-             // Star Icon
              const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
              star.setAttribute("viewBox", "0 0 24 24");
-             star.setAttribute("class", "w-full h-full drop-shadow-md");
-             const color = isVeryDark(settings.hullColor) ? settings.spinnakerColor : settings.hullColor;
-             star.setAttribute("fill", color);
+             star.setAttribute("class", "w-full h-full drop-shadow-sm");
+             star.setAttribute("fill", isLight ? "#0f172a" : "#ffffff"); // Contrast star
              const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
              path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
              star.appendChild(path);
@@ -3639,99 +3683,67 @@ function showResults() {
         } else {
              const img = document.createElement('img');
              img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
-             img.className = "w-full h-full rounded-2xl border-4 object-cover bg-slate-900 shadow-md";
-             const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
-             img.style.borderColor = color;
+             img.className = "w-full h-full rounded border-2 border-white/20 object-cover bg-slate-900";
              imgDiv.appendChild(img);
         }
 
-        // Details
-        const details = document.createElement('div');
-        details.className = "flex-1 flex flex-col justify-center";
+        // Name
+        const nameDiv = document.createElement('div');
+        nameDiv.className = `flex-1 font-bold text-lg uppercase tracking-wide truncate ${textCol}`;
+        nameDiv.textContent = boat.name;
 
-        const nameRow = document.createElement('div');
-        nameRow.className = "flex items-baseline gap-3 mb-1";
+        // Stats
+        const finishTime = formatTime(boat.raceState.finishTime);
+        const delta = (index > 0 && leader.raceState.finished && boat.raceState.finished)
+            ? "+" + (boat.raceState.finishTime - leader.raceState.finishTime).toFixed(2)
+            : "-";
+        const topSpeed = Math.max(...boat.raceState.legTopSpeeds).toFixed(1);
 
-        const name = document.createElement('span');
-        name.className = "text-2xl font-bold text-white tracking-wide";
-        name.textContent = boat.name;
-        if (boat.isPlayer) name.className += " text-yellow-300";
-
-        const finishTime = document.createElement('span');
-        finishTime.className = "text-xl font-mono text-emerald-400 font-bold";
-        if (boat.raceState.finished) {
-            finishTime.textContent = formatTime(boat.raceState.finishTime);
-            if (index > 0 && leader.raceState.finished) {
-                const diff = boat.raceState.finishTime - leader.raceState.finishTime;
-                const diffSpan = document.createElement('span');
-                diffSpan.className = "text-base text-emerald-600/70 ml-2 font-normal";
-                diffSpan.textContent = `(+${diff.toFixed(2)}s)`;
-                finishTime.appendChild(diffSpan);
-            }
-        } else {
-            finishTime.textContent = "Racing...";
-            finishTime.className = "text-sm font-mono text-slate-400 animate-pulse";
-        }
-
-        nameRow.appendChild(name);
-        nameRow.appendChild(finishTime);
-
-        // Stats Row
-        const statsRow = document.createElement('div');
-        statsRow.className = "flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-300 font-mono uppercase tracking-wider";
-
-        const totalDist = boat.raceState.legDistances.reduce((a, b) => a + b, 0);
-        const topSpeed = Math.max(...boat.raceState.legTopSpeeds);
-        const totalMoves = boat.raceState.legManeuvers.reduce((a, b) => a + b, 0);
-
-        // Avg Speed: Time-weighted average from speedometer
         const duration = boat.raceState.finished ? boat.raceState.finishTime : state.race.timer;
         const totalSpeedSum = boat.raceState.legSpeedSums ? boat.raceState.legSpeedSums.reduce((a, b) => a + b, 0) : 0;
-        const avgSpeed = duration > 0.1 ? (totalSpeedSum / duration) : 0;
+        const avgSpeed = (duration > 0.1 ? (totalSpeedSum / duration) : 0).toFixed(1);
 
-        statsRow.innerHTML = `
-            <span title="Top Speed">Top: <span class="text-white">${topSpeed.toFixed(1)}</span> kn</span>
-            <span title="Avg Speed">Avg: <span class="text-white">${avgSpeed.toFixed(1)}</span> kn</span>
-            <span title="Total Distance">Dist: <span class="text-white">${Math.round(totalDist)}</span> m</span>
-            <span title="Maneuvers">Moves: <span class="text-white">${totalMoves}</span></span>
-            <span title="Penalties" class="${boat.raceState.totalPenalties > 0 ? 'text-red-400' : 'text-slate-500'}">Penalties: <span class="text-white">${boat.raceState.totalPenalties}</span></span>
-        `;
+        const totalDist = Math.round(boat.raceState.legDistances.reduce((a, b) => a + b, 0));
+        const penalties = boat.raceState.totalPenalties;
 
-        // Per-Leg Stats
-        const legStats = document.createElement('div');
-        legStats.className = "mt-3 grid grid-cols-5 gap-2 border-t border-slate-600/30 pt-2";
+        const createStat = (val, w, align='text-right') => {
+            const d = document.createElement('div');
+            d.className = `${w} ${align} font-mono font-bold ${textCol}`;
+            d.textContent = val;
+            return d;
+        };
 
-        const legs = ['Start', 'Leg 1', 'Leg 2', 'Leg 3', 'Leg 4'];
-        legs.forEach((legName, i) => {
-             const col = document.createElement('div');
-             col.className = "flex flex-col gap-0.5";
+        const timeDiv = createStat(finishTime, "w-24");
+        const deltaDiv = document.createElement('div');
+        deltaDiv.className = `w-20 text-right font-mono text-sm ${subTextCol}`;
+        deltaDiv.textContent = delta;
 
-             // Time
-             let timeVal = 0;
-             if (i === 0) timeVal = boat.raceState.startLegDuration || 0;
-             else timeVal = boat.raceState.legTimes[i-1] || 0;
+        const topDiv = createStat(topSpeed, "w-16");
+        const avgDiv = createStat(avgSpeed, "w-16");
+        const distDiv = createStat(totalDist, "w-16");
 
-             const distVal = boat.raceState.legDistances[i] || 0;
-             const speedVal = boat.raceState.legTopSpeeds[i] || 0;
-             const movesVal = boat.raceState.legManeuvers[i] || 0;
+        const penDiv = document.createElement('div');
+        penDiv.className = `w-12 text-center font-bold rounded ${penalties > 0 ? 'bg-white text-red-600 shadow-sm' : subTextCol}`;
+        penDiv.textContent = penalties;
 
-             col.innerHTML = `
-                 <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">${legName}</div>
-                 <div class="text-xs font-mono text-emerald-300 font-bold">${formatSplitTime(timeVal)}</div>
-                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Top:</span> <span class="text-slate-300">${speedVal.toFixed(1)}</span></div>
-                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Dist:</span> <span class="text-slate-300">${Math.round(distVal)}</span></div>
-                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Mv:</span> <span class="text-slate-300">${movesVal}</span></div>
-             `;
-             legStats.appendChild(col);
-        });
-
-        details.appendChild(nameRow);
-        details.appendChild(statsRow);
-        details.appendChild(legStats);
+        // Points
+        const ptsDiv = document.createElement('div');
+        ptsDiv.className = "w-16 flex justify-center";
+        const ptsBox = document.createElement('div');
+        ptsBox.className = "bg-white text-slate-900 font-black text-xl w-10 h-10 flex items-center justify-center transform -skew-x-12 shadow-sm";
+        ptsBox.textContent = points;
+        ptsDiv.appendChild(ptsBox);
 
         row.appendChild(rankDiv);
         row.appendChild(imgDiv);
-        row.appendChild(details);
+        row.appendChild(nameDiv);
+        row.appendChild(timeDiv);
+        row.appendChild(deltaDiv);
+        row.appendChild(topDiv);
+        row.appendChild(avgDiv);
+        row.appendChild(distDiv);
+        row.appendChild(penDiv);
+        row.appendChild(ptsDiv);
 
         UI.resultsList.appendChild(row);
     });
