@@ -948,13 +948,9 @@ function setupPreRaceOverlay() {
             // Personality
             const config = AI_CONFIG.find(c => c.name === boat.name);
             let pText = config ? config.personality : "Unknown";
-            const words = pText.split(' ');
-            if (words.length > 10) {
-                pText = words.slice(0, 10).join(' ') + '...';
-            }
 
             const desc = document.createElement('div');
-            desc.className = "text-xs text-slate-300 italic";
+            desc.className = "text-xs text-slate-300 italic line-clamp-2";
             desc.textContent = pText;
 
             info.appendChild(nameRow);
