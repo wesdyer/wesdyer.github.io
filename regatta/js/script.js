@@ -105,42 +105,42 @@ const Sayings = {
 
 // AI Configuration
 const AI_CONFIG = [
-    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 5, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Time-on-Distance Start", "Wind-Shift Anticipation Start"], personality: "A relaxed veteran who reads the wind instinctively and somehow always ends up in the right place." },
-    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Port-Tack Flyer"], personality: "A flashy opportunist who thrives on bursts of speed and perfectly timed lane changes." },
-    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', boatHandling: 3, windSense: 3, positioning: 2, aggression: 4, composure: 2 , startStrategies: ["Chaos Gambit", "Second-Row Slingshot"], personality: "Unpredictable and awkward in motion, but maddeningly effective when chaos breaks out." },
-    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', boatHandling: 4, windSense: 2, positioning: 5, aggression: 5, composure: 3 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"], personality: "Aggressive and confrontational, specializing in brutal starting-line pressure and intimidation." },
-    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "High-Lane Builder"], personality: "Cold, dominant, and relentless, forcing others to react to his presence or suffer." },
-    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', boatHandling: 4, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "High-Lane Builder"], personality: "Stylish and confident, sailing with flair and daring others to keep up." },
-    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', boatHandling: 3, windSense: 4, positioning: 5, aggression: 2, composure: 4 , startStrategies: ["Mid-Line Safety Start", "Leebow Trap"], personality: "Methodical and stubborn, building slow advantages that are almost impossible to dismantle." },
-    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 4, composure: 4 , startStrategies: ["Leebow Trap", "Port-Tack Flyer"], personality: "Patient and dangerous, striking decisively when opponents least expect it." },
-    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Mid-Line Safety Start", "High-Lane Builder"], personality: "Big, steady, and immovable, excelling in endurance races and heavy conditions." },
-    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', boatHandling: 4, windSense: 4, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Gap Sniper", "Leebow Trap"], personality: "Slippery and cunning, exploiting tiny mistakes and disappearing into clean air." },
-    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 2, composure: 5 , startStrategies: ["Bail-Out & Reset", "Second-Row Slingshot"], personality: "Radiates good vibes while quietly outlasting flashier competitors." },
-    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Time-on-Distance Start"], personality: "A cheerful speedster who always looks for clean lanes and open water." },
-    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', boatHandling: 3, windSense: 2, positioning: 5, aggression: 4, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"], personality: "Defensive and stubborn, impossible to bully off the line." },
-    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', boatHandling: 4, windSense: 4, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Time-on-Distance Start", "Mid-Line Safety Start"], personality: "Calm and patient, winning races by never making mistakes." },
-    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', boatHandling: 5, windSense: 3, positioning: 4, aggression: 4, composure: 5 , startStrategies: ["High-Lane Builder", "Pin-End (Committee Boat) Start"], personality: "Silent, dominant, and terrifying when fully powered up." },
-    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', boatHandling: 3, windSense: 3, positioning: 4, aggression: 4, composure: 2 , startStrategies: ["Chaos Gambit", "Gap Sniper"], personality: "Erratic and clever, thrives in crowded chaos." },
-    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Second-Row Slingshot", "Time-on-Distance Start"], personality: "Built for straight-line speed and relentless pressure." },
-    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', boatHandling: 4, windSense: 2, positioning: 2, aggression: 5, composure: 2 , startStrategies: ["Port-Tack Flyer", "Chaos Gambit"], personality: "Explosive starts and risky moves define every race." },
-    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', boatHandling: 4, windSense: 5, positioning: 3, aggression: 2, composure: 4 , startStrategies: ["Wind-Shift Anticipation Start", "Mid-Line Safety Start"], personality: "Floats effortlessly through shifts others don’t even see." },
-    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', boatHandling: 3, windSense: 3, positioning: 5, aggression: 4, composure: 3 , startStrategies: ["Luff & Kill", "Leebow Trap"], personality: "A master of traps, overlaps, and dirty air." },
-    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', boatHandling: 2, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Second-Row Slingshot"], personality: "Slow-looking but shockingly hard to pass." },
-    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 3 , startStrategies: ["Port-Tack Flyer", "Leebow Trap"], personality: "Aggressive and surgical, always attacking at the worst moment." },
-    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', boatHandling: 4, windSense: 4, positioning: 5, aggression: 2, composure: 5 , startStrategies: ["Time-on-Distance Start", "High-Lane Builder"], personality: "Precision-focused and unflappable in traffic." },
-    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Wind-Shift Anticipation Start", "Gap Sniper"], personality: "Graceful and unpredictable, loves wide tactical plays." },
-    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', boatHandling: 3, windSense: 2, positioning: 5, aggression: 3, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"], personality: "Defensive and spiky—never gives an easy lane." },
-    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', boatHandling: 4, windSense: 5, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Wind-Shift Anticipation Start", "Gap Sniper"], personality: "Constantly hunting pressure and small gains." },
-    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', boatHandling: 3, windSense: 4, positioning: 4, aggression: 2, composure: 3 , startStrategies: ["Gap Sniper", "Bail-Out & Reset"], personality: "Looks harmless but slips through impossibly tight gaps." },
-    { name: 'Anchor', creature: 'Sea Turtle', hull: '#2F6F4E', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#B7C4B4', boatHandling: 2, windSense: 3, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Bail-Out & Reset"], personality: "Conservative, resilient, and brutally consistent." },
-    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', boatHandling: 4, windSense: 2, positioning: 3, aggression: 5, composure: 2 , startStrategies: ["Chaos Gambit", "Port-Tack Flyer"], personality: "Hyperactive and opportunistic, thrives on chaos." },
-    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', boatHandling: 3, windSense: 4, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Leebow Trap"], personality: "Methodical and cerebral, always playing the long game." },
-    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', boatHandling: 5, windSense: 1, positioning: 2, aggression: 5, composure: 1 , startStrategies: ["Second-Row Slingshot", "Port-Tack Flyer"], personality: "All-in on speed, even when it’s a terrible idea." },
-    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', boatHandling: 3, windSense: 5, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Bail-Out & Reset", "Wind-Shift Anticipation Start"], personality: "Quiet, patient, and underestimated, winning races by waiting out mistakes and capitalizing at exactly the right moment." },
-    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["High-Lane Builder", "Mid-Line Safety Start"], personality: "Calm, imposing, and unbothered by pressure, daring others to blink first." },
-    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 5, aggression: 4, composure: 3 , startStrategies: ["Leebow Trap", "Pin-End (Committee Boat) Start"], personality: "Elegant and ruthless, smiling sweetly while stealing your lane." },
-    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Port-Tack Flyer"], personality: "Fast, flashy, and always attacking on reaches." },
-    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 3, aggression: 5, composure: 3 , startStrategies: ["Time-on-Distance Start", "Chaos Gambit"], personality: "Hyper-alert and explosive off the line, thriving on quick reactions and sudden bursts." }
+    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "A relaxed veteran who reads the wind instinctively and somehow always ends up in the right place." },
+    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', personality: "A flashy opportunist who thrives on bursts of speed and perfectly timed lane changes." },
+    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', personality: "Unpredictable and awkward in motion, but maddeningly effective when chaos breaks out." },
+    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', personality: "Aggressive and confrontational, specializing in brutal starting-line pressure and intimidation." },
+    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', personality: "Cold, dominant, and relentless, forcing others to react to his presence or suffer." },
+    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', personality: "Stylish and confident, sailing with flair and daring others to keep up." },
+    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', personality: "Methodical and stubborn, building slow advantages that are almost impossible to dismantle." },
+    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A', personality: "Patient and dangerous, striking decisively when opponents least expect it." },
+    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', personality: "Big, steady, and immovable, excelling in endurance races and heavy conditions." },
+    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', personality: "Slippery and cunning, exploiting tiny mistakes and disappearing into clean air." },
+    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Radiates good vibes while quietly outlasting flashier competitors." },
+    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', personality: "A cheerful speedster who always looks for clean lanes and open water." },
+    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', personality: "Defensive and stubborn, impossible to bully off the line." },
+    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', personality: "Calm and patient, winning races by never making mistakes." },
+    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', personality: "Silent, dominant, and terrifying when fully powered up." },
+    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', personality: "Erratic and clever, thrives in crowded chaos." },
+    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', personality: "Built for straight-line speed and relentless pressure." },
+    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', personality: "Explosive starts and risky moves define every race." },
+    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', personality: "Floats effortlessly through shifts others don’t even see." },
+    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', personality: "A master of traps, overlaps, and dirty air." },
+    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', personality: "Slow-looking but shockingly hard to pass." },
+    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', personality: "Aggressive and surgical, always attacking at the worst moment." },
+    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Precision-focused and unflappable in traffic." },
+    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', personality: "Graceful and unpredictable, loves wide tactical plays." },
+    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', personality: "Defensive and spiky—never gives an easy lane." },
+    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', personality: "Constantly hunting pressure and small gains." },
+    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', personality: "Looks harmless but slips through impossibly tight gaps." },
+    { name: 'Anchor', creature: 'Sea Turtle', hull: '#2F6F4E', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Conservative, resilient, and brutally consistent." },
+    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', personality: "Hyperactive and opportunistic, thrives on chaos." },
+    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', personality: "Methodical and cerebral, always playing the long game." },
+    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', personality: "All-in on speed, even when it’s a terrible idea." },
+    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Quiet, patient, and underestimated, winning races by waiting out mistakes and capitalizing at exactly the right moment." },
+    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', personality: "Calm, imposing, and unbothered by pressure, daring others to blink first." },
+    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', personality: "Elegant and ruthless, smiling sweetly while stealing your lane." },
+    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', personality: "Fast, flashy, and always attacking on reaches." },
+    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Hyper-alert and explosive off the line, thriving on quick reactions and sudden bursts." }
 ];
 
 
@@ -353,12 +353,11 @@ class Boat {
         // Personality Stats
         if (config) {
              this.stats = {
-                 boatHandling: config.boatHandling || 3,
-                 windSense: config.windSense || 3,
-                 positioning: config.positioning || 3,
-                 aggression: config.aggression || 3,
-                 composure: config.composure || 3,
-                 creature: config.creature || "Unknown" ,
+                 boatHandling: 3,
+                 windSense: 3,
+                 positioning: 3,
+                 aggression: 3,
+                 composure: 3,
                  creature: config.creature || "Unknown"
              };
         } else {
@@ -4573,24 +4572,13 @@ function resetGame() {
         ai.speed = 0; // Initial speed
 
         // Pick Strategy
-        if (config.startStrategies && config.startStrategies.length > 0) {
-            ai.ai.startStrategy = config.startStrategies[Math.floor(Math.random() * config.startStrategies.length)];
-        } else {
-            ai.ai.startStrategy = "Mid-Line Safety Start";
-        }
+        ai.ai.startStrategy = "Mid-Line Safety Start";
 
         // Determine Start Area and Position
         // Areas: Left, Right, Mid-Front, Mid-Back
         const areas = ['Left', 'Right', 'Mid-Front', 'Mid-Back'];
-        // Distribute loosely based on strategy or random
+        // Distribute randomly
         let area = areas[Math.floor(Math.random() * areas.length)];
-        const strat = ai.ai.startStrategy;
-
-        // Bias area based on strategy name
-        if (strat.includes("Pin-End")) area = (getFavoredEnd() === 1) ? 'Right' : 'Left';
-        else if (strat.includes("Mid-Line")) area = (Math.random() > 0.5) ? 'Mid-Front' : 'Mid-Back';
-        else if (strat.includes("High-Lane")) area = 'Mid-Back'; // Needs runway
-        else if (strat.includes("Port-Tack")) area = 'Left'; // Usually pin end for port tack
 
         ai.ai.startArea = area;
 
@@ -4606,9 +4594,8 @@ function resetGame() {
         }
         ai.ai.startLinePct = linePct;
 
-        // Setup Distance based on Area/Strategy
-        // Back needs more room
-        if (area === 'Mid-Back' || strat.includes("Time-on-Distance")) {
+        // Setup Distance
+        if (area === 'Mid-Back') {
              ai.ai.setupDist = 400 + Math.random() * 150;
         } else {
              ai.ai.setupDist = 250 + Math.random() * 100;
