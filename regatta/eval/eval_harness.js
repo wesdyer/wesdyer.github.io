@@ -19,14 +19,15 @@
         },
 
         init: function() {
-            console.log("Initializing Eval Harness...");
             // Replace Math.random
             Math.random = () => this.random();
 
             // Disable Sound
-            window.settings.soundEnabled = false;
-            window.settings.bgSoundEnabled = false;
-            window.settings.musicEnabled = false;
+            if (window.settings) {
+                window.settings.soundEnabled = false;
+                window.settings.bgSoundEnabled = false;
+                window.settings.musicEnabled = false;
+            }
 
             // Hook requestAnimationFrame to stop auto-loop
             window.requestAnimationFrame = (cb) => {
@@ -78,6 +79,7 @@
                     boatId: boat.id,
                     boatName: boat.name,
                     type: type,
+                    targetId: targetId,
                     time: now,
                     leg: boat.raceState.leg
                 });
@@ -97,6 +99,9 @@
             this.seed = seed;
             this.data = { events: [], incidents: [] };
             this.lastIncidents = {};
+
+            // Ensure hook is set
+            window.onRaceEvent = (type, data) => this.handleEvent(type, data);
 
             // Reset Game (Uses our seeded random)
             window.resetGame();
@@ -129,7 +134,7 @@
                 boats: state.boats.map(b => ({
                     id: b.id,
                     name: b.name,
-                    character: b.creature || "Player",
+                    character: b.name,
                     finished: b.raceState.finished,
                     finishTime: b.raceState.finishTime,
                     leg: b.raceState.leg,

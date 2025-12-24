@@ -2287,6 +2287,7 @@ function updateBoatRaceState(boat, dt) {
             if (boat.raceState.isRounding && state.race.status === 'racing') {
                  const completeLeg = () => {
                     boat.raceState.leg++;
+                    if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: boat.raceState.leg - 1, time: state.race.timer });
                     boat.raceState.isRounding = false;
                     const split = state.race.timer - boat.raceState.legStartTime;
                     boat.raceState.lastLegDuration = split;
