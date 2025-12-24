@@ -105,42 +105,42 @@ const Sayings = {
 
 // AI Configuration
 const AI_CONFIG = [
-    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 5, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Time-on-Distance Start", "Wind-Shift Anticipation Start"] },
-    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Port-Tack Flyer"] },
-    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', boatHandling: 3, windSense: 3, positioning: 2, aggression: 4, composure: 2 , startStrategies: ["Chaos Gambit", "Second-Row Slingshot"] },
-    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', boatHandling: 4, windSense: 2, positioning: 5, aggression: 5, composure: 3 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"] },
-    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "High-Lane Builder"] },
-    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', boatHandling: 4, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "High-Lane Builder"] },
-    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', boatHandling: 3, windSense: 4, positioning: 5, aggression: 2, composure: 4 , startStrategies: ["Mid-Line Safety Start", "Leebow Trap"] },
-    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 4, composure: 4 , startStrategies: ["Leebow Trap", "Port-Tack Flyer"] },
-    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Mid-Line Safety Start", "High-Lane Builder"] },
-    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', boatHandling: 4, windSense: 4, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Gap Sniper", "Leebow Trap"] },
-    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 2, composure: 5 , startStrategies: ["Bail-Out & Reset", "Second-Row Slingshot"] },
-    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Time-on-Distance Start"] },
-    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', boatHandling: 3, windSense: 2, positioning: 5, aggression: 4, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"] },
-    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', boatHandling: 4, windSense: 4, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Time-on-Distance Start", "Mid-Line Safety Start"] },
-    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', boatHandling: 5, windSense: 3, positioning: 4, aggression: 4, composure: 5 , startStrategies: ["High-Lane Builder", "Pin-End (Committee Boat) Start"] },
-    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', boatHandling: 3, windSense: 3, positioning: 4, aggression: 4, composure: 2 , startStrategies: ["Chaos Gambit", "Gap Sniper"] },
-    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Second-Row Slingshot", "Time-on-Distance Start"] },
-    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', boatHandling: 4, windSense: 2, positioning: 2, aggression: 5, composure: 2 , startStrategies: ["Port-Tack Flyer", "Chaos Gambit"] },
-    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', boatHandling: 4, windSense: 5, positioning: 3, aggression: 2, composure: 4 , startStrategies: ["Wind-Shift Anticipation Start", "Mid-Line Safety Start"] },
-    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', boatHandling: 3, windSense: 3, positioning: 5, aggression: 4, composure: 3 , startStrategies: ["Luff & Kill", "Leebow Trap"] },
-    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', boatHandling: 2, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Second-Row Slingshot"] },
-    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 3 , startStrategies: ["Port-Tack Flyer", "Leebow Trap"] },
-    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', boatHandling: 4, windSense: 4, positioning: 5, aggression: 2, composure: 5 , startStrategies: ["Time-on-Distance Start", "High-Lane Builder"] },
-    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Wind-Shift Anticipation Start", "Gap Sniper"] },
-    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', boatHandling: 3, windSense: 2, positioning: 5, aggression: 3, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"] },
-    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', boatHandling: 4, windSense: 5, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Wind-Shift Anticipation Start", "Gap Sniper"] },
-    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', boatHandling: 3, windSense: 4, positioning: 4, aggression: 2, composure: 3 , startStrategies: ["Gap Sniper", "Bail-Out & Reset"] },
-    { name: 'Anchor', creature: 'Sea Turtle', hull: '#2F6F4E', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#B7C4B4', boatHandling: 2, windSense: 3, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Bail-Out & Reset"] },
-    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', boatHandling: 4, windSense: 2, positioning: 3, aggression: 5, composure: 2 , startStrategies: ["Chaos Gambit", "Port-Tack Flyer"] },
-    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', boatHandling: 3, windSense: 4, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Leebow Trap"] },
-    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', boatHandling: 5, windSense: 1, positioning: 2, aggression: 5, composure: 1 , startStrategies: ["Second-Row Slingshot", "Port-Tack Flyer"] },
-    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', boatHandling: 3, windSense: 5, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Bail-Out & Reset", "Wind-Shift Anticipation Start"] },
-    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["High-Lane Builder", "Mid-Line Safety Start"] },
-    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 5, aggression: 4, composure: 3 , startStrategies: ["Leebow Trap", "Pin-End (Committee Boat) Start"] },
-    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Port-Tack Flyer"] },
-    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 3, aggression: 5, composure: 3 , startStrategies: ["Time-on-Distance Start", "Chaos Gambit"] }
+    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 5, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Time-on-Distance Start", "Wind-Shift Anticipation Start"], personality: "Playful but unexpectedly competitive." },
+    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Port-Tack Flyer"], personality: "Skittish, avoids traffic at all costs." },
+    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', boatHandling: 3, windSense: 3, positioning: 2, aggression: 4, composure: 2 , startStrategies: ["Chaos Gambit", "Second-Row Slingshot"], personality: "Unpredictable, often confused on course." },
+    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', boatHandling: 4, windSense: 2, positioning: 5, aggression: 5, composure: 3 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"], personality: "Grumpy, defends his lane aggressively." },
+    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "High-Lane Builder"], personality: "Apex predator, loves to hunt." },
+    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', boatHandling: 4, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "High-Lane Builder"], personality: "Elegant, prefers clean air." },
+    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', boatHandling: 3, windSense: 4, positioning: 5, aggression: 2, composure: 4 , startStrategies: ["Mid-Line Safety Start", "Leebow Trap"], personality: "Workhorse, grinds out results." },
+    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 4, composure: 4 , startStrategies: ["Leebow Trap", "Port-Tack Flyer"], personality: "Lurks then strikes at marks." },
+    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Mid-Line Safety Start", "High-Lane Builder"], personality: "Slow starter, strong finisher." },
+    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', boatHandling: 4, windSense: 4, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Gap Sniper", "Leebow Trap"], personality: "Quick, erratic movements." },
+    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 2, composure: 5 , startStrategies: ["Bail-Out & Reset", "Second-Row Slingshot"], personality: "Clings to marks too close." },
+    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Time-on-Distance Start"], personality: "Surfs waves with joy." },
+    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', boatHandling: 3, windSense: 2, positioning: 5, aggression: 4, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"], personality: "Sideways strategy, defensive." },
+    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', boatHandling: 4, windSense: 4, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Time-on-Distance Start", "Mid-Line Safety Start"], personality: "Efficient, plays the long game." },
+    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', boatHandling: 5, windSense: 3, positioning: 4, aggression: 4, composure: 5 , startStrategies: ["High-Lane Builder", "Pin-End (Committee Boat) Start"], personality: "Tactical genius, calculating." },
+    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', boatHandling: 3, windSense: 3, positioning: 4, aggression: 4, composure: 2 , startStrategies: ["Chaos Gambit", "Gap Sniper"], personality: "Shy, hides in the pack." },
+    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Second-Row Slingshot", "Time-on-Distance Start"], personality: "Fast in a straight line." },
+    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', boatHandling: 4, windSense: 2, positioning: 2, aggression: 5, composure: 2 , startStrategies: ["Port-Tack Flyer", "Chaos Gambit"], personality: "Hot tempered, prone to risks." },
+    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', boatHandling: 4, windSense: 5, positioning: 3, aggression: 2, composure: 4 , startStrategies: ["Wind-Shift Anticipation Start", "Mid-Line Safety Start"], personality: "Floats through lulls easily." },
+    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', boatHandling: 3, windSense: 3, positioning: 5, aggression: 4, composure: 3 , startStrategies: ["Luff & Kill", "Leebow Trap"], personality: "Gets mixed up in crowds." },
+    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', boatHandling: 2, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Second-Row Slingshot"], personality: "Gentle giant, slow maneuvers." },
+    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 3 , startStrategies: ["Port-Tack Flyer", "Leebow Trap"], personality: "Sharp turns, aggressive cuts." },
+    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', boatHandling: 4, windSense: 4, positioning: 5, aggression: 2, composure: 5 , startStrategies: ["Time-on-Distance Start", "High-Lane Builder"], personality: "Cold and calculating." },
+    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Wind-Shift Anticipation Start", "Gap Sniper"], personality: "Upright and proper sailing." },
+    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', boatHandling: 3, windSense: 2, positioning: 5, aggression: 3, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"], personality: "Prickly, don't get too close." },
+    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', boatHandling: 4, windSense: 5, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Wind-Shift Anticipation Start", "Gap Sniper"], personality: "Fast as the wind itself." },
+    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', boatHandling: 3, windSense: 4, positioning: 4, aggression: 2, composure: 3 , startStrategies: ["Gap Sniper", "Bail-Out & Reset"], personality: "Goes where the wind blows." },
+    { name: 'Anchor', creature: 'Sea Turtle', hull: '#2F6F4E', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#B7C4B4', boatHandling: 2, windSense: 3, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Bail-Out & Reset"], personality: "Slow and steady wins." },
+    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', boatHandling: 4, windSense: 2, positioning: 3, aggression: 5, composure: 2 , startStrategies: ["Chaos Gambit", "Port-Tack Flyer"], personality: "High energy, erratic tactics." },
+    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', boatHandling: 3, windSense: 4, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Leebow Trap"], personality: "Ancient wisdom, spirals out." },
+    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', boatHandling: 5, windSense: 1, positioning: 2, aggression: 5, composure: 1 , startStrategies: ["Second-Row Slingshot", "Port-Tack Flyer"], personality: "Sprints ahead, fades later." },
+    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', boatHandling: 3, windSense: 5, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Bail-Out & Reset", "Wind-Shift Anticipation Start"], personality: "Closed off, hard to read." },
+    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["High-Lane Builder", "Mid-Line Safety Start"], personality: "Imposing presence on line." },
+    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 5, aggression: 4, composure: 3 , startStrategies: ["Leebow Trap", "Pin-End (Committee Boat) Start"], personality: "Demands room at marks." },
+    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Port-Tack Flyer"], personality: "Bright, flashy, distractible." },
+    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 3, aggression: 5, composure: 3 , startStrategies: ["Time-on-Distance Start", "Chaos Gambit"], personality: "Jumpy, reactive to shifts." }
 ];
 
 
@@ -872,8 +872,120 @@ const UI = {
     resultsOverlay: document.getElementById('results-overlay'),
     resultsList: document.getElementById('results-list'),
     resultsRestartButton: document.getElementById('results-restart-button'),
+    preRaceOverlay: document.getElementById('pre-race-overlay'),
+    prWindSpeed: document.getElementById('pr-wind-speed'),
+    prWindDir: document.getElementById('pr-wind-dir'),
+    prWindVar: document.getElementById('pr-wind-var'),
+    prCompetitorsGrid: document.getElementById('pr-competitors-grid'),
+    startRaceBtn: document.getElementById('start-race-btn'),
     boatRows: {}
 };
+
+function setupPreRaceOverlay() {
+    if (!UI.preRaceOverlay) return;
+
+    // Show Overlay
+    UI.preRaceOverlay.classList.remove('hidden');
+    UI.leaderboard.classList.add('hidden');
+    UI.legInfo.parentElement.classList.add('hidden'); // Hide leg info
+
+    // Populate Conditions
+    if (UI.prWindSpeed) {
+        const base = state.wind.baseSpeed;
+        UI.prWindSpeed.textContent = `${Math.floor(base)}-${Math.ceil(base + 5)} kn`;
+    }
+    if (UI.prWindDir) {
+        // baseDirection is in radians. 0 = North.
+        // Convert to cardinal.
+        const deg = (state.wind.baseDirection * 180 / Math.PI + 360) % 360;
+        const cardinals = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
+        const idx = Math.round(deg / 22.5) % 16;
+        UI.prWindDir.textContent = cardinals[idx];
+    }
+    if (UI.prWindVar) {
+        const cond = state.race.conditions;
+        let text = [];
+        if (cond.gustiness > 0.6) text.push("Gusty");
+        else if (cond.gustiness < 0.3) text.push("Steady");
+        else text.push("Moderate");
+
+        if (cond.shiftiness > 0.6) text.push("Shifty");
+        else if (cond.shiftiness < 0.3) text.push("Stable");
+
+        const type = cond.gustProb > 0.5 ? "Gusts" : "Lulls";
+        const strength = cond.strengthBias > 1.1 ? "Strong" : (cond.strengthBias < 0.9 ? "Light" : "Moderate");
+        text.push(`${strength} ${type}`);
+
+        UI.prWindVar.textContent = text.join(" • ");
+    }
+
+    // Populate Competitors
+    if (UI.prCompetitorsGrid) {
+        UI.prCompetitorsGrid.innerHTML = '';
+        // Skip Player (boats[0])
+        const competitors = state.boats.slice(1);
+        competitors.forEach(boat => {
+            const card = document.createElement('div');
+            card.className = "bg-slate-900/40 p-3 rounded-xl border border-white/5 flex gap-3 items-center";
+
+            // Image
+            const img = document.createElement('img');
+            img.src = boat.name.toLowerCase() + ".png";
+            img.className = "w-12 h-12 rounded-full border-2 object-cover bg-slate-800";
+            const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
+            img.style.borderColor = color;
+
+            const info = document.createElement('div');
+            info.className = "flex-1 min-w-0";
+
+            const nameRow = document.createElement('div');
+            nameRow.className = "flex justify-between items-baseline";
+            nameRow.innerHTML = `<span class="font-bold text-white truncate">${boat.name}</span> <span class="text-[10px] text-slate-400 uppercase">${boat.stats.creature || "Unknown"}</span>`;
+
+            // Personality
+            const config = AI_CONFIG.find(c => c.name === boat.name);
+            const pText = config ? config.personality : "Unknown";
+
+            const desc = document.createElement('div');
+            desc.className = "text-xs text-slate-300 italic truncate";
+            desc.textContent = `"${pText}"`;
+
+            const stats = document.createElement('div');
+            stats.className = "flex gap-3 mt-1 text-[10px] font-mono text-slate-400";
+            stats.innerHTML = `
+                <span title="Boat Handling">HDL:${boat.stats.boatHandling}</span>
+                <span title="Wind Sense">WND:${boat.stats.windSense}</span>
+                <span title="Aggression">AGR:${boat.stats.aggression}</span>
+            `;
+
+            info.appendChild(nameRow);
+            info.appendChild(desc);
+            info.appendChild(stats);
+
+            card.appendChild(img);
+            card.appendChild(info);
+            UI.prCompetitorsGrid.appendChild(card);
+        });
+    }
+}
+
+function startRace() {
+    if (state.race.status !== 'waiting') return;
+
+    if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
+    UI.leaderboard.classList.remove('hidden'); // Or hidden if prestart logic handles it
+    // Prestart logic usually hides leaderboard until start? No, updateLeaderboard logic: if 'prestart' UI.leaderboard.classList.add('hidden');
+
+    // Show Leg Info
+    if (UI.legInfo) UI.legInfo.parentElement.classList.remove('hidden');
+
+    state.race.status = 'prestart';
+    state.race.timer = 30.0;
+
+    // Init Audio Context if needed (user interaction trusted here)
+    if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
+    Sound.updateMusic();
+}
 
 // Settings Functions
 function loadSettings() {
@@ -980,6 +1092,7 @@ if (UI.settingsButton) UI.settingsButton.addEventListener('click', (e) => { e.pr
 if (UI.closeSettings) UI.closeSettings.addEventListener('click', () => toggleSettings(false));
 if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSettings(false));
 if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
+if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preventDefault(); startRace(); });
 
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(state.wind.speed); });
 if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { settings.bgSoundEnabled = e.target.checked; saveSettings(); Sound.updateWindSound(state.wind.speed); });
@@ -1004,6 +1117,12 @@ window.addEventListener('click', () => {
 
 window.addEventListener('keydown', (e) => {
     if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
+
+    if (state.race.status === 'waiting') {
+        startRace();
+        return;
+    }
+
     let key = e.key;
     if (key === 'a' || key === 'A') key = 'ArrowLeft';
     if (key === 'd' || key === 'D') key = 'ArrowRight';
@@ -1906,6 +2025,8 @@ function triggerPenalty(boat) {
 
 // Update Boat Physics & Race Status
 function updateBoat(boat, dt) {
+    if (state.race.status === 'waiting') return;
+
     const timeScale = dt * 60;
 
     if (boat.raceState.finished) {
@@ -4247,7 +4368,7 @@ function resetGame() {
         density
     };
     state.time = 0;
-    state.race.status = 'prestart';
+    state.race.status = 'waiting'; // Wait for user to start
     state.race.timer = 30.0;
 
     initCourse();
@@ -4355,6 +4476,9 @@ function resetGame() {
 
     state.particles = [];
     hideRaceMessage();
+
+    setupPreRaceOverlay();
+
     if (settings.soundEnabled || settings.musicEnabled) Sound.init();
     else Sound.updateMusic();
 }

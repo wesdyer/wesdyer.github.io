@@ -288,6 +288,124 @@
             </div>
         </div>
 
+        <!-- Pre-Race Overlay -->
+        <div id="pre-race-overlay" class="absolute inset-0 bg-slate-900/95 backdrop-blur-md z-50 flex flex-col pointer-events-auto overflow-hidden">
+            <!-- Header -->
+            <div class="flex items-center gap-6 p-8 pb-4 border-b border-white/10 bg-slate-900/50">
+                <img src="salty-crew-yacht-club-burgee.png" class="h-24 w-auto drop-shadow-2xl burgee-flutter">
+                <div>
+                    <h1 class="text-5xl font-black text-white uppercase tracking-tighter italic">Salty Critter <span class="text-blue-400">Yacht Club</span></h1>
+                    <div class="text-xl text-slate-400 font-mono tracking-widest mt-1">REGATTA SERIES • RACE DAY</div>
+                </div>
+            </div>
+
+            <div class="flex-1 grid grid-cols-12 gap-8 p-8 overflow-hidden">
+                <!-- Left Column: Course & Conditions -->
+                <div class="col-span-4 flex flex-col gap-8 h-full overflow-y-auto pr-2">
+                    <!-- Conditions Card -->
+                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
+                        <h2 class="text-2xl font-black text-white uppercase mb-4 flex items-center gap-2">
+                            <svg class="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" /></svg>
+                            Conditions
+                        </h2>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-slate-900/50 p-3 rounded-lg">
+                                <div class="text-xs text-slate-400 uppercase tracking-wider">Wind Speed</div>
+                                <div class="text-2xl font-bold text-white" id="pr-wind-speed">--</div>
+                            </div>
+                            <div class="bg-slate-900/50 p-3 rounded-lg">
+                                <div class="text-xs text-slate-400 uppercase tracking-wider">Direction</div>
+                                <div class="text-2xl font-bold text-white" id="pr-wind-dir">--</div>
+                            </div>
+                            <div class="bg-slate-900/50 p-3 rounded-lg col-span-2">
+                                <div class="text-xs text-slate-400 uppercase tracking-wider">Variability</div>
+                                <div class="text-lg font-bold text-blue-200" id="pr-wind-var">--</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Course Card -->
+                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl flex-1 flex flex-col">
+                        <h2 class="text-2xl font-black text-white uppercase mb-4 flex items-center gap-2">
+                            <svg class="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-1.447-.894L15 7m0 13V7" /></svg>
+                            The Course
+                        </h2>
+                        <div class="space-y-4 text-slate-300 text-sm mb-4">
+                            <div class="flex justify-between border-b border-white/5 pb-2">
+                                <span>Format</span>
+                                <span class="font-bold text-white">Upwind / Downwind</span>
+                            </div>
+                            <div class="flex justify-between border-b border-white/5 pb-2">
+                                <span>Length</span>
+                                <span class="font-bold text-white">4 Legs (800m ea)</span>
+                            </div>
+                            <div class="flex justify-between border-b border-white/5 pb-2">
+                                <span>Start Sequence</span>
+                                <span class="font-bold text-white">30 Seconds</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 bg-slate-900/50 rounded-xl relative border border-white/5 flex items-center justify-center overflow-hidden min-h-[200px]">
+                             <!-- Simple CSS/SVG Diagram -->
+                             <svg viewBox="0 0 200 300" class="w-full h-full p-4 opacity-80">
+                                 <!-- Wind Arrow -->
+                                 <g transform="translate(160, 30)">
+                                     <path d="M0 0 L0 20 M-5 15 L0 20 L5 15" stroke="white" stroke-width="2" fill="none"/>
+                                     <text x="0" y="-5" text-anchor="middle" fill="white" font-size="10" font-family="monospace">WIND</text>
+                                 </g>
+
+                                 <!-- Course Path -->
+                                 <path d="M100 250 L100 50 L100 250 L100 50 L100 250" stroke="#3b82f6" stroke-width="2" stroke-dasharray="4,4" fill="none" opacity="0.5"/>
+
+                                 <!-- Start Line -->
+                                 <line x1="70" y1="250" x2="130" y2="250" stroke="#ef4444" stroke-width="4" />
+                                 <text x="140" y="255" fill="#ef4444" font-size="10" font-weight="bold">START</text>
+
+                                 <!-- Windward Gate -->
+                                 <circle cx="80" cy="50" r="4" fill="#f97316" />
+                                 <circle cx="120" cy="50" r="4" fill="#f97316" />
+                                 <text x="135" y="55" fill="#f97316" font-size="10" font-weight="bold">W. GATE</text>
+
+                                 <!-- Leeward Gate -->
+                                 <circle cx="80" cy="200" r="4" fill="#f97316" />
+                                 <circle cx="120" cy="200" r="4" fill="#f97316" />
+                                 <text x="135" y="205" fill="#f97316" font-size="10" font-weight="bold">L. GATE</text>
+
+                                 <!-- Finish Line -->
+                                 <line x1="70" y1="250" x2="130" y2="250" stroke="#22c55e" stroke-width="4" stroke-dasharray="2,2" transform="translate(0, 10)" />
+                                 <text x="140" y="265" fill="#22c55e" font-size="10" font-weight="bold">FINISH</text>
+
+                                 <!-- Arrows -->
+                                 <path d="M90 240 Q60 150 70 60" stroke="white" stroke-width="1" />
+                                 <path d="M130 60 Q140 150 110 190" stroke="white" stroke-width="1" />
+                             </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Competitors -->
+                <div class="col-span-8 bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl flex flex-col overflow-hidden">
+                     <h2 class="text-2xl font-black text-white uppercase mb-4 flex items-center gap-2 shrink-0">
+                        <svg class="w-6 h-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                        The Fleet
+                    </h2>
+                    <div class="overflow-y-auto pr-2 grid grid-cols-2 lg:grid-cols-3 gap-4" id="pr-competitors-grid">
+                        <!-- Competitor Cards Injected Here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="p-8 pt-4 flex justify-center bg-gradient-to-t from-slate-900 via-slate-900 to-transparent flex-col items-center">
+                <button id="start-race-btn" class="group relative px-12 py-6 bg-blue-600 hover:bg-blue-500 text-white font-black text-3xl uppercase tracking-widest rounded-full shadow-[0_0_40px_rgba(37,99,235,0.6)] hover:shadow-[0_0_60px_rgba(37,99,235,0.8)] transition-all transform hover:scale-105 active:scale-95 border-2 border-white/20">
+                    <span class="relative z-10 flex items-center gap-4">
+                        Start Race
+                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                    </span>
+                </button>
+                <div class="text-center mt-4 text-slate-500 font-mono text-sm animate-pulse">Press Any Key to Begin</div>
+            </div>
+        </div>
+
         <!-- Results Overlay -->
         <div id="results-overlay" class="hidden absolute inset-0 bg-slate-900/95 backdrop-blur-md z-50 flex flex-col items-center justify-start pt-24 p-8 pointer-events-auto overflow-y-auto">
              <h1 class="text-6xl font-black text-white italic tracking-tighter uppercase mb-2 drop-shadow-2xl text-center shrink-0">Race Results</h1>
