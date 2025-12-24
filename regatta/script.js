@@ -998,8 +998,12 @@ function resize() { canvas.width = window.innerWidth; canvas.height = window.inn
 window.addEventListener('resize', resize);
 resize();
 
+window.addEventListener('click', () => {
+    if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
+});
+
 window.addEventListener('keydown', (e) => {
-    if (settings.soundEnabled && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
+    if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
     let key = e.key;
     if (key === 'a' || key === 'A') key = 'ArrowLeft';
     if (key === 'd' || key === 'D') key = 'ArrowRight';
@@ -4369,7 +4373,8 @@ function resetGame() {
 
     state.particles = [];
     hideRaceMessage();
-    Sound.updateMusic();
+    if (settings.soundEnabled || settings.musicEnabled) Sound.init();
+    else Sound.updateMusic();
 }
 
 function restartRace() { resetGame(); togglePause(false); }
