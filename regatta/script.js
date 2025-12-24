@@ -258,6 +258,111 @@ class Boat {
     }
 }
 
+// Gust System
+function createGust(x, y, type) {
+    const conditions = state.race.conditions;
+    const baseSpeed = state.wind.speed;
+    const windDir = state.wind.direction;
+
+    const radiusX = 400 + Math.random() * 600;
+    const radiusY = 200 + Math.random() * 300;
+
+    let speedDelta = 0;
+    let dirDelta = 0;
+
+    if (type === 'gust') {
+        speedDelta = baseSpeed * (0.2 + conditions.gustiness * 0.4);
+        dirDelta = (Math.random() - 0.5) * conditions.shiftiness * 1.0;
+    } else {
+        speedDelta = -baseSpeed * (0.2 + conditions.gustiness * 0.3);
+        dirDelta = (Math.random() - 0.5) * conditions.shiftiness * 0.5;
+    }
+
+    const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.25;
+    const moveDir = windDir + (Math.random() - 0.5) * 0.2;
+    // Move with the wind (Downwind)
+    // Wind Dir 0 (North) -> Blows South (+Y)
+    // Particle motion: x -= sin(dir), y += cos(dir)
+    const vx = -Math.sin(moveDir) * moveSpeed;
+    const vy = Math.cos(moveDir) * moveSpeed;
+
+    return {
+        type, x, y, vx, vy, radiusX, radiusY, rotation: windDir,
+        speedDelta, dirDelta,
+        duration: 30 + Math.random() * 60,
+        age: 0
+    };
+}
+
+function updateGusts(dt) {
+    const conditions = state.race.conditions;
+    const spawnChance = (0.002 + conditions.gustiness * 0.005);
+
+    if (Math.random() < spawnChance) {
+         const windDir = state.wind.direction;
+         const dist = 2000 + Math.random()*1000;
+         const angle = windDir + Math.PI + (Math.random()-0.5)*1.5;
+         const cx = state.camera.x;
+         const cy = state.camera.y;
+         const gx = cx + Math.sin(angle) * dist;
+         const gy = cy - Math.cos(angle) * dist;
+
+         const type = Math.random() > 0.5 ? 'gust' : 'lull';
+         state.gusts.push(createGust(gx, gy, type));
+    }
+
+    const timeScale = dt * 60;
+    for (let i = state.gusts.length - 1; i >= 0; i--) {
+        const g = state.gusts[i];
+
+        g.x += g.vx * timeScale;
+        g.y += g.vy * timeScale;
+
+        g.age += dt;
+        if (g.age > g.duration) {
+            state.gusts.splice(i, 1);
+        }
+    }
+}
+
+function getWindAt(x, y) {
+    let speed = state.wind.speed;
+    const windDir = state.wind.direction;
+    let dirX = Math.sin(windDir);
+    let dirY = -Math.cos(windDir);
+
+    let sumWx = dirX * speed;
+    let sumWy = dirY * speed;
+
+    for (const g of state.gusts) {
+        const dx = x - g.x;
+        const dy = y - g.y;
+        const cos = Math.cos(-g.rotation);
+        const sin = Math.sin(-g.rotation);
+        const rx = dx * cos - dy * sin;
+        const ry = dx * sin + dy * cos;
+
+        const distSq = (rx*rx)/(g.radiusX*g.radiusX) + (ry*ry)/(g.radiusY*g.radiusY);
+        if (distSq <= 1) {
+            const falloff = 1 - Math.sqrt(distSq);
+            const lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
+            const intensity = Math.max(0, falloff * lifeFade);
+
+            if (intensity > 0) {
+                 const gSpeed = g.speedDelta * intensity;
+                 const gwDir = windDir + g.dirDelta;
+                 sumWx += Math.sin(gwDir) * gSpeed;
+                 sumWy += -Math.cos(gwDir) * gSpeed;
+            }
+        }
+    }
+
+    const finalSpeed = Math.sqrt(sumWx*sumWx + sumWy*sumWy);
+    const finalDir = Math.atan2(sumWx, -sumWy);
+
+    return { speed: finalSpeed, direction: finalDir };
+}
+
 function updateTurbulence(boat, dt) {
     if (boat.raceState.finished) return;
 
@@ -1002,7 +1107,8 @@ function updateAI(boat, dt) {
     if (boat.isPlayer && !boat.raceState.finished) return;
 
     const timeScale = dt * 60;
-    const windDir = state.wind.direction;
+    const localWind = getWindAt(boat.x, boat.y);
+    const windDir = localWind.direction;
     let targetX, targetY;
 
     if (boat.raceState.finished) {
@@ -1107,7 +1213,7 @@ function updateAI(boat, dt) {
     if (state.race.status === 'prestart') {
         // Hold position (Head to Wind) until 15 seconds
         if (state.race.timer > 15) {
-             targetAngle = state.wind.direction;
+             targetAngle = localWind.direction;
         } else {
              // Go for line center (or just sail upwind towards line)
              // Simple logic: Sail towards 0,0
@@ -1140,7 +1246,7 @@ function updateAI(boat, dt) {
             desiredHeading = angleToTarget;
         } else {
             const currentTack = (normalizeAngle(boat.heading - windDir) > 0) ? 1 : -1;
-            const bestTWA = getBestVMGAngle(mode, state.wind.speed);
+            const bestTWA = getBestVMGAngle(mode, localWind.speed);
 
             const headingOnTack = normalizeAngle(windDir + currentTack * bestTWA);
             const headingOnSwap = normalizeAngle(windDir - currentTack * bestTWA);
@@ -1313,14 +1419,15 @@ function updateBoat(boat, dt) {
     boat.heading = normalizeAngle(boat.heading);
 
     // Physics
-    const angleToWind = Math.abs(normalizeAngle(boat.heading - state.wind.direction));
+    const localWind = getWindAt(boat.x, boat.y);
+    const angleToWind = Math.abs(normalizeAngle(boat.heading - localWind.direction));
 
     // Update Turbulence Particles
     updateTurbulence(boat, dt);
 
     // Disturbed Air
     boat.badAirIntensity = 0;
-    const windDir = state.wind.direction;
+    const windDir = localWind.direction;
     const wx = -Math.sin(windDir); // Flow X
     const wy = Math.cos(windDir);  // Flow Y
     const crx = -wy; // Right X
@@ -1350,7 +1457,7 @@ function updateBoat(boat, dt) {
     }
 
     // Sail Logic
-    let relWind = normalizeAngle(state.wind.direction - boat.heading);
+    let relWind = normalizeAngle(localWind.direction - boat.heading);
     if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
 
     // Check Tacking (Rule 13)
@@ -1392,7 +1499,7 @@ function updateBoat(boat, dt) {
     const jibFactor = Math.max(0, 1 - progress * 2);
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
-    const effectiveWind = state.wind.speed * (1.0 - boat.badAirIntensity);
+    const effectiveWind = localWind.speed * (1.0 - boat.badAirIntensity);
     let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveWind);
     let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveWind);
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
@@ -1883,15 +1990,24 @@ function update(dt) {
     state.time += 0.24 * dt;
     const timeScale = dt * 60;
 
-    Sound.updateWindSound(state.wind.speed);
-
-    // Wind Dynamics
+    // Wind Dynamics (Global)
     const dirDrift = Math.sin(state.time * 0.05) * 0.2;
     const dirGust = Math.sin(state.time * 0.3 + 123.4) * 0.05;
     state.wind.direction = state.wind.baseDirection + dirDrift + dirGust;
     const speedSurge = Math.sin(state.time * 0.1) * 2.0;
     const speedGust = Math.sin(state.time * 0.5 + 456.7) * 1.5;
     state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
+
+    updateGusts(dt);
+
+    // Sound (Use Player's local wind)
+    if (state.boats.length > 0) {
+        const p = state.boats[0];
+        const w = getWindAt(p.x, p.y);
+        Sound.updateWindSound(w.speed);
+    } else {
+        Sound.updateWindSound(state.wind.speed);
+    }
 
     // Global Race Timer
     if (state.race.status === 'prestart') {
@@ -1999,7 +2115,11 @@ function updateParticles(dt) {
         let decay = 0.0025;
         if (p.type === 'wake') { decay = 0.005; p.scale = 1 + (1-p.life)*1.5; p.alpha = p.life*0.4; }
         else if (p.type === 'wake-wave') { decay = 0.0015; p.scale = 0.5 + (1-p.life)*3; p.alpha = p.life*0.25; }
-        else if (p.type === 'wind') { p.x -= Math.sin(state.wind.direction)*timeScale; p.y += Math.cos(state.wind.direction)*timeScale; }
+        else if (p.type === 'wind') {
+             const local = getWindAt(p.x, p.y);
+             p.x -= Math.sin(local.direction)*timeScale * (local.speed / 10);
+             p.y += Math.cos(local.direction)*timeScale * (local.speed / 10);
+        }
         p.life -= decay * timeScale;
         if (p.life <= 0) { state.particles[i] = state.particles[state.particles.length-1]; state.particles.pop(); }
     }
@@ -2016,15 +2136,18 @@ function drawParticles(ctx, layer) {
         }
         ctx.globalAlpha = 1.0;
     } else if (layer === 'air') {
-        const windFactor = state.wind.speed / 10;
-        const tailLength = 30 + state.wind.speed * 4;
-        const dx = -Math.sin(state.wind.direction) * tailLength;
-        const dy = Math.cos(state.wind.direction) * tailLength;
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1 + windFactor;
+        ctx.strokeStyle = '#ffffff';
         for (const p of state.particles) {
             if (p.type === 'wind') {
+                const local = getWindAt(p.x, p.y);
+                const windFactor = local.speed / 10;
+                const tailLength = 30 + local.speed * 4;
+                const dx = -Math.sin(local.direction) * tailLength;
+                const dy = Math.cos(local.direction) * tailLength;
+
                 const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
                 ctx.globalAlpha = opacity;
+                ctx.lineWidth = 1 + windFactor;
                 ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + dx, p.y + dy); ctx.stroke();
             }
         }
@@ -2433,20 +2556,25 @@ function drawWater(ctx) {
     const startY = Math.floor((top-shiftY)/gridSize)*gridSize, endY = Math.ceil((bottom-shiftY)/gridSize)*gridSize;
 
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 2.5;
-    const angle = state.wind.direction + Math.PI;
-    const cosA = Math.cos(angle), sinA = Math.sin(angle);
+
     ctx.beginPath();
     for (let x = startX; x < endX; x+=gridSize) {
         for (let y = startY; y < endY; y+=gridSize) {
              const cx = x + shiftX + gridSize/2, cy = y + shiftY + gridSize/2;
+
+             // Local Wind Check
+             const local = getWindAt(cx, cy);
+             const angle = local.direction + Math.PI;
+             const cosA = Math.cos(angle), sinA = Math.sin(angle);
+             const speedFactor = local.speed / 10;
+
              const noise = Math.sin(x*0.12+y*0.17);
-             const bob = Math.sin(state.time*2+noise*10) * (0.3 + state.wind.speed/10);
-             // ... Simplified wave glyph ...
-             // Just reuse previous random logic
+             const bob = Math.sin(state.time*2+noise*10) * (0.3 + speedFactor);
+
              const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
              const randX = (seed - Math.floor(seed)) * 40 - 20;
              const randY = (Math.cos(seed) * 0.5 + 0.5) * 40 - 20;
-             let scale = (0.8 + ((seed*10)%1)*0.4) * Math.max(0.5, state.wind.speed/10);
+             let scale = (0.8 + ((seed*10)%1)*0.4) * Math.max(0.5, speedFactor);
 
              const rcx = cx + randX, rcy = cy + randY;
              const p1x = -8*scale, p1y = bob*scale, p2x = 8*scale, p2y = bob*scale;
@@ -2458,6 +2586,39 @@ function drawWater(ctx) {
         }
     }
     ctx.stroke();
+}
+
+function drawGusts(ctx) {
+    for (const g of state.gusts) {
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        ctx.rotate(g.rotation);
+
+        // Intensity check
+        const lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
+        if (lifeFade <= 0) { ctx.restore(); continue; }
+
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, g.radiusX);
+
+        // Scale context to make circle an oval
+        ctx.scale(1, g.radiusY / g.radiusX);
+
+        // Colors
+        if (g.type === 'gust') {
+            grad.addColorStop(0, `rgba(0, 0, 50, ${0.4 * lifeFade})`);
+            grad.addColorStop(1, 'rgba(0, 0, 50, 0)');
+        } else {
+            grad.addColorStop(0, `rgba(255, 255, 255, ${0.3 * lifeFade})`);
+            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        }
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, g.radiusX, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+    }
 }
 
 function drawMarkShadows(ctx) {
@@ -3078,6 +3239,7 @@ function draw() {
     ctx.rotate(-state.camera.rotation);
     ctx.translate(-state.camera.x, -state.camera.y);
 
+    drawGusts(ctx);
     drawWater(ctx);
     drawDisturbedAir(ctx);
     drawParticles(ctx, 'surface');
@@ -3277,6 +3439,11 @@ function resetGame() {
     state.wind.speed = state.wind.baseSpeed;
     state.wind.baseDirection = (Math.random()-0.5)*0.5;
     state.wind.direction = state.wind.baseDirection;
+    state.gusts = [];
+    state.race.conditions = {
+        gustiness: Math.random(),
+        shiftiness: Math.random()
+    };
     state.time = 0;
     state.race.status = 'prestart';
     state.race.timer = 30.0;
