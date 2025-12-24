@@ -265,8 +265,9 @@ function createGust(x, y, type) {
     const baseSpeed = state.wind.speed;
     const windDir = state.wind.direction;
 
-    const radiusX = 400 + Math.random() * 600;
-    const radiusY = 200 + Math.random() * 300;
+    // Varied size and shape
+    const radiusX = 300 + Math.random() * 1200;
+    const radiusY = 150 + Math.random() * 600;
 
     let speedDelta = 0;
     let dirDelta = 0;
@@ -298,18 +299,31 @@ function createGust(x, y, type) {
 function updateGusts(dt) {
     const conditions = state.race.conditions;
     const spawnChance = (0.002 + conditions.gustiness * 0.005);
+    const boundary = state.course.boundary;
 
-    if (Math.random() < spawnChance) {
-         const windDir = state.wind.direction;
-         const dist = 2000 + Math.random()*1000;
-         const angle = windDir + Math.PI + (Math.random()-0.5)*1.5;
-         const cx = state.camera.x;
-         const cy = state.camera.y;
-         const gx = cx + Math.sin(angle) * dist;
-         const gy = cy - Math.cos(angle) * dist;
+    const spawnGust = () => {
+         if (!boundary) return;
+         // Spawn across the whole course
+         // Use a random point within the boundary + padding
+         const r = boundary.radius + 500;
+         const angle = Math.random() * Math.PI * 2;
+         const dist = Math.sqrt(Math.random()) * r; // Uniform distribution
+         const gx = boundary.x + Math.sin(angle) * dist;
+         const gy = boundary.y - Math.cos(angle) * dist;
 
          const type = Math.random() > 0.5 ? 'gust' : 'lull';
          state.gusts.push(createGust(gx, gy, type));
+    };
+
+    // Ensure at least 2 active gusts/lulls
+    if (boundary) {
+        while (state.gusts.length < 2) {
+            spawnGust();
+        }
+
+        if (Math.random() < spawnChance) {
+             spawnGust();
+        }
     }
 
     const timeScale = dt * 60;
