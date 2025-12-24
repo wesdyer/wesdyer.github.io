@@ -3048,8 +3048,37 @@ function showResults() {
             <span title="Penalties" class="${boat.raceState.totalPenalties > 0 ? 'text-red-400' : 'text-slate-500'}">Penalties: <span class="text-white">${boat.raceState.totalPenalties}</span></span>
         `;
 
+        // Per-Leg Stats
+        const legStats = document.createElement('div');
+        legStats.className = "mt-3 grid grid-cols-5 gap-2 border-t border-slate-600/30 pt-2";
+
+        const legs = ['Start', 'Leg 1', 'Leg 2', 'Leg 3', 'Leg 4'];
+        legs.forEach((legName, i) => {
+             const col = document.createElement('div');
+             col.className = "flex flex-col gap-0.5";
+
+             // Time
+             let timeVal = 0;
+             if (i === 0) timeVal = boat.raceState.startLegDuration || 0;
+             else timeVal = boat.raceState.legTimes[i-1] || 0;
+
+             const distVal = boat.raceState.legDistances[i] || 0;
+             const speedVal = boat.raceState.legTopSpeeds[i] || 0;
+             const movesVal = boat.raceState.legManeuvers[i] || 0;
+
+             col.innerHTML = `
+                 <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">${legName}</div>
+                 <div class="text-xs font-mono text-emerald-300 font-bold">${formatSplitTime(timeVal)}</div>
+                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Top:</span> <span class="text-slate-300">${speedVal.toFixed(1)}</span></div>
+                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Dist:</span> <span class="text-slate-300">${Math.round(distVal)}</span></div>
+                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Mv:</span> <span class="text-slate-300">${movesVal}</span></div>
+             `;
+             legStats.appendChild(col);
+        });
+
         details.appendChild(nameRow);
         details.appendChild(statsRow);
+        details.appendChild(legStats);
 
         row.appendChild(rankDiv);
         row.appendChild(imgDiv);
