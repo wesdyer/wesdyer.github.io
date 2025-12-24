@@ -803,8 +803,8 @@ const Sound = {
         this.windSource.start(0);
     },
 
-    updateWindSound: function(speed) {
-        if (!settings.soundEnabled || !settings.bgSoundEnabled) {
+    updateWindSound: function(speed, mute = false) {
+        if (!settings.soundEnabled || !settings.bgSoundEnabled || mute) {
             if (this.windGain) this.windGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.1);
             return;
         }
@@ -2637,12 +2637,13 @@ function update(dt) {
     updateGusts(dt);
 
     // Sound (Use Player's local wind)
+    const resultsVisible = UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden');
     if (state.boats.length > 0) {
         const p = state.boats[0];
         const w = getWindAt(p.x, p.y);
-        Sound.updateWindSound(w.speed);
+        Sound.updateWindSound(w.speed, resultsVisible);
     } else {
-        Sound.updateWindSound(state.wind.speed);
+        Sound.updateWindSound(state.wind.speed, resultsVisible);
     }
 
     // Global Race Timer
