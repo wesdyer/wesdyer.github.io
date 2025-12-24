@@ -265,33 +265,48 @@ function createGust(x, y, type) {
     const baseSpeed = state.wind.speed;
     const windDir = state.wind.direction;
 
-    // Varied size and shape
-    const radiusX = 300 + Math.random() * 1200;
-    const radiusY = 150 + Math.random() * 600;
+    // Varied size and shape (Larger and more varied aspect ratios)
+    const sizeBase = 600 + Math.random() * 1500;
+    const aspect = 0.5 + Math.random() * 1.5; // 0.5 to 2.0 aspect ratio
+    const radiusX = sizeBase * Math.sqrt(aspect);
+    const radiusY = sizeBase / Math.sqrt(aspect);
+
+    // Varied rotation (mostly aligned with wind but with variance)
+    const rotation = windDir + (Math.random() - 0.5) * 1.0;
 
     let speedDelta = 0;
     let dirDelta = 0;
 
+    // Intensity distribution: Most +/- 5, some +/- 10, some +/- 3
+    const rand = Math.random();
+    let intensity = 5;
+    if (rand < 0.2) intensity = 10;      // 20% chance of strong gust
+    else if (rand < 0.4) intensity = 3;  // 20% chance of weak gust
+    // else 60% chance of 5 knots
+
     if (type === 'gust') {
-        speedDelta = baseSpeed * (0.2 + conditions.gustiness * 0.4);
+        speedDelta = intensity;
         dirDelta = (Math.random() - 0.5) * conditions.shiftiness * 1.0;
     } else {
-        speedDelta = -baseSpeed * (0.2 + conditions.gustiness * 0.3);
+        speedDelta = -intensity;
         dirDelta = (Math.random() - 0.5) * conditions.shiftiness * 0.5;
     }
 
-    const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.25;
-    const moveDir = windDir + (Math.random() - 0.5) * 0.2;
-    // Move with the wind (Downwind)
+    // Move slower across map
+    const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.15;
+
+    // Move in direction of *their* wind (windDir + dirDelta)
+    const moveDir = windDir + dirDelta;
+
     // Wind Dir 0 (North) -> Blows South (+Y)
     // Particle motion: x -= sin(dir), y += cos(dir)
     const vx = -Math.sin(moveDir) * moveSpeed;
     const vy = Math.cos(moveDir) * moveSpeed;
 
     return {
-        type, x, y, vx, vy, radiusX, radiusY, rotation: windDir,
+        type, x, y, vx, vy, radiusX, radiusY, rotation,
         speedDelta, dirDelta,
-        duration: 30 + Math.random() * 60,
+        duration: 40 + Math.random() * 80, // Slightly longer duration for slower movement
         age: 0
     };
 }
@@ -3514,8 +3529,10 @@ function draw() {
     drawMinimap();
 
     // UI Updates (Player Data)
+    const localWind = getWindAt(player.x, player.y);
+
     if (UI.compassRose) UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
-    if (UI.windArrow) UI.windArrow.style.transform = `rotate(${state.wind.direction}rad)`;
+    if (UI.windArrow) UI.windArrow.style.transform = `rotate(${localWind.direction}rad)`;
     if (UI.waypointArrow) UI.waypointArrow.style.transform = `rotate(${player.raceState.nextWaypoint.angle}rad)`;
     if (UI.headingArrow) UI.headingArrow.style.transform = `rotate(${player.heading - state.camera.rotation}rad)`;
 
@@ -3527,7 +3544,7 @@ function draw() {
             else UI.speed.classList.remove('text-red-400');
         }
         if (UI.windSpeed) {
-             UI.windSpeed.textContent = state.wind.speed.toFixed(1);
+             UI.windSpeed.textContent = localWind.speed.toFixed(1);
              if (player.badAirIntensity > 0.05) {
                  UI.windSpeed.classList.add('text-red-400');
                  if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
@@ -3535,8 +3552,8 @@ function draw() {
                  UI.windSpeed.classList.remove('text-red-400');
              }
         }
-        if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - state.wind.direction))*(180/Math.PI)) + '°';
-        if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - state.wind.direction))).toFixed(1);
+        if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI)) + '°';
+        if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - localWind.direction))).toFixed(1);
 
         if (UI.trimMode) {
              UI.trimMode.textContent = player.manualTrim ? "MANUAL TRIM" : "AUTO TRIM";
