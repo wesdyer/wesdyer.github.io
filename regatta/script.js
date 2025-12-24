@@ -281,7 +281,7 @@ function createGust(x, y, type) {
         dirDelta = (Math.random() - 0.5) * conditions.shiftiness * 0.5;
     }
 
-    const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.25;
+    const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.1;
     const moveDir = windDir + (Math.random() - 0.5) * 0.2;
     // Move with the wind (Downwind)
     // Wind Dir 0 (North) -> Blows South (+Y)
