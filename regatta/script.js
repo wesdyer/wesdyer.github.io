@@ -375,7 +375,7 @@ class Boat {
 }
 
 // Gust System
-function createGust(x, y, type) {
+function createGust(x, y, type, initial = false) {
     const conditions = state.race.conditions;
     const baseSpeed = state.wind.speed;
     const windDir = state.wind.direction;
@@ -387,12 +387,16 @@ function createGust(x, y, type) {
     let speedDelta = 0;
     let dirDelta = 0;
 
+    // Apply Biases
+    const sBias = conditions.strengthBias || 1.0;
+    const dBias = conditions.dirBias || 0;
+
     if (type === 'gust') {
-        speedDelta = baseSpeed * (0.2 + conditions.gustiness * 0.4);
-        dirDelta = (Math.random() - 0.5) * conditions.shiftiness * 1.0;
+        speedDelta = baseSpeed * (0.2 + conditions.gustiness * 0.4) * sBias;
+        dirDelta = ((Math.random() - 0.5) * conditions.shiftiness * 1.0) + dBias;
     } else {
-        speedDelta = -baseSpeed * (0.2 + conditions.gustiness * 0.3);
-        dirDelta = (Math.random() - 0.5) * conditions.shiftiness * 0.5;
+        speedDelta = -baseSpeed * (0.2 + conditions.gustiness * 0.3) * sBias;
+        dirDelta = ((Math.random() - 0.5) * conditions.shiftiness * 0.5) + dBias;
     }
 
     const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.1;
@@ -403,44 +407,47 @@ function createGust(x, y, type) {
     const vx = -Math.sin(moveDir) * moveSpeed;
     const vy = Math.cos(moveDir) * moveSpeed;
 
+    const duration = 30 + Math.random() * 60;
+    const age = initial ? Math.random() * duration : 0;
+
     return {
         type, x, y, vx, vy,
         maxRadiusX, maxRadiusY,
-        radiusX: 10, radiusY: 10, // Start small
+        radiusX: 10, radiusY: 10, // Start small, will update in first frame
         rotation: windDir,
         speedDelta, dirDelta,
-        duration: 30 + Math.random() * 60,
-        age: 0
+        duration,
+        age
     };
+}
+
+function spawnGlobalGust(initial = false) {
+    if (!state.course.boundary) return;
+    const boundary = state.course.boundary;
+    const conditions = state.race.conditions;
+
+    const r = boundary.radius + 500;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = Math.sqrt(Math.random()) * r;
+    const gx = boundary.x + Math.sin(angle) * dist;
+    const gy = boundary.y - Math.cos(angle) * dist;
+
+    // Type Bias
+    const prob = conditions.gustProb !== undefined ? conditions.gustProb : 0.5;
+    const type = Math.random() < prob ? 'gust' : 'lull';
+
+    state.gusts.push(createGust(gx, gy, type, initial));
 }
 
 function updateGusts(dt) {
     const conditions = state.race.conditions;
-    const spawnChance = (0.002 + conditions.gustiness * 0.005);
+    const targetCount = conditions.density || 8;
     const boundary = state.course.boundary;
 
-    const spawnGust = () => {
-         if (!boundary) return;
-         // Spawn across the whole course
-         // Use a random point within the boundary + padding
-         const r = boundary.radius + 500;
-         const angle = Math.random() * Math.PI * 2;
-         const dist = Math.sqrt(Math.random()) * r; // Uniform distribution
-         const gx = boundary.x + Math.sin(angle) * dist;
-         const gy = boundary.y - Math.cos(angle) * dist;
-
-         const type = Math.random() > 0.5 ? 'gust' : 'lull';
-         state.gusts.push(createGust(gx, gy, type));
-    };
-
-    // Ensure at least 2 active gusts/lulls
+    // Maintain density
     if (boundary) {
-        while (state.gusts.length < 2) {
-            spawnGust();
-        }
-
-        if (Math.random() < spawnChance) {
-             spawnGust();
+        while (state.gusts.length < targetCount) {
+            spawnGlobalGust();
         }
     }
 
@@ -4025,15 +4032,35 @@ function resetGame() {
     state.wind.baseDirection = (Math.random()-0.5)*0.5;
     state.wind.direction = state.wind.baseDirection;
     state.gusts = [];
+
+    // Randomized Biases
+    const biasRoll = Math.random();
+    let gustProb = 0.5;
+    if (biasRoll < 0.4) gustProb = 0.75; // Gust bias
+    else if (biasRoll < 0.8) gustProb = 0.25; // Lull bias
+
+    const strengthBias = 0.8 + Math.random() * 0.4;
+    const dirBias = (Math.random() - 0.5) * 0.4;
+    const density = 8 + Math.floor(Math.random() * 12); // 8-20 active
+
     state.race.conditions = {
         gustiness: Math.random(),
-        shiftiness: Math.random()
+        shiftiness: Math.random(),
+        gustProb,
+        strengthBias,
+        dirBias,
+        density
     };
     state.time = 0;
     state.race.status = 'prestart';
     state.race.timer = 30.0;
 
     initCourse();
+
+    // Pre-populate gusts
+    for (let i = 0; i < density; i++) {
+        spawnGlobalGust(true);
+    }
 
     state.boats = [];
     if (UI.lbRows) UI.lbRows.innerHTML = '';
