@@ -1113,6 +1113,8 @@ window.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', (e) => {
+    if (state.race.status === 'waiting') return;
+
     if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
 
     let key = e.key;
