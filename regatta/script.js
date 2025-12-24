@@ -3249,7 +3249,11 @@ function updateLeaderboard() {
 
             rankDiv.textContent = index + 1;
             if (index === 0) {
-                 distDiv.textContent = "";
+                 if (boat.raceState.finished) {
+                     distDiv.textContent = formatTime(boat.raceState.finishTime);
+                 } else {
+                     distDiv.textContent = "";
+                 }
             } else {
                  if (leader.raceState.finished) {
                      if (boat.raceState.finished) {
