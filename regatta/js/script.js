@@ -113,7 +113,7 @@ class BotController {
         // Start Strategy
         this.startSide = Math.random() < 0.5 ? 'left' : 'right';
         this.startLinePct = 0.1 + Math.random() * 0.8; // Target spot on line
-        this.startDistance = 40 + Math.random() * 40; // Hover distance
+        this.startDistance = 100 + Math.random() * 200; // Hover distance (increased from 40-80)
         this.startTimer = 0;
 
         // Navigation
@@ -144,7 +144,12 @@ class BotController {
         // 3. Prestart Override
         if (isPrestart) {
             const startCmd = this.getStartCommand();
-            desiredHeading = startCmd.heading;
+            if (startCmd.target) {
+                // Use strategic navigation to reach the start target (handles tacking/VMG)
+                desiredHeading = this.getStrategicHeading(startCmd.target);
+            } else {
+                desiredHeading = startCmd.heading;
+            }
             speedRequest = startCmd.speed;
         }
 
@@ -369,8 +374,22 @@ class BotController {
         let heading = 0;
         let speed = 1.0;
         
+        // Start Time Estimation:
+        // dist to target / speed
+        // If we are 200 units away, speed=100 -> 2s.
+        // But we need time to accelerate.
+        // Let's trigger "Go" when timeToTarget matches timer with buffer.
+
+        const distToTarget = Math.sqrt((targetX - boat.x)**2 + (targetY - boat.y)**2);
+        // Estimate average speed during approach as slower (acceleration)
+        // From speed 0.2 (12 units/s) to 1.0 (60 units/s) takes time.
+        // Use a conservative average speed of ~30 units/s for planning.
+        const approachSpeed = 30.0; // units/s
+        const timeToRun = distToTarget / approachSpeed;
+        const buffer = 10.0; // Increase buffer to account for slow acceleration and maneuvering
+
         // Phase 1: Wait / Hover
-        if (timer > 10) {
+        if (timer > timeToRun + buffer && timer > 10) {
             // Stay near setup point
             const dToSetup = Math.sqrt((boat.x - setupX)**2 + (boat.y - setupY)**2);
             if (dToSetup > 20) {
@@ -383,30 +402,36 @@ class BotController {
                 const distToLine = (targetX - boat.x)*lineNormalX + (targetY - boat.y)*lineNormalY; // Approx
                 
                 if (distToLine < this.startDistance - 10) {
-                    speed = 0.0; // Brake
-                    // Head to wind to stop
-                    heading = wd; 
+                    speed = 0.2; // Slow Sail (Don't stop completely)
+                    // Park Close-Hauled (Starboard) instead of Irons
+                    heading = normalizeAngle(wd + Math.PI / 4);
                 }
             } else {
-                // At setup, luff
-                heading = wd;
-                speed = 0.0;
+                // At setup, luff Close-Hauled but keep moving slightly
+                heading = normalizeAngle(wd + Math.PI / 4);
+                speed = 0.2;
             }
         } else {
             // Phase 2: Final Approach (Gun is coming)
-            // Aim for target on line
-            heading = Math.atan2(targetX - boat.x, -(targetY - boat.y));
             
-            // Time to burn?
+            // Use Navigation Target instead of fixed heading to allow Tacking/VMG
+            // But apply speed control logic
+
             const dist = Math.sqrt((targetX - boat.x)**2 + (targetY - boat.y)**2);
-            const timeToLine = dist / (boat.speed * 60 + 0.01);
+            // Estimate speed at 10.0 kn (~100 units/s)
+            const timeToLine = dist / 100.0;
             
-            if (timeToLine < timer - 1.0) {
-                speed = 0.5; // Slow down
-                // S-turn?
-                heading = normalizeAngle(heading + Math.PI/4); 
+            if (timeToLine < timer - 2.0) {
+                // Kill speed
+                speed = 0.1;
+                // Keep parking heading if we are waiting?
+                // Or just sail slowly towards target?
+                // If we sail towards target slowly, we progress.
+                // Let's return target but low speed.
+                return { target: {x: targetX, y: targetY}, speed };
             } else {
                 speed = 1.0; // Gun it
+                return { target: {x: targetX, y: targetY}, speed };
             }
         }
         
@@ -4367,8 +4392,8 @@ function resetGame() {
     UI.boatRows = {};
 
     // Calculate Start Line Positions
-    // 100m back = 500 units.
-    const distBack = 500;
+    // Spawn at 400 units to allow horizontal spread but close enough to reach parking
+    const distBack = 400;
 
     // Wind Vectors
     const wd = state.wind.direction;
@@ -4441,12 +4466,22 @@ function resetGame() {
     for (let i = 0; i < opponents.length; i++) {
         const config = opponents[i];
         const pos = positions[posIndex++];
-        const ai = new Boat(i + 1, false, pos.x, pos.y, config.name, config);
-        // Start head to wind
-        ai.heading = state.wind.direction;
+
+        // Add vertical scatter to prevent line-abreast collision issues
+        // Move some further back, some closer
+        const scatter = (Math.random() - 0.5) * 100;
+        const downwind = state.wind.direction + Math.PI;
+        const sx = pos.x + Math.sin(downwind) * scatter;
+        const sy = pos.y - Math.cos(downwind) * scatter;
+
+        const ai = new Boat(i + 1, false, sx, sy, config.name, config);
+
+        // Start on Starboard Tack (Close Hauled) to be ready to move
+        // Instead of Irons (Head to Wind)
+        ai.heading = normalizeAngle(state.wind.direction + Math.PI / 4);
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
-        ai.speed = 0; // Initial speed
+        ai.speed = 0.5; // Initial speed (moving slightly)
 
         // Basic Start Setup
         ai.ai.startLinePct = 0.1 + Math.random() * 0.8;
