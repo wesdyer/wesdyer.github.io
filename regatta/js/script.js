@@ -2693,6 +2693,29 @@ function update(dt) {
         }
     } else if (state.race.status === 'racing') {
         state.race.timer += dt;
+        if (state.race.timer >= 600.0) { // 10 Minute Cutoff
+            state.race.status = 'finished';
+
+            // Mark all active boats as DNF/DNS
+            for (const boat of state.boats) {
+                if (!boat.raceState.finished) {
+                    boat.raceState.finished = true;
+                    boat.raceState.finishTime = state.race.timer;
+
+                    // If still on Leg 0 (Start), they count as DNS
+                    if (boat.raceState.leg === 0) {
+                        boat.raceState.resultStatus = 'DNS';
+                    } else {
+                        boat.raceState.resultStatus = 'DNF';
+                    }
+                }
+            }
+
+            if (state.camera.target === 'boat') {
+                state.camera.target = 'finish';
+                showResults();
+            }
+        }
     }
 
     // Update Boats
@@ -3593,9 +3616,22 @@ function showResults() {
 
     // Sort by finish order (or progress)
     const sorted = [...state.boats].sort((a, b) => {
-        if (a.raceState.finished && !b.raceState.finished) return -1;
-        if (!a.raceState.finished && b.raceState.finished) return 1;
-        if (a.raceState.finished && b.raceState.finished) return a.raceState.finishTime - b.raceState.finishTime;
+        // Scoring helper: 0=Finished, 1=DNF, 2=DNS, 3=Racing
+        const getScore = (boat) => {
+            if (!boat.raceState.finished) return 3;
+            if (boat.raceState.resultStatus === 'DNS') return 2;
+            if (boat.raceState.resultStatus === 'DNF') return 1;
+            return 0;
+        };
+
+        const scoreA = getScore(a);
+        const scoreB = getScore(b);
+
+        if (scoreA !== scoreB) return scoreA - scoreB;
+
+        // Tie-breaking within same category
+        if (scoreA === 0) return a.raceState.finishTime - b.raceState.finishTime; // Time asc
+        // For DNF/DNS, sort by progress (descending)
         return getBoatProgress(b) - getBoatProgress(a);
     });
 
@@ -3661,13 +3697,18 @@ function showResults() {
         const finishTime = document.createElement('span');
         finishTime.className = "text-xl font-mono text-emerald-400 font-bold";
         if (boat.raceState.finished) {
-            finishTime.textContent = formatTime(boat.raceState.finishTime);
-            if (index > 0 && leader.raceState.finished) {
-                const diff = boat.raceState.finishTime - leader.raceState.finishTime;
-                const diffSpan = document.createElement('span');
-                diffSpan.className = "text-base text-emerald-600/70 ml-2 font-normal";
-                diffSpan.textContent = `(+${diff.toFixed(2)}s)`;
-                finishTime.appendChild(diffSpan);
+            if (boat.raceState.resultStatus) {
+                finishTime.textContent = boat.raceState.resultStatus;
+                finishTime.className = "text-xl font-mono text-red-500 font-bold";
+            } else {
+                finishTime.textContent = formatTime(boat.raceState.finishTime);
+                if (index > 0 && leader.raceState.finished && !leader.raceState.resultStatus) {
+                    const diff = boat.raceState.finishTime - leader.raceState.finishTime;
+                    const diffSpan = document.createElement('span');
+                    diffSpan.className = "text-base text-emerald-600/70 ml-2 font-normal";
+                    diffSpan.textContent = `(+${diff.toFixed(2)}s)`;
+                    finishTime.appendChild(diffSpan);
+                }
             }
         } else {
             finishTime.textContent = "Racing...";
@@ -3765,15 +3806,25 @@ function updateLeaderboard() {
 
     // Sort boats
     const sorted = [...state.boats].sort((a, b) => {
-        // 1. Finished status
-        if (a.raceState.finished && !b.raceState.finished) return -1;
-        if (!a.raceState.finished && b.raceState.finished) return 1;
-        if (a.raceState.finished && b.raceState.finished) return a.raceState.finishTime - b.raceState.finishTime;
+        // Scoring helper: 0=Finished, 1=DNF, 2=DNS, 3=Racing
+        const getScore = (boat) => {
+            if (!boat.raceState.finished) return 3;
+            if (boat.raceState.resultStatus === 'DNS') return 2;
+            if (boat.raceState.resultStatus === 'DNF') return 1;
+            return 0;
+        };
 
-        // 2. Leg
+        const scoreA = getScore(a);
+        const scoreB = getScore(b);
+
+        if (scoreA !== scoreB) return scoreA - scoreB;
+
+        if (scoreA === 0) return a.raceState.finishTime - b.raceState.finishTime;
+
+        // 2. Leg (For Racing)
         if (a.raceState.leg !== b.raceState.leg) return b.raceState.leg - a.raceState.leg;
 
-        // 3. Progress within leg
+        // 3. Progress within leg (For Racing or DNF/DNS tiebreak)
         const pA = getBoatProgress(a);
         const pB = getBoatProgress(b);
         return pB - pA;
@@ -3889,12 +3940,15 @@ function updateLeaderboard() {
             rankDiv.textContent = index + 1;
             if (index === 0) {
                  if (boat.raceState.finished) {
-                     distDiv.textContent = formatTime(boat.raceState.finishTime);
+                     if (boat.raceState.resultStatus) distDiv.textContent = boat.raceState.resultStatus;
+                     else distDiv.textContent = formatTime(boat.raceState.finishTime);
                  } else {
                      distDiv.textContent = "";
                  }
             } else {
-                 if (leader.raceState.finished) {
+                 if (boat.raceState.resultStatus) {
+                     distDiv.textContent = boat.raceState.resultStatus;
+                 } else if (leader.raceState.finished) {
                      if (boat.raceState.finished) {
                          const tDiff = boat.raceState.finishTime - leader.raceState.finishTime;
                          distDiv.textContent = "+" + tDiff.toFixed(1) + "s";
