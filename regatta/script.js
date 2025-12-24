@@ -1514,22 +1514,10 @@ function updateStartStrategy(boat, dt) {
     const dwy = -Math.cos(downwindDir);
 
     // 1. Determine Target Line Position (pct)
-    let linePct = 0.5;
-    const idSeed = (boat.id * 17) % 100 / 100; // Deterministic pseudo-random 0.0-1.0
+    // Use pre-calculated percent to ensure consistency between prestart and race start
+    const linePct = boat.ai.startLinePct !== undefined ? boat.ai.startLinePct : 0.5;
 
-    if (strategy === "Pin-End (Committee Boat) Start") {
-        linePct = (getFavoredEnd() === 1) ? 0.85 : 0.15;
-    } else if (strategy === "Mid-Line Safety Start") {
-        linePct = 0.4 + idSeed * 0.2; // 0.4 to 0.6
-    } else if (strategy === "Port-Tack Flyer") {
-        linePct = 0.15;
-    } else if (strategy === "Time-on-Distance Start") {
-        linePct = 0.2 + idSeed * 0.6; // Spread out 0.2-0.8
-    } else if (strategy === "Gap Sniper") {
-        linePct = 0.1 + idSeed * 0.8;
-    } else {
-        linePct = 0.3 + idSeed * 0.4;
-    }
+    const idSeed = (boat.id * 17) % 100 / 100; // Keep for setup dist calculation
 
     const pX = m0.x + ldx * linePct;
     const pY = m0.y + ldy * linePct;
@@ -1657,7 +1645,36 @@ function updateAI(boat, dt) {
         if (marks && marks.length >= 4) {
             let indices = (boat.raceState.leg === 0 || boat.raceState.leg === 2 || boat.raceState.leg === 4) ? [0, 1] : [2, 3];
 
-            if (boat.raceState.isRounding) {
+            // Special Logic for Start (Leg 0)
+            if (boat.raceState.leg === 0) {
+                 const m0 = marks[0];
+                 const m1 = marks[1];
+                 const linePct = boat.ai.startLinePct !== undefined ? boat.ai.startLinePct : 0.5;
+
+                 // Calculate Target on Line
+                 const ldx = m1.x - m0.x;
+                 const ldy = m1.y - m0.y;
+                 const pX = m0.x + ldx * linePct;
+                 const pY = m0.y + ldy * linePct;
+
+                 targetX = pX;
+                 targetY = pY;
+
+                 // OCS Check (Are we above the line?)
+                 // Wind vectors
+                 const downwindDir = windDir + Math.PI;
+                 const dwx = Math.sin(downwindDir);
+                 const dwy = -Math.cos(downwindDir);
+                 const distToLine = (boat.x - pX)*dwx + (boat.y - pY)*dwy;
+
+                 if (distToLine < -5) { // OCS / Upwind of line
+                      // Force return to prestart side
+                      const recoverDist = 150;
+                      targetX = pX + dwx * recoverDist;
+                      targetY = pY + dwy * recoverDist;
+                 }
+
+            } else if (boat.raceState.isRounding) {
                 // Aim Wide Logic
                 const m1 = marks[indices[0]];
                 const m2 = marks[indices[1]];
@@ -2689,6 +2706,12 @@ function update(dt) {
             state.race.timer = 0;
             Sound.playStart();
             Sound.updateMusic();
+
+            // Reset AI Stuck timers to prevent immediate recovery maneuvers
+            for (const b of state.boats) {
+                b.ai.stuckTimer = 0;
+                b.ai.recoveryMode = false;
+            }
         }
     } else if (state.race.status === 'racing') {
         state.race.timer += dt;
@@ -4391,6 +4414,26 @@ function resetGame() {
         } else {
             ai.ai.startStrategy = "Mid-Line Safety Start";
         }
+
+        // Determine Start Line Position (Pct) based on strategy to prevent congestion
+        let linePct = 0.5;
+        const strat = ai.ai.startStrategy;
+        const idSeed = Math.random(); // Randomize within strategy
+
+        if (strat === "Pin-End (Committee Boat) Start") {
+            linePct = (getFavoredEnd() === 1) ? 0.85 : 0.15;
+        } else if (strat === "Mid-Line Safety Start") {
+            linePct = 0.4 + idSeed * 0.2; // 0.4 to 0.6
+        } else if (strat === "Port-Tack Flyer") {
+            linePct = 0.15;
+        } else if (strat === "Time-on-Distance Start") {
+            linePct = 0.2 + idSeed * 0.6; // Spread out 0.2-0.8
+        } else if (strat === "Gap Sniper") {
+            linePct = 0.1 + idSeed * 0.8;
+        } else {
+            linePct = 0.3 + idSeed * 0.4;
+        }
+        ai.ai.startLinePct = linePct;
 
         state.boats.push(ai);
     }
