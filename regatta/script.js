@@ -346,7 +346,8 @@ class Boat {
             recoveryTarget: 0,
             prestartSide: (Math.random() > 0.5) ? 1 : -1,
             trimTimer: 0,
-            currentTrimTarget: 0
+            currentTrimTarget: 0,
+            congestionTimer: Math.random() * 2.0
         };
 
         // Personality Stats
@@ -1507,92 +1508,182 @@ function updateStartStrategy(boat, dt) {
     // Line Vector
     const ldx = m1.x - m0.x;
     const ldy = m1.y - m0.y;
+    const lineLen = Math.sqrt(ldx * ldx + ldy * ldy);
+    const ux = ldx / lineLen;
+    const uy = ldy / lineLen;
 
-    // Wind vectors
+    // Wind vectors (N -> S means Dir 0. Upwind is N. Downwind is S)
+    // Standard: Wind Dir is FROM. 0 = From North.
+    // Downwind direction = Wind Dir + PI.
     const downwindDir = windDir + Math.PI;
     const dwx = Math.sin(downwindDir);
     const dwy = -Math.cos(downwindDir);
 
-    // 1. Determine Target Line Position (pct)
-    // Use pre-calculated percent to ensure consistency between prestart and race start
-    const linePct = boat.ai.startLinePct !== undefined ? boat.ai.startLinePct : 0.5;
+    // --- 1. Dynamic Lane & Congestion Logic ---
+    if (boat.ai.congestionTimer === undefined) boat.ai.congestionTimer = Math.random();
+    boat.ai.congestionTimer -= dt;
 
-    const idSeed = (boat.id * 17) % 100 / 100; // Keep for setup dist calculation
+    if (boat.ai.startLinePct === undefined) boat.ai.startLinePct = 0.5;
 
+    // Periodically check for congestion (every 1-2s)
+    if (boat.ai.congestionTimer <= 0) {
+        boat.ai.congestionTimer = 1.0 + Math.random();
+
+        let density = 0;
+        let leftDensity = 0;
+        let rightDensity = 0;
+        const myPct = boat.ai.startLinePct;
+        const checkRadius = 0.15; // check 15% width around me
+
+        for (const other of state.boats) {
+            if (other === boat || other.raceState.finished) continue;
+            // Project other pos onto line axis
+            const vcx = other.x - m0.x;
+            const vcy = other.y - m0.y;
+            const t = (vcx * ux + vcy * uy) / lineLen; // 0 to 1 along line
+
+            if (Math.abs(t - myPct) < checkRadius) {
+                density++;
+                if (t < myPct) leftDensity++;
+                else rightDensity++;
+            }
+        }
+
+        // If crowded (>= 2 others nearby), shift to less crowded side
+        if (density >= 2) {
+            const shiftAmount = 0.1 + Math.random() * 0.1;
+            if (leftDensity > rightDensity) {
+                // Left is crowded, move Right
+                boat.ai.startLinePct = Math.min(0.9, boat.ai.startLinePct + shiftAmount);
+            } else {
+                // Right is crowded, move Left
+                boat.ai.startLinePct = Math.max(0.1, boat.ai.startLinePct - shiftAmount);
+            }
+        }
+    }
+
+    const linePct = boat.ai.startLinePct;
     const pX = m0.x + ldx * linePct;
     const pY = m0.y + ldy * linePct;
 
-    // 2. Physics & Timing
-    // Estimate Max Boat Speed on a reach/beat
-    // Reduced to 60 to account for acceleration lag from a standing start
-    const runSpeed = 60;
+    // Projected distance to line (positive = downwind/safe, negative = OCS)
+    const distToLine = (boat.x - pX) * dwx + (boat.y - pY) * dwy;
 
-    // Projected distance to line (positive = downwind/safe)
-    const distToLine = (boat.x - pX)*dwx + (boat.y - pY)*dwy;
-
-    // OCS Recovery
-    if (distToLine < -10) { // Tolerance of 10 units
-        // OCS!
-        const recoverDist = 200;
+    // --- 2. OCS Recovery (Aggressive) ---
+    // Tolerance: 5 units (approx 1m). If closer/over, bail out.
+    if (distToLine < 5) {
+        // Panic mode: Sail back downwind deep
+        const recoverDist = 150;
         const rX = pX + dwx * recoverDist;
         const rY = pY + dwy * recoverDist;
         const angle = Math.atan2(rX - boat.x, -(rY - boat.y));
         return { x: rX, y: rY, angle, speedLimit: 1.0 };
     }
 
-    // 3. Timed Run Logic
-    // Time needed to reach line at full speed
-    const timeToRun = Math.max(0, distToLine / runSpeed);
-    const burnTime = timer - timeToRun; // Time we need to waste
+    // --- 3. Physics & Timing ---
+    const runSpeed = 60; // Max speed approx (units/sec)
+    const idSeed = (boat.id * 17) % 100 / 100;
+    const setupDist = 300 + idSeed * 100; // 300-400 units back
 
     let targetX, targetY, speedLimit;
 
-    // Setup Distance (Where to wait)
-    const setupDist = 350 + idSeed * 150; // 350 - 500 units back
-
-    if (burnTime > 15) {
-        // Phase 1: Go to Setup Area and Wait
+    // Decision Logic based on Time
+    if (timer > 20) {
+        // --- Phase 1: Waiting / Loitering ---
+        // Target a setup point well back from the line
         const sX = pX + dwx * setupDist;
         const sY = pY + dwy * setupDist;
-
         targetX = sX;
         targetY = sY;
 
-        // If we are close to setup point, slow down
-        const distToSetup = Math.sqrt((boat.x - sX)**2 + (boat.y - sY)**2);
-        if (distToSetup < 50) {
-            speedLimit = 0.3; // Loiter
+        // If we are significantly ahead of our setup point (closer to line), fall back
+        if (distToLine < setupDist - 50) {
+            // Sail towards setup point (downwind/backwards)
+            speedLimit = 1.0;
         } else {
-            speedLimit = 1.0; // Get to setup
+            // Near setup point. Loiter.
+            const dSetup = Math.sqrt((boat.x - sX)**2 + (boat.y - sY)**2);
+            if (dSetup < 60) speedLimit = 0.1; // Slow down to stay there
+            else speedLimit = 0.8;
         }
     } else {
-        // Phase 2: The Approach
+        // --- Phase 2: The Approach ---
         targetX = pX;
         targetY = pY;
+        speedLimit = 1.0;
 
-        // Ideal Speed to hit line at T=0
-        // We want to close the distance in 'timer' seconds.
-        const reqSpeed = distToLine / Math.max(0.1, timer);
-        let factor = reqSpeed / runSpeed;
+        // A. Clear Lane Check (Raycast ahead)
+        // Vector to target
+        const vx = pX - boat.x;
+        const vy = pY - boat.y;
+        const dist = Math.sqrt(vx*vx + vy*vy);
+        const nvx = vx/dist;
+        const nvy = vy/dist;
+        // Right vector
+        const rvx = -nvy;
+        const rvy = nvx;
 
-        // Speed Management
-        // If timer is > 5s, try to maintain a slight lag to allow for late acceleration
-        if (timer > 5.0) {
-             factor = Math.min(1.0, factor * 0.9);
+        let blocked = false;
+        if (dist > 40) {
+             for (const other of state.boats) {
+                 if (other === boat || other.raceState.finished) continue;
+                 const dx = other.x - boat.x;
+                 const dy = other.y - boat.y;
+                 // Project other pos relative to my boat heading/target vector
+                 const fwd = dx*nvx + dy*nvy;
+                 const side = Math.abs(dx*rvx + dy*rvy);
+
+                 // If boat is in front (0 to dist) and narrow lateral band (25 units)
+                 if (fwd > 0 && fwd < dist && side < 25) {
+                     blocked = true;
+                     break;
+                 }
+             }
         }
 
-        speedLimit = Math.max(0.15, Math.min(1.0, factor));
-
-        // Emergency Slow Down if too close early on
-        if (timer > 10.0 && distToLine < 80) {
-             speedLimit = 0.1;
+        if (blocked) {
+            // Shift target laterally to find clear air
+            // Simple heuristic: Shift Right (starboard preference?) or random?
+            // Shifting target point along line vector (ux, uy)
+            const shiftDist = 40;
+            targetX += ux * shiftDist;
+            targetY += uy * shiftDist;
+            // Note: This changes the destination but not necessarily the linePct for next frame.
+            // That's fine, it acts as a temporary deviation.
         }
 
-        // Port Tack Flyer Special
-        if (strategy === "Port-Tack Flyer" && timer < 5 && distToLine > 50) {
-             targetX = m0.x + dwx * 20;
-             targetY = m0.y + dwy * 20;
-             speedLimit = 1.0;
+        // B. Timing Control
+        // We want to arrive at T=0.
+        // Current Time To Line (at full speed)
+        // Use 90% runSpeed as realistic average
+        const estimatedTime = distToLine / (runSpeed * 0.9);
+        const timeDiff = timer - estimatedTime; // Positive = We are early (have extra time)
+
+        if (timeDiff > 1.5) {
+            // We are early.
+            // 1. Slow down
+            speedLimit = 0.15; // Minimum steerage
+
+            // 2. If VERY early (e.g. > 5s buffer) and close, kill distance
+            if (timeDiff > 5.0 && distToLine < 150) {
+                 // Sail parallel to line (reach) to burn time without getting closer
+                 // Determine direction: towards center or away?
+                 // Just reach starboard (usually safer/ROW)
+                 // Or reach towards line ends?
+                 // Let's reach along the line vector (ux, uy)
+                 targetX = boat.x + ux * 100;
+                 targetY = boat.y + uy * 100;
+                 speedLimit = 0.6;
+            }
+        } else {
+            // On time or late. Full speed.
+            speedLimit = 1.0;
+        }
+
+        // C. Final Safety Brake
+        // If we are extremely close (dist < 25) and still have time (> 3s), STOP.
+        if (distToLine < 25 && timer > 3.0) {
+            speedLimit = 0.0;
         }
     }
 
