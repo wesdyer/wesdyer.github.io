@@ -392,12 +392,15 @@ function createGust(x, y, type, initial = false) {
     const sBias = conditions.strengthBias || 1.0;
     const dBias = conditions.dirBias || 0;
 
+    // Directional variance: Triangular distribution (-1 to 1) peaked at 0
+    // Scaled to max 30 degrees (approx 0.52 rad)
+    const dirNoise = (Math.random() - Math.random()) * (30 * Math.PI / 180) * conditions.shiftiness;
+    dirDelta = dirNoise + dBias;
+
     if (type === 'gust') {
         speedDelta = baseSpeed * (0.2 + conditions.gustiness * 0.4) * sBias;
-        dirDelta = ((Math.random() - 0.5) * conditions.shiftiness * 1.0) + dBias;
     } else {
         speedDelta = -baseSpeed * (0.2 + conditions.gustiness * 0.3) * sBias;
-        dirDelta = ((Math.random() - 0.5) * conditions.shiftiness * 0.5) + dBias;
     }
 
     const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.1;
