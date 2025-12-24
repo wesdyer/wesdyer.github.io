@@ -11,6 +11,98 @@ const CONFIG = {
     cockpitColor: '#cbd5e1',
 };
 
+// AI Sayings System
+const Sayings = {
+    queue: [],
+    current: null,
+    timer: 0,
+    silenceTimer: 0,
+    overlay: null,
+    img: null,
+    name: null,
+    text: null,
+
+    init: function() {
+        this.overlay = document.getElementById('ai-saying-overlay');
+        this.img = document.getElementById('ai-saying-img');
+        this.name = document.getElementById('ai-saying-name');
+        this.text = document.getElementById('ai-saying-text');
+    },
+
+    queueQuote: function(boat, type) {
+        if (!boat || boat.isPlayer) return;
+        if (this.queue.length >= 3) return;
+        if (!this.overlay) this.init();
+
+        const quotes = typeof AI_QUOTES !== 'undefined' ? AI_QUOTES[boat.name] : null;
+        if (!quotes) return;
+
+        const typeQuotes = quotes[type];
+        if (!typeQuotes) return;
+
+        const options = ['short', 'medium', 'long'];
+        const length = options[Math.floor(Math.random() * options.length)];
+        const text = typeQuotes[length];
+
+        this.queue.push({ boat, text });
+    },
+
+    update: function(dt) {
+        this.silenceTimer += dt;
+
+        if (this.current) {
+            this.timer -= dt;
+            if (this.timer <= 0) {
+                this.hide();
+            }
+        } else if (this.queue.length > 0) {
+            const item = this.queue.shift();
+            this.show(item);
+        } else if (this.silenceTimer > 10.0 && state.race.status !== 'finished') {
+            const candidates = state.boats.filter(b => !b.isPlayer && !b.raceState.finished);
+            if (candidates.length > 0) {
+                const boat = candidates[Math.floor(Math.random() * candidates.length)];
+                let type = 'random';
+                if (state.race.status === 'prestart') type = 'prestart';
+                this.queueQuote(boat, type);
+            }
+            this.silenceTimer = 0;
+        }
+    },
+
+    show: function(item) {
+        this.current = item;
+        this.timer = 2.0;
+        this.silenceTimer = 0;
+
+        if (this.overlay && this.img && this.name && this.text) {
+            this.img.src = item.boat.name.toLowerCase() + ".png";
+            const color = isVeryDark(item.boat.colors.hull) ? item.boat.colors.spinnaker : item.boat.colors.hull;
+            this.img.style.borderColor = color;
+            this.name.textContent = item.boat.name;
+            this.name.style.color = color;
+            this.text.textContent = `"${item.text}"`;
+
+            this.overlay.classList.remove('hidden');
+            requestAnimationFrame(() => {
+                 this.overlay.classList.remove('translate-y-4', 'opacity-0');
+            });
+        }
+    },
+
+    hide: function() {
+        if (this.overlay) {
+             this.overlay.classList.add('translate-y-4', 'opacity-0');
+             setTimeout(() => {
+                 if (this.current === null) this.overlay.classList.add('hidden');
+             }, 500);
+             this.current = null;
+        } else {
+            this.current = null;
+        }
+    }
+};
+
 // AI Configuration
 const AI_CONFIG = [
     { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6' },
@@ -256,6 +348,10 @@ class Boat {
         this.badAirIntensity = 0;
         this.turbulence = [];
         this.turbulenceTimer = 0;
+
+        this.playerProximity = { minD: Infinity, close: false };
+        this.lbRank = 0;
+        this.prevRank = 0;
     }
 }
 
@@ -1779,6 +1875,9 @@ function updateBoatRaceState(boat, dt) {
                                 if (boat.isPlayer) {
                                     Sound.playGateClear();
                                     Sound.updateMusic();
+                                } else {
+                                    const othersStarted = state.boats.some(b => b !== boat && b.raceState.leg > 0);
+                                    if (!othersStarted) Sayings.queueQuote(boat, "first_across_start");
                                 }
                                 boat.raceState.startTimeDisplay = state.race.timer;
                                 boat.raceState.startTimeDisplayTimer = 5.0;
@@ -1811,11 +1910,15 @@ function updateBoatRaceState(boat, dt) {
                                     showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                                     Sound.playFinish();
                                     if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                                } else {
+                                    Sayings.queueQuote(boat, "finished_race");
                                 }
                             } else {
                                 if (boat.isPlayer) {
                                     Sound.playGateClear();
                                     Sound.updateMusic();
+                                } else {
+                                    Sayings.queueQuote(boat, "rounded_mark");
                                 }
                             }
                         };
@@ -1858,11 +1961,15 @@ function updateBoatRaceState(boat, dt) {
                             showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                             Sound.playFinish();
                             if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                        } else {
+                            Sayings.queueQuote(boat, "finished_race");
                         }
                     } else {
                         if (boat.isPlayer) {
                             Sound.playGateClear();
                             Sound.updateMusic();
+                        } else {
+                            Sayings.queueQuote(boat, "rounded_mark");
                         }
                     }
                 };
@@ -2081,6 +2188,23 @@ function checkBoatCollisions(dt) {
                 // No penalties if either boat is finished
                 if (state.race.status === 'racing' && !b1.raceState.finished && !b2.raceState.finished) {
                     const rowBoat = getRightOfWay(b1, b2);
+
+                    // Sayings Check
+                    let playerBoat = null;
+                    let aiBoat = null;
+                    if (b1.isPlayer) { playerBoat = b1; aiBoat = b2; }
+                    else if (b2.isPlayer) { playerBoat = b2; aiBoat = b1; }
+
+                    if (playerBoat && aiBoat) {
+                        if (rowBoat === playerBoat) {
+                             if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
+                        } else if (rowBoat === aiBoat) {
+                             if (!playerBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_were_hit");
+                        } else {
+                             if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
+                        }
+                    }
+
                     if (rowBoat === b1) triggerPenalty(b2);
                     else if (rowBoat === b2) triggerPenalty(b1);
                     else {
@@ -2130,6 +2254,41 @@ function checkMarkCollisions(dt) {
     }
 }
 
+function checkNearMisses(dt) {
+    const player = state.boats[0];
+    if (state.race.status === 'finished' || player.raceState.finished) return;
+
+    for (let i = 1; i < state.boats.length; i++) {
+        const ai = state.boats[i];
+        if (ai.raceState.finished) continue;
+
+        const distSq = (player.x - ai.x)**2 + (player.y - ai.y)**2;
+        const dist = Math.sqrt(distSq);
+
+        if (dist < 100) {
+            if (dist < ai.playerProximity.minD) {
+                ai.playerProximity.minD = dist;
+            }
+            ai.playerProximity.close = true;
+        } else {
+            if (ai.playerProximity.close) {
+                if (ai.playerProximity.minD < 60 && ai.playerProximity.minD > 20) {
+                     if (!player.raceState.penalty && !ai.raceState.penalty) {
+                         const rowBoat = getRightOfWay(player, ai);
+                         if (rowBoat === player) {
+                             Sayings.queueQuote(ai, "narrowly_avoided_collision");
+                         } else {
+                             Sayings.queueQuote(ai, "player_narrowly_avoided_collision");
+                         }
+                     }
+                }
+            }
+            ai.playerProximity.close = false;
+            ai.playerProximity.minD = Infinity;
+        }
+    }
+}
+
 function update(dt) {
     state.time += 0.24 * dt;
     const timeScale = dt * 60;
@@ -2174,6 +2333,10 @@ function update(dt) {
     // Collisions
     checkBoatCollisions(dt);
     checkMarkCollisions(dt);
+    checkNearMisses(dt);
+
+    // Sayings
+    Sayings.update(dt);
 
     // Player Cam
     const player = state.boats[0];
@@ -3199,6 +3362,10 @@ function updateLeaderboard() {
         return;
     }
     if (!UI.leaderboard || !state.boats.length) return;
+
+    // Store previous ranks
+    state.boats.forEach(b => b.prevRank = b.lbRank);
+
     // Calculate L for distance estimates
     const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
     const c1x = (m0.x+m1.x)/2, c1y = (m0.y+m1.y)/2;
@@ -3367,6 +3534,36 @@ function updateLeaderboard() {
                 boat.lbRank = index;
             }
         });
+    }
+
+    // Sayings Checks
+    const player = state.boats[0];
+    const playerRank = player.lbRank;
+    const playerPrevRank = player.prevRank;
+
+    for (const boat of state.boats) {
+        if (boat.isPlayer) continue;
+
+        // Moved into First
+        if (boat.lbRank === 0 && boat.prevRank !== 0) {
+            Sayings.queueQuote(boat, "moved_into_first");
+        }
+
+        // Moved into Last
+        if (boat.lbRank === state.boats.length - 1 && boat.prevRank !== state.boats.length - 1) {
+            Sayings.queueQuote(boat, "moved_into_last");
+        }
+
+        // Passing Player (AI was behind, now ahead)
+        // Lower rank is better. Behind means rank > playerRank. Ahead means rank < playerRank.
+        if (boat.prevRank > playerPrevRank && boat.lbRank < playerRank) {
+            Sayings.queueQuote(boat, "they_pass_player");
+        }
+
+        // Player Passed AI (AI was ahead, now behind)
+        if (boat.prevRank < playerPrevRank && boat.lbRank > playerRank) {
+            Sayings.queueQuote(boat, "player_passes_them");
+        }
     }
 }
 
