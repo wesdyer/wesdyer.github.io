@@ -103,6 +103,438 @@ const Sayings = {
     }
 };
 
+// AI Controller
+class BotController {
+    constructor(boat) {
+        this.boat = boat;
+        this.targetHeading = 0;
+        this.speedLimit = 1.0;
+        
+        // Start Strategy
+        this.startSide = Math.random() < 0.5 ? 'left' : 'right';
+        this.startLinePct = 0.1 + Math.random() * 0.8; // Target spot on line
+        this.startDistance = 40 + Math.random() * 40; // Hover distance
+        this.startTimer = 0;
+
+        // Navigation
+        this.tackCooldown = 0;
+        this.preferredTack = 0; // 0=none, 1=starboard, -1=port
+        
+        // Staggered updates
+        this.updateTimer = Math.random() * 0.2; 
+    }
+
+    update(dt) {
+        this.updateTimer -= dt;
+        if (this.updateTimer > 0) return;
+        this.updateTimer = 0.1; // 10Hz updates
+
+        const isRacing = state.race.status === 'racing';
+        const isPrestart = state.race.status === 'prestart';
+
+        let desiredHeading = this.boat.heading;
+        let speedRequest = 1.0;
+
+        // 1. Navigation (Where do we want to go?)
+        const nav = this.getNavigationTarget();
+        
+        // 2. Strategy (Tack/Gybe/Laylines)
+        desiredHeading = this.getStrategicHeading(nav);
+
+        // 3. Prestart Override
+        if (isPrestart) {
+            const startCmd = this.getStartCommand();
+            desiredHeading = startCmd.heading;
+            speedRequest = startCmd.speed;
+        }
+
+        // 4. Collision Avoidance (Reactive Layer)
+        // Adjust desiredHeading to avoid immediate threats
+        desiredHeading = this.applyAvoidance(desiredHeading, speedRequest);
+
+        // Apply
+        this.targetHeading = desiredHeading;
+        this.speedLimit = speedRequest;
+    }
+
+    getNavigationTarget() {
+        const boat = this.boat;
+        const marks = state.course.marks;
+        if (!marks || marks.length < 2) return { x: boat.x + 1000, y: boat.y }; // Fallback
+
+        if (boat.raceState.finished) {
+            // Sail to boundary or away
+            const b = state.course.boundary;
+            if (b) {
+                const angle = Math.atan2(b.y - boat.y, b.x - boat.x);
+                return { x: b.x + Math.cos(angle)*(b.radius+500), y: b.y + Math.sin(angle)*(b.radius+500) };
+            }
+            return { x: boat.x, y: boat.y - 1000 };
+        }
+
+        // Determine Gate/Mark Target
+        // Logic similar to original but cleaner
+        let targetIndices = [0, 1];
+        const leg = boat.raceState.leg;
+        if (leg === 1 || leg === 3) targetIndices = [2, 3];
+        else targetIndices = [0, 1]; // Start(0), Leeward(2), Finish(4) use marks 0,1
+
+        const m1 = marks[targetIndices[0]];
+        const m2 = marks[targetIndices[1]];
+
+        let targetX, targetY;
+
+        if (leg === 0) {
+            // Start: Aim for our diversified spot on the line
+            // Use the same target calculation as prestart to maintain lanes
+            const pct = this.startLinePct;
+            targetX = m1.x + (m2.x - m1.x) * pct; // m1 is 0? Indices are [0,1]
+            // Wait, updateStartStrategy used marks[0] and marks[1].
+            // If targetIndices is [0,1], m1=marks[0], m2=marks[1].
+            // Let's ensure we use the same vector direction.
+            // updateStart used: m0 + (m1-m0)*pct.
+            // Here: m1 + (m2-m1)*pct if m1=0, m2=1. Correct.
+            targetY = m1.y + (m2.y - m1.y) * pct;
+            
+            // Aim slightly PAST the line?
+            // Yes, extend 100 units past to ensure crossing
+            const wd = state.wind.direction; // Downwind direction
+            targetX -= Math.sin(wd) * 100; // wd is From. We want to go Upwind (Against wd). 
+            // Wait, start is Upwind. 
+            // wd=0 (N). Blowing S. Start is usually upwind.
+            // So we go "Against" wd. Vector is -sin(wd), +cos(wd). 
+            // -sin(0) = 0. cos(0) = 1. Moving +Y (Down). That is downwind.
+            // Canvas Y is Down.
+            // Wind Dir 0 = From Top. Blowing Down (+Y).
+            // Start line usually crossed Upwind (-Y).
+            // So we want to move -Y.
+            // Upwind Vector: (sin(wd), -cos(wd))? 
+            // No. wd is "FROM". 0 means FROM North. Vector is (0, 1).
+            // Upwind is (0, -1).
+            // -sin(0)=0. -cos(0)=-1. Correct.
+            targetX += -Math.sin(wd) * 100; 
+            targetY += Math.cos(wd) * 100;
+        } else {
+            // Standard Legs: Sail to gate center
+            targetX = (m1.x + m2.x) / 2;
+            targetY = (m1.y + m2.y) / 2;
+        }
+
+        // If rounding, aim slightly outside to round cleanly
+        if (boat.raceState.isRounding) {
+            // We are passing through. Aim for a point past the gate.
+            // But we need to round. Which mark?
+            const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
+            const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
+            const mark = (d1 < d2) ? m1 : m2;
+            
+            // Calculate tangent for rounding
+            // For now, simple waypoint logic in script.js handles "nextWaypoint"
+            // Let's rely on geometric targets.
+            // Aim 80 units outside the mark to allow turn radius
+            const dx = mark.x - (m1.x+m2.x)/2;
+            const dy = mark.y - (m1.y+m2.y)/2;
+            const len = Math.sqrt(dx*dx+dy*dy);
+            if (len > 0) {
+                targetX = mark.x + (dx/len) * 50;
+                targetY = mark.y + (dy/len) * 50;
+            }
+        }
+
+        return { x: targetX, y: targetY };
+    }
+
+    getStrategicHeading(target) {
+        const boat = this.boat;
+        const windDir = state.wind.direction; // Global or Local? AI should use Local.
+        const localWind = getWindAt(boat.x, boat.y);
+        const wd = localWind.direction;
+
+        const dx = target.x - boat.x;
+        const dy = target.y - boat.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        const angleToTarget = Math.atan2(dx, -dy); // 0 is North (Up), but canvas Y is down. 
+        // Math.atan2(x, -y) gives angle relative to North (0, -1) in CW?
+        // Let's stick to standard math: atan2(dy, dx) is angle from X axis.
+        // In game: Heading 0 = Up (0, -1). Heading PI/2 = Right (1, 0).
+        // dx, dy = target - boat.
+        // If target is (0, -100) (Up), dx=0, dy=-100. atan2(0, 100) = 0. Correct.
+        
+        // Determine Point of Sail
+        const trueWindAngle = normalizeAngle(angleToTarget - wd);
+        const absTWA = Math.abs(trueWindAngle);
+        
+        let mode = 'reach';
+        if (absTWA < Math.PI / 3.5) mode = 'upwind'; // 45-50 deg
+        else if (absTWA > Math.PI * 0.7) mode = 'downwind';
+
+        if (mode === 'reach') return angleToTarget;
+
+        // VMG Sailing
+        const optTWA = (mode === 'upwind') ? (45 * Math.PI/180) : (150 * Math.PI/180);
+        
+        // Current Tack
+        const currentTack = normalizeAngle(boat.heading - wd) > 0 ? 1 : -1;
+        
+        // Ideal headings
+        const hStarboard = normalizeAngle(wd + optTWA); // Wind + 45
+        const hPort = normalizeAngle(wd - optTWA);      // Wind - 45
+        
+        // Check Laylines
+        // If we can fetch the target, sail directly (clamped to close hauled)
+        if (mode === 'upwind') {
+            if (absTWA > optTWA) return angleToTarget; // We can fetch it
+        } else {
+            // Downwind, we can always sail direct if not too deep
+            // But VMG is faster than dead downwind. 
+            // If TWA is e.g. 170, we should gybe.
+            // If we aim at target and TWA > 150, we should head up to 150.
+            if (absTWA < optTWA) return angleToTarget; // We can fetch (reaching)
+        }
+
+        // Tacking Logic
+        // Choose the tack that brings us closer to the centerline (min distance to target axis)
+        // Or simply: Look at angleToTarget.
+        // If angleToTarget is positive (right of wind), Starboard (1) is closer.
+        // If angleToTarget is negative (left of wind), Port (-1) is closer.
+        
+        // TWA is angleToTarget - Wind.
+        // If TWA > 0, Target is Right of Wind. We want Starboard tack (Wind+45) which heads Right.
+        const desiredTack = trueWindAngle > 0 ? 1 : -1;
+        
+        let selectedHeading = (currentTack === 1) ? hStarboard : hPort;
+
+        // Should we tack/gybe?
+        if (currentTack !== desiredTack) {
+            // We are on wrong tack.
+            // Only tack if we have crossed the "layline" significantly or timer expired.
+            // Simple logic: If we are far enough past the center line.
+            
+            // Or use VMG comparison with hysteresis
+            const vmgCurrent = Math.cos(normalizeAngle(boat.heading - angleToTarget)); // Approx
+            // Better: Project velocity on vector to target.
+            
+            // Simple Layline:
+            // We want to tack when angleToTarget relative to wind exceeds our tack angle?
+            // No, when angleToTarget aligns with the *other* tack.
+            
+            // Threshold with hysteresis
+            const threshold = 0.1; // Radians past ideal
+            if (boat.raceState.leg === 0) {
+                // Start leg: don't tack excessively
+                if (this.tackCooldown <= 0) {
+                     this.tackCooldown = 5.0;
+                     return (desiredTack === 1) ? hStarboard : hPort;
+                }
+            } else {
+                // If we persist on current tack, we go further away from target line.
+                // Tack if we are "overstanding" or close to it.
+                // Check if the OTHER tack points directly at target (Layline)
+                const otherHeading = (currentTack === 1) ? hPort : hStarboard;
+                const angleError = Math.abs(normalizeAngle(otherHeading - angleToTarget));
+                
+                if (angleError < 0.1) { // Close to layline
+                    if (this.tackCooldown <= 0) {
+                        this.tackCooldown = 15.0;
+                        return otherHeading;
+                    }
+                }
+            }
+        }
+        
+        // Keep current if no reason to switch
+        return selectedHeading;
+    }
+
+    getStartCommand() {
+        const boat = this.boat;
+        const timer = state.race.timer;
+        const m0 = state.course.marks[0];
+        const m1 = state.course.marks[1];
+        
+        // Target Point on line
+        const dx = m1.x - m0.x;
+        const dy = m1.y - m0.y;
+        const targetX = m0.x + dx * this.startLinePct;
+        const targetY = m0.y + dy * this.startLinePct;
+        
+        // Wind info
+        const wd = state.wind.direction;
+        const downwind = wd + Math.PI;
+        
+        // Setup Point (Downwind of line)
+        const setupX = targetX + Math.sin(downwind) * this.startDistance;
+        const setupY = targetY - Math.cos(downwind) * this.startDistance;
+        
+        let heading = 0;
+        let speed = 1.0;
+        
+        // Phase 1: Wait / Hover
+        if (timer > 10) {
+            // Stay near setup point
+            const dToSetup = Math.sqrt((boat.x - setupX)**2 + (boat.y - setupY)**2);
+            if (dToSetup > 20) {
+                // Sail to setup
+                heading = Math.atan2(setupX - boat.x, -(setupY - boat.y));
+                // If we are ahead of setup (closer to line), slow down
+                // Projected pos on line normal
+                const lineNormalX = Math.sin(wd);
+                const lineNormalY = -Math.cos(wd);
+                const distToLine = (targetX - boat.x)*lineNormalX + (targetY - boat.y)*lineNormalY; // Approx
+                
+                if (distToLine < this.startDistance - 10) {
+                    speed = 0.0; // Brake
+                    // Head to wind to stop
+                    heading = wd; 
+                }
+            } else {
+                // At setup, luff
+                heading = wd;
+                speed = 0.0;
+            }
+        } else {
+            // Phase 2: Final Approach (Gun is coming)
+            // Aim for target on line
+            heading = Math.atan2(targetX - boat.x, -(targetY - boat.y));
+            
+            // Time to burn?
+            const dist = Math.sqrt((targetX - boat.x)**2 + (targetY - boat.y)**2);
+            const timeToLine = dist / (boat.speed * 60 + 0.01);
+            
+            if (timeToLine < timer - 1.0) {
+                speed = 0.5; // Slow down
+                // S-turn?
+                heading = normalizeAngle(heading + Math.PI/4); 
+            } else {
+                speed = 1.0; // Gun it
+            }
+        }
+        
+        // OCS Check
+        // If we crossed line (y coordinate check relative to line), emergency return
+        // Simplify: just check if "distToLine" is negative
+        // But simpler: Is boat.raceState.ocs true?
+        if (boat.raceState.ocs) {
+            // Sail back below line
+            const recoverX = targetX + Math.sin(downwind) * 100;
+            const recoverY = targetY - Math.cos(downwind) * 100;
+            heading = Math.atan2(recoverX - boat.x, -(recoverY - boat.y));
+            speed = 1.0;
+        }
+
+        return { heading, speed };
+    }
+
+    applyAvoidance(desiredHeading, speedRequest) {
+        const boat = this.boat;
+        const lookaheadFrames = 120; // 2 seconds lookahead
+        const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
+        
+        // Candidates: more granular to find gaps
+        const candidates = [
+            0, 
+            0.1, -0.1, 
+            0.2, -0.2, 
+            0.4, -0.4, 
+            0.6, -0.6,
+            0.8, -0.8,
+            1.2, -1.2 
+        ];
+
+        let bestHeading = desiredHeading;
+        let minCost = Infinity;
+
+        for (const offset of candidates) {
+            const h = normalizeAngle(desiredHeading + offset);
+            
+            // Base Cost: Deviation from desired course
+            // Non-linear cost to strongly prefer small deviations
+            let cost = Math.pow(Math.abs(offset), 1.5) * 10; 
+
+            // Project position at t=lookahead
+            const vx = Math.sin(h) * speed;
+            const vy = -Math.cos(h) * speed;
+            const futureX = boat.x + vx * (lookaheadFrames / 60);
+            const futureY = boat.y + vy * (lookaheadFrames / 60);
+
+            // Check 3 points: Current, Halfway, Future
+            const points = [
+                {x: boat.x + vx * 0.5, y: boat.y + vy * 0.5},
+                {x: futureX, y: futureY}
+            ];
+
+            let collision = false;
+            let ruleViolation = false;
+            let proximityCost = 0;
+
+            // 1. Boats
+            for (const other of state.boats) {
+                if (other === boat || other.raceState.finished) continue;
+                
+                const ovx = other.velocity.x * 60;
+                const ovy = other.velocity.y * 60;
+
+                // Check along the path
+                for (let i = 0; i < points.length; i++) {
+                    const t = (i + 1) * 0.5 * (lookaheadFrames / 60);
+                    const myP = points[i];
+                    const otherP = {
+                        x: other.x + ovx * t,
+                        y: other.y + ovy * t
+                    };
+
+                    const distSq = (myP.x - otherP.x)**2 + (myP.y - otherP.y)**2;
+                    const safeDist = 80; // 40 radius * 2
+                    
+                    if (distSq < safeDist * safeDist) {
+                        collision = true;
+                        const row = getRightOfWay(boat, other);
+                        if (row === other) ruleViolation = true;
+                    } else if (distSq < 200 * 200) {
+                        // Soft avoidance (Proximity)
+                        proximityCost += 5000 / distSq; 
+                    }
+                }
+            }
+
+            // 2. Marks
+            if (state.course.marks) {
+                for (const m of state.course.marks) {
+                    // Check path
+                    for (const p of points) {
+                        const dSq = (p.x - m.x)**2 + (p.y - m.y)**2;
+                        if (dSq < 60*60) { // Mark radius 12 + boat + margin
+                            collision = true;
+                        } else if (dSq < 150*150) {
+                            proximityCost += 10000 / dSq;
+                        }
+                    }
+                }
+            }
+
+            // 3. Boundary
+            if (state.course.boundary) {
+                const b = state.course.boundary;
+                for (const p of points) {
+                    const d = Math.sqrt((p.x - b.x)**2 + (p.y - b.y)**2);
+                    if (d > b.radius - 50) collision = true;
+                }
+            }
+
+            if (collision) cost += 10000;
+            if (ruleViolation) cost += 20000;
+            cost += proximityCost;
+
+            if (cost < minCost) {
+                minCost = cost;
+                bestHeading = h;
+            }
+        }
+        
+        return bestHeading;
+    }
+}
+
 // AI Configuration
 const AI_CONFIG = [
     { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "A relaxed veteran who reads the wind instinctively and somehow always ends up in the right place." },
@@ -1447,393 +1879,40 @@ function getFavoredEnd() {
     return (d1 > d0) ? 1 : 0;
 }
 
-function updateStartStrategy(boat, dt) {
-    // Basic Start: Pick a spot on the line and hover near it
-    const timer = state.race.timer;
-    const marks = state.course.marks;
-    if (!marks || marks.length < 2) return { x: boat.x, y: boat.y, angle: 0, speedLimit: 1.0 };
-
-    const m0 = marks[0];
-    const m1 = marks[1];
-
-    // Assign a fixed target percentage if not exists
-    if (boat.ai.startLinePct === undefined) {
-        // Random spot, but keep away from very edges
-        boat.ai.startLinePct = 0.1 + Math.random() * 0.8;
-    }
-
-    // Line Vector
-    const ldx = m1.x - m0.x;
-    const ldy = m1.y - m0.y;
-    const pX = m0.x + ldx * boat.ai.startLinePct;
-    const pY = m0.y + ldy * boat.ai.startLinePct;
-
-    const windDir = state.wind.direction;
-    const downwindDir = windDir + Math.PI;
-    const dwx = Math.sin(downwindDir);
-    const dwy = -Math.cos(downwindDir);
-
-    let targetX = pX;
-    let targetY = pY;
-    let speedLimit = 1.0;
-
-    // Distance to line check
-    // Projected distance
-    const distToLine = (boat.x - pX) * dwx + (boat.y - pY) * dwy;
-
-    if (timer > 10) {
-        // Hover back
-        targetX = pX + dwx * 100;
-        targetY = pY + dwy * 100;
-        if (distToLine < 80) speedLimit = 0.1;
-    } else {
-        // Approach
-        // Calculate time to run distance
-        const dist = Math.sqrt((boat.x - pX)**2 + (boat.y - pY)**2);
-        const timeToRun = dist / (boat.speed * 60 + 0.1); // approx
-
-        if (timeToRun < timer - 1) {
-            speedLimit = 0.2; // Slow down, too early
-        } else {
-            speedLimit = 1.0;
-        }
-    }
-
-    // OCS Avoidance
-    if (distToLine < 10 && timer > 0.5) {
-         speedLimit = 0.0;
-         targetX = pX + dwx * 50; // Back up
-         targetY = pY + dwy * 50;
-    }
-
-    const targetAngle = Math.atan2(targetX - boat.x, -(targetY - boat.y));
-    return { x: targetX, y: targetY, angle: targetAngle, speedLimit };
-}
-
 function updateAI(boat, dt) {
-    if (boat.isPlayer && !boat.raceState.finished) return;
+    if (boat.isPlayer) return;
 
+    if (!boat.controller) {
+        boat.controller = new BotController(boat);
+    }
+
+    boat.controller.update(dt);
+
+    // Apply Output
     const timeScale = dt * 60;
-    const localWind = getWindAt(boat.x, boat.y);
-    const windDir = localWind.direction;
-    let targetX, targetY;
-    let speedLimit = 1.0;
+    const target = boat.controller.targetHeading;
+    const speedLimit = boat.controller.speedLimit;
 
-    // 1. Determine Strategic Target
-    if (boat.raceState.finished) {
-        const b = state.course.boundary;
-        if (b) {
-            const dx = boat.x - b.x;
-            const dy = boat.y - b.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist > 0.1) {
-                 targetX = b.x + (dx/dist) * (b.radius + 500);
-                 targetY = b.y + (dy/dist) * (b.radius + 500);
-            } else {
-                 targetX = boat.x + 1000; targetY = boat.y;
-            }
-        } else {
-            targetX = boat.x + 1000; targetY = boat.y;
-        }
-    } else if (state.race.status === 'prestart') {
-        const strat = updateStartStrategy(boat, dt);
-        targetX = strat.x;
-        targetY = strat.y;
-        speedLimit = strat.speedLimit !== undefined ? strat.speedLimit : 1.0;
-    } else {
-        const waypoint = boat.raceState.nextWaypoint;
-        const marks = state.course.marks;
+    // Smooth turn
+    const diff = normalizeAngle(target - boat.heading);
+    const aiTurnRate = CONFIG.turnSpeed * timeScale;
+    
+    // If very far off, turn faster?
+    const turnAmt = Math.sign(diff) * Math.min(Math.abs(diff), aiTurnRate);
+    boat.heading += turnAmt;
+    boat.heading = normalizeAngle(boat.heading);
 
-        if (marks && marks.length >= 4) {
-            let indices = (boat.raceState.leg === 0 || boat.raceState.leg === 2 || boat.raceState.leg === 4) ? [0, 1] : [2, 3];
-
-            if (boat.raceState.leg === 0) {
-                 const m0 = marks[0];
-                 const m1 = marks[1];
-                 const linePct = boat.ai.startLinePct !== undefined ? boat.ai.startLinePct : 0.5;
-
-                 const ldx = m1.x - m0.x;
-                 const ldy = m1.y - m0.y;
-                 const pX = m0.x + ldx * linePct;
-                 const pY = m0.y + ldy * linePct;
-
-                 targetX = pX;
-                 targetY = pY;
-
-                 const downwindDir = windDir + Math.PI;
-                 const dwx = Math.sin(downwindDir);
-                 const dwy = -Math.cos(downwindDir);
-                 const distToLine = (boat.x - pX)*dwx + (boat.y - pY)*dwy;
-
-                 if (distToLine < -5) {
-                      const recoverDist = 150;
-                      targetX = pX + dwx * recoverDist;
-                      targetY = pY + dwy * recoverDist;
-                 }
-
-            } else if (boat.raceState.isRounding) {
-                const m1 = marks[indices[0]];
-                const m2 = marks[indices[1]];
-                const d1 = (boat.x - m1.x) ** 2 + (boat.y - m1.y) ** 2;
-                const d2 = (boat.x - m2.x) ** 2 + (boat.y - m2.y) ** 2;
-                const targetMark = (d1 < d2) ? m1 : m2;
-
-                // Basic rounding: aim slightly wide
-                const cx = (m1.x + m2.x) / 2;
-                const cy = (m1.y + m2.y) / 2;
-                const vmx = targetMark.x - cx;
-                const vmy = targetMark.y - cy;
-                const distM = Math.sqrt(vmx*vmx + vmy*vmy);
-                const ux = vmx / distM;
-                const uy = vmy / distM;
-                const offset = 100; // Fixed wide turn
-                targetX = targetMark.x + ux * offset;
-                targetY = targetMark.y + uy * offset;
-            } else {
-                const m1 = marks[indices[0]];
-                const m2 = marks[indices[1]];
-                const gCx = (m1.x + m2.x) / 2;
-                const gCy = (m1.y + m2.y) / 2;
-                targetX = gCx;
-                targetY = gCy;
-
-                // Missed gate check
-                const wd = state.wind.direction;
-                const flowX = -Math.sin(wd);
-                const flowY = Math.cos(wd);
-                const isUpwindLeg = (boat.raceState.leg % 2 !== 0);
-
-                let fwdX, fwdY;
-                if (isUpwindLeg) {
-                     fwdX = -flowX; fwdY = -flowY;
-                } else {
-                     fwdX = flowX; fwdY = flowY;
-                }
-
-                const dx = boat.x - gCx;
-                const dy = boat.y - gCy;
-                const distPast = dx * fwdX + dy * fwdY;
-
-                if (distPast > 50) {
-                     targetX = gCx - fwdX * 200;
-                     targetY = gCy - fwdY * 200;
-                }
-            }
-        } else {
-            targetX = waypoint.x;
-            targetY = waypoint.y;
-        }
-    }
-
-    const dx = targetX - boat.x;
-    const dy = targetY - boat.y;
-    let targetAngle = Math.atan2(dx, -dy);
-
-    const isRacing = state.race.status === 'racing';
-    const isPrestart = state.race.status === 'prestart';
-    if (isRacing || isPrestart) {
-        const speedThreshold = 0.25;
-        const timeThreshold = isRacing ? 4.0 : 6.0;
-        if (boat.speed < speedThreshold) boat.ai.stuckTimer += dt;
-        else boat.ai.stuckTimer = Math.max(0, boat.ai.stuckTimer - dt);
-
-        if (boat.ai.stuckTimer > timeThreshold && !boat.ai.recoveryMode) {
-             boat.ai.recoveryMode = true;
-             const currentWindAngle = normalizeAngle(boat.heading - windDir);
-             let side = (currentWindAngle > 0) ? 1 : -1;
-             boat.ai.recoveryTarget = normalizeAngle(windDir + side * 1.6);
-        }
-        if (boat.ai.recoveryMode) {
-             if (boat.speed > 1.0) {
-                 boat.ai.recoveryMode = false;
-                 boat.ai.stuckTimer = 0;
-             } else {
-                 targetAngle = boat.ai.recoveryTarget;
-                 speedLimit = 1.0;
-             }
-        }
-    }
-
-    let desiredHeading = boat.heading;
-    if (boat.ai.recoveryMode) {
-        desiredHeading = boat.ai.recoveryTarget;
-    } else {
-        const angleToTarget = targetAngle;
-        let mode = 'reach';
-        const noGoLimit = Math.PI / 4.2;
-        const downwindLimit = Math.PI * 0.75;
-        const windToTarget = normalizeAngle(angleToTarget - windDir);
-        const absWindToTarget = Math.abs(windToTarget);
-
-        if (absWindToTarget < noGoLimit) mode = 'upwind';
-        else if (absWindToTarget > downwindLimit) mode = 'downwind';
-
-        if (boat.ai.tackCooldown > 0) boat.ai.tackCooldown -= dt;
-
-        const angleToWind = normalizeAngle(boat.heading - windDir);
-        if (state.race.status === 'racing' && boat.speed < 1.0 && Math.abs(angleToWind) < 0.6) {
-             const side = angleToWind > 0 ? 1 : -1;
-             desiredHeading = normalizeAngle(windDir + side * 1.05);
-        } else {
-            let legMode = mode;
-            if (state.race.status === 'racing') {
-                 if (boat.raceState.leg === 1 || boat.raceState.leg === 3) legMode = 'upwind';
-                 else if (boat.raceState.leg === 2 || boat.raceState.leg === 4) legMode = 'downwind';
-                 else if (boat.raceState.leg === 0) legMode = 'upwind';
-            }
-
-            const currentTack = (angleToWind > 0) ? 1 : -1;
-            const bestTWA = (legMode === 'upwind') ? (45 * Math.PI/180) : (150 * Math.PI/180);
-            const headingOnTack = normalizeAngle(windDir + currentTack * bestTWA);
-            const headingOnSwap = normalizeAngle(windDir - currentTack * bestTWA);
-
-            const vmgCurrent = Math.cos(normalizeAngle(headingOnTack - angleToTarget));
-            const vmgSwap = Math.cos(normalizeAngle(headingOnSwap - angleToTarget));
-
-            // Fixed threshold for basic AI
-            let swapThreshold = 0.15;
-
-            let outsideLayline = false;
-            const safeAbsAngle = Math.abs(windToTarget);
-            const absWindToTargetDeg = safeAbsAngle * (180/Math.PI);
-
-            if (legMode === 'upwind') {
-                if (absWindToTargetDeg > 50) {
-                     swapThreshold -= 0.5;
-                     outsideLayline = true;
-                }
-            } else if (legMode === 'downwind') {
-                if (absWindToTargetDeg < 140) {
-                     swapThreshold -= 0.5;
-                     outsideLayline = true;
-                }
-            }
-
-            let shouldSwap = false;
-            if (checkBoundaryExiting(boat)) shouldSwap = true;
-            else if (boat.ai.tackCooldown <= 0) {
-                 if (outsideLayline) {
-                      if (vmgSwap > vmgCurrent + swapThreshold) {
-                           if (boat.speed > 1.0 || legMode === 'downwind') shouldSwap = true;
-                      }
-                 } else {
-                      if (vmgSwap > vmgCurrent + swapThreshold) {
-                           if (boat.speed > 1.5 || legMode === 'downwind') shouldSwap = true;
-                      }
-                 }
-            }
-
-            if (shouldSwap) {
-                desiredHeading = headingOnSwap;
-                boat.ai.tackCooldown = 10.0; // Fixed cooldown
-            } else if (mode === 'reach') {
-                desiredHeading = angleToTarget;
-            } else {
-                desiredHeading = headingOnTack;
-            }
-        }
-    }
-
-    // Basic Collision Avoidance
-    let steerBias = 0;
-    const detectRadius = 300;
-    let avoidanceCount = 0;
-
-    if (state.course.boundary) {
-        const b = state.course.boundary;
-        const dx = boat.x - b.x;
-        const dy = boat.y - b.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        const margin = 500;
-        if (dist > b.radius - margin) {
-            const strength = Math.pow((dist - (b.radius - margin)) / margin, 3) * 4.0;
-            const angleToCenter = Math.atan2(-dy, -dx);
-            const diff = normalizeAngle(angleToCenter - desiredHeading);
-            steerBias += diff * strength;
-        }
-    }
-
-    const others = state.boats.filter(b => b !== boat && !b.raceState.finished).map(b => {
-        const dSq = (b.x - boat.x)**2 + (b.y - boat.y)**2;
-        return { boat: b, distSq: dSq };
-    }).sort((a,b) => a.distSq - b.distSq);
-
-    for (const item of others) {
-        if (avoidanceCount >= 2) break;
-        if (item.distSq > detectRadius * detectRadius) break;
-
-        const other = item.boat;
-        const dist = Math.sqrt(item.distSq);
-
-        if (isConflictSoon(boat, other)) {
-             avoidanceCount++;
-             const rowBoat = getRightOfWay(boat, other);
-             const iHaveROW = (rowBoat === boat);
-
-             if (iHaveROW) {
-                 if (dist < 80) {
-                     const angleToOther = Math.atan2(other.x - boat.x, -(other.y - boat.y));
-                     const diff = normalizeAngle(desiredHeading - angleToOther);
-                     const turnDir = (diff > 0) ? 1 : -1;
-                     steerBias += turnDir * 2.0;
-                 }
-             } else {
-                 const oh = other.heading;
-                 const sternX = other.x - Math.sin(oh) * 50;
-                 const sternY = other.y + Math.cos(oh) * 50;
-                 const safeX = sternX - Math.sin(oh) * 80;
-                 const safeY = sternY + Math.cos(oh) * 80;
-
-                 const angleToSafe = Math.atan2(safeX - boat.x, -(safeY - boat.y));
-                 const diff = normalizeAngle(angleToSafe - desiredHeading);
-
-                 const urgency = Math.min(2.0, 300 / dist);
-                 steerBias += diff * urgency;
-
-                 if (dist < 150) {
-                     const angleToOther = Math.atan2(other.x - boat.x, -(other.y - boat.y));
-                     if (Math.abs(normalizeAngle(boat.heading - angleToOther)) < 0.5) {
-                         speedLimit = Math.min(speedLimit, 0.4);
-                     }
-                 }
-             }
-        }
-    }
-
-    if (state.course.marks) {
-        for (const m of state.course.marks) {
-            const dx = m.x - boat.x;
-            const dy = m.y - boat.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 150) {
-                 const angleToMark = Math.atan2(dx, -dy);
-                 const diff = normalizeAngle(desiredHeading - angleToMark);
-                 const pushDir = (diff > 0) ? 1 : -1;
-                 const strength = (1.0 - dist/150) * 2.5;
-                 steerBias += pushDir * strength;
-            }
-        }
-    }
-
-    steerBias = Math.max(-Math.PI/1.5, Math.min(Math.PI/1.5, steerBias));
-    desiredHeading += steerBias;
-    boat.ai.targetHeading = normalizeAngle(desiredHeading);
-
-    if (boat.ai.recoveryMode) speedLimit = 1.0;
-
+    // Speed / Luff
     if (speedLimit < 0.9) {
         boat.ai.forcedLuff = 1.0 - speedLimit;
     } else {
         boat.ai.forcedLuff = 0;
     }
 
-    let diff = normalizeAngle(boat.ai.targetHeading - boat.heading);
-    const aiTurnRate = CONFIG.turnSpeed * timeScale * 0.8; // Fixed turn rate factor 0.8
-    if (Math.abs(diff) > aiTurnRate) boat.heading += Math.sign(diff) * aiTurnRate;
-    else boat.heading = boat.ai.targetHeading;
-
+    // Spinnaker Logic
+    const windDir = state.wind.direction; // Approximate
     const windAngle = Math.abs(normalizeAngle(windDir - boat.heading));
-    boat.spinnaker = (windAngle > Math.PI * 0.6) && (speedLimit > 0.8);
+    boat.spinnaker = (windAngle > Math.PI * 0.65) && (speedLimit > 0.8);
 }
 
 function triggerPenalty(boat) {
@@ -3193,15 +3272,16 @@ function drawGusts(ctx) {
         // Colors
         if (g.type === 'gust') {
             // Darker/More intense blue for stronger gusts
-            grad.addColorStop(0, `rgba(11, 63, 176, ${alpha})`);
-            grad.addColorStop(0.5, `rgba(11, 63, 176, ${alpha * 0.5})`);
-            grad.addColorStop(1, `rgba(11, 63, 176, 0)`);
+            const r = 0, gVal = 0, b = 60 + strength * 40; // 60-100
+            grad.addColorStop(0, `rgba(${r}, ${gVal}, ${b}, ${alpha})`);
+            grad.addColorStop(0.5, `rgba(${r}, ${gVal}, ${b}, ${alpha * 0.5})`);
+            grad.addColorStop(1, `rgba(${r}, ${gVal}, ${b}, 0)`);
         } else {
             // Lighter/More intense white/cyan for stronger lulls
             // Lulls reduce wind, maybe show as lighter patches
-            grad.addColorStop(0, `rgba(92, 201, 255, ${alpha})`);
-            grad.addColorStop(0.5, `rgba(92, 201, 255, ${alpha * 0.5})`);
-            grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
+            grad.addColorStop(0, `rgba(200, 250, 255, ${alpha})`);
+            grad.addColorStop(0.5, `rgba(200, 250, 255, ${alpha * 0.5})`);
+            grad.addColorStop(1, 'rgba(200, 250, 255, 0)');
         }
 
         ctx.fillStyle = grad;
