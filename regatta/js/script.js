@@ -1917,6 +1917,7 @@ function updateAI(boat, dt) {
 
 function triggerPenalty(boat) {
     if (boat.raceState.finished) return;
+    if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('penalty', { boat });
     if (!settings.penaltiesEnabled) return;
 
     // Reset timer if already penalized? Or just ignore?
@@ -2071,6 +2072,10 @@ function updateBoat(boat, dt) {
         targetGameSpeed *= 0.5;
     }
 
+    if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
+         if (checkBoundaryExiting(boat)) window.onRaceEvent('collision_boundary', { boat });
+    }
+
     const effectiveAoA = angleToWind - actualMagnitude;
     const luffStartThreshold = 0.5;
     if (effectiveAoA < luffStartThreshold) {
@@ -2206,6 +2211,7 @@ function updateBoatRaceState(boat, dt) {
                         if (crossingDir === 1) {
                             if (!boat.raceState.ocs) {
                                 boat.raceState.leg++;
+                                if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 0, time: state.race.timer });
                                 if (boat.isPlayer) {
                                     Sound.playGateClear();
                                     Sound.updateMusic();
@@ -2226,6 +2232,7 @@ function updateBoatRaceState(boat, dt) {
                         // Normal Legs
                          const completeLeg = () => {
                             boat.raceState.leg++;
+                            if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: boat.raceState.leg - 1, time: state.race.timer });
                             boat.raceState.isRounding = false;
                             const split = state.race.timer - boat.raceState.legStartTime;
                             boat.raceState.lastLegDuration = split;
@@ -2239,6 +2246,7 @@ function updateBoatRaceState(boat, dt) {
                                 if (boat.raceState.penalty) {
                                     boat.raceState.finishTime += boat.raceState.penaltyTimer;
                                 }
+                                if (window.onRaceEvent) window.onRaceEvent('finish', { boat, time: boat.raceState.finishTime });
                                 boat.raceState.trace.push({ x: boat.x, y: boat.y, leg: 4 });
                                 if (boat.isPlayer) {
                                     showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
@@ -2499,6 +2507,11 @@ function checkBoatCollisions(dt) {
             const res = satPolygonPolygon(poly1, poly2);
 
             if (res) {
+                if (window.onRaceEvent && state.race.status === 'racing') {
+                    window.onRaceEvent('collision_boat', { boat: b1, other: b2 });
+                    window.onRaceEvent('collision_boat', { boat: b2, other: b1 });
+                }
+
                 const tx = res.axis.x * res.overlap * 0.5;
                 const ty = res.axis.y * res.overlap * 0.5;
                 b1.x -= tx; b1.y -= ty;
@@ -2569,6 +2582,8 @@ function checkMarkCollisions(dt) {
         for (const mark of state.course.marks) {
             const res = satPolygonCircle(poly, mark, markRadius);
             if (res) {
+                if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_mark', { boat });
+
                 // Direction: axis points from Poly to Circle
                 // We want to move Poly away from Circle, so move opposite to axis
                 boat.x -= res.axis.x * res.overlap;
