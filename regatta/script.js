@@ -1477,17 +1477,16 @@ function updateStartStrategy(boat, dt) {
     } else if (strategy === "Wind-Shift Anticipation Start") {
         const favored = getFavoredEnd();
         linePct = (favored === 1) ? 0.85 : 0.15;
-        distBack = (timer > 10) ? 150 : 20 * timer;
+        distBack = (timer > 10) ? 150 : Math.max(30, 20 * timer);
 
     } else if (strategy === "Mid-Line Safety Start") {
         linePct = 0.5;
-        distBack = (timer > 8) ? 200 : 80;
-        if (timer < 4) distBack = -50;
+        distBack = (timer > 8) ? 200 : Math.max(30, 20 * timer);
 
     } else if (strategy === "Pin-End (Committee Boat) Start") {
         const favored = getFavoredEnd();
         linePct = (favored === 1) ? 0.9 : 0.1;
-        distBack = (timer > 10) ? 120 : 15 * timer;
+        distBack = (timer > 10) ? 120 : Math.max(30, 15 * timer);
 
     } else if (strategy === "Port-Tack Flyer") {
         linePct = 0.05;
@@ -1495,45 +1494,44 @@ function updateStartStrategy(boat, dt) {
             distBack = 200;
             angleOffset = -Math.PI/4;
         } else {
-            distBack = -100;
-            angleOffset = -Math.PI/4; // Force Port
+            distBack = 40;
+            // Only force port if we are actually near the pin
+            const distToPin = Math.sqrt((boat.x - marks[0].x)**2 + (boat.y - marks[0].y)**2);
+            if (distToPin < 200) angleOffset = -Math.PI/4;
         }
 
     } else if (strategy === "Luff & Kill") {
         linePct = 0.5 + (Math.random()-0.5)*0.4;
-        distBack = (timer > 10) ? 100 : 50;
-        if (timer < 5) distBack = -50;
+        distBack = (timer > 10) ? 100 : Math.max(30, 15 * timer);
 
     } else if (strategy === "High-Lane Builder") {
         linePct = 0.8;
-        distBack = (timer > 10) ? 150 : 80;
-        if (timer < 3) distBack = -50;
+        distBack = (timer > 10) ? 150 : Math.max(30, 20 * timer);
 
     } else if (strategy === "Leebow Trap") {
         linePct = 0.3;
-        distBack = (timer > 10) ? 180 : 100;
-        if (timer < 5) distBack = -50;
+        distBack = (timer > 10) ? 180 : Math.max(30, 20 * timer);
 
     } else if (strategy === "Gap Sniper") {
         const offset = ((boat.id * 17) % 100) / 100.0;
         linePct = 0.2 + 0.6 * offset;
-        distBack = (timer > 10) ? 150 : 20 * timer;
+        distBack = (timer > 10) ? 150 : Math.max(40, 20 * timer);
 
     } else if (strategy === "Second-Row Slingshot") {
         linePct = 0.5;
-        distBack = (timer > 5) ? 300 : 150;
-        if (timer < 2) distBack = -100;
+        distBack = (timer > 5) ? 300 : Math.max(50, 20 * timer);
 
     } else if (strategy === "Chaos Gambit") {
         const t = state.time;
         linePct = 0.5 + Math.sin(t * 0.5) * 0.4;
         distBack = 150 + Math.cos(t) * 50;
-        if (timer < 5) distBack = 0;
+        if (timer < 5) distBack = 40;
 
     } else if (strategy === "Bail-Out & Reset") {
         linePct = 0.5;
         distBack = 300;
-        if (timer < 5) distBack = 100;
+        if (timer < 8) distBack = 100;
+        if (timer < 3) distBack = -50;
     }
 
     // Apply Logic
@@ -1622,13 +1620,19 @@ function updateAI(boat, dt) {
                 const cx = (m1.x + m2.x) / 2;
                 const cy = (m1.y + m2.y) / 2;
                 // Aim wide of the mark to ensure crossing the extension line
-                // Better positioning = tighter rounding (less wide)
-                const wideFactor = 1.0 + (5 - positioning) * 0.2;
-                const vx = (targetMark.x - cx) * wideFactor;
-                const vy = (targetMark.y - cy) * wideFactor;
+                // Better positioning = tighter rounding
+                // Vector from center to mark
+                const vmx = targetMark.x - cx;
+                const vmy = targetMark.y - cy;
+                const distM = Math.sqrt(vmx*vmx + vmy*vmy);
+                const ux = vmx / distM;
+                const uy = vmy / distM;
 
-                targetX = targetMark.x + vx;
-                targetY = targetMark.y + vy;
+                // Offset: 60 units (tight) to 140 units (wide) based on positioning
+                const offset = 60 + (5 - positioning) * 20;
+
+                targetX = targetMark.x + ux * offset;
+                targetY = targetMark.y + uy * offset;
             } else {
                 // Aim for the midpoint to ensure passing between marks
                 // Better positioning = aim slightly favored side? For now center.
@@ -1761,7 +1765,7 @@ function updateAI(boat, dt) {
             const windSense = boat.currentStats.windSense;
             // Higher sense = smaller threshold needed to swap
             // 5 -> 0.05, 1 -> 0.25
-            const swapThreshold = 0.25 - (windSense - 1) * 0.05;
+            const swapThreshold = 0.20 - (windSense - 1) * 0.04;
 
             if (checkBoundaryExiting(boat)) {
                 shouldSwap = true;
@@ -1777,7 +1781,10 @@ function updateAI(boat, dt) {
 
             if (shouldSwap) {
                 desiredHeading = headingOnSwap;
-                boat.ai.tackCooldown = 15.0 + Math.random() * 10.0;
+                // Tacking Speed/Cooldown based on handling
+                // High handling (5) = faster recovery (5s), Low (1) = slower (15s)
+                const handling = boat.currentStats.boatHandling;
+                boat.ai.tackCooldown = 5.0 + (5 - handling) * 2.5 + Math.random() * 5.0;
             } else {
                 desiredHeading = headingOnTack;
             }

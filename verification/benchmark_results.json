@@ -1,0 +1,336 @@
+{
+  "start": [
+    {
+      "name": "Player",
+      "isPlayer": true,
+      "speed": 0,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    },
+    {
+      "name": "Flash",
+      "isPlayer": false,
+      "speed": 4.485972484016104,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    },
+    {
+      "name": "Vex",
+      "isPlayer": false,
+      "speed": 1.555458880194613,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    },
+    {
+      "name": "Strut",
+      "isPlayer": false,
+      "speed": 3.768932922094804,
+      "distToLine": 0,
+      "ocs": true,
+      "leg": 0
+    },
+    {
+      "name": "Scuttle",
+      "isPlayer": false,
+      "speed": 2.3869359932375573,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    },
+    {
+      "name": "Zing",
+      "isPlayer": false,
+      "speed": 0.24773415643411464,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    },
+    {
+      "name": "Finley",
+      "isPlayer": false,
+      "speed": 4.023317108133253,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    },
+    {
+      "name": "Whiskers",
+      "isPlayer": false,
+      "speed": 0.02701081686036296,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    },
+    {
+      "name": "Pulse",
+      "isPlayer": false,
+      "speed": 3.3803869738437275,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    },
+    {
+      "name": "Pebble",
+      "isPlayer": false,
+      "speed": 4.0602434073635685,
+      "distToLine": 0,
+      "ocs": false,
+      "leg": 0
+    }
+  ],
+  "results": [
+    {
+      "id": 0,
+      "name": "Player",
+      "isPlayer": true,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 0,
+      "legTopSpeeds": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "avgSpeed": 0,
+      "maneuvers": 0,
+      "stats": {
+        "boatHandling": 5,
+        "windSense": 5,
+        "positioning": 5,
+        "aggression": 3,
+        "composure": 5
+      },
+      "startStrategy": null
+    },
+    {
+      "id": 1,
+      "name": "Flash",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 0,
+      "legTopSpeeds": [
+        9.483613271230414,
+        8.298435171821668,
+        9.147905939118584,
+        7.655637319711533,
+        0
+      ],
+      "avgSpeed": 6.392289825563045,
+      "maneuvers": 5,
+      "stats": {
+        "boatHandling": 5,
+        "windSense": 1,
+        "positioning": 2,
+        "aggression": 5,
+        "composure": 1
+      },
+      "startStrategy": "Port-Tack Flyer"
+    },
+    {
+      "id": 2,
+      "name": "Vex",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 1,
+      "legTopSpeeds": [
+        6.433718322949144,
+        8.519918958631258,
+        9.08055370881822,
+        7.96992365134865,
+        0
+      ],
+      "avgSpeed": 6.687340566215653,
+      "maneuvers": 4,
+      "stats": {
+        "boatHandling": 4,
+        "windSense": 4,
+        "positioning": 3,
+        "aggression": 3,
+        "composure": 3
+      },
+      "startStrategy": "Gap Sniper"
+    },
+    {
+      "id": 3,
+      "name": "Strut",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 1,
+      "legTopSpeeds": [
+        9.014401560752503,
+        0,
+        0,
+        0,
+        0
+      ],
+      "avgSpeed": 4.714073489120628,
+      "maneuvers": 4,
+      "stats": {
+        "boatHandling": 4,
+        "windSense": 3,
+        "positioning": 3,
+        "aggression": 4,
+        "composure": 3
+      },
+      "startStrategy": "High-Lane Builder"
+    },
+    {
+      "id": 4,
+      "name": "Scuttle",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 1,
+      "legTopSpeeds": [
+        9.366329091478825,
+        0,
+        0,
+        0,
+        0
+      ],
+      "avgSpeed": 4.417980647346129,
+      "maneuvers": 3,
+      "stats": {
+        "boatHandling": 3,
+        "windSense": 3,
+        "positioning": 4,
+        "aggression": 4,
+        "composure": 2
+      },
+      "startStrategy": "Gap Sniper"
+    },
+    {
+      "id": 5,
+      "name": "Zing",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 2,
+      "legTopSpeeds": [
+        7.03414425688368,
+        8.445630816792113,
+        8.624419311928921,
+        7.903108612739393,
+        0
+      ],
+      "avgSpeed": 6.297307058875175,
+      "maneuvers": 4,
+      "stats": {
+        "boatHandling": 4,
+        "windSense": 2,
+        "positioning": 3,
+        "aggression": 5,
+        "composure": 2
+      },
+      "startStrategy": "Chaos Gambit"
+    },
+    {
+      "id": 6,
+      "name": "Finley",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 2,
+      "legTopSpeeds": [
+        9.27217778229153,
+        0,
+        0,
+        0,
+        0
+      ],
+      "avgSpeed": 4.598831606956807,
+      "maneuvers": 2,
+      "stats": {
+        "boatHandling": 5,
+        "windSense": 2,
+        "positioning": 3,
+        "aggression": 4,
+        "composure": 3
+      },
+      "startStrategy": "Time-on-Distance Start"
+    },
+    {
+      "id": 7,
+      "name": "Whiskers",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 3,
+      "legTopSpeeds": [
+        9.149177510826068,
+        0,
+        0,
+        0,
+        0
+      ],
+      "avgSpeed": 3.968641712147373,
+      "maneuvers": 2,
+      "stats": {
+        "boatHandling": 3,
+        "windSense": 3,
+        "positioning": 4,
+        "aggression": 2,
+        "composure": 5
+      },
+      "startStrategy": "High-Lane Builder"
+    },
+    {
+      "id": 8,
+      "name": "Pulse",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 2,
+      "legTopSpeeds": [
+        9.735615093947697,
+        8.26023906027785,
+        9.318313427074184,
+        5.4576163476925545,
+        0
+      ],
+      "avgSpeed": 5.884163147647928,
+      "maneuvers": 4,
+      "stats": {
+        "boatHandling": 4,
+        "windSense": 3,
+        "positioning": 3,
+        "aggression": 5,
+        "composure": 3
+      },
+      "startStrategy": "Time-on-Distance Start"
+    },
+    {
+      "id": 9,
+      "name": "Pebble",
+      "isPlayer": false,
+      "finished": false,
+      "finishTime": 0,
+      "totalPenalties": 1,
+      "legTopSpeeds": [
+        9.638723056441064,
+        8.109851644517768,
+        0,
+        0,
+        0
+      ],
+      "avgSpeed": 5.516357032129908,
+      "maneuvers": 3,
+      "stats": {
+        "boatHandling": 4,
+        "windSense": 4,
+        "positioning": 5,
+        "aggression": 2,
+        "composure": 5
+      },
+      "startStrategy": "High-Lane Builder"
+    }
+  ]
+}
