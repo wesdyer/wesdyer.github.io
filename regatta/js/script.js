@@ -76,7 +76,7 @@ const Sayings = {
         this.silenceTimer = 0;
 
         if (this.overlay && this.img && this.name && this.text) {
-            this.img.src = item.boat.name.toLowerCase() + ".png";
+            this.img.src = "assets/images/" + item.boat.name.toLowerCase() + ".png";
             const color = isVeryDark(item.boat.colors.hull) ? item.boat.colors.spinnaker : item.boat.colors.hull;
             this.img.style.borderColor = color;
             this.name.textContent = item.boat.name;
@@ -266,7 +266,7 @@ const state = {
 };
 
 const burgeeImg = new Image();
-burgeeImg.src = 'salty-crew-yacht-club-burgee.png';
+burgeeImg.src = 'assets/images/salty-crew-yacht-club-burgee.png';
 
 class Boat {
     constructor(id, isPlayer, startX, startY, name="USA", config=null) {
@@ -608,10 +608,10 @@ const Sound = {
     },
 
     getMusicFile: function(track) {
-         if (track === 'prestart') return 'prestart-countdown.mp3';
-         if (track === 'racing-upwind') return 'breezy-race.mp3';
-         if (track === 'racing-downwind') return 'spinnaker-run.mp3';
-         if (track === 'results') return 'harbor-results.mp3';
+         if (track === 'prestart') return 'assets/audio/prestart-countdown.mp3';
+         if (track === 'racing-upwind') return 'assets/audio/breezy-race.mp3';
+         if (track === 'racing-downwind') return 'assets/audio/spinnaker-run.mp3';
+         if (track === 'results') return 'assets/audio/harbor-results.mp3';
          return null;
     },
 
@@ -932,7 +932,7 @@ function setupPreRaceOverlay() {
 
             // Image
             const img = document.createElement('img');
-            img.src = boat.name.toLowerCase() + ".png";
+            img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
             img.className = "w-12 h-12 rounded-full border-2 object-cover bg-slate-800";
             const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
             img.style.borderColor = color;
@@ -3657,7 +3657,7 @@ function showResults() {
              imgDiv.appendChild(star);
         } else {
              const img = document.createElement('img');
-             img.src = boat.name.toLowerCase() + ".png";
+             img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
              img.className = "w-full h-full rounded-2xl border-4 object-cover bg-slate-900 shadow-md";
              const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
              img.style.borderColor = color;
@@ -3842,7 +3842,7 @@ function updateLeaderboard() {
                 } else {
                     // Portrait
                     const img = document.createElement('img');
-                    img.src = boat.name.toLowerCase() + ".png";
+                    img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
                     img.className = "w-8 h-8 rounded-full border-2 object-cover bg-slate-900";
                     const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
                     img.style.borderColor = color;
