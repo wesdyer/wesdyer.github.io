@@ -439,8 +439,7 @@ function drawDisturbedAir(ctx) {
 const Sound = {
     ctx: null,
     musicBuffers: {},
-    musicSource: null,
-    musicGain: null,
+    currentTrackNode: null, // { source, gain }
     activeTrack: null,
 
     init: function() {
@@ -458,7 +457,8 @@ const Sound = {
 
     getMusicFile: function(track) {
          if (track === 'prestart') return 'prestart-countdown.mp3';
-         if (track === 'racing') return 'breezy-race.mp3';
+         if (track === 'racing-upwind') return 'breezy-race.mp3';
+         if (track === 'racing-downwind') return 'spinnaker-run.mp3';
          if (track === 'results') return 'harbor-results.mp3';
          return null;
     },
@@ -480,10 +480,22 @@ const Sound = {
             });
     },
 
+    fadeOutAndStop: function(node, duration = 2.0) {
+        if (!node || !node.gain) return;
+        try {
+            const now = this.ctx.currentTime;
+            node.gain.gain.cancelScheduledValues(now);
+            node.gain.gain.setValueAtTime(node.gain.gain.value, now);
+            node.gain.gain.linearRampToValueAtTime(0, now + duration);
+            node.source.stop(now + duration + 0.1);
+        } catch (e) {}
+    },
+
     stopMusic: function() {
-        if (this.musicSource) {
-            try { this.musicSource.stop(); } catch(e) {}
-            this.musicSource = null;
+        // Immediate stop (for reset)
+        if (this.currentTrackNode) {
+            try { this.currentTrackNode.source.stop(); } catch(e) {}
+            this.currentTrackNode = null;
         }
         this.activeTrack = null;
     },
@@ -492,38 +504,58 @@ const Sound = {
         if (!this.ctx) return;
 
         if (!settings.musicEnabled) {
-            if (this.activeTrack) this.stopMusic();
+            if (this.currentTrackNode) this.fadeOutAndStop(this.currentTrackNode, 0.5);
+            this.currentTrackNode = null;
+            this.activeTrack = null;
             return;
         }
 
-        let targetTrack = 'racing';
+        let targetTrack = null;
         if (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')) {
             targetTrack = 'results';
         } else if (state.race.status === 'prestart') {
             targetTrack = 'prestart';
+        } else if (state.race.status === 'racing') {
+            const player = state.boats[0];
+            const leg = player ? player.raceState.leg : 0;
+            // Leg 0, 1, 3: Upwind (breezy-race.mp3)
+            // Leg 2, 4: Downwind (spinnaker-run.mp3)
+            if (leg === 0 || leg === 1 || leg === 3) targetTrack = 'racing-upwind';
+            else targetTrack = 'racing-downwind';
         }
 
-        if (this.activeTrack !== targetTrack) {
-            this.stopMusic();
+        if (targetTrack && this.activeTrack !== targetTrack) {
+            const previousNode = this.currentTrackNode;
             this.activeTrack = targetTrack;
+            this.currentTrackNode = null; // Will be replaced when loaded
+
+            if (previousNode) {
+                this.fadeOutAndStop(previousNode, 2.0);
+            }
 
             this.loadMusic(targetTrack).then(buffer => {
                 if (!settings.musicEnabled) return;
-                if (this.activeTrack !== targetTrack) return;
+                if (this.activeTrack !== targetTrack) return; // Changed while loading
                 if (!buffer) return;
 
-                if (this.musicSource) { try { this.musicSource.stop(); } catch(e){} }
+                const source = this.ctx.createBufferSource();
+                source.buffer = buffer;
+                source.loop = true;
 
-                this.musicSource = this.ctx.createBufferSource();
-                this.musicSource.buffer = buffer;
-                this.musicSource.loop = true;
+                const gain = this.ctx.createGain();
+                gain.gain.value = 0; // Start silent for fade in
 
-                this.musicGain = this.ctx.createGain();
-                this.musicGain.gain.value = 0.3;
+                source.connect(gain);
+                gain.connect(this.ctx.destination);
+                source.start(0);
 
-                this.musicSource.connect(this.musicGain);
-                this.musicGain.connect(this.ctx.destination);
-                this.musicSource.start(0);
+                // Fade In
+                const now = this.ctx.currentTime;
+                gain.gain.cancelScheduledValues(now);
+                gain.gain.setValueAtTime(0, now);
+                gain.gain.linearRampToValueAtTime(0.3, now + 2.0);
+
+                this.currentTrackNode = { source, gain };
             });
         }
     },
@@ -1730,7 +1762,10 @@ function updateBoatRaceState(boat, dt) {
                         if (crossingDir === 1) {
                             if (!boat.raceState.ocs) {
                                 boat.raceState.leg++;
-                                if (boat.isPlayer) Sound.playGateClear();
+                                if (boat.isPlayer) {
+                                    Sound.playGateClear();
+                                    Sound.updateMusic();
+                                }
                                 boat.raceState.startTimeDisplay = state.race.timer;
                                 boat.raceState.startTimeDisplayTimer = 5.0;
                                 boat.raceState.startLegDuration = state.race.timer;
@@ -1764,7 +1799,10 @@ function updateBoatRaceState(boat, dt) {
                                     if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
                                 }
                             } else {
-                                if (boat.isPlayer) Sound.playGateClear();
+                                if (boat.isPlayer) {
+                                    Sound.playGateClear();
+                                    Sound.updateMusic();
+                                }
                             }
                         };
 
@@ -1808,7 +1846,10 @@ function updateBoatRaceState(boat, dt) {
                             if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
                         }
                     } else {
-                        if (boat.isPlayer) Sound.playGateClear();
+                        if (boat.isPlayer) {
+                            Sound.playGateClear();
+                            Sound.updateMusic();
+                        }
                     }
                 };
 
