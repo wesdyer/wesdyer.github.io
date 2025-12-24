@@ -32,6 +32,11 @@ const Sayings = {
     queueQuote: function(boat, type) {
         if (!boat || boat.isPlayer) return;
         if (this.queue.length >= 3) return;
+
+        if (type !== 'random' && type !== 'prestart' && type !== 'first_across_start') {
+            if (Math.random() > 0.25) return;
+        }
+
         if (!this.overlay) this.init();
 
         const quotes = typeof AI_QUOTES !== 'undefined' ? AI_QUOTES[boat.name] : null;
@@ -58,7 +63,7 @@ const Sayings = {
         } else if (this.queue.length > 0) {
             const item = this.queue.shift();
             this.show(item);
-        } else if (this.silenceTimer > 10.0 && state.race.status !== 'finished') {
+        } else if (this.silenceTimer > 30.0 && state.race.status !== 'finished') {
             const candidates = state.boats.filter(b => !b.isPlayer && !b.raceState.finished);
             if (candidates.length > 0) {
                 const boat = candidates[Math.floor(Math.random() * candidates.length)];
@@ -4132,4 +4137,4 @@ function restartRace() { resetGame(); togglePause(false); }
 
 resetGame();
 requestAnimationFrame(loop);
-window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard;
+window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard; window.Sayings = Sayings;
