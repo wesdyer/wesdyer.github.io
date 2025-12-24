@@ -1564,132 +1564,121 @@ function getFavoredEnd() {
 }
 
 function updateStartStrategy(boat, dt) {
-    // Basic AI Start Strategy
-    // Aims for a target point relative to the line based on time remaining
     const strategy = boat.ai.startStrategy || "Mid-Line Safety Start";
-    const timer = state.race.timer; // Time until start (if prestart, decreasing)
+    const timer = state.race.timer; // Time until start
     const localWind = getWindAt(boat.x, boat.y);
     const windDir = localWind.direction;
     const marks = state.course.marks;
     if (!marks || marks.length < 2) return { x: boat.x, y: boat.y, angle: localWind.direction + Math.PI/2, speedLimit: 1.0 };
 
-    const m0 = marks[0]; // Pin (Left)
-    const m1 = marks[1]; // Boat (Right)
+    const m0 = marks[0];
+    const m1 = marks[1];
 
-    // Line Geometry
+    // Line Vector
     const ldx = m1.x - m0.x;
     const ldy = m1.y - m0.y;
-    const lineLen = Math.sqrt(ldx*ldx + ldy*ldy);
-    // Line Direction (Left to Right)
-    const lx = ldx / lineLen;
-    const ly = ldy / lineLen;
 
-    // Wind Direction Vector (From)
-    // Downwind is direction wind is blowing TO (opposite of From)
-    // windDir = 0 (N) -> Blows South.
-    // Downwind vector: (0, 1).
-    // sin(0)=0, -cos(0)=-1. Wait.
-    // Standard Math: 0 is East? No, Navigation.
-    // 0 is North. +Y is South.
-    // x = sin(dir), y = -cos(dir).
-    // North wind (0) -> x=0, y=-1 (Up).
-    // Wait, canvas Y is Down positive.
-    // North is Up (-Y). South is Down (+Y).
-    // If wind is FROM North (0), it blows TO South (+Y).
-    // Wind Vector (From): (sin(0), -cos(0)) = (0, -1). Points North (Upwind).
-    // Downwind Vector: (0, 1).
-
-    // Let's rely on getWindAt direction.
-    // If wind is North (0), direction is 0.
-    // To go Upwind, we head 0.
-    // To go Downwind, we head PI.
-
-    // Prestart side is Downwind of line.
-    // We want to be "below" the line.
-    // Line Normal pointing Downwind?
-    // We can just use the wind direction.
+    // Wind vectors
     const downwindDir = windDir + Math.PI;
     const dwx = Math.sin(downwindDir);
     const dwy = -Math.cos(downwindDir);
 
-    // Calculate Target Position based on Strategy
-    let linePct = 0.5; // 0.0 (Pin) to 1.0 (Boat)
-    let distBack = 50; // Distance behind line
+    // 1. Determine Target Line Position (pct)
+    let linePct = 0.5;
+    const idSeed = (boat.id * 17) % 100 / 100; // Deterministic pseudo-random 0.0-1.0
 
     if (strategy === "Pin-End (Committee Boat) Start") {
-        linePct = (getFavoredEnd() === 1) ? 0.9 : 0.1;
+        linePct = (getFavoredEnd() === 1) ? 0.85 : 0.15;
     } else if (strategy === "Mid-Line Safety Start") {
-        linePct = 0.5;
+        linePct = 0.4 + idSeed * 0.2; // 0.4 to 0.6
     } else if (strategy === "Port-Tack Flyer") {
-        linePct = 0.1; // Near Pin
+        linePct = 0.15;
     } else if (strategy === "Time-on-Distance Start") {
-        linePct = 0.5;
+        linePct = 0.2 + idSeed * 0.6; // Spread out 0.2-0.8
+    } else if (strategy === "Gap Sniper") {
+        linePct = 0.1 + idSeed * 0.8;
     } else {
-        // Randomize slightly based on ID
-        linePct = 0.2 + (boat.id % 6) * 0.1;
+        linePct = 0.3 + idSeed * 0.4;
     }
 
-    // Dynamic Distance Calculation
-    // We want to burn time.
-    // If timer is high (>30s), stay far back (e.g. 200m).
-    // If timer is low (<10s), move to attack position (20-40m).
-    // Speed approx 2-5m/s (10-25 units/s).
-    // 10s at 20 units/s = 200 units.
-    if (timer > 20) distBack = 200 + (boat.id % 5) * 20;
-    else if (timer > 10) distBack = 100 + timer * 5;
-    else distBack = 30 + timer * 8; // 30m at 0s, 110m at 10s.
-
-    // Calculate Point
     const pX = m0.x + ldx * linePct;
     const pY = m0.y + ldy * linePct;
 
-    // Target is Downwind of point
-    const targetX = pX + dwx * distBack;
-    const targetY = pY + dwy * distBack;
+    // 2. Physics & Timing
+    // Estimate Max Boat Speed on a reach/beat
+    // Reduced to 60 to account for acceleration lag from a standing start
+    const runSpeed = 60;
 
-    let targetAngle = Math.atan2(targetX - boat.x, -(targetY - boat.y)); // To Target
-    let speedLimit = 1.0;
+    // Projected distance to line (positive = downwind/safe)
+    const distToLine = (boat.x - pX)*dwx + (boat.y - pY)*dwy;
 
-    // Speed Control / OCS Prevention
-    const distToLine = (boat.x - pX)*dwx + (boat.y - pY)*dwy; // Projected distance
-    // Note: distToLine is positive if we are downwind (safe).
-    // If negative, we are OCS.
-
-    if (distToLine < 0) {
-        // We are OCS! Return immediately.
-        // Target deeper downwind.
+    // OCS Recovery
+    if (distToLine < -10) { // Tolerance of 10 units
+        // OCS!
         const recoverDist = 200;
         const rX = pX + dwx * recoverDist;
         const rY = pY + dwy * recoverDist;
-        targetAngle = Math.atan2(rX - boat.x, -(rY - boat.y));
-        speedLimit = 1.0; // Hurry back
+        const angle = Math.atan2(rX - boat.x, -(rY - boat.y));
+        return { x: rX, y: rY, angle, speedLimit: 1.0 };
+    }
+
+    // 3. Timed Run Logic
+    // Time needed to reach line at full speed
+    const timeToRun = Math.max(0, distToLine / runSpeed);
+    const burnTime = timer - timeToRun; // Time we need to waste
+
+    let targetX, targetY, speedLimit;
+
+    // Setup Distance (Where to wait)
+    const setupDist = 350 + idSeed * 150; // 350 - 500 units back
+
+    if (burnTime > 15) {
+        // Phase 1: Go to Setup Area and Wait
+        const sX = pX + dwx * setupDist;
+        const sY = pY + dwy * setupDist;
+
+        targetX = sX;
+        targetY = sY;
+
+        // If we are close to setup point, slow down
+        const distToSetup = Math.sqrt((boat.x - sX)**2 + (boat.y - sY)**2);
+        if (distToSetup < 50) {
+            speedLimit = 0.3; // Loiter
+        } else {
+            speedLimit = 1.0; // Get to setup
+        }
     } else {
-        // Check if we are too close too early
-        // Time to burn = timer.
-        // Time to line at full speed ~ distToLine / MaxSpeed.
-        // Max speed ~ 5.0 units/frame? No. ~2.0.
-        // Let's say speed is 2.5 (10 kts).
-        // If distToLine = 100, time = 40 frames = 0.6s.
-        // If timer = 5s, we are WAY too early.
+        // Phase 2: The Approach
+        targetX = pX;
+        targetY = pY;
 
-        const estSpeed = 2.0 * 60; // units per sec approx (120)
-        const timeToRun = distToLine / estSpeed;
+        // Ideal Speed to hit line at T=0
+        // We want to close the distance in 'timer' seconds.
+        const reqSpeed = distToLine / Math.max(0.1, timer);
+        let factor = reqSpeed / runSpeed;
 
-        if (timeToRun < timer - 5.0) {
-             // Too fast. Luff, but maintain steerage.
-             speedLimit = 0.3;
-        } else if (timeToRun < timer) {
-             // Slightly early
-             speedLimit = 0.7;
+        // Speed Management
+        // If timer is > 5s, try to maintain a slight lag to allow for late acceleration
+        if (timer > 5.0) {
+             factor = Math.min(1.0, factor * 0.9);
+        }
+
+        speedLimit = Math.max(0.15, Math.min(1.0, factor));
+
+        // Emergency Slow Down if too close early on
+        if (timer > 10.0 && distToLine < 80) {
+             speedLimit = 0.1;
         }
 
         // Port Tack Flyer Special
-        if (strategy === "Port-Tack Flyer" && timer < 10 && distToLine < 100) {
-             targetAngle = windDir + Math.PI/4;
+        if (strategy === "Port-Tack Flyer" && timer < 5 && distToLine > 50) {
+             targetX = m0.x + dwx * 20;
+             targetY = m0.y + dwy * 20;
              speedLimit = 1.0;
         }
     }
 
+    const targetAngle = Math.atan2(targetX - boat.x, -(targetY - boat.y));
     return { x: targetX, y: targetY, angle: targetAngle, speedLimit };
 }
 
