@@ -4046,6 +4046,10 @@ function updateLeaderboard() {
                 rowClass += "bg-emerald-900/60";
                 rankDiv.className = "lb-rank w-4 text-xs font-black italic text-white mr-2";
                 distDiv.className = "lb-dist text-[10px] font-mono text-white text-right min-w-[32px]";
+            } else if (boat.raceState.leg === 0) {
+                rowClass += "bg-gray-900/40 grayscale";
+                rankDiv.className = "lb-rank w-4 text-xs font-black italic text-gray-500 mr-2";
+                distDiv.className = "lb-dist text-[10px] font-mono text-gray-500 text-right min-w-[32px]";
             } else {
                 rowClass += "bg-slate-800/40";
                 rankDiv.className = "lb-rank w-4 text-xs font-black italic text-slate-400 mr-2";
