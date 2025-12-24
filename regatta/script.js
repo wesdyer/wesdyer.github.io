@@ -3722,7 +3722,11 @@ function drawBoatIndicator(ctx, boat) {
     const rank = (boat.lbRank !== undefined) ? (boat.lbRank + 1) : "-";
     const speed = (boat.speed * 4).toFixed(1);
     const name = boat.name.toUpperCase();
-    const line1 = `${rank} ${name}`;
+
+    let line1 = `${rank} ${name}`;
+    if (boat.raceState.leg === 0) {
+        line1 = name;
+    }
     const line2 = `${speed}kn`;
 
     ctx.save();
