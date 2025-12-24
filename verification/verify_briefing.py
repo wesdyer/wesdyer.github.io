@@ -1,44 +1,58 @@
+import re
 from playwright.sync_api import sync_playwright
-import os
-import time
 
 def verify_briefing():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
-        # Load the page
-        url = "file://" + os.path.realpath("regatta/index.html")
-        page.goto(url)
+        # Navigate to the game via localhost
+        page.goto("http://localhost:8000/regatta/index.html")
 
         # Wait for pre-race overlay
-        overlay = page.locator("#pre-race-overlay")
-        overlay.wait_for(state="visible", timeout=5000)
+        page.wait_for_selector("#pre-race-overlay")
 
-        # Check competitor grid
+        # Wait for competitors grid to populate
         grid = page.locator("#pr-competitors-grid")
-        grid.wait_for(state="visible")
+        grid.wait_for()
 
-        # Get the first competitor card
-        first_card = grid.locator("div.bg-slate-900\/40").first
+        # Wait for at least one card
+        page.wait_for_selector("#pr-competitors-grid > div", state="visible")
 
-        # Get inner text
-        text = first_card.inner_text()
-        print(f"Card text: {text}")
+        cards = page.locator("#pr-competitors-grid > div").all()
+        print(f"Checking {len(cards)} cards...")
 
-        # Check for stats
-        has_stats = "Handling:" in text
-        print(f"Has stats: {has_stats}")
+        truncated_by_js = 0
+        has_line_clamp = True
 
-        # Check for description class
-        desc_el = first_card.locator("div.text-xs.text-slate-300.italic")
-        desc_classes = desc_el.get_attribute("class")
-        print(f"Description classes: {desc_classes}")
+        for i, card in enumerate(cards):
+             desc_locator = card.locator(".italic")
+             text = desc_locator.text_content()
+             classes = desc_locator.get_attribute("class")
 
-        is_truncated = "truncate" in desc_classes
-        print(f"Is truncated: {is_truncated}")
+             # Check for class
+             if "line-clamp-2" not in classes:
+                 has_line_clamp = False
+                 print(f"Card {i} missing line-clamp-2 class: {classes}")
 
-        page.screenshot(path="verification/briefing_after.png")
+             # Check if text looks like it was JS truncated (ends in "...")
+             # Note: full text might end in "...", but unlikely for all of them.
+             # And specifically "..." attached to a word usually.
+             # We can also check if text length > 10 words.
+
+             words = text.split()
+             if len(words) > 10:
+                 pass # Good, we allowed more words!
+
+             # If it ends with "..." and is short, it might be suspicious if we expected full text.
+             # But let's rely on the class presence and the fact that we see longer strings.
+             if len(words) > 10:
+                 print(f"Card {i} has {len(words)} words. (Verified > 10)")
+
+        if has_line_clamp:
+            print("Verified: All cards have 'line-clamp-2' class.")
+        else:
+            print("Verification Failed: Some cards missing 'line-clamp-2'.")
 
         browser.close()
 
