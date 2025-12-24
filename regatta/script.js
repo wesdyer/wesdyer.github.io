@@ -1269,10 +1269,9 @@ function triggerPenalty(boat) {
     // Usually penalties stack or reset. Let's reset the timer to 10s.
     if (!boat.raceState.penalty) {
         boat.raceState.penalty = true;
+        boat.raceState.totalPenalties++; // Only increment start of penalty
         if (boat.isPlayer) Sound.playPenalty();
     }
-
-    boat.raceState.totalPenalties++;
 
     // Always reset timer to 10s on new penalty trigger
     boat.raceState.penaltyTimer = 10.0;
@@ -1676,7 +1675,10 @@ function updateBoatRaceState(boat, dt) {
 
     // Stats
     if (state.race.status === 'racing' && boat.raceState.leg < 5) {
-        const distMoved = boat.speed * (dt * 60) * 0.2;
+        // boat.speed is approx 0.25 * Knots. 1 Knot = 0.5144 m/s.
+        // Dist = Speed(Knots) * 0.5144 * dt
+        // Dist = (boat.speed * 4) * 0.5144 * dt = boat.speed * 2.0576 * dt
+        const distMoved = boat.speed * 2.0576 * dt;
         const kn = boat.speed * 4;
         boat.raceState.legDistances[boat.raceState.leg] += distMoved;
         if (kn > boat.raceState.legTopSpeeds[boat.raceState.leg]) boat.raceState.legTopSpeeds[boat.raceState.leg] = kn;
@@ -2724,6 +2726,7 @@ function showResults() {
         return getBoatProgress(b) - getBoatProgress(a);
     });
 
+    const leader = sorted[0];
     UI.resultsList.innerHTML = '';
 
     sorted.forEach((boat, index) => {
@@ -2733,15 +2736,23 @@ function showResults() {
 
         // Rank
         const rankDiv = document.createElement('div');
-        rankDiv.className = "text-4xl font-black text-slate-400 w-12 text-center italic";
-        rankDiv.textContent = index + 1;
-        if (index === 0) rankDiv.className += " text-yellow-400";
-        else if (index === 1) rankDiv.className += " text-gray-300";
-        else if (index === 2) rankDiv.className += " text-amber-700";
+        if (index === 0) {
+            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-yellow-900 bg-gradient-to-br from-yellow-300 to-yellow-600 border-2 border-yellow-200 shadow-lg";
+            rankDiv.textContent = "1";
+        } else if (index === 1) {
+            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-slate-900 bg-gradient-to-br from-slate-300 to-slate-500 border-2 border-slate-200 shadow-lg";
+            rankDiv.textContent = "2";
+        } else if (index === 2) {
+            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-amber-100 bg-gradient-to-br from-amber-600 to-amber-800 border-2 border-amber-400 shadow-lg";
+            rankDiv.textContent = "3";
+        } else {
+            rankDiv.className = "w-12 text-center text-4xl font-black text-slate-500 italic";
+            rankDiv.textContent = index + 1;
+        }
 
         // Image
         const imgDiv = document.createElement('div');
-        imgDiv.className = "w-16 h-16 shrink-0";
+        imgDiv.className = "w-24 h-24 shrink-0";
         if (boat.isPlayer) {
              // Star Icon
              const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -2756,7 +2767,7 @@ function showResults() {
         } else {
              const img = document.createElement('img');
              img.src = boat.name.toLowerCase() + ".png";
-             img.className = "w-full h-full rounded-full border-4 object-cover bg-slate-900 shadow-md";
+             img.className = "w-full h-full rounded-2xl border-4 object-cover bg-slate-900 shadow-md";
              const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
              img.style.borderColor = color;
              imgDiv.appendChild(img);
@@ -2778,6 +2789,13 @@ function showResults() {
         finishTime.className = "text-xl font-mono text-emerald-400 font-bold";
         if (boat.raceState.finished) {
             finishTime.textContent = formatTime(boat.raceState.finishTime);
+            if (index > 0 && leader.raceState.finished) {
+                const diff = boat.raceState.finishTime - leader.raceState.finishTime;
+                const diffSpan = document.createElement('span');
+                diffSpan.className = "text-base text-emerald-600/70 ml-2 font-normal";
+                diffSpan.textContent = `(+${diff.toFixed(2)}s)`;
+                finishTime.appendChild(diffSpan);
+            }
         } else {
             finishTime.textContent = "Racing...";
             finishTime.className = "text-sm font-mono text-slate-400 animate-pulse";
