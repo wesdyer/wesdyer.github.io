@@ -2638,11 +2638,21 @@ function update(dt) {
     const timeScale = dt * 60;
 
     // Wind Dynamics (Global)
-    const dirDrift = Math.sin(state.time * 0.05) * 0.2;
-    const dirGust = Math.sin(state.time * 0.3 + 123.4) * 0.05;
+    const conditions = state.race.conditions || { shiftiness: 0.5, gustiness: 0.5 };
+
+    // Scale variability based on course conditions
+    // Shiftiness (0-1) controls directional variance amplitude
+    // Low: 0.05 rad (~3 deg), High: 0.4 rad (~23 deg)
+    const dirAmp = 0.05 + conditions.shiftiness * 0.35;
+    const dirDrift = Math.sin(state.time * 0.05) * dirAmp;
+    const dirGust = Math.sin(state.time * 0.3 + 123.4) * (dirAmp * 0.25);
     state.wind.direction = state.wind.baseDirection + dirDrift + dirGust;
-    const speedSurge = Math.sin(state.time * 0.1) * 2.0;
-    const speedGust = Math.sin(state.time * 0.5 + 456.7) * 1.5;
+
+    // Gustiness (0-1) controls speed variance amplitude
+    // Low: 0.5 kn, High: 4.5 kn
+    const speedAmp = 0.5 + conditions.gustiness * 4.0;
+    const speedSurge = Math.sin(state.time * 0.1) * speedAmp;
+    const speedGust = Math.sin(state.time * 0.5 + 456.7) * (speedAmp * 0.5);
     state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
 
     updateGusts(dt);
