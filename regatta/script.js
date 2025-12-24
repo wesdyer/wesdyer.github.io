@@ -1578,8 +1578,7 @@ function updateStartStrategy(boat, dt) {
 
     // --- 3. Physics & Timing ---
     const runSpeed = 60; // Max speed approx (units/sec)
-    const idSeed = (boat.id * 17) % 100 / 100;
-    const setupDist = 300 + idSeed * 100; // 300-400 units back
+    const setupDist = boat.ai.setupDist || (300 + (boat.id * 17 % 100));
 
     let targetX, targetY, speedLimit;
 
@@ -1780,12 +1779,50 @@ function updateAI(boat, dt) {
                 targetY = targetMark.y + uy * offset;
             } else {
                 // Aim for gate center with some noise
-                targetX = (marks[indices[0]].x + marks[indices[1]].x) / 2;
-                targetY = (marks[indices[0]].y + marks[indices[1]].y) / 2;
+                const m1 = marks[indices[0]];
+                const m2 = marks[indices[1]];
+                const gCx = (m1.x + m2.x) / 2;
+                const gCy = (m1.y + m2.y) / 2;
+                targetX = gCx;
+                targetY = gCy;
+
                 if (positioning < 5) {
                     const noise = (5 - positioning) * 20;
                     targetX += (Math.random() - 0.5) * noise;
                     targetY += (Math.random() - 0.5) * noise;
+                }
+
+                // MISSED GATE CHECK
+                // Calculate "forward" direction relative to leg
+                // Leg 1/3 (Upwind): Target is Upwind. Wind blows FROM dir.
+                // Flow vector: wx = -sin(dir), wy = cos(dir).
+                // Upwind leg: Target is Upwind (Against Flow).
+                // Downwind leg: Target is Downwind (With Flow).
+                const wd = state.wind.direction;
+                const flowX = -Math.sin(wd);
+                const flowY = Math.cos(wd);
+                const isUpwindLeg = (boat.raceState.leg % 2 !== 0);
+
+                let fwdX, fwdY;
+                if (isUpwindLeg) {
+                     fwdX = -flowX; fwdY = -flowY;
+                } else {
+                     fwdX = flowX; fwdY = flowY;
+                }
+
+                // Vector from Gate to Boat
+                const dx = boat.x - gCx;
+                const dy = boat.y - gCy;
+
+                // Project onto Forward vector
+                const distPast = dx * fwdX + dy * fwdY;
+
+                // If we are significantly past the gate (> 50 units) and haven't crossed/rounded
+                if (distPast > 50) {
+                     // We missed it. Target a reset point BEHIND the gate.
+                     // 200 units behind.
+                     targetX = gCx - fwdX * 200;
+                     targetY = gCy - fwdY * 200;
                 }
             }
         } else {
@@ -4502,25 +4539,40 @@ function resetGame() {
             ai.ai.startStrategy = "Mid-Line Safety Start";
         }
 
-        // Determine Start Line Position (Pct) based on strategy to prevent congestion
-        let linePct = 0.5;
+        // Determine Start Area and Position
+        // Areas: Left, Right, Mid-Front, Mid-Back
+        const areas = ['Left', 'Right', 'Mid-Front', 'Mid-Back'];
+        // Distribute loosely based on strategy or random
+        let area = areas[Math.floor(Math.random() * areas.length)];
         const strat = ai.ai.startStrategy;
-        const idSeed = Math.random(); // Randomize within strategy
 
-        if (strat === "Pin-End (Committee Boat) Start") {
-            linePct = (getFavoredEnd() === 1) ? 0.85 : 0.15;
-        } else if (strat === "Mid-Line Safety Start") {
-            linePct = 0.4 + idSeed * 0.2; // 0.4 to 0.6
-        } else if (strat === "Port-Tack Flyer") {
-            linePct = 0.15;
-        } else if (strat === "Time-on-Distance Start") {
-            linePct = 0.2 + idSeed * 0.6; // Spread out 0.2-0.8
-        } else if (strat === "Gap Sniper") {
-            linePct = 0.1 + idSeed * 0.8;
-        } else {
-            linePct = 0.3 + idSeed * 0.4;
+        // Bias area based on strategy name
+        if (strat.includes("Pin-End")) area = (getFavoredEnd() === 1) ? 'Right' : 'Left';
+        else if (strat.includes("Mid-Line")) area = (Math.random() > 0.5) ? 'Mid-Front' : 'Mid-Back';
+        else if (strat.includes("High-Lane")) area = 'Mid-Back'; // Needs runway
+        else if (strat.includes("Port-Tack")) area = 'Left'; // Usually pin end for port tack
+
+        ai.ai.startArea = area;
+
+        // Determine Target Pct based on Area
+        let linePct = 0.5;
+        const width = 0.2; // random variance
+        const r = Math.random();
+
+        if (area === 'Left') linePct = 0.1 + r * 0.25; // 0.1 - 0.35
+        else if (area === 'Right') linePct = 0.65 + r * 0.25; // 0.65 - 0.9
+        else { // Mid
+            linePct = 0.35 + r * 0.3; // 0.35 - 0.65
         }
         ai.ai.startLinePct = linePct;
+
+        // Setup Distance based on Area/Strategy
+        // Back needs more room
+        if (area === 'Mid-Back' || strat.includes("Time-on-Distance")) {
+             ai.ai.setupDist = 400 + Math.random() * 150;
+        } else {
+             ai.ai.setupDist = 250 + Math.random() * 100;
+        }
 
         state.boats.push(ai);
     }
