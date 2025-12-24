@@ -1486,6 +1486,9 @@ function updateBoatRaceState(boat, dt) {
                             if (boat.raceState.leg > 4) {
                                 boat.raceState.finished = true;
                                 boat.raceState.finishTime = state.race.timer;
+                                if (boat.raceState.penalty) {
+                                    boat.raceState.finishTime += boat.raceState.penaltyTimer;
+                                }
                                 boat.raceState.trace.push({ x: boat.x, y: boat.y, leg: 4 });
                                 if (boat.isPlayer) {
                                     showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
@@ -1528,6 +1531,9 @@ function updateBoatRaceState(boat, dt) {
                     if (boat.raceState.leg > 4) {
                         boat.raceState.finished = true;
                         boat.raceState.finishTime = state.race.timer;
+                        if (boat.raceState.penalty) {
+                            boat.raceState.finishTime += boat.raceState.penaltyTimer;
+                        }
                         if (boat.isPlayer) {
                             showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                             Sound.playFinish();
