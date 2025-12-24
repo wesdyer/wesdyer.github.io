@@ -987,6 +987,17 @@ function getRightOfWay(b1, b2) {
     }
 }
 
+function getBestVMGAngle(mode, windSpeed) {
+    // Mode: 'upwind' or 'downwind'
+    // Derived from J/111 Polars
+    // Using safer angles to maintain speed and stability
+    if (mode === 'upwind') {
+        return 45 * (Math.PI / 180);
+    } else {
+        return 150 * (Math.PI / 180);
+    }
+}
+
 function updateAI(boat, dt) {
     if (boat.isPlayer && !boat.raceState.finished) return;
 
@@ -1053,20 +1064,32 @@ function updateAI(boat, dt) {
 
     // Stuck Detection & Recovery
     if (state.race.status === 'racing') {
-        if (boat.speed < 0.25) { // < ~1 kt
+        if (boat.speed < 0.25) { // < 1 kt (Reverted to lower threshold)
             boat.ai.stuckTimer += dt;
         } else {
             boat.ai.stuckTimer = Math.max(0, boat.ai.stuckTimer - dt);
         }
 
-        if (boat.ai.stuckTimer > 2.0 && !boat.ai.recoveryMode) {
+        if (boat.ai.stuckTimer > 3.0 && !boat.ai.recoveryMode) { // Increased wait time
              boat.ai.recoveryMode = true;
-             // Pick Beam Reach (90 deg to wind)
-             // Use current wind side, or random if head to wind
+             // Force a Reach to build speed (100 degrees TWA)
              const currentWindAngle = normalizeAngle(boat.heading - windDir);
              let side = Math.sign(currentWindAngle);
              if (side === 0) side = (Math.random() > 0.5) ? 1 : -1;
-             boat.ai.recoveryTarget = normalizeAngle(windDir + side * Math.PI * 0.5);
+
+             // Check if side drives us into boundary
+             const checkHeading = normalizeAngle(windDir + side * 1.7);
+             const hx = Math.sin(checkHeading), hy = -Math.cos(checkHeading);
+             const b = state.course.boundary;
+             const distToCenter = Math.sqrt((boat.x - b.x)**2 + (boat.y - b.y)**2);
+             if (distToCenter > b.radius - 300) {
+                  // If we are near boundary, ensure we sail AWAY from edge
+                  // Radial vector from center
+                  const rx = boat.x - b.x, ry = boat.y - b.y;
+                  if (hx * rx + hy * ry > 0) side = -side; // Flip if heading out
+             }
+
+             boat.ai.recoveryTarget = normalizeAngle(windDir + side * 1.7); // ~100 degrees
         }
 
         if (boat.ai.recoveryMode) {
@@ -1074,6 +1097,7 @@ function updateAI(boat, dt) {
                  boat.ai.recoveryMode = false;
                  boat.ai.stuckTimer = 0;
              } else {
+                 // Override target angle completely
                  targetAngle = boat.ai.recoveryTarget;
              }
         }
@@ -1081,8 +1105,8 @@ function updateAI(boat, dt) {
 
     // PRESTART Special Logic
     if (state.race.status === 'prestart') {
-        // Hold position (Head to Wind) until 10 seconds
-        if (state.race.timer > 10) {
+        // Hold position (Head to Wind) until 15 seconds
+        if (state.race.timer > 15) {
              targetAngle = state.wind.direction;
         } else {
              // Go for line center (or just sail upwind towards line)
@@ -1093,49 +1117,53 @@ function updateAI(boat, dt) {
         }
     }
 
-    // Determine Sailing Mode
-    const angleToTarget = targetAngle;
-    const angleToWind = normalizeAngle(angleToTarget - windDir);
-    const absAngleToWind = Math.abs(angleToWind);
-
-    let mode = 'reach';
-    const noGoLimit = Math.PI / 4.0;
-    const downwindLimit = Math.PI * 0.75;
-
-    if (absAngleToWind < noGoLimit) mode = 'upwind';
-    else if (absAngleToWind > downwindLimit) mode = 'downwind';
-
-    if (boat.ai.tackCooldown > 0) boat.ai.tackCooldown -= dt;
-
+    // Calculate desired heading based on sailing mode if not in recovery
     let desiredHeading = boat.heading;
 
-    if (mode === 'reach') {
-        desiredHeading = angleToTarget;
+    if (boat.ai.recoveryMode) {
+        desiredHeading = boat.ai.recoveryTarget;
     } else {
-        const currentTack = (normalizeAngle(boat.heading - windDir) > 0) ? 1 : -1;
-        const bestTWA = (mode === 'upwind') ? (Math.PI/4) : (Math.PI * 0.8);
+        const angleToTarget = targetAngle;
+        const angleToWind = normalizeAngle(angleToTarget - windDir);
+        const absAngleToWind = Math.abs(angleToWind);
 
-        const headingOnTack = normalizeAngle(windDir + currentTack * bestTWA);
-        const headingOnSwap = normalizeAngle(windDir - currentTack * bestTWA);
+        let mode = 'reach';
+        const noGoLimit = Math.PI / 4.0;
+        const downwindLimit = Math.PI * 0.75;
 
-        const vmgCurrent = Math.cos(normalizeAngle(headingOnTack - angleToTarget));
-        const vmgSwap = Math.cos(normalizeAngle(headingOnSwap - angleToTarget));
+        if (absAngleToWind < noGoLimit) mode = 'upwind';
+        else if (absAngleToWind > downwindLimit) mode = 'downwind';
 
-        let shouldSwap = false;
-        if (checkBoundaryExiting(boat)) shouldSwap = true;
-        else if (boat.ai.tackCooldown <= 0 && vmgSwap > vmgCurrent + 0.15) shouldSwap = true;
+        if (boat.ai.tackCooldown > 0) boat.ai.tackCooldown -= dt;
 
-        if (shouldSwap && boat.ai.tackCooldown <= 0) {
-            desiredHeading = headingOnSwap;
-            boat.ai.tackCooldown = 15.0 + Math.random() * 5.0;
+        if (mode === 'reach') {
+            desiredHeading = angleToTarget;
         } else {
-            desiredHeading = headingOnTack;
+            const currentTack = (normalizeAngle(boat.heading - windDir) > 0) ? 1 : -1;
+            const bestTWA = getBestVMGAngle(mode, state.wind.speed);
+
+            const headingOnTack = normalizeAngle(windDir + currentTack * bestTWA);
+            const headingOnSwap = normalizeAngle(windDir - currentTack * bestTWA);
+
+            const vmgCurrent = Math.cos(normalizeAngle(headingOnTack - angleToTarget));
+            const vmgSwap = Math.cos(normalizeAngle(headingOnSwap - angleToTarget));
+
+            let shouldSwap = false;
+            if (checkBoundaryExiting(boat)) shouldSwap = true;
+            else if (boat.ai.tackCooldown <= 0 && vmgSwap > vmgCurrent + 0.1) shouldSwap = true;
+
+            if (shouldSwap && boat.ai.tackCooldown <= 0) {
+                desiredHeading = headingOnSwap;
+                boat.ai.tackCooldown = 20.0 + Math.random() * 5.0; // Increased cooldown to prevent flapping
+            } else {
+                desiredHeading = headingOnTack;
+            }
         }
     }
 
     // Collision Avoidance
     let avoidX = 0, avoidY = 0;
-    const detectRadius = 200;
+    const detectRadius = 300;
     const collisionRadius = 60;
 
     // Skip collision avoidance during prestart hold to maintain line
@@ -1169,7 +1197,7 @@ function updateAI(boat, dt) {
                       } else {
                           // Give Way: Yield early
                           shouldAvoid = true;
-                          strength = (1.0 - dist / detectRadius) * 3.0;
+                          strength = (1.0 - dist / detectRadius) * 2.5; // Slightly reduced strength
                           if (dist < collisionRadius) strength *= 2.0; // Urgency
                       }
 
@@ -1184,7 +1212,7 @@ function updateAI(boat, dt) {
 
     // Mark Avoidance
     if (state.course && state.course.marks) {
-        const markDetectRadius = 200; // Increased radius for marks
+        const markDetectRadius = 200;
         for (const m of state.course.marks) {
              const dx = m.x - boat.x;
              const dy = m.y - boat.y;
@@ -1196,7 +1224,6 @@ function updateAI(boat, dt) {
                  // Check if mark is generally ahead (allow wider angle)
                  if (dx * bx + dy * by > -50) {
                       // Calculate strong repulsion
-                      // Strength increases dramatically as we get closer
                       const strength = Math.pow((1.0 - dist / markDetectRadius), 2) * 8.0;
                       avoidX -= (dx / dist) * strength;
                       avoidY -= (dy / dist) * strength;
@@ -1211,21 +1238,20 @@ function updateAI(boat, dt) {
          desiredHeading = Math.atan2(desiredX + avoidX, -(desiredY + avoidY));
     }
 
-    // If recovering, ensure we don't get pushed back into irons
+    // Ensure we don't steer into irons during recovery or avoidance if possible,
+    // but safety (avoidance) takes priority over speed.
     if (boat.ai.recoveryMode) {
-        const angleToWindFinal = normalizeAngle(desiredHeading - windDir);
-        if (Math.abs(angleToWindFinal) < Math.PI / 4) {
-             // Force it out of irons towards recovery target side
-             const side = Math.sign(normalizeAngle(boat.ai.recoveryTarget - windDir)) || 1;
-             desiredHeading = normalizeAngle(windDir + side * Math.PI * 0.4);
-        }
+        // Enforce the recovery heading strictly
+        desiredHeading = boat.ai.recoveryTarget;
     }
 
     boat.ai.targetHeading = normalizeAngle(desiredHeading);
 
-    // Steering
+    // Steering Physics
     let diff = normalizeAngle(boat.ai.targetHeading - boat.heading);
     const aiTurnRate = CONFIG.turnSpeed * timeScale;
+
+    // Smooth turning
     if (Math.abs(diff) > aiTurnRate) boat.heading += Math.sign(diff) * aiTurnRate;
     else boat.heading = boat.ai.targetHeading;
 
