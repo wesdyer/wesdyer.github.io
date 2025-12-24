@@ -438,10 +438,10 @@ function drawDisturbedAir(ctx) {
 // Sound System
 const Sound = {
     ctx: null,
-    musicBuffer: null,
+    musicBuffers: {},
     musicSource: null,
     musicGain: null,
-    musicLoading: false,
+    activeTrack: null,
 
     init: function() {
         if (!this.ctx) {
@@ -456,51 +456,75 @@ const Sound = {
         this.updateMusic();
     },
 
-    loadMusic: function() {
-        if (this.musicBuffer || this.musicLoading) return Promise.resolve();
-        if (!this.ctx) return Promise.resolve();
-        this.musicLoading = true;
-        return fetch('breezy-race.mp3')
+    getMusicFile: function(track) {
+         if (track === 'prestart') return 'prestart-countdown.mp3';
+         if (track === 'racing') return 'breezy-race.mp3';
+         if (track === 'results') return 'harbor-results.mp3';
+         return null;
+    },
+
+    loadMusic: function(track) {
+        if (this.musicBuffers[track]) return Promise.resolve(this.musicBuffers[track]);
+        const file = this.getMusicFile(track);
+        if (!file) return Promise.resolve(null);
+
+        return fetch(file)
             .then(response => response.arrayBuffer())
             .then(arrayBuffer => this.ctx.decodeAudioData(arrayBuffer))
             .then(audioBuffer => {
-                this.musicBuffer = audioBuffer;
-                this.musicLoading = false;
+                this.musicBuffers[track] = audioBuffer;
+                return audioBuffer;
             })
             .catch(e => {
                 console.error("Error loading music:", e);
-                this.musicLoading = false;
             });
+    },
+
+    stopMusic: function() {
+        if (this.musicSource) {
+            try { this.musicSource.stop(); } catch(e) {}
+            this.musicSource = null;
+        }
+        this.activeTrack = null;
     },
 
     updateMusic: function() {
         if (!this.ctx) return;
 
         if (!settings.musicEnabled) {
-            if (this.musicSource) {
-                try { this.musicSource.stop(); } catch(e) {}
-                this.musicSource = null;
-            }
+            if (this.activeTrack) this.stopMusic();
             return;
         }
 
-        if (settings.musicEnabled && !this.musicSource) {
-             this.loadMusic().then(() => {
-                 if (!settings.musicEnabled) return;
-                 if (this.musicSource) return;
-                 if (!this.musicBuffer) return;
+        let targetTrack = 'racing';
+        if (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')) {
+            targetTrack = 'results';
+        } else if (state.race.status === 'prestart') {
+            targetTrack = 'prestart';
+        }
 
-                 this.musicSource = this.ctx.createBufferSource();
-                 this.musicSource.buffer = this.musicBuffer;
-                 this.musicSource.loop = true;
+        if (this.activeTrack !== targetTrack) {
+            this.stopMusic();
+            this.activeTrack = targetTrack;
 
-                 this.musicGain = this.ctx.createGain();
-                 this.musicGain.gain.value = 0.3;
+            this.loadMusic(targetTrack).then(buffer => {
+                if (!settings.musicEnabled) return;
+                if (this.activeTrack !== targetTrack) return;
+                if (!buffer) return;
 
-                 this.musicSource.connect(this.musicGain);
-                 this.musicGain.connect(this.ctx.destination);
-                 this.musicSource.start(0);
-             });
+                if (this.musicSource) { try { this.musicSource.stop(); } catch(e){} }
+
+                this.musicSource = this.ctx.createBufferSource();
+                this.musicSource.buffer = buffer;
+                this.musicSource.loop = true;
+
+                this.musicGain = this.ctx.createGain();
+                this.musicGain.gain.value = 0.3;
+
+                this.musicSource.connect(this.musicGain);
+                this.musicGain.connect(this.ctx.destination);
+                this.musicSource.start(0);
+            });
         }
     },
 
@@ -2079,6 +2103,7 @@ function update(dt) {
             state.race.status = 'racing';
             state.race.timer = 0;
             Sound.playStart();
+            Sound.updateMusic();
         }
     } else if (state.race.status === 'racing') {
         state.race.timer += dt;
@@ -2941,6 +2966,7 @@ function showResults() {
 
     UI.resultsOverlay.classList.remove('hidden');
     UI.leaderboard.classList.add('hidden');
+    Sound.updateMusic();
 
     // Sort by finish order (or progress)
     const sorted = [...state.boats].sort((a, b) => {
@@ -3603,6 +3629,7 @@ function resetGame() {
 
     state.particles = [];
     hideRaceMessage();
+    Sound.updateMusic();
 }
 
 function restartRace() { resetGame(); togglePause(false); }
