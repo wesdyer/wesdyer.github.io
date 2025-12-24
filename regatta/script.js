@@ -2475,10 +2475,10 @@ function drawWater(ctx) {
 
         const isGust = (g.type === 'gust');
         // Gust: Darker (Black/Blue with alpha). Lull: Lighter (White with alpha).
-        // Max alpha around 0.3 for visibility without obscuring
-        const alpha = 0.3 * g.intensity;
-        const colorStart = isGust ? `rgba(0, 0, 50, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
-        const colorEnd = isGust ? `rgba(0, 0, 50, 0)` : `rgba(255, 255, 255, 0)`;
+        // Max alpha around 0.5 for better visibility
+        const alpha = 0.5 * g.intensity;
+        const colorStart = isGust ? `rgba(0, 0, 60, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+        const colorEnd = isGust ? `rgba(0, 0, 60, 0)` : `rgba(255, 255, 255, 0)`;
 
         const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
         grad.addColorStop(0, colorStart);
