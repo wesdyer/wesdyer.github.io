@@ -154,6 +154,11 @@ const state = {
         speed: 10,
         baseSpeed: 10
     },
+    gusts: [],
+    raceConditions: {
+        gustiness: 0.5,
+        shiftiness: 0.5
+    },
     showNavAids: true,
     particles: [],
     keys: {
@@ -174,6 +179,127 @@ const state = {
 
 const burgeeImg = new Image();
 burgeeImg.src = 'salty-crew-yacht-club-burgee.png';
+
+class Gust {
+    constructor() {
+        this.x = 0;
+        this.y = 0;
+        this.rx = 100;
+        this.ry = 100;
+        this.rotation = 0;
+        this.type = 'gust'; // 'gust' or 'lull'
+        this.speedDelta = 0;
+        this.dirDelta = 0;
+        this.life = 0;
+        this.maxLife = 0;
+        this.intensity = 0; // Current fade in/out factor
+        this.maxRadius = 0;
+    }
+}
+
+function getWindAt(x, y) {
+    let vx = Math.sin(state.wind.direction) * state.wind.speed;
+    let vy = -Math.cos(state.wind.direction) * state.wind.speed;
+
+    for (const g of state.gusts) {
+        if (g.intensity <= 0.01) continue;
+        const dx = x - g.x;
+        const dy = y - g.y;
+        if (Math.abs(dx) > g.maxRadius || Math.abs(dy) > g.maxRadius) continue;
+
+        const cos = Math.cos(-g.rotation);
+        const sin = Math.sin(-g.rotation);
+        const lx = dx * cos - dy * sin;
+        const ly = dx * sin + dy * cos;
+
+        const distSq = (lx*lx)/(g.rx*g.rx) + (ly*ly)/(g.ry*g.ry);
+        if (distSq < 1.0) {
+            // Smooth falloff from center to edge
+            const dist = Math.sqrt(distSq);
+            // Cubic falloff for smoother feel
+            const falloff = (1.0 - dist * dist) * (1.0 - dist * dist);
+            const strength = falloff * g.intensity;
+
+            // Gust Vector
+            // A gust adds speed in wind direction (roughly) + some shift
+            const gDir = state.wind.direction + g.dirDelta;
+            const gSpeed = g.speedDelta;
+
+            const gvx = Math.sin(gDir) * gSpeed * strength;
+            const gvy = -Math.cos(gDir) * gSpeed * strength;
+
+            vx += gvx;
+            vy += gvy;
+        }
+    }
+
+    const speed = Math.sqrt(vx*vx + vy*vy);
+    const direction = Math.atan2(vx, -vy);
+    return { speed, direction };
+}
+
+function updateGusts(dt) {
+    // Move gusts with the wind
+    const moveSpeed = state.wind.speed * 0.25 * (dt * 60); // Approx matching boat speed scale
+    const wx = Math.sin(state.wind.direction) * moveSpeed;
+    const wy = -Math.cos(state.wind.direction) * moveSpeed;
+
+    const courseCenter = { x: 0, y: 2000 }; // Approx center of course
+    const spawnRadius = 6000;
+
+    // Remove dead/far gusts
+    for (let i = state.gusts.length - 1; i >= 0; i--) {
+        const g = state.gusts[i];
+        g.x += wx;
+        g.y += wy;
+        g.life -= dt;
+
+        // Fade in/out
+        const fadeTime = 10.0;
+        if (g.life < fadeTime) g.intensity = g.life / fadeTime;
+        else if (g.maxLife - g.life < fadeTime) g.intensity = (g.maxLife - g.life) / fadeTime;
+        else g.intensity = 1.0;
+
+        const dist = Math.sqrt((g.x - courseCenter.x)**2 + (g.y - courseCenter.y)**2);
+        if (g.life <= 0 || dist > 8000) {
+            state.gusts.splice(i, 1);
+        }
+    }
+
+    // Spawn new gusts
+    const targetGusts = 3 + Math.floor(state.raceConditions.gustiness * 5); // 3 to 8 gusts
+    if (state.gusts.length < targetGusts && Math.random() < 0.01) {
+        const g = new Gust();
+
+        // Spawn upwind
+        const angle = state.wind.direction + Math.PI + (Math.random() - 0.5); // Upwind + scatter
+        const dist = 3000 + Math.random() * 2000;
+        g.x = courseCenter.x + Math.sin(angle) * dist;
+        g.y = courseCenter.y - Math.cos(angle) * dist; // Inverted Y
+
+        // Dimensions: Large ovals
+        g.rx = 400 + Math.random() * 800;
+        g.ry = 300 + Math.random() * 400;
+        g.maxRadius = Math.max(g.rx, g.ry);
+        g.rotation = state.wind.direction + (Math.random() - 0.5);
+
+        // Type
+        g.type = (Math.random() > 0.4) ? 'gust' : 'lull'; // 60% gust, 40% lull
+
+        // Strength based on race conditions
+        const baseStr = 5 + state.raceConditions.gustiness * 10; // 5-15 knots delta
+        g.speedDelta = (g.type === 'gust') ? baseStr : -baseStr * 0.7; // Lulls are less intense negative
+
+        const shift = 0.1 + state.raceConditions.shiftiness * 0.3; // 0.1 - 0.4 rads
+        g.dirDelta = (Math.random() - 0.5) * 2 * shift;
+
+        g.maxLife = 60 + Math.random() * 120; // 1-3 minutes
+        g.life = g.maxLife;
+        g.intensity = 0;
+
+        state.gusts.push(g);
+    }
+}
 
 class Boat {
     constructor(id, isPlayer, startX, startY, name="USA", config=null) {
@@ -288,18 +414,19 @@ function updateTurbulence(boat, dt) {
 }
 
 function drawDisturbedAir(ctx) {
-    const windDir = state.wind.direction;
-    const wx = -Math.sin(windDir);
-    const wy = Math.cos(windDir);
-    // Right Vector
-    const rx = -wy;
-    const ry = wx;
-
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
 
     for (const boat of state.boats) {
         if (boat.raceState.finished || !boat.turbulence) continue;
+
+        // Use local wind at boat for the cone direction
+        const localWind = getWindAt(boat.x, boat.y);
+        const windDir = localWind.direction;
+        const wx = -Math.sin(windDir);
+        const wy = Math.cos(windDir);
+        const rx = -wy;
+        const ry = wx;
 
         for (const p of boat.turbulence) {
              const coneWidth = 20 + (p.d / 350) * 80;
@@ -983,7 +1110,8 @@ function updateAI(boat, dt) {
     if (boat.isPlayer) return;
 
     const timeScale = dt * 60;
-    const windDir = state.wind.direction;
+    const localWind = getWindAt(boat.x, boat.y);
+    const windDir = localWind.direction;
     const waypoint = boat.raceState.nextWaypoint;
 
     // Default target: Center of Gate (Pass between marks)
@@ -1241,14 +1369,15 @@ function updateBoat(boat, dt) {
     boat.heading = normalizeAngle(boat.heading);
 
     // Physics
-    const angleToWind = Math.abs(normalizeAngle(boat.heading - state.wind.direction));
+    const localWind = getWindAt(boat.x, boat.y);
+    const angleToWind = Math.abs(normalizeAngle(boat.heading - localWind.direction));
 
     // Update Turbulence Particles
     updateTurbulence(boat, dt);
 
     // Disturbed Air
     boat.badAirIntensity = 0;
-    const windDir = state.wind.direction;
+    const windDir = localWind.direction; // Use local wind for shadow direction
     const wx = -Math.sin(windDir); // Flow X
     const wy = Math.cos(windDir);  // Flow Y
     const crx = -wy; // Right X
@@ -1278,18 +1407,13 @@ function updateBoat(boat, dt) {
     }
 
     // Sail Logic
-    let relWind = normalizeAngle(state.wind.direction - boat.heading);
+    let relWind = normalizeAngle(localWind.direction - boat.heading);
     if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
 
     // Check Tacking (Rule 13)
-    // Tacking is defined as "from the moment she is beyond head to wind until she is on a close-hauled course".
-    // "Head to wind" means pointing directly into wind (angleToWind ~ 0).
-    // Close-hauled is ~45 deg.
-    // Simplified: If angleToWind is small (in irons), we are tacking.
     if (angleToWind < Math.PI / 6) { // < 30 degrees
         boat.raceState.isTacking = true;
     } else {
-        // If we were tacking, check if we are on a close-hauled course (e.g. > 40 deg).
         if (boat.raceState.isTacking && angleToWind > Math.PI / 4.5) {
              boat.raceState.isTacking = false;
         }
@@ -1320,7 +1444,7 @@ function updateBoat(boat, dt) {
     const jibFactor = Math.max(0, 1 - progress * 2);
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
-    const effectiveWind = state.wind.speed * (1.0 - boat.badAirIntensity);
+    const effectiveWind = localWind.speed * (1.0 - boat.badAirIntensity);
     let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveWind);
     let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveWind);
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
@@ -1807,12 +1931,13 @@ function update(dt) {
     Sound.updateWindSound(state.wind.speed);
 
     // Wind Dynamics
-    const dirDrift = Math.sin(state.time * 0.05) * 0.2;
-    const dirGust = Math.sin(state.time * 0.3 + 123.4) * 0.05;
-    state.wind.direction = state.wind.baseDirection + dirDrift + dirGust;
-    const speedSurge = Math.sin(state.time * 0.1) * 2.0;
-    const speedGust = Math.sin(state.time * 0.5 + 456.7) * 1.5;
-    state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
+    // Reduced global noise as we now have localized gusts
+    const dirDrift = Math.sin(state.time * 0.05) * 0.1;
+    state.wind.direction = state.wind.baseDirection + dirDrift;
+    const speedSurge = Math.sin(state.time * 0.1) * 1.0;
+    state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge));
+
+    updateGusts(dt);
 
     // Global Race Timer
     if (state.race.status === 'prestart') {
@@ -1920,13 +2045,16 @@ function drawParticles(ctx, layer) {
         }
         ctx.globalAlpha = 1.0;
     } else if (layer === 'air') {
-        const windFactor = state.wind.speed / 10;
-        const tailLength = 30 + state.wind.speed * 4;
-        const dx = -Math.sin(state.wind.direction) * tailLength;
-        const dy = Math.cos(state.wind.direction) * tailLength;
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1 + windFactor;
+        ctx.strokeStyle = '#ffffff';
         for (const p of state.particles) {
             if (p.type === 'wind') {
+                const localWind = getWindAt(p.x, p.y);
+                const windFactor = localWind.speed / 10;
+                const tailLength = 30 + localWind.speed * 4;
+                const dx = -Math.sin(localWind.direction) * tailLength;
+                const dy = Math.cos(localWind.direction) * tailLength;
+
+                ctx.lineWidth = 1 + windFactor;
                 const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
                 ctx.globalAlpha = opacity;
                 ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + dx, p.y + dy); ctx.stroke();
@@ -2333,21 +2461,55 @@ function drawWater(ctx) {
     const startX = Math.floor((left-shiftX)/gridSize)*gridSize, endX = Math.ceil((right-shiftX)/gridSize)*gridSize;
     const startY = Math.floor((top-shiftY)/gridSize)*gridSize, endY = Math.ceil((bottom-shiftY)/gridSize)*gridSize;
 
+    // Draw Gusts/Lulls patches
+    for (const g of state.gusts) {
+        if (g.intensity <= 0.01) continue;
+        // Simple culling
+        if (g.x + g.maxRadius < left || g.x - g.maxRadius > right || g.y + g.maxRadius < top || g.y - g.maxRadius > bottom) continue;
+
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        ctx.rotate(g.rotation);
+        // Draw as unit circle scaled
+        ctx.scale(g.rx, g.ry);
+
+        const isGust = (g.type === 'gust');
+        // Gust: Darker (Black/Blue with alpha). Lull: Lighter (White with alpha).
+        // Max alpha around 0.3 for visibility without obscuring
+        const alpha = 0.3 * g.intensity;
+        const colorStart = isGust ? `rgba(0, 0, 50, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+        const colorEnd = isGust ? `rgba(0, 0, 50, 0)` : `rgba(255, 255, 255, 0)`;
+
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+        grad.addColorStop(0, colorStart);
+        grad.addColorStop(1, colorEnd);
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 2.5;
-    const angle = state.wind.direction + Math.PI;
-    const cosA = Math.cos(angle), sinA = Math.sin(angle);
     ctx.beginPath();
     for (let x = startX; x < endX; x+=gridSize) {
         for (let y = startY; y < endY; y+=gridSize) {
              const cx = x + shiftX + gridSize/2, cy = y + shiftY + gridSize/2;
+
+             // Local Wind Logic for Waves
+             const localWind = getWindAt(cx, cy);
+             const speed = localWind.speed;
+             const angle = localWind.direction + Math.PI;
+             const cosA = Math.cos(angle), sinA = Math.sin(angle);
+
              const noise = Math.sin(x*0.12+y*0.17);
-             const bob = Math.sin(state.time*2+noise*10) * (0.3 + state.wind.speed/10);
-             // ... Simplified wave glyph ...
-             // Just reuse previous random logic
+             const bob = Math.sin(state.time*2+noise*10) * (0.3 + speed/10);
+
              const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
              const randX = (seed - Math.floor(seed)) * 40 - 20;
              const randY = (Math.cos(seed) * 0.5 + 0.5) * 40 - 20;
-             let scale = (0.8 + ((seed*10)%1)*0.4) * Math.max(0.5, state.wind.speed/10);
+             let scale = (0.8 + ((seed*10)%1)*0.4) * Math.max(0.5, speed/10);
 
              const rcx = cx + randX, rcy = cy + randY;
              const p1x = -8*scale, p1y = bob*scale, p2x = 8*scale, p2y = bob*scale;
@@ -3047,6 +3209,9 @@ function resetGame() {
     state.time = 0;
     state.race.status = 'prestart';
     state.race.timer = 30.0;
+    state.gusts = [];
+    state.raceConditions.gustiness = Math.random();
+    state.raceConditions.shiftiness = Math.random();
 
     initCourse();
 
@@ -3146,4 +3311,4 @@ function restartRace() { resetGame(); togglePause(false); }
 
 resetGame();
 requestAnimationFrame(loop);
-window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard;
+window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard; window.Gust = Gust;
