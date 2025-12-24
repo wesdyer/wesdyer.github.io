@@ -4103,15 +4103,20 @@ function draw() {
              // Remove all potential color classes
              UI.windSpeed.classList.remove('text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
 
-             if (player.badAirIntensity > 0.05) {
-                 UI.windSpeed.classList.add('text-red-400');
-                 if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
-             } else if (isBoost) {
+             const effectiveSpeed = localWind.speed * (1.0 - player.badAirIntensity);
+             const isEffectiveBoost = effectiveSpeed > state.wind.speed + 0.1;
+             const isEffectiveLoss = effectiveSpeed < state.wind.speed - 0.1;
+
+             if (isEffectiveBoost) {
                  UI.windSpeed.classList.add('text-green-400');
-             } else if (isLoss) {
-                UI.windSpeed.classList.add('text-red-400');
+             } else if (isEffectiveLoss) {
+                 UI.windSpeed.classList.add('text-red-400');
              } else {
                  UI.windSpeed.classList.add('text-white');
+             }
+
+             if (player.badAirIntensity > 0.05) {
+                 if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
              }
         }
         if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI)) + '°';
