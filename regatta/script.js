@@ -1466,14 +1466,23 @@ function updateAI(boat, dt) {
     let targetAngle = Math.atan2(dx, -dy);
 
     // Stuck Detection & Recovery
-    if (state.race.status === 'racing') {
-        if (boat.speed < 0.25) { // < 1 kt
+    // Run in both Prestart and Racing, but with different thresholds
+    const isRacing = state.race.status === 'racing';
+    const isPrestart = state.race.status === 'prestart';
+
+    if (isRacing || isPrestart) {
+        // In Prestart, we expect low speeds (milling), so threshold is lower/timer longer
+        // Unless we are REALLY stuck (0 speed)
+        const speedThreshold = isRacing ? 0.25 : 0.1;
+        const timeThreshold = isRacing ? 3.0 : 5.0;
+
+        if (boat.speed < speedThreshold) {
             boat.ai.stuckTimer += dt;
         } else {
             boat.ai.stuckTimer = Math.max(0, boat.ai.stuckTimer - dt);
         }
 
-        if (boat.ai.stuckTimer > 3.0 && !boat.ai.recoveryMode) {
+        if (boat.ai.stuckTimer > timeThreshold && !boat.ai.recoveryMode) {
              boat.ai.recoveryMode = true;
              // Force a Reach to build speed (100 degrees TWA)
              const currentWindAngle = normalizeAngle(boat.heading - windDir);
@@ -1494,7 +1503,8 @@ function updateAI(boat, dt) {
         }
 
         if (boat.ai.recoveryMode) {
-             if (boat.speed > 1.2) { // Higher recovery threshold (> 4.8 kts)
+             const recoverSpeed = isRacing ? 1.2 : 0.5; // Lower recover speed needed in prestart
+             if (boat.speed > recoverSpeed) {
                  boat.ai.recoveryMode = false;
                  boat.ai.stuckTimer = 0;
              } else {
