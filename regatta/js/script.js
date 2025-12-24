@@ -2121,6 +2121,10 @@ function updateBoat(boat, dt) {
             const angle = Math.atan2(dy, dx);
             boat.x = b.x + Math.cos(angle) * b.radius;
             boat.y = b.y + Math.sin(angle) * b.radius;
+
+            if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
+                window.onRaceEvent('collision_boundary', { boat });
+            }
         }
     }
 
