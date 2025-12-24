@@ -3514,8 +3514,10 @@ function draw() {
     drawMinimap();
 
     // UI Updates (Player Data)
+    const localWind = getWindAt(player.x, player.y);
+
     if (UI.compassRose) UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
-    if (UI.windArrow) UI.windArrow.style.transform = `rotate(${state.wind.direction}rad)`;
+    if (UI.windArrow) UI.windArrow.style.transform = `rotate(${localWind.direction}rad)`;
     if (UI.waypointArrow) UI.waypointArrow.style.transform = `rotate(${player.raceState.nextWaypoint.angle}rad)`;
     if (UI.headingArrow) UI.headingArrow.style.transform = `rotate(${player.heading - state.camera.rotation}rad)`;
 
@@ -3527,7 +3529,7 @@ function draw() {
             else UI.speed.classList.remove('text-red-400');
         }
         if (UI.windSpeed) {
-             UI.windSpeed.textContent = state.wind.speed.toFixed(1);
+             UI.windSpeed.textContent = localWind.speed.toFixed(1);
              if (player.badAirIntensity > 0.05) {
                  UI.windSpeed.classList.add('text-red-400');
                  if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
@@ -3535,8 +3537,8 @@ function draw() {
                  UI.windSpeed.classList.remove('text-red-400');
              }
         }
-        if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - state.wind.direction))*(180/Math.PI)) + '°';
-        if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - state.wind.direction))).toFixed(1);
+        if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI)) + '°';
+        if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - localWind.direction))).toFixed(1);
 
         if (UI.trimMode) {
              UI.trimMode.textContent = player.manualTrim ? "MANUAL TRIM" : "AUTO TRIM";
