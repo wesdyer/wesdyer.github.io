@@ -363,8 +363,8 @@ function createGust(x, y, type) {
     const windDir = state.wind.direction;
 
     // Varied size and shape
-    const radiusX = 300 + Math.random() * 1200;
-    const radiusY = 150 + Math.random() * 600;
+    const maxRadiusX = 300 + Math.random() * 1200;
+    const maxRadiusY = 150 + Math.random() * 600;
 
     let speedDelta = 0;
     let dirDelta = 0;
@@ -386,7 +386,10 @@ function createGust(x, y, type) {
     const vy = Math.cos(moveDir) * moveSpeed;
 
     return {
-        type, x, y, vx, vy, radiusX, radiusY, rotation: windDir,
+        type, x, y, vx, vy,
+        maxRadiusX, maxRadiusY,
+        radiusX: 10, radiusY: 10, // Start small
+        rotation: windDir,
         speedDelta, dirDelta,
         duration: 30 + Math.random() * 60,
         age: 0
@@ -431,6 +434,13 @@ function updateGusts(dt) {
         g.y += g.vy * timeScale;
 
         g.age += dt;
+
+        // Grow and Shrink Lifecycle
+        const lifeProgress = g.age / g.duration;
+        const lifeFactor = Math.sin(lifeProgress * Math.PI); // 0 -> 1 -> 0
+        g.radiusX = Math.max(10, g.maxRadiusX * lifeFactor);
+        g.radiusY = Math.max(10, g.maxRadiusY * lifeFactor);
+
         if (g.age > g.duration) {
             state.gusts.splice(i, 1);
         }
@@ -2910,9 +2920,13 @@ function drawGusts(ctx) {
         ctx.translate(g.x, g.y);
         ctx.rotate(g.rotation);
 
-        // Intensity check
-        const lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
-        if (lifeFade <= 0) { ctx.restore(); continue; }
+        // Intensity based on strength (speedDelta)
+        const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
+        const alpha = strength * 0.6;
+
+        // Life fade is now handled by radius scaling in updateGusts mostly,
+        // but we can add a subtle fade at very edges of life if needed.
+        // Actually the prompt says "change color based on strength".
 
         const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, g.radiusX);
 
@@ -2921,13 +2935,17 @@ function drawGusts(ctx) {
 
         // Colors
         if (g.type === 'gust') {
-            grad.addColorStop(0, `rgba(0, 0, 70, ${0.45 * lifeFade})`);
-            grad.addColorStop(0.5, `rgba(0, 0, 80, ${0.25 * lifeFade})`);
-            grad.addColorStop(1, 'rgba(0, 0, 80, 0)');
+            // Darker/More intense blue for stronger gusts
+            const r = 0, gVal = 0, b = 60 + strength * 40; // 60-100
+            grad.addColorStop(0, `rgba(${r}, ${gVal}, ${b}, ${alpha})`);
+            grad.addColorStop(0.5, `rgba(${r}, ${gVal}, ${b}, ${alpha * 0.5})`);
+            grad.addColorStop(1, `rgba(${r}, ${gVal}, ${b}, 0)`);
         } else {
-            grad.addColorStop(0, `rgba(150, 245, 255, ${0.5 * lifeFade})`);
-            grad.addColorStop(0.5, `rgba(150, 245, 255, ${0.25 * lifeFade})`);
-            grad.addColorStop(1, 'rgba(150, 245, 255, 0)');
+            // Lighter/More intense white/cyan for stronger lulls
+            // Lulls reduce wind, maybe show as lighter patches
+            grad.addColorStop(0, `rgba(200, 250, 255, ${alpha})`);
+            grad.addColorStop(0.5, `rgba(200, 250, 255, ${alpha * 0.5})`);
+            grad.addColorStop(1, 'rgba(200, 250, 255, 0)');
         }
 
         ctx.fillStyle = grad;
@@ -3093,10 +3111,13 @@ function drawMinimap() {
         ctx.beginPath();
         ctx.arc(0, 0, g.radiusX * scale, 0, Math.PI * 2);
 
+        const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
+        const alpha = 0.2 + strength * 0.3;
+
         if (g.type === 'gust') {
-             ctx.fillStyle = 'rgba(0, 0, 50, 0.4)';
+             ctx.fillStyle = `rgba(0, 0, 80, ${alpha})`;
         } else {
-             ctx.fillStyle = 'rgba(150, 245, 255, 0.3)';
+             ctx.fillStyle = `rgba(150, 245, 255, ${alpha})`;
         }
         ctx.fill();
         ctx.restore();
@@ -3626,8 +3647,24 @@ function drawBoatIndicator(ctx, boat) {
     ctx.textBaseline = 'top';
     ctx.fillText(line1, x + 10, y + 5);
 
-    if (boat.badAirIntensity > 0.05) ctx.fillStyle = '#ef4444';
-    else ctx.fillStyle = '#ffffff';
+    // Speed Color Logic
+    // Red: Penalty OR Bad Air
+    // Green: Net Boost (Local Wind > Base Wind)
+    // Orange: Net Loss (Local Wind < Base Wind)
+    let speedColor = '#ffffff';
+    const localWind = getWindAt(boat.x, boat.y);
+    const isBoost = localWind.speed > state.wind.speed;
+    const isLoss = localWind.speed < state.wind.speed;
+
+    if (boat.raceState.penalty || boat.badAirIntensity > 0.05) {
+        speedColor = '#ef4444';
+    } else if (isBoost) {
+        speedColor = '#4ade80';
+    } else if (isLoss) {
+        speedColor = '#fb923c'; // Orange-400
+    }
+
+    ctx.fillStyle = speedColor;
     ctx.fillText(line2, x + 10, y + 17);
 
     ctx.restore();
@@ -3728,18 +3765,41 @@ function draw() {
 
     if (frameCount % 10 === 0) {
         updateLeaderboard();
+
+        const isBoost = localWind.speed > state.wind.speed;
+        const isLoss = localWind.speed < state.wind.speed;
+
         if (UI.speed) {
             UI.speed.textContent = (player.speed*4).toFixed(1);
-            if (player.badAirIntensity > 0.05) UI.speed.classList.add('text-red-400');
-            else UI.speed.classList.remove('text-red-400');
+
+            // Remove all potential color classes first
+            UI.speed.classList.remove('text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
+
+            if (player.raceState.penalty || player.badAirIntensity > 0.05) {
+                UI.speed.classList.add('text-red-400');
+            } else if (isBoost) {
+                UI.speed.classList.add('text-green-400');
+            } else if (isLoss) {
+                UI.speed.classList.add('text-orange-400');
+            } else {
+                UI.speed.classList.add('text-white');
+            }
         }
         if (UI.windSpeed) {
              UI.windSpeed.textContent = localWind.speed.toFixed(1);
+
+             // Remove all potential color classes
+             UI.windSpeed.classList.remove('text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
+
              if (player.badAirIntensity > 0.05) {
                  UI.windSpeed.classList.add('text-red-400');
                  if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
+             } else if (isBoost) {
+                 UI.windSpeed.classList.add('text-green-400');
+             } else if (isLoss) {
+                 UI.windSpeed.classList.add('text-orange-400');
              } else {
-                 UI.windSpeed.classList.remove('text-red-400');
+                 UI.windSpeed.classList.add('text-white');
              }
         }
         if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI)) + '°';
