@@ -384,7 +384,7 @@ function updateTurbulence(boat, dt) {
     }
 
     // Update
-    const maxDist = 350;
+    const maxDist = 450;
     for (let i = boat.turbulence.length - 1; i >= 0; i--) {
         const p = boat.turbulence[i];
         p.d += p.speed * dt;
@@ -412,7 +412,7 @@ function drawDisturbedAir(ctx) {
         if (boat.raceState.finished || !boat.turbulence) continue;
 
         for (const p of boat.turbulence) {
-             const coneWidth = 20 + (p.d / 350) * 80;
+             const coneWidth = 20 + (p.d / 450) * 80;
              // Zigzag effect: Increased frequency (0.05 -> 0.08) and amplitude (5 -> 12)
              const zig = Math.sin(p.d * 0.08 + state.time * 8 + p.phase) * 12;
              const crossOffset = p.crossRatio * coneWidth + zig;
@@ -421,9 +421,9 @@ function drawDisturbedAir(ctx) {
              const py = boat.y + wy * p.d + ry * crossOffset;
 
              // Slightly larger size
-             const size = 2.0 + (p.d/350)*2.0;
+             const size = 2.0 + (p.d/450)*2.0;
              // More opaque: 0.4 -> 0.6 max alpha
-             const alpha = Math.max(0, Math.min(1, (1.0 - p.d/350) * 0.6));
+             const alpha = Math.max(0, Math.min(1, (1.0 - p.d/450) * 0.6));
 
              ctx.globalAlpha = alpha;
              ctx.beginPath();
@@ -1495,7 +1495,7 @@ function updateBoat(boat, dt) {
     const wy = Math.cos(windDir);  // Flow Y
     const crx = -wy; // Right X
     const cry = wx;  // Right Y
-    const shadowLength = 350;
+    const shadowLength = 450;
     const startW = 20;
     const endW = 100;
 
@@ -1511,10 +1511,10 @@ function updateBoat(boat, dt) {
         const widthAtDist = startW + (dDown / shadowLength) * (endW - startW);
         const dCross = Math.abs(dx * crx + dy * cry);
 
-        if (dCross < widthAtDist * 0.6) {
-             const centerFactor = 1.0 - (dCross / (widthAtDist * 0.6));
+        if (dCross < widthAtDist * 0.7) {
+             const centerFactor = 1.0 - (dCross / (widthAtDist * 0.7));
              const distFactor = 1.0 - (dDown / shadowLength);
-             const intensity = 0.8 * centerFactor * distFactor;
+             const intensity = 0.95 * centerFactor * distFactor;
              if (intensity > boat.badAirIntensity) boat.badAirIntensity = intensity;
         }
     }
