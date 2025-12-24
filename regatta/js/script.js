@@ -3601,20 +3601,34 @@ function showResults() {
     const leader = sorted[0];
     UI.resultsList.innerHTML = '';
 
+    // Columns Configuration
+    const cols = {
+        pos: "w-14",
+        img: "w-16",
+        team: "flex-1",
+        time: "w-20",
+        delta: "w-20",
+        top: "w-16",
+        avg: "w-16",
+        dist: "w-16",
+        pen: "w-12",
+        pts: "w-24" // Wider for skewed box alignment
+    };
+
     // Header
     const header = document.createElement('div');
-    header.className = "flex items-center px-4 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 gap-4";
+    header.className = "flex items-center px-2 py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 gap-4";
     header.innerHTML = `
-        <div class="w-12 text-center">Pos</div>
-        <div class="w-12"></div>
-        <div class="flex-1">Team</div>
-        <div class="w-24 text-right">Time</div>
-        <div class="w-20 text-right">Delta</div>
-        <div class="w-16 text-right">Top</div>
-        <div class="w-16 text-right">Avg</div>
-        <div class="w-16 text-right">Dist</div>
-        <div class="w-12 text-center">Pen</div>
-        <div class="w-16 text-center text-white">Pts</div>
+        <div class="${cols.pos} text-center">Pos</div>
+        <div class="${cols.img}"></div>
+        <div class="${cols.team}">Team</div>
+        <div class="${cols.time} text-right">Time</div>
+        <div class="${cols.delta} text-right">Delta</div>
+        <div class="${cols.top} text-right">Top</div>
+        <div class="${cols.avg} text-right">Avg</div>
+        <div class="${cols.dist} text-right">Dist</div>
+        <div class="${cols.pen} text-center">Pen</div>
+        <div class="${cols.pts} text-center text-white">Points</div>
     `;
     UI.resultsList.appendChild(header);
 
@@ -3647,13 +3661,37 @@ function showResults() {
         const textCol = isLight ? "text-slate-900" : "text-white";
         const subTextCol = isLight ? "text-slate-800/70" : "text-white/70";
 
+        // Row Container
         const row = document.createElement('div');
-        row.className = `flex items-center px-4 py-4 mb-3 rounded-r-lg shadow-lg transition-transform hover:scale-[1.01] gap-6`;
-        row.style.backgroundColor = bgColor;
+        row.className = "relative flex items-center mb-3 h-16 w-full"; // Fixed height
+
+        // Background Bar with Gradient & Skew
+        const bar = document.createElement('div');
+        bar.className = "absolute inset-0 right-12 overflow-hidden shadow-lg transition-transform hover:scale-[1.01] origin-left";
+        // Gradient Fade: Base Color -> Slightly Lighter/Transparent to simulate the fade effect
+        bar.style.background = `linear-gradient(90deg, ${bgColor} 0%, ${bgColor} 60%, ${bgColor} 100%)`; // Solid base for now, can adjust opacity
+
+        // Gloss Overlay
+        const gloss = document.createElement('div');
+        gloss.className = "absolute inset-0 bg-gradient-to-b from-white/20 to-black/10 pointer-events-none";
+        bar.appendChild(gloss);
+
+        // Right Side Mask (Simulate the cut)
+        // Instead of masking, we just place the points box on top.
+        // But to get the "fade" visual, let's add a gradient overlay on the right edge of the bar
+        const fade = document.createElement('div');
+        fade.className = "absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-r from-transparent to-white/10 mix-blend-overlay";
+        bar.appendChild(fade);
+
+        row.appendChild(bar);
+
+        // Content Layer
+        const content = document.createElement('div');
+        content.className = "relative z-10 flex items-center w-full px-2 gap-4 h-full";
 
         // Rank
         const rankDiv = document.createElement('div');
-        rankDiv.className = "w-12 shrink-0 flex justify-center";
+        rankDiv.className = `${cols.pos} shrink-0 flex justify-center items-center`;
 
         if (index <= 2) {
              const colors = [
@@ -3674,7 +3712,10 @@ function showResults() {
 
         // Image (Square)
         const imgDiv = document.createElement('div');
-        imgDiv.className = "w-14 h-14 shrink-0";
+        imgDiv.className = `${cols.img} shrink-0 flex items-center justify-center`;
+        const imgBox = document.createElement('div');
+        imgBox.className = "w-12 h-12"; // Inner box for image
+
         if (boat.isPlayer) {
              const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
              star.setAttribute("viewBox", "0 0 24 24");
@@ -3683,17 +3724,18 @@ function showResults() {
              const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
              path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
              star.appendChild(path);
-             imgDiv.appendChild(star);
+             imgBox.appendChild(star);
         } else {
              const img = document.createElement('img');
              img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
              img.className = "w-full h-full rounded-md border-2 border-white/20 object-cover bg-slate-900 shadow-md";
-             imgDiv.appendChild(img);
+             imgBox.appendChild(img);
         }
+        imgDiv.appendChild(imgBox);
 
         // Name
         const nameDiv = document.createElement('div');
-        nameDiv.className = `flex-1 font-black text-3xl italic uppercase tracking-tighter truncate ${textCol}`;
+        nameDiv.className = `${cols.team} font-black text-3xl italic uppercase tracking-tighter truncate ${textCol}`;
         nameDiv.style.textShadow = isLight ? 'none' : '0 2px 4px rgba(0,0,0,0.3)';
         nameDiv.textContent = boat.name;
 
@@ -3718,37 +3760,42 @@ function showResults() {
             return d;
         };
 
-        const timeDiv = createStat(finishTime, "w-24");
+        const timeDiv = createStat(finishTime, cols.time);
         const deltaDiv = document.createElement('div');
-        deltaDiv.className = `w-20 text-right font-mono font-bold text-lg ${subTextCol}`;
+        deltaDiv.className = `${cols.delta} text-right font-mono font-bold text-lg ${subTextCol}`;
         deltaDiv.textContent = delta;
 
-        const topDiv = createStat(topSpeed, "w-16");
-        const avgDiv = createStat(avgSpeed, "w-16");
-        const distDiv = createStat(totalDist, "w-16");
+        const topDiv = createStat(topSpeed, cols.top);
+        const avgDiv = createStat(avgSpeed, cols.avg);
+        const distDiv = createStat(totalDist, cols.dist);
 
         const penDiv = document.createElement('div');
-        penDiv.className = `w-12 text-center font-bold text-lg rounded flex items-center justify-center h-8 mx-auto ${penalties > 0 ? 'bg-white text-red-600 shadow-sm' : subTextCol}`;
+        penDiv.className = `${cols.pen} text-center font-bold text-lg rounded flex items-center justify-center h-8 ${penalties > 0 ? 'bg-white text-red-600 shadow-sm' : subTextCol}`;
         penDiv.textContent = penalties > 0 ? penalties : "-";
 
-        // Points (SailGP Style: Skewed, White, Black text)
-        const ptsDiv = document.createElement('div');
-        ptsDiv.className = "w-16 flex justify-center";
-        const ptsBox = document.createElement('div');
-        ptsBox.className = "bg-white text-slate-900 font-black text-2xl w-12 h-10 flex items-center justify-center transform -skew-x-12 shadow-md border-l-4 border-slate-200";
-        ptsBox.textContent = points;
-        ptsDiv.appendChild(ptsBox);
+        content.appendChild(rankDiv);
+        content.appendChild(imgDiv);
+        content.appendChild(nameDiv);
+        content.appendChild(timeDiv);
+        content.appendChild(deltaDiv);
+        content.appendChild(topDiv);
+        content.appendChild(avgDiv);
+        content.appendChild(distDiv);
+        content.appendChild(penDiv);
 
-        row.appendChild(rankDiv);
-        row.appendChild(imgDiv);
-        row.appendChild(nameDiv);
-        row.appendChild(timeDiv);
-        row.appendChild(deltaDiv);
-        row.appendChild(topDiv);
-        row.appendChild(avgDiv);
-        row.appendChild(distDiv);
-        row.appendChild(penDiv);
-        row.appendChild(ptsDiv);
+        row.appendChild(content);
+
+        // Points (Right Aligned Skewed Box)
+        // Position absolutely to the right
+        const ptsBox = document.createElement('div');
+        ptsBox.className = "absolute right-0 top-0 bottom-0 w-24 bg-white transform -skew-x-12 origin-bottom-right flex items-center justify-center shadow-md z-20 border-l-4 border-white/50";
+        // Inner unskewed container for text
+        const ptsText = document.createElement('div');
+        ptsText.className = "transform skew-x-12 text-slate-900 font-black text-3xl";
+        ptsText.textContent = points;
+        ptsBox.appendChild(ptsText);
+
+        row.appendChild(ptsBox);
 
         UI.resultsList.appendChild(row);
     });
