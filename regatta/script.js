@@ -2754,9 +2754,9 @@ function drawGusts(ctx) {
             grad.addColorStop(0.5, `rgba(0, 0, 80, ${0.3 * lifeFade})`);
             grad.addColorStop(1, 'rgba(0, 0, 80, 0)');
         } else {
-            grad.addColorStop(0, `rgba(255, 255, 255, ${0.5 * lifeFade})`);
-            grad.addColorStop(0.5, `rgba(255, 255, 255, ${0.25 * lifeFade})`);
-            grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            grad.addColorStop(0, `rgba(150, 245, 255, ${0.5 * lifeFade})`);
+            grad.addColorStop(0.5, `rgba(150, 245, 255, ${0.25 * lifeFade})`);
+            grad.addColorStop(1, 'rgba(150, 245, 255, 0)');
         }
 
         ctx.fillStyle = grad;
@@ -2925,7 +2925,7 @@ function drawMinimap() {
         if (g.type === 'gust') {
              ctx.fillStyle = 'rgba(0, 0, 50, 0.4)';
         } else {
-             ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+             ctx.fillStyle = 'rgba(150, 245, 255, 0.3)';
         }
         ctx.fill();
         ctx.restore();
