@@ -1884,29 +1884,63 @@ function updateAI(boat, dt) {
         if (state.race.status === 'racing' && boat.speed < 1.0 && Math.abs(angleToWind) < 0.6) {
              const side = angleToWind > 0 ? 1 : -1;
              desiredHeading = normalizeAngle(windDir + side * 1.05);
-        } else if (mode === 'reach') {
-            desiredHeading = angleToTarget;
         } else {
-            // VMG Optimization
+            // VMG & Layline Logic
+            // Determine Leg Mode for VMG calculations (regardless of geometric 'reach' status)
+            // Note: In this game, Leg 0 (Start) and Legs 1/3 are Upwind. Legs 2/4 are Downwind.
+            let legMode = mode;
+            if (state.race.status === 'racing') {
+                 if (boat.raceState.leg === 1 || boat.raceState.leg === 3) legMode = 'upwind';
+                 else if (boat.raceState.leg === 2 || boat.raceState.leg === 4) legMode = 'downwind';
+                 else if (boat.raceState.leg === 0) legMode = 'upwind';
+            }
+
             const currentTack = (angleToWind > 0) ? 1 : -1;
-            const bestTWA = (mode === 'upwind') ? (45 * Math.PI/180) : (150 * Math.PI/180);
+            const bestTWA = (legMode === 'upwind') ? (45 * Math.PI/180) : (150 * Math.PI/180);
             const headingOnTack = normalizeAngle(windDir + currentTack * bestTWA);
             const headingOnSwap = normalizeAngle(windDir - currentTack * bestTWA);
 
             // Simple VMG check
-            // VMG = Speed * cos(Theta to Target)
             const vmgCurrent = Math.cos(normalizeAngle(headingOnTack - angleToTarget));
             const vmgSwap = Math.cos(normalizeAngle(headingOnSwap - angleToTarget));
 
             const windSense = boat.currentStats.windSense;
-            const swapThreshold = 0.20 - (windSense - 1) * 0.04;
+            let swapThreshold = 0.20 - (windSense - 1) * 0.04;
+
+            // Layline Bias: Strongly encourage return if outside laylines
+            let outsideLayline = false;
+            // Use locally defined var or recalculate to ensure safety
+            const safeAbsAngle = (typeof absWindToTarget !== 'undefined') ? absWindToTarget : Math.abs(windToTarget);
+            const absWindToTargetDeg = safeAbsAngle * (180/Math.PI);
+
+            if (legMode === 'upwind') {
+                if (absWindToTargetDeg > 50) {
+                     const diff = absWindToTargetDeg - 50;
+                     swapThreshold -= 0.5 + diff * 0.05; // Strong bias scaling with distance
+                     outsideLayline = true;
+                }
+            } else if (legMode === 'downwind') {
+                if (absWindToTargetDeg < 140) {
+                     const diff = 140 - absWindToTargetDeg;
+                     swapThreshold -= 0.5 + diff * 0.05;
+                     outsideLayline = true;
+                }
+            }
 
             let shouldSwap = false;
-            // Force swap if boundary logic requires it (handled in avoidance, but good to trigger tack state)
             if (checkBoundaryExiting(boat)) shouldSwap = true;
             else if (boat.ai.tackCooldown <= 0) {
-                 if (vmgSwap > vmgCurrent + swapThreshold) {
-                      if (boat.speed > 1.5 || mode === 'downwind') shouldSwap = true;
+                 // Check if outside laylines warrants a swap
+                 if (outsideLayline) {
+                      // Allow swap even if speed is low-ish (but not stuck)
+                      if (vmgSwap > vmgCurrent + swapThreshold) {
+                           if (boat.speed > 1.0 || legMode === 'downwind') shouldSwap = true;
+                      }
+                 } else {
+                      // Standard check
+                      if (vmgSwap > vmgCurrent + swapThreshold) {
+                           if (boat.speed > 1.5 || legMode === 'downwind') shouldSwap = true;
+                      }
                  }
             }
 
@@ -1914,6 +1948,8 @@ function updateAI(boat, dt) {
                 desiredHeading = headingOnSwap;
                 const handling = boat.currentStats.boatHandling;
                 boat.ai.tackCooldown = 8.0 + (5 - handling) * 2.0;
+            } else if (mode === 'reach') {
+                desiredHeading = angleToTarget;
             } else {
                 desiredHeading = headingOnTack;
             }
