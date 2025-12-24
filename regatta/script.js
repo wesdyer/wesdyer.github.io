@@ -250,7 +250,8 @@ class Boat {
             tackCooldown: 0,
             stuckTimer: 0,
             recoveryMode: false,
-            recoveryTarget: 0
+            recoveryTarget: 0,
+            prestartSide: (Math.random() > 0.5) ? 1 : -1
         };
 
         this.badAirIntensity = 0;
@@ -1347,7 +1348,13 @@ function updateAI(boat, dt) {
     if (state.race.status === 'prestart') {
         // Hold position (Head to Wind) until 15 seconds
         if (state.race.timer > 15) {
-             targetAngle = localWind.direction;
+             // targetAngle = localWind.direction;
+             // Mill about using beam reach (+/- 90 deg) based on random side preference
+             // Check boundary to flip side if needed
+             if (boat.x > 1500 && boat.ai.prestartSide === 1) boat.ai.prestartSide = -1;
+             if (boat.x < -1500 && boat.ai.prestartSide === -1) boat.ai.prestartSide = 1;
+
+             targetAngle = localWind.direction + boat.ai.prestartSide * (Math.PI / 2);
         } else {
              // Go for line center (or just sail upwind towards line)
              // Simple logic: Sail towards 0,0
@@ -1407,7 +1414,8 @@ function updateAI(boat, dt) {
     const collisionRadius = 60;
 
     // Skip collision avoidance during prestart hold to maintain line
-    if (!(state.race.status === 'prestart' && state.race.timer > 10)) {
+    // UPDATED: Always run collision avoidance to handle milling about
+    if (true) {
         for (const other of state.boats) {
             if (other === boat) continue;
             const dx = other.x - boat.x;
