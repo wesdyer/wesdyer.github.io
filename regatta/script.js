@@ -1299,18 +1299,37 @@ function checkBoundaryExiting(boat) {
     return false;
 }
 
+function getClearAstern(behind, ahead) {
+    // A boat is Clear Astern if her hull is behind a line abeam from the aftermost point of the other boat's hull.
+    const ahH = ahead.heading;
+    const fwdX = Math.sin(ahH), fwdY = -Math.cos(ahH); // Points to Bow
+    const sternX = ahead.x - fwdX * 30;
+    const sternY = ahead.y - fwdY * 30;
+
+    // We need to check if 'behind' boat's BOW is behind 'ahead' boat's STERN line.
+    const bhH = behind.heading;
+    const bhFwdX = Math.sin(bhH), bhFwdY = -Math.cos(bhH);
+    const bowX = behind.x + bhFwdX * 25;
+    const bowY = behind.y + bhFwdY * 25;
+
+    // Vector from Ahead's Stern to Behind's Bow
+    const dx = bowX - sternX;
+    const dy = bowY - sternY;
+
+    // Project onto Ahead's Forward Vector
+    const dot = dx * fwdX + dy * fwdY;
+
+    // If dot < 0, Behind's Bow is "behind" the abeam line at Ahead's Stern.
+    return dot < 0;
+}
+
 function getRightOfWay(b1, b2) {
     // Priority: Rule 14 -> 18 -> 13 -> 10 -> 11/12 -> 17/16
 
     // 1. Mark Room (Rule 18)
-    // Applies when:
-    // - Boats are at a mark (In Zone)
-    // - NOT on a beat to windward on opposite tacks (RRS 18.1.a)
-    // - NOT at a starting mark approaching to start (RRS 18.1.a) - Leg 0 excluded
+    const leg = b1.raceState.leg; // Assume same leg context for simplicity
     const isRacing = state.race.status === 'racing';
-    const leg = b1.raceState.leg; // Assume same leg context
 
-    // Check Tacks
     const t1 = b1.boomSide > 0 ? 1 : -1;
     const t2 = b2.boomSide > 0 ? 1 : -1;
     const oppositeTacks = (t1 !== t2);
@@ -1326,85 +1345,39 @@ function getRightOfWay(b1, b2) {
         }
     }
 
-    // Helper: isClearAstern
-    const getClearAstern = (behind, ahead) => {
-         // A boat is Clear Astern if her hull is behind a line abeam from the aftermost point of the other boat's hull.
-         // Hull dimensions approx: Bow +25 (relative to center in forward dir), Stern -30 (relative to center in forward dir).
-         // Wait, drawing code:
-         // moveTo(0, -25) (Bow is Up/Negative Y in local space).
-         // lineTo(..., 30) (Stern is Down/Positive Y in local space).
-         // So Forward Vector (0, -1) points to Bow.
-
-         // ahead.heading is rotation.
-         // Vector Fwd: (sin(h), -cos(h)).
-         // Stern Position: center - Fwd * 30? No, Stern is at +30 local Y.
-         // Local (0, 30) -> World: x + 30*(-sin(h))? No.
-         // Rotation: x' = x*cos - y*sin, y' = x*sin + y*cos.
-         // Stern (0, 30): x' = -30*sin(h), y' = 30*cos(h).
-         // World Stern = Center + (-30sin, 30cos).
-         // This corresponds to Center - Fwd * 30.
-
-         const ahH = ahead.heading;
-         const fwdX = Math.sin(ahH), fwdY = -Math.cos(ahH); // Points to Bow
-         const sternX = ahead.x - fwdX * 30;
-         const sternY = ahead.y - fwdY * 30;
-
-         // We need to check if 'behind' boat's BOW is behind 'ahead' boat's STERN line.
-         // behind boat's Bow:
-         const bhH = behind.heading;
-         const bhFwdX = Math.sin(bhH), bhFwdY = -Math.cos(bhH);
-         const bowX = behind.x + bhFwdX * 25;
-         const bowY = behind.y + bhFwdY * 25;
-
-         // Vector from Ahead's Stern to Behind's Bow
-         const dx = bowX - sternX;
-         const dy = bowY - sternY;
-
-         // Project onto Ahead's Forward Vector
-         const dot = dx * fwdX + dy * fwdY;
-
-         // If dot < 0, Behind's Bow is "behind" the abeam line at Ahead's Stern.
-         return dot < 0;
-    };
-
     if (rule18Applies) {
-        // Case A: One in zone, one out
+        // Simplification: If one is in zone and other isn't, the one in zone usually established it first.
         if (b1.raceState.inZone !== b2.raceState.inZone) {
-            // Boat in zone has rights (established clear ahead or first in)
             return b1.raceState.inZone ? b1 : b2;
         }
 
-        // Case B: Both in zone
-        // Determine Inside/Outside based on distance to Mark
-        let activeIndices = (leg % 2 === 0) ? [0, 1] : [2, 3];
-        let targetMark = null;
-        let minD = Infinity;
-        for (const idx of activeIndices) {
-            const m = state.course.marks[idx];
-            const d = (b1.x - m.x)**2 + (b1.y - m.y)**2;
-            if (d < minD) { minD = d; targetMark = m; }
-        }
-
+        // Both in zone
         const b1Astern = getClearAstern(b1, b2);
         const b2Astern = getClearAstern(b2, b1);
         const overlapped = !b1Astern && !b2Astern;
 
         if (overlapped) {
-            // Inside boat has ROW
-            // Check if both boats are aiming for the same mark.
-            // If they are far apart (different marks of gate), Rule 18 between them for THAT mark might be ambiguous,
-            // but assuming close proximity (collision likely), they round same mark.
+            // Inside boat has ROW.
+            // Determine which is inside relative to the mark.
+            let activeIndices = (leg % 2 === 0) ? [0, 1] : [2, 3];
+            let targetMark = state.course.marks[activeIndices[0]];
+            let minD = Infinity;
+            for (const idx of activeIndices) {
+                const m = state.course.marks[idx];
+                const d = (b1.x - m.x)**2 + (b1.y - m.y)**2;
+                if (d < minD) { minD = d; targetMark = m; }
+            }
+
             const d1 = (b1.x - targetMark.x)**2 + (b1.y - targetMark.y)**2;
             const d2 = (b2.x - targetMark.x)**2 + (b2.y - targetMark.y)**2;
             return (d1 < d2) ? b1 : b2;
         } else {
-            // Clear Ahead boat has ROW
+            // Clear Ahead has ROW
             return b1Astern ? b2 : b1;
         }
     }
 
     // 2. Rule 13 (While Tacking)
-    // Overrides 10, 11, 12
     if (b1.raceState.isTacking && !b2.raceState.isTacking) return b2;
     if (!b1.raceState.isTacking && b2.raceState.isTacking) return b1;
 
@@ -1417,64 +1390,27 @@ function getRightOfWay(b1, b2) {
     const b1Astern = getClearAstern(b1, b2);
     const b2Astern = getClearAstern(b2, b1);
 
-    if (b1Astern && !b2Astern) return b2; // b1 Astern -> b2 Ahead ROW
-    if (b2Astern && !b1Astern) return b1; // b2 Astern -> b1 Ahead ROW
+    if (b1Astern && !b2Astern) return b2; // b2 Ahead wins (Rule 12)
+    if (b2Astern && !b1Astern) return b1; // b1 Ahead wins (Rule 12)
 
     // Rule 11: Overlapped, Same Tack -> Leeward ROW
-    // Leeward is the side away from the wind.
-    // Determine relative position Left/Right of Wind Vector.
-    // Wind Vector points Downwind? No, state.wind.direction is "From".
-    // Wind Direction 0 (North) -> Blows South.
-    // We want the vector pointing INTO the wind (Upwind)? Or Downwind?
-    // "Left/Right of Wind". Usually relative to Look Downwind.
-
-    // Let's use Upwind Vector: Points into the wind.
-    // W = (sin(wDir), -cos(wDir))?
-    // If wDir=0 (North), Wind comes from North. Upwind is North (0, -1).
-    // Vector: sin(0)=0, -cos(0)=-1. Correct.
-
-    // Perpendicular Right of Upwind Vector:
-    // R = (-uy, ux).
-    // R = (-(-1), 0) = (1, 0) = East.
-    // Correct. Right of North is East.
-
-    // Project Relative Position (B2 - B1) onto Right Vector.
-    // if dot > 0 => B2 is Right of B1 (relative to Upwind).
-
-    // Starboard Tack (Wind from Right):
-    // Boat heading NW. Wind N.
-    // Leeward side is Left (West). Windward side is Right (East).
-    // If B2 is Right of B1 => B2 is Windward. B1 is Leeward.
-    // B1 (Leeward) has ROW.
-
-    // Port Tack (Wind from Left):
-    // Boat heading NE. Wind N.
-    // Leeward side is Right (East). Windward side is Left (West).
-    // If B2 is Right of B1 => B2 is Leeward. B1 is Windward.
-    // B2 (Leeward) has ROW.
-
     const dx = b2.x - b1.x;
     const dy = b2.y - b1.y;
     const wDir = state.wind.direction;
-
     const ux = Math.sin(wDir);
     const uy = -Math.cos(wDir);
-
-    // Right Vector
+    // Right of Wind Vector
     const rx = -uy;
     const ry = ux;
-
     const dotRight = dx * rx + dy * ry;
 
     if (t1 === 1) { // Starboard Tack
         // Wind from Right. Leeward is Left.
         // dotRight > 0 => b2 is Right (Windward). b1 is Leeward.
-        // b1 has ROW.
         return (dotRight > 0) ? b1 : b2;
     } else { // Port Tack
         // Wind from Left. Leeward is Right.
         // dotRight > 0 => b2 is Right (Leeward). b1 is Windward.
-        // b2 has ROW.
         return (dotRight > 0) ? b2 : b1;
     }
 }
@@ -1846,19 +1782,20 @@ function updateAI(boat, dt) {
     // 4. Advanced Collision Avoidance
     let steerBias = 0;
     const aggression = boat.currentStats.aggression;
-    const detectRadius = 300;
-    const collisionRadius = 80;
+    // Increased detection radius for earlier reaction
+    const detectRadius = 450;
+    const collisionRadius = 100;
     let avoidanceCount = 0;
 
-    // A. Boundary Repulsion (Soft Force)
+    // A. Boundary Repulsion (Stronger and Earlier)
     if (state.course.boundary) {
         const b = state.course.boundary;
         const dx = boat.x - b.x;
         const dy = boat.y - b.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        const margin = 400;
+        const margin = 600; // Increased margin
         if (dist > b.radius - margin) {
-            const strength = Math.pow((dist - (b.radius - margin)) / margin, 2) * 2.0;
+            const strength = Math.pow((dist - (b.radius - margin)) / margin, 3) * 4.0; // Stronger exponential
             const angleToCenter = Math.atan2(-dy, -dx);
             const diff = normalizeAngle(angleToCenter - desiredHeading);
             steerBias += diff * strength;
@@ -1872,58 +1809,59 @@ function updateAI(boat, dt) {
     }).sort((a,b) => a.distSq - b.distSq);
 
     for (const item of others) {
-        if (avoidanceCount >= 2) break; // Limit to nearest 2 threats
+        if (avoidanceCount >= 3) break;
         if (item.distSq > detectRadius * detectRadius) break;
 
         const other = item.boat;
         const dist = Math.sqrt(item.distSq);
 
+        // Use a more sensitive conflict check
         if (isConflictSoon(boat, other)) {
              avoidanceCount++;
              const rowBoat = getRightOfWay(boat, other);
              const iHaveROW = (rowBoat === boat);
 
              if (iHaveROW) {
-                 if (dist < collisionRadius) {
-                     // Panic steer away
+                 // Stand On Vessel (Rule 14 limit)
+                 // Only alter course if very close or if other boat is clearly not yielding
+                 if (dist < 80) {
+                     // Panic - Turn away from contact
                      const angleToOther = Math.atan2(other.x - boat.x, -(other.y - boat.y));
                      const diff = normalizeAngle(desiredHeading - angleToOther);
+                     // Turn away
                      const turnDir = (diff > 0) ? 1 : -1;
-                     steerBias += turnDir * 1.5;
+                     steerBias += turnDir * 2.0;
                  }
              } else {
-                 // Give Way
-                 const angleToOther = Math.atan2(other.x - boat.x, -(other.y - boat.y));
-                 const relHeading = normalizeAngle(boat.heading - other.heading);
+                 // Give Way Vessel
+                 // Must keep clear.
+                 // Strategy: Duck (aim for stern) or Tack away.
 
-                 // If Overtaking (Parallel-ish) or Head On
-                 // Repulsion/Side step is better than Stern aim which might cause collision
-                 const isParallel = Math.abs(relHeading) < Math.PI/3;
+                 // Ducking calculation
+                 // Target point: 80 units behind other boat's stern
+                 const oh = other.heading;
+                 const sternX = other.x - Math.sin(oh) * 50;
+                 const sternY = other.y + Math.cos(oh) * 50;
+                 // Aim further back to be safe
+                 const safeX = sternX - Math.sin(oh) * 80;
+                 const safeY = sternY + Math.cos(oh) * 80;
 
-                 if (isParallel && dist < 100) {
-                     // Lateral separation
-                     const dx = boat.x - other.x;
-                     const dy = boat.y - other.y;
-                     // Are we left or right relative to their heading?
-                     const ohX = Math.sin(other.heading), ohY = -Math.cos(other.heading);
-                     const rx = -ohY, ry = ohX;
-                     const dotRight = dx*rx + dy*ry;
-                     const avoidDir = (dotRight > 0) ? 1 : -1; // Move further right if on right
+                 const angleToSafe = Math.atan2(safeX - boat.x, -(safeY - boat.y));
+                 const diff = normalizeAngle(angleToSafe - desiredHeading);
 
-                     // Force turn
-                     const currentAngle = normalizeAngle(boat.heading - other.heading);
-                     steerBias += avoidDir * 1.0;
-                 } else {
-                     // Crossing - Aim for Stern
-                     const sternX = other.x - Math.sin(other.heading) * 60;
-                     const sternY = other.y + Math.cos(other.heading) * 60;
-                     const angleToStern = Math.atan2(sternX - boat.x, -(sternY - boat.y));
-                     const diff = normalizeAngle(angleToStern - desiredHeading);
-                     const urgency = Math.min(1.0, 200 / dist);
-                     steerBias += diff * urgency * 1.5;
+                 // Apply strong bias to aim for safe spot
+                 // Scale by urgency
+                 const urgency = Math.min(2.0, 300 / dist);
+                 steerBias += diff * urgency;
+
+                 // Slow down if really close and can't turn fast enough
+                 if (dist < 150) {
+                     // If we are pointing at them, slow down
+                     const angleToOther = Math.atan2(other.x - boat.x, -(other.y - boat.y));
+                     if (Math.abs(normalizeAngle(boat.heading - angleToOther)) < 0.5) {
+                         speedLimit = Math.min(speedLimit, 0.4);
+                     }
                  }
-
-                 if (dist < 100) speedLimit = Math.min(speedLimit, 0.5);
              }
         }
     }
