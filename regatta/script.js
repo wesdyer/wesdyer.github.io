@@ -105,42 +105,42 @@ const Sayings = {
 
 // AI Configuration
 const AI_CONFIG = [
-    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6' },
-    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF' },
-    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0' },
-    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A' },
-    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A' },
-    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5' },
-    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2' },
-    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A' },
-    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9' },
-    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0' },
-    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6' },
-    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1' },
-    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B' },
-    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6' },
-    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55' },
-    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92' },
-    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8' },
-    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E' },
-    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0' },
-    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9' },
-    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2' },
-    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A' },
-    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1' },
-    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6' },
-    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A' },
-    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4' },
-    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9' },
-    { name: 'Anchor', creature: 'Sea Turtle', hull: '#2F6F4E', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#B7C4B4' },
-    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC' },
-    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6' },
-    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6' },
-    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4' },
-    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC' },
-    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6' },
-    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B' },
-    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6' }
+    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 5, positioning: 4, aggression: 2, composure: 5 },
+    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 },
+    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', boatHandling: 3, windSense: 3, positioning: 2, aggression: 4, composure: 2 },
+    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', boatHandling: 4, windSense: 2, positioning: 5, aggression: 5, composure: 3 },
+    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 4 },
+    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', boatHandling: 4, windSense: 3, positioning: 3, aggression: 4, composure: 3 },
+    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', boatHandling: 3, windSense: 4, positioning: 5, aggression: 2, composure: 4 },
+    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 4, composure: 4 },
+    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 },
+    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', boatHandling: 4, windSense: 4, positioning: 3, aggression: 3, composure: 3 },
+    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 2, composure: 5 },
+    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 },
+    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', boatHandling: 3, windSense: 2, positioning: 5, aggression: 4, composure: 4 },
+    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', boatHandling: 4, windSense: 4, positioning: 4, aggression: 1, composure: 5 },
+    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', boatHandling: 5, windSense: 3, positioning: 4, aggression: 4, composure: 5 },
+    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', boatHandling: 3, windSense: 3, positioning: 4, aggression: 4, composure: 2 },
+    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 },
+    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', boatHandling: 4, windSense: 2, positioning: 2, aggression: 5, composure: 2 },
+    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', boatHandling: 4, windSense: 5, positioning: 3, aggression: 2, composure: 4 },
+    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', boatHandling: 3, windSense: 3, positioning: 5, aggression: 4, composure: 3 },
+    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', boatHandling: 2, windSense: 3, positioning: 4, aggression: 2, composure: 5 },
+    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 3 },
+    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', boatHandling: 4, windSense: 4, positioning: 5, aggression: 2, composure: 5 },
+    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 3, composure: 3 },
+    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', boatHandling: 3, windSense: 2, positioning: 5, aggression: 3, composure: 4 },
+    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', boatHandling: 4, windSense: 5, positioning: 3, aggression: 3, composure: 3 },
+    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', boatHandling: 3, windSense: 4, positioning: 4, aggression: 2, composure: 3 },
+    { name: 'Anchor', creature: 'Sea Turtle', hull: '#2F6F4E', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#B7C4B4', boatHandling: 2, windSense: 3, positioning: 4, aggression: 1, composure: 5 },
+    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', boatHandling: 4, windSense: 2, positioning: 3, aggression: 5, composure: 2 },
+    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', boatHandling: 3, windSense: 4, positioning: 4, aggression: 1, composure: 5 },
+    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', boatHandling: 5, windSense: 1, positioning: 2, aggression: 5, composure: 1 },
+    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', boatHandling: 3, windSense: 5, positioning: 4, aggression: 1, composure: 5 },
+    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 },
+    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 5, aggression: 4, composure: 3 },
+    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 },
+    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 3, aggression: 5, composure: 3 }
 ];
 
 
@@ -343,8 +343,26 @@ class Boat {
             stuckTimer: 0,
             recoveryMode: false,
             recoveryTarget: 0,
-            prestartSide: (Math.random() > 0.5) ? 1 : -1
+            prestartSide: (Math.random() > 0.5) ? 1 : -1,
+            trimTimer: 0,
+            currentTrimTarget: 0
         };
+
+        // Personality Stats
+        if (config) {
+             this.stats = {
+                 boatHandling: config.boatHandling || 3,
+                 windSense: config.windSense || 3,
+                 positioning: config.positioning || 3,
+                 aggression: config.aggression || 3,
+                 composure: config.composure || 3
+             };
+        } else {
+             // Default stats for Player or unknown
+             this.stats = { boatHandling: 5, windSense: 5, positioning: 5, aggression: 3, composure: 5 };
+        }
+        // Dynamic stats (can be reduced by penalties/stress)
+        this.currentStats = { ...this.stats };
 
         this.badAirIntensity = 0;
         this.turbulence = [];
@@ -1334,6 +1352,41 @@ function getBestVMGAngle(mode, windSpeed) {
     }
 }
 
+function updateAITrim(boat, optimalSailAngle, dt) {
+    // Stats: boatHandling (1-5)
+    // 5: Very fast, precise trim.
+    // 1: Slow, error-prone trim.
+
+    const handling = boat.currentStats.boatHandling;
+
+    // Add noise to target based on handling (lower handling = more error)
+    // Error range: 5 (0 deg) to 1 (20 deg error)
+    if (boat.ai.trimTimer <= 0) {
+        const errorMag = (5 - handling) * 0.05; // up to 0.2 rad error
+        const error = (Math.random() - 0.5) * errorMag;
+        boat.ai.currentTrimTarget = Math.max(0, optimalSailAngle + error);
+
+        // Retarget timer
+        boat.ai.trimTimer = 0.5 + Math.random() * (6 - handling) * 0.2;
+    } else {
+        boat.ai.trimTimer -= dt;
+    }
+
+    // Move manualSailAngle towards target
+    const current = boat.manualSailAngle;
+    const target = boat.ai.currentTrimTarget;
+    const diff = target - current;
+
+    // Trim Speed: 5 -> Fast (2.0 rad/s), 1 -> Slow (0.2 rad/s)
+    const speed = 0.2 + (handling - 1) * 0.45;
+    const step = speed * dt;
+
+    if (Math.abs(diff) < step) boat.manualSailAngle = target;
+    else boat.manualSailAngle += Math.sign(diff) * step;
+
+    boat.sailAngle = boat.manualSailAngle * boat.boomSide;
+}
+
 function updateAI(boat, dt) {
     if (boat.isPlayer && !boat.raceState.finished) return;
 
@@ -1364,6 +1417,9 @@ function updateAI(boat, dt) {
         const waypoint = boat.raceState.nextWaypoint;
 
         // Default target: Center of Gate (Pass between marks)
+        // Positioning Stat (1-5): Affects target accuracy and strategy
+        const positioning = boat.currentStats.positioning;
+
         targetX = waypoint.x;
         targetY = waypoint.y;
 
@@ -1382,15 +1438,25 @@ function updateAI(boat, dt) {
                 const cx = (m1.x + m2.x) / 2;
                 const cy = (m1.y + m2.y) / 2;
                 // Aim wide of the mark to ensure crossing the extension line
-                const vx = targetMark.x - cx;
-                const vy = targetMark.y - cy;
+                // Better positioning = tighter rounding (less wide)
+                const wideFactor = 1.0 + (5 - positioning) * 0.2;
+                const vx = (targetMark.x - cx) * wideFactor;
+                const vy = (targetMark.y - cy) * wideFactor;
 
                 targetX = targetMark.x + vx;
                 targetY = targetMark.y + vy;
             } else {
                 // Aim for the midpoint to ensure passing between marks
+                // Better positioning = aim slightly favored side? For now center.
+                // Add noise for poor positioning
                 targetX = (marks[indices[0]].x + marks[indices[1]].x) / 2;
                 targetY = (marks[indices[0]].y + marks[indices[1]].y) / 2;
+
+                if (positioning < 5) {
+                    const noise = (5 - positioning) * 20;
+                    targetX += (Math.random() - 0.5) * noise;
+                    targetY += (Math.random() - 0.5) * noise;
+                }
             }
         }
     }
@@ -1442,8 +1508,12 @@ function updateAI(boat, dt) {
 
     // PRESTART Special Logic
     if (state.race.status === 'prestart') {
-        // Hold position (Head to Wind) until 15 seconds
-        if (state.race.timer > 15) {
+        const positioning = boat.currentStats.positioning;
+        // Hold position (Head to Wind) until X seconds
+        // Better positioning = Start closer to time
+        const startMoveTime = 10 + (5 - positioning) * 2; // 10s to 18s
+
+        if (state.race.timer > startMoveTime) {
              // targetAngle = localWind.direction;
              // Mill about using beam reach (+/- 90 deg) based on random side preference
              // Check boundary to flip side if needed
@@ -1492,11 +1562,19 @@ function updateAI(boat, dt) {
             const vmgSwap = Math.cos(normalizeAngle(headingOnSwap - angleToTarget));
 
             let shouldSwap = false;
+
+            // Wind Sense: Affects tacking threshold
+            const windSense = boat.currentStats.windSense;
+            // Higher sense = smaller threshold needed to swap (detect smaller shifts)
+            // 5 -> 0.05, 1 -> 0.25
+            const swapThreshold = 0.25 - (windSense - 1) * 0.05;
+
             if (checkBoundaryExiting(boat)) shouldSwap = true;
-            else if (boat.ai.tackCooldown <= 0 && vmgSwap > vmgCurrent + 0.1) shouldSwap = true;
+            else if (boat.ai.tackCooldown <= 0 && vmgSwap > vmgCurrent + swapThreshold) shouldSwap = true;
 
             if (shouldSwap && boat.ai.tackCooldown <= 0) {
                 desiredHeading = headingOnSwap;
+                // Higher sense = lower cooldown? Or separate stat?
                 boat.ai.tackCooldown = 20.0 + Math.random() * 5.0; // Increased cooldown to prevent flapping
             } else {
                 desiredHeading = headingOnTack;
@@ -1506,8 +1584,14 @@ function updateAI(boat, dt) {
 
     // Collision Avoidance
     let avoidX = 0, avoidY = 0;
-    const detectRadius = 300;
-    const collisionRadius = 60;
+
+    // Aggression: Affects detection and safety buffers
+    const aggression = boat.currentStats.aggression;
+    // High Aggression (5): Closer detection (200), smaller gap
+    // Low Aggression (1): Far detection (400), larger gap
+
+    const detectRadius = 400 - (aggression - 1) * 50; // 200 - 400
+    const collisionRadius = 80 - (aggression - 1) * 10; // 40 - 80
 
     // Skip collision avoidance during prestart hold to maintain line
     // UPDATED: Always run collision avoidance to handle milling about
@@ -1593,16 +1677,20 @@ function updateAI(boat, dt) {
 
     // Steering Physics
     let diff = normalizeAngle(boat.ai.targetHeading - boat.heading);
-    const aiTurnRate = CONFIG.turnSpeed * timeScale;
+
+    // Boat Handling: Affects turn rate
+    // 5 -> 1.0x, 1 -> 0.6x
+    const handling = boat.currentStats.boatHandling;
+    const turnFactor = 0.6 + (handling - 1) * 0.1;
+    const aiTurnRate = CONFIG.turnSpeed * timeScale * turnFactor;
 
     // Smooth turning
     if (Math.abs(diff) > aiTurnRate) boat.heading += Math.sign(diff) * aiTurnRate;
     else boat.heading = boat.ai.targetHeading;
 
-    // Trim
+    // Spinnaker logic
     const windAngle = Math.abs(normalizeAngle(windDir - boat.heading));
     boat.spinnaker = (windAngle > Math.PI * 0.6);
-    boat.manualTrim = false;
 }
 
 function triggerPenalty(boat) {
@@ -1614,6 +1702,18 @@ function triggerPenalty(boat) {
     if (!boat.raceState.penalty) {
         boat.raceState.penalty = true;
         boat.raceState.totalPenalties++; // Only increment start of penalty
+
+        // Composure Check: Apply penalty impact
+        if (!boat.isPlayer) {
+             const composure = boat.stats.composure;
+             // High composure (5): Small impact. Low (1): High impact.
+             const impact = (6 - composure) * 0.2; // 0.2 to 1.0 reduction factor?
+             // Temporarily reduce stats
+             boat.currentStats.boatHandling = Math.max(1, boat.stats.boatHandling - impact * 2);
+             boat.currentStats.windSense = Math.max(1, boat.stats.windSense - impact * 2);
+
+             // Queue recovery? Handled in update loop decay
+        }
     }
 
     if (boat.isPlayer) Sound.playPenalty();
@@ -1645,6 +1745,19 @@ function updateBoat(boat, dt) {
 
     // AI Logic or Player Input
     if (!boat.isPlayer || boat.raceState.finished) {
+        // Composure Recovery
+        const composure = boat.stats.composure;
+        const recoveryRate = 0.05 + (composure - 1) * 0.05; // 0.05 to 0.25 per sec
+
+        // Recover handling
+        if (boat.currentStats.boatHandling < boat.stats.boatHandling) {
+            boat.currentStats.boatHandling = Math.min(boat.stats.boatHandling, boat.currentStats.boatHandling + recoveryRate * dt);
+        }
+        // Recover wind sense
+        if (boat.currentStats.windSense < boat.stats.windSense) {
+            boat.currentStats.windSense = Math.min(boat.stats.windSense, boat.currentStats.windSense + recoveryRate * dt);
+        }
+
         updateAI(boat, dt);
     }
 
@@ -1720,14 +1833,18 @@ function updateBoat(boat, dt) {
     let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
     if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
 
-    if (boat.manualTrim) {
+    if (boat.manualTrim && boat.isPlayer) {
         const trimRate = 0.8 * dt;
         if (state.keys.ArrowUp && boat.isPlayer) boat.manualSailAngle = Math.min(Math.PI / 1.5, boat.manualSailAngle + trimRate);
         if (state.keys.ArrowDown && boat.isPlayer) boat.manualSailAngle = Math.max(0, boat.manualSailAngle - trimRate);
         boat.sailAngle = boat.manualSailAngle * boat.boomSide;
-    } else {
+    } else if (boat.isPlayer) {
+        // Player Auto-Trim (Instant)
         boat.manualSailAngle = optimalSailAngle;
         boat.sailAngle = optimalSailAngle * boat.boomSide;
+    } else {
+        // AI Simulated Manual Trim
+        updateAITrim(boat, optimalSailAngle, dt);
     }
 
     const switchSpeed = dt / 5.0;
