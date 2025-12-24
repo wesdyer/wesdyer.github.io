@@ -105,42 +105,42 @@ const Sayings = {
 
 // AI Configuration
 const AI_CONFIG = [
-    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 5, positioning: 4, aggression: 2, composure: 5 },
-    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 },
-    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', boatHandling: 3, windSense: 3, positioning: 2, aggression: 4, composure: 2 },
-    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', boatHandling: 4, windSense: 2, positioning: 5, aggression: 5, composure: 3 },
-    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 4 },
-    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', boatHandling: 4, windSense: 3, positioning: 3, aggression: 4, composure: 3 },
-    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', boatHandling: 3, windSense: 4, positioning: 5, aggression: 2, composure: 4 },
-    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 4, composure: 4 },
-    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 },
-    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', boatHandling: 4, windSense: 4, positioning: 3, aggression: 3, composure: 3 },
-    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 2, composure: 5 },
-    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 },
-    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', boatHandling: 3, windSense: 2, positioning: 5, aggression: 4, composure: 4 },
-    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', boatHandling: 4, windSense: 4, positioning: 4, aggression: 1, composure: 5 },
-    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', boatHandling: 5, windSense: 3, positioning: 4, aggression: 4, composure: 5 },
-    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', boatHandling: 3, windSense: 3, positioning: 4, aggression: 4, composure: 2 },
-    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 },
-    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', boatHandling: 4, windSense: 2, positioning: 2, aggression: 5, composure: 2 },
-    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', boatHandling: 4, windSense: 5, positioning: 3, aggression: 2, composure: 4 },
-    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', boatHandling: 3, windSense: 3, positioning: 5, aggression: 4, composure: 3 },
-    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', boatHandling: 2, windSense: 3, positioning: 4, aggression: 2, composure: 5 },
-    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 3 },
-    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', boatHandling: 4, windSense: 4, positioning: 5, aggression: 2, composure: 5 },
-    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 3, composure: 3 },
-    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', boatHandling: 3, windSense: 2, positioning: 5, aggression: 3, composure: 4 },
-    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', boatHandling: 4, windSense: 5, positioning: 3, aggression: 3, composure: 3 },
-    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', boatHandling: 3, windSense: 4, positioning: 4, aggression: 2, composure: 3 },
-    { name: 'Anchor', creature: 'Sea Turtle', hull: '#2F6F4E', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#B7C4B4', boatHandling: 2, windSense: 3, positioning: 4, aggression: 1, composure: 5 },
-    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', boatHandling: 4, windSense: 2, positioning: 3, aggression: 5, composure: 2 },
-    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', boatHandling: 3, windSense: 4, positioning: 4, aggression: 1, composure: 5 },
-    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', boatHandling: 5, windSense: 1, positioning: 2, aggression: 5, composure: 1 },
-    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', boatHandling: 3, windSense: 5, positioning: 4, aggression: 1, composure: 5 },
-    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 },
-    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 5, aggression: 4, composure: 3 },
-    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 },
-    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 3, aggression: 5, composure: 3 }
+    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 5, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Time-on-Distance Start", "Wind-Shift Anticipation Start"] },
+    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Port-Tack Flyer"] },
+    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', boatHandling: 3, windSense: 3, positioning: 2, aggression: 4, composure: 2 , startStrategies: ["Chaos Gambit", "Second-Row Slingshot"] },
+    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', boatHandling: 4, windSense: 2, positioning: 5, aggression: 5, composure: 3 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"] },
+    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "High-Lane Builder"] },
+    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', boatHandling: 4, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "High-Lane Builder"] },
+    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', boatHandling: 3, windSense: 4, positioning: 5, aggression: 2, composure: 4 , startStrategies: ["Mid-Line Safety Start", "Leebow Trap"] },
+    { name: 'Chomp', creature: 'Alligator', hull: '#2ECC71', spinnaker: '#F4C27A', sail: '#000000', cockpit: '#C1B58A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 4, composure: 4 , startStrategies: ["Leebow Trap", "Port-Tack Flyer"] },
+    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Mid-Line Safety Start", "High-Lane Builder"] },
+    { name: 'Vex', creature: 'Lizard', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', boatHandling: 4, windSense: 4, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Gap Sniper", "Leebow Trap"] },
+    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 2, composure: 5 , startStrategies: ["Bail-Out & Reset", "Second-Row Slingshot"] },
+    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', boatHandling: 5, windSense: 3, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Time-on-Distance Start"] },
+    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', boatHandling: 3, windSense: 2, positioning: 5, aggression: 4, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"] },
+    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', boatHandling: 4, windSense: 4, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Time-on-Distance Start", "Mid-Line Safety Start"] },
+    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', boatHandling: 5, windSense: 3, positioning: 4, aggression: 4, composure: 5 , startStrategies: ["High-Lane Builder", "Pin-End (Committee Boat) Start"] },
+    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', boatHandling: 3, windSense: 3, positioning: 4, aggression: 4, composure: 2 , startStrategies: ["Chaos Gambit", "Gap Sniper"] },
+    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Second-Row Slingshot", "Time-on-Distance Start"] },
+    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', boatHandling: 4, windSense: 2, positioning: 2, aggression: 5, composure: 2 , startStrategies: ["Port-Tack Flyer", "Chaos Gambit"] },
+    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', boatHandling: 4, windSense: 5, positioning: 3, aggression: 2, composure: 4 , startStrategies: ["Wind-Shift Anticipation Start", "Mid-Line Safety Start"] },
+    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', boatHandling: 3, windSense: 3, positioning: 5, aggression: 4, composure: 3 , startStrategies: ["Luff & Kill", "Leebow Trap"] },
+    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', boatHandling: 2, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Second-Row Slingshot"] },
+    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', boatHandling: 4, windSense: 3, positioning: 4, aggression: 5, composure: 3 , startStrategies: ["Port-Tack Flyer", "Leebow Trap"] },
+    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', boatHandling: 4, windSense: 4, positioning: 5, aggression: 2, composure: 5 , startStrategies: ["Time-on-Distance Start", "High-Lane Builder"] },
+    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', boatHandling: 3, windSense: 4, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Wind-Shift Anticipation Start", "Gap Sniper"] },
+    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', boatHandling: 3, windSense: 2, positioning: 5, aggression: 3, composure: 4 , startStrategies: ["Pin-End (Committee Boat) Start", "Luff & Kill"] },
+    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', boatHandling: 4, windSense: 5, positioning: 3, aggression: 3, composure: 3 , startStrategies: ["Wind-Shift Anticipation Start", "Gap Sniper"] },
+    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', boatHandling: 3, windSense: 4, positioning: 4, aggression: 2, composure: 3 , startStrategies: ["Gap Sniper", "Bail-Out & Reset"] },
+    { name: 'Anchor', creature: 'Sea Turtle', hull: '#2F6F4E', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#B7C4B4', boatHandling: 2, windSense: 3, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Bail-Out & Reset"] },
+    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', boatHandling: 4, windSense: 2, positioning: 3, aggression: 5, composure: 2 , startStrategies: ["Chaos Gambit", "Port-Tack Flyer"] },
+    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', boatHandling: 3, windSense: 4, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Mid-Line Safety Start", "Leebow Trap"] },
+    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', boatHandling: 5, windSense: 1, positioning: 2, aggression: 5, composure: 1 , startStrategies: ["Second-Row Slingshot", "Port-Tack Flyer"] },
+    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', boatHandling: 3, windSense: 5, positioning: 4, aggression: 1, composure: 5 , startStrategies: ["Bail-Out & Reset", "Wind-Shift Anticipation Start"] },
+    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', boatHandling: 3, windSense: 3, positioning: 4, aggression: 2, composure: 5 , startStrategies: ["High-Lane Builder", "Mid-Line Safety Start"] },
+    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 5, aggression: 4, composure: 3 , startStrategies: ["Leebow Trap", "Pin-End (Committee Boat) Start"] },
+    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', boatHandling: 5, windSense: 2, positioning: 3, aggression: 4, composure: 3 , startStrategies: ["Gap Sniper", "Port-Tack Flyer"] },
+    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', boatHandling: 4, windSense: 3, positioning: 3, aggression: 5, composure: 3 , startStrategies: ["Time-on-Distance Start", "Chaos Gambit"] }
 ];
 
 
@@ -1404,6 +1404,172 @@ function updateAITrim(boat, optimalSailAngle, dt) {
     boat.sailAngle = boat.manualSailAngle * boat.boomSide;
 }
 
+function getFavoredEnd() {
+    const marks = state.course.marks;
+    if(!marks || marks.length < 2) return 0;
+    const m0 = marks[0];
+    const m1 = marks[1];
+
+    // Wind Direction (From)
+    const wd = state.wind.direction;
+    // Upwind Vector (Towards Wind) -> Opposite of From
+    // From 0 (N) -> Blows S. Upwind is N (0, -1).
+    const ux = Math.sin(wd);
+    const uy = -Math.cos(wd);
+
+    // Project mark positions onto upwind vector
+    const d0 = m0.x * ux + m0.y * uy;
+    const d1 = m1.x * ux + m1.y * uy;
+
+    return (d1 > d0) ? 1 : 0;
+}
+
+function updateStartStrategy(boat, dt) {
+    const strategy = boat.ai.startStrategy || "Mid-Line Safety Start";
+    const timer = state.race.timer;
+    const localWind = getWindAt(boat.x, boat.y);
+    const windDir = localWind.direction;
+    const marks = state.course.marks;
+    if (!marks || marks.length < 2) return { x: boat.x, y: boat.y, angle: localWind.direction + Math.PI/2 }; // Fail safe
+
+    const m0 = marks[0]; // Pin (Left)
+    const m1 = marks[1]; // Boat (Right)
+
+    // Line Vector
+    const ldx = m1.x - m0.x;
+    const ldy = m1.y - m0.y;
+    const lineLen = Math.sqrt(ldx*ldx + ldy*ldy);
+
+    // Upwind Normal (Assuming standard start, upwind is roughly perp to line)
+    // Actually windDir points Downwind (From).
+    // Upwind is -windDir.
+    // Line Normal pointing pre-start side (downwind)
+    const nx = -Math.sin(windDir); // Downwind X
+    const ny = Math.cos(windDir);  // Downwind Y (Positive if N wind)
+
+    // Target calculation vars
+    let linePct = 0.5;
+    let distBack = 100;
+    let angleOffset = Math.PI / 2; // Beam reach default
+
+    // Helper to get point on line
+    const getPoint = (pct) => ({ x: m0.x + ldx * pct, y: m0.y + ldy * pct });
+
+    // Helper to get waiting point
+    const getWaitPoint = (pct, dist) => {
+        const p = getPoint(pct);
+        return { x: p.x + nx * dist, y: p.y + ny * dist };
+    };
+
+    // --- Strategy Logic ---
+
+    if (strategy === "Time-on-Distance Start") {
+        // Aim for center, time approach
+        linePct = 0.5;
+        if (timer < 10) {
+             // Simple time-distance estimate
+             distBack = Math.min(300, 90 * timer);
+        } else {
+             distBack = 300;
+        }
+
+    } else if (strategy === "Wind-Shift Anticipation Start") {
+        const favored = getFavoredEnd();
+        linePct = (favored === 1) ? 0.85 : 0.15;
+        distBack = (timer > 10) ? 150 : 20 * timer;
+
+    } else if (strategy === "Mid-Line Safety Start") {
+        linePct = 0.5;
+        distBack = (timer > 8) ? 200 : 80;
+        if (timer < 4) distBack = -50;
+
+    } else if (strategy === "Pin-End (Committee Boat) Start") {
+        const favored = getFavoredEnd();
+        linePct = (favored === 1) ? 0.9 : 0.1;
+        distBack = (timer > 10) ? 120 : 15 * timer;
+
+    } else if (strategy === "Port-Tack Flyer") {
+        linePct = 0.05;
+        if (timer > 10) {
+            distBack = 200;
+            angleOffset = -Math.PI/4;
+        } else {
+            distBack = -100;
+            angleOffset = -Math.PI/4; // Force Port
+        }
+
+    } else if (strategy === "Luff & Kill") {
+        linePct = 0.5 + (Math.random()-0.5)*0.4;
+        distBack = (timer > 10) ? 100 : 50;
+        if (timer < 5) distBack = -50;
+
+    } else if (strategy === "High-Lane Builder") {
+        linePct = 0.8;
+        distBack = (timer > 10) ? 150 : 80;
+        if (timer < 3) distBack = -50;
+
+    } else if (strategy === "Leebow Trap") {
+        linePct = 0.3;
+        distBack = (timer > 10) ? 180 : 100;
+        if (timer < 5) distBack = -50;
+
+    } else if (strategy === "Gap Sniper") {
+        const offset = ((boat.id * 17) % 100) / 100.0;
+        linePct = 0.2 + 0.6 * offset;
+        distBack = (timer > 10) ? 150 : 20 * timer;
+
+    } else if (strategy === "Second-Row Slingshot") {
+        linePct = 0.5;
+        distBack = (timer > 5) ? 300 : 150;
+        if (timer < 2) distBack = -100;
+
+    } else if (strategy === "Chaos Gambit") {
+        const t = state.time;
+        linePct = 0.5 + Math.sin(t * 0.5) * 0.4;
+        distBack = 150 + Math.cos(t) * 50;
+        if (timer < 5) distBack = 0;
+
+    } else if (strategy === "Bail-Out & Reset") {
+        linePct = 0.5;
+        distBack = 300;
+        if (timer < 5) distBack = 100;
+    }
+
+    // Apply Logic
+    const targetP = getWaitPoint(linePct, Math.max(0, distBack));
+
+    let dx = targetP.x - boat.x;
+    let dy = targetP.y - boat.y;
+
+    if (distBack <= 0 || (timer < 5 && distBack < 100)) {
+         const p = getPoint(linePct);
+         // Aim slightly beyond line to ensure crossing
+         dx = p.x + (p.x - targetP.x)*0.5 - boat.x;
+         dy = p.y + (p.y - targetP.y)*0.5 - boat.y;
+    }
+
+    let targetAngle = Math.atan2(dx, -dy);
+
+    // Milling Logic
+    if (timer > 10 && distBack > 50) {
+         const dist = Math.sqrt(dx*dx + dy*dy);
+         if (dist < 50) {
+             const millDir = (Math.floor(state.time / 10) % 2 === 0) ? 1 : -1;
+             targetAngle = windDir + millDir * Math.PI/2;
+         }
+    }
+
+    // Port Tack Flyer Override
+    if (strategy === "Port-Tack Flyer" && timer < 15) {
+         const portHeading = normalizeAngle(windDir + Math.PI/3);
+         if (timer < 5) {
+             targetAngle = portHeading;
+         }
+    }
+
+    return { x: targetP.x, y: targetP.y, angle: targetAngle };
+}
+
 function updateAI(boat, dt) {
     if (boat.isPlayer && !boat.raceState.finished) return;
 
@@ -1535,47 +1701,15 @@ function updateAI(boat, dt) {
         // OCS Recovery: If over line, return
         if (boat.raceState.ocs) {
             // Target point 300 units DOWNWIND of center (0,0)
-            // Wind Vector (From) is (sin(dir), -cos(dir))
-            // Downwind is (-sin, cos) -> Opposite of Upwind
             const wx = Math.sin(windDir), wy = -Math.cos(windDir);
-            // Wait, (sin, -cos) points Upwind (into wind) if dir=0 (North).
-            // North Wind comes FROM North.
-            // Upwind is North (0, -1). sin(0)=0, -cos(0)=-1. Correct.
-            // Downwind is South (0, 1).
-            // We want to go Downwind.
             const targetX = 0 - wx * 300;
             const targetY = 0 - wy * 300;
             const dx = targetX - boat.x;
             const dy = targetY - boat.y;
             targetAngle = Math.atan2(dx, -dy);
         } else {
-            const positioning = boat.currentStats.positioning;
-            // Better positioning = Start closer to time (lower startMoveTime)
-            // Range: 5s to 15s
-            const startMoveTime = 5 + (5 - positioning) * 2;
-
-            if (state.race.timer > startMoveTime) {
-                 // Mill about using beam reach (+/- 90 deg)
-                 targetAngle = localWind.direction + boat.ai.prestartSide * (Math.PI / 2);
-
-                 // If getting too close to line (distance to center < 200), turn away (downwind)
-                 // Or rather, if we are "ahead" of the safety line?
-                 // Simple distance check for now
-                 const distSq = boat.x*boat.x + boat.y*boat.y;
-                 if (distSq < 200*200) {
-                     // Too close, turn downwind
-                     targetAngle = localWind.direction + Math.PI;
-                 } else {
-                     // Check boundary to flip side if needed
-                     if (boat.x > 1000 && boat.ai.prestartSide === 1) boat.ai.prestartSide = -1;
-                     if (boat.x < -1000 && boat.ai.prestartSide === -1) boat.ai.prestartSide = 1;
-                 }
-            } else {
-                 // Go for line center
-                 const dx = 0 - boat.x;
-                 const dy = 0 - boat.y;
-                 targetAngle = Math.atan2(dx, -dy);
-            }
+            const strat = updateStartStrategy(boat, dt);
+            targetAngle = strat.angle;
         }
     }
 
@@ -3784,7 +3918,7 @@ function drawBoatIndicator(ctx, boat) {
     if (boat.raceState.leg === 0) {
         line1 = name;
     }
-    const line2 = `${speed}kn`;
+    let line2 = `${speed}kn`;
 
     ctx.save();
     ctx.translate(boat.x, boat.y);
@@ -4193,6 +4327,14 @@ function resetGame() {
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
         ai.speed = 0; // Initial speed
+
+        // Pick Strategy
+        if (config.startStrategies && config.startStrategies.length > 0) {
+            ai.ai.startStrategy = config.startStrategies[Math.floor(Math.random() * config.startStrategies.length)];
+        } else {
+            ai.ai.startStrategy = "Mid-Line Safety Start";
+        }
+
         state.boats.push(ai);
     }
 
