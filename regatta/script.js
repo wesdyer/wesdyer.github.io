@@ -332,7 +332,8 @@ class Boat {
             legTimes: [],
             legManeuvers: [0, 0, 0, 0, 0],
             legTopSpeeds: [0, 0, 0, 0, 0],
-            legDistances: [0, 0, 0, 0, 0]
+            legDistances: [0, 0, 0, 0, 0],
+            legSpeedSums: [0, 0, 0, 0, 0]
         };
 
         // AI State
@@ -2359,12 +2360,15 @@ function updateBoatRaceState(boat, dt) {
 
     // Stats
     if (state.race.status === 'racing' && boat.raceState.leg < 5) {
-        // boat.speed is approx 0.25 * Knots. 1 Knot = 0.5144 m/s.
-        // Dist = Speed(Knots) * 0.5144 * dt
-        // Dist = (boat.speed * 4) * 0.5144 * dt = boat.speed * 2.0576 * dt
-        const distMoved = boat.speed * 2.0576 * dt;
+        // Distance Calculation:
+        // Use visual scale: 1 unit = 0.2 meters.
+        // Distance = Speed (units/s) * dt * 0.2
+        // boat.speed is units per frame (at 60fps). Speed/s = boat.speed * 60.
+        // Distance = boat.speed * 60 * dt * 0.2 = boat.speed * 12.0 * dt.
+        const distMoved = boat.speed * 12.0 * dt;
         const kn = boat.speed * 4;
         boat.raceState.legDistances[boat.raceState.leg] += distMoved;
+        boat.raceState.legSpeedSums[boat.raceState.leg] += kn * dt;
         if (kn > boat.raceState.legTopSpeeds[boat.raceState.leg]) boat.raceState.legTopSpeeds[boat.raceState.leg] = kn;
     }
 }
@@ -3641,9 +3645,10 @@ function showResults() {
         const topSpeed = Math.max(...boat.raceState.legTopSpeeds);
         const totalMoves = boat.raceState.legManeuvers.reduce((a, b) => a + b, 0);
 
-        // Avg Speed Approximation
+        // Avg Speed: Time-weighted average from speedometer
         const duration = boat.raceState.finished ? boat.raceState.finishTime : state.race.timer;
-        const avgSpeed = duration > 10 ? (totalDist / duration) * 1.94 : 0;
+        const totalSpeedSum = boat.raceState.legSpeedSums ? boat.raceState.legSpeedSums.reduce((a, b) => a + b, 0) : 0;
+        const avgSpeed = duration > 0.1 ? (totalSpeedSum / duration) : 0;
 
         statsRow.innerHTML = `
             <span title="Top Speed">Top: <span class="text-white">${topSpeed.toFixed(1)}</span> kn</span>
