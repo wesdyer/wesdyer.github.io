@@ -800,96 +800,182 @@ function checkBoundaryExiting(boat) {
 }
 
 function getRightOfWay(b1, b2) {
-    // 0. Tacking (Rule 13) - Keep Clear while tacking
-    if (b1.raceState.isTacking && !b2.raceState.isTacking) return b2;
-    if (!b1.raceState.isTacking && b2.raceState.isTacking) return b1;
-    // If both tacking, standard collision rules (or both keep clear of each other? Rule 13 only says keep clear of other boats)
+    // Priority: Rule 14 -> 18 -> 13 -> 10 -> 11/12 -> 17/16
 
-    // 1. Mark Room (Rule 18) - First in zone has rights
-    if (b1.raceState.inZone && !b2.raceState.inZone) return b1;
-    if (!b1.raceState.inZone && b2.raceState.inZone) return b2;
-    if (b1.raceState.inZone && b2.raceState.inZone) {
-         if (b1.raceState.zoneEnterTime < b2.raceState.zoneEnterTime) return b1;
-         if (b2.raceState.zoneEnterTime < b1.raceState.zoneEnterTime) return b2;
-    }
+    // 1. Mark Room (Rule 18)
+    // Applies when:
+    // - Boats are at a mark (In Zone)
+    // - NOT on a beat to windward on opposite tacks (RRS 18.1.a)
+    // - NOT at a starting mark approaching to start (RRS 18.1.a) - Leg 0 excluded
+    const isRacing = state.race.status === 'racing';
+    const leg = b1.raceState.leg; // Assume same leg context
 
-    // 2. Opposite Tacks (Rule 10)
-    // boomSide > 0 (Left Boom) => Starboard Tack
+    // Check Tacks
     const t1 = b1.boomSide > 0 ? 1 : -1;
     const t2 = b2.boomSide > 0 ? 1 : -1;
+    const oppositeTacks = (t1 !== t2);
+    const isUpwind = (leg === 1 || leg === 3);
 
-    if (t1 !== t2) {
+    let rule18Applies = false;
+    if (isRacing && leg > 0 && leg < 5) {
+        // Exclusion: Opposite tacks on a beat to windward
+        if (!(isUpwind && oppositeTacks)) {
+             if (b1.raceState.inZone || b2.raceState.inZone) {
+                 rule18Applies = true;
+             }
+        }
+    }
+
+    // Helper: isClearAstern
+    const getClearAstern = (behind, ahead) => {
+         // A boat is Clear Astern if her hull is behind a line abeam from the aftermost point of the other boat's hull.
+         // Hull dimensions approx: Bow +25 (relative to center in forward dir), Stern -30 (relative to center in forward dir).
+         // Wait, drawing code:
+         // moveTo(0, -25) (Bow is Up/Negative Y in local space).
+         // lineTo(..., 30) (Stern is Down/Positive Y in local space).
+         // So Forward Vector (0, -1) points to Bow.
+
+         // ahead.heading is rotation.
+         // Vector Fwd: (sin(h), -cos(h)).
+         // Stern Position: center - Fwd * 30? No, Stern is at +30 local Y.
+         // Local (0, 30) -> World: x + 30*(-sin(h))? No.
+         // Rotation: x' = x*cos - y*sin, y' = x*sin + y*cos.
+         // Stern (0, 30): x' = -30*sin(h), y' = 30*cos(h).
+         // World Stern = Center + (-30sin, 30cos).
+         // This corresponds to Center - Fwd * 30.
+
+         const ahH = ahead.heading;
+         const fwdX = Math.sin(ahH), fwdY = -Math.cos(ahH); // Points to Bow
+         const sternX = ahead.x - fwdX * 30;
+         const sternY = ahead.y - fwdY * 30;
+
+         // We need to check if 'behind' boat's BOW is behind 'ahead' boat's STERN line.
+         // behind boat's Bow:
+         const bhH = behind.heading;
+         const bhFwdX = Math.sin(bhH), bhFwdY = -Math.cos(bhH);
+         const bowX = behind.x + bhFwdX * 25;
+         const bowY = behind.y + bhFwdY * 25;
+
+         // Vector from Ahead's Stern to Behind's Bow
+         const dx = bowX - sternX;
+         const dy = bowY - sternY;
+
+         // Project onto Ahead's Forward Vector
+         const dot = dx * fwdX + dy * fwdY;
+
+         // If dot < 0, Behind's Bow is "behind" the abeam line at Ahead's Stern.
+         return dot < 0;
+    };
+
+    if (rule18Applies) {
+        // Case A: One in zone, one out
+        if (b1.raceState.inZone !== b2.raceState.inZone) {
+            // Boat in zone has rights (established clear ahead or first in)
+            return b1.raceState.inZone ? b1 : b2;
+        }
+
+        // Case B: Both in zone
+        // Determine Inside/Outside based on distance to Mark
+        let activeIndices = (leg % 2 === 0) ? [0, 1] : [2, 3];
+        let targetMark = null;
+        let minD = Infinity;
+        for (const idx of activeIndices) {
+            const m = state.course.marks[idx];
+            const d = (b1.x - m.x)**2 + (b1.y - m.y)**2;
+            if (d < minD) { minD = d; targetMark = m; }
+        }
+
+        const b1Astern = getClearAstern(b1, b2);
+        const b2Astern = getClearAstern(b2, b1);
+        const overlapped = !b1Astern && !b2Astern;
+
+        if (overlapped) {
+            // Inside boat has ROW
+            // Check if both boats are aiming for the same mark.
+            // If they are far apart (different marks of gate), Rule 18 between them for THAT mark might be ambiguous,
+            // but assuming close proximity (collision likely), they round same mark.
+            const d1 = (b1.x - targetMark.x)**2 + (b1.y - targetMark.y)**2;
+            const d2 = (b2.x - targetMark.x)**2 + (b2.y - targetMark.y)**2;
+            return (d1 < d2) ? b1 : b2;
+        } else {
+            // Clear Ahead boat has ROW
+            return b1Astern ? b2 : b1;
+        }
+    }
+
+    // 2. Rule 13 (While Tacking)
+    // Overrides 10, 11, 12
+    if (b1.raceState.isTacking && !b2.raceState.isTacking) return b2;
+    if (!b1.raceState.isTacking && b2.raceState.isTacking) return b1;
+
+    // 3. Rule 10 (Opposite Tacks)
+    if (oppositeTacks) {
         return (t1 === 1) ? b1 : b2; // Starboard (1) wins
     }
 
-    // 3. Same Tack (Rule 11: Windward/Leeward & Rule 12: Clear Astern)
-    // Check Clear Astern (Rule 12)
-    // A boat is Clear Astern if its hull is behind a line abeam from the aftermost point of the other boat.
-    // Overlap exists if neither is clear astern.
-    // If NOT overlapped, Clear Astern keeps clear.
+    // 4. Same Tack (Rule 11 & 12)
+    const b1Astern = getClearAstern(b1, b2);
+    const b2Astern = getClearAstern(b2, b1);
 
-    const h1 = b1.heading, h2 = b2.heading;
-    // We assume courses are roughly similar if same tack.
+    if (b1Astern && !b2Astern) return b2; // b1 Astern -> b2 Ahead ROW
+    if (b2Astern && !b1Astern) return b1; // b2 Astern -> b1 Ahead ROW
 
-    // Helper: isClearAstern(behind, ahead)
-    const isClearAstern = (behind, ahead) => {
-        // Line abeam of ahead's stern.
-        // Ahead stern pos:
-        const sternOffset = 30;
-        const ahX = Math.sin(ahead.heading), ahY = -Math.cos(ahead.heading);
-        const sternX = ahead.x - ahX * sternOffset;
-        const sternY = ahead.y - ahY * sternOffset;
+    // Rule 11: Overlapped, Same Tack -> Leeward ROW
+    // Leeward is the side away from the wind.
+    // Determine relative position Left/Right of Wind Vector.
+    // Wind Vector points Downwind? No, state.wind.direction is "From".
+    // Wind Direction 0 (North) -> Blows South.
+    // We want the vector pointing INTO the wind (Upwind)? Or Downwind?
+    // "Left/Right of Wind". Usually relative to Look Downwind.
 
-        // Vector from stern to behind boat
-        const dx = behind.x - sternX;
-        const dy = behind.y - sternY;
+    // Let's use Upwind Vector: Points into the wind.
+    // W = (sin(wDir), -cos(wDir))?
+    // If wDir=0 (North), Wind comes from North. Upwind is North (0, -1).
+    // Vector: sin(0)=0, -cos(0)=-1. Correct.
 
-        // Project onto Ahead's forward vector. If < 0, it is behind the stern line.
-        // Forward vector (ahX, ahY).
-        // Actually, "Behind the line abeam".
-        // Abeam line is perpendicular to centerline.
-        // So dot product with Forward vector < 0 means behind the abeam line.
-        const dot = dx * ahX + dy * ahY;
+    // Perpendicular Right of Upwind Vector:
+    // R = (-uy, ux).
+    // R = (-(-1), 0) = (1, 0) = East.
+    // Correct. Right of North is East.
 
-        // Also check if "Clear" (not overlapping laterally?)
-        // Rule definition: "hull is behind a line abeam from the aftermost point..."
-        // If dot < 0, it IS clear astern. Even if laterally far.
-        // (Assuming "abeam" line extends infinitely).
-        return dot < -10; // Buffer
-    };
+    // Project Relative Position (B2 - B1) onto Right Vector.
+    // if dot > 0 => B2 is Right of B1 (relative to Upwind).
 
-    const b1Astern = isClearAstern(b1, b2);
-    const b2Astern = isClearAstern(b2, b1);
+    // Starboard Tack (Wind from Right):
+    // Boat heading NW. Wind N.
+    // Leeward side is Left (West). Windward side is Right (East).
+    // If B2 is Right of B1 => B2 is Windward. B1 is Leeward.
+    // B1 (Leeward) has ROW.
 
-    if (b1Astern && !b2Astern) return b2; // b1 Clear Astern -> Keeps Clear -> b2 ROW
-    if (b2Astern && !b1Astern) return b1; // b2 Clear Astern -> Keeps Clear -> b1 ROW
+    // Port Tack (Wind from Left):
+    // Boat heading NE. Wind N.
+    // Leeward side is Right (East). Windward side is Left (West).
+    // If B2 is Right of B1 => B2 is Leeward. B1 is Windward.
+    // B2 (Leeward) has ROW.
 
-    // If Overlapped (Rule 11): Windward gives way to Leeward.
-    // Determine Windward side based on Tack.
     const dx = b2.x - b1.x;
     const dy = b2.y - b1.y;
     const wDir = state.wind.direction;
 
-    // Wind Flow Vector (To Direction)
-    // wDir 0 is From North (Flow South: 0, 1)
-    const fx = -Math.sin(wDir);
-    const fy = Math.cos(wDir);
+    const ux = Math.sin(wDir);
+    const uy = -Math.cos(wDir);
 
-    // Cross Product (Flow x RelPos) to determine Left/Right
-    // cp > 0 => Right of Flow (Starboard Side)
-    // cp < 0 => Left of Flow (Port Side)
-    const cp = fx * dy - fy * dx;
+    // Right Vector
+    const rx = -uy;
+    const ry = ux;
+
+    const dotRight = dx * rx + dy * ry;
 
     if (t1 === 1) { // Starboard Tack
-        // Windward Side is Right (Starboard). Leeward Side is Left (Port).
-        // If cp > 0 (b2 is Right of Flow -> West -> Leeward), b2 (Leeward) ROW.
-        // If cp < 0 (b2 is Left of Flow -> East -> Windward), b1 (Leeward) ROW.
-        return (cp > 0) ? b2 : b1;
+        // Wind from Right. Leeward is Left.
+        // dotRight > 0 => b2 is Right (Windward). b1 is Leeward.
+        // b1 has ROW.
+        return (dotRight > 0) ? b1 : b2;
     } else { // Port Tack
-        // Windward Side is Left (Port). Leeward Side is Right (Starboard).
-        // If cp > 0 (b2 is Right of Flow -> West -> Windward), b1 (Leeward) ROW.
-        // If cp < 0 (b2 is Left of Flow -> East -> Leeward), b2 (Leeward) ROW.
-        return (cp > 0) ? b1 : b2;
+        // Wind from Left. Leeward is Right.
+        // dotRight > 0 => b2 is Right (Leeward). b1 is Windward.
+        // b2 has ROW.
+        return (dotRight > 0) ? b2 : b1;
     }
 }
 
