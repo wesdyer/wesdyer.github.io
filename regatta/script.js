@@ -3786,15 +3786,11 @@ function drawBoatIndicator(ctx, boat) {
     // Orange: Net Loss (Local Wind < Base Wind)
     let speedColor = '#ffffff';
     const localWind = getWindAt(boat.x, boat.y);
-    const isBoost = localWind.speed > state.wind.speed;
-    const isLoss = localWind.speed < state.wind.speed;
+    const isBoost = localWind.speed > state.wind.speed + 0.1;
+    const isLoss = localWind.speed < state.wind.speed - 0.1;
 
     if (boat.raceState.penalty || boat.badAirIntensity > 0.05) {
         speedColor = '#ef4444';
-    } else if (isBoost) {
-        speedColor = '#4ade80';
-    } else if (isLoss) {
-        speedColor = '#fb923c'; // Orange-400
     }
 
     ctx.fillStyle = speedColor;
@@ -3899,8 +3895,8 @@ function draw() {
     if (frameCount % 10 === 0) {
         updateLeaderboard();
 
-        const isBoost = localWind.speed > state.wind.speed;
-        const isLoss = localWind.speed < state.wind.speed;
+        const isBoost = localWind.speed > state.wind.speed + 0.1;
+        const isLoss = localWind.speed < state.wind.speed - 0.1;
 
         if (UI.speed) {
             UI.speed.textContent = (player.speed*4).toFixed(1);
@@ -3910,10 +3906,6 @@ function draw() {
 
             if (player.raceState.penalty || player.badAirIntensity > 0.05) {
                 UI.speed.classList.add('text-red-400');
-            } else if (isBoost) {
-                UI.speed.classList.add('text-green-400');
-            } else if (isLoss) {
-                UI.speed.classList.add('text-orange-400');
             } else {
                 UI.speed.classList.add('text-white');
             }
@@ -3930,7 +3922,7 @@ function draw() {
              } else if (isBoost) {
                  UI.windSpeed.classList.add('text-green-400');
              } else if (isLoss) {
-                 UI.windSpeed.classList.add('text-orange-400');
+                UI.windSpeed.classList.add('text-red-400');
              } else {
                  UI.windSpeed.classList.add('text-white');
              }
