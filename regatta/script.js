@@ -591,7 +591,8 @@ const Sound = {
     playPenalty: function() {
         if (!settings.soundEnabled) return;
         this.init();
-        this.playTone(100, 0.5, 'sawtooth');
+        this.playTone(150, 0.15, 'sawtooth', 0);
+        this.playTone(150, 0.15, 'sawtooth', 0.2);
     },
 
     playGateClear: function() {
@@ -1463,8 +1464,9 @@ function triggerPenalty(boat) {
     if (!boat.raceState.penalty) {
         boat.raceState.penalty = true;
         boat.raceState.totalPenalties++; // Only increment start of penalty
-        if (boat.isPlayer) Sound.playPenalty();
     }
+
+    if (boat.isPlayer) Sound.playPenalty();
 
     // Always reset timer to 10s on new penalty trigger
     boat.raceState.penaltyTimer = 10.0;
