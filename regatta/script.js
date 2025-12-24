@@ -1,7 +1,7 @@
 // Game Configuration
 const CONFIG = {
     turnSpeed: 0.01, // Radians per frame (approx) -> adjusted for dt in update
-    turnPenalty: 0.995,
+    turnPenalty: 0.999,
     cameraPanSpeed: 1.25,
     cameraRotateSpeed: 0.01,
     windSpeed: 5,
@@ -2094,8 +2094,18 @@ function updateBoat(boat, dt) {
         boat.luffing = false;
     }
 
-    const speedAlpha = 1 - Math.pow(0.995, timeScale);
+    // Smoother speed changes (Higher inertia)
+    // 0.995 -> 0.998 reduces speed decay when drive is lost (gybes/tacks)
+    const speedAlpha = 1 - Math.pow(0.998, timeScale);
     boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
+
+    // Irons Penalty (Extra drag when head-to-wind)
+    // angleToWind is in radians. 0.5 rad is approx 28 degrees.
+    if (angleToWind < 0.5) {
+        // Apply stronger drag deep in irons to maintain tacking difficulty
+        // despite higher inertia.
+        boat.speed *= Math.pow(0.993, timeScale);
+    }
 
     // Rudder drag
     if (boat.isPlayer && (state.keys.ArrowLeft || state.keys.ArrowRight)) {
