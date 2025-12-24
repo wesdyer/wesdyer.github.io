@@ -415,7 +415,7 @@ function createGust(x, y, type, initial = false) {
         type, x, y, vx, vy,
         maxRadiusX, maxRadiusY,
         radiusX: 10, radiusY: 10, // Start small, will update in first frame
-        rotation: windDir,
+        rotation: windDir + Math.PI / 2,
         speedDelta, dirDelta,
         duration,
         age
