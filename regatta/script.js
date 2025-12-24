@@ -1381,7 +1381,12 @@ function getRightOfWay(b1, b2) {
         }
 
         // Case B: Both in zone
-        // Determine Inside/Outside based on distance to Mark
+        // The first boat into the mark zone has rights over later entrants
+        if (Math.abs(b1.raceState.zoneEnterTime - b2.raceState.zoneEnterTime) > 0.001) {
+            return (b1.raceState.zoneEnterTime < b2.raceState.zoneEnterTime) ? b1 : b2;
+        }
+
+        // Fallback (Simultaneous entry): Determine Inside/Outside based on distance to Mark
         let activeIndices = (leg % 2 === 0) ? [0, 1] : [2, 3];
         let targetMark = null;
         let minD = Infinity;
@@ -1391,22 +1396,9 @@ function getRightOfWay(b1, b2) {
             if (d < minD) { minD = d; targetMark = m; }
         }
 
-        const b1Astern = getClearAstern(b1, b2);
-        const b2Astern = getClearAstern(b2, b1);
-        const overlapped = !b1Astern && !b2Astern;
-
-        if (overlapped) {
-            // Inside boat has ROW
-            // Check if both boats are aiming for the same mark.
-            // If they are far apart (different marks of gate), Rule 18 between them for THAT mark might be ambiguous,
-            // but assuming close proximity (collision likely), they round same mark.
-            const d1 = (b1.x - targetMark.x)**2 + (b1.y - targetMark.y)**2;
-            const d2 = (b2.x - targetMark.x)**2 + (b2.y - targetMark.y)**2;
-            return (d1 < d2) ? b1 : b2;
-        } else {
-            // Clear Ahead boat has ROW
-            return b1Astern ? b2 : b1;
-        }
+        const d1 = (b1.x - targetMark.x)**2 + (b1.y - targetMark.y)**2;
+        const d2 = (b2.x - targetMark.x)**2 + (b2.y - targetMark.y)**2;
+        return (d1 < d2) ? b1 : b2; // Inside boat wins
     }
 
     // 2. Rule 13 (While Tacking)
