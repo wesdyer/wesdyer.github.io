@@ -198,6 +198,9 @@ class Boat {
         this.spinnaker = false;
         this.spinnakerDeployProgress = 0;
 
+        this.opacity = 1.0;
+        this.fadeTimer = 10.0;
+
         // Colors
         if (config) {
              this.colors = {
@@ -221,6 +224,7 @@ class Boat {
             penalty: false,
             penaltyProgress: 0, // Deprecated but kept for compatibility if needed
             penaltyTimer: 0,
+            totalPenalties: 0,
             finished: false,
             finishTime: 0,
             startTimeDisplay: 0,
@@ -498,6 +502,9 @@ const UI = {
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
     rulesStatus: document.getElementById('hud-rules-status'),
+    resultsOverlay: document.getElementById('results-overlay'),
+    resultsList: document.getElementById('results-list'),
+    resultsRestartButton: document.getElementById('results-restart-button'),
     boatRows: {}
 };
 
@@ -604,6 +611,7 @@ if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.prev
 if (UI.settingsButton) UI.settingsButton.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.settingsButton.blur(); });
 if (UI.closeSettings) UI.closeSettings.addEventListener('click', () => toggleSettings(false));
 if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSettings(false));
+if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
 
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(state.wind.speed); });
 if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { settings.bgSoundEnabled = e.target.checked; saveSettings(); Sound.updateWindSound(state.wind.speed); });
@@ -980,40 +988,62 @@ function getRightOfWay(b1, b2) {
 }
 
 function updateAI(boat, dt) {
-    if (boat.isPlayer) return;
+    if (boat.isPlayer && !boat.raceState.finished) return;
 
     const timeScale = dt * 60;
     const windDir = state.wind.direction;
-    const waypoint = boat.raceState.nextWaypoint;
+    let targetX, targetY;
 
-    // Default target: Center of Gate (Pass between marks)
-    let targetX = waypoint.x;
-    let targetY = waypoint.y;
-
-    const marks = state.course.marks;
-    if (marks && marks.length >= 4) {
-        // Identify active gate based on leg
-        let indices = (boat.raceState.leg === 0 || boat.raceState.leg === 2 || boat.raceState.leg === 4) ? [0, 1] : [2, 3];
-
-        if (boat.raceState.isRounding) {
-            const m1 = marks[indices[0]];
-            const m2 = marks[indices[1]];
-            const d1 = (boat.x - m1.x) ** 2 + (boat.y - m1.y) ** 2;
-            const d2 = (boat.x - m2.x) ** 2 + (boat.y - m2.y) ** 2;
-            const targetMark = (d1 < d2) ? m1 : m2;
-
-            const cx = (m1.x + m2.x) / 2;
-            const cy = (m1.y + m2.y) / 2;
-            // Aim wide of the mark to ensure crossing the extension line
-            const vx = targetMark.x - cx;
-            const vy = targetMark.y - cy;
-
-            targetX = targetMark.x + vx;
-            targetY = targetMark.y + vy;
+    if (boat.raceState.finished) {
+        // Target nearest boundary point
+        const b = state.course.boundary;
+        if (b) {
+            const dx = boat.x - b.x;
+            const dy = boat.y - b.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist > 0.1) {
+                 targetX = b.x + (dx/dist) * (b.radius + 500); // Aim outside
+                 targetY = b.y + (dy/dist) * (b.radius + 500);
+            } else {
+                 targetX = boat.x + 1000;
+                 targetY = boat.y;
+            }
         } else {
-            // Aim for the midpoint to ensure passing between marks
-            targetX = (marks[indices[0]].x + marks[indices[1]].x) / 2;
-            targetY = (marks[indices[0]].y + marks[indices[1]].y) / 2;
+            targetX = boat.x + 1000;
+            targetY = boat.y;
+        }
+    } else {
+        const waypoint = boat.raceState.nextWaypoint;
+
+        // Default target: Center of Gate (Pass between marks)
+        targetX = waypoint.x;
+        targetY = waypoint.y;
+
+        const marks = state.course.marks;
+        if (marks && marks.length >= 4) {
+            // Identify active gate based on leg
+            let indices = (boat.raceState.leg === 0 || boat.raceState.leg === 2 || boat.raceState.leg === 4) ? [0, 1] : [2, 3];
+
+            if (boat.raceState.isRounding) {
+                const m1 = marks[indices[0]];
+                const m2 = marks[indices[1]];
+                const d1 = (boat.x - m1.x) ** 2 + (boat.y - m1.y) ** 2;
+                const d2 = (boat.x - m2.x) ** 2 + (boat.y - m2.y) ** 2;
+                const targetMark = (d1 < d2) ? m1 : m2;
+
+                const cx = (m1.x + m2.x) / 2;
+                const cy = (m1.y + m2.y) / 2;
+                // Aim wide of the mark to ensure crossing the extension line
+                const vx = targetMark.x - cx;
+                const vy = targetMark.y - cy;
+
+                targetX = targetMark.x + vx;
+                targetY = targetMark.y + vy;
+            } else {
+                // Aim for the midpoint to ensure passing between marks
+                targetX = (marks[indices[0]].x + marks[indices[1]].x) / 2;
+                targetY = (marks[indices[0]].y + marks[indices[1]].y) / 2;
+            }
         }
     }
 
@@ -1216,6 +1246,8 @@ function triggerPenalty(boat) {
         if (boat.isPlayer) Sound.playPenalty();
     }
 
+    boat.raceState.totalPenalties++;
+
     // Always reset timer to 10s on new penalty trigger
     boat.raceState.penaltyTimer = 10.0;
 
@@ -1228,10 +1260,25 @@ function triggerPenalty(boat) {
 function updateBoat(boat, dt) {
     const timeScale = dt * 60;
 
-    // AI Logic
-    if (!boat.isPlayer) {
+    if (boat.raceState.finished) {
+        // Fade out logic
+        boat.fadeTimer -= dt;
+        if (boat.fadeTimer < 2.0) {
+            boat.opacity = Math.max(0, boat.fadeTimer / 2.0);
+        }
+        if (boat.fadeTimer <= 0) {
+            boat.opacity = 0;
+            // Stop updating completely if gone?
+            // For now, continue to update position to allow camera to detach naturally
+        }
+    }
+
+    // AI Logic or Player Input
+    if (!boat.isPlayer || boat.raceState.finished) {
         updateAI(boat, dt);
-    } else {
+    }
+
+    if (boat.isPlayer && !boat.raceState.finished) {
         // Player Input
         const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale;
         if (state.keys.ArrowLeft) boat.heading -= turnRate;
@@ -1716,9 +1763,12 @@ function checkBoatCollisions(dt) {
     const broadRadius = 40;
     for (let i = 0; i < state.boats.length; i++) {
         const b1 = state.boats[i];
+        if (b1.raceState.finished && b1.fadeTimer <= 0) continue;
         const poly1 = getHullPolygon(b1);
         for (let j = i + 1; j < state.boats.length; j++) {
             const b2 = state.boats[j];
+            if (b2.raceState.finished && b2.fadeTimer <= 0) continue;
+
             const dx = b2.x - b1.x, dy = b2.y - b1.y;
             if (dx*dx + dy*dy > (broadRadius*2)**2) continue;
 
@@ -1749,7 +1799,8 @@ function checkBoatCollisions(dt) {
                 b1.speed *= (friction - (friction - impactFactor) * impact1);
                 b2.speed *= (friction - (friction - impactFactor) * impact2);
 
-                if (state.race.status === 'racing') {
+                // No penalties if either boat is finished
+                if (state.race.status === 'racing' && !b1.raceState.finished && !b2.raceState.finished) {
                     const rowBoat = getRightOfWay(b1, b2);
                     if (rowBoat === b1) triggerPenalty(b2);
                     else if (rowBoat === b2) triggerPenalty(b1);
@@ -1859,8 +1910,25 @@ function update(dt) {
 
     if (state.camera.messageTimer > 0) state.camera.messageTimer -= dt;
     if (state.camera.target === 'boat') {
-        state.camera.x += (player.x - state.camera.x) * 0.1;
-        state.camera.y += (player.y - state.camera.y) * 0.1;
+        if (player.raceState.finished && player.fadeTimer <= 0) {
+             state.camera.target = 'finish';
+             showResults();
+        } else {
+            state.camera.x += (player.x - state.camera.x) * 0.1;
+            state.camera.y += (player.y - state.camera.y) * 0.1;
+        }
+    } else if (state.camera.target === 'finish') {
+        // Focus on Finish Line center
+        let indices = [0, 1];
+        if (state.course.marks && state.course.marks.length >= 2) {
+             const m1 = state.course.marks[0], m2 = state.course.marks[1];
+             const tx = (m1.x+m2.x)/2, ty = (m1.y+m2.y)/2;
+             state.camera.x += (tx - state.camera.x) * 0.05;
+             state.camera.y += (ty - state.camera.y) * 0.05;
+             // Rotate to face upwind (North, 0) for better view of finishers
+             let diff = normalizeAngle(0 - state.camera.rotation);
+             state.camera.rotation += diff * 0.05;
+        }
     }
 
     // Particles
@@ -1938,7 +2006,10 @@ function drawParticles(ctx, layer) {
 
 // Drawing (Refactored for Boat object)
 function drawBoat(ctx, boat) {
+    if (boat.opacity !== undefined && boat.opacity <= 0) return;
     ctx.save();
+    if (boat.opacity !== undefined) ctx.globalAlpha = boat.opacity;
+
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.beginPath(); ctx.ellipse(5, 5, 12, 28, 0, 0, Math.PI * 2); ctx.fill();
@@ -1969,7 +2040,7 @@ function drawBoat(ctx, boat) {
         else { ctx.translate(0, -5); ctx.rotate(boat.sailAngle); }
 
         const sailColor = boat.isPlayer ? settings.sailColor : boat.colors.sail;
-        ctx.globalAlpha = 0.9;
+        ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
         ctx.fillStyle = sailColor || '#ffffff';
         ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
 
@@ -2003,7 +2074,7 @@ function drawBoat(ctx, boat) {
         ctx.save();
         ctx.translate(0, -28); ctx.rotate(boat.sailAngle);
         const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
-        ctx.globalAlpha = 0.9;
+        ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
         ctx.fillStyle = spinColor || '#ef4444';
         ctx.strokeStyle = spinColor || '#ef4444';
         ctx.lineWidth = 1;
@@ -2613,7 +2684,118 @@ function getBoatProgress(boat) {
     return progress;
 }
 
+function showResults() {
+    if (!UI.resultsOverlay || !UI.resultsList) return;
+
+    UI.resultsOverlay.classList.remove('hidden');
+    UI.leaderboard.classList.add('hidden');
+
+    // Sort by finish order (or progress)
+    const sorted = [...state.boats].sort((a, b) => {
+        if (a.raceState.finished && !b.raceState.finished) return -1;
+        if (!a.raceState.finished && b.raceState.finished) return 1;
+        if (a.raceState.finished && b.raceState.finished) return a.raceState.finishTime - b.raceState.finishTime;
+        return getBoatProgress(b) - getBoatProgress(a);
+    });
+
+    UI.resultsList.innerHTML = '';
+
+    sorted.forEach((boat, index) => {
+        // Show all boats
+        const row = document.createElement('div');
+        row.className = "flex items-center p-4 bg-slate-700/50 rounded-xl border border-slate-600/50 backdrop-blur-sm shadow-lg gap-6";
+
+        // Rank
+        const rankDiv = document.createElement('div');
+        rankDiv.className = "text-4xl font-black text-slate-400 w-12 text-center italic";
+        rankDiv.textContent = index + 1;
+        if (index === 0) rankDiv.className += " text-yellow-400";
+        else if (index === 1) rankDiv.className += " text-gray-300";
+        else if (index === 2) rankDiv.className += " text-amber-700";
+
+        // Image
+        const imgDiv = document.createElement('div');
+        imgDiv.className = "w-16 h-16 shrink-0";
+        if (boat.isPlayer) {
+             // Star Icon
+             const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+             star.setAttribute("viewBox", "0 0 24 24");
+             star.setAttribute("class", "w-full h-full drop-shadow-md");
+             const color = isVeryDark(settings.hullColor) ? settings.spinnakerColor : settings.hullColor;
+             star.setAttribute("fill", color);
+             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+             path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
+             star.appendChild(path);
+             imgDiv.appendChild(star);
+        } else {
+             const img = document.createElement('img');
+             img.src = boat.name.toLowerCase() + ".png";
+             img.className = "w-full h-full rounded-full border-4 object-cover bg-slate-900 shadow-md";
+             const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
+             img.style.borderColor = color;
+             imgDiv.appendChild(img);
+        }
+
+        // Details
+        const details = document.createElement('div');
+        details.className = "flex-1 flex flex-col justify-center";
+
+        const nameRow = document.createElement('div');
+        nameRow.className = "flex items-baseline gap-3 mb-1";
+
+        const name = document.createElement('span');
+        name.className = "text-2xl font-bold text-white tracking-wide";
+        name.textContent = boat.name;
+        if (boat.isPlayer) name.className += " text-yellow-300";
+
+        const finishTime = document.createElement('span');
+        finishTime.className = "text-xl font-mono text-emerald-400 font-bold";
+        if (boat.raceState.finished) {
+            finishTime.textContent = formatTime(boat.raceState.finishTime);
+        } else {
+            finishTime.textContent = "Racing...";
+            finishTime.className = "text-sm font-mono text-slate-400 animate-pulse";
+        }
+
+        nameRow.appendChild(name);
+        nameRow.appendChild(finishTime);
+
+        // Stats Row
+        const statsRow = document.createElement('div');
+        statsRow.className = "flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-300 font-mono uppercase tracking-wider";
+
+        const totalDist = boat.raceState.legDistances.reduce((a, b) => a + b, 0);
+        const topSpeed = Math.max(...boat.raceState.legTopSpeeds);
+        const totalMoves = boat.raceState.legManeuvers.reduce((a, b) => a + b, 0);
+
+        // Avg Speed Approximation
+        const duration = boat.raceState.finished ? boat.raceState.finishTime : state.race.timer;
+        const avgSpeed = duration > 10 ? (totalDist / duration) * 1.94 : 0;
+
+        statsRow.innerHTML = `
+            <span title="Top Speed">Top: <span class="text-white">${topSpeed.toFixed(1)}</span> kn</span>
+            <span title="Avg Speed">Avg: <span class="text-white">${avgSpeed.toFixed(1)}</span> kn</span>
+            <span title="Total Distance">Dist: <span class="text-white">${Math.round(totalDist)}</span> m</span>
+            <span title="Maneuvers">Moves: <span class="text-white">${totalMoves}</span></span>
+            <span title="Penalties" class="${boat.raceState.totalPenalties > 0 ? 'text-red-400' : 'text-slate-500'}">Penalties: <span class="text-white">${boat.raceState.totalPenalties}</span></span>
+        `;
+
+        details.appendChild(nameRow);
+        details.appendChild(statsRow);
+
+        row.appendChild(rankDiv);
+        row.appendChild(imgDiv);
+        row.appendChild(details);
+
+        UI.resultsList.appendChild(row);
+    });
+}
+
 function updateLeaderboard() {
+    if (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')) {
+        showResults();
+        return;
+    }
     if (!UI.leaderboard || !state.boats.length) return;
     // Calculate L for distance estimates
     const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
@@ -2786,6 +2968,7 @@ function updateLeaderboard() {
 
 function drawBoatIndicator(ctx, boat) {
     if (boat.isPlayer) return;
+    if (boat.opacity !== undefined && boat.opacity <= 0) return;
 
     const rank = (boat.lbRank !== undefined) ? (boat.lbRank + 1) : "-";
     const speed = (boat.speed * 4).toFixed(1);
@@ -2876,7 +3059,12 @@ function draw() {
 
     // Draw Indicators
     for (const boat of state.boats) {
-        drawBoatIndicator(ctx, boat);
+        if (boat.opacity === undefined || boat.opacity > 0.1) {
+             ctx.save();
+             if (boat.opacity !== undefined) ctx.globalAlpha = boat.opacity;
+             drawBoatIndicator(ctx, boat);
+             ctx.restore();
+        }
     }
 
     ctx.restore();
@@ -3039,6 +3227,7 @@ function initCourse() {
 
 function resetGame() {
     loadSettings();
+    if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
     state.camera.target = 'boat';
     state.wind.baseSpeed = 8 + Math.random()*10;
     state.wind.speed = state.wind.baseSpeed;
