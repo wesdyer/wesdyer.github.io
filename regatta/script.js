@@ -58,6 +58,7 @@ const DEFAULT_SETTINGS = {
     manualTrim: false,
     soundEnabled: true,
     bgSoundEnabled: true,
+    musicEnabled: false,
     penaltiesEnabled: true,
     cameraMode: 'heading',
     hullColor: '#f1f5f9',
@@ -437,6 +438,10 @@ function drawDisturbedAir(ctx) {
 // Sound System
 const Sound = {
     ctx: null,
+    musicBuffer: null,
+    musicSource: null,
+    musicGain: null,
+    musicLoading: false,
 
     init: function() {
         if (!this.ctx) {
@@ -447,6 +452,55 @@ const Sound = {
         }
         if (this.ctx && this.ctx.state === 'suspended') {
             this.ctx.resume();
+        }
+        this.updateMusic();
+    },
+
+    loadMusic: function() {
+        if (this.musicBuffer || this.musicLoading) return Promise.resolve();
+        if (!this.ctx) return Promise.resolve();
+        this.musicLoading = true;
+        return fetch('breezy-race.mp3')
+            .then(response => response.arrayBuffer())
+            .then(arrayBuffer => this.ctx.decodeAudioData(arrayBuffer))
+            .then(audioBuffer => {
+                this.musicBuffer = audioBuffer;
+                this.musicLoading = false;
+            })
+            .catch(e => {
+                console.error("Error loading music:", e);
+                this.musicLoading = false;
+            });
+    },
+
+    updateMusic: function() {
+        if (!this.ctx) return;
+
+        if (!settings.musicEnabled) {
+            if (this.musicSource) {
+                try { this.musicSource.stop(); } catch(e) {}
+                this.musicSource = null;
+            }
+            return;
+        }
+
+        if (settings.musicEnabled && !this.musicSource) {
+             this.loadMusic().then(() => {
+                 if (!settings.musicEnabled) return;
+                 if (this.musicSource) return;
+                 if (!this.musicBuffer) return;
+
+                 this.musicSource = this.ctx.createBufferSource();
+                 this.musicSource.buffer = this.musicBuffer;
+                 this.musicSource.loop = true;
+
+                 this.musicGain = this.ctx.createGain();
+                 this.musicGain.gain.value = 0.3;
+
+                 this.musicSource.connect(this.musicGain);
+                 this.musicGain.connect(this.ctx.destination);
+                 this.musicSource.start(0);
+             });
         }
     },
 
@@ -595,6 +649,7 @@ const UI = {
     saveSettings: document.getElementById('save-settings'),
     settingSound: document.getElementById('setting-sound'),
     settingBgSound: document.getElementById('setting-bg-sound'),
+    settingMusic: document.getElementById('setting-music'),
     settingPenalties: document.getElementById('setting-penalties'),
     settingNavAids: document.getElementById('setting-navaids'),
     settingTrim: document.getElementById('setting-trim'),
@@ -639,6 +694,7 @@ function applySettings() {
 
     if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
     if (UI.settingBgSound) UI.settingBgSound.checked = settings.bgSoundEnabled;
+    if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
     if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
@@ -720,6 +776,7 @@ if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (
 
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(state.wind.speed); });
 if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { settings.bgSoundEnabled = e.target.checked; saveSettings(); Sound.updateWindSound(state.wind.speed); });
+if (UI.settingMusic) UI.settingMusic.addEventListener('change', (e) => { settings.musicEnabled = e.target.checked; saveSettings(); Sound.init(); });
 if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => { settings.penaltiesEnabled = e.target.checked; saveSettings(); });
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.manualTrim = e.target.checked; saveSettings(); });
@@ -796,6 +853,12 @@ window.addEventListener('keydown', (e) => {
         const col = settings.penaltiesEnabled ? "text-green-400" : "text-red-400";
         showRaceMessage(msg, col, `border-${settings.penaltiesEnabled ? 'green' : 'red'}-400/50`);
         setTimeout(hideRaceMessage, 1500);
+    }
+    if (e.key === 'F5') {
+        e.preventDefault();
+        settings.musicEnabled = !settings.musicEnabled;
+        saveSettings();
+        Sound.init();
     }
     if (e.key === '`' || e.code === 'Backquote') {
         state.showNavAids = !state.showNavAids;
