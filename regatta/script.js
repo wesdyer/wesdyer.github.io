@@ -946,23 +946,18 @@ function setupPreRaceOverlay() {
 
             // Personality
             const config = AI_CONFIG.find(c => c.name === boat.name);
-            const pText = config ? config.personality : "Unknown";
+            let pText = config ? config.personality : "Unknown";
+            const words = pText.split(' ');
+            if (words.length > 10) {
+                pText = words.slice(0, 10).join(' ') + '...';
+            }
 
             const desc = document.createElement('div');
-            desc.className = "text-xs text-slate-300 italic truncate";
-            desc.textContent = `"${pText}"`;
-
-            const stats = document.createElement('div');
-            stats.className = "flex gap-1 mt-1 text-[10px] font-mono text-slate-400";
-            stats.innerHTML = `
-                <span title="Boat Handling">Handling:${boat.stats.boatHandling}</span>
-                <span title="Wind Sense">Tactics:${boat.stats.windSense}</span>
-                <span title="Aggression">Aggressive:${boat.stats.aggression}</span>
-            `;
+            desc.className = "text-xs text-slate-300 italic";
+            desc.textContent = pText;
 
             info.appendChild(nameRow);
             info.appendChild(desc);
-            info.appendChild(stats);
 
             card.appendChild(img);
             card.appendChild(info);
@@ -1119,11 +1114,6 @@ window.addEventListener('click', () => {
 
 window.addEventListener('keydown', (e) => {
     if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
-
-    if (state.race.status === 'waiting') {
-        startRace();
-        return;
-    }
 
     let key = e.key;
     if (key === 'a' || key === 'A') key = 'ArrowLeft';
