@@ -103,6 +103,43 @@ const Sayings = {
     }
 };
 
+// Helper for Risk Prediction (CPA)
+function getRiskMetrics(boat, other) {
+    const dx = other.x - boat.x;
+    const dy = other.y - boat.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+
+    // Relative Velocity (units/sec)
+    // boat.velocity is updated in updateBoat, but if it's not ready, estimate from heading/speed
+    const vx1 = (Math.sin(boat.heading) * boat.speed) * 60;
+    const vy1 = (-Math.cos(boat.heading) * boat.speed) * 60;
+
+    const vx2 = (Math.sin(other.heading) * other.speed) * 60;
+    const vy2 = (-Math.cos(other.heading) * other.speed) * 60;
+
+    const relPx = dx;
+    const relPy = dy;
+    const relVx = vx2 - vx1;
+    const relVy = vy2 - vy1;
+
+    const vSq = relVx*relVx + relVy*relVy;
+
+    let tCPA = 0;
+    let distCPA = dist;
+
+    if (vSq > 0.001) {
+        const dot = relPx*relVx + relPy*relVy;
+        tCPA = -dot / vSq;
+        if (tCPA > 0) {
+            const cpaX = relPx + relVx * tCPA;
+            const cpaY = relPy + relVy * tCPA;
+            distCPA = Math.sqrt(cpaX*cpaX + cpaY*cpaY);
+        }
+    }
+
+    return { tCPA, distCPA, distCurrent: dist };
+}
+
 // AI Controller
 class BotController {
     constructor(boat) {
@@ -129,6 +166,11 @@ class BotController {
         this.tackCooldown = 0;
         this.preferredTack = 0; // 0=none, 1=starboard, -1=port
         
+        // Collision Avoidance State
+        this.riskState = 'LOW'; // LOW, MEDIUM, HIGH, IMMINENT
+        this.avoidanceRole = 'NONE'; // NONE, STAND_ON, GIVE_WAY
+        this.avoidanceCommitTimer = 0;
+
         // Staggered updates
         this.updateTimer = Math.random() * 0.2; 
     }
@@ -137,6 +179,9 @@ class BotController {
         this.updateTimer -= dt;
         if (this.updateTimer > 0) return;
         this.updateTimer = 0.1; // 10Hz updates
+
+        // Update Risk Assessment
+        this.updateRiskAssessment(dt);
 
         const isRacing = state.race.status === 'racing';
         const isPrestart = state.race.status === 'prestart';
@@ -592,6 +637,76 @@ class BotController {
         return { heading, speed };
     }
 
+    updateRiskAssessment(dt) {
+        // Decrement timer
+        if (this.avoidanceCommitTimer > 0) {
+            this.avoidanceCommitTimer -= dt;
+        }
+
+        // Find threats
+        let maxRisk = 'LOW';
+        let role = 'NONE';
+
+        // Filter nearby boats
+        const nearby = state.boats.filter(b => b !== this.boat && !b.raceState.finished);
+
+        for (const other of nearby) {
+            const metrics = getRiskMetrics(this.boat, other);
+
+            // Thresholds
+            let risk = 'LOW';
+            if (metrics.distCurrent < 300) {
+                if (metrics.distCPA < 60 && metrics.tCPA > 0 && metrics.tCPA < 5.0) {
+                     risk = 'MEDIUM';
+                }
+                if (metrics.distCPA < 40 && metrics.tCPA > 0 && metrics.tCPA < 3.0) {
+                     risk = 'HIGH';
+                }
+                if (metrics.distCurrent < 60 || (metrics.distCPA < 30 && metrics.tCPA > 0 && metrics.tCPA < 1.5)) {
+                     risk = 'IMMINENT';
+                }
+            }
+
+            if (risk !== 'LOW') {
+                // Determine Role
+                let rowBoat = null;
+                try {
+                     rowBoat = getRightOfWay(this.boat, other);
+                } catch(e) { }
+
+                const myRole = (rowBoat === this.boat) ? 'STAND_ON' : 'GIVE_WAY';
+
+                // Prioritize highest risk
+                const riskLevel = { 'LOW':0, 'MEDIUM':1, 'HIGH':2, 'IMMINENT':3 };
+                if (riskLevel[risk] > riskLevel[maxRisk]) {
+                    maxRisk = risk;
+                    role = myRole;
+                }
+            }
+        }
+
+        // Latching Logic: Prevent oscillation by holding state
+        if (this.avoidanceCommitTimer > 0) {
+            // If risk drops to LOW while committed, ignore it (hold previous state)
+            if (maxRisk === 'LOW') {
+                return;
+            }
+        }
+
+        this.riskState = maxRisk;
+        this.avoidanceRole = role;
+
+        // Trigger Commitment for Give-Way
+        if (maxRisk === 'MEDIUM' && role === 'GIVE_WAY') {
+             this.avoidanceCommitTimer = 2.0; // Commit/Refresh
+        } else if (maxRisk === 'HIGH' || maxRisk === 'IMMINENT') {
+             this.avoidanceCommitTimer = 2.0; // Also commit for higher risks
+        } else {
+             // If LOW (and we reached here, meaning timer expired), reset
+             this.avoidanceCommitTimer = 0;
+        }
+    }
+
     applyAvoidance(desiredHeading, speedRequest) {
         // If stuck (Wiggle Mode), ignore avoidance to force breakout
         if (this.wiggleActive) return desiredHeading;
@@ -616,8 +731,22 @@ class BotController {
 
         // Dynamic Safe Distance based on Liveness
         let safeDist = 80; // 40 radius * 2 (Normal)
+
+        // Tighter packing during start sequence
+        if (state.race.status === 'prestart' || this.boat.raceState.leg === 0) {
+            safeDist = 60;
+        }
+
         if (this.livenessState === 'recovery') safeDist = 50;
         if (this.livenessState === 'force') safeDist = 20;
+
+        // Symmetry Breaking: Differentiate Safety Bubbles (Only in Normal Liveness)
+        if (this.livenessState === 'normal' && this.avoidanceRole === 'GIVE_WAY') {
+            // Give-Way: Larger bubble to react early
+            if (this.riskState === 'MEDIUM' || this.riskState === 'HIGH') {
+                safeDist = 120;
+            }
+        }
 
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
@@ -625,6 +754,11 @@ class BotController {
             // Base Cost: Deviation from desired course
             // Non-linear cost to strongly prefer small deviations
             let cost = Math.pow(Math.abs(offset), 1.5) * 10; 
+
+            // Stand-On: Penalize large deviations (Hold Course)
+            if (this.avoidanceRole === 'STAND_ON' && this.riskState === 'MEDIUM') {
+                cost += Math.abs(offset) * 1000;
+            }
 
             // Project position at t=lookahead
             const vx = Math.sin(h) * speed;
@@ -647,8 +781,8 @@ class BotController {
             for (const other of state.boats) {
                 if (other === boat || other.raceState.finished) continue;
                 
-                const ovx = other.velocity.x * 60;
-                const ovy = other.velocity.y * 60;
+                const ovx = (other.velocity && other.velocity.x) ? other.velocity.x * 60 : Math.sin(other.heading)*other.speed*60;
+                const ovy = (other.velocity && other.velocity.y) ? other.velocity.y * 60 : -Math.cos(other.heading)*other.speed*60;
 
                 // Check along the path
                 for (let i = 0; i < points.length; i++) {
@@ -663,8 +797,19 @@ class BotController {
                     
                     if (distSq < safeDist * safeDist) {
                         boatCollision = true;
-                        const row = getRightOfWay(boat, other);
-                        if (row === other) ruleViolation = true;
+                        // Weight collision by distance (avoid closer/harder collisions more)
+                        cost += 500000 / (distSq + 10);
+
+                        // Strict Rule 14 Override for IMMINENT
+                        if (this.riskState === 'IMMINENT') {
+                             cost += 20000;
+                        } else {
+                            // Check Rules
+                            try {
+                                const row = getRightOfWay(boat, other);
+                                if (row === other) ruleViolation = true; // We are Give-Way
+                            } catch(e) {}
+                        }
                     } else if (distSq < 200 * 200 && this.livenessState === 'normal') {
                         // Soft avoidance (Proximity)
                         proximityCost += 5000 / distSq; 
