@@ -1498,6 +1498,7 @@ function setupPreRaceOverlay() {
 
     // Show Overlay
     UI.preRaceOverlay.classList.remove('hidden');
+    UI.preRaceOverlay.querySelectorAll('.overflow-y-auto').forEach(el => el.scrollTop = 0);
     UI.leaderboard.classList.add('hidden');
     UI.legInfo.parentElement.classList.add('hidden'); // Hide leg info
 
@@ -3864,6 +3865,7 @@ function showResults() {
     if (!UI.resultsOverlay || !UI.resultsList) return;
 
     UI.resultsOverlay.classList.remove('hidden');
+    UI.resultsOverlay.scrollTop = 0;
     UI.leaderboard.classList.add('hidden');
     Sound.updateMusic();
 
