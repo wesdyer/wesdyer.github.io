@@ -785,7 +785,7 @@ const DEFAULT_SETTINGS = {
 
 let settings = { ...DEFAULT_SETTINGS };
 
-// J/111 Polar Data
+// J/111 Polar Data (True Wind)
 const J111_POLARS = {
     angles: [0, 30, 38, 45, 52, 60, 75, 90, 110, 120, 135, 150, 180],
     speeds: {
@@ -816,6 +816,36 @@ const J111_POLARS = {
         20: {
             spinnaker: [0.0, 0.0, 1.2, 2.4, 3.6, 4.8, 6.5, 10.43, 10.87, 11.01, 10.81, 9.98, 8.88],
             nonSpinnaker: [0.0, 0.0, 8.2, 8.7, 9.26, 9.6, 9.98, 10.43, 9.77, 9.35, 8.4, 7.42, 6.66]
+        }
+    }
+};
+
+// J/111 Polar Data (Apparent Wind)
+const J111_POLARS_APP = {
+    "angles": [0, 10, 20, 30, 40, 50, 60, 80, 100, 120, 140, 160, 180],
+    "aws": [0, 5, 10, 15, 20, 25, 30, 35, 40],
+    "speeds": {
+        "spinnaker": {
+            "0": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "5": [0.0, 0.0, 0.0, 0.18, 2.32, 4.89, 5.38, 6.23, 6.53, 6.57, 6.74, 6.84, 6.12],
+            "10": [0.0, 0.0, 0.0, 0.03, 1.39, 4.99, 7.49, 8.63, 9.02, 8.82, 8.79, 8.57, 8.19],
+            "15": [0.0, 0.0, 0.0, 0.17, 1.8, 4.29, 7.73, 9.83, 10.7, 10.81, 10.5, 10.14, 9.66],
+            "20": [0.0, 0.0, 0.0, 0.05, 2.13, 4.36, 8.15, 11.2, 11.91, 12.06, 11.75, 11.51, 10.83],
+            "25": [0.0, 0.0, 0.0, 0.23, 2.34, 4.95, 7.47, 12.05, 13.16, 13.4, 12.95, 12.65, 11.92],
+            "30": [0.0, 0.0, 0.0, 0.06, 2.44, 5.22, 7.4, 13.0, 14.38, 14.76, 14.14, 13.63, 12.94],
+            "35": [0.0, 0.0, 0.0, 0.15, 2.7, 5.41, 7.86, 14.05, 15.48, 15.57, 14.57, 13.94, 13.26],
+            "40": [0.0, 0.0, 0.0, 0.07, 2.77, 5.7, 8.06, 15.02, 16.11, 0, 0, 0, 0]
+        },
+        "nonSpinnaker": {
+            "0": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+            "5": [0.0, 0.0, 0.55, 1.36, 5.21, 4.86, 4.73, 4.71, 4.62, 4.68, 4.53, 4.4, 4.22],
+            "10": [0.0, 0.0, 0.91, 1.6, 5.77, 6.43, 6.99, 7.27, 6.93, 6.49, 6.17, 5.9, 5.63],
+            "15": [0.0, 0.0, 1.75, 4.21, 7.8, 8.32, 8.62, 8.56, 8.46, 8.08, 7.39, 7.25, 6.91],
+            "20": [0.0, 0.0, 0.0, 1.92, 8.72, 9.06, 9.69, 9.91, 9.86, 9.22, 8.48, 8.1, 7.69],
+            "25": [0.0, 0.0, 0.0, 4.71, 9.33, 9.96, 10.68, 11.1, 10.83, 10.23, 9.28, 8.93, 8.47],
+            "30": [0.0, 0.0, 0.0, 1.72, 10.04, 10.77, 11.48, 12.1, 11.97, 11.22, 10.18, 9.78, 9.24],
+            "35": [0.0, 0.0, 0.0, 5.11, 10.75, 11.6, 12.33, 13.11, 13.09, 12.24, 10.95, 10.36, 9.77],
+            "40": [0.0, 0.0, 0.0, 2.51, 11.48, 12.31, 13.19, 14.13, 13.79, 12.49, 11.47, 0, 0]
         }
     }
 };
@@ -1928,6 +1958,55 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     return lower === upper ? s1 : s1 + (windSpeed - lower) / (upper - lower) * (s2 - s1);
 }
 
+function getTargetSpeedApparent(awaRadians, useSpinnaker, aws) {
+    const awaDeg = Math.abs(awaRadians) * (180 / Math.PI);
+    const angles = J111_POLARS_APP.angles;
+    const speeds = J111_POLARS_APP.aws; // [0, 5, 10, ... 40]
+
+    const getPolarSpeed = (ws) => {
+        const wsKey = String(ws);
+        const data = J111_POLARS_APP.speeds;
+        const sData = useSpinnaker ? data.spinnaker[wsKey] : data.nonSpinnaker[wsKey];
+        if (!sData) return 0; // fallback
+
+        for (let i = 0; i < angles.length - 1; i++) {
+            if (awaDeg >= angles[i] && awaDeg <= angles[i+1]) {
+                const t = (awaDeg - angles[i]) / (angles[i+1] - angles[i]);
+                return sData[i] + t * (sData[i+1] - sData[i]);
+            }
+        }
+        return sData[sData.length - 1];
+    };
+
+    if (aws <= 0) return 0;
+
+    // Find AWS bracket
+    let lower = 0, upper = 0;
+    for(let i=0; i<speeds.length-1; i++) {
+        if (aws >= speeds[i] && aws <= speeds[i+1]) {
+            lower = speeds[i]; upper = speeds[i+1]; break;
+        }
+    }
+    if (aws > speeds[speeds.length-1]) { lower=speeds[speeds.length-1]; upper=lower; }
+
+    if (lower === 0 && upper === 0 && aws > 0) {
+        // Between 0 and first step? Or aws > max?
+        if (aws > speeds[speeds.length-1]) {
+             // Extrapolate linearly based on last interval
+             const sMax = getPolarSpeed(speeds[speeds.length-1]);
+             const sPrev = getPolarSpeed(speeds[speeds.length-2]);
+             const slope = (sMax - sPrev) / (speeds[speeds.length-1] - speeds[speeds.length-2]);
+             return sMax + slope * (aws - speeds[speeds.length-1]);
+        }
+    }
+
+    const s1 = getPolarSpeed(lower);
+    const s2 = getPolarSpeed(upper);
+
+    if (lower === upper) return s1;
+    return s1 + (aws - lower) / (upper - lower) * (s2 - s1);
+}
+
 function checkBoundaryExiting(boat) {
     if (!state.course.boundary) return false;
     const b = state.course.boundary;
@@ -2217,6 +2296,25 @@ function updateBoat(boat, dt) {
     const localWind = getWindAt(boat.x, boat.y);
     const angleToWind = Math.abs(normalizeAngle(boat.heading - localWind.direction));
 
+    // Calculate Apparent Wind
+
+    // Boat Velocity Vector
+    const bvx = Math.sin(boat.heading) * boat.speed;
+    const bvy = -Math.cos(boat.heading) * boat.speed;
+
+    // Apparent Wind Vector (Blows From) = True Wind (Blows From) + Boat Velocity (Blows From)
+    // True Wind From Vector:
+    const twx = Math.sin(localWind.direction) * localWind.speed;
+    const twy = -Math.cos(localWind.direction) * localWind.speed;
+
+    // Apparent From Vector
+    const awx = twx + bvx;
+    const awy = twy + bvy;
+
+    const aws = Math.sqrt(awx*awx + awy*awy);
+    const awDir = Math.atan2(awx, -awy); // Direction FROM
+    const awa = Math.abs(normalizeAngle(boat.heading - awDir));
+
     // Update Turbulence Particles
     updateTurbulence(boat, dt);
 
@@ -2252,18 +2350,14 @@ function updateBoat(boat, dt) {
     }
 
     // Sail Logic
-    let relWind = normalizeAngle(localWind.direction - boat.heading);
+    // Use Apparent Wind for sail setting
+    let relWind = normalizeAngle(awDir - boat.heading);
     if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
 
     // Check Tacking (Rule 13)
-    // Tacking is defined as "from the moment she is beyond head to wind until she is on a close-hauled course".
-    // "Head to wind" means pointing directly into wind (angleToWind ~ 0).
-    // Close-hauled is ~45 deg.
-    // Simplified: If angleToWind is small (in irons), we are tacking.
-    if (angleToWind < Math.PI / 6) { // < 30 degrees
+    if (angleToWind < Math.PI / 6) { // < 30 degrees (Still use True Wind for "In Irons" check as per rules)
         boat.raceState.isTacking = true;
     } else {
-        // If we were tacking, check if we are on a close-hauled course (e.g. > 40 deg).
         if (boat.raceState.isTacking && angleToWind > Math.PI / 4.5) {
              boat.raceState.isTacking = false;
         }
@@ -2273,7 +2367,16 @@ function updateBoat(boat, dt) {
     boat.boomSide += (boat.targetBoomSide - boat.boomSide) * swingSpeed;
     if (Math.abs(boat.targetBoomSide - boat.boomSide) < 0.01) boat.boomSide = boat.targetBoomSide;
 
-    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
+    // Optimal Sail Angle based on AWA
+    // AWA is 0 at bow. Sail Angle is 0 at centerline.
+    // Optimal: AWA / 2 approx? No.
+    // Close hauled (AWA 25): Sail ~0-5.
+    // Reach (AWA 90): Sail ~45.
+    // Run (AWA 180): Sail ~90.
+    // Simple Model: Sail = max(0, AWA/2).
+    let optimalSailAngle = Math.max(0, awa * 0.5);
+
+    // Limits
     if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
 
     if (boat.manualTrim && boat.isPlayer) {
@@ -2298,12 +2401,18 @@ function updateBoat(boat, dt) {
     const jibFactor = Math.max(0, 1 - progress * 2);
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
-    const effectiveWind = localWind.speed * (1.0 - boat.badAirIntensity);
-    let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveWind);
-    let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveWind);
+    // Speed calculation using Apparent Wind
+    const effectiveWind = aws * (1.0 - boat.badAirIntensity); // AWS reduced by bad air?
+    // Bad air reduces TWS usually, but let's approximate it as reducing AWS
+
+    let targetKnotsJib = getTargetSpeedApparent(awa, false, effectiveWind);
+    let targetKnotsSpin = getTargetSpeedApparent(awa, true, effectiveWind);
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
 
     const actualMagnitude = Math.abs(boat.sailAngle);
+
+    // Trim Efficiency based on AWA
+    // Error = difference between actual sail angle and optimal (AWA/2)
     const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
     const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
     targetKnots *= trimEfficiency;
@@ -2913,11 +3022,20 @@ function update(dt) {
 
     // Scale variability based on course conditions
     // Shiftiness (0-1) controls directional variance amplitude
-    // Low: 0.05 rad (~3 deg), High: 0.4 rad (~23 deg)
-    const dirAmp = 0.05 + conditions.shiftiness * 0.35;
-    const dirDrift = Math.sin(state.time * 0.05) * dirAmp;
-    const dirGust = Math.sin(state.time * 0.3 + 123.4) * (dirAmp * 0.25);
-    state.wind.direction = state.wind.baseDirection + dirDrift + dirGust;
+    // Low: 0.05 rad (~3 deg), High: 0.6 rad (~34 deg)
+    const dirAmp = 0.05 + conditions.shiftiness * 0.55;
+
+    // Multi-frequency wind shifts for realism
+    // 1. Slow persistent shift (Drift) - period ~1-2 min
+    const slowDrift = Math.sin(state.time * 0.01) * (dirAmp * 0.7);
+
+    // 2. Medium Oscillating shift - period ~30s
+    const oscShift = Math.sin(state.time * 0.15) * (dirAmp * 0.3);
+
+    // 3. Fast Gust interaction (already handled by gusts mostly, but add some jitter)
+    const jitter = (Math.random() - 0.5) * 0.02; // ~1 deg jitter
+
+    state.wind.direction = state.wind.baseDirection + slowDrift + oscShift + jitter;
 
     // Gustiness (0-1) controls speed variance amplitude
     // Low: 0.5 kn, High: 4.5 kn
