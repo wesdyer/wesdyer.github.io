@@ -2205,11 +2205,11 @@ function triggerPenalty(boat) {
 
     if (boat.isPlayer) Sound.playPenalty();
 
-    // Always reset timer to 20s on new penalty trigger
-    boat.raceState.penaltyTimer = 20.0;
+    // Always reset timer to 10s on new penalty trigger
+    boat.raceState.penaltyTimer = 10.0;
 
     if (boat.isPlayer) {
-        showRaceMessage("PENALTY! SPEED REDUCED 50% FOR 20s", "text-red-500", "border-red-500/50");
+        showRaceMessage("PENALTY! SPEED REDUCED 50% FOR 10s", "text-red-500", "border-red-500/50");
     }
 }
 
