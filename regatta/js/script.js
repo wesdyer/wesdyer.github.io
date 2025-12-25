@@ -269,10 +269,10 @@ class BotController {
         if (!marks || marks.length < 2) return { x: boat.x + 1000, y: boat.y }; // Fallback
 
         if (boat.raceState.finished) {
-            // Sail to boundary or away
+            // Sail to nearest boundary
             const b = state.course.boundary;
             if (b) {
-                const angle = Math.atan2(b.y - boat.y, b.x - boat.x);
+                const angle = Math.atan2(boat.y - b.y, boat.x - b.x);
                 return { x: b.x + Math.cos(angle)*(b.radius+500), y: b.y + Math.sin(angle)*(b.radius+500) };
             }
             return { x: boat.x, y: boat.y - 1000 };
