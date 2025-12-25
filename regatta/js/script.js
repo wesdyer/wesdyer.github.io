@@ -3965,7 +3965,7 @@ function showResults() {
 
         // Thin white line under the row
         const line = document.createElement('div');
-        line.className = "absolute bottom-0 left-0 right-0 h-[1px] bg-white";
+        line.className = "absolute bottom-0 left-0 right-[25px] h-[1px] bg-white";
         row.appendChild(line);
 
         // Content Layer (Grid)
@@ -4011,10 +4011,7 @@ function showResults() {
         } else {
              const img = document.createElement('img');
              img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
-             img.className = "w-full h-full rounded-2xl border-4 object-cover bg-slate-900 shadow-md";
-             img.className = "w-full h-full rounded-md border-2 border-white/20 object-cover bg-slate-900 shadow-md";
-             const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
-             img.style.borderColor = color;
+             img.className = "w-full h-full rounded-md object-cover";
              imgDiv.appendChild(img);
         }
 
