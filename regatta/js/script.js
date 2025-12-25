@@ -3926,8 +3926,9 @@ function getBoatProgress(boat) {
 function showResults() {
     if (!UI.resultsOverlay || !UI.resultsList) return;
 
+    const wasHidden = UI.resultsOverlay.classList.contains('hidden');
     UI.resultsOverlay.classList.remove('hidden');
-    UI.resultsOverlay.scrollTop = 0;
+    if (wasHidden) UI.resultsOverlay.scrollTop = 0;
     UI.leaderboard.classList.add('hidden');
     Sound.updateMusic();
 
