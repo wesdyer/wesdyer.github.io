@@ -2313,7 +2313,7 @@ function updateBoat(boat, dt) {
     const effectiveAoA = angleToWind - actualMagnitude;
     const luffStartThreshold = 0.5;
     if (effectiveAoA < luffStartThreshold) {
-        boat.luffIntensity = Math.max(0, 1.0 - (effectiveAoA / luffStartThreshold));
+        boat.luffIntensity = Math.min(1.0, Math.max(0, 1.0 - (effectiveAoA / luffStartThreshold)));
         boat.luffing = true;
     } else {
         boat.luffIntensity = 0;
