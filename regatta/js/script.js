@@ -1579,6 +1579,11 @@ function setupPreRaceOverlay() {
 
             imgContainer.appendChild(img);
 
+            // Transparent overlay to protect image
+            const overlay = document.createElement('div');
+            overlay.className = "absolute inset-0 z-10";
+            imgContainer.appendChild(overlay);
+
             const info = document.createElement('div');
             info.className = "p-3 flex flex-col gap-1 relative z-10 bg-slate-900/40 flex-1";
 
