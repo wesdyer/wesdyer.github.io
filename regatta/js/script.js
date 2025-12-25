@@ -3577,16 +3577,15 @@ function drawGusts(ctx) {
         // Colors
         if (g.type === 'gust') {
             // Darker/More intense blue for stronger gusts
-            const r = 0, gVal = 0, b = 60 + strength * 40; // 60-100
-            grad.addColorStop(0, `rgba(${r}, ${gVal}, ${b}, ${alpha})`);
-            grad.addColorStop(0.5, `rgba(${r}, ${gVal}, ${b}, ${alpha * 0.5})`);
-            grad.addColorStop(1, `rgba(${r}, ${gVal}, ${b}, 0)`);
+            grad.addColorStop(0, `rgba(11, 63, 176, ${alpha})`);
+            grad.addColorStop(0.5, `rgba(11, 63, 176, ${alpha * 0.5})`);
+            grad.addColorStop(1, `rgba(11, 63, 176, 0)`);
         } else {
-            // Lighter/More intense white/cyan for stronger lulls
+            // Lighter/More intense cyan for stronger lulls
             // Lulls reduce wind, maybe show as lighter patches
-            grad.addColorStop(0, `rgba(200, 250, 255, ${alpha})`);
-            grad.addColorStop(0.5, `rgba(200, 250, 255, ${alpha * 0.5})`);
-            grad.addColorStop(1, 'rgba(200, 250, 255, 0)');
+            grad.addColorStop(0, `rgba(92, 201, 255, ${alpha})`);
+            grad.addColorStop(0.5, `rgba(92, 201, 255, ${alpha * 0.5})`);
+            grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
         }
 
         ctx.fillStyle = grad;
