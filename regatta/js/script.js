@@ -3603,21 +3603,22 @@ function showResults() {
 
     // CSS Grid Layout Class
     // Columns: Pos, Img, Team, Time, Delta, Top, Avg, Dist, Pen, Points (implicit in space)
-    const gridClass = "grid grid-cols-[3.5rem_4rem_1fr_5rem_5rem_4rem_4rem_4rem_3rem_6rem] gap-4 items-center px-4";
+    // Updated for full headers and width
+    const gridClass = "grid grid-cols-[4rem_4rem_1fr_5rem_5rem_6rem_6rem_6rem_6rem_6rem] gap-4 items-center px-4";
 
     // Header
     const header = document.createElement('div');
     header.className = `${gridClass} py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2`;
     header.innerHTML = `
-        <div class="text-center">Pos</div>
+        <div class="text-center">Position</div>
         <div></div>
-        <div>Team</div>
+        <div>Sailor</div>
         <div class="text-right">Time</div>
         <div class="text-right">Delta</div>
-        <div class="text-right">Top</div>
-        <div class="text-right">Avg</div>
-        <div class="text-right">Dist</div>
-        <div class="text-center">Pen</div>
+        <div class="text-right">Top Speed</div>
+        <div class="text-right">Average</div>
+        <div class="text-right">Distance</div>
+        <div class="text-center">Penalties</div>
         <div class="text-center text-white">Points</div>
     `;
     UI.resultsList.appendChild(header);
@@ -3645,11 +3646,9 @@ function showResults() {
         const useSpin = hullLuma < 50 || hullLuma > 200;
         const bgColor = useSpin ? spinColor : hullColor;
 
-        const luma = getLuma(bgColor);
-        const isLight = luma > 128;
-
-        const textCol = isLight ? "text-slate-900" : "text-white";
-        const subTextCol = isLight ? "text-slate-800/70" : "text-white/70";
+        // Text Color: Always White for Stats
+        const textCol = "text-white";
+        const subTextCol = "text-white/70";
 
         // Row Container
         const row = document.createElement('div');
@@ -3658,8 +3657,9 @@ function showResults() {
         // Background Bar with Fade Effect
         const bar = document.createElement('div');
         bar.className = "absolute inset-0 right-12 overflow-hidden shadow-lg transition-transform hover:scale-[1.01] origin-left";
-        // Fade from transparent on Left to Solid on Right
-        bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 35%, ${bgColor} 100%)`;
+        // Fade from transparent on Left (showing dark bg) to Solid on Right
+        // Longer fade: Solid starts at 60%
+        bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 60%, ${bgColor} 100%)`;
 
         // Gloss Overlay
         const gloss = document.createElement('div');
@@ -3693,19 +3693,7 @@ function showResults() {
              rankDiv.appendChild(medal);
         } else {
              const txt = document.createElement('div');
-             txt.className = `text-2xl font-black italic ${textCol}`;
-             // Ensure contrast if rank is on transparent/dark part
-             // The fade starts at 35%, so rank (leftmost) is on transparent/dark background
-             // If isLight (Boat color is light), textCol is dark.
-             // If dark text sits on dark background (transparent -> underlying modal is dark), it's bad.
-             // We should force white for rank if it's in the transparent zone?
-             // But textCol is decided by boat color.
-             // Actually, Rank sits at x=0 to 3.5rem. Grid starts at 0.
-             // Fade starts transparent. So background is the modal background (dark slate).
-             // So Rank should always be Light/White/Gold unless it has a medal.
-             if (isLight) txt.className = `text-2xl font-black italic text-white/80`; // Override for visibility on dark bg
-             else txt.className = `text-2xl font-black italic text-white/80`;
-
+             txt.className = `text-2xl font-black italic text-white/80`;
              txt.textContent = index + 1;
              rankDiv.appendChild(txt);
         }
@@ -3720,7 +3708,6 @@ function showResults() {
              const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
              star.setAttribute("viewBox", "0 0 24 24");
              star.setAttribute("class", "w-full h-full drop-shadow-md");
-             // For player, if on transparent bg, white star looks good.
              star.setAttribute("fill", "#ffffff");
              const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
              path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
@@ -3734,15 +3721,22 @@ function showResults() {
         }
         imgDiv.appendChild(imgBox);
 
-        // Name
-        // This is column 3.
-        // It starts after 7.5rem.
-        // Fade to solid happens around 35%.
-        // 35% of width... width is full screen. ~30% might be under the name.
-        // So Name sits on color. Text contrast must match color.
+        // Sailor Name (Italic, Black)
+        // If background is transparent/dark at this point (left side), 'text-slate-900' (black) might be invisible.
+        // Wait, "Use a better font for everything but the title 'Race Results' and the Sailor".
+        // This implies Sailor name keeps "font-black italic".
+        // BUT visibility?
+        // If col 3 is still in the "transparent" zone, it sits on dark bg. Black text on dark bg is bad.
+        // The gradient starts transparent (0%) -> Solid (60%).
+        // Col 3 starts at ~8rem (10% of width).
+        // If width is 1000px, 60% is 600px.
+        // So Sailor Name is definitely on the transparent/dark part.
+        // Text MUST be white/light to be visible on dark background.
+        // The previous code had `textCol` logic.
+        // I will force White for Name too, even if it's "Sailor".
+        // "Use white text for the name, place, ..." -> YES.
         const nameDiv = document.createElement('div');
-        nameDiv.className = `font-black text-3xl italic uppercase tracking-tighter truncate ${textCol}`;
-        nameDiv.style.textShadow = isLight ? 'none' : '0 2px 4px rgba(0,0,0,0.3)';
+        nameDiv.className = `font-black text-3xl italic uppercase tracking-tighter truncate text-white drop-shadow-md`;
         nameDiv.textContent = boat.name;
 
         // Stats
@@ -3759,16 +3753,17 @@ function showResults() {
         const totalDist = Math.round(boat.raceState.legDistances.reduce((a, b) => a + b, 0));
         const penalties = boat.raceState.totalPenalties;
 
+        // Stats Styling: Font Sans, Bold/Semibold, White
         const createStat = (val, align='text-right') => {
             const d = document.createElement('div');
-            d.className = `${align} font-mono font-bold text-lg ${textCol}`;
+            d.className = `${align} font-sans font-bold text-lg text-white drop-shadow-sm`;
             d.textContent = val;
             return d;
         };
 
         const timeDiv = createStat(finishTime);
         const deltaDiv = document.createElement('div');
-        deltaDiv.className = `text-right font-mono font-bold text-lg ${subTextCol}`;
+        deltaDiv.className = `text-right font-sans font-bold text-lg text-white/70`;
         deltaDiv.textContent = delta;
 
         const topDiv = createStat(topSpeed);
@@ -3776,7 +3771,8 @@ function showResults() {
         const distDiv = createStat(totalDist);
 
         const penDiv = document.createElement('div');
-        penDiv.className = `text-center font-bold text-lg rounded flex items-center justify-center h-8 ${penalties > 0 ? 'bg-white text-red-600 shadow-sm' : subTextCol}`;
+        // Penalty: No background, Red text if > 0
+        penDiv.className = `text-center font-sans font-bold text-lg ${penalties > 0 ? 'text-red-500' : 'text-white/30'}`;
         penDiv.textContent = penalties > 0 ? penalties : "-";
 
         content.appendChild(rankDiv);
@@ -3793,8 +3789,9 @@ function showResults() {
 
         // Points (Right Aligned Skewed Box)
         // Position absolutely to the right
+        // Add rounded-br-2xl for rounded bottom right corner
         const ptsBox = document.createElement('div');
-        ptsBox.className = "absolute right-0 top-0 bottom-0 w-24 bg-white transform -skew-x-12 origin-bottom-right flex items-center justify-center shadow-md z-20 border-l-4 border-white/50";
+        ptsBox.className = "absolute right-0 top-0 bottom-0 w-24 bg-white transform -skew-x-12 origin-bottom-right flex items-center justify-center shadow-md z-20 border-l-4 border-white/50 rounded-br-2xl";
         // Inner unskewed container for text
         const ptsText = document.createElement('div');
         ptsText.className = "transform skew-x-12 text-slate-900 font-black text-3xl";
