@@ -3603,8 +3603,8 @@ function showResults() {
 
     // CSS Grid Layout Class
     // Columns: Pos, Img, Team, Time, Delta, Top, Avg, Dist, Pen, Points (implicit in space)
-    // Updated for full headers and width
-    const gridClass = "grid grid-cols-[4rem_4rem_1fr_5rem_5rem_6rem_6rem_6rem_6rem_6rem] gap-4 items-center px-4";
+    // Optimized column widths to give more space to Sailor (1fr)
+    const gridClass = "grid grid-cols-[4rem_4rem_1fr_4.5rem_4.5rem_5rem_5rem_5rem_5rem_5rem] gap-4 items-center px-4";
 
     // Header
     const header = document.createElement('div');
@@ -3615,7 +3615,7 @@ function showResults() {
         <div>Sailor</div>
         <div class="text-right">Time</div>
         <div class="text-right">Delta</div>
-        <div class="text-right">Top Speed</div>
+        <div class="text-right">Top Spd</div>
         <div class="text-right">Average</div>
         <div class="text-right">Distance</div>
         <div class="text-center">Penalties</div>
@@ -3721,22 +3721,10 @@ function showResults() {
         }
         imgDiv.appendChild(imgBox);
 
-        // Sailor Name (Italic, Black)
-        // If background is transparent/dark at this point (left side), 'text-slate-900' (black) might be invisible.
-        // Wait, "Use a better font for everything but the title 'Race Results' and the Sailor".
-        // This implies Sailor name keeps "font-black italic".
-        // BUT visibility?
-        // If col 3 is still in the "transparent" zone, it sits on dark bg. Black text on dark bg is bad.
-        // The gradient starts transparent (0%) -> Solid (60%).
-        // Col 3 starts at ~8rem (10% of width).
-        // If width is 1000px, 60% is 600px.
-        // So Sailor Name is definitely on the transparent/dark part.
-        // Text MUST be white/light to be visible on dark background.
-        // The previous code had `textCol` logic.
-        // I will force White for Name too, even if it's "Sailor".
-        // "Use white text for the name, place, ..." -> YES.
+        // Sailor Name
+        // Reduced font size from 3xl to 2xl to allow more space
         const nameDiv = document.createElement('div');
-        nameDiv.className = `font-black text-3xl italic uppercase tracking-tighter truncate text-white drop-shadow-md`;
+        nameDiv.className = `font-black text-2xl italic uppercase tracking-tighter truncate text-white drop-shadow-md`;
         nameDiv.textContent = boat.name;
 
         // Stats
@@ -3753,17 +3741,18 @@ function showResults() {
         const totalDist = Math.round(boat.raceState.legDistances.reduce((a, b) => a + b, 0));
         const penalties = boat.raceState.totalPenalties;
 
-        // Stats Styling: Font Sans, Bold/Semibold, White
+        // Stats Styling: Font Sans, Bold, White
+        // Reduced font size from text-lg to text-sm for better alignment with headers
         const createStat = (val, align='text-right') => {
             const d = document.createElement('div');
-            d.className = `${align} font-sans font-bold text-lg text-white drop-shadow-sm`;
+            d.className = `${align} font-sans font-bold text-sm text-white drop-shadow-sm`;
             d.textContent = val;
             return d;
         };
 
         const timeDiv = createStat(finishTime);
         const deltaDiv = document.createElement('div');
-        deltaDiv.className = `text-right font-sans font-bold text-lg text-white/70`;
+        deltaDiv.className = `text-right font-sans font-bold text-sm text-white/70`;
         deltaDiv.textContent = delta;
 
         const topDiv = createStat(topSpeed);
@@ -3771,8 +3760,8 @@ function showResults() {
         const distDiv = createStat(totalDist);
 
         const penDiv = document.createElement('div');
-        // Penalty: No background, Red text if > 0
-        penDiv.className = `text-center font-sans font-bold text-lg ${penalties > 0 ? 'text-red-500' : 'text-white/30'}`;
+        // Penalty: White text (was Red), no background
+        penDiv.className = `text-center font-sans font-bold text-sm ${penalties > 0 ? 'text-white' : 'text-white/30'}`;
         penDiv.textContent = penalties > 0 ? penalties : "-";
 
         content.appendChild(rankDiv);
