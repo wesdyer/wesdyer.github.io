@@ -116,6 +116,15 @@ class BotController {
         this.startDistance = 100 + Math.random() * 200; // Hover distance (increased from 40-80)
         this.startTimer = 0;
 
+        this.livenessState = 'normal'; // 'normal', 'recovery', 'force'
+        this.lowSpeedTimer = 0;
+        this.wiggleTimer = 0;
+        this.wiggleSide = 1;
+        this.wiggleActive = false;
+        this.wiggleDuration = 0;
+        this.clearanceTimer = 0;
+        this.clearanceHeading = 0;
+
         // Navigation
         this.tackCooldown = 0;
         this.preferredTack = 0; // 0=none, 1=starboard, -1=port
@@ -132,14 +141,106 @@ class BotController {
         const isRacing = state.race.status === 'racing';
         const isPrestart = state.race.status === 'prestart';
 
+        // Liveness Watchdog
+        if (isRacing && this.boat.raceState.leg === 0) {
+            const timeSinceStart = state.race.timer;
+
+            // Velocity Check (Hysteresis)
+            if (this.boat.speed * 4 < 1.0) {
+                this.lowSpeedTimer += dt;
+            } else if (this.boat.speed * 4 > 2.5) { // Only reset if truly moving fast
+                this.lowSpeedTimer = 0;
+            }
+
+            const prevState = this.livenessState;
+            if (timeSinceStart > 45 || this.lowSpeedTimer > 10.0) {
+                this.livenessState = 'force';
+            } else if (timeSinceStart > 15 || this.lowSpeedTimer > 5.0) { // Reduced timer or Stuck
+                this.livenessState = 'recovery';
+            } else {
+                this.livenessState = 'normal';
+            }
+
+            if (prevState !== this.livenessState) {
+                console.log(`[AI] ${this.boat.name} transition: ${prevState} -> ${this.livenessState} (T=${timeSinceStart.toFixed(1)}, LowSpd=${this.lowSpeedTimer.toFixed(1)})`);
+            }
+        } else {
+            this.livenessState = 'normal';
+            this.lowSpeedTimer = 0;
+        }
+
         let desiredHeading = this.boat.heading;
         let speedRequest = 1.0;
 
-        // 1. Navigation (Where do we want to go?)
-        const nav = this.getNavigationTarget();
-        
-        // 2. Strategy (Tack/Gybe/Laylines)
-        desiredHeading = this.getStrategicHeading(nav);
+        // Wiggle / Unstick Logic (Overrides Strategy)
+        if (this.lowSpeedTimer > 3.0 && !this.wiggleActive) {
+            this.wiggleActive = true;
+            this.wiggleDuration = 5.0; // Lock in for 5 seconds
+
+            // Determine best wiggle direction (Away from nearest obstacle)
+            let closestObs = null;
+            let minD = Infinity;
+            // Check boats
+            for (const b of state.boats) {
+                if (b === this.boat) continue;
+                const dSq = (b.x - this.boat.x)**2 + (b.y - this.boat.y)**2;
+                if (dSq < minD) { minD = dSq; closestObs = b; }
+            }
+            // Check marks
+            if (state.course.marks) {
+                for (const m of state.course.marks) {
+                    const dSq = (m.x - this.boat.x)**2 + (m.y - this.boat.y)**2;
+                    if (dSq < minD) { minD = dSq; closestObs = m; }
+                }
+            }
+
+            // If we've been stuck a long time, the smart logic failed. Try Random.
+            if (this.lowSpeedTimer > 8.0) {
+                 this.wiggleSide = (Math.random() > 0.5) ? 1 : -1;
+            } else if (closestObs && minD < 100*100) {
+                const angleToObs = Math.atan2(closestObs.x - this.boat.x, -(closestObs.y - this.boat.y)); // 0=Up
+                const relAngle = normalizeAngle(angleToObs - this.boat.heading);
+                this.wiggleSide = relAngle > 0 ? -1 : 1; // If Right, go Left
+            } else {
+                this.wiggleSide = (Math.random() > 0.5) ? 1 : -1;
+            }
+        }
+
+        if (this.wiggleActive) {
+            this.wiggleDuration -= dt;
+
+            // Beam Reach +/- 100 degrees (Slightly downwind to shed power if needed)
+            const windDir = state.wind.direction;
+            desiredHeading = normalizeAngle(windDir + this.wiggleSide * 1.75); // ~100 degrees
+
+            // FORCE SPEED BOOST to overcome friction/pinning
+            speedRequest = 1.0;
+
+            if (this.wiggleDuration <= 0) {
+                this.wiggleActive = false;
+                // If STILL stuck, this wiggle failed. Don't reset timer fully so we trigger again immediately.
+                // But switch side next time.
+                if (this.lowSpeedTimer > 5.0) {
+                     this.wiggleSide *= -1; // Flip for next attempt
+                } else {
+                     this.lowSpeedTimer = 0; // Success
+                     // Enter Clearance Mode
+                     this.clearanceTimer = 3.0;
+                     this.clearanceHeading = desiredHeading; // Keep sailing this way
+                }
+            }
+        } else if (this.clearanceTimer > 0) {
+            this.clearanceTimer -= dt;
+            desiredHeading = this.clearanceHeading;
+            speedRequest = 1.0;
+        } else {
+            this.wiggleTimer = 0;
+            // 1. Navigation (Where do we want to go?)
+            const nav = this.getNavigationTarget();
+
+            // 2. Strategy (Tack/Gybe/Laylines)
+            desiredHeading = this.getStrategicHeading(nav);
+        }
 
         // 3. Prestart Override
         if (isPrestart) {
@@ -190,35 +291,61 @@ class BotController {
         let targetX, targetY;
 
         if (leg === 0) {
+            let pct = this.startLinePct;
+
+            // Recovery / Force Mode: Aim for center
+            if (this.livenessState !== 'normal') {
+                pct = 0.5;
+            }
+
             // Start: Aim for our diversified spot on the line
-            // Use the same target calculation as prestart to maintain lanes
-            const pct = this.startLinePct;
-            targetX = m1.x + (m2.x - m1.x) * pct; // m1 is 0? Indices are [0,1]
-            // Wait, updateStartStrategy used marks[0] and marks[1].
-            // If targetIndices is [0,1], m1=marks[0], m2=marks[1].
-            // Let's ensure we use the same vector direction.
-            // updateStart used: m0 + (m1-m0)*pct.
-            // Here: m1 + (m2-m1)*pct if m1=0, m2=1. Correct.
+            targetX = m1.x + (m2.x - m1.x) * pct;
             targetY = m1.y + (m2.y - m1.y) * pct;
             
-            // Aim slightly PAST the line?
-            // Yes, extend 100 units past to ensure crossing
-            const wd = state.wind.direction; // Downwind direction
-            targetX -= Math.sin(wd) * 100; // wd is From. We want to go Upwind (Against wd). 
-            // Wait, start is Upwind. 
-            // wd=0 (N). Blowing S. Start is usually upwind.
-            // So we go "Against" wd. Vector is -sin(wd), +cos(wd). 
-            // -sin(0) = 0. cos(0) = 1. Moving +Y (Down). That is downwind.
-            // Canvas Y is Down.
-            // Wind Dir 0 = From Top. Blowing Down (+Y).
-            // Start line usually crossed Upwind (-Y).
-            // So we want to move -Y.
-            // Upwind Vector: (sin(wd), -cos(wd))? 
-            // No. wd is "FROM". 0 means FROM North. Vector is (0, 1).
-            // Upwind is (0, -1).
-            // -sin(0)=0. -cos(0)=-1. Correct.
-            targetX += -Math.sin(wd) * 100; 
-            targetY += Math.cos(wd) * 100;
+            // Aim slightly PAST the line
+            // Wind Direction (wd) is FROM direction.
+            // Standard Coordinate System:
+            // wd=0 (N) -> Blows South (+Y).
+            // Upwind is North (-Y). Vector: (sin(wd), -cos(wd)).
+            // We want to target UPWIND (Past the line).
+            const wd = state.wind.direction;
+
+            // OCS / Recovery Logic for Racing Phase
+            // Check if we are on the Course Side (Upwind of line) without having started
+            const lineDx = m2.x - m1.x, lineDy = m2.y - m1.y;
+            const normalX = -lineDy, normalY = lineDx; // Points Downwind? No, -gateDy, gateDx?
+            // gateDx = m2-m1. gateDy.
+            // Check existing logic: nx = gateDy, ny = -gateDx.
+            // dot > 0 is crossing dir 1 (Start).
+            // Normal (nx, ny) points Upwind.
+            const nx = lineDy, ny = -lineDx;
+            const bDx = boat.x - m1.x, bDy = boat.y - m1.y;
+            const dot = bDx * nx + bDy * ny;
+
+            // dot > 0 means we are "Above" the line (Course Side)
+            // If ocs is true, OR if we are course side (dot > 0), we must return.
+            if (boat.raceState.ocs || dot > 0) {
+                // Must go DOWNWIND to clear line
+                // Always target the extensions to avoid crushing, even in normal mode if we are lost
+                const d0 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
+                const d1 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
+                const nearest = (d0 < d1) ? m1 : m2;
+
+                const lineLen = Math.sqrt(lineDx*lineDx + lineDy*lineDy);
+                const ux = lineDx/lineLen, uy = lineDy/lineLen;
+                const sign = (nearest === m1) ? -1 : 1;
+
+                // Normal mode: milder return. Force/Recovery: aggressive wide return.
+                const width = (this.livenessState === 'normal') ? 50 : 150;
+
+                targetX = nearest.x + (sign * ux * width) - (Math.sin(wd) * 150);
+                targetY = nearest.y + (sign * uy * width) + (Math.cos(wd) * 150);
+            } else {
+                // Normal Start (Upwind)
+                const distPast = (this.livenessState === 'force') ? 300 : 150;
+                targetX += Math.sin(wd) * distPast;
+                targetY -= Math.cos(wd) * distPast;
+            }
         } else {
             // Standard Legs: Sail to gate center
             targetX = (m1.x + m2.x) / 2;
@@ -255,10 +382,24 @@ class BotController {
         const localWind = getWindAt(boat.x, boat.y);
         const wd = localWind.direction;
 
+
         const dx = target.x - boat.x;
         const dy = target.y - boat.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
         const angleToTarget = Math.atan2(dx, -dy); // 0 is North (Up), but canvas Y is down. 
+
+        // FORCE / RECOVERY OVERRIDE
+        if (this.livenessState === 'force' || this.livenessState === 'recovery') {
+             const twa = normalizeAngle(angleToTarget - wd);
+             // If we can fetch it (TWA > 40 deg), go direct
+             if (Math.abs(twa) > 0.7) { // ~40 degrees
+                 return angleToTarget;
+             }
+             // Otherwise, beat to windward on best tack
+             const desiredTack = twa > 0 ? 1 : -1;
+             // Use local wind for best tack
+             return normalizeAngle(wd + desiredTack * 0.75); // 43 degrees
+        }
         // Math.atan2(x, -y) gives angle relative to North (0, -1) in CW?
         // Let's stick to standard math: atan2(dy, dx) is angle from X axis.
         // In game: Heading 0 = Up (0, -1). Heading PI/2 = Right (1, 0).
@@ -445,12 +586,16 @@ class BotController {
             const recoverY = targetY - Math.cos(downwind) * 100;
             heading = Math.atan2(recoverX - boat.x, -(recoverY - boat.y));
             speed = 1.0;
+            return { heading, speed }; // Explicit return to force OCS behavior
         }
 
         return { heading, speed };
     }
 
     applyAvoidance(desiredHeading, speedRequest) {
+        // If stuck (Wiggle Mode), ignore avoidance to force breakout
+        if (this.wiggleActive) return desiredHeading;
+
         const boat = this.boat;
         const lookaheadFrames = 120; // 2 seconds lookahead
         const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
@@ -468,6 +613,11 @@ class BotController {
 
         let bestHeading = desiredHeading;
         let minCost = Infinity;
+
+        // Dynamic Safe Distance based on Liveness
+        let safeDist = 80; // 40 radius * 2 (Normal)
+        if (this.livenessState === 'recovery') safeDist = 50;
+        if (this.livenessState === 'force') safeDist = 20;
 
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
@@ -488,7 +638,8 @@ class BotController {
                 {x: futureX, y: futureY}
             ];
 
-            let collision = false;
+            let boatCollision = false;
+            let staticCollision = false; // Marks/Boundary
             let ruleViolation = false;
             let proximityCost = 0;
 
@@ -509,13 +660,12 @@ class BotController {
                     };
 
                     const distSq = (myP.x - otherP.x)**2 + (myP.y - otherP.y)**2;
-                    const safeDist = 80; // 40 radius * 2
                     
                     if (distSq < safeDist * safeDist) {
-                        collision = true;
+                        boatCollision = true;
                         const row = getRightOfWay(boat, other);
                         if (row === other) ruleViolation = true;
-                    } else if (distSq < 200 * 200) {
+                    } else if (distSq < 200 * 200 && this.livenessState === 'normal') {
                         // Soft avoidance (Proximity)
                         proximityCost += 5000 / distSq; 
                     }
@@ -529,8 +679,8 @@ class BotController {
                     for (const p of points) {
                         const dSq = (p.x - m.x)**2 + (p.y - m.y)**2;
                         if (dSq < 60*60) { // Mark radius 12 + boat + margin
-                            collision = true;
-                        } else if (dSq < 150*150) {
+                            staticCollision = true;
+                        } else if (dSq < 150*150 && this.livenessState === 'normal') {
                             proximityCost += 10000 / dSq;
                         }
                     }
@@ -542,12 +692,29 @@ class BotController {
                 const b = state.course.boundary;
                 for (const p of points) {
                     const d = Math.sqrt((p.x - b.x)**2 + (p.y - b.y)**2);
-                    if (d > b.radius - 50) collision = true;
+                    if (d > b.radius - 50) staticCollision = true;
                 }
             }
 
-            if (collision) cost += 10000;
-            if (ruleViolation) cost += 20000;
+            if (boatCollision) {
+                if (this.livenessState === 'force') cost += 500; // Prefer glancing/missing
+                else if (this.livenessState === 'recovery') cost += 2000;
+                else cost += 10000;
+            }
+
+            if (staticCollision) {
+                // Static obstacles cause pinning.
+                if (this.livenessState === 'force') cost += 500; // Allow getting close/rubbing
+                else if (this.livenessState === 'recovery') cost += 8000;
+                else cost += 15000;
+            }
+
+            if (ruleViolation) {
+                if (this.livenessState === 'force') cost += 0; // IGNORE RULES
+                else if (this.livenessState === 'recovery') cost += 1000;
+                else cost += 20000;
+            }
+
             cost += proximityCost;
 
             if (cost < minCost) {
@@ -1920,8 +2087,13 @@ function updateAI(boat, dt) {
 
     // Smooth turn
     const diff = normalizeAngle(target - boat.heading);
-    const aiTurnRate = CONFIG.turnSpeed * timeScale;
+    let aiTurnRate = CONFIG.turnSpeed * timeScale;
     
+    // Wiggle / Force Mode: Super Steering
+    if (boat.controller && boat.controller.wiggleActive) {
+        aiTurnRate *= 5.0; // Snap turn to break friction
+    }
+
     // If very far off, turn faster?
     const turnAmt = Math.sign(diff) * Math.min(Math.abs(diff), aiTurnRate);
     boat.heading += turnAmt;
@@ -2115,6 +2287,19 @@ function updateBoat(boat, dt) {
     // 0.995 -> 0.998 reduces speed decay when drive is lost (gybes/tacks)
     const speedAlpha = 1 - Math.pow(0.998, timeScale);
     boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
+
+    // AI Boost: If wiggle is active, ensure minimum speed to slide off obstacles
+    if (!boat.isPlayer && boat.controller && boat.controller.wiggleActive) {
+        // Progressive Power: The longer we are stuck, the harder we push
+        let minSpeed = 0.15; // 3.5kn
+        const stuckTime = boat.controller.lowSpeedTimer;
+
+        if (stuckTime > 10.0) minSpeed = 0.30; // 7.0kn
+        if (stuckTime > 20.0) minSpeed = 0.50; // 11.5kn
+        if (stuckTime > 30.0) minSpeed = 0.75; // 17.5kn (Increased power)
+
+        if (boat.speed < minSpeed) boat.speed = minSpeed;
+    }
 
     // Irons Penalty (Extra drag when head-to-wind)
     // angleToWind is in radians. 0.5 rad is approx 28 degrees.
@@ -2525,6 +2710,7 @@ function checkBoatCollisions(dt) {
     for (let i = 0; i < state.boats.length; i++) {
         const b1 = state.boats[i];
         if (b1.raceState.finished && b1.fadeTimer <= 0) continue;
+
         const poly1 = getHullPolygon(b1);
         for (let j = i + 1; j < state.boats.length; j++) {
             const b2 = state.boats[j];
@@ -2626,7 +2812,8 @@ function checkMarkCollisions(dt) {
                 const impact = Math.max(0, hx * nx + hy * ny);
 
                 const friction = 0.99;
-                const impactFactor = 0.5;
+                let impactFactor = 0.5;
+                if (boat.controller && boat.controller.livenessState === 'force') impactFactor = 0.9; // Slide off marks
 
                 boat.speed *= (friction - (friction - impactFactor) * impact);
 
