@@ -1552,7 +1552,7 @@ function setupPreRaceOverlay() {
             // Base styling: Wider and taller, no rounded-br-3xl to keep it more uniform if we want, but user said "Make the badges wider and taller"
             // Let's use h-auto or fixed height.
             // "putting the portrait direction on the badge without the round circle"
-            card.className = "p-0 rounded-xl border border-white/5 flex flex-col relative overflow-hidden h-48 group";
+            card.className = "p-0 rounded-xl border border-white/5 flex flex-col relative overflow-hidden h-96 group";
 
             // Color Logic
             const hullColor = boat.colors.hull;
@@ -1571,7 +1571,7 @@ function setupPreRaceOverlay() {
             // Let's try a vertical card layout: Image on top (square), text below.
 
             const imgContainer = document.createElement('div');
-            imgContainer.className = "w-full h-32 relative overflow-hidden";
+            imgContainer.className = "w-full h-64 relative overflow-hidden";
 
             const img = document.createElement('img');
             img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
