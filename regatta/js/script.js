@@ -776,6 +776,7 @@ const DEFAULT_SETTINGS = {
     bgSoundEnabled: true,
     musicEnabled: false,
     penaltiesEnabled: true,
+    showApparentWind: false,
     cameraMode: 'heading',
     hullColor: '#f1f5f9',
     sailColor: '#ffffff',
@@ -1473,7 +1474,9 @@ const UI = {
     headingArrow: document.getElementById('hud-heading-arrow'),
     speed: document.getElementById('hud-speed'),
     windSpeed: document.getElementById('hud-wind-speed'),
+    windSpeedLabel: document.getElementById('hud-wind-speed-label'),
     windAngle: document.getElementById('hud-wind-angle'),
+    windAngleLabel: document.getElementById('hud-wind-angle-label'),
     trimMode: document.getElementById('hud-trim-mode'),
     vmg: document.getElementById('hud-vmg'),
     timer: document.getElementById('hud-timer'),
@@ -1499,6 +1502,7 @@ const UI = {
     settingMusic: document.getElementById('setting-music'),
     settingPenalties: document.getElementById('setting-penalties'),
     settingNavAids: document.getElementById('setting-navaids'),
+    settingApparentWind: document.getElementById('setting-apparent-wind'),
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
     settingHullColor: document.getElementById('setting-color-hull'),
@@ -1685,6 +1689,7 @@ function applySettings() {
     if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
     if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
+    if (UI.settingApparentWind) UI.settingApparentWind.checked = settings.showApparentWind;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     if (UI.settingHullColor) UI.settingHullColor.value = settings.hullColor;
@@ -1768,6 +1773,7 @@ if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { set
 if (UI.settingMusic) UI.settingMusic.addEventListener('change', (e) => { settings.musicEnabled = e.target.checked; saveSettings(); Sound.init(); });
 if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => { settings.penaltiesEnabled = e.target.checked; saveSettings(); });
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
+if (UI.settingApparentWind) UI.settingApparentWind.addEventListener('change', (e) => { settings.showApparentWind = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.manualTrim = e.target.checked; saveSettings(); });
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
 if (UI.settingHullColor) UI.settingHullColor.addEventListener('input', (e) => { settings.hullColor = e.target.value; saveSettings(); });
@@ -1859,6 +1865,11 @@ window.addEventListener('keydown', (e) => {
     if (e.key === '`' || e.code === 'Backquote') {
         state.showNavAids = !state.showNavAids;
         settings.navAids = state.showNavAids;
+        saveSettings();
+    }
+    if (e.key === 'Control' || e.key === 'ControlLeft' || e.key === 'ControlRight') {
+        if (e.repeat) return;
+        settings.showApparentWind = !settings.showApparentWind;
         saveSettings();
     }
 });
@@ -4567,7 +4578,9 @@ function draw() {
             }
         }
         if (UI.windSpeed) {
-             UI.windSpeed.textContent = localWind.speed.toFixed(1);
+             const aw = getApparentWind(player, localWind);
+             const displaySpeed = settings.showApparentWind ? aw.speed : localWind.speed;
+             UI.windSpeed.textContent = displaySpeed.toFixed(1);
 
              // Remove all potential color classes
              UI.windSpeed.classList.remove('text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
@@ -4587,8 +4600,17 @@ function draw() {
              if (player.badAirIntensity > 0.05) {
                  if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
              }
+             if (UI.windSpeedLabel) UI.windSpeedLabel.textContent = settings.showApparentWind ? 'AWS' : 'TWS';
         }
-        if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI)) + '°';
+        if (UI.windAngle) {
+            if (settings.showApparentWind) {
+                const aw = getApparentWind(player, localWind);
+                UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - aw.direction))*(180/Math.PI)) + '°';
+            } else {
+                UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI)) + '°';
+            }
+            if (UI.windAngleLabel) UI.windAngleLabel.textContent = settings.showApparentWind ? 'AWA' : 'TWA';
+        }
         if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - localWind.direction))).toFixed(1);
 
         if (UI.trimMode) {
