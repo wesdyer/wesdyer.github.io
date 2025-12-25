@@ -1,145 +1,342 @@
 {
   "config": {
-    "trials": 2,
+    "trials": 5,
     "seed": 12345
   },
   "results": {
     "overall": {
       "start_time": {
-        "n": 0,
-        "mean": 0,
-        "mode": 0,
-        "max": 0
+        "n": 28,
+        "mean": 194.7803571428411,
+        "mode": 2.5,
+        "max": 586.5666666664619
       },
-      "dns_percent": 100,
+      "dns_percent": 37.77777777777778,
       "upwind": {
         "time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
+          "n": 50,
+          "mean": 62.92499999998783,
+          "mode": 57.5,
+          "max": 90.86666666658402
         },
         "penalties": {
-          "n": 0,
-          "mean": 0,
+          "n": 50,
+          "mean": 0.14,
           "mode": 0,
-          "max": 0
+          "max": 4
         },
         "coll_boat": {
-          "n": 0,
-          "mean": 0,
+          "n": 50,
+          "mean": 0.16,
           "mode": 0,
-          "max": 0
+          "max": 4
         },
         "coll_mark": {
-          "n": 0,
+          "n": 50,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
         "coll_bound": {
-          "n": 0,
+          "n": 50,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
-        "dnf_percent": 0
+        "dnf_percent": 3.8461538461538436
       },
       "downwind": {
         "time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
+          "n": 48,
+          "mean": 54.80069444443287,
+          "mode": 42.5,
+          "max": 284.0999999997696
         },
         "penalties": {
-          "n": 0,
-          "mean": 0,
+          "n": 48,
+          "mean": 3.8541666666666665,
           "mode": 0,
-          "max": 0
+          "max": 98
         },
         "coll_boat": {
-          "n": 0,
-          "mean": 0,
+          "n": 48,
+          "mean": 4.354166666666667,
           "mode": 0,
-          "max": 0
+          "max": 141
         },
         "coll_mark": {
-          "n": 0,
-          "mean": 0,
+          "n": 48,
+          "mean": 2.2083333333333335,
           "mode": 0,
-          "max": 0
+          "max": 80
         },
         "coll_bound": {
-          "n": 0,
+          "n": 48,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
-        "dnf_percent": 0
+        "dnf_percent": 4.0000000000000036
       },
       "race": {
         "time": {
-          "n": 5,
-          "mean": 310.84000000002686,
-          "mode": {
-            "value": 262.5,
-            "range": [
-              260,
-              265
-            ],
-            "count": 1
-          },
-          "max": 440.28333333326157
+          "n": 45,
+          "mean": 477.7237037035845,
+          "mode": 602.5,
+          "max": 600.0166666664496
         },
         "penalties": {
-          "n": 20,
-          "mean": 0,
-          "mode": {
-            "value": 0,
-            "count": 20
-          },
-          "max": 0
+          "n": 45,
+          "mean": 4.266666666666667,
+          "mode": 0,
+          "max": 98
         },
         "coll_boat": {
-          "n": 20,
-          "mean": 0,
-          "mode": {
-            "value": 0,
-            "count": 20
-          },
-          "max": 0
+          "n": 45,
+          "mean": 5,
+          "mode": 0,
+          "max": 142
         },
         "coll_mark": {
-          "n": 20,
-          "mean": 0,
-          "mode": {
-            "value": 0,
-            "count": 20
-          },
-          "max": 0
+          "n": 45,
+          "mean": 2.3555555555555556,
+          "mode": 0,
+          "max": 80
         },
         "coll_bound": {
-          "n": 20,
+          "n": 45,
           "mean": 0,
-          "mode": {
-            "value": 0,
-            "count": 20
-          },
+          "mode": 0,
           "max": 0
         },
-        "dnf_percent": 75
+        "dnf_percent": 0.0
       }
     },
     "byCharacter": {
-      "Unknown": {
+      "Gasket": {
+        "start_time": {
+          "n": 2,
+          "mean": 177.31666666667277,
+          "mode": 347.5,
+          "max": 347.90000000001226
+        },
+        "dns_percent": 33.33333333333333,
+        "upwind": {
+          "time": {
+            "n": 4,
+            "mean": 68.00416666661759,
+            "mode": 62.5,
+            "max": 90.86666666658402
+          },
+          "penalties": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 4,
+            "mean": 98.02916666664538,
+            "mode": 72.5,
+            "max": 249.15000000004486
+          },
+          "penalties": {
+            "n": 4,
+            "mean": 24.5,
+            "mode": 0,
+            "max": 98
+          },
+          "coll_boat": {
+            "n": 4,
+            "mean": 35.25,
+            "mode": 0,
+            "max": 141
+          },
+          "coll_mark": {
+            "n": 4,
+            "mean": 6.5,
+            "mode": 0,
+            "max": 26
+          },
+          "coll_bound": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 3,
+            "mean": 539.5944444442823,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 3,
+            "mean": 32.666666666666664,
+            "mode": 0,
+            "max": 98
+          },
+          "coll_boat": {
+            "n": 3,
+            "mean": 47.333333333333336,
+            "mode": 0,
+            "max": 142
+          },
+          "coll_mark": {
+            "n": 3,
+            "mean": 8.666666666666666,
+            "mode": 0,
+            "max": 26
+          },
+          "coll_bound": {
+            "n": 3,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Bruce": {
+        "start_time": {
+          "n": 1,
+          "mean": 535.483333333175,
+          "mode": 537.5,
+          "max": 535.483333333175
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 1,
+            "mean": 59.283333333279415,
+            "mode": 57.5,
+            "max": 59.283333333279415
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "penalties": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 100.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Tangle": {
         "start_time": {
           "n": 0,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
-        "dns_percent": 100,
+        "dns_percent": 100.0,
         "upwind": {
           "time": {
             "n": 0,
@@ -208,58 +405,586 @@
         },
         "race": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
           },
           "penalties": {
             "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 2
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
             "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 2
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
             "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 2
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
             "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 2
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 100
+          "dnf_percent": 0.0
         }
       },
-      "Beaver": {
+      "Mistral": {
+        "start_time": {
+          "n": 2,
+          "mean": 312.95833333326686,
+          "mode": 122.5,
+          "max": 501.1499999998729
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 3,
+            "mean": 66.48888888887669,
+            "mode": 72.5,
+            "max": 72.4333333333882
+          },
+          "penalties": {
+            "n": 3,
+            "mean": 1,
+            "mode": 0,
+            "max": 3
+          },
+          "coll_boat": {
+            "n": 3,
+            "mean": 1.3333333333333333,
+            "mode": 0,
+            "max": 4
+          },
+          "coll_mark": {
+            "n": 3,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 3,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 39.883333333335145,
+            "mode": 42.5,
+            "max": 44.66666666670221
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 33.333333333333336
+        },
+        "race": {
+          "time": {
+            "n": 2,
+            "mean": 466.23333333323797,
+            "mode": 332.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 1.5,
+            "mode": 3,
+            "max": 3
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 2,
+            "mode": 4,
+            "max": 4
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Bixby": {
+        "start_time": {
+          "n": 2,
+          "mean": 6.091666666666721,
+          "mode": 12.5,
+          "max": 10.650000000000109
+        },
+        "dns_percent": 33.33333333333333,
+        "upwind": {
+          "time": {
+            "n": 4,
+            "mean": 58.76250000001443,
+            "mode": 62.5,
+            "max": 64.48333333333088
+          },
+          "penalties": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 4,
+            "mean": 43.91666666668242,
+            "mode": 47.5,
+            "max": 48.39999999999725
+          },
+          "penalties": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 4,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 3,
+            "mean": 340.97222222219017,
+            "mode": 197.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 3,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 3,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 3,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 3,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Saffron": {
+        "start_time": {
+          "n": 1,
+          "mean": 416.01666666661697,
+          "mode": 417.5,
+          "max": 416.01666666661697
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 57.299999999947886,
+            "mode": 57.5,
+            "max": 57.849999999947386
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 34.69999999996844,
+            "mode": 47.5,
+            "max": 46.349999999957845
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Regal": {
+        "start_time": {
+          "n": 1,
+          "mean": 5.566666666666652,
+          "mode": 7.5,
+          "max": 5.566666666666652
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 55.9333333333439,
+            "mode": 57.5,
+            "max": 58.41666666666433
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 40.13333333334751,
+            "mode": 42.5,
+            "max": 41.68333333333097
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 197.70000000004947,
+            "mode": 197.5,
+            "max": 197.70000000004947
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Nimbus": {
+        "start_time": {
+          "n": 1,
+          "mean": 29.549999999999603,
+          "mode": 27.5,
+          "max": 29.549999999999603
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 58.30000000002134,
+            "mode": 57.5,
+            "max": 58.783333333330006
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 45.65000000001941,
+            "mode": 52.5,
+            "max": 52.166666666674345
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 1.5,
+            "mode": 3,
+            "max": 3
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 237.4500000000811,
+            "mode": 237.5,
+            "max": 237.4500000000811
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 4,
+            "mode": 4,
+            "max": 4
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Torch": {
         "start_time": {
           "n": 0,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
-        "dns_percent": 100,
+        "dns_percent": 100.0,
         "upwind": {
           "time": {
             "n": 0,
@@ -329,64 +1054,369 @@
         "race": {
           "time": {
             "n": 1,
-            "mean": 260.9000000000914,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 260.9000000000914
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Zing": {
+        "start_time": {
+          "n": 1,
+          "mean": 311.71666666671183,
+          "mode": 312.5,
+          "max": 311.71666666671183
+        },
+        "dns_percent": 50.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 60.74166666661142,
+            "mode": 62.5,
+            "max": 62.11666666661017
           },
           "penalties": {
             "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 2
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
             "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 2
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
             "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 2
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
             "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 2
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 50
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 43.49999999996044,
+            "mode": 42.5,
+            "max": 44.88333333329251
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 2,
+            "mean": 560.1083333331526,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
         }
       },
-      "Great White": {
+      "Brine": {
+        "start_time": {
+          "n": 1,
+          "mean": 0.15,
+          "mode": 2.5,
+          "max": 0.15
+        },
+        "dns_percent": 50.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 59.90000000001296,
+            "mode": 62.5,
+            "max": 61.59999999999778
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 45.266666666683534,
+            "mode": 42.5,
+            "max": 45.58333333336961
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0.5,
+            "mode": 1,
+            "max": 1
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 2,
+            "mean": 405.24999999992133,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0.5,
+            "mode": 0,
+            "max": 1
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Wobble": {
+        "start_time": {
+          "n": 2,
+          "mean": 293.6583333332309,
+          "mode": 587.5,
+          "max": 586.5666666664619
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 58.158333333345595,
+            "mode": 57.5,
+            "max": 60.33333333335979
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 33.333333333333336
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 45.950000000016956,
+            "mode": 47.5,
+            "max": 45.99999999999739
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0.5,
+            "mode": 1,
+            "max": 1
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 2,
+            "mean": 404.4916666665874,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0.5,
+            "mode": 0,
+            "max": 1
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Knot": {
         "start_time": {
           "n": 0,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
-        "dns_percent": 100,
+        "dns_percent": 100.0,
         "upwind": {
           "time": {
             "n": 0,
@@ -456,64 +1486,261 @@
         "race": {
           "time": {
             "n": 1,
-            "mean": 260.9000000000914,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 260.9000000000914
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
           },
           "penalties": {
-            "n": 3,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 3
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 3,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 3
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 3,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 3
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 3,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 3
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 66.66666666666666
+          "dnf_percent": 0.0
         }
       },
-      "Octopus": {
+      "Flash": {
+        "start_time": {
+          "n": 1,
+          "mean": 0.6166666666666669,
+          "mode": 2.5,
+          "max": 0.6166666666666669
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 71.20833333335712,
+            "mode": 77.5,
+            "max": 77.78333333333018
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 2,
+            "mode": 4,
+            "max": 4
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 2,
+            "mode": 4,
+            "max": 4
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 47.108333333350025,
+            "mode": 47.5,
+            "max": 48.78333333333056
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0.5,
+            "mode": 1,
+            "max": 1
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 237.25000000008095,
+            "mode": 237.5,
+            "max": 237.25000000008095
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 4,
+            "mode": 4,
+            "max": 4
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 5,
+            "mode": 5,
+            "max": 5
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Pebble": {
         "start_time": {
           "n": 0,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
-        "dns_percent": 100,
+        "dns_percent": 100.0,
+        "upwind": {
+          "time": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "penalties": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0
+        },
+        "downwind": {
+          "time": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "penalties": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 0,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0
+        },
+        "race": {
+          "time": {
+            "n": 2,
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Whiskers": {
+        "start_time": {
+          "n": 0,
+          "mean": 0,
+          "mode": 0,
+          "max": 0
+        },
+        "dns_percent": 100.0,
         "upwind": {
           "time": {
             "n": 0,
@@ -583,64 +1810,45 @@
         "race": {
           "time": {
             "n": 1,
-            "mean": 260.9000000000914,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 260.9000000000914
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
           },
           "penalties": {
-            "n": 4,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 4
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 4,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 4
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 4,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 4
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 4,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 4
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 75
+          "dnf_percent": 0.0
         }
       },
-      "Swift": {
+      "Glide": {
         "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
+          "n": 1,
+          "mean": 579.2833333331351,
+          "mode": 577.5,
+          "max": 579.2833333331351
         },
-        "dns_percent": 100,
+        "dns_percent": 0.0,
         "upwind": {
           "time": {
             "n": 0,
@@ -672,7 +1880,7 @@
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 100.0
         },
         "downwind": {
           "time": {
@@ -706,449 +1914,1021 @@
             "max": 0
           },
           "dnf_percent": 0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Anchor": {
+        "start_time": {
+          "n": 1,
+          "mean": 260.2333333334253,
+          "mode": 262.5,
+          "max": 260.2333333334253
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 63.324999999942406,
+            "mode": 62.5,
+            "max": 64.86666666660767
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 45.20833333329222,
+            "mode": 47.5,
+            "max": 46.4333333332911
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 477.29999999989457,
+            "mode": 477.5,
+            "max": 477.29999999989457
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Skim": {
+        "start_time": {
+          "n": 1,
+          "mean": 359.5666666666683,
+          "mode": 357.5,
+          "max": 359.5666666666683
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 61.41666666661081,
+            "mode": 62.5,
+            "max": 64.6499999999412
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 42.699999999961165,
+            "mode": 47.5,
+            "max": 48.31666666662272
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 567.7999999998123,
+            "mode": 567.5,
+            "max": 567.7999999998123
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Ripple": {
+        "start_time": {
+          "n": 1,
+          "mean": 9.05000000000003,
+          "mode": 7.5,
+          "max": 9.05000000000003
+        },
+        "dns_percent": 50.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 61.7500000000229,
+            "mode": 57.5,
+            "max": 64.00000000004843
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 49.70000000001545,
+            "mode": 57.5,
+            "max": 56.53333333333012
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0.5,
+            "mode": 1,
+            "max": 1
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0.5,
+            "mode": 1,
+            "max": 1
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
         },
         "race": {
           "time": {
             "n": 2,
-            "mean": 240.42500000007638,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 260.9000000000914
+            "mean": 415.9833333332632,
+            "mode": 232.5,
+            "max": 600.0166666664496
           },
           "penalties": {
-            "n": 5,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 5
-            },
-            "max": 0
+            "n": 2,
+            "mean": 0.5,
+            "mode": 1,
+            "max": 1
           },
           "coll_boat": {
-            "n": 5,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 5
-            },
-            "max": 0
+            "n": 2,
+            "mean": 0.5,
+            "mode": 1,
+            "max": 1
           },
           "coll_mark": {
-            "n": 5,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 5
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 5,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 5
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 60
+          "dnf_percent": 0.0
         }
       },
-      "Otter": {
+      "Scuttle": {
         "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
+          "n": 1,
+          "mean": 284.96666666673616,
+          "mode": 282.5,
+          "max": 284.96666666673616
         },
-        "dns_percent": 100,
+        "dns_percent": 0.0,
         "upwind": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 57.7583333332808,
+            "mode": 57.5,
+            "max": 60.2499999999452
           },
           "penalties": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 0.0
         },
         "downwind": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 46.49999999995771,
+            "mode": 47.5,
+            "max": 49.19999999995525
           },
           "penalties": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 493.4833333332132,
+            "mode": 492.5,
+            "max": 493.4833333332132
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Fathom": {
+        "start_time": {
+          "n": 3,
+          "mean": 77.77222222222653,
+          "mode": 32.5,
+          "max": 154.21666666668153
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 6,
+            "mean": 67.31111111112742,
+            "mode": 62.5,
+            "max": 85.35000000006792
+          },
+          "penalties": {
+            "n": 6,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 6,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 6,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 6,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 6,
+            "mean": 77.43888888886485,
+            "mode": 42.5,
+            "max": 284.0999999997696
+          },
+          "penalties": {
+            "n": 6,
+            "mean": 14.333333333333334,
+            "mode": 0,
+            "max": 84
+          },
+          "coll_boat": {
+            "n": 6,
+            "mean": 9.833333333333334,
+            "mode": 0,
+            "max": 57
+          },
+          "coll_mark": {
+            "n": 6,
+            "mean": 13.333333333333334,
+            "mode": 0,
+            "max": 80
+          },
+          "coll_bound": {
+            "n": 6,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 3,
+            "mean": 367.2722222222111,
+            "mode": 247.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 3,
+            "mean": 28.666666666666668,
+            "mode": 0,
+            "max": 84
+          },
+          "coll_boat": {
+            "n": 3,
+            "mean": 21,
+            "mode": 0,
+            "max": 57
+          },
+          "coll_mark": {
+            "n": 3,
+            "mean": 26.666666666666668,
+            "mode": 0,
+            "max": 80
+          },
+          "coll_bound": {
+            "n": 3,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Hug": {
+        "start_time": {
+          "n": 1,
+          "mean": 80.51666666666338,
+          "mode": 82.5,
+          "max": 80.51666666666338
+        },
+        "dns_percent": 50.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 62.80000000002951,
+            "mode": 67.5,
+            "max": 68.66666666668081
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 44.25000000000249,
+            "mode": 52.5,
+            "max": 50.11666666670655
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
         },
         "race": {
           "time": {
             "n": 2,
-            "mean": 240.42500000007638,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 260.9000000000914
+            "mean": 447.3166666665885,
+            "mode": 292.5,
+            "max": 600.0166666664496
           },
           "penalties": {
-            "n": 7,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 7
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 7,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 7
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 7,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 7
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 7,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 7
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 71.42857142857143
+          "dnf_percent": 0.0
         }
       },
-      "Seahorse": {
+      "Bramble": {
         "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
+          "n": 1,
+          "mean": 341.03333333335183,
+          "mode": 342.5,
+          "max": 341.03333333335183
         },
-        "dns_percent": 100,
+        "dns_percent": 50.0,
         "upwind": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 73.59999999993306,
+            "mode": 82.5,
+            "max": 83.76666666659048
           },
           "penalties": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 0.0
         },
         "downwind": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 55.89166666661583,
+            "mode": 72.5,
+            "max": 70.44999999993593
           },
           "penalties": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 0.0
         },
         "race": {
           "time": {
             "n": 2,
-            "mean": 240.42500000007638,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 260.9000000000914
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
           },
           "penalties": {
-            "n": 7,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 7
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 7,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 7
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 7,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 7
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 7,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 7
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 71.42857142857143
+          "dnf_percent": 0.0
         }
       },
-      "Swan": {
+      "Clutch": {
         "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
+          "n": 1,
+          "mean": 10.666666666666776,
+          "mode": 12.5,
+          "max": 10.666666666666776
         },
-        "dns_percent": 100,
+        "dns_percent": 50.0,
         "upwind": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 58.92500000001533,
+            "mode": 57.5,
+            "max": 59.13333333336675
           },
           "penalties": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 0.0
         },
         "downwind": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 42.808333333349225,
+            "mode": 42.5,
+            "max": 42.98333333336754
           },
           "penalties": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 0.0
         },
         "race": {
           "time": {
             "n": 2,
-            "mean": 240.42500000007638,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 260.9000000000914
+            "mean": 407.07499999992274,
+            "mode": 602.5,
+            "max": 600.0166666664496
           },
           "penalties": {
-            "n": 8,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 8
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 8,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 8
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 8,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 8
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 8,
+            "n": 2,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 8
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 75
+          "dnf_percent": 0.0
         }
       },
-      "Cloud Ray": {
+      "Sunshine": {
+        "start_time": {
+          "n": 1,
+          "mean": 305.4666666667175,
+          "mode": 307.5,
+          "max": 305.4666666667175
+        },
+        "dns_percent": 0.0,
+        "upwind": {
+          "time": {
+            "n": 2,
+            "mean": 63.78333333327532,
+            "mode": 62.5,
+            "max": 64.74999999994111
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "downwind": {
+          "time": {
+            "n": 2,
+            "mean": 83.49166666659073,
+            "mode": 132.5,
+            "max": 130.73333333321443
+          },
+          "penalties": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 2,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        },
+        "race": {
+          "time": {
+            "n": 1,
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
+          },
+          "penalties": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_boat": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_mark": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "coll_bound": {
+            "n": 1,
+            "mean": 0,
+            "mode": 0,
+            "max": 0
+          },
+          "dnf_percent": 0.0
+        }
+      },
+      "Pulse": {
         "start_time": {
           "n": 0,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
-        "dns_percent": 100,
+        "dns_percent": 100.0,
         "upwind": {
           "time": {
             "n": 0,
@@ -1217,65 +2997,46 @@
         },
         "race": {
           "time": {
-            "n": 3,
-            "mean": 291.4722222222634,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 393.5666666666374
+            "n": 1,
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
           },
           "penalties": {
-            "n": 9,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 9
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 9,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 9
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 9,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 9
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 9,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 9
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 66.66666666666666
+          "dnf_percent": 0.0
         }
       },
-      "Fire Salamander": {
+      "Pearl": {
         "start_time": {
           "n": 0,
           "mean": 0,
           "mode": 0,
           "max": 0
         },
-        "dns_percent": 100,
+        "dns_percent": 100.0,
         "upwind": {
           "time": {
             "n": 0,
@@ -1344,1071 +3105,144 @@
         },
         "race": {
           "time": {
-            "n": 3,
-            "mean": 291.4722222222634,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 393.5666666666374
+            "n": 1,
+            "mean": 600.0166666664496,
+            "mode": 602.5,
+            "max": 600.0166666664496
           },
           "penalties": {
-            "n": 10,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 10
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 10,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 10
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 10,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 10
-            },
+            "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 10,
+            "n": 1,
             "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 10
-            },
+            "mode": 0,
             "max": 0
           },
-          "dnf_percent": 70
+          "dnf_percent": 0.0
         }
       },
-      "Flying Squirrel": {
+      "Chomp": {
         "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
+          "n": 1,
+          "mean": 110.599999999995,
+          "mode": 112.5,
+          "max": 110.599999999995
         },
-        "dns_percent": 100,
+        "dns_percent": 0.0,
         "upwind": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 63.383333333344346,
+            "mode": 67.5,
+            "max": 68.61666666670642
           },
           "penalties": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_mark": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 0.0
         },
         "downwind": {
           "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 46.266666666672464,
+            "mode": 57.5,
+            "max": 56.150000000044685
           },
           "penalties": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 2,
+            "mean": 1,
+            "mode": 2,
+            "max": 2
           },
           "coll_mark": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 2,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
+          "dnf_percent": 0.0
         },
         "race": {
           "time": {
-            "n": 3,
-            "mean": 291.4722222222634,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 393.5666666666374
+            "n": 1,
+            "mean": 329.9000000000286,
+            "mode": 327.5,
+            "max": 329.9000000000286
           },
           "penalties": {
-            "n": 12,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 12
-            },
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 12,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 12
-            },
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 12,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 12
-            },
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 12,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 12
-            },
-            "max": 0
-          },
-          "dnf_percent": 75
-        }
-      },
-      "Manatee": {
-        "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
-        },
-        "dns_percent": 100,
-        "upwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
+            "n": 1,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
+            "n": 1,
+            "mean": 4,
+            "mode": 4,
+            "max": 4
           },
           "coll_mark": {
-            "n": 0,
+            "n": 1,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
           "coll_bound": {
-            "n": 0,
+            "n": 1,
             "mean": 0,
             "mode": 0,
             "max": 0
           },
-          "dnf_percent": 0
-        },
-        "downwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "race": {
-          "time": {
-            "n": 3,
-            "mean": 291.4722222222634,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 393.5666666666374
-          },
-          "penalties": {
-            "n": 14,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 14
-            },
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 14,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 14
-            },
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 14,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 14
-            },
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 14,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 14
-            },
-            "max": 0
-          },
-          "dnf_percent": 78.57142857142857
-        }
-      },
-      "Platypus": {
-        "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
-        },
-        "dns_percent": 100,
-        "upwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "downwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "race": {
-          "time": {
-            "n": 3,
-            "mean": 291.4722222222634,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 393.5666666666374
-          },
-          "penalties": {
-            "n": 15,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 15
-            },
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 15,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 15
-            },
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 15,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 15
-            },
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 15,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 15
-            },
-            "max": 0
-          },
-          "dnf_percent": 80
-        }
-      },
-      "Nautilus": {
-        "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
-        },
-        "dns_percent": 100,
-        "upwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "downwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "race": {
-          "time": {
-            "n": 4,
-            "mean": 278.47916666671824,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 393.5666666666374
-          },
-          "penalties": {
-            "n": 16,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 16
-            },
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 16,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 16
-            },
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 16,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 16
-            },
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 16,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 16
-            },
-            "max": 0
-          },
-          "dnf_percent": 75
-        }
-      },
-      "Mackerel": {
-        "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
-        },
-        "dns_percent": 100,
-        "upwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "downwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "race": {
-          "time": {
-            "n": 4,
-            "mean": 278.47916666671824,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 393.5666666666374
-          },
-          "penalties": {
-            "n": 17,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 17
-            },
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 17,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 17
-            },
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 17,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 17
-            },
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 17,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 17
-            },
-            "max": 0
-          },
-          "dnf_percent": 76.47058823529412
-        }
-      },
-      "Penguin": {
-        "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
-        },
-        "dns_percent": 100,
-        "upwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "downwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "race": {
-          "time": {
-            "n": 4,
-            "mean": 278.47916666671824,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 393.5666666666374
-          },
-          "penalties": {
-            "n": 18,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 18
-            },
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 18,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 18
-            },
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 18,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 18
-            },
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 18,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 18
-            },
-            "max": 0
-          },
-          "dnf_percent": 77.77777777777779
-        }
-      },
-      "Walrus": {
-        "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
-        },
-        "dns_percent": 100,
-        "upwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "downwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "race": {
-          "time": {
-            "n": 5,
-            "mean": 310.84000000002686,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 440.28333333326157
-          },
-          "penalties": {
-            "n": 19,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 19
-            },
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 19,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 19
-            },
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 19,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 19
-            },
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 19,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 19
-            },
-            "max": 0
-          },
-          "dnf_percent": 73.68421052631578
-        }
-      },
-      "Albatross": {
-        "start_time": {
-          "n": 0,
-          "mean": 0,
-          "mode": 0,
-          "max": 0
-        },
-        "dns_percent": 100,
-        "upwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "downwind": {
-          "time": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "penalties": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 0,
-            "mean": 0,
-            "mode": 0,
-            "max": 0
-          },
-          "dnf_percent": 0
-        },
-        "race": {
-          "time": {
-            "n": 5,
-            "mean": 310.84000000002686,
-            "mode": {
-              "value": 262.5,
-              "range": [
-                260,
-                265
-              ],
-              "count": 1
-            },
-            "max": 440.28333333326157
-          },
-          "penalties": {
-            "n": 20,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 20
-            },
-            "max": 0
-          },
-          "coll_boat": {
-            "n": 20,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 20
-            },
-            "max": 0
-          },
-          "coll_mark": {
-            "n": 20,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 20
-            },
-            "max": 0
-          },
-          "coll_bound": {
-            "n": 20,
-            "mean": 0,
-            "mode": {
-              "value": 0,
-              "count": 20
-            },
-            "max": 0
-          },
-          "dnf_percent": 75
+          "dnf_percent": 0.0
         }
       }
     }

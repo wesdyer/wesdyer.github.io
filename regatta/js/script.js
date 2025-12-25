@@ -113,7 +113,7 @@ class BotController {
         // Start Strategy
         this.startSide = Math.random() < 0.5 ? 'left' : 'right';
         this.startLinePct = 0.1 + Math.random() * 0.8; // Target spot on line
-        this.startDistance = 40 + Math.random() * 40; // Hover distance
+        this.startDistance = 100 + Math.random() * 200; // Hover distance (increased from 40-80)
         this.startTimer = 0;
 
         // Navigation
@@ -144,7 +144,12 @@ class BotController {
         // 3. Prestart Override
         if (isPrestart) {
             const startCmd = this.getStartCommand();
-            desiredHeading = startCmd.heading;
+            if (startCmd.target) {
+                // Use strategic navigation to reach the start target (handles tacking/VMG)
+                desiredHeading = this.getStrategicHeading(startCmd.target);
+            } else {
+                desiredHeading = startCmd.heading;
+            }
             speedRequest = startCmd.speed;
         }
 
@@ -369,8 +374,22 @@ class BotController {
         let heading = 0;
         let speed = 1.0;
         
+        // Start Time Estimation:
+        // dist to target / speed
+        // If we are 200 units away, speed=100 -> 2s.
+        // But we need time to accelerate.
+        // Let's trigger "Go" when timeToTarget matches timer with buffer.
+
+        const distToTarget = Math.sqrt((targetX - boat.x)**2 + (targetY - boat.y)**2);
+        // Estimate average speed during approach as slower (acceleration)
+        // From speed 0.2 (12 units/s) to 1.0 (60 units/s) takes time.
+        // Use a conservative average speed of ~30 units/s for planning.
+        const approachSpeed = 30.0; // units/s
+        const timeToRun = distToTarget / approachSpeed;
+        const buffer = 10.0; // Increase buffer to account for slow acceleration and maneuvering
+
         // Phase 1: Wait / Hover
-        if (timer > 10) {
+        if (timer > timeToRun + buffer && timer > 10) {
             // Stay near setup point
             const dToSetup = Math.sqrt((boat.x - setupX)**2 + (boat.y - setupY)**2);
             if (dToSetup > 20) {
@@ -383,30 +402,36 @@ class BotController {
                 const distToLine = (targetX - boat.x)*lineNormalX + (targetY - boat.y)*lineNormalY; // Approx
                 
                 if (distToLine < this.startDistance - 10) {
-                    speed = 0.0; // Brake
-                    // Head to wind to stop
-                    heading = wd; 
+                    speed = 0.2; // Slow Sail (Don't stop completely)
+                    // Park Close-Hauled (Starboard) instead of Irons
+                    heading = normalizeAngle(wd + Math.PI / 4);
                 }
             } else {
-                // At setup, luff
-                heading = wd;
-                speed = 0.0;
+                // At setup, luff Close-Hauled but keep moving slightly
+                heading = normalizeAngle(wd + Math.PI / 4);
+                speed = 0.2;
             }
         } else {
             // Phase 2: Final Approach (Gun is coming)
-            // Aim for target on line
-            heading = Math.atan2(targetX - boat.x, -(targetY - boat.y));
             
-            // Time to burn?
+            // Use Navigation Target instead of fixed heading to allow Tacking/VMG
+            // But apply speed control logic
+
             const dist = Math.sqrt((targetX - boat.x)**2 + (targetY - boat.y)**2);
-            const timeToLine = dist / (boat.speed * 60 + 0.01);
+            // Estimate speed at 10.0 kn (~100 units/s)
+            const timeToLine = dist / 100.0;
             
-            if (timeToLine < timer - 1.0) {
-                speed = 0.5; // Slow down
-                // S-turn?
-                heading = normalizeAngle(heading + Math.PI/4); 
+            if (timeToLine < timer - 2.0) {
+                // Kill speed
+                speed = 0.1;
+                // Keep parking heading if we are waiting?
+                // Or just sail slowly towards target?
+                // If we sail towards target slowly, we progress.
+                // Let's return target but low speed.
+                return { target: {x: targetX, y: targetY}, speed };
             } else {
                 speed = 1.0; // Gun it
+                return { target: {x: targetX, y: targetY}, speed };
             }
         }
         
@@ -2121,6 +2146,10 @@ function updateBoat(boat, dt) {
             const angle = Math.atan2(dy, dx);
             boat.x = b.x + Math.cos(angle) * b.radius;
             boat.y = b.y + Math.sin(angle) * b.radius;
+
+            if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
+                window.onRaceEvent('collision_boundary', { boat });
+            }
         }
     }
 
@@ -2287,6 +2316,7 @@ function updateBoatRaceState(boat, dt) {
             if (boat.raceState.isRounding && state.race.status === 'racing') {
                  const completeLeg = () => {
                     boat.raceState.leg++;
+                    if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: boat.raceState.leg - 1, time: state.race.timer });
                     boat.raceState.isRounding = false;
                     const split = state.race.timer - boat.raceState.legStartTime;
                     boat.raceState.lastLegDuration = split;
@@ -2692,6 +2722,29 @@ function update(dt) {
         }
     } else if (state.race.status === 'racing') {
         state.race.timer += dt;
+        if (state.race.timer >= 600.0) { // 10 Minute Cutoff
+            state.race.status = 'finished';
+
+            // Mark all active boats as DNF/DNS
+            for (const boat of state.boats) {
+                if (!boat.raceState.finished) {
+                    boat.raceState.finished = true;
+                    boat.raceState.finishTime = state.race.timer;
+
+                    // If still on Leg 0 (Start), they count as DNS
+                    if (boat.raceState.leg === 0) {
+                        boat.raceState.resultStatus = 'DNS';
+                    } else {
+                        boat.raceState.resultStatus = 'DNF';
+                    }
+                }
+            }
+
+            if (state.camera.target === 'boat') {
+                state.camera.target = 'finish';
+                showResults();
+            }
+        }
     }
 
     // Update Boats
@@ -3592,9 +3645,22 @@ function showResults() {
 
     // Sort by finish order (or progress)
     const sorted = [...state.boats].sort((a, b) => {
-        if (a.raceState.finished && !b.raceState.finished) return -1;
-        if (!a.raceState.finished && b.raceState.finished) return 1;
-        if (a.raceState.finished && b.raceState.finished) return a.raceState.finishTime - b.raceState.finishTime;
+        // Scoring helper: 0=Finished, 1=DNF, 2=DNS, 3=Racing
+        const getScore = (boat) => {
+            if (!boat.raceState.finished) return 3;
+            if (boat.raceState.resultStatus === 'DNS') return 2;
+            if (boat.raceState.resultStatus === 'DNF') return 1;
+            return 0;
+        };
+
+        const scoreA = getScore(a);
+        const scoreB = getScore(b);
+
+        if (scoreA !== scoreB) return scoreA - scoreB;
+
+        // Tie-breaking within same category
+        if (scoreA === 0) return a.raceState.finishTime - b.raceState.finishTime; // Time asc
+        // For DNF/DNS, sort by progress (descending)
         return getBoatProgress(b) - getBoatProgress(a);
     });
 
@@ -3716,8 +3782,44 @@ function showResults() {
         } else {
              const img = document.createElement('img');
              img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
+             img.className = "w-full h-full rounded-2xl border-4 object-cover bg-slate-900 shadow-md";
              img.className = "w-full h-full rounded-md border-2 border-white/20 object-cover bg-slate-900 shadow-md";
-             imgBox.appendChild(img);
+             const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
+             img.style.borderColor = color;
+             imgDiv.appendChild(img);
+        }
+
+        // Details
+        const details = document.createElement('div');
+        details.className = "flex-1 flex flex-col justify-center";
+
+        const nameRow = document.createElement('div');
+        nameRow.className = "flex items-baseline gap-3 mb-1";
+
+        const name = document.createElement('span');
+        name.className = "text-2xl font-bold text-white tracking-wide";
+        name.textContent = boat.name;
+        if (boat.isPlayer) name.className += " text-yellow-300";
+
+        const finishTime = document.createElement('span');
+        finishTime.className = "text-xl font-mono text-emerald-400 font-bold";
+        if (boat.raceState.finished) {
+            if (boat.raceState.resultStatus) {
+                finishTime.textContent = boat.raceState.resultStatus;
+                finishTime.className = "text-xl font-mono text-red-500 font-bold";
+            } else {
+                finishTime.textContent = formatTime(boat.raceState.finishTime);
+                if (index > 0 && leader.raceState.finished && !leader.raceState.resultStatus) {
+                    const diff = boat.raceState.finishTime - leader.raceState.finishTime;
+                    const diffSpan = document.createElement('span');
+                    diffSpan.className = "text-base text-emerald-600/70 ml-2 font-normal";
+                    diffSpan.textContent = `(+${diff.toFixed(2)}s)`;
+                    finishTime.appendChild(diffSpan);
+                }
+            }
+        } else {
+            finishTime.textContent = "Racing...";
+            finishTime.className = "text-sm font-mono text-slate-400 animate-pulse";
         }
         imgDiv.appendChild(imgBox);
 
@@ -3820,15 +3922,25 @@ function updateLeaderboard() {
 
     // Sort boats
     const sorted = [...state.boats].sort((a, b) => {
-        // 1. Finished status
-        if (a.raceState.finished && !b.raceState.finished) return -1;
-        if (!a.raceState.finished && b.raceState.finished) return 1;
-        if (a.raceState.finished && b.raceState.finished) return a.raceState.finishTime - b.raceState.finishTime;
+        // Scoring helper: 0=Finished, 1=DNF, 2=DNS, 3=Racing
+        const getScore = (boat) => {
+            if (!boat.raceState.finished) return 3;
+            if (boat.raceState.resultStatus === 'DNS') return 2;
+            if (boat.raceState.resultStatus === 'DNF') return 1;
+            return 0;
+        };
 
-        // 2. Leg
+        const scoreA = getScore(a);
+        const scoreB = getScore(b);
+
+        if (scoreA !== scoreB) return scoreA - scoreB;
+
+        if (scoreA === 0) return a.raceState.finishTime - b.raceState.finishTime;
+
+        // 2. Leg (For Racing)
         if (a.raceState.leg !== b.raceState.leg) return b.raceState.leg - a.raceState.leg;
 
-        // 3. Progress within leg
+        // 3. Progress within leg (For Racing or DNF/DNS tiebreak)
         const pA = getBoatProgress(a);
         const pB = getBoatProgress(b);
         return pB - pA;
@@ -3944,12 +4056,15 @@ function updateLeaderboard() {
             rankDiv.textContent = index + 1;
             if (index === 0) {
                  if (boat.raceState.finished) {
-                     distDiv.textContent = formatTime(boat.raceState.finishTime);
+                     if (boat.raceState.resultStatus) distDiv.textContent = boat.raceState.resultStatus;
+                     else distDiv.textContent = formatTime(boat.raceState.finishTime);
                  } else {
                      distDiv.textContent = "";
                  }
             } else {
-                 if (leader.raceState.finished) {
+                 if (boat.raceState.resultStatus) {
+                     distDiv.textContent = boat.raceState.resultStatus;
+                 } else if (leader.raceState.finished) {
                      if (boat.raceState.finished) {
                          const tDiff = boat.raceState.finishTime - leader.raceState.finishTime;
                          distDiv.textContent = "+" + tDiff.toFixed(1) + "s";
@@ -4364,8 +4479,8 @@ function resetGame() {
     UI.boatRows = {};
 
     // Calculate Start Line Positions
-    // 100m back = 500 units.
-    const distBack = 500;
+    // Spawn at 400 units to allow horizontal spread but close enough to reach parking
+    const distBack = 400;
 
     // Wind Vectors
     const wd = state.wind.direction;
@@ -4438,12 +4553,22 @@ function resetGame() {
     for (let i = 0; i < opponents.length; i++) {
         const config = opponents[i];
         const pos = positions[posIndex++];
-        const ai = new Boat(i + 1, false, pos.x, pos.y, config.name, config);
-        // Start head to wind
-        ai.heading = state.wind.direction;
+
+        // Add vertical scatter to prevent line-abreast collision issues
+        // Move some further back, some closer
+        const scatter = (Math.random() - 0.5) * 100;
+        const downwind = state.wind.direction + Math.PI;
+        const sx = pos.x + Math.sin(downwind) * scatter;
+        const sy = pos.y - Math.cos(downwind) * scatter;
+
+        const ai = new Boat(i + 1, false, sx, sy, config.name, config);
+
+        // Start on Starboard Tack (Close Hauled) to be ready to move
+        // Instead of Irons (Head to Wind)
+        ai.heading = normalizeAngle(state.wind.direction + Math.PI / 4);
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
-        ai.speed = 0; // Initial speed
+        ai.speed = 0.5; // Initial speed (moving slightly)
 
         // Basic Start Setup
         ai.ai.startLinePct = 0.1 + Math.random() * 0.8;
