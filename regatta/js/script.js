@@ -173,9 +173,10 @@ class BotController {
         let speedRequest = 1.0;
 
         // Wiggle / Unstick Logic (Overrides Strategy)
-        if (this.lowSpeedTimer > 3.0 && !this.wiggleActive) {
+        // Faster reaction (2.0s instead of 3.0s)
+        if (this.lowSpeedTimer > 2.0 && !this.wiggleActive) {
             this.wiggleActive = true;
-            this.wiggleDuration = 5.0; // Lock in for 5 seconds
+            this.wiggleDuration = 4.0; // Reduced duration slightly to allow re-eval
 
             // Determine best wiggle direction (Away from nearest obstacle)
             let closestObs = null;
@@ -195,7 +196,7 @@ class BotController {
             }
 
             // If we've been stuck a long time, the smart logic failed. Try Random.
-            if (this.lowSpeedTimer > 8.0) {
+            if (this.lowSpeedTimer > 6.0) {
                  this.wiggleSide = (Math.random() > 0.5) ? 1 : -1;
             } else if (closestObs && minD < 100*100) {
                 const angleToObs = Math.atan2(closestObs.x - this.boat.x, -(closestObs.y - this.boat.y)); // 0=Up
@@ -216,7 +217,12 @@ class BotController {
             // FORCE SPEED BOOST to overcome friction/pinning
             speedRequest = 1.0;
 
-            if (this.wiggleDuration <= 0) {
+            // Early exit if we broke free
+            if (this.boat.speed * 4 > 2.0) {
+                this.wiggleActive = false;
+                this.wiggleDuration = 0;
+                this.lowSpeedTimer = 0;
+            } else if (this.wiggleDuration <= 0) {
                 this.wiggleActive = false;
                 // If STILL stuck, this wiggle failed. Don't reset timer fully so we trigger again immediately.
                 // But switch side next time.
@@ -355,21 +361,66 @@ class BotController {
         // If rounding, aim slightly outside to round cleanly
         if (boat.raceState.isRounding) {
             // We are passing through. Aim for a point past the gate.
-            // But we need to round. Which mark?
             const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
             const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
             const mark = (d1 < d2) ? m1 : m2;
             
-            // Calculate tangent for rounding
-            // For now, simple waypoint logic in script.js handles "nextWaypoint"
-            // Let's rely on geometric targets.
-            // Aim 80 units outside the mark to allow turn radius
+            // Aim OUTSIDE and PAST the mark to encourage a curve
             const dx = mark.x - (m1.x+m2.x)/2;
             const dy = mark.y - (m1.y+m2.y)/2;
             const len = Math.sqrt(dx*dx+dy*dy);
+
+            // Determine "Forward" direction for the leg
+            // If Leg 0/2/4 (Downwind next), we are going Upwind relative to mark?
+            // Actually leg index is current leg.
+            // If leg=1 (Upwind), we are rounding to go Downwind.
+            // Vector from Mark Center to Mark is (dx, dy).
+
             if (len > 0) {
-                targetX = mark.x + (dx/len) * 50;
-                targetY = mark.y + (dy/len) * 50;
+                const nx = dx/len;
+                const ny = dy/len;
+                // Offset OUTSIDE the gate (to clear the mark)
+                // Increased from 50 to 120 for wider turn
+                const offset = 120;
+
+                // Offset FORWARD (past the gate line) to prevent hooking
+                // Use the gate normal (perpendicular to dx,dy)
+                // Or simply the wind direction?
+                // Let's use wind axis.
+                const wd = state.wind.direction;
+                const windX = Math.sin(wd);
+                const windY = -Math.cos(wd);
+
+                // If rounding Top Gate (Leg 1/3), we want to go Downwind.
+                // So target should be Downwind of mark? No, we are approaching from Downwind.
+                // We want to sail PAST the mark (Upwind) then turn.
+                // Start/Bottom Gate: Approaching from Upwind. Sail PAST (Downwind).
+
+                const isTopGate = (leg === 1 || leg === 3);
+                const pastFactor = isTopGate ? -1 : 1; // Top gate (Upwind target), go further Upwind (-wind vector)
+
+                targetX = mark.x + (nx * offset) + (windX * pastFactor * 80);
+                targetY = mark.y + (ny * offset) + (windY * pastFactor * 80);
+            }
+        }
+
+        // Boundary Safety Clamp
+        // If getting too close to boundary (radius - 300), pull target towards center
+        const b = state.course.boundary;
+        if (b) {
+            const distToCenter = Math.sqrt(boat.x*boat.x + boat.y*boat.y); // Assuming center 0,0 relative to boundary check?
+            // Actually boundary.x/y might not be 0,0.
+            const dx = boat.x - b.x;
+            const dy = boat.y - b.y;
+            const d = Math.sqrt(dx*dx + dy*dy);
+
+            if (d > b.radius - 400) {
+                // Strong pull to center
+                const pullStr = (d - (b.radius - 400)) / 400; // 0 to 1
+                const cx = b.x;
+                const cy = b.y;
+                targetX = targetX * (1 - pullStr) + cx * pullStr;
+                targetY = targetY * (1 - pullStr) + cy * pullStr;
             }
         }
 
@@ -593,8 +644,9 @@ class BotController {
     }
 
     applyAvoidance(desiredHeading, speedRequest) {
-        // If stuck (Wiggle Mode), ignore avoidance to force breakout
-        if (this.wiggleActive) return desiredHeading;
+        // If stuck (Wiggle Mode), we ignore BOAT avoidance to force breakout,
+        // BUT we must still respect MARK avoidance to prevent plowing into them.
+        const ignoreBoats = this.wiggleActive;
 
         const boat = this.boat;
         const lookaheadFrames = 120; // 2 seconds lookahead
@@ -644,44 +696,52 @@ class BotController {
             let proximityCost = 0;
 
             // 1. Boats
-            for (const other of state.boats) {
-                if (other === boat || other.raceState.finished) continue;
-                
-                const ovx = other.velocity.x * 60;
-                const ovy = other.velocity.y * 60;
+            if (!ignoreBoats) {
+                for (const other of state.boats) {
+                    if (other === boat || other.raceState.finished) continue;
 
-                // Check along the path
-                for (let i = 0; i < points.length; i++) {
-                    const t = (i + 1) * 0.5 * (lookaheadFrames / 60);
-                    const myP = points[i];
-                    const otherP = {
-                        x: other.x + ovx * t,
-                        y: other.y + ovy * t
-                    };
+                    const ovx = other.velocity.x * 60;
+                    const ovy = other.velocity.y * 60;
 
-                    const distSq = (myP.x - otherP.x)**2 + (myP.y - otherP.y)**2;
-                    
-                    if (distSq < safeDist * safeDist) {
-                        boatCollision = true;
-                        const row = getRightOfWay(boat, other);
-                        if (row === other) ruleViolation = true;
-                    } else if (distSq < 200 * 200 && this.livenessState === 'normal') {
-                        // Soft avoidance (Proximity)
-                        proximityCost += 5000 / distSq; 
+                    // Check along the path
+                    for (let i = 0; i < points.length; i++) {
+                        const t = (i + 1) * 0.5 * (lookaheadFrames / 60);
+                        const myP = points[i];
+                        const otherP = {
+                            x: other.x + ovx * t,
+                            y: other.y + ovy * t
+                        };
+
+                        const distSq = (myP.x - otherP.x)**2 + (myP.y - otherP.y)**2;
+
+                        // Stronger repulsion for immediate overlap
+                        if (distSq < 40*40) {
+                             cost += 50000; // CRITICAL: Separation force
+                        }
+
+                        if (distSq < safeDist * safeDist) {
+                            boatCollision = true;
+                            const row = getRightOfWay(boat, other);
+                            if (row === other) ruleViolation = true;
+                        } else if (distSq < 200 * 200 && this.livenessState === 'normal') {
+                            // Soft avoidance (Proximity)
+                            proximityCost += 5000 / distSq;
+                        }
                     }
                 }
             }
 
             // 2. Marks
             if (state.course.marks) {
+                const markSafeDist = 80; // Increased from 60 to encourage dipping
                 for (const m of state.course.marks) {
                     // Check path
                     for (const p of points) {
                         const dSq = (p.x - m.x)**2 + (p.y - m.y)**2;
-                        if (dSq < 60*60) { // Mark radius 12 + boat + margin
+                        if (dSq < markSafeDist*markSafeDist) { // Mark radius 12 + boat + margin
                             staticCollision = true;
-                        } else if (dSq < 150*150 && this.livenessState === 'normal') {
-                            proximityCost += 10000 / dSq;
+                        } else if (dSq < 180*180 && this.livenessState === 'normal') {
+                            proximityCost += 15000 / dSq;
                         }
                     }
                 }
