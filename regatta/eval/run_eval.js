@@ -105,7 +105,14 @@ function calculateStats(values, type = 'continuous') {
 
     // Structures to hold raw data for aggregation
     const buckets = {
-        start: { time: [], dns_count: 0 },
+        start: {
+            time: [],
+            dns_count: 0,
+            stalled: [],
+            boundary_time: [],
+            min_mark_dist: [],
+            escapes: []
+        },
         upwind: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], attempt_count: 0, finish_count: 0 },
         downwind: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], attempt_count: 0, finish_count: 0 },
         race: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], dnf: 0, count: 0 }
@@ -140,6 +147,23 @@ function calculateStats(values, type = 'continuous') {
             } else {
                 bGlobal.start.dns_count++;
                 bChar.start.dns_count++;
+            }
+
+            // New Start Stats
+            if (boat.startStats) {
+                bGlobal.start.stalled.push(boat.startStats.stalledTime);
+                bChar.start.stalled.push(boat.startStats.stalledTime);
+
+                bGlobal.start.boundary_time.push(boat.startStats.boundaryTime);
+                bChar.start.boundary_time.push(boat.startStats.boundaryTime);
+
+                if (boat.startStats.minMarkDist !== Infinity) {
+                    bGlobal.start.min_mark_dist.push(boat.startStats.minMarkDist);
+                    bChar.start.min_mark_dist.push(boat.startStats.minMarkDist);
+                }
+
+                bGlobal.start.escapes.push(boat.startStats.escapes || 0);
+                bChar.start.escapes.push(boat.startStats.escapes || 0);
             }
 
             // 2. Leg Analysis
@@ -238,8 +262,14 @@ function calculateStats(values, type = 'continuous') {
         const downwindDnf = b.downwind.attempt_count > 0 ? (1 - (b.downwind.finish_count / b.downwind.attempt_count)) * 100 : 0;
 
         return {
-            start_time: calculateStats(b.start.time),
-            dns_percent: dnsPct,
+            start_stats: {
+                time: calculateStats(b.start.time),
+                stalled_time: calculateStats(b.start.stalled),
+                boundary_time: calculateStats(b.start.boundary_time),
+                min_mark_dist: calculateStats(b.start.min_mark_dist),
+                escapes: calculateStats(b.start.escapes, 'discrete'),
+                dns_percent: dnsPct
+            },
             upwind: {
                 time: calculateStats(b.upwind.time),
                 penalties: calculateStats(b.upwind.penalties, 'discrete'),
@@ -289,19 +319,19 @@ function calculateStats(values, type = 'continuous') {
 
     console.log("\nOVERALL METRICS:");
     const o = aggregated.overall;
-    console.log(`Start Time Mean: ${fmt(o.start_time.mean)}s (DNS: ${fmt(o.dns_percent)}%)`);
+    console.log(`Start Time Mean: ${fmt(o.start_stats.time.mean)}s (DNS: ${fmt(o.start_stats.dns_percent)}%)`);
+    console.log(`  Stalled Time Mean: ${fmt(o.start_stats.stalled_time.mean)}s`);
+    console.log(`  Boundary Time Mean: ${fmt(o.start_stats.boundary_time.mean)}s`);
+    console.log(`  Min Mark Dist Mean: ${fmt(o.start_stats.min_mark_dist.mean)} units`);
+    console.log(`  Escapes/Start: ${fmt(o.start_stats.escapes.mean)}`);
     console.log(`Race Time Mean: ${fmt(o.race.time.mean)}s (DNF: ${fmt(o.race.dnf_percent)}%)`);
-    console.log(`Upwind DNF: ${fmt(o.upwind.dnf_percent)}% | Downwind DNF: ${fmt(o.downwind.dnf_percent)}%`);
     console.log(`Avg Penalties/Race: ${fmt(o.race.penalties.mean)}`);
-    console.log(`Avg Boat Collisions/Race: ${fmt(o.race.coll_boat.mean)}`);
-    console.log(`Avg Mark Collisions/Race: ${fmt(o.race.coll_mark.mean)}`);
-    console.log(`Avg Bound Collisions/Race: ${fmt(o.race.coll_bound.mean)}`);
 
     console.log("\nPER CHARACTER (Summary):");
-    console.log("Char".padEnd(16) + "RaceTime".padEnd(10) + "DNF%".padEnd(8) + "DNS%".padEnd(8) + "Pen/R".padEnd(8) + "ColB/R".padEnd(8));
+    console.log("Char".padEnd(16) + "Start(s)".padEnd(10) + "Stall(s)".padEnd(10) + "Bound(s)".padEnd(10) + "MarkD".padEnd(8) + "DNS%".padEnd(8));
     for (const char in aggregated.byCharacter) {
         const c = aggregated.byCharacter[char];
-        console.log(char.padEnd(16) + fmt(c.race.time.mean).padEnd(10) + fmt(c.race.dnf_percent).padEnd(8) + fmt(c.dns_percent).padEnd(8) + fmt(c.race.penalties.mean).padEnd(8) + fmt(c.race.coll_boat.mean).padEnd(8));
+        console.log(char.padEnd(16) + fmt(c.start_stats.time.mean).padEnd(10) + fmt(c.start_stats.stalled_time.mean).padEnd(10) + fmt(c.start_stats.boundary_time.mean).padEnd(10) + fmt(c.start_stats.min_mark_dist.mean).padEnd(8) + fmt(c.start_stats.dns_percent).padEnd(8));
     }
 
     console.log(`\nFull results saved to ${OUT_FILE}`);

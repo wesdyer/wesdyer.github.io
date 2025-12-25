@@ -50,6 +50,8 @@
             this.logIncident(data.boat, 'collision_mark');
         } else if (type === 'collision_boundary') {
             this.logIncident(data.boat, 'collision_boundary');
+        } else if (type === 'deadlock_escape') {
+            this.logEvent(data.boat, 'deadlock_escape', { time: state.race.timer });
         }
     },
 
@@ -106,6 +108,16 @@
         let iterations = 0;
         const maxIterations = (maxTime + 100) * 60;
 
+        // Instrumentation Data
+        const boatStats = {};
+        state.boats.forEach(b => {
+             boatStats[b.id] = {
+                 stalledFrames: 0,
+                 boundaryFrames: 0,
+                 minMarkDist: Infinity
+             };
+        });
+
         // Loop
         while (iterations < maxIterations) {
             if (state.race.status === 'racing') {
@@ -113,9 +125,49 @@
                 if (state.boats.every(b => b.raceState.finished)) break;
             }
 
+            // --- Instrumentation ---
+            if (state.course.marks && state.course.marks.length >= 2) {
+                const m0 = state.course.marks[0];
+                const m1 = state.course.marks[1];
+                const boundary = state.course.boundary;
+
+                state.boats.forEach(b => {
+                    if (b.isPlayer) return;
+                    // Track only during Start Window (Leg 0)
+                    if (b.raceState.leg === 0) {
+                        const stats = boatStats[b.id];
+
+                        // Stalled: Speed < 0.2 (approx 1.0 knot)
+                        if (b.speed < 0.2) stats.stalledFrames++;
+
+                        // Boundary Proximity: < 200 units from edge
+                        if (boundary) {
+                             const dx = b.x - boundary.x;
+                             const dy = b.y - boundary.y;
+                             const dist = Math.sqrt(dx*dx + dy*dy);
+                             if (dist > boundary.radius - 200) stats.boundaryFrames++;
+                        }
+
+                        // Mark Distance
+                        const d0 = (b.x - m0.x)**2 + (b.y - m0.y)**2;
+                        const d1 = (b.x - m1.x)**2 + (b.y - m1.y)**2;
+                        const minD = Math.sqrt(Math.min(d0, d1));
+                        if (minD < stats.minMarkDist) stats.minMarkDist = minD;
+                    }
+                });
+            }
+            // -----------------------
+
             window.update(dt);
             iterations++;
         }
+
+        // Count escapes from events
+        state.boats.forEach(b => {
+            if (boatStats[b.id]) {
+                boatStats[b.id].escapes = this.data.events.filter(e => e.type === 'deadlock_escape' && e.boatId === b.id).length;
+            }
+        });
 
         return {
             config: { seed, timeLimit },
@@ -128,7 +180,13 @@
                 finished: b.raceState.finished,
                 finishTime: b.raceState.finishTime,
                 leg: b.raceState.leg,
-                penalties: b.raceState.totalPenalties
+                penalties: b.raceState.totalPenalties,
+                startStats: boatStats[b.id] ? {
+                    stalledTime: boatStats[b.id].stalledFrames * dt,
+                    boundaryTime: boatStats[b.id].boundaryFrames * dt,
+                    minMarkDist: boatStats[b.id].minMarkDist,
+                    escapes: boatStats[b.id].escapes
+                } : null
             }))
         };
     }
