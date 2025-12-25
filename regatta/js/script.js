@@ -269,10 +269,10 @@ class BotController {
         if (!marks || marks.length < 2) return { x: boat.x + 1000, y: boat.y }; // Fallback
 
         if (boat.raceState.finished) {
-            // Sail to nearest boundary
+            // Sail to boundary or away
             const b = state.course.boundary;
             if (b) {
-                const angle = Math.atan2(boat.y - b.y, boat.x - b.x);
+                const angle = Math.atan2(b.y - boat.y, b.x - boat.x);
                 return { x: b.x + Math.cos(angle)*(b.radius+500), y: b.y + Math.sin(angle)*(b.radius+500) };
             }
             return { x: boat.x, y: boat.y - 1000 };
@@ -2110,7 +2110,7 @@ function getFavoredEnd() {
 }
 
 function updateAI(boat, dt) {
-    if (boat.isPlayer && !boat.raceState.finished) return;
+    if (boat.isPlayer) return;
 
     if (!boat.controller) {
         boat.controller = new BotController(boat);
@@ -2179,23 +2179,15 @@ function updateBoat(boat, dt) {
     const timeScale = dt * 60;
 
     if (boat.raceState.finished) {
-        // Sail off the map logic
-        if (state.course.boundary) {
-             const dist = Math.sqrt((boat.x - state.course.boundary.x)**2 + (boat.y - state.course.boundary.y)**2);
-             if (dist > state.course.boundary.radius) {
-                 if (boat.opacity !== 0) {
-                     boat.opacity = 0; // Disappear
-                     boat.raceState.removeTimer = 5.0;
-                 }
-             }
+        // Fade out logic
+        boat.fadeTimer -= dt;
+        if (boat.fadeTimer < 2.0) {
+            boat.opacity = Math.max(0, boat.fadeTimer / 2.0);
         }
-
-        if (boat.opacity === 0) {
-             if (boat.raceState.removeTimer > 0) {
-                 boat.raceState.removeTimer -= dt;
-             } else {
-                 boat.raceState.readyToRemove = true;
-             }
+        if (boat.fadeTimer <= 0) {
+            boat.opacity = 0;
+            // Stop updating completely if gone?
+            // For now, continue to update position to allow camera to detach naturally
         }
     }
 
@@ -2373,7 +2365,7 @@ function updateBoat(boat, dt) {
         const b = state.course.boundary;
         const dx = boat.x - b.x, dy = boat.y - b.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > b.radius && !boat.raceState.finished) {
+        if (dist > b.radius) {
             const angle = Math.atan2(dy, dx);
             boat.x = b.x + Math.cos(angle) * b.radius;
             boat.y = b.y + Math.sin(angle) * b.radius;
@@ -2755,12 +2747,12 @@ function checkBoatCollisions(dt) {
     const broadRadius = 40;
     for (let i = 0; i < state.boats.length; i++) {
         const b1 = state.boats[i];
-        if (b1.raceState.finished && b1.opacity === 0) continue;
+        if (b1.raceState.finished && b1.fadeTimer <= 0) continue;
 
         const poly1 = getHullPolygon(b1);
         for (let j = i + 1; j < state.boats.length; j++) {
             const b2 = state.boats[j];
-            if (b2.raceState.finished && b2.opacity === 0) continue;
+            if (b2.raceState.finished && b2.fadeTimer <= 0) continue;
 
             const dx = b2.x - b1.x, dy = b2.y - b1.y;
             if (dx*dx + dy*dy > (broadRadius*2)**2) continue;
@@ -2981,12 +2973,8 @@ function update(dt) {
     }
 
     // Update Boats
-    for (let i = state.boats.length - 1; i >= 0; i--) {
-        const boat = state.boats[i];
+    for (const boat of state.boats) {
         updateBoat(boat, dt);
-        if (boat.raceState.readyToRemove && !boat.isPlayer) {
-            state.boats.splice(i, 1);
-        }
     }
 
     // Collisions
@@ -3021,7 +3009,7 @@ function update(dt) {
 
     if (state.camera.messageTimer > 0) state.camera.messageTimer -= dt;
     if (state.camera.target === 'boat') {
-        if (player.raceState.finished && player.opacity === 0) {
+        if (player.raceState.finished && player.fadeTimer <= 0) {
              state.camera.target = 'finish';
              showResults();
         } else {
