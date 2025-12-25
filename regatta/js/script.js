@@ -1577,12 +1577,7 @@ function setupPreRaceOverlay() {
             img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
             img.className = "w-full h-full object-cover transition-transform duration-700 group-hover:scale-110";
 
-            // Tint/Gradient overlay on image for text readability if needed, or just border
-            const imgOverlay = document.createElement('div');
-            imgOverlay.className = "absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent";
-
             imgContainer.appendChild(img);
-            imgContainer.appendChild(imgOverlay);
 
             const info = document.createElement('div');
             info.className = "p-3 flex flex-col gap-1 relative z-10 bg-slate-900/40 flex-1";
