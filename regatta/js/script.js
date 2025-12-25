@@ -171,6 +171,10 @@ class BotController {
         this.avoidanceRole = 'NONE'; // NONE, STAND_ON, GIVE_WAY
         this.avoidanceCommitTimer = 0;
 
+        // Mark Recovery Latch
+        this.markContactTimer = 0;
+        this.markEscapeHeading = 0;
+
         // Staggered updates
         this.updateTimer = Math.random() * 0.2; 
     }
@@ -309,17 +313,24 @@ class BotController {
         // Adjust desiredHeading to avoid immediate threats
         desiredHeading = this.applyAvoidance(desiredHeading, speedRequest);
 
-        // Mark Collision Override (Immediate Turn Away)
-        if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'mark' && this.boat.speed < 0.25) {
+        // Mark Collision Override (Immediate Turn Away + Latch)
+        if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'mark') {
              const col = this.boat.ai.collisionData;
              // Normal points from Boat to Mark.
              // We want to head away from mark.
-             // Target vector: -normal.
-             // Canvas coords: 0 is Up (0, -1). 90 is Right (1, 0).
-             // atan2(x, -y) gives heading.
              const awayX = -col.normal.x;
              const awayY = -col.normal.y;
-             desiredHeading = Math.atan2(awayX, -awayY);
+
+             // If we are stuck (slow) or just hit it, calculate escape
+             if (this.boat.speed < 0.5) {
+                 this.markEscapeHeading = Math.atan2(awayX, -awayY);
+                 this.markContactTimer = 2.0; // Commit to this direction for 2s
+             }
+        }
+
+        if (this.markContactTimer > 0) {
+             this.markContactTimer -= dt;
+             desiredHeading = this.markEscapeHeading;
              speedRequest = 1.0;
         }
 
