@@ -1549,8 +1549,10 @@ function setupPreRaceOverlay() {
 
         competitors.forEach(boat => {
             const card = document.createElement('div');
-            // Base styling
-            card.className = "p-3 rounded-xl rounded-br-3xl border border-white/5 flex gap-3 items-center relative overflow-hidden";
+            // Base styling: Wider and taller, no rounded-br-3xl to keep it more uniform if we want, but user said "Make the badges wider and taller"
+            // Let's use h-auto or fixed height.
+            // "putting the portrait direction on the badge without the round circle"
+            card.className = "p-0 rounded-xl border border-white/5 flex flex-col relative overflow-hidden h-48 group";
 
             // Color Logic
             const hullColor = boat.colors.hull;
@@ -1560,39 +1562,47 @@ function setupPreRaceOverlay() {
             const bgColor = useSpin ? spinColor : hullColor;
 
             // Apply gradient background
-            // Use a dark slate base that fades into the color
-            card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, ${bgColor} 100%)`;
+            card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
 
-            // Overlay to ensure text readability if color is bright
-            const overlay = document.createElement('div');
-            overlay.className = "absolute inset-0 bg-black/20";
-            card.appendChild(overlay);
+            // Image - Full width/height approach or top section?
+            // "putting the portrait direction on the badge without the round circle"
+            // Let's make it a large square/rect image at the top or filling a side?
+            // "Make the badges wider and taller" implies more space.
+            // Let's try a vertical card layout: Image on top (square), text below.
 
-            // Image
+            const imgContainer = document.createElement('div');
+            imgContainer.className = "w-full h-32 relative overflow-hidden";
+
             const img = document.createElement('img');
             img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
-            img.className = "w-12 h-12 rounded-full border-2 object-cover bg-slate-800 relative z-10";
-            img.style.borderColor = bgColor; // Use the chosen background color for border too
+            img.className = "w-full h-full object-cover transition-transform duration-700 group-hover:scale-110";
+
+            // Tint/Gradient overlay on image for text readability if needed, or just border
+            const imgOverlay = document.createElement('div');
+            imgOverlay.className = "absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent";
+
+            imgContainer.appendChild(img);
+            imgContainer.appendChild(imgOverlay);
 
             const info = document.createElement('div');
-            info.className = "flex-1 min-w-0 relative z-10";
+            info.className = "p-3 flex flex-col gap-1 relative z-10 bg-slate-900/40 flex-1";
 
             const nameRow = document.createElement('div');
-            nameRow.className = "flex justify-between items-baseline";
-            nameRow.innerHTML = `<span class="font-bold text-white truncate drop-shadow-md">${boat.name}</span>`;
+            nameRow.className = "flex justify-between items-center";
+            nameRow.innerHTML = `<span class="text-xl font-black text-white uppercase tracking-tight drop-shadow-md">${boat.name}</span>`;
 
             // Personality
             const config = AI_CONFIG.find(c => c.name === boat.name);
             let pText = config ? config.personality : "Unknown";
 
             const desc = document.createElement('div');
-            desc.className = "text-xs text-white/90 italic line-clamp-2 drop-shadow-sm";
+            desc.className = "text-xs text-slate-300 italic leading-snug line-clamp-3"; // Allow more lines
             desc.textContent = pText;
 
             info.appendChild(nameRow);
             info.appendChild(desc);
 
-            card.appendChild(img);
+            card.appendChild(imgContainer);
             card.appendChild(info);
             UI.prCompetitorsGrid.appendChild(card);
         });
