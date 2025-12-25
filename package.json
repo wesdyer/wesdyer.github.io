@@ -1,8 +1,9 @@
 {
-  "dependencies": {
-    "playwright": "^1.57.0"
-  },
   "scripts": {
     "eval:ai": "node regatta/eval/run_eval.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.57.0",
+    "playwright": "^1.57.0"
   }
 }

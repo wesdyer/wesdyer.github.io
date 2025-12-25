@@ -186,8 +186,8 @@ class BotController {
         const isRacing = state.race.status === 'racing';
         const isPrestart = state.race.status === 'prestart';
 
-        // Liveness Watchdog
-        if (isRacing && this.boat.raceState.leg === 0) {
+        // Liveness Watchdog (Enabled for all race phases to prevent stuck bots)
+        if (isRacing) {
             const timeSinceStart = state.race.timer;
 
             // Velocity Check (Hysteresis)
@@ -198,16 +198,22 @@ class BotController {
             }
 
             const prevState = this.livenessState;
-            if (timeSinceStart > 45 || this.lowSpeedTimer > 10.0) {
-                this.livenessState = 'force';
-            } else if (timeSinceStart > 15 || this.lowSpeedTimer > 5.0) { // Reduced timer or Stuck
-                this.livenessState = 'recovery';
+            // Only apply Force/Recovery logic on Start Leg (Leg 0) or if seriously stuck
+            // On other legs, we rely on Wiggle logic primarily
+            if (this.boat.raceState.leg === 0) {
+                if (timeSinceStart > 45 || this.lowSpeedTimer > 10.0) {
+                    this.livenessState = 'force';
+                } else if (timeSinceStart > 15 || this.lowSpeedTimer > 5.0) {
+                    this.livenessState = 'recovery';
+                } else {
+                    this.livenessState = 'normal';
+                }
             } else {
                 this.livenessState = 'normal';
             }
 
             if (prevState !== this.livenessState) {
-                console.log(`[AI] ${this.boat.name} transition: ${prevState} -> ${this.livenessState} (T=${timeSinceStart.toFixed(1)}, LowSpd=${this.lowSpeedTimer.toFixed(1)})`);
+                // console.log(`[AI] ${this.boat.name} transition: ${prevState} -> ${this.livenessState}`);
             }
         } else {
             this.livenessState = 'normal';
@@ -302,6 +308,20 @@ class BotController {
         // 4. Collision Avoidance (Reactive Layer)
         // Adjust desiredHeading to avoid immediate threats
         desiredHeading = this.applyAvoidance(desiredHeading, speedRequest);
+
+        // Mark Collision Override (Immediate Turn Away)
+        if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'mark' && this.boat.speed < 0.25) {
+             const col = this.boat.ai.collisionData;
+             // Normal points from Boat to Mark.
+             // We want to head away from mark.
+             // Target vector: -normal.
+             // Canvas coords: 0 is Up (0, -1). 90 is Right (1, 0).
+             // atan2(x, -y) gives heading.
+             const awayX = -col.normal.x;
+             const awayY = -col.normal.y;
+             desiredHeading = Math.atan2(awayX, -awayY);
+             speedRequest = 1.0;
+        }
 
         // Apply
         this.targetHeading = desiredHeading;
@@ -2970,6 +2990,11 @@ function checkMarkCollisions(dt) {
     if (!state.course || !state.course.marks) return;
     const markRadius = 12;
 
+    // Reset collision flags for next frame's AI
+    for (const boat of state.boats) {
+        if (boat.ai) boat.ai.collisionData = null;
+    }
+
     for (const boat of state.boats) {
         let close = false;
         for (const mark of state.course.marks) {
@@ -2982,6 +3007,11 @@ function checkMarkCollisions(dt) {
             const res = satPolygonCircle(poly, mark, markRadius);
             if (res) {
                 if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_mark', { boat });
+
+                // Store Collision Data for AI
+                if (boat.ai) {
+                    boat.ai.collisionData = { type: 'mark', normal: res.axis };
+                }
 
                 // Direction: axis points from Poly to Circle
                 // We want to move Poly away from Circle, so move opposite to axis
