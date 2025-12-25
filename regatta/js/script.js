@@ -786,6 +786,10 @@ const DEFAULT_SETTINGS = {
 let settings = { ...DEFAULT_SETTINGS };
 
 // J/111 Polar Data
+
+// J/111 AWS Polar Data
+const J111_AWS_POLARS = {"aws": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40], "awa": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180], "speeds": {"jib": [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.44, 0.93, 0.93, 0.96, 1.04, 1.12, 1.19, 1.29, 1.35, 1.29, 1.56, 1.5, 1.61, 1.63, 1.48, 1.48, 1.92, 1.81, 1.61, 1.41, 1.22, 1.44, 1.99, 1.71, 1.36, 1.17, 1.05, 0.87, 0.87, 0.76, 0.7, 0.83, 1.0, 1.39, 2.01], [0.0, 0.0, 0.87, 1.86, 1.86, 1.91, 2.075, 2.24, 2.38, 2.57, 2.69, 2.59, 3.12, 3.0, 3.22, 3.26, 2.96, 2.97, 3.61, 3.63, 3.23, 2.81, 2.44, 2.88, 3.85, 3.42, 2.72, 2.34, 2.11, 1.75, 1.75, 1.52, 1.4, 1.65, 2.0, 2.55, 3.67], [0.0, 0.22, 1.31, 2.4, 2.78, 2.87, 3.115, 3.36, 3.57, 3.86, 4.01, 3.88, 4.42, 4.51, 4.84, 4.89, 4.44, 4.45, 4.97, 5.22, 4.84, 4.22, 3.66, 4.32, 4.81, 5.09, 4.08, 3.5, 3.16, 2.62, 2.46, 2.18, 2.11, 2.17, 2.48, 3.09, 4.64], [0.0, 0.66, 1.75, 2.84, 3.71, 3.82, 4.15, 4.48, 4.75, 5.15, 5.24, 5.18, 5.71, 5.99, 6.04, 6.15, 5.91, 5.93, 5.79, 6.11, 6.3, 5.62, 4.88, 5.49, 5.73, 5.77, 5.43, 4.65, 3.98, 3.49, 3.04, 2.75, 2.81, 2.87, 3.31, 3.99, 5.09], [0.0, 1.09, 2.18, 3.28, 4.37, 4.81, 5.17, 5.53, 5.79, 6.12, 6.46, 6.47, 6.46, 6.78, 7.02, 6.91, 7.2, 7.01, 6.6, 6.95, 6.97, 6.85, 6.1, 6.24, 6.51, 6.35, 6.22, 5.54, 4.62, 4.37, 3.81, 3.45, 3.51, 3.57, 3.83, 4.61, 5.52], [0.0, 1.1, 2.2, 3.51, 4.89, 5.65, 6.005000000000001, 6.36, 6.66, 6.94, 7.39, 7.48, 7.2, 7.55, 7.81, 7.66, 7.78, 7.79, 7.48, 7.6, 7.53, 7.37, 7.29, 7.15, 6.97, 6.88, 6.81, 6.43, 5.26, 4.92, 4.37, 4.15, 4.21, 4.27, 4.33, 4.96, 6.18], [0.0, 1.31, 2.62, 3.93, 5.39, 6.31, 6.705, 7.1, 7.33, 7.71, 8.07, 8.27, 8.1, 8.21, 8.36, 8.33, 8.35, 8.33, 8.28, 8.26, 7.99, 7.9, 7.96, 7.86, 7.46, 7.4, 7.4, 7.32, 6.11, 5.38, 4.8, 4.86, 4.92, 4.98, 5.03, 5.6, 6.76], [0.0, 1.45, 2.9, 4.35, 5.8, 6.89, 7.324999999999999, 7.76, 7.98, 8.28, 8.47, 8.81, 8.67, 8.73, 8.84, 8.76, 8.9, 8.89, 8.86, 8.83, 8.49, 8.45, 8.58, 8.32, 8.03, 7.99, 7.93, 7.74, 6.93, 6.09, 5.5, 5.56, 5.62, 5.68, 5.74, 5.9, 7.06], [0.0, 1.45, 2.9, 4.44, 5.99, 7.29, 7.39, 8.2, 8.34, 8.6, 8.83, 9.09, 9.26, 9.27, 9.27, 9.2, 9.45, 9.33, 9.37, 9.29, 9.01, 9.08, 8.95, 8.78, 8.58, 8.45, 8.27, 8.08, 7.39, 6.55, 6.2, 6.26, 6.32, 6.38, 6.44, 6.5, 7.36], [0.0, 1.51, 3.03, 4.54, 6.05, 7.49, 7.965, 8.44, 8.68, 8.88, 9.11, 9.42, 9.74, 9.81, 9.61, 9.69, 9.92, 9.74, 9.81, 9.75, 9.57, 9.45, 9.3, 9.16, 8.98, 8.8, 8.61, 8.41, 7.84, 6.94, 6.9, 6.96, 7.02, 7.08, 7.14, 7.2, 7.67], [0.0, 1.51, 3.03, 4.53, 6.03, 7.53, 7.16, 8.66, 8.95, 9.17, 9.44, 9.73, 10.13, 10.21, 9.97, 10.19, 10.21, 10.15, 10.14, 10.09, 9.96, 9.8, 9.66, 9.5, 9.33, 9.14, 8.94, 8.73, 8.34, 7.55, 7.61, 7.67, 7.72, 7.78, 7.84, 7.9, 7.97], [0.0, 1.51, 3.01, 4.51, 6.01, 7.52, 3.32, 8.88, 9.22, 9.46, 9.77, 10.12, 10.4, 10.55, 10.43, 10.51, 10.5, 10.51, 10.46, 10.41, 10.31, 10.16, 9.99, 9.84, 9.67, 9.47, 9.27, 9.06, 8.73, 8.25, 8.31, 8.37, 8.43, 8.49, 8.42, 8.34, 8.27], [0.0, 1.5, 3.01, 4.51, 6.02, 7.53, 4.49, 9.05, 9.47, 9.75, 9.99, 10.26, 10.55, 10.88, 10.84, 10.79, 10.8, 10.81, 10.77, 10.72, 10.66, 10.49, 10.33, 10.17, 10.0, 9.8, 9.59, 9.37, 9.12, 8.95, 9.01, 8.94, 8.86, 8.79, 8.72, 8.65, 8.57], [0.0, 1.5, 3.01, 4.52, 6.03, 7.53, 5.48, 9.14, 9.58, 9.88, 10.13, 10.41, 10.72, 11.04, 11.11, 11.08, 11.09, 11.1, 11.08, 11.03, 10.99, 10.83, 10.67, 10.5, 10.33, 10.12, 9.9, 9.69, 9.46, 9.38, 9.31, 9.24, 9.16, 9.09, 9.02, 8.95, 8.87], [0.0, 1.51, 3.01, 4.52, 6.0, 7.47, 8.325, 9.18, 9.68, 10.01, 10.28, 10.56, 10.88, 11.22, 11.38, 11.38, 11.38, 11.37, 11.38, 11.33, 11.3, 11.16, 10.99, 10.82, 10.65, 10.44, 10.22, 10.0, 9.77, 9.68, 9.6, 9.53, 9.46, 9.39, 9.32, 9.25, 9.18], [0.0, 1.51, 3.01, 4.48, 5.95, 7.41, 8.29, 9.22, 9.78, 10.15, 10.42, 10.72, 11.03, 11.4, 11.66, 11.65, 11.64, 11.66, 11.68, 11.64, 11.6, 11.48, 11.31, 11.14, 10.97, 10.76, 10.53, 10.31, 10.06, 9.99, 9.93, 9.87, 9.8, 9.74, 9.28, 9.28, 9.28], [0.0, 1.49, 2.96, 4.44, 5.92, 7.39, 2.96, 9.28, 9.88, 10.28, 10.56, 10.87, 11.21, 11.57, 11.92, 11.91, 11.92, 11.95, 11.97, 11.94, 11.91, 11.81, 11.63, 11.42, 11.09, 10.71, 10.59, 10.53, 10.46, 10.4, 10.18, 10.0, 10.0, 9.28, 9.28, 9.28, 9.28], [0.0, 1.48, 2.96, 4.44, 5.91, 7.38, 3.85, 9.34, 9.98, 10.41, 10.72, 11.02, 11.38, 11.75, 12.17, 12.19, 12.2, 12.21, 12.25, 12.24, 12.21, 11.83, 11.42, 11.19, 11.12, 11.06, 10.95, 10.26, 10.0, 10.0, 10.0, 10.0, 10.0, 9.28, 9.28, 9.28, 9.28], [0.0, 1.48, 2.95, 4.42, 5.89, 6.45, 6.46, 9.41, 10.09, 10.52, 10.86, 11.19, 11.54, 11.95, 12.36, 12.44, 12.45, 12.49, 12.54, 12.13, 11.78, 11.72, 11.65, 11.07, 11.1, 11.1, 11.1, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 9.28, 9.28, 9.28, 9.28], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 9.03, 10.18, 10.64, 11.0, 11.35, 11.72, 12.12, 12.56, 12.7, 12.73, 12.43, 12.31, 11.84, 11.18, 12.12, 12.12, 11.1, 11.1, 11.1, 11.1, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 9.28, 9.28, 9.28, 9.28]], "spinnaker": [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.15, 0.34, 0.52, 1.06, 1.19, 1.72, 1.9, 1.77, 2.41, 2.31, 2.17, 2.0, 1.81, 3.05, 2.82, 2.55, 2.32, 2.0, 1.79, 1.61, 1.31, 1.13, 1.13, 1.01, 0.92, 0.95, 1.1, 1.6, 1.99, 4.02], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.68, 1.04, 2.13, 2.38, 3.43, 3.81, 3.53, 4.56, 4.62, 4.35, 4.0, 3.63, 5.38, 5.63, 5.11, 4.64, 4.0, 3.59, 3.22, 2.63, 2.26, 2.26, 2.02, 1.85, 1.9, 2.2, 3.02, 3.65, 6.0], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.45, 1.01, 1.55, 3.19, 3.57, 5.15, 5.67, 5.3, 6.18, 6.64, 6.52, 5.99, 5.44, 6.48, 6.95, 7.29, 6.96, 6.0, 5.38, 4.83, 3.94, 3.4, 3.4, 3.03, 2.77, 2.86, 2.94, 3.45, 4.79, 6.72], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.53, 1.22, 1.93, 4.37, 4.02, 6.25, 6.79, 7.06, 7.27, 7.5, 8.01, 7.99, 7.25, 7.58, 7.9, 7.99, 8.11, 8.0, 7.05, 6.23, 5.25, 4.53, 4.13, 3.69, 3.72, 3.81, 3.9, 4.4, 6.05, 7.3], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.6, 1.35, 2.14, 6.2, 3.8, 6.24, 7.84, 8.21, 8.35, 8.28, 8.61, 8.88, 8.9, 8.68, 8.85, 8.69, 8.76, 8.67, 8.51, 7.38, 6.36, 5.66, 5.05, 4.62, 4.67, 4.76, 4.85, 5.39, 6.47, 8.27], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.67, 1.5, 2.37, 6.24, 4.84, 6.11, 8.45, 8.71, 8.98, 9.1, 9.22, 9.46, 9.41, 9.64, 9.73, 9.39, 9.42, 9.29, 9.69, 8.53, 7.26, 6.79, 6.06, 5.54, 5.62, 5.71, 5.8, 5.89, 6.9, 9.07], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.74, 1.65, 2.62, 5.36, 7.04, 6.28, 8.9, 9.15, 9.37, 9.63, 9.84, 10.05, 9.93, 10.28, 10.44, 10.09, 10.0, 9.94, 10.35, 9.68, 8.16, 7.6, 6.79, 6.49, 6.57, 6.66, 6.75, 6.84, 7.7, 9.5], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.82, 1.8, 2.86, 4.66, 8.24, 7.9, 9.31, 9.52, 9.81, 10.13, 10.47, 10.56, 10.45, 10.92, 11.11, 10.79, 10.53, 10.7, 10.8, 10.74, 9.07, 8.26, 7.39, 7.44, 7.53, 7.61, 7.7, 7.79, 8.3, 9.92], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.88, 1.96, 3.11, 4.63, 5.58, 9.34, 9.7, 9.91, 10.24, 10.67, 11.02, 11.03, 11.01, 11.35, 11.47, 11.41, 11.07, 11.32, 11.24, 11.18, 10.19, 9.1, 8.31, 8.39, 8.48, 8.57, 8.65, 8.74, 8.83, 10.35], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.97, 2.12, 3.36, 4.43, 5.28, 9.16, 10.06, 10.17, 10.66, 11.06, 11.27, 11.51, 11.6, 11.69, 11.82, 11.94, 11.72, 11.75, 11.69, 11.62, 11.06, 9.9, 9.25, 9.34, 9.43, 9.52, 9.61, 9.69, 9.78, 10.78], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.01, 2.27, 3.61, 4.76, 5.67, 8.06, 10.38, 10.44, 11.0, 11.29, 11.53, 11.78, 11.94, 12.05, 12.17, 12.31, 12.29, 12.19, 12.13, 12.05, 11.73, 10.47, 10.21, 10.29, 10.38, 10.47, 10.56, 10.65, 10.73, 11.21], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.04, 2.31, 3.73, 4.96, 5.88, 7.39, 10.63, 10.86, 11.2, 11.51, 11.79, 12.05, 12.29, 12.4, 12.52, 12.67, 12.72, 12.64, 12.56, 12.47, 12.39, 11.08, 11.16, 11.25, 11.33, 11.42, 11.51, 11.6, 11.69, 11.64], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.07, 2.35, 3.79, 5.07, 5.99, 6.91, 10.81, 11.13, 11.41, 11.73, 12.05, 12.33, 12.62, 12.74, 12.88, 13.04, 13.15, 13.06, 12.97, 12.9, 12.82, 12.02, 12.11, 12.2, 12.29, 12.37, 12.31, 12.23, 12.15, 12.06], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.09, 2.39, 3.84, 5.15, 6.11, 7.03, 10.23, 11.34, 11.63, 11.96, 12.3, 12.6, 12.91, 13.08, 13.24, 13.41, 13.57, 13.48, 13.4, 13.32, 13.24, 12.97, 13.06, 12.99, 12.91, 12.82, 12.74, 12.64, 12.5, 12.41], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.12, 2.45, 3.92, 5.26, 6.25, 7.18, 9.99, 11.54, 11.86, 12.19, 12.55, 12.87, 13.2, 13.44, 13.59, 13.75, 13.95, 13.9, 13.82, 13.69, 13.41, 13.27, 13.13, 12.99, 12.85, 12.64, 12.41, 12.41, 12.41, 12.41], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.14, 2.51, 4.01, 5.37, 6.4, 7.34, 9.66, 11.76, 12.08, 12.41, 12.8, 13.15, 13.49, 13.78, 13.93, 14.12, 14.21, 13.7, 13.49, 13.35, 13.21, 13.07, 12.72, 13.46, 13.46, 12.41, 12.41, 12.41, 12.41, 12.41], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.18, 2.56, 4.08, 5.48, 6.55, 7.49, 9.6, 11.96, 12.29, 12.66, 13.04, 13.43, 13.78, 14.12, 14.25, 13.7, 13.56, 13.42, 13.16, 12.8, 13.46, 13.46, 13.46, 13.46, 13.46, 12.41, 12.41, 12.41, 12.41, 12.41], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.22, 2.63, 4.18, 5.61, 6.7, 7.67, 9.63, 12.09, 12.52, 12.89, 13.29, 13.7, 14.08, 13.77, 13.59, 13.24, 12.88, 14.29, 14.29, 13.46, 13.46, 13.46, 13.46, 13.46, 13.46, 12.41, 12.41, 12.41, 12.41, 12.41], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.24, 2.68, 4.28, 5.74, 6.87, 7.84, 9.53, 12.04, 12.74, 13.11, 13.55, 13.67, 13.32, 12.96, 14.28, 14.29, 14.29, 14.29, 14.29, 13.46, 13.46, 13.46, 13.46, 13.46, 13.46, 12.41, 12.41, 12.41, 12.41, 12.41], [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.28, 2.75, 4.36, 5.85, 7.03, 8.01, 9.64, 12.03, 12.95, 13.37, 13.04, 13.89, 13.89, 14.28, 14.28, 14.29, 14.29, 14.29, 14.29, 13.46, 13.46, 13.46, 13.46, 13.46, 13.46, 12.41, 12.41, 12.41, 12.41, 12.41]]}};
+
 const J111_POLARS = {
     angles: [0, 30, 38, 45, 52, 60, 75, 90, 110, 120, 135, 150, 180],
     speeds: {
@@ -820,35 +824,7 @@ const J111_POLARS = {
     }
 };
 
-const J111_AWS_POLARS = {"aws": [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 34, 36, 38, 40], "awa": [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170, 175, 180], "speeds": {"jib": [[0.37, 0.46, 0.58, 1.3, 1.99, 1.91, 1.92, 2.15, 2.5, 3.67, 4.53, 5.49, 5.48, 5.57, 5.27, 5.24, 5.07, 5.06, 4.95, 4.82, 4.86, 4.8, 4.45, 4.37, 4.39, 4.55, 4.78, 4.96, 5.08, 5.17, 4.74, 4.37, 4.27, 4.18, 4.04, 3.87, 3.77], [0.26, 0.37, 0.56, 1.36, 1.99, 1.65, 1.62, 1.94, 2.53, 3.82, 4.94, 5.44, 5.44, 5.48, 5.44, 5.22, 5.11, 4.98, 4.7, 4.86, 5.08, 4.92, 4.69, 4.19, 3.97, 4.44, 4.82, 5.04, 5.17, 5.25, 5.21, 4.45, 4.31, 4.22, 4.06, 3.75, 3.34], [0.11, 0.46, 1.02, 1.54, 2.06, 1.39, 1.01, 1.62, 2.69, 4.16, 5.13, 5.44, 5.35, 5.37, 5.18, 5.24, 5.43, 5.0, 4.34, 4.64, 5.24, 5.4, 4.84, 4.22, 3.83, 4.59, 5.0, 5.22, 5.32, 5.36, 5.84, 4.51, 4.39, 4.32, 4.21, 3.98, 3.79], [0.0, 0.16, 1.05, 1.97, 2.45, 1.4, 0.0, 1.59, 3.27, 4.92, 5.7, 5.69, 5.22, 5.2, 5.15, 5.4, 5.79, 5.54, 5.08, 5.14, 5.76, 6.06, 5.53, 4.83, 4.71, 5.19, 5.37, 5.48, 5.82, 5.89, 5.93, 5.14, 4.49, 4.48, 4.47, 4.48, 4.53], [0.0, 0.17, 1.2, 3.92, 3.44, 2.59, 0.0, 2.66, 4.98, 5.67, 5.69, 6.13, 5.72, 6.15, 6.04, 6.05, 6.66, 6.55, 6.0, 5.82, 6.14, 6.47, 6.37, 5.7, 5.17, 5.48, 5.72, 5.94, 6.0, 6.03, 6.38, 5.94, 4.6, 4.64, 4.73, 4.88, 5.05], [0.0, 0.0, 0.83, 4.74, 4.71, 4.89, 5.06, 4.12, 5.72, 6.33, 6.74, 6.75, 6.65, 6.72, 7.16, 7.12, 7.22, 7.43, 7.23, 6.66, 6.57, 6.84, 6.96, 6.88, 6.16, 5.87, 6.06, 6.23, 6.38, 6.46, 6.52, 6.02, 5.2, 5.23, 5.29, 5.38, 5.56], [0.0, 0.0, 1.55, 5.47, 5.51, 5.18, 5.48, 5.21, 6.64, 6.85, 7.49, 7.74, 7.52, 7.48, 7.77, 7.87, 7.73, 7.8, 7.96, 7.43, 7.04, 7.13, 7.32, 7.26, 6.92, 6.42, 6.46, 6.58, 6.7, 6.69, 6.96, 6.75, 5.75, 5.77, 5.82, 5.93, 6.09], [0.0, 0.0, 1.71, 5.94, 6.06, 5.63, 6.16, 5.55, 7.52, 7.7, 8.07, 8.45, 8.5, 8.28, 8.01, 8.24, 8.28, 8.16, 8.24, 8.13, 7.83, 7.65, 7.93, 7.99, 7.78, 6.95, 7.1, 7.42, 7.21, 7.17, 7.18, 6.86, 6.67, 6.3, 6.34, 6.45, 6.62], [0.0, 0.25, 1.76, 6.68, 6.71, 6.52, 6.69, 6.66, 8.08, 8.37, 8.46, 8.8, 8.93, 8.79, 8.65, 8.59, 8.7, 8.72, 8.86, 9.07, 8.59, 8.36, 8.31, 8.35, 8.16, 7.72, 7.52, 7.56, 7.55, 7.49, 7.67, 7.53, 7.16, 6.54, 6.65, 6.82, 6.98], [0.0, 0.33, 2.85, 7.02, 7.22, 7.29, 7.01, 7.93, 8.32, 8.62, 8.8, 9.03, 9.36, 9.25, 9.21, 9.11, 9.53, 9.37, 9.36, 9.35, 9.1, 8.83, 8.8, 8.85, 8.75, 8.56, 8.01, 8.01, 8.02, 7.94, 7.9, 7.83, 7.67, 7.08, 7.15, 7.25, 7.31], [0.0, 0.61, 2.89, 7.43, 6.87, 7.22, 7.05, 7.66, 8.59, 8.81, 9.11, 9.34, 9.52, 9.66, 9.51, 9.6, 9.72, 9.7, 9.65, 9.85, 9.83, 9.53, 9.26, 9.08, 9.01, 8.78, 8.52, 8.29, 8.24, 8.32, 8.23, 8.23, 7.91, 7.79, 7.62, 7.64, 7.67], [0.0, 0.42, 3.02, 6.83, 7.01, 7.25, 7.75, 8.42, 8.88, 9.01, 9.33, 9.61, 10.23, 10.3, 10.16, 10.04, 10.05, 10.3, 10.2, 10.06, 10.04, 9.77, 9.58, 9.48, 9.41, 9.3, 8.99, 8.66, 8.69, 8.69, 8.64, 8.47, 8.32, 8.04, 7.86, 7.92, 7.97], [0.06, 0.66, 2.84, 5.69, 6.74, 6.5, 4.29, 7.13, 8.35, 9.39, 9.87, 10.02, 10.29, 10.4, 10.44, 10.46, 10.46, 10.45, 10.4, 10.4, 10.49, 10.3, 10.03, 9.75, 9.75, 9.52, 9.19, 8.94, 8.82, 8.88, 8.83, 8.85, 8.56, 8.43, 8.24, 8.17, 8.18], [0.06, 0.64, 1.95, 5.5, 6.0, 6.39, 5.23, 8.31, 9.34, 9.64, 9.9, 10.13, 10.56, 10.89, 10.9, 10.82, 10.76, 10.73, 10.85, 10.78, 10.73, 10.66, 10.26, 10.1, 9.94, 9.9, 9.7, 9.28, 9.29, 9.26, 9.2, 8.97, 8.97, 8.56, 8.54, 8.53, 8.62], [0.31, 0.71, 1.82, 3.31, 5.82, 6.57, 6.54, 7.58, 8.84, 9.78, 10.06, 10.42, 10.76, 11.03, 11.05, 11.12, 11.11, 11.11, 11.11, 10.98, 10.92, 10.83, 10.77, 10.41, 10.42, 10.23, 9.9, 9.57, 9.38, 9.44, 9.36, 9.21, 9.06, 8.93, 8.77, 8.77, 8.72], [0.0, 0.53, 1.77, 5.37, 5.74, 4.85, 7.93, 6.7, 8.9, 9.91, 10.26, 10.52, 10.76, 11.23, 11.41, 11.45, 11.37, 11.26, 11.3, 11.34, 11.39, 11.35, 10.99, 10.71, 10.49, 10.38, 10.1, 9.84, 9.81, 9.74, 9.71, 9.31, 9.14, 9.02, 8.93, 9.07, 9.25], [0.3, 0.37, 1.75, 3.04, 5.61, 6.5, 7.84, 8.63, 9.45, 10.02, 10.31, 10.75, 11.06, 11.53, 11.68, 11.63, 11.71, 11.73, 11.77, 11.66, 11.51, 11.47, 11.32, 10.99, 11.01, 10.82, 10.3, 10.0, 9.99, 9.94, 9.82, 9.58, 9.2, 9.09, 9.01, 9.13, 9.22], [0.06, 0.3, 1.7, 3.09, 5.56, 5.09, 3.54, 7.13, 9.76, 10.12, 10.45, 11.0, 11.13, 11.53, 11.7, 11.86, 11.99, 11.86, 11.85, 11.84, 11.9, 11.92, 11.64, 11.22, 11.07, 10.98, 10.57, 10.09, 9.99, 9.93, 9.86, 9.62, 9.23, 9.13, 9.1, 9.06, 9.09], [0.06, 0.56, 1.67, 3.02, 5.47, 5.14, 4.17, 8.06, 9.54, 10.44, 10.61, 11.04, 11.25, 11.82, 12.22, 12.2, 12.16, 12.11, 12.24, 12.19, 12.08, 12.07, 11.79, 11.46, 11.16, 10.91, 10.69, 10.29, 10.03, 9.94, 9.88, 9.64, 9.52, 9.15, 9.11, 9.02, 9.01], [0.16, 0.36, 0.95, 2.88, 5.41, 5.85, 7.62, 8.51, 9.59, 10.36, 10.71, 11.22, 11.55, 12.0, 12.29, 12.32, 12.31, 12.36, 12.46, 12.4, 12.1, 11.98, 11.81, 11.59, 11.26, 10.89, 10.72, 10.37, 10.23, 9.96, 9.89, 9.64, 9.54, 9.36, 9.11, 9.0, 8.97], [0.0, 0.52, 1.76, 3.06, 5.49, 4.42, 8.4, 6.65, 9.19, 10.5, 10.91, 11.39, 11.6, 12.0, 12.45, 12.58, 12.45, 12.41, 12.39, 12.34, 12.17, 11.94, 11.8, 11.65, 11.33, 11.18, 10.75, 10.62, 10.3, 9.97, 9.9, 9.81, 9.56, 9.4, 9.31, 9.08, 8.96]], "spinnaker": [[0.0, 0.0, 0.05, 0.07, 0.29, 0.48, 0.52, 0.75, 0.93, 2.11, 3.07, 4.01, 5.47, 5.92, 6.0, 6.21, 5.98, 6.19, 6.02, 5.62, 5.8, 6.08, 6.45, 6.77, 7.0, 7.16, 7.81, 7.91, 7.97, 7.29, 6.04, 5.83, 5.76, 5.64, 5.45, 5.15, 4.9], [0.0, 0.0, 0.0, 0.07, 0.2, 0.28, 0.46, 0.57, 0.94, 2.1, 3.09, 4.69, 5.48, 5.88, 5.94, 5.97, 5.94, 6.3, 6.1, 5.48, 5.15, 5.97, 6.52, 6.91, 7.17, 7.78, 7.91, 8.0, 8.05, 7.45, 6.11, 5.89, 5.83, 5.74, 5.56, 5.16, 4.01], [0.0, 0.0, 0.0, 0.06, 0.24, 0.22, 0.32, 0.54, 0.98, 2.12, 3.11, 4.69, 5.4, 5.88, 5.96, 5.47, 6.07, 6.72, 6.5, 5.83, 5.37, 6.0, 6.8, 7.18, 7.43, 7.91, 8.04, 8.12, 8.63, 8.57, 6.2, 5.97, 5.95, 5.92, 5.85, 5.77, 6.0], [0.0, 0.0, 0.0, 0.0, 0.13, 0.16, 0.0, 0.51, 1.1, 2.2, 3.2, 4.49, 5.5, 5.57, 6.44, 6.23, 6.6, 7.41, 7.48, 7.1, 6.63, 6.69, 7.04, 7.6, 7.9, 8.1, 8.48, 8.64, 8.75, 8.76, 7.77, 6.06, 6.08, 6.13, 6.21, 6.39, 6.59], [0.0, 0.0, 0.0, 0.0, 0.11, 0.09, 0.0, 0.61, 1.19, 2.73, 3.95, 4.36, 6.46, 6.81, 7.33, 7.47, 7.39, 7.82, 8.41, 8.31, 7.95, 7.38, 7.55, 7.8, 8.08, 8.44, 8.67, 8.83, 8.92, 9.38, 8.75, 6.88, 6.91, 6.95, 7.02, 7.13, 7.33], [0.0, 0.0, 0.0, 0.0, 0.07, 0.1, 0.0, 0.71, 1.34, 2.84, 5.69, 3.93, 6.36, 7.85, 8.03, 8.64, 8.58, 8.65, 8.65, 8.9, 9.06, 8.77, 8.46, 8.27, 8.51, 8.67, 9.04, 9.35, 9.48, 9.57, 9.15, 8.33, 7.66, 7.69, 7.75, 7.91, 8.19], [0.0, 0.0, 0.0, 0.0, 0.08, 0.06, 0.0, 0.81, 1.5, 2.27, 4.9, 4.42, 5.71, 8.24, 8.72, 8.9, 9.2, 9.14, 9.0, 9.28, 9.45, 9.76, 9.28, 9.02, 9.19, 9.85, 9.75, 9.73, 9.78, 9.81, 10.07, 8.99, 8.39, 8.41, 8.47, 8.61, 8.79], [0.0, 0.0, 0.0, 0.0, 0.17, 0.13, 0.0, 0.91, 1.67, 2.49, 4.14, 6.14, 5.75, 7.79, 9.14, 9.3, 9.54, 9.69, 9.87, 9.81, 10.38, 10.68, 10.38, 9.94, 9.89, 10.0, 10.1, 10.36, 10.41, 10.45, 10.22, 9.92, 8.64, 8.74, 8.9, 9.18, 9.47], [0.0, 0.0, 0.0, 0.0, 0.21, 0.17, 0.0, 0.95, 1.83, 2.71, 3.9, 6.77, 6.65, 7.84, 9.24, 9.65, 9.95, 10.4, 10.69, 10.44, 10.72, 10.87, 11.04, 10.97, 10.6, 10.5, 10.81, 10.76, 10.74, 10.74, 10.82, 10.72, 9.95, 9.49, 9.6, 9.72, 9.76], [0.0, 0.0, 0.0, 0.0, 0.34, 0.29, 0.34, 0.98, 2.02, 3.0, 4.04, 6.54, 7.94, 8.01, 9.3, 10.31, 10.53, 10.95, 11.02, 11.01, 11.26, 11.5, 11.64, 11.52, 11.31, 11.21, 11.07, 11.16, 11.29, 11.34, 11.17, 11.18, 10.51, 10.21, 10.26, 10.34, 10.46], [0.0, 0.0, 0.0, 0.0, 0.27, 0.21, 0.0, 1.2, 2.12, 3.27, 4.04, 6.64, 8.02, 8.2, 9.27, 10.75, 10.89, 11.08, 11.52, 11.68, 11.74, 11.77, 11.85, 11.98, 12.02, 11.57, 11.62, 11.7, 11.74, 11.8, 11.7, 11.29, 11.28, 10.79, 10.59, 10.66, 10.65], [0.0, 0.0, 0.0, 0.14, 0.53, 0.48, 0.63, 1.32, 2.41, 3.56, 4.58, 6.59, 7.64, 9.62, 9.98, 10.6, 11.37, 11.63, 11.81, 11.87, 11.99, 12.21, 12.44, 12.46, 12.28, 12.07, 11.97, 11.92, 12.02, 12.05, 12.01, 11.87, 11.41, 11.09, 10.93, 11.1, 11.25], [0.0, 0.0, 0.0, 0.0, 0.32, 0.41, 0.32, 1.39, 2.54, 3.51, 4.61, 6.36, 8.13, 9.19, 9.82, 10.93, 11.64, 11.68, 11.95, 12.34, 12.5, 12.57, 12.62, 12.68, 12.75, 12.49, 12.43, 12.54, 12.48, 12.46, 12.31, 12.18, 11.98, 11.6, 11.38, 11.42, 11.52], [0.0, 0.0, 0.0, 0.15, 0.3, 0.42, 0.32, 1.34, 2.35, 3.55, 4.6, 6.19, 7.86, 9.77, 10.21, 11.0, 11.83, 12.21, 12.44, 12.65, 12.7, 12.97, 13.13, 13.29, 13.19, 13.0, 12.81, 12.67, 12.74, 12.75, 12.48, 12.29, 12.09, 11.79, 11.79, 11.86, 12.01], [0.0, 0.0, 0.0, 0.29, 0.35, 0.52, 0.72, 1.44, 2.73, 3.9, 5.27, 6.23, 7.22, 10.29, 10.48, 11.22, 12.18, 12.39, 12.53, 12.75, 13.0, 13.34, 13.43, 13.42, 13.41, 13.24, 13.14, 13.29, 13.22, 13.01, 12.62, 12.39, 12.18, 11.92, 11.96, 12.18, 12.39], [0.0, 0.0, 0.0, 0.0, 0.33, 0.4, 0.0, 1.41, 2.4, 3.6, 4.6, 5.85, 8.02, 9.24, 10.62, 11.0, 12.32, 12.56, 12.89, 13.36, 13.41, 13.56, 13.7, 13.98, 13.86, 13.49, 13.32, 13.4, 13.36, 13.19, 12.92, 12.45, 12.25, 12.13, 12.01, 12.12, 12.2], [0.0, 0.0, 0.0, 0.16, 0.37, 0.56, 0.72, 1.51, 2.81, 3.98, 5.13, 5.91, 7.93, 9.67, 11.53, 11.5, 12.72, 13.1, 13.19, 13.43, 13.55, 13.72, 13.93, 14.25, 14.14, 13.76, 13.39, 13.33, 13.29, 13.2, 12.94, 12.77, 12.3, 12.18, 12.02, 12.04, 12.05], [0.0, 0.0, 0.0, 0.0, 0.37, 0.47, 0.35, 1.31, 2.55, 4.11, 5.38, 6.1, 8.06, 9.14, 10.99, 11.46, 12.4, 13.22, 13.3, 13.74, 14.12, 14.0, 13.99, 14.1, 14.01, 13.83, 13.59, 13.42, 13.26, 13.19, 13.1, 12.8, 12.32, 12.21, 12.02, 11.99, 11.97], [0.0, 0.0, 0.0, 0.0, 0.36, 0.48, 0.36, 1.52, 2.55, 4.05, 4.96, 6.3, 8.41, 9.52, 11.71, 11.75, 12.53, 13.47, 13.72, 13.95, 14.21, 14.06, 13.98, 14.01, 13.98, 13.8, 13.68, 13.46, 13.38, 13.18, 13.11, 12.81, 12.58, 12.23, 12.16, 11.97, 11.94], [0.0, 0.04, 0.1, 0.34, 0.41, 0.77, 0.82, 1.65, 2.95, 4.49, 5.75, 6.3, 8.28, 8.9, 11.85, 11.93, 12.56, 13.61, 13.88, 13.84, 13.96, 13.99, 13.95, 13.94, 13.94, 13.78, 13.7, 13.62, 13.42, 13.18, 13.11, 12.82, 12.71, 12.49, 12.39, 11.97, 11.93], [0.0, 0.03, 0.11, 0.36, 0.67, 0.63, 0.0, 1.62, 2.51, 4.23, 5.46, 6.58, 8.67, 9.57, 11.31, 12.05, 12.3, 13.22, 13.71, 13.74, 13.87, 13.9, 13.92, 13.91, 13.92, 13.89, 13.7, 13.65, 13.6, 13.44, 13.12, 13.0, 12.73, 12.52, 12.43, 11.97, 11.92]]}};
-
 // Physics Helper Functions
-function getApparentWind(boat, trueWind) {
-    // True Wind Components (From -> To)
-    // TWS vector: points in direction wind is blowing.
-    // If wind direction is 0 (N), it blows S (0, 1) in canvas coords.
-    // True Wind Vector T: (sin(wd)*speed, -cos(wd)*speed)
-    const twX = Math.sin(trueWind.direction) * trueWind.speed;
-    const twY = -Math.cos(trueWind.direction) * trueWind.speed;
-
-    // Boat Velocity Vector B: (vx, vy)
-    const bX = boat.velocity.x;
-    const bY = boat.velocity.y;
-
-    // Apparent Wind Vector A = T - B
-    const awX = twX - bX;
-    const awY = twY - bY;
-
-    // AWS
-    const aws = Math.sqrt(awX * awX + awY * awY);
-
-    // AWD (Global Direction)
-    // atan2(x, -y) matches standard "0 is Up/North" logic if y is down
-    const awd = Math.atan2(awX, -awY);
-
-    return { speed: aws, direction: awd };
-}
-
 function normalizeAngle(angle) {
     while (angle > Math.PI) angle -= 2 * Math.PI;
     while (angle < -Math.PI) angle += 2 * Math.PI;
@@ -1921,53 +1897,101 @@ function showRaceMessage(text, textColorClass, borderColorClass) {
 
 function hideRaceMessage() { if (UI.message) UI.message.classList.add('hidden'); }
 
-function getTargetSpeed(awaRadians, useSpinnaker, awsKnots) {
-    const awaDeg = Math.abs(awaRadians) * (180 / Math.PI);
 
-    // Bounds check
-    const aws = Math.max(0, Math.min(40, awsKnots));
-    const awa = Math.max(0, Math.min(180, awaDeg));
+// Physics Helper Functions
+function getApparentWind(boat, trueWind) {
+    // True Wind Direction (Coming From)
+    // TWS: trueWind.speed
+    // TWD: trueWind.direction
 
-    const awsSteps = J111_AWS_POLARS.aws; // 0, 2, ... 40
-    const awaSteps = J111_AWS_POLARS.awa; // 0, 5, ... 180
+    // Convert TWD to vector (Flow direction is TWD + PI)
+    const twDir = trueWind.direction + Math.PI;
+    const twX = Math.sin(twDir) * trueWind.speed;
+    const twY = -Math.cos(twDir) * trueWind.speed;
 
-    // Find AWS index
-    let awsIdx = 0;
-    for(let i=0; i<awsSteps.length-1; i++) {
-        if(aws >= awsSteps[i] && aws <= awsSteps[i+1]) { awsIdx = i; break; }
+    // Boat Velocity Vector
+    // boat.heading is 0=Up.
+    const bX = boat.velocity.x;
+    const bY = boat.velocity.y;
+
+    // Apparent Wind Vector = True Wind Vector - Boat Velocity Vector
+    const awX = twX - bX;
+    const awY = twY - bY;
+
+    const aws = Math.sqrt(awX*awX + awY*awY);
+    // atan2(x, -y) gives angle relative to North (0, -1) in CW?
+    // Standard Math.atan2(y, x) gives angle from X axis.
+    // Our coordinate system: 0 is North (-Y).
+    const awDirFrom = Math.atan2(awX, -awY) - Math.PI;
+
+    // AWA: Angle between Heading and Apparent Wind
+    const awa = normalizeAngle(boat.heading - awDirFrom);
+
+    return { speed: aws, angle: awa, direction: normalizeAngle(awDirFrom) };
+}
+
+function getInterpolatedSpeed(awaDeg, awsKnots, useSpinnaker) {
+    const polars = J111_AWS_POLARS;
+
+    // AWS Interpolation
+    let awsIdx = -1;
+    for (let i = 0; i < polars.aws.length - 1; i++) {
+        if (awsKnots >= polars.aws[i] && awsKnots <= polars.aws[i+1]) {
+            awsIdx = i;
+            break;
+        }
     }
 
-    // Find AWA index
-    let awaIdx = 0;
-    for(let i=0; i<awaSteps.length-1; i++) {
-        if(awa >= awaSteps[i] && awa <= awaSteps[i+1]) { awaIdx = i; break; }
+    // Clamp AWS
+    let awsT = 0;
+    if (awsIdx === -1) {
+        if (awsKnots < polars.aws[0]) { awsIdx = 0; awsT = 0; }
+        else { awsIdx = polars.aws.length - 2; awsT = 1; }
+    } else {
+        awsT = (awsKnots - polars.aws[awsIdx]) / (polars.aws[awsIdx+1] - polars.aws[awsIdx]);
     }
 
-    const table = useSpinnaker ? J111_AWS_POLARS.speeds.spinnaker : J111_AWS_POLARS.speeds.jib;
+    // AWA Interpolation
+    let awaIdx = -1;
+    // Handle symmetry: polars are 0-180. Input awaDeg is abs(AWA).
+    const absAwa = Math.abs(awaDeg);
+    for (let i = 0; i < polars.awa.length - 1; i++) {
+        if (absAwa >= polars.awa[i] && absAwa <= polars.awa[i+1]) {
+            awaIdx = i;
+            break;
+        }
+    }
+
+    // Clamp AWA
+    let awaT = 0;
+    if (awaIdx === -1) {
+        if (absAwa < polars.awa[0]) { awaIdx = 0; awaT = 0; }
+        else { awaIdx = polars.awa.length - 2; awaT = 1; }
+    } else {
+        awaT = (absAwa - polars.awa[awaIdx]) / (polars.awa[awaIdx+1] - polars.awa[awaIdx]);
+    }
+
+    const data = useSpinnaker ? polars.speeds.spinnaker : polars.speeds.jib;
 
     // Bilinear Interpolation
-    // Q11(x1, y1), Q12(x1, y2), Q21(x2, y1), Q22(x2, y2)
-    // x = aws, y = awa
+    // speeds[awsIndex][awaIndex]
+    // Row: AWS, Col: AWA
+    const v11 = data[awsIdx][awaIdx];
+    const v12 = data[awsIdx][awaIdx+1];
+    const v21 = data[awsIdx+1][awaIdx];
+    const v22 = data[awsIdx+1][awaIdx+1];
 
-    const x1 = awsSteps[awsIdx], x2 = awsSteps[awsIdx+1];
-    const y1 = awaSteps[awaIdx], y2 = awaSteps[awaIdx+1];
+    const vTop = v11 + awaT * (v12 - v11);
+    const vBot = v21 + awaT * (v22 - v21);
 
-    // Values
-    // Table is [aws_row][awa_col]
-    const q11 = table[awsIdx][awaIdx];
-    const q12 = table[awsIdx][awaIdx+1];
-    const q21 = table[awsIdx+1][awaIdx];
-    const q22 = table[awsIdx+1][awaIdx+1];
-
-    // R1 = Lerp(x) at y1
-    const tx = (aws - x1) / (x2 - x1);
-    const r1 = q11 + tx * (q21 - q11);
-    const r2 = q12 + tx * (q22 - q12);
-
-    // P = Lerp(y) between R1 and R2
-    const ty = (awa - y1) / (y2 - y1);
-    return r1 + ty * (r2 - r1);
+    return vTop + awsT * (vBot - vTop);
 }
+
+function getTargetSpeed(awaRadians, useSpinnaker, awsKnots) {
+    const awaDeg = Math.abs(awaRadians) * (180 / Math.PI);
+    return getInterpolatedSpeed(awaDeg, awsKnots, useSpinnaker);
+}
+
 
 function checkBoundaryExiting(boat) {
     if (!state.course.boundary) return false;
@@ -2214,6 +2238,7 @@ function triggerPenalty(boat) {
 }
 
 // Update Boat Physics & Race Status
+// Update Boat Physics & Race Status
 function updateBoat(boat, dt) {
     if (state.race.status === 'waiting') return;
 
@@ -2254,19 +2279,15 @@ function updateBoat(boat, dt) {
 
     boat.heading = normalizeAngle(boat.heading);
 
-    // Physics - Wind
+    // Physics
     const localWind = getWindAt(boat.x, boat.y);
-    const angleToWind = Math.abs(normalizeAngle(boat.heading - localWind.direction)); // TWA
-
-    // Apparent Wind
     const apparentWind = getApparentWind(boat, localWind);
-    // Apply Bad Air reduction to AWS directly?
-    // Bad Air reduces the *energy* available. Reducing TWS effectively reduces AWS.
-    // However, we calculated AWS from TWS.
-    // Let's calculate a "Physics AWS" which includes bad air.
-    // Or just pass an "effective AWS" to getTargetSpeed.
+    const angleToWind = Math.abs(apparentWind.angle); // AWA
 
-    // Disturbed Air Calculation
+    // Update Turbulence Particles
+    updateTurbulence(boat, dt);
+
+    // Disturbed Air (Calculated based on True Wind Flow)
     boat.badAirIntensity = 0;
     const windDir = localWind.direction;
     const wx = -Math.sin(windDir); // Flow X
@@ -2297,28 +2318,21 @@ function updateBoat(boat, dt) {
         }
     }
 
-    // Apply Bad Air to Apparent Wind
-    // If wind is blocked, TWS is effectively lower.
-    // We already calculated AWS based on full TWS.
-    // Recalculating AWS with reduced TWS is complex because boat velocity is fixed.
-    // Approximation: Reduce AWS by the bad air factor.
-    // AWS is mostly wind driven on these boats.
-    const effectiveAWS = apparentWind.speed * (1.0 - boat.badAirIntensity);
-    const effectiveAWA = Math.abs(normalizeAngle(apparentWind.direction - boat.heading));
+    // Sail Logic
+    // Use AWA for trim
+    let relWind = apparentWind.angle;
+    if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
 
-    // Update Turbulence Particles
-    updateTurbulence(boat, dt);
+    // Check Tacking (Rule 13)
+    // Using TWA for Rules consistency or AWA?
+    // Rules usually refer to "Head to Wind". Tacking starts when head passes wind.
+    // TWA is better for the official "In Irons" definition for rules.
+    const trueAngleToWind = Math.abs(normalizeAngle(boat.heading - localWind.direction));
 
-    // Sail Logic (Using Apparent Wind Angle)
-    let relAppWind = normalizeAngle(apparentWind.direction - boat.heading);
-    if (Math.abs(relAppWind) > 0.1) boat.targetBoomSide = relAppWind > 0 ? 1 : -1;
-
-    // Check Tacking (Rule 13) - Uses True Wind Angle (angleToWind) generally, but physically feels AWA.
-    // Rules definition: "Head to wind" (TWA=0).
-    if (angleToWind < Math.PI / 6) { // < 30 degrees
+    if (trueAngleToWind < Math.PI / 6) { // < 30 degrees
         boat.raceState.isTacking = true;
     } else {
-        if (boat.raceState.isTacking && angleToWind > Math.PI / 4.5) {
+        if (boat.raceState.isTacking && trueAngleToWind > Math.PI / 4.5) {
              boat.raceState.isTacking = false;
         }
     }
@@ -2327,17 +2341,19 @@ function updateBoat(boat, dt) {
     boat.boomSide += (boat.targetBoomSide - boat.boomSide) * swingSpeed;
     if (Math.abs(boat.targetBoomSide - boat.boomSide) < 0.01) boat.boomSide = boat.targetBoomSide;
 
-    // Optimal Sail Trim (Based on AWA)
-    // AWA is 0 (Head to wind) -> 180 (Dead Run).
-    // Optimal Angle of Attack ~ 20-25 degrees?
-    // Sail Angle = AWA - AoA.
-    // Close Hauled: AWA=28. Sail=3?
-    // Reaching: AWA=90. Sail=65?
-    // Downwind: AWA=150. Sail=90 (Max out)
-    // Heuristic: Sail Angle = AWA / 2 is decent, but usually AWA - offset.
-    // Let's use: max(0, AWA - 0.35) (approx 20 degrees).
-    let optimalSailAngle = Math.max(0, effectiveAWA - 0.4);
-    if (optimalSailAngle > Math.PI/2.0) optimalSailAngle = Math.PI/2.0;
+    // Optimal Sail Angle based on AWA
+    // Standard trim: Sheet in to half the AWA? Or lookup?
+    // Simplified: Close hauled (AWA~25) -> Sail~0.
+    // Reach (AWA~90) -> Sail~45.
+    // Downwind (AWA~150-180) -> Sail~90.
+
+    // Let's use AWA - small_offset.
+    // If AWA is 30, optimal is 0.
+    // If AWA is 90, optimal is 45? (PI/4)
+    // If AWA is 180, optimal is 90.
+
+    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 6));
+    if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
 
     if (boat.manualTrim && boat.isPlayer) {
         const trimRate = 0.8 * dt;
@@ -2361,15 +2377,17 @@ function updateBoat(boat, dt) {
     const jibFactor = Math.max(0, 1 - progress * 2);
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
-    let targetKnotsJib = getTargetSpeed(effectiveAWA, false, effectiveAWS);
-    let targetKnotsSpin = getTargetSpeed(effectiveAWA, true, effectiveAWS);
+    // Apply Bad Air reduction to AWS?
+    // Effectively, bad air reduces the wind velocity the sails "see".
+    const effectiveAWS = apparentWind.speed * (1.0 - boat.badAirIntensity);
+
+    let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveAWS);
+    let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveAWS);
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
 
     const actualMagnitude = Math.abs(boat.sailAngle);
     const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
-    // Trim efficiency penalty: if off by 10 deg (0.17 rad), penalty is 0.17*2 = 0.34? Too harsh.
-    // Reduced penalty scale.
-    const trimEfficiency = Math.max(0, 1.0 - angleDiff * 1.0);
+    const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
     targetKnots *= trimEfficiency;
 
     let targetGameSpeed = targetKnots * 0.25;
@@ -2383,38 +2401,38 @@ function updateBoat(boat, dt) {
          if (checkBoundaryExiting(boat)) window.onRaceEvent('collision_boundary', { boat });
     }
 
-    // Luffing Logic (Based on Effective AoA to Apparent Wind)
-    const currentAoA = effectiveAWA - actualMagnitude;
-    const luffStartThreshold = 0.3; // Stalls below 17 degrees AoA?
-    if (currentAoA < luffStartThreshold) {
-        boat.luffIntensity = Math.min(1.0, Math.max(0, 1.0 - (currentAoA / luffStartThreshold)));
+    // Luffing Logic (Visual only now, speed handled by Polars/TrimEfficiency)
+    // Visual luff if angleToWind < sailAngle significantly (Sheeted out too far)
+    // Or if sailing too high (AWA < Min Sailing Angle).
+    // Our Polars return 0 speed for very low AWA, so speed drops naturally.
+
+    const effectiveAoA = angleToWind - actualMagnitude;
+    const luffStartThreshold = 0.5;
+    if (effectiveAoA < luffStartThreshold) {
+        boat.luffIntensity = Math.min(1.0, Math.max(0, 1.0 - (effectiveAoA / luffStartThreshold)));
         boat.luffing = true;
     } else {
         boat.luffIntensity = 0;
         boat.luffing = false;
     }
 
-    // Smoother speed changes (Higher inertia)
-    // 0.995 -> 0.9985 reduces speed decay when drive is lost (gybes/tacks)
+    // Smoother speed changes
     const speedAlpha = 1 - Math.pow(0.9985, timeScale);
     boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
 
-    // AI Boost: If wiggle is active, ensure minimum speed to slide off obstacles
+    // AI Boost: If wiggle is active
     if (!boat.isPlayer && boat.controller && boat.controller.wiggleActive) {
-        // Progressive Power: The longer we are stuck, the harder we push
-        let minSpeed = 0.15; // 3.5kn
+        let minSpeed = 0.15;
         const stuckTime = boat.controller.lowSpeedTimer;
-
-        if (stuckTime > 10.0) minSpeed = 0.30; // 7.0kn
-        if (stuckTime > 20.0) minSpeed = 0.50; // 11.5kn
-        if (stuckTime > 30.0) minSpeed = 0.75; // 17.5kn (Increased power)
-
+        if (stuckTime > 10.0) minSpeed = 0.30;
+        if (stuckTime > 20.0) minSpeed = 0.50;
+        if (stuckTime > 30.0) minSpeed = 0.75;
         if (boat.speed < minSpeed) boat.speed = minSpeed;
     }
 
-    // Irons Penalty (Extra drag when head-to-wind TWA)
-    // Still use TWA for Irons check as it represents the "No Go Zone" better physically
-    if (angleToWind < 0.5) {
+    // Irons Penalty (Extra drag when head-to-wind)
+    // Based on TWA or AWA? TWA is safer to define 'Irons'.
+    if (trueAngleToWind < 0.5) {
         boat.speed *= Math.pow(0.997, timeScale);
     }
 
