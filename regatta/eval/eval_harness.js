@@ -99,6 +99,9 @@
         // Force Start
         window.startRace();
 
+        // Capture all participants
+        const participants = [...state.boats];
+
         // Run Loop
         const dt = 1/60;
         const maxTime = timeLimit || 600;
@@ -121,7 +124,7 @@
             config: { seed, timeLimit },
             events: this.data.events,
             incidents: this.data.incidents,
-            boats: state.boats.map(b => ({
+            boats: participants.map(b => ({
                 id: b.id,
                 name: b.name,
                 character: b.name,

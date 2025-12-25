@@ -89,6 +89,8 @@ function calculateStats(values, type = 'continuous') {
             return window.evalHarness.runTrial(seed, limit);
         }, { seed, limit: TIME_LIMIT });
 
+        console.log(`Trial ${i+1} boats:`, result.boats.length, result.boats.map(b => b.name));
+
         allResults.push(result);
     }
 
