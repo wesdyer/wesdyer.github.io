@@ -4066,29 +4066,33 @@ function showResults() {
     });
 
     const leader = sorted[0];
-    UI.resultsList.innerHTML = '';
 
     // CSS Grid Layout Class
-    // Columns: Pos, Img, Team, Time, Delta, Top, Avg, Dist, Pen, Points (implicit in space)
-    // Optimized column widths to give more space to Sailor (1fr)
     const gridClass = "grid grid-cols-[4rem_4rem_1fr_4.5rem_4.5rem_5rem_5rem_5rem_5rem_5rem] gap-4 items-center px-4";
 
     // Header
-    const header = document.createElement('div');
-    header.className = `${gridClass} py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2`;
-    header.innerHTML = `
-        <div class="text-center">Position</div>
-        <div></div>
-        <div>Sailor</div>
-        <div class="text-right">Time</div>
-        <div class="text-right">Delta</div>
-        <div class="text-right">Top Spd</div>
-        <div class="text-right">Average</div>
-        <div class="text-right">Distance</div>
-        <div class="text-center">Penalties</div>
-        <div class="text-center text-white">Points</div>
-    `;
-    UI.resultsList.appendChild(header);
+    let header = UI.resultsList.querySelector('.res-header');
+    if (!header) {
+        // Only clear if we are initializing clean
+        if (UI.resultsList.children.length === 0 || !UI.resultsList.querySelector('.res-header')) {
+             UI.resultsList.innerHTML = '';
+        }
+        header = document.createElement('div');
+        header.className = `${gridClass} py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 res-header`;
+        header.innerHTML = `
+            <div class="text-center">Position</div>
+            <div></div>
+            <div>Sailor</div>
+            <div class="text-right">Time</div>
+            <div class="text-right">Delta</div>
+            <div class="text-right">Top Spd</div>
+            <div class="text-right">Average</div>
+            <div class="text-right">Distance</div>
+            <div class="text-center">Penalties</div>
+            <div class="text-center text-white">Points</div>
+        `;
+        UI.resultsList.appendChild(header);
+    }
 
     const getLuma = (c) => {
         let r=0, g=0, b=0;
@@ -4100,105 +4104,142 @@ function showResults() {
         return 0.299*r + 0.587*g + 0.114*b;
     };
 
+    if (!UI.resultRows) UI.resultRows = {};
     const totalBoats = state.boats.length;
 
     sorted.forEach((boat, index) => {
         const points = totalBoats - index;
+        let row = UI.resultRows[boat.id];
+        let isNew = false;
 
         const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
         const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
-
-        // Color Logic: Use Spinnaker if Hull is Very Light OR Very Dark
         const hullLuma = getLuma(hullColor);
         const useSpin = hullLuma < 50 || hullLuma > 200;
         const bgColor = useSpin ? spinColor : hullColor;
 
-        // Text Color: Always White for Stats
-        const textCol = "text-white";
-        const subTextCol = "text-white/70";
+        if (!row) {
+            isNew = true;
+            row = document.createElement('div');
+            row.className = "relative mb-3 h-16 w-full res-row"; // Added res-row class
 
-        // Row Container
-        const row = document.createElement('div');
-        row.className = "relative mb-3 h-16 w-full"; // Fixed height
+            // Background Bar
+            const bar = document.createElement('div');
+            bar.className = "res-bar absolute inset-0 right-12 overflow-hidden drop-shadow-lg transition-transform hover:scale-[1.01] origin-left";
+            // Set initial background
+            bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 50%)`;
 
-        // Background Bar with Fade Effect
-        const bar = document.createElement('div');
-        bar.className = "absolute inset-0 right-12 overflow-hidden drop-shadow-lg transition-transform hover:scale-[1.01] origin-left";
-        // Fade from transparent on Left (showing dark bg) to Solid on Right
-        // Fade extends across the entire width for a smoother effect
-        bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 50%)`;
+            // Gloss & Fade
+            const gloss = document.createElement('div');
+            gloss.className = "absolute inset-0 bg-gradient-to-b from-white/20 to-black/10 pointer-events-none";
+            bar.appendChild(gloss);
+            const fade = document.createElement('div');
+            fade.className = "absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-r from-transparent to-white/10 mix-blend-overlay";
+            bar.appendChild(fade);
 
-        // Gloss Overlay
-        const gloss = document.createElement('div');
-        gloss.className = "absolute inset-0 bg-gradient-to-b from-white/20 to-black/10 pointer-events-none";
-        bar.appendChild(gloss);
+            row.appendChild(bar);
 
-        // Right Side Mask (Simulate the cut)
-        const fade = document.createElement('div');
-        fade.className = "absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-r from-transparent to-white/10 mix-blend-overlay";
-        bar.appendChild(fade);
+            // Line
+            const line = document.createElement('div');
+            line.className = "absolute bottom-0 left-0 right-[25px] h-[1px] bg-white";
+            row.appendChild(line);
 
-        row.appendChild(bar);
+            // Content
+            const content = document.createElement('div');
+            content.className = `relative z-10 ${gridClass} w-full h-full`;
 
-        // Thin white line under the row
-        const line = document.createElement('div');
-        line.className = "absolute bottom-0 left-0 right-[25px] h-[1px] bg-white";
-        row.appendChild(line);
+            // Rank Container
+            const rankDiv = document.createElement('div');
+            rankDiv.className = `res-rank flex justify-center items-center`;
+            content.appendChild(rankDiv);
 
-        // Content Layer (Grid)
-        const content = document.createElement('div');
-        content.className = `relative z-10 ${gridClass} w-full h-full`;
+            // Image Container
+            const imgDiv = document.createElement('div');
+            imgDiv.className = `flex items-center justify-center`;
+            const imgBox = document.createElement('div');
+            imgBox.className = "w-12 h-12";
+            if (boat.isPlayer) {
+                const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                star.setAttribute("viewBox", "0 0 24 24");
+                star.setAttribute("class", "w-full h-full drop-shadow-md");
+                star.setAttribute("fill", "#ffffff");
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
+                star.appendChild(path);
+                imgBox.appendChild(star);
+            } else {
+                const img = document.createElement('img');
+                img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
+                img.className = "w-full h-full rounded-md object-cover";
+                imgDiv.appendChild(img);
+            }
+            imgDiv.appendChild(imgBox);
+            content.appendChild(imgDiv);
 
-        // Rank
-        const rankDiv = document.createElement('div');
-        rankDiv.className = `flex justify-center items-center`;
+            // Name
+            const nameDiv = document.createElement('div');
+            nameDiv.className = `res-name font-black text-2xl italic uppercase tracking-tighter truncate text-white drop-shadow-md`;
+            nameDiv.textContent = boat.name;
+            content.appendChild(nameDiv);
 
-        if (index <= 2) {
-             const colors = [
-                 "text-yellow-900 bg-yellow-400 border-yellow-200", // Gold
-                 "text-slate-900 bg-slate-300 border-slate-200",   // Silver
-                 "text-amber-900 bg-amber-600 border-amber-400"    // Bronze
-             ];
-             const medal = document.createElement('div');
-             medal.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg font-black border-2 shadow-md ${colors[index]}`;
-             medal.textContent = index + 1;
-             rankDiv.appendChild(medal);
-        } else {
-             const txt = document.createElement('div');
-             txt.className = `text-2xl font-black italic text-white/80`;
-             txt.textContent = index + 1;
-             rankDiv.appendChild(txt);
+            // Helper for stats
+            const createStat = (cls) => {
+                const d = document.createElement('div');
+                d.className = `${cls} font-sans font-bold text-sm text-white drop-shadow-sm text-right`;
+                return d;
+            };
+
+            content.appendChild(createStat('res-time'));
+            content.appendChild(createStat('res-delta')); // Has text-white/70 logic
+            content.appendChild(createStat('res-top'));
+            content.appendChild(createStat('res-avg'));
+            content.appendChild(createStat('res-dist'));
+
+            const penDiv = document.createElement('div');
+            penDiv.className = `res-pen text-center font-sans font-bold text-sm text-white/30`;
+            content.appendChild(penDiv);
+
+            row.appendChild(content);
+
+            // Points Box
+            const ptsBox = document.createElement('div');
+            ptsBox.className = "absolute right-0 top-0 bottom-0 w-24 bg-white transform -skew-x-12 origin-bottom-right flex items-center justify-center shadow-md z-20 border-l-4 border-white/50 rounded-br-2xl";
+            const ptsText = document.createElement('div');
+            ptsText.className = "res-points transform skew-x-12 text-slate-900 font-black text-3xl";
+            ptsBox.appendChild(ptsText);
+            row.appendChild(ptsBox);
+
+            UI.resultRows[boat.id] = row;
         }
 
-        // Image (Square)
-        const imgDiv = document.createElement('div');
-        imgDiv.className = `flex items-center justify-center`;
-        const imgBox = document.createElement('div');
-        imgBox.className = "w-12 h-12";
+        // Update Content
+        const bar = row.querySelector('.res-bar');
+        if (bar) bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 50%)`;
 
-        if (boat.isPlayer) {
-             const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-             star.setAttribute("viewBox", "0 0 24 24");
-             star.setAttribute("class", "w-full h-full drop-shadow-md");
-             star.setAttribute("fill", "#ffffff");
-             const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-             path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
-             star.appendChild(path);
-             imgBox.appendChild(star);
-        } else {
-             const img = document.createElement('img');
-             img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
-             img.className = "w-full h-full rounded-md object-cover";
-             imgDiv.appendChild(img);
+        // Update Rank
+        const rankDiv = row.querySelector('.res-rank');
+        if (rankDiv) {
+            // Check if we need to update rank style
+            // Simple check: clear and rebuild if type changes (medal vs text)
+            // Or just clear and rebuild always (lightweight)
+            rankDiv.innerHTML = '';
+            if (index <= 2) {
+                 const colors = [
+                     "text-yellow-900 bg-yellow-400 border-yellow-200", // Gold
+                     "text-slate-900 bg-slate-300 border-slate-200",   // Silver
+                     "text-amber-900 bg-amber-600 border-amber-400"    // Bronze
+                 ];
+                 const medal = document.createElement('div');
+                 medal.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg font-black border-2 shadow-md ${colors[index]}`;
+                 medal.textContent = index + 1;
+                 rankDiv.appendChild(medal);
+            } else {
+                 const txt = document.createElement('div');
+                 txt.className = `text-2xl font-black italic text-white/80`;
+                 txt.textContent = index + 1;
+                 rankDiv.appendChild(txt);
+            }
         }
-
-        imgDiv.appendChild(imgBox);
-
-        // Sailor Name
-        // Reduced font size from 3xl to 2xl to allow more space
-        const nameDiv = document.createElement('div');
-        nameDiv.className = `font-black text-2xl italic uppercase tracking-tighter truncate text-white drop-shadow-md`;
-        nameDiv.textContent = boat.name;
 
         // Stats
         const finishTime = formatTime(boat.raceState.finishTime);
@@ -4214,54 +4255,22 @@ function showResults() {
         const totalDist = Math.round(boat.raceState.legDistances.reduce((a, b) => a + b, 0));
         const penalties = boat.raceState.totalPenalties;
 
-        // Stats Styling: Font Sans, Bold, White
-        // Reduced font size from text-lg to text-sm for better alignment with headers
-        const createStat = (val, align='text-right') => {
-            const d = document.createElement('div');
-            d.className = `${align} font-sans font-bold text-sm text-white drop-shadow-sm`;
-            d.textContent = val;
-            return d;
-        };
+        const updateText = (cls, val) => { const el = row.querySelector('.'+cls); if(el) el.textContent = val; return el; };
 
-        const timeDiv = createStat(finishTime);
-        const deltaDiv = document.createElement('div');
-        deltaDiv.className = `text-right font-sans font-bold text-sm text-white/70`;
-        deltaDiv.textContent = delta;
+        updateText('res-time', finishTime);
+        const dEl = updateText('res-delta', delta);
+        if (dEl) dEl.className = `res-delta font-sans font-bold text-sm text-right ${delta==='-' ? 'text-white/30' : 'text-white/70'}`;
 
-        const topDiv = createStat(topSpeed);
-        const avgDiv = createStat(avgSpeed);
-        const distDiv = createStat(totalDist);
+        updateText('res-top', topSpeed);
+        updateText('res-avg', avgSpeed);
+        updateText('res-dist', totalDist);
 
-        const penDiv = document.createElement('div');
-        // Penalty: White text (was Red), no background
-        penDiv.className = `text-center font-sans font-bold text-sm ${penalties > 0 ? 'text-white' : 'text-white/30'}`;
-        penDiv.textContent = penalties > 0 ? penalties : "-";
+        const pEl = updateText('res-pen', penalties > 0 ? penalties : "-");
+        if (pEl) pEl.className = `res-pen text-center font-sans font-bold text-sm ${penalties > 0 ? 'text-white' : 'text-white/30'}`;
 
-        content.appendChild(rankDiv);
-        content.appendChild(imgDiv);
-        content.appendChild(nameDiv);
-        content.appendChild(timeDiv);
-        content.appendChild(deltaDiv);
-        content.appendChild(topDiv);
-        content.appendChild(avgDiv);
-        content.appendChild(distDiv);
-        content.appendChild(penDiv);
+        updateText('res-points', points);
 
-        row.appendChild(content);
-
-        // Points (Right Aligned Skewed Box)
-        // Position absolutely to the right
-        // Add rounded-br-2xl for rounded bottom right corner
-        const ptsBox = document.createElement('div');
-        ptsBox.className = "absolute right-0 top-0 bottom-0 w-24 bg-white transform -skew-x-12 origin-bottom-right flex items-center justify-center shadow-md z-20 border-l-4 border-white/50 rounded-br-2xl";
-        // Inner unskewed container for text
-        const ptsText = document.createElement('div');
-        ptsText.className = "transform skew-x-12 text-slate-900 font-black text-3xl";
-        ptsText.textContent = points;
-        ptsBox.appendChild(ptsText);
-
-        row.appendChild(ptsBox);
-
+        // Ensure order by appending (moves element to end)
         UI.resultsList.appendChild(row);
     });
 }
@@ -4848,6 +4857,8 @@ function resetGame() {
     state.boats = [];
     if (UI.lbRows) UI.lbRows.innerHTML = '';
     UI.boatRows = {};
+    if (UI.resultsList) UI.resultsList.innerHTML = '';
+    UI.resultRows = {};
 
     // Calculate Start Line Positions
     // Spawn at 400 units to allow horizontal spread but close enough to reach parking
