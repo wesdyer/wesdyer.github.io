@@ -482,7 +482,22 @@ class BotController {
         if (mode === 'reach') return angleToTarget;
 
         // VMG Sailing
-        const optTWA = (mode === 'upwind') ? (45 * Math.PI/180) : (150 * Math.PI/180);
+        let optTWA = (mode === 'upwind') ? (45 * Math.PI/180) : (150 * Math.PI/180);
+
+        // Planing Optimization for AI
+        // If downwind and conditions allow, try to heat it up to planing angles
+        // Planing requires TWS > 12.0 and TWA > 100 < 170.
+        // Best planing angle usually ~135-140.
+        // Check if wind speed allows planing
+        if (mode === 'downwind' && state.wind.speed > J111_PLANING.minTWS) {
+             // Calculate potential VMG at 150 vs 140(planing)
+             // Approx: 150 deg gives X speed. 140 deg gives Y speed * 1.20 (planing).
+             // cos(30) = 0.866. cos(40) = 0.766.
+             // If Speed increase > 13%, planing pays.
+             // Multiplier is 1.20 (20%). So it pays!
+             // Target Planing Angle ~140 degrees (2.44 rad)
+             optTWA = 140 * Math.PI/180;
+        }
         
         // Current Tack
         const currentTack = normalizeAngle(boat.heading - wd) > 0 ? 1 : -1;
@@ -985,6 +1000,28 @@ const J111_POLARS = {
     }
 };
 
+// Planing Configuration
+const J111_PLANING = {
+    // Conditions
+    minTWA: 100 * Math.PI / 180,
+    maxTWA: 170 * Math.PI / 180, // Drop off if dead downwind (unstable)
+    minTWS: 12.0, // Needs decent breeze
+    entrySpeed: 8.5, // Knots
+    exitSpeed: 7.5, // Hysteresis
+    entryTime: 1.5, // Seconds to trigger (prevent blips)
+    exitTime: 1.0,  // Seconds to lose it
+
+    // Physics Modifiers
+    speedMultiplier: 1.20, // 20% boost when planing (so 11kn -> 13.2kn)
+    accelBoost: 1.5, // Surging acceleration
+    turnDrag: 0.990, // Higher drag in turns while planing (loss of plane)
+    turnRateScale: 0.7, // Stiffer steering at high speed
+
+    // Visuals
+    wakeLengthScale: 2.0,
+    wakeWidthScale: 1.5
+};
+
 // Physics Helper Functions
 function normalizeAngle(angle) {
     while (angle > Math.PI) angle -= 2 * Math.PI;
@@ -1122,7 +1159,10 @@ class Boat {
             legManeuvers: [0, 0, 0, 0, 0],
             legTopSpeeds: [0, 0, 0, 0, 0],
             legDistances: [0, 0, 0, 0, 0],
-            legSpeedSums: [0, 0, 0, 0, 0]
+            legSpeedSums: [0, 0, 0, 0, 0],
+            isPlaning: false,
+            planingTimer: 0,
+            planingFactor: 0
         };
 
         // AI State
@@ -2465,6 +2505,74 @@ function updateBoat(boat, dt) {
     const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
     targetKnots *= trimEfficiency;
 
+    // PLANING LOGIC
+    const twaDeg = Math.abs(angleToWind * 180 / Math.PI);
+    const tws = effectiveWind;
+    const boatKnots = boat.speed * 4;
+
+    let canPlane = (
+        twaDeg > (J111_PLANING.minTWA * 180 / Math.PI) &&
+        twaDeg < (J111_PLANING.maxTWA * 180 / Math.PI) &&
+        tws > J111_PLANING.minTWS
+    );
+
+    // Hysteresis State Machine
+    if (canPlane) {
+        if (!boat.raceState.isPlaning) {
+            // Trying to enter
+            if (boatKnots > J111_PLANING.entrySpeed) {
+                boat.raceState.planingTimer += dt;
+                if (boat.raceState.planingTimer > J111_PLANING.entryTime) {
+                    boat.raceState.isPlaning = true;
+                    boat.raceState.planingTimer = 0;
+                    if (boat.isPlayer && settings.soundEnabled) {
+                         // Optional: Play a surge sound or change wind pitch (handled in audio update)
+                    }
+                }
+            } else {
+                boat.raceState.planingTimer = 0;
+            }
+        } else {
+             // Maintaining
+             // Exit if speed drops below lower threshold
+             if (boatKnots < J111_PLANING.exitSpeed) {
+                 boat.raceState.planingTimer += dt;
+                 if (boat.raceState.planingTimer > J111_PLANING.exitTime) {
+                     boat.raceState.isPlaning = false;
+                     boat.raceState.planingTimer = 0;
+                 }
+             } else {
+                 boat.raceState.planingTimer = 0;
+             }
+        }
+    } else {
+        // Conditions lost
+        if (boat.raceState.isPlaning) {
+             boat.raceState.planingTimer += dt;
+             if (boat.raceState.planingTimer > J111_PLANING.exitTime) {
+                 boat.raceState.isPlaning = false;
+                 boat.raceState.planingTimer = 0;
+             }
+        } else {
+             boat.raceState.planingTimer = 0;
+        }
+    }
+
+    if (boat.raceState.isPlaning) {
+        // Boost target speed
+        targetKnots *= J111_PLANING.speedMultiplier;
+
+        // Handling: Turning bleeds speed faster
+        const turnActive = Math.abs(boat.heading - boat.prevHeading) > 0.0001;
+        if (turnActive) {
+            targetKnots *= J111_PLANING.turnDrag;
+        }
+    }
+
+    // Smooth factor for planing transition
+    const targetFactor = boat.raceState.isPlaning ? 1.0 : 0.0;
+    boat.raceState.planingFactor += (targetFactor - boat.raceState.planingFactor) * dt * 2.0;
+
     let targetGameSpeed = targetKnots * 0.25;
 
     // Apply Penalty Speed Reduction
@@ -3216,12 +3324,33 @@ function update(dt) {
              const boatDY = -Math.cos(boat.heading);
              const sternX = boat.x - boatDX * 30;
              const sternY = boat.y - boatDY * 30;
-             if (Math.random() < 0.2) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
-             if (Math.random() < 0.25) {
+             const planing = boat.raceState.isPlaning;
+
+             // Base Wake
+             let wakeProb = 0.2;
+             if (planing) wakeProb = 0.6; // More foam
+
+             if (Math.random() < wakeProb) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
+
+             // V-Wake (Waves)
+             let waveProb = 0.25;
+             let spread = 0.1;
+             let scale = 1.0;
+             if (planing) {
+                 waveProb = 0.5;
+                 spread = 0.2; // Wider V
+                 scale = J111_PLANING.wakeLengthScale;
+             }
+
+             if (Math.random() < waveProb) {
                   const rightX = Math.cos(boat.heading), rightY = Math.sin(boat.heading);
-                  const spread = 0.1;
-                  createParticle(sternX - rightX*10, sternY - rightY*10, 'wake-wave', { vx: -rightX*spread, vy: -rightY*spread });
-                  createParticle(sternX + rightX*10, sternY + rightY*10, 'wake-wave', { vx: rightX*spread, vy: rightY*spread });
+                  createParticle(sternX - rightX*10, sternY - rightY*10, 'wake-wave', { vx: -rightX*spread, vy: -rightY*spread, scale: scale });
+                  createParticle(sternX + rightX*10, sternY + rightY*10, 'wake-wave', { vx: rightX*spread, vy: rightY*spread, scale: scale });
+
+                  // Planing Rooster Tail / Spray
+                  if (planing && Math.random() < 0.2) {
+                      createParticle(sternX, sternY, 'wake', { life: 1.5, scale: 1.5 });
+                  }
              }
         }
     }
@@ -3243,8 +3372,18 @@ function updateParticles(dt) {
         if (p.vx) p.x += p.vx * timeScale;
         if (p.vy) p.y += p.vy * timeScale;
         let decay = 0.0025;
-        if (p.type === 'wake') { decay = 0.005; p.scale = 1 + (1-p.life)*1.5; p.alpha = p.life*0.4; }
-        else if (p.type === 'wake-wave') { decay = 0.0015; p.scale = 0.5 + (1-p.life)*3; p.alpha = p.life*0.25; }
+        if (p.type === 'wake') {
+            decay = 0.005;
+            const s = p.scale || 1.0;
+            p.scaleVal = s + (1-p.life)*1.5;
+            p.alpha = p.life*0.4;
+        }
+        else if (p.type === 'wake-wave') {
+            decay = 0.0015;
+            const s = p.scale || 1.0;
+            p.scaleVal = (0.5 + (1-p.life)*3) * s;
+            p.alpha = p.life*0.25;
+        }
         else if (p.type === 'wind') {
              const local = getWindAt(p.x, p.y);
              p.x -= Math.sin(local.direction)*timeScale * (local.speed / 10);
@@ -3261,7 +3400,8 @@ function drawParticles(ctx, layer) {
         for (const p of state.particles) {
             if (p.type === 'wake' || p.type === 'wake-wave') {
                 ctx.globalAlpha = p.alpha;
-                ctx.beginPath(); ctx.arc(p.x, p.y, 3 * p.scale, 0, Math.PI * 2); ctx.fill();
+                const s = p.scaleVal || p.scale || 1.0;
+                ctx.beginPath(); ctx.arc(p.x, p.y, 3 * s, 0, Math.PI * 2); ctx.fill();
             }
         }
         ctx.globalAlpha = 1.0;
@@ -4671,12 +4811,36 @@ function draw() {
             UI.speed.textContent = (player.speed*4).toFixed(1);
 
             // Remove all potential color classes first
-            UI.speed.classList.remove('text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
+            UI.speed.classList.remove('text-red-400', 'text-green-400', 'text-cyan-400', 'text-white');
 
             if (player.raceState.penalty || player.badAirIntensity > 0.05) {
                 UI.speed.classList.add('text-red-400');
+            } else if (player.raceState.isPlaning) {
+                // Planing Indicator
+                UI.speed.classList.add('text-cyan-400');
+                if (!UI.speed.textContent.includes('PLANE')) {
+                     // Hacky way to add indicator near speed if layout allows?
+                     // Or just rely on color.
+                     // The requirement said: "Add a “PLANING” indicator in the sailing HUD"
+                }
             } else {
                 UI.speed.classList.add('text-white');
+            }
+
+            // Explicit PLANING label injection if not present
+            let planingLabel = document.getElementById('hud-planing-label');
+            if (!planingLabel && UI.speed.parentElement) {
+                 planingLabel = document.createElement('div');
+                 planingLabel.id = 'hud-planing-label';
+                 planingLabel.className = 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden';
+                 planingLabel.textContent = 'PLANING';
+                 UI.speed.parentElement.style.position = 'relative';
+                 UI.speed.parentElement.appendChild(planingLabel);
+            }
+
+            if (planingLabel) {
+                if (player.raceState.isPlaning) planingLabel.classList.remove('hidden');
+                else planingLabel.classList.add('hidden');
             }
         }
         if (UI.windSpeed) {
