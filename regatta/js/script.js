@@ -3576,17 +3576,15 @@ function drawGusts(ctx) {
 
         // Colors
         if (g.type === 'gust') {
-            // Darker/More intense blue for stronger gusts
-            const r = 0, gVal = 0, b = 60 + strength * 40; // 60-100
-            grad.addColorStop(0, `rgba(${r}, ${gVal}, ${b}, ${alpha})`);
-            grad.addColorStop(0.5, `rgba(${r}, ${gVal}, ${b}, ${alpha * 0.5})`);
-            grad.addColorStop(1, `rgba(${r}, ${gVal}, ${b}, 0)`);
+            // Darkest gusts: rgb(2, 21, 150)
+            grad.addColorStop(0, `rgba(2, 21, 150, ${alpha})`);
+            grad.addColorStop(0.5, `rgba(2, 21, 150, ${alpha * 0.5})`);
+            grad.addColorStop(1, `rgba(2, 21, 150, 0)`);
         } else {
-            // Lighter/More intense white/cyan for stronger lulls
-            // Lulls reduce wind, maybe show as lighter patches
-            grad.addColorStop(0, `rgba(200, 250, 255, ${alpha})`);
-            grad.addColorStop(0.5, `rgba(200, 250, 255, ${alpha * 0.5})`);
-            grad.addColorStop(1, 'rgba(200, 250, 255, 0)');
+            // Lightest lulls: rgb(115, 211, 255)
+            grad.addColorStop(0, `rgba(115, 211, 255, ${alpha})`);
+            grad.addColorStop(0.5, `rgba(115, 211, 255, ${alpha * 0.5})`);
+            grad.addColorStop(1, 'rgba(115, 211, 255, 0)');
         }
 
         ctx.fillStyle = grad;
@@ -3756,9 +3754,9 @@ function drawMinimap() {
         const alpha = 0.2 + strength * 0.3;
 
         if (g.type === 'gust') {
-             ctx.fillStyle = `rgba(0, 0, 80, ${alpha})`;
+             ctx.fillStyle = `rgba(2, 21, 150, ${alpha})`;
         } else {
-             ctx.fillStyle = `rgba(150, 245, 255, ${alpha})`;
+             ctx.fillStyle = `rgba(115, 211, 255, ${alpha})`;
         }
         ctx.fill();
         ctx.restore();
