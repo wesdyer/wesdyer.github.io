@@ -3789,38 +3789,6 @@ function showResults() {
              imgDiv.appendChild(img);
         }
 
-        // Details
-        const details = document.createElement('div');
-        details.className = "flex-1 flex flex-col justify-center";
-
-        const nameRow = document.createElement('div');
-        nameRow.className = "flex items-baseline gap-3 mb-1";
-
-        const name = document.createElement('span');
-        name.className = "text-2xl font-bold text-white tracking-wide";
-        name.textContent = boat.name;
-        if (boat.isPlayer) name.className += " text-yellow-300";
-
-        const finishTime = document.createElement('span');
-        finishTime.className = "text-xl font-mono text-emerald-400 font-bold";
-        if (boat.raceState.finished) {
-            if (boat.raceState.resultStatus) {
-                finishTime.textContent = boat.raceState.resultStatus;
-                finishTime.className = "text-xl font-mono text-red-500 font-bold";
-            } else {
-                finishTime.textContent = formatTime(boat.raceState.finishTime);
-                if (index > 0 && leader.raceState.finished && !leader.raceState.resultStatus) {
-                    const diff = boat.raceState.finishTime - leader.raceState.finishTime;
-                    const diffSpan = document.createElement('span');
-                    diffSpan.className = "text-base text-emerald-600/70 ml-2 font-normal";
-                    diffSpan.textContent = `(+${diff.toFixed(2)}s)`;
-                    finishTime.appendChild(diffSpan);
-                }
-            }
-        } else {
-            finishTime.textContent = "Racing...";
-            finishTime.className = "text-sm font-mono text-slate-400 animate-pulse";
-        }
         imgDiv.appendChild(imgBox);
 
         // Sailor Name
