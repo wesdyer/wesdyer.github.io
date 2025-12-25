@@ -1579,7 +1579,7 @@ function setupPreRaceOverlay() {
 
             const nameRow = document.createElement('div');
             nameRow.className = "flex justify-between items-baseline";
-            nameRow.innerHTML = `<span class="font-bold text-white truncate drop-shadow-md">${boat.name}</span> <span class="text-[10px] text-white/80 uppercase font-bold drop-shadow-md">${boat.creature || "Unknown"}</span>`;
+            nameRow.innerHTML = `<span class="font-bold text-white truncate drop-shadow-md">${boat.name}</span>`;
 
             // Personality
             const config = AI_CONFIG.find(c => c.name === boat.name);
