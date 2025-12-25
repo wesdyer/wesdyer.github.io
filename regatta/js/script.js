@@ -1,7 +1,7 @@
 // Game Configuration
 const CONFIG = {
     turnSpeed: 0.01, // Radians per frame (approx) -> adjusted for dt in update
-    turnPenalty: 0.999,
+    turnPenalty: 0.9995,
     cameraPanSpeed: 1.25,
     cameraRotateSpeed: 0.01,
     windSpeed: 5,
@@ -2330,8 +2330,8 @@ function updateBoat(boat, dt) {
     }
 
     // Smoother speed changes (Higher inertia)
-    // 0.995 -> 0.998 reduces speed decay when drive is lost (gybes/tacks)
-    const speedAlpha = 1 - Math.pow(0.998, timeScale);
+    // 0.995 -> 0.9985 reduces speed decay when drive is lost (gybes/tacks)
+    const speedAlpha = 1 - Math.pow(0.9985, timeScale);
     boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
 
     // AI Boost: If wiggle is active, ensure minimum speed to slide off obstacles
@@ -2351,8 +2351,8 @@ function updateBoat(boat, dt) {
     // angleToWind is in radians. 0.5 rad is approx 28 degrees.
     if (angleToWind < 0.5) {
         // Apply stronger drag deep in irons to maintain tacking difficulty
-        // despite higher inertia.
-        boat.speed *= Math.pow(0.993, timeScale);
+        // despite higher inertia. Reduced from 0.993 to 0.997 to be less punitive.
+        boat.speed *= Math.pow(0.997, timeScale);
     }
 
     // Rudder drag
