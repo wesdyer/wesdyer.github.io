@@ -3667,45 +3667,123 @@ function showResults() {
     const leader = sorted[0];
     UI.resultsList.innerHTML = '';
 
+    // CSS Grid Layout Class
+    // Columns: Pos, Img, Team, Time, Delta, Top, Avg, Dist, Pen, Points (implicit in space)
+    // Optimized column widths to give more space to Sailor (1fr)
+    const gridClass = "grid grid-cols-[4rem_4rem_1fr_4.5rem_4.5rem_5rem_5rem_5rem_5rem_5rem] gap-4 items-center px-4";
+
+    // Header
+    const header = document.createElement('div');
+    header.className = `${gridClass} py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2`;
+    header.innerHTML = `
+        <div class="text-center">Position</div>
+        <div></div>
+        <div>Sailor</div>
+        <div class="text-right">Time</div>
+        <div class="text-right">Delta</div>
+        <div class="text-right">Top Spd</div>
+        <div class="text-right">Average</div>
+        <div class="text-right">Distance</div>
+        <div class="text-center">Penalties</div>
+        <div class="text-center text-white">Points</div>
+    `;
+    UI.resultsList.appendChild(header);
+
+    const getLuma = (c) => {
+        let r=0, g=0, b=0;
+        if(c.startsWith('#')) {
+            const hex = c.substring(1);
+            if(hex.length===3) { r=parseInt(hex[0]+hex[0],16); g=parseInt(hex[1]+hex[1],16); b=parseInt(hex[2]+hex[2],16); }
+            else { r=parseInt(hex.substring(0,2),16); g=parseInt(hex.substring(2,4),16); b=parseInt(hex.substring(4,6),16); }
+        }
+        return 0.299*r + 0.587*g + 0.114*b;
+    };
+
+    const totalBoats = state.boats.length;
+
     sorted.forEach((boat, index) => {
-        // Show all boats
+        const points = totalBoats - index;
+
+        const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
+        const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+
+        // Color Logic: Use Spinnaker if Hull is Very Light OR Very Dark
+        const hullLuma = getLuma(hullColor);
+        const useSpin = hullLuma < 50 || hullLuma > 200;
+        const bgColor = useSpin ? spinColor : hullColor;
+
+        // Text Color: Always White for Stats
+        const textCol = "text-white";
+        const subTextCol = "text-white/70";
+
+        // Row Container
         const row = document.createElement('div');
-        row.className = "flex items-center p-4 bg-slate-700/50 rounded-xl border border-slate-600/50 backdrop-blur-sm shadow-lg gap-6";
+        row.className = "relative mb-3 h-16 w-full"; // Fixed height
+
+        // Background Bar with Fade Effect
+        const bar = document.createElement('div');
+        bar.className = "absolute inset-0 right-12 overflow-hidden shadow-lg transition-transform hover:scale-[1.01] origin-left";
+        // Fade from transparent on Left (showing dark bg) to Solid on Right
+        // Fade extends across the entire width for a smoother effect
+        bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 100%)`;
+
+        // Gloss Overlay
+        const gloss = document.createElement('div');
+        gloss.className = "absolute inset-0 bg-gradient-to-b from-white/20 to-black/10 pointer-events-none";
+        bar.appendChild(gloss);
+
+        // Right Side Mask (Simulate the cut)
+        const fade = document.createElement('div');
+        fade.className = "absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-r from-transparent to-white/10 mix-blend-overlay";
+        bar.appendChild(fade);
+
+        row.appendChild(bar);
+
+        // Content Layer (Grid)
+        const content = document.createElement('div');
+        content.className = `relative z-10 ${gridClass} w-full h-full`;
 
         // Rank
         const rankDiv = document.createElement('div');
-        if (index === 0) {
-            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-yellow-900 bg-gradient-to-br from-yellow-300 to-yellow-600 border-2 border-yellow-200 shadow-lg";
-            rankDiv.textContent = "1";
-        } else if (index === 1) {
-            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-slate-900 bg-gradient-to-br from-slate-300 to-slate-500 border-2 border-slate-200 shadow-lg";
-            rankDiv.textContent = "2";
-        } else if (index === 2) {
-            rankDiv.className = "w-12 h-12 shrink-0 rounded-full flex items-center justify-center text-xl font-black text-amber-100 bg-gradient-to-br from-amber-600 to-amber-800 border-2 border-amber-400 shadow-lg";
-            rankDiv.textContent = "3";
+        rankDiv.className = `flex justify-center items-center`;
+
+        if (index <= 2) {
+             const colors = [
+                 "text-yellow-900 bg-yellow-400 border-yellow-200", // Gold
+                 "text-slate-900 bg-slate-300 border-slate-200",   // Silver
+                 "text-amber-900 bg-amber-600 border-amber-400"    // Bronze
+             ];
+             const medal = document.createElement('div');
+             medal.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg font-black border-2 shadow-md ${colors[index]}`;
+             medal.textContent = index + 1;
+             rankDiv.appendChild(medal);
         } else {
-            rankDiv.className = "w-12 text-center text-4xl font-black text-slate-500 italic";
-            rankDiv.textContent = index + 1;
+             const txt = document.createElement('div');
+             txt.className = `text-2xl font-black italic text-white/80`;
+             txt.textContent = index + 1;
+             rankDiv.appendChild(txt);
         }
 
-        // Image
+        // Image (Square)
         const imgDiv = document.createElement('div');
-        imgDiv.className = "w-24 h-24 shrink-0";
+        imgDiv.className = `flex items-center justify-center`;
+        const imgBox = document.createElement('div');
+        imgBox.className = "w-12 h-12";
+
         if (boat.isPlayer) {
-             // Star Icon
              const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
              star.setAttribute("viewBox", "0 0 24 24");
              star.setAttribute("class", "w-full h-full drop-shadow-md");
-             const color = isVeryDark(settings.hullColor) ? settings.spinnakerColor : settings.hullColor;
-             star.setAttribute("fill", color);
+             star.setAttribute("fill", "#ffffff");
              const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
              path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
              star.appendChild(path);
-             imgDiv.appendChild(star);
+             imgBox.appendChild(star);
         } else {
              const img = document.createElement('img');
              img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
              img.className = "w-full h-full rounded-2xl border-4 object-cover bg-slate-900 shadow-md";
+             img.className = "w-full h-full rounded-md border-2 border-white/20 object-cover bg-slate-900 shadow-md";
              const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
              img.style.borderColor = color;
              imgDiv.appendChild(img);
@@ -3743,66 +3821,75 @@ function showResults() {
             finishTime.textContent = "Racing...";
             finishTime.className = "text-sm font-mono text-slate-400 animate-pulse";
         }
+        imgDiv.appendChild(imgBox);
 
-        nameRow.appendChild(name);
-        nameRow.appendChild(finishTime);
+        // Sailor Name
+        // Reduced font size from 3xl to 2xl to allow more space
+        const nameDiv = document.createElement('div');
+        nameDiv.className = `font-black text-2xl italic uppercase tracking-tighter truncate text-white drop-shadow-md`;
+        nameDiv.textContent = boat.name;
 
-        // Stats Row
-        const statsRow = document.createElement('div');
-        statsRow.className = "flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-300 font-mono uppercase tracking-wider";
+        // Stats
+        const finishTime = formatTime(boat.raceState.finishTime);
+        const delta = (index > 0 && leader.raceState.finished && boat.raceState.finished)
+            ? "+" + (boat.raceState.finishTime - leader.raceState.finishTime).toFixed(2)
+            : "-";
+        const topSpeed = Math.max(...boat.raceState.legTopSpeeds).toFixed(1);
 
-        const totalDist = boat.raceState.legDistances.reduce((a, b) => a + b, 0);
-        const topSpeed = Math.max(...boat.raceState.legTopSpeeds);
-        const totalMoves = boat.raceState.legManeuvers.reduce((a, b) => a + b, 0);
-
-        // Avg Speed: Time-weighted average from speedometer
         const duration = boat.raceState.finished ? boat.raceState.finishTime : state.race.timer;
         const totalSpeedSum = boat.raceState.legSpeedSums ? boat.raceState.legSpeedSums.reduce((a, b) => a + b, 0) : 0;
-        const avgSpeed = duration > 0.1 ? (totalSpeedSum / duration) : 0;
+        const avgSpeed = (duration > 0.1 ? (totalSpeedSum / duration) : 0).toFixed(1);
 
-        statsRow.innerHTML = `
-            <span title="Top Speed">Top: <span class="text-white">${topSpeed.toFixed(1)}</span> kn</span>
-            <span title="Avg Speed">Avg: <span class="text-white">${avgSpeed.toFixed(1)}</span> kn</span>
-            <span title="Total Distance">Dist: <span class="text-white">${Math.round(totalDist)}</span> m</span>
-            <span title="Maneuvers">Moves: <span class="text-white">${totalMoves}</span></span>
-            <span title="Penalties" class="${boat.raceState.totalPenalties > 0 ? 'text-red-400' : 'text-slate-500'}">Penalties: <span class="text-white">${boat.raceState.totalPenalties}</span></span>
-        `;
+        const totalDist = Math.round(boat.raceState.legDistances.reduce((a, b) => a + b, 0));
+        const penalties = boat.raceState.totalPenalties;
 
-        // Per-Leg Stats
-        const legStats = document.createElement('div');
-        legStats.className = "mt-3 grid grid-cols-5 gap-2 border-t border-slate-600/30 pt-2";
+        // Stats Styling: Font Sans, Bold, White
+        // Reduced font size from text-lg to text-sm for better alignment with headers
+        const createStat = (val, align='text-right') => {
+            const d = document.createElement('div');
+            d.className = `${align} font-sans font-bold text-sm text-white drop-shadow-sm`;
+            d.textContent = val;
+            return d;
+        };
 
-        const legs = ['Start', 'Leg 1', 'Leg 2', 'Leg 3', 'Leg 4'];
-        legs.forEach((legName, i) => {
-             const col = document.createElement('div');
-             col.className = "flex flex-col gap-0.5";
+        const timeDiv = createStat(finishTime);
+        const deltaDiv = document.createElement('div');
+        deltaDiv.className = `text-right font-sans font-bold text-sm text-white/70`;
+        deltaDiv.textContent = delta;
 
-             // Time
-             let timeVal = 0;
-             if (i === 0) timeVal = boat.raceState.startLegDuration || 0;
-             else timeVal = boat.raceState.legTimes[i-1] || 0;
+        const topDiv = createStat(topSpeed);
+        const avgDiv = createStat(avgSpeed);
+        const distDiv = createStat(totalDist);
 
-             const distVal = boat.raceState.legDistances[i] || 0;
-             const speedVal = boat.raceState.legTopSpeeds[i] || 0;
-             const movesVal = boat.raceState.legManeuvers[i] || 0;
+        const penDiv = document.createElement('div');
+        // Penalty: White text (was Red), no background
+        penDiv.className = `text-center font-sans font-bold text-sm ${penalties > 0 ? 'text-white' : 'text-white/30'}`;
+        penDiv.textContent = penalties > 0 ? penalties : "-";
 
-             col.innerHTML = `
-                 <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">${legName}</div>
-                 <div class="text-xs font-mono text-emerald-300 font-bold">${formatSplitTime(timeVal)}</div>
-                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Top:</span> <span class="text-slate-300">${speedVal.toFixed(1)}</span></div>
-                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Dist:</span> <span class="text-slate-300">${Math.round(distVal)}</span></div>
-                 <div class="text-[10px] text-slate-400 flex justify-between"><span>Mv:</span> <span class="text-slate-300">${movesVal}</span></div>
-             `;
-             legStats.appendChild(col);
-        });
+        content.appendChild(rankDiv);
+        content.appendChild(imgDiv);
+        content.appendChild(nameDiv);
+        content.appendChild(timeDiv);
+        content.appendChild(deltaDiv);
+        content.appendChild(topDiv);
+        content.appendChild(avgDiv);
+        content.appendChild(distDiv);
+        content.appendChild(penDiv);
 
-        details.appendChild(nameRow);
-        details.appendChild(statsRow);
-        details.appendChild(legStats);
+        row.appendChild(content);
 
-        row.appendChild(rankDiv);
-        row.appendChild(imgDiv);
-        row.appendChild(details);
+        // Points (Right Aligned Skewed Box)
+        // Position absolutely to the right
+        // Add rounded-br-2xl for rounded bottom right corner
+        const ptsBox = document.createElement('div');
+        ptsBox.className = "absolute right-0 top-0 bottom-0 w-24 bg-white transform -skew-x-12 origin-bottom-right flex items-center justify-center shadow-md z-20 border-l-4 border-white/50 rounded-br-2xl";
+        // Inner unskewed container for text
+        const ptsText = document.createElement('div');
+        ptsText.className = "transform skew-x-12 text-slate-900 font-black text-3xl";
+        ptsText.textContent = points;
+        ptsBox.appendChild(ptsText);
+
+        row.appendChild(ptsBox);
 
         UI.resultsList.appendChild(row);
     });
