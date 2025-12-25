@@ -1536,30 +1536,57 @@ function setupPreRaceOverlay() {
         UI.prCompetitorsGrid.innerHTML = '';
         // Skip Player (boats[0])
         const competitors = state.boats.slice(1);
+
+        const getLuma = (c) => {
+            let r=0, g=0, b=0;
+            if(c.startsWith('#')) {
+                const hex = c.substring(1);
+                if(hex.length===3) { r=parseInt(hex[0]+hex[0],16); g=parseInt(hex[1]+hex[1],16); b=parseInt(hex[2]+hex[2],16); }
+                else { r=parseInt(hex.substring(0,2),16); g=parseInt(hex.substring(2,4),16); b=parseInt(hex.substring(4,6),16); }
+            }
+            return 0.299*r + 0.587*g + 0.114*b;
+        };
+
         competitors.forEach(boat => {
             const card = document.createElement('div');
-            card.className = "bg-slate-900/40 p-3 rounded-xl border border-white/5 flex gap-3 items-center";
+            // Base styling
+            card.className = "p-3 rounded-xl rounded-br-3xl border border-white/5 flex gap-3 items-center relative overflow-hidden";
+
+            // Color Logic
+            const hullColor = boat.colors.hull;
+            const spinColor = boat.colors.spinnaker;
+            const hullLuma = getLuma(hullColor);
+            const useSpin = hullLuma < 50 || hullLuma > 200;
+            const bgColor = useSpin ? spinColor : hullColor;
+
+            // Apply gradient background
+            // Use a dark slate base that fades into the color
+            card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, ${bgColor} 100%)`;
+
+            // Overlay to ensure text readability if color is bright
+            const overlay = document.createElement('div');
+            overlay.className = "absolute inset-0 bg-black/20";
+            card.appendChild(overlay);
 
             // Image
             const img = document.createElement('img');
             img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
-            img.className = "w-12 h-12 rounded-full border-2 object-cover bg-slate-800";
-            const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
-            img.style.borderColor = color;
+            img.className = "w-12 h-12 rounded-full border-2 object-cover bg-slate-800 relative z-10";
+            img.style.borderColor = bgColor; // Use the chosen background color for border too
 
             const info = document.createElement('div');
-            info.className = "flex-1 min-w-0";
+            info.className = "flex-1 min-w-0 relative z-10";
 
             const nameRow = document.createElement('div');
             nameRow.className = "flex justify-between items-baseline";
-            nameRow.innerHTML = `<span class="font-bold text-white truncate">${boat.name}</span> <span class="text-[10px] text-slate-400 uppercase">${boat.creature || "Unknown"}</span>`;
+            nameRow.innerHTML = `<span class="font-bold text-white truncate drop-shadow-md">${boat.name}</span> <span class="text-[10px] text-white/80 uppercase font-bold drop-shadow-md">${boat.creature || "Unknown"}</span>`;
 
             // Personality
             const config = AI_CONFIG.find(c => c.name === boat.name);
             let pText = config ? config.personality : "Unknown";
 
             const desc = document.createElement('div');
-            desc.className = "text-xs text-slate-300 italic line-clamp-2";
+            desc.className = "text-xs text-white/90 italic line-clamp-2 drop-shadow-sm";
             desc.textContent = pText;
 
             info.appendChild(nameRow);
