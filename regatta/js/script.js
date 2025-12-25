@@ -3658,8 +3658,8 @@ function showResults() {
         const bar = document.createElement('div');
         bar.className = "absolute inset-0 right-12 overflow-hidden shadow-lg transition-transform hover:scale-[1.01] origin-left";
         // Fade from transparent on Left (showing dark bg) to Solid on Right
-        // Longer fade: Solid starts at 60%
-        bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 60%, ${bgColor} 100%)`;
+        // Fade extends across the entire width for a smoother effect
+        bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 100%)`;
 
         // Gloss Overlay
         const gloss = document.createElement('div');
