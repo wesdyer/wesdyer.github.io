@@ -2206,12 +2206,7 @@ function getRightOfWay(b1, b2) {
     }
 
     if (rule18Applies) {
-        // Simplification: If one is in zone and other isn't, the one in zone usually established it first.
-        if (b1.raceState.inZone !== b2.raceState.inZone) {
-            return b1.raceState.inZone ? b1 : b2;
-        }
-
-        // Both in zone
+        // Mark Room - Prioritize Overlap
         const b1Astern = getClearAstern(b1, b2);
         const b2Astern = getClearAstern(b2, b1);
         const overlapped = !b1Astern && !b2Astern;
@@ -2226,6 +2221,8 @@ function getRightOfWay(b1, b2) {
                 const m = state.course.marks[idx];
                 const d = (b1.x - m.x)**2 + (b1.y - m.y)**2;
                 if (d < minD) { minD = d; targetMark = m; }
+                const d2 = (b2.x - m.x)**2 + (b2.y - m.y)**2;
+                if (d2 < minD) { minD = d2; targetMark = m; }
             }
 
             const d1 = (b1.x - targetMark.x)**2 + (b1.y - targetMark.y)**2;
@@ -2233,6 +2230,13 @@ function getRightOfWay(b1, b2) {
             return (d1 < d2) ? b1 : b2;
         } else {
             // Clear Ahead has ROW
+            if (b1Astern) return b2;
+            if (b2Astern) return b1;
+
+            // Fallback for non-overlapped state (one in, one out)
+            if (b1.raceState.inZone !== b2.raceState.inZone) {
+                return b1.raceState.inZone ? b1 : b2;
+            }
             return b1Astern ? b2 : b1;
         }
     }
