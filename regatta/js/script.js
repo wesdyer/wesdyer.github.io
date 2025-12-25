@@ -916,7 +916,8 @@ const state = {
         status: 'prestart',
         timer: 30.0,
     },
-    course: {}
+    course: {},
+    layline: { windDir: 0, upwindTWA: 0.785, downwindTWA: 2.61 }
 };
 
 const burgeeImg = new Image();
@@ -1922,6 +1923,46 @@ function showRaceMessage(text, textColorClass, borderColorClass) {
 }
 
 function hideRaceMessage() { if (UI.message) UI.message.classList.add('hidden'); }
+
+function getOptimalTWA(windSpeed, upwind) {
+    const angles = J111_POLARS.angles;
+    const speeds = [6, 8, 10, 12, 14, 16, 20];
+
+    const getPolarSpeedAtIndex = (idx, ws) => {
+         let lower = 6, upper = 20;
+         if (ws <= 6) return J111_POLARS.speeds[6][upwind ? 'nonSpinnaker' : 'spinnaker'][idx] * (Math.max(0, ws)/6.0);
+         if (ws >= 20) return J111_POLARS.speeds[20][upwind ? 'nonSpinnaker' : 'spinnaker'][idx];
+
+         for(let i=0; i<speeds.length-1; i++) {
+             if (ws >= speeds[i] && ws <= speeds[i+1]) { lower=speeds[i]; upper=speeds[i+1]; break; }
+         }
+
+         const s1 = J111_POLARS.speeds[lower][upwind ? 'nonSpinnaker' : 'spinnaker'][idx];
+         const s2 = J111_POLARS.speeds[upper][upwind ? 'nonSpinnaker' : 'spinnaker'][idx];
+         return s1 + (ws - lower)/(upper - lower) * (s2 - s1);
+    };
+
+    let bestAngle = upwind ? 45 : 150;
+    let maxVMG = -Infinity;
+
+    const loopStart = upwind ? 0 : 7;
+    const loopEnd = upwind ? 8 : angles.length;
+
+    for(let i=loopStart; i<loopEnd; i++) {
+        const angleDeg = angles[i];
+        const angleRad = angleDeg * Math.PI/180;
+        const speed = getPolarSpeedAtIndex(i, windSpeed);
+
+        const val = upwind ? (speed * Math.cos(angleRad)) : (speed * -Math.cos(angleRad));
+
+        if (val > maxVMG) {
+            maxVMG = val;
+            bestAngle = angleDeg;
+        }
+    }
+
+    return bestAngle * Math.PI / 180;
+}
 
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
@@ -3033,7 +3074,8 @@ function update(dt) {
     const oscShift = Math.sin(state.time * 0.15) * (dirAmp * 0.3);
 
     // 3. Fast Gust interaction (already handled by gusts mostly, but add some jitter)
-    const jitter = (Math.random() - 0.5) * 0.02; // ~1 deg jitter
+    // Removed random jitter to prevent bouncing
+    const jitter = 0;
 
     state.wind.direction = state.wind.baseDirection + slowDrift + oscShift + jitter;
 
@@ -3043,6 +3085,19 @@ function update(dt) {
     const speedSurge = Math.sin(state.time * 0.1) * speedAmp;
     const speedGust = Math.sin(state.time * 0.5 + 456.7) * (speedAmp * 0.5);
     state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
+
+    // Update Layline Hysteresis
+    if (!state.layline) state.layline = { windDir: state.wind.direction, upwindTWA: Math.PI/4, downwindTWA: 150*Math.PI/180 };
+
+    const smoothFactor = dt * 0.5; // Slow smoothing for stability
+    let wDiff = normalizeAngle(state.wind.direction - state.layline.windDir);
+    state.layline.windDir = normalizeAngle(state.layline.windDir + wDiff * smoothFactor);
+
+    const targetUp = getOptimalTWA(state.wind.speed, true);
+    state.layline.upwindTWA += (targetUp - state.layline.upwindTWA) * smoothFactor;
+
+    const targetDown = getOptimalTWA(state.wind.speed, false);
+    state.layline.downwindTWA += (targetDown - state.layline.downwindTWA) * smoothFactor;
 
     updateGusts(dt);
 
@@ -3587,11 +3642,55 @@ function drawLayLines(ctx) {
     const zoneRadius = (player.raceState.leg === 0 || player.raceState.leg === 4) ? 0 : 165;
 
     ctx.save(); ctx.lineWidth = 5;
+
+    // Use smoothed layline values
+    const windDir = state.layline ? state.layline.windDir : state.wind.direction;
+    const upTWA = state.layline ? state.layline.upwindTWA : Math.PI/4;
+    const downTWA = state.layline ? state.layline.downwindTWA : (150*Math.PI/180);
+
+    // Laylines are relative to wind
+    // Upwind: Wind +/- TWA
+    // Downwind: Wind +/- (180 - (180-TWA)) = Wind +/- TWA?
+    // Wait. Downwind TWA is e.g. 150.
+    // If Wind is 0. Port Gybe Heading is -150. Starboard Gybe Heading is 150.
+    // Laylines extend FROM mark UPWIND.
+    // If we are approaching Mark (Leeward), we sail 150/210.
+    // The line extends from Mark at reciprocal?
+    // Sailing 150. Reciprocal 330 (-30).
+    // Wind (0) - 30.
+    // Angle = Wind - (180 - DownwindTWA).
+    // So offset is 180 - DownwindTWA.
+
+    const upOffset = upTWA;
+    const downOffset = Math.PI - downTWA;
+    const offset = isUpwind ? upOffset : downOffset;
+
     for (const idx of targets) {
         const m = state.course.marks[idx];
-        const ang1 = state.wind.direction + Math.PI/4, ang2 = state.wind.direction - Math.PI/4;
+        const ang1 = windDir + offset, ang2 = windDir - offset;
         const isLeft = (idx % 2 === 0);
         const drawRay = (angle) => {
+            // isUpwind (Leg 1,3,0): Approaching Windward Gate. We are sailing Upwind.
+            // Laylines extend DOWNWIND from mark.
+            // Heading is e.g. 45. Reciprocal 225.
+            // Angle (Wind+Offset) is 45.
+            // We want ray at 225.
+            // So da = angle + PI.
+
+            // isUpwind=false (Leg 2,4): Approaching Leeward Gate. Sailing Downwind.
+            // Heading 150. Reciprocal 330.
+            // Angle (Wind+Offset 30) = 30.
+            // Ray 330 = 30 + 300? No. 330 is -30.
+            // If Angle is 30. We want -30?
+            // Wind 0. Offset 30. Ang1=30, Ang2=-30.
+            // Starboard Gybe (H 150). Reciprocal 330 (-30). Matches Ang2.
+            // Port Gybe (H -150). Reciprocal 30. Matches Ang1.
+            // So we want the ray to be at Ang1/Ang2 directly?
+            // Wait. 330 is -30. So yes, if we draw ray at -30, it points NNW.
+            // Wind 0. Mark at 0. Ray to NNW.
+            // Boat at NNW. Sailing SSE (150). Matches.
+            // So for Downwind leg, we draw ray at `angle`.
+
             let da = angle + (isUpwind ? Math.PI : 0);
             const dx = Math.sin(da), dy = -Math.cos(da);
             const startX = m.x + dx*zoneRadius, startY = m.y + dy*zoneRadius;
@@ -3600,6 +3699,26 @@ function drawLayLines(ctx) {
                 ctx.strokeStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(startX+dx*t, startY+dy*t); ctx.stroke();
             }
         };
+        // Target Logic:
+        // Left Mark (0 or 2).
+        // If Upwind (Mark 2): We want Starboard Tack Layline?
+        // Mark 2 is Left Gate.
+        // We round it to Port? No, depends on gate logic.
+        // Actually we draw BOTH laylines for the active target?
+        // The original code: isLeft ? drawRay(ang1) : drawRay(ang2) ?
+        // If Upwind: isLeft (Mark 2). drawRay(ang1). ang1 = Wind+45. Ray = 225 (SW).
+        // Mark 2 (Left). Layline extending SW.
+        // If we are on Starboard tack (H 45), we approach Mark 2 from SW? Yes.
+        // So Left Mark gets Starboard Layline.
+        // Right Mark (Mark 3) gets Port Layline (Ang2 -> Wind-45 -> Ray SE).
+
+        // If Downwind:
+        // Mark 0 (Left). isLeft=true. drawRay(ang2). ang2 = Wind-Offset (-30). Ray -30 (NNW).
+        // We approach from NNW on Starboard Gybe (H 150).
+        // So Left Mark gets Starboard Gybe Layline.
+        // Right Mark (Mark 1). drawRay(ang1). ang1 = Wind+Offset (30). Ray 30 (NNE).
+        // Approach from NNE on Port Gybe (H -150).
+
         if (isUpwind) isLeft ? drawRay(ang1) : drawRay(ang2);
         else isLeft ? drawRay(ang2) : drawRay(ang1);
     }
@@ -4768,6 +4887,7 @@ function resetGame() {
     state.wind.speed = state.wind.baseSpeed;
     state.wind.baseDirection = (Math.random()-0.5)*0.5;
     state.wind.direction = state.wind.baseDirection;
+    state.layline = { windDir: state.wind.direction, upwindTWA: Math.PI/4, downwindTWA: 150*Math.PI/180 };
     state.gusts = [];
 
     // Randomized Biases
