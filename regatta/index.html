@@ -364,6 +364,42 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Fleet Selection Card -->
+                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl flex-1 flex flex-col justify-center">
+                        <h2 class="text-2xl font-black text-white uppercase mb-4 flex items-center gap-2">
+                            <svg class="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            Fleet Class
+                        </h2>
+                        <div class="flex flex-col gap-2" id="boat-class-selector">
+                            <label class="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-slate-900/40 cursor-pointer hover:bg-slate-900/60 transition-colors group">
+                                <input type="radio" name="boat-class" value="cruiser" class="w-5 h-5 text-blue-600 bg-slate-700 border-slate-500 focus:ring-blue-600 focus:ring-2">
+                                <div>
+                                    <div class="text-white font-bold uppercase tracking-wider group-hover:text-purple-300 transition-colors">Cruiser</div>
+                                    <div class="text-xs text-slate-400">Catalina 30</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-slate-900/40 cursor-pointer hover:bg-slate-900/60 transition-colors group">
+                                <input type="radio" name="boat-class" value="performance" class="w-5 h-5 text-blue-600 bg-slate-700 border-slate-500 focus:ring-blue-600 focus:ring-2" checked>
+                                <div>
+                                    <div class="text-white font-bold uppercase tracking-wider group-hover:text-purple-300 transition-colors">Performance</div>
+                                    <div class="text-xs text-slate-400">J/111</div>
+                                </div>
+                            </label>
+                            <label class="flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-slate-900/40 cursor-pointer hover:bg-slate-900/60 transition-colors group">
+                                <input type="radio" name="boat-class" value="sport" class="w-5 h-5 text-blue-600 bg-slate-700 border-slate-500 focus:ring-blue-600 focus:ring-2">
+                                <div>
+                                    <div class="text-white font-bold uppercase tracking-wider group-hover:text-purple-300 transition-colors">Sport</div>
+                                    <div class="text-xs text-slate-400">Melges 24</div>
+                                </div>
+                            </label>
+                        </div>
+                        <div id="class-desc" class="mt-4 text-xs text-slate-300 italic min-h-[2.5em]">
+                            Balanced racer-cruiser. Fast, smooth, and versatile.
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Right Column: Competitors -->
@@ -549,6 +585,7 @@
     </div>
 
     <script src="js/ai-quotes.js"></script>
+    <script src="js/boat-data.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>

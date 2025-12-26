@@ -1032,63 +1032,6 @@ const DEFAULT_SETTINGS = {
 
 let settings = { ...DEFAULT_SETTINGS };
 
-// J/111 Polar Data
-const J111_POLARS = {
-    angles: [0, 30, 38, 45, 52, 60, 75, 90, 110, 120, 135, 150, 180],
-    speeds: {
-        6: {
-            spinnaker: [0.0, 0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 5.46, 5.5, 5.48, 5.25, 4.72, 4.01],
-            nonSpinnaker: [0.0, 0.0, 4.7, 4.93, 5.18, 5.29, 5.36, 5.46, 4.94, 4.65, 4.08, 3.51, 3.01]
-        },
-        8: {
-            spinnaker: [0.0, 0.0, 0.6, 1.2, 1.8, 2.4, 3.5, 6.79, 6.87, 6.85, 6.58, 5.94, 5.06],
-            nonSpinnaker: [0.0, 0.0, 5.8, 6.09, 6.41, 6.55, 6.65, 6.79, 6.17, 5.82, 5.12, 4.42, 3.8]
-        },
-        10: {
-            spinnaker: [0.0, 0.0, 0.7, 1.4, 2.1, 2.8, 4.0, 7.89, 8.01, 8.01, 7.72, 6.99, 6.0],
-            nonSpinnaker: [0.0, 0.0, 6.66, 7.0, 7.38, 7.56, 7.7, 7.89, 7.2, 6.8, 6.0, 5.2, 4.5]
-        },
-        12: {
-            spinnaker: [0.0, 0.0, 0.8, 1.6, 2.4, 3.2, 4.5, 8.6, 8.74, 8.75, 8.44, 7.65, 6.58],
-            nonSpinnaker: [0.0, 0.0, 7.23, 7.6, 8.02, 8.22, 8.38, 8.6, 7.85, 7.42, 6.56, 5.69, 4.93]
-        },
-        14: {
-            spinnaker: [0.0, 0.0, 0.9, 1.8, 2.7, 3.6, 5.0, 9.01, 9.18, 9.2, 8.89, 8.08, 6.98],
-            nonSpinnaker: [0.0, 0.0, 7.52, 7.91, 8.36, 8.57, 8.76, 9.01, 8.25, 7.81, 6.91, 6.01, 5.23]
-        },
-        16: {
-            spinnaker: [0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.5, 9.42, 9.66, 9.7, 9.42, 8.59, 7.47],
-            nonSpinnaker: [0.0, 0.0, 7.76, 8.18, 8.66, 8.9, 9.13, 9.42, 8.68, 8.24, 7.32, 6.39, 5.61]
-        },
-        20: {
-            spinnaker: [0.0, 0.0, 1.2, 2.4, 3.6, 4.8, 6.5, 10.43, 10.87, 11.01, 10.81, 9.98, 8.88],
-            nonSpinnaker: [0.0, 0.0, 8.2, 8.7, 9.26, 9.6, 9.98, 10.43, 9.77, 9.35, 8.4, 7.42, 6.66]
-        }
-    }
-};
-
-// Planing Configuration
-const J111_PLANING = {
-    // Conditions
-    minTWA: 100 * Math.PI / 180,
-    maxTWA: 170 * Math.PI / 180, // Drop off if dead downwind (unstable)
-    minTWS: 12.0, // Needs decent breeze
-    entrySpeed: 8.5, // Knots
-    exitSpeed: 7.5, // Hysteresis
-    entryTime: 1.5, // Seconds to trigger (prevent blips)
-    exitTime: 1.0,  // Seconds to lose it
-
-    // Physics Modifiers
-    speedMultiplier: 1.20, // 20% boost when planing (so 11kn -> 13.2kn)
-    accelBoost: 1.5, // Surging acceleration
-    turnDrag: 0.990, // Higher drag in turns while planing (loss of plane)
-    turnRateScale: 0.7, // Stiffer steering at high speed
-
-    // Visuals
-    wakeLengthScale: 2.0,
-    wakeWidthScale: 1.5
-};
-
 // Physics Helper Functions
 function normalizeAngle(angle) {
     while (angle > Math.PI) angle -= 2 * Math.PI;
@@ -1168,6 +1111,7 @@ const state = {
     race: { // Global Race State
         status: 'prestart',
         timer: 30.0,
+        boatClass: 'performance'
     },
     course: {}
 };
@@ -2234,12 +2178,17 @@ function showRaceMessage(text, textColorClass, borderColorClass) {
 function hideRaceMessage() { if (UI.message) UI.message.classList.add('hidden'); }
 
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
+    const boatClass = state.race.boatClass || 'performance';
+    const polars = BOAT_CLASSES[boatClass].polars;
+    if (!polars) return 0;
+
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
-    const angles = J111_POLARS.angles;
-    const speeds = [6, 8, 10, 12, 14, 16, 20];
+    const angles = polars.angles;
+    const speeds = Object.keys(polars.speeds).map(Number).sort((a,b)=>a-b);
 
     const getPolarSpeed = (ws) => {
-        const data = J111_POLARS.speeds[ws];
+        const data = polars.speeds[ws];
+        if (!data) return 0;
         const sData = useSpinnaker ? data.spinnaker : data.nonSpinnaker;
         for (let i = 0; i < angles.length - 1; i++) {
             if (twaDeg >= angles[i] && twaDeg <= angles[i+1]) {
@@ -2251,13 +2200,15 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     };
 
     if (windSpeed <= 0) return 0;
-    if (windSpeed < 6) {
-         // Linearly interpolate from 0 to Speed@6
-         return getPolarSpeed(6) * (windSpeed / 6.0);
+
+    // Low wind interpolation
+    const minSpeed = speeds[0];
+    if (windSpeed < minSpeed) {
+         return getPolarSpeed(minSpeed) * (windSpeed / minSpeed);
     }
 
-    let lower = 6, upper = 20;
-    if (windSpeed >= 20) { lower = 20; upper = 20; }
+    let lower = minSpeed, upper = speeds[speeds.length-1];
+    if (windSpeed >= upper) { lower = upper; upper = upper; }
     else {
         for (let i = 0; i < speeds.length - 1; i++) {
             if (windSpeed >= speeds[i] && windSpeed <= speeds[i+1]) { lower = speeds[i]; upper = speeds[i+1]; break; }
@@ -2640,69 +2591,71 @@ function updateBoat(boat, dt) {
     const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
     targetKnots *= trimEfficiency;
 
-    // PLANING LOGIC
+    // DYNAMIC & PLANING/SURFING LOGIC
+    const boatClass = state.race.boatClass || 'performance';
+    const dyn = BOAT_CLASSES[boatClass].dynamics;
     const twaDeg = Math.abs(angleToWind * 180 / Math.PI);
     const tws = effectiveWind;
     const boatKnots = boat.speed * 4;
 
-    let canPlane = (
-        twaDeg > (J111_PLANING.minTWA * 180 / Math.PI) &&
-        twaDeg < (J111_PLANING.maxTWA * 180 / Math.PI) &&
-        tws > J111_PLANING.minTWS
-    );
+    // Planing (Sport)
+    if (dyn.planing) {
+        // Planing Config
+        const minTWA = 100, maxTWA = 170, minTWS = 12.0;
+        const entrySpeed = 8.0, exitSpeed = 7.0;
+        const entryTime = 1.5, exitTime = 1.0;
 
-    // Hysteresis State Machine
-    if (canPlane) {
-        if (!boat.raceState.isPlaning) {
-            // Trying to enter
-            if (boatKnots > J111_PLANING.entrySpeed) {
-                boat.raceState.planingTimer += dt;
-                if (boat.raceState.planingTimer > J111_PLANING.entryTime) {
-                    boat.raceState.isPlaning = true;
-                    boat.raceState.planingTimer = 0;
-                    if (boat.isPlayer && settings.soundEnabled) {
-                         // Optional: Play a surge sound or change wind pitch (handled in audio update)
+        let canPlane = (twaDeg > minTWA && twaDeg < maxTWA && tws > minTWS);
+
+        if (canPlane) {
+            if (!boat.raceState.isPlaning) {
+                if (boatKnots > entrySpeed) {
+                    boat.raceState.planingTimer += dt;
+                    if (boat.raceState.planingTimer > entryTime) {
+                        boat.raceState.isPlaning = true;
+                        boat.raceState.planingTimer = 0;
                     }
-                }
+                } else boat.raceState.planingTimer = 0;
             } else {
-                boat.raceState.planingTimer = 0;
+                if (boatKnots < exitSpeed) {
+                    boat.raceState.planingTimer += dt;
+                    if (boat.raceState.planingTimer > exitTime) {
+                        boat.raceState.isPlaning = false;
+                        boat.raceState.planingTimer = 0;
+                    }
+                } else boat.raceState.planingTimer = 0;
             }
         } else {
-             // Maintaining
-             // Exit if speed drops below lower threshold
-             if (boatKnots < J111_PLANING.exitSpeed) {
+            if (boat.raceState.isPlaning) {
                  boat.raceState.planingTimer += dt;
-                 if (boat.raceState.planingTimer > J111_PLANING.exitTime) {
+                 if (boat.raceState.planingTimer > exitTime) {
                      boat.raceState.isPlaning = false;
                      boat.raceState.planingTimer = 0;
                  }
-             } else {
-                 boat.raceState.planingTimer = 0;
-             }
+            } else boat.raceState.planingTimer = 0;
         }
     } else {
-        // Conditions lost
-        if (boat.raceState.isPlaning) {
-             boat.raceState.planingTimer += dt;
-             if (boat.raceState.planingTimer > J111_PLANING.exitTime) {
-                 boat.raceState.isPlaning = false;
-                 boat.raceState.planingTimer = 0;
-             }
-        } else {
-             boat.raceState.planingTimer = 0;
+        boat.raceState.isPlaning = false;
+    }
+
+    // Surfing (Performance)
+    let surfBonus = 1.0;
+    if (dyn.surfing) {
+        if (tws > 16 && twaDeg > 120 && twaDeg < 160) {
+            // Wave surfing modulation
+            const wave = Math.sin(state.time * 2.0);
+            if (wave > 0.5) surfBonus = 1.05; // 5% boost on wave face
         }
     }
 
     if (boat.raceState.isPlaning) {
-        // Boost target speed
-        targetKnots *= J111_PLANING.speedMultiplier;
-
-        // Handling: Turning bleeds speed faster
+        targetKnots *= 1.25; // 25% Boost
+        // Turn Drag
         const turnActive = Math.abs(boat.heading - boat.prevHeading) > 0.0001;
-        if (turnActive) {
-            targetKnots *= J111_PLANING.turnDrag;
-        }
+        if (turnActive) targetKnots *= 0.98;
     }
+
+    targetKnots *= surfBonus;
 
     // Smooth factor for planing transition
     const targetFactor = boat.raceState.isPlaning ? 1.0 : 0.0;
@@ -2729,10 +2682,15 @@ function updateBoat(boat, dt) {
         boat.luffing = false;
     }
 
-    // Smoother speed changes (Higher inertia)
-    // 0.995 -> 0.9985 reduces speed decay when drive is lost (gybes/tacks)
-    const speedAlpha = 1 - Math.pow(0.9985, timeScale);
-    boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
+    // Inertia & Acceleration
+    const inertia = dyn.inertia || 0.998;
+    const accel = dyn.accelFactor || 1.0;
+
+    const baseAlpha = 1 - Math.pow(inertia, timeScale);
+    let alpha = baseAlpha;
+    if (targetGameSpeed > boat.speed) alpha *= accel;
+
+    boat.speed = boat.speed * (1 - alpha) + targetGameSpeed * alpha;
 
     // AI Boost: If wiggle is active, ensure minimum speed to slide off obstacles
     if (!boat.isPlayer && boat.controller && boat.controller.wiggleActive) {
@@ -3460,29 +3418,29 @@ function update(dt) {
 
     // Add Wake for all boats
     if (state.race.status !== 'waiting') {
-        for (const boat of state.boats) {
-            if (boat.speed > 0.25) {
-                const boatDX = Math.sin(boat.heading);
-                const boatDY = -Math.cos(boat.heading);
-                const sternX = boat.x - boatDX * 30;
-                const sternY = boat.y - boatDY * 30;
-                const planing = boat.raceState.isPlaning;
+      for (const boat of state.boats) {
+          if (boat.speed > 0.25) {
+               const boatDX = Math.sin(boat.heading);
+               const boatDY = -Math.cos(boat.heading);
+               const sternX = boat.x - boatDX * 30;
+               const sternY = boat.y - boatDY * 30;
+               const planing = boat.raceState.isPlaning;
 
-                // Base Wake
-                let wakeProb = 0.2;
-                if (planing) wakeProb = 0.6; // More foam
+               // Base Wake
+               let wakeProb = 0.2;
+               if (planing) wakeProb = 0.6; // More foam
 
-                if (Math.random() < wakeProb) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
+               if (Math.random() < wakeProb) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
 
-                // V-Wake (Waves)
-                let waveProb = 0.25;
-                let spread = 0.1;
-                let scale = 1.0;
-                if (planing) {
-                    waveProb = 0.5;
-                    spread = 0.2; // Wider V
-                    scale = J111_PLANING.wakeLengthScale;
-                }
+               // V-Wake (Waves)
+               let waveProb = 0.25;
+               let spread = 0.1;
+               let scale = 1.0;
+               if (planing) {
+                   waveProb = 0.5;
+                   spread = 0.2; // Wider V
+                   scale = 2.0;
+               }
 
                 if (Math.random() < waveProb) {
                     const rightX = Math.cos(boat.heading), rightY = Math.sin(boat.heading);
@@ -3571,8 +3529,19 @@ function drawParticles(ctx, layer) {
 // Drawing (Refactored for Boat object)
 function drawBoat(ctx, boat) {
     if (boat.opacity !== undefined && boat.opacity <= 0) return;
+
+    const boatClass = state.race.boatClass || 'performance';
+    const visual = BOAT_CLASSES[boatClass].visual || {};
+    const hullScale = visual.hullScale || 1.0;
+    const widthScale = visual.hullWidthScale || 1.0;
+    const sailScale = visual.sailScale || 1.0;
+
     ctx.save();
     if (boat.opacity !== undefined) ctx.globalAlpha = boat.opacity;
+
+    // Apply Hull Scaling for Body
+    ctx.save();
+    ctx.scale(widthScale, hullScale);
 
     // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
@@ -3594,14 +3563,24 @@ function drawBoat(ctx, boat) {
     ctx.fillStyle = cockpitColor || '#cbd5e1';
     ctx.beginPath(); ctx.roundRect(-8, 10, 16, 15, 4); ctx.fill();
 
+    ctx.restore(); // End Hull Scaling
+
+    // Bowsprit
+    if (visual.bowsprit) {
+        const spritLen = visual.bowspritLength || 10;
+        ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, -25 * hullScale); ctx.lineTo(0, (-25 * hullScale) - spritLen); ctx.stroke();
+    }
+
     // Mast
-    ctx.fillStyle = '#475569'; ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#475569'; ctx.beginPath(); ctx.arc(0, -5 * hullScale, 3, 0, Math.PI * 2); ctx.fill();
 
     // Sails
     const drawSailFunc = (isJib, scale = 1.0) => {
         ctx.save();
-        if (isJib) { ctx.translate(0, -25); ctx.rotate(boat.sailAngle); }
-        else { ctx.translate(0, -5); ctx.rotate(boat.sailAngle); }
+        const s = scale * sailScale;
+        if (isJib) { ctx.translate(0, -25 * hullScale); ctx.rotate(boat.sailAngle); }
+        else { ctx.translate(0, -5 * hullScale); ctx.rotate(boat.sailAngle); }
 
         const sailColor = boat.isPlayer ? settings.sailColor : boat.colors.sail;
         ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
@@ -3611,7 +3590,7 @@ function drawBoat(ctx, boat) {
         const luff = boat.luffIntensity || 0;
         const angleRatio = Math.min(1.0, Math.abs(boat.sailAngle) / (Math.PI / 4));
         const flattenFactor = 0.6 + 0.4 * angleRatio;
-        const baseDepth = (isJib ? 11 : 15) * scale * flattenFactor;
+        const baseDepth = (isJib ? 11 : 15) * s * flattenFactor;
         let controlX = -boat.boomSide * baseDepth;
         if (luff > 0) {
              const currentDepth = baseDepth * (1.0 - luff * 0.8);
@@ -3620,23 +3599,24 @@ function drawBoat(ctx, boat) {
              controlX = (-boat.boomSide * currentDepth) + flutterAmt;
         }
         ctx.beginPath();
-        if (isJib) { ctx.moveTo(0, 0); ctx.lineTo(0, 28 * scale); ctx.quadraticCurveTo(controlX, 14 * scale, 0, 0); }
-        else { ctx.moveTo(0, 0); ctx.lineTo(0, 45); ctx.quadraticCurveTo(controlX, 20, 0, 0); }
+        if (isJib) { ctx.moveTo(0, 0); ctx.lineTo(0, 28 * s); ctx.quadraticCurveTo(controlX, 14 * s, 0, 0); }
+        else { ctx.moveTo(0, 0); ctx.lineTo(0, 45 * s); ctx.quadraticCurveTo(controlX, 20 * s, 0, 0); }
         ctx.fill(); ctx.stroke();
 
         if (!isJib) {
             ctx.strokeStyle = 'rgba(0,0,0,0.1)'; ctx.beginPath();
-            ctx.moveTo(0, 15); ctx.lineTo(controlX * 0.33, 12);
-            ctx.moveTo(0, 30); ctx.lineTo(controlX * 0.6, 24);
+            ctx.moveTo(0, 15 * s); ctx.lineTo(controlX * 0.33, 12 * s);
+            ctx.moveTo(0, 30 * s); ctx.lineTo(controlX * 0.6, 24 * s);
             ctx.stroke();
-            ctx.strokeStyle = '#475569'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 45); ctx.stroke();
+            ctx.strokeStyle = '#475569'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 45 * s); ctx.stroke();
         }
         ctx.restore();
     };
 
     const drawSpinnaker = (scale = 1.0) => {
         ctx.save();
-        ctx.translate(0, -28); ctx.rotate(boat.sailAngle);
+        const s = scale * sailScale;
+        ctx.translate(0, -28 * hullScale); ctx.rotate(boat.sailAngle);
         const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
         ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
         ctx.fillStyle = spinColor || '#ef4444';
@@ -3644,7 +3624,7 @@ function drawBoat(ctx, boat) {
         ctx.lineWidth = 1;
 
         const luff = boat.luffIntensity || 0;
-        const baseDepth = 40 * scale;
+        const baseDepth = 40 * s;
         let controlX = -boat.boomSide * baseDepth;
         if (luff > 0) {
              const currentDepth = baseDepth * (1.0 - luff * 0.9);
@@ -3652,7 +3632,7 @@ function drawBoat(ctx, boat) {
              const flutterAmt = Math.sin(time) * baseDepth * 1.2 * luff;
              controlX = (-boat.boomSide * currentDepth) + flutterAmt;
         }
-        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 50 * scale); ctx.quadraticCurveTo(controlX, 25 * scale, 0, 0);
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 50 * s); ctx.quadraticCurveTo(controlX, 25 * s, 0, 0);
         ctx.fill(); ctx.stroke(); ctx.restore();
     };
 
@@ -5124,6 +5104,11 @@ function initCourse() {
 
 function resetGame() {
     loadSettings();
+
+    // Set Class
+    const selector = document.querySelector('input[name="boat-class"]:checked');
+    state.race.boatClass = selector ? selector.value : 'performance';
+
     if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
     state.camera.target = 'boat';
     state.wind.baseSpeed = 8 + Math.random()*10;
@@ -5292,3 +5277,39 @@ function restartRace() { resetGame(); togglePause(false); }
 resetGame();
 requestAnimationFrame(loop);
 window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard;
+
+// Boat Class UI Logic
+const classRadios = document.querySelectorAll('input[name="boat-class"]');
+const classDesc = document.getElementById('class-desc');
+classRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        const cls = BOAT_CLASSES[e.target.value];
+        if (cls && classDesc) {
+            classDesc.textContent = cls.description;
+        }
+    });
+});
+
+window.benchPolars = function() {
+    console.log("Polar Bench");
+    const speeds = [6, 10, 14, 20];
+    const angles = [45, 90, 140, 180];
+
+    for (const cls of ['cruiser', 'performance', 'sport']) {
+        console.log(`--- ${cls.toUpperCase()} ---`);
+        state.race.boatClass = cls;
+        for (const ws of speeds) {
+             let row = `TWS ${ws}: `;
+             for (const wa of angles) {
+                 const rad = wa * Math.PI/180;
+                 const spin = wa > 100;
+                 const spd = getTargetSpeed(rad, spin, ws);
+                 row += `[${wa}°: ${spd.toFixed(2)}kn] `;
+             }
+             console.log(row);
+        }
+    }
+    // Restore
+    const selector = document.querySelector('input[name="boat-class"]:checked');
+    state.race.boatClass = selector ? selector.value : 'performance';
+};
