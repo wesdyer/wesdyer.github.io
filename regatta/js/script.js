@@ -1240,10 +1240,10 @@ class Boat {
             nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 },
             trace: [],
             legTimes: [],
-            legManeuvers: [0, 0, 0, 0, 0],
-            legTopSpeeds: [0, 0, 0, 0, 0],
-            legDistances: [0, 0, 0, 0, 0],
-            legSpeedSums: [0, 0, 0, 0, 0],
+            legManeuvers: new Array(32).fill(0),
+            legTopSpeeds: new Array(32).fill(0),
+            legDistances: new Array(32).fill(0),
+            legSpeedSums: new Array(32).fill(0),
             isPlaning: false,
             planingTimer: 0,
             planingFactor: 0
@@ -1618,9 +1618,8 @@ const Sound = {
         } else if (state.race.status === 'racing') {
             const player = state.boats[0];
             const leg = player ? player.raceState.leg : 0;
-            // Leg 0, 1, 3: Upwind (breezy-race.mp3)
-            // Leg 2, 4: Downwind (spinnaker-run.mp3)
-            if (leg === 0 || leg === 1 || leg === 3) targetTrack = 'racing-upwind';
+            // Odd Legs = Upwind, Even = Downwind (plus Start leg 0 is "upwind" music for excitement)
+            if (leg === 0 || leg % 2 !== 0) targetTrack = 'racing-upwind';
             else targetTrack = 'racing-downwind';
         }
 
@@ -2444,10 +2443,10 @@ function getRightOfWay(b1, b2) {
     const t1 = b1.boomSide > 0 ? 1 : -1;
     const t2 = b2.boomSide > 0 ? 1 : -1;
     const oppositeTacks = (t1 !== t2);
-    const isUpwind = (leg === 1 || leg === 3);
+    const isUpwind = (leg % 2 !== 0); // Odd legs are upwind
 
     let rule18Applies = false;
-    if (isRacing && leg > 0 && leg < 5) {
+    if (isRacing && leg > 0 && leg <= state.race.totalLegs) {
         // Exclusion: Opposite tacks on a beat to windward
         if (!(isUpwind && oppositeTacks)) {
              if (b1.raceState.inZone || b2.raceState.inZone) {
@@ -2941,8 +2940,11 @@ function updateBoatRaceState(boat, dt) {
         // Zone Check
         let inZone = false;
         let zoneMarks = [];
-        if (boat.raceState.leg === 1 || boat.raceState.leg === 3) zoneMarks = [2, 3];
-        else if (boat.raceState.leg === 2) zoneMarks = [0, 1];
+        // No zones on Start (0) or Finish (totalLegs)
+        if (boat.raceState.leg > 0 && boat.raceState.leg < state.race.totalLegs) {
+            if (boat.raceState.leg % 2 !== 0) zoneMarks = [2, 3];
+            else zoneMarks = [0, 1];
+        }
 
         for (const idx of zoneMarks) {
              const m = marks[idx];
@@ -3161,7 +3163,7 @@ function updateBoatRaceState(boat, dt) {
     if (boat.lastWindSide === undefined) boat.lastWindSide = currentWindSide;
     if (currentWindSide !== 0) {
         if (boat.lastWindSide !== 0 && currentWindSide !== boat.lastWindSide) {
-             if (state.race.status === 'racing' && boat.raceState.leg >= 0 && boat.raceState.leg < 5) {
+             if (state.race.status === 'racing' && boat.raceState.leg >= 0 && boat.raceState.leg <= state.race.totalLegs) {
                  boat.raceState.legManeuvers[boat.raceState.leg]++;
              }
         }
@@ -3169,7 +3171,7 @@ function updateBoatRaceState(boat, dt) {
     }
 
     // Stats
-    if (state.race.status === 'racing' && boat.raceState.leg < 5) {
+    if (state.race.status === 'racing' && boat.raceState.leg <= state.race.totalLegs) {
         // Distance Calculation:
         // Use visual scale: 1 unit = 0.2 meters.
         // Distance = Speed (units/s) * dt * 0.2
@@ -3910,10 +3912,12 @@ function drawRoundingArrows(ctx) {
 
     // Player Leg determines what to show
     const player = state.boats[0];
+    // No arrows on Start (0) or Finish (totalLegs)
+    if (player.raceState.leg === 0 || player.raceState.leg >= state.race.totalLegs) return;
+
     let activeMarks = [];
-    if (player.raceState.leg === 1 || player.raceState.leg === 3) activeMarks = [{ index: 2, ccw: true }, { index: 3, ccw: false }];
-    else if (player.raceState.leg === 2) activeMarks = [{ index: 0, ccw: false }, { index: 1, ccw: true }];
-    else return;
+    if (player.raceState.leg % 2 !== 0) activeMarks = [{ index: 2, ccw: true }, { index: 3, ccw: false }]; // Upwind
+    else activeMarks = [{ index: 0, ccw: false }, { index: 1, ccw: true }]; // Downwind
 
     ctx.save();
     ctx.lineWidth = 10; ctx.strokeStyle = '#22d3ee'; ctx.fillStyle = '#22d3ee'; ctx.lineCap = 'round';
@@ -3951,7 +3955,7 @@ function drawActiveGateLine(ctx) {
     let indices;
     if (state.race.status === 'finished' || player.raceState.finished) indices = [0, 1];
     else {
-        if (player.raceState.leg !== 0 && player.raceState.leg !== 4) return;
+        if (player.raceState.leg !== 0 && player.raceState.leg !== state.race.totalLegs) return;
         indices = (player.raceState.leg % 2 === 0) ? [0, 1] : [2, 3];
     }
     const m1 = state.course.marks[indices[0]], m2 = state.course.marks[indices[1]];
@@ -3968,7 +3972,7 @@ function drawActiveGateLine(ctx) {
 
     ctx.save(); ctx.fillStyle = color; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const midX = (m1.x+m2.x)/2, midY = (m1.y+m2.y)/2;
-    let label = (player.raceState.leg === 0) ? "START" : ((player.raceState.leg === 4 || state.race.status === 'finished' || player.raceState.finished) ? "FINISH" : "");
+    let label = (player.raceState.leg === 0) ? "START" : ((player.raceState.leg === state.race.totalLegs || state.race.status === 'finished' || player.raceState.finished) ? "FINISH" : "");
     if (label) {
         const angle = Math.atan2(m2.y - m1.y, m2.x - m1.x);
         ctx.translate(midX, midY);
@@ -4073,7 +4077,8 @@ function drawMarkZones(ctx) {
     const player = state.boats[0];
     let active = [];
 
-    if (player.raceState.leg > 0 && player.raceState.leg <= state.race.totalLegs) {
+    // Exclude Start (0) and Finish (totalLegs)
+    if (player.raceState.leg > 0 && player.raceState.leg < state.race.totalLegs) {
         if (player.raceState.leg % 2 !== 0) active = [2, 3];
         else active = [0, 1];
     } else return;
@@ -5315,13 +5320,10 @@ function resetGame() {
     state.race.status = 'waiting'; // Wait for user to start
 
     // Defaults for Race Config (can be overridden by UI)
-    state.race.legLength = 3200; // 3200 units = 640m. User wanted 100-2000m slider.
-    // Wait, existing UI says "3200m" but code used 4000 units?
-    // 4000 units * 0.2m/unit = 800m. 4 legs = 3200m. Correct.
-    // So legLength default 4000.
-    state.race.legLength = 4000;
-    state.race.totalLegs = 4;
-    state.race.startTimerDuration = 30.0;
+    // Preserve existing config if set, otherwise use defaults
+    state.race.legLength = state.race.legLength || 4000;
+    state.race.totalLegs = state.race.totalLegs || 4;
+    state.race.startTimerDuration = state.race.startTimerDuration || 30.0;
 
     state.race.timer = state.race.startTimerDuration;
 
