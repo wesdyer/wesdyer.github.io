@@ -1011,8 +1011,10 @@ let settings = { ...DEFAULT_SETTINGS };
 
 // Physics Helper Functions
 function normalizeAngle(angle) {
-    while (angle > Math.PI) angle -= 2 * Math.PI;
-    while (angle < -Math.PI) angle += 2 * Math.PI;
+    if (!Number.isFinite(angle)) return 0;
+    angle = angle % (2 * Math.PI);
+    if (angle > Math.PI) angle -= 2 * Math.PI;
+    if (angle < -Math.PI) angle += 2 * Math.PI;
     return angle;
 }
 

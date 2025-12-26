@@ -6,17 +6,17 @@ const BOAT_CLASSES = {
         description: "Heavy, stable, and forgiving. Best for learning the ropes.",
         visual: {
             hullScale: 1.0,
-            hullWidthScale: 1.2, // Beamy
+            hullWidthScale: 1.2,
             deckColor: '#e2e8f0',
             bowsprit: false,
-            sailScale: 0.9, // Smaller rig
+            sailScale: 0.9,
             freeboardScale: 1.1
         },
         dynamics: {
-            turnSpeed: 0.005, // Heavy (0.008 -> 0.005)
-            turnPenalty: 0.998,
-            accelFactor: 0.3, // Slow (0.5 -> 0.3)
-            inertia: 0.9995, // High inertia (0.999 -> 0.9995)
+            turnSpeed: 0.004, // Very Heavy
+            turnPenalty: 0.997, // High Drag in turns
+            accelFactor: 0.2, // Very Slow Accel
+            inertia: 0.9998, // Extreme Inertia
             heelResponse: 0.5,
             planing: false,
             surfing: false,
@@ -50,7 +50,7 @@ const BOAT_CLASSES = {
         description: "Balanced racer-cruiser. Fast, smooth, and versatile.",
         visual: {
             hullScale: 1.05,
-            hullWidthScale: 0.95, // Sleek
+            hullWidthScale: 0.95,
             deckColor: '#cbd5e1',
             bowsprit: true,
             bowspritLength: 6, // Short
@@ -115,10 +115,10 @@ const BOAT_CLASSES = {
             freeboardScale: 0.8
         },
         dynamics: {
-            turnSpeed: 0.022, // Twitchy (0.015 -> 0.022)
-            turnPenalty: 0.995,
-            accelFactor: 2.5, // Rocket (1.5 -> 2.5)
-            inertia: 0.985, // Stops fast (0.990 -> 0.985)
+            turnSpeed: 0.025, // Twitchy (0.022 -> 0.025)
+            turnPenalty: 0.990, // Significant speed bleed in turns
+            accelFactor: 3.0, // Explosive Accel (2.5 -> 3.0)
+            inertia: 0.98, // Stops fast (0.985 -> 0.98)
             heelResponse: 3.0,
             planing: true,
             surfing: false,
