@@ -3501,7 +3501,13 @@ function update(dt) {
         }
     } else if (state.race.status === 'racing') {
         state.race.timer += dt;
-        if (state.race.timer >= 600.0) { // 10 Minute Cutoff
+
+        // Calculate Cutoff Time (0.1875s per meter)
+        // legLength is in units. 5 units = 1 meter.
+        const totalDistMeters = (state.race.totalLegs * state.race.legLength) / 5;
+        const cutoffTime = totalDistMeters * 0.1875;
+
+        if (state.race.timer >= cutoffTime) { // Dynamic Cutoff
             state.race.status = 'finished';
 
             // Mark all active boats as DNF/DNS
@@ -4534,7 +4540,11 @@ function showResults() {
     const totalBoats = state.boats.length;
 
     sorted.forEach((boat, index) => {
-        const points = totalBoats - index;
+        let points = totalBoats - index;
+        if (boat.raceState.resultStatus === 'DNS' || boat.raceState.resultStatus === 'DNF') {
+            points = 0;
+        }
+
         let row = UI.resultRows[boat.id];
         let isNew = false;
 
@@ -4668,7 +4678,11 @@ function showResults() {
         }
 
         // Stats
-        const finishTime = formatTime(boat.raceState.finishTime);
+        let finishTime = formatTime(boat.raceState.finishTime);
+        if (boat.raceState.resultStatus) {
+            finishTime = boat.raceState.resultStatus;
+        }
+
         const delta = (index > 0 && leader.raceState.finished && boat.raceState.finished)
             ? "+" + (boat.raceState.finishTime - leader.raceState.finishTime).toFixed(2)
             : "-";
@@ -4683,7 +4697,13 @@ function showResults() {
 
         const updateText = (cls, val) => { const el = row.querySelector('.'+cls); if(el) el.textContent = val; return el; };
 
-        updateText('res-time', finishTime);
+        const tEl = updateText('res-time', finishTime);
+        if (tEl) {
+             // Ensure it is always white (resetting any potential previous red state)
+             tEl.classList.remove('text-red-400');
+             tEl.classList.add('text-white');
+        }
+
         const dEl = updateText('res-delta', delta);
         if (dEl) dEl.className = `res-delta font-sans font-bold text-sm text-right ${delta==='-' ? 'text-white/30' : 'text-white/70'}`;
 
