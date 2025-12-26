@@ -1,7 +1,7 @@
 // Game Configuration
 const CONFIG = {
     turnSpeed: 0.01, // Radians per frame (approx) -> adjusted for dt in update
-    turnPenalty: 0.9995,
+    turnPenalty: 0.99975,
     cameraPanSpeed: 1.25,
     cameraRotateSpeed: 0.01,
     windSpeed: 5,
