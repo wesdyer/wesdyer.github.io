@@ -5128,7 +5128,7 @@ function resetGame() {
     state.camera.target = 'boat';
     state.wind.baseSpeed = 8 + Math.random()*10;
     state.wind.speed = state.wind.baseSpeed;
-    state.wind.baseDirection = (Math.random()-0.5)*0.5;
+    state.wind.baseDirection = Math.random() * Math.PI * 2;
     state.wind.direction = state.wind.baseDirection;
     state.gusts = [];
 
