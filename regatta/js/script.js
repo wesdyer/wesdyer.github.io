@@ -4699,13 +4699,9 @@ function showResults() {
 
         const tEl = updateText('res-time', finishTime);
         if (tEl) {
-             if (boat.raceState.resultStatus) {
-                 tEl.classList.add('text-red-400');
-                 tEl.classList.remove('text-white');
-             } else {
-                 tEl.classList.remove('text-red-400');
-                 tEl.classList.add('text-white');
-             }
+             // Ensure it is always white (resetting any potential previous red state)
+             tEl.classList.remove('text-red-400');
+             tEl.classList.add('text-white');
         }
 
         const dEl = updateText('res-delta', delta);
