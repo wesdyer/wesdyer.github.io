@@ -1288,18 +1288,22 @@ function createGust(x, y, type, initial = false) {
     }
 
     // Directional Deviation inside Puff ("Puff Shiftiness")
-    // Low: 2-5 deg. High: 10-15 deg.
+    // Enhanced for bigger shifts as requested.
+    // Low: 5-20 deg. High: 10-30 deg.
     // conditions.puffShiftiness is 0-1
-    const minDev = 2 + conditions.puffShiftiness * 8; // 2 to 10
-    const maxDev = 5 + conditions.puffShiftiness * 10; // 5 to 15
+    const minDev = 5 + conditions.puffShiftiness * 15; // 5 to 20
+    const maxDev = 10 + conditions.puffShiftiness * 20; // 10 to 30
     const devDeg = minDev + Math.random() * (maxDev - minDev);
     const devRad = devDeg * (Math.PI / 180);
     dirDelta = (Math.random() < 0.5 ? -1 : 1) * devRad;
 
-    // Movement
-    const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.1;
-    // Gusts move roughly with the wind, maybe slight variance
-    const moveDir = windDir + (Math.random() - 0.5) * 0.1;
+    // Movement Factors (Relative to global wind)
+    const moveSpeedFactor = (0.8 + Math.random() * 0.4) * 0.1; // 10% of wind speed approx
+    const moveDirOffset = (Math.random() - 0.5) * 0.1; // Slight drift relative to wind
+
+    // Initial Velocity
+    const moveSpeed = baseSpeed * moveSpeedFactor;
+    const moveDir = windDir + moveDirOffset;
     const vx = -Math.sin(moveDir) * moveSpeed;
     const vy = Math.cos(moveDir) * moveSpeed;
 
@@ -1308,9 +1312,10 @@ function createGust(x, y, type, initial = false) {
 
     return {
         type, x, y, vx, vy,
+        moveSpeedFactor, moveDirOffset,
         maxRadiusX, maxRadiusY,
         radiusX: 10, radiusY: 10,
-        rotation: windDir + Math.PI / 2,
+        rotation: windDir + dirDelta + Math.PI / 2,
         speedDelta, dirDelta,
         duration,
         age
@@ -1356,8 +1361,20 @@ function updateGusts(dt) {
     }
 
     const timeScale = dt * 60;
+    const globalWindSpeed = state.wind.speed;
+    const globalWindDir = state.wind.direction;
+
     for (let i = state.gusts.length - 1; i >= 0; i--) {
         const g = state.gusts[i];
+
+        // Update Velocity to follow global wind
+        const moveSpeed = globalWindSpeed * g.moveSpeedFactor;
+        const moveDir = globalWindDir + g.moveDirOffset;
+        g.vx = -Math.sin(moveDir) * moveSpeed;
+        g.vy = Math.cos(moveDir) * moveSpeed;
+
+        // Update Rotation to align with local wind direction (Global + Delta)
+        g.rotation = globalWindDir + g.dirDelta + Math.PI / 2;
 
         g.x += g.vx * timeScale;
         g.y += g.vy * timeScale;
