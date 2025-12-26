@@ -2208,6 +2208,7 @@ if (UI.confPuffShift) UI.confPuffShift.addEventListener('input', updateCondition
 
             // Re-init course to align with new wind
             initCourse();
+            repositionBoats();
         }
     });
 
@@ -5281,6 +5282,93 @@ function loop(timestamp) {
     requestAnimationFrame(loop);
 }
 
+function repositionBoats() {
+    if (!state.boats || state.boats.length === 0) return;
+
+    // Wind Vectors
+    const wd = state.wind.direction;
+    const ux = Math.sin(wd);
+    const uy = -Math.cos(wd);
+
+    // Downwind Vector (Back from line)
+    const backX = -ux;
+    const backY = -uy;
+
+    // Start Line Center and Geometry
+    if (!state.course.marks || state.course.marks.length < 2) return;
+    const m0 = state.course.marks[0];
+    const m1 = state.course.marks[1];
+    const cx = (m0.x + m1.x) / 2;
+    const cy = (m0.y + m1.y) / 2;
+
+    const lDx = m1.x - m0.x;
+    const lDy = m1.y - m0.y;
+    const lLen = Math.sqrt(lDx*lDx + lDy*lDy);
+    const rx = lDx / lLen;
+    const ry = lDy / lLen;
+
+    // Spawn at 400 units back
+    const distBack = 400;
+    const lineCx = cx + backX * distBack;
+    const lineCy = cy + backY * distBack;
+
+    // Width Calculation
+    // Layline width at distance: StartWidth + 2 * Distance (assuming 45 deg laylines)
+    // Actually, just using startWidth + margin is enough.
+    const startWidth = lLen;
+    const totalWidth = startWidth + 2 * distBack;
+
+    // Generate Evenly Spaced Positions
+    const positions = [];
+    const step = (state.boats.length > 1) ? totalWidth / (state.boats.length - 1) : 0;
+    const startOffset = -totalWidth / 2;
+
+    for (let i = 0; i < state.boats.length; i++) {
+        const offset = startOffset + i * step;
+        positions.push({
+            x: lineCx + rx * offset,
+            y: lineCy + ry * offset
+        });
+    }
+
+    // Shuffle Positions
+    for (let i = positions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+
+    let posIndex = 0;
+    for (const boat of state.boats) {
+        const pos = positions[posIndex++];
+
+        if (boat.isPlayer) {
+            boat.x = pos.x;
+            boat.y = pos.y;
+            boat.heading = wd; // Head to wind
+            boat.velocity = { x: 0, y: 0 };
+            boat.speed = 0;
+        } else {
+             // Add vertical scatter
+            const scatter = (Math.random() - 0.5) * 100;
+            const downwind = wd + Math.PI;
+            const sx = pos.x + Math.sin(downwind) * scatter;
+            const sy = pos.y - Math.cos(downwind) * scatter;
+
+            boat.x = sx;
+            boat.y = sy;
+            // Start on Starboard Tack (Close Hauled)
+            boat.heading = normalizeAngle(wd + Math.PI / 4);
+            boat.speed = 0.5;
+            boat.velocity = {
+                x: Math.sin(boat.heading) * boat.speed,
+                y: -Math.cos(boat.heading) * boat.speed
+            };
+        }
+        boat.prevHeading = boat.heading;
+        if (boat.raceState) boat.raceState.lastPos = { x: boat.x, y: boat.y };
+    }
+}
+
 // Init
 function initCourse() {
     const d = state.wind.baseDirection, ux = Math.sin(d), uy = -Math.cos(d), rx = -uy, ry = ux;
@@ -5364,67 +5452,8 @@ function resetGame() {
     if (UI.resultsList) UI.resultsList.innerHTML = '';
     UI.resultRows = {};
 
-    // Calculate Start Line Positions
-    // Spawn at 400 units to allow horizontal spread but close enough to reach parking
-    const distBack = 400;
-
-    // Wind Vectors
-    const wd = state.wind.direction;
-    const ux = Math.sin(wd);
-    const uy = -Math.cos(wd);
-
-    // Downwind Vector (Back from line)
-    const backX = -ux;
-    const backY = -uy;
-
-    // Start Line Center
-    const m0 = state.course.marks[0];
-    const m1 = state.course.marks[1];
-    const cx = (m0.x + m1.x) / 2;
-    const cy = (m0.y + m1.y) / 2;
-
-    // Calculate Start Line Unit Vector (Right Vector)
-    const lDx = m1.x - m0.x;
-    const lDy = m1.y - m0.y;
-    const lLen = Math.sqrt(lDx*lDx + lDy*lDy);
-    const rx = lDx / lLen;
-    const ry = lDy / lLen;
-
-    // Center of Boat Line
-    const lineCx = cx + backX * distBack;
-    const lineCy = cy + backY * distBack;
-
-    // Width Calculation
-    // Start Width
-    const startWidth = Math.sqrt((m1.x - m0.x)**2 + (m1.y - m0.y)**2);
-    // Layline width at distance: StartWidth + 2 * Distance (assuming 45 deg laylines)
-    const totalWidth = startWidth + 2 * distBack;
-
-    // Generate Evenly Spaced Positions
-    const totalBoats = 10; // Player + 9 AI
-    const positions = [];
-    const step = totalWidth / (totalBoats - 1);
-    const startOffset = -totalWidth / 2;
-
-    for (let i = 0; i < totalBoats; i++) {
-        const offset = startOffset + i * step;
-        positions.push({
-            x: lineCx + rx * offset,
-            y: lineCy + ry * offset
-        });
-    }
-
-    // Shuffle Positions (Fisher-Yates)
-    for (let i = positions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [positions[i], positions[j]] = [positions[j], positions[i]];
-    }
-
-    let posIndex = 0;
-
-    // Create Player
-    const pPos = positions[posIndex++];
-    const player = new Boat(0, true, pPos.x, pPos.y, "Player");
+    // Create Boats (Initialized at 0,0, positioned by repositionBoats)
+    const player = new Boat(0, true, 0, 0, "Player");
     player.heading = state.wind.direction; // Head to wind
     player.prevHeading = player.heading;
     player.lastWindSide = 0;
@@ -5441,23 +5470,11 @@ function resetGame() {
 
     for (let i = 0; i < opponents.length; i++) {
         const config = opponents[i];
-        const pos = positions[posIndex++];
+        const ai = new Boat(i + 1, false, 0, 0, config.name, config);
 
-        // Add vertical scatter to prevent line-abreast collision issues
-        // Move some further back, some closer
-        const scatter = (Math.random() - 0.5) * 100;
-        const downwind = state.wind.direction + Math.PI;
-        const sx = pos.x + Math.sin(downwind) * scatter;
-        const sy = pos.y - Math.cos(downwind) * scatter;
-
-        const ai = new Boat(i + 1, false, sx, sy, config.name, config);
-
-        // Start on Starboard Tack (Close Hauled) to be ready to move
-        // Instead of Irons (Head to Wind)
-        ai.heading = normalizeAngle(state.wind.direction + Math.PI / 4);
+        // Initial setup props
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
-        ai.speed = 0.5; // Initial speed (moving slightly)
 
         // Basic Start Setup
         ai.ai.startLinePct = 0.1 + Math.random() * 0.8;
@@ -5465,6 +5482,8 @@ function resetGame() {
 
         state.boats.push(ai);
     }
+
+    repositionBoats();
 
     state.particles = [];
     hideRaceMessage();
