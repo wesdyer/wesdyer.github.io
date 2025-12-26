@@ -401,21 +401,17 @@ class BotController {
             // dot > 0 means we are "Above" the line (Course Side)
             // If ocs is true, OR if we are course side (dot > 0), we must return.
             if (boat.raceState.ocs || dot > 0) {
-                // Must go DOWNWIND to clear line
-                // Always target the extensions to avoid crushing, even in normal mode if we are lost
-                const d0 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
-                const d1 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
-                const nearest = (d0 < d1) ? m1 : m2;
+                // Must go DOWNWIND to clear line.
+                // Reset to center of start box to avoid looping around the ends which causes circular navigation traps.
+                const centerX = (m1.x + m2.x) / 2;
+                const centerY = (m1.y + m2.y) / 2;
 
-                const lineLen = Math.sqrt(lineDx*lineDx + lineDy*lineDy);
-                const ux = lineDx/lineLen, uy = lineDy/lineLen;
-                const sign = (nearest === m1) ? -1 : 1;
+                // Target Downwind (backwards from wind direction)
+                // Upwind is (sin(wd), -cos(wd)). Downwind is (-sin(wd), cos(wd)).
+                const distBack = (this.livenessState === 'normal') ? 150 : 250;
 
-                // Normal mode: milder return. Force/Recovery: aggressive wide return.
-                const width = (this.livenessState === 'normal') ? 50 : 150;
-
-                targetX = nearest.x + (sign * ux * width) - (Math.sin(wd) * 150);
-                targetY = nearest.y + (sign * uy * width) + (Math.cos(wd) * 150);
+                targetX = centerX - Math.sin(wd) * distBack;
+                targetY = centerY + Math.cos(wd) * distBack;
             } else {
                 // Normal Start (Upwind)
                 const distPast = (this.livenessState === 'force') ? 300 : 150;
