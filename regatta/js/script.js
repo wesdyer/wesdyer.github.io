@@ -734,14 +734,17 @@ class BotController {
 
             // Thresholds
             let risk = 'LOW';
-            if (metrics.distCurrent < 300) {
-                if (metrics.distCPA < 60 && metrics.tCPA > 0 && metrics.tCPA < 5.0) {
+            // Increased detection range (was 300) to allow earlier reactions (4s head-on closing ~480 units)
+            if (metrics.distCurrent < 600) {
+                // Earlier detection: tCPA thresholds increased (5.0 -> 8.0, 3.0 -> 4.5)
+                // Distance thresholds slightly increased for larger safety bubble
+                if (metrics.distCPA < 70 && metrics.tCPA > 0 && metrics.tCPA < 8.0) {
                      risk = 'MEDIUM';
                 }
-                if (metrics.distCPA < 40 && metrics.tCPA > 0 && metrics.tCPA < 3.0) {
+                if (metrics.distCPA < 50 && metrics.tCPA > 0 && metrics.tCPA < 4.5) {
                      risk = 'HIGH';
                 }
-                if (metrics.distCurrent < 60 || (metrics.distCPA < 30 && metrics.tCPA > 0 && metrics.tCPA < 1.5)) {
+                if (metrics.distCurrent < 60 || (metrics.distCPA < 35 && metrics.tCPA > 0 && metrics.tCPA < 2.0)) {
                      risk = 'IMMINENT';
                 }
             }
@@ -791,7 +794,7 @@ class BotController {
         if (this.wiggleActive) return desiredHeading;
 
         const boat = this.boat;
-        const lookaheadFrames = 120; // 2 seconds lookahead
+        const lookaheadFrames = 240; // Increased to 4 seconds lookahead
         const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
         
         // Candidates: more granular to find gaps
@@ -802,7 +805,8 @@ class BotController {
             0.4, -0.4, 
             0.6, -0.6,
             0.8, -0.8,
-            1.2, -1.2 
+            1.2, -1.2,
+            1.6, -1.6 // Wider options for emergency bailouts
         ];
 
         let bestHeading = desiredHeading;
@@ -823,7 +827,7 @@ class BotController {
         if (this.livenessState === 'normal' && this.avoidanceRole === 'GIVE_WAY') {
             // Give-Way: Larger bubble to react early
             if (this.riskState === 'MEDIUM' || this.riskState === 'HIGH') {
-                safeDist = 120;
+                safeDist = 150; // Increased significantly for earlier give-way
             }
         }
 
@@ -834,9 +838,9 @@ class BotController {
             // Non-linear cost to strongly prefer small deviations
             let cost = Math.pow(Math.abs(offset), 1.5) * 10; 
 
-            // Stand-On: Penalize large deviations (Hold Course)
-            if (this.avoidanceRole === 'STAND_ON' && this.riskState === 'MEDIUM') {
-                cost += Math.abs(offset) * 1000;
+            // Stand-On: Penalize large deviations (Hold Course) unless imminent
+            if (this.avoidanceRole === 'STAND_ON' && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
+                cost += Math.abs(offset) * 2000; // Stronger penalty to hold course
             }
 
             // Project position at t=lookahead
@@ -862,6 +866,25 @@ class BotController {
                 
                 const ovx = (other.velocity && other.velocity.x) ? other.velocity.x * 60 : Math.sin(other.heading)*other.speed*60;
                 const ovy = (other.velocity && other.velocity.y) ? other.velocity.y * 60 : -Math.cos(other.heading)*other.speed*60;
+
+                // Strategic Positioning (Duck Stern / Go Above)
+                if (this.avoidanceRole === 'GIVE_WAY' && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
+                    const t = lookaheadFrames / 60;
+                    const myFut = { x: futureX, y: futureY };
+                    const otherFut = { x: other.x + ovx * t, y: other.y + ovy * t };
+                    const dx = myFut.x - otherFut.x;
+                    const dy = myFut.y - otherFut.y;
+
+                    if (dx*dx + dy*dy < 250*250) {
+                        const oh = other.heading;
+                        const ofx = Math.sin(oh), ofy = -Math.cos(oh);
+                        const dotForward = dx * ofx + dy * ofy;
+
+                        // Penalize crossing bow (dotForward > 0), Reward ducking (dotForward < 0)
+                        if (dotForward > 0) cost += 1500;
+                        else cost -= 500;
+                    }
+                }
 
                 // Check along the path
                 for (let i = 0; i < points.length; i++) {
@@ -889,9 +912,9 @@ class BotController {
                                 if (row === other) ruleViolation = true; // We are Give-Way
                             } catch(e) {}
                         }
-                    } else if (distSq < 200 * 200 && this.livenessState === 'normal') {
+                    } else if (distSq < 250 * 250 && this.livenessState === 'normal') {
                         // Soft avoidance (Proximity)
-                        proximityCost += 5000 / distSq; 
+                        proximityCost += 5000 / (distSq + 10);
                     }
                 }
             }
@@ -1232,18 +1255,22 @@ function createGust(x, y, type, initial = false) {
     }
 
     // Directional Deviation inside Puff ("Puff Shiftiness")
-    // Low: 2-5 deg. High: 10-15 deg.
+    // Enhanced for bigger shifts as requested.
+    // Low: 5-20 deg. High: 10-30 deg.
     // conditions.puffShiftiness is 0-1
-    const minDev = 2 + conditions.puffShiftiness * 8; // 2 to 10
-    const maxDev = 5 + conditions.puffShiftiness * 10; // 5 to 15
+    const minDev = 5 + conditions.puffShiftiness * 15; // 5 to 20
+    const maxDev = 10 + conditions.puffShiftiness * 20; // 10 to 30
     const devDeg = minDev + Math.random() * (maxDev - minDev);
     const devRad = devDeg * (Math.PI / 180);
     dirDelta = (Math.random() < 0.5 ? -1 : 1) * devRad;
 
-    // Movement
-    const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.1;
-    // Gusts move roughly with the wind, maybe slight variance
-    const moveDir = windDir + (Math.random() - 0.5) * 0.1;
+    // Movement Factors (Relative to global wind)
+    const moveSpeedFactor = (0.8 + Math.random() * 0.4) * 0.1; // 10% of wind speed approx
+    const moveDirOffset = (Math.random() - 0.5) * 0.1; // Slight drift relative to wind
+
+    // Initial Velocity
+    const moveSpeed = baseSpeed * moveSpeedFactor;
+    const moveDir = windDir + moveDirOffset;
     const vx = -Math.sin(moveDir) * moveSpeed;
     const vy = Math.cos(moveDir) * moveSpeed;
 
@@ -1252,9 +1279,10 @@ function createGust(x, y, type, initial = false) {
 
     return {
         type, x, y, vx, vy,
+        moveSpeedFactor, moveDirOffset,
         maxRadiusX, maxRadiusY,
         radiusX: 10, radiusY: 10,
-        rotation: windDir + Math.PI / 2,
+        rotation: windDir + dirDelta + Math.PI / 2,
         speedDelta, dirDelta,
         duration,
         age
@@ -1300,8 +1328,20 @@ function updateGusts(dt) {
     }
 
     const timeScale = dt * 60;
+    const globalWindSpeed = state.wind.speed;
+    const globalWindDir = state.wind.direction;
+
     for (let i = state.gusts.length - 1; i >= 0; i--) {
         const g = state.gusts[i];
+
+        // Update Velocity to follow global wind
+        const moveSpeed = globalWindSpeed * g.moveSpeedFactor;
+        const moveDir = globalWindDir + g.moveDirOffset;
+        g.vx = -Math.sin(moveDir) * moveSpeed;
+        g.vy = Math.cos(moveDir) * moveSpeed;
+
+        // Update Rotation to align with local wind direction (Global + Delta)
+        g.rotation = globalWindDir + g.dirDelta + Math.PI / 2;
 
         g.x += g.vx * timeScale;
         g.y += g.vy * timeScale;
@@ -3377,40 +3417,42 @@ function update(dt) {
     const windDirY = -Math.cos(state.wind.direction);
 
     // Add Wake for all boats
-    for (const boat of state.boats) {
-        if (boat.speed > 0.25) {
-             const boatDX = Math.sin(boat.heading);
-             const boatDY = -Math.cos(boat.heading);
-             const sternX = boat.x - boatDX * 30;
-             const sternY = boat.y - boatDY * 30;
-             const planing = boat.raceState.isPlaning;
+    if (state.race.status !== 'waiting') {
+      for (const boat of state.boats) {
+          if (boat.speed > 0.25) {
+               const boatDX = Math.sin(boat.heading);
+               const boatDY = -Math.cos(boat.heading);
+               const sternX = boat.x - boatDX * 30;
+               const sternY = boat.y - boatDY * 30;
+               const planing = boat.raceState.isPlaning;
 
-             // Base Wake
-             let wakeProb = 0.2;
-             if (planing) wakeProb = 0.6; // More foam
+               // Base Wake
+               let wakeProb = 0.2;
+               if (planing) wakeProb = 0.6; // More foam
 
-             if (Math.random() < wakeProb) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
+               if (Math.random() < wakeProb) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
 
-             // V-Wake (Waves)
-             let waveProb = 0.25;
-             let spread = 0.1;
-             let scale = 1.0;
-             if (planing) {
-                 waveProb = 0.5;
-                 spread = 0.2; // Wider V
-                 scale = 2.0;
-             }
+               // V-Wake (Waves)
+               let waveProb = 0.25;
+               let spread = 0.1;
+               let scale = 1.0;
+               if (planing) {
+                   waveProb = 0.5;
+                   spread = 0.2; // Wider V
+                   scale = 2.0;
+               }
 
-             if (Math.random() < waveProb) {
-                  const rightX = Math.cos(boat.heading), rightY = Math.sin(boat.heading);
-                  createParticle(sternX - rightX*10, sternY - rightY*10, 'wake-wave', { vx: -rightX*spread, vy: -rightY*spread, scale: scale });
-                  createParticle(sternX + rightX*10, sternY + rightY*10, 'wake-wave', { vx: rightX*spread, vy: rightY*spread, scale: scale });
+                if (Math.random() < waveProb) {
+                    const rightX = Math.cos(boat.heading), rightY = Math.sin(boat.heading);
+                    createParticle(sternX - rightX*10, sternY - rightY*10, 'wake-wave', { vx: -rightX*spread, vy: -rightY*spread, scale: scale });
+                    createParticle(sternX + rightX*10, sternY + rightY*10, 'wake-wave', { vx: rightX*spread, vy: rightY*spread, scale: scale });
 
-                  // Planing Rooster Tail / Spray
-                  if (planing && Math.random() < 0.2) {
-                      createParticle(sternX, sternY, 'wake', { life: 1.5, scale: 1.5 });
-                  }
-             }
+                    // Planing Rooster Tail / Spray
+                    if (planing && Math.random() < 0.2) {
+                        createParticle(sternX, sternY, 'wake', { life: 1.5, scale: 1.5 });
+                    }
+                }
+            }
         }
     }
 
