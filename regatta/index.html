@@ -312,55 +312,111 @@
 
             <div class="flex-1 grid grid-cols-12 gap-8 p-8 overflow-hidden">
                 <!-- Left Column: Course & Conditions -->
-                <div class="col-span-4 flex flex-col gap-8 h-full overflow-y-auto pr-2">
-                    <!-- Conditions Card -->
+                <div class="col-span-4 flex flex-col gap-6 h-full overflow-y-auto pr-2">
+
+                    <!-- Wind Setup -->
                     <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
-                        <h2 class="text-2xl font-black text-white uppercase mb-4 flex items-center gap-2">
-                            <svg class="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.59 4.59A2 2 0 1111 8H2m10.59 11.41A2 2 0 1014 16H2m15.73-8.27A2.5 2.5 0 1119.5 12H2" />
-                            </svg>
-                            Conditions
+                        <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.59 4.59A2 2 0 1111 8H2m10.59 11.41A2 2 0 1014 16H2m15.73-8.27A2.5 2.5 0 1119.5 12H2" /></svg>
+                            Wind Setup
                         </h2>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-slate-900/50 p-3 rounded-lg">
-                                <div class="text-xs text-slate-400 uppercase tracking-wider">Wind Speed</div>
-                                <div class="text-2xl font-bold text-white" id="pr-wind-speed">--</div>
+
+                        <div class="space-y-5">
+                            <div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Wind Strength</div>
+                                <input type="range" id="conf-wind-strength" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                    <span>Light Air</span>
+                                    <span>Heavy Air</span>
+                                </div>
                             </div>
-                            <div class="bg-slate-900/50 p-3 rounded-lg">
-                                <div class="text-xs text-slate-400 uppercase tracking-wider">Direction</div>
-                                <div class="text-2xl font-bold text-white" id="pr-wind-dir">--</div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Variability</div>
+                                <input type="range" id="conf-wind-variability" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                    <span>Steady</span>
+                                    <span>Unstable</span>
+                                </div>
                             </div>
-                            <div class="bg-slate-900/50 p-3 rounded-lg col-span-2">
-                                <div class="text-xs text-slate-400 uppercase tracking-wider">Variability</div>
-                                <div class="text-lg font-bold text-blue-200" id="pr-wind-var">--</div>
+                            <div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Shiftiness</div>
+                                <input type="range" id="conf-wind-shiftiness" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                    <span>Stable</span>
+                                    <span>Shifty</span>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Course Card -->
-                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl flex-1 flex flex-col">
-                        <h2 class="text-2xl font-black text-white uppercase mb-4 flex items-center gap-2">
-                            <svg class="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                            </svg>
-                            The Course
+                    <!-- Puffs -->
+                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
+                        <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
+                             <svg class="w-5 h-5 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" /></svg>
+                            Puffs
                         </h2>
-                        <div class="space-y-4 text-slate-300 text-sm mb-4">
-                            <div class="flex justify-between border-b border-white/5 pb-2">
-                                <span>Format</span>
-                                <span class="font-bold text-white">Upwind / Downwind</span>
+                        <div class="space-y-5">
+                            <div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Puff Frequency</div>
+                                <input type="range" id="conf-puff-frequency" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                                <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                    <span>Flat</span>
+                                    <span>Puffy</span>
+                                </div>
                             </div>
-                            <div class="flex justify-between border-b border-white/5 pb-2">
-                                <span>Legs</span>
-                                <span class="font-bold text-white">4</span>
+                            <div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Puff Intensity</div>
+                                <input type="range" id="conf-puff-intensity" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                                <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                    <span>Soft</span>
+                                    <span>Punchy</span>
+                                </div>
                             </div>
-                            <div class="flex justify-between border-b border-white/5 pb-2">
-                                <span>Total Distance</span>
-                                <span class="font-bold text-white">3200m</span>
+                            <div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Directional Shift</div>
+                                <input type="range" id="conf-puff-shift" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                                <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
+                                    <span>Straight</span>
+                                    <span>Twisty</span>
+                                </div>
                             </div>
-                            <div class="flex justify-between border-b border-white/5 pb-2">
-                                <span>Start Sequence</span>
-                                <span class="font-bold text-white">30 Seconds</span>
+                        </div>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="bg-slate-900/60 rounded-xl p-4 border border-white/5">
+                        <div id="conf-description" class="text-sm text-slate-300 italic font-mono leading-relaxed text-center">
+                            Conditions are moderate with steady breezes.
+                        </div>
+                    </div>
+
+                    <!-- Course Setup -->
+                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
+                        <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
+                             <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" /></svg>
+                            Course Setup
+                        </h2>
+                        <div class="space-y-5">
+                            <div>
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <div class="text-xs font-bold text-slate-300 uppercase">Distance</div>
+                                    <div id="val-course-dist" class="text-xs font-mono text-emerald-400">800m</div>
+                                </div>
+                                <input type="range" id="conf-course-dist" min="100" max="2000" step="50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <div class="text-xs font-bold text-slate-300 uppercase">Legs</div>
+                                    <div id="val-course-legs" class="text-xs font-mono text-emerald-400">4</div>
+                                </div>
+                                <input type="range" id="conf-course-legs" min="1" max="10" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <div class="text-xs font-bold text-slate-300 uppercase">Start Time</div>
+                                    <div id="val-course-timer" class="text-xs font-mono text-emerald-400">30s</div>
+                                </div>
+                                <input type="range" id="conf-course-timer" min="0" max="60" step="5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                             </div>
                         </div>
                     </div>

@@ -1168,6 +1168,9 @@ const state = {
     race: { // Global Race State
         status: 'prestart',
         timer: 30.0,
+        legLength: 4000,
+        totalLegs: 4,
+        startTimerDuration: 30.0
     },
     course: {}
 };
@@ -1820,13 +1823,92 @@ const UI = {
     resultsList: document.getElementById('results-list'),
     resultsRestartButton: document.getElementById('results-restart-button'),
     preRaceOverlay: document.getElementById('pre-race-overlay'),
-    prWindSpeed: document.getElementById('pr-wind-speed'),
-    prWindDir: document.getElementById('pr-wind-dir'),
-    prWindVar: document.getElementById('pr-wind-var'),
+    // Config Sliders
+    confWindStrength: document.getElementById('conf-wind-strength'),
+    confWindVar: document.getElementById('conf-wind-variability'),
+    confWindShift: document.getElementById('conf-wind-shiftiness'),
+    confPuffFreq: document.getElementById('conf-puff-frequency'),
+    confPuffInt: document.getElementById('conf-puff-intensity'),
+    confPuffShift: document.getElementById('conf-puff-shift'),
+    confDesc: document.getElementById('conf-description'),
+    confCourseDist: document.getElementById('conf-course-dist'),
+    confCourseLegs: document.getElementById('conf-course-legs'),
+    confCourseTimer: document.getElementById('conf-course-timer'),
+    valCourseDist: document.getElementById('val-course-dist'),
+    valCourseLegs: document.getElementById('val-course-legs'),
+    valCourseTimer: document.getElementById('val-course-timer'),
+
     prCompetitorsGrid: document.getElementById('pr-competitors-grid'),
     startRaceBtn: document.getElementById('start-race-btn'),
     boatRows: {}
 };
+
+function updateConditionDescription() {
+    if (!UI.confDesc) return;
+
+    const strength = parseFloat(UI.confWindStrength.value);
+    const variability = parseFloat(UI.confWindVar.value);
+    const shiftiness = parseFloat(UI.confWindShift.value);
+    const puffFreq = parseFloat(UI.confPuffFreq.value);
+    const puffInt = parseFloat(UI.confPuffInt.value);
+    const puffShift = parseFloat(UI.confPuffShift.value);
+
+    // Apply to state
+    const baseMin = 5;
+    const baseMax = 25;
+    state.wind.baseSpeed = baseMin + strength * (baseMax - baseMin);
+
+    state.race.conditions.variability = variability;
+    state.race.conditions.shiftiness = shiftiness;
+    state.race.conditions.puffiness = puffFreq;
+    state.race.conditions.gustStrengthBias = puffInt;
+    state.race.conditions.puffShiftiness = puffShift;
+
+    let text = "";
+
+    // Wind
+    if (strength < 0.3) text += "Light breeze";
+    else if (strength < 0.7) text += "Moderate breeze";
+    else text += "Heavy air";
+
+    if (variability > 0.7) text += " with unstable pressure";
+    else if (variability > 0.3) text += " with variable pressure";
+    else text += " with steady pressure";
+
+    if (shiftiness > 0.7) text += " and very shifty direction. ";
+    else if (shiftiness > 0.3) text += " and oscillating shifts. ";
+    else text += ". ";
+
+    // Puffs
+    if (puffFreq < 0.3) text += "The course has few isolated puffs";
+    else if (puffFreq < 0.7) text += "Expect regular puffs across the course";
+    else text += "The water is covered in heavy gusts";
+
+    if (puffInt > 0.6) text += " that pack a serious punch";
+    else if (puffInt < 0.4) text += " that are soft and subtle";
+
+    if (puffShift > 0.6) text += " with sharp directional twists.";
+    else if (puffShift > 0.3) text += " with some directional leverage.";
+    else text += ".";
+
+    UI.confDesc.textContent = text;
+}
+
+function updateCourseConfig() {
+    if (UI.confCourseDist) {
+        state.race.legLength = parseInt(UI.confCourseDist.value) * 5; // 1m = 5 units
+        if (UI.valCourseDist) UI.valCourseDist.textContent = UI.confCourseDist.value + "m";
+        initCourse();
+    }
+    if (UI.confCourseLegs) {
+        state.race.totalLegs = parseInt(UI.confCourseLegs.value);
+        if (UI.valCourseLegs) UI.valCourseLegs.textContent = state.race.totalLegs;
+    }
+    if (UI.confCourseTimer) {
+        state.race.startTimerDuration = parseInt(UI.confCourseTimer.value);
+        if (UI.valCourseTimer) UI.valCourseTimer.textContent = state.race.startTimerDuration + "s";
+    }
+}
 
 function setupPreRaceOverlay() {
     if (!UI.preRaceOverlay) return;
@@ -1837,40 +1919,36 @@ function setupPreRaceOverlay() {
     UI.leaderboard.classList.add('hidden');
     UI.legInfo.parentElement.classList.add('hidden'); // Hide leg info
 
-    // Populate Conditions
-    if (UI.prWindSpeed) {
-        const base = state.wind.baseSpeed;
-        UI.prWindSpeed.textContent = `${Math.floor(base)}-${Math.ceil(base + 5)} kn`;
-    }
-    if (UI.prWindDir) {
-        // baseDirection is in radians. 0 = North.
-        // Convert to cardinal.
-        const deg = (state.wind.baseDirection * 180 / Math.PI + 360) % 360;
-        const cardinals = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
-        const idx = Math.round(deg / 22.5) % 16;
-        UI.prWindDir.textContent = cardinals[idx];
-    }
-    if (UI.prWindVar) {
-        const cond = state.race.conditions;
-        let text = [];
+    // Initialize Sliders from Current State (Randomized or Default)
+    const cond = state.race.conditions;
 
-        // Shiftiness
-        if (cond.shiftiness > 0.7) text.push("Very Shifty");
-        else if (cond.shiftiness > 0.3) text.push("Shifty");
-        else text.push("Steady Direction");
+    // Reverse Map Wind Strength
+    const baseMin = 5, baseMax = 25;
+    const strVal = Math.max(0, Math.min(1, (state.wind.baseSpeed - baseMin) / (baseMax - baseMin)));
 
-        // Variability
-        if (cond.variability > 0.7) text.push("Very Variable");
-        else if (cond.variability > 0.3) text.push("Variable Speed");
-        else text.push("Stable Speed");
+    if (UI.confWindStrength) UI.confWindStrength.value = strVal;
+    if (UI.confWindVar) UI.confWindVar.value = cond.variability;
+    if (UI.confWindShift) UI.confWindShift.value = cond.shiftiness;
+    if (UI.confPuffFreq) UI.confPuffFreq.value = cond.puffiness;
+    if (UI.confPuffInt) UI.confPuffInt.value = cond.gustStrengthBias;
+    if (UI.confPuffShift) UI.confPuffShift.value = cond.puffShiftiness;
 
-        // Puffiness / Gusts
-        if (cond.puffiness > 0.7) text.push("Heavy Gusts");
-        else if (cond.puffiness > 0.3) text.push("Moderate Puffs");
-        else text.push("Light Puffs");
+    // Course Defaults
+    // 4000 units / 5 = 800m
+    if (UI.confCourseDist) UI.confCourseDist.value = state.race.legLength / 5;
+    if (UI.confCourseLegs) UI.confCourseLegs.value = state.race.totalLegs;
+    if (UI.confCourseTimer) UI.confCourseTimer.value = state.race.startTimerDuration;
 
-        UI.prWindVar.textContent = text.join(" • ");
-    }
+    // Bind Listeners (if not already bound - simple check or rebind is fine since overlay is destroyed? No, persistent.)
+    // Better to remove old listeners? Or just use oninput which overwrites?
+    // addEventListener adds multiple if called multiple times.
+    // Let's rely on checking a flag or just do it once globally?
+    // setupPreRaceOverlay is called on resetGame. resetGame is called multiple times.
+    // We should bind listeners globally at the bottom of the script, not here.
+    // BUT we need to set values here.
+
+    updateConditionDescription();
+    updateCourseConfig();
 
     // Populate Competitors
     if (UI.prCompetitorsGrid) {
@@ -1961,7 +2039,7 @@ function startRace() {
     if (UI.legInfo) UI.legInfo.parentElement.classList.remove('hidden');
 
     state.race.status = 'prestart';
-    state.race.timer = 30.0;
+    state.race.timer = state.race.startTimerDuration;
 
     // Init Audio Context if needed (user interaction trusted here)
     if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
@@ -2086,6 +2164,18 @@ if (UI.settingHullColor) UI.settingHullColor.addEventListener('input', (e) => { 
 if (UI.settingSailColor) UI.settingSailColor.addEventListener('input', (e) => { settings.sailColor = e.target.value; saveSettings(); });
 if (UI.settingCockpitColor) UI.settingCockpitColor.addEventListener('input', (e) => { settings.cockpitColor = e.target.value; saveSettings(); });
 if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.addEventListener('input', (e) => { settings.spinnakerColor = e.target.value; saveSettings(); });
+
+// Pre-Race Config Listeners
+if (UI.confWindStrength) UI.confWindStrength.addEventListener('input', updateConditionDescription);
+if (UI.confWindVar) UI.confWindVar.addEventListener('input', updateConditionDescription);
+if (UI.confWindShift) UI.confWindShift.addEventListener('input', updateConditionDescription);
+if (UI.confPuffFreq) UI.confPuffFreq.addEventListener('input', updateConditionDescription);
+if (UI.confPuffInt) UI.confPuffInt.addEventListener('input', updateConditionDescription);
+if (UI.confPuffShift) UI.confPuffShift.addEventListener('input', updateConditionDescription);
+
+if (UI.confCourseDist) UI.confCourseDist.addEventListener('input', updateCourseConfig);
+if (UI.confCourseLegs) UI.confCourseLegs.addEventListener('input', updateCourseConfig);
+if (UI.confCourseTimer) UI.confCourseTimer.addEventListener('input', updateCourseConfig);
 
 let minimapCtx = null;
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -2839,11 +2929,18 @@ function updateBoatRaceState(boat, dt) {
     if (marks && marks.length >= 4) {
         let gateIndices = [];
         let requiredDirection = 1;
-        if (boat.raceState.leg === 0) { gateIndices = [0, 1]; requiredDirection = 1; }
-        else if (boat.raceState.leg === 1) { gateIndices = [2, 3]; requiredDirection = 1; }
-        else if (boat.raceState.leg === 2) { gateIndices = [0, 1]; requiredDirection = -1; }
-        else if (boat.raceState.leg === 3) { gateIndices = [2, 3]; requiredDirection = 1; }
-        else if (boat.raceState.leg === 4) { gateIndices = [0, 1]; requiredDirection = -1; }
+
+        if (boat.raceState.leg === 0) {
+            gateIndices = [0, 1]; requiredDirection = 1;
+        } else if (boat.raceState.leg <= state.race.totalLegs) {
+            // Odd legs (1, 3...): Upwind to 2,3. Direction 1 (Crossing Upwind)
+            // Even legs (2, 4...): Downwind to 0,1. Direction -1 (Crossing Downwind)
+            if (boat.raceState.leg % 2 !== 0) {
+                 gateIndices = [2, 3]; requiredDirection = 1;
+            } else {
+                 gateIndices = [0, 1]; requiredDirection = -1;
+            }
+        }
 
         if (gateIndices.length > 0) {
             const m1 = marks[gateIndices[0]], m2 = marks[gateIndices[1]];
@@ -2900,7 +2997,7 @@ function updateBoatRaceState(boat, dt) {
                             boat.raceState.legSplitTimer = 5.0;
                             boat.raceState.legStartTime = state.race.timer;
 
-                            if (boat.raceState.leg > 4) {
+                            if (boat.raceState.leg > state.race.totalLegs) {
                                 boat.raceState.finished = true;
                                 boat.raceState.finishTime = state.race.timer;
                                 if (boat.raceState.penalty) {
@@ -2925,7 +3022,7 @@ function updateBoatRaceState(boat, dt) {
                             }
                         };
 
-                        if (boat.raceState.leg === 4) {
+                        if (boat.raceState.leg === state.race.totalLegs) {
                             if (crossingDir === requiredDirection) completeLeg();
                             else if (boat.isPlayer) { showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50"); setTimeout(hideRaceMessage, 2000); }
                         } else {
@@ -2954,7 +3051,7 @@ function updateBoatRaceState(boat, dt) {
                     if (boat.raceState.leg > 1) boat.raceState.legTimes.push(split);
                     boat.raceState.legSplitTimer = 5.0;
                     boat.raceState.legStartTime = state.race.timer;
-                    if (boat.raceState.leg > 4) {
+                    if (boat.raceState.leg > state.race.totalLegs) {
                         boat.raceState.finished = true;
                         boat.raceState.finishTime = state.race.timer;
                         if (boat.raceState.penalty) {
@@ -3912,7 +4009,7 @@ function drawLayLines(ctx) {
     const player = state.boats[0];
     let targets = (player.raceState.leg % 2 === 0) ? [0, 1] : [2, 3];
     const isUpwind = (player.raceState.leg % 2 !== 0) || (player.raceState.leg === 0);
-    const zoneRadius = (player.raceState.leg === 0 || player.raceState.leg === 4) ? 0 : 165;
+    const zoneRadius = (player.raceState.leg === 0 || player.raceState.leg === state.race.totalLegs) ? 0 : 165;
 
     ctx.save(); ctx.lineWidth = 5;
     for (const idx of targets) {
@@ -3938,9 +4035,11 @@ function drawMarkZones(ctx) {
     if (!state.showNavAids || state.race.status === 'finished') return;
     const player = state.boats[0];
     let active = [];
-    if (player.raceState.leg === 1 || player.raceState.leg === 3) active = [2, 3];
-    else if (player.raceState.leg === 2) active = [0, 1];
-    else return;
+
+    if (player.raceState.leg > 0 && player.raceState.leg <= state.race.totalLegs) {
+        if (player.raceState.leg % 2 !== 0) active = [2, 3];
+        else active = [0, 1];
+    } else return;
 
     ctx.save(); ctx.lineWidth = 5;
     const h = player.heading, sinH = Math.sin(h), cosH = Math.cos(h);
@@ -4285,10 +4384,11 @@ function getBoatProgress(boat) {
     const len = Math.sqrt(dx*dx+dy*dy);
     const wx = dx/len, wy = dy/len;
 
+    const totalLegs = state.race.totalLegs;
     if (boat.raceState.finished) {
         // Finished boats are ranked by finish time, but for progress calculation we can assume they are at the end.
         // Or better, handle them separately in sorting.
-        return 4*len + (1000000 - boat.raceState.finishTime); // Higher is better (lower time = higher score)
+        return totalLegs*len + (1000000 - boat.raceState.finishTime); // Higher is better (lower time = higher score)
     }
 
     // Project onto course axis (Start -> Upwind)
@@ -4298,21 +4398,28 @@ function getBoatProgress(boat) {
 
     // Leg Progress
     // Leg 0: relP (Starts neg, target 0).
-    // Leg 1: relP (0 to L).
-    // Leg 2: 2L - relP (L to 0).
-    // Leg 3: 2L + relP (0 to L).
-    // Leg 4: 4L - relP (L to 0).
+    // Leg 1 (Up): relP (0 to L). Base: 0
+    // Leg 2 (Down): 2L - relP (L to 0). Base: L + (L - relP) = 2L - relP
+    // Leg 3 (Up): 2L + relP (0 to L). Base: 2L + relP
+    // Leg 4 (Down): 4L - relP (L to 0). Base: 3L + (L - relP) = 4L - relP
 
-    const L = len; // Approx 4000
+    // Formula:
+    // If Leg is Odd (Upwind): (Leg-1)*L + relP
+    // If Leg is Even (Downwind): Leg*L - relP
+
+    const L = len;
 
     let progress = 0;
-    switch(boat.raceState.leg) {
-        case 0: progress = relP; break;
-        case 1: progress = relP; break;
-        case 2: progress = 2*L - relP; break;
-        case 3: progress = 2*L + relP; break;
-        case 4: progress = 4*L - relP; break;
-        default: progress = 0; // Should be covered by finished check
+    const leg = boat.raceState.leg;
+
+    if (leg === 0) {
+        progress = relP;
+    } else {
+        if (leg % 2 !== 0) { // Odd (Upwind)
+            progress = (leg - 1) * L + relP;
+        } else { // Even (Downwind)
+            progress = leg * L - relP;
+        }
     }
 
     return progress;
@@ -4574,7 +4681,7 @@ function updateLeaderboard() {
     const c2x = (m2.x+m3.x)/2, c2y = (m2.y+m3.y)/2;
     const dx = c2x-c1x, dy = c2y-c1y;
     const len = Math.sqrt(dx*dx+dy*dy);
-    const totalRaceDist = 4 * len;
+    const totalRaceDist = state.race.totalLegs * len;
 
 
     if (state.race.status === 'prestart') {
@@ -4615,7 +4722,7 @@ function updateLeaderboard() {
     // Update Header
     if (UI.lbLeg) {
         if (leader.raceState.finished) UI.lbLeg.textContent = "FINISH";
-        else UI.lbLeg.textContent = `${Math.max(1, leader.raceState.leg)}/4`;
+        else UI.lbLeg.textContent = `${Math.max(1, leader.raceState.leg)}/${state.race.totalLegs}`;
     }
 
     // Render Rows
@@ -5059,7 +5166,7 @@ function draw() {
              let txt = "";
              if (state.race.status === 'prestart') txt = "PRESTART";
              else if (state.race.status === 'finished' || player.raceState.finished) txt = "FINISHED";
-             else txt = (player.raceState.leg === 0) ? "START" : `LEG ${player.raceState.leg} OF 4: ${(player.raceState.leg%2!==0)?"UPWIND":"DOWNWIND"}`;
+             else txt = (player.raceState.leg === 0) ? "START" : `LEG ${player.raceState.leg} OF ${state.race.totalLegs}: ${(player.raceState.leg%2!==0)?"UPWIND":"DOWNWIND"}`;
              UI.legInfo.textContent = txt;
         }
 
@@ -5077,7 +5184,7 @@ function draw() {
                  player.raceState.legTimes.forEach((t, i) => {
                      html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Leg ${i+1}: ${formatSplitTime(t)}</span> <span class="text-slate-500">Top:${getTop(i+1)}kn Dist:${getDist(i+1)}m Moves:${getMoves(i+1)}</span></div>`;
                  });
-                 if ((state.race.status==='racing' || state.race.status==='prestart') && player.raceState.leg < 5) {
+                 if ((state.race.status==='racing' || state.race.status==='prestart') && player.raceState.leg <= state.race.totalLegs) {
                      const cur = player.raceState.leg;
                      const t = (cur===0) ? state.race.timer : (state.race.timer - player.raceState.legStartTime);
                      const lbl = (cur===0) ? "Start" : `Leg ${cur}`;
@@ -5112,13 +5219,14 @@ function loop(timestamp) {
 // Init
 function initCourse() {
     const d = state.wind.baseDirection, ux = Math.sin(d), uy = -Math.cos(d), rx = -uy, ry = ux;
-    const w = 550, dist = 4000;
+    const w = 550;
+    const dist = state.race.legLength || 4000;
     state.course = {
         marks: [
             { x: -rx*w/2, y: -ry*w/2, type: 'start' }, { x: rx*w/2, y: ry*w/2, type: 'start' },
             { x: ux*dist - rx*w/2, y: uy*dist - ry*w/2, type: 'mark' }, { x: ux*dist + rx*w/2, y: uy*dist + ry*w/2, type: 'mark' }
         ],
-        boundary: { x: ux*dist/2, y: uy*dist/2, radius: 3500 }
+        boundary: { x: ux*dist/2, y: uy*dist/2, radius: Math.max(3500, dist + 500) } // Adjust boundary for long courses
     };
 }
 
@@ -5163,7 +5271,17 @@ function resetGame() {
     };
     state.time = 0;
     state.race.status = 'waiting'; // Wait for user to start
-    state.race.timer = 30.0;
+
+    // Defaults for Race Config (can be overridden by UI)
+    state.race.legLength = 3200; // 3200 units = 640m. User wanted 100-2000m slider.
+    // Wait, existing UI says "3200m" but code used 4000 units?
+    // 4000 units * 0.2m/unit = 800m. 4 legs = 3200m. Correct.
+    // So legLength default 4000.
+    state.race.legLength = 4000;
+    state.race.totalLegs = 4;
+    state.race.startTimerDuration = 30.0;
+
+    state.race.timer = state.race.startTimerDuration;
 
     initCourse();
 
