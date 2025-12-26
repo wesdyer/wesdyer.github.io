@@ -427,29 +427,41 @@ class BotController {
             targetX = (m1.x + m2.x) / 2;
             targetY = (m1.y + m2.y) / 2;
 
-            // Missed Gate Logic: If we sailed past without crossing, reset to approach
-            const wd = state.wind.baseDirection;
-            const ux = Math.sin(wd); // Upwind Vector X
-            const uy = -Math.cos(wd); // Upwind Vector Y (Points North for wd=0)
+            // Missed Gate Check: If we sailed past without crossing, turn back
+            const gateDx = m2.x - m1.x;
+            const gateDy = m2.y - m1.y;
+            const nx = gateDy; // Normal points "Up/Left" depending on gate
+            const ny = -gateDx;
 
-            const dx = boat.x - targetX;
-            const dy = boat.y - targetY;
+            // Check where we are relative to gate plane
+            const bdx = boat.x - m1.x;
+            const bdy = boat.y - m1.y;
+            const dot = bdx * nx + bdy * ny;
 
-            // Project boat position relative to gate onto Upwind Vector
-            const proj = dx * ux + dy * uy;
+            // Crossing Direction:
+            // Leg 1/3 (Upwind): Target 2,3. Cross dir 1 (Positive Dot).
+            // Leg 2/4 (Downwind): Target 0,1. Cross dir -1 (Negative Dot).
 
-            const isUpwindLeg = (leg === 1 || leg === 3);
-            const isDownwindLeg = (leg === 2 || leg === 4);
+            let pastGate = false;
+            // Add buffer of 50 units past the line
+            if (leg === 1 || leg === 3) {
+                 if (dot > 50) pastGate = true;
+            } else if (leg === 2 || leg === 4) {
+                 if (dot < -50) pastGate = true;
+            }
 
-            // Threshold: 50 units past
-            if (isUpwindLeg && proj > 50) {
-                // We are upwind of the gate (missed it). Go back Downwind.
-                targetX += -ux * 200;
-                targetY += -uy * 200;
-            } else if (isDownwindLeg && proj < -50) {
-                // We are downwind of the gate (missed it). Go back Upwind.
-                targetX += ux * 200;
-                targetY += uy * 200;
+            if (pastGate) {
+                // Recovery: Aim 150 units "Before" the gate center to reset approach
+                const len = Math.sqrt(nx*nx + ny*ny);
+                const unx = nx/len;
+                const uny = ny/len;
+                const center = { x: (m1.x+m2.x)/2, y: (m1.y+m2.y)/2 };
+
+                // If Leg 1 (Upwind), we want to be "Below" (Negative Normal direction)
+                const factor = (leg === 1 || leg === 3) ? -1 : 1;
+
+                targetX = center.x + unx * 150 * factor;
+                targetY = center.y + uny * 150 * factor;
             }
         }
 
@@ -464,13 +476,13 @@ class BotController {
             // Calculate tangent for rounding
             // For now, simple waypoint logic in script.js handles "nextWaypoint"
             // Let's rely on geometric targets.
-            // Aim 80 units outside the mark to allow turn radius
+            // Aim 90 units outside the mark to allow turn radius (Avoidance radius is 45)
             const dx = mark.x - (m1.x+m2.x)/2;
             const dy = mark.y - (m1.y+m2.y)/2;
             const len = Math.sqrt(dx*dx+dy*dy);
             if (len > 0) {
-                targetX = mark.x + (dx/len) * 50;
-                targetY = mark.y + (dy/len) * 50;
+                targetX = mark.x + (dx/len) * 90;
+                targetY = mark.y + (dy/len) * 90;
             }
         }
 
@@ -894,9 +906,9 @@ class BotController {
                     // Check path
                     for (const p of points) {
                         const dSq = (p.x - m.x)**2 + (p.y - m.y)**2;
-                        if (dSq < 60*60) { // Mark radius 12 + boat + margin
+                        if (dSq < 45*45) { // Reduced from 60 to 45 for tighter rounding
                             staticCollision = true;
-                        } else if (dSq < 150*150 && this.livenessState === 'normal') {
+                        } else if (dSq < 100*100 && this.livenessState === 'normal') {
                             proximityCost += 10000 / dSq;
                         }
                     }
