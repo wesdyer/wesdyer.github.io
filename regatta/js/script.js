@@ -2789,6 +2789,7 @@ function updateBoat(boat, dt) {
                 if (boat.raceState.planingTimer > J111_PLANING.entryTime) {
                     boat.raceState.isPlaning = true;
                     boat.raceState.planingTimer = 0;
+                    if (!boat.isPlayer) Sayings.queueQuote(boat, "start_planing");
                     if (boat.isPlayer && settings.soundEnabled) {
                          // Optional: Play a surge sound or change wind pitch (handled in audio update)
                     }

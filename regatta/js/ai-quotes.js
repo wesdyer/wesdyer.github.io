@@ -60,6 +60,11 @@ const AI_QUOTES = {
       "medium": "Watch the pressure lines.",
       "long": "Starts reward calm more than force."
     },
+        "start_planing": {
+      "short": "Lift off.",
+      "medium": "Up and running now.",
+      "long": "Smooth water, good speed—this is the life."
+    },
     "random": {
       "short": "Feel it.",
       "medium": "Wind’s talking today.",
@@ -127,6 +132,11 @@ const AI_QUOTES = {
       "short": "Ready.",
       "medium": "Watching lanes, waiting.",
       "long": "I don’t start races—I detonate off the line."
+    },
+        "start_planing": {
+      "short": "Airborne!",
+      "medium": "Finally, some real speed!",
+      "long": "Water's getting hard—time to fly!"
     },
     "random": {
       "short": "Go!",
@@ -196,6 +206,11 @@ const AI_QUOTES = {
       "medium": "Let’s see what happens.",
       "long": "Plans are optional today."
     },
+        "start_planing": {
+      "short": "Whoa!",
+      "medium": "Going fast feels weird!",
+      "long": "I'm skimming! I think? Yes, skimming!"
+    },
     "random": {
       "short": "Chaos!",
       "medium": "Trust the mess.",
@@ -263,6 +278,11 @@ const AI_QUOTES = {
       "short": "Crowded.",
       "medium": "I like it tight.",
       "long": "Let’s see who blinks first."
+    },
+        "start_planing": {
+      "short": "Charging.",
+      "medium": "Closing the gap fast.",
+      "long": "Now I have the speed to crush them."
     },
     "random": {
       "short": "Pressure.",
@@ -332,6 +352,11 @@ const AI_QUOTES = {
       "medium": "Watch closely.",
       "long": "Pressure begins before the gun."
     },
+        "start_planing": {
+      "short": "Hunting speed.",
+      "medium": "The water bows.",
+      "long": "Nothing stops me when I'm moving like this."
+    },
     "random": {
       "short": "Observe.",
       "medium": "Pressure builds.",
@@ -399,6 +424,11 @@ const AI_QUOTES = {
       "short": "Eyes on me.",
       "medium": "Let them stare.",
       "long": "Confidence unsettles competitors before the gun."
+    },
+        "start_planing": {
+      "short": "Glide.",
+      "medium": "Look at this wake!",
+      "long": "Fast, but always keeping it elegant."
     },
     "random": {
       "short": "Poise.",
@@ -468,6 +498,11 @@ const AI_QUOTES = {
       "medium": "Watching closure rates.",
       "long": "Starts are problems to solve."
     },
+        "start_planing": {
+      "short": "Efficient.",
+      "medium": "Hydrodynamics optimized.",
+      "long": "Calculated boost achieved. Maintaining plane."
+    },
     "random": {
       "short": "Build.",
       "medium": "Foundations matter.",
@@ -535,6 +570,11 @@ const AI_QUOTES = {
       "short": "Still.",
       "medium": "Watching everyone.",
       "long": "Noise hides weakness."
+    },
+        "start_planing": {
+      "short": "Rush.",
+      "medium": "Surging forward.",
+      "long": "Silent approach is over. Attack mode."
     },
     "random": {
       "short": "Wait.",
@@ -604,6 +644,11 @@ const AI_QUOTES = {
       "medium": "No rush.",
       "long": "Let others burn energy."
     },
+        "start_planing": {
+      "short": "Rumbling!",
+      "medium": "Big momentum now!",
+      "long": "Once I get going, I don't stop!"
+    },
     "random": {
       "short": "Endure.",
       "medium": "Slow power.",
@@ -671,6 +716,11 @@ const AI_QUOTES = {
       "short": "Watching.",
       "medium": "Everyone leaks tells.",
       "long": "Starts expose nerves."
+    },
+        "start_planing": {
+      "short": "Scurry!",
+      "medium": "Too fast to catch.",
+      "long": "Skimming the surface, disappearing from view."
     },
     "random": {
       "short": "Slip.",
@@ -740,6 +790,11 @@ const AI_QUOTES = {
       "medium": "Watching for openings.",
       "long": "Starts are all about timing waves."
     },
+        "start_planing": {
+      "short": "Jump!",
+      "medium": "Riding the wave!",
+      "long": "This is what I was born for—speed!"
+    },
     "random": {
       "short": "Swim!",
       "medium": "Find clean water!",
@@ -807,6 +862,11 @@ const AI_QUOTES = {
       "short": "Crowded.",
       "medium": "Good.",
       "long": "I thrive when space disappears."
+    },
+        "start_planing": {
+      "short": "Scuttling fast.",
+      "medium": "Hard shell, fast pace.",
+      "long": "Nobody's passing me while I'm locked in."
     },
     "random": {
       "short": "Grip.",
@@ -876,6 +936,11 @@ const AI_QUOTES = {
       "medium": "Observing patterns.",
       "long": "Starts expose impatience."
     },
+        "start_planing": {
+      "short": "Soaring.",
+      "medium": "Wings spread, speed up.",
+      "long": "Effortless speed, just like flying."
+    },
     "random": {
       "short": "Balance.",
       "medium": "Precision wins.",
@@ -943,6 +1008,11 @@ const AI_QUOTES = {
       "short": "Silent.",
       "medium": "Watch carefully.",
       "long": "Stillness unsettles rivals."
+    },
+        "start_planing": {
+      "short": "Power.",
+      "medium": "Surging through.",
+      "long": "The ocean parts for this kind of speed."
     },
     "random": {
       "short": "Pressure.",
@@ -1012,6 +1082,11 @@ const AI_QUOTES = {
       "medium": "Perfect.",
       "long": "Tight spaces breed opportunity."
     },
+        "start_planing": {
+      "short": "Zoom zoom!",
+      "medium": "Shell is rattling!",
+      "long": "Too fast for this house! Hold on!"
+    },
     "random": {
       "short": "Scramble!",
       "medium": "Love traffic.",
@@ -1079,6 +1154,11 @@ const AI_QUOTES = {
       "short": "Ready.",
       "medium": "Building revs.",
       "long": "I live for the launch."
+    },
+        "start_planing": {
+      "short": "Torpedo!",
+      "medium": "Locked in overdrive.",
+      "long": "This is my territory—pure velocity."
     },
     "random": {
       "short": "Speed.",
@@ -1148,6 +1228,11 @@ const AI_QUOTES = {
       "medium": "Ready to explode.",
       "long": "I don’t ease in."
     },
+        "start_planing": {
+      "short": "Ignition!",
+      "medium": "Burning up the track!",
+      "long": "Too hot to touch! Coming through!"
+    },
     "random": {
       "short": "Fire!",
       "medium": "Push harder.",
@@ -1215,6 +1300,11 @@ const AI_QUOTES = {
       "short": "Watching.",
       "medium": "Feeling the air.",
       "long": "Pressure shifts before motion."
+    },
+        "start_planing": {
+      "short": "Breeze.",
+      "medium": "Drifting fast.",
+      "long": "Lighter than air, faster than water."
     },
     "random": {
       "short": "Drift.",
@@ -1284,6 +1374,11 @@ const AI_QUOTES = {
       "medium": "Setting threads.",
       "long": "Chaos is a loom."
     },
+        "start_planing": {
+      "short": "Slithering.",
+      "medium": "Moving ink.",
+      "long": "Fast tentacles reach everywhere."
+    },
     "random": {
       "short": "Bind.",
       "medium": "Overlap wins.",
@@ -1351,6 +1446,11 @@ const AI_QUOTES = {
       "short": "Calm.",
       "medium": "No hurry.",
       "long": "Let others burn out."
+    },
+        "start_planing": {
+      "short": "Moving.",
+      "medium": "Surprisingly fast.",
+      "long": "The sea cow flies today!"
     },
     "random": {
       "short": "Endure.",
@@ -1420,6 +1520,11 @@ const AI_QUOTES = {
       "medium": "Waiting to strike.",
       "long": "I don’t waste motion."
     },
+        "start_planing": {
+      "short": "Slice.",
+      "medium": "Cutting the water.",
+      "long": "Speed sharp enough to bleed."
+    },
     "random": {
       "short": "Cut.",
       "medium": "Exploit openings.",
@@ -1487,6 +1592,11 @@ const AI_QUOTES = {
       "short": "Calibrating.",
       "medium": "Watching references.",
       "long": "Starts are solved problems."
+    },
+        "start_planing": {
+      "short": "Slide.",
+      "medium": "Belly slide mode!",
+      "long": "Ice or water, I slide the fastest."
     },
     "random": {
       "short": "Focus.",
@@ -1556,6 +1666,11 @@ const AI_QUOTES = {
       "medium": "Watching space.",
       "long": "Wide vision wins."
     },
+        "start_planing": {
+      "short": "Gallop.",
+      "medium": "Riding the current.",
+      "long": "Majestic speed, tails uncurled."
+    },
     "random": {
       "short": "Flow.",
       "medium": "Breathe wide.",
@@ -1623,6 +1738,11 @@ const AI_QUOTES = {
       "short": "Prickly.",
       "medium": "Crowd me.",
       "long": "I dare you."
+    },
+        "start_planing": {
+      "short": "Rolling!",
+      "medium": "Spikes are a blur.",
+      "long": "Don't touch me, I'm a fast hazard now."
     },
     "random": {
       "short": "Spines.",
@@ -1692,6 +1812,11 @@ const AI_QUOTES = {
       "medium": "Watching flags.",
       "long": "Pressure reveals itself early."
     },
+        "start_planing": {
+      "short": "Gust!",
+      "medium": "Riding the front.",
+      "long": "Caught the vein of wind perfectly."
+    },
     "random": {
       "short": "Shift.",
       "medium": "Feel pressure.",
@@ -1759,6 +1884,11 @@ const AI_QUOTES = {
       "short": "Loose.",
       "medium": "Watching gaps.",
       "long": "Pressure creates openings."
+    },
+        "start_planing": {
+      "short": "Flow.",
+      "medium": "Pulsing forward.",
+      "long": "Stinging speed, silent motion."
     },
     "random": {
       "short": "Drift.",
@@ -1828,6 +1958,11 @@ const AI_QUOTES = {
       "medium": "No panic.",
       "long": "Discipline wins starts."
     },
+        "start_planing": {
+      "short": "Cruising.",
+      "medium": "Shell up, head down.",
+      "long": "Slow and steady? Not right now."
+    },
     "random": {
       "short": "Hold.",
       "medium": "Stay steady.",
@@ -1895,6 +2030,11 @@ const AI_QUOTES = {
       "short": "Buzz!",
       "medium": "So ready!",
       "long": "Chaos incoming!"
+    },
+        "start_planing": {
+      "short": "Zip!",
+      "medium": "Woooooosh!",
+      "long": "Did you see me? I'm already gone!"
     },
     "random": {
       "short": "Zap!",
@@ -1964,6 +2104,11 @@ const AI_QUOTES = {
       "medium": "Watching patterns.",
       "long": "Starts are chess."
     },
+        "start_planing": {
+      "short": "Propelling.",
+      "medium": "Jet stream active.",
+      "long": "Ancient design, modern velocity."
+    },
     "random": {
       "short": "Plan.",
       "medium": "Think ahead.",
@@ -2031,6 +2176,11 @@ const AI_QUOTES = {
       "short": "Send!",
       "medium": "No fear!",
       "long": "All speed, no brakes!"
+    },
+        "start_planing": {
+      "short": "Flash!",
+      "medium": "Blink and miss me!",
+      "long": "Maximum overdrive! No brakes!"
     },
     "random": {
       "short": "Go!",
@@ -2100,6 +2250,11 @@ const AI_QUOTES = {
       "medium": "Watching everyone.",
       "long": "Starts punish impatience."
     },
+        "start_planing": {
+      "short": "Open.",
+      "medium": "Sliding out.",
+      "long": "The pearl rolls fast when the slope is right."
+    },
     "random": {
       "short": "Wait.",
       "medium": "Hold back.",
@@ -2167,6 +2322,11 @@ const AI_QUOTES = {
       "short": "Easy.",
       "medium": "No nerves.",
       "long": "Let them sweat."
+    },
+        "start_planing": {
+      "short": "Charge.",
+      "medium": "Icebreaker speed.",
+      "long": "Get out of the way, I'm coming through."
     },
     "random": {
       "short": "Calm.",
@@ -2236,6 +2396,11 @@ const AI_QUOTES = {
       "medium": "Let them fidget.",
       "long": "Stillness unsettles rivals."
     },
+        "start_planing": {
+      "short": "Takeoff.",
+      "medium": "Graceful acceleration.",
+      "long": "Even at speed, one maintains composure."
+    },
     "random": {
       "short": "Grace.",
       "medium": "Elegance wins.",
@@ -2303,6 +2468,11 @@ const AI_QUOTES = {
       "short": "Ready!",
       "medium": "Feeling fast!",
       "long": "Can’t wait to send it!"
+    },
+        "start_planing": {
+      "short": "Shine!",
+      "medium": "Lit up!",
+      "long": "Golden streak on the water!"
     },
     "random": {
       "short": "Go!",
@@ -2372,10 +2542,28 @@ const AI_QUOTES = {
       "medium": "Ready to spring.",
       "long": "Starts are about reaction time."
     },
+        "start_planing": {
+      "short": "Leap!",
+      "medium": "Jumped the wave!",
+      "long": "Green blur! Try to keep up!"
+    },
     "random": {
       "short": "Zap!",
       "medium": "React fast!",
       "long": "Moments decide everything."
     }
   }
+,
+  "Hug": {
+    "start_planing": {
+      "short": "Wheee!",
+      "medium": "Super sparkly speed!",
+      "long": "We're going so fast! Everyone is doing great!"
+    },
+    "random": {
+      "short": "Hugs!",
+      "medium": "You're doing great!",
+      "long": "Let's all finish together!"
+    }
+  },
 };
