@@ -533,13 +533,8 @@ class BotController {
         // Planing requires TWS > 12.0 and TWA > 100 < 170.
         // Best planing angle usually ~135-140.
         // Check if wind speed allows planing
-        if (mode === 'downwind' && state.wind.speed > J111_PLANING.minTWS) {
-             // Calculate potential VMG at 150 vs 140(planing)
-             // Approx: 150 deg gives X speed. 140 deg gives Y speed * 1.20 (planing).
-             // cos(30) = 0.866. cos(40) = 0.766.
-             // If Speed increase > 13%, planing pays.
-             // Multiplier is 1.20 (20%). So it pays!
-             // Target Planing Angle ~140 degrees (2.44 rad)
+        const planingThreshold = 12.0;
+        if (mode === 'downwind' && state.wind.speed > planingThreshold) {
              optTWA = 140 * Math.PI/180;
         }
         
