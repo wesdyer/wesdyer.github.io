@@ -2520,7 +2520,7 @@ function updateBoat(boat, dt) {
 
     // Optimal Sail Angle based on AWA
     // New: AWA / 2 is a good approximation for trim.
-    let optimalSailAngle = Math.max(0, angleToWind * 0.5);
+    let optimalSailAngle = Math.max(0, angleToWind - 0.35);
     // Clamp
     if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
 
