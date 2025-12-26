@@ -734,14 +734,17 @@ class BotController {
 
             // Thresholds
             let risk = 'LOW';
-            if (metrics.distCurrent < 300) {
-                if (metrics.distCPA < 60 && metrics.tCPA > 0 && metrics.tCPA < 5.0) {
+            // Increased detection range (was 300) to allow earlier reactions (4s head-on closing ~480 units)
+            if (metrics.distCurrent < 600) {
+                // Earlier detection: tCPA thresholds increased (5.0 -> 8.0, 3.0 -> 4.5)
+                // Distance thresholds slightly increased for larger safety bubble
+                if (metrics.distCPA < 70 && metrics.tCPA > 0 && metrics.tCPA < 8.0) {
                      risk = 'MEDIUM';
                 }
-                if (metrics.distCPA < 40 && metrics.tCPA > 0 && metrics.tCPA < 3.0) {
+                if (metrics.distCPA < 50 && metrics.tCPA > 0 && metrics.tCPA < 4.5) {
                      risk = 'HIGH';
                 }
-                if (metrics.distCurrent < 60 || (metrics.distCPA < 30 && metrics.tCPA > 0 && metrics.tCPA < 1.5)) {
+                if (metrics.distCurrent < 60 || (metrics.distCPA < 35 && metrics.tCPA > 0 && metrics.tCPA < 2.0)) {
                      risk = 'IMMINENT';
                 }
             }
@@ -791,7 +794,7 @@ class BotController {
         if (this.wiggleActive) return desiredHeading;
 
         const boat = this.boat;
-        const lookaheadFrames = 120; // 2 seconds lookahead
+        const lookaheadFrames = 240; // Increased to 4 seconds lookahead
         const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
         
         // Candidates: more granular to find gaps
@@ -802,7 +805,8 @@ class BotController {
             0.4, -0.4, 
             0.6, -0.6,
             0.8, -0.8,
-            1.2, -1.2 
+            1.2, -1.2,
+            1.6, -1.6 // Wider options for emergency bailouts
         ];
 
         let bestHeading = desiredHeading;
@@ -823,7 +827,7 @@ class BotController {
         if (this.livenessState === 'normal' && this.avoidanceRole === 'GIVE_WAY') {
             // Give-Way: Larger bubble to react early
             if (this.riskState === 'MEDIUM' || this.riskState === 'HIGH') {
-                safeDist = 120;
+                safeDist = 150; // Increased significantly for earlier give-way
             }
         }
 
@@ -834,9 +838,9 @@ class BotController {
             // Non-linear cost to strongly prefer small deviations
             let cost = Math.pow(Math.abs(offset), 1.5) * 10; 
 
-            // Stand-On: Penalize large deviations (Hold Course)
-            if (this.avoidanceRole === 'STAND_ON' && this.riskState === 'MEDIUM') {
-                cost += Math.abs(offset) * 1000;
+            // Stand-On: Penalize large deviations (Hold Course) unless imminent
+            if (this.avoidanceRole === 'STAND_ON' && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
+                cost += Math.abs(offset) * 2000; // Stronger penalty to hold course
             }
 
             // Project position at t=lookahead
@@ -862,6 +866,25 @@ class BotController {
                 
                 const ovx = (other.velocity && other.velocity.x) ? other.velocity.x * 60 : Math.sin(other.heading)*other.speed*60;
                 const ovy = (other.velocity && other.velocity.y) ? other.velocity.y * 60 : -Math.cos(other.heading)*other.speed*60;
+
+                // Strategic Positioning (Duck Stern / Go Above)
+                if (this.avoidanceRole === 'GIVE_WAY' && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
+                    const t = lookaheadFrames / 60;
+                    const myFut = { x: futureX, y: futureY };
+                    const otherFut = { x: other.x + ovx * t, y: other.y + ovy * t };
+                    const dx = myFut.x - otherFut.x;
+                    const dy = myFut.y - otherFut.y;
+
+                    if (dx*dx + dy*dy < 250*250) {
+                        const oh = other.heading;
+                        const ofx = Math.sin(oh), ofy = -Math.cos(oh);
+                        const dotForward = dx * ofx + dy * ofy;
+
+                        // Penalize crossing bow (dotForward > 0), Reward ducking (dotForward < 0)
+                        if (dotForward > 0) cost += 1500;
+                        else cost -= 500;
+                    }
+                }
 
                 // Check along the path
                 for (let i = 0; i < points.length; i++) {
@@ -889,9 +912,9 @@ class BotController {
                                 if (row === other) ruleViolation = true; // We are Give-Way
                             } catch(e) {}
                         }
-                    } else if (distSq < 200 * 200 && this.livenessState === 'normal') {
+                    } else if (distSq < 250 * 250 && this.livenessState === 'normal') {
                         // Soft avoidance (Proximity)
-                        proximityCost += 5000 / distSq; 
+                        proximityCost += 5000 / (distSq + 10);
                     }
                 }
             }
