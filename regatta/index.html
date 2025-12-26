@@ -134,7 +134,6 @@
                             <li class="flex justify-between"><span>Toggle Sound</span> <span class="text-white font-bold">F3</span></li>
                             <li class="flex justify-between"><span>Toggle Penalties</span> <span class="text-white font-bold">F4</span></li>
                             <li class="flex justify-between"><span>Toggle Music</span> <span class="text-white font-bold">F5</span></li>
-                            <li class="flex justify-between"><span>Toggle AWS/AWA</span> <span class="text-white font-bold">F6</span></li>
                             <li class="flex justify-between"><span>Help</span> <span class="text-white font-bold">?</span></li>
                         </ul>
                     </div>
@@ -242,15 +241,6 @@
                         <span class="text-slate-200 font-bold">Navigational Aids</span>
                         <label class="relative inline-flex items-center cursor-pointer">
                             <input type="checkbox" id="setting-navaids" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-
-                    <!-- Apparent Wind -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Show Apparent Wind</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-apparent-wind" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -515,7 +505,7 @@
                             <span id="hud-wind-speed" class="text-xs font-mono text-blue-200">10</span>
                         </div>
                         <div class="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-600/50">
-                            <span class="text-[8px] text-slate-400 font-bold tracking-tight" id="hud-wind-label">TWA</span>
+                            <span class="text-[8px] text-slate-400 font-bold tracking-tight">TWA</span>
                             <span id="hud-wind-angle" class="text-xs font-mono text-blue-200">0</span>
                         </div>
                     </div>
@@ -559,7 +549,6 @@
     </div>
 
     <script src="js/ai-quotes.js"></script>
-    <script src="js/j111_aws_polars.js"></script>
     <script src="js/script.js"></script>
 </body>
 </html>
