@@ -426,6 +426,31 @@ class BotController {
             // Standard Legs: Sail to gate center
             targetX = (m1.x + m2.x) / 2;
             targetY = (m1.y + m2.y) / 2;
+
+            // Missed Gate Logic: If we sailed past without crossing, reset to approach
+            const wd = state.wind.baseDirection;
+            const ux = Math.sin(wd); // Upwind Vector X
+            const uy = -Math.cos(wd); // Upwind Vector Y (Points North for wd=0)
+
+            const dx = boat.x - targetX;
+            const dy = boat.y - targetY;
+
+            // Project boat position relative to gate onto Upwind Vector
+            const proj = dx * ux + dy * uy;
+
+            const isUpwindLeg = (leg === 1 || leg === 3);
+            const isDownwindLeg = (leg === 2 || leg === 4);
+
+            // Threshold: 50 units past
+            if (isUpwindLeg && proj > 50) {
+                // We are upwind of the gate (missed it). Go back Downwind.
+                targetX += -ux * 200;
+                targetY += -uy * 200;
+            } else if (isDownwindLeg && proj < -50) {
+                // We are downwind of the gate (missed it). Go back Upwind.
+                targetX += ux * 200;
+                targetY += uy * 200;
+            }
         }
 
         // If rounding, aim slightly outside to round cleanly
