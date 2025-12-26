@@ -2717,15 +2717,30 @@ function updateBoat(boat, dt) {
     if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
 
     // Check Tacking (Rule 13)
-    // Tacking is defined as "from the moment she is beyond head to wind until she is on a close-hauled course".
-    // "Head to wind" means pointing directly into wind (angleToWind ~ 0).
-    // Close-hauled is ~45 deg.
-    // Simplified: If angleToWind is small (in irons), we are tacking.
-    if (angleToWind < Math.PI / 6) { // < 30 degrees
-        boat.raceState.isTacking = true;
-    } else {
-        // If we were tacking, check if we are on a close-hauled course (e.g. > 40 deg).
-        if (boat.raceState.isTacking && angleToWind > Math.PI / 4.5) {
+    // Rule 13: "After a boat passes head to wind, she shall keep clear of other boats until she is on a close-hauled course."
+    // We detect "passing head to wind" by checking if the wind side relative to the boat flips while upwind.
+    const currentSide = Math.sign(relWind);
+
+    // Initialize if missing (default to current if non-zero, else 1)
+    if (boat.lastLocalWindSide === undefined) boat.lastLocalWindSide = (currentSide !== 0) ? currentSide : 1;
+
+    // Only update and check if we are not exactly head-to-wind (0)
+    // This allows us to bridge across the 0 value (e.g. -1 -> 0 -> 1)
+    if (currentSide !== 0) {
+        if (currentSide !== boat.lastLocalWindSide) {
+             // Crossed the wind
+             // Only if we are generally pointing upwind (avoid gybes triggering this)
+             if (angleToWind < Math.PI / 2) {
+                 boat.raceState.isTacking = true;
+             }
+        }
+        boat.lastLocalWindSide = currentSide;
+    }
+
+    // Clear Tacking state when close-hauled
+    if (boat.raceState.isTacking) {
+        // Close-hauled is ~45 deg (PI/4).
+        if (angleToWind >= Math.PI / 4.0) {
              boat.raceState.isTacking = false;
         }
     }
