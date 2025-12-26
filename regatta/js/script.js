@@ -1206,8 +1206,7 @@ class Boat {
 // Gust System
 function createGust(x, y, type, initial = false) {
     const conditions = state.race.conditions;
-    const baseSpeed = state.wind.speed;
-    const windDir = state.wind.direction;
+    const baseSpeed = state.wind.speed; // Current global speed
 
     // Varied size and shape
     const maxRadiusX = 300 + Math.random() * 1200;
@@ -1216,37 +1215,40 @@ function createGust(x, y, type, initial = false) {
     let speedDelta = 0;
     let dirDelta = 0;
 
-    // Apply Biases
-    const sBias = conditions.strengthBias || 1.0;
-    const dBias = conditions.dirBias || 0;
+    // Puffiness controls strength and directional deviation
+    const puffiness = conditions.puffiness || 0.5;
 
-    // Directional variance: Triangular distribution (-1 to 1) peaked at 0
-    // Scaled to max 30 degrees (approx 0.52 rad)
-    const dirNoise = (Math.random() - Math.random()) * (30 * Math.PI / 180) * conditions.shiftiness;
-    dirDelta = dirNoise + dBias;
+    // Directional Deviation (Shiftiness of the puff itself)
+    const shiftiness = conditions.shiftiness || 0.5;
+    const maxPuffShift = (5 + shiftiness * 15) * (Math.PI / 180);
+    dirDelta = (Math.random() - 0.5) * 2 * maxPuffShift;
+
+    // Strength
+    const strengthBias = conditions.gustStrengthBias || 1.0;
+    const punch = (0.2 + puffiness * 0.4) * strengthBias;
 
     if (type === 'gust') {
-        speedDelta = baseSpeed * (0.2 + conditions.gustiness * 0.4) * sBias;
+        speedDelta = baseSpeed * punch;
     } else {
-        speedDelta = -baseSpeed * (0.2 + conditions.gustiness * 0.3) * sBias;
+        speedDelta = -baseSpeed * punch * 0.8;
     }
 
-    const moveSpeed = baseSpeed * (0.8 + Math.random() * 0.4) * 0.1;
-    const moveDir = windDir + (Math.random() - 0.5) * 0.2;
-    // Move with the wind (Downwind)
-    // Wind Dir 0 (North) -> Blows South (+Y)
-    // Particle motion: x -= sin(dir), y += cos(dir)
-    const vx = -Math.sin(moveDir) * moveSpeed;
-    const vy = Math.cos(moveDir) * moveSpeed;
+    // Movement Parameters (stored for dynamic updating)
+    // Deviate slightly from wind direction
+    const moveDirOffset = (Math.random() - 0.5) * 0.2;
+    // Move at 80-120% of 10% of wind speed (slow drift)
+    const moveSpeedFactor = (0.8 + Math.random() * 0.4) * 0.1;
 
     const duration = 30 + Math.random() * 60;
     const age = initial ? Math.random() * duration : 0;
 
     return {
-        type, x, y, vx, vy,
+        type, x, y,
+        moveDirOffset, moveSpeedFactor, // New params
+        vx: 0, vy: 0, // Placeholder
         maxRadiusX, maxRadiusY,
-        radiusX: 10, radiusY: 10, // Start small, will update in first frame
-        rotation: windDir + Math.PI / 2,
+        radiusX: 10, radiusY: 10,
+        rotation: 0, // Will be set in update
         speedDelta, dirDelta,
         duration,
         age
@@ -1265,7 +1267,7 @@ function spawnGlobalGust(initial = false) {
     const gy = boundary.y - Math.cos(angle) * dist;
 
     // Type Bias
-    const prob = conditions.gustProb !== undefined ? conditions.gustProb : 0.5;
+    const prob = conditions.gustBias || 0.5;
     const type = Math.random() < prob ? 'gust' : 'lull';
 
     state.gusts.push(createGust(gx, gy, type, initial));
@@ -1273,7 +1275,9 @@ function spawnGlobalGust(initial = false) {
 
 function updateGusts(dt) {
     const conditions = state.race.conditions;
-    const targetCount = conditions.density || 8;
+    const puffiness = conditions.puffiness || 0.5;
+    // Density: 5 to 25 based on puffiness
+    const targetCount = Math.floor(5 + puffiness * 20);
     const boundary = state.course.boundary;
 
     // Maintain density
@@ -1284,8 +1288,21 @@ function updateGusts(dt) {
     }
 
     const timeScale = dt * 60;
+    const windDir = state.wind.direction;
+    const windSpeed = state.wind.speed;
+
     for (let i = state.gusts.length - 1; i >= 0; i--) {
         const g = state.gusts[i];
+
+        // Update Physics based on current wind
+        const moveDir = windDir + g.moveDirOffset;
+        const moveSpeed = windSpeed * g.moveSpeedFactor;
+
+        g.vx = -Math.sin(moveDir) * moveSpeed;
+        g.vy = Math.cos(moveDir) * moveSpeed;
+
+        // Update Rotation (align with wind)
+        g.rotation = windDir + Math.PI / 2;
 
         g.x += g.vx * timeScale;
         g.y += g.vy * timeScale;
@@ -1734,16 +1751,21 @@ function setupPreRaceOverlay() {
     if (UI.prWindVar) {
         const cond = state.race.conditions;
         let text = [];
-        if (cond.gustiness > 0.6) text.push("Gusty");
-        else if (cond.gustiness < 0.3) text.push("Steady");
-        else text.push("Moderate");
 
-        if (cond.shiftiness > 0.6) text.push("Shifty");
-        else if (cond.shiftiness < 0.3) text.push("Stable");
+        // Shiftiness
+        if (cond.shiftiness > 0.7) text.push("Very Shifty");
+        else if (cond.shiftiness > 0.4) text.push("Shifty");
+        else text.push("Steady");
 
-        const type = cond.gustProb > 0.5 ? "Gusts" : "Lulls";
-        const strength = cond.strengthBias > 1.1 ? "Strong" : (cond.strengthBias < 0.9 ? "Light" : "Moderate");
-        text.push(`${strength} ${type}`);
+        // Variability
+        if (cond.variability > 0.7) text.push("Variable");
+        else if (cond.variability > 0.4) text.push("Moderate");
+        else text.push("Stable");
+
+        // Puffiness
+        if (cond.puffiness > 0.7) text.push("Puffy");
+        else if (cond.puffiness > 0.4) text.push("Active");
+        else text.push("Uniform");
 
         UI.prWindVar.textContent = text.join(" • ");
     }
@@ -3195,22 +3217,36 @@ function update(dt) {
     const timeScale = dt * 60;
 
     // Wind Dynamics (Global)
-    const conditions = state.race.conditions || { shiftiness: 0.5, gustiness: 0.5 };
+    const conditions = state.race.conditions || { shiftiness: 0.5, variability: 0.5, puffiness: 0.5 };
 
-    // Scale variability based on course conditions
-    // Shiftiness (0-1) controls directional variance amplitude
-    // Low: 0.05 rad (~3 deg), High: 0.4 rad (~23 deg)
-    const dirAmp = 0.05 + conditions.shiftiness * 0.35;
-    const dirDrift = Math.sin(state.time * 0.05) * dirAmp;
-    const dirGust = Math.sin(state.time * 0.3 + 123.4) * (dirAmp * 0.25);
-    state.wind.direction = state.wind.baseDirection + dirDrift + dirGust;
+    // Time for weather changes (slow)
+    const wTime = state.time * 0.05;
 
-    // Gustiness (0-1) controls speed variance amplitude
-    // Low: 0.5 kn, High: 4.5 kn
-    const speedAmp = 0.5 + conditions.gustiness * 4.0;
-    const speedSurge = Math.sin(state.time * 0.1) * speedAmp;
-    const speedGust = Math.sin(state.time * 0.5 + 456.7) * (speedAmp * 0.5);
-    state.wind.speed = Math.max(5, Math.min(25, state.wind.baseSpeed + speedSurge + speedGust));
+    // 1. Shiftiness (Directional Changes)
+    // Range: +/- 3 deg (Steady) to +/- 45 deg (Shifty)
+    const minShift = 3 * Math.PI / 180;
+    const maxShift = 45 * Math.PI / 180;
+    const shiftAmp = minShift + conditions.shiftiness * (maxShift - minShift);
+
+    // Low-frequency noise for smooth shifting
+    const shiftNoise = Math.sin(wTime * 0.7) * 0.5 +
+                       Math.sin(wTime * 0.3 + 20) * 0.3 +
+                       Math.sin(wTime * 0.1 + 40) * 0.2;
+
+    state.wind.direction = state.wind.baseDirection + shiftNoise * shiftAmp;
+
+    // 2. Variability (Speed Changes)
+    // Range: +/- 5% (Stable) to +/- 100% (Variable)
+    const minVar = 0.05;
+    const maxVar = 1.0;
+    const varAmp = minVar + conditions.variability * (maxVar - minVar);
+
+    // Smooth fluctuations
+    const varNoise = Math.sin(wTime * 0.8 + 100) * 0.5 +
+                     Math.sin(wTime * 0.4 + 200) * 0.3 +
+                     Math.sin(wTime * 0.15 + 300) * 0.2;
+
+    state.wind.speed = Math.max(2, state.wind.baseSpeed * (1.0 + varNoise * varAmp));
 
     updateGusts(dt);
 
@@ -5000,32 +5036,30 @@ function resetGame() {
     state.wind.direction = state.wind.baseDirection;
     state.gusts = [];
 
-    // Randomized Biases
-    const biasRoll = Math.random();
-    let gustProb = 0.5;
-    if (biasRoll < 0.4) gustProb = 0.75; // Gust bias
-    else if (biasRoll < 0.8) gustProb = 0.25; // Lull bias
-
-    const strengthBias = 0.8 + Math.random() * 0.4;
-    const dirBias = (Math.random() - 0.5) * 0.4;
-    const density = 8 + Math.floor(Math.random() * 12); // 8-20 active
+    // Initialize Course Characteristics
+    // Shiftiness: Directional instability (0-1)
+    // Variability: Speed instability (0-1)
+    // Puffiness: Localized gust/lull density (0-1)
 
     state.race.conditions = {
-        gustiness: Math.random(),
         shiftiness: Math.random(),
-        gustProb,
-        strengthBias,
-        dirBias,
-        density
+        variability: Math.random(),
+        puffiness: Math.random(),
+        // Internal biases
+        gustBias: (Math.random() > 0.5) ? 0.7 : 0.3, // Bias towards gusts or lulls
+        gustStrengthBias: 0.8 + Math.random() * 0.4 // Global modifier for puff strength
     };
+
+    // Density is now derived from puffiness in spawn logic
     state.time = 0;
     state.race.status = 'waiting'; // Wait for user to start
     state.race.timer = 30.0;
 
     initCourse();
 
-    // Pre-populate gusts
-    for (let i = 0; i < density; i++) {
+    // Pre-populate gusts based on puffiness
+    const initialDensity = Math.floor(5 + state.race.conditions.puffiness * 20);
+    for (let i = 0; i < initialDensity; i++) {
         spawnGlobalGust(true);
     }
 
