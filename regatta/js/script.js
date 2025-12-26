@@ -5352,15 +5352,18 @@ function resetGame() {
     const backX = -ux;
     const backY = -uy;
 
-    // Right Vector (Crosswind)
-    const rx = -uy;
-    const ry = ux;
-
     // Start Line Center
     const m0 = state.course.marks[0];
     const m1 = state.course.marks[1];
     const cx = (m0.x + m1.x) / 2;
     const cy = (m0.y + m1.y) / 2;
+
+    // Calculate Start Line Unit Vector (Right Vector)
+    const lDx = m1.x - m0.x;
+    const lDy = m1.y - m0.y;
+    const lLen = Math.sqrt(lDx*lDx + lDy*lDy);
+    const rx = lDx / lLen;
+    const ry = lDy / lLen;
 
     // Center of Boat Line
     const lineCx = cx + backX * distBack;
