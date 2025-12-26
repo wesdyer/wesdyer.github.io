@@ -323,6 +323,13 @@
 
                         <div class="space-y-5">
                             <div>
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <div class="text-xs font-bold text-slate-300 uppercase">Direction</div>
+                                    <div id="val-wind-direction" class="text-xs font-mono text-blue-400">N</div>
+                                </div>
+                                <input type="range" id="conf-wind-direction" min="0" max="7" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                            </div>
+                            <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Wind Strength</div>
                                 <input type="range" id="conf-wind-strength" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
@@ -331,7 +338,7 @@
                                 </div>
                             </div>
                             <div>
-                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Variability</div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Pressure Variability</div>
                                 <input type="range" id="conf-wind-variability" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Steady</span>
@@ -339,7 +346,7 @@
                                 </div>
                             </div>
                             <div>
-                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Shiftiness</div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Directional Variability</div>
                                 <input type="range" id="conf-wind-shiftiness" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Stable</span>
@@ -357,7 +364,7 @@
                         </h2>
                         <div class="space-y-5">
                             <div>
-                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Puff Frequency</div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Frequency</div>
                                 <input type="range" id="conf-puff-frequency" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Flat</span>
@@ -365,7 +372,7 @@
                                 </div>
                             </div>
                             <div>
-                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Puff Intensity</div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Intensity</div>
                                 <input type="range" id="conf-puff-intensity" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Soft</span>
@@ -373,7 +380,7 @@
                                 </div>
                             </div>
                             <div>
-                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Directional Shift</div>
+                                <div class="text-xs font-bold text-slate-300 uppercase mb-1">Shift</div>
                                 <input type="range" id="conf-puff-shift" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Straight</span>

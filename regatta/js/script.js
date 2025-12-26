@@ -1830,6 +1830,8 @@ const UI = {
     confPuffFreq: document.getElementById('conf-puff-frequency'),
     confPuffInt: document.getElementById('conf-puff-intensity'),
     confPuffShift: document.getElementById('conf-puff-shift'),
+    confWindDir: document.getElementById('conf-wind-direction'),
+    valWindDir: document.getElementById('val-wind-direction'),
     confDesc: document.getElementById('conf-description'),
     confCourseDist: document.getElementById('conf-course-dist'),
     confCourseLegs: document.getElementById('conf-course-legs'),
@@ -1921,6 +1923,23 @@ function setupPreRaceOverlay() {
 
     // Initialize Sliders from Current State (Randomized or Default)
     const cond = state.race.conditions;
+
+    // Wind Direction
+    if (UI.confWindDir) {
+        // Calculate nominal direction by removing bias
+        const bias = state.race.conditions.directionBias || 0;
+        const nominalRad = normalizeAngle(state.wind.baseDirection - bias);
+
+        let deg = nominalRad * (180 / Math.PI);
+        if (deg < 0) deg += 360;
+        const octant = Math.round(deg / 45) % 8;
+        UI.confWindDir.value = octant;
+
+        if (UI.valWindDir) {
+            const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+            UI.valWindDir.textContent = dirs[octant];
+        }
+    }
 
     // Reverse Map Wind Strength
     const baseMin = 5, baseMax = 25;
@@ -2172,6 +2191,24 @@ if (UI.confWindShift) UI.confWindShift.addEventListener('input', updateCondition
 if (UI.confPuffFreq) UI.confPuffFreq.addEventListener('input', updateConditionDescription);
 if (UI.confPuffInt) UI.confPuffInt.addEventListener('input', updateConditionDescription);
 if (UI.confPuffShift) UI.confPuffShift.addEventListener('input', updateConditionDescription);
+
+    if (UI.confWindDir) UI.confWindDir.addEventListener('input', () => {
+        if (UI.valWindDir) {
+            const val = parseInt(UI.confWindDir.value);
+            const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+            UI.valWindDir.textContent = dirs[val];
+
+            // Set base direction
+            const targetRad = val * (Math.PI / 4); // 45 degrees step
+            // Apply current offset
+            const offset = state.race.conditions.directionBias || 0;
+            state.wind.baseDirection = normalizeAngle(targetRad + offset);
+            state.wind.direction = state.wind.baseDirection;
+
+            // Re-init course to align with new wind
+            initCourse();
+        }
+    });
 
 if (UI.confCourseDist) UI.confCourseDist.addEventListener('input', updateCourseConfig);
 if (UI.confCourseLegs) UI.confCourseLegs.addEventListener('input', updateCourseConfig);
@@ -5262,12 +5299,17 @@ function resetGame() {
     // 0-1. 0=Low, 1=High.
     const puffShiftiness = Math.random();
 
+    // Direction Bias (Variability 5-10% roughly)
+    // +/- 0.1 to 0.2 radians
+    const directionBias = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.1);
+
     state.race.conditions = {
         shiftiness,
         variability,
         puffiness,
         gustStrengthBias,
-        puffShiftiness
+        puffShiftiness,
+        directionBias
     };
     state.time = 0;
     state.race.status = 'waiting'; // Wait for user to start
