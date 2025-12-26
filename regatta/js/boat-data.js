@@ -2,7 +2,7 @@
 const BOAT_CLASSES = {
     cruiser: {
         id: 'cruiser',
-        displayName: 'Cruiser (Catalina 30)',
+        displayName: 'Cruiser',
         description: "Heavy, stable, and forgiving. Best for learning the ropes.",
         visual: {
             hullScale: 1.0,
@@ -13,14 +13,14 @@ const BOAT_CLASSES = {
             freeboardScale: 1.1
         },
         dynamics: {
-            turnSpeed: 0.008, // Slow turning
-            turnPenalty: 0.998, // Drag in turns
-            accelFactor: 0.5, // Slow acceleration
-            inertia: 0.999, // High inertia (glides longer)
-            heelResponse: 0.5, // Slow heeling
+            turnSpeed: 0.005, // Heavy (0.008 -> 0.005)
+            turnPenalty: 0.998,
+            accelFactor: 0.3, // Slow (0.5 -> 0.3)
+            inertia: 0.9995, // High inertia (0.999 -> 0.9995)
+            heelResponse: 0.5,
             planing: false,
             surfing: false,
-            leeway: 0.05 // High leeway
+            leeway: 0.05
         },
         polars: {
             angles: [0, 30, 40, 50, 60, 90, 110, 135, 150, 180],
@@ -46,28 +46,27 @@ const BOAT_CLASSES = {
     },
     performance: {
         id: 'performance',
-        displayName: 'Performance (J/111)',
+        displayName: 'Performance',
         description: "Balanced racer-cruiser. Fast, smooth, and versatile.",
         visual: {
-            hullScale: 1.05, // Longer
+            hullScale: 1.05,
             hullWidthScale: 0.95, // Sleek
             deckColor: '#cbd5e1',
             bowsprit: true,
-            bowspritLength: 8,
+            bowspritLength: 6, // Short
             sailScale: 1.0,
             freeboardScale: 1.0
         },
         dynamics: {
             turnSpeed: 0.011, // Standard
-            turnPenalty: 0.999, // Standard
+            turnPenalty: 0.999,
             accelFactor: 0.8,
             inertia: 0.998,
             heelResponse: 0.8,
             planing: false,
-            surfing: true, // Surf bonus
+            surfing: true,
             leeway: 0.02
         },
-        // Copied from J111_POLARS in script.js
         polars: {
             angles: [0, 30, 38, 45, 52, 60, 75, 90, 110, 120, 135, 150, 180],
             speeds: {
@@ -104,24 +103,24 @@ const BOAT_CLASSES = {
     },
     sport: {
         id: 'sport',
-        displayName: 'Sport (Melges 24)',
+        displayName: 'Sport',
         description: "Lightweight, high-performance sportboat. Planes downwind.",
         visual: {
-            hullScale: 0.85, // Smaller boat
-            hullWidthScale: 1.1, // Wide stern for planing
+            hullScale: 0.85,
+            hullWidthScale: 1.1,
             deckColor: '#f8fafc',
             bowsprit: true,
-            bowspritLength: 15, // Long retractable sprits
-            sailScale: 1.1, // Big rig relative to hull
+            bowspritLength: 18, // Long
+            sailScale: 1.1,
             freeboardScale: 0.8
         },
         dynamics: {
-            turnSpeed: 0.015, // Twitchy
-            turnPenalty: 0.995, // Lose speed in turns
-            accelFactor: 1.5, // Accelerates fast
-            inertia: 0.990, // Stops fast
-            heelResponse: 2.0, // Tendo
-            planing: true, // Enables Planing state
+            turnSpeed: 0.022, // Twitchy (0.015 -> 0.022)
+            turnPenalty: 0.995,
+            accelFactor: 2.5, // Rocket (1.5 -> 2.5)
+            inertia: 0.985, // Stops fast (0.990 -> 0.985)
+            heelResponse: 3.0,
+            planing: true,
             surfing: false,
             leeway: 0.03
         },
@@ -137,11 +136,11 @@ const BOAT_CLASSES = {
                     nonSpinnaker: [0.0, 0.0, 5.0, 5.5, 6.0, 6.2, 5.8, 5.0, 4.2, 3.5]
                 },
                 14: {
-                    spinnaker:    [0.0, 0.0, 1.5, 3.5, 6.0, 9.0, 10.0, 11.0, 9.0, 7.0], // Planing onset
+                    spinnaker:    [0.0, 0.0, 1.5, 3.5, 6.0, 9.0, 10.0, 11.0, 9.0, 7.0],
                     nonSpinnaker: [0.0, 0.0, 5.8, 6.0, 6.5, 6.8, 6.2, 5.5, 4.8, 4.0]
                 },
                 20: {
-                    spinnaker:    [0.0, 0.0, 2.0, 4.0, 7.0, 11.0, 13.0, 15.0, 12.0, 9.0], // Full Plane
+                    spinnaker:    [0.0, 0.0, 2.0, 4.0, 7.0, 11.0, 13.0, 15.0, 12.0, 9.0],
                     nonSpinnaker: [0.0, 0.0, 6.0, 6.2, 6.8, 7.2, 6.8, 6.0, 5.2, 4.5]
                 }
             }
