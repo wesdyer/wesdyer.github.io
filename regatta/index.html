@@ -356,6 +356,27 @@
                         </div>
                     </div>
 
+                    <!-- Current Setup -->
+                    <div id="current-setup-panel" class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl hidden">
+                        <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
+                             <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            Current Setup
+                        </h2>
+                        <div class="space-y-5">
+                             <div class="flex justify-between items-baseline mb-1">
+                                <div class="text-xs font-bold text-slate-300 uppercase">Speed</div>
+                                <div id="val-current-speed" class="text-xs font-mono text-indigo-400">0.0 kn</div>
+                            </div>
+                            <div class="flex justify-between items-baseline mb-1">
+                                <div class="text-xs font-bold text-slate-300 uppercase">Direction</div>
+                                <div id="val-current-dir" class="text-xs font-mono text-indigo-400">N</div>
+                            </div>
+                             <div class="w-full h-1 bg-slate-700 rounded-full overflow-hidden mt-2">
+                                  <div id="bar-current-strength" class="h-full bg-indigo-500 w-0 transition-all duration-500"></div>
+                             </div>
+                        </div>
+                    </div>
+
                     <!-- Puffs -->
                     <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
                         <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
