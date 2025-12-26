@@ -1154,6 +1154,10 @@ const state = {
         speed: 10,
         baseSpeed: 10
     },
+    current: {
+        speed: 0,
+        direction: 0
+    },
     showNavAids: true,
     particles: [],
     keys: {
@@ -1870,6 +1874,18 @@ function setupPreRaceOverlay() {
         else text.push("Light Puffs");
 
         UI.prWindVar.textContent = text.join(" • ");
+    }
+
+    if (UI.preRaceOverlay.querySelector('#pr-current')) {
+        const el = UI.preRaceOverlay.querySelector('#pr-current');
+        if (state.current.speed < 0.1) {
+            el.textContent = "None";
+        } else {
+            const deg = (state.current.direction * 180 / Math.PI + 360) % 360;
+            const cardinals = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+            const idx = Math.round(deg / 45) % 8;
+            el.textContent = `${state.current.speed.toFixed(1)} kn ${cardinals[idx]}`;
+        }
     }
 
     // Populate Competitors
@@ -2765,6 +2781,22 @@ function updateBoat(boat, dt) {
     boat.velocity.x = boatDirX * boat.speed;
     boat.velocity.y = boatDirY * boat.speed;
 
+    // Apply Current to Position (Drift)
+    // boat.speed is internal units/frame (derived from knot calculation logic: kn = speed*4)
+    // If state.current.speed is in Knots
+    // Internal Speed = Knots / 4.0
+    if (state.current.speed > 0) {
+        const currentInternal = state.current.speed / 4.0;
+        // Current Direction is "Towards" (Flow direction).
+        // 0 is North (Up).
+        // x = sin(dir), y = -cos(dir)
+        const cVx = Math.sin(state.current.direction) * currentInternal;
+        const cVy = -Math.cos(state.current.direction) * currentInternal;
+
+        boat.x += cVx * timeScale;
+        boat.y += cVy * timeScale;
+    }
+
     boat.x += boat.velocity.x * timeScale;
     boat.y += boat.velocity.y * timeScale;
 
@@ -3503,6 +3535,29 @@ function update(dt) {
         let range = Math.max(canvas.width, canvas.height) * 1.5;
         createParticle(state.camera.x + (Math.random()-0.5)*range, state.camera.y + (Math.random()-0.5)*range, 'wind', { life: Math.random() + 0.5 });
     }
+
+    // Current Particles
+    if (state.current.speed > 0.1) {
+        // Current Lines
+        if (Math.random() < 0.05 * state.current.speed) { // Density based on speed
+             let range = Math.max(canvas.width, canvas.height) * 1.5;
+             createParticle(state.camera.x + (Math.random()-0.5)*range, state.camera.y + (Math.random()-0.5)*range, 'current', { life: Math.random() + 1.0 });
+        }
+
+        // Mark Wakes
+        if (state.course.marks) {
+            for (const m of state.course.marks) {
+                if (Math.random() < 0.3) {
+                    // Spawn wake downstream (in direction of current)
+                    // Offset randomly around mark
+                    const offX = (Math.random()-0.5)*20;
+                    const offY = (Math.random()-0.5)*20;
+                    createParticle(m.x + offX, m.y + offY, 'current-wake', { life: 1.0 + Math.random() });
+                }
+            }
+        }
+    }
+
     updateParticles(dt);
 }
 
@@ -3515,6 +3570,7 @@ function updateParticles(dt) {
         if (p.vx) p.x += p.vx * timeScale;
         if (p.vy) p.y += p.vy * timeScale;
         let decay = 0.0025;
+
         if (p.type === 'wake') {
             decay = 0.005;
             const s = p.scale || 1.0;
@@ -3532,13 +3588,55 @@ function updateParticles(dt) {
              p.x -= Math.sin(local.direction)*timeScale * (local.speed / 10);
              p.y += Math.cos(local.direction)*timeScale * (local.speed / 10);
         }
+        else if (p.type === 'current') {
+             const speed = state.current.speed / 4.0; // Internal speed
+             p.x += Math.sin(state.current.direction) * speed * timeScale;
+             p.y -= Math.cos(state.current.direction) * speed * timeScale;
+             decay = 0.005;
+        }
+        else if (p.type === 'current-wake') {
+             const speed = state.current.speed / 4.0;
+             p.x += Math.sin(state.current.direction) * speed * timeScale;
+             p.y -= Math.cos(state.current.direction) * speed * timeScale;
+             decay = 0.01;
+             p.alpha = p.life * 0.3;
+        }
+
         p.life -= decay * timeScale;
         if (p.life <= 0) { state.particles[i] = state.particles[state.particles.length-1]; state.particles.pop(); }
     }
 }
 
 function drawParticles(ctx, layer) {
-    if (layer === 'surface') {
+    if (layer === 'current') {
+        // Draw current lines and wakes
+        for (const p of state.particles) {
+            if (p.type === 'current') {
+                const len = 30 + state.current.speed * 10;
+                const dx = Math.sin(state.current.direction) * len;
+                const dy = -Math.cos(state.current.direction) * len;
+
+                ctx.strokeStyle = '#1e40af'; // Dark Blue (blue-800)
+                ctx.lineWidth = 2 + state.current.speed;
+                ctx.globalAlpha = Math.min(p.life, 1.0) * 0.3;
+
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x + dx, p.y + dy);
+                ctx.stroke();
+            }
+            else if (p.type === 'current-wake') {
+                ctx.fillStyle = '#60a5fa'; // Blue-400
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                const radius = Math.max(0, 2 + (1-p.life)*5);
+                ctx.arc(p.x, p.y, radius, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        ctx.globalAlpha = 1.0;
+    }
+    else if (layer === 'surface') {
         ctx.fillStyle = '#ffffff';
         for (const p of state.particles) {
             if (p.type === 'wake' || p.type === 'wake-wave') {
@@ -4873,6 +4971,7 @@ function draw() {
     ctx.translate(-state.camera.x, -state.camera.y);
 
     drawGusts(ctx);
+    drawParticles(ctx, 'current'); // Below wave level
     drawWater(ctx);
     drawDisturbedAir(ctx);
     drawParticles(ctx, 'surface');
@@ -5153,6 +5252,12 @@ function resetGame() {
     // Puff Shiftiness (Directional Deviation inside Gusts)
     // 0-1. 0=Low, 1=High.
     const puffShiftiness = Math.random();
+
+    // Initialize Current
+    // 70% chance of 0. 30% chance of 0-3 kn.
+    const hasCurrent = Math.random() > 0.7;
+    state.current.speed = hasCurrent ? (Math.random() * 3.0) : 0;
+    state.current.direction = Math.random() * Math.PI * 2;
 
     state.race.conditions = {
         shiftiness,
