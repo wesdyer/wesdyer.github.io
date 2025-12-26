@@ -849,18 +849,13 @@ class BotController {
             const futureX = boat.x + vx * (lookaheadFrames / 60);
             const futureY = boat.y + vy * (lookaheadFrames / 60);
 
-            // Check 3 points: Current, Halfway, Future
-            const points = [
-                {x: boat.x + vx * 0.5, y: boat.y + vy * 0.5},
-                {x: futureX, y: futureY}
-            ];
-
             let boatCollision = false;
             let staticCollision = false; // Marks/Boundary
             let ruleViolation = false;
             let proximityCost = 0;
 
-            // 1. Boats
+            // 1. Boats - Check multiple points along the path
+            const boatSamples = 5;
             for (const other of state.boats) {
                 if (other === boat || other.raceState.finished) continue;
                 
@@ -886,16 +881,19 @@ class BotController {
                     }
                 }
 
-                // Check along the path
-                for (let i = 0; i < points.length; i++) {
-                    const t = (i + 1) * 0.5 * (lookaheadFrames / 60);
-                    const myP = points[i];
+                // Check along the path (5 points)
+                for (let i = 1; i <= boatSamples; i++) {
+                    const t = i * (1.0/boatSamples) * (lookaheadFrames / 60);
+
+                    const myPx = boat.x + vx * t; // t in seconds
+                    const myPy = boat.y + vy * t;
+
                     const otherP = {
                         x: other.x + ovx * t,
                         y: other.y + ovy * t
                     };
 
-                    const distSq = (myP.x - otherP.x)**2 + (myP.y - otherP.y)**2;
+                    const distSq = (myPx - otherP.x)**2 + (myPy - otherP.y)**2;
                     
                     if (distSq < safeDist * safeDist) {
                         boatCollision = true;
@@ -919,27 +917,37 @@ class BotController {
                 }
             }
 
-            // 2. Marks
+            // 2. Marks - Use Segment Distance Check (Prevent Tunneling)
             if (state.course.marks) {
                 for (const m of state.course.marks) {
-                    // Check path
-                    for (const p of points) {
-                        const dSq = (p.x - m.x)**2 + (p.y - m.y)**2;
-                        if (dSq < 45*45) { // Reduced from 60 to 45 for tighter rounding
-                            staticCollision = true;
-                        } else if (dSq < 100*100 && this.livenessState === 'normal') {
-                            proximityCost += 10000 / dSq;
-                        }
+                    // Check distance from Mark to Path Segment (boat -> future)
+                    const closest = getClosestPointOnSegment(m.x, m.y, boat.x, boat.y, futureX, futureY);
+                    const dSq = (closest.x - m.x)**2 + (closest.y - m.y)**2;
+
+                    if (dSq < 50*50) { // Safety radius (Mark radius ~12 + Boat ~25 + Margin)
+                        staticCollision = true;
+                        cost += 200000 / (dSq + 1); // Intense penalty for direct hit
+                    } else if (dSq < 130*130 && this.livenessState === 'normal') {
+                        // Soft avoidance: Increased radius (was 100) and cost
+                        // The "1 / dSq" curve ensures cost spikes rapidly as we get close ("cutting in"),
+                        // forcing a turn before it's too late.
+                        proximityCost += 25000 / (dSq + 100);
                     }
                 }
             }
 
-            // 3. Boundary
+            // 3. Boundary - Segment Check
             if (state.course.boundary) {
                 const b = state.course.boundary;
-                for (const p of points) {
-                    const d = Math.sqrt((p.x - b.x)**2 + (p.y - b.y)**2);
-                    if (d > b.radius - 50) staticCollision = true;
+                // Check future point first (simple)
+                const dFut = Math.sqrt((futureX - b.x)**2 + (futureY - b.y)**2);
+                if (dFut > b.radius - 80) staticCollision = true;
+
+                // Or check a few points if boundary is complex, but circle is easy.
+                // If we are heading OUT, future dist > current dist.
+                const dCurr = Math.sqrt((boat.x - b.x)**2 + (boat.y - b.y)**2);
+                if (dFut > dCurr && dFut > b.radius - 120) {
+                     proximityCost += 5000 * (dFut - (b.radius - 120)) / 120;
                 }
             }
 
