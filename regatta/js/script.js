@@ -3578,9 +3578,9 @@ function update(dt) {
         }
     } else if (state.camera.target === 'finish') {
         // Focus on Finish Line center
-        let indices = [0, 1];
+        let indices = (state.race.totalLegs % 2 === 0) ? [0, 1] : [2, 3];
         if (state.course.marks && state.course.marks.length >= 2) {
-             const m1 = state.course.marks[0], m2 = state.course.marks[1];
+             const m1 = state.course.marks[indices[0]], m2 = state.course.marks[indices[1]];
              const tx = (m1.x+m2.x)/2, ty = (m1.y+m2.y)/2;
              state.camera.x += (tx - state.camera.x) * 0.05;
              state.camera.y += (ty - state.camera.y) * 0.05;
@@ -3953,8 +3953,9 @@ function drawRoundingArrows(ctx) {
 function drawActiveGateLine(ctx) {
     const player = state.boats[0];
     let indices;
-    if (state.race.status === 'finished' || player.raceState.finished) indices = [0, 1];
-    else {
+    if (state.race.status === 'finished' || player.raceState.finished) {
+        indices = (state.race.totalLegs % 2 === 0) ? [0, 1] : [2, 3];
+    } else {
         if (player.raceState.leg !== 0 && player.raceState.leg !== state.race.totalLegs) return;
         indices = (player.raceState.leg % 2 === 0) ? [0, 1] : [2, 3];
     }
