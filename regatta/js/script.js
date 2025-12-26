@@ -1293,14 +1293,11 @@ function createGust(x, y, type, initial = false) {
     let dirDelta = 0;
 
     // Gust Strength
-    // Bias 0 (Soft) to 1 (Punchy)
-    // Gust: +20% to +50%
-    // Lull: -10% to -40%
+    // Strength is now balanced (0.5 bias), as the slider controls Type Balance instead.
 
     // Base strength factor 0.0 to 1.0 within the range
     const strengthRandom = Math.random();
-    // Mix with bias: weighted towards bias
-    const bias = conditions.gustStrengthBias || 0.5;
+    const bias = 0.5;
     const strengthFactor = (strengthRandom + bias) * 0.5; // 0 to 1
 
     if (type === 'gust') {
@@ -1360,12 +1357,9 @@ function spawnGlobalGust(initial = false) {
     const gy = boundary.y - Math.cos(angle) * dist;
 
     // Type Bias
-    // "Bias behavior: A given race should lean toward... softer/punchier" handled in strength.
-    // What about Gust vs Lull frequency?
-    // "Puffiness controls density... Multiple puffs and lulls may exist simultaneously"
-    // Let's assume 50/50 balance unless otherwise specified, or random per race?
-    // Let's stick to 50/50 mix for now.
-    const type = Math.random() < 0.5 ? 'gust' : 'lull';
+    // Controls Lull vs Gust prevalence. 0 = Mostly Lull. 1 = Mostly Gust.
+    const bias = conditions.gustStrengthBias !== undefined ? conditions.gustStrengthBias : 0.5;
+    const type = Math.random() < bias ? 'gust' : 'lull';
 
     state.gusts.push(createGust(gx, gy, type, initial));
 }
@@ -1886,8 +1880,8 @@ function updateConditionDescription() {
     else if (puffFreq < 0.7) text += "Expect regular puffs across the course";
     else text += "The water is covered in heavy gusts";
 
-    if (puffInt > 0.6) text += " that pack a serious punch";
-    else if (puffInt < 0.4) text += " that are soft and subtle";
+    if (puffInt > 0.6) text += " consisting mostly of pressure increases";
+    else if (puffInt < 0.4) text += " consisting mostly of lulls";
 
     if (puffShift > 0.6) text += " with sharp directional twists.";
     else if (puffShift > 0.3) text += " with some directional leverage.";
