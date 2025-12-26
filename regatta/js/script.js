@@ -1040,6 +1040,17 @@ function normalizeAngle(angle) {
     return angle;
 }
 
+function calculateApparentWind(tws, twaRadians, boatSpeed) {
+    // TWS: Knots, TWA: Radians, BoatSpeed: Knots
+    // AWS = sqrt((TWS * sin(TWA))^2 + (TWS * cos(TWA) + BSP)^2)
+    // AWA = atan2(TWS * sin(TWA), TWS * cos(TWA) + BSP)
+    const twsSin = tws * Math.sin(twaRadians);
+    const twsCos = tws * Math.cos(twaRadians);
+    const aws = Math.sqrt(Math.pow(twsSin, 2) + Math.pow(twsCos + boatSpeed, 2));
+    const awa = Math.atan2(twsSin, twsCos + boatSpeed);
+    return { speed: aws, angle: Math.abs(awa) };
+}
+
 function isVeryDark(color) {
     if (!color) return false;
     let r = 0, g = 0, b = 0;
@@ -1687,6 +1698,7 @@ const UI = {
     settingMusic: document.getElementById('setting-music'),
     settingPenalties: document.getElementById('setting-penalties'),
     settingNavAids: document.getElementById('setting-navaids'),
+    settingApparentWind: document.getElementById('setting-apparent-wind'),
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
     settingHullColor: document.getElementById('setting-color-hull'),
@@ -1873,6 +1885,7 @@ function applySettings() {
     if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
     if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
+    if (UI.settingApparentWind) UI.settingApparentWind.checked = settings.showApparentWind;
     if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     if (UI.settingHullColor) UI.settingHullColor.value = settings.hullColor;
@@ -1956,6 +1969,7 @@ if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { set
 if (UI.settingMusic) UI.settingMusic.addEventListener('change', (e) => { settings.musicEnabled = e.target.checked; saveSettings(); Sound.init(); });
 if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => { settings.penaltiesEnabled = e.target.checked; saveSettings(); });
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
+if (UI.settingApparentWind) UI.settingApparentWind.addEventListener('change', (e) => { settings.showApparentWind = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.manualTrim = e.target.checked; saveSettings(); });
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
 if (UI.settingHullColor) UI.settingHullColor.addEventListener('input', (e) => { settings.hullColor = e.target.value; saveSettings(); });
@@ -2044,6 +2058,11 @@ window.addEventListener('keydown', (e) => {
         saveSettings();
         Sound.init();
     }
+    if (e.key === 'F6') {
+        e.preventDefault();
+        settings.showApparentWind = !settings.showApparentWind;
+        saveSettings();
+    }
     if (e.key === '`' || e.code === 'Backquote') {
         state.showNavAids = !state.showNavAids;
         settings.navAids = state.showNavAids;
@@ -2109,39 +2128,55 @@ function showRaceMessage(text, textColorClass, borderColorClass) {
 
 function hideRaceMessage() { if (UI.message) UI.message.classList.add('hidden'); }
 
-function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
-    const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
-    const angles = J111_POLARS.angles;
-    const speeds = [6, 8, 10, 12, 14, 16, 20];
+function getTargetSpeed(aws, awaRadians, useSpinnaker) {
+    if (!J111_AWS_POLARS) return 0;
+    const awaDeg = Math.abs(awaRadians) * (180 / Math.PI);
+    const awsAxis = J111_AWS_POLARS.aws;
+    const awaAxis = J111_AWS_POLARS.awa;
+    const data = useSpinnaker ? J111_AWS_POLARS.spinnaker : J111_AWS_POLARS.nonSpinnaker;
 
-    const getPolarSpeed = (ws) => {
-        const data = J111_POLARS.speeds[ws];
-        const sData = useSpinnaker ? data.spinnaker : data.nonSpinnaker;
-        for (let i = 0; i < angles.length - 1; i++) {
-            if (twaDeg >= angles[i] && twaDeg <= angles[i+1]) {
-                const t = (twaDeg - angles[i]) / (angles[i+1] - angles[i]);
-                return sData[i] + t * (sData[i+1] - sData[i]);
-            }
-        }
-        return sData[sData.length - 1];
-    };
-
-    if (windSpeed <= 0) return 0;
-    if (windSpeed < 6) {
-         // Linearly interpolate from 0 to Speed@6
-         return getPolarSpeed(6) * (windSpeed / 6.0);
+    // Bilinear Interpolation
+    // Find AWS indices
+    let awsIdx = -1;
+    for (let i = 0; i < awsAxis.length - 1; i++) {
+        if (aws >= awsAxis[i] && aws <= awsAxis[i+1]) { awsIdx = i; break; }
+    }
+    if (awsIdx === -1) {
+        if (aws < awsAxis[0]) awsIdx = 0;
+        else awsIdx = awsAxis.length - 2; // Clamp to max
     }
 
-    let lower = 6, upper = 20;
-    if (windSpeed >= 20) { lower = 20; upper = 20; }
-    else {
-        for (let i = 0; i < speeds.length - 1; i++) {
-            if (windSpeed >= speeds[i] && windSpeed <= speeds[i+1]) { lower = speeds[i]; upper = speeds[i+1]; break; }
-        }
+    // Find AWA indices
+    let awaIdx = -1;
+    for (let i = 0; i < awaAxis.length - 1; i++) {
+        if (awaDeg >= awaAxis[i] && awaDeg <= awaAxis[i+1]) { awaIdx = i; break; }
+    }
+    if (awaIdx === -1) {
+        if (awaDeg < awaAxis[0]) awaIdx = 0;
+        else awaIdx = awaAxis.length - 2;
     }
 
-    const s1 = getPolarSpeed(lower), s2 = getPolarSpeed(upper);
-    return lower === upper ? s1 : s1 + (windSpeed - lower) / (upper - lower) * (s2 - s1);
+    // Interpolation weights
+    const awsLow = awsAxis[awsIdx], awsHigh = awsAxis[awsIdx+1];
+    const awaLow = awaAxis[awaIdx], awaHigh = awaAxis[awaIdx+1];
+
+    // Safety check for denominators
+    const tAWS = (awsHigh > awsLow) ? (aws - awsLow) / (awsHigh - awsLow) : 0;
+    const tAWA = (awaHigh > awaLow) ? (awaDeg - awaLow) / (awaHigh - awaLow) : 0;
+
+    // Grid is [AWA][AWS] because meshgrid order
+    // Ensure bounds
+    const v00 = data[awaIdx][awsIdx];
+    const v10 = data[awaIdx][awsIdx+1];
+    const v01 = data[awaIdx+1][awsIdx];
+    const v11 = data[awaIdx+1][awsIdx+1];
+
+    // Interpolate along AWS first
+    const v0 = v00 * (1 - tAWS) + v10 * tAWS;
+    const v1 = v01 * (1 - tAWS) + v11 * tAWS;
+
+    // Interpolate along AWA
+    return v0 * (1 - tAWA) + v1 * tAWA;
 }
 
 function checkBoundaryExiting(boat) {
@@ -2423,7 +2458,12 @@ function updateBoat(boat, dt) {
 
     // Physics
     const localWind = getWindAt(boat.x, boat.y);
-    const angleToWind = Math.abs(normalizeAngle(boat.heading - localWind.direction));
+    const twaRadians = Math.abs(normalizeAngle(boat.heading - localWind.direction));
+
+    // Calculate Apparent Wind
+    // Convert boat speed to knots for calculation (speed * 4)
+    const aw = calculateApparentWind(localWind.speed, twaRadians, boat.speed * 4.0);
+    const angleToWind = aw.angle; // Now using AWA for sail trim and physics
 
     // Update Turbulence Particles
     updateTurbulence(boat, dt);
@@ -2464,15 +2504,12 @@ function updateBoat(boat, dt) {
     if (Math.abs(relWind) > 0.1) boat.targetBoomSide = relWind > 0 ? 1 : -1;
 
     // Check Tacking (Rule 13)
-    // Tacking is defined as "from the moment she is beyond head to wind until she is on a close-hauled course".
-    // "Head to wind" means pointing directly into wind (angleToWind ~ 0).
-    // Close-hauled is ~45 deg.
-    // Simplified: If angleToWind is small (in irons), we are tacking.
-    if (angleToWind < Math.PI / 6) { // < 30 degrees
+    // Tacking logic relies on TWA (angle to true wind)
+    const twaAbs = twaRadians;
+    if (twaAbs < Math.PI / 6) { // < 30 degrees
         boat.raceState.isTacking = true;
     } else {
-        // If we were tacking, check if we are on a close-hauled course (e.g. > 40 deg).
-        if (boat.raceState.isTacking && angleToWind > Math.PI / 4.5) {
+        if (boat.raceState.isTacking && twaAbs > Math.PI / 4.5) {
              boat.raceState.isTacking = false;
         }
     }
@@ -2481,7 +2518,10 @@ function updateBoat(boat, dt) {
     boat.boomSide += (boat.targetBoomSide - boat.boomSide) * swingSpeed;
     if (Math.abs(boat.targetBoomSide - boat.boomSide) < 0.01) boat.boomSide = boat.targetBoomSide;
 
-    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
+    // Optimal Sail Angle based on AWA
+    // New: AWA / 2 is a good approximation for trim.
+    let optimalSailAngle = Math.max(0, angleToWind * 0.5);
+    // Clamp
     if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
 
     if (boat.manualTrim && boat.isPlayer) {
@@ -2506,25 +2546,31 @@ function updateBoat(boat, dt) {
     const jibFactor = Math.max(0, 1 - progress * 2);
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
-    const effectiveWind = localWind.speed * (1.0 - boat.badAirIntensity);
-    let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveWind);
-    let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveWind);
+    const effectiveTWS = localWind.speed * (1.0 - boat.badAirIntensity);
+    // Recalculate AWS with effective TWS (bad air reduces TWS)
+    const effectiveAW = calculateApparentWind(effectiveTWS, twaRadians, boat.speed * 4.0);
+
+    // Target speed from AWS Polars
+    // Note: getTargetSpeed now expects AWS and AWA
+    let targetKnotsJib = getTargetSpeed(effectiveAW.speed, effectiveAW.angle, false);
+    let targetKnotsSpin = getTargetSpeed(effectiveAW.speed, effectiveAW.angle, true);
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
 
     const actualMagnitude = Math.abs(boat.sailAngle);
     const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
+    // Trim efficiency penalty
     const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
     targetKnots *= trimEfficiency;
 
     // PLANING LOGIC
-    const twaDeg = Math.abs(angleToWind * 180 / Math.PI);
-    const tws = effectiveWind;
+    const twaDeg = Math.abs(twaRadians * 180 / Math.PI);
     const boatKnots = boat.speed * 4;
 
     let canPlane = (
         twaDeg > (J111_PLANING.minTWA * 180 / Math.PI) &&
         twaDeg < (J111_PLANING.maxTWA * 180 / Math.PI) &&
-        tws > J111_PLANING.minTWS
+        effectiveTWS > J111_PLANING.minTWS &&
+        effectiveAW.speed > 12.0 // Requirement for AWS
     );
 
     // Hysteresis State Machine
@@ -2595,10 +2641,11 @@ function updateBoat(boat, dt) {
          if (checkBoundaryExiting(boat)) window.onRaceEvent('collision_boundary', { boat });
     }
 
+    // Luffing based on AWA
     const effectiveAoA = angleToWind - actualMagnitude;
-    const luffStartThreshold = 0.5;
+    const luffStartThreshold = 0.1; // Radians
     if (effectiveAoA < luffStartThreshold) {
-        boat.luffIntensity = Math.min(1.0, Math.max(0, 1.0 - (effectiveAoA / luffStartThreshold)));
+        boat.luffIntensity = Math.min(1.0, Math.max(0, 1.0 - (effectiveAoA / 0.5))); // Scale intensity
         boat.luffing = true;
     } else {
         boat.luffIntensity = 0;
@@ -2624,10 +2671,8 @@ function updateBoat(boat, dt) {
     }
 
     // Irons Penalty (Extra drag when head-to-wind)
-    // angleToWind is in radians. 0.5 rad is approx 28 degrees.
-    if (angleToWind < 0.5) {
-        // Apply stronger drag deep in irons to maintain tacking difficulty
-        // despite higher inertia. Reduced from 0.993 to 0.997 to be less punitive.
+    // Use TWA for irons check (environment relative)
+    if (twaAbs < 0.5) {
         boat.speed *= Math.pow(0.997, timeScale);
     }
 
@@ -4863,8 +4908,13 @@ function draw() {
                 else planingLabel.classList.add('hidden');
             }
         }
+        // Apparent Wind Calculation for UI
+        const currentTWA = normalizeAngle(player.heading - localWind.direction);
+        const apparent = calculateApparentWind(localWind.speed, currentTWA, player.speed * 4.0);
+
         if (UI.windSpeed) {
-             UI.windSpeed.textContent = localWind.speed.toFixed(1);
+             const displaySpeed = settings.showApparentWind ? apparent.speed : localWind.speed;
+             UI.windSpeed.textContent = displaySpeed.toFixed(1);
 
              // Remove all potential color classes
              UI.windSpeed.classList.remove('text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
@@ -4885,7 +4935,14 @@ function draw() {
                  if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
              }
         }
-        if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI)) + '°';
+
+        const windLabel = document.getElementById('hud-wind-label');
+        if (windLabel) windLabel.textContent = settings.showApparentWind ? "AWA" : "TWA";
+
+        if (UI.windAngle) {
+            const displayAngle = settings.showApparentWind ? apparent.angle : Math.abs(currentTWA);
+            UI.windAngle.textContent = Math.round(displayAngle * (180/Math.PI)) + '°';
+        }
         if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - localWind.direction))).toFixed(1);
 
         if (UI.trimMode) {
