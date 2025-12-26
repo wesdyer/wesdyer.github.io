@@ -3419,40 +3419,42 @@ function update(dt) {
     const windDirY = -Math.cos(state.wind.direction);
 
     // Add Wake for all boats
-    for (const boat of state.boats) {
-        if (boat.speed > 0.25) {
-             const boatDX = Math.sin(boat.heading);
-             const boatDY = -Math.cos(boat.heading);
-             const sternX = boat.x - boatDX * 30;
-             const sternY = boat.y - boatDY * 30;
-             const planing = boat.raceState.isPlaning;
+    if (state.race.status !== 'waiting') {
+        for (const boat of state.boats) {
+            if (boat.speed > 0.25) {
+                const boatDX = Math.sin(boat.heading);
+                const boatDY = -Math.cos(boat.heading);
+                const sternX = boat.x - boatDX * 30;
+                const sternY = boat.y - boatDY * 30;
+                const planing = boat.raceState.isPlaning;
 
-             // Base Wake
-             let wakeProb = 0.2;
-             if (planing) wakeProb = 0.6; // More foam
+                // Base Wake
+                let wakeProb = 0.2;
+                if (planing) wakeProb = 0.6; // More foam
 
-             if (Math.random() < wakeProb) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
+                if (Math.random() < wakeProb) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
 
-             // V-Wake (Waves)
-             let waveProb = 0.25;
-             let spread = 0.1;
-             let scale = 1.0;
-             if (planing) {
-                 waveProb = 0.5;
-                 spread = 0.2; // Wider V
-                 scale = J111_PLANING.wakeLengthScale;
-             }
+                // V-Wake (Waves)
+                let waveProb = 0.25;
+                let spread = 0.1;
+                let scale = 1.0;
+                if (planing) {
+                    waveProb = 0.5;
+                    spread = 0.2; // Wider V
+                    scale = J111_PLANING.wakeLengthScale;
+                }
 
-             if (Math.random() < waveProb) {
-                  const rightX = Math.cos(boat.heading), rightY = Math.sin(boat.heading);
-                  createParticle(sternX - rightX*10, sternY - rightY*10, 'wake-wave', { vx: -rightX*spread, vy: -rightY*spread, scale: scale });
-                  createParticle(sternX + rightX*10, sternY + rightY*10, 'wake-wave', { vx: rightX*spread, vy: rightY*spread, scale: scale });
+                if (Math.random() < waveProb) {
+                    const rightX = Math.cos(boat.heading), rightY = Math.sin(boat.heading);
+                    createParticle(sternX - rightX*10, sternY - rightY*10, 'wake-wave', { vx: -rightX*spread, vy: -rightY*spread, scale: scale });
+                    createParticle(sternX + rightX*10, sternY + rightY*10, 'wake-wave', { vx: rightX*spread, vy: rightY*spread, scale: scale });
 
-                  // Planing Rooster Tail / Spray
-                  if (planing && Math.random() < 0.2) {
-                      createParticle(sternX, sternY, 'wake', { life: 1.5, scale: 1.5 });
-                  }
-             }
+                    // Planing Rooster Tail / Spray
+                    if (planing && Math.random() < 0.2) {
+                        createParticle(sternX, sternY, 'wake', { life: 1.5, scale: 1.5 });
+                    }
+                }
+            }
         }
     }
 
