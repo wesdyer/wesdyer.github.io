@@ -2566,4 +2566,77 @@ const AI_QUOTES = {
       "long": "Let's all finish together!"
     }
   },
+
+  "Blaze": {
+    "player_passes_them": {
+      "short": "Briefly.",
+      "medium": "You woke me.",
+      "long": "That gap closes now."
+    },
+    "they_pass_player": {
+      "short": "Too slow.",
+      "medium": "Blink and I'm gone.",
+      "long": "Speed eats mistakes."
+    },
+    "they_hit_player": {
+      "short": "Contact!",
+      "medium": "Too close to the teeth.",
+      "long": "You're in my water."
+    },
+    "they_were_hit": {
+      "short": "Careless.",
+      "medium": "Don't scratch the paint.",
+      "long": "You can't catch by hitting."
+    },
+    "narrowly_avoided_collision": {
+      "short": "Sharp.",
+      "medium": "Teeth bared.",
+      "long": "Missed by an inch."
+    },
+    "player_narrowly_avoided_collision": {
+      "short": "Flinched.",
+      "medium": "Good instinct.",
+      "long": "Fear saved you."
+    },
+    "moved_into_first": {
+      "short": "Feeding time.",
+      "medium": "Clear water ahead.",
+      "long": "Where I belong."
+    },
+    "moved_into_last": {
+      "short": "Hunting.",
+      "medium": "Stalking from deep.",
+      "long": "The pack is slow."
+    },
+    "rounded_mark": {
+      "short": "Cut.",
+      "medium": "Turning tight.",
+      "long": "Apex hit."
+    },
+    "first_across_start": {
+      "short": "Launched.",
+      "medium": "First blood.",
+      "long": "Perfect attack angle."
+    },
+    "finished_race": {
+      "short": "Done.",
+      "medium": "Prey escaped.",
+      "long": "Relentless pace."
+    },
+    "prestart": {
+      "short": "Circling.",
+      "medium": "Smell fear?",
+      "long": "Ready to strike."
+    },
+    "start_planing": {
+      "short": "Ignition.",
+      "medium": "Fin up, hammer down.",
+      "long": "Hydrodynamic perfection."
+    },
+    "random": {
+      "short": "Speed.",
+      "medium": "Keep moving.",
+      "long": "Hunt or be hunted."
+    }
+  },
 };
