@@ -5948,6 +5948,7 @@ function checkIslandCollisions(dt) {
                  // Grounding Penalty: Lose 60% speed instantly + massive drag
                  boat.speed *= 0.4;
 
+                 if (state.race.status === 'racing') triggerPenalty(boat);
                  if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat });
             }
         }
