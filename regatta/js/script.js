@@ -3968,7 +3968,7 @@ function drawParticles(ctx, layer) {
     if (layer === 'current') {
         // Very dark blue lines
         // Proportional to strength (opacity/count handled in spawn, here just draw)
-        ctx.strokeStyle = '#000033'; // Very dark blue
+        ctx.strokeStyle = '#0640bf'; // Very dark blue
         ctx.lineWidth = 4;
         const c = state.race.conditions.current;
         const dir = c ? c.direction : 0;
