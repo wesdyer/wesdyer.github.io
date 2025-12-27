@@ -5904,7 +5904,12 @@ function generateIslands(boundary) {
         for(let k=0; k<treeCount; k++) {
              const ang = Math.random() * Math.PI * 2;
              const dst = Math.random() * radius * 0.4;
-             trees.push({ x: x + Math.cos(ang)*dst, y: y + Math.sin(ang)*dst, size: 12 + Math.random()*8 });
+             trees.push({
+                 x: x + Math.cos(ang)*dst,
+                 y: y + Math.sin(ang)*dst,
+                 size: 14 + Math.random()*10,
+                 rotation: Math.random() * Math.PI * 2
+             });
         }
 
         islands.push({ x, y, radius, vertices, vegVertices, trees });
@@ -5952,15 +5957,29 @@ function checkIslandCollisions(dt) {
 function drawIslands(ctx) {
     if (!state.course || !state.course.islands) return;
 
+    const drawRoundedPoly = (vertices) => {
+        if (vertices.length < 3) return;
+        ctx.beginPath();
+        const last = vertices[vertices.length - 1];
+        const first = vertices[0];
+        let midX = (last.x + first.x) / 2;
+        let midY = (last.y + first.y) / 2;
+        ctx.moveTo(midX, midY);
+
+        for (let i = 0; i < vertices.length; i++) {
+            const p = vertices[i];
+            const next = vertices[(i + 1) % vertices.length];
+            midX = (p.x + next.x) / 2;
+            midY = (p.y + next.y) / 2;
+            ctx.quadraticCurveTo(p.x, p.y, midX, midY);
+        }
+        ctx.closePath();
+    };
+
     for (const isl of state.course.islands) {
         // Sand
         ctx.fillStyle = '#fde047'; // Yellow 300
-        ctx.beginPath();
-        if (isl.vertices.length > 0) {
-            ctx.moveTo(isl.vertices[0].x, isl.vertices[0].y);
-            for(let i=1; i<isl.vertices.length; i++) ctx.lineTo(isl.vertices[i].x, isl.vertices[i].y);
-        }
-        ctx.closePath();
+        drawRoundedPoly(isl.vertices);
         ctx.fill();
         ctx.strokeStyle = '#eab308'; // Darker sand stroke
         ctx.lineWidth = 2;
@@ -5968,30 +5987,45 @@ function drawIslands(ctx) {
 
         // Vegetation
         ctx.fillStyle = '#16a34a'; // Green 600
-        ctx.beginPath();
-        if (isl.vegVertices.length > 0) {
-            ctx.moveTo(isl.vegVertices[0].x, isl.vegVertices[0].y);
-            for(let i=1; i<isl.vegVertices.length; i++) ctx.lineTo(isl.vegVertices[i].x, isl.vegVertices[i].y);
-        }
-        ctx.closePath();
+        drawRoundedPoly(isl.vegVertices);
         ctx.fill();
 
         // Trees
-        ctx.fillStyle = '#064e3b'; // Emerald 900
         for(const t of isl.trees) {
-            // Simple Palm Top
-            ctx.beginPath();
-            ctx.arc(t.x, t.y, t.size/2, 0, Math.PI*2);
-            ctx.fill();
-            // Fronds
-            ctx.strokeStyle = '#064e3b';
-            ctx.lineWidth = 2;
-            for(let a=0; a<Math.PI*2; a+=Math.PI/2.5) {
-                ctx.beginPath();
-                ctx.moveTo(t.x, t.y);
-                ctx.lineTo(t.x + Math.cos(a)*t.size, t.y + Math.sin(a)*t.size);
-                ctx.stroke();
+            // Shadow/Trunk Base
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath(); ctx.arc(t.x+2, t.y+2, t.size/3, 0, Math.PI*2); ctx.fill();
+
+            const fronds = 7;
+            const startAngle = t.rotation || 0;
+
+            for(let i=0; i<fronds; i++) {
+                 const angle = startAngle + (i / fronds) * Math.PI * 2;
+                 const len = t.size;
+                 const wid = t.size * 0.3;
+
+                 const cx = t.x;
+                 const cy = t.y;
+                 const tx = cx + Math.cos(angle) * len;
+                 const ty = cy + Math.sin(angle) * len;
+
+                 // Draw Leaf
+                 ctx.fillStyle = '#15803d'; // Green 700
+                 ctx.beginPath();
+                 ctx.moveTo(cx, cy);
+                 ctx.quadraticCurveTo(cx + Math.cos(angle-0.4)*len*0.6, cy + Math.sin(angle-0.4)*len*0.6, tx, ty);
+                 ctx.quadraticCurveTo(cx + Math.cos(angle+0.4)*len*0.6, cy + Math.sin(angle+0.4)*len*0.6, cx, cy);
+                 ctx.fill();
+
+                 // Rib
+                 ctx.strokeStyle = '#14532d'; // Green 900
+                 ctx.lineWidth = 1;
+                 ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
             }
+
+            // Center
+            ctx.fillStyle = '#14532d';
+            ctx.beginPath(); ctx.arc(t.x, t.y, t.size/5, 0, Math.PI*2); ctx.fill();
         }
     }
 }
