@@ -2060,7 +2060,10 @@ const UI = {
     valCurrentSpeed: document.getElementById('val-current-speed'),
     uiCurrentArrow: document.getElementById('ui-current-arrow'),
     uiCurrentDirText: document.getElementById('ui-current-dir-text'),
-    uiCurrentBar: document.getElementById('ui-current-bar'),
+    confCurrentEnable: document.getElementById('conf-current-enable'),
+    confCurrentDir: document.getElementById('conf-current-direction'),
+    confCurrentSpeed: document.getElementById('conf-current-speed'),
+    currentControls: document.getElementById('current-controls'),
 
     prCompetitorsGrid: document.getElementById('pr-competitors-grid'),
     startRaceBtn: document.getElementById('start-race-btn'),
@@ -2181,37 +2184,54 @@ function setupPreRaceOverlay() {
     if (UI.confCourseTimer) UI.confCourseTimer.value = state.race.startTimerDuration;
 
     // Update Current Display
-    if (state.race.conditions.current) {
+    const updateCurrentUI = () => {
         const c = state.race.conditions.current;
-        if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = c.speed.toFixed(1) + " kn";
-        if (UI.valCurrentDir) UI.valCurrentDir.textContent = Math.round(c.direction * (180/Math.PI)) + "°";
+        const hasCurrent = !!c;
 
-        if (UI.uiCurrentBar) {
-            const pct = Math.min(100, (c.speed / 3.0) * 100);
-            UI.uiCurrentBar.style.width = pct + "%";
-        }
-
-        if (UI.uiCurrentArrow && UI.uiCurrentDirText) {
-             const svg = UI.uiCurrentArrow.querySelector('svg');
-             if (c.speed < 0.1) {
-                 if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "NONE";
-                 if(svg) svg.style.opacity = 0.2;
+        if (UI.confCurrentEnable) UI.confCurrentEnable.checked = hasCurrent;
+        if (UI.currentControls) {
+             if (hasCurrent) {
+                 UI.currentControls.classList.remove('opacity-50', 'pointer-events-none');
              } else {
-                 // Determine cardinal direction
-                 const deg = (c.direction * (180/Math.PI) + 360) % 360;
-                 const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-                 const idx = Math.round(deg / 45) % 8;
-                 if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = dirs[idx];
-                 if(svg) {
-                     svg.style.opacity = 1.0;
-                     // Rotate arrow. SVG points Up (0 deg) by default?
-                     // If arrow points UP, and direction is N (0), rotate 0.
-                     // Current direction is TOWARDS.
-                     svg.style.transform = `rotate(${deg}deg)`;
-                 }
+                 UI.currentControls.classList.add('opacity-50', 'pointer-events-none');
              }
         }
-    }
+
+        if (hasCurrent) {
+            const deg = Math.round(c.direction * (180/Math.PI));
+            if (UI.confCurrentDir) UI.confCurrentDir.value = deg;
+            if (UI.confCurrentSpeed) UI.confCurrentSpeed.value = c.speed.toFixed(1);
+
+            if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = c.speed.toFixed(1) + " kn";
+            if (UI.valCurrentDir) UI.valCurrentDir.textContent = deg + "°";
+
+            if (UI.uiCurrentArrow && UI.uiCurrentDirText) {
+                 const svg = UI.uiCurrentArrow.querySelector('svg');
+                 if (c.speed < 0.1) {
+                     if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "NONE";
+                     if(svg) svg.style.opacity = 0.2;
+                 } else {
+                     const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+                     const idx = Math.round(deg / 45) % 8;
+                     if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = dirs[idx];
+                     if(svg) {
+                         svg.style.opacity = 1.0;
+                         svg.style.transform = `rotate(${deg}deg)`;
+                     }
+                 }
+            }
+        } else {
+             // Disabled State
+             if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = "OFF";
+             if (UI.valCurrentDir) UI.valCurrentDir.textContent = "-";
+             if (UI.uiCurrentArrow) {
+                 const svg = UI.uiCurrentArrow.querySelector('svg');
+                 if(svg) svg.style.opacity = 0.2;
+             }
+             if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "DISABLED";
+        }
+    };
+    updateCurrentUI();
 
     // Bind Listeners (if not already bound - simple check or rebind is fine since overlay is destroyed? No, persistent.)
     // Better to remove old listeners? Or just use oninput which overwrites?
@@ -2472,6 +2492,39 @@ if (UI.confPuffShift) UI.confPuffShift.addEventListener('input', updateCondition
 if (UI.confCourseDist) UI.confCourseDist.addEventListener('input', updateCourseConfig);
 if (UI.confCourseLegs) UI.confCourseLegs.addEventListener('input', updateCourseConfig);
 if (UI.confCourseTimer) UI.confCourseTimer.addEventListener('input', updateCourseConfig);
+
+if (UI.confCurrentEnable) {
+    UI.confCurrentEnable.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            // Enable default current
+            state.race.conditions.current = {
+                speed: 1.0,
+                direction: Math.random() * Math.PI * 2
+            };
+        } else {
+            state.race.conditions.current = null;
+        }
+        setupPreRaceOverlay(); // Refresh UI
+    });
+}
+if (UI.confCurrentDir) {
+    UI.confCurrentDir.addEventListener('input', (e) => {
+        if (state.race.conditions.current) {
+            const deg = parseFloat(e.target.value);
+            state.race.conditions.current.direction = deg * (Math.PI / 180);
+            setupPreRaceOverlay(); // Update text/arrow
+        }
+    });
+}
+if (UI.confCurrentSpeed) {
+    UI.confCurrentSpeed.addEventListener('input', (e) => {
+        if (state.race.conditions.current) {
+            state.race.conditions.current.speed = parseFloat(e.target.value);
+            setupPreRaceOverlay(); // Update text
+        }
+    });
+}
+
 
 let minimapCtx = null;
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -4079,16 +4132,16 @@ function drawParticles(ctx, layer) {
     if (layer === 'current') {
         // Very dark blue lines
         // Proportional to strength (opacity/count handled in spawn, here just draw)
-        ctx.strokeStyle = '#000033'; // Very dark blue
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#0640bf'; // Very dark blue
+        ctx.lineWidth = 4;
         const c = state.race.conditions.current;
         const dir = c ? c.direction : 0;
-        const dx = Math.sin(dir) * 40;
-        const dy = -Math.cos(dir) * 40;
+        const dx = Math.sin(dir) * 80;
+        const dy = -Math.cos(dir) * 80;
 
         for (const p of state.particles) {
             if (p.type === 'current') {
-                ctx.globalAlpha = p.alpha * 0.4; // Semi-transparent
+                ctx.globalAlpha = p.alpha * 0.8; // Semi-transparent
                 ctx.beginPath();
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(p.x + dx, p.y + dy);

@@ -398,17 +398,26 @@
 
                     <!-- Current -->
                     <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
-                        <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
-                             <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            Current
-                        </h2>
-                        <div class="space-y-5">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-lg font-black text-white uppercase flex items-center gap-2">
+                                <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                Current
+                            </h2>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="conf-current-enable" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+
+                        <div class="space-y-5" id="current-controls">
                             <div>
                                 <div class="flex justify-between items-baseline mb-1">
                                     <div class="text-xs font-bold text-slate-300 uppercase">Set (Direction)</div>
                                     <div id="val-current-direction" class="text-xs font-mono text-indigo-400">0°</div>
                                 </div>
-                                <div class="flex items-center gap-4 bg-slate-900/40 p-2 rounded-lg border border-white/5">
+                                <input type="range" id="conf-current-direction" min="0" max="360" step="15" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+
+                                <div class="flex items-center gap-4 bg-slate-900/40 p-2 rounded-lg border border-white/5 mt-2">
                                      <div id="ui-current-arrow" class="w-8 h-8 rounded-full border border-slate-600 flex items-center justify-center bg-slate-800 shadow-inner">
                                          <svg class="w-5 h-5 text-indigo-400 transform transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
                                      </div>
@@ -420,9 +429,7 @@
                                     <div class="text-xs font-bold text-slate-300 uppercase">Drift (Speed)</div>
                                     <div id="val-current-speed" class="text-xs font-mono text-indigo-400">0.0 kn</div>
                                 </div>
-                                <div class="w-full h-2 bg-slate-700 rounded-lg overflow-hidden mt-1">
-                                     <div id="ui-current-bar" class="h-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
-                                </div>
+                                <input type="range" id="conf-current-speed" min="0" max="3.0" step="0.1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                             </div>
                         </div>
                     </div>
