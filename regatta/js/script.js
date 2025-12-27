@@ -490,133 +490,222 @@ class BotController {
 
     getStrategicHeading(target) {
         const boat = this.boat;
-        const windDir = state.wind.direction; // Global or Local? AI should use Local.
         const localWind = getWindAt(boat.x, boat.y);
         const wd = localWind.direction;
-
+        const current = state.race.conditions.current;
 
         const dx = target.x - boat.x;
         const dy = target.y - boat.y;
         const dist = Math.sqrt(dx*dx + dy*dy);
-        const angleToTarget = Math.atan2(dx, -dy); // 0 is North (Up), but canvas Y is down. 
+        const angleToTarget = Math.atan2(dx, -dy); // 0 is North (Up)
 
         // FORCE / RECOVERY OVERRIDE
         if (this.livenessState === 'force' || this.livenessState === 'recovery') {
              const twa = normalizeAngle(angleToTarget - wd);
-             // If we can fetch it (TWA > 40 deg), go direct
-             if (Math.abs(twa) > 0.7) { // ~40 degrees
-                 return angleToTarget;
-             }
-             // Otherwise, beat to windward on best tack
+             if (Math.abs(twa) > 0.7) return angleToTarget;
              const desiredTack = twa > 0 ? 1 : -1;
-             // Use local wind for best tack
-             return normalizeAngle(wd + desiredTack * 0.75); // 43 degrees
+             return normalizeAngle(wd + desiredTack * 0.75);
         }
-        // Math.atan2(x, -y) gives angle relative to North (0, -1) in CW?
-        // Let's stick to standard math: atan2(dy, dx) is angle from X axis.
-        // In game: Heading 0 = Up (0, -1). Heading PI/2 = Right (1, 0).
-        // dx, dy = target - boat.
-        // If target is (0, -100) (Up), dx=0, dy=-100. atan2(0, 100) = 0. Correct.
+
+        // --- Current Compensation ---
+        // Calculate the heading needed to make our COG point to target.
+        // Or better: Calculate efficient course given current.
+
+        // For Reaching/Fetching check, we must use COG.
+        // Can we fetch the target?
+        // We sail at heading H. Velocity V_water. Current V_current.
+        // V_ground = V_water + V_current.
+        // We want V_ground to align with angleToTarget.
         
-        // Determine Point of Sail
-        const trueWindAngle = normalizeAngle(angleToTarget - wd);
+        let compensatedHeading = angleToTarget;
+        let crabbing = false;
+
+        if (current && current.speed > 0.1) {
+            const cSpeed = current.speed / 4.0; // Current speed in game units/frame
+            const cDir = current.direction;
+
+            // Boat water speed estimate (use current speed or minimal reference)
+            const bSpeed = Math.max(0.5, boat.speed);
+
+            // Angle between Current and Target
+            const diff = normalizeAngle(cDir - angleToTarget);
+
+            // Cross-track component of current
+            // If current is flowing Right (relative to target vector), it pushes us Right.
+            // We must steer Left.
+            const crossCurrent = Math.sin(diff) * cSpeed;
+
+            // Sin rule for triangle of velocities
+            // sin(crabAngle) / cSpeed = sin(diff) / bSpeed? No.
+            // sin(crabAngle) = -crossCurrent / bSpeed
+
+            const ratio = -crossCurrent / bSpeed;
+            if (Math.abs(ratio) < 0.9) {
+                const crabAngle = Math.asin(ratio);
+                compensatedHeading = normalizeAngle(angleToTarget + crabAngle);
+                crabbing = true;
+            }
+        }
+
+        // --- Determine Mode based on Compensated Heading ---
+        // We check TWA relative to the heading we MUST sail to track straight
+        const trueWindAngle = normalizeAngle(compensatedHeading - wd);
         const absTWA = Math.abs(trueWindAngle);
         
         let mode = 'reach';
-        if (absTWA < Math.PI / 3.5) mode = 'upwind'; // 45-50 deg
-        else if (absTWA > Math.PI * 0.7) mode = 'downwind';
+        let optTWA = (45 * Math.PI/180);
 
-        if (mode === 'reach') return angleToTarget;
+        if (absTWA < Math.PI / 3.5) mode = 'upwind';
+        else if (absTWA > Math.PI * 0.7) {
+            mode = 'downwind';
+            optTWA = (150 * Math.PI/180);
 
-        // VMG Sailing
-        let optTWA = (mode === 'upwind') ? (45 * Math.PI/180) : (150 * Math.PI/180);
-
-        // Planing Optimization for AI
-        // If downwind and conditions allow, try to heat it up to planing angles
-        // Planing requires TWS > 12.0 and TWA > 100 < 170.
-        // Best planing angle usually ~135-140.
-        // Check if wind speed allows planing
-        if (mode === 'downwind' && state.wind.speed > J111_PLANING.minTWS) {
-             // Calculate potential VMG at 150 vs 140(planing)
-             // Approx: 150 deg gives X speed. 140 deg gives Y speed * 1.20 (planing).
-             // cos(30) = 0.866. cos(40) = 0.766.
-             // If Speed increase > 13%, planing pays.
-             // Multiplier is 1.20 (20%). So it pays!
-             // Target Planing Angle ~140 degrees (2.44 rad)
-             optTWA = 140 * Math.PI/180;
-        }
-        
-        // Current Tack
-        const currentTack = normalizeAngle(boat.heading - wd) > 0 ? 1 : -1;
-        
-        // Ideal headings
-        const hStarboard = normalizeAngle(wd + optTWA); // Wind + 45
-        const hPort = normalizeAngle(wd - optTWA);      // Wind - 45
-        
-        // Check Laylines
-        // If we can fetch the target, sail directly (clamped to close hauled)
-        if (mode === 'upwind') {
-            if (absTWA > optTWA) return angleToTarget; // We can fetch it
-        } else {
-            // Downwind, we can always sail direct if not too deep
-            // But VMG is faster than dead downwind. 
-            // If TWA is e.g. 170, we should gybe.
-            // If we aim at target and TWA > 150, we should head up to 150.
-            if (absTWA < optTWA) return angleToTarget; // We can fetch (reaching)
-        }
-
-        // Tacking Logic
-        // Choose the tack that brings us closer to the centerline (min distance to target axis)
-        // Or simply: Look at angleToTarget.
-        // If angleToTarget is positive (right of wind), Starboard (1) is closer.
-        // If angleToTarget is negative (left of wind), Port (-1) is closer.
-        
-        // TWA is angleToTarget - Wind.
-        // If TWA > 0, Target is Right of Wind. We want Starboard tack (Wind+45) which heads Right.
-        const desiredTack = trueWindAngle > 0 ? 1 : -1;
-        
-        let selectedHeading = (currentTack === 1) ? hStarboard : hPort;
-
-        // Should we tack/gybe?
-        if (currentTack !== desiredTack) {
-            // We are on wrong tack.
-            // Only tack if we have crossed the "layline" significantly or timer expired.
-            // Simple logic: If we are far enough past the center line.
-            
-            // Or use VMG comparison with hysteresis
-            const vmgCurrent = Math.cos(normalizeAngle(boat.heading - angleToTarget)); // Approx
-            // Better: Project velocity on vector to target.
-            
-            // Simple Layline:
-            // We want to tack when angleToTarget relative to wind exceeds our tack angle?
-            // No, when angleToTarget aligns with the *other* tack.
-            
-            // Threshold with hysteresis
-            const threshold = 0.1; // Radians past ideal
-            if (boat.raceState.leg === 0) {
-                // Start leg: don't tack excessively
-                if (this.tackCooldown <= 0) {
-                     this.tackCooldown = 5.0;
-                     return (desiredTack === 1) ? hStarboard : hPort;
-                }
-            } else {
-                // If we persist on current tack, we go further away from target line.
-                // Tack if we are "overstanding" or close to it.
-                // Check if the OTHER tack points directly at target (Layline)
-                const otherHeading = (currentTack === 1) ? hPort : hStarboard;
-                const angleError = Math.abs(normalizeAngle(otherHeading - angleToTarget));
-                
-                if (angleError < 0.1) { // Close to layline
-                    if (this.tackCooldown <= 0) {
-                        this.tackCooldown = 15.0;
-                        return otherHeading;
-                    }
-                }
+            // Planing Check
+            if (state.wind.speed > J111_PLANING.minTWS) {
+                 optTWA = 140 * Math.PI/180;
             }
         }
+
+        // 1. Can we FETCH the target?
+        // If on a reach, sail the compensated heading directly.
+        if (mode === 'reach') {
+            return compensatedHeading;
+        }
         
-        // Keep current if no reason to switch
-        return selectedHeading;
+        if (mode === 'upwind') {
+            // If we can point high enough to track to target (including current effect)
+            // Minimum sailing angle ~45 deg
+            if (absTWA > optTWA) {
+                return compensatedHeading; // We can fetch it
+            }
+        } else {
+            // Downwind fetch check
+            if (absTWA < optTWA) {
+                return compensatedHeading;
+            }
+        }
+
+        // 2. Tacking / Gybing Logic
+        // We cannot fetch. We must choose the best Tack.
+        
+        const hStarboard = normalizeAngle(wd + optTWA);
+        const hPort = normalizeAngle(wd - optTWA);
+        
+        // Helper to score a tack
+        // Score = VMG to Target (using COG) + Pressure Bonus
+        const scoreTack = (heading) => {
+            // 1. Calculate COG
+            let cog = heading;
+            let speedOverGround = boat.speed;
+            
+            if (current && current.speed > 0.1) {
+                const cSpeed = current.speed / 4.0;
+                const cDir = current.direction;
+                const bSpeed = Math.max(1.0, boat.speed); // Assume good speed on tack
+                
+                const vx = Math.sin(heading)*bSpeed + Math.sin(cDir)*cSpeed;
+                const vy = -Math.cos(heading)*bSpeed - Math.cos(cDir)*cSpeed;
+
+                cog = Math.atan2(vx, -vy); // Standard bearing
+                speedOverGround = Math.sqrt(vx*vx + vy*vy);
+            }
+
+            // VMG to Target
+            // cos(angle between COG and Target)
+            const angleErr = normalizeAngle(cog - angleToTarget);
+            let score = Math.cos(angleErr) * speedOverGround;
+
+            // 2. Pressure Scouting (Look Ahead)
+            // Project position 5 seconds ahead
+            const lookAheadTime = 5.0 * 60; // frames
+            const projX = boat.x + Math.sin(cog) * speedOverGround * lookAheadTime;
+            const projY = boat.y - Math.cos(cog) * speedOverGround * lookAheadTime;
+
+            // Sample wind there
+            const futureWind = getWindAt(projX, projY);
+
+            // Bonus for stronger wind
+            // Base wind 10. If we find 12, +20% score?
+            const windBonus = (futureWind.speed - state.wind.speed); // Relative to base
+            score += windBonus * 0.1; // Weighting factor
+
+            // Bonus for Shift (Lift)
+            // If future wind direction allows better pointing next time?
+            // Complex. But simply sailing into a header is bad?
+            // Actually VMG calculation handles the *current* wind direction.
+            // If we sail into a lift, our future VMG improves.
+            // Let's assume Pressure is the main lookahead factor for now.
+
+            return score;
+        };
+
+        const scoreS = scoreTack(hStarboard);
+        const scoreP = scoreTack(hPort);
+
+        // Hysteresis / Stickiness
+        // Bias towards current tack to prevent rapid switching
+        const currentTack = normalizeAngle(boat.heading - wd) > 0 ? 1 : -1; // 1=Stbd, -1=Port
+        const tackBonus = 0.1; // Equivalent to slight VMG advantage
+
+        let preferredHeading = (scoreS > scoreP) ? hStarboard : hPort;
+
+        if (currentTack === 1 && scoreS + tackBonus > scoreP) preferredHeading = hStarboard;
+        if (currentTack === -1 && scoreP + tackBonus > scoreS) preferredHeading = hPort;
+
+        // Check Laylines (Overstanding)
+        // If on the preferred tack, check if we crossed the layline for the *other* tack.
+        // i.e., does the *other* tack now point directly at the target (or past it)?
+
+        // If we are on Starboard, and Port tack COG points at target, we should tack.
+        const otherTackHeading = (preferredHeading === hStarboard) ? hPort : hStarboard;
+
+        // Calculate COG for other tack
+        let otherCog = otherTackHeading;
+        if (current && current.speed > 0.1) {
+             // ... same COG math ...
+             const cSpeed = current.speed / 4.0;
+             const cDir = current.direction;
+             const bSpeed = Math.max(1.0, boat.speed);
+             const vx = Math.sin(otherTackHeading)*bSpeed + Math.sin(cDir)*cSpeed;
+             const vy = -Math.cos(otherTackHeading)*bSpeed - Math.cos(cDir)*cSpeed;
+             otherCog = Math.atan2(vx, -vy);
+        }
+        
+        // Angle from Other Tack COG to Target
+        const otherError = normalizeAngle(otherCog - angleToTarget);
+
+        // If we are on Starboard (preferred), and Port tack aligns with target...
+        // Wait, layline logic:
+        // We sail Starboard until Port tack fetches the mark.
+        // So if we are sailing Starboard, and Port Tack VMG is perfect (angle 0), we tack.
+        // Actually, if we go *past* 0 (sign change), we overstood.
+
+        // Only trigger tack if we are currently on the 'wrong' tack relative to geometry
+        // but 'score' keeps us there due to wind.
+        // Actually, explicit Layline check overrides score.
+
+        if (Math.abs(otherError) < 0.05) { // 3 degrees tolerance
+             if (this.tackCooldown <= 0) {
+                 this.tackCooldown = 10.0;
+                 return otherTackHeading;
+             }
+        }
+
+        // Cooldown check
+        if (this.tackCooldown > 0) this.tackCooldown -= 1/60; // approx dt
+
+        // If we decide to switch tacks based on score
+        const targetTackSign = (preferredHeading === hStarboard) ? 1 : -1;
+        if (targetTackSign !== currentTack && this.tackCooldown > 0) {
+            // Keep current if cooldown active
+            return (currentTack === 1) ? hStarboard : hPort;
+        }
+
+        if (targetTackSign !== currentTack) {
+             this.tackCooldown = 5.0; // Reset cooldown on switch
+        }
+
+        return preferredHeading;
     }
 
     getStartCommand() {
