@@ -4274,7 +4274,7 @@ function drawParticles(ctx, layer) {
 
         for (const p of state.particles) {
             if (p.type === 'current') {
-                ctx.globalAlpha = p.alpha * 0.8; // Semi-transparent
+                ctx.globalAlpha = p.alpha * 0.4; // Semi-transparent
                 ctx.beginPath();
                 ctx.moveTo(p.x, p.y);
                 ctx.lineTo(p.x + dx, p.y + dy);
