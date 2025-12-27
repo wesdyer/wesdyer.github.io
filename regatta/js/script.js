@@ -2170,6 +2170,55 @@ function updateCourseConfig() {
     }
 }
 
+// Update Current Display
+function updateCurrentUI() {
+    const c = state.race.conditions.current;
+    const hasCurrent = !!c;
+
+    if (UI.confCurrentEnable) UI.confCurrentEnable.checked = hasCurrent;
+    if (UI.currentControls) {
+            if (hasCurrent) {
+                UI.currentControls.classList.remove('opacity-50', 'pointer-events-none');
+            } else {
+                UI.currentControls.classList.add('opacity-50', 'pointer-events-none');
+            }
+    }
+
+    if (hasCurrent) {
+        const deg = Math.round(c.direction * (180/Math.PI));
+        if (UI.confCurrentDir) UI.confCurrentDir.value = deg;
+        if (UI.confCurrentSpeed) UI.confCurrentSpeed.value = c.speed.toFixed(1);
+
+        if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = c.speed.toFixed(1) + " kn";
+        if (UI.valCurrentDir) UI.valCurrentDir.textContent = deg + "°";
+
+        if (UI.uiCurrentArrow && UI.uiCurrentDirText) {
+                const svg = UI.uiCurrentArrow.querySelector('svg');
+                if (c.speed < 0.1) {
+                    if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "NONE";
+                    if(svg) svg.style.opacity = 0.2;
+                } else {
+                    const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+                    const idx = Math.round(deg / 45) % 8;
+                    if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = dirs[idx];
+                    if(svg) {
+                        svg.style.opacity = 1.0;
+                        svg.style.transform = `rotate(${deg}deg)`;
+                    }
+                }
+        }
+    } else {
+            // Disabled State
+            if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = "OFF";
+            if (UI.valCurrentDir) UI.valCurrentDir.textContent = "-";
+            if (UI.uiCurrentArrow) {
+                const svg = UI.uiCurrentArrow.querySelector('svg');
+                if(svg) svg.style.opacity = 0.2;
+            }
+            if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "DISABLED";
+    }
+};
+
 function setupPreRaceOverlay() {
     if (!UI.preRaceOverlay) return;
 
@@ -2216,54 +2265,6 @@ function setupPreRaceOverlay() {
     if (UI.confCourseLegs) UI.confCourseLegs.value = state.race.totalLegs;
     if (UI.confCourseTimer) UI.confCourseTimer.value = state.race.startTimerDuration;
 
-    // Update Current Display
-    const updateCurrentUI = () => {
-        const c = state.race.conditions.current;
-        const hasCurrent = !!c;
-
-        if (UI.confCurrentEnable) UI.confCurrentEnable.checked = hasCurrent;
-        if (UI.currentControls) {
-             if (hasCurrent) {
-                 UI.currentControls.classList.remove('opacity-50', 'pointer-events-none');
-             } else {
-                 UI.currentControls.classList.add('opacity-50', 'pointer-events-none');
-             }
-        }
-
-        if (hasCurrent) {
-            const deg = Math.round(c.direction * (180/Math.PI));
-            if (UI.confCurrentDir) UI.confCurrentDir.value = deg;
-            if (UI.confCurrentSpeed) UI.confCurrentSpeed.value = c.speed.toFixed(1);
-
-            if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = c.speed.toFixed(1) + " kn";
-            if (UI.valCurrentDir) UI.valCurrentDir.textContent = deg + "°";
-
-            if (UI.uiCurrentArrow && UI.uiCurrentDirText) {
-                 const svg = UI.uiCurrentArrow.querySelector('svg');
-                 if (c.speed < 0.1) {
-                     if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "NONE";
-                     if(svg) svg.style.opacity = 0.2;
-                 } else {
-                     const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-                     const idx = Math.round(deg / 45) % 8;
-                     if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = dirs[idx];
-                     if(svg) {
-                         svg.style.opacity = 1.0;
-                         svg.style.transform = `rotate(${deg}deg)`;
-                     }
-                 }
-            }
-        } else {
-             // Disabled State
-             if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = "OFF";
-             if (UI.valCurrentDir) UI.valCurrentDir.textContent = "-";
-             if (UI.uiCurrentArrow) {
-                 const svg = UI.uiCurrentArrow.querySelector('svg');
-                 if(svg) svg.style.opacity = 0.2;
-             }
-             if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "DISABLED";
-        }
-    };
     updateCurrentUI();
 
     // Bind Listeners (if not already bound - simple check or rebind is fine since overlay is destroyed? No, persistent.)
@@ -2537,7 +2538,7 @@ if (UI.confCurrentEnable) {
         } else {
             state.race.conditions.current = null;
         }
-        setupPreRaceOverlay(); // Refresh UI
+        updateCurrentUI(); // Refresh UI
     });
 }
 if (UI.confCurrentDir) {
@@ -2545,7 +2546,7 @@ if (UI.confCurrentDir) {
         if (state.race.conditions.current) {
             const deg = parseFloat(e.target.value);
             state.race.conditions.current.direction = deg * (Math.PI / 180);
-            setupPreRaceOverlay(); // Update text/arrow
+            updateCurrentUI(); // Update text/arrow
         }
     });
 }
@@ -2553,7 +2554,7 @@ if (UI.confCurrentSpeed) {
     UI.confCurrentSpeed.addEventListener('input', (e) => {
         if (state.race.conditions.current) {
             state.race.conditions.current.speed = parseFloat(e.target.value);
-            setupPreRaceOverlay(); // Update text
+            updateCurrentUI(); // Update text
         }
     });
 }
