@@ -3933,7 +3933,7 @@ function update(dt) {
         // "Visual effects should be proportional to the strength"
         // Strength affects line visibility/count.
         // Chance to spawn:
-        const spawnChance = 0.2 + (c.speed / 3.0) * 0.5;
+        const spawnChance = (0.2 + (c.speed / 3.0) * 0.5) * 0.25;
         if (Math.random() < spawnChance) {
              let range = Math.max(canvas.width, canvas.height) * 1.5;
              createParticle(state.camera.x + (Math.random()-0.5)*range, state.camera.y + (Math.random()-0.5)*range, 'current', { life: 1.0 + Math.random(), alpha: Math.min(1, c.speed/1.5) });
