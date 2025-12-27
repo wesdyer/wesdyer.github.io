@@ -1038,5 +1038,21 @@ const AI_QUOTES = {
     "prestart": "No fear!",
     "start_planing": "Blink and miss me!",
     "random": "Never lift!"
+  },
+  "Cheer": {
+    "player_passes_them": "Yay! Go you!",
+    "they_pass_player": "Woohoo! Passing through!",
+    "they_hit_player": "Oopsie! My bad!",
+    "they_were_hit": "It's okay! No worries!",
+    "narrowly_avoided_collision": "Close one! Teehee!",
+    "player_narrowly_avoided_collision": "Nice save! High five!",
+    "moved_into_first": "I'm leading! Can you believe it?",
+    "moved_into_last": "I'm still having fun back here!",
+    "rounded_mark": "Round we go! Whee!",
+    "first_across_start": "Best start ever!",
+    "finished_race": "That was so much fun!",
+    "prestart": "I'm so excited!",
+    "start_planing": "We're flying now! Yippee!",
+    "random": "Isn't sailing the best?"
   }
 };
