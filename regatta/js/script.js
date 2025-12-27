@@ -6028,11 +6028,12 @@ function resetGame() {
 
     // Current Generation
     // 70% chance of zero. 30% chance of 0-3 knots.
-    let currentSpeed = 0;
-    let currentDir = 0;
+    let currentData = null;
     if (Math.random() > 0.7) {
-        currentSpeed = Math.random() * 3.0;
-        currentDir = Math.random() * Math.PI * 2;
+        currentData = {
+            speed: Math.random() * 3.0,
+            direction: Math.random() * Math.PI * 2
+        };
     }
 
     state.race.conditions = {
@@ -6042,10 +6043,7 @@ function resetGame() {
         gustStrengthBias,
         puffShiftiness,
         directionBias,
-        current: {
-            speed: currentSpeed,
-            direction: currentDir
-        }
+        current: currentData
     };
     state.time = 0;
     state.race.status = 'waiting'; // Wait for user to start
