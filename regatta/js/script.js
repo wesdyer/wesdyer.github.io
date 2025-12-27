@@ -985,6 +985,15 @@ class BotController {
     }
 }
 
+// Wind Configuration
+const WIND_CONFIG = {
+    presets: {
+        STEADY: { amp: 4, period: 90, slew: 0.2 },
+        NORMAL: { amp: 10, period: 60, slew: 0.4 },
+        SHIFTY: { amp: 18, period: 45, slew: 0.6 }
+    }
+};
+
 // AI Configuration
 const AI_CONFIG = [
     { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Relaxed veteran who instinctively finds perfect wind." },
@@ -1191,6 +1200,7 @@ const state = {
     wind: {
         direction: 0,
         baseDirection: 0,
+        currentShift: 0,
         speed: 10,
         baseSpeed: 10
     },
@@ -1314,6 +1324,177 @@ class Boat {
         this.creature = config ? (config.creature || "Unknown") : "Unknown";
         this.prevRank = 0;
     }
+}
+
+function updateBaseWind(dt) {
+    const cond = state.race.conditions;
+
+    // Interpolate Config based on Shiftiness (0-1)
+    const s = cond.shiftiness !== undefined ? cond.shiftiness : 0.5;
+
+    // Lerp Helper
+    const lerp = (a, b, t) => a + (b - a) * t;
+
+    let pAmp, pPeriod, pSlew;
+
+    if (s < 0.5) {
+        const t = s * 2;
+        pAmp = lerp(WIND_CONFIG.presets.STEADY.amp, WIND_CONFIG.presets.NORMAL.amp, t);
+        pPeriod = lerp(WIND_CONFIG.presets.STEADY.period, WIND_CONFIG.presets.NORMAL.period, t);
+        pSlew = lerp(WIND_CONFIG.presets.STEADY.slew, WIND_CONFIG.presets.NORMAL.slew, t);
+    } else {
+        const t = (s - 0.5) * 2;
+        pAmp = lerp(WIND_CONFIG.presets.NORMAL.amp, WIND_CONFIG.presets.SHIFTY.amp, t);
+        pPeriod = lerp(WIND_CONFIG.presets.NORMAL.period, WIND_CONFIG.presets.SHIFTY.period, t);
+        pSlew = lerp(WIND_CONFIG.presets.NORMAL.slew, WIND_CONFIG.presets.SHIFTY.slew, t);
+    }
+
+    // Update Oscillator Phase
+    if (state.wind.oscillator === undefined) state.wind.oscillator = 0;
+    state.wind.oscillator += dt * (2 * Math.PI / pPeriod);
+
+    // Target Shift (Sine + Low Freq Noise)
+    const noise = fractalNoise(state.time * 0.05) * 1.5;
+    const targetDeg = pAmp * Math.sin(state.wind.oscillator + noise);
+
+    // Slew Limiting on Current Shift (No wrapping issues here as shifts are small)
+    if (state.wind.currentShift === undefined) state.wind.currentShift = 0;
+    const currentShiftDeg = state.wind.currentShift * (180 / Math.PI);
+
+    const diff = targetDeg - currentShiftDeg;
+    const maxStep = pSlew * dt;
+
+    let newShiftDeg = currentShiftDeg;
+    if (Math.abs(diff) < maxStep) {
+        newShiftDeg = targetDeg;
+    } else {
+        newShiftDeg += Math.sign(diff) * maxStep;
+    }
+
+    state.wind.currentShift = newShiftDeg * (Math.PI / 180);
+    state.wind.direction = normalizeAngle(state.wind.baseDirection + state.wind.currentShift);
+
+    // Variability (Speed)
+    const v = cond.variability !== undefined ? cond.variability : 0.5;
+    const varPct = 0.05 + v * 0.25;
+    const speedNoise = fractalNoise(state.time * 0.2 + 50);
+    state.wind.speed = Math.max(2, state.wind.baseSpeed * (1.0 + speedNoise * varPct));
+
+    // Debug History
+    if (!state.wind.history) state.wind.history = [];
+    if (!state.wind.debugTimer) state.wind.debugTimer = 0;
+    state.wind.debugTimer -= dt;
+    if (state.wind.debugTimer <= 0) {
+        state.wind.debugTimer = 0.5;
+        state.wind.history.push({ t: state.time, dir: newShiftDeg, speed: state.wind.speed });
+        if (state.wind.history.length > 240) state.wind.history.shift();
+    }
+}
+
+function drawWindDebug(ctx) {
+    if (!settings.debugMode) return;
+
+    const h = 100;
+    const w = 200;
+    const x = canvas.width - w - 20;
+    const y = 80; // Below Top Right HUD
+
+    ctx.save();
+
+    // Background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(x, y, w, h);
+
+    // Center Line
+    ctx.strokeStyle = '#666';
+    ctx.beginPath();
+    ctx.moveTo(x, y + h/2);
+    ctx.lineTo(x + w, y + h/2);
+    ctx.stroke();
+
+    // Plot
+    if (state.wind.history && state.wind.history.length > 1) {
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        const now = state.time;
+        // 120s window
+        for (const p of state.wind.history) {
+            const timeOffset = now - p.t;
+            if (timeOffset > 120) continue;
+
+            const px = x + w - (timeOffset / 120) * w;
+            // Scale: +/- 30 deg fills height
+            const py = y + h/2 - (p.dir / 30) * (h/2);
+            ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+
+        // Plot Speed (Cyan)
+        ctx.strokeStyle = '#22d3ee';
+        ctx.beginPath();
+        let first = true;
+        for (const p of state.wind.history) {
+            const timeOffset = now - p.t;
+            if (timeOffset > 120) continue;
+
+            const px = x + w - (timeOffset / 120) * w;
+            // Scale: 0-30 knots fills height (bottom up)
+            // base y is y+h.
+            const py = (y + h) - (p.speed / 30) * h;
+            if (first) { ctx.moveTo(px, py); first = false; }
+            else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    }
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px monospace';
+    ctx.fillText("Base Wind Shift (+/- 30°)", x + 5, y + 15);
+    ctx.fillStyle = '#22d3ee';
+    ctx.fillText("Wind Speed (0-30kn)", x + 5, y + 25);
+    ctx.fillStyle = '#fff';
+
+    // Current Delta
+    const shift = (state.wind.currentShift || 0) * (180/Math.PI);
+    ctx.fillText(`Cur: ${shift > 0 ? '+' : ''}${shift.toFixed(1)}°`, x + 5, y + h - 5);
+
+    // Per-Boat Delta (Relative to 30s ago)
+    // Find history point ~30s ago
+    let pastShift = shift;
+    const now = state.time;
+    if (state.wind.history) {
+        const past = state.wind.history.find(p => p.t >= now - 30);
+        if (past) pastShift = past.dir;
+    }
+    const delta30 = shift - pastShift;
+    ctx.textAlign = 'right';
+    ctx.fillText(`30s Δ: ${delta30 > 0 ? '+' : ''}${delta30.toFixed(1)}°`, x + w - 5, y + h - 5);
+
+    ctx.restore();
+}
+
+function drawDebugWorld(ctx) {
+    if (!settings.debugMode) return;
+
+    ctx.save();
+    for (const boat of state.boats) {
+        if (boat.raceState.finished) continue;
+        const w = getWindAt(boat.x, boat.y);
+
+        // Draw Wind Vector
+        ctx.beginPath();
+        ctx.moveTo(boat.x, boat.y);
+        const len = 40;
+        const dx = Math.sin(w.direction) * len;
+        const dy = -Math.cos(w.direction) * len;
+        ctx.lineTo(boat.x + dx, boat.y + dy);
+        ctx.strokeStyle = '#ff00ff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+    }
+    ctx.restore();
 }
 
 // Gust System
@@ -2372,6 +2553,11 @@ window.addEventListener('keydown', (e) => {
     if (e.key === '`' || e.code === 'Backquote') {
         state.showNavAids = !state.showNavAids;
         settings.navAids = state.showNavAids;
+        saveSettings();
+    }
+    if (e.key === 'F8') {
+        e.preventDefault();
+        settings.debugMode = !settings.debugMode;
         saveSettings();
     }
 });
@@ -3560,30 +3746,7 @@ function update(dt) {
     state.time += 0.24 * dt;
     const timeScale = dt * 60;
 
-    // Wind Dynamics (Global)
-    // New Model: Base Wind + Shiftiness + Variability
-    const cond = state.race.conditions || {};
-
-    // 1. Shiftiness (Directional)
-    // Range: 3 to 30 degrees
-    const shiftDeg = 3 + (cond.shiftiness || 0) * 27;
-    const shiftRad = shiftDeg * (Math.PI / 180);
-
-    // Frequency increases with shiftiness?
-    // "Base TWD should always be changing slowly"
-    const shiftFreq = 0.05 + (cond.shiftiness || 0) * 0.1;
-    const dirNoise = fractalNoise(state.time * shiftFreq);
-    state.wind.direction = state.wind.baseDirection + dirNoise * shiftRad;
-
-    // 2. Variability (Speed)
-    // Range: 5% to 40%
-    // Independent from shiftiness
-    const varPct = 0.05 + (cond.variability || 0) * 0.35;
-    const varFreq = 0.1 + (cond.variability || 0) * 0.2;
-    const speedNoise = fractalNoise(state.time * varFreq + 100); // offset
-    const speedMod = 1.0 + speedNoise * varPct;
-    state.wind.speed = Math.max(2, state.wind.baseSpeed * speedMod);
-
+    updateBaseWind(dt);
     updateGusts(dt);
 
     // Current Visuals
@@ -5251,6 +5414,8 @@ function draw() {
         }
     }
 
+    drawDebugWorld(ctx);
+
     ctx.restore();
 
     // Camera Message
@@ -5289,6 +5454,7 @@ function draw() {
     }
 
     drawMinimap();
+    drawWindDebug(ctx);
 
     // UI Updates (Player Data)
     const localWind = getWindAt(player.x, player.y);
@@ -5563,6 +5729,10 @@ function resetGame() {
     state.wind.speed = state.wind.baseSpeed;
     state.wind.baseDirection = Math.random() * Math.PI * 2;
     state.wind.direction = state.wind.baseDirection;
+    state.wind.currentShift = 0;
+    state.wind.oscillator = Math.random() * Math.PI * 2; // Random phase
+    state.wind.history = [];
+    state.wind.debugTimer = 0;
     state.gusts = [];
 
     // Randomized Biases for New Wind Model
@@ -5680,6 +5850,76 @@ function resetGame() {
 }
 
 function restartRace() { resetGame(); togglePause(false); }
+
+// Batch Simulation Harness
+window.runBatchSim = function(count = 50) {
+    console.log(`Starting Batch Sim of ${count} races...`);
+    const results = {
+        races: 0,
+        avgTacksWinner: 0,
+        avgTacksLosers: 0,
+        wins: { player: 0, ai: 0 },
+        collisions: 0
+    };
+
+    // Mocking window.onRaceEvent to capture data
+    const oldEvent = window.onRaceEvent;
+    window.onRaceEvent = (type, data) => {
+        if (type === 'collision_boat') results.collisions++;
+    };
+
+    settings.soundEnabled = false;
+    settings.musicEnabled = false;
+
+    let totalTacksWinner = 0;
+    let totalTacksLosers = 0;
+
+    for (let i=0; i<count; i++) {
+        resetGame();
+        state.race.status = 'racing'; // Skip prestart
+        state.race.timer = 0;
+
+        let simTime = 0;
+        const maxTime = 600; // 10 mins limit
+        const dt = 1/60;
+
+        while (state.race.status !== 'finished' && simTime < maxTime) {
+            update(dt);
+            simTime += dt;
+        }
+
+        results.races++;
+        // Analyze results
+        const winner = state.boats.find(b => b.lbRank === 0);
+        if (winner) {
+            if (winner.isPlayer) results.wins.player++; else results.wins.ai++;
+            // Count tacks (sum of Upwind legs 1 & 3)
+            const winnerTacks = (winner.raceState.legManeuvers[1] || 0) + (winner.raceState.legManeuvers[3] || 0);
+            totalTacksWinner += winnerTacks;
+        }
+
+        // Losers Stats
+        let raceLoserTacks = 0;
+        let loserCount = 0;
+        for (const b of state.boats) {
+            if (b !== winner && !b.raceState.resultStatus) { // Only finished boats
+                 const tacks = (b.raceState.legManeuvers[1] || 0) + (b.raceState.legManeuvers[3] || 0);
+                 raceLoserTacks += tacks;
+                 loserCount++;
+            }
+        }
+        if (loserCount > 0) totalTacksLosers += (raceLoserTacks / loserCount);
+
+        console.log(`Race ${i+1}/${count} finished in ${simTime.toFixed(1)}s. Winner: ${winner ? winner.name : 'None'}`);
+    }
+
+    results.avgTacksWinner = totalTacksWinner / count;
+    results.avgTacksLosers = totalTacksLosers / count;
+
+    window.onRaceEvent = oldEvent;
+    console.log("Batch Sim Complete", results);
+    return results;
+};
 
 resetGame();
 requestAnimationFrame(loop);
