@@ -756,7 +756,8 @@ class BotController {
                 // Determine Role
                 let rowBoat = null;
                 try {
-                     rowBoat = getRightOfWay(this.boat, other);
+                     const res = getRightOfWay(this.boat, other);
+                     rowBoat = res.boat;
                 } catch(e) { }
 
                 const myRole = (rowBoat === this.boat) ? 'STAND_ON' : 'GIVE_WAY';
@@ -909,8 +910,8 @@ class BotController {
                         } else {
                             // Check Rules
                             try {
-                                const row = getRightOfWay(boat, other);
-                                if (row === other) ruleViolation = true; // We are Give-Way
+                                const res = getRightOfWay(boat, other);
+                                if (res.boat === other) ruleViolation = true; // We are Give-Way
                             } catch(e) {}
                         }
                     } else if (distSq < 250 * 250 && this.livenessState === 'normal') {
@@ -1399,8 +1400,8 @@ function drawWindDebug(ctx) {
 
     const h = 100;
     const w = 200;
-    const x = canvas.width - w - 20;
-    const y = 80; // Below Top Right HUD
+    const x = 230;
+    const y = 100;
 
     ctx.save();
 
@@ -1474,6 +1475,38 @@ function drawWindDebug(ctx) {
     const delta30 = shift - pastShift;
     ctx.textAlign = 'right';
     ctx.fillText(`30s Δ: ${delta30 > 0 ? '+' : ''}${delta30.toFixed(1)}°`, x + w - 5, y + h - 5);
+
+    // Rule Debug Info
+    ctx.textAlign = 'left';
+    let textY = y + h + 20;
+    const player = state.boats[0];
+    const checkDist = 400;
+
+    let conflictCount = 0;
+    for (const other of state.boats) {
+        if (other === player) continue;
+        const distSq = (player.x - other.x)**2 + (player.y - other.y)**2;
+        if (distSq < checkDist * checkDist && isConflictSoon(player, other)) {
+            conflictCount++;
+        }
+    }
+
+    if (conflictCount > 0) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        ctx.fillRect(x, y + h + 5, 300, conflictCount * 20 + 10);
+    }
+
+    for (const other of state.boats) {
+        if (other === player) continue;
+        const distSq = (player.x - other.x)**2 + (player.y - other.y)**2;
+        if (distSq < checkDist * checkDist && isConflictSoon(player, other)) {
+            const res = getRightOfWay(player, other);
+            const isWinner = res.boat === player;
+            ctx.fillStyle = isWinner ? '#4ade80' : '#ef4444';
+            ctx.fillText(`${other.name} - ${res.rule}: ${res.reason}`, x + 5, textY);
+            textY += 20;
+        }
+    }
 
     ctx.restore();
 }
@@ -2722,7 +2755,11 @@ function getRightOfWay(b1, b2) {
     if (rule18Applies) {
         // Simplification: If one is in zone and other isn't, the one in zone usually established it first.
         if (b1.raceState.inZone !== b2.raceState.inZone) {
-            return b1.raceState.inZone ? b1 : b2;
+            return {
+                boat: b1.raceState.inZone ? b1 : b2,
+                rule: "Rule 18",
+                reason: "Mark-Room (Zone Entry)"
+            };
         }
 
         // Both in zone
@@ -2744,28 +2781,31 @@ function getRightOfWay(b1, b2) {
 
             const d1 = (b1.x - targetMark.x)**2 + (b1.y - targetMark.y)**2;
             const d2 = (b2.x - targetMark.x)**2 + (b2.y - targetMark.y)**2;
-            return (d1 < d2) ? b1 : b2;
+            const winner = (d1 < d2) ? b1 : b2;
+            return { boat: winner, rule: "Rule 18", reason: "Mark-Room (Inside)" };
         } else {
             // Clear Ahead has ROW
-            return b1Astern ? b2 : b1;
+            const winner = b1Astern ? b2 : b1;
+            return { boat: winner, rule: "Rule 18", reason: "Mark-Room (Clear Ahead)" };
         }
     }
 
     // 2. Rule 13 (While Tacking)
-    if (b1.raceState.isTacking && !b2.raceState.isTacking) return b2;
-    if (!b1.raceState.isTacking && b2.raceState.isTacking) return b1;
+    if (b1.raceState.isTacking && !b2.raceState.isTacking) return { boat: b2, rule: "Rule 13", reason: "Tacking" };
+    if (!b1.raceState.isTacking && b2.raceState.isTacking) return { boat: b1, rule: "Rule 13", reason: "Tacking" };
 
     // 3. Rule 10 (Opposite Tacks)
     if (oppositeTacks) {
-        return (t1 === 1) ? b1 : b2; // Starboard (1) wins
+        const winner = (t1 === 1) ? b1 : b2; // Starboard (1) wins
+        return { boat: winner, rule: "Rule 10", reason: "Port vs Starboard" };
     }
 
     // 4. Same Tack (Rule 11 & 12)
     const b1Astern = getClearAstern(b1, b2);
     const b2Astern = getClearAstern(b2, b1);
 
-    if (b1Astern && !b2Astern) return b2; // b2 Ahead wins (Rule 12)
-    if (b2Astern && !b1Astern) return b1; // b1 Ahead wins (Rule 12)
+    if (b1Astern && !b2Astern) return { boat: b2, rule: "Rule 12", reason: "Clear Ahead" }; // b2 Ahead wins (Rule 12)
+    if (b2Astern && !b1Astern) return { boat: b1, rule: "Rule 12", reason: "Clear Ahead" }; // b1 Ahead wins (Rule 12)
 
     // Rule 11: Overlapped, Same Tack -> Leeward ROW
     const dx = b2.x - b1.x;
@@ -2781,11 +2821,13 @@ function getRightOfWay(b1, b2) {
     if (t1 === 1) { // Starboard Tack
         // Wind from Right. Leeward is Left.
         // dotRight > 0 => b2 is Right (Windward). b1 is Leeward.
-        return (dotRight > 0) ? b1 : b2;
+        const winner = (dotRight > 0) ? b1 : b2;
+        return { boat: winner, rule: "Rule 11", reason: "Windward/Leeward" };
     } else { // Port Tack
         // Wind from Left. Leeward is Right.
         // dotRight > 0 => b2 is Right (Leeward). b1 is Windward.
-        return (dotRight > 0) ? b2 : b1;
+        const winner = (dotRight > 0) ? b2 : b1;
+        return { boat: winner, rule: "Rule 11", reason: "Windward/Leeward" };
     }
 }
 
@@ -3705,7 +3747,8 @@ function checkBoatCollisions(dt) {
 
                 // No penalties if either boat is finished
                 if (state.race.status === 'racing' && !b1.raceState.finished && !b2.raceState.finished) {
-                    const rowBoat = getRightOfWay(b1, b2);
+                    const res = getRightOfWay(b1, b2);
+                    const rowBoat = res.boat;
 
                     // Sayings Check
                     let playerBoat = null;
@@ -3805,8 +3848,8 @@ function checkNearMisses(dt) {
             if (ai.playerProximity.close) {
                 if (ai.playerProximity.minD < 60 && ai.playerProximity.minD > 20) {
                      if (!player.raceState.penalty && !ai.raceState.penalty) {
-                         const rowBoat = getRightOfWay(player, ai);
-                         if (rowBoat === player) {
+                         const res = getRightOfWay(player, ai);
+                         if (res.boat === player) {
                              Sayings.queueQuote(ai, "narrowly_avoided_collision");
                          } else {
                              Sayings.queueQuote(ai, "player_narrowly_avoided_collision");
@@ -4312,10 +4355,10 @@ function drawRulesOverlay(ctx) {
             const distSq = (b1.x - b2.x)**2 + (b1.y - b2.y)**2;
 
             if (distSq < checkDist * checkDist && isConflictSoon(b1, b2)) {
-                const rowBoat = getRightOfWay(b1, b2);
-                if (rowBoat) {
-                    const winner = rowBoat;
-                    const loser = (rowBoat === b1) ? b2 : b1;
+                const res = getRightOfWay(b1, b2);
+                if (res.boat) {
+                    const winner = res.boat;
+                    const loser = (winner === b1) ? b2 : b1;
 
                     // Winner (Green) - pointing at Loser
                     drawTriangle(winner, loser, '#4ade80');
