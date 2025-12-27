@@ -2771,5 +2771,78 @@ const AI_QUOTES = {
       "medium": "Good wind today.",
       "long": "Just focusing on my own race."
     }
+  },
+
+  "Blaze": {
+    "player_passes_them": {
+      "short": "Briefly.",
+      "medium": "You're prey now.",
+      "long": "I love a chase. Better keep that speed up."
+    },
+    "they_pass_player": {
+      "short": "Eaten.",
+      "medium": "Too slow to survive.",
+      "long": "That was a warning bite. Next time I take the whole lane."
+    },
+    "they_hit_player": {
+      "short": "Contact.",
+      "medium": "Testing your hull.",
+      "long": "If you swim with sharks, expect to get bumped."
+    },
+    "they_were_hit": {
+      "short": "Bold.",
+      "medium": "You dare bite back?",
+      "long": "Now you've got my full attention."
+    },
+    "narrowly_avoided_collision": {
+      "short": "Missed.",
+      "medium": "Scented you.",
+      "long": "I thrive in the red zone."
+    },
+    "player_narrowly_avoided_collision": {
+      "short": "Flinch.",
+      "medium": "You smelled fear.",
+      "long": "Good reflex. You might survive this race."
+    },
+    "moved_into_first": {
+      "short": "Alpha.",
+      "medium": "Top predator.",
+      "long": "The water is clear when you're the fastest thing in it."
+    },
+    "moved_into_last": {
+      "short": "Circling.",
+      "medium": "Choosing a target.",
+      "long": "The attack run starts from the deep water."
+    },
+    "rounded_mark": {
+      "short": "Cut.",
+      "medium": "Sharp turn.",
+      "long": "Marks are just pivots for the next attack vector."
+    },
+    "first_across_start": {
+      "short": "Gone.",
+      "medium": "Feeding frenzy.",
+      "long": "Blood in the water, and I'm the first one to it."
+    },
+    "finished_race": {
+      "short": "Fed.",
+      "medium": "Race devoured.",
+      "long": "Speed kills, and I'm feeling very alive."
+    },
+    "prestart": {
+      "short": "Hunting.",
+      "medium": "Locking targets.",
+      "long": "Waiting for the signal to tear this course open."
+    },
+    "start_planing": {
+      "short": "Attack!",
+      "medium": "Closing speed: lethal.",
+      "long": "Hydrodynamics disengaged. Pure thrust mode active."
+    },
+    "random": {
+      "short": "Swim.",
+      "medium": "Keep moving.",
+      "long": "Stop moving and you sink. I never stop."
+    }
   }
 };
