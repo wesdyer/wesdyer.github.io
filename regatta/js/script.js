@@ -1066,6 +1066,7 @@ const AI_CONFIG = [
 
 // Settings
 const DEFAULT_SETTINGS = {
+    playerName: "Player",
     navAids: true,
     manualTrim: false,
     soundEnabled: true,
@@ -2023,6 +2024,7 @@ const UI = {
     saveSettings: document.getElementById('save-settings'),
     settingSound: document.getElementById('setting-sound'),
     settingBgSound: document.getElementById('setting-bg-sound'),
+    settingPlayerName: document.getElementById('setting-player-name'),
     settingMusic: document.getElementById('setting-music'),
     settingPenalties: document.getElementById('setting-penalties'),
     settingNavAids: document.getElementById('setting-navaids'),
@@ -2343,9 +2345,11 @@ function applySettings() {
     state.showNavAids = settings.navAids;
     if (state.boats.length > 0) {
         state.boats[0].manualTrim = settings.manualTrim;
+        state.boats[0].name = settings.playerName;
     }
     state.camera.mode = settings.cameraMode;
 
+    if (UI.settingPlayerName) UI.settingPlayerName.value = settings.playerName;
     if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
     if (UI.settingBgSound) UI.settingBgSound.checked = settings.bgSoundEnabled;
     if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
@@ -2429,6 +2433,7 @@ if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSetti
 if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
 if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preventDefault(); startRace(); });
 
+if (UI.settingPlayerName) UI.settingPlayerName.addEventListener('input', (e) => { settings.playerName = e.target.value || "Player"; saveSettings(); });
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(state.wind.speed); });
 if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { settings.bgSoundEnabled = e.target.checked; saveSettings(); Sound.updateWindSound(state.wind.speed); });
 if (UI.settingMusic) UI.settingMusic.addEventListener('change', (e) => { settings.musicEnabled = e.target.checked; saveSettings(); Sound.init(); });
@@ -5886,7 +5891,7 @@ function resetGame() {
     UI.resultRows = {};
 
     // Create Boats (Initialized at 0,0, positioned by repositionBoats)
-    const player = new Boat(0, true, 0, 0, "Player");
+    const player = new Boat(0, true, 0, 0, settings.playerName || "Player");
     player.heading = state.wind.direction; // Head to wind
     player.prevHeading = player.heading;
     player.lastWindSide = 0;
