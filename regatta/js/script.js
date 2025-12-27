@@ -1834,11 +1834,7 @@ const Sound = {
         } else if (state.race.status === 'prestart') {
             targetTrack = 'prestart';
         } else if (state.race.status === 'racing') {
-            const player = state.boats[0];
-            const leg = player ? player.raceState.leg : 0;
-            // Odd Legs = Upwind, Even = Downwind (plus Start leg 0 is "upwind" music for excitement)
-            if (leg === 0 || leg % 2 !== 0) targetTrack = 'racing-upwind';
-            else targetTrack = 'racing-downwind';
+            targetTrack = 'racing-downwind';
         }
 
         if (targetTrack && this.activeTrack !== targetTrack) {
@@ -1979,7 +1975,7 @@ const Sound = {
             if (!this.windSource) this.initWindSound();
             if (this.windGain && this.windFilter) {
                  const clampedSpeed = Math.max(5, Math.min(25, speed));
-                 const volume = 0.05 + ((clampedSpeed - 5) / 20) * 0.25;
+                 const volume = (0.05 + ((clampedSpeed - 5) / 20) * 0.25) * 0.5;
                  const freq = 300 + ((clampedSpeed - 5) / 20) * 900;
                  const now = this.ctx.currentTime;
                  this.windGain.gain.setTargetAtTime(volume, now, 0.1);
