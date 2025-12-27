@@ -1,0 +1,119 @@
+[
+  {
+    "name": "Finley",
+    "avgPts": 10,
+    "avgTime": 227.45000000007315,
+    "starts": 1,
+    "points": 10,
+    "wins": 1,
+    "top3": 1,
+    "finishTimes": [
+      227.45000000007315
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Brine",
+    "avgPts": 9,
+    "avgTime": 232.81666666674408,
+    "starts": 1,
+    "points": 9,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      232.81666666674408
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Torrent",
+    "avgPts": 8,
+    "avgTime": 237.0500000000808,
+    "starts": 1,
+    "points": 8,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      237.0500000000808
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Splat",
+    "avgPts": 7,
+    "avgTime": 241.38333333341757,
+    "starts": 1,
+    "points": 7,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      241.38333333341757
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Tangle",
+    "avgPts": 6,
+    "avgTime": 248.9166666667569,
+    "starts": 1,
+    "points": 6,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      248.9166666667569
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Skim",
+    "avgPts": 5,
+    "avgTime": 251.91666666675928,
+    "starts": 1,
+    "points": 5,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      251.91666666675928
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Scoop",
+    "avgPts": 4,
+    "avgTime": 257.40000000009456,
+    "starts": 1,
+    "points": 4,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      257.40000000009456
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Skerry",
+    "avgPts": 3,
+    "avgTime": 268.85000000008415,
+    "starts": 1,
+    "points": 3,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      268.85000000008415
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Wiggle",
+    "avgPts": 2,
+    "avgTime": 315.8500000000414,
+    "starts": 1,
+    "points": 2,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      315.8500000000414
+    ],
+    "dnf": 0
+  }
+]
