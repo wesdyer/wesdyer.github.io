@@ -37,12 +37,15 @@ const Sayings = {
         const quotes = typeof AI_QUOTES !== 'undefined' ? AI_QUOTES[boat.name] : null;
         if (!quotes) return;
 
-        const typeQuotes = quotes[type];
-        if (!typeQuotes) return;
+        const rawQuote = quotes[type];
+        if (!rawQuote) return;
 
-        const options = ['short', 'medium', 'long'];
-        const length = options[Math.floor(Math.random() * options.length)];
-        const text = typeQuotes[length];
+        let text = rawQuote;
+        if (typeof rawQuote === 'object') {
+            const options = ['short', 'medium', 'long'];
+            const length = options[Math.floor(Math.random() * options.length)];
+            text = rawQuote[length];
+        }
 
         this.queue.push({ boat, text });
     },
