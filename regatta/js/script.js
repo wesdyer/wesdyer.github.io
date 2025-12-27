@@ -1306,6 +1306,7 @@ const state = {
         Shift: false,
     },
     paused: false,
+    gameSpeed: 1.0,
     time: 0,
     race: { // Global Race State
         status: 'prestart',
@@ -1491,8 +1492,9 @@ function drawWindDebug(ctx) {
 
     const h = 100;
     const w = 200;
-    const x = 230;
-    const y = 100;
+    // Align right, accounting for the wider conflict info box (300px)
+    const x = ctx.canvas.width - 320;
+    const y = 430;
 
     ctx.save();
 
@@ -2740,6 +2742,18 @@ window.addEventListener('keydown', (e) => {
         e.preventDefault();
         settings.debugMode = !settings.debugMode;
         saveSettings();
+    }
+    if (e.key === 'F9') {
+        e.preventDefault();
+        if (!state.gameSpeed) state.gameSpeed = 1.0;
+
+        if (state.gameSpeed >= 0.9) state.gameSpeed = 0.5;
+        else if (state.gameSpeed >= 0.4) state.gameSpeed = 0.25;
+        else state.gameSpeed = 1.0;
+
+        const pct = Math.round(state.gameSpeed * 100);
+        showRaceMessage(`GAME SPEED: ${pct}%`, "text-yellow-400", "border-yellow-400/50");
+        setTimeout(hideRaceMessage, 1500);
     }
 });
 
@@ -5877,7 +5891,7 @@ function loop(timestamp) {
             iterations = 10;
         }
 
-        const step = Math.min(dt, 0.1);
+        const step = Math.min(dt, 0.1) * (state.gameSpeed || 1.0);
         for (let i = 0; i < iterations; i++) {
             update(step);
         }
