@@ -1841,6 +1841,13 @@ const UI = {
     valCourseLegs: document.getElementById('val-course-legs'),
     valCourseTimer: document.getElementById('val-course-timer'),
 
+    // Current UI
+    valCurrentDir: document.getElementById('val-current-direction'),
+    valCurrentSpeed: document.getElementById('val-current-speed'),
+    uiCurrentArrow: document.getElementById('ui-current-arrow'),
+    uiCurrentDirText: document.getElementById('ui-current-dir-text'),
+    uiCurrentBar: document.getElementById('ui-current-bar'),
+
     prCompetitorsGrid: document.getElementById('pr-competitors-grid'),
     startRaceBtn: document.getElementById('start-race-btn'),
     boatRows: {}
@@ -1958,6 +1965,39 @@ function setupPreRaceOverlay() {
     if (UI.confCourseDist) UI.confCourseDist.value = state.race.legLength / 5;
     if (UI.confCourseLegs) UI.confCourseLegs.value = state.race.totalLegs;
     if (UI.confCourseTimer) UI.confCourseTimer.value = state.race.startTimerDuration;
+
+    // Update Current Display
+    if (state.race.conditions.current) {
+        const c = state.race.conditions.current;
+        if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = c.speed.toFixed(1) + " kn";
+        if (UI.valCurrentDir) UI.valCurrentDir.textContent = Math.round(c.direction * (180/Math.PI)) + "°";
+
+        if (UI.uiCurrentBar) {
+            const pct = Math.min(100, (c.speed / 3.0) * 100);
+            UI.uiCurrentBar.style.width = pct + "%";
+        }
+
+        if (UI.uiCurrentArrow && UI.uiCurrentDirText) {
+             const svg = UI.uiCurrentArrow.querySelector('svg');
+             if (c.speed < 0.1) {
+                 if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "NONE";
+                 if(svg) svg.style.opacity = 0.2;
+             } else {
+                 // Determine cardinal direction
+                 const deg = (c.direction * (180/Math.PI) + 360) % 360;
+                 const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+                 const idx = Math.round(deg / 45) % 8;
+                 if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = dirs[idx];
+                 if(svg) {
+                     svg.style.opacity = 1.0;
+                     // Rotate arrow. SVG points Up (0 deg) by default?
+                     // If arrow points UP, and direction is N (0), rotate 0.
+                     // Current direction is TOWARDS.
+                     svg.style.transform = `rotate(${deg}deg)`;
+                 }
+             }
+        }
+    }
 
     // Bind Listeners (if not already bound - simple check or rebind is fine since overlay is destroyed? No, persistent.)
     // Better to remove old listeners? Or just use oninput which overwrites?
@@ -2910,6 +2950,21 @@ function updateBoat(boat, dt) {
     boat.velocity.x = boatDirX * boat.speed;
     boat.velocity.y = boatDirY * boat.speed;
 
+    // Apply Current
+    if (state.race.conditions.current) {
+        // current velocity in game units/frame?
+        // current.speed is Knots.
+        // boat.speed is in game units (scaled by SPEED_SCALE ~0.043 for knots->units/frame)
+        // Actually: Speed * 4 = Knots. So Speed = Knots / 4.
+        const c = state.race.conditions.current;
+        const cSpeed = c.speed / 4.0;
+        const cVx = Math.sin(c.direction) * cSpeed;
+        const cVy = -Math.cos(c.direction) * cSpeed;
+
+        boat.velocity.x += cVx;
+        boat.velocity.y += cVy;
+    }
+
     boat.x += boat.velocity.x * timeScale;
     boat.y += boat.velocity.y * timeScale;
 
@@ -3499,6 +3554,37 @@ function update(dt) {
 
     updateGusts(dt);
 
+    // Current Visuals
+    if (state.race.conditions.current && state.race.conditions.current.speed > 0.1) {
+        const c = state.race.conditions.current;
+        // Current Lines
+        // Density based on speed? Or constant?
+        // "Visual effects should be proportional to the strength"
+        // Strength affects line visibility/count.
+        // Chance to spawn:
+        const spawnChance = 0.2 + (c.speed / 3.0) * 0.5;
+        if (Math.random() < spawnChance) {
+             let range = Math.max(canvas.width, canvas.height) * 1.5;
+             createParticle(state.camera.x + (Math.random()-0.5)*range, state.camera.y + (Math.random()-0.5)*range, 'current', { life: 1.0 + Math.random(), alpha: Math.min(1, c.speed/1.5) });
+        }
+
+        // Mark Wakes
+        if (state.course.marks) {
+            for (const m of state.course.marks) {
+                if (Math.random() < 0.3 * (c.speed/3.0)) { // Scale with speed
+                     // Spawn at mark
+                     // Offset slightly in direction of flow? Or around it?
+                     // Mark is obstacle. Wake forms downstream.
+                     const flowDir = c.direction;
+                     const offset = 12; // Radius
+                     const wx = Math.sin(flowDir) * offset;
+                     const wy = -Math.cos(flowDir) * offset;
+                     createParticle(m.x + wx + (Math.random()-0.5)*10, m.y + wy + (Math.random()-0.5)*10, 'mark-wake', { life: 1.5, alpha: 0.5 * (c.speed/3.0), scale: 0.8 });
+                }
+            }
+        }
+    }
+
     // Sound (Use Player's local wind)
     const resultsVisible = UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden');
     if (state.boats.length > 0) {
@@ -3692,17 +3778,54 @@ function updateParticles(dt) {
              const local = getWindAt(p.x, p.y);
              p.x -= Math.sin(local.direction)*timeScale * (local.speed / 10);
              p.y += Math.cos(local.direction)*timeScale * (local.speed / 10);
+        } else if (p.type === 'current') {
+             const c = state.race.conditions.current;
+             const speed = c ? c.speed : 0;
+             const dir = c ? c.direction : 0;
+             // Move with current (Game Units = Knots / 4)
+             const moveSpeed = (speed / 4.0) * timeScale;
+             p.x += Math.sin(dir) * moveSpeed;
+             p.y -= Math.cos(dir) * moveSpeed;
+        } else if (p.type === 'mark-wake') {
+             const c = state.race.conditions.current;
+             const speed = c ? c.speed : 0;
+             const dir = c ? c.direction : 0;
+             // Move with current (Game Units = Knots / 4)
+             const moveSpeed = (speed / 4.0) * timeScale;
+             p.x += Math.sin(dir) * moveSpeed;
+             p.y -= Math.cos(dir) * moveSpeed;
         }
+
         p.life -= decay * timeScale;
         if (p.life <= 0) { state.particles[i] = state.particles[state.particles.length-1]; state.particles.pop(); }
     }
 }
 
 function drawParticles(ctx, layer) {
-    if (layer === 'surface') {
+    if (layer === 'current') {
+        // Very dark blue lines
+        // Proportional to strength (opacity/count handled in spawn, here just draw)
+        ctx.strokeStyle = '#000033'; // Very dark blue
+        ctx.lineWidth = 2;
+        const c = state.race.conditions.current;
+        const dir = c ? c.direction : 0;
+        const dx = Math.sin(dir) * 40;
+        const dy = -Math.cos(dir) * 40;
+
+        for (const p of state.particles) {
+            if (p.type === 'current') {
+                ctx.globalAlpha = p.alpha * 0.4; // Semi-transparent
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x + dx, p.y + dy);
+                ctx.stroke();
+            }
+        }
+        ctx.globalAlpha = 1.0;
+    } else if (layer === 'surface') {
         ctx.fillStyle = '#ffffff';
         for (const p of state.particles) {
-            if (p.type === 'wake' || p.type === 'wake-wave') {
+            if (p.type === 'wake' || p.type === 'wake-wave' || p.type === 'mark-wake') {
                 ctx.globalAlpha = p.alpha;
                 const s = p.scaleVal || p.scale || 1.0;
                 ctx.beginPath(); ctx.arc(p.x, p.y, 3 * s, 0, Math.PI * 2); ctx.fill();
@@ -5062,6 +5185,7 @@ function draw() {
     ctx.translate(-state.camera.x, -state.camera.y);
 
     drawGusts(ctx);
+    drawParticles(ctx, 'current');
     drawWater(ctx);
     drawDisturbedAir(ctx);
     drawParticles(ctx, 'surface');
@@ -5435,13 +5559,26 @@ function resetGame() {
     // +/- 0.1 to 0.2 radians
     const directionBias = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.1);
 
+    // Current Generation
+    // 70% chance of zero. 30% chance of 0-3 knots.
+    let currentSpeed = 0;
+    let currentDir = 0;
+    if (Math.random() > 0.7) {
+        currentSpeed = Math.random() * 3.0;
+        currentDir = Math.random() * Math.PI * 2;
+    }
+
     state.race.conditions = {
         shiftiness,
         variability,
         puffiness,
         gustStrengthBias,
         puffShiftiness,
-        directionBias
+        directionBias,
+        current: {
+            speed: currentSpeed,
+            direction: currentDir
+        }
     };
     state.time = 0;
     state.race.status = 'waiting'; // Wait for user to start

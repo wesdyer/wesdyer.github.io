@@ -390,6 +390,37 @@
                         </div>
                     </div>
 
+                    <!-- Current -->
+                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
+                        <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
+                             <svg class="w-5 h-5 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                            Current
+                        </h2>
+                        <div class="space-y-5">
+                            <div>
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <div class="text-xs font-bold text-slate-300 uppercase">Set (Direction)</div>
+                                    <div id="val-current-direction" class="text-xs font-mono text-indigo-400">0°</div>
+                                </div>
+                                <div class="flex items-center gap-4 bg-slate-900/40 p-2 rounded-lg border border-white/5">
+                                     <div id="ui-current-arrow" class="w-8 h-8 rounded-full border border-slate-600 flex items-center justify-center bg-slate-800 shadow-inner">
+                                         <svg class="w-5 h-5 text-indigo-400 transform transition-transform duration-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                                     </div>
+                                     <span id="ui-current-dir-text" class="text-sm font-bold text-white tracking-wider">NONE</span>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <div class="text-xs font-bold text-slate-300 uppercase">Drift (Speed)</div>
+                                    <div id="val-current-speed" class="text-xs font-mono text-indigo-400">0.0 kn</div>
+                                </div>
+                                <div class="w-full h-2 bg-slate-700 rounded-lg overflow-hidden mt-1">
+                                     <div id="ui-current-bar" class="h-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Description -->
                     <div class="bg-slate-900/60 rounded-xl p-4 border border-white/5">
                         <div id="conf-description" class="text-sm text-slate-300 italic font-mono leading-relaxed text-center">
