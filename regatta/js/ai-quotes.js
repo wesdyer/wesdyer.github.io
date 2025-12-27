@@ -2566,4 +2566,210 @@ const AI_QUOTES = {
       "long": "Let's all finish together!"
     }
   },
+  "Splat": {
+    "random": {
+      "short": "Oof!",
+      "medium": "I meant to do that!",
+      "long": "Everything is fine! I think?"
+    },
+    "start_planing": {
+      "short": "Too fast!",
+      "medium": "I'm sliding everywhere!",
+      "long": "Help! I can't stop this thing!"
+    }
+  },
+  "Dart": {
+    "random": {
+      "short": "Zoom!",
+      "medium": "Catch me!",
+      "long": "Speed is life! Let's go!"
+    },
+    "start_planing": {
+      "short": "Rocket!",
+      "medium": "Engaging thrusters!",
+      "long": "Maximum velocity achieved! Bye!"
+    }
+  },
+  "Roll": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Spike": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Flicker": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Croak": {
+    "random": {
+      "short": "Steady.",
+      "medium": "Waiting for the shift.",
+      "long": "Patience wins more races than speed."
+    }
+  },
+  "Snap": {
+    "random": {
+      "short": "Hmph.",
+      "medium": "Kids these days.",
+      "long": "Back in my day, we sailed uphill both ways."
+    }
+  },
+  "Rift": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Skerry": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Crush": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Torrent": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Jester": {
+    "random": {
+      "short": "Wild!",
+      "medium": "Who knows what's next?",
+      "long": "I love it when things get messy."
+    }
+  },
+  "Breeze": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Petal": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Stomp": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Crimson": {
+    "random": {
+      "short": "Steady.",
+      "medium": "Waiting for the shift.",
+      "long": "Patience wins more races than speed."
+    }
+  },
+  "Viper": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Skitter": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Veil": {
+    "random": {
+      "short": "Steady.",
+      "medium": "Waiting for the shift.",
+      "long": "Patience wins more races than speed."
+    }
+  },
+  "Puff": {
+    "random": {
+      "short": "Chill.",
+      "medium": "Vibes are good.",
+      "long": "Just floating along, happy as a clam."
+    }
+  },
+  "Lure": {
+    "random": {
+      "short": "Steady.",
+      "medium": "Waiting for the shift.",
+      "long": "Patience wins more races than speed."
+    }
+  },
+  "Wiggle": {
+    "random": {
+      "short": "Wild!",
+      "medium": "Who knows what's next?",
+      "long": "I love it when things get messy."
+    }
+  },
+  "Zeffir": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Scoop": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Popper": {
+    "random": {
+      "short": "Wild!",
+      "medium": "Who knows what's next?",
+      "long": "I love it when things get messy."
+    }
+  },
+  "Frond": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  },
+  "Bulkhead": {
+    "random": {
+      "short": "Move.",
+      "medium": "Coming through.",
+      "long": "I have the right of weight."
+    }
+  },
+  "Slipstream": {
+    "random": {
+      "short": "Sailing!",
+      "medium": "Good wind today.",
+      "long": "Just focusing on my own race."
+    }
+  }
 };
