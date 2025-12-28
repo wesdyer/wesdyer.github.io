@@ -2320,7 +2320,13 @@ const UI = {
 
     prCompetitorsGrid: document.getElementById('pr-competitors-grid'),
     startRaceBtn: document.getElementById('start-race-btn'),
-    boatRows: {}
+    boatRows: {},
+
+    // Water Debug
+    waterDebug: document.getElementById('water-debug'),
+    waterDebugControls: document.getElementById('water-debug-controls'),
+    waterReset: document.getElementById('water-reset'),
+    waterClose: document.getElementById('water-close')
 };
 
 function updateConditionDescription() {
@@ -2890,6 +2896,7 @@ window.addEventListener('keydown', (e) => {
         }
     }
     if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
+    if (e.key === 'F8') { e.preventDefault(); toggleWaterDebug(); }
     if (e.key === 'F3') {
         e.preventDefault();
         settings.soundEnabled = !settings.soundEnabled;
@@ -4905,46 +4912,9 @@ function drawMarkZones(ctx) {
 
 // Draw Water (Waves) - Same as original
 function drawWater(ctx) {
-    const gridSize = 80;
-    const dist = state.time * 20;
-    const shiftX = -Math.sin(state.wind.direction)*dist, shiftY = Math.cos(state.wind.direction)*dist;
-    const pad = gridSize*2;
-    const left = state.camera.x - canvas.width/2 - pad, right = state.camera.x + canvas.width/2 + pad;
-    const top = state.camera.y - canvas.height/2 - pad, bottom = state.camera.y + canvas.height/2 + pad;
-    const startX = Math.floor((left-shiftX)/gridSize)*gridSize, endX = Math.ceil((right-shiftX)/gridSize)*gridSize;
-    const startY = Math.floor((top-shiftY)/gridSize)*gridSize, endY = Math.ceil((bottom-shiftY)/gridSize)*gridSize;
-
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 2.5;
-
-    ctx.beginPath();
-    for (let x = startX; x < endX; x+=gridSize) {
-        for (let y = startY; y < endY; y+=gridSize) {
-             const cx = x + shiftX + gridSize/2, cy = y + shiftY + gridSize/2;
-
-             // Local Wind Check
-             const local = getWindAt(cx, cy);
-             const angle = local.direction + Math.PI;
-             const cosA = Math.cos(angle), sinA = Math.sin(angle);
-             const speedFactor = local.speed / 10;
-
-             const noise = Math.sin(x*0.12+y*0.17);
-             const bob = Math.sin(state.time*2+noise*10) * (0.3 + speedFactor);
-
-             const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-             const randX = (seed - Math.floor(seed)) * 40 - 20;
-             const randY = (Math.cos(seed) * 0.5 + 0.5) * 40 - 20;
-             let scale = (0.8 + ((seed*10)%1)*0.4) * Math.max(0.5, speedFactor);
-
-             const rcx = cx + randX, rcy = cy + randY;
-             const p1x = -8*scale, p1y = bob*scale, p2x = 8*scale, p2y = bob*scale;
-             const cpx = 0, cpy = (bob-6)*scale;
-
-             const t = (px, py) => ({ x: px*cosA - py*sinA + rcx, y: px*sinA + py*cosA + rcy });
-             const tp1 = t(p1x, p1y), tp2 = t(p2x, p2y), tcp = t(cpx, cpy);
-             ctx.moveTo(tp1.x, tp1.y); ctx.quadraticCurveTo(tcp.x, tcp.y, tp2.x, tp2.y);
-        }
+    if (window.WaterRenderer) {
+        window.WaterRenderer.draw(ctx, state);
     }
-    ctx.stroke();
 }
 
 function drawGusts(ctx) {
@@ -5862,7 +5832,9 @@ function drawBoatIndicator(ctx, boat) {
 
 function draw() {
     frameCount++;
-    ctx.fillStyle = CONFIG.waterColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Water Background (Screen Space)
+    drawWater(ctx);
 
     const player = state.boats[0];
     if (!player) return;
@@ -5874,7 +5846,6 @@ function draw() {
 
     drawGusts(ctx);
     drawParticles(ctx, 'current');
-    drawWater(ctx);
     drawIslands(ctx);
     drawDisturbedAir(ctx);
     drawParticles(ctx, 'surface');
@@ -6516,6 +6487,20 @@ function drawIslands(ctx) {
         const limit = viewRadius + isl.radius;
         if (distSq > limit**2) continue;
 
+        // Shoreline Glow (Tropical Shallow Water)
+        if (window.WATER_CONFIG && window.WATER_CONFIG.shorelineGlowSize > 0) {
+            ctx.save();
+            ctx.shadowColor = window.WATER_CONFIG.shorelineColor || '#4ade80';
+            ctx.shadowBlur = window.WATER_CONFIG.shorelineGlowSize * 20; // Scale factor
+            ctx.fillStyle = window.WATER_CONFIG.shorelineColor || '#4ade80';
+            ctx.globalAlpha = window.WATER_CONFIG.shorelineGlowOpacity || 0.5;
+
+            // Draw slightly larger or just rely on shadow spread
+            drawRoundedPoly(isl.vertices);
+            ctx.fill();
+            ctx.restore();
+        }
+
         // Sand
         ctx.fillStyle = '#fde047'; // Yellow 300
         drawRoundedPoly(isl.vertices);
@@ -6690,6 +6675,9 @@ function resetGame() {
 
     initCourse();
 
+    // Init Water Renderer
+    if (window.WaterRenderer) window.WaterRenderer.init();
+
     // Pre-populate gusts
     const density = 5 + Math.floor(puffiness * 20);
     for (let i = 0; i < density; i++) {
@@ -6818,4 +6806,89 @@ window.runBatchSim = function(count = 50) {
 
 resetGame();
 requestAnimationFrame(loop);
+
+// Water Debug Logic
+function toggleWaterDebug() {
+    if (!UI.waterDebug) return;
+    UI.waterDebug.classList.toggle('hidden');
+    if (!UI.waterDebug.classList.contains('hidden')) {
+        initWaterDebugUI();
+    }
+}
+
+function initWaterDebugUI() {
+    if (!UI.waterDebugControls || !window.WATER_CONFIG) return;
+    UI.waterDebugControls.innerHTML = ''; // Clear
+
+    const createControl = (key, label, type, min, max, step) => {
+        const div = document.createElement('div');
+        div.className = "flex flex-col gap-1";
+
+        const header = document.createElement('div');
+        header.className = "flex justify-between items-end";
+
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+        lbl.className = "text-slate-400 font-bold uppercase text-[10px] tracking-wide";
+
+        const valDisp = document.createElement('span');
+        valDisp.className = "text-cyan-400 font-mono";
+        valDisp.textContent = window.WATER_CONFIG[key];
+
+        header.appendChild(lbl);
+        header.appendChild(valDisp);
+        div.appendChild(header);
+
+        let input;
+        if (type === 'color') {
+            input = document.createElement('input');
+            input.type = 'color';
+            input.value = window.WATER_CONFIG[key];
+            input.className = "w-full h-6 bg-slate-800 rounded cursor-pointer border border-slate-600";
+        } else {
+            input = document.createElement('input');
+            input.type = 'range';
+            input.min = min;
+            input.max = max;
+            input.step = step;
+            input.value = window.WATER_CONFIG[key];
+            input.className = "w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500";
+        }
+
+        input.addEventListener('input', (e) => {
+            window.WATER_CONFIG[key] = (type === 'range') ? parseFloat(e.target.value) : e.target.value;
+            valDisp.textContent = window.WATER_CONFIG[key];
+        });
+
+        div.appendChild(input);
+        UI.waterDebugControls.appendChild(div);
+    };
+
+    createControl('baseColor', 'Base Color', 'color');
+    createControl('depthGradientStrength', 'Vignette Strength', 'range', 0, 1, 0.05);
+    createControl('contourOpacity', 'Contour Opacity', 'range', 0, 1, 0.05);
+    createControl('contourScale', 'Contour Scale', 'range', 0.5, 3.0, 0.1);
+    createControl('contourSpacing', 'Contour Spacing', 'range', 10, 100, 5);
+    createControl('contourWarp', 'Contour Warp', 'range', 0, 2.0, 0.1);
+    createControl('contourSpeed', 'Flow Speed', 'range', 0, 0.1, 0.005);
+    createControl('causticOpacity', 'Caustic Opacity', 'range', 0, 1, 0.05);
+    createControl('causticScale', 'Caustic Scale', 'range', 0.5, 5.0, 0.1);
+    createControl('grainOpacity', 'Grain Opacity', 'range', 0, 0.2, 0.01);
+    createControl('shorelineGlowSize', 'Island Glow Size', 'range', 1.0, 3.0, 0.1);
+    createControl('shorelineGlowOpacity', 'Island Glow Opacity', 'range', 0, 1, 0.05);
+    createControl('shorelineColor', 'Glow Color', 'color');
+}
+
+if (UI.waterReset) {
+    UI.waterReset.addEventListener('click', () => {
+        // Simple reload for defaults or store defaults separately?
+        // Let's just reload page for now or hardcode reset if needed.
+        // Or store defaults in water.js
+        window.location.reload();
+    });
+}
+if (UI.waterClose) UI.waterClose.addEventListener('click', () => {
+    if (UI.waterDebug) UI.waterDebug.classList.add('hidden');
+});
+
 window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard; window.CONFIG = CONFIG;
