@@ -594,47 +594,104 @@ class BotController {
         // Helper to score a tack
         // Score = VMG to Target (using COG) + Pressure Bonus
         const scoreTack = (heading) => {
-            // 1. Calculate COG
+            // 1. Estimate Target Speed based on Stats (Boost, Polars, POS)
+            // Need approximate TWA at candidate heading
+            const estTwa = normalizeAngle(heading - localWind.direction);
+            const estTwaDeg = Math.abs(estTwa) * (180 / Math.PI);
+
+            // Calculate effective wind for this boat (Boost Stat)
+            const boostFactor = boat.stats.boost * 0.05;
+            let effectiveWind = localWind.speed;
+            if (effectiveWind > state.wind.baseSpeed) {
+                effectiveWind = state.wind.baseSpeed + (effectiveWind - state.wind.baseSpeed) * (1.0 + boostFactor);
+            } else {
+                effectiveWind = state.wind.baseSpeed + (effectiveWind - state.wind.baseSpeed) * (1.0 - boostFactor);
+            }
+
+            // Determine Target Speed from Polars
+            const useSpin = (estTwaDeg > 90); // Simplified assumption for planning
+            let targetKnots = getTargetSpeed(Math.abs(estTwa), useSpin, effectiveWind);
+
+            // Apply Point of Sail Stats
+            let posStat = 0;
+            if (estTwaDeg <= 60) {
+                posStat = boat.stats.upwind * 0.008;
+            } else if (estTwaDeg >= 145) {
+                posStat = boat.stats.downwind * 0.01;
+            } else {
+                 // Reach
+                 posStat = boat.stats.reach * 0.012;
+            }
+            targetKnots *= (1.0 + posStat);
+            const targetGameSpeed = targetKnots * 0.25;
+
+            // 2. Simulate Speed Profile (Acceleration / Momentum)
+            // How fast can we get there?
+            // Simple simulation over lookahead time
+            let simSpeed = boat.speed;
+            let totalDist = 0;
+            const steps = 5; // 5 steps of 1 second
+
+            // Approximate alpha for 1 second (60 frames)
+            // Per frame alpha ~ 0.0015. Per second ~ 0.086
+            let alphaBase = 0.086;
+
+            if (targetGameSpeed > simSpeed) {
+                 // Accelerating
+                 const accelMod = 1.0 + boat.stats.acceleration * 0.024;
+                 alphaBase *= accelMod;
+            } else {
+                 // Decelerating (Momentum)
+                 const momMod = 1.0 - boat.stats.momentum * 0.02;
+                 alphaBase *= momMod;
+            }
+
+            for(let i=0; i<steps; i++) {
+                simSpeed = simSpeed * (1 - alphaBase) + targetGameSpeed * alphaBase;
+                totalDist += simSpeed * 60; // units per second
+            }
+            const avgSpeed = totalDist / (steps * 60);
+
+            // 3. Calculate COG with Current
             let cog = heading;
-            let speedOverGround = boat.speed;
+            let speedOverGround = avgSpeed;
             
             if (current && current.speed > 0.1) {
                 const cSpeed = current.speed / 4.0;
                 const cDir = current.direction;
-                const bSpeed = Math.max(1.0, boat.speed); // Assume good speed on tack
-                
-                const vx = Math.sin(heading)*bSpeed + Math.sin(cDir)*cSpeed;
-                const vy = -Math.cos(heading)*bSpeed - Math.cos(cDir)*cSpeed;
+                // Use avgSpeed for vector addition
+                const vx = Math.sin(heading)*avgSpeed + Math.sin(cDir)*cSpeed;
+                const vy = -Math.cos(heading)*avgSpeed - Math.cos(cDir)*cSpeed;
 
-                cog = Math.atan2(vx, -vy); // Standard bearing
+                cog = Math.atan2(vx, -vy);
                 speedOverGround = Math.sqrt(vx*vx + vy*vy);
             }
 
             // VMG to Target
-            // cos(angle between COG and Target)
             const angleErr = normalizeAngle(cog - angleToTarget);
             let score = Math.cos(angleErr) * speedOverGround;
 
-            // 2. Pressure Scouting (Look Ahead)
-            // Project position 5 seconds ahead
-            const lookAheadTime = 5.0 * 60; // frames
-            const projX = boat.x + Math.sin(cog) * speedOverGround * lookAheadTime;
-            const projY = boat.y - Math.cos(cog) * speedOverGround * lookAheadTime;
+            // 4. Pressure Scouting (Look Ahead) with Boost awareness
+            // Project position using calculated distance
+            const projX = boat.x + Math.sin(cog) * speedOverGround * (steps * 60);
+            const projY = boat.y - Math.cos(cog) * speedOverGround * (steps * 60);
 
             // Sample wind there
             const futureWind = getWindAt(projX, projY);
 
-            // Bonus for stronger wind
-            // Base wind 10. If we find 12, +20% score?
-            const windBonus = (futureWind.speed - state.wind.speed); // Relative to base
-            score += windBonus * 0.1; // Weighting factor
+            // Apply Boost to Future Wind
+            let futureEffective = futureWind.speed;
+            if (futureEffective > state.wind.baseSpeed) {
+                futureEffective = state.wind.baseSpeed + (futureEffective - state.wind.baseSpeed) * (1.0 + boostFactor);
+            } else {
+                futureEffective = state.wind.baseSpeed + (futureEffective - state.wind.baseSpeed) * (1.0 - boostFactor);
+            }
 
-            // Bonus for Shift (Lift)
-            // If future wind direction allows better pointing next time?
-            // Complex. But simply sailing into a header is bad?
-            // Actually VMG calculation handles the *current* wind direction.
-            // If we sail into a lift, our future VMG improves.
-            // Let's assume Pressure is the main lookahead factor for now.
+            // Bonus for stronger wind relative to current effective wind
+            // We compare future effective wind vs base wind (or current effective?)
+            // Comparing to base makes sense as absolute value
+            const windBonus = (futureEffective - state.wind.baseSpeed);
+            score += windBonus * 0.2; // Increased weight
 
             return score;
         };
