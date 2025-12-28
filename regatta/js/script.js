@@ -3293,8 +3293,26 @@ function updateBoat(boat, dt) {
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
 
     const actualMagnitude = Math.abs(boat.sailAngle);
-    const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
-    const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
+    const angleDiff = actualMagnitude - optimalSailAngle;
+
+    let trimEfficiency = 1.0;
+    let leewayIntensity = 0;
+
+    if (angleDiff > 0) {
+        // Under-trimmed (Sail too loose)
+        // Steeper penalty for luffing/loss of power
+        trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.5);
+    } else {
+        // Over-trimmed (Sail too tight)
+        const absDiff = Math.abs(angleDiff);
+        // Stall penalty
+        trimEfficiency = Math.max(0, 1.0 - absDiff * 2.0);
+
+        // Leeway Calculation (Sideways slip)
+        // Max leeway when fully strapped in against wind
+        leewayIntensity = absDiff * 2.0;
+    }
+
     targetKnots *= trimEfficiency;
 
     // PLANING LOGIC
@@ -3464,8 +3482,36 @@ function updateBoat(boat, dt) {
 
     const boatDirX = Math.sin(boat.heading);
     const boatDirY = -Math.cos(boat.heading);
-    boat.velocity.x = boatDirX * boat.speed;
-    boat.velocity.y = boatDirY * boat.speed;
+
+    // Calculate Velocity
+    // Forward Component
+    let vx = boatDirX * boat.speed;
+    let vy = boatDirY * boat.speed;
+
+    // Leeway Component (Perpendicular to heading, away from wind)
+    // If boomSide is 1 (Starboard Tack, Wind from Right), Leeway pushes Left (Port).
+    // Left Vector relative to Heading(0,-1) is (-1,0).
+    // Right Vector is (1,0).
+    // LeewayDir should be -boomSide.
+    if (leewayIntensity > 0 && boat.speed > 0.1) {
+        // Leeway vector (Left/Right)
+        // Right Vector (relative to heading): (cos(h), sin(h))
+        const lx = Math.cos(boat.heading);
+        const ly = Math.sin(boat.heading);
+
+        const dir = -boat.boomSide; // 1 -> -1 (Left), -1 -> 1 (Right)
+
+        // Scale leeway by boat speed (drifting requires movement through water or force)
+        // But side-slip is often higher when moving slowly?
+        // Let's model it as a ratio of forward speed for simplicity in this engine.
+        const slipSpeed = boat.speed * leewayIntensity * 0.4;
+
+        vx += lx * dir * slipSpeed;
+        vy += ly * dir * slipSpeed;
+    }
+
+    boat.velocity.x = vx;
+    boat.velocity.y = vy;
 
     // Apply Current
     if (state.race.conditions.current) {
