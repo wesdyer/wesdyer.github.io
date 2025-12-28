@@ -251,6 +251,15 @@ class BotController {
                     if (dSq < minD) { minD = dSq; closestObs = m; }
                 }
             }
+            // Check Islands
+            if (state.course.islands) {
+                for (const isl of state.course.islands) {
+                    const dSq = (isl.x - this.boat.x)**2 + (isl.y - this.boat.y)**2;
+                    // Approximate island as circle radius*1.2 for wiggle centering
+                    // If we are touching it, the distance is roughly radius.
+                    if (dSq < minD) { minD = dSq; closestObs = isl; }
+                }
+            }
 
             // If we've been stuck a long time, the smart logic failed. Try Random.
             if (this.lowSpeedTimer > 8.0) {
@@ -1086,7 +1095,32 @@ class BotController {
                 }
             }
 
-            // 3. Boundary - Segment Check
+            // 3. Islands - Circle Approximation
+            if (state.course.islands) {
+                for (const isl of state.course.islands) {
+                    // Quick check: Are we even close?
+                    const dCenterSq = (isl.x - boat.x)**2 + (isl.y - boat.y)**2;
+                    // Max island extent ~1.3*radius. Boat speed ~1.0 (60 units/s). Lookahead 4s = 240 units.
+                    // If > radius + 400, skip.
+                    if (dCenterSq > (isl.radius + 500)**2) continue;
+
+                    // Approximate island as a circle of radius * 1.3
+                    const avoidRadius = isl.radius * 1.3 + 30; // +30 buffer for boat
+
+                    // Check distance from Island Center to Path Segment
+                    const closest = getClosestPointOnSegment(isl.x, isl.y, boat.x, boat.y, futureX, futureY);
+                    const dSq = (closest.x - isl.x)**2 + (closest.y - isl.y)**2;
+
+                    if (dSq < avoidRadius * avoidRadius) {
+                        staticCollision = true;
+                        cost += 300000 / (dSq + 1); // Heavy penalty
+                    } else if (dSq < (avoidRadius + 100)**2 && this.livenessState === 'normal') {
+                         proximityCost += 25000 / (dSq + 100);
+                    }
+                }
+            }
+
+            // 4. Boundary - Segment Check
             if (state.course.boundary) {
                 const b = state.course.boundary;
                 // Check future point first (simple)
