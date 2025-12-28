@@ -6648,7 +6648,8 @@ function resetGame() {
     const directionBias = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.1);
 
     // Obstacle Defaults (Randomized on Init)
-    const islandCoverage = Math.random() * 0.5; // 0% to 50%
+    // 70% chance of no islands (0 coverage)
+    const islandCoverage = (Math.random() > 0.7) ? Math.random() * 0.5 : 0;
     const islandSize = Math.random();
     const islandClustering = Math.random();
 
