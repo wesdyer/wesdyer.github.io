@@ -1,47 +1,41 @@
-
-import asyncio
-from playwright.async_api import async_playwright
+from playwright.sync_api import sync_playwright
 import os
 
-async def run():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
+def check_islands():
+    # Use realpath to get absolute path to index.html
+    path = os.path.abspath("regatta/index.html")
+    url = f"file://{path}"
 
-        filepath = os.path.abspath("regatta/index.html")
-        url = f"file://{filepath}"
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page()
 
-        await page.goto(url)
-        await page.wait_for_timeout(1000)
+        # Load game
+        page.goto(url)
 
-        # Click Start Race
-        await page.click('#start-race-btn')
+        # Wait for initialization (state object to be available)
+        page.wait_for_timeout(1000)
 
-        # Wait for game loop to run a bit
-        await page.wait_for_timeout(2000)
+        # Check island coverage in state
+        # We run this multiple times to verify the probability roughly if possible,
+        # but for visual verification we just want to see the state.
 
-        # Force camera to zoom out or move to an island?
-        # Let's just try to find an island in state and move camera there via evaluate
+        coverage = page.evaluate("window.state.race.conditions.islandCoverage")
+        print(f"Island Coverage: {coverage}")
 
-        island_pos = await page.evaluate("""() => {
-            if (state.course.islands && state.course.islands.length > 0) {
-                return {x: state.course.islands[0].x, y: state.course.islands[0].y};
-            }
-            return null;
-        }""")
+        # Take screenshot of the pre-race overlay which shows the slider
+        # The overlay ID is 'pre-race-overlay'
 
-        if island_pos:
-            print(f"Moving camera to island at {island_pos}")
-            # Override camera position to look at the island
-            await page.evaluate(f"state.camera.x = {island_pos['x']}; state.camera.y = {island_pos['y']}; state.camera.target = 'fixed';")
-            await page.wait_for_timeout(500)
+        # Ensure overlay is visible (resetGame triggers it)
+        # Wait for it just in case
+        try:
+            page.wait_for_selector("#pre-race-overlay", state="visible", timeout=2000)
+        except:
+            print("Overlay not visible?")
 
-            await page.screenshot(path="verification/island_gameplay.png")
-            print("Screenshot saved to verification/island_gameplay.png")
-        else:
-            print("No islands found to focus on.")
+        page.screenshot(path="verification/island_check.png")
 
-        await browser.close()
+        browser.close()
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    check_islands()
