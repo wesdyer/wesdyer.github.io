@@ -84,10 +84,12 @@ function tileableNoise2D(x, y, w, h) {
     const ny = y;
 
     // Sample 4 points in domain
+    // We subtract the period (w, h) for the blend targets so that
+    // when s=1 (x=w), v2 becomes noise(w-w)=noise(0), matching v1 at s=0.
     const v1 = noise2D(nx, ny);
-    const v2 = noise2D(nx + w, ny);
-    const v3 = noise2D(nx, ny + h);
-    const v4 = noise2D(nx + w, ny + h);
+    const v2 = noise2D(nx - w, ny);
+    const v3 = noise2D(nx, ny - h);
+    const v4 = noise2D(nx - w, ny - h);
 
     // Bilinear blend
     const i1 = v1 * (1 - s) + v2 * s;
@@ -216,13 +218,13 @@ class WaterRenderer {
 
                 // Correct approach:
                 // 1. Calculate warped coordinates qx, qy.
-                // 2. Sample noise at (qx, qy), (qx+P, qy), (qx, qy+P), (qx+P, qy+P).
+                // 2. Sample noise at (qx, qy), (qx-P, qy), (qx, qy-P), (qx-P, qy-P).
                 // 3. Blend using s = x/size, t = y/size.
 
                 const v1 = noise2D(qx, qy);
-                const v2 = noise2D(qx + warpPeriod, qy);
-                const v3 = noise2D(qx, qy + warpPeriod);
-                const v4 = noise2D(qx + warpPeriod, qy + warpPeriod);
+                const v2 = noise2D(qx - warpPeriod, qy);
+                const v3 = noise2D(qx, qy - warpPeriod);
+                const v4 = noise2D(qx - warpPeriod, qy - warpPeriod);
 
                 const s = x / size;
                 const t = y / size;
