@@ -2449,6 +2449,26 @@ function setupPreRaceOverlay() {
 function startRace() {
     if (state.race.status !== 'waiting') return;
 
+    // Fix for Current Toggle State Sync
+    // Ensure the game state matches the UI checkbox state exactly before starting
+    if (UI.confCurrentEnable) {
+        if (UI.confCurrentEnable.checked) {
+            // User wants current
+            if (!state.race.conditions.current) {
+                // Restore from UI values or defaults
+                const speed = UI.confCurrentSpeed ? parseFloat(UI.confCurrentSpeed.value) : 1.0;
+                const dirDeg = UI.confCurrentDir ? parseFloat(UI.confCurrentDir.value) : 0;
+                state.race.conditions.current = {
+                    speed: isNaN(speed) ? 1.0 : speed,
+                    direction: (isNaN(dirDeg) ? 0 : dirDeg) * (Math.PI / 180)
+                };
+            }
+        } else {
+            // User does not want current
+            state.race.conditions.current = null;
+        }
+    }
+
     if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
     UI.leaderboard.classList.remove('hidden'); // Or hidden if prestart logic handles it
     // Prestart logic usually hides leaderboard until start? No, updateLeaderboard logic: if 'prestart' UI.leaderboard.classList.add('hidden');
