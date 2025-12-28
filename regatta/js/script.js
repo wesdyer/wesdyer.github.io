@@ -3454,8 +3454,8 @@ function updateBoat(boat, dt) {
     if (angleToWind < 0.5) {
         // Apply stronger drag deep in irons to maintain tacking difficulty
         // despite higher inertia. Reduced from 0.993 to 0.997 to be less punitive.
-        // User Request: Make luffing a "real brake" -> increased penalty to 0.990
-        boat.speed *= Math.pow(0.990, timeScale);
+        // User Request: Make luffing a "real brake" -> increased penalty to 0.994 (Balanced)
+        boat.speed *= Math.pow(0.994, timeScale);
     }
 
     // Rudder drag
