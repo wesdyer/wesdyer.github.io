@@ -178,6 +178,10 @@ class BotController {
         this.markContactTimer = 0;
         this.markEscapeHeading = 0;
 
+        // Island Escape Latch
+        this.islandEscapeMode = false;
+        this.islandEscapeHeading = 0;
+
         // Staggered updates
         this.updateTimer = Math.random() * 0.2; 
     }
@@ -230,8 +234,45 @@ class BotController {
         let desiredHeading = this.boat.heading;
         let speedRequest = 1.0;
 
+        // Check for Island Collision Trigger
+        if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
+             this.islandEscapeMode = true;
+             // Calculate escape heading: Away from island center
+             const isl = this.boat.ai.collisionData.obstacle;
+             const dx = this.boat.x - isl.x;
+             const dy = this.boat.y - isl.y;
+             this.islandEscapeHeading = Math.atan2(dx, -dy);
+             this.lowSpeedTimer = 0;
+             this.wiggleActive = false;
+        }
+
+        // Check for Stuck Near Island (Proactive trigger for Escape Mode)
+        // If we are slow, and an island is very close ahead
+        if (!this.islandEscapeMode && this.lowSpeedTimer > 2.0) {
+             if (state.course.islands) {
+                 for (const isl of state.course.islands) {
+                     const distSq = (this.boat.x - isl.x)**2 + (this.boat.y - isl.y)**2;
+                     const threshold = (isl.radius + 100)**2;
+                     if (distSq < threshold) {
+                         // Check if it's ahead
+                         const angleToIsl = Math.atan2(isl.x - this.boat.x, -(isl.y - this.boat.y));
+                         const relAngle = Math.abs(normalizeAngle(angleToIsl - this.boat.heading));
+                         if (relAngle < Math.PI / 2) { // It is ahead
+                             this.islandEscapeMode = true;
+                             const dx = this.boat.x - isl.x;
+                             const dy = this.boat.y - isl.y;
+                             this.islandEscapeHeading = Math.atan2(dx, -dy);
+                             this.lowSpeedTimer = 0;
+                             this.wiggleActive = false;
+                             break;
+                         }
+                     }
+                 }
+             }
+        }
+
         // Wiggle / Unstick Logic (Overrides Strategy)
-        if (this.lowSpeedTimer > 3.0 && !this.wiggleActive) {
+        if (this.lowSpeedTimer > 3.0 && !this.wiggleActive && !this.islandEscapeMode) {
             this.wiggleActive = true;
             this.wiggleDuration = 5.0; // Lock in for 5 seconds
 
@@ -344,6 +385,33 @@ class BotController {
              this.markContactTimer -= dt;
              desiredHeading = this.markEscapeHeading;
              speedRequest = 1.0;
+        }
+
+        // Island Escape Logic
+        if (this.islandEscapeMode) {
+             // Check exit condition: Distance to all islands > Safe
+             let safe = true;
+             if (state.course.islands) {
+                 for (const isl of state.course.islands) {
+                      const distSq = (this.boat.x - isl.x)**2 + (this.boat.y - isl.y)**2;
+                      if (distSq < (isl.radius + 150)**2) { // Keep escaping until 150 units clear
+                          safe = false;
+                          // Update heading to be away from this closest island
+                          const dx = this.boat.x - isl.x;
+                          const dy = this.boat.y - isl.y;
+                          this.islandEscapeHeading = Math.atan2(dx, -dy);
+                          break;
+                      }
+                 }
+             }
+
+             if (safe) {
+                 this.islandEscapeMode = false;
+             } else {
+                 // Override controls
+                 desiredHeading = this.islandEscapeHeading;
+                 speedRequest = 1.0; // Force full speed
+             }
         }
 
         // Apply
@@ -1113,9 +1181,9 @@ class BotController {
 
                     if (dSq < avoidRadius * avoidRadius) {
                         staticCollision = true;
-                        cost += 300000 / (dSq + 1); // Heavy penalty
-                    } else if (dSq < (avoidRadius + 100)**2 && this.livenessState === 'normal') {
-                         proximityCost += 25000 / (dSq + 100);
+                        cost += 1000000 / (dSq + 1); // Increased from 300,000
+                    } else if (dSq < (avoidRadius + 200)**2 && this.livenessState === 'normal') { // Increased radius from 100 to 200
+                         proximityCost += 50000 / (dSq + 100); // Increased cost
                     }
                 }
             }
@@ -6312,6 +6380,10 @@ function checkIslandCollisions(dt) {
 
                  if (state.race.status === 'racing') triggerPenalty(boat);
                  if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat });
+
+                 if (boat.ai) {
+                     boat.ai.collisionData = { type: 'island', obstacle: isl, normal: res.axis };
+                 }
             }
         }
     }
