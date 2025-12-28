@@ -2649,6 +2649,8 @@ if (UI.confCurrentEnable) {
             };
         } else {
             state.race.conditions.current = null;
+            // Clear current particles immediately
+            state.particles = state.particles.filter(p => p.type !== 'current' && p.type !== 'mark-wake');
         }
         updateCurrentUI(); // Refresh UI
     });
