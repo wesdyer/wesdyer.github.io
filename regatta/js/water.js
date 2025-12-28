@@ -43,6 +43,11 @@ for(let i=0; i<512; i++) Permutation[i] = Math.floor(Math.random()*255);
 
 function dot(g, x, y) { return g[0]*x + g[1]*y; }
 
+// Interpolation helper
+function smoothstep(t) {
+    return t * t * (3 - 2 * t);
+}
+
 // 2D Noise function
 function noise2D(xin, yin) {
     const F2 = 0.5*(Math.sqrt(3.0)-1.0);
@@ -78,8 +83,8 @@ function noise2D(xin, yin) {
 
 // Tileable Noise Helper: Mixes noise samples from 4 corners to wrap edges
 function tileableNoise2D(x, y, w, h) {
-    const s = x / w;
-    const t = y / h;
+    const s = smoothstep(x / w);
+    const t = smoothstep(y / h);
     const nx = x;
     const ny = y;
 
@@ -226,8 +231,8 @@ class WaterRenderer {
                 const v3 = noise2D(qx, qy - warpPeriod);
                 const v4 = noise2D(qx - warpPeriod, qy - warpPeriod);
 
-                const s = x / size;
-                const t = y / size;
+                const s = smoothstep(x / size);
+                const t = smoothstep(y / size);
 
                 const i1 = v1 * (1 - s) + v2 * s;
                 const i2 = v3 * (1 - s) + v4 * s;
