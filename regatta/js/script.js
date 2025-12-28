@@ -5969,12 +5969,12 @@ function draw() {
     ctx.rotate(-state.camera.rotation);
     ctx.translate(-state.camera.x, -state.camera.y);
 
+    drawParticles(ctx, 'surface');
     drawGusts(ctx);
     drawIslandShadows(ctx);
     drawParticles(ctx, 'current');
     drawIslands(ctx);
     drawDisturbedAir(ctx);
-    drawParticles(ctx, 'surface');
     drawActiveGateLine(ctx);
     drawLadderLines(ctx);
     drawLayLines(ctx);
