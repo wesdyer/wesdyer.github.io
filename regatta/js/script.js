@@ -1,7 +1,7 @@
 // Game Configuration
 const CONFIG = {
     turnSpeed: 0.01, // Radians per frame (approx) -> adjusted for dt in update
-    turnPenalty: 0.99975,
+    turnPenalty: 0.9999,
     cameraPanSpeed: 1.25,
     cameraRotateSpeed: 0.01,
     windSpeed: 5,
@@ -3513,7 +3513,8 @@ function updateBoat(boat, dt) {
     if (angleToWind < 0.5) {
         // Apply stronger drag deep in irons to maintain tacking difficulty
         // despite higher inertia. Reduced from 0.993 to 0.997 to be less punitive.
-        boat.speed *= Math.pow(0.997, timeScale);
+        // User Request: Make luffing a "real brake" -> increased penalty to 0.994 (Balanced)
+        boat.speed *= Math.pow(0.994, timeScale);
     }
 
     // Rudder drag
@@ -6280,4 +6281,4 @@ window.runBatchSim = function(count = 50) {
 
 resetGame();
 requestAnimationFrame(loop);
-window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard;
+window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard; window.CONFIG = CONFIG;
