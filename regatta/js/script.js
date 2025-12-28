@@ -2319,6 +2319,10 @@ const UI = {
     currentControls: document.getElementById('current-controls'),
 
     prCompetitorsGrid: document.getElementById('pr-competitors-grid'),
+    // Toast
+    toast: document.getElementById('toast-notification'),
+    toastMsg: document.getElementById('toast-message'),
+
     startRaceBtn: document.getElementById('start-race-btn'),
     boatRows: {}
 };
@@ -2852,14 +2856,85 @@ window.addEventListener('keydown', (e) => {
     if (key === 's' || key === 'S') key = 'ArrowDown';
 
     if (state.keys.hasOwnProperty(key)) state.keys[key] = true;
-    if (e.key === 'Enter') {
+
+    // View & System
+    if (e.key.toLowerCase() === 'c') {
         const modes = ['heading', 'north', 'wind', 'gate'];
         state.camera.mode = modes[(modes.indexOf(state.camera.mode) + 1) % modes.length];
         settings.cameraMode = state.camera.mode;
         state.camera.message = state.camera.mode.toUpperCase();
         state.camera.messageTimer = 1.5;
         saveSettings();
+        showToast(`Camera: ${state.camera.mode.toUpperCase()}`);
     }
+    if (e.key.toLowerCase() === 'n') {
+        state.showNavAids = !state.showNavAids;
+        settings.navAids = state.showNavAids;
+        saveSettings();
+        if (UI.settingNavAids) UI.settingNavAids.checked = state.showNavAids;
+        showToast(`Nav Aids: ${state.showNavAids ? "ON" : "OFF"}`);
+    }
+    if (e.key.toLowerCase() === 'p') {
+        settings.penaltiesEnabled = !settings.penaltiesEnabled;
+        saveSettings();
+        if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
+        if (UI.rulesStatus) {
+            if (settings.penaltiesEnabled) {
+                UI.rulesStatus.textContent = "RULES: ON";
+                UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider`;
+            } else {
+                UI.rulesStatus.textContent = "RULES: OFF";
+                UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-red-400 bg-slate-900/80 px-2 py-0.5 rounded-full border border-red-500/50 uppercase tracking-wider`;
+            }
+        }
+        showToast(`Penalties: ${settings.penaltiesEnabled ? "ON" : "OFF"}`);
+    }
+
+    if (e.key === 'F12') {
+        e.preventDefault();
+        if (window.html2canvas) {
+            showToast("Capturing Screenshot...");
+            setTimeout(() => {
+                window.html2canvas(document.body).then(c => {
+                    const link = document.createElement('a');
+                    link.download = 'regatta-screenshot.png';
+                    link.href = c.toDataURL();
+                    link.click();
+                    showToast("Screenshot Saved");
+                });
+            }, 100);
+        }
+    }
+
+    if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) toggleHelp();
+    if (e.key === 'Escape') {
+        if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) toggleHelp(false);
+        else if (UI.settingsScreen && !UI.settingsScreen.classList.contains('hidden')) toggleSettings(false);
+        else togglePause();
+    }
+
+    // Audio
+    if (e.key.toLowerCase() === 'm') {
+        if (e.shiftKey) {
+            settings.musicEnabled = !settings.musicEnabled;
+            saveSettings();
+            if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
+            if (settings.musicEnabled) Sound.init();
+            else Sound.stopMusic();
+            Sound.updateMusic();
+            showToast(`Music: ${settings.musicEnabled ? "ON" : "OFF"}`);
+        } else {
+            settings.soundEnabled = !settings.soundEnabled;
+            saveSettings();
+            if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
+            if (settings.soundEnabled) Sound.init();
+            Sound.updateWindSound(state.wind.speed);
+            showToast(`Sound: ${settings.soundEnabled ? "ON" : "OFF"}`);
+        }
+    }
+
+    // Sailing
     if (e.key === ' ' || e.code === 'Space') {
         if (state.boats.length > 0) state.boats[0].spinnaker = !state.boats[0].spinnaker;
     }
@@ -2869,70 +2944,37 @@ window.addEventListener('keydown', (e) => {
             state.boats[0].manualTrim = !state.boats[0].manualTrim;
             settings.manualTrim = state.boats[0].manualTrim;
             saveSettings();
+            if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
             if (state.boats[0].manualTrim) state.boats[0].manualSailAngle = Math.abs(state.boats[0].sailAngle);
+            showToast(`Trim: ${state.boats[0].manualTrim ? "MANUAL" : "AUTO"}`);
         }
     }
-    if (e.key === '?' || (e.shiftKey && e.key === '/')) toggleHelp();
-    if (e.key === 'Escape') {
-        if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) toggleHelp(false);
-        else if (UI.settingsScreen && !UI.settingsScreen.classList.contains('hidden')) toggleSettings(false);
-        else togglePause();
-    }
-    if (e.key === 'F1') {
-        e.preventDefault();
-        if (window.html2canvas) {
-            window.html2canvas(document.body).then(c => {
-                const link = document.createElement('a');
-                link.download = 'regatta-screenshot.png';
-                link.href = c.toDataURL();
-                link.click();
-            });
-        }
-    }
-    if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
-    if (e.key === 'F3') {
-        e.preventDefault();
-        settings.soundEnabled = !settings.soundEnabled;
-        saveSettings();
-        if (settings.soundEnabled) Sound.init();
-        Sound.updateWindSound(state.wind.speed);
-    }
-    if (e.key === 'F4') {
-        e.preventDefault();
-        settings.penaltiesEnabled = !settings.penaltiesEnabled;
-        saveSettings();
-        const msg = settings.penaltiesEnabled ? "RULES ENABLED" : "RULES DISABLED";
-        const col = settings.penaltiesEnabled ? "text-green-400" : "text-red-400";
-        showRaceMessage(msg, col, `border-${settings.penaltiesEnabled ? 'green' : 'red'}-400/50`);
-        setTimeout(hideRaceMessage, 1500);
-    }
-    if (e.key === 'F5') {
-        e.preventDefault();
-        settings.musicEnabled = !settings.musicEnabled;
-        saveSettings();
-        Sound.init();
-    }
-    if (e.key === '`' || e.code === 'Backquote') {
-        state.showNavAids = !state.showNavAids;
-        settings.navAids = state.showNavAids;
-        saveSettings();
-    }
+
+    // Dev
     if (e.key === 'F8') {
         e.preventDefault();
         settings.debugMode = !settings.debugMode;
-        saveSettings();
+        showToast(`Debug: ${settings.debugMode ? "ON" : "OFF"}`);
     }
-    if (e.key === 'F9') {
-        e.preventDefault();
-        if (!state.gameSpeed) state.gameSpeed = 1.0;
-
-        if (state.gameSpeed >= 0.9) state.gameSpeed = 0.5;
-        else if (state.gameSpeed >= 0.4) state.gameSpeed = 0.25;
-        else state.gameSpeed = 1.0;
-
-        const pct = Math.round(state.gameSpeed * 100);
-        showRaceMessage(`GAME SPEED: ${pct}%`, "text-yellow-400", "border-yellow-400/50");
-        setTimeout(hideRaceMessage, 1500);
+    if (e.key === '[') {
+        const steps = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 10.0];
+        let current = state.gameSpeed || 1.0;
+        let next = 0.1;
+        for (let i = steps.length - 1; i >= 0; i--) {
+            if (steps[i] < current - 0.01) { next = steps[i]; break; }
+        }
+        state.gameSpeed = next;
+        showToast(`Speed: ${state.gameSpeed}x`);
+    }
+    if (e.key === ']') {
+        const steps = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 10.0];
+        let current = state.gameSpeed || 1.0;
+        let next = 10.0;
+        for (let i = 0; i < steps.length; i++) {
+            if (steps[i] > current + 0.01) { next = steps[i]; break; }
+        }
+        state.gameSpeed = next;
+        showToast(`Speed: ${state.gameSpeed}x`);
     }
 });
 
@@ -2993,6 +3035,18 @@ function showRaceMessage(text, textColorClass, borderColorClass) {
 }
 
 function hideRaceMessage() { if (UI.message) UI.message.classList.add('hidden'); }
+
+function showToast(text) {
+    if (UI.toast && UI.toastMsg) {
+        UI.toastMsg.textContent = text;
+        UI.toast.classList.remove('opacity-0', 'translate-y-4');
+
+        if (UI.toast.hideTimeout) clearTimeout(UI.toast.hideTimeout);
+        UI.toast.hideTimeout = setTimeout(() => {
+            UI.toast.classList.add('opacity-0', 'translate-y-4');
+        }, 1500);
+    }
+}
 
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
