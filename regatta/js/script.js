@@ -4206,6 +4206,7 @@ function update(dt) {
     // Collisions
     checkBoatCollisions(dt);
     checkMarkCollisions(dt);
+    checkIslandCollisions(dt);
     checkNearMisses(dt);
 
     // Sayings
@@ -5031,6 +5032,38 @@ function drawMinimap() {
     const bp = t(b.x, b.y);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
 
+    // Islands
+    if (state.course.islands) {
+        ctx.fillStyle = '#fde047'; // Sand color for minimap
+        for (const isl of state.course.islands) {
+            ctx.beginPath();
+            if (isl.vertices.length > 0) {
+                const p0 = t(isl.vertices[0].x, isl.vertices[0].y);
+                ctx.moveTo(p0.x, p0.y);
+                for(let i=1; i<isl.vertices.length; i++) {
+                    const pi = t(isl.vertices[i].x, isl.vertices[i].y);
+                    ctx.lineTo(pi.x, pi.y);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+            // Optional: Green center?
+            ctx.fillStyle = '#16a34a';
+            ctx.beginPath();
+            if (isl.vegVertices.length > 0) {
+                const p0 = t(isl.vegVertices[0].x, isl.vegVertices[0].y);
+                ctx.moveTo(p0.x, p0.y);
+                for(let i=1; i<isl.vegVertices.length; i++) {
+                    const pi = t(isl.vegVertices[i].x, isl.vegVertices[i].y);
+                    ctx.lineTo(pi.x, pi.y);
+                }
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = '#fde047'; // Reset for next
+        }
+    }
+
     // Gusts
     for (const g of state.gusts) {
         const pos = t(g.x, g.y);
@@ -5742,6 +5775,7 @@ function draw() {
     drawGusts(ctx);
     drawParticles(ctx, 'current');
     drawWater(ctx);
+    drawIslands(ctx);
     drawDisturbedAir(ctx);
     drawParticles(ctx, 'surface');
     drawActiveGateLine(ctx);
@@ -6067,6 +6101,218 @@ function repositionBoats() {
     }
 }
 
+// Island Logic
+function generateIslands(boundary) {
+    const islands = [];
+    const count = 6 + Math.floor(Math.random() * 5); // 6-10 islands
+    const minR = 0;
+    const maxR = boundary.radius - 200;
+
+    // Course line segment for avoidance
+    const marks = state.course.marks;
+    if (!marks || marks.length < 4) return [];
+
+    // Determine bounds of the "Fairway" (Corridor between marks)
+    const mStart = { x: (marks[0].x+marks[1].x)/2, y: (marks[0].y+marks[1].y)/2 };
+    const mUpwind = { x: (marks[2].x+marks[3].x)/2, y: (marks[2].y+marks[3].y)/2 };
+
+    // Safety corridor width around the direct path
+    const corridorWidth = 350;
+
+    for(let i=0; i<count; i++) {
+        let x, y, valid = false;
+        let attempts = 0;
+        const radius = 60 + Math.random() * 120; // Varied size
+
+        while(!valid && attempts < 50) {
+            attempts++;
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.sqrt(Math.random()) * maxR; // Uniform distribution in circle
+            x = boundary.x + Math.cos(angle) * dist;
+            y = boundary.y + Math.sin(angle) * dist;
+
+            valid = true;
+
+            // 1. Avoid Marks
+            for (const m of marks) {
+                if ((x-m.x)**2 + (y-m.y)**2 < (350 + radius)**2) { valid = false; break; }
+            }
+            if (!valid) continue;
+
+            // 2. Avoid Start/Finish Box Areas
+            if ((x-mStart.x)**2 + (y-mStart.y)**2 < (600 + radius)**2) { valid = false; continue; }
+            if ((x-mUpwind.x)**2 + (y-mUpwind.y)**2 < (600 + radius)**2) { valid = false; continue; }
+
+            // 3. Avoid other islands
+            for (const isl of islands) {
+                 if ((x-isl.x)**2 + (y-isl.y)**2 < (isl.radius + radius + 150)**2) { valid = false; break; }
+            }
+            if (!valid) continue;
+
+            // 4. Fairway Check
+            const closest = getClosestPointOnSegment(x, y, mStart.x, mStart.y, mUpwind.x, mUpwind.y);
+            const distToPath = Math.sqrt((x-closest.x)**2 + (y-closest.y)**2);
+
+            // Allow some islands near path but not BLOCKING it completely
+            if (distToPath < corridorWidth + radius) {
+                 // 60% chance to reject if in corridor
+                 if (Math.random() < 0.6) valid = false;
+            }
+        }
+
+        if (!valid) continue;
+
+        // Generate Polygon (Jagged Blob)
+        const vertices = [];
+        const points = 7 + Math.floor(Math.random() * 6);
+        for(let j=0; j<points; j++) {
+            const theta = (j / points) * Math.PI * 2;
+            const r = radius * (0.7 + Math.random() * 0.6);
+            vertices.push({
+                x: x + Math.cos(theta) * r,
+                y: y + Math.sin(theta) * r
+            });
+        }
+
+        // Veg Poly (Inner)
+        const vegVertices = vertices.map(v => ({
+            x: x + (v.x - x) * 0.75,
+            y: y + (v.y - y) * 0.75
+        }));
+
+        // Palm Trees
+        const trees = [];
+        const treeCount = 2 + Math.floor(Math.random() * 5);
+        for(let k=0; k<treeCount; k++) {
+             const ang = Math.random() * Math.PI * 2;
+             const dst = Math.random() * radius * 0.4;
+             trees.push({
+                 x: x + Math.cos(ang)*dst,
+                 y: y + Math.sin(ang)*dst,
+                 size: 14 + Math.random()*10,
+                 rotation: Math.random() * Math.PI * 2
+             });
+        }
+
+        islands.push({ x, y, radius, vertices, vegVertices, trees });
+    }
+    return islands;
+}
+
+function checkIslandCollisions(dt) {
+    if (!state.course || !state.course.islands) return;
+
+    for (const boat of state.boats) {
+        if (boat.raceState.finished && boat.fadeTimer <= 0) continue;
+
+        // Optimization: Broad phase
+        let potential = false;
+        for (const isl of state.course.islands) {
+            const dx = boat.x - isl.x;
+            const dy = boat.y - isl.y;
+            if (dx*dx + dy*dy < (isl.radius + 50)**2) { potential = true; break; }
+        }
+        if (!potential) continue;
+
+        const boatPoly = getHullPolygon(boat);
+
+        for (const isl of state.course.islands) {
+            const dx = boat.x - isl.x;
+            const dy = boat.y - isl.y;
+            if (dx*dx + dy*dy > (isl.radius + 50)**2) continue;
+
+            const res = satPolygonPolygon(boatPoly, isl.vertices);
+            if (res) {
+                 // Push boat OUT
+                 boat.x -= res.axis.x * res.overlap;
+                 boat.y -= res.axis.y * res.overlap;
+
+                 // Grounding Penalty: Lose 60% speed instantly + massive drag
+                 boat.speed *= 0.4;
+
+                 if (state.race.status === 'racing') triggerPenalty(boat);
+                 if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat });
+            }
+        }
+    }
+}
+
+function drawIslands(ctx) {
+    if (!state.course || !state.course.islands) return;
+
+    const drawRoundedPoly = (vertices) => {
+        if (vertices.length < 3) return;
+        ctx.beginPath();
+        const last = vertices[vertices.length - 1];
+        const first = vertices[0];
+        let midX = (last.x + first.x) / 2;
+        let midY = (last.y + first.y) / 2;
+        ctx.moveTo(midX, midY);
+
+        for (let i = 0; i < vertices.length; i++) {
+            const p = vertices[i];
+            const next = vertices[(i + 1) % vertices.length];
+            midX = (p.x + next.x) / 2;
+            midY = (p.y + next.y) / 2;
+            ctx.quadraticCurveTo(p.x, p.y, midX, midY);
+        }
+        ctx.closePath();
+    };
+
+    for (const isl of state.course.islands) {
+        // Sand
+        ctx.fillStyle = '#fde047'; // Yellow 300
+        drawRoundedPoly(isl.vertices);
+        ctx.fill();
+        ctx.strokeStyle = '#eab308'; // Darker sand stroke
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Vegetation
+        ctx.fillStyle = '#16a34a'; // Green 600
+        drawRoundedPoly(isl.vegVertices);
+        ctx.fill();
+
+        // Trees
+        for(const t of isl.trees) {
+            // Shadow/Trunk Base
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.beginPath(); ctx.arc(t.x+2, t.y+2, t.size/3, 0, Math.PI*2); ctx.fill();
+
+            const fronds = 7;
+            const startAngle = t.rotation || 0;
+
+            for(let i=0; i<fronds; i++) {
+                 const angle = startAngle + (i / fronds) * Math.PI * 2;
+                 const len = t.size;
+                 const wid = t.size * 0.3;
+
+                 const cx = t.x;
+                 const cy = t.y;
+                 const tx = cx + Math.cos(angle) * len;
+                 const ty = cy + Math.sin(angle) * len;
+
+                 // Draw Leaf
+                 ctx.fillStyle = '#15803d'; // Green 700
+                 ctx.beginPath();
+                 ctx.moveTo(cx, cy);
+                 ctx.quadraticCurveTo(cx + Math.cos(angle-0.4)*len*0.6, cy + Math.sin(angle-0.4)*len*0.6, tx, ty);
+                 ctx.quadraticCurveTo(cx + Math.cos(angle+0.4)*len*0.6, cy + Math.sin(angle+0.4)*len*0.6, cx, cy);
+                 ctx.fill();
+
+                 // Rib
+                 ctx.strokeStyle = '#14532d'; // Green 900
+                 ctx.lineWidth = 1;
+                 ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
+            }
+
+            // Center
+            ctx.fillStyle = '#14532d';
+            ctx.beginPath(); ctx.arc(t.x, t.y, t.size/5, 0, Math.PI*2); ctx.fill();
+        }
+    }
+}
+
 // Init
 function initCourse() {
     const d = state.wind.baseDirection, ux = Math.sin(d), uy = -Math.cos(d), rx = -uy, ry = ux;
@@ -6079,6 +6325,9 @@ function initCourse() {
         ],
         boundary: { x: ux*dist/2, y: uy*dist/2, radius: Math.max(3500, dist + 500) } // Adjust boundary for long courses
     };
+
+    // Generate Islands
+    state.course.islands = generateIslands(state.course.boundary);
 }
 
 function resetGame() {
