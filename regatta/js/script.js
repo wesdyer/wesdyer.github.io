@@ -106,6 +106,16 @@ const Sayings = {
     }
 };
 
+// Seeded RNG Helper
+function mulberry32(a) {
+    return function() {
+      var t = a += 0x6D2B79F5;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+}
+
 // Helper for Risk Prediction (CPA)
 function getRiskMetrics(boat, other) {
     const dx = other.x - boat.x;
@@ -178,10 +188,6 @@ class BotController {
         this.markContactTimer = 0;
         this.markEscapeHeading = 0;
 
-        // Island Escape Latch
-        this.islandEscapeMode = false;
-        this.islandEscapeHeading = 0;
-
         // Staggered updates
         this.updateTimer = Math.random() * 0.2; 
     }
@@ -234,45 +240,8 @@ class BotController {
         let desiredHeading = this.boat.heading;
         let speedRequest = 1.0;
 
-        // Check for Island Collision Trigger
-        if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
-             this.islandEscapeMode = true;
-             // Calculate escape heading: Away from island center
-             const isl = this.boat.ai.collisionData.obstacle;
-             const dx = this.boat.x - isl.x;
-             const dy = this.boat.y - isl.y;
-             this.islandEscapeHeading = Math.atan2(dx, -dy);
-             this.lowSpeedTimer = 0;
-             this.wiggleActive = false;
-        }
-
-        // Check for Stuck Near Island (Proactive trigger for Escape Mode)
-        // If we are slow, and an island is very close ahead
-        if (!this.islandEscapeMode && this.lowSpeedTimer > 2.0) {
-             if (state.course.islands) {
-                 for (const isl of state.course.islands) {
-                     const distSq = (this.boat.x - isl.x)**2 + (this.boat.y - isl.y)**2;
-                     const threshold = (isl.radius + 100)**2;
-                     if (distSq < threshold) {
-                         // Check if it's ahead
-                         const angleToIsl = Math.atan2(isl.x - this.boat.x, -(isl.y - this.boat.y));
-                         const relAngle = Math.abs(normalizeAngle(angleToIsl - this.boat.heading));
-                         if (relAngle < Math.PI / 2) { // It is ahead
-                             this.islandEscapeMode = true;
-                             const dx = this.boat.x - isl.x;
-                             const dy = this.boat.y - isl.y;
-                             this.islandEscapeHeading = Math.atan2(dx, -dy);
-                             this.lowSpeedTimer = 0;
-                             this.wiggleActive = false;
-                             break;
-                         }
-                     }
-                 }
-             }
-        }
-
         // Wiggle / Unstick Logic (Overrides Strategy)
-        if (this.lowSpeedTimer > 3.0 && !this.wiggleActive && !this.islandEscapeMode) {
+        if (this.lowSpeedTimer > 3.0 && !this.wiggleActive) {
             this.wiggleActive = true;
             this.wiggleDuration = 5.0; // Lock in for 5 seconds
 
@@ -290,15 +259,6 @@ class BotController {
                 for (const m of state.course.marks) {
                     const dSq = (m.x - this.boat.x)**2 + (m.y - this.boat.y)**2;
                     if (dSq < minD) { minD = dSq; closestObs = m; }
-                }
-            }
-            // Check Islands
-            if (state.course.islands) {
-                for (const isl of state.course.islands) {
-                    const dSq = (isl.x - this.boat.x)**2 + (isl.y - this.boat.y)**2;
-                    // Approximate island as circle radius*1.2 for wiggle centering
-                    // If we are touching it, the distance is roughly radius.
-                    if (dSq < minD) { minD = dSq; closestObs = isl; }
                 }
             }
 
@@ -385,33 +345,6 @@ class BotController {
              this.markContactTimer -= dt;
              desiredHeading = this.markEscapeHeading;
              speedRequest = 1.0;
-        }
-
-        // Island Escape Logic
-        if (this.islandEscapeMode) {
-             // Check exit condition: Distance to all islands > Safe
-             let safe = true;
-             if (state.course.islands) {
-                 for (const isl of state.course.islands) {
-                      const distSq = (this.boat.x - isl.x)**2 + (this.boat.y - isl.y)**2;
-                      if (distSq < (isl.radius + 150)**2) { // Keep escaping until 150 units clear
-                          safe = false;
-                          // Update heading to be away from this closest island
-                          const dx = this.boat.x - isl.x;
-                          const dy = this.boat.y - isl.y;
-                          this.islandEscapeHeading = Math.atan2(dx, -dy);
-                          break;
-                      }
-                 }
-             }
-
-             if (safe) {
-                 this.islandEscapeMode = false;
-             } else {
-                 // Override controls
-                 desiredHeading = this.islandEscapeHeading;
-                 speedRequest = 1.0; // Force full speed
-             }
         }
 
         // Apply
@@ -677,7 +610,7 @@ class BotController {
             const estTwaDeg = Math.abs(estTwa) * (180 / Math.PI);
 
             // Calculate effective wind for this boat (Boost Stat)
-            const boostFactor = boat.stats.boost * 0.03;
+            const boostFactor = boat.stats.boost * 0.05;
             let effectiveWind = localWind.speed;
             if (effectiveWind > state.wind.baseSpeed) {
                 effectiveWind = state.wind.baseSpeed + (effectiveWind - state.wind.baseSpeed) * (1.0 + boostFactor);
@@ -692,12 +625,12 @@ class BotController {
             // Apply Point of Sail Stats
             let posStat = 0;
             if (estTwaDeg <= 60) {
-                posStat = boat.stats.upwind * 0.012;
+                posStat = boat.stats.upwind * 0.008;
             } else if (estTwaDeg >= 145) {
-                posStat = boat.stats.downwind * 0.014;
+                posStat = boat.stats.downwind * 0.01;
             } else {
                  // Reach
-                 posStat = boat.stats.reach * 0.016;
+                 posStat = boat.stats.reach * 0.012;
             }
             targetKnots *= (1.0 + posStat);
             const targetGameSpeed = targetKnots * 0.25;
@@ -1163,32 +1096,7 @@ class BotController {
                 }
             }
 
-            // 3. Islands - Circle Approximation
-            if (state.course.islands) {
-                for (const isl of state.course.islands) {
-                    // Quick check: Are we even close?
-                    const dCenterSq = (isl.x - boat.x)**2 + (isl.y - boat.y)**2;
-                    // Max island extent ~1.3*radius. Boat speed ~1.0 (60 units/s). Lookahead 4s = 240 units.
-                    // If > radius + 400, skip.
-                    if (dCenterSq > (isl.radius + 500)**2) continue;
-
-                    // Approximate island as a circle of radius * 1.3
-                    const avoidRadius = isl.radius * 1.3 + 30; // +30 buffer for boat
-
-                    // Check distance from Island Center to Path Segment
-                    const closest = getClosestPointOnSegment(isl.x, isl.y, boat.x, boat.y, futureX, futureY);
-                    const dSq = (closest.x - isl.x)**2 + (closest.y - isl.y)**2;
-
-                    if (dSq < avoidRadius * avoidRadius) {
-                        staticCollision = true;
-                        cost += 1000000 / (dSq + 1); // Increased from 300,000
-                    } else if (dSq < (avoidRadius + 200)**2 && this.livenessState === 'normal') { // Increased radius from 100 to 200
-                         proximityCost += 50000 / (dSq + 100); // Increased cost
-                    }
-                }
-            }
-
-            // 4. Boundary - Segment Check
+            // 3. Boundary - Segment Check
             if (state.course.boundary) {
                 const b = state.course.boundary;
                 // Check future point first (simple)
@@ -1958,11 +1866,67 @@ function getWindAt(x, y) {
         }
     }
 
-    const finalSpeed = Math.sqrt(sumWx*sumWx + sumWy*sumWy);
-    const finalDir = Math.atan2(sumWx, -sumWy); // x, -y to get angle from North CW?
-    // Wait, atan2(x, -y) is standard for "0 is Up, CW".
-    // Check: x=0, y=-1 (Up). atan2(0, 1) = 0. Correct.
-    // Check: x=1, y=0 (Right). atan2(1, 0) = PI/2. Correct.
+    // Island Wind Shadow
+    // Check if point x,y is downwind of any island
+    // "Wind shadows behave like stationary lulls"
+    // They reduce speed but don't change direction significantly (unless we want wrapping, but requirements say "meaninfully dampen wind strength")
+    let shadowFactor = 1.0;
+    
+    if (state.course.islands) {
+        for (const isl of state.course.islands) {
+            // Distance from island center
+            const dx = x - isl.x;
+            const dy = y - isl.y;
+            
+            // Wind Vector (blowing FROM baseDir)
+            // Wind Direction (baseDir) is FROM direction.
+            // Coordinate system: Y is down.
+            // North (0) -> Blows South (+Y). Vector (0, 1).
+            // East (PI/2) -> Blows West (-X). Vector (-1, 0).
+            const flowX = -Math.sin(baseDir);
+            const flowY = Math.cos(baseDir);
+            
+            // Project relative position onto flow vector
+            // dot > 0 means downwind
+            const dot = dx * flowX + dy * flowY;
+            
+            if (dot > 0) {
+                // Downwind. Check cross-track distance.
+                // Cross vector (-flowY, flowX) or similar
+                const cross = dx * (-flowY) - dy * flowX; // 2D cross product scalar
+                
+                // Shadow width depends on island radius.
+                // Simple cone: Width expands slightly? Or stays cylindrical?
+                // Realism: Wakes spread.
+                const wakeWidth = isl.radius * (1.0 + dot / 500); // Slight spread
+                
+                if (Math.abs(cross) < wakeWidth) {
+                    // Inside shadow cone.
+                    // Intensity fades with distance downwind.
+                    // Max length: 8 * radius?
+                    const shadowLen = isl.radius * 8;
+                    if (dot < shadowLen) {
+                        // Calculate intensity
+                        // Center is strongest. Edges weaker.
+                        // Close is strongest. Far weaker.
+                        
+                        const latFactor = 1.0 - Math.abs(cross) / wakeWidth; // 1 at center, 0 at edge
+                        const longFactor = 1.0 - dot / shadowLen; // 1 at island, 0 at end
+                        
+                        // Combined strength (0 to 1)
+                        // Max reduction: 70%?
+                        const localShadow = latFactor * longFactor * 0.7;
+                        
+                        // Accumulate shadows? Or take max? Max is safer.
+                        shadowFactor = Math.min(shadowFactor, 1.0 - localShadow);
+                    }
+                }
+            }
+        }
+    }
+
+    const finalSpeed = Math.sqrt(sumWx*sumWx + sumWy*sumWy) * shadowFactor;
+    const finalDir = Math.atan2(sumWx, -sumWy); 
 
     return { speed: finalSpeed, direction: finalDir };
 }
@@ -2339,6 +2303,11 @@ const UI = {
     valCourseLegs: document.getElementById('val-course-legs'),
     valCourseTimer: document.getElementById('val-course-timer'),
 
+    // Obstacles UI
+    confIslandCoverage: document.getElementById('conf-island-coverage'),
+    confIslandSize: document.getElementById('conf-island-size'),
+    confIslandClustering: document.getElementById('conf-island-clustering'),
+
     // Current UI
     valCurrentDir: document.getElementById('val-current-direction'),
     valCurrentSpeed: document.getElementById('val-current-speed'),
@@ -2363,6 +2332,7 @@ function updateConditionDescription() {
     const puffFreq = parseFloat(UI.confPuffFreq.value);
     const puffInt = parseFloat(UI.confPuffInt.value);
     const puffShift = parseFloat(UI.confPuffShift.value);
+    const islandCov = parseFloat(UI.confIslandCoverage.value);
 
     // Apply to state
     const baseMin = 5;
@@ -2374,6 +2344,11 @@ function updateConditionDescription() {
     state.race.conditions.puffiness = puffFreq;
     state.race.conditions.gustStrengthBias = puffInt;
     state.race.conditions.puffShiftiness = puffShift;
+    // Obstacles applied in initCourse via state.race.conditions or direct read, 
+    // but better to sync here.
+    state.race.conditions.islandCoverage = islandCov;
+    state.race.conditions.islandSize = parseFloat(UI.confIslandSize.value);
+    state.race.conditions.islandClustering = parseFloat(UI.confIslandClustering.value);
 
     let text = "";
 
@@ -2401,6 +2376,12 @@ function updateConditionDescription() {
     if (puffShift > 0.6) text += " with sharp directional twists.";
     else if (puffShift > 0.3) text += " with some directional leverage.";
     else text += ".";
+
+    // Obstacles
+    if (islandCov > 0) {
+        text += " Navigation hazards present.";
+        if (state.race.conditions.islandClustering > 0.6) text += " Archipelagos expected.";
+    }
 
     UI.confDesc.textContent = text;
 }
@@ -2509,6 +2490,10 @@ function setupPreRaceOverlay() {
     if (UI.confPuffFreq) UI.confPuffFreq.value = cond.puffiness;
     if (UI.confPuffInt) UI.confPuffInt.value = cond.gustStrengthBias;
     if (UI.confPuffShift) UI.confPuffShift.value = cond.puffShiftiness;
+
+    if (UI.confIslandCoverage) UI.confIslandCoverage.value = cond.islandCoverage;
+    if (UI.confIslandSize) UI.confIslandSize.value = cond.islandSize;
+    if (UI.confIslandClustering) UI.confIslandClustering.value = cond.islandClustering;
 
     // Course Defaults
     // 4000 units / 5 = 800m
@@ -2774,6 +2759,19 @@ if (UI.confWindShift) UI.confWindShift.addEventListener('input', updateCondition
 if (UI.confPuffFreq) UI.confPuffFreq.addEventListener('input', updateConditionDescription);
 if (UI.confPuffInt) UI.confPuffInt.addEventListener('input', updateConditionDescription);
 if (UI.confPuffShift) UI.confPuffShift.addEventListener('input', updateConditionDescription);
+
+if (UI.confIslandCoverage) {
+    UI.confIslandCoverage.addEventListener('input', updateConditionDescription);
+    UI.confIslandCoverage.addEventListener('change', initCourse);
+}
+if (UI.confIslandSize) {
+    UI.confIslandSize.addEventListener('input', updateConditionDescription);
+    UI.confIslandSize.addEventListener('change', initCourse);
+}
+if (UI.confIslandClustering) {
+    UI.confIslandClustering.addEventListener('input', updateConditionDescription);
+    UI.confIslandClustering.addEventListener('change', initCourse);
+}
 
     if (UI.confWindDir) UI.confWindDir.addEventListener('input', () => {
         if (UI.valWindDir) {
@@ -3240,8 +3238,8 @@ function updateAI(boat, dt) {
     let aiTurnRate = CONFIG.turnSpeed * timeScale;
 
     // Apply Handling Stat (AI)
-    // +/- 12% -> 2.4% per point
-    aiTurnRate *= (1.0 + boat.stats.handling * 0.024);
+    // +/- 15% -> 3% per point
+    aiTurnRate *= (1.0 + boat.stats.handling * 0.03);
     
     // Wiggle / Force Mode: Super Steering
     if (boat.controller && boat.controller.wiggleActive) {
@@ -3315,7 +3313,7 @@ function updateBoat(boat, dt) {
     if (boat.isPlayer && !boat.raceState.finished) {
         // Player Input
         // Apply Handling Stat (Player)
-        const handlingMod = (1.0 + boat.stats.handling * 0.024);
+        const handlingMod = (1.0 + boat.stats.handling * 0.03);
         const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale * handlingMod;
         if (state.keys.ArrowLeft) boat.heading -= turnRate;
         if (state.keys.ArrowRight) boat.heading += turnRate;
@@ -3424,9 +3422,9 @@ function updateBoat(boat, dt) {
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
     // Boost Stat: Affects wind handling
-    // Boost (+/-15%): Benefit from gusts, lose less from lulls/bad air.
-    // 3% per point.
-    const boostFactor = boat.stats.boost * 0.03;
+    // Boost (+/-25%): Benefit from gusts, lose less from lulls/bad air.
+    // 5% per point.
+    const boostFactor = boat.stats.boost * 0.05;
     const baseWind = state.wind.baseSpeed;
     let physWindSpeed = localWind.speed;
 
@@ -3454,26 +3452,8 @@ function updateBoat(boat, dt) {
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
 
     const actualMagnitude = Math.abs(boat.sailAngle);
-    const angleDiff = actualMagnitude - optimalSailAngle;
-
-    let trimEfficiency = 1.0;
-    let leewayIntensity = 0;
-
-    if (angleDiff > 0) {
-        // Under-trimmed (Sail too loose)
-        // Steeper penalty for luffing/loss of power
-        trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.5);
-    } else {
-        // Over-trimmed (Sail too tight)
-        const absDiff = Math.abs(angleDiff);
-        // Stall penalty
-        trimEfficiency = Math.max(0, 1.0 - absDiff * 2.0);
-
-        // Leeway Calculation (Sideways slip)
-        // Max leeway when fully strapped in against wind
-        leewayIntensity = absDiff * 2.0;
-    }
-
+    const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
+    const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
     targetKnots *= trimEfficiency;
 
     // PLANING LOGIC
@@ -3550,9 +3530,9 @@ function updateBoat(boat, dt) {
     // TWA is in degrees (twaDeg)
     let speedStat = 0;
     if (twaDeg <= 60) {
-        speedStat = boat.stats.upwind * 0.012; // 6% / 5 = 0.012
+        speedStat = boat.stats.upwind * 0.008; // 4% / 5 = 0.008
     } else if (twaDeg >= 145) {
-        speedStat = boat.stats.downwind * 0.014; // 7% / 5 = 0.014
+        speedStat = boat.stats.downwind * 0.01; // 5% / 5 = 0.01
     } else {
         // Linear Interpolation
         // Reach peak assumed at (60+145)/2 = 102.5?
@@ -3560,13 +3540,13 @@ function updateBoat(boat, dt) {
         // Or simpler: Calculate blend weights.
         if (twaDeg < 102.5) {
             const t = (twaDeg - 60) / (102.5 - 60);
-            const s1 = boat.stats.upwind * 0.012;
-            const s2 = boat.stats.reach * 0.016; // 8% / 5 = 0.016
+            const s1 = boat.stats.upwind * 0.008;
+            const s2 = boat.stats.reach * 0.012; // 6% / 5 = 0.012
             speedStat = s1 + t * (s2 - s1);
         } else {
             const t = (twaDeg - 102.5) / (145 - 102.5);
-            const s1 = boat.stats.reach * 0.016;
-            const s2 = boat.stats.downwind * 0.014;
+            const s1 = boat.stats.reach * 0.012;
+            const s2 = boat.stats.downwind * 0.01;
             speedStat = s1 + t * (s2 - s1);
         }
     }
@@ -3644,36 +3624,8 @@ function updateBoat(boat, dt) {
 
     const boatDirX = Math.sin(boat.heading);
     const boatDirY = -Math.cos(boat.heading);
-
-    // Calculate Velocity
-    // Forward Component
-    let vx = boatDirX * boat.speed;
-    let vy = boatDirY * boat.speed;
-
-    // Leeway Component (Perpendicular to heading, away from wind)
-    // If boomSide is 1 (Starboard Tack, Wind from Right), Leeway pushes Left (Port).
-    // Left Vector relative to Heading(0,-1) is (-1,0).
-    // Right Vector is (1,0).
-    // LeewayDir should be -boomSide.
-    if (leewayIntensity > 0 && boat.speed > 0.1) {
-        // Leeway vector (Left/Right)
-        // Right Vector (relative to heading): (cos(h), sin(h))
-        const lx = Math.cos(boat.heading);
-        const ly = Math.sin(boat.heading);
-
-        const dir = -boat.boomSide; // 1 -> -1 (Left), -1 -> 1 (Right)
-
-        // Scale leeway by boat speed (drifting requires movement through water or force)
-        // But side-slip is often higher when moving slowly?
-        // Let's model it as a ratio of forward speed for simplicity in this engine.
-        const slipSpeed = boat.speed * leewayIntensity * 0.4;
-
-        vx += lx * dir * slipSpeed;
-        vy += ly * dir * slipSpeed;
-    }
-
-    boat.velocity.x = vx;
-    boat.velocity.y = vy;
+    boat.velocity.x = boatDirX * boat.speed;
+    boat.velocity.y = boatDirY * boat.speed;
 
     // Apply Current
     if (state.race.conditions.current) {
@@ -6252,70 +6204,121 @@ function repositionBoats() {
 // Island Logic
 function generateIslands(boundary) {
     const islands = [];
-    const count = 6 + Math.floor(Math.random() * 5); // 6-10 islands
-    const minR = 0;
+    const coverage = state.race.conditions.islandCoverage || 0;
+    if (coverage <= 0) return [];
+
+    // Use seeded RNG if available, else standard random (fallback)
+    const rng = state.race.seed ? mulberry32(state.race.seed) : Math.random;
+
+    const sizeSetting = state.race.conditions.islandSize !== undefined ? state.race.conditions.islandSize : 0.5;
+    const clustering = state.race.conditions.islandClustering !== undefined ? state.race.conditions.islandClustering : 0.5;
+
+    // Target Area Calculation
+    const courseArea = Math.PI * boundary.radius * boundary.radius;
+    const targetLandArea = courseArea * coverage;
+
+    // Size Params
+    const baseRadius = 60 + sizeSetting * 190;
+    const avgIslandArea = Math.PI * baseRadius * baseRadius;
+    const targetCount = Math.max(1, Math.round(targetLandArea / avgIslandArea));
+
     const maxR = boundary.radius - 200;
 
     // Course line segment for avoidance
     const marks = state.course.marks;
     if (!marks || marks.length < 4) return [];
 
-    // Determine bounds of the "Fairway" (Corridor between marks)
+    // Fairway Bounds
     const mStart = { x: (marks[0].x+marks[1].x)/2, y: (marks[0].y+marks[1].y)/2 };
     const mUpwind = { x: (marks[2].x+marks[3].x)/2, y: (marks[2].y+marks[3].y)/2 };
+    
+    // Clustering Centers
+    const clusterCenters = [];
+    if (clustering > 0.3) {
+        const numClusters = Math.max(1, Math.floor((1.0 - clustering) * 5) + 1); // 0.9->1 cluster, 0.3->4 clusters
+        for(let i=0; i<numClusters; i++) {
+             const angle = rng() * Math.PI * 2;
+             const dist = Math.sqrt(rng()) * maxR;
+             clusterCenters.push({
+                 x: boundary.x + Math.cos(angle)*dist,
+                 y: boundary.y + Math.sin(angle)*dist
+             });
+        }
+    }
 
-    // Safety corridor width around the direct path
-    const corridorWidth = 350;
+    let currentArea = 0;
+    let fails = 0;
 
-    for(let i=0; i<count; i++) {
+    // Generate loop
+    for(let i=0; i<targetCount * 1.5 && currentArea < targetLandArea; i++) {
         let x, y, valid = false;
         let attempts = 0;
-        const radius = 60 + Math.random() * 120; // Varied size
+        
+        // Randomized Radius based on setting
+        const sizeVar = rng() * 0.6 + 0.7; // 0.7 to 1.3 variation
+        const radius = baseRadius * sizeVar; 
 
         while(!valid && attempts < 50) {
             attempts++;
-            const angle = Math.random() * Math.PI * 2;
-            const dist = Math.sqrt(Math.random()) * maxR; // Uniform distribution in circle
-            x = boundary.x + Math.cos(angle) * dist;
-            y = boundary.y + Math.sin(angle) * dist;
+            
+            // Position Generation
+            if (clustering > 0.3 && clusterCenters.length > 0 && rng() < clustering) {
+                // Pick near a cluster center
+                const center = clusterCenters[Math.floor(rng()*clusterCenters.length)];
+                // Dispersion depends on clustering strength? High clustering = tight dispersion.
+                const dispersion = 1200 * (1.1 - clustering); 
+                const angle = rng() * Math.PI * 2;
+                const dist = rng() * dispersion;
+                x = center.x + Math.cos(angle)*dist;
+                y = center.y + Math.sin(angle)*dist;
+            } else {
+                // Uniform
+                const angle = rng() * Math.PI * 2;
+                const dist = Math.sqrt(rng()) * maxR; 
+                x = boundary.x + Math.cos(angle) * dist;
+                y = boundary.y + Math.sin(angle) * dist;
+            }
+
+            // Boundary Check
+            if ((x-boundary.x)**2 + (y-boundary.y)**2 > maxR**2) continue;
 
             valid = true;
 
-            // 1. Avoid Marks
+            // 1. Avoid Marks (Strict)
+            // Marks need ~350 units clearance for rounding logic + zones
+            const markClearance = 350 + radius;
             for (const m of marks) {
-                if ((x-m.x)**2 + (y-m.y)**2 < (350 + radius)**2) { valid = false; break; }
+                if ((x-m.x)**2 + (y-m.y)**2 < markClearance**2) { valid = false; break; }
             }
             if (!valid) continue;
 
-            // 2. Avoid Start/Finish Box Areas
-            if ((x-mStart.x)**2 + (y-mStart.y)**2 < (600 + radius)**2) { valid = false; continue; }
-            if ((x-mUpwind.x)**2 + (y-mUpwind.y)**2 < (600 + radius)**2) { valid = false; continue; }
+            // 2. Avoid Start/Finish Box Areas (Strict)
+            const boxClearance = 500 + radius;
+            if ((x-mStart.x)**2 + (y-mStart.y)**2 < boxClearance**2) { valid = false; continue; }
+            if ((x-mUpwind.x)**2 + (y-mUpwind.y)**2 < boxClearance**2) { valid = false; continue; }
 
-            // 3. Avoid other islands
+            // 3. Avoid other islands (Strict No-Overlap)
+            // Ensure gap between islands
             for (const isl of islands) {
-                 if ((x-isl.x)**2 + (y-isl.y)**2 < (isl.radius + radius + 150)**2) { valid = false; break; }
+                 const dSq = (x-isl.x)**2 + (y-isl.y)**2;
+                 const minDist = radius + isl.radius + 30; // 30 unit buffer
+                 if (dSq < minDist**2) { valid = false; break; }
             }
             if (!valid) continue;
-
-            // 4. Fairway Check
-            const closest = getClosestPointOnSegment(x, y, mStart.x, mStart.y, mUpwind.x, mUpwind.y);
-            const distToPath = Math.sqrt((x-closest.x)**2 + (y-closest.y)**2);
-
-            // Allow some islands near path but not BLOCKING it completely
-            if (distToPath < corridorWidth + radius) {
-                 // 60% chance to reject if in corridor
-                 if (Math.random() < 0.6) valid = false;
-            }
         }
 
-        if (!valid) continue;
+        if (!valid) {
+            fails++;
+            if (fails > 20) break; // Give up if space is full
+            continue;
+        }
 
         // Generate Polygon (Jagged Blob)
         const vertices = [];
-        const points = 7 + Math.floor(Math.random() * 6);
+        const points = 7 + Math.floor(rng() * 6);
         for(let j=0; j<points; j++) {
             const theta = (j / points) * Math.PI * 2;
-            const r = radius * (0.7 + Math.random() * 0.6);
+            const r = radius * (0.7 + rng() * 0.6);
             vertices.push({
                 x: x + Math.cos(theta) * r,
                 y: y + Math.sin(theta) * r
@@ -6330,21 +6333,115 @@ function generateIslands(boundary) {
 
         // Palm Trees
         const trees = [];
-        const treeCount = 2 + Math.floor(Math.random() * 5);
+        // Scale tree count by size
+        const treeCount = Math.floor(2 + (radius/60) * 2 + rng() * 3);
         for(let k=0; k<treeCount; k++) {
-             const ang = Math.random() * Math.PI * 2;
-             const dst = Math.random() * radius * 0.4;
+             const ang = rng() * Math.PI * 2;
+             const dst = rng() * radius * 0.4;
              trees.push({
                  x: x + Math.cos(ang)*dst,
                  y: y + Math.sin(ang)*dst,
-                 size: 14 + Math.random()*10,
-                 rotation: Math.random() * Math.PI * 2
+                 size: 14 + rng()*10,
+                 rotation: rng() * Math.PI * 2
              });
         }
 
         islands.push({ x, y, radius, vertices, vegVertices, trees });
+        currentArea += Math.PI * radius * radius;
     }
+    
     return islands;
+}
+
+function checkCourseNavigability(islands, marks) {
+    if (!islands || islands.length === 0) return true;
+    
+    // Grid Flood Fill
+    // Define bounds based on course boundary radius
+    const radius = state.course.boundary ? state.course.boundary.radius : 4000;
+    const pad = 200;
+    const minX = state.course.boundary.x - radius - pad;
+    const maxX = state.course.boundary.x + radius + pad;
+    const minY = state.course.boundary.y - radius - pad;
+    const maxY = state.course.boundary.y + radius + pad;
+
+    const resolution = 100; // 100 unit grid
+    const cols = Math.ceil((maxX - minX) / resolution);
+    const rows = Math.ceil((maxY - minY) / resolution);
+    
+    const grid = new Uint8Array(cols * rows); // 0=water, 1=island
+    
+    // Rasterize islands roughly
+    // optimization: only check cells near islands
+    for(const isl of islands) {
+        // Bounding box in grid coords
+        const c1 = Math.floor((isl.x - isl.radius - minX) / resolution);
+        const c2 = Math.ceil((isl.x + isl.radius - minX) / resolution);
+        const r1 = Math.floor((isl.y - isl.radius - minY) / resolution);
+        const r2 = Math.ceil((isl.y + isl.radius - minY) / resolution);
+        
+        for(let c=c1; c<c2; c++) {
+            for(let r=r1; r<r2; r++) {
+                if(c>=0 && c<cols && r>=0 && r<rows) {
+                    const wx = minX + c * resolution + resolution/2;
+                    const wy = minY + r * resolution + resolution/2;
+                    if ((wx-isl.x)**2 + (wy-isl.y)**2 < isl.radius**2) {
+                        grid[r*cols + c] = 1;
+                    }
+                }
+            }
+        }
+    }
+    
+    // Start Point (Start Line Center)
+    const sx = (marks[0].x+marks[1].x)/2;
+    const sy = (marks[0].y+marks[1].y)/2;
+    const startC = Math.floor((sx - minX) / resolution);
+    const startR = Math.floor((sy - minY) / resolution);
+    
+    // Target Point (Upwind Gate Center)
+    const tx = (marks[2].x+marks[3].x)/2;
+    const ty = (marks[2].y+marks[3].y)/2;
+    const targetC = Math.floor((tx - minX) / resolution);
+    const targetR = Math.floor((ty - minY) / resolution);
+    
+    if (grid[startR*cols + startC] === 1) return false; // Start blocked (unlikely due to generation checks)
+    if (grid[targetR*cols + targetC] === 1) return false; // Target blocked
+    
+    // BFS
+    const queue = [startR*cols + startC];
+    const visited = new Uint8Array(cols * rows);
+    visited[startR*cols + startC] = 1;
+    
+    let found = false;
+    while(queue.length > 0) {
+        const idx = queue.shift();
+        if (idx === targetR*cols + targetC) {
+            found = true;
+            break;
+        }
+        
+        const r = Math.floor(idx / cols);
+        const c = idx % cols;
+        
+        // Neighbors (4-way)
+        const neighbors = [
+            {r: r+1, c: c}, {r: r-1, c: c},
+            {r: r, c: c+1}, {r: r, c: c-1}
+        ];
+        
+        for(const n of neighbors) {
+            if (n.r >= 0 && n.r < rows && n.c >= 0 && n.c < cols) {
+                const nIdx = n.r*cols + n.c;
+                if (!visited[nIdx] && grid[nIdx] === 0) {
+                    visited[nIdx] = 1;
+                    queue.push(nIdx);
+                }
+            }
+        }
+    }
+    
+    return found;
 }
 
 function checkIslandCollisions(dt) {
@@ -6380,10 +6477,6 @@ function checkIslandCollisions(dt) {
 
                  if (state.race.status === 'racing') triggerPenalty(boat);
                  if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat });
-
-                 if (boat.ai) {
-                     boat.ai.collisionData = { type: 'island', obstacle: isl, normal: res.axis };
-                 }
             }
         }
     }
@@ -6391,6 +6484,12 @@ function checkIslandCollisions(dt) {
 
 function drawIslands(ctx) {
     if (!state.course || !state.course.islands) return;
+
+    // Viewport Culling
+    // Viewport diagonal radius approximation
+    const viewRadius = Math.sqrt(ctx.canvas.width**2 + ctx.canvas.height**2) * 0.6; // Slightly more than half diagonal
+    const camX = state.camera.x;
+    const camY = state.camera.y;
 
     const drawRoundedPoly = (vertices) => {
         if (vertices.length < 3) return;
@@ -6412,6 +6511,11 @@ function drawIslands(ctx) {
     };
 
     for (const isl of state.course.islands) {
+        // Culling Check
+        const distSq = (isl.x - camX)**2 + (isl.y - camY)**2;
+        const limit = viewRadius + isl.radius;
+        if (distSq > limit**2) continue;
+
         // Sand
         ctx.fillStyle = '#fde047'; // Yellow 300
         drawRoundedPoly(isl.vertices);
@@ -6479,7 +6583,28 @@ function initCourse() {
     };
 
     // Generate Islands
-    state.course.islands = generateIslands(state.course.boundary);
+    let islands = [];
+    let attempts = 0;
+    let valid = false;
+    
+    // Only attempt if islands are requested
+    if (state.race.conditions.islandCoverage > 0) {
+        while(!valid && attempts < 5) {
+            attempts++;
+            islands = generateIslands(state.course.boundary);
+            if (checkCourseNavigability(islands, state.course.marks)) {
+                valid = true;
+            }
+        }
+        if (!valid) {
+            console.warn("Failed to generate navigable course with islands. Fallback to fewer islands.");
+            // Last ditch: fewer islands? Or just empty array? 
+            // Let's accept the last generated set if they exist but warn, or clear.
+            // Clearing is safer.
+            islands = []; 
+        }
+    }
+    state.course.islands = islands;
 }
 
 function resetGame() {
@@ -6522,6 +6647,11 @@ function resetGame() {
     // +/- 0.1 to 0.2 radians
     const directionBias = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.1);
 
+    // Obstacle Defaults (Randomized on Init)
+    const islandCoverage = Math.random() * 0.5; // 0% to 50%
+    const islandSize = Math.random();
+    const islandClustering = Math.random();
+
     // Current Generation
     // 70% chance of zero. 30% chance of 0-3 knots.
     let currentData = null;
@@ -6539,8 +6669,14 @@ function resetGame() {
         gustStrengthBias,
         puffShiftiness,
         directionBias,
-        current: currentData
+        current: currentData,
+        islandCoverage,
+        islandSize,
+        islandClustering
     };
+    
+    // Seed for island generation
+    state.race.seed = Math.floor(Math.random() * 1000000);
     state.time = 0;
     state.race.status = 'waiting'; // Wait for user to start
 
