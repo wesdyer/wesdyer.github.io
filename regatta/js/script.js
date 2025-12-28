@@ -609,7 +609,7 @@ class BotController {
             const estTwaDeg = Math.abs(estTwa) * (180 / Math.PI);
 
             // Calculate effective wind for this boat (Boost Stat)
-            const boostFactor = boat.stats.boost * 0.05;
+            const boostFactor = boat.stats.boost * 0.03;
             let effectiveWind = localWind.speed;
             if (effectiveWind > state.wind.baseSpeed) {
                 effectiveWind = state.wind.baseSpeed + (effectiveWind - state.wind.baseSpeed) * (1.0 + boostFactor);
@@ -624,12 +624,12 @@ class BotController {
             // Apply Point of Sail Stats
             let posStat = 0;
             if (estTwaDeg <= 60) {
-                posStat = boat.stats.upwind * 0.008;
+                posStat = boat.stats.upwind * 0.012;
             } else if (estTwaDeg >= 145) {
-                posStat = boat.stats.downwind * 0.01;
+                posStat = boat.stats.downwind * 0.014;
             } else {
                  // Reach
-                 posStat = boat.stats.reach * 0.012;
+                 posStat = boat.stats.reach * 0.016;
             }
             targetKnots *= (1.0 + posStat);
             const targetGameSpeed = targetKnots * 0.25;
@@ -3172,8 +3172,8 @@ function updateAI(boat, dt) {
     let aiTurnRate = CONFIG.turnSpeed * timeScale;
 
     // Apply Handling Stat (AI)
-    // +/- 15% -> 3% per point
-    aiTurnRate *= (1.0 + boat.stats.handling * 0.03);
+    // +/- 12% -> 2.4% per point
+    aiTurnRate *= (1.0 + boat.stats.handling * 0.024);
     
     // Wiggle / Force Mode: Super Steering
     if (boat.controller && boat.controller.wiggleActive) {
@@ -3247,7 +3247,7 @@ function updateBoat(boat, dt) {
     if (boat.isPlayer && !boat.raceState.finished) {
         // Player Input
         // Apply Handling Stat (Player)
-        const handlingMod = (1.0 + boat.stats.handling * 0.03);
+        const handlingMod = (1.0 + boat.stats.handling * 0.024);
         const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale * handlingMod;
         if (state.keys.ArrowLeft) boat.heading -= turnRate;
         if (state.keys.ArrowRight) boat.heading += turnRate;
@@ -3356,9 +3356,9 @@ function updateBoat(boat, dt) {
     const spinFactor = Math.max(0, (progress - 0.5) * 2);
 
     // Boost Stat: Affects wind handling
-    // Boost (+/-25%): Benefit from gusts, lose less from lulls/bad air.
-    // 5% per point.
-    const boostFactor = boat.stats.boost * 0.05;
+    // Boost (+/-15%): Benefit from gusts, lose less from lulls/bad air.
+    // 3% per point.
+    const boostFactor = boat.stats.boost * 0.03;
     const baseWind = state.wind.baseSpeed;
     let physWindSpeed = localWind.speed;
 
@@ -3482,9 +3482,9 @@ function updateBoat(boat, dt) {
     // TWA is in degrees (twaDeg)
     let speedStat = 0;
     if (twaDeg <= 60) {
-        speedStat = boat.stats.upwind * 0.008; // 4% / 5 = 0.008
+        speedStat = boat.stats.upwind * 0.012; // 6% / 5 = 0.012
     } else if (twaDeg >= 145) {
-        speedStat = boat.stats.downwind * 0.01; // 5% / 5 = 0.01
+        speedStat = boat.stats.downwind * 0.014; // 7% / 5 = 0.014
     } else {
         // Linear Interpolation
         // Reach peak assumed at (60+145)/2 = 102.5?
@@ -3492,13 +3492,13 @@ function updateBoat(boat, dt) {
         // Or simpler: Calculate blend weights.
         if (twaDeg < 102.5) {
             const t = (twaDeg - 60) / (102.5 - 60);
-            const s1 = boat.stats.upwind * 0.008;
-            const s2 = boat.stats.reach * 0.012; // 6% / 5 = 0.012
+            const s1 = boat.stats.upwind * 0.012;
+            const s2 = boat.stats.reach * 0.016; // 8% / 5 = 0.016
             speedStat = s1 + t * (s2 - s1);
         } else {
             const t = (twaDeg - 102.5) / (145 - 102.5);
-            const s1 = boat.stats.reach * 0.012;
-            const s2 = boat.stats.downwind * 0.01;
+            const s1 = boat.stats.reach * 0.016;
+            const s2 = boat.stats.downwind * 0.014;
             speedStat = s1 + t * (s2 - s1);
         }
     }
