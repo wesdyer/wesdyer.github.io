@@ -4989,6 +4989,47 @@ function drawGusts(ctx) {
     }
 }
 
+function drawIslandShadows(ctx) {
+    if (!state.course.islands) return;
+    const windDir = state.wind.direction;
+    const shadowAngle = Math.atan2(Math.cos(windDir), -Math.sin(windDir));
+
+    // Viewport Culling
+    const camX = state.camera.x;
+    const camY = state.camera.y;
+    // Approx viewport radius
+    const viewRadius = Math.max(ctx.canvas.width, ctx.canvas.height);
+
+    for (const isl of state.course.islands) {
+        // Culling (Simple distance check including shadow length)
+        const distSq = (isl.x - camX)**2 + (isl.y - camY)**2;
+        if (distSq > (viewRadius + isl.radius * 9)**2) continue;
+
+        ctx.save();
+        ctx.translate(isl.x, isl.y);
+        ctx.rotate(shadowAngle);
+
+        const shadowLen = isl.radius * 8;
+        const startWidth = isl.radius;
+        const endWidth = isl.radius * (1.0 + shadowLen / 500);
+
+        const grad = ctx.createLinearGradient(0, 0, shadowLen, 0);
+        // Lull color: rgba(92, 201, 255, alpha)
+        grad.addColorStop(0, 'rgba(92, 201, 255, 0.6)');
+        grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, -startWidth);
+        ctx.lineTo(shadowLen, -endWidth);
+        ctx.quadraticCurveTo(shadowLen + endWidth * 0.5, 0, shadowLen, endWidth);
+        ctx.lineTo(0, startWidth);
+        ctx.quadraticCurveTo(-startWidth * 0.5, 0, 0, -startWidth);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
 function drawMarkShadows(ctx) {
     for (const m of state.course.marks) {
         ctx.save(); ctx.translate(m.x, m.y);
@@ -5131,6 +5172,37 @@ function drawMinimap() {
     const b = state.course.boundary;
     const bp = t(b.x, b.y);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+
+    // Island Shadows
+    if (state.course.islands) {
+        const windDir = state.wind.direction;
+        const shadowAngle = Math.atan2(Math.cos(windDir), -Math.sin(windDir));
+
+        for (const isl of state.course.islands) {
+            const pos = t(isl.x, isl.y);
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(shadowAngle);
+
+            const shadowLen = isl.radius * 8 * scale;
+            const startWidth = isl.radius * scale;
+            const endWidth = isl.radius * (1.0 + (isl.radius * 8)/500) * scale;
+
+            const grad = ctx.createLinearGradient(0, 0, shadowLen, 0);
+            grad.addColorStop(0, 'rgba(92, 201, 255, 0.6)');
+            grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -startWidth);
+            ctx.lineTo(shadowLen, -endWidth);
+            ctx.quadraticCurveTo(shadowLen + endWidth * 0.5, 0, shadowLen, endWidth);
+            ctx.lineTo(0, startWidth);
+            ctx.quadraticCurveTo(-startWidth * 0.5, 0, 0, -startWidth);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
 
     // Islands
     if (state.course.islands) {
@@ -5873,6 +5945,7 @@ function draw() {
     ctx.translate(-state.camera.x, -state.camera.y);
 
     drawGusts(ctx);
+    drawIslandShadows(ctx);
     drawParticles(ctx, 'current');
     drawWater(ctx);
     drawIslands(ctx);
