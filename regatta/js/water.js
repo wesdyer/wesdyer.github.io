@@ -15,13 +15,13 @@ window.WATER_CONFIG = {
     contourScale: 150, // Noise scale
     contourSpacing: 25, // Pixels between lines
     contourWidth: 1.0,
-    contourScrollSpeed: 0.02, // Slower flow
+    contourScrollSpeed: 0.005, // Slower flow
     contourDistortion: 0.5,
 
     // Caustics
     causticStrength: 0.06,
     causticScale: 400,
-    causticSpeed: 0.015,
+    causticSpeed: 0.005,
 
     // Grain/Texture
     grainStrength: 0.02,
@@ -330,11 +330,11 @@ class WaterRenderer {
         const speed = config.contourScrollSpeed;
 
         // Scroll offsets (flow)
-        const flowDx = Math.sin(windDir) * this.time * speed * 20;
+        const flowDx = -Math.sin(windDir) * this.time * speed * 20;
         const flowDy = Math.cos(windDir) * this.time * speed * 20;
 
         // Caustic scroll
-        const cDx = Math.sin(windDir + 1) * this.time * config.causticSpeed * 10;
+        const cDx = -Math.sin(windDir + 1) * this.time * config.causticSpeed * 10;
         const cDy = Math.cos(windDir + 1) * this.time * config.causticSpeed * 10;
 
         // We need a matrix that maps Screen Pixels -> World Pattern UVs
