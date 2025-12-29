@@ -1,10 +1,10 @@
 
 // Water Rendering Configuration
 window.WATER_CONFIG = {
-    // Deep Ocean Palette (Dark Blues)
-    baseColor: '#2088f8', // Vivid Blue (from image)
-    deepColor: '#1a67f9', // Darkest Blue (from image)
-    shallowColor: '#39c3f6', // Lighter Blue (from image)
+    // Tropical Palette
+    baseColor: '#0ea5e9', // Sky-500 (Brighter, more tropical)
+    deepColor: '#0369a1', // Sky-700
+    shallowColor: '#38bdf8', // Sky-400
 
     // Depth Gradient
     depthGradientStrength: 0.20,
