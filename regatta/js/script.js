@@ -5138,7 +5138,7 @@ function drawIslandShadows(ctx) {
 
         const grad = ctx.createLinearGradient(0, 0, shadowLen, 0);
         // Lull color: rgba(92, 201, 255, alpha)
-        grad.addColorStop(0, 'rgba(92, 201, 255, 0.6)');
+        grad.addColorStop(0, 'rgba(92, 201, 255, 0.25)');
         grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
 
         ctx.fillStyle = grad;
