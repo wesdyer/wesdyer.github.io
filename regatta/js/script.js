@@ -6512,7 +6512,37 @@ function generateIslands(boundary) {
              });
         }
 
-        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks };
+        // Sand Patches
+        const sandPatches = [];
+        const sandPatchCount = Math.floor(br / 15);
+        const sandColors = ['#fce7b3', '#fae19d', '#fef3c7', '#eaddb6'];
+        for(let k=0; k<sandPatchCount; k++) {
+             const ang = rng() * Math.PI * 2;
+             const dst = rng() * br * 0.9;
+             sandPatches.push({
+                 x: bx + Math.cos(ang)*dst,
+                 y: by + Math.sin(ang)*dst,
+                 r: 10 + rng() * 20,
+                 color: sandColors[Math.floor(rng() * sandColors.length)]
+             });
+        }
+
+        // Vegetation Patches
+        const vegPatches = [];
+        const vegPatchCount = Math.floor(br / 15);
+        const vegColors = ['#a3e635', '#65a30d', '#4ade80', '#bef264'];
+        for(let k=0; k<vegPatchCount; k++) {
+             const ang = rng() * Math.PI * 2;
+             const dst = rng() * br * 0.7; // Tighter for veg
+             vegPatches.push({
+                 x: bx + Math.cos(ang)*dst,
+                 y: by + Math.sin(ang)*dst,
+                 r: 8 + rng() * 15,
+                 color: vegColors[Math.floor(rng() * vegColors.length)]
+             });
+        }
+
+        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks, sandPatches, vegPatches };
     };
 
     // Helper: Validate a circle against world constraints
@@ -6807,17 +6837,35 @@ function drawIslands(ctx) {
     }
 
     // Pass 2: Sand Fills (Covers inner strokes of overlapping islands)
-    ctx.fillStyle = '#fde6b1'; // Pale Sand
     for (const isl of visible) {
+        ctx.save();
         drawRoundedPoly(isl.vertices);
+        ctx.clip();
+        ctx.fillStyle = '#fde6b1'; // Base Sand
         ctx.fill();
+        if (isl.sandPatches) {
+            for (const p of isl.sandPatches) {
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+            }
+        }
+        ctx.restore();
     }
 
     // Pass 3: Vegetation
-    ctx.fillStyle = '#84cc16'; // Vibrant Green
     for (const isl of visible) {
+        ctx.save();
         drawRoundedPoly(isl.vegVertices);
+        ctx.clip();
+        ctx.fillStyle = '#84cc16'; // Base Green
         ctx.fill();
+        if (isl.vegPatches) {
+            for (const p of isl.vegPatches) {
+                ctx.fillStyle = p.color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+            }
+        }
+        ctx.restore();
     }
 
     // Pass 3.5: Rocks
