@@ -1908,7 +1908,7 @@ function getWindAt(x, y) {
                     // Inside shadow cone.
                     // Intensity fades with distance downwind.
                     // Max length: 8 * radius?
-                    const shadowLen = isl.radius * 8;
+                    const shadowLen = isl.radius * 5;
                     if (dot < shadowLen) {
                         // Calculate intensity
                         // Center is strongest. Edges weaker.
@@ -5147,7 +5147,7 @@ function drawIslandShadows(ctx) {
         ctx.translate(isl.x, isl.y);
         ctx.rotate(shadowAngle);
 
-        const shadowLen = isl.radius * 8;
+        const shadowLen = isl.radius * 5;
         const startWidth = isl.radius;
         const endWidth = isl.radius * (1.0 + shadowLen / 500);
 
