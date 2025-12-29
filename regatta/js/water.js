@@ -48,6 +48,11 @@ function smoothstep(t) {
     return t * t * (3 - 2 * t);
 }
 
+function getVarianceCorrection(t) {
+    const dem = t * t + (1 - t) * (1 - t);
+    return 1.0 / Math.sqrt(dem || 1);
+}
+
 // 2D Noise function
 function noise2D(xin, yin) {
     const F2 = 0.5*(Math.sqrt(3.0)-1.0);
@@ -99,7 +104,11 @@ function tileableNoise2D(x, y, w, h) {
     // Bilinear blend
     const i1 = v1 * (1 - s) + v2 * s;
     const i2 = v3 * (1 - s) + v4 * s;
-    return i1 * (1 - t) + i2 * t;
+    const val = i1 * (1 - t) + i2 * t;
+
+    // Variance compensation to hide grid seams
+    const corr = getVarianceCorrection(s) * getVarianceCorrection(t);
+    return val * corr;
 }
 
 class WaterRenderer {
@@ -236,7 +245,10 @@ class WaterRenderer {
 
                 const i1 = v1 * (1 - s) + v2 * s;
                 const i2 = v3 * (1 - s) + v4 * s;
-                const val = i1 * (1 - t) + i2 * t;
+                let val = i1 * (1 - t) + i2 * t;
+
+                // Variance compensation
+                val *= getVarianceCorrection(s) * getVarianceCorrection(t);
 
                 // Create bands
                 // Map val to pixel space based on spacing
