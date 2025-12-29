@@ -6796,11 +6796,11 @@ function drawIslands(ctx) {
     for (const isl of visible) {
         for(const t of isl.trees) {
             if (palmImg.complete && palmImg.naturalWidth > 0) {
-                const size = t.size * 2.2;
+                const size = t.size * 4.0;
 
                 // Shadow (Draw First, with World Offset)
                 ctx.save();
-                ctx.translate(t.x + 3, t.y + 3); // World offset (+3, +3)
+                ctx.translate(t.x + 5, t.y + 5); // World offset (+5, +5)
                 ctx.rotate(t.rotation || 0);     // Match tree rotation
                 ctx.globalAlpha = 0.2;
                 ctx.filter = "brightness(0)";
