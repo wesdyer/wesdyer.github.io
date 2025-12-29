@@ -5329,7 +5329,7 @@ function drawMinimap() {
 
     // Islands
     if (state.course.islands) {
-        ctx.fillStyle = '#fde047'; // Sand color for minimap
+        ctx.fillStyle = '#fde6b1'; // Sand color for minimap
         for (const isl of state.course.islands) {
             ctx.beginPath();
             if (isl.vertices.length > 0) {
@@ -5343,7 +5343,7 @@ function drawMinimap() {
             ctx.closePath();
             ctx.fill();
             // Optional: Green center?
-            ctx.fillStyle = '#16a34a';
+            ctx.fillStyle = '#84cc16';
             ctx.beginPath();
             if (isl.vegVertices.length > 0) {
                 const p0 = t(isl.vegVertices[0].x, isl.vegVertices[0].y);
@@ -5355,7 +5355,19 @@ function drawMinimap() {
             }
             ctx.closePath();
             ctx.fill();
-            ctx.fillStyle = '#fde047'; // Reset for next
+
+            // Draw rocks on minimap (optional, but good for detail)
+            ctx.fillStyle = '#9ca3af';
+            if (isl.rocks) {
+                for (const rock of isl.rocks) {
+                    const rp = t(rock.x, rock.y);
+                    ctx.beginPath();
+                    ctx.arc(rp.x, rp.y, rock.size * scale, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            ctx.fillStyle = '#fde6b1'; // Reset for next
         }
     }
 
@@ -6484,7 +6496,23 @@ function generateIslands(boundary) {
                  rotation: rng() * Math.PI * 2
              });
         }
-        return { x: bx, y: by, radius: br, vertices, vegVertices, trees };
+
+        // Rocks
+        const rocks = [];
+        const rockCount = Math.floor(1 + (br/50) * 3 + rng() * 2);
+        for(let k=0; k<rockCount; k++) {
+             const ang = rng() * Math.PI * 2;
+             // Place near the vegetation border (0.7 radius +/- variation)
+             const dst = br * (0.65 + rng() * 0.15);
+             rocks.push({
+                 x: bx + Math.cos(ang)*dst,
+                 y: by + Math.sin(ang)*dst,
+                 size: 8 + rng() * 12,
+                 rotation: rng() * Math.PI * 2
+             });
+        }
+
+        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks };
     };
 
     // Helper: Validate a circle against world constraints
@@ -6755,7 +6783,7 @@ function drawIslands(ctx) {
     }
 
     // Pass 1: Sand Strokes (Outer merged boundary)
-    ctx.strokeStyle = '#eab308'; // Darker sand stroke
+    ctx.strokeStyle = '#d4b483'; // Darker sand stroke
     ctx.lineWidth = 2;
     for (const isl of visible) {
         // Shoreline Glow (Tropical Shallow Water)
@@ -6773,23 +6801,44 @@ function drawIslands(ctx) {
         }
 
         // Sand
-        ctx.fillStyle = '#fde047'; // Yellow 300
+        ctx.fillStyle = '#fde6b1'; // Pale Sand
         drawRoundedPoly(isl.vertices);
         ctx.stroke();
     }
 
     // Pass 2: Sand Fills (Covers inner strokes of overlapping islands)
-    ctx.fillStyle = '#fde047'; // Yellow 300
+    ctx.fillStyle = '#fde6b1'; // Pale Sand
     for (const isl of visible) {
         drawRoundedPoly(isl.vertices);
         ctx.fill();
     }
 
     // Pass 3: Vegetation
-    ctx.fillStyle = '#16a34a'; // Green 600
+    ctx.fillStyle = '#84cc16'; // Vibrant Green
     for (const isl of visible) {
         drawRoundedPoly(isl.vegVertices);
         ctx.fill();
+    }
+
+    // Pass 3.5: Rocks
+    ctx.fillStyle = '#9ca3af'; // Grey Rock
+    for (const isl of visible) {
+        if (!isl.rocks) continue;
+        for (const rock of isl.rocks) {
+             ctx.beginPath();
+             // Simple "blob" rock
+             ctx.arc(rock.x, rock.y, rock.size, 0, Math.PI * 2);
+             ctx.fill();
+
+             // Optional: Add some shading/texture to look less like a circle
+             ctx.save();
+             ctx.clip();
+             ctx.fillStyle = 'rgba(0,0,0,0.1)';
+             ctx.beginPath();
+             ctx.arc(rock.x - rock.size*0.2, rock.y + rock.size*0.2, rock.size*0.8, 0, Math.PI*2);
+             ctx.fill();
+             ctx.restore();
+        }
     }
 
     // Pass 4: Trees
