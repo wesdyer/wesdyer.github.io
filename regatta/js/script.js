@@ -1365,6 +1365,7 @@ const state = {
     },
     showNavAids: true,
     particles: [],
+    waveStates: new Map(),
     keys: {
         ArrowLeft: false,
         ArrowRight: false,
@@ -4479,6 +4480,7 @@ function update(dt) {
         createParticle(state.camera.x + (Math.random()-0.5)*range, state.camera.y + (Math.random()-0.5)*range, 'wind', { life: Math.random() + 0.5 });
     }
     updateParticles(dt);
+    updateWindWaves(dt);
 }
 
 function createParticle(x, y, type, props = {}) { state.particles.push({ x, y, type, life: 1.0, ...props }); }
@@ -4975,100 +4977,104 @@ function drawMarkZones(ctx) {
     ctx.restore();
 }
 
-function drawWindWaves(ctx) {
-    if (!state.boats.length) return;
-
-    // Bounds calculation based on camera viewport
+function updateWindWaves(dt) {
     const camX = state.camera.x;
     const camY = state.camera.y;
-    // View radius (approx half diagonal of screen + buffer)
-    const radius = Math.max(ctx.canvas.width, ctx.canvas.height) * 0.8;
+    const radius = Math.max(canvas.width, canvas.height) * 0.8;
 
-    const startX = camX - radius;
-    const endX = camX + radius;
-    const startY = camY - radius;
-    const endY = camY + radius;
+    const gridSize = 180;
 
-    const gridSize = 180; // Approx 36 meters
+    const iStart = Math.floor((camX - radius) / gridSize);
+    const iEnd = Math.floor((camX + radius) / gridSize);
+    const jStart = Math.floor((camY - radius) / gridSize);
+    const jEnd = Math.floor((camY + radius) / gridSize);
 
-    // Snap to grid
-    const iStart = Math.floor(startX / gridSize);
-    const iEnd = Math.floor(endX / gridSize);
-    const jStart = Math.floor(startY / gridSize);
-    const jEnd = Math.floor(endY / gridSize);
+    const activeKeys = new Set();
+
+    for (let j = jStart; j <= jEnd; j++) {
+        for (let i = iStart; i <= iEnd; i++) {
+             const key = `${i},${j}`;
+             activeKeys.add(key);
+
+             let wave = state.waveStates.get(key);
+             if (!wave) {
+                 const seed = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
+                 const rand = seed - Math.floor(seed);
+
+                 const bx = i * gridSize;
+                 const by = j * gridSize;
+
+                 const ox = (rand - 0.5) * gridSize * 0.6;
+                 const oy = ((rand * 10 % 1) - 0.5) * gridSize * 0.6;
+
+                 wave = {
+                     x: bx + ox,
+                     y: by + oy,
+                     dist: rand * gridSize,
+                     angle: 0,
+                     speed: 0
+                 };
+                 state.waveStates.set(key, wave);
+             }
+
+             const wind = getWindAt(wave.x, wave.y);
+
+             // Travel Speed: Proportional to wind speed
+             const travelFactor = 3.0;
+             const moveDist = wind.speed * travelFactor * dt;
+
+             wave.dist = (wave.dist + moveDist) % gridSize;
+             wave.angle = wind.direction + Math.PI;
+             wave.windSpeed = wind.speed;
+        }
+    }
+
+    // Prune
+    for (const key of state.waveStates.keys()) {
+        if (!activeKeys.has(key)) {
+            state.waveStates.delete(key);
+        }
+    }
+}
+
+function drawWindWaves(ctx) {
+    if (state.waveStates.size === 0) return;
 
     ctx.save();
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineCap = 'round';
 
-    const time = state.time;
+    for (const wave of state.waveStates.values()) {
+        if (wave.windSpeed < 2) continue;
 
-    for (let j = jStart; j <= jEnd; j++) {
-        for (let i = iStart; i <= iEnd; i++) {
-            const bx = i * gridSize;
-            const by = j * gridSize;
+        const gridSize = 180;
+        const cycle = wave.dist / gridSize;
+        const alphaWave = Math.sin(cycle * Math.PI);
 
-            // Circular cull
-            if ((bx - camX)**2 + (by - camY)**2 > radius**2) continue;
+        // Size proportional to speed
+        // 5 knots -> small, 25 knots -> large
+        const size = wave.windSpeed * 4.5;
 
-            // Random offset for organic look (seeded hash)
-            const seed = Math.sin(i * 12.9898 + j * 78.233) * 43758.5453;
-            const rand = seed - Math.floor(seed);
-            const ox = (rand - 0.5) * gridSize * 0.6;
-            const oy = ((rand * 10 % 1) - 0.5) * gridSize * 0.6;
+        // Opacity based on speed
+        const intensity = Math.min(1.0, (wave.windSpeed - 2) / 20);
 
-            const x = bx + ox;
-            const y = by + oy;
+        ctx.globalAlpha = alphaWave * intensity * 0.6;
+        ctx.lineWidth = 1.5 + intensity * 2.0;
 
-            const wind = getWindAt(x, y);
-            const speed = wind.speed;
+        const dx = Math.sin(wave.angle) * wave.dist;
+        const dy = -Math.cos(wave.angle) * wave.dist;
 
-            // Only draw if enough wind
-            if (speed < 2) continue;
+        ctx.save();
+        ctx.translate(wave.x + dx, wave.y + dy);
+        ctx.rotate(wave.angle);
 
-            // Animation: Travel downwind
-            // Wind comes FROM 'wind.direction'. Blows TOWARDS 'wind.direction + PI'.
-            // In game coords: North(0) blows South(+Y). Vector(0, 1).
-            // Vector = (-sin(dir), cos(dir)).
-            const travelSpeed = 4.0;
-            const dist = (time * travelSpeed * (speed / 10)) % gridSize;
-            const cycle = dist / gridSize; // 0 to 1
+        ctx.beginPath();
+        ctx.moveTo(-size/2, 0);
+        ctx.quadraticCurveTo(0, -size * 0.25, size/2, 0);
+        ctx.stroke();
 
-            // Fade in/out at edges of cycle
-            const alphaWave = Math.sin(cycle * Math.PI); // 0 -> 1 -> 0
-
-            const dx = -Math.sin(wind.direction) * dist;
-            const dy = Math.cos(wind.direction) * dist;
-
-            const wx = x + dx;
-            const wy = y + dy;
-
-            // Wave Orientation: Perpendicular to wind
-            const angle = wind.direction + Math.PI;
-
-            // Scale based on wind strength
-            const intensity = Math.max(0, (speed - 4) / 20); // 0 at 4kn, 1 at 24kn
-            if (intensity <= 0) continue;
-
-            const size = 40 + intensity * 80; // Much Wider
-
-            ctx.globalAlpha = alphaWave * Math.min(1, intensity + 0.3) * 0.5; // Max 0.5 opacity
-            ctx.lineWidth = 1.5 + intensity * 2.0;
-
-            ctx.save();
-            ctx.translate(wx, wy);
-            ctx.rotate(angle);
-
-            // Draw Wave Arch
-            ctx.beginPath();
-            ctx.moveTo(-size/2, 0);
-            ctx.quadraticCurveTo(0, -size * 0.25, size/2, 0);
-            ctx.stroke();
-
-            ctx.restore();
-        }
+        ctx.restore();
     }
-
     ctx.restore();
 }
 
@@ -6992,6 +6998,7 @@ function resetGame() {
     repositionBoats();
 
     state.particles = [];
+    state.waveStates.clear();
     hideRaceMessage();
 
     setupPreRaceOverlay();
