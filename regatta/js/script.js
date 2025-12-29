@@ -6084,7 +6084,7 @@ function draw() {
     drawParticles(ctx, 'surface');
     drawGusts(ctx);
     drawWindWaves(ctx);
-    drawIslandShadows(ctx);
+    // drawIslandShadows(ctx);
     drawParticles(ctx, 'current');
     drawIslands(ctx);
     drawDisturbedAir(ctx);
