@@ -6896,21 +6896,15 @@ function resetGame() {
     // +/- 0.1 to 0.2 radians
     const directionBias = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.1);
 
-    // Obstacle Defaults (Randomized on Init)
-    // 70% chance of no islands (0 coverage)
-    const islandCoverage = (Math.random() > 0.7) ? Math.random() * 0.5 : 0;
+    // Obstacle Defaults
+    // Default to no islands
+    const islandCoverage = 0;
     const islandSize = Math.random();
     const islandClustering = Math.random();
 
     // Current Generation
-    // 70% chance of zero. 30% chance of 0-3 knots.
+    // Default to no current
     let currentData = null;
-    if (Math.random() > 0.7) {
-        currentData = {
-            speed: Math.random() * 3.0,
-            direction: Math.random() * Math.PI * 2
-        };
-    }
 
     state.race.conditions = {
         shiftiness,
