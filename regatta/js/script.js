@@ -5035,13 +5035,13 @@ function drawWindWaves(ctx) {
             const wy = y + dy;
 
             // Wave Orientation: Perpendicular to wind
-            const angle = wind.direction + Math.PI / 2;
+            const angle = wind.direction;
 
             // Scale based on wind strength
             const intensity = Math.max(0, (speed - 4) / 20); // 0 at 4kn, 1 at 24kn
             if (intensity <= 0) continue;
 
-            const size = 8 + intensity * 24; // 8 to 32
+            const size = 40 + intensity * 80; // Much Wider
 
             ctx.globalAlpha = alphaWave * Math.min(1, intensity + 0.3) * 0.5; // Max 0.5 opacity
             ctx.lineWidth = 1.5 + intensity * 2.0;
