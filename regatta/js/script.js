@@ -1388,6 +1388,9 @@ const state = {
 const burgeeImg = new Image();
 burgeeImg.src = 'assets/images/salty-crew-yacht-club-burgee.png';
 
+const palmImg = new Image();
+palmImg.src = 'assets/images/palm.png';
+
 class Boat {
     constructor(id, isPlayer, startX, startY, name="USA", config=null) {
         this.id = id;
@@ -6694,38 +6697,25 @@ function drawIslands(ctx) {
     // Pass 4: Trees
     for (const isl of visible) {
         for(const t of isl.trees) {
-            // Shadow/Trunk Base
-            ctx.fillStyle = 'rgba(0,0,0,0.2)';
-            ctx.beginPath(); ctx.arc(t.x+2, t.y+2, t.size/3, 0, Math.PI*2); ctx.fill();
+            if (palmImg.complete && palmImg.naturalWidth > 0) {
+                const size = t.size * 2.2;
 
-            const fronds = 7;
-            const startAngle = t.rotation || 0;
+                // Shadow (Draw First, with World Offset)
+                ctx.save();
+                ctx.translate(t.x + 3, t.y + 3); // World offset (+3, +3)
+                ctx.rotate(t.rotation || 0);     // Match tree rotation
+                ctx.globalAlpha = 0.2;
+                ctx.filter = "brightness(0)";
+                ctx.drawImage(palmImg, -size/2, -size/2, size, size);
+                ctx.restore();
 
-            for(let i=0; i<fronds; i++) {
-                 const angle = startAngle + (i / fronds) * Math.PI * 2;
-                 const len = t.size;
-                 const cx = t.x;
-                 const cy = t.y;
-                 const tx = cx + Math.cos(angle) * len;
-                 const ty = cy + Math.sin(angle) * len;
-
-                 // Draw Leaf
-                 ctx.fillStyle = '#15803d'; // Green 700
-                 ctx.beginPath();
-                 ctx.moveTo(cx, cy);
-                 ctx.quadraticCurveTo(cx + Math.cos(angle-0.4)*len*0.6, cy + Math.sin(angle-0.4)*len*0.6, tx, ty);
-                 ctx.quadraticCurveTo(cx + Math.cos(angle+0.4)*len*0.6, cy + Math.sin(angle+0.4)*len*0.6, cx, cy);
-                 ctx.fill();
-
-                 // Rib
-                 ctx.strokeStyle = '#14532d'; // Green 900
-                 ctx.lineWidth = 1;
-                 ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
+                // Tree (Draw Second)
+                ctx.save();
+                ctx.translate(t.x, t.y);
+                ctx.rotate(t.rotation || 0);
+                ctx.drawImage(palmImg, -size/2, -size/2, size, size);
+                ctx.restore();
             }
-
-            // Center
-            ctx.fillStyle = '#14532d';
-            ctx.beginPath(); ctx.arc(t.x, t.y, t.size/5, 0, Math.PI*2); ctx.fill();
         }
     }
 }
