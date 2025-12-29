@@ -2,7 +2,7 @@
 // Water Rendering Configuration
 window.WATER_CONFIG = {
     // Tropical Palette
-    baseColor: '#0ea5e9', // Sky-500
+    baseColor: '#0ea5e9', // Sky-500 (Brighter, more tropical)
     deepColor: '#0369a1', // Sky-700
     shallowColor: '#38bdf8', // Sky-400
 
@@ -10,14 +10,13 @@ window.WATER_CONFIG = {
     depthGradientStrength: 0.20,
     depthGradientScale: 1.0,
 
-    // Contour Lines (Waves)
-    contourOpacity: 0.35, // Stronger visibility for testing
-    contourScale: 800, // Wider waves (larger period)
-    waveStretch: 20.0,  // High stretch for distinct perpendicular lines
-    contourSpacing: 25,
-    contourWidth: 1.2,
-    contourScrollSpeed: 0.04,
-    contourDistortion: 0.2,
+    // Contour Lines (Cartoon effect)
+    contourOpacity: 0.12,
+    contourScale: 150, // Noise scale
+    contourSpacing: 25, // Pixels between lines
+    contourWidth: 1.0,
+    contourScrollSpeed: 0.02, // Slower flow
+    contourDistortion: 0.5,
 
     // Caustics
     causticStrength: 0.06,
@@ -28,7 +27,7 @@ window.WATER_CONFIG = {
     grainStrength: 0.02,
 
     // Shoreline
-    shorelineColor: '#4ade80',
+    shorelineColor: '#4ade80', // Green-400 (Turquoise-ish green)
     shorelineGlowSize: 1.5,
     shorelineGlowOpacity: 0.5,
 
@@ -90,6 +89,8 @@ function tileableNoise2D(x, y, w, h) {
     const ny = y;
 
     // Sample 4 points in domain
+    // We subtract the period (w, h) for the blend targets so that
+    // when s=1 (x=w), v2 becomes noise(w-w)=noise(0), matching v1 at s=0.
     const v1 = noise2D(nx, ny);
     const v2 = noise2D(nx - w, ny);
     const v3 = noise2D(nx, ny - h);
@@ -124,7 +125,7 @@ class WaterRenderer {
     // Check if config changed requiring texture rebuild
     getConfigHash() {
         const c = window.WATER_CONFIG;
-        return `${c.contourScale}-${c.waveStretch}-${c.contourSpacing}-${c.contourWidth}-${c.contourDistortion}-${c.causticScale}-${c.chunkSize}`;
+        return `${c.contourScale}-${c.contourSpacing}-${c.contourWidth}-${c.contourDistortion}-${c.causticScale}-${c.chunkSize}`;
     }
 
     updateTextures() {
@@ -135,7 +136,7 @@ class WaterRenderer {
         const config = window.WATER_CONFIG;
         const size = config.chunkSize;
 
-        // 1. Generate Contour Texture (Waves)
+        // 1. Generate Contour Texture
         this.contourCanvas.width = size;
         this.contourCanvas.height = size;
         const ctxC = this.contourCanvas.getContext('2d');
@@ -144,30 +145,91 @@ class WaterRenderer {
         const imgDataC = ctxC.createImageData(size, size);
         const dataC = imgDataC.data;
 
-        // Anisotropic scaling for waves
-        // scaleX is stretched (low frequency) -> Creates Horizontal Lines (along X)
-        const scaleY = config.contourScale;
-        const scaleX = config.contourScale * (config.waveStretch || 1.0);
-
-        const periodX = size / scaleX;
-        const periodY = size / scaleY;
+        // Tileable scaling
+        const scale = config.contourScale;
+        const warpPeriod = size / scale; // Period in noise space
 
         for (let y = 0; y < size; y++) {
             for (let x = 0; x < size; x++) {
-                const nx = x / scaleX;
-                const ny = y / scaleY;
+                // Domain warp (Tileable)
+                // We use tileableNoise for the warp offset calculation too to ensure the warp field loops
+                const nx = x / scale;
+                const ny = y / scale;
 
-                const wx = tileableNoise2D(nx, ny, periodX, periodY);
-                const wy = tileableNoise2D(nx + 5.2, ny + 1.3, periodX, periodY);
+                // Warp vector field
+                const wx = tileableNoise2D(nx, ny, warpPeriod, warpPeriod);
+                const wy = tileableNoise2D(nx + 5.2, ny + 1.3, warpPeriod, warpPeriod);
 
                 const qx = nx + config.contourDistortion * wx;
                 const qy = ny + config.contourDistortion * wy;
 
-                // Sample main noise
+                // Sample main noise (Tileable) with warped coords?
+                // Warping a periodic domain usually breaks periodicity unless the warp itself is periodic (which it is now).
+                // However, qx/qy are distorted. Does tileableNoise handle arbitrary inputs?
+                // tileableNoise2D assumes x,y are within 0..w? No, it just linearly interpolates.
+                // If qx exceeds period, we need to wrap inputs to tileableNoise?
+                // tileableNoise logic: v1=noise(x,y), v2=noise(x+w,y).
+                // If x is way out, v1 and v2 are still just sampled.
+                // Wait, tileableNoise takes (x, y, w, h) where w,h are the domain size.
+                // It blends across the domain 0..w.
+                // We are iterating x=0..size. nx = 0..size/scale = 0..warpPeriod.
+                // So we are covering exactly one period.
+                // So tileableNoise2D(nx, ny, warpPeriod, warpPeriod) works perfectly for the base field.
+
+                // Now, for the final value:
+                // We want F(qx, qy) to be periodic.
+                // Since qx = nx + offset, and nx is periodic 0..P, and offset is periodic 0..P (derived from wx),
+                // qx is not strictly 0..P, but (qx mod P) is the lookup we want?
+                // tileableNoise blends based on (x/w) ratio.
+                // If we pass qx directly, s = qx/w. If qx > w, s > 1.
+                // Does logic hold?
+                // i1 = v1*(1-s) + v2*s. If s=1.1?
+                // v1(1.1) + v2(-0.1)? No, linear extrapolation.
+                // We need to wrap qx into 0..P range for the blend factors to make sense?
+                // Or does simple wrapping work?
+                // Actually, tileable noise function is usually just:
+                // Mix( Noise(x,y), Noise(x-w, y), x/w )
+                // My function: v1(x), v2(x+w).
+                // If x wraps, v1 becomes v2?
+                // At x=0: s=0. returns v1(0).
+                // At x=w: s=1. returns v2(w) = noise(2w).
+                // Wait, v2 is noise(x+w).
+                // We want at x=w to equal x=0.
+                // At x=0: noise(0).
+                // At x=w: noise(2w). These are unrelated.
+                // My tileableNoise2D function is flawed for general inputs?
+                // It is designed to be called with x in 0..w.
+                // We need to ensure qx is wrapped or handled.
+                // But qx is the *coordinate*.
+                // The issue is: The noise function itself isn't periodic. We are *forcing* periodicity by blending edges.
+                // So we must sample at (qx, qy) but blend based on where we are in the *tile*.
+                // But we are in warped space.
+                // Actually, for the final noise look up `val = noise(qx, qy)`, we want the *result* to tile.
+                // If we use tileableNoise2D(qx, qy, ...), we are saying "blend qx based on qx/w".
+                // But the tile boundaries are at physical x=0, x=size.
+                // We need to blend the *result* based on physical x,y position in the tile, not warped position.
+                // So: `val = tileableNoise2D_SampleWarped(x, y, period, distortion)`.
+                // Or simply:
+                // `val = noise(qx, qy)`? No.
+                // We need `val` to match at x=0 and x=size.
+                // At x=0: qx0 = 0 + dist*W(0).
+                // At x=size: qx1 = P + dist*W(P).
+                // Since W is periodic, W(0)=W(P) (mostly, if W is tileable).
+                // So qx1 = qx0 + P.
+                // We need Noise(qx0) == Noise(qx0 + P).
+                // Standard noise isn't periodic.
+                // So we need to use a periodic noise function, or use the tileable blend on the *final* lookup.
+                // But we should blend based on the *original* grid position (s = x/size), not the warped coordinate.
+
+                // Correct approach:
+                // 1. Calculate warped coordinates qx, qy.
+                // 2. Sample noise at (qx, qy), (qx-P, qy), (qx, qy-P), (qx-P, qy-P).
+                // 3. Blend using s = x/size, t = y/size.
+
                 const v1 = noise2D(qx, qy);
-                const v2 = noise2D(qx - periodX, qy);
-                const v3 = noise2D(qx, qy - periodY);
-                const v4 = noise2D(qx - periodX, qy - periodY);
+                const v2 = noise2D(qx - warpPeriod, qy);
+                const v3 = noise2D(qx, qy - warpPeriod);
+                const v4 = noise2D(qx - warpPeriod, qy - warpPeriod);
 
                 const s = smoothstep(x / size);
                 const t = smoothstep(y / size);
@@ -177,13 +239,16 @@ class WaterRenderer {
                 const val = i1 * (1 - t) + i2 * t;
 
                 // Create bands
-                const v = (val + 1.0) * 0.5 * 1000;
+                // Map val to pixel space based on spacing
+                const v = (val + 1.0) * 0.5 * 1000; // arbitrary scale
                 const band = v % config.contourSpacing;
 
                 let alpha = 0;
                 if (band < config.contourWidth) {
+                    // Smooth edge
                     alpha = 255;
                 } else if (band < config.contourWidth + 1.0) {
+                    // Anti-alias roughly
                     alpha = 128;
                 }
 
@@ -196,7 +261,7 @@ class WaterRenderer {
         }
         ctxC.putImageData(imgDataC, 0, 0);
 
-        // 2. Generate Caustic Texture (Isotropic)
+        // 2. Generate Caustic Texture
         this.causticCanvas.width = size;
         this.causticCanvas.height = size;
         const ctxK = this.causticCanvas.getContext('2d');
@@ -210,6 +275,8 @@ class WaterRenderer {
                 const nx = x / config.causticScale;
                 const ny = y / config.causticScale;
 
+                // Billowy noise (Tileable)
+                // Use tileable helper directly
                 let val = Math.abs(tileableNoise2D(nx, ny, causticPeriod, causticPeriod));
                 val = 1.0 - val;
                 val = val * val * val; // Sharpen
@@ -223,6 +290,7 @@ class WaterRenderer {
         }
         ctxK.putImageData(imgDataK, 0, 0);
 
+        // Invalidate patterns
         this.contourPattern = null;
         this.causticPattern = null;
 
@@ -233,13 +301,15 @@ class WaterRenderer {
         if (!state) return;
         const config = window.WATER_CONFIG;
 
+        // Check for config updates (e.g. from Debug UI)
         this.updateTextures();
 
         const width = ctx.canvas.width;
         const height = ctx.canvas.height;
-        this.time += 1;
+        this.time += 1; // Increment internal time
 
-        // 1. Base Fill
+        // 1. Base Fill & Depth Gradient (Screen Space)
+        // We use a radial gradient to simulate depth/vignette
         const cx = width / 2;
         const cy = height / 2;
         const radius = Math.max(width, height) * 0.8 * config.depthGradientScale;
@@ -249,21 +319,51 @@ class WaterRenderer {
         grad.addColorStop(1, config.deepColor);
 
         ctx.save();
+        // Use setTransform instead of resetTransform to be kinder to context stack,
+        // effectively filling the screen by resetting to identity for the fill.
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, width, height);
 
         // 2. Prepare for World-Mapped Patterns
-        // Wind Direction (Radians, 0=North, clockwise)
         const windDir = state.wind ? state.wind.direction : 0;
+        const speed = config.contourScrollSpeed;
 
-        // Base Camera Matrix: Transforms pattern from World(0,0) to Screen
+        // Scroll offsets (flow)
+        const flowDx = Math.sin(windDir) * this.time * speed * 20;
+        const flowDy = Math.cos(windDir) * this.time * speed * 20;
+
+        // Caustic scroll
+        const cDx = Math.sin(windDir + 1) * this.time * config.causticSpeed * 10;
+        const cDy = Math.cos(windDir + 1) * this.time * config.causticSpeed * 10;
+
+        // We need a matrix that maps Screen Pixels -> World Pattern UVs
+        // Pattern logic:
+        // By default, createPattern tiles in the coordinate space it is drawn.
+        // We are drawing a rect at 0,0,width,height (Screen Space).
+        // So (0,0) is Top-Left of Screen.
+        // We want (0,0) on Screen to map to the correct World coordinate.
+        // World(0,0) projects to Screen via:
+        // ScreenP = Translate(W/2, H/2) * Rotate(-camRot) * Translate(-camX, -camY) * WorldP
+        // Inverse (Screen -> World):
+        // WorldP = Translate(camX, camY) * Rotate(camRot) * Translate(-W/2, -H/2) * ScreenP
+
+        // The pattern matrix transforms the pattern coordinate system.
+        // If we apply M to pattern, then Pattern(p) samples texture at M^-1 * p.
+        // Wait, standard Canvas setTransform applies to the pattern coordinate space.
+        // So we want to align the pattern space with World Space.
+
+        // Construct Matrix:
+        // Start at Identity (Pattern is at 0,0)
+        // We want Pattern Origin to align with World Origin projected to Screen.
+        // So we apply the Camera Transform to the Pattern Matrix.
+
         const camMatrix = new DOMMatrix();
         camMatrix.translateSelf(width/2, height/2);
-        camMatrix.rotateSelf(0, 0, -state.camera.rotation * (180/Math.PI));
+        camMatrix.rotateSelf(0, 0, -state.camera.rotation * (180/Math.PI)); // Degrees
         camMatrix.translateSelf(-state.camera.x, -state.camera.y);
 
-        // 3. Draw Contours (Waves)
+        // 3. Draw Contours
         if (!this.contourPattern) {
              this.contourPattern = ctx.createPattern(this.contourCanvas, 'repeat');
         }
@@ -272,22 +372,9 @@ class WaterRenderer {
         ctx.fillStyle = this.contourPattern;
 
         const contourMat = DOMMatrix.fromMatrix(camMatrix);
-
-        // Apply Wind Rotation to World Space
-        // Base Texture: Horizontal Lines (due to waveStretch on X)
-        // We want waves Perpendicular to wind.
-        // If Wind is North (0 deg), we want Horizontal Waves (Perpendicular to N-S axis).
-        // Rotation = windDir aligns Pattern Y (Flow axis) with Wind.
-
-        contourMat.rotateSelf(windDir * (180/Math.PI));
-
-        // Scroll in the direction of the wind (Texture Y axis)
-        // Texture Y axis aligns with Wind Direction after rotation.
-        // So moving +Y in Pattern Space moves With Wind.
-        const flowDist = this.time * config.contourScrollSpeed * 20;
-        contourMat.translateSelf(0, flowDist);
-
+        contourMat.translateSelf(flowDx, flowDy); // Apply flow in world space
         this.contourPattern.setTransform(contourMat);
+
         ctx.fillRect(0, 0, width, height);
 
         // 4. Draw Caustics
@@ -295,16 +382,11 @@ class WaterRenderer {
              this.causticPattern = ctx.createPattern(this.causticCanvas, 'repeat');
         }
 
-        ctx.globalCompositeOperation = 'overlay';
+        ctx.globalCompositeOperation = 'overlay'; // or screen/lighter
         ctx.globalAlpha = config.causticStrength;
         ctx.fillStyle = this.causticPattern;
 
         const causticMat = DOMMatrix.fromMatrix(camMatrix);
-
-        // Offset caustics slightly and drift them too
-        const cDx = Math.sin(windDir + 1) * this.time * config.causticSpeed * 10;
-        const cDy = Math.cos(windDir + 1) * this.time * config.causticSpeed * 10;
-
         causticMat.translateSelf(cDx, cDy);
         this.causticPattern.setTransform(causticMat);
 
@@ -314,4 +396,5 @@ class WaterRenderer {
     }
 }
 
+// Expose to window
 window.WaterRenderer = new WaterRenderer();
