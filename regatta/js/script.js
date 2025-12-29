@@ -2514,8 +2514,8 @@ function setupPreRaceOverlay() {
     if (UI.confPuffInt) UI.confPuffInt.value = cond.gustStrengthBias;
     if (UI.confPuffShift) UI.confPuffShift.value = cond.puffShiftiness;
 
-    if (UI.confIslandCoverage) UI.confIslandCoverage.value = cond.islandCoverage;
-    if (UI.confIslandSize) UI.confIslandSize.value = cond.islandSize;
+    if (UI.confIslandCount) UI.confIslandCount.value = cond.islandCount;
+    if (UI.confIslandMaxSize) UI.confIslandMaxSize.value = cond.islandMaxSize;
     if (UI.confIslandClustering) UI.confIslandClustering.value = cond.islandClustering;
 
     // Course Defaults
