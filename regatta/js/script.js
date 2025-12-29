@@ -190,6 +190,12 @@ class BotController {
 
         // Staggered updates
         this.updateTimer = Math.random() * 0.2; 
+
+        // Route Planning
+        this.planner = new RoutePlanner();
+        this.currentPath = [];
+        this.pathTimer = 0;
+        this.finalTarget = null;
     }
 
     update(dt) {
@@ -357,145 +363,140 @@ class BotController {
         const marks = state.course.marks;
         if (!marks || marks.length < 2) return { x: boat.x + 1000, y: boat.y }; // Fallback
 
+        // 1. Determine Ultimate Destination (Mark/Gate/Finish)
+        let destX, destY;
+
         if (boat.raceState.finished) {
             // Sail to nearest boundary
             const b = state.course.boundary;
             if (b) {
                 const angle = Math.atan2(boat.y - b.y, boat.x - b.x);
-                return { x: b.x + Math.cos(angle)*(b.radius+500), y: b.y + Math.sin(angle)*(b.radius+500) };
-            }
-            return { x: boat.x, y: boat.y - 1000 };
-        }
-
-        // Determine Gate/Mark Target
-        // Logic similar to original but cleaner
-        let targetIndices = [0, 1];
-        const leg = boat.raceState.leg;
-        if (leg === 1 || leg === 3) targetIndices = [2, 3];
-        else targetIndices = [0, 1]; // Start(0), Leeward(2), Finish(4) use marks 0,1
-
-        const m1 = marks[targetIndices[0]];
-        const m2 = marks[targetIndices[1]];
-
-        let targetX, targetY;
-
-        if (leg === 0) {
-            let pct = this.startLinePct;
-
-            // Recovery / Force Mode: Aim for center
-            if (this.livenessState !== 'normal') {
-                pct = 0.5;
-            }
-
-            // Start: Aim for our diversified spot on the line
-            targetX = m1.x + (m2.x - m1.x) * pct;
-            targetY = m1.y + (m2.y - m1.y) * pct;
-            
-            // Aim slightly PAST the line
-            // Wind Direction (wd) is FROM direction.
-            // Standard Coordinate System:
-            // wd=0 (N) -> Blows South (+Y).
-            // Upwind is North (-Y). Vector: (sin(wd), -cos(wd)).
-            // We want to target UPWIND (Past the line).
-            const wd = state.wind.direction;
-
-            // OCS / Recovery Logic for Racing Phase
-            // Check if we are on the Course Side (Upwind of line) without having started
-            const lineDx = m2.x - m1.x, lineDy = m2.y - m1.y;
-            const normalX = -lineDy, normalY = lineDx; // Points Downwind? No, -gateDy, gateDx?
-            // gateDx = m2-m1. gateDy.
-            // Check existing logic: nx = gateDy, ny = -gateDx.
-            // dot > 0 is crossing dir 1 (Start).
-            // Normal (nx, ny) points Upwind.
-            const nx = lineDy, ny = -lineDx;
-            const bDx = boat.x - m1.x, bDy = boat.y - m1.y;
-            const dot = bDx * nx + bDy * ny;
-
-            // dot > 0 means we are "Above" the line (Course Side)
-            // If ocs is true, OR if we are course side (dot > 0), we must return.
-            if (boat.raceState.ocs || dot > 0) {
-                // Must go DOWNWIND to clear line.
-                // Reset to center of start box to avoid looping around the ends which causes circular navigation traps.
-                const centerX = (m1.x + m2.x) / 2;
-                const centerY = (m1.y + m2.y) / 2;
-
-                // Target Downwind (backwards from wind direction)
-                // Upwind is (sin(wd), -cos(wd)). Downwind is (-sin(wd), cos(wd)).
-                const distBack = (this.livenessState === 'normal') ? 150 : 250;
-
-                targetX = centerX - Math.sin(wd) * distBack;
-                targetY = centerY + Math.cos(wd) * distBack;
+                destX = b.x + Math.cos(angle)*(b.radius+500);
+                destY = b.y + Math.sin(angle)*(b.radius+500);
             } else {
-                // Normal Start (Upwind)
-                const distPast = (this.livenessState === 'force') ? 300 : 150;
-                targetX += Math.sin(wd) * distPast;
-                targetY -= Math.cos(wd) * distPast;
+                destX = boat.x; destY = boat.y - 1000;
             }
         } else {
-            // Standard Legs: Sail to gate center
-            targetX = (m1.x + m2.x) / 2;
-            targetY = (m1.y + m2.y) / 2;
+            // Determine Gate/Mark Target
+            let targetIndices = [0, 1];
+            const leg = boat.raceState.leg;
+            if (leg === 1 || leg === 3) targetIndices = [2, 3];
+            else targetIndices = [0, 1];
 
-            // Missed Gate Check: If we sailed past without crossing, turn back
-            const gateDx = m2.x - m1.x;
-            const gateDy = m2.y - m1.y;
-            const nx = gateDy; // Normal points "Up/Left" depending on gate
-            const ny = -gateDx;
+            const m1 = marks[targetIndices[0]];
+            const m2 = marks[targetIndices[1]];
 
-            // Check where we are relative to gate plane
-            const bdx = boat.x - m1.x;
-            const bdy = boat.y - m1.y;
-            const dot = bdx * nx + bdy * ny;
+            if (leg === 0) {
+                // START STRATEGY
+                let pct = this.startLinePct;
+                if (this.livenessState !== 'normal') pct = 0.5;
 
-            // Crossing Direction:
-            // Leg 1/3 (Upwind): Target 2,3. Cross dir 1 (Positive Dot).
-            // Leg 2/4 (Downwind): Target 0,1. Cross dir -1 (Negative Dot).
+                destX = m1.x + (m2.x - m1.x) * pct;
+                destY = m1.y + (m2.y - m1.y) * pct;
 
-            let pastGate = false;
-            // Add buffer of 50 units past the line
-            if (leg === 1 || leg === 3) {
-                 if (dot > 50) pastGate = true;
-            } else if (leg === 2 || leg === 4) {
-                 if (dot < -50) pastGate = true;
+                const wd = state.wind.direction;
+
+                // OCS / Recovery Logic
+                const lineDx = m2.x - m1.x, lineDy = m2.y - m1.y;
+                const nx = lineDy, ny = -lineDx;
+                const bDx = boat.x - m1.x, bDy = boat.y - m1.y;
+                const dot = bDx * nx + bDy * ny;
+
+                if (boat.raceState.ocs || dot > 0) {
+                    // Must go DOWNWIND
+                    const centerX = (m1.x + m2.x) / 2;
+                    const centerY = (m1.y + m2.y) / 2;
+                    const distBack = (this.livenessState === 'normal') ? 150 : 250;
+                    destX = centerX - Math.sin(wd) * distBack;
+                    destY = centerY + Math.cos(wd) * distBack;
+                } else {
+                    // Normal Start (Upwind Target)
+                    const distPast = (this.livenessState === 'force') ? 300 : 150;
+                    destX += Math.sin(wd) * distPast;
+                    destY -= Math.cos(wd) * distPast;
+                }
+            } else {
+                // RACE LEGS
+                destX = (m1.x + m2.x) / 2;
+                destY = (m1.y + m2.y) / 2;
+
+                // Missed Gate Check
+                const gateDx = m2.x - m1.x;
+                const gateDy = m2.y - m1.y;
+                const nx = gateDy;
+                const ny = -gateDx;
+                const bdx = boat.x - m1.x;
+                const bdy = boat.y - m1.y;
+                const dot = bdx * nx + bdy * ny;
+
+                let pastGate = false;
+                if (leg === 1 || leg === 3) { if (dot > 50) pastGate = true; }
+                else if (leg === 2 || leg === 4) { if (dot < -50) pastGate = true; }
+
+                if (pastGate) {
+                    const len = Math.sqrt(nx*nx + ny*ny);
+                    const unx = nx/len;
+                    const uny = ny/len;
+                    const center = { x: (m1.x+m2.x)/2, y: (m1.y+m2.y)/2 };
+                    const factor = (leg === 1 || leg === 3) ? -1 : 1;
+                    destX = center.x + unx * 150 * factor;
+                    destY = center.y + uny * 150 * factor;
+                }
             }
 
-            if (pastGate) {
-                // Recovery: Aim 150 units "Before" the gate center to reset approach
-                const len = Math.sqrt(nx*nx + ny*ny);
-                const unx = nx/len;
-                const uny = ny/len;
-                const center = { x: (m1.x+m2.x)/2, y: (m1.y+m2.y)/2 };
-
-                // If Leg 1 (Upwind), we want to be "Below" (Negative Normal direction)
-                const factor = (leg === 1 || leg === 3) ? -1 : 1;
-
-                targetX = center.x + unx * 150 * factor;
-                targetY = center.y + uny * 150 * factor;
+            // Rounding Bias
+            if (boat.raceState.isRounding) {
+                const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
+                const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
+                const mark = (d1 < d2) ? m1 : m2;
+                const dx = mark.x - (m1.x+m2.x)/2;
+                const dy = mark.y - (m1.y+m2.y)/2;
+                const len = Math.sqrt(dx*dx+dy*dy);
+                if (len > 0) {
+                    destX = mark.x + (dx/len) * 90;
+                    destY = mark.y + (dy/len) * 90;
+                }
             }
         }
 
-        // If rounding, aim slightly outside to round cleanly
-        if (boat.raceState.isRounding) {
-            // We are passing through. Aim for a point past the gate.
-            // But we need to round. Which mark?
-            const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
-            const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
-            const mark = (d1 < d2) ? m1 : m2;
-            
-            // Calculate tangent for rounding
-            // For now, simple waypoint logic in script.js handles "nextWaypoint"
-            // Let's rely on geometric targets.
-            // Aim 90 units outside the mark to allow turn radius (Avoidance radius is 45)
-            const dx = mark.x - (m1.x+m2.x)/2;
-            const dy = mark.y - (m1.y+m2.y)/2;
-            const len = Math.sqrt(dx*dx+dy*dy);
-            if (len > 0) {
-                targetX = mark.x + (dx/len) * 90;
-                targetY = mark.y + (dy/len) * 90;
+        // 2. Global Path Planning
+        // Update Path if timer expired or target moved significantly
+        if (this.pathTimer > 0) this.pathTimer -= 0.1; // Called in update usually, but here fine
+
+        let needsReplan = false;
+        if (this.pathTimer <= 0) needsReplan = true;
+        if (!this.finalTarget || (destX-this.finalTarget.x)**2 + (destY-this.finalTarget.y)**2 > 50*50) needsReplan = true;
+
+        // If islands exist, use planner
+        if (state.course.islands && state.course.islands.length > 0) {
+            if (needsReplan) {
+                this.finalTarget = { x: destX, y: destY };
+                // Plan path
+                this.currentPath = this.planner.findPath(
+                    { x: boat.x, y: boat.y },
+                    this.finalTarget,
+                    state.course.islands
+                );
+                this.pathTimer = 2.0 + Math.random(); // Replan every 2-3s
+            }
+
+            // Prune visited waypoints
+            if (this.currentPath.length > 0) {
+                const wp = this.currentPath[0];
+                const d2 = (boat.x - wp.x)**2 + (boat.y - wp.y)**2;
+                if (d2 < 60*60) { // Reached waypoint (60 units)
+                    this.currentPath.shift();
+                }
+            }
+
+            // Return next waypoint or final dest
+            if (this.currentPath.length > 0) {
+                return this.currentPath[0];
             }
         }
 
-        return { x: targetX, y: targetY };
+        // Fallback / No Islands
+        return { x: destX, y: destY };
     }
 
     getStrategicHeading(target) {
@@ -1111,6 +1112,35 @@ class BotController {
                 }
             }
 
+            // 4. Island - Collision Check (Local Layer)
+            if (state.course.islands) {
+                // We use the segment from boat to future position
+                const start = { x: boat.x, y: boat.y };
+                const end = { x: futureX, y: futureY };
+
+                for (const isl of state.course.islands) {
+                    // Quick Bounding Box/Circle Check
+                    const d = Geom.distToSegment({x: isl.x, y: isl.y}, start, end);
+                    if (d < isl.radius + 30) { // Close to island
+                        // Detailed Polygon Check
+                        // Check if segment intersects or if end point is inside
+                        if (Geom.segmentIntersectsPoly(start, end, isl.vertices)) {
+                            staticCollision = true;
+                            cost += 500000; // HUGE penalty (Hard Constraint)
+                        } else {
+                            // Proximity penalty (Buffer zone)
+                            // If distance to edge is < safeDist
+                            // Approximation: distance to center < radius + safe
+                            // Better: Distance to polygon? Too expensive?
+                            // Use Circle approx for proximity cost
+                            if (d < isl.radius + 80) {
+                                proximityCost += 10000 * (1.0 - (d - isl.radius)/80);
+                            }
+                        }
+                    }
+                }
+            }
+
             if (boatCollision) {
                 if (this.livenessState === 'force') cost += 500; // Prefer glancing/missing
                 else if (this.livenessState === 'recovery') cost += 2000;
@@ -1679,6 +1709,27 @@ function drawDebugWorld(ctx) {
     if (!settings.debugMode) return;
 
     ctx.save();
+
+    // Draw Inflated Islands (Global Planner View)
+    // Only need one boat's planner since they should be same
+    const planner = state.boats.find(b => !b.isPlayer)?.controller?.planner;
+    if (planner && planner.inflatedIslands) {
+        ctx.strokeStyle = '#f59e0b'; // Amber
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        for (const isl of planner.inflatedIslands) {
+            if (!isl.vertices || isl.vertices.length === 0) continue;
+            ctx.beginPath();
+            ctx.moveTo(isl.vertices[0].x, isl.vertices[0].y);
+            for (let i = 1; i < isl.vertices.length; i++) {
+                ctx.lineTo(isl.vertices[i].x, isl.vertices[i].y);
+            }
+            ctx.closePath();
+            ctx.stroke();
+        }
+        ctx.setLineDash([]);
+    }
+
     for (const boat of state.boats) {
         if (boat.raceState.finished) continue;
         const w = getWindAt(boat.x, boat.y);
@@ -1693,6 +1744,23 @@ function drawDebugWorld(ctx) {
         ctx.strokeStyle = '#ff00ff';
         ctx.lineWidth = 2;
         ctx.stroke();
+
+        // Draw Planned Path
+        if (boat.controller && boat.controller.currentPath && boat.controller.currentPath.length > 0) {
+            ctx.strokeStyle = '#00ff00'; // Green
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(boat.x, boat.y);
+            for (const p of boat.controller.currentPath) {
+                ctx.lineTo(p.x, p.y);
+            }
+            ctx.stroke();
+
+            // Draw current target waypoint
+            const wp = boat.controller.currentPath[0];
+            ctx.fillStyle = '#00ff00';
+            ctx.beginPath(); ctx.arc(wp.x, wp.y, 5, 0, Math.PI*2); ctx.fill();
+        }
     }
     ctx.restore();
 }
