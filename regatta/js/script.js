@@ -4980,7 +4980,7 @@ function drawWindWaves(ctx) {
     const startY = camY - radius;
     const endY = camY + radius;
 
-    const gridSize = 60; // Approx 12 meters
+    const gridSize = 180; // Approx 36 meters
 
     // Snap to grid
     const iStart = Math.floor(startX / gridSize);
@@ -5035,7 +5035,7 @@ function drawWindWaves(ctx) {
             const wy = y + dy;
 
             // Wave Orientation: Perpendicular to wind
-            const angle = wind.direction;
+            const angle = wind.direction + Math.PI;
 
             // Scale based on wind strength
             const intensity = Math.max(0, (speed - 4) / 20); // 0 at 4kn, 1 at 24kn
