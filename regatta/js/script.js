@@ -6317,14 +6317,21 @@ function generateIslands(boundary) {
     const courseArea = Math.PI * boundary.radius * boundary.radius;
     const targetLandArea = courseArea * coverage;
 
-    // Size Params
-    const baseRadius = 60 + sizeSetting * 190;
-    const avgIslandArea = Math.PI * baseRadius * baseRadius;
+    // Size Params (Significantly Increased for Max 500m)
+    // 500m = 2500 units. Radius = 1250 units.
+    // Map Slider 0-1 to Radius Range
+    // Min Base: 50 + 0*350 = 50. Max Base: 50 + 1*350 = 400.
+    // Min Large: 200 + 0*1050 = 200. Max Large: 200 + 1*1050 = 1250.
+    const rMinBase = 50 + sizeSetting * 350;
+    const rMaxBase = 200 + sizeSetting * 1050;
+
+    const avgR = (rMinBase + rMaxBase) / 2;
+    const avgIslandArea = Math.PI * avgR * avgR;
     const targetCount = Math.max(1, Math.round(targetLandArea / avgIslandArea));
 
     const maxR = boundary.radius - 200;
 
-    // Course line segment for avoidance
+    // Avoidance Geometry
     const marks = state.course.marks;
     if (!marks || marks.length < 4) return [];
 
@@ -6335,7 +6342,7 @@ function generateIslands(boundary) {
     // Clustering Centers
     const clusterCenters = [];
     if (clustering > 0.3) {
-        const numClusters = Math.max(1, Math.floor((1.0 - clustering) * 5) + 1); // 0.9->1 cluster, 0.3->4 clusters
+        const numClusters = Math.max(1, Math.floor((1.0 - clustering) * 5) + 1);
         for(let i=0; i<numClusters; i++) {
              const angle = rng() * Math.PI * 2;
              const dist = Math.sqrt(rng()) * maxR;
@@ -6349,105 +6356,135 @@ function generateIslands(boundary) {
     let currentArea = 0;
     let fails = 0;
 
-    // Generate loop
-    for(let i=0; i<targetCount * 1.5 && currentArea < targetLandArea; i++) {
+    // Helper: Generate a jagged polygon for a body
+    const createIslandBody = (bx, by, br) => {
+        const vertices = [];
+        const points = 7 + Math.floor(rng() * 6);
+        for(let j=0; j<points; j++) {
+            const theta = (j / points) * Math.PI * 2;
+            const r = br * (0.7 + rng() * 0.6);
+            vertices.push({
+                x: bx + Math.cos(theta) * r,
+                y: by + Math.sin(theta) * r
+            });
+        }
+        // Veg Poly (Inner)
+        const vegVertices = vertices.map(v => ({
+            x: bx + (v.x - bx) * 0.75,
+            y: by + (v.y - by) * 0.75
+        }));
+        // Trees
+        const trees = [];
+        const treeCount = Math.floor(2 + (br/60) * 2 + rng() * 3);
+        for(let k=0; k<treeCount; k++) {
+             const ang = rng() * Math.PI * 2;
+             const dst = rng() * br * 0.4;
+             trees.push({
+                 x: bx + Math.cos(ang)*dst,
+                 y: by + Math.sin(ang)*dst,
+                 size: 14 + rng()*10,
+                 rotation: rng() * Math.PI * 2
+             });
+        }
+        return { x: bx, y: by, radius: br, vertices, vegVertices, trees };
+    };
+
+    // Helper: Validate a circle against world constraints
+    const isValidCircle = (cx, cy, cr) => {
+         // Boundary
+         if ((cx-boundary.x)**2 + (cy-boundary.y)**2 > (maxR - cr)**2) return false;
+
+         // Marks (Strict)
+         const markClearance = 350 + cr;
+         for (const m of marks) {
+            if ((cx-m.x)**2 + (cy-m.y)**2 < markClearance**2) return false;
+         }
+
+         // Start/Finish Boxes
+         const boxClearance = 500 + cr;
+         if ((cx-mStart.x)**2 + (cy-mStart.y)**2 < boxClearance**2) return false;
+         if ((cx-mUpwind.x)**2 + (cy-mUpwind.y)**2 < boxClearance**2) return false;
+
+         // Other Islands (Strict No-Overlap with EXISTING islands)
+         // Note: Parts of the SAME composite island are allowed to overlap each other (handled outside)
+         for (const isl of islands) {
+             const dSq = (cx-isl.x)**2 + (cy-isl.y)**2;
+             const minDist = cr + isl.radius + 30;
+             if (dSq < minDist**2) return false;
+         }
+         return true;
+    };
+
+    // Main Loop
+    for(let i=0; i<targetCount * 2 && currentArea < targetLandArea; i++) {
+        if (fails > 50) break;
+
         let x, y, valid = false;
         let attempts = 0;
         
-        // Randomized Radius based on setting
-        const sizeVar = rng() * 0.6 + 0.7; // 0.7 to 1.3 variation
-        const radius = baseRadius * sizeVar; 
+        // Base Radius for this island group
+        const rMain = rMinBase + rng() * (rMaxBase - rMinBase);
+
+        // Composite Logic
+        const isComposite = (rng() < 0.7); // 70% composite
+
+        const candidates = []; // List of {x,y,r} to form this group
 
         while(!valid && attempts < 50) {
             attempts++;
-            
-            // Position Generation
+            candidates.length = 0; // Clear previous attempt
+
+            // 1. Pick Center
             if (clustering > 0.3 && clusterCenters.length > 0 && rng() < clustering) {
-                // Pick near a cluster center
                 const center = clusterCenters[Math.floor(rng()*clusterCenters.length)];
-                // Dispersion depends on clustering strength? High clustering = tight dispersion.
                 const dispersion = 1200 * (1.1 - clustering); 
                 const angle = rng() * Math.PI * 2;
                 const dist = rng() * dispersion;
                 x = center.x + Math.cos(angle)*dist;
                 y = center.y + Math.sin(angle)*dist;
             } else {
-                // Uniform
                 const angle = rng() * Math.PI * 2;
                 const dist = Math.sqrt(rng()) * maxR; 
                 x = boundary.x + Math.cos(angle) * dist;
                 y = boundary.y + Math.sin(angle) * dist;
             }
 
-            // Boundary Check
-            if ((x-boundary.x)**2 + (y-boundary.y)**2 > maxR**2) continue;
+            // 2. Main Body
+            if (!isValidCircle(x, y, rMain)) continue;
+            candidates.push({ x, y, r: rMain });
 
-            valid = true;
+            // 3. Child Bodies (if composite)
+            if (isComposite) {
+                const numExtras = 1 + Math.floor(rng() * 3); // 1-3 extra parts
+                for(let k=0; k<numExtras; k++) {
+                    const ang = rng() * Math.PI * 2;
+                    // Place on edge of main body
+                    const dist = rMain * (0.6 + rng() * 0.4);
+                    const rChild = rMain * (0.3 + rng() * 0.5); // Smaller
 
-            // 1. Avoid Marks (Strict)
-            // Marks need ~350 units clearance for rounding logic + zones
-            const markClearance = 350 + radius;
-            for (const m of marks) {
-                if ((x-m.x)**2 + (y-m.y)**2 < markClearance**2) { valid = false; break; }
+                    const cx = x + Math.cos(ang)*dist;
+                    const cy = y + Math.sin(ang)*dist;
+
+                    if (isValidCircle(cx, cy, rChild)) {
+                         candidates.push({ x: cx, y: cy, r: rChild });
+                    }
+                }
             }
-            if (!valid) continue;
 
-            // 2. Avoid Start/Finish Box Areas (Strict)
-            const boxClearance = 500 + radius;
-            if ((x-mStart.x)**2 + (y-mStart.y)**2 < boxClearance**2) { valid = false; continue; }
-            if ((x-mUpwind.x)**2 + (y-mUpwind.y)**2 < boxClearance**2) { valid = false; continue; }
-
-            // 3. Avoid other islands (Strict No-Overlap)
-            // Ensure gap between islands
-            for (const isl of islands) {
-                 const dSq = (x-isl.x)**2 + (y-isl.y)**2;
-                 const minDist = radius + isl.radius + 30; // 30 unit buffer
-                 if (dSq < minDist**2) { valid = false; break; }
-            }
-            if (!valid) continue;
+            if (candidates.length > 0) valid = true;
         }
 
         if (!valid) {
             fails++;
-            if (fails > 20) break; // Give up if space is full
             continue;
         }
 
-        // Generate Polygon (Jagged Blob)
-        const vertices = [];
-        const points = 7 + Math.floor(rng() * 6);
-        for(let j=0; j<points; j++) {
-            const theta = (j / points) * Math.PI * 2;
-            const r = radius * (0.7 + rng() * 0.6);
-            vertices.push({
-                x: x + Math.cos(theta) * r,
-                y: y + Math.sin(theta) * r
-            });
+        // Create Bodies
+        for(const c of candidates) {
+            const body = createIslandBody(c.x, c.y, c.r);
+            islands.push(body);
+            currentArea += Math.PI * c.r * c.r;
         }
-
-        // Veg Poly (Inner)
-        const vegVertices = vertices.map(v => ({
-            x: x + (v.x - x) * 0.75,
-            y: y + (v.y - y) * 0.75
-        }));
-
-        // Palm Trees
-        const trees = [];
-        // Scale tree count by size
-        const treeCount = Math.floor(2 + (radius/60) * 2 + rng() * 3);
-        for(let k=0; k<treeCount; k++) {
-             const ang = rng() * Math.PI * 2;
-             const dst = rng() * radius * 0.4;
-             trees.push({
-                 x: x + Math.cos(ang)*dst,
-                 y: y + Math.sin(ang)*dst,
-                 size: 14 + rng()*10,
-                 rotation: rng() * Math.PI * 2
-             });
-        }
-
-        islands.push({ x, y, radius, vertices, vegVertices, trees });
-        currentArea += Math.PI * radius * radius;
     }
     
     return islands;
@@ -6591,6 +6628,7 @@ function drawIslands(ctx) {
     const camX = state.camera.x;
     const camY = state.camera.y;
 
+    // Helper
     const drawRoundedPoly = (vertices) => {
         if (vertices.length < 3) return;
         ctx.beginPath();
@@ -6610,12 +6648,18 @@ function drawIslands(ctx) {
         ctx.closePath();
     };
 
+    // Filter Visible Islands
+    const visible = [];
     for (const isl of state.course.islands) {
-        // Culling Check
         const distSq = (isl.x - camX)**2 + (isl.y - camY)**2;
         const limit = viewRadius + isl.radius;
-        if (distSq > limit**2) continue;
+        if (distSq <= limit**2) visible.push(isl);
+    }
 
+    // Pass 1: Sand Strokes (Outer merged boundary)
+    ctx.strokeStyle = '#eab308'; // Darker sand stroke
+    ctx.lineWidth = 2;
+    for (const isl of visible) {
         // Shoreline Glow (Tropical Shallow Water)
         if (window.WATER_CONFIG && window.WATER_CONFIG.shorelineGlowSize > 0) {
             ctx.save();
@@ -6633,17 +6677,25 @@ function drawIslands(ctx) {
         // Sand
         ctx.fillStyle = '#fde047'; // Yellow 300
         drawRoundedPoly(isl.vertices);
-        ctx.fill();
-        ctx.strokeStyle = '#eab308'; // Darker sand stroke
-        ctx.lineWidth = 2;
         ctx.stroke();
+    }
 
-        // Vegetation
-        ctx.fillStyle = '#16a34a'; // Green 600
+    // Pass 2: Sand Fills (Covers inner strokes of overlapping islands)
+    ctx.fillStyle = '#fde047'; // Yellow 300
+    for (const isl of visible) {
+        drawRoundedPoly(isl.vertices);
+        ctx.fill();
+    }
+
+    // Pass 3: Vegetation
+    ctx.fillStyle = '#16a34a'; // Green 600
+    for (const isl of visible) {
         drawRoundedPoly(isl.vegVertices);
         ctx.fill();
+    }
 
-        // Trees
+    // Pass 4: Trees
+    for (const isl of visible) {
         for(const t of isl.trees) {
             if (palmImg.complete && palmImg.naturalWidth > 0) {
                 const size = t.size * 2.2;
