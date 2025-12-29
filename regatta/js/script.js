@@ -2319,8 +2319,18 @@ const UI = {
     currentControls: document.getElementById('current-controls'),
 
     prCompetitorsGrid: document.getElementById('pr-competitors-grid'),
+    // Toast
+    toast: document.getElementById('toast-notification'),
+    toastMsg: document.getElementById('toast-message'),
+
     startRaceBtn: document.getElementById('start-race-btn'),
-    boatRows: {}
+    boatRows: {},
+
+    // Water Debug
+    waterDebug: document.getElementById('water-debug'),
+    waterDebugControls: document.getElementById('water-debug-controls'),
+    waterReset: document.getElementById('water-reset'),
+    waterClose: document.getElementById('water-close')
 };
 
 function updateConditionDescription() {
@@ -2852,14 +2862,85 @@ window.addEventListener('keydown', (e) => {
     if (key === 's' || key === 'S') key = 'ArrowDown';
 
     if (state.keys.hasOwnProperty(key)) state.keys[key] = true;
-    if (e.key === 'Enter') {
+
+    // View & System
+    if (e.key.toLowerCase() === 'c') {
         const modes = ['heading', 'north', 'wind', 'gate'];
         state.camera.mode = modes[(modes.indexOf(state.camera.mode) + 1) % modes.length];
         settings.cameraMode = state.camera.mode;
         state.camera.message = state.camera.mode.toUpperCase();
         state.camera.messageTimer = 1.5;
         saveSettings();
+        showToast(`Camera: ${state.camera.mode.toUpperCase()}`);
     }
+    if (e.key.toLowerCase() === 'n') {
+        state.showNavAids = !state.showNavAids;
+        settings.navAids = state.showNavAids;
+        saveSettings();
+        if (UI.settingNavAids) UI.settingNavAids.checked = state.showNavAids;
+        showToast(`Nav Aids: ${state.showNavAids ? "ON" : "OFF"}`);
+    }
+    if (e.key.toLowerCase() === 'p') {
+        settings.penaltiesEnabled = !settings.penaltiesEnabled;
+        saveSettings();
+        if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
+        if (UI.rulesStatus) {
+            if (settings.penaltiesEnabled) {
+                UI.rulesStatus.textContent = "RULES: ON";
+                UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider`;
+            } else {
+                UI.rulesStatus.textContent = "RULES: OFF";
+                UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-red-400 bg-slate-900/80 px-2 py-0.5 rounded-full border border-red-500/50 uppercase tracking-wider`;
+            }
+        }
+        showToast(`Penalties: ${settings.penaltiesEnabled ? "ON" : "OFF"}`);
+    }
+
+    if (e.key === 'F12') {
+        e.preventDefault();
+        if (window.html2canvas) {
+            showToast("Capturing Screenshot...");
+            setTimeout(() => {
+                window.html2canvas(document.body).then(c => {
+                    const link = document.createElement('a');
+                    link.download = 'regatta-screenshot.png';
+                    link.href = c.toDataURL();
+                    link.click();
+                    showToast("Screenshot Saved");
+                });
+            }, 100);
+        }
+    }
+
+    if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) toggleHelp();
+    if (e.key === 'Escape') {
+        if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) toggleHelp(false);
+        else if (UI.settingsScreen && !UI.settingsScreen.classList.contains('hidden')) toggleSettings(false);
+        else togglePause();
+    }
+
+    // Audio
+    if (e.key.toLowerCase() === 'm') {
+        if (e.shiftKey) {
+            settings.musicEnabled = !settings.musicEnabled;
+            saveSettings();
+            if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
+            if (settings.musicEnabled) Sound.init();
+            else Sound.stopMusic();
+            Sound.updateMusic();
+            showToast(`Music: ${settings.musicEnabled ? "ON" : "OFF"}`);
+        } else {
+            settings.soundEnabled = !settings.soundEnabled;
+            saveSettings();
+            if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
+            if (settings.soundEnabled) Sound.init();
+            Sound.updateWindSound(state.wind.speed);
+            showToast(`Sound: ${settings.soundEnabled ? "ON" : "OFF"}`);
+        }
+    }
+    if (e.key === 'F7') { e.preventDefault(); toggleWaterDebug(); }
+    // Sailing
     if (e.key === ' ' || e.code === 'Space') {
         if (state.boats.length > 0) state.boats[0].spinnaker = !state.boats[0].spinnaker;
     }
@@ -2869,70 +2950,37 @@ window.addEventListener('keydown', (e) => {
             state.boats[0].manualTrim = !state.boats[0].manualTrim;
             settings.manualTrim = state.boats[0].manualTrim;
             saveSettings();
+            if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
             if (state.boats[0].manualTrim) state.boats[0].manualSailAngle = Math.abs(state.boats[0].sailAngle);
+            showToast(`Trim: ${state.boats[0].manualTrim ? "MANUAL" : "AUTO"}`);
         }
     }
-    if (e.key === '?' || (e.shiftKey && e.key === '/')) toggleHelp();
-    if (e.key === 'Escape') {
-        if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) toggleHelp(false);
-        else if (UI.settingsScreen && !UI.settingsScreen.classList.contains('hidden')) toggleSettings(false);
-        else togglePause();
-    }
-    if (e.key === 'F1') {
-        e.preventDefault();
-        if (window.html2canvas) {
-            window.html2canvas(document.body).then(c => {
-                const link = document.createElement('a');
-                link.download = 'regatta-screenshot.png';
-                link.href = c.toDataURL();
-                link.click();
-            });
-        }
-    }
-    if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
-    if (e.key === 'F3') {
-        e.preventDefault();
-        settings.soundEnabled = !settings.soundEnabled;
-        saveSettings();
-        if (settings.soundEnabled) Sound.init();
-        Sound.updateWindSound(state.wind.speed);
-    }
-    if (e.key === 'F4') {
-        e.preventDefault();
-        settings.penaltiesEnabled = !settings.penaltiesEnabled;
-        saveSettings();
-        const msg = settings.penaltiesEnabled ? "RULES ENABLED" : "RULES DISABLED";
-        const col = settings.penaltiesEnabled ? "text-green-400" : "text-red-400";
-        showRaceMessage(msg, col, `border-${settings.penaltiesEnabled ? 'green' : 'red'}-400/50`);
-        setTimeout(hideRaceMessage, 1500);
-    }
-    if (e.key === 'F5') {
-        e.preventDefault();
-        settings.musicEnabled = !settings.musicEnabled;
-        saveSettings();
-        Sound.init();
-    }
-    if (e.key === '`' || e.code === 'Backquote') {
-        state.showNavAids = !state.showNavAids;
-        settings.navAids = state.showNavAids;
-        saveSettings();
-    }
+
+    // Dev
     if (e.key === 'F8') {
         e.preventDefault();
         settings.debugMode = !settings.debugMode;
-        saveSettings();
+        showToast(`Debug: ${settings.debugMode ? "ON" : "OFF"}`);
     }
-    if (e.key === 'F9') {
-        e.preventDefault();
-        if (!state.gameSpeed) state.gameSpeed = 1.0;
-
-        if (state.gameSpeed >= 0.9) state.gameSpeed = 0.5;
-        else if (state.gameSpeed >= 0.4) state.gameSpeed = 0.25;
-        else state.gameSpeed = 1.0;
-
-        const pct = Math.round(state.gameSpeed * 100);
-        showRaceMessage(`GAME SPEED: ${pct}%`, "text-yellow-400", "border-yellow-400/50");
-        setTimeout(hideRaceMessage, 1500);
+    if (e.key === '[') {
+        const steps = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 10.0];
+        let current = state.gameSpeed || 1.0;
+        let next = 0.1;
+        for (let i = steps.length - 1; i >= 0; i--) {
+            if (steps[i] < current - 0.01) { next = steps[i]; break; }
+        }
+        state.gameSpeed = next;
+        showToast(`Speed: ${state.gameSpeed}x`);
+    }
+    if (e.key === ']') {
+        const steps = [0.1, 0.25, 0.5, 1.0, 2.0, 4.0, 10.0];
+        let current = state.gameSpeed || 1.0;
+        let next = 10.0;
+        for (let i = 0; i < steps.length; i++) {
+            if (steps[i] > current + 0.01) { next = steps[i]; break; }
+        }
+        state.gameSpeed = next;
+        showToast(`Speed: ${state.gameSpeed}x`);
     }
 });
 
@@ -2993,6 +3041,18 @@ function showRaceMessage(text, textColorClass, borderColorClass) {
 }
 
 function hideRaceMessage() { if (UI.message) UI.message.classList.add('hidden'); }
+
+function showToast(text) {
+    if (UI.toast && UI.toastMsg) {
+        UI.toastMsg.textContent = text;
+        UI.toast.classList.remove('opacity-0', 'translate-y-4');
+
+        if (UI.toast.hideTimeout) clearTimeout(UI.toast.hideTimeout);
+        UI.toast.hideTimeout = setTimeout(() => {
+            UI.toast.classList.add('opacity-0', 'translate-y-4');
+        }, 1500);
+    }
+}
 
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
@@ -4905,46 +4965,9 @@ function drawMarkZones(ctx) {
 
 // Draw Water (Waves) - Same as original
 function drawWater(ctx) {
-    const gridSize = 80;
-    const dist = state.time * 20;
-    const shiftX = -Math.sin(state.wind.direction)*dist, shiftY = Math.cos(state.wind.direction)*dist;
-    const pad = gridSize*2;
-    const left = state.camera.x - canvas.width/2 - pad, right = state.camera.x + canvas.width/2 + pad;
-    const top = state.camera.y - canvas.height/2 - pad, bottom = state.camera.y + canvas.height/2 + pad;
-    const startX = Math.floor((left-shiftX)/gridSize)*gridSize, endX = Math.ceil((right-shiftX)/gridSize)*gridSize;
-    const startY = Math.floor((top-shiftY)/gridSize)*gridSize, endY = Math.ceil((bottom-shiftY)/gridSize)*gridSize;
-
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 2.5;
-
-    ctx.beginPath();
-    for (let x = startX; x < endX; x+=gridSize) {
-        for (let y = startY; y < endY; y+=gridSize) {
-             const cx = x + shiftX + gridSize/2, cy = y + shiftY + gridSize/2;
-
-             // Local Wind Check
-             const local = getWindAt(cx, cy);
-             const angle = local.direction + Math.PI;
-             const cosA = Math.cos(angle), sinA = Math.sin(angle);
-             const speedFactor = local.speed / 10;
-
-             const noise = Math.sin(x*0.12+y*0.17);
-             const bob = Math.sin(state.time*2+noise*10) * (0.3 + speedFactor);
-
-             const seed = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-             const randX = (seed - Math.floor(seed)) * 40 - 20;
-             const randY = (Math.cos(seed) * 0.5 + 0.5) * 40 - 20;
-             let scale = (0.8 + ((seed*10)%1)*0.4) * Math.max(0.5, speedFactor);
-
-             const rcx = cx + randX, rcy = cy + randY;
-             const p1x = -8*scale, p1y = bob*scale, p2x = 8*scale, p2y = bob*scale;
-             const cpx = 0, cpy = (bob-6)*scale;
-
-             const t = (px, py) => ({ x: px*cosA - py*sinA + rcx, y: px*sinA + py*cosA + rcy });
-             const tp1 = t(p1x, p1y), tp2 = t(p2x, p2y), tcp = t(cpx, cpy);
-             ctx.moveTo(tp1.x, tp1.y); ctx.quadraticCurveTo(tcp.x, tcp.y, tp2.x, tp2.y);
-        }
+    if (window.WaterRenderer) {
+        window.WaterRenderer.draw(ctx, state);
     }
-    ctx.stroke();
 }
 
 function drawGusts(ctx) {
@@ -4985,6 +5008,47 @@ function drawGusts(ctx) {
         ctx.arc(0, 0, g.radiusX, 0, Math.PI * 2);
         ctx.fill();
 
+        ctx.restore();
+    }
+}
+
+function drawIslandShadows(ctx) {
+    if (!state.course.islands) return;
+    const windDir = state.wind.direction;
+    const shadowAngle = Math.atan2(Math.cos(windDir), -Math.sin(windDir));
+
+    // Viewport Culling
+    const camX = state.camera.x;
+    const camY = state.camera.y;
+    // Approx viewport radius
+    const viewRadius = Math.max(ctx.canvas.width, ctx.canvas.height);
+
+    for (const isl of state.course.islands) {
+        // Culling (Simple distance check including shadow length)
+        const distSq = (isl.x - camX)**2 + (isl.y - camY)**2;
+        if (distSq > (viewRadius + isl.radius * 9)**2) continue;
+
+        ctx.save();
+        ctx.translate(isl.x, isl.y);
+        ctx.rotate(shadowAngle);
+
+        const shadowLen = isl.radius * 8;
+        const startWidth = isl.radius;
+        const endWidth = isl.radius * (1.0 + shadowLen / 500);
+
+        const grad = ctx.createLinearGradient(0, 0, shadowLen, 0);
+        // Lull color: rgba(92, 201, 255, alpha)
+        grad.addColorStop(0, 'rgba(92, 201, 255, 0.6)');
+        grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
+
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.moveTo(0, -startWidth);
+        ctx.lineTo(shadowLen, -endWidth);
+        ctx.quadraticCurveTo(shadowLen + endWidth * 0.5, 0, shadowLen, endWidth);
+        ctx.lineTo(0, startWidth);
+        ctx.quadraticCurveTo(-startWidth * 0.5, 0, 0, -startWidth);
+        ctx.fill();
         ctx.restore();
     }
 }
@@ -5131,6 +5195,37 @@ function drawMinimap() {
     const b = state.course.boundary;
     const bp = t(b.x, b.y);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+
+    // Island Shadows
+    if (state.course.islands) {
+        const windDir = state.wind.direction;
+        const shadowAngle = Math.atan2(Math.cos(windDir), -Math.sin(windDir));
+
+        for (const isl of state.course.islands) {
+            const pos = t(isl.x, isl.y);
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(shadowAngle);
+
+            const shadowLen = isl.radius * 8 * scale;
+            const startWidth = isl.radius * scale;
+            const endWidth = isl.radius * (1.0 + (isl.radius * 8)/500) * scale;
+
+            const grad = ctx.createLinearGradient(0, 0, shadowLen, 0);
+            grad.addColorStop(0, 'rgba(92, 201, 255, 0.6)');
+            grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
+
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -startWidth);
+            ctx.lineTo(shadowLen, -endWidth);
+            ctx.quadraticCurveTo(shadowLen + endWidth * 0.5, 0, shadowLen, endWidth);
+            ctx.lineTo(0, startWidth);
+            ctx.quadraticCurveTo(-startWidth * 0.5, 0, 0, -startWidth);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
 
     // Islands
     if (state.course.islands) {
@@ -5862,7 +5957,9 @@ function drawBoatIndicator(ctx, boat) {
 
 function draw() {
     frameCount++;
-    ctx.fillStyle = CONFIG.waterColor; ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw Water Background (Screen Space)
+    drawWater(ctx);
 
     const player = state.boats[0];
     if (!player) return;
@@ -5872,12 +5969,12 @@ function draw() {
     ctx.rotate(-state.camera.rotation);
     ctx.translate(-state.camera.x, -state.camera.y);
 
+    drawParticles(ctx, 'surface');
     drawGusts(ctx);
+    drawIslandShadows(ctx);
     drawParticles(ctx, 'current');
-    drawWater(ctx);
     drawIslands(ctx);
     drawDisturbedAir(ctx);
-    drawParticles(ctx, 'surface');
     drawActiveGateLine(ctx);
     drawLadderLines(ctx);
     drawLayLines(ctx);
@@ -6560,6 +6657,22 @@ function drawIslands(ctx) {
     ctx.strokeStyle = '#eab308'; // Darker sand stroke
     ctx.lineWidth = 2;
     for (const isl of visible) {
+        // Shoreline Glow (Tropical Shallow Water)
+        if (window.WATER_CONFIG && window.WATER_CONFIG.shorelineGlowSize > 0) {
+            ctx.save();
+            ctx.shadowColor = window.WATER_CONFIG.shorelineColor || '#4ade80';
+            ctx.shadowBlur = window.WATER_CONFIG.shorelineGlowSize * 20; // Scale factor
+            ctx.fillStyle = window.WATER_CONFIG.shorelineColor || '#4ade80';
+            ctx.globalAlpha = window.WATER_CONFIG.shorelineGlowOpacity || 0.5;
+
+            // Draw slightly larger or just rely on shadow spread
+            drawRoundedPoly(isl.vertices);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        // Sand
+        ctx.fillStyle = '#fde047'; // Yellow 300
         drawRoundedPoly(isl.vertices);
         ctx.stroke();
     }
@@ -6696,7 +6809,8 @@ function resetGame() {
     const directionBias = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.1);
 
     // Obstacle Defaults (Randomized on Init)
-    const islandCoverage = Math.random() * 0.5; // 0% to 50%
+    // 70% chance of no islands (0 coverage)
+    const islandCoverage = (Math.random() > 0.7) ? Math.random() * 0.5 : 0;
     const islandSize = Math.random();
     const islandClustering = Math.random();
 
@@ -6737,6 +6851,9 @@ function resetGame() {
     state.race.timer = state.race.startTimerDuration;
 
     initCourse();
+
+    // Init Water Renderer
+    if (window.WaterRenderer) window.WaterRenderer.init();
 
     // Pre-populate gusts
     const density = 5 + Math.floor(puffiness * 20);
@@ -6866,4 +6983,89 @@ window.runBatchSim = function(count = 50) {
 
 resetGame();
 requestAnimationFrame(loop);
+
+// Water Debug Logic
+function toggleWaterDebug() {
+    if (!UI.waterDebug) return;
+    UI.waterDebug.classList.toggle('hidden');
+    if (!UI.waterDebug.classList.contains('hidden')) {
+        initWaterDebugUI();
+    }
+}
+
+function initWaterDebugUI() {
+    if (!UI.waterDebugControls || !window.WATER_CONFIG) return;
+    UI.waterDebugControls.innerHTML = ''; // Clear
+
+    const createControl = (key, label, type, min, max, step) => {
+        const div = document.createElement('div');
+        div.className = "flex flex-col gap-1";
+
+        const header = document.createElement('div');
+        header.className = "flex justify-between items-end";
+
+        const lbl = document.createElement('label');
+        lbl.textContent = label;
+        lbl.className = "text-slate-400 font-bold uppercase text-[10px] tracking-wide";
+
+        const valDisp = document.createElement('span');
+        valDisp.className = "text-cyan-400 font-mono";
+        valDisp.textContent = window.WATER_CONFIG[key];
+
+        header.appendChild(lbl);
+        header.appendChild(valDisp);
+        div.appendChild(header);
+
+        let input;
+        if (type === 'color') {
+            input = document.createElement('input');
+            input.type = 'color';
+            input.value = window.WATER_CONFIG[key];
+            input.className = "w-full h-6 bg-slate-800 rounded cursor-pointer border border-slate-600";
+        } else {
+            input = document.createElement('input');
+            input.type = 'range';
+            input.min = min;
+            input.max = max;
+            input.step = step;
+            input.value = window.WATER_CONFIG[key];
+            input.className = "w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500";
+        }
+
+        input.addEventListener('input', (e) => {
+            window.WATER_CONFIG[key] = (type === 'range') ? parseFloat(e.target.value) : e.target.value;
+            valDisp.textContent = window.WATER_CONFIG[key];
+        });
+
+        div.appendChild(input);
+        UI.waterDebugControls.appendChild(div);
+    };
+
+    createControl('baseColor', 'Base Color', 'color');
+    createControl('depthGradientStrength', 'Vignette Strength', 'range', 0, 1, 0.05);
+    createControl('contourOpacity', 'Contour Opacity', 'range', 0, 1, 0.05);
+    createControl('contourScale', 'Contour Scale', 'range', 0.5, 3.0, 0.1);
+    createControl('contourSpacing', 'Contour Spacing', 'range', 10, 100, 5);
+    createControl('contourWarp', 'Contour Warp', 'range', 0, 2.0, 0.1);
+    createControl('contourSpeed', 'Flow Speed', 'range', 0, 0.1, 0.005);
+    createControl('causticOpacity', 'Caustic Opacity', 'range', 0, 1, 0.05);
+    createControl('causticScale', 'Caustic Scale', 'range', 0.5, 5.0, 0.1);
+    createControl('grainOpacity', 'Grain Opacity', 'range', 0, 0.2, 0.01);
+    createControl('shorelineGlowSize', 'Island Glow Size', 'range', 1.0, 3.0, 0.1);
+    createControl('shorelineGlowOpacity', 'Island Glow Opacity', 'range', 0, 1, 0.05);
+    createControl('shorelineColor', 'Glow Color', 'color');
+}
+
+if (UI.waterReset) {
+    UI.waterReset.addEventListener('click', () => {
+        // Simple reload for defaults or store defaults separately?
+        // Let's just reload page for now or hardcode reset if needed.
+        // Or store defaults in water.js
+        window.location.reload();
+    });
+}
+if (UI.waterClose) UI.waterClose.addEventListener('click', () => {
+    if (UI.waterDebug) UI.waterDebug.classList.add('hidden');
+});
+
 window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard; window.CONFIG = CONFIG;
