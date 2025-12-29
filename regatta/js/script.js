@@ -5296,40 +5296,10 @@ function drawMinimap() {
     const bp = t(b.x, b.y);
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
 
-    // Island Shadows
-    if (state.course.islands) {
-        const windDir = state.wind.direction;
-        const shadowAngle = Math.atan2(Math.cos(windDir), -Math.sin(windDir));
-
-        for (const isl of state.course.islands) {
-            const pos = t(isl.x, isl.y);
-            ctx.save();
-            ctx.translate(pos.x, pos.y);
-            ctx.rotate(shadowAngle);
-
-            const shadowLen = isl.radius * 8 * scale;
-            const startWidth = isl.radius * scale;
-            const endWidth = isl.radius * (1.0 + (isl.radius * 8)/500) * scale;
-
-            const grad = ctx.createLinearGradient(0, 0, shadowLen, 0);
-            grad.addColorStop(0, 'rgba(92, 201, 255, 0.6)');
-            grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
-
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.moveTo(0, -startWidth);
-            ctx.lineTo(shadowLen, -endWidth);
-            ctx.quadraticCurveTo(shadowLen + endWidth * 0.5, 0, shadowLen, endWidth);
-            ctx.lineTo(0, startWidth);
-            ctx.quadraticCurveTo(-startWidth * 0.5, 0, 0, -startWidth);
-            ctx.fill();
-            ctx.restore();
-        }
-    }
-
     // Islands
     if (state.course.islands) {
-        ctx.fillStyle = '#fde6b1'; // Sand color for minimap
+        // Sand first
+        ctx.fillStyle = '#fde6b1';
         for (const isl of state.course.islands) {
             ctx.beginPath();
             if (isl.vertices.length > 0) {
@@ -5342,8 +5312,10 @@ function drawMinimap() {
             }
             ctx.closePath();
             ctx.fill();
-            // Optional: Green center?
-            ctx.fillStyle = '#84cc16';
+        }
+        // Green center
+        ctx.fillStyle = '#84cc16';
+        for (const isl of state.course.islands) {
             ctx.beginPath();
             if (isl.vegVertices.length > 0) {
                 const p0 = t(isl.vegVertices[0].x, isl.vegVertices[0].y);
@@ -5355,19 +5327,6 @@ function drawMinimap() {
             }
             ctx.closePath();
             ctx.fill();
-
-            // Draw rocks on minimap (optional, but good for detail)
-            ctx.fillStyle = '#9ca3af';
-            if (isl.rocks) {
-                for (const rock of isl.rocks) {
-                    const rp = t(rock.x, rock.y);
-                    ctx.beginPath();
-                    ctx.arc(rp.x, rp.y, rock.size * scale, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-
-            ctx.fillStyle = '#fde6b1'; // Reset for next
         }
     }
 
