@@ -2307,8 +2307,9 @@ const UI = {
     valCourseTimer: document.getElementById('val-course-timer'),
 
     // Obstacles UI
-    confIslandCoverage: document.getElementById('conf-island-coverage'),
-    confIslandSize: document.getElementById('conf-island-size'),
+    confIslandCount: document.getElementById('conf-island-count'),
+    valIslandCount: document.getElementById('val-island-count'),
+    confIslandMaxSize: document.getElementById('conf-island-max-size'),
     confIslandClustering: document.getElementById('conf-island-clustering'),
 
     // Current UI
@@ -2345,7 +2346,11 @@ function updateConditionDescription() {
     const puffFreq = parseFloat(UI.confPuffFreq.value);
     const puffInt = parseFloat(UI.confPuffInt.value);
     const puffShift = parseFloat(UI.confPuffShift.value);
-    const islandCov = parseFloat(UI.confIslandCoverage.value);
+
+    // Obstacles
+    const islandCount = parseInt(UI.confIslandCount.value);
+    const islandMaxSize = parseFloat(UI.confIslandMaxSize.value);
+    const islandClustering = parseFloat(UI.confIslandClustering.value);
 
     // Apply to state
     const baseMin = 5;
@@ -2357,11 +2362,14 @@ function updateConditionDescription() {
     state.race.conditions.puffiness = puffFreq;
     state.race.conditions.gustStrengthBias = puffInt;
     state.race.conditions.puffShiftiness = puffShift;
-    // Obstacles applied in initCourse via state.race.conditions or direct read, 
-    // but better to sync here.
-    state.race.conditions.islandCoverage = islandCov;
-    state.race.conditions.islandSize = parseFloat(UI.confIslandSize.value);
-    state.race.conditions.islandClustering = parseFloat(UI.confIslandClustering.value);
+
+    // Sync Obstacle state
+    state.race.conditions.islandCount = islandCount;
+    state.race.conditions.islandMaxSize = islandMaxSize;
+    state.race.conditions.islandClustering = islandClustering;
+
+    // Update labels
+    if (UI.valIslandCount) UI.valIslandCount.textContent = islandCount;
 
     let text = "";
 
@@ -2391,9 +2399,10 @@ function updateConditionDescription() {
     else text += ".";
 
     // Obstacles
-    if (islandCov > 0) {
-        text += " Navigation hazards present.";
-        if (state.race.conditions.islandClustering > 0.6) text += " Archipelagos expected.";
+    if (islandCount > 0) {
+        text += ` ${islandCount} island${islandCount > 1 ? 's' : ''} on course.`;
+        if (islandClustering > 0.6) text += " Likely grouped.";
+        else if (islandClustering < 0.4) text += " Scattered layout.";
     }
 
     UI.confDesc.textContent = text;
@@ -2773,13 +2782,13 @@ if (UI.confPuffFreq) UI.confPuffFreq.addEventListener('input', updateConditionDe
 if (UI.confPuffInt) UI.confPuffInt.addEventListener('input', updateConditionDescription);
 if (UI.confPuffShift) UI.confPuffShift.addEventListener('input', updateConditionDescription);
 
-if (UI.confIslandCoverage) {
-    UI.confIslandCoverage.addEventListener('input', updateConditionDescription);
-    UI.confIslandCoverage.addEventListener('change', initCourse);
+if (UI.confIslandCount) {
+    UI.confIslandCount.addEventListener('input', updateConditionDescription);
+    UI.confIslandCount.addEventListener('change', initCourse);
 }
-if (UI.confIslandSize) {
-    UI.confIslandSize.addEventListener('input', updateConditionDescription);
-    UI.confIslandSize.addEventListener('change', initCourse);
+if (UI.confIslandMaxSize) {
+    UI.confIslandMaxSize.addEventListener('input', updateConditionDescription);
+    UI.confIslandMaxSize.addEventListener('change', initCourse);
 }
 if (UI.confIslandClustering) {
     UI.confIslandClustering.addEventListener('input', updateConditionDescription);
@@ -6373,58 +6382,35 @@ function repositionBoats() {
 // Island Logic
 function generateIslands(boundary) {
     const islands = [];
-    const coverage = state.race.conditions.islandCoverage || 0;
-    if (coverage <= 0) return [];
+    // User Settings
+    const islandCount = state.race.conditions.islandCount || 0;
+    if (islandCount <= 0) return [];
+
+    const maxSizeSetting = state.race.conditions.islandMaxSize !== undefined ? state.race.conditions.islandMaxSize : 0.5;
+    const clustering = state.race.conditions.islandClustering !== undefined ? state.race.conditions.islandClustering : 0.5;
 
     // Use seeded RNG if available, else standard random (fallback)
     const rng = state.race.seed ? mulberry32(state.race.seed) : Math.random;
 
-    const sizeSetting = state.race.conditions.islandSize !== undefined ? state.race.conditions.islandSize : 0.5;
-    const clustering = state.race.conditions.islandClustering !== undefined ? state.race.conditions.islandClustering : 0.5;
+    // Radius Range logic
+    // Smallest possible island: 100 units
+    // Max size setting 1.0 -> 1200 units
+    // Min size setting 0.0 -> 200 units (max for that setting)
 
-    // Target Area Calculation
-    const courseArea = Math.PI * boundary.radius * boundary.radius;
-    const targetLandArea = courseArea * coverage;
+    // "Max size of Islands" determines the upper bound for the first island and the random range for others.
+    const absoluteMinR = 80;
+    const absoluteMaxR = 200 + maxSizeSetting * 1000; // 200 to 1200
 
-    // Size Params (Significantly Increased for Max 500m)
-    // 500m = 2500 units. Radius = 1250 units.
-    // Map Slider 0-1 to Radius Range
-    // Min Base: 50 + 0*350 = 50. Max Base: 50 + 1*350 = 400.
-    // Min Large: 200 + 0*1050 = 200. Max Large: 200 + 1*1050 = 1250.
-    const rMinBase = 50 + sizeSetting * 350;
-    const rMaxBase = 200 + sizeSetting * 1050;
-
-    const avgR = (rMinBase + rMaxBase) / 2;
-    const avgIslandArea = Math.PI * avgR * avgR;
-    const targetCount = Math.max(1, Math.round(targetLandArea / avgIslandArea));
-
-    const maxR = boundary.radius - 200;
+    // Boundary Constraints
+    const maxWorldR = boundary.radius - 200;
 
     // Avoidance Geometry
     const marks = state.course.marks;
     if (!marks || marks.length < 4) return [];
 
-    // Fairway Bounds
     const mStart = { x: (marks[0].x+marks[1].x)/2, y: (marks[0].y+marks[1].y)/2 };
     const mUpwind = { x: (marks[2].x+marks[3].x)/2, y: (marks[2].y+marks[3].y)/2 };
     
-    // Clustering Centers
-    const clusterCenters = [];
-    if (clustering > 0.3) {
-        const numClusters = Math.max(1, Math.floor((1.0 - clustering) * 5) + 1);
-        for(let i=0; i<numClusters; i++) {
-             const angle = rng() * Math.PI * 2;
-             const dist = Math.sqrt(rng()) * maxR;
-             clusterCenters.push({
-                 x: boundary.x + Math.cos(angle)*dist,
-                 y: boundary.y + Math.sin(angle)*dist
-             });
-        }
-    }
-
-    let currentArea = 0;
-    let fails = 0;
-
     // Helper: Generate a jagged polygon for a body
     const createIslandBody = (bx, by, br) => {
         const vertices = [];
@@ -6455,13 +6441,11 @@ function generateIslands(boundary) {
                  rotation: rng() * Math.PI * 2
              });
         }
-
         // Rocks
         const rocks = [];
         const rockCount = Math.floor(1 + (br/50) * 3 + rng() * 2);
         for(let k=0; k<rockCount; k++) {
              const ang = rng() * Math.PI * 2;
-             // Place near the vegetation border (0.7 radius +/- variation)
              const dst = br * (0.65 + rng() * 0.15);
              rocks.push({
                  x: bx + Math.cos(ang)*dst,
@@ -6470,14 +6454,13 @@ function generateIslands(boundary) {
                  rotation: rng() * Math.PI * 2
              });
         }
-
         return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks };
     };
 
-    // Helper: Validate a circle against world constraints
+    // Helper: Validate a circle
     const isValidCircle = (cx, cy, cr) => {
          // Boundary
-         if ((cx-boundary.x)**2 + (cy-boundary.y)**2 > (maxR - cr)**2) return false;
+         if ((cx-boundary.x)**2 + (cy-boundary.y)**2 > (maxWorldR - cr)**2) return false;
 
          // Marks (Strict)
          const markClearance = 350 + cr;
@@ -6490,8 +6473,7 @@ function generateIslands(boundary) {
          if ((cx-mStart.x)**2 + (cy-mStart.y)**2 < boxClearance**2) return false;
          if ((cx-mUpwind.x)**2 + (cy-mUpwind.y)**2 < boxClearance**2) return false;
 
-         // Other Islands (Strict No-Overlap with EXISTING islands)
-         // Note: Parts of the SAME composite island are allowed to overlap each other (handled outside)
+         // Overlap with existing islands
          for (const isl of islands) {
              const dSq = (cx-isl.x)**2 + (cy-isl.y)**2;
              const minDist = cr + isl.radius + 30;
@@ -6500,75 +6482,97 @@ function generateIslands(boundary) {
          return true;
     };
 
-    // Main Loop
-    for(let i=0; i<targetCount * 2 && currentArea < targetLandArea; i++) {
+    // Main Generation Loop
+    let clusterCenter = null;
+    let fails = 0;
+
+    for (let i = 0; i < islandCount; i++) {
         if (fails > 50) break;
 
-        let x, y, valid = false;
-        let attempts = 0;
+        // Size Determination
+        let r = 0;
+        if (i === 0) {
+            // First island is "Biggest" (according to size setting)
+            // But if user selected "Small", biggest is small.
+            // If user selected "Large", biggest is large.
+            // Let's use the absoluteMaxR derived from setting.
+            r = absoluteMaxR;
+        } else {
+            // Others are random sizes up to that size
+            r = absoluteMinR + rng() * (absoluteMaxR - absoluteMinR);
+        }
         
-        // Base Radius for this island group
-        const rMain = rMinBase + rng() * (rMaxBase - rMinBase);
+        // Position
+        let x, y, valid = false, attempts = 0;
 
-        // Composite Logic
-        const isComposite = (rng() < 0.7); // 70% composite
+        // Dispersion Logic
+        // Clustering 0: Scattered (use full map)
+        // Clustering 1: Grouped (tight cluster around first island)
+        let center = { x: boundary.x, y: boundary.y };
+        let radiusLimit = maxWorldR;
 
-        const candidates = []; // List of {x,y,r} to form this group
+        if (i > 0 && clusterCenter) {
+            // If we have a cluster center (first island), we bias towards it.
+            // 0 clustering -> infinite range (bounded by world)
+            // 1 clustering -> tight range (e.g. 1.5 * maxR)
+            center = clusterCenter;
 
-        while(!valid && attempts < 50) {
+            // Map clustering 0-1 to range
+            // 1.0 -> tight (r * 1.5)
+            // 0.0 -> loose (world size)
+
+            // Actually, "clustered based on clustering setting" suggests probabilistic or bounded.
+            // Let's use a bounded circle around the first island.
+            const tightDist = absoluteMaxR * 1.5;
+            const looseDist = boundary.radius * 2; // Full map
+            const searchDist = tightDist + (1.0 - clustering) * (looseDist - tightDist);
+
+            radiusLimit = searchDist;
+        }
+
+        while (!valid && attempts < 50) {
             attempts++;
-            candidates.length = 0; // Clear previous attempt
 
-            // 1. Pick Center
-            if (clustering > 0.3 && clusterCenters.length > 0 && rng() < clustering) {
-                const center = clusterCenters[Math.floor(rng()*clusterCenters.length)];
-                const dispersion = 1200 * (1.1 - clustering); 
-                const angle = rng() * Math.PI * 2;
-                const dist = rng() * dispersion;
-                x = center.x + Math.cos(angle)*dist;
-                y = center.y + Math.sin(angle)*dist;
-            } else {
-                const angle = rng() * Math.PI * 2;
-                const dist = Math.sqrt(rng()) * maxR; 
+            let dist, angle;
+            if (i === 0 || clustering < 0.1) {
+                // First island or totally scattered: Random in world
+                angle = rng() * Math.PI * 2;
+                dist = Math.sqrt(rng()) * maxWorldR;
                 x = boundary.x + Math.cos(angle) * dist;
                 y = boundary.y + Math.sin(angle) * dist;
+            } else {
+                // Biased towards cluster center
+                angle = rng() * Math.PI * 2;
+                dist = Math.sqrt(rng()) * radiusLimit; // Bias towards center? sqrt(rng) is uniform in circle.
+                // To make it more clustered, maybe power of rng?
+                // But limiting radius is enough.
+
+                x = center.x + Math.cos(angle) * dist;
+                y = center.y + Math.sin(angle) * dist;
             }
 
-            // 2. Main Body
-            if (!isValidCircle(x, y, rMain)) continue;
-            candidates.push({ x, y, r: rMain });
-
-            // 3. Child Bodies (if composite)
-            if (isComposite) {
-                const numExtras = 1 + Math.floor(rng() * 3); // 1-3 extra parts
-                for(let k=0; k<numExtras; k++) {
-                    const ang = rng() * Math.PI * 2;
-                    // Place on edge of main body
-                    const dist = rMain * (0.6 + rng() * 0.4);
-                    const rChild = rMain * (0.3 + rng() * 0.5); // Smaller
-
-                    const cx = x + Math.cos(ang)*dist;
-                    const cy = y + Math.sin(ang)*dist;
-
-                    if (isValidCircle(cx, cy, rChild)) {
-                         candidates.push({ x: cx, y: cy, r: rChild });
-                    }
+            if (isValidCircle(x, y, r)) {
+                valid = true;
+            } else {
+                // Retry with smaller radius?
+                if (i > 0 && attempts > 20) {
+                    r *= 0.9;
+                    if (r < absoluteMinR) r = absoluteMinR;
                 }
             }
-
-            if (candidates.length > 0) valid = true;
         }
 
-        if (!valid) {
-            fails++;
-            continue;
-        }
-
-        // Create Bodies
-        for(const c of candidates) {
-            const body = createIslandBody(c.x, c.y, c.r);
+        if (valid) {
+            const body = createIslandBody(x, y, r);
             islands.push(body);
-            currentArea += Math.PI * c.r * c.r;
+            if (i === 0) {
+                clusterCenter = { x: x, y: y };
+            }
+        } else {
+            fails++;
+            // Don't increment i (retry this island count? No, loop continues)
+            // To retry the count, we should decrement i, but prevent infinite loop.
+            // Here we just skip it if we fail too much.
         }
     }
     
@@ -6845,7 +6849,7 @@ function initCourse() {
     let valid = false;
     
     // Only attempt if islands are requested
-    if (state.race.conditions.islandCoverage > 0) {
+    if (state.race.conditions.islandCount > 0) {
         while(!valid && attempts < 5) {
             attempts++;
             islands = generateIslands(state.course.boundary);
@@ -6854,10 +6858,7 @@ function initCourse() {
             }
         }
         if (!valid) {
-            console.warn("Failed to generate navigable course with islands. Fallback to fewer islands.");
-            // Last ditch: fewer islands? Or just empty array? 
-            // Let's accept the last generated set if they exist but warn, or clear.
-            // Clearing is safer.
+            console.warn("Failed to generate navigable course with islands.");
             islands = []; 
         }
     }
@@ -6906,8 +6907,8 @@ function resetGame() {
 
     // Obstacle Defaults
     // Default to no islands
-    const islandCoverage = 0;
-    const islandSize = Math.random();
+    const islandCount = 0;
+    const islandMaxSize = Math.random();
     const islandClustering = Math.random();
 
     // Current Generation
@@ -6922,8 +6923,8 @@ function resetGame() {
         puffShiftiness,
         directionBias,
         current: currentData,
-        islandCoverage,
-        islandSize,
+        islandCount,
+        islandMaxSize,
         islandClustering
     };
     
