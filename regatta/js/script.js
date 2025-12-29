@@ -3460,11 +3460,11 @@ function updateBoat(boat, dt) {
     if (Math.abs(boat.targetBoomSide - boat.boomSide) < 0.01) boat.boomSide = boat.targetBoomSide;
 
     let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
-    if (optimalSailAngle > Math.PI/2.2) optimalSailAngle = Math.PI/2.2;
+    if (optimalSailAngle > Math.PI / 2.0) optimalSailAngle = Math.PI / 2.0;
 
     if (boat.manualTrim && boat.isPlayer) {
         const trimRate = 0.8 * dt;
-        if (state.keys.ArrowUp && boat.isPlayer) boat.manualSailAngle = Math.min(Math.PI / 1.5, boat.manualSailAngle + trimRate);
+        if (state.keys.ArrowUp && boat.isPlayer) boat.manualSailAngle = Math.min(Math.PI / 2.0, boat.manualSailAngle + trimRate);
         if (state.keys.ArrowDown && boat.isPlayer) boat.manualSailAngle = Math.max(0, boat.manualSailAngle - trimRate);
         boat.sailAngle = boat.manualSailAngle * boat.boomSide;
     } else if (boat.isPlayer) {
