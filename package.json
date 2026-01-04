@@ -1,14 +1,12 @@
 {
-  "name": "regatta",
-  "version": "1.0.0",
-  "description": "Salty Critter Yacht Club Regatta - Refactored",
-  "type": "module",
   "scripts": {
-    "test": "npx playwright test",
-    "start": "python3 -m http.server 8080"
+    "eval:ai": "node regatta/eval/run_eval.js"
   },
   "devDependencies": {
-    "@playwright/test": "^1.40.0",
-    "playwright": "^1.40.0"
+    "@playwright/test": "^1.57.0",
+    "playwright": "^1.57.0"
+  },
+  "dependencies": {
+    "jsdom": "^27.4.0"
   }
 }
