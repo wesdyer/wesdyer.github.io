@@ -1,6 +1,6 @@
 
 // Geometry Helpers
-const Geom = {
+export const Geom = {
     // Check if segment AB intersects segment CD
     segmentIntersect: function(a, b, c, d) {
         const ccw = (p1, p2, p3) => (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x);
@@ -48,7 +48,7 @@ const Geom = {
     }
 };
 
-class RoutePlanner {
+export class RoutePlanner {
     constructor() {
         this.path = [];
         this.inflatedIslands = [];
