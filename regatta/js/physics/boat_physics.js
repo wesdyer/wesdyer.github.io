@@ -5,7 +5,6 @@ import { getWindAt, updateTurbulence } from './wind.js';
 import { normalizeAngle } from '../utils/math.js';
 import { getHullPolygon, checkLineIntersection } from './collision.js'; // For gate crossing checks?
 // Actually gate crossing logic is inside updateBoat usually.
-import { getTargetSpeed } from './performance.js';
 
 // We need Sound and Sayings and UI for events inside updateBoat (e.g. crossing lines)
 import { Sound } from '../audio/sound.js';
@@ -148,6 +147,10 @@ export function updateBoat(boat, dt) {
     // Import J111_POLARS is circular if we use the helper from AI?
     // I duplicated logic in AI controller. Ideally I should have a `physics/performance.js`.
     // I'll inline a simple polar lookup or reuse the logic.
+    // Let's rely on simple interpolation for now or extract `getTargetSpeed` to a common file.
+    // I put `getTargetSpeed` in `ai/controller.js`. I should move it to `physics/performance.js`.
+    // For now I will mock it or copy it.
+
     let targetKnots = getTargetSpeed(angleToWind, boat.spinnaker, effectiveWind);
 
     // Apply Stats
