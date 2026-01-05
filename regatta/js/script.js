@@ -3537,7 +3537,9 @@ function updateBoat(boat, dt) {
     boat.boomSide += (boat.targetBoomSide - boat.boomSide) * swingSpeed;
     if (Math.abs(boat.targetBoomSide - boat.boomSide) < 0.01) boat.boomSide = boat.targetBoomSide;
 
-    let optimalSailAngle = Math.max(0, angleToWind - (Math.PI / 4));
+    // Sail Angle Logic: Map TWA 45-180 to Sail Angle 0-90.
+    // Range is 135 deg (3PI/4). Target is 90 deg (PI/2). Ratio = 2/3.
+    let optimalSailAngle = Math.max(0, (angleToWind - (Math.PI / 4)) * (2.0 / 3.0));
     if (optimalSailAngle > Math.PI / 2.0) optimalSailAngle = Math.PI / 2.0;
 
     if (boat.manualTrim && boat.isPlayer) {
