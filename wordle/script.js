@@ -51,10 +51,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 cell.className = 'flex items-center justify-center border-2 text-3xl font-bold uppercase select-none rounded-sm';
 
                 if (tile.color) {
-                    setTimeout(() => {
-                        cell.classList.add('animate-flip');
+                    if (i === state.currentRow && state.gameStatus === 'playing') {
+                        setTimeout(() => {
+                            cell.classList.add('animate-flip');
+                            cell.classList.add(`bg-${tile.color}`, 'text-white', 'border-transparent');
+                        }, j * 200);
+                    } else {
                         cell.classList.add(`bg-${tile.color}`, 'text-white', 'border-transparent');
-                    }, j * 200);
+                    }
                 } else if (tile.letter) {
                     cell.classList.add('border-border-active');
                 } else {
