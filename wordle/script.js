@@ -327,6 +327,12 @@ document.addEventListener('DOMContentLoaded', () => {
         statsModal.classList.add('hidden');
     });
 
+    statsModal.addEventListener('click', (e) => {
+        if (e.target === statsModal) {
+            statsModal.classList.add('hidden');
+        }
+    });
+
     function displayStats() {
         const stats = JSON.parse(localStorage.getItem('wordleStats')) || {};
         statsContent.innerHTML = '';
