@@ -96,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (key.toLowerCase() === 'enter') {
             if (state.currentCol === 5) {
                 submitGuess();
+                return;
             }
         } else if (state.currentCol < 5 && /^[a-zA-Z]$/.test(key)) {
             state.grid[state.currentRow][state.currentCol] = { letter: key.toUpperCase(), color: '' };
