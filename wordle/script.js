@@ -52,9 +52,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (tile.color) {
                     if (i === state.currentRow && state.gameStatus === 'playing') {
+                        cell.classList.add('border-border-active');
                         setTimeout(() => {
                             cell.classList.add('animate-flip');
-                            cell.classList.add(`bg-${tile.color}`, 'text-white', 'border-transparent');
+                            setTimeout(() => {
+                                cell.classList.remove('border-border-active');
+                                cell.classList.add(`bg-${tile.color}`, 'text-white', 'border-transparent');
+                            }, 300);
                         }, j * 200);
                     } else {
                         cell.classList.add(`bg-${tile.color}`, 'text-white', 'border-transparent');
