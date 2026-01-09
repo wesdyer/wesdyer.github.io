@@ -67,9 +67,16 @@
 <body class="bg-background font-sans text-text-primary antialiased selection:bg-correct selection:text-white">
 <div class="relative flex h-full min-h-screen w-full flex-col max-w-md mx-auto border-x border-neutral-100 shadow-xl bg-white">
 <header class="flex items-center px-4 py-3 justify-between border-b border-neutral-100 sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
-<div class="size-10 shrink-0"></div>
+<div class="flex items-center gap-1">
+<button id="reveal-btn" class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-text-primary" title="Reveal Answer">
+<span class="material-symbols-outlined text-[24px]">visibility</span>
+</button>
+<button id="skip-btn" class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-text-primary" title="Skip Word">
+<span class="material-symbols-outlined text-[24px]">skip_next</span>
+</button>
+</div>
 <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-center flex-1">Endless Wordle</h1>
-<button class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-text-primary">
+<button id="stats-btn" class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-text-primary">
 <span class="material-symbols-outlined text-[24px]">bar_chart</span>
 </button>
 </header>
@@ -98,6 +105,8 @@
 </div>
 </div>
 </div>
+
+<div id="toast-container" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
 <div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
     <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-auto">

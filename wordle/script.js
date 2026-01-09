@@ -2,6 +2,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     const grid = document.getElementById('grid');
     const keyboardContainer = document.getElementById('keyboard');
+    const skipBtn = document.getElementById('skip-btn');
+    const revealBtn = document.getElementById('reveal-btn');
+    const toastContainer = document.getElementById('toast-container');
 
     let state = {
         secretWord: '',
@@ -12,6 +15,42 @@ document.addEventListener('DOMContentLoaded', () => {
         keyboardState: {},
         difficulty: 'Medium' // Easy, Medium, Hard
     };
+
+    function showToast(message, duration = 2500) {
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.className = 'bg-black text-white px-4 py-2 rounded font-bold shadow-lg transition-opacity duration-300 opacity-0';
+        toastContainer.appendChild(toast);
+
+        requestAnimationFrame(() => {
+            toast.classList.remove('opacity-0');
+        });
+
+        if (duration > 0) {
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, duration);
+        }
+    }
+
+    if (skipBtn) {
+        skipBtn.addEventListener('click', () => {
+            init(true);
+            skipBtn.blur();
+        });
+    }
+
+    if (revealBtn) {
+        revealBtn.addEventListener('click', () => {
+            if (state.secretWord) {
+                showToast(state.secretWord.toUpperCase(), 3000);
+            }
+            revealBtn.blur();
+        });
+    }
 
     function init(newGame = false) {
         if (medianFrequency === 0) {
@@ -158,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (state.currentRow === 5) {
             state.gameStatus = 'lost';
             updateStats(false);
+            showToast(state.secretWord.toUpperCase(), 5000);
             showNewGameButton();
         } else {
             state.currentRow++;
@@ -309,12 +349,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const statsBtn = document.querySelector('button .material-symbols-outlined');
+    const statsBtn = document.getElementById('stats-btn');
     const statsModal = document.getElementById('stats-modal');
     const closeStatsBtn = document.getElementById('close-stats');
     const statsContent = document.getElementById('stats-content');
 
-    statsBtn.parentElement.addEventListener('click', () => {
+    statsBtn.addEventListener('click', () => {
         statsModal.classList.remove('hidden');
         displayStats();
     });
