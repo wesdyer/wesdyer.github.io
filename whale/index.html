@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Whale Journey</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="lib/pixi.min.js"></script>
+</head>
+<body>
+    <div id="game-container"></div>
+    <div id="ui-layer">
+        <div id="controls-hint" class="overlay">
+            <h1>Whale Journey</h1>
+            <p><strong>Desktop:</strong> WASD / Arrows to Swim. Space to Dash.</p>
+            <p><strong>Mobile:</strong> Touch & Drag to Swim. Tap to Dash.</p>
+            <p>Collect Plankton. Avoid Hazards. Breathe.</p>
+            <button id="start-btn">Start Journey</button>
+        </div>
+        <div id="debug-overlay" style="display: none;">
+            <div id="fps-counter">FPS: 0</div>
+            <div id="entity-count">Entities: 0</div>
+        </div>
+    </div>
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
