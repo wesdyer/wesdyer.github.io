@@ -4068,76 +4068,101 @@ function satPolygonCircle(poly, circleCenter, radius) {
 
 function checkBoatCollisions(dt) {
     const broadRadius = 40;
-    for (let i = 0; i < state.boats.length; i++) {
-        const b1 = state.boats[i];
+    const cellSize = 100;
+    const grid = new Map();
+
+    // 1. Build Grid
+    for (const boat of state.boats) {
+        if (boat.raceState.finished && boat.fadeTimer <= 0) continue;
+        const cx = Math.floor(boat.x / cellSize);
+        const cy = Math.floor(boat.y / cellSize);
+        const key = cx + "," + cy;
+        let list = grid.get(key);
+        if (!list) { list = []; grid.set(key, list); }
+        list.push(boat);
+    }
+
+    // 2. Iterate
+    for (const b1 of state.boats) {
         if (b1.raceState.finished && b1.fadeTimer <= 0) continue;
 
+        const cx = Math.floor(b1.x / cellSize);
+        const cy = Math.floor(b1.y / cellSize);
         const poly1 = getHullPolygon(b1);
-        for (let j = i + 1; j < state.boats.length; j++) {
-            const b2 = state.boats[j];
-            if (b2.raceState.finished && b2.fadeTimer <= 0) continue;
 
-            const dx = b2.x - b1.x, dy = b2.y - b1.y;
-            if (dx*dx + dy*dy > (broadRadius*2)**2) continue;
+        for (let ox = -1; ox <= 1; ox++) {
+            for (let oy = -1; oy <= 1; oy++) {
+                const key = (cx + ox) + "," + (cy + oy);
+                const cell = grid.get(key);
+                if (!cell) continue;
 
-            const poly2 = getHullPolygon(b2);
-            const res = satPolygonPolygon(poly1, poly2);
+                for (const b2 of cell) {
+                    if (b1.id >= b2.id) continue;
+                    if (b2.raceState.finished && b2.fadeTimer <= 0) continue;
 
-            if (res) {
-                if (window.onRaceEvent && state.race.status === 'racing') {
-                    window.onRaceEvent('collision_boat', { boat: b1, other: b2 });
-                    window.onRaceEvent('collision_boat', { boat: b2, other: b1 });
-                }
+                    const dx = b2.x - b1.x, dy = b2.y - b1.y;
+                    if (dx*dx + dy*dy > (broadRadius*2)**2) continue;
 
-                const tx = res.axis.x * res.overlap * 0.5;
-                const ty = res.axis.y * res.overlap * 0.5;
-                b1.x -= tx; b1.y -= ty;
-                b2.x += tx; b2.y += ty;
+                    const poly2 = getHullPolygon(b2);
+                    const res = satPolygonPolygon(poly1, poly2);
 
-                // Physics Response: Angle dependent friction
-                const nx = res.axis.x, ny = res.axis.y;
-
-                // B1: Normal points AWAY from B1? No, B1->B2. So points AWAY from B1.
-                // If B1 moves TOWARDS B2, dot(h1, n) > 0.
-                const h1x = Math.sin(b1.heading), h1y = -Math.cos(b1.heading);
-                const impact1 = Math.max(0, h1x * nx + h1y * ny);
-
-                // B2: Normal points INTO B2. We want normal pointing AWAY from B2 for impact calc. So -n.
-                const h2x = Math.sin(b2.heading), h2y = -Math.cos(b2.heading);
-                const impact2 = Math.max(0, h2x * (-nx) + h2y * (-ny));
-
-                const friction = 0.99;
-                const impactFactor = 0.5; // Multiplier at max impact (0.5 means lose 50%)
-
-                b1.speed *= (friction - (friction - impactFactor) * impact1);
-                b2.speed *= (friction - (friction - impactFactor) * impact2);
-
-                // No penalties if either boat is finished
-                if (state.race.status === 'racing' && !b1.raceState.finished && !b2.raceState.finished) {
-                    const res = getRightOfWay(b1, b2);
-                    const rowBoat = res.boat;
-
-                    // Sayings Check
-                    let playerBoat = null;
-                    let aiBoat = null;
-                    if (b1.isPlayer) { playerBoat = b1; aiBoat = b2; }
-                    else if (b2.isPlayer) { playerBoat = b2; aiBoat = b1; }
-
-                    if (playerBoat && aiBoat) {
-                        if (rowBoat === playerBoat) {
-                             if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
-                        } else if (rowBoat === aiBoat) {
-                             if (!playerBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_were_hit");
-                        } else {
-                             if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
+                    if (res) {
+                        if (window.onRaceEvent && state.race.status === 'racing') {
+                            window.onRaceEvent('collision_boat', { boat: b1, other: b2 });
+                            window.onRaceEvent('collision_boat', { boat: b2, other: b1 });
                         }
-                    }
 
-                    if (rowBoat === b1) triggerPenalty(b2);
-                    else if (rowBoat === b2) triggerPenalty(b1);
-                    else {
-                        triggerPenalty(b1);
-                        triggerPenalty(b2);
+                        const tx = res.axis.x * res.overlap * 0.5;
+                        const ty = res.axis.y * res.overlap * 0.5;
+                        b1.x -= tx; b1.y -= ty;
+                        b2.x += tx; b2.y += ty;
+
+                        // Physics Response: Angle dependent friction
+                        const nx = res.axis.x, ny = res.axis.y;
+
+                        // B1: Normal points AWAY from B1? No, B1->B2. So points AWAY from B1.
+                        // If B1 moves TOWARDS B2, dot(h1, n) > 0.
+                        const h1x = Math.sin(b1.heading), h1y = -Math.cos(b1.heading);
+                        const impact1 = Math.max(0, h1x * nx + h1y * ny);
+
+                        // B2: Normal points INTO B2. We want normal pointing AWAY from B2 for impact calc. So -n.
+                        const h2x = Math.sin(b2.heading), h2y = -Math.cos(b2.heading);
+                        const impact2 = Math.max(0, h2x * (-nx) + h2y * (-ny));
+
+                        const friction = 0.99;
+                        const impactFactor = 0.5; // Multiplier at max impact (0.5 means lose 50%)
+
+                        b1.speed *= (friction - (friction - impactFactor) * impact1);
+                        b2.speed *= (friction - (friction - impactFactor) * impact2);
+
+                        // No penalties if either boat is finished
+                        if (state.race.status === 'racing' && !b1.raceState.finished && !b2.raceState.finished) {
+                            const res = getRightOfWay(b1, b2);
+                            const rowBoat = res.boat;
+
+                            // Sayings Check
+                            let playerBoat = null;
+                            let aiBoat = null;
+                            if (b1.isPlayer) { playerBoat = b1; aiBoat = b2; }
+                            else if (b2.isPlayer) { playerBoat = b2; aiBoat = b1; }
+
+                            if (playerBoat && aiBoat) {
+                                if (rowBoat === playerBoat) {
+                                     if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
+                                } else if (rowBoat === aiBoat) {
+                                     if (!playerBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_were_hit");
+                                } else {
+                                     if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
+                                }
+                            }
+
+                            if (rowBoat === b1) triggerPenalty(b2);
+                            else if (rowBoat === b2) triggerPenalty(b1);
+                            else {
+                                triggerPenalty(b1);
+                                triggerPenalty(b2);
+                            }
+                        }
                     }
                 }
             }
