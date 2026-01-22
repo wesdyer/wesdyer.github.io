@@ -192,7 +192,7 @@ class BotController {
         this.updateTimer = Math.random() * 0.2; 
 
         // Route Planning
-        this.planner = new RoutePlanner();
+        this.planner = new RoutePlanner(100);
         this.currentPath = [];
         this.pathTimer = 0;
         this.finalTarget = null;
