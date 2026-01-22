@@ -1,3 +1,49 @@
+// Spatial Partitioning for Performance
+class SpatialHash {
+    constructor(cellSize) {
+        this.cellSize = cellSize;
+        this.map = new Map();
+    }
+
+    key(x, y) {
+        const cx = Math.floor(x / this.cellSize);
+        const cy = Math.floor(y / this.cellSize);
+        return cx + "," + cy;
+    }
+
+    clear() {
+        this.map.clear();
+    }
+
+    insert(boat) {
+        const k = this.key(boat.x, boat.y);
+        if (!this.map.has(k)) this.map.set(k, []);
+        this.map.get(k).push(boat);
+    }
+
+    query(x, y, radius) {
+        const found = [];
+        const cellRadius = Math.ceil(radius / this.cellSize);
+        const cx = Math.floor(x / this.cellSize);
+        const cy = Math.floor(y / this.cellSize);
+
+        for (let i = -cellRadius; i <= cellRadius; i++) {
+            for (let j = -cellRadius; j <= cellRadius; j++) {
+                const k = (cx + i) + "," + (cy + j);
+                const cell = this.map.get(k);
+                if (cell) {
+                    for (let n = 0; n < cell.length; n++) {
+                         found.push(cell[n]);
+                    }
+                }
+            }
+        }
+        return found;
+    }
+}
+
+const spatialHash = new SpatialHash(400);
+
 // Game Configuration
 const CONFIG = {
     turnSpeed: 0.01, // Radians per frame (approx) -> adjusted for dt in update
@@ -887,9 +933,10 @@ class BotController {
         let role = 'NONE';
 
         // Filter nearby boats
-        const nearby = state.boats.filter(b => b !== this.boat && !b.raceState.finished);
+        const nearby = spatialHash ? spatialHash.query(this.boat.x, this.boat.y, 600) : state.boats;
 
         for (const other of nearby) {
+            if (other === this.boat || other.raceState.finished) continue;
             const metrics = getRiskMetrics(this.boat, other);
 
             // Thresholds
@@ -4233,6 +4280,14 @@ function checkNearMisses(dt) {
 function update(dt) {
     state.time += 0.24 * dt;
     const timeScale = dt * 60;
+
+    // Update Spatial Hash
+    if (spatialHash) {
+        spatialHash.clear();
+        for (const boat of state.boats) {
+            spatialHash.insert(boat);
+        }
+    }
 
     if (window.Rules) window.Rules.update(dt);
 
