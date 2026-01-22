@@ -3965,16 +3965,25 @@ function updateBoatRaceState(boat, dt) {
 }
 
 // Collision Helpers
+const HULL_LOCALS = [
+    {x: 0, y: -25}, {x: 15, y: -5}, {x: 15, y: 20},
+    {x: 12, y: 30}, {x: -12, y: 30}, {x: -15, y: 20}, {x: -15, y: -5}
+];
+
 function getHullPolygon(boat) {
-    const locals = [
-        {x: 0, y: -25}, {x: 15, y: -5}, {x: 15, y: 20},
-        {x: 12, y: 30}, {x: -12, y: 30}, {x: -15, y: 20}, {x: -15, y: -5}
-    ];
+    if (!boat._hullPoly) {
+        boat._hullPoly = HULL_LOCALS.map(() => ({x:0, y:0}));
+    }
+
     const cos = Math.cos(boat.heading), sin = Math.sin(boat.heading);
-    return locals.map(p => ({
-        x: boat.x + (p.x * cos - p.y * sin),
-        y: boat.y + (p.x * sin + p.y * cos)
-    }));
+    const poly = boat._hullPoly;
+
+    for (let i = 0; i < HULL_LOCALS.length; i++) {
+        const p = HULL_LOCALS[i];
+        poly[i].x = boat.x + (p.x * cos - p.y * sin);
+        poly[i].y = boat.y + (p.x * sin + p.y * cos);
+    }
+    return poly;
 }
 
 function projectPolygon(axis, poly) {
