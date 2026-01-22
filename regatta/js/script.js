@@ -2623,9 +2623,8 @@ function setupPreRaceOverlay() {
 
         competitors.forEach(boat => {
             const card = document.createElement('div');
-            // Base styling: Wider and taller, no rounded-br-3xl to keep it more uniform if we want, but user said "Make the badges wider and taller"
-            // Let's use h-auto or fixed height.
-            // "putting the portrait direction on the badge without the round circle"
+            // Base styling: Fixed height (h-96) to ensure consistent tall cards across all rows.
+            // Implements vertical card layout with portrait image on top.
             card.className = "p-0 rounded-xl border border-white/5 flex flex-col relative overflow-hidden h-96 group";
 
             // Color Logic
@@ -2637,12 +2636,6 @@ function setupPreRaceOverlay() {
 
             // Apply gradient background
             card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
-
-            // Image - Full width/height approach or top section?
-            // "putting the portrait direction on the badge without the round circle"
-            // Let's make it a large square/rect image at the top or filling a side?
-            // "Make the badges wider and taller" implies more space.
-            // Let's try a vertical card layout: Image on top (square), text below.
 
             const imgContainer = document.createElement('div');
             imgContainer.className = "w-full h-64 relative overflow-hidden";
