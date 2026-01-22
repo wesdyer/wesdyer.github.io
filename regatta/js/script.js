@@ -1374,6 +1374,131 @@ function isVeryDark(color) {
     return luma < 60;
 }
 
+// Particle System Optimization (Object Pool)
+class ParticleSystem {
+    constructor(initialCapacity = 2000) {
+        this.store = [];
+        this.capacity = initialCapacity;
+        this.count = 0;
+        for (let i = 0; i < this.capacity; i++) {
+            this.store.push(this.createEmptyParticle());
+        }
+    }
+
+    createEmptyParticle() {
+        return {
+            x: 0, y: 0, type: null, life: 0,
+            vx: 0, vy: 0, scale: 1, scaleVal: 1, alpha: 1,
+            moveSpeed: 0, rotation: 0,
+            props: {} // Fallback for extra props if any
+        };
+    }
+
+    reset() {
+        this.count = 0;
+    }
+
+    ensureCapacity() {
+        const newCap = this.capacity * 2;
+        for (let i = this.capacity; i < newCap; i++) {
+            this.store.push(this.createEmptyParticle());
+        }
+        this.capacity = newCap;
+    }
+
+    spawn(x, y, type, props = {}) {
+        if (this.count >= this.capacity) {
+            this.ensureCapacity();
+        }
+
+        const p = this.store[this.count];
+        p.x = x;
+        p.y = y;
+        p.type = type;
+        p.life = 1.0;
+
+        // Reset Defaults
+        p.vx = 0; p.vy = 0; p.scale = 1; p.scaleVal = 1; p.alpha = 1;
+        p.moveSpeed = 0; p.rotation = 0;
+
+        // Fast property copy
+        // We iterate props object.
+        for (let key in props) {
+            p[key] = props[key];
+        }
+
+        this.count++;
+    }
+
+    update(dt) {
+        const timeScale = dt * 60;
+        // Iterate backwards to allow swap-removal
+        for (let i = this.count - 1; i >= 0; i--) {
+            const p = this.store[i];
+
+            if (p.vx) p.x += p.vx * timeScale;
+            if (p.vy) p.y += p.vy * timeScale;
+
+            let decay = 0.0025;
+            if (p.type === 'wake') {
+                decay = 0.005;
+                const s = p.scale || 1.0;
+                p.scaleVal = s + (1-p.life)*1.5;
+                p.alpha = p.life*0.4;
+            }
+            else if (p.type === 'wake-wave') {
+                decay = 0.0015;
+                const s = p.scale || 1.0;
+                p.scaleVal = (0.5 + (1-p.life)*3) * s;
+                p.alpha = p.life*0.25;
+            }
+            else if (p.type === 'wind') {
+                 const local = getWindAt(p.x, p.y);
+                 p.x -= Math.sin(local.direction)*timeScale * (local.speed / 10);
+                 p.y += Math.cos(local.direction)*timeScale * (local.speed / 10);
+            } else if (p.type === 'current') {
+                 const c = state.race.conditions.current;
+                 const speed = c ? c.speed : 0;
+                 const dir = c ? c.direction : 0;
+                 const moveSpeed = (speed / 4.0) * timeScale;
+                 p.x += Math.sin(dir) * moveSpeed;
+                 p.y -= Math.cos(dir) * moveSpeed;
+            } else if (p.type === 'mark-wake') {
+                 const c = state.race.conditions.current;
+                 const speed = c ? c.speed : 0;
+                 const dir = c ? c.direction : 0;
+                 const moveSpeed = (speed / 4.0) * timeScale;
+                 p.x += Math.sin(dir) * moveSpeed;
+                 p.y -= Math.cos(dir) * moveSpeed;
+            }
+
+            p.life -= decay * timeScale;
+
+            if (p.life <= 0) {
+                this.removeAt(i);
+            }
+        }
+    }
+
+    removeAt(index) {
+        this.count--;
+        if (index < this.count) {
+            // Swap with last active
+            const temp = this.store[index];
+            this.store[index] = this.store[this.count];
+            this.store[this.count] = temp;
+        }
+    }
+
+    removeParticlesByType(types) {
+        for (let i = this.count - 1; i >= 0; i--) {
+            if (types.includes(this.store[i].type)) {
+                this.removeAt(i);
+            }
+        }
+    }
+}
+
 // Game State
 const state = {
     boats: [], // Array of Boat instances. boats[0] is Player.
@@ -1394,7 +1519,7 @@ const state = {
         baseSpeed: 10
     },
     showNavAids: true,
-    particles: [],
+    particleSystem: new ParticleSystem(),
     waveStates: new Map(),
     keys: {
         ArrowLeft: false,
@@ -2898,7 +3023,7 @@ if (UI.confCurrentEnable) {
         } else {
             state.race.conditions.current = null;
             // Clear current particles immediately
-            state.particles = state.particles.filter(p => p.type !== 'current' && p.type !== 'mark-wake');
+                state.particleSystem.removeParticlesByType(['current', 'mark-wake']);
         }
         updateCurrentUI(); // Refresh UI
     });
@@ -4440,55 +4565,17 @@ function update(dt) {
     updateWindWaves(dt);
 }
 
-function createParticle(x, y, type, props = {}) { state.particles.push({ x, y, type, life: 1.0, ...props }); }
+function createParticle(x, y, type, props = {}) { state.particleSystem.spawn(x, y, type, props); }
 
 function updateParticles(dt) {
-    const timeScale = dt * 60;
-    for (let i = state.particles.length - 1; i >= 0; i--) {
-        const p = state.particles[i];
-        if (p.vx) p.x += p.vx * timeScale;
-        if (p.vy) p.y += p.vy * timeScale;
-        let decay = 0.0025;
-        if (p.type === 'wake') {
-            decay = 0.005;
-            const s = p.scale || 1.0;
-            p.scaleVal = s + (1-p.life)*1.5;
-            p.alpha = p.life*0.4;
-        }
-        else if (p.type === 'wake-wave') {
-            decay = 0.0015;
-            const s = p.scale || 1.0;
-            p.scaleVal = (0.5 + (1-p.life)*3) * s;
-            p.alpha = p.life*0.25;
-        }
-        else if (p.type === 'wind') {
-             const local = getWindAt(p.x, p.y);
-             p.x -= Math.sin(local.direction)*timeScale * (local.speed / 10);
-             p.y += Math.cos(local.direction)*timeScale * (local.speed / 10);
-        } else if (p.type === 'current') {
-             const c = state.race.conditions.current;
-             const speed = c ? c.speed : 0;
-             const dir = c ? c.direction : 0;
-             // Move with current (Game Units = Knots / 4)
-             const moveSpeed = (speed / 4.0) * timeScale;
-             p.x += Math.sin(dir) * moveSpeed;
-             p.y -= Math.cos(dir) * moveSpeed;
-        } else if (p.type === 'mark-wake') {
-             const c = state.race.conditions.current;
-             const speed = c ? c.speed : 0;
-             const dir = c ? c.direction : 0;
-             // Move with current (Game Units = Knots / 4)
-             const moveSpeed = (speed / 4.0) * timeScale;
-             p.x += Math.sin(dir) * moveSpeed;
-             p.y -= Math.cos(dir) * moveSpeed;
-        }
-
-        p.life -= decay * timeScale;
-        if (p.life <= 0) { state.particles[i] = state.particles[state.particles.length-1]; state.particles.pop(); }
-    }
+    state.particleSystem.update(dt);
 }
 
 function drawParticles(ctx, layer) {
+    const sys = state.particleSystem;
+    const count = sys.count;
+    const store = sys.store;
+
     if (layer === 'current') {
         // Very dark blue lines
         // Proportional to strength (opacity/count handled in spawn, here just draw)
@@ -4499,7 +4586,8 @@ function drawParticles(ctx, layer) {
         const dx = Math.sin(dir) * 80;
         const dy = -Math.cos(dir) * 80;
 
-        for (const p of state.particles) {
+        for (let i = 0; i < count; i++) {
+            const p = store[i];
             if (p.type === 'current') {
                 ctx.globalAlpha = p.alpha * 0.4; // Semi-transparent
                 ctx.beginPath();
@@ -4511,7 +4599,8 @@ function drawParticles(ctx, layer) {
         ctx.globalAlpha = 1.0;
     } else if (layer === 'surface') {
         ctx.fillStyle = '#ffffff';
-        for (const p of state.particles) {
+        for (let i = 0; i < count; i++) {
+            const p = store[i];
             if (p.type === 'wake' || p.type === 'wake-wave' || p.type === 'mark-wake') {
                 ctx.globalAlpha = p.alpha;
                 const s = p.scaleVal || p.scale || 1.0;
@@ -4521,7 +4610,8 @@ function drawParticles(ctx, layer) {
         ctx.globalAlpha = 1.0;
     } else if (layer === 'air') {
         ctx.strokeStyle = '#ffffff';
-        for (const p of state.particles) {
+        for (let i = 0; i < count; i++) {
+            const p = store[i];
             if (p.type === 'wind') {
                 const local = getWindAt(p.x, p.y);
                 const windFactor = local.speed / 10;
@@ -6955,7 +7045,7 @@ function resetGame() {
 
     repositionBoats();
 
-    state.particles = [];
+    state.particleSystem.reset();
     state.waveStates.clear();
     hideRaceMessage();
 
