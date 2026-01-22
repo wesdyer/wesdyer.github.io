@@ -849,10 +849,6 @@ class BotController {
             if (timeToLine < timer - 2.0) {
                 // Kill speed
                 speed = 0.1;
-                // Keep parking heading if we are waiting?
-                // Or just sail slowly towards target?
-                // If we sail towards target slowly, we progress.
-                // Let's return target but low speed.
                 return { target: {x: targetX, y: targetY}, speed };
             } else {
                 speed = 1.0; // Gun it
