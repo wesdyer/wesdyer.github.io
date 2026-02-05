@@ -1586,6 +1586,10 @@ function updateBaseWind(dt) {
         state.wind.history.push({ t: state.time, dir: newShiftDeg, speed: state.wind.speed });
         if (state.wind.history.length > 240) state.wind.history.shift();
     }
+
+    // Update Cached Vector
+    state.wind.vx = Math.sin(state.wind.direction) * state.wind.speed;
+    state.wind.vy = -Math.cos(state.wind.direction) * state.wind.speed;
 }
 
 function drawWindDebug(ctx) {
@@ -1822,12 +1826,15 @@ function createGust(x, y, type, initial = false) {
     const duration = 30 + Math.random() * 60;
     const age = initial ? Math.random() * duration : 0;
 
+    const rotation = windDir + dirDelta + Math.PI / 2;
     return {
         type, x, y, vx, vy,
         moveSpeedFactor, moveDirOffset,
         maxRadiusX, maxRadiusY,
         radiusX: 10, radiusY: 10,
-        rotation: windDir + dirDelta + Math.PI / 2,
+        rotation,
+        cos: Math.cos(-rotation),
+        sin: Math.sin(-rotation),
         speedDelta, dirDelta,
         duration,
         age
@@ -1884,6 +1891,8 @@ function updateGusts(dt) {
 
         // Update Rotation to align with local wind direction (Global + Delta)
         g.rotation = globalWindDir + g.dirDelta + Math.PI / 2;
+        g.cos = Math.cos(-g.rotation);
+        g.sin = Math.sin(-g.rotation);
 
         g.x += g.vx * timeScale;
         g.y += g.vy * timeScale;
@@ -1908,14 +1917,20 @@ function getWindAt(x, y) {
     const baseDir = state.wind.direction;
 
     // Convert to vector
-    let sumWx = Math.sin(baseDir) * baseSpeed;
-    let sumWy = -Math.cos(baseDir) * baseSpeed;
+    let sumWx, sumWy;
+    if (state.wind.vx !== undefined) {
+        sumWx = state.wind.vx;
+        sumWy = state.wind.vy;
+    } else {
+        sumWx = Math.sin(baseDir) * baseSpeed;
+        sumWy = -Math.cos(baseDir) * baseSpeed;
+    }
 
     for (const g of state.gusts) {
         const dx = x - g.x;
         const dy = y - g.y;
-        const cos = Math.cos(-g.rotation);
-        const sin = Math.sin(-g.rotation);
+        const cos = (g.cos !== undefined) ? g.cos : Math.cos(-g.rotation);
+        const sin = (g.sin !== undefined) ? g.sin : Math.sin(-g.rotation);
         const rx = dx * cos - dy * sin;
         const ry = dx * sin + dy * cos;
 
@@ -6836,6 +6851,8 @@ function resetGame() {
     state.wind.speed = state.wind.baseSpeed;
     state.wind.baseDirection = Math.random() * Math.PI * 2;
     state.wind.direction = state.wind.baseDirection;
+    state.wind.vx = Math.sin(state.wind.direction) * state.wind.speed;
+    state.wind.vy = -Math.cos(state.wind.direction) * state.wind.speed;
     state.wind.currentShift = 0;
     state.wind.oscillator = Math.random() * Math.PI * 2; // Random phase
     state.wind.history = [];

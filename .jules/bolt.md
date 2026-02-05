@@ -1,0 +1,3 @@
+## 2024-05-23 - [Optimized Wind Math]
+**Learning:** In the `regatta` game loop, the `getWindAt` function was a significant hotspot because it recalculated `Math.sin` and `Math.cos` for the global wind vector and every gust object for every query (boats, particles, wave grid cells). Since wind direction and gust rotation only change once per frame (in the update loop), these values can be cached.
+**Action:** When working on simulation loops involving field queries (like wind, gravity, flow), always identify parameters that remain constant for the duration of a frame and cache their derived values (vectors, rotation matrices) in the update phase to avoid redundant expensive math operations in the query phase.
