@@ -53,12 +53,15 @@ function modeDiscrete(values) {
 }
 
 function calculateStats(values, type = 'continuous') {
-    if (values.length === 0) return { n: 0, mean: 0, mode: 0, max: 0 };
+    if (values.length === 0) return { n: 0, mean: 0, median: 0, mode: 0, max: 0 };
     const sum = values.reduce((a, b) => a + b, 0);
     const mean = sum / values.length;
     const max = Math.max(...values);
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
     const mode = type === 'continuous' ? modeContinuous(values) : modeDiscrete(values);
-    return { n: values.length, mean, mode, max };
+    return { n: values.length, mean, median, mode, max };
 }
 
 (async () => {
@@ -291,8 +294,8 @@ function calculateStats(values, type = 'continuous') {
 
     console.log("\nOVERALL METRICS:");
     const o = aggregated.overall;
-    console.log(`Start Time Mean: ${fmt(o.start_time.mean)}s (DNS: ${fmt(o.dns_percent)}%)`);
-    console.log(`Race Time Mean: ${fmt(o.race.time.mean)}s (DNF: ${fmt(o.race.dnf_percent)}%)`);
+    console.log(`Start Time Mean: ${fmt(o.start_time.mean)}s | Median: ${fmt(o.start_time.median)}s (DNS: ${fmt(o.dns_percent)}%)`);
+    console.log(`Race Time Mean: ${fmt(o.race.time.mean)}s | Median: ${fmt(o.race.time.median)}s (DNF: ${fmt(o.race.dnf_percent)}%)`);
     console.log(`Upwind DNF: ${fmt(o.upwind.dnf_percent)}% | Downwind DNF: ${fmt(o.downwind.dnf_percent)}%`);
     console.log(`Avg Penalties/Race: ${fmt(o.race.penalties.mean)}`);
     console.log(`Avg Boat Collisions/Race: ${fmt(o.race.coll_boat.mean)}`);
