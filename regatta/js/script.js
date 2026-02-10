@@ -3777,6 +3777,9 @@ function updateBoat(boat, dt) {
     boat.raceState.lastPos.x = boat.x;
     boat.raceState.lastPos.y = boat.y;
     boat.prevHeading = boat.heading;
+
+    // Invalidate Collision Cache (Will be recomputed if needed this frame)
+    boat.collisionPoly = null;
 }
 
 function updateBoatRaceState(boat, dt) {
@@ -4046,7 +4049,7 @@ function updateBoatRaceState(boat, dt) {
 }
 
 // Collision Helpers
-function getHullPolygon(boat) {
+function computeHullPolygon(boat) {
     const locals = [
         {x: 0, y: -25}, {x: 15, y: -5}, {x: 15, y: 20},
         {x: 12, y: 30}, {x: -12, y: 30}, {x: -15, y: 20}, {x: -15, y: -5}
@@ -4056,6 +4059,13 @@ function getHullPolygon(boat) {
         x: boat.x + (p.x * cos - p.y * sin),
         y: boat.y + (p.x * sin + p.y * cos)
     }));
+}
+
+function getHullPolygon(boat) {
+    if (!boat.collisionPoly) {
+        boat.collisionPoly = computeHullPolygon(boat);
+    }
+    return boat.collisionPoly;
 }
 
 function projectPolygon(axis, poly) {
