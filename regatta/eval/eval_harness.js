@@ -120,19 +120,35 @@
             iterations++;
         }
 
+        // Rank boats by finish time for placement
+        const sorted = [...participants].sort((a, b) => {
+            if (a.raceState.finished && b.raceState.finished) return a.raceState.finishTime - b.raceState.finishTime;
+            if (a.raceState.finished) return -1;
+            if (b.raceState.finished) return 1;
+            return 0;
+        });
+        const placementMap = {};
+        sorted.forEach((b, i) => { placementMap[b.id] = i + 1; });
+
         return {
             config: { seed, timeLimit },
             events: this.data.events,
             incidents: this.data.incidents,
-            boats: participants.map(b => ({
-                id: b.id,
-                name: b.name,
-                character: b.name,
-                finished: b.raceState.finished,
-                finishTime: b.raceState.finishTime,
-                leg: b.raceState.leg,
-                penalties: b.raceState.totalPenalties
-            }))
+            boats: participants.map(b => {
+                const maneuvers = b.raceState.legManeuvers || [];
+                const tackCount = (maneuvers[1] || 0) + (maneuvers[3] || 0);
+                return {
+                    id: b.id,
+                    name: b.name,
+                    character: b.name,
+                    finished: b.raceState.finished,
+                    finishTime: b.raceState.finishTime,
+                    leg: b.raceState.leg,
+                    penalties: b.raceState.totalPenalties,
+                    placement: placementMap[b.id],
+                    tackCount: tackCount
+                };
+            })
         };
     }
 };

@@ -113,7 +113,9 @@ function calculateStats(values, type = 'continuous') {
         start: { time: [], dns_count: 0 },
         upwind: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], attempt_count: 0, finish_count: 0 },
         downwind: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], attempt_count: 0, finish_count: 0 },
-        race: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], dnf: 0, count: 0 }
+        race: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], dnf: 0, count: 0 },
+        placement: [],
+        tackCount: []
     };
 
     const charBuckets = {};
@@ -206,6 +208,16 @@ function calculateStats(values, type = 'continuous') {
             processLeg(3, 'upwind');
             processLeg(4, 'downwind');
 
+            // Placement & Tack Count
+            if (boat.placement != null) {
+                bGlobal.placement.push(boat.placement);
+                bChar.placement.push(boat.placement);
+            }
+            if (boat.tackCount != null) {
+                bGlobal.tackCount.push(boat.tackCount);
+                bChar.tackCount.push(boat.tackCount);
+            }
+
             // Race Overall
             bGlobal.race.count++;
             bChar.race.count++;
@@ -245,6 +257,8 @@ function calculateStats(values, type = 'continuous') {
         return {
             start_time: calculateStats(b.start.time),
             dns_percent: dnsPct,
+            placement: calculateStats(b.placement, 'discrete'),
+            tack_count: calculateStats(b.tackCount, 'discrete'),
             upwind: {
                 time: calculateStats(b.upwind.time),
                 penalties: calculateStats(b.upwind.penalties, 'discrete'),
@@ -296,6 +310,8 @@ function calculateStats(values, type = 'continuous') {
     const o = aggregated.overall;
     console.log(`Start Time Mean: ${fmt(o.start_time.mean)}s | Median: ${fmt(o.start_time.median)}s (DNS: ${fmt(o.dns_percent)}%)`);
     console.log(`Race Time Mean: ${fmt(o.race.time.mean)}s | Median: ${fmt(o.race.time.median)}s (DNF: ${fmt(o.race.dnf_percent)}%)`);
+    console.log(`Avg Placement: ${fmt(o.placement.mean)} | Avg Tacks: ${fmt(o.tack_count.mean)}`);
+    console.log(`Upwind Time Mean: ${fmt(o.upwind.time.mean)}s | Downwind Time Mean: ${fmt(o.downwind.time.mean)}s`);
     console.log(`Upwind DNF: ${fmt(o.upwind.dnf_percent)}% | Downwind DNF: ${fmt(o.downwind.dnf_percent)}%`);
     console.log(`Avg Penalties/Race: ${fmt(o.race.penalties.mean)}`);
     console.log(`Avg Boat Collisions/Race: ${fmt(o.race.coll_boat.mean)}`);

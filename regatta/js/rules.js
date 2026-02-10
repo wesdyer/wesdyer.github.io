@@ -11,8 +11,10 @@
  * - Proper Course: Course to finish/mark in absence of other boats.
  *
  * Interaction Table (Evaluation Order):
- * 1. Rule 13 (Tacking): Overrides 10/11/12.
- * 2. Rule 18 (Mark-Room): Can override ROW (inside boat gets room even if keep-clear).
+ * 0. Rule 21 (Section D): OCS/penalty boats must keep clear. Overrides all.
+ * 1. Rule 13 (Tacking): Overrides 10/11/12. Both-tacking falls through to 10/11.
+ * 2. Rule 18 (Mark-Room): Sets mark-room obligation (NOT on beats w/ opposite tacks per 18.1a).
+ *    Section A rules still independently determine ROW.
  * 3. Rule 10 (Opposite Tacks): Port keeps clear.
  * 4. Rule 11 (Same Tack, Overlapped): Windward keeps clear.
  * 5. Rule 12 (Same Tack, Not Overlapped): Clear Astern keeps clear.
@@ -115,6 +117,25 @@
             return this.distToMark(boat, mark) < ZONE_RADIUS;
         },
 
+        getLeewardBoat: function(b1, b2) {
+            const state = window.state;
+            const wd = state.wind.direction;
+            const t1 = this.getTack(b1);
+            const dx = b2.x - b1.x;
+            const dy = b2.y - b1.y;
+            const wx = Math.sin(wd);
+            const wy = -Math.cos(wd);
+            const rx = -wy;
+            const ry = wx;
+            const dot = dx * rx + dy * ry;
+
+            if (t1 === STARBOARD) {
+                return (dot > 0) ? b1 : b2; // dot>0 means b2 is windward, b1 is leeward
+            } else {
+                return (dot > 0) ? b2 : b1; // PORT: dot>0 means b2 is leeward
+            }
+        },
+
         // --- Core Logic ---
 
         update: function(dt) {
@@ -136,6 +157,7 @@
                         this.interactions[key] = {
                             overlap: false,
                             overlapStart: 0,
+                            overlapFromClearAstern: false, // Rule 17: was overlap established from clear astern within 2 hull lengths?
                             overlapSide: 0, // 1 if b1 is Leeward, -1 if b2 is Leeward (relative)
                             zoneSnapshot: null, // { markIndex: -1, b1In: false, b2In: false, overlapped: false, inside: null }
                             rowOwner: null,
@@ -150,16 +172,18 @@
                         data.overlap = true;
                         data.overlapStart = now;
 
-                        // Check lateral distance for Rule 17 (Proper Course)
-                        // "If clear astern becomes overlapped within two hull lengths to leeward"
-                        // Calculate lateral distance
-                        // Use b1 as reference?
-                        // If b1 was clear astern, calculate distance of b1 from b2's centerline.
-                        // For now, simply store the fact. Detailed Rule 17 check needs relative positions at start.
-                        // We will compute limitations in evaluate().
+                        // Rule 17: Track if overlap was established from clear astern within 2 hull lengths
+                        data.overlapFromClearAstern = false;
+                        const dist = Math.sqrt(distSq(b1, b2));
+                        if (dist < 2 * HULL_LENGTH) {
+                            // Check if one boat was clear astern just before overlap began
+                            // At the moment of overlap establishment, use current positions as proxy
+                            data.overlapFromClearAstern = true;
+                        }
                     } else if (!currentlyOverlapped && data.overlap) {
                         data.overlap = false;
                         data.overlapStart = 0;
+                        data.overlapFromClearAstern = false;
                     }
 
                     // 2. Zone Latching (Rule 18)
@@ -268,21 +292,40 @@
             const t2 = this.getTack(b2);
             const oppositeTacks = (t1 !== t2);
 
+            // --- 0. Rule 21 (Section D) ---
+            // Boats taking penalties, returning to start (OCS), or sailing backwards must keep clear
+            const b1Returning = b1.raceState.ocs || b1.raceState.penalty;
+            const b2Returning = b2.raceState.ocs || b2.raceState.penalty;
+
+            if (b1Returning && !b2Returning) {
+                result.rowBoat = b2;
+                result.rule = "Rule 21";
+                result.reason = b1.raceState.ocs ? "Returning to Start" : "Taking Penalty";
+                return result;
+            }
+            if (b2Returning && !b1Returning) {
+                result.rowBoat = b1;
+                result.rule = "Rule 21";
+                result.reason = b2.raceState.ocs ? "Returning to Start" : "Taking Penalty";
+                return result;
+            }
+            // If both returning/penalized, fall through to normal rules
+
             // --- 1. Rule 13 (Tacking) ---
             if (b1.raceState.isTacking || b2.raceState.isTacking) {
                 if (b1.raceState.isTacking && b2.raceState.isTacking) {
-                    // Both tacking: Port side or Astern keeps clear
-                    // Simplification: Just say "Port Tacking" keeps clear if defined, or random?
-                    // "The one on the other's port side"
-                    // If A is to left of B.
-                    // Vector B->A.
-                    // If (B->A) is Left of B's Heading? No, Left of Wind?
-                    // "On the other's port side". Relative bearing.
-                    // Let's use simple ROW based on ID fallback if ambiguous?
-                    // Or "Astern keeps clear".
+                    // Both tacking: fall through to underlying rules (10/11/12)
                     if (this.isClearAstern(b1, b2)) { result.rowBoat = b2; result.reason = "Tacking (Astern)"; }
                     else if (this.isClearAstern(b2, b1)) { result.rowBoat = b1; result.reason = "Tacking (Astern)"; }
-                    else { result.rowBoat = b1; result.reason = "Tacking (Simul)"; } // Fallback
+                    else if (t1 !== t2) {
+                        // Opposite tacks: Rule 10 (port keeps clear)
+                        result.rowBoat = (t1 === STARBOARD) ? b1 : b2;
+                        result.reason = "Both Tacking (Starboard)";
+                    } else {
+                        // Same tack: Rule 11 (windward keeps clear)
+                        result.rowBoat = this.getLeewardBoat(b1, b2);
+                        result.reason = "Both Tacking (Leeward)";
+                    }
                 } else if (b1.raceState.isTacking) {
                     result.rowBoat = b2;
                     result.rule = "Rule 13";
@@ -296,28 +339,26 @@
             }
 
             // --- 2. Rule 18 (Mark-Room) ---
-            // Applies if snapshot exists
+            // Exception 18.1(a)(1): Rule 18 does NOT apply between boats on opposite tacks
+            // on a beat to windward (upwind legs)
             if (data && data.zoneSnapshot && data.zoneSnapshot.entitled !== null) {
-                const entitledId = data.zoneSnapshot.entitled;
-                result.markRoom = entitledId;
+                let rule18Applies = true;
 
-                // Rule 18 can override ROW rules (Section A) in some cases,
-                // but technically Section A still determines ROW, Rule 18 just compels "Room".
-                // However, 18.2(a) says "Outside boat shall give the inside boat mark-room."
-                // In game engine, we often equate "Entitled to Room" with "Has Right of Way" for collision purposes,
-                // because if you hit the entitled boat, you are at fault (failed to give room).
-                // So we set rowBoat to the entitled boat for penalty logic.
+                if (oppositeTacks) {
+                    // Beat to windward: odd legs (1, 3) are upwind, leg 0 is pre-start/start
+                    const b1OnBeat = (b1.raceState.leg % 2 !== 0) || b1.raceState.leg === 0;
+                    const b2OnBeat = (b2.raceState.leg % 2 !== 0) || b2.raceState.leg === 0;
+                    if (b1OnBeat || b2OnBeat) {
+                        rule18Applies = false;
+                    }
+                }
 
-                // Exception: 18.3 Tacking in Zone
-                // If the entitled boat tacked in the zone?
-                // Logic handled in update() - snapshot clears if they tack.
-                // So if snapshot exists, we are good.
-
-                // Mark-Room usually trumps everything else except 14.
-                result.rowBoat = (b1.id === entitledId) ? b1 : b2;
-                result.rule = "Rule 18";
-                result.reason = data.zoneSnapshot.reason;
-                return result;
+                if (rule18Applies) {
+                    const entitledId = data.zoneSnapshot.entitled;
+                    result.markRoom = entitledId;
+                    // Mark-room is tracked separately; Section A rules below still determine ROW.
+                    // In collision logic, markRoom entitled boat gets immunity (outside must give room).
+                }
             }
 
             // --- 3. Rule 10 (Opposite Tacks) ---
@@ -344,70 +385,15 @@
             const overlapped = this.isOverlapped(b1, b2);
 
             if (overlapped) {
-                // Rule 11
-                // Determine Windward/Leeward
-                // Wind vector
-                const wd = state.wind.direction;
-                // If Starboard Tack (Wind from Right), Leeward is Left side.
-                // If Port Tack (Wind from Left), Leeward is Right side.
-                // Vector b1 -> b2
-                const dx = b2.x - b1.x;
-                const dy = b2.y - b1.y;
-
-                // Rotate vector by -WindDir to align Wind with Y axis (Down)?
-                // Or simply: Cross product with Wind?
-                // Wind blows FROM direction. Vector W = (sin(wd), -cos(wd)).
-                // Boat on Starboard tack: Wind from Right.
-                // So Leeward is "Downwind/Left".
-                // Let's use cross product relative to wind.
-
-                // Relative bearing of B from A relative to Wind.
-                // Or simpler: Projected distance on perpendicular wind axis.
-                const wx = Math.sin(wd);
-                const wy = -Math.cos(wd);
-                // Right of Wind vector (90 deg CW)
-                const rx = -wy;
-                const ry = wx;
-
-                // Dot product with Right Vector
-                const dot = dx * rx + dy * ry;
-                // If dot > 0, b2 is to the Right of b1 (relative to wind flow).
-
-                let b1IsLeeward = false;
-
-                if (t1 === STARBOARD) {
-                    // Wind from Right. Leeward is Left.
-                    // Right side is Windward.
-                    // If b2 is to Right (dot > 0), b2 is Windward. b1 is Leeward.
-                    if (dot > 0) b1IsLeeward = true;
-                    else b1IsLeeward = false;
-                } else { // PORT
-                    // Wind from Left. Leeward is Right.
-                    // Right side is Leeward.
-                    // If b2 is to Right (dot > 0), b2 is Leeward. b1 is Windward.
-                    if (dot > 0) b1IsLeeward = false;
-                    else b1IsLeeward = true;
-                }
-
-                if (b1IsLeeward) {
-                    result.rowBoat = b1;
-                    result.reason = "Leeward";
-                } else {
-                    result.rowBoat = b2;
-                    result.reason = "Leeward";
-                }
+                // Rule 11: Windward boat keeps clear
+                result.rowBoat = this.getLeewardBoat(b1, b2);
+                result.reason = "Leeward";
                 result.rule = "Rule 11";
 
-                // Rule 17 Check
-                // "If clear astern becomes overlapped within two hull lengths to leeward"
-                // We need to know if current ROW boat (Leeward) established overlap from clear astern within dist.
-                // We check stored interaction data.
-                if (data && data.overlap) {
-                    // Did overlap start from clear astern?
-                    // We didn't store "from clear astern" explicitly but we can infer or should have stored it.
-                    // Simplification: If rule 17 applies, prevent luffing above proper course.
-                    if (result.rowBoat === b1) result.constraints.push("Rule 17");
-                    else result.constraints.push("Rule 17");
+                // Rule 17 Check: Only applies if overlap was established from clear astern
+                // within 2 hull lengths
+                if (data && data.overlap && data.overlapFromClearAstern) {
+                    result.constraints.push("Rule 17");
                 }
 
             } else {
@@ -443,7 +429,8 @@
             return {
                 boat: res.rowBoat,
                 rule: res.rule,
-                reason: res.reason
+                reason: res.reason,
+                markRoom: res.markRoom // ID of boat entitled to mark-room (or null)
             };
         },
 

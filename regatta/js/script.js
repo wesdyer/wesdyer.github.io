@@ -161,11 +161,11 @@ class BotController {
         this.speedLimit = 1.0;
         
         // Start Strategy
-        this.startSide = Math.random() < 0.5 ? 'left' : 'right';
         // Use pre-assigned position from resetGame if available, otherwise random
         this.startLinePct = (boat.ai && boat.ai.startLinePct != null) ? boat.ai.startLinePct : (0.1 + Math.random() * 0.8);
-        this.startDistance = 80 + Math.random() * 70; // Hover distance (80-150 units)
-        this.startTimer = 0;
+
+        // Prestart State Machine
+        this.prestartPhase = 'HOLD';       // HOLD, APPROACH, ACCELERATE
 
         this.livenessState = 'normal'; // 'normal', 'recovery', 'force'
         this.lowSpeedTimer = 0;
@@ -185,6 +185,9 @@ class BotController {
         this.avoidanceRole = 'NONE'; // NONE, STAND_ON, GIVE_WAY
         this.avoidanceCommitTimer = 0;
 
+        // Wind Shift Tracking
+        this.windTracker = { emaSin: 0, emaCos: 0, meanDirection: null, initialized: false };
+
         // Mark Recovery Latch
         this.markContactTimer = 0;
         this.markEscapeHeading = 0;
@@ -199,10 +202,30 @@ class BotController {
         this.finalTarget = null;
     }
 
+    updateWindTracker() {
+        const localWind = getWindAt(this.boat.x, this.boat.y);
+        const wd = localWind.direction;
+        const alpha = 0.00167; // ~60s window at 10Hz (0.1 / 60)
+
+        if (!this.windTracker.initialized) {
+            this.windTracker.emaSin = Math.sin(wd);
+            this.windTracker.emaCos = Math.cos(wd);
+            this.windTracker.meanDirection = wd;
+            this.windTracker.initialized = true;
+        } else {
+            this.windTracker.emaSin += alpha * (Math.sin(wd) - this.windTracker.emaSin);
+            this.windTracker.emaCos += alpha * (Math.cos(wd) - this.windTracker.emaCos);
+            this.windTracker.meanDirection = Math.atan2(this.windTracker.emaSin, this.windTracker.emaCos);
+        }
+    }
+
     update(dt) {
         this.updateTimer -= dt;
         if (this.updateTimer > 0) return;
         this.updateTimer = 0.1; // 10Hz updates
+
+        // Update Wind Tracker
+        this.updateWindTracker();
 
         // Update Risk Assessment
         this.updateRiskAssessment(dt);
@@ -706,16 +729,40 @@ class BotController {
             const windBonus = (futureEffective - state.wind.baseSpeed);
             score += windBonus * 0.1; // Reduced to prevent tack oscillation
 
+            // 5. Wind Shift Lift/Header Bonus
+            // When wind shifts right (positive), starboard tack TWA decreases (header),
+            // port tack TWA increases (lift). So port tack benefits from positive shift.
+            if (this.windTracker.initialized && this.windTracker.meanDirection !== null && mode === 'upwind') {
+                const shift = normalizeAngle(localWind.direction - this.windTracker.meanDirection);
+                const shiftMag = Math.abs(shift);
+                // Only react to meaningful shifts (>3 degrees = 0.052 rad)
+                if (shiftMag > 0.052) {
+                    const tackSide = normalizeAngle(heading - wd) > 0 ? 1 : -1;
+                    // Positive shift headers starboard (tackSide=1), lifts port (tackSide=-1)
+                    const liftFactor = -tackSide * shift; // positive = lift for this tack
+                    score += liftFactor * 2.0;
+                }
+            }
+
             return score;
         };
 
-        const scoreS = scoreTack(hStarboard);
-        const scoreP = scoreTack(hPort);
+        let scoreS = scoreTack(hStarboard);
+        let scoreP = scoreTack(hPort);
+
+        // Dirty air escape: penalize current tack if in dirty air
+        if (boat.badAirIntensity > 0.15) {
+            const currentTackSide = normalizeAngle(boat.heading - wd) > 0 ? 1 : -1;
+            const dirtyPenalty = boat.badAirIntensity * 0.6;
+            if (currentTackSide === 1) scoreS -= dirtyPenalty; // Penalize staying on starboard
+            else scoreP -= dirtyPenalty; // Penalize staying on port
+        }
 
         // Hysteresis / Stickiness
         // Bias towards current tack to prevent rapid switching
         const currentTack = normalizeAngle(boat.heading - wd) > 0 ? 1 : -1; // 1=Stbd, -1=Port
-        const tackBonus = 0.4; // Stronger preference for current tack to prevent oscillation
+        // Clear air stickiness: increase hysteresis when in clean air (lane discipline)
+        const tackBonus = (boat.badAirIntensity < 0.05) ? 0.6 : 0.4;
 
         let preferredHeading = (scoreS > scoreP) ? hStarboard : hPort;
 
@@ -779,53 +826,95 @@ class BotController {
         return preferredHeading;
     }
 
+    // --- Prestart Helper Methods ---
+
+    getLineDistance() {
+        const m0 = state.course.marks[0];
+        const m1 = state.course.marks[1];
+        const lineDx = m1.x - m0.x;
+        const lineDy = m1.y - m0.y;
+        const nx = lineDy, ny = -lineDx; // Normal perpendicular to line (points upwind)
+        const bDx = this.boat.x - m0.x, bDy = this.boat.y - m0.y;
+        return bDx * nx + bDy * ny; // positive = above/upwind of line
+    }
+
     getStartCommand() {
         const boat = this.boat;
         const timer = state.race.timer;
         const m0 = state.course.marks[0];
         const m1 = state.course.marks[1];
 
-        // Target Point on line
+        // Dynamic favored-end drift (early prestart only)
+        if (timer > 10) {
+            const favored = getFavoredEnd(); // 0 or 1
+            const favoredPct = favored === 1 ? 0.75 : 0.25;
+            this.startLinePct += (favoredPct - this.startLinePct) * 0.005;
+            this.startLinePct = Math.max(0.05, Math.min(0.90, this.startLinePct));
+        }
+
+        // Compute line geometry
+        const lineDot = this.getLineDistance();
+
+        // Line target
         const dx = m1.x - m0.x;
         const dy = m1.y - m0.y;
         const targetX = m0.x + dx * this.startLinePct;
         const targetY = m0.y + dy * this.startLinePct;
-
-        // Wind info
         const wd = state.wind.direction;
         const downwind = wd + Math.PI;
 
-        let heading = 0;
-        let speed = 1.0;
-
-        // OCS Check (highest priority)
+        // OCS Check (highest priority - during racing)
         if (boat.raceState.ocs) {
             const recoverX = targetX + Math.sin(downwind) * 100;
             const recoverY = targetY - Math.cos(downwind) * 100;
-            heading = Math.atan2(recoverX - boat.x, -(recoverY - boat.y));
-            speed = 1.0;
-            return { heading, speed };
+            return { target: { x: recoverX, y: recoverY }, speed: 1.0 };
         }
 
         // Gun already fired — full speed to line
         if (timer <= 0) {
-            return { target: {x: targetX, y: targetY}, speed: 1.0 };
+            return { target: { x: targetX, y: targetY }, speed: 1.0 };
         }
 
-        // Timing-based approach
-        const distToTarget = Math.sqrt((targetX - boat.x)**2 + (targetY - boat.y)**2);
-        const approachSpeed = 80.0; // units/s (closer to actual ~120 u/s with safety margin)
-        const timeNeeded = distToTarget / approachSpeed;
-        const buffer = 3.0;
+        // Position-aware prestart: if above the line, maneuver to get below
+        if (lineDot > 20 && this.prestartPhase !== 'ACCELERATE') {
+            const retreatDist = Math.max(80, lineDot + 50);
+            const retreatX = targetX + Math.sin(downwind) * retreatDist;
+            const retreatY = targetY - Math.cos(downwind) * retreatDist;
+            this.prestartPhase = 'HOLD'; // Reset to hold after retreating
+            return { target: { x: retreatX, y: retreatY }, speed: 1.0 };
+        }
 
-        if (timer > timeNeeded * 1.5 && timer > buffer) {
-            // Hold position: head to wind, boat stops naturally without luff penalty
-            heading = wd; // Head directly into the wind
-            speed = 0.9; // High enough to avoid forcedLuff stopping boat, but head-to-wind = natural depower
-            return { heading, speed };
-        } else {
-            // Final approach: full speed to target
-            return { target: {x: targetX, y: targetY}, speed: 1.0 };
+        // Phase transitions
+        const distToTarget = Math.sqrt((targetX - boat.x) ** 2 + (targetY - boat.y) ** 2);
+
+        if (this.prestartPhase === 'HOLD') {
+            // Approach timing: match original's conservative timing
+            const timeNeeded = distToTarget / 80;
+            const approachTime = Math.max(timeNeeded * 1.5, 3.0);
+            if (timer <= approachTime) {
+                this.prestartPhase = 'APPROACH';
+            }
+        }
+
+        if (this.prestartPhase === 'APPROACH' && timer <= 2) {
+            this.prestartPhase = 'ACCELERATE';
+        }
+
+        // Execute current phase
+        switch (this.prestartPhase) {
+            case 'HOLD': {
+                // Head-to-wind (naturally depowers without luff penalty)
+                return { heading: wd, speed: 0.9 };
+            }
+
+            case 'APPROACH':
+            case 'ACCELERATE': {
+                // Target point past line for upwind approach — full speed
+                return { target: { x: targetX, y: targetY }, speed: 1.0 };
+            }
+
+            default:
+                return { target: { x: targetX, y: targetY }, speed: 1.0 };
         }
     }
 
@@ -4109,6 +4198,12 @@ function checkBoatCollisions(dt) {
                     const res = getRightOfWay(b1, b2);
                     const rowBoat = res.boat;
 
+                    // If mark-room is active, entitled boat effectively has immunity
+                    // (outside boat must give room regardless of Section A ROW)
+                    const effectiveRow = res.markRoom
+                        ? (res.markRoom === b1.id ? b1 : b2)
+                        : rowBoat;
+
                     // Sayings Check
                     let playerBoat = null;
                     let aiBoat = null;
@@ -4116,17 +4211,17 @@ function checkBoatCollisions(dt) {
                     else if (b2.isPlayer) { playerBoat = b2; aiBoat = b1; }
 
                     if (playerBoat && aiBoat) {
-                        if (rowBoat === playerBoat) {
+                        if (effectiveRow === playerBoat) {
                              if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
-                        } else if (rowBoat === aiBoat) {
+                        } else if (effectiveRow === aiBoat) {
                              if (!playerBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_were_hit");
                         } else {
                              if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
                         }
                     }
 
-                    if (rowBoat === b1) triggerPenalty(b2);
-                    else if (rowBoat === b2) triggerPenalty(b1);
+                    if (effectiveRow === b1) triggerPenalty(b2);
+                    else if (effectiveRow === b2) triggerPenalty(b1);
                     else {
                         triggerPenalty(b1);
                         triggerPenalty(b2);
@@ -6930,6 +7025,10 @@ function resetGame() {
         available.splice(idx, 1);
     }
 
+    // Determine favored end for start positioning bias
+    const favoredEnd = getFavoredEnd(); // 0 = mark 0 (low pct), 1 = mark 1 (high pct)
+    const favorBias = favoredEnd === 1 ? 0.15 : -0.15; // Shift spread toward favored end
+
     for (let i = 0; i < opponents.length; i++) {
         const config = opponents[i];
         const ai = new Boat(i + 1, false, 0, 0, config.name, config);
@@ -6938,11 +7037,11 @@ function resetGame() {
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
 
-        // Start Setup: Evenly spaced with small jitter
+        // Start Setup: Evenly spaced with small jitter, biased toward favored end
         const numAI = opponents.length;
         const basePos = numAI > 1 ? 0.1 + 0.7 * (i / (numAI - 1)) : 0.5;
         const jitter = (Math.random() - 0.5) * 0.10; // ±5%
-        ai.ai.startLinePct = Math.max(0.05, Math.min(0.90, basePos + jitter));
+        ai.ai.startLinePct = Math.max(0.05, Math.min(0.90, basePos + jitter + favorBias));
         ai.ai.setupDist = 250 + Math.random() * 100;
 
         state.boats.push(ai);
