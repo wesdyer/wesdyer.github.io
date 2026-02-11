@@ -6478,33 +6478,55 @@ function generateIslands(boundary) {
             x: bx + (v.x - bx) * 0.75,
             y: by + (v.y - by) * 0.75
         }));
-        // Trees
-        const trees = [];
+        // Decorations
+        const decorations = [];
+
+        // Palms
         const treeCount = Math.floor(2 + (br/60) * 2 + rng() * 3);
         for(let k=0; k<treeCount; k++) {
              const ang = rng() * Math.PI * 2;
              const dst = rng() * br * 0.4;
-             trees.push({
+             decorations.push({
+                 type: 'palm',
+                 variant: Math.floor(rng() * 3),
                  x: bx + Math.cos(ang)*dst,
                  y: by + Math.sin(ang)*dst,
-                 size: 14 + rng()*10,
+                 scale: 0.8 + rng() * 0.4,
                  rotation: rng() * Math.PI * 2
              });
         }
+
+        // Bushes
+        const bushCount = Math.floor(2 + (br/50) * 2 + rng() * 3);
+        for(let k=0; k<bushCount; k++) {
+             const ang = rng() * Math.PI * 2;
+             const dst = rng() * br * 0.5;
+             decorations.push({
+                 type: 'bush',
+                 variant: Math.floor(rng() * 3),
+                 x: bx + Math.cos(ang)*dst,
+                 y: by + Math.sin(ang)*dst,
+                 scale: 0.8 + rng() * 0.4,
+                 rotation: rng() * Math.PI * 2
+             });
+        }
+
         // Rocks
-        const rocks = [];
         const rockCount = Math.floor(1 + (br/50) * 3 + rng() * 2);
         for(let k=0; k<rockCount; k++) {
              const ang = rng() * Math.PI * 2;
              const dst = br * (0.65 + rng() * 0.15);
-             rocks.push({
+             decorations.push({
+                 type: 'rock',
+                 variant: Math.floor(rng() * 3),
                  x: bx + Math.cos(ang)*dst,
                  y: by + Math.sin(ang)*dst,
-                 size: 8 + rng() * 12,
+                 scale: 0.6 + rng() * 0.6,
                  rotation: rng() * Math.PI * 2
              });
         }
-        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks };
+
+        return { x: bx, y: by, radius: br, vertices, vegVertices, decorations };
     };
 
     // Helper: Validate a circle
@@ -6760,122 +6782,18 @@ function checkIslandCollisions(dt) {
 
 function drawIslands(ctx) {
     if (!state.course || !state.course.islands) return;
+    if (!window.IslandRenderer) return;
 
     // Viewport Culling
-    // Viewport diagonal radius approximation
-    const viewRadius = Math.sqrt(ctx.canvas.width**2 + ctx.canvas.height**2) * 0.6; // Slightly more than half diagonal
+    const viewRadius = Math.sqrt(ctx.canvas.width**2 + ctx.canvas.height**2) * 0.6;
     const camX = state.camera.x;
     const camY = state.camera.y;
 
-    // Helper
-    const drawRoundedPoly = (vertices) => {
-        if (vertices.length < 3) return;
-        ctx.beginPath();
-        const last = vertices[vertices.length - 1];
-        const first = vertices[0];
-        let midX = (last.x + first.x) / 2;
-        let midY = (last.y + first.y) / 2;
-        ctx.moveTo(midX, midY);
-
-        for (let i = 0; i < vertices.length; i++) {
-            const p = vertices[i];
-            const next = vertices[(i + 1) % vertices.length];
-            midX = (p.x + next.x) / 2;
-            midY = (p.y + next.y) / 2;
-            ctx.quadraticCurveTo(p.x, p.y, midX, midY);
-        }
-        ctx.closePath();
-    };
-
-    // Filter Visible Islands
-    const visible = [];
     for (const isl of state.course.islands) {
         const distSq = (isl.x - camX)**2 + (isl.y - camY)**2;
         const limit = viewRadius + isl.radius;
-        if (distSq <= limit**2) visible.push(isl);
-    }
-
-    // Pass 1: Sand Strokes (Outer merged boundary)
-    ctx.strokeStyle = '#d4b483'; // Darker sand stroke
-    ctx.lineWidth = 2;
-    for (const isl of visible) {
-        // Shoreline Glow (Tropical Shallow Water)
-        if (window.WATER_CONFIG && window.WATER_CONFIG.shorelineGlowSize > 0) {
-            ctx.save();
-            ctx.shadowColor = window.WATER_CONFIG.shorelineColor || '#4ade80';
-            ctx.shadowBlur = window.WATER_CONFIG.shorelineGlowSize * 20; // Scale factor
-            ctx.fillStyle = window.WATER_CONFIG.shorelineColor || '#4ade80';
-            ctx.globalAlpha = window.WATER_CONFIG.shorelineGlowOpacity || 0.5;
-
-            // Draw slightly larger or just rely on shadow spread
-            drawRoundedPoly(isl.vertices);
-            ctx.fill();
-            ctx.restore();
-        }
-
-        // Sand
-        ctx.fillStyle = '#fde6b1'; // Pale Sand
-        drawRoundedPoly(isl.vertices);
-        ctx.stroke();
-    }
-
-    // Pass 2: Sand Fills (Covers inner strokes of overlapping islands)
-    ctx.fillStyle = '#fde6b1'; // Pale Sand
-    for (const isl of visible) {
-        drawRoundedPoly(isl.vertices);
-        ctx.fill();
-    }
-
-    // Pass 3: Vegetation
-    ctx.fillStyle = '#84cc16'; // Vibrant Green
-    for (const isl of visible) {
-        drawRoundedPoly(isl.vegVertices);
-        ctx.fill();
-    }
-
-    // Pass 3.5: Rocks
-    ctx.fillStyle = '#9ca3af'; // Grey Rock
-    for (const isl of visible) {
-        if (!isl.rocks) continue;
-        for (const rock of isl.rocks) {
-             ctx.beginPath();
-             // Simple "blob" rock
-             ctx.arc(rock.x, rock.y, rock.size, 0, Math.PI * 2);
-             ctx.fill();
-
-             // Optional: Add some shading/texture to look less like a circle
-             ctx.save();
-             ctx.clip();
-             ctx.fillStyle = 'rgba(0,0,0,0.1)';
-             ctx.beginPath();
-             ctx.arc(rock.x - rock.size*0.2, rock.y + rock.size*0.2, rock.size*0.8, 0, Math.PI*2);
-             ctx.fill();
-             ctx.restore();
-        }
-    }
-
-    // Pass 4: Trees
-    for (const isl of visible) {
-        for(const t of isl.trees) {
-            if (palmImg.complete && palmImg.naturalWidth > 0) {
-                const size = t.size * 4.0;
-
-                // Shadow (Draw First, with World Offset)
-                ctx.save();
-                ctx.translate(t.x + 5, t.y + 5); // World offset (+5, +5)
-                ctx.rotate(t.rotation || 0);     // Match tree rotation
-                ctx.globalAlpha = 0.2;
-                ctx.filter = "brightness(0)";
-                ctx.drawImage(palmImg, -size/2, -size/2, size, size);
-                ctx.restore();
-
-                // Tree (Draw Second)
-                ctx.save();
-                ctx.translate(t.x, t.y);
-                ctx.rotate(t.rotation || 0);
-                ctx.drawImage(palmImg, -size/2, -size/2, size, size);
-                ctx.restore();
-            }
+        if (distSq <= limit**2) {
+            window.IslandRenderer.drawIsland(ctx, isl);
         }
     }
 }
@@ -6913,6 +6831,9 @@ function initCourse() {
         }
     }
     state.course.islands = islands;
+
+    // Initialize Island Renderer if available
+    if (window.IslandRenderer) window.IslandRenderer.init();
 }
 
 function resetGame() {
