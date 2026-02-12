@@ -101,7 +101,7 @@
         <!-- Help Screen -->
         <div id="help-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
             <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative">
-                <button id="close-help" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <button id="close-help" aria-label="Close Help" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -198,7 +198,7 @@
         <!-- Settings Screen -->
         <div id="settings-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
             <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
-                <button id="close-settings" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <button id="close-settings" aria-label="Close Settings" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -210,14 +210,14 @@
                     <!-- Player Name -->
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Player Name</span>
-                        <input type="text" id="setting-player-name" class="bg-slate-700 text-white text-sm rounded-lg block p-2.5 border border-slate-600 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500 outline-none w-40 text-right" placeholder="Player" maxlength="12">
+                        <input type="text" id="setting-player-name" aria-label="Player Name" class="bg-slate-700 text-white text-sm rounded-lg block p-2.5 border border-slate-600 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500 outline-none w-40 text-right" placeholder="Player" maxlength="12">
                     </div>
 
                     <!-- Music -->
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Music</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-music" class="sr-only peer">
+                            <input type="checkbox" id="setting-music" aria-label="Music" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -226,7 +226,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Sound Effects</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-sound" class="sr-only peer">
+                            <input type="checkbox" id="setting-sound" aria-label="Sound Effects" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -235,7 +235,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Background Sound Effects</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-bg-sound" class="sr-only peer">
+                            <input type="checkbox" id="setting-bg-sound" aria-label="Background Sound Effects" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -244,7 +244,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Penalties</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-penalties" class="sr-only peer">
+                            <input type="checkbox" id="setting-penalties" aria-label="Penalties" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -253,7 +253,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Navigational Aids</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-navaids" class="sr-only peer">
+                            <input type="checkbox" id="setting-navaids" aria-label="Navigational Aids" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -262,7 +262,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Manual Trim</span>
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-trim" class="sr-only peer">
+                            <input type="checkbox" id="setting-trim" aria-label="Manual Trim" class="sr-only peer">
                             <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                     </div>
@@ -270,7 +270,7 @@
                     <!-- Camera Mode -->
                     <div class="flex items-center justify-between">
                         <span class="text-slate-200 font-bold">Camera Mode</span>
-                        <select id="setting-camera-mode" class="bg-slate-700 text-white text-sm rounded-lg block p-2.5 border border-slate-600 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <select id="setting-camera-mode" aria-label="Camera Mode" class="bg-slate-700 text-white text-sm rounded-lg block p-2.5 border border-slate-600 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500 outline-none">
                             <option value="heading">Heading</option>
                             <option value="north">North</option>
                             <option value="wind">Wind</option>
@@ -284,22 +284,22 @@
 
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-slate-200 font-bold">Hull Color</span>
-                            <input type="color" id="setting-color-hull" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#f1f5f9">
+                            <input type="color" id="setting-color-hull" aria-label="Hull Color" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#f1f5f9">
                         </div>
 
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-slate-200 font-bold">Sail Color</span>
-                            <input type="color" id="setting-color-sail" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#ffffff">
+                            <input type="color" id="setting-color-sail" aria-label="Sail Color" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#ffffff">
                         </div>
 
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-slate-200 font-bold">Cockpit Color</span>
-                            <input type="color" id="setting-color-cockpit" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#cbd5e1">
+                            <input type="color" id="setting-color-cockpit" aria-label="Cockpit Color" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#cbd5e1">
                         </div>
 
                         <div class="flex items-center justify-between">
                             <span class="text-slate-200 font-bold">Spinnaker Color</span>
-                            <input type="color" id="setting-color-spinnaker" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#ef4444">
+                            <input type="color" id="setting-color-spinnaker" aria-label="Spinnaker Color" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#ef4444">
                         </div>
                     </div>
                 </div>
@@ -340,11 +340,11 @@
                                     <div class="text-xs font-bold text-slate-300 uppercase">Direction</div>
                                     <div id="val-wind-direction" class="text-xs font-mono text-blue-400">N</div>
                                 </div>
-                                <input type="range" id="conf-wind-direction" min="0" max="7" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <input type="range" id="conf-wind-direction" aria-label="Wind Direction" min="0" max="7" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
                             </div>
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Strength</div>
-                                <input type="range" id="conf-wind-strength" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <input type="range" id="conf-wind-strength" aria-label="Wind Strength" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Light Air</span>
                                     <span>Heavy Air</span>
@@ -352,7 +352,7 @@
                             </div>
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Pressure Variability</div>
-                                <input type="range" id="conf-wind-variability" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <input type="range" id="conf-wind-variability" aria-label="Pressure Variability" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Steady</span>
                                     <span>Unstable</span>
@@ -360,7 +360,7 @@
                             </div>
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Directional Variability</div>
-                                <input type="range" id="conf-wind-shiftiness" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <input type="range" id="conf-wind-shiftiness" aria-label="Directional Variability" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Stable</span>
                                     <span>Shifty</span>
@@ -378,7 +378,7 @@
                         <div class="space-y-5">
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Frequency</div>
-                                <input type="range" id="conf-puff-frequency" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                                <input type="range" id="conf-puff-frequency" aria-label="Puff Frequency" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Flat</span>
                                     <span>Puffy</span>
@@ -386,7 +386,7 @@
                             </div>
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Intensity</div>
-                                <input type="range" id="conf-puff-intensity" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                                <input type="range" id="conf-puff-intensity" aria-label="Puff Intensity" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Lulls</span>
                                     <span>Gusts</span>
@@ -394,7 +394,7 @@
                             </div>
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Shift</div>
-                                <input type="range" id="conf-puff-shift" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
+                                <input type="range" id="conf-puff-shift" aria-label="Puff Shift" min="0" max="1" step="0.05" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Straight</span>
                                     <span>Twisty</span>
@@ -411,7 +411,7 @@
                                 Current
                             </h2>
                             <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="conf-current-enable" class="sr-only peer">
+                                <input type="checkbox" id="conf-current-enable" aria-label="Enable Current" class="sr-only peer">
                                 <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                             </label>
                         </div>
@@ -422,7 +422,7 @@
                                     <div class="text-xs font-bold text-slate-300 uppercase">Set (Direction)</div>
                                     <div id="val-current-direction" class="text-xs font-mono text-indigo-400">0°</div>
                                 </div>
-                                <input type="range" id="conf-current-direction" min="0" max="360" step="15" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                                <input type="range" id="conf-current-direction" aria-label="Current Direction" min="0" max="360" step="15" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
 
                                 <div class="flex items-center gap-4 bg-slate-900/40 p-2 rounded-lg border border-white/5 mt-2">
                                      <div id="ui-current-arrow" class="w-8 h-8 rounded-full border border-slate-600 flex items-center justify-center bg-slate-800 shadow-inner">
@@ -436,7 +436,7 @@
                                     <div class="text-xs font-bold text-slate-300 uppercase">Drift (Speed)</div>
                                     <div id="val-current-speed" class="text-xs font-mono text-indigo-400">0.0 kn</div>
                                 </div>
-                                <input type="range" id="conf-current-speed" min="0" max="3.0" step="0.1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                                <input type="range" id="conf-current-speed" aria-label="Current Speed" min="0" max="3.0" step="0.1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                             </div>
                         </div>
                     </div>
@@ -453,11 +453,11 @@
                                     <div class="text-xs font-bold text-slate-300 uppercase">Number of Islands</div>
                                     <div id="val-island-count" class="text-xs font-mono text-yellow-400">0</div>
                                 </div>
-                                <input type="range" id="conf-island-count" min="0" max="10" step="1" value="0" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                                <input type="range" id="conf-island-count" aria-label="Number of Islands" min="0" max="10" step="1" value="0" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500">
                             </div>
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Max size of Islands</div>
-                                <input type="range" id="conf-island-max-size" min="0" max="1" step="0.1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                                <input type="range" id="conf-island-max-size" aria-label="Max size of Islands" min="0" max="1" step="0.1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Small</span>
                                     <span>Large</span>
@@ -465,7 +465,7 @@
                             </div>
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Clustering of Islands</div>
-                                <input type="range" id="conf-island-clustering" min="0" max="1" step="0.1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500">
+                                <input type="range" id="conf-island-clustering" aria-label="Clustering of Islands" min="0" max="1" step="0.1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-yellow-500">
                                 <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wider mt-1">
                                     <span>Scattered</span>
                                     <span>Grouped</span>
@@ -493,21 +493,21 @@
                                     <div class="text-xs font-bold text-slate-300 uppercase">Distance</div>
                                     <div id="val-course-dist" class="text-xs font-mono text-emerald-400">800m</div>
                                 </div>
-                                <input type="range" id="conf-course-dist" min="100" max="2000" step="50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                                <input type="range" id="conf-course-dist" aria-label="Course Distance" min="100" max="2000" step="50" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                             </div>
                             <div>
                                 <div class="flex justify-between items-baseline mb-1">
                                     <div class="text-xs font-bold text-slate-300 uppercase">Legs</div>
                                     <div id="val-course-legs" class="text-xs font-mono text-emerald-400">4</div>
                                 </div>
-                                <input type="range" id="conf-course-legs" min="1" max="10" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                                <input type="range" id="conf-course-legs" aria-label="Number of Legs" min="1" max="10" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                             </div>
                             <div>
                                 <div class="flex justify-between items-baseline mb-1">
                                     <div class="text-xs font-bold text-slate-300 uppercase">Start Time</div>
                                     <div id="val-course-timer" class="text-xs font-mono text-emerald-400">30s</div>
                                 </div>
-                                <input type="range" id="conf-course-timer" min="0" max="60" step="5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
+                                <input type="range" id="conf-course-timer" aria-label="Start Timer" min="0" max="60" step="5" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500">
                             </div>
                         </div>
                     </div>
@@ -686,7 +686,7 @@
         <!-- AI Sayings Overlay -->
         <div id="ai-saying-overlay" class="absolute bottom-8 left-1/2 -translate-x-1/2 z-40 flex items-end gap-4 pointer-events-none hidden transition-all duration-500 ease-out transform translate-y-4 opacity-0">
              <div class="relative w-32 h-32 shrink-0">
-                  <img id="ai-saying-img" src="" class="w-full h-full object-cover rounded-2xl border-4 bg-slate-900 shadow-2xl">
+                  <img id="ai-saying-img" src="" alt="" class="w-full h-full object-cover rounded-2xl border-4 bg-slate-900 shadow-2xl">
              </div>
              <div class="bg-black/80 backdrop-blur-md text-white p-6 rounded-2xl border border-white/10 shadow-2xl max-w-lg mb-4">
                   <div id="ai-saying-name" class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-1"></div>

@@ -80,6 +80,7 @@ const Sayings = {
 
         if (this.overlay && this.img && this.name && this.text) {
             this.img.src = "assets/images/" + item.boat.name.toLowerCase() + ".png";
+            this.img.alt = item.boat.name;
             const color = isVeryDark(item.boat.colors.hull) ? item.boat.colors.spinnaker : item.boat.colors.hull;
             this.img.style.borderColor = color;
             this.name.textContent = item.boat.name;
@@ -2765,6 +2766,7 @@ function setupPreRaceOverlay() {
 
             const img = document.createElement('img');
             img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
+            img.alt = boat.name;
             img.className = "w-full h-full object-cover transition-transform duration-700 group-hover:scale-110";
 
             imgContainer.appendChild(img);
@@ -5815,6 +5817,7 @@ function showResults() {
             } else {
                 const img = document.createElement('img');
                 img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
+                img.alt = boat.name;
                 img.className = "w-full h-full rounded-md object-cover";
                 imgDiv.appendChild(img);
             }
@@ -6027,6 +6030,7 @@ function updateLeaderboard() {
                     // Portrait
                     const img = document.createElement('img');
                     img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
+                    img.alt = boat.name;
                     img.className = "w-8 h-8 rounded-full border-2 object-cover bg-slate-900";
                     const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
                     img.style.borderColor = color;
