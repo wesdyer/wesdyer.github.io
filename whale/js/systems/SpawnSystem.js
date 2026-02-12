@@ -33,7 +33,7 @@ export class SpawnSystem {
             }
 
             // Check off-screen (Left side)
-            if (ent.container.x < -100) {
+            if (ent.container.x < -500) {
                 this.game.gameLayer.removeChild(ent.container);
                 this.game.entities.splice(i, 1);
                 continue;

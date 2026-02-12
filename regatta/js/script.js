@@ -165,7 +165,7 @@ class BotController {
         this.startLinePct = (boat.ai && boat.ai.startLinePct != null) ? boat.ai.startLinePct : (0.1 + Math.random() * 0.8);
 
         // Prestart State Machine
-        this.prestartPhase = 'HOLD';       // HOLD, APPROACH, ACCELERATE
+        this.prestartPhase = 'HOLD';       // HOLD, POSITION, APPROACH, ACCELERATE
 
         this.livenessState = 'normal'; // 'normal', 'recovery', 'force'
         this.lowSpeedTimer = 0;
@@ -589,12 +589,12 @@ class BotController {
         const absTWA = Math.abs(trueWindAngle);
         
         let mode = 'reach';
-        let optTWA = getOptimalVMGAngle('upwind', localWind.speed);
+        let optTWA = getCharacterOptimalVMGAngle('upwind', localWind.speed, boat.stats);
 
         if (absTWA < Math.PI / 3.5) mode = 'upwind';
         else if (absTWA > Math.PI * 0.7) {
             mode = 'downwind';
-            optTWA = getOptimalVMGAngle('downwind', localWind.speed);
+            optTWA = getCharacterOptimalVMGAngle('downwind', localWind.speed, boat.stats);
 
             // Planing Check
             if (state.wind.speed > J111_PLANING.minTWS) {
@@ -727,7 +727,8 @@ class BotController {
             // We compare future effective wind vs base wind (or current effective?)
             // Comparing to base makes sense as absolute value
             const windBonus = (futureEffective - state.wind.baseSpeed);
-            score += windBonus * 0.1; // Reduced to prevent tack oscillation
+            const pressureCoeff = 0.1 * (1.0 + boostFactor);
+            score += windBonus * pressureCoeff;
 
             // 5. Wind Shift Lift/Header Bonus
             // When wind shifts right (positive), starboard tack TWA decreases (header),
@@ -761,8 +762,11 @@ class BotController {
         // Hysteresis / Stickiness
         // Bias towards current tack to prevent rapid switching
         const currentTack = normalizeAngle(boat.heading - wd) > 0 ? 1 : -1; // 1=Stbd, -1=Port
-        // Clear air stickiness: increase hysteresis when in clean air (lane discipline)
-        const tackBonus = (boat.badAirIntensity < 0.05) ? 0.6 : 0.4;
+        // Stat-aware hysteresis: agile characters need less stickiness
+        const tackAgility = (boat.stats.handling * 0.3 + boat.stats.acceleration * 0.3 + boat.stats.momentum * 0.2);
+        const hysteresisMod = -tackAgility * 0.0625; // Range: +0.25 to -0.25
+        const baseTackBonus = (boat.badAirIntensity < 0.05) ? 0.6 : 0.4;
+        const tackBonus = Math.max(0.15, Math.min(1.0, baseTackBonus + hysteresisMod));
 
         let preferredHeading = (scoreS > scoreP) ? hStarboard : hPort;
 
@@ -838,6 +842,28 @@ class BotController {
         return bDx * nx + bDy * ny; // positive = above/upwind of line
     }
 
+    getApproachTime(distance, currentSpeed, stats) {
+        // Mini physics simulation matching updateBoat() acceleration
+        const targetGameSpeed = getTargetSpeed(0.7, false, state.wind.baseSpeed) * 0.25; // close-hauled ~40° TWA
+        const accelMod = 1.0 + stats.acceleration * 0.024;
+
+        let speed = currentSpeed;
+        let dist = distance;
+        let time = 0;
+        const step = 0.1; // 100ms steps
+        const maxTime = 30; // safety cap
+
+        while (dist > 0 && time < maxTime) {
+            const timeScale = step * 60;
+            let alpha = 1 - Math.pow(0.9985, timeScale);
+            if (targetGameSpeed > speed) alpha *= accelMod;
+            speed = speed * (1 - alpha) + targetGameSpeed * alpha;
+            dist -= speed * 60 * step; // speed * 60 = game units/sec
+            time += step;
+        }
+        return time;
+    }
+
     getStartCommand() {
         const boat = this.boat;
         const timer = state.race.timer;
@@ -888,9 +914,11 @@ class BotController {
         const distToTarget = Math.sqrt((targetX - boat.x) ** 2 + (targetY - boat.y) ** 2);
 
         if (this.prestartPhase === 'HOLD') {
-            // Approach timing: match original's conservative timing
-            const timeNeeded = distToTarget / 80;
-            const approachTime = Math.max(timeNeeded * 1.5, 3.0);
+            // Physics-aware approach timing (0.85 factor — boat overshoots sim estimate)
+            const approachTime = Math.max(
+                this.getApproachTime(distToTarget, boat.speed, boat.stats) * 0.85,
+                3.0
+            );
             if (timer <= approachTime) {
                 this.prestartPhase = 'APPROACH';
             }
@@ -909,7 +937,7 @@ class BotController {
 
             case 'APPROACH':
             case 'ACCELERATE': {
-                // Target point past line for upwind approach — full speed
+                // Target point on line for upwind approach — full speed
                 return { target: { x: targetX, y: targetY }, speed: 1.0 };
             }
 
@@ -992,14 +1020,35 @@ class BotController {
         }
     }
 
+    /**
+     * applyAvoidance() — RRS-aware collision avoidance cost function
+     *
+     * Evaluates candidate headings and selects the lowest-cost option.
+     * Cost factors implement RRS obligations:
+     *
+     *  - Base deviation cost: Encourages keeping proper course (RRS general).
+     *  - STAND_ON hold-course: RRS 16 — ROW boat should not alter course
+     *    unnecessarily. Graduated per Rule 14: full hold at MEDIUM risk,
+     *    reduced at HIGH (give-way not yielding), zero at IMMINENT.
+     *  - Rule 16 toward-threat penalty: Prevents STAND_ON from steering
+     *    into keep-clear boat (RRS 16: "give room to keep clear").
+     *  - GIVE_WAY large bubble: RRS 16 — give keep-clear boat room to
+     *    react early by expanding the safety distance.
+     *  - Duck stern reward / bow crossing penalty: Proper give-way technique
+     *    (pass astern of ROW boat, don't cut across their bow).
+     *  - Rule violation cost: Penalty for being give-way and heading into
+     *    collision (RRS 10/11/12/13 obligation to keep clear).
+     *  - IMMINENT override: RRS 14 — both boats must avoid contact at all
+     *    costs when collision is imminent.
+     */
     applyAvoidance(desiredHeading, speedRequest) {
         // If stuck (Wiggle Mode), ignore avoidance to force breakout
         if (this.wiggleActive) return desiredHeading;
 
         const boat = this.boat;
-        const lookaheadFrames = 240; // Increased to 4 seconds lookahead
+        const lookaheadFrames = 240; // 4 seconds lookahead
         const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
-        
+
         // Candidates: more granular to find gaps
         const candidates = [
             0, 
@@ -1043,9 +1092,19 @@ class BotController {
             // Non-linear cost to strongly prefer small deviations
             let cost = Math.pow(Math.abs(offset), 1.5) * 10; 
 
-            // Stand-On: Penalize large deviations (Hold Course) unless imminent
-            if (this.avoidanceRole === 'STAND_ON' && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
-                cost += Math.abs(offset) * 3000; // Stronger penalty to hold course
+            // RRS Rule 16/14: Stand-on boat holds course...
+            // but Rule 14 requires evasive action when "it becomes clear
+            // the other boat is not keeping clear."
+            // MEDIUM: Full hold-course — give-way boat still has time to act.
+            // HIGH: Reduced hold-course — give-way boat may not be keeping
+            //       clear; begin accepting evasion per Rule 14.
+            // IMMINENT: No hold-course bonus — pure Rule 14 emergency avoidance.
+            if (this.avoidanceRole === 'STAND_ON') {
+                if (this.riskState === 'MEDIUM') {
+                    cost += Math.abs(offset) * 3000;
+                } else if (this.riskState === 'HIGH') {
+                    cost += Math.abs(offset) * 1000;
+                }
             }
 
             // Project position at t=lookahead
@@ -1083,6 +1142,19 @@ class BotController {
                         // Penalize crossing bow (dotForward > 0), Reward ducking (dotForward < 0)
                         if (dotForward > 0) cost += 1500;
                         else cost -= 800;
+                    }
+                }
+
+                // RRS Rule 16: ROW boat changing course must give
+                // keep-clear boat room to respond. Penalize STAND_ON
+                // heading changes that move toward the other boat.
+                if (this.avoidanceRole === 'STAND_ON' && this.riskState !== 'LOW') {
+                    const toOther = Math.atan2(other.x - boat.x, -(other.y - boat.y));
+                    const currentDelta = Math.abs(normalizeAngle(desiredHeading - toOther));
+                    const newDelta = Math.abs(normalizeAngle(h - toOther));
+                    if (newDelta < currentDelta - 0.05) {
+                        // Heading toward other boat — Rule 16 penalty
+                        cost += 2000;
                     }
                 }
 
@@ -1739,7 +1811,9 @@ function drawWindDebug(ctx) {
             const res = getRightOfWay(player, other);
             const isWinner = res.boat === player;
             ctx.fillStyle = isWinner ? '#4ade80' : '#ef4444';
-            ctx.fillText(`${other.name} - ${res.rule}: ${res.reason}`, x + 5, textY);
+            let label = `${other.name} - ${res.rule}: ${res.reason}`;
+            if (res.markRoom) label += ' [Mark-Room]';
+            ctx.fillText(label, x + 5, textY);
             textY += 20;
         }
     }
@@ -3287,6 +3361,75 @@ function getBestVMGAngle(mode, windSpeed) {
     return getOptimalVMGAngle(mode, windSpeed);
 }
 
+function getCharacterOptimalVMGAngle(mode, windSpeed, stats) {
+    const angles = J111_POLARS.angles;
+    const speeds = [6, 8, 10, 12, 14, 16, 20];
+
+    // Apply boost stat to effective wind (same formula as physics line 3582)
+    const boostFactor = stats.boost * 0.05;
+    let ws = windSpeed;
+    const baseWind = state.wind.baseSpeed;
+    if (ws > baseWind) {
+        ws = baseWind + (ws - baseWind) * (1.0 + boostFactor);
+    } else {
+        ws = baseWind + (ws - baseWind) * (1.0 - boostFactor);
+    }
+    ws = Math.max(6, Math.min(20, ws));
+
+    let lower = 6, upper = 6;
+    for (let i = 0; i < speeds.length - 1; i++) {
+        if (ws >= speeds[i] && ws <= speeds[i + 1]) {
+            lower = speeds[i]; upper = speeds[i + 1]; break;
+        }
+    }
+    if (ws >= 20) { lower = 20; upper = 20; }
+
+    const getSpeed = (wsKey, angleIdx) => {
+        const data = J111_POLARS.speeds[wsKey];
+        return mode === 'downwind' ? data.spinnaker[angleIdx] : data.nonSpinnaker[angleIdx];
+    };
+
+    let bestVMG = -Infinity;
+    let bestAngle = mode === 'upwind' ? 45 : 150;
+
+    for (let i = 0; i < angles.length; i++) {
+        const a = angles[i];
+        if (mode === 'upwind' && (a < 30 || a > 70)) continue;
+        if (mode === 'downwind' && (a < 110 || a > 180)) continue;
+
+        const s1 = getSpeed(lower, i);
+        const s2 = getSpeed(upper, i);
+        let boatSpeed = lower === upper ? s1 : s1 + (ws - lower) / (upper - lower) * (s2 - s1);
+
+        // Apply point-of-sail stat modifiers (same as physics lines 3687-3709)
+        let posStat = 0;
+        if (a <= 60) {
+            posStat = stats.upwind * 0.008;
+        } else if (a >= 145) {
+            posStat = stats.downwind * 0.01;
+        } else if (a < 102.5) {
+            const t = (a - 60) / (102.5 - 60);
+            posStat = stats.upwind * 0.008 + t * (stats.reach * 0.012 - stats.upwind * 0.008);
+        } else {
+            const t = (a - 102.5) / (145 - 102.5);
+            posStat = stats.reach * 0.012 + t * (stats.downwind * 0.01 - stats.reach * 0.012);
+        }
+        boatSpeed *= (1.0 + posStat);
+
+        const aRad = a * Math.PI / 180;
+        const vmg = mode === 'upwind'
+            ? boatSpeed * Math.cos(aRad)
+            : boatSpeed * Math.cos(Math.PI - aRad);
+
+        if (vmg > bestVMG) {
+            bestVMG = vmg;
+            bestAngle = a;
+        }
+    }
+
+    return bestAngle * (Math.PI / 180);
+}
+
 function updateAITrim(boat, optimalSailAngle, dt) {
     // Basic AI Trim: Adjust towards optimal at a fixed rate
     const trimSpeed = 1.0; // Radians per second
@@ -4818,11 +4961,15 @@ function drawRulesOverlay(ctx) {
                     const winner = res.boat;
                     const loser = (winner === b1) ? b2 : b1;
 
-                    // Winner (Green) - pointing at Loser
-                    drawTriangle(winner, loser, '#4ade80');
-
-                    // Loser (Red) - pointing at Winner
-                    drawTriangle(loser, winner, '#ef4444');
+                    if (res.rule === 'Rule 21') {
+                        // Section D override — orange for OCS/penalty
+                        drawTriangle(winner, loser, '#f59e0b');
+                        drawTriangle(loser, winner, '#ef4444');
+                    } else {
+                        // Normal — green ROW, red give-way
+                        drawTriangle(winner, loser, '#4ade80');
+                        drawTriangle(loser, winner, '#ef4444');
+                    }
                 }
             }
         }

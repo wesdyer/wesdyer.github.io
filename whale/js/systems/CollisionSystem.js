@@ -7,12 +7,18 @@ export class CollisionSystem {
         const player = this.game.player;
         if (!player) return;
 
-        // Player Hitbox
-        // Whale is roughly 80x40. Center is at container xy.
-        // Let's approximate with a circle radius 30 for now, or 2 circles.
+        // Player Hitbox (AABB)
+        // Whale sprite: 400x119 at scale 0.5 = 200x60 on screen
+        // Body anchor (0.45, 0.42) → extends ~90 left, ~110 right, ~25 up, ~35 down
+        // Use a slightly smaller hitbox for fair gameplay
         const pX = player.container.x;
         const pY = player.container.y;
-        const pRadius = 30;
+        const pHalfW = 70;  // ~140px wide hitbox (body core, not tail tip)
+        const pHalfH = 20;  // ~40px tall hitbox
+        const pLeft = pX - pHalfW;
+        const pRight = pX + pHalfW;
+        const pTop = pY - pHalfH;
+        const pBottom = pY + pHalfH;
 
         for (const ent of this.game.entities) {
             if (!ent.active) continue;
@@ -23,25 +29,37 @@ export class CollisionSystem {
             // Check Collision
             let hit = false;
 
-            // Plankton is small circle
             if (ent.constructor.name === 'Plankton') {
-                 const dx = pX - eX;
-                 const dy = pY - eY;
-                 const dist = Math.sqrt(dx*dx + dy*dy);
-                 if (dist < pRadius + ent.radius) {
-                     hit = true;
-                     this.handlePlankton(ent);
-                 }
-            } else if (ent.constructor.name === 'Hazard') {
-                // Hazard logic
-                // Simple distance check for now
-                const dx = pX - eX;
-                const dy = pY - eY;
-
-                // For Boat/Rects, we might want AABB, but Radius is easiest for "smooth" feel
-                if (dist(dx, dy) < pRadius + ent.radius) {
+                // Circle collision — check closest point on whale rect to plankton center
+                const closestX = Math.max(pLeft, Math.min(eX, pRight));
+                const closestY = Math.max(pTop, Math.min(eY, pBottom));
+                const dx = eX - closestX;
+                const dy = eY - closestY;
+                if (Math.sqrt(dx*dx + dy*dy) < ent.radius) {
                     hit = true;
-                    this.handleHazard(ent);
+                    this.handlePlankton(ent);
+                }
+            } else if (ent.constructor.name === 'Hazard') {
+                if (ent.type === 'BOAT') {
+                    // AABB vs AABB — ship rect vs whale rect
+                    const shipHalfW = ent.width / 2;
+                    const shipTop = eY - ent.height * 0.8;
+                    const shipBottom = eY + ent.height * 0.2;
+                    if (pRight > eX - shipHalfW && pLeft < eX + shipHalfW &&
+                        pBottom > shipTop && pTop < shipBottom) {
+                        hit = true;
+                        this.handleHazard(ent);
+                    }
+                } else {
+                    // Circle vs whale rect
+                    const closestX = Math.max(pLeft, Math.min(eX, pRight));
+                    const closestY = Math.max(pTop, Math.min(eY, pBottom));
+                    const dx = eX - closestX;
+                    const dy = eY - closestY;
+                    if (Math.sqrt(dx*dx + dy*dy) < ent.radius) {
+                        hit = true;
+                        this.handleHazard(ent);
+                    }
                 }
             }
         }
@@ -66,9 +84,10 @@ export class CollisionSystem {
     handleHazard(ent) {
         if (this.game.player.invulnerable > 0) return;
 
-        ent.active = false; // Destroy hazard or just apply hit?
-        // Usually hazards persist but player flashes.
-        // For simplicity, let's just apply damage and small debounce.
+        // Only destroy small hazards, not boats
+        if (ent.type !== 'BOAT') {
+            ent.active = false;
+        }
 
         const player = this.game.player;
 

@@ -20,21 +20,16 @@ export class Hazard {
         const gfx = new PIXI.Graphics();
 
         if (this.type === 'BOAT') {
-            // Boat Hull (Above water mostly)
-            gfx.beginFill(0x888888);
-            gfx.drawRect(-40, -20, 80, 20);
-            gfx.endFill();
+            // Cargo ship sprite
+            const ship = PIXI.Sprite.from('assets/cargo_ship.png');
+            ship.anchor.set(0.5, 0.8); // Anchor near waterline
+            ship.scale.set(1.5);
+            this.container.addChild(ship);
 
-            // Prop Wash (Danger Zone below)
-            gfx.beginFill(0xffffff, 0.3);
-            gfx.moveTo(-35, 0);
-            gfx.lineTo(0, 80); // Cone
-            gfx.lineTo(-20, 80);
-            gfx.endFill();
-
-            this.radius = 40; // Approximate
-            this.width = 80;
-            this.height = 100;
+            this.radius = 180;
+            this.width = 450;
+            this.height = 105;
+            return; // Skip adding empty gfx
         } else if (this.type === 'NET') {
             gfx.lineStyle(2, 0x552200, 0.8);
             // Draw grid

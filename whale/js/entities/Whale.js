@@ -32,36 +32,52 @@ export class Whale {
     }
 
     createVisuals() {
-        this.sprite = new PIXI.Graphics();
+        // Wrapper group handles horizontal flip + overall scale
+        this.whaleGroup = new PIXI.Container();
+        this.whaleGroup.scale.set(-0.5, 0.5); // Flipped (image faces left, whale swims right)
 
-        // Body (Ellipse)
-        this.sprite.beginFill(0x4fd1c5); // Teal/Turquoise
-        this.sprite.drawEllipse(0, 0, 40, 20); // Center at 0,0
-        this.sprite.endFill();
+        // --- Tail fluke (behind body) ---
+        this.tailSprite = PIXI.Sprite.from('assets/whale_tail.png');
+        this.tailSprite.anchor.set(0, 0.37); // Pivot at left-center (peduncle connection)
+        this.tailSprite.position.set(125, 5);  // Relative to body center (180,50)
+        this.whaleGroup.addChild(this.tailSprite);
 
-        // Tail
-        this.sprite.beginFill(0x38b2ac);
-        this.sprite.moveTo(-30, 0);
-        this.sprite.lineTo(-50, -15);
-        this.sprite.lineTo(-50, 15);
-        this.sprite.lineTo(-30, 0);
-        this.sprite.endFill();
+        // --- Pectoral flipper (behind body — body hides the attachment) ---
+        this.flipperSprite = PIXI.Sprite.from('assets/whale_flipper.png');
+        this.flipperSprite.anchor.set(0.636, 0.163); // Pivot at body attachment point
+        this.flipperSprite.position.set(-20, 32);
+        this.whaleGroup.addChild(this.flipperSprite);
 
-        // Eye
-        this.sprite.beginFill(0xffffff);
-        this.sprite.drawCircle(20, -5, 3);
-        this.sprite.endFill();
-        this.sprite.beginFill(0x000000);
-        this.sprite.drawCircle(21, -5, 1);
-        this.sprite.endFill();
+        // --- Body (drawn last, on top — covers flipper attachment seam) ---
+        this.bodySprite = PIXI.Sprite.from('assets/whale_body.png');
+        this.bodySprite.anchor.set(0.45, 0.42); // Center of body mass
+        this.bodySprite.position.set(0, 0);
+        this.whaleGroup.addChild(this.bodySprite);
 
-        this.container.addChild(this.sprite);
+        // For invulnerability flash, reference the whole group
+        this.sprite = this.whaleGroup;
+
+        // Animation state
+        this.swimTime = 0;
+        this.facingRight = true;
+        this.wasUnderwater = true;
+
+        this.container.addChild(this.whaleGroup);
     }
 
     update(dt) {
         const input = this.game.input;
         const waterLevel = this.game.world.WATER_LEVEL;
         const isUnderwater = this.container.y > waterLevel;
+
+        // Blow when surfacing
+        if (this.wasUnderwater && !isUnderwater && this.game.particles) {
+            // Spout from blowhole (slightly ahead and above the whale's back)
+            const blowX = this.container.x + (this.facingRight ? 20 : -20);
+            const blowY = this.container.y - 25;
+            this.game.particles.blow(blowX, blowY);
+        }
+        this.wasUnderwater = isUnderwater;
 
         if (this.invulnerable > 0) {
             this.invulnerable -= dt;
@@ -147,9 +163,42 @@ export class Whale {
             this.vy = 0;
         }
 
+        // Swimming animation
+        this.swimTime += dt;
+        const swimSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+
+        // Flip whale based on horizontal movement direction
+        if (this.vx > 15) this.facingRight = true;
+        else if (this.vx < -15) this.facingRight = false;
+        this.whaleGroup.scale.x = this.facingRight ? -0.5 : 0.5;
+
+        // --- Tail animation ---
+        // Slow, graceful oscillation that picks up slightly with speed
+        const tailFreq = 2 + Math.min(swimSpeed / 150, 2);
+        const tailAmp = 0.12 + Math.min(swimSpeed / 300, 0.25);
+        this.tailSprite.rotation = Math.sin(this.swimTime * tailFreq) * tailAmp;
+
+        // --- Flipper animation ---
+        // Gentle flapping, slower than tail
+        const flipFreq = 1.2 + Math.min(swimSpeed / 250, 1.3);
+        const flipAmp = 0.08 + Math.min(swimSpeed / 400, 0.17);
+        this.flipperSprite.rotation = Math.sin(this.swimTime * flipFreq + 0.5) * flipAmp;
+
+        // --- Body bob ---
+        // Slight vertical bob for idle swimming feel
+        this.whaleGroup.y = Math.sin(this.swimTime * 1.5) * 2;
+
+        // Dash stretch effect
+        if (this.speed > 300) {
+            const stretch = 1.05;
+            this.whaleGroup.scale.y = 0.5 / stretch;
+            this.whaleGroup.scale.x = (this.facingRight ? -0.5 : 0.5) * stretch;
+        } else {
+            this.whaleGroup.scale.y = 0.5;
+        }
+
         // Rotation (Tilt based on velocity)
-        // Smooth rotation
-        const targetRotation = Math.atan2(this.vy, this.speed * 2 + Math.abs(this.vx)); // Bias towards forward
+        const targetRotation = Math.atan2(this.vy, this.speed * 2 + Math.abs(this.vx));
         this.container.rotation += (targetRotation - this.container.rotation) * 5 * dt;
     }
 }
