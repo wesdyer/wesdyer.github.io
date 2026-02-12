@@ -1938,12 +1938,18 @@ function createGust(x, y, type, initial = false) {
     const duration = 30 + Math.random() * 60;
     const age = initial ? Math.random() * duration : 0;
 
+    const rotation = windDir + dirDelta + Math.PI / 2;
+    const maxR = 10;
+
     return {
         type, x, y, vx, vy,
         moveSpeedFactor, moveDirOffset,
         maxRadiusX, maxRadiusY,
         radiusX: 10, radiusY: 10,
-        rotation: windDir + dirDelta + Math.PI / 2,
+        rotation,
+        cos: Math.cos(rotation),
+        sin: Math.sin(rotation),
+        maxRadiusSq: maxR * maxR,
         speedDelta, dirDelta,
         duration,
         age
@@ -2000,6 +2006,8 @@ function updateGusts(dt) {
 
         // Update Rotation to align with local wind direction (Global + Delta)
         g.rotation = globalWindDir + g.dirDelta + Math.PI / 2;
+        g.cos = Math.cos(g.rotation);
+        g.sin = Math.sin(g.rotation);
 
         g.x += g.vx * timeScale;
         g.y += g.vy * timeScale;
@@ -2011,6 +2019,9 @@ function updateGusts(dt) {
         const lifeFactor = Math.sin(lifeProgress * Math.PI); // 0 -> 1 -> 0
         g.radiusX = Math.max(10, g.maxRadiusX * lifeFactor);
         g.radiusY = Math.max(10, g.maxRadiusY * lifeFactor);
+
+        const maxR = Math.max(g.radiusX, g.radiusY);
+        g.maxRadiusSq = maxR * maxR;
 
         if (g.age > g.duration) {
             state.gusts.splice(i, 1);
@@ -2030,10 +2041,15 @@ function getWindAt(x, y) {
     for (const g of state.gusts) {
         const dx = x - g.x;
         const dy = y - g.y;
-        const cos = Math.cos(-g.rotation);
-        const sin = Math.sin(-g.rotation);
-        const rx = dx * cos - dy * sin;
-        const ry = dx * sin + dy * cos;
+
+        // Fast Bounding Circle Check
+        if (dx*dx + dy*dy > g.maxRadiusSq) continue;
+
+        // Use cached trig (rotation is negated for coordinate transform)
+        // cos(-a) = cos(a) = g.cos
+        // sin(-a) = -sin(a) = -g.sin
+        const rx = dx * g.cos + dy * g.sin;
+        const ry = dy * g.cos - dx * g.sin;
 
         const distSq = (rx*rx)/(g.radiusX*g.radiusX) + (ry*ry)/(g.radiusY*g.radiusY);
         if (distSq <= 1) {
