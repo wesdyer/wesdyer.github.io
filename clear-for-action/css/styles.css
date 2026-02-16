@@ -1193,6 +1193,10 @@ ul, ol { list-style: none; }
   line-height: 1.2;
 }
 
+.gun-stat-label.range-short { color: #2ecc40; }
+.gun-stat-label.range-medium { color: #f1c40f; }
+.gun-stat-label.range-long { color: #e74c3c; }
+
 .gun-stat-val {
   font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
@@ -1396,7 +1400,7 @@ ul, ol { list-style: none; }
   display: flex;
   gap: var(--space-sm);
   justify-content: center;
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-lg);
 }
 .vital-box-wrapper {
   display: flex;
@@ -1450,6 +1454,13 @@ ul, ol { list-style: none; }
 .vital-box-btn:disabled {
   opacity: 0.25;
   cursor: default;
+}
+.vital-box.pulse {
+  animation: vital-pulse 0.3s ease-out;
+}
+@keyframes vital-pulse {
+  0% { transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
 
 /* --- Speed Reference --- */
@@ -1709,6 +1720,9 @@ ul, ol { list-style: none; }
 
 .toggle.active .toggle-track {
   background: var(--navy);
+}
+.status-toggles .toggle.active .toggle-track {
+  background: var(--red);
 }
 
 .toggle-thumb {
@@ -2127,7 +2141,7 @@ ul, ol { list-style: none; }
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-md);
-  margin-top: var(--space-md);
+  margin-top: var(--space-lg);
 }
 
 /* --- Notes --- */
@@ -3051,11 +3065,11 @@ ul, ol { list-style: none; }
   width: 32px;
   height: 32px;
   object-fit: contain;
-  filter: brightness(0) invert(1);
+  filter: brightness(0) invert(0.64);
 }
 .ship-action-skills-value {
   font-family: var(--font-ui);
-  font-size: 1.2rem;
+  font-size: 1.59rem;
   font-weight: 900;
   color: var(--white);
   margin-left: var(--space-sm);

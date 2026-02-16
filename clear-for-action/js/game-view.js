@@ -332,9 +332,9 @@ function buildCardBody(body, ship, game, save) {
               </div>
               <div class="gun-stats">
                 <div class="gun-stat-cell"><span class="gun-stat-label">Dmg</span><span class="gun-stat-val">${gun.damage}</span></div>
-                <div class="gun-stat-cell"><span class="gun-stat-label">S</span>${rangeVal(gun.rangeShort)}</div>
-                <div class="gun-stat-cell"><span class="gun-stat-label">M</span>${rangeVal(gun.rangeMedium)}</div>
-                <div class="gun-stat-cell"><span class="gun-stat-label">L</span>${rangeVal(gun.rangeLong)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label range-short">S</span>${rangeVal(gun.rangeShort)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label range-medium">M</span>${rangeVal(gun.rangeMedium)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label range-long">L</span>${rangeVal(gun.rangeLong)}</div>
               </div>
               <div class="gun-side gun-side-stbd">
                 <button class="gun-side-btn" data-side="starboard" data-dir="-1">\u2212</button>
@@ -391,9 +391,9 @@ function buildCardBody(body, ship, game, save) {
               </div>
               <div class="gun-stats">
                 <div class="gun-stat-cell"><span class="gun-stat-label">Dmg</span><span class="gun-stat-val">${gun.damage}</span></div>
-                <div class="gun-stat-cell"><span class="gun-stat-label">S</span>${rangeVal(gun.rangeShort)}</div>
-                <div class="gun-stat-cell"><span class="gun-stat-label">M</span>${rangeVal(gun.rangeMedium)}</div>
-                <div class="gun-stat-cell"><span class="gun-stat-label">L</span>${rangeVal(gun.rangeLong)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label range-short">S</span>${rangeVal(gun.rangeShort)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label range-medium">M</span>${rangeVal(gun.rangeMedium)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label range-long">L</span>${rangeVal(gun.rangeLong)}</div>
               </div>
             </div>
           `;
@@ -537,6 +537,10 @@ function buildCardBody(body, ship, game, save) {
           ship.currentVitals[key] = current;
           save();
           renderBox();
+          const vb = box.querySelector('.vital-box');
+          vb.classList.remove('pulse');
+          void vb.offsetWidth;
+          vb.classList.add('pulse');
         });
       });
     };
