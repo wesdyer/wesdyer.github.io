@@ -2,6 +2,8 @@
 // Clear for Action! — Utility Functions
 // ============================================
 
+import { GUN_TYPES } from './data.js';
+
 export function uuid() {
   return crypto.randomUUID?.() ??
     'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
@@ -106,6 +108,7 @@ export function shipCardHtml(ship, { showActions = true } = {}) {
     : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
   const flagHtml = nationalityFlag(ship.nationality);
   const crewTag = crewRatingTag(ship.captain?.crewRating);
+  const pts = calculatePoints(ship);
 
   return `
     <div class="ship-grid-card" data-id="${ship.id}">
@@ -118,6 +121,7 @@ export function shipCardHtml(ship, { showActions = true } = {}) {
           ${crewTag ? `<div class="ship-grid-card-crew">${crewTag}</div>` : ''}
         </div>
         ${flagHtml ? `<div class="ship-grid-card-flag">${flagHtml}</div>` : ''}
+        <span class="points-badge ship-grid-card-points">${pts} pts</span>
       </div>
       ${showActions ? `
       <div class="ship-grid-card-actions">
@@ -161,6 +165,46 @@ export function getGameShips(game) {
     return game.forces.flatMap(f => f.ships || []);
   }
   return game.ships || [];
+}
+
+export function calculatePoints(ship) {
+  // Offense
+  let offense = 0;
+  for (const g of (ship.guns || [])) {
+    const gt = GUN_TYPES.find(t => t.type === g.type);
+    if (!gt) continue;
+    const facing = (g.facing === 'bow' || g.facing === 'stern') ? 0.3 : 1.0;
+    const range = gt.isCarronade ? 0.7 : 1.0;
+    offense += gt.damage * (g.count || 0) * facing * range;
+  }
+
+  // Durability
+  const def = ship.movement?.defense || 0;
+  const hull = ship.vitals?.hull || 0;
+  const effectiveHP = hull * (1 + def * def / 100);
+  const c = ship.criticals || {};
+  const critSlots = (c.fire || 0) + (c.leak || 0) + (c.steering || 0) + (c.mast || 0) + (c.officer || 0);
+  const durability = effectiveHP
+    + (ship.vitals?.rigging || 0) * 0.4
+    + (ship.vitals?.crew || 0) * 1.0
+    + (ship.vitals?.morale || 0) * 0.3
+    + critSlots * 0.3;
+
+  // Mobility
+  const spd = ship.speed || {};
+  const avgSpeed = ((spd.closeHauled || 0) + (spd.reaching || 0) + (spd.running || 0)) / 3;
+  const mobility = avgSpeed + (ship.movement?.maneuver || 0) * 0.5;
+
+  // Crew quality
+  const sk = ship.skills || {};
+  const avgSkill = ((sk.command || 0) + (sk.seamanship || 0) + (sk.gunnery || 0) + (sk.closeAction || 0)) / 4;
+  const crewMods = { landsmen: -2, ordinary: 0, able: 2, crack: 4 };
+  const crewMod = crewMods[ship.captain?.crewRating] ?? 0;
+  const crewQuality = (avgSkill + crewMod) / 11;
+
+  // Combine
+  const raw = (offense + durability * 5 + mobility * 2) * crewQuality / 25;
+  return Math.max(Math.round(raw), 1);
 }
 
 export function windArrow(direction) {

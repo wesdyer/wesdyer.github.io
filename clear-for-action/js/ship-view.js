@@ -3,7 +3,7 @@
 // ============================================
 
 import { getShip } from './storage.js';
-import { escapeHtml, nationalityFlag, getSpeedForSail, crewRatingTag } from './utils.js';
+import { escapeHtml, nationalityFlag, getSpeedForSail, crewRatingTag, calculatePoints } from './utils.js';
 import { GUN_FACINGS, GUN_TYPES } from './data.js';
 
 export function renderShipView(container, shipId) {
@@ -20,6 +20,7 @@ export function renderShipView(container, shipId) {
     : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
   const crewTag = crewRatingTag(ship.captain?.crewRating);
 
+  const pts = calculatePoints(ship);
   let headerHtml = `<div class="ship-view-card">
     <div class="ship-view-card-header">
       <div class="ship-view-card-image">${imageHtml}</div>
@@ -28,9 +29,13 @@ export function renderShipView(container, shipId) {
         <div class="ship-view-card-subtitle">${escapeHtml(ship.classAndRating || 'Unknown class')}</div>
         ${(ship.yearLaunched || ship.tonnage || ship.complement) ? `<div class="ship-view-card-meta">${[ship.yearLaunched, ship.tonnage ? `${escapeHtml(ship.tonnage)} tons` : '', ship.complement ? `${escapeHtml(ship.complement)} complement` : ''].filter(Boolean).join(' \u00b7 ')}</div>` : ''}
       </div>
-      ${flag ? `<div class="ship-view-card-flag">${flag}</div>` : ''}
+      ${flag || pts ? `<div class="ship-view-card-flag">
+        ${flag || ''}
+        <span class="points-badge">${pts} pts</span>
+      </div>` : ''}
     </div>
     ${ship.description ? `<div class="ship-view-card-desc">${escapeHtml(ship.description)}</div>` : ''}
+    ${ship.detailsUrl ? `<div class="ship-view-card-link"><a href="${escapeHtml(ship.detailsUrl)}" target="_blank" rel="noopener noreferrer">Details</a></div>` : ''}
   </div>`;
 
   // --- Captain, Crew & Skills ---

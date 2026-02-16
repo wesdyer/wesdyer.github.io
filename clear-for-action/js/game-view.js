@@ -8,7 +8,7 @@ import {
   createHealthBar, createInteractiveHealthBar, createCheckboxRow,
   createCriticalRow, createSegmentedControl, createToggle, vitalColor,
 } from './components.js';
-import { escapeHtml, nationalityFlag, sailIcon, clamp, getSpeedForSail, getGameShips, crewRatingTag } from './utils.js';
+import { escapeHtml, nationalityFlag, sailIcon, clamp, getSpeedForSail, getGameShips, crewRatingTag, calculatePoints } from './utils.js';
 
 // --- Condition Detection (Universal Modifiers) ---
 function getActiveConditions(ship) {
@@ -83,9 +83,10 @@ export function renderGameView(container, gameId) {
   let flatIdx = 0;
   (game.forces || []).forEach(force => {
     if (!force.ships?.length) return;
+    const forcePoints = force.ships.reduce((sum, s) => sum + calculatePoints(s), 0);
     const forceHeader = document.createElement('div');
     forceHeader.className = 'force-header';
-    forceHeader.innerHTML = `${nationalityFlag(force.nationality)} <span>${escapeHtml(force.name || force.nationality)}</span>`;
+    forceHeader.innerHTML = `${nationalityFlag(force.nationality)} <span>${escapeHtml(force.name || force.nationality)}</span><span class="points-badge force-header-points">${forcePoints} pts</span>`;
     container.appendChild(forceHeader);
 
     force.ships.forEach(ship => {
@@ -275,6 +276,7 @@ function buildShipCard(ship, flatIdx, gameId) {
     : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
 
   const crewTag = crewRatingTag(ship.captain?.crewRating);
+  const pts = calculatePoints(ship);
   const conditions = getActiveConditions(ship);
   const healthPct = getOverallHealth(ship);
   const healthBg = vitalColor(healthPct);
@@ -301,7 +303,10 @@ function buildShipCard(ship, flatIdx, gameId) {
       </div>
       ${conditionsHtml}
     </div>
-    <span class="ship-card-chevron">\u203A</span>
+    <div class="ship-card-right">
+      <span class="points-badge">${pts} pts</span>
+      <span class="ship-card-chevron">\u203A</span>
+    </div>
   `;
 
   summary.addEventListener('click', () => {

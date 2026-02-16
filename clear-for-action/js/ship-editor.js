@@ -5,7 +5,7 @@
 import { getShip, saveShip, deleteShip } from './storage.js';
 import { NATIONALITIES, CREW_RATINGS, ABILITIES, GUN_TYPES, GUN_FACINGS, SHIP_TEMPLATES, createShipFromTemplate, createBlankShip } from './data.js';
 import { createStepper, createChipSelector, createImagePicker, showToast, confirmDialog } from './components.js';
-import { uuid, escapeHtml, debounce, deepClone } from './utils.js';
+import { uuid, escapeHtml, debounce, deepClone, calculatePoints } from './utils.js';
 
 export function renderShipEditor(container, shipId, queryParams) {
   let ship;
@@ -44,8 +44,8 @@ export function renderShipEditor(container, shipId, queryParams) {
 
   // Defer listeners so initialization events don't mark as dirty
   setTimeout(() => {
-    form.addEventListener('input', () => { dirty = true; autoSave(); });
-    form.addEventListener('change', () => { dirty = true; autoSave(); });
+    form.addEventListener('input', () => { dirty = true; autoSave(); form._updatePoints?.(); });
+    form.addEventListener('change', () => { dirty = true; autoSave(); form._updatePoints?.(); });
   }, 0);
 }
 
@@ -95,6 +95,7 @@ function buildForm(form, ship, isNew, autoSave) {
     formGroup('Complement', input('text', ship.complement, v => ship.complement = v, '197')),
   ));
   overview.appendChild(formGroup('Description', textarea(ship.description, v => ship.description = v, 'Brief description...')));
+  overview.appendChild(formGroup('Details Link', input('url', ship.detailsUrl || '', v => ship.detailsUrl = v, 'https://en.wikipedia.org/wiki/...')));
 
   const shipImagePicker = createImagePicker({
     currentImage: ship.shipImage,
@@ -262,6 +263,14 @@ function buildForm(form, ship, isNew, autoSave) {
     }));
   });
   vitals.appendChild(vitalsGrid);
+  // --- Points display (live-updating) ---
+  const pointsDisplay = el('div', { className: 'editor-points-display' });
+  const updatePointsDisplay = () => {
+    pointsDisplay.innerHTML = `<span class="points-badge points-badge-lg">${calculatePoints(ship)} pts</span>`;
+  };
+  updatePointsDisplay();
+  form._updatePoints = updatePointsDisplay;
+
   // --- Guns ---
   const guns = makeSection('Guns');
   const gunsContainer = el('div', { id: 'guns-container' });
@@ -276,6 +285,7 @@ function buildForm(form, ship, isNew, autoSave) {
       }, 0);
     ship.broadsideWeight = Math.round(weight);
     bwDisplay.textContent = `Broadside Weight: ${ship.broadsideWeight} lbs`;
+    updatePointsDisplay();
     autoSave?.();
   };
 
@@ -329,6 +339,7 @@ function buildForm(form, ship, isNew, autoSave) {
   const activeTabId = form.dataset.activeTab || 'overview';
   const { container: tabbedContainer, activateTab, dots } = createTabbedLayout(tabDefs, activeTabId);
 
+  form.appendChild(pointsDisplay);
   form.appendChild(tabbedContainer);
 
   // Persist active tab across rebuilds

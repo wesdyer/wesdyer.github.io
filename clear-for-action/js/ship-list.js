@@ -3,7 +3,7 @@
 // ============================================
 
 import { getShips } from './storage.js';
-import { escapeHtml, shipCardHtml } from './utils.js';
+import { escapeHtml, shipCardHtml, calculatePoints } from './utils.js';
 import { NATIONALITIES } from './data.js';
 
 const SORT_OPTIONS = [
@@ -15,6 +15,8 @@ const SORT_OPTIONS = [
   { id: 'tonnage-asc', label: 'Size \u2191', field: 'tonnage', dir: 1, parse: v => parseInt(v) || 0 },
   { id: 'broadside-desc', label: 'Broadside \u2193', field: 'broadsideWeight', dir: -1, parse: v => v || 0 },
   { id: 'broadside-asc', label: 'Broadside \u2191', field: 'broadsideWeight', dir: 1, parse: v => v || 0 },
+  { id: 'points-desc', label: 'Points \u2193', field: '_points', dir: -1, parse: v => v || 0 },
+  { id: 'points-asc', label: 'Points \u2191', field: '_points', dir: 1, parse: v => v || 0 },
 ];
 
 let persistedSort = 'recent-desc';
@@ -30,6 +32,7 @@ export function renderShipList(container) {
     const isString = sortId.startsWith('name');
 
     const ships = getShips()
+      .map(s => { s._points = calculatePoints(s); return s; })
       .filter(s => {
         if (nationalityFilter && s.nationality !== nationalityFilter) return false;
         if (!searchQuery) return true;

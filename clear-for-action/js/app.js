@@ -383,6 +383,8 @@ async function renderHome(container) {
 
 // --- Init ---
 window.addEventListener('hashchange', route);
-window.addEventListener('DOMContentLoaded', route);
-// Handle initial load if hash is already set
-if (document.readyState !== 'loading') route();
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', route);
+} else {
+  route();
+}

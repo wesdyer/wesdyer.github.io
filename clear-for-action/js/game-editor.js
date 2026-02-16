@@ -6,7 +6,7 @@ import { getGame, getShips, saveGame, deleteGame } from './storage.js';
 import { NATIONALITIES } from './data.js';
 import { createGameShip } from './data.js';
 import { showToast, showModal, confirmDialog } from './components.js';
-import { uuid, escapeHtml, nationalityFlag, getGameShips, deepClone } from './utils.js';
+import { uuid, escapeHtml, nationalityFlag, getGameShips, deepClone, calculatePoints } from './utils.js';
 
 export function renderGameEditor(container, gameId) {
   const isNew = !gameId;
@@ -144,7 +144,19 @@ export function renderGameEditor(container, gameId) {
 
       const updateFlag = () => { flagSpan.innerHTML = nationalityFlag(force.nationality); };
 
-      header.append(natRow, nameInput);
+      const forcePoints = document.createElement('span');
+      forcePoints.className = 'points-badge points-badge-lg';
+      const updateForcePoints = () => {
+        const total = force.ships.reduce((sum, s) => sum + calculatePoints(s), 0);
+        forcePoints.textContent = `${total} pts`;
+      };
+      updateForcePoints();
+
+      const nameRow = document.createElement('div');
+      nameRow.className = 'force-name-row';
+      nameRow.append(nameInput, forcePoints);
+
+      header.append(natRow, nameRow);
       card.appendChild(header);
 
       // Ship list
@@ -157,9 +169,11 @@ export function renderGameEditor(container, gameId) {
         force.ships.forEach((ship, si) => {
           const row = document.createElement('div');
           row.className = 'force-ship-row';
+          const pts = calculatePoints(ship);
           row.innerHTML = `
             <span class="force-ship-name">${escapeHtml(ship.displayName || ship.name || 'Untitled')}</span>
             <span class="force-ship-class">${escapeHtml(ship.classAndRating || '')}</span>
+            <span class="points-badge">${pts} pts</span>
             <button class="btn btn-ghost btn-sm force-ship-remove" title="Remove" aria-label="Remove ship" style="color:var(--red);padding:4px">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -242,7 +256,7 @@ export function renderGameEditor(container, gameId) {
       const filtered = allShips.filter(s => {
         if (filterNationality && s.nationality !== filterNationality) return false;
         if (searchText) {
-          const hay = [s.name, s.classAndRating, s.nationality].filter(Boolean).join(' ').toLowerCase();
+          const hay = [s.name, s.classAndRating, s.nationality, s.yearLaunched].filter(Boolean).join(' ').toLowerCase();
           return searchText.toLowerCase().split(/\s+/).every(w => hay.includes(w));
         }
         return true;
@@ -263,9 +277,11 @@ export function renderGameEditor(container, gameId) {
           item.className = `ship-selector-item ${used ? 'selected' : ''}`;
           item.style.opacity = used ? '0.5' : '1';
           item.style.cursor = used ? 'not-allowed' : 'pointer';
+          const pts = calculatePoints(ship);
           item.innerHTML = `
             <span class="ship-name">${nationalityFlag(ship.nationality)} ${escapeHtml(ship.name || 'Untitled')}</span>
-            <span class="ship-class">${escapeHtml(ship.classAndRating || '')}</span>
+            <span class="ship-class">${escapeHtml(ship.classAndRating || '')}${ship.yearLaunched ? ` (${escapeHtml(ship.yearLaunched)})` : ''}</span>
+            <span class="points-badge">${pts} pts</span>
             ${used ? '<span class="badge">In use</span>' : ''}
           `;
           if (!used) {

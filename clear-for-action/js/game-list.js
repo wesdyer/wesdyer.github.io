@@ -3,7 +3,7 @@
 // ============================================
 
 import { getGames } from './storage.js';
-import { formatDate, escapeHtml, getGameShips, nationalityFlag } from './utils.js';
+import { formatDate, escapeHtml, getGameShips, nationalityFlag, calculatePoints } from './utils.js';
 
 export function renderGameList(container) {
   let searchQuery = '';
@@ -81,11 +81,13 @@ export function battleCardHtml(game) {
     .map(f => {
       const count = f.ships.length;
       const totalBroadside = f.ships.reduce((sum, s) => sum + (s.broadsideWeight || 0), 0);
+      const totalPoints = f.ships.reduce((sum, s) => sum + calculatePoints(s), 0);
       return `<div class="battle-card-force-line">
         <span class="force-line-flag">${nationalityFlag(f.nationality)}</span>
         <span class="force-line-name">${escapeHtml(f.name || f.nationality)}</span>
         <span class="force-line-ships"><strong>${count}</strong> ship${count !== 1 ? 's' : ''}</span>
         <span class="force-line-broadside">${totalBroadside ? `<strong>${totalBroadside}</strong> lbs` : ''}</span>
+        <span class="force-line-points"><span class="points-badge">${totalPoints} pts</span></span>
       </div>`;
     })
     .join('');
