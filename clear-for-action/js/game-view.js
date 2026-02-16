@@ -3,12 +3,12 @@
 // ============================================
 
 import { getGame, autoSave } from './storage.js';
-import { SAIL_SETTINGS, WIND_STRENGTHS } from './data.js';
+import { SAIL_SETTINGS } from './data.js';
 import {
   createHealthBar, createInteractiveHealthBar, createCheckboxRow,
-  createSegmentedControl, createToggle, showModal, createCompassPicker,
+  createSegmentedControl, createToggle,
 } from './components.js';
-import { escapeHtml, nationalityFlag, sailIcon, windArrow, clamp, getSpeedForSail } from './utils.js';
+import { escapeHtml, nationalityFlag, sailIcon, clamp, getSpeedForSail, getGameShips } from './utils.js';
 
 export function renderGameView(container, gameId) {
   let game = getGame(gameId);
@@ -22,44 +22,9 @@ export function renderGameView(container, gameId) {
   const render = () => {
     container.innerHTML = '';
 
-    // --- Top Bar ---
-    const topbar = document.createElement('div');
-    topbar.className = 'game-topbar';
-    topbar.innerHTML = `
-      <div class="game-topbar-title">${escapeHtml(game.name)}</div>
-      <div class="game-topbar-controls">
-        <div class="round-counter">
-          <button class="stepper-btn" id="round-dec">\u2212</button>
-          <span>Rd <strong id="round-val">${game.round}</strong></span>
-          <button class="stepper-btn" id="round-inc">+</button>
-        </div>
-        <div class="wind-indicator" id="wind-btn">
-          ${windArrow(game.wind.direction)} ${game.wind.direction} ${game.wind.strength}
-        </div>
-        <a href="#/games/${gameId}/edit" class="btn btn-ghost btn-sm">Edit</a>
-      </div>
-    `;
-    container.appendChild(topbar);
-
-    // Round counter
-    topbar.querySelector('#round-dec').addEventListener('click', () => {
-      game.round = Math.max(1, game.round - 1);
-      topbar.querySelector('#round-val').textContent = game.round;
-      save();
-    });
-    topbar.querySelector('#round-inc').addEventListener('click', () => {
-      game.round++;
-      topbar.querySelector('#round-val').textContent = game.round;
-      save();
-    });
-
-    // Wind picker
-    topbar.querySelector('#wind-btn').addEventListener('click', () => {
-      openWindPicker(game, save, render);
-    });
-
-    // --- Ship Cards ---
-    if (!game.ships?.length) {
+    // --- Ship Cards grouped by force ---
+    const allShips = getGameShips(game);
+    if (allShips.length === 0) {
       container.innerHTML += `
         <div class="empty-state">
           <div class="empty-state-icon">\u{26F5}</div>
@@ -70,9 +35,18 @@ export function renderGameView(container, gameId) {
       return;
     }
 
-    game.ships.forEach((ship, idx) => {
-      const card = buildShipCard(ship, idx, game, save);
-      container.appendChild(card);
+    (game.forces || []).forEach(force => {
+      if (!force.ships?.length) return;
+      // Force header
+      const forceHeader = document.createElement('div');
+      forceHeader.className = 'force-header';
+      forceHeader.innerHTML = `${nationalityFlag(force.nationality)} <span>${escapeHtml(force.name || force.nationality)}</span>`;
+      container.appendChild(forceHeader);
+
+      force.ships.forEach((ship, idx) => {
+        const card = buildShipCard(ship, idx, game, save);
+        container.appendChild(card);
+      });
     });
   };
 
@@ -91,7 +65,7 @@ function buildShipCard(ship, idx, game, save) {
 
   const nameSpan = document.createElement('span');
   nameSpan.className = 'ship-card-name';
-  nameSpan.textContent = `${nationalityFlag(ship.nationality)} ${ship.displayName || ship.name || 'Ship'}`;
+  nameSpan.innerHTML = `${nationalityFlag(ship.nationality)} ${escapeHtml(ship.displayName || ship.name || 'Ship')}`;
 
   const miniBars = document.createElement('div');
   miniBars.className = 'ship-card-mini-bars';
@@ -383,48 +357,3 @@ function makeSection(title) {
   return section;
 }
 
-function openWindPicker(game, save, renderParent) {
-  const body = document.createElement('div');
-
-  // Direction
-  const dirLabel = document.createElement('div');
-  dirLabel.className = 'form-label';
-  dirLabel.textContent = 'Direction';
-  body.appendChild(dirLabel);
-
-  body.appendChild(createCompassPicker({
-    value: game.wind.direction,
-    onChange: (dir) => { game.wind.direction = dir; },
-  }));
-
-  // Strength
-  const strLabel = document.createElement('div');
-  strLabel.className = 'form-label mt-md';
-  strLabel.textContent = 'Strength';
-  body.appendChild(strLabel);
-
-  const strSelect = document.createElement('select');
-  strSelect.className = 'form-select';
-  strSelect.innerHTML = WIND_STRENGTHS.map(w =>
-    `<option value="${w.id}" ${game.wind.strength === w.id ? 'selected' : ''}>${w.name}</option>`
-  ).join('');
-  strSelect.addEventListener('change', () => { game.wind.strength = strSelect.value; });
-  body.appendChild(strSelect);
-
-  const footer = document.createElement('div');
-  footer.style.display = 'flex';
-  footer.style.justifyContent = 'flex-end';
-  footer.style.width = '100%';
-
-  const doneBtn = document.createElement('button');
-  doneBtn.className = 'btn btn-primary';
-  doneBtn.textContent = 'Done';
-  footer.appendChild(doneBtn);
-
-  const { close } = showModal({ title: 'Wind', body, footer });
-  doneBtn.addEventListener('click', () => {
-    close();
-    save();
-    renderParent();
-  });
-}

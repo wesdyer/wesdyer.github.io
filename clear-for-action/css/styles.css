@@ -151,7 +151,9 @@ ul, ol { list-style: none; }
 .form-hint,
 .battle-card-meta,
 .recent-item-sub,
-.recent-item-date {
+.recent-item-date,
+.force-ship-name,
+.force-ship-class {
   font-family: var(--font-ui);
 }
 
@@ -230,8 +232,13 @@ ul, ol { list-style: none; }
   display: none;
 }
 .navbar-page-title .navbar-add,
-.navbar-page-title .navbar-edit {
+.navbar-page-title .navbar-actions {
   margin-left: auto;
+}
+.navbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
 }
 
 .navbar-add {
@@ -1186,7 +1193,8 @@ ul, ol { list-style: none; }
   border-top: 1px solid var(--parchment-dark);
 }
 
-.ship-grid-card-actions .spacer {
+.ship-grid-card-actions .spacer,
+.battle-card-actions .spacer {
   flex: 1;
 }
 .card-action-btn {
@@ -1453,6 +1461,47 @@ ul, ol { list-style: none; }
   font-style: italic;
 }
 
+.battle-card-forces {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-top: var(--space-sm);
+  border-top: 1px solid var(--parchment-dark);
+}
+.battle-card-force-line {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  align-items: center;
+  gap: var(--space-sm) var(--space-lg);
+  padding: var(--space-xs) 0;
+  border-bottom: 1px solid var(--parchment-dark);
+}
+.battle-card-force-line:last-child {
+  border-bottom: none;
+}
+.force-line-flag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.force-line-flag .nationality-flag {
+  height: 20px;
+}
+.force-line-name {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+.force-line-ships,
+.force-line-broadside {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  color: var(--gray);
+  text-align: right;
+  white-space: nowrap;
+}
+
 .battle-card-actions {
   display: flex;
   align-items: center;
@@ -1564,7 +1613,7 @@ ul, ol { list-style: none; }
   align-items: center;
   justify-content: flex-end;
   gap: var(--space-sm);
-  padding: var(--space-xl) var(--space-md);
+  padding: var(--space-lg) var(--space-md);
   background: linear-gradient(to bottom, var(--navy), #254a6f);
   color: var(--white);
   border-radius: var(--radius-lg);
@@ -1577,22 +1626,22 @@ ul, ol { list-style: none; }
 }
 .home-nav-card:hover { background: linear-gradient(to bottom, var(--navy-light), #2d5a85); }
 
-.home-nav-icon { font-size: 2.5rem; }
+.home-nav-icon { font-size: 2.25rem; }
 .home-nav-img {
   width: auto;
   filter: invert(1);
   object-fit: contain;
 }
-.home-nav-img-ship { height: 72px; }
-.home-nav-img-battle { height: 56px; }
+.home-nav-img-ship { height: 65px; }
+.home-nav-img-battle { height: 50px; }
 .home-nav-label {
   font-family: var(--font-heading);
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: var(--white);
 }
 .home-nav-sub {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: var(--gray-light);
   margin-top: -2px;
 }
@@ -1715,6 +1764,92 @@ ul, ol { list-style: none; }
   border-bottom: 1px solid var(--parchment-dark);
 }
 .ability-item:last-child { border-bottom: none; }
+
+/* --- Forces (Game Editor & View) --- */
+.force-card {
+  border: 2px solid var(--gray-light);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  background: var(--white);
+}
+
+.force-card-header {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+.force-card-header .form-select {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 120px;
+}
+.force-card-header .form-input {
+  flex: 1;
+}
+
+.force-ship-list {
+  margin-bottom: var(--space-sm);
+}
+
+.force-ship-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 1px solid var(--parchment-dark);
+  min-height: 40px;
+}
+.force-ship-row:last-child {
+  border-bottom: none;
+}
+
+.force-ship-flag {
+  flex-shrink: 0;
+}
+.force-ship-name {
+  flex: 1;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.force-ship-class {
+  font-size: 0.8125rem;
+  color: var(--gray);
+  flex-shrink: 0;
+}
+.force-ship-remove {
+  flex-shrink: 0;
+}
+
+.force-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--space-sm);
+  border-top: 1px solid var(--parchment-dark);
+}
+
+/* Force header in game view */
+.force-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--font-heading);
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--navy);
+  padding: var(--space-sm) 0;
+  margin-top: var(--space-md);
+  margin-bottom: var(--space-xs);
+  border-bottom: 2px solid var(--brass);
+}
+.force-header:first-child {
+  margin-top: 0;
+}
 
 /* --- Ship Selector (Game Editor) --- */
 .ship-selector {
@@ -1845,6 +1980,14 @@ ul, ol { list-style: none; }
   width: 20px;
   height: 20px;
   object-fit: contain;
+}
+.navbar-duplicate-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.navbar-duplicate-btn .navbar-quill-icon {
+  filter: invert(1);
 }
 
 .ship-view-card {

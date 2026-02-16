@@ -5,7 +5,7 @@
 import { getShip, saveShip, deleteShip } from './storage.js';
 import { NATIONALITIES, CREW_RATINGS, ABILITIES, GUN_TYPES, GUN_FACINGS, SHIP_TEMPLATES, createShipFromTemplate, createBlankShip } from './data.js';
 import { createStepper, createChipSelector, createImagePicker, showToast, confirmDialog } from './components.js';
-import { uuid, escapeHtml, debounce } from './utils.js';
+import { uuid, escapeHtml, debounce, deepClone } from './utils.js';
 
 export function renderShipEditor(container, shipId, queryParams) {
   let ship;
@@ -366,6 +366,23 @@ function buildForm(form, ship, isNew, autoSave) {
     saveShip(ship);
     location.hash = '#/ships';
   });
+  const duplicateBtn = el('button', { className: 'btn btn-secondary', type: 'button' });
+  duplicateBtn.textContent = 'Duplicate';
+  duplicateBtn.addEventListener('click', async () => {
+    const ok = await confirmDialog(
+      `Duplicate "${ship.name || 'this ship'}"?`,
+      { title: 'Duplicate Ship', confirmText: 'Duplicate' }
+    );
+    if (!ok) return;
+    const copy = deepClone(ship);
+    copy.id = uuid();
+    copy.name = (ship.name || 'Untitled') + ' Copy';
+    copy.createdAt = new Date().toISOString();
+    copy.updatedAt = new Date().toISOString();
+    saveShip(copy);
+    showToast('Ship duplicated', 'success');
+    location.hash = `#/ships/${copy.id}/edit`;
+  });
   const deleteBtn = el('button', { className: 'btn btn-danger', type: 'button' });
   deleteBtn.textContent = 'Delete';
   deleteBtn.addEventListener('click', async () => {
@@ -379,7 +396,7 @@ function buildForm(form, ship, isNew, autoSave) {
       location.hash = '#/ships';
     }
   });
-  bottomSection.append(doneBtn, deleteBtn);
+  bottomSection.append(doneBtn, duplicateBtn, deleteBtn);
   form.appendChild(bottomSection);
 }
 

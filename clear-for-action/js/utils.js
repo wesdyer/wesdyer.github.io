@@ -156,6 +156,13 @@ export function sailIcon(setting) {
   return icons[setting] || '\u{26F5}';
 }
 
+export function getGameShips(game) {
+  if (game.forces) {
+    return game.forces.flatMap(f => f.ships || []);
+  }
+  return game.ships || [];
+}
+
 export function windArrow(direction) {
   const arrows = {
     'N': '\u{2B07}', 'NE': '\u{2199}', 'E': '\u{2B05}', 'SE': '\u{2196}',

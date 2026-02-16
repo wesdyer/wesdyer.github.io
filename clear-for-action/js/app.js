@@ -2,14 +2,14 @@
 // Clear for Action! — App Router & Init
 // ============================================
 
-import { getShip, getShips, getGame, getGames, getStorageStats } from './storage.js';
+import { getShip, getShips, getGame, getGames, getStorageStats, saveShip } from './storage.js';
 import { renderShipList } from './ship-list.js';
 import { renderShipView } from './ship-view.js';
 import { renderShipEditor } from './ship-editor.js';
-import { renderGameList } from './game-list.js';
+import { renderGameList, battleCardHtml } from './game-list.js';
 import { renderGameEditor } from './game-editor.js';
 import { renderGameView } from './game-view.js';
-import { formatDate, escapeHtml, shipCardHtml } from './utils.js';
+import { formatDate, escapeHtml, shipCardHtml, getGameShips, uuid, deepClone } from './utils.js';
 
 // --- Router ---
 function route() {
@@ -69,8 +69,20 @@ function route() {
         renderShipEditor(view, segments[1]);
       } else if (segments.length === 2) {
         const ship = getShip(segments[1]);
-        pageTitle.innerHTML = `${escapeHtml(ship?.name || 'Ship')} <a href="#/ships/${segments[1]}/edit" class="navbar-edit" aria-label="Edit ship"><img src="quill-white.png" alt="Edit" class="navbar-quill-icon"></a>`;
+        pageTitle.innerHTML = `${escapeHtml(ship?.name || 'Ship')} <span class="navbar-actions"><a href="#/ships/${segments[1]}/edit" class="navbar-edit" aria-label="Edit ship"><img src="quill-white.png" alt="Edit" class="navbar-quill-icon"></a><button class="navbar-edit navbar-duplicate-btn" data-id="${segments[1]}" aria-label="Duplicate ship"><img src="duplicate-icon.png" alt="Duplicate" class="navbar-quill-icon"></button></span>`;
         renderShipView(view, segments[1]);
+        // Duplicate button handler
+        document.querySelector('.navbar-duplicate-btn')?.addEventListener('click', () => {
+          const orig = getShip(segments[1]);
+          if (!orig) return;
+          const copy = deepClone(orig);
+          copy.id = uuid();
+          copy.name = (orig.name || 'Untitled') + ' Copy';
+          copy.createdAt = new Date().toISOString();
+          copy.updatedAt = new Date().toISOString();
+          saveShip(copy);
+          location.hash = `#/ships/${copy.id}`;
+        });
       }
     }
     // Games
@@ -135,17 +147,8 @@ function renderHome(container) {
 
     ${recentGames.length > 0 ? `
       <h2 style="margin-top:var(--space-xl);margin-bottom:var(--space-md)">Recent Battles</h2>
-      <div class="recent-list">
-        ${recentGames.map(g => `
-          <a href="#/games/${g.id}" class="recent-item">
-            <span class="recent-item-icon">\u{2694}\u{FE0F}</span>
-            <div class="recent-item-info">
-              <div class="recent-item-name">${escapeHtml(g.name || 'Untitled')}</div>
-              <div class="recent-item-sub">Round ${g.round || 1} \u00b7 ${g.ships?.length || 0} ships</div>
-            </div>
-            <span class="recent-item-date">${formatDate(g.lastPlayed || g.createdAt)}</span>
-          </a>
-        `).join('')}
+      <div class="battle-grid">
+        ${recentGames.map(g => battleCardHtml(g)).join('')}
       </div>
     ` : ''}
   `;
@@ -155,6 +158,13 @@ function renderHome(container) {
     card.style.cursor = 'pointer';
     card.addEventListener('click', () => {
       location.hash = `#/ships/${card.dataset.id}`;
+    });
+  });
+
+  // Battle card clicks
+  container.querySelectorAll('.battle-card').forEach(card => {
+    card.addEventListener('click', () => {
+      location.hash = `#/games/${card.dataset.id}`;
     });
   });
 }

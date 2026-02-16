@@ -50,12 +50,34 @@ export function deleteShip(id) {
 
 // --- Games ---
 
+function migrateGame(game) {
+  if (!game) return game;
+  if (!game.forces && game.ships) {
+    const nationality = game.ships[0]?.nationality || 'British';
+    game.forces = [{
+      id: crypto.randomUUID?.() ?? Math.random().toString(36).slice(2),
+      nationality,
+      name: nationality,
+      ships: game.ships,
+    }];
+    delete game.ships;
+  }
+  if (!game.forces) {
+    game.forces = [];
+  }
+  if (game.notes !== undefined && game.description === undefined) {
+    game.description = game.notes;
+    delete game.notes;
+  }
+  return game;
+}
+
 export function getGames() {
-  return read(GAMES_KEY);
+  return read(GAMES_KEY).map(migrateGame);
 }
 
 export function getGame(id) {
-  return getGames().find(g => g.id === id) || null;
+  return migrateGame(getGames().find(g => g.id === id) || null);
 }
 
 export function saveGame(game) {

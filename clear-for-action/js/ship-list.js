@@ -2,9 +2,8 @@
 // Clear for Action! — Ship Library View
 // ============================================
 
-import { getShips, deleteShip, saveShip } from './storage.js';
-import { confirmDialog, showToast } from './components.js';
-import { formatDate, uuid, escapeHtml, nationalityFlag, deepClone, shipCardHtml } from './utils.js';
+import { getShips } from './storage.js';
+import { escapeHtml, shipCardHtml } from './utils.js';
 import { NATIONALITIES } from './data.js';
 
 export function renderShipList(container) {
@@ -46,7 +45,7 @@ export function renderShipList(container) {
         </div>
       ` : `
         <div class="ship-grid">
-          ${ships.map(s => shipCardHtml(s)).join('')}
+          ${ships.map(s => shipCardHtml(s, { showActions: false })).join('')}
         </div>
       `}
     `;
@@ -76,57 +75,8 @@ export function renderShipList(container) {
 
     // Card clicks
     container.querySelectorAll('.ship-grid-card').forEach(card => {
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.ship-grid-card-actions')) return;
+      card.addEventListener('click', () => {
         location.hash = `#/ships/${card.dataset.id}`;
-      });
-    });
-
-    // Edit buttons
-    container.querySelectorAll('[data-action="edit"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        location.hash = `#/ships/${btn.dataset.id}/edit`;
-      });
-    });
-
-    // Delete buttons
-    container.querySelectorAll('[data-action="delete"]').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        const ship = getShips().find(s => s.id === id);
-        const ok = await confirmDialog(
-          `Delete "${ship?.name || 'Untitled'}"? This cannot be undone.`,
-          { title: 'Delete Ship', confirmText: 'Delete', danger: true }
-        );
-        if (ok) {
-          deleteShip(id);
-          showToast('Ship deleted');
-          render();
-        }
-      });
-    });
-
-    container.querySelectorAll('[data-action="duplicate"]').forEach(btn => {
-      btn.addEventListener('click', async (e) => {
-        e.stopPropagation();
-        const id = btn.dataset.id;
-        const ship = getShips().find(s => s.id === id);
-        if (!ship) return;
-        const ok = await confirmDialog(
-          `Duplicate "${ship.name || 'this ship'}"?`,
-          { title: 'Duplicate Ship', confirmText: 'Duplicate' }
-        );
-        if (!ok) return;
-        const copy = deepClone(ship);
-        copy.id = uuid();
-        copy.name = ship.name + ' (copy)';
-        copy.createdAt = new Date().toISOString();
-        copy.updatedAt = new Date().toISOString();
-        saveShip(copy);
-        showToast('Ship duplicated');
-        render();
       });
     });
   };
