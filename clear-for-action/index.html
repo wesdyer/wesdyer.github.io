@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Clear for Action!</title>
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="app">
+    <nav id="navbar" class="navbar" role="navigation" aria-label="Main navigation">
+      <button id="back-btn" class="navbar-back hidden" type="button" aria-label="Go back">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="navbar-brand">
+        <a href="#/" class="navbar-logo"><img src="anchor-white.png" alt="" class="navbar-logo-icon">Clear for Action!</a>
+      </div>
+      <div id="page-title" class="navbar-page-title"></div>
+    </nav>
+    <main id="view" class="view-container" role="main"></main>
+  </div>
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+  <div id="modal-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
