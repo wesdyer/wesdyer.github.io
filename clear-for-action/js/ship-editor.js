@@ -29,11 +29,10 @@ export function renderShipEditor(container, shipId, queryParams) {
   }
 
   const isNew = !shipId;
-
-  // For new ships, do an initial save so auto-save works
-  if (isNew) saveShip(ship);
+  let dirty = !isNew; // existing ships are always saveable
 
   const autoSave = debounce(() => {
+    if (!dirty) return; // don't save untouched new ships
     ship.updatedAt = new Date().toISOString();
     saveShip(ship);
   }, 400);
@@ -43,8 +42,11 @@ export function renderShipEditor(container, shipId, queryParams) {
   const form = container.querySelector('#ship-form');
   buildForm(form, ship, isNew, autoSave);
 
-  form.addEventListener('input', autoSave);
-  form.addEventListener('change', autoSave);
+  // Defer listeners so initialization events don't mark as dirty
+  setTimeout(() => {
+    form.addEventListener('input', () => { dirty = true; autoSave(); });
+    form.addEventListener('change', () => { dirty = true; autoSave(); });
+  }, 0);
 }
 
 function buildForm(form, ship, isNew, autoSave) {
@@ -320,7 +322,11 @@ function buildForm(form, ship, isNew, autoSave) {
   const bottomSection = el('div', { style: 'margin-top:var(--space-2xl);padding-top:var(--space-lg);border-top:1px solid var(--gray-light);display:flex;gap:var(--space-md)' });
   const doneBtn = el('button', { className: 'btn btn-primary', type: 'button' });
   doneBtn.textContent = 'Done';
-  doneBtn.addEventListener('click', () => { location.hash = '#/ships'; });
+  doneBtn.addEventListener('click', () => {
+    ship.updatedAt = new Date().toISOString();
+    saveShip(ship);
+    location.hash = '#/ships';
+  });
   const deleteBtn = el('button', { className: 'btn btn-danger', type: 'button' });
   deleteBtn.textContent = 'Delete';
   deleteBtn.addEventListener('click', async () => {

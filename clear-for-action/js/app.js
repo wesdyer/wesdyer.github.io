@@ -69,7 +69,7 @@ function route() {
         renderShipEditor(view, segments[1]);
       } else if (segments.length === 2) {
         const ship = getShip(segments[1]);
-        pageTitle.innerHTML = `${escapeHtml(ship?.name || 'Ship')} <a href="#/ships/${segments[1]}/edit" class="navbar-edit" aria-label="Edit ship"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></a>`;
+        pageTitle.innerHTML = `${escapeHtml(ship?.name || 'Ship')} <a href="#/ships/${segments[1]}/edit" class="navbar-edit" aria-label="Edit ship"><img src="quill-white.png" alt="Edit" class="navbar-quill-icon"></a>`;
         renderShipView(view, segments[1]);
       }
     }

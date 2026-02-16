@@ -317,7 +317,8 @@ export function createImagePicker({ currentImage, onImageChange, label = 'Image'
       preview.innerHTML = `<img src="${currentImage.data}" alt="${label}">`;
       removeBtn.style.display = '';
     } else {
-      preview.innerHTML = `<span class="placeholder-icon">\u{1F6A2}</span><span class="drop-hint">Drop image here</span>`;
+      const placeholderSrc = label === 'Captain' ? 'captain-silhouette.png' : 'ship-silhouette.png';
+      preview.innerHTML = `<img src="${placeholderSrc}" alt="${label}" class="placeholder-silhouette"><span class="drop-hint">Drop image here</span>`;
       removeBtn.style.display = 'none';
     }
   };

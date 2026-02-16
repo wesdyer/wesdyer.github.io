@@ -76,7 +76,6 @@ html {
   font-size: 16px;
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
-  overflow-x: hidden;
 }
 
 body {
@@ -656,6 +655,17 @@ ul, ol { list-style: none; }
 .modal-overlay.hidden {
   display: none;
 }
+.zoomable-img {
+  cursor: zoom-in;
+}
+.image-zoom-full {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  cursor: zoom-out;
+}
 
 .modal {
   background: var(--white);
@@ -1053,6 +1063,12 @@ ul, ol { list-style: none; }
   font-size: 2.5rem;
   color: var(--gray-light);
 }
+.ship-grid-card-image .placeholder-silhouette {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  opacity: 0.25;
+}
 
 .ship-grid-card-info {
   flex: 1;
@@ -1130,6 +1146,20 @@ ul, ol { list-style: none; }
 .ship-grid-card-actions .spacer {
   flex: 1;
 }
+.card-action-btn {
+  padding: 4px;
+  background: transparent;
+}
+.card-action-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+.card-action-btn:hover .card-action-icon {
+  opacity: 1;
+}
 
 /* --- Image Picker --- */
 .image-picker {
@@ -1161,6 +1191,12 @@ ul, ol { list-style: none; }
 .image-preview .placeholder-icon {
   font-size: 2.5rem;
   color: var(--gray-light);
+}
+.image-preview .placeholder-silhouette {
+  width: 60%;
+  height: 60%;
+  object-fit: contain;
+  opacity: 0.25;
 }
 
 .image-preview.drag-over {
@@ -1746,6 +1782,11 @@ ul, ol { list-style: none; }
 .navbar-edit:hover {
   opacity: 1;
 }
+.navbar-quill-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
 
 .ship-view-card {
   background: var(--white);
@@ -1777,6 +1818,12 @@ ul, ol { list-style: none; }
 .ship-view-card-image .placeholder-icon {
   font-size: 3rem;
   color: var(--gray-light);
+}
+.ship-view-card-image .placeholder-silhouette {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  opacity: 0.25;
 }
 .ship-view-card-info {
   flex: 1;
@@ -1878,12 +1925,12 @@ ul, ol { list-style: none; }
 }
 .ship-view-skills-label {
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 400;
   color: var(--parchment);
 }
 .ship-view-skills-value {
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.2rem;
+  font-weight: 900;
   color: var(--white);
   margin-left: var(--space-sm);
 }
@@ -1913,7 +1960,8 @@ ul, ol { list-style: none; }
   flex-shrink: 0;
 }
 .ship-view-stat-value {
-  font-weight: 700;
+  font-weight: 900;
+  font-size: 1.05rem;
   color: var(--navy);
   min-width: 2ch;
   text-align: right;
@@ -1924,21 +1972,26 @@ ul, ol { list-style: none; }
   border-collapse: collapse;
   font-size: 0.9rem;
 }
-.ship-view-speed-table th,
+.ship-view-speed-table th {
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray);
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 2px solid var(--navy);
+}
 .ship-view-speed-table td {
   padding: var(--space-xs) var(--space-sm);
   text-align: center;
   border-bottom: 1px solid var(--gray-lighter);
 }
-.ship-view-speed-table th {
-  font-weight: 600;
-  color: var(--ink-light);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
+.ship-view-speed-table tbody tr:last-child td {
+  border-bottom: none;
 }
 .ship-view-speed-table tbody tr:nth-child(odd) {
-  background: var(--parchment);
+  background: rgba(0,0,0,0.07);
 }
 .ship-view-speed-table td:first-child,
 .ship-view-speed-table th:first-child {
@@ -1947,31 +2000,72 @@ ul, ol { list-style: none; }
   color: var(--ink);
 }
 
-.ship-view-guns-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+.ship-view-broadside {
+  margin-bottom: var(--space-md);
+  color: var(--navy);
+  font-size: 0.95rem;
 }
-.ship-view-gun-row {
+.ship-view-broadside strong {
+  font-size: 1.1rem;
+}
+.ship-view-guns-group {
+  margin-bottom: var(--space-md);
+}
+.ship-view-guns-group:last-child {
+  margin-bottom: 0;
+}
+.ship-view-guns-group-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--navy);
+  margin-bottom: var(--space-xs);
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: var(--space-sm);
-  padding: var(--space-xs) 0;
+}
+.ship-view-guns-weight {
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--gray);
+}
+.ship-view-guns-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.ship-view-guns-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--gray);
+  padding: var(--space-xs) var(--space-sm);
+  border-bottom: 2px solid var(--navy);
+}
+.ship-view-guns-table td {
+  padding: var(--space-xs) var(--space-sm);
   border-bottom: 1px solid var(--gray-lighter);
 }
-.ship-view-gun-row:last-child {
+.ship-view-guns-table tbody tr:last-child td {
   border-bottom: none;
 }
-.ship-view-gun-count {
-  font-weight: 700;
-  color: var(--navy);
-  min-width: 32px;
+.ship-view-guns-table tbody tr:nth-child(odd) {
+  background: rgba(0,0,0,0.07);
 }
-.ship-view-gun-type {
-  flex: 1;
+.ship-view-guns-table .gun-stat {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
 }
-.ship-view-gun-facing {
-  font-size: 0.85rem;
+.ship-view-guns-table th:nth-child(n+3) {
+  text-align: center;
+}
+.ship-view-guns-table .gun-carronade td:nth-child(2) {
+  font-style: italic;
 }
 
 .ship-view-abilities {
@@ -1982,6 +2076,11 @@ ul, ol { list-style: none; }
 .ship-view-ability {
   padding: var(--space-xs) 0;
   border-bottom: 1px solid var(--gray-lighter);
+}
+.ship-view-ability strong {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.85rem;
 }
 .ship-view-ability:last-child {
   border-bottom: none;
@@ -1995,6 +2094,13 @@ ul, ol { list-style: none; }
     flex: 1 1 45%;
   }
   .ship-view-skills-cell:nth-child(2) {
+    border-right: none;
+  }
+  .ship-view-skills-cell:nth-child(1),
+  .ship-view-skills-cell:nth-child(2) {
+    border-bottom: 1px solid var(--navy-light);
+  }
+  .ship-view-skills-cell:nth-child(4) {
     border-right: none;
   }
   .ship-view-two-col {

@@ -4,7 +4,7 @@
 
 import { getShip } from './storage.js';
 import { escapeHtml, nationalityFlag, getSpeedForSail, crewRatingTag } from './utils.js';
-import { GUN_FACINGS } from './data.js';
+import { GUN_FACINGS, GUN_TYPES } from './data.js';
 
 export function renderShipView(container, shipId) {
   const ship = getShip(shipId);
@@ -16,8 +16,8 @@ export function renderShipView(container, shipId) {
   const flag = nationalityFlag(ship.nationality);
   // --- Header (card-style) ---
   const imageHtml = ship.shipImage?.data
-    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}">`
-    : `<span class="placeholder-icon">\u{1F6A2}</span>`;
+    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" class="zoomable-img">`
+    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette">`;
   const crewTag = crewRatingTag(ship.captain?.crewRating);
 
   let headerHtml = `<div class="ship-view-card">
@@ -25,8 +25,8 @@ export function renderShipView(container, shipId) {
       <div class="ship-view-card-image">${imageHtml}</div>
       <div class="ship-view-card-info">
         <div class="ship-view-name">${escapeHtml(ship.name || 'Untitled')}</div>
-        <div class="ship-view-card-subtitle">${escapeHtml(ship.classAndRating || 'Unknown class')}${ship.yearLaunched ? ` (${escapeHtml(ship.yearLaunched)})` : ''}</div>
-        ${ship.tonnage ? `<div class="ship-view-card-meta">${escapeHtml(ship.tonnage)} tons${ship.complement ? ` \u00b7 ${escapeHtml(ship.complement)} complement` : ''}</div>` : ''}
+        <div class="ship-view-card-subtitle">${escapeHtml(ship.classAndRating || 'Unknown class')}</div>
+        ${(ship.yearLaunched || ship.tonnage || ship.complement) ? `<div class="ship-view-card-meta">${[ship.yearLaunched, ship.tonnage ? `${escapeHtml(ship.tonnage)} tons` : '', ship.complement ? `${escapeHtml(ship.complement)} complement` : ''].filter(Boolean).join(' \u00b7 ')}</div>` : ''}
       </div>
       ${flag ? `<div class="ship-view-card-flag">${flag}</div>` : ''}
     </div>
@@ -39,7 +39,7 @@ export function renderShipView(container, shipId) {
     <div class="form-section-title">Captain & Crew</div>
     ${(ship.captain?.name || ship.captain?.rank || ship.captain?.crewRating) ? `
     <div class="ship-view-captain">
-      ${ship.captain.image?.data ? `<div class="ship-view-captain-img"><img src="${ship.captain.image.data}" alt="${escapeHtml(ship.captain.name || 'Captain')}"></div>` : ''}
+      ${ship.captain.image?.data ? `<div class="ship-view-captain-img"><img src="${ship.captain.image.data}" alt="${escapeHtml(ship.captain.name || 'Captain')}" class="zoomable-img"></div>` : ''}
       <div>
         ${ship.captain.name ? `<div class="ship-view-stat-value">${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}</div>` : ''}
         ${crewTag ? `<div style="margin-top:4px">${crewTag}</div>` : ''}
@@ -103,21 +103,58 @@ export function renderShipView(container, shipId) {
   // --- Guns ---
   let gunsHtml = '';
   if (ship.guns?.length || ship.broadsideWeight) {
-    const facingName = (id) => GUN_FACINGS.find(f => f.id === id)?.name || id;
-    const gunLabel = (g) => g.isCarronade ? g.type.replace(' carr.', '') + ' carronade' : g.type + ' long gun';
+    const gunLabel = (g) => g.isCarronade ? g.type.replace(' carr.', '') + ' carronade' : g.type;
+    const gunRef = (g) => GUN_TYPES.find(t => t.type === g.type);
+    const dmg = (g) => g.damage ?? gunRef(g)?.damage ?? '—';
+    const rShort = (g) => g.rangeShort ?? gunRef(g)?.short ?? '—';
+    const rMed = (g) => { const v = g.rangeMedium ?? gunRef(g)?.medium; return v || '—'; };
+    const rLong = (g) => { const v = g.rangeLong ?? gunRef(g)?.long; return v || '—'; };
+
+    const facingGroups = [
+      { id: 'broadside', title: 'Broadside', halve: true },
+      { id: 'bow', title: 'Bow Chasers', halve: false },
+      { id: 'stern', title: 'Stern Chasers', halve: false },
+    ];
+
+    const calcWeight = (guns, halve) => Math.round(
+      guns.reduce((sum, g) => {
+        const pdr = parseInt(g.type) || 0;
+        return sum + (halve ? g.count / 2 : g.count) * pdr;
+      }, 0)
+    );
+
+    const gunTableHtml = (guns) => `<table class="ship-view-guns-table">
+      <thead>
+        <tr><th>Qty</th><th>Type</th><th>Dmg</th><th>Short</th><th>Med</th><th>Long</th></tr>
+      </thead>
+      <tbody>
+        ${guns.map(g => `
+          <tr${g.isCarronade ? ' class="gun-carronade"' : ''}>
+            <td>${g.count}</td>
+            <td>${escapeHtml(gunLabel(g))}</td>
+            <td class="gun-stat"><strong>${dmg(g)}</strong></td>
+            <td class="gun-stat">${rShort(g)}</td>
+            <td class="gun-stat">${rMed(g)}</td>
+            <td class="gun-stat">${rLong(g)}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+
+    const facingSections = facingGroups
+      .map(f => {
+        const guns = ship.guns?.filter(g => g.facing === f.id) || [];
+        if (!guns.length) return '';
+        const weight = calcWeight(guns, f.halve);
+        return `<div class="ship-view-guns-group">
+          <div class="ship-view-guns-group-title">${f.title}${weight ? ` <span class="ship-view-guns-weight">${weight} lbs</span>` : ''}</div>
+          ${gunTableHtml(guns)}
+        </div>`;
+      }).join('');
 
     gunsHtml = `<div class="form-section">
       <div class="form-section-title">Guns</div>
-      ${ship.broadsideWeight ? `<div class="ship-view-stat" style="margin-bottom:var(--space-sm);font-weight:700;color:var(--navy)">Broadside Weight: ${ship.broadsideWeight} lbs</div>` : ''}
-      ${ship.guns?.length ? `<div class="ship-view-guns-list">
-        ${ship.guns.map(g => `
-          <div class="ship-view-gun-row">
-            <span class="ship-view-gun-count">${g.count}x</span>
-            <span class="ship-view-gun-type">${escapeHtml(gunLabel(g))}</span>
-            <span class="ship-view-gun-facing text-muted">${escapeHtml(facingName(g.facing))}</span>
-          </div>
-        `).join('')}
-      </div>` : ''}
+      ${facingSections}
     </div>`;
   }
 
@@ -138,4 +175,17 @@ export function renderShipView(container, shipId) {
   }
 
   container.innerHTML = headerHtml + captainHtml + vitalsCriticalsHtml + movementHtml + gunsHtml + abilitiesHtml;
+
+  // Image zoom on tap/click
+  container.querySelectorAll('.zoomable-img').forEach(img => {
+    img.addEventListener('click', () => {
+      const overlay = document.getElementById('modal-overlay');
+      overlay.innerHTML = `<img src="${img.src}" class="image-zoom-full">`;
+      overlay.classList.remove('hidden');
+      overlay.addEventListener('click', () => {
+        overlay.classList.add('hidden');
+        overlay.innerHTML = '';
+      }, { once: true });
+    });
+  });
 }

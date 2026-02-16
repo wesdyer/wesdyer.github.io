@@ -109,11 +109,16 @@ export function renderShipList(container) {
     });
 
     container.querySelectorAll('[data-action="duplicate"]').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
         const ship = getShips().find(s => s.id === id);
         if (!ship) return;
+        const ok = await confirmDialog(
+          `Duplicate "${ship.name || 'this ship'}"?`,
+          { title: 'Duplicate Ship', confirmText: 'Duplicate' }
+        );
+        if (!ok) return;
         const copy = deepClone(ship);
         copy.id = uuid();
         copy.name = ship.name + ' (copy)';
