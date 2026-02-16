@@ -149,7 +149,7 @@ ul, ol { list-style: none; }
 .editor-tab,
 .search-input,
 .form-hint,
-.game-list-meta,
+.battle-card-meta,
 .recent-item-sub,
 .recent-item-date {
   font-family: var(--font-ui);
@@ -1409,40 +1409,56 @@ ul, ol { list-style: none; }
   justify-content: center;
 }
 
-/* --- Game List --- */
-.game-list-item {
+/* --- Battle List --- */
+.battle-grid {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: var(--space-md);
-  padding: var(--space-md);
+  max-width: 640px;
+}
+
+.battle-card {
   background: var(--white);
   border: var(--border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  margin-bottom: var(--space-sm);
   cursor: pointer;
   transition: box-shadow 0.15s;
+  overflow: hidden;
 }
 
-.game-list-item:hover { box-shadow: var(--shadow-md); }
+.battle-card:hover { box-shadow: var(--shadow-md); }
 
-.game-list-info { flex: 1; min-width: 0; }
+.battle-card-body {
+  padding: var(--space-md);
+}
 
-.game-list-title {
+.battle-card-title {
   font-family: var(--font-heading);
-  font-size: 1.0625rem;
+  font-size: 1.75rem;
+  font-weight: 700;
   color: var(--navy);
 }
 
-.game-list-meta {
+.battle-card-meta {
   font-size: 0.8125rem;
   color: var(--gray);
+  margin-top: 2px;
 }
 
-.game-list-actions {
+.battle-card-ships {
+  font-size: 0.8125rem;
+  color: var(--ink-light);
+  margin-top: var(--space-xs);
+  font-style: italic;
+}
+
+.battle-card-actions {
   display: flex;
-  gap: var(--space-xs);
-  flex-shrink: 0;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) var(--space-md);
+  border-top: 1px solid var(--parchment-dark);
 }
 
 /* --- Home Dashboard --- */

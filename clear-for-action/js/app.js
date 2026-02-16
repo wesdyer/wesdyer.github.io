@@ -76,7 +76,7 @@ function route() {
     // Games
     else if (segments[0] === 'games') {
       if (segments.length === 1) {
-        pageTitle.textContent = 'Games';
+        pageTitle.innerHTML = 'Battles <a href="#/games/new" class="btn btn-primary btn-add navbar-add" aria-label="New Battle">+</a>';
         renderGameList(view);
       } else if (segments[1] === 'new') {
         pageTitle.textContent = 'New Game';
