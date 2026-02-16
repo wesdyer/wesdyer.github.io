@@ -235,8 +235,8 @@ const CRITICAL_CONFIG = {
   fire:     { icon: '\u{1F525}', color: 'critical-fire',     hint: 'Active fire aboard ship (-3 all skills)' },
   leak:     { icon: '\u{1F4A7}', color: 'critical-leak',     hint: 'Ship taking water (-1 all skills)' },
   steering: { icon: '\u2699',    color: 'critical-steering',  hint: 'Steering damage (-2 or -4 seamanship)' },
-  mast:     { icon: '\u2693',    color: 'critical-mast',      hint: 'Mast destroyed (-2 all skills)' },
-  officer:  { icon: '\u2694',    color: 'critical-officer',   hint: 'Officer down (-1 or -4 all skills)' },
+  mast:     { icon: '\u26F5',    color: 'critical-mast',      hint: 'Mast destroyed (-2 all skills)' },
+  officer:  { icon: '\u{1F464}', color: 'critical-officer',   hint: 'Officer down (-1 or -4 all skills)' },
 };
 
 export function createCriticalRow({ key, label, total, checked = 0, onChange }) {

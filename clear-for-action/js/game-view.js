@@ -192,21 +192,45 @@ export function renderShipActionView(container, gameId, shipIndex) {
   // --- Swipe support ---
   let touchStartX = 0;
   let touchStartY = 0;
-  container.addEventListener('touchstart', (e) => {
+  let touchStartTime = 0;
+  let swiping = false;
+
+  const onTouchStart = (e) => {
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
-  }, { passive: true });
-  container.addEventListener('touchend', (e) => {
+    touchStartTime = Date.now();
+    swiping = true;
+  };
+
+  const onTouchMove = (e) => {
+    if (!swiping) return;
+    // Cancel swipe if vertical movement dominates (user is scrolling)
+    const deltaY = Math.abs(e.touches[0].clientY - touchStartY);
+    const deltaX = Math.abs(e.touches[0].clientX - touchStartX);
+    if (deltaY > 30 && deltaY > deltaX) {
+      swiping = false;
+    }
+  };
+
+  const onTouchEnd = (e) => {
+    if (!swiping) return;
+    swiping = false;
     const deltaX = e.changedTouches[0].clientX - touchStartX;
     const deltaY = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+    const elapsed = Date.now() - touchStartTime;
+    // Require: >50px horizontal, mostly horizontal, within 500ms
+    if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) && elapsed < 500) {
       if (deltaX > 0 && idx > 0) {
         location.hash = `#/games/${gameId}/ship/${idx - 1}`;
       } else if (deltaX < 0 && idx < allShips.length - 1) {
         location.hash = `#/games/${gameId}/ship/${idx + 1}`;
       }
     }
-  }, { passive: true });
+  };
+
+  wrapper.addEventListener('touchstart', onTouchStart, { passive: true });
+  wrapper.addEventListener('touchmove', onTouchMove, { passive: true });
+  wrapper.addEventListener('touchend', onTouchEnd, { passive: true });
 }
 
 function getOverallHealth(ship) {

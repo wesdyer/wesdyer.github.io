@@ -10,7 +10,7 @@ import { renderGameList, battleCardHtml } from './game-list.js';
 import { renderGameEditor } from './game-editor.js';
 import { renderGameView, renderShipActionView } from './game-view.js';
 import { formatDate, escapeHtml, shipCardHtml, getGameShips, uuid, deepClone } from './utils.js';
-import { showToast, confirmDialog } from './components.js';
+import { showToast, confirmDialog, showModal } from './components.js';
 
 function setupShipyardImportExport(listContainer) {
   // Export
@@ -54,16 +54,54 @@ function setupShipyardImportExport(listContainer) {
         showToast('No valid ships found in file', 'error');
         return;
       }
-      const ok = await confirmDialog(
-        `Import ${valid.length} ship${valid.length !== 1 ? 's' : ''}? Duplicates will be added as new ships.`,
-        { title: 'Import Ships', confirmText: 'Import' }
-      );
-      if (!ok) return;
       const existingIds = new Set(getShips().map(s => s.id));
+      const dupeCount = valid.filter(s => existingIds.has(s.id)).length;
+
+      let dupMode = 'duplicate'; // default if no dupes
+      if (dupeCount > 0) {
+        dupMode = await new Promise(resolve => {
+          const footer = document.createElement('div');
+          footer.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;width:100%';
+          const opts = [
+            { id: 'duplicate', label: 'Duplicate', cls: 'btn btn-primary', desc: 'Add as new ships' },
+            { id: 'replace', label: 'Replace', cls: 'btn btn-secondary', desc: 'Overwrite existing' },
+            { id: 'ignore', label: 'Ignore', cls: 'btn btn-secondary', desc: 'Skip duplicates' },
+          ];
+          opts.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = opt.cls;
+            btn.textContent = opt.label;
+            btn.title = opt.desc;
+            btn.addEventListener('click', () => { close(); resolve(opt.id); });
+            footer.appendChild(btn);
+          });
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'btn btn-ghost';
+          cancelBtn.textContent = 'Cancel';
+          cancelBtn.addEventListener('click', () => { close(); resolve(null); });
+          footer.appendChild(cancelBtn);
+
+          const { close } = showModal({
+            title: 'Import Ships',
+            body: `<p>${valid.length} ship${valid.length !== 1 ? 's' : ''} found, ${dupeCount} already in shipyard.</p><p>How should duplicates be handled?</p>`,
+            footer,
+          });
+        });
+        if (!dupMode) return;
+      } else {
+        const ok = await confirmDialog(
+          `Import ${valid.length} ship${valid.length !== 1 ? 's' : ''}?`,
+          { title: 'Import Ships', confirmText: 'Import' }
+        );
+        if (!ok) return;
+      }
+
       let count = 0;
       for (const ship of valid) {
         if (existingIds.has(ship.id)) {
-          ship.id = uuid();
+          if (dupMode === 'ignore') continue;
+          if (dupMode === 'duplicate') ship.id = uuid();
+          // 'replace' keeps same id, saveShip will overwrite
         }
         ship.updatedAt = new Date().toISOString();
         saveShip(ship);
