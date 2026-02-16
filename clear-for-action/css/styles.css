@@ -1218,7 +1218,7 @@ ul, ol { list-style: none; }
   letter-spacing: 0.5px;
   color: var(--navy);
   padding: var(--space-sm) 0 var(--space-xs);
-  border-bottom: 2px solid var(--navy);
+  border-bottom: 2px solid var(--gray-light);
   margin-top: var(--space-sm);
 }
 
@@ -1389,6 +1389,67 @@ ul, ol { list-style: none; }
   color: var(--navy);
   margin-top: -2px;
   line-height: 1;
+}
+
+/* --- Vital Boxes --- */
+.vitals-boxes {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: center;
+  margin-bottom: var(--space-md);
+}
+.vital-box-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.vital-box-label {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+.vital-box-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.vital-box {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-ui);
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+.vital-box-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gray-light);
+  background: var(--parchment);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--navy);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.vital-box-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
 }
 
 /* --- Speed Reference --- */
@@ -2066,6 +2127,7 @@ ul, ol { list-style: none; }
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-md);
+  margin-top: var(--space-md);
 }
 
 /* --- Notes --- */
@@ -2962,6 +3024,11 @@ ul, ol { list-style: none; }
   margin-bottom: var(--space-md);
   box-shadow: var(--shadow-sm);
 }
+.ship-action-skills-bar:has(+ .conditions-bar:not(.hidden)) {
+  border-radius: 0;
+  margin-bottom: 0;
+  box-shadow: none;
+}
 .ship-action-skills-cell {
   flex: 1;
   display: flex;
@@ -2992,6 +3059,38 @@ ul, ol { list-style: none; }
   font-weight: 900;
   color: var(--white);
   margin-left: var(--space-sm);
+}
+.ship-action-skills-value.modified {
+  color: var(--red);
+}
+
+/* --- Conditions Bar --- */
+.conditions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 6px var(--space-sm);
+  background: var(--parchment-dark);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+.condition-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--red);
+  color: var(--white);
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.condition-mod {
+  font-weight: 800;
 }
 /* Narrow screens: swap text labels for icons */
 @media (max-width: 600px) {

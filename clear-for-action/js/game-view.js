@@ -6,9 +6,60 @@ import { getGame, autoSave } from './storage.js';
 import { SAIL_SETTINGS } from './data.js';
 import {
   createHealthBar, createInteractiveHealthBar, createCheckboxRow,
-  createSegmentedControl, createToggle,
+  createSegmentedControl, createToggle, vitalColor,
 } from './components.js';
 import { escapeHtml, nationalityFlag, sailIcon, clamp, getSpeedForSail, getGameShips, crewRatingTag } from './utils.js';
+
+// --- Condition Detection (Universal Modifiers) ---
+function getActiveConditions(ship) {
+  const conditions = [];
+  const cv = ship.currentVitals || {};
+  const v = ship.vitals || {};
+  const cc = ship.currentCriticals || {};
+  const cr = ship.criticals || {};
+
+  // Crew & Officers — mutually exclusive tiers
+  if (cc.officer > 0 && cr.officer > 0 && cc.officer >= cr.officer) {
+    conditions.push({ name: 'Command Lost', mod: -4 });
+  } else if (cc.officer > 0) {
+    conditions.push({ name: 'Officer Down', mod: -1 });
+  }
+
+  if (cv.crew === 0 && v.crew > 0) {
+    conditions.push({ name: 'Skeleton Crew', mod: -5 });
+  } else if (v.crew > 0 && cv.crew <= Math.floor(v.crew / 2)) {
+    conditions.push({ name: 'Shorthanded', mod: -2 });
+  }
+
+  if (cv.morale === 0 && v.morale > 0) {
+    conditions.push({ name: 'Demoralized', mod: -4 });
+  } else if (v.morale > 0 && cv.morale <= Math.floor(v.morale / 2)) {
+    conditions.push({ name: 'Unsteady', mod: -2 });
+  }
+
+  // Ship Damage
+  if (cc.fire > 0) conditions.push({ name: 'Fire Aboard', mod: -3 });
+  if (cc.leak > 0) conditions.push({ name: 'Taking Water', mod: -1 });
+  if (cc.mast > 0) conditions.push({ name: 'Dismasted', mod: -2 });
+
+  // Rigging/Hull — crippled (0) vs battered (half)
+  const riggingCrippled = v.rigging > 0 && cv.rigging === 0;
+  const hullCrippled = v.hull > 0 && cv.hull === 0;
+  const riggingBattered = v.rigging > 0 && cv.rigging <= Math.floor(v.rigging / 2) && cv.rigging > 0;
+  const hullBattered = v.hull > 0 && cv.hull <= Math.floor(v.hull / 2) && cv.hull > 0;
+
+  if (riggingCrippled || hullCrippled) conditions.push({ name: 'Crippled', mod: -2 });
+  if (riggingBattered || hullBattered) conditions.push({ name: 'Battered', mod: -1 });
+
+  // Steering
+  if (cc.steering > 0 && cr.steering > 0 && cc.steering >= cr.steering) {
+    conditions.push({ name: 'Steering Lost', mod: -4 });
+  } else if (cc.steering > 0) {
+    conditions.push({ name: 'Impaired Steering', mod: -2 });
+  }
+
+  return conditions;
+}
 
 export function renderGameView(container, gameId) {
   let game = getGame(gameId);
@@ -52,7 +103,6 @@ export function renderShipActionView(container, gameId, shipIndex) {
     return;
   }
 
-  const save = () => autoSave(game);
   const allShips = getGameShips(game);
   const idx = parseInt(shipIndex);
 
@@ -90,24 +140,53 @@ export function renderShipActionView(container, gameId, shipIndex) {
   // --- Skills bar ---
   const skillsBar = document.createElement('div');
   skillsBar.className = 'ship-action-skills-bar';
-  [
+
+  // --- Conditions bar ---
+  const conditionsBar = document.createElement('div');
+  conditionsBar.className = 'conditions-bar';
+
+  const skillsDef = [
     { key: 'command', label: 'Command', icon: 'captain-silhouette.png' },
     { key: 'seamanship', label: 'Seamanship', icon: 'anchor-white.png' },
     { key: 'gunnery', label: 'Gunnery', icon: 'cannon.png' },
     { key: 'closeAction', label: 'Close Action', icon: 'crossed-sabers.png' },
-  ].forEach(({ key, label, icon }) => {
-    skillsBar.innerHTML += `<div class="ship-action-skills-cell">
-      <span class="ship-action-skills-label">${label}</span>
-      <img src="${icon}" alt="${label}" title="${label}" class="ship-action-skills-icon">
-      <span class="ship-action-skills-value">${ship.skills?.[key] ?? '-'}</span>
-    </div>`;
-  });
+  ];
+
+  const refreshConditions = () => {
+    const conditions = getActiveConditions(ship);
+    const totalMod = conditions.reduce((sum, c) => sum + c.mod, 0);
+
+    skillsBar.innerHTML = '';
+    skillsDef.forEach(({ key, label, icon }) => {
+      const base = ship.skills?.[key] ?? 0;
+      const effective = base + totalMod;
+      const modified = totalMod !== 0;
+      skillsBar.innerHTML += `<div class="ship-action-skills-cell">
+        <span class="ship-action-skills-label">${label}</span>
+        <img src="${icon}" alt="${label}" title="${label}" class="ship-action-skills-icon">
+        <span class="ship-action-skills-value ${modified ? 'modified' : ''}">${effective}</span>
+      </div>`;
+    });
+
+    conditionsBar.innerHTML = '';
+    if (conditions.length > 0) {
+      conditionsBar.classList.remove('hidden');
+      conditions.forEach(c => {
+        conditionsBar.innerHTML += `<span class="condition-tag"><span class="condition-name">${escapeHtml(c.name)}</span><span class="condition-mod">${c.mod}</span></span>`;
+      });
+    } else {
+      conditionsBar.classList.add('hidden');
+    }
+  };
+  refreshConditions();
+
+  const save = () => { autoSave(game); refreshConditions(); };
 
   const body = document.createElement('div');
   body.className = 'ship-action-body';
   buildCardBody(body, ship, game, save);
 
-  wrapper.append(summary, skillsBar, body);
+  wrapper.append(summary, skillsBar, conditionsBar, body);
   container.appendChild(wrapper);
 
   // --- Swipe support ---
@@ -431,20 +510,40 @@ function buildCardBody(body, ship, game, save) {
   }
 
   // Vitals
+  const vitalsRow = document.createElement('div');
+  vitalsRow.className = 'vitals-boxes';
   ['morale', 'crew', 'rigging', 'hull'].forEach(key => {
     const label = key.charAt(0).toUpperCase() + key.slice(1);
-    const bar = createInteractiveHealthBar({
-      label,
-      current: ship.currentVitals[key],
-      max: ship.vitals[key],
-      vitalKey: key,
-      onUpdate: (k, v) => {
-        ship.currentVitals[k] = v;
-        save();
-      },
-    });
-    statusSection.appendChild(bar);
+    const max = ship.vitals[key];
+    let current = ship.currentVitals[key];
+    const box = document.createElement('div');
+    box.className = 'vital-box-wrapper';
+
+    const renderBox = () => {
+      const pct = max > 0 ? (current / max) * 100 : 0;
+      const bg = vitalColor(pct);
+      box.innerHTML = `
+        <div class="vital-box-label">${escapeHtml(label)}</div>
+        <div class="vital-box-row">
+          <button class="vital-box-btn" data-dir="-1" ${current <= 0 ? 'disabled' : ''}>\u2212</button>
+          <div class="vital-box" style="background:${bg}">${current}</div>
+          <button class="vital-box-btn" data-dir="1" ${current >= max ? 'disabled' : ''}>+</button>
+        </div>
+      `;
+      box.querySelectorAll('.vital-box-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const dir = parseInt(btn.dataset.dir);
+          current = Math.max(0, Math.min(max, current + dir));
+          ship.currentVitals[key] = current;
+          save();
+          renderBox();
+        });
+      });
+    };
+    renderBox();
+    vitalsRow.appendChild(box);
   });
+  statusSection.appendChild(vitalsRow);
 
   // Criticals
   ['fire', 'leak', 'steering', 'mast', 'officer'].forEach(key => {

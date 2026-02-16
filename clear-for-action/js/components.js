@@ -136,7 +136,7 @@ export function createStepper({ value = 0, min = 0, max = 99, step = 1, onChange
 }
 
 // --- Health Bar ---
-function vitalColor(pct) {
+export function vitalColor(pct) {
   // Dark green → green → yellow → orange → red → dark red
   const hue = Math.round((pct / 100) * 120); // 0 (red) to 120 (green)
   const sat = 75;
