@@ -41,7 +41,7 @@ export function renderShipView(container, shipId) {
     <div class="ship-view-captain">
       ${ship.captain.image?.data ? `<div class="ship-view-captain-img"><img src="${ship.captain.image.data}" alt="${escapeHtml(ship.captain.name || 'Captain')}" class="zoomable-img"></div>` : ''}
       <div>
-        ${ship.captain.name ? `<div class="ship-view-stat-value">${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}</div>` : ''}
+        ${ship.captain.name ? `<div class="ship-view-captain-name">${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}</div>` : ''}
         ${crewTag ? `<div style="margin-top:4px">${crewTag}</div>` : ''}
       </div>
     </div>` : ''}

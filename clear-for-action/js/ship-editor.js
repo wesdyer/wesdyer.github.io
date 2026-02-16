@@ -37,7 +37,7 @@ export function renderShipEditor(container, shipId, queryParams) {
     saveShip(ship);
   }, 400);
 
-  container.innerHTML = `<form id="ship-form" autocomplete="off"></form>`;
+  container.innerHTML = `<form id="ship-form" class="editor-form" autocomplete="off"></form>`;
 
   const form = container.querySelector('#ship-form');
   buildForm(form, ship, isNew, autoSave);
@@ -72,11 +72,12 @@ function buildForm(form, ship, isNew, autoSave) {
       // Re-apply nationality skills
       const nat = NATIONALITIES.find(n => n.id === ship.nationality);
       if (nat) ship.skills = { command: nat.command, seamanship: nat.seamanship, gunnery: nat.gunnery, closeAction: nat.closeAction };
+      form.dataset.activeTab = 'overview';
       buildForm(form, ship, isNew);
     });
 
     section.appendChild(formGroup('Template', templateSelect));
-    form.appendChild(section);
+    form.__templateSection = section;
   }
 
   // --- Overview ---
@@ -315,14 +316,52 @@ function buildForm(form, ship, isNew, autoSave) {
   });
   criticals.appendChild(critGrid);
 
-  // --- Append all sections in order ---
-  form.append(overview, captain, skills, vitals, criticals, movement, guns, abilities);
+  // --- Tab definitions ---
+  const tabDefs = [
+    { id: 'overview', label: 'Overview', sections: isNew ? [form.__templateSection, overview] : [overview] },
+    { id: 'crew', label: 'Crew', sections: [captain] },
+    { id: 'stats', label: 'Stats', sections: [skills, vitals, criticals] },
+    { id: 'movement', label: 'Movement', sections: [movement] },
+    { id: 'guns', label: 'Guns', sections: [guns] },
+    { id: 'abilities', label: 'Abilities', sections: [abilities] },
+  ];
+
+  const activeTabId = form.dataset.activeTab || 'overview';
+  const { container: tabbedContainer, activateTab, dots } = createTabbedLayout(tabDefs, activeTabId);
+
+  form.appendChild(tabbedContainer);
+
+  // Persist active tab across rebuilds
+  form.dataset.activeTab = activeTabId;
+
+  // --- Validation: red dot on Overview when Name is empty ---
+  const nameInput = overview.querySelector('input[type="text"]');
+  const updateValidationDots = () => {
+    const empty = !ship.name?.trim();
+    if (dots.overview) dots.overview.classList.toggle('hidden', !empty);
+  };
+  if (nameInput) {
+    nameInput.addEventListener('input', updateValidationDots);
+  }
+  updateValidationDots();
 
   // --- Done / Delete ---
-  const bottomSection = el('div', { style: 'margin-top:var(--space-2xl);padding-top:var(--space-lg);border-top:1px solid var(--gray-light);display:flex;gap:var(--space-md)' });
+  const bottomSection = el('div', { className: 'editor-bottom' });
   const doneBtn = el('button', { className: 'btn btn-primary', type: 'button' });
   doneBtn.textContent = 'Done';
   doneBtn.addEventListener('click', () => {
+    if (!ship.name?.trim()) {
+      activateTab('overview');
+      form.dataset.activeTab = 'overview';
+      const nameField = overview.querySelector('input[type="text"]');
+      if (nameField) {
+        nameField.focus();
+        nameField.classList.add('input-error');
+        setTimeout(() => nameField.classList.remove('input-error'), 1200);
+      }
+      showToast('Ship name is required', 'error');
+      return;
+    }
     ship.updatedAt = new Date().toISOString();
     saveShip(ship);
     location.hash = '#/ships';
@@ -404,6 +443,101 @@ function renderGuns(container, ship, onChanged) {
 function readFormIntoShip(form, ship) {
   // Most values are written directly via event handlers, but ensure any missed inputs get read
   // Broadside weight is handled via its input handler
+}
+
+// --- Tabbed Layout ---
+function createTabbedLayout(tabDefs, activeTabId) {
+  const wrapper = document.createDocumentFragment();
+  const dots = {};  // tabId → dot element (for validation)
+
+  // --- Tab bar (desktop) ---
+  const tabBar = el('div', { className: 'editor-tabs' });
+  const panels = [];
+  const tabBtns = [];
+
+  const activateTab = (id) => {
+    tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === id));
+    panels.forEach(p => {
+      const isTarget = p.dataset.panel === id;
+      p.classList.toggle('active', isTarget);
+      p.classList.toggle('expanded', isTarget);
+    });
+    // Persist for rebuilds
+    const form = tabBar.closest('form');
+    if (form) form.dataset.activeTab = id;
+  };
+
+  tabDefs.forEach(tab => {
+    // Tab button
+    const btn = el('button', { type: 'button', className: 'editor-tab' + (tab.id === activeTabId ? ' active' : '') });
+    btn.dataset.tab = tab.id;
+    const labelSpan = document.createElement('span');
+    labelSpan.textContent = tab.label;
+    const dot = el('span', { className: 'tab-dot hidden' });
+    dots[tab.id] = dot;
+    btn.append(labelSpan, dot);
+    btn.addEventListener('click', () => activateTab(tab.id));
+    tabBar.appendChild(btn);
+    tabBtns.push(btn);
+
+    // Panel
+    const panel = el('div', { className: 'editor-panel' + (tab.id === activeTabId ? ' active expanded' : '') });
+    panel.dataset.panel = tab.id;
+
+    // Accordion header (mobile)
+    const accHeader = el('button', { type: 'button', className: 'accordion-header' });
+    const accLeft = el('span', { className: 'accordion-header-left' });
+    const accLabel = document.createElement('span');
+    accLabel.textContent = tab.label;
+    const accDot = el('span', { className: 'tab-dot hidden' });
+    // Share dot state: sync with tab dot
+    const origDot = dot;
+    const syncDots = () => { accDot.className = origDot.className; };
+    // We'll use a MutationObserver to keep them in sync
+    const observer = new MutationObserver(syncDots);
+    observer.observe(origDot, { attributes: true, attributeFilter: ['class'] });
+    accLeft.append(accLabel, accDot);
+    const chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    chevron.setAttribute('width', '20');
+    chevron.setAttribute('height', '20');
+    chevron.setAttribute('viewBox', '0 0 24 24');
+    chevron.setAttribute('fill', 'none');
+    chevron.setAttribute('stroke', 'currentColor');
+    chevron.setAttribute('stroke-width', '2');
+    chevron.setAttribute('stroke-linecap', 'round');
+    chevron.setAttribute('stroke-linejoin', 'round');
+    chevron.classList.add('accordion-chevron');
+    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyline.setAttribute('points', '6 9 12 15 18 9');
+    chevron.appendChild(polyline);
+    accHeader.append(accLeft, chevron);
+
+    accHeader.addEventListener('click', () => {
+      const isExpanded = panel.classList.contains('expanded');
+      // Collapse all, then expand this one only if it wasn't already open
+      panels.forEach(p => p.classList.remove('expanded'));
+      if (!isExpanded) {
+        panel.classList.add('expanded');
+      }
+      // Sync active tab state for desktop consistency
+      tabBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab.id));
+      panels.forEach(p => p.classList.toggle('active', p.dataset.panel === tab.id));
+      const form = tabBar.closest('form');
+      if (form) form.dataset.activeTab = tab.id;
+    });
+
+    // Panel body
+    const body = el('div', { className: 'editor-panel-body' });
+    tab.sections.filter(Boolean).forEach(s => body.appendChild(s));
+
+    panel.append(accHeader, body);
+    panels.push(panel);
+  });
+
+  wrapper.appendChild(tabBar);
+  panels.forEach(p => wrapper.appendChild(p));
+
+  return { container: wrapper, activateTab, dots };
 }
 
 // --- Helpers ---

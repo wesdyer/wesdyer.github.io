@@ -36,8 +36,9 @@
 
   /* Typography */
   --font-heading: 'IM Fell English SC', Georgia, 'Times New Roman', serif;
-  --font-body: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'SF Mono', 'Fira Code', monospace;
+  --font-body: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Inter', system-ui, sans-serif;
 
   /* Spacing */
   --space-xs: 4px;
@@ -109,10 +110,50 @@ img { max-width: 100%; height: auto; }
 
 button, input, select, textarea {
   font: inherit;
+  font-family: var(--font-ui);
   color: inherit;
 }
 
 ul, ol { list-style: none; }
+
+/* Inter for all UI chrome: nav, labels, badges, stats, tables */
+.navbar,
+.nav-link,
+.btn,
+.form-label,
+.badge,
+.chip,
+.speed-table,
+.toggle-label,
+.gun-type,
+.gun-detail,
+.gun-count,
+.health-bar-label,
+.stepper-value,
+.stat-label,
+.stat-value,
+.ship-grid-card-subtitle,
+.ship-grid-card-captain,
+.ship-view-stat-label,
+.ship-view-stat-value,
+.ship-view-skills-label,
+.ship-view-skills-value,
+.ship-view-speed-table,
+.ship-view-guns-table,
+.ship-view-card-subtitle,
+.ship-view-card-meta,
+.ship-view-broadside,
+.crew-tag,
+.round-counter,
+.wind-indicator,
+.editor-tab,
+.search-input,
+.form-hint,
+.game-list-meta,
+.recent-item-sub,
+.recent-item-date {
+  font-family: var(--font-ui);
+}
 
 /* --- Navbar --- */
 .navbar {
@@ -455,7 +496,8 @@ ul, ol { list-style: none; }
   text-align: center;
   font-size: 1.125rem;
   font-weight: 700;
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
   padding: 0 var(--space-xs);
 }
 
@@ -981,7 +1023,8 @@ ul, ol { list-style: none; }
 }
 
 .gun-count {
-  font-family: var(--font-mono);
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
   font-size: 1rem;
   min-width: 32px;
@@ -1904,6 +1947,11 @@ ul, ol { list-style: none; }
   height: 100%;
   object-fit: cover;
 }
+.ship-view-captain-name {
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--ink);
+}
 
 .ship-view-skills-bar {
   display: flex;
@@ -2114,8 +2162,169 @@ ul, ol { list-style: none; }
   }
 }
 
+/* --- Ship Editor: Tabs + Accordion --- */
+
+/* Tab bar (desktop only) */
+.editor-tabs {
+  display: none;
+  position: sticky;
+  top: var(--navbar-height);
+  z-index: 50;
+  background: var(--white);
+  border-bottom: 2px solid var(--parchment-dark);
+  padding: 0 var(--space-sm);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.editor-tabs::-webkit-scrollbar { display: none; }
+
+.editor-tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  min-height: var(--touch-target);
+  background: transparent;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--gray);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s;
+}
+.editor-tab:hover { color: var(--navy); }
+.editor-tab.active {
+  color: var(--navy);
+}
+.editor-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: var(--space-sm);
+  right: var(--space-sm);
+  height: 3px;
+  background: var(--brass);
+  border-radius: 3px 3px 0 0;
+}
+
+/* Validation dot */
+.tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--red);
+  flex-shrink: 0;
+}
+.tab-dot.hidden { display: none; }
+
+/* Accordion header (mobile only) */
+.accordion-header {
+  display: none;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--white);
+  border: none;
+  border-bottom: 2px solid var(--brass);
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--navy);
+  cursor: pointer;
+  gap: var(--space-sm);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.accordion-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.accordion-chevron {
+  transition: transform 0.2s;
+  flex-shrink: 0;
+  color: var(--gray);
+}
+.editor-panel.expanded .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+/* Panels */
+.editor-panel {
+  /* Panels hidden by default on desktop (shown via .active) */
+}
+.editor-panel-body {
+  padding: var(--space-md) 0;
+}
+
+/* Remove rope dividers inside panels — the panel structure replaces them */
+.editor-panel .form-section {
+  background-image: none;
+  margin-bottom: var(--space-md);
+  padding-bottom: 0;
+}
+.editor-panel .form-section:last-child {
+  margin-bottom: 0;
+}
+
+/* Bottom bar (Done/Delete) */
+.editor-bottom {
+  margin-top: var(--space-xl);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--gray-light);
+  display: flex;
+  gap: var(--space-md);
+}
+
+/* Input error flash */
+.input-error {
+  border-color: var(--red) !important;
+  animation: input-error-flash 0.6s ease;
+}
+@keyframes input-error-flash {
+  0%, 100% { border-color: var(--red); }
+  50% { border-color: var(--red-light); }
+}
+
+/* Desktop (>=768px): show tabs, hide accordion headers, toggle panels via .active */
+@media (min-width: 768px) {
+  .editor-tabs {
+    display: flex;
+  }
+  .accordion-header {
+    display: none !important;
+  }
+  .editor-panel {
+    display: none;
+  }
+  .editor-panel.active {
+    display: block;
+  }
+}
+
+/* Mobile (<768px): hide tabs, show accordion headers, toggle panel body via .expanded */
+@media (max-width: 767px) {
+  .editor-tabs {
+    display: none !important;
+  }
+  .accordion-header {
+    display: flex;
+  }
+  .editor-panel-body {
+    display: none;
+  }
+  .editor-panel.expanded .editor-panel-body {
+    display: block;
+  }
+}
+
 /* --- Print --- */
 @media print {
-  .navbar, .toast-container, .modal-overlay { display: none; }
+  .navbar, .toast-container, .modal-overlay, .editor-tabs, .accordion-header { display: none; }
   .view-container { max-width: none; }
+  .editor-panel, .editor-panel-body { display: block !important; }
 }
