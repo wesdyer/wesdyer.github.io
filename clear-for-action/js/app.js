@@ -111,7 +111,7 @@ function renderHome(container) {
   container.innerHTML = `
     <div class="home-hero">
       <img src="pob.png" alt="Naval battle">
-      <div class="home-hero-tagline">Manage Ships. Track Battles. Command the Seas.</div>
+      <div class="home-hero-tagline">Manage Ships. Fight Battles. Command the Seas.</div>
     </div>
     <div class="home-nav">
       <a href="#/ships" class="home-nav-card">
