@@ -3237,6 +3237,20 @@ ul, ol { list-style: none; }
 .ship-action-detail.struck {
   /* No visual change — struck status shown via toggle */
 }
+.ship-action-detail.slide-in-left {
+  animation: slide-in-left 0.25s ease-out;
+}
+.ship-action-detail.slide-in-right {
+  animation: slide-in-right 0.25s ease-out;
+}
+@keyframes slide-in-left {
+  from { transform: translateX(40%); opacity: 0.5; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(-40%); opacity: 0.5; }
+  to { transform: translateX(0); opacity: 1; }
+}
 .ship-action-header {
   display: flex;
   align-items: center;

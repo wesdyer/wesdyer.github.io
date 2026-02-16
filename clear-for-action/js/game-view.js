@@ -96,6 +96,10 @@ export function renderGameView(container, gameId) {
   });
 }
 
+let slideDirection = null; // 'left' or 'right'
+
+export function setSlideDirection(dir) { slideDirection = dir; }
+
 export function renderShipActionView(container, gameId, shipIndex) {
   let game = getGame(gameId);
   if (!game) {
@@ -187,6 +191,13 @@ export function renderShipActionView(container, gameId, shipIndex) {
   buildCardBody(body, ship, game, save);
 
   wrapper.append(summary, skillsBar, conditionsBar, body);
+
+  // Apply slide animation if navigating between ships
+  if (slideDirection) {
+    wrapper.classList.add(slideDirection === 'left' ? 'slide-in-left' : 'slide-in-right');
+    slideDirection = null;
+  }
+
   container.appendChild(wrapper);
 
   // --- Swipe support ---
@@ -221,8 +232,10 @@ export function renderShipActionView(container, gameId, shipIndex) {
     // Require: >50px horizontal, mostly horizontal, within 500ms
     if (Math.abs(deltaX) > 50 && Math.abs(deltaX) > Math.abs(deltaY) && elapsed < 500) {
       if (deltaX > 0 && idx > 0) {
+        slideDirection = 'right';
         location.hash = `#/games/${gameId}/ship/${idx - 1}`;
       } else if (deltaX < 0 && idx < allShips.length - 1) {
+        slideDirection = 'left';
         location.hash = `#/games/${gameId}/ship/${idx + 1}`;
       }
     }
