@@ -79,6 +79,7 @@ export function renderShipList(container) {
         location.hash = `#/ships/${card.dataset.id}`;
       });
     });
+
   };
 
   render();

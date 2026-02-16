@@ -253,9 +253,23 @@ ul, ol { list-style: none; }
   margin-left: auto;
 }
 .navbar-actions {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: var(--space-xs);
+}
+.navbar-icon-btn {
+  background: none;
+  border: none;
+  color: var(--parchment);
+  opacity: 0.7;
+  padding: var(--space-xs);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.15s;
+}
+.navbar-icon-btn:hover {
+  opacity: 1;
 }
 
 .navbar-add {
@@ -1979,6 +1993,13 @@ ul, ol { list-style: none; }
 .empty-state-text {
   font-size: 0.9375rem;
   margin-bottom: var(--space-lg);
+}
+
+/* --- Shipyard Actions --- */
+.shipyard-actions {
+  display: flex;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
 }
 
 /* --- Search Bar --- */

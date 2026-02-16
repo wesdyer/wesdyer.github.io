@@ -10,6 +10,74 @@ import { renderGameList, battleCardHtml } from './game-list.js';
 import { renderGameEditor } from './game-editor.js';
 import { renderGameView, renderShipActionView } from './game-view.js';
 import { formatDate, escapeHtml, shipCardHtml, getGameShips, uuid, deepClone } from './utils.js';
+import { showToast, confirmDialog } from './components.js';
+
+function setupShipyardImportExport(listContainer) {
+  // Export
+  document.getElementById('nav-export-ships')?.addEventListener('click', () => {
+    const allShips = getShips();
+    if (allShips.length === 0) {
+      showToast('No ships to export', 'info');
+      return;
+    }
+    const data = JSON.stringify(allShips, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `cfa-shipyard-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`Exported ${allShips.length} ship${allShips.length !== 1 ? 's' : ''}`, 'success');
+  });
+
+  // Import
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = '.json';
+  fileInput.style.display = 'none';
+  document.body.appendChild(fileInput);
+
+  document.getElementById('nav-import-ships')?.addEventListener('click', () => {
+    fileInput.click();
+  });
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const imported = JSON.parse(text);
+      if (!Array.isArray(imported)) throw new Error('Invalid format');
+      const valid = imported.filter(s => s && typeof s === 'object' && s.name);
+      if (valid.length === 0) {
+        showToast('No valid ships found in file', 'error');
+        return;
+      }
+      const ok = await confirmDialog(
+        `Import ${valid.length} ship${valid.length !== 1 ? 's' : ''}? Duplicates will be added as new ships.`,
+        { title: 'Import Ships', confirmText: 'Import' }
+      );
+      if (!ok) return;
+      const existingIds = new Set(getShips().map(s => s.id));
+      let count = 0;
+      for (const ship of valid) {
+        if (existingIds.has(ship.id)) {
+          ship.id = uuid();
+        }
+        ship.updatedAt = new Date().toISOString();
+        saveShip(ship);
+        count++;
+      }
+      showToast(`Imported ${count} ship${count !== 1 ? 's' : ''}`, 'success');
+      route(); // re-render the list
+    } catch (e) {
+      showToast('Failed to import: invalid file', 'error');
+    }
+    fileInput.value = '';
+    fileInput.remove();
+  });
+}
 
 // --- Router ---
 function route() {
@@ -57,8 +125,9 @@ function route() {
     // Ships
     else if (segments[0] === 'ships') {
       if (segments.length === 1) {
-        pageTitle.innerHTML = 'Shipyard <a href="#/ships/new" class="btn btn-primary btn-add navbar-add" aria-label="New Ship">+</a>';
+        pageTitle.innerHTML = 'Shipyard <span class="navbar-actions"><button class="navbar-icon-btn" id="nav-import-ships" aria-label="Import ships" title="Import"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button><button class="navbar-icon-btn" id="nav-export-ships" aria-label="Export ships" title="Export"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><a href="#/ships/new" class="btn btn-primary btn-add navbar-add" aria-label="New Ship">+</a></span>';
         renderShipList(view);
+        setupShipyardImportExport(view);
       } else if (segments[1] === 'new') {
         pageTitle.textContent = 'New Ship';
         const params = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
