@@ -2260,7 +2260,8 @@ ul, ol { list-style: none; }
   padding: var(--space-lg) var(--space-md) var(--space-md);
   background: linear-gradient(transparent, rgba(20, 40, 64, 0.85));
   font-family: var(--font-heading);
-  font-size: 1.2rem;
+  font-size: clamp(0.6rem, 3.5vw, 1.4rem);
+  white-space: nowrap;
   color: var(--parchment);
   text-align: center;
   letter-spacing: 0.03em;
