@@ -519,7 +519,14 @@ export function createGameShip(ship) {
   gs.sourceShipId = ship.id;
   gs.displayName = ship.name;
   gs.currentVitals = { ...ship.vitals };
-  gs.currentGuns = (ship.guns || []).map(g => ({ gunId: g.id, remainingCount: g.count }));
+  gs.currentGuns = (ship.guns || []).map(g => {
+    const entry = { gunId: g.id, remainingCount: g.count };
+    if (g.facing === 'broadside' || !g.facing) {
+      entry.remainingPort = Math.floor(g.count / 2);
+      entry.remainingStarboard = g.count - entry.remainingPort;
+    }
+    return entry;
+  });
   gs.currentCriticals = { fire: 0, leak: 0, steering: 0, mast: 0, officer: 0 };
   gs.sailSetting = 'battle';
   gs.status = { grappled: false, aground: false, struck: false, firstBroadside: { port: true, starboard: true } };

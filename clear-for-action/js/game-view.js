@@ -8,7 +8,7 @@ import {
   createHealthBar, createInteractiveHealthBar, createCheckboxRow,
   createSegmentedControl, createToggle,
 } from './components.js';
-import { escapeHtml, nationalityFlag, sailIcon, clamp, getSpeedForSail, getGameShips } from './utils.js';
+import { escapeHtml, nationalityFlag, sailIcon, clamp, getSpeedForSail, getGameShips, crewRatingTag } from './utils.js';
 
 export function renderGameView(container, gameId) {
   let game = getGame(gameId);
@@ -17,109 +17,420 @@ export function renderGameView(container, gameId) {
     return;
   }
 
-  const save = () => autoSave(game);
+  const allShips = getGameShips(game);
+  if (allShips.length === 0) {
+    container.innerHTML += `
+      <div class="empty-state">
+        <div class="empty-state-icon">\u{26F5}</div>
+        <div class="empty-state-title">No ships in this game</div>
+        <div class="empty-state-text"><a href="#/games/${gameId}/edit">Add ships</a> to start tracking.</div>
+      </div>
+    `;
+    return;
+  }
 
-  const render = () => {
-    container.innerHTML = '';
+  let flatIdx = 0;
+  (game.forces || []).forEach(force => {
+    if (!force.ships?.length) return;
+    const forceHeader = document.createElement('div');
+    forceHeader.className = 'force-header';
+    forceHeader.innerHTML = `${nationalityFlag(force.nationality)} <span>${escapeHtml(force.name || force.nationality)}</span>`;
+    container.appendChild(forceHeader);
 
-    // --- Ship Cards grouped by force ---
-    const allShips = getGameShips(game);
-    if (allShips.length === 0) {
-      container.innerHTML += `
-        <div class="empty-state">
-          <div class="empty-state-icon">\u{26F5}</div>
-          <div class="empty-state-title">No ships in this game</div>
-          <div class="empty-state-text"><a href="#/games/${gameId}/edit">Add ships</a> to start tracking.</div>
-        </div>
-      `;
-      return;
-    }
-
-    (game.forces || []).forEach(force => {
-      if (!force.ships?.length) return;
-      // Force header
-      const forceHeader = document.createElement('div');
-      forceHeader.className = 'force-header';
-      forceHeader.innerHTML = `${nationalityFlag(force.nationality)} <span>${escapeHtml(force.name || force.nationality)}</span>`;
-      container.appendChild(forceHeader);
-
-      force.ships.forEach((ship, idx) => {
-        const card = buildShipCard(ship, idx, game, save);
-        container.appendChild(card);
-      });
+    force.ships.forEach(ship => {
+      const card = buildShipCard(ship, flatIdx, gameId);
+      container.appendChild(card);
+      flatIdx++;
     });
-  };
-
-  render();
+  });
 }
 
-function buildShipCard(ship, idx, game, save) {
+export function renderShipActionView(container, gameId, shipIndex) {
+  let game = getGame(gameId);
+  if (!game) {
+    container.innerHTML = '<p>Game not found. <a href="#/games">Back to games</a></p>';
+    return;
+  }
+
+  const save = () => autoSave(game);
+  const allShips = getGameShips(game);
+  const idx = parseInt(shipIndex);
+
+  if (idx < 0 || idx >= allShips.length) {
+    container.innerHTML = `<p>Ship not found. <a href="#/games/${gameId}">Back to battle</a></p>`;
+    return;
+  }
+
+  const ship = allShips[idx];
+
+  // --- Ship detail (no card wrapper — sits directly on background) ---
+  const wrapper = document.createElement('div');
+  wrapper.className = `ship-action-detail ${ship.status?.struck ? 'struck' : ''}`;
+
+  const summary = document.createElement('div');
+  summary.className = 'ship-action-header';
+  const imageHtml = ship.shipImage?.data
+    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}">`
+    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette">`;
+  const flagHtml = nationalityFlag(ship.nationality);
+  const crewTag = crewRatingTag(ship.captain?.crewRating);
+  const captainName = ship.captain?.name ? `${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}` : '';
+  summary.innerHTML = `
+    <div class="ship-action-header-thumb">${imageHtml}</div>
+    <div class="ship-card-info">
+      <div class="ship-card-class">${escapeHtml(ship.classAndRating || '')}</div>
+      ${captainName ? `<div class="ship-action-header-captain">${captainName}</div>` : ''}
+    </div>
+    ${flagHtml || crewTag ? `<div class="ship-action-header-badge">
+      ${flagHtml ? `<div class="ship-action-header-flag">${flagHtml}</div>` : ''}
+      ${crewTag ? `<div>${crewTag}</div>` : ''}
+    </div>` : ''}
+  `;
+
+  // --- Skills bar ---
+  const skillsBar = document.createElement('div');
+  skillsBar.className = 'ship-action-skills-bar';
+  [
+    { key: 'command', label: 'Command', icon: 'captain-silhouette.png' },
+    { key: 'seamanship', label: 'Seamanship', icon: 'anchor-white.png' },
+    { key: 'gunnery', label: 'Gunnery', icon: 'cannon.png' },
+    { key: 'closeAction', label: 'Close Action', icon: 'crossed-sabers.png' },
+  ].forEach(({ key, label, icon }) => {
+    skillsBar.innerHTML += `<div class="ship-action-skills-cell">
+      <span class="ship-action-skills-label">${label}</span>
+      <img src="${icon}" alt="${label}" title="${label}" class="ship-action-skills-icon">
+      <span class="ship-action-skills-value">${ship.skills?.[key] ?? '-'}</span>
+    </div>`;
+  });
+
+  const body = document.createElement('div');
+  body.className = 'ship-action-body';
+  buildCardBody(body, ship, game, save);
+
+  wrapper.append(summary, skillsBar, body);
+  container.appendChild(wrapper);
+
+  // --- Swipe support ---
+  let touchStartX = 0;
+  let touchStartY = 0;
+  container.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+  container.addEventListener('touchend', (e) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX;
+    const deltaY = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX > 0 && idx > 0) {
+        location.hash = `#/games/${gameId}/ship/${idx - 1}`;
+      } else if (deltaX < 0 && idx < allShips.length - 1) {
+        location.hash = `#/games/${gameId}/ship/${idx + 1}`;
+      }
+    }
+  }, { passive: true });
+}
+
+function buildShipCard(ship, flatIdx, gameId) {
   const card = document.createElement('div');
   card.className = `card ship-card ${ship.status?.struck ? 'struck' : ''}`;
 
-  const isCollapsed = ship.collapsed !== false;
+  const summary = document.createElement('div');
+  summary.className = 'ship-card-summary';
 
-  // --- Header (always visible) ---
-  const header = document.createElement('div');
-  header.className = 'ship-card-header';
+  const imageHtml = ship.shipImage?.data
+    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}">`
+    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette">`;
 
-  const nameSpan = document.createElement('span');
-  nameSpan.className = 'ship-card-name';
-  nameSpan.innerHTML = `${nationalityFlag(ship.nationality)} ${escapeHtml(ship.displayName || ship.name || 'Ship')}`;
+  summary.innerHTML = `
+    <div class="ship-card-thumb">${imageHtml}</div>
+    <div class="ship-card-info">
+      <div class="ship-card-name">${escapeHtml(ship.displayName || ship.name || 'Ship')}</div>
+      <div class="ship-card-class">${escapeHtml(ship.classAndRating || '')}</div>
+      <div class="ship-card-mini-bars">
+        ${['morale', 'crew', 'rigging', 'hull'].map(key =>
+          createHealthBar({ label: key, current: ship.currentVitals[key], max: ship.vitals[key], mini: true })
+        ).join('')}
+      </div>
+    </div>
+    <span class="ship-card-chevron">\u203A</span>
+  `;
 
-  const miniBars = document.createElement('div');
-  miniBars.className = 'ship-card-mini-bars';
-  const vitals = [
-    { key: 'morale', max: ship.vitals.morale, cur: ship.currentVitals.morale, color: 'var(--morale-color)' },
-    { key: 'crew', max: ship.vitals.crew, cur: ship.currentVitals.crew, color: 'var(--crew-color)' },
-    { key: 'rigging', max: ship.vitals.rigging, cur: ship.currentVitals.rigging, color: 'var(--rigging-color)' },
-    { key: 'hull', max: ship.vitals.hull, cur: ship.currentVitals.hull, color: 'var(--hull-color)' },
-  ];
-  miniBars.innerHTML = vitals.map(v => createHealthBar({ label: v.key, current: v.cur, max: v.max, mini: true })).join('');
-
-  const badges = document.createElement('div');
-  badges.className = 'ship-card-badges';
-  const sailSetting = ship.sailSetting || 'battle';
-  badges.innerHTML = `<span class="badge">${sailIcon(sailSetting)} ${SAIL_SETTINGS.find(s => s.id === sailSetting)?.name || ''}</span>`;
-  if (ship.status?.grappled) badges.innerHTML += '<span class="badge badge-warning">Grappled</span>';
-  if (ship.status?.aground) badges.innerHTML += '<span class="badge badge-danger">Aground</span>';
-  if (ship.status?.struck) badges.innerHTML += '<span class="badge badge-danger">Struck</span>';
-
-  const expandIcon = document.createElement('span');
-  expandIcon.className = `ship-card-expand ${isCollapsed ? '' : 'open'}`;
-  expandIcon.textContent = '\u25BC';
-
-  header.append(nameSpan, miniBars, badges, expandIcon);
-
-  // --- Body ---
-  const body = document.createElement('div');
-  body.className = `card-body ${isCollapsed ? 'collapsed' : ''}`;
-
-  // Toggle collapse
-  header.addEventListener('click', () => {
-    ship.collapsed = !ship.collapsed;
-    body.classList.toggle('collapsed', ship.collapsed);
-    expandIcon.classList.toggle('open', !ship.collapsed);
-    save();
-    // Re-render body content when expanding
-    if (!ship.collapsed) {
-      buildCardBody(body, ship, game, save);
-    }
+  summary.addEventListener('click', () => {
+    location.hash = `#/games/${gameId}/ship/${flatIdx}`;
   });
 
-  if (!isCollapsed) {
-    buildCardBody(body, ship, game, save);
-  }
-
-  card.append(header, body);
+  card.appendChild(summary);
   return card;
+}
+
+function rangeVal(v) {
+  return v ? `<span class="gun-stat-val">${v}</span>` : `<span class="gun-stat-val gun-stat-na">\u2014</span>`;
 }
 
 function buildCardBody(body, ship, game, save) {
   body.innerHTML = '';
 
-  // --- Vitals Section ---
-  const vitalsSection = makeSection('Vitals');
+  // --- Guns Section ---
+  if (ship.guns?.length) {
+    const gunsSection = document.createElement('div');
+    gunsSection.className = 'ship-card-section';
+
+    // Migrate gun state: ensure broadside guns have port/starboard counts
+    migrateGunState(ship);
+
+    // Group guns by facing
+    const facingGroups = [
+      { id: 'broadside', title: 'Broadside', halve: true },
+      { id: 'bow', title: 'Bow Chasers', halve: false },
+      { id: 'stern', title: 'Stern Chasers', halve: false },
+    ];
+
+    facingGroups.forEach(facing => {
+      const guns = ship.guns.filter(g => facing.id === 'broadside'
+        ? (g.facing === 'broadside' || !g.facing)
+        : g.facing === facing.id);
+      if (!guns.length) return;
+
+      // Effective weight for this group
+      const weight = Math.round(guns.reduce((sum, g) => {
+        const pdr = parseInt(g.type) || 0;
+        return sum + (facing.halve ? Math.floor(g.count / 2) : g.count) * pdr;
+      }, 0));
+
+      // Section header
+      const header = document.createElement('div');
+      header.className = 'gun-group-header';
+      header.innerHTML = `<span>${facing.title}</span>${weight ? `<span class="gun-group-weight">${weight} lbs</span>` : ''}`;
+
+      // First broadside toggle in the broadside header
+      if (facing.id === 'broadside') {
+        const fbAvail = ship.status?.firstBroadside?.port !== false || ship.status?.firstBroadside?.starboard !== false;
+        const fbToggle = document.createElement('div');
+        fbToggle.className = `gun-group-header-fb toggle-mini ${fbAvail ? 'active' : ''}`;
+        fbToggle.innerHTML = `
+          <span class="toggle-mini-label">Initial</span>
+          <div class="toggle-mini-track"><div class="toggle-mini-thumb"></div></div>
+        `;
+        fbToggle.addEventListener('click', () => {
+          if (!ship.status.firstBroadside) ship.status.firstBroadside = { port: true, starboard: true };
+          const wasAvail = ship.status.firstBroadside.port !== false || ship.status.firstBroadside.starboard !== false;
+          const newVal = !wasAvail;
+          ship.status.firstBroadside.port = newVal;
+          ship.status.firstBroadside.starboard = newVal;
+          fbToggle.classList.toggle('active', newVal);
+          save();
+        });
+        header.appendChild(fbToggle);
+      }
+
+      gunsSection.appendChild(header);
+
+      if (facing.id === 'broadside') {
+        // Column labels
+        const colLabels = document.createElement('div');
+        colLabels.className = 'gun-row-col-labels';
+        colLabels.innerHTML = `<span class="gun-col-label">Port</span><span></span><span class="gun-col-label">Starboard</span>`;
+        gunsSection.appendChild(colLabels);
+
+        // Broadside gun rows
+        guns.forEach(gun => {
+          const gunState = ship.currentGuns?.find(g => g.gunId === gun.id);
+          const portCount = gunState ? gunState.remainingPort : Math.floor(gun.count / 2);
+          const stbdCount = gunState ? gunState.remainingStarboard : gun.count - Math.floor(gun.count / 2);
+          const halfMax = Math.floor(gun.count / 2);
+          const halfMaxStbd = gun.count - halfMax;
+
+          const row = document.createElement('div');
+          row.className = 'gun-row-broadside';
+
+          row.innerHTML = `
+            <div class="gun-type">${escapeHtml(gun.isCarronade ? gun.type.replace(' carr.', '') + ' carronade' : gun.type)}</div>
+            <div class="gun-row-controls">
+              <div class="gun-side gun-side-port">
+                <button class="gun-side-btn" data-side="port" data-dir="-1">\u2212</button>
+                <span class="gun-side-count" data-side="port">${portCount}</span>
+                <button class="gun-side-btn" data-side="port" data-dir="1">+</button>
+              </div>
+              <div class="gun-stats">
+                <div class="gun-stat-cell"><span class="gun-stat-label">Dmg</span><span class="gun-stat-val">${gun.damage}</span></div>
+                <div class="gun-stat-cell"><span class="gun-stat-label">S</span>${rangeVal(gun.rangeShort)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label">M</span>${rangeVal(gun.rangeMedium)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label">L</span>${rangeVal(gun.rangeLong)}</div>
+              </div>
+              <div class="gun-side gun-side-stbd">
+                <button class="gun-side-btn" data-side="starboard" data-dir="-1">\u2212</button>
+                <span class="gun-side-count" data-side="starboard">${stbdCount}</span>
+                <button class="gun-side-btn" data-side="starboard" data-dir="1">+</button>
+              </div>
+            </div>
+          `;
+
+          const updateBroadsideBtnState = () => {
+            row.querySelectorAll('.gun-side-btn').forEach(b => {
+              const s = b.dataset.side;
+              const d = parseInt(b.dataset.dir);
+              const cur = gunState ? gunState[s === 'port' ? 'remainingPort' : 'remainingStarboard'] : 0;
+              const mx = s === 'port' ? halfMax : halfMaxStbd;
+              b.disabled = (d === -1 && cur <= 0) || (d === 1 && cur >= mx);
+            });
+          };
+          updateBroadsideBtnState();
+
+          row.querySelectorAll('.gun-side-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              if (!gunState) return;
+              const side = btn.dataset.side;
+              const dir = parseInt(btn.dataset.dir);
+              const max = side === 'port' ? halfMax : halfMaxStbd;
+              const key = side === 'port' ? 'remainingPort' : 'remainingStarboard';
+              gunState[key] = clamp(gunState[key] + dir, 0, max);
+              row.querySelector(`.gun-side-count[data-side="${side}"]`).textContent = gunState[key];
+              updateBroadsideBtnState();
+              save();
+            });
+          });
+
+          gunsSection.appendChild(row);
+        });
+
+      } else {
+        // Chaser gun rows (bow/stern)
+        guns.forEach(gun => {
+          const gunState = ship.currentGuns?.find(g => g.gunId === gun.id);
+          const remaining = gunState ? gunState.remainingCount : gun.count;
+
+          const row = document.createElement('div');
+          row.className = 'gun-row-chaser';
+
+          row.innerHTML = `
+            <div class="gun-type">${escapeHtml(gun.isCarronade ? gun.type.replace(' carr.', '') + ' carronade' : gun.type)}</div>
+            <div class="gun-row-controls">
+              <div class="gun-chaser-count">
+                <button class="gun-side-btn" data-dir="-1">\u2212</button>
+                <span class="gun-count">${remaining}</span>
+                <button class="gun-side-btn" data-dir="1">+</button>
+              </div>
+              <div class="gun-stats">
+                <div class="gun-stat-cell"><span class="gun-stat-label">Dmg</span><span class="gun-stat-val">${gun.damage}</span></div>
+                <div class="gun-stat-cell"><span class="gun-stat-label">S</span>${rangeVal(gun.rangeShort)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label">M</span>${rangeVal(gun.rangeMedium)}</div>
+                <div class="gun-stat-cell"><span class="gun-stat-label">L</span>${rangeVal(gun.rangeLong)}</div>
+              </div>
+            </div>
+          `;
+
+          const updateChaserBtnState = () => {
+            row.querySelectorAll('.gun-side-btn').forEach(b => {
+              const d = parseInt(b.dataset.dir);
+              const cur = gunState ? gunState.remainingCount : 0;
+              b.disabled = (d === -1 && cur <= 0) || (d === 1 && cur >= gun.count);
+            });
+          };
+          updateChaserBtnState();
+
+          row.querySelectorAll('.gun-side-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              if (!gunState) return;
+              const dir = parseInt(btn.dataset.dir);
+              gunState.remainingCount = clamp(gunState.remainingCount + dir, 0, gun.count);
+              row.querySelector('.gun-count').textContent = gunState.remainingCount;
+              updateChaserBtnState();
+              save();
+            });
+          });
+
+          gunsSection.appendChild(row);
+        });
+      }
+    });
+
+    body.appendChild(gunsSection);
+  }
+
+  // --- Sail Setting ---
+  const sailSection = makeSection('Sails');
+  const speedRef = document.createElement('div');
+  speedRef.className = 'sail-speed-ref';
+
+  const renderSpeedRef = () => {
+    const currentSail = ship.sailSetting || 'battle';
+    if (ship.speed) {
+      const s = getSpeedForSail(ship.speed, currentSail);
+      speedRef.innerHTML = `
+        <div class="sail-speed-cell"><span class="sail-speed-label">Close Hauled</span><span class="sail-speed-val">${s.closeHauled}</span></div>
+        <div class="sail-speed-cell"><span class="sail-speed-label">Reaching</span><span class="sail-speed-val">${s.reaching}</span></div>
+        <div class="sail-speed-cell"><span class="sail-speed-label">Running</span><span class="sail-speed-val">${s.running}</span></div>
+      `;
+    }
+  };
+
+  sailSection.appendChild(createSegmentedControl({
+    options: SAIL_SETTINGS,
+    value: ship.sailSetting || 'battle',
+    onChange: (v) => {
+      ship.sailSetting = v;
+      renderSpeedRef();
+      save();
+    },
+  }));
+  renderSpeedRef();
+  sailSection.appendChild(speedRef);
+  body.appendChild(sailSection);
+
+  // --- Maneuver Section ---
+  if (ship.movement?.maneuver) {
+    const maneuverSection = makeSection('Maneuvers');
+    const total = ship.movement.maneuver;
+    const helmRow = document.createElement('div');
+    helmRow.className = 'maneuver-helms';
+
+    if (!ship.status) ship.status = {};
+    if (!ship.status.maneuversUsedSet) ship.status.maneuversUsedSet = {};
+
+    for (let i = 0; i < total; i++) {
+      const helm = document.createElement('img');
+      helm.src = 'helm.png';
+      helm.alt = 'Maneuver';
+      helm.className = 'maneuver-helm';
+      if (ship.status.maneuversUsedSet[String(i)]) helm.classList.add('used');
+
+      helm.addEventListener('click', () => {
+        if (!ship.status.maneuversUsedSet) ship.status.maneuversUsedSet = {};
+        const key = String(i);
+        if (ship.status.maneuversUsedSet[key]) {
+          delete ship.status.maneuversUsedSet[key];
+          helm.classList.remove('used');
+        } else {
+          ship.status.maneuversUsedSet[key] = true;
+          helm.classList.add('used');
+        }
+        save();
+      });
+
+      helmRow.appendChild(helm);
+    }
+
+    maneuverSection.appendChild(helmRow);
+    body.appendChild(maneuverSection);
+  }
+
+  // --- Status Section (Defense + Vitals + Criticals + Toggles) ---
+  const statusSection = makeSection('Status');
+
+  // Defense
+  if (ship.movement?.defense) {
+    const defRef = document.createElement('div');
+    defRef.className = 'status-defense';
+    defRef.innerHTML = `
+      <div class="defense-shield">
+        <img src="shield.png" alt="Defense" class="defense-shield-img">
+        <span class="defense-shield-val">${ship.movement.defense}</span>
+      </div>
+    `;
+    statusSection.appendChild(defRef);
+  }
+
+  // Vitals
   ['morale', 'crew', 'rigging', 'hull'].forEach(key => {
     const label = key.charAt(0).toUpperCase() + key.slice(1);
     const bar = createInteractiveHealthBar({
@@ -132,86 +443,16 @@ function buildCardBody(body, ship, game, save) {
         save();
       },
     });
-    vitalsSection.appendChild(bar);
+    statusSection.appendChild(bar);
   });
-  body.appendChild(vitalsSection);
 
-  // --- Guns Section ---
-  if (ship.guns?.length) {
-    const gunsSection = makeSection('Guns');
-
-    ship.guns.forEach((gun, gi) => {
-      const gunState = ship.currentGuns?.find(g => g.gunId === gun.id);
-      const remaining = gunState ? gunState.remainingCount : gun.count;
-
-      const row = document.createElement('div');
-      row.className = 'gun-row';
-
-      row.innerHTML = `
-        <div class="gun-info">
-          <div class="gun-type">${gun.count}x ${escapeHtml(gun.type)} ${gun.facing || 'BS'}</div>
-          <div class="gun-detail">Dmg ${gun.damage} | R: ${gun.rangeShort || '-'}/${gun.rangeMedium || '-'}/${gun.rangeLong || '-'}</div>
-        </div>
-        <button class="health-btn" data-dir="-1" data-gi="${gi}">\u2212</button>
-        <span class="gun-count">${remaining}/${gun.count}</span>
-        <button class="health-btn" data-dir="1" data-gi="${gi}">+</button>
-      `;
-
-      row.querySelectorAll('.health-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const dir = parseInt(btn.dataset.dir);
-          if (!gunState) return;
-          gunState.remainingCount = clamp(gunState.remainingCount + dir, 0, gun.count);
-          row.querySelector('.gun-count').textContent = `${gunState.remainingCount}/${gun.count}`;
-          save();
-        });
-      });
-
-      gunsSection.appendChild(row);
-    });
-
-    // First broadside indicators
-    const broadsideRow = document.createElement('div');
-    broadsideRow.className = 'gun-row';
-    broadsideRow.innerHTML = '<div class="gun-info"><div class="gun-type">First Broadside</div></div>';
-
-    ['port', 'starboard'].forEach(side => {
-      const avail = ship.status?.firstBroadside?.[side] !== false;
-      const dot = document.createElement('div');
-      dot.className = 'broadside-indicator';
-      dot.innerHTML = `
-        <div class="broadside-dot ${avail ? 'available' : ''}" data-side="${side}"></div>
-        <span class="text-small">${side.charAt(0).toUpperCase() + side.slice(1)}</span>
-      `;
-      dot.querySelector('.broadside-dot').addEventListener('click', () => {
-        if (!ship.status.firstBroadside) ship.status.firstBroadside = { port: true, starboard: true };
-        ship.status.firstBroadside[side] = !ship.status.firstBroadside[side];
-        dot.querySelector('.broadside-dot').classList.toggle('available', ship.status.firstBroadside[side]);
-        save();
-      });
-      broadsideRow.appendChild(dot);
-    });
-    gunsSection.appendChild(broadsideRow);
-
-    // Broadside weight
-    if (ship.broadsideWeight) {
-      const bw = document.createElement('div');
-      bw.className = 'text-small text-muted mt-sm';
-      bw.textContent = `Broadside weight: ${ship.broadsideWeight} lbs`;
-      gunsSection.appendChild(bw);
-    }
-
-    body.appendChild(gunsSection);
-  }
-
-  // --- Criticals Section ---
-  const critSection = makeSection('Criticals');
+  // Criticals
   ['fire', 'leak', 'steering', 'mast', 'officer'].forEach(key => {
     const total = ship.criticals?.[key] || 0;
     if (total === 0) return;
     const label = key.charAt(0).toUpperCase() + key.slice(1);
     const checked = ship.currentCriticals?.[key] || 0;
-    critSection.appendChild(createCheckboxRow({
+    statusSection.appendChild(createCheckboxRow({
       label,
       total,
       checked,
@@ -222,49 +463,10 @@ function buildCardBody(body, ship, game, save) {
       },
     }));
   });
-  body.appendChild(critSection);
-
-  // --- Sail Setting ---
-  const sailSection = makeSection('Sail Setting');
-  sailSection.appendChild(createSegmentedControl({
-    options: SAIL_SETTINGS,
-    value: ship.sailSetting || 'battle',
-    onChange: (v) => {
-      ship.sailSetting = v;
-      save();
-    },
-  }));
-
-  // Speed reference table
-  if (ship.speed) {
-    const speedTable = document.createElement('table');
-    speedTable.className = 'speed-table mt-sm';
-    const currentSail = ship.sailSetting || 'battle';
-    speedTable.innerHTML = `
-      <tr>
-        <th></th><th>Close Hauled</th><th>Reaching</th><th>Running</th>
-      </tr>
-      ${['full', 'battle', 'reefed'].map(setting => {
-        const s = getSpeedForSail(ship.speed, setting);
-        return `
-        <tr class="${setting === currentSail ? 'current-sail' : ''}">
-          <th>${setting.charAt(0).toUpperCase() + setting.slice(1)}</th>
-          <td>${s.closeHauled}</td>
-          <td>${s.reaching}</td>
-          <td>${s.running}</td>
-        </tr>`;
-      }).join('')}
-    `;
-    sailSection.appendChild(speedTable);
-  }
-  body.appendChild(sailSection);
-
-  // --- Status Toggles ---
-  const statusSection = makeSection('Status');
   const toggles = document.createElement('div');
   toggles.className = 'status-toggles';
 
-  ['grappled', 'aground', 'struck'].forEach(key => {
+  ['struck', 'sunk', 'aground'].forEach(key => {
     const label = key.charAt(0).toUpperCase() + key.slice(1);
     toggles.appendChild(createToggle({
       label,
@@ -279,75 +481,37 @@ function buildCardBody(body, ship, game, save) {
   statusSection.appendChild(toggles);
   body.appendChild(statusSection);
 
-  // --- Skills Reference ---
-  const skillsSection = makeSection('Skills');
-  const skillsRef = document.createElement('div');
-  skillsRef.className = 'skills-ref';
-  [
-    { key: 'command', label: 'Command' },
-    { key: 'seamanship', label: 'Seamanship' },
-    { key: 'gunnery', label: 'Gunnery' },
-    { key: 'closeAction', label: 'Close Action' },
-  ].forEach(({ key, label }) => {
-    skillsRef.innerHTML += `
-      <div class="skill-ref-item">
-        <span class="skill-ref-label">${label}</span>
-        <span class="skill-ref-value">${ship.skills?.[key] ?? '-'}</span>
-      </div>
-    `;
-  });
-  skillsSection.appendChild(skillsRef);
-
-  // Movement reference
-  if (ship.movement) {
-    const movRef = document.createElement('div');
-    movRef.className = 'skills-ref mt-sm';
-    movRef.innerHTML = `
-      <div class="skill-ref-item">
-        <span class="skill-ref-label">Maneuver</span>
-        <span class="skill-ref-value">${ship.movement.maneuver ?? '-'}</span>
-      </div>
-      <div class="skill-ref-item">
-        <span class="skill-ref-label">Defense</span>
-        <span class="skill-ref-value">${ship.movement.defense ?? '-'}</span>
-      </div>
-    `;
-    skillsSection.appendChild(movRef);
-  }
-  body.appendChild(skillsSection);
-
   // --- Abilities ---
   if (ship.abilities?.length) {
     const abilitiesSection = makeSection('Abilities');
-    const chipGroup = document.createElement('div');
-    chipGroup.className = 'chip-group';
+    const abilityList = document.createElement('div');
+    abilityList.className = 'ability-cards';
     ship.abilities.forEach(ability => {
-      const chip = document.createElement('span');
-      chip.className = 'chip selected';
-      if (typeof ability === 'object') {
-        chip.textContent = ability.name;
-        if (ability.effect) chip.title = ability.effect;
-      } else {
-        chip.textContent = ability.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      }
-      chipGroup.appendChild(chip);
+      const card = document.createElement('div');
+      card.className = 'ability-card';
+      const name = typeof ability === 'object' ? ability.name : ability.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const effect = typeof ability === 'object' ? ability.effect : '';
+      card.innerHTML = `<div class="ability-card-name">${escapeHtml(name)}</div>${effect ? `<div class="ability-card-effect">${escapeHtml(effect)}</div>` : ''}`;
+      abilityList.appendChild(card);
     });
-    abilitiesSection.appendChild(chipGroup);
+    abilitiesSection.appendChild(abilityList);
     body.appendChild(abilitiesSection);
   }
 
-  // --- Notes ---
-  const notesSection = makeSection('Notes');
-  const notesArea = document.createElement('textarea');
-  notesArea.className = 'ship-notes';
-  notesArea.placeholder = 'Battle notes...';
-  notesArea.value = ship.notes || '';
-  notesArea.addEventListener('input', () => {
-    ship.notes = notesArea.value;
-    save();
+}
+
+function migrateGunState(ship) {
+  if (!ship.currentGuns) return;
+  ship.currentGuns.forEach(gs => {
+    const gun = ship.guns?.find(g => g.id === gs.gunId);
+    if (!gun) return;
+    const isBroadside = gun.facing === 'broadside' || !gun.facing;
+    if (isBroadside && gs.remainingPort === undefined) {
+      const total = gs.remainingCount ?? gun.count;
+      gs.remainingPort = Math.floor(total / 2);
+      gs.remainingStarboard = total - gs.remainingPort;
+    }
   });
-  notesSection.appendChild(notesArea);
-  body.appendChild(notesSection);
 }
 
 function makeSection(title) {
@@ -356,4 +520,3 @@ function makeSection(title) {
   section.innerHTML = `<div class="ship-card-section-title">${escapeHtml(title)}</div>`;
   return section;
 }
-

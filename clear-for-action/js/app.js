@@ -8,7 +8,7 @@ import { renderShipView } from './ship-view.js';
 import { renderShipEditor } from './ship-editor.js';
 import { renderGameList, battleCardHtml } from './game-list.js';
 import { renderGameEditor } from './game-editor.js';
-import { renderGameView } from './game-view.js';
+import { renderGameView, renderShipActionView } from './game-view.js';
 import { formatDate, escapeHtml, shipCardHtml, getGameShips, uuid, deepClone } from './utils.js';
 
 // --- Router ---
@@ -97,6 +97,22 @@ function route() {
         const game = getGame(segments[1]);
         pageTitle.textContent = game?.name || 'Edit Game';
         renderGameEditor(view, segments[1]);
+      } else if (segments.length === 4 && segments[2] === 'ship') {
+        const game = getGame(segments[1]);
+        const allShips = getGameShips(game);
+        const shipIdx = parseInt(segments[3]);
+        const ship = allShips?.[shipIdx];
+        const prevDisabled = shipIdx === 0 ? 'disabled' : '';
+        const nextDisabled = shipIdx >= allShips.length - 1 ? 'disabled' : '';
+        backBtn.onclick = () => { location.hash = `#/games/${segments[1]}`; };
+        pageTitle.innerHTML = `${escapeHtml(ship?.displayName || ship?.name || 'Ship')} <span class="navbar-actions"><button class="navbar-nav-btn" ${prevDisabled} data-dir="prev" aria-label="Previous ship">\u2190</button><span class="navbar-nav-counter">${shipIdx + 1}/${allShips.length}</span><button class="navbar-nav-btn" ${nextDisabled} data-dir="next" aria-label="Next ship">\u2192</button></span>`;
+        document.querySelector('.navbar-nav-btn[data-dir="prev"]')?.addEventListener('click', () => {
+          if (shipIdx > 0) location.hash = `#/games/${segments[1]}/ship/${shipIdx - 1}`;
+        });
+        document.querySelector('.navbar-nav-btn[data-dir="next"]')?.addEventListener('click', () => {
+          if (shipIdx < allShips.length - 1) location.hash = `#/games/${segments[1]}/ship/${shipIdx + 1}`;
+        });
+        renderShipActionView(view, segments[1], shipIdx);
       } else if (segments.length === 2) {
         const game = getGame(segments[1]);
         pageTitle.textContent = game?.name || 'Game';

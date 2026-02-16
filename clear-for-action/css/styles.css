@@ -126,8 +126,12 @@ ul, ol { list-style: none; }
 .speed-table,
 .toggle-label,
 .gun-type,
-.gun-detail,
+.gun-stat-label,
+.gun-stat-val,
 .gun-count,
+.gun-col-label,
+.gun-group-header,
+.gun-group-weight,
 .health-bar-label,
 .stepper-value,
 .stat-label,
@@ -857,6 +861,45 @@ ul, ol { list-style: none; }
   border-left-color: var(--gray);
 }
 
+.ship-card-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  min-height: 56px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.ship-card-thumb {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--parchment);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ship-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ship-card-thumb .placeholder-silhouette {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  opacity: 0.25;
+}
+
+.ship-card-info {
+  flex: 1;
+  min-width: 0;
+}
+
 .ship-card-header {
   display: flex;
   align-items: center;
@@ -870,9 +913,16 @@ ul, ol { list-style: none; }
 
 .ship-card-name {
   font-family: var(--font-heading);
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  flex-shrink: 0;
+  color: var(--navy);
+}
+
+.ship-card-class {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  color: var(--gray);
+  margin-top: 1px;
 }
 
 .ship-card-mini-bars {
@@ -902,7 +952,12 @@ ul, ol { list-style: none; }
 
 .ship-card-section {
   padding: var(--space-sm) 0;
-  border-top: 1px solid var(--parchment-dark);
+  padding-top: var(--space-md);
+  border-top: none;
+  background-image: url('../rope-divider.png');
+  background-repeat: repeat-x;
+  background-position: top center;
+  background-size: auto 6px;
 }
 
 .ship-card-section-title {
@@ -1002,31 +1057,240 @@ ul, ol { list-style: none; }
   font-size: 1.5rem;
 }
 
-/* --- Gun Row --- */
-.gun-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) 0;
-  border-bottom: 1px solid var(--parchment-dark);
-  flex-wrap: wrap;
+/* --- Gun Column Labels --- */
+.gun-row-col-labels {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  padding: var(--space-xs) var(--space-sm) 0;
 }
 
-.gun-row:last-child { border-bottom: none; }
+.gun-col-label {
+  font-family: var(--font-ui);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gray);
+}
 
-.gun-info {
-  flex: 1;
-  min-width: 0;
+.gun-col-label:last-child {
+  text-align: right;
+}
+
+/* --- Gun Row (Broadside) --- */
+.gun-row-broadside,
+.gun-row-chaser {
+  padding: var(--space-sm);
+  border-bottom: 1px solid var(--parchment-dark);
+}
+
+.gun-row-broadside:nth-child(odd),
+.gun-row-chaser:nth-child(odd) {
+  background: rgba(0,0,0,0.04);
+}
+
+.gun-row-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.gun-side {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.gun-side-port {
+  justify-content: flex-start;
+}
+
+.gun-side-stbd {
+  justify-content: flex-end;
+}
+
+
+.gun-side-count {
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 1.05rem;
+  min-width: 1.5em;
+  text-align: center;
+  color: var(--navy);
+}
+
+.gun-side-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--gray-light);
+  background: var(--white);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.1s;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  color: var(--navy);
+}
+
+.gun-side-btn:active:not(:disabled) {
+  background: var(--parchment-dark);
+}
+
+.gun-side-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
 }
 
 .gun-type {
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  background: var(--navy);
+  color: var(--white);
+  margin: 0 calc(-1 * var(--space-sm));
+  padding: 1px var(--space-sm);
 }
 
-.gun-detail {
-  font-size: 0.75rem;
+.gun-stats {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-top: 2px;
+}
+
+.gun-stat-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 var(--space-sm);
+  border-right: 1px solid var(--gray-light);
+  width: 2.5em;
+  flex-shrink: 0;
+}
+
+.gun-stat-cell:last-child {
+  border-right: none;
+}
+
+.gun-stat-cell:first-child {
+  border-right: 3px solid var(--navy);
+}
+
+.gun-stat-label {
+  font-family: var(--font-ui);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
   color: var(--gray);
+  line-height: 1.2;
+}
+
+.gun-stat-val {
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+
+.gun-stat-na {
+  color: var(--gray-light);
+}
+
+/* --- Gun Group Header --- */
+.gun-group-header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--navy);
+  padding: var(--space-sm) 0 var(--space-xs);
+  border-bottom: 2px solid var(--navy);
+  margin-top: var(--space-sm);
+}
+
+.gun-group-header:first-child {
+  margin-top: 0;
+}
+
+.gun-group-weight {
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--gray);
+}
+
+.gun-group-header-fb {
+  margin-left: auto;
+}
+
+/* --- Mini Toggle (used in gun group header) --- */
+.toggle-mini {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.toggle-mini-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: var(--gray);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.toggle-mini-track {
+  width: 28px;
+  height: 16px;
+  border-radius: var(--radius-full);
+  background: var(--gray-light);
+  position: relative;
+  transition: background 0.2s;
+}
+
+.toggle-mini.active .toggle-mini-track {
+  background: var(--navy);
+}
+
+.toggle-mini-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--white);
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  transition: left 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle-mini.active .toggle-mini-thumb {
+  left: 14px;
+}
+
+/* --- Gun Row (Chaser) --- */
+
+
+.gun-chaser-count {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
 }
 
 .gun-count {
@@ -1036,6 +1300,95 @@ ul, ol { list-style: none; }
   font-size: 1rem;
   min-width: 32px;
   text-align: center;
+}
+
+
+/* --- Sail Speed Reference (Action View) --- */
+.sail-speed-ref {
+  display: flex;
+  justify-content: space-around;
+  margin-top: var(--space-sm);
+}
+
+.sail-speed-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sail-speed-label {
+  font-family: var(--font-ui);
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--gray);
+}
+
+.sail-speed-val {
+  font-family: var(--font-ui);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+/* --- Maneuver Helms --- */
+.maneuver-helms {
+  display: flex;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.maneuver-helm {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  cursor: pointer;
+  transition: opacity 0.15s, filter 0.15s;
+  filter: brightness(0) saturate(100%) invert(20%) sepia(30%) saturate(1200%) hue-rotate(180deg) brightness(0.8);
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.maneuver-helm.used {
+  opacity: 0.2;
+  filter: brightness(0) saturate(100%) invert(20%) sepia(30%) saturate(1200%) hue-rotate(180deg) brightness(0.8) grayscale(1);
+}
+
+.status-defense {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-md);
+}
+
+.defense-shield {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 81px;
+}
+
+.defense-shield-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: brightness(0) saturate(100%) invert(20%) sepia(30%) saturate(1200%) hue-rotate(180deg) brightness(0.8);
+}
+
+.defense-shield-val {
+  position: absolute;
+  font-family: var(--font-ui);
+  font-size: 1.875rem;
+  font-weight: 900;
+  color: var(--navy);
+  margin-top: -2px;
+  line-height: 1;
 }
 
 /* --- Speed Reference --- */
@@ -1765,6 +2118,30 @@ ul, ol { list-style: none; }
 }
 .ability-item:last-child { border-bottom: none; }
 
+/* --- Ability Cards (Game View) --- */
+.ability-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+.ability-card {
+  background: var(--parchment);
+  border: 1px solid var(--parchment-dark);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
+.ability-card-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--navy);
+}
+.ability-card-effect {
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin-top: 2px;
+  line-height: 1.35;
+}
+
 /* --- Forces (Game Editor & View) --- */
 .force-card {
   border: 2px solid var(--gray-light);
@@ -2480,6 +2857,156 @@ ul, ol { list-style: none; }
     display: block;
   }
 }
+
+/* --- Ship Action View (Navbar Navigation) --- */
+.navbar-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.5);
+  background: transparent;
+  color: var(--white);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+.navbar-nav-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.15);
+  border-color: var(--white);
+}
+.navbar-nav-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+.navbar-nav-counter {
+  font-family: var(--font-ui);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.7);
+  white-space: nowrap;
+}
+
+.ship-card-chevron {
+  font-size: 1.5rem;
+  color: var(--gray);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* --- Ship Action Detail (no card wrapper) --- */
+.ship-action-detail {
+  /* No card styling — content sits on page background */
+}
+.ship-action-detail.struck {
+  opacity: 0.6;
+}
+.ship-action-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--white);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.ship-action-header-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.ship-action-header-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--parchment);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ship-action-header-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ship-action-header-thumb .placeholder-silhouette {
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  opacity: 0.25;
+}
+.ship-action-header-captain {
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  color: var(--ink-light);
+  font-style: italic;
+  margin-top: 2px;
+}
+.ship-action-header-flag .nationality-flag {
+  height: 24px;
+}
+.ship-action-skills-bar {
+  display: flex;
+  background: var(--navy);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
+.ship-action-skills-cell {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-sm) var(--space-md);
+  border-right: 1px solid var(--navy-light);
+}
+.ship-action-skills-cell:last-child {
+  border-right: none;
+}
+.ship-action-skills-label {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--parchment);
+}
+.ship-action-skills-icon {
+  display: none;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+.ship-action-skills-value {
+  font-family: var(--font-ui);
+  font-size: 1.2rem;
+  font-weight: 900;
+  color: var(--white);
+  margin-left: var(--space-sm);
+}
+/* Narrow screens: swap text labels for icons */
+@media (max-width: 600px) {
+  .ship-action-skills-label { display: none; }
+  .ship-action-skills-icon { display: block; }
+  .ship-action-skills-cell {
+    justify-content: center;
+    gap: var(--space-xs);
+    padding: var(--space-sm) var(--space-sm);
+  }
+}
+.ship-action-body {
+  padding-top: 0;
+}
+
 
 /* --- Print --- */
 @media print {

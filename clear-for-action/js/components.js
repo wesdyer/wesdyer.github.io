@@ -136,13 +136,23 @@ export function createStepper({ value = 0, min = 0, max = 99, step = 1, onChange
 }
 
 // --- Health Bar ---
+function vitalColor(pct) {
+  // Dark green → green → yellow → orange → red → dark red
+  const hue = Math.round((pct / 100) * 120); // 0 (red) to 120 (green)
+  const sat = 75;
+  // Darken at extremes: lightest in middle, darker at 0% and 100%
+  const distFromCenter = Math.abs(pct - 50) / 50; // 0 at center, 1 at extremes
+  const lit = 45 - distFromCenter * 13; // 45% center, 32% at extremes
+  return `hsl(${hue}, ${sat}%, ${lit}%)`;
+}
+
 export function createHealthBar({ label, current, max, color = 'green', mini = false }) {
   const pct = max > 0 ? (current / max) * 100 : 0;
-  const colorClass = pct > 66 ? 'green' : pct > 33 ? 'yellow' : 'red';
+  const bg = vitalColor(pct);
 
   if (mini) {
     return `<div class="health-bar health-bar-mini">
-      <div class="health-bar-fill ${colorClass}" style="width:${pct}%"></div>
+      <div class="health-bar-fill" style="width:${pct}%; background:${bg}"></div>
     </div>`;
   }
 
@@ -152,7 +162,7 @@ export function createHealthBar({ label, current, max, color = 'green', mini = f
       <span>${current}/${max}</span>
     </div>
     <div class="health-bar">
-      <div class="health-bar-fill ${colorClass}" style="width:${pct}%"></div>
+      <div class="health-bar-fill" style="width:${pct}%; background:${bg}"></div>
     </div>
   </div>`;
 }
@@ -164,7 +174,7 @@ export function createInteractiveHealthBar({ label, current, max, vitalKey, colo
 
   const render = () => {
     const pct = max > 0 ? (current / max) * 100 : 0;
-    const colorClass = pct > 66 ? 'green' : pct > 33 ? 'yellow' : 'red';
+    const bg = vitalColor(pct);
     container.innerHTML = `
       <div class="health-bar-label">
         <span>${escapeHtml(label)}</span>
@@ -174,7 +184,7 @@ export function createInteractiveHealthBar({ label, current, max, vitalKey, colo
         <button class="health-btn" data-dir="-1">\u2212</button>
         <div class="health-bar-track">
           <div class="health-bar">
-            <div class="health-bar-fill ${colorClass}" style="width:${pct}%"></div>
+            <div class="health-bar-fill" style="width:${pct}%; background:${bg}"></div>
           </div>
         </div>
         <button class="health-btn" data-dir="1">+</button>
