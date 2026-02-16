@@ -102,8 +102,8 @@ export function crewRatingTag(crewRating) {
 
 export function shipCardHtml(ship, { showActions = true } = {}) {
   const imageHtml = ship.shipImage?.data
-    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}">`
-    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette">`;
+    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" loading="lazy">`
+    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
   const flagHtml = nationalityFlag(ship.nationality);
   const crewTag = crewRatingTag(ship.captain?.crewRating);
 

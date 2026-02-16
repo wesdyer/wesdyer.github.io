@@ -291,7 +291,7 @@ ul, ol { list-style: none; }
   padding: var(--space-sm) var(--space-md);
   color: var(--parchment);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   border-radius: var(--radius-sm);
   min-height: var(--touch-target);
   transition: background 0.15s;
@@ -848,7 +848,7 @@ ul, ol { list-style: none; }
   border: 2px solid var(--gray-light);
   border-radius: var(--radius-full);
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
   user-select: none;
@@ -963,7 +963,7 @@ ul, ol { list-style: none; }
   background: var(--navy-dark);
   color: var(--white);
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
   box-shadow: var(--shadow-md);
   animation: toast-in 0.3s ease;
   pointer-events: auto;
@@ -1982,7 +1982,7 @@ ul, ol { list-style: none; }
 
 .toggle-label {
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 /* --- Empty State --- */

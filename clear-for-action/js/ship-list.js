@@ -38,7 +38,7 @@ export function renderShipList(container) {
       </div>
       ${ships.length === 0 ? `
         <div class="empty-state">
-          <div class="empty-state-icon"><img src="ship-silhouette.png" alt="" style="height:80px;width:auto;opacity:0.6"></div>
+          <div class="empty-state-icon"><img src="ship-silhouette.png" alt="" style="height:80px;width:auto;opacity:0.6" loading="lazy"></div>
           <div class="empty-state-title">${searchQuery ? 'No ships found' : 'No ships yet'}</div>
           <div class="empty-state-text">${searchQuery ? 'Try a different search.' : 'Create your first ship to get started.'}</div>
           ${!searchQuery ? '<a href="#/ships/new" class="btn btn-primary">Create Ship</a>' : ''}

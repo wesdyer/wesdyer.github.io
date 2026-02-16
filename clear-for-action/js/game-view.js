@@ -124,8 +124,8 @@ export function renderShipActionView(container, gameId, shipIndex) {
   const summary = document.createElement('div');
   summary.className = 'ship-action-header';
   const imageHtml = ship.shipImage?.data
-    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}">`
-    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette">`;
+    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" loading="lazy">`
+    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
   const flagHtml = nationalityFlag(ship.nationality);
   const crewTag = crewRatingTag(ship.captain?.crewRating);
   const captainName = ship.captain?.name ? `${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}` : '';
@@ -271,8 +271,8 @@ function buildShipCard(ship, flatIdx, gameId) {
   summary.className = 'ship-card-summary';
 
   const imageHtml = ship.shipImage?.data
-    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}">`
-    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette">`;
+    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" loading="lazy">`
+    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
 
   const crewTag = crewRatingTag(ship.captain?.crewRating);
   const conditions = getActiveConditions(ship);

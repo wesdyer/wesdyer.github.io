@@ -3,14 +3,18 @@
 // ============================================
 
 import { getShip, getShips, getGame, getGames, getStorageStats, saveShip } from './storage.js';
-import { renderShipList } from './ship-list.js';
-import { renderShipView } from './ship-view.js';
-import { renderShipEditor } from './ship-editor.js';
-import { renderGameList, battleCardHtml } from './game-list.js';
-import { renderGameEditor } from './game-editor.js';
-import { renderGameView, renderShipActionView, setSlideDirection } from './game-view.js';
 import { formatDate, escapeHtml, shipCardHtml, getGameShips, uuid, deepClone } from './utils.js';
 import { showToast, confirmDialog, showModal } from './components.js';
+
+// Lazy-loaded modules
+const lazy = {
+  shipList:    () => import('./ship-list.js'),
+  shipView:    () => import('./ship-view.js'),
+  shipEditor:  () => import('./ship-editor.js'),
+  gameList:    () => import('./game-list.js'),
+  gameEditor:  () => import('./game-editor.js'),
+  gameView:    () => import('./game-view.js'),
+};
 
 function setupShipyardImportExport(listContainer) {
   // Export
@@ -118,7 +122,7 @@ function setupShipyardImportExport(listContainer) {
 }
 
 // --- Router ---
-function route() {
+async function route() {
   const hash = location.hash || '#/';
   const view = document.getElementById('view');
   view.innerHTML = '';
@@ -158,25 +162,29 @@ function route() {
   try {
     if (segments.length === 0) {
       pageTitle.textContent = '';
-      renderHome(view);
+      await renderHome(view);
     }
     // Ships
     else if (segments[0] === 'ships') {
       if (segments.length === 1) {
         pageTitle.innerHTML = 'Shipyard <span class="navbar-actions"><button class="navbar-icon-btn" id="nav-import-ships" aria-label="Import ships" title="Import"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button><button class="navbar-icon-btn" id="nav-export-ships" aria-label="Export ships" title="Export"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><a href="#/ships/new" class="btn btn-primary btn-add navbar-add" aria-label="New Ship">+</a></span>';
+        const { renderShipList } = await lazy.shipList();
         renderShipList(view);
         setupShipyardImportExport(view);
       } else if (segments[1] === 'new') {
         pageTitle.textContent = 'New Ship';
         const params = new URLSearchParams(hash.includes('?') ? hash.split('?')[1] : '');
+        const { renderShipEditor } = await lazy.shipEditor();
         renderShipEditor(view, null, params);
       } else if (segments.length === 3 && segments[2] === 'edit') {
         const ship = getShip(segments[1]);
         pageTitle.textContent = ship?.name || 'Edit Ship';
+        const { renderShipEditor } = await lazy.shipEditor();
         renderShipEditor(view, segments[1]);
       } else if (segments.length === 2) {
         const ship = getShip(segments[1]);
         pageTitle.innerHTML = `${escapeHtml(ship?.name || 'Ship')} <span class="navbar-actions"><a href="#/ships/${segments[1]}/edit" class="navbar-edit" aria-label="Edit ship"><img src="quill-white.png" alt="Edit" class="navbar-quill-icon"></a></span>`;
+        const { renderShipView } = await lazy.shipView();
         renderShipView(view, segments[1]);
       }
     }
@@ -184,13 +192,16 @@ function route() {
     else if (segments[0] === 'games') {
       if (segments.length === 1) {
         pageTitle.innerHTML = 'Battles <a href="#/games/new" class="btn btn-primary btn-add navbar-add" aria-label="New Battle">+</a>';
+        const { renderGameList } = await lazy.gameList();
         renderGameList(view);
       } else if (segments[1] === 'new') {
         pageTitle.textContent = 'New Game';
+        const { renderGameEditor } = await lazy.gameEditor();
         renderGameEditor(view, null);
       } else if (segments.length === 3 && segments[2] === 'edit') {
         const game = getGame(segments[1]);
         pageTitle.textContent = game?.name || 'Edit Game';
+        const { renderGameEditor } = await lazy.gameEditor();
         renderGameEditor(view, segments[1]);
       } else if (segments.length === 4 && segments[2] === 'ship') {
         const game = getGame(segments[1]);
@@ -201,16 +212,18 @@ function route() {
         const nextDisabled = shipIdx >= allShips.length - 1 ? 'disabled' : '';
         backBtn.onclick = () => { location.hash = `#/games/${segments[1]}`; };
         pageTitle.innerHTML = `${escapeHtml(ship?.displayName || ship?.name || 'Ship')} <span class="navbar-actions"><button class="navbar-nav-btn" ${prevDisabled} data-dir="prev" aria-label="Previous ship">\u2190</button><span class="navbar-nav-counter">${shipIdx + 1}/${allShips.length}</span><button class="navbar-nav-btn" ${nextDisabled} data-dir="next" aria-label="Next ship">\u2192</button></span>`;
+        const gv = await lazy.gameView();
         document.querySelector('.navbar-nav-btn[data-dir="prev"]')?.addEventListener('click', () => {
-          if (shipIdx > 0) { setSlideDirection('right'); location.hash = `#/games/${segments[1]}/ship/${shipIdx - 1}`; }
+          if (shipIdx > 0) { gv.setSlideDirection('right'); location.hash = `#/games/${segments[1]}/ship/${shipIdx - 1}`; }
         });
         document.querySelector('.navbar-nav-btn[data-dir="next"]')?.addEventListener('click', () => {
-          if (shipIdx < allShips.length - 1) { setSlideDirection('left'); location.hash = `#/games/${segments[1]}/ship/${shipIdx + 1}`; }
+          if (shipIdx < allShips.length - 1) { gv.setSlideDirection('left'); location.hash = `#/games/${segments[1]}/ship/${shipIdx + 1}`; }
         });
-        renderShipActionView(view, segments[1], shipIdx);
+        gv.renderShipActionView(view, segments[1], shipIdx);
       } else if (segments.length === 2) {
         const game = getGame(segments[1]);
         pageTitle.innerHTML = `${escapeHtml(game?.name || 'Game')} <span class="navbar-actions"><a href="#/games/${segments[1]}/edit" class="navbar-edit" aria-label="Edit battle"><img src="quill-white.png" alt="Edit" class="navbar-quill-icon"></a></span>`;
+        const { renderGameView } = await lazy.gameView();
         renderGameView(view, segments[1]);
       }
     }
@@ -225,11 +238,17 @@ function route() {
 }
 
 // --- Home Dashboard ---
-function renderHome(container) {
+async function renderHome(container) {
   const ships = getShips().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
   const games = getGames().sort((a, b) => new Date(b.lastPlayed || b.createdAt) - new Date(a.lastPlayed || a.createdAt));
   const recentShips = ships.slice(0, 3);
   const recentGames = games.slice(0, 3);
+
+  // Lazy-load battleCardHtml only if needed
+  let battleCardHtml;
+  if (recentGames.length > 0) {
+    ({ battleCardHtml } = await lazy.gameList());
+  }
 
   container.innerHTML = `
     <div class="home-hero">

@@ -31,7 +31,7 @@ export function renderGameList(container) {
       </div>
       ${games.length === 0 ? `
         <div class="empty-state">
-          <div class="empty-state-icon"><img src="battle-icon.png" alt="" style="height:80px;width:auto;opacity:0.6"></div>
+          <div class="empty-state-icon"><img src="battle-icon.png" alt="" style="height:80px;width:auto;opacity:0.6" loading="lazy"></div>
           <div class="empty-state-title">${hasFilter ? 'No battles found' : 'No battles yet'}</div>
           <div class="empty-state-text">${hasFilter ? 'Try a different search.' : 'Create your first battle to get started.'}</div>
           ${!hasFilter ? '<a href="#/games/new" class="btn btn-primary">Create Battle</a>' : ''}

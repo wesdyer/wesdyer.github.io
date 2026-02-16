@@ -16,8 +16,8 @@ export function renderShipView(container, shipId) {
   const flag = nationalityFlag(ship.nationality);
   // --- Header (card-style) ---
   const imageHtml = ship.shipImage?.data
-    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" class="zoomable-img">`
-    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette">`;
+    ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" class="zoomable-img" loading="lazy">`
+    : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
   const crewTag = crewRatingTag(ship.captain?.crewRating);
 
   let headerHtml = `<div class="ship-view-card">
@@ -39,7 +39,7 @@ export function renderShipView(container, shipId) {
     <div class="form-section-title">Captain & Crew</div>
     ${(ship.captain?.name || ship.captain?.rank || ship.captain?.crewRating) ? `
     <div class="ship-view-captain">
-      ${ship.captain.image?.data ? `<div class="ship-view-captain-img"><img src="${ship.captain.image.data}" alt="${escapeHtml(ship.captain.name || 'Captain')}" class="zoomable-img"></div>` : ''}
+      ${ship.captain.image?.data ? `<div class="ship-view-captain-img"><img src="${ship.captain.image.data}" alt="${escapeHtml(ship.captain.name || 'Captain')}" class="zoomable-img" loading="lazy"></div>` : ''}
       <div>
         ${ship.captain.name ? `<div class="ship-view-captain-name">${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}</div>` : ''}
         ${crewTag ? `<div style="margin-top:4px">${crewTag}</div>` : ''}
