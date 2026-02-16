@@ -80,7 +80,8 @@ html {
 
 body {
   font-family: var(--font-body);
-  background: var(--parchment);
+  background: url('../rhumb-lines.png') no-repeat bottom right / 600px, var(--parchment) url('../parchment-texture.png') repeat;
+  background-attachment: fixed, scroll;
   color: var(--ink);
   line-height: 1.5;
   min-height: 100dvh;
@@ -126,6 +127,7 @@ ul, ol { list-style: none; }
   background: var(--navy);
   color: var(--white);
   box-shadow: var(--shadow-md);
+  border-bottom: 2px solid #ffd740;
 }
 
 .navbar-back {
@@ -395,11 +397,15 @@ ul, ol { list-style: none; }
 .form-section {
   margin-bottom: var(--space-lg);
   padding-bottom: var(--space-lg);
-  border-bottom: 1px solid var(--parchment-dark);
+  border-bottom: none;
+  background-image: url('../rope-divider.png');
+  background-repeat: repeat-x;
+  background-position: bottom center;
+  background-size: auto 6px;
 }
 
 .form-section:last-child {
-  border-bottom: none;
+  background-image: none;
 }
 
 .form-section-title {
@@ -1818,6 +1824,17 @@ ul, ol { list-style: none; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-lg);
+  background-image: url('../rope-divider.png');
+  background-repeat: repeat-x;
+  background-position: bottom center;
+  background-size: auto 6px;
+}
+.ship-view-two-col .form-section {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  background-image: none;
 }
 
 .ship-view-captain {
