@@ -6,7 +6,7 @@ import { getGame, autoSave } from './storage.js';
 import { SAIL_SETTINGS } from './data.js';
 import {
   createHealthBar, createInteractiveHealthBar, createCheckboxRow,
-  createSegmentedControl, createToggle, vitalColor,
+  createCriticalRow, createSegmentedControl, createToggle, vitalColor,
 } from './components.js';
 import { escapeHtml, nationalityFlag, sailIcon, clamp, getSpeedForSail, getGameShips, crewRatingTag } from './utils.js';
 
@@ -209,9 +209,26 @@ export function renderShipActionView(container, gameId, shipIndex) {
   }, { passive: true });
 }
 
+function getOverallHealth(ship) {
+  const v = ship.vitals || {};
+  const cv = ship.currentVitals || {};
+  // Weighted aggregate: crew and hull matter most, morale and rigging secondary
+  const weights = { morale: 0.2, crew: 0.3, rigging: 0.2, hull: 0.3 };
+  let totalWeight = 0;
+  let weightedSum = 0;
+  for (const key of ['morale', 'crew', 'rigging', 'hull']) {
+    const max = v[key] || 0;
+    if (max > 0) {
+      weightedSum += (cv[key] / max) * weights[key];
+      totalWeight += weights[key];
+    }
+  }
+  return totalWeight > 0 ? (weightedSum / totalWeight) * 100 : 100;
+}
+
 function buildShipCard(ship, flatIdx, gameId) {
   const card = document.createElement('div');
-  card.className = `card ship-card ${ship.status?.struck ? 'struck' : ''}`;
+  card.className = `card ship-card ${ship.status?.struck ? 'struck' : ''} ${ship.status?.sunk ? 'sunk' : ''}`;
 
   const summary = document.createElement('div');
   summary.className = 'ship-card-summary';
@@ -220,16 +237,32 @@ function buildShipCard(ship, flatIdx, gameId) {
     ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}">`
     : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette">`;
 
+  const crewTag = crewRatingTag(ship.captain?.crewRating);
+  const conditions = getActiveConditions(ship);
+  const healthPct = getOverallHealth(ship);
+  const healthBg = vitalColor(healthPct);
+
+  const conditionsHtml = conditions.length > 0
+    ? `<div class="ship-card-conditions">${conditions.map(c =>
+        `<span class="condition-tag-mini">${escapeHtml(c.name)}</span>`
+      ).join('')}</div>`
+    : '';
+
   summary.innerHTML = `
     <div class="ship-card-thumb">${imageHtml}</div>
     <div class="ship-card-info">
-      <div class="ship-card-name">${escapeHtml(ship.displayName || ship.name || 'Ship')}</div>
-      <div class="ship-card-class">${escapeHtml(ship.classAndRating || '')}</div>
-      <div class="ship-card-mini-bars">
-        ${['morale', 'crew', 'rigging', 'hull'].map(key =>
-          createHealthBar({ label: key, current: ship.currentVitals[key], max: ship.vitals[key], mini: true })
-        ).join('')}
+      <div class="ship-card-name-row">
+        <span class="ship-card-name">${escapeHtml(ship.displayName || ship.name || 'Ship')}</span>
+        ${crewTag ? `<span class="ship-card-crew-tag">${crewTag}</span>` : ''}
       </div>
+      <div class="ship-card-class">${escapeHtml(ship.classAndRating || '')}</div>
+      <div class="ship-card-health">
+        <div class="health-bar health-bar-mini">
+          <div class="health-bar-fill" style="width:${healthPct}%; background:${healthBg}"></div>
+        </div>
+        <span class="ship-card-health-pct">${Math.round(healthPct)}%</span>
+      </div>
+      ${conditionsHtml}
     </div>
     <span class="ship-card-chevron">\u203A</span>
   `;
@@ -550,22 +583,30 @@ function buildCardBody(body, ship, game, save) {
   statusSection.appendChild(vitalsRow);
 
   // Criticals
-  ['fire', 'leak', 'steering', 'mast', 'officer'].forEach(key => {
-    const total = ship.criticals?.[key] || 0;
-    if (total === 0) return;
-    const label = key.charAt(0).toUpperCase() + key.slice(1);
-    const checked = ship.currentCriticals?.[key] || 0;
-    statusSection.appendChild(createCheckboxRow({
-      label,
-      total,
-      checked,
-      onChange: (v) => {
-        if (!ship.currentCriticals) ship.currentCriticals = { fire: 0, leak: 0, steering: 0, mast: 0, officer: 0 };
-        ship.currentCriticals[key] = v;
-        save();
-      },
-    }));
-  });
+  const criticalKeys = ['fire', 'leak', 'steering', 'mast', 'officer'];
+  const hasCriticals = criticalKeys.some(k => (ship.criticals?.[k] || 0) > 0);
+  if (hasCriticals) {
+    const critTracker = document.createElement('div');
+    critTracker.className = 'critical-tracker';
+    criticalKeys.forEach(key => {
+      const total = ship.criticals?.[key] || 0;
+      if (total === 0) return;
+      const label = key.charAt(0).toUpperCase() + key.slice(1);
+      const checked = ship.currentCriticals?.[key] || 0;
+      critTracker.appendChild(createCriticalRow({
+        key,
+        label,
+        total,
+        checked,
+        onChange: (v) => {
+          if (!ship.currentCriticals) ship.currentCriticals = { fire: 0, leak: 0, steering: 0, mast: 0, officer: 0 };
+          ship.currentCriticals[key] = v;
+          save();
+        },
+      }));
+    });
+    statusSection.appendChild(critTracker);
+  }
   const toggles = document.createElement('div');
   toggles.className = 'status-toggles';
 

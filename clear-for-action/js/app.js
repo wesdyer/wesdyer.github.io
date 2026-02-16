@@ -69,20 +69,8 @@ function route() {
         renderShipEditor(view, segments[1]);
       } else if (segments.length === 2) {
         const ship = getShip(segments[1]);
-        pageTitle.innerHTML = `${escapeHtml(ship?.name || 'Ship')} <span class="navbar-actions"><a href="#/ships/${segments[1]}/edit" class="navbar-edit" aria-label="Edit ship"><img src="quill-white.png" alt="Edit" class="navbar-quill-icon"></a><button class="navbar-edit navbar-duplicate-btn" data-id="${segments[1]}" aria-label="Duplicate ship"><img src="duplicate-icon.png" alt="Duplicate" class="navbar-quill-icon"></button></span>`;
+        pageTitle.innerHTML = `${escapeHtml(ship?.name || 'Ship')} <span class="navbar-actions"><a href="#/ships/${segments[1]}/edit" class="navbar-edit" aria-label="Edit ship"><img src="quill-white.png" alt="Edit" class="navbar-quill-icon"></a></span>`;
         renderShipView(view, segments[1]);
-        // Duplicate button handler
-        document.querySelector('.navbar-duplicate-btn')?.addEventListener('click', () => {
-          const orig = getShip(segments[1]);
-          if (!orig) return;
-          const copy = deepClone(orig);
-          copy.id = uuid();
-          copy.name = (orig.name || 'Untitled') + ' Copy';
-          copy.createdAt = new Date().toISOString();
-          copy.updatedAt = new Date().toISOString();
-          saveShip(copy);
-          location.hash = `#/ships/${copy.id}`;
-        });
       }
     }
     // Games
@@ -115,7 +103,7 @@ function route() {
         renderShipActionView(view, segments[1], shipIdx);
       } else if (segments.length === 2) {
         const game = getGame(segments[1]);
-        pageTitle.textContent = game?.name || 'Game';
+        pageTitle.innerHTML = `${escapeHtml(game?.name || 'Game')} <span class="navbar-actions"><a href="#/games/${segments[1]}/edit" class="navbar-edit" aria-label="Edit battle"><img src="quill-white.png" alt="Edit" class="navbar-quill-icon"></a></span>`;
         renderGameView(view, segments[1]);
       }
     }
@@ -139,7 +127,7 @@ function renderHome(container) {
   container.innerHTML = `
     <div class="home-hero">
       <img src="pob.png" alt="Naval battle">
-      <div class="home-hero-tagline">Manage Ships. Fight Battles. Command the Seas.</div>
+      <div class="home-hero-tagline">Build Ships. Fight Battles. Command the Seas.</div>
     </div>
     <div class="home-nav">
       <a href="#/ships" class="home-nav-card">

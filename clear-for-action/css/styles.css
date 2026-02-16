@@ -34,6 +34,18 @@
   --rigging-color: var(--amber);
   --hull-color: var(--red);
 
+  /* Critical colors */
+  --critical-fire: #d35400;
+  --critical-fire-bg: #fdebd0;
+  --critical-leak: #2980b9;
+  --critical-leak-bg: #d6eaf8;
+  --critical-steering: #7f8c8d;
+  --critical-steering-bg: #eaecee;
+  --critical-mast: #8b6914;
+  --critical-mast-bg: #f9f0d9;
+  --critical-officer: #8e44ad;
+  --critical-officer-bg: #f0e0f7;
+
   /* Typography */
   --font-heading: 'IM Fell English SC', Georgia, 'Times New Roman', serif;
   --font-body: 'Source Serif 4', Georgia, 'Times New Roman', serif;
@@ -212,6 +224,7 @@ ul, ol { list-style: none; }
   height: 24px;
   width: 24px;
   flex-shrink: 0;
+  filter: brightness(0) invert(1);
 }
 
 .navbar-brand.hidden {
@@ -628,6 +641,151 @@ ul, ol { list-style: none; }
   transform: scale(0.92);
 }
 
+/* --- Critical Damage Tracker --- */
+.critical-tracker {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.critical-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: 6px var(--space-sm);
+  border-radius: var(--radius-md);
+  transition: background-color 0.15s ease;
+  outline: none;
+}
+.critical-row:focus-visible {
+  box-shadow: 0 0 0 2px var(--navy);
+}
+
+.critical-row-icon {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.critical-row-label {
+  font-family: var(--font-ui);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  min-width: 68px;
+  flex-shrink: 0;
+}
+
+.critical-pips {
+  display: flex;
+  gap: 5px;
+  flex: 1;
+}
+
+.critical-pip {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--gray-light);
+  background: var(--white);
+  cursor: pointer;
+  transition: transform 0.1s ease, background 0.15s ease, border-color 0.15s ease;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+.critical-pip:active {
+  transform: scale(0.88);
+}
+.critical-pip-pop {
+  animation: pip-pop 0.15s ease-out;
+}
+
+/* Per-critical colors for filled pips + label */
+.critical-fire .critical-row-label { color: var(--critical-fire); }
+.critical-fire .critical-pip.filled {
+  background: var(--critical-fire);
+  border-color: var(--critical-fire);
+}
+
+.critical-leak .critical-row-label { color: var(--critical-leak); }
+.critical-leak .critical-pip.filled {
+  background: var(--critical-leak);
+  border-color: var(--critical-leak);
+}
+
+.critical-steering .critical-row-label { color: var(--critical-steering); }
+.critical-steering .critical-pip.filled {
+  background: var(--critical-steering);
+  border-color: var(--critical-steering);
+}
+
+.critical-mast .critical-row-label { color: var(--critical-mast); }
+.critical-mast .critical-pip.filled {
+  background: var(--critical-mast);
+  border-color: var(--critical-mast);
+}
+
+.critical-officer .critical-row-label { color: var(--critical-officer); }
+.critical-officer .critical-pip.filled {
+  background: var(--critical-officer);
+  border-color: var(--critical-officer);
+}
+
+/* Flash feedback */
+.critical-flash {
+  animation: critical-flash-bg 0.3s ease-out;
+}
+.critical-flash-up {
+  animation: critical-flash-up-bg 0.3s ease-out;
+}
+
+.critical-fire.critical-flash-up { --flash-color: var(--critical-fire-bg); }
+.critical-leak.critical-flash-up { --flash-color: var(--critical-leak-bg); }
+.critical-steering.critical-flash-up { --flash-color: var(--critical-steering-bg); }
+.critical-mast.critical-flash-up { --flash-color: var(--critical-mast-bg); }
+.critical-officer.critical-flash-up { --flash-color: var(--critical-officer-bg); }
+
+@keyframes pip-pop {
+  0% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+@keyframes critical-flash-bg {
+  0% { background-color: var(--parchment-dark); }
+  100% { background-color: transparent; }
+}
+@keyframes critical-flash-up-bg {
+  0% { background-color: var(--flash-color, var(--parchment-dark)); }
+  100% { background-color: transparent; }
+}
+
+.critical-clear {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--gray);
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.critical-clear:hover {
+  color: var(--red);
+  background: rgba(192, 57, 43, 0.1);
+}
+.critical-clear.invisible {
+  visibility: hidden;
+}
+
 /* --- Segmented Control --- */
 .segmented-control {
   display: flex;
@@ -911,6 +1069,13 @@ ul, ol { list-style: none; }
   -webkit-user-select: none;
 }
 
+.ship-card-name-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-xs);
+  flex-wrap: wrap;
+}
+
 .ship-card-name {
   font-family: var(--font-heading);
   font-size: 1.1rem;
@@ -918,11 +1083,57 @@ ul, ol { list-style: none; }
   color: var(--navy);
 }
 
+.ship-card-crew-tag .crew-tag {
+  font-size: 0.6rem;
+  padding: 1px 6px;
+}
+
 .ship-card-class {
   font-family: var(--font-ui);
   font-size: 0.8125rem;
   color: var(--gray);
   margin-top: 1px;
+}
+
+.ship-card-health {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-top: 4px;
+}
+.ship-card-health .health-bar-mini {
+  flex: 1;
+  height: 6px;
+}
+.ship-card-health-pct {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--gray);
+  min-width: 28px;
+  text-align: right;
+}
+
+.ship-card-conditions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 4px;
+}
+.condition-tag-mini {
+  font-family: var(--font-ui);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  background: var(--red);
+  color: var(--white);
+  padding: 1px 5px;
+  border-radius: 8px;
+}
+
+.ship-card.sunk {
+  opacity: 0.45;
 }
 
 .ship-card-mini-bars {
@@ -2057,7 +2268,7 @@ ul, ol { list-style: none; }
 .home-nav-icon { font-size: 2.25rem; }
 .home-nav-img {
   width: auto;
-  filter: invert(1);
+  filter: invert(0.75);
   object-fit: contain;
 }
 .home-nav-img-ship { height: 65px; }
@@ -2229,13 +2440,22 @@ ul, ol { list-style: none; }
 
 .force-card-header {
   display: flex;
+  flex-direction: column;
   gap: var(--space-sm);
   margin-bottom: var(--space-md);
 }
-.force-card-header .form-select {
+.force-nat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+.force-nat-row .form-select {
   flex: 0 0 auto;
   width: auto;
   min-width: 120px;
+}
+.force-nat-flag .nationality-flag {
+  height: 24px;
 }
 .force-card-header .form-input {
   flex: 1;

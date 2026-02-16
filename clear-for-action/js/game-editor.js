@@ -2,11 +2,11 @@
 // Clear for Action! — Game Editor
 // ============================================
 
-import { getGame, getShips, saveGame } from './storage.js';
+import { getGame, getShips, saveGame, deleteGame } from './storage.js';
 import { NATIONALITIES } from './data.js';
 import { createGameShip } from './data.js';
-import { showToast, showModal } from './components.js';
-import { uuid, escapeHtml, nationalityFlag, getGameShips } from './utils.js';
+import { showToast, showModal, confirmDialog } from './components.js';
+import { uuid, escapeHtml, nationalityFlag, getGameShips, deepClone } from './utils.js';
 
 export function renderGameEditor(container, gameId) {
   const isNew = !gameId;
@@ -36,17 +36,10 @@ export function renderGameEditor(container, gameId) {
 
   const render = () => {
     container.innerHTML = `
-      <div class="page-header">
-        <h1>${isNew ? 'New Game' : 'Edit Game'}</h1>
-        <div class="flex gap-sm">
-          <a href="${isNew ? '#/games' : '#/games/' + gameId}" class="btn btn-ghost">Cancel</a>
-          <button id="save-game" class="btn btn-primary">Save</button>
-        </div>
-      </div>
       <div class="form-section">
-        <div class="form-section-title">Game Details</div>
+        <div class="form-section-title">Battle Details</div>
         <div class="form-group">
-          <label class="form-label">Game Name *</label>
+          <label class="form-label">Name *</label>
           <input type="text" class="form-input" id="game-name" value="${escapeHtml(game.name)}" placeholder="e.g. Battle of the Nile">
         </div>
         <div class="form-group">
@@ -71,23 +64,21 @@ export function renderGameEditor(container, gameId) {
         name: 'British',
         ships: [],
       });
+      doSave();
       renderForces();
     });
 
-    // Save
-    container.querySelector('#save-game').addEventListener('click', () => {
-      const name = container.querySelector('#game-name').value.trim();
-      if (!name) {
-        showToast('Game name is required', 'error');
-        return;
-      }
-      game.name = name;
-      game.description = container.querySelector('#game-description').value;
-      game.forces = forces;
-      saveGame(game);
-      showToast(isNew ? 'Game created' : 'Game saved', 'success');
-      location.hash = isNew ? `#/games/${game.id}` : `#/games/${gameId}`;
-    });
+    container.querySelector('#game-name').addEventListener('input', doSave);
+    container.querySelector('#game-description').addEventListener('input', doSave);
+  };
+
+  const doSave = () => {
+    const nameEl = container.querySelector('#game-name');
+    const descEl = container.querySelector('#game-description');
+    if (nameEl) game.name = nameEl.value.trim() || game.name;
+    if (descEl) game.description = descEl.value;
+    game.forces = forces;
+    saveGame(game);
   };
 
   const renderForces = () => {
@@ -133,14 +124,27 @@ export function renderGameEditor(container, gameId) {
           nameInput.value = force.name;
           nameManuallySet = false;
         }
+        updateFlag();
+        doSave();
       });
 
       nameInput.addEventListener('input', () => {
         force.name = nameInput.value;
         nameManuallySet = true;
+        doSave();
       });
 
-      header.append(natSelect, nameInput);
+      const flagSpan = document.createElement('span');
+      flagSpan.className = 'force-nat-flag';
+      flagSpan.innerHTML = nationalityFlag(force.nationality);
+
+      const natRow = document.createElement('div');
+      natRow.className = 'force-nat-row';
+      natRow.append(natSelect, flagSpan);
+
+      const updateFlag = () => { flagSpan.innerHTML = nationalityFlag(force.nationality); };
+
+      header.append(natRow, nameInput);
       card.appendChild(header);
 
       // Ship list
@@ -154,7 +158,6 @@ export function renderGameEditor(container, gameId) {
           const row = document.createElement('div');
           row.className = 'force-ship-row';
           row.innerHTML = `
-            <span class="force-ship-flag">${nationalityFlag(ship.nationality)}</span>
             <span class="force-ship-name">${escapeHtml(ship.displayName || ship.name || 'Untitled')}</span>
             <span class="force-ship-class">${escapeHtml(ship.classAndRating || '')}</span>
             <button class="btn btn-ghost btn-sm force-ship-remove" title="Remove" aria-label="Remove ship" style="color:var(--red);padding:4px">
@@ -304,4 +307,57 @@ export function renderGameEditor(container, gameId) {
   };
 
   render();
+
+  // --- Bottom actions: Done / Duplicate / Delete ---
+  const bottomSection = document.createElement('div');
+  bottomSection.className = 'editor-bottom';
+
+  const doneBtn = document.createElement('button');
+  doneBtn.className = 'btn btn-primary';
+  doneBtn.type = 'button';
+  doneBtn.textContent = 'Done';
+  doneBtn.addEventListener('click', () => {
+    doSave();
+    location.hash = isNew ? `#/games/${game.id}` : `#/games/${gameId}`;
+  });
+
+  const duplicateBtn = document.createElement('button');
+  duplicateBtn.className = 'btn btn-secondary';
+  duplicateBtn.type = 'button';
+  duplicateBtn.textContent = 'Duplicate';
+  duplicateBtn.addEventListener('click', async () => {
+    const ok = await confirmDialog(
+      `Duplicate "${game.name || 'this battle'}"?`,
+      { title: 'Duplicate Battle', confirmText: 'Duplicate' }
+    );
+    if (!ok) return;
+    doSave();
+    const copy = deepClone(game);
+    copy.id = uuid();
+    copy.name = (game.name || 'Untitled') + ' Copy';
+    copy.createdAt = new Date().toISOString();
+    copy.lastPlayed = new Date().toISOString();
+    saveGame(copy);
+    showToast('Battle duplicated', 'success');
+    location.hash = `#/games/${copy.id}/edit`;
+  });
+
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'btn btn-danger';
+  deleteBtn.type = 'button';
+  deleteBtn.textContent = 'Delete';
+  deleteBtn.addEventListener('click', async () => {
+    const ok = await confirmDialog(
+      `Delete "${game.name || 'this battle'}"? This cannot be undone.`,
+      { title: 'Delete Battle', confirmText: 'Delete', danger: true }
+    );
+    if (ok) {
+      deleteGame(game.id);
+      showToast('Battle deleted', 'success');
+      location.hash = '#/games';
+    }
+  });
+
+  bottomSection.append(doneBtn, duplicateBtn, deleteBtn);
+  container.appendChild(bottomSection);
 }

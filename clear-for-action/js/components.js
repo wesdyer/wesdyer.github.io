@@ -203,7 +203,7 @@ export function createInteractiveHealthBar({ label, current, max, vitalKey, colo
   return container;
 }
 
-// --- Checkbox Row (for criticals) ---
+// --- Checkbox Row (legacy, kept for non-critical uses) ---
 export function createCheckboxRow({ label, total, checked = 0, onChange }) {
   const row = document.createElement('div');
   row.className = 'checkbox-row';
@@ -226,6 +226,91 @@ export function createCheckboxRow({ label, total, checked = 0, onChange }) {
       });
     });
   };
+  render();
+  return row;
+}
+
+// --- Critical Damage Row ---
+const CRITICAL_CONFIG = {
+  fire:     { icon: '\u{1F525}', color: 'critical-fire',     hint: 'Active fire aboard ship (-3 all skills)' },
+  leak:     { icon: '\u{1F4A7}', color: 'critical-leak',     hint: 'Ship taking water (-1 all skills)' },
+  steering: { icon: '\u2699',    color: 'critical-steering',  hint: 'Steering damage (-2 or -4 seamanship)' },
+  mast:     { icon: '\u2693',    color: 'critical-mast',      hint: 'Mast destroyed (-2 all skills)' },
+  officer:  { icon: '\u2694',    color: 'critical-officer',   hint: 'Officer down (-1 or -4 all skills)' },
+};
+
+export function createCriticalRow({ key, label, total, checked = 0, onChange }) {
+  const cfg = CRITICAL_CONFIG[key] || { icon: '\u26A0', color: 'critical-fire', hint: '' };
+  const row = document.createElement('div');
+  row.className = `critical-row ${cfg.color}`;
+  row.setAttribute('role', 'group');
+  row.setAttribute('tabindex', '0');
+
+  let prevChecked = checked;
+
+  const render = (animate = false) => {
+    const increased = checked > prevChecked;
+    row.setAttribute('aria-label', `${label} critical severity ${checked} of ${total}`);
+    row.innerHTML = `
+      <span class="critical-row-icon" title="${escapeHtml(cfg.hint)}">${cfg.icon}</span>
+      <span class="critical-row-label" title="${escapeHtml(cfg.hint)}">${escapeHtml(label)}</span>
+      <div class="critical-pips">
+        ${Array.from({ length: total }, (_, i) =>
+          `<button class="critical-pip ${i < checked ? 'filled' : ''}" data-idx="${i}" type="button" aria-label="${label} ${i + 1} of ${total}"></button>`
+        ).join('')}
+      </div>
+      <button class="critical-clear ${checked === 0 ? 'invisible' : ''}" type="button" aria-label="Clear ${label}" title="Clear">\u00D7</button>
+    `;
+
+    if (animate) {
+      row.classList.remove('critical-flash', 'critical-flash-up');
+      void row.offsetWidth;
+      row.classList.add(increased ? 'critical-flash-up' : 'critical-flash');
+      // Animate filled pips
+      row.querySelectorAll('.critical-pip.filled').forEach(pip => {
+        pip.classList.add('critical-pip-pop');
+      });
+    }
+
+    row.querySelectorAll('.critical-pip').forEach(pip => {
+      pip.addEventListener('click', () => {
+        const idx = parseInt(pip.dataset.idx);
+        prevChecked = checked;
+        if (idx + 1 === checked) {
+          checked = idx; // tap highest filled → decrement
+        } else {
+          checked = idx + 1;
+        }
+        onChange?.(checked);
+        render(true);
+      });
+    });
+
+    row.querySelector('.critical-clear')?.addEventListener('click', () => {
+      prevChecked = checked;
+      checked = 0;
+      onChange?.(checked);
+      render(true);
+    });
+  };
+
+  // Keyboard support
+  row.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      prevChecked = checked;
+      checked = Math.min(total, checked + 1);
+      onChange?.(checked);
+      render(true);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      prevChecked = checked;
+      checked = Math.max(0, checked - 1);
+      onChange?.(checked);
+      render(true);
+    }
+  });
+
   render();
   return row;
 }
