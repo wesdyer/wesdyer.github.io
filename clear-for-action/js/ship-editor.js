@@ -319,8 +319,8 @@ function buildForm(form, ship, isNew, autoSave) {
   // --- Tab definitions ---
   const tabDefs = [
     { id: 'overview', label: 'Overview', sections: isNew ? [form.__templateSection, overview] : [overview] },
-    { id: 'crew', label: 'Crew', sections: [captain] },
-    { id: 'stats', label: 'Stats', sections: [skills, vitals, criticals] },
+    { id: 'crew', label: 'Crew', sections: [captain, skills] },
+    { id: 'stats', label: 'Stats', sections: [vitals, criticals] },
     { id: 'movement', label: 'Movement', sections: [movement] },
     { id: 'guns', label: 'Guns', sections: [guns] },
     { id: 'abilities', label: 'Abilities', sections: [abilities] },

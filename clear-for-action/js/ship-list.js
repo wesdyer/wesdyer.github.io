@@ -6,12 +6,29 @@ import { getShips } from './storage.js';
 import { escapeHtml, shipCardHtml } from './utils.js';
 import { NATIONALITIES } from './data.js';
 
+const SORT_OPTIONS = [
+  { id: 'recent-desc', label: 'Recent', field: 'updatedAt', dir: -1, parse: v => new Date(v || 0).getTime() },
+  { id: 'recent-asc', label: 'Oldest', field: 'updatedAt', dir: 1, parse: v => new Date(v || 0).getTime() },
+  { id: 'name-asc', label: 'A\u2013Z', field: 'name', dir: 1, parse: v => (v || '').toLowerCase() },
+  { id: 'name-desc', label: 'Z\u2013A', field: 'name', dir: -1, parse: v => (v || '').toLowerCase() },
+  { id: 'tonnage-desc', label: 'Size \u2193', field: 'tonnage', dir: -1, parse: v => parseInt(v) || 0 },
+  { id: 'tonnage-asc', label: 'Size \u2191', field: 'tonnage', dir: 1, parse: v => parseInt(v) || 0 },
+  { id: 'broadside-desc', label: 'Broadside \u2193', field: 'broadsideWeight', dir: -1, parse: v => v || 0 },
+  { id: 'broadside-asc', label: 'Broadside \u2191', field: 'broadsideWeight', dir: 1, parse: v => v || 0 },
+];
+
+let persistedSort = 'recent-desc';
+
 export function renderShipList(container) {
   let searchQuery = '';
   let nationalityFilter = '';
+  let sortId = persistedSort;
 
   const render = () => {
     const hasFilter = searchQuery || nationalityFilter;
+    const sort = SORT_OPTIONS.find(s => s.id === sortId) || SORT_OPTIONS[0];
+    const isString = sortId.startsWith('name');
+
     const ships = getShips()
       .filter(s => {
         if (nationalityFilter && s.nationality !== nationalityFilter) return false;
@@ -19,11 +36,16 @@ export function renderShipList(container) {
         const words = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
         const haystack = [
           s.name, s.classAndRating, s.nationality,
-          s.captain?.name, s.captain?.rank
+          s.captain?.name, s.captain?.rank, s.yearLaunched
         ].filter(Boolean).join(' ').toLowerCase();
         return words.every(w => haystack.includes(w));
       })
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+      .sort((a, b) => {
+        const va = sort.parse(a[sort.field]);
+        const vb = sort.parse(b[sort.field]);
+        if (isString) return sort.dir * va.localeCompare(vb);
+        return sort.dir * (va - vb);
+      });
 
     container.innerHTML = `
       <div class="search-bar">
@@ -34,6 +56,11 @@ export function renderShipList(container) {
             ${NATIONALITIES.map(n => `<option value="${n.id}" ${n.id === nationalityFilter ? 'selected' : ''}>${n.id}</option>`).join('')}
           </select>
           ${hasFilter ? '<button class="btn btn-ghost btn-sm search-clear" type="button">Clear</button>' : ''}
+        </div>
+        <div class="sort-row">
+          <select class="search-sort">
+            ${SORT_OPTIONS.map(s => `<option value="${s.id}" ${s.id === sortId ? 'selected' : ''}>${s.label}</option>`).join('')}
+          </select>
         </div>
       </div>
       ${ships.length === 0 ? `
@@ -63,6 +90,13 @@ export function renderShipList(container) {
     // Nationality filter
     container.querySelector('.search-nationality')?.addEventListener('change', (e) => {
       nationalityFilter = e.target.value;
+      render();
+    });
+
+    // Sort
+    container.querySelector('.search-sort')?.addEventListener('change', (e) => {
+      sortId = e.target.value;
+      persistedSort = sortId;
       render();
     });
 

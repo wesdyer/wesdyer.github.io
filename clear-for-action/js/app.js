@@ -16,6 +16,59 @@ const lazy = {
   gameView:    () => import('./game-view.js'),
 };
 
+// Build a ship picker list (checkboxes + ship info). Returns { container, getSelected }.
+function buildShipPicker(ships, { existingIds } = {}) {
+  const container = document.createElement('div');
+  container.className = 'ship-picker';
+
+  // Select all toggle
+  const toggleRow = document.createElement('label');
+  toggleRow.className = 'ship-picker-toggle';
+  const toggleCb = document.createElement('input');
+  toggleCb.type = 'checkbox';
+  toggleCb.checked = true;
+  toggleRow.appendChild(toggleCb);
+  toggleRow.append(' Select All');
+  container.appendChild(toggleRow);
+
+  const list = document.createElement('div');
+  list.className = 'ship-picker-list';
+  container.appendChild(list);
+
+  const checkboxes = [];
+  ships.forEach((ship, i) => {
+    const row = document.createElement('label');
+    row.className = 'ship-picker-row';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = true;
+    cb.dataset.index = i;
+    checkboxes.push(cb);
+    row.appendChild(cb);
+    const info = document.createElement('span');
+    info.className = 'ship-picker-info';
+    const isDupe = existingIds?.has(ship.id);
+    info.innerHTML = `<strong>${escapeHtml(ship.name || 'Untitled')}</strong> <span class="ship-picker-class">${escapeHtml(ship.classAndRating || '')}</span>${isDupe ? ' <span class="ship-picker-dupe">duplicate</span>' : ''}`;
+    row.appendChild(info);
+    list.appendChild(row);
+  });
+
+  toggleCb.addEventListener('change', () => {
+    checkboxes.forEach(cb => { cb.checked = toggleCb.checked; });
+  });
+  list.addEventListener('change', () => {
+    const allChecked = checkboxes.every(cb => cb.checked);
+    const noneChecked = checkboxes.every(cb => !cb.checked);
+    toggleCb.checked = allChecked;
+    toggleCb.indeterminate = !allChecked && !noneChecked;
+  });
+
+  return {
+    container,
+    getSelected: () => checkboxes.filter(cb => cb.checked).map(cb => ships[cb.dataset.index]),
+  };
+}
+
 function setupShipyardImportExport(listContainer) {
   // Export
   document.getElementById('nav-export-ships')?.addEventListener('click', () => {
@@ -24,15 +77,38 @@ function setupShipyardImportExport(listContainer) {
       showToast('No ships to export', 'info');
       return;
     }
-    const data = JSON.stringify(allShips, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `cfa-shipyard-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast(`Exported ${allShips.length} ship${allShips.length !== 1 ? 's' : ''}`, 'success');
+    const { container: pickerEl, getSelected } = buildShipPicker(allShips);
+
+    const footer = document.createElement('div');
+    footer.style.cssText = 'display:flex;gap:8px;width:100%';
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'btn btn-primary';
+    exportBtn.textContent = 'Export';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn btn-ghost';
+    cancelBtn.textContent = 'Cancel';
+    footer.appendChild(exportBtn);
+    footer.appendChild(cancelBtn);
+
+    const { close } = showModal({ title: 'Export Ships', body: pickerEl, footer });
+    cancelBtn.addEventListener('click', close);
+    exportBtn.addEventListener('click', () => {
+      const selected = getSelected();
+      if (selected.length === 0) {
+        showToast('No ships selected', 'info');
+        return;
+      }
+      const data = JSON.stringify(selected, null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `cfa-shipyard-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      close();
+      showToast(`Exported ${selected.length} ship${selected.length !== 1 ? 's' : ''}`, 'success');
+    });
   });
 
   // Import
@@ -59,52 +135,58 @@ function setupShipyardImportExport(listContainer) {
         return;
       }
       const existingIds = new Set(getShips().map(s => s.id));
-      const dupeCount = valid.filter(s => existingIds.has(s.id)).length;
 
-      let dupMode = 'duplicate'; // default if no dupes
-      if (dupeCount > 0) {
-        dupMode = await new Promise(resolve => {
-          const footer = document.createElement('div');
-          footer.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;width:100%';
+      // Show picker + duplicate handling
+      const result = await new Promise(resolve => {
+        const { container: pickerEl, getSelected } = buildShipPicker(valid, { existingIds });
+        const hasDupes = valid.some(s => existingIds.has(s.id));
+
+        const footer = document.createElement('div');
+        footer.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;width:100%';
+
+        if (hasDupes) {
+          const hint = document.createElement('p');
+          hint.style.cssText = 'margin:0 0 8px;font-size:0.85rem;color:var(--ink-light);width:100%';
+          hint.textContent = 'Some ships already exist. How should duplicates be handled?';
+          footer.appendChild(hint);
           const opts = [
-            { id: 'duplicate', label: 'Duplicate', cls: 'btn btn-primary', desc: 'Add as new ships' },
-            { id: 'replace', label: 'Replace', cls: 'btn btn-secondary', desc: 'Overwrite existing' },
-            { id: 'ignore', label: 'Ignore', cls: 'btn btn-secondary', desc: 'Skip duplicates' },
+            { id: 'duplicate', label: 'Import as New', cls: 'btn btn-primary', desc: 'Add as new ships' },
+            { id: 'replace', label: 'Replace Existing', cls: 'btn btn-secondary', desc: 'Overwrite existing' },
           ];
           opts.forEach(opt => {
             const btn = document.createElement('button');
             btn.className = opt.cls;
             btn.textContent = opt.label;
             btn.title = opt.desc;
-            btn.addEventListener('click', () => { close(); resolve(opt.id); });
+            btn.addEventListener('click', () => { close(); resolve({ ships: getSelected(), dupMode: opt.id }); });
             footer.appendChild(btn);
           });
-          const cancelBtn = document.createElement('button');
-          cancelBtn.className = 'btn btn-ghost';
-          cancelBtn.textContent = 'Cancel';
-          cancelBtn.addEventListener('click', () => { close(); resolve(null); });
-          footer.appendChild(cancelBtn);
+        } else {
+          const importBtn = document.createElement('button');
+          importBtn.className = 'btn btn-primary';
+          importBtn.textContent = 'Import';
+          importBtn.addEventListener('click', () => { close(); resolve({ ships: getSelected(), dupMode: 'duplicate' }); });
+          footer.appendChild(importBtn);
+        }
 
-          const { close } = showModal({
-            title: 'Import Ships',
-            body: `<p>${valid.length} ship${valid.length !== 1 ? 's' : ''} found, ${dupeCount} already in shipyard.</p><p>How should duplicates be handled?</p>`,
-            footer,
-          });
-        });
-        if (!dupMode) return;
-      } else {
-        const ok = await confirmDialog(
-          `Import ${valid.length} ship${valid.length !== 1 ? 's' : ''}?`,
-          { title: 'Import Ships', confirmText: 'Import' }
-        );
-        if (!ok) return;
+        const cancelBtn = document.createElement('button');
+        cancelBtn.className = 'btn btn-ghost';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => { close(); resolve(null); });
+        footer.appendChild(cancelBtn);
+
+        const { close } = showModal({ title: 'Import Ships', body: pickerEl, footer });
+      });
+
+      if (!result || result.ships.length === 0) {
+        if (result) showToast('No ships selected', 'info');
+        return;
       }
 
       let count = 0;
-      for (const ship of valid) {
+      for (const ship of result.ships) {
         if (existingIds.has(ship.id)) {
-          if (dupMode === 'ignore') continue;
-          if (dupMode === 'duplicate') ship.id = uuid();
+          if (result.dupMode === 'duplicate') ship.id = uuid();
           // 'replace' keeps same id, saveShip will overwrite
         }
         ship.updatedAt = new Date().toISOString();
@@ -167,7 +249,7 @@ async function route() {
     // Ships
     else if (segments[0] === 'ships') {
       if (segments.length === 1) {
-        pageTitle.innerHTML = 'Shipyard <span class="navbar-actions"><button class="navbar-icon-btn" id="nav-import-ships" aria-label="Import ships" title="Import"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button><button class="navbar-icon-btn" id="nav-export-ships" aria-label="Export ships" title="Export"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><a href="#/ships/new" class="btn btn-primary btn-add navbar-add" aria-label="New Ship">+</a></span>';
+        pageTitle.innerHTML = 'Shipyard <span class="navbar-actions"><button class="navbar-icon-btn" id="nav-import-ships" aria-label="Import ships" title="Import"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button><button class="navbar-icon-btn" id="nav-export-ships" aria-label="Export ships" title="Export"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button><a href="#/ships/new" class="btn btn-primary btn-add navbar-add" aria-label="New Ship">+</a></span>';
         const { renderShipList } = await lazy.shipList();
         renderShipList(view);
         setupShipyardImportExport(view);
