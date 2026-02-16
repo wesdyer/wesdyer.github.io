@@ -114,7 +114,8 @@ export function shipCardHtml(ship, { showActions = true } = {}) {
         <div class="ship-grid-card-info">
           <div class="ship-grid-card-title">${escapeHtml(ship.name || 'Untitled')}</div>
           <div class="ship-grid-card-subtitle">${escapeHtml(ship.classAndRating || 'Unknown class')}${ship.yearLaunched ? ` (${escapeHtml(ship.yearLaunched)})` : ''}</div>
-          ${ship.captain?.name ? `<div class="ship-grid-card-captain">${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}${crewTag ? ' ' + crewTag : ''}</div>` : ''}
+          ${ship.captain?.name ? `<div class="ship-grid-card-captain">${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}</div>` : ''}
+          ${crewTag ? `<div class="ship-grid-card-crew">${crewTag}</div>` : ''}
         </div>
         ${flagHtml ? `<div class="ship-grid-card-flag">${flagHtml}</div>` : ''}
       </div>
