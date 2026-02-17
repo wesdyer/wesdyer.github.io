@@ -52,18 +52,16 @@ export function renderShipList(container) {
 
     container.innerHTML = `
       <div class="search-bar">
-        <div class="search-row">
-          <input type="text" class="search-input" placeholder="Search ships..." value="${escapeHtml(searchQuery)}">
+        <input type="text" class="search-input" placeholder="Search ships..." value="${escapeHtml(searchQuery)}">
+        <div class="search-filters">
           <select class="search-nationality">
             <option value="">All nations</option>
             ${NATIONALITIES.map(n => `<option value="${n.id}" ${n.id === nationalityFilter ? 'selected' : ''}>${n.id}</option>`).join('')}
           </select>
-          ${hasFilter ? '<button class="btn btn-ghost btn-sm search-clear" type="button">Clear</button>' : ''}
-        </div>
-        <div class="sort-row">
           <select class="search-sort">
             ${SORT_OPTIONS.map(s => `<option value="${s.id}" ${s.id === sortId ? 'selected' : ''}>${s.label}</option>`).join('')}
           </select>
+          ${hasFilter ? '<button class="btn btn-ghost btn-sm search-clear" type="button">Clear</button>' : ''}
         </div>
       </div>
       ${ships.length === 0 ? `

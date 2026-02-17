@@ -86,8 +86,10 @@ export const GUN_TYPES = [
   { type: '18-pdr carr.',  damage: 26, short: 4, medium: 0,  long: 0,  isCarronade: true },
   { type: '24-pdr carr.',  damage: 28, short: 4, medium: 0,  long: 0,  isCarronade: true },
   { type: '32-pdr carr.',  damage: 30, short: 5, medium: 0,  long: 0,  isCarronade: true },
+  { type: '36-pdr carr.',  damage: 31, short: 5, medium: 0,  long: 0,  isCarronade: true },
   { type: '42-pdr carr.',  damage: 32, short: 5, medium: 0,  long: 0,  isCarronade: true },
   { type: '64-pdr carr.',  damage: 38, short: 6, medium: 0,  long: 0,  isCarronade: true },
+  { type: '68-pdr carr.',  damage: 40, short: 6, medium: 0,  long: 0,  isCarronade: true },
 ];
 
 export const GUN_FACINGS = [
