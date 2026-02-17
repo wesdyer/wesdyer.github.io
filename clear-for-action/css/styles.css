@@ -2327,7 +2327,7 @@ ul, ol { list-style: none; }
   height: 300px;
   display: block;
   object-fit: cover;
-  object-position: center bottom;
+  object-position: center 70%;
 }
 
 /* --- Home Navigation --- */

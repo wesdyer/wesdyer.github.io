@@ -334,7 +334,7 @@ async function renderHome(container) {
 
   container.innerHTML = `
     <div class="home-hero">
-      <img src="pob.png" alt="Naval battle">
+      <img src="pob.webp" alt="Naval battle">
       <div class="home-hero-tagline">Build Ships. Fight Battles. Command the Seas.</div>
     </div>
     <div class="home-nav">
