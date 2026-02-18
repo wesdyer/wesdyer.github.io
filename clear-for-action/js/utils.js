@@ -2,7 +2,7 @@
 // Clear for Action! — Utility Functions
 // ============================================
 
-import { GUN_TYPES } from './data.js';
+import { GUN_TYPES, ABILITIES } from './data.js';
 
 export function uuid() {
   return crypto.randomUUID?.() ??
@@ -218,8 +218,16 @@ export function calculatePoints(ship) {
   const avgSkill = ((sk.command || 0) + (sk.seamanship || 0) + (sk.gunnery || 0) + (sk.closeAction || 0)) / 4;
   const crewQuality = avgSkill / 11;
 
+  // Abilities
+  let abilityPts = 0;
+  for (const a of (ship.abilities || [])) {
+    const id = typeof a === 'string' ? a : a.id;
+    const ref = ABILITIES.find(r => r.id === id);
+    if (ref?.points) abilityPts += ref.points;
+  }
+
   // Combine
-  const raw = (offense + durability * 5 + mobility * 2) * crewQuality / 25;
+  const raw = (offense + durability * 5 + mobility * 2) * crewQuality / 25 + abilityPts;
   return Math.max(Math.round(raw), 1);
 }
 
