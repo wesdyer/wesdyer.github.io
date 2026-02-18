@@ -3,8 +3,8 @@
 // ============================================
 
 import { getShip } from './storage.js';
-import { escapeHtml, nationalityFlag, getSpeedForSail, crewRatingTag, calculatePoints } from './utils.js';
-import { GUN_FACINGS, GUN_TYPES } from './data.js';
+import { escapeHtml, nationalityFlag, getSpeedForSail, crewRatingTag, fictionalTag, calculatePoints, formatYears } from './utils.js';
+import { GUN_FACINGS, GUN_TYPES, ABILITIES } from './data.js';
 
 export function renderShipView(container, shipId) {
   const ship = getShip(shipId);
@@ -13,7 +13,7 @@ export function renderShipView(container, shipId) {
     return;
   }
 
-  const flag = nationalityFlag(ship.nationality);
+  const flag = nationalityFlag(ship.nationality, ship.shipType);
   // --- Header (card-style) ---
   const imageHtml = ship.shipImage?.data
     ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" class="zoomable-img" loading="lazy">`
@@ -26,8 +26,8 @@ export function renderShipView(container, shipId) {
       <div class="ship-view-card-image">${imageHtml}</div>
       <div class="ship-view-card-info">
         <div class="ship-view-name">${escapeHtml(ship.name || 'Untitled')}</div>
-        <div class="ship-view-card-subtitle">${escapeHtml(ship.classAndRating || 'Unknown class')}</div>
-        ${(ship.yearLaunched || ship.tonnage || ship.complement) ? `<div class="ship-view-card-meta">${[ship.yearLaunched, ship.tonnage ? `${escapeHtml(ship.tonnage)} tons` : '', ship.complement ? `${escapeHtml(ship.complement)} complement` : ''].filter(Boolean).join(' \u00b7 ')}</div>` : ''}
+        <div class="ship-view-card-subtitle">${escapeHtml(ship.classAndRating || 'Unknown class')}${ship.isFictional ? ` ${fictionalTag(ship)}` : ''}</div>
+        ${(ship.yearLaunched || ship.yearRefit || ship.tonnage || ship.complement) ? `<div class="ship-view-card-meta">${[formatYears(ship), ship.tonnage ? `${escapeHtml(ship.tonnage)} tons` : '', ship.complement ? `${escapeHtml(ship.complement)} complement` : ''].filter(Boolean).join(' \u00b7 ')}</div>` : ''}
       </div>
       ${flag || pts ? `<div class="ship-view-card-flag">
         ${flag || ''}
@@ -99,6 +99,10 @@ export function renderShipView(container, shipId) {
         <tr><td>Reefed</td><td>${reefed.closeHauled}</td><td>${reefed.reaching}</td><td>${reefed.running}</td></tr>
       </tbody>
     </table>
+    ${ship.speed?.sweeps ? `<div class="ship-view-stat" style="margin-top:var(--space-lg)">
+      <span class="ship-view-stat-label">Sweeps</span>
+      <span class="ship-view-stat-value">${ship.speed.sweeps}</span>
+    </div>` : ''}
     <div class="ship-view-stat" style="margin-top:var(--space-lg)">
       <span class="ship-view-stat-label">Maneuver</span>
       <span class="ship-view-stat-value">${maneuver}</span>
@@ -166,16 +170,34 @@ export function renderShipView(container, shipId) {
   // --- Abilities ---
   let abilitiesHtml = '';
   if (ship.abilities?.length) {
+    const categoryOrder = ['ship', 'captain', 'crew', 'weakness', '_custom'];
+    const categoryLabels = { ship: 'Ship', captain: 'Captain', crew: 'Crew', weakness: 'Weakness', _custom: 'Custom' };
+    const grouped = {};
+    ship.abilities.forEach(a => {
+      const name = typeof a === 'string' ? a : a.name;
+      const id = typeof a === 'string' ? a : a.id;
+      const ref = ABILITIES.find(r => r.id === id);
+      const cat = ref?.category || '_custom';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(a);
+    });
+    const sections = categoryOrder
+      .filter(cat => grouped[cat]?.length)
+      .map(cat => {
+        const isWeakness = cat === 'weakness';
+        return `<div class="ability-category-header ${isWeakness ? 'ability-category-header--weakness' : ''}">${categoryLabels[cat]}</div>` +
+          grouped[cat].map(a => {
+            const name = typeof a === 'string' ? a : a.name;
+            const effect = typeof a !== 'string' ? a.effect : '';
+            return `<div class="ship-view-ability ${isWeakness ? 'ship-view-ability--weakness' : ''}">
+              <strong>${escapeHtml(name)}</strong>
+              ${effect ? `<div class="text-small text-muted">${escapeHtml(effect)}</div>` : ''}
+            </div>`;
+          }).join('');
+      }).join('');
     abilitiesHtml = `<div class="form-section">
       <div class="form-section-title">Abilities</div>
-      <div class="ship-view-abilities">
-        ${ship.abilities.map(a => `
-          <div class="ship-view-ability">
-            <strong>${escapeHtml(typeof a === 'string' ? a : a.name)}</strong>
-            ${(typeof a !== 'string' && a.effect) ? `<div class="text-small text-muted">${escapeHtml(a.effect)}</div>` : ''}
-          </div>
-        `).join('')}
-      </div>
+      <div class="ship-view-abilities">${sections}</div>
     </div>`;
   }
 

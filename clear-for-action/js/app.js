@@ -3,7 +3,7 @@
 // ============================================
 
 import { getShip, getShips, getGame, getGames, getStorageStats, saveShip } from './storage.js';
-import { formatDate, escapeHtml, shipCardHtml, getGameShips, uuid, deepClone } from './utils.js';
+import { formatDate, escapeHtml, shipCardHtml, getGameShips, uuid, deepClone, calculatePoints } from './utils.js';
 import { showToast, confirmDialog, showModal } from './components.js';
 
 // Lazy-loaded modules
@@ -15,6 +15,53 @@ const lazy = {
   gameEditor:  () => import('./game-editor.js'),
   gameView:    () => import('./game-view.js'),
 };
+
+// --- CSV Export ---
+function csvEscape(val) {
+  const s = String(val ?? '');
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function shipsToCsv(ships) {
+  const headers = [
+    'Name', 'Nationality', 'Ship Type', 'Fictional', 'Class & Rating',
+    'Year Launched', 'Year Refit', 'Tonnage', 'Complement',
+    'Captain', 'Rank', 'Crew Rating',
+    'Command', 'Seamanship', 'Gunnery', 'Close Action',
+    'Defense', 'Maneuver',
+    'Speed CH', 'Speed Reach', 'Speed Run', 'Sweeps',
+    'Morale', 'Crew', 'Rigging', 'Hull',
+    'Crit Fire', 'Crit Leak', 'Crit Steering', 'Crit Mast', 'Crit Officer',
+    'Broadside Weight', 'Armament', 'Points',
+  ];
+
+  const rows = ships.map(s => {
+    const sk = s.skills || {};
+    const sp = s.speed || {};
+    const v = s.vitals || {};
+    const c = s.criticals || {};
+    const m = s.movement || {};
+    const armament = (s.guns || []).map(g => {
+      const facing = g.facing === 'bow' ? ' (bow)' : g.facing === 'stern' ? ' (stern)' : '';
+      return `${g.count}x ${g.type}${facing}`;
+    }).join('; ');
+
+    return [
+      s.name, s.nationality, s.shipType || 'navy', s.isFictional ? 'Yes' : 'No',
+      s.classAndRating, s.yearLaunched, s.yearRefit, s.tonnage, s.complement,
+      s.captain?.name, s.captain?.rank, s.captain?.crewRating,
+      sk.command, sk.seamanship, sk.gunnery, sk.closeAction,
+      m.defense, m.maneuver,
+      sp.closeHauled, sp.reaching, sp.running, sp.sweeps || 0,
+      v.morale, v.crew, v.rigging, v.hull,
+      c.fire, c.leak, c.steering, c.mast, c.officer,
+      s.broadsideWeight || 0, armament, calculatePoints(s),
+    ].map(csvEscape);
+  });
+
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}
 
 // Build a ship picker list (checkboxes + ship info). Returns { container, getSelected }.
 function buildShipPicker(ships, { existingIds } = {}) {
@@ -81,33 +128,44 @@ function setupShipyardImportExport(listContainer) {
 
     const footer = document.createElement('div');
     footer.style.cssText = 'display:flex;gap:8px;width:100%';
-    const exportBtn = document.createElement('button');
-    exportBtn.className = 'btn btn-primary';
-    exportBtn.textContent = 'Export';
+    const exportJsonBtn = document.createElement('button');
+    exportJsonBtn.className = 'btn btn-primary';
+    exportJsonBtn.textContent = 'Export JSON';
+    const exportCsvBtn = document.createElement('button');
+    exportCsvBtn.className = 'btn btn-secondary';
+    exportCsvBtn.textContent = 'Export CSV';
     const cancelBtn = document.createElement('button');
     cancelBtn.className = 'btn btn-ghost';
     cancelBtn.textContent = 'Cancel';
-    footer.appendChild(exportBtn);
-    footer.appendChild(cancelBtn);
+    footer.append(exportJsonBtn, exportCsvBtn, cancelBtn);
 
     const { close } = showModal({ title: 'Export Ships', body: pickerEl, footer });
     cancelBtn.addEventListener('click', close);
-    exportBtn.addEventListener('click', () => {
-      const selected = getSelected();
-      if (selected.length === 0) {
-        showToast('No ships selected', 'info');
-        return;
-      }
-      const data = JSON.stringify(selected, null, 2);
-      const blob = new Blob([data], { type: 'application/json' });
+
+    const downloadFile = (content, type, ext) => {
+      const blob = new Blob([content], { type });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `cfa-shipyard-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `cfa-shipyard-${new Date().toISOString().slice(0, 10)}.${ext}`;
       a.click();
       URL.revokeObjectURL(url);
+    };
+
+    exportJsonBtn.addEventListener('click', () => {
+      const selected = getSelected();
+      if (selected.length === 0) { showToast('No ships selected', 'info'); return; }
+      downloadFile(JSON.stringify(selected, null, 2), 'application/json', 'json');
       close();
       showToast(`Exported ${selected.length} ship${selected.length !== 1 ? 's' : ''}`, 'success');
+    });
+
+    exportCsvBtn.addEventListener('click', () => {
+      const selected = getSelected();
+      if (selected.length === 0) { showToast('No ships selected', 'info'); return; }
+      downloadFile(shipsToCsv(selected), 'text/csv', 'csv');
+      close();
+      showToast(`Exported ${selected.length} ship${selected.length !== 1 ? 's' : ''} to CSV`, 'success');
     });
   });
 

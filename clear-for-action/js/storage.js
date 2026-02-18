@@ -24,10 +24,39 @@ function write(key, data) {
   }
 }
 
+// --- Ship Migration ---
+
+function migrateShip(ship) {
+  if (!ship) return ship;
+  // isPrivateer → shipType: 'privateer'
+  if (ship.isPrivateer) {
+    ship.shipType = 'privateer';
+    delete ship.isPrivateer;
+  }
+  // Merchants nationality → Minor Power + merchant type
+  if (ship.nationality === 'Merchants') {
+    ship.nationality = 'Minor Power';
+    ship.shipType = 'merchant';
+  }
+  // Minor Navy → Minor Power
+  if (ship.nationality === 'Minor Navy') {
+    ship.nationality = 'Minor Power';
+  }
+  // Default shipType
+  if (!ship.shipType) {
+    ship.shipType = 'navy';
+  }
+  // Clean up legacy field
+  if ('isPrivateer' in ship) {
+    delete ship.isPrivateer;
+  }
+  return ship;
+}
+
 // --- Ships ---
 
 export function getShips() {
-  return read(SHIPS_KEY);
+  return read(SHIPS_KEY).map(migrateShip);
 }
 
 export function getShip(id) {
@@ -69,6 +98,12 @@ function migrateGame(game) {
     game.description = game.notes;
     delete game.notes;
   }
+  // Migrate ships within forces
+  game.forces.forEach(f => {
+    if (f.nationality === 'Merchants') f.nationality = 'Minor Power';
+    if (f.nationality === 'Minor Navy') f.nationality = 'Minor Power';
+    (f.ships || []).forEach(migrateShip);
+  });
   return game;
 }
 

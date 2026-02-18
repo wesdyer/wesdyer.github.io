@@ -1769,6 +1769,10 @@ ul, ol { list-style: none; }
   font-weight: 700;
 }
 
+.ship-count {
+  padding: var(--space-xs) 0;
+}
+
 /* --- Ship Grid (Library) --- */
 .ship-grid {
   display: flex;
@@ -1881,6 +1885,7 @@ ul, ol { list-style: none; }
 .crew-blue   { background: #d0e4f7; color: #1a5fa0; }
 .crew-purple { background: #e8d5f5; color: #7b2d8e; }
 .crew-red    { background: #f8d7da; color: #b52a37; }
+.fictional-tag { background: #fef3cd; color: #856404; font-style: italic; }
 
 .nationality-flag {
   height: 20px;
@@ -3070,6 +3075,35 @@ ul, ol { list-style: none; }
   border-bottom: none;
 }
 
+/* --- Ability Category Headers & Weakness Styling --- */
+.ability-category-header {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  color: var(--navy);
+  padding: var(--space-sm) 0 var(--space-xs);
+  border-bottom: 1px solid var(--parchment-dark);
+  margin-top: var(--space-xs);
+}
+.ability-category-header:first-child {
+  margin-top: 0;
+}
+.ability-category-header--weakness {
+  color: var(--red);
+  border-bottom-color: var(--red-light);
+}
+.ship-view-ability--weakness {
+  border-left: 3px solid var(--red-light);
+  padding-left: var(--space-sm);
+  background: rgba(192, 57, 43, 0.04);
+}
+.ability-card--weakness {
+  border-color: var(--red-light);
+  background: rgba(192, 57, 43, 0.05);
+  border-left: 3px solid var(--red);
+}
+
 @media (max-width: 600px) {
   .ship-view-skills-bar {
     flex-wrap: wrap;
@@ -3480,8 +3514,8 @@ ul, ol { list-style: none; }
   border-radius: 4px;
   vertical-align: middle;
   line-height: 1.4;
-  background: #fef9e7;
-  color: var(--brass-dark);
+  background: var(--gray-lighter);
+  color: var(--gray);
   white-space: nowrap;
 }
 .points-badge-lg {
@@ -3496,6 +3530,52 @@ ul, ol { list-style: none; }
   position: absolute;
   bottom: var(--space-sm);
   right: var(--space-sm);
+}
+
+/* --- Form Toggle Row (inline toggles in editor) --- */
+.form-toggle-row {
+  display: flex;
+  gap: var(--space-lg);
+  padding: 0 var(--space-xs);
+  margin-bottom: var(--space-sm);
+}
+.form-toggle-row .toggle-mini {
+  min-height: 32px;
+}
+.form-toggle-row .toggle-mini-label {
+  font-size: 0.75rem;
+}
+
+/* --- Privateer Flag Overlay (saltire / black X) --- */
+.flag-privateer {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+.flag-privateer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top right, transparent calc(50% - 3px), rgba(0,0,0,0.75) calc(50% - 3px), rgba(0,0,0,0.75) calc(50% + 3px), transparent calc(50% + 3px)),
+    linear-gradient(to bottom right, transparent calc(50% - 3px), rgba(0,0,0,0.75) calc(50% - 3px), rgba(0,0,0,0.75) calc(50% + 3px), transparent calc(50% + 3px));
+  pointer-events: none;
+}
+
+/* --- Merchant Flag Overlay (coin) --- */
+.flag-merchant {
+  position: relative;
+  display: inline-block;
+  vertical-align: middle;
+}
+.flag-merchant::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../flags/coin-overlay.png') no-repeat center center;
+  background-size: auto 75%;
+  opacity: 1;
+  pointer-events: none;
 }
 
 /* --- Print --- */

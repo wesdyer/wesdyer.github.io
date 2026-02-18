@@ -31,6 +31,12 @@ export function formatDate(iso) {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+export function formatYears(ship) {
+  if (!ship.yearLaunched && !ship.yearRefit) return '';
+  if (ship.yearLaunched && ship.yearRefit) return `${ship.yearLaunched} (refit ${ship.yearRefit})`;
+  return ship.yearLaunched || `Refit ${ship.yearRefit}`;
+}
+
 export function compressImage(file, maxSize = 400, quality = 0.7) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -74,7 +80,11 @@ export function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
 }
 
-export function nationalityFlag(nationality) {
+export function stripAccents(str) {
+  return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+export function nationalityFlag(nationality, shipType = 'navy') {
   const flagFiles = {
     'British': 'british',
     'French': 'french',
@@ -83,11 +93,13 @@ export function nationalityFlag(nationality) {
     'American': 'american',
     'Ottoman': 'ottoman',
     'Pirates': 'pirate',
-    'Privateers': 'pirate',
   };
   const file = flagFiles[nationality];
-  if (file) return `<img src="flags/${file}.png" alt="${nationality}" class="nationality-flag">`;
-  return '';
+  if (!file) return '';
+  const img = `<img src="flags/${file}.png" alt="${nationality}" class="nationality-flag">`;
+  if (shipType === 'privateer') return `<span class="flag-privateer">${img}</span>`;
+  if (shipType === 'merchant') return `<span class="flag-merchant">${img}</span>`;
+  return img;
 }
 
 export function crewRatingTag(crewRating) {
@@ -102,12 +114,18 @@ export function crewRatingTag(crewRating) {
   return `<span class="crew-tag ${r.color}">${r.label}</span>`;
 }
 
+export function fictionalTag(ship) {
+  if (!ship?.isFictional) return '';
+  return '<span class="crew-tag fictional-tag">Fictional</span>';
+}
+
 export function shipCardHtml(ship, { showActions = true } = {}) {
   const imageHtml = ship.shipImage?.data
     ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" loading="lazy">`
     : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
-  const flagHtml = nationalityFlag(ship.nationality);
+  const flagHtml = nationalityFlag(ship.nationality, ship.shipType);
   const crewTag = crewRatingTag(ship.captain?.crewRating);
+  const ficTag = fictionalTag(ship);
   const pts = calculatePoints(ship);
 
   return `
@@ -116,9 +134,9 @@ export function shipCardHtml(ship, { showActions = true } = {}) {
         <div class="ship-grid-card-image">${imageHtml}</div>
         <div class="ship-grid-card-info">
           <div class="ship-grid-card-title">${escapeHtml(ship.name || 'Untitled')}</div>
-          <div class="ship-grid-card-subtitle">${escapeHtml(ship.classAndRating || 'Unknown class')}${ship.yearLaunched ? ` (${escapeHtml(ship.yearLaunched)})` : ''}</div>
+          <div class="ship-grid-card-subtitle">${escapeHtml(ship.classAndRating || 'Unknown class')}${formatYears(ship) ? ` · ${escapeHtml(formatYears(ship))}` : ''}</div>
           ${ship.captain?.name ? `<div class="ship-grid-card-captain">${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}</div>` : ''}
-          ${crewTag ? `<div class="ship-grid-card-crew">${crewTag}</div>` : ''}
+          ${crewTag || ficTag ? `<div class="ship-grid-card-crew">${crewTag}${ficTag}</div>` : ''}
         </div>
         ${flagHtml ? `<div class="ship-grid-card-flag">${flagHtml}</div>` : ''}
         <span class="points-badge ship-grid-card-points">${pts} pts</span>
@@ -195,12 +213,10 @@ export function calculatePoints(ship) {
   const avgSpeed = ((spd.closeHauled || 0) + (spd.reaching || 0) + (spd.running || 0)) / 3;
   const mobility = avgSpeed + (ship.movement?.maneuver || 0) * 0.5;
 
-  // Crew quality
+  // Crew quality (skills already incorporate crew rating)
   const sk = ship.skills || {};
   const avgSkill = ((sk.command || 0) + (sk.seamanship || 0) + (sk.gunnery || 0) + (sk.closeAction || 0)) / 4;
-  const crewMods = { landsmen: -2, ordinary: 0, able: 2, crack: 4 };
-  const crewMod = crewMods[ship.captain?.crewRating] ?? 0;
-  const crewQuality = (avgSkill + crewMod) / 11;
+  const crewQuality = avgSkill / 11;
 
   // Combine
   const raw = (offense + durability * 5 + mobility * 2) * crewQuality / 25;

@@ -3,7 +3,7 @@
 // ============================================
 
 import { getShips } from './storage.js';
-import { escapeHtml, shipCardHtml, calculatePoints } from './utils.js';
+import { escapeHtml, shipCardHtml, calculatePoints, stripAccents } from './utils.js';
 import { NATIONALITIES } from './data.js';
 
 const SORT_OPTIONS = [
@@ -36,11 +36,13 @@ export function renderShipList(container) {
       .filter(s => {
         if (nationalityFilter && s.nationality !== nationalityFilter) return false;
         if (!searchQuery) return true;
-        const words = searchQuery.toLowerCase().split(/\s+/).filter(Boolean);
-        const haystack = [
+        const words = stripAccents(searchQuery.toLowerCase()).split(/\s+/).filter(Boolean);
+        const haystack = stripAccents([
           s.name, s.classAndRating, s.nationality,
-          s.captain?.name, s.captain?.rank, s.yearLaunched
-        ].filter(Boolean).join(' ').toLowerCase();
+          s.captain?.name, s.captain?.rank, s.yearLaunched, s.yearRefit,
+          s.shipType || '',
+          s.isFictional ? 'fictional' : ''
+        ].filter(Boolean).join(' ').toLowerCase());
         return words.every(w => haystack.includes(w));
       })
       .sort((a, b) => {
@@ -72,6 +74,7 @@ export function renderShipList(container) {
           ${!searchQuery ? '<a href="#/ships/new" class="btn btn-primary">Create Ship</a>' : ''}
         </div>
       ` : `
+        <div class="ship-count text-muted text-small">${ships.length} ship${ships.length !== 1 ? 's' : ''}</div>
         <div class="ship-grid">
           ${ships.map(s => shipCardHtml(s, { showActions: false })).join('')}
         </div>

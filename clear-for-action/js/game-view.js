@@ -3,7 +3,7 @@
 // ============================================
 
 import { getGame, autoSave } from './storage.js';
-import { SAIL_SETTINGS } from './data.js';
+import { SAIL_SETTINGS, ABILITIES } from './data.js';
 import {
   createHealthBar, createInteractiveHealthBar, createCheckboxRow,
   createCriticalRow, createSegmentedControl, createToggle, vitalColor,
@@ -72,7 +72,7 @@ export function renderGameView(container, gameId) {
   if (allShips.length === 0) {
     container.innerHTML += `
       <div class="empty-state">
-        <div class="empty-state-icon">\u{26F5}</div>
+        <div class="empty-state-icon"><img src="ship-silhouette.png" alt="" style="height:80px;width:auto;opacity:0.6" loading="lazy"></div>
         <div class="empty-state-title">No ships in this game</div>
         <div class="empty-state-text"><a href="#/games/${gameId}/edit">Add ships</a> to start tracking.</div>
       </div>
@@ -127,7 +127,7 @@ export function renderShipActionView(container, gameId, shipIndex) {
   const imageHtml = ship.shipImage?.data
     ? `<img src="${ship.shipImage.data}" alt="${escapeHtml(ship.name)}" loading="lazy">`
     : `<img src="ship-silhouette.png" alt="Ship" class="placeholder-silhouette" loading="lazy">`;
-  const flagHtml = nationalityFlag(ship.nationality);
+  const flagHtml = nationalityFlag(ship.nationality, ship.shipType);
   const crewTag = crewRatingTag(ship.captain?.crewRating);
   const captainName = ship.captain?.name ? `${ship.captain.rank ? escapeHtml(ship.captain.rank) + ' ' : ''}${escapeHtml(ship.captain.name)}` : '';
   summary.innerHTML = `
@@ -672,14 +672,36 @@ function buildCardBody(body, ship, game, save) {
     const abilitiesSection = makeSection('Abilities');
     const abilityList = document.createElement('div');
     abilityList.className = 'ability-cards';
+
+    const categoryOrder = ['ship', 'captain', 'crew', 'weakness', '_custom'];
+    const categoryLabels = { ship: 'Ship', captain: 'Captain', crew: 'Crew', weakness: 'Weakness', _custom: 'Custom' };
+    const grouped = {};
     ship.abilities.forEach(ability => {
-      const card = document.createElement('div');
-      card.className = 'ability-card';
-      const name = typeof ability === 'object' ? ability.name : ability.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      const effect = typeof ability === 'object' ? ability.effect : '';
-      card.innerHTML = `<div class="ability-card-name">${escapeHtml(name)}</div>${effect ? `<div class="ability-card-effect">${escapeHtml(effect)}</div>` : ''}`;
-      abilityList.appendChild(card);
+      const id = typeof ability === 'object' ? ability.id : ability;
+      const ref = ABILITIES.find(r => r.id === id);
+      const cat = ref?.category || '_custom';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(ability);
     });
+
+    categoryOrder.forEach(cat => {
+      if (!grouped[cat]?.length) return;
+      const isWeakness = cat === 'weakness';
+      const header = document.createElement('div');
+      header.className = `ability-category-header ${isWeakness ? 'ability-category-header--weakness' : ''}`;
+      header.textContent = categoryLabels[cat];
+      abilityList.appendChild(header);
+
+      grouped[cat].forEach(ability => {
+        const card = document.createElement('div');
+        card.className = `ability-card ${isWeakness ? 'ability-card--weakness' : ''}`;
+        const name = typeof ability === 'object' ? ability.name : ability.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+        const effect = typeof ability === 'object' ? ability.effect : '';
+        card.innerHTML = `<div class="ability-card-name">${escapeHtml(name)}</div>${effect ? `<div class="ability-card-effect">${escapeHtml(effect)}</div>` : ''}`;
+        abilityList.appendChild(card);
+      });
+    });
+
     abilitiesSection.appendChild(abilityList);
     body.appendChild(abilitiesSection);
   }

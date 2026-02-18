@@ -6,7 +6,7 @@ import { getGame, getShips, saveGame, deleteGame } from './storage.js';
 import { NATIONALITIES } from './data.js';
 import { createGameShip } from './data.js';
 import { showToast, showModal, confirmDialog } from './components.js';
-import { uuid, escapeHtml, nationalityFlag, getGameShips, deepClone, calculatePoints } from './utils.js';
+import { uuid, escapeHtml, nationalityFlag, getGameShips, deepClone, calculatePoints, formatYears, stripAccents } from './utils.js';
 
 export function renderGameEditor(container, gameId) {
   const isNew = !gameId;
@@ -256,8 +256,8 @@ export function renderGameEditor(container, gameId) {
       const filtered = allShips.filter(s => {
         if (filterNationality && s.nationality !== filterNationality) return false;
         if (searchText) {
-          const hay = [s.name, s.classAndRating, s.nationality, s.yearLaunched].filter(Boolean).join(' ').toLowerCase();
-          return searchText.toLowerCase().split(/\s+/).every(w => hay.includes(w));
+          const hay = stripAccents([s.name, s.classAndRating, s.nationality, s.yearLaunched, s.yearRefit, s.shipType].filter(Boolean).join(' ').toLowerCase());
+          return stripAccents(searchText.toLowerCase()).split(/\s+/).every(w => hay.includes(w));
         }
         return true;
       });
@@ -279,8 +279,8 @@ export function renderGameEditor(container, gameId) {
           item.style.cursor = used ? 'not-allowed' : 'pointer';
           const pts = calculatePoints(ship);
           item.innerHTML = `
-            <span class="ship-name">${nationalityFlag(ship.nationality)} ${escapeHtml(ship.name || 'Untitled')}</span>
-            <span class="ship-class">${escapeHtml(ship.classAndRating || '')}${ship.yearLaunched ? ` (${escapeHtml(ship.yearLaunched)})` : ''}</span>
+            <span class="ship-name">${nationalityFlag(ship.nationality, ship.shipType)} ${escapeHtml(ship.name || 'Untitled')}</span>
+            <span class="ship-class">${escapeHtml(ship.classAndRating || '')}${formatYears(ship) ? ` · ${escapeHtml(formatYears(ship))}` : ''}</span>
             <span class="points-badge">${pts} pts</span>
             ${used ? '<span class="badge">In use</span>' : ''}
           `;

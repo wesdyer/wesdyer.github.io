@@ -3,7 +3,7 @@
 // ============================================
 
 import { getShip, saveShip, deleteShip } from './storage.js';
-import { NATIONALITIES, CREW_RATINGS, ABILITIES, GUN_TYPES, GUN_FACINGS, SHIP_TEMPLATES, createShipFromTemplate, createBlankShip } from './data.js';
+import { NATIONALITIES, CREW_RATINGS, ABILITIES, GUN_TYPES, GUN_FACINGS, SHIP_TEMPLATES, SHIP_TYPES, createShipFromTemplate, createBlankShip } from './data.js';
 import { createStepper, createChipSelector, createImagePicker, showToast, confirmDialog } from './components.js';
 import { uuid, escapeHtml, debounce, deepClone, calculatePoints } from './utils.js';
 
@@ -21,11 +21,8 @@ export function renderShipEditor(container, shipId, queryParams) {
     ship = templateId ? createShipFromTemplate(templateId) : createBlankShip();
     ship.id = uuid();
     ship.createdAt = new Date().toISOString();
-    // Apply nationality defaults
-    const nat = NATIONALITIES.find(n => n.id === ship.nationality);
-    if (nat && !shipId) {
-      ship.skills = { command: nat.command, seamanship: nat.seamanship, gunnery: nat.gunnery, closeAction: nat.closeAction };
-    }
+    // Apply skill defaults based on nationality + type
+    applySkillDefaults(ship);
   }
 
   const isNew = !shipId;
@@ -68,10 +65,8 @@ function buildForm(form, ship, isNew, autoSave) {
       const t = templateSelect.value;
       if (!t) return;
       const tpl = createShipFromTemplate(t);
-      Object.assign(ship, tpl, { id: ship.id, name: ship.name, createdAt: ship.createdAt, nationality: ship.nationality });
-      // Re-apply nationality skills
-      const nat = NATIONALITIES.find(n => n.id === ship.nationality);
-      if (nat) ship.skills = { command: nat.command, seamanship: nat.seamanship, gunnery: nat.gunnery, closeAction: nat.closeAction };
+      Object.assign(ship, tpl, { id: ship.id, name: ship.name, createdAt: ship.createdAt, nationality: ship.nationality, shipType: ship.shipType });
+      applySkillDefaults(ship);
       form.dataset.activeTab = 'overview';
       buildForm(form, ship, isNew);
     });
@@ -82,13 +77,27 @@ function buildForm(form, ship, isNew, autoSave) {
 
   // --- Overview ---
   const overview = makeSection('Ship Overview');
+
+  const fictionalToggle = miniToggle('Fictional', !!ship.isFictional, (v) => {
+    ship.isFictional = v;
+    autoSave?.();
+  });
+
+  const isPirates = ship.nationality === 'Pirates';
+  const typeSelect = shipTypeSelect(ship, form, isNew, autoSave);
+
   overview.appendChild(formRow(
     formGroup('Name *', input('text', ship.name, v => ship.name = v, 'e.g. HMS Surprise')),
-    formGroup('Nationality', nationalitySelect(ship, form, isNew)),
+    formGroup('Nationality', nationalitySelect(ship, form, isNew, autoSave)),
+    ...(!isPirates ? [formGroup('Type', typeSelect)] : []),
   ));
+  const toggleRow = el('div', { className: 'form-toggle-row' });
+  toggleRow.append(fictionalToggle);
+  overview.appendChild(toggleRow);
   overview.appendChild(formRow(
     formGroup('Class & Rating', input('text', ship.classAndRating, v => ship.classAndRating = v, 'e.g. 28-gun 6th rate')),
     formGroup('Year Launched', input('text', ship.yearLaunched, v => ship.yearLaunched = v, '1794')),
+    formGroup('Year Refit', input('text', ship.yearRefit || '', v => ship.yearRefit = v, '1813')),
   ));
   overview.appendChild(formRow(
     formGroup('Tonnage', input('text', ship.tonnage, v => ship.tonnage = v, '578')),
@@ -169,8 +178,18 @@ function buildForm(form, ship, isNew, autoSave) {
   // Add from preexisting
   const addRow = el('div', { className: 'flex gap-sm mt-sm', style: 'align-items:end;flex-wrap:wrap' });
   const presetSelect = el('select', { className: 'form-select', style: 'flex:1;min-width:200px' });
-  presetSelect.innerHTML = `<option value="">-- Add existing ability --</option>` +
-    [...ABILITIES].sort((a, b) => a.name.localeCompare(b.name)).map(a => `<option value="${a.id}">${a.name}</option>`).join('');
+  const abilityCategoryOrder = [
+    { key: 'ship', label: 'Ship' },
+    { key: 'captain', label: 'Captain' },
+    { key: 'crew', label: 'Crew' },
+    { key: 'weakness', label: 'Weakness' },
+  ];
+  presetSelect.innerHTML = `<option value="">-- Add ability --</option>` +
+    abilityCategoryOrder.map(cat => {
+      const items = ABILITIES.filter(a => a.category === cat.key).sort((a, b) => a.name.localeCompare(b.name));
+      if (!items.length) return '';
+      return `<optgroup label="${cat.label}">${items.map(a => `<option value="${a.id}">${a.name}</option>`).join('')}</optgroup>`;
+    }).join('');
   const addPresetBtn = el('button', { className: 'btn btn-secondary btn-sm', type: 'button' });
   addPresetBtn.textContent = 'Add';
   addPresetBtn.addEventListener('click', () => {
@@ -240,6 +259,17 @@ function buildForm(form, ship, isNew, autoSave) {
     }));
   });
   movement.appendChild(row);
+  const sweepsRow = el('div', { className: 'grid-2 mb-md' });
+  sweepsRow.appendChild(createStepper({
+    value: ship.speed?.sweeps || 0,
+    min: 0, max: 10,
+    onChange: v => {
+      if (!ship.speed) ship.speed = {};
+      ship.speed.sweeps = v;
+    },
+    label: 'Sweeps',
+  }));
+  movement.appendChild(sweepsRow);
   const maneuverGrid = el('div', { className: 'grid-2' });
   maneuverGrid.appendChild(createStepper({ value: ship.movement.maneuver, min: 0, max: 10, onChange: v => ship.movement.maneuver = v, label: 'Maneuver' }));
   movement.appendChild(maneuverGrid);
@@ -629,21 +659,67 @@ function textarea(value, onChange, placeholder = '') {
   return ta;
 }
 
-function nationalitySelect(ship, form, isNew) {
+function nationalitySelect(ship, form, isNew, autoSave) {
   const select = el('select', { className: 'form-select' });
   select.innerHTML = NATIONALITIES.map(n =>
     `<option value="${n.id}" ${ship.nationality === n.id ? 'selected' : ''}>${n.name}</option>`
   ).join('');
   select.addEventListener('change', () => {
     ship.nationality = select.value;
-    // Auto-fill skill defaults for new ships
+    // Pirates have no type dropdown — force navy
+    if (select.value === 'Pirates') {
+      ship.shipType = 'navy';
+    }
     if (isNew) {
-      const nat = NATIONALITIES.find(n => n.id === select.value);
-      if (nat) {
-        ship.skills = { command: nat.command, seamanship: nat.seamanship, gunnery: nat.gunnery, closeAction: nat.closeAction };
-        buildForm(form, ship, isNew);
-      }
+      applySkillDefaults(ship);
+      buildForm(form, ship, isNew, autoSave);
     }
   });
   return select;
+}
+
+function shipTypeSelect(ship, form, isNew, autoSave) {
+  const select = el('select', { className: 'form-select' });
+  select.innerHTML = SHIP_TYPES.map(t =>
+    `<option value="${t.id}" ${ship.shipType === t.id ? 'selected' : ''}>${t.name}</option>`
+  ).join('');
+  select.addEventListener('change', () => {
+    ship.shipType = select.value;
+    if (isNew) {
+      applySkillDefaults(ship);
+      buildForm(form, ship, isNew, autoSave);
+    }
+  });
+  return select;
+}
+
+function applySkillDefaults(ship) {
+  if (ship.nationality === 'Pirates') {
+    const nat = NATIONALITIES.find(n => n.id === 'Pirates');
+    ship.skills = { command: nat.command, seamanship: nat.seamanship, gunnery: nat.gunnery, closeAction: nat.closeAction };
+    return;
+  }
+  const type = SHIP_TYPES.find(t => t.id === ship.shipType);
+  if (type && type.command) {
+    // Privateer or Merchant — use type stats
+    ship.skills = { command: type.command, seamanship: type.seamanship, gunnery: type.gunnery, closeAction: type.closeAction };
+  } else {
+    // Navy — use nationality stats
+    const nat = NATIONALITIES.find(n => n.id === ship.nationality);
+    if (nat) ship.skills = { command: nat.command, seamanship: nat.seamanship, gunnery: nat.gunnery, closeAction: nat.closeAction };
+  }
+}
+
+function miniToggle(label, value, onChange) {
+  const toggle = el('div', { className: `toggle-mini ${value ? 'active' : ''}` });
+  toggle.innerHTML = `
+    <span class="toggle-mini-label">${escapeHtml(label)}</span>
+    <div class="toggle-mini-track"><div class="toggle-mini-thumb"></div></div>
+  `;
+  toggle.addEventListener('click', () => {
+    value = !value;
+    toggle.classList.toggle('active', value);
+    onChange?.(value);
+  });
+  return toggle;
 }
