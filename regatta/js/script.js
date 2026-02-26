@@ -1684,6 +1684,8 @@ function updateBaseWind(dt) {
 
     state.wind.currentShift = newShiftDeg * (Math.PI / 180);
     state.wind.direction = normalizeAngle(state.wind.baseDirection + state.wind.currentShift);
+    state.wind.sinDir = Math.sin(state.wind.direction);
+    state.wind.cosDir = Math.cos(state.wind.direction);
 
     // Variability (Speed)
     const v = cond.variability !== undefined ? cond.variability : 0.5;
@@ -1938,13 +1940,21 @@ function createGust(x, y, type, initial = false) {
     const duration = 30 + Math.random() * 60;
     const age = initial ? Math.random() * duration : 0;
 
+    const rotation = windDir + dirDelta + Math.PI / 2;
+
     return {
         type, x, y, vx, vy,
         moveSpeedFactor, moveDirOffset,
         maxRadiusX, maxRadiusY,
         radiusX: 10, radiusY: 10,
-        rotation: windDir + dirDelta + Math.PI / 2,
+        rotation,
+        sinRot: Math.sin(-rotation),
+        cosRot: Math.cos(-rotation),
+        invRadiusXSq: 0.01,
+        invRadiusYSq: 0.01,
         speedDelta, dirDelta,
+        sinDirDelta: Math.sin(dirDelta),
+        cosDirDelta: Math.cos(dirDelta),
         duration,
         age
     };
@@ -2000,6 +2010,8 @@ function updateGusts(dt) {
 
         // Update Rotation to align with local wind direction (Global + Delta)
         g.rotation = globalWindDir + g.dirDelta + Math.PI / 2;
+        g.sinRot = Math.sin(-g.rotation);
+        g.cosRot = Math.cos(-g.rotation);
 
         g.x += g.vx * timeScale;
         g.y += g.vy * timeScale;
@@ -2011,6 +2023,8 @@ function updateGusts(dt) {
         const lifeFactor = Math.sin(lifeProgress * Math.PI); // 0 -> 1 -> 0
         g.radiusX = Math.max(10, g.maxRadiusX * lifeFactor);
         g.radiusY = Math.max(10, g.maxRadiusY * lifeFactor);
+        g.invRadiusXSq = 1.0 / (g.radiusX * g.radiusX);
+        g.invRadiusYSq = 1.0 / (g.radiusY * g.radiusY);
 
         if (g.age > g.duration) {
             state.gusts.splice(i, 1);
@@ -2021,21 +2035,21 @@ function updateGusts(dt) {
 function getWindAt(x, y) {
     // Current Global Wind
     const baseSpeed = state.wind.speed;
-    const baseDir = state.wind.direction;
+    // const baseDir = state.wind.direction;
 
     // Convert to vector
-    let sumWx = Math.sin(baseDir) * baseSpeed;
-    let sumWy = -Math.cos(baseDir) * baseSpeed;
+    let sumWx = state.wind.sinDir * baseSpeed;
+    let sumWy = -state.wind.cosDir * baseSpeed;
 
     for (const g of state.gusts) {
         const dx = x - g.x;
         const dy = y - g.y;
-        const cos = Math.cos(-g.rotation);
-        const sin = Math.sin(-g.rotation);
-        const rx = dx * cos - dy * sin;
-        const ry = dx * sin + dy * cos;
 
-        const distSq = (rx*rx)/(g.radiusX*g.radiusX) + (ry*ry)/(g.radiusY*g.radiusY);
+        // Use cached trig and inverse radius
+        const rx = dx * g.cosRot - dy * g.sinRot;
+        const ry = dx * g.sinRot + dy * g.cosRot;
+
+        const distSq = (rx*rx) * g.invRadiusXSq + (ry*ry) * g.invRadiusYSq;
         if (distSq <= 1) {
             const falloff = 1 - Math.sqrt(distSq);
             const lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
@@ -2044,12 +2058,14 @@ function getWindAt(x, y) {
             if (intensity > 0) {
                  const gSpeed = g.speedDelta * intensity;
                  // Local direction inside puff
-                 const gwDir = baseDir + g.dirDelta;
+                 // Angle sum identity to avoid trig calls
+                 // gwDir = windDir + dirDelta
+                 const sinGwDir = state.wind.sinDir * g.cosDirDelta + state.wind.cosDir * g.sinDirDelta;
+                 const cosGwDir = state.wind.cosDir * g.cosDirDelta - state.wind.sinDir * g.sinDirDelta;
 
                  // Add puff vector
-                 // Note: gSpeed can be negative (lull)
-                 sumWx += Math.sin(gwDir) * gSpeed;
-                 sumWy += -Math.cos(gwDir) * gSpeed;
+                 sumWx += sinGwDir * gSpeed;
+                 sumWy += -cosGwDir * gSpeed;
             }
         }
     }
@@ -2061,18 +2077,14 @@ function getWindAt(x, y) {
     let shadowFactor = 1.0;
     
     if (state.course.islands) {
+        // Hoist flow vector calculation
+        const flowX = -state.wind.sinDir;
+        const flowY = state.wind.cosDir;
+
         for (const isl of state.course.islands) {
             // Distance from island center
             const dx = x - isl.x;
             const dy = y - isl.y;
-            
-            // Wind Vector (blowing FROM baseDir)
-            // Wind Direction (baseDir) is FROM direction.
-            // Coordinate system: Y is down.
-            // North (0) -> Blows South (+Y). Vector (0, 1).
-            // East (PI/2) -> Blows West (-X). Vector (-1, 0).
-            const flowX = -Math.sin(baseDir);
-            const flowY = Math.cos(baseDir);
             
             // Project relative position onto flow vector
             // dot > 0 means downwind
@@ -7070,6 +7082,8 @@ function resetGame() {
     state.wind.speed = state.wind.baseSpeed;
     state.wind.baseDirection = Math.random() * Math.PI * 2;
     state.wind.direction = state.wind.baseDirection;
+    state.wind.sinDir = Math.sin(state.wind.direction);
+    state.wind.cosDir = Math.cos(state.wind.direction);
     state.wind.currentShift = 0;
     state.wind.oscillator = Math.random() * Math.PI * 2; // Random phase
     state.wind.history = [];
