@@ -280,6 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     span.className = 'material-symbols-outlined text-[20px]';
                     span.textContent = 'backspace';
                     backspaceBtn.dataset.key = 'Backspace';
+                    backspaceBtn.setAttribute('aria-label', 'Backspace');
                     backspaceBtn.appendChild(span);
                     rowDiv.appendChild(backspaceBtn);
                 } else {
