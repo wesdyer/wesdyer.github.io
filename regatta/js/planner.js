@@ -49,19 +49,27 @@ const Geom = {
 };
 
 class RoutePlanner {
-    constructor() {
+    constructor(margin = 100) {
         this.path = [];
         this.inflatedIslands = [];
         this.lastStart = null;
         this.lastTarget = null;
         this.islandsDirty = true;
+        this.margin = margin;
+    }
+
+    setMargin(margin) {
+        if (this.margin !== margin) {
+            this.margin = margin;
+            this.islandsDirty = true;
+        }
     }
 
     updateIslands(islands) {
         // Inflate islands for safety margin
         // Safety = Boat Radius (approx 30) + Buffer (50) + SpeedFactor?
         // Let's use a fixed generous buffer for global planning: 100 units.
-        const MARGIN = 100;
+        const MARGIN = this.margin;
 
         this.inflatedIslands = islands.map(isl => {
             const center = { x: isl.x, y: isl.y };
@@ -100,7 +108,7 @@ class RoutePlanner {
     // A* Pathfinding on Visibility Graph
     findPath(start, target, islands) {
         // If islands changed, update inflated cache
-        if (this.inflatedIslands.length !== islands.length) {
+        if (this.islandsDirty || this.inflatedIslands.length !== islands.length) {
             this.updateIslands(islands);
         }
 
