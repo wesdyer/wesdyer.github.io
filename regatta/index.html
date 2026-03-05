@@ -90,7 +90,7 @@
 
         <!-- Pause Button -->
         <div class="absolute bottom-4 right-4 z-30 pointer-events-auto">
-            <button id="pause-button" class="bg-slate-800/80 hover:bg-slate-700 text-white font-bold py-2 px-3 rounded-full border border-slate-600/50 shadow-lg transition-colors flex items-center gap-2">
+            <button id="pause-button" aria-label="Pause Game" class="bg-slate-800/80 hover:bg-slate-700 text-white font-bold py-2 px-3 rounded-full border border-slate-600/50 shadow-lg transition-colors flex items-center gap-2">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
@@ -101,7 +101,7 @@
         <!-- Help Screen -->
         <div id="help-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
             <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative">
-                <button id="close-help" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <button id="close-help" aria-label="Close Help" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -198,7 +198,7 @@
         <!-- Settings Screen -->
         <div id="settings-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
             <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
-                <button id="close-settings" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
+                <button id="close-settings" aria-label="Close Settings" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -284,7 +284,7 @@
 
                         <div class="flex items-center justify-between mb-4">
                             <span class="text-slate-200 font-bold">Hull Color</span>
-                            <input type="color" id="setting-color-hull" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#f1f5f9">
+                            <input type="color" id="setting-color-hull" aria-label="Hull Color" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#f1f5f9">
                         </div>
 
                         <div class="flex items-center justify-between mb-4">
@@ -340,7 +340,7 @@
                                     <div class="text-xs font-bold text-slate-300 uppercase">Direction</div>
                                     <div id="val-wind-direction" class="text-xs font-mono text-blue-400">N</div>
                                 </div>
-                                <input type="range" id="conf-wind-direction" min="0" max="7" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+                                <input type="range" id="conf-wind-direction" aria-label="Wind Direction" min="0" max="7" step="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
                             </div>
                             <div>
                                 <div class="text-xs font-bold text-slate-300 uppercase mb-1">Strength</div>
