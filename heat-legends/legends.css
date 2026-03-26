@@ -32,12 +32,18 @@ body {
     text-align: center;
     cursor: pointer;
     font-weight: bold;
+    border: none;
     border-radius: 10px;
     display: inline-block;
     min-width: 120px;
     font-size: 1.25rem;
     user-select: none;
     margin: 5px;
+}
+
+.button:focus-visible {
+    outline: 2px solid rgb(70, 181, 255);
+    outline-offset: 2px;
 }
 
 .button:hover {
@@ -155,6 +161,11 @@ td.empty {
     flex-shrink: 0;
 }
 
+.selector:focus-visible {
+    outline: 2px solid rgb(70, 181, 255);
+    outline-offset: 2px;
+}
+
 .selector:hover {
     cursor: pointer;
 }
@@ -175,6 +186,11 @@ td.empty {
     display: inline-block;
     position: relative;
     flex-shrink: 0;
+}
+
+.flag-selector:focus-visible {
+    outline: 2px solid rgb(70, 181, 255);
+    outline-offset: 2px;
 }
 
 .flag-selector:hover {
