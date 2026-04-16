@@ -1,0 +1,3 @@
+## 2024-05-24 - Trigonometric Function Caching in High-Frequency Physics Methods
+**Learning:** In the `regatta` application, trigonometric functions (`Math.sin`, `Math.cos`) and division operations (`/`) within high-frequency physics queries like `getWindAt` (which is called per frame by every boat, AI projection, and visible wind wave) can create significant performance bottlenecks.
+**Action:** Always pre-calculate and cache trigonometric values (e.g., `sinDir`, `cosDir`, `sinRot`, `cosRot`) and inverse values for division (e.g., `invRadiusXSq = 1 / (r * r)`) when the underlying properties (`direction`, `rotation`, `radius`) are updated, rather than recalculating them on the fly in `getWindAt`.
