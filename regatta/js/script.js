@@ -870,20 +870,55 @@ class BotController {
         const m0 = state.course.marks[0];
         const m1 = state.course.marks[1];
 
-        // Dynamic favored-end drift (early prestart only)
+        // Compute line geometry early for utility evaluation
+        const dx = m1.x - m0.x;
+        const dy = m1.y - m0.y;
+
+        // Tactical Utility-Based Optimization Engine (early prestart only)
         if (timer > 10) {
             const favored = getFavoredEnd(); // 0 or 1
-            const favoredPct = favored === 1 ? 0.75 : 0.25;
-            this.startLinePct += (favoredPct - this.startLinePct) * 0.005;
-            this.startLinePct = Math.max(0.05, Math.min(0.90, this.startLinePct));
+            
+            let bestUtility = -Infinity;
+            let bestPct = this.startLinePct;
+            
+            // Sample line from 5% to 95%
+            for (let pct = 0.05; pct <= 0.95; pct += 0.1) {
+                // Wind advantage: favored end gets 1.0, unfavorable gets 0.0
+                const windScore = favored === 1 ? pct : (1 - pct);
+                
+                const tx = m0.x + dx * pct;
+                const ty = m0.y + dy * pct;
+                
+                // Traffic density penalty based on other boats' current positions
+                let trafficPenalty = 0;
+                for (const otherBoat of state.boats) {
+                    if (otherBoat.id === boat.id) continue;
+                    const dist = Math.hypot(otherBoat.x - tx, otherBoat.y - ty);
+                    if (dist < 150) {
+                        trafficPenalty += 150 / (dist + 1);
+                    }
+                }
+                
+                // Penalty to prevent erratic target switching
+                const driftPenalty = Math.abs(pct - this.startLinePct) * 2;
+                
+                // Total utility score
+                const utility = (windScore * 50) - trafficPenalty - driftPenalty;
+                
+                if (utility > bestUtility) {
+                    bestUtility = utility;
+                    bestPct = pct;
+                }
+            }
+            
+            // Smoothly drift toward the best utility position
+            this.startLinePct += (bestPct - this.startLinePct) * 0.05;
+            this.startLinePct = Math.max(0.05, Math.min(0.95, this.startLinePct));
         }
 
-        // Compute line geometry
         const lineDot = this.getLineDistance();
 
         // Line target
-        const dx = m1.x - m0.x;
-        const dy = m1.y - m0.y;
         const targetX = m0.x + dx * this.startLinePct;
         const targetY = m0.y + dy * this.startLinePct;
         const wd = state.wind.direction;
@@ -912,20 +947,29 @@ class BotController {
 
         // Phase transitions
         const distToTarget = Math.sqrt((targetX - boat.x) ** 2 + (targetY - boat.y) ** 2);
+        
+        // Physics-aware approach timing estimate
+        const approachTime = this.getApproachTime(distToTarget, boat.speed, boat.stats);
 
         if (this.prestartPhase === 'HOLD') {
-            // Physics-aware approach timing (0.85 factor — boat overshoots sim estimate)
-            const approachTime = Math.max(
-                this.getApproachTime(distToTarget, boat.speed, boat.stats) * 0.85,
-                3.0
-            );
-            if (timer <= approachTime) {
+            // Trigger approach phase early enough to allow maneuvering and speed management
+            if (timer <= approachTime + 2.0) { // Changed from 5.0 to 2.0 to prevent drifting over line
                 this.prestartPhase = 'APPROACH';
             }
         }
 
-        if (this.prestartPhase === 'APPROACH' && timer <= 2) {
-            this.prestartPhase = 'ACCELERATE';
+        if (this.prestartPhase === 'APPROACH') {
+            // Dynamic Performance Buffer to transition to ACCELERATE
+            // Scales based on capability to reach top speed vs. current velocity
+            const accelPotential = boat.stats.acceleration || 0;
+            const speedFactor = boat.speed / 5.0; 
+            const dynamicBuffer = 0.95 - (accelPotential * 0.01) + (speedFactor * 0.02);
+            
+            const accelerateTime = Math.max(approachTime * dynamicBuffer, 1.0);
+            
+            if (timer <= accelerateTime) {
+                this.prestartPhase = 'ACCELERATE';
+            }
         }
 
         // Execute current phase
@@ -935,9 +979,32 @@ class BotController {
                 return { heading: wd, speed: 0.9 };
             }
 
-            case 'APPROACH':
+            case 'APPROACH': {
+                // Mid-course steering corrections for separation
+                let approachX = targetX;
+                let approachY = targetY;
+                
+                for (const otherBoat of state.boats) {
+                    if (otherBoat.id === boat.id) continue;
+                    const dist = Math.hypot(otherBoat.x - boat.x, otherBoat.y - boat.y);
+                    if (dist < 40) {
+                        // Repel the target vector away from the nearby boat
+                        approachX += (boat.x - otherBoat.x) * 0.6;
+                        approachY += (boat.y - otherBoat.y) * 0.6;
+                    }
+                }
+                
+                // Speed management: slightly depowered, drop speed further if arriving early
+                let approachSpeed = 0.85;
+                if (timer > approachTime + 1.0) { // changed from 2.0
+                    approachSpeed = 0.6; 
+                }
+                
+                return { target: { x: approachX, y: approachY }, speed: approachSpeed };
+            }
+
             case 'ACCELERATE': {
-                // Target point on line for upwind approach — full speed
+                // Top speed push to line
                 return { target: { x: targetX, y: targetY }, speed: 1.0 };
             }
 
@@ -945,6 +1012,7 @@ class BotController {
                 return { target: { x: targetX, y: targetY }, speed: 1.0 };
         }
     }
+
 
     updateRiskAssessment(dt) {
         // Decrement timer
