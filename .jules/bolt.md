@@ -1,0 +1,3 @@
+## 2024-05-07 - Pre-calculating Trigonometric Values in Outer Loops
+**Learning:** `getWindAt(x, y)` was being called extremely frequently (multiple times per boat per frame for AI calculations and rendering). Inside `getWindAt`, iterating over multiple wind gusts and performing `Math.sin`/`Math.cos` and division operations at runtime formed a performance bottleneck.
+**Action:** When updating game state objects in outer loops (like `updateGusts(dt)` or when wind direction changes), pre-calculate and cache their trigonometric transformations (e.g., `sinDir`, `cosRot`) and reciprocal values for division. Then reuse these cached scalar values inside high-frequency spatial lookups like `getWindAt`.
