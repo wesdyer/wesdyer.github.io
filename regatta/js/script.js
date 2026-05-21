@@ -1752,6 +1752,9 @@ function updateBaseWind(dt) {
 
     state.wind.currentShift = newShiftDeg * (Math.PI / 180);
     state.wind.direction = normalizeAngle(state.wind.baseDirection + state.wind.currentShift);
+    // Bolt: Cache trig calculations to optimize getWindAt
+    state.wind.sinDir = Math.sin(state.wind.direction);
+    state.wind.cosDir = Math.cos(state.wind.direction);
 
     // Variability (Speed)
     const v = cond.variability !== undefined ? cond.variability : 0.5;
@@ -2006,16 +2009,29 @@ function createGust(x, y, type, initial = false) {
     const duration = 30 + Math.random() * 60;
     const age = initial ? Math.random() * duration : 0;
 
-    return {
+    const rotation = windDir + dirDelta + Math.PI / 2;
+
+    const gust = {
         type, x, y, vx, vy,
         moveSpeedFactor, moveDirOffset,
         maxRadiusX, maxRadiusY,
         radiusX: 10, radiusY: 10,
-        rotation: windDir + dirDelta + Math.PI / 2,
+        rotation,
         speedDelta, dirDelta,
         duration,
         age
     };
+
+    // Bolt: Cache trig/division calculations
+    gust.cosRot = Math.cos(-gust.rotation);
+    gust.sinRot = Math.sin(-gust.rotation);
+    gust.invRadiusXSq = 1 / (gust.radiusX * gust.radiusX);
+    gust.invRadiusYSq = 1 / (gust.radiusY * gust.radiusY);
+    gust.lifeFade = Math.min(gust.age / 5, 1) * Math.min((gust.duration - gust.age) / 5, 1);
+    gust.sinGwDir = Math.sin(windDir + gust.dirDelta);
+    gust.cosGwDir = Math.cos(windDir + gust.dirDelta);
+
+    return gust;
 }
 
 function spawnGlobalGust(initial = false) {
@@ -2082,6 +2098,15 @@ function updateGusts(dt) {
 
         if (g.age > g.duration) {
             state.gusts.splice(i, 1);
+        } else {
+            // Bolt: Cache trig/division calculations to optimize getWindAt
+            g.cosRot = Math.cos(-g.rotation);
+            g.sinRot = Math.sin(-g.rotation);
+            g.invRadiusXSq = 1 / (g.radiusX * g.radiusX);
+            g.invRadiusYSq = 1 / (g.radiusY * g.radiusY);
+            g.lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
+            g.sinGwDir = Math.sin(globalWindDir + g.dirDelta);
+            g.cosGwDir = Math.cos(globalWindDir + g.dirDelta);
         }
     }
 }
@@ -2091,33 +2116,38 @@ function getWindAt(x, y) {
     const baseSpeed = state.wind.speed;
     const baseDir = state.wind.direction;
 
-    // Convert to vector
-    let sumWx = Math.sin(baseDir) * baseSpeed;
-    let sumWy = -Math.cos(baseDir) * baseSpeed;
+    // Use cached trig values if available to save computation
+    const sinDir = state.wind.sinDir !== undefined ? state.wind.sinDir : Math.sin(baseDir);
+    const cosDir = state.wind.cosDir !== undefined ? state.wind.cosDir : Math.cos(baseDir);
 
-    for (const g of state.gusts) {
+    // Convert to vector
+    let sumWx = sinDir * baseSpeed;
+    let sumWy = -cosDir * baseSpeed;
+
+    for (let i = 0; i < state.gusts.length; i++) {
+        const g = state.gusts[i];
         const dx = x - g.x;
         const dy = y - g.y;
-        const cos = Math.cos(-g.rotation);
-        const sin = Math.sin(-g.rotation);
-        const rx = dx * cos - dy * sin;
-        const ry = dx * sin + dy * cos;
 
-        const distSq = (rx*rx)/(g.radiusX*g.radiusX) + (ry*ry)/(g.radiusY*g.radiusY);
+        // Bolt: Use cached trig calculations
+        const rx = dx * g.cosRot - dy * g.sinRot;
+        const ry = dx * g.sinRot + dy * g.cosRot;
+
+        // Bolt: Avoid slow division by using cached inverse squares
+        const distSq = (rx*rx)*g.invRadiusXSq + (ry*ry)*g.invRadiusYSq;
         if (distSq <= 1) {
             const falloff = 1 - Math.sqrt(distSq);
-            const lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
-            const intensity = Math.max(0, falloff * lifeFade);
+            // Bolt: Use pre-calculated lifeFade
+            const intensity = Math.max(0, falloff * g.lifeFade);
 
             if (intensity > 0) {
                  const gSpeed = g.speedDelta * intensity;
-                 // Local direction inside puff
-                 const gwDir = baseDir + g.dirDelta;
 
                  // Add puff vector
                  // Note: gSpeed can be negative (lull)
-                 sumWx += Math.sin(gwDir) * gSpeed;
-                 sumWy += -Math.cos(gwDir) * gSpeed;
+                 // Bolt: Use cached trig calculations
+                 sumWx += g.sinGwDir * gSpeed;
+                 sumWy += -g.cosGwDir * gSpeed;
             }
         }
     }
@@ -2128,19 +2158,21 @@ function getWindAt(x, y) {
     // They reduce speed but don't change direction significantly (unless we want wrapping, but requirements say "meaninfully dampen wind strength")
     let shadowFactor = 1.0;
     
-    if (state.course.islands) {
-        for (const isl of state.course.islands) {
+    if (state.course.islands && state.course.islands.length > 0) {
+        // Wind Vector (blowing FROM baseDir)
+        // Wind Direction (baseDir) is FROM direction.
+        // Coordinate system: Y is down.
+        // North (0) -> Blows South (+Y). Vector (0, 1).
+        // East (PI/2) -> Blows West (-X). Vector (-1, 0).
+        // Bolt: Use cached trig calculations out of the inner loop
+        const flowX = -sinDir;
+        const flowY = cosDir;
+
+        for (let i = 0; i < state.course.islands.length; i++) {
+            const isl = state.course.islands[i];
             // Distance from island center
             const dx = x - isl.x;
             const dy = y - isl.y;
-            
-            // Wind Vector (blowing FROM baseDir)
-            // Wind Direction (baseDir) is FROM direction.
-            // Coordinate system: Y is down.
-            // North (0) -> Blows South (+Y). Vector (0, 1).
-            // East (PI/2) -> Blows West (-X). Vector (-1, 0).
-            const flowX = -Math.sin(baseDir);
-            const flowY = Math.cos(baseDir);
             
             // Project relative position onto flow vector
             // dot > 0 means downwind
@@ -3060,6 +3092,9 @@ if (UI.confIslandClustering) {
             const offset = state.race.conditions.directionBias || 0;
             state.wind.baseDirection = normalizeAngle(targetRad + offset);
             state.wind.direction = state.wind.baseDirection;
+            // Bolt: Cache trig calculations to optimize getWindAt
+            state.wind.sinDir = Math.sin(state.wind.direction);
+            state.wind.cosDir = Math.cos(state.wind.direction);
 
             // Re-init course to align with new wind
             initCourse();
@@ -7138,6 +7173,9 @@ function resetGame() {
     state.wind.speed = state.wind.baseSpeed;
     state.wind.baseDirection = Math.random() * Math.PI * 2;
     state.wind.direction = state.wind.baseDirection;
+    // Bolt: Cache trig calculations to optimize getWindAt
+    state.wind.sinDir = Math.sin(state.wind.direction);
+    state.wind.cosDir = Math.cos(state.wind.direction);
     state.wind.currentShift = 0;
     state.wind.oscillator = Math.random() * Math.PI * 2; // Random phase
     state.wind.history = [];
