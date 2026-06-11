@@ -1,0 +1,3 @@
+## 2024-05-18 - Caching Wind Sine/Cosine in Regatta
+**Learning:** In the `regatta` application, `getWindAt` is called extremely frequently per frame (for every boat, multiple times for collision projection, sail calculations, particle and wave physics, etc.). Inside `getWindAt`, `Math.sin(baseDir)` and `Math.cos(baseDir)` were calculated repeatedly, but `baseDir` (which is `state.wind.direction`) only changes once per frame in `updateBaseWind` (or occasionally from user interaction).
+**Action:** Cache `sinDir` and `cosDir` on `state.wind` whenever `state.wind.direction` is updated to eliminate redundant trigonometric operations across all entities.
