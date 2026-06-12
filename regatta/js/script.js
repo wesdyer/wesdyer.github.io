@@ -878,6 +878,23 @@ class BotController {
         if (timer > 10) {
             const favored = getFavoredEnd(); // 0 or 1
             
+            // Pre-calculate 4-second projected positions for all other boats
+            const projectedBoats = [];
+            for (const otherBoat of state.boats) {
+                if (otherBoat.id === boat.id) continue;
+                const projX = otherBoat.x + Math.sin(otherBoat.heading) * otherBoat.speed * 60 * 4.0;
+                const projY = otherBoat.y - Math.cos(otherBoat.heading) * otherBoat.speed * 60 * 4.0;
+                
+                // Predict ROW conflict: check if we are the give-way boat
+                let isGiveWay = false;
+                try {
+                    const rowRes = getRightOfWay(boat, otherBoat);
+                    if (rowRes.boat === otherBoat) isGiveWay = true;
+                } catch(e) {}
+                
+                projectedBoats.push({ x: projX, y: projY, isGiveWay });
+            }
+            
             let bestUtility = -Infinity;
             let bestPct = this.startLinePct;
             
@@ -889,21 +906,25 @@ class BotController {
                 const tx = m0.x + dx * pct;
                 const ty = m0.y + dy * pct;
                 
-                // Traffic density penalty based on other boats' current positions
+                // Traffic density penalty based on other boats' projected positions
                 let trafficPenalty = 0;
-                for (const otherBoat of state.boats) {
-                    if (otherBoat.id === boat.id) continue;
-                    const dist = Math.hypot(otherBoat.x - tx, otherBoat.y - ty);
+                for (const projBoat of projectedBoats) {
+                    const dist = Math.hypot(projBoat.x - tx, projBoat.y - ty);
                     if (dist < 150) {
-                        trafficPenalty += 150 / (dist + 1);
+                        const rowMultiplier = projBoat.isGiveWay ? 2.0 : 1.0;
+                        trafficPenalty += (150 / (dist + 1)) * rowMultiplier;
                     }
                 }
                 
                 // Penalty to prevent erratic target switching
                 const driftPenalty = Math.abs(pct - this.startLinePct) * 2;
                 
+                // Unique offset to distribute assignments across a wider range
+                const preferredPct = ((boat.id % 5) + 1) / 6.0;
+                const spreadPenalty = Math.abs(pct - preferredPct) * 10;
+                
                 // Total utility score
-                const utility = (windScore * 50) - trafficPenalty - driftPenalty;
+                const utility = (windScore * 15) - trafficPenalty - driftPenalty - spreadPenalty;
                 
                 if (utility > bestUtility) {
                     bestUtility = utility;
@@ -994,9 +1015,9 @@ class BotController {
                     }
                 }
                 
-                // Speed management: slightly depowered, drop speed further if arriving early
-                let approachSpeed = 0.85;
-                if (timer > approachTime + 1.0) { // changed from 2.0
+                // Speed management: dynamic time-on-distance speed
+                let approachSpeed = 1.0;
+                if (timer - approachTime > 0) { // arriving early
                     approachSpeed = 0.6; 
                 }
                 
