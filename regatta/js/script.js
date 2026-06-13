@@ -903,7 +903,9 @@ class BotController {
                 const driftPenalty = Math.abs(pct - this.startLinePct) * 2;
                 
                 // Total utility score
-                const utility = (windScore * 50) - trafficPenalty - driftPenalty;
+                // Apply individualized favored weight to avoid entire fleet choosing the exact same spot
+                const favoredWeight = (boat.ai && boat.ai.favoredWeight !== undefined) ? boat.ai.favoredWeight : 1.0;
+                const utility = (windScore * 50 * favoredWeight) - trafficPenalty - driftPenalty;
                 
                 if (utility > bestUtility) {
                     bestUtility = utility;
@@ -995,8 +997,10 @@ class BotController {
                 }
                 
                 // Speed management: slightly depowered, drop speed further if arriving early
-                let approachSpeed = 0.85;
-                if (timer > approachTime + 1.0) { // changed from 2.0
+                let approachSpeed = (boat.ai && boat.ai.speedCapMax !== undefined) ? boat.ai.speedCapMax : 0.85;
+                const bleedThreshold = (boat.ai && boat.ai.bleedThreshold !== undefined) ? boat.ai.bleedThreshold : 1.0;
+                
+                if (timer > approachTime + bleedThreshold) {
                     approachSpeed = 0.6; 
                 }
                 
@@ -1689,7 +1693,11 @@ class Boat {
             prestartSide: (Math.random() > 0.5) ? 1 : -1,
             trimTimer: 0,
             currentTrimTarget: 0,
-            congestionTimer: Math.random() * 2.0
+            congestionTimer: Math.random() * 2.0,
+            // Stochastic Diversification parameters
+            favoredWeight: 0.5 + Math.random() * 1.0, // Req 1: randomized probability weight (0.5 to 1.5)
+            speedCapMax: 0.85 + Math.random() * 0.10, // Req 3: per-boat range 0.85 to 0.95
+            bleedThreshold: 0.5 + Math.random() * 1.5   // Req 4: individualized speed bleeding threshold (0.5 to 2.0)
         };
 
         // Personality Stats Removed for Basic AI
@@ -7242,7 +7250,6 @@ function resetGame() {
 
     // Determine favored end for start positioning bias
     const favoredEnd = getFavoredEnd(); // 0 = mark 0 (low pct), 1 = mark 1 (high pct)
-    const favorBias = favoredEnd === 1 ? 0.15 : -0.15; // Shift spread toward favored end
 
     for (let i = 0; i < opponents.length; i++) {
         const config = opponents[i];
@@ -7255,8 +7262,10 @@ function resetGame() {
         // Start Setup: Evenly spaced with small jitter, biased toward favored end
         const numAI = opponents.length;
         const basePos = numAI > 1 ? 0.1 + 0.7 * (i / (numAI - 1)) : 0.5;
+        // Requirement 2: Unique jitter per boat rather than uniform shift
+        const individualFavorBias = (favoredEnd === 1 ? 1 : -1) * (0.05 + Math.random() * 0.20);
         const jitter = (Math.random() - 0.5) * 0.10; // ±5%
-        ai.ai.startLinePct = Math.max(0.05, Math.min(0.90, basePos + jitter + favorBias));
+        ai.ai.startLinePct = Math.max(0.05, Math.min(0.95, basePos + jitter + individualFavorBias));
         ai.ai.setupDist = 250 + Math.random() * 100;
 
         state.boats.push(ai);
