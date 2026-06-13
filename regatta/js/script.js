@@ -1453,39 +1453,6 @@ const DEFAULT_SETTINGS = {
 let settings = { ...DEFAULT_SETTINGS };
 
 // J/111 Polar Data
-const J111_POLARS = {
-    angles: [0, 30, 38, 45, 52, 60, 75, 90, 110, 120, 135, 150, 180],
-    speeds: {
-        6: {
-            spinnaker: [0.0, 0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 5.46, 5.5, 5.48, 5.25, 4.72, 4.01],
-            nonSpinnaker: [0.0, 0.0, 4.7, 4.93, 5.18, 5.29, 5.36, 5.46, 4.94, 4.65, 4.08, 3.51, 3.01]
-        },
-        8: {
-            spinnaker: [0.0, 0.0, 0.6, 1.2, 1.8, 2.4, 3.5, 6.79, 6.87, 6.85, 6.58, 5.94, 5.06],
-            nonSpinnaker: [0.0, 0.0, 5.8, 6.09, 6.41, 6.55, 6.65, 6.79, 6.17, 5.82, 5.12, 4.42, 3.8]
-        },
-        10: {
-            spinnaker: [0.0, 0.0, 0.7, 1.4, 2.1, 2.8, 4.0, 7.89, 8.01, 8.01, 7.72, 6.99, 6.0],
-            nonSpinnaker: [0.0, 0.0, 6.66, 7.0, 7.38, 7.56, 7.7, 7.89, 7.2, 6.8, 6.0, 5.2, 4.5]
-        },
-        12: {
-            spinnaker: [0.0, 0.0, 0.8, 1.6, 2.4, 3.2, 4.5, 8.6, 8.74, 8.75, 8.44, 7.65, 6.58],
-            nonSpinnaker: [0.0, 0.0, 7.23, 7.6, 8.02, 8.22, 8.38, 8.6, 7.85, 7.42, 6.56, 5.69, 4.93]
-        },
-        14: {
-            spinnaker: [0.0, 0.0, 0.9, 1.8, 2.7, 3.6, 5.0, 9.01, 9.18, 9.2, 8.89, 8.08, 6.98],
-            nonSpinnaker: [0.0, 0.0, 7.52, 7.91, 8.36, 8.57, 8.76, 9.01, 8.25, 7.81, 6.91, 6.01, 5.23]
-        },
-        16: {
-            spinnaker: [0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.5, 9.42, 9.66, 9.7, 9.42, 8.59, 7.47],
-            nonSpinnaker: [0.0, 0.0, 7.76, 8.18, 8.66, 8.9, 9.13, 9.42, 8.68, 8.24, 7.32, 6.39, 5.61]
-        },
-        20: {
-            spinnaker: [0.0, 0.0, 1.2, 2.4, 3.6, 4.8, 6.5, 10.43, 10.87, 11.01, 10.81, 9.98, 8.88],
-            nonSpinnaker: [0.0, 0.0, 8.2, 8.7, 9.26, 9.6, 9.98, 10.43, 9.77, 9.35, 8.4, 7.42, 6.66]
-        }
-    }
-};
 
 // Planing Configuration
 const J111_PLANING = {
@@ -3321,37 +3288,31 @@ function showToast(text) {
 
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
-    const angles = J111_POLARS.angles;
-    const speeds = [6, 8, 10, 12, 14, 16, 20];
-
-    const getPolarSpeed = (ws) => {
-        const data = J111_POLARS.speeds[ws];
-        const sData = useSpinnaker ? data.spinnaker : data.nonSpinnaker;
-        for (let i = 0; i < angles.length - 1; i++) {
-            if (twaDeg >= angles[i] && twaDeg <= angles[i+1]) {
-                const t = (twaDeg - angles[i]) / (angles[i+1] - angles[i]);
-                return sData[i] + t * (sData[i+1] - sData[i]);
-            }
-        }
-        return sData[sData.length - 1];
-    };
-
-    if (windSpeed <= 0) return 0;
-    if (windSpeed < 6) {
-         // Linearly interpolate from 0 to Speed@6
-         return getPolarSpeed(6) * (windSpeed / 6.0);
+    let speed = 0;
+    if (twaDeg < 30) {
+        speed = 0; // irons
+    } else if (twaDeg <= 60) {
+        // Upwind linear interpolation from 0 at 30 to peak upwind
+        const peakUpwind = Math.min(windSpeed * 0.7, 7.5);
+        speed = peakUpwind * ((twaDeg - 30) / 30);
+    } else if (twaDeg < 140) {
+        // Reaching
+        const peakUpwind = Math.min(windSpeed * 0.7, 7.5);
+        const peakReach = Math.min(windSpeed * 0.9, 10.5);
+        speed = peakUpwind + (peakReach - peakUpwind) * ((twaDeg - 60) / 80);
+    } else {
+        // Downwind
+        const peakReach = Math.min(windSpeed * 0.9, 10.5);
+        const deepDownwind = Math.min(windSpeed * 0.65, 8.5);
+        speed = peakReach - (peakReach - deepDownwind) * ((twaDeg - 140) / 40);
     }
-
-    let lower = 6, upper = 20;
-    if (windSpeed >= 20) { lower = 20; upper = 20; }
-    else {
-        for (let i = 0; i < speeds.length - 1; i++) {
-            if (windSpeed >= speeds[i] && windSpeed <= speeds[i+1]) { lower = speeds[i]; upper = speeds[i+1]; break; }
-        }
+    
+    // Spinnaker gives a flat 20% boost downwind/reaching
+    if (useSpinnaker && twaDeg > 90) {
+        speed *= 1.2;
     }
-
-    const s1 = getPolarSpeed(lower), s2 = getPolarSpeed(upper);
-    return lower === upper ? s1 : s1 + (windSpeed - lower) / (upper - lower) * (s2 - s1);
+    
+    return speed;
 }
 
 function checkBoundaryExiting(boat) {
@@ -3767,123 +3728,164 @@ function updateBoat(boat, dt) {
     // Note: if boost is negative (e.g. -0.5), BadAir becomes 1.5x worse.
 
     const effectiveWind = Math.max(0, physWindSpeed * (1.0 - effectiveBadAir));
-    let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveWind);
-    let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveWind);
-    let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
 
+    // Vector Physics Engine
+    // 1. Calculate Apparent Wind Vector
+    const boatVxKts = boat.velocity.x * 4.0;
+    const boatVyKts = boat.velocity.y * 4.0;
+
+    const twvX = -Math.sin(localWind.direction) * effectiveWind;
+    const twvY = Math.cos(localWind.direction) * effectiveWind; 
+
+    const awvX = twvX - boatVxKts;
+    const awvY = twvY - boatVyKts;
+
+    let aws = Math.sqrt(awvX * awvX + awvY * awvY);
+    if (aws < 0.1) aws = 0.1;
+    const awDir = Math.atan2(-awvX, awvY);
+
+    const awa = normalizeAngle(boat.heading - awDir);
+
+    // 2. Sail Lift/Drag Model
     const actualMagnitude = Math.abs(boat.sailAngle);
+    const aoa = Math.abs(awa - actualMagnitude * Math.sign(awa));
+
+    const optimalAoA = 0.35; 
+    let Cl = 0;
+    if (aoa < optimalAoA) {
+        Cl = 1.5 * (aoa / optimalAoA);
+    } else {
+        Cl = 1.5 * Math.exp(-(aoa - optimalAoA) * 2.0); 
+    }
+    let Cd_sail = 0.05 + 1.2 * Math.pow(Math.sin(aoa), 2);
+
+    // Depower mechanic (sail flattening/spilling)
+    let depower = 1.0;
+    const awCap = 18.0;
+    if (aws > awCap) {
+        depower = awCap / aws;
+    }
+
+    // Dynamic Pressure & Sail Area
+    const q = 0.5 * aws * aws * depower;
+    const sailAreaMod = jibFactor * 1.0 + spinFactor * 1.5;
+    
+    // Trim Efficiency
     const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
     const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
-    targetKnots *= trimEfficiency;
+    
+    const forceScale = 0.05 * sailAreaMod * trimEfficiency; 
+    const liftForce = Cl * q * forceScale;
+    const dragForce = Cd_sail * q * forceScale;
 
-    // PLANING LOGIC
-    const twaDeg = Math.abs(angleToWind * 180 / Math.PI);
-    const tws = effectiveWind;
-    const boatKnots = boat.speed * 4;
+    // Resolve forces to local boat frame
+    const liftAngle = awa - Math.sign(awa) * (Math.PI / 2.0);
+    const dragAngle = awa + Math.PI;
 
-    let canPlane = (
-        twaDeg > (J111_PLANING.minTWA * 180 / Math.PI) &&
-        twaDeg < (J111_PLANING.maxTWA * 180 / Math.PI) &&
-        tws > J111_PLANING.minTWS
-    );
+    const aeroFx = liftForce * Math.sin(liftAngle) + dragForce * Math.sin(dragAngle);
+    let aeroFy = liftForce * Math.cos(liftAngle) + dragForce * Math.cos(dragAngle);
 
-    // Hysteresis State Machine
-    if (canPlane) {
+    // 3. Planing State Machine (Vector-based)
+    const forwardThrust = aeroFy;
+    const fwdSpeedKts = boatVxKts * Math.sin(boat.heading) + boatVyKts * -Math.cos(boat.heading);
+    
+    // Planing requires sufficient thrust to overcome hump drag, plus minimum speed
+    let isThrustSufficient = forwardThrust > 8.0 && fwdSpeedKts > 8.0;
+
+    if (isThrustSufficient) {
         if (!boat.raceState.isPlaning) {
-            // Trying to enter
-            if (boatKnots > J111_PLANING.entrySpeed) {
-                boat.raceState.planingTimer += dt;
-                if (boat.raceState.planingTimer > J111_PLANING.entryTime) {
-                    boat.raceState.isPlaning = true;
-                    boat.raceState.planingTimer = 0;
-                    if (!boat.isPlayer) Sayings.queueQuote(boat, "start_planing");
-                    if (boat.isPlayer && settings.soundEnabled) {
-                         // Optional: Play a surge sound or change wind pitch (handled in audio update)
-                    }
-                }
-            } else {
+            boat.raceState.planingTimer += dt;
+            if (boat.raceState.planingTimer > J111_PLANING.entryTime) {
+                boat.raceState.isPlaning = true;
                 boat.raceState.planingTimer = 0;
+                if (!boat.isPlayer) Sayings.queueQuote(boat, "start_planing");
             }
         } else {
-             // Maintaining
-             // Exit if speed drops below lower threshold
-             if (boatKnots < J111_PLANING.exitSpeed) {
-                 boat.raceState.planingTimer += dt;
-                 if (boat.raceState.planingTimer > J111_PLANING.exitTime) {
-                     boat.raceState.isPlaning = false;
-                     boat.raceState.planingTimer = 0;
-                 }
-             } else {
-                 boat.raceState.planingTimer = 0;
-             }
+            boat.raceState.planingTimer = 0;
         }
     } else {
-        // Conditions lost
         if (boat.raceState.isPlaning) {
-             boat.raceState.planingTimer += dt;
-             if (boat.raceState.planingTimer > J111_PLANING.exitTime) {
-                 boat.raceState.isPlaning = false;
+            if (fwdSpeedKts < J111_PLANING.exitSpeed) {
+                boat.raceState.planingTimer += dt;
+                if (boat.raceState.planingTimer > J111_PLANING.exitTime) {
+                    boat.raceState.isPlaning = false;
+                    boat.raceState.planingTimer = 0;
+                }
+            } else {
                  boat.raceState.planingTimer = 0;
-             }
+            }
         } else {
-             boat.raceState.planingTimer = 0;
+            boat.raceState.planingTimer = 0;
         }
     }
 
-    if (boat.raceState.isPlaning) {
-        // Boost target speed
-        targetKnots *= J111_PLANING.speedMultiplier;
-
-        // Handling: Turning bleeds speed faster
-        const turnActive = Math.abs(boat.heading - boat.prevHeading) > 0.0001;
-        if (turnActive) {
-            targetKnots *= J111_PLANING.turnDrag;
-        }
-    }
-
-    // Smooth factor for planing transition
     const targetFactor = boat.raceState.isPlaning ? 1.0 : 0.0;
     boat.raceState.planingFactor += (targetFactor - boat.raceState.planingFactor) * dt * 2.0;
 
-    // Apply Upwind/Reach/Downwind Speed Stats
-    // Interpolate between Upwind (<=60), Reach (60-145), Downwind (>=145)
-    // TWA is in degrees (twaDeg)
+    // 4. Hydrodynamic Forces & Integration
+    const worldDirX = Math.sin(boat.heading);
+    const worldDirY = -Math.cos(boat.heading);
+    const worldRightX = Math.cos(boat.heading);
+    const worldRightY = Math.sin(boat.heading);
+
+    const latSpeedKts = boatVxKts * worldRightX + boatVyKts * worldRightY;
+
+    // Heel and turning drag
+    const turnActive = Math.abs(boat.heading - boat.prevHeading) > 0.0001;
+    let heelDrag = 1.0 + Math.abs(aeroFx) * 0.05;
+    if (turnActive) heelDrag *= (1.0 / J111_PLANING.turnDrag); // Increase drag on turn
+
+    // Boat Stats (Upwind/Reach/Downwind speed mods) -> Affect Hull Drag inverse
+    const twaDeg = Math.abs(angleToWind * 180 / Math.PI);
     let speedStat = 0;
-    if (twaDeg <= 60) {
-        speedStat = boat.stats.upwind * 0.008; // 4% / 5 = 0.008
-    } else if (twaDeg >= 145) {
-        speedStat = boat.stats.downwind * 0.01; // 5% / 5 = 0.01
-    } else {
-        // Linear Interpolation
-        // Reach peak assumed at (60+145)/2 = 102.5?
-        // Let's just interpolate the Stat Value.
-        // Or simpler: Calculate blend weights.
+    if (twaDeg <= 60) speedStat = boat.stats.upwind * 0.008;
+    else if (twaDeg >= 145) speedStat = boat.stats.downwind * 0.01;
+    else {
         if (twaDeg < 102.5) {
             const t = (twaDeg - 60) / (102.5 - 60);
-            const s1 = boat.stats.upwind * 0.008;
-            const s2 = boat.stats.reach * 0.012; // 6% / 5 = 0.012
-            speedStat = s1 + t * (s2 - s1);
+            speedStat = boat.stats.upwind * 0.008 + t * (boat.stats.reach * 0.012 - boat.stats.upwind * 0.008);
         } else {
             const t = (twaDeg - 102.5) / (145 - 102.5);
-            const s1 = boat.stats.reach * 0.012;
-            const s2 = boat.stats.downwind * 0.01;
-            speedStat = s1 + t * (s2 - s1);
+            speedStat = boat.stats.reach * 0.012 + t * (boat.stats.downwind * 0.01 - boat.stats.reach * 0.012);
         }
     }
-    // Apply multiplier
-    targetKnots *= (1.0 + speedStat);
+    
+    // Hull Drag Coefficient
+    let hullDragCoeff = 0.06 * heelDrag * (1.0 - speedStat);
+    if (boat.raceState.isPlaning) hullDragCoeff *= 0.5; // Planing reduces hull drag
 
-    let targetGameSpeed = targetKnots * 0.25;
+    const keelDragCoeff = 1.0;  
+    
+    let mass = 5.0 * (1.0 - boat.stats.acceleration * 0.02 + boat.stats.momentum * 0.02);
 
-    // Apply Penalty Speed Reduction
+    let dragFwd = -Math.sign(fwdSpeedKts) * hullDragCoeff * fwdSpeedKts * fwdSpeedKts;
+    // Damping to prevent velocity explosions
+    const maxDragFwd = (Math.abs(fwdSpeedKts) / timeScale) * mass;
+    if (Math.abs(dragFwd) > maxDragFwd) dragFwd = Math.sign(dragFwd) * maxDragFwd;
+
+    let dragLat = -Math.sign(latSpeedKts) * keelDragCoeff * latSpeedKts * latSpeedKts;
+    const maxDragLat = (Math.abs(latSpeedKts) / timeScale) * mass;
+    if (Math.abs(dragLat) > maxDragLat) dragLat = Math.sign(dragLat) * maxDragLat;
+
+    let netFx = aeroFx + dragLat;
+    let netFy = aeroFy + dragFwd;
+
+    const accelFwd = netFy / mass;
+    const accelLat = netFx / mass;
+
+    let newFwdSpeedKts = fwdSpeedKts + accelFwd * timeScale;
+    let newLatSpeedKts = latSpeedKts + accelLat * timeScale;
+
+    // 5. Penalties and Constraints
     if (boat.raceState.penalty) {
-        targetGameSpeed *= 0.5;
+        newFwdSpeedKts *= 0.95;
     }
 
     if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
          if (checkBoundaryExiting(boat)) window.onRaceEvent('collision_boundary', { boat });
     }
 
+    // Luffing state updates
     const effectiveAoA = angleToWind - actualMagnitude;
     const luffStartThreshold = 0.5;
     if (effectiveAoA < luffStartThreshold) {
@@ -3894,58 +3896,31 @@ function updateBoat(boat, dt) {
         boat.luffing = false;
     }
 
-    // Smoother speed changes (Higher inertia)
-    // 0.995 -> 0.9985 reduces speed decay when drive is lost (gybes/tacks)
-    let speedAlpha = 1 - Math.pow(0.9985, timeScale);
-
-    // Apply Acceleration / Momentum Stats
-    if (targetGameSpeed > boat.speed) {
-        // Accelerating
-        // +12% max -> 2.4% per point
-        const accelMod = 1.0 + boat.stats.acceleration * 0.024;
-        speedAlpha *= accelMod;
-    } else {
-        // Decelerating (Momentum)
-        // Higher momentum (positive stat) means SLOWER loss.
-        // +10% max -> 2% per point.
-        // If stat is +5, we want to reduce alpha by 10% (preserve 10% more speed)
-        const momMod = 1.0 - boat.stats.momentum * 0.02;
-        speedAlpha *= momMod;
-    }
-
-    boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
-
-    // AI Boost: If wiggle is active, ensure minimum speed to slide off obstacles
-    if (!boat.isPlayer && boat.controller && boat.controller.wiggleActive) {
-        // Progressive Power: The longer we are stuck, the harder we push
-        let minSpeed = 0.15; // 3.5kn
-        const stuckTime = boat.controller.lowSpeedTimer;
-
-        if (stuckTime > 10.0) minSpeed = 0.30; // 7.0kn
-        if (stuckTime > 20.0) minSpeed = 0.50; // 11.5kn
-        if (stuckTime > 30.0) minSpeed = 0.75; // 17.5kn (Increased power)
-
-        if (boat.speed < minSpeed) boat.speed = minSpeed;
-    }
-
     // Irons Penalty (Extra drag when head-to-wind)
-    // angleToWind is in radians. 0.5 rad is approx 28 degrees.
     if (angleToWind < 0.5) {
-        // Apply stronger drag deep in irons to maintain tacking difficulty
-        // despite higher inertia. Reduced from 0.993 to 0.997 to be less punitive.
-        // User Request: Make luffing a "real brake" -> increased penalty to 0.994 (Balanced)
-        boat.speed *= Math.pow(0.994, timeScale);
+        newFwdSpeedKts *= Math.pow(0.994, timeScale);
     }
 
     // Rudder drag
     if (boat.isPlayer && (state.keys.ArrowLeft || state.keys.ArrowRight)) {
-         boat.speed *= Math.pow(CONFIG.turnPenalty, timeScale);
+         newFwdSpeedKts *= Math.pow(CONFIG.turnPenalty, timeScale);
     }
 
-    const boatDirX = Math.sin(boat.heading);
-    const boatDirY = -Math.cos(boat.heading);
-    boat.velocity.x = boatDirX * boat.speed;
-    boat.velocity.y = boatDirY * boat.speed;
+    // AI Wiggle Minimum Speed Constraint
+    if (!boat.isPlayer && boat.controller && boat.controller.wiggleActive) {
+        let minSpeedKts = 0.15 * 4; 
+        const stuckTime = boat.controller.lowSpeedTimer;
+        if (stuckTime > 10.0) minSpeedKts = 0.30 * 4; 
+        if (stuckTime > 20.0) minSpeedKts = 0.50 * 4; 
+        if (stuckTime > 30.0) minSpeedKts = 0.75 * 4; 
+        if (newFwdSpeedKts < minSpeedKts) newFwdSpeedKts = minSpeedKts;
+    }
+
+    // 6. Output to Existing State Variables
+    boat.speed = Math.max(0, newFwdSpeedKts / 4.0);
+
+    boat.velocity.x = (newFwdSpeedKts * worldDirX + newLatSpeedKts * worldRightX) / 4.0;
+    boat.velocity.y = (newFwdSpeedKts * worldDirY + newLatSpeedKts * worldRightY) / 4.0;
 
     // Apply Current
     if (state.race.conditions.current) {
