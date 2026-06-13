@@ -889,13 +889,32 @@ class BotController {
                 const tx = m0.x + dx * pct;
                 const ty = m0.y + dy * pct;
                 
-                // Traffic density penalty based on other boats' current positions
+                // Traffic density penalty based on 4-second projected positions
                 let trafficPenalty = 0;
                 for (const otherBoat of state.boats) {
                     if (otherBoat.id === boat.id) continue;
-                    const dist = Math.hypot(otherBoat.x - tx, otherBoat.y - ty);
+                    
+                    // Project 4 seconds into the future
+                    const vx = Math.sin(otherBoat.heading) * otherBoat.speed * 60;
+                    const vy = -Math.cos(otherBoat.heading) * otherBoat.speed * 60;
+                    const projX = otherBoat.x + vx * 4.0;
+                    const projY = otherBoat.y + vy * 4.0;
+
+                    const dist = Math.hypot(projX - tx, projY - ty);
                     if (dist < 150) {
-                        trafficPenalty += 150 / (dist + 1);
+                        let penalty = 150 / (dist + 1);
+                        
+                        // Right of Way conflict penalty
+                        try {
+                            const res = getRightOfWay(boat, otherBoat);
+                            if (res.boat === otherBoat) {
+                                penalty *= 2.0; // Penalize points where we give way
+                            }
+                        } catch (e) {
+                            // Ignore if ROW function fails
+                        }
+                        
+                        trafficPenalty += penalty;
                     }
                 }
                 
@@ -994,9 +1013,9 @@ class BotController {
                     }
                 }
                 
-                // Speed management: slightly depowered, drop speed further if arriving early
-                let approachSpeed = 0.85;
-                if (timer > approachTime + 1.0) { // changed from 2.0
+                // Speed management: maintain near-max speed, only drop speed if arriving early
+                let approachSpeed = 1.0;
+                if (timer > approachTime) { 
                     approachSpeed = 0.6; 
                 }
                 
@@ -7242,7 +7261,7 @@ function resetGame() {
 
     // Determine favored end for start positioning bias
     const favoredEnd = getFavoredEnd(); // 0 = mark 0 (low pct), 1 = mark 1 (high pct)
-    const favorBias = favoredEnd === 1 ? 0.15 : -0.15; // Shift spread toward favored end
+    const favorBias = favoredEnd === 1 ? 0.05 : -0.05; // Reduced bias for wider initial spread
 
     for (let i = 0; i < opponents.length; i++) {
         const config = opponents[i];
@@ -7252,11 +7271,11 @@ function resetGame() {
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
 
-        // Start Setup: Evenly spaced with small jitter, biased toward favored end
+        // Start Setup: Widely spread across the line with small jitter
         const numAI = opponents.length;
-        const basePos = numAI > 1 ? 0.1 + 0.7 * (i / (numAI - 1)) : 0.5;
+        const basePos = numAI > 1 ? 0.05 + 0.90 * (i / (numAI - 1)) : 0.5;
         const jitter = (Math.random() - 0.5) * 0.10; // ±5%
-        ai.ai.startLinePct = Math.max(0.05, Math.min(0.90, basePos + jitter + favorBias));
+        ai.ai.startLinePct = Math.max(0.05, Math.min(0.95, basePos + jitter + favorBias));
         ai.ai.setupDist = 250 + Math.random() * 100;
 
         state.boats.push(ai);
