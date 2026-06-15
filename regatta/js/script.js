@@ -168,6 +168,7 @@ class BotController {
         this.prestartPhase = 'HOLD';       // HOLD, POSITION, APPROACH, ACCELERATE
 
         this.livenessState = 'normal'; // 'normal', 'recovery', 'force'
+        this.forceTack = 0; // committed tack during force/recovery start (0=none, ±1)
         this.lowSpeedTimer = 0;
         this.wiggleTimer = 0;
         this.wiggleSide = 1;
@@ -538,10 +539,19 @@ class BotController {
         // FORCE / RECOVERY OVERRIDE
         if (this.livenessState === 'force' || this.livenessState === 'recovery') {
              const twa = normalizeAngle(angleToTarget - wd);
-             if (Math.abs(twa) > 0.7) return angleToTarget;
-             const desiredTack = twa > 0 ? 1 : -1;
-             return normalizeAngle(wd + desiredTack * 0.75);
+             if (Math.abs(twa) > 0.7) { this.forceTack = 0; return angleToTarget; }
+             // Close-hauled drive toward the target. When the target is nearly dead
+             // upwind (|twa| small) the raw tack choice flips every frame, parking the
+             // boat head-to-wind ("in irons") so it mills near the line and starts
+             // very late (or not at all). Commit to a tack and only re-pick it once
+             // the target is clearly to the other side — this drives a decisive,
+             // powered close-hauled approach across the line.
+             if (this.forceTack === 0 || Math.abs(twa) > 0.4) {
+                 this.forceTack = twa > 0 ? 1 : -1;
+             }
+             return normalizeAngle(wd + this.forceTack * 0.75);
         }
+        this.forceTack = 0;
 
         // --- Current Compensation ---
         // Calculate the heading needed to make our COG point to target.
@@ -4034,6 +4044,27 @@ function updateBoatRaceState(boat, dt) {
         }
     }
 
+    // Position-based OCS clearing (anti-deadlock).
+    // OCS normally clears only by crossing the start *segment* downward. A boat
+    // that is over early and returns to the pre-start side by passing around the
+    // end of the line (outside the marks) would otherwise keep OCS set forever,
+    // get trapped by the AI's OCS-recovery navigation (which keeps it behind the
+    // line), and never start — a DNS. The Racing Rules treat a boat as no longer
+    // on the course side once it is fully behind the line, so clear OCS whenever
+    // a still-to-start boat is clearly on the pre-start side, however it got there.
+    if (state.race.status === 'racing' && boat.raceState.leg === 0 && boat.raceState.ocs &&
+        marks && marks.length >= 2) {
+        const m0 = marks[0], m1 = marks[1];
+        const lineDx = m1.x - m0.x, lineDy = m1.y - m0.y;
+        const lineLen = Math.hypot(lineDx, lineDy) || 1;
+        // Signed perpendicular distance to the line: positive = course side (OCS).
+        const perpDist = ((boat.x - m0.x) * lineDy - (boat.y - m0.y) * lineDx) / lineLen;
+        if (perpDist < -40) {
+            boat.raceState.ocs = false;
+            if (boat.isPlayer) hideRaceMessage();
+        }
+    }
+
     // Crossing Logic
     // Same logic as before, applied to boat.raceState
     if (marks && marks.length >= 4) {
@@ -7266,6 +7297,18 @@ function resetGame() {
 
     state.particles = [];
     state.waveStates.clear();
+
+    // Reset the AI quote system. Its update() consumes Math.random() for quote
+    // selection; if its queue/timers carry over between races the number and
+    // timing of those random draws leaks across runs, desynchronising any
+    // seeded RNG (and leaving stale quotes on screen on a real restart).
+    if (!window.__DNS_KEEP_SAYINGS_LEAK) {
+        Sayings.queue = [];
+        Sayings.current = null;
+        Sayings.timer = 0;
+        Sayings.silenceTimer = 0;
+    }
+
     hideRaceMessage();
 
     setupPreRaceOverlay();

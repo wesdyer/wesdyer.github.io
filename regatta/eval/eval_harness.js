@@ -109,11 +109,48 @@
         let iterations = 0;
         const maxIterations = (maxTime + 100) * 60;
 
+        // Diagnostic sampling for DNS investigation: for boats still on leg 0
+        // during racing, periodically record their state so we can see whether a
+        // non-starting boat is stuck, OCS-looping, or wandering off the line.
+        const diag = {};
+        let lastSample = -999;
+        const lineDot = (b) => {
+            const m0 = state.course.marks[0], m1 = state.course.marks[1];
+            const lineDx = m1.x - m0.x, lineDy = m1.y - m0.y;
+            const nx = lineDy, ny = -lineDx;
+            return (b.x - m0.x) * nx + (b.y - m0.y) * ny; // >0 = above/OCS side
+        };
+        const sample = () => {
+            if (state.race.status !== 'racing') return;
+            const t = state.race.timer;
+            if (t - lastSample < 3) return;
+            lastSample = t;
+            state.boats.forEach(b => {
+                if (b.isPlayer) return;
+                if (b.raceState.finished || b.raceState.leg > 0) return;
+                if (!diag[b.id]) diag[b.id] = [];
+                const c = b.controller || {};
+                diag[b.id].push({
+                    t: Math.round(t * 10) / 10,
+                    x: Math.round(b.x), y: Math.round(b.y),
+                    spd: Math.round((b.speed || 0) * 100) / 100,
+                    hd: Math.round((b.heading || 0) * 100) / 100,
+                    ocs: !!b.raceState.ocs,
+                    dot: Math.round(lineDot(b)),
+                    live: c.livenessState || null,
+                    phase: c.prestartPhase || null,
+                    wig: !!c.wiggleActive,
+                    pen: !!b.raceState.penalty
+                });
+            });
+        };
+
         // Loop
         while (iterations < maxIterations) {
             if (state.race.status === 'racing') {
                 if (state.race.timer > maxTime) break;
                 if (state.boats.every(b => b.raceState.finished)) break;
+                sample();
             }
 
             window.update(dt);
@@ -146,7 +183,17 @@
                     leg: b.raceState.leg,
                     penalties: b.raceState.totalPenalties,
                     placement: placementMap[b.id],
-                    tackCount: tackCount
+                    tackCount: tackCount,
+                    // DNS diagnostics
+                    x: Math.round(b.x), y: Math.round(b.y),
+                    speed: Math.round((b.speed || 0) * 100) / 100,
+                    ocs: !!b.raceState.ocs,
+                    resultStatus: b.raceState.resultStatus || null,
+                    prestartPhase: (b.controller && b.controller.prestartPhase) || null,
+                    // Keep the trajectory for any boat still on leg 0 at the end
+                    // (a DNS boat is marked finished=true at the 600s cutoff, so we
+                    // must NOT gate on !finished here or we'd discard the data).
+                    diagTrack: (b.raceState.leg === 0) ? (diag[b.id] || []) : undefined
                 };
             })
         };
