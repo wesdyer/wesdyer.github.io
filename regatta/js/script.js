@@ -169,6 +169,9 @@ class BotController {
 
         this.livenessState = 'normal'; // 'normal', 'recovery', 'force'
         this.forceTack = 0; // committed tack during force/recovery start (0=none, ±1)
+        this.startCommitted = false; // latched once we begin the final run to the line
+        this.startStageDepth = 200;  // echelon staging depth behind the line (set on reset)
+        this.tCrossTarget = 0;       // target crossing time relative to the gun (echelon slot)
         this.lowSpeedTimer = 0;
         this.wiggleTimer = 0;
         this.wiggleSide = 1;
@@ -309,9 +312,21 @@ class BotController {
         if (this.wiggleActive) {
             this.wiggleDuration -= dt;
 
-            // Beam Reach +/- 100 degrees (Slightly downwind to shed power if needed)
             const windDir = state.wind.direction;
-            desiredHeading = normalizeAngle(windDir + this.wiggleSide * 1.75); // ~100 degrees
+            if (this.boat.raceState.leg === 0) {
+                // Start unstick: a stuck boat in the pack must NOT beam-reach hundreds
+                // of units off the line (that turns a brief jam into a 40-90s recovery
+                // and dominates the mean start time). Instead nudge close-hauled TOWARD
+                // the line — up if we're behind it, down if we're over it — offset to
+                // one side to slip out of the traffic, so we clear the pack while
+                // staying on the line.
+                const above = this.getLineDistance() > 0;
+                const toward = above ? (windDir + Math.PI) : windDir;
+                desiredHeading = normalizeAngle(toward + this.wiggleSide * (above ? 0.6 : 0.85));
+            } else {
+                // Beam Reach +/- 100 degrees (Slightly downwind to shed power if needed)
+                desiredHeading = normalizeAngle(windDir + this.wiggleSide * 1.75); // ~100 degrees
+            }
 
             // FORCE SPEED BOOST to overcome friction/pinning
             speedRequest = 1.0;
@@ -357,6 +372,7 @@ class BotController {
         // 4. Collision Avoidance (Reactive Layer)
         // Adjust desiredHeading to avoid immediate threats
         desiredHeading = this.applyAvoidance(desiredHeading, speedRequest);
+
 
         // Mark Collision Override (Immediate Turn Away + Latch)
         if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'mark') {
@@ -413,33 +429,37 @@ class BotController {
             const m2 = marks[targetIndices[1]];
 
             if (leg === 0) {
-                // START STRATEGY
-                let pct = this.startLinePct;
-                if (this.livenessState !== 'normal') pct = 0.5;
+                // START STRATEGY — lane discipline. Drive straight up our own lane
+                // through the start segment. We deliberately keep targeting our lane
+                // (not the line centre) so we cross WITHIN the segment and start;
+                // retreating to the centre pulls boats into the pack and makes them
+                // oscillate across the line for tens of seconds without starting.
+                let pct = Math.max(0.15, Math.min(0.85, this.startLinePct));
 
-                destX = m1.x + (m2.x - m1.x) * pct;
-                destY = m1.y + (m2.y - m1.y) * pct;
-
+                const laneX = m1.x + (m2.x - m1.x) * pct;
+                const laneY = m1.y + (m2.y - m1.y) * pct;
                 const wd = state.wind.direction;
 
-                // OCS / Recovery Logic
+                // Signed position relative to the line (>0 = course side / above).
                 const lineDx = m2.x - m1.x, lineDy = m2.y - m1.y;
                 const nx = lineDy, ny = -lineDx;
-                const bDx = boat.x - m1.x, bDy = boat.y - m1.y;
-                const dot = bDx * nx + bDy * ny;
+                const dot = (boat.x - m1.x) * nx + (boat.y - m1.y) * ny;
 
-                if (boat.raceState.ocs || dot > 0) {
-                    // Must go DOWNWIND
-                    const centerX = (m1.x + m2.x) / 2;
-                    const centerY = (m1.y + m2.y) / 2;
-                    const distBack = (this.livenessState === 'normal') ? 80 : 120;
-                    destX = centerX - Math.sin(wd) * distBack;
-                    destY = centerY + Math.cos(wd) * distBack;
+                if (boat.raceState.ocs) {
+                    // Over early — dip back below the line at our lane to clear OCS.
+                    const distBack = (this.livenessState === 'normal') ? 90 : 130;
+                    destX = laneX - Math.sin(wd) * distBack;
+                    destY = laneY + Math.cos(wd) * distBack;
+                } else if (dot > 5) {
+                    // Above the line but not started (crossed outside the segment) —
+                    // dip back to our lane on the segment rather than retreating far.
+                    destX = laneX - Math.sin(wd) * 45;
+                    destY = laneY + Math.cos(wd) * 45;
                 } else {
-                    // Normal Start (Upwind Target)
-                    const distPast = (this.livenessState === 'force') ? 300 : 150;
-                    destX += Math.sin(wd) * distPast;
-                    destY -= Math.cos(wd) * distPast;
+                    // Below the line — drive up through our lane on the segment.
+                    const distPast = (this.livenessState === 'force') ? 200 : 80;
+                    destX = laneX + Math.sin(wd) * distPast;
+                    destY = laneY - Math.cos(wd) * distPast;
                 }
             } else {
                 // RACE LEGS
@@ -865,7 +885,7 @@ class BotController {
 
         while (dist > 0 && time < maxTime) {
             const timeScale = step * 60;
-            let alpha = 1 - Math.pow(0.9985, timeScale);
+            let alpha = 1 - Math.pow(0.9970, timeScale); // must match updateBoat's speed response
             if (targetGameSpeed > speed) alpha *= accelMod;
             speed = speed * (1 - alpha) + targetGameSpeed * alpha;
             dist -= speed * 60 * step; // speed * 60 = game units/sec
@@ -880,147 +900,69 @@ class BotController {
         const m0 = state.course.marks[0];
         const m1 = state.course.marks[1];
 
-        // Compute line geometry early for utility evaluation
         const dx = m1.x - m0.x;
         const dy = m1.y - m0.y;
+        const lineLen = Math.hypot(dx, dy) || 1;
 
-        // Tactical Utility-Based Optimization Engine (early prestart only)
-        if (timer > 10) {
-            const favored = getFavoredEnd(); // 0 or 1
-            
-            let bestUtility = -Infinity;
-            let bestPct = this.startLinePct;
-            
-            // Sample line from 5% to 95%
-            for (let pct = 0.05; pct <= 0.95; pct += 0.1) {
-                // Wind advantage: favored end gets 1.0, unfavorable gets 0.0
-                const windScore = favored === 1 ? pct : (1 - pct);
-                
-                const tx = m0.x + dx * pct;
-                const ty = m0.y + dy * pct;
-                
-                // Traffic density penalty based on other boats' current positions
-                let trafficPenalty = 0;
-                for (const otherBoat of state.boats) {
-                    if (otherBoat.id === boat.id) continue;
-                    const dist = Math.hypot(otherBoat.x - tx, otherBoat.y - ty);
-                    if (dist < 150) {
-                        trafficPenalty += 150 / (dist + 1);
-                    }
-                }
-                
-                // Penalty to prevent erratic target switching
-                const driftPenalty = Math.abs(pct - this.startLinePct) * 2;
-                
-                // Total utility score
-                const utility = (windScore * 50) - trafficPenalty - driftPenalty;
-                
-                if (utility > bestUtility) {
-                    bestUtility = utility;
-                    bestPct = pct;
-                }
-            }
-            
-            // Smoothly drift toward the best utility position
-            this.startLinePct += (bestPct - this.startLinePct) * 0.05;
-            this.startLinePct = Math.max(0.05, Math.min(0.95, this.startLinePct));
-        }
-
-        const lineDot = this.getLineDistance();
-
-        // Line target
+        // Hold our assigned lane (set in repositionBoats). We never drift the lateral
+        // target — chasing a "better" spot makes the boat cross diagonally and end up
+        // outside the start segment (so it never starts). Lane discipline keeps us
+        // lined up with the segment.
+        this.startLinePct = Math.max(0.1, Math.min(0.9, this.startLinePct));
         const targetX = m0.x + dx * this.startLinePct;
         const targetY = m0.y + dy * this.startLinePct;
         const wd = state.wind.direction;
         const downwind = wd + Math.PI;
 
-        // OCS Check (highest priority - during racing)
+        // Signed perpendicular distance to the line (>0 = course side / over early).
+        const pDist = ((boat.x - m0.x) * dy - (boat.y - m0.y) * dx) / lineLen;
+        const behind = Math.max(0, -pDist);
+
+        const P = (typeof window !== 'undefined' && window.__START) ? window.__START : {};
+        const STAGE = P.stage != null ? P.stage : (this.startStageDepth || 60);
+        const PAST = P.past != null ? P.past : 70;   // how far past the line to aim
+        const OVER = P.over != null ? P.over : 10;   // perp over which we are over-early
+        const BUF = P.buf != null ? P.buf : 1.0;     // crossing-run buffer
+        const cosT = Math.cos(0.7);
+
+        const aimX = targetX + Math.sin(wd) * PAST;     // up through our lane
+        const aimY = targetY - Math.cos(wd) * PAST;
+        const stageX = targetX - Math.sin(wd) * STAGE;  // in lane, just behind the line
+        const stageY = targetY + Math.cos(wd) * STAGE;
+
+        // OCS recovery (flagged over early) — dip back below the line in our lane.
         if (boat.raceState.ocs) {
-            const recoverX = targetX + Math.sin(downwind) * 100;
-            const recoverY = targetY - Math.cos(downwind) * 100;
-            return { target: { x: recoverX, y: recoverY }, speed: 1.0 };
+            return { target: { x: targetX - Math.sin(wd) * 110, y: targetY + Math.cos(wd) * 110 }, speed: 1.0 };
         }
 
-        // Gun already fired — full speed to line
+        // Gun fired — full speed up our lane.
         if (timer <= 0) {
-            return { target: { x: targetX, y: targetY }, speed: 1.0 };
+            this.startCommitted = true;
+            return { target: { x: aimX, y: aimY }, speed: 1.0 };
         }
 
-        // Position-aware prestart: if above the line, maneuver to get below
-        if (lineDot > 20 && this.prestartPhase !== 'ACCELERATE') {
-            const retreatDist = Math.max(80, lineDot + 50);
-            const retreatX = targetX + Math.sin(downwind) * retreatDist;
-            const retreatY = targetY - Math.cos(downwind) * retreatDist;
-            this.prestartPhase = 'HOLD'; // Reset to hold after retreating
+        // Over the line during the prestart — dip back to the pre-start side.
+        if (pDist > OVER && !this.startCommitted) {
+            const retreatX = targetX - Math.sin(wd) * (STAGE + pDist);
+            const retreatY = targetY + Math.cos(wd) * (STAGE + pDist);
             return { target: { x: retreatX, y: retreatY }, speed: 1.0 };
         }
 
-        // Phase transitions
-        const distToTarget = Math.sqrt((targetX - boat.x) ** 2 + (targetY - boat.y) ** 2);
-        
-        // Physics-aware approach timing estimate
-        const approachTime = this.getApproachTime(distToTarget, boat.speed, boat.stats);
-
-        if (this.prestartPhase === 'HOLD') {
-            // Trigger approach phase early enough to allow maneuvering and speed management
-            if (timer <= approachTime + 2.0) { // Changed from 5.0 to 2.0 to prevent drifting over line
-                this.prestartPhase = 'APPROACH';
-            }
+        // ---- Staged-lane start ----
+        // Stage just behind the line in our lane, then ease across timed to cross on
+        // the gun. The crossing run is SHORT, so we drift little and cross inside the
+        // segment (a long run drifts out of the segment, never starts, and jams).
+        const tCross = this.getApproachTime(STAGE / cosT, boat.speed, boat.stats) + BUF;
+        if (this.startCommitted || timer <= tCross) {
+            this.startCommitted = true;
+            return { target: { x: aimX, y: aimY }, speed: 1.0 };
         }
 
-        if (this.prestartPhase === 'APPROACH') {
-            // Dynamic Performance Buffer to transition to ACCELERATE
-            // Scales based on capability to reach top speed vs. current velocity
-            const accelPotential = boat.stats.acceleration || 0;
-            const speedFactor = boat.speed / 5.0; 
-            const dynamicBuffer = 0.95 - (accelPotential * 0.01) + (speedFactor * 0.02);
-            
-            const accelerateTime = Math.max(approachTime * dynamicBuffer, 1.0);
-            
-            if (timer <= accelerateTime) {
-                this.prestartPhase = 'ACCELERATE';
-            }
+        // Pre-cross: get to the staging point in our lane and hold there.
+        if (behind > STAGE + 35) {
+            return { target: { x: stageX, y: stageY }, speed: 0.75 };
         }
-
-        // Execute current phase
-        switch (this.prestartPhase) {
-            case 'HOLD': {
-                // Head-to-wind (naturally depowers without luff penalty)
-                return { heading: wd, speed: 0.9 };
-            }
-
-            case 'APPROACH': {
-                // Mid-course steering corrections for separation
-                let approachX = targetX;
-                let approachY = targetY;
-                
-                for (const otherBoat of state.boats) {
-                    if (otherBoat.id === boat.id) continue;
-                    const dist = Math.hypot(otherBoat.x - boat.x, otherBoat.y - boat.y);
-                    if (dist < 40) {
-                        // Repel the target vector away from the nearby boat
-                        approachX += (boat.x - otherBoat.x) * 0.6;
-                        approachY += (boat.y - otherBoat.y) * 0.6;
-                    }
-                }
-                
-                // Speed management: slightly depowered, drop speed further if arriving early
-                let approachSpeed = 0.85;
-                if (timer > approachTime + 1.0) { // changed from 2.0
-                    approachSpeed = 0.6; 
-                }
-                
-                return { target: { x: approachX, y: approachY }, speed: approachSpeed };
-            }
-
-            case 'ACCELERATE': {
-                // Top speed push to line
-                return { target: { x: targetX, y: targetY }, speed: 1.0 };
-            }
-
-            default:
-                return { target: { x: targetX, y: targetY }, speed: 1.0 };
-        }
+        return { heading: wd, speed: 0.9 };
     }
 
 
@@ -1145,22 +1087,28 @@ class BotController {
         // Dynamic Safe Distance based on Liveness
         let safeDist = 80; // 40 radius * 2 (Normal)
 
-        // Tighter packing during start sequence
-        if (state.race.status === 'prestart' || this.boat.raceState.leg === 0) {
-            safeDist = 60;
-        }
+        // Tighter packing during start sequence. The fleet stages and crosses in
+        // lanes only ~55u apart, so the normal 80-120u bubbles would make every
+        // neighbour a permanent threat and freeze the start into a jammed wall.
+        const isStartPhase = state.race.status === 'prestart' || this.boat.raceState.leg === 0;
+        if (isStartPhase) safeDist = 55;
 
         if (this.livenessState === 'recovery') safeDist = 50;
         if (this.livenessState === 'force') safeDist = 20;
 
         // Symmetry Breaking: Differentiate Safety Bubbles (Only in Normal Liveness)
         if (this.livenessState === 'normal' && this.avoidanceRole === 'GIVE_WAY') {
-            // Give-Way: Larger bubble to react early
+            // Give-Way: Larger bubble to react early — but kept modest during the start
+            // so lane-neighbours on parallel courses don't form an impassable wall.
             if (this.riskState === 'MEDIUM' || this.riskState === 'HIGH') {
-                // Reduced during prestart/leg 0 to prevent impassable exclusion walls
-                const isStartPhase = state.race.status === 'prestart' || this.boat.raceState.leg === 0;
-                safeDist = isStartPhase ? 120 : 150;
+                safeDist = isStartPhase ? 68 : 150;
             }
+        }
+
+        // Committed crossers run UP their lanes on near-parallel courses ~55u apart —
+        // they won't actually collide, so pack tightest here and let the line flow.
+        if (this.startCommitted && this.boat.raceState.leg === 0) {
+            safeDist = Math.min(safeDist, 48);
         }
 
         for (const offset of candidates) {
@@ -3904,9 +3852,13 @@ function updateBoat(boat, dt) {
         boat.luffing = false;
     }
 
-    // Smoother speed changes (Higher inertia)
-    // 0.995 -> 0.9985 reduces speed decay when drive is lost (gybes/tacks)
-    let speedAlpha = 1 - Math.pow(0.9985, timeScale);
+    // Speed response toward target (acceleration / drag). The per-second retention
+    // is base^60: 0.9985 gave a ~11.6s time-constant, far too sluggish for a 35ft
+    // planing sport boat (J/111) — boats reached the line at half speed and took
+    // 30s+ to rebuild speed after losing it in traffic. 0.9970 ⇒ ~5.5s constant,
+    // which matches a sport keelboat getting up to speed and sharply improves
+    // starts and post-tack recovery without making the boats feel like powerboats.
+    let speedAlpha = 1 - Math.pow(0.9970, timeScale);
 
     // Apply Acceleration / Momentum Stats
     if (targetGameSpeed > boat.speed) {
@@ -6615,53 +6567,58 @@ function repositionBoats() {
 
     // Spawn at 400 units back
     const distBack = 400;
-    const lineCx = cx + backX * distBack;
-    const lineCy = cy + backY * distBack;
 
-    // Width Calculation
-    // Layline width at distance: StartWidth + 2 * Distance (assuming 45 deg laylines)
-    // Actually, just using startWidth + margin is enough.
-    const startWidth = lLen;
-    const totalWidth = startWidth + 2 * distBack;
+    // Lane-based grid. Each boat owns an evenly-spaced lane WITHIN the start
+    // segment and spawns directly behind it, so it lines up with the line and can
+    // run straight up without converging laterally (the old layout spread boats
+    // ~2.5x the line width and shuffled them independent of their target lane, so
+    // most crossed outside the segment and never started cleanly). Each AI boat's
+    // start target (startLinePct) is set to its lane so spawn == target.
+    const N = state.boats.length;
+    const loPct = 0.15, hiPct = 0.85;
+    let favBias = 0;
+    try { favBias = (getFavoredEnd() === 1 ? 1 : -1) * 0.06; } catch (e) {}
 
-    // Generate Evenly Spaced Positions
-    const positions = [];
-    const step = (state.boats.length > 1) ? totalWidth / (state.boats.length - 1) : 0;
-    const startOffset = -totalWidth / 2;
-
-    for (let i = 0; i < state.boats.length; i++) {
-        const offset = startOffset + i * step;
-        positions.push({
-            x: lineCx + rx * offset,
-            y: lineCy + ry * offset
-        });
-    }
-
-    // Shuffle Positions
-    for (let i = positions.length - 1; i > 0; i--) {
+    // Shuffle which boat gets which lane.
+    const laneIdx = [];
+    for (let i = 0; i < N; i++) laneIdx.push(i);
+    for (let i = laneIdx.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [positions[i], positions[j]] = [positions[j], positions[i]];
+        [laneIdx[i], laneIdx[j]] = [laneIdx[j], laneIdx[i]];
     }
 
-    let posIndex = 0;
+    // Lane-aligned spawn. Each boat owns a lane within the start segment and spawns
+    // directly behind it, so it lines up with the line and runs straight up without
+    // converging laterally. (The old layout spread boats ~2.5x the line width and
+    // shuffled them independent of their target lane, so most crossed outside the
+    // segment and never started cleanly.) The start controller stages each boat just
+    // behind the line in its lane and times a short crossing on the gun.
+    let bi = 0;
     for (const boat of state.boats) {
-        const pos = positions[posIndex++];
+        const k = laneIdx[bi++];
+        let pct = N > 1 ? loPct + (hiPct - loPct) * (k / (N - 1)) : 0.5;
+        pct = Math.max(0.1, Math.min(0.9, pct + favBias));
+
+        const laneX = cx + (m1.x - m0.x) * (pct - 0.5);
+        const laneY = cy + (m1.y - m0.y) * (pct - 0.5);
+        const scatter = (Math.random() - 0.5) * 120;   // depth (along-wind) scatter
+        const jitterLat = (Math.random() - 0.5) * 20;  // small lateral jitter
+        const sx = laneX + backX * (distBack + scatter) + rx * jitterLat;
+        const sy = laneY + backY * (distBack + scatter) + ry * jitterLat;
+
+        boat.x = sx;
+        boat.y = sy;
 
         if (boat.isPlayer) {
-            boat.x = pos.x;
-            boat.y = pos.y;
             boat.heading = wd; // Head to wind
             boat.velocity = { x: 0, y: 0 };
             boat.speed = 0;
         } else {
-             // Add vertical scatter
-            const scatter = (Math.random() - 0.5) * 100;
-            const downwind = wd + Math.PI;
-            const sx = pos.x + Math.sin(downwind) * scatter;
-            const sy = pos.y - Math.cos(downwind) * scatter;
-
-            boat.x = sx;
-            boat.y = sy;
+            if (boat.ai) boat.ai.startLinePct = pct;
+            if (boat.controller) {
+                boat.controller.startLinePct = pct;
+                boat.controller.startStageDepth = 60;
+            }
             // Start on Starboard Tack (Close Hauled)
             boat.heading = normalizeAngle(wd + Math.PI / 4);
             boat.speed = 0.5;
