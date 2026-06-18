@@ -1,0 +1,3 @@
+## 2024-06-18 - Caching trigonometric calculations in high-frequency functions
+**Learning:** Functions like `getWindAt` that run thousands of times per frame for thousands of objects (boats, waves, particles) become massive bottlenecks if they contain expensive mathematical operations (`Math.sin`, `Math.cos`) and divisions.
+**Action:** When a high-frequency function computes values derived from variables that change less frequently (e.g., wind direction updates less often than it is queried), cache those derived values (`sinDir`, `cosDir`, `invRadiusXSq`) directly on the state objects (like `state.wind` or `state.gusts`) when they are updated, and simply reuse the cached properties in the hot loop.
