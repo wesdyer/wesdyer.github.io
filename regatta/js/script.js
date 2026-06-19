@@ -160,6 +160,11 @@ class BotController {
         this.targetHeading = 0;
         this.speedLimit = 1.0;
         
+        // Stochastic Diversification (Start Line)
+        this.favoredWeight = 30 + Math.random() * 40; // Base was 50
+        this.approachSpeedCap = 0.85 + Math.random() * 0.15; // Range: 0.85 to 1.00
+        this.bleedThreshold = 0.5 + Math.random() * 1.5; // Range: 0.5 to 2.0
+        
         // Start Strategy
         // Use pre-assigned position from resetGame if available, otherwise random
         this.startLinePct = (boat.ai && boat.ai.startLinePct != null) ? boat.ai.startLinePct : (0.1 + Math.random() * 0.8);
@@ -913,7 +918,7 @@ class BotController {
                 const driftPenalty = Math.abs(pct - this.startLinePct) * 2;
                 
                 // Total utility score
-                const utility = (windScore * 50) - trafficPenalty - driftPenalty;
+                const utility = (windScore * this.favoredWeight) - trafficPenalty - driftPenalty;
                 
                 if (utility > bestUtility) {
                     bestUtility = utility;
@@ -1005,8 +1010,8 @@ class BotController {
                 }
                 
                 // Speed management: slightly depowered, drop speed further if arriving early
-                let approachSpeed = 0.85;
-                if (timer > approachTime + 1.0) { // changed from 2.0
+                let approachSpeed = this.approachSpeedCap;
+                if (timer > approachTime + this.bleedThreshold) { // use individualized risk tolerance
                     approachSpeed = 0.6; 
                 }
                 
@@ -7273,7 +7278,6 @@ function resetGame() {
 
     // Determine favored end for start positioning bias
     const favoredEnd = getFavoredEnd(); // 0 = mark 0 (low pct), 1 = mark 1 (high pct)
-    const favorBias = favoredEnd === 1 ? 0.15 : -0.15; // Shift spread toward favored end
 
     for (let i = 0; i < opponents.length; i++) {
         const config = opponents[i];
@@ -7283,11 +7287,12 @@ function resetGame() {
         ai.prevHeading = ai.heading;
         ai.lastWindSide = 0;
 
-        // Start Setup: Evenly spaced with small jitter, biased toward favored end
+        // Start Setup: Evenly spaced with unique jitter per boat toward favored end
         const numAI = opponents.length;
         const basePos = numAI > 1 ? 0.1 + 0.7 * (i / (numAI - 1)) : 0.5;
+        const uniqueFavorBias = favoredEnd === 1 ? Math.random() * 0.30 : -Math.random() * 0.30;
         const jitter = (Math.random() - 0.5) * 0.10; // ±5%
-        ai.ai.startLinePct = Math.max(0.05, Math.min(0.90, basePos + jitter + favorBias));
+        ai.ai.startLinePct = Math.max(0.05, Math.min(0.90, basePos + jitter + uniqueFavorBias));
         ai.ai.setupDist = 250 + Math.random() * 100;
 
         state.boats.push(ai);
