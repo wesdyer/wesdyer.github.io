@@ -718,16 +718,29 @@ class BotController {
             }
             const avgSpeed = totalDist / (steps * 60);
 
-            // 3. Calculate COG with Current
-            let cog = heading;
+            // 3. Calculate COG with leeway + current. The boat crabs to leeward of
+            // its heading upwind (mirrors updateBoat), so the AI must reckon its true
+            // track to call laylines and VMG correctly — otherwise it sails into the
+            // mark to leeward and has to pinch or re-tack.
+            let leewayRad = 0;
+            if (estTwaDeg < 90 && avgSpeed > 0.05) {
+                const spdK = Math.max(1.5, avgSpeed / 0.25);
+                const shape = 1.0 - Math.abs(estTwa) / (Math.PI * 0.5);
+                const lwDeg = Math.min(3.0, 3.0 * shape * (effectiveWind / 12) * (12 / (spdK * spdK)));
+                const lwSign = Math.sign(estTwa) || 1;
+                leewayRad = (lwDeg * Math.PI / 180) * lwSign;
+            }
+            const cogBase = normalizeAngle(heading + leewayRad);
+
+            let cog = cogBase;
             let speedOverGround = avgSpeed;
-            
+
             if (current && current.speed > 0.1) {
                 const cSpeed = current.speed / 4.0;
                 const cDir = current.direction;
                 // Use avgSpeed for vector addition
-                const vx = Math.sin(heading)*avgSpeed + Math.sin(cDir)*cSpeed;
-                const vy = -Math.cos(heading)*avgSpeed - Math.cos(cDir)*cSpeed;
+                const vx = Math.sin(cogBase)*avgSpeed + Math.sin(cDir)*cSpeed;
+                const vy = -Math.cos(cogBase)*avgSpeed - Math.cos(cDir)*cSpeed;
 
                 cog = Math.atan2(vx, -vy);
                 speedOverGround = Math.sqrt(vx*vx + vy*vy);
@@ -1314,10 +1327,15 @@ class BotController {
 
 // Wind Configuration
 const WIND_CONFIG = {
+    // Oscillating-shift presets. Real beats oscillate ±5-18° on periods of
+    // ~180-360s (heavy->light air), slow enough that playing the shifts (tack on
+    // the header, sail the lifted tack) is a real tactical lever rather than noise.
+    // (Old periods 45-90s read as twitchy.) A second, shorter harmonic is layered
+    // on in updateBaseWind so the roll never looks obviously periodic.
     presets: {
-        STEADY: { amp: 4, period: 90, slew: 0.2 },
-        NORMAL: { amp: 10, period: 60, slew: 0.4 },
-        SHIFTY: { amp: 18, period: 45, slew: 0.6 }
+        STEADY: { amp: 5,  period: 360, slew: 0.3 },
+        NORMAL: { amp: 11, period: 270, slew: 0.5 },
+        SHIFTY: { amp: 18, period: 180, slew: 0.8 }
     }
 };
 
@@ -1690,9 +1708,23 @@ function updateBaseWind(dt) {
     if (state.wind.oscillator === undefined) state.wind.oscillator = 0;
     state.wind.oscillator += dt * (2 * Math.PI / pPeriod);
 
-    // Target Shift (Sine + Low Freq Noise)
-    const noise = fractalNoise(state.time * 0.05) * 1.5;
-    const targetDeg = pAmp * Math.sin(state.wind.oscillator + noise);
+    // Target Shift: primary roll + a shorter incommensurate harmonic + low-freq
+    // noise, so the wind breathes naturally and never looks obviously periodic.
+    const noise = fractalNoise(state.time * 0.05) * 1.0;
+    const primary = pAmp * Math.sin(state.wind.oscillator + noise);
+    // Secondary harmonic: ~1/3 amplitude, ~0.42x period (incommensurate).
+    const secondary = (pAmp * 0.33) * Math.sin(state.wind.oscillator * 2.37 + 1.1);
+    const targetDeg = primary + secondary;
+
+    // Persistent shift: a slow one-way veer/back over the whole race (seeded in
+    // resetGame). Tiny in reality over one beat, but exaggerated here to ~the
+    // amplitude of one oscillation so picking the favored SIDE is a real gamble.
+    // This is the opposite tactic from oscillations: commit to the shifting side,
+    // don't tack on every header. (AI reads the low-freq trend to tell them apart.)
+    if (state.wind.persistentShift === undefined) state.wind.persistentShift = 0;
+    const pr = state.wind.persistentRate || 0; // deg/sec, signed (set at reset)
+    const pMax = state.wind.persistentMax || 0;
+    state.wind.persistentShift = Math.max(-pMax, Math.min(pMax, state.wind.persistentShift + pr * dt));
 
     // Slew Limiting on Current Shift (No wrapping issues here as shifts are small)
     if (state.wind.currentShift === undefined) state.wind.currentShift = 0;
@@ -1709,7 +1741,9 @@ function updateBaseWind(dt) {
     }
 
     state.wind.currentShift = newShiftDeg * (Math.PI / 180);
-    state.wind.direction = normalizeAngle(state.wind.baseDirection + state.wind.currentShift);
+    // Total wind direction = base + oscillation + persistent drift.
+    const persistRad = state.wind.persistentShift * (Math.PI / 180);
+    state.wind.direction = normalizeAngle(state.wind.baseDirection + state.wind.currentShift + persistRad);
 
     // Variability (Speed)
     const v = cond.variability !== undefined ? cond.variability : 0.5;
@@ -1941,18 +1975,21 @@ function createGust(x, y, type, initial = false) {
         speedDelta = -baseSpeed * pct;
     }
 
-    // Directional Deviation inside Puff ("Puff Shiftiness")
-    // Enhanced for bigger shifts as requested.
-    // Low: 5-20 deg. High: 10-30 deg.
-    // conditions.puffShiftiness is 0-1
-    const minDev = 5 + conditions.puffShiftiness * 15; // 5 to 20
-    const maxDev = 10 + conditions.puffShiftiness * 20; // 10 to 30
-    const devDeg = minDev + Math.random() * (maxDev - minDev);
-    const devRad = devDeg * (Math.PI / 180);
-    dirDelta = (Math.random() < 0.5 ? -1 : 1) * devRad;
+    // Gust-shift coupling (Northern Hemisphere): a gust is faster, more-veered
+    // upper-level air mixed down to the surface, so the wind VEERS (clockwise) in a
+    // puff and BACKS (counter-clockwise) in a lull. Magnitude scales with the puff's
+    // strength. This is the key realism upgrade — it turns "random gusts" into a
+    // READABLE pattern (a puff lifts starboard / heads port), so both the player and
+    // the AI can anticipate the shift that arrives with the pressure.
+    const hemiSign = 1; // NH: gust veers +, lull backs -
+    const veerBase = (8 + conditions.puffShiftiness * 14) * (Math.PI / 180); // 8-22 deg
+    const veerMag = veerBase * (0.6 + strengthFactor * 0.8); // stronger puff -> bigger shift
+    dirDelta = hemiSign * (type === 'gust' ? 1 : -1) * veerMag;
 
-    // Movement Factors (Relative to global wind)
-    const moveSpeedFactor = (0.8 + Math.random() * 0.4) * 0.1; // 10% of wind speed approx
+    // Movement: puffs travel downwind at roughly the gradient wind speed (~0.6-0.9x
+    // the true wind here), so they sweep down the course and "connect the puffs" /
+    // sailing toward pressure becomes a real tactic. (Old factor barely moved them.)
+    const moveSpeedFactor = (0.8 + Math.random() * 0.4) * 0.18;
     const moveDirOffset = (Math.random() - 0.5) * 0.1; // Slight drift relative to wind
 
     // Initial Velocity
@@ -1961,7 +1998,9 @@ function createGust(x, y, type, initial = false) {
     const vx = -Math.sin(moveDir) * moveSpeed;
     const vy = Math.cos(moveDir) * moveSpeed;
 
-    const duration = 30 + Math.random() * 60;
+    // Longer-lived puffs (90-240s) persist long enough to read, chase, and ride,
+    // instead of flickering in and out.
+    const duration = 90 + Math.random() * 150;
     const age = initial ? Math.random() * duration : 0;
 
     return {
@@ -3495,6 +3534,18 @@ function getFavoredEnd() {
     return (d1 > d0) ? 1 : 0;
 }
 
+// Rudder authority grows with boat speed: a keelboat steers crisply at speed but
+// mushily when slow, and barely at all "in irons" (head-to-wind with no way). This
+// makes in-irons and the cost of a slow/bad tack emerge naturally instead of being
+// special-cased. Kept forgiving with a generous floor so boats never fully lock up.
+function steerageFactor(boat) {
+    const spdKnots = boat.speed / 0.25; // game speed -> knots
+    // 0kt -> 0.6x, ramps to full authority by ~3.5kt, capped at 1.0 (no super-turning).
+    // Floor kept fairly high (0.6) so a boat that slows in close quarters can still
+    // turn away — a lower floor traps slow boats in the pack and spikes collisions.
+    return Math.min(1.0, Math.max(0.6, 0.6 + 0.4 * (spdKnots / 3.5)));
+}
+
 function updateAI(boat, dt) {
     if (boat.isPlayer) return;
 
@@ -3516,10 +3567,13 @@ function updateAI(boat, dt) {
     // Apply Handling Stat (AI)
     // +/- 15% -> 3% per point
     aiTurnRate *= (1.0 + boat.stats.handling * 0.03);
-    
-    // Wiggle / Force Mode: Super Steering
+
+    // Speed-dependent rudder authority (mushy when slow, crisp at speed).
+    aiTurnRate *= steerageFactor(boat);
+
+    // Wiggle / Force Mode: Super Steering (overrides steerage to break free)
     if (boat.controller && boat.controller.wiggleActive) {
-        aiTurnRate *= 5.0; // Snap turn to break friction
+        aiTurnRate = CONFIG.turnSpeed * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
     }
 
     // If very far off, turn faster?
@@ -3590,7 +3644,7 @@ function updateBoat(boat, dt) {
         // Player Input
         // Apply Handling Stat (Player)
         const handlingMod = (1.0 + boat.stats.handling * 0.03);
-        const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale * handlingMod;
+        const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale * handlingMod * steerageFactor(boat);
         if (state.keys.ArrowLeft) boat.heading -= turnRate;
         if (state.keys.ArrowRight) boat.heading += turnRate;
     }
@@ -3858,19 +3912,23 @@ function updateBoat(boat, dt) {
     // 30s+ to rebuild speed after losing it in traffic. 0.9970 ⇒ ~5.5s constant,
     // which matches a sport keelboat getting up to speed and sharply improves
     // starts and post-tack recovery without making the boats feel like powerboats.
-    let speedAlpha = 1 - Math.pow(0.9970, timeScale);
+    // Asymmetric response: a displacement keelboat accelerates on a ~5.5s constant
+    // (0.9970) but DECELERATES slower (~9s, 0.9982) — it "carries its way" when
+    // depowered or head-to-wind, the heavy-boat momentum that makes timing a
+    // shoot-to-the-line or a coast into a mark feel real. (Stat mods on top.)
+    const accelerating = targetGameSpeed > boat.speed;
+    // accel ~5.5s (0.9970), decel ~9s (0.9982): asymmetric so the boat carries its way
+    // when depowered/head-to-wind — the heavy-keelboat momentum that makes timing a
+    // shoot-to-the-line or a coast into a mark feel real. (Stat mods on top.)
+    let speedAlpha = 1 - Math.pow(accelerating ? 0.9970 : 0.9982, timeScale);
 
     // Apply Acceleration / Momentum Stats
-    if (targetGameSpeed > boat.speed) {
-        // Accelerating
+    if (accelerating) {
         // +12% max -> 2.4% per point
         const accelMod = 1.0 + boat.stats.acceleration * 0.024;
         speedAlpha *= accelMod;
     } else {
-        // Decelerating (Momentum)
-        // Higher momentum (positive stat) means SLOWER loss.
-        // +10% max -> 2% per point.
-        // If stat is +5, we want to reduce alpha by 10% (preserve 10% more speed)
+        // Decelerating (Momentum). Higher momentum stat = slower loss.
         const momMod = 1.0 - boat.stats.momentum * 0.02;
         speedAlpha *= momMod;
     }
@@ -3904,10 +3962,42 @@ function updateBoat(boat, dt) {
          boat.speed *= Math.pow(CONFIG.turnPenalty, timeScale);
     }
 
-    const boatDirX = Math.sin(boat.heading);
-    const boatDirY = -Math.cos(boat.heading);
+    // Leeway: sailing upwind the keel can't fully resist the side-force, so the boat
+    // crabs a few degrees to LEEWARD of where it points. Greatest close-hauled, fades
+    // to ~0 by a beam reach and downwind, and less the faster you go. Applied as a
+    // course-over-ground offset (heading/sail unchanged) — cheap, believable, and the
+    // reason laylines must be sailed a touch high. boat.leeway is exposed so the AI
+    // can compensate (aim up-tack) in its layline/VMG planning.
+    let cogHeading = boat.heading;
+    boat.leeway = 0;
+    if (angleToWind < Math.PI * 0.5 && boat.speed > 0.05) {
+        const spdK = Math.max(1.5, boat.speed / 0.25);
+        const shape = 1.0 - angleToWind / (Math.PI * 0.5);        // 1 head-to-wind -> 0 at beam
+        const lwDeg = Math.min(3.0, 3.0 * shape * (localWind.speed / 12) * (12 / (spdK * spdK)));
+        const lwSign = Math.sign(normalizeAngle(boat.heading - localWind.direction)) || 1;
+        boat.leeway = (lwDeg * Math.PI / 180) * lwSign;
+        cogHeading = normalizeAngle(boat.heading + boat.leeway);
+    }
+
+    const boatDirX = Math.sin(cogHeading);
+    const boatDirY = -Math.cos(cogHeading);
     boat.velocity.x = boatDirX * boat.speed;
     boat.velocity.y = boatDirY * boat.speed;
+
+    // Apparent wind = true wind (air motion) minus the boat's own motion. As the boat
+    // accelerates, the apparent wind creeps forward and strengthens — "the boat makes
+    // its own wind." Used for the flag/telltales and HUD so fast points of sail feel
+    // alive. (Speed/VMG model stays on TRUE wind angle, which is correct for polars.)
+    {
+        const Wkn = localWind.speed;                 // true wind, knots
+        const Bkn = boat.speed / 0.25;               // boat speed, knots
+        const awx = -Math.sin(localWind.direction) * Wkn - Math.sin(boat.heading) * Bkn;
+        const awy =  Math.cos(localWind.direction) * Wkn + Math.cos(boat.heading) * Bkn;
+        boat.apparentWind = {
+            direction: normalizeAngle(Math.atan2(-awx, awy)), // heading the wind comes FROM
+            speed: Math.hypot(awx, awy)
+        };
+    }
 
     // Apply Current
     if (state.race.conditions.current) {
@@ -4849,6 +4939,24 @@ function drawBoat(ctx, boat) {
     // Mast
     ctx.fillStyle = '#475569'; ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI * 2); ctx.fill();
 
+    // Masthead fly (wind pennant) — streams downwind with the APPARENT wind. You can
+    // watch it swing forward as the boat accelerates ("the boat makes its own wind"),
+    // and it's the realistic cue for trimming and reading the lift/header in a puff.
+    if (boat.apparentWind) {
+        const rel = normalizeAngle(boat.apparentWind.direction - boat.heading);
+        const fx = -Math.sin(rel), fy = Math.cos(rel); // streams to where wind blows TO (local frame)
+        const len = 13 + Math.min(8, boat.apparentWind.speed * 0.4);
+        ctx.save();
+        ctx.strokeStyle = boat.isPlayer ? '#fbbf24' : 'rgba(241,245,249,0.6)';
+        ctx.lineWidth = boat.isPlayer ? 2.2 : 1.4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(0, -5);
+        ctx.lineTo(fx * len, -5 + fy * len);
+        ctx.stroke();
+        ctx.restore();
+    }
+
     // Sails
     const drawSailFunc = (isJib, scale = 1.0) => {
         ctx.save();
@@ -5335,29 +5443,28 @@ function drawGusts(ctx) {
 
         // Intensity based on strength (speedDelta)
         const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
-        const alpha = strength * 0.6;
-
-        // Life fade is now handled by radius scaling in updateGusts mostly,
-        // but we can add a subtle fade at very edges of life if needed.
-        // Actually the prompt says "change color based on strength".
+        // Light-air emphasis: the same 2kt puff is a huge % change in light air but
+        // barely visible in a fresh breeze, so cat's-paws read strongest when it's
+        // light and wash out as it builds (real water cue; matches eSail/AC sailing).
+        const airCue = 1.0 + Math.max(0, (14 - state.wind.baseSpeed) / 14) * 0.9; // ~1.0 heavy -> ~1.9 light
+        const alpha = Math.min(0.85, strength * 0.6 * airCue);
 
         const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, g.radiusX);
 
         // Scale context to make circle an oval
         ctx.scale(1, g.radiusY / g.radiusX);
 
-        // Colors
+        // Gust = darker, rippled water (more pressure); lull = lighter, glassier
+        // (less pressure). Soft-edged so the patch reads as a moving cat's-paw the
+        // player can aim for ("connect the puffs").
         if (g.type === 'gust') {
-            // Darker/More intense blue for stronger gusts
-            grad.addColorStop(0, `rgba(11, 63, 176, ${alpha})`);
-            grad.addColorStop(0.5, `rgba(11, 63, 176, ${alpha * 0.5})`);
+            grad.addColorStop(0, `rgba(9, 46, 130, ${alpha})`);
+            grad.addColorStop(0.55, `rgba(11, 63, 176, ${alpha * 0.45})`);
             grad.addColorStop(1, `rgba(11, 63, 176, 0)`);
         } else {
-            // Lighter/More intense cyan for stronger lulls
-            // Lulls reduce wind, maybe show as lighter patches
-            grad.addColorStop(0, `rgba(92, 201, 255, ${alpha})`);
-            grad.addColorStop(0.5, `rgba(92, 201, 255, ${alpha * 0.5})`);
-            grad.addColorStop(1, 'rgba(92, 201, 255, 0)');
+            grad.addColorStop(0, `rgba(150, 222, 255, ${alpha * 0.9})`);
+            grad.addColorStop(0.55, `rgba(120, 210, 255, ${alpha * 0.4})`);
+            grad.addColorStop(1, 'rgba(120, 210, 255, 0)');
         }
 
         ctx.fillStyle = grad;
@@ -6448,7 +6555,12 @@ function draw() {
                  if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
              }
         }
-        if (UI.windAngle) UI.windAngle.textContent = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI)) + '°';
+        if (UI.windAngle) {
+            const twa = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI));
+            // Apparent wind angle — what you actually trim to; creeps forward (smaller) as you speed up.
+            const awa = player.apparentWind ? Math.round(Math.abs(normalizeAngle(player.heading - player.apparentWind.direction))*(180/Math.PI)) : twa;
+            UI.windAngle.textContent = `${twa}° (AW ${awa}°)`;
+        }
         if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - localWind.direction))).toFixed(1);
 
         if (UI.trimMode) {
@@ -7135,6 +7247,14 @@ function resetGame() {
     state.wind.history = [];
     state.wind.debugTimer = 0;
     state.gusts = [];
+
+    // Persistent shift for this race: a slow, one-way veer (+) or back (-) of
+    // ~18-28° total over the race, at ~2-4°/min. Creates the "pick the right side"
+    // gamble. Sign/rate are randomized per race so neither player nor AI can
+    // foresee it; the AI infers it from the wind's low-frequency trend.
+    state.wind.persistentShift = 0;
+    state.wind.persistentMax = 18 + Math.random() * 10;            // 18-28 deg
+    state.wind.persistentRate = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.random() * 2) / 60; // deg/sec
 
     // Randomized Biases for New Wind Model
 
