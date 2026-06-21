@@ -7086,7 +7086,11 @@ function drawIslands(ctx) {
 // Init
 function initCourse() {
     const d = state.wind.baseDirection, ux = Math.sin(d), uy = -Math.cos(d), rx = -uy, ry = ux;
-    const w = 550;
+    // Start-line width. With a 10-boat fleet, 550u packs lane-neighbours ~43u apart —
+    // tighter than the boats' ~50u collision diameter — so the start jams structurally.
+    // Tunable for sweeps.
+    const _SPw = (typeof window !== 'undefined' && window.__START) ? window.__START : {};
+    const w = _SPw.width != null ? _SPw.width : 1100;
     const dist = state.race.legLength || 4000;
     state.course = {
         marks: [
