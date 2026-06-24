@@ -1,0 +1,3 @@
+## 2024-03-XX - [Regatta getWindAt trigonometric optimization]
+**Learning:** High-frequency functions like `getWindAt` in the physics loop can become bottlenecks due to redundant trigonometric calculations (Math.sin, Math.cos) for static or slowly changing values like base wind direction. Caching these values per-update avoids millions of redundant math operations per trial.
+**Action:** Always look for sine/cosine calculations inside tight loops (like iterating over boats, gusts, or pixels) that depend on variables outside the loop. Cache these values at the source of the update rather than recalculating them on demand.
