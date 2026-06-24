@@ -2011,7 +2011,14 @@ function createGust(x, y, type, initial = false) {
         rotation: windDir + dirDelta + Math.PI / 2,
         speedDelta, dirDelta,
         duration,
-        age
+        age,
+        // Pre-initialized cache values for getWindAt hot-loop to avoid undefined branches
+        sinRot: 0,
+        cosRot: 1,
+        invRadiusXSq: 1/100,
+        invRadiusYSq: 1/100,
+        sinGwDir: Math.sin(windDir + dirDelta),
+        cosGwDir: Math.cos(windDir + dirDelta)
     };
 }
 
@@ -2077,6 +2084,15 @@ function updateGusts(dt) {
         g.radiusX = Math.max(10, g.maxRadiusX * lifeFactor);
         g.radiusY = Math.max(10, g.maxRadiusY * lifeFactor);
 
+        // Pre-calculate expensive math for getWindAt
+        g.sinRot = Math.sin(-g.rotation);
+        g.cosRot = Math.cos(-g.rotation);
+        g.invRadiusXSq = 1 / (g.radiusX * g.radiusX);
+        g.invRadiusYSq = 1 / (g.radiusY * g.radiusY);
+        const gwDir = globalWindDir + g.dirDelta;
+        g.sinGwDir = Math.sin(gwDir);
+        g.cosGwDir = Math.cos(gwDir);
+
         if (g.age > g.duration) {
             state.gusts.splice(i, 1);
         }
@@ -2095,12 +2111,12 @@ function getWindAt(x, y) {
     for (const g of state.gusts) {
         const dx = x - g.x;
         const dy = y - g.y;
-        const cos = Math.cos(-g.rotation);
-        const sin = Math.sin(-g.rotation);
-        const rx = dx * cos - dy * sin;
-        const ry = dx * sin + dy * cos;
 
-        const distSq = (rx*rx)/(g.radiusX*g.radiusX) + (ry*ry)/(g.radiusY*g.radiusY);
+        const rx = dx * g.cosRot - dy * g.sinRot;
+        const ry = dx * g.sinRot + dy * g.cosRot;
+
+        const distSq = (rx*rx) * g.invRadiusXSq + (ry*ry) * g.invRadiusYSq;
+
         if (distSq <= 1) {
             const falloff = 1 - Math.sqrt(distSq);
             const lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
@@ -2108,13 +2124,9 @@ function getWindAt(x, y) {
 
             if (intensity > 0) {
                  const gSpeed = g.speedDelta * intensity;
-                 // Local direction inside puff
-                 const gwDir = baseDir + g.dirDelta;
 
-                 // Add puff vector
-                 // Note: gSpeed can be negative (lull)
-                 sumWx += Math.sin(gwDir) * gSpeed;
-                 sumWy += -Math.cos(gwDir) * gSpeed;
+                 sumWx += g.sinGwDir * gSpeed;
+                 sumWy += -g.cosGwDir * gSpeed;
             }
         }
     }

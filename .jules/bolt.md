@@ -1,0 +1,4 @@
+
+## 2024-05-24 - [Hoisting Math Operations from Hot Loops]
+**Learning:** `getWindAt` is called extremely frequently (for the player, all AI boats, particles, waves, etc.) making it a hot loop. Inside it, iterating over `state.gusts` and calculating `Math.sin`, `Math.cos`, and divisions was causing significant overhead.
+**Action:** Pre-calculate `sin`, `cos`, and inverse squared radius values on the `gust` objects in the once-per-frame `updateGusts` function. In the `getWindAt` hot loop, replace trigonometric functions with property lookups and replace division with multiplication by the cached inverse squared values. Be sure to initialize these cached properties with safe defaults when creating objects to avoid undefined lookups or branching overhead during the first frame before the update function runs.
