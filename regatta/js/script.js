@@ -1745,6 +1745,10 @@ function updateBaseWind(dt) {
     const persistRad = state.wind.persistentShift * (Math.PI / 180);
     state.wind.direction = normalizeAngle(state.wind.baseDirection + state.wind.currentShift + persistRad);
 
+    // Cache for performance
+    state.wind.sinDir = Math.sin(state.wind.direction);
+    state.wind.cosDir = Math.cos(state.wind.direction);
+
     // Variability (Speed)
     const v = cond.variability !== undefined ? cond.variability : 0.5;
     const varPct = 0.05 + v * 0.25;
@@ -2088,9 +2092,9 @@ function getWindAt(x, y) {
     const baseSpeed = state.wind.speed;
     const baseDir = state.wind.direction;
 
-    // Convert to vector
-    let sumWx = Math.sin(baseDir) * baseSpeed;
-    let sumWy = -Math.cos(baseDir) * baseSpeed;
+    // Convert to vector using cached trig
+    let sumWx = state.wind.sinDir * baseSpeed;
+    let sumWy = -state.wind.cosDir * baseSpeed;
 
     for (const g of state.gusts) {
         const dx = x - g.x;
@@ -2136,8 +2140,8 @@ function getWindAt(x, y) {
             // Coordinate system: Y is down.
             // North (0) -> Blows South (+Y). Vector (0, 1).
             // East (PI/2) -> Blows West (-X). Vector (-1, 0).
-            const flowX = -Math.sin(baseDir);
-            const flowY = Math.cos(baseDir);
+            const flowX = -state.wind.sinDir;
+            const flowY = state.wind.cosDir;
             
             // Project relative position onto flow vector
             // dot > 0 means downwind
@@ -3057,6 +3061,8 @@ if (UI.confIslandClustering) {
             const offset = state.race.conditions.directionBias || 0;
             state.wind.baseDirection = normalizeAngle(targetRad + offset);
             state.wind.direction = state.wind.baseDirection;
+            state.wind.sinDir = Math.sin(state.wind.direction);
+            state.wind.cosDir = Math.cos(state.wind.direction);
 
             // Re-init course to align with new wind
             initCourse();
@@ -7242,6 +7248,8 @@ function resetGame() {
     state.wind.speed = state.wind.baseSpeed;
     state.wind.baseDirection = Math.random() * Math.PI * 2;
     state.wind.direction = state.wind.baseDirection;
+    state.wind.sinDir = Math.sin(state.wind.direction);
+    state.wind.cosDir = Math.cos(state.wind.direction);
     state.wind.currentShift = 0;
     state.wind.oscillator = Math.random() * Math.PI * 2; // Random phase
     state.wind.history = [];

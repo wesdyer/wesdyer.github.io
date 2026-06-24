@@ -70,7 +70,7 @@ function calculateStats(values, type = 'continuous') {
     }
 
     console.log(`Starting Eval: ${NUM_TRIALS} trials, Seed Base: ${SEED_BASE}`);
-    const browser = await chromium.launch();
+    const browser = await chromium.launch({ executablePath: '/home/jules/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome' });
     const page = await browser.newPage();
 
     // Load Game
