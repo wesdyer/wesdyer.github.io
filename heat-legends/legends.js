@@ -220,7 +220,7 @@ function custom_driver(color, name, nationality, speedDeck, overDeck, cornerDeck
 }
 
 function create_driver(driver) {
-    const e = $("<tr><td class='car'></td><td class='name'></td><td class='td-flag'><img class='flag'/></td><td class='max-speed'></td><td class='approach'></td><td class='corner'></td><td><div class='button remove'>Remove</div></td></tr>");
+    const e = $("<tr><td class='car'></td><td class='name'></td><td class='td-flag'><img class='flag'/></td><td class='max-speed'></td><td class='approach'></td><td class='corner'></td><td><button class='button remove'>Remove</button></td></tr>");
     e.attr("id", driver.color);
     e.addClass("driver");
     $('#drivers').append(e);
@@ -320,9 +320,10 @@ $(document).ready(() => {
     let i = 0;
     for (let nationality of nationalities) {
         const n = nationality;
-        const e = $("<div class='flag-selector'><img class='flag-select'/></div>")
+        const e = $("<button class='flag-selector'><img class='flag-select'/></button>")
         e.attr("id", "flag-" + nationality.country);
         e.find("img").attr("src", "flags/" + nationality.flag);
+        e.find("img").attr("alt", nationality.country);
         e.click(function () {
             chosen_nationality = n;
             $('.flag-selector').removeClass('selected');
