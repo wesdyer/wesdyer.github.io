@@ -1,0 +1,3 @@
+## 2025-02-14 - Accessible Custom Radio Buttons
+**Learning:** Custom radio buttons often rely on hiding the native `<input>` and styling the parent label. Using `invisible`, `hidden`, or `w-0 absolute` removes the input from the accessibility tree or prevents it from receiving focus properly.
+**Action:** Always use the `sr-only` class to visually hide the native input while keeping it accessible to screen readers. For keyboard visibility, apply focus styles to the parent wrapper using the `has-[:focus-visible]` modifier.
