@@ -1,0 +1,3 @@
+## 2025-01-20 - Adding focus styles and ARIA labels for buttons in Wordle
+**Learning:** Virtual keyboards generated dynamically need ARIA labels for non-alphabetic keys (Enter, Backspace), and all interactive elements including custom radio buttons (`.sr-only` instead of `.invisible`) need explicit `focus-visible` styles to be usable via keyboard navigation.
+**Action:** When creating custom styled inputs or icon-only buttons, ensure to add screen reader support (`aria-label`) and visible keyboard focus indicators (`focus-visible`). Avoid using `invisible` for inputs if they should still receive focus and be readable by screen readers.
