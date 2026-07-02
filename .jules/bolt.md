@@ -1,0 +1,3 @@
+## 2025-02-18 - Pre-compute and cache trigonometric values for high-frequency queries
+**Learning:** In the `regatta` application, spatial queries like `getWindAt` are called thousands of times per frame (for every pixel of wake, for UI updates, for AI planning, etc.). Calculating `Math.sin()` and `Math.cos()` inside these high-frequency loops is a major performance bottleneck, especially when the inputs (wind direction, gust rotation) change relatively slowly.
+**Action:** Always pre-calculate and cache expensive trigonometric and division values (like `Math.sin(direction)` or `1 / (radius * radius)`) directly on the objects (e.g. `state.wind.sinDir`, `g.invRadiusXSq`) whenever they are updated, so that high-frequency functions can simply use vector multiplication.
