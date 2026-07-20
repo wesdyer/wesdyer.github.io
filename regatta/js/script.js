@@ -35,9 +35,13 @@ const Sayings = {
         if (!this.overlay) this.init();
 
         const quotes = typeof AI_QUOTES !== 'undefined' ? AI_QUOTES[boat.name] : null;
-        if (!quotes) return;
-
-        const rawQuote = quotes[type];
+        let rawQuote = quotes ? quotes[type] : null;
+        // Archetype behavior triggers fall back to generic archetype lines so
+        // every character voices its style even without bespoke quotes.
+        if (!rawQuote && typeof ARCHETYPE_CALLS !== 'undefined' && ARCHETYPE_CALLS[type]) {
+            const lines = ARCHETYPE_CALLS[type];
+            rawQuote = lines[Math.floor(Math.random() * lines.length)];
+        }
         if (!rawQuote) return;
 
         let text = rawQuote;
@@ -211,7 +215,8 @@ class BotController {
     updateWindTracker() {
         const localWind = getWindAt(this.boat.x, this.boat.y);
         const wd = localWind.direction;
-        const alpha = 0.00167; // ~60s window at 10Hz (0.1 / 60)
+        // ~60s window at 10Hz; shift-whisperers read the wind faster (windFast > 1)
+        const alpha = 0.00167 * (this.boat.traits ? this.boat.traits.windFast : 1);
 
         if (!this.windTracker.initialized) {
             this.windTracker.emaSin = Math.sin(wd);
@@ -493,12 +498,24 @@ class BotController {
                     if (!this.gateChoice || this.gateChoice.leg !== leg) {
                         const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
                         const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
-                        this.gateChoice = { leg, idx: d1 <= d2 ? 0 : 1 };
+                        let idx = d1 <= d2 ? 0 : 1;
+                        // Gambler: pick a SIDE of the beat for this leg and bang
+                        // it — gate end chosen by coin flip, not proximity.
+                        // Not on leg 1: a far-side pick right off the start line
+                        // drags them diagonally through the whole fleet (fouls).
+                        if (boat.traits && boat.traits.sideCommit && leg > 1) {
+                            idx = Math.random() < 0.5 ? 0 : 1;
+                            if (typeof Sayings !== 'undefined') Sayings.queueQuote(boat, 'side_pick');
+                        }
+                        this.gateChoice = { leg, idx };
                     }
                     const chosen = this.gateChoice.idx === 0 ? m1 : m2;
                     const isBeat = leg % 2 !== 0;
                     let insetRaw = NAV.inset != null ? NAV.inset : 240;
                     if (!isBeat && NAV.insetDown != null) insetRaw = NAV.insetDown;
+                    // cornerScale: corner artists cut closer to the mark, freight
+                    // trains swing wide (paired with their rounding offset below).
+                    insetRaw *= (boat.traits ? boat.traits.cornerScale : 1);
                     const inset = Math.min(insetRaw, gLen * 0.45);
                     const inSign = this.gateChoice.idx === 0 ? 1 : -1;
                     destX = chosen.x + (gDx / gLen) * inset * inSign;
@@ -532,8 +549,10 @@ class BotController {
             // Rounding Bias
             if (boat.raceState.isRounding) {
                 const NAVR = (typeof window !== 'undefined' && window.__NAV) ? window.__NAV : {};
-                const roundOff = NAVR.roundOff != null ? NAVR.roundOff : 65;
-                const roundTurn = NAVR.roundTurn != null ? NAVR.roundTurn : 80;
+                const cScale = boat.traits ? boat.traits.cornerScale : 1;
+                const roundOff = (NAVR.roundOff != null ? NAVR.roundOff : 65) * cScale;
+                const tTurn = boat.traits ? boat.traits.roundTurn : null;
+                const roundTurn = NAVR.roundTurn != null ? NAVR.roundTurn : (tTurn != null ? tTurn : 80);
                 const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
                 const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
                 const mark = (d1 < d2) ? m1 : m2;
@@ -713,7 +732,28 @@ class BotController {
         
         const hStarboard = normalizeAngle(wd + optTWA);
         const hPort = normalizeAngle(wd - optTWA);
-        
+
+        // Leech cover: find the nearest live rival once per decision. When one
+        // is close on an upwind leg, the leech biases toward MATCHING their
+        // tack — shadowing them move for move.
+        const traits = boat.traits || DEFAULT_TRAITS;
+        let coverTackSide = 0;
+        if (traits.cover > 0 && mode === 'upwind' && boat.raceState.leg % 2 === 1) {
+            let best = null, bestD2 = 320 * 320;
+            for (const other of state.boats) {
+                if (other === boat || other.raceState.finished) continue;
+                const d2 = (other.x - boat.x) ** 2 + (other.y - boat.y) ** 2;
+                if (d2 < bestD2) { bestD2 = d2; best = other; }
+            }
+            if (best) {
+                coverTackSide = normalizeAngle(best.heading - wd) > 0 ? 1 : -1;
+                if (this.coverLockLeg !== boat.raceState.leg) {
+                    this.coverLockLeg = boat.raceState.leg;
+                    if (typeof Sayings !== 'undefined') Sayings.queueQuote(boat, 'cover_lock');
+                }
+            }
+        }
+
         // Helper to score a tack
         // Score = VMG to Target (using COG) + Pressure Bonus
         const scoreTack = (heading) => {
@@ -738,12 +778,12 @@ class BotController {
             // Apply Point of Sail Stats
             let posStat = 0;
             if (estTwaDeg <= 60) {
-                posStat = boat.stats.upwind * 0.008;
+                posStat = boat.stats.upwind * 0.012;
             } else if (estTwaDeg >= 145) {
-                posStat = boat.stats.downwind * 0.01;
+                posStat = boat.stats.downwind * 0.015;
             } else {
                  // Reach
-                 posStat = boat.stats.reach * 0.012;
+                 posStat = boat.stats.reach * 0.018;
             }
             targetKnots *= (1.0 + posStat);
             const targetGameSpeed = targetKnots * 0.25;
@@ -827,7 +867,7 @@ class BotController {
             // We compare future effective wind vs base wind (or current effective?)
             // Comparing to base makes sense as absolute value
             const windBonus = (futureEffective - state.wind.baseSpeed);
-            const pressureCoeff = 0.1 * (1.0 + boostFactor);
+            const pressureCoeff = 0.1 * (1.0 + boostFactor) * traits.pressureSense;
             score += windBonus * pressureCoeff;
 
             // 5. Wind Shift Lift/Header Bonus
@@ -841,8 +881,15 @@ class BotController {
                     const tackSide = normalizeAngle(heading - wd) > 0 ? 1 : -1;
                     // Positive shift headers starboard (tackSide=1), lifts port (tackSide=-1)
                     const liftFactor = -tackSide * shift; // positive = lift for this tack
-                    score += liftFactor * 2.0;
+                    // shiftSense: whisperers weigh shifts heavily, gamblers barely look
+                    score += liftFactor * 2.0 * traits.shiftSense;
                 }
+            }
+
+            // Leech cover: reward the tack that matches the shadowed rival's
+            if (coverTackSide !== 0) {
+                const tackSide2 = normalizeAngle(heading - wd) > 0 ? 1 : -1;
+                if (tackSide2 === coverTackSide) score += 0.45 * traits.cover;
             }
 
             return score;
@@ -866,7 +913,10 @@ class BotController {
         const tackAgility = (boat.stats.handling * 0.3 + boat.stats.acceleration * 0.3 + boat.stats.momentum * 0.2);
         const hysteresisMod = -tackAgility * 0.0625; // Range: +0.25 to -0.25
         const baseTackBonus = (boat.badAirIntensity < 0.05) ? 0.6 : 0.4;
-        const tackBonus = Math.max(0.15, Math.min(1.0, baseTackBonus + hysteresisMod));
+        // Gamblers are far stickier — committed to their side of the beat.
+        // Racing legs only: stickiness on leg 0 pins them in start traffic.
+        const commitBonus = (traits.sideCommit && boat.raceState.leg > 0) ? 0.45 : 0;
+        const tackBonus = Math.max(0.15, Math.min(1.5, baseTackBonus + hysteresisMod + commitBonus));
 
         let preferredHeading = (scoreS > scoreP) ? hStarboard : hPort;
 
@@ -915,8 +965,10 @@ class BotController {
         // but 'score' keeps us there due to wind.
         // Actually, explicit Layline check overrides score.
 
-        // Layline proximity check: tack when other tack can fetch the mark
-        if (Math.abs(otherError) < 0.1) {
+        // Layline proximity check: tack when other tack can fetch the mark.
+        // laylineTight < 1 calls the layline later/closer (metronome precision);
+        // > 1 tacks early and overstands a touch (freight caution).
+        if (Math.abs(otherError) < 0.1 * traits.laylineTight) {
              if (this.tackCooldown <= 0) {
                  this.tackCooldown = 10.0;
                  return otherTackHeading;
@@ -1002,7 +1054,9 @@ class BotController {
         const STAGE = P.stage != null ? P.stage : (this.startStageDepth || 60);
         const PAST = P.past != null ? P.past : 70;   // how far past the line to aim
         const OVER = P.over != null ? P.over : 10;   // perp over which we are over-early
-        const BUF = P.buf != null ? P.buf : 0.5;     // crossing-run buffer (higher = commit earlier; >1 measured to raise OCS sharply)
+        // crossing-run buffer (higher = commit earlier; >1 measured to raise OCS sharply)
+        // Archetype: rockets/bullies commit a touch earlier, metronomes later.
+        const BUF = (P.buf != null ? P.buf : 0.5) + (boat.traits ? boat.traits.startBufAdj : 0);
         const cosT = Math.cos(0.7);
 
         const aimX = targetX + Math.sin(wd) * PAST;     // up through our lane
@@ -1107,6 +1161,16 @@ class BotController {
             }
         }
 
+        // Bully call-out: taunt when wading into a fresh close-quarters fight.
+        if (this.bullyQuoteTimer > 0) this.bullyQuoteTimer -= dt;
+        const wasCalm = this.riskState === 'LOW' || this.riskState === 'MEDIUM';
+        if (wasCalm && (maxRisk === 'HIGH' || maxRisk === 'IMMINENT') &&
+            this.boat.traits && this.boat.traits.aggro >= 0.8 && !(this.bullyQuoteTimer > 0) &&
+            state.race.status === 'racing') {
+            this.bullyQuoteTimer = 25;
+            if (typeof Sayings !== 'undefined') Sayings.queueQuote(this.boat, 'bully_engage');
+        }
+
         this.riskState = maxRisk;
         this.avoidanceRole = role;
 
@@ -1195,6 +1259,13 @@ class BotController {
         if (this.startCommitted && this.boat.raceState.leg === 0) {
             safeDist = Math.min(safeDist, 48);
         }
+
+        // Archetype aggression: bullies shave their margins (+aggro), corner
+        // artists give extra room (-aggro). RACING ONLY — the packed start is
+        // tuned to the boat-length millimetre, and shifting margins there in
+        // EITHER direction measurably wrecked the shifter's own start.
+        const aggro = this.boat.traits ? this.boat.traits.aggro : 0;
+        if (aggro && !isStartPhase) safeDist *= (1 - 0.12 * aggro);
 
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
@@ -1412,73 +1483,152 @@ const WIND_CONFIG = {
 };
 
 // AI Configuration
+// --- Racing Archetypes ---------------------------------------------------
+// Each AI character has ONE archetype: a persona layer of behavioral traits
+// consumed by BotController, plus a threat/weakness line surfaced to the
+// player. Design rule: every archetype changes HOW the boat races, paired
+// with an exploitable weakness — never a flat power boost. All trait values
+// default to current fleet behavior (DEFAULT_TRAITS) so an archetype only
+// diverges where it means to.
+//   aggro        -1..1  avoidance margin scale (+ = shaves give-way bubbles)
+//   startBufAdj  secs   added to the start crossing-run buffer (+ = commits earlier)
+//   shiftSense   x      multiplier on the lift/header tack bonus
+//   windFast     x      multiplier on the wind-tracker EMA rate (faster read)
+//   pressureSense x     multiplier on the pressure-seeking bonus
+//   cornerScale  x      multiplier on gate approach inset + rounding offset (<1 = tighter)
+//   sideCommit   0/1    gambler: pick a side of the beat per leg and bang it
+//   cover        0..1   leech: bonus for matching the nearest rival's tack
+//   laylineTight x      multiplier on the layline trigger window (<1 = calls it later/closer)
+//   speedScale   x      multiplier on boatspeed (identity tax — keep within 0.97..1.0)
+//   roundTurn    u|null  override of the rounding carve pull (fleet default 80)
+const DEFAULT_TRAITS = { aggro: 0, startBufAdj: 0, shiftSense: 1.0, windFast: 1.0, pressureSense: 1.0, cornerScale: 1.0, sideCommit: 0, cover: 0, laylineTight: 1.0, speedScale: 1.0, roundTurn: null };
+
+const ARCHETYPES = {
+    bully: {
+        label: 'Line Bully',
+        threat: 'Crowds rivals into flinching first — gives you no room at the start or in traffic.',
+        weakness: 'Runs hot: the fights cost penalties and pace. Stay clean and sail past the wreckage.',
+        traits: { aggro: 1.0 },
+    },
+    rocket: {
+        label: 'Rocket Start',
+        threat: 'First off the line almost every race and gone with clear air.',
+        weakness: 'Fades once the fleet reaches full speed — reel them in mid-leg and hold your lane.',
+        traits: { startBufAdj: -0.1 },
+    },
+    shift: {
+        label: 'Shift Whisperer',
+        threat: 'Reads the wind before anyone. In shifty air, going the other way is usually wrong.',
+        weakness: 'Slow in a straight line — beat them on pure pace when the breeze goes steady.',
+        traits: { shiftSense: 1.5, windFast: 1.4, pressureSense: 1.15, speedScale: 0.97 },
+    },
+    freight: {
+        label: 'Freight Train',
+        threat: 'Carries speed nothing can stop — never cross them late.',
+        weakness: 'Wide, lumbering roundings — attack at every mark.',
+        traits: { cornerScale: 1.25, laylineTight: 1.1 },
+    },
+    corner: {
+        label: 'Corner Artist',
+        threat: 'Surgical mark roundings — gains boat lengths at every gate.',
+        weakness: 'Backs off in a crowd — lean on them and they yield the lane.',
+        traits: { cornerScale: 0.85, aggro: -0.15, roundTurn: 130 },
+    },
+    gambler: {
+        label: 'Corner Gambler',
+        threat: 'Bangs a corner of the course. When the shift favors them, they come back untouchable.',
+        weakness: 'Ignores the wind to get there — most days the corner buries them.',
+        traits: { sideCommit: 1, shiftSense: 0.4 },
+    },
+    leech: {
+        label: 'The Leech',
+        threat: 'Locks onto the nearest rival and matches every tack, sitting on their wind.',
+        weakness: 'Loses time shadowing — split hard and stretch them past their patience.',
+        traits: { cover: 0.8 },
+    },
+    metronome: {
+        label: 'Metronome',
+        threat: 'Never blinks, never blunders — always in the hunt at the finish.',
+        weakness: 'No spikes: one well-timed risk is worth more than their whole race.',
+        traits: { laylineTight: 0.85, startBufAdj: -0.05 },
+    },
+};
+
+// Generic archetype call-outs used when a character has no bespoke quote for
+// a behavior trigger (bully engaging, gambler picking a side, leech locking on).
+const ARCHETYPE_CALLS = {
+    bully_engage: ["My water. Find another lane!", "You do NOT want this fight.", "Coming through — flinch or foul."],
+    side_pick: ["I like the look of that corner.", "See you at the shift, suckers.", "All in. One side, one story."],
+    cover_lock: ["Nice wind you've got there. Mine now.", "Wherever you go, I go.", "You tack, I tack. Simple."],
+};
+
 const AI_CONFIG = [
-    { name: 'Cheer', creature: 'Pom Pom Crab', hull: '#FF9ECF', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#FFFFFF', personality: "Cheerful and fun loving, always positive and enthuiastic.", stats: { acceleration: 2, momentum: -2, handling: 4, upwind: 1, reach: -2, downwind: -1, boost: 5 } },
-    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Relaxed veteran who instinctively finds perfect wind." , stats: { acceleration: -2, momentum: -3, handling: -1, upwind: 0, reach: 1, downwind: 5, boost: -1 } },
-    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', personality: "Flashy opportunist thriving on speed bursts." , stats: { acceleration: 5, momentum: 0, handling: -4, upwind: 3, reach: -4, downwind: 3, boost: 2 } },
-    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', personality: "Awkward, unpredictable, deadly effective in chaos." , stats: { acceleration: 5, momentum: -1, handling: -2, upwind: -3, reach: 3, downwind: 0, boost: 4 } },
-    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', personality: "Aggressive bully dominating the starting line." , stats: { acceleration: 1, momentum: -2, handling: 0, upwind: 2, reach: -1, downwind: -5, boost: 2 } },
-    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', personality: "Cold, relentless presence forcing others to react." , stats: { acceleration: -5, momentum: -2, handling: -5, upwind: -3, reach: -3, downwind: 4, boost: 1 } },
-    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', personality: "Stylish confidence with daring, showy sailing." , stats: { acceleration: -3, momentum: -3, handling: -5, upwind: 5, reach: -2, downwind: 1, boost: 2 } },
-    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', personality: "Methodical and stubborn, grinding out advantages." , stats: { acceleration: 3, momentum: -3, handling: 3, upwind: 0, reach: 0, downwind: -4, boost: -3 } },
-    { name: 'Chomp', creature: 'Saltwater Crocodile', hull: '#2ECC71', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#C1B58A', personality: "Patient hunter striking without warning." , stats: { acceleration: 4, momentum: 1, handling: -5, upwind: 5, reach: -3, downwind: 0, boost: 3 } },
-    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', personality: "Massive, steady, unbeatable in heavy conditions." , stats: { acceleration: -2, momentum: 4, handling: 2, upwind: 0, reach: -5, downwind: 4, boost: -3 } },
-    { name: 'Vex', creature: 'Water Dragon', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', personality: "Slippery tactician exploiting tiny mistakes." , stats: { acceleration: -3, momentum: -5, handling: 4, upwind: -4, reach: -5, downwind: 1, boost: 4 } },
-    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Chill vibes, relentless endurance." , stats: { acceleration: -3, momentum: 1, handling: 0, upwind: 5, reach: 2, downwind: 2, boost: 5 } },
-    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', personality: "Cheerful speedster seeking clean lanes." , stats: { acceleration: -2, momentum: -1, handling: -3, upwind: 4, reach: -4, downwind: 5, boost: 5 } },
-    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', personality: "Defensive and stubborn off the line." , stats: { acceleration: -5, momentum: 2, handling: -4, upwind: 4, reach: -5, downwind: -2, boost: 0 } },
-    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', personality: "Patient perfectionist who never blunders." , stats: { acceleration: -4, momentum: 3, handling: 2, upwind: 4, reach: 3, downwind: -5, boost: 2 } },
-    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', personality: "Silent dominance unleashed at full power." , stats: { acceleration: 0, momentum: 5, handling: -5, upwind: 3, reach: 2, downwind: -2, boost: -3 } },
-    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', personality: "Erratic survivor thriving in congestion." , stats: { acceleration: -4, momentum: -3, handling: -3, upwind: -3, reach: 1, downwind: -2, boost: 5 } },
-    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', personality: "Pure speed and relentless pressure." , stats: { acceleration: -2, momentum: -3, handling: -3, upwind: 5, reach: -5, downwind: 1, boost: -1 } },
-    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', personality: "Explosive starts, reckless aggression." , stats: { acceleration: 1, momentum: -5, handling: -3, upwind: -1, reach: 4, downwind: -1, boost: 4 } },
-    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', personality: "Effortlessly surfing invisible shifts." , stats: { acceleration: 5, momentum: -5, handling: -4, upwind: 1, reach: 4, downwind: -5, boost: 0 } },
-    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', personality: "Trap-setting master of dirty air." , stats: { acceleration: -1, momentum: 1, handling: -3, upwind: -2, reach: -1, downwind: -5, boost: 5 } },
-    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', personality: "Looks slow, impossible to pass." , stats: { acceleration: -5, momentum: 3, handling: 3, upwind: 3, reach: -2, downwind: 4, boost: -4 } },
-    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', personality: "Surgical aggression at the worst moments." , stats: { acceleration: 0, momentum: 4, handling: 5, upwind: -1, reach: 0, downwind: -1, boost: -1 } },
-    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Precise and unshakable in traffic." , stats: { acceleration: -2, momentum: 5, handling: 3, upwind: 5, reach: -4, downwind: 4, boost: -2 } },
-    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', personality: "Graceful wildcard favoring wide tactics." , stats: { acceleration: -4, momentum: -2, handling: 3, upwind: -5, reach: 5, downwind: 0, boost: 5 } },
-    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', personality: "Spiky defender denying easy lanes." , stats: { acceleration: -5, momentum: 3, handling: -4, upwind: 3, reach: -1, downwind: 1, boost: -4 } },
-    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', personality: "Constantly sniffing out pressure." , stats: { acceleration: 5, momentum: 5, handling: 2, upwind: 0, reach: -1, downwind: 0, boost: -1 } },
-    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', personality: "Harmless-looking, slips through gaps." , stats: { acceleration: -4, momentum: -5, handling: -5, upwind: -2, reach: -1, downwind: 4, boost: 4 } },
-    { name: 'Anchor', creature: 'Sea Turtle', hull: '#96C47A', spinnaker: '#ffd016', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Conservative, resilient, brutally consistent." , stats: { acceleration: 3, momentum: 5, handling: -2, upwind: -5, reach: 0, downwind: -2, boost: -1 } },
-    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', personality: "Hyperactive chaos opportunist." , stats: { acceleration: 4, momentum: 5, handling: 4, upwind: -3, reach: -4, downwind: -2, boost: 1 } },
-    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', personality: "Cerebral planner playing long games." , stats: { acceleration: -2, momentum: -3, handling: 0, upwind: -3, reach: 0, downwind: 1, boost: -4 } },
-    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', personality: "Speed-first, consequences later." , stats: { acceleration: 2, momentum: -1, handling: 5, upwind: -5, reach: -1, downwind: 2, boost: -4 } },
-    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Quiet patience, strikes at perfect moments." , stats: { acceleration: 4, momentum: -5, handling: -1, upwind: -5, reach: 4, downwind: 5, boost: 4 } },
-    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', personality: "Imposing calm daring mistakes." , stats: { acceleration: 2, momentum: 4, handling: -3, upwind: -5, reach: -5, downwind: -2, boost: -1 } },
-    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', personality: "Elegant lane thief with ruthless timing." , stats: { acceleration: -1, momentum: 3, handling: 5, upwind: 0, reach: 4, downwind: -4, boost: -2 } },
-    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', personality: "Flashy speed attacking on reaches." , stats: { acceleration: 1, momentum: -4, handling: 1, upwind: 4, reach: 0, downwind: -4, boost: -4 } },
-    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Lightning reactions and explosive starts." , stats: { acceleration: -3, momentum: 2, handling: -1, upwind: -3, reach: -5, downwind: -5, boost: 2 } },
-    { name: 'Splat', creature: 'Blobfish', hull: '#E7A6B4', spinnaker: '#6a1051', sail: '#FFFFFF', cockpit: '#CFC6CC', personality: "Looks doomed, but somehow always survives." , stats: { acceleration: -5, momentum: 0, handling: -3, upwind: 0, reach: -2, downwind: 0, boost: 1 } },
-    { name: 'Dart', creature: 'Kingfisher', hull: '#00C2FF', spinnaker: '#E5A051', sail: '#FFFFFF', cockpit: '#AEBFCC', personality: "pure speed, energetic, very competitive" , stats: { acceleration: 1, momentum: 4, handling: -3, upwind: -4, reach: 4, downwind: -2, boost: 5 } },
-    { name: 'Roll', creature: 'Harbor Seal', hull: '#7D8597', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#C3CAD3', personality: "Playful feints hiding brutal positioning skills." , stats: { acceleration: -5, momentum: 4, handling: 5, upwind: -3, reach: 2, downwind: -1, boost: 4 } },
-    { name: 'Spike', creature: 'Narwhal', hull: '#6B7FD7', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#C5CED6', personality: "Majestic closer unleashing terrifying late-race surges." , stats: { acceleration: 1, momentum: -2, handling: 1, upwind: -5, reach: 2, downwind: 1, boost: 3 } },
-    { name: 'Flicker', creature: 'Tern', hull: '#EE6C4D', spinnaker: '#E0FBFC', sail: '#000000', cockpit: '#C7CCD1', personality: "Constant repositioning, never predictable." , stats: { acceleration: 4, momentum: 3, handling: -2, upwind: -2, reach: 3, downwind: 0, boost: -1 } },
-    { name: 'Croak', creature: 'Bullfrog', hull: '#386641', spinnaker: '#A7C957', sail: '#FFFFFF', cockpit: '#BFC9B8', personality: "Patient swamp tactician lethal in shifts." , stats: { acceleration: 3, momentum: -2, handling: -1, upwind: 4, reach: 1, downwind: 5, boost: 2 } },
-    { name: 'Snap', creature: 'Snapping Turtle', hull: '#4B5D23', spinnaker: '#ef3629', sail: '#000000', cockpit: '#B8B8A8', personality: "Grouchy, old salty sailor who likes to beat the young whippersnappers." , stats: { acceleration: -2, momentum: -4, handling: -4, upwind: 2, reach: 5, downwind: 2, boost: 5 } },
-    { name: 'Rift', creature: 'Moray Eel', hull: '#d4ff07', spinnaker: '#ff61df', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Lurks quietly, strikes savagely at marks." , stats: { acceleration: -1, momentum: -3, handling: 2, upwind: 2, reach: 3, downwind: -4, boost: 2 } },
-    { name: 'Skerry', creature: 'Puffin', hull: '#FF5400', spinnaker: '#1D3557', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Fearless gap-threader thriving in traffic." , stats: { acceleration: -2, momentum: 1, handling: -1, upwind: -3, reach: 3, downwind: 2, boost: -2 } },
-    { name: 'Crush', creature: 'Mantis Shrimp', hull: '#00F5D4', spinnaker: '#F15BB5', sail: '#000000', cockpit: '#CFC7DC', personality: "Explosive reactions with devastating timing." , stats: { acceleration: -4, momentum: -5, handling: 1, upwind: 1, reach: -3, downwind: -5, boost: 0 } },
-    { name: 'Torrent', creature: 'Swordfish', hull: '#083fa6', spinnaker: '#D62828', sail: '#FFFFFF', cockpit: '#8D99AE', personality: "Straight-line dominance with brutal acceleration." , stats: { acceleration: 5, momentum: -2, handling: 1, upwind: 1, reach: -1, downwind: -2, boost: 2 } },
-    { name: 'Jester', creature: 'Clownfish', hull: '#ffa000', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#f4f4f4', personality: "Cheerful chaos masking shrewd cunning." , stats: { acceleration: 1, momentum: 3, handling: 2, upwind: -3, reach: 0, downwind: 5, boost: -1 } },
-    { name: 'Breeze', creature: 'Nudibranch', hull: '#000080', spinnaker: '#ff3fa7', sail: '#FFFFFF', cockpit: '#D6D6DC', personality: "Chill, stylish, always finds unexpected pressure." , stats: { acceleration: -4, momentum: 4, handling: -2, upwind: -3, reach: 4, downwind: 1, boost: 5 } },
-    { name: 'Petal', creature: 'Roseate Spoonbill', hull: '#FF6FAE', spinnaker: '#1a3685', sail: '#FFFFFF', cockpit: '#e6e6e6', personality: "Elegant lane snatcher with impeccable timing." , stats: { acceleration: -3, momentum: 3, handling: 1, upwind: -5, reach: -1, downwind: 3, boost: 4 } },
-    { name: 'Stomp', creature: 'Blue-Footed Booby', hull: '#00B4D8', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Clumsy confidence hiding fearless lane attacks." , stats: { acceleration: 5, momentum: -3, handling: 4, upwind: 3, reach: 2, downwind: 0, boost: 1 } },
-    { name: 'Crimson', creature: 'Red Snapper', hull: '#ed1515', spinnaker: '#2643E9', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Calm, surgical tactician striking at perfect moments." , stats: { acceleration: -1, momentum: -3, handling: 4, upwind: 1, reach: -2, downwind: -2, boost: 5 } },
-    { name: 'Viper', creature: 'Green Tree Snake', hull: '#49c100', spinnaker: '#FF1E1E', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Hyper-alert ambusher striking instantly from perfect angles." , stats: { acceleration: -3, momentum: -2, handling: -2, upwind: -5, reach: -1, downwind: -5, boost: 3 } },
-    { name: 'Skitter', creature: 'Mudskipper', hull: '#e33d28', spinnaker: '#15f121', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Erratic bursts, impossible angles, constant pressure." , stats: { acceleration: 1, momentum: -4, handling: -2, upwind: 1, reach: -1, downwind: 5, boost: -2 } },
-    { name: 'Veil', creature: 'Vampire Squid', hull: '#7A1FA2', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Calm, shadowy predator striking without warning." , stats: { acceleration: -1, momentum: -4, handling: -5, upwind: -1, reach: 3, downwind: -1, boost: -4 } },
-    { name: 'Puff', creature: 'Mandarin Dragonet', hull: '#0032ff', spinnaker: '#E17638', sail: '#62e517', cockpit: '#17b3f2', personality: "Super chill vibes, effortless flow, always smiling." , stats: { acceleration: 2, momentum: 4, handling: 0, upwind: 1, reach: 0, downwind: -3, boost: 4 } },
-    { name: 'Lure', creature: 'Anglerfish', hull: '#0B0F1A', spinnaker: '#6AFF3D', sail: '#F5F7FA', cockpit: '#2E3440', personality: "Patient darkness, sudden lethal strikes." , stats: { acceleration: -4, momentum: 5, handling: 0, upwind: -2, reach: 4, downwind: -5, boost: 2 } },
-    { name: 'Wiggle', creature: 'Axolotl', hull: '#FFFFFF', spinnaker: '#FF4FA3', sail: '#BDEFFF', cockpit: '#D1D7DB', personality: "Cute chaos, surprisingly competitive." , stats: { acceleration: 2, momentum: 1, handling: -5, upwind: -3, reach: 3, downwind: 3, boost: -3 } },
-    { name: 'Zeffir', creature: 'Seagull', hull: '#FFFFFF', spinnaker: '#FF7A00', sail: '#FFFFFF', cockpit: '#D1D7DB', personality: "Always lifted, always smiling." , stats: { acceleration: 4, momentum: 1, handling: -1, upwind: 1, reach: 2, downwind: -4, boost: 2 } },
-    { name: 'Scoop', creature: 'Pelican', hull: '#D8C6A3', spinnaker: '#5499dc', sail: '#FFFFFF', cockpit: '#e6e6e6', personality: "Big moves, surprisingly precise." , stats: { acceleration: -4, momentum: -1, handling: 1, upwind: 4, reach: -4, downwind: -1, boost: 2 } },
-    { name: 'Popper', creature: 'Pufferfish', hull: '#FFD84D', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Defensive chaos, punishes reckless pressure." , stats: { acceleration: -3, momentum: 2, handling: -2, upwind: -4, reach: -3, downwind: 0, boost: 0 } },
-    { name: 'Frond', creature: 'Leafy Seadragon', hull: '#5FAF6E', spinnaker: '#FF8C42', sail: '#F3FFF9', cockpit: '#BFCFC4', personality: "Graceful drifter, impossible to read." , stats: { acceleration: -4, momentum: -2, handling: -3, upwind: 2, reach: 2, downwind: 5, boost: 5 } },
-    { name: 'Bulkhead', creature: 'Elephant Seal', hull: '#6B7280', spinnaker: '#FF7A00', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Massive momentum, awkward turns, impossible to stop." , stats: { acceleration: -3, momentum: -2, handling: 2, upwind: 3, reach: -1, downwind: -5, boost: 5 } },
-    { name: 'Slipstream', creature: 'Salmon', hull: '#B6BCC6', spinnaker: '#E94B4B', sail: '#FFFFFF', cockpit: '#41c617', personality: "Relentless endurance, explosive late surges." , stats: { acceleration: 5, momentum: 3, handling: 1, upwind: 1, reach: -3, downwind: -5, boost: -1 } },
-    { name: 'Blaze', creature: 'Mako Shark', hull: '#1F3C5B', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Blisteringly fast attacker forcing races into constant reaction mode." , stats: { acceleration: -3, momentum: -2, handling: 2, upwind: 0, reach: 3, downwind: -4, boost: -1 } },
+    { name: 'Cheer', creature: 'Pom Pom Crab', hull: '#FF9ECF', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#FFFFFF', personality: "Cheerful and fun loving, always positive and enthuiastic.", archetype: 'metronome', stats: { acceleration: 2, momentum: -2, handling: 4, upwind: 1, reach: -2, downwind: -1, boost: 5 } },
+    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Relaxed veteran who instinctively finds perfect wind." , archetype: 'shift', stats: { acceleration: -2, momentum: -3, handling: -1, upwind: 0, reach: 1, downwind: 5, boost: -1 } },
+    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', personality: "Flashy opportunist thriving on speed bursts." , archetype: 'rocket', stats: { acceleration: 5, momentum: 0, handling: -4, upwind: 3, reach: -4, downwind: 3, boost: 2 } },
+    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', personality: "Awkward, unpredictable, deadly effective in chaos." , archetype: 'gambler', stats: { acceleration: 5, momentum: -1, handling: -2, upwind: -3, reach: 3, downwind: 0, boost: 4 } },
+    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', personality: "Aggressive bully dominating the starting line." , archetype: 'bully', stats: { acceleration: 1, momentum: -2, handling: 0, upwind: 2, reach: -1, downwind: -5, boost: 2 } },
+    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', personality: "Cold, relentless presence forcing others to react." , archetype: 'bully', stats: { acceleration: -5, momentum: -2, handling: -5, upwind: -3, reach: -3, downwind: 4, boost: 1 } },
+    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', personality: "Stylish confidence with daring, showy sailing." , archetype: 'metronome', stats: { acceleration: -3, momentum: -3, handling: -5, upwind: 5, reach: -2, downwind: 1, boost: 2 } },
+    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', personality: "Methodical and stubborn, grinding out advantages." , archetype: 'metronome', stats: { acceleration: 3, momentum: -3, handling: 3, upwind: 0, reach: 0, downwind: -4, boost: -3 } },
+    { name: 'Chomp', creature: 'Saltwater Crocodile', hull: '#2ECC71', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#C1B58A', personality: "Patient hunter striking without warning." , archetype: 'leech', stats: { acceleration: 4, momentum: 1, handling: -5, upwind: 5, reach: -3, downwind: 0, boost: 3 } },
+    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', personality: "Massive, steady, unbeatable in heavy conditions." , archetype: 'freight', stats: { acceleration: -2, momentum: 4, handling: 2, upwind: 0, reach: -5, downwind: 4, boost: -3 } },
+    { name: 'Vex', creature: 'Water Dragon', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', personality: "Slippery tactician exploiting tiny mistakes." , archetype: 'corner', stats: { acceleration: -3, momentum: -5, handling: 4, upwind: -4, reach: -5, downwind: 1, boost: 4 } },
+    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Chill vibes, relentless endurance." , archetype: 'metronome', stats: { acceleration: -3, momentum: 1, handling: 0, upwind: 5, reach: 2, downwind: 2, boost: 5 } },
+    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', personality: "Cheerful speedster seeking clean lanes." , archetype: 'shift', stats: { acceleration: -2, momentum: -1, handling: -3, upwind: 4, reach: -4, downwind: 5, boost: 5 } },
+    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', personality: "Defensive and stubborn off the line." , archetype: 'bully', stats: { acceleration: -5, momentum: 2, handling: -4, upwind: 4, reach: -5, downwind: -2, boost: 0 } },
+    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', personality: "Patient perfectionist who never blunders." , archetype: 'metronome', stats: { acceleration: -4, momentum: 3, handling: 2, upwind: 4, reach: 3, downwind: -5, boost: 2 } },
+    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', personality: "Silent dominance unleashed at full power." , archetype: 'freight', stats: { acceleration: 0, momentum: 5, handling: -5, upwind: 3, reach: 2, downwind: -2, boost: -3 } },
+    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', personality: "Erratic survivor thriving in congestion." , archetype: 'gambler', stats: { acceleration: -4, momentum: -3, handling: -3, upwind: -3, reach: 1, downwind: -2, boost: 5 } },
+    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', personality: "Pure speed and relentless pressure." , archetype: 'leech', stats: { acceleration: -2, momentum: -3, handling: -3, upwind: 5, reach: -5, downwind: 1, boost: -1 } },
+    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', personality: "Explosive starts, reckless aggression." , archetype: 'rocket', stats: { acceleration: 1, momentum: -5, handling: -3, upwind: -1, reach: 4, downwind: -1, boost: 4 } },
+    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', personality: "Effortlessly surfing invisible shifts." , archetype: 'shift', stats: { acceleration: 5, momentum: -5, handling: -4, upwind: 1, reach: 4, downwind: -5, boost: 0 } },
+    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', personality: "Trap-setting master of dirty air." , archetype: 'leech', stats: { acceleration: -1, momentum: 1, handling: -3, upwind: -2, reach: -1, downwind: -5, boost: 5 } },
+    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', personality: "Looks slow, impossible to pass." , archetype: 'freight', stats: { acceleration: -5, momentum: 3, handling: 3, upwind: 3, reach: -2, downwind: 4, boost: -4 } },
+    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', personality: "Surgical aggression at the worst moments." , archetype: 'bully', stats: { acceleration: 0, momentum: 4, handling: 5, upwind: -1, reach: 0, downwind: -1, boost: -1 } },
+    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Precise and unshakable in traffic." , archetype: 'metronome', stats: { acceleration: -2, momentum: 5, handling: 3, upwind: 5, reach: -4, downwind: 4, boost: -2 } },
+    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', personality: "Graceful wildcard favoring wide tactics." , archetype: 'gambler', stats: { acceleration: -4, momentum: -2, handling: 3, upwind: -5, reach: 5, downwind: 0, boost: 5 } },
+    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', personality: "Spiky defender denying easy lanes." , archetype: 'bully', stats: { acceleration: -5, momentum: 3, handling: -4, upwind: 3, reach: -1, downwind: 1, boost: -4 } },
+    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', personality: "Constantly sniffing out pressure." , archetype: 'shift', stats: { acceleration: 5, momentum: 5, handling: 2, upwind: 0, reach: -1, downwind: 0, boost: -1 } },
+    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', personality: "Harmless-looking, slips through gaps." , archetype: 'gambler', stats: { acceleration: -4, momentum: -5, handling: -5, upwind: -2, reach: -1, downwind: 4, boost: 4 } },
+    { name: 'Anchor', creature: 'Sea Turtle', hull: '#96C47A', spinnaker: '#ffd016', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Conservative, resilient, brutally consistent." , archetype: 'metronome', stats: { acceleration: 3, momentum: 5, handling: -2, upwind: -5, reach: 0, downwind: -2, boost: -1 } },
+    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', personality: "Hyperactive chaos opportunist." , archetype: 'rocket', stats: { acceleration: 4, momentum: 5, handling: 4, upwind: -3, reach: -4, downwind: -2, boost: 1 } },
+    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', personality: "Cerebral planner playing long games." , archetype: 'leech', stats: { acceleration: -2, momentum: -3, handling: 0, upwind: -3, reach: 0, downwind: 1, boost: -4 } },
+    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', personality: "Speed-first, consequences later." , archetype: 'rocket', stats: { acceleration: 2, momentum: -1, handling: 5, upwind: -5, reach: -1, downwind: 2, boost: -4 } },
+    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Quiet patience, strikes at perfect moments." , archetype: 'leech', stats: { acceleration: 4, momentum: -5, handling: -1, upwind: -5, reach: 4, downwind: 5, boost: 4 } },
+    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', personality: "Imposing calm daring mistakes." , archetype: 'freight', stats: { acceleration: 2, momentum: 4, handling: -3, upwind: -5, reach: -5, downwind: -2, boost: -1 } },
+    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', personality: "Elegant lane thief with ruthless timing." , archetype: 'corner', stats: { acceleration: -1, momentum: 3, handling: 5, upwind: 0, reach: 4, downwind: -4, boost: -2 } },
+    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', personality: "Flashy speed attacking on reaches." , archetype: 'rocket', stats: { acceleration: 1, momentum: -4, handling: 1, upwind: 4, reach: 0, downwind: -4, boost: -4 } },
+    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Lightning reactions and explosive starts." , archetype: 'rocket', stats: { acceleration: -3, momentum: 2, handling: -1, upwind: -3, reach: -5, downwind: -5, boost: 2 } },
+    { name: 'Splat', creature: 'Blobfish', hull: '#E7A6B4', spinnaker: '#6a1051', sail: '#FFFFFF', cockpit: '#CFC6CC', personality: "Looks doomed, but somehow always survives." , archetype: 'gambler', stats: { acceleration: -5, momentum: 0, handling: -3, upwind: 0, reach: -2, downwind: 0, boost: 1 } },
+    { name: 'Dart', creature: 'Kingfisher', hull: '#00C2FF', spinnaker: '#E5A051', sail: '#FFFFFF', cockpit: '#AEBFCC', personality: "pure speed, energetic, very competitive" , archetype: 'rocket', stats: { acceleration: 1, momentum: 4, handling: -3, upwind: -4, reach: 4, downwind: -2, boost: 5 } },
+    { name: 'Roll', creature: 'Harbor Seal', hull: '#7D8597', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#C3CAD3', personality: "Playful feints hiding brutal positioning skills." , archetype: 'corner', stats: { acceleration: -5, momentum: 4, handling: 5, upwind: -3, reach: 2, downwind: -1, boost: 4 } },
+    { name: 'Spike', creature: 'Narwhal', hull: '#6B7FD7', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#C5CED6', personality: "Majestic closer unleashing terrifying late-race surges." , archetype: 'freight', stats: { acceleration: 1, momentum: -2, handling: 1, upwind: -5, reach: 2, downwind: 1, boost: 3 } },
+    { name: 'Flicker', creature: 'Tern', hull: '#EE6C4D', spinnaker: '#E0FBFC', sail: '#000000', cockpit: '#C7CCD1', personality: "Constant repositioning, never predictable." , archetype: 'gambler', stats: { acceleration: 4, momentum: 3, handling: -2, upwind: -2, reach: 3, downwind: 0, boost: -1 } },
+    { name: 'Croak', creature: 'Bullfrog', hull: '#386641', spinnaker: '#A7C957', sail: '#FFFFFF', cockpit: '#BFC9B8', personality: "Patient swamp tactician lethal in shifts." , archetype: 'shift', stats: { acceleration: 3, momentum: -2, handling: -1, upwind: 4, reach: 1, downwind: 5, boost: 2 } },
+    { name: 'Snap', creature: 'Snapping Turtle', hull: '#4B5D23', spinnaker: '#ef3629', sail: '#000000', cockpit: '#B8B8A8', personality: "Grouchy, old salty sailor who likes to beat the young whippersnappers." , archetype: 'metronome', stats: { acceleration: -2, momentum: -4, handling: -4, upwind: 2, reach: 5, downwind: 2, boost: 5 } },
+    { name: 'Rift', creature: 'Moray Eel', hull: '#d4ff07', spinnaker: '#ff61df', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Lurks quietly, strikes savagely at marks." , archetype: 'corner', stats: { acceleration: -1, momentum: -3, handling: 2, upwind: 2, reach: 3, downwind: -4, boost: 2 } },
+    { name: 'Skerry', creature: 'Puffin', hull: '#FF5400', spinnaker: '#1D3557', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Fearless gap-threader thriving in traffic." , archetype: 'corner', stats: { acceleration: -2, momentum: 1, handling: -1, upwind: -3, reach: 3, downwind: 2, boost: -2 } },
+    { name: 'Crush', creature: 'Mantis Shrimp', hull: '#00F5D4', spinnaker: '#F15BB5', sail: '#000000', cockpit: '#CFC7DC', personality: "Explosive reactions with devastating timing." , archetype: 'corner', stats: { acceleration: -4, momentum: -5, handling: 1, upwind: 1, reach: -3, downwind: -5, boost: 0 } },
+    { name: 'Torrent', creature: 'Swordfish', hull: '#083fa6', spinnaker: '#D62828', sail: '#FFFFFF', cockpit: '#8D99AE', personality: "Straight-line dominance with brutal acceleration." , archetype: 'rocket', stats: { acceleration: 5, momentum: -2, handling: 1, upwind: 1, reach: -1, downwind: -2, boost: 2 } },
+    { name: 'Jester', creature: 'Clownfish', hull: '#ffa000', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#f4f4f4', personality: "Cheerful chaos masking shrewd cunning." , archetype: 'leech', stats: { acceleration: 1, momentum: 3, handling: 2, upwind: -3, reach: 0, downwind: 5, boost: -1 } },
+    { name: 'Breeze', creature: 'Nudibranch', hull: '#000080', spinnaker: '#ff3fa7', sail: '#FFFFFF', cockpit: '#D6D6DC', personality: "Chill, stylish, always finds unexpected pressure." , archetype: 'shift', stats: { acceleration: -4, momentum: 4, handling: -2, upwind: -3, reach: 4, downwind: 1, boost: 5 } },
+    { name: 'Petal', creature: 'Roseate Spoonbill', hull: '#FF6FAE', spinnaker: '#1a3685', sail: '#FFFFFF', cockpit: '#e6e6e6', personality: "Elegant lane snatcher with impeccable timing." , archetype: 'corner', stats: { acceleration: -3, momentum: 3, handling: 1, upwind: -5, reach: -1, downwind: 3, boost: 4 } },
+    { name: 'Stomp', creature: 'Blue-Footed Booby', hull: '#00B4D8', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Clumsy confidence hiding fearless lane attacks." , archetype: 'bully', stats: { acceleration: 5, momentum: -3, handling: 4, upwind: 3, reach: 2, downwind: 0, boost: 1 } },
+    { name: 'Crimson', creature: 'Red Snapper', hull: '#ed1515', spinnaker: '#2643E9', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Calm, surgical tactician striking at perfect moments." , archetype: 'leech', stats: { acceleration: -1, momentum: -3, handling: 4, upwind: 1, reach: -2, downwind: -2, boost: 5 } },
+    { name: 'Viper', creature: 'Green Tree Snake', hull: '#49c100', spinnaker: '#FF1E1E', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Hyper-alert ambusher striking instantly from perfect angles." , archetype: 'corner', stats: { acceleration: -3, momentum: -2, handling: -2, upwind: -5, reach: -1, downwind: -5, boost: 3 } },
+    { name: 'Skitter', creature: 'Mudskipper', hull: '#e33d28', spinnaker: '#15f121', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Erratic bursts, impossible angles, constant pressure." , archetype: 'gambler', stats: { acceleration: 1, momentum: -4, handling: -2, upwind: 1, reach: -1, downwind: 5, boost: -2 } },
+    { name: 'Veil', creature: 'Vampire Squid', hull: '#7A1FA2', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Calm, shadowy predator striking without warning." , archetype: 'leech', stats: { acceleration: -1, momentum: -4, handling: -5, upwind: -1, reach: 3, downwind: -1, boost: -4 } },
+    { name: 'Puff', creature: 'Mandarin Dragonet', hull: '#0032ff', spinnaker: '#E17638', sail: '#62e517', cockpit: '#17b3f2', personality: "Super chill vibes, effortless flow, always smiling." , archetype: 'freight', stats: { acceleration: 2, momentum: 4, handling: 0, upwind: 1, reach: 0, downwind: -3, boost: 4 } },
+    { name: 'Lure', creature: 'Anglerfish', hull: '#0B0F1A', spinnaker: '#6AFF3D', sail: '#F5F7FA', cockpit: '#2E3440', personality: "Patient darkness, sudden lethal strikes." , archetype: 'freight', stats: { acceleration: -4, momentum: 5, handling: 0, upwind: -2, reach: 4, downwind: -5, boost: 2 } },
+    { name: 'Wiggle', creature: 'Axolotl', hull: '#FFFFFF', spinnaker: '#FF4FA3', sail: '#BDEFFF', cockpit: '#D1D7DB', personality: "Cute chaos, surprisingly competitive." , archetype: 'gambler', stats: { acceleration: 2, momentum: 1, handling: -5, upwind: -3, reach: 3, downwind: 3, boost: -3 } },
+    { name: 'Zeffir', creature: 'Seagull', hull: '#FFFFFF', spinnaker: '#FF7A00', sail: '#FFFFFF', cockpit: '#D1D7DB', personality: "Always lifted, always smiling." , archetype: 'shift', stats: { acceleration: 4, momentum: 1, handling: -1, upwind: 1, reach: 2, downwind: -4, boost: 2 } },
+    { name: 'Scoop', creature: 'Pelican', hull: '#D8C6A3', spinnaker: '#5499dc', sail: '#FFFFFF', cockpit: '#e6e6e6', personality: "Big moves, surprisingly precise." , archetype: 'metronome', stats: { acceleration: -4, momentum: -1, handling: 1, upwind: 4, reach: -4, downwind: -1, boost: 2 } },
+    { name: 'Popper', creature: 'Pufferfish', hull: '#FFD84D', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Defensive chaos, punishes reckless pressure." , archetype: 'bully', stats: { acceleration: -3, momentum: 2, handling: -2, upwind: -4, reach: -3, downwind: 0, boost: 0 } },
+    { name: 'Frond', creature: 'Leafy Seadragon', hull: '#5FAF6E', spinnaker: '#FF8C42', sail: '#F3FFF9', cockpit: '#BFCFC4', personality: "Graceful drifter, impossible to read." , archetype: 'shift', stats: { acceleration: -4, momentum: -2, handling: -3, upwind: 2, reach: 2, downwind: 5, boost: 5 } },
+    { name: 'Bulkhead', creature: 'Elephant Seal', hull: '#6B7280', spinnaker: '#FF7A00', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Massive momentum, awkward turns, impossible to stop." , archetype: 'freight', stats: { acceleration: -3, momentum: -2, handling: 2, upwind: 3, reach: -1, downwind: -5, boost: 5 } },
+    { name: 'Slipstream', creature: 'Salmon', hull: '#B6BCC6', spinnaker: '#E94B4B', sail: '#FFFFFF', cockpit: '#41c617', personality: "Relentless endurance, explosive late surges." , archetype: 'freight', stats: { acceleration: 5, momentum: 3, handling: 1, upwind: 1, reach: -3, downwind: -5, boost: -1 } },
+    { name: 'Blaze', creature: 'Mako Shark', hull: '#1F3C5B', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Blisteringly fast attacker forcing races into constant reaction mode." , archetype: 'bully', stats: { acceleration: -3, momentum: -2, handling: 2, upwind: 0, reach: 3, downwind: -4, boost: -1 } },
 ];
 
 
@@ -1749,6 +1899,11 @@ class Boat {
         this.playerProximity = { minD: Infinity, close: false };
         this.lbRank = 0;
         this.creature = config ? (config.creature || "Unknown") : "Unknown";
+        // Racing archetype persona (see ARCHETYPES). Player and unknown configs
+        // get pure defaults = the baseline fleet behavior.
+        this.archetype = (config && config.archetype) || null;
+        const archDef = this.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[this.archetype] : null;
+        this.traits = Object.assign({}, DEFAULT_TRAITS, archDef ? archDef.traits : {});
         this.prevRank = 0;
     }
 }
@@ -2923,11 +3078,31 @@ function setupPreRaceOverlay() {
             let pText = config ? config.personality : "Unknown";
 
             const desc = document.createElement('div');
-            desc.className = "text-xs text-slate-300 italic leading-snug line-clamp-3"; // Allow more lines
+            desc.className = "text-xs text-slate-300 italic leading-snug line-clamp-2";
             desc.textContent = pText;
 
             info.appendChild(nameRow);
             info.appendChild(desc);
+
+            // Racing archetype: style badge + threat/weakness scouting report
+            const archDef = config && config.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[config.archetype] : null;
+            if (archDef) {
+                const badge = document.createElement('div');
+                badge.className = "text-[10px] font-black uppercase tracking-widest text-amber-300 mt-1";
+                badge.textContent = archDef.label;
+
+                const threat = document.createElement('div');
+                threat.className = "text-[11px] text-red-300 leading-snug";
+                threat.textContent = "⚠ " + archDef.threat;
+
+                const weak = document.createElement('div');
+                weak.className = "text-[11px] text-emerald-300 leading-snug";
+                weak.textContent = "◎ " + archDef.weakness;
+
+                info.appendChild(badge);
+                info.appendChild(threat);
+                info.appendChild(weak);
+            }
 
             card.appendChild(imgContainer);
             card.appendChild(info);
@@ -3541,15 +3716,15 @@ function getCharacterOptimalVMGAngle(mode, windSpeed, stats) {
         // Apply point-of-sail stat modifiers (same as physics lines 3687-3709)
         let posStat = 0;
         if (a <= 60) {
-            posStat = stats.upwind * 0.008;
+            posStat = stats.upwind * 0.012;
         } else if (a >= 145) {
-            posStat = stats.downwind * 0.01;
+            posStat = stats.downwind * 0.015;
         } else if (a < 102.5) {
             const t = (a - 60) / (102.5 - 60);
-            posStat = stats.upwind * 0.008 + t * (stats.reach * 0.012 - stats.upwind * 0.008);
+            posStat = stats.upwind * 0.012 + t * (stats.reach * 0.018 - stats.upwind * 0.012);
         } else {
             const t = (a - 102.5) / (145 - 102.5);
-            posStat = stats.reach * 0.012 + t * (stats.downwind * 0.01 - stats.reach * 0.012);
+            posStat = stats.reach * 0.018 + t * (stats.downwind * 0.015 - stats.reach * 0.018);
         }
         boatSpeed *= (1.0 + posStat);
 
@@ -3934,9 +4109,9 @@ function updateBoat(boat, dt) {
     // TWA is in degrees (twaDeg)
     let speedStat = 0;
     if (twaDeg <= 60) {
-        speedStat = boat.stats.upwind * 0.008; // 4% / 5 = 0.008
+        speedStat = boat.stats.upwind * 0.012; // 6% max at +/-5
     } else if (twaDeg >= 145) {
-        speedStat = boat.stats.downwind * 0.01; // 5% / 5 = 0.01
+        speedStat = boat.stats.downwind * 0.015; // 7.5% max at +/-5
     } else {
         // Linear Interpolation
         // Reach peak assumed at (60+145)/2 = 102.5?
@@ -3944,18 +4119,21 @@ function updateBoat(boat, dt) {
         // Or simpler: Calculate blend weights.
         if (twaDeg < 102.5) {
             const t = (twaDeg - 60) / (102.5 - 60);
-            const s1 = boat.stats.upwind * 0.008;
-            const s2 = boat.stats.reach * 0.012; // 6% / 5 = 0.012
+            const s1 = boat.stats.upwind * 0.012;
+            const s2 = boat.stats.reach * 0.018; // 9% max at +/-5
             speedStat = s1 + t * (s2 - s1);
         } else {
             const t = (twaDeg - 102.5) / (145 - 102.5);
-            const s1 = boat.stats.reach * 0.012;
-            const s2 = boat.stats.downwind * 0.01;
+            const s1 = boat.stats.reach * 0.018;
+            const s2 = boat.stats.downwind * 0.015;
             speedStat = s1 + t * (s2 - s1);
         }
     }
     // Apply multiplier
     targetKnots *= (1.0 + speedStat);
+
+    // Archetype identity tax (e.g. shift-whisperers are slow in a straight line)
+    if (boat.traits && boat.traits.speedScale !== 1.0) targetKnots *= boat.traits.speedScale;
 
     let targetGameSpeed = targetKnots * 0.25;
 
