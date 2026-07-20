@@ -1,6 +1,10 @@
 // Game Configuration
 const CONFIG = {
-    turnSpeed: 0.01, // Radians per frame (approx) -> adjusted for dt in update
+    turnSpeed: 0.015, // Radians per frame (~51°/s at full authority). Deliberately
+                      // ~50% above realistic keelboat rates: on a 3-4 min compressed
+                      // course, responsiveness (crash tacks, duck-or-die calls) beats
+                      // realism — and it measured faster AND cleaner for the AI fleet
+                      // (race -7s, mark hits -55%). Fine trim stays on Shift (0.25x).
     turnPenalty: 0.9999,
     cameraPanSpeed: 1.25,
     cameraRotateSpeed: 0.01,
@@ -1708,6 +1712,11 @@ const J111_PLANING = {
 };
 
 // Physics Helper Functions
+function getTurnSpeed() {
+    const PH = (typeof window !== 'undefined' && window.__PHYS) ? window.__PHYS : {};
+    return PH.turnSpeed != null ? PH.turnSpeed : CONFIG.turnSpeed;
+}
+
 function normalizeAngle(angle) {
     while (angle > Math.PI) angle -= 2 * Math.PI;
     while (angle < -Math.PI) angle += 2 * Math.PI;
@@ -3809,7 +3818,7 @@ function updateAI(boat, dt) {
 
     // Smooth turn
     const diff = normalizeAngle(target - boat.heading);
-    let aiTurnRate = CONFIG.turnSpeed * timeScale;
+    let aiTurnRate = getTurnSpeed() * timeScale;
 
     // Apply Handling Stat (AI)
     // +/- 15% -> 3% per point
@@ -3820,7 +3829,7 @@ function updateAI(boat, dt) {
 
     // Wiggle / Force Mode: Super Steering (overrides steerage to break free)
     if (boat.controller && boat.controller.wiggleActive) {
-        aiTurnRate = CONFIG.turnSpeed * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
+        aiTurnRate = getTurnSpeed() * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
     }
 
     // If very far off, turn faster?
@@ -3891,7 +3900,7 @@ function updateBoat(boat, dt) {
         // Player Input
         // Apply Handling Stat (Player)
         const handlingMod = (1.0 + boat.stats.handling * 0.03);
-        const turnRate = (state.keys.Shift ? CONFIG.turnSpeed * 0.25 : CONFIG.turnSpeed) * timeScale * handlingMod * steerageFactor(boat);
+        const turnRate = (state.keys.Shift ? getTurnSpeed() * 0.25 : getTurnSpeed()) * timeScale * handlingMod * steerageFactor(boat);
         if (state.keys.ArrowLeft) boat.heading -= turnRate;
         if (state.keys.ArrowRight) boat.heading += turnRate;
     }

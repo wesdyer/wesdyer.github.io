@@ -5,10 +5,9 @@ const fs = require('fs'); const path = require('path');
 const A = process.argv.slice(2);
 const NUM = parseInt(A[0]) || 12, BASE = parseInt(A[1]) || 100;
 const CONFIGS = [
-  { label: 'turn0(base)', nav: {} },
-  { label: 'turn80p', nav: { roundTurn: 80 } },
-  { label: 'turn140p', nav: { roundTurn: 140 } },
-  { label: 'turn200p', nav: { roundTurn: 200 } },
+  { label: 'ts0.010(base)', nav: {}, phys: {} },
+  { label: 'ts0.0133(+33%)', nav: {}, phys: { turnSpeed: 0.0133 } },
+  { label: 'ts0.015(+50%)', nav: {}, phys: { turnSpeed: 0.015 } },
 ];
 (async () => {
   const browser = await chromium.launch();
@@ -18,8 +17,9 @@ const CONFIGS = [
   await page.addScriptTag({ content: fs.readFileSync('regatta/eval/eval_harness.js', 'utf8') });
   console.log('config'.padEnd(16) + 'race'.padEnd(8) + 'med'.padEnd(8) + 'max'.padEnd(8) + 'start'.padEnd(7) + 'pen'.padEnd(6) + 'cM'.padEnd(6) + 'cB'.padEnd(6) + 'rnd1'.padEnd(6) + 'rnd2'.padEnd(6) + 'rnd3'.padEnd(6) + 'dnf');
   for (const cfg of CONFIGS) {
-    const out = await page.evaluate(({ NUM, BASE, nav }) => {
+    const out = await page.evaluate(({ NUM, BASE, nav, phys }) => {
       window.__NAV = nav;
+      window.__PHYS = phys || {};
       const finish = [], starts = []; let pen = 0, cM = 0, cB = 0, dnf = 0, n = 0;
       const rounds = { 1: [], 2: [], 3: [] };
       for (let i = 0; i < NUM; i++) {
@@ -62,7 +62,7 @@ const CONFIGS = [
         });
       }
       return { finish, starts, pen, cM, cB, dnf, n, rounds };
-    }, { NUM, BASE, nav: cfg.nav });
+    }, { NUM, BASE, nav: cfg.nav, phys: cfg.phys });
     const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
     const med = a => { if (!a.length) return 0; const s = [...a].sort((x, y) => x - y); return s[Math.floor(s.length / 2)]; };
     const mx = a => a.length ? Math.max(...a) : 0;
