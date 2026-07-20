@@ -4023,10 +4023,20 @@ function updateBoat(boat, dt) {
     // Irons Penalty (Extra drag when head-to-wind)
     // angleToWind is in radians. 0.5 rad is approx 28 degrees.
     if (angleToWind < 0.5) {
-        // Apply stronger drag deep in irons to maintain tacking difficulty
-        // despite higher inertia. Reduced from 0.993 to 0.997 to be less punitive.
-        // User Request: Make luffing a "real brake" -> increased penalty to 0.994 (Balanced)
-        boat.speed *= Math.pow(0.994, timeScale);
+        // Momentum-aware: a slow boat parked head-to-wind gets the full "real
+        // brake" (0.994/frame, ~-30%/s — deliberate, for prestart holds and
+        // shoots), but a boat CARRYING WAY through a tack coasts on momentum
+        // (real keelboats exit a tack at ~70-80% speed, not ~40%). Blend from
+        // the full brake at <=3kn up to a light one at >=6kn. Flat 0.994 for
+        // everyone measured 59% median tack loss vs ~25% real.
+        const PH = (typeof window !== 'undefined' && window.__PHYS) ? window.__PHYS : {};
+        const ironsHi = PH.ironsHi != null ? PH.ironsHi : 0.998;
+        const bandLo = PH.bandLo != null ? PH.bandLo : 1.5;
+        const bandHi = PH.bandHi != null ? PH.bandHi : 4.0;
+        const kn = boat.speed * 4;
+        const carry = Math.min(1, Math.max(0, (kn - bandLo) / (bandHi - bandLo)));
+        const ironsBase = 0.994 + (ironsHi - 0.994) * carry;
+        boat.speed *= Math.pow(ironsBase, timeScale);
     }
 
     // Rudder drag
