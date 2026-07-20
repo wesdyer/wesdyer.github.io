@@ -447,7 +447,8 @@ class BotController {
 
                 if (boat.raceState.ocs) {
                     // Over early — dip back below the line at our lane to clear OCS.
-                    const distBack = (this.livenessState === 'normal') ? 90 : 130;
+                    const ocsBase = (typeof window !== 'undefined' && window.__START && window.__START.ocsback != null) ? window.__START.ocsback : 55;
+                    const distBack = (this.livenessState === 'normal') ? ocsBase : ocsBase + 40;
                     destX = laneX - Math.sin(wd) * distBack;
                     destY = laneY + Math.cos(wd) * distBack;
                 } else if (dot > 5) {
@@ -462,9 +463,45 @@ class BotController {
                     destY = laneY - Math.cos(wd) * distPast;
                 }
             } else {
-                // RACE LEGS
-                destX = (m1.x + m2.x) / 2;
-                destY = (m1.y + m2.y) / 2;
+                // RACE LEGS — approach the gate at a chosen END, not the centre.
+                // Completing legs 1..totalLegs-1 requires crossing the segment AND
+                // rounding a gate mark (crossing its outward extension back), so a
+                // centre approach on a wide gate costs ~half the gate width in pure
+                // lateral sailing after crossing. Aim just inside the chosen mark.
+                // The finish (leg === totalLegs) completes on any segment crossing,
+                // so aim at the nearest point on the line.
+                const gDx = m2.x - m1.x, gDy = m2.y - m1.y;
+                const gLen = Math.hypot(gDx, gDy) || 1;
+                const NAV = (typeof window !== 'undefined' && window.__NAV) ? window.__NAV : {};
+
+                if (leg === state.race.totalLegs) {
+                    let t = ((boat.x - m1.x) * gDx + (boat.y - m1.y) * gDy) / (gLen * gLen);
+                    t = Math.max(0.08, Math.min(0.92, t));
+                    destX = m1.x + gDx * t;
+                    destY = m1.y + gDy * t;
+                } else if (NAV.mode === 'center' || (leg % 2 === 0 && NAV.insetDown == null)) {
+                    // Downwind legs approach the gate at the CENTRE — measured
+                    // faster and cleaner than end-targeting (boats arrive spread
+                    // out and pick a mark late, rounding whichever is nearest).
+                    destX = (m1.x + m2.x) / 2;
+                    destY = (m1.y + m2.y) / 2;
+                } else {
+                    // Upwind legs: choose a gate end once per leg (nearest at leg
+                    // entry) and stick with it — re-choosing mid-beat wanders.
+                    if (!this.gateChoice || this.gateChoice.leg !== leg) {
+                        const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
+                        const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
+                        this.gateChoice = { leg, idx: d1 <= d2 ? 0 : 1 };
+                    }
+                    const chosen = this.gateChoice.idx === 0 ? m1 : m2;
+                    const isBeat = leg % 2 !== 0;
+                    let insetRaw = NAV.inset != null ? NAV.inset : 240;
+                    if (!isBeat && NAV.insetDown != null) insetRaw = NAV.insetDown;
+                    const inset = Math.min(insetRaw, gLen * 0.45);
+                    const inSign = this.gateChoice.idx === 0 ? 1 : -1;
+                    destX = chosen.x + (gDx / gLen) * inset * inSign;
+                    destY = chosen.y + (gDy / gLen) * inset * inSign;
+                }
 
                 // Missed Gate Check
                 const gateDx = m2.x - m1.x;
@@ -492,6 +529,7 @@ class BotController {
 
             // Rounding Bias
             if (boat.raceState.isRounding) {
+                const roundOff = (typeof window !== 'undefined' && window.__NAV && window.__NAV.roundOff != null) ? window.__NAV.roundOff : 65;
                 const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
                 const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
                 const mark = (d1 < d2) ? m1 : m2;
@@ -499,8 +537,8 @@ class BotController {
                 const dy = mark.y - (m1.y+m2.y)/2;
                 const len = Math.sqrt(dx*dx+dy*dy);
                 if (len > 0) {
-                    destX = mark.x + (dx/len) * 65;
-                    destY = mark.y + (dy/len) * 65;
+                    destX = mark.x + (dx/len) * roundOff;
+                    destY = mark.y + (dy/len) * roundOff;
                 }
             }
         }
@@ -823,15 +861,25 @@ class BotController {
         // If we are on Starboard, and Port tack COG points at target, we should tack.
         const otherTackHeading = (preferredHeading === hStarboard) ? hPort : hStarboard;
 
-        // Calculate COG for other tack
-        let otherCog = otherTackHeading;
+        // Calculate COG for other tack — include leeway (mirrors scoreTack) so we
+        // call the layline on our true crabbed track, not our heading. Tacking on
+        // the heading line leaves us to leeward of the mark, pinching to fetch.
+        let otherLeewayHeading = otherTackHeading;
+        const otherTwa = normalizeAngle(otherTackHeading - wd);
+        if (Math.abs(otherTwa) < Math.PI * 0.5 && boat.speed > 0.05) {
+            const spdK = Math.max(1.5, boat.speed / 0.25);
+            const shape = 1.0 - Math.abs(otherTwa) / (Math.PI * 0.5);
+            const lwDeg = Math.min(3.0, 3.0 * shape * (localWind.speed / 12) * (12 / (spdK * spdK)));
+            otherLeewayHeading = normalizeAngle(otherTackHeading + (lwDeg * Math.PI / 180) * (Math.sign(otherTwa) || 1));
+        }
+        let otherCog = otherLeewayHeading;
         if (current && current.speed > 0.1) {
              // ... same COG math ...
              const cSpeed = current.speed / 4.0;
              const cDir = current.direction;
              const bSpeed = Math.max(1.0, boat.speed);
-             const vx = Math.sin(otherTackHeading)*bSpeed + Math.sin(cDir)*cSpeed;
-             const vy = -Math.cos(otherTackHeading)*bSpeed - Math.cos(cDir)*cSpeed;
+             const vx = Math.sin(otherLeewayHeading)*bSpeed + Math.sin(cDir)*cSpeed;
+             const vy = -Math.cos(otherLeewayHeading)*bSpeed - Math.cos(cDir)*cSpeed;
              otherCog = Math.atan2(vx, -vy);
         }
         
@@ -935,7 +983,7 @@ class BotController {
         const STAGE = P.stage != null ? P.stage : (this.startStageDepth || 60);
         const PAST = P.past != null ? P.past : 70;   // how far past the line to aim
         const OVER = P.over != null ? P.over : 10;   // perp over which we are over-early
-        const BUF = P.buf != null ? P.buf : 1.0;     // crossing-run buffer
+        const BUF = P.buf != null ? P.buf : 0.5;     // crossing-run buffer (higher = commit earlier; >1 measured to raise OCS sharply)
         const cosT = Math.cos(0.7);
 
         const aimX = targetX + Math.sin(wd) * PAST;     // up through our lane
@@ -945,7 +993,8 @@ class BotController {
 
         // OCS recovery (flagged over early) — dip back below the line in our lane.
         if (boat.raceState.ocs) {
-            return { target: { x: targetX - Math.sin(wd) * 110, y: targetY + Math.cos(wd) * 110 }, speed: 1.0 };
+            const OCSBACK = P.ocsback != null ? P.ocsback : 55; // just past the -40 OCS-clear plane; deeper dips measured slower
+            return { target: { x: targetX - Math.sin(wd) * OCSBACK, y: targetY + Math.cos(wd) * OCSBACK }, speed: 1.0 };
         }
 
         // Gun fired — full speed up our lane.
