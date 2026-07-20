@@ -5,10 +5,10 @@ const fs = require('fs'); const path = require('path');
 const A = process.argv.slice(2);
 const NUM = parseInt(A[0]) || 12, BASE = parseInt(A[1]) || 100;
 const CONFIGS = [
-  { label: 'default(180)', nav: {} },
-  { label: 'inset240', nav: { inset: 240 } },
-  { label: 'inset300', nav: { inset: 300 } },
-  { label: 'inset120', nav: { inset: 120 } },
+  { label: 'turn0(base)', nav: {} },
+  { label: 'turn80p', nav: { roundTurn: 80 } },
+  { label: 'turn140p', nav: { roundTurn: 140 } },
+  { label: 'turn200p', nav: { roundTurn: 200 } },
 ];
 (async () => {
   const browser = await chromium.launch();

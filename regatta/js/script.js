@@ -124,6 +124,8 @@ function getRiskMetrics(boat, other) {
 
     // Relative Velocity (units/sec)
     // boat.velocity is updated in updateBoat, but if it's not ready, estimate from heading/speed
+    // NOTE: heading-based on purpose — using actual velocity vectors (leeway/current)
+    // was tested and REGRESSED (risk flaps during turning transients; race +3.5s, collisions +64%).
     const vx1 = (Math.sin(boat.heading) * boat.speed) * 60;
     const vy1 = (-Math.cos(boat.heading) * boat.speed) * 60;
 
@@ -529,7 +531,9 @@ class BotController {
 
             // Rounding Bias
             if (boat.raceState.isRounding) {
-                const roundOff = (typeof window !== 'undefined' && window.__NAV && window.__NAV.roundOff != null) ? window.__NAV.roundOff : 65;
+                const NAVR = (typeof window !== 'undefined' && window.__NAV) ? window.__NAV : {};
+                const roundOff = NAVR.roundOff != null ? NAVR.roundOff : 65;
+                const roundTurn = NAVR.roundTurn != null ? NAVR.roundTurn : 80;
                 const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
                 const d2 = (boat.x - m2.x)**2 + (boat.y - m2.y)**2;
                 const mark = (d1 < d2) ? m1 : m2;
@@ -539,6 +543,21 @@ class BotController {
                 if (len > 0) {
                     destX = mark.x + (dx/len) * roundOff;
                     destY = mark.y + (dy/len) * roundOff;
+                    if (roundTurn) {
+                        // Pull the exit point onto the NEXT leg so the boat carves
+                        // around the mark instead of swinging a wide lateral arc:
+                        // beats exit heading downwind, runs exit heading upwind.
+                        // ONLY once the boat is laterally beyond the mark — pulling
+                        // earlier makes it descend across the gate segment, which
+                        // ABORTS the rounding and loops it back (measured: DNFs).
+                        const past = (boat.x - mark.x) * (dx/len) + (boat.y - mark.y) * (dy/len);
+                        if (past > 15) {
+                            const wdr = state.wind.direction;
+                            const sgn = (leg % 2 !== 0) ? -1 : 1;
+                            destX += Math.sin(wdr) * roundTurn * sgn;
+                            destY -= Math.cos(wdr) * roundTurn * sgn;
+                        }
+                    }
                 }
             }
         }
@@ -1146,6 +1165,10 @@ class BotController {
         let bestHeading = desiredHeading;
         let minCost = Infinity;
 
+        // NOTE: leeway-aware candidate projection and an in-irons candidate
+        // penalty were both tested here and REGRESSED (see memory: Round 10) —
+        // avoidance predictions must stay heading-based and hold-friendly.
+
         // Dynamic Safe Distance based on Liveness
         let safeDist = 80; // 40 radius * 2 (Normal)
 
@@ -1178,7 +1201,7 @@ class BotController {
             
             // Base Cost: Deviation from desired course
             // Non-linear cost to strongly prefer small deviations
-            let cost = Math.pow(Math.abs(offset), 1.5) * 10; 
+            let cost = Math.pow(Math.abs(offset), 1.5) * 10;
 
             // RRS Rule 16/14: Stand-on boat holds course...
             // but Rule 14 requires evasive action when "it becomes clear

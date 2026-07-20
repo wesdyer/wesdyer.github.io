@@ -5,11 +5,10 @@ const fs = require('fs'); const path = require('path');
 const A = process.argv.slice(2);
 const NUM = parseInt(A[0]) || 25, BASE = parseInt(A[1]) || 100;
 const CONFIGS = [
-  { label: 'base(buf1)', st: {} },
-  { label: 'buf0.5', st: { buf: 0.5 } },
-  { label: 'buf0', st: { buf: 0.0 } },
-  { label: 'ocsback55', st: { ocsback: 55 } },
-  { label: 'buf0.5/ocs55', st: { buf: 0.5, ocsback: 55 } },
+  { label: 'off/off', st: {}, nav: { avdLee: 0, irons: 0 } },
+  { label: 'lee-only', st: {}, nav: { irons: 0 } },
+  { label: 'irons-only', st: {}, nav: { avdLee: 0 } },
+  { label: 'both', st: {}, nav: {} },
 ];
 (async () => {
   const browser = await chromium.launch();
@@ -21,6 +20,7 @@ const CONFIGS = [
     const results = [];
     for (const cfg of CONFIGS) {
       window.__START = Object.assign({}, cfg.st);
+      window.__NAV = Object.assign({}, cfg.nav);
       const starts = [], pens = [], collB = [], collM = [];
       let dns = 0, nb = 0, ocsCount = 0;
       for (let i = 0; i < NUM; i++) {
