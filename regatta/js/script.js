@@ -380,6 +380,47 @@ class BotController {
             speedRequest = startCmd.speed;
         }
 
+        // 3.5 One-Turn Penalty execution: when flagged, find a moment with sea
+        // room and spiral through a full 360°. Start conditions: racing leg,
+        // no boat within 160u (or the deadline has passed — take it anyway),
+        // and no imminent threat. Once spinning, commit; pause only for an
+        // IMMINENT collision (accumulator keeps net progress across pauses).
+        const rsP = this.boat.raceState;
+        if (rsP.penalty && isRacing && rsP.leg >= 1 && !rsP.finished) {
+            if (!this.penaltySpin) {
+                let nearest = Infinity;
+                for (const other of state.boats) {
+                    if (other === this.boat || other.raceState.finished) continue;
+                    const d2 = (other.x - this.boat.x) ** 2 + (other.y - this.boat.y) ** 2;
+                    if (d2 < nearest) nearest = d2;
+                }
+                // Never start a spiral near a mark: fouls cluster at roundings,
+                // and a 360 swept there hits the mark (fresh foul, loop risk).
+                let markNear = false;
+                if (state.course.marks) {
+                    for (const m of state.course.marks) {
+                        if ((m.x - this.boat.x) ** 2 + (m.y - this.boat.y) ** 2 < 220 * 220) { markNear = true; break; }
+                    }
+                }
+                const clear = nearest > 120 * 120;
+                const deadline = rsP.penaltyFlagTime > 12;
+                if (!markNear && (clear || deadline) && this.riskState !== 'IMMINENT' && this.riskState !== 'HIGH') {
+                    // Spin away from the nearest boat's side; default starboard-round.
+                    this.penaltySpin = true;
+                    this.penaltySpinDir = (rsP.penaltyRot !== 0) ? Math.sign(rsP.penaltyRot) : 1;
+                }
+            }
+            if (this.penaltySpin && this.riskState !== 'IMMINENT') {
+                desiredHeading = normalizeAngle(this.boat.heading + this.penaltySpinDir * 1.2);
+                speedRequest = 1.0;
+                this.targetHeading = desiredHeading;
+                this.speedLimit = speedRequest;
+                return; // committed: skip avoidance while spiraling in clear water
+            }
+        } else if (this.penaltySpin) {
+            this.penaltySpin = false; // cleared (or race state changed) — resume racing
+        }
+
         // 4. Collision Avoidance (Reactive Layer)
         // Adjust desiredHeading to avoid immediate threats
         desiredHeading = this.applyAvoidance(desiredHeading, speedRequest);
@@ -553,8 +594,8 @@ class BotController {
             // Rounding Bias
             if (boat.raceState.isRounding) {
                 const NAVR = (typeof window !== 'undefined' && window.__NAV) ? window.__NAV : {};
-                const cScale = boat.traits ? boat.traits.cornerScale : 1;
-                const roundOff = (NAVR.roundOff != null ? NAVR.roundOff : 65) * cScale;
+                const cRound = boat.traits ? (boat.traits.cornerRound != null ? boat.traits.cornerRound : 1) : 1;
+                const roundOff = (NAVR.roundOff != null ? NAVR.roundOff : 65) * cRound;
                 const tTurn = boat.traits ? boat.traits.roundTurn : null;
                 const roundTurn = NAVR.roundTurn != null ? NAVR.roundTurn : (tTurn != null ? tTurn : 80);
                 const d1 = (boat.x - m1.x)**2 + (boat.y - m1.y)**2;
@@ -1499,20 +1540,23 @@ const WIND_CONFIG = {
 //   shiftSense   x      multiplier on the lift/header tack bonus
 //   windFast     x      multiplier on the wind-tracker EMA rate (faster read)
 //   pressureSense x     multiplier on the pressure-seeking bonus
-//   cornerScale  x      multiplier on gate approach inset + rounding offset (<1 = tighter)
+//   cornerScale  x      multiplier on gate approach inset (<1 = aims closer to the mark)
+//   cornerRound  x      multiplier on the rounding offset — KEEP >= 1.0 unless you
+//                       want mark contact; tight offsets clip the mark, and with
+//                       turn-penalties each clip costs a ~15-25s spiral episode
 //   sideCommit   0/1    gambler: pick a side of the beat per leg and bang it
 //   cover        0..1   leech: bonus for matching the nearest rival's tack
 //   laylineTight x      multiplier on the layline trigger window (<1 = calls it later/closer)
 //   speedScale   x      multiplier on boatspeed (identity tax — keep within 0.97..1.0)
 //   roundTurn    u|null  override of the rounding carve pull (fleet default 80)
-const DEFAULT_TRAITS = { aggro: 0, startBufAdj: 0, shiftSense: 1.0, windFast: 1.0, pressureSense: 1.0, cornerScale: 1.0, sideCommit: 0, cover: 0, laylineTight: 1.0, speedScale: 1.0, roundTurn: null };
+const DEFAULT_TRAITS = { aggro: 0, startBufAdj: 0, shiftSense: 1.0, windFast: 1.0, pressureSense: 1.0, cornerScale: 1.0, cornerRound: 1.0, sideCommit: 0, cover: 0, laylineTight: 1.0, speedScale: 1.0, roundTurn: null };
 
 const ARCHETYPES = {
     bully: {
         label: 'Line Bully',
         threat: 'Crowds rivals into flinching first — gives you no room at the start or in traffic.',
         weakness: 'Runs hot: the fights cost penalties and pace. Stay clean and sail past the wreckage.',
-        traits: { aggro: 1.0 },
+        traits: { aggro: 0.7 },
     },
     rocket: {
         label: 'Rocket Start',
@@ -1530,7 +1574,7 @@ const ARCHETYPES = {
         label: 'Freight Train',
         threat: 'Carries speed nothing can stop — never cross them late.',
         weakness: 'Wide, lumbering roundings — attack at every mark.',
-        traits: { cornerScale: 1.25, laylineTight: 1.1 },
+        traits: { cornerScale: 1.25, cornerRound: 1.25, laylineTight: 1.1 },
     },
     corner: {
         label: 'Corner Artist',
@@ -1862,7 +1906,11 @@ class Boat {
             ocs: false,
             penalty: false,
             penaltyProgress: 0, // Deprecated but kept for compatibility if needed
-            penaltyTimer: 0,
+            penaltyTimer: 0,        // kept for save/eval compat; no longer drives a slowdown
+            penaltyTurnsOwed: 0,    // 360° turns queued by fouls
+            penaltyRot: 0,          // net signed rotation (rad) accumulated while flagged
+            penaltyLastHeading: null,
+            penaltyFlagTime: 0,     // seconds since first un-cleared foul (drives AI deadline)
             totalPenalties: 0,
             finished: false,
             finishTime: 0,
@@ -1911,7 +1959,8 @@ class Boat {
         // Racing archetype persona (see ARCHETYPES). Player and unknown configs
         // get pure defaults = the baseline fleet behavior.
         this.archetype = (config && config.archetype) || null;
-        const archDef = this.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[this.archetype] : null;
+        const traitsOff = typeof window !== 'undefined' && window.__CHAR && window.__CHAR.traitsOff;
+        const archDef = !traitsOff && this.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[this.archetype] : null;
         this.traits = Object.assign({}, DEFAULT_TRAITS, archDef ? archDef.traits : {});
         this.prevRank = 0;
     }
@@ -3855,20 +3904,25 @@ function triggerPenalty(boat) {
     if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('penalty', { boat });
     if (!settings.penaltiesEnabled) return;
 
-    // Reset timer if already penalized? Or just ignore?
-    // Usually penalties stack or reset. Let's reset the timer to 10s.
-    if (!boat.raceState.penalty) {
-        boat.raceState.penalty = true;
-        boat.raceState.totalPenalties++; // Only increment start of penalty
-    }
-
-    if (boat.isPlayer) Sound.playPenalty();
-
-    // Always reset timer to 10s on new penalty trigger
-    boat.raceState.penaltyTimer = 10.0;
-
-    if (boat.isPlayer) {
-        showRaceMessage("PENALTY! SPEED REDUCED 50% FOR 10s", "text-red-500", "border-red-500/50");
+    // One-Turn Penalty (RRS 44 style): the foul flags the boat and owes a
+    // 360° turn. No speed is taken away — the cost is the turn itself, taken
+    // when the sailor chooses (Rule 21 keep-clear applies while flagged, and
+    // an un-taken turn costs +15s at the finish). Sustained/grinding contact
+    // re-triggers every frame, so counting is per flagged EPISODE (same
+    // debounce semantics as the old 10s-timer design): while flagged, further
+    // fouls neither add turns nor inflate totalPenalties.
+    const rs = boat.raceState;
+    if (!rs.penalty) {
+        rs.penalty = true;
+        rs.totalPenalties++;
+        rs.penaltyTurnsOwed = 1;
+        rs.penaltyFlagTime = 0;
+        rs.penaltyRot = 0;
+        rs.penaltyLastHeading = boat.heading;
+        if (boat.isPlayer) {
+            Sound.playPenalty();
+            showRaceMessage("PENALTY! DO A 360° TURN TO CLEAR", "text-red-500", "border-red-500/50");
+        }
     }
 }
 
@@ -4146,10 +4200,8 @@ function updateBoat(boat, dt) {
 
     let targetGameSpeed = targetKnots * 0.25;
 
-    // Apply Penalty Speed Reduction
-    if (boat.raceState.penalty) {
-        targetGameSpeed *= 0.5;
-    }
+    // Penalties no longer slow the boat directly — the cost is the owed 360°
+    // turn (see triggerPenalty). Rule 21 keep-clear still applies while flagged.
 
     if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
          if (checkBoundaryExiting(boat)) window.onRaceEvent('collision_boundary', { boat });
@@ -4453,7 +4505,8 @@ function updateBoatRaceState(boat, dt) {
                                 boat.raceState.finished = true;
                                 boat.raceState.finishTime = state.race.timer;
                                 if (boat.raceState.penalty) {
-                                    boat.raceState.finishTime += boat.raceState.penaltyTimer;
+                                    // Un-taken penalty turns convert to time at the finish.
+                                    boat.raceState.finishTime += 15 * Math.max(1, boat.raceState.penaltyTurnsOwed);
                                 }
                                 if (window.onRaceEvent) window.onRaceEvent('finish', { boat, time: boat.raceState.finishTime });
                                 boat.raceState.trace.push({ x: boat.x, y: boat.y, leg: 4 });
@@ -4507,7 +4560,8 @@ function updateBoatRaceState(boat, dt) {
                         boat.raceState.finished = true;
                         boat.raceState.finishTime = state.race.timer;
                         if (boat.raceState.penalty) {
-                            boat.raceState.finishTime += boat.raceState.penaltyTimer;
+                            // Un-taken penalty turns convert to time at the finish.
+                            boat.raceState.finishTime += 15 * Math.max(1, boat.raceState.penaltyTurnsOwed);
                         }
                         if (boat.isPlayer) {
                             showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
@@ -4557,17 +4611,41 @@ function updateBoatRaceState(boat, dt) {
         }
     }
 
-    // Penalty Timer
-    if (boat.raceState.penalty) {
-         boat.raceState.penaltyTimer -= dt;
-         if (boat.raceState.penaltyTimer <= 0) {
-             boat.raceState.penalty = false;
-             boat.raceState.penaltyTimer = 0;
-             if (boat.isPlayer) hideRaceMessage();
-         } else if (boat.isPlayer) {
-             // Update countdown message
-             showRaceMessage(`PENALTY! SPEED REDUCED: ${boat.raceState.penaltyTimer.toFixed(1)}s`, "text-red-500", "border-red-500/50");
-         }
+    // One-Turn Penalty: accumulate net signed rotation while flagged; a full
+    // 360° (net, so a wobble unwinds) clears one owed turn. Direction is the
+    // sailor's choice — RRS asks for a tack and a gybe, and any net full
+    // rotation includes both.
+    if (boat.raceState.penalty && state.race.status === 'racing') {
+        const rs = boat.raceState;
+        rs.penaltyFlagTime += dt;
+        if (rs.penaltyLastHeading == null) rs.penaltyLastHeading = boat.heading;
+        // Decay credit toward zero (~7°/s) so ordinary sailing — alternating
+        // tacks, one-off mark roundings (~180° bursts that fade before the
+        // next) — can't passively clear the turn. A committed spiral
+        // (~30-50°/s) out-rotates the decay easily; extending a mark rounding
+        // into a full circle (the classic "penalty at the offset") works too.
+        const decay = 0.12 * dt;
+        if (Math.abs(rs.penaltyRot) > decay) rs.penaltyRot -= Math.sign(rs.penaltyRot) * decay;
+        else rs.penaltyRot = 0;
+        rs.penaltyRot += normalizeAngle(boat.heading - rs.penaltyLastHeading);
+        rs.penaltyLastHeading = boat.heading;
+
+        if (Math.abs(rs.penaltyRot) >= Math.PI * 2) {
+            rs.penaltyTurnsOwed--;
+            rs.penaltyRot = 0;
+            if (rs.penaltyTurnsOwed <= 0) {
+                rs.penalty = false;
+                rs.penaltyTurnsOwed = 0;
+                rs.penaltyLastHeading = null;
+                if (boat.isPlayer) {
+                    showRaceMessage("PENALTY CLEARED!", "text-green-400", "border-green-400/50");
+                    setTimeout(hideRaceMessage, 2000);
+                }
+            }
+        } else if (boat.isPlayer) {
+            const remaining = Math.ceil((Math.PI * 2 - Math.abs(rs.penaltyRot)) * 180 / Math.PI);
+            showRaceMessage(`PENALTY! TURN ${remaining}° MORE TO CLEAR (or +15s at finish)`, "text-red-500", "border-red-500/50");
+        }
     }
 
     // Maneuvers Stats

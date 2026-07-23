@@ -5,13 +5,15 @@ const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
 const A = process.argv.slice(2);
 const NUM = parseInt(A[0]) || 30, BASE = parseInt(A[1]) || 100;
+const CHAR = A[2] ? JSON.parse(A[2]) : null; // e.g. '{"traitsOff":1}' for pure-stat baseline
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
   page.on('pageerror', e => console.log('PAGEERROR', e.message));
   await page.goto('file://' + path.resolve('regatta/index.html'));
   await page.addScriptTag({ content: fs.readFileSync('regatta/eval/eval_harness.js', 'utf8') });
-  const out = await page.evaluate(({ NUM, BASE }) => {
+  const out = await page.evaluate(({ NUM, BASE, CHAR }) => {
+    if (CHAR) window.__CHAR = CHAR;
     const rows = []; // {arch, name, finish, place, start, pen, dnf}
     for (let i = 0; i < NUM; i++) {
       window.evalHarness.seed = BASE + i;
@@ -48,7 +50,7 @@ const NUM = parseInt(A[0]) || 30, BASE = parseInt(A[1]) || 100;
       });
     }
     return rows;
-  }, { NUM, BASE });
+  }, { NUM, BASE, CHAR });
 
   const groups = {};
   for (const r of out) (groups[r.arch] = groups[r.arch] || []).push(r);
