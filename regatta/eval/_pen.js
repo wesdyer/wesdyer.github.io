@@ -13,10 +13,18 @@ const NUM = parseInt(A[0]) || 6, BASE = parseInt(A[1]) || 100;
   await page.addScriptTag({ content: fs.readFileSync('regatta/eval/eval_harness.js', 'utf8') });
   const out = await page.evaluate(({ NUM, BASE }) => {
     const episodes = []; let uncleared = 0, cleared = 0;
+    const kinds = { contact: 0, no_contact: 0, other: 0 };
+    const hookKinds = (oh) => (t, d) => {
+      if (t === 'penalty' && d && d.boat && !d.boat.isPlayer && !d.boat.raceState.penalty) {
+        kinds[d.kind === 'no_contact' ? 'no_contact' : (d.kind === 'contact' ? 'contact' : 'other')]++;
+      }
+      if (oh) oh(t, d);
+    };
     for (let i = 0; i < NUM; i++) {
       window.evalHarness.seed = BASE + i;
       window.resetGame(); window.startRace();
       const active = {}; // boatId -> {t0, fouls}
+      const oh0 = window.onRaceEvent; window.onRaceEvent = hookKinds(oh0);
       const dt = 1 / 60; let it = 0;
       while (it < 600 * 60) {
         if (state.race.status === 'racing') {
@@ -47,10 +55,11 @@ const NUM = parseInt(A[0]) || 6, BASE = parseInt(A[1]) || 100;
         }
         window.update(dt); it++;
       }
+      window.onRaceEvent = oh0;
       // boats still flagged at race end (finished flagged)
       Object.keys(active).forEach(() => { uncleared++; });
     }
-    return { episodes, cleared, uncleared };
+    return { episodes, cleared, uncleared, kinds };
   }, { NUM, BASE });
 
   const eps = out.episodes.filter(e => e.cleared);
@@ -58,6 +67,7 @@ const NUM = parseInt(A[0]) || 6, BASE = parseInt(A[1]) || 100;
   const q = p => durs.length ? durs[Math.floor(p * (durs.length - 1))] : 0;
   const extra = out.episodes.reduce((a, e) => a + e.extraFouls, 0);
   const spin = out.episodes.filter(e => e.spinSeen).length;
+  console.log('kinds: contact=' + out.kinds.contact + ' no_contact=' + out.kinds.no_contact + ' other=' + out.kinds.other);
   console.log(`episodes=${out.episodes.length} cleared=${out.cleared} unclearedAtFinish=${out.uncleared}`);
   console.log(`time-to-clear: med=${q(0.5).toFixed(1)}s p75=${q(0.75).toFixed(1)}s p90=${q(0.9).toFixed(1)}s max=${durs[durs.length-1] || 0}s`);
   console.log(`spinSeen=${spin}/${out.episodes.length} secondaryFoulsDuringEpisodes=${extra}`);

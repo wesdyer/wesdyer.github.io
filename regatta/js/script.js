@@ -421,10 +421,62 @@ class BotController {
             this.penaltySpin = false; // cleared (or race state changed) — resume racing
         }
 
+        // Rule 16 grace: when OUR intended course changes MATERIALLY (a tack,
+        // gybe, or big bear-away — not lift/header trim jitter, which happens
+        // near-constantly and starved the foul detector), a keep-clear boat
+        // must get time to respond before we can claim it forced us to act.
+        if (this.prevDesired == null) this.prevDesired = desiredHeading;
+        if (Math.abs(normalizeAngle(desiredHeading - this.prevDesired)) > 0.5) this.rule16Grace = 1.0;
+        else if (this.rule16Grace > 0) this.rule16Grace -= dt;
+        this.prevDesired = desiredHeading;
+
         // 4. Collision Avoidance (Reactive Layer)
         // Adjust desiredHeading to avoid immediate threats
         desiredHeading = this.applyAvoidance(desiredHeading, speedRequest);
 
+        // No-contact foul (RRS "keep clear" definition): a boat keeps clear
+        // only if the right-of-way boat can sail her course with NO NEED to
+        // take avoiding action. When we are the stand-on boat and avoidance
+        // has us sustainedly >20° off our intended course at HIGH+ risk, the
+        // give-way boat has broken her rule — contact or not. Guards:
+        //  - Rule 15: role/pairing must be stable >1.5s (a newly obligated
+        //    boat gets room to respond).
+        //  - Rule 16: no claim within 1.5s of our own sharp course change.
+        //  - Rule 18: no claim against a boat entitled to mark-room from us.
+        //  - per-pair 20s cooldown; racing only (prestart is too dense).
+        const RU = (typeof window !== 'undefined' && window.__RULES) ? window.__RULES : {};
+        const DEV = RU.dev != null ? RU.dev : 0.35;
+        const HOLD = RU.hold != null ? RU.hold : 0.8;
+        // GRACE is only a flicker guard: forcing is front-loaded in an
+        // encounter, and the HOLD accumulation itself is the Rule 15 proof —
+        // a give-way boat that kept forcing for HOLD seconds had room and
+        // time to respond and didn't take it.
+        const GRACE = RU.grace != null ? RU.grace : 0.3;
+        if (isRacing && this.avoidanceRole === 'STAND_ON' &&
+            (this.riskState === 'HIGH' || this.riskState === 'IMMINENT') &&
+            this.threatBoat && !this.threatBoat.raceState.finished &&
+            !this.threatBoat.raceState.penalty &&
+            !(this.threatRowRes && this.threatRowRes.markRoom === this.threatBoat.id)) {
+            const cd = (this.foulCooldowns && this.foulCooldowns[this.threatBoat.id]) || 0;
+            const eligible = this.roleStableTime > GRACE && !(this.rule16Grace > 0) && state.time > cd;
+            // Leaky accumulator: deviation oscillates tick-to-tick as the cost
+            // function re-picks candidates, so charge while forced and bleed
+            // (rather than reset) between — a hard reset never reached HOLD.
+            if (eligible && this.lastAvoidDeviation > DEV) {
+                this.forcedAvoidTimer = Math.min((this.forcedAvoidTimer || 0) + 0.1, 1.5);
+                if (this.forcedAvoidTimer >= HOLD) {
+                    const info = this.threatRowRes ? { rule: this.threatRowRes.rule, reason: this.threatRowRes.reason, kind: 'no_contact' } : { kind: 'no_contact' };
+                    triggerPenalty(this.threatBoat, info);
+                    this.foulCooldowns = this.foulCooldowns || {};
+                    this.foulCooldowns[this.threatBoat.id] = state.time + 20;
+                    this.forcedAvoidTimer = 0;
+                }
+            } else {
+                this.forcedAvoidTimer = Math.max(0, (this.forcedAvoidTimer || 0) - 0.05);
+            }
+        } else {
+            this.forcedAvoidTimer = Math.max(0, (this.forcedAvoidTimer || 0) - 0.1);
+        }
 
         // Mark Collision Override (Immediate Turn Away + Latch)
         if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'mark') {
@@ -1155,6 +1207,8 @@ class BotController {
         // Find threats
         let maxRisk = 'LOW';
         let role = 'NONE';
+        let threat = null;
+        let threatRow = null;
 
         // Filter nearby boats
         const nearby = state.boats.filter(b => b !== this.boat && !b.raceState.finished);
@@ -1182,9 +1236,10 @@ class BotController {
             if (risk !== 'LOW') {
                 // Determine Role
                 let rowBoat = null;
+                let rowRes = null;
                 try {
-                     const res = getRightOfWay(this.boat, other);
-                     rowBoat = res.boat;
+                     rowRes = getRightOfWay(this.boat, other);
+                     rowBoat = rowRes.boat;
                 } catch(e) { }
 
                 const myRole = (rowBoat === this.boat) ? 'STAND_ON' : 'GIVE_WAY';
@@ -1194,8 +1249,36 @@ class BotController {
                 if (riskLevel[risk] > riskLevel[maxRisk]) {
                     maxRisk = risk;
                     role = myRole;
+                    threat = other;
+                    threatRow = rowRes;
                 }
             }
+        }
+
+        // Track the dominant threat + how long this pairing has been stable —
+        // the no-contact foul detector needs it (Rule 15 gives a boat that
+        // just became obligated room to respond before any foul). Keyed to the
+        // threat's identity only: role and risk levels flap tick-to-tick in
+        // multi-boat geometry, and keying on them killed ~94% of valid claims.
+        // The pairing must also PERSIST through the latch: fresh risk dips to
+        // LOW for a tick or two mid-encounter, and clearing the threat there
+        // starved the detector (threat was set in only 17% of latched ticks).
+        if (threat) {
+            if (threat === this.threatBoat) {
+                this.roleStableTime += dt;
+                this.threatRowRes = threatRow || this.threatRowRes;
+            } else {
+                this.threatBoat = threat;
+                this.threatRowRes = threatRow;
+                this.roleStableTime = 0;
+            }
+        } else if (this.avoidanceCommitTimer > 0 && this.threatBoat) {
+            // Latched mid-encounter: hold the pairing, keep accruing stability.
+            this.roleStableTime += dt;
+        } else {
+            this.threatBoat = null;
+            this.threatRowRes = null;
+            this.roleStableTime = 0;
         }
 
         // Latching Logic: Prevent oscillation by holding state
@@ -1253,6 +1336,7 @@ class BotController {
      */
     applyAvoidance(desiredHeading, speedRequest) {
         // If stuck (Wiggle Mode), ignore avoidance to force breakout
+        this.lastAvoidDeviation = 0;
         if (this.wiggleActive) return desiredHeading;
 
         const boat = this.boat;
@@ -1509,6 +1593,9 @@ class BotController {
             }
         }
         
+        // Expose how far avoidance pushed us off our intended course — the
+        // no-contact foul detector reads this as "avoiding action taken".
+        this.lastAvoidDeviation = Math.abs(normalizeAngle(bestHeading - desiredHeading));
         return bestHeading;
     }
 }
@@ -3899,9 +3986,9 @@ function updateAI(boat, dt) {
     boat.spinnaker = (windAngle > Math.PI * 0.65) && (speedLimit > 0.8);
 }
 
-function triggerPenalty(boat) {
+function triggerPenalty(boat, info) {
     if (boat.raceState.finished) return;
-    if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('penalty', { boat });
+    if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('penalty', { boat, kind: info && info.kind, rule: info && info.rule });
     if (!settings.penaltiesEnabled) return;
 
     // One-Turn Penalty (RRS 44 style): the foul flags the boat and owes a
@@ -3921,7 +4008,8 @@ function triggerPenalty(boat) {
         rs.penaltyLastHeading = boat.heading;
         if (boat.isPlayer) {
             Sound.playPenalty();
-            showRaceMessage("PENALTY! DO A 360° TURN TO CLEAR", "text-red-500", "border-red-500/50");
+            const why = info && info.rule ? ` (${info.rule}${info.reason ? ' — ' + info.reason : ''})` : '';
+            showRaceMessage(`PENALTY${why}! DO A 360° TURN TO CLEAR`, "text-red-500", "border-red-500/50");
         }
     }
 }
@@ -4851,11 +4939,12 @@ function checkBoatCollisions(dt) {
                         }
                     }
 
-                    if (effectiveRow === b1) triggerPenalty(b2);
-                    else if (effectiveRow === b2) triggerPenalty(b1);
+                    const pInfo = { rule: res.rule, reason: res.reason, kind: 'contact' };
+                    if (effectiveRow === b1) triggerPenalty(b2, pInfo);
+                    else if (effectiveRow === b2) triggerPenalty(b1, pInfo);
                     else {
-                        triggerPenalty(b1);
-                        triggerPenalty(b2);
+                        triggerPenalty(b1, pInfo);
+                        triggerPenalty(b2, pInfo);
                     }
                 }
             }
@@ -4907,7 +4996,7 @@ function checkMarkCollisions(dt) {
 
                 boat.speed *= (friction - (friction - impactFactor) * impact);
 
-                if (state.race.status === 'racing') triggerPenalty(boat);
+                if (state.race.status === 'racing') triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact' });
             }
         }
     }
@@ -7413,7 +7502,7 @@ function checkIslandCollisions(dt) {
                  // Grounding Penalty: Lose 60% speed instantly + massive drag
                  boat.speed *= 0.4;
 
-                 if (state.race.status === 'racing') triggerPenalty(boat);
+                 if (state.race.status === 'racing') triggerPenalty(boat, { reason: 'Ran Aground', kind: 'contact' });
                  if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat });
             }
         }
