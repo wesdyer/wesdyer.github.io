@@ -7003,9 +7003,7 @@ function draw() {
         }
         if (UI.windAngle) {
             const twa = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI));
-            // Apparent wind angle — what you actually trim to; creeps forward (smaller) as you speed up.
-            const awa = player.apparentWind ? Math.round(Math.abs(normalizeAngle(player.heading - player.apparentWind.direction))*(180/Math.PI)) : twa;
-            UI.windAngle.textContent = `${twa}° (AW ${awa}°)`;
+            UI.windAngle.textContent = `${twa}°`;
         }
         if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - localWind.direction))).toFixed(1);
 
