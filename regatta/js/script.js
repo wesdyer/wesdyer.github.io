@@ -6836,6 +6836,65 @@ function drawBoatIndicator(ctx, boat) {
     ctx.restore();
 }
 
+// Edge-clamped indicator for an active gate mark (or, with markIndex null, the
+// closest point on the start/finish line). The mini arc mirrors the in-world
+// rounding arrows of drawRoundingArrows: same start/end/ccw per mark index,
+// rotated into screen space so it always agrees with what you'll see at the mark.
+function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fillStyle = '#22c55e'; ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+
+    if (markIndex !== null) {
+        let start, end, ccw;
+        if (markIndex === 0)      { start = 0;       end = Math.PI; ccw = false; }
+        else if (markIndex === 1) { start = Math.PI; end = 0;       ccw = true; }
+        else if (markIndex === 2) { start = 0;       end = Math.PI; ccw = true; }
+        else                      { start = Math.PI; end = 0;       ccw = false; }
+
+        ctx.save();
+        ctx.rotate(state.wind.baseDirection + screenRot);
+        ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 3; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(0, 0, 15, start, end, ccw); ctx.stroke();
+        const tipX = 15 * Math.cos(end), tipY = 15 * Math.sin(end);
+        const tangent = end + (ccw ? -Math.PI/2 : Math.PI/2);
+        ctx.translate(tipX, tipY); ctx.rotate(tangent);
+        ctx.fillStyle = '#22d3ee';
+        ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(5, 0); ctx.lineTo(-5, 5); ctx.lineTo(-3, 0); ctx.fill();
+        ctx.restore();
+    }
+
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
+    ctx.fillText(label, 0, markIndex !== null ? -21 : -12);
+    ctx.restore();
+}
+
+// Edge-clamped indicator for a nearby off-screen competitor: hull-colored dot
+// with the boat's current rank inside and its name above.
+function drawNpcEdgeIndicator(ctx, x, y, boat) {
+    const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
+    ctx.save();
+    ctx.translate(x, y);
+
+    ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = boat.raceState.penalty ? '#ef4444' : '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+
+    if (state.race.status === 'racing' && boat.lbRank !== undefined) {
+        ctx.fillStyle = isVeryDark(color) ? '#ffffff' : '#0f172a';
+        ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(boat.lbRank + 1), 0, 0.5);
+    }
+
+    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
+    ctx.fillText(boat.name.toUpperCase(), 0, -13);
+    ctx.restore();
+}
+
 function draw() {
     frameCount++;
 
@@ -6902,28 +6961,53 @@ function draw() {
         ctx.restore();
     }
 
-    // Waypoint Arrow
-    if (state.race.status !== 'finished' && state.showNavAids) {
-        const wx = player.raceState.nextWaypoint.x, wy = player.raceState.nextWaypoint.y;
-        const dx = wx - state.camera.x, dy = wy - state.camera.y;
-        const rot = -state.camera.rotation;
-        const rx = dx*Math.cos(rot) - dy*Math.sin(rot);
-        const ry = dx*Math.sin(rot) + dy*Math.cos(rot);
-
+    // Edge indicators: next mark(s) and nearby competitors.
+    if (state.race.status !== 'finished') {
         const m = 40, hw = Math.max(10, canvas.width/2-m), hh = Math.max(10, canvas.height/2-m);
-        let t = 1.0;
-        if (Math.abs(rx)>0.1 || Math.abs(ry)>0.1) t = Math.min(hw/Math.abs(rx), hh/Math.abs(ry));
-        const f = Math.min(t, 1.0);
+        const rot = -state.camera.rotation;
+        // Project a world point into screen space, clamped to the screen edge band.
+        const toScreen = (wx, wy) => {
+            const dx = wx - state.camera.x, dy = wy - state.camera.y;
+            const rx = dx*Math.cos(rot) - dy*Math.sin(rot);
+            const ry = dx*Math.sin(rot) + dy*Math.cos(rot);
+            let t = 1.0;
+            if (Math.abs(rx)>0.1 || Math.abs(ry)>0.1) t = Math.min(hw/Math.abs(rx), hh/Math.abs(ry));
+            const f = Math.min(t, 1.0);
+            return { x: canvas.width/2 + rx*f, y: canvas.height/2 + ry*f, onScreen: t >= 1.0 };
+        };
 
-        ctx.save();
-        ctx.translate(canvas.width/2 + rx*f, canvas.height/2 + ry*f);
-        ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fillStyle = '#22c55e'; ctx.fill();
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+        if (state.showNavAids) {
+            const leg = player.raceState.leg;
+            const marks = state.course.marks;
+            if (leg > 0 && leg < state.race.totalLegs && marks && marks.length >= 4) {
+                // Gate leg: one indicator per gate mark, each showing its rounding direction.
+                const indices = (leg % 2 !== 0) ? [2, 3] : [0, 1];
+                for (const idx of indices) {
+                    const mk = marks[idx];
+                    const d = Math.sqrt((mk.x-player.x)**2 + (mk.y-player.y)**2) * 0.2;
+                    const p = toScreen(mk.x, mk.y);
+                    drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(d) + 'm', idx, rot);
+                }
+            } else {
+                // Start/finish: a line you cross, not a mark you round — single indicator.
+                const wp = player.raceState.nextWaypoint;
+                const p = toScreen(wp.x, wp.y);
+                drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(wp.dist) + 'm', null, rot);
+            }
+        }
 
-        ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-        ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
-        ctx.fillText(Math.round(player.raceState.nextWaypoint.dist) + 'm', 0, -12);
-        ctx.restore();
+        // Competitors: off-screen but close-ish. On-screen boats already carry
+        // name tags; distant boats live on the minimap.
+        const NPC_EDGE_RANGE = 1500; // world units (~300 m)
+        for (const boat of state.boats) {
+            if (boat.isPlayer) continue;
+            if (boat.opacity !== undefined && boat.opacity <= 0.1) continue;
+            const bdx = boat.x - player.x, bdy = boat.y - player.y;
+            if (bdx*bdx + bdy*bdy > NPC_EDGE_RANGE*NPC_EDGE_RANGE) continue;
+            const p = toScreen(boat.x, boat.y);
+            if (p.onScreen) continue;
+            drawNpcEdgeIndicator(ctx, p.x, p.y, boat);
+        }
     }
 
     drawMinimap();
