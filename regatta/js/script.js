@@ -1969,9 +1969,9 @@ const VENUES = {
         wind: [16, 22],
         cond: { shiftiness: [0.3, 0.5], variability: [0.6, 0.85], puffiness: [0.5, 0.8], gustStrengthBias: [0.75, 0.95], puffShiftiness: [0.4, 0.6] },
         islands: { count: [0, 0] },
-        palette: { baseColor: '#475569', deepColor: '#1e293b', shallowColor: '#64748b', shorelineColor: '#e2e8f0',
-                   gusts: { gustDark: [14, 20, 34], gustMid: [22, 31, 50], lullBright: [198, 214, 230], lullMid: [180, 200, 222], snow: true } },
-        fx: { ice: true, overpowered: true }
+        palette: { baseColor: '#1d4066', deepColor: '#0e2444', shallowColor: '#2e5c8f', shorelineColor: '#dbeafe',
+                   gusts: { gustDark: [8, 24, 52], gustMid: [14, 38, 76], lullBright: [200, 226, 246], lullMid: [176, 208, 236], snow: true } },
+        fx: { ice: true, overpowered: true, snowfall: true }
     }
 };
 
@@ -2226,14 +2226,16 @@ function generateIceFloes(rng) {
     const boundary = state.course.boundary;
     const marks = state.course.marks;
     const floes = [];
-    const count = 9 + Math.floor(rng() * 4);
+    const count = 15 + Math.floor(rng() * 4);
 
     for (let i = 0; i < count && floes.length < count; i++) {
         let placed = false;
         for (let attempt = 0; attempt < 12 && !placed; attempt++) {
-            // The first two are proper BERGS — big, slow, race-defining;
-            // the rest are car-to-house-sized floes.
-            const r = i < 2 ? 260 + rng() * 120 : 70 + rng() * 90;
+            // Size tiers: 2 proper BERGS, a few mid-size floes, and a scatter
+            // of small drift ice — varied like the reference art.
+            const r = i < 2 ? 260 + rng() * 130
+                    : i < 6 ? 140 + rng() * 100
+                    : 55 + rng() * 85;
             const ang = rng() * Math.PI * 2;
             const dst = Math.sqrt(rng()) * (boundary.radius - 300);
             const cx = boundary.x + Math.sin(ang) * dst;
@@ -2257,10 +2259,12 @@ function generateIceFloes(rng) {
 
 function makeFloe(cx, cy, r, rng) {
     const vertices = [];
-    const points = 7 + Math.floor(rng() * 4);
+    const points = 6 + Math.floor(rng() * 6);
+    // Shape personality: some floes are smooth pans, others sharp shards
+    const jag = 0.12 + rng() * 0.35;
     for (let j = 0; j < points; j++) {
         const theta = (j / points) * Math.PI * 2;
-        const vr = r * (0.8 + rng() * 0.35);
+        const vr = r * (1.0 - jag + rng() * jag * 1.6);
         vertices.push({ x: cx + Math.cos(theta) * vr, y: cy + Math.sin(theta) * vr });
     }
     const vegVertices = vertices.map(v => ({ x: cx + (v.x - cx) * 0.7, y: cy + (v.y - cy) * 0.7 }));
@@ -2281,17 +2285,40 @@ function makeFloe(cx, cy, r, rng) {
         });
     }
 
+    // Angular facet planes for the bigger ice (reference-art look)
+    const facets = [];
+    if (r > 140) {
+        const facetCount = 2 + Math.floor(rng() * 3);
+        for (let k = 0; k < facetCount; k++) {
+            facets.push({ i: Math.floor(rng() * points), depth: 0.1 + rng() * 0.3, shade: rng() });
+        }
+    }
+
+    // Each floe wanders on its OWN slow random heading and rate — the pack
+    // has no common direction. Bergs are ponderous.
+    const speed = (3 + rng() * 6) * (r > 220 ? 0.4 : 1); // units/sec, never fast
+    const dir = rng() * Math.PI * 2;
+
     return {
         // soft: true — RRS 31 penalizes touching MARKS, not obstructions.
         // Hitting ice costs you 60% of your speed (hull damage), not a 360;
         // rules penalties in the Arctic come from fouling BOATS (incl. Rule 19
         // squeezes into the ice, which stay very much illegal).
-        x: cx, y: cy, radius: r, vertices, vegVertices, trees: [], rocks: [], cracks, soft: true,
+        x: cx, y: cy, radius: r, vertices, vegVertices, trees: [], rocks: [], cracks, facets, soft: true,
         style: 'ice', isFloe: true,
-        // Bergs are massive — they barely answer to the wind
-        driftFactor: (0.7 + rng() * 0.6) * (r > 220 ? 0.45 : 1),
-        driftSkew: (rng() - 0.5) * 0.5
+        driftVx: Math.sin(dir) * speed,
+        driftVy: -Math.cos(dir) * speed,
+        // Slow heading curl so paths curve instead of running straight
+        wanderPhase: rng() * Math.PI * 2,
+        wanderRate: 0.1 + rng() * 0.25
     };
+}
+
+// Rigid-translate a floe (center + baked geometry all move together)
+function moveFloe(isl, dx, dy) {
+    isl.x += dx; isl.y += dy;
+    for (const v of isl.vertices) { v.x += dx; v.y += dy; }
+    for (const v of isl.vegVertices) { v.x += dx; v.y += dy; }
 }
 
 // Brash ice: sparse fist-to-fridge-sized white chunks drifting between the
@@ -2312,6 +2339,55 @@ function generateBrash(rng) {
         });
     }
     return brash;
+}
+
+// Screen-space snowfall (Arctic): wind-slanted streaky flakes falling across
+// the view, like the reference art. Own seeded PRNG — never Math.random
+// (would desync the eval RNG stream).
+let SNOW = null;
+const snowRand = mulberry32(40713);
+function drawSnowOverlay(ctx) {
+    if (!state.race.venueFx || !state.race.venueFx.snowfall) { SNOW = null; return; }
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+
+    // draw() has no dt; derive one (clamped so tab-switches don't teleport flakes)
+    const now = performance.now();
+    const dt = SNOW ? Math.min(0.05, Math.max(0, (now - SNOW.t) / 1000)) : 1 / 60;
+
+    if (!SNOW || SNOW.w !== w || SNOW.h !== h) {
+        SNOW = { w, h, t: now, flakes: [] };
+        for (let i = 0; i < 130; i++) {
+            SNOW.flakes.push({
+                x: snowRand() * w, y: snowRand() * h,
+                spd: 55 + snowRand() * 90,           // px/sec fall
+                size: 1 + snowRand() * 2.2,
+                sway: snowRand() * Math.PI * 2,
+                depth: 0.45 + snowRand() * 0.55      // parallax-ish alpha/speed tier
+            });
+        }
+    }
+
+    SNOW.t = now;
+    const slant = 0.35; // wind-driven diagonal, like the reference streaks
+    ctx.save();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineCap = 'round';
+    for (const f of SNOW.flakes) {
+        f.y += f.spd * f.depth * dt;
+        f.x += (f.spd * slant * f.depth + Math.sin(state.time * 2 + f.sway) * 14) * dt;
+        if (f.y > h + 4) { f.y = -4; f.x = snowRand() * w; }
+        if (f.x > w + 4) f.x = -4;
+        else if (f.x < -4) f.x = w + 4;
+
+        const len = 3 + f.spd * f.depth * 0.045;
+        ctx.globalAlpha = 0.35 + f.depth * 0.4;
+        ctx.lineWidth = f.size;
+        ctx.beginPath();
+        ctx.moveTo(f.x, f.y);
+        ctx.lineTo(f.x - len * slant, f.y - len);
+        ctx.stroke();
+    }
+    ctx.restore();
 }
 
 function drawBrashIce(ctx) {
@@ -2359,27 +2435,65 @@ function updateIceFloes(dt) {
         }
     }
 
+    const floes = [];
     for (const isl of state.course.islands) {
         if (!isl.isFloe) continue;
-        const dir = d + isl.driftSkew;
-        const vx = -Math.sin(dir) * base * isl.driftFactor * dt;
-        const vy = Math.cos(dir) * base * isl.driftFactor * dt;
-        isl.x += vx; isl.y += vy;
-        for (const v of isl.vertices) { v.x += vx; v.y += vy; }
-        for (const v of isl.vegVertices) { v.x += vx; v.y += vy; }
+        floes.push(isl);
 
-        // Drifted out of the arena: respawn just inside the upwind rim at a
-        // random bearing, so it sweeps back down across the course.
+        // Slow deterministic heading curl: each floe's own velocity rotates
+        // gently, so paths curve and meander without any per-frame RNG.
+        const curl = Math.sin(state.time * isl.wanderRate + isl.wanderPhase) * 0.12 * dt;
+        const cosC = Math.cos(curl), sinC = Math.sin(curl);
+        const nvx = isl.driftVx * cosC - isl.driftVy * sinC;
+        isl.driftVy = isl.driftVx * sinC + isl.driftVy * cosC;
+        isl.driftVx = nvx;
+
+        moveFloe(isl, isl.driftVx * dt, isl.driftVy * dt);
+
+        // Arena rim: bounce back inward (reflect velocity about the inward
+        // normal) instead of teleport-respawning.
         const relX = isl.x - boundary.x, relY = isl.y - boundary.y;
-        if (relX * relX + relY * relY > (boundary.radius + isl.radius + 100) ** 2) {
-            const ang = d + (Math.random() - 0.5) * 2.0; // upwind side ± ~57°
-            const rr = boundary.radius - isl.radius - 150;
-            const nx = boundary.x + Math.sin(ang) * rr;
-            const ny = boundary.y - Math.cos(ang) * rr;
-            const dxv = nx - isl.x, dyv = ny - isl.y;
-            isl.x = nx; isl.y = ny;
-            for (const v of isl.vertices) { v.x += dxv; v.y += dyv; }
-            for (const v of isl.vegVertices) { v.x += dxv; v.y += dyv; }
+        const rd = Math.sqrt(relX * relX + relY * relY);
+        const rim = boundary.radius - isl.radius * 0.5;
+        if (rd > rim && rd > 1) {
+            const nx = relX / rd, ny = relY / rd; // outward normal
+            const dot = isl.driftVx * nx + isl.driftVy * ny;
+            if (dot > 0) {
+                isl.driftVx -= 2 * dot * nx;
+                isl.driftVy -= 2 * dot * ny;
+            }
+            moveFloe(isl, (rim - rd) * nx, (rim - rd) * ny);
+        }
+    }
+
+    // Floe-on-floe BOUNCE: mass-weighted positional separation plus an
+    // elastic velocity reflection — converging ice visibly rebounds, bergs
+    // barely notice, small floes ricochet.
+    for (let i = 0; i < floes.length; i++) {
+        for (let j = i + 1; j < floes.length; j++) {
+            const a = floes[i], b = floes[j];
+            const dx = b.x - a.x, dy = b.y - a.y;
+            const minD = (a.radius + b.radius) * 0.92; // vertices are jagged; slight visual overlap is fine
+            const d2 = dx * dx + dy * dy;
+            if (d2 >= minD * minD || d2 < 1) continue;
+            const dist = Math.sqrt(d2);
+            const nx = dx / dist, ny = dy / dist;
+            const overlap = minD - dist;
+            const mA = a.radius * a.radius, mB = b.radius * b.radius;
+            const shareA = mB / (mA + mB), shareB = mA / (mA + mB);
+            moveFloe(a, -nx * overlap * shareA, -ny * overlap * shareA);
+            moveFloe(b, nx * overlap * shareB, ny * overlap * shareB);
+
+            // 1D elastic collision along the normal (restitution 0.85)
+            const vaN = a.driftVx * nx + a.driftVy * ny;
+            const vbN = b.driftVx * nx + b.driftVy * ny;
+            if (vaN - vbN > 0) { // closing
+                const e = 0.85;
+                const vaN2 = (mA * vaN + mB * vbN - mB * e * (vaN - vbN)) / (mA + mB);
+                const vbN2 = (mA * vaN + mB * vbN + mA * e * (vaN - vbN)) / (mA + mB);
+                a.driftVx += (vaN2 - vaN) * nx; a.driftVy += (vaN2 - vaN) * ny;
+                b.driftVx += (vbN2 - vbN) * nx; b.driftVy += (vbN2 - vbN) * ny;
+            }
         }
     }
 }
@@ -6955,12 +7069,17 @@ function drawMinimap() {
         ctx.fill('evenodd');
     }
 
-    // Islands
+    // Islands (style-aware: ice reads as pale glacial blue, not land)
+    const MINIMAP_ISLAND = {
+        tropical: { body: '#fde6b1', top: '#84cc16' },
+        grass:    { body: '#8a9a5b', top: '#4d7c0f' },
+        ice:      { body: '#b8dcf5', top: '#f2f9ff' }
+    };
     if (state.course.islands) {
-        // Sand first
-        ctx.fillStyle = '#fde6b1';
+        // Body first
         for (const isl of state.course.islands) {
             if (isl.isBank) continue;
+            ctx.fillStyle = (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.tropical).body;
             ctx.beginPath();
             if (isl.vertices.length > 0) {
                 const p0 = t(isl.vertices[0].x, isl.vertices[0].y);
@@ -6973,10 +7092,10 @@ function drawMinimap() {
             ctx.closePath();
             ctx.fill();
         }
-        // Green center
-        ctx.fillStyle = '#84cc16';
+        // Center cap (vegetation on land, snow on ice)
         for (const isl of state.course.islands) {
             if (isl.isBank) continue;
+            ctx.fillStyle = (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.tropical).top;
             ctx.beginPath();
             if (isl.vegVertices.length > 0) {
                 const p0 = t(isl.vegVertices[0].x, isl.vegVertices[0].y);
@@ -7805,6 +7924,9 @@ function draw() {
 
     ctx.restore();
 
+    // Screen-space weather (Arctic snowfall) — over the world, under the UI
+    drawSnowOverlay(ctx);
+
     // Camera Message
     if (state.camera.messageTimer > 0) {
         ctx.save();
@@ -8503,7 +8625,7 @@ function checkIslandCollisions(dt) {
 const ISLAND_STYLES = {
     tropical: { body: '#fde6b1', stroke: '#d4b483', veg: '#84cc16', rock: '#9ca3af', trees: true },
     grass:    { body: '#a89b6a', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },
-    ice:      { body: '#eef6fb', stroke: '#b6d4e8', veg: '#ffffff', rock: '#a8c8dd', trees: false }
+    ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false }
 };
 
 function traceRoundedPoly(g, vertices) {
@@ -8558,10 +8680,10 @@ function bakeIslandSprite(isl) {
             y: isl.y + (v.y - isl.y) * 1.28
         }));
         g.save();
-        g.fillStyle = 'rgba(140, 190, 220, 0.35)';
+        g.fillStyle = 'rgba(74, 144, 200, 0.45)';
         traceRoundedPoly(g, shelf);
         g.fill();
-        g.fillStyle = 'rgba(165, 210, 235, 0.35)';
+        g.fillStyle = 'rgba(120, 180, 226, 0.42)';
         const shelf2 = isl.vertices.map(v => ({
             x: isl.x + (v.x - isl.x) * 1.12,
             y: isl.y + (v.y - isl.y) * 1.12
@@ -8594,9 +8716,25 @@ function bakeIslandSprite(isl) {
     traceRoundedPoly(g, isl.vegVertices);
     g.fill();
 
+    // Ice facets (bergs): angular translucent blue planes radiating from the
+    // center, echoing the reference art's faceted look
+    if (isl.style === 'ice' && isl.facets && isl.facets.length) {
+        for (const f of isl.facets) {
+            const v1 = isl.vertices[f.i % isl.vertices.length];
+            const v2 = isl.vertices[(f.i + 1) % isl.vertices.length];
+            g.fillStyle = f.shade < 0.5 ? 'rgba(122, 176, 222, 0.4)' : 'rgba(78, 138, 194, 0.35)';
+            g.beginPath();
+            g.moveTo(isl.x + (v1.x - isl.x) * f.depth, isl.y + (v1.y - isl.y) * f.depth);
+            g.lineTo(v1.x, v1.y);
+            g.lineTo(v2.x, v2.y);
+            g.closePath();
+            g.fill();
+        }
+    }
+
     // Pressure cracks (ice only): thin glacial-blue fractures
     if (isl.cracks && isl.cracks.length) {
-        g.strokeStyle = 'rgba(130, 170, 200, 0.55)';
+        g.strokeStyle = 'rgba(64, 125, 180, 0.7)';
         g.lineWidth = 3;
         g.lineCap = 'round';
         for (const cr of isl.cracks) {
