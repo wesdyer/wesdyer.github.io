@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check *)",
+      "Bash(npm run eval:ai *)",
+      "Bash(pkill -9 -f chrome-headless)"
+    ]
+  }
+}

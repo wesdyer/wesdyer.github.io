@@ -327,6 +327,29 @@
                 <!-- Left Column: Course & Conditions -->
                 <div class="col-span-4 flex flex-col gap-6 h-full overflow-y-auto pr-2">
 
+                    <!-- Venue -->
+                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
+                        <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            Venue
+                        </h2>
+                        <div id="venue-picker" class="grid grid-cols-3 gap-2"></div>
+                        <div id="venue-blurb" class="text-xs text-slate-400 mt-3 min-h-[2rem]"></div>
+
+                        <div class="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+                            <div>
+                                <div class="text-xs font-bold text-slate-300 uppercase">Customize</div>
+                                <div class="text-[10px] text-slate-500">Fine-tune wind, current, obstacles &amp; course</div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="conf-customize" class="sr-only peer">
+                                <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="customize-panels" class="hidden flex flex-col gap-6">
+
                     <!-- Wind Setup -->
                     <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
                         <h2 class="text-lg font-black text-white uppercase mb-4 flex items-center gap-2">
@@ -511,6 +534,7 @@
                             </div>
                         </div>
                     </div>
+                    </div><!-- /customize-panels -->
                 </div>
 
                 <!-- Right Column: Competitors -->
@@ -669,6 +693,9 @@
             </div>
             <div id="hud-rules-status" class="mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider">
                 RULES: ON
+            </div>
+            <div id="hud-overpowered" class="hidden mt-1 text-[10px] font-bold text-amber-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-amber-500/50 uppercase tracking-wider">
+                ⚠ OVERPOWERED
             </div>
 
         </div>

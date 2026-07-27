@@ -26,6 +26,11 @@ window.WATER_CONFIG = {
     // Grain/Texture
     grainStrength: 0.02,
 
+    // Render scale: water rasterizes into an offscreen canvas at this fraction
+    // of screen resolution, then upscales. The contour/caustic layers are soft
+    // and low-frequency, so 0.5 (quarter the pixels) is visually free.
+    resolutionScale: 0.5,
+
     // Shoreline
     shorelineColor: '#4ade80', // Green-400 (Turquoise-ish green)
     shorelineGlowSize: 1.5,
@@ -320,22 +325,43 @@ class WaterRenderer {
         const height = ctx.canvas.height;
         this.time += 1; // Increment internal time
 
+        // Low-res offscreen target: both water passes rasterize at
+        // resolutionScale (default 0.5 → quarter the pixels), then one
+        // upscaled blit hits the screen. This is the single biggest paint
+        // saving in the game — the two full-screen passes dominated frames.
+        const rs = config.resolutionScale || 1.0;
+        const lw = Math.max(1, Math.ceil(width * rs));
+        const lh = Math.max(1, Math.ceil(height * rs));
+        if (!this.lowCanvas || this.lowCanvas.width !== lw || this.lowCanvas.height !== lh) {
+            this.lowCanvas = document.createElement('canvas');
+            this.lowCanvas.width = lw;
+            this.lowCanvas.height = lh;
+            this.lowCtx = this.lowCanvas.getContext('2d');
+            this.contourPattern = null;
+            this._gradKey = null;
+        }
+        const lctx = this.lowCtx;
+
         // 1. Base Fill & Depth Gradient (Screen Space)
         // We use a radial gradient to simulate depth/vignette
-        const cx = width / 2;
-        const cy = height / 2;
-        const radius = Math.max(width, height) * 0.8 * config.depthGradientScale;
+        const cx = lw / 2;
+        const cy = lh / 2;
+        const radius = Math.max(lw, lh) * 0.8 * config.depthGradientScale;
 
-        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-        grad.addColorStop(0, config.baseColor);
-        grad.addColorStop(1, config.deepColor);
+        // Cache the base gradient — it only changes on resize or palette swap
+        const gradKey = lw + 'x' + lh + config.baseColor + config.deepColor + config.depthGradientScale;
+        if (this._gradKey !== gradKey) {
+            const g = lctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+            g.addColorStop(0, config.baseColor);
+            g.addColorStop(1, config.deepColor);
+            this._grad = g;
+            this._gradKey = gradKey;
+        }
+        const grad = this._grad;
 
-        ctx.save();
-        // Use setTransform instead of resetTransform to be kinder to context stack,
-        // effectively filling the screen by resetting to identity for the fill.
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, width, height);
+        lctx.setTransform(1, 0, 0, 1, 0, 0);
+        lctx.fillStyle = grad;
+        lctx.fillRect(0, 0, lw, lh);
 
         // 2. Prepare for World-Mapped Patterns
         const windDir = state.wind ? state.wind.direction : 0;
@@ -370,40 +396,55 @@ class WaterRenderer {
         // We want Pattern Origin to align with World Origin projected to Screen.
         // So we apply the Camera Transform to the Pattern Matrix.
 
+        // Maps world -> LOW-RES screen: scale first, then the usual camera
+        // transform (M_low = S(rs) · M_full).
         const camMatrix = new DOMMatrix();
+        camMatrix.scaleSelf(rs, rs);
         camMatrix.translateSelf(width/2, height/2);
         camMatrix.rotateSelf(0, 0, -state.camera.rotation * (180/Math.PI)); // Degrees
         camMatrix.translateSelf(-state.camera.x, -state.camera.y);
 
         // 3. Draw Contours
         if (!this.contourPattern) {
-             this.contourPattern = ctx.createPattern(this.contourCanvas, 'repeat');
+             this.contourPattern = lctx.createPattern(this.contourCanvas, 'repeat');
         }
 
-        ctx.globalAlpha = config.contourOpacity;
-        ctx.fillStyle = this.contourPattern;
+        lctx.globalAlpha = config.contourOpacity;
+        lctx.fillStyle = this.contourPattern;
 
         const contourMat = DOMMatrix.fromMatrix(camMatrix);
         contourMat.translateSelf(flowDx, flowDy); // Apply flow in world space
         this.contourPattern.setTransform(contourMat);
 
-        ctx.fillRect(0, 0, width, height);
+        lctx.fillRect(0, 0, lw, lh);
+        lctx.globalAlpha = 1.0;
 
-        // 4. Draw Caustics
-        if (!this.causticPattern) {
-             this.causticPattern = ctx.createPattern(this.causticCanvas, 'repeat');
+        // 4. Draw Caustics — skipped below a visibility threshold: a ~6%-alpha
+        // 'overlay' composite is a full extra screen pass for an effect that
+        // is imperceptible over the busy contour layer. Raise causticStrength
+        // above 0.08 to re-enable.
+        if (config.causticStrength >= 0.08) {
+            if (!this.causticPattern) {
+                 this.causticPattern = lctx.createPattern(this.causticCanvas, 'repeat');
+            }
+
+            lctx.globalCompositeOperation = 'overlay'; // or screen/lighter
+            lctx.globalAlpha = config.causticStrength;
+            lctx.fillStyle = this.causticPattern;
+
+            const causticMat = DOMMatrix.fromMatrix(camMatrix);
+            causticMat.translateSelf(cDx, cDy);
+            this.causticPattern.setTransform(causticMat);
+
+            lctx.fillRect(0, 0, lw, lh);
+            lctx.globalCompositeOperation = 'source-over';
+            lctx.globalAlpha = 1.0;
         }
 
-        ctx.globalCompositeOperation = 'overlay'; // or screen/lighter
-        ctx.globalAlpha = config.causticStrength;
-        ctx.fillStyle = this.causticPattern;
-
-        const causticMat = DOMMatrix.fromMatrix(camMatrix);
-        causticMat.translateSelf(cDx, cDy);
-        this.causticPattern.setTransform(causticMat);
-
-        ctx.fillRect(0, 0, width, height);
-
+        // Single upscaled blit to the screen
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.drawImage(this.lowCanvas, 0, 0, width, height);
         ctx.restore();
     }
 }

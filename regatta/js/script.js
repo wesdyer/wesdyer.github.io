@@ -686,17 +686,22 @@ class BotController {
         if (this.pathTimer <= 0) needsReplan = true;
         if (!this.finalTarget || (destX-this.finalTarget.x)**2 + (destY-this.finalTarget.y)**2 > 50*50) needsReplan = true;
 
-        // If islands exist, use planner
-        if (state.course.islands && state.course.islands.length > 0) {
+        // If pathable islands exist, use planner (banks are excluded — the
+        // river corridor is handled by the clamp + reactive avoidance)
+        const navIslands = state.course.navIslands || state.course.islands;
+        if (navIslands && navIslands.length > 0) {
             if (needsReplan) {
                 this.finalTarget = { x: destX, y: destY };
                 // Plan path
                 this.currentPath = this.planner.findPath(
                     { x: boat.x, y: boat.y },
                     this.finalTarget,
-                    state.course.islands
+                    navIslands,
+                    state.course.navVersion
                 );
-                this.pathTimer = 2.0 + Math.random(); // Replan every 2-3s
+                // Replan every 2-3s; faster around drifting ice, whose
+                // positions go stale quickly
+                this.pathTimer = (state.race.venueFx && state.race.venueFx.ice) ? 1.2 + Math.random() * 0.6 : 2.0 + Math.random();
             }
 
             // Prune visited waypoints
@@ -722,7 +727,7 @@ class BotController {
         const boat = this.boat;
         const localWind = getWindAt(boat.x, boat.y);
         const wd = localWind.direction;
-        const current = state.race.conditions.current;
+        const current = getCurrentAt(boat.x, boat.y);
 
         const dx = target.x - boat.x;
         const dy = target.y - boat.y;
@@ -966,6 +971,34 @@ class BotController {
             const windBonus = (futureEffective - state.wind.baseSpeed);
             const pressureCoeff = 0.1 * (1.0 + boostFactor) * traits.pressureSense;
             score += windBonus * pressureCoeff;
+
+            // 4b. Current Scouting (river): score the tack by the water it
+            // LEADS TO — slack near the banks against an adverse stream, full
+            // midstream push when the flow helps. This is what makes river
+            // lane strategy exist for the AI at all: the current under the
+            // keel is the same for both tacks and cancels out of the choice.
+            if (state.race.riverCurrent) {
+                const futureCur = getCurrentAt(projX, projY);
+                if (futureCur && futureCur.speed > 0.05) {
+                    const helping = Math.cos(futureCur.direction - angleToTarget) * (futureCur.speed / 4.0);
+                    score += helping * 0.5;
+                }
+            }
+
+            // 4c. Land feasibility: a tack whose projected position is inside
+            // an island (or beyond the river's sailable water) ends in an
+            // avoidance scramble and a forced tack-back — tax it up front.
+            if (state.course.islands && state.course.islands.length) {
+                for (const isl of state.course.islands) {
+                    const dIsl2 = (projX - isl.x) ** 2 + (projY - isl.y) ** 2;
+                    if (dIsl2 < isl.radius * isl.radius) { score -= 0.6; break; }
+                }
+            }
+            if (state.race.riverCurrent) {
+                const rcF = state.race.riverCurrent;
+                const latF = (projX - rcF.cx) * rcF.rx + (projY - rcF.cy) * rcF.ry;
+                if (Math.abs(latF) > 1050) score -= 0.6;
+            }
 
             // 5. Wind Shift Lift/Header Bonus
             // When wind shifts right (positive), starboard tack TWA decreases (header),
@@ -1396,6 +1429,60 @@ class BotController {
         const aggro = this.boat.traits ? this.boat.traits.aggro : 0;
         if (aggro && !isStartPhase) safeDist *= (1 - 0.12 * aggro);
 
+        // RRS 19 (Room at an Obstruction): find overlapped boats that have
+        // land close on their far side while WE sit outside them — we owe
+        // them room to pass it. Computed once; candidates that would close
+        // their escape gap get taxed at rule-violation weight below.
+        const rule19Pairs = [];
+        if (state.course.islands && state.course.islands.length && this.livenessState === 'normal'
+            && window.Rules && window.Rules.isOverlapped) {
+            const boat0 = this.boat;
+            for (const other of state.boats) {
+                if (other === boat0 || other.raceState.finished) continue;
+                const dxo = other.x - boat0.x, dyo = other.y - boat0.y;
+                if (dxo * dxo + dyo * dyo > 220 * 220) continue;
+                for (const isl of state.course.islands) {
+                    const ox = other.x - isl.x, oy = other.y - isl.y;
+                    const d2i = ox * ox + oy * oy;
+                    const lim = isl.radius + 320;
+                    if (d2i > lim * lim) continue; // squared early-out before sqrt
+                    const oc = Math.sqrt(d2i);
+                    const edgeGap = oc - isl.radius;
+                    if (edgeGap > 320 || edgeGap < -50) continue;
+                    const ax = ox / Math.max(1, oc), ay = oy / Math.max(1, oc); // escape axis
+                    const myProj = (boat0.x - isl.x) * ax + (boat0.y - isl.y) * ay;
+                    if (myProj < oc + 15) continue;                    // we are not outside
+                    if (!window.Rules.isOverlapped(boat0, other)) continue;
+                    rule19Pairs.push({ other, ax, ay });
+                    break;
+                }
+            }
+        }
+
+        // Perf: prune static obstacles to those reachable within the lookahead
+        // disc ONCE per decision — the candidate loop below runs 15 headings,
+        // and with the river's ~86 bank islands the unpruned inner loops cost
+        // ~600k segment-distance checks per second across the fleet.
+        const reach = speed * (lookaheadFrames / 60) + 120;
+        let nearIslands = null;
+        if (state.course.islands && state.course.islands.length) {
+            nearIslands = [];
+            for (const isl of state.course.islands) {
+                const dx = isl.x - this.boat.x, dy = isl.y - this.boat.y;
+                const rr = isl.radius + reach;
+                if (dx * dx + dy * dy < rr * rr) nearIslands.push(isl);
+            }
+        }
+        let nearWeeds = null;
+        if (state.course.weeds) {
+            nearWeeds = [];
+            for (const w of state.course.weeds) {
+                const dx = w.x - this.boat.x, dy = w.y - this.boat.y;
+                const rr = w.radius + reach;
+                if (dx * dx + dy * dy < rr * rr) nearWeeds.push(w);
+            }
+        }
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
             
@@ -1538,30 +1625,59 @@ class BotController {
             }
 
             // 4. Island - Collision Check (Local Layer)
-            if (state.course.islands) {
+            if (nearIslands && nearIslands.length) {
                 // We use the segment from boat to future position
                 const start = { x: boat.x, y: boat.y };
                 const end = { x: futureX, y: futureY };
 
-                for (const isl of state.course.islands) {
+                for (const isl of nearIslands) {
+                    // Drifting floes move 20-60u within the lookahead window;
+                    // static geometry checks aim boats at where the gap WAS.
+                    // Padding the floe's effective radius by its possible
+                    // travel restores the margin (74% of arctic penalties were
+                    // floe groundings before this).
+                    const movePad = isl.isFloe ? 75 : 0;
                     // Quick Bounding Box/Circle Check
                     const d = Geom.distToSegment({x: isl.x, y: isl.y}, start, end);
-                    if (d < isl.radius + 30) { // Close to island
+                    if (d < isl.radius + 30 + movePad) { // Close to island
                         // Detailed Polygon Check
                         // Check if segment intersects or if end point is inside
-                        if (Geom.segmentIntersectsPoly(start, end, isl.vertices)) {
+                        if (Geom.segmentIntersectsPoly(start, end, isl.vertices) || (isl.isFloe && d < isl.radius + movePad * 0.6)) {
                             staticCollision = true;
                             cost += 500000; // HUGE penalty (Hard Constraint)
                         } else {
                             // Proximity penalty (Buffer zone)
-                            // If distance to edge is < safeDist
-                            // Approximation: distance to center < radius + safe
-                            // Better: Distance to polygon? Too expensive?
                             // Use Circle approx for proximity cost
-                            if (d < isl.radius + 80) {
-                                proximityCost += 10000 * (1.0 - (d - isl.radius)/80);
+                            const band = 80 + movePad;
+                            if (d < isl.radius + band) {
+                                proximityCost += 10000 * (1.0 - (d - isl.radius)/band);
                             }
                         }
+                    }
+                }
+            }
+
+            // 3b. RRS 19 obligation: this candidate squeezes an inside boat
+            // toward the land — treat like any other rule violation.
+            for (const r19 of rule19Pairs) {
+                const o = r19.other;
+                const tSec = lookaheadFrames / 60;
+                const ovx19 = (o.velocity && o.velocity.x) ? o.velocity.x * 60 : Math.sin(o.heading) * o.speed * 60;
+                const ovy19 = (o.velocity && o.velocity.y) ? o.velocity.y * 60 : -Math.cos(o.heading) * o.speed * 60;
+                const gap = (futureX - (o.x + ovx19 * tSec)) * r19.ax + (futureY - (o.y + ovy19 * tSec)) * r19.ay;
+                if (gap < 110) cost += 22000;
+            }
+
+            // 4b. Weed patches (Swamp) — passable but slow, so a soft cost:
+            // steer around them when there's a clean lane, plough through
+            // when the detour would cost more.
+            if (nearWeeds && nearWeeds.length) {
+                const start = { x: boat.x, y: boat.y };
+                const end = { x: futureX, y: futureY };
+                for (const w of nearWeeds) {
+                    const d = Geom.distToSegment({ x: w.x, y: w.y }, start, end);
+                    if (d < w.radius) {
+                        proximityCost += 2500 * (1.0 - d / w.radius);
                     }
                 }
             }
@@ -1787,10 +1903,528 @@ const DEFAULT_SETTINGS = {
     hullColor: '#f1f5f9',
     sailColor: '#ffffff',
     cockpitColor: '#cbd5e1',
-    spinnakerColor: '#ef4444'
+    spinnakerColor: '#ef4444',
+    venue: 'bay',
+    customizeConditions: false
 };
 
 let settings = { ...DEFAULT_SETTINGS };
+
+// --- Venues -----------------------------------------------------------------
+// A venue is a parameter bundle over the existing condition systems plus at
+// most one bespoke mechanic (fx flags). Ranges are [min, max]; a value is
+// drawn per race. 'bay' is the default and deliberately has NO overrides —
+// resetGame's own randomization IS the Bay, so eval baselines and RNG
+// sequences stay untouched when no other venue is selected.
+// Current exists only in the river (spatial field via getCurrentAt).
+const VENUES = {
+    bay: {
+        label: 'Bay', emoji: '⛵',
+        blurb: 'Home waters. A bit of everything — the all-rounder venue.',
+        fx: {}
+    },
+    lake: {
+        label: 'Lake', emoji: '🏞️',
+        blurb: 'Light, shifty and puffy. Read the wind or watch it leave you.',
+        wind: [6, 12],
+        cond: { shiftiness: [0.7, 1.0], variability: [0.6, 0.9], puffiness: [0.6, 0.9], gustStrengthBias: [0.35, 0.6], puffShiftiness: [0.6, 0.9] },
+        islands: { count: [2, 4], maxSize: [0.1, 0.35], clustering: [0.1, 0.5] },
+        palette: { baseColor: '#0e7490', deepColor: '#155e75', shallowColor: '#22d3ee', shorelineColor: '#4ade80',
+                   gusts: { gustDark: [6, 55, 75], gustMid: [10, 78, 102], lullBright: [168, 232, 240], lullMid: [140, 216, 228] } },
+        fx: {}
+    },
+    ocean: {
+        label: 'Ocean', emoji: '🌊',
+        blurb: 'Steady breeze and big rolling swell. Surf it downwind, punch it upwind.',
+        wind: [12, 20],
+        cond: { shiftiness: [0.05, 0.2], variability: [0.1, 0.3], puffiness: [0.2, 0.4], gustStrengthBias: [0.5, 0.7], puffShiftiness: [0.1, 0.3] },
+        islands: { count: [0, 0] },
+        palette: { baseColor: '#0369a1', deepColor: '#1e3a8a', shallowColor: '#0ea5e9', shorelineColor: '#93c5fd',
+                   gusts: { gustDark: [8, 32, 105], gustMid: [13, 47, 138], lullBright: [138, 198, 244], lullMid: [118, 188, 238] } },
+        fx: { swell: true }
+    },
+    river: {
+        label: 'River', emoji: '🛶',
+        blurb: 'Funneled wind between the banks — and the current decides everything.',
+        wind: [10, 14],
+        cond: { shiftiness: [0.25, 0.45], variability: [0.4, 0.7], puffiness: [0.4, 0.7], gustStrengthBias: [0.4, 0.6], puffShiftiness: [0.2, 0.4] },
+        islands: { count: [0, 0] },
+        palette: { baseColor: '#3f6f5f', deepColor: '#2c5248', shallowColor: '#5c8f7a', shorelineColor: '#a3b18a',
+                   gusts: { gustDark: [18, 52, 42], gustMid: [27, 68, 56], lullBright: [156, 204, 184], lullMid: [134, 190, 168] } },
+        fx: { river: true }
+    },
+    swamp: {
+        label: 'Swamp', emoji: '🐊',
+        blurb: 'Fickle zephyrs, grass islands and weed. Scrappy, claustrophobic racing.',
+        wind: [5, 8],
+        cond: { shiftiness: [0.8, 1.0], variability: [0.8, 1.0], puffiness: [0.8, 1.0], gustStrengthBias: [0.15, 0.35], puffShiftiness: [0.8, 1.0] },
+        islands: { count: [5, 7], maxSize: [0.0, 0.15], clustering: [0.4, 0.8], style: 'grass' },
+        palette: { baseColor: '#606c38', deepColor: '#3a4423', shallowColor: '#7d8a4e', shorelineColor: '#8a9a5b',
+                   gusts: { gustDark: [36, 44, 18], gustMid: [50, 60, 26], lullBright: [184, 192, 142], lullMid: [168, 178, 126] } },
+        fx: { weeds: true }
+    },
+    arctic: {
+        label: 'Arctic', emoji: '🧊',
+        blurb: 'Hard katabatic gusts and drifting ice. Survive first, race second.',
+        wind: [16, 22],
+        cond: { shiftiness: [0.3, 0.5], variability: [0.6, 0.85], puffiness: [0.5, 0.8], gustStrengthBias: [0.75, 0.95], puffShiftiness: [0.4, 0.6] },
+        islands: { count: [0, 0] },
+        palette: { baseColor: '#475569', deepColor: '#1e293b', shallowColor: '#64748b', shorelineColor: '#e2e8f0',
+                   gusts: { gustDark: [14, 20, 34], gustMid: [22, 31, 50], lullBright: [198, 214, 230], lullMid: [180, 200, 222], snow: true } },
+        fx: { ice: true, overpowered: true }
+    }
+};
+
+// Bay palette = whatever water.js shipped with; captured at load so venue
+// switches can restore it.
+let DEFAULT_WATER_PALETTE = null;
+
+// Puff/lull tints follow the venue's water so cat's-paws read as pressure on
+// THIS water, not blue patches pasted on top. Bay keeps the original blues.
+const DEFAULT_GUST_COLORS = { gustDark: [9, 46, 130], gustMid: [11, 63, 176], lullBright: [150, 222, 255], lullMid: [120, 210, 255] };
+let activeGustColors = DEFAULT_GUST_COLORS;
+
+function applyVenuePalette(venueKey) {
+    if (!window.WATER_CONFIG) return;
+    if (!DEFAULT_WATER_PALETTE) {
+        DEFAULT_WATER_PALETTE = {
+            baseColor: window.WATER_CONFIG.baseColor,
+            deepColor: window.WATER_CONFIG.deepColor,
+            shallowColor: window.WATER_CONFIG.shallowColor,
+            shorelineColor: window.WATER_CONFIG.shorelineColor
+        };
+    }
+    const venuePal = VENUES[venueKey] && VENUES[venueKey].palette;
+    const pal = venuePal || DEFAULT_WATER_PALETTE;
+    const { gusts, ...waterPal } = pal;
+    Object.assign(window.WATER_CONFIG, waterPal);
+    activeGustColors = (venuePal && venuePal.gusts) || DEFAULT_GUST_COLORS;
+    GUST_SPRITES = null; // rebake puff/lull sprites in the new tint
+}
+
+// Apply a venue's condition ranges on top of resetGame's randomized defaults.
+// Bay is a no-op (beyond clearing fx + restoring the palette) by design.
+function applyVenueConditions() {
+    const key = (settings.venue && VENUES[settings.venue]) ? settings.venue : 'bay';
+    const v = VENUES[key];
+    const cond = state.race.conditions;
+
+    state.race.venue = key;
+    state.race.venueFx = { ...(v.fx || {}) };
+    applyVenuePalette(key);
+
+    const draw = (range) => range[0] + Math.random() * (range[1] - range[0]);
+
+    if (v.wind) {
+        state.wind.baseSpeed = draw(v.wind);
+        state.wind.speed = state.wind.baseSpeed;
+    }
+    if (v.cond) {
+        for (const k of Object.keys(v.cond)) cond[k] = draw(v.cond[k]);
+    }
+    if (v.islands) {
+        cond.islandCount = Math.round(draw(v.islands.count));
+        if (v.islands.maxSize) cond.islandMaxSize = draw(v.islands.maxSize);
+        if (v.islands.clustering) cond.islandClustering = draw(v.islands.clustering);
+        cond.islandStyle = v.islands.style || 'tropical';
+    } else {
+        cond.islandStyle = 'tropical';
+    }
+    // Venues own the current: only the river has one, and it's spatial.
+    if (key !== 'bay') cond.current = null;
+}
+
+// --- Venue mechanics -------------------------------------------------------
+
+// Ocean swell: long waves travelling downwind. Sailing WITH them surfs
+// (net bonus + surge cycles); punching INTO them costs. Zero effect abeam.
+// (celerity is in units per state.time tick; state.time runs at 0.24x real
+// seconds, so 250 here ≈ 60 units/sec of real crest travel)
+const SWELL = { wavelength: 1200, celerity: 250, polarBias: 0.03, surge: 0.05 };
+
+// Polar: above this effective wind, boats become overpowered; the handling
+// stat decides how much pace they bleed. More wind stops being strictly faster.
+const OVERPOWERED = { threshold: 18, costPerKnot: 0.03, handlingRelief: 0.08, maxCost: 0.25 };
+
+// Swamp weeds: soft drag zones — up to this much boatspeed lost at patch center.
+const WEED_DRAG = 0.45;
+
+// Combined venue multiplier on a boat's target speed. Applied identically to
+// player and AI so venues change the racing, not the fairness.
+function getVenueSpeedFactor(boat, effectiveWind) {
+    const fx = state.race.venueFx;
+    if (!fx) return 1.0;
+    let f = 1.0;
+
+    if (fx.swell) {
+        const sd = state.wind.baseDirection;
+        const ux = -Math.sin(sd), uy = Math.cos(sd); // downwind travel unit
+        const along = boat.x * ux + boat.y * uy;
+        const phase = ((along - state.time * SWELL.celerity) / SWELL.wavelength) * Math.PI * 2;
+        const align = Math.cos(normalizeAngle(boat.heading - sd - Math.PI)); // +1 running, -1 beating
+        f *= 1 + align * (SWELL.polarBias + SWELL.surge * Math.sin(phase));
+    }
+
+    if (fx.overpowered && effectiveWind > OVERPOWERED.threshold) {
+        const excess = effectiveWind - OVERPOWERED.threshold;
+        const cope = Math.max(0.3, 1 - (boat.stats.handling || 0) * OVERPOWERED.handlingRelief);
+        f *= 1 - Math.min(OVERPOWERED.maxCost, excess * OVERPOWERED.costPerKnot * cope);
+    }
+
+    boat.inWeeds = false;
+    if (fx.weeds && state.course.weeds) {
+        for (const w of state.course.weeds) {
+            const dx = boat.x - w.x, dy = boat.y - w.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 < w.radius * w.radius) {
+                const depth = 1 - Math.sqrt(d2) / w.radius;
+                f *= 1 - WEED_DRAG * Math.min(1, depth * 1.5);
+                boat.inWeeds = true;
+                break;
+            }
+        }
+    }
+
+    return f;
+}
+
+// Local water current. Uniform everywhere except the river, where it runs
+// along the course axis — strongest midstream, dying (and slightly reversing
+// as a counter-eddy) at the banks. Classic river tactics: ride the middle
+// when it helps, hug the bank when it hurts.
+function getCurrentAt(x, y) {
+    const rc = state.race.riverCurrent;
+    if (rc) {
+        const lat = (x - rc.cx) * rc.rx + (y - rc.cy) * rc.ry; // cross-track distance
+        const t = Math.min(1, Math.abs(lat) / rc.halfWidth);
+
+        // Along-course envelope: the flow slackens to ~25% near the start line
+        // and the windward gate (rivers pool at constrictions). Without this the
+        // AI's start timing — which doesn't model current — gets boats swept
+        // downstream at the gun and a quarter of the fleet DNFs beating back.
+        const along = (x - rc.cx) * rc.ux + (y - rc.cy) * rc.uy + rc.dist / 2;
+        const t1 = Math.max(0, Math.min(1, (along - 200) / 1000));
+        const t2 = Math.max(0, Math.min(1, (rc.dist - 200 - along) / 1000));
+        const env = 0.25 + 0.75 * Math.min(t1, t2);
+
+        const signed = rc.max * env * (1.15 * (1 - t * t) - 0.15);
+        return {
+            speed: Math.abs(signed),
+            direction: signed >= 0 ? rc.flowDir : normalizeAngle(rc.flowDir + Math.PI)
+        };
+    }
+    return state.race.conditions.current;
+}
+
+// River banks: chains of grassy islands lining both sides of the course.
+// Being islands, they inherit collision, AI avoidance, pathfinding and wind
+// shadow (less breeze near the bank — which pairs with the weaker current).
+function generateRiverBanks(rng) {
+    const d = state.wind.baseDirection;
+    const ux = Math.sin(d), uy = -Math.cos(d);   // course axis (start -> windward)
+    const rx = -uy, ry = ux;                      // lateral
+    const dist = state.race.legLength || 4000;
+    const lateral = 1550;                         // bank centreline offset
+    // Step/radius/jag chosen so adjacent bank islands ALWAYS overlap even at
+    // minimum vertex radius (0.85 * 260 * 2 = 442 > 300 + jitter) — a gap in
+    // the chain lets boats squeeze out of the river and DNF wandering behind it.
+    const step = 300;
+
+    // The river is a CLOSED stadium: two side chains plus end caps well inside
+    // the circular arena. Open ends stranded boats in the wedge pocket where
+    // bank met boundary circle (29-33% DNF in evals); flat caps are escapable
+    // and the wedge is unreachable.
+    const capLo = -1800;
+    const capHi = dist + 1800;
+
+    const banks = [];
+    const makeBank = (cx, cy) => {
+        const r = 260 + rng() * 80;
+        const vertices = [];
+        const points = 8 + Math.floor(rng() * 4);
+        for (let j = 0; j < points; j++) {
+            const theta = (j / points) * Math.PI * 2;
+            const vr = r * (0.85 + rng() * 0.3);
+            vertices.push({ x: cx + Math.cos(theta) * vr, y: cy + Math.sin(theta) * vr });
+        }
+        const vegVertices = vertices.map(v => ({ x: cx + (v.x - cx) * 0.75, y: cy + (v.y - cy) * 0.75 }));
+        const trees = [];
+        const treeCount = 2 + Math.floor(rng() * 3);
+        for (let k = 0; k < treeCount; k++) {
+            const ang = rng() * Math.PI * 2, dst = rng() * r * 0.4;
+            trees.push({ x: cx + Math.cos(ang) * dst, y: cy + Math.sin(ang) * dst, size: 14 + rng() * 10, rotation: rng() * Math.PI * 2 });
+        }
+        banks.push({ x: cx, y: cy, radius: r, vertices, vegVertices, trees, rocks: [], style: 'grass', isBank: true, soft: true });
+    };
+
+    // Side chains (overlap the caps at the corners)
+    for (let side = -1; side <= 1; side += 2) {
+        for (let along = capLo - 300; along <= capHi + 300; along += step) {
+            const jitterL = (rng() - 0.5) * 80;
+            makeBank(ux * along + rx * (lateral + jitterL) * side, uy * along + ry * (lateral + jitterL) * side);
+        }
+    }
+    // End caps (span past the side chains so the corners are solid)
+    for (const capAlong of [capLo, capHi]) {
+        for (let lat2 = -(lateral + 250); lat2 <= lateral + 250; lat2 += step) {
+            const jitterA = (rng() - 0.5) * 80;
+            makeBank(ux * (capAlong + jitterA) + rx * lat2, uy * (capAlong + jitterA) + ry * lat2);
+        }
+    }
+
+    state.race.riverCurrent = {
+        cx: ux * dist / 2, cy: uy * dist / 2,
+        ux, uy, rx, ry, dist,
+        halfWidth: lateral - 150,
+        max: 0.9 + rng() * 0.4,
+        flowDir: rng() < 0.5 ? d : normalizeAngle(d + Math.PI)
+    };
+
+    // ── Continuous shore (visual only) ──────────────────────────────────
+    // The bank islands above become INVISIBLE colliders/AI markers; what the
+    // player sees is one continuous land mass with a wavy water's edge,
+    // rendered as a single ring path (see drawRiverShore). Generated LAST so
+    // the extra rng() draws cannot perturb the eval-verified course/current.
+    // Edge stays outside the ±1120 physics clamp: 1240 − 55 − 35 = 1150 min.
+    const worldPt = (a, l) => ({ x: ux * a + rx * l, y: uy * a + ry * l });
+    const ph = [rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2, rng() * Math.PI * 2];
+    const edgeLat = (a, side) => 1240
+        + Math.sin(a / 640 + (side > 0 ? ph[0] : ph[2])) * 55
+        + Math.sin(a / 233 + (side > 0 ? ph[1] : ph[3])) * 35;
+
+    const ring = [];
+    const stepS = 130;
+    const capLoV = capLo + 150, capHiV = capHi - 150; // visual water end, inside the cap colliders
+    for (let a = capLoV; a <= capHiV; a += stepS) ring.push(worldPt(a, -edgeLat(a, -1)));
+    for (let l = -edgeLat(capHiV, -1); l <= edgeLat(capHiV, 1); l += stepS) ring.push(worldPt(capHiV + Math.sin(l / 300 + ph[1]) * 45, l));
+    for (let a = capHiV; a >= capLoV; a -= stepS) ring.push(worldPt(a, edgeLat(a, 1)));
+    for (let l = edgeLat(capLoV, 1); l >= -edgeLat(capLoV, -1); l -= stepS) ring.push(worldPt(capLoV + Math.sin(l / 300 + ph[3]) * 45, l));
+
+    // Shore decorations, culled per-frame in drawRiverShore
+    const decorations = [];
+    for (let side = -1; side <= 1; side += 2) {
+        for (let a = capLoV + 100; a <= capHiV - 100; a += 160 + rng() * 140) {
+            const l = (edgeLat(a, side) + 70 + rng() * 260) * side;
+            const p = worldPt(a, l);
+            decorations.push({
+                x: p.x, y: p.y,
+                size: 15 + rng() * 12,
+                rotation: rng() * Math.PI * 2,
+                type: rng() < 0.75 ? 'tree' : 'rock'
+            });
+        }
+    }
+
+    state.course.riverShore = { ring, decorations };
+
+    return banks;
+}
+
+// Polar ice floes: drifting islands. Slow enough for the AI's reactive
+// avoidance; fast enough that the course never looks the same twice.
+function generateIceFloes(rng) {
+    const boundary = state.course.boundary;
+    const marks = state.course.marks;
+    const floes = [];
+    const count = 9 + Math.floor(rng() * 4);
+
+    for (let i = 0; i < count && floes.length < count; i++) {
+        let placed = false;
+        for (let attempt = 0; attempt < 12 && !placed; attempt++) {
+            // The first two are proper BERGS — big, slow, race-defining;
+            // the rest are car-to-house-sized floes.
+            const r = i < 2 ? 260 + rng() * 120 : 70 + rng() * 90;
+            const ang = rng() * Math.PI * 2;
+            const dst = Math.sqrt(rng()) * (boundary.radius - 300);
+            const cx = boundary.x + Math.sin(ang) * dst;
+            const cy = boundary.y - Math.cos(ang) * dst;
+
+            let ok = true;
+            for (const m of marks) {
+                if ((cx - m.x) ** 2 + (cy - m.y) ** 2 < (450 + r) ** 2) { ok = false; break; }
+            }
+            for (const f of floes) {
+                if ((cx - f.x) ** 2 + (cy - f.y) ** 2 < (f.radius + r + 60) ** 2) { ok = false; break; }
+            }
+            if (!ok) continue;
+
+            floes.push(makeFloe(cx, cy, r, rng));
+            placed = true;
+        }
+    }
+    return floes;
+}
+
+function makeFloe(cx, cy, r, rng) {
+    const vertices = [];
+    const points = 7 + Math.floor(rng() * 4);
+    for (let j = 0; j < points; j++) {
+        const theta = (j / points) * Math.PI * 2;
+        const vr = r * (0.8 + rng() * 0.35);
+        vertices.push({ x: cx + Math.cos(theta) * vr, y: cy + Math.sin(theta) * vr });
+    }
+    const vegVertices = vertices.map(v => ({ x: cx + (v.x - cx) * 0.7, y: cy + (v.y - cy) * 0.7 }));
+
+    // Pressure cracks: 2-4 jagged strokes across the surface (relative coords,
+    // baked into the sprite so they ride along as the floe drifts)
+    const cracks = [];
+    const crackCount = 2 + Math.floor(rng() * 3);
+    for (let k = 0; k < crackCount; k++) {
+        const a1 = rng() * Math.PI * 2;
+        const a2 = a1 + Math.PI * (0.6 + rng() * 0.5);
+        const r1 = r * (0.25 + rng() * 0.5), r2 = r * (0.3 + rng() * 0.55);
+        const midJitter = (rng() - 0.5) * r * 0.3;
+        cracks.push({
+            ax: Math.cos(a1) * r1, ay: Math.sin(a1) * r1,
+            mx: Math.cos((a1 + a2) / 2) * midJitter, my: Math.sin((a1 + a2) / 2) * midJitter,
+            bx: Math.cos(a2) * r2, by: Math.sin(a2) * r2
+        });
+    }
+
+    return {
+        // soft: true — RRS 31 penalizes touching MARKS, not obstructions.
+        // Hitting ice costs you 60% of your speed (hull damage), not a 360;
+        // rules penalties in the Arctic come from fouling BOATS (incl. Rule 19
+        // squeezes into the ice, which stay very much illegal).
+        x: cx, y: cy, radius: r, vertices, vegVertices, trees: [], rocks: [], cracks, soft: true,
+        style: 'ice', isFloe: true,
+        // Bergs are massive — they barely answer to the wind
+        driftFactor: (0.7 + rng() * 0.6) * (r > 220 ? 0.45 : 1),
+        driftSkew: (rng() - 0.5) * 0.5
+    };
+}
+
+// Brash ice: sparse fist-to-fridge-sized white chunks drifting between the
+// floes. Pure texture — no collision, no AI, just "this water is cold".
+function generateBrash(rng) {
+    const boundary = state.course.boundary;
+    const brash = [];
+    const count = 70 + Math.floor(rng() * 30);
+    for (let i = 0; i < count; i++) {
+        const ang = rng() * Math.PI * 2;
+        const dst = Math.sqrt(rng()) * boundary.radius;
+        brash.push({
+            x: boundary.x + Math.sin(ang) * dst,
+            y: boundary.y - Math.cos(ang) * dst,
+            r: 2.5 + rng() * 6,
+            driftFactor: 0.8 + rng() * 0.7,
+            skew: (rng() - 0.5) * 0.7
+        });
+    }
+    return brash;
+}
+
+function drawBrashIce(ctx) {
+    if (!state.course.brash) return;
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewR2 = (Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 20) ** 2;
+    ctx.save();
+    ctx.fillStyle = 'rgba(235, 244, 250, 0.6)';
+    for (const b of state.course.brash) {
+        const dx = b.x - camX, dy = b.y - camY;
+        if (dx * dx + dy * dy > viewR2) continue;
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.restore();
+}
+
+function updateIceFloes(dt) {
+    if (!state.race.venueFx || !state.race.venueFx.ice || !state.course.islands) return;
+    const boundary = state.course.boundary;
+    if (!boundary) return;
+
+    // Ice drifts at ~2-3% of the wind, skewed slightly off the wind axis.
+    // (0.55 -> 0.45: slower ice erodes the AI's avoidance margins less)
+    const d = state.wind.direction;
+    const base = state.wind.speed * 0.45; // units/sec at driftFactor 1
+
+    // Floes moved: invalidate the planner's inflated-island cache
+    if (state.course.navVersion !== undefined) state.course.navVersion++;
+
+    // Brash drifts with the ice (respawns on the upwind rim like floes)
+    if (state.course.brash) {
+        for (const bi of state.course.brash) {
+            const dir = d + bi.skew;
+            bi.x += -Math.sin(dir) * base * bi.driftFactor * dt;
+            bi.y += Math.cos(dir) * base * bi.driftFactor * dt;
+            const rx2 = bi.x - boundary.x, ry2 = bi.y - boundary.y;
+            if (rx2 * rx2 + ry2 * ry2 > (boundary.radius + 100) ** 2) {
+                const ang = d + (Math.random() - 0.5) * 2.0;
+                const rr = boundary.radius - 150;
+                bi.x = boundary.x + Math.sin(ang) * rr;
+                bi.y = boundary.y - Math.cos(ang) * rr;
+            }
+        }
+    }
+
+    for (const isl of state.course.islands) {
+        if (!isl.isFloe) continue;
+        const dir = d + isl.driftSkew;
+        const vx = -Math.sin(dir) * base * isl.driftFactor * dt;
+        const vy = Math.cos(dir) * base * isl.driftFactor * dt;
+        isl.x += vx; isl.y += vy;
+        for (const v of isl.vertices) { v.x += vx; v.y += vy; }
+        for (const v of isl.vegVertices) { v.x += vx; v.y += vy; }
+
+        // Drifted out of the arena: respawn just inside the upwind rim at a
+        // random bearing, so it sweeps back down across the course.
+        const relX = isl.x - boundary.x, relY = isl.y - boundary.y;
+        if (relX * relX + relY * relY > (boundary.radius + isl.radius + 100) ** 2) {
+            const ang = d + (Math.random() - 0.5) * 2.0; // upwind side ± ~57°
+            const rr = boundary.radius - isl.radius - 150;
+            const nx = boundary.x + Math.sin(ang) * rr;
+            const ny = boundary.y - Math.cos(ang) * rr;
+            const dxv = nx - isl.x, dyv = ny - isl.y;
+            isl.x = nx; isl.y = ny;
+            for (const v of isl.vertices) { v.x += dxv; v.y += dyv; }
+            for (const v of isl.vegVertices) { v.x += dxv; v.y += dyv; }
+        }
+    }
+}
+
+// Swamp weed patches: soft circular drag zones (no collision — just slow).
+function generateWeeds(rng) {
+    const boundary = state.course.boundary;
+    const marks = state.course.marks;
+    const mStart = { x: (marks[0].x + marks[1].x) / 2, y: (marks[0].y + marks[1].y) / 2 };
+    const mUpwind = { x: (marks[2].x + marks[3].x) / 2, y: (marks[2].y + marks[3].y) / 2 };
+    const weeds = [];
+    const count = 9 + Math.floor(rng() * 4);
+
+    for (let i = 0; i < count; i++) {
+        for (let attempt = 0; attempt < 12; attempt++) {
+            const r = 130 + rng() * 150;
+            const ang = rng() * Math.PI * 2;
+            const dst = Math.sqrt(rng()) * (boundary.radius - 400);
+            const cx = boundary.x + Math.sin(ang) * dst;
+            const cy = boundary.y - Math.cos(ang) * dst;
+
+            let ok = true;
+            for (const m of marks) {
+                if ((cx - m.x) ** 2 + (cy - m.y) ** 2 < (300 + r) ** 2) { ok = false; break; }
+            }
+            if ((cx - mStart.x) ** 2 + (cy - mStart.y) ** 2 < (550 + r) ** 2) ok = false;
+            if ((cx - mUpwind.x) ** 2 + (cy - mUpwind.y) ** 2 < (550 + r) ** 2) ok = false;
+            for (const w of weeds) {
+                if ((cx - w.x) ** 2 + (cy - w.y) ** 2 < (w.radius + r) ** 2) { ok = false; break; }
+            }
+            if (!ok) continue;
+
+            // Speckle layout is baked so patches don't shimmer frame to frame
+            const clumps = [];
+            const clumpCount = Math.floor(r / 12);
+            for (let k = 0; k < clumpCount; k++) {
+                const a = rng() * Math.PI * 2, dd = Math.sqrt(rng()) * r * 0.9;
+                clumps.push({ x: cx + Math.cos(a) * dd, y: cy + Math.sin(a) * dd, size: 6 + rng() * 12 });
+            }
+            weeds.push({ x: cx, y: cy, radius: r, clumps });
+            break;
+        }
+    }
+    return weeds;
+}
 
 // J/111 Polar Data
 const J111_POLARS = {
@@ -2507,8 +3141,12 @@ function getWindAt(x, y) {
     // They reduce speed but don't change direction significantly (unless we want wrapping, but requirements say "meaninfully dampen wind strength")
     let shadowFactor = 1.0;
     
-    if (state.course.islands) {
-        for (const isl of state.course.islands) {
+    // navIslands excludes river banks (their shadows, parallel to the funneled
+    // wind, would blanket the corridor edges in permanent lull-traps — and
+    // getWindAt is called per particle per frame, so the list must be short).
+    const shadowIslands = state.course.navIslands || state.course.islands;
+    if (shadowIslands) {
+        for (const isl of shadowIslands) {
             // Distance from island center
             const dx = x - isl.x;
             const dy = y - isl.y;
@@ -2917,11 +3555,16 @@ const UI = {
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
     rulesStatus: document.getElementById('hud-rules-status'),
+    overpoweredBadge: document.getElementById('hud-overpowered'),
     resultsOverlay: document.getElementById('results-overlay'),
     resultsList: document.getElementById('results-list'),
     resultsRestartButton: document.getElementById('results-restart-button'),
     preRaceOverlay: document.getElementById('pre-race-overlay'),
     // Config Sliders
+    venuePicker: document.getElementById('venue-picker'),
+    venueBlurb: document.getElementById('venue-blurb'),
+    confCustomize: document.getElementById('conf-customize'),
+    customizePanels: document.getElementById('customize-panels'),
     confWindStrength: document.getElementById('conf-wind-strength'),
     confWindVar: document.getElementById('conf-wind-variability'),
     confWindShift: document.getElementById('conf-wind-shiftiness'),
@@ -3058,6 +3701,16 @@ function updateCourseConfig() {
 
 // Update Current Display
 function updateCurrentUI() {
+    // River venue: the current is the venue's spatial field, not a knob.
+    if (state.race.riverCurrent) {
+        if (UI.confCurrentEnable) UI.confCurrentEnable.checked = true;
+        if (UI.currentControls) UI.currentControls.classList.add('opacity-50', 'pointer-events-none');
+        if (UI.valCurrentSpeed) UI.valCurrentSpeed.textContent = state.race.riverCurrent.max.toFixed(1) + " kn midstream";
+        if (UI.valCurrentDir) UI.valCurrentDir.textContent = "—";
+        if (UI.uiCurrentDirText) UI.uiCurrentDirText.textContent = "RIVER FLOW — STRONG MIDSTREAM, SLACK AT BANKS";
+        return;
+    }
+
     const c = state.race.conditions.current;
     const hasCurrent = !!c;
 
@@ -3105,7 +3758,70 @@ function updateCurrentUI() {
     }
 };
 
+// --- Venue picker ----------------------------------------------------------
+function renderVenuePicker() {
+    if (!UI.venuePicker) return;
+    const selected = (settings.venue && VENUES[settings.venue]) ? settings.venue : 'bay';
+
+    if (!UI.venuePicker.childElementCount) {
+        for (const key of Object.keys(VENUES)) {
+            const v = VENUES[key];
+            const btn = document.createElement('button');
+            btn.dataset.venue = key;
+            btn.innerHTML = `<span class="text-xl leading-none">${v.emoji}</span><span class="text-[11px] font-bold uppercase tracking-wider">${v.label}</span>`;
+            btn.addEventListener('click', (e) => { e.preventDefault(); selectVenue(key); });
+            UI.venuePicker.appendChild(btn);
+        }
+    }
+
+    for (const btn of UI.venuePicker.children) {
+        const active = btn.dataset.venue === selected;
+        btn.className = 'flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-colors ' +
+            (active
+                ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg'
+                : 'bg-slate-900/40 border-white/10 text-slate-300 hover:border-white/30 hover:bg-slate-900/70');
+    }
+    if (UI.venueBlurb) UI.venueBlurb.textContent = VENUES[selected].blurb;
+
+    // Customize toggle: venue-only by default; the condition/course panels
+    // only appear for tinkerers.
+    if (UI.confCustomize) UI.confCustomize.checked = !!settings.customizeConditions;
+    if (UI.customizePanels) UI.customizePanels.classList.toggle('hidden', !settings.customizeConditions);
+}
+
+function selectVenue(key) {
+    if (!VENUES[key] || state.race.status !== 'waiting') return;
+    settings.venue = key;
+    saveSettings();
+
+    // Bay has no ranges of its own (resetGame's randomization IS the Bay), so
+    // returning to it from another venue re-rolls the default conditions here.
+    if (key === 'bay') {
+        state.wind.baseSpeed = 8 + Math.random() * 10;
+        state.wind.speed = state.wind.baseSpeed;
+        const c = state.race.conditions;
+        c.shiftiness = Math.random();
+        c.variability = Math.random();
+        c.puffiness = Math.random();
+        c.gustStrengthBias = Math.random();
+        c.puffShiftiness = Math.random();
+        c.islandCount = 0;
+    }
+
+    applyVenueConditions();
+    initCourse();
+    if (window.WaterRenderer) window.WaterRenderer.init();
+    // Clear stale gusts and reseed at the new venue's density/strength
+    state.gusts = [];
+    const density = 5 + Math.floor(state.race.conditions.puffiness * 20);
+    for (let i = 0; i < density; i++) spawnGlobalGust(true);
+    state.particles = [];
+
+    setupPreRaceOverlay();
+}
+
 function setupPreRaceOverlay() {
+    renderVenuePicker();
     if (!UI.preRaceOverlay) return;
 
     // Show Overlay
@@ -3271,7 +3987,8 @@ function startRace() {
 
     // Fix for Current Toggle State Sync
     // Ensure the game state matches the UI checkbox state exactly before starting
-    if (UI.confCurrentEnable) {
+    // (skipped in the river venue — its spatial current isn't UI-configurable)
+    if (UI.confCurrentEnable && !state.race.riverCurrent) {
         if (UI.confCurrentEnable.checked) {
             // User wants current
             if (!state.race.conditions.current) {
@@ -3313,6 +4030,8 @@ function loadSettings() {
             settings = { ...DEFAULT_SETTINGS, ...parsed };
         } catch (e) { console.error("Failed to parse settings", e); }
     }
+    // Migration: the Polar venue was renamed to Arctic (July 2026)
+    if (settings.venue === 'polar') settings.venue = 'arctic';
     applySettings();
 }
 
@@ -3426,6 +4145,18 @@ if (UI.settingSailColor) UI.settingSailColor.addEventListener('input', (e) => { 
 if (UI.settingCockpitColor) UI.settingCockpitColor.addEventListener('input', (e) => { settings.cockpitColor = e.target.value; saveSettings(); });
 if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.addEventListener('input', (e) => { settings.spinnakerColor = e.target.value; saveSettings(); });
 
+// Customize toggle: ON reveals the condition/course panels; OFF hides them
+// AND re-applies the selected venue preset, so "customize off" always means
+// stock venue conditions rather than invisible leftover tweaks.
+if (UI.confCustomize) {
+    UI.confCustomize.addEventListener('change', (e) => {
+        settings.customizeConditions = e.target.checked;
+        saveSettings();
+        if (UI.customizePanels) UI.customizePanels.classList.toggle('hidden', !settings.customizeConditions);
+        if (!settings.customizeConditions) selectVenue(settings.venue);
+    });
+}
+
 // Pre-Race Config Listeners
 if (UI.confWindStrength) UI.confWindStrength.addEventListener('input', updateConditionDescription);
 if (UI.confWindVar) UI.confWindVar.addEventListener('input', updateConditionDescription);
@@ -3472,6 +4203,7 @@ if (UI.confCourseTimer) UI.confCourseTimer.addEventListener('input', updateCours
 
 if (UI.confCurrentEnable) {
     UI.confCurrentEnable.addEventListener('change', (e) => {
+        if (state.race.riverCurrent) { updateCurrentUI(); return; } // river current is not a knob
         if (e.target.checked) {
             // Enable default current
             state.race.conditions.current = {
@@ -4187,6 +4919,8 @@ function updateBoat(boat, dt) {
     // Note: if boost is negative (e.g. -0.5), BadAir becomes 1.5x worse.
 
     const effectiveWind = Math.max(0, physWindSpeed * (1.0 - effectiveBadAir));
+    boat.effectiveWindNow = effectiveWind; // read by the HUD overpowered badge
+
     let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveWind);
     let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveWind);
     let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
@@ -4295,6 +5029,9 @@ function updateBoat(boat, dt) {
 
     // Archetype identity tax (e.g. shift-whisperers are slow in a straight line)
     if (boat.traits && boat.traits.speedScale !== 1.0) targetKnots *= boat.traits.speedScale;
+
+    // Venue effects: ocean swell surfing, polar overpowering, swamp weed drag
+    targetKnots *= getVenueSpeedFactor(boat, effectiveWind);
 
     let targetGameSpeed = targetKnots * 0.25;
 
@@ -4418,16 +5155,13 @@ function updateBoat(boat, dt) {
         };
     }
 
-    // Apply Current
-    if (state.race.conditions.current) {
-        // current velocity in game units/frame?
-        // current.speed is Knots.
-        // boat.speed is in game units (scaled by SPEED_SCALE ~0.043 for knots->units/frame)
-        // Actually: Speed * 4 = Knots. So Speed = Knots / 4.
-        const c = state.race.conditions.current;
-        const cSpeed = c.speed / 4.0;
-        const cVx = Math.sin(c.direction) * cSpeed;
-        const cVy = -Math.cos(c.direction) * cSpeed;
+    // Apply Current (spatial in the river venue, uniform otherwise)
+    const boatCurrent = getCurrentAt(boat.x, boat.y);
+    if (boatCurrent && boatCurrent.speed > 0.01) {
+        // current.speed is Knots. Speed * 4 = Knots. So Speed = Knots / 4.
+        const cSpeed = boatCurrent.speed / 4.0;
+        const cVx = Math.sin(boatCurrent.direction) * cSpeed;
+        const cVy = -Math.cos(boatCurrent.direction) * cSpeed;
 
         boat.velocity.x += cVx;
         boat.velocity.y += cVy;
@@ -4437,7 +5171,32 @@ function updateBoat(boat, dt) {
     boat.y += boat.velocity.y * timeScale;
 
     // Boundary Check
-    if (state.course.boundary) {
+    if (state.race.riverCurrent) {
+        // River arena is the bank corridor, not the circle. Hard-clamp to the
+        // bank CENTERLINES: SAT vs the bank polygons handles the fine contact,
+        // but a boat that tunnels through overlapping bank islands (SAT push-out
+        // can eject deep intruders out the far side) is snapped back to the
+        // correct side instead of stranding behind the wall.
+        const rc = state.race.riverCurrent;
+        const relX = boat.x - rc.cx, relY = boat.y - rc.cy;
+        let alongC = relX * rc.ux + relY * rc.uy;
+        let latC = relX * rc.rx + relY * rc.ry;
+        // Clamp INSIDE the banks' innermost polygon edge (centreline 1550 minus
+        // max vertex reach ~390, minus a hull margin). Clamping at the centreline
+        // parked boats inside the polygons, where collision push-out and the
+        // clamp fought each other and the fleet ground along the wall to DNF.
+        const latLim = 1120, alongLim = rc.dist / 2 + 1370;
+        let clamped = false;
+        if (Math.abs(latC) > latLim) { latC = Math.sign(latC) * latLim; clamped = true; }
+        if (Math.abs(alongC) > alongLim) { alongC = Math.sign(alongC) * alongLim; clamped = true; }
+        if (clamped) {
+            boat.x = rc.cx + rc.ux * alongC + rc.rx * latC;
+            boat.y = rc.cy + rc.uy * alongC + rc.ry * latC;
+            if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
+                window.onRaceEvent('collision_boundary', { boat });
+            }
+        }
+    } else if (state.course.boundary) {
         const b = state.course.boundary;
         const dx = boat.x - b.x, dy = boat.y - b.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -5056,36 +5815,39 @@ function update(dt) {
     updateBaseWind(dt);
     updateGusts(dt);
 
-    // Current Visuals
-    if (state.race.conditions.current && state.race.conditions.current.speed > 0.1) {
-        const c = state.race.conditions.current;
-        // Current Lines
-        // Density based on speed? Or constant?
-        // "Visual effects should be proportional to the strength"
-        // Strength affects line visibility/count.
-        // Chance to spawn:
-        const spawnChance = (0.2 + (c.speed / 3.0) * 0.5) * 0.25;
-        if (Math.random() < spawnChance) {
-             let range = Math.max(canvas.width, canvas.height) * 1.5;
-             createParticle(state.camera.x + (Math.random()-0.5)*range, state.camera.y + (Math.random()-0.5)*range, 'current', { life: 1.0 + Math.random(), alpha: Math.min(1, c.speed/1.5) });
+    // Current Visuals (uniform current, or the river's spatial field)
+    if (state.race.riverCurrent || (state.race.conditions.current && state.race.conditions.current.speed > 0.1)) {
+        // Spawn at a random point near the camera; visibility scales with the
+        // LOCAL current there, so the river's midstream reads faster than the banks.
+        const range = Math.max(canvas.width, canvas.height) * 1.5;
+        const px = state.camera.x + (Math.random() - 0.5) * range;
+        const py = state.camera.y + (Math.random() - 0.5) * range;
+        const local = getCurrentAt(px, py);
+        if (local && local.speed > 0.15) {
+            const spawnChance = (0.2 + (local.speed / 3.0) * 0.5) * 0.25;
+            if (Math.random() < spawnChance) {
+                createParticle(px, py, 'current', { life: 1.0 + Math.random(), alpha: Math.min(1, local.speed / 1.5) });
+            }
         }
 
         // Mark Wakes
         if (state.course.marks) {
             for (const m of state.course.marks) {
-                if (Math.random() < 0.3 * (c.speed/3.0)) { // Scale with speed
-                     // Spawn at mark
-                     // Offset slightly in direction of flow? Or around it?
+                const mc = getCurrentAt(m.x, m.y);
+                if (mc && mc.speed > 0.15 && Math.random() < 0.3 * (mc.speed / 3.0)) {
                      // Mark is obstacle. Wake forms downstream.
-                     const flowDir = c.direction;
+                     const flowDir = mc.direction;
                      const offset = 12; // Radius
                      const wx = Math.sin(flowDir) * offset;
                      const wy = -Math.cos(flowDir) * offset;
-                     createParticle(m.x + wx + (Math.random()-0.5)*10, m.y + wy + (Math.random()-0.5)*10, 'mark-wake', { life: 1.5, alpha: 0.5 * (c.speed/3.0), scale: 0.8 });
+                     createParticle(m.x + wx + (Math.random()-0.5)*10, m.y + wy + (Math.random()-0.5)*10, 'mark-wake', { life: 1.5, alpha: 0.5 * (mc.speed/3.0), scale: 0.8 });
                 }
             }
         }
     }
+
+    // Venue: drifting ice floes (Polar)
+    updateIceFloes(dt);
 
     // Sound (Use Player's local wind)
     const resultsVisible = UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden');
@@ -5282,16 +6044,8 @@ function updateParticles(dt) {
              const local = getWindAt(p.x, p.y);
              p.x -= Math.sin(local.direction)*timeScale * (local.speed / 10);
              p.y += Math.cos(local.direction)*timeScale * (local.speed / 10);
-        } else if (p.type === 'current') {
-             const c = state.race.conditions.current;
-             const speed = c ? c.speed : 0;
-             const dir = c ? c.direction : 0;
-             // Move with current (Game Units = Knots / 4)
-             const moveSpeed = (speed / 4.0) * timeScale;
-             p.x += Math.sin(dir) * moveSpeed;
-             p.y -= Math.cos(dir) * moveSpeed;
-        } else if (p.type === 'mark-wake') {
-             const c = state.race.conditions.current;
+        } else if (p.type === 'current' || p.type === 'mark-wake') {
+             const c = getCurrentAt(p.x, p.y);
              const speed = c ? c.speed : 0;
              const dir = c ? c.direction : 0;
              // Move with current (Game Units = Knots / 4)
@@ -5306,22 +6060,33 @@ function updateParticles(dt) {
 }
 
 function drawParticles(ctx, layer) {
+    // Viewport cull: with 10 boats laying wakes across the whole course,
+    // hundreds of particles are off-screen at any moment — skip them before
+    // touching the canvas. (Also skips the per-particle getWindAt/getCurrentAt
+    // lookups for the culled ones.)
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 120;
+    const viewR2 = viewR * viewR;
+    const onScreen = (p) => {
+        const dx = p.x - camX, dy = p.y - camY;
+        return dx * dx + dy * dy < viewR2;
+    };
+
     if (layer === 'current') {
-        // Very dark blue lines
-        // Proportional to strength (opacity/count handled in spawn, here just draw)
-        ctx.strokeStyle = '#0640bf'; // Very dark blue
+        // Dark streamlines, tinted to the venue's water (river = deep green)
+        ctx.strokeStyle = state.race.riverCurrent ? '#14352c' : '#0640bf';
         ctx.lineWidth = 4;
-        const c = state.race.conditions.current;
-        const dir = c ? c.direction : 0;
-        const dx = Math.sin(dir) * 80;
-        const dy = -Math.cos(dir) * 80;
 
         for (const p of state.particles) {
             if (p.type === 'current') {
+                if (!onScreen(p)) continue;
+                const c = getCurrentAt(p.x, p.y);
+                const dir = c ? c.direction : 0;
+                const len = 80 * (c ? Math.min(1, c.speed / 1.5) : 1);
                 ctx.globalAlpha = p.alpha * 0.4; // Semi-transparent
                 ctx.beginPath();
                 ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x + dx, p.y + dy);
+                ctx.lineTo(p.x + Math.sin(dir) * len, p.y - Math.cos(dir) * len);
                 ctx.stroke();
             }
         }
@@ -5330,6 +6095,7 @@ function drawParticles(ctx, layer) {
         ctx.fillStyle = '#ffffff';
         for (const p of state.particles) {
             if (p.type === 'wake' || p.type === 'wake-wave' || p.type === 'mark-wake') {
+                if (!onScreen(p)) continue;
                 ctx.globalAlpha = p.alpha;
                 const s = p.scaleVal || p.scale || 1.0;
                 ctx.beginPath(); ctx.arc(p.x, p.y, 3 * s, 0, Math.PI * 2); ctx.fill();
@@ -5340,6 +6106,7 @@ function drawParticles(ctx, layer) {
         ctx.strokeStyle = '#ffffff';
         for (const p of state.particles) {
             if (p.type === 'wind') {
+                if (!onScreen(p)) continue;
                 const local = getWindAt(p.x, p.y);
                 const windFactor = local.speed / 10;
                 const tailLength = 30 + local.speed * 4;
@@ -5881,11 +6648,70 @@ function drawWater(ctx) {
     }
 }
 
+// Puff/lull sprites: the radial gradient is baked ONCE per venue palette to an
+// offscreen canvas, then each gust is a single drawImage. Building 25 fresh
+// gradients + huge ellipse fills per frame was one of the biggest paint costs.
+let GUST_SPRITES = null;
+function bakeGustSprites() {
+    const gc = activeGustColors;
+    const make = (stops, withSnow) => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 256;
+        const g2 = c.getContext('2d');
+        const grad = g2.createRadialGradient(128, 128, 0, 128, 128, 128);
+        for (const [pos, color] of stops) grad.addColorStop(pos, color);
+        g2.fillStyle = grad;
+        g2.fillRect(0, 0, 256, 256);
+
+        // Arctic squalls: white flurry streaks along the wind axis, clipped
+        // to the puff's own alpha via source-atop. Seeded PRNG — this bakes
+        // lazily mid-race and must never touch Math.random (eval RNG).
+        if (withSnow) {
+            const prand = mulberry32(9377);
+            g2.globalCompositeOperation = 'source-atop';
+            g2.lineCap = 'round';
+            for (let i = 0; i < 70; i++) {
+                const y = 128 + (prand() + prand() - 1) * 100;
+                const x = prand() * 236;
+                const len = 8 + prand() * 26;
+                g2.strokeStyle = `rgba(255, 255, 255, ${0.18 + prand() * 0.3})`;
+                g2.lineWidth = 1.5 + prand() * 1.5;
+                g2.beginPath();
+                g2.moveTo(x, y);
+                g2.lineTo(x + len, y + (prand() - 0.5) * 4);
+                g2.stroke();
+            }
+            g2.globalCompositeOperation = 'source-over';
+        }
+        return c;
+    };
+    GUST_SPRITES = {
+        // Relative alpha profile is baked in; per-gust intensity is applied
+        // via globalAlpha at draw time — output matches the old gradients.
+        gust: make([
+            [0, `rgba(${gc.gustDark[0]}, ${gc.gustDark[1]}, ${gc.gustDark[2]}, 1)`],
+            [0.55, `rgba(${gc.gustMid[0]}, ${gc.gustMid[1]}, ${gc.gustMid[2]}, 0.45)`],
+            [1, `rgba(${gc.gustMid[0]}, ${gc.gustMid[1]}, ${gc.gustMid[2]}, 0)`]
+        ], !!gc.snow),
+        lull: make([
+            [0, `rgba(${gc.lullBright[0]}, ${gc.lullBright[1]}, ${gc.lullBright[2]}, 0.9)`],
+            [0.55, `rgba(${gc.lullMid[0]}, ${gc.lullMid[1]}, ${gc.lullMid[2]}, 0.4)`],
+            [1, `rgba(${gc.lullMid[0]}, ${gc.lullMid[1]}, ${gc.lullMid[2]}, 0)`]
+        ])
+    };
+}
+
 function drawGusts(ctx) {
+    if (!GUST_SPRITES) bakeGustSprites();
+
+    // Viewport cull: gusts live across the whole arena; most are off-screen.
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+
     for (const g of state.gusts) {
-        ctx.save();
-        ctx.translate(g.x, g.y);
-        ctx.rotate(g.rotation);
+        const rmax = Math.max(g.radiusX, g.radiusY);
+        const dx = g.x - camX, dy = g.y - camY;
+        if (dx * dx + dy * dy > (viewR + rmax) ** 2) continue;
 
         // Intensity based on strength (speedDelta)
         const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
@@ -5894,30 +6720,13 @@ function drawGusts(ctx) {
         // light and wash out as it builds (real water cue; matches eSail/AC sailing).
         const airCue = 1.0 + Math.max(0, (14 - state.wind.baseSpeed) / 14) * 0.9; // ~1.0 heavy -> ~1.9 light
         const alpha = Math.min(0.85, strength * 0.6 * airCue);
+        if (alpha <= 0.01) continue;
 
-        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, g.radiusX);
-
-        // Scale context to make circle an oval
-        ctx.scale(1, g.radiusY / g.radiusX);
-
-        // Gust = darker, rippled water (more pressure); lull = lighter, glassier
-        // (less pressure). Soft-edged so the patch reads as a moving cat's-paw the
-        // player can aim for ("connect the puffs").
-        if (g.type === 'gust') {
-            grad.addColorStop(0, `rgba(9, 46, 130, ${alpha})`);
-            grad.addColorStop(0.55, `rgba(11, 63, 176, ${alpha * 0.45})`);
-            grad.addColorStop(1, `rgba(11, 63, 176, 0)`);
-        } else {
-            grad.addColorStop(0, `rgba(150, 222, 255, ${alpha * 0.9})`);
-            grad.addColorStop(0.55, `rgba(120, 210, 255, ${alpha * 0.4})`);
-            grad.addColorStop(1, 'rgba(120, 210, 255, 0)');
-        }
-
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(0, 0, g.radiusX, 0, Math.PI * 2);
-        ctx.fill();
-
+        ctx.save();
+        ctx.translate(g.x, g.y);
+        ctx.rotate(g.rotation);
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(GUST_SPRITES[g.type === 'gust' ? 'gust' : 'lull'], -g.radiusX, -g.radiusY, g.radiusX * 2, g.radiusY * 2);
         ctx.restore();
     }
 }
@@ -5998,14 +6807,27 @@ function drawMarkBodies(ctx) {
 function drawBoundary(ctx) {
     const b = state.course.boundary;
     if (!b) return;
+    // River: the shore IS the boundary — the club-branded circle would paint
+    // across the land.
+    if (state.course.riverShore) return;
+
+    // Viewport cull: the ring is only visible when the camera is near the
+    // radius band. Mid-course (most of a race) this skips EVERYTHING —
+    // previously the full circle, glow, and per-character curved text were
+    // painted every frame regardless.
+    const camDx = state.camera.x - b.x, camDy = state.camera.y - b.y;
+    const camDist = Math.sqrt(camDx * camDx + camDy * camDy);
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    if (Math.abs(camDist - b.radius) > viewR + 80) return;
+    const camAng = Math.atan2(camDy, camDx);
+    const halfSpan = Math.min(Math.PI, (viewR + 250) / b.radius);
+
     ctx.save(); ctx.translate(b.x, b.y);
 
-    // Glow
+    // Glow — stroke only the visible arc
     ctx.shadowBlur = 20;
     ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-
-    // Solid thick white line
-    ctx.beginPath(); ctx.arc(0, 0, b.radius, 0, Math.PI * 2);
+    ctx.beginPath(); ctx.arc(0, 0, b.radius, camAng - halfSpan, camAng + halfSpan);
     ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 80; ctx.setLineDash([]); ctx.stroke();
 
     ctx.shadowBlur = 0; // Reset for text/images
@@ -6015,14 +6837,19 @@ function drawBoundary(ctx) {
     ctx.font = 'bold 50px sans-serif';
     ctx.textBaseline = 'middle';
 
-    // Measure char by char for curvature
-    const charWidths = [];
-    let textWidth = 0;
-    for (const char of text) {
-        const w = ctx.measureText(char).width;
-        charWidths.push(w);
-        textWidth += w;
+    // Static text metrics: measure once, ever (was per-char per-frame)
+    if (!drawBoundary._metrics) {
+        const charWidths = [];
+        let textWidth = 0;
+        for (const char of text) {
+            const w = ctx.measureText(char).width;
+            charWidths.push(w);
+            textWidth += w;
+        }
+        drawBoundary._metrics = { charWidths, textWidth };
     }
+    const charWidths = drawBoundary._metrics.charWidths;
+    const textWidth = drawBoundary._metrics.textWidth;
 
     // Image
     const imgH = 40;
@@ -6034,9 +6861,13 @@ function drawBoundary(ctx) {
     const circumference = 2 * Math.PI * b.radius;
     const count = Math.ceil(circumference / segmentLen);
     const angleStep = (Math.PI * 2) / count;
+    const segHalf = (segmentLen / b.radius) / 2;
 
     for (let i = 0; i < count; i++) {
         const angle = i * angleStep;
+
+        // Angular cull: draw only the 1-2 segments inside the view window
+        if (Math.abs(normalizeAngle(angle - camAng)) > halfSpan + segHalf) continue;
 
         const contentWidth = imgW + gap + textWidth;
         const startX = -contentWidth / 2;
@@ -6101,16 +6932,35 @@ function drawMinimap() {
     const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
     const t = (x, y) => ({ x: (x-cx)*scale + width/2, y: (y-cy)*scale + height/2 });
 
-    // Boundary
+    // Boundary (hidden in the river — the shore is the boundary there)
     const b = state.course.boundary;
-    const bp = t(b.x, b.y);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    if (!state.course.riverShore) {
+        const bp = t(b.x, b.y);
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+    }
+
+    // River land: minimap rect + ring hole, even-odd
+    if (state.course.riverShore) {
+        const ring = state.course.riverShore.ring;
+        ctx.beginPath();
+        ctx.rect(0, 0, width, height);
+        const r0 = t(ring[0].x, ring[0].y);
+        ctx.moveTo(r0.x, r0.y);
+        for (let i = 1; i < ring.length; i++) {
+            const p = t(ring[i].x, ring[i].y);
+            ctx.lineTo(p.x, p.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(104, 118, 62, 0.9)';
+        ctx.fill('evenodd');
+    }
 
     // Islands
     if (state.course.islands) {
         // Sand first
         ctx.fillStyle = '#fde6b1';
         for (const isl of state.course.islands) {
+            if (isl.isBank) continue;
             ctx.beginPath();
             if (isl.vertices.length > 0) {
                 const p0 = t(isl.vertices[0].x, isl.vertices[0].y);
@@ -6126,6 +6976,7 @@ function drawMinimap() {
         // Green center
         ctx.fillStyle = '#84cc16';
         for (const isl of state.course.islands) {
+            if (isl.isBank) continue;
             ctx.beginPath();
             if (isl.vegVertices.length > 0) {
                 const p0 = t(isl.vegVertices[0].x, isl.vegVertices[0].y);
@@ -6912,8 +7763,12 @@ function draw() {
     drawParticles(ctx, 'surface');
     drawGusts(ctx);
     drawWindWaves(ctx);
+    drawSwell(ctx);
     // drawIslandShadows(ctx);
     drawParticles(ctx, 'current');
+    drawRiverShore(ctx);
+    drawWeeds(ctx);
+    drawBrashIce(ctx);
     drawIslands(ctx);
     drawDisturbedAir(ctx);
     drawActiveGateLine(ctx);
@@ -7023,6 +7878,17 @@ function draw() {
 
     if (frameCount % 10 === 0) {
         updateLeaderboard();
+
+        // Arctic: show when the player's boat is overpowered (>18kn effective
+        // wind costs speed, scaled by handling) — turns an invisible tax into
+        // a readable condition to sail around.
+        if (UI.overpoweredBadge) {
+            const op = state.race.venueFx && state.race.venueFx.overpowered
+                && player.effectiveWindNow !== undefined
+                && player.effectiveWindNow > OVERPOWERED.threshold
+                && state.race.status === 'racing' && !player.raceState.finished;
+            UI.overpoweredBadge.classList.toggle('hidden', !op);
+        }
 
         const isBoost = localWind.speed > state.wind.speed + 0.1;
         const isLoss = localWind.speed < state.wind.speed - 0.1;
@@ -7347,7 +8213,10 @@ function generateIslands(boundary) {
                  rotation: rng() * Math.PI * 2
              });
         }
-        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks };
+        // Venue styling: swamp grass islands are marsh — soft groundings
+        // (speed loss but no rules penalty), and rendered as grass.
+        const style = state.race.conditions.islandStyle || 'tropical';
+        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks, style, soft: style === 'grass' };
     };
 
     // Helper: Validate a circle
@@ -7594,133 +8463,340 @@ function checkIslandCollisions(dt) {
                  // Grounding Penalty: Lose 60% speed instantly + massive drag
                  boat.speed *= 0.4;
 
-                 if (state.race.status === 'racing') triggerPenalty(boat, { reason: 'Ran Aground', kind: 'contact' });
+                 // RRS 19 (Room at an Obstruction): if an overlapped boat sat
+                 // OUTSIDE us (between us and open water) while we hit the
+                 // land, she denied us room — the foul is hers, not ours.
+                 let squeezer = null;
+                 if (state.race.status === 'racing' && window.Rules && window.Rules.isOverlapped) {
+                     const bx = boat.x - isl.x, by = boat.y - isl.y;
+                     const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
+                     const ax = bx / bl, ay = by / bl; // escape direction: island -> boat
+                     for (const o of state.boats) {
+                         if (o === boat || o.raceState.finished) continue;
+                         const dx2 = o.x - boat.x, dy2 = o.y - boat.y;
+                         // Tight attribution: blame only a boat close aboard
+                         // (~2.5 lengths) sitting clearly on our open-water
+                         // side — generous ranges over-penalized polar packs
+                         // that were all legitimately dodging the same floe.
+                         if (dx2 * dx2 + dy2 * dy2 > 130 * 130) continue;
+                         if (dx2 * ax + dy2 * ay < 45) continue;        // not clearly outside us
+                         if (!window.Rules.isOverlapped(boat, o)) continue;
+                         squeezer = o;
+                         break;
+                     }
+                 }
+                 if (squeezer) {
+                     triggerPenalty(squeezer, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'no-contact' });
+                 }
+
+                 // Soft shores (river banks, swamp marsh) cost speed but not a
+                 // rules penalty — otherwise every graze becomes a 360°-spiral.
+                 // A squeezed boat is excused entirely: she was denied room.
+                 if (state.race.status === 'racing' && !isl.soft && !squeezer) triggerPenalty(boat, { reason: 'Ran Aground', kind: 'contact' });
                  if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat });
             }
         }
     }
 }
 
+// Per-style palettes: tropical (default), grass (swamp/river banks), ice (polar floes)
+const ISLAND_STYLES = {
+    tropical: { body: '#fde6b1', stroke: '#d4b483', veg: '#84cc16', rock: '#9ca3af', trees: true },
+    grass:    { body: '#a89b6a', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },
+    ice:      { body: '#eef6fb', stroke: '#b6d4e8', veg: '#ffffff', rock: '#a8c8dd', trees: false }
+};
+
+function traceRoundedPoly(g, vertices) {
+    if (vertices.length < 3) return;
+    g.beginPath();
+    const last = vertices[vertices.length - 1];
+    const first = vertices[0];
+    let midX = (last.x + first.x) / 2;
+    let midY = (last.y + first.y) / 2;
+    g.moveTo(midX, midY);
+    for (let i = 0; i < vertices.length; i++) {
+        const p = vertices[i];
+        const next = vertices[(i + 1) % vertices.length];
+        midX = (p.x + next.x) / 2;
+        midY = (p.y + next.y) / 2;
+        g.quadraticCurveTo(p.x, p.y, midX, midY);
+    }
+    g.closePath();
+}
+
+// Bake one island (glow, body, veg, rocks, trees) into an offscreen sprite.
+// Islands are static and floes rigid (translate, never rotate), so this runs
+// ONCE per island per race. The live path previously paid a 30px shadowBlur
+// glow, three curve fills, and double ctx.filter tree draws PER FRAME —
+// ablation showed drawIslands alone took the swamp from 58 to 12 FPS.
+function bakeIslandSprite(isl) {
+    const st = ISLAND_STYLES[isl.style] || ISLAND_STYLES.tropical;
+
+    let maxR = isl.radius;
+    for (const v of isl.vertices) {
+        const d = Math.sqrt((v.x - isl.x) ** 2 + (v.y - isl.y) ** 2);
+        if (d > maxR) maxR = d;
+    }
+    // Glow blur + tree canopy overhang margin; ice needs room for the
+    // underwater shelf ring (vertices scaled ~1.3)
+    const spriteR = isl.style === 'ice' ? maxR * 1.35 + 60 : maxR + 100;
+    // Cap texture size; big islands render slightly downscaled (soft look anyway)
+    const scale = Math.min(1, 900 / spriteR);
+    const size = Math.max(8, Math.ceil(spriteR * 2 * scale));
+
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d');
+    g.scale(scale, scale);
+    g.translate(spriteR - isl.x, spriteR - isl.y); // world coords -> sprite space
+
+    if (isl.style === 'ice') {
+        // Underwater ice shelf: the pale shallow ledge visible around real
+        // bergs — vertices scaled out ~1.28, translucent glacial cyan.
+        const shelf = isl.vertices.map(v => ({
+            x: isl.x + (v.x - isl.x) * 1.28,
+            y: isl.y + (v.y - isl.y) * 1.28
+        }));
+        g.save();
+        g.fillStyle = 'rgba(140, 190, 220, 0.35)';
+        traceRoundedPoly(g, shelf);
+        g.fill();
+        g.fillStyle = 'rgba(165, 210, 235, 0.35)';
+        const shelf2 = isl.vertices.map(v => ({
+            x: isl.x + (v.x - isl.x) * 1.12,
+            y: isl.y + (v.y - isl.y) * 1.12
+        }));
+        traceRoundedPoly(g, shelf2);
+        g.fill();
+        g.restore();
+    } else if (window.WATER_CONFIG && window.WATER_CONFIG.shorelineGlowSize > 0) {
+        // Shoreline Glow
+        g.save();
+        g.shadowColor = window.WATER_CONFIG.shorelineColor || '#4ade80';
+        g.shadowBlur = window.WATER_CONFIG.shorelineGlowSize * 20;
+        g.fillStyle = window.WATER_CONFIG.shorelineColor || '#4ade80';
+        g.globalAlpha = window.WATER_CONFIG.shorelineGlowOpacity || 0.5;
+        traceRoundedPoly(g, isl.vertices);
+        g.fill();
+        g.restore();
+    }
+
+    // Body
+    g.strokeStyle = st.stroke;
+    g.lineWidth = 2;
+    g.fillStyle = st.body;
+    traceRoundedPoly(g, isl.vertices);
+    g.stroke();
+    g.fill();
+
+    // Vegetation (snow cap on ice)
+    g.fillStyle = st.veg;
+    traceRoundedPoly(g, isl.vegVertices);
+    g.fill();
+
+    // Pressure cracks (ice only): thin glacial-blue fractures
+    if (isl.cracks && isl.cracks.length) {
+        g.strokeStyle = 'rgba(130, 170, 200, 0.55)';
+        g.lineWidth = 3;
+        g.lineCap = 'round';
+        for (const cr of isl.cracks) {
+            g.beginPath();
+            g.moveTo(isl.x + cr.ax, isl.y + cr.ay);
+            g.quadraticCurveTo(isl.x + cr.mx, isl.y + cr.my, isl.x + cr.bx, isl.y + cr.by);
+            g.stroke();
+        }
+    }
+
+    // Rocks
+    if (isl.rocks) {
+        g.fillStyle = st.rock;
+        for (const rock of isl.rocks) {
+            g.beginPath();
+            g.arc(rock.x, rock.y, rock.size, 0, Math.PI * 2);
+            g.fill();
+            g.save();
+            g.clip();
+            g.fillStyle = 'rgba(0,0,0,0.1)';
+            g.beginPath();
+            g.arc(rock.x - rock.size * 0.2, rock.y + rock.size * 0.2, rock.size * 0.8, 0, Math.PI * 2);
+            g.fill();
+            g.restore();
+            g.fillStyle = st.rock;
+        }
+    }
+
+    // Trees
+    if (st.trees && palmImg.complete && palmImg.naturalWidth > 0) {
+        for (const t of isl.trees) {
+            const tSize = t.size * 4.0;
+            g.save();
+            g.translate(t.x + 5, t.y + 5);
+            g.rotate(t.rotation || 0);
+            g.globalAlpha = 0.2;
+            g.filter = "brightness(0)";
+            g.drawImage(palmImg, -tSize / 2, -tSize / 2, tSize, tSize);
+            g.restore();
+            g.save();
+            g.translate(t.x, t.y);
+            g.rotate(t.rotation || 0);
+            g.drawImage(palmImg, -tSize / 2, -tSize / 2, tSize, tSize);
+            g.restore();
+        }
+    }
+
+    isl._sprite = { canvas: c, r: spriteR, baked: palmImg.complete && palmImg.naturalWidth > 0 };
+}
+
 function drawIslands(ctx) {
     if (!state.course || !state.course.islands) return;
 
     // Viewport Culling
-    // Viewport diagonal radius approximation
-    const viewRadius = Math.sqrt(ctx.canvas.width**2 + ctx.canvas.height**2) * 0.6; // Slightly more than half diagonal
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x;
     const camY = state.camera.y;
 
-    // Helper
-    const drawRoundedPoly = (vertices) => {
-        if (vertices.length < 3) return;
-        ctx.beginPath();
-        const last = vertices[vertices.length - 1];
-        const first = vertices[0];
-        let midX = (last.x + first.x) / 2;
-        let midY = (last.y + first.y) / 2;
-        ctx.moveTo(midX, midY);
+    for (const isl of state.course.islands) {
+        if (isl.isBank) continue; // river banks: invisible colliders, see drawRiverShore
+        const distSq = (isl.x - camX) ** 2 + (isl.y - camY) ** 2;
+        const limit = viewRadius + isl.radius;
+        if (distSq > limit ** 2) continue;
 
-        for (let i = 0; i < vertices.length; i++) {
-            const p = vertices[i];
-            const next = vertices[(i + 1) % vertices.length];
-            midX = (p.x + next.x) / 2;
-            midY = (p.y + next.y) / 2;
-            ctx.quadraticCurveTo(p.x, p.y, midX, midY);
-        }
+        // Bake lazily; rebake once the palm image finishes loading
+        if (!isl._sprite || (!isl._sprite.baked && palmImg.complete && palmImg.naturalWidth > 0)) bakeIslandSprite(isl);
+        const s = isl._sprite;
+        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+    }
+}
+
+
+// River shore: one continuous land mass around the water. Rendered as a
+// SINGLE even-odd path (big rect + river ring hole) with no shadows — cost is
+// independent of shoreline length and far cheaper than the ~120 bank-island
+// blobs it replaces (each of which paid for shadowBlur glow, three curve
+// fills and tree sprites). Decorations are culled to the viewport.
+function drawRiverShore(ctx) {
+    const shore = state.course.riverShore;
+    if (!shore) return;
+
+    const b = state.course.boundary;
+    const R = (b ? b.radius : 5000) + 2000;
+    const cx0 = b ? b.x : 0, cy0 = b ? b.y : 0;
+    const ring = shore.ring;
+
+    const tracePath = () => {
+        ctx.beginPath();
+        ctx.rect(cx0 - R, cy0 - R, R * 2, R * 2);
+        ctx.moveTo(ring[0].x, ring[0].y);
+        for (let i = 1; i < ring.length; i++) ctx.lineTo(ring[i].x, ring[i].y);
         ctx.closePath();
     };
 
-    // Filter Visible Islands
-    const visible = [];
-    for (const isl of state.course.islands) {
-        const distSq = (isl.x - camX)**2 + (isl.y - camY)**2;
-        const limit = viewRadius + isl.radius;
-        if (distSq <= limit**2) visible.push(isl);
+    ctx.save();
+
+    // Land fill (rect + ring hole, even-odd)
+    tracePath();
+    ctx.fillStyle = '#68763e';
+    ctx.fill('evenodd');
+
+    // Water's edge: a mud band straddling the ring (reads as shallows), then
+    // a soft waterline highlight.
+    ctx.beginPath();
+    ctx.moveTo(ring[0].x, ring[0].y);
+    for (let i = 1; i < ring.length; i++) ctx.lineTo(ring[i].x, ring[i].y);
+    ctx.closePath();
+    ctx.strokeStyle = '#9d8b5e';
+    ctx.lineWidth = 26;
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(220, 235, 210, 0.35)';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    // Decorations: viewport-culled, cheap shadows (no ctx.filter)
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const cullSq = (viewR + 80) ** 2;
+    for (const dcor of shore.decorations) {
+        if ((dcor.x - camX) ** 2 + (dcor.y - camY) ** 2 > cullSq) continue;
+        if (dcor.type === 'tree' && palmImg.complete && palmImg.naturalWidth > 0) {
+            const size = dcor.size * 4.0;
+            ctx.save();
+            ctx.translate(dcor.x + 5, dcor.y + 5);
+            ctx.globalAlpha = 0.18;
+            ctx.fillStyle = '#000000';
+            ctx.beginPath(); ctx.ellipse(0, 0, size * 0.32, size * 0.24, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+            ctx.save();
+            ctx.translate(dcor.x, dcor.y);
+            ctx.rotate(dcor.rotation);
+            ctx.drawImage(palmImg, -size / 2, -size / 2, size, size);
+            ctx.restore();
+        } else if (dcor.type === 'rock') {
+            ctx.fillStyle = '#8a8a7a';
+            ctx.beginPath(); ctx.arc(dcor.x, dcor.y, dcor.size * 0.8, 0, Math.PI * 2); ctx.fill();
+        }
     }
 
-    // Pass 1: Sand Strokes (Outer merged boundary)
-    ctx.strokeStyle = '#d4b483'; // Darker sand stroke
-    ctx.lineWidth = 2;
-    for (const isl of visible) {
-        // Shoreline Glow (Tropical Shallow Water)
-        if (window.WATER_CONFIG && window.WATER_CONFIG.shorelineGlowSize > 0) {
-            ctx.save();
-            ctx.shadowColor = window.WATER_CONFIG.shorelineColor || '#4ade80';
-            ctx.shadowBlur = window.WATER_CONFIG.shorelineGlowSize * 20; // Scale factor
-            ctx.fillStyle = window.WATER_CONFIG.shorelineColor || '#4ade80';
-            ctx.globalAlpha = window.WATER_CONFIG.shorelineGlowOpacity || 0.5;
+    ctx.restore();
+}
 
-            // Draw slightly larger or just rely on shadow spread
-            drawRoundedPoly(isl.vertices);
-            ctx.fill();
-            ctx.restore();
+// Swamp weed patches: translucent mottled mats with baked speckle clumps.
+function drawWeeds(ctx) {
+    if (!state.course.weeds) return;
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+
+    for (const w of state.course.weeds) {
+        const distSq = (w.x - camX) ** 2 + (w.y - camY) ** 2;
+        if (distSq > (viewRadius + w.radius) ** 2) continue;
+
+        ctx.save();
+        ctx.fillStyle = 'rgba(45, 66, 23, 0.35)';
+        ctx.beginPath(); ctx.arc(w.x, w.y, w.radius, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(77, 106, 35, 0.55)';
+        for (const c of w.clumps) {
+            ctx.beginPath(); ctx.arc(c.x, c.y, c.size, 0, Math.PI * 2); ctx.fill();
         }
+        ctx.restore();
+    }
+}
 
-        // Sand
-        ctx.fillStyle = '#fde6b1'; // Pale Sand
-        drawRoundedPoly(isl.vertices);
+// Ocean swell: slow crest bands sweeping downwind across the course.
+function drawSwell(ctx) {
+    if (!state.race.venueFx || !state.race.venueFx.swell) return;
+    const sd = state.wind.baseDirection;
+    const ux = -Math.sin(sd), uy = Math.cos(sd);   // travel direction (downwind)
+    const cx2 = -uy, cy2 = ux;                      // crest axis
+
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.75;
+
+    const camAlong = camX * ux + camY * uy;
+    const travel = state.time * SWELL.celerity;
+    const first = Math.floor((camAlong - viewRadius - travel) / SWELL.wavelength);
+    const last = Math.ceil((camAlong + viewRadius - travel) / SWELL.wavelength);
+
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.10)';
+    ctx.lineWidth = 26;
+    ctx.lineCap = 'round';
+    for (let k = first; k <= last; k++) {
+        const along = k * SWELL.wavelength + travel;
+        // Point on this crest nearest the camera
+        const px = camX + (along - camAlong) * ux;
+        const py = camY + (along - camAlong) * uy;
+        ctx.beginPath();
+        // Gently bowed crest line: three segments with sinusoidal offset
+        const seg = 14, span = viewRadius;
+        for (let s = -seg; s <= seg; s++) {
+            const t = (s / seg) * span;
+            const bow = Math.sin(t / 700 + k * 1.7) * 40;
+            const x = px + cx2 * t + ux * bow;
+            const y = py + cy2 * t + uy * bow;
+            if (s === -seg) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        }
         ctx.stroke();
     }
-
-    // Pass 2: Sand Fills (Covers inner strokes of overlapping islands)
-    ctx.fillStyle = '#fde6b1'; // Pale Sand
-    for (const isl of visible) {
-        drawRoundedPoly(isl.vertices);
-        ctx.fill();
-    }
-
-    // Pass 3: Vegetation
-    ctx.fillStyle = '#84cc16'; // Vibrant Green
-    for (const isl of visible) {
-        drawRoundedPoly(isl.vegVertices);
-        ctx.fill();
-    }
-
-    // Pass 3.5: Rocks
-    ctx.fillStyle = '#9ca3af'; // Grey Rock
-    for (const isl of visible) {
-        if (!isl.rocks) continue;
-        for (const rock of isl.rocks) {
-             ctx.beginPath();
-             // Simple "blob" rock
-             ctx.arc(rock.x, rock.y, rock.size, 0, Math.PI * 2);
-             ctx.fill();
-
-             // Optional: Add some shading/texture to look less like a circle
-             ctx.save();
-             ctx.clip();
-             ctx.fillStyle = 'rgba(0,0,0,0.1)';
-             ctx.beginPath();
-             ctx.arc(rock.x - rock.size*0.2, rock.y + rock.size*0.2, rock.size*0.8, 0, Math.PI*2);
-             ctx.fill();
-             ctx.restore();
-        }
-    }
-
-    // Pass 4: Trees
-    for (const isl of visible) {
-        for(const t of isl.trees) {
-            if (palmImg.complete && palmImg.naturalWidth > 0) {
-                const size = t.size * 4.0;
-
-                // Shadow (Draw First, with World Offset)
-                ctx.save();
-                ctx.translate(t.x + 5, t.y + 5); // World offset (+5, +5)
-                ctx.rotate(t.rotation || 0);     // Match tree rotation
-                ctx.globalAlpha = 0.2;
-                ctx.filter = "brightness(0)";
-                ctx.drawImage(palmImg, -size/2, -size/2, size, size);
-                ctx.restore();
-
-                // Tree (Draw Second)
-                ctx.save();
-                ctx.translate(t.x, t.y);
-                ctx.rotate(t.rotation || 0);
-                ctx.drawImage(palmImg, -size/2, -size/2, size, size);
-                ctx.restore();
-            }
-        }
-    }
+    ctx.restore();
 }
 
 // Init
@@ -7760,6 +8836,31 @@ function initCourse() {
         }
     }
     state.course.islands = islands;
+
+    // Venue world features (banks/floes are islands: they inherit collision,
+    // avoidance, pathfinding and wind shadow for free)
+    state.course.weeds = null;
+    state.course.riverShore = null;
+    state.course.brash = null;
+    state.race.riverCurrent = null;
+    const fx = state.race.venueFx;
+    if (fx && (fx.river || fx.ice || fx.weeds)) {
+        const rng = state.race.seed ? mulberry32(state.race.seed + 7) : Math.random;
+        if (fx.river) state.course.islands = islands.concat(generateRiverBanks(rng));
+        if (fx.ice) {
+            state.course.islands = islands.concat(generateIceFloes(rng));
+            state.course.brash = generateBrash(rng);
+        }
+        if (fx.weeds) state.course.weeds = generateWeeds(rng);
+    }
+
+    // Perf: river banks are unreachable behind the physics clamp, so they are
+    // excluded from pathfinding and wind shadows entirely (they stay in
+    // course.islands for reactive avoidance, Rule 19 and collision). With ~86
+    // bank islands, feeding them to the A* visibility graph caused
+    // multi-hundred-ms replan spikes.
+    state.course.navIslands = state.course.islands.filter(i => !i.isBank);
+    state.course.navVersion = 0; // bumped when floes drift, so the planner's inflated cache refreshes
 }
 
 function resetGame() {
@@ -7832,7 +8933,11 @@ function resetGame() {
         islandMaxSize,
         islandClustering
     };
-    
+
+    // Venue overrides (no-op for Bay — see applyVenueConditions)
+    applyVenueConditions();
+
+
     // Seed for island generation
     state.race.seed = Math.floor(Math.random() * 1000000);
     state.time = 0;
@@ -7852,8 +8957,8 @@ function resetGame() {
     // Init Water Renderer
     if (window.WaterRenderer) window.WaterRenderer.init();
 
-    // Pre-populate gusts
-    const density = 5 + Math.floor(puffiness * 20);
+    // Pre-populate gusts (conditions.puffiness may have been venue-overridden)
+    const density = 5 + Math.floor(state.race.conditions.puffiness * 20);
     for (let i = 0; i < density; i++) {
         spawnGlobalGust(true);
     }

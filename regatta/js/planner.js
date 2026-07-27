@@ -60,10 +60,10 @@ class RoutePlanner {
     updateIslands(islands) {
         // Inflate islands for safety margin
         // Safety = Boat Radius (approx 30) + Buffer (50) + SpeedFactor?
-        // Let's use a fixed generous buffer for global planning: 100 units.
-        const MARGIN = 100;
-
+        // Fixed generous buffer for static land: 100 units. Drifting floes get
+        // more — they move 20-60u between replans, eating the margin.
         this.inflatedIslands = islands.map(isl => {
+            const MARGIN = isl.isFloe ? 190 : 100;
             const center = { x: isl.x, y: isl.y };
             // Islands are star-shaped radial, so we can inflate radially
             const vertices = isl.vertices.map(v => {
@@ -98,10 +98,13 @@ class RoutePlanner {
     }
 
     // A* Pathfinding on Visibility Graph
-    findPath(start, target, islands) {
-        // If islands changed, update inflated cache
-        if (this.inflatedIslands.length !== islands.length) {
+    findPath(start, target, islands, version) {
+        // Rebuild the inflated cache when the island list changes — including
+        // when drifting ice floes MOVE (version bump). Comparing only length
+        // left the planner routing around floe positions minutes stale.
+        if (this.inflatedIslands.length !== islands.length || this._islandsVersion !== version) {
             this.updateIslands(islands);
+            this._islandsVersion = version;
         }
 
         // 1. Check direct line
@@ -110,11 +113,16 @@ class RoutePlanner {
         }
 
         // 2. Build Graph
-        // Nodes: Start, Target, All Inflated Vertices
+        // Nodes: Start, Target, and vertices of islands NEAR the start→target
+        // corridor only. Far islands can't be part of a sane detour, and each
+        // extra node multiplies A* expansion cost (every neighbor check is an
+        // isLineSafe over all islands).
         const nodes = [{x: start.x, y: start.y, id: 'start'}, {x: target.x, y: target.y, id: 'end'}];
         let nodeId = 0;
 
         for (const isl of this.inflatedIslands) {
+            const corridor = isl.radius + 900;
+            if (Geom.distToSegment({ x: isl.x, y: isl.y }, start, target) > corridor) continue;
             for (const v of isl.vertices) {
                 nodes.push({ x: v.x, y: v.y, id: nodeId++, islandId: isl });
             }
