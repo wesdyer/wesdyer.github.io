@@ -1919,13 +1919,15 @@ let settings = { ...DEFAULT_SETTINGS };
 // Current exists only in the river (spatial field via getCurrentAt).
 const VENUES = {
     bay: {
-        tagline: 'Home Waters', water: 'Open water', tags: [['HONEST BREEZE','ok'],['ALL-ROUND TEST','ok']],
+        name: 'Lighthouse Cove',
+        tagline: 'Buoys & Breeze', water: 'Light chop', obstacles: 'Buoys, shore & traffic', tags: [['HONEST BREEZE','ok'],['ALL-ROUND TEST','ok']],
         label: 'Bay', emoji: '⛵',
-        blurb: 'The club\'s home water — honest breeze, fair lines, no excuses. Every part of your game gets tested here.',
+        blurb: 'Buoys to port, lighthouse to starboard, no excuses anywhere. Fair water and honest breeze — every part of your game gets tested here.',
         fx: {}
     },
     lake: {
-        tagline: 'Glass & Puffs', water: 'Flat, pine islands', tags: [['DEAD SPOTS','warn'],['SHIFT READING','ok']],
+        name: 'Stillwater Lake',
+        tagline: 'Glass & Puffs', water: 'Flat glass', obstacles: 'Islands, skiffs & shoals', tags: [['DEAD SPOTS','warn'],['SHIFT READING','ok']],
         label: 'Lake', emoji: '🏞️',
         blurb: 'Mirror water and fickle mountain air. The breeze only whispers — racers who listen sail away from everyone parked in the glass.',
         wind: [6, 12],
@@ -1936,7 +1938,8 @@ const VENUES = {
         fx: {}
     },
     ocean: {
-        tagline: 'Swell & Speed', water: 'Long rolling swell', tags: [['UPWIND SLOG','warn'],['SURF THE SETS','ok']],
+        name: 'Bluewater Bash',
+        tagline: 'Swell & Speed', water: 'Long rolling swell', obstacles: 'None — open water', tags: [['UPWIND SLOG','warn'],['SURF THE SETS','ok']],
         label: 'Ocean', emoji: '🌊',
         blurb: 'Nothing out here but you, a steady breeze, and a mile of rolling swell. Surf hard downwind, grind out the beat — pure speed wins.',
         wind: [12, 20],
@@ -1947,7 +1950,8 @@ const VENUES = {
         fx: { swell: true }
     },
     river: {
-        tagline: 'Current & Rocks', water: 'Fast middle, slack banks', tags: [['SHALLOW BANKS','warn'],['LANE CHOICE','ok']],
+        name: 'Otter Run',
+        tagline: 'Current & Rocks', water: 'Fast midstream', obstacles: 'Rocky banks', tags: [['SHALLOW BANKS','warn'],['LANE CHOICE','ok']],
         label: 'River', emoji: '🛶',
         blurb: 'The stream runs hard down the middle and dawdles along the banks. Pick the lane that pays and let the river carry you past the fleet.',
         wind: [10, 14],
@@ -1958,7 +1962,8 @@ const VENUES = {
         fx: { river: true }
     },
     swamp: {
-        tagline: 'Dead Air & Weed', water: 'Weed beds & marsh', tags: [['WEED BEDS','warn'],['KEEP HER MOVING','ok']],
+        name: 'Gatorgrass Bayou',
+        tagline: 'Dead Air & Weed', water: 'Still & weedy', obstacles: 'Grass islands & weed beds', tags: [['WEED BEDS','warn'],['KEEP HER MOVING','ok']],
         label: 'Swamp', emoji: '🐊',
         blurb: 'Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel — patience beats pace in here.',
         wind: [5, 8],
@@ -1969,7 +1974,8 @@ const VENUES = {
         fx: { weeds: true }
     },
     arctic: {
-        tagline: 'Glacier Wind & Ice', water: 'Drifting ice & brash', tags: [['DRIFTING ICE','warn'],['OVERPOWERED','warn'],['GUST TIMING','ok']],
+        name: 'Glacier Sound',
+        tagline: 'Glacier Wind & Ice', water: 'Steep cold chop', obstacles: 'Drifting bergs & floes', tags: [['DRIFTING ICE','warn'],['OVERPOWERED','warn'],['GUST TIMING','ok']],
         label: 'Arctic', emoji: '🧊',
         blurb: 'Freezing squalls pour off the ice cap and the pack drifts where it pleases. Mind the bergs, tame the gusts, survive to the finish.',
         wind: [16, 22],
@@ -1978,7 +1984,14 @@ const VENUES = {
         palette: { baseColor: '#1d4066', deepColor: '#0e2444', shallowColor: '#2e5c8f', shorelineColor: '#dbeafe',
                    gusts: { gustDark: [8, 24, 52], gustMid: [14, 38, 76], lullBright: [200, 226, 246], lullMid: [176, 208, 236], snow: true } },
         fx: { ice: true, overpowered: true, snowfall: true }
-    }
+    },
+    seatrials: {
+        name: 'Sea Trials',
+        tagline: 'Clipboard & Stopwatch', water: 'Calm, standard', obstacles: 'None', tags: [['NO SURPRISES','ok'],['TRUE BASELINE','ok']],
+        label: 'Sea Trials', emoji: '⏱️',
+        blurb: 'The committee\'s measured mile. Standard conditions, no tricks — where boats and bots get tested before race day. (Benchmark venue: identical to the original default conditions.)',
+        fx: {}
+    },
 };
 
 // Bay palette = whatever water.js shipped with; captured at load so venue
@@ -3883,17 +3896,27 @@ function renderVenuePicker() {
     if (!UI.venuePicker) return;
     const selected = (settings.venue && VENUES[settings.venue]) ? settings.venue : 'bay';
 
-    if (!UI.venuePicker.childElementCount) {
-        for (const key of Object.keys(VENUES)) {
+    // Sea Trials (the benchmark venue) only appears for tinkerers with
+    // Customize on — casual players see the six art venues.
+    const visibleKeys = Object.keys(VENUES).filter(k => k !== 'seatrials' || settings.customizeConditions || selected === 'seatrials');
+
+    if (UI.venuePicker._keys !== visibleKeys.join()) {
+        UI.venuePicker._keys = visibleKeys.join();
+        UI.venuePicker.innerHTML = '';
+        for (const key of visibleKeys) {
             const v = VENUES[key];
             const btn = document.createElement('button');
             btn.dataset.venue = key;
             // Venue art card: thumbnail fill + name/tagline scrim (full-size
-            // art lives in assets/images/venues/<key>.png for other uses)
+            // art lives in assets/images/venues/<key>.png for other uses).
+            // Sea Trials has no art — plain committee-grey card.
+            const art = key === 'seatrials'
+                ? `<span class="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-4xl">⏱️</span>`
+                : `<img src="assets/images/venues/thumbs/${key}.png" alt="${v.label}" class="absolute inset-0 w-full h-full object-cover" draggable="false">`;
             btn.innerHTML = `
-                <img src="assets/images/venues/thumbs/${key}.png" alt="${v.label}" class="absolute inset-0 w-full h-full object-cover" draggable="false">
+                ${art}
                 <span class="absolute inset-x-0 bottom-0 pt-8 pb-2 px-3 bg-gradient-to-t from-slate-950/95 via-slate-950/55 to-transparent text-left">
-                    <span class="block text-base font-black uppercase tracking-wide text-white leading-tight">${v.label}</span>
+                    <span class="block text-base font-black uppercase tracking-wide text-white leading-tight">${v.name || v.label}</span>
                     <span class="block text-[10px] font-mono uppercase tracking-widest text-slate-300">${v.tagline}</span>
                 </span>`;
             btn.addEventListener('click', (e) => { e.preventDefault(); selectVenue(key); });
@@ -3925,10 +3948,11 @@ function renderVenueDetail(key) {
     const windVal = Math.round(state.wind.baseSpeed);
     const gustVal = Math.round(state.wind.baseSpeed * (1.2 + 0.3 * (state.race.conditions.gustStrengthBias || 0.5)));
 
-    let currentVal = 'None';
-    if (state.race.riverCurrent) currentVal = state.race.riverCurrent.max.toFixed(1) + ' kt stream';
-    else if (state.race.venueFx && state.race.venueFx.ice) currentVal = '~1 kt ice drift';
-    else if (state.race.conditions.current) currentVal = state.race.conditions.current.speed.toFixed(1) + ' kt set';
+    // Water = what the water itself is doing: current, swell, glass, chop.
+    // Live values win over the static description when a flow exists.
+    let waterVal = v.water;
+    if (state.race.riverCurrent) waterVal = state.race.riverCurrent.max.toFixed(1) + ' kt stream';
+    else if (state.race.conditions.current) waterVal = state.race.conditions.current.speed.toFixed(1) + ' kt set';
 
     const tile = (label, value) => `
         <div class="bg-slate-950/60 rounded-lg px-3 py-2 border border-white/5">
@@ -3939,12 +3963,15 @@ function renderVenueDetail(key) {
         <span class="px-2.5 py-0.5 rounded-full border text-[10px] font-mono uppercase tracking-wider ${tone === 'warn' ? 'border-amber-500/60 text-amber-300' : 'border-emerald-500/60 text-emerald-300'}">${label}</span>`).join('');
 
     UI.venueDetail.innerHTML = `
-        <div class="text-xl font-black text-white uppercase tracking-wide">${v.label}</div>
+        <div class="flex items-baseline justify-between">
+            <span class="text-xl font-black text-white uppercase tracking-wide">${v.name || v.label}</span>
+            <span class="text-[10px] font-mono uppercase tracking-widest text-slate-500">${v.label}</span>
+        </div>
         <div class="text-sm text-slate-300 mt-1">${v.blurb}</div>
         <div class="grid grid-cols-3 gap-2 mt-3">
             ${tile('Wind', `${windVal} kt G${gustVal}`)}
-            ${tile('Current', currentVal)}
-            ${tile('Water', v.water)}
+            ${tile('Water', waterVal)}
+            ${tile('Obstacles', v.obstacles)}
         </div>
         <div class="flex flex-wrap gap-2 mt-3">${chips}</div>`;
 }
@@ -3956,7 +3983,7 @@ function selectVenue(key) {
 
     // Bay has no ranges of its own (resetGame's randomization IS the Bay), so
     // returning to it from another venue re-rolls the default conditions here.
-    if (key === 'bay') {
+    if (key === 'bay' || key === 'seatrials') {
         state.wind.baseSpeed = 8 + Math.random() * 10;
         state.wind.speed = state.wind.baseSpeed;
         const c = state.race.conditions;
@@ -4313,7 +4340,12 @@ if (UI.confCustomize) {
         settings.customizeConditions = e.target.checked;
         saveSettings();
         if (UI.customizePanels) UI.customizePanels.classList.toggle('hidden', !settings.customizeConditions);
-        if (!settings.customizeConditions) selectVenue(settings.venue);
+        if (!settings.customizeConditions) {
+            // Sea Trials hides with Customize; fall back to Bay
+            selectVenue(settings.venue === 'seatrials' ? 'bay' : settings.venue);
+        } else {
+            renderVenuePicker(); // reveal Sea Trials card
+        }
     });
 }
 

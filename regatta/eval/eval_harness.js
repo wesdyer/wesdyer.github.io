@@ -9,6 +9,13 @@
     },
 
     init: function() {
+        // Benchmark venue pin: evals run on 'seatrials' (the frozen original
+        // default conditions) so numbers stay comparable forever, regardless
+        // of what Bay becomes. Per-venue eval scripts that set
+        // regatta_settings BEFORE loading this harness are respected.
+        if (!localStorage.getItem('regatta_settings')) {
+            localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'seatrials' }));
+        }
         // Replace Math.random
         Math.random = () => this.random();
 
