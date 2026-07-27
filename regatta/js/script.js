@@ -1702,7 +1702,7 @@ const ARCHETYPE_CALLS = {
 // and sharper without changing character-to-character balance or archetype
 // identities. 0 = original difficulty; each point is worth roughly 1.2-1.8%
 // boatspeed depending on point of sail, plus accel/handling/gust response.
-const AI_STAT_BONUS = 3;
+const AI_STAT_BONUS = 4;
 
 const AI_CONFIG = [
     { name: 'Cheer', creature: 'Pom Pom Crab', hull: '#FF9ECF', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#FFFFFF', personality: "Cheerful and fun loving, always positive and enthuiastic.", archetype: 'metronome', stats: { acceleration: 2, momentum: -2, handling: 4, upwind: 1, reach: -2, downwind: -1, boost: 5 } },
