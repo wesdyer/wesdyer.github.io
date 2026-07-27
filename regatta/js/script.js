@@ -1697,6 +1697,13 @@ const ARCHETYPE_CALLS = {
     cover_lock: ["Nice wind you've got there. Mine now.", "Wherever you go, I go.", "You tack, I tack. Simple."],
 };
 
+// Difficulty: flat bonus added to every stat of every AI boat at construction.
+// The player's boat has all-zero stats, so this makes the whole fleet faster
+// and sharper without changing character-to-character balance or archetype
+// identities. 0 = original difficulty; each point is worth roughly 1.2-1.8%
+// boatspeed depending on point of sail, plus accel/handling/gust response.
+const AI_STAT_BONUS = 2;
+
 const AI_CONFIG = [
     { name: 'Cheer', creature: 'Pom Pom Crab', hull: '#FF9ECF', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#FFFFFF', personality: "Cheerful and fun loving, always positive and enthuiastic.", archetype: 'metronome', stats: { acceleration: 2, momentum: -2, handling: 4, upwind: 1, reach: -2, downwind: -1, boost: 5 } },
     { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Relaxed veteran who instinctively finds perfect wind." , archetype: 'shift', stats: { acceleration: -2, momentum: -3, handling: -1, upwind: 0, reach: 1, downwind: 5, boost: -1 } },
@@ -1980,8 +1987,11 @@ class Boat {
              this.colors = { hull: '#fff', sail: '#fff', cockpit: '#ccc', spinnaker: '#f00' };
         }
 
-        // Stats
-        this.stats = (config && config.stats) ? config.stats : { acceleration:0, momentum:0, handling:0, upwind:0, reach:0, downwind:0, boost:0 };
+        // Stats (copied so the difficulty bonus never mutates AI_CONFIG)
+        this.stats = { ...((config && config.stats) ? config.stats : { acceleration:0, momentum:0, handling:0, upwind:0, reach:0, downwind:0, boost:0 }) };
+        if (!isPlayer) {
+            for (const k in this.stats) this.stats[k] += AI_STAT_BONUS;
+        }
 
         // Race State
         this.raceState = {
