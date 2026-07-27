@@ -1919,13 +1919,15 @@ let settings = { ...DEFAULT_SETTINGS };
 // Current exists only in the river (spatial field via getCurrentAt).
 const VENUES = {
     bay: {
+        tagline: 'Home Waters', water: 'Open water', tags: [['HONEST BREEZE','ok'],['ALL-ROUND TEST','ok']],
         label: 'Bay', emoji: '⛵',
-        blurb: 'Home waters. A bit of everything — the all-rounder venue.',
+        blurb: 'The club\'s home water — honest breeze, fair lines, no excuses. Every part of your game gets tested here.',
         fx: {}
     },
     lake: {
+        tagline: 'Glass & Puffs', water: 'Flat, pine islands', tags: [['DEAD SPOTS','warn'],['SHIFT READING','ok']],
         label: 'Lake', emoji: '🏞️',
-        blurb: 'Light, shifty and puffy. Read the wind or watch it leave you.',
+        blurb: 'Mirror water and fickle mountain air. The breeze only whispers — racers who listen sail away from everyone parked in the glass.',
         wind: [6, 12],
         cond: { shiftiness: [0.7, 1.0], variability: [0.6, 0.9], puffiness: [0.6, 0.9], gustStrengthBias: [0.35, 0.6], puffShiftiness: [0.6, 0.9] },
         islands: { count: [2, 4], maxSize: [0.1, 0.35], clustering: [0.1, 0.5] },
@@ -1934,8 +1936,9 @@ const VENUES = {
         fx: {}
     },
     ocean: {
+        tagline: 'Swell & Speed', water: 'Long rolling swell', tags: [['UPWIND SLOG','warn'],['SURF THE SETS','ok']],
         label: 'Ocean', emoji: '🌊',
-        blurb: 'Steady breeze and big rolling swell. Surf it downwind, punch it upwind.',
+        blurb: 'Nothing out here but you, a steady breeze, and a mile of rolling swell. Surf hard downwind, grind out the beat — pure speed wins.',
         wind: [12, 20],
         cond: { shiftiness: [0.05, 0.2], variability: [0.1, 0.3], puffiness: [0.2, 0.4], gustStrengthBias: [0.5, 0.7], puffShiftiness: [0.1, 0.3] },
         islands: { count: [0, 0] },
@@ -1944,8 +1947,9 @@ const VENUES = {
         fx: { swell: true }
     },
     river: {
+        tagline: 'Current & Rocks', water: 'Fast middle, slack banks', tags: [['SHALLOW BANKS','warn'],['LANE CHOICE','ok']],
         label: 'River', emoji: '🛶',
-        blurb: 'Funneled wind between the banks — and the current decides everything.',
+        blurb: 'The stream runs hard down the middle and dawdles along the banks. Pick the lane that pays and let the river carry you past the fleet.',
         wind: [10, 14],
         cond: { shiftiness: [0.25, 0.45], variability: [0.4, 0.7], puffiness: [0.4, 0.7], gustStrengthBias: [0.4, 0.6], puffShiftiness: [0.2, 0.4] },
         islands: { count: [0, 0] },
@@ -1954,8 +1958,9 @@ const VENUES = {
         fx: { river: true }
     },
     swamp: {
+        tagline: 'Dead Air & Weed', water: 'Weed beds & marsh', tags: [['WEED BEDS','warn'],['KEEP HER MOVING','ok']],
         label: 'Swamp', emoji: '🐊',
-        blurb: 'Fickle zephyrs, grass islands and weed. Scrappy, claustrophobic racing.',
+        blurb: 'Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel — patience beats pace in here.',
         wind: [5, 8],
         cond: { shiftiness: [0.8, 1.0], variability: [0.8, 1.0], puffiness: [0.8, 1.0], gustStrengthBias: [0.15, 0.35], puffShiftiness: [0.8, 1.0] },
         islands: { count: [5, 7], maxSize: [0.0, 0.15], clustering: [0.4, 0.8], style: 'grass' },
@@ -1964,8 +1969,9 @@ const VENUES = {
         fx: { weeds: true }
     },
     arctic: {
+        tagline: 'Glacier Wind & Ice', water: 'Drifting ice & brash', tags: [['DRIFTING ICE','warn'],['OVERPOWERED','warn'],['GUST TIMING','ok']],
         label: 'Arctic', emoji: '🧊',
-        blurb: 'Hard katabatic gusts and drifting ice. Survive first, race second.',
+        blurb: 'Freezing squalls pour off the ice cap and the pack drifts where it pleases. Mind the bergs, tame the gusts, survive to the finish.',
         wind: [16, 22],
         cond: { shiftiness: [0.3, 0.5], variability: [0.6, 0.85], puffiness: [0.5, 0.8], gustStrengthBias: [0.75, 0.95], puffShiftiness: [0.4, 0.6] },
         islands: { count: [0, 0] },
@@ -3676,7 +3682,7 @@ const UI = {
     preRaceOverlay: document.getElementById('pre-race-overlay'),
     // Config Sliders
     venuePicker: document.getElementById('venue-picker'),
-    venueBlurb: document.getElementById('venue-blurb'),
+    venueDetail: document.getElementById('venue-detail'),
     confCustomize: document.getElementById('conf-customize'),
     customizePanels: document.getElementById('customize-panels'),
     confWindStrength: document.getElementById('conf-wind-strength'),
@@ -3882,7 +3888,14 @@ function renderVenuePicker() {
             const v = VENUES[key];
             const btn = document.createElement('button');
             btn.dataset.venue = key;
-            btn.innerHTML = `<span class="text-xl leading-none">${v.emoji}</span><span class="text-[11px] font-bold uppercase tracking-wider">${v.label}</span>`;
+            // Venue art card: thumbnail fill + name/tagline scrim (full-size
+            // art lives in assets/images/venues/<key>.png for other uses)
+            btn.innerHTML = `
+                <img src="assets/images/venues/thumbs/${key}.png" alt="${v.label}" class="absolute inset-0 w-full h-full object-cover" draggable="false">
+                <span class="absolute inset-x-0 bottom-0 pt-8 pb-2 px-3 bg-gradient-to-t from-slate-950/95 via-slate-950/55 to-transparent text-left">
+                    <span class="block text-base font-black uppercase tracking-wide text-white leading-tight">${v.label}</span>
+                    <span class="block text-[10px] font-mono uppercase tracking-widest text-slate-300">${v.tagline}</span>
+                </span>`;
             btn.addEventListener('click', (e) => { e.preventDefault(); selectVenue(key); });
             UI.venuePicker.appendChild(btn);
         }
@@ -3890,17 +3903,50 @@ function renderVenuePicker() {
 
     for (const btn of UI.venuePicker.children) {
         const active = btn.dataset.venue === selected;
-        btn.className = 'flex flex-col items-center gap-1 py-2 px-1 rounded-xl border transition-colors ' +
+        btn.className = 'relative aspect-[4/3] overflow-hidden rounded-xl border-2 transition-all ' +
             (active
-                ? 'bg-emerald-500/20 border-emerald-400 text-white shadow-lg'
-                : 'bg-slate-900/40 border-white/10 text-slate-300 hover:border-white/30 hover:bg-slate-900/70');
+                ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-lg'
+                : 'border-white/10 opacity-85 hover:opacity-100 hover:border-white/40');
     }
-    if (UI.venueBlurb) UI.venueBlurb.textContent = VENUES[selected].blurb;
+    renderVenueDetail(selected);
 
     // Customize toggle: venue-only by default; the condition/course panels
     // only appear for tinkerers.
     if (UI.confCustomize) UI.confCustomize.checked = !!settings.customizeConditions;
     if (UI.customizePanels) UI.customizePanels.classList.toggle('hidden', !settings.customizeConditions);
+}
+
+// Selected-venue detail: blurb + live condition tiles + hazard/skill chips.
+// Wind reflects the ACTUAL rolled conditions for this race.
+function renderVenueDetail(key) {
+    if (!UI.venueDetail) return;
+    const v = VENUES[key];
+
+    const windVal = Math.round(state.wind.baseSpeed);
+    const gustVal = Math.round(state.wind.baseSpeed * (1.2 + 0.3 * (state.race.conditions.gustStrengthBias || 0.5)));
+
+    let currentVal = 'None';
+    if (state.race.riverCurrent) currentVal = state.race.riverCurrent.max.toFixed(1) + ' kt stream';
+    else if (state.race.venueFx && state.race.venueFx.ice) currentVal = '~1 kt ice drift';
+    else if (state.race.conditions.current) currentVal = state.race.conditions.current.speed.toFixed(1) + ' kt set';
+
+    const tile = (label, value) => `
+        <div class="bg-slate-950/60 rounded-lg px-3 py-2 border border-white/5">
+            <div class="text-[9px] font-mono uppercase tracking-widest text-slate-500">${label}</div>
+            <div class="text-sm font-bold text-white mt-0.5">${value}</div>
+        </div>`;
+    const chips = (v.tags || []).map(([label, tone]) => `
+        <span class="px-2.5 py-0.5 rounded-full border text-[10px] font-mono uppercase tracking-wider ${tone === 'warn' ? 'border-amber-500/60 text-amber-300' : 'border-emerald-500/60 text-emerald-300'}">${label}</span>`).join('');
+
+    UI.venueDetail.innerHTML = `
+        <div class="text-xl font-black text-white uppercase tracking-wide">${v.label}</div>
+        <div class="text-sm text-slate-300 mt-1">${v.blurb}</div>
+        <div class="grid grid-cols-3 gap-2 mt-3">
+            ${tile('Wind', `${windVal} kt G${gustVal}`)}
+            ${tile('Current', currentVal)}
+            ${tile('Water', v.water)}
+        </div>
+        <div class="flex flex-wrap gap-2 mt-3">${chips}</div>`;
 }
 
 function selectVenue(key) {
