@@ -10,6 +10,7 @@ implements it.
 | [visual-style.md](visual-style.md) | Brand, color, typography, motion, accessibility, the product shell and HUD chrome, character art, asset specs, review rubric | **v0.5** — current |
 | [race-view.md](race-view.md) | Everything drawn on the water: camera, water, venue palettes, land, course overlay, wakes, particles, weather, race-scale sprites | **v1.0** — current |
 | [venue-art.md](venue-art.md) | Venue illustration: art direction, owned-hue registry, base prompt, delivery pipeline, acceptance checklist | current |
+| [art-pipeline.md](art-pipeline.md) | How art gets *made*: asset classes, roles, anchors, the six-step workflow, acceptance. Tooling in `../art/` | current |
 | [debt.md](debt.md) | The single register of verified visual defects, across all three | current |
 
 **Planned.** `gameplay.md` (course design, venue mechanics, difficulty, feel) ·
@@ -18,8 +19,9 @@ Add them here as siblings; keep each one narrow.
 
 ## The seam
 
-The split between visual-style.md and race-view.md follows the same line the design
-decisions do:
+visual-style.md, race-view.md and venue-art.md say what good art **is**;
+art-pipeline.md says how it gets **made**. The split between visual-style.md and
+race-view.md follows the same line the design decisions do:
 
 > **On the water: broadcast graphics and the illustrated world.
 > Above it: the product shell.**

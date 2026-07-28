@@ -15,6 +15,28 @@ const CONFIG = {
     cockpitColor: '#cbd5e1',
 };
 
+// ── Canvas type ────────────────────────────────────────────────────────────
+// Mirrors the .t-* system in index.html so text painted on the water belongs to
+// the same product as the DOM chrome. Canvas has no CSS fallback chain worth
+// trusting: if the webfont hasn't loaded when ctx.font is set, it silently
+// resolves to the OS default and stays there for that paint. FONTS_READY flips
+// once document.fonts settles; until then these strings still name the family,
+// so the only cost of an early frame is a fallback glyph set.
+const FONT = {
+    // Label voice — Archivo 800 caps. Names, chips, anything titling a thing.
+    label:   (px) => `800 ${px}px Archivo, sans-serif`,
+    // Data voice — IBM Plex Mono 600, tabular. Every number.
+    mono:    (px) => `600 ${px}px "IBM Plex Mono", ui-monospace, monospace`,
+    // Display voice — Saira 900 italic. Course geometry callouts.
+    display: (px) => `italic 900 ${px}px Saira, Archivo, sans-serif`,
+    // Brand voice — the club name curved on the course boundary.
+    brand:   (px) => `900 ${px}px Archivo, sans-serif`,
+};
+let FONTS_READY = false;
+if (typeof document !== 'undefined' && document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => { FONTS_READY = true; });
+}
+
 // AI Sayings System
 const Sayings = {
     queue: [],
@@ -1895,7 +1917,9 @@ const AI_CONFIG = [
 const DEFAULT_SETTINGS = {
     playerName: "Player",
     navAids: true,
-    manualTrim: false,
+    // Stored in the polarity the Settings toggle shows. The boat carries the
+    // inverse (boat.manualTrim) because the physics reads more naturally that way.
+    autoTrim: true,
     soundEnabled: true,
     bgSoundEnabled: true,
     musicEnabled: false,
@@ -3507,7 +3531,7 @@ function drawWindDebug(ctx) {
     }
 
     ctx.fillStyle = '#fff';
-    ctx.font = '10px monospace';
+    ctx.font = FONT.mono(10);
     ctx.fillText("Base Wind Shift (+/- 30°)", x + 5, y + 15);
     ctx.fillStyle = '#22d3ee';
     ctx.fillText("Wind Speed (0-30kn)", x + 5, y + 25);
@@ -4188,7 +4212,6 @@ const UI = {
     speed: document.getElementById('hud-speed'),
     windSpeed: document.getElementById('hud-wind-speed'),
     windAngle: document.getElementById('hud-wind-angle'),
-    trimMode: document.getElementById('hud-trim-mode'),
     vmg: document.getElementById('hud-vmg'),
     timer: document.getElementById('hud-timer'),
     startTime: document.getElementById('hud-start-time'),
@@ -4202,7 +4225,6 @@ const UI = {
     helpButton: document.getElementById('help-button'),
     closeHelp: document.getElementById('close-help'),
     resumeHelp: document.getElementById('resume-help'),
-    pauseButton: document.getElementById('pause-button'),
     resumeButton: document.getElementById('resume-button'),
     restartButton: document.getElementById('restart-button'),
     settingsButton: document.getElementById('settings-button'),
@@ -4226,7 +4248,6 @@ const UI = {
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
-    rulesStatus: document.getElementById('hud-rules-status'),
     overpoweredBadge: document.getElementById('hud-overpowered'),
     resultsOverlay: document.getElementById('results-overlay'),
     resultsList: document.getElementById('results-list'),
@@ -4771,7 +4792,8 @@ function setupPreRaceOverlay() {
     UI.preRaceOverlay.classList.remove('hidden');
     UI.preRaceOverlay.querySelectorAll('.overflow-y-auto').forEach(el => el.scrollTop = 0);
     UI.leaderboard.classList.add('hidden');
-    UI.legInfo.parentElement.classList.add('hidden'); // Hide leg info
+    UI.legInfo.parentElement.classList.add('hidden'); // Hide venue caption
+    if (UI.legTimes) UI.legTimes.classList.add('hidden'); // now a sibling, hide it too
 
     // Initialize Sliders from Current State (Randomized or Default)
     const cond = state.race.conditions;
@@ -4904,7 +4926,8 @@ function startRace() {
     UI.leaderboard.classList.remove('hidden'); // Or hidden if prestart logic handles it
     // Prestart logic usually hides leaderboard until start? No, updateLeaderboard logic: if 'prestart' UI.leaderboard.classList.add('hidden');
 
-    // Show Leg Info
+    // Show venue caption (leg splits stay hidden until the prestart ends — the
+    // render loop unhides them once status leaves 'prestart')
     if (UI.legInfo) UI.legInfo.parentElement.classList.remove('hidden');
 
     state.race.status = 'prestart';
@@ -4918,9 +4941,10 @@ function startRace() {
 // Settings Functions
 function loadSettings() {
     const stored = localStorage.getItem('regatta_settings');
+    let parsed = null;
     if (stored) {
         try {
-            const parsed = JSON.parse(stored);
+            parsed = JSON.parse(stored);
             settings = { ...DEFAULT_SETTINGS, ...parsed };
         } catch (e) { console.error("Failed to parse settings", e); }
     }
@@ -4929,6 +4953,13 @@ function loadSettings() {
     // Migration: the Semicircle kite panel became Triangle (July 2026) — without
     // this a saved 'bullseye' falls through to a plain solid sail
     if (settings.spinnakerPattern === 'bullseye') settings.spinnakerPattern = 'triangle';
+    // Migration: the Manual Trim toggle became Auto Trim (July 2026), flipping the
+    // stored polarity. Test the raw save, not the merged settings — the merge always
+    // supplies an autoTrim default, so only `parsed` can tell us which era it is from.
+    if (parsed && parsed.autoTrim === undefined && parsed.manualTrim !== undefined) {
+        settings.autoTrim = !parsed.manualTrim;
+    }
+    delete settings.manualTrim;
     applySettings();
 }
 
@@ -4940,7 +4971,7 @@ function saveSettings() {
 function applySettings() {
     state.showNavAids = settings.navAids;
     if (state.boats.length > 0) {
-        state.boats[0].manualTrim = settings.manualTrim;
+        state.boats[0].manualTrim = !settings.autoTrim;
         state.boats[0].name = settings.playerName;
     }
     state.camera.mode = settings.cameraMode;
@@ -4951,7 +4982,7 @@ function applySettings() {
     if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
     if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
-    if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
+    if (UI.settingTrim) UI.settingTrim.checked = settings.autoTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     if (UI.settingHullColor) UI.settingHullColor.value = settings.hullColor;
     if (UI.settingSailColor) UI.settingSailColor.value = settings.sailColor;
@@ -4960,16 +4991,6 @@ function applySettings() {
     if (UI.settingSpinnakerPattern) UI.settingSpinnakerPattern.value = SPIN_PATTERNS[settings.spinnakerPattern] ? settings.spinnakerPattern : 'solid';
     if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.value = settings.spinnakerColor2 || '#ffffff';
     updateSpinColor2Row();
-
-    if (UI.rulesStatus) {
-        if (settings.penaltiesEnabled) {
-            UI.rulesStatus.textContent = "RULES: ON";
-            UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider`;
-        } else {
-            UI.rulesStatus.textContent = "RULES: OFF";
-            UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-red-400 bg-slate-900/80 px-2 py-0.5 rounded-full border border-red-500/50 uppercase tracking-wider`;
-        }
-    }
 }
 
 function togglePause(show) {
@@ -5023,7 +5044,6 @@ function toggleSettings(show) {
 if (UI.helpButton) UI.helpButton.addEventListener('click', (e) => { e.preventDefault(); toggleHelp(true); UI.helpButton.blur(); });
 if (UI.closeHelp) UI.closeHelp.addEventListener('click', () => toggleHelp(false));
 if (UI.resumeHelp) UI.resumeHelp.addEventListener('click', () => toggleHelp(false));
-if (UI.pauseButton) UI.pauseButton.addEventListener('click', (e) => { e.preventDefault(); togglePause(true); UI.pauseButton.blur(); });
 if (UI.resumeButton) UI.resumeButton.addEventListener('click', (e) => { e.preventDefault(); togglePause(false); });
 if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
 if (UI.settingsButton) UI.settingsButton.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.settingsButton.blur(); });
@@ -5038,7 +5058,7 @@ if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { set
 if (UI.settingMusic) UI.settingMusic.addEventListener('change', (e) => { settings.musicEnabled = e.target.checked; saveSettings(); Sound.init(); });
 if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => { settings.penaltiesEnabled = e.target.checked; saveSettings(); });
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
-if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.manualTrim = e.target.checked; saveSettings(); });
+if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.autoTrim = e.target.checked; saveSettings(); });
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
 if (UI.settingHullColor) UI.settingHullColor.addEventListener('input', (e) => { settings.hullColor = e.target.value; saveSettings(); });
 if (UI.settingSailColor) UI.settingSailColor.addEventListener('input', (e) => { settings.sailColor = e.target.value; saveSettings(); });
@@ -5189,16 +5209,7 @@ window.addEventListener('keydown', (e) => {
         settings.penaltiesEnabled = !settings.penaltiesEnabled;
         saveSettings();
         if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
-        if (UI.rulesStatus) {
-            if (settings.penaltiesEnabled) {
-                UI.rulesStatus.textContent = "RULES: ON";
-                UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-emerald-300 bg-slate-900/80 px-2 py-0.5 rounded-full border border-emerald-500/50 uppercase tracking-wider`;
-            } else {
-                UI.rulesStatus.textContent = "RULES: OFF";
-                UI.rulesStatus.className = `mt-1 text-[10px] font-bold text-red-400 bg-slate-900/80 px-2 py-0.5 rounded-full border border-red-500/50 uppercase tracking-wider`;
-            }
-        }
-        showToast(`Penalties: ${settings.penaltiesEnabled ? "ON" : "OFF"}`);
+        showToast(`Sailing Rules: ${settings.penaltiesEnabled ? "ON" : "OFF"}`);
     }
 
     if (e.key === 'F12') {
@@ -5252,11 +5263,12 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Tab') {
         e.preventDefault();
         if (state.boats.length > 0) {
-            state.boats[0].manualTrim = !state.boats[0].manualTrim;
-            settings.manualTrim = state.boats[0].manualTrim;
-            saveSettings();
-            if (UI.settingTrim) UI.settingTrim.checked = settings.manualTrim;
+            settings.autoTrim = !settings.autoTrim;
+            saveSettings(); // re-derives boat.manualTrim from settings.autoTrim
+            if (UI.settingTrim) UI.settingTrim.checked = settings.autoTrim;
             if (state.boats[0].manualTrim) state.boats[0].manualSailAngle = Math.abs(state.boats[0].sailAngle);
+            // The chips are gone from the HUD, so this toast is the only signal that
+            // ↑/↓ just changed meaning — keep it.
             showToast(`Trim: ${state.boats[0].manualTrim ? "MANUAL" : "AUTO"}`);
         }
     }
@@ -7444,7 +7456,7 @@ function drawActiveGateLine(ctx) {
     ctx.shadowColor = color; ctx.shadowBlur = 15; ctx.strokeStyle = color; ctx.lineWidth = 5;
     ctx.lineDashOffset = dashOffset; ctx.stroke();
 
-    ctx.save(); ctx.fillStyle = color; ctx.font = 'bold 24px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.save(); ctx.fillStyle = color; ctx.font = FONT.display(24); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     const midX = (m1.x+m2.x)/2, midY = (m1.y+m2.y)/2;
     let label = (player.raceState.leg === 0) ? "START" : ((player.raceState.leg === state.race.totalLegs || state.race.status === 'finished' || player.raceState.finished) ? "FINISH" : "");
     if (label) {
@@ -7497,7 +7509,7 @@ function drawLadderLines(ctx) {
     if (!isUpwindTarget) { slopeLeft = Math.tan(delta - Math.PI/4); slopeRight = Math.tan(delta + Math.PI/4); }
 
     ctx.save(); ctx.strokeStyle = `rgba(${NAV_RGB}, 0.5)`; ctx.lineWidth = 3;
-    ctx.font = 'italic 900 22px Saira, Archivo, sans-serif'; ctx.fillStyle = `rgba(${NAV_RGB}, 0.9)`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = FONT.display(22); ctx.fillStyle = `rgba(${NAV_RGB}, 0.9)`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     // Labels lie along the rung itself (SailGP style), flipped to stay upright ON SCREEN
     // (the camera rotates, so the flip test must be in screen space, not world space)
     let labelAngle = Math.atan2(py, px);
@@ -7611,7 +7623,7 @@ function drawMarkZones(ctx) {
     ctx.translate(gx, gy);
     let rot = gAng; if (Math.abs(normalizeAngle(rot - state.camera.rotation)) > Math.PI / 2) rot += Math.PI;
     ctx.rotate(rot);
-    ctx.font = 'italic 900 52px Saira, Archivo, sans-serif';
+    ctx.font = FONT.display(52);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.30)';
     ctx.fillText('GATE ' + player.raceState.leg, 0, 0);
@@ -7951,11 +7963,11 @@ function drawBoundary(ctx) {
 
     // Text & Burgee
     const text = "Salty Critter Yacht Club";
-    ctx.font = 'bold 50px sans-serif';
+    ctx.font = FONT.brand(50);
     ctx.textBaseline = 'middle';
 
     // Static text metrics: measure once, ever (was per-char per-frame)
-    if (!drawBoundary._metrics) {
+    if (!drawBoundary._metrics || drawBoundary._metricsReady !== FONTS_READY) {
         const charWidths = [];
         let textWidth = 0;
         for (const char of text) {
@@ -7964,6 +7976,7 @@ function drawBoundary(ctx) {
             textWidth += w;
         }
         drawBoundary._metrics = { charWidths, textWidth };
+        drawBoundary._metricsReady = FONTS_READY;
     }
     const charWidths = drawBoundary._metrics.charWidths;
     const textWidth = drawBoundary._metrics.textWidth;
@@ -8126,7 +8139,7 @@ function drawMinimap() {
         ctx.arc(0, 0, g.radiusX * scale, 0, Math.PI * 2);
 
         const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
-        const alpha = 0.2 + strength * 0.3;
+        const alpha = 0.12 + strength * 0.18;  // was 0.2+0.3 — outshouted the boats
 
         if (g.type === 'gust') {
              ctx.fillStyle = `rgba(0, 0, 80, ${alpha})`;
@@ -8182,8 +8195,12 @@ function drawMinimap() {
         if (boat.isPlayer) continue;
         const pos = t(boat.x, boat.y);
         ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(boat.heading);
-        ctx.fillStyle = boat.colors.hull;
-        ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(5, 6); ctx.lineTo(-5, 6); ctx.fill();
+        // Ink outline: hull colors alone don't separate from water or gust blobs
+        // at this size, and dark hulls disappeared entirely.
+        ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(5, 6); ctx.lineTo(-5, 6); ctx.closePath();
+        ctx.fillStyle = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(11, 28, 43, 0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
         ctx.restore();
     }
 
@@ -8192,13 +8209,16 @@ function drawMinimap() {
         const pos = t(player.x, player.y);
         ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(player.heading);
 
-        // Pulse Glow
-        const glow = 10 + Math.sin(state.time * 8) * 5;
-        ctx.shadowBlur = glow;
-        ctx.shadowColor = settings.hullColor || '#facc15';
+        // Restrained glow — at blur 10-15 the halo washed the marker out to white,
+        // losing the yellow that means "you" everywhere else in the product.
+        ctx.shadowBlur = 6 + Math.sin(state.time * 8) * 2;
+        ctx.shadowColor = 'rgba(250, 204, 21, 0.9)';
 
+        ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(8, 9); ctx.lineTo(-8, 9); ctx.closePath();
         ctx.fillStyle = settings.hullColor || '#facc15';
-        ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(8, 9); ctx.lineTo(-8, 9); ctx.fill();
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = '#0b1c2b'; ctx.lineWidth = 1.5; ctx.stroke();
         ctx.restore();
     }
 }
@@ -8584,7 +8604,7 @@ function updateLeaderboard() {
                 // Construct inner HTML once
                 // Rank
                 const rank = document.createElement('div');
-                rank.className = "lb-rank w-4 text-xs font-black italic text-slate-400 mr-2";
+                rank.className = "lb-rank t-mono w-4 text-[11px] text-slate-400 mr-2";
 
                 // Portrait / Icon
                 const iconContainer = document.createElement('div');
@@ -8613,13 +8633,13 @@ function updateLeaderboard() {
 
                 // Name
                 const nameDiv = document.createElement('div');
-                nameDiv.className = "lb-name text-xs font-bold text-white tracking-wide flex-1 truncate";
+                nameDiv.className = "lb-name t-display t-display-8 text-[15px] text-white uppercase flex-1 truncate";
                 nameDiv.textContent = boat.name;
                 if (boat.isPlayer) nameDiv.className += " text-yellow-300";
 
                 // Meters Back
                 const distDiv = document.createElement('div');
-                distDiv.className = "lb-dist text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
+                distDiv.className = "lb-dist t-mono text-[10px] text-slate-400 text-right min-w-[32px]";
 
                 row.appendChild(rank);
                 row.appendChild(iconContainer);
@@ -8642,16 +8662,16 @@ function updateLeaderboard() {
             let rowClass = "lb-row flex items-center px-3 border-b border-slate-700/50 transition-colors duration-500 ";
             if (boat.raceState.finished) {
                 rowClass += "bg-emerald-900/60";
-                rankDiv.className = "lb-rank w-4 text-xs font-black italic text-white mr-2";
-                distDiv.className = "lb-dist text-[10px] font-mono text-white text-right min-w-[32px]";
+                rankDiv.className = "lb-rank t-mono w-4 text-[11px] text-white mr-2";
+                distDiv.className = "lb-dist t-mono text-[10px] text-white text-right min-w-[32px]";
             } else if (boat.raceState.leg === 0) {
                 rowClass += "bg-gray-900/40 grayscale";
-                rankDiv.className = "lb-rank w-4 text-xs font-black italic text-gray-500 mr-2";
-                distDiv.className = "lb-dist text-[10px] font-mono text-gray-500 text-right min-w-[32px]";
+                rankDiv.className = "lb-rank t-mono w-4 text-[11px] text-gray-500 mr-2";
+                distDiv.className = "lb-dist t-mono text-[10px] text-gray-500 text-right min-w-[32px]";
             } else {
                 rowClass += "bg-slate-800/40";
-                rankDiv.className = "lb-rank w-4 text-xs font-black italic text-slate-400 mr-2";
-                distDiv.className = "lb-dist text-[10px] font-mono text-slate-400 text-right min-w-[32px]";
+                rankDiv.className = "lb-rank t-mono w-4 text-[11px] text-slate-400 mr-2";
+                distDiv.className = "lb-dist t-mono text-[10px] text-slate-400 text-right min-w-[32px]";
             }
             row.className = rowClass;
 
@@ -8742,70 +8762,69 @@ function drawBoatIndicator(ctx, boat) {
     if (boat.isPlayer) return;
     if (boat.opacity !== undefined && boat.opacity <= 0) return;
 
-    const rank = (boat.lbRank !== undefined) ? (boat.lbRank + 1) : "-";
-    const speed = (boat.speed * 4).toFixed(1);
+    // One line: rank pip + name. The label's only job on the water is IDENTITY —
+    // binding "that pink boat" to "Splat". Rank and name are already in the
+    // leaderboard, so the pip reuses that panel's ring-plus-rank language and the
+    // two views teach each other. Speed was removed deliberately: a rival's
+    // ABSOLUTE boatspeed changes no decision (the fleet sits inside ~1.5kn), and
+    // reading it meant holding a number while glancing at your own instrument.
+    const rank = (boat.lbRank !== undefined) ? String(boat.lbRank + 1) : "-";
+    const showRank = boat.raceState.leg !== 0;   // no standings before the gun
     const name = boat.name.toUpperCase();
-
-    let line1 = `${rank} ${name}`;
-    if (boat.raceState.leg === 0) {
-        line1 = name;
-    }
-    let line2 = `${speed}kn`;
+    const idColor = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
 
     ctx.save();
     ctx.translate(boat.x, boat.y);
     ctx.rotate(state.camera.rotation);
-    ctx.translate(0, 50); // Below boat
+    ctx.translate(0, 46); // below the boat, camera-upright
 
-    ctx.font = "bold 11px monospace";
-    const paddingX = 8;
-    const m1 = ctx.measureText(line1);
-    const m2 = ctx.measureText(line2);
-    const boxWidth = Math.max(m1.width, m2.width) + paddingX * 2 + 6;
-    const boxHeight = 32;
+    // The pip is always present — it is the identity carrier, and identity matters
+    // most in the prestart scrum. It just holds no digit until there are standings.
+    const PIP_R = showRank ? 8 : 4.5;
+    const padX = 7;
+    ctx.font = FONT.label(11);
+    const nameW = ctx.measureText(name).width;
+    const pipSlot = PIP_R * 2 + 5;
+    const boxW = padX + pipSlot + nameW + padX;
+    const boxH = 22;
+    const x = -boxW / 2, y = 0;
 
-    const x = -boxWidth / 2;
-    const y = 0;
-
-    // Shadow
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowColor = 'rgba(0,0,0,0.45)';
     ctx.shadowBlur = 4;
     ctx.shadowOffsetY = 2;
 
-    // Main Box
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
+    ctx.fillStyle = 'rgba(15, 23, 42, 0.55)';
     ctx.beginPath();
-    ctx.roundRect(x, y, boxWidth, boxHeight, 4);
+    ctx.roundRect(x, y, boxW, boxH, 6);
     ctx.fill();
-
-    // Colored Bar
     ctx.shadowColor = 'transparent';
-    ctx.fillStyle = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
+
+    let cursor = x + padX;
+
+    // Filled pip in the boat's identity color; digit picks whichever of
+    // ink/white actually reads on it.
+    const pcx = cursor + PIP_R, pcy = y + boxH / 2;
+    ctx.fillStyle = idColor;
     ctx.beginPath();
-    ctx.roundRect(x + 2, y + 2, 4, boxHeight - 4, 2);
+    ctx.arc(pcx, pcy, PIP_R, 0, Math.PI * 2);
     ctx.fill();
 
-    // Text
+    if (showRank) {
+        ctx.font = FONT.mono(10);
+        ctx.fillStyle = isVeryDark(idColor) ? '#f8fafc' : '#0b1c2b';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(rank, pcx, pcy + 0.5);
+        ctx.font = FONT.label(11);
+    }
+    cursor += PIP_R * 2 + 5;
+
+    // Penalty is the one state that overrides identity — red means penalty here
+    // exactly as it does everywhere else.
     ctx.fillStyle = boat.raceState.penalty ? '#ef4444' : '#ffffff';
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'top';
-    ctx.fillText(line1, x + 10, y + 5);
-
-    // Speed Color Logic
-    // Red: Penalty OR Bad Air
-    // Green: Net Boost (Local Wind > Base Wind)
-    // Orange: Net Loss (Local Wind < Base Wind)
-    let speedColor = '#ffffff';
-    const localWind = getWindAt(boat.x, boat.y);
-    const isBoost = localWind.speed > state.wind.speed + 0.1;
-    const isLoss = localWind.speed < state.wind.speed - 0.1;
-
-    if (boat.raceState.penalty || boat.badAirIntensity > 0.05) {
-        speedColor = '#ef4444';
-    }
-
-    ctx.fillStyle = speedColor;
-    ctx.fillText(line2, x + 10, y + 17);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(name, cursor, y + boxH / 2 + 0.5);
 
     ctx.restore();
 }
@@ -8840,7 +8859,7 @@ function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
         ctx.restore();
     }
 
-    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#ffffff'; ctx.font = FONT.label(15); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
     ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
     ctx.fillText(label, 0, markIndex !== null ? -21 : -12);
     ctx.restore();
@@ -8859,11 +8878,11 @@ function drawNpcEdgeIndicator(ctx, x, y, boat) {
 
     if (state.race.status === 'racing' && boat.lbRank !== undefined) {
         ctx.fillStyle = isVeryDark(color) ? '#ffffff' : '#0f172a';
-        ctx.font = 'bold 11px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = FONT.mono(10); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(String(boat.lbRank + 1), 0, 0.5);
     }
 
-    ctx.fillStyle = '#ffffff'; ctx.font = 'bold 10px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#ffffff'; ctx.font = FONT.label(10); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
     ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
     ctx.fillText(boat.name.toUpperCase(), 0, -13);
     ctx.restore();
@@ -8944,7 +8963,7 @@ function draw() {
         ctx.save();
         ctx.globalAlpha = Math.min(1.0, state.camera.messageTimer*2);
         ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.strokeStyle = 'white'; ctx.lineWidth = 2;
-        ctx.font = 'bold 32px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = FONT.label(28); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         const txt = "CAMERA: " + state.camera.message;
         ctx.fillText(txt, canvas.width/2, canvas.height/3);
         ctx.restore();
@@ -9067,16 +9086,16 @@ function draw() {
              UI.windSpeed.textContent = localWind.speed.toFixed(1);
 
              // Remove all potential color classes
-             UI.windSpeed.classList.remove('text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
+             UI.windSpeed.classList.remove('text-rose-300', 'text-emerald-300', 'text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
 
              const effectiveSpeed = localWind.speed * (1.0 - player.badAirIntensity);
              const isEffectiveBoost = effectiveSpeed > state.wind.speed + 0.1;
              const isEffectiveLoss = effectiveSpeed < state.wind.speed - 0.1;
 
              if (isEffectiveBoost) {
-                 UI.windSpeed.classList.add('text-green-400');
+                 UI.windSpeed.classList.add('text-emerald-300');
              } else if (isEffectiveLoss) {
-                 UI.windSpeed.classList.add('text-red-400');
+                 UI.windSpeed.classList.add('text-rose-300');
              } else {
                  UI.windSpeed.classList.add('text-white');
              }
@@ -9090,11 +9109,6 @@ function draw() {
             UI.windAngle.textContent = `${twa}°`;
         }
         if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - localWind.direction))).toFixed(1);
-
-        if (UI.trimMode) {
-             UI.trimMode.textContent = player.manualTrim ? "MANUAL TRIM" : "AUTO TRIM";
-             UI.trimMode.className = `mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase tracking-wider bg-slate-900/80 ${player.manualTrim ? "text-yellow-300 border-yellow-500/50" : "text-emerald-300 border-emerald-500/50"}`;
-        }
 
         if (UI.timer) {
             let displayTime = state.race.timer;
@@ -9111,7 +9125,7 @@ function draw() {
             }
 
             UI.timer.textContent = formatTime(displayTime);
-            UI.timer.className = `font-mono text-4xl font-black tabular-nums tracking-widest drop-shadow-md ${timerClass}`;
+            UI.timer.className = `t-mono text-4xl tracking-widest drop-shadow-md ${timerClass}`;
         }
 
         if (UI.startTime) {
@@ -9132,24 +9146,38 @@ function draw() {
         }
 
         if (UI.legTimes) {
-            UI.legTimes.classList.toggle('hidden', state.race.status === 'prestart');
-            if (state.race.status !== 'prestart') {
+            // legTimes is its own positioned container now, so it no longer inherits
+            // the venue caption's hidden state — it has to gate on 'waiting' itself
+            // or stale splits would show over the venue picker.
+            const legTimesHidden = state.race.status === 'prestart' || state.race.status === 'waiting';
+            UI.legTimes.classList.toggle('hidden', legTimesHidden);
+            if (!legTimesHidden) {
                  let html = "";
                  const getMoves = (i) => player.raceState.legManeuvers[i] || 0;
                  const getDist = (i) => Math.round(player.raceState.legDistances[i] || 0);
                  const getTop = (i) => (player.raceState.legTopSpeeds[i] || 0).toFixed(1);
 
+                 // Split times are for the player; Top/Dist/Moves is telemetry
+                 // and reads as dev output on screen, so it rides F8 debug.
+                 const tele = (i) => settings.debugMode
+                     ? ` <span class="t-mono text-slate-500" style="font-size:10px;">Top:${getTop(i)}kn Dist:${getDist(i)}m Moves:${getMoves(i)}</span>`
+                     : '';
+                 const CHIP = 'bg-slate-900/60 px-2 py-0.5 rounded border-r-2 border-slate-500 shadow-md flex justify-between gap-4';
+
                  if (player.raceState.startLegDuration !== null) {
-                     html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Start: ${formatSplitTime(player.raceState.startLegDuration)}</span> <span class="text-slate-500">Top:${getTop(0)}kn Dist:${getDist(0)}m Moves:${getMoves(0)}</span></div>`;
+                     html += `<div class="${CHIP}"><span class="t-mono text-slate-300" style="font-size:11px;">Start ${formatSplitTime(player.raceState.startLegDuration)}</span>${tele(0)}</div>`;
                  }
                  player.raceState.legTimes.forEach((t, i) => {
-                     html += `<div class="bg-slate-900/60 text-slate-300 font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-slate-500 shadow-md flex justify-between gap-4"><span>Leg ${i+1}: ${formatSplitTime(t)}</span> <span class="text-slate-500">Top:${getTop(i+1)}kn Dist:${getDist(i+1)}m Moves:${getMoves(i+1)}</span></div>`;
+                     html += `<div class="${CHIP}"><span class="t-mono text-slate-300" style="font-size:11px;">Leg ${i+1} ${formatSplitTime(t)}</span>${tele(i+1)}</div>`;
                  });
                  if ((state.race.status==='racing' || state.race.status==='prestart') && player.raceState.leg <= state.race.totalLegs) {
                      const cur = player.raceState.leg;
                      const t = (cur===0) ? state.race.timer : (state.race.timer - player.raceState.legStartTime);
                      const lbl = (cur===0) ? "Start" : `Leg ${cur}`;
-                     html += `<div class="bg-slate-900/80 text-white font-mono text-xs font-bold px-2 py-0.5 rounded border-l-2 border-green-500 shadow-md flex justify-between gap-4"><span>${lbl}: ${formatSplitTime(t)}</span> <span class="text-white/50">Top:${getTop(cur)}kn Dist:${getDist(cur)}m Moves:${getMoves(cur)}</span></div>`;
+                     const teleCur = settings.debugMode
+                         ? ` <span class="t-mono text-white/50" style="font-size:10px;">Top:${getTop(cur)}kn Dist:${getDist(cur)}m Moves:${getMoves(cur)}</span>`
+                         : '';
+                     html += `<div class="bg-slate-900/80 px-2 py-0.5 rounded border-r-2 border-green-500 shadow-md flex justify-between gap-4"><span class="t-mono text-white" style="font-size:11px;">${lbl} ${formatSplitTime(t)}</span>${teleCur}</div>`;
                  }
                  UI.legTimes.innerHTML = html;
             }
@@ -10165,6 +10193,9 @@ function resetGame() {
 
     // Create Boats (Initialized at 0,0, positioned by repositionBoats)
     const player = new Boat(0, true, 0, 0, settings.playerName || "Player");
+    // applySettings() only runs on load/save, so a boat built after that would
+    // otherwise ignore a stored Auto Trim = off and start the race auto-trimming.
+    player.manualTrim = !settings.autoTrim;
     player.heading = state.wind.direction; // Head to wind
     player.prevHeading = player.heading;
     player.lastWindSide = 0;
@@ -10325,7 +10356,7 @@ function initWaterDebugUI() {
         lbl.className = "text-slate-400 font-bold uppercase text-[10px] tracking-wide";
 
         const valDisp = document.createElement('span');
-        valDisp.className = "text-cyan-400 font-mono";
+        valDisp.className = "t-mono text-cyan-400";
         valDisp.textContent = window.WATER_CONFIG[key];
 
         header.appendChild(lbl);

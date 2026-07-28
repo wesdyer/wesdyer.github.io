@@ -341,9 +341,16 @@ fixing:
    `text-2xl`, stacked, "Yacht Club" in `blue-100`. Pick one lockup. `.t-wordmark`
    pins the *system* sans, so the brand mark renders differently on every OS — the
    real fix is an SVG lockup, and short of that, one shared class.
-2. **Two mono stacks.** `font-mono` appears 17× in `index.html` and 9× in
-   `script.js` (all HUD); `.t-mono` 18× and 11× (all menu). The race timer and the
-   venue-briefing wind value are literally different typefaces.
+2. **Two mono stacks, and the race view has none of the good one.** `font-mono`
+   (the OS stack) appears 26× — 17 in `index.html`, 9 in `script.js`, all of it HUD.
+   `.t-mono` (IBM Plex Mono) is applied **twice in the whole codebase**, both in the
+   pre-race sidebar. The race timer and the venue-briefing wind value are literally
+   different typefaces.
+
+   More broadly: **every use of `.t-display`, `.t-label` and `.t-mono` is on the
+   pre-race screen.** The race view uses zero type-system classes — the system is
+   defined in the same file that renders the HUD and applied only to the other
+   screen.
 3. **Canvas text is outside the system.** Of the ten `ctx.font` sites, eight specify
    bare `monospace` or `sans-serif` — `drawWindDebug`, `drawActiveGateLine`,
    `drawBoundary`, `drawBoatIndicator`, `drawMarkEdgeIndicator`,

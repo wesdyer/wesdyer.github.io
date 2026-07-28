@@ -1,0 +1,162 @@
+{
+  "_comment": "Art asset registry. Single source of truth for the generation pipeline. See ../guidelines/art-pipeline.md. Every asset is declared here BEFORE it is drawn; status walks slot -> inbox -> art.",
+  "profiles": {
+    "world-prop": {
+      "track": "sprite",
+      "master": 1024,
+      "background": "transparent",
+      "bake": 4,
+      "safeMargin": 0.06,
+      "out": "assets/images/props",
+      "note": "Top-down orthographic. Drawn in the world at `world` px (camera is 1:1). Baked at 4x display like boat parts."
+    },
+    "terrain": {
+      "track": "sprite",
+      "master": 1024,
+      "background": "transparent",
+      "bake": 4,
+      "safeMargin": 0.02,
+      "out": "assets/images/terrain",
+      "note": "Reserved. Islands/shore are procedural today (bakeIslandSprite); this profile exists so the rework has a home."
+    },
+    "illustration": {
+      "track": "static",
+      "master": 1254,
+      "background": "opaque",
+      "thumb": 256,
+      "out": "assets/images/venues",
+      "note": "Venue cards. Bottom fifth stays simple for the name scrim."
+    },
+    "portrait": {
+      "track": "static",
+      "master": 500,
+      "background": "transparent",
+      "reduceTest": 64,
+      "out": "assets/images/competitors",
+      "note": "Bust crop, centered for circular use, face within central 70%."
+    },
+    "ui-icon": {
+      "track": "static",
+      "master": 512,
+      "background": "transparent",
+      "reduceTest": 32,
+      "out": "assets/images/misc",
+      "note": "Test over both the navy shell and bright water."
+    }
+  },
+  "roles": {
+    "hazard": "Collides or penalizes. Must telegraph before contact and hold the 3:1 contrast floor on Pearl Lagoon AND Glacier Sound.",
+    "ambient": "Decorative, no collision. MUST NOT be confusable with a hazard at race scale \u2014 different silhouette family, not just different color.",
+    "landmark": "Venue identity, on land or fixed. Never affects play.",
+    "traffic": "Non-racing boats. MUST NOT be confusable with a competitor at race scale (extends race-view.md 10.2).",
+    "nav": "Navigation aids the player is meant to read \u2014 channel markers, beacons. Canonical buoyage color coding."
+  },
+  "anchors": {
+    "center": "Rotation and placement origin at the art's centroid. Floating things.",
+    "waterline": "Origin where the object meets the water. Things that stick up out of it.",
+    "trunk-base": "Origin at the base of the stem. Trees, reeds.",
+    "footprint": "Origin at the center of the ground contact polygon. Buildings, standing birds."
+  },
+  "assets": [
+    {
+      "key": "bayou-cypress",
+      "class": "world-prop",
+      "role": "landmark",
+      "venue": "swamp",
+      "world": 90,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "subject": "bald cypress seen from directly above \u2014 spreading flat canopy of clustered needle-mass blobs, buttressed trunk just visible at center, a few strands of hanging moss breaking the canopy edge"
+    },
+    {
+      "key": "bayou-cypress-knee",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "swamp",
+      "world": 26,
+      "anchor": "waterline",
+      "status": "slot",
+      "subject": "cluster of three cypress knees breaking the surface \u2014 knobbly conical root spikes, wet dark bark, small ring ripple where each meets the water"
+    },
+    {
+      "key": "bayou-driftlog",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "swamp",
+      "world": 70,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "half-submerged fallen log, one broken stub branch, bark peeling in two flat tones, dark waterline stain along its length"
+    },
+    {
+      "key": "bayou-lilypads",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "swamp",
+      "world": 56,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "loose cluster of seven round lily pads with the classic notch, two flat greens, one white bloom, pads clearly flat ON the surface with no vertical mass"
+    },
+    {
+      "key": "bayou-cattails",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "swamp",
+      "world": 48,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "subject": "clump of cattail reeds from above \u2014 radiating blade-mass in olive and yellow-green, a few brown seed heads catching light at the tips"
+    },
+    {
+      "key": "bayou-gator",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "swamp",
+      "world": 70,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "alligator cruising just under the surface \u2014 armored ridged back and tail in olive, snout breaking the water, faint wake V behind, naturalistic not cartoon-eyed"
+    },
+    {
+      "key": "bayou-heron",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "swamp",
+      "world": 40,
+      "anchor": "footprint",
+      "status": "slot",
+      "subject": "great blue heron standing in shallows seen from above \u2014 slate wings folded, long neck tucked into an S, thin legs and their shadow in the shallow water"
+    },
+    {
+      "key": "bayou-shack",
+      "class": "world-prop",
+      "role": "landmark",
+      "venue": "swamp",
+      "world": 130,
+      "anchor": "footprint",
+      "status": "slot",
+      "subject": "stilt fishing shack from above \u2014 rust corrugated roof with a simple ridge line, small dock finger reaching into the water, one moored skiff, weathered board walkway"
+    },
+    {
+      "key": "bayou-pirogue",
+      "class": "world-prop",
+      "role": "traffic",
+      "venue": "swamp",
+      "world": 62,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "flat-bottomed pirogue skiff from directly above \u2014 plain wooden hull, no sail and no mast, two thwarts and a push pole lying inside, unmistakably not a racing sailboat"
+    },
+    {
+      "key": "bayou-daybeacon",
+      "class": "world-prop",
+      "role": "nav",
+      "venue": "swamp",
+      "world": 34,
+      "anchor": "waterline",
+      "status": "slot",
+      "subject": "green square day beacon on a single piling \u2014 flat square board facing up-channel, weathered post, small ring ripple at the waterline"
+    }
+  ]
+}

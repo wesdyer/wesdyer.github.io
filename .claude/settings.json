@@ -1,39 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(node --check *)",
-      "Bash(npm run eval:ai *)",
-      "Bash(pkill -9 -f chrome-headless)",
-
-      "Bash(python3 -m http.server *)",
-      "Bash(pkill -9 -f chrome-headless*)",
-      "Bash(pkill -f http.server*)",
-      "Bash(curl -s -o /dev/null *)",
-      "Bash(sips -g *)",
-      "Bash(md5 -q *)",
-      "Bash(shasum *)",
-
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git stash *)",
-      "Bash(git mv *)",
-      "Bash(git check-ignore *)",
-      "Bash(sed -i *)",
-
-      "mcp__claude-in-chrome__tabs_context_mcp",
-      "mcp__claude-in-chrome__tabs_create_mcp",
-      "mcp__claude-in-chrome__tabs_close_mcp",
-      "mcp__claude-in-chrome__navigate",
-      "mcp__claude-in-chrome__read_page",
-      "mcp__claude-in-chrome__get_page_text",
-      "mcp__claude-in-chrome__read_console_messages",
-      "mcp__claude-in-chrome__read_network_requests",
-      "mcp__claude-in-chrome__find",
-      "mcp__claude-in-chrome__resize_window",
-      "mcp__claude-in-chrome__list_connected_browsers",
-      "mcp__claude-in-chrome__computer",
-      "mcp__claude-in-chrome__javascript_tool",
-      "mcp__claude-in-chrome__browser_batch"
+      "Bash(npm run eval:ai *)"
     ]
   }
 }
