@@ -6234,41 +6234,46 @@ function update(dt) {
     const windDirX = Math.sin(state.wind.direction);
     const windDirY = -Math.cos(state.wind.direction);
 
-    // Add Wake for all boats
+    // Wakes: each boat carries a short tapered RIBBON trail (sampled stern
+    // positions, ~1.5s of life — about half the old visual length) plus
+    // sparse foam dots. The old 'wake-wave' particle streams lived ~11s and
+    // are gone entirely; drawWakes renders the ribbons.
     if (state.race.status !== 'waiting') {
         for (const boat of state.boats) {
-            if (boat.speed > 0.25) {
+            if (!boat.wakeTrail) { boat.wakeTrail = []; boat.wakeSampleT = 0; }
+
+            // Age + prune (all boats, including finished — trails fade out)
+            for (const s2 of boat.wakeTrail) s2.age += dt;
+            while (boat.wakeTrail.length && boat.wakeTrail[boat.wakeTrail.length - 1].age > 2.25) boat.wakeTrail.pop();
+
+            if (boat.speed > 0.08 && !boat.raceState.finished) {
                 const boatDX = Math.sin(boat.heading);
                 const boatDY = -Math.cos(boat.heading);
-                const sternX = boat.x - boatDX * 30;
-                const sternY = boat.y - boatDY * 30;
+                // Sample UNDER the aft hull (not at the transom) — the boat
+                // sprite covers the ribbon origin, so the wake emerges from
+                // beneath the hull instead of spurting off the stern
+                const sternX = boat.x - boatDX * 12;
+                const sternY = boat.y - boatDY * 12;
                 const planing = boat.raceState.isPlaning;
 
-                // Base Wake
-                let wakeProb = 0.2;
-                if (planing) wakeProb = 0.6; // More foam
-
-                if (Math.random() < wakeProb) createParticle(sternX + (Math.random()-0.5)*4, sternY + (Math.random()-0.5)*4, 'wake');
-
-                // V-Wake (Waves)
-                let waveProb = 0.25;
-                let spread = 0.1;
-                let scale = 1.0;
-                if (planing) {
-                    waveProb = 0.5;
-                    spread = 0.2; // Wider V
-                    scale = J111_PLANING.wakeLengthScale;
+                boat.wakeSampleT -= dt;
+                if (boat.wakeSampleT <= 0) {
+                    boat.wakeSampleT = 0.08;
+                    boat.wakeTrail.unshift({ x: sternX, y: sternY, age: 0, str: Math.max(0, Math.min(1, (boat.speed - 0.05) / 1.45)) * (planing ? 1.3 : 1) });
+                    if (boat.wakeTrail.length > 34) boat.wakeTrail.pop();
                 }
 
-                if (Math.random() < waveProb) {
-                    const rightX = Math.cos(boat.heading), rightY = Math.sin(boat.heading);
-                    createParticle(sternX - rightX*10, sternY - rightY*10, 'wake-wave', { vx: -rightX*spread, vy: -rightY*spread, scale: scale });
-                    createParticle(sternX + rightX*10, sternY + rightY*10, 'wake-wave', { vx: rightX*spread, vy: rightY*spread, scale: scale });
-
-                    // Planing Rooster Tail / Spray
-                    if (planing && Math.random() < 0.2) {
-                        createParticle(sternX, sternY, 'wake', { life: 1.5, scale: 1.5 });
-                    }
+                // Occasional foam blobs scattered ALONG the wake band (real
+                // wakes break into patches); never point-spawned at the stern
+                const str0 = boat.wakeTrail.length ? boat.wakeTrail[0].str : 0;
+                if (boat.wakeTrail.length > 4 && Math.random() < (planing ? 0.22 : 0.10) * str0) {
+                    const idx = 1 + Math.floor(Math.random() * Math.min(9, boat.wakeTrail.length - 2));
+                    const p = boat.wakeTrail[idx];
+                    const q = boat.wakeTrail[idx + 1];
+                    const sdx = q.x - p.x, sdy = q.y - p.y;
+                    const sl = Math.sqrt(sdx * sdx + sdy * sdy) || 1;
+                    const off = (Math.random() - 0.5) * 2 * (8 + p.age * 8);
+                    createParticle(p.x + (-sdy / sl) * off, p.y + (sdx / sl) * off, 'wake', { scale: 0.7 + Math.random() * 0.9 });
                 }
             }
         }
@@ -6293,7 +6298,7 @@ function updateParticles(dt) {
         if (p.vy) p.y += p.vy * timeScale;
         let decay = 0.0025;
         if (p.type === 'wake') {
-            decay = 0.005;
+            decay = 0.009;
             const s = p.scale || 1.0;
             p.scaleVal = s + (1-p.life)*1.5;
             p.alpha = p.life*0.4;
@@ -6321,6 +6326,52 @@ function updateParticles(dt) {
         p.life -= decay * timeScale;
         if (p.life <= 0) { state.particles[i] = state.particles[state.particles.length-1]; state.particles.pop(); }
     }
+}
+
+// Boat wakes: tapered two-tone ribbons along each boat's recent stern track —
+// a soft outer band that widens and fades as it ages (wake spreading) with a
+// brighter narrow core, plus two short V quarter-wave strokes at the stern.
+// Clean filled shapes, no blur: fits the art style and replaces the old
+// long-lived particle streams.
+function drawWakes(ctx) {
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewR2 = (Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 200) ** 2;
+    const MAX_AGE = 2.25;
+
+    ctx.save();
+    for (const boat of state.boats) {
+        const trail = boat.wakeTrail;
+        if (!trail || trail.length < 2) continue;
+        const dxv = boat.x - camX, dyv = boat.y - camY;
+        if (dxv * dxv + dyv * dyv > viewR2) continue;
+
+        // Per-segment quads so alpha/width can vary along the ribbon
+        for (let pass = 0; pass < 2; pass++) {
+            const wScale = pass === 0 ? 1 : 0.42;      // outer band, then bright core
+            const aScale = pass === 0 ? 0.35 : 0.50;
+            for (let i = 0; i < trail.length - 1; i++) {
+                const a = trail[i], b = trail[i + 1];
+                const segDX = b.x - a.x, segDY = b.y - a.y;
+                const len = Math.sqrt(segDX * segDX + segDY * segDY);
+                if (len < 0.5) continue;
+                const nx = -segDY / len, ny = segDX / len;
+                const wA = (9 + a.age * 6) * wScale * a.str;
+                const wB = (9 + b.age * 6) * wScale * b.str;
+                const alpha = Math.pow(1 - a.age / MAX_AGE, 1.25) * aScale * a.str;
+                if (alpha <= 0.01) continue;
+                ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+                ctx.beginPath();
+                ctx.moveTo(a.x + nx * wA, a.y + ny * wA);
+                ctx.lineTo(b.x + nx * wB, b.y + ny * wB);
+                ctx.lineTo(b.x - nx * wB, b.y - ny * wB);
+                ctx.lineTo(a.x - nx * wA, a.y - ny * wA);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+    }
+    ctx.restore();
 }
 
 function drawParticles(ctx, layer) {
@@ -8058,6 +8109,7 @@ function draw() {
     ctx.rotate(-state.camera.rotation);
     ctx.translate(-state.camera.x, -state.camera.y);
 
+    drawWakes(ctx);
     drawParticles(ctx, 'surface');
     drawGusts(ctx);
     drawWindWaves(ctx);
