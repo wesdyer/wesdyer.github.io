@@ -4544,8 +4544,28 @@ function drawCockpitFittings(g, cockpitColor) {
     const c = cockpitColor || '#cbd5e1';
     g.save(); // lineWidth/lineCap here must not leak into the sails or the fly
     // Matches the sole the artwork outlines: template px x 376..648, y 580..861
+    const sole = () => { g.beginPath(); g.roundRect(-8.5, 6.75, 17, 17.5, 5); };
     g.fillStyle = c;
-    g.beginPath(); g.roundRect(-8.5, 6.75, 17, 17.5, 5); g.fill();
+    sole(); g.fill();
+
+    // The cockpit is a WELL sunk into the deck, so the coaming shades the sole
+    // all the way around its inside edge. Clip to the sole and stroke the same
+    // path: the outer half of each stroke is clipped away, leaving a band that
+    // hugs the inside. Two bands, not a smooth ramp — the style guide asks for
+    // hard 1-2 tone shading and no soft gradients, and the crisp step reads as
+    // a well rather than a dished bowl. The middle of the sole stays flat,
+    // because most of a cockpit floor is flat.
+    //
+    // Even all the way round rather than cast to one side — the boat rotates,
+    // so a directional pool of shadow would swing with her and read as wrong.
+    g.save();
+    sole(); g.clip();
+    for (const [inset, alpha] of [[2.4, 0.11], [1.1, 0.14]]) {
+        g.strokeStyle = `rgba(15,23,42,${alpha})`;
+        g.lineWidth = inset * 2; // half falls outside the clip
+        sole(); g.stroke();
+    }
+    g.restore();
 
     // Wheel: dark on a pale sole, pale on a dark one, so it reads on any paint job
     const hex = c.replace('#', '');
