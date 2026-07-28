@@ -38,4 +38,4 @@ def create_map_icon(filename):
     print(f"Generated {filename}")
 
 if __name__ == "__main__":
-    create_map_icon("regatta/assets/images/course-icon.png")
+    create_map_icon("regatta/assets/images/misc/course-icon.png")

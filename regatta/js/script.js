@@ -87,7 +87,7 @@ const Sayings = {
         this.silenceTimer = 0;
 
         if (this.overlay && this.img && this.name && this.text) {
-            this.img.src = "assets/images/" + item.boat.name.toLowerCase() + ".png";
+            this.img.src = "assets/images/competitors/" + item.boat.name.toLowerCase() + ".png";
             const color = isVeryDark(item.boat.colors.hull) ? item.boat.colors.spinnaker : item.boat.colors.hull;
             this.img.style.borderColor = color;
             this.name.textContent = item.boat.name;
@@ -1631,12 +1631,13 @@ class BotController {
                 const end = { x: futureX, y: futureY };
 
                 for (const isl of nearIslands) {
-                    // Drifting floes move 20-60u within the lookahead window;
+                    // Drifting floes move ~50-150u within the lookahead window;
                     // static geometry checks aim boats at where the gap WAS.
                     // Padding the floe's effective radius by its possible
                     // travel restores the margin (74% of arctic penalties were
-                    // floe groundings before this).
-                    const movePad = isl.isFloe ? 75 : 0;
+                    // floe groundings before this). Scaled with the drift speed
+                    // when the ice was sped up — the pad has to track it.
+                    const movePad = isl.isFloe ? 170 : 0;
                     // Quick Bounding Box/Circle Check
                     const d = Geom.distToSegment({x: isl.x, y: isl.y}, start, end);
                     if (d < isl.radius + 30 + movePad) { // Close to island
@@ -2321,17 +2322,106 @@ function generateIceFloes(rng) {
     return floes;
 }
 
-function makeFloe(cx, cy, r, rng) {
-    const vertices = [];
-    const points = 6 + Math.floor(rng() * 6);
-    // Shape personality: some floes are smooth pans, others sharp shards
-    const jag = 0.12 + rng() * 0.35;
-    for (let j = 0; j < points; j++) {
-        const theta = (j / points) * Math.PI * 2;
-        const vr = r * (1.0 - jag + rng() * jag * 1.6);
-        vertices.push({ x: cx + Math.cos(theta) * vr, y: cy + Math.sin(theta) * vr });
+// Floe outlines, worked from aerial berg photography. Real ice is not a jittered
+// circle: it lobes, it cuts deep bays, it snaps off into long shards and angular
+// slabs. Building the radius as a harmonic sum gives those organic lobes and
+// concave bays, and squashing along a random axis gives the elongation. Five
+// archetypes, weighted so lobed bergs and shards show up most.
+const FLOE_KINDS = ['pan', 'slab', 'shard', 'lobed', 'cluster', 'lobed', 'shard'];
+function makeFloeOutline(r, rng) {
+    const kind = FLOE_KINDS[Math.floor(rng() * FLOE_KINDS.length)];
+    // Spread the amplitude over several NON-multiple frequencies with random
+    // phases. One dominant harmonic gives f-fold symmetry, and a floe that is
+    // cleanly 3- or 4-fold symmetric reads as a flower, not as ice. The f=1
+    // term shoves the mass off-centre, which is what kills the symmetry.
+    let points, harm, aspect, bayCount;
+    if (kind === 'pan') {                 // rounded drift pan
+        points = 11 + Math.floor(rng() * 4);
+        harm = [[1, 0.05], [2, 0.05], [3, 0.04], [5, 0.03]];
+        aspect = 1.0 + rng() * 0.2; bayCount = 0;
+    } else if (kind === 'slab') {         // angular tabular plate, few long edges
+        points = 5 + Math.floor(rng() * 3);
+        harm = [[1, 0.12], [2, 0.09], [3, 0.05]];
+        aspect = 1.25 + rng() * 0.5; bayCount = rng() < 0.3 ? 1 : 0;
+    } else if (kind === 'shard') {        // long splinter calved off something
+        points = 8 + Math.floor(rng() * 4);
+        harm = [[1, 0.16], [2, 0.10], [3, 0.08], [5, 0.05]];
+        aspect = 1.9 + rng() * 1.1; bayCount = rng() < 0.5 ? 1 : 0;
+    } else if (kind === 'lobed') {        // the classic deep-bayed berg
+        points = 15 + Math.floor(rng() * 7);
+        harm = [[1, 0.14], [2, 0.13], [3, 0.11], [5, 0.07]];
+        aspect = 1.1 + rng() * 0.45; bayCount = 1 + (rng() < 0.4 ? 1 : 0);
+    } else {                              // knuckly cluster of fused chunks
+        points = 18 + Math.floor(rng() * 9);
+        harm = [[1, 0.10], [2, 0.10], [3, 0.08], [5, 0.07], [8, 0.05], [13, 0.04]];
+        aspect = 1.0 + rng() * 0.3; bayCount = rng() < 0.5 ? 1 : 0;
     }
-    const vegVertices = vertices.map(v => ({ x: cx + (v.x - cx) * 0.7, y: cy + (v.y - cy) * 0.7 }));
+    const H = harm.map(([f, a]) => ({ f, a, p: rng() * Math.PI * 2 }));
+    const bays = [];
+    for (let i = 0; i < bayCount; i++) {
+        bays.push({ at: rng() * Math.PI * 2, w: 0.35 + rng() * 0.5, d: 0.25 + rng() * 0.3 });
+    }
+
+    const pts = [];
+    for (let i = 0; i < points; i++) {
+        const th = (i / points) * Math.PI * 2;
+        let k = 1;
+        for (const h of H) k += h.a * Math.cos(h.f * th + h.p);
+        for (const b of bays) {
+            // angular distance to the bay centre, wrapped to [0, PI]
+            const d = Math.abs(((th - b.at + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+            if (d < b.w) k -= b.d * (1 + Math.cos(Math.PI * d / b.w)) * 0.5;
+        }
+        k = Math.max(0.32, k);
+        pts.push({ x: Math.cos(th) * r * k, y: Math.sin(th) * r * k });
+    }
+
+    // Squash along one axis, then swing that axis to a random bearing
+    const rot = rng() * Math.PI * 2, cr = Math.cos(rot), sr = Math.sin(rot);
+    let maxD = 0;
+    for (const p of pts) {
+        const ex = p.x * aspect, ey = p.y / aspect;
+        p.x = ex * cr - ey * sr; p.y = ex * sr + ey * cr;
+        maxD = Math.max(maxD, Math.hypot(p.x, p.y));
+    }
+    // Renormalise: isl.radius is the broad-phase bound for collision and for the
+    // AI's avoidance, so the outline must not poke outside it.
+    if (maxD > 0) { const k = r / maxD; for (const p of pts) { p.x *= k; p.y *= k; } }
+    return pts;
+}
+
+// Andrew's monotone chain. Wound the same way as the old generated outlines
+// (increasing theta) so satPolygonPolygon sees the winding it always has.
+function convexHullOf(pts) {
+    if (pts.length < 3) return pts.slice();
+    const p = pts.slice().sort((a, b) => a.x - b.x || a.y - b.y);
+    const cross = (o, a, b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+    const lower = [];
+    for (const q of p) {
+        while (lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop();
+        lower.push(q);
+    }
+    const upper = [];
+    for (let i = p.length - 1; i >= 0; i--) {
+        const q = p[i];
+        while (upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop();
+        upper.push(q);
+    }
+    lower.pop(); upper.pop();
+    return lower.concat(upper);
+}
+
+function makeFloe(cx, cy, r, rng) {
+    // The drawn outline may be deeply concave; the COLLIDER is its convex hull,
+    // because satPolygonPolygon assumes convexity — feed it a bayed polygon and
+    // boats "hit" open water inside the bay. Hulling outward is the safe error:
+    // a boat may stop a little short of a cleft, but never sails through ice.
+    const localArt = makeFloeOutline(r, rng);
+    const localHull = convexHullOf(localArt);
+    const localVeg = localArt.map(p => ({ x: p.x * 0.7, y: p.y * 0.7 }));
+    // World-space mirrors; syncFloe rebuilds these from the local shape each frame
+    const vertices = localHull.map(p => ({ x: cx + p.x, y: cy + p.y }));
+    const vegVertices = localVeg.map(p => ({ x: cx + p.x, y: cy + p.y }));
 
     // Pressure cracks: 2-4 jagged strokes across the surface (relative coords,
     // baked into the sprite so they ride along as the floe drifts)
@@ -2349,18 +2439,19 @@ function makeFloe(cx, cy, r, rng) {
         });
     }
 
-    // Angular facet planes for the bigger ice (reference-art look)
+    // Angular facet planes — the low-poly ice look the style guide calls for.
+    // Indexed against the ART outline, which is what gets drawn.
     const facets = [];
-    if (r > 140) {
-        const facetCount = 2 + Math.floor(rng() * 3);
+    if (r > 110) {
+        const facetCount = 2 + Math.floor(rng() * 4);
         for (let k = 0; k < facetCount; k++) {
-            facets.push({ i: Math.floor(rng() * points), depth: 0.1 + rng() * 0.3, shade: rng() });
+            facets.push({ i: Math.floor(rng() * localArt.length), depth: 0.1 + rng() * 0.3, shade: rng() });
         }
     }
 
-    // Each floe wanders on its OWN slow random heading and rate — the pack
-    // has no common direction. Bergs are ponderous.
-    const speed = (3 + rng() * 6) * (r > 220 ? 0.4 : 1); // units/sec, never fast
+    // Each floe wanders on its OWN heading and rate — the pack has no common
+    // direction. Bergs are ponderous; drift ice skates.
+    const speed = (8 + rng() * 14) * (r > 220 ? 0.45 : 1); // units/sec
     const dir = rng() * Math.PI * 2;
 
     return {
@@ -2370,19 +2461,38 @@ function makeFloe(cx, cy, r, rng) {
         // squeezes into the ice, which stay very much illegal).
         x: cx, y: cy, radius: r, vertices, vegVertices, trees: [], rocks: [], cracks, facets, soft: true,
         style: 'ice', isFloe: true,
+        localArt, localHull, localVeg,
         driftVx: Math.sin(dir) * speed,
         driftVy: -Math.cos(dir) * speed,
+        // Ice spins as it drifts. Small pans twirl, bergs barely turn.
+        spin: rng() * Math.PI * 2,
+        spinRate: (rng() < 0.5 ? -1 : 1) * (0.08 + rng() * 0.27) * (r > 220 ? 0.4 : 1),
         // Slow heading curl so paths curve instead of running straight
         wanderPhase: rng() * Math.PI * 2,
         wanderRate: 0.1 + rng() * 0.25
     };
 }
 
-// Rigid-translate a floe (center + baked geometry all move together)
+// Translate only — the world-space geometry is rebuilt by syncFloe once all
+// motion and collisions for the frame have settled.
 function moveFloe(isl, dx, dy) {
     isl.x += dx; isl.y += dy;
-    for (const v of isl.vertices) { v.x += dx; v.y += dy; }
-    for (const v of isl.vegVertices) { v.x += dx; v.y += dy; }
+}
+
+// Rebuild the world-space collider and snow cap from the floe's local shape,
+// its position and its current spin.
+function syncFloe(isl) {
+    const c = Math.cos(isl.spin), s = Math.sin(isl.spin);
+    for (let i = 0; i < isl.localHull.length; i++) {
+        const p = isl.localHull[i], w = isl.vertices[i];
+        w.x = isl.x + p.x * c - p.y * s;
+        w.y = isl.y + p.x * s + p.y * c;
+    }
+    for (let i = 0; i < isl.localVeg.length; i++) {
+        const p = isl.localVeg[i], w = isl.vegVertices[i];
+        w.x = isl.x + p.x * c - p.y * s;
+        w.y = isl.y + p.x * s + p.y * c;
+    }
 }
 
 // Brash ice: sparse fist-to-fridge-sized white chunks drifting between the
@@ -2513,6 +2623,7 @@ function updateIceFloes(dt) {
         isl.driftVx = nvx;
 
         moveFloe(isl, isl.driftVx * dt, isl.driftVy * dt);
+        isl.spin += isl.spinRate * dt;
 
         // Arena rim: bounce back inward (reflect velocity about the inward
         // normal) instead of teleport-respawning.
@@ -2557,10 +2668,23 @@ function updateIceFloes(dt) {
                 const vbN2 = (mA * vaN + mB * vbN + mA * e * (vaN - vbN)) / (mA + mB);
                 a.driftVx += (vaN2 - vaN) * nx; a.driftVy += (vaN2 - vaN) * ny;
                 b.driftVx += (vbN2 - vbN) * nx; b.driftVy += (vbN2 - vbN) * ny;
+
+                // Glancing blows spin the ice up. Tangential closing speed
+                // becomes angular impulse, scaled down by size so a berg shrugs
+                // it off while a small pan gets kicked into a twirl.
+                const vRelT = (a.driftVx - b.driftVx) * -ny + (a.driftVy - b.driftVy) * nx;
+                a.spinRate = clampSpin(a.spinRate - vRelT * 0.9 / a.radius);
+                b.spinRate = clampSpin(b.spinRate + vRelT * 0.9 / b.radius);
             }
         }
     }
+
+    // One rebuild per floe, after every push and bounce has settled
+    for (const isl of floes) syncFloe(isl);
 }
+
+// Ice that spins faster than this reads as a cartoon top, not a floe
+function clampSpin(w) { return Math.max(-0.75, Math.min(0.75, w)); }
 
 // Swamp weed patches: soft circular drag zones (no collision — just slow).
 function generateWeeds(rng) {
@@ -2756,10 +2880,10 @@ const state = {
 };
 
 const burgeeImg = new Image();
-burgeeImg.src = 'assets/images/salty-crew-yacht-club-burgee.png';
+burgeeImg.src = 'assets/images/misc/salty-crew-yacht-club-burgee.png';
 
 const palmImg = new Image();
-palmImg.src = 'assets/images/palm.png';
+palmImg.src = 'assets/images/misc/palm.png';
 
 // Boat part sprites (uniform 16 px/world-unit on 1024^2 transparent canvases;
 // exported from the vector shapes — drop-in replaceable with painted art).
@@ -3036,7 +3160,7 @@ function getSpinnakerSprite(pattern, colorA, colorB) {
 
 // Inflatable tetrahedron racing mark; gray bake for inactive marks
 const markImg = new Image();
-markImg.src = 'assets/images/mark.png';
+markImg.src = 'assets/images/misc/mark.png';
 let markImgGray = null;
 function getMarkImgGray() {
     if (markImgGray || !markImg.complete || !markImg.naturalWidth) return markImgGray;
@@ -4398,7 +4522,7 @@ function competitorProfileHTML(config) {
              style="background: linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)">
             <canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130" data-boat="${config.name}"></canvas>
             <div class="flex items-center gap-5 relative">
-                <img src="assets/images/${config.name.toLowerCase()}.png" alt="${config.name}" class="w-32 h-32 object-cover shrink-0" draggable="false">
+                <img src="assets/images/competitors/${config.name.toLowerCase()}.png" alt="${config.name}" class="w-32 h-32 object-cover shrink-0" draggable="false">
                 <div class="py-4">
                     <div class="t-display text-white uppercase leading-tight" style="font-size:36px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
                     <div class="t-label mt-1" style="font-size:13px; letter-spacing:2.5px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${archDef ? archDef.label : ''}</div>
@@ -4649,7 +4773,7 @@ function setupPreRaceOverlay() {
             card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
             card.innerHTML = `
                 <div class="w-full aspect-square relative overflow-hidden">
-                    <img src="assets/images/${boat.name.toLowerCase()}.png" alt="${boat.name}"
+                    <img src="assets/images/competitors/${boat.name.toLowerCase()}.png" alt="${boat.name}"
                          class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" draggable="false">
                 </div>
                 <div class="p-3 bg-slate-900/60 flex-1">
@@ -8177,7 +8301,7 @@ function showResults() {
                 imgBox.appendChild(star);
             } else {
                 const img = document.createElement('img');
-                img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
+                img.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
                 img.className = "w-full h-full rounded-md object-cover";
                 imgDiv.appendChild(img);
             }
@@ -8389,7 +8513,7 @@ function updateLeaderboard() {
                 } else {
                     // Portrait
                     const img = document.createElement('img');
-                    img.src = "assets/images/" + boat.name.toLowerCase() + ".png";
+                    img.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
                     img.className = "w-8 h-8 rounded-full border-2 object-cover bg-slate-900";
                     const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
                     img.style.borderColor = color;
@@ -8677,8 +8801,7 @@ function draw() {
     drawParticles(ctx, 'current');
     drawRiverShore(ctx);
     drawWeeds(ctx);
-    drawBrashIce(ctx);
-    drawIslands(ctx);
+    drawIslands(ctx, 'land');
     drawDisturbedAir(ctx);
     drawActiveGateLine(ctx);
     drawLadderLines(ctx);
@@ -8686,6 +8809,10 @@ function draw() {
     drawMarkZones(ctx);
     drawRoundingArrows(ctx);
     drawBoundary(ctx);
+    // Ice last of the water layer: the nav aids are paint on the surface, and
+    // floes drift OVER paint. Marks and boats still draw on top of the ice.
+    drawBrashIce(ctx);
+    drawIslands(ctx, 'floe');
     drawParticles(ctx, 'air');
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
@@ -9376,6 +9503,13 @@ function checkIslandCollisions(dt) {
                  // Grounding Penalty: Lose 60% speed instantly + massive drag
                  boat.speed *= 0.4;
 
+                 // Groundings are the Arctic's real cost driver — surface them
+                 // so the eval harness can measure ice avoidance directly
+                 // instead of inferring it from race time.
+                 if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
+                     window.onRaceEvent('collision_island', { boat, isFloe: !!isl.isFloe });
+                 }
+
                  // RRS 19 (Room at an Obstruction): if an overlapped boat sat
                  // OUTSIDE us (between us and open water) while we hit the
                  // land, she denied us room — the foul is hers, not ours.
@@ -9420,6 +9554,17 @@ const ISLAND_STYLES = {
     redrock:  { body: '#c2703e', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false }
 };
 
+// Ice is faceted, not rounded — the style guide asks for literal low-poly
+// facets and crisp edges, and the aerial references are all hard planes and
+// snapped corners. Straight segments where land gets smoothed curves.
+function traceAngularPoly(g, vertices) {
+    if (vertices.length < 3) return;
+    g.beginPath();
+    g.moveTo(vertices[0].x, vertices[0].y);
+    for (let i = 1; i < vertices.length; i++) g.lineTo(vertices[i].x, vertices[i].y);
+    g.closePath();
+}
+
 function traceRoundedPoly(g, vertices) {
     if (vertices.length < 3) return;
     g.beginPath();
@@ -9439,16 +9584,27 @@ function traceRoundedPoly(g, vertices) {
 }
 
 // Bake one island (glow, body, veg, rocks, trees) into an offscreen sprite.
-// Islands are static and floes rigid (translate, never rotate), so this runs
-// ONCE per island per race. The live path previously paid a 30px shadowBlur
-// glow, three curve fills, and double ctx.filter tree draws PER FRAME —
-// ablation showed drawIslands alone took the swamp from 58 to 12 FPS.
+// Islands are static, so this runs ONCE per island per race. The live path
+// previously paid a 30px shadowBlur glow, three curve fills, and double
+// ctx.filter tree draws PER FRAME — ablation showed drawIslands alone took the
+// swamp from 58 to 12 FPS.
+//
+// Floes now SPIN, which they could not before. Their sprite is therefore baked
+// in the floe's own local frame (origin at its centre, spin zero) and rotated at
+// draw time; baking world-space geometry would freeze whatever heading the floe
+// happened to hold at bake time and then rotate it a second time on screen.
+// The drawn outline is the art shape, not the convex collider.
 function bakeIslandSprite(isl) {
     const st = ISLAND_STYLES[isl.style] || ISLAND_STYLES.tropical;
+    const isFloe = !!isl.isFloe;
+    const VERTS = isFloe ? isl.localArt : isl.vertices;
+    const VEG = isFloe ? isl.localVeg : isl.vegVertices;
+    const ox = isFloe ? 0 : isl.x, oy = isFloe ? 0 : isl.y;
+    const trace = isl.style === 'ice' ? traceAngularPoly : traceRoundedPoly;
 
     let maxR = isl.radius;
-    for (const v of isl.vertices) {
-        const d = Math.sqrt((v.x - isl.x) ** 2 + (v.y - isl.y) ** 2);
+    for (const v of VERTS) {
+        const d = Math.sqrt((v.x - ox) ** 2 + (v.y - oy) ** 2);
         if (d > maxR) maxR = d;
     }
     // Glow blur + tree canopy overhang margin; ice needs room for the
@@ -9462,25 +9618,19 @@ function bakeIslandSprite(isl) {
     c.width = c.height = size;
     const g = c.getContext('2d');
     g.scale(scale, scale);
-    g.translate(spriteR - isl.x, spriteR - isl.y); // world coords -> sprite space
+    g.translate(spriteR - ox, spriteR - oy); // shape coords -> sprite space
 
     if (isl.style === 'ice') {
-        // Underwater ice shelf: the pale shallow ledge visible around real
-        // bergs — vertices scaled out ~1.28, translucent glacial cyan.
-        const shelf = isl.vertices.map(v => ({
-            x: isl.x + (v.x - isl.x) * 1.28,
-            y: isl.y + (v.y - isl.y) * 1.28
-        }));
+        // Underwater ice shelf: the drowned shoulder that glows pale turquoise
+        // around a real berg — the signature of every aerial reference. Two
+        // translucent rings scaled out from the outline.
+        const ring = (k) => VERTS.map(v => ({ x: ox + (v.x - ox) * k, y: oy + (v.y - oy) * k }));
         g.save();
         g.fillStyle = 'rgba(74, 144, 200, 0.45)';
-        traceRoundedPoly(g, shelf);
+        trace(g, ring(1.28));
         g.fill();
         g.fillStyle = 'rgba(120, 180, 226, 0.42)';
-        const shelf2 = isl.vertices.map(v => ({
-            x: isl.x + (v.x - isl.x) * 1.12,
-            y: isl.y + (v.y - isl.y) * 1.12
-        }));
-        traceRoundedPoly(g, shelf2);
+        trace(g, ring(1.12));
         g.fill();
         g.restore();
     } else if (window.WATER_CONFIG && window.WATER_CONFIG.shorelineGlowSize > 0) {
@@ -9490,7 +9640,7 @@ function bakeIslandSprite(isl) {
         g.shadowBlur = window.WATER_CONFIG.shorelineGlowSize * 20;
         g.fillStyle = window.WATER_CONFIG.shorelineColor || '#4ade80';
         g.globalAlpha = window.WATER_CONFIG.shorelineGlowOpacity || 0.5;
-        traceRoundedPoly(g, isl.vertices);
+        trace(g, VERTS);
         g.fill();
         g.restore();
     }
@@ -9499,24 +9649,25 @@ function bakeIslandSprite(isl) {
     g.strokeStyle = st.stroke;
     g.lineWidth = 2;
     g.fillStyle = st.body;
-    traceRoundedPoly(g, isl.vertices);
+    trace(g, VERTS);
     g.stroke();
     g.fill();
 
     // Vegetation (snow cap on ice)
     g.fillStyle = st.veg;
-    traceRoundedPoly(g, isl.vegVertices);
+    trace(g, VEG);
     g.fill();
 
-    // Ice facets (bergs): angular translucent blue planes radiating from the
-    // center, echoing the reference art's faceted look
+    // Ice facets: angular translucent blue planes radiating from the centre —
+    // the low-poly faceting the style guide asks for, and what reads as relief
+    // on the aerial references.
     if (isl.style === 'ice' && isl.facets && isl.facets.length) {
         for (const f of isl.facets) {
-            const v1 = isl.vertices[f.i % isl.vertices.length];
-            const v2 = isl.vertices[(f.i + 1) % isl.vertices.length];
+            const v1 = VERTS[f.i % VERTS.length];
+            const v2 = VERTS[(f.i + 1) % VERTS.length];
             g.fillStyle = f.shade < 0.5 ? 'rgba(122, 176, 222, 0.4)' : 'rgba(78, 138, 194, 0.35)';
             g.beginPath();
-            g.moveTo(isl.x + (v1.x - isl.x) * f.depth, isl.y + (v1.y - isl.y) * f.depth);
+            g.moveTo(ox + (v1.x - ox) * f.depth, oy + (v1.y - oy) * f.depth);
             g.lineTo(v1.x, v1.y);
             g.lineTo(v2.x, v2.y);
             g.closePath();
@@ -9531,8 +9682,8 @@ function bakeIslandSprite(isl) {
         g.lineCap = 'round';
         for (const cr of isl.cracks) {
             g.beginPath();
-            g.moveTo(isl.x + cr.ax, isl.y + cr.ay);
-            g.quadraticCurveTo(isl.x + cr.mx, isl.y + cr.my, isl.x + cr.bx, isl.y + cr.by);
+            g.moveTo(ox + cr.ax, oy + cr.ay);
+            g.quadraticCurveTo(ox + cr.mx, oy + cr.my, ox + cr.bx, oy + cr.by);
             g.stroke();
         }
     }
@@ -9577,7 +9728,10 @@ function bakeIslandSprite(isl) {
     isl._sprite = { canvas: c, r: spriteR, baked: palmImg.complete && palmImg.naturalWidth > 0 };
 }
 
-function drawIslands(ctx) {
+// `which`: 'land' for static geometry, 'floe' for drifting ice, omitted for all.
+// The two are drawn in separate passes so the nav aids can sit BETWEEN them —
+// ladder lines and laylines are paint on the water, and ice floats over paint.
+function drawIslands(ctx, which) {
     if (!state.course || !state.course.islands) return;
 
     // Viewport Culling
@@ -9587,14 +9741,26 @@ function drawIslands(ctx) {
 
     for (const isl of state.course.islands) {
         if (isl.isBank) continue; // river banks: invisible colliders, see drawRiverShore
+        if (which === 'land' && isl.isFloe) continue;
+        if (which === 'floe' && !isl.isFloe) continue;
         const distSq = (isl.x - camX) ** 2 + (isl.y - camY) ** 2;
         const limit = viewRadius + isl.radius;
         if (distSq > limit ** 2) continue;
 
-        // Bake lazily; rebake once the palm image finishes loading
-        if (!isl._sprite || (!isl._sprite.baked && palmImg.complete && palmImg.naturalWidth > 0)) bakeIslandSprite(isl);
+        // Bake lazily; rebake once the palm image finishes loading. Floes carry
+        // no trees and their sprite is spin-canonical, so they never rebake —
+        // a rebake would capture their current heading and double it on screen.
+        if (!isl._sprite || (!isl.isFloe && !isl._sprite.baked && palmImg.complete && palmImg.naturalWidth > 0)) bakeIslandSprite(isl);
         const s = isl._sprite;
-        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        if (isl.isFloe) {
+            ctx.save();
+            ctx.translate(isl.x, isl.y);
+            ctx.rotate(isl.spin);
+            ctx.drawImage(s.canvas, -s.r, -s.r, s.r * 2, s.r * 2);
+            ctx.restore();
+        } else {
+            ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        }
     }
 }
 
