@@ -8,3 +8,4 @@ clear-for-action/useful/.DS_Store
 clear-for-action/.DS_Store
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+.obsidian/

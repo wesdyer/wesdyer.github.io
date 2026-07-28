@@ -1,8 +1,11 @@
-# Regatta Venue Art — Style Guide
+# Venue Art — Direction, Prompts & Delivery
+
+*Moved July 28 2026 from `assets/images/venues/ART_STYLE.md`. Companion to
+[visual-style.md](visual-style.md).*
 
 How to generate new art that fits the established venue-card collection (the ten
-images in this folder). Use this when prompting for any new venue, loading
-screen, or backdrop so it reads as the same artist's work.
+images in `../assets/images/venues/`). Use this when prompting for any new venue,
+loading screen, or backdrop so it reads as the same artist's work.
 
 ## The style in one sentence
 
@@ -84,17 +87,37 @@ Unclaimed hue territory for future venues: warm golds/ambers (sunset), greys
 - [ ] Exactly one focal creature/landmark; corners quiet
 - [ ] Style match: chunky facets, hard shading, zero blur/photo-realism
 
-## In-game water (top-down) — differs from card water
+## In-game water (top-down) — now matches the card idiom
 
-The cards are PERSPECTIVE views (wave-lattice water). The GAME is top-down,
-which uses a different idiom (learned the hard way — view dictates idiom):
+**Rendering north star (July 2026):** the in-game world matches the card art
+style — chunky facets, crisp flat tones, no blur. Water was rewritten from
+noise-contours to the card art's ANGULAR RIPPLE LATTICE. Future passes pull
+gusts, islands and wakes toward the same language.
 
-- Base: flat venue hue + soft elongated diagonal tonal clouds (very low
-  contrast, two families ±~35°) — baked tileable texture (water.js).
+Two layers, and the split matters:
+
+- Base: flat venue hue + faceted piecewise-linear wave strokes in light and
+  dark tones — the card art's diamond lattice, baked tileable
+  (`water.js` `updateTextures`, `rippleSpacing: 26`, `rippleOpacity: 0.9`).
+  Uses its own PRNG, never `Math.random` — render must not touch the eval RNG
+  stream.
 - Crests: DYNAMIC stitched whitecap fragments — thin white zigzag dashes
   with gaps + optional echo line — living in the wind-wave grid
-  (updateWindWaves/drawWindWaves), oriented perpendicular to local wind
-  travel, drifting downwind, density/brightness scaled by local wind speed.
-  Gusts whiten, lulls go glassy: the water reports the wind field.
+  (`updateWindWaves`/`drawWindWaves` in script.js), oriented perpendicular to
+  local wind travel, drifting downwind, density/brightness scaled by local
+  wind speed. Gusts whiten, lulls go glassy: the water reports the wind field.
 - Never bake crests into the texture: static crests can't align with the
   scene's wind and read as wallpaper.
+- The `contour*` knobs in `WATER_CONFIG` are legacy, kept for compatibility.
+  Don't design against them.
+
+Per-venue base/deep/shallow/shoreline values and gust tints live in
+`VENUES[key].palette` (script.js) — table in
+[visual-style.md](visual-style.md) §4.5.
+A new venue must supply all four tones plus gust tints.
+
+## Where the rest lives
+
+This document covers venue illustration: direction, prompts, delivery,
+acceptance. Brand, color tokens, typography, UI and HUD rules are in
+[visual-style.md](visual-style.md).
