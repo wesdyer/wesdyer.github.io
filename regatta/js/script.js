@@ -1821,72 +1821,72 @@ const ARCHETYPE_CALLS = {
 const AI_STAT_BONUS = 4;
 
 const AI_CONFIG = [
-    { name: 'Cheer', creature: 'Pom Pom Crab', hull: '#FF9ECF', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#FFFFFF', personality: "Cheerful and fun loving, always positive and enthuiastic.", beat: 'Out-spike her steady beat — she has no pace off the wind.', archetype: 'metronome', stats: { acceleration: 2, momentum: -2, handling: 4, upwind: 1, reach: -2, downwind: -1, boost: 5 } },
-    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Relaxed veteran who instinctively finds perfect wind." , beat: 'Beat him to the top mark — upwind he is merely mortal.', archetype: 'shift', stats: { acceleration: -2, momentum: -3, handling: -1, upwind: 0, reach: 1, downwind: 5, boost: -1 } },
-    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', sail: '#FFFFFF', cockpit: '#AEB4BF', personality: "Flashy opportunist thriving on speed bursts." , beat: 'Survive her start, then turn hard and often — she hates corners.', archetype: 'rocket', stats: { acceleration: 5, momentum: 0, handling: -4, upwind: 3, reach: -4, downwind: 3, boost: 2 } },
-    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', sail: '#FFFFFF', cockpit: '#B0B0B0', personality: "Awkward, unpredictable, deadly effective in chaos." , beat: 'Ignores the wind to get there — sail the middle and collect.', archetype: 'gambler', stats: { acceleration: 5, momentum: -1, handling: -2, upwind: -3, reach: 3, downwind: 0, boost: 4 } },
-    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#5A5A5A', personality: "Aggressive bully dominating the starting line." , beat: 'Stay clean upwind, then walk away downwind — he parks there.', archetype: 'bully', stats: { acceleration: 1, momentum: -2, handling: 0, upwind: 2, reach: -1, downwind: -5, boost: 2 } },
-    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', sail: '#FFFFFF', cockpit: '#3A3A3A', personality: "Cold, relentless presence forcing others to react." , beat: 'Force restarts and tacking duels — he cannot get moving again.', archetype: 'bully', stats: { acceleration: -5, momentum: -2, handling: -5, upwind: -3, reach: -3, downwind: 4, boost: 1 } },
-    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', sail: '#FFFFFF', cockpit: '#B0BEC5', personality: "Stylish confidence with daring, showy sailing." , beat: 'Push her into maneuvers — every turn costs her the strut.', archetype: 'metronome', stats: { acceleration: -3, momentum: -3, handling: -5, upwind: 5, reach: -2, downwind: 1, boost: 2 } },
-    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', sail: '#000000', cockpit: '#C4BEB2', personality: "Methodical and stubborn, grinding out advantages." , beat: 'Match him upwind, pull away when the spinnakers go up.', archetype: 'metronome', stats: { acceleration: 3, momentum: -3, handling: 3, upwind: 0, reach: 0, downwind: -4, boost: -3 } },
-    { name: 'Chomp', creature: 'Saltwater Crocodile', hull: '#2ECC71', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#C1B58A', personality: "Patient hunter striking without warning." , beat: 'Tack early, tack often — the ambusher cannot follow through turns.', archetype: 'leech', stats: { acceleration: 4, momentum: 1, handling: -5, upwind: 5, reach: -3, downwind: 0, boost: 3 } },
-    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', sail: '#FFFFFF', cockpit: '#ddd3c9', personality: "Massive, steady, unbeatable in heavy conditions." , beat: 'Attack every rounding and reach — the train needs straight track.', archetype: 'freight', stats: { acceleration: -2, momentum: 4, handling: 2, upwind: 0, reach: -5, downwind: 4, boost: -3 } },
-    { name: 'Vex', creature: 'Water Dragon', hull: '#0fe367', spinnaker: '#D9D9D9', sail: '#FFFFFF', cockpit: '#D0D0D0', personality: "Slippery tactician exploiting tiny mistakes." , beat: 'Lean on him mid-leg — away from corners he is out of tricks.', archetype: 'corner', stats: { acceleration: -3, momentum: -5, handling: 4, upwind: -4, reach: -5, downwind: 1, boost: 4 } },
-    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Chill vibes, relentless endurance." , beat: 'Get ahead early — Hug finishes everything she starts, slowly.', archetype: 'metronome', stats: { acceleration: -3, momentum: 1, handling: 0, upwind: 5, reach: 2, downwind: 2, boost: 5 } },
-    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', sail: '#FFFFFF', cockpit: '#B8C6D1', personality: "Cheerful speedster seeking clean lanes." , beat: 'Drag her into traffic — clean lanes are where she lives.', archetype: 'shift', stats: { acceleration: -2, momentum: -1, handling: -3, upwind: 4, reach: -4, downwind: 5, boost: 5 } },
-    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#6B6B6B', personality: "Defensive and stubborn off the line." , beat: 'Do not engage — sail past while he is busy starting fights.', archetype: 'bully', stats: { acceleration: -5, momentum: 2, handling: -4, upwind: 4, reach: -5, downwind: -2, boost: 0 } },
-    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', sail: '#000000', cockpit: '#C5CED6', personality: "Patient perfectionist who never blunders." , beat: 'Perfect upwind, lost downwind — make the runs count.', archetype: 'metronome', stats: { acceleration: -4, momentum: 3, handling: 2, upwind: 4, reach: 3, downwind: -5, boost: 2 } },
-    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', sail: '#FFFFFF', cockpit: '#3C3F55', personality: "Silent dominance unleashed at full power." , beat: 'Turn the race into corners — momentum cannot help him there.', archetype: 'freight', stats: { acceleration: 0, momentum: 5, handling: -5, upwind: 3, reach: 2, downwind: -2, boost: -3 } },
-    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', sail: '#000000', cockpit: '#BFAF92', personality: "Erratic survivor thriving in congestion." , beat: 'Deny the chaos — in a clean race he is just slow.', archetype: 'gambler', stats: { acceleration: -4, momentum: -3, handling: -3, upwind: -3, reach: 1, downwind: -2, boost: 5 } },
-    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', sail: '#FFFFFF', cockpit: '#A7B8C8', personality: "Pure speed and relentless pressure." , beat: 'Break cover downwind — his speed lives on the beat.', archetype: 'leech', stats: { acceleration: -2, momentum: -3, handling: -3, upwind: 5, reach: -5, downwind: 1, boost: -1 } },
-    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', sail: '#000000', cockpit: '#5E5E5E', personality: "Explosive starts, reckless aggression." , beat: 'Let the fire burn out — he keeps nothing through lulls or turns.', archetype: 'rocket', stats: { acceleration: 1, momentum: -5, handling: -3, upwind: -1, reach: 4, downwind: -1, boost: 4 } },
-    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', sail: '#FFFFFF', cockpit: '#C9D0E0', personality: "Effortlessly surfing invisible shifts." , beat: 'Chase him downwind — clouds stall when the wind goes aft.', archetype: 'shift', stats: { acceleration: 5, momentum: -5, handling: -4, upwind: 1, reach: 4, downwind: -5, boost: 0 } },
-    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#B8ACC9', personality: "Trap-setting master of dirty air." , beat: 'Dive downwind — the trap-setter unravels on the runs.', archetype: 'leech', stats: { acceleration: -1, momentum: 1, handling: -3, upwind: -2, reach: -1, downwind: -5, boost: 5 } },
-    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', sail: '#FFFFFF', cockpit: '#C3CCD2', personality: "Looks slow, impossible to pass." , beat: 'Break his rhythm at the marks — restarts are agony for a manatee.', archetype: 'freight', stats: { acceleration: -5, momentum: 3, handling: 3, upwind: 3, reach: -2, downwind: 4, boost: -4 } },
-    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', sail: '#FFFFFF', cockpit: '#5C5F6A', personality: "Surgical aggression at the worst moments." , beat: 'No weak stat — refuse the fight and race your own boat.', archetype: 'bully', stats: { acceleration: 0, momentum: 4, handling: 5, upwind: -1, reach: 0, downwind: -1, boost: -1 } },
-    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Precise and unshakable in traffic." , beat: 'Reach across her line — precision cannot fix a slow reach.', archetype: 'metronome', stats: { acceleration: -2, momentum: 5, handling: 3, upwind: 5, reach: -4, downwind: 4, boost: -2 } },
-    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', sail: '#FFFFFF', cockpit: '#CBBFA6', personality: "Graceful wildcard favoring wide tactics." , beat: 'She bets it all on the reaches — win the beats and it is over.', archetype: 'gambler', stats: { acceleration: -4, momentum: -2, handling: 3, upwind: -5, reach: 5, downwind: 0, boost: 5 } },
-    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', sail: '#FFFFFF', cockpit: '#7A7F9A', personality: "Spiky defender denying easy lanes." , beat: 'Stay out of reach — alone, the urchin barely moves.', archetype: 'bully', stats: { acceleration: -5, momentum: 3, handling: -4, upwind: 3, reach: -1, downwind: 1, boost: -4 } },
-    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', sail: '#FFFFFF', cockpit: '#C4CFD4', personality: "Constantly sniffing out pressure." , beat: 'Fast everywhere — beat the swift on shifts, not speed.', archetype: 'shift', stats: { acceleration: 5, momentum: 5, handling: 2, upwind: 0, reach: -1, downwind: 0, boost: -1 } },
-    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', sail: '#FFFFFF', cockpit: '#D6C9D9', personality: "Harmless-looking, slips through gaps." , beat: 'Every maneuver hurts him — force gybes and watch him wilt.', archetype: 'gambler', stats: { acceleration: -4, momentum: -5, handling: -5, upwind: -2, reach: -1, downwind: 4, boost: 4 } },
-    { name: 'Anchor', creature: 'Sea Turtle', hull: '#96C47A', spinnaker: '#ffd016', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Conservative, resilient, brutally consistent." , beat: 'Own the beats — the turtle only wins races run downhill.', archetype: 'metronome', stats: { acceleration: 3, momentum: 5, handling: -2, upwind: -5, reach: 0, downwind: -2, boost: -1 } },
-    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', sail: '#FFFFFF', cockpit: '#CFC7DC', personality: "Hyperactive chaos opportunist." , beat: 'Survive the launch — the beats bring him back to you.', archetype: 'rocket', stats: { acceleration: 4, momentum: 5, handling: 4, upwind: -3, reach: -4, downwind: -2, boost: 1 } },
-    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#588157', sail: '#FFFFFF', cockpit: '#C8B5A6', personality: "Cerebral planner playing long games." , beat: 'Sail into pressure — the nautilus cannot cash a gust.', archetype: 'leech', stats: { acceleration: -2, momentum: -3, handling: 0, upwind: -3, reach: 0, downwind: 1, boost: -4 } },
-    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', sail: '#000000', cockpit: '#B4C2D6', personality: "Speed-first, consequences later." , beat: 'Send him upwind — the sprinter\'s compass only points down.', archetype: 'rocket', stats: { acceleration: 2, momentum: -1, handling: 5, upwind: -5, reach: -1, downwind: 2, boost: -4 } },
-    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Quiet patience, strikes at perfect moments." , beat: 'Make her tack — every stop costs a fortune in pearls.', archetype: 'leech', stats: { acceleration: 4, momentum: -5, handling: -1, upwind: -5, reach: 4, downwind: 5, boost: 4 } },
-    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', sail: '#FFFFFF', cockpit: '#BFC6CC', personality: "Imposing calm daring mistakes." , beat: 'Just point higher — Bluff bluffs; the upwind legs call it.', archetype: 'freight', stats: { acceleration: 2, momentum: 4, handling: -3, upwind: -5, reach: -5, downwind: -2, boost: -1 } },
-    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', sail: '#000000', cockpit: '#C9CCD6', personality: "Elegant lane thief with ruthless timing." , beat: 'Race the runs — royalty will not hoist and hustle.', archetype: 'corner', stats: { acceleration: -1, momentum: 3, handling: 5, upwind: 0, reach: 4, downwind: -4, boost: -2 } },
-    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', sail: '#FFFFFF', cockpit: '#BDB76B', personality: "Flashy speed attacking on reaches." , beat: 'Keep her in lulls and dirty air — no gusts, no shine.', archetype: 'rocket', stats: { acceleration: 1, momentum: -4, handling: 1, upwind: 4, reach: 0, downwind: -4, boost: -4 } },
-    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Sticky feet, sticky cover — impossible to shake loose." , beat: 'Break away off the wind — sticky feet, short hops.', archetype: 'leech', stats: { acceleration: -3, momentum: 2, handling: -1, upwind: -3, reach: -5, downwind: -5, boost: 2 } },
-    { name: 'Splat', creature: 'Blobfish', hull: '#E7A6B4', spinnaker: '#6a1051', sail: '#FFFFFF', cockpit: '#CFC6CC', personality: "Looks doomed, but somehow always survives." , beat: 'Just race — his corner needs a miracle and a tailwind.', archetype: 'gambler', stats: { acceleration: -5, momentum: 0, handling: -3, upwind: 0, reach: -2, downwind: 0, boost: 1 } },
-    { name: 'Dart', creature: 'Kingfisher', hull: '#00C2FF', spinnaker: '#E5A051', sail: '#FFFFFF', cockpit: '#AEBFCC', personality: "pure speed, energetic, very competitive" , beat: 'Point high and turn often — darts only fly straight.', archetype: 'rocket', stats: { acceleration: 1, momentum: 4, handling: -3, upwind: -4, reach: 4, downwind: -2, boost: 5 } },
-    { name: 'Roll', creature: 'Harbor Seal', hull: '#7D8597', spinnaker: '#FFD166', sail: '#FFFFFF', cockpit: '#C3CAD3', personality: "Playful feints hiding brutal positioning skills." , beat: 'Slow him leaving marks — perfect turns, painful exits.', archetype: 'corner', stats: { acceleration: -5, momentum: 4, handling: 5, upwind: -3, reach: 2, downwind: -1, boost: 4 } },
-    { name: 'Spike', creature: 'Narwhal', hull: '#6B7FD7', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#C5CED6', personality: "Leads with the horn — makes his own right of way." , beat: 'Point high and stay clear of the horn — he cannot climb after you.', archetype: 'bully', stats: { acceleration: 1, momentum: -2, handling: 1, upwind: -5, reach: 2, downwind: 1, boost: 3 } },
-    { name: 'Flicker', creature: 'Tern', hull: '#EE6C4D', spinnaker: '#E0FBFC', sail: '#000000', cockpit: '#C7CCD1', personality: "Constant repositioning, never predictable." , beat: 'Follow the fleet, not the tern — his corner rarely pays.', archetype: 'gambler', stats: { acceleration: 4, momentum: 3, handling: -2, upwind: -2, reach: 3, downwind: 0, boost: -1 } },
-    { name: 'Croak', creature: 'Bullfrog', hull: '#386641', spinnaker: '#A7C957', sail: '#FFFFFF', cockpit: '#BFC9B8', personality: "Patient swamp tactician lethal in shifts." , beat: 'Strong wherever the wind blows — outsail him in the transitions.', archetype: 'shift', stats: { acceleration: 3, momentum: -2, handling: -1, upwind: 4, reach: 1, downwind: 5, boost: 2 } },
-    { name: 'Snap', creature: 'Snapping Turtle', hull: '#4B5D23', spinnaker: '#ef3629', sail: '#000000', cockpit: '#B8B8A8', personality: "Grouchy, old salty sailor who likes to beat the young whippersnappers." , beat: 'Keep him turning — snappers lose their grip in maneuvers.', archetype: 'metronome', stats: { acceleration: -2, momentum: -4, handling: -4, upwind: 2, reach: 5, downwind: 2, boost: 5 } },
-    { name: 'Rift', creature: 'Moray Eel', hull: '#d4ff07', spinnaker: '#ff61df', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Lurks quietly, strikes savagely at marks." , beat: 'Pull away on the runs — eels do not surf.', archetype: 'corner', stats: { acceleration: -1, momentum: -3, handling: 2, upwind: 2, reach: 3, downwind: -4, boost: 2 } },
-    { name: 'Skerry', creature: 'Puffin', hull: '#FF5400', spinnaker: '#1D3557', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Fearless gap-threader thriving in traffic." , beat: 'Give him no gaps to thread — then climb away upwind.', archetype: 'bully', stats: { acceleration: -2, momentum: 1, handling: -1, upwind: -3, reach: 3, downwind: 2, boost: -2 } },
-    { name: 'Crush', creature: 'Mantis Shrimp', hull: '#00F5D4', spinnaker: '#F15BB5', sail: '#000000', cockpit: '#CFC7DC', personality: "Explosive reactions with devastating timing." , beat: 'Everything between corners is yours — especially the runs.', archetype: 'corner', stats: { acceleration: -4, momentum: -5, handling: 1, upwind: 1, reach: -3, downwind: -5, boost: 0 } },
-    { name: 'Torrent', creature: 'Swordfish', hull: '#083fa6', spinnaker: '#D62828', sail: '#FFFFFF', cockpit: '#8D99AE', personality: "Straight-line dominance with brutal acceleration." , beat: 'Absorb the opening surge — the swordfish dulls by leg two.', archetype: 'rocket', stats: { acceleration: 5, momentum: -2, handling: 1, upwind: 1, reach: -1, downwind: -2, boost: 2 } },
-    { name: 'Jester', creature: 'Clownfish', hull: '#ffa000', spinnaker: '#FFFFFF', sail: '#000000', cockpit: '#f4f4f4', personality: "Cheerful chaos masking shrewd cunning." , beat: 'Escape upwind — the joke is on him above the layline.', archetype: 'leech', stats: { acceleration: 1, momentum: 3, handling: 2, upwind: -3, reach: 0, downwind: 5, boost: -1 } },
-    { name: 'Breeze', creature: 'Nudibranch', hull: '#000080', spinnaker: '#ff3fa7', sail: '#FFFFFF', cockpit: '#D6D6DC', personality: "Chill, stylish, always finds unexpected pressure." , beat: 'Crowd her at starts and marks — slow to build speed, easy to pin.', archetype: 'shift', stats: { acceleration: -4, momentum: 4, handling: -2, upwind: -3, reach: 4, downwind: 1, boost: 5 } },
-    { name: 'Petal', creature: 'Roseate Spoonbill', hull: '#FF6FAE', spinnaker: '#1a3685', sail: '#FFFFFF', cockpit: '#e6e6e6', personality: "Elegant lane snatcher with impeccable timing." , beat: 'Win the beats — the spoonbill blooms only at the marks.', archetype: 'corner', stats: { acceleration: -3, momentum: 3, handling: 1, upwind: -5, reach: -1, downwind: 3, boost: 4 } },
-    { name: 'Stomp', creature: 'Blue-Footed Booby', hull: '#00B4D8', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Clumsy confidence hiding fearless lane attacks." , beat: 'Refuse the brawl and outlast him — stomping bleeds speed.', archetype: 'bully', stats: { acceleration: 5, momentum: -3, handling: 4, upwind: 3, reach: 2, downwind: 0, boost: 1 } },
-    { name: 'Crimson', creature: 'Red Snapper', hull: '#ed1515', spinnaker: '#2643E9', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Calm, surgical tactician striking at perfect moments." , beat: 'Break away in a straight line — he only shines in puffs.', archetype: 'leech', stats: { acceleration: -1, momentum: -3, handling: 4, upwind: 1, reach: -2, downwind: -2, boost: 5 } },
-    { name: 'Viper', creature: 'Green Tree Snake', hull: '#49c100', spinnaker: '#FF1E1E', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Coils around your wind and waits for the twitch." , beat: 'Slip the cover in open water — he fades on the long legs.', archetype: 'leech', stats: { acceleration: -3, momentum: -2, handling: -2, upwind: -5, reach: -1, downwind: -5, boost: 3 } },
-    { name: 'Skitter', creature: 'Mudskipper', hull: '#e33d28', spinnaker: '#15f121', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Erratic bursts, impossible angles, constant pressure." , beat: 'Cut off the downwind escape, then watch the gamble fail.', archetype: 'gambler', stats: { acceleration: 1, momentum: -4, handling: -2, upwind: 1, reach: -1, downwind: 5, boost: -2 } },
-    { name: 'Veil', creature: 'Vampire Squid', hull: '#7A1FA2', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Calm, shadowy predator striking without warning." , beat: 'Force maneuvers — the cloak tears in every tack.', archetype: 'leech', stats: { acceleration: -1, momentum: -4, handling: -5, upwind: -1, reach: 3, downwind: -1, boost: -4 } },
-    { name: 'Puff', creature: 'Mandarin Dragonet', hull: '#0032ff', spinnaker: '#E17638', sail: '#62e517', cockpit: '#17b3f2', personality: "Super chill vibes, effortless flow, always smiling." , beat: 'Attack downwind — the dragonet will not run with you.', archetype: 'freight', stats: { acceleration: 2, momentum: 4, handling: 0, upwind: 1, reach: 0, downwind: -3, boost: 4 } },
-    { name: 'Lure', creature: 'Anglerfish', hull: '#0B0F1A', spinnaker: '#6AFF3D', sail: '#F5F7FA', cockpit: '#2E3440', personality: "Patient darkness, sudden lethal strikes." , beat: 'Refuse the bait upwind — the runs are a free pass.', archetype: 'freight', stats: { acceleration: -4, momentum: 5, handling: 0, upwind: -2, reach: 4, downwind: -5, boost: 2 } },
-    { name: 'Wiggle', creature: 'Axolotl', hull: '#FFFFFF', spinnaker: '#FF4FA3', sail: '#BDEFFF', cockpit: '#D1D7DB', personality: "Cute chaos, surprisingly competitive." , beat: 'Make him steer — wiggling is not turning.', archetype: 'gambler', stats: { acceleration: 2, momentum: 1, handling: -5, upwind: -3, reach: 3, downwind: 3, boost: -3 } },
-    { name: 'Zeffir', creature: 'Seagull', hull: '#FFFFFF', spinnaker: '#FF7A00', sail: '#FFFFFF', cockpit: '#D1D7DB', personality: "Always lifted, always smiling." , beat: 'Hold him off downwind — gulls glide everywhere but there.', archetype: 'shift', stats: { acceleration: 4, momentum: 1, handling: -1, upwind: 1, reach: 2, downwind: -4, boost: 2 } },
-    { name: 'Scoop', creature: 'Pelican', hull: '#D8C6A3', spinnaker: '#5499dc', sail: '#FFFFFF', cockpit: '#e6e6e6', personality: "Big moves, surprisingly precise." , beat: 'Rush the starts and reaches — the pelican needs a runway.', archetype: 'metronome', stats: { acceleration: -4, momentum: -1, handling: 1, upwind: 4, reach: -4, downwind: -1, boost: 2 } },
-    { name: 'Popper', creature: 'Pufferfish', hull: '#FFD84D', spinnaker: '#E10600', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Defensive chaos, punishes reckless pressure." , beat: 'Point higher and let him puff himself out.', archetype: 'bully', stats: { acceleration: -3, momentum: 2, handling: -2, upwind: -4, reach: -3, downwind: 0, boost: 0 } },
-    { name: 'Frond', creature: 'Leafy Seadragon', hull: '#5FAF6E', spinnaker: '#FF8C42', sail: '#F3FFF9', cockpit: '#BFCFC4', personality: "Graceful drifter, impossible to read." , beat: 'Pin him at the start — the seadragon blooms late, downwind.', archetype: 'shift', stats: { acceleration: -4, momentum: -2, handling: -3, upwind: 2, reach: 2, downwind: 5, boost: 5 } },
-    { name: 'Bulkhead', creature: 'Elephant Seal', hull: '#6B7280', spinnaker: '#FF7A00', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "A wall of calm — unbothered, unhurried, unmoved." , beat: 'Hoist and go — the bulkhead sinks on every run.', archetype: 'metronome', stats: { acceleration: -3, momentum: -2, handling: 2, upwind: 3, reach: -1, downwind: -5, boost: 5 } },
-    { name: 'Slipstream', creature: 'Salmon', hull: '#B6BCC6', spinnaker: '#E94B4B', sail: '#FFFFFF', cockpit: '#41c617', personality: "Relentless endurance, explosive late surges." , beat: 'Deny the tow upwind, then leave — salmon cannot run downstream.', archetype: 'freight', stats: { acceleration: 5, momentum: 3, handling: 1, upwind: 1, reach: -3, downwind: -5, boost: -1 } },
-    { name: 'Blaze', creature: 'Mako Shark', hull: '#1F3C5B', spinnaker: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Blisteringly fast attacker forcing races into constant reaction mode." , beat: 'Skip the fight, win the runs — makos idle downwind.', archetype: 'bully', stats: { acceleration: -3, momentum: -2, handling: 2, upwind: 0, reach: 3, downwind: -4, boost: -1 } },
+    { name: 'Cheer', creature: 'Pom Pom Crab', hull: '#FF9ECF', spinnaker: '#00E5FF', spinnaker2: '#FF9ECF', sail: '#FFFFFF', cockpit: '#FFFFFF', personality: "Cheerful and fun loving, always positive and enthuiastic.", beat: 'Out-spike her steady beat — she has no pace off the wind.', archetype: 'metronome', stats: { acceleration: 2, momentum: -2, handling: 4, upwind: 1, reach: -2, downwind: -1, boost: 5 } },
+    { name: 'Bixby', creature: 'Otter', hull: '#0046ff', spinnaker: '#FFD400', spinnaker2: '#0046ff', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Relaxed veteran who instinctively finds perfect wind." , beat: 'Beat him to the top mark — upwind he is merely mortal.', archetype: 'shift', stats: { acceleration: -2, momentum: -3, handling: -1, upwind: 0, reach: 1, downwind: 5, boost: -1 } },
+    { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#AEB4BF', personality: "Flashy opportunist thriving on speed bursts." , beat: 'Survive her start, then turn hard and often — she hates corners.', archetype: 'rocket', stats: { acceleration: 5, momentum: 0, handling: -4, upwind: 3, reach: -4, downwind: 3, boost: 2 } },
+    { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#00E5FF', spinnaker2: '#FF8C1A', sail: '#FFFFFF', cockpit: '#B0B0B0', personality: "Awkward, unpredictable, deadly effective in chaos." , beat: 'Ignores the wind to get there — sail the middle and collect.', archetype: 'gambler', stats: { acceleration: 5, momentum: -1, handling: -2, upwind: -3, reach: 3, downwind: 0, boost: 4 } },
+    { name: 'Pinch', creature: 'Lobster', hull: '#E10600', spinnaker: '#FFFFFF', spinnaker2: '#E10600', sail: '#FFFFFF', cockpit: '#5A5A5A', personality: "Aggressive bully dominating the starting line." , beat: 'Stay clean upwind, then walk away downwind — he parks there.', archetype: 'bully', stats: { acceleration: 1, momentum: -2, handling: 0, upwind: 2, reach: -1, downwind: -5, boost: 2 } },
+    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', spinnaker2: '#000000', sail: '#FFFFFF', cockpit: '#3A3A3A', personality: "Cold, relentless presence forcing others to react." , beat: 'Force restarts and tacking duels — he cannot get moving again.', archetype: 'bully', stats: { acceleration: -5, momentum: -2, handling: -5, upwind: -3, reach: -3, downwind: 4, boost: 1 } },
+    { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#000000', spinnaker2: '#FF4F9A', sail: '#FFFFFF', cockpit: '#B0BEC5', personality: "Stylish confidence with daring, showy sailing." , beat: 'Push her into maneuvers — every turn costs her the strut.', archetype: 'metronome', stats: { acceleration: -3, momentum: -3, handling: -5, upwind: 5, reach: -2, downwind: 1, boost: 2 } },
+    { name: 'Gasket', creature: 'Beaver', hull: '#FFE600', spinnaker: '#000000', spinnaker2: '#FFE600', sail: '#000000', cockpit: '#C4BEB2', personality: "Methodical and stubborn, grinding out advantages." , beat: 'Match him upwind, pull away when the spinnakers go up.', archetype: 'metronome', stats: { acceleration: 3, momentum: -3, handling: 3, upwind: 0, reach: 0, downwind: -4, boost: -3 } },
+    { name: 'Chomp', creature: 'Saltwater Crocodile', hull: '#2ECC71', spinnaker: '#FF7A00', spinnaker2: '#2ECC71', sail: '#000000', cockpit: '#C1B58A', personality: "Patient hunter striking without warning." , beat: 'Tack early, tack often — the ambusher cannot follow through turns.', archetype: 'leech', stats: { acceleration: 4, momentum: 1, handling: -5, upwind: 5, reach: -3, downwind: 0, boost: 3 } },
+    { name: 'Whiskers', creature: 'Walrus', hull: '#C49A6C', spinnaker: '#8E0038', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#ddd3c9', personality: "Massive, steady, unbeatable in heavy conditions." , beat: 'Attack every rounding and reach — the train needs straight track.', archetype: 'freight', stats: { acceleration: -2, momentum: 4, handling: 2, upwind: 0, reach: -5, downwind: 4, boost: -3 } },
+    { name: 'Vex', creature: 'Water Dragon', hull: '#0fe367', spinnaker: '#D9D9D9', spinnaker2: '#0fe367', sail: '#FFFFFF', cockpit: '#D0D0D0', personality: "Slippery tactician exploiting tiny mistakes." , beat: 'Lean on him mid-leg — away from corners he is out of tricks.', archetype: 'corner', stats: { acceleration: -3, momentum: -5, handling: 4, upwind: -4, reach: -5, downwind: 1, boost: 4 } },
+    { name: 'Hug', creature: 'Starfish', hull: '#9900ff', spinnaker: '#e8a6ff', spinnaker2: '#FF9E2C', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Chill vibes, relentless endurance." , beat: 'Get ahead early — Hug finishes everything she starts, slowly.', archetype: 'metronome', stats: { acceleration: -3, momentum: 1, handling: 0, upwind: 5, reach: 2, downwind: 2, boost: 5 } },
+    { name: 'Ripple', creature: 'Dolphin', hull: '#00B3FF', spinnaker: '#FF6F00', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#B8C6D1', personality: "Cheerful speedster seeking clean lanes." , beat: 'Drag her into traffic — clean lanes are where she lives.', archetype: 'shift', stats: { acceleration: -2, momentum: -1, handling: -3, upwind: 4, reach: -4, downwind: 5, boost: 5 } },
+    { name: 'Clutch', creature: 'Crab', hull: '#B00020', spinnaker: '#FFD166', spinnaker2: '#B00020', sail: '#FFFFFF', cockpit: '#6B6B6B', personality: "Defensive and stubborn off the line." , beat: 'Do not engage — sail past while he is busy starting fights.', archetype: 'bully', stats: { acceleration: -5, momentum: 2, handling: -4, upwind: 4, reach: -5, downwind: -2, boost: 0 } },
+    { name: 'Glide', creature: 'Albatross', hull: '#E8F1F8', spinnaker: '#1F4FFF', spinnaker2: '#FFFFFF', sail: '#000000', cockpit: '#C5CED6', personality: "Patient perfectionist who never blunders." , beat: 'Perfect upwind, lost downwind — make the runs count.', archetype: 'metronome', stats: { acceleration: -4, momentum: 3, handling: 2, upwind: 4, reach: 3, downwind: -5, boost: 2 } },
+    { name: 'Fathom', creature: 'Orca', hull: '#1C1C3C', spinnaker: '#00F0FF', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#3C3F55', personality: "Silent dominance unleashed at full power." , beat: 'Turn the race into corners — momentum cannot help him there.', archetype: 'freight', stats: { acceleration: 0, momentum: 5, handling: -5, upwind: 3, reach: 2, downwind: -2, boost: -3 } },
+    { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', spinnaker2: '#FFB703', sail: '#000000', cockpit: '#BFAF92', personality: "Erratic survivor thriving in congestion." , beat: 'Deny the chaos — in a clean race he is just slow.', archetype: 'gambler', stats: { acceleration: -4, momentum: -3, handling: -3, upwind: -3, reach: 1, downwind: -2, boost: 5 } },
+    { name: 'Finley', creature: 'Tuna', hull: '#0077B6', spinnaker: '#ffd900', spinnaker2: '#0077B6', sail: '#FFFFFF', cockpit: '#A7B8C8', personality: "Pure speed and relentless pressure." , beat: 'Break cover downwind — his speed lives on the beat.', archetype: 'leech', stats: { acceleration: -2, momentum: -3, handling: -3, upwind: 5, reach: -5, downwind: 1, boost: -1 } },
+    { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', spinnaker2: '#FF3B30', sail: '#000000', cockpit: '#5E5E5E', personality: "Explosive starts, reckless aggression." , beat: 'Let the fire burn out — he keeps nothing through lulls or turns.', archetype: 'rocket', stats: { acceleration: 1, momentum: -5, handling: -3, upwind: -1, reach: 4, downwind: -1, boost: 4 } },
+    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', spinnaker2: '#6A7FDB', sail: '#FFFFFF', cockpit: '#C9D0E0', personality: "Effortlessly surfing invisible shifts." , beat: 'Chase him downwind — clouds stall when the wind goes aft.', archetype: 'shift', stats: { acceleration: 5, momentum: -5, handling: -4, upwind: 1, reach: 4, downwind: -5, boost: 0 } },
+    { name: 'Tangle', creature: 'Octopus', hull: '#7A1FA2', spinnaker: '#00E676', spinnaker2: '#7A1FA2', sail: '#FFFFFF', cockpit: '#B8ACC9', personality: "Trap-setting master of dirty air." , beat: 'Dive downwind — the trap-setter unravels on the runs.', archetype: 'leech', stats: { acceleration: -1, momentum: 1, handling: -3, upwind: -2, reach: -1, downwind: -5, boost: 5 } },
+    { name: 'Brine', creature: 'Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C3CCD2', personality: "Looks slow, impossible to pass." , beat: 'Break his rhythm at the marks — restarts are agony for a manatee.', archetype: 'freight', stats: { acceleration: -5, momentum: 3, handling: 3, upwind: 3, reach: -2, downwind: 4, boost: -4 } },
+    { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', spinnaker2: '#2D3142', sail: '#FFFFFF', cockpit: '#5C5F6A', personality: "Surgical aggression at the worst moments." , beat: 'No weak stat — refuse the fight and race your own boat.', archetype: 'bully', stats: { acceleration: 0, momentum: 4, handling: 5, upwind: -1, reach: 0, downwind: -1, boost: -1 } },
+    { name: 'Pebble', creature: 'Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Precise and unshakable in traffic." , beat: 'Reach across her line — precision cannot fix a slow reach.', archetype: 'metronome', stats: { acceleration: -2, momentum: 5, handling: 3, upwind: 5, reach: -4, downwind: 4, boost: -2 } },
+    { name: 'Saffron', creature: 'Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', spinnaker2: '#FFB000', sail: '#FFFFFF', cockpit: '#CBBFA6', personality: "Graceful wildcard favoring wide tactics." , beat: 'She bets it all on the reaches — win the beats and it is over.', archetype: 'gambler', stats: { acceleration: -4, momentum: -2, handling: 3, upwind: -5, reach: 5, downwind: 0, boost: 5 } },
+    { name: 'Bramble', creature: 'Sea Urchin', hull: '#2B2E4A', spinnaker: '#FF9F1C', spinnaker2: '#2B2E4A', sail: '#FFFFFF', cockpit: '#7A7F9A', personality: "Spiky defender denying easy lanes." , beat: 'Stay out of reach — alone, the urchin barely moves.', archetype: 'bully', stats: { acceleration: -5, momentum: 3, handling: -4, upwind: 3, reach: -1, downwind: 1, boost: -4 } },
+    { name: 'Mistral', creature: 'Swift', hull: '#A8DADC', spinnaker: '#E63946', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C4CFD4', personality: "Constantly sniffing out pressure." , beat: 'Fast everywhere — beat the swift on shifts, not speed.', archetype: 'shift', stats: { acceleration: 5, momentum: 5, handling: 2, upwind: 0, reach: -1, downwind: 0, boost: -1 } },
+    { name: 'Drift', creature: 'Jellyfish', hull: '#FF70A6', spinnaker: '#70D6FF', spinnaker2: '#FF70A6', sail: '#FFFFFF', cockpit: '#D6C9D9', personality: "Harmless-looking, slips through gaps." , beat: 'Every maneuver hurts him — force gybes and watch him wilt.', archetype: 'gambler', stats: { acceleration: -4, momentum: -5, handling: -5, upwind: -2, reach: -1, downwind: 4, boost: 4 } },
+    { name: 'Anchor', creature: 'Sea Turtle', hull: '#96C47A', spinnaker: '#ffd016', spinnaker2: '#3E8E41', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Conservative, resilient, brutally consistent." , beat: 'Own the beats — the turtle only wins races run downhill.', archetype: 'metronome', stats: { acceleration: 3, momentum: 5, handling: -2, upwind: -5, reach: 0, downwind: -2, boost: -1 } },
+    { name: 'Zing', creature: 'Flying Squirrel', hull: '#9B5DE5', spinnaker: '#FEE440', spinnaker2: '#9B5DE5', sail: '#FFFFFF', cockpit: '#CFC7DC', personality: "Hyperactive chaos opportunist." , beat: 'Survive the launch — the beats bring him back to you.', archetype: 'rocket', stats: { acceleration: 4, momentum: 5, handling: 4, upwind: -3, reach: -4, downwind: -2, boost: 1 } },
+    { name: 'Knot', creature: 'Nautilus', hull: '#C8553D', spinnaker: '#FF8C42', spinnaker2: '#FFF6E5', sail: '#FFFFFF', cockpit: '#C8B5A6', personality: "Cerebral planner playing long games." , beat: 'Sail into pressure — the nautilus cannot cash a gust.', archetype: 'leech', stats: { acceleration: -2, momentum: -3, handling: 0, upwind: -3, reach: 0, downwind: 1, boost: -4 } },
+    { name: 'Flash', creature: 'Mackerel', hull: '#3A86FF', spinnaker: '#FFBE0B', spinnaker2: '#FFFFFF', sail: '#000000', cockpit: '#B4C2D6', personality: "Speed-first, consequences later." , beat: 'Send him upwind — the sprinter\'s compass only points down.', archetype: 'rocket', stats: { acceleration: 2, momentum: -1, handling: 5, upwind: -5, reach: -1, downwind: 2, boost: -4 } },
+    { name: 'Pearl', creature: 'Oyster', hull: '#C7A6FF', spinnaker: '#2E2E2E', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Quiet patience, strikes at perfect moments." , beat: 'Make her tack — every stop costs a fortune in pearls.', archetype: 'leech', stats: { acceleration: 4, momentum: -5, handling: -1, upwind: -5, reach: 4, downwind: 5, boost: 4 } },
+    { name: 'Bluff', creature: 'Polar Bear', hull: '#FFFFFF', spinnaker: '#00AEEF', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#BFC6CC', personality: "Imposing calm daring mistakes." , beat: 'Just point higher — Bluff bluffs; the upwind legs call it.', archetype: 'freight', stats: { acceleration: 2, momentum: 4, handling: -3, upwind: -5, reach: -5, downwind: -2, boost: -1 } },
+    { name: 'Regal', creature: 'Swan', hull: '#FFFFFF', spinnaker: '#E10600', spinnaker2: '#FFFFFF', sail: '#000000', cockpit: '#C9CCD6', personality: "Elegant lane thief with ruthless timing." , beat: 'Race the runs — royalty will not hoist and hustle.', archetype: 'corner', stats: { acceleration: -1, momentum: 3, handling: 5, upwind: 0, reach: 4, downwind: -4, boost: -2 } },
+    { name: 'Sunshine', creature: 'Mahi-Mahi', hull: '#FFEB3B', spinnaker: '#00E676', spinnaker2: '#FFEB3B', sail: '#FFFFFF', cockpit: '#BDB76B', personality: "Flashy speed attacking on reaches." , beat: 'Keep her in lulls and dirty air — no gusts, no shine.', archetype: 'rocket', stats: { acceleration: 1, momentum: -4, handling: 1, upwind: 4, reach: 0, downwind: -4, boost: -4 } },
+    { name: 'Pulse', creature: 'Tree Frog', hull: '#00FF6A', spinnaker: '#7A00FF', spinnaker2: '#00FF6A', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Sticky feet, sticky cover — impossible to shake loose." , beat: 'Break away off the wind — sticky feet, short hops.', archetype: 'leech', stats: { acceleration: -3, momentum: 2, handling: -1, upwind: -3, reach: -5, downwind: -5, boost: 2 } },
+    { name: 'Splat', creature: 'Blobfish', hull: '#E7A6B4', spinnaker: '#6a1051', spinnaker2: '#E7A6B4', sail: '#FFFFFF', cockpit: '#CFC6CC', personality: "Looks doomed, but somehow always survives." , beat: 'Just race — his corner needs a miracle and a tailwind.', archetype: 'gambler', stats: { acceleration: -5, momentum: 0, handling: -3, upwind: 0, reach: -2, downwind: 0, boost: 1 } },
+    { name: 'Dart', creature: 'Kingfisher', hull: '#00C2FF', spinnaker: '#FF9433', spinnaker2: '#00C2FF', sail: '#FFFFFF', cockpit: '#AEBFCC', personality: "pure speed, energetic, very competitive" , beat: 'Point high and turn often — darts only fly straight.', archetype: 'rocket', stats: { acceleration: 1, momentum: 4, handling: -3, upwind: -4, reach: 4, downwind: -2, boost: 5 } },
+    { name: 'Roll', creature: 'Harbor Seal', hull: '#7D8597', spinnaker: '#FFD166', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C3CAD3', personality: "Playful feints hiding brutal positioning skills." , beat: 'Slow him leaving marks — perfect turns, painful exits.', archetype: 'corner', stats: { acceleration: -5, momentum: 4, handling: 5, upwind: -3, reach: 2, downwind: -1, boost: 4 } },
+    { name: 'Spike', creature: 'Narwhal', hull: '#6B7FD7', spinnaker: '#FFFFFF', spinnaker2: '#6B7FD7', sail: '#000000', cockpit: '#C5CED6', personality: "Leads with the horn — makes his own right of way." , beat: 'Point high and stay clear of the horn — he cannot climb after you.', archetype: 'bully', stats: { acceleration: 1, momentum: -2, handling: 1, upwind: -5, reach: 2, downwind: 1, boost: 3 } },
+    { name: 'Flicker', creature: 'Tern', hull: '#EE6C4D', spinnaker: '#E0FBFC', spinnaker2: '#EE6C4D', sail: '#000000', cockpit: '#C7CCD1', personality: "Constant repositioning, never predictable." , beat: 'Follow the fleet, not the tern — his corner rarely pays.', archetype: 'gambler', stats: { acceleration: 4, momentum: 3, handling: -2, upwind: -2, reach: 3, downwind: 0, boost: -1 } },
+    { name: 'Croak', creature: 'Bullfrog', hull: '#386641', spinnaker: '#A7C957', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#BFC9B8', personality: "Patient swamp tactician lethal in shifts." , beat: 'Strong wherever the wind blows — outsail him in the transitions.', archetype: 'shift', stats: { acceleration: 3, momentum: -2, handling: -1, upwind: 4, reach: 1, downwind: 5, boost: 2 } },
+    { name: 'Snap', creature: 'Snapping Turtle', hull: '#4B5D23', spinnaker: '#ef3629', spinnaker2: '#000000', sail: '#000000', cockpit: '#B8B8A8', personality: "Grouchy, old salty sailor who likes to beat the young whippersnappers." , beat: 'Keep him turning — snappers lose their grip in maneuvers.', archetype: 'metronome', stats: { acceleration: -2, momentum: -4, handling: -4, upwind: 2, reach: 5, downwind: 2, boost: 5 } },
+    { name: 'Rift', creature: 'Moray Eel', hull: '#d4ff07', spinnaker: '#ff61df', spinnaker2: '#d4ff07', sail: '#FFFFFF', cockpit: '#B7C4B4', personality: "Lurks quietly, strikes savagely at marks." , beat: 'Pull away on the runs — eels do not surf.', archetype: 'corner', stats: { acceleration: -1, momentum: -3, handling: 2, upwind: 2, reach: 3, downwind: -4, boost: 2 } },
+    { name: 'Skerry', creature: 'Puffin', hull: '#FF5400', spinnaker: '#1D3557', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Fearless gap-threader thriving in traffic." , beat: 'Give him no gaps to thread — then climb away upwind.', archetype: 'bully', stats: { acceleration: -2, momentum: 1, handling: -1, upwind: -3, reach: 3, downwind: 2, boost: -2 } },
+    { name: 'Crush', creature: 'Mantis Shrimp', hull: '#00F5D4', spinnaker: '#F15BB5', spinnaker2: '#00F5D4', sail: '#000000', cockpit: '#CFC7DC', personality: "Explosive reactions with devastating timing." , beat: 'Everything between corners is yours — especially the runs.', archetype: 'corner', stats: { acceleration: -4, momentum: -5, handling: 1, upwind: 1, reach: -3, downwind: -5, boost: 0 } },
+    { name: 'Torrent', creature: 'Swordfish', hull: '#083fa6', spinnaker: '#D62828', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#8D99AE', personality: "Straight-line dominance with brutal acceleration." , beat: 'Absorb the opening surge — the swordfish dulls by leg two.', archetype: 'rocket', stats: { acceleration: 5, momentum: -2, handling: 1, upwind: 1, reach: -1, downwind: -2, boost: 2 } },
+    { name: 'Jester', creature: 'Clownfish', hull: '#ffa000', spinnaker: '#FFFFFF', spinnaker2: '#ffa000', sail: '#000000', cockpit: '#f4f4f4', personality: "Cheerful chaos masking shrewd cunning." , beat: 'Escape upwind — the joke is on him above the layline.', archetype: 'leech', stats: { acceleration: 1, momentum: 3, handling: 2, upwind: -3, reach: 0, downwind: 5, boost: -1 } },
+    { name: 'Breeze', creature: 'Nudibranch', hull: '#000080', spinnaker: '#ff3fa7', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#D6D6DC', personality: "Chill, stylish, always finds unexpected pressure." , beat: 'Crowd her at starts and marks — slow to build speed, easy to pin.', archetype: 'shift', stats: { acceleration: -4, momentum: 4, handling: -2, upwind: -3, reach: 4, downwind: 1, boost: 5 } },
+    { name: 'Petal', creature: 'Roseate Spoonbill', hull: '#FF6FAE', spinnaker: '#FFFFFF', spinnaker2: '#FF6FAE', sail: '#FFFFFF', cockpit: '#e6e6e6', personality: "Elegant lane snatcher with impeccable timing." , beat: 'Win the beats — the spoonbill blooms only at the marks.', archetype: 'corner', stats: { acceleration: -3, momentum: 3, handling: 1, upwind: -5, reach: -1, downwind: 3, boost: 4 } },
+    { name: 'Stomp', creature: 'Blue-Footed Booby', hull: '#00B4D8', spinnaker: '#E10600', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Clumsy confidence hiding fearless lane attacks." , beat: 'Refuse the brawl and outlast him — stomping bleeds speed.', archetype: 'bully', stats: { acceleration: 5, momentum: -3, handling: 4, upwind: 3, reach: 2, downwind: 0, boost: 1 } },
+    { name: 'Crimson', creature: 'Red Snapper', hull: '#ed1515', spinnaker: '#2643E9', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#CFCFD4', personality: "Calm, surgical tactician striking at perfect moments." , beat: 'Break away in a straight line — he only shines in puffs.', archetype: 'leech', stats: { acceleration: -1, momentum: -3, handling: 4, upwind: 1, reach: -2, downwind: -2, boost: 5 } },
+    { name: 'Viper', creature: 'Green Tree Snake', hull: '#49c100', spinnaker: '#FF1E1E', spinnaker2: '#000000', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Coils around your wind and waits for the twitch." , beat: 'Slip the cover in open water — he fades on the long legs.', archetype: 'leech', stats: { acceleration: -3, momentum: -2, handling: -2, upwind: -5, reach: -1, downwind: -5, boost: 3 } },
+    { name: 'Skitter', creature: 'Mudskipper', hull: '#e33d28', spinnaker: '#15f121', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Erratic bursts, impossible angles, constant pressure." , beat: 'Cut off the downwind escape, then watch the gamble fail.', archetype: 'gambler', stats: { acceleration: 1, momentum: -4, handling: -2, upwind: 1, reach: -1, downwind: 5, boost: -2 } },
+    { name: 'Veil', creature: 'Vampire Squid', hull: '#7A1FA2', spinnaker: '#E10600', spinnaker2: '#000000', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Calm, shadowy predator striking without warning." , beat: 'Force maneuvers — the cloak tears in every tack.', archetype: 'leech', stats: { acceleration: -1, momentum: -4, handling: -5, upwind: -1, reach: 3, downwind: -1, boost: -4 } },
+    { name: 'Puff', creature: 'Mandarin Dragonet', hull: '#0032ff', spinnaker: '#E17638', spinnaker2: '#0032ff', sail: '#62e517', cockpit: '#17b3f2', personality: "Super chill vibes, effortless flow, always smiling." , beat: 'Attack downwind — the dragonet will not run with you.', archetype: 'freight', stats: { acceleration: 2, momentum: 4, handling: 0, upwind: 1, reach: 0, downwind: -3, boost: 4 } },
+    { name: 'Lure', creature: 'Anglerfish', hull: '#0B0F1A', spinnaker: '#6AFF3D', spinnaker2: '#0B0F1A', sail: '#F5F7FA', cockpit: '#2E3440', personality: "Patient darkness, sudden lethal strikes." , beat: 'Refuse the bait upwind — the runs are a free pass.', archetype: 'freight', stats: { acceleration: -4, momentum: 5, handling: 0, upwind: -2, reach: 4, downwind: -5, boost: 2 } },
+    { name: 'Wiggle', creature: 'Axolotl', hull: '#FFFFFF', spinnaker: '#FF4FA3', spinnaker2: '#BDEFFF', sail: '#BDEFFF', cockpit: '#D1D7DB', personality: "Cute chaos, surprisingly competitive." , beat: 'Make him steer — wiggling is not turning.', archetype: 'gambler', stats: { acceleration: 2, momentum: 1, handling: -5, upwind: -3, reach: 3, downwind: 3, boost: -3 } },
+    { name: 'Zeffir', creature: 'Seagull', hull: '#FFFFFF', spinnaker: '#FF7A00', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#D1D7DB', personality: "Always lifted, always smiling." , beat: 'Hold him off downwind — gulls glide everywhere but there.', archetype: 'shift', stats: { acceleration: 4, momentum: 1, handling: -1, upwind: 1, reach: 2, downwind: -4, boost: 2 } },
+    { name: 'Scoop', creature: 'Pelican', hull: '#D8C6A3', spinnaker: '#5499dc', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#e6e6e6', personality: "Big moves, surprisingly precise." , beat: 'Rush the starts and reaches — the pelican needs a runway.', archetype: 'metronome', stats: { acceleration: -4, momentum: -1, handling: 1, upwind: 4, reach: -4, downwind: -1, boost: 2 } },
+    { name: 'Popper', creature: 'Pufferfish', hull: '#FFD84D', spinnaker: '#E10600', spinnaker2: '#FFD84D', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Defensive chaos, punishes reckless pressure." , beat: 'Point higher and let him puff himself out.', archetype: 'bully', stats: { acceleration: -3, momentum: 2, handling: -2, upwind: -4, reach: -3, downwind: 0, boost: 0 } },
+    { name: 'Frond', creature: 'Leafy Seadragon', hull: '#5FAF6E', spinnaker: '#FF8C42', spinnaker2: '#5FAF6E', sail: '#F3FFF9', cockpit: '#BFCFC4', personality: "Graceful drifter, impossible to read." , beat: 'Pin him at the start — the seadragon blooms late, downwind.', archetype: 'shift', stats: { acceleration: -4, momentum: -2, handling: -3, upwind: 2, reach: 2, downwind: 5, boost: 5 } },
+    { name: 'Bulkhead', creature: 'Elephant Seal', hull: '#6B7280', spinnaker: '#FF7A00', spinnaker2: '#000000', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "A wall of calm — unbothered, unhurried, unmoved." , beat: 'Hoist and go — the bulkhead sinks on every run.', archetype: 'metronome', stats: { acceleration: -3, momentum: -2, handling: 2, upwind: 3, reach: -1, downwind: -5, boost: 5 } },
+    { name: 'Slipstream', creature: 'Salmon', hull: '#B6BCC6', spinnaker: '#E94B4B', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#41c617', personality: "Relentless endurance, explosive late surges." , beat: 'Deny the tow upwind, then leave — salmon cannot run downstream.', archetype: 'freight', stats: { acceleration: 5, momentum: 3, handling: 1, upwind: 1, reach: -3, downwind: -5, boost: -1 } },
+    { name: 'Blaze', creature: 'Mako Shark', hull: '#1F3C5B', spinnaker: '#FFFFFF', spinnaker2: '#1F3C5B', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Blisteringly fast attacker forcing races into constant reaction mode." , beat: 'Skip the fight, win the runs — makos idle downwind.', archetype: 'bully', stats: { acceleration: -3, momentum: -2, handling: 2, upwind: 0, reach: 3, downwind: -4, boost: -1 } },
 ];
 
 
@@ -1904,6 +1904,8 @@ const DEFAULT_SETTINGS = {
     sailColor: '#ffffff',
     cockpitColor: '#cbd5e1',
     spinnakerColor: '#ef4444',
+    spinnakerColor2: '#ffffff',
+    spinnakerPattern: 'solid',
     venue: 'bay',
     customizeConditions: false
 };
@@ -2759,6 +2761,279 @@ burgeeImg.src = 'assets/images/salty-crew-yacht-club-burgee.png';
 const palmImg = new Image();
 palmImg.src = 'assets/images/palm.png';
 
+// Boat part sprites (uniform 16 px/world-unit on 1024^2 transparent canvases;
+// exported from the vector shapes — drop-in replaceable with painted art).
+// Anchors: hull sprite has the boat origin at px (512,472); each sail sprite
+// has its tack/pivot at px (512,112) with the camber bulging toward +x.
+const BOAT_SPRITE_SCALE = 16;
+// Tint bakes downsample to 4 px/world-unit (256^2): boats are ~55 px on screen,
+// so this stays ~4x oversampled for zoom while cutting texture memory and the
+// per-frame GPU downsample ~16x vs baking at the 1024^2 authoring size.
+const BOAT_SPRITE_BAKE = 4;
+const boatSprites = { hull: new Image(), main: new Image(), jib: new Image(), spin: new Image() };
+for (const k in boatSprites) boatSprites[k].src = 'assets/images/boat-parts/' + k + '.png';
+// Hull shading. Boats rotate, so anything baked into the sprite has to be
+// rotation-invariant — a directional "sun" would spin with the boat and read as
+// wrong. Darkening toward the gunwale is direction-free and says the same thing:
+// the topsides curve away from you. Elliptical, tracking the hull's own bbox
+// (template x 252..772, y 62..964) as a fraction of the 1024 box.
+// 0 = flat, 1 = the full effect below. Turn it down or to 0 to taste.
+const HULL_SHADE = 0.55;
+const HULL_SHADE_GEOM = { cx: 0.500, cy: 0.501, rx: 0.254, ry: 0.440 };
+function shadeHullBake(g, size) {
+    if (HULL_SHADE <= 0) return;
+    const { cx, cy, rx, ry } = HULL_SHADE_GEOM;
+    const px = cx * size, py = cy * size, r = rx * size;
+    // Mix each stop back toward white by (1 - HULL_SHADE) so one knob scales it
+    const stop = (v) => {
+        const b = Math.round(255 - (255 - v) * HULL_SHADE);
+        return `rgb(${b},${b},${b})`;
+    };
+    g.save();
+    g.globalCompositeOperation = 'multiply';
+    // Squash the circle into the hull's proportions so the falloff hugs the
+    // sheerline instead of pooling at the bow and stern
+    g.translate(px, py); g.scale(1, ry / rx); g.translate(-px, -py);
+    const grad = g.createRadialGradient(px, py, r * 0.30, px, py, r);
+    grad.addColorStop(0.00, stop(255));   // deck stays the pure paint colour
+    grad.addColorStop(0.62, stop(246));
+    grad.addColorStop(0.88, stop(226));
+    grad.addColorStop(1.00, stop(203));   // gunwale
+    g.fillStyle = grad;
+    g.fillRect(-size, -size, size * 3, size * 3);
+    g.restore();
+}
+
+// Spinnaker shading, worked out from aerial photographs of running boats by
+// sampling single-colour panels across each sail, so panel colour can't be
+// mistaken for shading.
+//
+// What the photographs actually show:
+//   • a broad lit region over the OUTER belly — the face of the balloon — which
+//     stays essentially full-strength colour; the sail is bright, not muddy;
+//   • the deepest shadow pooled at the FOOT, where the sail hangs under its own
+//     belly, and along the LUFF where it turns back toward the mast;
+//   • the head bright, being nearest the sky;
+//   • and the light wrapping in smooth CURVES that follow the sail's form.
+//
+// That last point is what an earlier attempt here got wrong. Crossed linear
+// ramps put bands of constant brightness across the sail and read as a machined
+// tube, not cloth. One elliptical falloff centred on the lit belly gives curved
+// contours and reads as an inflated kite. (The two aerials disagree on how hard
+// the head-to-foot falloff is — that is sun angle, not sail shape — so this
+// takes the middle of them rather than fitting either exactly.)
+//
+// Both passes run in sprite space. The kite swings with the sail, mirrors on
+// each tack and spins with the boat, so a fixed world light would be wrong three
+// ways at once; the sail's own form is true from every angle.
+// Sail occupies template x 504..840 (luff..max bulge), y 105..927 (head..foot).
+// 0 = flat, 1 = the full effect below.
+const SPIN_SHADE = 0.8;
+function shadeSpinBake(g, size) {
+    if (SPIN_SHADE <= 0) return;
+    const s = size / 1024;
+    const stop = (v) => {
+        const b = Math.round(255 - (255 - v) * SPIN_SHADE);
+        return `rgb(${b},${b},${b})`;
+    };
+    // The form: one elliptical falloff centred on the lit outer belly, set high
+    // so the head keeps its light and the shadow gathers toward the foot
+    g.save();
+    g.globalCompositeOperation = 'multiply';
+    const cx = 730 * s, cy = 370 * s, rx = 310 * s, ry = 500 * s;
+    g.translate(cx, cy); g.scale(1, ry / rx); g.translate(-cx, -cy);
+    const belly = g.createRadialGradient(cx, cy, rx * 0.18, cx, cy, rx);
+    belly.addColorStop(0.00, stop(255));   // lit face — full-strength colour
+    belly.addColorStop(0.48, stop(253));
+    belly.addColorStop(0.74, stop(233));
+    belly.addColorStop(0.90, stop(206));
+    belly.addColorStop(1.00, stop(178));   // foot and the far edges
+    g.fillStyle = belly;
+    g.fillRect(-size, -size, size * 3, size * 3);
+    g.restore();
+    // The luff turning back on itself, a soft band rather than a hard edge
+    g.save();
+    g.globalCompositeOperation = 'multiply';
+    const luff = g.createLinearGradient(504 * s, 0, 712 * s, 0);
+    luff.addColorStop(0.00, stop(200));
+    luff.addColorStop(0.33, stop(233));
+    luff.addColorStop(1.00, stop(255));
+    g.fillStyle = luff;
+    g.fillRect(0, 0, size, size);
+    g.restore();
+}
+
+// Paint jobs: multiply-tint a part once per color, then re-cut the silhouette.
+// Composite ops only (no getImageData — file:// safe). Cache shared across boats.
+const boatTintCache = new Map();
+function getTintedBoatPart(part, color) {
+    const key = part + '|' + color;
+    let c = boatTintCache.get(key);
+    if (c) return c;
+    const img = boatSprites[part];
+    if (!img.complete || !img.naturalWidth) return null;
+    c = document.createElement('canvas');
+    const size = Math.round(img.naturalWidth * BOAT_SPRITE_BAKE / BOAT_SPRITE_SCALE);
+    c.width = size; c.height = size;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0, size, size);
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = color;
+    g.fillRect(0, 0, size, size);
+    // Shading rides along in the same cached bake, so it costs nothing per frame.
+    // Before the silhouette cut, since 'multiply' paints into transparent pixels.
+    if (part === 'hull') shadeHullBake(g, size);
+    if (part === 'spin') shadeSpinBake(g, size); // solid kites come through here
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(img, 0, 0, size, size);
+    boatTintCache.set(key, c);
+    return c;
+}
+
+// Spinnaker panel patterns: accent regions in the sprite's template space
+// (1024 box, tack at (512,112), bulge +x). Regions are clipped by the art's
+// alpha at bake time, so any future painted spinnaker inherits every pattern.
+function spinWedge(g, s, cx, cy, a0, a1) {
+    const tx = cx * s, ty = cy * s, R = 1400 * s;
+    g.beginPath();
+    g.moveTo(tx, ty);
+    g.lineTo(tx + Math.cos(a0) * R, ty + Math.sin(a0) * R);
+    g.lineTo(tx + Math.cos(a1) * R, ty + Math.sin(a1) * R);
+    g.closePath();
+}
+const SPIN_PATTERNS = {
+    solid: [],
+    // Straight seam across the middle of the sail: head half / foot half
+    halves: [(g, s) => { g.beginPath(); g.rect(0, 512 * s, 1024 * s, 1024 * s); }],
+    // Diagonal split radiating from the head (the original "halves")
+    crosshalves: [(g, s) => spinWedge(g, s, 512, 112, 0, 1.23)],
+    gores: [1, 3].map(i => (g, s) => spinWedge(g, s, 512, 112, 0.89 + i * 0.136, 0.89 + (i + 1) * 0.136)),
+    // Five even stripes head-to-foot (sail spans y 112-912): base/accent alternating
+    stripes: [(g, s) => { g.beginPath(); g.rect(0, 272 * s, 1024 * s, 160 * s); },
+              (g, s) => { g.beginPath(); g.rect(0, 592 * s, 1024 * s, 160 * s); }],
+    // Rising-sun rays from the front-edge center (pairs with the triangle)
+    rays: [1, 3, 5, 7].map(i => (g, s) =>
+        spinWedge(g, s, 512, 512, -Math.PI / 2 + i * (Math.PI / 9), -Math.PI / 2 + (i + 1) * (Math.PI / 9))),
+    // Triangle: tip on the straight (luff) edge at the BACK of the kite, opening
+    // forward. The two rays run well past the leech, so the silhouette clips the
+    // wide end into a curve that follows the sail's front edge — a wedge with a
+    // rounded mouth rather than a flat-based triangle.
+    triangle: [(g, s) => spinWedge(g, s, 512, 512, -0.70, 0.70)],
+};
+const SPIN_PATTERN_NAMES = Object.keys(SPIN_PATTERNS);
+function spinPatternForName(name) {
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+    return SPIN_PATTERN_NAMES[h % SPIN_PATTERN_NAMES.length];
+}
+
+// Hand-curated kite pattern per character (colors live in AI_CONFIG:
+// spinnaker = base, spinnaker2 = panel accent; solid ignores the accent).
+const SPIN_LOOKS = {
+    Cheer: 'triangle',
+    Bixby: 'halves',
+    Skim: 'gores',
+    Wobble: 'triangle',
+    Pinch: 'crosshalves',
+    Bruce: 'solid',
+    Strut: 'gores',
+    Gasket: 'stripes',
+    Chomp: 'crosshalves',
+    Whiskers: 'stripes',
+    Vex: 'crosshalves',
+    Hug: 'triangle',
+    Ripple: 'gores',
+    Clutch: 'solid',
+    Glide: 'halves',
+    Fathom: 'triangle',
+    Scuttle: 'stripes',
+    Finley: 'gores',
+    Torch: 'gores',
+    Nimbus: 'solid',
+    Tangle: 'stripes',
+    Brine: 'solid',
+    Razor: 'gores',
+    Pebble: 'halves',
+    Saffron: 'triangle',
+    Bramble: 'gores',
+    Mistral: 'gores',
+    Drift: 'triangle',
+    Anchor: 'stripes',
+    Zing: 'crosshalves',
+    Knot: 'stripes',
+    Flash: 'rays',
+    Pearl: 'triangle',
+    Bluff: 'solid',
+    Regal: 'halves',
+    Sunshine: 'rays',
+    Pulse: 'triangle',
+    Splat: 'triangle',
+    Dart: 'crosshalves',
+    Roll: 'stripes',
+    Spike: 'gores',
+    Flicker: 'stripes',
+    Croak: 'solid',
+    Snap: 'triangle',
+    Rift: 'crosshalves',
+    Skerry: 'crosshalves',
+    Crush: 'triangle',
+    Torrent: 'stripes',
+    Jester: 'stripes',
+    Breeze: 'gores',
+    Petal: 'halves',
+    Stomp: 'triangle',
+    Crimson: 'solid',
+    Viper: 'stripes',
+    Skitter: 'gores',
+    Veil: 'crosshalves',
+    Puff: 'stripes',
+    Lure: 'triangle',
+    Wiggle: 'triangle',
+    Zeffir: 'solid',
+    Scoop: 'solid',
+    Popper: 'rays',
+    Frond: 'gores',
+    Bulkhead: 'stripes',
+    Slipstream: 'halves',
+    Blaze: 'gores',
+};
+function getSpinnakerSprite(pattern, colorA, colorB) {
+    const regions = SPIN_PATTERNS[pattern];
+    if (!regions || !regions.length || !colorB) return getTintedBoatPart('spin', colorA);
+    const key = 'spinp|' + pattern + '|' + colorA + '|' + colorB;
+    let c = boatTintCache.get(key);
+    if (c) return c;
+    const img = boatSprites.spin;
+    if (!img.complete || !img.naturalWidth) return null;
+    const size = Math.round(img.naturalWidth * BOAT_SPRITE_BAKE / BOAT_SPRITE_SCALE);
+    c = document.createElement('canvas'); c.width = size; c.height = size;
+    const g = c.getContext('2d');
+    const tintPass = (color) => {
+        g.drawImage(img, 0, 0, size, size);
+        g.globalCompositeOperation = 'multiply'; g.fillStyle = color; g.fillRect(0, 0, size, size);
+        g.globalCompositeOperation = 'destination-in'; g.drawImage(img, 0, 0, size, size);
+        g.globalCompositeOperation = 'source-over';
+    };
+    tintPass(colorA);
+    const s = size / 1024;
+    for (const region of regions) {
+        g.save();
+        region(g, s);
+        g.clip();
+        tintPass(colorB);
+        g.restore();
+    }
+    // Shade last, so the base and every accent panel curve together
+    shadeSpinBake(g, size);
+    // Final unclipped silhouette cut: antialiased clip edges leave partial-alpha
+    // accent pixels outside the sail that the clipped passes can't clear
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(img, 0, 0, size, size);
+    g.globalCompositeOperation = 'source-over';
+    boatTintCache.set(key, c);
+    return c;
+}
+
 // Inflatable tetrahedron racing mark; gray bake for inactive marks
 const markImg = new Image();
 markImg.src = 'assets/images/mark.png';
@@ -2815,6 +3090,10 @@ class Boat {
         } else if (!isPlayer) {
              this.colors = { hull: '#fff', sail: '#fff', cockpit: '#ccc', spinnaker: '#f00' };
         }
+        // Panel pattern (SPIN_LOOKS, config.spinPattern override, name-hash
+        // fallback); accent color comes from config.spinnaker2
+        this.spinPattern = isPlayer ? null : ((config && config.spinPattern) || SPIN_LOOKS[name] || spinPatternForName(name));
+        if (!isPlayer && this.colors && config && config.spinnaker2) this.colors.spinAccent = config.spinnaker2;
 
         // Stats (copied so the difficulty bonus never mutates AI_CONFIG)
         this.stats = { ...((config && config.stats) ? config.stats : { acceleration:0, momentum:0, handling:0, upwind:0, reach:0, downwind:0, boost:0 }) };
@@ -3746,6 +4025,9 @@ const UI = {
     settingSailColor: document.getElementById('setting-color-sail'),
     settingCockpitColor: document.getElementById('setting-color-cockpit'),
     settingSpinnakerColor: document.getElementById('setting-color-spinnaker'),
+    settingSpinnakerPattern: document.getElementById('setting-spinnaker-pattern'),
+    settingSpinnakerColor2: document.getElementById('setting-color-spinnaker2'),
+    settingSpinnakerColor2Row: document.getElementById('setting-color-spinnaker2-row'),
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
@@ -4056,6 +4338,15 @@ function renderCompetitorDetail() {
         UI.competitorDetail.innerHTML = '';
         return;
     }
+    UI.competitorDetail.innerHTML = `<div class="t-label mb-3">Competitor Profile</div>` + competitorProfileHTML(config);
+    UI.competitorDetail.classList.remove('hidden');
+    renderProfileBoat(UI.competitorDetail.querySelector('.profile-boat-canvas'), config);
+}
+
+// Portrait band + blurb + stat bars + counter-tactic, as markup. Shared by the
+// pre-race sidebar and the competitor.html roster sheet, so the roster always
+// shows exactly what a player sees.
+function competitorProfileHTML(config) {
     const archDef = (typeof ARCHETYPES !== 'undefined' && config.archetype) ? ARCHETYPES[config.archetype] : null;
 
     // Highlight the character's three most extreme stats (base ±5 design
@@ -4102,13 +4393,13 @@ function renderCompetitorDetail() {
     const hullLuma = luma(config.hull);
     const bandColor = (hullLuma < 50 || hullLuma > 200) ? config.spinnaker : config.hull;
 
-    UI.competitorDetail.innerHTML = `
-        <div class="t-label mb-3">Competitor Profile</div>
-        <div class="rounded-xl overflow-hidden border border-white/10"
+    return `
+        <div class="rounded-xl overflow-hidden border border-white/10 relative"
              style="background: linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)">
-            <div class="flex items-center gap-5">
+            <canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130" data-boat="${config.name}"></canvas>
+            <div class="flex items-center gap-5 relative">
                 <img src="assets/images/${config.name.toLowerCase()}.png" alt="${config.name}" class="w-32 h-32 object-cover shrink-0" draggable="false">
-                <div class="py-4 pr-4">
+                <div class="py-4">
                     <div class="t-display text-white uppercase leading-tight" style="font-size:36px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
                     <div class="t-label mt-1" style="font-size:13px; letter-spacing:2.5px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${archDef ? archDef.label : ''}</div>
                 </div>
@@ -4118,7 +4409,112 @@ function renderCompetitorDetail() {
         <div class="flex flex-col gap-3 mt-5">${bars}</div>
         <div class="t-label t-label-sm mt-5">How to Beat Them</div>
         <div class="mt-1 leading-snug" style="font-size:15px; font-weight:500; color:#9fe6c4;">${config.beat || (archDef ? archDef.weakness : '')}</div>`;
-    UI.competitorDetail.classList.remove('hidden');
+}
+
+// Cockpit sole, wheel and mast, in the hull sprite's own coordinates. The sprite
+// bakes the coaming, deck hatch and trunk; the sole is painted here so every boat
+// keeps its own cockpit colour, and the wheel goes back on top of that paint —
+// the sprite's own wheel sits underneath it. Shared by the race and the profile
+// card so the two can't drift apart.
+function drawCockpitFittings(g, cockpitColor) {
+    const c = cockpitColor || '#cbd5e1';
+    g.save(); // lineWidth/lineCap here must not leak into the sails or the fly
+    // Matches the sole the artwork outlines: template px x 376..648, y 580..861
+    g.fillStyle = c;
+    g.beginPath(); g.roundRect(-8.5, 6.75, 17, 17.5, 5); g.fill();
+
+    // Wheel: dark on a pale sole, pale on a dark one, so it reads on any paint job
+    const hex = c.replace('#', '');
+    const luma = 0.299 * parseInt(hex.substring(0, 2), 16)
+               + 0.587 * parseInt(hex.substring(2, 4), 16)
+               + 0.114 * parseInt(hex.substring(4, 6), 16);
+    const ink = (luma > 140 || !Number.isFinite(luma)) ? '#475569' : '#e2e8f0';
+    const cy = 19.5, r = 3.05;
+    g.strokeStyle = ink; g.fillStyle = ink;
+    g.lineWidth = 0.6; g.lineCap = 'round';
+    g.beginPath(); g.arc(0, cy, r, 0, Math.PI * 2); g.stroke();
+    g.beginPath();
+    for (const a of [-Math.PI / 2, Math.PI / 6, Math.PI * 5 / 6]) {
+        g.moveTo(0, cy); g.lineTo(Math.cos(a) * r, cy + Math.sin(a) * r);
+    }
+    g.stroke();
+    g.beginPath(); g.arc(0, cy, 0.85, 0, Math.PI * 2); g.fill();
+
+    // Mast
+    g.fillStyle = '#475569'; g.beginPath(); g.arc(0, -5, 3, 0, Math.PI * 2); g.fill();
+    g.restore();
+}
+
+// Their boat, kite flying, drawn from the same sprite pipeline as the race.
+// Drawn around the origin at unit scale — the caller fits and places it.
+function drawProfileBoatArt(g, cfg) {
+    const u = 1024 / BOAT_SPRITE_SCALE;
+    g.save();
+    g.rotate(Math.PI / 6); // bow angled ~30° to the right
+    g.fillStyle = 'rgba(0,0,0,0.22)';
+    g.beginPath(); g.ellipse(3, 3, 12, 28, 0, 0, Math.PI * 2); g.fill();
+    const hull = getTintedBoatPart('hull', cfg.hull);
+    if (hull) g.drawImage(hull, -512 / BOAT_SPRITE_SCALE, -472 / BOAT_SPRITE_SCALE, u, u);
+    drawCockpitFittings(g, cfg.cockpit);
+    const sail = (sprite, tackY, rot, mirror) => {
+        if (!sprite) return;
+        g.save();
+        g.translate(0, tackY);
+        g.rotate(rot);
+        g.scale(mirror, 1);
+        g.globalAlpha = 0.95;
+        g.drawImage(sprite, -512 / BOAT_SPRITE_SCALE, -112 / BOAT_SPRITE_SCALE, u, u);
+        g.restore();
+        g.globalAlpha = 1;
+    };
+    // broad reach: main and kite both to starboard, set at the same angle
+    sail(getTintedBoatPart('main', cfg.sail), -5, -1.25, 1);
+    sail(getSpinnakerSprite(SPIN_LOOKS[cfg.name] || 'solid', cfg.spinnaker, cfg.spinnaker2 || cfg.hull), -28, -1.25, 1);
+    g.restore();
+}
+
+// Painted bounds of that composition, relative to the origin. The silhouette is
+// identical for every competitor (only the tints differ) and the pose is fixed,
+// so this is a constant rather than a measurement — sniffing it from pixels
+// would mean getImageData, which throws on a file:// page's tainted canvas.
+// Re-derive it (alpha > 8 over a scratch render) if the pose or art changes.
+const PROFILE_BOAT_BOUNDS = { x: -26, y: -26, w: 77, h: 59 };
+
+function renderProfileBoat(canvas, cfg) {
+    if (!canvas) return;
+    // Claim the right end of the header band, but give ground on narrow panels
+    // so the boat never crowds the competitor's name
+    const band = canvas.parentElement;
+    const CW = Math.round(Math.max(104, Math.min(176, (band ? band.clientWidth : 480) * 0.36)));
+    const CH = Math.max(96, Math.min(130, band ? band.clientHeight : 130));
+    // Render at device resolution — a CSS-sized backing store blurs on HiDPI
+    const dpr = window.devicePixelRatio || 1;
+    if (canvas.width !== Math.round(CW * dpr)) {
+        canvas.width = Math.round(CW * dpr); canvas.height = Math.round(CH * dpr);
+        canvas.style.width = CW + 'px'; canvas.style.height = CH + 'px';
+    }
+    const g = canvas.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    const ready = ['hull', 'main', 'spin'].every(k => boatSprites[k].complete && boatSprites[k].naturalWidth);
+    if (!ready) {
+        // sprites still loading (first open) — retry once they're in, unless
+        // the panel has been swapped out from under us in the meantime
+        setTimeout(() => { if (canvas.isConnected) renderProfileBoat(canvas, cfg); }, 300);
+        return;
+    }
+    const box = PROFILE_BOAT_BOUNDS;
+    // Fit the whole rig inside the canvas so nothing clips against the band
+    // edge, but keep it a garnish rather than letting it fill the panel
+    const pad = 7;
+    const scale = Math.min(1.65, (CW - pad * 2) / box.w, (CH - pad * 2) / box.h);
+    g.save();
+    g.scale(dpr, dpr);
+    g.translate(CW / 2, CH / 2);
+    g.scale(scale, scale);
+    g.translate(-(box.x + box.w / 2), -(box.y + box.h / 2));
+    drawProfileBoatArt(g, cfg);
+    g.restore();
 }
 
 function selectVenue(key) {
@@ -4315,6 +4711,9 @@ function loadSettings() {
     }
     // Migration: the Polar venue was renamed to Arctic (July 2026)
     if (settings.venue === 'polar') settings.venue = 'arctic';
+    // Migration: the Semicircle kite panel became Triangle (July 2026) — without
+    // this a saved 'bullseye' falls through to a plain solid sail
+    if (settings.spinnakerPattern === 'bullseye') settings.spinnakerPattern = 'triangle';
     applySettings();
 }
 
@@ -4343,6 +4742,9 @@ function applySettings() {
     if (UI.settingSailColor) UI.settingSailColor.value = settings.sailColor;
     if (UI.settingCockpitColor) UI.settingCockpitColor.value = settings.cockpitColor;
     if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.value = settings.spinnakerColor;
+    if (UI.settingSpinnakerPattern) UI.settingSpinnakerPattern.value = SPIN_PATTERNS[settings.spinnakerPattern] ? settings.spinnakerPattern : 'solid';
+    if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.value = settings.spinnakerColor2 || '#ffffff';
+    updateSpinColor2Row();
 
     if (UI.rulesStatus) {
         if (settings.penaltiesEnabled) {
@@ -4427,6 +4829,15 @@ if (UI.settingHullColor) UI.settingHullColor.addEventListener('input', (e) => { 
 if (UI.settingSailColor) UI.settingSailColor.addEventListener('input', (e) => { settings.sailColor = e.target.value; saveSettings(); });
 if (UI.settingCockpitColor) UI.settingCockpitColor.addEventListener('input', (e) => { settings.cockpitColor = e.target.value; saveSettings(); });
 if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.addEventListener('input', (e) => { settings.spinnakerColor = e.target.value; saveSettings(); });
+// Second spinnaker color only applies when the pattern has accent panels
+function updateSpinColor2Row() {
+    if (!UI.settingSpinnakerColor2Row) return;
+    const off = (settings.spinnakerPattern || 'solid') === 'solid';
+    UI.settingSpinnakerColor2Row.style.opacity = off ? '0.35' : '1';
+    if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.disabled = off;
+}
+if (UI.settingSpinnakerPattern) UI.settingSpinnakerPattern.addEventListener('change', (e) => { settings.spinnakerPattern = e.target.value; updateSpinColor2Row(); saveSettings(); });
+if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.addEventListener('input', (e) => { settings.spinnakerColor2 = e.target.value; saveSettings(); });
 
 // Customize toggle: ON reveals the condition/course panels; OFF hides them
 // AND re-applies the selected venue preset, so "customize off" always means
@@ -6491,24 +6902,26 @@ function drawBoat(ctx, boat) {
     ctx.fillStyle = 'rgba(0,0,0,0.2)';
     ctx.beginPath(); ctx.ellipse(5, 5, 12, 28, 0, 0, Math.PI * 2); ctx.fill();
 
-    // Hull
-    const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
-    ctx.fillStyle = hullColor || '#f1f5f9';
-    ctx.beginPath();
-    ctx.moveTo(0, -25);
-    ctx.bezierCurveTo(18, -10, 18, 20, 12, 30);
-    ctx.lineTo(-12, 30);
-    ctx.bezierCurveTo(-18, 20, -18, -10, 0, -25);
-    ctx.fill();
-    ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5; ctx.stroke();
+    // Hull (sprite, tinted with the paint job; vector fallback while loading)
+    const hullColor = (boat.isPlayer ? settings.hullColor : boat.colors.hull) || '#f1f5f9';
+    const hullSprite = getTintedBoatPart('hull', hullColor);
+    if (hullSprite) {
+        const u = 1024 / BOAT_SPRITE_SCALE;
+        ctx.drawImage(hullSprite, -512 / BOAT_SPRITE_SCALE, -472 / BOAT_SPRITE_SCALE, u, u);
+    } else {
+        ctx.fillStyle = hullColor;
+        ctx.beginPath();
+        ctx.moveTo(0, -25);
+        ctx.bezierCurveTo(18, -10, 18, 20, 12, 30);
+        ctx.lineTo(-12, 30);
+        ctx.bezierCurveTo(-18, 20, -18, -10, 0, -25);
+        ctx.fill();
+        ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5; ctx.stroke();
+    }
 
-    // Cockpit
+    // Cockpit sole, wheel and mast
     const cockpitColor = boat.isPlayer ? settings.cockpitColor : boat.colors.cockpit;
-    ctx.fillStyle = cockpitColor || '#cbd5e1';
-    ctx.beginPath(); ctx.roundRect(-8, 10, 16, 15, 4); ctx.fill();
-
-    // Mast
-    ctx.fillStyle = '#475569'; ctx.beginPath(); ctx.arc(0, -5, 3, 0, Math.PI * 2); ctx.fill();
+    drawCockpitFittings(ctx, cockpitColor);
 
     // Masthead fly (wind pennant) — streams downwind with the APPARENT wind. You can
     // watch it swing forward as the boat accelerates ("the boat makes its own wind"),
@@ -6516,14 +6929,22 @@ function drawBoat(ctx, boat) {
     if (boat.apparentWind) {
         const rel = normalizeAngle(boat.apparentWind.direction - boat.heading);
         const fx = -Math.sin(rel), fy = Math.cos(rel); // streams to where wind blows TO (local frame)
+        const px2 = -fy, py2 = fx; // perpendicular, for the flutter wave
         const len = 13 + Math.min(8, boat.apparentWind.speed * 0.4);
         ctx.save();
         ctx.strokeStyle = boat.isPlayer ? '#fbbf24' : 'rgba(241,245,249,0.6)';
         ctx.lineWidth = boat.isPlayer ? 2.2 : 1.4;
-        ctx.lineCap = 'round';
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        // Telltale flutter: a traveling wave runs down the ribbon, amplitude
+        // growing toward the free end; phased per boat so flies don't sync
+        const t = state.time * 55 + (typeof boat.id === 'number' ? boat.id : 0) * 1.7;
         ctx.beginPath();
         ctx.moveTo(0, -5);
-        ctx.lineTo(fx * len, -5 + fy * len);
+        for (let i = 1; i <= 6; i++) {
+            const f = i / 6;
+            const wave = Math.sin(t - f * 4.5) * f * f * 2.4;
+            ctx.lineTo(fx * len * f + px2 * wave, -5 + fy * len * f + py2 * wave);
+        }
         ctx.stroke();
         ctx.restore();
     }
@@ -6587,12 +7008,46 @@ function drawBoat(ctx, boat) {
         ctx.fill(); ctx.stroke(); ctx.restore();
     };
 
-    drawSailFunc(false);
+    // Sprite sails: rotate at the tack like the vector sails, mirror the camber
+    // to the leeward side, flatten as the sheet comes in, shear-flutter when
+    // luffing, and scale about the tack for the jib<->spinnaker crossfade.
+    const drawSailSprite = (part, tackY, color, scale) => {
+        const sprite = part === 'spin'
+            ? getSpinnakerSprite(
+                boat.isPlayer ? (settings.spinnakerPattern || 'solid') : (boat.spinPattern || 'solid'),
+                color || '#ffffff',
+                boat.isPlayer ? (settings.spinnakerColor2 || settings.hullColor) : (boat.colors.spinAccent || boat.colors.hull))
+            : getTintedBoatPart(part, color || '#ffffff');
+        if (!sprite) return false;
+        ctx.save();
+        ctx.translate(0, tackY);
+        ctx.rotate(boat.sailAngle);
+        const luff = boat.luffIntensity || 0;
+        const angleRatio = Math.min(1.0, Math.abs(boat.sailAngle) / (Math.PI / 4));
+        // Floor the camber squash — a sail scaled too thin reads as a broken sliver
+        const flatten = Math.max(0.5, (0.6 + 0.4 * angleRatio) * (1 - luff * 0.8));
+        if (luff > 0) ctx.transform(1, 0, Math.sin(state.time * 30) * 0.3 * luff, 1, 0, 0);
+        // boomSide lerps through 0 as the boom swings across in a tack/gybe —
+        // use its sign for which side the camber bulges and floor the magnitude
+        // so the sail keeps its body mid-swing instead of collapsing to a line
+        const side = boat.boomSide < 0 ? -1 : 1;
+        const body = Math.max(0.7, Math.abs(boat.boomSide));
+        ctx.scale(-side * body * flatten * scale, scale);
+        ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
+        const u = 1024 / BOAT_SPRITE_SCALE;
+        ctx.drawImage(sprite, -512 / BOAT_SPRITE_SCALE, -112 / BOAT_SPRITE_SCALE, u, u);
+        ctx.restore();
+        return true;
+    };
+    const sailColor = boat.isPlayer ? settings.sailColor : boat.colors.sail;
+    const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+
+    if (!drawSailSprite('main', -5, sailColor, 1)) drawSailFunc(false);
     const progress = boat.spinnakerDeployProgress;
     const jibScale = Math.max(0, 1 - progress * 2);
     const spinScale = Math.max(0, (progress - 0.5) * 2);
-    if (jibScale > 0.01) drawSailFunc(true, jibScale);
-    if (spinScale > 0.01) drawSpinnaker(spinScale);
+    if (jibScale > 0.01 && !drawSailSprite('jib', -25, sailColor, jibScale)) drawSailFunc(true, jibScale);
+    if (spinScale > 0.01 && !drawSailSprite('spin', -28, spinColor, spinScale)) drawSpinnaker(spinScale);
     ctx.restore();
 }
 
@@ -8236,8 +8691,12 @@ function draw() {
     drawMarkBodies(ctx);
     drawRulesOverlay(ctx);
 
-    // Draw All Boats
+    // Draw All Boats (viewport cull: mid-race most of the fleet is off-screen)
+    const boatViewR = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) * 0.6 + 90;
+    const boatViewR2 = boatViewR * boatViewR;
     for (const boat of state.boats) {
+        const bdx = boat.x - state.camera.x, bdy = boat.y - state.camera.y;
+        if (bdx * bdx + bdy * bdy > boatViewR2) continue;
         ctx.save();
         ctx.translate(boat.x, boat.y);
         ctx.rotate(boat.heading);
@@ -9662,3 +10121,6 @@ if (UI.waterClose) UI.waterClose.addEventListener('click', () => {
 });
 
 window.state = state; window.UI = UI; window.updateLeaderboard = updateLeaderboard; window.CONFIG = CONFIG;
+// Roster sheet (competitor.html) reads the fleet straight out of the game
+window.AI_CONFIG = AI_CONFIG; window.ARCHETYPES = ARCHETYPES;
+window.competitorProfileHTML = competitorProfileHTML; window.renderProfileBoat = renderProfileBoat;
