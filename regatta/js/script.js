@@ -2390,6 +2390,24 @@ function makeFloeOutline(r, rng) {
     return pts;
 }
 
+// Distance from the shape's origin out to its outline along `ang`. Ray-casts
+// against every edge and takes the nearest hit, so it is correct for the
+// concave bays too, where a bounding radius would be wildly optimistic.
+function outlineRadiusAt(pts, ang) {
+    const dx = Math.cos(ang), dy = Math.sin(ang);
+    let best = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+        const p = pts[i], q = pts[(i + 1) % pts.length];
+        const ex = q.x - p.x, ey = q.y - p.y;
+        const den = ex * dy - dx * ey;
+        if (Math.abs(den) < 1e-9) continue;          // edge parallel to the ray
+        const t = (ex * p.y - ey * p.x) / den;       // distance along the ray
+        const u = (dx * p.y - dy * p.x) / den;       // position along the edge
+        if (t > 0 && u >= 0 && u <= 1 && t < best) best = t;
+    }
+    return Number.isFinite(best) ? best : 0;
+}
+
 // Andrew's monotone chain. Wound the same way as the old generated outlines
 // (increasing theta) so satPolygonPolygon sees the winding it always has.
 function convexHullOf(pts) {
@@ -2424,14 +2442,21 @@ function makeFloe(cx, cy, r, rng) {
     const vegVertices = localVeg.map(p => ({ x: cx + p.x, y: cy + p.y }));
 
     // Pressure cracks: 2-4 jagged strokes across the surface (relative coords,
-    // baked into the sprite so they ride along as the floe drifts)
+    // baked into the sprite so they ride along as the floe drifts).
+    //
+    // Placed against the outline's LOCAL radius, not the floe's bounding r. Only
+    // the widest point of a lobed or elongated floe reaches r, so a fraction of
+    // r fired down a narrow axis lands well outside the ice — which is exactly
+    // how cracks ended up hanging in open water. (The bake also clips them to
+    // the silhouette, which catches the curve's bulge between the endpoints.)
     const cracks = [];
     const crackCount = 2 + Math.floor(rng() * 3);
     for (let k = 0; k < crackCount; k++) {
         const a1 = rng() * Math.PI * 2;
         const a2 = a1 + Math.PI * (0.6 + rng() * 0.5);
-        const r1 = r * (0.25 + rng() * 0.5), r2 = r * (0.3 + rng() * 0.55);
-        const midJitter = (rng() - 0.5) * r * 0.3;
+        const e1 = outlineRadiusAt(localArt, a1), e2 = outlineRadiusAt(localArt, a2);
+        const r1 = e1 * (0.25 + rng() * 0.5), r2 = e2 * (0.3 + rng() * 0.55);
+        const midJitter = (rng() - 0.5) * Math.min(e1, e2) * 0.3;
         cracks.push({
             ax: Math.cos(a1) * r1, ay: Math.sin(a1) * r1,
             mx: Math.cos((a1 + a2) / 2) * midJitter, my: Math.sin((a1 + a2) / 2) * midJitter,
@@ -9695,8 +9720,14 @@ function bakeIslandSprite(isl) {
         }
     }
 
-    // Pressure cracks (ice only): thin glacial-blue fractures
+    // Pressure cracks (ice only): thin glacial-blue fractures. Clipped to the
+    // outline — a crack is a fracture IN the ice, so none of it may hang in open
+    // water. Only this block is clipped, not the whole sprite: land islands let
+    // their tree canopies overhang on purpose, and the sprite reserves margin
+    // for exactly that.
     if (isl.cracks && isl.cracks.length) {
+        g.save();
+        trace(g, VERTS); g.clip();
         g.strokeStyle = 'rgba(64, 125, 180, 0.7)';
         g.lineWidth = 3;
         g.lineCap = 'round';
@@ -9706,6 +9737,7 @@ function bakeIslandSprite(isl) {
             g.quadraticCurveTo(ox + cr.mx, oy + cr.my, ox + cr.bx, oy + cr.by);
             g.stroke();
         }
+        g.restore();
     }
 
     // Rocks
