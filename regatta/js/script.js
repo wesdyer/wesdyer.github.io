@@ -6663,6 +6663,10 @@ function drawRulesOverlay(ctx) {
     }
 }
 
+// Course-overlay kit (SailGP-inspired): thin mint-teal geometry, dashed
+// laylines, amber only for the active in-zone state, Saira italic labels.
+const NAV_RGB = '64, 245, 200';
+
 function drawRoundingArrows(ctx) {
     if (!state.showNavAids || !state.course || !state.course.marks || state.race.status === 'finished') return;
 
@@ -6676,7 +6680,7 @@ function drawRoundingArrows(ctx) {
     else activeMarks = [{ index: 0, ccw: false }, { index: 1, ccw: true }]; // Downwind
 
     ctx.save();
-    ctx.lineWidth = 10; ctx.strokeStyle = '#22d3ee'; ctx.fillStyle = '#22d3ee'; ctx.lineCap = 'round';
+    ctx.lineWidth = 7; ctx.strokeStyle = `rgba(${NAV_RGB}, 0.85)`; ctx.fillStyle = `rgba(${NAV_RGB}, 0.85)`; ctx.lineCap = 'round';
     const windDir = state.wind.baseDirection;
 
     for (const item of activeMarks) {
@@ -6732,8 +6736,15 @@ function drawActiveGateLine(ctx) {
     let label = (player.raceState.leg === 0) ? "START" : ((player.raceState.leg === state.race.totalLegs || state.race.status === 'finished' || player.raceState.finished) ? "FINISH" : "");
     if (label) {
         const angle = Math.atan2(m2.y - m1.y, m2.x - m1.x);
+        // Face approaching racers: the text's top points in the direction of travel
+        // through the line (START: toward the first gate; FINISH: away from the last gate)
+        const oIdx = (indices[0] === 0) ? [2, 3] : [0, 1];
+        const o1 = state.course.marks[oIdx[0]], o2 = state.course.marks[oIdx[1]];
+        let tx = (o1.x + o2.x) / 2 - midX, ty = (o1.y + o2.y) / 2 - midY;
+        if (label === 'FINISH') { tx = -tx; ty = -ty; }
         ctx.translate(midX, midY);
-        let rot = angle; if (Math.abs(normalizeAngle(rot)) > Math.PI/2) rot += Math.PI;
+        let rot = angle;
+        if (Math.sin(rot) * tx - Math.cos(rot) * ty < 0) rot += Math.PI;
         ctx.rotate(rot); ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.5)';
         ctx.strokeText(label, 0, 0); ctx.fillText(label, 0, 0);
     }
@@ -6772,8 +6783,14 @@ function drawLadderLines(ctx) {
     let slopeLeft = Math.tan(delta + Math.PI/4), slopeRight = Math.tan(delta - Math.PI/4);
     if (!isUpwindTarget) { slopeLeft = Math.tan(delta - Math.PI/4); slopeRight = Math.tan(delta + Math.PI/4); }
 
-    ctx.save(); ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.lineWidth = 4;
-    ctx.font = 'bold 24px monospace'; ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.save(); ctx.strokeStyle = `rgba(${NAV_RGB}, 0.5)`; ctx.lineWidth = 3;
+    ctx.font = 'italic 900 22px Saira, Archivo, sans-serif'; ctx.fillStyle = `rgba(${NAV_RGB}, 0.9)`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // Labels lie along the rung itself (SailGP style), flipped to stay upright ON SCREEN
+    // (the camera rotates, so the flip test must be in screen space, not world space)
+    let labelAngle = Math.atan2(py, px);
+    if (Math.abs(normalizeAngle(labelAngle - state.camera.rotation)) > Math.PI / 2) labelAngle += Math.PI;
+    const toGateSign = (endProj > startProj) ? 1 : -1;
+    const gateAngle = Math.atan2(toGateSign * wy, toGateSign * wx);
 
     for (let p = firstLine; p <= maxP; p+=interval) {
         if (p < minP) continue;
@@ -6795,7 +6812,25 @@ function drawLadderLines(ctx) {
 
             const distToGate = Math.abs(endProj - p) * 0.2;
             if (distToGate > 50) {
-                 ctx.fillText(Math.round(distToGate) + 'm', (x1+x2)/2, (y1+y2)/2);
+                 // Labels repeat at fixed world positions along the rung (static — the water
+                 // moves past them), each with a chevron pointing toward the gate
+                 const label = String(Math.round(distToGate));
+                 const tw = ctx.measureText(label).width;
+                 for (let v = Math.ceil((finalMin + 90) / 900) * 900; v <= finalMax - 90; v += 900) {
+                     const lx = cx + v * px, ly = cy + v * py;
+                     ctx.save();
+                     ctx.translate(lx, ly);
+                     ctx.rotate(labelAngle);
+                     ctx.fillText(label, 0, -14);
+                     ctx.translate(tw / 2 + 16, -14);
+                     ctx.rotate(gateAngle - labelAngle);
+                     ctx.beginPath();
+                     ctx.moveTo(-4, -7); ctx.lineTo(4, 0); ctx.lineTo(-4, 7);
+                     ctx.strokeStyle = `rgba(${NAV_RGB}, 0.9)`;
+                     ctx.lineWidth = 3.5; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+                     ctx.stroke();
+                     ctx.restore();
+                 }
             }
         }
     }
@@ -6809,7 +6844,7 @@ function drawLayLines(ctx) {
     const isUpwind = (player.raceState.leg % 2 !== 0) || (player.raceState.leg === 0);
     const zoneRadius = (player.raceState.leg === 0 || player.raceState.leg === state.race.totalLegs) ? 0 : 165;
 
-    ctx.save(); ctx.lineWidth = 5;
+    ctx.save(); ctx.lineWidth = 5.5;
     for (const idx of targets) {
         const m = state.course.marks[idx];
         const ang1 = state.wind.direction + Math.PI/4, ang2 = state.wind.direction - Math.PI/4;
@@ -6820,7 +6855,7 @@ function drawLayLines(ctx) {
             const startX = m.x + dx*zoneRadius, startY = m.y + dy*zoneRadius;
             const t = rayCircleIntersection(startX, startY, dx, dy, state.course.boundary.x, state.course.boundary.y, state.course.boundary.radius);
             if (t !== null) {
-                ctx.strokeStyle = '#facc15'; ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(startX+dx*t, startY+dy*t); ctx.stroke();
+                ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`; ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(startX+dx*t, startY+dy*t); ctx.stroke();
             }
         };
         if (isUpwind) isLeft ? drawRay(ang1) : drawRay(ang2);
@@ -6840,7 +6875,7 @@ function drawMarkZones(ctx) {
         else active = [0, 1];
     } else return;
 
-    ctx.save(); ctx.lineWidth = 5;
+    ctx.save();
     const h = player.heading, sinH = Math.sin(h), cosH = Math.cos(h);
     const bowX = player.x + 25*sinH, bowY = player.y - 25*cosH;
     const sternX = player.x - 30*sinH, sternY = player.y + 30*cosH;
@@ -6849,9 +6884,25 @@ function drawMarkZones(ctx) {
         const m = state.course.marks[idx];
         const closest = getClosestPointOnSegment(m.x, m.y, bowX, bowY, sternX, sternY);
         const distSq = (closest.x-m.x)**2 + (closest.y-m.y)**2;
-        ctx.strokeStyle = (distSq < 165*165) ? '#facc15' : 'rgba(255, 255, 255, 0.7)';
+        const inZone = distSq < 165*165;
+        ctx.strokeStyle = inZone ? 'rgba(251, 191, 36, 0.95)' : `rgba(${NAV_RGB}, 0.68)`;
+        ctx.lineWidth = inZone ? 5.5 : 4;
         ctx.beginPath(); ctx.arc(m.x, m.y, 165, 0, Math.PI*2); ctx.stroke();
     }
+
+    // Flat GATE label on the water between the active gate marks
+    const gA = state.course.marks[active[0]], gB = state.course.marks[active[1]];
+    const gx = (gA.x + gB.x) / 2, gy = (gA.y + gB.y) / 2;
+    const gAng = Math.atan2(gB.y - gA.y, gB.x - gA.x);
+    ctx.save();
+    ctx.translate(gx, gy);
+    let rot = gAng; if (Math.abs(normalizeAngle(rot - state.camera.rotation)) > Math.PI / 2) rot += Math.PI;
+    ctx.rotate(rot);
+    ctx.font = 'italic 900 52px Saira, Archivo, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.30)';
+    ctx.fillText('GATE ' + player.raceState.leg, 0, 0);
+    ctx.restore();
     ctx.restore();
 }
 
