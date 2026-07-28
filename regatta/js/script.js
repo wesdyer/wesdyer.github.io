@@ -2759,6 +2759,25 @@ burgeeImg.src = 'assets/images/salty-crew-yacht-club-burgee.png';
 const palmImg = new Image();
 palmImg.src = 'assets/images/palm.png';
 
+// Inflatable tetrahedron racing mark; gray bake for inactive marks
+const markImg = new Image();
+markImg.src = 'assets/images/mark.png';
+let markImgGray = null;
+function getMarkImgGray() {
+    if (markImgGray || !markImg.complete || !markImg.naturalWidth) return markImgGray;
+    const c = document.createElement('canvas');
+    c.width = markImg.naturalWidth; c.height = markImg.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(markImg, 0, 0);
+    // Slate tint via source-atop (keeps the sprite's alpha + some shading;
+    // avoids getImageData, which taints the canvas under file://)
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = 'rgba(148, 163, 184, 0.8)';
+    g.fillRect(0, 0, c.width, c.height);
+    markImgGray = c;
+    return markImgGray;
+}
+
 class Boat {
     constructor(id, isPlayer, startX, startY, name="USA", config=null) {
         this.id = id;
@@ -6279,10 +6298,17 @@ function update(dt) {
         }
     }
 
-    // Wind Particles
-    if (Math.random() < 0.2) {
-        let range = Math.max(canvas.width, canvas.height) * 1.5;
-        createParticle(state.camera.x + (Math.random()-0.5)*range, state.camera.y + (Math.random()-0.5)*range, 'wind', { life: Math.random() + 0.5 });
+    // Wind streaks: pressure-weighted spawns — gusts breed streaks, lulls go
+    // near-silent, so streak density itself reports the wind field
+    if (Math.random() < 0.5) {
+        const range = Math.max(canvas.width, canvas.height) * 1.5;
+        const sx = state.camera.x + (Math.random()-0.5)*range;
+        const sy = state.camera.y + (Math.random()-0.5)*range;
+        const rel = getWindAt(sx, sy).speed / Math.max(1, state.wind.speed);
+        const chance = Math.max(0.07, (rel - 0.85) * 1.6);
+        if (Math.random() < chance) {
+            createParticle(sx, sy, 'wind', { life: Math.random() + 0.7, jit: Math.random() });
+        }
     }
     updateParticles(dt);
     updateWindWaves(dt);
@@ -6418,23 +6444,40 @@ function drawParticles(ctx, layer) {
         }
         ctx.globalAlpha = 1.0;
     } else if (layer === 'air') {
-        ctx.strokeStyle = '#ffffff';
+        // SailGP-style comet streaks: a thick bright head leading downwind with a
+        // thin tapering tail — the asymmetry alone shows wind direction. Length
+        // and width scale with local wind; color warms white -> amber inside
+        // gusts so pressure reads at a glance.
+        const base = Math.max(1, state.wind.speed);
         for (const p of state.particles) {
-            if (p.type === 'wind') {
-                if (!onScreen(p)) continue;
-                const local = getWindAt(p.x, p.y);
-                const windFactor = local.speed / 10;
-                const tailLength = 30 + local.speed * 4;
-                const dx = -Math.sin(local.direction) * tailLength;
-                const dy = Math.cos(local.direction) * tailLength;
-
-                const opacity = Math.min(p.life, 1.0) * (0.15 + windFactor * 0.2);
-                ctx.globalAlpha = opacity;
-                ctx.lineWidth = 1 + windFactor;
-                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + dx, p.y + dy); ctx.stroke();
-            }
+            if (p.type !== 'wind') continue;
+            if (!onScreen(p)) continue;
+            const local = getWindAt(p.x, p.y);
+            const rel = local.speed / base;
+            const L = 34 + local.speed * 4.5;
+            const mx = -Math.sin(local.direction), my = Math.cos(local.direction);
+            const nx = -my, ny = mx;
+            const hx = p.x + mx * L * 0.3, hy = p.y + my * L * 0.3;
+            const tx = p.x - mx * L * 0.7, ty = p.y - my * L * 0.7;
+            const gust = Math.max(0, Math.min(1, (rel - 1.03) / 0.3));
+            const lull = Math.max(0, Math.min(1, (0.97 - rel) / 0.25));
+            const alpha = Math.min(p.life, 1) * (0.15 + rel * 0.13 + gust * 0.22) * (1 - lull * 0.65);
+            if (alpha <= 0.015) continue;
+            const cg = Math.round(255 - 69 * gust), cb = Math.round(255 - 191 * gust);
+            const wH = (2.3 + (p.jit || 0.5) * 0.8) * (1 + gust * 1.1);
+            ctx.fillStyle = `rgba(255,${cg},${cb},${alpha.toFixed(3)})`;
+            ctx.beginPath();
+            ctx.moveTo(hx + nx * wH, hy + ny * wH);
+            ctx.lineTo(hx - nx * wH, hy - ny * wH);
+            ctx.lineTo(tx, ty);
+            ctx.closePath();
+            ctx.fill();
+            // rounded bright head cap
+            ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.9).toFixed(3)})`;
+            ctx.beginPath();
+            ctx.arc(hx, hy, wH * 0.7, 0, Math.PI * 2);
+            ctx.fill();
         }
-        ctx.globalAlpha = 1.0;
     }
 }
 
@@ -7176,10 +7219,18 @@ function drawMarkShadows(ctx) {
 
 function drawMarkBodies(ctx) {
     const player = state.boats[0];
+    const W = 30, H = W * (markImg.naturalHeight / (markImg.naturalWidth || 1)) || 26;
     for (let i=0; i<state.course.marks.length; i++) {
         const m = state.course.marks[i];
         ctx.save(); ctx.translate(m.x, m.y);
-        const bob = 1.0 + Math.sin(state.time*5 + m.x*0.01)*0.05; ctx.scale(bob, bob);
+        // Very subtle bob: slow breathing scale + faint rotation wobble, phased
+        // per mark by position (deterministic — no RNG in the render path)
+        const phase = m.x * 0.013 + m.y * 0.007;
+        const bob = 1 + Math.sin(state.time * 7 + phase) * 0.02;
+        // gentle circular sway at anchor + a slow rotation wobble
+        ctx.translate(Math.sin(state.time * 4.1 + phase) * 2.2, Math.cos(state.time * 3.4 + phase * 1.7) * 2.2);
+        ctx.rotate((m.x * 7.3 + m.y * 3.1) % 6.283 + Math.sin(state.time * 5.3 + phase) * 0.06);
+        ctx.scale(bob, bob);
 
         let active = false;
         if (state.race.status !== 'finished') {
@@ -7187,13 +7238,15 @@ function drawMarkBodies(ctx) {
             else { if (i===2 || i===3) active = true; }
         }
 
-        const c1 = active ? '#fdba74' : '#e2e8f0';
-        const c2 = active ? '#f97316' : '#94a3b8';
-        const c3 = active ? '#c2410c' : '#64748b';
-        const grad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 12);
-        grad.addColorStop(0, c1); grad.addColorStop(0.5, c2); grad.addColorStop(1, c3);
-        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = c3; ctx.lineWidth = 1; ctx.stroke();
+        if (markImg.complete && markImg.naturalWidth) {
+            const img = active ? markImg : (getMarkImgGray() || markImg);
+            if (!active) ctx.globalAlpha = 0.92;
+            ctx.drawImage(img, -W / 2, -H / 2, W, H);
+        } else {
+            // fallback while the sprite loads
+            ctx.fillStyle = active ? '#f97316' : '#94a3b8';
+            ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
+        }
         ctx.restore();
     }
 }
@@ -8397,11 +8450,8 @@ function draw() {
         }
 
         if (UI.legInfo) {
-             let txt = "";
-             if (state.race.status === 'prestart') txt = "PRESTART";
-             else if (state.race.status === 'finished' || player.raceState.finished) txt = "FINISHED";
-             else txt = (player.raceState.leg === 0) ? "START" : `LEG ${player.raceState.leg} OF ${state.race.totalLegs}: ${(player.raceState.leg%2!==0)?"UPWIND":"DOWNWIND"}`;
-             UI.legInfo.textContent = txt;
+             const v = VENUES[settings.venue];
+             UI.legInfo.textContent = (v && v.name) ? v.name.toUpperCase() : "";
         }
 
         if (UI.legTimes) {
