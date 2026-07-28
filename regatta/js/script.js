@@ -2287,19 +2287,54 @@ function generateRiverBanks(rng) {
 
 // Polar ice floes: drifting islands. Slow enough for the AI's reactive
 // avoidance; fast enough that the course never looks the same twice.
+const FLOE_DENSITY = 3;
 function generateIceFloes(rng) {
     const boundary = state.course.boundary;
     const marks = state.course.marks;
     const floes = [];
-    const count = 15 + Math.floor(rng() * 4);
+    // Pack density. The tiers scale WITH it: bumping the count alone would bury
+    // the same two bergs under a drift of small ice rather than reading as more
+    // ice. window.__FLOES.density is a sweep hook (cf. __NAV / __START).
+    const density = (window.__FLOES && window.__FLOES.density) || FLOE_DENSITY;
+    const count = Math.round((15 + Math.floor(rng() * 4)) * density);
+    // The count scales linearly but the two LARGE tiers scale by sqrt, so the
+    // extra ice arrives as small drift rather than as more course-blocking mass.
+    // Scaling every tier linearly was measured at +28% race time and ~6x the ice
+    // contact — that is a materially harder venue, not a busier-looking one.
+    // Big ice also dominates cost: a berg bakes a ~5MB sprite and covers a lot of
+    // screen. A few bergs in a scatter of floes is what the aerials show anyway.
+    const ov = window.__FLOES || {};
+    const bergN = ov.bergs != null ? ov.bergs : Math.round(2 * Math.sqrt(density));
+    const midN = ov.mid != null ? ov.mid : Math.round(6 * Math.sqrt(density));
+    // A denser pack rejects more candidate spots, so it needs more tries before
+    // it gives up — otherwise the achieved count silently falls short.
+    const tries = 12 + Math.round(10 * density);
+
+    // Start box: the line itself plus the spawn row 400 units downwind of it,
+    // mirroring repositionBoats. Cleared to ten boat lengths (hull is ~56 units),
+    // plus repositionBoats' own +/-60 depth scatter and +/-10 lateral jitter —
+    // without that margin a boat landing at the far end of its scatter measured
+    // only ~520 units of room.
+    const START_CLEAR = 560 + 70;
+    let startBox = null;
+    if (marks.length >= 2) {
+        const m0 = marks[0], m1 = marks[1];
+        // downwind of the line, matching repositionBoats' backX/backY exactly
+        const bx = -Math.sin(state.wind.direction), by = Math.cos(state.wind.direction);
+        const D = 400;
+        startBox = [
+            [m0, m1],
+            [{ x: m0.x + bx * D, y: m0.y + by * D }, { x: m1.x + bx * D, y: m1.y + by * D }]
+        ];
+    }
 
     for (let i = 0; i < count && floes.length < count; i++) {
         let placed = false;
-        for (let attempt = 0; attempt < 12 && !placed; attempt++) {
-            // Size tiers: 2 proper BERGS, a few mid-size floes, and a scatter
-            // of small drift ice — varied like the reference art.
-            const r = i < 2 ? 260 + rng() * 130
-                    : i < 6 ? 140 + rng() * 100
+        for (let attempt = 0; attempt < tries && !placed; attempt++) {
+            // Size tiers: proper BERGS, mid-size floes, and a scatter of small
+            // drift ice — varied like the reference art.
+            const r = i < bergN ? 260 + rng() * 130
+                    : i < midN  ? 140 + rng() * 100
                     : 55 + rng() * 85;
             const ang = rng() * Math.PI * 2;
             const dst = Math.sqrt(rng()) * (boundary.radius - 300);
@@ -2309,6 +2344,17 @@ function generateIceFloes(rng) {
             let ok = true;
             for (const m of marks) {
                 if ((cx - m.x) ** 2 + (cy - m.y) ** 2 < (450 + r) ** 2) { ok = false; break; }
+            }
+            // Keep the start box clear. Boats spawn in lanes along the line and
+            // 400 units behind it (see repositionBoats), so clearing the two end
+            // MARKS alone left ice sitting on the grid — a boat could be pinned
+            // against a floe before it had moved. Ten boat lengths of room from
+            // both the line and the spawn row; the rows are parallel and 400
+            // apart, so clearing each by 560 clears the box between them too.
+            if (ok && startBox) {
+                for (const seg of startBox) {
+                    if (Geom.distToSegment({ x: cx, y: cy }, seg[0], seg[1]) < START_CLEAR + r) { ok = false; break; }
+                }
             }
             for (const f of floes) {
                 if ((cx - f.x) ** 2 + (cy - f.y) ** 2 < (f.radius + r + 60) ** 2) { ok = false; break; }
