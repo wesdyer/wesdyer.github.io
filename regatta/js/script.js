@@ -1937,17 +1937,30 @@ const VENUES = {
                    gusts: { gustDark: [6, 55, 75], gustMid: [10, 78, 102], lullBright: [168, 232, 240], lullMid: [140, 216, 228] } },
         fx: {}
     },
-    ocean: {
-        name: 'Bluewater Bash',
-        tagline: 'Swell & Speed', water: 'Long rolling swell', obstacles: 'None — open water', tags: [['UPWIND SLOG','warn'],['SURF THE SETS','ok']],
-        label: 'Ocean', emoji: '🌊',
-        blurb: 'Nothing out here but you, a steady breeze, and a mile of rolling swell. Surf hard downwind, grind out the beat — pure speed wins.',
-        wind: [12, 20],
-        cond: { shiftiness: [0.05, 0.2], variability: [0.1, 0.3], puffiness: [0.2, 0.4], gustStrengthBias: [0.5, 0.7], puffShiftiness: [0.1, 0.3] },
-        islands: { count: [0, 0] },
-        palette: { baseColor: '#0369a1', deepColor: '#1e3a8a', shallowColor: '#0ea5e9', shorelineColor: '#93c5fd',
-                   gusts: { gustDark: [8, 32, 105], gustMid: [13, 47, 138], lullBright: [138, 198, 244], lullMid: [118, 188, 238] } },
-        fx: { swell: true }
+    lagoon: {
+        name: 'Pearl Lagoon',
+        tagline: 'Squalls & Coral', water: 'Clear & flat', obstacles: 'Coral heads & reef passes', tags: [['RAIN SQUALLS','warn'],['CORAL HEADS','warn'],['SQUALL RIDING','ok']],
+        label: 'Lagoon', emoji: '🐚',
+        blurb: 'Turquoise flats, coral gates, and squalls marching down the trades. Duck the rain or ride it — the brave get wet and get ahead.',
+        wind: [10, 16],
+        cond: { shiftiness: [0.15, 0.35], variability: [0.3, 0.5], puffiness: [0.4, 0.6], gustStrengthBias: [0.55, 0.75], puffShiftiness: [0.3, 0.5] },
+        islands: { count: [1, 2], maxSize: [0.05, 0.2], clustering: [0.2, 0.6] },
+        palette: { baseColor: '#1fb6c9', deepColor: '#0e7490', shallowColor: '#7ee8e0', shorelineColor: '#fde68a',
+                   gusts: { gustDark: [10, 88, 104], gustMid: [16, 110, 128], lullBright: [214, 250, 248], lullMid: [192, 240, 238] } },
+        // Squalls + reef passes arrive in the Pearl Lagoon identity pass
+        fx: {}
+    },
+    swamp: {
+        name: 'Gatorgrass Bayou',
+        tagline: 'Dead Air & Weed', water: 'Still & weedy', obstacles: 'Grass islands & weed beds', tags: [['WEED BEDS','warn'],['KEEP HER MOVING','ok']],
+        label: 'Swamp', emoji: '🐊',
+        blurb: 'Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel — patience beats pace in here.',
+        wind: [5, 8],
+        cond: { shiftiness: [0.8, 1.0], variability: [0.8, 1.0], puffiness: [0.8, 1.0], gustStrengthBias: [0.15, 0.35], puffShiftiness: [0.8, 1.0] },
+        islands: { count: [5, 7], maxSize: [0.0, 0.15], clustering: [0.4, 0.8], style: 'grass' },
+        palette: { baseColor: '#606c38', deepColor: '#3a4423', shallowColor: '#7d8a4e', shorelineColor: '#8a9a5b',
+                   gusts: { gustDark: [36, 44, 18], gustMid: [50, 60, 26], lullBright: [184, 192, 142], lullMid: [168, 178, 126] } },
+        fx: { weeds: true }
     },
     river: {
         name: 'Otter Run',
@@ -1961,17 +1974,43 @@ const VENUES = {
                    gusts: { gustDark: [18, 52, 42], gustMid: [27, 68, 56], lullBright: [156, 204, 184], lullMid: [134, 190, 168] } },
         fx: { river: true }
     },
-    swamp: {
-        name: 'Gatorgrass Bayou',
-        tagline: 'Dead Air & Weed', water: 'Still & weedy', obstacles: 'Grass islands & weed beds', tags: [['WEED BEDS','warn'],['KEEP HER MOVING','ok']],
-        label: 'Swamp', emoji: '🐊',
-        blurb: 'Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel — patience beats pace in here.',
-        wind: [5, 8],
-        cond: { shiftiness: [0.8, 1.0], variability: [0.8, 1.0], puffiness: [0.8, 1.0], gustStrengthBias: [0.15, 0.35], puffShiftiness: [0.8, 1.0] },
-        islands: { count: [5, 7], maxSize: [0.0, 0.15], clustering: [0.4, 0.8], style: 'grass' },
-        palette: { baseColor: '#606c38', deepColor: '#3a4423', shallowColor: '#7d8a4e', shorelineColor: '#8a9a5b',
-                   gusts: { gustDark: [36, 44, 18], gustMid: [50, 60, 26], lullBright: [184, 192, 142], lullMid: [168, 178, 126] } },
-        fx: { weeds: true }
+    ocean: {
+        name: 'Bluewater Bonanza',
+        tagline: 'Swell & Speed', water: 'Long rolling swell', obstacles: 'None — open water', tags: [['UPWIND SLOG','warn'],['SURF THE SETS','ok']],
+        label: 'Ocean', emoji: '🌊',
+        blurb: 'Nothing out here but you, a steady breeze, and a mile of rolling swell. Surf hard downwind, grind out the beat — pure speed wins.',
+        wind: [12, 20],
+        cond: { shiftiness: [0.05, 0.2], variability: [0.1, 0.3], puffiness: [0.2, 0.4], gustStrengthBias: [0.5, 0.7], puffShiftiness: [0.1, 0.3] },
+        islands: { count: [0, 0] },
+        palette: { baseColor: '#0369a1', deepColor: '#1e3a8a', shallowColor: '#0ea5e9', shorelineColor: '#93c5fd',
+                   gusts: { gustDark: [8, 32, 105], gustMid: [13, 47, 138], lullBright: [138, 198, 244], lullMid: [118, 188, 238] } },
+        fx: { swell: true }
+    },
+    redrock: {
+        name: 'Redrock Reservoir',
+        tagline: 'Cliffs & Gusts', water: 'Flat, wind-shadowed', obstacles: 'Rock spires & canyon walls', tags: [['WIND SHADOWS','warn'],['ROCK SPIRES','warn'],['LOCAL KNOWLEDGE','ok']],
+        label: 'Reservoir', emoji: '🏜️',
+        blurb: 'Sandstone walls carve the breeze into shadows, funnels and sudden gust-bombs. Learn the canyon and it fights for you.',
+        wind: [9, 15],
+        cond: { shiftiness: [0.4, 0.6], variability: [0.5, 0.75], puffiness: [0.5, 0.7], gustStrengthBias: [0.6, 0.8], puffShiftiness: [0.5, 0.7] },
+        islands: { count: [2, 4], maxSize: [0.05, 0.25], clustering: [0.2, 0.6], style: 'redrock' },
+        palette: { baseColor: '#189db5', deepColor: '#0c6478', shallowColor: '#5cd6d6', shorelineColor: '#e8a06a',
+                   gusts: { gustDark: [8, 70, 86], gustMid: [12, 90, 108], lullBright: [200, 240, 242], lullMid: [180, 230, 235] } },
+        // Terrain-shaped wind (wall shadows, venturi, williwaws) arrives in the identity pass
+        fx: {}
+    },
+    glowtide: {
+        name: 'Glowtide Strait',
+        tagline: 'Moonlight & Glow', water: 'Dark & glowing', obstacles: 'Rocky shores & lit marks', tags: [['NIGHT RACING','warn'],['GLOW READING','ok']],
+        label: 'Strait', emoji: '🌙',
+        blurb: 'Race by moonlight on water that burns blue where it moves. The dark hides the breeze — the glow gives it away, if you know how to look.',
+        wind: [8, 14],
+        cond: { shiftiness: [0.4, 0.65], variability: [0.4, 0.6], puffiness: [0.5, 0.7], gustStrengthBias: [0.45, 0.65], puffShiftiness: [0.4, 0.6] },
+        islands: { count: [1, 2], maxSize: [0.05, 0.2], clustering: [0.3, 0.7], style: 'grass' },
+        palette: { baseColor: '#1a2560', deepColor: '#0a0f30', shallowColor: '#27407e', shorelineColor: '#67e8f9',
+                   gusts: { gustDark: [10, 30, 80], gustMid: [14, 44, 104], lullBright: [124, 152, 204], lullMid: [104, 134, 188] } },
+        // Night rendering (dimmed world, glowing wakes/gust-threads) arrives in the identity pass
+        fx: {}
     },
     arctic: {
         name: 'Glacier Sound',
@@ -3896,9 +3935,8 @@ function renderVenuePicker() {
     if (!UI.venuePicker) return;
     const selected = (settings.venue && VENUES[settings.venue]) ? settings.venue : 'bay';
 
-    // Sea Trials (the benchmark venue) only appears for tinkerers with
-    // Customize on — casual players see the six art venues.
-    const visibleKeys = Object.keys(VENUES).filter(k => k !== 'seatrials' || settings.customizeConditions || selected === 'seatrials');
+    // All eight venues visible, Sea Trials leading top-left
+    const visibleKeys = Object.keys(VENUES);
 
     if (UI.venuePicker._keys !== visibleKeys.join()) {
         UI.venuePicker._keys = visibleKeys.join();
@@ -3908,13 +3946,9 @@ function renderVenuePicker() {
             const btn = document.createElement('button');
             btn.dataset.venue = key;
             // Venue art card: thumbnail fill + name/tagline scrim (full-size
-            // art lives in assets/images/venues/<key>.png for other uses).
-            // Sea Trials has no art — plain committee-grey card.
-            const art = key === 'seatrials'
-                ? `<span class="absolute inset-0 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-4xl">⏱️</span>`
-                : `<img src="assets/images/venues/thumbs/${key}.png" alt="${v.label}" class="absolute inset-0 w-full h-full object-cover" draggable="false">`;
+            // art lives in assets/images/venues/<key>.png for other uses)
             btn.innerHTML = `
-                ${art}
+                <img src="assets/images/venues/thumbs/${key}.png" alt="${v.label}" class="absolute inset-0 w-full h-full object-cover" draggable="false">
                 <span class="absolute inset-x-0 bottom-0 pt-8 pb-2 px-3 bg-gradient-to-t from-slate-950/95 via-slate-950/55 to-transparent text-left">
                     <span class="block text-base font-black uppercase tracking-wide text-white leading-tight">${v.name || v.label}</span>
                     <span class="block text-[10px] font-mono uppercase tracking-widest text-slate-300">${v.tagline}</span>
@@ -3965,7 +3999,7 @@ function renderVenueDetail(key) {
     UI.venueDetail.innerHTML = `
         <div class="flex items-baseline justify-between">
             <span class="text-xl font-black text-white uppercase tracking-wide">${v.name || v.label}</span>
-            <span class="text-[10px] font-mono uppercase tracking-widest text-slate-500">${v.label}</span>
+            ${v.name && v.name !== v.label ? `<span class="text-[10px] font-mono uppercase tracking-widest text-slate-500">${v.label}</span>` : ''}
         </div>
         <div class="text-sm text-slate-300 mt-1">${v.blurb}</div>
         <div class="grid grid-cols-3 gap-2 mt-3">
@@ -4340,12 +4374,7 @@ if (UI.confCustomize) {
         settings.customizeConditions = e.target.checked;
         saveSettings();
         if (UI.customizePanels) UI.customizePanels.classList.toggle('hidden', !settings.customizeConditions);
-        if (!settings.customizeConditions) {
-            // Sea Trials hides with Customize; fall back to Bay
-            selectVenue(settings.venue === 'seatrials' ? 'bay' : settings.venue);
-        } else {
-            renderVenuePicker(); // reveal Sea Trials card
-        }
+        if (!settings.customizeConditions) selectVenue(settings.venue); // back to stock preset
     });
 }
 
@@ -7151,7 +7180,8 @@ function drawMinimap() {
     const MINIMAP_ISLAND = {
         tropical: { body: '#fde6b1', top: '#84cc16' },
         grass:    { body: '#8a9a5b', top: '#4d7c0f' },
-        ice:      { body: '#b8dcf5', top: '#f2f9ff' }
+        ice:      { body: '#b8dcf5', top: '#f2f9ff' },
+        redrock:  { body: '#c2703e', top: '#d98e57' }
     };
     if (state.course.islands) {
         // Body first
@@ -8416,7 +8446,7 @@ function generateIslands(boundary) {
         // Venue styling: swamp grass islands are marsh — soft groundings
         // (speed loss but no rules penalty), and rendered as grass.
         const style = state.race.conditions.islandStyle || 'tropical';
-        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks, style, soft: style === 'grass' };
+        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks, style, soft: style === 'grass' || style === 'redrock' };
     };
 
     // Helper: Validate a circle
@@ -8703,7 +8733,8 @@ function checkIslandCollisions(dt) {
 const ISLAND_STYLES = {
     tropical: { body: '#fde6b1', stroke: '#d4b483', veg: '#84cc16', rock: '#9ca3af', trees: true },
     grass:    { body: '#a89b6a', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },
-    ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false }
+    ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
+    redrock:  { body: '#c2703e', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false }
 };
 
 function traceRoundedPoly(g, vertices) {
