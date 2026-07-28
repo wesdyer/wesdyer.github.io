@@ -4001,20 +4001,13 @@ function renderVenueDetail(key) {
             <span class="${mono ? 't-mono' : 'font-bold'} text-right ml-4" style="font-size:13.5px; color:#eef4ff;">${value}</span>
         </div>`;
 
-    // Descriptive hierarchy: lead sentence bright, remainder recedes
-    const blurb = v.blurb || '';
-    const leadMatch = blurb.match(/^[^.!?]*[.!?]/);
-    const lead = leadMatch ? leadMatch[0] : blurb;
-    const rest = leadMatch ? blurb.slice(lead.length).trim() : '';
-
     UI.venueDetail.innerHTML = `
         <img src="assets/images/venues/${key}.png" alt="${v.name || v.label}" class="w-full h-64 object-cover rounded-xl border border-white/10" draggable="false">
         <div class="flex items-baseline justify-between mt-4">
             <span class="t-display uppercase text-white" style="font-size:31px;">${v.name || v.label}</span>
             ${v.name && v.name !== v.label ? `<span class="t-label t-label-sm">${v.label}</span>` : ''}
         </div>
-        <div class="mt-2" style="font-size:16.5px; font-weight:500; color:#eef4ff; line-height:1.55;">${lead}</div>
-        ${rest ? `<div style="font-size:14.5px; color:#9dabc4; line-height:1.6;">${rest}</div>` : ''}
+        <div class="mt-2" style="font-size:15px; font-weight:450; color:#c2cde0; line-height:1.6;">${v.blurb || ''}</div>
         <div class="flex flex-col gap-2 mt-4">
             ${row('Wind', `${windVal}–${gustVal} kt`, true)}
             ${row('Water', waterVal, false)}
@@ -4097,8 +4090,8 @@ function renderCompetitorDetail() {
             <div class="flex items-center gap-5">
                 <img src="assets/images/${config.name.toLowerCase()}.png" alt="${config.name}" class="w-32 h-32 object-cover shrink-0" draggable="false">
                 <div class="py-4 pr-4">
-                    <div class="t-display text-white uppercase leading-tight" style="font-size:29px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
-                    <div class="t-label t-label-sm mt-1" style="color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${archDef ? archDef.label : ''}</div>
+                    <div class="t-display text-white uppercase leading-tight" style="font-size:36px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
+                    <div class="t-label mt-1" style="font-size:13px; letter-spacing:2.5px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${archDef ? archDef.label : ''}</div>
                 </div>
             </div>
         </div>
@@ -6816,7 +6809,7 @@ function updateWindWaves(dt) {
     const camY = state.camera.y;
     const radius = Math.max(canvas.width, canvas.height) * 0.8;
 
-    const gridSize = 180;
+    const gridSize = 150;
 
     const iStart = Math.floor((camX - radius) / gridSize);
     const iEnd = Math.floor((camX + radius) / gridSize);
@@ -6848,6 +6841,19 @@ function updateWindWaves(dt) {
                      angle: 0,
                      speed: 0
                  };
+                 // Stitched-crest geometry (reference look): seeded zigzag
+                 // polyline with dash gaps, optional echo line, family tilt.
+                 let s2 = ((Math.abs(Math.floor(seed * 1000)) % 2147483647) >>> 0) || 1;
+                 const pr = () => { s2 = (s2 * 1664525 + 1013904223) >>> 0; return s2 / 4294967296; };
+                 const n = 5 + Math.floor(pr() * 5);
+                 wave.pts = [];
+                 for (let p = 0; p <= n; p++) wave.pts.push({ t: p / n, y: (pr() - 0.5) * 6 });
+                 wave.gaps = [];
+                 for (let p = 0; p < n; p++) wave.gaps.push(pr() < 0.78);
+                 wave.echo = pr() < 0.35;
+                 wave.echoOff = 4 + pr() * 4;
+                 wave.tilt = (pr() - 0.5) * 0.5; // two loose crest families crossing
+                 wave.lwj = 0.9 + pr() * 0.8;
                  state.waveStates.set(key, wave);
              }
 
@@ -6881,7 +6887,7 @@ function drawWindWaves(ctx) {
     for (const wave of state.waveStates.values()) {
         if (wave.windSpeed < 2) continue;
 
-        const gridSize = 180;
+        const gridSize = 150;
         const cycle = wave.dist / gridSize;
         const alphaWave = Math.sin(cycle * Math.PI);
 
@@ -6892,20 +6898,35 @@ function drawWindWaves(ctx) {
         // Opacity based on speed
         const intensity = Math.min(1.0, (wave.windSpeed - 2) / 20);
 
-        ctx.globalAlpha = alphaWave * intensity * 0.6;
-        ctx.lineWidth = 1.5 + intensity * 2.0;
+        ctx.globalAlpha = alphaWave * intensity * 0.75;
+        ctx.lineWidth = (1.0 + intensity * 1.2) * (wave.lwj || 1);
 
         const dx = Math.sin(wave.angle) * wave.dist;
         const dy = -Math.cos(wave.angle) * wave.dist;
 
         ctx.save();
         ctx.translate(wave.x + dx, wave.y + dy);
-        ctx.rotate(wave.angle);
+        ctx.rotate(wave.angle + (wave.tilt || 0));
 
-        ctx.beginPath();
-        ctx.moveTo(-size/2, 0);
-        ctx.quadraticCurveTo(0, -size * 0.25, size/2, 0);
-        ctx.stroke();
+        const w = Math.max(26, Math.min(84, size));
+        const pts = wave.pts, gaps = wave.gaps;
+        if (pts) {
+            for (let p = 0; p < gaps.length; p++) {
+                if (!gaps[p]) continue;
+                ctx.beginPath();
+                ctx.moveTo((pts[p].t - 0.5) * w, pts[p].y);
+                ctx.lineTo((pts[p + 1].t - 0.5) * w, pts[p + 1].y);
+                ctx.stroke();
+            }
+            if (wave.echo) {
+                ctx.globalAlpha *= 0.45;
+                ctx.lineWidth *= 0.8;
+                ctx.beginPath();
+                ctx.moveTo((pts[1].t - 0.5) * w, pts[1].y + wave.echoOff);
+                ctx.lineTo((pts[pts.length - 2].t - 0.5) * w, pts[pts.length - 2].y + wave.echoOff);
+                ctx.stroke();
+            }
+        }
 
         ctx.restore();
     }

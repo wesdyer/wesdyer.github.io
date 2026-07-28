@@ -10,7 +10,11 @@ window.WATER_CONFIG = {
     depthGradientStrength: 0.20,
     depthGradientScale: 1.0,
 
-    // Contour Lines (Cartoon effect)
+    // Ripple lattice (venue-art style water)
+    rippleSpacing: 26,
+    rippleOpacity: 0.9,
+
+    // Contour Lines (legacy knobs, kept for compat)
     contourOpacity: 0.12,
     contourScale: 150, // Noise scale
     contourSpacing: 25, // Pixels between lines
@@ -139,7 +143,7 @@ class WaterRenderer {
     // Check if config changed requiring texture rebuild
     getConfigHash() {
         const c = window.WATER_CONFIG;
-        return `${c.contourScale}-${c.contourSpacing}-${c.contourWidth}-${c.contourDistortion}-${c.causticScale}-${c.chunkSize}`;
+        return `${c.rippleSpacing || 26}-${c.rippleOpacity || 0.9}-${c.chunkSize}`;
     }
 
     updateTextures() {
@@ -150,168 +154,56 @@ class WaterRenderer {
         const config = window.WATER_CONFIG;
         const size = config.chunkSize;
 
-        // 1. Generate Contour Texture
+        // ── Angular ripple lattice (venue-art style) ────────────────────
+        // Faceted piecewise-linear wave strokes in light + dark tones over
+        // the flat base — matches the card art's diamond-lattice water.
+        // Tileable: wobble sines use integer cycles per tile (seamless in x)
+        // and every stroke is drawn at y, y±size (seamless in y). Own PRNG —
+        // never Math.random (render must not touch the eval RNG stream).
         this.contourCanvas.width = size;
         this.contourCanvas.height = size;
-        const ctxC = this.contourCanvas.getContext('2d');
-        ctxC.clearRect(0,0,size,size);
+        const g = this.contourCanvas.getContext('2d');
+        g.clearRect(0, 0, size, size);
 
-        const imgDataC = ctxC.createImageData(size, size);
-        const dataC = imgDataC.data;
+        let seed = 987654321;
+        const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
 
-        // Tileable scaling
-        const scale = config.contourScale;
-        const warpPeriod = size / scale; // Period in noise space
+        // Distorted diamond-brick tiling: rows of wide cells, alternate rows
+        // offset half a cell, every vertex jittered (periodic arrays => the
+        // tile is seamless). Each cell is flat-filled slightly lighter or
+        // darker than base, or left as base — a mosaic of tonal facets.
+        // Top-down cartoon water (matches the game's view): two layers.
+        // A) large SOFT tonal clouds — lighter/darker drifts of the base hue.
+        // B) a sparse 'caustic web' — thin wobbly light loops, fragments and
+        //    tiny lenses, the classic sunlight-on-the-seabed idiom.
+        // Isotropic (caustics don't align with wind). Every element is drawn
+        // 3x3-wrapped so the tile stays seamless.
+        const wrap = (fn) => { for (const dx of [-size, 0, size]) for (const dy of [-size, 0, size]) fn(dx, dy); };
 
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                // Domain warp (Tileable)
-                // We use tileableNoise for the warp offset calculation too to ensure the warp field loops
-                const nx = x / scale;
-                const ny = y / scale;
-
-                // Warp vector field
-                const wx = tileableNoise2D(nx, ny, warpPeriod, warpPeriod);
-                const wy = tileableNoise2D(nx + 5.2, ny + 1.3, warpPeriod, warpPeriod);
-
-                const qx = nx + config.contourDistortion * wx;
-                const qy = ny + config.contourDistortion * wy;
-
-                // Sample main noise (Tileable) with warped coords?
-                // Warping a periodic domain usually breaks periodicity unless the warp itself is periodic (which it is now).
-                // However, qx/qy are distorted. Does tileableNoise handle arbitrary inputs?
-                // tileableNoise2D assumes x,y are within 0..w? No, it just linearly interpolates.
-                // If qx exceeds period, we need to wrap inputs to tileableNoise?
-                // tileableNoise logic: v1=noise(x,y), v2=noise(x+w,y).
-                // If x is way out, v1 and v2 are still just sampled.
-                // Wait, tileableNoise takes (x, y, w, h) where w,h are the domain size.
-                // It blends across the domain 0..w.
-                // We are iterating x=0..size. nx = 0..size/scale = 0..warpPeriod.
-                // So we are covering exactly one period.
-                // So tileableNoise2D(nx, ny, warpPeriod, warpPeriod) works perfectly for the base field.
-
-                // Now, for the final value:
-                // We want F(qx, qy) to be periodic.
-                // Since qx = nx + offset, and nx is periodic 0..P, and offset is periodic 0..P (derived from wx),
-                // qx is not strictly 0..P, but (qx mod P) is the lookup we want?
-                // tileableNoise blends based on (x/w) ratio.
-                // If we pass qx directly, s = qx/w. If qx > w, s > 1.
-                // Does logic hold?
-                // i1 = v1*(1-s) + v2*s. If s=1.1?
-                // v1(1.1) + v2(-0.1)? No, linear extrapolation.
-                // We need to wrap qx into 0..P range for the blend factors to make sense?
-                // Or does simple wrapping work?
-                // Actually, tileable noise function is usually just:
-                // Mix( Noise(x,y), Noise(x-w, y), x/w )
-                // My function: v1(x), v2(x+w).
-                // If x wraps, v1 becomes v2?
-                // At x=0: s=0. returns v1(0).
-                // At x=w: s=1. returns v2(w) = noise(2w).
-                // Wait, v2 is noise(x+w).
-                // We want at x=w to equal x=0.
-                // At x=0: noise(0).
-                // At x=w: noise(2w). These are unrelated.
-                // My tileableNoise2D function is flawed for general inputs?
-                // It is designed to be called with x in 0..w.
-                // We need to ensure qx is wrapped or handled.
-                // But qx is the *coordinate*.
-                // The issue is: The noise function itself isn't periodic. We are *forcing* periodicity by blending edges.
-                // So we must sample at (qx, qy) but blend based on where we are in the *tile*.
-                // But we are in warped space.
-                // Actually, for the final noise look up `val = noise(qx, qy)`, we want the *result* to tile.
-                // If we use tileableNoise2D(qx, qy, ...), we are saying "blend qx based on qx/w".
-                // But the tile boundaries are at physical x=0, x=size.
-                // We need to blend the *result* based on physical x,y position in the tile, not warped position.
-                // So: `val = tileableNoise2D_SampleWarped(x, y, period, distortion)`.
-                // Or simply:
-                // `val = noise(qx, qy)`? No.
-                // We need `val` to match at x=0 and x=size.
-                // At x=0: qx0 = 0 + dist*W(0).
-                // At x=size: qx1 = P + dist*W(P).
-                // Since W is periodic, W(0)=W(P) (mostly, if W is tileable).
-                // So qx1 = qx0 + P.
-                // We need Noise(qx0) == Noise(qx0 + P).
-                // Standard noise isn't periodic.
-                // So we need to use a periodic noise function, or use the tileable blend on the *final* lookup.
-                // But we should blend based on the *original* grid position (s = x/size), not the warped coordinate.
-
-                // Correct approach:
-                // 1. Calculate warped coordinates qx, qy.
-                // 2. Sample noise at (qx, qy), (qx-P, qy), (qx, qy-P), (qx-P, qy-P).
-                // 3. Blend using s = x/size, t = y/size.
-
-                const v1 = noise2D(qx, qy);
-                const v2 = noise2D(qx - warpPeriod, qy);
-                const v3 = noise2D(qx, qy - warpPeriod);
-                const v4 = noise2D(qx - warpPeriod, qy - warpPeriod);
-
-                const s = smoothstep(x / size);
-                const t = smoothstep(y / size);
-
-                const i1 = v1 * (1 - s) + v2 * s;
-                const i2 = v3 * (1 - s) + v4 * s;
-                let val = i1 * (1 - t) + i2 * t;
-
-                // Variance compensation
-                val *= getVarianceCorrection(s) * getVarianceCorrection(t);
-
-                // Create bands
-                // Map val to pixel space based on spacing
-                const v = (val + 1.0) * 0.5 * 1000; // arbitrary scale
-                const band = v % config.contourSpacing;
-
-                let alpha = 0;
-                if (band < config.contourWidth) {
-                    // Smooth edge
-                    alpha = 255;
-                } else if (band < config.contourWidth + 1.0) {
-                    // Anti-alias roughly
-                    alpha = 128;
-                }
-
-                const idx = (y * size + x) * 4;
-                dataC[idx] = 255;     // R
-                dataC[idx+1] = 255;   // G
-                dataC[idx+2] = 255;   // B
-                dataC[idx+3] = alpha; // A
-            }
+        // A) soft swell masses: elongated diagonal tonal drifts, two families
+        // (±~35°), very low contrast — the big gentle undulation of the sea.
+        for (let i = 0; i < 14; i++) {
+            const cx = rand() * size, cy = rand() * size;
+            const rx = 110 + rand() * 130, ry = rx * (0.30 + rand() * 0.25);
+            const rot = (rand() < 0.5 ? 1 : -1) * (0.5 + rand() * 0.35); // ±~29-49°
+            const light = rand() < 0.5;
+            const a = 0.030 + rand() * 0.030;
+            wrap((dx, dy) => {
+                const grd = g.createRadialGradient(0, 0, 0, 0, 0, rx);
+                grd.addColorStop(0, light ? `rgba(255,255,255,${a.toFixed(3)})` : `rgba(0,20,90,${a.toFixed(3)})`);
+                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                g.save(); g.translate(cx + dx, cy + dy); g.rotate(rot); g.scale(1, ry / rx);
+                g.fillStyle = grd;
+                g.beginPath(); g.arc(0, 0, rx, 0, Math.PI * 2); g.fill();
+                g.restore();
+            });
         }
-        ctxC.putImageData(imgDataC, 0, 0);
-
-        // 2. Generate Caustic Texture
-        this.causticCanvas.width = size;
-        this.causticCanvas.height = size;
-        const ctxK = this.causticCanvas.getContext('2d');
-        const imgDataK = ctxK.createImageData(size, size);
-        const dataK = imgDataK.data;
-
-        const causticPeriod = size / config.causticScale;
-
-        for (let y = 0; y < size; y++) {
-            for (let x = 0; x < size; x++) {
-                const nx = x / config.causticScale;
-                const ny = y / config.causticScale;
-
-                // Billowy noise (Tileable)
-                // Use tileable helper directly
-                let val = Math.abs(tileableNoise2D(nx, ny, causticPeriod, causticPeriod));
-                val = 1.0 - val;
-                val = val * val * val; // Sharpen
-
-                const idx = (y * size + x) * 4;
-                dataK[idx] = 255;
-                dataK[idx+1] = 255;
-                dataK[idx+2] = 255;
-                dataK[idx+3] = Math.floor(val * 255);
-            }
-        }
-        ctxK.putImageData(imgDataK, 0, 0);
 
         // Invalidate patterns
         this.contourPattern = null;
         this.causticPattern = null;
 
-        console.log("WaterRenderer: Textures Updated");
+        console.log('WaterRenderer: Ripple texture updated');
     }
 
     draw(ctx, state) {
@@ -409,11 +301,11 @@ class WaterRenderer {
              this.contourPattern = lctx.createPattern(this.contourCanvas, 'repeat');
         }
 
-        lctx.globalAlpha = config.contourOpacity;
+        lctx.globalAlpha = config.rippleOpacity || 0.9;
         lctx.fillStyle = this.contourPattern;
 
         const contourMat = DOMMatrix.fromMatrix(camMatrix);
-        contourMat.translateSelf(flowDx, flowDy); // Apply flow in world space
+        contourMat.translateSelf(flowDx, flowDy); // gentle downwind drift
         this.contourPattern.setTransform(contourMat);
 
         lctx.fillRect(0, 0, lw, lh);

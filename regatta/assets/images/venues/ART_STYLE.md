@@ -83,3 +83,18 @@ Unclaimed hue territory for future venues: warm golds/ambers (sunset), greys
 - [ ] Bottom fifth is simple enough for the name scrim
 - [ ] Exactly one focal creature/landmark; corners quiet
 - [ ] Style match: chunky facets, hard shading, zero blur/photo-realism
+
+## In-game water (top-down) — differs from card water
+
+The cards are PERSPECTIVE views (wave-lattice water). The GAME is top-down,
+which uses a different idiom (learned the hard way — view dictates idiom):
+
+- Base: flat venue hue + soft elongated diagonal tonal clouds (very low
+  contrast, two families ±~35°) — baked tileable texture (water.js).
+- Crests: DYNAMIC stitched whitecap fragments — thin white zigzag dashes
+  with gaps + optional echo line — living in the wind-wave grid
+  (updateWindWaves/drawWindWaves), oriented perpendicular to local wind
+  travel, drifting downwind, density/brightness scaled by local wind speed.
+  Gusts whiten, lulls go glassy: the water reports the wind field.
+- Never bake crests into the texture: static crests can't align with the
+  scene's wind and read as wallpaper.
