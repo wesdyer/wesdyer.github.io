@@ -8152,20 +8152,18 @@ function drawIslandShadows(ctx) {
 function drawMarkShadows(ctx) {
     for (const m of state.course.marks) {
         ctx.save(); ctx.translate(m.x, m.y);
-        // Sized to the mark's VISIBLE width (~58px at W=60), not to its sprite box —
-        // the buoy is a triangle, so it fills only ~69% of a square frame and a
-        // box-sized shadow reads as a disc sticking out from under it. Cosmetic only.
-        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(5, 5, 25, 0, Math.PI*2); ctx.fill();
+        // Sized to the mark's VISIBLE width (~29px at W=30), so it reads as a contact
+        // shadow rather than a disc sticking out from under it. Cosmetic only.
+        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(3, 3, 13, 0, Math.PI*2); ctx.fill();
         ctx.restore();
     }
 }
 
 function drawMarkBodies(ctx) {
     const player = state.boats[0];
-    // Doubled from 30: the top-down sprite carries less visual mass than the old
-    // oblique art, which showed the buoy's sides. Purely cosmetic — markRadius (12)
-    // is unchanged, so the mark now DRAWS 2.5x wider than the body boats collide with.
-    const W = 60, H = W * (markImg.naturalHeight / (markImg.naturalWidth || 1)) || 26;
+    // The sprite is fill-normalized at ingest (fillTo 0.96), so W is very close to the
+    // mark's real drawn width — ~29px here. Cosmetic only: markRadius (12) is unchanged.
+    const W = 30, H = W * (markImg.naturalHeight / (markImg.naturalWidth || 1)) || 26;
     for (let i=0; i<state.course.marks.length; i++) {
         const m = state.course.marks[i];
         ctx.save(); ctx.translate(m.x, m.y);

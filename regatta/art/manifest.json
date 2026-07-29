@@ -225,11 +225,11 @@
       "anchor": "center",
       "status": "art",
       "subject": "adult orca cruising just beneath the surface seen from directly overhead \u2014 long torpedo body, broad pectoral fins swept slightly back, wide notched tail flukes, and the dorsal fin foreshortened to a short dark blade at the shoulders. This is the BACK of the animal, never the belly: the body is true black \u2014 black is one of this venue's two declared accents, so do not shift it toward navy, steel blue or charcoal \u2014 built from flat hard-edged facets, with absolutely no rim light, no outer glow or halo, and no glossy specular highlights. The black back carries exactly three pale markings and no others: a large pale grey saddle patch immediately behind the dorsal fin spanning most of the width of the back, a crisp white oval eye patch on each side near the snout, and a narrow white flash where the tail stock joins the flukes. No white on the mid-body or flanks \u2014 a broad white area there would read as an upside-down whale. Naturalistically proportioned marine mammal, never a cartoon-eyed mascot, no visible eye highlight",
+      "note": "Regenerated after the palette fix: dark-region blue cast dropped from +37 to +11, and the grey saddle patch \u2014 specified from the start but absent in every earlier generation \u2014 finally appeared.",
       "anchorPx": [
         0.501,
         0.5
-      ],
-      "note": "Regenerated after the palette fix: dark-region blue cast dropped from +37 to +11, and the grey saddle patch \u2014 specified from the start but absent in every earlier generation \u2014 finally appeared."
+      ]
     },
     {
       "key": "arctic-orca-b",
@@ -240,11 +240,11 @@
       "anchor": "center",
       "status": "art",
       "subject": "a SECOND adult orca, a different individual from the first \u2014 same species construction, same overhead view, same flat faceted rendering and identical palette, but distinguishable at a glance by a differently shaped pale grey saddle patch (real orcas are identified by saddle shape) and a slightly slimmer body. This is the BACK of the animal, never the belly: true black body, crisp white oval eye patch on each side near the snout, dorsal fin foreshortened to a short dark blade at the shoulders, broad pectoral fins swept slightly back, wide notched tail flukes. No rim light, no glow, no glossy speculars, no white on the mid-body or flanks. Naturalistically proportioned, never a cartoon-eyed mascot",
+      "note": "Regenerated after the palette fix: dark-region blue cast dropped from +37 to +11, and the grey saddle patch \u2014 specified from the start but absent in every earlier generation \u2014 finally appeared.",
       "anchorPx": [
         0.501,
-        0.5002
-      ],
-      "note": "Regenerated after the palette fix: dark-region blue cast dropped from +37 to +11, and the grey saddle patch \u2014 specified from the start but absent in every earlier generation \u2014 finally appeared."
+        0.5005
+      ]
     },
     {
       "key": "arctic-orca-surfacing",
@@ -267,11 +267,11 @@
       "anchor": "center",
       "status": "art",
       "subject": "orca calf cruising just beneath the surface seen from directly overhead \u2014 same construction as the adult at smaller scale, rounder blunter body, proportionally shorter dorsal fin, softer white eye patch. Glossy black back with the pale saddle patch and white underside showing through the water. Naturalistically proportioned, never a cartoon-eyed mascot",
+      "note": "Regenerated after the palette fix (art-pipeline.md 3c). Known minor inconsistency: its dark regions carry a +24 blue cast against the adults' +11, so the calf is measurably bluer than its own pod. Not perceptible at 50px beside them, so accepted rather than regenerated \u2014 but if the family is ever reworked, match the calf to the adults.",
       "anchorPx": [
         0.5,
         0.501
-      ],
-      "note": "Regenerated after the palette fix (art-pipeline.md 3c). Known minor inconsistency: its dark regions carry a +24 blue cast against the adults' +11, so the calf is measurably bluer than its own pod. Not perceptible at 50px beside them, so accepted rather than regenerated \u2014 but if the family is ever reworked, match the calf to the adults."
+      ]
     },
     {
       "key": "arctic-penguin-huddle",
@@ -298,11 +298,11 @@
         "minGap": 0.62,
         "seed": 7
       },
+      "worldTrue": 46,
       "anchorPx": [
-        0.5288,
-        0.5254
-      ],
-      "worldTrue": 46
+        0.5332,
+        0.5347
+      ]
     },
     {
       "key": "arctic-seal",
@@ -347,8 +347,8 @@
       },
       "worldTrue": 24,
       "anchorPx": [
-        0.564,
-        0.6011
+        0.603,
+        0.6084
       ]
     },
     {
@@ -376,11 +376,11 @@
         ],
         "seed": 4
       },
+      "worldTrue": 50,
       "anchorPx": [
-        0.4834,
-        0.5259
-      ],
-      "worldTrue": 50
+        0.4814,
+        0.5186
+      ]
     },
     {
       "key": "arctic-penguin-swimming",
@@ -460,8 +460,8 @@
       "note": "Macaronis colony in huge dense numbers, so this is packed tighter and larger than the seven-bird emperor huddle \u2014 a genuinely different footprint, which is the axis that reads at race scale. Upsized ~50% over strict scale: measured, birds do not resolve below ~70px for a seven-bird group.",
       "worldTrue": 60,
       "anchorPx": [
-        0.5356,
-        0.4917
+        0.5195,
+        0.4937
       ]
     },
     {
@@ -532,8 +532,8 @@
       "subject": "ONE wandering albatross in flight, soaring, seen from directly overhead \u2014 enormous slender wings held straight out and locked, not flapping, spanning nearly the full width of the frame and giving the bird a long thin CROSS silhouette unlike anything else. Body and back are white, the upperwing surfaces darken toward the trailing edge and finish in clean black wingtips, and the short wedge tail trails behind. The heavy pale hooked bill leads, pointing to the TOP of the frame. Wings are narrow and stiff with a subtle backward sweep, never broad or rounded. Crisp flat faceted shading, a clean dark contour no heavier than the rest of the set, no glossy speculars, no motion blur. Exactly one bird, alone. No water, no ground, NO SHADOW \u2014 the engine draws the shadow that makes it read as airborne",
       "note": "AIR-LAYER PROP. Needs two engine pieces that do not exist yet: a draw pass above the boats, and a displaced shadow on the water. The shadow IS the altitude cue \u2014 without it a bird seen from directly overhead reads as floating, not flying. `world` folds in three things: true wingspan at 9.2px/m, the ~1.5x recognition exaggeration, and an altitude magnification (a bird at height is closer to the camera, so it is genuinely larger \u2014 not a cheat). Sprite carries NO shadow. Solitary by nature, so one bird alone is correct rather than a compromise.",
       "anchorPx": [
-        0.499,
-        0.5259
+        0.5,
+        0.4648
       ]
     },
     {
@@ -574,19 +574,19 @@
       },
       "note": "AIR-LAYER PROP. Needs two engine pieces that do not exist yet: a draw pass above the boats, and a displaced shadow on the water. The shadow IS the altitude cue \u2014 without it a bird seen from directly overhead reads as floating, not flying. `world` folds in three things: true wingspan at 9.2px/m, the ~1.5x recognition exaggeration, and an altitude magnification (a bird at height is closer to the camera, so it is genuinely larger \u2014 not a cheat). Sprite carries NO shadow. Flocks, so the birds share a rough heading \u2014 hence the narrow rotate range, unlike a standing huddle.",
       "anchorPx": [
-        0.5317,
-        0.4844
+        0.5371,
+        0.4966
       ]
     },
     {
       "key": "mark",
       "class": "world-prop",
       "role": "nav",
-      "world": 60,
+      "world": 30,
       "anchor": "center",
       "status": "art",
       "subject": "An inflatable racing mark floating on open water, seen from DIRECTLY OVERHEAD \u2014 looking straight down onto it from a helicopter, with none of its side or bottom rim visible anywhere, not even at the near edge. THINK OF IT AS A LOW THREE-SIDED PYRAMID, not a flat cushion. It is a squat tetrahedron: a rounded triangular base with three big triangular faces that SLOPE UPWARD and inward to meet at a single blunt apex directly above the centre. Seen from above you are looking down at those three sloping faces, and the three ridges where they meet run from the central apex out to the three rounded corners, forming a clean three-spoke Y. A bold dark lifting ring sits on the apex at the centre \u2014 make it a solid, chunky ring, not a hairline, because it is the one focal dot. THREE FACES, THREE CLEARLY DIFFERENT VALUES \u2014 this is the hardest requirement and the whole point of the pyramid form. Because each face tilts in a different direction, each catches the single light source differently. Render them as roughly 100%, 75% and 50% brightness: one face bright, one clearly mid, one clearly dark, with a hard crisp edge along every ridge. The engine desaturates inactive marks to flat slate grey for most of the race, so hue differences are worthless \u2014 CONVERTED TO GREYSCALE the three faces, the Y-ridge and the centre ring must all still read instantly. A mark that is one even tone with faint seams is a failure. COLOUR: true safety orange, warm and mid-bright, not red and not scarlet. Flat poster-like colour within each face \u2014 absolutely no gloss, no shine, no specular highlight, no smooth gradient, no plastic sheen. A narrow band of deeper wetter orange runs around the very bottom edge where the fabric meets the water. ROTATION: placed at an arbitrary angle with no 'up' \u2014 the three faces, ridges and corners must be identical in size and shape so the three-fold symmetry looks deliberate however it is turned, and the apex must sit at the exact centre of the frame. Drawn at only about 30 pixels: bold simple silhouette, a thin clean contour no heavier than the rest of the set, no detail that would not survive that size. No numbers, no letters, no flag, no water, no ripple, no shadow",
-      "note": "Venue-agnostic: the only prop on all ten venues, so no venue palette clause. Replaces the 160x140 oblique mark.png with a 2048 square master. ENGINE FACTS: drawMarkBodies() draws it at W=30 and applies an arbitrary per-mark rotation, so the art has no 'up' and three-fold symmetry is correct here \u2014 the opposite of the group-prop rule against symmetry (hence allowSymmetry). THE INACTIVE-STATE TEST WAS UNWINNABLE AND TWO CANDIDATES WERE REJECTED FOR FAILING IT. getMarkImgGray() tints inactive marks with source-atop rgba(148,163,184,0.8), i.e. 0.2*art + 0.8*slate, so exactly 20% of any value difference survives BY CONSTRUCTION. Measured three-face value spread, active -> inactive: incumbent 54.4 -> 10.9, candidate A 39.7 -> 7.9, this one 28.8 -> 5.8. At 30px all three are the same grey triangle when inactive. Inactive legibility is a CODE parameter, not an art problem: dropping the tint from 0.8 to ~0.55 recovers 45% instead of 20% and visibly helps whatever art is used. SHIPPED: the higher-contrast candidate, chosen by eye. It also measured best of the two new ones on three-face value spread (39.7 active / 7.9 inactive, against the alternative's 28.8 / 5.8), so the preference matched the metric. Its known deviation is colour: body RGB (202,57,9) reads scarlet rather than the safety orange the subject asked for \u2014 the incumbent sat at (225,108,44). Left as-is because the extra saturation is part of why it reads at 30px, but if the mark ever looks too red against the warm venues (redrock, swamp), that is the number to change. Upsized 30 -> 60 on 2026-07-28 at the request of the designer: the top-down form has less visual mass than the old oblique one, which cheated the projection to show its sides. NOTE the collision radius (markRadius = 12 in script.js, so 24 units across) was deliberately NOT changed \u2014 the visible mark is now 2.5x the collider. That is forgiving rather than punishing, but boats will visibly overlap the mark without penalty. Changing markRadius would alter physics and invalidate the eval baseline.",
+      "note": "Venue-agnostic: the only prop on all ten venues, so no venue palette clause. Replaces the 160x140 oblique mark.png with a 2048 square master. ENGINE FACTS: drawMarkBodies() draws it at W=30 and applies an arbitrary per-mark rotation, so the art has no 'up' and three-fold symmetry is correct here \u2014 the opposite of the group-prop rule against symmetry (hence allowSymmetry). THE INACTIVE-STATE TEST WAS UNWINNABLE AND TWO CANDIDATES WERE REJECTED FOR FAILING IT. getMarkImgGray() tints inactive marks with source-atop rgba(148,163,184,0.8), i.e. 0.2*art + 0.8*slate, so exactly 20% of any value difference survives BY CONSTRUCTION. Measured three-face value spread, active -> inactive: incumbent 54.4 -> 10.9, candidate A 39.7 -> 7.9, this one 28.8 -> 5.8. At 30px all three are the same grey triangle when inactive. Inactive legibility is a CODE parameter, not an art problem: dropping the tint from 0.8 to ~0.55 recovers 45% instead of 20% and visibly helps whatever art is used. SHIPPED: the higher-contrast candidate, chosen by eye. It also measured best of the two new ones on three-face value spread (39.7 active / 7.9 inactive, against the alternative's 28.8 / 5.8), so the preference matched the metric. Its known deviation is colour: body RGB (202,57,9) reads scarlet rather than the safety orange the subject asked for \u2014 the incumbent sat at (225,108,44). Left as-is because the extra saturation is part of why it reads at 30px, but if the mark ever looks too red against the warm venues (redrock, swamp), that is the number to change. Sized at world 30 with fillTo 0.96, giving ~29px visible. It went 30 -> 60 while ingest was mis-measuring the master (invisible alpha-1 residue inflated the bbox, so world 60 was only drawing 41px). Once that was fixed the same 60 drew 58px, which was too big, so it came back to 30. The collider markRadius = 12 (24 units across) is unchanged throughout.",
       "allowSymmetry": true,
       "worldTrue": 30,
       "fillTo": 0.96,

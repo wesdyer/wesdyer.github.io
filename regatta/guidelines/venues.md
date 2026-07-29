@@ -842,6 +842,108 @@ spoonbill/egret (ambient).
 
 ---
 
+## Designed vs randomized
+
+**Recommendation: designed stage, randomized weather.** Author the geography;
+randomize everything that blows across it.
+
+### Why this document forces the question
+
+Almost every course above depends on authored geography. Redrock's slot canyon,
+Otter Run's bridge arches, the Cove's harbour gate, Flats' two channels,
+Emberfall's cones-as-marks, Glacier Sound's calving face, Lake's island in the
+middle of the beat. **None of these survive randomization** — a randomly placed
+slot canyon isn't learnable, and a random bridge is just a rock.
+
+"LOCAL KNOWLEDGE" is already a chip on Redrock's card. It is a promise that a
+random course cannot keep. You cannot learn a place that is regenerated.
+
+### Where things stand today
+
+- `initCourse()` places marks from `state.wind.baseDirection` — **the course
+  rotates with the wind**, so the beat is always a beat.
+- Islands are regenerated per race from `state.race.seed`, guarded by
+  `checkCourseNavigability` with 5 retries.
+- On failure that guard **drops all islands and logs a warning** — the race ships
+  with the venue's terrain deleted.
+
+That last behaviour is the argument in miniature: random generation can't
+guarantee a usable course, and its failure mode is removing the character.
+
+### The real-world model
+
+Sailing already answers this. A club races the same water every weekend and no
+two races are alike — because the *geography* is fixed and the *weather* isn't.
+Local knowledge is precisely the accumulated understanding of how a fixed place
+behaves under varying conditions. That's the deepest skill in the sport, and it's
+currently impossible in this game.
+
+### Two course families
+
+This split falls out naturally and should drive implementation:
+
+| | **Wind-relative** | **Geography-fixed** |
+|---|---|---|
+| Marks | placed from wind direction (as today) | pinned to terrain |
+| Wind | any direction | constrained to a **venue wind sector** |
+| Terrain | sparse or symmetric — must not break any rotation | dense, authored, the point |
+| Shapes | W/L, Triangle, Trapezoid | Loop, Out & Back, Round the Cans, Slalom |
+| Venues | Lake, Lagoon, Bay, Ocean, **Sea Trials** | Otter Run, Redrock, Bayou, Flats, Emberfall, Glowtide, Glacier Sound |
+
+**Geography-fixed venues need a wind sector**, and that constraint is itself
+characterful: canyon wind blows down-canyon, a fjord funnels, a river valley
+channels. Without it, a random wind direction eventually makes a narrow channel
+dead upwind with no room to tack — unsailable, not hard.
+
+**Wind-relative venues keep today's behaviour**, which matters most for Sea
+Trials: it stays exactly as it is, marks rotating with the breeze, nothing
+authored, eval anchor intact.
+
+### What stays randomized
+
+Plenty, and it's the part that actually varies a race:
+
+- Wind direction within the venue's sector, and strength within its `cond` band
+- Gust, puff and squall fields — position, timing, track
+- Drifting hazard start positions and drift vectors (logs, floes, pumice)
+- Phase offsets for cyclic hazards — tide at Flats, eruptions at Emberfall, the
+  ferry timetable at the Cove
+- Wildlife appearances, and the 9-of-66 fleet draw
+
+A fixed course under a rotating wind produces genuinely different races. Redrock's
+slot is a venturi or a dead zone *depending on the day's wind angle* — that's
+written into its spec above and only works if the slot is always in the same
+place.
+
+### Variety without randomness: course cards
+
+Real race committees signal a course number — "today we're sailing Course 3."
+Authoring **2–3 course variants per venue** gives replay variety that is designed
+rather than rolled, and it's thematically perfect for a yacht club. Cheaper than
+it sounds: same terrain, different mark set and rounding order.
+
+### Costs and risks, honestly
+
+- **AI must be validated per venue.** Today the AI is tuned on Sea Trials and
+  generalises because every course is the same open-water W/L. Bespoke geography
+  — narrow slots, single-file braids, bridge arches — is much harder to path
+  through. **The river venue already took five fixes**, and that was one current
+  field in open water. Budget real AI time per designed venue; this is the
+  dominant cost, not the authoring.
+- **Authoring load.** 12 venues × terrain + marks. It's data, not code, but it's
+  a genuine content pass and it needs an editor or a hand-written format.
+- **Eval stability improves.** Designed courses *reduce* the RNG surface, which
+  helps determinism — as long as Sea Trials is untouched.
+
+### Suggested sequencing
+
+1. Keep every shipped venue wind-relative for now — nothing breaks.
+2. Author **one** geography-fixed venue end to end as the pilot. **Otter Run** is
+   the right choice: it already has a current field, a natural wind sector
+   (down-valley), and the simplest fixed geometry (a channel and a bridge).
+3. Measure the AI cost there before committing to the rest.
+4. Then Redrock and Flats, whose mechanics are worthless without fixed ground.
+
 ## Reusable hazard classes
 
 How few *kinds* of hazard the whole set needs — most venues get their character
