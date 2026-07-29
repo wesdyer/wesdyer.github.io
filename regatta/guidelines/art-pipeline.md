@@ -104,6 +104,24 @@ inward so the middle is the densest part — the thing every generated rosette g
 backwards. `line` lays a vertical track with a slight bow and uneven spacing; vertical
 because §3 makes sprite-up the direction of travel.
 
+**Oblong elements need a lower `elementFill` — Observed.** `ingest.py` normalizes every
+element to 88% of its frame so members scatter at consistent size, and `compose.py`
+rotates with `expand=False`. Together those clip anything that doesn't fit its own
+*inscribed circle*: a 3:2 hut at 88% has a half-diagonal of 0.53 and loses its corners
+past ~15°, which is invisible on a penguin and unmissable on a building. Such an asset
+declares its own `elementFill` (`arctic-hut` uses 0.64 → half-diagonal 0.385) and the
+group's `scale` range compensates. Round elements keep the 0.88 default.
+
+**Tune the `compose` block against a stand-in, not by arithmetic — Observed.** Placement
+is *rejection sampling with an inward bias*, so an arrangement that exists geometrically
+is not one the sampler will find: `arctic-station`'s hand-computed `spread 0.46 /
+minGap 0.80` passed the inscribed-triangle check and still failed to place all three
+huts on half the seeds tried. Compose a plain rectangle of the right aspect first, sweep
+seeds, and keep the numbers that fit N/N every time. Frame fill also swings widely across
+seeds (0.73–1.09 for three huts), which would make `world` mean a different on-screen
+size per seed — so a composed group generally wants `fillTo`, leaving the seed to control
+layout only.
+
 ## 3c. Venue palette binds pictures, not objects — **Rule**
 
 The palette registry in [venue-art.md](venue-art.md) governs **venue card

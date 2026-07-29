@@ -134,8 +134,14 @@ def ingest(asset, profiles, check_only=False):
         # an authoring accident, not intent, so it is removed here rather than left
         # for every compose block to compensate for. Species size differences belong
         # in the group's `scale` range, where they are visible and deliberate.
+        # Per-asset override, because the safe fill depends on the SHAPE. compose.py
+        # rotates with expand=False, so content only survives rotation if it fits its
+        # own inscribed circle. A penguin is roughly round and lives happily at 88%; a
+        # rectangular hut at 88% loses its corners past ~15deg, and a clipped corner on
+        # a building is unmissable. Oblong elements that get rotated declare a lower
+        # elementFill; the group's `scale` range compensates.
         fill_before = max(bbox[2] - bbox[0], bbox[3] - bbox[1]) / src_w if bbox else 0
-        target = prof.get("elementFill", 0.88)
+        target = asset.get("elementFill", prof.get("elementFill", 0.88))
         if bbox:
             k = src_w / m
             crop = img.crop(tuple(int(v / k) for v in bbox))
@@ -149,6 +155,21 @@ def ingest(asset, profiles, check_only=False):
         print(f"    fill normalized {fill_before:.0%} -> {target:.0%}, recentred")
         used = [g["key"] for g in ALL_ASSETS if g.get("compose", {}).get("from") == key]
         print(f"    used by: {', '.join(used) if used else 'NOTHING — no group composes this'}")
+
+        # `ships: true` — an element the ENGINE scatters at runtime rather than
+        # compose.py scattering at bake time. That was assumed impossible ("a
+        # single penguin is 4-7px"), but the figure is the animal's TRUE size:
+        # the accepted groups already draw each bird at 11-19px, so a lone
+        # element is perfectly legible at the size it was always drawn. Runtime
+        # scatter is what lets a bird waddle, dive and surface on its own —
+        # a baked group is one image and can never animate a member.
+        if asset.get("ships"):
+            wp = profiles["world-prop"]
+            bake = asset["world"] * wp["bake"]
+            sdest = paths.store(REPO / wp["out"], asset, PREFIXES)
+            img.resize((bake, bake), Image.LANCZOS).save(sdest)
+            print(f"    -> {sdest.relative_to(REPO)}  ({bake}px bake for "
+                  f"{asset['world']}px display, runtime scatter)")
     elif prof["track"] == "sprite":
         # Optional fill normalization. A generation that centres a small shape in a big
         # frame makes `world` a lie — the mark came back filling 55% of its master, so

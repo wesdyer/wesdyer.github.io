@@ -356,7 +356,11 @@
         </div>
 
         <!-- Pre-Race Overlay -->
-        <div id="pre-race-overlay" class="absolute inset-0 bg-slate-900/95 backdrop-blur-md z-50 flex flex-col pointer-events-auto overflow-hidden">
+        <!-- Fully opaque: this is a home screen, not a scrim. At /95 the race view
+             bled through — 5% of a bright Arctic ice field is very visible behind
+             dark chrome. backdrop-blur dropped with it: it does nothing behind an
+             opaque layer and was blurring the whole viewport every frame. -->
+        <div id="pre-race-overlay" class="absolute inset-0 bg-slate-900 z-50 flex flex-col pointer-events-auto overflow-hidden">
             <!-- Header -->
             <div class="flex items-center gap-6 p-8 pb-4 border-b border-white/10 bg-slate-900/50">
                 <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-24 w-auto drop-shadow-2xl burgee-flutter">
@@ -612,7 +616,9 @@
         </div>
 
         <!-- Results Overlay -->
-        <div id="results-overlay" class="hidden absolute inset-0 bg-slate-900/95 backdrop-blur-md z-50 flex flex-col items-center justify-start pt-24 p-8 pointer-events-auto overflow-y-auto">
+        <!-- Same reasoning as the pre-race overlay: a full-screen results page is
+             not a scrim, and /95 let the ice through behind it. -->
+        <div id="results-overlay" class="hidden absolute inset-0 bg-slate-900 z-50 flex flex-col items-center justify-start pt-24 p-8 pointer-events-auto overflow-y-auto">
              <h1 class="text-6xl font-black text-white italic tracking-tighter uppercase mb-2 drop-shadow-2xl text-center shrink-0">Race Results</h1>
              <div class="h-1 w-32 bg-gradient-to-r from-transparent via-blue-500 to-transparent mb-8 shrink-0"></div>
 
@@ -803,6 +809,9 @@
         </div>
     </div>
 
+    <!-- Baked venue geography (art/bake_mask.py). JS not JSON so it loads over
+         file:// for the eval harness, where fetch() is blocked. -->
+    <script src="assets/images/venues/masks/arctic-geo.js"></script>
     <script src="js/ai-quotes.js"></script>
     <script src="js/water.js"></script>
     <script src="js/planner.js"></script>

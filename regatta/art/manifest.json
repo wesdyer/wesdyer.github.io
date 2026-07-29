@@ -229,7 +229,14 @@
       "anchorPx": [
         0.501,
         0.5
-      ]
+      ],
+      "parts": {
+        "body": "art/parts/arctic/orca-body.png",
+        "flukes": "art/parts/arctic/orca-flukes.png",
+        "hinge": 0.7998,
+        "note": "Cut from the accepted master by split.py at the tail stock. The flukes are drawn first, scaled cos(tilt) about the hinge, then the body over the top so it hides the seam \u2014 the same way a boat's sails overlay its hull. Fluke chord foreshortens 11.4px to 8.1px at a 45 degree beat at race scale, which a whole-sprite transform cannot reproduce."
+      },
+      "behaviour": "orca-pod"
     },
     {
       "key": "arctic-orca-b",
@@ -244,7 +251,14 @@
       "anchorPx": [
         0.501,
         0.5005
-      ]
+      ],
+      "parts": {
+        "body": "art/parts/arctic/orca-b-body.png",
+        "flukes": "art/parts/arctic/orca-b-flukes.png",
+        "hinge": 0.7988,
+        "note": "Cut from the accepted master by split.py at the tail stock. The flukes are drawn first, scaled cos(tilt) about the hinge, then the body over the top so it hides the seam \u2014 the same way a boat's sails overlay its hull. Fluke chord foreshortens 11.4px to 8.1px at a 45 degree beat at race scale, which a whole-sprite transform cannot reproduce."
+      },
+      "behaviour": "orca-pod"
     },
     {
       "key": "arctic-orca-surfacing",
@@ -271,7 +285,14 @@
       "anchorPx": [
         0.5,
         0.501
-      ]
+      ],
+      "parts": {
+        "body": "art/parts/arctic/orca-calf-body.png",
+        "flukes": "art/parts/arctic/orca-calf-flukes.png",
+        "hinge": 0.7715,
+        "note": "Cut from the accepted master by split.py at the tail stock. The flukes are drawn first, scaled cos(tilt) about the hinge, then the body over the top so it hides the seam \u2014 the same way a boat's sails overlay its hull. Fluke chord foreshortens 11.4px to 8.1px at a 45 degree beat at race scale, which a whole-sprite transform cannot reproduce."
+      },
+      "behaviour": "orca-pod"
     },
     {
       "key": "arctic-penguin-huddle",
@@ -415,7 +436,9 @@
       "venue": "arctic",
       "status": "art",
       "subject": "ONE SINGLE emperor penguin standing on ice, seen from directly overhead, centred and filling the frame, facing the TOP of the frame. From this angle it is a compact teardrop: the body is TRUE NEUTRAL BLACK \u2014 not blue-black, not navy, not steel blue, not charcoal. This bird sits in a blue venue and the model's instinct will be to tint it to match; do not. Hold the blacks neutral and the overall colour nearly desaturated, with only the species marking carrying saturated colour. The back and the back of the head fill most of the shape, the beak foreshortened and pointing away up the frame, two dark flippers held slightly out from the body, and a sliver of white breast at the leading edge only. A vivid orange-yellow ear-and-neck flash on each side of the head is the one bright accent. Crisp flat faceted shading, a clean dark contour no heavier than the rest of the set, no glossy speculars, no white halo or plate behind the bird. Exactly one bird, alone, nothing else in frame. No ice, no ground, no shadow",
-      "note": "Composed into huddle/pair/line by compose.py. Generate this ONCE and every penguin group inherits it. Colour wording corrected: the macaroni and gentoo subjects had asked for 'blue-black', and emperor/adelie only described black passively. A passive colour description loses to the model's prior in a blue venue; the orca reached +11 blue-cast only once its subject actively refused navy. All four now carry that refusal."
+      "note": "Composed into huddle/pair/line by compose.py. Generate this ONCE and every penguin group inherits it. Colour wording corrected: the macaroni and gentoo subjects had asked for 'blue-black', and emperor/adelie only described black passively. A passive colour description loses to the model's prior in a blue venue; the orca reached +11 blue-cast only once its subject actively refused navy. All four now carry that refusal. SHIPS AS A SPRITE (ships:true): the runtime floe-colony scatter in script.js draws individual birds so each can waddle and later dive, which a baked group sprite can never do. The profile note's 'never ships - a single penguin is 4-7px' is about TRUE scale; the accepted groups already draw each bird at 11-19px, so this size is what shipped all along, just fused.",
+      "world": 25,
+      "ships": true
     },
     {
       "key": "arctic-penguin-adelie",
@@ -423,7 +446,9 @@
       "venue": "arctic",
       "status": "art",
       "subject": "ONE SINGLE ADELIE penguin standing on ice, seen from directly overhead, centred and filling the frame, facing the TOP of the frame. A compact teardrop: the body is TRUE NEUTRAL BLACK \u2014 not blue-black, not navy, not steel blue, not charcoal. This bird sits in a blue venue and the model's instinct will be to tint it to match; do not. Hold the blacks neutral and the overall colour nearly desaturated, with only the species marking carrying saturated colour. The back and the back of the head fill most of the shape, beak foreshortened and pointing away up the frame, two dark flippers held slightly out, a sliver of white breast at the leading edge only. SPECIES: Adelies are the PLAIN penguin \u2014 solid black head with NO yellow or orange anywhere, just a fine white eye ring and a small dull pinkish beak. Crisp flat faceted shading, a clean dark contour no heavier than the rest of the set, no glossy speculars, no white halo behind the bird. Exactly one bird, alone. No ice, no ground, no shadow",
-      "note": "Element for arctic-penguin-line. Point the line's compose.from at arctic-penguin-emperor instead if you would rather not spend a second generation \u2014 footprint, not species, is what reads at race scale. Colour wording corrected: the macaroni and gentoo subjects had asked for 'blue-black', and emperor/adelie only described black passively. A passive colour description loses to the model's prior in a blue venue; the orca reached +11 blue-cast only once its subject actively refused navy. All four now carry that refusal."
+      "note": "Element for arctic-penguin-line. Point the line's compose.from at arctic-penguin-emperor instead if you would rather not spend a second generation \u2014 footprint, not species, is what reads at race scale. Colour wording corrected: the macaroni and gentoo subjects had asked for 'blue-black', and emperor/adelie only described black passively. A passive colour description loses to the model's prior in a blue venue; the orca reached +11 blue-cast only once its subject actively refused navy. All four now carry that refusal. SHIPS AS A SPRITE (ships:true): the runtime floe-colony scatter in script.js draws individual birds so each can waddle and later dive, which a baked group sprite can never do. The profile note's 'never ships - a single penguin is 4-7px' is about TRUE scale; the accepted groups already draw each bird at 11-19px, so this size is what shipped all along, just fused.",
+      "world": 20,
+      "ships": true
     },
     {
       "key": "arctic-penguin-macaroni",
@@ -431,7 +456,9 @@
       "venue": "arctic",
       "status": "art",
       "subject": "ONE SINGLE MACARONI penguin standing on ice, seen from directly overhead. A compact teardrop: the body is TRUE NEUTRAL BLACK \u2014 not blue-black, not navy, not steel blue, not charcoal. This bird sits in a blue venue and the model's instinct will be to tint it to match; do not. Hold the blacks neutral and the overall colour nearly desaturated, with only the species marking carrying saturated colour. The back and the back of the head fill most of the shape, a heavy rust-orange beak foreshortened and pointing away up the frame, two dark flippers held slightly out, a sliver of white breast at the leading edge only. SPECIES SIGNATURE \u2014 this is the whole point of the bird: flamboyant golden-yellow CREST PLUMES spring from the centre of the forehead and sweep BACKWARD over the crown, spilling out past the sides of the head in loose spiky strands. Because the crest sits on TOP of the head it is fully visible from directly above \u2014 make it bold, wide and unmistakable, reading as a bright ragged golden fan breaking the smooth teardrop outline. Crisp flat faceted shading, a clean dark contour no heavier than the rest of the set, no glossy speculars, no white halo behind the bird. Exactly one bird, alone. No ice, no ground, no shadow",
-      "note": "The best species for an overhead view: the crest is the only marking that sits on top of the head AND changes the silhouette rather than just adding colour. Colour wording corrected: the macaroni and gentoo subjects had asked for 'blue-black', and emperor/adelie only described black passively. A passive colour description loses to the model's prior in a blue venue; the orca reached +11 blue-cast only once its subject actively refused navy. All four now carry that refusal."
+      "note": "The best species for an overhead view: the crest is the only marking that sits on top of the head AND changes the silhouette rather than just adding colour. Colour wording corrected: the macaroni and gentoo subjects had asked for 'blue-black', and emperor/adelie only described black passively. A passive colour description loses to the model's prior in a blue venue; the orca reached +11 blue-cast only once its subject actively refused navy. All four now carry that refusal. SHIPS AS A SPRITE (ships:true): the runtime floe-colony scatter in script.js draws individual birds so each can waddle and later dive, which a baked group sprite can never do. The profile note's 'never ships - a single penguin is 4-7px' is about TRUE scale; the accepted groups already draw each bird at 11-19px, so this size is what shipped all along, just fused.",
+      "world": 27,
+      "ships": true
     },
     {
       "key": "arctic-penguin-macaroni-colony",
@@ -495,20 +522,22 @@
       "key": "arctic-penguin-porpoising",
       "class": "element",
       "venue": "arctic",
-      "world": 14,
-      "status": "slot",
+      "world": 20,
+      "status": "art",
       "subject": "ONE SINGLE emperor penguin porpoising through water, seen from directly overhead \u2014 a slim dark torpedo with flippers swept back tight against the body, the head and short beak leading and pointing up the frame, a pale underside just showing through the water along the flanks, and a hint of the orange-yellow neck flash. Exactly one bird, alone. No water, no wake, no foam, no spray",
-      "note": "Element for arctic-penguin-swimming. DERIVE from the accepted emperor element rather than generating fresh, so the swimming birds are the same individual as the standing ones \u2014 a re-prompt gives you a cousin. Reference: art/elements/arctic/penguin-emperor.png",
-      "derivedFrom": "arctic-penguin-emperor"
+      "note": "Element for arctic-penguin-swimming. DERIVE from the accepted emperor element rather than generating fresh, so the swimming birds are the same individual as the standing ones \u2014 a re-prompt gives you a cousin. Reference: art/elements/arctic/penguin-emperor.png world raised 14 -> 20 and ships:true: the runtime dive draws this per-bird, and it must match the 19px standing emperor it transitions FROM. 14 was sized for the composed arctic-penguin-swimming group, which is unaffected (compose scales by frame fraction, not by world).",
+      "derivedFrom": "arctic-penguin-emperor",
+      "ships": true
     },
     {
       "key": "arctic-penguin-gentoo",
       "class": "element",
       "venue": "arctic",
-      "world": 10,
+      "world": 21,
       "status": "art",
       "subject": "ONE SINGLE GENTOO penguin standing on ice, seen from directly overhead. A compact teardrop: the body is TRUE NEUTRAL BLACK \u2014 not blue-black, not navy, not steel blue, not charcoal. This bird sits in a blue venue and the model's instinct will be to tint it to match; do not. Hold the blacks neutral and the overall colour nearly desaturated, with only the species marking carrying saturated colour. The back and the back of the head fill most of the shape, two dark flippers held slightly out from the body, and a sliver of white breast at the leading edge only. TWO SPECIES SIGNATURES, both of which an overhead camera sees well and both of which must be unmistakable. FIRST, colour: a bold white BONNET patch sits across the top of the crown, running side to side over the eyes like a headband, paired with a bright orange-red beak foreshortened and pointing away up the frame. SECOND, silhouette: gentoos have a long stiff wedge-shaped TAIL that projects clearly behind the body, so the teardrop ends in a distinct pointed tail spur rather than a smooth curve \u2014 this is the one penguin whose outline is not a plain teardrop. Crisp flat faceted shading, a clean dark contour no heavier than the rest of the set, no glossy speculars, no white halo behind the bird. Exactly one bird, alone. No ice, no ground, no shadow",
-      "note": "The only penguin with TWO overhead-readable identifiers: a white crown bonnet (colour, on top of the head) and a projecting stiff tail (silhouette). Element; composed into groups, never ships alone. Colour wording corrected: the macaroni and gentoo subjects had asked for 'blue-black', and emperor/adelie only described black passively. A passive colour description loses to the model's prior in a blue venue; the orca reached +11 blue-cast only once its subject actively refused navy. All four now carry that refusal."
+      "note": "The only penguin with TWO overhead-readable identifiers: a white crown bonnet (colour, on top of the head) and a projecting stiff tail (silhouette). Element; composed into groups, never ships alone. Colour wording corrected: the macaroni and gentoo subjects had asked for 'blue-black', and emperor/adelie only described black passively. A passive colour description loses to the model's prior in a blue venue; the orca reached +11 blue-cast only once its subject actively refused navy. All four now carry that refusal. SHIPS AS A SPRITE (ships:true): the runtime floe-colony scatter in script.js draws individual birds so each can waddle and later dive, which a baked group sprite can never do. The profile note's 'never ships - a single penguin is 4-7px' is about TRUE scale; the accepted groups already draw each bird at 11-19px, so this size is what shipped all along, just fused.",
+      "ships": true
     },
     {
       "key": "flats",
@@ -579,6 +608,47 @@
       ]
     },
     {
+      "key": "arctic-hut",
+      "class": "element",
+      "venue": "arctic",
+      "world": 52,
+      "status": "art",
+      "elementFill": 0.64,
+      "subject": "ONE polar research hut, alone, seen from DIRECTLY OVERHEAD \u2014 a prefab field-station module standing on short skids, so nearly all of what shows is its ROOF. A plain rectangular footprint about half again as long as it is wide, with a shallow gabled roof and one crisp RIDGE LINE running the full length of the long axis, straight up the frame. The ridge splits the roof into two flat planes of clearly different lightness \u2014 that hard two-tone split is what makes it read as a solid volume instead of a flat rectangle, so it must be unmistakable. CRITICAL: image models want to draw a building in three-quarter view. There must be NO visible wall face, NO end elevation, NO perspective and NO vanishing point \u2014 the roof is a flat rectangle seen square-on, exactly as a building looks in a satellite photograph. COLOUR: painted high-visibility international orange-red, warm and saturated across the whole roof \u2014 the deliberate safety colour field huts are painted so they can be found in a whiteout, and the one thing that separates a hut from the rock and ice it sits on. Detail is limited to what survives at 50px: a dark doorway with a small entry step at one gable end, one short dark stove pipe offset to one side of the ridge, and a narrow darker trim band along each eave. Corners are square and crisp and the outline is a clean hard-edged rectangle, never a soft or rounded blob. A thin clean dark contour, no heavier than the rest of the set. No snow, no drift, no ground, no ice, no rock, no cast shadow, no antenna mast, no guy wires, no flag, no people, no vehicles",
+      "note": "ELEMENT for arctic-station. elementFill 0.64 rather than the profile's 0.88: compose.py rotates with expand=False, so an oblong only survives rotation if it fits inside its own inscribed circle. At 3:2 and 0.88 fill the half-diagonal is 0.53 of the frame and the corners are clipped past ~15deg \u2014 unmissable on a building. At 0.64 it is 0.385 and the hut rotates freely at any angle. The group's `scale` range is raised to compensate."
+    },
+    {
+      "key": "arctic-station",
+      "class": "world-prop",
+      "role": "landmark",
+      "venue": "arctic",
+      "world": 170,
+      "anchor": "footprint",
+      "status": "art",
+      "subject": "COMPOSED from arctic-hut \u2014 see that element for the art.",
+      "fillTo": 0.86,
+      "compose": {
+        "from": "arctic-hut",
+        "count": 3,
+        "spread": 0.62,
+        "scale": [
+          0.34,
+          0.48
+        ],
+        "rotate": [
+          -40,
+          40
+        ],
+        "minGap": 0.72,
+        "seed": 7
+      },
+      "note": "COMPOSED by compose.py \u2014 three huts of one design, not three generations. Glacier Sound's first landmark, the arctic counterpart to bayou-shack. TUNED against a 3:2 stand-in rectangle, not guessed: the first numbers (spread 0.46 / minGap 0.80) failed to place all three huts on half of the seeds tried, because scatter() is rejection sampling biased INWARD (r = R*u^0.62) \u2014 an arrangement existing geometrically is not the same as the sampler finding it. spread 0.62 / minGap 0.72 fits 3/3 on 40/40 seeds. fillTo 0.86 because frame fill still swings 0.73-1.09 across seeds, which would make `world` mean a different on-screen size per seed; normalizing makes world 170 honest and leaves the seed controlling layout only. 0.86 rather than 0.88 clears the profile's 6% safeMargin tripwire instead of landing exactly on it. Seed 7 chosen by eye from six candidates: three separate buildings in an irregular triangle, where 4 and 31 clump a pair together and 19 and 23 leave a hollow centre. SIZING (measured after ingest, not predicted): fillTo rescales the composition by 0.86/0.65 = 1.32x, so huts land 49-69px on the long axis = 5.3-7.5m at 9.2px/m. That is Jamesway/Weatherhaven module size and deliberately LARGER than the 56px boat \u2014 a hut you can live in outsizes a 20ft sportboat. An earlier estimate here said 3.7-6.5m; it omitted the fillTo upscale. `rotate` is deliberately narrow (+/-40deg): station modules sit broadly aligned into the wind, fully random angles read as debris rather than a camp, and zero rotation reads as a copy-paste stamp.",
+      "anchorPx": [
+        0.5,
+        0.4995
+      ]
+    },
+    {
       "key": "mark",
       "class": "world-prop",
       "role": "nav",
@@ -586,13 +656,78 @@
       "anchor": "center",
       "status": "art",
       "subject": "An inflatable racing mark floating on open water, seen from DIRECTLY OVERHEAD \u2014 looking straight down onto it from a helicopter, with none of its side or bottom rim visible anywhere, not even at the near edge. THINK OF IT AS A LOW THREE-SIDED PYRAMID, not a flat cushion. It is a squat tetrahedron: a rounded triangular base with three big triangular faces that SLOPE UPWARD and inward to meet at a single blunt apex directly above the centre. Seen from above you are looking down at those three sloping faces, and the three ridges where they meet run from the central apex out to the three rounded corners, forming a clean three-spoke Y. A bold dark lifting ring sits on the apex at the centre \u2014 make it a solid, chunky ring, not a hairline, because it is the one focal dot. THREE FACES, THREE CLEARLY DIFFERENT VALUES \u2014 this is the hardest requirement and the whole point of the pyramid form. Because each face tilts in a different direction, each catches the single light source differently. Render them as roughly 100%, 75% and 50% brightness: one face bright, one clearly mid, one clearly dark, with a hard crisp edge along every ridge. The engine desaturates inactive marks to flat slate grey for most of the race, so hue differences are worthless \u2014 CONVERTED TO GREYSCALE the three faces, the Y-ridge and the centre ring must all still read instantly. A mark that is one even tone with faint seams is a failure. COLOUR: true safety orange, warm and mid-bright, not red and not scarlet. Flat poster-like colour within each face \u2014 absolutely no gloss, no shine, no specular highlight, no smooth gradient, no plastic sheen. A narrow band of deeper wetter orange runs around the very bottom edge where the fabric meets the water. ROTATION: placed at an arbitrary angle with no 'up' \u2014 the three faces, ridges and corners must be identical in size and shape so the three-fold symmetry looks deliberate however it is turned, and the apex must sit at the exact centre of the frame. Drawn at only about 30 pixels: bold simple silhouette, a thin clean contour no heavier than the rest of the set, no detail that would not survive that size. No numbers, no letters, no flag, no water, no ripple, no shadow",
-      "note": "Venue-agnostic: the only prop on all ten venues, so no venue palette clause. Replaces the 160x140 oblique mark.png with a 2048 square master. ENGINE FACTS: drawMarkBodies() draws it at W=30 and applies an arbitrary per-mark rotation, so the art has no 'up' and three-fold symmetry is correct here \u2014 the opposite of the group-prop rule against symmetry (hence allowSymmetry). THE INACTIVE-STATE TEST WAS UNWINNABLE AND TWO CANDIDATES WERE REJECTED FOR FAILING IT. getMarkImgGray() tints inactive marks with source-atop rgba(148,163,184,0.8), i.e. 0.2*art + 0.8*slate, so exactly 20% of any value difference survives BY CONSTRUCTION. Measured three-face value spread, active -> inactive: incumbent 54.4 -> 10.9, candidate A 39.7 -> 7.9, this one 28.8 -> 5.8. At 30px all three are the same grey triangle when inactive. Inactive legibility is a CODE parameter, not an art problem: dropping the tint from 0.8 to ~0.55 recovers 45% instead of 20% and visibly helps whatever art is used. SHIPPED: the higher-contrast candidate, chosen by eye. It also measured best of the two new ones on three-face value spread (39.7 active / 7.9 inactive, against the alternative's 28.8 / 5.8), so the preference matched the metric. Its known deviation is colour: body RGB (202,57,9) reads scarlet rather than the safety orange the subject asked for \u2014 the incumbent sat at (225,108,44). Left as-is because the extra saturation is part of why it reads at 30px, but if the mark ever looks too red against the warm venues (redrock, swamp), that is the number to change. Sized at world 30 with fillTo 0.96, giving ~29px visible. It went 30 -> 60 while ingest was mis-measuring the master (invisible alpha-1 residue inflated the bbox, so world 60 was only drawing 41px). Once that was fixed the same 60 drew 58px, which was too big, so it came back to 30. The collider markRadius = 12 (24 units across) is unchanged throughout.",
+      "note": "Venue-agnostic: the only prop on all ten venues, so no venue palette clause. Replaces the 160x140 oblique mark.png with a 2048 square master. ENGINE FACTS: drawMarkBodies() draws it at W=30 and applies an arbitrary per-mark rotation, so the art has no 'up' and three-fold symmetry is correct here \u2014 the opposite of the group-prop rule against symmetry (hence allowSymmetry). THE INACTIVE-STATE TEST WAS UNWINNABLE AND TWO CANDIDATES WERE REJECTED FOR FAILING IT. getMarkImgGray() tints inactive marks with source-atop rgba(148,163,184,0.8), i.e. 0.2*art + 0.8*slate, so exactly 20% of any value difference survives BY CONSTRUCTION. Measured three-face value spread, active -> inactive: incumbent 54.4 -> 10.9, candidate A 39.7 -> 7.9, this one 28.8 -> 5.8. At 30px all three are the same grey triangle when inactive. Inactive legibility is a CODE parameter, not an art problem: dropping the tint from 0.8 to ~0.55 recovers 45% instead of 20% and visibly helps whatever art is used. SHIPPED: the higher-contrast candidate, chosen by eye. It also measured best of the two new ones on three-face value spread (39.7 active / 7.9 inactive, against the alternative's 28.8 / 5.8), so the preference matched the metric. Its known deviation is colour: body RGB (202,57,9) reads scarlet rather than the safety orange the subject asked for \u2014 the incumbent sat at (225,108,44). Left as-is because the extra saturation is part of why it reads at 30px, but if the mark ever looks too red against the warm venues (redrock, swamp), that is the number to change. Sized at world 30 with fillTo 0.96, giving ~29px visible. It went 30 -> 60 while ingest was mis-measuring the master (invisible alpha-1 residue inflated the bbox, so world 60 was only drawing 41px). Once that was fixed the same 60 drew 58px, which was too big, so it came back to 30. The collider markRadius = 12 (24 units across) is unchanged throughout. MARK TAXONOMY (design decision, 2026-07-28): the orange tetrahedron is a TEMPORARY mark \u2014 an inflatable laid by the race committee for this race. The yellow can is a PERMANENT mark \u2014 a fixed installation the course is built around. Which one a course uses is a per-course choice, not a global one. Currently every course uses the orange temporary mark.",
       "allowSymmetry": true,
       "worldTrue": 30,
       "fillTo": 0.96,
       "anchorPx": [
         0.4995,
         0.4995
+      ],
+      "markType": "temporary"
+    },
+    {
+      "key": "buoy-channel-red",
+      "world": 28,
+      "subject": "A RED lighted channel buoy floating on open water, seen from DIRECTLY OVERHEAD. COLOUR: the buoy's red is sampled from the venue card and must be matched \u2014 a deep warm signal red around #BB3220, never scarlet, never orange, never pink, never maroon. It is a navigation aid, so the red is functional information and must not be shifted toward the surrounding water's hue. MATCH THE BUOYS IN THE LIGHTHOUSE COVE VENUE CARD \u2014 the same class of lighted pillar buoy, rendered top-down. Its construction, from the water inward, is a set of CONCENTRIC RINGS: (1) a broad low DRUM FLOAT filling most of the sprite, in the buoy's colour, with a slightly deeper, wetter tone in a narrow band right at its outer waterline edge; (2) a crisp WHITE HORIZONTAL BAND ringing the drum just inside that edge \u2014 this bright ring is the buoy's signature and the thing that makes it findable, so keep it clean, unbroken and a full clear step brighter than everything around it; (3) a TAPERED TOWER rising from the centre of the drum, in the same colour, reading from above as a smaller concentric circle a clear step brighter than the drum because it is nearer the light; (4) at the exact centre, the LANTERN: a small pale housing ringed around a DARK POINTED CAP, with a tiny bright finial dot at the very top. The dark cap is the one focal point of the whole sprite. Seen from directly overhead, none of the buoy's side is visible \u2014 only these rings, each a flat hard-edged band of clearly different lightness. Those value steps ARE the structure: a concentric object has no silhouette to read by, so the rings must still make complete sense converted to greyscale. Fill the frame \u2014 reach close to the edges with only a hair of margin. Engine rotation transforms the coordinate system rather than sampling a fixed frame, so nothing clips at any angle and padding only makes the buoy smaller than it should be. Absolutely no gloss, no shine, no specular highlight, no smooth gradient, no plastic sheen, no reflection. A thin clean dark contour. No numbers, no letters, no text, no flag, no water, no ripple, no shadow",
+      "note": "Form and colour taken from the Lighthouse Cove venue card (assets/images/venues/bay.png), where these buoys already appear: a drum float with a white band, a tapered tower and a lantern with a dark cap. Reds sampled at #BB3220/#B8341E, green at #268B34. NOTE the pair is coded by COLOUR ALONE, which normally conflicts with the never-colour-alone rule \u2014 but the card draws them identically and matching the established art wins. An earlier draft distinguished them by a triangular vs square topmark; dropped as off-reference. ACCEPTED WITH THREE RECORDED DEVIATIONS, all invisible at the 28px display size and none affecting the nav function. (1) The pair is not identical as specified: the red carries a flat spoked X-frame at its centre, the green a raised domed lantern with a specular highlight \u2014 they should share one lantern. (2) Both carry mottled surface texture against the base prompt's 'minimal microtexture', and the green's dome highlight is gloss, which the subject refused. (3) Colour drifted brighter than the venue card: red #D11F15 against the card's #BB3220, green #51AD26 against #268B34 \u2014 more saturated and, for a nav aid, arguably more findable, but no longer a match for the buoys in bay.png. Worth one more pass only if these ever appear above ~3x race scale.",
+      "class": "world-prop",
+      "role": "nav",
+      "anchor": "center",
+      "status": "art",
+      "allowSymmetry": true,
+      "fillTo": 0.96,
+      "anchorPx": [
+        0.4995,
+        0.4995
+      ]
+    },
+    {
+      "key": "buoy-channel-green",
+      "world": 28,
+      "subject": "A GREEN lighted channel buoy floating on open water, seen from DIRECTLY OVERHEAD. It is the IDENTICAL buoy to the red one in every respect except colour \u2014 same drum, same white band, same tapered tower, same lantern \u2014 because that is how the pair appears on the venue card. COLOUR: the buoy's green is sampled from the venue card and must be matched \u2014 a strong mid signal green around #268B34, never teal, never lime, never olive, never emerald. It is a navigation aid, so the green is functional information and must not be shifted toward the surrounding water's hue. MATCH THE BUOYS IN THE LIGHTHOUSE COVE VENUE CARD \u2014 the same class of lighted pillar buoy, rendered top-down. Its construction, from the water inward, is a set of CONCENTRIC RINGS: (1) a broad low DRUM FLOAT filling most of the sprite, in the buoy's colour, with a slightly deeper, wetter tone in a narrow band right at its outer waterline edge; (2) a crisp WHITE HORIZONTAL BAND ringing the drum just inside that edge \u2014 this bright ring is the buoy's signature and the thing that makes it findable, so keep it clean, unbroken and a full clear step brighter than everything around it; (3) a TAPERED TOWER rising from the centre of the drum, in the same colour, reading from above as a smaller concentric circle a clear step brighter than the drum because it is nearer the light; (4) at the exact centre, the LANTERN: a small pale housing ringed around a DARK POINTED CAP, with a tiny bright finial dot at the very top. The dark cap is the one focal point of the whole sprite. Seen from directly overhead, none of the buoy's side is visible \u2014 only these rings, each a flat hard-edged band of clearly different lightness. Those value steps ARE the structure: a concentric object has no silhouette to read by, so the rings must still make complete sense converted to greyscale. Fill the frame \u2014 reach close to the edges with only a hair of margin. Engine rotation transforms the coordinate system rather than sampling a fixed frame, so nothing clips at any angle and padding only makes the buoy smaller than it should be. Absolutely no gloss, no shine, no specular highlight, no smooth gradient, no plastic sheen, no reflection. A thin clean dark contour. No numbers, no letters, no text, no flag, no water, no ripple, no shadow",
+      "note": "Form and colour taken from the Lighthouse Cove venue card (assets/images/venues/bay.png), where these buoys already appear: a drum float with a white band, a tapered tower and a lantern with a dark cap. Reds sampled at #BB3220/#B8341E, green at #268B34. NOTE the pair is coded by COLOUR ALONE, which normally conflicts with the never-colour-alone rule \u2014 but the card draws them identically and matching the established art wins. An earlier draft distinguished them by a triangular vs square topmark; dropped as off-reference. ACCEPTED WITH THREE RECORDED DEVIATIONS, all invisible at the 28px display size and none affecting the nav function. (1) The pair is not identical as specified: the red carries a flat spoked X-frame at its centre, the green a raised domed lantern with a specular highlight \u2014 they should share one lantern. (2) Both carry mottled surface texture against the base prompt's 'minimal microtexture', and the green's dome highlight is gloss, which the subject refused. (3) Colour drifted brighter than the venue card: red #D11F15 against the card's #BB3220, green #51AD26 against #268B34 \u2014 more saturated and, for a nav aid, arguably more findable, but no longer a match for the buoys in bay.png. Worth one more pass only if these ever appear above ~3x race scale.",
+      "class": "world-prop",
+      "role": "nav",
+      "anchor": "center",
+      "status": "art",
+      "allowSymmetry": true,
+      "fillTo": 0.96,
+      "anchorPx": [
+        0.5,
+        0.4995
+      ]
+    },
+    {
+      "key": "mark-can-yellow",
+      "world": 30,
+      "subject": "A yellow cylindrical racing mark \u2014 the classic inflatable 'yellow can' \u2014 floating on open water, seen from DIRECTLY OVERHEAD, with none of its side visible anywhere. From this angle it is a FLAT CIRCULAR DISC with a taut inflated top: a narrow band of deeper, wetter yellow around the waterline, then a broad flat top face, and a bold dark lifting ring sitting at the exact centre as the one focal dot. Three or four faint radial seams run from the ring out to the rim, spaced evenly, reading as slightly darker lines that show the fabric panels. COLOUR: vivid safety yellow, warm and high-visibility, never mustard, never lime, never cream. It must be findable at a glance against pale turquoise shallows, olive swamp water and near-black polar water alike. Fill the frame: the buoy should reach close to the edges, with only a hair of margin. Engine rotation transforms the coordinate system rather than sampling a fixed frame, so nothing clips at any angle and padding only makes the buoy smaller than it should be. Build the form from FLAT HARD-EDGED BANDS OF CLEARLY DIFFERENT LIGHTNESS, not from smooth shading \u2014 a concentric object seen from above has no silhouette to read, so its value steps ARE its structure, and it must still make sense converted to greyscale. Absolutely no gloss, no shine, no specular highlight, no smooth gradient, no plastic sheen, no reflection. A thin clean dark contour, no heavier than the rest of the set. No numbers, no letters, no text of any kind, no flag, no water, no ripple, no shadow",
+      "note": "Alternative race mark to the orange tetrahedron. Circular and radially symmetric, so it reads identically at any of the arbitrary rotations drawMarkBodies applies. MARK TAXONOMY (design decision, 2026-07-28): the orange tetrahedron is a TEMPORARY mark \u2014 an inflatable laid by the race committee for this race. The yellow can is a PERMANENT mark \u2014 a fixed installation the course is built around. Which one a course uses is a per-course choice, not a global one. Currently every course uses the orange temporary mark. SHIPPED AND READY BUT UNUSED: drawMarkBodies() resolves a single global markImg, so nothing renders this yet \u2014 using it needs marks to carry a sprite reference rather than share one. Measured contrast against water is ~2.4x the orange mark's at every venue (Glacier Sound 10.4:1 vs 4.4, Pearl Lagoon 2.7:1 vs 1.1, Gatorgrass 5.5:1 vs 2.3), and being a circle it is rotation-invariant where the tetrahedron is not.",
+      "class": "world-prop",
+      "role": "nav",
+      "anchor": "center",
+      "status": "art",
+      "allowSymmetry": true,
+      "fillTo": 0.96,
+      "anchorPx": [
+        0.4995,
+        0.4995
+      ],
+      "markType": "permanent"
+    },
+    {
+      "key": "zodiac",
+      "class": "world-prop",
+      "role": "traffic",
+      "world": 54,
+      "anchor": "center",
+      "status": "art",
+      "fillTo": 0.92,
+      "subject": "A rigid-hull inflatable boat \u2014 a Zodiac-type work RIB \u2014 seen from DIRECTLY OVERHEAD, floating level, bow pointing to the TOP of the frame. THE SILHOUETTE IS THE WHOLE POINT: two fat parallel buoyancy tubes run the length of the boat and sweep together into a blunt rounded point at the bow, leaving a long open U-shaped well between them, and the stern is cut square and OPEN across the back \u2014 a horseshoe, never a pointed racing hull. The tubes read as thick cylinders, tapering to sealed conical ends at the transom, banded by three or four dark seams. Inside the well: a flat pale deck, one small dark centre console set just forward of amidships, and a plain bench seat behind it. A dark blocky outboard motor sits on the transom and overhangs the stern beyond the tubes. ABSOLUTELY NO SAIL, NO MAST, NO BOOM, NO RIGGING and no sail number \u2014 this is a powered working boat and must never be mistaken for a racing sailboat at a glance. COLOUR: bright safety orange tubes, warm and saturated, the canonical colour of a rescue and support RIB, with a mid-grey deck and near-black console and outboard for internal contrast. It has to stay findable against near-black polar water, deep blue and pale turquoise shallows alike. Flat hard-edged shading in clear steps of lightness, no gloss, no specular highlight, no smooth gradient. A thin clean dark contour, no heavier than the rest of the set. No water, no wake, no spray, no ripple, no cast shadow, no crew, no figures, no flag",
+      "note": "VENUE-NEUTRAL like mark/buoy-channel-*: a support RIB is race furniture at every venue \u2014 committee boat, safety boat, and Glacier Sound's station tender for arctic-station. Kept venue-neutral deliberately so no palette clause tints it; safety orange is canonical everywhere. SIZING: world 54 with fillTo 0.92 gives a 50px hull = 5.4m at 9.2px/m, a real Zodiac Pro size and deliberately SHORTER than the 56px racing boat. That size gap is part of the `traffic` contract, but the silhouette does the real work: a horseshoe of tubes with an open transom shares no family with a pointed sailing hull, and it survives colour removal. Do NOT exaggerate it up to boat size for readability \u2014 that trades away the one thing keeping it off the competitor read. MEASURED CONTRAST (WCAG ratio vs flat water, at 54px): Glacier Sound \u2014 orange tubes 4.22:1, median pixel 2.53:1. Pearl Lagoon \u2014 median 2.27:1, tubes only 1.36:1, because orange and turquoise are opposed in HUE but nearly equal in LUMINANCE, so on lagoon water this prop is carried by hue and by its dark contour, not by value. That reads as a fail against the 3:1 floor until you measure the thing the floor is calibrated on: the player's own hull is 2.01:1 on Pearl Lagoon, WORSE than this. The 3:1 figure in the acceptance rubric is not met by the game's hero asset on lagoon water, so treat it as a target for dark venues and judge lagoon on the plate. Accepted on that basis.",
+      "anchorPx": [
+        0.5,
+        0.5
       ]
     }
   ],
@@ -601,5 +736,68 @@
     "anchor": "The player's boat. Hull is ~56 world units (see the repositionBoats comment in script.js) and the camera is 1:1, so 56px = one boat.",
     "boatLength": "Treat the boat as a ~20ft (6.1m) sportboat. Nothing in the game names a class, so this is a free choice \u2014 and it is the one that makes the accepted art self-consistent. At J/105 scale (10.5m) everything already accepted would be ~2x oversize.",
     "note": "Exaggeration is permitted and often required: a penguin's true overhead footprint is ~0.5m = 4.6px, which cannot carry a silhouette. Measured on arctic water, a 7-bird huddle needs ~70px before individual birds resolve and species colour appears. Exaggerate deliberately and record it here; do not drift."
+  },
+  "behaviours": {
+    "orca-pod": {
+      "appliesTo": [
+        "arctic-orca",
+        "arctic-orca-b",
+        "arctic-orca-calf"
+      ],
+      "tunedBy": "designer, in art/_orcapreview.html, 2026-07-28",
+      "motion": {
+        "beatAmpDeg": 52,
+        "beatRateHz": 0.66,
+        "swimSpeed": 46,
+        "yawRad": 0.01,
+        "cycleSec": 29,
+        "surfaceDwell": 0.42,
+        "surfaceDepth": 0.11,
+        "vanishDepth": 0.84,
+        "depthShrink": 0.2,
+        "shadowStrength": 0.55,
+        "wake": 0.81,
+        "bubbles": 39,
+        "blow": 0.84,
+        "blowLingerSec": 4.4,
+        "blowIntervalSec": 5.9,
+        "flukePrints": 0
+      },
+      "pod": {
+        "size": 6,
+        "calves": {
+          "0": 0.12,
+          "1": 0.74,
+          "2": 0.14
+        },
+        "note": "calf count decided once per pod; calves take the trailing indices"
+      },
+      "variance": {
+        "master": 0.51,
+        "channels": {
+          "size": 0.4,
+          "beatAmp": 0.24,
+          "beatRate": 0.23,
+          "yaw": 0.6
+        },
+        "effectivePct": {
+          "size": 20.4,
+          "beatAmp": 12.2,
+          "beatRate": 11.7,
+          "yaw": 30.6
+        },
+        "source": "hash(index, channel) \u2014 deterministic, never Math.random, so the render path cannot perturb the RNG stream the eval harness depends on"
+      },
+      "dorsalAt": 0.44,
+      "blowholeAt": 0.16,
+      "notes": [
+        "surfaceDepth is deliberately NOT zero \u2014 a swimming orca is never fully out of the water, and bottoming the depth curve at 0 draws it flat on the surface like a decal.",
+        "The depth curve DWELLS: rise, swim up top, sink, stay down. A sine spends equal time everywhere and reads as bobbing.",
+        "Deep animals draw as a flat dark silhouette (#0a1a2c via source-atop), not as the faded real sprite. Losing the markings is what reads as UNDER water; a faded sprite reads as merely far away. Drone footage shows the opposite \u2014 markings persist at depth \u2014 but legibility at 40px beat accuracy here.",
+        "The blow is emitted in WORLD space at the animal's position when it blew, and stays put while the animal swims on. Evaluated analytically from past time, so there is no particle list and nothing to reset between races.",
+        "Blow density peaks at exhalation and only falls. Holding peak opacity while the sprite scales up reads as fading IN, which is a bug that took three passes to see.",
+        "Rejected after trying: bow wake, submerging foam, fluke prints as rings, and fluke prints as bubble scatters. All read as graphics rather than water."
+      ]
+    }
   }
 }

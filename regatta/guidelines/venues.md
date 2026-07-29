@@ -76,11 +76,11 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 
 | # | Venue | Course | The question it asks every lap | Signature moment |
 |---|---|---|---|---|
-| 1 | Lighthouse Cove | **Trapezoid** | can I make the harbour gate before the ferry? | threading the channel with the ferry bearing down |
+| 1 | Lighthouse Cove | **Trapezoid** | can I make the harbour gate before the ship? | threading the channel with a cargo ship bearing down |
 | 2 | Stillwater Lake | **W/L**, long beat | which side of the island has the breeze? | the whole fleet splitting round an island |
 | 3 | Pearl Lagoon | **Triangle** | round the squall or through it? | reef gate on the reach, rain arriving |
 | 4 | Gatorgrass Bayou | **Loop** | wide and windy, or short and gator-infested? | the log drifting into the gap you chose |
-| 5 | Otter Run | **Out & Back** | fast water or slack water? | parking in an eddy to shake a rival |
+| 5 | Otter Run | **Out & Back**, 1 lap | fast water or slack water — and it inverts? | parking in an eddy to shake a rival |
 | 6 | Bluewater Bonanza | **Distance Triangle** | where is the pressure, an hour from now? | the long surf home under kite |
 | 7 | Redrock Reservoir | **Distance Loop** | is the narrows doubled or dead today? | the venturi firing you out the slot |
 | 8 | Glowtide Strait | **Slalom** | do I follow the glow or trust my own line? | chasing a glowing wake through lit gates |
@@ -100,9 +100,10 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 **Description.** The friendly front door. Fair water, honest breeze, nothing
 hidden — a working harbour with a race running through it.
 
-**Character & narrative.** The club regatta. Spectator boats at anchor, gulls,
-someone's ferry running its schedule regardless of your race. The story is *the
-everyday race done well* — you didn't beat the weather, you beat the fleet.
+**Character & narrative.** The club regatta in a working port. Spectator boats at
+anchor, pelicans on the pilings, a container ship keeping its schedule regardless
+of your race. The story is *the everyday race done well* — you didn't beat the
+weather, you beat the fleet and everything else using the harbour that afternoon.
 
 **Traits.** Mid everything, no `cond` overrides — default randomisation, and
 that's the point.
@@ -110,8 +111,18 @@ that's the point.
 **Art.** Coastal azure + green headlands; red/green buoys, white lighthouse. Sky:
 sea-breeze cloud line over the land, clear over the water (shipped).
 
-**Key mechanics.** **Marine traffic** — a crossing ferry on a fixed, learnable
-schedule and anchored spectator boats.
+**Key mechanics.** **Marine traffic, at two extremes.** This is the venue's whole
+identity: the race itself is deliberately plain, and the traffic is what makes it.
+
+| | speed | what it costs you |
+|---|---|---|
+| **Cargo ship** | slow, utterly predictable | an enormous moving **wind shadow** — the real hazard is its air, not its hull |
+| **Wing foiler** | fast, erratic, tiny | a **dodge** — right of way you have but cannot rely on |
+
+Two things, as far apart as the harbour offers, and they work in opposite
+directions: the biggest thing on the water hurts you from furthest away and never
+touches you; the smallest can only hurt you by being exactly where you are. A
+third, middling traffic type would sit between them and teach nothing new.
 
 ### Course — Trapezoid, 3 laps
 
@@ -126,23 +137,45 @@ consequences, in the one venue that's about buoys and traffic. The windward mark
 sits off the lighthouse headland, close enough that a tight rounding scatters the
 gulls.
 
-**The question it asks.** *Can I make the gate before the ferry does?* The ferry
-runs a schedule you can learn across a race. Every lap you're calculating whether
-to push for the gap, or bear away and lose three lengths behind its wake.
+**One island, one wind hole.** A single wooded islet sits inside the course with a
+**fixed wind shadow** to leeward of it. Paired with the cargo ship's *moving*
+shadow, the venue teaches the same lesson twice in two forms — and the fixed one
+teaches it first, because you can see the island coming from the start. This is
+the front door's one real piece of wind strategy, and it is deliberately the only
+one.
+
+**The question it asks.** *Can I make the gate before the ship does?* The cargo
+ship runs a schedule you can learn across a race. Every lap you're calculating whether
+to push for the gap, or bear away and lose three lengths in its wind shadow.
 
 **Course hazards.** The **harbour gate** — two buoys, one narrow channel, ten
-boats. The **ferry** crossing the reaching leg on its timer, with a wake that
-disturbs the water behind it. **Anchored spectator boats** squeezing the layline
-at the windward mark, which is exactly where you least want fixed traffic. The
-**rocky islet** just outside the offset, punishing a wide rounding.
+boats. The **cargo ship** crossing the reaching leg on its schedule, dragging a
+wind shadow far wider than itself. **Wing foilers** cutting across at three times
+your speed. **Anchored spectator boats**
+squeezing the layline at the windward mark, which is exactly where you least want
+fixed traffic. The **island's lee**, a fixed hole you can route around or gamble
+through. The **rocky islet** just outside the offset, punishing a wide rounding.
 
 **Signature moment.** Threading the harbour gate overlapped with two other boats
-while the ferry's horn goes.
+while the cargo ship's horn goes.
 
 **Key assets.** Lighthouse (landmark + mark) · harbourmaster's house (landmark) ·
-dock (landmark) · red/green channel buoys (nav + gate) · anchored spectator
-launch (traffic) · crossing ferry (traffic, scheduled) · gulls (ambient, scatter
-on close rounding) · rocky islet (hazard).
+dock (landmark) · wooded islet (landmark + fixed wind shadow) · red/green channel
+buoys (nav + gate) · **cargo ship** (traffic, scheduled, wind shadow) · **wing
+foiler** (traffic, fast and erratic) · anchored spectator launch (traffic) ·
+**gulls** (ambient, reactive — scatter on a close rounding) · **pelicans**
+(ambient, on the pilings and diving) · **seals** (ambient, hauled out on the islet
+and swimming) · **great white shark** (ambient) · rocky islet (hazard).
+
+**The shark is atmosphere, not an obstacle.** It cannot slow a keelboat, and a
+collision penalty would be the first rule in the game its own fiction doesn't
+support. A fin crossing your line that costs you nothing is worth more than a rule
+players would resent — and it lands harder in a venue whose real dangers are all
+made of steel and air. Character kin: Bruce is a Great White (race-view.md 10.5).
+
+**The gulls are the venue's one reactive element.** A tight rounding at the
+lighthouse scatters them, which makes a good rounding *visible* — to you and to
+anyone watching. It costs nothing and rewards exactly the thing the venue teaches.
 
 ---
 
@@ -324,53 +357,102 @@ reactive)** · lily-pad raft (ambient) · cattails (ambient) · stilt shack
 
 # 5. Otter Run `river`
 
-**Tagline** Current & Rocks · **Chips** SHALLOW BANKS, LANE CHOICE
+**Tagline** Current & Rocks · **Chips** READ THE WATER, LANE CHOICE
 
-**Description.** A river that actually flows. The stream runs hard down the
-middle and dawdles along the banks — pick the lane that pays and let the water
-carry you past the fleet.
+**Description.** A river that actually flows. The stream runs hard down the middle
+and dawdles — or turns back on itself — along the banks. Pick the lane that pays,
+and pick it again in reverse on the way home.
 
-**Character & narrative.** Alpine and busy. A stone bridge, salmon jumping, a
-heron that won't move, Bixby's kin in the eddies. The story is *the lane* — you
-found water nobody else was in.
+**Character & narrative.** Alpine and busy. Stone bridges, salmon running up the
+shallows, bears working the gravel bars, eagles on the snags, Bixby's kin in the
+eddies. The story is *the lane* — you found water nobody else was in.
 
-**Traits.** Moderate, steady-ish wind (`shiftiness 0.25–0.45`). The variable that
-matters isn't the breeze, it's the water.
+**Traits.** Moderate wind, low shiftiness (`shiftiness 0.20–0.35`). The breeze is
+the steadiest in the game because the valley holds it; the variable that matters
+is the water.
 
 **Art.** Whitewater teal + tan rock. Sky: high thin cirrus only (shipped) —
 terrain-driven wind, not thermal.
 
-**Key mechanics.** **Spatial current field** (`fx.river`, built) — the game's only
-existing current system. **Midstream boulders with slack eddies behind them.**
-**Foam streaks** showing lane speed.
+**Key mechanics.**
 
-### Course — Out & Back, 3 laps
+- **Spatial current field** (`fx.river`, built) — the game's only existing current
+  system, and the venue is built entirely on it.
+- **Three lanes, not two.** The thalweg down the middle runs hardest; the shallows
+  run slower; and behind rocks and along the insides of bends the water turns and
+  runs *back upstream*. A back-eddy is not merely less bad going up — it is
+  actively faster than standing still.
+- **Rapids** — a boost or a penalty depending on your line, see below.
+- **Valley wind.** The valley funnels the breeze along its own axis, blowing
+  downstream. This is what makes the two legs different races rather than the same
+  race twice.
 
-The asymmetry is the point and no other venue can produce it. **These are two
-completely different races sharing a lap:**
+### Course — Out & Back, **1 lap**
 
-- **Upstream** is slow, tactical, and about *avoiding* the fast water — you hunt
-  the slack along the banks, give up the rhumb line, and pass by being clever.
-- **Downstream** is fast, compressed and chaotic — the current does the work,
-  everyone converges on the same fast lane, and the boulders arrive quickly.
+**Upstream is a beat against the current. Downstream is a run with it.** Wind and
+water agree, which stacks the asymmetry as high as it will go:
 
-**The question it asks.** *Fast water or slack water?* — and it inverts between
-legs, which no W/L can do.
+- **Out** is slow, patient and technical. You are stemming the current and beating
+  into the valley wind at once, so you hunt slack and back-eddies along the banks,
+  short-tack the insides of the bends, and give up the rhumb line entirely. You
+  pass people by being cleverer about water, not faster through it.
+- **Back** is fast, compressed and committed. The current does the work, the fleet
+  converges on one fast lane, and everything you dodged carefully on the way up
+  now arrives at speed with the river pushing you into it.
 
-**Course hazards.** **Midstream boulders sit in the fast lane** — the quickest
-water is also the most obstructed, which is the whole tension, and downstream
-you're arriving at them with the current behind you. **Bridge pylons** form a
-hard gate every lap: pick an arch, commit, no changing your mind, and the current
-sets you sideways as you go through. **Shallow banks** run progressive drag, so
-the slack lane isn't free either.
+**One lap changes what the venue tests.** Three laps would let you learn the
+river; one lap means you have to *read* it. Every lane cue has to be legible from
+the water at racing speed — foam streaks, eddy lines, the colour change over the
+shallows, standing waves at the rapids. This venue is the one that teaches players
+to read water, so its features must be honest: what you can see must be what is
+there.
 
-**Signature moment.** Parking in the eddy behind a boulder to let a rival sail
-past into the stream — a real river-racing trick no other venue can offer.
+**The question it asks.** *Where is the water helping me, and is it worth what it
+costs to get there?* — and the answer **inverts** halfway through the race, which
+no other course shape can do.
 
-**Key assets.** Stone arch bridge (landmark + gate) · **bridge pylon (hazard)** ·
-midstream boulder (hazard, with eddy) · eddy-line foam (terrain) · rocky bank
-(terrain) · heron on a rock (ambient) · salmon jump (ambient) · otter — Bixby kin
-(ambient; **this venue owns the otter**).
+**The island asks it twice, with opposite answers.** A wooded island splits the
+river into a short shallow channel and a longer deep one. Going up you want the
+shallow side: less current, and the back-eddies behind the island's head can
+carry you. Coming down you want the deep side: the current is the point. Get it
+right twice and you have made two gains from one piece of geography — and the
+second decision arrives when you are moving three times as fast.
+
+**Rapids — a boost or a penalty, by line.** Each rapid has a smooth **tongue**
+where the water accelerates cleanly, and broken shoulders either side. Hit the
+tongue and the river fires you through faster than you could sail. Miss it and the
+standing waves stop you dead and turn you sideways. It is precision rewarded, not
+a lottery — the tongue is visible as a dark V from upstream, and the tell is
+readable at speed, which is what the one-lap format demands.
+
+**Course hazards.**
+
+- **Midstream rocks sit in the fast lane** — the quickest water is the most
+  obstructed. They also *make* the back-eddies you want, so the same feature is
+  the hazard on one leg and the opportunity on the other. That double duty is the
+  neatest thing in the venue and should survive any simplification.
+- **Two bridges** form hard gates: pick an arch, commit, no changing your mind.
+  Each throws a wind shadow across the river and the current runs faster through
+  the narrowed span, so the boat that picks well gains twice. **Bridge pylons** are
+  solid.
+- **Shallow banks** run progressive drag and then ground you — so the slack lane
+  is not free, and hugging the bank to escape the current has a floor.
+- **The rapids' shoulders**, on both legs, but far more punishing downstream.
+
+**Signature moment.** Parking in the eddy behind a rock to let a rival sail past
+into the stream — a real river-racing trick no other venue can offer.
+
+**Key assets.** Two stone arch bridges (landmark + gate) · **bridge pylon
+(hazard)** · midstream rock (hazard, with eddy) · river island (landmark + route
+choice) · rapid tongue and standing waves (terrain, boost/penalty) · eddy-line
+foam (terrain) · gravel bar and shallows (terrain + soft hazard) · rocky bank
+(terrain) · **bear on the gravel bar** (ambient, fishing) · **salmon run**
+(ambient — they are doing exactly what you are, fighting the current) · **eagle**
+(ambient, perched on snags and overhead) · otter — Bixby kin (ambient; **this
+venue owns the otter**).
+
+> The heron moved to Gatorgrass Bayou, where it is already a declared asset
+> (`bayou-heron`). Two venues sharing a signature bird would weaken both.
 
 ---
 
@@ -907,7 +989,7 @@ Plenty, and it's the part that actually varies a race:
 - Gust, puff and squall fields — position, timing, track
 - Drifting hazard start positions and drift vectors (logs, floes, pumice)
 - Phase offsets for cyclic hazards — tide at Flats, eruptions at Emberfall, the
-  ferry timetable at the Cove
+  cargo-ship schedule at the Cove
 - Wildlife appearances, and the 9-of-66 fleet draw
 
 A fixed course under a rotating wind produces genuinely different races. Redrock's
@@ -956,11 +1038,11 @@ from recombining these:
 | **Drifting soft** | moves, drag *(momentum-scaled, built)* | pumice rafts, weed mats, glass patches |
 | **Static soft** | fixed, drag / soft grounding | shoals, reef shelves, weed beds, mud banks |
 | **Emergent** | appears mid-race | drying sandbars, calved ice |
-| **Cyclic** | dangerous on a learnable rhythm | **erupting cones**, ferry schedule |
+| **Cyclic** | dangerous on a learnable rhythm | **erupting cones**, cargo-ship schedule |
 | **Reactive** | responds to the player | **gators**, **flamingo flock**, penguins, loons |
 | **Invisible** | no physical marker | wind shadows, cloud shadows, dead air, wall lees |
 | **Sight-blocking** | hides information | sedge islands, squall curtains, darkness |
-| **Traffic** | non-racing boats on schedules | ferry, skiffs, pirogue |
+| **Traffic** | non-racing boats, scheduled or loose | cargo ship, wing foiler, skiffs, pirogue |
 
 **Three of these are new and each unlocks several venues at once:** *Cyclic*
 (Emberfall, Lighthouse Cove), *Reactive* (Gatorgrass, Flamingo Reach), and
@@ -977,7 +1059,7 @@ game today, and gators are the right place to prove it.
 3. **Distance Triangle at Bluewater Bonanza.** Reuses step 1 with a longer
    `legLength`, one lap, and a seamount for the far mark.
 4. **Trapezoid at Lighthouse Cove.** Adds the offset and separated traffic; the
-   ferry gets a leg to cross and the buoys become a gate.
+   cargo ship gets a leg to cross and the buoys become a gate.
 5. **Loop / Round the Cans.** The biggest lift (N marks, rounding order, AI
    pathing per rounding), but four venues want it.
 6. **Slalom at Glowtide** last. Highest risk, highest spectacle.

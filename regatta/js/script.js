@@ -544,6 +544,32 @@ class BotController {
             } else {
                 destX = boat.x; destY = boat.y - 1000;
             }
+        } else if (state.course.type === 'islandRound' && boat.raceState.leg >= 1 && state.course.roundMark) {
+            // ISLAND COURSE. Leg 1: sail to a point off the mountain on the side
+            // the rounding starts from, so the boat arrives already turning the
+            // right way instead of driving at the rock and having to swerve.
+            // Leg 2: the finish line.
+            const rm = state.course.roundMark;
+            const rs = boat.raceState;
+            if (rs.leg === 1) {
+                const bearing = Math.atan2(boat.y - rm.y, boat.x - rm.x);
+                // Starboard rounding sweeps the bearing POSITIVE (see the
+                // derivation in updateBoatRaceState), so the entry lies at a
+                // bearing BEHIND the boat's current one. Once inside the zone,
+                // lead the target around the mark so the boat keeps turning.
+                const lead = rs.roundArmed ? 1.05 : 0.55;
+                const a = bearing + lead;
+                destX = rm.x + Math.cos(a) * (rm.zone * 0.92);
+                destY = rm.y + Math.sin(a) * (rm.zone * 0.92);
+            } else {
+                const m1 = marks[0], m2 = marks[1];
+                const gDx = m2.x - m1.x, gDy = m2.y - m1.y;
+                const gLen2 = gDx * gDx + gDy * gDy || 1;
+                let t = ((boat.x - m1.x) * gDx + (boat.y - m1.y) * gDy) / gLen2;
+                t = Math.max(0.08, Math.min(0.92, t));
+                destX = m1.x + gDx * t;
+                destY = m1.y + gDy * t;
+            }
         } else {
             // Determine Gate/Mark Target
             let targetIndices = [0, 1];
@@ -2050,7 +2076,7 @@ const VENUES = {
         islands: { count: [0, 0] },
         palette: { baseColor: '#1d4066', deepColor: '#0e2444', shallowColor: '#2e5c8f', shorelineColor: '#dbeafe',
                    gusts: { gustDark: [8, 24, 52], gustMid: [14, 38, 76], lullBright: [200, 226, 246], lullMid: [176, 208, 236], snow: true } },
-        fx: { ice: true, overpowered: true, snowfall: true }
+        fx: { ice: true, mask: true, islandCourse: true, overpowered: true, snowfall: true }
     },
     seatrials: {
         name: 'Sea Trial Bay',
@@ -2310,6 +2336,355 @@ function generateRiverBanks(rng) {
     return banks;
 }
 
+// The glacier itself: a calving face across the windward end of the sound.
+// Placed WIND-RELATIVE (like generateRiverBanks) so the whole scene rotates with
+// the course — no wind sector, no terrain-pinned marks, existing W/L untouched.
+//
+// It exists to give the venue's wind a source. "Glacier Wind & Ice" had no
+// glacier: the katabatic came from nowhere and OVERPOWERED just happened. With a
+// face at the windward end the beat runs INTO it, so wind and ice thicken
+// together the further up the leg you go.
+//
+// Unlike river banks these are VISIBLE and reachable, so they are not flagged
+// isBank — they draw, they show on the minimap, and the planner routes around
+// them. soft: true matches the floes (RRS 31 penalizes marks, not obstructions).
+const GLACIER = {
+    // Distance from the windward mark to the calving front (the water's edge).
+    // Set by the camera, not by taste: the view is translate-only at 1 world unit
+    // = 1 screen pixel, so the furthest anything can ever be seen is half the
+    // canvas diagonal (~834u at 1456x813) and half its HEIGHT is only ~407u.
+    // Measured: a front ~357u past the mark put the ice INTO the rounding
+    // (groundings/boat 669 -> 1488, race median 280s -> 312s, over the 3-5 min
+    // band); ~705u was safe but only ever clipped a screen corner. ~525u fills
+    // the top of the view on the approach without being hit on a normal
+    // overstand.
+    front: 525,
+    lobe: 900,       // terminus bulges toward the course at centre, recedes at the edges
+    step: 260,       // collider spacing; must be < 2 * rMin * 0.85 or the wall gains a gap
+    rMin: 240, rJit: 70,
+    wave1: 130, wave2: 46,   // calving-front raggedness (two harmonics)
+    shelfBand: 46,           // submerged ice shelf drawn straddling the waterline
+    // SHAPE (from the sketch): an asymmetric BAY, not a symmetric channel.
+    // Land wraps the windward end (the glacier, lobing down into the water) and
+    // runs down ONE flank past the start, where the research camp sits. The
+    // other flank and the downwind end are open sea — the sketch's "less ice".
+    // A two-sided sound was the wrong read and made the venue a corridor.
+    landSide: -1,            // which flank carries the coast (+1 flips it)
+    shoreLat: 1750,          // coast distance from the course axis on the land side
+    sideWave1: 260, sideWave2: 90,
+    openEnd: -3200,          // downwind end, outside the arena: the bay opens to sea
+    // The granite mountain in the sound. It is the ROUNDING MARK, so it needs
+    // navigable water on every side — the first placement tucked it against the
+    // land flank with 43u to the coast and 135u to the glacier, narrower than a
+    // hull, and boats simply ground trying to get round (4377 groundings/boat).
+    // Sits near the axis now, well clear of both, with the whole zone in water.
+    rockAlong: -1000, rockLat: 150, rockR: 430,
+    lowIceAlong: 0.52, lowIceLat: 1050, lowIceR: 430  // fixed low ice, out on the open side
+};
+
+// ── Mask-baked geography ────────────────────────────────────────────────────
+// The venue's land comes from a painted mask (assets/images/venues/masks/), baked
+// to polygons by art/bake_mask.py. The mask is the single source of truth: navy
+// water, white snow, grey granite, and a green start/finish line. Both the
+// colliders and the drawn coast come from the same file, so what you paint is
+// exactly what you sail.
+//
+// Replaces the procedural coast entirely for this venue. That version could not
+// match a drawn map — it only ever produced a lobed front plus one wavy flank.
+// World units the 0..1 mask spans. This is the venue's scale knob: doubling it
+// doubles every distance, so the start->island leg and the race length scale
+// with it. 25000 puts the leg around 14.7k units.
+const MASK_WORLD = 8750;
+
+// Ray-cast point-in-polygon. Mask landmasses are large and CONCAVE — the main
+// one has a bounding radius of ~9400 units, more than half the world — so the
+// bounding-circle test used for floes is meaningless against them and rejects
+// every candidate position on the map. Anything asking "is this on land?" for a
+// mask shape has to test the actual polygon.
+function pointInPoly(x, y, verts) {
+    let inside = false;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+        const xi = verts[i].x, yi = verts[i].y, xj = verts[j].x, yj = verts[j].y;
+        if ((yi > y) !== (yj > y) && x < ((xj - xi) * (y - yi)) / (yj - yi || 1e-9) + xi) inside = !inside;
+    }
+    return inside;
+}
+
+// Is this position open water on a mask venue? Margin pushes it clear of the shore.
+function inMaskWater(x, y, margin = 0) {
+    const mg = state.course.maskGeo;
+    if (!mg) return true;
+    for (const isl of mg.islands) {
+        if (pointInPoly(x, y, isl.vertices)) return false;
+        if (margin > 0) {
+            // near-shore rejection: distance to the polygon edge
+            for (let i = 0, j = isl.vertices.length - 1; i < isl.vertices.length; j = i++) {
+                if (Geom.distToSegment({ x, y }, isl.vertices[j], isl.vertices[i]) < margin) return false;
+            }
+        }
+    }
+    return true;
+}
+
+function buildMaskGeography(venueKey) {
+    const geo = (window.VENUE_GEO || {})[venueKey];
+    if (!geo || !geo.shapes) return null;
+    const S = MASK_WORLD;
+    // Mask space is 0..1 with +y DOWN, matching canvas, so the only transform is
+    // scale and a shift that puts the mask's centre at the world origin.
+    const toWorld = (p) => ({ x: (p[0] - 0.5) * S, y: (p[1] - 0.5) * S });
+
+    const islands = [];
+    let granite = null;
+    for (const sh of geo.shapes) {
+        const verts = sh.ring.map(toWorld);
+        const c = toWorld(sh.c);
+        const radius = sh.r * S;
+        const isGranite = sh.cls === 'granite';
+        const isl = {
+            x: c.x, y: c.y, radius, vertices: verts,
+            vegVertices: verts.map(v => ({ x: c.x + (v.x - c.x) * (isGranite ? 0.3 : 0.82),
+                                          y: c.y + (v.y - c.y) * (isGranite ? 0.3 : 0.82) })),
+            trees: [], rocks: [],
+            style: isGranite ? 'granite' : 'ice',
+            // Ice is soft (RRS 31 penalizes marks, not obstructions); granite is
+            // rock and grounds you properly.
+            soft: !isGranite,
+            fromMask: true,
+            isRock: isGranite
+        };
+        if (isGranite) {
+            const LX = -0.55, LY = -0.83;
+            isl.facets = verts.map((v1, j) => {
+                const v2 = verts[(j + 1) % verts.length];
+                const mx = (v1.x + v2.x) / 2 - c.x, my = (v1.y + v2.y) / 2 - c.y;
+                const m = Math.hypot(mx, my) || 1;
+                return { i: j, lit: (mx / m) * LX + (my / m) * LY };
+            });
+            granite = isl;
+        }
+        islands.push(isl);
+    }
+
+    const start = geo.start ? geo.start.map(toWorld) : null;
+    return { islands, granite, start, worldSize: S };
+}
+
+// The glacier: a real coastline across the windward end of the sound, not a row
+// of bergs. Two layers, and the split is the same one the river uses:
+//
+//   colliders  — island bodies along the front, flagged hidden so they never
+//                draw. They exist for collision, avoidance and pathfinding.
+//   shore      — ONE continuous filled land mass with a ragged calving front,
+//                drawn by drawGlacierShore. This is what the player sees.
+//
+// Drawing the collider bodies directly (the first attempt) read as exactly what
+// it was: a chain of overlapping berg blobs with their individual rims showing.
+// A coast has to be one shape.
+//
+// Placed WIND-RELATIVE like generateRiverBanks, so the scene rotates with the
+// course — no wind sector, no terrain-pinned marks, existing W/L untouched.
+function generateGlacierFace(rng) {
+    const d = state.wind.baseDirection;
+    const ux = Math.sin(d), uy = -Math.cos(d);   // course axis (start -> windward)
+    const rx = -uy, ry = ux;                     // lateral
+    const dist = state.race.legLength || 4000;
+    const b = state.course.boundary;
+    const bodies = [];
+
+    const worldPt = (along, lat) => ({ x: ux * along + rx * lat, y: uy * along + ry * lat });
+
+    // How far out the coast must run to seal against the arena. Beyond this the
+    // water is unreachable, so the front is closed and there is no wedge pocket
+    // for a boat to strand in (cf. the river banks' 29-33% DNF).
+    const halfSpan = b.radius + 900;
+
+    // Calving front profile. A quadratic lobe (closest at the centreline,
+    // receding to the edges) plus two harmonics so the edge is ragged like ice
+    // rather than a drawn curve.
+    const ph1 = rng() * Math.PI * 2, ph2 = rng() * Math.PI * 2;
+    const frontAt = (lat) => dist + GLACIER.front
+        + (lat / halfSpan) ** 2 * GLACIER.lobe
+        + Math.sin(lat / 520 + ph1) * GLACIER.wave1
+        + Math.sin(lat / 190 + ph2) * GLACIER.wave2;
+
+    // ONE coast, on the land flank only. Wavy so it reads as rock and ice rather
+    // than a canal wall. The opposite flank is open sea and has no shore at all —
+    // out there the arena boundary is the only limit, which is what the sketch's
+    // "less ice" side is.
+    const S = GLACIER.landSide;
+    const ph3 = rng() * Math.PI * 2, ph4 = rng() * Math.PI * 2;
+    const sideAt = (along) => GLACIER.shoreLat
+        + Math.sin(along / 700 + ph3) * GLACIER.sideWave1
+        + Math.sin(along / 260 + ph4) * GLACIER.sideWave2;
+
+    // Where the coast meets the calving front.
+    const headAlong = frontAt(S * GLACIER.shoreLat);
+
+    // ── Colliders ───────────────────────────────────────────────────────
+    // Hidden + isBank: invisible (the shore draws as one mass) and kept out of
+    // the A* visibility graph. They stay in course.islands for collision,
+    // reactive avoidance and Rule 19 — exactly the river-bank arrangement, which
+    // exists because ~86 bank bodies in the nav graph caused multi-hundred-ms
+    // replan spikes.
+    const addBody = (p) => {
+        const r = GLACIER.rMin + rng() * GLACIER.rJit;
+        const vertices = [];
+        const pts = 7 + Math.floor(rng() * 3);
+        for (let j = 0; j < pts; j++) {
+            const th = (j / pts) * Math.PI * 2;
+            // 0.85 floor with step 260: 2 * 0.85 * 240 = 408 > 260, so adjacent
+            // bodies always overlap however the jitter falls.
+            const vr = r * (0.85 + rng() * 0.3);
+            vertices.push({ x: p.x + Math.cos(th) * vr, y: p.y + Math.sin(th) * vr });
+        }
+        bodies.push({
+            x: p.x, y: p.y, radius: r, vertices,
+            vegVertices: vertices.map(v => ({ x: p.x + (v.x - p.x) * 0.72, y: p.y + (v.y - p.y) * 0.72 })),
+            trees: [], rocks: [], style: 'ice', soft: true,
+            isGlacier: true, hidden: true, isBank: true
+        });
+    };
+    // Front, sat back by ~r so the collision edge lands on the drawn waterline
+    for (let lat = -halfSpan; lat <= halfSpan; lat += GLACIER.step) {
+        addBody(worldPt(frontAt(lat) + GLACIER.rMin * 0.82, lat));
+    }
+    // The single land flank, overlapping the front at the head so the corner is
+    // solid. Runs past the open (seaward) end so there is no wedge to strand in.
+    for (let a = GLACIER.openEnd - 300; a <= headAlong + 300; a += GLACIER.step) {
+        addBody(worldPt(a, S * (sideAt(a) + GLACIER.rMin * 0.82)));
+    }
+
+    // ── Shore: ONE continuous water-edge ring ───────────────────────────
+    // Traced as the WATER's edge, then filled even-odd against a huge rect so
+    // everything outside becomes land — the river's trick. Up the left flank,
+    // across the calving front, down the right flank, closed across the open
+    // (seaward) end well outside the arena.
+    // The water edge: up the land flank, across the calving front, then straight
+    // out past the open side and back round the seaward end. The open flank is
+    // closed far outside the arena so the fill still resolves, but no coast is
+    // ever drawn there.
+    const outer = halfSpan;
+    const ring = [];
+    for (let a = GLACIER.openEnd; a <= headAlong; a += 90) ring.push(worldPt(a, S * sideAt(a)));
+    for (let lat = S * GLACIER.shoreLat; ; lat -= S * 55) {
+        ring.push(worldPt(frontAt(lat), lat));
+        if (S > 0 ? lat <= -outer : lat >= outer) break;
+    }
+    ring.push(worldPt(GLACIER.openEnd, -S * outer));
+
+    // Ridges and peaks inland, per the sketch: a band behind the calving front,
+    // and a run along the land flank only.
+    const decorations = [];
+    const peak = (p, big) => decorations.push({
+        x: p.x, y: p.y, size: (big ? 90 : 55) + rng() * (big ? 140 : 90),
+        dirX: ux, dirY: uy, kind: rng() < 0.62 ? 'peak' : 'ridge'
+    });
+    for (let lat = -halfSpan + 200; lat <= halfSpan - 200; lat += 380 + rng() * 340) {
+        peak(worldPt(frontAt(lat) + 190 + rng() * 620, lat + (rng() - 0.5) * 200), true);
+    }
+    for (let a = GLACIER.openEnd + 200; a <= headAlong - 300; a += 340 + rng() * 320) {
+        peak(worldPt(a, S * (sideAt(a) + 150 + rng() * 520)), false);
+    }
+
+    // Profile kept on the shore object so anything that places things in the
+    // water can ask where the water actually IS. Without this, ice is scattered
+    // against the old circular boundary and half of it lands inside the ice
+    // sheet (measured: 48% of floes and brash stranded on land).
+    state.course.glacierShore = { ring, decorations, ux, uy, rx, ry, frontAt, sideAt, landSide: S };
+
+    // ── The Rock ────────────────────────────────────────────────────────
+    // Sketched as a ringed island sitting in the water under the glacier lobe.
+    // Hard (not soft): it is rock, not ice, so it is the one thing here that
+    // grounds you properly. Placed off the windward gate toward the land side so
+    // it does not block the rounding — in Phase 3 it becomes the mark itself.
+    {
+        const p = worldPt(dist + GLACIER.rockAlong, S * GLACIER.rockLat);
+        const r = GLACIER.rockR;
+        // Jagged, not lumpy: many vertices, wide radius swing, and the angle
+        // itself jittered so spurs and clefts land irregularly instead of at
+        // even intervals. Granite that has been broken, not a worn sandbank.
+        const verts = [];
+        const n = 15 + Math.floor(rng() * 6);
+        for (let j = 0; j < n; j++) {
+            const th = (j / n) * Math.PI * 2 + (rng() - 0.5) * (Math.PI * 2 / n) * 0.85;
+            const spur = rng() < 0.35 ? 1.25 + rng() * 0.35 : 0.62 + rng() * 0.42;
+            const vr = r * spur;
+            verts.push({ x: p.x + Math.cos(th) * vr, y: p.y + Math.sin(th) * vr });
+        }
+        // Full low-poly fan from the summit to every edge, shaded per face
+        // against a fixed light — the faceted relief the reference art is built
+        // from. Computed once here, not per frame; bakeIslandSprite just fills
+        // the triangles it is handed.
+        const LX = -0.55, LY = -0.83;   // light from up-course-left
+        const facets = [];
+        for (let j = 0; j < verts.length; j++) {
+            const v1 = verts[j], v2 = verts[(j + 1) % verts.length];
+            const mx = (v1.x + v2.x) / 2 - p.x, my = (v1.y + v2.y) / 2 - p.y;
+            const m = Math.hypot(mx, my) || 1;
+            facets.push({ i: j, lit: (mx / m) * LX + (my / m) * LY });   // -1 shadow .. +1 lit
+        }
+        bodies.push({
+            x: p.x, y: p.y, radius: r * 1.3, vertices: verts,
+            // Summit plate: pulled well in so the mountain reads as rising to a
+            // point rather than being a flat-topped mesa.
+            vegVertices: verts.map(v => ({ x: p.x + (v.x - p.x) * 0.26, y: p.y + (v.y - p.y) * 0.26 })),
+            trees: [], rocks: [], facets, style: 'granite', soft: false, isRock: true
+        });
+    }
+
+    // ── Fixed low ice ───────────────────────────────────────────────────
+    // Sketched as a labelled patch out on the open side. Static (never drifts)
+    // and soft, so it is a shortcut you pay for in speed rather than a wall.
+    {
+        const p = worldPt(dist * GLACIER.lowIceAlong, -S * GLACIER.lowIceLat);
+        const r = GLACIER.lowIceR;
+        const verts = [];
+        const n = 11 + Math.floor(rng() * 5);
+        for (let j = 0; j < n; j++) {
+            const th = (j / n) * Math.PI * 2;
+            const vr = r * (0.78 + rng() * 0.44);
+            verts.push({ x: p.x + Math.cos(th) * vr, y: p.y + Math.sin(th) * vr });
+        }
+        bodies.push({
+            x: p.x, y: p.y, radius: r, vertices: verts,
+            vegVertices: verts.map(v => ({ x: p.x + (v.x - p.x) * 0.8, y: p.y + (v.y - p.y) * 0.8 })),
+            trees: [], rocks: [], style: 'ice', soft: true, isLowIce: true
+        });
+    }
+
+    return bodies;
+}
+
+// Is this point in the sound's open water? Margin keeps things off the shore.
+// True everywhere when the venue has no glacier, so callers need no venue test.
+function inGlacierWater(x, y, margin = 0) {
+    const sh = state.course.glacierShore;
+    if (!sh) return true;
+    const along = x * sh.ux + y * sh.uy;
+    const lat = x * sh.rx + y * sh.ry;
+    // Only the land flank constrains laterally; the other side is open sea.
+    if (lat * sh.landSide > sh.sideAt(along) - margin) return false;
+    if (along > sh.frontAt(lat) - margin) return false;
+    return true;
+}
+
+// Ice-density gradient. 0 at the start end of the course, 1 at the glacier end;
+// returns the probability that a candidate ice position survives sampling. The
+// floor is deliberately non-zero — the start end should read as "less ice", not
+// "no ice", or the venue stops being the Arctic for the first third of the beat.
+const ICE_GRADIENT = { floor: 0.3, peak: 1.0 };
+function iceGradientAccept(x, y) {
+    const dist = state.race.legLength || 4000;
+    if (!dist) return 1;
+    const d = state.wind.baseDirection;
+    const ux = Math.sin(d), uy = -Math.cos(d);
+    // Project onto the course axis (origin = start line, +ve = toward windward)
+    const along = x * ux + y * uy;
+    const t = Math.max(0, Math.min(1, along / dist));
+    return ICE_GRADIENT.floor + (ICE_GRADIENT.peak - ICE_GRADIENT.floor) * t;
+}
+
 // Polar ice floes: drifting islands. Slow enough for the AI's reactive
 // avoidance; fast enough that the course never looks the same twice.
 const FLOE_DENSITY = 3;
@@ -2366,8 +2741,14 @@ function generateIceFloes(rng) {
             const cx = boundary.x + Math.sin(ang) * dst;
             const cy = boundary.y - Math.cos(ang) * dst;
 
-            let ok = true;
-            for (const m of marks) {
+            let ok = inGlacierWater(cx, cy, r + 60);   // never inside the ice sheet
+            // Density gradient: the ice comes OFF the glacier, so it packs at the
+            // windward end and thins toward the start. Rejection-sampled against
+            // the along-course position so every clearance rule below still
+            // applies unchanged. This is what makes the beat escalate — wind and
+            // ice thicken together, because both have the same source.
+            if (ok && iceGradientAccept(cx, cy) < rng()) ok = false;
+            if (ok) for (const m of marks) {
                 if ((cx - m.x) ** 2 + (cy - m.y) ** 2 < (450 + r) ** 2) { ok = false; break; }
             }
             // Keep the start box clear. Boats spawn in lanes along the line and
@@ -2384,9 +2765,22 @@ function generateIceFloes(rng) {
             for (const f of floes) {
                 if ((cx - f.x) ** 2 + (cy - f.y) ** 2 < (f.radius + r + 60) ** 2) { ok = false; break; }
             }
+            // ...and against everything ALREADY in the course. Mask landmasses are
+            // concave, so they need a real polygon test — their bounding circle
+            // covers most of the map and would reject every position.
+            if (ok) for (const isl of state.course.islands) {
+                if (isl.fromMask) continue;
+                if ((cx - isl.x) ** 2 + (cy - isl.y) ** 2 < (isl.radius + r + 60) ** 2) { ok = false; break; }
+            }
+            if (ok && !inMaskWater(cx, cy, r + 80)) ok = false;
             if (!ok) continue;
 
-            floes.push(makeFloe(cx, cy, r, rng));
+            const floe = makeFloe(cx, cy, r, rng);
+            // Only ice that has been drifting gets a colony. Bergs calved during
+            // the race (calveFloe) deliberately do not — a face that just broke
+            // off the glacier would not arrive already inhabited.
+            populateFloeColony(floe, rng);
+            floes.push(floe);
             placed = true;
         }
     }
@@ -2398,7 +2792,9 @@ function generateIceFloes(rng) {
 // slabs. Building the radius as a harmonic sum gives those organic lobes and
 // concave bays, and squashing along a random axis gives the elongation. Five
 // archetypes, weighted so lobed bergs and shards show up most.
-const FLOE_KINDS = ['pan', 'slab', 'shard', 'lobed', 'cluster', 'lobed', 'shard'];
+// 'shard' was weighted twice and reaches aspect 3.0, which read as a field of
+// long splinters. One entry, and a shorter maximum.
+const FLOE_KINDS = ['pan', 'slab', 'shard', 'lobed', 'cluster', 'lobed', 'pan'];
 function makeFloeOutline(r, rng) {
     const kind = FLOE_KINDS[Math.floor(rng() * FLOE_KINDS.length)];
     // Spread the amplitude over several NON-multiple frequencies with random
@@ -2417,7 +2813,7 @@ function makeFloeOutline(r, rng) {
     } else if (kind === 'shard') {        // long splinter calved off something
         points = 8 + Math.floor(rng() * 4);
         harm = [[1, 0.16], [2, 0.10], [3, 0.08], [5, 0.05]];
-        aspect = 1.9 + rng() * 1.1; bayCount = rng() < 0.5 ? 1 : 0;
+        aspect = 1.6 + rng() * 0.6; bayCount = rng() < 0.5 ? 1 : 0;
     } else if (kind === 'lobed') {        // the classic deep-bayed berg
         points = 15 + Math.floor(rng() * 7);
         harm = [[1, 0.14], [2, 0.13], [3, 0.11], [5, 0.07]];
@@ -2569,6 +2965,210 @@ function makeFloe(cx, cy, r, rng) {
     };
 }
 
+// ---- Floe colonies ------------------------------------------------------
+//
+// Penguins ride the ice. Every bird lives in its floe's LOCAL space, which is
+// what makes this nearly free: the floe already drifts, curls its heading and
+// spins, and drawIslands already draws it inside a translate/rotate. Put the
+// birds in that same transform and the whole colony inherits the motion with
+// no animation code at all — the waddle below is only what the bird adds on
+// top of a ride it gets for nothing.
+//
+// One species per floe. Real rookeries are single-species, and mixing them
+// would throw away the only channel species actually reads on: a colony that
+// all moves the same way is recognisably one kind of animal.
+
+// Fraction of the outline radius birds stay inside. They draw from their
+// centre, so this has to clear half a bird plus the snow rim, or they stand
+// with one foot in the water.
+const COLONY_INSET = 0.72;
+
+// Waddle gait. The rock and the forward step are ONE motion — see updateFloeColony.
+// WADDLE_SURGE is the floor of forward speed at mid-lean; the rest is delivered in
+// two surges per rock cycle, as the bird pivots over each foot. Lower = more
+// lurching, 1.0 = a constant glide with an unrelated wobble on top.
+const WADDLE_SURGE = 0.35;
+// Rock amplitude retained while standing still, so an idle bird settles rather
+// than freezing solid.
+const WADDLE_IDLE = 0.12;
+// Max turn rate, rad/s, when steering back off a boundary. Birds STEER toward a
+// legal heading rather than being assigned one — an instant assignment flipped a
+// bird up to 176 degrees in one frame and re-fired every frame while it sat on
+// the boundary. Halved from 2.6: a bird that spins on the spot reads as a
+// weathervane, and a penguin turns its whole body slowly.
+const WADDLE_TURN = 1.3;
+// Peak rate of the wandering heading curl, rad/s. Halved from 0.9 for the same
+// reason — this is the meander you see while a bird is walking freely.
+const WADDLE_CURL = 0.45;
+
+function populateFloeColony(floe, rng) {
+    if (floe.radius < 90) return;        // no room to walk; a pan of ice is not a rookery
+    if (rng() > 0.45) return;            // most ice stays empty — a colony should be a find
+    const species = PENGUIN_NAMES[Math.floor(rng() * PENGUIN_NAMES.length)];
+    const k = PENGUIN_KINDS[species];
+    const n = Math.max(3, Math.min(11, Math.round(floe.radius / 40 * k.density)));
+
+    // THE COLONY IS THE READABLE UNIT, NOT THE BIRD. At 15-19px a penguin seen
+    // from directly overhead is its black back and nothing else — no silhouette
+    // survives, and scattered singles read as dirt on the ice. The accepted
+    // group sprites work precisely because they are DENSE: arctic-penguin-huddle
+    // packs 7 birds into 70px, overlapping ~40%, so the eye reads one mass.
+    // Reproduce that packing and the colony reads at range while each bird still
+    // owns its own waddle. Real rookeries are dense patches anyway.
+    const spread = Math.max(16, Math.sqrt(n) * k.world * 0.62);
+
+    // Seat the patch somewhere on the floe, far enough in that the whole cluster
+    // sits on ice. Sampled against the real outline, not the bounding radius:
+    // floes cut deep bays, so a fraction of `radius` fired down a narrow axis
+    // lands in open water — the trap the pressure cracks hit, same fix.
+    const cang = rng() * Math.PI * 2;
+    const room = Math.max(0, outlineRadiusAt(floe.localArt, cang) * COLONY_INSET - spread);
+    const cx = Math.cos(cang) * room * Math.sqrt(rng());
+    const cy = Math.sin(cang) * room * Math.sqrt(rng());
+
+    const birds = [];
+    for (let i = 0; i < n; i++) {
+        // r = R * u^0.62 — compose.py's own bias, which puts the densest part in
+        // the MIDDLE. Uniform-over-disc sampling hollows the centre out, and a
+        // colony with a hole in it reads as a ring rather than a huddle.
+        const a = rng() * Math.PI * 2;
+        const rr = spread * Math.pow(rng(), 0.62);
+        let bx = cx + Math.cos(a) * rr, by = cy + Math.sin(a) * rr;
+        // The patch is a disc; the floe is not. Seating the patch against the
+        // outline at one angle leaves it overhanging at others, so pull any bird
+        // that landed past the outline back onto the ice. Cheaper and steadier
+        // than shrinking the whole patch to the floe's narrowest axis, which
+        // would collapse colonies on shards and slabs.
+        const lim = outlineRadiusAt(floe.localArt, Math.atan2(by, bx)) * COLONY_INSET;
+        const d = Math.hypot(bx, by);
+        if (d > lim && d > 0) { bx *= lim / d; by *= lim / d; }
+        birds.push({
+            lx: bx, ly: by,
+            heading: rng() * Math.PI * 2,
+            phase: rng() * Math.PI * 2,
+            // Per-bird rate jitter. A colony waddling in lockstep reads as one
+            // object stamped N times — the failure mode the baked groups have,
+            // and the whole reason these are individuals.
+            rate: k.rate * (0.85 + rng() * 0.3),
+            pace: 0.75 + rng() * 0.5,
+            // Gait duty cycle. A bird walks while its own slow gate sine is above
+            // `rest`, and stands otherwise — deterministic, so no per-frame RNG,
+            // and every bird keeps its own rhythm. Biased so a colony is mostly
+            // still with a few birds crossing it at any moment; a patch where
+            // every bird marches at once reads as an ant farm.
+            rest: -0.15 + rng() * 0.75,
+            gaitPhase: rng() * Math.PI * 2,
+            gaitRate: 0.18 + rng() * 0.4,
+            walk: 0,
+            curlPhase: rng() * Math.PI * 2,
+            curlRate: 0.25 + rng() * 0.5
+        });
+    }
+    floe.penguins = { species, cx, cy, spread, birds };
+}
+
+function updateFloeColony(isl, dt) {
+    const col = isl.penguins;
+    const k = PENGUIN_KINDS[col.species];
+    for (const b of col.birds) {
+        // A WADDLE IS A ROCK THAT CARRIES THE BIRD FORWARD. The two are one
+        // motion, not two: the bird tips onto a foot and pivots over it, so
+        // forward progress SURGES at each extreme of the lean — twice per rock
+        // cycle — and a bird that is standing still does not rock at all.
+        // Decoupling them (constant glide + independent rock) reads as a wobble.
+        const gate = Math.sin(state.time * b.gaitRate + b.gaitPhase);
+        b.walk = Math.max(0, Math.min(1, (gate - b.rest) * 3));
+        const sway = Math.sin(state.time * b.rate + b.phase);
+        const surge = WADDLE_SURGE + (1 - WADDLE_SURGE) * Math.abs(sway);
+
+        const step = k.speed * b.pace * b.walk * surge * dt;
+        const nx = b.lx + Math.sin(b.heading) * step;
+        const ny = b.ly - Math.cos(b.heading) * step;
+
+        // Contained by the COLONY, and separately by the ICE. Birds that wander
+        // the whole pan dissolve the patch that makes them readable; birds that
+        // leave the outline stand on open water. The patch is a disc but a floe
+        // is not, so seating the patch inside the outline at ONE angle is not
+        // enough — an elongated floe overhangs at every other angle, which is
+        // exactly how ~1 bird per frame ended up afloat.
+        //
+        // ALWAYS STEP, THEN PROJECT BACK — never refuse the step. Refusing it
+        // deadlocks: the two rules can disagree, with the patch centre lying
+        // off-ice and the floe centre lying outside the patch, and a bird caught
+        // between them alternates targets and never moves again (measured: one
+        // bird blocked for 419 of 420 frames). Projecting instead makes the
+        // bird slide along whichever boundary it met, which is both unstickable
+        // and what a real one does when it meets an edge.
+        let px = nx, py = ny, corrected = false;
+
+        const dx = px - col.cx, dy = py - col.cy;
+        const dPatch = Math.hypot(dx, dy);
+        if (dPatch > col.spread && dPatch > 0) {
+            const s = col.spread / dPatch;
+            px = col.cx + dx * s; py = col.cy + dy * s; corrected = true;
+        }
+        const rIce = outlineRadiusAt(isl.localArt, Math.atan2(py, px)) * COLONY_INSET;
+        const dIce = Math.hypot(px, py);
+        if (dIce > rIce && dIce > 0) {
+            const s = rIce / dIce;
+            px *= s; py *= s; corrected = true;
+        }
+        b.lx = px; b.ly = py;
+
+        if (corrected) {
+            // STEER, never snap. Assigning the heading outright reversed a bird
+            // by up to 176 degrees in a single frame — the visible "jump" — and
+            // re-fired every frame while it sat on the boundary, which is the
+            // "flash". Turning at a bounded rate gives a bird that pivots as it
+            // slides along the edge and walks off once it points somewhere open.
+            const target = Math.atan2(-(px - col.cx), (py - col.cy))
+                + Math.sin(b.curlPhase * 7.3) * 0.7;
+            let turn = (target - b.heading) % (Math.PI * 2);
+            if (turn > Math.PI) turn -= Math.PI * 2;
+            if (turn < -Math.PI) turn += Math.PI * 2;
+            const maxTurn = WADDLE_TURN * dt;
+            b.heading += Math.max(-maxTurn, Math.min(maxTurn, turn));
+        } else {
+            // Deterministic heading curl, the trick the floes use for their own
+            // drift: paths meander without per-frame RNG, so replays stay stable.
+            // Applied ONLY while the bird is free to walk — curling at up to
+            // 0.9 rad/s while it was pinned fought the 2.6 rad/s steering and
+            // held blocked birds pivoting for ~2.8s instead of the ~1.2s a turn
+            // should take.
+            b.heading += Math.sin(state.time * b.curlRate + b.curlPhase) * WADDLE_CURL * dt;
+        }
+    }
+}
+
+// Runs INSIDE the floe transform drawIslands sets up, so local coords are
+// already floe-relative and the colony rides the ice for free.
+function drawFloeColony(ctx, isl) {
+    const col = isl.penguins;
+    const img = penguinImgs[col.species];
+    if (!img.complete || !img.naturalWidth) return;
+    const k = PENGUIN_KINDS[col.species];
+    const w = k.world, h = w / 2;
+    for (const b of col.birds) {
+        // From directly overhead a waddle is NOT an up-down bob — there is no
+        // up. It is the body yawing about its axis as the weight goes foot to
+        // foot, plus the whole bird sliding toward the loaded foot. Yaw alone
+        // reads as a compass needle twitching; the paired sideways slide is
+        // what turns it into walking.
+        //
+        // Amplitude follows the gait: `b.walk` is 0 while the bird is standing,
+        // so a stationary bird sits still instead of rocking on the spot. The
+        // small floor keeps it alive rather than frozen.
+        const sway = Math.sin(state.time * b.rate + b.phase);
+        const amp = WADDLE_IDLE + (1 - WADDLE_IDLE) * b.walk;
+        const lat = sway * w * k.lat * amp;
+        ctx.save();
+        ctx.translate(b.lx + Math.cos(b.heading) * lat, b.ly + Math.sin(b.heading) * lat);
+        ctx.rotate(b.heading + sway * k.rock * amp);
+        ctx.drawImage(img, -h, -h, w, w);
+        ctx.restore();
+    }
+}
+
 // Translate only — the world-space geometry is rebuilt by syncFloe once all
 // motion and collisions for the frame have settled.
 function moveFloe(isl, dx, dy) {
@@ -2597,12 +3197,32 @@ function generateBrash(rng) {
     const boundary = state.course.boundary;
     const brash = [];
     const count = 70 + Math.floor(rng() * 30);
+    const sh = state.course.glacierShore;
     for (let i = 0; i < count; i++) {
-        const ang = rng() * Math.PI * 2;
-        const dst = Math.sqrt(rng()) * boundary.radius;
+        let bx, by;
+        if (sh) {
+            // Sample INSIDE the sound. Sampling the old circle and rejecting what
+            // landed ashore threw away most draws — the sound is a fraction of
+            // that circle, so brash came out at a third of its intended density.
+            // Span the bay: from the land flank across to open sea.
+            const lat = sh.landSide * (sh.sideAt(0) - 120) - sh.landSide * rng() * 3400;
+            const a = GLACIER.openEnd + rng() * (sh.frontAt(lat) - GLACIER.openEnd - 120);
+            bx = sh.ux * a + sh.rx * lat;
+            by = sh.uy * a + sh.ry * lat;
+        } else {
+            const ang = rng() * Math.PI * 2;
+            const dst = Math.sqrt(rng()) * boundary.radius;
+            bx = boundary.x + Math.sin(ang) * dst;
+            by = boundary.y - Math.cos(ang) * dst;
+        }
+        if (!inGlacierWater(bx, by, 40)) continue;   // never on the ice sheet
+        if (!inMaskWater(bx, by, 30)) continue;      // nor on mask land
+        // Same glacier-end bias as the floes, so the texture agrees with the
+        // hazard: thick brash under the face, thinning toward the start.
+        if (iceGradientAccept(bx, by) < rng()) continue;
         brash.push({
-            x: boundary.x + Math.sin(ang) * dst,
-            y: boundary.y - Math.cos(ang) * dst,
+            x: bx,
+            y: by,
             r: 2.5 + rng() * 6,
             driftFactor: 0.8 + rng() * 0.7,
             skew: (rng() - 0.5) * 0.7
@@ -2676,10 +3296,118 @@ function drawBrashIce(ctx) {
     ctx.restore();
 }
 
+// Calving: the face drops new ice into the water DURING the race. This is the
+// one hazard that makes lap three a different course from lap one — the gap you
+// used on the way up may not be there on the way back.
+//
+// Deliberately conservative: a hard cap on total spawns, a clear-water check
+// against every boat and every existing floe, and nothing spawned before the
+// start. A berg materializing on top of a boat would be unfair in a way no
+// amount of drama pays for.
+const CALVING = { first: 45, every: 38, jitter: 22, max: 4, rMin: 90, rJit: 110, clear: 420 };
+function updateCalving(dt) {
+    const cv = state.course.calving;
+    if (!cv || state.race.status !== 'racing' || cv.spawned >= CALVING.max) return;
+    cv.timer -= dt;
+    if (cv.timer > 0) return;
+    cv.timer = CALVING.every + Math.random() * CALVING.jitter;
+
+    const face = state.course.islands.filter(i => i.isGlacier);
+    if (!face.length) return;
+    const src = face[Math.floor(Math.random() * face.length)];
+
+    // Drop it just downwind of the face, into open water.
+    const d = state.wind.baseDirection;
+    const ux = Math.sin(d), uy = -Math.cos(d);
+    const r = CALVING.rMin + Math.random() * CALVING.rJit;
+    const off = src.radius + r + 120;
+    const cx = src.x - ux * off;
+    const cy = src.y - uy * off;
+
+    const b = state.course.boundary;
+    if ((cx - b.x) ** 2 + (cy - b.y) ** 2 > (b.radius - 200) ** 2) return;
+    if (!inGlacierWater(cx, cy, r + 40)) return;   // calve into water, not into the sheet
+    for (const boat of state.boats) {
+        if ((cx - boat.x) ** 2 + (cy - boat.y) ** 2 < (CALVING.clear + r) ** 2) return;
+    }
+    for (const isl of state.course.islands) {
+        if ((cx - isl.x) ** 2 + (cy - isl.y) ** 2 < (isl.radius + r + 60) ** 2) return;
+    }
+
+    state.course.islands.push(makeFloe(cx, cy, r, Math.random));
+    state.course.navIslands = state.course.islands.filter(i => !i.isBank);
+    if (state.course.navVersion !== undefined) state.course.navVersion++;
+    cv.spawned++;
+    if (window.onRaceEvent) window.onRaceEvent('calving', { x: cx, y: cy, r });
+}
+
+// Ice grounds on the shore and rebounds. Floes already bounce off the arena rim
+// and off each other; without this they drift straight through the coast and
+// beach themselves inside the ice sheet.
+//
+// Reflected analytically off the shore profile rather than the collider
+// polygons: the coast is defined by frontAt/sideAt, so the surface normal is
+// just the course axis at the calving front and the lateral at the flank.
+function bounceFloeOffShore(isl) {
+    const sh = state.course.glacierShore;
+    if (!sh) return;
+    const along = isl.x * sh.ux + isl.y * sh.uy;
+    const lat = isl.x * sh.rx + isl.y * sh.ry;
+
+    // Land flank (one side only — the other side is open water)
+    const s = sh.landSide;
+    const sideLimit = sh.sideAt(along) - isl.radius * 0.6;
+    if (lat * s > sideLimit) {
+        const push = lat * s - sideLimit;
+        moveFloe(isl, -s * sh.rx * push, -s * sh.ry * push);
+        const vLat = isl.driftVx * sh.rx + isl.driftVy * sh.ry;
+        if (vLat * s > 0) { isl.driftVx -= 2 * vLat * sh.rx; isl.driftVy -= 2 * vLat * sh.ry; }
+    }
+
+    // Calving front
+    const frontLimit = sh.frontAt(lat) - isl.radius * 0.6;
+    if (along > frontLimit) {
+        const push = along - frontLimit;
+        moveFloe(isl, -sh.ux * push, -sh.uy * push);
+        const vAl = isl.driftVx * sh.ux + isl.driftVy * sh.uy;
+        if (vAl > 0) { isl.driftVx -= 2 * vAl * sh.ux; isl.driftVy -= 2 * vAl * sh.uy; }
+    }
+
+    // Standing islands — the rocky island and the fixed low ice. The shore
+    // profile above does not know about them, so ice drifted straight over the
+    // top. Same radial push-and-reflect the floe-on-floe bounce uses, except
+    // these never move, so the floe absorbs all of the correction.
+    for (const other of state.course.islands) {
+        if (other === isl || other.isFloe || other.hidden) continue;
+        if (other.fromMask) {
+            // Concave coastline: bounding-radius push is meaningless here (the
+            // main landmass covers most of the map) and let ice sit on the shore
+            // and on the rocky island. Polygon test instead.
+            const res = circlePolyCollide(isl.x, isl.y, isl.radius, other.vertices);
+            if (!res) continue;
+            moveFloe(isl, -res.axis.x * res.overlap, -res.axis.y * res.overlap);
+            const nx2 = -res.axis.x, ny2 = -res.axis.y;
+            const dot2 = isl.driftVx * nx2 + isl.driftVy * ny2;
+            if (dot2 < 0) { isl.driftVx -= 2 * dot2 * nx2; isl.driftVy -= 2 * dot2 * ny2; }
+            continue;
+        }
+        const dx = isl.x - other.x, dy = isl.y - other.y;
+        const need = other.radius + isl.radius;
+        const dd = Math.sqrt(dx * dx + dy * dy);
+        if (dd >= need || dd < 1) continue;
+        const nx = dx / dd, ny = dy / dd;
+        moveFloe(isl, nx * (need - dd), ny * (need - dd));
+        const dot = isl.driftVx * nx + isl.driftVy * ny;
+        if (dot < 0) { isl.driftVx -= 2 * dot * nx; isl.driftVy -= 2 * dot * ny; }
+    }
+}
+
 function updateIceFloes(dt) {
     if (!state.race.venueFx || !state.race.venueFx.ice || !state.course.islands) return;
     const boundary = state.course.boundary;
     if (!boundary) return;
+
+    updateCalving(dt);
 
     // Ice drifts at ~2-3% of the wind, skewed slightly off the wind axis.
     // (0.55 -> 0.45: slower ice erodes the AI's avoidance margins less)
@@ -2696,11 +3424,24 @@ function updateIceFloes(dt) {
             bi.x += -Math.sin(dir) * base * bi.driftFactor * dt;
             bi.y += Math.cos(dir) * base * bi.driftFactor * dt;
             const rx2 = bi.x - boundary.x, ry2 = bi.y - boundary.y;
-            if (rx2 * rx2 + ry2 * ry2 > (boundary.radius + 100) ** 2) {
-                const ang = d + (Math.random() - 0.5) * 2.0;
-                const rr = boundary.radius - 150;
-                bi.x = boundary.x + Math.sin(ang) * rr;
-                bi.y = boundary.y - Math.cos(ang) * rr;
+            const gone = rx2 * rx2 + ry2 * ry2 > (boundary.radius + 100) ** 2
+                      || !inGlacierWater(bi.x, bi.y, -30);   // drifted onto the sheet
+            if (gone) {
+                const sh = state.course.glacierShore;
+                if (sh) {
+                    // Recycle under the calving face: brash comes off the glacier,
+                    // so it should reappear at the head of the sound, not on the
+                    // rim of a circle that is now mostly land.
+                    const lat = sh.landSide * (sh.sideAt(0) - 250) - sh.landSide * Math.random() * 3200;
+                    const a = sh.frontAt(lat) - 200 - Math.random() * 600;
+                    bi.x = sh.ux * a + sh.rx * lat;
+                    bi.y = sh.uy * a + sh.ry * lat;
+                } else {
+                    const ang = d + (Math.random() - 0.5) * 2.0;
+                    const rr = boundary.radius - 150;
+                    bi.x = boundary.x + Math.sin(ang) * rr;
+                    bi.y = boundary.y - Math.cos(ang) * rr;
+                }
             }
         }
     }
@@ -2720,6 +3461,7 @@ function updateIceFloes(dt) {
 
         moveFloe(isl, isl.driftVx * dt, isl.driftVy * dt);
         isl.spin += isl.spinRate * dt;
+        if (isl.penguins) updateFloeColony(isl, dt);
 
         // Arena rim: bounce back inward (reflect velocity about the inward
         // normal) instead of teleport-respawning.
@@ -2735,6 +3477,8 @@ function updateIceFloes(dt) {
             }
             moveFloe(isl, (rim - rd) * nx, (rim - rd) * ny);
         }
+
+        bounceFloeOffShore(isl);
     }
 
     // Floe-on-floe BOUNCE: mass-weighted positional separation plus an
@@ -2777,10 +3521,302 @@ function updateIceFloes(dt) {
 
     // One rebuild per floe, after every push and bounce has settled
     for (const isl of floes) syncFloe(isl);
+
+    // Second shore pass. The floe-on-floe separation above runs AFTER the
+    // per-floe shore bounce and can shove ice back into the coast, where it then
+    // sits. Re-resolve against land last so the coastline always wins — and if a
+    // floe STILL overlaps after that, it is wedged somewhere the push cannot
+    // resolve (a narrow inlet where opposite shores cancel). Relocate it rather
+    // than leave a berg sitting on land: the ice is drifting scenery, and one
+    // beached floe reads as a bug every time.
+    for (const f of floes) {
+        bounceFloeOffShore(f);
+        if (!state.course.maskGeo) continue;
+        let stuck = false;
+        for (const isl of state.course.maskGeo.islands) {
+            if (circlePolyCollide(f.x, f.y, f.radius * 0.9, isl.vertices)) { stuck = true; break; }
+        }
+        if (!stuck) continue;
+        for (let tries = 0; tries < 24; tries++) {
+            const a = Math.random() * Math.PI * 2;
+            const d = Math.sqrt(Math.random()) * (boundary.radius - 400);
+            const nx2 = boundary.x + Math.sin(a) * d, ny2 = boundary.y - Math.cos(a) * d;
+            if (!inMaskWater(nx2, ny2, f.radius + 120)) continue;
+            moveFloe(f, nx2 - f.x, ny2 - f.y);
+            break;
+        }
+    }
 }
 
 // Ice that spins faster than this reads as a cartoon top, not a floe
 function clampSpin(w) { return Math.max(-0.75, Math.min(0.75, w)); }
+
+// ---------------------------------------------------------------------------
+// Glacier Sound orca pods
+//
+// Tuned in art/_orcapreview.html; the numbers are mirrored in art/manifest.json
+// under behaviours["orca-pod"], which also records what was tried and rejected.
+//
+// Everything here is a PURE FUNCTION OF TIME AND INDEX. No stored positions, no
+// particle lists, no integration, and — critically — no Math.random anywhere in
+// the render path, which the eval harness depends on staying untouched. A pod's
+// past position is recomputed rather than remembered, which is how a blow can
+// hang where it was exhaled without any state to reset between races.
+//
+// Drawn in three passes, because the layering is what sells it:
+//   ORCA_PASS.under   before drawWakes      — bodies, so wind waves ride over them
+//   ORCA_PASS.surface after drawSwell       — the dorsal cut and its bubbles
+//   ORCA_PASS.air     after the boat loop   — blows; vapour is above the hulls
+const ORCA = {
+    beatAmp: 52 * Math.PI / 180, beatRate: 0.66, yaw: 0.010,
+    cycleSec: 29, dwell: 0.42, surfaceDepth: 0.11, vanishDepth: 0.84,
+    depthShrink: 0.20, shadow: 0.55, wake: 0.81, bubbles: 39,
+    blow: 0.84, blowLinger: 4.4, dorsalAt: 0.44, blowholeAt: 0.16,
+    pods: 2, podSize: 6, wanderSpeed: 1.0,
+    vary: 0.51, vSize: 0.40, vAmp: 0.24, vRate: 0.23, vYaw: 0.60,
+    hinge: { a: 0.7998, b: 0.7988, c: 0.7715 },
+    base:  { a: 88, b: 82, c: 50 },
+};
+const orcaImg = {}, orcaSil = {};
+let orcaLoaded = false, orcaBlowSprite = null;
+for (const [k, f] of Object.entries({
+    a_body: 'orca-body', a_flukes: 'orca-flukes',
+    b_body: 'orca-b-body', b_flukes: 'orca-b-flukes',
+    c_body: 'orca-calf-body', c_flukes: 'orca-calf-flukes' })) {
+    const im = new Image();
+    im.onload = () => { orcaLoaded = Object.values(orcaImg).every(i => i.complete && i.naturalWidth); };
+    im.src = 'assets/images/props/arctic/' + f + '.png';
+    orcaImg[k] = im;
+}
+
+// Flat dark silhouette per part, baked once per part. Composite ops only —
+// getImageData taints the canvas under file://, the same constraint
+// getMarkImgGray() works under.
+function getOrcaSil(k) {
+    if (orcaSil[k]) return orcaSil[k];
+    const im = orcaImg[k];
+    if (!im.complete || !im.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = im.naturalWidth; c.height = im.naturalHeight;
+    const g = c.getContext('2d');
+    g.drawImage(im, 0, 0);
+    g.globalCompositeOperation = 'source-atop';
+    g.fillStyle = '#0a1a2c';               // a shade darker than deep polar water
+    g.fillRect(0, 0, c.width, c.height);
+    orcaSil[k] = c;
+    return c;
+}
+// Soft radial for the blow, baked once — building gradients per frame was one of
+// this game's biggest paint costs (see bakeGustSprites).
+function getOrcaBlowSprite() {
+    if (orcaBlowSprite) return orcaBlowSprite;
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const g = c.getContext('2d');
+    const grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    grd.addColorStop(0.00, 'rgba(255,255,255,0.95)');
+    grd.addColorStop(0.40, 'rgba(240,249,255,0.42)');
+    grd.addColorStop(1.00, 'rgba(240,249,255,0)');
+    g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
+    orcaBlowSprite = c;
+    return c;
+}
+
+const orcaHash = (i, k) => { const s = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453; return s - Math.floor(s); };
+const orcaJit  = (i, k, v) => 1 + (orcaHash(i, k) - 0.5) * 2 * v;
+const orcaSmooth = x => x * x * (3 - 2 * x);
+const orcaClamp = x => x < 0 ? 0 : x > 1 ? 1 : x;
+
+// Depth over one dive. Deliberately NOT a sine: a sine spends equal time
+// everywhere and reads as bobbing. The animal rises, swims up top for a stretch,
+// sinks, then stays down. surfaceDepth is not zero either — a swimming orca is
+// never fully out of the water, and bottoming at 0 draws it flat like a decal.
+function orcaDepthAt(u) {
+    const rise = 0.13, sink = 0.13, m = ORCA.surfaceDepth;
+    if (u < rise)                    return m + (1 - m) * (1 - orcaSmooth(u / rise));
+    if (u < rise + ORCA.dwell)       return m;
+    if (u < rise + ORCA.dwell + sink) return m + (1 - m) * orcaSmooth((u - rise - ORCA.dwell) / sink);
+    return 1;
+}
+
+// A pod wanders on a sum of sines with incommensurate periods, scaled to the
+// course boundary so it works on any sized map. Never visibly repeats, but stays
+// a pure function of time.
+function orcaCourseArea() {
+    // Anchor the wander to the RACECOURSE, not the boundary. Glacier Sound's
+    // boundary radius is 4500 while the marks span a few hundred units, so
+    // wandering the boundary put the pods in the far ocean where the player
+    // never sees them. Cached per race — the marks do not move.
+    if (state._orcaArea && state._orcaArea.n === state.course.marks.length) return state._orcaArea;
+    const ms = state.course.marks || [];
+    if (!ms.length) return { x: 0, y: 0, r: 700, n: 0 };
+    let cx = 0, cy = 0;
+    for (const m of ms) { cx += m.x; cy += m.y; }
+    cx /= ms.length; cy /= ms.length;
+    let far = 0;
+    for (const m of ms) far = Math.max(far, Math.hypot(m.x - cx, m.y - cy));
+    state._orcaArea = { x: cx, y: cy, r: Math.max(320, far * 0.5), n: ms.length };
+    return state._orcaArea;
+}
+function orcaPodCentre(pi, tt) {
+    const a = orcaCourseArea();
+    const R = a.r, cx = a.x, cy = a.y;
+    const s = pi * 37.7, k = ORCA.wanderSpeed;
+    return {
+        x: cx + Math.sin(tt * 0.055 * k + s) * R + Math.sin(tt * 0.021 * k + s * 1.7) * R * 0.32,
+        y: cy + Math.cos(tt * 0.041 * k + s * 1.3) * R * 0.82 + Math.sin(tt * 0.017 * k + s * 2.1) * R * 0.27,
+    };
+}
+// Heading from the path's own derivative, so a pod always faces where it is
+// actually going and there is no heading state to drift out of sync.
+function orcaPodHeading(pi, tt) {
+    const a = orcaPodCentre(pi, tt - 0.12), b = orcaPodCentre(pi, tt + 0.12);
+    return Math.atan2(b.y - a.y, b.x - a.x) + Math.PI / 2;
+}
+// Calf count is rolled once per pod — 0 rarely, 1 usually, 2 sometimes — and
+// calves take the trailing slots, so they swim at the back where they belong.
+function orcaCalves(pi) { const r = orcaHash(ORCA.podSize + pi * 7, 31); return r < 0.12 ? 0 : (r < 0.86 ? 1 : 2); }
+
+function orcaIndividual(i, slot, pi) {
+    const kind = slot >= ORCA.podSize - orcaCalves(pi) ? 'c' : (orcaHash(i, 8) < 0.42 ? 'b' : 'a');
+    return {
+        kind, hinge: ORCA.hinge[kind], seed: i,
+        size: ORCA.base[kind] * orcaJit(i, 1, ORCA.vary * ORCA.vSize),
+        amp:  ORCA.beatAmp    * orcaJit(i, 2, ORCA.vary * ORCA.vAmp),
+        rate: ORCA.beatRate   * orcaJit(i, 3, ORCA.vary * ORCA.vRate),
+        yaw:  ORCA.yaw        * orcaJit(i, 4, ORCA.vary * ORCA.vYaw),
+        phase: orcaHash(i, 5) * Math.PI * 2, uph: orcaHash(i, 6),
+    };
+}
+function orcaPos(i, o, tt, pi) {
+    const c = orcaPodCentre(pi, tt), hd = orcaPodHeading(pi, tt);
+    const back = (0.35 + orcaHash(i, 9) * 0.9) * 78 * (o.kind === 'c' ? 0.55 : 1);
+    const side = (orcaHash(i, 10) - 0.5) * 2 * 74 * (o.kind === 'c' ? 0.45 : 1)
+               + Math.sin(tt * 0.7 + o.uph * 6.28) * 9;
+    const cos = Math.cos(hd - Math.PI / 2), sin = Math.sin(hd - Math.PI / 2);
+    return { x: c.x - back * cos - side * sin, y: c.y - back * sin + side * cos,
+             heading: hd + Math.sin(tt * 0.42 + o.uph * 6.28) * o.yaw };
+}
+
+// Resolve the whole population once per frame, viewport-culled, so the three
+// passes agree about where everything is without recomputing the sines.
+let orcaFrame = [], orcaFrameAt = -1;
+function orcaPopulation(t) {
+    if (orcaFrameAt === t) return orcaFrame;
+    orcaFrameAt = t; orcaFrame = [];
+    const viewR = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) * 0.6 + 160;
+    const viewR2 = viewR * viewR;
+    for (let pi = 0; pi < ORCA.pods; pi++) {
+        for (let k = 0; k < ORCA.podSize; k++) {
+            const i = pi * 13 + k;
+            const o = orcaIndividual(i, k, pi);
+            const q = orcaPos(i, o, t, pi);
+            const dx = q.x - state.camera.x, dy = q.y - state.camera.y;
+            if (dx * dx + dy * dy > viewR2) continue;
+            orcaFrame.push({ o, i, pi, x: q.x, y: q.y, h: q.heading,
+                             d: orcaDepthAt(((t / ORCA.cycleSec) + o.uph) % 1) });
+        }
+    }
+    return orcaFrame;
+}
+
+function orcaActive() {
+    return settings.venue === 'arctic' && orcaLoaded && !!(state.course && state.course.marks && state.course.marks.length);
+}
+
+// pass: 'under' | 'surface' | 'air'
+function drawOrcaPods(ctx, pass) {
+    if (!orcaActive()) return;
+    const t = state.time;
+    const pop = orcaPopulation(t);
+
+    if (pass === 'under') {
+        for (const e of pop) {
+            const o = e.o, d = e.d;
+            // Real sprite when shallow, flat silhouette through the mid depths,
+            // nothing at the bottom. Losing the markings is what reads as UNDER
+            // water; a merely faded sprite reads as far away.
+            const solid  = 1 - orcaSmooth(orcaClamp((d - ORCA.surfaceDepth) / 0.42));
+            const shadow = ORCA.shadow * orcaSmooth(orcaClamp(d / 0.34))
+                         * (1 - orcaSmooth(orcaClamp((d - ORCA.vanishDepth + 0.30) / 0.30)));
+            if (solid <= 0.004 && shadow <= 0.004) continue;
+            const sz = o.size * (1 - d * ORCA.depthShrink);
+            const k = Math.cos(Math.sin(t * o.rate * Math.PI * 2 + o.phase) * o.amp);
+            const h = -sz / 2 + o.hinge * sz;
+            const paint = (bodySrc, flukeSrc, alpha) => {
+                if (!bodySrc || !flukeSrc || alpha <= 0.004) return;
+                ctx.save(); ctx.globalAlpha = alpha;
+                ctx.translate(e.x, e.y); ctx.rotate(e.h);
+                ctx.save(); ctx.translate(0, h); ctx.scale(1, k); ctx.translate(0, -h);
+                ctx.drawImage(flukeSrc, -sz / 2, -sz / 2, sz, sz); ctx.restore();
+                ctx.drawImage(bodySrc, -sz / 2, -sz / 2, sz, sz);
+                ctx.restore();
+            };
+            paint(getOrcaSil(o.kind + '_body'), getOrcaSil(o.kind + '_flukes'), shadow);
+            paint(orcaImg[o.kind + '_body'], orcaImg[o.kind + '_flukes'], solid);
+        }
+        return;
+    }
+
+    if (pass === 'surface') {
+        for (const e of pop) {
+            const o = e.o;
+            const near = 1 - orcaSmooth(orcaClamp((e.d - ORCA.surfaceDepth) / 0.26));
+            if (near <= 0.01) continue;
+            const sz = o.size * (1 - e.d * ORCA.depthShrink);
+            const a = near * ORCA.wake;
+            ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.h);
+            const fy = -sz / 2 + ORCA.dorsalAt * sz, len = sz * 0.95;
+            // a fin slices the surface: narrow and near-white, not wide and pale
+            const grd = ctx.createLinearGradient(0, fy, 0, fy + len);
+            grd.addColorStop(0.00, 'rgba(255,255,255,' + (0.85 * a).toFixed(3) + ')');
+            grd.addColorStop(0.30, 'rgba(246,252,255,' + (0.42 * a).toFixed(3) + ')');
+            grd.addColorStop(1.00, 'rgba(246,252,255,0)');
+            ctx.strokeStyle = grd; ctx.lineWidth = Math.max(0.9, sz * 0.022); ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(0, fy); ctx.lineTo(0, fy + len); ctx.stroke();
+            ctx.fillStyle = '#ffffff';
+            for (let b = 0; b < ORCA.bubbles; b++) {
+                const u = (orcaHash(o.seed, 40 + b) + t * 0.42) % 1;
+                const fade = (1 - u) * (1 - u);
+                if (fade < 0.02) continue;
+                const tight = orcaHash(o.seed, 100 + b) < 0.55;
+                const lat = (orcaHash(o.seed, 60 + b) - 0.5) * 2 * sz * (tight ? 0.030 : 0.105) * u;
+                const r = sz * (0.007 + orcaHash(o.seed, 80 + b) * (tight ? 0.013 : 0.024)) * (0.6 + u * 0.7);
+                ctx.globalAlpha = 0.9 * a * fade;
+                ctx.beginPath(); ctx.arc(lat, fy + u * len, r, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.globalAlpha = 0.55 * a;
+            ctx.beginPath(); ctx.ellipse(0, fy + sz * 0.015, sz * 0.022, sz * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+        return;
+    }
+
+    // 'air' — the blow hangs where it was exhaled while the animal swims on, so
+    // it is placed at the pod's PAST position, recomputed rather than stored.
+    const sprite = getOrcaBlowSprite();
+    if (!sprite || ORCA.blow <= 0) return;
+    const INT = Math.max(4, ORCA.blowLinger * 1.35);
+    for (const e of pop) {
+        const o = e.o;
+        const age = ((t + orcaHash(o.seed, 3) * INT) % INT) / ORCA.blowLinger;
+        if (age >= 1) continue;
+        const te = t - age * ORCA.blowLinger;
+        if (orcaDepthAt(((te / ORCA.cycleSec) + o.uph) % 1) > ORCA.surfaceDepth + 0.03) continue;
+        const q = orcaPos(e.i, o, te, e.pi);
+        const off = -o.size * 0.5 + ORCA.blowholeAt * o.size;
+        const bx = q.x - Math.sin(q.heading) * off, by = q.y + Math.cos(q.heading) * off;
+        // dense point, rapid burst, long diffusion — density peaks at exhalation
+        // and only falls, or it reads as fading IN rather than blowing
+        const r = o.size * (0.045 + 0.50 * (1 - Math.pow(1 - age, 2.8)));
+        const drift = age * o.size * 0.34;
+        ctx.save();
+        ctx.globalAlpha = Math.pow(1 - age, 1.8) * 0.95 * ORCA.blow;
+        ctx.translate(bx + Math.sin(q.heading) * drift, by - Math.cos(q.heading) * drift * 0.35);
+        ctx.scale(1, 0.82 + age * 0.55);
+        ctx.drawImage(sprite, -r, -r, r * 2, r * 2);
+        ctx.restore();
+    }
+}
 
 // Swamp weed patches: soft circular drag zones (no collision — just slow).
 function generateWeeds(rng) {
@@ -3260,6 +4296,32 @@ function getSpinnakerSprite(pattern, colorA, colorB) {
     g.globalCompositeOperation = 'source-over';
     boatTintCache.set(key, c);
     return c;
+}
+
+// Penguin species that ride the floes. These are the art pipeline's ELEMENT
+// masters, shipped individually rather than baked into a group sprite: a bird
+// only gets to waddle (and later dive) if the engine owns it as its own object.
+//
+// The per-species numbers are the point, not decoration. At 15-19px on screen
+// the plumage that separates an emperor from an adelie is two or three pixels
+// and reads as noise, so species is carried by MOVEMENT — a stately emperor
+// rocking slowly against an adelie skittering flat out is legible where the
+// markings are not.
+const PENGUIN_KINDS = {
+    //  world = display px.  speed = units/sec on the ice.  rock = waddle yaw in
+    //  radians.  rate = waddle cycles/sec.  lat = sideways slide toward the
+    //  loaded foot, as a fraction of the bird's size.  density = birds per unit
+    //  of floe radius, relative.
+    emperor:  { world: 25, speed: 1.1, rock: 0.09, rate: 1.7, lat: 0.035, density: 0.55 },
+    gentoo:   { world: 21, speed: 4.6, rock: 0.15, rate: 2.9, lat: 0.040, density: 0.85 },
+    macaroni: { world: 27, speed: 3.6, rock: 0.16, rate: 2.8, lat: 0.025, density: 1.30 },
+    adelie:   { world: 20, speed: 3.4, rock: 0.28, rate: 2.7, lat: 0.090, density: 1.00 },
+};
+const PENGUIN_NAMES = Object.keys(PENGUIN_KINDS);
+const penguinImgs = {};
+for (const sp of PENGUIN_NAMES) {
+    penguinImgs[sp] = new Image();
+    penguinImgs[sp].src = 'assets/images/props/arctic/penguin-' + sp + '.png';
 }
 
 // Inflatable tetrahedron racing mark; gray bake for inactive marks
@@ -3849,6 +4911,13 @@ function getWindAt(x, y) {
     const shadowIslands = state.course.navIslands || state.course.islands;
     if (shadowIslands) {
         for (const isl of shadowIslands) {
+            // Mask coastlines cast NO shadow. The shadow model is circular —
+            // width comes from isl.radius — and a mask landmass has a bounding
+            // radius of ~9400 units, over half the world, so its "shadow"
+            // blanketed the entire map and killed the breeze everywhere.
+            // A real coastline shadow has to be cast from the shoreline itself,
+            // which is its own piece of work; until then, none.
+            if (isl.fromMask) continue;
             // Distance from island center
             const dx = x - isl.x;
             const dy = y - isl.y;
@@ -6437,6 +7506,136 @@ function updateBoatRaceState(boat, dt) {
         }
     }
 
+    // Island course waypoint: the HUD arrow and distance should point at the
+    // mountain while outbound and at the finish line coming home. The gate-based
+    // block above targets the unused windward gate, so override it here.
+    if (state.course.type === 'islandRound' && state.course.roundMark && marks && marks.length >= 2) {
+        const rs0 = boat.raceState;
+        let tx, ty;
+        if (rs0.leg <= 1) {
+            tx = state.course.roundMark.x; ty = state.course.roundMark.y;
+        } else {
+            const c = getClosestPointOnSegment(boat.x, boat.y, marks[0].x, marks[0].y, marks[1].x, marks[1].y);
+            tx = c.x; ty = c.y;
+        }
+        const wdx = tx - boat.x, wdy = ty - boat.y;
+        rs0.nextWaypoint = {
+            x: tx, y: ty,
+            dist: Math.sqrt(wdx * wdx + wdy * wdy) * 0.2,
+            angle: Math.atan2(wdx, -wdy)
+        };
+    }
+
+    // ISLAND-ROUNDING COURSE (Glacier Sound): start line -> one rounding of the
+    // granite mountain, leaving it to STARBOARD -> back across the same line.
+    //
+    // A rounding is not a gate crossing, so it is measured as swept angle: track
+    // the boat's bearing FROM the mark and accumulate the signed change while it
+    // is inside the zone. A legal rounding sweeps ~180 degrees the correct way.
+    //
+    // Sign convention, derived rather than guessed. Heading h gives forward
+    // (sin h, -cos h) on this y-down canvas, so starboard is (cos h, sin h).
+    // Mark to starboard means (C-P).(cos h, sin h) > 0, i.e. r.(cos h, sin h) < 0
+    // for r = P-C. The bearing rate is (r x v)/|r|^2 and
+    // r x v = -(rx*cos h + ry*sin h) > 0. So LEAVING THE MARK TO STARBOARD MEANS
+    // THE BEARING ANGLE INCREASES — accumulate positive.
+    if (state.course.type === 'islandRound' && marks && marks.length >= 2) {
+        const rs = boat.raceState;
+        const rm = state.course.roundMark;
+        const m1 = marks[0], m2 = marks[1];
+        const intersect = checkLineIntersection(rs.lastPos.x, rs.lastPos.y, boat.x, boat.y, m1.x, m1.y, m2.x, m2.y);
+        let crossingDir = 0;
+        if (intersect) {
+            const nx = m2.y - m1.y, ny = -(m2.x - m1.x);
+            crossingDir = ((boat.x - rs.lastPos.x) * nx + (boat.y - rs.lastPos.y) * ny) > 0 ? 1 : -1;
+        }
+
+        if (state.race.status === 'prestart') {
+            if (intersect && crossingDir === 1) {
+                rs.ocs = true;
+                if (boat.isPlayer) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
+            } else if (intersect) {
+                rs.ocs = false;
+                if (boat.isPlayer) hideRaceMessage();
+            }
+        } else if (state.race.status === 'racing' && !rs.finished) {
+            // Leg 0 -> 1: start
+            if (rs.leg === 0 && intersect) {
+                if (crossingDir === 1 && !rs.ocs) {
+                    rs.leg = 1;
+                    rs.roundSweep = 0;
+                    rs.roundArmed = false;
+                    if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 0, time: state.race.timer });
+                    if (boat.isPlayer) { Sound.playGateClear(); Sound.updateMusic(); }
+                    rs.startTimeDisplay = state.race.timer;
+                    rs.startTimeDisplayTimer = 5.0;
+                    rs.startLegDuration = state.race.timer;
+                    rs.legStartTime = state.race.timer;
+                } else if (crossingDir === -1) {
+                    rs.ocs = false;
+                    if (boat.isPlayer) hideRaceMessage();
+                }
+            }
+
+            // Leg 1: sweep the mark
+            if (rs.leg === 1 && rm) {
+                const rx0 = rs.lastPos.x - rm.x, ry0 = rs.lastPos.y - rm.y;
+                const rx1 = boat.x - rm.x, ry1 = boat.y - rm.y;
+                const inZone = (rx1 * rx1 + ry1 * ry1) < rm.zone * rm.zone;
+                if (inZone) {
+                    rs.roundArmed = true;
+                    let dA = Math.atan2(ry1, rx1) - Math.atan2(ry0, rx0);
+                    while (dA > Math.PI) dA -= Math.PI * 2;
+                    while (dA < -Math.PI) dA += Math.PI * 2;
+                    rs.roundSweep = (rs.roundSweep || 0) + dA;
+                    // 160 degrees rather than a strict 180: the mark has real
+                    // width, so a clean rounding that starts and ends slightly
+                    // wide of the zone sweeps a little under half a turn.
+                    if (rs.roundSweep > Math.PI * 0.89) {
+                        rs.leg = 2;
+                        rs.isRounding = false;
+                        const split = state.race.timer - rs.legStartTime;
+                        rs.lastLegDuration = split;
+                        rs.legTimes.push(split);
+                        rs.legSplitTimer = 5.0;
+                        rs.legStartTime = state.race.timer;
+                        if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 1, time: state.race.timer });
+                        if (boat.isPlayer) { Sound.playGateClear(); Sound.updateMusic(); }
+                        else Sayings.queueQuote(boat, "rounded_mark");
+                    } else if (rs.roundSweep < -Math.PI * 0.55 && boat.isPlayer && !rs._wrongRound) {
+                        rs._wrongRound = true;
+                        showRaceMessage("WRONG WAY ROUND — LEAVE IT TO STARBOARD", "text-orange-500", "border-orange-500/50");
+                        setTimeout(hideRaceMessage, 2500);
+                    }
+                }
+            }
+
+            // Leg 2 -> finish: back across the line, the other way
+            if (rs.leg === 2 && intersect) {
+                if (crossingDir === -1) {
+                    rs.leg = 3;
+                    rs.finished = true;
+                    rs.finishTime = state.race.timer;
+                    if (rs.penalty) rs.finishTime += 15 * Math.max(1, rs.penaltyTurnsOwed);
+                    const split = state.race.timer - rs.legStartTime;
+                    rs.legTimes.push(split);
+                    if (window.onRaceEvent) window.onRaceEvent('finish', { boat, time: rs.finishTime });
+                    if (boat.isPlayer) {
+                        showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
+                        Sound.playFinish();
+                        if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                    } else {
+                        Sayings.queueQuote(boat, "finished_race");
+                    }
+                } else if (boat.isPlayer) {
+                    showRaceMessage("ROUND THE MOUNTAIN FIRST", "text-orange-500", "border-orange-500/50");
+                    setTimeout(hideRaceMessage, 2000);
+                }
+            }
+        }
+        return;   // caller stores lastPos
+    }
+
     // Crossing Logic
     // Same logic as before, applied to boat.raceState
     if (marks && marks.length >= 4) {
@@ -7031,7 +8230,18 @@ function update(dt) {
 
         // Calculate Cutoff Time (0.1875s per meter)
         // legLength is in units. 5 units = 1 meter.
-        const totalDistMeters = (state.race.totalLegs * state.race.legLength) / 5;
+        let totalDistMeters = (state.race.totalLegs * state.race.legLength) / 5;
+        // The island course does not use legLength: its two legs run to the
+        // rounding mark and back, and one of them is a beat, which costs ~1.4x
+        // the rhumb line in sailed distance plus the rounding itself. Computing
+        // the cutoff from legLength force-finished every boat at 300s with the
+        // fleet still spread across legs 0-2.
+        if (state.course.type === 'islandRound' && state.course.roundMark) {
+            const m0 = state.course.marks[0], m1 = state.course.marks[1];
+            const sx = (m0.x + m1.x) / 2, sy = (m0.y + m1.y) / 2;
+            const legU = Math.hypot(state.course.roundMark.x - sx, state.course.roundMark.y - sy);
+            totalDistMeters = (legU * 2 * 1.45) / 5;
+        }
         const cutoffTime = totalDistMeters * 0.1875;
 
         if (state.race.timer >= cutoffTime) { // Dynamic Cutoff
@@ -7696,7 +8906,10 @@ function drawRoundingArrows(ctx) {
 function drawActiveGateLine(ctx) {
     const player = state.boats[0];
     let indices;
-    if (state.race.status === 'finished' || player.raceState.finished) {
+    if (state.course.type === 'islandRound') {
+        // One line, and it is both start and finish — always drawn.
+        indices = [0, 1];
+    } else if (state.race.status === 'finished' || player.raceState.finished) {
         indices = (state.race.totalLegs % 2 === 0) ? [0, 1] : [2, 3];
     } else {
         if (player.raceState.leg !== 0 && player.raceState.leg !== state.race.totalLegs) return;
@@ -7820,9 +9033,48 @@ function drawLadderLines(ctx) {
     ctx.restore();
 }
 
+// Is the target upwind of the boat? On a fixed course the legs are not
+// alternating beats and runs, so this has to be measured rather than inferred
+// from the leg number.
+function isUpwindTo(boat, target) {
+    const wx = Math.sin(state.wind.direction), wy = -Math.cos(state.wind.direction);
+    const dx = target.x - boat.x, dy = target.y - boat.y;
+    const l = Math.hypot(dx, dy) || 1;
+    return ((dx / l) * wx + (dy / l) * wy) > 0;   // pointing into the wind
+}
+
 function drawLayLines(ctx) {
     if (!state.showNavAids || state.race.status === 'finished') return;
     const player = state.boats[0];
+
+    // Island course: lay lines onto the ROUNDING MARK while outbound, and onto
+    // the finish line coming home. There is no windward gate to index.
+    if (state.course.type === 'islandRound') {
+        // Laylines belong to the START only: they are the approach to the line
+        // before the gun. The rounding is a single mark with a zone circle, and
+        // the finish is a line you simply cross — neither wants laylines.
+        if (player.raceState.leg !== 0) return;
+        const pts = [state.course.marks[0], state.course.marks[1]];
+        const up = true;
+        ctx.save(); ctx.lineWidth = 5.5;
+        for (let k = 0; k < pts.length; k++) {
+            const m = pts[k];
+            const zr = 0;
+            for (const sgn of [k === 0 ? -1 : 1]) {
+                const a = state.wind.direction + sgn * Math.PI / 4 + (up ? Math.PI : 0);
+                const dx = Math.sin(a), dy = -Math.cos(a);
+                const sx = m.x + dx * zr, sy = m.y + dy * zr;
+                const t = rayCircleIntersection(sx, sy, dx, dy, state.course.boundary.x, state.course.boundary.y, state.course.boundary.radius);
+                if (t !== null) {
+                    ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`;
+                    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + dx * t, sy + dy * t); ctx.stroke();
+                }
+            }
+        }
+        ctx.restore();
+        return;
+    }
+
     let targets = (player.raceState.leg % 2 === 0) ? [0, 1] : [2, 3];
     const isUpwind = (player.raceState.leg % 2 !== 0) || (player.raceState.leg === 0);
     const zoneRadius = (player.raceState.leg === 0 || player.raceState.leg === state.race.totalLegs) ? 0 : 165;
@@ -7851,6 +9103,22 @@ function drawMarkZones(ctx) {
     if (!state.showNavAids || state.race.status === 'finished') return;
     const player = state.boats[0];
     let active = [];
+
+    // Island course: ONE zone circle around the rounding mark. Marks 2/3 are
+    // parked beside the granite island for code that indexes them, and drawing
+    // their zones put a phantom gate at the rounding.
+    if (state.course.type === 'islandRound') {
+        const rm = state.course.roundMark;
+        if (!rm || player.raceState.leg !== 1) return;
+        ctx.save();
+        ctx.strokeStyle = `rgba(${NAV_RGB}, 0.55)`;
+        ctx.lineWidth = 5; ctx.setLineDash([26, 20]);
+        ctx.lineDashOffset = -state.time * 18;
+        ctx.beginPath(); ctx.arc(rm.x, rm.y, rm.zone, 0, Math.PI * 2); ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+        return;
+    }
 
     // Exclude Start (0) and Finish (totalLegs)
     if (player.raceState.leg > 0 && player.raceState.leg < state.race.totalLegs) {
@@ -8164,7 +9432,10 @@ function drawMarkBodies(ctx) {
     // The sprite is fill-normalized at ingest (fillTo 0.96), so W is very close to the
     // mark's real drawn width — ~29px here. Cosmetic only: markRadius (12) is unchanged.
     const W = 30, H = W * (markImg.naturalHeight / (markImg.naturalWidth || 1)) || 26;
-    for (let i=0; i<state.course.marks.length; i++) {
+    // The island course uses only the start/finish line; marks 2 and 3 exist
+    // in the array (lots of code indexes them) but are not part of the course.
+    const markCount = state.course.type === 'islandRound' ? 2 : state.course.marks.length;
+    for (let i=0; i<markCount; i++) {
         const m = state.course.marks[i];
         ctx.save(); ctx.translate(m.x, m.y);
         // Very subtle bob: slow breathing scale + faint rotation wobble, phased
@@ -8198,9 +9469,9 @@ function drawMarkBodies(ctx) {
 function drawBoundary(ctx) {
     const b = state.course.boundary;
     if (!b) return;
-    // River: the shore IS the boundary — the club-branded circle would paint
-    // across the land.
-    if (state.course.riverShore) return;
+    // River and Glacier Sound: the shore IS the boundary — the club-branded
+    // circle would paint across the land.
+    if (state.course.riverShore || state.course.glacierShore) return;
 
     // Viewport cull: the ring is only visible when the camera is near the
     // radius band. Mid-course (most of a race) this skips EVERYTHING —
@@ -8318,15 +9589,22 @@ function drawMinimap() {
         minX = Math.min(minX, m.x); maxX = Math.max(maxX, m.x);
         minY = Math.min(minY, m.y); maxY = Math.max(maxY, m.y);
     }
-    const pad = 200;
+    // Mask venues show the WHOLE map: the geography is authored and fixed, so a
+    // minimap cropped to player+marks hides most of it and reads nothing like
+    // the painted mask.
+    if (state.course.maskGeo) {
+        const H = MASK_WORLD / 2;
+        minX = -H; maxX = H; minY = -H; maxY = H;
+    }
+    const pad = state.course.maskGeo ? 0 : 200;
     minX-=pad; maxX+=pad; minY-=pad; maxY+=pad;
-    const scale = (width-20)/Math.max(maxX-minX, maxY-minY);
+    const scale = (width - (state.course.maskGeo ? 0 : 20)) / Math.max(maxX-minX, maxY-minY);
     const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
     const t = (x, y) => ({ x: (x-cx)*scale + width/2, y: (y-cy)*scale + height/2 });
 
     // Boundary (hidden in the river — the shore is the boundary there)
     const b = state.course.boundary;
-    if (!state.course.riverShore) {
+    if (!state.course.riverShore && !state.course.maskGeo) {
         const bp = t(b.x, b.y);
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
     }
@@ -8352,13 +9630,41 @@ function drawMinimap() {
         tropical: { body: '#fde6b1', top: '#84cc16' },
         grass:    { body: '#8a9a5b', top: '#4d7c0f' },
         ice:      { body: '#b8dcf5', top: '#f2f9ff' },
-        redrock:  { body: '#c2703e', top: '#d98e57' }
+        redrock:  { body: '#c2703e', top: '#d98e57' },
+        granite:  { body: '#4b5563', top: '#374151' }
     };
+    // Glacier: its colliders are hidden, so draw the shore mass itself or the
+    // minimap would show open water where the coast is.
+    //
+    // The ring traces the WATER's edge, so it must be filled EVEN-ODD against a
+    // covering rect — land is everything OUTSIDE it. Filling the ring directly
+    // paints the sea with the land colour, which is exactly what it did.
+    if (state.course.glacierShore) {
+        const ring = state.course.glacierShore.ring;
+        ctx.beginPath();
+        ctx.rect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        const g0 = t(ring[0].x, ring[0].y);
+        ctx.moveTo(g0.x, g0.y);
+        for (let i = 1; i < ring.length; i++) { const gp = t(ring[i].x, ring[i].y); ctx.lineTo(gp.x, gp.y); }
+        ctx.closePath();
+        ctx.fillStyle = MINIMAP_ISLAND.ice.top;
+        ctx.fill('evenodd');
+        // waterline
+        ctx.beginPath();
+        ctx.moveTo(g0.x, g0.y);
+        for (let i = 1; i < ring.length; i++) { const gp = t(ring[i].x, ring[i].y); ctx.lineTo(gp.x, gp.y); }
+        ctx.closePath();
+        ctx.strokeStyle = MINIMAP_ISLAND.ice.body;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
     if (state.course.islands) {
         // Body first
         for (const isl of state.course.islands) {
-            if (isl.isBank) continue;
-            ctx.fillStyle = (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.tropical).body;
+            if (isl.isBank || isl.hidden) continue;
+            ctx.fillStyle = isl.fromMask
+                ? (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.ice).top
+                : (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.tropical).body;
             ctx.beginPath();
             if (isl.vertices.length > 0) {
                 const p0 = t(isl.vertices[0].x, isl.vertices[0].y);
@@ -8369,11 +9675,15 @@ function drawMinimap() {
                 }
             }
             ctx.closePath();
-            ctx.fill();
+            // even-odd: mask rings are keyholed (the sound is a hole in the land)
+            ctx.fill('evenodd');
         }
         // Center cap (vegetation on land, snow on ice)
         for (const isl of state.course.islands) {
-            if (isl.isBank) continue;
+            if (isl.isBank || isl.hidden) continue;
+            // Mask shapes are keyholed; an inset "cap" ring is meaningless and
+            // paints blobs across the water.
+            if (isl.fromMask) continue;
             ctx.fillStyle = (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.tropical).top;
             ctx.beginPath();
             if (isl.vegVertices.length > 0) {
@@ -8445,13 +9755,21 @@ function drawMinimap() {
     drawG(2, 3, active.includes(2));
 
     // Marks Points
-    for (let i=0; i<state.course.marks.length; i++) {
+    // The island course uses only the start/finish line; marks 2 and 3 exist
+    // in the array (lots of code indexes them) but are not part of the course.
+    const markCount = state.course.type === 'islandRound' ? 2 : state.course.marks.length;
+    for (let i=0; i<markCount; i++) {
         const p = t(state.course.marks[i].x, state.course.marks[i].y);
-        ctx.beginPath(); ctx.arc(p.x, p.y, active.includes(i) ? 4 : 3, 0, Math.PI*2);
+        const mkR = state.course.maskGeo ? 0.6 : 1;
+        ctx.beginPath(); ctx.arc(p.x, p.y, (active.includes(i) ? 4 : 3) * mkR, 0, Math.PI*2);
         ctx.fillStyle = active.includes(i) ? '#f97316' : '#94a3b8'; ctx.fill();
     }
 
     // Boats
+    // Marker size. These were tuned when the minimap framed player+marks; a
+    // mask venue shows the WHOLE map, where a fixed 8px arrow is a boat the size
+    // of an island and the fleet becomes one coloured smear. Shrink to match.
+    const mk = state.course.maskGeo ? 0.55 : 1;
     // Draw AI boats first
     for (const boat of state.boats) {
         if (boat.isPlayer) continue;
@@ -8459,10 +9777,10 @@ function drawMinimap() {
         ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(boat.heading);
         // Ink outline: hull colors alone don't separate from water or gust blobs
         // at this size, and dark hulls disappeared entirely.
-        ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(5, 6); ctx.lineTo(-5, 6); ctx.closePath();
+        ctx.beginPath(); ctx.moveTo(0, -8*mk); ctx.lineTo(5*mk, 6*mk); ctx.lineTo(-5*mk, 6*mk); ctx.closePath();
         ctx.fillStyle = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(11, 28, 43, 0.85)'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.strokeStyle = 'rgba(11, 28, 43, 0.85)'; ctx.lineWidth = 1.5 * mk; ctx.stroke();
         ctx.restore();
     }
 
@@ -8476,7 +9794,7 @@ function drawMinimap() {
         ctx.shadowBlur = 6 + Math.sin(state.time * 8) * 2;
         ctx.shadowColor = 'rgba(250, 204, 21, 0.9)';
 
-        ctx.beginPath(); ctx.moveTo(0, -12); ctx.lineTo(8, 9); ctx.lineTo(-8, 9); ctx.closePath();
+        ctx.beginPath(); ctx.moveTo(0, -12*mk); ctx.lineTo(8*mk, 9*mk); ctx.lineTo(-8*mk, 9*mk); ctx.closePath();
         ctx.fillStyle = settings.hullColor || '#facc15';
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -9164,22 +10482,38 @@ function draw() {
     ctx.rotate(-state.camera.rotation);
     ctx.translate(-state.camera.x, -state.camera.y);
 
+    // Orcas swim UNDER everything on the water: boat wakes, wind waves and swell
+    // all lay over a submerged animal, which is most of what sells the depth.
+    drawOrcaPods(ctx, 'under');
+
     drawWakes(ctx);
     drawParticles(ctx, 'surface');
     drawGusts(ctx);
     drawWindWaves(ctx);
     drawSwell(ctx);
+
+    // ...but a fin cutting the surface and the bubbles behind it are ON the
+    // water, so they go over the crests the body sits beneath.
+    drawOrcaPods(ctx, 'surface');
     // drawIslandShadows(ctx);
     drawParticles(ctx, 'current');
     drawRiverShore(ctx);
+    drawGlacierShore(ctx);
     drawWeeds(ctx);
-    drawIslands(ctx, 'land');
-    drawDisturbedAir(ctx);
+    // Nav aids are paint ON THE WATER, so they must go UNDER the land — drawn
+    // after drawIslands they ran across the coastline and the rocky island.
+    // Gate line, ladder rungs and laylines are all derived from a windward GATE
+    // and mean nothing on an island rounding, so they are skipped there.
     drawActiveGateLine(ctx);
-    drawLadderLines(ctx);
+    // Ladder rungs measure progress up a windward leg and have no meaning on a
+    // single island rounding. The start/finish line and the laylines do, so they
+    // stay — skipping drawActiveGateLine took the start line with it.
+    if (state.course.type !== 'islandRound') drawLadderLines(ctx);
     drawLayLines(ctx);
     drawMarkZones(ctx);
     drawRoundingArrows(ctx);
+    drawIslands(ctx, 'land');
+    drawDisturbedAir(ctx);
     drawBoundary(ctx);
     // Ice last of the water layer: the nav aids are paint on the surface, and
     // floes drift OVER paint. Marks and boats still draw on top of the ice.
@@ -9202,6 +10536,9 @@ function draw() {
         drawBoat(ctx, boat);
         ctx.restore();
     }
+
+    // A blow is vapour hanging in the air, so it passes over hulls and sails too.
+    drawOrcaPods(ctx, 'air');
 
     // Draw Indicators
     for (const boat of state.boats) {
@@ -9853,6 +11190,34 @@ function checkCourseNavigability(islands, marks) {
     return found;
 }
 
+// Boat hull half-width for coarse collision against concave mask coastlines.
+const HULL_R = 30;
+
+// Circle vs (possibly concave, possibly keyholed) polygon. Returns the same
+// {axis, overlap} shape satPolygonPolygon does, so the caller is unchanged.
+// Handles the boat being INSIDE the shape too, which happens if it is pushed
+// through by another boat — it escapes via the nearest edge rather than sticking.
+function circlePolyCollide(cx, cy, r, verts) {
+    let bestD2 = Infinity, bx = 0, by = 0;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+        const ax = verts[j].x, ay = verts[j].y, bx2 = verts[i].x, by2 = verts[i].y;
+        const ex = bx2 - ax, ey = by2 - ay;
+        const len2 = ex * ex + ey * ey || 1;
+        let t = ((cx - ax) * ex + (cy - ay) * ey) / len2;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const px = ax + ex * t, py = ay + ey * t;
+        const d2 = (cx - px) ** 2 + (cy - py) ** 2;
+        if (d2 < bestD2) { bestD2 = d2; bx = px; by = py; }
+    }
+    const inside = pointInPoly(cx, cy, verts);
+    const d = Math.sqrt(bestD2);
+    if (!inside && d >= r) return null;
+    // axis points from the surface toward the boat; caller subtracts it.
+    let nx = (cx - bx) / (d || 1), ny = (cy - by) / (d || 1);
+    if (inside) { nx = -nx; ny = -ny; }
+    return { axis: { x: -nx, y: -ny }, overlap: inside ? d + r : r - d };
+}
+
 function checkIslandCollisions(dt) {
     if (!state.course || !state.course.islands) return;
 
@@ -9875,7 +11240,13 @@ function checkIslandCollisions(dt) {
             const dy = boat.y - isl.y;
             if (dx*dx + dy*dy > (isl.radius + 50)**2) continue;
 
-            const res = satPolygonPolygon(boatPoly, isl.vertices);
+            // Mask landmasses are concave and keyholed, and SAT is a CONVEX test —
+            // run against them it collides with their convex hull, which spans
+            // most of the map and reads as invisible walls all over open water.
+            // Circle-vs-polygon instead: exact for concave shapes, and cheap.
+            const res = isl.fromMask
+                ? circlePolyCollide(boat.x, boat.y, HULL_R, isl.vertices)
+                : satPolygonPolygon(boatPoly, isl.vertices);
             if (res) {
                  // Push boat OUT
                  boat.x -= res.axis.x * res.overlap;
@@ -9932,7 +11303,10 @@ const ISLAND_STYLES = {
     tropical: { body: '#fde6b1', stroke: '#d4b483', veg: '#84cc16', rock: '#9ca3af', trees: true },
     grass:    { body: '#a89b6a', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
-    redrock:  { body: '#c2703e', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false }
+    redrock:  { body: '#c2703e', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },
+    // Bare granite: dark, cold and jagged. Traced angular like ice (see the
+    // tracer pick below) because it is broken rock, not a rounded sandbank.
+    granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false }
 };
 
 // Ice is faceted, not rounded — the style guide asks for literal low-poly
@@ -9981,7 +11355,7 @@ function bakeIslandSprite(isl) {
     const VERTS = isFloe ? isl.localArt : isl.vertices;
     const VEG = isFloe ? isl.localVeg : isl.vegVertices;
     const ox = isFloe ? 0 : isl.x, oy = isFloe ? 0 : isl.y;
-    const trace = isl.style === 'ice' ? traceAngularPoly : traceRoundedPoly;
+    const trace = (isl.style === 'ice' || isl.style === 'granite') ? traceAngularPoly : traceRoundedPoly;
 
     let maxR = isl.radius;
     for (const v of VERTS) {
@@ -10042,6 +11416,29 @@ function bakeIslandSprite(isl) {
     // Ice facets: angular translucent blue planes radiating from the centre —
     // the low-poly faceting the style guide asks for, and what reads as relief
     // on the aerial references.
+    // Granite: a full fan of flat-shaded faces from the summit to every edge,
+    // so the mountain reads as low-poly relief rather than a grey blob. Four
+    // flat tones, hard edges, no gradients — the reference art's language.
+    if (isl.style === 'granite' && isl.facets && isl.facets.length) {
+        const GREY = ['#2a323d', '#39424f', '#4b5563', '#5d6775'];
+        for (const f of isl.facets) {
+            const v1 = VERTS[f.i % VERTS.length];
+            const v2 = VERTS[(f.i + 1) % VERTS.length];
+            const step = Math.min(3, Math.max(0, Math.floor((f.lit + 1) * 2)));
+            g.fillStyle = GREY[step];
+            g.beginPath();
+            g.moveTo(ox, oy);              // summit
+            g.lineTo(v1.x, v1.y);
+            g.lineTo(v2.x, v2.y);
+            g.closePath();
+            g.fill();
+        }
+        // Snow catching on the highest faces
+        g.fillStyle = 'rgba(226, 240, 252, 0.9)';
+        trace(g, VEG);
+        g.fill();
+    }
+
     if (isl.style === 'ice' && isl.facets && isl.facets.length) {
         for (const f of isl.facets) {
             const v1 = VERTS[f.i % VERTS.length];
@@ -10128,12 +11525,37 @@ function drawIslands(ctx, which) {
     const camY = state.camera.y;
 
     for (const isl of state.course.islands) {
-        if (isl.isBank) continue; // river banks: invisible colliders, see drawRiverShore
+        // Invisible colliders: river banks (drawRiverShore) and the glacier
+        // front (drawGlacierShore) both draw as one continuous mass instead.
+        if (isl.isBank || isl.hidden) continue;
         if (which === 'land' && isl.isFloe) continue;
         if (which === 'floe' && !isl.isFloe) continue;
         const distSq = (isl.x - camX) ** 2 + (isl.y - camY) ** 2;
         const limit = viewRadius + isl.radius;
         if (distSq > limit ** 2) continue;
+
+        // Mask landmasses draw as direct paths, never baked sprites, for two
+        // reasons. They are huge — the main one has a 9388-unit radius, far past
+        // bakeIslandSprite's 900px cap, so it would come back a blurred postage
+        // stamp. And their rings are KEYHOLED: the trace walks into the sound and
+        // back out, so the water is a hole in the polygon. Canvas fills nonzero by
+        // default, which fills that hole solid and paints the sea white — this
+        // has to be 'evenodd'.
+        if (isl.fromMask) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(isl.vertices[0].x, isl.vertices[0].y);
+            for (let i = 1; i < isl.vertices.length; i++) ctx.lineTo(isl.vertices[i].x, isl.vertices[i].y);
+            ctx.closePath();
+            const st = ISLAND_STYLES[isl.style] || ISLAND_STYLES.ice;
+            ctx.fillStyle = st.body;
+            ctx.fill('evenodd');
+            ctx.strokeStyle = st.stroke;
+            ctx.lineWidth = 6;
+            ctx.stroke();
+            ctx.restore();
+            continue;
+        }
 
         // Bake lazily; rebake once the palm image finishes loading. Floes carry
         // no trees and their sprite is spin-canonical, so they never rebake —
@@ -10145,6 +11567,7 @@ function drawIslands(ctx, which) {
             ctx.translate(isl.x, isl.y);
             ctx.rotate(isl.spin);
             ctx.drawImage(s.canvas, -s.r, -s.r, s.r * 2, s.r * 2);
+            if (isl.penguins) drawFloeColony(ctx, isl);
             ctx.restore();
         } else {
             ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
@@ -10152,6 +11575,89 @@ function drawIslands(ctx, which) {
     }
 }
 
+
+// Glacier shore: one continuous ice mass with a ragged calving front. Same
+// approach as drawRiverShore — a single filled path, cost independent of
+// shoreline length — but filled directly rather than even-odd, because the
+// glacier bounds the water on one side instead of enclosing it.
+//
+// Layer order matters: submerged shelf first (a wide band straddling the
+// waterline, so it reads as ice continuing under the water), then the land, then
+// the crisp front edge. Flat tones and hard edges only — venue-art.md rule 3,
+// "ice is literal low-poly facets", and this style never blurs.
+function drawGlacierShore(ctx) {
+    const shore = state.course.glacierShore;
+    if (!shore) return;
+    const ring = shore.ring;
+
+    const b = state.course.boundary;
+    const R = (b ? b.radius : 5000) + 3000;
+    const cx0 = b ? b.x : 0, cy0 = b ? b.y : 0;
+
+    // Water edge alone (for the shelf band and waterline)
+    const traceEdge = () => {
+        ctx.beginPath();
+        ctx.moveTo(ring[0].x, ring[0].y);
+        for (let i = 1; i < ring.length; i++) ctx.lineTo(ring[i].x, ring[i].y);
+        ctx.closePath();
+    };
+    // Land = everything OUTSIDE the water ring (big rect + ring, even-odd)
+    const traceLand = () => {
+        ctx.beginPath();
+        ctx.rect(cx0 - R, cy0 - R, R * 2, R * 2);
+        ctx.moveTo(ring[0].x, ring[0].y);
+        for (let i = 1; i < ring.length; i++) ctx.lineTo(ring[i].x, ring[i].y);
+        ctx.closePath();
+    };
+
+    ctx.save();
+
+    // Submerged shelf: pale blue band straddling the waterline, drawn UNDER the
+    // land so only the water-side half survives.
+    traceEdge();
+    ctx.strokeStyle = 'rgba(150, 199, 232, 0.55)';
+    ctx.lineWidth = GLACIER.shelfBand * 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    ctx.strokeStyle = 'rgba(196, 226, 245, 0.5)';
+    ctx.lineWidth = GLACIER.shelfBand;
+    ctx.stroke();
+
+    // The ice sheet itself
+    traceLand();
+    ctx.fillStyle = '#eaf4fc';
+    ctx.fill('evenodd');
+
+    // Crisp waterline
+    traceEdge();
+    ctx.strokeStyle = '#7fb2d9';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+
+    // Inland ridges and peaks, viewport-culled. Flat two-tone triangles: a lit
+    // face and a shadow face, no gradients.
+    const camX = state.camera.x, camY = state.camera.y;
+    const cullSq = (Math.hypot(ctx.canvas.width, ctx.canvas.height) * 0.6 + 300) ** 2;
+    for (const dc of shore.decorations) {
+        if ((dc.x - camX) ** 2 + (dc.y - camY) ** 2 > cullSq) continue;
+        const s = dc.size, ax = dc.dirX, ay = dc.dirY;   // up-slope, away from water
+        const px = -ay, py = ax;                          // across-slope
+        const tipX = dc.x + ax * s * 0.9, tipY = dc.y + ay * s * 0.9;
+        const lX = dc.x - px * s * 0.62, lY = dc.y - py * s * 0.62;
+        const rX = dc.x + px * s * 0.62, rY = dc.y + py * s * 0.62;
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY); ctx.lineTo(lX, lY); ctx.lineTo(rX, rY); ctx.closePath();
+        ctx.fillStyle = dc.kind === 'peak' ? '#ffffff' : '#f4fafe';
+        ctx.fill();
+        // shadow half
+        ctx.beginPath();
+        ctx.moveTo(tipX, tipY); ctx.lineTo(rX, rY); ctx.lineTo(dc.x, dc.y); ctx.closePath();
+        ctx.fillStyle = 'rgba(143, 194, 232, 0.55)';
+        ctx.fill();
+    }
+
+    ctx.restore();
+}
 
 // River shore: one continuous land mass around the water. Rendered as a
 // SINGLE even-odd path (big rect + river ring hole) with no shadows — cost is
@@ -10285,6 +11791,85 @@ function drawSwell(ctx) {
 
 // Init
 function initCourse() {
+    // MASK-BAKED VENUE. Geography is fixed in world space, so the course cannot
+    // rotate with the wind the way every other venue's does. Instead the wind is
+    // derived FROM the map: square to the painted start line, blowing down the
+    // course, so the leg to the granite island is a beat.
+    const maskKey = (state.race.venueFx && state.race.venueFx.mask) ? settings.venue : null;
+    const mask = maskKey ? buildMaskGeography(maskKey) : null;
+    if (mask && mask.start && mask.granite) {
+        const [a, b] = mask.start;
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        // The PAINTED line sets the orientation — it is a drawn instruction, not
+        // a hint. The wind is then derived FROM it ("the wind should blow against
+        // the start-finish line"): square to the line, on whichever side the
+        // island lies. Deriving the line from the island instead rotated it ~64
+        // degrees off what was drawn.
+        let lx = b.x - a.x, ly = b.y - a.y;
+        const ll0 = Math.hypot(lx, ly) || 1;
+        lx /= ll0; ly /= ll0;
+        let ux0 = -ly, uy0 = lx;                        // square to the line
+        const toIsl = { x: mask.granite.x - mx, y: mask.granite.y - my };
+        // Start heads AWAY from the island: the line sits in a closed channel, so
+        // the fleet beats out into open water first and comes at the rounding from
+        // the sound rather than straight up a dead end.
+        if (ux0 * toIsl.x + uy0 * toIsl.y > 0) { ux0 = -ux0; uy0 = -uy0; }
+        const cl = Math.hypot(toIsl.x, toIsl.y) || 1;
+        // heading convention: forward = (sin h, -cos h)
+        state.wind.baseDirection = Math.atan2(ux0, -uy0);
+        state.wind.direction = state.wind.baseDirection;
+
+        // Re-lay the line square to that axis, centred on where it was painted,
+        // at the width the fleet actually needs (the painted line is indicative).
+        const _SPw0 = (typeof window !== 'undefined' && window.__START) ? window.__START : {};
+        const w0 = _SPw0.width != null ? _SPw0.width : 1100;   // same line as every venue
+        // Lay the line along the painted direction — but its VERTEX ORDER decides
+        // the crossing normal n = (dy, -dx), and the start test wants n pointing
+        // up-course. Flipping the wind without flipping the order put the whole
+        // fleet on the wrong side of its own start line.
+        let rx0 = lx, ry0 = ly;
+        if ((ry0 * ux0 - rx0 * uy0) < 0) { rx0 = -rx0; ry0 = -ry0; }
+        state.course = {
+            marks: [
+                { x: mx - rx0 * w0 / 2, y: my - ry0 * w0 / 2, type: 'start' },
+                { x: mx + rx0 * w0 / 2, y: my + ry0 * w0 / 2, type: 'start' },
+                // Unused by this course type, but plenty of code indexes [2]/[3].
+                { x: mask.granite.x - rx0 * 200, y: mask.granite.y - ry0 * 200, type: 'mark' },
+                { x: mask.granite.x + rx0 * 200, y: mask.granite.y + ry0 * 200, type: 'mark' }
+            ],
+            // The painted mask IS the world: no open ocean past its edge.
+            boundary: { x: 0, y: 0, radius: MASK_WORLD * 0.5 }
+        };
+        state.race.legLength = cl;
+        state.course.type = 'islandRound';
+        state.race.totalLegs = 2;
+        state.course.islands = mask.islands;
+        state.course.navIslands = mask.islands;
+        state.course.navVersion = 0;
+        state.course.maskGeo = mask;
+        state.course.weeds = null;
+        state.course.riverShore = null;
+        state.course.glacierShore = null;
+        state.course.brash = null;
+        state.course.calving = null;
+        state.race.riverCurrent = null;
+        state.course.roundMark = {
+            x: mask.granite.x, y: mask.granite.y,
+            radius: mask.granite.radius,
+            // Big enough to capture the whole island, not just skim it.
+            zone: mask.granite.radius * 2.1,
+            side: 'starboard'
+        };
+        const fx0 = state.race.venueFx;
+        if (fx0 && fx0.ice) {
+            const rngM = state.race.seed ? mulberry32(state.race.seed + 7) : Math.random;
+            state.course.islands = mask.islands.concat(generateIceFloes(rngM));
+            state.course.navIslands = state.course.islands.filter(i => !i.isBank);
+            state.course.brash = generateBrash(rngM);
+        }
+        return;
+    }
+
     const d = state.wind.baseDirection, ux = Math.sin(d), uy = -Math.cos(d), rx = -uy, ry = ux;
     // Start-line width. With a 10-boat fleet, 550u packs lane-neighbours ~43u apart —
     // tighter than the boats' ~50u collision diameter — so the start jams structurally.
@@ -10299,6 +11884,15 @@ function initCourse() {
         ],
         boundary: { x: ux*dist/2, y: uy*dist/2, radius: Math.max(3500, dist + 500) } // Adjust boundary for long courses
     };
+
+    // Course type. 'wl' is the windward-leeward every venue has raced until now:
+    // start gate, windward gate, totalLegs laps. 'islandRound' is Glacier Sound's
+    // — start line, ONE rounding of the granite island, then a dash back to the
+    // same line as the finish. Marks 2 and 3 are unused there; the rounding mark
+    // is an island, so it is held on state.course.roundMark instead.
+    state.course.type = (state.race.venueFx && state.race.venueFx.islandCourse) ? 'islandRound' : 'wl';
+    state.course.roundMark = null;
+    if (state.course.type === 'islandRound') state.race.totalLegs = 2;
 
     // Generate Islands
     let islands = [];
@@ -10326,14 +11920,36 @@ function initCourse() {
     state.course.weeds = null;
     state.course.riverShore = null;
     state.course.brash = null;
+    state.course.calving = null;
+    state.course.glacierShore = null;
     state.race.riverCurrent = null;
     const fx = state.race.venueFx;
     if (fx && (fx.river || fx.ice || fx.weeds)) {
         const rng = state.race.seed ? mulberry32(state.race.seed + 7) : Math.random;
         if (fx.river) state.course.islands = islands.concat(generateRiverBanks(rng));
         if (fx.ice) {
-            state.course.islands = islands.concat(generateIceFloes(rng));
+            // Face first: the floe placer reads the course, and the gradient it
+            // samples is defined by the same axis the face sits on.
+            // Face FIRST, and installed before the floes are placed — the floe
+            // placer now rejects candidates overlapping anything already in
+            // course.islands, so the shore, the rocky island and the fixed low
+            // ice have to be there for that test to see them.
+            const face = fx.glacier ? generateGlacierFace(rng) : [];
+            state.course.islands = islands.concat(face);
+            state.course.islands = state.course.islands.concat(generateIceFloes(rng));
             state.course.brash = generateBrash(rng);
+            state.course.calving = fx.glacier ? { timer: CALVING.first, spawned: 0 } : null;
+            // The granite mountain is the rounding mark for this course type.
+            if (state.course.type === 'islandRound') {
+                const rock = state.course.islands.find(i => i.isRock);
+                if (rock) state.course.roundMark = {
+                    x: rock.x, y: rock.y,
+                    radius: rock.radius,
+                    // Sail wide enough that the layline clears the spurs.
+                    zone: rock.radius + 420,
+                    side: 'starboard'
+                };
+            }
         }
         if (fx.weeds) state.course.weeds = generateWeeds(rng);
     }
