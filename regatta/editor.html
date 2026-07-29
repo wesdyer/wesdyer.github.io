@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCYC — Venue Editor</title>
+    <link rel="icon" type="image/png" href="assets/images/misc/salty-crew-yacht-club-burgee.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..900&family=IBM+Plex+Mono:wght@400;600&family=Saira:ital,wdth,wght@0,50..125,100..900;1,50..125,100..900&display=swap" rel="stylesheet">
+    <style>
+        /* Same typography system as index.html and competitor.html — an editor that
+           does not look like the game misreads the game. */
+        body { font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; background-color: #0b1220; color: #e6ecf8; overflow: hidden; }
+        .t-display { font-family: 'Saira', 'Archivo', sans-serif; font-stretch: 81%; font-weight: 900; }
+        .t-label { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; color: #7f8ea9; }
+        .t-mono { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-variant-numeric: tabular-nums; }
+        canvas { display: block; }
+
+        .tab { padding: 6px 14px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 13px; color: #8ea0bd; }
+        .tab:hover { background: rgba(255,255,255,0.06); color: #cfe0ff; }
+        .tab.active { background: #1d4ed8; color: #fff; }
+
+        .tool { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 9px; border-radius: 7px;
+                cursor: pointer; font-size: 12.5px; font-weight: 700; color: #9fb0c9; background: transparent; text-align: left; }
+        .tool:hover { background: rgba(255,255,255,0.06); color: #dbeafe; }
+        .tool.active { background: #1d4ed8; color: #fff; }
+        .tool kbd { font-family: 'IBM Plex Mono', monospace; font-size: 10px; opacity: 0.65; margin-left: auto; }
+
+        .btn { padding: 5px 10px; border-radius: 7px; font-size: 12px; font-weight: 700;
+               background: #334155; color: #e2e8f0; cursor: pointer; }
+        .btn:hover:not(:disabled) { background: #475569; }
+        .btn:disabled { opacity: 0.35; cursor: default; }
+        .btn-primary { background: #1d4ed8; } .btn-primary:hover:not(:disabled) { background: #2563eb; }
+
+        #schematic { cursor: crosshair; }
+        #schematic.dragging { cursor: grabbing; }
+
+        .row { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 12.5px; }
+        .row span:first-child { color: #7f8ea9; }
+
+        .find { border-radius: 7px; padding: 6px 9px; font-size: 12px; cursor: pointer; border-left: 3px solid; line-height: 1.35; }
+        .find:hover { filter: brightness(1.25); }
+        .find.sel { outline: 1px solid rgba(255,255,255,0.35); }
+        .find-error { background: rgba(244,63,94,0.13); border-color: #f43f5e; }
+        .find-warn  { background: rgba(251,191,36,0.12); border-color: #fbbf24; }
+        .find-ok    { background: rgba(52,211,153,0.09); border-color: #34d399; }
+        .find-t { font-weight: 800; } .find-d { color: #a8b6cd; }
+
+        #roster { display: grid; grid-template-columns: repeat(auto-fill, minmax(480px, 1fr)); gap: 22px; }
+        @media (max-width: 560px) { #roster { grid-template-columns: 1fr; } }
+
+        input[type=range] { accent-color: #38bdf8; }
+        .inp { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); border-radius: 7px;
+               padding: 4px 7px; font-size: 12px; }
+    </style>
+</head>
+<body class="h-screen flex flex-col">
+
+<!-- The engine is loaded for its data, its course compiler and its sprite
+     pipeline. It needs this canvas to exist at parse time; it is never drawn to. -->
+<canvas id="gameCanvas" width="1280" height="720" style="display:none"></canvas>
+
+<header class="flex items-center gap-4 px-5 py-2.5 border-b border-white/10 shrink-0">
+    <h1 class="t-display italic uppercase text-white" style="font-size:20px;">Venue Editor</h1>
+    <nav class="flex gap-1">
+        <div class="tab active" data-view="course">Course</div>
+        <div class="tab" data-view="fleet">Fleet</div>
+    </nav>
+    <div class="flex-1"></div>
+    <div id="course-controls" class="flex items-center gap-2.5">
+        <span id="toast" class="t-mono" style="font-size:11.5px; opacity:0; transition:opacity .3s;"></span>
+        <span id="dirty" class="t-mono" style="font-size:11px;"></span>
+        <button id="btn-undo" class="btn" title="Cmd/Ctrl+Z">Undo</button>
+        <button id="btn-redo" class="btn" title="Cmd/Ctrl+Shift+Z">Redo</button>
+        <button id="btn-save" class="btn btn-primary" title="Cmd/Ctrl+S">Save</button>
+        <select id="venue-select" class="inp"></select>
+        <label class="t-label" style="letter-spacing:1.2px;">Seed</label>
+        <input id="seed-input" type="number" value="90210" class="inp t-mono w-20">
+        <button id="btn-fit" class="btn">Fit</button>
+    </div>
+</header>
+
+<!-- ── Course view ─────────────────────────────────────────────────────── -->
+<main id="view-course" class="flex-1 flex min-h-0">
+    <!-- Tool palette -->
+    <aside class="w-[188px] shrink-0 border-r border-white/10 p-3 space-y-1 overflow-y-auto">
+        <div class="t-label mb-1.5">Tools</div>
+        <button class="tool active" data-tool="select">Select / move<kbd>V</kbd></button>
+        <button class="tool" data-tool="vertex">Vertex<kbd>A</kbd></button>
+        <button class="tool" data-tool="sculpt">Sculpt<kbd>S</kbd></button>
+        <button class="tool" data-tool="smooth">Smooth<kbd>G</kbd></button>
+        <button class="tool" data-tool="mark">Marks &amp; zone<kbd>M</kbd></button>
+        <button class="tool" data-tool="bcircle">Boundary<kbd>B</kbd></button>
+        <button class="tool" data-tool="measure">Measure<kbd>R</kbd></button>
+
+        <div id="brush-row" class="items-center gap-2 pt-2" style="display:none">
+            <span class="t-label" style="letter-spacing:1px;">Brush</span>
+            <input id="brush" type="range" min="40" max="2000" step="10" value="260" class="flex-1 w-full">
+        </div>
+
+        <div class="pt-4 space-y-1.5">
+            <div class="t-label mb-1">Shape</div>
+            <button id="btn-resample" class="btn w-full">Resample vertices</button>
+        </div>
+
+        <div class="pt-4 space-y-1.5">
+            <div class="t-label mb-1">Arena</div>
+            <button id="btn-brect" class="btn w-full">Fit to map (rect)</button>
+            <button id="btn-bcircle" class="btn w-full">Back to circle</button>
+            <p class="text-slate-500" style="font-size:10.5px; line-height:1.45;">
+                A circle inscribed in a square map discards its corners; one that
+                circumscribes it admits off-map water. A rect does neither.
+            </p>
+        </div>
+
+        <div class="pt-4 space-y-1.5">
+            <div class="t-label mb-1">Whole map</div>
+            <div class="flex items-center gap-1.5">
+                <input id="scalemap" class="inp t-mono w-14" value="100">
+                <span class="text-slate-500" style="font-size:11px;">%</span>
+                <button id="btn-scalemap" class="btn flex-1">Scale</button>
+            </div>
+            <p class="text-slate-500" style="font-size:10.5px; line-height:1.45;">
+                Scales land, marks, rounding zone and boundary together. Replaces
+                editing <span class="t-mono">MASK_WORLD</span>. Prop sprites do not scale.
+            </p>
+        </div>
+    </aside>
+
+    <div class="flex-1 relative min-w-0">
+        <canvas id="schematic"></canvas>
+        <div id="hint" class="absolute top-3 left-3 t-mono text-slate-500 pointer-events-none" style="font-size:11px;"></div>
+        <div id="hud" class="absolute bottom-3 left-3 t-mono text-slate-400 pointer-events-none" style="font-size:11.5px;"></div>
+    </div>
+
+    <aside class="w-[340px] shrink-0 border-l border-white/10 overflow-y-auto p-5 space-y-5">
+        <div>
+            <div class="flex items-baseline justify-between mb-2">
+                <div class="t-label">Checks</div>
+                <div id="check-tally" class="t-mono" style="font-size:11px;"></div>
+            </div>
+            <div id="checks" class="space-y-1"></div>
+        </div>
+        <div>
+            <div class="t-label mb-2">Course</div>
+            <div id="info-course"></div>
+        </div>
+        <div>
+            <div class="t-label mb-2">Distance &amp; time</div>
+            <div id="info-time"></div>
+            <p class="text-slate-500 mt-2" style="font-size:11px; line-height:1.5;">
+                Cutoff uses the game's own 0.1875&nbsp;s/m. Expected applies the measured
+                ratio of mean race time to cutoff — an estimate, not a simulation.
+                Target band 3–5&nbsp;min.
+            </p>
+        </div>
+        <div>
+            <div class="t-label mb-2">Land</div>
+            <div id="info-land"></div>
+        </div>
+        <div>
+            <div class="t-label mb-2">Legend</div>
+            <div class="space-y-1.5" style="font-size:12px;">
+                <div><span style="color:#38bdf8">━</span> start / finish line &amp; marks</div>
+                <div><span style="color:#fbbf24">◯</span> rounding zone</div>
+                <div><span style="color:#e8edf5">▬</span> land &nbsp; <span style="color:#8d8d8d">▬</span> granite &nbsp; <span style="color:#7dd3fc">▬</span> drifting ice</div>
+                <div><span style="color:#475569">◯</span> boundary &nbsp; <span style="color:#34d399">➜</span> wind</div>
+            </div>
+        </div>
+    </aside>
+</main>
+
+<!-- ── Fleet view ──────────────────────────────────────────────────────── -->
+<main id="view-fleet" class="flex-1 overflow-y-auto hidden">
+    <div class="max-w-[1800px] mx-auto px-8 py-8">
+        <div class="flex items-baseline gap-4 flex-wrap mb-6">
+            <h2 class="t-display italic uppercase text-white" style="font-size:26px;">Competitor Roster</h2>
+            <span id="roster-count" class="t-mono text-slate-400" style="font-size:14px;"></span>
+        </div>
+        <div id="roster"></div>
+    </div>
+</main>
+
+<div id="fatal" class="hidden fixed inset-0 bg-slate-900/95 p-10 t-mono text-rose-300 overflow-auto" style="font-size:13px;"></div>
+
+<script>
+    // Keep the game dormant: script.js starts its animation loop at the end of the
+    // file, and an editor must not have a race running underneath it.
+    window.__realRAF = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = () => 0;
+</script>
+<script src="js/ai-quotes.js"></script>
+<script src="js/water.js"></script>
+<script src="js/planner.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/arena.js"></script>
+<script src="js/venuedoc.js"></script>
+<script src="js/venuecheck.js"></script>
+<script src="assets/venues/arctic.venue.js"></script>
+<script src="js/script.js"></script>
+<script src="js/editor.js"></script>
+<script>
+(function () {
+    window.requestAnimationFrame = window.__realRAF;
+
+    // ── Tabs ────────────────────────────────────────────────────────────
+    const views = { course: document.getElementById('view-course'), fleet: document.getElementById('view-fleet') };
+    let rosterBuilt = false;
+    document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        const v = t.dataset.view;
+        for (const k in views) views[k].classList.toggle('hidden', k !== v);
+        document.getElementById('course-controls').classList.toggle('hidden', v !== 'course');
+        if (v === 'fleet' && !rosterBuilt) { buildRoster(); rosterBuilt = true; }
+        if (v === 'course') EditorApp.resize();
+    }));
+
+    // ── Fleet roster (same pipeline as competitor.html) ──────────────────
+    function buildRoster() {
+        const root = document.getElementById('roster');
+        const fleet = [...AI_CONFIG].sort((a, b) => a.name.localeCompare(b.name));
+        document.getElementById('roster-count').textContent = fleet.length + ' competitors';
+        root.innerHTML = fleet.map(cfg =>
+            `<section class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
+                ${competitorProfileHTML(cfg)}
+             </section>`).join('');
+        const byName = new Map(fleet.map(c => [c.name, c]));
+        root.querySelectorAll('.profile-boat-canvas').forEach(c => renderProfileBoat(c, byName.get(c.dataset.boat)));
+    }
+
+    // ── Venue picker: documents first, since those are the editable ones ──
+    const sel = document.getElementById('venue-select');
+    const keys = Object.keys(VENUES);
+    const hasDoc = (k) => !!(window.VENUE_DOC && window.VENUE_DOC[k]);
+    keys.sort((a, b) => (hasDoc(b) - hasDoc(a)) || a.localeCompare(b));
+    for (const k of keys) {
+        const o = document.createElement('option');
+        o.value = k;
+        o.textContent = `${VENUES[k].name} (${k})` + (hasDoc(k) ? '  ·  document' : '');
+        sel.appendChild(o);
+    }
+    sel.value = keys.find(hasDoc) || keys[0];
+
+    try {
+        EditorApp.resize();
+        EditorApp.loadVenue();
+    } catch (err) {
+        const f = document.getElementById('fatal');
+        f.textContent = 'Editor failed to start:\n\n' + (err && err.stack || err);
+        f.classList.remove('hidden');
+        throw err;
+    }
+})();
+</script>
+</body>
+</html>

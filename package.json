@@ -1,6 +1,16 @@
 {
   "scripts": {
-    "eval:ai": "node regatta/eval/run_eval.js"
+    "eval:ai": "node regatta/eval/run_eval.js",
+    "trace": "node regatta/eval/run_traces.js",
+    "trace:update": "node regatta/eval/run_traces.js --update --seeds 3",
+    "trace:det": "node regatta/eval/run_traces.js --determinism",
+    "test:venue": "node regatta/eval/test_venuedoc.js",
+    "check:venues": "node regatta/eval/check_venues.js",
+    "test:editor": "node regatta/eval/test_editor.js",
+    "test": "node regatta/eval/test_arena.js && node regatta/eval/test_venuedoc.js && node regatta/eval/test_editor.js && node regatta/eval/test_render.js && node regatta/eval/test_boundary_race.js && node regatta/eval/check_venues.js",
+    "test:arena": "node regatta/eval/test_arena.js",
+    "test:render": "node regatta/eval/test_render.js",
+    "test:boundary": "node regatta/eval/test_boundary_race.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

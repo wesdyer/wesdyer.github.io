@@ -107,6 +107,45 @@ def trace(cells, n):
     return contour
 
 
+def outer_water(grid):
+    """Cells reachable from the image border through water.
+
+    Water that is NOT reachable is enclosed by land, and is a HOLE. Without this,
+    a mask that fully encloses a lagoon traces as solid land and says nothing: the
+    Moore trace only ever walks a component's outer boundary, so the water inside
+    simply disappears. The current Arctic mask is unaffected — its water reaches
+    the image edge — but that is luck, not design.
+    """
+    n = len(grid)
+    seen = [[False] * n for _ in range(n)]
+    stack = []
+    for i in range(n):
+        for (x, y) in ((i, 0), (i, n - 1), (0, i), (n - 1, i)):
+            if grid[y][x] == 'water' and not seen[y][x]:
+                seen[y][x] = True
+                stack.append((x, y))
+    while stack:
+        x, y = stack.pop()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < n and 0 <= ny < n and not seen[ny][nx] and grid[ny][nx] == 'water':
+                seen[ny][nx] = True
+                stack.append((nx, ny))
+    return seen
+
+
+def point_in_ring(px, py, ring):
+    inside = False
+    j = len(ring) - 1
+    for i in range(len(ring)):
+        xi, yi = ring[i]
+        xj, yj = ring[j]
+        if (yi > py) != (yj > py) and px < (xj - xi) * (py - yi) / ((yj - yi) or 1e-9) + xi:
+            inside = not inside
+        j = i
+    return inside
+
+
 def simplify_closed(pts, eps):
     """Douglas-Peucker for a CLOSED ring.
 
@@ -172,7 +211,30 @@ def main():
                 'c': [round(cx / GRID, 5), round(cy / GRID, 5)],
                 'r': round(rad / GRID, 5),
                 'ring': [[round(x / GRID, 5), round(y / GRID, 5)] for x, y in ring],
+                'holes': [],
             })
+
+    # Enclosed water becomes a HOLE in whichever shape surrounds it. Assigned to
+    # the SMALLEST containing ring, so a lagoon inside an island inside a bay lands
+    # on the island rather than the bay.
+    reachable = outer_water(grid)
+    for cells in components(grid, 'water'):
+        if reachable[cells[0][1]][cells[0][0]]:
+            continue                                    # open water, not a hole
+        hring = simplify_closed(trace(cells, GRID), EPSILON)
+        if len(hring) < 4:
+            continue
+        hn = [[round(x / GRID, 5), round(y / GRID, 5)] for x, y in hring]
+        best, best_area = None, float('inf')
+        for sh in out['shapes']:
+            if point_in_ring(hn[0][0], hn[0][1], sh['ring']) and sh['area'] < best_area:
+                best, best_area = sh, sh['area']
+        if best is not None:
+            best['holes'].append(hn)
+            print(f"   hole: {len(cells)} water cells enclosed by {best['cls']} "
+                  f"(area {best['area']}) -> {len(hn)} vertices")
+        else:
+            print(f"   WARNING: {len(cells)} enclosed water cells sit inside no traced shape; dropped")
 
     # Start/finish line, painted green on the mask
     full = im.convert('RGB')

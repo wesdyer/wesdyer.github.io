@@ -304,11 +304,15 @@
                                 // the same side."
                                 // Leg awareness: only snapshot marks relevant
                                 // to at least one boat's current leg.
-                                // Marks 0,1 = leeward gate (target on even legs: 2, 4)
-                                // Marks 2,3 = windward gate (target on odd legs: 1, 3)
-                                const markIsWindward = (mIdx >= 2);
-                                const b1NeedsWindward = (b1.raceState.leg % 2 !== 0);
-                                const b2NeedsWindward = (b2.raceState.leg % 2 !== 0);
+                                // Which marks form the windward gate, and which
+                                // boats are heading there, come from the route —
+                                // not from "index >= 2" and leg parity, which only
+                                // describe a windward-leeward.
+                                const C = window.Course;
+                                const upPair = (C && C.windwardMarks()) || [];
+                                const markIsWindward = upPair.indexOf(mIdx) !== -1;
+                                const b1NeedsWindward = !!(C && C.legTargetsWindward(b1.raceState.leg));
+                                const b2NeedsWindward = !!(C && C.legTargetsWindward(b2.raceState.leg));
 
                                 // Skip if neither boat is heading to this type of mark
                                 if (markIsWindward && !b1NeedsWindward && !b2NeedsWindward) continue;
@@ -479,8 +483,8 @@
 
                 if (oppositeTacks) {
                     // Beats to windward: odd legs (1, 3) and leg 0 (start)
-                    const b1OnBeat = (b1.raceState.leg % 2 !== 0) || b1.raceState.leg === 0;
-                    const b2OnBeat = (b2.raceState.leg % 2 !== 0) || b2.raceState.leg === 0;
+                    const b1OnBeat = !!(window.Course && window.Course.legIsBeat(b1.raceState.leg));
+                    const b2OnBeat = !!(window.Course && window.Course.legIsBeat(b2.raceState.leg));
                     if (b1OnBeat || b2OnBeat) {
                         rule18Applies = false; // 18.1(a) exception
                     }
@@ -506,7 +510,8 @@
                 // close-hauled, a starboard-tack boat shall not bear off
                 // if it results in the port-tack boat having to act
                 // immediately to keep clear."
-                if (b1.raceState.leg % 2 !== 0 && b2.raceState.leg % 2 !== 0) {
+                if (window.Course && window.Course.legTargetsWindward(b1.raceState.leg)
+                    && window.Course.legTargetsWindward(b2.raceState.leg)) {
                     result.constraints.push("Rule 16.2");
                 }
 

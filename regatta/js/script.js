@@ -572,10 +572,12 @@ class BotController {
             }
         } else {
             // Determine Gate/Mark Target
-            let targetIndices = [0, 1];
             const leg = boat.raceState.leg;
-            if (leg === 1 || leg === 3) targetIndices = [2, 3];
-            else targetIndices = [0, 1];
+            // BUGFIX: this was `leg === 1 || leg === 3`, enumerated rather than
+            // derived. The legs slider goes to 10, so on any course longer than
+            // four legs the AI targeted the LEEWARD line on legs 5, 7 and 9 while
+            // actually sailing upwind. The route knows which gate each leg wants.
+            const targetIndices = legMarks(leg) || [0, 1];
 
             const m1 = marks[targetIndices[0]];
             const m2 = marks[targetIndices[1]];
@@ -631,7 +633,7 @@ class BotController {
                     t = Math.max(0.08, Math.min(0.92, t));
                     destX = m1.x + gDx * t;
                     destY = m1.y + gDy * t;
-                } else if (NAV.mode === 'center' || (leg % 2 === 0 && NAV.insetDown == null)) {
+                } else if (NAV.mode === 'center' || (!legTargetsWindward(leg) && NAV.insetDown == null)) {
                     // Downwind legs approach the gate at the CENTRE — measured
                     // faster and cleaner than end-targeting (boats arrive spread
                     // out and pick a mark late, rounding whichever is nearest).
@@ -655,7 +657,7 @@ class BotController {
                         this.gateChoice = { leg, idx };
                     }
                     const chosen = this.gateChoice.idx === 0 ? m1 : m2;
-                    const isBeat = leg % 2 !== 0;
+                    const isBeat = legTargetsWindward(leg);
                     let insetRaw = NAV.inset != null ? NAV.inset : 240;
                     if (!isBeat && NAV.insetDown != null) insetRaw = NAV.insetDown;
                     // cornerScale: corner artists cut closer to the mark, freight
@@ -676,16 +678,22 @@ class BotController {
                 const bdy = boat.y - m1.y;
                 const dot = bdx * nx + bdy * ny;
 
+                // Same enumeration bug as the target above: legs 5+ matched
+                // neither arm, so a boat past the gate on leg 5 never retargeted.
+                // `dir` is exactly this test, and the start (leg 0) is excluded by
+                // its role rather than by being the number zero.
+                const gEntry = routeLeg(leg);
+                const gateLeg = !!(gEntry && gEntry.role !== 'start' && gEntry.marks);
                 let pastGate = false;
-                if (leg === 1 || leg === 3) { if (dot > 50) pastGate = true; }
-                else if (leg === 2 || leg === 4) { if (dot < -50) pastGate = true; }
+                if (gateLeg && gEntry.dir > 0) { if (dot > 50) pastGate = true; }
+                else if (gateLeg && gEntry.dir < 0) { if (dot < -50) pastGate = true; }
 
                 if (pastGate) {
                     const len = Math.sqrt(nx*nx + ny*ny);
                     const unx = nx/len;
                     const uny = ny/len;
                     const center = { x: (m1.x+m2.x)/2, y: (m1.y+m2.y)/2 };
-                    const factor = (leg === 1 || leg === 3) ? -1 : 1;
+                    const factor = (gateLeg && gEntry.dir > 0) ? -1 : 1;
                     destX = center.x + unx * 150 * factor;
                     destY = center.y + uny * 150 * factor;
                 }
@@ -717,7 +725,7 @@ class BotController {
                         const past = (boat.x - mark.x) * (dx/len) + (boat.y - mark.y) * (dy/len);
                         if (past > 15) {
                             const wdr = state.wind.direction;
-                            const sgn = (leg % 2 !== 0) ? -1 : 1;
+                            const sgn = legTargetsWindward(leg) ? -1 : 1;
                             destX += Math.sin(wdr) * roundTurn * sgn;
                             destY -= Math.cos(wdr) * roundTurn * sgn;
                         }
@@ -888,7 +896,7 @@ class BotController {
         // tack — shadowing them move for move.
         const traits = boat.traits || DEFAULT_TRAITS;
         let coverTackSide = 0;
-        if (traits.cover > 0 && mode === 'upwind' && boat.raceState.leg % 2 === 1) {
+        if (traits.cover > 0 && mode === 'upwind' && legTargetsWindward(boat.raceState.leg)) {
             let best = null, bestD2 = 320 * 320;
             for (const other of state.boats) {
                 if (other === boat || other.raceState.finished) continue;
@@ -2412,9 +2420,9 @@ function pointInPoly(x, y, verts) {
 
 // Is this position open water on a mask venue? Margin pushes it clear of the shore.
 function inMaskWater(x, y, margin = 0) {
-    const mg = state.course.maskGeo;
-    if (!mg) return true;
-    for (const isl of mg.islands) {
+    const land = state.course.landShapes;
+    if (!land) return true;
+    for (const isl of land) {
         if (pointInPoly(x, y, isl.vertices)) return false;
         if (margin > 0) {
             // near-shore rejection: distance to the polygon edge
@@ -2426,49 +2434,10 @@ function inMaskWater(x, y, margin = 0) {
     return true;
 }
 
-function buildMaskGeography(venueKey) {
-    const geo = (window.VENUE_GEO || {})[venueKey];
-    if (!geo || !geo.shapes) return null;
-    const S = MASK_WORLD;
-    // Mask space is 0..1 with +y DOWN, matching canvas, so the only transform is
-    // scale and a shift that puts the mask's centre at the world origin.
-    const toWorld = (p) => ({ x: (p[0] - 0.5) * S, y: (p[1] - 0.5) * S });
-
-    const islands = [];
-    let granite = null;
-    for (const sh of geo.shapes) {
-        const verts = sh.ring.map(toWorld);
-        const c = toWorld(sh.c);
-        const radius = sh.r * S;
-        const isGranite = sh.cls === 'granite';
-        const isl = {
-            x: c.x, y: c.y, radius, vertices: verts,
-            vegVertices: verts.map(v => ({ x: c.x + (v.x - c.x) * (isGranite ? 0.3 : 0.82),
-                                          y: c.y + (v.y - c.y) * (isGranite ? 0.3 : 0.82) })),
-            trees: [], rocks: [],
-            style: isGranite ? 'granite' : 'ice',
-            // Ice is soft (RRS 31 penalizes marks, not obstructions); granite is
-            // rock and grounds you properly.
-            soft: !isGranite,
-            fromMask: true,
-            isRock: isGranite
-        };
-        if (isGranite) {
-            const LX = -0.55, LY = -0.83;
-            isl.facets = verts.map((v1, j) => {
-                const v2 = verts[(j + 1) % verts.length];
-                const mx = (v1.x + v2.x) / 2 - c.x, my = (v1.y + v2.y) / 2 - c.y;
-                const m = Math.hypot(mx, my) || 1;
-                return { i: j, lit: (mx / m) * LX + (my / m) * LY };
-            });
-            granite = isl;
-        }
-        islands.push(isl);
-    }
-
-    const start = geo.start ? geo.start.map(toWorld) : null;
-    return { islands, granite, start, worldSize: S };
-}
+// buildMaskGeography() lived here. It traced the painted mask into collider
+// polygons at load time. Venue documents ARE those polygons now, so the
+// conversion step is gone; art/bake_mask.py imports a mask into a document
+// once, and nothing re-derives geometry at runtime.
 
 // The glacier: a real coastline across the windward end of the sound, not a row
 // of bergs. Two layers, and the split is the same one the river uses:
@@ -2736,10 +2705,8 @@ function generateIceFloes(rng) {
             const r = i < bergN ? 260 + rng() * 130
                     : i < midN  ? 140 + rng() * 100
                     : 55 + rng() * 85;
-            const ang = rng() * Math.PI * 2;
-            const dst = Math.sqrt(rng()) * (boundary.radius - 300);
-            const cx = boundary.x + Math.sin(ang) * dst;
-            const cy = boundary.y - Math.cos(ang) * dst;
+            const _sp = Arena.sample(boundary, rng, 300);
+            const cx = _sp.x, cy = _sp.y;
 
             let ok = inGlacierWater(cx, cy, r + 60);   // never inside the ice sheet
             // Density gradient: the ice comes OFF the glacier, so it packs at the
@@ -3210,10 +3177,8 @@ function generateBrash(rng) {
             bx = sh.ux * a + sh.rx * lat;
             by = sh.uy * a + sh.ry * lat;
         } else {
-            const ang = rng() * Math.PI * 2;
-            const dst = Math.sqrt(rng()) * boundary.radius;
-            bx = boundary.x + Math.sin(ang) * dst;
-            by = boundary.y - Math.cos(ang) * dst;
+            const _sp = Arena.sample(boundary, rng, 0);
+            bx = _sp.x; by = _sp.y;
         }
         if (!inGlacierWater(bx, by, 40)) continue;   // never on the ice sheet
         if (!inMaskWater(bx, by, 30)) continue;      // nor on mask land
@@ -3236,6 +3201,24 @@ function generateBrash(rng) {
 // (would desync the eval RNG stream).
 let SNOW = null;
 const snowRand = mulberry32(40713);
+
+// Visual-effect PRNG. Particle spawning (spray, wake foam, wind streaks, current
+// swirls) lives inside update() rather than draw(), so it was drawing from
+// Math.random — the SIMULATION stream.
+//
+// That made the sim depend on the camera: the spawn point is sampled near
+// state.camera, and the follow-up draws are CONDITIONAL on what is at that point
+// (`if (local.speed > 0.15)`, `if (rel > 0.85)`). Look somewhere else and a
+// different NUMBER of draws is consumed, so every subsequent boat, gust and
+// shift changes. The camera is never reset between races, so race 2 in a session
+// raced differently from race 1 — and the AI eval, which runs 100 trials in one
+// page, carried each trial's final camera position into the next.
+//
+// Particles are strictly visual (state.particles is read only by updateParticles
+// and the draw loops), so they get their own stream and the sim stops noticing
+// them. Deliberately NOT reseeded per race: visual variety across races is fine,
+// and it can no longer reach the simulation.
+const fxRand = mulberry32(0x5EED17);
 function drawSnowOverlay(ctx) {
     if (!state.race.venueFx || !state.race.venueFx.snowfall) { SNOW = null; return; }
     const w = ctx.canvas.width, h = ctx.canvas.height;
@@ -3423,8 +3406,7 @@ function updateIceFloes(dt) {
             const dir = d + bi.skew;
             bi.x += -Math.sin(dir) * base * bi.driftFactor * dt;
             bi.y += Math.cos(dir) * base * bi.driftFactor * dt;
-            const rx2 = bi.x - boundary.x, ry2 = bi.y - boundary.y;
-            const gone = rx2 * rx2 + ry2 * ry2 > (boundary.radius + 100) ** 2
+            const gone = Arena.signedDist(boundary, bi.x, bi.y) < -100
                       || !inGlacierWater(bi.x, bi.y, -30);   // drifted onto the sheet
             if (gone) {
                 const sh = state.course.glacierShore;
@@ -3438,9 +3420,8 @@ function updateIceFloes(dt) {
                     bi.y = sh.uy * a + sh.ry * lat;
                 } else {
                     const ang = d + (Math.random() - 0.5) * 2.0;
-                    const rr = boundary.radius - 150;
-                    bi.x = boundary.x + Math.sin(ang) * rr;
-                    bi.y = boundary.y - Math.cos(ang) * rr;
+                    const _rp = Arena.rimPoint(boundary, ang, 150);
+                    bi.x = _rp.x; bi.y = _rp.y;
                 }
             }
         }
@@ -3465,17 +3446,17 @@ function updateIceFloes(dt) {
 
         // Arena rim: bounce back inward (reflect velocity about the inward
         // normal) instead of teleport-respawning.
-        const relX = isl.x - boundary.x, relY = isl.y - boundary.y;
-        const rd = Math.sqrt(relX * relX + relY * relY);
-        const rim = boundary.radius - isl.radius * 0.5;
-        if (rd > rim && rd > 1) {
-            const nx = relX / rd, ny = relY / rd; // outward normal
-            const dot = isl.driftVx * nx + isl.driftVy * ny;
+        // Keep half a floe-radius of clearance from the edge, whatever shape it is.
+        const _inset = isl.radius * 0.5;
+        const _sd = Arena.signedDist(boundary, isl.x, isl.y);
+        if (_sd < _inset) {
+            const n = Arena.outward(boundary, isl.x, isl.y);
+            const dot = isl.driftVx * n.x + isl.driftVy * n.y;
             if (dot > 0) {
-                isl.driftVx -= 2 * dot * nx;
-                isl.driftVy -= 2 * dot * ny;
+                isl.driftVx -= 2 * dot * n.x;
+                isl.driftVy -= 2 * dot * n.y;
             }
-            moveFloe(isl, (rim - rd) * nx, (rim - rd) * ny);
+            moveFloe(isl, (_sd - _inset) * n.x, (_sd - _inset) * n.y);
         }
 
         bounceFloeOffShore(isl);
@@ -3531,16 +3512,15 @@ function updateIceFloes(dt) {
     // beached floe reads as a bug every time.
     for (const f of floes) {
         bounceFloeOffShore(f);
-        if (!state.course.maskGeo) continue;
+        if (!state.course.landShapes) continue;
         let stuck = false;
-        for (const isl of state.course.maskGeo.islands) {
+        for (const isl of state.course.landShapes) {
             if (circlePolyCollide(f.x, f.y, f.radius * 0.9, isl.vertices)) { stuck = true; break; }
         }
         if (!stuck) continue;
         for (let tries = 0; tries < 24; tries++) {
-            const a = Math.random() * Math.PI * 2;
-            const d = Math.sqrt(Math.random()) * (boundary.radius - 400);
-            const nx2 = boundary.x + Math.sin(a) * d, ny2 = boundary.y - Math.cos(a) * d;
+            const _sp = Arena.sample(boundary, Math.random, 400);
+            const nx2 = _sp.x, ny2 = _sp.y;
             if (!inMaskWater(nx2, ny2, f.radius + 120)) continue;
             moveFloe(f, nx2 - f.x, ny2 - f.y);
             break;
@@ -3822,8 +3802,8 @@ function drawOrcaPods(ctx, pass) {
 function generateWeeds(rng) {
     const boundary = state.course.boundary;
     const marks = state.course.marks;
-    const mStart = { x: (marks[0].x + marks[1].x) / 2, y: (marks[0].y + marks[1].y) / 2 };
-    const mUpwind = { x: (marks[2].x + marks[3].x) / 2, y: (marks[2].y + marks[3].y) / 2 };
+    const _ax = courseAxis();
+    const mStart = _ax.start, mUpwind = _ax.windward;
     const weeds = [];
     const count = 9 + Math.floor(rng() * 4);
 
@@ -5465,6 +5445,10 @@ function updateCourseConfig() {
     if (UI.confCourseLegs) {
         state.race.totalLegs = parseInt(UI.confCourseLegs.value);
         if (UI.valCourseLegs) UI.valCourseLegs.textContent = state.race.totalLegs;
+        // The route is a table keyed by leg, so a leg-count change must rebuild
+        // it. Only the route — calling initCourse() here would regenerate the
+        // islands too, which is not what moving this slider means.
+        if (state.course) state.course.route = buildRoute(state.course.type, state.race.totalLegs);
     }
     if (UI.confCourseTimer) {
         state.race.startTimerDuration = parseInt(UI.confCourseTimer.value);
@@ -6709,14 +6693,11 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
 function checkBoundaryExiting(boat) {
     if (!state.course.boundary) return false;
     const b = state.course.boundary;
-    const dx = boat.x - b.x, dy = boat.y - b.y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-    if (dist > b.radius - 200) {
-        // Check if heading away
+    // Within 200u of the edge and heading further out — whatever shape the edge is.
+    if (Arena.signedDist(b, boat.x, boat.y) < 200) {
         const hx = Math.sin(boat.heading), hy = -Math.cos(boat.heading);
-        // Normal vector at boundary is (dx, dy) relative to center.
-        // We want dot product of heading and normal.
-        if (hx * dx + hy * dy > 0) return true;
+        const n = Arena.outward(b, boat.x, boat.y);
+        if (hx * n.x + hy * n.y > 0) return true;
     }
     return false;
 }
@@ -7418,14 +7399,12 @@ function updateBoat(boat, dt) {
             }
         }
     } else if (state.course.boundary) {
-        const b = state.course.boundary;
-        const dx = boat.x - b.x, dy = boat.y - b.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > b.radius) {
-            const angle = Math.atan2(dy, dx);
-            boat.x = b.x + Math.cos(angle) * b.radius;
-            boat.y = b.y + Math.sin(angle) * b.radius;
-
+        // Nearest point INSIDE the arena. Must land on the edge rather than merely
+        // near it, or the clamp and the collision push-out fight each other — which
+        // is how the river banks once ground boats along a wall to DNF.
+        const c = Arena.clamp(state.course.boundary, boat.x, boat.y);
+        if (c.clamped) {
+            boat.x = c.x; boat.y = c.y;
             if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
                 window.onRaceEvent('collision_boundary', { boat });
             }
@@ -7448,24 +7427,33 @@ function updateBoatRaceState(boat, dt) {
 
     // Waypoint
     const marks = state.course.marks;
-    if (marks && marks.length >= 4) {
-        let indices = (boat.raceState.leg === 0 || boat.raceState.leg === 2 || boat.raceState.leg === 4) ? [0, 1] : [2, 3];
-        const m1 = marks[indices[0]], m2 = marks[indices[1]];
-        const closest = getClosestPointOnSegment(boat.x, boat.y, m1.x, m1.y, m2.x, m2.y);
-        const dx = closest.x - boat.x, dy = closest.y - boat.y;
-        boat.raceState.nextWaypoint = {
-            x: closest.x, y: closest.y,
-            dist: Math.sqrt(dx*dx + dy*dy) * 0.2,
-            angle: Math.atan2(dx, -dy)
-        };
+    // Guarded on >= 2, not >= 4. Requiring four marks meant a course with only a
+    // line and a rounding skipped this block entirely — which silently stopped
+    // resetting raceState.inZone each frame, leaving a stale value feeding the
+    // mark-room rules.
+    if (marks && marks.length >= 2) {
+        // Third enumerated selector found in this file (`leg === 0 || leg === 2
+        // || leg === 4`), with the same off-by-a-course-length bug as the other
+        // two: legs 6, 8 and 10 fell through to the windward gate while sailing
+        // downwind.
+        const indices = legMarks(boat.raceState.leg);
+        if (indices) {
+            const m1 = marks[indices[0]], m2 = marks[indices[1]];
+            const closest = getClosestPointOnSegment(boat.x, boat.y, m1.x, m1.y, m2.x, m2.y);
+            const dx = closest.x - boat.x, dy = closest.y - boat.y;
+            boat.raceState.nextWaypoint = {
+                x: closest.x, y: closest.y,
+                dist: Math.sqrt(dx*dx + dy*dy) * 0.2,
+                angle: Math.atan2(dx, -dy)
+            };
+        }
 
         // Zone Check
         let inZone = false;
         let zoneMarks = [];
         // No zones on Start (0) or Finish (totalLegs)
         if (boat.raceState.leg > 0 && boat.raceState.leg < state.race.totalLegs) {
-            if (boat.raceState.leg % 2 !== 0) zoneMarks = [2, 3];
-            else zoneMarks = [0, 1];
+            zoneMarks = legMarks(boat.raceState.leg) || [];
         }
 
         for (const idx of zoneMarks) {
@@ -7639,19 +7627,16 @@ function updateBoatRaceState(boat, dt) {
     // Crossing Logic
     // Same logic as before, applied to boat.raceState
     if (marks && marks.length >= 4) {
+        // Which gate this leg is sailed TO, and which way it must be crossed.
+        // From the route table rather than leg parity, so a course that is not a
+        // windward-leeward can express itself.
         let gateIndices = [];
         let requiredDirection = 1;
+        const legEntry = routeLeg(boat.raceState.leg);
 
-        if (boat.raceState.leg === 0) {
-            gateIndices = [0, 1]; requiredDirection = 1;
-        } else if (boat.raceState.leg <= state.race.totalLegs) {
-            // Odd legs (1, 3...): Upwind to 2,3. Direction 1 (Crossing Upwind)
-            // Even legs (2, 4...): Downwind to 0,1. Direction -1 (Crossing Downwind)
-            if (boat.raceState.leg % 2 !== 0) {
-                 gateIndices = [2, 3]; requiredDirection = 1;
-            } else {
-                 gateIndices = [0, 1]; requiredDirection = -1;
-            }
+        if (boat.raceState.leg <= state.race.totalLegs && legEntry && legEntry.marks) {
+            gateIndices = legEntry.marks;
+            requiredDirection = legEntry.dir;
         }
 
         if (gateIndices.length > 0) {
@@ -7666,7 +7651,9 @@ function updateBoatRaceState(boat, dt) {
                 const crossingDir = dot > 0 ? 1 : -1;
 
                 if (state.race.status === 'prestart') {
-                    if (gateIndices[0] === 0) {
+                    // The start line, identified by its route role rather than by
+                    // being "the pair that happens to begin at index 0".
+                    if (legEntry && legEntry.role === 'start') {
                         if (crossingDir === 1) {
                             boat.raceState.ocs = true;
                             if (boat.isPlayer) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
@@ -8171,13 +8158,13 @@ function update(dt) {
         // Spawn at a random point near the camera; visibility scales with the
         // LOCAL current there, so the river's midstream reads faster than the banks.
         const range = Math.max(canvas.width, canvas.height) * 1.5;
-        const px = state.camera.x + (Math.random() - 0.5) * range;
-        const py = state.camera.y + (Math.random() - 0.5) * range;
+        const px = state.camera.x + (fxRand() - 0.5) * range;
+        const py = state.camera.y + (fxRand() - 0.5) * range;
         const local = getCurrentAt(px, py);
         if (local && local.speed > 0.15) {
             const spawnChance = (0.2 + (local.speed / 3.0) * 0.5) * 0.25;
-            if (Math.random() < spawnChance) {
-                createParticle(px, py, 'current', { life: 1.0 + Math.random(), alpha: Math.min(1, local.speed / 1.5) });
+            if (fxRand() < spawnChance) {
+                createParticle(px, py, 'current', { life: 1.0 + fxRand(), alpha: Math.min(1, local.speed / 1.5) });
             }
         }
 
@@ -8185,13 +8172,13 @@ function update(dt) {
         if (state.course.marks) {
             for (const m of state.course.marks) {
                 const mc = getCurrentAt(m.x, m.y);
-                if (mc && mc.speed > 0.15 && Math.random() < 0.3 * (mc.speed / 3.0)) {
+                if (mc && mc.speed > 0.15 && fxRand() < 0.3 * (mc.speed / 3.0)) {
                      // Mark is obstacle. Wake forms downstream.
                      const flowDir = mc.direction;
                      const offset = 12; // Radius
                      const wx = Math.sin(flowDir) * offset;
                      const wy = -Math.cos(flowDir) * offset;
-                     createParticle(m.x + wx + (Math.random()-0.5)*10, m.y + wy + (Math.random()-0.5)*10, 'mark-wake', { life: 1.5, alpha: 0.5 * (mc.speed/3.0), scale: 0.8 });
+                     createParticle(m.x + wx + (fxRand()-0.5)*10, m.y + wy + (fxRand()-0.5)*10, 'mark-wake', { life: 1.5, alpha: 0.5 * (mc.speed/3.0), scale: 0.8 });
                 }
             }
         }
@@ -8316,7 +8303,7 @@ function update(dt) {
         }
     } else if (state.camera.target === 'finish') {
         // Focus on Finish Line center
-        let indices = (state.race.totalLegs % 2 === 0) ? [0, 1] : [2, 3];
+        let indices = finishMarks() || [0, 1];
         if (state.course.marks && state.course.marks.length >= 2) {
              const m1 = state.course.marks[indices[0]], m2 = state.course.marks[indices[1]];
              const tx = (m1.x+m2.x)/2, ty = (m1.y+m2.y)/2;
@@ -8364,14 +8351,14 @@ function update(dt) {
                 // Occasional foam blobs scattered ALONG the wake band (real
                 // wakes break into patches); never point-spawned at the stern
                 const str0 = boat.wakeTrail.length ? boat.wakeTrail[0].str : 0;
-                if (boat.wakeTrail.length > 4 && Math.random() < (planing ? 0.22 : 0.10) * str0) {
-                    const idx = 1 + Math.floor(Math.random() * Math.min(9, boat.wakeTrail.length - 2));
+                if (boat.wakeTrail.length > 4 && fxRand() < (planing ? 0.22 : 0.10) * str0) {
+                    const idx = 1 + Math.floor(fxRand() * Math.min(9, boat.wakeTrail.length - 2));
                     const p = boat.wakeTrail[idx];
                     const q = boat.wakeTrail[idx + 1];
                     const sdx = q.x - p.x, sdy = q.y - p.y;
                     const sl = Math.sqrt(sdx * sdx + sdy * sdy) || 1;
-                    const off = (Math.random() - 0.5) * 2 * (8 + p.age * 8);
-                    createParticle(p.x + (-sdy / sl) * off, p.y + (sdx / sl) * off, 'wake', { scale: 0.7 + Math.random() * 0.9 });
+                    const off = (fxRand() - 0.5) * 2 * (8 + p.age * 8);
+                    createParticle(p.x + (-sdy / sl) * off, p.y + (sdx / sl) * off, 'wake', { scale: 0.7 + fxRand() * 0.9 });
                 }
             }
         }
@@ -8379,14 +8366,14 @@ function update(dt) {
 
     // Wind streaks: pressure-weighted spawns — gusts breed streaks, lulls go
     // near-silent, so streak density itself reports the wind field
-    if (Math.random() < 0.5) {
+    if (fxRand() < 0.5) {
         const range = Math.max(canvas.width, canvas.height) * 1.5;
-        const sx = state.camera.x + (Math.random()-0.5)*range;
-        const sy = state.camera.y + (Math.random()-0.5)*range;
+        const sx = state.camera.x + (fxRand()-0.5)*range;
+        const sy = state.camera.y + (fxRand()-0.5)*range;
         const rel = getWindAt(sx, sy).speed / Math.max(1, state.wind.speed);
         const chance = Math.max(0.07, (rel - 0.85) * 1.6);
-        if (Math.random() < chance) {
-            createParticle(sx, sy, 'wind', { life: Math.random() + 0.7, jit: Math.random() });
+        if (fxRand() < chance) {
+            createParticle(sx, sy, 'wind', { life: fxRand() + 0.7, jit: fxRand() });
         }
     }
     updateParticles(dt);
@@ -8868,9 +8855,13 @@ function drawRoundingArrows(ctx) {
     // No arrows on Start (0) or Finish (totalLegs)
     if (player.raceState.leg === 0 || player.raceState.leg >= state.race.totalLegs) return;
 
-    let activeMarks = [];
-    if (player.raceState.leg % 2 !== 0) activeMarks = [{ index: 2, ccw: true }, { index: 3, ccw: false }]; // Upwind
-    else activeMarks = [{ index: 0, ccw: false }, { index: 1, ccw: true }]; // Downwind
+    // Rounding direction alternates with which end of the gate you take: at the
+    // windward gate the first mark is left to port, at the leeward line it is the
+    // second. Keyed on the route ROLE, not leg parity — leg 0 targets the start
+    // line and must read as a leeward-style pair even though it is a beat.
+    const amIdx = legMarks(player.raceState.leg) || [0, 1];
+    const amWindward = (routeLeg(player.raceState.leg) || {}).role === 'windward';
+    const activeMarks = amIdx.map((index, k) => ({ index, ccw: amWindward ? k === 0 : k === 1 }));
 
     ctx.save();
     ctx.lineWidth = 7; ctx.strokeStyle = `rgba(${NAV_RGB}, 0.85)`; ctx.fillStyle = `rgba(${NAV_RGB}, 0.85)`; ctx.lineCap = 'round';
@@ -8910,10 +8901,10 @@ function drawActiveGateLine(ctx) {
         // One line, and it is both start and finish — always drawn.
         indices = [0, 1];
     } else if (state.race.status === 'finished' || player.raceState.finished) {
-        indices = (state.race.totalLegs % 2 === 0) ? [0, 1] : [2, 3];
+        indices = finishMarks() || [0, 1];
     } else {
         if (player.raceState.leg !== 0 && player.raceState.leg !== state.race.totalLegs) return;
-        indices = (player.raceState.leg % 2 === 0) ? [0, 1] : [2, 3];
+        indices = legMarks(player.raceState.leg) || [0, 1];
     }
     const m1 = state.course.marks[indices[0]], m2 = state.course.marks[indices[1]];
     ctx.save();
@@ -8934,10 +8925,15 @@ function drawActiveGateLine(ctx) {
         const angle = Math.atan2(m2.y - m1.y, m2.x - m1.x);
         // Face approaching racers: the text's top points in the direction of travel
         // through the line (START: toward the first gate; FINISH: away from the last gate)
-        const oIdx = (indices[0] === 0) ? [2, 3] : [0, 1];
-        const o1 = state.course.marks[oIdx[0]], o2 = state.course.marks[oIdx[1]];
-        let tx = (o1.x + o2.x) / 2 - midX, ty = (o1.y + o2.y) / 2 - midY;
-        if (label === 'FINISH') { tx = -tx; ty = -ty; }
+        // Direction of travel THROUGH the line: the crossing normal n = (dy, -dx)
+        // times the required crossing sign. This used to look up "the other gate"
+        // as marks[2]/[3] — which do not exist on a course with one line and a
+        // rounding, so it read undefined and crashed the whole draw. `dir` already
+        // encodes travel direction, so no separate FINISH negation is needed:
+        // the start crosses with dir +1 and the finish with dir -1.
+        const _le = routeLeg(Math.min(player.raceState.leg, state.race.totalLegs)) || {};
+        const _ds = _le.dir || 1;
+        const tx = (m2.y - m1.y) * _ds, ty = -(m2.x - m1.x) * _ds;
         ctx.translate(midX, midY);
         let rot = angle;
         if (Math.sin(rot) * tx - Math.cos(rot) * ty < 0) rot += Math.PI;
@@ -8951,14 +8947,23 @@ function drawLadderLines(ctx) {
     const player = state.boats[0];
     if (!state.showNavAids || state.race.status === 'prestart' || state.race.status === 'finished' || player.raceState.finished) return;
 
-    const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
-    const c1x = (m0.x+m1.x)/2, c1y = (m0.y+m1.y)/2, c2x = (m2.x+m3.x)/2, c2y = (m2.y+m3.y)/2;
-    const dx = c2x-c1x, dy = c2y-c1y, len = Math.sqrt(dx*dx+dy*dy);
-    const wx = dx/len, wy = dy/len, px = -wy, py = wx;
+    const _ax = courseAxis();
+    if (!_ax) return;
+    const c1x = _ax.start.x, c1y = _ax.start.y, c2x = _ax.windward.x, c2y = _ax.windward.y;
+    const dx = _ax.dx, dy = _ax.dy, len = _ax.len;
+    const wx = _ax.ux, wy = _ax.uy, px = -wy, py = wx;
     const courseAngle = Math.atan2(wx, -wy);
 
-    let prevIndex = (player.raceState.leg === 0 || player.raceState.leg % 2 !== 0) ? 0 : 2;
-    let nextIndex = (prevIndex === 0) ? 2 : 0;
+    // Ladder rungs span the course AXIS — from the leeward/start line to the
+    // windward gate — so they are keyed on the two ends of the route, and flipped
+    // by whether this leg is sailed up or down.
+    const dnPair = (routeLeg(0) && routeLeg(0).marks) || [0, 1];
+    const upPair = (routeLeg(1) && routeLeg(1).marks) || [2, 3];
+    const goingUp = legIsBeat(player.raceState.leg);
+    const nextPair = goingUp ? upPair : dnPair;
+    const prevPair = goingUp ? dnPair : upPair;
+    let prevIndex = prevPair[0];
+    let nextIndex = nextPair[0];
 
     const mPrev = state.course.marks[prevIndex], mNext = state.course.marks[nextIndex];
     const startProj = mPrev.x*wx + mPrev.y*wy, endProj = mNext.x*wx + mNext.y*wy;
@@ -8969,12 +8974,12 @@ function drawLadderLines(ctx) {
 
     // Boundary & Laylines Projection logic same as before...
     const uL = mNext.x*wx + mNext.y*wy, vL = mNext.x*px + mNext.y*py;
-    const mNextR = state.course.marks[nextIndex+1];
+    const mNextR = state.course.marks[nextPair[1]];
     const uR = mNextR.x*wx + mNextR.y*wy, vR = mNextR.x*px + mNextR.y*py;
     const b = state.course.boundary;
     const uC = b.x*wx + b.y*wy, vC = b.x*px + b.y*py, R = b.radius;
 
-    const isUpwindTarget = (nextIndex === 2);
+    const isUpwindTarget = goingUp;
     const delta = normalizeAngle(state.wind.direction - courseAngle);
     let slopeLeft = Math.tan(delta + Math.PI/4), slopeRight = Math.tan(delta - Math.PI/4);
     if (!isUpwindTarget) { slopeLeft = Math.tan(delta - Math.PI/4); slopeRight = Math.tan(delta + Math.PI/4); }
@@ -9064,7 +9069,7 @@ function drawLayLines(ctx) {
                 const a = state.wind.direction + sgn * Math.PI / 4 + (up ? Math.PI : 0);
                 const dx = Math.sin(a), dy = -Math.cos(a);
                 const sx = m.x + dx * zr, sy = m.y + dy * zr;
-                const t = rayCircleIntersection(sx, sy, dx, dy, state.course.boundary.x, state.course.boundary.y, state.course.boundary.radius);
+                const t = Arena.rayHit(state.course.boundary, sx, sy, dx, dy);
                 if (t !== null) {
                     ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`;
                     ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + dx * t, sy + dy * t); ctx.stroke();
@@ -9075,8 +9080,8 @@ function drawLayLines(ctx) {
         return;
     }
 
-    let targets = (player.raceState.leg % 2 === 0) ? [0, 1] : [2, 3];
-    const isUpwind = (player.raceState.leg % 2 !== 0) || (player.raceState.leg === 0);
+    let targets = legMarks(player.raceState.leg) || [0, 1];
+    const isUpwind = legIsBeat(player.raceState.leg);
     const zoneRadius = (player.raceState.leg === 0 || player.raceState.leg === state.race.totalLegs) ? 0 : 165;
 
     ctx.save(); ctx.lineWidth = 5.5;
@@ -9088,7 +9093,7 @@ function drawLayLines(ctx) {
             let da = angle + (isUpwind ? Math.PI : 0);
             const dx = Math.sin(da), dy = -Math.cos(da);
             const startX = m.x + dx*zoneRadius, startY = m.y + dy*zoneRadius;
-            const t = rayCircleIntersection(startX, startY, dx, dy, state.course.boundary.x, state.course.boundary.y, state.course.boundary.radius);
+            const t = Arena.rayHit(state.course.boundary, startX, startY, dx, dy);
             if (t !== null) {
                 ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`; ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(startX+dx*t, startY+dy*t); ctx.stroke();
             }
@@ -9122,8 +9127,7 @@ function drawMarkZones(ctx) {
 
     // Exclude Start (0) and Finish (totalLegs)
     if (player.raceState.leg > 0 && player.raceState.leg < state.race.totalLegs) {
-        if (player.raceState.leg % 2 !== 0) active = [2, 3];
-        else active = [0, 1];
+        active = legMarks(player.raceState.leg) || [];
     } else return;
 
     ctx.save();
@@ -9449,8 +9453,8 @@ function drawMarkBodies(ctx) {
 
         let active = false;
         if (state.race.status !== 'finished') {
-            if (player.raceState.leg % 2 === 0) { if (i===0 || i===1) active = true; }
-            else { if (i===2 || i===3) active = true; }
+            const act = legMarks(player.raceState.leg) || [];
+            if (act.indexOf(i) !== -1) active = true;
         }
 
         if (markImg.complete && markImg.naturalWidth) {
@@ -9592,19 +9596,21 @@ function drawMinimap() {
     // Mask venues show the WHOLE map: the geography is authored and fixed, so a
     // minimap cropped to player+marks hides most of it and reads nothing like
     // the painted mask.
-    if (state.course.maskGeo) {
-        const H = MASK_WORLD / 2;
-        minX = -H; maxX = H; minY = -H; maxY = H;
+    if (state.course.doc) {
+        // Follows the ARENA rather than MASK_WORLD, so it tracks a scaled map and a
+        // polygon boundary instead of a constant that no longer describes either.
+        const e = Arena.extent(state.course.boundary);
+        minX = e.minX; maxX = e.maxX; minY = e.minY; maxY = e.maxY;
     }
-    const pad = state.course.maskGeo ? 0 : 200;
+    const pad = state.course.doc ? 0 : 200;
     minX-=pad; maxX+=pad; minY-=pad; maxY+=pad;
-    const scale = (width - (state.course.maskGeo ? 0 : 20)) / Math.max(maxX-minX, maxY-minY);
+    const scale = (width - (state.course.doc ? 0 : 20)) / Math.max(maxX-minX, maxY-minY);
     const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
     const t = (x, y) => ({ x: (x-cx)*scale + width/2, y: (y-cy)*scale + height/2 });
 
     // Boundary (hidden in the river — the shore is the boundary there)
     const b = state.course.boundary;
-    if (!state.course.riverShore && !state.course.maskGeo) {
+    if (!state.course.riverShore && !state.course.doc) {
         const bp = t(b.x, b.y);
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
     }
@@ -9741,7 +9747,7 @@ function drawMinimap() {
     }
 
     // Marks
-    let active = (player.raceState.leg % 2 === 0) ? [0, 1] : [2, 3];
+    let active = legMarks(player.raceState.leg) || [];
     if (state.race.status === 'finished') active = [];
 
     // Gates
@@ -9751,16 +9757,24 @@ function drawMinimap() {
         ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
         ctx.strokeStyle = a ? '#facc15' : 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = a ? 2 : 1; ctx.stroke();
     };
-    drawG(0, 1, active.includes(0));
-    drawG(2, 3, active.includes(2));
+    // Gates come from the ROUTE, not from the hardcoded pairs (0,1) and (2,3). A
+    // course with one line and a rounding has no second gate, and reading marks[2]
+    // on a two-mark course crashed the whole minimap.
+    const drawn = {};
+    for (const e of (state.course.route || [])) {
+        if (!e.marks) continue;
+        const key = e.marks.join(',');
+        if (drawn[key]) continue;
+        drawn[key] = true;
+        drawG(e.marks[0], e.marks[1], active.indexOf(e.marks[0]) !== -1);
+    }
 
-    // Marks Points
-    // The island course uses only the start/finish line; marks 2 and 3 exist
-    // in the array (lots of code indexes them) but are not part of the course.
-    const markCount = state.course.type === 'islandRound' ? 2 : state.course.marks.length;
+    // Marks Points — every mark the course actually has, now that placeholder marks
+    // are gone and the array length means what it says.
+    const markCount = state.course.marks.length;
     for (let i=0; i<markCount; i++) {
         const p = t(state.course.marks[i].x, state.course.marks[i].y);
-        const mkR = state.course.maskGeo ? 0.6 : 1;
+        const mkR = state.course.doc ? 0.6 : 1;
         ctx.beginPath(); ctx.arc(p.x, p.y, (active.includes(i) ? 4 : 3) * mkR, 0, Math.PI*2);
         ctx.fillStyle = active.includes(i) ? '#f97316' : '#94a3b8'; ctx.fill();
     }
@@ -9769,7 +9783,7 @@ function drawMinimap() {
     // Marker size. These were tuned when the minimap framed player+marks; a
     // mask venue shows the WHOLE map, where a fixed 8px arrow is a boat the size
     // of an island and the fleet becomes one coloured smear. Shrink to match.
-    const mk = state.course.maskGeo ? 0.55 : 1;
+    const mk = state.course.doc ? 0.55 : 1;
     // Draw AI boats first
     for (const boat of state.boats) {
         if (boat.isPlayer) continue;
@@ -9806,12 +9820,12 @@ function drawMinimap() {
 let frameCount = 0;
 
 function getBoatProgress(boat) {
-    const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
-    const c1x = (m0.x+m1.x)/2, c1y = (m0.y+m1.y)/2;
-    const c2x = (m2.x+m3.x)/2, c2y = (m2.y+m3.y)/2;
-    const dx = c2x-c1x, dy = c2y-c1y;
-    const len = Math.sqrt(dx*dx+dy*dy);
-    const wx = dx/len, wy = dy/len;
+    const _ax = courseAxis();
+    const c1x = _ax.start.x, c1y = _ax.start.y;
+    const c2x = _ax.windward.x, c2y = _ax.windward.y;
+    const dx = _ax.dx, dy = _ax.dy;
+    const len = _ax.len;
+    const wx = _ax.ux, wy = _ax.uy;
 
     const totalLegs = state.race.totalLegs;
     if (boat.raceState.finished) {
@@ -9844,9 +9858,9 @@ function getBoatProgress(boat) {
     if (leg === 0) {
         progress = relP;
     } else {
-        if (leg % 2 !== 0) { // Odd (Upwind)
+        if (legTargetsWindward(leg)) {   // beating to the windward gate
             progress = (leg - 1) * L + relP;
-        } else { // Even (Downwind)
+        } else {                          // running back to the leeward line
             progress = leg * L - relP;
         }
     }
@@ -10119,11 +10133,11 @@ function updateLeaderboard() {
     state.boats.forEach(b => b.prevRank = b.lbRank);
 
     // Calculate L for distance estimates
-    const m0 = state.course.marks[0], m1 = state.course.marks[1], m2 = state.course.marks[2], m3 = state.course.marks[3];
-    const c1x = (m0.x+m1.x)/2, c1y = (m0.y+m1.y)/2;
-    const c2x = (m2.x+m3.x)/2, c2y = (m2.y+m3.y)/2;
-    const dx = c2x-c1x, dy = c2y-c1y;
-    const len = Math.sqrt(dx*dx+dy*dy);
+    const _ax = courseAxis();
+    const c1x = _ax.start.x, c1y = _ax.start.y;
+    const c2x = _ax.windward.x, c2y = _ax.windward.y;
+    const dx = _ax.dx, dy = _ax.dy;
+    const len = _ax.len;
     const totalRaceDist = state.race.totalLegs * len;
 
 
@@ -10588,7 +10602,7 @@ function draw() {
             const marks = state.course.marks;
             if (leg > 0 && leg < state.race.totalLegs && marks && marks.length >= 4) {
                 // Gate leg: one indicator per gate mark, each showing its rounding direction.
-                const indices = (leg % 2 !== 0) ? [2, 3] : [0, 1];
+                const indices = legMarks(leg) || [];
                 for (const idx of indices) {
                     const mk = marks[idx];
                     const d = Math.sqrt((mk.x-player.x)**2 + (mk.y-player.y)**2) * 0.2;
@@ -10925,8 +10939,8 @@ function generateIslands(boundary) {
     const marks = state.course.marks;
     if (!marks || marks.length < 4) return [];
 
-    const mStart = { x: (marks[0].x+marks[1].x)/2, y: (marks[0].y+marks[1].y)/2 };
-    const mUpwind = { x: (marks[2].x+marks[3].x)/2, y: (marks[2].y+marks[3].y)/2 };
+    const _ax = courseAxis();
+    const mStart = _ax.start, mUpwind = _ax.windward;
     
     // Helper: Generate a jagged polygon for a body
     const createIslandBody = (bx, by, br) => {
@@ -11140,14 +11154,15 @@ function checkCourseNavigability(islands, marks) {
     }
     
     // Start Point (Start Line Center)
-    const sx = (marks[0].x+marks[1].x)/2;
-    const sy = (marks[0].y+marks[1].y)/2;
+    const _ax0 = courseAxis();
+    const sx = _ax0.start.x;
+    const sy = _ax0.start.y;
     const startC = Math.floor((sx - minX) / resolution);
     const startR = Math.floor((sy - minY) / resolution);
     
     // Target Point (Upwind Gate Center)
-    const tx = (marks[2].x+marks[3].x)/2;
-    const ty = (marks[2].y+marks[3].y)/2;
+    const tx = _ax0.windward.x;
+    const ty = _ax0.windward.y;
     const targetC = Math.floor((tx - minX) / resolution);
     const targetR = Math.floor((ty - minY) / resolution);
     
@@ -11790,80 +11805,168 @@ function drawSwell(ctx) {
 }
 
 // Init
-function initCourse() {
-    // MASK-BAKED VENUE. Geography is fixed in world space, so the course cannot
-    // rotate with the wind the way every other venue's does. Instead the wind is
-    // derived FROM the map: square to the painted start line, blowing down the
-    // course, so the leg to the granite island is a beat.
-    const maskKey = (state.race.venueFx && state.race.venueFx.mask) ? settings.venue : null;
-    const mask = maskKey ? buildMaskGeography(maskKey) : null;
-    if (mask && mask.start && mask.granite) {
-        const [a, b] = mask.start;
-        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-        // The PAINTED line sets the orientation — it is a drawn instruction, not
-        // a hint. The wind is then derived FROM it ("the wind should blow against
-        // the start-finish line"): square to the line, on whichever side the
-        // island lies. Deriving the line from the island instead rotated it ~64
-        // degrees off what was drawn.
-        let lx = b.x - a.x, ly = b.y - a.y;
-        const ll0 = Math.hypot(lx, ly) || 1;
-        lx /= ll0; ly /= ll0;
-        let ux0 = -ly, uy0 = lx;                        // square to the line
-        const toIsl = { x: mask.granite.x - mx, y: mask.granite.y - my };
-        // Start heads AWAY from the island: the line sits in a closed channel, so
-        // the fleet beats out into open water first and comes at the rounding from
-        // the sound rather than straight up a dead end.
-        if (ux0 * toIsl.x + uy0 * toIsl.y > 0) { ux0 = -ux0; uy0 = -uy0; }
-        const cl = Math.hypot(toIsl.x, toIsl.y) || 1;
-        // heading convention: forward = (sin h, -cos h)
-        state.wind.baseDirection = Math.atan2(ux0, -uy0);
-        state.wind.direction = state.wind.baseDirection;
+// ─── COURSE ROUTE ────────────────────────────────────────────────────────────
+//
+// A course is MARKS (physical objects) plus a ROUTE (ordered passage
+// instructions). `route[n]` describes leg n: which marks bound it, which way a
+// boat must cross, and whether that crossing finishes the race.
+//
+// This exists to replace `leg % 2 !== 0 ? [2,3] : [0,1]`, which was repeated at
+// about a dozen sites. That arithmetic IS a windward-leeward course encoded as a
+// formula: marks [0,1] are the start/leeward line and [2,3] the windward gate,
+// forever. No other course shape can satisfy it — which is why `islandRound` has
+// to park two unused marks at [2] and [3] purely so the formula does not throw,
+// and why it once drew a phantom gate at them.
+//
+// Route entry:
+//   { kind: 'line'|'gate', marks: [i, j], dir: +1|-1, beat: bool, finish?: bool }
+//   { kind: 'round', side: 'starboard'|'port' }              (mark is course.roundMark)
+//
+// `dir` is the sign of the crossing against the gate normal n = (dy, -dx), which
+// is why mark ORDER within a pair is load-bearing and not cosmetic.
+function buildRoute(type, totalLegs) {
+    const route = [];
+    if (type === 'islandRound') {
+        route.push({ kind: 'line',  marks: [0, 1], dir: +1, beat: true,  role: 'start' });
+        route.push({ kind: 'round', side: 'starboard',      beat: true,  role: 'rounding' });
+        route.push({ kind: 'line',  marks: [0, 1], dir: -1, beat: false, role: 'finish', finish: true });
+        return route;
+    }
+    // Windward-leeward. Leg 0 is the start (up through the line); odd legs beat
+    // to the windward gate; even legs run back down to the start/leeward line.
+    //
+    // Two entries are generated PAST the finish. Several draw paths query the
+    // player's leg after they have finished (leg becomes totalLegs+1), and the
+    // old formula happily answered for any leg. Generating the tail keeps those
+    // answers identical instead of relying on a fallback.
+    for (let leg = 0; leg <= totalLegs + 1; leg++) {
+        const beat = (leg % 2 !== 0) || leg === 0;
+        route.push({
+            kind: leg === 0 ? 'line' : 'gate',
+            marks: (leg % 2 !== 0) ? [2, 3] : [0, 1],
+            dir: (leg === 0 || leg % 2 !== 0) ? +1 : -1,
+            beat,
+            role: leg === 0 ? 'start' : (leg % 2 !== 0 ? 'windward' : 'leeward'),
+            finish: leg === totalLegs
+        });
+    }
+    return route;
+}
 
-        // Re-lay the line square to that axis, centred on where it was painted,
-        // at the width the fleet actually needs (the painted line is indicative).
-        const _SPw0 = (typeof window !== 'undefined' && window.__START) ? window.__START : {};
-        const w0 = _SPw0.width != null ? _SPw0.width : 1100;   // same line as every venue
-        // Lay the line along the painted direction — but its VERTEX ORDER decides
-        // the crossing normal n = (dy, -dx), and the start test wants n pointing
-        // up-course. Flipping the wind without flipping the order put the whole
-        // fleet on the wrong side of its own start line.
-        let rx0 = lx, ry0 = ly;
-        if ((ry0 * ux0 - rx0 * uy0) < 0) { rx0 = -rx0; ry0 = -ry0; }
-        state.course = {
-            marks: [
-                { x: mx - rx0 * w0 / 2, y: my - ry0 * w0 / 2, type: 'start' },
-                { x: mx + rx0 * w0 / 2, y: my + ry0 * w0 / 2, type: 'start' },
-                // Unused by this course type, but plenty of code indexes [2]/[3].
-                { x: mask.granite.x - rx0 * 200, y: mask.granite.y - ry0 * 200, type: 'mark' },
-                { x: mask.granite.x + rx0 * 200, y: mask.granite.y + ry0 * 200, type: 'mark' }
-            ],
-            // The painted mask IS the world: no open ocean past its edge.
-            boundary: { x: 0, y: 0, radius: MASK_WORLD * 0.5 }
-        };
-        state.race.legLength = cl;
+const routeLeg  = (leg) => (state.course && state.course.route) ? (state.course.route[leg] || null) : null;
+// Marks bounding the leg's target gate/line, or null for a rounding (no gate).
+const legMarks  = (leg) => { const r = routeLeg(leg); return (r && r.marks) ? r.marks : null; };
+const legDir    = (leg) => { const r = routeLeg(leg); return r ? r.dir : 1; };
+// Is this leg sailed upwind? Leg 0 counts: the start is a beat to the line.
+const legIsBeat = (leg) => { const r = routeLeg(leg); return r ? !!r.beat : false; };
+// The finish is simply the last route entry's gate.
+const finishMarks = () => legMarks(state.race.totalLegs);
+
+// The start/finish line — by route role, not by "the pair at index 0".
+const startLineMarks = () => {
+    const r = state.course && state.course.route && state.course.route[0];
+    return (r && r.marks) ? r.marks : [0, 1];
+};
+
+// The course AXIS: leeward/start line midpoint -> windward gate midpoint, plus
+// the unit vector along it. Six separate sites recomputed this from marks[0..3];
+// it is one concept and belongs in one place.
+//
+// A course with no windward gate (islandRound) uses its rounding mark as the far
+// end, which is the natural analogue. Note this is byte-identical to the old
+// marks[2]/[3] computation there: those two placeholder marks are laid out
+// symmetrically either side of the granite island, so their midpoint already WAS
+// the island centre.
+function courseAxis() {
+    const a = legMid(0);
+    let b = legMid(1);
+    if (!b && state.course && state.course.roundMark) {
+        b = { x: state.course.roundMark.x, y: state.course.roundMark.y };
+    }
+    if (!a || !b) return null;
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    return { start: a, windward: b, dx, dy, len, ux: dx / len, uy: dy / len };
+}
+
+// Does this leg's target gate sit at the windward end? Distinct from legIsBeat:
+// leg 0 is sailed upwind but targets the START line, so it is a beat that is not
+// heading for the windward gate.
+const legTargetsWindward = (leg) => (routeLeg(leg) || {}).role === 'windward';
+
+// rules.js is loaded BEFORE script.js but runs after it, so these reach it via a
+// namespace rather than relying on cross-script lexical bindings.
+window.Course = {
+    routeLeg: (l) => routeLeg(l),
+    legMarks: (l) => legMarks(l),
+    legIsBeat: (l) => legIsBeat(l),
+    legTargetsWindward: (l) => legTargetsWindward(l),
+    windwardMarks: () => {
+        const r = state.course && state.course.route && state.course.route[1];
+        return (r && r.marks) || null;
+    }
+};
+
+function legMid(leg) {
+    const idx = legMarks(leg);
+    if (!idx || !state.course.marks) return null;
+    const a = state.course.marks[idx[0]], b = state.course.marks[idx[1]];
+    if (!a || !b) return null;
+    return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+function initCourse() {
+    // DESIGNED VENUE, from a venue document. Land is vector polygons in world
+    // units and the course is AUTHORED — marks, route and wind direction are read,
+    // not inferred.
+    //
+    // This replaces a chain of inference from a painted mask: wind computed square
+    // to a green line, flipped to point away from the island, the line re-laid at
+    // fleet width, then its vertex order flipped again so the crossing normal
+    // pointed up-course. Both flips were wrong at some point, each in a way that
+    // was only visible by sailing it. Values that are drawn should be read.
+    const doc = (state.race.venueFx && state.race.venueFx.mask) ? window.VenueDoc.get(settings.venue) : null;
+    if (doc) {
+        const problems = window.VenueDoc.validate(doc);
+        const errors = problems.filter(p => p.level === 'error');
+        for (const p of problems) console[p.level === 'error' ? 'error' : 'warn'](`[venue ${settings.venue}] ${p.msg}`);
+        if (errors.length) console.error(`[venue ${settings.venue}] ${errors.length} error(s); course may be unsailable`);
+
+        const c = window.VenueDoc.compile(doc);
+        if (c.windBase !== null) {
+            state.wind.baseDirection = c.windBase;
+            state.wind.direction = c.windBase;
+        }
+        state.course = { marks: c.marks, boundary: c.boundary };
+        // NOTE: legLength is deliberately NOT set here. It is the player's Course
+        // Distance setting (the config slider writes it, resetGame preserves it),
+        // and writing to it made an Arctic race silently resize the next Bay
+        // course. The island cutoff is measured from the real start->mark distance
+        // in updateRace, not from legLength.
         state.course.type = 'islandRound';
-        state.race.totalLegs = 2;
-        state.course.islands = mask.islands;
-        state.course.navIslands = mask.islands;
+        state.race.totalLegs = c.legs;
+        state.course.route = c.route;
+        state.course.islands = c.islands;
+        state.course.navIslands = c.islands;
         state.course.navVersion = 0;
-        state.course.maskGeo = mask;
+        state.course.doc = doc;
+        // The vector land, kept separate from course.islands (which also carries
+        // drifting floes). Anything asking "is this point on land?" must test these
+        // POLYGONS — the landmass bounding radius is 9388, more than half the
+        // world, and reasoning from it silently broke floe placement, collision and
+        // wind shadow on three separate occasions.
+        state.course.landShapes = c.islands;
         state.course.weeds = null;
         state.course.riverShore = null;
         state.course.glacierShore = null;
         state.course.brash = null;
         state.course.calving = null;
         state.race.riverCurrent = null;
-        state.course.roundMark = {
-            x: mask.granite.x, y: mask.granite.y,
-            radius: mask.granite.radius,
-            // Big enough to capture the whole island, not just skim it.
-            zone: mask.granite.radius * 2.1,
-            side: 'starboard'
-        };
+        state.course.roundMark = c.roundMark;
         const fx0 = state.race.venueFx;
-        if (fx0 && fx0.ice) {
+        if (fx0 && fx0.ice && c.seeded.ice) {
             const rngM = state.race.seed ? mulberry32(state.race.seed + 7) : Math.random;
-            state.course.islands = mask.islands.concat(generateIceFloes(rngM));
+            state.course.islands = c.islands.concat(generateIceFloes(rngM));
             state.course.navIslands = state.course.islands.filter(i => !i.isBank);
             state.course.brash = generateBrash(rngM);
         }
@@ -11893,6 +11996,7 @@ function initCourse() {
     state.course.type = (state.race.venueFx && state.race.venueFx.islandCourse) ? 'islandRound' : 'wl';
     state.course.roundMark = null;
     if (state.course.type === 'islandRound') state.race.totalLegs = 2;
+    state.course.route = buildRoute(state.course.type, state.race.totalLegs);
 
     // Generate Islands
     let islands = [];
