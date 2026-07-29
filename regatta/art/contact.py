@@ -19,6 +19,8 @@ import sys
 
 from PIL import Image, ImageDraw
 
+import paths
+
 ROOT = pathlib.Path(__file__).resolve().parent
 REPO = ROOT.parent
 MANIFEST = ROOT / "manifest.json"
@@ -26,6 +28,7 @@ PLATES = ROOT / "plates"
 SHEETS = ROOT / "sheets"
 MASTERS = ROOT / "masters"
 INBOX = ROOT / "inbox"
+PREFIXES = {}
 
 BAND_H = 260          # height of each water band
 SLOTS = (0.16, 0.5, 0.84)   # where along the band the prop is dropped
@@ -35,8 +38,8 @@ ZOOMS = (1, 2, 4)
 def source_image(asset, profiles):
     """Prefer the shipped bake, fall back to master, then inbox."""
     prof = profiles[asset["class"]]
-    for p in (REPO / prof["out"] / f"{asset['key']}.png",
-              MASTERS / f"{asset['key']}.png",
+    for p in (paths.store(REPO / prof["out"], asset, PREFIXES),
+              paths.store(MASTERS, asset, PREFIXES),
               INBOX / f"{asset['key']}.png"):
         if p.exists():
             return Image.open(p).convert("RGBA"), p
@@ -89,6 +92,77 @@ def zoom_strip(art, world, width):
     return strip
 
 
+def compare_band(plate, cands, world, anchor, venue):
+    """One venue band with every candidate side by side, for model bake-offs."""
+    w = plate.width
+    top = max(0, (plate.height - BAND_H) // 2)
+    strip = plate.crop((0, top, w, top + BAND_H)).convert("RGBA")
+    d = ImageDraw.Draw(strip)
+    ax, ay = anchor
+    n = len(cands)
+    for i, (lab, art) in enumerate(cands):
+        cx = int(w * (i + 1) / (n + 1))
+        cy = BAND_H // 2
+        scaled = art.resize((world, world), Image.LANCZOS)
+        strip.alpha_composite(scaled, (cx - int(ax * world), cy - int(ay * world)))
+        label(d, (cx - world // 2, cy + world // 2 + 8), lab)
+    label(d, (10, 8), f"{venue}  ·  {world}px on the water")
+    return strip
+
+
+def build_compare(asset, plate_names, paths):
+    """Same asset, several candidate files — one sheet, judged at race scale."""
+    key = asset["key"]
+    cands = []
+    for p in paths:
+        lab, _, fp = p.rpartition(":") if ":" in p else ("", "", p)
+        f = pathlib.Path(fp)
+        if not f.exists():
+            print(f"    skip {fp} — not found")
+            continue
+        cands.append((lab or f.stem[:24], Image.open(f).convert("RGBA")))
+    if not cands:
+        return f"{key}: no candidate files found"
+
+    world = asset.get("world", 96)
+    anchor = asset.get("anchorPx", [0.5, 0.5])
+
+    bands = []
+    for v in plate_names:
+        pl = PLATES / f"{v}.png"
+        if not pl.exists():
+            print(f"    skip plate '{v}' — run: node regatta/art/plates.js {v}")
+            continue
+        bands.append(compare_band(Image.open(pl), cands, world, anchor, v))
+    if not bands:
+        return f"{key}: no plates available"
+
+    # Detail row at 1.5x so construction differences are visible too.
+    dw = int(world * 1.5)
+    width = bands[0].width
+    row = Image.new("RGBA", (width, dw + 40), (28, 34, 48, 255))
+    dr = ImageDraw.Draw(row)
+    for i, (lab, art) in enumerate(cands):
+        cx = int(width * (i + 1) / (len(cands) + 1))
+        row.alpha_composite(art.resize((dw, dw), Image.LANCZOS), (cx - dw // 2, 28))
+        label(dr, (cx - dw // 2, 6), f"{lab}  ({dw}px)")
+
+    header = 34
+    total = header + sum(b.height for b in bands) + row.height
+    sheet = Image.new("RGBA", (width, total), (18, 22, 33, 255))
+    label(ImageDraw.Draw(sheet), (12, 10),
+          f"{key}  ·  {len(cands)} candidates  ·  world={world}px")
+    y = header
+    for b in bands:
+        sheet.paste(b, (0, y)); y += b.height
+    sheet.paste(row, (0, y))
+
+    out = paths.store(SHEETS, asset, PREFIXES).with_name(
+        paths.rel(asset, PREFIXES).name + "_compare.png")
+    sheet.convert("RGB").save(out)
+    return f"{key}: -> {out.relative_to(REPO)}"
+
+
 def build_sheet(asset, profiles, plate_names):
     key = asset["key"]
     art, src = source_image(asset, profiles)
@@ -125,10 +199,9 @@ def build_sheet(asset, profiles, plate_names):
         y += b.height
     sheet.paste(zs, (0, y))
 
-    SHEETS.mkdir(exist_ok=True)
-    out = SHEETS / f"{key}.png"
+    out = paths.store(SHEETS, asset, PREFIXES)
     sheet.convert("RGB").save(out)
-    return f"{key}: -> art/sheets/{key}.png"
+    return f"{key}: -> {out.relative_to(REPO)}"
 
 
 def main():
@@ -136,9 +209,12 @@ def main():
     ap.add_argument("keys", nargs="*")
     ap.add_argument("--venue")
     ap.add_argument("--plates", nargs="*", default=None)
+    ap.add_argument("--compare", nargs="*", default=None,
+                    help="candidate files for one key, as label:path or path")
     args = ap.parse_args()
 
     m = json.loads(MANIFEST.read_text())
+    PREFIXES.update(paths.venue_prefixes(m["assets"]))
     by_key = {a["key"]: a for a in m["assets"]}
 
     if args.venue:
@@ -151,6 +227,9 @@ def main():
     if not sel:
         sys.exit("no assets matched")
 
+    if args.compare and len(sel) != 1:
+        sys.exit("--compare takes exactly one asset key")
+
     for a in sel:
         # The rubric requires both contrast extremes; the prop's own venue is
         # where it will actually live.
@@ -161,7 +240,10 @@ def main():
             if a.get("venue"):
                 names.add(a["venue"])
             names = sorted(names)
-        print(build_sheet(a, m["profiles"], names))
+        if args.compare:
+            print(build_compare(a, names, args.compare))
+        else:
+            print(build_sheet(a, m["profiles"], names))
 
 
 if __name__ == "__main__":

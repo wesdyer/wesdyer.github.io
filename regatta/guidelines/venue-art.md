@@ -66,9 +66,57 @@ eye-path, focal element, wildlife witness).
 | Glowtide Strait | near-black indigo night | electric cyan biolume + red lit buoy + moon gold |
 | Glacier Sound | steel navy + faceted ice blue-white | penguin yellow, orca black |
 | Sea Trials | plain honest blue | one orange mark + committee boat |
+| Curlew Flats | warm amber-gold sandbars | deep slate-blue channels, rust-red withies |
 
-Unclaimed hue territory for future venues: warm golds/ambers (sunset), greys
-(storm/fog), volcanic black + ember red, spring pastels.
+Unclaimed hue territory for future venues: greys (storm/fog), volcanic black +
+ember red.
+
+*Spring pastels was listed here and has been struck: pastel means low chroma,
+which contradicts rule 2's "saturated and confident". The first Curlew Flats
+pass was specced as pewter/pastel and measured 0.185 mean saturation against a
+set that runs 0.66–0.94 — it read as unfinished next to its neighbours. A
+palette claim must name a saturated hue, not a muted one.*
+
+## Sky & weather registry (own a sky the way you own a hue)
+
+Audited July 2026: six of the ten shipped cards had effectively the same sky —
+white cumulus clustered left and right on flat mid-blue. In a sailing game the
+sky IS the wind, so a default sky wastes the most valuable band of the card.
+
+**Rule: the sky advertises the mechanic.** A player should be able to guess how
+the venue plays from the top fifth alone. Rule 5's cartoon-cumulus recipe is the
+*house style* for clouds, not an instruction to put the same clouds everywhere.
+
+| Venue | Mechanic it must advertise | Sky |
+|---|---|---|
+| Lighthouse Cove | sea breeze, shore traffic | cloud line stacked over the LAND edge, clear over the water — the true sea-breeze signature |
+| Stillwater Lake | glass patches & puffs | near-empty pale sky, a scatter of *tiny* fair-weather cumulus — small clouds are the puffs |
+| Pearl Lagoon | mobile rain squalls | dark squall curtain with a visible rain shaft marching in, bright trade sky behind it |
+| Gatorgrass Bayou | dead air | no sky — canopy, heat haze, god-rays. Already correct |
+| Otter Run | current & rocks | high thin cirrus only. Wind here is terrain-driven, not thermal — no cumulus |
+| Bluewater Bonanza | cloud-shadow pressure cells | *Parked July 2026 — see note below. Card keeps its original sky* |
+| Redrock Reservoir | terrain wind, williwaws | towering thermal build over the rim, dust haze low in the canyon |
+| Glowtide Strait | night information game | clear moonlit night, minimal cloud. Already correct |
+| Glacier Sound | katabatic, ice | low grey overcast, sea smoke off the water, snow streaks. Already correct |
+| Sea Trials | it is a benchmark | deliberately plain and evenly lit — blandness is the identity. Flatter than everything else |
+| Curlew Flats | falling tide, building current | wide open estuary sky, varied blob-stack cumulus at mixed sizes plus thin streaks |
+| Emberfall Isle | vents & pumice | ash plume drifting downwind, ember-lit from beneath |
+
+**Status (July 2026).** Reworked and shipped: **Lagoon** (squall cell + rain
+shaft), **Lake** (12 small puffs), **Bay** (sea-breeze line — land:water cloud
+ratio 4.1:1 → 11.3:1), **Otter Run** (cirrus only — sky max luminance 254 → 191).
+All four moved saturation up and held contrast. **Redrock** keeps its bare sky by
+choice; **Sea Trials** stays plain on purpose (0.055 contrast, by far the flattest
+card, which is correct for a benchmark).
+
+**Ocean: attempted and parked.** Cloud shadows on the water are the right idea —
+its mechanic literally is cloud-shadow pressure cells — but two generative passes
+produced varied clouds and no shadows, and a hand-composited attempt read as
+off-style: feathered shadow edges contradict rule 3's crisp edges and rule 5's
+flat shade tones. A clouds-only version measured *worse* than the shipped card
+(saturation 0.814 → 0.736, contrast unchanged), so the original stays. If revived,
+the shadows must be FLAT hard-edged cloud-shaped patches with the wave streaks
+running unbroken through them — not soft gradients, not reflections.
 
 ## Delivery pipeline
 
@@ -82,6 +130,10 @@ Unclaimed hue territory for future venues: warm golds/ambers (sunset), greys
 
 - [ ] Reads instantly at 256px thumbnail size (squint test)
 - [ ] Dominant hue is committed, not muddy; pops against neighbors on the grid
+- [ ] Saturation sits in the set's range — the ten shipped cards measure 0.66–0.94
+      mean HSV saturation (128px downsample), mean 0.78. Under ~0.6 reads as
+      unfinished on the grid no matter how good the painting is. Check it against
+      real neighbours in a contact sheet, not on its own.
 - [ ] Eye-path through the water exists
 - [ ] Bottom fifth is simple enough for the name scrim
 - [ ] Exactly one focal creature/landmark; corners quiet

@@ -1931,6 +1931,7 @@ const DEFAULT_SETTINGS = {
     spinnakerColor: '#ef4444',
     spinnakerColor2: '#ffffff',
     spinnakerPattern: 'solid',
+    telltaleColor: '#fbbf24',
     venue: 'bay',
     customizeConditions: false
 };
@@ -3120,6 +3121,14 @@ function spinWedge(g, s, cx, cy, a0, a1) {
     g.lineTo(tx + Math.cos(a1) * R, ty + Math.sin(a1) * R);
     g.closePath();
 }
+// Display names for the patterns below. Kept adjacent so a new pattern that
+// forgets a label is obvious; the pre-race player panel builds its dropdown
+// from these, while the Settings modal hard-codes the same list in markup.
+const SPIN_PATTERN_LABELS = {
+    solid: 'Solid', halves: 'Halves', crosshalves: 'Cross Halves', gores: 'Gores',
+    stripes: 'Stripes', rays: 'Rays', triangle: 'Triangle'
+};
+
 const SPIN_PATTERNS = {
     solid: [],
     // Straight seam across the middle of the sail: head half / foot half
@@ -3255,7 +3264,7 @@ function getSpinnakerSprite(pattern, colorA, colorB) {
 
 // Inflatable tetrahedron racing mark; gray bake for inactive marks
 const markImg = new Image();
-markImg.src = 'assets/images/misc/mark.png';
+markImg.src = 'assets/images/props/mark.png';
 let markImgGray = null;
 function getMarkImgGray() {
     if (markImgGray || !markImg.complete || !markImg.naturalWidth) return markImgGray;
@@ -4245,6 +4254,7 @@ const UI = {
     settingSpinnakerPattern: document.getElementById('setting-spinnaker-pattern'),
     settingSpinnakerColor2: document.getElementById('setting-color-spinnaker2'),
     settingSpinnakerColor2Row: document.getElementById('setting-color-spinnaker2-row'),
+    settingTelltaleColor: document.getElementById('setting-color-telltale'),
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
@@ -4534,6 +4544,10 @@ function renderVenueDetail(key) {
 
 // --- Competitor scouting (sidebar, below the venue briefing) ---------------
 let selectedCompetitor = null;
+// Sentinel for the player's own fleet card. Deliberately not a legal AI_CONFIG
+// name, so it can't collide with a competitor — or with a player who names
+// themselves after one.
+const PLAYER_CARD_KEY = '__player__';
 
 function selectCompetitor(name) {
     selectedCompetitor = selectedCompetitor === name ? null : name; // toggle
@@ -4548,6 +4562,7 @@ function selectCompetitor(name) {
 
 function renderCompetitorDetail() {
     if (!UI.competitorDetail) return;
+    if (selectedCompetitor === PLAYER_CARD_KEY) { renderPlayerDetail(); return; }
     const config = selectedCompetitor ? AI_CONFIG.find(c => c.name === selectedCompetitor) : null;
     if (!config) {
         UI.competitorDetail.classList.add('hidden');
@@ -4557,6 +4572,23 @@ function renderCompetitorDetail() {
     UI.competitorDetail.innerHTML = `<div class="t-label mb-3">Competitor Profile</div>` + competitorProfileHTML(config);
     UI.competitorDetail.classList.remove('hidden');
     renderProfileBoat(UI.competitorDetail.querySelector('.profile-boat-canvas'), config);
+}
+
+// Perceived brightness of a hex color. Three callers now (fleet cards, the
+// competitor profile band, the player card), all asking the same question:
+// is this color too dark or too washed out to carry a panel background?
+function colorLuma(c) {
+    const hex = (c || '#888888').replace('#', '');
+    const dbl = hex.length === 3;
+    const part = (i) => parseInt(dbl ? hex[i] + hex[i] : hex.substring(i * 2, i * 2 + 2), 16) || 0;
+    return 0.299 * part(0) + 0.587 * part(1) + 0.114 * part(2);
+}
+
+// A color reads as a panel background unless it is near-black or near-white;
+// in those cases fall back to the boat's other signature color.
+function bandColorFor(primary, fallback) {
+    const l = colorLuma(primary);
+    return (l < 50 || l > 200) ? fallback : primary;
 }
 
 // Portrait band + blurb + stat bars + counter-tactic, as markup. Shared by the
@@ -4601,13 +4633,7 @@ function competitorProfileHTML(config) {
 
     // Header band in the competitor's racing colors (same hull-vs-spinnaker
     // luma pick as the fleet cards, so the panel matches their card)
-    const luma = (c) => {
-        const hex = (c || '#888888').replace('#', '');
-        const r = parseInt(hex.substring(0, 2), 16), g = parseInt(hex.substring(2, 4), 16), b = parseInt(hex.substring(4, 6), 16);
-        return 0.299 * r + 0.587 * g + 0.114 * b;
-    };
-    const hullLuma = luma(config.hull);
-    const bandColor = (hullLuma < 50 || hullLuma > 200) ? config.spinnaker : config.hull;
+    const bandColor = bandColorFor(config.hull, config.spinnaker);
 
     return `
         <div class="rounded-xl overflow-hidden border border-white/10 relative"
@@ -4705,7 +4731,10 @@ function drawProfileBoatArt(g, cfg) {
     };
     // broad reach: main and kite both to starboard, set at the same angle
     sail(getTintedBoatPart('main', cfg.sail), -5, -1.25, 1);
-    sail(getSpinnakerSprite(SPIN_LOOKS[cfg.name] || 'solid', cfg.spinnaker, cfg.spinnaker2 || cfg.hull), -28, -1.25, 1);
+    // spinPattern first: the player picks theirs explicitly, and SPIN_LOOKS is
+    // keyed by competitor name so it would miss them (or worse, match if they
+    // happened to name themselves after one).
+    sail(getSpinnakerSprite(cfg.spinPattern || SPIN_LOOKS[cfg.name] || 'solid', cfg.spinnaker, cfg.spinnaker2 || cfg.hull), -28, -1.25, 1);
     g.restore();
 }
 
@@ -4751,6 +4780,206 @@ function renderProfileBoat(canvas, cfg) {
     g.translate(-(box.x + box.w / 2), -(box.y + box.h / 2));
     drawProfileBoatArt(g, cfg);
     g.restore();
+}
+
+// --- Player fleet card ------------------------------------------------------
+// The player's boat as a profile-art config, so it can go through exactly the
+// same renderer the competitors use.
+function playerBoatConfig() {
+    return {
+        name: settings.playerName || 'Player',
+        hull: settings.hullColor,
+        sail: settings.sailColor,
+        cockpit: settings.cockpitColor,
+        spinnaker: settings.spinnakerColor,
+        spinnaker2: settings.spinnakerColor2 || settings.hullColor,
+        spinPattern: SPIN_PATTERNS[settings.spinnakerPattern] ? settings.spinnakerPattern : 'solid'
+    };
+}
+
+// Square boat art for the card's portrait slot. renderProfileBoat fits a wide
+// header band, so this does its own fit rather than fighting that sizing.
+function renderPlayerCardBoat(canvas) {
+    if (!canvas) return;
+    const cfg = playerBoatConfig();
+    // The slot is aspect-square, so its width is the single source of truth for
+    // both axes. Measuring height separately is what allowed a 2:1 backing store
+    // to be squashed into a square CSS box and stretch the boat vertically.
+    const slot = canvas.parentElement;
+    const size = Math.round(slot ? slot.clientWidth : 0);
+    // Zero means the overlay has not been laid out yet — retry rather than bake
+    // in a guessed size, which would stick around as a wrong-aspect bitmap.
+    if (!size) {
+        setTimeout(() => { if (canvas.isConnected) renderPlayerCardBoat(canvas); }, 120);
+        return;
+    }
+    const dpr = window.devicePixelRatio || 1;
+    const px = Math.round(size * dpr);
+    // Both axes checked: guarding on width alone let a stale height persist.
+    if (canvas.width !== px || canvas.height !== px) {
+        canvas.width = px;
+        canvas.height = px;
+    }
+    const g = canvas.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, canvas.width, canvas.height);
+    const ready = ['hull', 'main', 'spin'].every(k => boatSprites[k].complete && boatSprites[k].naturalWidth);
+    if (!ready) {
+        setTimeout(() => { if (canvas.isConnected) renderPlayerCardBoat(canvas); }, 300);
+        return;
+    }
+    const box = PROFILE_BOAT_BOUNDS;
+    const pad = 10;
+    const scale = Math.min((size - pad * 2) / box.w, (size - pad * 2) / box.h);
+    g.save();
+    g.scale(dpr, dpr);
+    g.translate(size / 2, size / 2);
+    g.scale(scale, scale);
+    g.translate(-(box.x + box.w / 2), -(box.y + box.h / 2));
+    drawProfileBoatArt(g, cfg);
+    g.restore();
+}
+
+// Fills a card element with the player's boat + name. Called on build and again
+// whenever the colors change, so the card always shows current settings.
+function renderPlayerCardInto(card) {
+    const cfg = playerBoatConfig();
+    const bgColor = bandColorFor(cfg.hull, cfg.spinnaker);
+    card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
+    card.innerHTML = `
+        <div class="w-full aspect-square relative overflow-hidden">
+            <canvas class="player-card-canvas w-full h-full transition-transform duration-700 group-hover:scale-110"></canvas>
+        </div>
+        <div class="p-3 bg-slate-900/60 flex-1">
+            <div class="t-display t-display-8 text-white uppercase leading-tight truncate" style="font-size:17.5px;">${escapeHTMLText(cfg.name)}</div>
+            <div class="t-label t-label-sm mt-0.5" style="color:#7dd3fc;">You</div>
+        </div>`;
+    renderPlayerCardBoat(card.querySelector('.player-card-canvas'));
+}
+
+// Player names are free text and land in innerHTML in two places here.
+function escapeHTMLText(s) {
+    return String(s).replace(/[&<>"']/g, ch => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+    ));
+}
+
+// Sidebar panel for the player: same header band as a competitor profile, but
+// where a rival shows stat bars this shows an appearance editor. The player's
+// stats are all zero by design, so bars here would be a wall of nothing.
+const PLAYER_COLOR_FIELDS = [
+    { key: 'hullColor', label: 'Hull' },
+    { key: 'sailColor', label: 'Sail' },
+    { key: 'cockpitColor', label: 'Cockpit' },
+    { key: 'spinnakerColor', label: 'Spinnaker' },
+    { key: 'spinnakerColor2', label: 'Spinnaker 2' },
+    { key: 'telltaleColor', label: 'Telltale' }
+];
+
+function renderPlayerDetail() {
+    const cfg = playerBoatConfig();
+    const bandColor = bandColorFor(cfg.hull, cfg.spinnaker);
+    const patternOptions = Object.keys(SPIN_PATTERNS).map(k =>
+        `<option value="${k}"${k === cfg.spinPattern ? ' selected' : ''}>${SPIN_PATTERN_LABELS[k] || k}</option>`
+    ).join('');
+    const swatches = PLAYER_COLOR_FIELDS.map(f => `
+        <div class="flex items-center justify-between gap-3" data-color-row="${f.key}">
+            <span class="t-label t-label-sm">${f.label}</span>
+            <input type="color" data-player-color="${f.key}" value="${settings[f.key] || '#ffffff'}"
+                   class="w-14 h-7 bg-transparent border border-white/15 rounded cursor-pointer">
+        </div>`).join('');
+
+    UI.competitorDetail.innerHTML = `
+        <div class="t-label mb-3">Your Boat</div>
+        <div class="rounded-xl overflow-hidden border border-white/10 relative mb-4"
+             style="background: linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)">
+            <canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130"></canvas>
+            <div class="relative p-4">
+                <div class="t-display t-display-8 text-white uppercase leading-tight" style="font-size:22px;">${escapeHTMLText(cfg.name)}</div>
+                <div class="t-label t-label-sm mt-0.5" style="color:#7dd3fc;">Helm &mdash; that's you</div>
+            </div>
+        </div>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between gap-3">
+                <span class="t-label t-label-sm">Name</span>
+                <input type="text" id="player-detail-name" maxlength="12" value="${escapeHTMLText(cfg.name)}"
+                       class="bg-slate-700 text-white text-sm rounded-lg p-2 border border-slate-600 outline-none focus:border-blue-500 w-40 text-right">
+            </div>
+            ${swatches}
+            <div class="flex items-center justify-between gap-3">
+                <span class="t-label t-label-sm">Kite Pattern</span>
+                <select id="player-detail-pattern" class="bg-slate-700 text-white text-sm rounded-lg px-2 py-1.5 border border-slate-600 cursor-pointer">${patternOptions}</select>
+            </div>
+            <p class="text-slate-500 leading-snug" style="font-size:12.5px;">
+                Every boat in the fleet sails the same hull. Colors are yours; the result is on you.
+            </p>
+        </div>`;
+    UI.competitorDetail.classList.remove('hidden');
+    renderProfileBoat(UI.competitorDetail.querySelector('.profile-boat-canvas'), cfg);
+    updatePlayerColor2State();
+
+    // Writes go through settings + saveSettings(), the same path the Settings
+    // modal uses, so the two editors can never drift apart.
+    UI.competitorDetail.querySelectorAll('[data-player-color]').forEach(input => {
+        input.addEventListener('input', (e) => {
+            settings[e.target.dataset.playerColor] = e.target.value;
+            saveSettings();
+        });
+    });
+    const nameInput = UI.competitorDetail.querySelector('#player-detail-name');
+    if (nameInput) {
+        nameInput.addEventListener('input', (e) => {
+            settings.playerName = e.target.value;
+            saveSettings();
+        });
+    }
+    const patternSelect = UI.competitorDetail.querySelector('#player-detail-pattern');
+    if (patternSelect) {
+        patternSelect.addEventListener('change', (e) => {
+            settings.spinnakerPattern = e.target.value;
+            saveSettings();
+            updatePlayerColor2State();
+        });
+    }
+}
+
+// Spinnaker 2 only means something on a patterned kite (mirrors the Settings
+// modal's updateSpinColor2Row).
+function updatePlayerColor2State() {
+    if (!UI.competitorDetail) return;
+    const row = UI.competitorDetail.querySelector('[data-color-row="spinnakerColor2"]');
+    if (!row) return;
+    const off = (settings.spinnakerPattern || 'solid') === 'solid';
+    row.style.opacity = off ? '0.35' : '1';
+    const input = row.querySelector('input');
+    if (input) input.disabled = off;
+}
+
+// Colors can also change from the Settings modal, so the card and the open
+// panel both re-read settings after any save. Visuals only — rewriting an input
+// the user is currently typing in would fight their caret.
+function refreshPlayerAppearance() {
+    if (!UI.prCompetitorsGrid) return;
+    const card = UI.prCompetitorsGrid.querySelector(`[data-name="${PLAYER_CARD_KEY}"]`);
+    if (card) renderPlayerCardInto(card);
+    if (selectedCompetitor !== PLAYER_CARD_KEY || !UI.competitorDetail) return;
+
+    const cfg = playerBoatConfig();
+    const bandColor = bandColorFor(cfg.hull, cfg.spinnaker);
+    const band = UI.competitorDetail.querySelector('.profile-boat-canvas')?.parentElement;
+    if (band) band.style.background = `linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)`;
+    renderProfileBoat(UI.competitorDetail.querySelector('.profile-boat-canvas'), cfg);
+
+    const nameEl = UI.competitorDetail.querySelector('.t-display');
+    if (nameEl) nameEl.textContent = cfg.name.toUpperCase();
+    UI.competitorDetail.querySelectorAll('[data-player-color]').forEach(input => {
+        if (input !== document.activeElement) input.value = settings[input.dataset.playerColor] || '#ffffff';
+    });
+    const nameInput = UI.competitorDetail.querySelector('#player-detail-name');
+    if (nameInput && nameInput !== document.activeElement) nameInput.value = cfg.name;
+    const patternSelect = UI.competitorDetail.querySelector('#player-detail-pattern');
+    if (patternSelect && patternSelect !== document.activeElement) patternSelect.value = cfg.spinPattern;
+    updatePlayerColor2State();
 }
 
 function selectVenue(key) {
@@ -4858,15 +5087,15 @@ function setupPreRaceOverlay() {
         // Skip Player (boats[0])
         const competitors = state.boats.slice(1);
 
-        const getLuma = (c) => {
-            let r=0, g=0, b=0;
-            if(c.startsWith('#')) {
-                const hex = c.substring(1);
-                if(hex.length===3) { r=parseInt(hex[0]+hex[0],16); g=parseInt(hex[1]+hex[1],16); b=parseInt(hex[2]+hex[2],16); }
-                else { r=parseInt(hex.substring(0,2),16); g=parseInt(hex.substring(2,4),16); b=parseInt(hex.substring(4,6),16); }
-            }
-            return 0.299*r + 0.587*g + 0.114*b;
-        };
+        // Player leads the fleet: 1 + 9 competitors fills the 5-col grid to 5x2.
+        // No portrait art exists for the player, so this card draws their boat in
+        // their own colors instead — clicking it opens the editor in the sidebar.
+        const playerCard = document.createElement('div');
+        playerCard.className = "rounded-xl border border-sky-400/25 flex flex-col relative overflow-hidden group cursor-pointer transition-shadow hover:border-sky-300/50";
+        playerCard.dataset.name = PLAYER_CARD_KEY;
+        playerCard.addEventListener('click', () => selectCompetitor(PLAYER_CARD_KEY));
+        UI.prCompetitorsGrid.appendChild(playerCard);
+        renderPlayerCardInto(playerCard);
 
         // Simplified fleet cards (design ref): portrait + name + archetype.
         // The scouting detail (personality, threat, weakness) lives elsewhere.
@@ -4874,10 +5103,7 @@ function setupPreRaceOverlay() {
             const config = AI_CONFIG.find(c => c.name === boat.name);
             const archDef = config && config.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[config.archetype] : null;
 
-            const hullColor = boat.colors.hull;
-            const spinColor = boat.colors.spinnaker;
-            const hullLuma = getLuma(hullColor);
-            const bgColor = (hullLuma < 50 || hullLuma > 200) ? spinColor : hullColor;
+            const bgColor = bandColorFor(boat.colors.hull, boat.colors.spinnaker);
 
             const card = document.createElement('div');
             card.className = "rounded-xl border border-white/5 flex flex-col relative overflow-hidden group cursor-pointer transition-shadow hover:border-white/25";
@@ -4990,7 +5216,11 @@ function applySettings() {
     if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.value = settings.spinnakerColor;
     if (UI.settingSpinnakerPattern) UI.settingSpinnakerPattern.value = SPIN_PATTERNS[settings.spinnakerPattern] ? settings.spinnakerPattern : 'solid';
     if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.value = settings.spinnakerColor2 || '#ffffff';
+    if (UI.settingTelltaleColor) UI.settingTelltaleColor.value = settings.telltaleColor || '#fbbf24';
     updateSpinColor2Row();
+    // Boat colors have two editors now (this modal and the pre-race player
+    // panel); both write here, so this is where they re-sync.
+    refreshPlayerAppearance();
 }
 
 function togglePause(show) {
@@ -5073,6 +5303,7 @@ function updateSpinColor2Row() {
 }
 if (UI.settingSpinnakerPattern) UI.settingSpinnakerPattern.addEventListener('change', (e) => { settings.spinnakerPattern = e.target.value; updateSpinColor2Row(); saveSettings(); });
 if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.addEventListener('input', (e) => { settings.spinnakerColor2 = e.target.value; saveSettings(); });
+if (UI.settingTelltaleColor) UI.settingTelltaleColor.addEventListener('input', (e) => { settings.telltaleColor = e.target.value; saveSettings(); });
 
 // Customize toggle: ON reveals the condition/course panels; OFF hides them
 // AND re-applies the selected venue preset, so "customize off" always means
@@ -7150,32 +7381,6 @@ function drawBoat(ctx, boat) {
     const cockpitColor = boat.isPlayer ? settings.cockpitColor : boat.colors.cockpit;
     drawCockpitFittings(ctx, cockpitColor);
 
-    // Masthead fly (wind pennant) — streams downwind with the APPARENT wind. You can
-    // watch it swing forward as the boat accelerates ("the boat makes its own wind"),
-    // and it's the realistic cue for trimming and reading the lift/header in a puff.
-    if (boat.apparentWind) {
-        const rel = normalizeAngle(boat.apparentWind.direction - boat.heading);
-        const fx = -Math.sin(rel), fy = Math.cos(rel); // streams to where wind blows TO (local frame)
-        const px2 = -fy, py2 = fx; // perpendicular, for the flutter wave
-        const len = 13 + Math.min(8, boat.apparentWind.speed * 0.4);
-        ctx.save();
-        ctx.strokeStyle = boat.isPlayer ? '#fbbf24' : 'rgba(241,245,249,0.6)';
-        ctx.lineWidth = boat.isPlayer ? 2.2 : 1.4;
-        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-        // Telltale flutter: a traveling wave runs down the ribbon, amplitude
-        // growing toward the free end; phased per boat so flies don't sync
-        const t = state.time * 55 + (typeof boat.id === 'number' ? boat.id : 0) * 1.7;
-        ctx.beginPath();
-        ctx.moveTo(0, -5);
-        for (let i = 1; i <= 6; i++) {
-            const f = i / 6;
-            const wave = Math.sin(t - f * 4.5) * f * f * 2.4;
-            ctx.lineTo(fx * len * f + px2 * wave, -5 + fy * len * f + py2 * wave);
-        }
-        ctx.stroke();
-        ctx.restore();
-    }
-
     // Sails
     const drawSailFunc = (isJib, scale = 1.0) => {
         ctx.save();
@@ -7275,6 +7480,59 @@ function drawBoat(ctx, boat) {
     const spinScale = Math.max(0, (progress - 0.5) * 2);
     if (jibScale > 0.01 && !drawSailSprite('jib', -25, sailColor, jibScale)) drawSailFunc(true, jibScale);
     if (spinScale > 0.01 && !drawSailSprite('spin', -28, spinColor, spinScale)) drawSpinnaker(spinScale);
+
+    // Masthead fly (wind pennant) — streams downwind with the APPARENT wind. You can
+    // watch it swing forward as the boat accelerates ("the boat makes its own wind"),
+    // and it's the realistic cue for trimming and reading the lift/header in a puff.
+    // Player only: it is an instrument, and nine more fluttering ribbons made the
+    // one that matters harder to pick out of the fleet.
+    //
+    // Drawn after the sails: a real fly sits above the rig, and underneath them
+    // only ~25% of the ribbon survived at any point of sail. Anchored at the mast
+    // rather than the stern — at the transom it reads as a burgee (decoration) and
+    // sits in the boom clutter, where at the mast it lands where the eye already is.
+    // Kept short so that being on top buys visibility without adding noise.
+    if (boat.apparentWind && boat.isPlayer) {
+        const rel = normalizeAngle(boat.apparentWind.direction - boat.heading);
+        const fx = -Math.sin(rel), fy = Math.cos(rel); // streams to where wind blows TO (local frame)
+        const px2 = -fy, py2 = fx; // perpendicular, for the flutter wave
+
+        // Breeze 0..1 over the sailable range. Light air lets the ribbon fall into
+        // slow, wide swings; as it builds, the fly pulls taut and shivers instead —
+        // faster but tighter.
+        //
+        // state.time runs at 0.24 units/sec, so cycles/sec = freq * 0.24 / 2pi.
+        // 68..158 is 2.6Hz drifting to 6.0Hz (the old flat 55 was 2.1Hz). Well
+        // clear of the 60fps sampling limit, which starts to bite around 15Hz.
+        const breeze = Math.min(1, Math.max(0, (boat.apparentWind.speed - 4) / 16));
+        const len = 9 + 4 * breeze;
+        const freq = 68 + 90 * breeze;
+        const amp = 3.2 - 2.1 * breeze;
+
+        // Phase is accumulated rather than computed as time*freq. With a frequency
+        // that moves with the wind, that product lurches whenever the breeze shifts
+        // — and the jump scales with elapsed race time, so it gets worse the longer
+        // you sail. Integrating keeps the wave continuous across gusts and gybes.
+        const dt = Math.min(0.1, Math.max(0, state.time - (boat.telltaleTime ?? state.time)));
+        boat.telltaleTime = state.time;
+        boat.telltalePhase = ((boat.telltalePhase ?? 0) + dt * freq) % (Math.PI * 2);
+        const t = boat.telltalePhase;
+
+        ctx.save();
+        ctx.strokeStyle = settings.telltaleColor || '#fbbf24';
+        ctx.lineWidth = 2.2;
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        // Travelling wave down the ribbon, amplitude growing toward the free end
+        ctx.beginPath();
+        ctx.moveTo(0, -5);
+        for (let i = 1; i <= 6; i++) {
+            const f = i / 6;
+            const wave = Math.sin(t - f * 4.5) * f * f * amp;
+            ctx.lineTo(fx * len * f + px2 * wave, -5 + fy * len * f + py2 * wave);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
     ctx.restore();
 }
 
@@ -7894,14 +8152,20 @@ function drawIslandShadows(ctx) {
 function drawMarkShadows(ctx) {
     for (const m of state.course.marks) {
         ctx.save(); ctx.translate(m.x, m.y);
-        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(3, 3, 12, 0, Math.PI*2); ctx.fill();
+        // Sized to the mark's VISIBLE width (~58px at W=60), not to its sprite box —
+        // the buoy is a triangle, so it fills only ~69% of a square frame and a
+        // box-sized shadow reads as a disc sticking out from under it. Cosmetic only.
+        ctx.fillStyle = 'rgba(0,0,0,0.2)'; ctx.beginPath(); ctx.arc(5, 5, 25, 0, Math.PI*2); ctx.fill();
         ctx.restore();
     }
 }
 
 function drawMarkBodies(ctx) {
     const player = state.boats[0];
-    const W = 30, H = W * (markImg.naturalHeight / (markImg.naturalWidth || 1)) || 26;
+    // Doubled from 30: the top-down sprite carries less visual mass than the old
+    // oblique art, which showed the buoy's sides. Purely cosmetic — markRadius (12)
+    // is unchanged, so the mark now DRAWS 2.5x wider than the body boats collide with.
+    const W = 60, H = W * (markImg.naturalHeight / (markImg.naturalWidth || 1)) || 26;
     for (let i=0; i<state.course.marks.length; i++) {
         const m = state.course.marks[i];
         ctx.save(); ctx.translate(m.x, m.y);

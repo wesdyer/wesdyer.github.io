@@ -21,11 +21,17 @@ import sys
 
 from PIL import Image
 
+import paths
+
 ROOT = pathlib.Path(__file__).resolve().parent
 REPO = ROOT.parent
 MANIFEST = ROOT / "manifest.json"
 INBOX = ROOT / "inbox"
 MASTERS = ROOT / "masters"
+
+
+ALL_ASSETS = []          # filled in main(); lets ingest report who uses an element
+PREFIXES = {}            # venue -> strippable key prefix, see paths.py
 
 
 class Fail(Exception):
@@ -58,7 +64,14 @@ def check_master(img, prof, key):
         if max(corners) > 8:
             raise Fail(f"corners not transparent (alpha {corners}) — backdrop present")
 
-        bbox = alpha.getbbox()
+        # Threshold before measuring. alpha.getbbox() counts ANY non-zero pixel, and
+        # generations routinely leave residue at alpha 1-2 from a removed backdrop —
+        # invisible, but it inflated the mark's measured height from 506px to 793px,
+        # which then mis-sized fill normalization and mis-seeded the anchor.
+        solid = alpha.point(lambda v: 255 if v > 8 else 0)
+        bbox = solid.getbbox()
+        if bbox is None:
+            raise Fail("no pixels above alpha 8 — effectively empty")
         margin = prof.get("safeMargin", 0.0)
         if margin:
             pad = int(min(img.size) * margin)
@@ -96,24 +109,77 @@ def ingest(asset, profiles, check_only=False):
         print(f"    ok (check only, nothing written)")
         return None
 
+    # Normalize the bbox against the size it was MEASURED at, before any resample.
+    # Dividing by the profile master instead silently corrupts the anchor whenever
+    # the delivered master is a different size (a 2048px file lands the anchor at 1.0).
+    src_w = img.width
     m = prof["master"]
     if img.size != (m, m):
         img = img.resize((m, m), Image.LANCZOS)
 
     MASTERS.mkdir(exist_ok=True)
-    img.save(MASTERS / f"{key}.png")
+    img.save(paths.store(MASTERS, asset, PREFIXES))
 
     outdir = REPO / prof["out"]
-    outdir.mkdir(parents=True, exist_ok=True)
+    dest = paths.store(outdir, asset, PREFIXES)
+    shown = dest.relative_to(REPO)
 
-    if prof["track"] == "sprite":
+    if prof["track"] == "element":
+        # No bake and no anchor: compose.py scales the element into the group, and
+        # the anchor belongs to the composed sprite, not to its parts.
+        #
+        # NORMALIZE THE FILL. Elements are interchangeable by design — compose.py
+        # scales them all by the same fraction — so a member that happens to sit at
+        # 77% of its frame scatters 20% smaller than one at 96%. That difference is
+        # an authoring accident, not intent, so it is removed here rather than left
+        # for every compose block to compensate for. Species size differences belong
+        # in the group's `scale` range, where they are visible and deliberate.
+        fill_before = max(bbox[2] - bbox[0], bbox[3] - bbox[1]) / src_w if bbox else 0
+        target = prof.get("elementFill", 0.88)
+        if bbox:
+            k = src_w / m
+            crop = img.crop(tuple(int(v / k) for v in bbox))
+            f = target * m / max(crop.size)
+            crop = crop.resize((max(1, round(crop.width * f)),
+                                max(1, round(crop.height * f))), Image.LANCZOS)
+            img = Image.new("RGBA", (m, m), (0, 0, 0, 0))
+            img.alpha_composite(crop, ((m - crop.width) // 2, (m - crop.height) // 2))
+        img.save(dest)
+        print(f"    -> {shown}  ({m}px master, unbaked)")
+        print(f"    fill normalized {fill_before:.0%} -> {target:.0%}, recentred")
+        used = [g["key"] for g in ALL_ASSETS if g.get("compose", {}).get("from") == key]
+        print(f"    used by: {', '.join(used) if used else 'NOTHING — no group composes this'}")
+    elif prof["track"] == "sprite":
+        # Optional fill normalization. A generation that centres a small shape in a big
+        # frame makes `world` a lie — the mark came back filling 55% of its master, so
+        # world:60 drew a 33px object. fillTo rescales the content to occupy the size it
+        # declares.
+        #
+        # Fitted on the BOUNDING BOX, not the circumscribed circle. Engine rotation goes
+        # through ctx.rotate() + drawImage, which transforms the coordinate system rather
+        # than sampling a fixed frame, so nothing clips at any angle and padding buys
+        # nothing. (The 8% margin the prompts ask for is for BAKED rotation — compose.py
+        # rotates with expand=False, where corners genuinely can be lost.)
+        if asset.get("fillTo") and bbox:
+            k = m / src_w
+            box = tuple(int(v * k) for v in bbox)
+            crop = img.crop(box)
+            f = asset["fillTo"] * m / max(crop.size)
+            crop = crop.resize((max(1, round(crop.width * f)), max(1, round(crop.height * f))),
+                               Image.LANCZOS)
+            img = Image.new("RGBA", (m, m), (0, 0, 0, 0))
+            img.alpha_composite(crop, ((m - crop.width) // 2, (m - crop.height) // 2))
+            bbox = img.getchannel("A").getbbox(); src_w = m
+            fw, fh = (bbox[2] - bbox[0]) / m, (bbox[3] - bbox[1]) / m
+            print(f"    fill normalized to {asset['fillTo']:.0%} — content {fw:.0%}x{fh:.0%} "
+                  f"of frame, visible at {round(asset['world']*fw)}x{round(asset['world']*fh)}px")
         size = asset["world"] * prof["bake"]
         game = img.resize((size, size), Image.LANCZOS)
-        game.save(outdir / f"{key}.png")
-        print(f"    -> {prof['out']}/{key}.png  ({size}px bake for {asset['world']}px display)")
+        game.save(dest)
+        print(f"    -> {shown}  ({size}px bake for {asset['world']}px display)")
         if bbox:
-            anchor = [round((bbox[0] + bbox[2]) / 2 / m, 4),
-                      round((bbox[1] + bbox[3]) / 2 / m, 4)]
+            anchor = [round((bbox[0] + bbox[2]) / 2 / src_w, 4),
+                      round((bbox[1] + bbox[3]) / 2 / src_w, 4)]
             if "anchorPx" not in asset:
                 asset["anchorPx"] = anchor
                 print(f"    anchor seeded at {anchor} (bbox center) — verify on the contact sheet")
@@ -121,14 +187,14 @@ def ingest(asset, profiles, check_only=False):
                 print(f"    anchor kept at {asset['anchorPx']} (bbox center would be {anchor})")
     else:
         out = img.convert("RGB") if prof["background"] == "opaque" else img
-        out.save(outdir / f"{key}.png")
-        print(f"    -> {prof['out']}/{key}.png")
+        out.save(dest)
+        print(f"    -> {shown}")
         if prof.get("thumb"):
             t = prof["thumb"]
-            thumbdir = outdir / "thumbs"
-            thumbdir.mkdir(exist_ok=True)
-            out.resize((t, t), Image.LANCZOS).save(thumbdir / f"{key}.png")
-            print(f"    -> {prof['out']}/thumbs/{key}.png  ({t}px)")
+            thumb = dest.parent / "thumbs" / dest.name
+            thumb.parent.mkdir(parents=True, exist_ok=True)
+            out.resize((t, t), Image.LANCZOS).save(thumb)
+            print(f"    -> {thumb.relative_to(REPO)}  ({t}px)")
 
     asset["status"] = "art"
     return asset
@@ -142,6 +208,8 @@ def main():
     args = ap.parse_args()
 
     m = json.loads(MANIFEST.read_text())
+    ALL_ASSETS[:] = m["assets"]
+    PREFIXES.update(paths.venue_prefixes(m["assets"]))
     by_key = {a["key"]: a for a in m["assets"]}
 
     if args.all:

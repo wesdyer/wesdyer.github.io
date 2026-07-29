@@ -64,6 +64,70 @@ it. **Check the crosshair; correct `anchorPx` by hand when it's wrong.** This is
 single field that is cheap now and expensive across eighty files later, because
 fixing it after the fact means re-cropping masters.
 
+**Orientation — Rule.** Anything with a front faces the **top of the frame** in the
+master. The engine rotates sprites about the anchor and treats sprite-up as zero
+heading (`hull.png` ships bow-up; `drawBoat()` applies heading straight to it). A
+library where some assets face up and others face right is unfixable without
+re-exporting, so this is checked at generation time, not at ingest.
+
+## 3b. Generate single objects; compose groups in code — **Rule**
+
+> **A master is one object. Anything that ships as several of the same object is
+> composed by `compose.py`, not generated as a group.**
+
+Image models are strongly drawn to symmetry. Asked for "seven penguins in a loose
+huddle" they return a rosette — evenly spaced, facing inward, a hole in the middle —
+and they keep returning one after the negative prompt is hardened with `mandala`,
+`rosette`, `radial symmetry` and six more terms. At race scale a rosette reads as a
+snowflake, not as animals. Two generations were spent proving this.
+
+Irregular scatter is trivial for a PRNG. So the split is:
+
+- **element** (`class: "element"`) — one object, centred, facing up, filling the
+  frame. Lives in `art/elements/`, never ships: a single penguin is 4–7px on screen.
+- **group** — a `world-prop` with a `compose` block naming its element, a count, a
+  spread, scale and rotation ranges, and a seed. `compose.py` writes the master.
+
+Four things fall out of it that generating groups cannot give you:
+
+1. Every member is literally the same accepted art, so a group cannot drift in style.
+2. A new variant costs a `--seed`, not a generation.
+3. Density, count and footprint become tunable numbers rather than prompt pleading.
+4. One element serves every group built from it — three penguin groups, one bird.
+
+**This applies to repeated instances of the SAME object.** A composition of genuinely
+different interlocking parts — the Bayou's shack with its dock and moored skiff — stays
+a single generated master, because it isn't N copies of anything.
+
+`compose.py` offers two layouts. `cluster` samples a disc with `r = R·u^0.62`, biasing
+inward so the middle is the densest part — the thing every generated rosette got
+backwards. `line` lays a vertical track with a slight bow and uneven spacing; vertical
+because §3 makes sprite-up the direction of travel.
+
+## 3c. Venue palette binds pictures, not objects — **Rule**
+
+The palette registry in [venue-art.md](venue-art.md) governs **venue card
+illustration**: what a whole picture of a place commits to. A prop is an object *in*
+that place, not a picture *of* it, so the two need different clauses and `prompt.py`
+now emits different ones.
+
+Applying the card's commitment to props cost real work before it was spotted. Every
+arctic prompt carried *"palette is committed to steel navy and faceted ice blue-white
+... do not introduce hues outside that commitment"*, which instructed the model that
+the object itself should be made of steel navy. Consequences:
+
+- Three orcas came back navy instead of black, fought in the subject text for three
+  generations while the palette clause pushed the other way.
+- A snow petrel — a bird that is famously immaculate white — came back with navy
+  wings, and was misdiagnosed as the generic seabird prior.
+- An albatross's pink bill, a gentoo's orange beak and any nav aid's canonical
+  buoyage colour were all technically forbidden.
+
+For props the venue palette is **context, not instruction**: the world the object has
+to belong to, and a list of hues that would look alien in it. **Colour that carries
+information always wins** — true plumage or hide, a beak, canonical buoyage, a painted
+hull — even when that colour appears nowhere else in the venue.
+
 ## 4. The six steps
 
 ```
