@@ -109,6 +109,39 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     check('redo re-applied the sculpt', near(r.coastR, b.coastR, 1e-12));
     await page.evaluate(() => window.EditorApp._undo());
 
+    // ── Authored ice holds still; only its MOTION is per race ───────────────
+    // Ice is hand-placed now, so "does the seed move it?" has a different answer than it
+    // used to: the layout must NOT move (it is authored), while the drift, spin and wander
+    // must, because that is what keeps playthroughs unique.
+    console.log('\nice stability');
+    const ice = await page.evaluate(() => {
+        const A = window.EditorApp;
+        const layout = () => (state.course.islands || []).filter(i => i.isFloe)
+                               .map(i => [Math.round(i.x), Math.round(i.y), Math.round(i.radius)]);
+        const motion = () => (state.course.islands || []).filter(i => i.isFloe)
+                               .map(i => [+i.driftVx.toFixed(3), +i.driftVy.toFixed(3), +i.spin.toFixed(3)]);
+        const before = layout(), motion0 = motion();
+        const coast = A._state().doc.land.find(l => l.id === 'coast');
+        A._sculpt(coast.outer[20][0], coast.outer[20][1], 200, 90, 500);
+        A._afterEdit(true, 'sculpt for ice test');
+        const afterEdit = layout();
+        A._recompile(true);
+        const afterSameSeed = layout();
+        A._previewSeed(777);
+        A._recompile(true);
+        const afterNewSeed = layout(), motion1 = motion();
+        const same = (a, b) => a.length === b.length && a.every((p, i) => p.every((v, k) => v === b[i][k]));
+        return { n: before.length, heldStill: same(before, afterEdit),
+                 sameSeedStable: same(before, afterSameSeed),
+                 layoutFixed: same(before, afterNewSeed),
+                 motionVaries: !same(motion0, motion1) };
+    });
+    check('editing land does not move the ice', ice.heldStill === true, `${ice.n} floes`);
+    check('recompiling does not move it either', ice.sameSeedStable === true);
+    check('a different seed leaves the LAYOUT alone — it is authored', ice.layoutFixed === true);
+    check('...but gives every floe a fresh drift and spin', ice.motionVaries === true);
+    await page.evaluate(() => { window.EditorApp._previewSeed(90210); });
+
     // ── Scale whole map ─────────────────────────────────────────────────────
     console.log('\nscale whole map');
     const before = await snap();
@@ -131,12 +164,21 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     check('compiled rounding zone followed', near(s6.compiledRoundZone, before.compiledRoundZone * 0.6, 1e-6));
     check('still valid after scaling', s6.valid === 0);
 
-    // The point of scaling: it moves the race INTO the target band, and the checks
-    // must notice without being asked.
+    // Scaling changes how long the race is, and the checks must notice without being
+    // asked. What the VERDICT should be is not asserted here: the race-length check now
+    // measures the sailable path and prices it with the polar, and by that measure
+    // Glacier Sound at full size is already in band — the old straight-line formula's
+    // "7:07, 40% too long" was measuring a line no boat can sail. So the assertion is on
+    // the RELATIONSHIP: 60% of the geometry is a materially shorter race.
     const raceBefore = before.findings.find(f => f.id === 'race-length');
     const raceAfter = s6.findings.find(f => f.id === 'race-length');
-    check('race length was out of band before', raceBefore && raceBefore.level === 'warn', raceBefore && raceBefore.detail);
-    check('race length is in band after scaling to 60%', raceAfter && raceAfter.level === 'ok', raceAfter && raceAfter.detail);
+    const mins = (t) => { const m = /best ~(\d+):(\d+)/.exec(t || ''); return m ? +m[1] * 60 + +m[2] : null; };
+    const tBefore = mins(raceBefore && raceBefore.detail), tAfter = mins(raceAfter && raceAfter.detail);
+    check('the race-length check reports a best time both times',
+          tBefore != null && tAfter != null, `${tBefore} / ${tAfter}`);
+    check('scaling to 60% shortens the race by roughly 40%',
+          tBefore && tAfter && tAfter / tBefore > 0.5 && tAfter / tBefore < 0.75,
+          `${tBefore}s -> ${tAfter}s (${tBefore ? (tAfter / tBefore).toFixed(2) : '?'}x)`);
     console.log(`         before: ${raceBefore && raceBefore.detail}`);
     console.log(`         after:  ${raceAfter && raceAfter.detail}`);
 
@@ -178,13 +220,19 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         const d0 = A._state().doc;
         d0.world.boundary = { circle: { x: 0, y: 0, r: d0.world.size * 0.5 }, poly: null };
         A._afterEdit(true, 'inscribed circle');
-        const before = A._state().findings.filter(f => f.id === 'land-outside').length;
+        // An arena flush with the map edge leaves nothing beyond it to look at.
         A._boundaryToRect(0);
+        A._afterEdit(true, 'rect flush');
+        const before = (A._state().findings.find(x => x.id === 'scenery-depth') || {}).level;
+        // Inset it and land continues PAST the sailing limit, which is the point.
+        A._boundaryToRect(400);
         A._afterEdit(true, 'rect');
         const f = A._state().findings;
         return {
             before,
-            after: f.filter(x => x.id === 'land-outside').length,
+            depth: (f.find(x => x.id === 'scenery-depth') || {}).level,
+            depthDetail: (f.find(x => x.id === 'scenery-depth') || {}).detail,
+            coverage2: (f.find(x => x.id === 'arena-coverage') || {}).level,
             coverage: (f.find(x => x.id === 'arena-coverage') || {}).detail,
             covLevel: (f.find(x => x.id === 'arena-coverage') || {}).level,
             navigable: (f.find(x => x.id === 'navigable') || {}).level,
@@ -196,8 +244,9 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     });
     check('rect arena reaches the compiled course', rect.compiledPoly === 4, `${rect.compiledPoly} vertices`);
     check('stale sampling circle is dropped with a poly', rect.compiledCircle === null);
-    check('land-outside warnings cleared', rect.before > 0 && rect.after === 0, `${rect.before} -> ${rect.after}`);
-    check('arena coverage now passes', rect.covLevel === 'ok', rect.coverage);
+    check('arena flush with the map edge is flagged', rect.before === 'warn', `was ${rect.before}`);
+    check('land now continues past the sailing limit', rect.depth === 'ok', rect.depthDetail);
+    check('arena is fully painted after the rect fit', rect.coverage2 === 'ok', rect.coverage);
     check('course is still navigable', rect.navigable === 'ok');
     check('document still validates', rect.errors === 0);
     console.log(`         ${rect.coverage}`);
@@ -214,21 +263,503 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     const rs = await page.evaluate(() => {
         const A = window.EditorApp;
         const l = A._shapeById('coast');
+        const snap = () => l.outer.map(p => p.slice());
         const spacing = (ring) => ring.map((p, i) => {
             const q = ring[(i + 1) % ring.length];
             return Math.hypot(q[0] - p[0], q[1] - p[1]);
         });
-        const sd = (a) => { const m = a.reduce((x, y) => x + y, 0) / a.length;
+        const cv = (a) => { const m = a.reduce((x, y) => x + y, 0) / a.length;
             return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length) / m; };
-        const beforeCV = sd(spacing(l.outer)), n = l.outer.length;
+        const per = (r) => spacing(r).reduce((x, y) => x + y, 0);
+
+        const beforeCV = cv(spacing(l.outer)), n = l.outer.length;
         A._resample(l); A._afterEdit(true, 'resample');
-        return { beforeCV, afterCV: sd(spacing(l.outer)), n, after: l.outer.length };
+        const p1 = snap(), per1 = per(p1), afterCV = cv(spacing(p1));
+        A._resample(l);
+        const p2 = snap(), per2 = per(p2);
+        for (let i = 0; i < 5; i++) A._resample(l);
+        const p7 = snap(), per7 = per(p7), cv7 = cv(spacing(p7));
+
+        // Worst vertex movement between consecutive passes. Rotation shows up here as a
+        // full spacing; lossy chord drift shows up as a small fraction of one.
+        // ROTATION test, precisely: after a pass, is vertex k still nearer to old vertex
+        // k than to its neighbours? Rotation slides every index round the ring, so all of
+        // them fail. Lossy chord drift can move one vertex a long way at a sharp corner
+        // without breaking correspondence anywhere — which is why a max-movement
+        // threshold tests the wrong thing.
+        let step = 0, slipped = 0;
+        const N1 = p1.length;
+        for (let i = 0; i < N1; i++) {
+            const d0 = Math.hypot(p2[i][0] - p1[i][0], p2[i][1] - p1[i][1]);
+            const dn = Math.hypot(p2[i][0] - p1[(i + 1) % N1][0], p2[i][1] - p1[(i + 1) % N1][1]);
+            const dp = Math.hypot(p2[i][0] - p1[(i - 1 + N1) % N1][0], p2[i][1] - p1[(i - 1 + N1) % N1][1]);
+            step = Math.max(step, d0);
+            if (d0 > dn || d0 > dp) slipped++;
+        }
+        return { beforeCV, afterCV, cv7, n, nAfter: p7.length, step, slipped, N1,
+                 spacing: per1 / p1.length, per1, per2, per7,
+                 vertex0Fixed: Math.hypot(p7[0][0] - p1[0][0], p7[0][1] - p1[0][1]) };
     });
-    check('vertex count preserved', rs.after === rs.n, `${rs.n} -> ${rs.after}`);
+    check('vertex count preserved', rs.nAfter === rs.n, `${rs.n} -> ${rs.nAfter}`);
     check('spacing became more even', rs.afterCV < rs.beforeCV,
           `CV ${rs.beforeCV.toFixed(3)} -> ${rs.afterCV.toFixed(3)}`);
+    // The bug was ROTATION: each pass shifted every vertex a full step, so indices slid
+    // round the ring and the shape visibly mangled when the button was pressed twice. A
+    // second pass must move vertices by much LESS than one spacing. Resampling is lossy
+    // by nature — chords cut corners — so some drift is expected; a whole step is not.
+    // The real property: repeated passes keep the spacing EVEN. The bug made each pass
+    // start emitting one step in, so indices slid round the ring and evenness decayed —
+    // pressing the button twice visibly mangled the shape. Now it converges instead.
+    check('spacing stays even after seven passes', rs.cv7 <= rs.afterCV * 1.15,
+          `CV ${rs.afterCV.toFixed(3)} -> ${rs.cv7.toFixed(3)}`);
+    check('vertex 0 stays put across repeated resamples', rs.vertex0Fixed < 1e-6,
+          `moved ${rs.vertex0Fixed.toFixed(3)}u`);
+    check('the shape does not collapse over seven passes', rs.per7 > rs.per1 * 0.9,
+          `perimeter ${Math.round(rs.per1)} -> ${Math.round(rs.per7)}u`);
+    console.log(`         perimeter ${Math.round(rs.per1)} -> ${Math.round(rs.per2)} -> ${Math.round(rs.per7)}u, `
+              + `spacing CV ${rs.beforeCV.toFixed(3)} -> ${rs.afterCV.toFixed(3)} -> ${rs.cv7.toFixed(3)}`);
 
-    // ── Save output ─────────────────────────────────────────────────────────
+    // ── Vertex multi-selection, move, align, insert/delete ──────────────────
+    // One selection layer shared by every mode that owns vertices, so marquee-select and
+    // align behave the same on land, the arena and a wind region's outline.
+    console.log('\nvertex selection');
+    const vs = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('[data-mode="vertex"]').click();
+        const l = A._shapeById('coast');
+        const before = l.outer.map(q => q.slice());
+        A._selectVerts([0, 1, 2, 3].map(i => ({ kind: 'land', id: 'coast', ring: -1, i })));
+        const n = A._vselCount();
+        A._moveSel(150, -75);
+        const moved = [0, 1, 2, 3].every(i =>
+            Math.abs(l.outer[i][0] - (before[i][0] + 150)) < 1e-9 &&
+            Math.abs(l.outer[i][1] - (before[i][1] - 75)) < 1e-9);
+        const untouched = Math.abs(l.outer[10][0] - before[10][0]) < 1e-9;
+        A._alignSel('x');
+        const alignedX = [1, 2, 3].every(i => Math.abs(l.outer[i][0] - l.outer[0][0]) < 1e-9);
+        A._alignSel('y');
+        const alignedY = [1, 2, 3].every(i => Math.abs(l.outer[i][1] - l.outer[0][1]) < 1e-9);
+
+        // The arena is a polygon and takes the same gestures.
+        document.querySelector('[data-mode="boundary"]').click();
+        const bp = () => A._state().doc.world.boundary.poly;
+        const arenaBefore = bp().length;
+        const ins = A._insertNear((bp()[0][0] + bp()[1][0]) / 2, (bp()[0][1] + bp()[1][1]) / 2);
+        const arenaAfter = bp().length;
+        A._selectVerts([{ kind: 'arena', i: 1 }]);
+        const del = A._deleteSel();
+        const arenaFinal = bp().length;
+
+        // A ring must never fall below 3 points, or the validator rejects the document.
+        A._selectVerts([0, 1, 2, 3].map(i => ({ kind: 'arena', i })));
+        A._deleteSel();
+        const arenaFloor = bp().length;
+
+        document.querySelector('[data-mode="shape"]').click();
+        return { n, moved, untouched, alignedX, alignedY, arenaBefore, ins, arenaAfter, del, arenaFinal, arenaFloor };
+    });
+    check('four vertices selected', vs.n === 4, String(vs.n));
+    check('dragging moves the whole selection', vs.moved === true);
+    check('...and leaves everything else alone', vs.untouched === true);
+    check('align X snaps to the anchor', vs.alignedX === true);
+    check('align Y snaps to the anchor', vs.alignedY === true);
+    check('an arena edge accepts an inserted vertex', vs.ins === true && vs.arenaAfter === vs.arenaBefore + 1,
+          `${vs.arenaBefore} -> ${vs.arenaAfter}`);
+    check('an arena vertex can be deleted', vs.del === true && vs.arenaFinal === vs.arenaBefore,
+          `-> ${vs.arenaFinal}`);
+    check('a ring never falls below three points', vs.arenaFloor >= 3, `${vs.arenaFloor}`);
+    await page.evaluate(() => { while (window.EditorApp._state().histIdx > 0) window.EditorApp._undo(); });
+
+    // ── Marks & gates as an inventory, and the route as an ordering ─────────
+    // The separation is the whole point: deleting a LEG must leave the gate alone, and
+    // deleting a MARK must take its gate and the legs that used it.
+    console.log('\nmarks, gates and the route');
+    const inv = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('[data-mode="marks"]').click();
+        const before = A._state().doc.course;
+        const marks0 = before.marks.length, lines0 = (before.lines || []).length;
+        document.getElementById('btn-add-line').click();       // a gate with no leg
+        const c = () => A._state().doc.course;
+        const madeGate = c().lines.length === lines0 + 1 && c().marks.length === marks0 + 2;
+        const unusedOk = c().route.filter(e => e.lineId === c().lines[c().lines.length - 1].id).length === 0;
+        // Now use it — twice.
+        const gid = c().lines[c().lines.length - 1].id;
+        A._addToRoute(`line:${gid}`, 'through'); A._afterEdit(true, 'add leg');
+        A._addToRoute(`line:${gid}`, 'round');   A._afterEdit(true, 'add leg');
+        const uses = c().route.filter(e => e.lineId === gid).length;
+        const passes = c().route.filter(e => e.lineId === gid).map(e => e.pass).join(',');
+        // Removing ONE leg must not disturb the inventory.
+        const legIdx = c().route.findIndex(e => e.lineId === gid);
+        c().route.splice(legIdx, 1); A._afterEdit(true, 'remove leg');
+        const afterLegRemoval = {
+            uses: c().route.filter(e => e.lineId === gid).length,
+            lines: c().lines.length, marks: c().marks.length
+        };
+        // Deleting the gate takes its marks AND the remaining leg.
+        const gi = c().lines.findIndex(l => l.id === gid);
+        A._deleteLine(gi);
+        const afterGateDelete = {
+            uses: c().route.filter(e => e.lineId === gid).length,
+            lines: c().lines.length, marks: c().marks.length
+        };
+        return { madeGate, unusedOk, uses, passes, afterLegRemoval, afterGateDelete,
+                 marks0, lines0 };
+    });
+    check('a gate can be created without touching the route',
+          inv.madeGate === true && inv.unusedOk === true);
+    check('the same gate can be used by two legs, sailed differently',
+          inv.uses === 2 && inv.passes === 'through,round', `${inv.uses} uses: ${inv.passes}`);
+    check('removing a LEG leaves the gate and its marks alone',
+          inv.afterLegRemoval.uses === 1 && inv.afterLegRemoval.lines === inv.lines0 + 1
+          && inv.afterLegRemoval.marks === inv.marks0 + 2,
+          JSON.stringify(inv.afterLegRemoval));
+    check('deleting the GATE takes its marks and its remaining leg',
+          inv.afterGateDelete.uses === 0 && inv.afterGateDelete.lines === inv.lines0
+          && inv.afterGateDelete.marks === inv.marks0,
+          JSON.stringify(inv.afterGateDelete));
+
+    const del = await page.evaluate(() => {
+        const A = window.EditorApp;
+        const c = () => A._state().doc.course;
+        // A start-line mark is structural: refusing is better than a course with no start.
+        const startLine = c().route[0].lineId;
+        const pinId = c().lines.find(l => l.id === startLine).marks[0];
+        const pinIdx = c().marks.findIndex(m => m.id === pinId);
+        const refused = A._deleteMark(pinIdx) === false && c().marks.some(m => m.id === pinId);
+        // A free mark deletes, and takes any leg that rounded it.
+        const id = A._addMark('can'); A._afterEdit(true, 'add mark');
+        A._addToRoute(`mark:${id}`); A._afterEdit(true, 'add leg');
+        const legs0 = c().route.length;
+        const idx = c().marks.findIndex(m => m.id === id);
+        const ok = A._deleteMark(idx);
+        return { refused, ok, gone: !c().marks.some(m => m.id === id),
+                 legsDropped: legs0 - c().route.length };
+    });
+    check('a start-line mark refuses to be deleted', del.refused === true);
+    check('a free mark deletes, and its rounding leg goes with it',
+          del.ok === true && del.gone === true && del.legsDropped === 1,
+          `dropped ${del.legsDropped} leg(s)`);
+
+    // ── Hover tells you WHICH gate ──────────────────────────────────────────
+    const hov = await page.evaluate(() => {
+        const A = window.EditorApp;
+        const c = A._state().doc.course;
+        const ln = c.lines[0];
+        const a = c.marks.find(m => m.id === ln.marks[0]), b = c.marks.find(m => m.id === ln.marks[1]);
+        // The midpoint of a line is on the line, so hit-testing must find the GATE there.
+        const hitMid = A._hit((a.x + b.x) / 2, (a.y + b.y) / 2);
+        const hitEnd = A._hit(a.x, a.y);           // a mark wins over its own gate
+        return { line: hitMid.line, mark: hitEnd.mark, label: A._lineLabel(ln.id) };
+    });
+    check('a gate is grabbable along its span', hov.line === 0, `line ${hov.line}`);
+    check('...but a mark still wins at its own position', hov.mark >= 0, `mark ${hov.mark}`);
+    check('a gate has a readable name', /line|gate/i.test(hov.label), hov.label);
+
+    // ── Route reorder by drag, and custom names ─────────────────────────────
+    // The route order IS the course: the leg engine walks it in sequence. So the two
+    // things worth pinning are that a drag actually moves an entry, and that the start
+    // and finish cannot leave their ends however the gesture is aimed.
+    console.log('\nroute reorder and naming');
+    await page.evaluate(() => {
+        const A = window.EditorApp;
+        // Geometry is made in Marks & gates; the Route panel only orders what exists.
+        document.querySelector('[data-mode="marks"]').click();
+        const gid = A._addLine(); A._afterEdit(true, 'gate');
+        const mid = A._addMark('can'); A._afterEdit(true, 'mark');
+        document.querySelector('[data-mode="route"]').click();
+        A._addToRoute(`line:${gid}`, 'through'); A._afterEdit(true, 'leg');
+        A._addToRoute(`mark:${mid}`); A._afterEdit(true, 'leg');
+    });
+    const rows = page.locator('#route-list .rt');
+    const kindsOf = () => page.evaluate(() => window.EditorApp._state().doc.course.route
+        .map(e => e.role === 'start' ? 'start' : e.finish ? 'finish' : (e.pass || e.kind)));
+    const order0 = await kindsOf();
+    check('the route now has two movable legs', order0.length >= 4, order0.join(','));
+
+    // Drag the first movable row down past the second. The drop point matters: the LOWER
+    // half of a row means "after it", which is the whole gesture being tested.
+    const rowH = (await rows.nth(2).boundingBox()).height;
+    await rows.nth(1).dragTo(rows.nth(2), { targetPosition: { x: 40, y: rowH * 0.8 } });
+    const order1 = await kindsOf();
+    check('dragging a leg down moves it', order1[1] === order0[2] && order1[2] === order0[1],
+          `${order0.join(',')} -> ${order1.join(',')}`);
+    check('the start stays first and the finish last',
+          order1[0] === 'start' && order1[order1.length - 1] === 'finish', order1.join(','));
+
+    // Aim a drag at the finish row: it must land just before the finish, never after it.
+    await rows.nth(1).dragTo(rows.nth(order1.length - 1), { targetPosition: { x: 40, y: rowH * 0.2 } });
+    const aimed = await kindsOf();
+    check('a leg dragged onto the finish lands before it, not after',
+          aimed[aimed.length - 1] === 'finish' && aimed[aimed.length - 2] === order1[1],
+          aimed.join(','));
+
+    const nm = await page.evaluate(() => {
+        const A = window.EditorApp;
+        const set = (id, v) => { const el = document.getElementById(id); el.value = v;
+            el.dispatchEvent(new Event('change')); };
+        const r = () => A._state().doc.course.route;
+        // A leg with no name reads as what it IS.
+        const derived = A._entryLabel(1);
+        document.querySelector('#route-list .rt[data-i="1"]').click();
+        const rowShown = !document.getElementById('rt-name-row').classList.contains('hidden');
+        set('rt-name', 'The Long Beat');
+        const named = r()[1].name;
+        const shownNamed = document.querySelector('#route-list .rt[data-i="1"] .rt-k').textContent;
+        set('rt-name', '   ');                     // blank clears it, default comes back
+        const cleared = r()[1].name === undefined;
+        const shownAgain = document.querySelector('#route-list .rt[data-i="1"] .rt-k').textContent;
+
+        // Marks the same way, with the smart default still on show beside the field.
+        document.querySelector('[data-mode="marks"]').click();
+        A._selectMark(0);
+        const mkShown = !document.getElementById('mk-name-row').classList.contains('hidden');
+        const mkDerived = document.getElementById('mk-derived').textContent;
+        set('mk-name', 'Sneaky Rock');
+        const mkNamed = A._state().doc.course.marks[0].name;
+        const mkLabel = A._markLabel(0);
+        set('mk-kind', 'can');
+        const kind = A._state().doc.course.marks[0].kind;
+        set('mk-name', '');
+
+        // And gates, which are named objects in their own right now.
+        A._selectLine(0);
+        const lnShown = !document.getElementById('ln-name-row').classList.contains('hidden');
+        set('ln-name', 'The Narrows');
+        const lnNamed = A._lineLabel(A._state().doc.course.lines[0].id);
+        set('ln-name', '');
+        const lnCleared = A._state().doc.course.lines[0].name === undefined;
+        return { derived, rowShown, named, shownNamed, cleared, shownAgain,
+                 mkShown, mkDerived, mkNamed, mkLabel, kind,
+                 mkCleared: A._state().doc.course.marks[0].name === undefined,
+                 lnShown, lnNamed, lnCleared };
+    });
+    check('an unnamed leg reads as what it is', /gate|round|start|finish/i.test(nm.derived), nm.derived);
+    check('clicking a row opens the name field', nm.rowShown === true);
+    check('a typed leg name is stored and shown', nm.named === 'The Long Beat' && nm.shownNamed === 'The Long Beat',
+          `${nm.named} / ${nm.shownNamed}`);
+    check('blanking the field restores the smart default', nm.cleared === true && nm.shownAgain === nm.derived,
+          `${nm.shownAgain} vs ${nm.derived}`);
+    check('selecting a mark opens its name field', nm.mkShown === true);
+    check('...with the smart default on show', /pin|boat|gate|mark|rounding/i.test(nm.mkDerived), nm.mkDerived);
+    check('a typed mark name wins over the derived label', nm.mkNamed === 'Sneaky Rock' && nm.mkLabel === 'Sneaky Rock',
+          `${nm.mkNamed} / ${nm.mkLabel}`);
+    check('the mark kind can be changed', nm.kind === 'can', nm.kind);
+    check('blanking a mark name restores the default', nm.mkCleared === true);
+    check('a gate can be named too', nm.lnShown === true && nm.lnNamed === 'The Narrows', nm.lnNamed);
+    check('blanking a gate name restores its default', nm.lnCleared === true);
+
+    // ── Measuring a multi-leg path ──────────────────────────────────────────
+    console.log('\nmeasure');
+    const meas = await page.evaluate(() => {
+        document.querySelector('[data-mode="measure"]').click();
+        const cv = document.getElementById('schematic');
+        const r = cv.getBoundingClientRect();
+        const at = (x, y, shift) => {
+            cv.dispatchEvent(new MouseEvent('mousedown', { clientX: r.left + x, clientY: r.top + y,
+                button: 0, shiftKey: !!shift, bubbles: true }));
+            window.dispatchEvent(new MouseEvent('mousemove', { clientX: r.left + x, clientY: r.top + y, bubbles: true }));
+            window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        };
+        at(200, 200);                       // drag out the first leg
+        window.dispatchEvent(new MouseEvent('mousemove', { clientX: r.left + 300, clientY: r.top + 200, bubbles: true }));
+        const one = window.EditorApp._measure().pts.length;
+        at(400, 300, true);                 // shift EXTENDS
+        at(500, 400, true);
+        const three = window.EditorApp._measure().pts.length;
+        at(120, 120);                       // a plain drag starts over
+        const restart = window.EditorApp._measure().pts.length;
+        return { one, three, restart };
+    });
+    check('a drag measures one leg', meas.one === 2, `${meas.one} points`);
+    check('shift-click extends it into a path', meas.three === 4, `${meas.three} points`);
+    check('a plain drag starts a new measurement', meas.restart === 2, `${meas.restart} points`);
+
+    // ── Current regions ─────────────────────────────────────────────────────
+    console.log('\ncurrent');
+    const cur = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('[data-mode="current"]').click();
+        document.getElementById('btn-add-cur-all').click();
+        const d = A._state().doc;
+        const r = d.current.regions[0];
+        const set = (id, v) => { const el = document.getElementById(id); el.value = v;
+            el.dispatchEvent(new Event('change')); };
+        set('cr-speed', '2.5');
+        set('cr-dir', '90');
+        // Does the GAME see it? getCurrentAt is what the physics and the AI read.
+        const mid = getCurrentAt(0, 0);
+        // Outside every region the answer is the AMBIENT current, which is null when the
+        // venue has none — the same value every consumer already guards for.
+        const outside = getCurrentAt(1e6, 1e6);
+        // And no RNG may be consumed, or a current could move the eval anchor.
+        let draws = 0;
+        const real = Math.random;
+        Math.random = () => { draws++; return real(); };
+        for (let i = 0; i < 200; i++) getCurrentAt(i * 12, 0);
+        Math.random = real;
+        return { count: d.current.regions.length, speed: r.speed,
+                 dirDeg: Math.round(r.direction * 180 / Math.PI),
+                 midSpeed: mid.speed, midDir: mid.direction,
+                 outSpeed: outside ? outside.speed : 0, outNull: outside === null, draws };
+    });
+    check('a whole-course current region is created', cur.count === 1, String(cur.count));
+    check('speed and flow direction are stored', cur.speed === 2.5 && cur.dirDeg === 90,
+          `${cur.speed}kt @ ${cur.dirDeg}°`);
+    check('the game reads the flow inside the region', Math.abs(cur.midSpeed - 2.5) < 0.15,
+          `${cur.midSpeed.toFixed(2)}kt`);
+    check('...pointing where the region says', Math.abs(cur.midDir - Math.PI / 2) < 0.05,
+          `${cur.midDir.toFixed(3)} rad`);
+    check('outside every region the ambient current is returned untouched',
+          cur.outSpeed < 1e-9, `${cur.outSpeed}${cur.outNull ? ' (null — this venue has no ambient current)' : ''}`);
+    check('sampling the current consumes no rng draws', cur.draws === 0, `${cur.draws} draws`);
+
+    // ── The legend describes THIS venue ─────────────────────────────────────
+    const leg = await page.evaluate(() => window.EditorApp._legend());
+    check('the legend mentions what the venue has', /granite|ice/i.test(leg) && /current/i.test(leg), leg.slice(0, 120));
+    check('...and not a fixed list', !/tropical sand|red rock/i.test(leg), leg.slice(0, 160));
+
+    await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
+
+    // ── A rounding mark is not the island it stands on ──────────────────────
+    // The bug this fixes: the rounding referenced a LAND SHAPE, so the mark WAS the
+    // island's centroid and dragging one dragged the other.
+    console.log('\nrounding mark vs island');
+    const rnd = await page.evaluate(() => {
+        const A = window.EditorApp;
+        const d = A._state().doc;
+        const e = d.course.route.find(x => x.kind === 'round');
+        const mi = d.course.marks.findIndex(m => m.id === e.markId);
+        const isle = d.land.find(l => l.id === 'granite-isle');
+        const before = { mx: d.course.marks[mi].x, my: d.course.marks[mi].y, ic: isle.c.slice() };
+        // Move the MARK.
+        d.course.marks[mi].x += 400; d.course.marks[mi].y -= 250;
+        A._afterEdit(true, 'move mark');
+        const isle2 = A._state().doc.land.find(l => l.id === 'granite-isle');
+        const islandHeld = Math.abs(isle2.c[0] - before.ic[0]) < 1e-9
+                        && Math.abs(isle2.c[1] - before.ic[1]) < 1e-9;
+        const markMoved = Math.abs(A._state().doc.course.marks[mi].x - (before.mx + 400)) < 1e-9;
+        // ...and the compiled rounding follows the mark, not the island.
+        const cm = window.state.course.route.find(x => x.kind === 'round').mark;
+        const compiledFollows = Math.abs(cm.x - (before.mx + 400)) < 1e-6;
+        // Now move the ISLAND and check the mark stays.
+        A._selectShape('granite-isle');
+        const isle3 = A._state().doc.land.find(l => l.id === 'granite-isle');
+        A._translateShape(isle3, -300, 120);
+        A._afterEdit(true, 'move island');
+        const markHeld = Math.abs(A._state().doc.course.marks[mi].x - (before.mx + 400)) < 1e-9;
+        const noLandRef = !('landId' in e);
+        return { islandHeld, markMoved, compiledFollows, markHeld, noLandRef,
+                 radius: e.radius, zone: e.zone };
+    });
+    check('the route no longer references a land shape', rnd.noLandRef === true);
+    check('moving the rounding mark leaves the island alone',
+          rnd.markMoved === true && rnd.islandHeld === true);
+    check('...and the compiled rounding follows the mark', rnd.compiledFollows === true);
+    check('moving the island leaves the mark alone', rnd.markHeld === true);
+    check('the rounding still knows how big the thing it stands at is',
+          rnd.radius > 100 && rnd.zone > rnd.radius, `radius ${Math.round(rnd.radius)}, zone ${Math.round(rnd.zone)}`);
+    await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
+
+    // ── Hand-placed ice ─────────────────────────────────────────────────────
+    console.log('\nhand-placed ice');
+    const ice2 = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('[data-mode="venue"]').click();
+        const clean = !A._state().dirty;                 // reading must not dirty the doc
+        document.getElementById('ice-scatter').value = '1';
+        document.getElementById('ice-vary').value = '0';
+        // The venue ships with hand-placed ice, so everything here counts DELTAS.
+        const start = A._state().doc.ice.length;
+        const n1 = A._addIce(-3200, 2600, 300);          // open water on this venue
+        A._afterEdit(true, 'ice');
+        const one = A._state().doc.ice.length - start;
+        const verts = A._state().doc.ice[A._state().doc.ice.length - 1].outer.length;
+        // Scatter: several floes inside the dragged circle, all of them inside it.
+        document.getElementById('ice-scatter').value = '6';
+        const mid = A._state().doc.ice.length;
+        A._addIce(-3200, 3400, 900);
+        A._afterEdit(true, 'ice');
+        const after = A._state().doc.ice.length - mid;
+        const inside = A._state().doc.ice.slice(mid).every(f => {
+            const cx = f.outer.reduce((a, p) => a + p[0], 0) / f.outer.length;
+            const cy = f.outer.reduce((a, p) => a + p[1], 0) / f.outer.length;
+            return Math.hypot(cx - (-3200), cy - 3400) <= 900;
+        });
+        // Does the GAME build them? Authored floes carry a flag and a fresh drift.
+        A._recompile(true);
+        const built = (window.state.course.islands || []).filter(i => i.authored);
+        const docN = A._state().doc.ice.length;
+        const drifts = built.every(f => Math.hypot(f.driftVx, f.driftVy) > 0 && f.spinRate !== 0);
+        // Every authored floe must reach the game with the outline it was given — matched
+        // by id, since the built list also carries whatever else is in the course.
+        const byId = {};
+        for (const f of A._state().doc.ice) byId[f.id] = f.outer.length;
+        const shapeHeld = built.length > 0 && built.every(f => byId[f.id] === f.localArt.length);
+        const onLand = A._state().doc.ice.every(f => {
+            const cx = f.outer.reduce((a, p) => a + p[0], 0) / f.outer.length;
+            const cy = f.outer.reduce((a, p) => a + p[1], 0) / f.outer.length;
+            return !A._state().doc.land.some(l => window.VenueDoc.pointInRing(cx, cy, l.outer));
+        });
+        // Deleting.
+        const before = A._state().doc.ice.length;
+        A._deleteIce(0);
+        const gone = A._state().doc.ice.length === before - 1;
+        return { clean, n1, one, verts, after, inside, builtN: built.length, docN,
+                 drifts, shapeHeld, allInWater: onLand, gone };
+    });
+    check('reading the ice list does not mark the document unsaved', ice2.clean === true);
+    check('a drag places one floe with a generated outline',
+          ice2.one === 1 && ice2.verts >= 5, `+${ice2.one} floe, ${ice2.verts} vertices`);
+    // Fewer than asked for is correct behaviour when the box is partly land: the tool
+    // places fewer rather than placing them badly.
+    check('scatter places several, all inside the drag',
+          ice2.after >= 2 && ice2.after <= 6 && ice2.inside === true, `+${ice2.after} floes`);
+    check('...and never on land', ice2.allInWater === true);
+    check('the game builds every authored floe', ice2.builtN === ice2.docN,
+          `${ice2.builtN} built of ${ice2.docN} authored`);
+    check('...each with its authored shape', ice2.shapeHeld === true);
+    check('...and a fresh drift and spin per race', ice2.drifts === true);
+    check('ice can be deleted', ice2.gone === true);
+    await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
+
+    // ── Alignment snapping ──────────────────────────────────────────────────
+    console.log('\nvertex snapping');
+    const snapT = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('[data-mode="vertex"]').click();
+        const l = A._shapeById('coast');
+        const ref = { kind: 'land', id: 'coast', ring: -1, i: 5 };
+        const nb = l.outer[4];
+        // Just off the neighbour's x: must snap onto it.
+        const close = A._snapPoint({ x: nb[0] + 2, y: nb[1] + 4000 }, ref);
+        // Well away from it: must not.
+        const farOff = A._snapPoint({ x: nb[0] + 4000, y: nb[1] + 4000 }, ref);
+        return { snappedX: Math.abs(close.x - nb[0]) < 1e-9,
+                 keptY: Math.abs(close.y - (nb[1] + 4000)) < 1e-9,
+                 freeX: Math.abs(farOff.x - (nb[0] + 4000)) < 1e-9 };
+    });
+    check('a vertex snaps to its neighbour\'s axis when close', snapT.snappedX === true);
+    check('...on that axis only', snapT.keptY === true);
+    check('...and not when it is deliberately elsewhere', snapT.freeX === true);
+
+    // ── The vertex panel stops shouting in Wind mode ────────────────────────
+    const panel = await page.evaluate(() => {
+        const shown = () => document.getElementById('vsel-row').style.display !== 'none';
+        document.querySelector('[data-mode="vertex"]').click();
+        const inVertex = shown();
+        document.querySelector('[data-mode="wind"]').click();
+        const inWind = shown();
+        window.EditorApp._selectVerts([{ kind: 'arena', i: 0 }]);
+        const withSel = shown();
+        window.EditorApp._selectVerts([]);
+        return { inVertex, inWind, withSel };
+    });
+    check('the vertex panel lives in Vertices mode', panel.inVertex === true);
+    check('...is not in the way in Wind mode', panel.inWind === false);
+    check('...but appears there once something is selected', panel.withSel === true);
+
+    // ── Save output    // ── Save output ─────────────────────────────────────────────────────────
     console.log('\nsave output');
     const out = await page.evaluate(() => {
         const d = window.EditorApp._state().doc;

@@ -83,10 +83,16 @@ function segToShapeDist(p, q, shape) {
 // HULL_R is 30 in script.js, so a boat is ~60 units across; call the practical
 // clearance a boat needs to pass and manoeuvre 3 hull widths.
 const HULL_DIA = 60;
+// Findings are read by a person, and nobody thinks in world units. 5u = 1 metre, and a
+// boat is 55u = 11 m long, so gaps are also quoted in BOAT WIDTHS where that is the
+// actual question ("can two boats pass here?").
+const M = (u) => (Math.abs(u) >= 5000 ? `${(u / 5000).toFixed(2)} km` : `${Math.round(u / 5)} m`);
+const HULLS = (u) => `${(u / HULL_DIA).toFixed(1)} hulls`;
 const PASSABLE = HULL_DIA * 3;
 
 function runChecks(ctx) {
     const { doc, compiled, boats, floes } = ctx;
+    ctx.scenery = ctx.scenery || (compiled && compiled.scenery) || null;
     const out = [];
     const add = (level, id, title, detail, extra) =>
         out.push(Object.assign({ level, id, title, detail }, extra || {}));
@@ -102,19 +108,25 @@ function runChecks(ctx) {
         add(p.level === 'error' ? 'error' : 'warn', 'schema', 'Document', p.msg);
     }
 
-    // 2. Land outside the arena. The boundary is the invisible wall; land beyond it
-    //    is decoration a boat can never reach, and water beyond it is worse — it
-    //    looks sailable and is not.
+    // 2. Land beyond the arena is WANTED, not a defect. This check used to warn about
+    //    it, which was backwards: the arena bounds boats, and land continuing past it
+    //    is what stops a sailor at the limit from seeing the world end. So report it
+    //    as depth, and warn only in the opposite case — an arena edge with nothing
+    //    beyond it to look at.
     if (bnd && (bnd.poly || bnd.radius)) {
+        const beyond = [];
+        let deepest = 0;
         for (const l of land) {
             const outs = l.outer.filter(p => !window.Arena.contains(bnd, p[0], p[1]));
-            if (outs.length) {
-                add(outs.length === l.outer.length ? 'error' : 'warn', 'land-outside',
-                    'Land outside the boundary',
-                    `"${l.id}": ${outs.length}/${l.outer.length} vertices are beyond the arena edge`,
-                    { shapes: [l.id], points: outs.slice(0, 40).map(p => ({ x: p[0], y: p[1] })) });
-            }
+            if (!outs.length) continue;
+            beyond.push(l.id);
+            for (const p of outs) deepest = Math.max(deepest, -window.Arena.signedDist(bnd, p[0], p[1]));
         }
+        add(beyond.length ? 'ok' : 'warn', 'scenery-depth', 'Scenery beyond the arena',
+            beyond.length
+                ? `${beyond.length} shape(s) continue past the sailing limit, up to ${M(deepest)} `
+                  + `beyond it (${beyond.join(', ')})`
+                : 'No land extends past the arena — a boat at the limit sees the world end');
     }
 
     // 3. ROUNDING CLEARANCE. The measured gap from the rounding island to every
@@ -122,8 +134,31 @@ function runChecks(ctx) {
     //    This is the check that would have caught the granite island sitting 43
     //    units from the coast with a ~56-unit hull: literally unroundable, and it
     //    cost 4377 groundings per boat before anyone measured it.
-    if (rm && rm.landId) {
-        const rock = land.find(l => l.id === rm.landId);
+    // Which land is being rounded is now DISCOVERED, not declared: whatever shape the
+    // rounding mark stands on, or the nearest one inside its zone. A mark and an island
+    // are separate objects that happen to be in the same place, so the check has to look
+    // rather than read a field — and this way it also catches a buoy laid next to a shoal.
+    const landAtMark = (mk) => {
+        if (!mk) return null;
+        for (const l of land) {
+            if (window.VenueDoc.pointInRing(mk.x, mk.y, l.outer)
+                && !(l.holes || []).some(h => window.VenueDoc.pointInRing(mk.x, mk.y, h))) return l;
+        }
+        let best = null, bestD = Infinity;
+        for (const l of land) {
+            for (const p of l.outer) {
+                const d = Math.hypot(p[0] - mk.x, p[1] - mk.y);
+                if (d < bestD) { bestD = d; best = l; }
+            }
+        }
+        return (best && bestD <= Math.max(mk.zone || 0, 200)) ? best : null;
+    };
+    if (rm) {
+        const rock = landAtMark(rm);
+        if (!rock) {
+            add('ok', 'round-clearance', 'Rounding clearance',
+                'The rounding mark is in open water — nothing within its zone to foul');
+        }
         if (rock) {
             let worst = null;
             for (const other of land) {
@@ -135,8 +170,8 @@ function runChecks(ctx) {
                 const d = worst.g.dist;
                 const level = d < HULL_DIA ? 'error' : d < PASSABLE ? 'warn' : 'ok';
                 add(level, 'round-clearance', 'Rounding clearance',
-                    `Narrowest gap between "${rock.id}" and "${worst.other.id}" is ${Math.round(d)}u`
-                    + ` (hull ${HULL_DIA}u, wants ${PASSABLE}u to manoeuvre)`,
+                    `Narrowest gap between "${rock.id}" and "${worst.other.id}" is ${M(d)} (${HULLS(d)})`
+                    + ` — a hull is ${M(HULL_DIA)} wide and wants ${M(PASSABLE)} to manoeuvre`,
                     { segs: worst.g.from ? [[{ x: worst.g.from[0], y: worst.g.from[1] },
                                               { x: worst.g.to[0], y: worst.g.to[1] }]] : [] });
             }
@@ -144,7 +179,24 @@ function runChecks(ctx) {
             // satisfy the rounding without going round anything.
             if (rm.zone < rock.r) {
                 add('error', 'round-zone', 'Rounding zone too small',
-                    `zone ${Math.round(rm.zone)}u is inside the island's own radius ${Math.round(rock.r)}u`);
+                    `zone ${M(rm.zone)} is inside the radius of the "${rock.id}" it stands on (${M(rock.r)})`
+                    + ' — the rounding could be satisfied without going round anything');
+            }
+            // ...and there must be water to sail through on the FAR side. The arena
+            // edge is as solid as a cliff: with only 175u past the island, boats
+            // stalled on the rounding leg and ground along the wall for the whole
+            // race. The land-to-land gap above says nothing about this.
+            if (bnd) {
+                let tight = Infinity, at = null;
+                for (const p of rock.outer) {
+                    const d = window.Arena.signedDist(bnd, p[0], p[1]);
+                    if (d < tight) { tight = d; at = p; }
+                }
+                const lvl = tight < HULL_DIA ? 'error' : tight < PASSABLE ? 'warn' : 'ok';
+                add(lvl, 'round-arena', 'Rounding room inside the arena',
+                    `Closest the rounding shape comes to the arena edge is ${M(tight)} (${HULLS(tight)})`
+                    + ` — wants ${M(PASSABLE)} to sail round`,
+                    { points: at ? [{ x: at[0], y: at[1] }] : [] });
             }
         }
     }
@@ -162,7 +214,7 @@ function runChecks(ctx) {
         }
         const level = nearest.dist < HULL_DIA ? 'error' : nearest.dist < PASSABLE ? 'warn' : 'ok';
         add(level, 'start-clearance', 'Start line clearance',
-            `Line is ${Math.round(lineLen)}u long; closest land is "${nearest.id}" at ${Math.round(nearest.dist)}u`,
+            `Line is ${M(lineLen)} long; closest land is "${nearest.id}" at ${M(nearest.dist)}`,
             { segs: nearest.at ? [[{ x: nearest.at[0], y: nearest.at[1] },
                                    { x: (p[0] + q[0]) / 2, y: (p[1] + q[1]) / 2 }]] : [] });
 
@@ -270,13 +322,17 @@ function runChecks(ctx) {
                     if (m && ar) inBoth++;
                 }
             }
-            const mapCovered = inMap ? 100 * inBoth / inMap : 0;      // of the painted map, how much is sailable
-            const arenaUnpainted = inArena ? 100 * (1 - inBoth / inArena) : 0;  // of the arena, how much is off-map
-            add(mapCovered < 95 || arenaUnpainted > 5 ? 'warn' : 'ok', 'arena-coverage', 'Arena vs map',
-                `${bnd.poly ? `${bnd.poly.length}-gon arena` : `Arena r=${Math.round(bnd.radius)}`}`
-                + ` on a ${Math.round(size)}x${Math.round(size)} map: `
-                + `${mapCovered.toFixed(0)}% of the painted map is inside the arena, `
-                + `${arenaUnpainted.toFixed(0)}% of the arena is off-map water`);
+            const mapCovered = inMap ? 100 * inBoth / inMap : 0;
+            const arenaUnpainted = inArena ? 100 * (1 - inBoth / inArena) : 0;
+            // Only ONE of these is a defect. Painted map OUTSIDE the arena is scenery
+            // — deliberately so, since the arena bounds boats and the map bounds what
+            // there is to look at. Arena INSIDE no painted map is the problem: water a
+            // boat may sail into that the mask never described.
+            add(arenaUnpainted > 5 ? 'warn' : 'ok', 'arena-coverage', 'Arena vs map',
+                `${bnd.poly ? `${bnd.poly.length}-gon arena` : `Arena r=${M(bnd.radius)}`}`
+                + ` on a ${M(size)} square map: `
+                + `${arenaUnpainted.toFixed(0)}% of the arena is unpainted water`
+                + ` (${(100 - mapCovered).toFixed(0)}% of the map lies outside the arena, as scenery)`);
         } else {
             add('error', 'navigable', 'Navigability', 'The start line midpoint is not in water');
         }
@@ -321,8 +377,8 @@ function runChecks(ctx) {
         const minGap = gaps.length ? Math.min.apply(null, gaps) : 0;
         const stacked = spread < lineLen * 0.35 || acrossExt > spread;
         add(stacked ? 'warn' : minGap < HULL_DIA ? 'warn' : 'ok', 'spawn-spread', 'Fleet spread',
-            `${boats.length} boats span ${Math.round(spread)}u along a ${Math.round(lineLen)}u line`
-            + ` (across ${Math.round(acrossExt)}u, tightest gap ${Math.round(minGap)}u vs ${HULL_DIA}u hull)`
+            `${boats.length} boats span ${M(spread)} along a ${M(lineLen)} line`
+            + ` (across ${M(acrossExt)}, tightest gap ${M(minGap)} vs a ${M(HULL_DIA)} hull)`
             + (stacked ? ' — stacked in a column rather than laid out in lanes' : '')
             + (!stacked && minGap < HULL_DIA ? ' — lane neighbours are closer than a hull width' : ''),
             { points: boats.map(b => ({ x: b.x, y: b.y })) });
@@ -332,6 +388,9 @@ function runChecks(ctx) {
     //    placement, collision AND wind shadow on three separate occasions, because
     //    the coast's bounding circle covers more than half the world. Anything
     //    asking "is this in water?" must test the polygons — so this check does.
+    if (!floes || !floes.length) {
+        add('ok', 'floe-land', 'Ice', 'No ice on this venue — nothing to place badly');
+    }
     if (floes && floes.length) {
         const bad = [], outside = [];
         for (const f of floes) {
@@ -342,25 +401,60 @@ function runChecks(ctx) {
             bad.length ? `${bad.length} of ${floes.length} floes have their centre inside land`
                        : `all ${floes.length} floe centres are in water`,
             { points: bad.map(f => ({ x: f.x, y: f.y })) });
-        if (outside.length) {
-            add('warn', 'floe-outside', 'Ice outside the boundary',
-                `${outside.length} floes sit beyond the arena edge`,
-                { points: outside.map(f => ({ x: f.x, y: f.y })) });
+        // Ice beyond the arena is WANTED — it is the scenery a sailor at the limit
+        // looks at, and ice does not respect an imaginary line. What would be a
+        // defect is ice outside the SCENERY extent, where nothing can ever see it.
+        const scn = ctx.scenery;
+        if (scn) {
+            const lost = floes.filter(f => !window.Arena.contains(scn, f.x, f.y));
+            add(lost.length ? 'warn' : 'ok', 'floe-scenery', 'Ice placement',
+                lost.length
+                    ? `${lost.length} floes are outside the scenery extent, where nothing can see them`
+                    : `${outside.length} of ${floes.length} floes sit beyond the sailing limit, as scenery`,
+                { points: lost.map(f => ({ x: f.x, y: f.y })) });
         }
     }
 
     // 8. RACE LENGTH. The target is a design decision, so this is a warning and not
     //    an error, but a course nobody wants to finish is still a broken course.
-    if (rm && marks.length >= 2) {
-        const sx = (marks[0].x + marks[1].x) / 2, sy = (marks[0].y + marks[1].y) / 2;
-        const leg = Math.hypot(rm.x - sx, rm.y - sy);
-        const dist = leg * 2 * 1.45;                        // same beat factor updateRace uses
-        const expected = (dist / 5) * 0.1875 * 0.71;        // game's s/m, times measured mean/cutoff
-        const inBand = expected >= 180 && expected <= 300;
+    const est = compiled.estimate;
+    if (est && est.secs > 0) {
+        // The honest measure: the hull-width path around the land, priced by the game's
+        // own polar. The fleet mean runs about 1.35x the leader (measured in the eval), and
+        // that is what the 3–5 minute target was ever about.
+        const best = est.secs, mean = est.secs * 1.35;
+        const inBand = mean >= 180 && mean <= 300;
+        const detour = compiled.sailedDist > 0 ? est.dist / compiled.sailedDist : 1;
         add(inBand ? 'ok' : 'warn', 'race-length', 'Race length',
-            `Sailed ~${Math.round(dist)}u, expected ~${Math.floor(expected / 60)}:`
-            + String(Math.round(expected % 60)).padStart(2, '0')
+            `${M(est.dist)} of sailable path (${detour.toFixed(2)}x the straight line) — `
+            + `best ~${Math.floor(best / 60)}:${String(Math.round(best % 60)).padStart(2, '0')}, `
+            + `fleet ~${Math.floor(mean / 60)}:${String(Math.round(mean % 60)).padStart(2, '0')}`
             + (inBand ? ' (in the 3–5 min band)' : ' — outside the 3–5 min target'));
+        // A limit is a promise that the slow boats get to finish. 1.6x the leader is where
+        // the eval's spread puts the last of them.
+        const limit = (compiled.cutoff != null) ? compiled.cutoff : compiled.cutoffAuto;
+        const want = best * 1.6;
+        if (compiled.cutoff == null) {
+            add('warn', 'cutoff-derived', 'Time limit is derived',
+                `No authored limit, so the game falls back to ${M(compiled.sailedDist)} of straight line`
+                + ` at 0.1875 s/m = ${Math.floor(compiled.cutoffAuto / 60)}:`
+                + String(Math.round(compiled.cutoffAuto % 60)).padStart(2, '0')
+                + ` — which cannot see the land the path goes around. Set it to ~`
+                + `${Math.floor(want / 60)}:${String(Math.round(want % 60)).padStart(2, '0')} in the Overview.`);
+        } else {
+            const ok = limit >= want * 0.9;
+            add(ok ? 'ok' : 'warn', 'cutoff-enough', 'Time limit',
+                `${Math.floor(limit / 60)}:${String(Math.round(limit % 60)).padStart(2, '0')} authored`
+                + ` against a ${Math.floor(want / 60)}:${String(Math.round(want % 60)).padStart(2, '0')}`
+                + ` need for the tail of the fleet`
+                + (ok ? '' : ' — the slower boats would be scored DNF while still racing'));
+        }
+    } else if (compiled.sailedDist > 0) {
+        add(inBand ? 'ok' : 'warn', 'race-length', 'Race length',
+            `Sailed ~${M(dist)} straight-line, expected ~${Math.floor(expected / 60)}:`
+            + String(Math.round(expected % 60)).padStart(2, '0')
+            + (inBand ? ' (in the 3–5 min band)' : ' — outside the 3–5 min target')
+            + ' · no sailable path found, so this ignores the land in the way');
     }
 
     return out;

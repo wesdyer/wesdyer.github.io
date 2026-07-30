@@ -390,6 +390,93 @@ shipped.
 
 ---
 
+## 4b. Scenery vs arena — a design correction
+
+The checks originally warned about **land outside the boundary**, on the reasoning
+that land a boat cannot reach is waste. That was backwards.
+
+The arena bounds **boats**. Land and drifting ice are **scenery**, and they should
+extend past it — otherwise a sailor who reaches the limit watches the world stop at
+an invisible wall. Ice especially: it does not respect an imaginary line.
+
+So the model is now two extents:
+
+| | bounds | who respects it |
+|---|---|---|
+| **arena** (`world.boundary`) | the sailing limit | boats (clamp, AI exit test, laylines) |
+| **scenery** (derived) | arena ∪ land, plus `sceneryMargin` (default 1200u) | ice placement, drift, brash recycling |
+
+Consequences, all of them corrections to earlier work:
+
+- `land-outside` **inverted** into `scenery-depth`: land past the limit is reported
+  as depth; the *warning* is now the opposite case — an arena edge with nothing
+  beyond it to look at.
+- `floe-outside` **inverted** into `floe-scenery`: ice past the limit is the point.
+  The defect is ice outside the *scenery* extent, where nothing can ever see it.
+- `arena-coverage` **halved**: painted map outside the arena is scenery, not waste.
+  Only *unpainted arena* — water a boat may enter that the mask never described —
+  is a defect.
+- The arena default became the map rect **inset 700u**, so land continues past the
+  sailing limit. Flush with the map edge there is nothing out there; inset too far
+  and sailable water is thrown away.
+- Pathfinding now skips scenery outside the arena. Ice a boat can never reach is
+  pure cost in the A* visibility graph, where every extra node multiplies expansion.
+
+Measured on Glacier Sound: **1 warning, 10 ok** — only race length, which is a
+design decision. 35 of 54 floes now sit beyond the sailing limit as scenery, and two
+land shapes continue up to 990u past it.
+
+## 4c. One leg engine
+
+`updateBoatRaceState` had two hardcoded course types. It now has **one walker over
+the route**, and each entry states how its leg ends:
+
+| entry | ends when |
+|---|---|
+| `line`, `role: 'start'` | crossed once in `dir` (and OCS before the gun) |
+| `line`, `finish: true` | crossed once in `dir` |
+| `gate` | crossed in, then back out past an end |
+| `round` | swept ~160° about a mark, on the correct side |
+
+The insight that made this small: **a gate leg was already a rounding** — cross in,
+leave round an end. So the only genuinely new primitive was the swept-angle test, and
+one walker now races lines, gates and roundings **in any order**. Start and finish are
+identified by `role` and `finish`, never by leg number.
+
+`npm run test:route` drives a boat along a known path through line → gate → rounding →
+line (12 assertions). Driven rather than AI-sailed, so a failure means the engine.
+
+Roundings resolve from either a land shape (`landId`) or a course mark (`markIdx`), and
+marks carry a `kind` appearance — an orange inflatable or a yellow can. The editor's
+**Route panel** lists the legs in order with `+ Gate` and `+ Rounding mark`, plus
+per-leg flip-direction, flip-side, toggle-beat and delete.
+
+Two traps found on the way:
+
+- **`setupPreRaceOverlay()` → `updateCourseConfig()` runs on every `resetGame` and was
+  clobbering the compiled route** with `buildRoute(...)`, discarding roundings' resolved
+  marks. Latent until the engine started actually reading the route. Now guarded on
+  `!state.course.doc`: a document's route is authored, never regenerated.
+- **Sweep accumulates from the moment the zone is entered**, so an approach that curls
+  the wrong way round a mark banks negative credit the rounding must then undo. That is
+  correct — it is a real rounding requirement — but it means an approach has to be
+  radial, not tangential-the-wrong-way.
+
+### A pre-existing failure the traces were hiding
+
+While testing this: **the AI cannot complete Glacier Sound, and never could.** Max leg
+reached is 1 in the Phase-1 golden, recorded before any arena, scenery or walker work.
+Boats start, beat away from the island, and never get within ~4450u of the rounding mark
+(the leg is 5525u), accumulating ~25 000 grounding-frames each. Tested against five
+arena shapes — map rect, inset 400, inset 700, circle 4375, circle 6187 — **identical in
+every case**, so the arena is not the cause.
+
+The user deferred AI performance explicitly, so this is known-deferred rather than new.
+But it is worth stating plainly what it means for the test net: **golden traces prove
+"nothing changed", not "this works."** They locked in a broken Glacier Sound as the
+baseline without complaint. The validation checks are what should catch this, and the
+"can the fleet actually sail it?" harness listed in §7 is still unbuilt.
+
 ## 5. Phases
 
 Each ships and reverts independently. Eval anchor gated at every one.
@@ -717,6 +804,393 @@ prestart / every leg / one past the finish / finished / three camera modes × na
 aids on and off. This is the one class of bug the traces structurally cannot see.
 
 `npm test` now runs arena → venuedoc → editor → render → boundary-race → checks.
+
+### Phase 4c — Course authoring: modes, wind regions, route ✅ DONE
+
+**Mode palette instead of a flat tool list.** `mode` (shape | vertex | marks |
+boundary | wind | map | measure, keys 1–7) × `sub` (drag | sculpt | smooth), with
+`syncTool()` deriving the legacy `tool` string. Each mode owns a panel and *only
+that mode's geometry is hit-testable*, which is what makes marks draggable without
+grabbing coastline vertices by accident. Measure has its own mode, so the
+measurement overlay can be switched off by leaving it.
+
+**One vertex-selection layer, shared by every mode that owns vertices.** `vsel` is
+a list of refs (`{kind: land|arena|wind, id, ring, i}`) in click order, so
+marquee-drag and Shift-click behave identically on a coastline, the arena and a wind
+region's outline — and **align X/Y snaps to `vsel[0]`**, the first thing clicked,
+which is the only anchor rule that does not need explaining. Ring deletion has a
+hard floor of 3 points, because below that the validator rejects the document.
+
+**Wind regions.** Overlapping polygons rather than a partition, summed as
+*deltas* in `getWindAt`: `base + Σ (target − base) × intensity`, with a smoothstep
+falloff band. Two regions therefore compose into a convergence nobody authored.
+Direction is summed **as vectors** — 350° and 10° do not average to 180°.
+`eval/test_wind.js` (11 assertions) pins the additivity, the monotone edge ramp, and
+that sampling the field **consumes zero `rng()` draws**, which is what keeps a wind
+region from being able to move the eval anchor.
+
+**The route list is the course.** Rows carry the leg's identity and its controls:
+crossing direction, rounding side, and for gates a **pass mode** — `through`
+(cross once in the required direction and you are done) versus `round` (cross in,
+then leave round an end). `eval/test_gates.js` drives a boat up through a gate and
+straight back down and asserts a round-gate does *not* count, which is the whole
+difference between the two.
+
+**Reordering is a drag, not a pair of arrows.** HTML5 drag-and-drop on the row, with
+the start and finish rendered `pinned` (undraggable): the leg engine walks the route
+in order, so those two cannot leave their ends. The drop maths thinks in **insertion
+slots** clamped to `[1, len−1]`, and the blue drop indicator is drawn from the same
+clamped slot — so the gesture can never promise a drop the reorder will refuse.
+
+**Names are authored or derived, never blank.** `entryLabel` / `markLabel` prefer an
+authored `name` and otherwise derive one from what the thing *is* — "Start/finish
+pin", "Committee boat", "Leg 2 gate, left", "Leg 3: gate (round an end)",
+"Leg 1: round granite-isle". Clearing the text field deletes `name`, so the smart
+default comes straight back. Leg labels are keyed on the **leg number**, not on
+their marks: a gate's marks are themselves auto-named after their leg, so naming the
+leg after its marks said the same thing twice and wrapped to three lines.
+
+**Shared start/finish has no separate concept.** The route always ends with a
+`finish` entry (the validator enforces it); "shared" simply means that entry
+references the same two marks as the start, with its own `dir` — so the direction
+you cross still matters and is still authored. The ⇄ button repoints the entry and
+creates or drops a mark pair.
+
+Three traps this run:
+
+- **`.fixed` collides with Tailwind's `position: fixed` utility.** The pinned
+  start/finish rows were being taken out of flow and stacked on top of each other;
+  Playwright caught it as "row 0 intercepts pointer events" at row 1's centre, which
+  is a far better error message than the screenshot would have given. Renamed
+  `.pinned`. Any class name in this file has to be checked against Tailwind first.
+- **Selecting a row on `mousedown` kills the drag.** The re-render replaces the
+  element mid-gesture and `dragstart` never fires. Select on `click`; a completed
+  drag does not fire click, so the two never collide.
+- **A test hook that duplicates production logic tests nothing.** The first version
+  of the reorder test called an `_reorder(from, to)` hook — which passed while the
+  real handler was broken. Now the test does a real `dragTo` on the real rows, and
+  the drop point has to land in a row's *lower* half for "after it" to be tested at
+  all.
+
+### Phase 4d — Inventory vs ordering ✅ DONE
+
+The feedback that drove this: *"we need to be able to reuse marks and gates in a route
+list… then we shouldn't delete gates, marks in the route because that is just an
+ordering. The gates and marks are deleted on the map."* That is a data-model
+observation, and it was right.
+
+#### A LINE is a first-class object
+
+A route entry used to carry `marks: [i, j]` — indices into `course.marks`. Two things
+were impossible as a result:
+
+- **Deleting a mark renumbered every index after it**, so marks could not be deleted on
+  the map at all. (The reported bug — "deleting a gate keeps the end marks there" — was
+  this seen from the other end.)
+- **A gate had no identity.** It was a pair of indices that happened to appear in an
+  entry, so the same gate used twice was two unrelated entries that merely looked alike.
+
+So the document now holds `course.lines[]` — a named pair of marks, referenced by id —
+and a route entry is a *use* of one, carrying only what varies per use: `dir`, and
+`pass` (through / round an end). References are ids throughout: `lineId`, `markId`,
+`landId`. **The route is therefore purely an ordering**, which is what makes ✕ on a row
+mean "remove this leg" and nothing else.
+
+`VenueDoc.compile` resolves ids back to the indices the leg engine already reads
+(`marks: [i, j]`, `markIdx`), so **the runtime shape is unchanged** — all 40 golden
+traces stayed byte-identical through the whole refactor, including after the shipped
+document was rewritten on disk in the new form.
+
+`VenueDoc.migrate` converts the old form on load and is idempotent; `VenueDoc.get`
+migrates on the way out, so the game, the editor, the checks and the tests all see
+exactly one reference form. `eval/test_course_model.js` races a course that uses **one
+gate twice, crossed in opposite directions on consecutive legs** — the thing indices
+could not express — and asserts both uses register independently.
+
+#### Derived rather than stored
+
+- **`course.legs` is gone.** Every entry after the start ends a leg, so the count is
+  `route.length - 1`. Storing it as well meant two sources of truth a reorder could
+  separate.
+- **`course.type` is gone**, replaced by `course.description` — free text. Course type
+  was a switch between two hardcoded course shapes; a designed course does not need one.
+- **The time limit is measured from the ROUTE**: mark to mark, with a leg that nets
+  upwind costing ×1.45 because it cannot be sailed in a straight line. This replaces
+  `legs × legLength` (which only ever described a windward-leeward) *and* the
+  `islandRound` special case in `updateRace`, which was that same gap patched for one
+  venue. `compile` returns `sailedDist` and `cutoffAuto`; an authored `course.cutoff`
+  overrides both. **Glacier Sound's limit therefore moved 601 s → 508 s** and its
+  race-length warning went from 7:07 to 6:00 expected — the old number was an artifact
+  of applying the beat factor to both legs.
+- **`course.startTime`** authors the prestart (default 30 s). It goes through
+  `state.race.userStartTime` exactly as `userLegs` does, because the slider writes the
+  value out on one reset and reads it back on the next — the leak that hit `legLength`
+  and `totalLegs` before it.
+
+#### Deleting says what goes with it
+
+Deletion belongs to the inventory, in Marks & gates mode, on the map or in the list:
+
+- a **mark** takes its gates, and the legs that used them
+- a **gate** takes its two marks (they exist to *be* that gate) and its legs
+- a **start or finish mark refuses**, because no amount of undo makes a course with no
+  start line obvious
+
+Every case toasts what it removed. Hovering a mark, a gate or a route row highlights the
+geometry and names it on the map, which is the other half of the same problem: a list of
+three similar gates is a list of words until you can see which is which.
+
+#### Units, and the seed
+
+**Everything reads in metres.** 5 u = 1 m, 55 u = 11 m = a boat length (a J111, from the
+game's 165 u three-length RRS zone). World units survive only in the cursor HUD, where
+they are the coordinates a document stores. The check findings were converted too — and
+gaps that are really "can two boats pass?" now also read in hulls.
+
+**The Seed box is gone.** It only ever chose which random *ice layout* the preview showed
+— the game seeds that per race — so it was a property of the preview asking for a number
+whose meaning was never stated. It is now a **Reroll ice** button with a small layout
+number beside it.
+
+**The legend is derived** from what the document actually contains. A fixed list told you
+about white land and grey granite on a course that has neither, which is worse than no
+legend: it is a legend for a different map.
+
+#### Water & current
+
+Water itself is not an editable object — it is wherever land and the arena are not. What
+*is* authorable is what the water does, and that is regions, so the mode hosts the first
+of them: **current**. Same construction as wind regions (polygon, smoothstep edge,
+additive, zero RNG draws) but the quantity is a **flow** — an absolute direction and
+speed — because a patch of water either has a stream running through it or it does not.
+Summed as vectors on top of whatever ambient current the venue already has, so two
+overlapping streams give a resultant. `getCurrentAt` gained the summation and
+`ambientCurrentAt` was split out of it; the river field is now the ambient term rather
+than a competing branch. The field preview skips land.
+
+#### Four bugs found in the process
+
+- **The Checks tab blanked the page.** Two independent tab groups both used `.tab`, and
+  the view switcher was bound to all of them: clicking a *pane* tab read an undefined
+  `dataset.view` and hid both views. Scoped to `.tab[data-view]`.
+- **A check that stops running reads as a pass.** The editor passed `VenueCheck.run` a
+  hand-built `compiled` object with only the fields it knew about, so when the
+  race-length check started reading `sailedDist` it silently vanished — 11 ok, no
+  warning, nothing to see. It now passes the real `compile()` output.
+- **`sailedDist` measured the wrong array**: the document's route, whose entries have no
+  resolved marks (resolution happens on the compiled copies). It came out 0, which is
+  what made the check disappear rather than warn.
+- **`.fixed` collides with Tailwind's `position: fixed`** — see Phase 4c.
+
+### Phase 4e — Separating what was fused ✅ DONE
+
+Six items of feedback, and five of them were the same shape: two things that had been
+treated as one.
+
+#### A rounding mark is not the island it stands on
+
+`{kind: 'round', landId: 'granite-isle'}` made the mark *be* the island's centroid, so
+dragging the rounding handle translated the whole landmass and the island could not be
+moved without moving the course. A rounding now names a **MARK**, always; migration lays
+one at the island's centroid and carries `radius` (what the mark is standing at, which is
+what floors the zone). The island goes back to being ordinary land — `deleteSelectedShape`
+no longer has to refuse, because nothing in the route points at land any more.
+
+Which land is being rounded is now **discovered** by the checks — the shape the mark
+stands on, or the nearest one inside its zone — rather than declared. That generalises:
+the clearance check now also fires for a buoy laid next to a shoal.
+
+#### Route mode orders; Marks & gates mode edits
+
+The rounding centre and ring are *handles*, so they only exist in the mode that owns the
+geometry. In Route mode the map is an index you point at: clicking a gate or mark adds a
+leg that uses it, and nothing there can move or reshape anything.
+
+#### There is no base wind
+
+A region states the wind **there** — an absolute mean direction, and optionally an
+absolute speed — and "the wind is the same everywhere" is one region over the whole map,
+which is exactly what an authored base direction meant. So that is what it migrates into,
+and `wind.baseDirection` is gone from documents.
+
+**Overlaps AVERAGE, they do not sum.** This was the user's correction and it is the right
+one: summing deltas meant building a curving breeze out of two regions also doubled its
+strength through the overlap, so every curve came with a squall attached and the only
+remedy was to author compensating lulls. The blend is a partition of unity — each region
+contributes its falloff intensity as a *weight*, and whatever weight is left over goes to
+the venue's own wind — so edges still fade smoothly, full coverage means the regions decide
+entirely, and nothing anywhere can exceed the strongest thing blowing. Direction averages
+as unit vectors and speed as a scalar, deliberately: averaging full velocity vectors makes
+two opposed regions cancel to a calm, which is a convergence nobody asked for when all they
+wanted was a bend.
+
+Two properties keep it faithful. **The day's shift rides on top** of every region's mean,
+or a course fully covered by regions would never see a wind shift at all. And **an absent
+speed means "whatever the venue is doing here"**, which is what preserves race-to-race
+variety on a course that only authors direction — and is why migrating Glacier Sound to
+one whole-map region left **all 20 traces byte-identical**.
+
+`windBase`, the one direction the rest of the game needs a single answer for (laylines,
+whether a leg nets upwind, the start-line orientation check), is now derived: the
+region-weighted mean at the middle of the course.
+
+#### Hand-placed ice
+
+`doc.ice[]` holds authored outlines. Drag in Ice mode to place one — the drag sets its
+size, the outline comes from the game's own floe generator so authored ice is shaped by
+the same harmonics as the scattered kind — and `scatter` drops several inside the drag,
+spaced apart, which is how density gets authored. Click to select, drag to move, Delete to
+remove, and reshape vertex by vertex in Vertices mode.
+
+**Position and shape are authored; drift, spin and wander are drawn from the race RNG**,
+which is what the user asked for: a designed ice field that still plays out differently
+every time. `makeFloe` gained an `artOverride` parameter and nothing else changed.
+`seeded.ice` is now a checkbox, so a venue can have hand-placed ice only.
+
+#### Water is not an object; its colour is
+
+There is nothing to edit about water itself — it is wherever land and the arena are not.
+What *is* authorable is how it looks, so `doc.palette` overrides the venue's water colours
+and the swatches show whatever is in force.
+
+#### Snapping, and a panel that stopped shouting
+
+Dragging a vertex to exactly the x or y of the one next to it is something people do
+constantly and cannot do by hand, so within 7 *screen* pixels of a ring neighbour's axis it
+snaps, per axis, with a guide line drawn along the axis being held. Multi-vertex drags do
+not snap, because "which of the six is aligned with what" has no useful answer.
+
+The vertex-selection panel now lives in Vertices mode, and appears in Arena / Wind / Water
+only once something is actually selected.
+
+### Phase 4f — The time limit, measured honestly ✅ DONE
+
+The user's diagnosis was exactly right: *"the derived time limit is wrong because it is
+probably using straight line route completion instead of path finding and almost certainly
+doesn't take wind into account."* Both halves were true.
+
+**Distance.** `SailCheck.routeEstimate` measures the hull-width path — the same grid the
+sailability check drives a boat along — so the distance being priced is a distance that has
+been proven sailable. On Glacier Sound the sailable path is **1.9–2.1× the straight line**,
+because the direct line from the start to the island crosses a coast. The old figure was
+measuring a route no boat can take.
+
+**Speed.** Each hop is priced by the game's own J111 polar: the best VMG toward that hop's
+bearing, maximised over true wind angle, which is what tacking upwind and gybing downwind
+actually cost. Per hop, not per leg — a single end-to-end bearing priced the arctic beat as
+a broad reach, because the rounding arc leaves the boat on the far side of the island.
+
+Knots become world units per second from two facts in `script.js` rather than a fudge:
+`boat.speed` is units per *frame* at 60 fps, and `boatKnots = boat.speed * 4`, so
+units/s = knots × 15. (Getting this wrong first time made the estimate 4× too slow, which
+is how the anchor came to be checked at all.)
+
+Result for Glacier Sound: **5.6 km of sailable path, best ~3:20, fleet ~4:30 — in the
+3–5 minute band.** The course was never too long; the old formula's "7:07, 40% too long"
+was measuring the wrong thing twice over.
+
+**Where each number lives.** The honest estimate needs a nav grid and a BFS per leg
+(42 ms), so it lives in the editor, which reports it and offers a button that writes it
+into `course.cutoff`. The engine keeps a deliberately generous straight-line fallback for
+documents that have not been through the editor — and a check now says so out loud, with
+the number to set. Pricing the *straight line* with the polar was tried and rejected: it
+looks more rigorous and is worse, because it would have DNF'd the fleet at 2:12 on a course
+whose path is twice as long. The old beat factor was accidentally covering for the detour.
+
+#### Bugs found on the way
+
+- **A read that writes.** `dice()` and `dlines()` created `doc.ice = []` / `course.lines = []`
+  on access, so merely *looking* at a pristine document marked it unsaved. Third instance
+  of this exact bug (after `windRefresh`), now split into read-only and writer accessors.
+- **A check that vanished** rather than warning — see Phase 4d; the second-order cause was
+  `sailedDist` measuring the document's route instead of the compiled one.
+- **The scale-map test asserted a verdict, not a mechanism.** It required "out of band
+  before, in band after scaling to 60%", which inverted once the measurement got honest.
+  It now asserts the *relationship* — 60% of the geometry is ~40% less race — which is what
+  the tool actually guarantees.
+
+### Phase 4g — Contextual venue objects, and things you can see ✅ DONE
+
+Twelve items of feedback. Several were the same complaint from different angles: the
+editor was telling you *about* things instead of *showing* them.
+
+#### Ice belongs to the venue, not to a tool
+
+Ice mode became **Venue** mode, whose panel is contextual: it reads the venue's effect
+flags and shows only what that venue has. Glacier Sound gets the ice section because its
+`fx.ice` is set; a venue without it gets told there is nothing venue-specific to place.
+The next venue-specific object drops into the same frame instead of needing its own mode.
+
+**Random ice is gone from designed venues.** Where the ice is, is a design decision, and
+scattering it per race made the one thing a designer most wants to place the one thing they
+could not. `_bake_ice.js` captured the layout the generator was already producing — 54
+floes, 781 vertices — and wrote it into the document, so Glacier Sound keeps the look it
+had and every floe is now draggable. The generator still serves the nine randomized venues,
+which have no document to author. **This changed arctic's behaviour** (its RNG stream no
+longer spends draws on placement) and the traces were re-recorded; every other venue stayed
+byte-identical.
+
+Ice vertices are now editable — they were *listed* as selectable but never hit-tested, so
+they could be marquee-selected and not dragged. Placement also refuses to put a floe on
+land: the scatter retries, and places fewer rather than placing them badly.
+
+#### A boat, to scale
+
+"Does this fit?" is the question a course designer asks most, and metres in your head is a
+poor way to answer it. Measure mode can now drop a **J111 at true size** (55 × 17 world
+units) — drag the hull to move it, drag the ring at its bow to turn it, with the
+three-length RRS zone drawn as a dashed circle because that is what a rounding has to
+accommodate. Below ~14 screen pixels it draws a locator instead: the point is to zoom in
+and look, and you cannot zoom to something you cannot find. The panel reads out its
+heading against the wind, and says when it is inside the no-go zone.
+
+#### Marks: what is actually on the water
+
+A mark can now carry **nothing**. An island rounding or a transit is a *position*, so the
+race marks it with a pulsing ring-and-cross indicator instead of planting an orange
+inflatable in the middle of a rock — which is exactly what Glacier Sound was doing, and it
+now uses `kind: 'none'`. A yellow can is drawn as a drum rather than reusing the cone
+sprite.
+
+Two related bugs fell out. `drawMarkBodies` skipped every mark past the first two on an
+island course — a leftover from the placeholder-marks era that was hiding the rounding mark
+itself. And the marks list showed `inf` for every mark, which read as an ID; it now says
+"orange buoy", "yellow can", "no buoy".
+
+The rename fields say what they do: the label above shows the name in force and whether it
+is *automatic* or *renamed*, and the empty box's placeholder repeats that name — so "what
+goes in this field" answers itself, and clearing it visibly returns to the default.
+
+#### One crossing at a time
+
+A shared start/finish line is crossed in both directions, so drawing every entry's arrow at
+once put a saltire on the line and said nothing about which crossing you were looking at.
+Hovering or selecting a route row now draws **only that leg's** arrow, enlarged, labelled
+`START` / `FINISH` / `THROUGH` / `IN, THEN ROUND AN END`, and suppresses its twin's.
+
+The net-direction ↑↓ indicator is gone — it was derived correctly and communicated nothing.
+
+#### Everything else
+
+- **Land shapes → Land**, and leaving the mode clears its selection. A shape left selected
+  kept its inspector populated and its outline lit while you edited something else.
+- **A dragged rounding mark takes its zone and arrow with it.** The circle was drawn from
+  the compiled course, which only updates on commit, so it stayed behind mid-drag.
+- **Route mode cannot create geometry.** The "New gate" / "New rounding" shortcuts are gone;
+  marks and gates are made in their own mode and the Route panel only orders what exists.
+  It says so when there is nothing to add.
+- **The water preview is real water.** A 230 × 104 canvas driven by the game's own
+  `WaterRenderer` — ripple lattice, caustics, depth ramp — animating only while the Water
+  panel is open. Four swatches cannot tell you what water will look like, because the
+  colours tint each other.
+
+#### The check that vanished, again
+
+Baking the ice emptied the editor's generated-floe list, and the ice checks — which guard
+on `floes.length` — **fell silent rather than checking the 54 floes actually in the
+course.** Third instance of this exact failure in one session. Two fixes: the editor passes
+every floe (authored included), and the check now reports "no ice on this venue" instead of
+skipping. A check that stops running reads as a pass.
 
 ### Phase 5 — Props
 The runtime prop system does not exist (`grep -c "placedProps\|propPlacement"` = 0),

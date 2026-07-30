@@ -7,10 +7,15 @@
     "test:venue": "node regatta/eval/test_venuedoc.js",
     "check:venues": "node regatta/eval/check_venues.js",
     "test:editor": "node regatta/eval/test_editor.js",
-    "test": "node regatta/eval/test_arena.js && node regatta/eval/test_venuedoc.js && node regatta/eval/test_editor.js && node regatta/eval/test_render.js && node regatta/eval/test_boundary_race.js && node regatta/eval/check_venues.js",
+    "test": "node regatta/eval/test_arena.js && node regatta/eval/test_venuedoc.js && node regatta/eval/test_course_model.js && node regatta/eval/test_route.js && node regatta/eval/test_gates.js && node regatta/eval/test_wind.js && node regatta/eval/test_sailable.js && node regatta/eval/test_editor.js && node regatta/eval/test_render.js && node regatta/eval/test_boundary_race.js && node regatta/eval/check_venues.js",
     "test:arena": "node regatta/eval/test_arena.js",
     "test:render": "node regatta/eval/test_render.js",
-    "test:boundary": "node regatta/eval/test_boundary_race.js"
+    "test:boundary": "node regatta/eval/test_boundary_race.js",
+    "test:route": "node regatta/eval/test_route.js",
+    "test:sailable": "node regatta/eval/test_sailable.js",
+    "test:wind": "node regatta/eval/test_wind.js",
+    "test:gates": "node regatta/eval/test_gates.js",
+    "test:model": "node regatta/eval/test_course_model.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

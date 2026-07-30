@@ -482,9 +482,13 @@
                 let rule18Applies = true;
 
                 if (oppositeTacks) {
-                    // Beats to windward: odd legs (1, 3) and leg 0 (start)
-                    const b1OnBeat = !!(window.Course && window.Course.legIsBeat(b1.raceState.leg));
-                    const b2OnBeat = !!(window.Course && window.Course.legIsBeat(b2.raceState.leg));
+                    // RRS 18.1(a): rule 18 does not apply "between boats on opposite
+                    // tacks on a BEAT TO WINDWARD". That is each boat's point of sail,
+                    // not a property of the leg — a boat beats, reaches and runs within
+                    // one leg — so it is asked of the boats.
+                    const C = window.Course;
+                    const b1OnBeat = !!(C && C.isBeating(b1));
+                    const b2OnBeat = !!(C && C.isBeating(b2));
                     if (b1OnBeat || b2OnBeat) {
                         rule18Applies = false; // 18.1(a) exception
                     }

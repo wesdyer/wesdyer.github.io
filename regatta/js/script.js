@@ -2114,8 +2114,12 @@ function applyVenuePalette(venueKey) {
             shorelineColor: window.WATER_CONFIG.shorelineColor
         };
     }
+    // A venue DOCUMENT may override the water colours. Water is not an editable object —
+    // it is wherever land and the arena are not — so what there is to author about it is
+    // how it looks, and that belongs with the rest of the venue's design.
+    const docPal = (window.VenueDoc && window.VenueDoc.get(venueKey) || {}).palette;
     const venuePal = VENUES[venueKey] && VENUES[venueKey].palette;
-    const pal = venuePal || DEFAULT_WATER_PALETTE;
+    const pal = Object.assign({}, DEFAULT_WATER_PALETTE, venuePal || {}, docPal || {});
     const { gusts, ...waterPal } = pal;
     Object.assign(window.WATER_CONFIG, waterPal);
     activeGustColors = (venuePal && venuePal.gusts) || DEFAULT_GUST_COLORS;
@@ -2216,7 +2220,9 @@ function getVenueSpeedFactor(boat, effectiveWind) {
 // along the course axis — strongest midstream, dying (and slightly reversing
 // as a counter-eddy) at the banks. Classic river tactics: ride the middle
 // when it helps, hug the bank when it hurts.
-function getCurrentAt(x, y) {
+// The AMBIENT current: a river venue's spatial field, or the uniform drift the player
+// set. Split out so authored regions can add to whichever it is instead of replacing it.
+function ambientCurrentAt(x, y) {
     const rc = state.race.riverCurrent;
     if (rc) {
         const lat = (x - rc.cx) * rc.rx + (y - rc.cy) * rc.ry; // cross-track distance
@@ -2238,6 +2244,44 @@ function getCurrentAt(x, y) {
         };
     }
     return state.race.conditions.current;
+}
+
+function getCurrentAt(x, y) {
+    const base = ambientCurrentAt(x, y);
+    // AUTHORED CURRENT REGIONS. Same construction as wind regions — polygon, soft edge,
+    // additive — but the quantity is a FLOW rather than a modifier: a patch of water
+    // either has a stream running through it or it does not, so a region carries an
+    // absolute direction and speed. Summed as VECTORS on top of the ambient current, so
+    // two overlapping streams produce a resultant instead of one of them winning.
+    //
+    // Touches no RNG (state.time only), so a current region cannot move the eval anchor.
+    const creg = state.course.currentRegions;
+    if (!creg || !creg.length) return base;
+
+    let cx = 0, cy = 0, touched = false;
+    if (base && base.speed > 0) {
+        cx = Math.sin(base.direction) * base.speed;
+        cy = -Math.cos(base.direction) * base.speed;
+    }
+    for (const r of creg) {
+        const bb = r.bb;
+        if (x < bb.minX - 1 || x > bb.maxX + 1 || y < bb.minY - 1 || y > bb.maxY + 1) continue;
+        const sd = Arena.signedDist(r, x, y);
+        if (sd <= 0) continue;
+        // Smoothstep in from the edge, exactly as wind regions do: the polygon is where
+        // the stream ENDS and it reaches full strength `falloff` inside.
+        const t = Math.min(1, sd / r.falloff);
+        const intensity = t * t * (3 - 2 * t);
+        if (intensity <= 0) continue;
+        const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
+        const dir = r.direction + r.dirVar * osc;
+        const spd = Math.max(0, r.speed + r.speedVar * osc) * intensity;
+        cx += Math.sin(dir) * spd;
+        cy += -Math.cos(dir) * spd;
+        touched = true;
+    }
+    if (!touched) return base;
+    return { speed: Math.hypot(cx, cy), direction: Math.atan2(cx, -cy) };
 }
 
 // River banks: chains of grassy islands lining both sides of the course.
@@ -2705,7 +2749,9 @@ function generateIceFloes(rng) {
             const r = i < bergN ? 260 + rng() * 130
                     : i < midN  ? 140 + rng() * 100
                     : 55 + rng() * 85;
-            const _sp = Arena.sample(boundary, rng, 300);
+            // Scenery extent, not the arena: bergs outside the sailing limit are the
+            // point — they stop the world looking like it ends at an invisible wall.
+            const _sp = Arena.sample(state.course.scenery || boundary, rng, 300);
             const cx = _sp.x, cy = _sp.y;
 
             let ok = inGlacierWater(cx, cy, r + 60);   // never inside the ice sheet
@@ -2863,12 +2909,16 @@ function convexHullOf(pts) {
     return lower.concat(upper);
 }
 
-function makeFloe(cx, cy, r, rng) {
+// `artOverride` is an AUTHORED outline in local coordinates — hand-placed ice from a
+// venue document, where the shape is designed rather than generated. Everything else
+// still comes from the race RNG, so an authored floe has a designed position and shape
+// but a fresh drift, spin and wander every race.
+function makeFloe(cx, cy, r, rng, artOverride) {
     // The drawn outline may be deeply concave; the COLLIDER is its convex hull,
     // because satPolygonPolygon assumes convexity — feed it a bayed polygon and
     // boats "hit" open water inside the bay. Hulling outward is the safe error:
     // a boat may stop a little short of a cleft, but never sails through ice.
-    const localArt = makeFloeOutline(r, rng);
+    const localArt = artOverride || makeFloeOutline(r, rng);
     const localHull = convexHullOf(localArt);
     const localVeg = localArt.map(p => ({ x: p.x * 0.7, y: p.y * 0.7 }));
     // World-space mirrors; syncFloe rebuilds these from the local shape each frame
@@ -3177,7 +3227,7 @@ function generateBrash(rng) {
             bx = sh.ux * a + sh.rx * lat;
             by = sh.uy * a + sh.ry * lat;
         } else {
-            const _sp = Arena.sample(boundary, rng, 0);
+            const _sp = Arena.sample(state.course.scenery || boundary, rng, 0);
             bx = _sp.x; by = _sp.y;
         }
         if (!inGlacierWater(bx, by, 40)) continue;   // never on the ice sheet
@@ -3406,7 +3456,8 @@ function updateIceFloes(dt) {
             const dir = d + bi.skew;
             bi.x += -Math.sin(dir) * base * bi.driftFactor * dt;
             bi.y += Math.cos(dir) * base * bi.driftFactor * dt;
-            const gone = Arena.signedDist(boundary, bi.x, bi.y) < -100
+            const _scn = state.course.scenery || boundary;
+            const gone = Arena.signedDist(_scn, bi.x, bi.y) < -100
                       || !inGlacierWater(bi.x, bi.y, -30);   // drifted onto the sheet
             if (gone) {
                 const sh = state.course.glacierShore;
@@ -3420,7 +3471,7 @@ function updateIceFloes(dt) {
                     bi.y = sh.uy * a + sh.ry * lat;
                 } else {
                     const ang = d + (Math.random() - 0.5) * 2.0;
-                    const _rp = Arena.rimPoint(boundary, ang, 150);
+                    const _rp = Arena.rimPoint(state.course.scenery || boundary, ang, 150);
                     bi.x = _rp.x; bi.y = _rp.y;
                 }
             }
@@ -3448,9 +3499,10 @@ function updateIceFloes(dt) {
         // normal) instead of teleport-respawning.
         // Keep half a floe-radius of clearance from the edge, whatever shape it is.
         const _inset = isl.radius * 0.5;
-        const _sd = Arena.signedDist(boundary, isl.x, isl.y);
+        const _scn2 = state.course.scenery || boundary;
+        const _sd = Arena.signedDist(_scn2, isl.x, isl.y);
         if (_sd < _inset) {
-            const n = Arena.outward(boundary, isl.x, isl.y);
+            const n = Arena.outward(_scn2, isl.x, isl.y);
             const dot = isl.driftVx * n.x + isl.driftVy * n.y;
             if (dot > 0) {
                 isl.driftVx -= 2 * dot * n.x;
@@ -3519,7 +3571,7 @@ function updateIceFloes(dt) {
         }
         if (!stuck) continue;
         for (let tries = 0; tries < 24; tries++) {
-            const _sp = Arena.sample(boundary, Math.random, 400);
+            const _sp = Arena.sample(state.course.scenery || boundary, Math.random, 400);
             const nx2 = _sp.x, ny2 = _sp.y;
             if (!inMaskWater(nx2, ny2, f.radius + 120)) continue;
             moveFloe(f, nx2 - f.x, ny2 - f.y);
@@ -4375,6 +4427,12 @@ class Boat {
         this.raceState = {
             leg: 0,
             isRounding: false,
+            // Swept-angle rounding progress. Declared here rather than created on
+            // first use so it always EXISTS — the golden traces hash the fields a
+            // boat has at race start, so a field created mid-race is never observed.
+            roundSweep: 0,
+            roundWrong: 0,
+            roundArmed: false,
             isTacking: false, // Rule 13
             inZone: false,
             zoneEnterTime: 0,
@@ -4848,9 +4906,73 @@ function getWindAt(x, y) {
     const baseSpeed = state.wind.speed;
     const baseDir = state.wind.direction;
 
+    // ── Wind regions ────────────────────────────────────────────────────────
+    // A region states the wind THERE — an absolute mean direction and (optionally) an
+    // absolute speed — and overlapping regions are AVERAGED, not summed.
+    //
+    // Averaging is the whole point. Summing deltas meant that building a curving breeze
+    // out of two regions also doubled its strength through the overlap, so every curve
+    // came with a squall attached and the only way to avoid it was to author
+    // compensating lulls. Averaged, two 12-knot regions 40 degrees apart give 12 knots
+    // at 20 degrees, which is what a curving wind actually is.
+    //
+    // The blend is a partition of unity: each region contributes its falloff intensity
+    // as a WEIGHT, and whatever weight is left over (1 - the sum, floored at zero) goes
+    // to the venue's own wind. So a region's edge still fades smoothly into its
+    // surroundings, full coverage means the regions decide entirely, and nothing
+    // anywhere can exceed the strongest thing blowing.
+    //
+    // Direction averages as unit vectors and speed as a scalar, deliberately: averaging
+    // full velocity vectors makes two opposed regions cancel to a calm, which is a
+    // convergence nobody asked for when all they wanted was a bend.
+    let dir = baseDir, spd = baseSpeed;
+    const wregions = state.course.windRegions;
+    if (wregions && wregions.length) {
+        // The venue's live shift — oscillation, persistent shift — is a property of the
+        // DAY, not of the patch of water, so it rides on top of every region's mean.
+        // Without this a region would freeze the wind it covers, and a course fully
+        // covered by regions would never see a shift at all.
+        const liveShift = baseDir - state.wind.baseDirection;
+        let wsum = 0, ux = 0, uy = 0, sacc = 0;
+        for (const r of wregions) {
+            const bb = r.bb;
+            if (x < bb.minX - 1 || x > bb.maxX + 1 || y < bb.minY - 1 || y > bb.maxY + 1) continue;
+            const sd = Arena.signedDist(r, x, y);
+            if (sd <= 0) continue;
+            // Smoothstep in from the edge: the polygon is where the region ENDS, and it
+            // reaches full weight `falloff` inside. A region narrower than twice its
+            // falloff never reaches full weight, which is honest and visible in the
+            // editor's field preview.
+            const t = Math.min(1, sd / r.falloff);
+            const w = t * t * (3 - 2 * t);
+            if (w <= 0) continue;
+            // Mean plus an oscillation with an explicit time scale. state.time is
+            // deterministic and no RNG is touched, so regions cannot shift the seeded
+            // stream.
+            const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
+            const rd = r.direction + r.dirVar * osc + liveShift;
+            // An absent speed means "whatever the venue is doing here", which is what
+            // keeps race-to-race variety on a course that only authors direction.
+            const rs = Math.max(0, (r.speed != null ? r.speed : baseSpeed) + r.speedVar * osc);
+            ux += Math.sin(rd) * w; uy += -Math.cos(rd) * w;
+            sacc += rs * w;
+            wsum += w;
+        }
+        if (wsum > 0) {
+            const wBase = Math.max(0, 1 - wsum);
+            if (wBase > 0) {
+                ux += Math.sin(baseDir) * wBase; uy += -Math.cos(baseDir) * wBase;
+                sacc += baseSpeed * wBase;
+            }
+            const total = wsum + wBase;
+            dir = Math.atan2(ux, -uy);
+            spd = sacc / total;
+        }
+    }
+
     // Convert to vector
-    let sumWx = Math.sin(baseDir) * baseSpeed;
-    let sumWy = -Math.cos(baseDir) * baseSpeed;
+    let sumWx = Math.sin(dir) * spd;
+    let sumWy = -Math.cos(dir) * spd;
 
     for (const g of state.gusts) {
         const dx = x - g.x;
@@ -4868,8 +4990,9 @@ function getWindAt(x, y) {
 
             if (intensity > 0) {
                  const gSpeed = g.speedDelta * intensity;
-                 // Local direction inside puff
-                 const gwDir = baseDir + g.dirDelta;
+                 // Local direction inside the puff, relative to the wind HERE — which is
+                 // the region-blended direction, so a gust crossing a bend bends with it.
+                 const gwDir = dir + g.dirDelta;
 
                  // Add puff vector
                  // Note: gSpeed can be negative (lull)
@@ -5443,15 +5566,33 @@ function updateCourseConfig() {
         initCourse();
     }
     if (UI.confCourseLegs) {
-        state.race.totalLegs = parseInt(UI.confCourseLegs.value);
+        state.race.userLegs = parseInt(UI.confCourseLegs.value);
+        // A designed course's route defines its legs, so the slider does not apply
+        // there. Applying it anyway would desync totalLegs from the route length and the
+        // race would finish on the wrong leg.
+        if (!state.course || !state.course.doc) state.race.totalLegs = state.race.userLegs;
         if (UI.valCourseLegs) UI.valCourseLegs.textContent = state.race.totalLegs;
-        // The route is a table keyed by leg, so a leg-count change must rebuild
-        // it. Only the route — calling initCourse() here would regenerate the
-        // islands too, which is not what moving this slider means.
-        if (state.course) state.course.route = buildRoute(state.course.type, state.race.totalLegs);
+        // Rebuild the leg table only for GENERATED courses. A document venue's route
+        // is AUTHORED, and regenerating it from buildRoute() discards its roundings'
+        // resolved marks — which is exactly what happened: setupPreRaceOverlay calls
+        // this on every resetGame, so Glacier Sound raced a route whose rounding had
+        // no mark and could never be completed. Latent until the leg engine started
+        // actually reading the route.
+        //
+        // Only the route is rebuilt either way; calling initCourse() here would
+        // regenerate the islands too, which is not what moving this slider means.
+        if (state.course && !state.course.doc) {
+            state.course.route = buildRoute(state.course.type, state.race.totalLegs);
+        }
     }
     if (UI.confCourseTimer) {
-        state.race.startTimerDuration = parseInt(UI.confCourseTimer.value);
+        // Same shape as userLegs: the slider is the PLAYER's preference, and a designed
+        // course's authored start time wins over it. Writing the slider straight into
+        // startTimerDuration is how legLength and totalLegs both leaked between venues —
+        // the value goes out to the UI on one reset and comes back in on the next.
+        state.race.userStartTime = parseInt(UI.confCourseTimer.value);
+        const authored = state.course && state.course.doc && state.course.startTime != null;
+        if (!authored) state.race.startTimerDuration = state.race.userStartTime;
         if (UI.valCourseTimer) UI.valCourseTimer.textContent = state.race.startTimerDuration + "s";
     }
 }
@@ -6115,7 +6256,10 @@ function setupPreRaceOverlay() {
     // Course Defaults
     // 4000 units / 5 = 800m
     if (UI.confCourseDist) UI.confCourseDist.value = state.race.legLength / 5;
-    if (UI.confCourseLegs) UI.confCourseLegs.value = state.race.totalLegs;
+    // The player's preference, NOT state.race.totalLegs. Writing the current course's
+    // leg count into the slider laundered Glacier Sound's 2 legs through the UI, and the
+    // next resetGame read it straight back — so every later venue raced 2 laps.
+    if (UI.confCourseLegs) UI.confCourseLegs.value = state.race.userLegs || state.race.totalLegs || 4;
     if (UI.confCourseTimer) UI.confCourseTimer.value = state.race.startTimerDuration;
 
     updateCurrentUI();
@@ -7514,125 +7658,149 @@ function updateBoatRaceState(boat, dt) {
         };
     }
 
-    // ISLAND-ROUNDING COURSE (Glacier Sound): start line -> one rounding of the
-    // granite mountain, leaving it to STARBOARD -> back across the same line.
+
+    // ─── LEG PROGRESSION ────────────────────────────────────────────────────
+    // ONE walker over the route. Each entry says how its leg ends:
     //
-    // A rounding is not a gate crossing, so it is measured as swept angle: track
-    // the boat's bearing FROM the mark and accumulate the signed change while it
-    // is inside the zone. A legal rounding sweeps ~180 degrees the correct way.
+    //   kind 'line',  role 'start'  — cross once in `dir` (and OCS before the gun)
+    //   kind 'line',  finish        — cross once in `dir`
+    //   kind 'gate'                 — cross in, then back out past an end
+    //   kind 'round'                — sweep ~180 degrees about a mark, correct side
+    //
+    // Gates and island roundings used to be two hardcoded course types. A gate leg
+    // is ALREADY a rounding (cross in, leave round an end), so the only genuinely
+    // new primitive here is the swept-angle test — which is why one walker can now
+    // race a route mixing lines, gates and roundings in any order.
+    const _entry = routeLeg(boat.raceState.leg);
+
+    // Shared, so a rounding and a gate cannot drift apart in what they record. The
+    // two old branches each had their own copy and already disagreed: the island
+    // course pushed a leg split unconditionally and emitted no `leg_complete` at the
+    // finish; the W/L path did the opposite.
+    const advanceLeg = () => {
+        const rs = boat.raceState;
+        rs.leg++;
+        if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: rs.leg - 1, time: state.race.timer });
+        rs.isRounding = false;
+        rs.roundSweep = 0;
+        rs.roundWrong = 0;
+        rs.roundArmed = false;
+        rs._wrongRound = false;
+        const split = state.race.timer - rs.legStartTime;
+        rs.lastLegDuration = split;
+        if (rs.leg > 1) rs.legTimes.push(split);
+        rs.legSplitTimer = 5.0;
+        rs.legStartTime = state.race.timer;
+
+        if (rs.leg > state.race.totalLegs) {
+            rs.finished = true;
+            rs.finishTime = state.race.timer;
+            // Un-taken penalty turns convert to time at the finish.
+            if (rs.penalty) rs.finishTime += 15 * Math.max(1, rs.penaltyTurnsOwed);
+            if (window.onRaceEvent) window.onRaceEvent('finish', { boat, time: rs.finishTime });
+            // Was hardcoded `leg: 4`, which is wrong on any course that is not four
+            // legs. The trace's leg field is cosmetic, so this is unobserved by the
+            // golden traces — noted rather than relied upon.
+            rs.trace.push({ x: boat.x, y: boat.y, leg: rs.leg });
+            if (boat.isPlayer) {
+                showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
+                Sound.playFinish();
+                if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            } else {
+                Sayings.queueQuote(boat, "finished_race");
+            }
+        } else if (boat.isPlayer) {
+            Sound.playGateClear();
+            Sound.updateMusic();
+        } else {
+            Sayings.queueQuote(boat, "rounded_mark");
+        }
+    };
+
+    // ROUNDING leg: swept bearing angle about a mark, not a line crossing.
     //
     // Sign convention, derived rather than guessed. Heading h gives forward
-    // (sin h, -cos h) on this y-down canvas, so starboard is (cos h, sin h).
-    // Mark to starboard means (C-P).(cos h, sin h) > 0, i.e. r.(cos h, sin h) < 0
-    // for r = P-C. The bearing rate is (r x v)/|r|^2 and
-    // r x v = -(rx*cos h + ry*sin h) > 0. So LEAVING THE MARK TO STARBOARD MEANS
-    // THE BEARING ANGLE INCREASES — accumulate positive.
-    if (state.course.type === 'islandRound' && marks && marks.length >= 2) {
+    // (sin h, -cos h) on this y-down canvas, so starboard is (cos h, sin h). Mark to
+    // starboard means r.(cos h, sin h) < 0 for r = P-C, and the bearing rate is
+    // (r x v)/|r|^2 with r x v = -(rx cos h + ry sin h) > 0. So LEAVING THE MARK TO
+    // STARBOARD MEANS THE BEARING ANGLE INCREASES — accumulate positive, and flip
+    // the sign for a port rounding.
+    if (_entry && _entry.kind === 'round' && _entry.mark
+        && state.race.status === 'racing' && !boat.raceState.finished) {
         const rs = boat.raceState;
-        const rm = state.course.roundMark;
-        const m1 = marks[0], m2 = marks[1];
-        const intersect = checkLineIntersection(rs.lastPos.x, rs.lastPos.y, boat.x, boat.y, m1.x, m1.y, m2.x, m2.y);
-        let crossingDir = 0;
-        if (intersect) {
-            const nx = m2.y - m1.y, ny = -(m2.x - m1.x);
-            crossingDir = ((boat.x - rs.lastPos.x) * nx + (boat.y - rs.lastPos.y) * ny) > 0 ? 1 : -1;
+        const rm = _entry.mark;
+        const sgn = (rm.side === 'port') ? -1 : 1;
+        const rx1 = boat.x - rm.x, ry1 = boat.y - rm.y;
+        const d2 = rx1 * rx1 + ry1 * ry1;
+
+        // TWO separate requirements, which were previously one:
+        //
+        //   1. You must PASS the mark — come within its zone at least once. That is
+        //      what proves you rounded this mark rather than something else.
+        //   2. You must go ROUND it — sweep the bearing the correct way while it is the
+        //      active mark.
+        //
+        // Sweep used to accumulate only while inside the zone, so a WIDE rounding
+        // accumulated nothing and never registered, even though the boat had plainly
+        // gone round. Now the zone arms it and the sweep counts out to a generous
+        // radius, bounded so a boat cannot "round" a mark by circling half a mile away.
+        //
+        // Note the sweep is only ever read for its SIGN — see the completion test
+        // below for why a magnitude threshold cannot work.
+        if (d2 < rm.zone * rm.zone) rs.roundArmed = true;
+        const activeR = rm.zone * ROUND_ACTIVE;
+        const d2prev = (rs.lastPos.x - rm.x) ** 2 + (rs.lastPos.y - rm.y) ** 2;
+        if (rs.roundArmed && d2 < activeR * activeR) {
+            const rx0 = rs.lastPos.x - rm.x, ry0 = rs.lastPos.y - rm.y;
+            let dA = Math.atan2(ry1, rx1) - Math.atan2(ry0, rx0);
+            while (dA > Math.PI) dA -= Math.PI * 2;
+            while (dA < -Math.PI) dA += Math.PI * 2;
+            // Wrong-way travel gets its OWN accumulator, so the warning and the side
+            // judgement cannot eat each other.
+            const prog = dA * sgn;
+            // NET signed sweep, not a magnitude race. What matters is which SIDE the
+            // mark was left on, and the sign carries that. It is not clamped at zero:
+            // a wrong-way excursion must be able to cancel, or you could bank credit
+            // one way and then pass on the wrong side.
+            rs.roundSweep = (rs.roundSweep || 0) + prog;
+            if (prog < 0) rs.roundWrong = (rs.roundWrong || 0) - prog;
+            if (rs.roundWrong > Math.PI * 0.55 && boat.isPlayer && !rs._wrongRound) {
+                rs._wrongRound = true;
+                showRaceMessage(`WRONG WAY ROUND — LEAVE IT TO ${String(rm.side).toUpperCase()}`,
+                                "text-orange-500", "border-orange-500/50");
+                setTimeout(hideRaceMessage, 2500);
+            }
         }
 
-        if (state.race.status === 'prestart') {
-            if (intersect && crossingDir === 1) {
-                rs.ocs = true;
-                if (boat.isPlayer) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
-            } else if (intersect) {
-                rs.ocs = false;
-                if (boat.isPlayer) hideRaceMessage();
-            }
-        } else if (state.race.status === 'racing' && !rs.finished) {
-            // Leg 0 -> 1: start
-            if (rs.leg === 0 && intersect) {
-                if (crossingDir === 1 && !rs.ocs) {
-                    rs.leg = 1;
-                    rs.roundSweep = 0;
-                    rs.roundArmed = false;
-                    if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 0, time: state.race.timer });
-                    if (boat.isPlayer) { Sound.playGateClear(); Sound.updateMusic(); }
-                    rs.startTimeDisplay = state.race.timer;
-                    rs.startTimeDisplayTimer = 5.0;
-                    rs.startLegDuration = state.race.timer;
-                    rs.legStartTime = state.race.timer;
-                } else if (crossingDir === -1) {
-                    rs.ocs = false;
-                    if (boat.isPlayer) hideRaceMessage();
-                }
-            }
-
-            // Leg 1: sweep the mark
-            if (rs.leg === 1 && rm) {
-                const rx0 = rs.lastPos.x - rm.x, ry0 = rs.lastPos.y - rm.y;
-                const rx1 = boat.x - rm.x, ry1 = boat.y - rm.y;
-                const inZone = (rx1 * rx1 + ry1 * ry1) < rm.zone * rm.zone;
-                if (inZone) {
-                    rs.roundArmed = true;
-                    let dA = Math.atan2(ry1, rx1) - Math.atan2(ry0, rx0);
-                    while (dA > Math.PI) dA -= Math.PI * 2;
-                    while (dA < -Math.PI) dA += Math.PI * 2;
-                    rs.roundSweep = (rs.roundSweep || 0) + dA;
-                    // 160 degrees rather than a strict 180: the mark has real
-                    // width, so a clean rounding that starts and ends slightly
-                    // wide of the zone sweeps a little under half a turn.
-                    if (rs.roundSweep > Math.PI * 0.89) {
-                        rs.leg = 2;
-                        rs.isRounding = false;
-                        const split = state.race.timer - rs.legStartTime;
-                        rs.lastLegDuration = split;
-                        rs.legTimes.push(split);
-                        rs.legSplitTimer = 5.0;
-                        rs.legStartTime = state.race.timer;
-                        if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 1, time: state.race.timer });
-                        if (boat.isPlayer) { Sound.playGateClear(); Sound.updateMusic(); }
-                        else Sayings.queueQuote(boat, "rounded_mark");
-                    } else if (rs.roundSweep < -Math.PI * 0.55 && boat.isPlayer && !rs._wrongRound) {
-                        rs._wrongRound = true;
-                        showRaceMessage("WRONG WAY ROUND — LEAVE IT TO STARBOARD", "text-orange-500", "border-orange-500/50");
-                        setTimeout(hideRaceMessage, 2500);
-                    }
-                }
-            }
-
-            // Leg 2 -> finish: back across the line, the other way
-            if (rs.leg === 2 && intersect) {
-                if (crossingDir === -1) {
-                    rs.leg = 3;
-                    rs.finished = true;
-                    rs.finishTime = state.race.timer;
-                    if (rs.penalty) rs.finishTime += 15 * Math.max(1, rs.penaltyTurnsOwed);
-                    const split = state.race.timer - rs.legStartTime;
-                    rs.legTimes.push(split);
-                    if (window.onRaceEvent) window.onRaceEvent('finish', { boat, time: rs.finishTime });
-                    if (boat.isPlayer) {
-                        showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
-                        Sound.playFinish();
-                        if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                    } else {
-                        Sayings.queueQuote(boat, "finished_race");
-                    }
-                } else if (boat.isPlayer) {
-                    showRaceMessage("ROUND THE MOUNTAIN FIRST", "text-orange-500", "border-orange-500/50");
-                    setTimeout(hideRaceMessage, 2000);
-                }
-            }
+        // COMPLETION ON DEPARTURE, not on a sweep threshold.
+        //
+        // A fixed threshold (this was 160 degrees) is wrong in general. Sailing in a
+        // straight line PAST a mark sweeps ~180 degrees by itself, so the threshold was
+        // not measuring "went round" — it was accidentally measuring "passed close".
+        // And the sweep a real rounding needs depends on where the NEXT mark is: an
+        // out-and-back needs ~180, a triangle corner might need 60. No single number
+        // can serve both.
+        //
+        // The actual racing rule is "leave the mark on the required side", so that is
+        // what this tests. Proximity is the zone; the SIDE is the sign of the net
+        // sweep; and the leg completes when the boat has passed the mark and is
+        // leaving. The small minimum only rejects degenerate cases — a boat nudging
+        // the zone edge and retreating has not passed anything.
+        if (rs.roundArmed && d2 > (rm.zone * 1.25) ** 2 && d2 > d2prev
+            && (rs.roundSweep || 0) > Math.PI / 4) {
+            advanceLeg();
         }
-        return;   // caller stores lastPos
     }
 
-    // Crossing Logic
-    // Same logic as before, applied to boat.raceState
-    if (marks && marks.length >= 4) {
+    // CROSSING legs: lines and gates. Guarded on >= 2 marks, not >= 4 — a course
+    // with one line and a rounding has exactly two.
+    if (marks && marks.length >= 2) {
         // Which gate this leg is sailed TO, and which way it must be crossed.
         // From the route table rather than leg parity, so a course that is not a
         // windward-leeward can express itself.
         let gateIndices = [];
         let requiredDirection = 1;
-        const legEntry = routeLeg(boat.raceState.leg);
+        const legEntry = _entry;
 
         if (boat.raceState.leg <= state.race.totalLegs && legEntry && legEntry.marks) {
             gateIndices = legEntry.marks;
@@ -7663,10 +7831,13 @@ function updateBoatRaceState(boat, dt) {
                         }
                     }
                 } else if (state.race.status === 'racing' && !boat.raceState.finished) {
-                    if (boat.raceState.leg === 0) {
-                        if (crossingDir === 1) {
+                    if (legEntry.role === 'start') {
+                        if (crossingDir === requiredDirection) {
                             if (!boat.raceState.ocs) {
                                 boat.raceState.leg++;
+                                boat.raceState.roundSweep = 0;
+                                boat.raceState.roundWrong = 0;
+                                boat.raceState.roundArmed = false;
                                 if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 0, time: state.race.timer });
                                 if (boat.isPlayer) {
                                     Sound.playGateClear();
@@ -7686,44 +7857,13 @@ function updateBoatRaceState(boat, dt) {
                         }
                     } else {
                         // Normal Legs
-                         const completeLeg = () => {
-                            boat.raceState.leg++;
-                            if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: boat.raceState.leg - 1, time: state.race.timer });
-                            boat.raceState.isRounding = false;
-                            const split = state.race.timer - boat.raceState.legStartTime;
-                            boat.raceState.lastLegDuration = split;
-                            if (boat.raceState.leg > 1) boat.raceState.legTimes.push(split);
-                            boat.raceState.legSplitTimer = 5.0;
-                            boat.raceState.legStartTime = state.race.timer;
 
-                            if (boat.raceState.leg > state.race.totalLegs) {
-                                boat.raceState.finished = true;
-                                boat.raceState.finishTime = state.race.timer;
-                                if (boat.raceState.penalty) {
-                                    // Un-taken penalty turns convert to time at the finish.
-                                    boat.raceState.finishTime += 15 * Math.max(1, boat.raceState.penaltyTurnsOwed);
-                                }
-                                if (window.onRaceEvent) window.onRaceEvent('finish', { boat, time: boat.raceState.finishTime });
-                                boat.raceState.trace.push({ x: boat.x, y: boat.y, leg: 4 });
-                                if (boat.isPlayer) {
-                                    showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
-                                    Sound.playFinish();
-                                    if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                                } else {
-                                    Sayings.queueQuote(boat, "finished_race");
-                                }
-                            } else {
-                                if (boat.isPlayer) {
-                                    Sound.playGateClear();
-                                    Sound.updateMusic();
-                                } else {
-                                    Sayings.queueQuote(boat, "rounded_mark");
-                                }
-                            }
-                        };
-
-                        if (boat.raceState.leg === state.race.totalLegs) {
-                            if (crossingDir === requiredDirection) completeLeg();
+                        // A gate is either sailed THROUGH (crossing it completes the
+                        // leg, like a finish line) or ROUNDED (cross in, then leave
+                        // round an end). Absent `pass` means round, which is what a
+                        // windward-leeward gate has always done.
+                        if (legEntry.finish || legEntry.pass === 'through') {
+                            if (crossingDir === requiredDirection) advanceLeg();
                             else if (boat.isPlayer) { showRaceMessage("WRONG WAY!", "text-orange-500", "border-orange-500/50"); setTimeout(hideRaceMessage, 2000); }
                         } else {
                             if (!boat.raceState.isRounding) {
@@ -7742,38 +7882,6 @@ function updateBoatRaceState(boat, dt) {
 
             // Extensions Logic
             if (boat.raceState.isRounding && state.race.status === 'racing') {
-                 const completeLeg = () => {
-                    boat.raceState.leg++;
-                    if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: boat.raceState.leg - 1, time: state.race.timer });
-                    boat.raceState.isRounding = false;
-                    const split = state.race.timer - boat.raceState.legStartTime;
-                    boat.raceState.lastLegDuration = split;
-                    if (boat.raceState.leg > 1) boat.raceState.legTimes.push(split);
-                    boat.raceState.legSplitTimer = 5.0;
-                    boat.raceState.legStartTime = state.race.timer;
-                    if (boat.raceState.leg > state.race.totalLegs) {
-                        boat.raceState.finished = true;
-                        boat.raceState.finishTime = state.race.timer;
-                        if (boat.raceState.penalty) {
-                            // Un-taken penalty turns convert to time at the finish.
-                            boat.raceState.finishTime += 15 * Math.max(1, boat.raceState.penaltyTurnsOwed);
-                        }
-                        if (boat.isPlayer) {
-                            showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
-                            Sound.playFinish();
-                            if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                        } else {
-                            Sayings.queueQuote(boat, "finished_race");
-                        }
-                    } else {
-                        if (boat.isPlayer) {
-                            Sound.playGateClear();
-                            Sound.updateMusic();
-                        } else {
-                            Sayings.queueQuote(boat, "rounded_mark");
-                        }
-                    }
-                };
 
                 const gDx = m2.x - m1.x, gDy = m2.y - m1.y;
                 const len = Math.sqrt(gDx*gDx + gDy*gDy);
@@ -7791,7 +7899,7 @@ function updateBoatRaceState(boat, dt) {
 
                 const dirL = checkExt(m1.x, m1.y, m1.x - ux * extLen, m1.y - uy * extLen);
                 const dirR = checkExt(m2.x, m2.y, m2.x + ux * extLen, m2.y + uy * extLen);
-                if (dirL === -requiredDirection || dirR === -requiredDirection) completeLeg();
+                if (dirL === -requiredDirection || dirR === -requiredDirection) advanceLeg();
             }
         }
     }
@@ -8218,18 +8326,13 @@ function update(dt) {
         // Calculate Cutoff Time (0.1875s per meter)
         // legLength is in units. 5 units = 1 meter.
         let totalDistMeters = (state.race.totalLegs * state.race.legLength) / 5;
-        // The island course does not use legLength: its two legs run to the
-        // rounding mark and back, and one of them is a beat, which costs ~1.4x
-        // the rhumb line in sailed distance plus the rounding itself. Computing
-        // the cutoff from legLength force-finished every boat at 300s with the
-        // fleet still spread across legs 0-2.
-        if (state.course.type === 'islandRound' && state.course.roundMark) {
-            const m0 = state.course.marks[0], m1 = state.course.marks[1];
-            const sx = (m0.x + m1.x) / 2, sy = (m0.y + m1.y) / 2;
-            const legU = Math.hypot(state.course.roundMark.x - sx, state.course.roundMark.y - sy);
-            totalDistMeters = (legU * 2 * 1.45) / 5;
-        }
-        const cutoffTime = totalDistMeters * 0.1875;
+        // A designed course carries its own limit — authored, or derived from the route
+        // by VenueDoc.compile. `legs × legLength` only ever described a
+        // windward-leeward; the island special case that used to live here was that
+        // same gap patched for one venue, and it did not generalise to a course with
+        // gates in it.
+        const cutoffTime = (state.course.cutoff != null)
+            ? state.course.cutoff : totalDistMeters * 0.1875;
 
         if (state.race.timer >= cutoffTime) { // Dynamic Cutoff
             state.race.status = 'finished';
@@ -8959,7 +9062,7 @@ function drawLadderLines(ctx) {
     // by whether this leg is sailed up or down.
     const dnPair = (routeLeg(0) && routeLeg(0).marks) || [0, 1];
     const upPair = (routeLeg(1) && routeLeg(1).marks) || [2, 3];
-    const goingUp = legIsBeat(player.raceState.leg);
+    const goingUp = legGoesUpwind(player.raceState.leg);
     const nextPair = goingUp ? upPair : dnPair;
     const prevPair = goingUp ? dnPair : upPair;
     let prevIndex = prevPair[0];
@@ -9081,7 +9184,7 @@ function drawLayLines(ctx) {
     }
 
     let targets = legMarks(player.raceState.leg) || [0, 1];
-    const isUpwind = legIsBeat(player.raceState.leg);
+    const isUpwind = legGoesUpwind(player.raceState.leg);
     const zoneRadius = (player.raceState.leg === 0 || player.raceState.leg === state.race.totalLegs) ? 0 : 165;
 
     ctx.save(); ctx.lineWidth = 5.5;
@@ -9108,6 +9211,27 @@ function drawMarkZones(ctx) {
     if (!state.showNavAids || state.race.status === 'finished') return;
     const player = state.boats[0];
     let active = [];
+
+    // MARKS WITH NO BUOY. A rounding laid on an island, or a transit — there is nothing
+    // physically there, so the indicator IS the mark: a ring and a cross, pulsing gently
+    // so it reads as course information rather than as scenery.
+    for (const m of state.course.marks) {
+        if (m.kind !== 'none') continue;
+        const pulse = 1 + Math.sin(state.time * 2.2 + m.x * 0.01) * 0.06;
+        ctx.save();
+        ctx.translate(m.x, m.y);
+        ctx.strokeStyle = `rgba(${NAV_RGB}, 0.75)`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(0, 0, 22 * pulse, 0, Math.PI * 2); ctx.stroke();
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(-30, 0); ctx.lineTo(-12, 0);
+        ctx.moveTo(12, 0);  ctx.lineTo(30, 0);
+        ctx.moveTo(0, -30); ctx.lineTo(0, -12);
+        ctx.moveTo(0, 12);  ctx.lineTo(0, 30);
+        ctx.stroke();
+        ctx.restore();
+    }
 
     // Island course: ONE zone circle around the rounding mark. Marks 2/3 are
     // parked beside the granite island for code that indexes them, and drawing
@@ -9423,6 +9547,7 @@ function drawIslandShadows(ctx) {
 
 function drawMarkShadows(ctx) {
     for (const m of state.course.marks) {
+        if (m.kind === 'none') continue;          // nothing there to cast one
         ctx.save(); ctx.translate(m.x, m.y);
         // Sized to the mark's VISIBLE width (~29px at W=30), so it reads as a contact
         // shadow rather than a disc sticking out from under it. Cosmetic only.
@@ -9436,11 +9561,16 @@ function drawMarkBodies(ctx) {
     // The sprite is fill-normalized at ingest (fillTo 0.96), so W is very close to the
     // mark's real drawn width — ~29px here. Cosmetic only: markRadius (12) is unchanged.
     const W = 30, H = W * (markImg.naturalHeight / (markImg.naturalWidth || 1)) || 26;
-    // The island course uses only the start/finish line; marks 2 and 3 exist
-    // in the array (lots of code indexes them) but are not part of the course.
-    const markCount = state.course.type === 'islandRound' ? 2 : state.course.marks.length;
-    for (let i=0; i<markCount; i++) {
+    // EVERY mark in the array is part of the course. This used to skip all but the
+    // first two on an island course, because `islandRound` parked two placeholder
+    // marks that were not real — they are long gone, and the skip was hiding the
+    // rounding mark itself once roundings became ordinary marks.
+    for (let i = 0; i < state.course.marks.length; i++) {
         const m = state.course.marks[i];
+        // A mark with no buoy is a POSITION — an island you round, a transit — so it
+        // gets an indicator rather than a sprite. Drawn in drawMarkZones, which already
+        // owns the "here is what the course asks of you" layer.
+        if (m.kind === 'none') continue;
         ctx.save(); ctx.translate(m.x, m.y);
         // Very subtle bob: slow breathing scale + faint rotation wobble, phased
         // per mark by position (deterministic — no RNG in the render path)
@@ -9457,7 +9587,17 @@ function drawMarkBodies(ctx) {
             if (act.indexOf(i) !== -1) active = true;
         }
 
-        if (markImg.complete && markImg.naturalWidth) {
+        if (m.kind === 'can') {
+            // A yellow drum, not an inflatable: drawn rather than sprited, since it is a
+            // cylinder and the sprite is a cone.
+            const w = 19, h = 24;
+            ctx.fillStyle = active ? '#facc15' : '#a1a1aa';
+            ctx.fillRect(-w / 2, -h / 2, w, h);
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            ctx.fillRect(-w / 2, -h / 2 + h * 0.62, w, h * 0.16);
+            ctx.strokeStyle = 'rgba(0,0,0,0.35)'; ctx.lineWidth = 1.5;
+            ctx.strokeRect(-w / 2, -h / 2, w, h);
+        } else if (markImg.complete && markImg.naturalWidth) {
             const img = active ? markImg : (getMarkImgGray() || markImg);
             if (!active) ctx.globalAlpha = 0.92;
             ctx.drawImage(img, -W / 2, -H / 2, W, H);
@@ -11206,6 +11346,11 @@ function checkCourseNavigability(islands, marks) {
 }
 
 // Boat hull half-width for coarse collision against concave mask coastlines.
+// How far out a rounding still counts, as a multiple of the mark's zone. The zone is
+// the pass-within distance; this is the go-round-it distance. Generous enough that a
+// wide, seamanlike rounding registers, bounded so circling far away does not.
+const ROUND_ACTIVE = 2.5;
+
 const HULL_R = 30;
 
 // Circle vs (possibly concave, possibly keyholed) polygon. Returns the same
@@ -11827,9 +11972,9 @@ function drawSwell(ctx) {
 function buildRoute(type, totalLegs) {
     const route = [];
     if (type === 'islandRound') {
-        route.push({ kind: 'line',  marks: [0, 1], dir: +1, beat: true,  role: 'start' });
-        route.push({ kind: 'round', side: 'starboard',      beat: true,  role: 'rounding' });
-        route.push({ kind: 'line',  marks: [0, 1], dir: -1, beat: false, role: 'finish', finish: true });
+        route.push({ kind: 'line',  marks: [0, 1], dir: +1, role: 'start' });
+        route.push({ kind: 'round', side: 'starboard',      role: 'rounding' });
+        route.push({ kind: 'line',  marks: [0, 1], dir: -1, role: 'finish', finish: true });
         return route;
     }
     // Windward-leeward. Leg 0 is the start (up through the line); odd legs beat
@@ -11840,12 +11985,10 @@ function buildRoute(type, totalLegs) {
     // old formula happily answered for any leg. Generating the tail keeps those
     // answers identical instead of relying on a fallback.
     for (let leg = 0; leg <= totalLegs + 1; leg++) {
-        const beat = (leg % 2 !== 0) || leg === 0;
         route.push({
             kind: leg === 0 ? 'line' : 'gate',
             marks: (leg % 2 !== 0) ? [2, 3] : [0, 1],
             dir: (leg === 0 || leg % 2 !== 0) ? +1 : -1,
-            beat,
             role: leg === 0 ? 'start' : (leg % 2 !== 0 ? 'windward' : 'leeward'),
             finish: leg === totalLegs
         });
@@ -11858,7 +12001,54 @@ const routeLeg  = (leg) => (state.course && state.course.route) ? (state.course.
 const legMarks  = (leg) => { const r = routeLeg(leg); return (r && r.marks) ? r.marks : null; };
 const legDir    = (leg) => { const r = routeLeg(leg); return r ? r.dir : 1; };
 // Is this leg sailed upwind? Leg 0 counts: the start is a beat to the line.
-const legIsBeat = (leg) => { const r = routeLeg(leg); return r ? !!r.beat : false; };
+// Where a leg is sailed TO: a gate/line midpoint, or a rounding mark.
+function legTargetPoint(leg) {
+    const r = routeLeg(leg);
+    if (!r) return null;
+    if (r.kind === 'round') return r.mark ? { x: r.mark.x, y: r.mark.y } : null;
+    return legMid(leg);
+}
+
+// Does this leg's NET DIRECTION go upwind? A geometric fact about the course, derived
+// from the mean wind — used for drawing laylines and mark zones, which need to know
+// which way along the course axis a leg runs.
+//
+// This is NOT "the boat is beating". A boat beats, reaches and runs WITHIN a single leg
+// depending on its actual heading; point of sail belongs to the boat, not the leg. See
+// pointOfSail() below, which is what the rules and the character stats want.
+//
+// It used to be an authored `beat` flag, which is a fact that can disagree with the
+// course — and silently did: Glacier Sound's rounding leg was marked `beat: true` while
+// its wind points AWAY from the island, making that leg a run.
+const legGoesUpwind = (leg) => {
+    const to = legTargetPoint(leg);
+    if (!to) return false;
+    let dx, dy;
+    const r = routeLeg(leg);
+    if (leg === 0 || !legTargetPoint(leg - 1)) {
+        // No previous leg to come from, so travel is the crossing direction itself:
+        // the gate normal n = (dy, -dx) times the required crossing sign.
+        const idx = legMarks(leg);
+        if (!idx || !state.course.marks) return false;
+        const a = state.course.marks[idx[0]], b = state.course.marks[idx[1]];
+        if (!a || !b) return false;
+        const sgn = (r && r.dir) || 1;
+        dx = (b.y - a.y) * sgn; dy = -(b.x - a.x) * sgn;
+    } else {
+        const from = legTargetPoint(leg - 1);
+        dx = to.x - from.x; dy = to.y - from.y;
+    }
+    if (!dx && !dy) return false;
+    // heading convention: forward = (sin h, -cos h); the wind direction is the heading
+    // that points dead upwind, so TWA = windDir - heading.
+    //
+    // BASE direction, not the live one. Whether a leg is a beat is a property of the
+    // course and the mean wind, not of the momentary shift — using the oscillating
+    // `wind.direction` made the answer flicker frame to frame on any leg lying near 90
+    // degrees to the breeze, which showed up immediately in the 6-leg traces.
+    const heading = Math.atan2(dx, -dy);
+    return Math.abs(normalizeAngle(state.wind.baseDirection - heading)) < Math.PI / 2;
+};
 // The finish is simply the last route entry's gate.
 const finishMarks = () => legMarks(state.race.totalLegs);
 
@@ -11889,9 +12079,21 @@ function courseAxis() {
     return { start: a, windward: b, dx, dy, len, ux: dx / len, uy: dy / len };
 }
 
-// Does this leg's target gate sit at the windward end? Distinct from legIsBeat:
-// leg 0 is sailed upwind but targets the START line, so it is a beat that is not
-// heading for the windward gate.
+// A BOAT's point of sail, right now. Close-hauled up to 60 degrees off the true wind,
+// reaching to 120, running beyond — the conventional split, and the one the character
+// stats (upwind / reach / downwind) are written against.
+//
+// This is the question RRS 18.1(a) actually asks ("boats on opposite tacks on a beat to
+// windward"), and the question a character's beat/run strength applies to. It uses the
+// LIVE wind, because a boat's point of sail genuinely changes with every shift.
+function pointOfSail(boat) {
+    const twa = Math.abs(normalizeAngle(state.wind.direction - boat.heading));
+    return twa < Math.PI / 3 ? 'beat' : twa < Math.PI * 2 / 3 ? 'reach' : 'run';
+}
+
+// Does this leg's target gate sit at the windward end? Distinct from legGoesUpwind:
+// leg 0 runs upwind but targets the START line, so its net direction is upwind while it
+// is not heading for the windward gate.
 const legTargetsWindward = (leg) => (routeLeg(leg) || {}).role === 'windward';
 
 // rules.js is loaded BEFORE script.js but runs after it, so these reach it via a
@@ -11899,7 +12101,9 @@ const legTargetsWindward = (leg) => (routeLeg(leg) || {}).role === 'windward';
 window.Course = {
     routeLeg: (l) => routeLeg(l),
     legMarks: (l) => legMarks(l),
-    legIsBeat: (l) => legIsBeat(l),
+    legGoesUpwind: (l) => legGoesUpwind(l),
+    pointOfSail: (b) => pointOfSail(b),
+    isBeating: (b) => pointOfSail(b) === 'beat',
     legTargetsWindward: (l) => legTargetsWindward(l),
     windwardMarks: () => {
         const r = state.course && state.course.route && state.course.route[1];
@@ -11956,6 +12160,20 @@ function initCourse() {
         // world, and reasoning from it silently broke floe placement, collision and
         // wind shadow on three separate occasions.
         state.course.landShapes = c.islands;
+        // Where SCENERY lives, as opposed to where boats may sail. Drifting ice is
+        // placed and kept inside this, not inside the arena.
+        state.course.scenery = c.scenery;
+        state.course.windRegions = c.windRegions;
+        state.course.currentRegions = c.currentRegions;
+        // Timing is authored per venue when the document says so. Absent means the
+        // game's own default, so a document that says nothing races as it always did.
+        state.course.startTime = c.startTime;
+        state.race.startTimerDuration = (c.startTime != null)
+            ? c.startTime : (state.race.userStartTime || 30.0);
+        // An authored limit wins; otherwise the one derived from the route. Either way a
+        // designed course gets a limit measured from the course, not from legLength.
+        state.course.cutoff = (c.cutoff != null) ? c.cutoff : c.cutoffAuto;
+        state.course.description = c.description;
         state.course.weeds = null;
         state.course.riverShore = null;
         state.course.glacierShore = null;
@@ -11963,12 +12181,39 @@ function initCourse() {
         state.course.calving = null;
         state.race.riverCurrent = null;
         state.course.roundMark = c.roundMark;
+        // HAND-PLACED ICE. Position and shape are authored; drift velocity, spin and
+        // wander are drawn from the race RNG, so the layout is yours and every race
+        // still plays out differently. Added BEFORE the generator so generated floes
+        // reject candidates that would land on top of authored ones.
+        const fxI = state.race.venueFx;
+        if (c.ice && c.ice.length) {
+            const rngI = state.race.seed ? mulberry32(state.race.seed + 11) : Math.random;
+            const authored = c.ice.map(f => {
+                const floe = makeFloe(f.x, f.y, f.r, rngI, f.local.map(p => ({ x: p.x, y: p.y })));
+                floe.authored = true;
+                floe.id = f.id;
+                return floe;
+            });
+            for (const f of authored) if (fxI && fxI.ice) populateFloeColony(f, rngI);
+            state.course.islands = state.course.islands.concat(authored);
+        }
+        // NO RANDOM ICE on a designed venue. Where the ice is, is a design decision, and
+        // scattering it per race made the one thing a designer most wants to place the one
+        // thing they could not. `doc.ice` is the answer; the generator still serves the
+        // nine randomized venues, which have no document to author.
         const fx0 = state.race.venueFx;
-        if (fx0 && fx0.ice && c.seeded.ice) {
+        if (fx0 && fx0.ice) {
             const rngM = state.race.seed ? mulberry32(state.race.seed + 7) : Math.random;
-            state.course.islands = c.islands.concat(generateIceFloes(rngM));
-            state.course.navIslands = state.course.islands.filter(i => !i.isBank);
             state.course.brash = generateBrash(rngM);
+        }
+        if (state.course.islands.length !== c.islands.length) {
+            // Pathfinding skips scenery a boat can never reach. Ice beyond the arena
+            // exists to be looked at; feeding it to the A* visibility graph is pure
+            // cost, and every extra node multiplies expansion (the river's ~86 bank
+            // islands once caused multi-hundred-ms replan spikes).
+            const b0 = state.course.boundary;
+            state.course.navIslands = state.course.islands.filter(i =>
+                !i.isBank && Arena.signedDist(b0, i.x, i.y) > -(i.radius + 120));
         }
         return;
     }
@@ -11995,6 +12240,7 @@ function initCourse() {
     // is an island, so it is held on state.course.roundMark instead.
     state.course.type = (state.race.venueFx && state.race.venueFx.islandCourse) ? 'islandRound' : 'wl';
     state.course.roundMark = null;
+    state.race.totalLegs = state.race.userLegs || 4;
     if (state.course.type === 'islandRound') state.race.totalLegs = 2;
     state.course.route = buildRoute(state.course.type, state.race.totalLegs);
 
@@ -12151,8 +12397,12 @@ function resetGame() {
     // Defaults for Race Config (can be overridden by UI)
     // Preserve existing config if set, otherwise use defaults
     state.race.legLength = state.race.legLength || 4000;
-    state.race.totalLegs = state.race.totalLegs || 4;
-    state.race.startTimerDuration = state.race.startTimerDuration || 30.0;
+    // The player's lap count is a SETTING; a designed course's leg count is a property
+    // of the course. Keeping them in one field meant racing Glacier Sound (2 legs) left
+    // every later venue on 2 laps instead of 4 — the same shape of leak as legLength.
+    state.race.userLegs = state.race.userLegs || state.race.totalLegs || 4;
+    state.race.totalLegs = state.race.userLegs;
+    state.race.startTimerDuration = state.race.userStartTime || 30.0;
 
     state.race.timer = state.race.startTimerDuration;
 

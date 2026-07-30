@@ -52,7 +52,12 @@ const check = (name, cond, detail) => {
             resetGame();
             startRace();
 
+            // BOATS are bounded by the arena. LAND and DRIFTING ICE are scenery and
+            // deliberately extend past it, so they are checked against the scenery
+            // extent instead — ice confined to the sailing limit is what made the
+            // world look like it stopped at an invisible wall.
             const b = state.course.boundary;
+            const scn = state.course.scenery || b;
             let worstBoat = 0, worstFloe = 0, boatSamples = 0, floeSamples = 0;
             for (let i = 0; i < 5400; i++) {          // 30s prestart + 60s racing
                 update(1 / 60);
@@ -65,21 +70,24 @@ const check = (name, cond, detail) => {
                 for (const f of (state.course.islands || [])) {
                     if (f.fromMask) continue;            // authored land, not drift
                     floeSamples++;
-                    const sd = window.Arena.signedDist(b, f.x, f.y);
+                    const sd = window.Arena.signedDist(scn, f.x, f.y);
                     if (sd < worstFloe) worstFloe = sd;
                 }
             }
             // Ice placement at generation time, before any drift.
             const placed = (state.course.islands || []).filter(f => !f.fromMask);
-            const outsideAtBirth = placed.filter(f => window.Arena.signedDist(b, f.x, f.y) < -f.radius).length;
+            const outsideAtBirth = placed.filter(f => window.Arena.signedDist(scn, f.x, f.y) < -f.radius).length;
+            const asScenery = placed.filter(f => window.Arena.signedDist(b, f.x, f.y) < 0).length;
 
             return {
                 poly: b.poly ? b.poly.length : 0,
                 worstBoat, worstFloe, boatSamples, floeSamples,
                 floes: placed.length, outsideAtBirth,
                 brash: (state.course.brash || []).length,
+                asScenery,
                 brashOutside: (state.course.brash || [])
-                    .filter(x => window.Arena.signedDist(b, x.x, x.y) < -200).length
+                    .filter(x => window.Arena.signedDist(scn, x.x, x.y) < -200).length,
+                sceneryPoly: state.course.scenery ? state.course.scenery.poly.length : 0
             };
         }, shape);
         await page.close();
@@ -96,14 +104,18 @@ const check = (name, cond, detail) => {
         // overshoot within a frame but no more.
         check('boats stay inside', out.worstBoat > -60,
               `worst ${out.worstBoat.toFixed(2)}u over ${out.boatSamples} samples`);
-        check('ice is placed inside', out.outsideAtBirth === 0,
-              `${out.outsideAtBirth} of ${out.floes} floes born outside`);
-        // Floes drift and are bounced back, so they may briefly graze the edge.
-        check('drifting ice is kept inside', out.worstFloe > -400,
+        check('ice is placed inside the SCENERY extent', out.outsideAtBirth === 0,
+              `${out.outsideAtBirth} of ${out.floes} floes born outside scenery`);
+        // Floes drift and are bounced back at the scenery edge, so they may graze it.
+        check('drifting ice is kept inside the scenery extent', out.worstFloe > -400,
               `worst ${out.worstFloe.toFixed(2)}u over ${out.floeSamples} samples`);
-        check('brash stays inside', out.brashOutside === 0,
-              `${out.brashOutside} of ${out.brash} brash outside`);
-        console.log(`         ${out.floes} floes, ${out.brash} brash; worst boat ${out.worstBoat.toFixed(1)}u, worst floe ${out.worstFloe.toFixed(1)}u`);
+        check('brash stays inside the scenery extent', out.brashOutside === 0,
+              `${out.brashOutside} of ${out.brash} brash outside scenery`);
+        // The whole point: some ice is BEYOND the sailing limit, as scenery.
+        check('some ice sits beyond the sailing limit, as scenery', out.asScenery > 0,
+              `${out.asScenery} of ${out.floes}`);
+        console.log(`         ${out.floes} floes (${out.asScenery} beyond the arena as scenery), ${out.brash} brash;`
+                  + ` worst boat ${out.worstBoat.toFixed(1)}u, worst floe ${out.worstFloe.toFixed(1)}u`);
     }
 
     await browser.close();

@@ -49,7 +49,9 @@ require(DOC);
 new Function('window', fs.readFileSync(path.join(ROOT, 'regatta/js/arena.js'), 'utf8'))(global.window);
 new Function('window', fs.readFileSync(path.join(ROOT, 'regatta/js/venuedoc.js'), 'utf8'))(global.window);
 const V = global.window.VenueDoc;
-const doc = global.window.VENUE_DOC.holetest;
+// get() migrates on the way out, which is how every consumer sees a document — so the
+// test reads it the same way rather than validating a form nothing actually loads.
+const doc = V.migrate(global.window.VENUE_DOC.holetest);
 
 console.log('\nhole detection');
 const withHole = doc.land.filter(l => l.holes.length);
@@ -92,12 +94,21 @@ check('escaped hole vertex', mutate(d => { d.land.find(l => l.holes.length).hole
       .some(p => /not contained/.test(p.msg)));
 check('duplicate land id', mutate(d => { d.land[1].id = d.land[0].id; })
       .some(p => /duplicate land id/.test(p.msg)));
-check('rounding references unknown land', mutate(d => { d.course.route[1].landId = 'nope'; })
-      .some(p => /unknown land/.test(p.msg)));
+check('rounding references a missing mark', mutate(d => { d.course.route[1].markId = 'nope'; })
+      .some(p => /missing mark/.test(p.msg)));
+check('a rounding that still names land is rejected',
+      mutate(d => { d.course.route[1].landId = 'granite-isle'; })
+      .some(p => /names a MARK/.test(p.msg)));
 check('bad rounding side', mutate(d => { d.course.route[1].side = 'sideways'; })
       .some(p => /side/.test(p.msg)));
-check('route mark out of range', mutate(d => { d.course.route[0].marks = [0, 7]; })
+check('line references a missing mark', mutate(d => { d.course.lines[0].marks[1] = 'nope'; })
       .some(p => /missing mark/.test(p.msg)));
+check('leg references a missing line', mutate(d => { d.course.route[0].lineId = 'nope'; })
+      .some(p => /unusable line/.test(p.msg)));
+check('a line with the same mark at both ends', mutate(d => { d.course.lines[0].marks[1] = d.course.lines[0].marks[0]; })
+      .some(p => /same mark/.test(p.msg)));
+check('duplicate mark id', mutate(d => { d.course.marks[1].id = d.course.marks[0].id; })
+      .some(p => /duplicate mark id/.test(p.msg)));
 check('degenerate outer ring', mutate(d => { d.land[0].outer = [[0, 0], [1, 0]]; })
       .some(p => />= 3 points/.test(p.msg)));
 check('wrong schema', mutate(d => { d.schema = 99; }).some(p => /schema/.test(p.msg)));
@@ -112,12 +123,56 @@ console.log('\ncompile carries holes to the runtime island');
 const c = V.compile(doc);
 check('compiled island keeps its hole', c.islands.some(i => (i.holes || []).length === 1));
 check('granite island gets facets', (c.islands.find(i => i.isRock) || {}).facets !== undefined);
-check('rounding resolves to the granite shape',
-      c.roundMark && c.roundMark.landId === 'granite-isle');
+// The rounding is a MARK now. What it stands on is discovered by the checks, not declared
+// by the route — so what compile must get right is the mark and its size.
+check('rounding resolves to its mark', c.roundMark && c.roundMark.markIdx != null,
+      JSON.stringify(c.roundMark && { markIdx: c.roundMark.markIdx, radius: c.roundMark.radius }));
+check('the rounding mark sits on the granite island', (() => {
+    const g = doc.land.find(l => l.cls === 'granite');
+    return g && c.roundMark && Math.hypot(c.roundMark.x - g.c[0], c.roundMark.y - g.c[1]) < 1;
+})());
+check('the rounding zone captures the island it stands on', (() => {
+    const g = doc.land.find(l => l.cls === 'granite');
+    return g && c.roundMark && c.roundMark.zone > g.r;
+})(), c.roundMark && `zone ${Math.round(c.roundMark.zone)}`);
 
 // The fixture is not a real venue; leave no loadable document behind.
 fs.unlinkSync(DOC);
 fs.unlinkSync(GEO);
+
+// A designed course's leg count must not leak into the next venue. Glacier Sound has 2
+// legs; a windward-leeward has the player's setting. Racing one then the other used to
+// leave the second on 2 laps — the same shape of leak as legLength.
+console.log('\nleg count does not leak between venues');
+{
+    const { execFileSync } = require('child_process');
+    const out = execFileSync('node', ['-e', `
+        const { chromium } = require('playwright');
+        const path = require('path');
+        (async () => {
+            const b = await chromium.launch();
+            const p = await b.newPage();
+            await p.goto('file://' + path.resolve('regatta/index.html'));
+            const r = await p.evaluate(() => {
+                let s = 90210;
+                Math.random = () => { let t = s += 0x6D2B79F5; t = Math.imul(t ^ (t >>> 15), t | 1);
+                    t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+                const at = (v) => { localStorage.setItem('regatta_settings', JSON.stringify({venue:v}));
+                                    resetGame(); return state.race.totalLegs; };
+                const bayFirst = at('bay');
+                const arctic = at('arctic');
+                const bayAfter = at('bay');
+                return { bayFirst, arctic, bayAfter };
+            });
+            await b.close();
+            console.log(JSON.stringify(r));
+        })();
+    `], { cwd: ROOT, encoding: 'utf8' }).trim();
+    const legs = JSON.parse(out.split('\n').pop());
+    check('an island course reports its own leg count', legs.arctic === 2, String(legs.arctic));
+    check('the next venue keeps the player setting', legs.bayAfter === legs.bayFirst,
+          `bay was ${legs.bayFirst}, after arctic ${legs.bayAfter}`);
+}
 
 console.log(`\n${failures ? 'FAIL' : 'PASS'} — ${failures} failure(s)`);
 process.exitCode = failures ? 1 : 0;

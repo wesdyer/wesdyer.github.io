@@ -82,7 +82,20 @@ window.traceHarness = {
     // Bump whenever hashFrame/hashCourseGeom changes WHAT is observed. Goldens
     // record it, so a stale golden reports "observation changed" instead of
     // masquerading as a behaviour regression.
-    OBS_VERSION: 1,
+    //   1 -> 2: raceState gained roundSweep/roundArmed. They existed before but were
+    //           created mid-race, and the key list is built at race start, so
+    //           rounding progress was never actually hashed.
+    //   2 -> 3: raceState gained roundWrong — wrong-way detection split out of
+    //           roundSweep so progress could be clamped at zero.
+    //   3 -> 4: rounding split into pass-within (the zone arms it) and go-round-it
+    //           (sweep counts out to 2.5x the zone), so a wide rounding registers.
+    //   4 -> 5: rounding completes on DEPARTURE judged by the sweep's SIGN, not by a
+    //           magnitude threshold. A straight line past a mark sweeps ~180 degrees on
+    //           its own, and a triangle corner needs far less, so no fixed number works.
+    //   5 -> 6: the authored `beat` flag is gone. Leg direction is derived from the mean
+    //           wind (legGoesUpwind, for laylines and zones) and point of sail is asked
+    //           of the BOAT (pointOfSail, for RRS 18.1(a) and character stats).
+    OBS_VERSION: 6,
 
     seed: 0,
 

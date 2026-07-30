@@ -38,6 +38,13 @@ const geo = global.window.VENUE_GEO[VENUE];
 if (!geo) { console.error(`no VENUE_GEO for ${VENUE}`); process.exit(1); }
 
 const S = MASK_WORLD;
+// The arena is the map rectangle INSET by roughly a screen's width. Land and ice are
+// scenery and deliberately continue past the sailing limit, so a sailor who reaches
+// the edge sees coastline and bergs carrying on into the distance instead of the
+// world stopping. Flush with the map edge there is nothing out there to look at;
+// inset too far and you throw away sailable water.
+const ARENA_INSET = 700;
+const A = S / 2 - ARENA_INSET;
 // Mask space is 0..1 with +y DOWN, matching canvas, so the only transform is a
 // scale and a shift putting the mask centre at the world origin.
 const toWorld = (p) => ({ x: (p[0] - 0.5) * S, y: (p[1] - 0.5) * S });
@@ -108,7 +115,11 @@ if ((ry * ux - rx * uy) < 0) { rx = -rx; ry = -ry; }
 
 const marks = [
     { id: 'sf-pin',  x: mx - rx * START_WIDTH / 2, y: my - ry * START_WIDTH / 2 },
-    { id: 'sf-boat', x: mx + rx * START_WIDTH / 2, y: my + ry * START_WIDTH / 2 }
+    { id: 'sf-boat', x: mx + rx * START_WIDTH / 2, y: my + ry * START_WIDTH / 2 },
+    // The rounding mark, laid at the island's centre. A separate object from the island.
+    // No buoy: it is a position on an island, so the race marks it with an indicator
+    // rather than planting an inflatable in the middle of the rock.
+    { id: 'round-granite', name: 'Round granite-isle', x: granite.x, y: granite.y, kind: 'none' }
 ];
 
 const doc = {
@@ -131,24 +142,40 @@ const doc = {
         // arena, and a stale twin would leave Arena.sample's fast path describing
         // the wrong shape. Generated venues (which have no document) keep their
         // circle and their exact RNG draw count.
-        boundary: { poly: [[-S/2, -S/2], [S/2, -S/2], [S/2, S/2], [-S/2, S/2]], circle: null }
+        boundary: { poly: [[-A, -A], [A, -A], [A, A], [-A, A]], circle: null }
     },
     land,
     course: {
-        legs: 2,
+        description: 'Start, round the granite island to starboard, finish on the same line.',
         marks,
+        // A LINE is a named pair of marks, and a route entry is a USE of one. The start
+        // and the finish here are the same line crossed in opposite directions, which is
+        // all "shared start/finish" has ever meant. Leg count is derived from the route.
+        lines: [{ id: 'sf', name: 'Start / finish line', marks: ['sf-pin', 'sf-boat'] }],
         route: [
-            { kind: 'line',  marks: [0, 1], dir: 1,  beat: true,  role: 'start' },
-            // The rounding references a land shape by NAME. Referencing it by index
-            // is how two placeholder marks were once able to masquerade as a gate.
-            { kind: 'round', landId: 'granite-isle', side: 'starboard',
+            { kind: 'line',  lineId: 'sf', dir: 1,  role: 'start' },
+            // A rounding names a MARK, laid on the island. The island stays ordinary
+            // land: the two are separate objects that happen to be in the same place, so
+            // either can be moved or reshaped without dragging the other.
+            { kind: 'round', markId: 'round-granite', side: 'starboard',
+              // What the mark is standing at, which is what floors the zone.
+              radius: granite.radius,
               // Big enough to capture the whole island, not just skim it.
-              zone: granite.radius * 2.1, beat: true, role: 'rounding' },
-            { kind: 'line',  marks: [0, 1], dir: -1, beat: false, role: 'finish', finish: true }
+              zone: granite.radius * 2.1, role: 'rounding' },
+            { kind: 'line',  lineId: 'sf', dir: -1, role: 'finish', finish: true }
         ]
     },
-    // Authored, not derived — see the header note on the two sign flips.
-    wind: { mode: 'fixed', baseDirection: windBase },
+    // THERE IS NO BASE WIND: the wind is stated by regions, and "the same everywhere" is
+    // one region over the whole map. `speed` is absent so the venue's own range still
+    // applies, which is what keeps race-to-race variety.
+    wind: {
+        regions: [{
+            id: 'wind-all', name: 'Course wind',
+            poly: [[-S, -S], [S, -S], [S, S], [-S, S]],
+            falloff: 400, direction: windBase, dirVar: 0,
+            speed: null, speedVar: 0, period: 30
+        }]
+    },
     seeded: { ice: true }
 };
 
@@ -169,10 +196,14 @@ if (fs.existsSync(OUT)) {
         // and the rounding `zone` are all derived from the ring and legitimately
         // differ from an older document that carried the bake's independently
         // rounded values, so they are not compared.
-        cmp('wind', doc.wind.baseDirection, prev.wind.baseDirection);
+        const prevDir = (prev.wind.regions && prev.wind.regions.length)
+            ? prev.wind.regions[0].direction : prev.wind.baseDirection;
+        cmp('wind', doc.wind.regions[0].direction, prevDir);
         doc.course.marks.forEach((m, i) => {
-            cmp(`mark${i}.x`, m.x, prev.course.marks[i].x);
-            cmp(`mark${i}.y`, m.y, prev.course.marks[i].y);
+            const pm = prev.course.marks[i];
+            if (!pm) { diffs.push(`mark[${i}] missing in previous`); return; }
+            cmp(`mark${i}.x`, m.x, pm.x);
+            cmp(`mark${i}.y`, m.y, pm.y);
         });
         // Only AUTHORED geometry is compared. `c` and `r` are derived from `outer`
         // and legitimately differ from an older document that carried the bake's
@@ -201,7 +232,8 @@ fs.writeFileSync(OUT,
 
 const verts = land.reduce((a, l) => a + l.outer.length, 0);
 console.log(`Wrote ${path.relative(process.cwd(), OUT)}`);
-console.log(`  world ${S}  boundary: ${doc.world.boundary.poly.length}-gon (the map rectangle)`);
+console.log(`  world ${S}  arena: ${doc.world.boundary.poly.length}-gon, map rect inset ${ARENA_INSET}u`);
 console.log(`  land ${land.length} shapes / ${verts} vertices: ${land.map(l => l.id).join(', ')}`);
-console.log(`  marks ${marks.length}, legs 2, rounding granite-isle zone ${doc.course.route[1].zone}`);
+console.log(`  marks ${marks.length}, lines ${doc.course.lines.length}, legs ${doc.course.route.length - 1}, `
+          + `rounding mark on granite-isle, zone ${Math.round(doc.course.route[1].zone)}`);
 console.log(`  wind ${windBase} rad (${Math.round(windBase * 180 / Math.PI)}deg)`);
