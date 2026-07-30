@@ -722,7 +722,6 @@ window.VENUE_DOC["arctic"] = {
     "regions": [
       {
         "id": "wind-all",
-        "name": "Course wind",
         "poly": [
           [
             -8750,

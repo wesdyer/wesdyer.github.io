@@ -149,7 +149,7 @@ function migrateVenueDoc(doc) {
             const size = (doc.world && doc.world.size) || 8750;
             const h = size;                        // generous: the field is sampled well
             w.regions.push({                       // outside the arena, for particles
-                id: 'wind-all', name: 'Course wind',
+                id: 'wind-all',
                 poly: [[-h, -h], [h, -h], [h, h], [-h, h]],
                 falloff: 400, direction: w.baseDirection, dirVar: 0,
                 speed: null, speedVar: 0, period: 30
@@ -292,7 +292,7 @@ function validateVenueDoc(doc) {
         warn('wind.baseDirection is ignored — the wind is stated by regions');
     }
     if (!((doc.wind && doc.wind.regions) || []).length) {
-        warn('no wind regions: the venue default applies everywhere, which a designed course should not rely on');
+        err('no wind regions: outside a region there is no wind, so nothing here can be sailed');
     }
     // Wind and current regions are the same object with different fields on top, so
     // they get the same checks — a polygon, a soft edge, a unique id.

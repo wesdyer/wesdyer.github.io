@@ -55,7 +55,7 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
 
         const sample = (x, y) => { const w = getWindAt(x, y); return { s: w.speed, d: w.direction }; };
 
-        const far  = sample(-4000, 3000);          // outside every region
+        const far  = sample(-4000, 3000);          // outside every region: CALM
         const inA  = sample(-2400, 0);             // deep inside A only
         const inB  = sample(600, 0);               // deep inside B only
         const both = sample(-900, 0);              // the overlap
@@ -102,8 +102,11 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
     console.log('wind regions: absolute and averaged\n');
     check('no page errors', errs.length === 0, errs.slice(0, 2).join(' | '));
 
-    check('outside every region the venue wind is untouched',
-          near(r.far.s, 8, 1e-6) && nearAng(r.far.d, -1, 1e-6), `${r.far.s.toFixed(2)}kt @ ${r.far.d.toFixed(3)}`);
+    // No fallback breeze. Once regions state the wind, an unstated patch is a hole in the
+    // design, and filling it in silently is how a course comes to depend on a wind nobody
+    // authored. A hole is sailable-looking and unsailable, which the checks now hunt for.
+    check('outside every region the water is CALM',
+          near(r.far.s, 0, 1e-9), `${r.far.s.toFixed(3)}kt`);
 
     check('deep inside a region the wind is what that region says',
           nearAng(r.inA.d, 0, 0.02) && near(r.inA.s, 12, 0.2),
@@ -120,8 +123,8 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
 
     const mono = r.ramp.every((v, i) => i === 0 || v >= r.ramp[i - 1] - 1e-9);
     check('the edge is a monotone ramp, not a step', mono, JSON.stringify(r.ramp.map(v => +v.toFixed(2))));
-    check('the ramp spans from the venue wind to the region wind',
-          near(r.ramp[0], 8, 1.5) && near(r.ramp[r.ramp.length - 1], 12, 0.5),
+    check('the ramp spans from calm to the region wind',
+          r.ramp[0] < 2 && near(r.ramp[r.ramp.length - 1], 12, 0.5),
           `${r.ramp[0].toFixed(2)} -> ${r.ramp[r.ramp.length-1].toFixed(2)}`);
 
     check('direction averages as VECTORS, not as numbers',

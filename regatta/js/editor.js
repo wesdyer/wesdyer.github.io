@@ -32,13 +32,15 @@ let selFinding = -1;
 // MODE is what you are editing; only that type is interactive, so a click can never
 // grab the wrong kind of thing. `tool` is derived from it so the render code keeps its
 // existing vocabulary.
-let mode = 'shape';           // shape | vertex | marks | route | boundary | wind | current | venue | map | measure
-let sub = 'drag';             // within vertex: drag | sculpt | smooth
+let mode = 'shape';           // shape | marks | route | boundary | wind | current | venue | map | measure
+let sub = 'drag';             // within Land: drag | sculpt | smooth
 let drawing = false;          // shape mode, mid-draw
 let tool = 'select';
+// EVERY MODE EDITS ITS OWN OUTLINES. There is no separate Vertices mode: selecting a thing
+// shows its vertices, which is both fewer modes and a better rule — visible means grabbable,
+// and nothing else is either.
 function syncTool() {
-    tool = mode === 'vertex'   ? sub
-         : mode === 'shape'    ? (drawing ? 'draw' : 'select')
+    tool = mode === 'shape'    ? (drawing ? 'draw' : sub === 'drag' ? 'select' : sub)
          : mode === 'marks'    ? 'mark'
          : mode === 'boundary' ? 'bcircle'
          : mode;
@@ -84,6 +86,21 @@ function windBase() {
     if (state && state.wind && typeof state.wind.baseDirection === 'number') return state.wind.baseDirection;
     return 0;
 }
+
+// ── Bearings ────────────────────────────────────────────────────────────────
+// The game's heading convention already agrees with the real world: 0 is north, north is
+// up the screen, and it increases clockwise (forward = sin, -cos). What did NOT agree was
+// the presentation — the editor showed the raw radians as a signed angle, so a
+// south-westerly read as "-145°" instead of the 215° anyone would say out loud.
+//
+// A WIND is named by where it comes FROM, which is exactly what `wind.direction` already
+// holds. A CURRENT is named by where it goes TO, which is what a region's `direction`
+// holds. Both are stated in the panels rather than left to be inferred.
+const degOf = (rad) => Math.round(((rad * 180 / Math.PI) % 360 + 360) % 360) % 360;
+const radOf = (deg) => (((deg % 360) + 360) % 360) * Math.PI / 180;
+const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+                 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+const compassOf = (rad) => COMPASS[Math.round(degOf(rad) / 22.5) % 16];
 
 // ── Units ───────────────────────────────────────────────────────────────────
 // 5 world units = 1 metre, and 55u = 11m = one boat length (a J111 — the game's 165u
@@ -197,8 +214,10 @@ function recomputeEstimate() {
     try {
         const t0 = (window.performance && performance.now) ? performance.now() : 0;
         const grid = window.SailCheck.buildGrid(doc.land, course.boundary, null);
+        // Pass the real field, not one number: the wind varies across the course, and a
+        // patch with no region over it has no wind at all.
         estimate = window.SailCheck.routeEstimate(grid, course.marks, course.route,
-                                                 windBase(), state.wind.speed);
+            windBase(), state.wind.speed, (x, y) => getWindAt(x, y));
         if (estimate && t0) estimate.ms = Math.round(performance.now() - t0);
     } catch (e) {
         // An unsailable course can fail to produce a path at all. The sailability check
@@ -209,9 +228,7 @@ function recomputeEstimate() {
 
 function runChecks() {
     // The compiled shape the checks read must carry everything compile derives, or a
-    // check quietly stops running instead of reporting. `sailedDist`/`cutoff` come from
-    // the document, so recompile them here rather than fishing for them in state.course,
-    // which only keeps the fields the game itself needs.
+    // check quietly stops running instead of reporting.
     const derived = window.VenueDoc.compile(doc);
     const compiled = { marks: course.marks, boundary: course.boundary, roundMark: course.roundMark,
                        route: course.route, scenery: course.scenery,
@@ -219,25 +236,30 @@ function runChecks() {
                        cutoff: derived.cutoff, cutoffAuto: derived.cutoffAuto };
     recomputeEstimate();
     if (estimate) compiled.estimate = estimate;
-    // EVERY floe, authored or generated. `floes` alone is the generated-preview cache, and
-    // on a hand-placed venue it is empty — which made the ice checks fall silent rather
-    // than check the 54 floes actually in the course.
+    // EVERY floe, authored or generated: `floes` alone is the generated-preview cache, and
+    // on a hand-placed venue it is empty — which made the ice checks fall silent.
     const allIce = (course.islands || []).filter(i => i.isFloe);
     findings = window.VenueCheck.run({ doc, compiled, boats: state.boats, floes: allIce });
     const order = { error: 0, warn: 1, ok: 2 };
     findings.sort((a, b) => order[a.level] - order[b.level]);
-    const n = (lv) => findings.filter(f => f.level === lv).length;
-    $('check-tally').innerHTML =
-        (n('error') ? `<span style="color:#fb7185">${n('error')} error</span> ` : '')
-        + (n('warn') ? `<span style="color:#fbbf24">${n('warn')} warn</span> ` : '')
-        + `<span style="color:#6ee7b7">${n('ok')} ok</span>`;
-    $('checks').innerHTML = findings.map((f, i) =>
-        `<div class="find find-${f.level}${i === selFinding ? ' sel' : ''}" data-i="${i}">
-            <div class="find-t">${f.title}</div><div class="find-d">${f.detail}</div></div>`).join('');
-    $('checks').querySelectorAll('.find').forEach(el => el.addEventListener('click', () => {
+    checksRefresh();
+    statsRefresh();
+}
+
+function checksRefresh() {
+    const box = $('checks');
+    if (!box) return;
+    box.innerHTML = findings.map((f, i) => {
+        const ok = f.level === 'ok';
+        return `<div class="ck${ok ? ' ok' : ''}${i === selFinding ? ' sel' : ''}" data-i="${i}">`
+             + `<span class="dot ${f.level === 'error' ? 'err' : f.level === 'warn' ? 'warn' : 'ok'}"></span>`
+             + `<span class="ck-t"><b>${f.title}</b>${ok ? '' : '<br>'}${ok ? ' — ' + f.detail : f.detail}</span>`
+             + (ok ? '' : '<span class="ck-fix">show →</span>') + `</div>`;
+    }).join('');
+    box.querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', () => {
         const i = +el.dataset.i;
         selFinding = (selFinding === i) ? -1 : i;
-        runChecks(); draw();
+        checksRefresh(); draw();
     }));
 }
 
@@ -248,9 +270,6 @@ function afterEdit(pushSnapshot, label) {
     info();
     refreshChrome();
     refreshInspector();
-    routeRefresh();
-    markRefresh();
-    lineRefresh();
     marksInspector();
     windRefresh();
     currentRefresh();
@@ -280,13 +299,11 @@ function loadVenue() {
         course = state.course;
         floes = (course.islands || []).filter(i => !i.fromMask);
         findings = [];
-        $('checks').innerHTML = '<div class="text-slate-500" style="font-size:11.5px;line-height:1.5">'
-            + 'Generated venue — no document to edit or check. Land, marks and wind are produced '
-            + 'per-seed at load.</div>';
-        $('check-tally').textContent = '';
-        info(); refreshChrome(); refreshInspector(); routeRefresh();
-        markRefresh(); lineRefresh(); windRefresh(); currentRefresh(); venueRefresh();
-        iceRefresh(); fitView();
+        $('checks').innerHTML = '<div class="in-none">Generated venue — no document to edit or '
+            + 'check. Its land, marks and wind are produced per seed at load.</div>';
+        statsRefresh();
+        info(); refreshChrome(); refreshInspector();
+        windRefresh(); currentRefresh(); venueRefresh(); iceRefresh(); fitView();
         return;
     }
     doc = clone(src);
@@ -296,8 +313,8 @@ function loadVenue() {
     histIdx = 0;
     fileHandle = null;
     selWind = -1; selCur = -1; selLine = -1; selRoute = -1;
-    recompile(); info(); refreshChrome(); refreshInspector(); routeRefresh();
-    markRefresh(); lineRefresh(); marksInspector(); windRefresh(); currentRefresh();
+    recompile(); info(); refreshChrome(); refreshInspector();
+    marksInspector(); windRefresh(); currentRefresh();
     venueRefresh(); iceRefresh(); paletteRefresh();
 
     fitView();
@@ -347,51 +364,210 @@ function toast(msg, bad) {
     toastT = setTimeout(() => { el.style.opacity = '0'; }, 2600);
 }
 
+// ── Layers ──────────────────────────────────────────────────────────────────
+// The layer list IS the mode switch. `mode` keeps its old names internally because
+// sixty sites gate on them; a layer adds what the list needs on top: a readable name, an
+// icon, how much of it there is, and whether it is drawn.
+//
+// There is no Objects layer — the runtime has no props yet, and a layer that can only be
+// empty is a promise, not a feature.
+const LAYERS = [
+    { id: 'water',    mode: 'current', name: 'Water',  icon: 'wave',
+      count: () => cregs().length || null, hint: 'colour and current' },
+    { id: 'land',     mode: 'shape',   name: 'Land',   icon: 'land',
+      count: () => doc ? `${doc.land.length} · ${doc.land.reduce((a, l) => a + l.outer.length, 0)} pts` : null },
+    { id: 'arena',    mode: 'boundary', name: 'Arena', icon: 'frame',
+      count: () => (doc && doc.world.boundary.poly) ? `${doc.world.boundary.poly.length}-gon` : 'circle' },
+    { id: 'venue',    mode: 'venue',   name: 'Venue',  icon: 'ice',
+      count: () => dice().length || null },
+    { id: 'wind',     mode: 'wind',    name: 'Wind',   icon: 'wind',
+      count: () => wregs().length || null },
+    { id: 'marks',    mode: 'marks',   name: 'Marks',  icon: 'mark',
+      count: () => doc ? `${dmarksOf().length}+${dlines().length}` : null },
+    { id: 'course',   mode: 'route',   name: 'Course', icon: 'route',
+      count: () => doc ? Math.max(1, routeOf().length - 1) : null }
+];
+const layerOf = (m) => LAYERS.find(l => l.mode === m) || null;
+
+// Which layers are DRAWN. Hiding one is not the same as not editing it — on a course this
+// dense, turning the ice off to see the marks under it is the difference between reading
+// the map and guessing at it.
+const hidden = new Set();
+const shown = (id) => !hidden.has(id);
+
+const LAYER_ICON = {
+    wave:  '<path d="M1 11c2-2 3.5-2 5.5 0S10 13 12 11" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M1 7c2-2 3.5-2 5.5 0S10 9 12 7" stroke="currentColor" stroke-width="1.4" fill="none"/>',
+    land:  '<path d="M1.5 11l3.5-6 3 4 2-2.5 2.5 4.5z" stroke="currentColor" stroke-width="1.3" fill="none"/>',
+    frame: '<rect x="2" y="2.5" width="10" height="9" stroke="currentColor" stroke-width="1.3" fill="none"/>',
+    ice:   '<path d="M7 1.5v11M2.5 4l9 6M11.5 4l-9 6" stroke="currentColor" stroke-width="1.2"/>',
+    wind:  '<path d="M1.5 5.5h7a2 2 0 100-2M1.5 9h9a2 2 0 110 2" stroke="currentColor" stroke-width="1.3" fill="none"/>',
+    mark:  '<circle cx="7" cy="7" r="2.2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2" stroke="currentColor" stroke-width="1.2"/>',
+    route: '<path d="M2 11c4 0 3-8 7-8" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="2" cy="11" r="1.4" fill="currentColor"/><circle cx="11.5" cy="3" r="1.4" fill="currentColor"/>'
+};
+const EYE_ON  = '<path d="M1 7s2.2-3.6 6-3.6S13 7 13 7s-2.2 3.6-6 3.6S1 7 1 7z" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/>';
+const EYE_OFF = '<path d="M1 7s2.2-3.6 6-3.6S13 7 13 7s-2.2 3.6-6 3.6S1 7 1 7z" stroke="currentColor" stroke-width="1.1" fill="none" opacity=".5"/><path d="M2 12L12 2" stroke="currentColor" stroke-width="1.3"/>';
+
+function layerRefresh() {
+    const box = $('layer-list');
+    if (!box) return;
+    const svg = (d) => `<svg class="ly-eye" viewBox="0 0 14 14" width="14" height="14">${d}</svg>`;
+    const icon = (k) => `<svg viewBox="0 0 14 14" width="14" height="14" style="flex:none;opacity:.8">${LAYER_ICON[k] || ''}</svg>`;
+    let html = `<div class="ly root${mode === 'map' ? ' on' : ''}" data-layer="level">`
+             + `<span style="width:14px"></span>${icon('frame')}`
+             + `<span class="ly-n">${doc ? (doc.venue || 'Level') : 'Level'}</span>`
+             + `<span class="ly-c">${doc ? fmtM(doc.world.size) : ''}</span></div>`;
+    for (const L of LAYERS) {
+        const on = mode === L.mode;
+        const c = L.count();
+        html += `<div class="ly${on ? ' on' : ''}${shown(L.id) ? '' : ' off'}" data-layer="${L.id}">`
+              + `<span class="ly-eye" data-eye="${L.id}" title="show or hide this layer">`
+              + `<svg viewBox="0 0 14 14" width="14" height="14">${shown(L.id) ? EYE_ON : EYE_OFF}</svg></span>`
+              + icon(L.icon)
+              + `<span class="ly-n">${L.name}</span>`
+              + `<span class="ly-c">${c == null ? '' : c}</span></div>`;
+    }
+    box.innerHTML = html;
+    box.querySelectorAll('[data-layer]').forEach(el => el.addEventListener('click', (ev) => {
+        if (ev.target.closest('[data-eye]')) return;
+        if (el.dataset.layer === 'level') { setMode('map'); return; }
+        const L = LAYERS.find(x => x.id === el.dataset.layer);
+        if (L) setMode(L.mode);
+    }));
+    box.querySelectorAll('[data-eye]').forEach(el => el.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const id = el.dataset.eye;
+        if (hidden.has(id)) hidden.delete(id); else hidden.add(id);
+        layerRefresh(); draw();
+    }));
+}
+
 // ── Chrome (buttons, dirty state, hints) ────────────────────────────────────
 function refreshChrome() {
     $('btn-undo').disabled = histIdx <= 0;
     $('btn-redo').disabled = histIdx >= history.length - 1;
     $('btn-save').disabled = !doc || !isDirty();
     $('dirty').textContent = doc ? (isDirty() ? '● unsaved' : 'saved') : '';
-    $('dirty').style.color = isDirty() ? '#fbbf24' : '#64748b';
+    $('dirty').classList.toggle('dirty', isDirty());
     syncTool();
-    document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-    document.querySelectorAll('.mode-panel').forEach(p => p.classList.toggle('hidden', p.dataset.for !== mode));
-    document.querySelectorAll('.subtool').forEach(b => b.classList.toggle('active', b.dataset.sub === sub));
+    syncFieldButtons();
+    layerRefresh();
+    toolStrip();
+    // A layer's settings are an inspector section, shown when that layer is active.
+    document.querySelectorAll('.mode-panel').forEach(p => p.hidden = p.dataset.layer !== mode);
     $('btn-draw').textContent = drawing ? 'Cancel drawing' : 'Draw a new shape';
     const vsRow = $('vsel-row');
     if (vsRow) {
-        // Vertex mode is ABOUT vertices, so the panel lives there. The other modes that
-        // happen to own vertices only show it once something is actually selected —
-        // otherwise every visit to Wind came with a block of vertex instructions.
-        const owns = mode === 'vertex'
-            || ((mode === 'boundary' || mode === 'wind' || mode === 'current') && vsel.length > 0);
-        vsRow.style.display = owns ? 'block' : 'none';
+        vsRow.style.display = vsel.length > 0 ? 'block' : 'none';
         $('vsel-count').textContent = vsel.length
             ? `${vsel.length} selected — the ringed one is the align anchor`
             : 'Drag a box to select · Shift+click to add';
         $('btn-align-x').disabled = vsel.length < 2;
         $('btn-align-y').disabled = vsel.length < 2;
     }
-    const hints = {
-        shape: drawing
-            ? 'Click to drop points · Enter or double-click closes the shape · Esc cancels'
-            : 'Click a shape · drag = move · Cmd/Ctrl+drag = rotate · Alt+drag = scale · Shift constrains · Delete removes',
-        vertex: sub === 'drag'
-            ? 'Drag a vertex (Shift constrains) · double-click an EDGE to insert · Delete removes the hovered one'
-            : sub === 'sculpt'
-              ? 'Drag: nearby vertices follow the cursor, strongest at the centre, nothing at the rim · [ ] resize'
-              : 'Drag: nearby vertices relax toward their neighbours, flattening wobble · [ ] resize',
-        marks:    'Drag a mark, or a gate to move both its marks · Delete removes the selected one · rounding CENTRE moves, RING resizes',
-        route:    'Click a gate or mark on the map to ADD a leg using it · reorder by dragging a row · ✕ removes the leg, not the marks',
-        boundary: 'Drag an arena corner · or use Fit rect / Back to circle',
-        wind:     'Click a region to select it, then drag its corners · regions are AVERAGED where they overlap · turn on the field to see the result',
-        current:  'Flow ° is where the water GOES · regions add as vectors · turn on the field to see the total',
-        venue:    'Drag to place ice — the drag sets the size · raise scatter for a field · click one to select, drag to move, Delete to remove',
-        map:      'Numeric only — nothing here is dragged',
-        measure:  'Drag to measure · SHIFT-click to extend it into a path · Esc or Clear removes it'
-    };
-    $('hint').textContent = (hints[mode] || '') + '   ·   middle-mouse pans and wheel zooms, always';
+    const br = $('brush-row');
+    if (br) br.hidden = !(mode === 'shape' && (sub === 'sculpt' || sub === 'smooth'));
+    // The layer's own section steps aside once an object is selected: the inspector above it
+    // is already about that object, and saying it twice is how a panel gets long.
+    const ls = $('land-layer-sect');
+    if (ls) ls.hidden = !!(mode === 'shape' && sel.shape);
+    const is = $('ice-sel');
+    if (is) is.hidden = true;                     // the floe inspector carries Delete
+    hintBar();
+    objRefresh();
+    inspectorRefresh();
+}
+
+// ── Tool strip ──────────────────────────────────────────────────────────────
+// Tools act on whatever the active layer owns, which is why there are five of them and
+// not five per layer: select, draw, and the two brushes are the same gestures whatever
+// outline you point them at, and the ruler belongs to no layer at all.
+const TOOLS = [
+    { id: 'select', key: 'V', name: 'Select', icon: '<path d="M4 3l9 6.5-4 .6L7.6 14z" fill="currentColor"/>',
+      on: () => sub === 'drag' && !drawing && mode !== 'measure' },
+    { id: 'draw', key: 'P', name: 'Draw', icon: '<path d="M8 2.5l5 4-2 6H5l-2-6z" stroke="currentColor" stroke-width="1.3" fill="none"/>',
+      on: () => drawing, enabled: () => mode === 'shape' },
+    { id: 'sculpt', key: 'S', name: 'Sculpt', icon: '<circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/>',
+      on: () => sub === 'sculpt', enabled: () => mode === 'shape' },
+    { id: 'smooth', key: 'G', name: 'Smooth', icon: '<path d="M2 11c3 0 3.5-6 6-6s3 4 6 4" stroke="currentColor" stroke-width="1.3" fill="none"/>',
+      on: () => sub === 'smooth', enabled: () => mode === 'shape' },
+    { id: 'measure', key: 'M', name: 'Measure', icon: '<path d="M2.5 9.5l7-7 4 4-7 7z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 7l1.5 1.5M7 5l1.5 1.5" stroke="currentColor" stroke-width="1.1"/>',
+      on: () => mode === 'measure' }
+];
+let toolBuilt = false;
+function toolStrip() {
+    const box = $('tool-strip');
+    if (!box) return;
+    if (!toolBuilt) {
+        box.innerHTML = TOOLS.map(t =>
+            `<button class="tl" data-tool="${t.id}" title="${t.name} (${t.key})">`
+            + `<svg viewBox="0 0 16 16" width="17" height="17">${t.icon}</svg></button>`).join('');
+        box.querySelectorAll('[data-tool]').forEach(el =>
+            el.addEventListener('click', () => pickTool(el.dataset.tool)));
+        toolBuilt = true;
+    }
+    for (const t of TOOLS) {
+        const el = box.querySelector(`[data-tool="${t.id}"]`);
+        el.classList.toggle('on', !!t.on());
+        const ok = !t.enabled || t.enabled();
+        el.disabled = !ok;
+        el.style.opacity = ok ? '' : '.35';
+    }
+}
+function pickTool(id) {
+    if (id === 'measure') { setMode('measure'); return; }
+    if (mode === 'measure') setMode('shape');
+    if (id === 'draw') {
+        if (mode !== 'shape') setMode('shape');
+        drawing = !drawing; if (!drawing) pending = null;
+        sub = 'drag';
+    } else {
+        drawing = false; pending = null;
+        sub = (id === 'select') ? 'drag' : id;
+    }
+    refreshChrome(); draw();
+}
+
+// ── Hint bar ────────────────────────────────────────────────────────────────
+// What this tool does with the modifiers, spelled out. The gestures are consistent across
+// layers, so this is short — which is the point of making them consistent.
+const MODS = {
+    select: ['drag move', '⌘ drag rotate', '⌥ drag scale', '⇧ constrain', '⌫ delete'],
+    draw: ['click to drop points', '⏎ or double-click closes', 'esc cancels'],
+    sculpt: ['drag to pull nearby vertices', '[ ] brush size'],
+    smooth: ['drag to relax wobble', '[ ] brush size'],
+    measure: ['drag to measure', '⇧ click extends the path', 'esc clears']
+};
+function hintBar() {
+    const t = TOOLS.find(x => x.on()) || TOOLS[0];
+    $('hint-key').textContent = t.key;
+    $('hint-tool').textContent = t.name;
+    $('hint-mods').innerHTML = (MODS[t.id] || []).map(m => `<span class="mod">${m}</span>`).join('');
+}
+
+// ── Stats band ──────────────────────────────────────────────────────────────
+function statsRefresh() {
+    if (!$('stat-dist')) return;
+    const est = estimate;
+    const authored = doc && doc.course.cutoff != null;
+    const d2 = doc ? window.VenueDoc.compile(doc) : null;
+    const cutoff = authored ? doc.course.cutoff : (d2 ? d2.cutoffAuto || 0 : 0);
+    $('stat-dist').textContent = est ? fmtM(est.dist) : (d2 ? fmtM(d2.sailedDist || 0) : '—');
+    $('stat-best').textContent = est ? mmss(est.secs) : '—';
+    // The fleet mean is what the 3–5 minute target was about, so that is what gets coloured.
+    const mean = est ? est.secs * 1.35 : 0;
+    const band = mean >= 180 && mean <= 300;
+    $('stat-best').className = 'st-v num' + (est ? (band ? ' ok' : ' warn') : '');
+    $('stat-best').title = est ? `fleet ~${mmss(mean)} — ${band ? 'inside' : 'outside'} the 3–5 min target` : '';
+    $('stat-limit').textContent = cutoff ? mmss(cutoff) : '—';
+    $('stat-limit').title = authored ? 'authored' : 'derived, and blind to the land the path goes around';
+    $('stat-legs').textContent = doc ? Math.max(1, routeOf().length - 1) : '—';
+
+    const n = (lv) => findings.filter(f => f.level === lv).length;
+    const e = n('error'), w = n('warn');
+    $('tally-body').innerHTML =
+        `<span class="dot ${e ? 'err' : w ? 'warn' : 'ok'}"></span>`
+        + `<span style="font-weight:600">${e ? `${e} error` : w ? `${w} warning${w > 1 ? 's' : ''}` : 'all clear'}</span>`
+        + `<span class="dim" style="font-size:12px">${n('ok')} ok</span>`;
 }
 
 // ── Rendering ───────────────────────────────────────────────────────────────
@@ -411,6 +587,14 @@ function fitView() {
     view.scale = Math.min(W() / (c - a + 400), H() / (d - b + 400)) || 0.1;
     draw();
 }
+// The read-outs say something before the pointer has moved: three dashes tell you nothing
+// about where the view is.
+function hudIdle() {
+    if (!$('hud')) return;
+    $('hud').textContent = `${Math.round(uToM(view.x))}, ${Math.round(uToM(view.y))} m`;
+    $('hud-zoom').textContent = `${view.scale.toFixed(3)}×`;
+}
+
 function resize() {
     const r = cv.parentElement.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -477,10 +661,11 @@ function draw() {
             ctx.lineWidth = selected ? 2.5 : 1;
             ctx.stroke();
         }
-        // Vertices, only where they can be manipulated — 137 dots everywhere is noise.
-        if (tool === 'vertex' || sel.shape) {
+        // Vertices of the SELECTED shape only — 137 dots everywhere is noise, and a handle
+        // that is drawn but not grabbable (or grabbable but not drawn) is worse than none.
+        if (sel.shape && mode === 'shape') {
             for (const l of shapes) {
-                if (tool !== 'vertex' && sel.shape !== l.id) continue;
+                if (sel.shape !== l.id) continue;
                 for (const ring of eachRing(l)) {
                     ring.forEach((p, i) => {
                         const s = toS(p[0], p[1]);
@@ -746,16 +931,16 @@ function draw() {
     if (doc) {
         dice().forEach((f, i) => {
             ctx.beginPath(); ringPath(f.outer);
-            const on = (mode === 'venue' || mode === 'vertex') && (selIce === i || hover.ice === i);
+            const on = mode === 'venue' && (selIce === i || hover.ice === i);
             ctx.fillStyle = on ? 'rgba(186,230,253,0.85)' : 'rgba(125,211,252,0.55)';
             ctx.fill();
-            if (mode === 'venue' || mode === 'vertex') {
+            if (mode === 'venue') {
                 ctx.strokeStyle = on ? '#fff' : 'rgba(224,242,254,0.7)';
                 ctx.lineWidth = on ? 2.5 : 1;
                 ctx.stroke();
             }
-            // In Vertices mode ice carries handles like any other outline.
-            if (mode === 'vertex') {
+            // The SELECTED floe carries handles, like any other outline in its own mode.
+            if (mode === 'venue' && selIce === i) {
                 f.outer.forEach((p, k) => {
                     const q = toS(p[0], p[1]);
                     const hot = hover.ice === i && hover.vert === k;
@@ -806,8 +991,8 @@ function draw() {
     drawFinding();
     drawBoatProbe();
     if (measure) drawMeasure();
-    windArrow();
     scaleBar();
+    hudIdle();
 }
 
 // Regions are drawn as their EXTENT plus an inner line at the falloff inset, because
@@ -892,11 +1077,12 @@ function drawWindRegions() {
         // Label with what it actually does, so the map is readable without the panel.
         const c = r.poly.reduce((a, p) => [a[0] + p[0], a[1] + p[1]], [0, 0]).map(v => v / r.poly.length);
         const sp = toS(c[0], c[1]);
-        const deg = Math.round((r.direction || 0) * 180 / Math.PI);
+        const deg = degOf(r.direction || 0);
         ctx.fillStyle = on ? '#a7f3d0' : 'rgba(167,243,208,0.65)';
         ctx.font = '600 11px "IBM Plex Mono", monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`${r.id}  ${deg}°  ${r.speed != null ? r.speed.toFixed(1) + 'kt' : 'venue kt'}`, sp.x, sp.y);
+        ctx.fillText(`${r.name || r.id}  wind from ${deg}° ${compassOf(r.direction || 0)}`
+            + `  ${r.speed != null ? r.speed.toFixed(1) + 'kt' : 'venue kt'}`, sp.x, sp.y - 16);
         ctx.textAlign = 'left';
 
         if (on) {
@@ -933,6 +1119,10 @@ function drawWindField() {
         for (let sx = step / 2; sx < W(); sx += step) {
             const w = toW(sx, sy);
             const f = getWindAt(w.x, w.y);
+            // CALM DRAWS AS NOTHING. Outside every region there is no wind, and a hole in
+            // the wind has to look like a hole — a row of tiny arrows would read as "light
+            // here" rather than "unsailable here".
+            if (!f || f.speed < 0.05) continue;
             const rel = base > 0 ? f.speed / base : 1;
             // Blue below base, green at it, amber above — the same reading as the
             // in-game pressure cues.
@@ -1070,14 +1260,6 @@ function drawBoatProbe() {
     ctx.strokeStyle = 'rgba(15,23,42,0.55)'; ctx.stroke();
     ctx.restore();
 
-    // The rotate handle sits off the bow, where a tiller-less boat's heading reads from.
-    const hx = c.x + Math.sin(boatProbe.heading) * (BOAT_L * 0.72 * sc);
-    const hy = c.y - Math.cos(boatProbe.heading) * (BOAT_L * 0.72 * sc);
-    const hot = lastMouse && Math.hypot(lastMouse.sx - hx, lastMouse.sy - hy) < 12;
-    ctx.beginPath(); ctx.arc(hx, hy, hot ? 7 : 5, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(8,15,30,0.8)'; ctx.fill();
-    ctx.beginPath(); ctx.arc(hx, hy, hot ? 5 : 3.2, 0, Math.PI * 2);
-    ctx.fillStyle = hot ? '#fff' : '#fbbf24'; ctx.fill();
 }
 
 function grid() {
@@ -1092,35 +1274,353 @@ function grid() {
     ctx.stroke();
 }
 
-function windArrow() {
-    const w = windBase();
-    const ux = Math.sin(w), uy = -Math.cos(w);              // forward = (sin h, -cos h)
-    const cx = 62, cy = 62, L = 30;
-    ctx.strokeStyle = '#34d399'; ctx.fillStyle = '#34d399'; ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.moveTo(cx - ux*L, cy - uy*L); ctx.lineTo(cx + ux*L, cy + uy*L); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx + ux*L, cy + uy*L);
-    ctx.lineTo(cx + ux*L - uy*7 - ux*9, cy + uy*L + ux*7 - uy*9);
-    ctx.lineTo(cx + ux*L + uy*7 - ux*9, cy + uy*L - ux*7 - uy*9);
-    ctx.closePath(); ctx.fill();
-    ctx.fillStyle = '#7f8ea9'; ctx.font = '10px "IBM Plex Mono", monospace';
-    ctx.fillText('WIND ' + Math.round(w * 180 / Math.PI) + '°', 22, 104);
-}
+// The overall wind indicator is GONE. There is no one wind on a course whose whole point
+// is that the wind varies across it — a single arrow in the corner was a claim the model
+// no longer makes. Turn on the wind field to see what the wind is actually doing.
 
+// The scale bar lives in the hint bar, with the cursor read-out and the zoom — the three
+// facts about "where am I and how big is this" belong together, not scattered on the map.
 function scaleBar() {
-    // Step in round METRES, not round world units: the bar is a ruler for a person.
     let units = mToU(20);
     while (units * view.scale < 70) units *= 2;
-    const px = units * view.scale, x = W() - px - 22, y = H() - 26;
-    ctx.strokeStyle = '#8ea0bd'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(x, y-4); ctx.lineTo(x, y); ctx.lineTo(x+px, y); ctx.lineTo(x+px, y-4); ctx.stroke();
-    ctx.fillStyle = '#8ea0bd'; ctx.font = '10px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
-    ctx.fillText(`${fmtM(units)}  ·  ${fmtBL(units)}`, x + px/2, y - 8);
-    ctx.textAlign = 'left';
+    const el = $('scalebar');
+    if (!el) return;
+    el.style.width = Math.round(units * view.scale) + 'px';
+    $('scaletext').textContent = `${fmtM(units)} · ${fmtBL(units)}`;
+}
+
+// ── The selected layer's objects ────────────────────────────────────────────
+// One list, driven by the active layer. Every layer answers the same three questions —
+// what are the things, which is selected, what is each one's size — so the rows look the
+// same whether they are coastlines, floes or legs.
+function objRefresh() {
+    const box = $('obj-list'), title = $('objs-title'), acts = $('objs-actions');
+    if (!box) return;
+    const L = layerOf(mode);
+    title.textContent = L ? L.name : (mode === 'measure' ? 'Measure' : 'Level');
+    if (mode === 'map') title.textContent = 'Level';
+    acts.innerHTML = '';
+    if (!doc) { box.innerHTML = '<div class="ob-empty">Generated venue — nothing authored to edit.</div>'; return; }
+
+    const act = (label, fn, title2) => {
+        const b = document.createElement('button');
+        b.className = 'btn btn-ghost'; b.style.cssText = 'font-size:11px;padding:2px 6px';
+        b.textContent = label; b.title = title2 || ''; b.onclick = fn;
+        acts.appendChild(b);
+    };
+    const row = (opts) => `<div class="ob${opts.on ? ' on' : ''}" data-i="${opts.i}">`
+        + `<span class="ob-g">${opts.glyph || ''}</span>`
+        + `<span class="ob-n">${opts.name}</span>`
+        + `<span class="ob-c">${opts.count == null ? '' : opts.count}</span></div>`;
+
+    if (mode === 'shape') {
+        act('+ Draw', () => { pickTool('draw'); });
+        box.innerHTML = doc.land.map((l, i) => row({
+            i, on: sel.shape === l.id, glyph: sel.shape === l.id ? '◆' : '◇',
+            name: l.id, count: l.outer.length
+        })).join('') || '<div class="ob-empty">No land yet — Draw to make some.</div>';
+        wire(box, (i) => { sel = Object.assign({}, NOHIT, { shape: doc.land[i].id }); vsel = [];
+            refreshInspector(); refreshChrome(); draw(); });
+    } else if (mode === 'venue') {
+        box.innerHTML = dice().map((f, i) => {
+            const c = iceCentre(f);
+            return row({ i, on: selIce === i, glyph: selIce === i ? '◆' : '◇',
+                         name: f.id, count: fmtM(c.r * 2) });
+        }).join('') || '<div class="ob-empty">No ice yet — drag on the water to place some.</div>';
+        wire(box, (i) => { selIce = i; vsel = []; iceRefresh(); refreshChrome(); draw(); });
+    } else if (mode === 'marks') {
+        act('+ Mark', () => $('btn-add-mark').click());
+        act('+ Gate', () => $('btn-add-line').click());
+        const ml = dmarksOf().map((m, i) => row({
+            i, on: sel.mark === i, glyph: m.kind === 'can' ? '▣' : m.kind === 'none' ? '◌' : '●',
+            name: markLabel(i), count: MARK_KIND_LABEL[m.kind] || 'buoy' })).join('');
+        const ll = dlines().map((ln, i) => {
+            const ends = lineEnds(ln.id);
+            const len = ends ? Math.hypot(ends[1].x - ends[0].x, ends[1].y - ends[0].y) : 0;
+            return `<div class="ob${selLine === i ? ' on' : ''}" data-line="${i}">`
+                 + `<span class="ob-g">━</span><span class="ob-n">${lineLabel(ln.id)}</span>`
+                 + `<span class="ob-c">${fmtM(len)}</span></div>`;
+        }).join('');
+        box.innerHTML = ml + (ll ? `<div class="ob-empty" style="padding-top:10px">Gates &amp; lines</div>` + ll : '');
+        wire(box, (i) => selectMark(i));
+        box.querySelectorAll('[data-line]').forEach(el => el.addEventListener('click',
+            () => selectLine(+el.dataset.line)));
+    } else if (mode === 'route') {
+        routeRefresh(box);
+        return;
+    } else if (mode === 'wind' || mode === 'current') {
+        const rs = mode === 'wind' ? wregs() : cregs();
+        const selR = mode === 'wind' ? selWind : selCur;
+        act('+ Here', () => $(mode === 'wind' ? 'btn-add-wind' : 'btn-add-cur').click());
+        act('+ Whole course', () => $(mode === 'wind' ? 'btn-add-wind-all' : 'btn-add-cur-all').click());
+        box.innerHTML = rs.map((r, i) => row({
+            i, on: selR === i, glyph: '▭', name: r.name || r.id,
+            count: mode === 'wind'
+                ? `${degOf(r.direction || 0)}°${r.speed != null ? ' ' + r.speed.toFixed(0) + 'kt' : ''}`
+                : `${(r.speed || 0).toFixed(1)}kt ${degOf(r.direction || 0)}°`
+        })).join('') || `<div class="ob-empty">${mode === 'wind'
+            ? 'No regions. Outside a wind region there is no wind at all, so a course needs its water covered.'
+            : 'No current. Water with no region over it simply does not flow.'}</div>`;
+        wire(box, (i) => {
+            if (mode === 'wind') { selWind = i; windRefresh(); } else { selCur = i; currentRefresh(); }
+            vsel = []; refreshChrome(); draw();
+        });
+    } else if (mode === 'boundary') {
+        const bp = doc.world.boundary.poly;
+        box.innerHTML = bp
+            ? `<div class="ob-empty">${bp.length} corners. Drag them on the map; double-click an edge to add one.</div>`
+            : '<div class="ob-empty">A circle. Fit a rectangle to make it a polygon.</div>';
+    } else {
+        box.innerHTML = '<div class="ob-empty">Nothing to list for this tool.</div>';
+    }
+}
+function wire(box, fn) {
+    box.querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', (ev) => {
+        if (ev.target.tagName === 'B') return;
+        fn(+el.dataset.i);
+    }));
+}
+
+// ── Inspector ───────────────────────────────────────────────────────────────
+// It inspects the SELECTED OBJECT, or the layer when nothing is selected. The header
+// names what you are looking at, because a panel of numbers cannot answer that itself.
+function inspectorRefresh() {
+    if (!$('in-kicker')) return;
+    const kick = $('in-kicker'), name = $('in-name'), meta = $('in-meta'), obj = $('insp-obj');
+    let k = 'Level', n = doc ? (doc.venue || '—') : '—', m = '', html = '';
+
+    if (!doc) {
+        obj.innerHTML = '<div class="in-none">This venue is generated per seed — there is no document to edit. '
+            + 'Pick a venue marked <b>document</b> to author one.</div>';
+        kick.textContent = 'Generated venue'; name.textContent = '—'; meta.textContent = '';
+        return;
+    }
+
+    if (mode === 'shape' && sel.shape) {
+        const l = shapeById(sel.shape);
+        if (l) { k = 'Land shape'; n = l.id;
+            m = `${l.outer.length} pts · ${(l.holes || []).length ? (l.holes.length + ' holes') : 'closed'}`;
+            html = inspLand(l); }
+    } else if (mode === 'venue' && selIce >= 0 && dice()[selIce]) {
+        const f = dice()[selIce];
+        k = 'Ice floe'; n = f.id; m = `${f.outer.length} pts`;
+        html = inspIce(f);
+    } else if (mode === 'marks' && sel.mark >= 0) {
+        k = 'Mark'; n = markLabel(sel.mark);
+        const mk = dmarksOf()[sel.mark];
+        m = mk.name ? 'renamed' : 'automatic';
+        html = '';                       // its own panel section carries the fields
+    } else if (mode === 'marks' && selLine >= 0) {
+        k = 'Gate'; n = lineLabel(dlines()[selLine].id); m = dlines()[selLine].name ? 'renamed' : 'automatic';
+    } else if (mode === 'route' && selRoute >= 0) {
+        k = 'Leg'; n = entryLabel(routeOf()[selRoute], selRoute);
+        m = `leg ${selRoute} of ${routeOf().length - 1}`;
+    } else if (mode === 'wind' && selWind >= 0 && wregs()[selWind]) {
+        const r = wregs()[selWind];
+        k = 'Wind region'; n = r.name || r.id;
+        m = `from ${degOf(r.direction || 0)}° ${compassOf(r.direction || 0)}`;
+    } else if (mode === 'current' && selCur >= 0 && cregs()[selCur]) {
+        const r = cregs()[selCur];
+        k = 'Current region'; n = r.name || r.id; m = `${(r.speed || 0).toFixed(1)} kt`;
+    } else {
+        const L = layerOf(mode);
+        k = L ? `${L.name} layer` : (mode === 'measure' ? 'Tool' : 'Level');
+        n = L ? L.name : (mode === 'measure' ? 'Measure' : (doc.venue || 'Level'));
+        const c = L && L.count();
+        m = c == null ? '' : String(c);
+    }
+    kick.textContent = k; name.textContent = n; meta.textContent = m;
+    obj.innerHTML = html;
+    obj.querySelectorAll('[data-num]').forEach(el => el.addEventListener('change', () => numEdit(el)));
+    obj.querySelectorAll('[data-act]').forEach(el => el.addEventListener('click', () => shapeAct(el.dataset.act)));
+    // Material and softness are the shape's own properties, so they live in its inspector
+    // rather than in a panel off to the side.
+    obj.querySelectorAll('[data-mat]').forEach(el => el.addEventListener('click', () => {
+        const l = shapeById(sel.shape); if (!l) return;
+        const t = LAND_TYPES[+el.dataset.mat];
+        l.style = t.style; l.cls = t.cls; l.soft = t.soft;
+        afterEdit(true, 'material');
+    }));
+    const sf = obj.querySelector('#in-soft');
+    if (sf) sf.addEventListener('change', () => {
+        const l = shapeById(sel.shape); if (!l) return;
+        l.soft = sf.checked;
+        afterEdit(true, 'soft');
+    });
+    relatedChecks();
+}
+
+// ── Object inspectors ───────────────────────────────────────────────────────
+// Everything here is wired to something real. The design also sketched polygon booleans
+// and per-shape wind shadow; those need engine work that does not exist, and a control
+// that does nothing is worse than an absent one, so they are not drawn.
+const ringBox = (rings) => {
+    let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+    for (const ring of rings) for (const p of ring) {
+        if (p[0] < a) a = p[0]; if (p[1] < b) b = p[1];
+        if (p[0] > c) c = p[0]; if (p[1] > d) d = p[1];
+    }
+    return { minX: a, minY: b, maxX: c, maxY: d, w: c - a, h: d - b, cx: (a + c) / 2, cy: (b + d) / 2 };
+};
+const f1 = (v) => Math.round(v * 10) / 10;
+// A framed numeric field. `data-num` names what it edits so one handler serves them all.
+const numF = (label, key, val, unit, ro) =>
+    `<label class="in-f${ro ? ' ro' : ''}"><label>${label}</label>`
+    + `<input data-num="${key}" value="${val}"${ro ? ' readonly' : ''} spellcheck="false">`
+    + `<span class="dim" style="font-size:11px">${unit || ''}</span></label>`;
+
+function inspLand(l) {
+    const bb = ringBox(eachRing(l));
+    const area = Math.abs(window.VenueDoc.ringArea(l.outer));
+    // The narrowest gap to any other shape: a channel is only sailable if a boat fits, and
+    // this is the number the clearance check reports, brought to where you are editing.
+    // Point-to-SEGMENT, which is what the clearance check uses. Measuring vertex-to-vertex
+    // instead reported 165 m where the check said 148 m — two numbers for the same gap on
+    // the same screen, and no way for a reader to know which one to believe.
+    const segD = (px, py, a, b) => {
+        const dx = b[0] - a[0], dy = b[1] - a[1], l2 = dx * dx + dy * dy;
+        let t = l2 ? ((px - a[0]) * dx + (py - a[1]) * dy) / l2 : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        return Math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy));
+    };
+    let gap = null, gapTo = null;
+    for (const o of doc.land) {
+        if (o.id === l.id) continue;
+        for (const ringA of eachRing(l)) for (const ringB of eachRing(o)) {
+            for (const q of ringA) for (let i = 0; i < ringB.length; i++) {
+                const d = segD(q[0], q[1], ringB[i], ringB[(i + 1) % ringB.length]);
+                if (gap == null || d < gap) { gap = d; gapTo = o.id; }
+            }
+            for (const q of ringB) for (let i = 0; i < ringA.length; i++) {
+                const d = segD(q[0], q[1], ringA[i], ringA[(i + 1) % ringA.length]);
+                if (gap == null || d < gap) { gap = d; gapTo = o.id; }
+            }
+        }
+    }
+    const t = LAND_TYPES.findIndex(x => x.style === l.style);
+    return `
+<div class="in-sect"><span class="k">Material</span>
+  <div class="in-seg" id="in-mat">${LAND_TYPES.map((x, i) =>
+    `<button class="${i === t ? 'on' : ''}" data-mat="${i}">${x.label.split(' ')[0]}</button>`).join('')}</div>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px">
+    <input type="checkbox" id="in-soft"${l.soft ? ' checked' : ''}> soft — drags you, does not ground you
+  </label>
+</div>
+<div class="in-sect"><span class="k">Transform</span>
+  <div class="in-grid">
+    ${numF('X', 'shape.x', f1(uToM(bb.cx)), 'm')}
+    ${numF('Y', 'shape.y', f1(uToM(bb.cy)), 'm')}
+    ${numF('W', 'shape.w', f1(uToM(bb.w)), 'm')}
+    ${numF('H', 'shape.h', f1(uToM(bb.h)), 'm')}
+    ${numF('∠', 'shape.rot', '0.0', '°')}
+    ${numF('Area', 'shape.area', (uToM(1) * uToM(1) * area / 1e6).toFixed(3), 'km²', true)}
+  </div>
+  <div class="in-note">∠ turns the shape by that many degrees about its centre, then resets to zero — there is no stored rotation, only the vertices.</div>
+</div>
+<div class="in-sect"><span class="k">Path</span>
+  <div class="in-chips">
+    <button class="btn" data-act="sculpt">Sculpt</button>
+    <button class="btn" data-act="smooth">Smooth</button>
+    <button class="btn" data-act="resample">Resample</button>
+    <button class="btn" data-act="dup">Duplicate</button>
+  </div>
+  ${gap != null ? `<div class="in-row" style="margin-top:10px"><span>Min channel to ${gapTo}</span>
+    <span class="num">${fmtM(gap)} · ${fmtBL(gap)}</span></div>` : ''}
+</div>
+<div class="in-sect"><span class="k">Gameplay</span>
+  <div class="in-row"><span>Collision</span><span>${l.soft ? 'soft — slows you' : 'solid — grounds you'}</span></div>
+  <div class="in-row"><span>Wind shadow</span><span>from its polygon</span></div>
+  <div class="in-row"><span>Blocks pathfinding</span><span>yes, at hull width</span></div>
+</div>
+<div class="in-sect"><span class="k">Danger</span>
+  <button class="btn in-danger" style="width:100%;justify-content:center" data-act="del">Delete this shape</button>
+</div>`;
+}
+
+function inspIce(f) {
+    const bb = ringBox([f.outer]);
+    const c = iceCentre(f);
+    return `
+<div class="in-sect"><span class="k">Transform</span>
+  <div class="in-grid">
+    ${numF('X', 'ice.x', f1(uToM(bb.cx)), 'm')}
+    ${numF('Y', 'ice.y', f1(uToM(bb.cy)), 'm')}
+    ${numF('W', 'ice.w', f1(uToM(bb.w)), 'm')}
+    ${numF('H', 'ice.h', f1(uToM(bb.h)), 'm')}
+    ${numF('∠', 'ice.rot', '0.0', '°')}
+    ${numF('Across', 'ice.r', f1(uToM(c.r * 2)), 'm', true)}
+  </div>
+</div>
+<div class="in-sect"><span class="k">Gameplay</span>
+  <div class="in-row"><span>Collision</span><span>soft — costs speed</span></div>
+  <div class="in-row"><span>Drift, spin, wander</span><span>random each race</span></div>
+  <div class="in-note">You author where the ice is and what shape it is. Its motion is drawn
+  from the race seed, so a designed field still plays out differently every time.</div>
+</div>
+<div class="in-sect"><span class="k">Danger</span>
+  <button class="btn in-danger" style="width:100%;justify-content:center" data-act="delice">Delete this floe</button>
+</div>`;
+}
+
+// One handler for every framed field: the key says what to do.
+function numEdit(el) {
+    const [what, key] = el.dataset.num.split('.');
+    const v = parseFloat(el.value);
+    if (!isFinite(v)) { inspectorRefresh(); return; }
+    const isIce = what === 'ice';
+    const l = isIce ? dice()[selIce] : shapeById(sel.shape);
+    if (!l) return;
+    const rings = isIce ? [l.outer] : eachRing(l);
+    const bb = ringBox(rings);
+    const map = (fn) => { for (const ring of rings) for (const p of ring) {
+        const q = fn(p[0], p[1]); p[0] = q.x; p[1] = q.y; } };
+    if (key === 'x') map((x, y) => ({ x: x + (mToU(v) - bb.cx), y }));
+    else if (key === 'y') map((x, y) => ({ x, y: y + (mToU(v) - bb.cy) }));
+    else if (key === 'w' && bb.w > 0) { const k = mToU(v) / bb.w;
+        map((x, y) => ({ x: bb.cx + (x - bb.cx) * k, y })); }
+    else if (key === 'h' && bb.h > 0) { const k = mToU(v) / bb.h;
+        map((x, y) => ({ x, y: bb.cy + (y - bb.cy) * k })); }
+    else if (key === 'rot') {
+        const a = v * Math.PI / 180, cs = Math.cos(a), sn = Math.sin(a);
+        map((x, y) => ({ x: bb.cx + (x - bb.cx) * cs - (y - bb.cy) * sn,
+                         y: bb.cy + (x - bb.cx) * sn + (y - bb.cy) * cs }));
+    } else return;
+    if (!isIce) rebake(l);
+    afterEdit(true, 'transform');
+}
+
+function shapeAct(a) {
+    if (a === 'sculpt' || a === 'smooth') { pickTool(a); return; }
+    if (a === 'resample') { const l = shapeById(sel.shape); if (l) { resampleShape(l); afterEdit(true, 'resample'); } return; }
+    if (a === 'dup') { duplicateShape(); afterEdit(true, 'duplicate'); return; }
+    if (a === 'del') { if (deleteSelectedShape()) afterEdit(true, 'delete shape'); return; }
+    if (a === 'delice') { if (selIce >= 0) deleteIce(selIce); return; }
+}
+
+// ── Related checks ──────────────────────────────────────────────────────────
+// The findings that mention what you have selected, in the inspector, next to the thing
+// they are about. The full list still lives in the drawer.
+function relatedChecks() {
+    const obj = $('insp-obj');
+    if (!obj || !doc) return;
+    const subject = (mode === 'shape' && sel.shape) ? sel.shape
+                  : (mode === 'venue' && selIce >= 0 && dice()[selIce]) ? dice()[selIce].id
+                  : (mode === 'marks' && sel.mark >= 0) ? (dmarksOf()[sel.mark] || {}).id
+                  : null;
+    if (!subject) return;
+    const hits = findings.filter(f => (f.detail || '').includes(subject) || (f.title || '').includes(subject));
+    if (!hits.length) return;
+    const div = document.createElement('div');
+    div.className = 'in-sect';
+    div.innerHTML = '<span class="k">Related checks</span>'
+        + hits.map(f => `<div class="ck ${f.level === 'ok' ? 'ok' : ''}"><span class="dot ${f.level === 'error' ? 'err' : f.level === 'warn' ? 'warn' : 'ok'}"></span>`
+            + `<span class="ck-t">${f.detail}</span></div>`).join('');
+    obj.appendChild(div);
 }
 
 // ── Info panel ──────────────────────────────────────────────────────────────
-const row = (k, v) => `<div class="row"><span>${k}</span><span class="t-mono">${v}</span></div>`;
+// The inspector's own row style: label left, value right, both aligned down the panel.
+const row = (k, v) => `<div class="in-row"><span>${k}</span><span class="num">${v}</span></div>`;
 const mmss = s => `${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`;
 
 function info() {
@@ -1133,8 +1633,8 @@ function info() {
         row('legs', `${legs}  (from the route)`) +
         row('marks', m.length) +
         (doc ? row('gates &amp; lines', dlines().length) : '') +
-        row('wind', Math.round(windBase() * 180/Math.PI) + '°'
-            + (doc ? ` (from ${wregs().length} region${wregs().length === 1 ? '' : 's'})` : '')) +
+        (doc ? row('wind regions', wregs().length
+            + (wregs().length ? '' : '  ⚠ no wind anywhere')) : '') +
         (doc && cregs().length ? row('current regions', cregs().length) : '') +
         row('arena', course.boundary && course.boundary.poly
             ? `polygon, ${course.boundary.poly.length} corners`
@@ -1180,7 +1680,7 @@ function info() {
             ? row('vs straight line', `${(estimate.dist / straight).toFixed(2)}×  (${fmtM(straight)})`) : '') +
         (estimate
             ? row('best time', mmss(estimate.secs))
-              + `<div class="row"><span>fleet ~1.35×</span><span class="t-mono" style="color:${band ? '#6ee7b7' : '#fbbf24'}">`
+              + `<div class="in-row"><span>fleet ~1.35×</span><span class="num" style="color:${band ? 'var(--ed-ok)' : 'var(--ed-warn)'}">`
               + `${mmss(mean)}${band ? '' : '  ⚠'}</span></div>`
               + (estimate.slowest
                   ? `<div class="text-slate-500 mt-1" style="font-size:11px">slowest leg ${estimate.slowest.leg}: `
@@ -1189,8 +1689,8 @@ function info() {
                     + `${mmss(estimate.slowest.secs)}</div>`
                   : '')
             : '') +
-        row('time limit', mmss(cutoff) + (authored ? ' (authored)' : ' (derived, blind to land)'));
-    $('info-time').innerHTML += `<div class="text-slate-500 mt-1" style="font-size:11px">${note}`
+        row('time limit', mmss(cutoff) + (authored ? ' authored' : ' derived'));
+    $('info-time').innerHTML += `<div class="in-note" style="margin-top:6px">${note}`
         + (estimate && estimate.ms != null ? ` · ${estimate.ms}ms` : '') + `</div>`;
     const useBtn = $('btn-use-est');
     if (useBtn) {
@@ -1212,7 +1712,6 @@ function info() {
             + row('vertices', isl.reduce((a,i)=>a+((i.vertices||[]).length),0));
     }
     legendRefresh();
-    $('seed-readout').textContent = `ice #${previewSeed}`;
 }
 
 // The legend describes THIS venue. A fixed list told you about white land and grey
@@ -1221,7 +1720,9 @@ function info() {
 function legendRefresh() {
     const box = $('legend');
     if (!box) return;
-    const sw = (col, glyph, text) => `<div><span style="color:${col}">${glyph}</span> ${text}</div>`;
+    const sw = (col, glyph, text) =>
+        `<div style="display:flex;gap:8px;align-items:baseline"><span style="color:${col}">${glyph}</span>`
+        + `<span>${text}</span></div>`;
     const out = [];
     const rt = doc ? routeOf() : [];
     if (rt.some(e => e.role === 'start' || e.finish) || !doc) {
@@ -1337,8 +1838,6 @@ function refreshInspector() {
         inspBuilt = true;
     }
     const l = (doc && sel.shape) ? shapeById(sel.shape) : null;
-    box.classList.toggle('hidden', !l);
-    none.classList.toggle('hidden', !!l);
     if (!l) return;
     $('insp-id').textContent = l.id;
     const idx = LAND_TYPES.findIndex(t => t.style === l.style);
@@ -1405,8 +1904,8 @@ function useCount(e) {
     return routeOf().filter(x => key(x) === key(e)).length;
 }
 
-function routeRefresh() {
-    const box = $('route-list');
+function routeRefresh(into) {
+    const box = into || $('obj-list');
     if (!box) return;
     if (!doc) { box.innerHTML = ''; return; }
     const r = routeOf();
@@ -1425,22 +1924,22 @@ function routeRefresh() {
         const del = movable(i) ? `<b data-act="del" data-i="${i}" title="remove this LEG — the marks stay">✕</b>` : '';
         const n = useCount(e);
         const reused = n > 1 ? `<span title="used by ${n} legs" style="opacity:.55">×${n}</span>` : '';
-        return `<div class="rt${i === selRoute ? ' sel' : ''}${movable(i) ? '' : ' pinned'}"`
+        return `<div class="ob${i === selRoute ? ' on' : ''}${movable(i) ? '' : ' pinned'}"`
              + ` data-i="${i}"${movable(i) ? ' draggable="true"' : ''}>`
              + `<span class="grip" title="${movable(i) ? 'drag to reorder' : 'the start and finish are fixed in place'}">⠿</span>`
-             + `<span class="rt-n">${i === 0 ? 'S' : i === r.length - 1 ? 'F' : i}</span>`
-             + `<span class="rt-k">${entryLabel(e, i)}</span>${reused}`
+             + `<span class="ob-g">${i === 0 ? 'S' : i === r.length - 1 ? 'F' : i}</span>`
+             + `<span class="ob-n">${entryLabel(e, i)}</span>${reused}`
              + `${modeBtn}${share}${ctl}${del}</div>`;
     }).join('');
 
     // Selecting a row is what the name field edits. On `click`, not mousedown: a
     // mousedown re-render would replace the row mid-gesture and the drag would never
     // start. A completed drag does not fire click, so the two never collide.
-    box.querySelectorAll('.rt').forEach(el => {
+    box.querySelectorAll('.ob').forEach(el => {
         el.addEventListener('click', (ev) => {
             if (ev.target.tagName === 'B') return;              // buttons do their own thing
             selRoute = +el.dataset.i;
-            routeRefresh(); marksInspector(); draw();
+            refreshChrome(); marksInspector(); draw();
         });
         // Hovering a row shows you WHICH geometry it means. Without this a route of
         // three similar gates is a list of words.
@@ -1456,7 +1955,7 @@ function routeRefresh() {
         const after = (ev.clientY - rect.top) > rect.height / 2;
         return Math.max(1, Math.min(r.length - 1, +el.dataset.i + (after ? 1 : 0)));
     };
-    box.querySelectorAll('.rt[draggable]').forEach(el => {
+    box.querySelectorAll('.ob[draggable]').forEach(el => {
         el.addEventListener('dragstart', (ev) => {
             dragFrom = +el.dataset.i;
             el.classList.add('dragging');
@@ -1465,17 +1964,17 @@ function routeRefresh() {
         });
         el.addEventListener('dragend', () => {
             el.classList.remove('dragging');
-            box.querySelectorAll('.rt').forEach(x => x.classList.remove('dropbefore', 'dropafter'));
+            box.querySelectorAll('.ob').forEach(x => x.classList.remove('dropbefore', 'dropafter'));
         });
     });
-    box.querySelectorAll('.rt').forEach(el => {
+    box.querySelectorAll('.ob').forEach(el => {
         el.addEventListener('dragover', (ev) => {
             ev.preventDefault();
-            box.querySelectorAll('.rt').forEach(x => x.classList.remove('dropbefore', 'dropafter'));
+            box.querySelectorAll('.ob').forEach(x => x.classList.remove('dropbefore', 'dropafter'));
             // Think in insertion SLOTS, clamped to the movable band, so the indicator can
             // never promise a drop the reorder will refuse. Slot len-1 draws above the
             // finish row and means "last leg before the finish".
-            const row = box.querySelector(`.rt[data-i="${dropSlot(el, ev)}"]`);
+            const row = box.querySelector(`.ob[data-i="${dropSlot(el, ev)}"]`);
             if (row) row.classList.add('dropbefore');
         });
         el.addEventListener('drop', (ev) => {
@@ -1526,65 +2025,26 @@ function routeRefresh() {
         const keep = add.value;
         add.innerHTML = opts.join('');
         if (keep) add.value = keep;
-        add.classList.toggle('hidden', !opts.length);
-        $('btn-rt-add').classList.toggle('hidden', !opts.length);
-        $('rt-nothing').classList.toggle('hidden', !!opts.length);
+        add.hidden = !opts.length;
+        $('btn-rt-add').hidden = !opts.length;
+        $('rt-nothing').hidden = !!opts.length;
     }
 }
 
 // ── The inventory: what exists on the water ─────────────────────────────────
-function markRefresh() {
-    const box = $('mark-list');
-    if (!box) return;
-    if (!doc) { box.innerHTML = ''; return; }
-    box.innerHTML = dmarksOf().map((m, i) =>
-        `<div class="rt${i === sel.mark ? ' sel' : ''}" data-i="${i}">`
-        + `<span class="rt-k">${markLabel(i)}</span>`
-        + `<span style="opacity:.55;font-size:10.5px">${MARK_KIND_LABEL[m.kind] || MARK_KIND_LABEL.inflatable}</span>`
-        + `<b data-act="del" data-i="${i}" title="delete this mark">✕</b></div>`).join('');
-    box.querySelectorAll('.rt').forEach(el => {
-        el.addEventListener('click', (ev) => {
-            if (ev.target.tagName === 'B') return;
-            selectMark(+el.dataset.i);
-        });
-        el.addEventListener('mouseenter', () => { hover = Object.assign({}, NOHIT, { mark: +el.dataset.i }); draw(); });
-        el.addEventListener('mouseleave', () => { hover = Object.assign({}, NOHIT); draw(); });
-    });
-    box.querySelectorAll('b').forEach(el => el.addEventListener('click', () => deleteMark(+el.dataset.i)));
-}
+// markRefresh folded into objRefresh — one list, driven by the active layer.
 
-function lineRefresh() {
-    const box = $('line-list');
-    if (!box) return;
-    if (!doc) { box.innerHTML = ''; return; }
-    const rt = routeOf();
-    box.innerHTML = dlines().map((ln, i) => {
-        const uses = rt.filter(e => e.lineId === ln.id).length;
-        return `<div class="rt${i === selLine ? ' sel' : ''}" data-i="${i}">`
-             + `<span class="rt-k">${lineLabel(ln.id)}</span>`
-             + `<span class="t-mono" style="opacity:.5;font-size:10.5px" title="legs using it">${uses}×</span>`
-             + `<b data-act="del" data-i="${i}" title="delete this gate and its marks">✕</b></div>`;
-    }).join('');
-    box.querySelectorAll('.rt').forEach(el => {
-        el.addEventListener('click', (ev) => {
-            if (ev.target.tagName === 'B') return;
-            selectLine(+el.dataset.i);
-        });
-        el.addEventListener('mouseenter', () => { hover = Object.assign({}, NOHIT, { line: +el.dataset.i }); draw(); });
-        el.addEventListener('mouseleave', () => { hover = Object.assign({}, NOHIT); draw(); });
-    });
-    box.querySelectorAll('b').forEach(el => el.addEventListener('click', () => deleteLine(+el.dataset.i)));
-}
+// lineRefresh folded into objRefresh — one list, driven by the active layer.
 
 function selectMark(i) {
     sel = Object.assign({}, NOHIT, { mark: i });
     selLine = -1;
-    marksInspector(); markRefresh(); lineRefresh(); draw();
+    marksInspector(); refreshChrome(); draw();
 }
 function selectLine(i) {
     selLine = i;
     sel = Object.assign({}, NOHIT);
-    marksInspector(); markRefresh(); lineRefresh(); draw();
+    marksInspector(); refreshChrome(); draw();
 }
 
 // Where to drop new marks: the middle of the view, spread along the current wind so a
@@ -1605,7 +2065,7 @@ function marksInspector() {
     if (!rtRow || !mkRow || !lnRow) return;
     const r = routeOf();
     const e = (selRoute >= 0) ? r[selRoute] : null;
-    rtRow.classList.toggle('hidden', !e);
+    rtRow.hidden = !e;
     if (e) {
         $('rt-name').value = e.name || '';
         $('rt-name').placeholder = entryLabel(e, selRoute);
@@ -1615,7 +2075,7 @@ function marksInspector() {
     }
 
     const m = (sel.mark >= 0) ? dmarksOf()[sel.mark] : null;
-    mkRow.classList.toggle('hidden', !m);
+    mkRow.hidden = !m;
     if (m) {
         // The label above the box is the name in force. The box itself is empty unless a
         // name was typed, and its placeholder repeats that label — so "what goes in this
@@ -1630,7 +2090,7 @@ function marksInspector() {
     }
 
     const ln = (selLine >= 0) ? dlines()[selLine] : null;
-    lnRow.classList.toggle('hidden', !ln);
+    lnRow.hidden = !ln;
     if (ln) {
         const dl = lineLabel(ln.id);
         $('ln-derived').textContent = dl + (ln.name ? '  (renamed)' : '  (automatic)');
@@ -1822,25 +2282,16 @@ const wregs = () => (doc && doc.wind.regions) || [];
 
 function windRefresh() {
     const list = $('wind-list'), box = $('wreg');
-    if (!doc) { list.innerHTML = ''; box.classList.add('hidden'); return; }
+    if (!doc) { list.innerHTML = ''; box.hidden = true; return; }
     // READ without writing. Creating `regions = []` here mutated a pristine document
     // and marked it unsaved the moment it loaded — the dirty flag has to mean "you
     // changed something", or it means nothing.
     const rs = wregs();
-    list.innerHTML = rs.map((r, i) =>
-        `<div class="rt"><span class="rt-k">${r.name || r.id}</span>`
-        + `<span class="t-mono" style="opacity:.55;font-size:10.5px">`
-        + `${Math.round((r.direction || 0) * 180 / Math.PI)}°`
-        + `${r.speed != null ? ' ' + r.speed.toFixed(0) + 'kt' : ''}</span>`
-        + `<b data-i="${i}">${i === selWind ? '●' : '○'}</b></div>`).join('');
-    list.querySelectorAll('b').forEach(el => el.addEventListener('click', () => {
-        selWind = (selWind === +el.dataset.i) ? -1 : +el.dataset.i;
-        windRefresh(); draw();
-    }));
+    list.innerHTML = '';          // the layer's object column lists the regions
     const r = rs[selWind];
-    box.classList.toggle('hidden', !r);
+    box.hidden = !r;
     if (!r) return;
-    $('wr-dir').value = Math.round((r.direction || 0) * 180 / Math.PI);
+    $('wr-dir').value = degOf(r.direction || 0);
     $('wr-dirvar').value = Math.round((r.dirVar || 0) * 180 / Math.PI);
     $('wr-speed').value = (r.speed != null ? r.speed : '');
     $('wr-speedvar').value = (r.speedVar || 0);
@@ -1914,22 +2365,15 @@ function palettePreview() {
 function currentRefresh() {
     const list = $('cur-list'), box = $('creg');
     if (!list || !box) return;
-    if (!doc) { list.innerHTML = ''; box.classList.add('hidden'); return; }
+    if (!doc) { list.innerHTML = ''; box.hidden = true; return; }
     // READ without writing — creating `current.regions = []` here would mark a pristine
     // document unsaved the moment it loaded.
     const rs = cregs();
-    list.innerHTML = rs.map((r, i) =>
-        `<div class="rt"><span class="rt-k">${r.id}</span>`
-        + `<span class="t-mono" style="opacity:.55;font-size:10.5px">${(r.speed != null ? r.speed : 0).toFixed(1)}kt</span>`
-        + `<b data-i="${i}">${i === selCur ? '●' : '○'}</b></div>`).join('');
-    list.querySelectorAll('b').forEach(el => el.addEventListener('click', () => {
-        selCur = (selCur === +el.dataset.i) ? -1 : +el.dataset.i;
-        currentRefresh(); draw();
-    }));
+    list.innerHTML = '';          // the layer's object column lists the regions
     const r = rs[selCur];
-    box.classList.toggle('hidden', !r);
+    box.hidden = !r;
     if (!r) return;
-    $('cr-dir').value = Math.round((r.direction || 0) * 180 / Math.PI);
+    $('cr-dir').value = degOf(r.direction || 0);
     $('cr-dirvar').value = Math.round((r.dirVar || 0) * 180 / Math.PI);
     $('cr-speed').value = (r.speed != null ? r.speed : 0);
     $('cr-speedvar').value = (r.speedVar || 0);
@@ -1990,7 +2434,8 @@ function drawCurrentRegions() {
         ctx.closePath(); ctx.fill();
         ctx.font = '600 11px "IBM Plex Mono", monospace';
         ctx.textAlign = 'center';
-        ctx.fillText(`${r.id}  ${(r.speed || 0).toFixed(1)}kt`, sp.x, sp.y + L + 16);
+        ctx.fillText(`${r.name || r.id}  ${(r.speed || 0).toFixed(1)}kt toward `
+            + `${degOf(r.direction || 0)}° ${compassOf(r.direction || 0)}`, sp.x, sp.y + L + 16);
         ctx.textAlign = 'left';
 
         if (on) {
@@ -2119,8 +2564,8 @@ function venueRefresh() {
     box.innerHTML = `<b>${(window.VENUES && VENUES[doc.venue] && VENUES[doc.venue].name) || doc.venue}</b>`
         + `<div class="t-mono" style="font-size:10.5px;opacity:.7">effects: ${on.length ? on.join(', ') : 'none'}</div>`;
     const hasIce = !!fx.ice;
-    $('venue-ice').classList.toggle('hidden', !hasIce);
-    $('venue-none').classList.toggle('hidden', hasIce);
+    $('venue-ice').hidden = !hasIce;
+    $('venue-none').hidden = hasIce;
 }
 
 function iceRefresh() {
@@ -2132,7 +2577,7 @@ function iceRefresh() {
         ? `${n} floe${n === 1 ? '' : 's'}, all placed by hand`
         : 'No ice yet — drag on the water to place some';
     const f = dice()[selIce];
-    $('ice-sel').classList.toggle('hidden', !f);
+    $('ice-sel').hidden = !f;
     if (f) {
         const c = iceCentre(f);
         $('ice-info').textContent = `${f.id} · ${fmtM(c.r * 2)} across · ${f.outer.length} vertices`;
@@ -2174,16 +2619,18 @@ function commitPending() {
 function modeVertexRefs() {
     if (!doc) return [];
     const out = [];
-    if (mode === 'vertex') {
-        for (const l of doc.land) {
+    // The SELECTED object's vertices, in the mode that owns it. Marquee-selecting across
+    // objects you cannot see the handles of would be selecting blind.
+    if (mode === 'shape' && sel.shape) {
+        const l = shapeById(sel.shape);
+        if (l) {
             l.outer.forEach((p, i) => out.push({ kind: 'land', id: l.id, ring: -1, i, x: p[0], y: p[1] }));
             (l.holes || []).forEach((h, hi) => h.forEach((p, i) =>
                 out.push({ kind: 'land', id: l.id, ring: hi, i, x: p[0], y: p[1] })));
         }
-        // Hand-placed ice is an outline like any other, and the point of authoring it is
-        // being able to reshape it.
-        dice().forEach((f, k) => f.outer.forEach((p, i) =>
-            out.push({ kind: 'ice', id: f.id, r: k, i, x: p[0], y: p[1] })));
+    } else if (mode === 'venue' && selIce >= 0 && dice()[selIce]) {
+        const f = dice()[selIce];
+        f.outer.forEach((p, i) => out.push({ kind: 'ice', id: f.id, r: selIce, i, x: p[0], y: p[1] }));
     } else if (mode === 'boundary') {
         const bp = doc.world.boundary.poly;
         if (bp) bp.forEach((p, i) => out.push({ kind: 'arena', i, x: p[0], y: p[1] }));
@@ -2326,6 +2773,14 @@ function hit(wx, wy) {
     }
     if (mode === 'venue' && doc) {
         const fs = dice();
+        // The selected floe's vertices win over every body: a handle sits ON its outline,
+        // so testing bodies first would make it unreachable.
+        if (selIce >= 0 && fs[selIce]) {
+            const ring = fs[selIce].outer;
+            for (let i = 0; i < ring.length; i++) {
+                if (Math.hypot(ring[i][0] - wx, ring[i][1] - wy) < r) { out.ice = selIce; out.vert = i; return out; }
+            }
+        }
         // Last drawn wins, so the piece on top is the one you grab.
         for (let i = fs.length - 1; i >= 0; i--) {
             if (pointInRing(wx, wy, fs[i].outer)) { out.ice = i; return out; }
@@ -2352,29 +2807,22 @@ function hit(wx, wy) {
     }
     if (!doc) return out;
     // Land vertices only in vertex mode; land BODIES only in shape mode.
-    if (mode !== 'vertex' && mode !== 'shape') return out;
-    if (mode === 'shape') {
-        for (const l of doc.land) {
-            if (pointInRing(wx, wy, l.outer) && !(l.holes||[]).some(h => pointInRing(wx, wy, h))) { out.shape = l.id; return out; }
-        }
-        return out;
-    }
-    // Vertices win over bodies: a vertex sits ON its shape's outline, so testing
-    // bodies first would make vertices unreachable.
-    for (const l of doc.land) {
-        for (const ring of eachRing(l)) {
-            for (let i = 0; i < ring.length; i++) {
-                if (Math.hypot(ring[i][0] - wx, ring[i][1] - wy) < r) { out.shape = l.id; out.vert = i; return out; }
+    if (mode !== 'shape') return out;
+    // The SELECTED shape's vertices win over every body — a vertex sits ON the outline, so
+    // testing bodies first would make it unreachable. Only the selected shape's handles are
+    // drawn, and only those are grabbable: visible and grabbable are the same set.
+    if (sel.shape) {
+        const l = shapeById(sel.shape);
+        if (l) {
+            let base = 0;
+            for (const ring of eachRing(l)) {
+                for (let i = 0; i < ring.length; i++) {
+                    if (Math.hypot(ring[i][0] - wx, ring[i][1] - wy) < r) {
+                        out.shape = l.id; out.vert = base + i; return out;
+                    }
+                }
+                base += ring.length;
             }
-        }
-    }
-    // Ice outlines are editable too — they were listed as selectable vertices but never
-    // hit-tested, so they could be marquee-selected and not dragged.
-    const fs2 = dice();
-    for (let k = 0; k < fs2.length; k++) {
-        const ring = fs2[k].outer;
-        for (let i = 0; i < ring.length; i++) {
-            if (Math.hypot(ring[i][0] - wx, ring[i][1] - wy) < r) { out.ice = k; out.vert = i; return out; }
         }
     }
     for (const l of doc.land) {
@@ -2441,11 +2889,12 @@ function smooth(cx, cy, strength) {
 // outline, or a wind region. Same gesture everywhere.
 function modeRings() {
     if (!doc) return [];
-    if (mode === 'vertex') {
-        const out = [];
-        for (const l of doc.land) for (const ring of eachRing(l)) out.push({ ring, land: l });
-        for (const f of dice()) out.push({ ring: f.outer, land: null });
-        return out;
+    if (mode === 'shape' && sel.shape) {
+        const l = shapeById(sel.shape);
+        return l ? eachRing(l).map(ring => ({ ring, land: l })) : [];
+    }
+    if (mode === 'venue' && selIce >= 0 && dice()[selIce]) {
+        return [{ ring: dice()[selIce].outer, land: null }];
     }
     if (mode === 'boundary') {
         const bp = doc.world.boundary.poly;
@@ -2604,6 +3053,19 @@ function scaleMap(k) {
 
     for (const l of doc.land) transformShape(l, (x, y) => ({ x: x*k, y: y*k }));
     for (const m of doc.course.marks) { m.x *= k; m.y *= k; }
+    // EVERYTHING scales, or the map is no longer the same map: hand-placed ice, every
+    // rounding's zone and the size of what it stands at, and the wind and current regions
+    // with their falloff bands. Leaving any of them behind silently changes the course —
+    // ice that no longer fits its channel, a wind region that no longer covers the water.
+    for (const f of dice()) for (const p of f.outer) { p[0] *= k; p[1] *= k; }
+    for (const e of doc.course.route) {
+        if (e.zone) e.zone *= k;
+        if (e.radius) e.radius *= k;
+    }
+    for (const r of wregs().concat(cregs())) {
+        r.poly = r.poly.map(p => [p[0] * k, p[1] * k]);
+        if (r.falloff) r.falloff *= k;
+    }
 
     if (keepLen !== null) {
         // Re-lay at the original length about the scaled midpoint, preserving
@@ -2613,8 +3075,7 @@ function scaleMap(k) {
         marks[0].x = mx - dirx * keepLen / 2; marks[0].y = my - diry * keepLen / 2;
         marks[1].x = mx + dirx * keepLen / 2; marks[1].y = my + diry * keepLen / 2;
     }
-    const rEntry = doc.course.route.find(e => e.kind === 'round');
-    if (rEntry && rEntry.zone) rEntry.zone *= k;
+    if (doc.world.sceneryMargin) doc.world.sceneryMargin *= k;
     doc.world.size *= k;
     if (doc.world.boundary.circle) {
         doc.world.boundary.circle.x *= k; doc.world.boundary.circle.y *= k; doc.world.boundary.circle.r *= k;
@@ -2650,9 +3111,26 @@ cv.addEventListener('mousedown', (e) => {
     }
     if (mode === 'venue' && doc) {
         const hi = hit(w.x, w.y);
+        if (hi.ice >= 0 && hi.vert >= 0) {
+            // A vertex of the selected floe.
+            const f = dice()[hi.ice];
+            const ref = { kind: 'ice', id: f.id, r: hi.ice, i: hi.vert };
+            if (e.shiftKey) {
+                vsel = inSel(ref) ? vsel.filter(v => !sameRef(v, ref)) : vsel.concat([ref]);
+                refreshChrome(); draw(); return;
+            }
+            if (!inSel(ref)) vsel = [ref];
+            drag = { kind: 'vsel', last: w, moved: false, origin: w };
+            refreshChrome(); draw(); return;
+        }
         if (hi.ice >= 0) {
-            selIce = hi.ice; iceRefresh();
-            drag = { kind: 'ice', i: hi.ice, last: w, moved: false, origin: w };
+            if (selIce !== hi.ice) { selIce = hi.ice; vsel = []; }
+            iceRefresh();
+            // The SAME three gestures as a land shape: ice is a shape, and there is no
+            // reason for it to answer to different controls.
+            const c = iceCentre(dice()[hi.ice]);
+            drag = { kind: (e.metaKey || e.ctrlKey) ? 'icerot' : e.altKey ? 'icescale' : 'ice',
+                     i: hi.ice, last: w, start: w, centre: c, moved: false, origin: w };
             draw(); return;
         }
         // Empty water: drag out a circle and fill it with ice.
@@ -2661,17 +3139,13 @@ cv.addEventListener('mousedown', (e) => {
         draw(); return;
     }
     if (mode === 'measure' && boatProbe) {
-        const sc = view.scale;
-        const c = toS(boatProbe.x, boatProbe.y);
-        const hx = c.x + Math.sin(boatProbe.heading) * (BOAT_L * 0.72 * sc);
-        const hy = c.y - Math.cos(boatProbe.heading) * (BOAT_L * 0.72 * sc);
-        const sx0 = e.clientX - r.left, sy0 = e.clientY - r.top;
-        if (Math.hypot(sx0 - hx, sy0 - hy) < 14) {
-            drag = { kind: 'boatrot' };
-            return;
-        }
-        if (Math.hypot(w.x - boatProbe.x, w.y - boatProbe.y) < BOAT_L * 0.6) {
-            drag = { kind: 'boatmove', last: w };
+        // The SAME controls as a land shape: drag to move, Cmd/Ctrl+drag to rotate. A
+        // bespoke handle on the bow was one more thing to learn for no reason.
+        const grab = Math.max(BOAT_L * 0.6, 16 / view.scale);
+        if (Math.hypot(w.x - boatProbe.x, w.y - boatProbe.y) < grab) {
+            drag = (e.metaKey || e.ctrlKey)
+                ? { kind: 'boatrot', start: boatProbe.heading, from: w }
+                : { kind: 'boatmove', last: w };
             return;
         }
     }
@@ -2693,9 +3167,12 @@ cv.addEventListener('mousedown', (e) => {
         if (hr.rcentre >= 0) { drag = { kind: 'rcentre', li: hr.rcentre, last: w, moved: false, origin: w }; return; }
         if (hr.rring >= 0)   { drag = { kind: 'rring',   li: hr.rring,   moved: false, origin: w }; return; }
     }
-    if (doc && selWind >= 0) {
+    // Region outlines. Gated on the mode's OWN selection: this used to ask whether a WIND
+    // region was selected, so a current region's corners could never be grabbed.
+    const regionSelected = (mode === 'wind' && selWind >= 0) || (mode === 'current' && selCur >= 0);
+    if (doc && regionSelected) {
         const hw = hit(w.x, w.y);
-        if (hw.wvert >= 0) { drag = { kind: 'wvert', i: hw.wvert, moved: false }; return; }
+        if (hw.wvert >= 0) { drag = { kind: 'wvert', i: hw.wvert, moved: false, origin: w }; return; }
     }
     if (doc) {
         const hb = hit(w.x, w.y);
@@ -2711,7 +3188,7 @@ cv.addEventListener('mousedown', (e) => {
         drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y };
         return;
     }
-    if (mode === 'vertex' && (sub === 'sculpt' || sub === 'smooth')) {
+    if (mode === 'shape' && (sub === 'sculpt' || sub === 'smooth')) {
         if (!doc) return;
         drag = { kind: sub, last: w, moved: false, origin: w };
         return;
@@ -2729,7 +3206,7 @@ cv.addEventListener('mousedown', (e) => {
             drag = { kind: 'line', i: h.line, last: w, moved: false, origin: w };
         } else {
             sel = Object.assign({}, NOHIT); selLine = -1;
-            marksInspector(); markRefresh(); lineRefresh();
+            marksInspector();
         }
         draw(); return;
     }
@@ -2751,7 +3228,7 @@ cv.addEventListener('mousedown', (e) => {
         cv.classList.add('dragging');
         return;
     }
-    if (mode === 'vertex' && doc && h.ice >= 0 && h.vert >= 0) {
+    if (mode === 'venue' && doc && h.ice >= 0 && h.vert >= 0) {
         const f = dice()[h.ice];
         const ref = { kind: 'ice', id: f.id, r: h.ice, i: h.vert };
         if (e.shiftKey) {
@@ -2762,7 +3239,7 @@ cv.addEventListener('mousedown', (e) => {
         drag = { kind: 'vsel', last: w, moved: false, origin: w };
         refreshChrome(); draw(); return;
     }
-    if (mode === 'vertex' && doc && h.shape && h.vert >= 0) {
+    if (mode === 'shape' && doc && h.shape && h.vert >= 0) {
         // Which ring the hit vertex belongs to, so the ref is unambiguous.
         const l = shapeById(h.shape);
         let ref = null;
@@ -2790,7 +3267,7 @@ cv.addEventListener('mousedown', (e) => {
     }
     if (mode === 'shape' && !drawing && doc) {
         if (h.shape) {
-            sel = { shape: h.shape, mark: -1, vert: -1, bvert: -1 };
+            if (sel.shape !== h.shape) { sel = Object.assign({}, NOHIT, { shape: h.shape }); vsel = []; }
             refreshInspector();
             const l = shapeById(h.shape);
             const c = shapeCentroid(l);
@@ -2798,16 +3275,21 @@ cv.addEventListener('mousedown', (e) => {
                      shape: h.shape, last: w, start: w, centre: c, moved: false, origin: w };
             info(); draw(); return;
         }
-        sel = { shape: null, mark: -1, vert: -1, bvert: -1 };
-        refreshInspector();
-        info();
+        // Empty water with a shape selected starts a MARQUEE over its vertices; with nothing
+        // selected it pans, because there would be nothing to select.
+        if (!sel.shape) {
+            sel = Object.assign({}, NOHIT);
+            refreshInspector();
+            info();
+        }
     }
     // Empty space in a mode that owns vertices starts a MARQUEE. Middle mouse is always
     // pan, so left-drag is free for selection — which is the point of the mouse model.
-    if (doc && (mode === 'vertex' || mode === 'boundary'
+    if (doc && ((mode === 'shape' && sel.shape) || mode === 'boundary'
+                || (mode === 'venue' && selIce >= 0)
                 || (mode === 'wind' && selWind >= 0) || (mode === 'current' && selCur >= 0))) {
         marquee = { a: w, b: w, add: e.shiftKey };
-        drag = { kind: 'marquee' };
+        drag = { kind: 'marquee', add: e.shiftKey };
         return;
     }
     drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y };
@@ -2835,7 +3317,10 @@ window.addEventListener('mousemove', (e) => {
             boatProbe.x += w.x - drag.last.x; boatProbe.y += w.y - drag.last.y;
             drag.last = w; boatInfo(); draw();
         } else if (drag.kind === 'boatrot') {
-            boatProbe.heading = Math.atan2(w.x - boatProbe.x, -(w.y - boatProbe.y));
+            // Rotate by the angle the pointer has swept about the boat, like a shape.
+            const a0 = Math.atan2(drag.from.x - boatProbe.x, -(drag.from.y - boatProbe.y));
+            const a1 = Math.atan2(w.x - boatProbe.x, -(w.y - boatProbe.y));
+            boatProbe.heading = drag.start + (a1 - a0);
             boatInfo(); draw();
         } else if (drag.kind === 'icenew') {
             drag.r = Math.hypot(w.x - drag.origin.x, w.y - drag.origin.y);
@@ -2845,6 +3330,31 @@ window.addEventListener('mousemove', (e) => {
             if (f) {
                 const dx = w.x - drag.last.x, dy = w.y - drag.last.y;
                 for (const p of f.outer) { p[0] += dx; p[1] += dy; }
+            }
+            drag.last = w; drag.moved = true; draw();
+        } else if (drag.kind === 'icerot') {
+            const f = dice()[drag.i], C = drag.centre;
+            if (f) {
+                const a0 = Math.atan2(drag.last.y - C.y, drag.last.x - C.x);
+                const a1 = Math.atan2(w.y - C.y, w.x - C.x);
+                const da = a1 - a0, cs = Math.cos(da), sn = Math.sin(da);
+                for (const p of f.outer) {
+                    const x = p[0] - C.x, y = p[1] - C.y;
+                    p[0] = C.x + x * cs - y * sn;
+                    p[1] = C.y + x * sn + y * cs;
+                }
+            }
+            drag.last = w; drag.moved = true; draw();
+        } else if (drag.kind === 'icescale') {
+            const f = dice()[drag.i], C = drag.centre;
+            if (f) {
+                const d0 = Math.hypot(drag.last.x - C.x, drag.last.y - C.y) || 1;
+                const d1 = Math.hypot(w.x - C.x, w.y - C.y) || 1;
+                const k = Math.max(0.2, Math.min(5, d1 / d0));
+                for (const p of f.outer) {
+                    p[0] = C.x + (p[0] - C.x) * k;
+                    p[1] = C.y + (p[1] - C.y) * k;
+                }
             }
             drag.last = w; drag.moved = true; draw();
         } else if (drag.kind === 'measure') {
@@ -2962,8 +3472,9 @@ window.addEventListener('mousemove', (e) => {
         else if (tool === 'sculpt' || tool === 'smooth') draw();
     }
 
-    $('hud').textContent = `${Math.round(uToM(w.x))}, ${Math.round(uToM(w.y))} m   ·   ${view.scale.toFixed(3)}×`
-        + (tool === 'sculpt' || tool === 'smooth' ? `   ·   brush ${Math.round(uToM(brush))} m` : '');
+    $('hud').textContent = `${Math.round(uToM(w.x))}, ${Math.round(uToM(w.y))} m`
+        + (tool === 'sculpt' || tool === 'smooth' ? `  ·  brush ${Math.round(uToM(brush))} m` : '');
+    $('hud-zoom').textContent = `${view.scale.toFixed(3)}×`;
 });
 
 window.addEventListener('mouseup', () => {
@@ -2974,10 +3485,18 @@ window.addEventListener('mouseup', () => {
     if (d.kind === 'marquee' && marquee) {
         const x0 = Math.min(marquee.a.x, marquee.b.x), x1 = Math.max(marquee.a.x, marquee.b.x);
         const y0 = Math.min(marquee.a.y, marquee.b.y), y1 = Math.max(marquee.a.y, marquee.b.y);
+        const tiny = (x1 - x0) * view.scale < 4 && (y1 - y0) * view.scale < 4;
         const hits = modeVertexRefs().filter(v => v.x >= x0 && v.x <= x1 && v.y >= y0 && v.y <= y1)
                                      .map(({ kind, id, ring, i, r }) => ({ kind, id, ring, i, r }));
         vsel = marquee.add ? vsel.concat(hits.filter(h => !inSel(h))) : hits;
         marquee = null;
+        // A CLICK on empty water — not a drag — means "deselect", which is what it means
+        // everywhere else. Without this, selecting a shape left no way to unselect it
+        // except Escape, because empty water had become marquee territory.
+        if (tiny && !hits.length && !d.add) {
+            if (mode === 'shape') { sel = Object.assign({}, NOHIT); refreshInspector(); info(); }
+            if (mode === 'venue') { selIce = -1; iceRefresh(); }
+        }
         refreshChrome(); draw();
         return;
     }
@@ -2999,7 +3518,7 @@ window.addEventListener('mouseup', () => {
 cv.addEventListener('dblclick', (e) => {
     if (drawing && pending) { commitPending(); return; }
     if (!doc) return;
-    if (!(mode === 'vertex' && sub === 'drag') && mode !== 'boundary'
+    if (!(mode === 'shape' && sub === 'drag') && mode !== 'boundary' && mode !== 'venue'
         && mode !== 'wind' && mode !== 'current') return;
     const r = cv.getBoundingClientRect();
     const w = toW(e.clientX - r.left, e.clientY - r.top);
@@ -3023,6 +3542,8 @@ window.addEventListener('keydown', (e) => {
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
     if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); if (doc && isDirty()) save(); return; }
+    if (e.key.toLowerCase() === 'w') { showField = !showField; syncFieldButtons(); draw(); return; }
+    if (e.key.toLowerCase() === 'c' && !mod) { showCurField = !showCurField; syncFieldButtons(); draw(); return; }
     if (e.key === '[') { brush = Math.max(40, brush / 1.25); $('brush').value = Math.round(brush); draw(); return; }
     if (e.key === ']') { brush = Math.min(4000, brush * 1.25); $('brush').value = Math.round(brush); draw(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') {
@@ -3033,11 +3554,11 @@ window.addEventListener('keydown', (e) => {
             if (sel.mark >= 0) { deleteMark(sel.mark); return; }
             if (selLine >= 0) { deleteLine(selLine); return; }
         }
+        // Vertices first: if some are selected, THEY are what Delete means. Only with none
+        // selected does Delete remove the whole object.
+        if (vsel.length && deleteSelectedVertices()) { afterEdit(true, 'delete vertices'); return; }
         if (mode === 'venue' && selIce >= 0) { deleteIce(selIce); return; }
-        if (mode === 'vertex' || mode === 'boundary' || mode === 'wind' || mode === 'current') {
-            if (deleteSelectedVertices()) { afterEdit(true, 'delete vertices'); return; }
-        }
-        if (sel.shape && deleteSelectedShape()) afterEdit(true, 'delete shape');
+        if (mode === 'shape' && sel.shape && deleteSelectedShape()) afterEdit(true, 'delete shape');
         return;
     }
     if (e.key === 'Enter' && pending) { commitPending(); return; }
@@ -3045,15 +3566,17 @@ window.addEventListener('keydown', (e) => {
     // A measurement is deliberately sticky so you can make precise edits against it —
     // so it needs an explicit way out.
     if (e.key === 'Escape' && measure) { measure = null; draw(); return; }
-    if (e.key === 'Escape' && (sel.mark >= 0 || selLine >= 0 || selRoute >= 0)) {
-        sel = Object.assign({}, NOHIT); selLine = -1; selRoute = -1;
-        marksInspector(); markRefresh(); lineRefresh(); routeRefresh(); draw(); return;
+    // Escape clears whatever is selected, in any mode.
+    if (e.key === 'Escape' && (sel.shape || sel.mark >= 0 || selLine >= 0 || selRoute >= 0
+                               || selIce >= 0 || vsel.length)) {
+        sel = Object.assign({}, NOHIT); selLine = -1; selRoute = -1; selIce = -1; vsel = [];
+        refreshInspector(); marksInspector(); iceRefresh(); refreshChrome(); draw(); return;
     }
-    const modes = { '1': 'shape', '2': 'vertex', '3': 'marks', '4': 'route', '5': 'boundary',
-                    '6': 'wind', '7': 'current', '8': 'venue', '9': 'map', '0': 'measure' };
+    const modes = { '1': 'shape', '2': 'marks', '3': 'route', '4': 'boundary',
+                    '5': 'wind', '6': 'current', '7': 'venue', '8': 'map', '9': 'measure' };
     if (modes[e.key]) { setMode(modes[e.key]); return; }
-    // Sub-tools only mean something inside vertex mode.
-    if (mode === 'vertex') {
+    // Sub-tools only mean something inside Land mode.
+    if (mode === 'shape') {
         const subs = { d: 'drag', s: 'sculpt', g: 'smooth' };
         if (subs[e.key]) { sub = subs[e.key]; refreshChrome(); draw(); }
     }
@@ -3062,13 +3585,13 @@ window.addEventListener('keydown', (e) => {
 // Right panel: Overview and Checks are separate panes. The course stats, legend and
 // route are what you look at while working; the checks are what you consult. Stacking
 // them meant the stats were always pushed off the top.
-document.querySelectorAll('[data-pane]').forEach(t => t.addEventListener('click', () => {
-    document.querySelectorAll('[data-pane]').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    const p = t.dataset.pane;
-    $('pane-overview').classList.toggle('hidden', p !== 'overview');
-    $('pane-checks').classList.toggle('hidden', p !== 'checks');
-}));
+// The checks live in a drawer under the stats band: they are what you consult, not what you
+// keep on screen, and the tally is always visible whether it is open or not.
+$('btn-drawer').addEventListener('click', () => {
+    const d = $('drawer');
+    d.hidden = !d.hidden;
+    $('tally-chev').style.transform = d.hidden ? '' : 'rotate(180deg)';
+});
 
 // ── Wire up ─────────────────────────────────────────────────────────────────
 // Switching mode clears what that mode owned. A shape left selected in Land mode kept its
@@ -3083,9 +3606,6 @@ function setMode(next) {
     refreshChrome(); draw();
 }
 document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
-document.querySelectorAll('.subtool').forEach(b => b.addEventListener('click', () => {
-    sub = b.dataset.sub; refreshChrome(); draw();
-}));
 $('btn-draw').addEventListener('click', () => {
     if (!doc) return;
     drawing = !drawing;
@@ -3190,8 +3710,8 @@ $('btn-wr-del').addEventListener('click', () => {
     doc.wind.regions.splice(selWind, 1); selWind = -1;
     afterEdit(true, 'delete wind region');
 });
-$('wind-field').addEventListener('change', (e) => { showField = e.target.checked; draw(); });
-[['wr-dir','direction',Math.PI/180], ['wr-dirvar','dirVar',Math.PI/180],
+
+[['wr-dirvar','dirVar',Math.PI/180],
  ['wr-speedvar','speedVar',1],
  ['wr-period','period',1], ['wr-falloff','falloff',U_PER_M]].forEach(([id, key, scale]) => {
     $(id).addEventListener('change', () => {
@@ -3199,6 +3719,15 @@ $('wind-field').addEventListener('change', (e) => { showField = e.target.checked
         const v = parseFloat($(id).value);
         if (isFinite(v)) { r[key] = v * scale; afterEdit(true, 'wind region'); }
     });
+});
+// A compass bearing, 0-359, naming where the wind comes FROM.
+$('wr-dir').addEventListener('change', () => {
+    const r = wregs()[selWind]; if (!r) return;
+    const v = parseFloat($('wr-dir').value);
+    if (!isFinite(v)) { windRefresh(); return; }
+    r.direction = radOf(v);
+    afterEdit(true, 'wind region');
+    toast(`Wind from ${degOf(r.direction)}° (${compassOf(r.direction)})`);
 });
 // Blank speed means "whatever the venue is doing here", which is what keeps a course that
 // only authors direction varying from race to race.
@@ -3211,6 +3740,50 @@ $('wr-speed').addEventListener('change', () => {
     r.speed = v;
     afterEdit(true, 'wind region');
 });
+// ── Arena ──────────────────────────────────────────────────────────────────
+$('btn-brect').addEventListener('click', () => {
+    if (!doc) return;
+    // An inset pulls the sailing limit INSIDE the painted map, which is what leaves
+    // land beyond it for a sailor at the edge to look at.
+    const insetM = parseFloat($('brect-inset').value) || 0;
+    boundaryToRect(mToU(insetM)); afterEdit(true, 'boundary rect');
+    toast(insetM ? `Arena set to the map rect, inset ${insetM} m` : 'Arena set to the map rectangle');
+});
+$('btn-bcircle').addEventListener('click', () => {
+    if (!doc) return;
+    boundaryToCircle(); afterEdit(true, 'boundary circle');
+    toast('Arena set to a circle');
+});
+
+// ── Whole map ──────────────────────────────────────────────────────────────
+$('btn-scalemap').addEventListener('click', () => {
+    if (!doc) return;
+    const pct = parseFloat($('scalemap').value);
+    if (!isFinite(pct) || pct <= 0) { toast('Enter a percentage', true); return; }
+    scaleMap(pct / 100); afterEdit(true, 'scale map');
+});
+
+// ── Field previews: top-level, because "what is the weather doing here" is a question you
+//    have while editing anything, not only while editing the weather.
+function syncFieldButtons() {
+    $('btn-field-wind').classList.toggle('btn-primary', showField);
+    $('btn-field-cur').classList.toggle('btn-primary', showCurField);
+}
+$('btn-field-wind').addEventListener('click', () => {
+    showField = !showField; syncFieldButtons(); draw();
+});
+$('btn-field-cur').addEventListener('click', () => {
+    showCurField = !showCurField; syncFieldButtons(); draw();
+});
+
+// ── Venue picker ───────────────────────────────────────────────────────────
+$('venue-select').addEventListener('change', () => {
+    if (doc && isDirty() && !confirm('Discard unsaved changes?')) {
+        $('venue-select').value = doc.venue; return;
+    }
+    loadVenue();
+});
+
 $('btn-add-mark').addEventListener('click', () => {
     if (!doc) return;
     const id = addMark('inflatable'); afterEdit(true, 'add mark');
@@ -3296,13 +3869,13 @@ $('btn-cr-del').addEventListener('click', () => {
     doc.current.regions.splice(selCur, 1);
     selCur = -1; afterEdit(true, 'delete current region');
 });
-$('cur-field').addEventListener('change', () => { showCurField = $('cur-field').checked; draw(); });
+
 const curField = (id, fn) => $(id).addEventListener('change', () => {
     const r = cregs()[selCur]; if (!r) return;
     fn(r, parseFloat($(id).value));
     afterEdit(true, 'current region');
 });
-curField('cr-dir',      (r, v) => r.direction = (v || 0) * Math.PI / 180);
+curField('cr-dir',      (r, v) => r.direction = radOf(v || 0));
 curField('cr-dirvar',   (r, v) => r.dirVar = Math.abs(v || 0) * Math.PI / 180);
 curField('cr-speed',    (r, v) => r.speed = Math.max(0, v || 0));
 curField('cr-speedvar', (r, v) => r.speedVar = Math.abs(v || 0));
@@ -3367,6 +3940,11 @@ window.EditorApp = { resize, fitView, loadVenue, draw,
     _hit: (x, y) => hit(x, y),
     _measure: () => measure,
     _estimate: () => estimate,
+    _savedJSON: () => savedJSON,
+    _boat: () => boatProbe,
+    _degOf: (r) => degOf(r),
+    _compassOf: (r) => compassOf(r),
+    _pickTool: (t) => pickTool(t),
     _setView: (x, y, sc) => { view.x = x; view.y = y; view.scale = sc;
         if (boatProbe) { boatProbe.x = x; boatProbe.y = y; } boatInfo(); draw(); },
     _addIce: (x, y, r) => addIce(x, y, r),
@@ -3374,6 +3952,7 @@ window.EditorApp = { resize, fitView, loadVenue, draw,
     _translateShape: (l, dx, dy) => translateShape(l, dx, dy),
     _deleteIce: (i) => deleteIce(i),
     _selIce: () => selIce,
+    _selectIce: (i) => { selIce = i; vsel = []; iceRefresh(); draw(); },
     _snapPoint: (w, ref) => snapPoint(w, snapCandidates(ref)),
     _previewSeed: (v) => { if (v != null) previewSeed = v; return previewSeed; },
     _legend: () => $('legend').textContent,

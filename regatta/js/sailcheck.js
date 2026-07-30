@@ -274,7 +274,7 @@ function legVMG(legDir, windDir, windSpeed) {
     return { vmg: best, twaCourse };
 }
 
-function routeEstimate(grid, marks, route, windDir, windSpeed) {
+function routeEstimate(grid, marks, route, windDir, windSpeed, windAt) {
     // The waypoints a correct sailor hits, then the distance between them: this is the
     // same ideal path the sailability check drives a boat along, so what gets priced is a
     // distance that has been proven sailable.
@@ -300,6 +300,7 @@ function routeEstimate(grid, marks, route, windDir, windSpeed) {
     // single bearing taken end-to-end priced the arctic beat as a broad reach because the
     // rounding arc left the boat on the far side of the island.
     const per = {};
+    let calm = 0;               // path length through water with no wind over it
     let prev = null;
     for (const wp of wps) {
         if (prev) {
@@ -317,7 +318,14 @@ function routeEstimate(grid, marks, route, windDir, windSpeed) {
                 }
             }
             const bearing = Math.atan2(wp.x - prev.x, -(wp.y - prev.y));
-            const v = legVMG(bearing, windDir, windSpeed);
+            // The wind WHERE THE BOAT IS, sampled at the middle of the hop. A course whose
+            // wind varies across it cannot be priced with one number, and a hop through a
+            // patch nobody put a region over cannot be sailed at all.
+            const local = windAt
+                ? windAt((prev.x + wp.x) / 2, (prev.y + wp.y) / 2)
+                : { direction: windDir, speed: windSpeed };
+            if (!local || local.speed < 0.5) { calm += d; prev = wp; continue; }
+            const v = legVMG(bearing, local.direction, local.speed);
             const secs = (v && v.vmg > 0.2)
                 ? d / (v.vmg * U_PER_S_PER_KNOT)
                 : d / (REF > 0 ? REF * U_PER_S_PER_KNOT : 30);
@@ -341,8 +349,10 @@ function routeEstimate(grid, marks, route, windDir, windSpeed) {
         out.push(rec);
         if (!slowest || rec.secs > slowest.secs) slowest = rec;
     }
-    return { legs: out, dist: out.reduce((a, l) => a + l.dist, 0), secs: total, slowest,
-             refKnots: REF, windDir, windSpeed };
+    return { legs: out, dist: out.reduce((a, l) => a + l.dist, 0) + calm, secs: total, slowest,
+             // Distance the boat cannot cover at all, because there is no wind there. A
+             // course with any of this is unsailable, however good the rest of it is.
+             calm, refKnots: REF, windDir, windSpeed };
 }
 
 window.SailCheck = {

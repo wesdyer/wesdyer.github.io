@@ -189,6 +189,53 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     check('land-outside is unchanged by uniform scaling (ratio preserved)', outBefore === outAfter,
           `${outBefore} -> ${outAfter}`);
 
+    // ── Scaling the map scales EVERYTHING ───────────────────────────────────
+    // A map is only the same map if every part of it scales together. Ice that keeps its
+    // size no longer fits its channel; a wind region that keeps its size no longer covers
+    // the water. So this measures each kind of object rather than trusting a list.
+    console.log('\nscale everything');
+    const everything = await page.evaluate(() => {
+        const A = window.EditorApp;
+        // Give the venue one of each thing that has a size.
+        document.querySelector('#layer-list [data-layer="venue"]').click();
+        document.getElementById('ice-scatter').value = '1';
+        A._addIce(-3200, 2600, 300); A._afterEdit(true, 'ice');
+        document.querySelector('#layer-list [data-layer="water"]').click();
+        document.getElementById('btn-add-cur-all').click();
+        const snap = () => {
+            const d = A._state().doc;
+            const spanOf = (ring) => {
+                let minX = Infinity, maxX = -Infinity;
+                for (const p of ring) { if (p[0] < minX) minX = p[0]; if (p[0] > maxX) maxX = p[0]; }
+                return maxX - minX;
+            };
+            const rd = d.course.route.find(e => e.kind === 'round');
+            return {
+                world: d.world.size,
+                arena: spanOf(d.world.boundary.poly),
+                land: spanOf(d.land[0].outer),
+                iceSpan: spanOf(d.ice[d.ice.length - 1].outer),
+                iceX: d.ice[d.ice.length - 1].outer[0][0],
+                zone: rd.zone, radius: rd.radius,
+                markX: d.course.marks[2].x,
+                windSpan: spanOf(d.wind.regions[0].poly),
+                windFall: d.wind.regions[0].falloff,
+                curSpan: spanOf(d.current.regions[0].poly),
+                curFall: d.current.regions[0].falloff
+            };
+        };
+        const before = snap();
+        A._scaleMap(0.5); A._afterEdit(true, 'scale');
+        return { before, after: snap() };
+    });
+    const halved = (k) => Math.abs(everything.after[k] - everything.before[k] * 0.5) < 1e-6;
+    for (const k of ['world', 'arena', 'land', 'iceSpan', 'iceX', 'zone', 'radius', 'markX',
+                     'windSpan', 'windFall', 'curSpan', 'curFall']) {
+        check(`${k} scaled with the map`, halved(k),
+              `${(+everything.before[k]).toFixed(1)} -> ${(+everything.after[k]).toFixed(1)}`);
+    }
+    await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
+
     // ── Boundary radius ─────────────────────────────────────────────────────
     // Growing the circle to circumscribe the square map is what DOES clear it.
     console.log('\nboundary radius');
@@ -320,12 +367,14 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
               + `spacing CV ${rs.beforeCV.toFixed(3)} -> ${rs.afterCV.toFixed(3)} -> ${rs.cv7.toFixed(3)}`);
 
     // ── Vertex multi-selection, move, align, insert/delete ──────────────────
-    // One selection layer shared by every mode that owns vertices, so marquee-select and
-    // align behave the same on land, the arena and a wind region's outline.
+    // One selection layer shared by every mode that owns vertices — land in Land mode, the
+    // arena in Arena mode, a region's outline in Wind or Water. There is no separate
+    // Vertices mode: selecting a thing shows its vertices.
     console.log('\nvertex selection');
     const vs = await page.evaluate(() => {
         const A = window.EditorApp;
-        document.querySelector('[data-mode="vertex"]').click();
+        document.querySelector('#layer-list [data-layer="land"]').click();
+        A._selectShape('coast');                   // its vertices are what is editable
         const l = A._shapeById('coast');
         const before = l.outer.map(q => q.slice());
         A._selectVerts([0, 1, 2, 3].map(i => ({ kind: 'land', id: 'coast', ring: -1, i })));
@@ -341,7 +390,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         const alignedY = [1, 2, 3].every(i => Math.abs(l.outer[i][1] - l.outer[0][1]) < 1e-9);
 
         // The arena is a polygon and takes the same gestures.
-        document.querySelector('[data-mode="boundary"]').click();
+        document.querySelector('#layer-list [data-layer="arena"]').click();
         const bp = () => A._state().doc.world.boundary.poly;
         const arenaBefore = bp().length;
         const ins = A._insertNear((bp()[0][0] + bp()[1][0]) / 2, (bp()[0][1] + bp()[1][1]) / 2);
@@ -355,7 +404,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         A._deleteSel();
         const arenaFloor = bp().length;
 
-        document.querySelector('[data-mode="shape"]').click();
+        document.querySelector('#layer-list [data-layer="land"]').click();
         return { n, moved, untouched, alignedX, alignedY, arenaBefore, ins, arenaAfter, del, arenaFinal, arenaFloor };
     });
     check('four vertices selected', vs.n === 4, String(vs.n));
@@ -376,7 +425,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     console.log('\nmarks, gates and the route');
     const inv = await page.evaluate(() => {
         const A = window.EditorApp;
-        document.querySelector('[data-mode="marks"]').click();
+        document.querySelector('#layer-list [data-layer="marks"]').click();
         const before = A._state().doc.course;
         const marks0 = before.marks.length, lines0 = (before.lines || []).length;
         document.getElementById('btn-add-line').click();       // a gate with no leg
@@ -464,14 +513,14 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     await page.evaluate(() => {
         const A = window.EditorApp;
         // Geometry is made in Marks & gates; the Route panel only orders what exists.
-        document.querySelector('[data-mode="marks"]').click();
+        document.querySelector('#layer-list [data-layer="marks"]').click();
         const gid = A._addLine(); A._afterEdit(true, 'gate');
         const mid = A._addMark('can'); A._afterEdit(true, 'mark');
-        document.querySelector('[data-mode="route"]').click();
+        document.querySelector('#layer-list [data-layer="course"]').click();
         A._addToRoute(`line:${gid}`, 'through'); A._afterEdit(true, 'leg');
         A._addToRoute(`mark:${mid}`); A._afterEdit(true, 'leg');
     });
-    const rows = page.locator('#route-list .rt');
+    const rows = page.locator('#obj-list .ob');
     const kindsOf = () => page.evaluate(() => window.EditorApp._state().doc.course.route
         .map(e => e.role === 'start' ? 'start' : e.finish ? 'finish' : (e.pass || e.kind)));
     const order0 = await kindsOf();
@@ -501,17 +550,17 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         const r = () => A._state().doc.course.route;
         // A leg with no name reads as what it IS.
         const derived = A._entryLabel(1);
-        document.querySelector('#route-list .rt[data-i="1"]').click();
+        document.querySelector('#obj-list .ob[data-i="1"]').click();
         const rowShown = !document.getElementById('rt-name-row').classList.contains('hidden');
         set('rt-name', 'The Long Beat');
         const named = r()[1].name;
-        const shownNamed = document.querySelector('#route-list .rt[data-i="1"] .rt-k').textContent;
+        const shownNamed = document.querySelector('#obj-list .ob[data-i="1"] .ob-n').textContent;
         set('rt-name', '   ');                     // blank clears it, default comes back
         const cleared = r()[1].name === undefined;
-        const shownAgain = document.querySelector('#route-list .rt[data-i="1"] .rt-k').textContent;
+        const shownAgain = document.querySelector('#obj-list .ob[data-i="1"] .ob-n').textContent;
 
         // Marks the same way, with the smart default still on show beside the field.
-        document.querySelector('[data-mode="marks"]').click();
+        document.querySelector('#layer-list [data-layer="marks"]').click();
         A._selectMark(0);
         const mkShown = !document.getElementById('mk-name-row').classList.contains('hidden');
         const mkDerived = document.getElementById('mk-derived').textContent;
@@ -552,7 +601,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     // ── Measuring a multi-leg path ──────────────────────────────────────────
     console.log('\nmeasure');
     const meas = await page.evaluate(() => {
-        document.querySelector('[data-mode="measure"]').click();
+        window.EditorApp._pickTool('measure');
         const cv = document.getElementById('schematic');
         const r = cv.getBoundingClientRect();
         const at = (x, y, shift) => {
@@ -579,7 +628,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     console.log('\ncurrent');
     const cur = await page.evaluate(() => {
         const A = window.EditorApp;
-        document.querySelector('[data-mode="current"]').click();
+        document.querySelector('#layer-list [data-layer="water"]').click();
         document.getElementById('btn-add-cur-all').click();
         const d = A._state().doc;
         const r = d.current.regions[0];
@@ -665,7 +714,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     console.log('\nhand-placed ice');
     const ice2 = await page.evaluate(() => {
         const A = window.EditorApp;
-        document.querySelector('[data-mode="venue"]').click();
+        document.querySelector('#layer-list [data-layer="venue"]').click();
         const clean = !A._state().dirty;                 // reading must not dirty the doc
         document.getElementById('ice-scatter').value = '1';
         document.getElementById('ice-vary').value = '0';
@@ -727,7 +776,8 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     console.log('\nvertex snapping');
     const snapT = await page.evaluate(() => {
         const A = window.EditorApp;
-        document.querySelector('[data-mode="vertex"]').click();
+        document.querySelector('#layer-list [data-layer="land"]').click();
+        A._selectShape('coast');
         const l = A._shapeById('coast');
         const ref = { kind: 'land', id: 'coast', ring: -1, i: 5 };
         const nb = l.outer[4];
@@ -743,21 +793,150 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     check('...on that axis only', snapT.keptY === true);
     check('...and not when it is deliberately elsewhere', snapT.freeX === true);
 
-    // ── The vertex panel stops shouting in Wind mode ────────────────────────
+    // ── The vertex panel appears only when there is a selection ─────────────
     const panel = await page.evaluate(() => {
         const shown = () => document.getElementById('vsel-row').style.display !== 'none';
-        document.querySelector('[data-mode="vertex"]').click();
-        const inVertex = shown();
-        document.querySelector('[data-mode="wind"]').click();
-        const inWind = shown();
-        window.EditorApp._selectVerts([{ kind: 'arena', i: 0 }]);
+        const A = window.EditorApp;
+        A._selectVerts([]);
+        document.querySelector('#layer-list [data-layer="land"]').click();
+        const idle = shown();
+        A._selectVerts([{ kind: 'land', id: 'coast', ring: -1, i: 0 }]);
         const withSel = shown();
-        window.EditorApp._selectVerts([]);
-        return { inVertex, inWind, withSel };
+        document.querySelector('#layer-list [data-layer="wind"]').click();
+        A._selectVerts([]);
+        const inWind = shown();
+        return { idle, withSel, inWind };
     });
-    check('the vertex panel lives in Vertices mode', panel.inVertex === true);
-    check('...is not in the way in Wind mode', panel.inWind === false);
-    check('...but appears there once something is selected', panel.withSel === true);
+    check('the vertex panel stays out of the way with nothing selected', panel.idle === false);
+    check('...and appears as soon as something is selected', panel.withSel === true);
+    check('...in whichever mode owns it', panel.inWind === false);
+
+    // ── Ice takes the same three gestures as a land shape ───────────────────
+    const iceG = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('#layer-list [data-layer="venue"]').click();
+        document.getElementById('ice-scatter').value = '1';
+        A._addIce(-3200, 2600, 300);
+        A._afterEdit(true, 'ice');
+        const i = A._state().doc.ice.length - 1;
+        const f = () => A._state().doc.ice[i];
+        const centre = () => {
+            const o = f().outer;
+            return { x: o.reduce((a, p) => a + p[0], 0) / o.length,
+                     y: o.reduce((a, p) => a + p[1], 0) / o.length };
+        };
+        const span = () => {
+            const o = f().outer, c = centre();
+            return Math.max.apply(null, o.map(p => Math.hypot(p[0] - c.x, p[1] - c.y)));
+        };
+        const cv = document.getElementById('schematic');
+        const r = cv.getBoundingClientRect();
+        A._setView(centre().x, centre().y, 1);
+        const at = (mods) => {
+            const c = { x: r.width / 2, y: r.height / 2 };
+            cv.dispatchEvent(new MouseEvent('mousedown', Object.assign({
+                clientX: r.left + c.x, clientY: r.top + c.y, button: 0, bubbles: true }, mods || {})));
+            window.dispatchEvent(new MouseEvent('mousemove', {
+                clientX: r.left + c.x + 60, clientY: r.top + c.y + 30, bubbles: true }));
+            window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        };
+        A._selectIce(i);
+        const before = { c: centre(), span: span(), v0: f().outer[0].slice() };
+        at();                                     // plain drag: move
+        const afterMove = { c: centre(), span: span() };
+        A._setView(centre().x, centre().y, 1);
+        at({ metaKey: true });                    // Cmd+drag: rotate
+        const afterRot = { c: centre(), span: span(), v0: f().outer[0].slice() };
+        A._setView(centre().x, centre().y, 1);
+        at({ altKey: true });                     // Alt+drag: scale
+        const afterScale = { span: span() };
+        return { before, afterMove, afterRot, afterScale };
+    });
+    check('a plain drag moves a floe',
+          Math.hypot(iceG.afterMove.c.x - iceG.before.c.x, iceG.afterMove.c.y - iceG.before.c.y) > 20,
+          `moved ${Math.round(Math.hypot(iceG.afterMove.c.x - iceG.before.c.x, iceG.afterMove.c.y - iceG.before.c.y))}u`);
+    check('Cmd/Ctrl+drag ROTATES it — its size does not change',
+          Math.abs(iceG.afterRot.span - iceG.afterMove.span) < 1e-6
+          && Math.hypot(iceG.afterRot.v0[0] - iceG.before.v0[0], iceG.afterRot.v0[1] - iceG.before.v0[1]) > 1,
+          `span ${iceG.afterMove.span.toFixed(1)} -> ${iceG.afterRot.span.toFixed(1)}`);
+    check('Alt+drag SCALES it', Math.abs(iceG.afterScale.span - iceG.afterRot.span) > 1,
+          `span ${iceG.afterRot.span.toFixed(1)} -> ${iceG.afterScale.span.toFixed(1)}`);
+    await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
+
+    // ── Current region vertices, boat controls, bearings ────────────────────
+    console.log('\ncurrent regions and the boat');
+    const cur2 = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('#layer-list [data-layer="water"]').click();
+        document.getElementById('btn-add-cur-all').click();
+        const reg = () => A._state().doc.current.regions[0];
+        const p0 = reg().poly[0].slice();
+        // A region corner must be GRABBABLE in its own mode — this was gated on the WIND
+        // selection, so current corners could never be dragged.
+        const h = A._hit(p0[0], p0[1]);
+        A._selectVerts([{ kind: 'current', r: 0, i: 0 }]);
+        A._moveSel(150, -90);
+        const moved = Math.abs(reg().poly[0][0] - (p0[0] + 150)) < 1e-9;
+        A._selectVerts([]);
+        return { wvert: h.wvert, moved };
+    });
+    check('a current region corner is grabbable in Water mode', cur2.wvert === 0, `wvert ${cur2.wvert}`);
+    check('...and moves when dragged', cur2.moved === true);
+
+    const bear = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('#layer-list [data-layer="wind"]').click();
+        const r = () => A._state().doc.wind.regions[0];
+        // The wind is named by where it comes FROM, as a compass bearing: 0 north, up.
+        const el = document.getElementById('wr-dir');
+        // Selecting the region is what exposes its fields — from the layer's object column,
+        // which is where regions are listed now.
+        document.querySelector('#obj-list .ob').click();
+        el.value = '215'; el.dispatchEvent(new Event('change'));
+        const stored = r().direction;
+        const shown = document.getElementById('wr-dir').value;
+        // 215 degrees means from the south-west, so the wind blows toward the north-east:
+        // forward = (sin, -cos) of the FROM bearing points back at where it came from.
+        const fromVec = { x: Math.sin(stored), y: -Math.cos(stored) };
+        return { stored, shown, fromVec, deg: A._degOf(stored), compass: A._compassOf(stored) };
+    });
+    check('a wind bearing round-trips as a compass number',
+          bear.shown === '215' && bear.deg === 215, `stored ${bear.stored.toFixed(3)} shown ${bear.shown}`);
+    check('...and 215° reads as south-west', bear.compass === 'SW', bear.compass);
+    check('...pointing back at where the wind came from (south-west of the boat)',
+          bear.fromVec.x < 0 && bear.fromVec.y > 0,
+          `(${bear.fromVec.x.toFixed(2)}, ${bear.fromVec.y.toFixed(2)}) — screen y is down, so +y is south`);
+
+    const boat = await page.evaluate(() => {
+        const A = window.EditorApp;
+        window.EditorApp._pickTool('measure');
+        document.getElementById('show-boat').click();
+        const cv = document.getElementById('schematic');
+        const r = cv.getBoundingClientRect();
+        A._setView(0, 0, 1);                      // 1 px per world unit: the boat is 55 px
+        const at = (x, y, mods) => {
+            cv.dispatchEvent(new MouseEvent('mousedown', Object.assign({
+                clientX: r.left + x, clientY: r.top + y, button: 0, bubbles: true }, mods || {})));
+            window.dispatchEvent(new MouseEvent('mousemove', { clientX: r.left + x + 40, clientY: r.top + y + 20, bubbles: true }));
+            window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        };
+        const b0 = Object.assign({}, A._boat());
+        const c = { x: r.width / 2, y: r.height / 2 };
+        at(c.x, c.y);                             // plain drag: move
+        const b1 = Object.assign({}, A._boat());
+        at(c.x + 40, c.y + 20, { metaKey: true }); // Cmd+drag: rotate
+        const b2 = Object.assign({}, A._boat());
+        return { b0, b1, b2 };
+    });
+    check('the boat appears when switched on', boat.b0 && boat.b0.x !== undefined);
+    check('a plain drag MOVES it, like a shape',
+          Math.abs(boat.b1.x - boat.b0.x) > 20 && Math.abs(boat.b1.heading - boat.b0.heading) < 1e-9,
+          `moved ${Math.round(boat.b1.x - boat.b0.x)}u, heading ${boat.b1.heading.toFixed(3)}`);
+    check('Cmd/Ctrl+drag ROTATES it, like a shape',
+          Math.abs(boat.b2.heading - boat.b1.heading) > 0.05
+          && Math.abs(boat.b2.x - boat.b1.x) < 1e-9,
+          `heading ${boat.b1.heading.toFixed(3)} -> ${boat.b2.heading.toFixed(3)}`);
+    await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
 
     // ── Save output    // ── Save output ─────────────────────────────────────────────────────────
     console.log('\nsave output');

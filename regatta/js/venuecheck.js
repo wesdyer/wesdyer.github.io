@@ -417,6 +417,22 @@ function runChecks(ctx) {
 
     // 8. RACE LENGTH. The target is a design decision, so this is a warning and not
     //    an error, but a course nobody wants to finish is still a broken course.
+    // NO WIND IS UNSAILABLE. Outside every wind region the water is calm, so a course whose
+    // route crosses an uncovered patch cannot be sailed there — and it looks perfectly fine
+    // on the map, which is exactly why this has to be said out loud.
+    const est0 = compiled.estimate;
+    if (est0) {
+        const calm = est0.calm || 0;
+        if (calm > 0) {
+            add('error', 'no-wind', 'No wind over part of the course',
+                `${M(calm)} of the sailable path crosses water with no wind region over it`
+                + ' — a boat cannot sail there. Cover it in Wind mode.');
+        } else {
+            add('ok', 'no-wind', 'Wind covers the course',
+                'Every part of the sailable path has wind over it');
+        }
+    }
+
     const est = compiled.estimate;
     if (est && est.secs > 0) {
         // The honest measure: the hull-width path around the land, priced by the game's

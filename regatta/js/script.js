@@ -4958,16 +4958,15 @@ function getWindAt(x, y) {
             sacc += rs * w;
             wsum += w;
         }
-        if (wsum > 0) {
-            const wBase = Math.max(0, 1 - wsum);
-            if (wBase > 0) {
-                ux += Math.sin(baseDir) * wBase; uy += -Math.cos(baseDir) * wBase;
-                sacc += baseSpeed * wBase;
-            }
-            const total = wsum + wBase;
-            dir = Math.atan2(ux, -uy);
-            spd = sacc / total;
-        }
+        // NO WIND WHERE NO REGION SAYS THERE IS. The leftover weight goes to CALM, not to
+        // a venue-wide breeze: once regions state the wind, an unstated patch is a hole in
+        // the design, and filling it in silently is how a course comes to depend on a
+        // fallback nobody authored. A hole is sailable-looking and unsailable, so the
+        // checks hunt for it — see `no-wind` in venuecheck.
+        const wBase = Math.max(0, 1 - wsum);
+        const total = wsum + wBase;
+        dir = wsum > 0 ? Math.atan2(ux, -uy) : baseDir;
+        spd = total > 0 ? sacc / total : 0;
     }
 
     // Convert to vector

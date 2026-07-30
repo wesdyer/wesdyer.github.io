@@ -15,11 +15,11 @@ const shots = [
       const A = window.EditorApp;
       const m = A._addMark('can'); A._afterEdit(true, 'mark');
       A._addToRoute(`mark:${m}`); A._afterEdit(true, 'leg');
-      document.querySelector('#route-list .rt[data-i="1"]').click();
+      document.querySelector('#obj-list .ob[data-i="1"]').click();
   }) },
   { mode: 'current', name: 'current', setup: (p) => p.evaluate(() => {
       document.getElementById('btn-add-cur-all').click();
-      document.getElementById('cur-field').click();
+      document.getElementById('btn-field-cur').click();     // the field toggles live in the header now
   }) },
   { mode: 'venue', name: 'venue', setup: async (p) => {
       await p.evaluate(() => {
@@ -29,7 +29,7 @@ const shots = [
       });
   } },
   { mode: 'wind', name: 'wind', setup: (p) => p.evaluate(() => {
-      document.getElementById('wind-field').click();
+      document.getElementById('btn-field-wind').click();
       document.querySelector('#wind-list .rt b').click();
   }) },
   { mode: 'measure', name: 'measure', setup: async (p) => {
@@ -62,7 +62,7 @@ const shots = [
     await s.setup(p);
     await p.waitForTimeout(250);
     await p.screenshot({ path: `regatta/eval/_editor_${s.name}.png` });
-    const panel = await p.locator(`.mode-panel[data-for="${s.mode}"]`).boundingBox();
+    const panel = await p.locator(`.mode-panel[data-layer="${s.mode}"]`).boundingBox();
     if (panel) await p.screenshot({ path: `regatta/eval/_editor_${s.name}_panel.png`,
       clip: { x: Math.max(0, panel.x - 8), y: Math.max(0, panel.y - 8),
               width: panel.width + 16, height: Math.min(panel.height + 16, 1020) } });
@@ -70,7 +70,7 @@ const shots = [
   // The right-hand Overview, and the Checks pane that used to blank the page.
   await p.screenshot({ path: 'regatta/eval/_editor_overview.png',
       clip: { x: 1800 - 380, y: 40, width: 380, height: 1000 } });
-  await p.click('[data-pane="checks"]');
+  await p.click('#btn-drawer');
   await p.waitForTimeout(250);
   const stillThere = await p.evaluate(() => ({
       courseVisible: !document.getElementById('view-course').classList.contains('hidden'),

@@ -1192,6 +1192,206 @@ course.** Third instance of this exact failure in one session. Two fixes: the ed
 every floe (authored included), and the check now reports "no ice on this venue" instead of
 skipping. A check that stops running reads as a pass.
 
+### Phase 4h — Bearings, calm water, and a dead-button guard ✅ DONE
+
+#### The bug that mattered: four dead controls
+
+**Switching venues had stopped working**, and so had Arena's *Fit rect* / *Back to circle*
+and the *Whole map* scale — all four handlers had been deleted by a cut between two
+anchors, which silently took everything in between with it. **Second time this session.**
+A dead button throws nothing and logs nothing; it just does nothing.
+
+So `eval/test_controls.js` now closes it, and not by guessing from the source: it installs
+a recorder over `addEventListener` **before any page script runs**, then asserts every
+`<button>`, `<input>` and `<select>` in the page has a real listener attached (bar a small
+read-on-demand whitelist). It also clicks every venue in the picker and asserts the editor
+followed, and clicks every button in every mode asserting nothing throws. A static
+heuristic was tried first and produced false positives on controls wired through tables and
+helpers — asking the browser is both simpler and correct.
+
+#### Bearings the way people say them
+
+The game's heading convention already agreed with the real world: **0 is north, north is up
+the screen, clockwise positive**. What disagreed was the presentation — the editor printed
+raw radians as a signed angle, so a south-westerly read as `-145°` instead of the `215°`
+anyone would say. Bearings are now 0–359 with a compass point beside them, and each panel
+states which convention it uses: a **wind is named by where it comes from**, a **current by
+where it goes to**. That is not a new model, only an honest label on the one that existed.
+
+#### Calm water is a design error, and now it says so
+
+**Outside every wind region there is no wind at all.** The leftover weight in the blend goes
+to calm rather than to a venue-wide breeze: once regions state the wind, an unstated patch
+is a hole in the design, and filling it in silently is how a course comes to depend on a
+fallback nobody authored.
+
+A hole is *sailable-looking and unsailable*, so three things hunt for it:
+
+- the wind-field preview **draws calm as nothing** — a row of tiny arrows would read as
+  "light here" rather than "you cannot sail here"
+- `routeEstimate` samples the wind **where the boat is**, per hop, and reports the distance
+  it could not price as `calm`
+- a `no-wind` check turns that into an error naming the metres involved
+
+The validator also errors on a document with no wind regions, which is now genuinely
+unsailable rather than merely unusual.
+
+#### The global wind is gone from the interface
+
+No corner arrow, no single "wind" row in the Overview: a course whose point is that the wind
+varies across it cannot be summarised by one arrow, and showing one is a claim the model no
+longer makes. **Wind field** and **Current field** moved to the header (keys `W` and `C`)
+because "what is the weather doing here" is a question you have while editing anything.
+`windBase` still exists internally — laylines and "does this leg net upwind" need one
+number — but it is derived from the regions and no longer presented as a property of the
+venue.
+
+#### Smaller things
+
+- **A current region's corners can be dragged.** The mousedown gate asked whether a *wind*
+  region was selected, so in Water mode it never looked.
+- **The boat takes the same controls as a land shape**: drag to move, Cmd/Ctrl+drag to
+  rotate. The bespoke ring on its bow was one more thing to learn for no reason.
+- **The seed box and Reroll ice are gone** — there is no random ice on a designed venue to
+  reroll.
+- **"What this course is" is now "Description"**, with a line saying what it is: a note
+  saved in the venue file for whoever opens it next. Nothing in the game reads it yet.
+- The whole-map wind region lost its "Course wind" name; it is Glacier Sound's authored
+  wind, not a system default, and deleting it is one click.
+
+**Note on undo cost:** with 54 floes baked in, the document is 62 KB, so 100 snapshot undo
+levels are ~6 MB rather than the 1.2 MB measured when snapshot undo was chosen. Still cheap
+for a desktop editor, but it is no longer negligible.
+
+### Phase 4i — Fewer modes, and scale means scale ✅ DONE
+
+#### Vertices was a mode; it should have been a level
+
+Every mode already edited its own outlines — the arena's corners in Arena mode, a region's
+corners in Wind and Water — while land and ice were exiled to a separate **Vertices** mode.
+That mode is gone, and the rule it implied is now the rule everywhere: **select a thing and
+its vertices appear.**
+
+That is one fewer mode *and* a better invariant. Previously the Vertices mode drew handles
+for every land shape at once (137 dots) but only the selected shape's were grabbable in
+some paths — visible and grabbable were different sets, which is the exact ambiguity modes
+were introduced to remove. Now the selected object's handles are drawn, and those are the
+ones that hit-test. Nothing else is either.
+
+The sculpt and smooth brushes moved into **Land**, which is the only thing they sculpt.
+Consequences worth stating:
+
+- `Delete` means *the selected vertices* when there are any, and the whole object when
+  there are not — one key, read in the obvious order.
+- Dragging empty water with something selected is a **marquee** over its vertices; with
+  nothing selected it pans. A *click* on empty water deselects, because that is what a click
+  on empty space means everywhere else — without it, selecting a shape left no way out but
+  Escape. Escape now clears any selection in any mode.
+- Mode keys renumbered 1–9.
+
+#### Ice is a shape, so it takes a shape's gestures
+
+Hand-placed ice answered only to a plain drag. It now takes the **same three gestures as a
+land shape** — drag to move, Cmd/Ctrl+drag to rotate about its centroid, Alt+drag to scale —
+because it is a shape and there was no reason for it to be special. Its vertices are
+editable in Venue mode by the same select-then-edit rule.
+
+#### Scale means scale
+
+*Scale everything* scaled land, marks and the arena, and quietly left behind the ice, the
+rounding zones, the size of the object each rounding stands at, and the wind and current
+regions with their falloff bands. A map is only the same map if every part of it scales
+together: ice that keeps its size no longer fits its channel, and a wind region that keeps
+its size no longer covers the water — which, now that uncovered water is calm, makes the
+course unsailable in a way that has nothing to do with what you were trying to change.
+
+Everything scales. The one deliberate exception is unchanged and still worth its comment:
+**the start line's length is set by the fleet, not the geography**, so scaling moves its
+midpoint and preserves its length.
+
+The test does not trust a list — it measures each kind of object before and after a 50%
+scale and asserts every one of the twelve halved.
+
+### Phase 4j — The redesign: layers, one inspector, glacier cyan ✅ DONE
+
+Implemented from the Claude Design project `565de0b9`, option **3a** — the *1a shell + 1b's
+stats band, dark ground, glacier-cyan accent*. The design converged over three turns: three
+IA directions, then the winner refined light and dark, then an accent study picked for
+"hours of staring: mid-chroma, no pure red".
+
+#### The IA change: nine modes became layers and one inspector
+
+The mode palette asked "what are you editing?" and then gave each answer its own panel of
+controls. That scaled badly: nine panels, each inventing its own spacing, and no way to see
+what a venue contained without visiting all of them.
+
+**Left: layers.** One row per kind of thing, each carrying its visibility, its name and how
+much of it there is — `6 · 137 pts`, `54`, `3+1`. Picking a layer is what makes that kind of
+thing interactive, so the list *is* the mode switch; the counts mean you can read a venue's
+contents without opening anything. Below it, the selected layer's objects, in one list whose
+rows look the same whether they are coastlines, floes, regions or legs.
+
+**Right: one inspector, one rule.** It inspects the selected OBJECT, or the LAYER when
+nothing is selected. That answered the question the mode panels could not: where do
+layer-level settings live? The nine panels moved here bodily — same markup, same wiring,
+restyled — and the object inspectors are new.
+
+**Middle: the numbers, then the map.** A stats band carries the four figures a course is
+judged by (distance, best time, limit, legs) plus the check tally, which opens a drawer.
+Tools float top-left, and the hint bar along the bottom spells out what the active tool does
+with each modifier, with the cursor read-out, zoom and scale bar beside it.
+
+Two modes stopped being modes: **Measure** is a tool (it always was one), and **Whole map**
+became the Level layer, which is also where the old Overview pane went.
+
+#### Adopting the design system rather than copying it
+
+`css/ds.css` is the project's stylesheet, vendored unmodified — re-syncing means replacing
+the file. `css/editor.css` is the editor's theme: it overrides the system's tokens (the
+system ships a red accent; the editor is `#33809f` glacier cyan on the `neutral-900` ground)
+so `.btn-primary`, `.seg-opt` and links re-theme without any call site opting out. Tailwind
+is still loaded, but only the Fleet roster's markup uses it — rebuilding 66 competitor cards
+is not part of a chrome redesign, and it loads first so the design system wins every tie.
+
+#### What was built, and what was deliberately not
+
+The mock sketched controls with no engine behind them. Dead controls are worse than absent
+ones, so the rule was: build what is real, omit the rest.
+
+**Built, wired to real behaviour:** numeric X / Y / W / H / ∠ transform fields (∠ turns the
+shape and resets, because there is no stored rotation — only vertices); area; min channel to
+the nearest other shape; material and softness; path actions; per-layer visibility; related
+checks filtered to the selection.
+
+**Omitted:** Union / Intersect / Difference (needs a polygon clipping library), per-shape
+wind shadow and current deflection parameters (needs new physics), and the Objects layer
+(the runtime has no props — a layer that can only be empty is a promise, not a feature).
+
+#### Two numbers for one gap
+
+The inspector's "min channel" measured vertex-to-vertex and read 165 m where the clearance
+check said 148 m — two numbers for the same gap, on the same screen, with no way for a
+reader to know which to believe. It now uses point-to-segment, like the check.
+
+#### Deliberate differences from the mock
+
+- **Wind and Current field toggles are in the header**, not floating on the canvas: they were
+  asked for as top-level buttons, and that request post-dates the design.
+- **Water and Current are one layer.** The mock lists them separately; the editor keeps the
+  Water layer holding both the palette and the current regions, since water's colour and
+  what the water does are the same subject. Splitting them is a small, safe change if wanted.
+- **A `Legs` cell** was added to the stats band; the mock has three.
+- **Material offers five types**, not the mock's three, because `LAND_TYPES` has five.
+- The mock's **Arena lock glyph** is not implemented — there is no layer-locking concept yet.
+
+#### The mistake this cost
+
+The head replacement was written by a script that never saved the file — it wrote only its
+scratch output — so the design system was not loaded at all, and the first screenshot was an
+unstyled column. **Assert the edit landed, in the file, before believing a script's
+"done".** Same lesson as the anchor-cut that removed four handlers, in a new costume; the
+fix is the same: verify against the artefact, not against the log.
+
 ### Phase 5 — Props
 The runtime prop system does not exist (`grep -c "placedProps\|propPlacement"` = 0),
 so this means building placement *and* rendering *and* collision opt-in. A separate
