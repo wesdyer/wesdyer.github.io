@@ -11,9 +11,8 @@ const path = require('path');
   const out = await p.evaluate(() => {
     const c = window.state.course;
     return {
-      findings: [...document.querySelectorAll('#checks .find')].map(el =>
-        `${el.className.match(/find-(\w+)/)[1].padEnd(5)} ${el.querySelector('.find-t').textContent}: `
-        + el.querySelector('.find-d').textContent),
+      findings: (window.EditorApp._state().findings || []).map(f =>
+        `${f.level.padEnd(5)} ${f.title}: ${f.detail}`),
       cutoff: c.cutoff, startTimer: window.state.race.startTimerDuration,
       totalLegs: window.state.race.totalLegs,
       est: window.EditorApp._estimate(),

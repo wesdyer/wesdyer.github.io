@@ -40,13 +40,21 @@
     <div style="flex:1"></div>
     <div id="course-controls" style="display:flex;align-items:center;gap:8px;font-size:13px">
         <span id="toast"></span>
-        <label class="ed-venue" title="Venue">
-            <select id="venue-select"></select>
-        </label>
+        <!-- The venue menu. A native <select> pops an OS list that ignores the design
+             system entirely, so the list is drawn in-window; the select stays as the value
+             holder so everything already listening for its change event keeps working. -->
+        <div class="ed-menu">
+            <button id="venue-btn" class="ed-venue" aria-haspopup="listbox" aria-expanded="false">
+                <span id="venue-label">—</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6"
+                          stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+            <div id="venue-menu" class="ed-pop" role="listbox" hidden></div>
+            <select id="venue-select" hidden></select>
+        </div>
         <span class="ed-sep"></span>
         <span id="dirty" class="ed-saved"></span>
-        <button id="btn-field-wind" class="btn btn-sm btn-line btn-toggle" title="Show the wind field (W)">Wind</button>
-        <button id="btn-field-cur" class="btn btn-sm btn-line btn-toggle cur" title="Show the current field (C)">Current</button>
         <span class="ed-sep"></span>
         <button id="btn-undo" class="btn btn-sm btn-line" title="Cmd/Ctrl+Z">Undo</button>
         <button id="btn-redo" class="btn btn-sm btn-line" title="Cmd/Ctrl+Shift+Z">Redo</button>
@@ -64,15 +72,170 @@
         <div class="ed-sect"><span class="k">Layers</span></div>
         <div id="layer-list"></div>
 
+        <!-- Settings that govern what you are about to CREATE belong above the list of what
+             you have already created: you set the scatter, then you place, then the new floes
+             appear below. Panels that describe the layer as a whole stay under the list. -->
+        <div id="layer-settings-top">
+        <div class="mode-panel" hidden data-layer="venue">
+            <p id="venue-none" class="in-note" hidden style="padding:10px 16px;margin:0">
+                This venue has no venue-specific objects to place. Effects like snowfall and
+                aurora come from the venue definition in the code.
+            </p>
+        </div>
+        </div>
+
         <div class="ed-sect top">
             <span class="k" id="objs-title">Objects</span>
             <span id="objs-actions" style="display:flex;gap:6px"></span>
         </div>
         <div id="obj-list" class="ed-objs"></div>
+
+        <!-- LAYER-WIDE settings live on the left, with the layer they belong to. The right
+             panel is for the thing you have selected — one column for "what this layer is",
+             one for "what this object is". -->
+        <div id="layer-settings">
+        <!-- layer: course — the course as a whole: what it is called, how long it runs,
+             and the one number the whole thing is judged by. -->
+        <div class="mode-panel" data-layer="map">
+            <div class="in-sect">
+                <span class="k">Course name</span>
+                <input id="course-name" class="in-wide" placeholder="Glacier Sound">
+                <div class="in-row" style="margin-top:8px"><span>venue</span>
+                    <span class="num" id="course-venue">—</span></div>
+            </div>
+            <div class="in-sect">
+                <span class="k">Timing</span>
+                <div class="in-grid">
+                    <label class="in-f"><label>Prestart</label>
+                        <input id="course-start" placeholder="30" spellcheck="false"><span class="dim" style="font-size:11px">s</span></label>
+                    <label class="in-f"><label>Limit</label>
+                        <input id="course-cutoff" placeholder="auto" spellcheck="false"><span class="dim" style="font-size:11px">s</span></label>
+                </div>
+                <div id="info-time" style="margin-top:10px"></div>
+                <button id="btn-use-est" class="btn btn-fill" style="margin-top:10px">Use the estimate</button>
+            </div>
+            <div class="in-sect">
+                <span class="k">Scale everything</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <label class="in-f" style="flex:1"><label>%</label>
+                        <input id="scalemap" value="100" spellcheck="false"></label>
+                    <button id="btn-scalemap" class="btn btn-fill">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- layer: water -->
+        <!-- The water's COLOUR. The current that runs through it is its own layer: one is a
+             property of the whole map, the other is a set of objects drawn on it. -->
+        <div class="mode-panel" hidden data-layer="water">
+            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Water colour</div>
+            <canvas id="pal-preview" width="230" height="200"
+                    style="height:200px;border-radius:8px;display:block;
+                           border:1px solid rgba(255,255,255,0.1)"></canvas>
+            <div class="in-grid" style="align-items:center;font-size:11.5px;">
+                <label class="k">surface</label>
+                <input id="pal-base" type="color" class="in-wide" style="padding:1px;height:26px">
+                <label class="k">deep</label>
+                <input id="pal-deep" type="color" class="in-wide" style="padding:1px;height:26px">
+            </div>
+            <button id="btn-pal-reset" class="btn btn-fill">Restore colours</button>
+        </div>
+
+        <!-- layer: shape — no panel. Draw, Sculpt and Smooth are on the tool strip beside
+             the canvas, the brush is sized with [ ], and the hint bar spells out what the
+             armed tool does; a second copy of all of it here was only clutter. -->
+
+        <!-- layer: marks -->
+        <div class="mode-panel" hidden data-layer="marks">
+            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Marks</div>
+            <div id="mark-list" style="display:flex;flex-direction:column"></div>
+            <div style="display:flex;gap:6px">
+                <button id="btn-add-mark" class="btn btn-fill" style="flex:1">+ Mark</button>
+                <button id="btn-add-line" class="btn btn-fill" style="flex:1">+ Gate</button>
+            </div>
+
+            <div class="k" style="display:block;padding:14px 16px 8px;margin:0">Gates &amp; lines</div>
+            <div id="line-list" style="display:flex;flex-direction:column"></div>
+
+            <div id="mk-name-row" class="in-sect" hidden>
+                <div class="k">Selected mark</div>
+                <div id="mk-derived" class="num" style="color:var(--ed-accent-text)" style="font-size:11.5px;"></div>
+                <label class="k" style="display:block;margin:10px 0 5px">Rename it</label>
+                <input id="mk-name" class="in-wide">
+                <label class="k" style="display:block;margin:10px 0 5px">What is on the water</label>
+                <select id="mk-kind" class="in-wide">
+                    <option value="inflatable">Orange inflatable buoy</option>
+                    <option value="can">Yellow can</option>
+                    <option value="none">Nothing — just a position</option>
+                </select>
+                <div id="mk-pos" class="in-note num" style="font-size:10.5px;"></div>
+                <button id="btn-mk-del" class="btn btn-fill" style="background:#7f1d1d">Delete mark</button>
+            </div>
+            <div id="ln-name-row" class="in-sect" hidden>
+                <div class="k">Selected gate</div>
+                <div id="ln-derived" class="num" style="color:#bcdc7c" style="font-size:11.5px;"></div>
+                <label class="k" style="display:block;margin:10px 0 5px">Rename it</label>
+                <input id="ln-name" class="in-wide">
+                <div id="ln-info" class="in-note num" style="font-size:10.5px;"></div>
+                <button id="btn-ln-del" class="btn btn-fill" style="background:#7f1d1d">Delete gate</button>
+            </div>
+            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
+                A mark may carry a buoy, a can, or <b>nothing at all</b> — a position the
+                race marks with an indicator, which is what an island rounding or a transit
+                wants. Renaming is optional: leave the box empty and the name above it is
+                used, and it keeps up as the course changes.
+                Marks and gates live here; the <b>Route</b> is only the order you sail them,
+                so the same gate can appear in it more than once. Deleting happens HERE —
+                select on the map or in the list and press Delete. A gate whose marks are
+                deleted goes with them.
+            </p>
+        </div>
+
+        <!-- layer: route -->
+        <div class="mode-panel" hidden data-layer="route">
+            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Route</div>
+            <div id="route-list" style="display:flex;flex-direction:column"></div>
+
+            <div class="k" style="display:block;padding:14px 16px 8px;margin:0">Add a leg</div>
+            <select id="rt-add-what" class="in-wide"></select>
+            <div style="display:flex;gap:6px">
+                <button id="btn-rt-add" class="btn btn-fill" style="flex:1">+ Add before finish</button>
+            </div>
+            <div id="rt-nothing" class="in-note" hidden style="font-size:10.5px; line-height:1.45;">
+                Nothing to add yet — make a mark or a gate in <b>Marks &amp; gates</b> first.
+            </div>
+
+            <div id="rt-name-row" class="in-sect" hidden>
+                <label class="k">Leg name</label>
+                <input id="rt-name" class="in-wide" placeholder="(smart default)">
+                <div id="rt-info" class="in-note num" style="font-size:10.5px;"></div>
+            </div>
+            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
+                This is the ORDER, not the geometry: marks and gates are made and deleted in
+                <b>Marks &amp; gates</b>. Drag a row by its grip to reorder; the start and finish
+                stay at their ends. ✕ removes the LEG only. Click a gate or mark on the map to
+                add another leg using it — the same gate can appear as often as you like. A
+                gate is sailed <b>thru</b>, or entered and left <b>rnd</b> an end; a rounding is
+                left to a side. Hover a row to see which way that leg crosses.
+            </p>
+        </div>
+
+        <!-- layer: boundary -->
+        <div class="mode-panel" hidden data-layer="boundary">
+            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Arena</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:0 16px 8px">
+                <input id="brect-inset" class="in-wide num" style="width:62px" value="140" title="inset from the map edge, in metres">
+                <span class="in-note" style="font-size:11px;">m in</span>
+                <button id="btn-brect" class="btn btn-fill" style="flex:1">Fit rect</button>
+            </div>
+        </div>
+
+        <!-- layer: wind -->
+                </div>
     </aside>
 
     <div class="ed-mid">
-        <!-- The three numbers a course is judged by, plus the check tally. -->
+        <!-- The numbers a course is judged by, and the check tally. -->
         <div class="ed-stats">
             <div class="st"><span class="st-k">Dist</span><span class="st-v num" id="stat-dist">—</span></div>
             <div class="st"><span class="st-k">Best</span><span class="st-v num" id="stat-best">—</span></div>
@@ -90,8 +253,44 @@
         <div class="ed-canvas-wrap">
             <canvas id="schematic"></canvas>
 
-            <!-- Tools act on whatever the active layer owns. -->
+            <!-- Tools act on whatever the active layer owns, and only the ones that mean
+                 something for that layer are enabled. -->
             <div class="ed-tools" id="tool-strip"></div>
+
+            <!-- The armed tool's OWN settings, beside the tool that uses them. They are not
+                 a property of the layer — they decide what the next drag makes — so they
+                 belong with the tool and disappear with it, rather than sitting in the left
+                 column being true of nothing whenever another tool is up. -->
+            <div class="ed-toolopts" id="tool-opts" hidden>
+                <label class="to-f"><span>scatter</span>
+                    <input id="ice-scatter" class="num" value="1" spellcheck="false"
+                           title="how many floes one drag drops"></label>
+                <label class="to-f"><span>vary</span>
+                    <input id="ice-vary" class="num" value="45" spellcheck="false"
+                           title="% size spread between them"></label>
+            </div>
+
+            <!-- Overlays, over the thing they overlay. -->
+            <div class="ed-fields">
+                <button id="btn-field-wind" class="btn btn-toggle" title="Show the wind field (W)">Wind</button>
+                <button id="btn-field-cur" class="btn btn-toggle cur" title="Show the current field (C)">Current</button>
+            </div>
+
+            <!-- Commands on the SELECTION, over the map the selection is on. They act on
+                 however many polygons are selected, which is why they cannot live in the
+                 inspector — that shows one object. Hidden entirely when nothing is
+                 selected: an action bar offering verbs with no object is just clutter. -->
+            <div class="ed-acts" id="sel-acts" hidden>
+                <span class="ed-acts-n" id="sel-acts-n">—</span>
+                <button id="btn-sel-dup" class="btn" title="Duplicate (Cmd/Ctrl+D)">Duplicate</button>
+                <button id="btn-sel-resample" class="btn" title="Space the points evenly">Resample</button>
+                <span class="ed-acts-sep" id="sel-acts-sep"></span>
+                <button id="btn-sel-union" class="btn" title="Merge them into one">Union</button>
+                <button id="btn-sel-intersect" class="btn" title="Keep only what they all share">Intersect</button>
+                <button id="btn-sel-subtract" class="btn" title="Remove the others from the first one selected">Subtract</button>
+                <button id="btn-sel-symdiff" class="btn" title="Keep what only ONE of them covers — the overlap goes">Difference</button>
+                <button id="btn-sel-del" class="btn danger" title="Delete (Del)">Delete</button>
+            </div>
 
             <div id="drawer" class="ed-drawer" hidden>
                 <div class="k" style="margin-bottom:8px">Checks</div>
@@ -112,360 +311,27 @@
         </div>
     </div>
 
+    <!-- The right panel is for the thing you have SELECTED. Layer-wide settings live on the
+         left, with the layer they belong to. -->
     <aside class="ed-right">
         <div class="in-head">
-            <div class="k k-accent" id="in-kicker">Level</div>
+            <div class="k k-accent" id="in-kicker">Course</div>
             <div class="in-title">
                 <span class="in-name" id="in-name">—</span>
                 <span class="in-meta" id="in-meta"></span>
             </div>
         </div>
         <div class="ed-insp" id="inspector">
-            <!-- Object inspectors: shown when something is selected. -->
             <div id="insp-obj"></div>
             <!-- Shared by every layer that owns outlines. Appears once something is selected. -->
             <div id="vsel-row" class="in-sect" style="display:none">
                 <span class="k">Vertex selection</span>
                 <div id="vsel-count" class="in-note" style="margin:0 0 8px"></div>
                 <div style="display:flex;gap:6px">
-                    <button id="btn-align-x" class="btn btn-line" style="flex:1;justify-content:center" title="same X as the anchor">Align X</button>
-                    <button id="btn-align-y" class="btn btn-line" style="flex:1;justify-content:center" title="same Y as the anchor">Align Y</button>
-                </div>
-                <div class="in-note">Drag any selected vertex to move them all. Double-click an
-                    EDGE to insert one; Delete removes the selection.</div>
-            </div>
-
-
-            <!-- Layer inspectors: the mode panels, which are layer-level settings. They
-                 keep their markup and their wiring; only where they live has changed. -->
-<!-- layer: shape -->
-            <!-- layer: level — the course as a whole. This is what the old Overview pane
-                 held; it is layer-level settings, so it lives in the inspector like the
-                 rest of them. -->
-            <div class="mode-panel" data-layer="map">
-                <div class="in-sect">
-                    <span class="k">What this course is</span>
-                    <input id="course-desc" class="in-wide" placeholder="e.g. beat out, run home past the shoal">
-                    <div class="in-note">A note saved in the venue file, for whoever opens it
-                        next — including you in six months. Nothing in the game reads it yet.</div>
-                </div>
-                <div class="in-sect">
-                    <span class="k">Course</span>
-                    <div id="info-course"></div>
-                </div>
-                <div class="in-sect">
-                    <span class="k">Timing</span>
-                    <div class="in-grid">
-                        <label class="in-f"><label>Prestart</label>
-                            <input id="course-start" placeholder="30" spellcheck="false"><span class="dim" style="font-size:11px">s</span></label>
-                        <label class="in-f"><label>Limit</label>
-                            <input id="course-cutoff" placeholder="auto" spellcheck="false"><span class="dim" style="font-size:11px">s</span></label>
-                    </div>
-                    <div id="info-time" style="margin-top:10px"></div>
-                    <button id="btn-use-est" class="btn btn-line" style="width:100%;justify-content:center;margin-top:8px">Use the estimate as the limit</button>
-                    <div class="in-note">The estimate measures the <b>sailable path</b> —
-                        hull-width, around the land — and prices each leg with the game's own
-                        J111 polar. It does not model manoeuvre losses or traffic, so it is a
-                        floor for a well-sailed boat. Blank prestart means the player's own
-                        setting. Boats still sailing when the limit expires are scored DNF.</div>
-                </div>
-                <div class="in-sect">
-                    <span class="k">Scale everything</span>
-                    <div style="display:flex;align-items:center;gap:8px">
-                        <label class="in-f" style="flex:1"><label>%</label>
-                            <input id="scalemap" value="100" spellcheck="false"></label>
-                        <button id="btn-scalemap" class="btn btn-line">Apply</button>
-                    </div>
-                    <div class="in-note">Land, ice, marks, gates, rounding zones, the arena and
-                        every wind and current region scale together. The start line keeps its
-                        length: that is set by the fleet, not the geography.</div>
-                </div>
-                <div class="in-sect">
-                    <span class="k">Land</span>
-                    <div id="info-land"></div>
-                </div>
-                <div class="in-sect">
-                    <span class="k">Legend</span>
-                    <div id="legend" style="display:flex;flex-direction:column;gap:6px;font-size:12px"></div>
+                    <button id="btn-align-x" class="btn btn-fill" style="flex:1" title="same X as the anchor">Align X</button>
+                    <button id="btn-align-y" class="btn btn-fill" style="flex:1" title="same Y as the anchor">Align Y</button>
                 </div>
             </div>
-
-<div class="mode-panel" data-layer="shape">
-            <!-- The shape's own inspector is rendered into #insp-obj by inspLand(). This
-                 block survives only because its controls carry the wiring the new inspector
-                 delegates to; it is never shown. -->
-            <div id="insp-none" hidden></div>
-            <div id="insp" hidden>
-                <div id="insp-id" class="num" style="color:var(--ed-accent-text)" style="font-size:11.5px;"></div>
-                <label class="k">Type</label>
-                <select id="insp-type" class="in-wide"></select>
-                <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px" style="font-size:11.5px;">
-                    <input id="insp-soft" type="checkbox"> soft (drag, not grounding)
-                </label>
-                <div id="insp-stats" class="in-note num" style="font-size:10.5px;"></div>
-                <button id="btn-resample" class="btn btn-line" style="width:100%;justify-content:center">Resample vertices</button>
-                <button id="btn-dup" class="btn btn-line" style="width:100%;justify-content:center">Duplicate</button>
-                <button id="btn-del" class="btn btn-line" style="width:100%;justify-content:center" style="background:#7f1d1d">Delete shape</button>
-            </div>
-            <div class="in-sect" id="land-layer-sect">
-                <span class="k">Land layer</span>
-                <button id="btn-draw" class="btn btn-line" style="width:100%;justify-content:center">Draw a new shape</button>
-                <div class="in-note">Click a shape to select it: its vertices appear and the
-                    inspector fills in. Drag on open water to marquee-select vertices.</div>
-            </div>
-
-            <!-- The brush belongs with the brush tools, which live in the tool strip. -->
-            <div class="in-sect" id="brush-row">
-                <span class="k">Brush size</span>
-                <input id="brush" type="range" min="40" max="2000" step="10" value="260" style="width:100%">
-                <div class="in-note">Sculpt drags nearby vertices along with the cursor,
-                    strongest at the centre and nothing at the rim; Smooth relaxes them toward
-                    their neighbours. The shaded disc is the reach and the dots are what will
-                    move. <span class="num">[ ]</span> resizes it.</div>
-            </div>
-            <div class="in-note" style="padding:0 16px 12px">Select a shape and its
-                <b>vertices</b> appear — drag one, double-click an EDGE to insert, drag a box on
-                open water to select several, Delete removes them.</div>
-        </div>
-
-<!-- layer: marks -->
-<div class="mode-panel" hidden data-layer="marks">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Marks</div>
-            
-            <div style="display:flex;gap:6px">
-                <button id="btn-add-mark" class="btn btn-line" style="flex:1;justify-content:center">+ Mark</button>
-                <button id="btn-add-line" class="btn btn-line" style="flex:1;justify-content:center">+ Gate</button>
-            </div>
-
-            <div class="k" style="display:block;padding:14px 16px 8px;margin:0">Gates &amp; lines</div>
-            
-
-            <div id="mk-name-row" class="in-sect" hidden>
-                <div class="k">Selected mark</div>
-                <div id="mk-derived" class="num" style="color:var(--ed-accent-text)" style="font-size:11.5px;"></div>
-                <label class="k" style="display:block;margin:10px 0 5px">Rename it</label>
-                <input id="mk-name" class="in-wide">
-                <label class="k" style="display:block;margin:10px 0 5px">What is on the water</label>
-                <select id="mk-kind" class="in-wide">
-                    <option value="inflatable">Orange inflatable buoy</option>
-                    <option value="can">Yellow can</option>
-                    <option value="none">Nothing — just a position</option>
-                </select>
-                <div id="mk-pos" class="in-note num" style="font-size:10.5px;"></div>
-                <button id="btn-mk-del" class="btn btn-line" style="width:100%;justify-content:center" style="background:#7f1d1d">Delete mark</button>
-            </div>
-            <div id="ln-name-row" class="in-sect" hidden>
-                <div class="k">Selected gate</div>
-                <div id="ln-derived" class="num" style="color:#bcdc7c" style="font-size:11.5px;"></div>
-                <label class="k" style="display:block;margin:10px 0 5px">Rename it</label>
-                <input id="ln-name" class="in-wide">
-                <div id="ln-info" class="in-note num" style="font-size:10.5px;"></div>
-                <button id="btn-ln-del" class="btn btn-line" style="width:100%;justify-content:center" style="background:#7f1d1d">Delete gate</button>
-            </div>
-            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                A mark may carry a buoy, a can, or <b>nothing at all</b> — a position the
-                race marks with an indicator, which is what an island rounding or a transit
-                wants. Renaming is optional: leave the box empty and the name above it is
-                used, and it keeps up as the course changes.
-                Marks and gates live here; the <b>Route</b> is only the order you sail them,
-                so the same gate can appear in it more than once. Deleting happens HERE —
-                select on the map or in the list and press Delete. A gate whose marks are
-                deleted goes with them.
-            </p>
-        </div>
-
-<!-- layer: route -->
-<div class="mode-panel" hidden data-layer="route">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Route</div>
-            
-
-            <div class="k" style="display:block;padding:14px 16px 8px;margin:0">Add a leg</div>
-            <select id="rt-add-what" class="in-wide"></select>
-            <div style="display:flex;gap:6px">
-                <button id="btn-rt-add" class="btn btn-line" style="flex:1;justify-content:center">+ Add before finish</button>
-            </div>
-            <div id="rt-nothing" class="text-slate-500 hidden" style="font-size:10.5px; line-height:1.45;">
-                Nothing to add yet — make a mark or a gate in <b>Marks &amp; gates</b> first.
-            </div>
-
-            <div id="rt-name-row" class="in-sect" hidden>
-                <label class="k">Leg name</label>
-                <input id="rt-name" class="in-wide" placeholder="(smart default)">
-                <div id="rt-info" class="in-note num" style="font-size:10.5px;"></div>
-            </div>
-            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                This is the ORDER, not the geometry: marks and gates are made and deleted in
-                <b>Marks &amp; gates</b>. Drag a row by its grip to reorder; the start and finish
-                stay at their ends. ✕ removes the LEG only. Click a gate or mark on the map to
-                add another leg using it — the same gate can appear as often as you like. A
-                gate is sailed <b>thru</b>, or entered and left <b>rnd</b> an end; a rounding is
-                left to a side. Hover a row to see which way that leg crosses.
-            </p>
-        </div>
-
-<!-- layer: boundary -->
-<div class="mode-panel" hidden data-layer="boundary">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Arena</div>
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                <input id="brect-inset" class="in-wide num" style="width:62px" value="140" title="inset from the map edge, in metres">
-                <span class="in-note" style="font-size:11px;">m in</span>
-                <button id="btn-brect" class="btn btn-line" style="flex:1;justify-content:center">Fit rect</button>
-            </div>
-            <button id="btn-bcircle" class="btn btn-line" style="width:100%;justify-content:center">Back to circle</button>
-            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                A rect matches a painted map exactly. Inset it so land continues past the
-                sailing limit — otherwise a sailor at the edge sees the world end.
-            </p>
-        </div>
-
-<!-- layer: wind -->
-<div class="mode-panel" hidden data-layer="wind">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Wind regions</div>
-            <div id="wind-list" style="display:flex;flex-direction:column"></div>
-            <button id="btn-add-wind-all" class="btn btn-line" style="width:100%;justify-content:center">+ Region over whole course</button>
-            <button id="btn-add-wind" class="btn btn-line" style="width:100%;justify-content:center">+ Region here</button>
-            <div id="wreg" class="in-sect" hidden>
-                <div class="in-grid">
-                    <label class="k">wind from °</label>
-                    <input id="wr-dir" class="in-wide num" value="0">
-                    <label class="k">± °</label>
-                    <input id="wr-dirvar" class="in-wide num" value="0">
-                    <label class="k">speed kt</label>
-                    <input id="wr-speed" class="in-wide num" placeholder="venue">
-                    <label class="k">± kt</label>
-                    <input id="wr-speedvar" class="in-wide num" value="0">
-                    <label class="k">period s</label>
-                    <input id="wr-period" class="in-wide num" value="30">
-                    <label class="k">falloff m</label>
-                    <input id="wr-falloff" class="in-wide num" value="80">
-                </div>
-                <button id="btn-wr-del" class="btn btn-line" style="width:100%;justify-content:center" style="background:#7f1d1d">Delete region</button>
-            </div>
-            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                A region states the wind THERE — <b>where it comes from</b>, as a compass
-                bearing, 0° being north at the top of the screen. <b>Outside every region
-                there is no wind at all</b>, so a course needs its water covered; the checks
-                say so when it is not. Regions may overlap and are <b>averaged</b>, not added
-                — two of them 40° apart give a curve at the same strength, not a squall.
-                Leave speed blank to keep the venue's own range (and its race-to-race
-                variety); set it to pin a number. <b>Wind field</b> at the top shows the
-                result.
-            </p>
-        </div>
-
-<!-- layer: current -->
-<div class="mode-panel" hidden data-layer="current">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Water colour</div>
-            <canvas id="pal-preview" width="230" height="104"
-                    style="width:100%;height:104px;border-radius:8px;display:block;
-                           border:1px solid rgba(255,255,255,0.1)"></canvas>
-            <div class="in-note" style="font-size:10.5px; line-height:1.4;">
-                A live patch of this venue's water, drawn by the game's own renderer — ripple
-                lattice, caustics and depth ramp included — so the colours are the colours
-                you will sail on rather than four swatches that only suggest them.
-            </div>
-            <div class="in-grid" style="align-items:center" style="font-size:11.5px;">
-                <label class="k">surface</label>
-                <input id="pal-base" type="color" class="in-wide" style="padding:1px;height:26px">
-                <label class="k">deep</label>
-                <input id="pal-deep" type="color" class="in-wide" style="padding:1px;height:26px">
-                <label class="k">shallows</label>
-                <input id="pal-shallow" type="color" class="in-wide" style="padding:1px;height:26px">
-                <label class="k">shoreline</label>
-                <input id="pal-shore" type="color" class="in-wide" style="padding:1px;height:26px">
-            </div>
-            <button id="btn-pal-reset" class="btn btn-line" style="width:100%;justify-content:center">Back to the venue's colours</button>
-
-            <div class="k" style="display:block;padding:14px 16px 8px;margin:0">Current regions</div>
-            <button id="btn-add-cur" class="btn btn-line" style="width:100%;justify-content:center">+ Region here</button>
-            <button id="btn-add-cur-all" class="btn btn-line" style="width:100%;justify-content:center">+ Region over whole course</button>
-            <div id="cur-list" style="display:flex;flex-direction:column"></div>
-            <div id="creg" class="in-sect" hidden>
-                <div class="in-grid">
-                    <label class="k">toward °</label>
-                    <input id="cr-dir" class="in-wide num" value="0">
-                    <label class="k">± °</label>
-                    <input id="cr-dirvar" class="in-wide num" value="0">
-                    <label class="k">speed kt</label>
-                    <input id="cr-speed" class="in-wide num" value="1">
-                    <label class="k">± kt</label>
-                    <input id="cr-speedvar" class="in-wide num" value="0">
-                    <label class="k">period s</label>
-                    <input id="cr-period" class="in-wide num" value="45">
-                    <label class="k">falloff m</label>
-                    <input id="cr-falloff" class="in-wide num" value="80">
-                </div>
-                <button id="btn-cr-del" class="btn btn-line" style="width:100%;justify-content:center" style="background:#7f1d1d">Delete region</button>
-            </div>
-            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                A current region carries a FLOW — an absolute direction and speed — rather
-                than a modifier, because a patch of water either has a stream running
-                through it or it does not. Regions add as vectors, so two overlapping
-                streams give a resultant. <b>Toward °</b> is the compass bearing the water is
-                GOING (a current is named by where it sets, unlike a wind).
-                The water itself is not an object: it is wherever land and the arena are not.
-            </p>
-        </div>
-
-<!-- layer: venue -->
-<div class="mode-panel" hidden data-layer="venue">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">This venue</div>
-            <div id="venue-fx" class="text-slate-400" style="font-size:11px; line-height:1.5;"></div>
-
-            <!-- Contextual: only venues whose effects include ice get this. -->
-            <div id="venue-ice" hidden>
-                <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Ice</div>
-                <div id="ice-count" class="in-note" style="font-size:11px;"></div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                    <label class="k">scatter</label>
-                    <input id="ice-scatter" class="in-wide num" style="width:62px" value="1">
-                    <span class="in-note" style="font-size:10.5px;">per drag</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                    <label class="k">vary</label>
-                    <input id="ice-vary" class="in-wide num" style="width:62px" value="45">
-                    <span class="in-note" style="font-size:10.5px;">% size spread</span>
-                </div>
-                <div id="ice-sel" class="in-sect" hidden>
-                    <div id="ice-info" class="num" style="color:var(--ed-accent-num)" style="font-size:11px;"></div>
-                    <button id="btn-ice-del" class="btn btn-line" style="width:100%;justify-content:center" style="background:#7f1d1d">Delete this ice</button>
-                </div>
-                <button id="btn-ice-clear" class="btn btn-line" style="width:100%;justify-content:center">Remove all ice</button>
-                <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                    <b>Drag</b> to place a floe — the drag sets its size and the outline is
-                    generated, so no two look alike. Raise <b>scatter</b> to drop several
-                    inside the drag instead of one, which is how you set density. Click one
-                    to select, drag it to move, Delete to remove; reshape it vertex by
-                    vertex in <b>Vertices</b>. Position and shape are yours; each race gives
-                    every floe a fresh drift, spin and wander, so playthroughs stay unique.
-                </p>
-            </div>
-            <p id="venue-none" class="in-note" hidden style="padding:0 16px 12px">
-                This venue has no venue-specific objects to place. Effects like snowfall and
-                aurora come from the venue definition in the code.
-            </p>
-        </div>
-
-
-<!-- layer: measure -->
-<div class="mode-panel" hidden data-layer="measure">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Measure</div>
-            <button id="btn-clear-measure2" class="btn btn-line" style="width:100%;justify-content:center">Clear measurement</button>
-            <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px">
-                <input id="show-boat" type="checkbox"> show a boat, to scale
-            </label>
-            <div id="boat-info" class="text-slate-500 t-mono hidden" style="font-size:10.5px; line-height:1.5;"></div>
-            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                A boat drawn to scale answers "does this fit" directly: <b>drag</b> it to move,
-                <b>Cmd/Ctrl+drag</b> to turn it — the same controls as a land shape. The
-                dashed circle is the three-length RRS zone, which is what a mark rounding has
-                to accommodate.
-                Drag to measure one leg; <b>Shift-click</b> to extend it into a path and get
-                per-leg lengths plus the total. Reads metres, boat lengths (11 m, a J111) and
-                the time that distance implies. A measurement stays on screen so you can
-                edit against it — Esc or the button clears it.
-            </p>
-        </div>
         </div>
     </aside>
 </main>
@@ -494,6 +360,13 @@
 <script src="js/planner.js"></script>
 <script src="js/rules.js"></script>
 <script src="js/arena.js"></script>
+<!-- polygon-clipping 0.15.7 (MIT), the published UMD build VENDORED UNMODIFIED — see
+     js/polygon-clipping.LICENSE.md. Martinez-Rueda sweep-line boolean ops: it handles the
+     degeneracies (collinear edges, shared vertices, touching-not-crossing) you get the moment
+     you union two islands you snapped together, which is exactly where a short
+     Greiner-Hormann falls over. EDITOR ONLY — the game never needs a boolean, and index.html
+     must not load it. Same rule as venuecheck.js. -->
+<script src="js/polygon-clipping.js"></script>
 <script src="js/venuedoc.js"></script>
 <script src="js/venuecheck.js"></script>
 <script src="js/sailcheck.js"></script>
@@ -576,10 +449,14 @@
     for (const k of keys) {
         const o = document.createElement('option');
         o.value = k;
-        o.textContent = `${VENUES[k].name} (${k})` + (hasDoc(k) ? '  ·  document' : '');
+        // NAMES, not ids. A venue is "Glacier Sound" to everyone who works on it; `arctic`
+        // is the filename. The id stays the stable key in the document and in localStorage.
+        o.textContent = VENUES[k].name;
+        o.dataset.doc = hasDoc(k) ? '1' : '';
         sel.appendChild(o);
     }
     sel.value = keys.find(hasDoc) || keys[0];
+    EditorApp.buildVenueMenu();
 
     try {
         EditorApp.resize();

@@ -1392,6 +1392,83 @@ unstyled column. **Assert the edit landed, in the file, before believing a scrip
 "done".** Same lesson as the anchor-cut that removed four handlers, in a new costume; the
 fix is the same: verify against the artefact, not against the log.
 
+#### Header pass
+
+**Venue names, never ids.** A venue is "Glacier Sound" to everyone who works on it; `arctic`
+is its filename. The id stays the document key, the file name and the localStorage value —
+it is a key, not a label. One trap on the way: `venueName()` guarded on
+`window.VENUES && …`, and `VENUES` is a top-level `const` in `script.js`, so it lives in the
+script scope and **not** on `window` — the guard was always false and every call silently
+fell back to the id.
+
+**The "· document" suffix is gone.** The picker groups *Documents — editable* above
+*Generated per seed*, which carries the same fact by arrangement rather than by appending a
+word to every name.
+
+**The venue menu is drawn in-window.** A native `<select>` pops a list the OS draws — system
+font, system radius, system highlight — in the one control you touch every session. The
+`<select>` remains as a hidden value holder, so everything already listening for its `change`
+event kept working; click-outside, Escape and arrow-key navigation are now ours, and tested.
+
+**The field toggles moved onto the map**, top right, where 3a put them and where the thing
+they toggle actually is.
+
+#### And a fourth silent check
+
+`check_venues.js` — the headless gate — scraped `#checks .find` out of the markup. The
+redesign renamed that class to `.ck`, so the gate reported `0 error, 0 warn, 0 ok` and
+**passed**. It now reads the findings array directly and fails when it is empty, because
+every venue has passing checks to report. The rule this keeps re-teaching: a gate must not be
+able to measure nothing and call it success.
+
+#### Course layer pass
+
+**Level became Course** (map icon), and the old Course layer — the ordering — became
+**Route**. That is the right pair of names: the course is the whole thing, the route is the
+order you sail it. The root row lost its number: it showed the world's *size*, which reads as
+an area estimate of something and is a measure of nothing anyone cares about.
+
+**Layer-wide settings moved to the left panel**, with the layer they belong to; the right
+panel is now only ever about the thing you have selected. That reverses the earlier
+"inspector shows the layer when nothing is selected" decision, and it is a better split: one
+column answers *what is this layer*, the other *what is this object*.
+
+**The Course panel is what a course is, and nothing else:** an editable name, the venue it is
+laid on, the timing (with the estimate and a button that names the number it would set), and
+scale-everything. Gone: the description field and its paragraph, the legend, the land and ice
+facts, and the overview rows for legs / marks / gates / regions / arena — every one of those
+is a count on its own layer row, which is a shorter answer in a place you are already
+looking.
+
+**The course name is editable and everything reads it** — the header menu, the layer row, the
+inspector title. It is stored as `doc.name`, falling back to the venue's own name, which sets
+up a distinction we will need: *a venue may later carry several courses*, sharing its ice and
+weather while differing in map and route. Naming the root layer "Course" and keeping the
+venue on its own row is the first half of that separation.
+
+**Buttons look like buttons.** An outline on a dark ground reads as a text field, which is
+how "Set the limit to 4:54" was being read. `.btn-fill` gives them a face.
+
+**The hint bar is layer-aware**, and on the Course layer — where none of the drag gestures
+apply — it says what does apply instead of listing five pieces of wrong advice. **Only Measure
+is enabled** there for the same reason; the rest are shown inactive.
+
+**The object column is blank** for the Course layer, header and all, rather than saying
+"Nothing to list for this tool".
+
+#### The layout bug the drag test caught
+
+Two stacked scroll regions in the left column, `flex:1` on the object list and nothing
+constraining the settings panel below it, so the children overflowed and **the settings panel
+covered the very rows you drag to reorder legs**. Playwright reported it as
+`<div class="k">Route</div> … intercepts pointer events` — the drag test failing was the only
+signal; nothing looked wrong in a screenshot. The column scrolls as a whole now.
+
+Three structural mishaps in this session came from slicing HTML between markers — one deleted
+eight panels, one took the middle and right columns with it, and one duplicated a region by
+slicing with reversed bounds. `regatta/eval/_shellcheck.py` now asserts every shell landmark,
+the panel count and the absence of duplicate ids; run it after any structural edit.
+
 ### Phase 5 — Props
 The runtime prop system does not exist (`grep -c "placedProps\|propPlacement"` = 0),
 so this means building placement *and* rendering *and* collision opt-in. A separate

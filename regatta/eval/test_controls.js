@@ -87,6 +87,58 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
           results.filter(r => r.marks < 2).map(r => r.v).join(', '));
     check('no page errors across every venue', errs.length === 0, errs.slice(0, 3).join(' | '));
 
+    // ── The venue menu ──────────────────────────────────────────────────────
+    // It is our markup now, not the OS's, so the things a <select> gave for free have to be
+    // tested: it opens, it lists everything, picking one loads it, and it shuts.
+    console.log('\nthe venue menu');
+    const menu = await page.evaluate(() => {
+        const A = window.EditorApp;
+        const label = () => document.getElementById('venue-label').textContent;
+        const closed = A._venueMenu().open;
+        document.getElementById('venue-btn').click();
+        const opened = A._venueMenu().open;
+        const opts = A._venueMenu().options;
+        const groups = [...document.querySelectorAll('#venue-menu .ed-pop-k')].map(e => e.textContent);
+        const ticked = [...document.querySelectorAll('#venue-menu .ed-opt.on')].map(e => e.dataset.v);
+        const before = label();
+        // Clicking outside must dismiss it.
+        document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+        const dismissed = !A._venueMenu().open;
+        document.getElementById('venue-btn').click();
+        document.querySelector('#venue-menu [data-v="seatrials"]').click();
+        return { closed, opened, opts, groups, ticked, before, dismissed,
+                 after: label(), stillOpen: A._venueMenu().open,
+                 loaded: JSON.parse(localStorage.getItem('regatta_settings')).venue,
+                 anyIds: [...document.querySelectorAll('#venue-menu .ed-opt span')]
+                     .map(e => e.textContent).filter(t => /^[a-z]+$/.test(t)) };
+    });
+    check('the menu starts closed', menu.closed === false);
+    check('the button opens it', menu.opened === true);
+    check('it lists every venue', menu.opts.length >= 10, `${menu.opts.length}`);
+    check('documents are grouped ahead of generated venues',
+          menu.groups.length === 2 && /document/i.test(menu.groups[0]) && /generated/i.test(menu.groups[1]),
+          menu.groups.join(' | '));
+    check('the current venue is ticked', menu.ticked.length === 1, menu.ticked.join(','));
+    check('clicking outside dismisses it', menu.dismissed === true);
+    // NAMES, not ids: "Glacier Sound", never "arctic".
+    check('the trigger shows the venue NAME', /\s/.test(menu.before) && menu.before !== 'arctic', menu.before);
+    check('...and so does every row', menu.anyIds.length === 0, `id-looking rows: ${menu.anyIds.join(',')}`);
+    check('picking one loads it and closes the menu',
+          menu.loaded === 'seatrials' && menu.stillOpen === false && menu.after === 'Sea Trial Bay',
+          `${menu.loaded} · label ${menu.after}`);
+    check('no "document" suffix anywhere in the picker',
+          !/·\s*document/.test(await page.evaluate(() => document.getElementById('venue-menu').textContent)));
+
+    // The field overlays belong over the map, not among the file controls.
+    const overlay = await page.evaluate(() => {
+        const w = document.getElementById('btn-field-wind');
+        return { inCanvas: !!w.closest('.ed-canvas-wrap'), inHeader: !!w.closest('.ed-head'),
+                 rightSide: w.closest('.ed-fields') &&
+                     getComputedStyle(w.closest('.ed-fields')).right === '14px' };
+    });
+    check('the field toggles sit over the map', overlay.inCanvas === true && overlay.inHeader === false);
+    check('...at its top right', overlay.rightSide === true);
+
     // Every button in every LAYER: clicking must not throw. A dead button is silent, but a
     // button that throws takes the editor with it. The counts are asserted non-zero because
     // this section once swept zero elements and passed — a test that finds nothing to do and
@@ -104,8 +156,13 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
         errs.length = 0;
         const n = await page.evaluate((id) => {
             document.querySelector(`#layer-list [data-layer="${id}"]`).click();
+            // Panel buttons AND the object column's actions. As layers moved their creation
+            // verbs out of panels and onto that row (+ Draw, + Whole course, + Mark …), a
+            // sweep that only walked panels was covering less and less — which is how a
+            // dead control gets past it. Both are controls; both get clicked.
             const panes = [...document.querySelectorAll('.mode-panel')].filter(p => !p.hidden);
-            const btns = panes.flatMap(p => [...p.querySelectorAll('button')])
+            const btns = [...panes.flatMap(p => [...p.querySelectorAll('button')]),
+                          ...document.querySelectorAll('#objs-actions button')]
                 .filter(b => !b.disabled && !/delete|remove/i.test(b.textContent));
             for (const b of btns) b.click();
             return btns.length;
@@ -113,9 +170,13 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
         clicked += n;
         check(`${L}: ${n} button(s) clicked without error`, errs.length === 0, errs.slice(0, 2).join(' | '));
     }
+    // A floor, not a count: the point is that the sweep found REAL controls, so it cannot
+    // quietly pass over an empty selector the way it once did when a rename emptied it.
     check('the sweep actually clicked something', clicked > 8, `${clicked} buttons total`);
 
-    // The tool strip, likewise: five tools, all switchable, none throwing.
+    // The tool strip, likewise: every tool switchable, none throwing. All but the two
+    // always-available ones (Select and the ruler) need a layer with outlines on it —
+    // this sweep runs from the Course layer, where the strip correctly greys them out.
     errs.length = 0;
     const tools = await page.evaluate(() => {
         const out = [];
@@ -126,11 +187,11 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
         }
         return out;
     });
-    check('the tool strip has five tools', tools.length === 5, tools.join(' '));
+    check('the tool strip has nine tools', tools.length === 9, tools.join(' '));
     check('picking a tool turns it on', tools.filter(t => t.endsWith(':on')).length >= 1, tools.join(' '));
     check('no page errors from the tool strip', errs.length === 0, errs.slice(0, 2).join(' | '));
 
-    // The checks drawer, and the eye on every layer.
+    // The checks drawer.
     errs.length = 0;
     const misc = await page.evaluate(() => {
         const d = document.getElementById('drawer');
@@ -138,16 +199,54 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
         document.getElementById('btn-drawer').click();
         const opened = !d.hidden;
         document.getElementById('btn-drawer').click();
-        const eyes = document.querySelectorAll('#layer-list [data-eye]').length;
-        document.querySelector('#layer-list [data-eye]').click();
-        const hidTxt = document.querySelector('#layer-list .ly.off') ? 'hides' : 'no-op';
-        document.querySelector('#layer-list [data-eye]').click();
-        return { before, opened, closed: d.hidden, eyes, hidTxt };
+        return { before, opened, closed: d.hidden,
+                 eyes: document.querySelectorAll('#layer-list [data-eye]').length,
+                 waterEye: !!document.querySelector('#layer-list [data-eye="water"]') };
     });
     check('the checks drawer opens and closes', misc.before && misc.opened && misc.closed);
-    check('every layer has a visibility eye', misc.eyes >= 7, String(misc.eyes));
-    check('the eye actually hides its layer', misc.hidTxt === 'hides', misc.hidTxt);
-    check('no page errors from the drawer or the eyes', errs.length === 0, errs.slice(0, 2).join(' | '));
+    // Every layer that DRAWS something gets an eye. Water is the exception: it is the surface
+    // the rest sits on, not an overlay, so there is nothing to turn off.
+    check('every drawable layer has a visibility eye, and Water has none',
+          misc.eyes === 7 && misc.waterEye === false, `${misc.eyes} eyes · water eye ${misc.waterEye}`);
+    check('no page errors from the drawer', errs.length === 0, errs.slice(0, 2).join(' | '));
+
+    // ── The eyes must actually hide things ──────────────────────────────────
+    // They shipped once as a control that only dimmed its own row: the eye said "hidden" and
+    // the map drew the layer anyway. So this compares the CANVAS before and after, per layer,
+    // rather than trusting a class name.
+    console.log('\nthe visibility eyes hide their layer');
+    await page.evaluate(() => {
+        // Give every layer something to hide: this venue authors no current. And FIT the view
+        // — an earlier section leaves it panned, and a layer that is off screen "hides" with
+        // no visible change, which reads as a broken eye rather than a bad test.
+        document.querySelector('#layer-list [data-layer="current"]').click();
+        [...document.querySelectorAll('#objs-actions .btn')]
+            .find(b => /whole course/i.test(b.textContent)).click();
+        document.getElementById('btn-field-wind').click();
+        document.getElementById('btn-field-cur').click();
+        window.EditorApp.fitView();
+    });
+    await page.waitForTimeout(250);
+    // Compare the rendered PNG itself. A hand-rolled pixel hash reported "no change" for the
+    // arena — a 1.5px dashed outline under a translucent region fill — while the image plainly
+    // differed. When the question is "did the canvas change", ask the canvas.
+    const shot = () => page.evaluate(() => document.getElementById('schematic').toDataURL());
+
+    for (const L of ['current', 'land', 'arena', 'venue', 'wind', 'marks', 'route']) {
+        const on = await shot();
+        await page.evaluate((l) => document.querySelector(`#layer-list [data-eye="${l}"]`).click(), L);
+        await page.waitForTimeout(200);
+        const off = await shot();
+        const dimmed = await page.evaluate((l) =>
+            document.querySelector(`#layer-list [data-layer="${l}"]`).classList.contains('off'), L);
+        await page.evaluate((l) => document.querySelector(`#layer-list [data-eye="${l}"]`).click(), L);
+        await page.waitForTimeout(200);
+        const back = await shot();
+        check(`${L}: hiding it changes the map, showing it restores it`,
+              on !== off && on === back && dimmed === true,
+              `changed ${on !== off} · restored ${on === back} · dimmed ${dimmed}`);
+    }
+    await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
 
     await browser.close();
     console.log(`\n${failures ? 'FAIL' : 'PASS'} — ${failures} failure(s)`);

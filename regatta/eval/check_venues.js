@@ -31,13 +31,21 @@ const COLOR = { error: '\x1b[31m', warn: '\x1b[33m', ok: '\x1b[32m', off: '\x1b[
             const sel = document.getElementById('venue-select');
             sel.value = venue;
             sel.dispatchEvent(new Event('change'));
-            return [...document.querySelectorAll('#checks .find')].map(el => ({
-                level: el.className.match(/find-(\w+)/)[1],
-                title: el.querySelector('.find-t').textContent,
-                detail: el.querySelector('.find-d').textContent
+            // Read the editor's own findings array rather than scraping its markup: this
+            // scraped `.find` elements, and when the redesign renamed the class it reported
+            // zero findings and PASSED. A gate that can silently measure nothing is not a gate.
+            return (window.EditorApp._state().findings || []).map(f => ({
+                level: f.level, title: f.title, detail: f.detail
             }));
         }, v);
 
+        if (!findings.length) {
+            console.error(`\n${v}: the check engine returned NOTHING. That is a broken harness,`
+                        + ' not a clean venue — every venue has passing checks to report.');
+            process.exitCode = 1;
+            await browser.close();
+            return;
+        }
         const e = findings.filter(f => f.level === 'error').length;
         const w = findings.filter(f => f.level === 'warn').length;
         errors += e; warns += w;

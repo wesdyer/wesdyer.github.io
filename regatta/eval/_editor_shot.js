@@ -17,8 +17,17 @@ const shots = [
       A._addToRoute(`mark:${m}`); A._afterEdit(true, 'leg');
       document.querySelector('#obj-list .ob[data-i="1"]').click();
   }) },
+  { mode: 'water', name: 'water', setup: (p) => p.evaluate(() => {}) },
+  { mode: 'shape', name: 'land', setup: (p) => p.evaluate(() => {
+      const A = window.EditorApp;
+      A._selectShape(A._state().doc.land[1].id);
+      const el = document.querySelector('#insp-obj [data-rename="shape"]');
+      el.value = 'Granite Isle'; el.dispatchEvent(new Event('change'));
+      A._selectShape(A._state().doc.land[1].id);
+  }) },
   { mode: 'current', name: 'current', setup: (p) => p.evaluate(() => {
-      document.getElementById('btn-add-cur-all').click();
+      [...document.querySelectorAll('#objs-actions .btn')]
+            .find(b => /whole course/i.test(b.textContent)).click();
       document.getElementById('btn-field-cur').click();     // the field toggles live in the header now
   }) },
   { mode: 'venue', name: 'venue', setup: async (p) => {
@@ -30,9 +39,9 @@ const shots = [
   } },
   { mode: 'wind', name: 'wind', setup: (p) => p.evaluate(() => {
       document.getElementById('btn-field-wind').click();
-      document.querySelector('#wind-list .rt b').click();
+      document.querySelector('#obj-list .ob').click();   // regions live in the object column now
   }) },
-  { mode: 'measure', name: 'measure', setup: async (p) => {
+  { mode: 'shape', name: 'measure', tool: 'measure', setup: async (p) => {
       const cv = await p.locator('#schematic').boundingBox();
       await p.mouse.move(cv.x + 300, cv.y + 260);
       await p.mouse.down(); await p.mouse.move(cv.x + 560, cv.y + 400); await p.mouse.up();
@@ -41,12 +50,16 @@ const shots = [
       await p.mouse.move(cv.x + 900, cv.y + 520); await p.mouse.down(); await p.mouse.up();
       await p.keyboard.up('Shift');
       await p.evaluate(() => {
-          document.getElementById('show-boat').click();
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', bubbles: true }));
           // Zoomed to where a boat is judgeable against a gate, which is the whole point.
           window.EditorApp._setView(2500, 1800, 0.55);
       });
   } }
 ];
+
+// Layers are rows in the left-hand list now, keyed by layer id rather than by mode name.
+const LAYER_OF = { shape: 'land', marks: 'marks', route: 'route', current: 'current',
+                   water: 'water', venue: 'venue', wind: 'wind', boundary: 'arena', map: 'course' };
 
 (async () => {
   const b = await chromium.launch();
@@ -58,11 +71,14 @@ const shots = [
   await p.waitForTimeout(1500);
 
   for (const s of shots) {
-    await p.click(`[data-mode="${s.mode}"]`);
+    await p.click(`#layer-list [data-layer="${LAYER_OF[s.mode]}"]`);
+    if (s.tool) await p.click(`#tool-strip [data-tool="${s.tool}"]`);
     await s.setup(p);
     await p.waitForTimeout(250);
     await p.screenshot({ path: `regatta/eval/_editor_${s.name}.png` });
-    const panel = await p.locator(`.mode-panel[data-layer="${s.mode}"]`).boundingBox();
+    // Not every layer HAS a settings panel — Land's tools all live on the tool strip.
+    const box = p.locator(`.mode-panel[data-layer="${s.mode}"]`);
+    const panel = (s.tool || await box.count() === 0) ? null : await box.boundingBox();
     if (panel) await p.screenshot({ path: `regatta/eval/_editor_${s.name}_panel.png`,
       clip: { x: Math.max(0, panel.x - 8), y: Math.max(0, panel.y - 8),
               width: panel.width + 16, height: Math.min(panel.height + 16, 1020) } });
@@ -74,7 +90,7 @@ const shots = [
   await p.waitForTimeout(250);
   const stillThere = await p.evaluate(() => ({
       courseVisible: !document.getElementById('view-course').classList.contains('hidden'),
-      checksVisible: !document.getElementById('pane-checks').classList.contains('hidden'),
+      checksVisible: !document.getElementById('drawer').hidden,
       controls: !document.getElementById('course-controls').classList.contains('hidden')
   }));
   console.log('checks tab:', JSON.stringify(stillThere));

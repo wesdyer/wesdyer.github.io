@@ -19,6 +19,52 @@
 // eval harness loads the page over file://, where fetch() is blocked by CORS.
 (function () {
 
+// ── Keyholing: the document's holes, in the form the RUNTIME speaks ─────────
+// A document says interior water with `{outer, holes}`. The game says it with a KEYHOLE — a
+// single ring that walks in, around the water, and back out. Both are valid; the game was
+// built for the second and says so ("the water is a hole in the polygon ... this has to be
+// 'evenodd'" in the renderer, "concave and keyholed" in the collision test).
+//
+// Nothing converted between them. `holes` was compiled onto the island and read by NOTHING —
+// no runtime file mentions it — while `vertices` came from `outer` alone, so an authored
+// lagoon would have drawn solid, grounded a boat sailing it, and been invisible to the
+// planner. It never bit only because Glacier Sound has zero holes.
+//
+// Converting here, at the document->runtime boundary, is what makes render, collision AND
+// pathfinding right at once: all three consume this one ring, and none of them changes.
+// The bridge is zero-width, so parity-based tests (even-odd fill, the crossing-number
+// pointInPoly) count its two coincident edges as cancelling and read the lagoon as water.
+function keyholeRings(outer, holes) {
+    if (!holes || !holes.length) return outer.map(p => [p[0], p[1]]);
+    let ring = outer.map(p => [p[0], p[1]]);
+    // One hole at a time, each spliced into the ring built so far — so a second hole bridges
+    // to the already-keyholed outline rather than to the original.
+    for (const hole of holes) {
+        if (!hole || hole.length < 3) continue;
+        // Closest pair between the two rings. A rightmost-vertex ray cast is the textbook
+        // choice; closest-pair is simpler and equivalent for holes that sit clear inside
+        // their shell, which the validator already requires.
+        let bi = 0, hj = 0, best = Infinity;
+        for (let i = 0; i < ring.length; i++) {
+            for (let j = 0; j < hole.length; j++) {
+                const d = (ring[i][0] - hole[j][0]) ** 2 + (ring[i][1] - hole[j][1]) ** 2;
+                if (d < best) { best = d; bi = i; hj = j; }
+            }
+        }
+        // outer[0..bi] -> hole[hj..end] -> hole[0..hj] -> back to outer[bi] -> outer[bi..end]
+        const bridged = ring.slice(0, bi + 1);
+        for (let k = 0; k < hole.length; k++) {
+            const p = hole[(hj + k) % hole.length];
+            bridged.push([p[0], p[1]]);
+        }
+        bridged.push([hole[hj][0], hole[hj][1]]);   // close the hole
+        bridged.push([ring[bi][0], ring[bi][1]]);   // return along the bridge
+        for (let k = bi + 1; k < ring.length; k++) bridged.push(ring[k]);
+        ring = bridged;
+    }
+    return ring;
+}
+
 // Point-in-polygon, even-odd ray cast. Shared by containment and hole tests.
 function pointInRing(x, y, ring) {
     let inside = false;
@@ -380,7 +426,10 @@ function compileVenueDoc(doc) {
     const byId = {};
 
     for (const l of (doc.land || [])) {
-        const verts = l.outer.map(p => ({ x: p[0], y: p[1] }));
+        // KEYHOLED, so the runtime's single-ring render / collision / pathfinding all see the
+        // interior water. With no holes this is `outer` copied, which is why every existing
+        // venue is byte-identical across this change.
+        const verts = keyholeRings(l.outer, l.holes).map(p => ({ x: p[0], y: p[1] }));
         // Prefer the BAKED centroid/radius. Recomputing them from the ring is not
         // guaranteed to agree (the bake used the mean of the simplified ring), and
         // island radius feeds placement, wind and pathfinding.
@@ -708,6 +757,7 @@ window.VenueDoc = {
     compile: compileVenueDoc,
     resolveRefs: resolveRefs,
     pointInRing: pointInRing,
+    keyholeRings: keyholeRings,
     ringSelfIntersects: ringSelfIntersects,
     ringArea: ringArea
 };

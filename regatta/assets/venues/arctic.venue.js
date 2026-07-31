@@ -743,7 +743,7 @@ window.VENUE_DOC["arctic"] = {
         "falloff": 400,
         "direction": -2.5238369280235613,
         "dirVar": 0,
-        "speed": null,
+        "speed": 19,
         "speedVar": 0,
         "period": 30
       }

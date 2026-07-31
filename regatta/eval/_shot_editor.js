@@ -8,7 +8,7 @@ const path = require('path');
   p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve('regatta/editor.html'));
   await p.waitForTimeout(1600);
-  const layers = process.argv[2] ? [process.argv[2]] : ['level','land','marks','course','wind','water','venue','arena'];
+  const layers = process.argv[2] ? [process.argv[2]] : ['course','land','marks','route','wind','water','venue','arena'];
   for (const L of layers) {
     await p.evaluate((id) => {
       const row = document.querySelector(`[data-layer="${id}"]`);

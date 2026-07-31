@@ -31,6 +31,54 @@ const Geom = {
         return Math.sqrt((p.x - px)**2 + (p.y - py)**2);
     },
 
+    // A TRUE OUTWARD OFFSET. Every vertex moves along the bisector of its two edge normals,
+    // so the new outline sits `margin` clear of the old one the whole way round.
+    //
+    // What this replaces was a RADIAL push from the centroid, on the stated assumption that
+    // "islands are star-shaped radial". A coastline is not one: 50 of Glacier Sound's 84
+    // vertices cannot see their own centroid. Where the shore runs roughly parallel to a
+    // centroid ray — inlets, the backs of headlands — a radial push is nearly TANGENTIAL and
+    // buys almost no perpendicular room. Measured against an intended 100 units: median 83,
+    // p10 29, MINIMUM 2, against a 30-unit hull. The inflated ring never self-intersected, so
+    // nothing complained; the boats simply believed in clearance they did not have.
+    offsetRing: function(verts, margin) {
+        const n = verts.length;
+        if (n < 3) return verts.map(v => ({ x: v.x, y: v.y }));
+        // Winding decides which way is OUT. Shoelace positive = counter-clockwise, whose
+        // outward normal for edge a->b is (dy, -dx); negative flips it.
+        let area2 = 0;
+        for (let i = 0; i < n; i++) {
+            const a = verts[i], b = verts[(i + 1) % n];
+            area2 += a.x * b.y - b.x * a.y;
+        }
+        const s = area2 >= 0 ? 1 : -1;
+        const edgeNormal = (i) => {
+            const a = verts[i], b = verts[(i + 1) % n];
+            const dx = b.x - a.x, dy = b.y - a.y;
+            const len = Math.hypot(dx, dy) || 1;
+            return { x: s * dy / len, y: -s * dx / len };
+        };
+        // A mitre grows without bound as a corner sharpens. Capped, so a near-spike is cut
+        // back instead of shooting a spar of "blocked water" out into open sea.
+        const MITRE_CAP = 3;
+        const out = [];
+        for (let i = 0; i < n; i++) {
+            const n1 = edgeNormal((i - 1 + n) % n), n2 = edgeNormal(i);
+            let bx = n1.x + n2.x, by = n1.y + n2.y;
+            const bl = Math.hypot(bx, by);
+            if (bl < 1e-9) {
+                // A 180 degree reversal has no bisector. Use the edge normal and move on.
+                out.push({ x: verts[i].x + n2.x * margin, y: verts[i].y + n2.y * margin });
+                continue;
+            }
+            bx /= bl; by /= bl;
+            const cos = bx * n1.x + by * n1.y;             // cosine of half the turn
+            const scale = Math.min(margin / Math.max(cos, 1e-6), margin * MITRE_CAP);
+            out.push({ x: verts[i].x + bx * scale, y: verts[i].y + by * scale });
+        }
+        return out;
+    },
+
     // Check if segment AB intersects Polygon (any edge) OR is fully inside
     // Returns true if blocked
     segmentIntersectsPoly: function(a, b, poly) {
@@ -64,20 +112,13 @@ class RoutePlanner {
         // more — they move 20-60u between replans, eating the margin.
         this.inflatedIslands = islands.map(isl => {
             const MARGIN = isl.isFloe ? 190 : 100;
-            const center = { x: isl.x, y: isl.y };
-            // Islands are star-shaped radial, so we can inflate radially
-            const vertices = isl.vertices.map(v => {
-                const dx = v.x - center.x;
-                const dy = v.y - center.y;
-                const len = Math.sqrt(dx*dx + dy*dy);
-                // Push out
-                const scale = (len + MARGIN) / len;
-                return { x: center.x + dx * scale, y: center.y + dy * scale };
-            });
             return {
                 x: isl.x, y: isl.y,
+                // Still the BOUNDING circle, and still only a broad-phase reject. A mitred
+                // corner can sit slightly further out than this, which costs a missed reject,
+                // never a missed collision — the polygon test behind it is the real answer.
                 radius: isl.radius + MARGIN,
-                vertices: vertices
+                vertices: Geom.offsetRing(isl.vertices, MARGIN)
             };
         });
         this.islandsDirty = false;

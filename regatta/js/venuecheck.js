@@ -466,11 +466,15 @@ function runChecks(ctx) {
                 + (ok ? '' : ' — the slower boats would be scored DNF while still racing'));
         }
     } else if (compiled.sailedDist > 0) {
-        add(inBand ? 'ok' : 'warn', 'race-length', 'Race length',
-            `Sailed ~${M(dist)} straight-line, expected ~${Math.floor(expected / 60)}:`
-            + String(Math.round(expected % 60)).padStart(2, '0')
-            + (inBand ? ' (in the 3–5 min band)' : ' — outside the 3–5 min target')
-            + ' · no sailable path found, so this ignores the land in the way');
+        // ⚠️ THIS BRANCH WAS DEAD AND BROKEN: it named `inBand`, `dist` and `expected`, none
+        // of which exist here any more — three ReferenceErrors that could not fire while
+        // every course had a sailable path to price. Allowing a region to be calm made one
+        // that has not, and the checks threw instead of reporting.
+        // It also should not dress the straight line up as an estimate. If no path could be
+        // priced the course is blocked or becalmed, and THAT is the finding.
+        add('warn', 'race-length', 'Race length',
+            `${M(compiled.sailedDist)} of straight-line course, but no sailable path could be`
+            + ' priced — check that wind covers the water and the route is not blocked.');
     }
 
     return out;

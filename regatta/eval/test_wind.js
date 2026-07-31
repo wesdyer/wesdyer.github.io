@@ -78,8 +78,9 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         state.wind.direction = -1 + 0.3;           // the venue shifted 0.3 rad right
         const shifted = sample(0, 0);
 
-        // Speed absent = "whatever the venue is doing here", which is what keeps a course
-        // that only authors direction varying from race to race.
+        // A REGION STATES ITS OWN SPEED. Absent is CALM, not "ask the venue" — a region that
+        // looked authored but silently borrowed a number blew at different strengths on
+        // different venues with identical fields.
         d.wind.regions = [{ id: 'V', poly: box(0, 0, 1500), falloff: 200, direction: 0, speed: null, period: 0 }];
         resetGame();
         state.gusts = []; state.wind.speed = 17; state.wind.baseDirection = -1; state.wind.direction = -1; state.time = 0;
@@ -133,8 +134,8 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
     check("the day's shift still rides on top of a region's mean",
           nearAng(r.shifted.d, 0.3, 0.02), `${r.shifted.d.toFixed(3)} (want 0.300)`);
 
-    check('a region with no speed follows the venue',
-          near(r.venueSpeed.s, 17, 0.2), `${r.venueSpeed.s.toFixed(2)}kt (venue is 17)`);
+    check('a region with no speed is CALM, not the venue\'s wind',
+          r.venueSpeed.s < 0.01, `${r.venueSpeed.s.toFixed(2)}kt (the venue is doing 17)`);
 
     check('sampling the field consumes no rng draws', r.draws === 0, `${r.draws} draws`);
     check('the representative direction is derived from the regions',

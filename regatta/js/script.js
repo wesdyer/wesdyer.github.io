@@ -4951,9 +4951,12 @@ function getWindAt(x, y) {
             // stream.
             const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
             const rd = r.direction + r.dirVar * osc + liveShift;
-            // An absent speed means "whatever the venue is doing here", which is what
-            // keeps race-to-race variety on a course that only authors direction.
-            const rs = Math.max(0, (r.speed != null ? r.speed : baseSpeed) + r.speedVar * osc);
+            // A REGION STATES ITS OWN SPEED. There is no venue fallback: an absent speed is
+            // zero, the same way an unstated patch of water is calm. Falling back to the
+            // venue meant a region could look authored while silently borrowing a number
+            // from somewhere else, and two regions with the same fields could blow at
+            // different strengths depending on which venue they sat on.
+            const rs = Math.max(0, (r.speed || 0) + r.speedVar * osc);
             ux += Math.sin(rd) * w; uy += -Math.cos(rd) * w;
             sacc += rs * w;
             wsum += w;
