@@ -151,30 +151,58 @@ const VENUE = venIdx >= 0 ? ARGS[venIdx + 1] : 'seatrials';
 const charIdx = ARGS.indexOf('--char');
 const CHAR = charIdx >= 0 ? ARGS[charIdx + 1] : null;
 
+// Trials accumulate state in the page and it degrades — shards that once ran 200
+// deep started dying around 50 once the venue/gust work landed. Rather than tune the
+// worker count against a moving ceiling, each worker recycles its own browser every
+// RECYCLE trials. Bounded memory, no lost work, and the seeded RNG is re-seeded per
+// trial anyway so a fresh page is numerically identical to a tired one.
+const RECYCLE = 25;
+
 (async () => {
     const { chromium } = require('playwright');
-    const browser = await chromium.launch();
-    const page = await browser.newPage();
+    let browser = null, page = null;
+    const openPage = async () => {
+        if (browser) { try { await browser.close(); } catch (e) {} }
+        browser = await chromium.launch();
+        page = await browser.newPage();
+        await page.goto('file://' + path.resolve('regatta/index.html'));
+        await page.evaluate(v => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), VENUE);
+        await page.addScriptTag({ content: fs.readFileSync('regatta/eval/eval_harness.js', 'utf8') });
+        if (CHAR) await page.evaluate(c => { window.__CHAR = JSON.parse(c); }, CHAR);
+    };
+    await openPage();
+    const _unused = async () => {
     await page.goto('file://' + path.resolve('regatta/index.html'));
     // Set BEFORE the harness loads: its init() only defaults to 'seatrials' when
     // regatta_settings is absent, so writing it first is what makes the pin
     // yield. Only `venue` is set, so every other setting comes from
     // DEFAULT_SETTINGS and stays identical across venues.
-    await page.evaluate(v => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), VENUE);
-    await page.addScriptTag({ content: fs.readFileSync('regatta/eval/eval_harness.js', 'utf8') });
-    if (CHAR) await page.evaluate(c => { window.__CHAR = JSON.parse(c); }, CHAR);
+    };
+    void _unused;
 
     const chars = {};
     const t0 = Date.now();
 
     for (let i = 0; i < NUM_TRIALS; i++) {
         const seed = SEED_BASE + i;
-        const result = await page.evaluate(
-            ({ seed, limit }) => window.evalHarness.runTrial(seed, limit),
-            { seed, limit: TIME_LIMIT }
-        );
+        if (i > 0 && i % RECYCLE === 0) await openPage();
+        let result;
+        try {
+            result = await page.evaluate(
+                ({ seed, limit }) => window.evalHarness.runTrial(seed, limit),
+                { seed, limit: TIME_LIMIT });
+        } catch (e) {
+            // A dead page loses this trial, not the shard. Reopen and retry once.
+            process.stdout.write(`[${SEED_BASE}] page died at ${i}, reopening\n`);
+            await openPage();
+            result = await page.evaluate(
+                ({ seed, limit }) => window.evalHarness.runTrial(seed, limit),
+                { seed, limit: TIME_LIMIT });
+        }
 
-        const ai = result.boats.filter(b => b.name !== 'Player');
+        // Identify the player by FLAG, never by name — they sail as a character now,
+        // so a name test silently lets an undriven boat into the fleet statistics.
+        const ai = result.boats.filter(b => !(b.isPlayer || b.name === 'Player'));
         const finishers = ai.filter(b => b.finished && b.finishTime > 0);
         // A race that lost most of its fleet says nothing reliable about the
         // survivors' relative speed, so drop it rather than let it skew a mean.

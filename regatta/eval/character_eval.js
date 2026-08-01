@@ -64,7 +64,7 @@ const OUT_FILE = 'regatta/eval/character_stats.json';
         const totalBoats = boats.length; // Should be 10
 
         boats.forEach((boat, index) => {
-            if (boat.name === 'Player') return;
+            if (boat.isPlayer || boat.name === 'Player') return;  // flag, not name — the player is a character now
 
             if (!charStats[boat.name]) {
                 charStats[boat.name] = {

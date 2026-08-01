@@ -107,8 +107,8 @@ def main(paths):
         start = f'loopStart: {loop_start}, ' if loop_start else ''
         print(f"    {key}: {{ file: '{rel}', {start}loopEnd: {loop_end}, trim: {trim} }},")
         if loop_start:
-            print(f'    ↻ the first {loop_start:.0f}s are too sparse to loop back into, so the'
-                  f' loop returns to {loop_start:.0f}s.')
+            print(f'    ↻ the first {loop_start:.1f}s are too sparse to loop back into, so the'
+                  f' loop returns to {loop_start:.1f}s.')
             print('      Everything before it is unused: playback enters there too.')
         if two_sided:
             print(f'    ↻ and {fade_end - loop_end:.0f}s trimmed off the tail as well: the ending'

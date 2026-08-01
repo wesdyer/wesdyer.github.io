@@ -27,13 +27,29 @@ const http = require('http');
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css',
                '.mp3': 'audio/mpeg', '.png': 'image/png', '.json': 'application/json',
                '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.ico': 'image/x-icon' };
+// ⚠️ It MUST serve HTTP Range. A browser cannot seek in media without it — `seekable`
+// stays empty and `currentTime = loopStart` is silently ignored — so a server without
+// Range makes every track look like it ignores its loop point. That cost a wrong
+// diagnosis once already; real hosts (GitHub Pages included) serve Range, so a test
+// server that doesn't is testing something the game never meets.
 const serve = root => new Promise(resolve => {
     const server = http.createServer((req, res) => {
         const file = path.join(root, decodeURIComponent(req.url.split('?')[0]));
-        fs.readFile(file, (err, data) => {
+        fs.stat(file, (err, st) => {
             if (err) { res.writeHead(404); return res.end(); }
-            res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream' });
-            res.end(data);
+            const type = MIME[path.extname(file)] || 'application/octet-stream';
+            const match = req.headers.range && /bytes=(\d*)-(\d*)/.exec(req.headers.range);
+            if (match) {
+                const start = match[1] ? parseInt(match[1], 10) : 0;
+                const end = match[2] ? parseInt(match[2], 10) : st.size - 1;
+                res.writeHead(206, { 'Content-Type': type, 'Accept-Ranges': 'bytes',
+                    'Content-Range': `bytes ${start}-${end}/${st.size}`,
+                    'Content-Length': end - start + 1 });
+                return fs.createReadStream(file, { start, end }).pipe(res);
+            }
+            res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes',
+                                 'Content-Length': st.size });
+            fs.createReadStream(file).pipe(res);
         });
     });
     server.listen(0, '127.0.0.1', () => resolve(server));
@@ -233,8 +249,17 @@ const check = (name, cond, detail) => {
             const heard = await web.evaluate(async () => {
                 const sleep = ms => new Promise(r => setTimeout(r, ms));
                 settings.musicEnabled = true;
+                // A venue whose track declares a loopStart, entered over a REAL origin.
+                // A fresh element cannot seek before metadata loads and fails silently, so
+                // this is where a dropped loopStart shows up — file:// loads fast enough to
+                // hide it.
+                settings.venue = 'arctic';
+                selectVenue('arctic');
+                await sleep(400);
                 Sound.init();
-                await sleep(1500);
+                await sleep(600);
+                startRace();
+                await sleep(2500);
                 if (!Sound.musicBus) return { routed: false, peak: 0, track: Sound.activeTrack };
                 const an = Sound.ctx.createAnalyser();
                 an.fftSize = 2048;
@@ -246,13 +271,20 @@ const check = (name, cond, detail) => {
                     for (let j = 0; j < buf.length; j++) peak = Math.max(peak, Math.abs(buf[j]));
                     await sleep(50);
                 }
+                const def = MUSIC_TRACKS[Sound.activeTrack] || {};
                 return { routed: !!(Sound.activeVoice && Sound.activeVoice.gain),
-                         peak: +peak.toFixed(5), track: Sound.activeTrack };
+                         peak: +peak.toFixed(5), track: Sound.activeTrack,
+                         enteredAt: +Sound.activeVoice.el.currentTime.toFixed(1),
+                         loopStart: def.loopStart || 0 };
             });
             check(`http:// routes through Web Audio (track '${heard.track}')`, heard.routed,
                   'fell back to element volume on a real origin');
             check(`SIGNAL REACHES THE OUTPUT (peak ${heard.peak})`, heard.peak > 1e-3,
                   'the graph is connected and silent — this is the bug file:// cannot see');
+            // Entry must land past loopStart and keep moving — never snap back to 0.
+            check(`http:// enters at loopStart (t=${heard.enteredAt}, loopStart ${heard.loopStart})`,
+                  heard.enteredAt >= heard.loopStart - 0.5,
+                  'the seek was dropped — a fresh element cannot seek before metadata loads');
             check('no page errors over http', webErrors.length === 0, webErrors.slice(0, 2).join(' | '));
             await web.close();
         } finally {

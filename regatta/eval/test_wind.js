@@ -155,28 +155,38 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         resetGame();
         const o = {}, isl = state.course.navIslands.filter(i => !i.isFloe);
         const s = isl[0];
+
+        // A SHAPE CASTS ITS LEE DOWN THE WIND AT ITSELF, so these sweep the FIELD rather than
+        // handing shadowAt a direction — there is no direction to hand it any more, and the
+        // old signature only worked while one global angle stood for the wind everywhere.
+        //
+        // Clearing the regions makes the field uniform, so `state.wind.direction` IS the wind
+        // at the island and the probe geometry below is exact. With regions left in place the
+        // island would take its own blended angle and the probes would be aimed elsewhere —
+        // which is the real behaviour, and is what the region tests above cover.
+        state.course.windRegions = [];
+        const shadeAt = (x, y, dir) => { state.wind.direction = dir; return shadowAt(x, y, null, 'wind'); };
+
         // NOTHING casts a lee until it is given a height — that is the default, deliberately,
         // so the feature existing does not change how ten venues sail.
-        o.silentByDefault = shadowAt(s.x + 1, s.y + 1, state.wind.direction, 'wind') === 1
+        o.silentByDefault = shadeAt(s.x + 1, s.y + 1, state.wind.direction) === 1
             && isl.every(i => !(i.height > 0));
-        s.height = 40; s._sil = null;         // 40 m of rock -> 400 m of bad air, at 10 heights
-        const at = (dir, k) => shadowAt(s.x - Math.sin(dir) * s.radius * 2 * (k === 'lee' ? 1 : -1) * -1,
-                                        s.y + Math.cos(dir) * s.radius * 2 * (k === 'lee' ? 1 : -1) * -1,
-                                        dir, 'wind');
+        s.height = 40;                        // 40 m of rock -> 400 m of bad air, at 10 heights
         // Downwind is thin, upwind is untouched — at EVERY wind direction, because a shadow
         // that does not turn with the breeze is in the wrong place the moment it shifts.
         o.lee = [], o.luff = [];
         for (let d = 0; d < 360; d += 45) {
             const r = d * Math.PI / 180, fx = -Math.sin(r), fy = Math.cos(r);
-            o.lee.push(+shadowAt(s.x + fx * s.radius * 2, s.y + fy * s.radius * 2, r, 'wind').toFixed(2));
-            o.luff.push(+shadowAt(s.x - fx * s.radius * 2, s.y - fy * s.radius * 2, r, 'wind').toFixed(2));
+            o.lee.push(+shadeAt(s.x + fx * s.radius * 2, s.y + fy * s.radius * 2, r).toFixed(2));
+            o.luff.push(+shadeAt(s.x - fx * s.radius * 2, s.y - fy * s.radius * 2, r).toFixed(2));
         }
         // One FIXED point is shadowed at one wind angle and clear at the rest.
         o.fixed = [];
         for (let d = 0; d < 360; d += 45)
-            o.fixed.push(+shadowAt(s.x + s.radius * 2, s.y, d * Math.PI / 180, 'wind').toFixed(2));
+            o.fixed.push(+shadeAt(s.x + s.radius * 2, s.y, d * Math.PI / 180).toFixed(2));
         // It fades with distance rather than stopping at a wall.
-        const d0 = state.wind.direction, fx = -Math.sin(d0), fy = Math.cos(d0);
+        const d0 = state.wind.baseDirection; state.wind.direction = d0;
+        const fx = -Math.sin(d0), fy = Math.cos(d0);
         const len = window.shadowLengthOf(s, 'wind');
         // Sampled as FRACTIONS OF THE PLUME, not as multiples of the island's radius. The
         // radius version happened to straddle the end of the shadow at one particular value
@@ -184,35 +194,47 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         // was testing the constant, not the property. The last sample is past the tail by
         // construction, which is what "ends in clear air" actually means.
         o.profile = [0.1, 0.3, 0.5, 0.8, 1.2].map(k =>
-            +shadowAt(s.x + fx * (s.radius + len * k), s.y + fy * (s.radius + len * k), d0, 'wind').toFixed(2));
+            +shadeAt(s.x + fx * (s.radius + len * k), s.y + fy * (s.radius + len * k), d0).toFixed(2));
         // Step sizes along the plume: an S-curve's are small, large, small.
         const walk = [];
         for (let t = 0; t <= 1.0001; t += 0.1)
-            walk.push(shadowAt(s.x + fx * (s.radius + len * t), s.y + fy * (s.radius + len * t), d0, 'wind'));
+            walk.push(shadeAt(s.x + fx * (s.radius + len * t), s.y + fy * (s.radius + len * t), d0));
         o.steps = walk.map(v => +v.toFixed(2));
         const step = walk.slice(1).map((v, i) => v - walk[i]);
         const mid = step[Math.floor(step.length / 2)];
         o.sCurve = mid > step[0] * 1.5 && mid > step[step.length - 1] * 1.5;
 
         // Authoring the LENGTH directly overrides the height-derived one, and 0 means none.
-        s.windShadow = 0; s._sil = null;
-        o.zeroCastsNone = shadowAt(s.x + fx * s.radius * 2, s.y + fy * s.radius * 2, d0, 'wind') === 1;
-        s.windShadow = s.radius * 12; s._sil = null;
-        o.longerReaches = shadowAt(s.x + fx * s.radius * 8, s.y + fy * s.radius * 8, d0, 'wind') < 0.99;
-        delete s.windShadow; s._sil = null;
+        s.windShadow = 0;
+        o.zeroCastsNone = shadeAt(s.x + fx * s.radius * 2, s.y + fy * s.radius * 2, d0) === 1;
+        s.windShadow = s.radius * 12;
+        o.longerReaches = shadeAt(s.x + fx * s.radius * 8, s.y + fy * s.radius * 8, d0) < 0.99;
+        delete s.windShadow;
         // Height is what sets it: taller casts further, which is the whole model.
-        const at3r = () => shadowAt(s.x + fx * s.radius * 3, s.y + fy * s.radius * 3, d0, 'wind');
-        s.height = 10; s._sil = null; const shortH = at3r();
-        s.height = 90; s._sil = null; const tallH = at3r();
+        const at3r = () => shadeAt(s.x + fx * s.radius * 3, s.y + fy * s.radius * 3, d0);
+        s.height = 10; const shortH = at3r();
+        s.height = 90; const tallH = at3r();
         o.tallerCastsFurther = tallH < shortH;
         s.height = 40; s._sil = null;
 
         // A COASTLINE must shadow a band, not the map — the failure that switched the whole
         // model off. Measured as the share of open water in any degree of lee.
+        //
+        // THE COASTLINE, singular. This used to height all of Glacier Sound's shapes at once
+        // and measure the total, which is really a measurement of how many shapes a designer
+        // has placed: it read 29% at six shapes and 64% at a hundred and twenty-three, and
+        // tipped past this bound the day the venue gained a hand-placed ice field. Neither
+        // number says anything about the bug being guarded, which is one enormous outline
+        // casting from a bounding circle centred inland.
         localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'arctic' }));
         resetGame();
-        // 20 m of shelf and shore, authored here because the venue does not author it.
-        for (const i of state.course.navIslands) { i.height = 20; i._sil = null; }
+        let coast = null;
+        for (const i of state.course.navIslands) {
+            i.height = 0; delete i.windShadow;          // isolate: only the coast casts
+            if (!coast || i.radius > coast.radius) coast = i;
+        }
+        coast.height = 20;                              // 20 m of shelf and shore
+        o.coastRadius = Math.round(coast.radius);
         const b = state.course.boundary, dA = state.wind.direction;
         let n = 0, dim = 0;
         const onLand = (x, y) => state.course.landShapes.some(L => {
@@ -224,7 +246,7 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         for (let i = 0; i < 30; i++) for (let j = 0; j < 30; j++) {
             const x = b.x + (i / 29 - 0.5) * b.radius * 1.6, y = b.y + (j / 29 - 0.5) * b.radius * 1.6;
             if (!Arena.contains(b, x, y, 0) || onLand(x, y)) continue;
-            n++; if (shadowAt(x, y, dA, 'wind') < 0.999) dim++;
+            n++; if (shadowAt(x, y, null, 'wind') < 0.999) dim++;
         }
         o.coastShare = Math.round(100 * dim / n);
         o.coastCasts = dim > 0;

@@ -130,7 +130,7 @@ function calculateStats(values, type = 'continuous') {
     allResults.forEach(trial => {
         trial.boats.forEach(boat => {
             const charName = boat.character || boat.name;
-            if (charName === 'Player') return;
+            if (boat.isPlayer || charName === 'Player') return;  // flag, not name — the player is a character now
 
             const bGlobal = buckets;
             const bChar = getBucket(charName);

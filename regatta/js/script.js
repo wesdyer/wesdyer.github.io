@@ -1187,8 +1187,7 @@ class BotController {
     // --- Prestart Helper Methods ---
 
     getLineDistance() {
-        const m0 = state.course.marks[0];
-        const m1 = state.course.marks[1];
+        const [m0, m1] = startLinePts();
         const lineDx = m1.x - m0.x;
         const lineDy = m1.y - m0.y;
         const nx = lineDy, ny = -lineDx; // Normal perpendicular to line (points upwind)
@@ -1221,8 +1220,7 @@ class BotController {
     getStartCommand() {
         const boat = this.boat;
         const timer = state.race.timer;
-        const m0 = state.course.marks[0];
-        const m1 = state.course.marks[1];
+        const [m0, m1] = startLinePts();
 
         const dx = m1.x - m0.x;
         const dy = m1.y - m0.y;
@@ -1979,7 +1977,6 @@ const AI_CONFIG = [
 
 // Settings
 const DEFAULT_SETTINGS = {
-    playerName: "Player",
     navAids: true,
     // Stored in the polarity the Settings toggle shows. The boat carries the
     // inverse (boat.manualTrim) because the physics reads more naturally that way.
@@ -1989,13 +1986,14 @@ const DEFAULT_SETTINGS = {
     musicEnabled: false,
     penaltiesEnabled: true,
     cameraMode: 'heading',
-    hullColor: '#f1f5f9',
-    sailColor: '#ffffff',
-    cockpitColor: '#cbd5e1',
-    spinnakerColor: '#ef4444',
-    spinnakerColor2: '#ffffff',
-    spinnakerColor3: '#ffd400',
-    spinnakerPattern: 'solid',
+    // WHO YOU SAIL AS. The custom hull/sail/cockpit/spinnaker/pattern settings are gone:
+    // you pick a character from the fleet and get their boat, their name and their face.
+    // One way to say it instead of two — a recoloured Finley was not Finley, and the
+    // player's appearance living in `settings` while everyone else's lived on the boat is
+    // what put six `isPlayer ? settings.x : boat.colors.x` branches inside drawBoat.
+    character: 'Finley',
+    // Not part of the character: the telltales are an INSTRUMENT, not a livery, and no
+    // character defines one.
     telltaleColor: '#fbbf24',
     venue: 'bay',
 };
@@ -2632,6 +2630,15 @@ function updateIceFloes(dt) {
                 isl.driftVx -= 2 * dot * n.x;
                 isl.driftVy -= 2 * dot * n.y;
             }
+            // ABSOLUTE, deliberately: the scenery extent is the one edge nothing may be seen
+            // outside, so it is restored in full every frame rather than eased like the land
+            // and ice-on-ice corrections. Capping it to their rate let those two push a floe
+            // out faster than this could pull it back, and ice escaped by up to 1015 units.
+            //
+            // It cannot jump visibly any more, because the case that made it jump is gone:
+            // a floe authored far outside used to be hauled 300-941 units on the first frame,
+            // and settleFloes() now resolves that before anything is drawn. What is left here
+            // is drift, which is a fraction of a unit per frame.
             moveFloe(isl, (_sd - _inset) * n.x, (_sd - _inset) * n.y);
         }
 
@@ -2652,8 +2659,14 @@ function updateIceFloes(dt) {
             const overlap = minD - dist;
             const mA = a.radius * a.radius, mB = b.radius * b.radius;
             const shareA = mB / (mA + mB), shareB = mA / (mA + mB);
-            moveFloe(a, -nx * overlap * shareA, -ny * overlap * shareA);
-            moveFloe(b, nx * overlap * shareB, ny * overlap * shareB);
+            // CAPPED to the same rate as every other correction here, so no floe is ever moved
+            // faster than it can be seen to move. settleFloes() clears the authored overlaps
+            // before the first frame, but a pinch — ice held against ice by a shore that will
+            // not yield — has no solution to converge to, and resolving one of those in a
+            // single uncapped step is exactly the jump this whole pass exists to prevent.
+            const corr = Math.min(overlap, Math.max(2, FLOE_PUSH_RATE * dt));
+            moveFloe(a, -nx * corr * shareA, -ny * corr * shareA);
+            moveFloe(b, nx * corr * shareB, ny * corr * shareB);
 
             // 1D elastic collision along the normal (restitution 0.85)
             const vaN = a.driftVx * nx + a.driftVy * ny;
@@ -2678,29 +2691,151 @@ function updateIceFloes(dt) {
     // One rebuild per floe, after every push and bounce has settled
     for (const isl of floes) syncFloe(isl);
 
-    // Second shore pass. The floe-on-floe separation above runs AFTER the
-    // per-floe shore bounce and can shove ice back into the coast, where it then
-    // sits. Re-resolve against land last so the coastline always wins — and if a
-    // floe STILL overlaps after that, it is wedged somewhere the push cannot
-    // resolve (a narrow inlet where opposite shores cancel). Relocate it rather
-    // than leave a berg sitting on land: the ice is drifting scenery, and one
-    // beached floe reads as a bug every time.
-    for (const f of floes) {
-        if (!state.course.landShapes) continue;
-        let stuck = false;
-        for (const isl of state.course.landShapes) {
-            if (circlePolyCollide(f.x, f.y, f.radius * 0.9, isl.vertices)) { stuck = true; break; }
+    // Shore pass, last, so the coastline always wins: the floe-on-floe separation above can
+    // shove ice back into land, and whatever land says here is what stands this frame.
+    //
+    // ICE IS PUSHED OFF A SHORE, NEVER TELEPORTED OFF IT. This used to sample a random point
+    // in the scenery and jump the floe there — a berg vanishing from one headland and
+    // reappearing half a course away, 58 times in a three-minute race on Glacier Sound with
+    // 112 authored floes. Nothing about a drifting object may be discontinuous; a player
+    // watching a berg has every right to expect it to still be there.
+    //
+    // So: find the shortest way out of the polygon and take a step along it, and reflect the
+    // drift that was carrying the floe in. A floe deep inside a shape needs several frames to
+    // walk out, which is correct — it slides off the shore the way it slid on.
+    // A RATE, not a per-frame constant: the push is a velocity like any other motion, so it
+    // looks the same at 30fps as at 144 and a big berg leaves a shore no faster than a small
+    // one. 150 units/sec against a drift of about 9 — firm, and still plainly movement.
+    for (const f of floes) pushFloeOffLand(f, Math.max(2, FLOE_PUSH_RATE * dt));
+}
+
+// How fast ice is pushed out of land it has drifted into, in units/sec.
+const FLOE_PUSH_RATE = 150;
+
+// The shortest way out of any land this floe overlaps, taken as a step of at most `maxStep`.
+// Shared by the per-frame shore pass and the settle pass that runs once at course build, so
+// the two cannot disagree about which way "out" is.
+function pushFloeOffLand(f, maxStep) {
+    const land = state.course.landShapes;
+    if (!land) return false;
+    let moved = false;
+    for (const isl of land) {
+        const R = f.radius * 0.9;
+        if (!circlePolyCollide(f.x, f.y, R, isl.vertices)) continue;
+        // Nearest point on the outline, and which side of it the centre is on.
+        const verts = isl.vertices;
+        let bestD2 = Infinity, bx = 0, by = 0;
+        for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+            const q = getClosestPointOnSegment(f.x, f.y, verts[j].x, verts[j].y, verts[i].x, verts[i].y);
+            const dx = f.x - q.x, dy = f.y - q.y, d2 = dx * dx + dy * dy;
+            if (d2 < bestD2) { bestD2 = d2; bx = q.x; by = q.y; }
         }
-        if (!stuck) continue;
-        for (let tries = 0; tries < 24; tries++) {
-            const _sp = Arena.sample(state.course.scenery || boundary, Math.random, 400);
-            const nx2 = _sp.x, ny2 = _sp.y;
-            if (!inMaskWater(nx2, ny2, f.radius + 120)) continue;
-            moveFloe(f, nx2 - f.x, ny2 - f.y);
-            break;
+        const inside = pointInPoly(f.x, f.y, verts);
+        const d = Math.sqrt(bestD2) || 1e-6;
+        // Outward: away from the outline when the centre is already outside it, toward the
+        // outline when the centre has ended up within.
+        let ox = (f.x - bx) / d, oy = (f.y - by) / d;
+        if (inside) { ox = -ox; oy = -oy; }
+        const need = inside ? (d + R) : (R - d);
+        if (!(need > 0)) continue;
+        const step = Math.min(need, maxStep);
+        moveFloe(f, ox * step, oy * step);
+        // Kill the drift still carrying it in, with a little bounce.
+        const into = f.driftVx * ox + f.driftVy * oy;
+        if (into < 0) {
+            f.driftVx -= 1.6 * into * ox;
+            f.driftVy -= 1.6 * into * oy;
+        }
+        moved = true;
+    }
+    if (moved) syncFloe(f);
+    return moved;
+}
+
+// Resolve authored overlaps ONCE, before the first frame is ever drawn.
+//
+// A document may place ice over land or outside the scenery — nothing stops it, and Glacier
+// Sound's 112 hand-placed floes do both. Left to the per-frame push those would spend the
+// opening seconds visibly sliding out, which is the same complaint as the teleport in a
+// politer voice. Doing it here means the race opens with the ice where it will actually be.
+function settleFloes() {
+    const floes = (state.course.islands || []).filter(i => i.isFloe);
+    if (!floes.length) return;
+    const scn = state.course.scenery || state.course.boundary;
+
+    // Rim, land and ice-on-ice are ONE relaxation, not three phases in sequence: pushing a
+    // floe off a headland can bury it in its neighbour, and separating that pair can put one
+    // of them back on the headland. Run in sequence, whichever ran last won and the loser was
+    // still overlapping when the first frame arrived — which the uncapped per-frame bounce
+    // then resolved in a single visible jump. Interleaved, they converge.
+    for (let round = 0; round < 16; round++) {
+        let worst = 0;
+        const before = floes.map(f => ({ x: f.x, y: f.y }));
+
+        for (const f of floes) {
+            if (scn) {
+                const inset = f.radius * 0.5;
+                const sd = Arena.signedDist(scn, f.x, f.y);
+                if (sd < inset) {
+                    const n = Arena.outward(scn, f.x, f.y);
+                    moveFloe(f, -(inset - sd) * n.x, -(inset - sd) * n.y);
+                }
+            }
+            // Uncapped here: nothing is on screen yet, so there is no motion to be smooth.
+            for (let k = 0; k < 8; k++) if (!pushFloeOffLand(f, f.radius)) break;
+        }
+
+        // Positions only — no velocity change. Nothing has collided; they were simply drawn
+        // overlapping, and a document's ice should not start the race already rebounding.
+        for (let i = 0; i < floes.length; i++) {
+            for (let j = i + 1; j < floes.length; j++) {
+                const a = floes[i], b = floes[j];
+                const dx = b.x - a.x, dy = b.y - a.y;
+                const minD = (a.radius + b.radius) * 0.92;
+                const d2 = dx * dx + dy * dy;
+                if (d2 >= minD * minD || d2 < 1) continue;
+                const dist = Math.sqrt(d2);
+                const nx = dx / dist, ny = dy / dist, overlap = minD - dist;
+                const mA = a.radius * a.radius, mB = b.radius * b.radius;
+                moveFloe(a, -nx * overlap * (mB / (mA + mB)), -ny * overlap * (mB / (mA + mB)));
+                moveFloe(b, nx * overlap * (mA / (mA + mB)), ny * overlap * (mA / (mA + mB)));
+            }
+        }
+
+        for (let i = 0; i < floes.length; i++) {
+            const d = Math.hypot(floes[i].x - before[i].x, floes[i].y - before[i].y);
+            if (d > worst) worst = d;
+        }
+        if (worst < 0.5) break;
+    }
+
+    // THE RIM HAS THE LAST WORD, so "inside the scenery extent" is this function's guarantee
+    // and not merely its usual outcome. The relaxation above does not always reach it: five of
+    // Glacier Sound's floes are big enough (radius 519 to 1095) to be pushed back out by land
+    // as fast as the rim pulls them in, and they were still up to 941 units outside when the
+    // loop gave up — which the per-frame clamp then took back in one visible jump.
+    //
+    // A floe left touching land here is fine: the per-frame shore push eases it off over the
+    // next second at a rate nobody reads as a jump. A floe left outside the world is not.
+    if (scn) {
+        for (const f of floes) {
+            // Iterated: one correction is exact against the nearest EDGE, and a floe pushed
+            // in past a corner can come to rest outside a different one.
+            for (let k = 0; k < 8; k++) {
+                const inset = f.radius * 0.5;
+                const sd = Arena.signedDist(scn, f.x, f.y);
+                if (sd >= inset) break;
+                const n = Arena.outward(scn, f.x, f.y);
+                moveFloe(f, -(inset - sd) * n.x, -(inset - sd) * n.y);
+            }
         }
     }
+    for (const f of floes) syncFloe(f);
 }
+
+// (clearOfCourse lived here. It vetoed a relocation that landed on the start line or a mark,
+// which was the right guard on the wrong mechanism — ice is pushed off a shore now and never
+// relocated at all, so there is no random destination left to veto.)
 
 // Ice that spins faster than this reads as a cartoon top, not a floe
 function clampSpin(w) { return Math.max(-0.75, Math.min(0.75, w)); }
@@ -3287,31 +3422,11 @@ class Boat {
         this.opacity = 1.0;
         this.fadeTimer = FINISH_FADE_SECS;
 
-        // Colors
-        if (config) {
-             this.colors = {
-                 hull: config.hull,
-                 sail: config.sail,
-                 cockpit: config.cockpit,
-                 spinnaker: config.spinnaker
-             };
-        } else if (!isPlayer) {
-             this.colors = { hull: '#fff', sail: '#fff', cockpit: '#ccc', spinnaker: '#f00' };
-        }
-        // Panel pattern (SPIN_LOOKS, config.spinPattern override, name-hash
-        // fallback); accent color comes from config.spinnaker2
-        this.spinPattern = isPlayer ? null : ((config && config.spinPattern) || SPIN_LOOKS[name] || spinPatternForName(name));
-        if (!isPlayer && this.colors && config && config.spinnaker2) this.colors.spinAccent = config.spinnaker2;
-        // Optional third kite colour. Absent means the two-colour look, unchanged.
-        if (!isPlayer && this.colors && config && config.spinnaker3) this.colors.spinAccent3 = config.spinnaker3;
-
-        // Stats (copied so the difficulty bonus never mutates AI_CONFIG). Missing keys
-        // fall back to 0, so a character authored before a stat existed races exactly
-        // as it did — that is what makes adding a column safe.
-        this.stats = Object.assign({}, STAT_DEFAULTS, (config && config.stats) || {});
-        if (!isPlayer) {
-            for (const k of BONUS_STATS) this.stats[k] += AI_STAT_BONUS;
-        }
+        // APPEARANCE IS THE SAME PATH FOR EVERYONE. It used to branch on `isPlayer` here and
+        // in six places inside drawBoat, because the player's colours lived in `settings`
+        // and everyone else's lived on the boat. The player is a character now, so there is
+        // one source and no branch.
+        applyBoatIdentity(this, config, isPlayer);
 
         // Race State
         this.raceState = {
@@ -3866,8 +3981,11 @@ const SHADOW_QUANTUM = 0.035;        // ~2 degrees
 const SHADOW_MAX = 0.7;              // deepest reduction, at the shore on the centreline
 const SHADOW_SPREAD = 0.35;          // how much the plume widens over its length
 
-function shadowSil(isl, flowX, flowY, key) {
-    let sil = isl._sil;
+// `slot` names the cache field, so wind and current keep SEPARATE silhouettes. They shared
+// one, keyed by a string that included the kind — which is a cache that reports a miss every
+// time both are in use, and rebuilds an 85-vertex projection twice per island per sample.
+function shadowSil(isl, flowX, flowY, key, slot) {
+    let sil = isl[slot];
     if (sil && sil.key === key) return sil;
     const verts = isl.isFloe ? isl.localArt : isl.vertices;
     if (!verts || !verts.length) return null;
@@ -3883,27 +4001,100 @@ function shadowSil(isl, flowX, flowY, key) {
     }
     sil = { key, alongMax, crossMid: (crossMin + crossMax) / 2,
             halfW: Math.max(1, (crossMax - crossMin) / 2) };
-    isl._sil = sil;
+    isl[slot] = sil;
     return sil;
 }
 
-// `dir` is where the flow COMES FROM for wind, and where it GOES for current — so each
-// caller hands in the vector it means rather than this guessing from a name.
+// WHICH WAY THIS OBSTACLE'S LEE POINTS: the mean wind at the obstacle itself.
+//
+// Not the venue mean. That is the bug this replaces — on Glacier Sound the mean is 130 degrees
+// while the wind over the course runs from 45 to 217, so every shape cast its lee up to 85
+// degrees away from the air actually passing it, and 462 of 599 shadowed samples disagreed
+// with the truth. In the worst places the game took 70% of the breeze away where the real wind
+// left a shape's lee nowhere near.
+//
+// And deliberately NOT the wind at the SAMPLE POINT, which sounds more local but is worse:
+// two points either side of a lee would each test against a differently-aimed plume from the
+// SAME island, so the lee would come apart into seams and holes instead of being one coherent
+// wake. Which way a wake lies is a fact about the obstacle, not about who is looking at it.
+//
+// The obstacle's reference point stands for the whole shape. That is exact for the small ones
+// and an approximation for a long coast lying across a bend — but a single shape can only have
+// one wake, so some point has to speak for it, and its own is the defensible one. (No venue
+// gives its coastline a height today, so nothing large is currently affected.)
+//
+// CACHED: shadowAt runs inside getWindAt, and getWindAt runs per boat and per particle per
+// frame. The day's live shift is added at READ time rather than baked into the cache — it is
+// the same angle on every region, so it rotates the blended mean exactly, which leaves only
+// the static part to recompute.
+function islandWindDir(isl) {
+    const shift = state.wind.direction - state.wind.baseDirection;
+    // Region oscillation is measured in tens of seconds, so a quarter-second key is far finer
+    // than anything it can express. Floes are keyed on having actually moved.
+    const tq = Math.round(state.time * 4);
+    // ...and on the REGION SET ITSELF, by reference. The editor redraws the field after every
+    // keystroke in a region's direction box, and a recompile hands back a fresh array — so
+    // comparing the reference is both the cheapest test available and exactly the event that
+    // should invalidate this. Without it the editor's field preview would keep showing lees
+    // aimed down the wind the venue had BEFORE the edit, which is the one place a stale
+    // shadow would be read as the truth about a design.
+    const regs = state.course.windRegions;
+    if (isl._wdT !== tq || isl._wdX !== isl.x || isl._wdY !== isl.y || isl._wdR !== regs) {
+        isl._wdT = tq; isl._wdX = isl.x; isl._wdY = isl.y; isl._wdR = regs;
+        isl._wdBase = regionWindAt(isl.x, isl.y).direction - shift;
+    }
+    return isl._wdBase + shift;
+}
+
+// A WAKE ONLY REACHES WATER THE FLOW ACTUALLY CARRIED IT TO, measured as the bend between the
+// wind at the obstacle and the wind where you are standing.
+//
+// TWO numbers, not one. A wake genuinely does bend with the flow — Glacier Sound's isle-1 has
+// 40 degrees of turn across its own 500-unit lee and is still plainly shadowing the water
+// behind it — so a single cutoff either keeps the cross-field nonsense or throws away real
+// lees. Full strength through the first 26 degrees, then fading, gone by a right angle: past
+// that the streamline through here never came near the obstacle.
+const SHADOW_BEND_FREE = Math.PI / 7;    // ~26 degrees: a wake carries this much turn intact
+const SHADOW_BEND = Math.PI / 2;         // 90 degrees: none of it got here
+
+// `dir` is where the flow GOES for current, and for WIND it is the mean direction AT THE SAMPLE
+// POINT. The wind lee is still aimed by each obstacle's own wind — see islandWindDir — but the
+// local one decides whether the wake got here.
 function shadowAt(x, y, dir, kind) {
     const list = state.course.navIslands || state.course.islands;
     if (!list || !list.length) return 1;
-    const flowX = kind === 'wind' ? -Math.sin(dir) : Math.sin(dir);
-    const flowY = kind === 'wind' ? Math.cos(dir) : -Math.cos(dir);
-    const key = kind + Math.round(dir / SHADOW_QUANTUM);
+    const isWind = kind === 'wind';
+    // getWindAt has already blended the field and hands its answer in, so the gate below is
+    // free on the hot path. A caller that passes null for wind gets it sampled lazily, and only
+    // if some obstacle turns out to be a candidate — most calls touch no caster at all and must
+    // not pay for a field lookup.
+    let localDir = isWind ? (dir === null || dir === undefined ? null : dir) : null;
+    // CURRENT keeps one direction for every obstacle, so its flow vector and silhouette key
+    // are computed once. WIND does not: see islandWindDir.
+    const cFlowX = isWind ? 0 : Math.sin(dir);
+    const cFlowY = isWind ? 0 : -Math.cos(dir);
+    const cKey = isWind ? '' : 'c' + Math.round(dir / SHADOW_QUANTUM);
     let factor = 1;
     for (const isl of list) {
-        const sil = shadowSil(isl, flowX, flowY, key);
-        if (!sil) continue;
-        // Authored per shape, in units; absent means derive it from the SILHOUETTE. 0 is a
-        // real answer — a reef awash blocks no breeze, and a designer may simply not want
-        // one here.
-        const len = shadowLen(isl, sil, kind);
+        // LENGTH FIRST. It reads an authored number or a height and needs neither geometry nor
+        // wind, and it is zero for almost everything — 114 of Glacier Sound's 123 shapes author
+        // no height at all — so asking it before the direction lookup and the silhouette keeps
+        // both off the hot path entirely.
+        //
+        // Authored per shape, in units; absent means derive it from the height. 0 is a real
+        // answer — a reef awash blocks no breeze, and a designer may simply not want one here.
+        const len = shadowLen(isl, kind);
         if (!(len > 0)) continue;
+        let flowX, flowY, key;
+        if (isWind) {
+            const d = islandWindDir(isl);
+            flowX = -Math.sin(d); flowY = Math.cos(d);
+            key = 'w' + Math.round(d / SHADOW_QUANTUM);
+        } else {
+            flowX = cFlowX; flowY = cFlowY; key = cKey;
+        }
+        const sil = shadowSil(isl, flowX, flowY, key, isWind ? '_silW' : '_silC');
+        if (!sil) continue;
         // Distance DOWNFLOW of the obstacle's trailing edge, so the plume starts where the
         // land stops rather than somewhere inside it.
         const along = (x * flowX + y * flowY) - sil.alongMax;
@@ -3923,9 +4114,32 @@ function shadowAt(x, y, dir, kind) {
         const ss = (t) => t * t * (3 - 2 * t);
         const lat = ss(1 - cross / halfW);      // 1 on the centreline, 0 at the edge
         const lon = ss(1 - along / len);        // 1 at the obstacle, 0 at the tail
+
+        // HAS THE WAKE GOT HERE? A plume is cast as a straight band down the wind at the
+        // obstacle, which is right while the flow runs straight — and wrong the moment the
+        // field bends, because the band then walks across water the wake never reached.
+        //
+        // Glacier Sound showed it plainly: a 4300-unit ice shelf standing in wind from 130
+        // threw a 2500-unit band north-west, over water whose own wind is from 45. A boat
+        // there has the breeze on its nose from the north-east and was being told it sat in
+        // the lee of something to its SOUTH-EAST — downwind of it.
+        //
+        // So the local wind gates the lee: full where it still agrees with the obstacle's,
+        // fading out as the two part, gone by SHADOW_BEND. Smooth, because the field is
+        // smooth — this scales an already-coherent plume rather than aiming it, so it cannot
+        // put a seam in one.
+        let bend = 1;
+        if (isWind) {
+            if (localDir === null) localDir = regionWindAt(x, y).direction;
+            const off = Math.abs(normalizeAngle(localDir - islandWindDir(isl)));
+            if (off >= SHADOW_BEND) continue;
+            if (off > SHADOW_BEND_FREE) {
+                bend = ss(1 - (off - SHADOW_BEND_FREE) / (SHADOW_BEND - SHADOW_BEND_FREE));
+            }
+        }
         // Deepest shadow wins rather than shadows stacking: two islands in line should not
         // multiply into a dead calm neither of them could produce alone.
-        factor = Math.min(factor, 1 - lat * lon * SHADOW_MAX);
+        factor = Math.min(factor, 1 - lat * lon * bend * SHADOW_MAX);
     }
     return factor;
 }
@@ -3958,13 +4172,7 @@ function shadowAt(x, y, dir, kind) {
 // The editor needs to show what "auto" currently works out to, and there must be exactly one
 // answer to that — so it asks the game rather than deriving a second one of its own.
 if (typeof window !== 'undefined') {
-    window.shadowLengthOf = (isl, kind) => {
-        const dir = (state.wind && state.wind.direction) || 0;
-        const fx = kind === 'wind' ? -Math.sin(dir) : Math.sin(dir);
-        const fy = kind === 'wind' ? Math.cos(dir) : -Math.cos(dir);
-        const sil = shadowSil(isl, fx, fy, kind + '|ed|' + dir);
-        return sil ? shadowLen(isl, sil, kind) : 0;
-    };
+    window.shadowLengthOf = (isl, kind) => shadowLen(isl, kind);
 }
 // Sailing's own rule of thumb puts a wind shadow at seven to fifteen times the height of
 // the thing casting it, and rigging references quote 10-20x. Ten is the middle of the
@@ -3974,7 +4182,7 @@ if (typeof window !== 'undefined') {
 const SHADOW_HEIGHTS = 10;           // wind shadow, in obstacle heights
 const SHADOW_WAKE = 2.5;            // current wake, in half-widths of what the stream sees
 const M_TO_U = 5;                   // the world's scale: 5 units to the metre
-function shadowLen(isl, sil, kind) {
+function shadowLen(isl, kind) {
     const authored = kind === 'wind' ? isl.windShadow : isl.currentShadow;
     if (authored != null) return authored;
     if (kind !== 'wind') return 0;
@@ -3987,13 +4195,19 @@ if (typeof window !== 'undefined') {
     window.shadowSuggest = (isl) => {
         if (isl.isFloe) return 0;
         const dir = (state.wind && state.wind.direction) || 0;
-        const sil = shadowSil(isl, Math.sin(dir), -Math.cos(dir), 'suggest|' + dir);
+        const sil = shadowSil(isl, Math.sin(dir), -Math.cos(dir), 'suggest|' + dir, '_silS');
         return sil ? sil.halfW * SHADOW_WAKE : 0;
     };
 }
 
-function getWindAt(x, y) {
-    // Current Global Wind
+// THE MEAN WIND AT A POINT: the regions blended, plus the day's live shift. No puffs, no lee.
+//
+// Split out of getWindAt so an OBSTACLE can ask which way its own lee points without asking
+// for the lee — shadowAt is called from getWindAt, so anything the shadow consults has to
+// stop short of the shadow or the two recurse forever. This is the field that gusts and
+// shadows are applied on top of, and it is the honest answer to "which way is the wind
+// blowing here" for anything that is not a boat.
+function regionWindAt(x, y) {
     const baseSpeed = state.wind.speed;
     const baseDir = state.wind.direction;
 
@@ -4062,6 +4276,12 @@ function getWindAt(x, y) {
         dir = wsum > 0 ? Math.atan2(ux, -uy) : baseDir;
         spd = total > 0 ? sacc / total : 0;
     }
+    return { direction: dir, speed: spd };
+}
+
+function getWindAt(x, y) {
+    const mean = regionWindAt(x, y);
+    const dir = mean.direction, spd = mean.speed;
 
     // Convert to vector
     let sumWx = Math.sin(dir) * spd;
@@ -4113,7 +4333,9 @@ function getWindAt(x, y) {
         }
     }
 
-    const shadowFactor = shadowAt(x, y, baseDir, 'wind');
+    // The local mean, which gates whether a wake reached here — the lee's AIM still comes
+    // from each obstacle's own wind.
+    const shadowFactor = shadowAt(x, y, dir, 'wind');
 
     const finalSpeed = Math.sqrt(sumWx*sumWx + sumWy*sumWy) * shadowFactor;
     // CLAMPED to one puff's worth. Cells overlap, and three flanks agreeing must not be able
@@ -4159,18 +4381,28 @@ function updateTurbulence(boat, dt) {
 }
 
 function drawDisturbedAir(ctx) {
-    const windDir = state.wind.direction;
-    const wx = -Math.sin(windDir);
-    const wy = Math.cos(windDir);
-    // Right Vector
-    const rx = -wy;
-    const ry = wx;
-
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
 
     for (const boat of state.boats) {
         if (boat.raceState.finished || !boat.turbulence) continue;
+
+        // THE WIND THIS BOAT IS IN, not the venue mean. The bad-air cone that actually slows
+        // the boat behind you is already built from `localWind.direction` in updateBoatPhysics
+        // — this drew the matching plume from `state.wind.direction`, so on a venue whose
+        // regions bend the breeze the two pointed different ways and the visible dirty air
+        // streamed off sideways while the real one went downwind. Same wind, same picture.
+        //
+        // Sampled once per boat, not per particle: getWindAt walks every region and gust, and
+        // ten boats is ten calls a frame where per-particle would be several hundred. The
+        // plume is therefore straight — it does not bend along a gradient over its own 450
+        // units — but it leaves the boat down the wind that is actually blowing there.
+        const windDir = getWindAt(boat.x, boat.y).direction;
+        const wx = -Math.sin(windDir);
+        const wy = Math.cos(windDir);
+        // Right Vector
+        const rx = -wy;
+        const ry = wx;
 
         for (const p of boat.turbulence) {
              const coneWidth = 20 + (p.d / 450) * 80;
@@ -4217,7 +4449,8 @@ function drawDisturbedAir(ctx) {
 // -16.2 dB (harbor-results) to -20.2 dB (yacht-club); these bring everything to
 // about -17 dB so a cue change is not also a volume change.
 //
-// `harbor-glow.mp3` ships but is deliberately unassigned — there is no cue for it.
+// `harbor-glow.mp3` and `breezy-race.mp3` ship but are deliberately unassigned —
+// there is no cue for either. Both are kept: unassigning is how a track is retired.
 // Every row here is produced by `python3 regatta/art/music_loop.py <file>` — run it on
 // a new track and paste what it prints. Do not hand-edit loopEnd or trim.
 // `loopStart` matters as much as loopEnd and is NOT its mirror. A track can begin at
@@ -4231,11 +4464,31 @@ const MUSIC_TRACKS = {
     racing:       { file: 'assets/audio/spinnaker-run.mp3',      loopEnd: 264.5, trim: 0.96 },
     results:      { file: 'assets/audio/harbor-results.mp3',     loopEnd: 118.0, trim: 0.90 },
     'racing-seatrials': { file: 'assets/audio/seatrials.mp3',    loopStart: 20.5, loopEnd: 119.5, trim: 0.84 },
-    // Per-venue race tracks override `racing` by key. Lighthouse Cove takes
-    // breezy-race: it is the brightest track in the set (2741 Hz centroid, 29% of
-    // its energy above 2 kHz), so it sits above the wind bed better than anything
-    // else here — and it is the venue whose music the plan calls the reference.
-    'racing-bay': { file: 'assets/audio/breezy-race.mp3',        loopEnd: 135.5, trim: 0.98 },
+    'racing-arctic':    { file: 'assets/audio/arctic.mp3',       loopStart: 15.0, loopEnd: 137.5, trim: 0.78 },
+    // Pearl Lagoon is the best-behaved file in the set: no intro and no outro, so
+    // 118.5 s of its 119.0 s is loop body and nothing is discarded, and C major reads
+    // at r=0.91 against a brief that asked for a sunlit major — the cleanest key in
+    // the project.
+    //   Its 39.4% in the wind band is second-worst here, and §3 says put a WINDY
+    //   venue's identity low. Measured rather than assumed: this venue races at 13 kn,
+    //   the same as Lighthouse Cove, so the bed sits 12.1 dB under the music's RMS
+    //   (bay 13.4, arctic 6.4 — arctic is the tight one). The conflict §3 warns about
+    //   is not present today because THE SQUALLS ARE NOT BUILT YET. When the identity
+    //   pass lands them, re-measure this venue before trusting the steel pan: a squall
+    //   is exactly the event that takes the band this track lives in.
+
+    'racing-lagoon':    { file: 'assets/audio/pearl-lagoon.mp3', loopEnd: 118.5, trim: 0.87 },
+    // Per-venue race tracks override `racing` by key. Lighthouse Cove was held by
+    // breezy-race, which is now unassigned: breezy-race puts 47.7% of its energy in
+    // the 900 Hz-6.5 kHz band the wind bed was highpassed into, the worst in the set,
+    // so the property that once justified it (brightest track here, 2795 Hz centroid)
+    // is exactly what §3's inversion turned into a liability. The purpose-written
+    // track lands 29.3% and 112 BPM against a brief that asked for 112.
+    //   ⚠️ Its 94.0 s loop body is the shortest in the project, so the seam comes
+    //   round ~2.5 times in a race where breezy-race's came round once. The seam
+    //   itself measures 0.0 dB (breezy-race: 2.0), which is the trade that makes it
+    //   acceptable — a clean seam heard three times beats an audible one heard once.
+    'racing-bay': { file: 'assets/audio/lighthouse-cove.mp3',    loopStart: 3.0,  loopEnd: 97.0,  trim: 0.79 },
 };
 
 const MUSIC_VOLUME = 0.3;       // master, before per-track trim
@@ -4275,6 +4528,29 @@ const WIND_SOUND = {
 
 // Sound System
 const Sound = {
+    // ⚠️ AUDIO MUST NEVER DRAW FROM Math.random().
+    //
+    // The two noise buffers below are `sampleRate * 2` samples each — about 96,000 draws
+    // apiece, which was 57% of every number the simulation pulled in a whole race. Worse,
+    // `initWindSound` fills its buffer ONCE PER PAGE, so the first race consumed ~96,000
+    // more draws than every race after it and diverged from them completely. Golden traces
+    // caught it as "arctic is non-deterministic"; it was never arctic, and never the ice.
+    //
+    // White noise from a fixed seed is indistinguishable by ear from white noise off the
+    // global RNG, so the audio keeps its own stream and the simulation keeps its own.
+    // This is the same rule the visual particles already follow.
+    _noiseSeed: 0x2f6e2b1,
+    fillNoise: function (data) {
+        let x = this._noiseSeed;
+        for (let i = 0; i < data.length; i++) {
+            // xorshift32 — cheap, no allocation, and stable across engines.
+            x ^= x << 13; x >>>= 0;
+            x ^= x >>> 17;
+            x ^= x << 5;  x >>>= 0;
+            data[i] = (x / 0x80000000) - 1;
+        }
+    },
+
     ctx: null,
     musicBus: null,
     musicVoices: {},    // track -> up to two voices, so a loop seam can crossfade
@@ -4429,6 +4705,10 @@ const Sound = {
 
         clearTimeout(voice.stopTimer);
         voice.seamed = false;
+        // Seeking at readyState 0 is fine — the browser queues it until metadata arrives.
+        // (Verified: a fresh element seeks to 15 s and lands there. What a seek DOES need
+        // is an origin serving HTTP Range; without it `seekable` is empty and loopStart is
+        // silently ignored. Real hosts do, and so must eval/test_audio.js's server.)
         try { voice.el.currentTime = from || 0; } catch (e) {}
         this.rampVoice(voice, 0, 0);
         const played = voice.el.play();
@@ -4535,7 +4815,7 @@ const Sound = {
         const bufferSize = this.ctx.sampleRate * 2.0;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        this.fillNoise(data);
         const noise = this.ctx.createBufferSource();
         noise.buffer = buffer;
         const noiseFilter = this.ctx.createBiquadFilter();
@@ -4609,7 +4889,7 @@ const Sound = {
         const bufferSize = this.ctx.sampleRate * 2;
         const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
         const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        this.fillNoise(data);
         this.windSource = this.ctx.createBufferSource();
         this.windSource.buffer = buffer;
         this.windSource.loop = true;
@@ -4724,24 +5004,17 @@ const UI = {
     saveSettings: document.getElementById('save-settings'),
     settingSound: document.getElementById('setting-sound'),
     settingBgSound: document.getElementById('setting-bg-sound'),
-    settingPlayerName: document.getElementById('setting-player-name'),
     settingMusic: document.getElementById('setting-music'),
     settingPenalties: document.getElementById('setting-penalties'),
     settingNavAids: document.getElementById('setting-navaids'),
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
-    settingHullColor: document.getElementById('setting-color-hull'),
-    settingSailColor: document.getElementById('setting-color-sail'),
-    settingCockpitColor: document.getElementById('setting-color-cockpit'),
-    settingSpinnakerColor: document.getElementById('setting-color-spinnaker'),
-    settingSpinnakerPattern: document.getElementById('setting-spinnaker-pattern'),
-    settingSpinnakerColor2: document.getElementById('setting-color-spinnaker2'),
-    settingSpinnakerColor2Row: document.getElementById('setting-color-spinnaker2-row'),
     settingTelltaleColor: document.getElementById('setting-color-telltale'),
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
     lbPips: document.getElementById('lb-pips'),
+    characterPicker: document.getElementById('character-picker'),
     overpoweredBadge: document.getElementById('hud-overpowered'),
     resultsOverlay: document.getElementById('results-overlay'),
     resultsList: document.getElementById('results-list'),
@@ -4987,7 +5260,13 @@ function speciesLine(creature, size) {
          + ` color:rgba(255,255,255,0.72); text-shadow:0 1px 4px rgba(0,0,0,0.75);">${creature}</div>`;
 }
 
-function competitorProfileHTML(config) {
+// `asSelf` is the PLAYER looking at the character they have chosen. It keeps only what you
+// actually take on — the face, the name, the species and the boat — and drops everything
+// that describes a RIVAL: the stat bars (you take none of their stats), the archetype label
+// (that is the AI behaviour driving those stats), the personality quote (they are not
+// speaking, you are steering) and the counter-tactic, which would tell you how to beat
+// yourself.
+function competitorProfileHTML(config, asSelf) {
     const archDef = (typeof ARCHETYPES !== 'undefined' && config.archetype) ? ARCHETYPES[config.archetype] : null;
 
     // Highlight the character's three most extreme stats (base ±5 design
@@ -5038,14 +5317,15 @@ function competitorProfileHTML(config) {
                 <div class="py-4">
                     <div class="t-display text-white uppercase leading-tight" style="font-size:36px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
                     ${speciesLine(config.creature)}
-                    <div class="t-label mt-1" style="font-size:13px; letter-spacing:2.5px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${archDef ? archDef.label : ''}</div>
+                    <div class="t-label mt-1" style="font-size:13px; letter-spacing:2.5px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${asSelf ? '' : (archDef ? archDef.label : '')}</div>
                 </div>
             </div>
-        </div>
+        </div>`
+        + (asSelf ? `` : `
         <div class="italic mt-4 pl-3" style="font-size:16px; color:#e6ecf8; border-left:3px solid #fcd34d;">${config.personality || ''}</div>
         <div class="flex flex-col gap-3 mt-5">${bars}</div>
         <div class="t-label t-label-sm mt-5">How to Beat Them</div>
-        <div class="mt-1 leading-snug" style="font-size:15px; font-weight:500; color:#9fe6c4;">${config.beat || (archDef ? archDef.weakness : '')}</div>`;
+        <div class="mt-1 leading-snug" style="font-size:15px; font-weight:500; color:#9fe6c4;">${config.beat || (archDef ? archDef.weakness : '')}</div>`);
 }
 
 // Cockpit sole, wheel and mast, in the hull sprite's own coordinates. The sprite
@@ -5177,80 +5457,216 @@ function renderProfileBoat(canvas, cfg) {
     g.restore();
 }
 
-// --- Player fleet card ------------------------------------------------------
-// The player's boat as a profile-art config, so it can go through exactly the
-// same renderer the competitors use.
-function playerBoatConfig() {
-    return {
-        name: settings.playerName || 'Player',
-        hull: settings.hullColor,
-        sail: settings.sailColor,
-        cockpit: settings.cockpitColor,
-        spinnaker: settings.spinnakerColor,
-        spinnaker2: settings.spinnakerColor2 || settings.hullColor,
-        spinnaker3: settings.spinnakerColor3,
-        spinPattern: SPIN_PATTERNS[settings.spinnakerPattern] ? settings.spinnakerPattern : 'solid'
+// Name, colours, kite pattern and stats — everything that says WHICH BOAT this is, with
+// nothing about where it is or how its race is going. Split out so a character can be
+// swapped onto a boat that is already on the water (see swapClashingOpponent).
+function applyBoatIdentity(boat, config, isPlayer) {
+    boat.name = config ? config.name : boat.name;
+    boat.colors = config
+        ? { hull: config.hull, sail: config.sail, cockpit: config.cockpit, spinnaker: config.spinnaker }
+        : { hull: '#fff', sail: '#fff', cockpit: '#ccc', spinnaker: '#f00' };
+    // Panel pattern (SPIN_LOOKS, config.spinPattern override, name-hash fallback);
+    // accent colours come from config.spinnaker2/3.
+    boat.spinPattern = (config && config.spinPattern) || SPIN_LOOKS[boat.name] || spinPatternForName(boat.name);
+    if (config && config.spinnaker2) boat.colors.spinAccent = config.spinnaker2;
+    // Optional third kite colour. Absent means the two-colour look, unchanged.
+    if (config && config.spinnaker3) boat.colors.spinAccent3 = config.spinnaker3;
+
+    // Stats (copied so the difficulty bonus never mutates AI_CONFIG). Missing keys fall
+    // back to 0, so a character authored before a stat existed races exactly as it did.
+    //
+    // ⚠️ THE PLAYER TAKES NONE OF THEM. You get the boat, not the sailor.
+    boat.stats = Object.assign({}, STAT_DEFAULTS, (!isPlayer && config && config.stats) || {});
+    if (!isPlayer) {
+        for (const k of BONUS_STATS) boat.stats[k] += AI_STAT_BONUS;
+    }
+}
+
+// ── THE CHARACTER PICKER ────────────────────────────────────────────────────
+// A grid of the whole fleet: each cell is the BOAT — the thing you look at for the entire
+// race, and where the colour actually lives — with the portrait as a badge and the name
+// underneath. The portrait is your leaderboard identity and stays readable at 28px because
+// it is drawn as an avatar; the boat carries the hull, the kite and its pattern.
+//
+// SORTED BY HULL HUE, not by archetype. The player takes no stats, so `freight` versus
+// `rocket` has no effect on anything you do — sorting by it would imply a difference that
+// does not exist. Colour is the only axis that matters here, and "the teal one" is a
+// findable thought in a way that "the metronome" is not.
+let characterOrder = null;
+function charactersByHue() {
+    if (characterOrder) return characterOrder;
+    const hueOf = (hex) => {
+        const [r, g, b] = _rgbOf(hex);
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+        // A near-neutral has no hue to sort on; park those at the end rather than letting
+        // rounding scatter them through the spectrum.
+        if (d < 18) return { h: 1000, l: 0.299 * r + 0.587 * g + 0.114 * b };
+        let h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+        return { h: h * 60, l: 0.299 * r + 0.587 * g + 0.114 * b };
     };
+    characterOrder = AI_CONFIG.slice().sort((a, b) => {
+        const A = hueOf(a.hull), B = hueOf(b.hull);
+        return A.h - B.h || A.l - B.l;
+    });
+    return characterOrder;
 }
 
-// Square boat art for the card's portrait slot. renderProfileBoat fits a wide
-// header band, so this does its own fit rather than fighting that sizing.
-function renderPlayerCardBoat(canvas) {
-    if (!canvas) return;
-    const cfg = playerBoatConfig();
-    // The slot is aspect-square, so its width is the single source of truth for
-    // both axes. Measuring height separately is what allowed a 2:1 backing store
-    // to be squashed into a square CSS box and stretch the boat vertically.
-    const slot = canvas.parentElement;
-    const size = Math.round(slot ? slot.clientWidth : 0);
-    // Zero means the overlay has not been laid out yet — retry rather than bake
-    // in a guessed size, which would stick around as a wrong-aspect bitmap.
-    if (!size) {
-        setTimeout(() => { if (canvas.isConnected) renderPlayerCardBoat(canvas); }, 120);
-        return;
-    }
-    const dpr = window.devicePixelRatio || 1;
-    const px = Math.round(size * dpr);
-    // Both axes checked: guarding on width alone let a stale height persist.
-    if (canvas.width !== px || canvas.height !== px) {
-        canvas.width = px;
-        canvas.height = px;
-    }
-    const g = canvas.getContext('2d');
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    g.clearRect(0, 0, canvas.width, canvas.height);
-    const ready = ['hull', 'main', 'spin'].every(k => boatSprites[k].complete && boatSprites[k].naturalWidth);
-    if (!ready) {
-        setTimeout(() => { if (canvas.isConnected) renderPlayerCardBoat(canvas); }, 300);
-        return;
-    }
-    const box = PROFILE_BOAT_BOUNDS;
-    const pad = 10;
-    const scale = Math.min((size - pad * 2) / box.w, (size - pad * 2) / box.h);
-    g.save();
-    g.scale(dpr, dpr);
-    g.translate(size / 2, size / 2);
-    g.scale(scale, scale);
-    g.translate(-(box.x + box.w / 2), -(box.y + box.h / 2));
-    drawProfileBoatArt(g, cfg);
-    g.restore();
+// Baked once per character and reused. 82 boats is 82 canvases of tinted sprite
+// compositing; doing that every time the picker opens is waste, and `renderProfileBoat`
+// re-schedules itself every 300ms until the boat sprites load — 82 of those racing each
+// other on first open is worse than waste.
+const _charBoatCache = new Map();
+function characterBoatCanvas(cfg) {
+    const hit = _charBoatCache.get(cfg.name);
+    if (hit) return hit;
+    const c = document.createElement('canvas');
+    _charBoatCache.set(cfg.name, c);
+    renderProfileBoat(c, cfg);
+    // ⚠️ `renderProfileBoat` sizes itself from `canvas.parentElement.clientWidth` and writes
+    // an inline style.width — it was built to claim the right end of a profile HEADER BAND.
+    // In a grid cell that inline width wins over the layout class and the canvas overflows
+    // its cell, cropping the boat and pushing the name bar out of view. The backing store is
+    // what we want; the CSS size is the cell's business.
+    c.style.width = ''; c.style.height = '';
+    c.className = 'block w-full h-auto';
+    return c;
 }
 
-// Fills a card element with the player's boat + name. Called on build and again
-// whenever the colors change, so the card always shows current settings.
+// One Sea Trials water patch, baked once and shared by all 82 cells as a CSS background.
+// The colours are read from the live water config rather than copied, so the picker keeps
+// matching the water you actually race on if that palette is ever retuned. Sea Trials
+// carries no palette override, so this IS its water.
+let _charWaterURL = null;
+function characterWaterPatch() {
+    if (_charWaterURL) return _charWaterURL;
+    const W = 220, H = 165;
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const g = c.getContext('2d');
+    const cfg = (typeof WATER_CONFIG !== 'undefined') ? WATER_CONFIG : {};
+    const grd = g.createLinearGradient(0, 0, 0, H);
+    grd.addColorStop(0, cfg.shallowColor || '#38bdf8');
+    grd.addColorStop(0.45, cfg.baseColor || '#0ea5e9');
+    grd.addColorStop(1, cfg.deepColor || '#0369a1');
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    // Soft swell streaks. Deterministic on purpose — a Math.random() here would be a draw
+    // taken during a UI action, and the whole venue system is pinned to the draw sequence.
+    g.lineCap = 'round';
+    for (let i = 0; i < 11; i++) {
+        const y = (i * 37 % H) + (i % 3) * 5;
+        const w = 26 + (i * 17) % 60;
+        const x = (i * 53) % W;
+        g.globalAlpha = 0.05 + (i % 4) * 0.022;
+        g.strokeStyle = i % 3 === 0 ? '#0c4a6e' : '#e0f2fe';
+        g.lineWidth = 1.6 + (i % 3) * 0.9;
+        g.beginPath();
+        g.moveTo(x, y);
+        g.quadraticCurveTo(x + w / 2, y - 3.5, x + w, y);
+        g.stroke();
+    }
+    g.globalAlpha = 1;
+    _charWaterURL = c.toDataURL('image/png');
+    return _charWaterURL;
+}
+
+function openCharacterPicker() {
+    if (!UI.characterPicker) return;
+    const grid = UI.characterPicker.querySelector('#character-grid');
+    grid.innerHTML = '';
+    const water = characterWaterPatch();
+    for (const cfg of charactersByHue()) {
+        const cell = document.createElement('button');
+        cell.type = 'button';
+        cell.dataset.char = cfg.name;
+        // `flex flex-col` explicitly: a <button> lays its children out INLINE by default, so
+        // the name bar sat beside the boat instead of under it and was clipped away.
+        cell.className = 'group relative rounded-xl overflow-hidden border transition-colors text-left flex flex-col';
+        const me = cfg.name === settings.character;
+        const band = deepBandFor(cfg.hull, cfg.spinnaker, cfg.spinnaker2);
+        cell.style.cssText = `background:${band};`
+            + `border-color:${me ? '#fbbf24' : 'rgba(255,255,255,0.10)'};`
+            + (me ? 'box-shadow: inset 0 0 0 2px #fbbf24;' : '');
+        // The boat sits ON WATER, not on a colour swatch — it reads as a boat you could sail
+        // rather than a product tile. The character's own colour stays on the name bar below,
+        // which is where it still does identifying work.
+        const sea = document.createElement('div');
+        sea.className = 'relative w-full';
+        sea.style.cssText = `background-image:url(${water}); background-size:cover; background-position:center;`;
+        const boat = characterBoatCanvas(cfg);
+        const live = boat.cloneNode(true);
+        live.style.width = ''; live.style.height = '';
+        live.className = 'block w-full h-auto';
+        sea.appendChild(live);
+        // cloneNode copies attributes, not pixels — blit the baked one in.
+        live.getContext('2d').drawImage(boat, 0, 0);
+        cell.appendChild(sea);
+        // The portrait is square and unringed: a circular crop eats the ears, hats and fins
+        // that tell two green lizards apart, and at this size the silhouette IS the label.
+        const bar = document.createElement('div');
+        bar.className = 'flex items-center gap-2.5 px-2.5 py-2';
+        bar.style.background = 'rgba(15,23,42,0.72)';
+        bar.innerHTML = `<img src="assets/images/competitors/${cfg.name.toLowerCase()}.png"
+                              class="w-16 h-16 rounded-md object-cover shrink-0" draggable="false" alt="">
+                         <span class="t-display truncate text-white uppercase" style="font-size:19px;">${cfg.name}</span>`;
+        cell.appendChild(bar);
+        cell.addEventListener('click', () => pickCharacter(cfg.name));
+        grid.appendChild(cell);
+    }
+    UI.characterPicker.classList.remove('hidden');
+}
+function closeCharacterPicker() {
+    if (UI.characterPicker) UI.characterPicker.classList.add('hidden');
+}
+(() => {
+    const btn = document.getElementById('character-picker-close');
+    if (btn) btn.addEventListener('click', closeCharacterPicker);
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && UI.characterPicker && !UI.characterPicker.classList.contains('hidden')) {
+            closeCharacterPicker();
+        }
+    });
+})();
+
+function pickCharacter(name) {
+    settings.character = name;
+    saveSettings();
+    applyPlayerCharacter();
+    closeCharacterPicker();
+    renderCompetitorGrid();
+}
+
+// --- Who the player is ------------------------------------------------------
+// The player IS one of the fleet's characters. `playerBoatConfig` used to assemble a
+// competitor-shaped object out of the appearance settings so the player could go through
+// the competitors' renderer; now it just IS a competitor's config, which is the same shape
+// arrived at honestly.
+//
+// ⚠️ STATS ARE NOT PART OF IT — see the Boat constructor. A character's stats are what makes
+// the AI sail like them; handing those to the player would turn the picker into a difficulty
+// setting and make every eval number depend on which face was chosen.
+function playerCharacter() {
+    return AI_CONFIG.find(c => c.name === settings.character) || AI_CONFIG[0];
+}
+function playerBoatConfig() { return playerCharacter(); }
+
+// Called on build and again whenever the character changes.
+// Identical in shape to a rival's fleet card — portrait, name, species — because you
+// ARE one of these characters now. Only the label differs: where a rival names its
+// archetype (the AI behaviour you are about to race), yours says "You".
 function renderPlayerCardInto(card) {
     const cfg = playerBoatConfig();
     const bgColor = bandColorFor(cfg.hull, cfg.spinnaker);
     card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
     card.innerHTML = `
         <div class="w-full aspect-square relative overflow-hidden">
-            <canvas class="player-card-canvas w-full h-full transition-transform duration-700 group-hover:scale-110"></canvas>
+            <img src="assets/images/competitors/${cfg.name.toLowerCase()}.png" alt="${escapeHTMLText(cfg.name)}"
+                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" draggable="false">
         </div>
         <div class="p-3 bg-slate-900/60 flex-1">
             <div class="t-display t-display-8 text-white uppercase leading-tight truncate" style="font-size:17.5px;">${escapeHTMLText(cfg.name)}</div>
+            ${speciesLine(cfg.creature, 10.5)}
             <div class="t-label t-label-sm mt-0.5" style="color:#7dd3fc;">You</div>
         </div>`;
-    renderPlayerCardBoat(card.querySelector('.player-card-canvas'));
 }
 
 // Player names are free text and land in innerHTML in two places here.
@@ -5260,131 +5676,31 @@ function escapeHTMLText(s) {
     ));
 }
 
-// Sidebar panel for the player: same header band as a competitor profile, but
-// where a rival shows stat bars this shows an appearance editor. The player's
-// stats are all zero by design, so bars here would be a wall of nothing.
-const PLAYER_COLOR_FIELDS = [
-    { key: 'hullColor', label: 'Hull' },
-    { key: 'sailColor', label: 'Sail' },
-    { key: 'cockpitColor', label: 'Cockpit' },
-    { key: 'spinnakerColor', label: 'Spinnaker' },
-    { key: 'spinnakerColor2', label: 'Spinnaker 2' },
-    { key: 'spinnakerColor3', label: 'Spinnaker 3' },
-    { key: 'telltaleColor', label: 'Telltale' }
-];
-
-// Patterns that actually paint a third field. Everything else ignores colour 3,
-// so its row greys out rather than offering a control that does nothing.
-const THREE_COLOUR_PATTERNS = new Set(['thirds', 'chevron', 'sunburst', 'tricolour']);
-
 function renderPlayerDetail() {
     const cfg = playerBoatConfig();
-    const bandColor = bandColorFor(cfg.hull, cfg.spinnaker);
-    const patternOptions = spinPatternsByColorCount().map(k =>
-        `<option value="${k}"${k === cfg.spinPattern ? ' selected' : ''}>${SPIN_PATTERN_LABELS[k] || k} (${spinColorCount(k)})</option>`
-    ).join('');
-    const swatches = PLAYER_COLOR_FIELDS.map(f => `
-        <div class="flex items-center justify-between gap-3" data-color-row="${f.key}">
-            <span class="t-label t-label-sm">${f.label}</span>
-            <input type="color" data-player-color="${f.key}" value="${settings[f.key] || '#ffffff'}"
-                   class="w-14 h-7 bg-transparent border border-white/15 rounded cursor-pointer">
-        </div>`).join('');
-
     UI.competitorDetail.innerHTML = `
-        <div class="t-label mb-3">Your Boat</div>
-        <div class="rounded-xl overflow-hidden border border-white/10 relative mb-4"
-             style="background: linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)">
-            <canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130"></canvas>
-            <div class="relative p-4">
-                <div class="t-display t-display-8 text-white uppercase leading-tight" style="font-size:22px;">${escapeHTMLText(cfg.name)}</div>
-                <div class="t-label t-label-sm mt-0.5" style="color:#7dd3fc;">Helm &mdash; that's you</div>
-            </div>
-        </div>
-        <div class="space-y-3">
-            <div class="flex items-center justify-between gap-3">
-                <span class="t-label t-label-sm">Name</span>
-                <input type="text" id="player-detail-name" maxlength="12" value="${escapeHTMLText(cfg.name)}"
-                       class="bg-slate-700 text-white text-sm rounded-lg p-2 border border-slate-600 outline-none focus:border-blue-500 w-40 text-right">
-            </div>
-            ${swatches}
-            <div class="flex items-center justify-between gap-3">
-                <span class="t-label t-label-sm">Kite Pattern</span>
-                <select id="player-detail-pattern" class="bg-slate-700 text-white text-sm rounded-lg px-2 py-1.5 border border-slate-600 cursor-pointer">${patternOptions}</select>
-            </div>
-            <p class="text-slate-500 leading-snug" style="font-size:12.5px;">
-                Every boat in the fleet sails the same hull. Colors are yours; the result is on you.
-            </p>
+        <div class="t-label mb-3">You</div>
+        ${competitorProfileHTML(cfg, true)}
+        <div class="flex justify-center">
+          <button id="player-pick-character"
+                  class="mt-5 px-7 py-4 rounded-lg t-label pointer-events-auto whitespace-nowrap"
+                  style="background:#1d4ed8; color:#fff; letter-spacing:2px; font-size:16px;">Change Character</button>
         </div>`;
     UI.competitorDetail.classList.remove('hidden');
     renderProfileBoat(UI.competitorDetail.querySelector('.profile-boat-canvas'), cfg);
-    updatePlayerColor2State();
-
-    // Writes go through settings + saveSettings(), the same path the Settings
-    // modal uses, so the two editors can never drift apart.
-    UI.competitorDetail.querySelectorAll('[data-player-color]').forEach(input => {
-        input.addEventListener('input', (e) => {
-            settings[e.target.dataset.playerColor] = e.target.value;
-            saveSettings();
-        });
-    });
-    const nameInput = UI.competitorDetail.querySelector('#player-detail-name');
-    if (nameInput) {
-        nameInput.addEventListener('input', (e) => {
-            settings.playerName = e.target.value;
-            saveSettings();
-        });
-    }
-    const patternSelect = UI.competitorDetail.querySelector('#player-detail-pattern');
-    if (patternSelect) {
-        patternSelect.addEventListener('change', (e) => {
-            settings.spinnakerPattern = e.target.value;
-            saveSettings();
-            updatePlayerColor2State();
-        });
-    }
+    const btn = UI.competitorDetail.querySelector('#player-pick-character');
+    if (btn) btn.addEventListener('click', openCharacterPicker);
 }
 
-// Spinnaker 2 only means something on a patterned kite (mirrors the Settings
-// modal's updateSpinColor2Row).
-function updatePlayerColor2State() {
-    if (!UI.competitorDetail) return;
-    const pattern = settings.spinnakerPattern || 'solid';
-    const setRow = (key, off) => {
-        const row = UI.competitorDetail.querySelector('[data-color-row="' + key + '"]');
-        if (!row) return;
-        row.style.opacity = off ? '0.35' : '1';
-        const input = row.querySelector('input');
-        if (input) input.disabled = off;
-    };
-    setRow('spinnakerColor2', pattern === 'solid');
-    setRow('spinnakerColor3', !THREE_COLOUR_PATTERNS.has(pattern));
-}
-
-// Colors can also change from the Settings modal, so the card and the open
-// panel both re-read settings after any save. Visuals only — rewriting an input
-// the user is currently typing in would fight their caret.
+// The character can change from the picker, so the fleet card and the open panel both
+// re-read it. Visuals only.
 function refreshPlayerAppearance() {
     if (!UI.prCompetitorsGrid) return;
     const card = UI.prCompetitorsGrid.querySelector(`[data-name="${PLAYER_CARD_KEY}"]`);
     if (card) renderPlayerCardInto(card);
-    if (selectedCompetitor !== PLAYER_CARD_KEY || !UI.competitorDetail) return;
-
-    const cfg = playerBoatConfig();
-    const bandColor = bandColorFor(cfg.hull, cfg.spinnaker);
-    const band = UI.competitorDetail.querySelector('.profile-boat-canvas')?.parentElement;
-    if (band) band.style.background = `linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)`;
-    renderProfileBoat(UI.competitorDetail.querySelector('.profile-boat-canvas'), cfg);
-
-    const nameEl = UI.competitorDetail.querySelector('.t-display');
-    if (nameEl) nameEl.textContent = cfg.name.toUpperCase();
-    UI.competitorDetail.querySelectorAll('[data-player-color]').forEach(input => {
-        if (input !== document.activeElement) input.value = settings[input.dataset.playerColor] || '#ffffff';
-    });
-    const nameInput = UI.competitorDetail.querySelector('#player-detail-name');
-    if (nameInput && nameInput !== document.activeElement) nameInput.value = cfg.name;
-    const patternSelect = UI.competitorDetail.querySelector('#player-detail-pattern');
-    if (patternSelect && patternSelect !== document.activeElement) patternSelect.value = cfg.spinPattern;
-    updatePlayerColor2State();
+    // The panel is read-only now, so a full re-render is both simpler and safer than
+    // patching individual nodes — there is no input whose caret it could fight.
+    if (selectedCompetitor === PLAYER_CARD_KEY && UI.competitorDetail) renderPlayerDetail();
 }
 
 function selectVenue(key) {
@@ -5415,6 +5731,14 @@ function selectVenue(key) {
         for (let i = 0; i < want; i++) spawnRegionGust(gregs, true);
     }
     state.particles = [];
+
+    // The fleet was laid out behind the PREVIOUS venue's start line. initCourse() has
+    // just moved the marks and the wind out from under it, and startRace() only flips
+    // the status — it never re-places anyone — so without this the race begins with
+    // every boat stranded wherever the old course put them. Only ever visible when the
+    // two venues disagree about the course axis, which is why it read as intermittent.
+    // Consumes no RNG, so the golden traces are untouched.
+    repositionBoats();
 
     setupPreRaceOverlay();
 }
@@ -5456,51 +5780,60 @@ function setupPreRaceOverlay() {
     // BUT we need to set values here.
 
 
-    // Populate Competitors
-    if (UI.prCompetitorsGrid) {
-        UI.prCompetitorsGrid.innerHTML = '';
-        // New race, new fleet: clear any scouting selection
-        selectedCompetitor = null;
-        renderCompetitorDetail();
-        // Skip Player (boats[0])
-        const competitors = state.boats.slice(1);
+    // Populate Competitors. New race, new fleet: clear any scouting selection.
+    selectedCompetitor = null;
+    renderCompetitorDetail();
+    renderCompetitorGrid();
+}
 
-        // Player leads the fleet: 1 + 9 competitors fills the 5-col grid to 5x2.
-        // No portrait art exists for the player, so this card draws their boat in
-        // their own colors instead — clicking it opens the editor in the sidebar.
-        const playerCard = document.createElement('div');
-        playerCard.className = "rounded-xl border border-sky-400/25 flex flex-col relative overflow-hidden group cursor-pointer transition-shadow hover:border-sky-300/50";
-        playerCard.dataset.name = PLAYER_CARD_KEY;
-        playerCard.addEventListener('click', () => selectCompetitor(PLAYER_CARD_KEY));
-        UI.prCompetitorsGrid.appendChild(playerCard);
-        renderPlayerCardInto(playerCard);
+// Builds the fleet grid from state.boats — the LIVE fleet, not the roster. Extracted
+// from setupPreRaceOverlay so that changing character can refresh it without re-running
+// the whole overlay (which would also rebuild the venue picker and reset the scroll).
+//
+// ⚠️ `pickCharacter` has always called this by name behind a `typeof ... === 'function'`
+// guard, and the function did not exist — so the guard silently did nothing and the grid
+// kept showing the character you had just taken over, still racing against you. The swap
+// underneath was working the whole time. A typeof guard around a name you own is not a
+// safety net, it is a silent failure.
+function renderCompetitorGrid() {
+    if (!UI.prCompetitorsGrid) return;
+    UI.prCompetitorsGrid.innerHTML = '';
+    // Skip Player (boats[0])
+    const competitors = state.boats.slice(1);
 
-        // Simplified fleet cards (design ref): portrait + name + archetype.
-        // The scouting detail (personality, threat, weakness) lives elsewhere.
-        competitors.forEach(boat => {
-            const config = AI_CONFIG.find(c => c.name === boat.name);
-            const archDef = config && config.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[config.archetype] : null;
+    // Player leads the fleet: 1 + 9 competitors fills the 5-col grid to 5x2.
+    const playerCard = document.createElement('div');
+    playerCard.className = "rounded-xl border border-sky-400/25 flex flex-col relative overflow-hidden group cursor-pointer transition-shadow hover:border-sky-300/50";
+    playerCard.dataset.name = PLAYER_CARD_KEY;
+    playerCard.addEventListener('click', () => selectCompetitor(PLAYER_CARD_KEY));
+    UI.prCompetitorsGrid.appendChild(playerCard);
+    renderPlayerCardInto(playerCard);
 
-            const bgColor = bandColorFor(boat.colors.hull, boat.colors.spinnaker);
+    // Simplified fleet cards (design ref): portrait + name + archetype.
+    // The scouting detail (personality, threat, weakness) lives elsewhere.
+    competitors.forEach(boat => {
+        const config = AI_CONFIG.find(c => c.name === boat.name);
+        const archDef = config && config.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[config.archetype] : null;
 
-            const card = document.createElement('div');
-            card.className = "rounded-xl border border-white/5 flex flex-col relative overflow-hidden group cursor-pointer transition-shadow hover:border-white/25";
-            card.dataset.name = boat.name;
-            card.addEventListener('click', () => selectCompetitor(boat.name));
-            card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
-            card.innerHTML = `
-                <div class="w-full aspect-square relative overflow-hidden">
-                    <img src="assets/images/competitors/${boat.name.toLowerCase()}.png" alt="${boat.name}"
-                         class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" draggable="false">
-                </div>
-                <div class="p-3 bg-slate-900/60 flex-1">
-                    <div class="t-display t-display-8 text-white uppercase leading-tight" style="font-size:17.5px;">${boat.name}</div>
-                    ${speciesLine(config && config.creature, 10.5)}
-                    <div class="t-label t-label-sm mt-0.5" style="color:#fcd34d;">${archDef ? archDef.label : ''}</div>
-                </div>`;
-            UI.prCompetitorsGrid.appendChild(card);
-        });
-    }
+        const bgColor = bandColorFor(boat.colors.hull, boat.colors.spinnaker);
+
+        const card = document.createElement('div');
+        card.className = "rounded-xl border border-white/5 flex flex-col relative overflow-hidden group cursor-pointer transition-shadow hover:border-white/25";
+        card.dataset.name = boat.name;
+        card.addEventListener('click', () => selectCompetitor(boat.name));
+        card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
+        card.innerHTML = `
+            <div class="w-full aspect-square relative overflow-hidden">
+                <img src="assets/images/competitors/${boat.name.toLowerCase()}.png" alt="${boat.name}"
+                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" draggable="false">
+            </div>
+            <div class="p-3 bg-slate-900/60 flex-1">
+                <div class="t-display t-display-8 text-white uppercase leading-tight" style="font-size:17.5px;">${boat.name}</div>
+                ${speciesLine(config && config.creature, 10.5)}
+                <div class="t-label t-label-sm mt-0.5" style="color:#fcd34d;">${archDef ? archDef.label : ''}</div>
+            </div>`;
+        UI.prCompetitorsGrid.appendChild(card);
+    });
 }
 
 function startRace() {
@@ -5525,7 +5858,10 @@ function startRace() {
 
 // Settings Functions
 function loadSettings() {
-    const stored = localStorage.getItem('regatta_settings');
+    // getItem can throw for the same reasons setItem can; a player with site data disabled
+    // should get defaults, not a dead page.
+    let stored = null;
+    try { stored = localStorage.getItem('regatta_settings'); } catch (e) { stored = null; }
     let parsed = null;
     if (stored) {
         try {
@@ -5537,7 +5873,6 @@ function loadSettings() {
     if (settings.venue === 'polar') settings.venue = 'arctic';
     // Migration: the Semicircle kite panel became Triangle (July 2026) — without
     // this a saved 'bullseye' falls through to a plain solid sail
-    if (settings.spinnakerPattern === 'bullseye') settings.spinnakerPattern = 'triangle';
     // Migration: the Manual Trim toggle became Auto Trim (July 2026), flipping the
     // stored polarity. Test the raw save, not the merged settings — the merge always
     // supplies an autoTrim default, so only `parsed` can tell us which era it is from.
@@ -5548,20 +5883,65 @@ function loadSettings() {
     applySettings();
 }
 
+// ⚠️ APPLYING AND STORING ARE SEPARATE JOBS, AND THE WRITE MUST NOT BE ABLE TO KILL THE
+// APPLY. localStorage.setItem throws for real reasons a player can hit — Safari private
+// browsing, a full quota, a file:// origin with site data disabled — and this used to let
+// that exception escape into every caller. `pickCharacter` would then leave the picker
+// open with the character half-applied, and `applySettings()` (which is what actually puts
+// the choice on the boat) would never run at all. Losing persistence is a nuisance; losing
+// the apply is a broken screen.
 function saveSettings() {
-    localStorage.setItem('regatta_settings', JSON.stringify(settings));
+    try {
+        localStorage.setItem('regatta_settings', JSON.stringify(settings));
+    } catch (e) {
+        // Warn once — this fires on every toggle, and a storage-disabled browser would
+        // otherwise flood the console.
+        if (!saveSettings._warned) {
+            saveSettings._warned = true;
+            console.warn('Settings could not be saved; they will not survive a reload.', e);
+        }
+    }
     applySettings();
+}
+
+// You changed character while a fleet already existed, and one of them is now you. Swap
+// that opponent for someone not on the water — identity only, so it inherits the lane,
+// the position and the start setup the outgoing boat had.
+//
+// ⚠️ THE REPLACEMENT IS CHOSEN DETERMINISTICALLY (first unused, in roster order) rather than
+// at random. A `Math.random()` here would add a draw to the seeded stream and move every
+// venue's races, for a UI action that has nothing to do with the simulation.
+function swapClashingOpponent() {
+    if (!state.boats || !state.boats.length) return false;
+    const mine = settings.character;
+    const clash = state.boats.find(b => !b.isPlayer && b.name === mine);
+    if (!clash) return false;
+    const taken = new Set(state.boats.map(b => b.name));
+    const repl = AI_CONFIG.find(c => !taken.has(c.name));
+    if (!repl) return false;
+    applyBoatIdentity(clash, repl, false);
+    return true;
+}
+
+// Point the player's boat at whoever they are now, without rebuilding the race.
+function applyPlayerCharacter() {
+    const pc = playerCharacter();
+    if (state.boats && state.boats.length) {
+        applyBoatIdentity(state.boats[0], pc, true);
+        swapClashingOpponent();
+    }
+    refreshPlayerAppearance();
 }
 
 function applySettings() {
     state.showNavAids = settings.navAids;
     if (state.boats.length > 0) {
         state.boats[0].manualTrim = !settings.autoTrim;
-        state.boats[0].name = settings.playerName;
+        applyBoatIdentity(state.boats[0], playerCharacter(), true);
+        swapClashingOpponent();
     }
     state.camera.mode = settings.cameraMode;
 
-    if (UI.settingPlayerName) UI.settingPlayerName.value = settings.playerName;
     if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
     if (UI.settingBgSound) UI.settingBgSound.checked = settings.bgSoundEnabled;
     if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
@@ -5569,14 +5949,7 @@ function applySettings() {
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.autoTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
-    if (UI.settingHullColor) UI.settingHullColor.value = settings.hullColor;
-    if (UI.settingSailColor) UI.settingSailColor.value = settings.sailColor;
-    if (UI.settingCockpitColor) UI.settingCockpitColor.value = settings.cockpitColor;
-    if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.value = settings.spinnakerColor;
-    if (UI.settingSpinnakerPattern) UI.settingSpinnakerPattern.value = SPIN_PATTERNS[settings.spinnakerPattern] ? settings.spinnakerPattern : 'solid';
-    if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.value = settings.spinnakerColor2 || '#ffffff';
     if (UI.settingTelltaleColor) UI.settingTelltaleColor.value = settings.telltaleColor || '#fbbf24';
-    updateSpinColor2Row();
     // Boat colors have two editors now (this modal and the pre-race player
     // panel); both write here, so this is where they re-sync.
     refreshPlayerAppearance();
@@ -5641,7 +6014,6 @@ if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSetti
 if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
 if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preventDefault(); startRace(); });
 
-if (UI.settingPlayerName) UI.settingPlayerName.addEventListener('input', (e) => { settings.playerName = e.target.value || "Player"; saveSettings(); });
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(Sound.playerWindSpeed()); });
 if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { settings.bgSoundEnabled = e.target.checked; saveSettings(); Sound.updateWindSound(Sound.playerWindSpeed()); });
 if (UI.settingMusic) UI.settingMusic.addEventListener('change', (e) => { settings.musicEnabled = e.target.checked; saveSettings(); Sound.init(); });
@@ -5649,19 +6021,6 @@ if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => {
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.autoTrim = e.target.checked; saveSettings(); });
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
-if (UI.settingHullColor) UI.settingHullColor.addEventListener('input', (e) => { settings.hullColor = e.target.value; saveSettings(); });
-if (UI.settingSailColor) UI.settingSailColor.addEventListener('input', (e) => { settings.sailColor = e.target.value; saveSettings(); });
-if (UI.settingCockpitColor) UI.settingCockpitColor.addEventListener('input', (e) => { settings.cockpitColor = e.target.value; saveSettings(); });
-if (UI.settingSpinnakerColor) UI.settingSpinnakerColor.addEventListener('input', (e) => { settings.spinnakerColor = e.target.value; saveSettings(); });
-// Second spinnaker color only applies when the pattern has accent panels
-function updateSpinColor2Row() {
-    if (!UI.settingSpinnakerColor2Row) return;
-    const off = (settings.spinnakerPattern || 'solid') === 'solid';
-    UI.settingSpinnakerColor2Row.style.opacity = off ? '0.35' : '1';
-    if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.disabled = off;
-}
-if (UI.settingSpinnakerPattern) UI.settingSpinnakerPattern.addEventListener('change', (e) => { settings.spinnakerPattern = e.target.value; updateSpinColor2Row(); saveSettings(); });
-if (UI.settingSpinnakerColor2) UI.settingSpinnakerColor2.addEventListener('input', (e) => { settings.spinnakerColor2 = e.target.value; saveSettings(); });
 if (UI.settingTelltaleColor) UI.settingTelltaleColor.addEventListener('input', (e) => { settings.telltaleColor = e.target.value; saveSettings(); });
 
 // Pre-race config listeners: the venue customization panel is gone. A course's wind,
@@ -6074,8 +6433,7 @@ function updateAITrim(boat, optimalSailAngle, dt) {
 function getFavoredEnd() {
     const marks = state.course.marks;
     if(!marks || marks.length < 2) return 0;
-    const m0 = marks[0];
-    const m1 = marks[1];
+    const [m0, m1] = startLinePts();
 
     // Wind Direction (From)
     const wd = state.wind.direction;
@@ -6717,7 +7075,7 @@ function updateBoatRaceState(boat, dt) {
     // a still-to-start boat is clearly on the pre-start side, however it got there.
     if (state.race.status === 'racing' && boat.raceState.leg === 0 && boat.raceState.ocs &&
         marks && marks.length >= 2) {
-        const m0 = marks[0], m1 = marks[1];
+        const [m0, m1] = startLinePts();
         const lineDx = m1.x - m0.x, lineDy = m1.y - m0.y;
         const lineLen = Math.hypot(lineDx, lineDy) || 1;
         // Signed perpendicular distance to the line: positive = course side (OCS).
@@ -6737,7 +7095,8 @@ function updateBoatRaceState(boat, dt) {
         if (rs0.leg <= 1) {
             tx = state.course.roundMark.x; ty = state.course.roundMark.y;
         } else {
-            const c = getClosestPointOnSegment(boat.x, boat.y, marks[0].x, marks[0].y, marks[1].x, marks[1].y);
+            const [s0, s1] = startLinePts();
+            const c = getClosestPointOnSegment(boat.x, boat.y, s0.x, s0.y, s1.x, s1.y);
             tx = c.x; ty = c.y;
         }
         const wdx = tx - boat.x, wdy = ty - boat.y;
@@ -7754,7 +8113,7 @@ function drawBoat(ctx, boat) {
     ctx.beginPath(); ctx.ellipse(5, 5, 12, 28, 0, 0, Math.PI * 2); ctx.fill();
 
     // Hull (sprite, tinted with the paint job; vector fallback while loading)
-    const hullColor = (boat.isPlayer ? settings.hullColor : boat.colors.hull) || '#f1f5f9';
+    const hullColor = boat.colors.hull || '#f1f5f9';
     const hullSprite = getTintedBoatPart('hull', hullColor);
     if (hullSprite) {
         const u = 1024 / BOAT_SPRITE_SCALE;
@@ -7771,7 +8130,7 @@ function drawBoat(ctx, boat) {
     }
 
     // Cockpit sole, wheel and mast
-    const cockpitColor = boat.isPlayer ? settings.cockpitColor : boat.colors.cockpit;
+    const cockpitColor = boat.colors.cockpit;
     drawCockpitFittings(ctx, cockpitColor);
 
     // Sails
@@ -7780,7 +8139,7 @@ function drawBoat(ctx, boat) {
         if (isJib) { ctx.translate(0, -25); ctx.rotate(boat.sailAngle); }
         else { ctx.translate(0, -5); ctx.rotate(boat.sailAngle); }
 
-        const sailColor = boat.isPlayer ? settings.sailColor : boat.colors.sail;
+        const sailColor = boat.colors.sail;
         ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
         ctx.fillStyle = sailColor || '#ffffff';
         ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
@@ -7814,7 +8173,7 @@ function drawBoat(ctx, boat) {
     const drawSpinnaker = (scale = 1.0) => {
         ctx.save();
         ctx.translate(0, -28); ctx.rotate(boat.sailAngle);
-        const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+        const spinColor = boat.colors.spinnaker;
         ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
         ctx.fillStyle = spinColor || '#ef4444';
         ctx.strokeStyle = spinColor || '#ef4444';
@@ -7839,10 +8198,10 @@ function drawBoat(ctx, boat) {
     const drawSailSprite = (part, tackY, color, scale) => {
         const sprite = part === 'spin'
             ? getSpinnakerSprite(
-                boat.isPlayer ? (settings.spinnakerPattern || 'solid') : (boat.spinPattern || 'solid'),
+                boat.spinPattern || 'solid',
                 color || '#ffffff',
-                boat.isPlayer ? (settings.spinnakerColor2 || settings.hullColor) : (boat.colors.spinAccent || boat.colors.hull),
-                boat.isPlayer ? settings.spinnakerColor3 : boat.colors.spinAccent3)
+                boat.colors.spinAccent || boat.colors.hull,
+                boat.colors.spinAccent3)
             : getTintedBoatPart(part, color || '#ffffff');
         if (!sprite) return false;
         ctx.save();
@@ -7865,8 +8224,8 @@ function drawBoat(ctx, boat) {
         ctx.restore();
         return true;
     };
-    const sailColor = boat.isPlayer ? settings.sailColor : boat.colors.sail;
-    const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+    const sailColor = boat.colors.sail;
+    const spinColor = boat.colors.spinnaker;
 
     if (!drawSailSprite('main', -5, sailColor, 1)) drawSailFunc(false);
     const progress = boat.spinnakerDeployProgress;
@@ -8052,6 +8411,36 @@ function drawRoundingArrows(ctx) {
     // No arrows on Start (0) or Finish (totalLegs)
     if (player.raceState.leg === 0 || player.raceState.leg >= state.race.totalLegs) return;
 
+    // ISLAND ROUNDING: the active mark is ONE mark, so the arrow belongs on it. Every other
+    // nav-aid here has an islandRound branch; this one did not, and `legMarks()` returns null
+    // on a leg that rounds rather than crosses — so the `|| [0, 1]` fallback below reached for
+    // the first two marks in the array, which are the START LINE. Crossing the start turned
+    // the line you had just left into a phantom gate with rounding arcs on both ends, while
+    // the mark you were actually sailing to had none.
+    if (state.course.type === 'islandRound') {
+        const e = routeLeg(player.raceState.leg);
+        const rm = (e && e.kind === 'round' && e.mark) ? e.mark : null;
+        if (!rm) return;
+        // Leaving the mark to STARBOARD means the bearing angle increases (see the sweep test
+        // in updateBoatRaceState) — and with y down, increasing angle is clockwise on screen,
+        // which is `counterclockwise = false`. So port rounds are the ccw ones.
+        const ccw = (rm.side === 'port');
+        const R = Math.max(90, (rm.zone || 0) * 0.42);
+        ctx.save();
+        ctx.lineWidth = 7; ctx.lineCap = 'round';
+        ctx.strokeStyle = `rgba(${NAV_RGB}, 0.85)`; ctx.fillStyle = `rgba(${NAV_RGB}, 0.85)`;
+        ctx.translate(rm.x, rm.y);
+        ctx.rotate(state.time * 8.0 * (ccw ? -1 : 1));
+        const start = 0, end = Math.PI;
+        ctx.beginPath(); ctx.arc(0, 0, R, start, end, ccw); ctx.stroke();
+        ctx.translate(R * Math.cos(end), R * Math.sin(end));
+        ctx.rotate(end + (ccw ? -Math.PI / 2 : Math.PI / 2));
+        ctx.beginPath();
+        ctx.moveTo(-10, -10); ctx.lineTo(10, 0); ctx.lineTo(-10, 10); ctx.lineTo(-6, 0); ctx.fill();
+        ctx.restore();
+        return;
+    }
+
     // Rounding direction alternates with which end of the gate you take: at the
     // windward gate the first mark is left to port, at the leeward line it is the
     // second. Keyed on the route ROLE, not leg parity — leg 0 targets the start
@@ -8108,11 +8497,23 @@ function drawActiveGateLine(ctx) {
     const dashOffset = -state.time * 20;
     ctx.beginPath(); ctx.moveTo(m1.x, m1.y); ctx.lineTo(m2.x, m2.y);
 
+    // IS THIS LINE WHAT THE PLAYER IS BEING ASKED FOR? On an island course it is drawn for the
+    // whole race — it is both the start and the finish — so through the middle of the race it
+    // has to say it is not the target. A white line reads as "cross me", and it was still
+    // reading that way while the rounding was the live instruction.
+    const lineIsTarget = state.race.status === 'finished' || player.raceState.finished
+        || player.raceState.leg === 0 || player.raceState.leg >= state.race.totalLegs;
+
     let color = '#ffffff';
     if (state.race.status === 'finished' || player.raceState.finished) color = '#4ade80';
     else if (player.raceState.leg === 0 && state.race.status === 'prestart') color = '#ef4444';
+    // The same slate the greyed-out buoys use, so "not the thing you are sailing to" looks
+    // the same whatever piece of furniture is saying it.
+    else if (!lineIsTarget) color = '#94a3b8';
 
-    ctx.shadowColor = color; ctx.shadowBlur = 15; ctx.strokeStyle = color; ctx.lineWidth = 5;
+    ctx.shadowColor = color; ctx.shadowBlur = lineIsTarget ? 15 : 0;
+    ctx.strokeStyle = color; ctx.lineWidth = lineIsTarget ? 5 : 3;
+    ctx.globalAlpha = lineIsTarget ? 1 : 0.4;
     ctx.lineDashOffset = dashOffset; ctx.stroke();
 
     ctx.save(); ctx.fillStyle = color; ctx.font = FONT.display(24); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
@@ -8256,22 +8657,43 @@ function drawLayLines(ctx) {
         // before the gun. The rounding is a single mark with a zone circle, and
         // the finish is a line you simply cross — neither wants laylines.
         if (player.raceState.leg !== 0) return;
-        const pts = [state.course.marks[0], state.course.marks[1]];
-        const up = true;
+        const pts = startLinePts();
+        if (!pts[0] || !pts[1]) return;
+
+        // ONE LAYLINE PER END, running back from that end, down and away from the line.
+        //
+        // Each end is laid on ONE tack — the starboard end on starboard, the port end on port
+        // — so each gets that tack's layline and no other. Written as the ray that leans AWAY
+        // from the other end, which is the same statement without needing to work out which
+        // end is which: the two close-hauled angles are 90 degrees apart, and the one pointing
+        // away from your neighbour is the tack that fetches you.
+        //
+        // So the pair DIVERGES. It used to take the ray leaning toward the other end, which is
+        // the opposite tack at each end — two lines that cross below the middle of the line and
+        // read as a big X over the fleet. Clipping that X at its crossing made a tidy wedge and
+        // was still the wrong two lines.
+        //
+        // The wind is sampled AT EACH END, so a line lying across a gradient shows its skew.
         ctx.save(); ctx.lineWidth = 5.5;
+        ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`;
         for (let k = 0; k < pts.length; k++) {
-            const m = pts[k];
-            const zr = 0;
-            for (const sgn of [k === 0 ? -1 : 1]) {
-                const a = state.wind.direction + sgn * Math.PI / 4 + (up ? Math.PI : 0);
+            const m = pts[k], other = pts[k ^ 1];
+            const wHere = getWindAt(m.x, m.y).direction;
+            let tx = other.x - m.x, ty = other.y - m.y;
+            const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+            let best = null;
+            for (const s of [-1, 1]) {
+                const a = wHere + s * Math.PI / 4 + Math.PI;   // back down the close-hauled track
                 const dx = Math.sin(a), dy = -Math.cos(a);
-                const sx = m.x + dx * zr, sy = m.y + dy * zr;
-                const t = Arena.rayHit(state.course.boundary, sx, sy, dx, dy);
-                if (t !== null) {
-                    ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`;
-                    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + dx * t, sy + dy * t); ctx.stroke();
-                }
+                const lean = dx * tx + dy * ty;
+                if (!best || lean < best.lean) best = { dx, dy, lean };
             }
+            const t = Arena.rayHit(state.course.boundary, m.x, m.y, best.dx, best.dy);
+            if (t === null) continue;
+            ctx.beginPath();
+            ctx.moveTo(m.x, m.y);
+            ctx.lineTo(m.x + best.dx * t, m.y + best.dy * t);
+            ctx.stroke();
         }
         ctx.restore();
         return;
@@ -9070,35 +9492,42 @@ function drawMinimap() {
     // mask venue shows the WHOLE map, where a fixed 8px arrow is a boat the size
     // of an island and the fleet becomes one coloured smear. Shrink to match.
     const mk = state.course.doc ? 0.55 : 1;
-    // Draw AI boats first
+
+    // COMPETITORS ARE DOTS. Ten rotating triangles a few pixels tall encode a heading
+    // nobody can read at this size — they just made the fleet a field of similar shapes
+    // you had to pick your own arrow out of. A dot says the one thing a rival pip is for:
+    // where they are. It also leaves the ARROW shape meaning exactly one thing on this
+    // map, which is what makes the player findable at a glance.
     for (const boat of state.boats) {
         if (boat.isPlayer) continue;
         const pos = t(boat.x, boat.y);
-        ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(boat.heading);
         // Ink outline: hull colors alone don't separate from water or gust blobs
         // at this size, and dark hulls disappeared entirely.
-        ctx.beginPath(); ctx.moveTo(0, -8*mk); ctx.lineTo(5*mk, 6*mk); ctx.lineTo(-5*mk, 6*mk); ctx.closePath();
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, 4.6 * mk, 0, Math.PI * 2);
         ctx.fillStyle = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(11, 28, 43, 0.85)'; ctx.lineWidth = 1.5 * mk; ctx.stroke();
-        ctx.restore();
+        ctx.strokeStyle = 'rgba(11, 28, 43, 0.85)'; ctx.lineWidth = 1.4 * mk; ctx.stroke();
     }
 
-    // Draw Player last (larger and with stroke)
+    // THE PLAYER IS A LARGE WHITE ARROW — drawn last, so it is never buried under a rival.
     if (player) {
         const pos = t(player.x, player.y);
         ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(player.heading);
 
-        // Restrained glow — at blur 10-15 the halo washed the marker out to white,
-        // losing the yellow that means "you" everywhere else in the product.
+        // Deliberately NOT scaled by `mk`. The fleet shrinks on a whole-map venue so it
+        // does not smear; the one marker you are hunting for must stay the same size, or
+        // it shrinks exactly when the map gets hard to read.
         ctx.shadowBlur = 6 + Math.sin(state.time * 8) * 2;
-        ctx.shadowColor = 'rgba(250, 204, 21, 0.9)';
+        ctx.shadowColor = 'rgba(15, 30, 45, 0.95)';
 
-        ctx.beginPath(); ctx.moveTo(0, -12*mk); ctx.lineTo(8*mk, 9*mk); ctx.lineTo(-8*mk, 9*mk); ctx.closePath();
-        ctx.fillStyle = settings.hullColor || '#facc15';
+        ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(8.5, 10); ctx.lineTo(0, 6); ctx.lineTo(-8.5, 10);
+        ctx.closePath();
+        // White, against a fleet of saturated hull colours. Shape and value both separate
+        // it now, so it no longer needs the gold that used to be doing that job alone.
+        ctx.fillStyle = '#ffffff';
         ctx.fill();
         ctx.shadowBlur = 0;
-        ctx.strokeStyle = '#0b1c2b'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.strokeStyle = '#0b1c2b'; ctx.lineWidth = 1.6; ctx.stroke();
         ctx.restore();
     }
 }
@@ -9235,8 +9664,14 @@ function showResults() {
         let row = UI.resultRows[boat.id];
         let isNew = false;
 
-        const hullColor = boat.isPlayer ? settings.hullColor : boat.colors.hull;
-        const spinColor = boat.isPlayer ? settings.spinnakerColor : boat.colors.spinnaker;
+        // The player is a character now and carries colours on the boat like everyone
+        // else, so there is no isPlayer branch to make here. This was the last of the
+        // `isPlayer ? settings.x : boat.colors.x` pairs, and it was CRASHING the
+        // leaderboard: settings.hullColor stopped existing with the custom-appearance
+        // settings, so getLuma(undefined) threw on .startsWith and took the whole race
+        // with it. Seed-dependent only because it needed a race to reach the results.
+        const hullColor = boat.colors.hull;
+        const spinColor = boat.colors.spinnaker;
         const hullLuma = getLuma(hullColor);
         const useSpin = hullLuma < 50 || hullLuma > 200;
         const bgColor = useSpin ? spinColor : hullColor;
@@ -9244,7 +9679,9 @@ function showResults() {
         if (!row) {
             isNew = true;
             row = document.createElement('div');
-            row.className = "relative mb-3 h-16 w-full res-row"; // Added res-row class
+            // `res-me` gives the player the same gold ring + gold type the leaderboard
+            // uses, so "which one is me" is answered the same way on every screen.
+            row.className = "relative mb-3 h-16 w-full res-row" + (boat.isPlayer ? " res-me" : "");
 
             // Background Bar
             const bar = document.createElement('div');
@@ -9279,23 +9716,23 @@ function showResults() {
             // Image Container
             const imgDiv = document.createElement('div');
             imgDiv.className = `flex items-center justify-center`;
+            // EVERY row shows a face, the player's included — they are one of these
+            // characters now. The player used to get a white star here because there was
+            // no portrait to show; there is one, and the star was also the last thing on
+            // this row still saying "you" through a special case instead of through the
+            // row highlight below.
+            //
+            // ⚠️ Both branches used to end with `imgDiv.appendChild(imgBox)`, but the
+            // competitor branch put its <img> straight into imgDiv — so every rival row
+            // also carried a stray empty 48x48 box beside the portrait.
             const imgBox = document.createElement('div');
             imgBox.className = "w-12 h-12";
-            if (boat.isPlayer) {
-                const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                star.setAttribute("viewBox", "0 0 24 24");
-                star.setAttribute("class", "w-full h-full drop-shadow-md");
-                star.setAttribute("fill", "#ffffff");
-                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
-                star.appendChild(path);
-                imgBox.appendChild(star);
-            } else {
-                const img = document.createElement('img');
-                img.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
-                img.className = "w-full h-full rounded-md object-cover";
-                imgDiv.appendChild(img);
-            }
+            const img = document.createElement('img');
+            img.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
+            img.className = "w-full h-full rounded-md object-cover drop-shadow-md";
+            img.draggable = false;
+            img.alt = boat.name;
+            imgBox.appendChild(img);
             imgDiv.appendChild(imgBox);
             content.appendChild(imgDiv);
 
@@ -9514,27 +9951,21 @@ function updateLeaderboard() {
                 const iconContainer = document.createElement('div');
                 iconContainer.className = "w-9 h-9 mr-2.5 flex items-center justify-center shrink-0";
 
-                if (boat.isPlayer) {
-                    const star = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-                    star.setAttribute("viewBox", "0 0 24 24");
-                    star.setAttribute("class", "w-7 h-7 drop-shadow-md");
-                    const color = isVeryDark(settings.hullColor) ? settings.spinnakerColor : settings.hullColor;
-                    star.setAttribute("fill", color);
-                    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-                    path.setAttribute("d", "M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z");
-                    star.appendChild(path);
-                    iconContainer.appendChild(star);
-                } else {
-                    // CIRCLES. The portraits are the identity here — a coloured ring carries
-                    // the boat's colour without tinting the row behind the type, which is
-                    // what the band gradient got wrong.
-                    const img = document.createElement('img');
-                    img.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
-                    img.className = "w-9 h-9 rounded-full border-2 object-cover";
-                    img.style.borderColor = deepBandFor(boat.colors.hull, boat.colors.spinnaker, boat.colors.spinAccent);
-                    img.style.background = "#1e2531";
-                    iconContainer.appendChild(img);
-                }
+                // EVERY ROW SHOWS A FACE, yours included. The player used to get a star
+                // because the player had no portrait — but the player IS a character now, and
+                // showing whose boat you picked is the point of picking one. Which row is
+                // yours is already said by the gold ring and the gold type, so the star was
+                // carrying a meaning that was no longer its own.
+                //
+                // (It was also reading `settings.hullColor` for its fill, which stopped
+                // existing when the custom-appearance settings went — so it had quietly
+                // become a black star.)
+                const img = document.createElement('img');
+                img.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
+                img.className = "w-9 h-9 rounded-full border-2 object-cover";
+                img.style.borderColor = deepBandFor(boat.colors.hull, boat.colors.spinnaker, boat.colors.spinAccent);
+                img.style.background = "#1e2531";
+                iconContainer.appendChild(img);
 
                 const nameDiv = document.createElement('div');
                 nameDiv.className = "lb-name t-display flex-1 truncate uppercase";
@@ -10143,19 +10574,19 @@ function loop(timestamp) {
 function repositionBoats() {
     if (!state.boats || state.boats.length === 0) return;
 
-    // Wind Vectors
-    const wd = state.wind.direction;
-    const ux = Math.sin(wd);
-    const uy = -Math.cos(wd);
-
-    // Downwind Vector (Back from line)
-    const backX = -ux;
-    const backY = -uy;
+    // BACK FROM THE LINE is a fact about the LINE, not about the wind: the pre-start side is
+    // whichever side the route says the fleet crosses FROM. This used to be the reciprocal of
+    // the wind vector, which is the same thing only while the line happens to lie square to
+    // the breeze. On Glacier Sound the two are 80 degrees apart, so "400 units back" slid the
+    // fleet 400 units ALONG the line instead — boats ended up 60 units off it, smeared past
+    // the committee end, and over it before the gun.
+    const cross = startCrossNormal();
+    const backX = -cross.x;
+    const backY = -cross.y;
 
     // Start Line Center and Geometry
     if (!state.course.marks || state.course.marks.length < 2) return;
-    const m0 = state.course.marks[0];
-    const m1 = state.course.marks[1];
+    const [m0, m1] = startLinePts();
     const cx = (m0.x + m1.x) / 2;
     const cy = (m0.y + m1.y) / 2;
 
@@ -10209,8 +10640,15 @@ function repositionBoats() {
         boat.x = sx;
         boat.y = sy;
 
+        // THE WIND EACH BOAT IS ACTUALLY LYING IN, sampled where it floats. A venue whose
+        // regions bend the breeze has no single start-line wind: on Glacier Sound the mean is
+        // 130 degrees and the line reads 217, so heading the whole fleet at the mean left
+        // every boat ~87 degrees off the air it was sitting in. Per boat, because the gradient
+        // runs ACROSS the line as well as along the course.
+        const lw = getWindAt(sx, sy).direction;
+
         if (boat.isPlayer) {
-            boat.heading = wd; // Head to wind
+            boat.heading = lw; // Head to wind — the wind HERE
             boat.velocity = { x: 0, y: 0 };
             boat.speed = 0;
         } else {
@@ -10220,7 +10658,7 @@ function repositionBoats() {
                 boat.controller.startStageDepth = 60;
             }
             // Start on Starboard Tack (Close Hauled)
-            boat.heading = normalizeAngle(wd + Math.PI / 4);
+            boat.heading = normalizeAngle(lw + Math.PI / 4);
             boat.speed = 0.5;
             boat.velocity = {
                 x: Math.sin(boat.heading) * boat.speed,
@@ -11027,6 +11465,36 @@ const startLineMarks = () => {
     const r = state.course && state.course.route && state.course.route[0];
     return (r && r.marks) ? r.marks : [0, 1];
 };
+// The two start-line marks as points. Every consumer wants the objects, and each one
+// that reached for `marks[0]`/`marks[1]` itself was quietly asserting that the pin and
+// the boat end are the first two marks in the array. That holds for the ten venues
+// shipped today, but nothing enforces it: the editor is free to author a route whose
+// opening line names any pair, and the moment it does, the fleet spawns behind the
+// wrong marks, the laylines draw on the wrong marks and OCS is judged against them.
+const startLinePts = () => {
+    const [a, b] = startLineMarks();
+    const m = state.course.marks;
+    return [m[a], m[b]];
+};
+
+// THE WAY THE FLEET CROSSES THE START, as a unit vector. `dir * (gateDy, -gateDx)` over the
+// route entry's own mark pair — the same expression updateBoatRaceState judges a crossing
+// with, so "which side is pre-start" has ONE definition and the placement, the committee
+// boat's heading and the OCS test cannot disagree about it.
+//
+// Deliberately NOT derived from the wind. A line is crossed the way its route says, and on a
+// venue whose breeze bends across the course there is no single wind to ask — asking the
+// global mean is what put the fleet alongside the line instead of behind it.
+const startCrossNormal = () => {
+    const r = state.course && state.course.route && state.course.route[0];
+    const [a, b] = startLineMarks();
+    const m = state.course.marks;
+    if (!m || !m[a] || !m[b]) return { x: 0, y: -1 };
+    const dx = m[b].x - m[a].x, dy = m[b].y - m[a].y;
+    const l = Math.hypot(dx, dy) || 1;
+    const s = (r && r.dir < 0) ? -1 : 1;
+    return { x: s * dy / l, y: -s * dx / l };
+};
 
 // The course AXIS: leeward/start line midpoint -> windward gate midpoint, plus
 // the unit vector along it. Six separate sites recomputed this from marks[0..3];
@@ -11150,25 +11618,28 @@ function orientCourseMarks() {
         }
         if (k < 0 || !marks[other]) continue;
 
-        // Direction of travel through the line on that first use: toward the next
-        // waypoint, or (for a line used only as the finish) away from the previous one.
-        const here = legMid(k);
-        let ahead = legMid(k + 1) || (state.course.roundMark || null);
-        let tx, ty;
-        if (here && ahead) { tx = ahead.x - here.x; ty = ahead.y - here.y; }
-        else {
-            const back = legMid(k - 1);
-            if (!here || !back) continue;
-            tx = here.x - back.x; ty = here.y - back.y;
-        }
-        const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+        // Direction of travel through the line: the ROUTE'S OWN crossing normal, which is
+        // `dir * (gateDy, -gateDx)` over the entry's mark pair in the entry's order — the
+        // exact vector updateBoatRaceState judges a crossing with. So the hull faces the way
+        // a boat legally crosses, by construction.
+        //
+        // This used to point at the NEXT WAYPOINT instead and take whichever normal agreed
+        // with it. That is only the same vector when the next mark happens to lie square off
+        // the line; on Glacier Sound, whose rounding sits 60 degrees off the line's normal,
+        // it chose the opposite one and moored the committee boat facing back down the course.
+        // The authored `dir` cannot disagree with the rules engine, and a bearing to a mark
+        // can.
+        const gi = route[k].marks;
+        const ga = marks[gi[0]], gb = marks[gi[1]];
+        const gdx = gb.x - ga.x, gdy = gb.y - ga.y;
+        const gl = Math.hypot(gdx, gdy) || 1;
+        const sgnDir = (route[k].dir >= 0) ? 1 : -1;
+        const nx = sgnDir * gdy / gl, ny = -sgnDir * gdx / gl;
 
-        // The line's own normal, signed to point the way the fleet goes.
+        // Along the line, away from the other end — the outboard nudge below.
         const o = marks[other];
         let lx = o.x - m.x, ly = o.y - m.y;
         const ll = Math.hypot(lx, ly) || 1; lx /= ll; ly /= ll;
-        let nx = -ly, ny = lx;
-        if (nx * tx + ny * ty < 0) { nx = -nx; ny = -ny; }
 
         // Sprite-up is zero heading (art-pipeline.md 3), so heading is the bow's bearing.
         m.heading = Math.atan2(nx, -ny);
@@ -11304,6 +11775,11 @@ function initCourse() {
         state.course.navIslands = state.course.islands.filter(i =>
             !i.isBank && Arena.signedDist(b0, i.x, i.y) > -(i.radius + 120));
         orientCourseMarks();
+        // Ice sits where it will actually be BEFORE anything is drawn. This has to be on the
+        // DOCUMENT path, not merely at the end of initCourse: every venue is a document now,
+        // so the tail below is the generated-course path and returns here without ever
+        // reaching it.
+        settleFloes();
         return;
     }
 
@@ -11364,6 +11840,10 @@ function initCourse() {
     state.course.navIslands = state.course.islands.filter(i => !i.isBank);
     state.course.navVersion = 0; // bumped when floes drift, so the planner's inflated cache refreshes
     orientCourseMarks();
+    // Ice sits where it will actually be BEFORE anything is drawn, so no berg is ever seen
+    // walking out of a headland it was authored inside. After navIslands, because the push
+    // reads landShapes and rebuilds each floe's collider.
+    settleFloes();
 }
 
 function resetGame() {
@@ -11452,7 +11932,8 @@ function resetGame() {
     UI.resultRows = {};
 
     // Create Boats (Initialized at 0,0, positioned by repositionBoats)
-    const player = new Boat(0, true, 0, 0, settings.playerName || "Player");
+    const pc = playerCharacter();
+    const player = new Boat(0, true, 0, 0, pc.name, pc);
     // applySettings() only runs on load/save, so a boat built after that would
     // otherwise ignore a stored Auto Trim = off and start the race auto-trimming.
     player.manualTrim = !settings.autoTrim;
@@ -11463,7 +11944,10 @@ function resetGame() {
 
     // Create AI Boats
     const opponents = [];
-    const available = [...AI_CONFIG];
+    // NEVER RACE YOURSELF. Two boats with one name and one face makes the leaderboard
+    // unreadable and the edge indicators ambiguous. The draw count is unchanged at 9, so
+    // the rng stream is the same length; only which nine come out differs.
+    const available = AI_CONFIG.filter(c => c.name !== settings.character);
     for (let i = 0; i < 9 && available.length > 0; i++) {
         const idx = Math.floor(Math.random() * available.length);
         opponents.push(available[idx]);

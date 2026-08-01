@@ -61,6 +61,12 @@ highpassed at **900 Hz** and sweeps up to **6.5 kHz**, with a quiet rumble below
 So the band to protect is now the **upper mids and highs**, and the low-mid is
 free. Concretely:
 
+⚠️ **This table is written against the venues as PLANNED, not as they race today.**
+Measured Aug 1 2026: Pearl Lagoon runs 13 kn, the same as Lighthouse Cove, because
+its squalls are not built — so its "heavy" row is a forecast. Only Glacier Sound is
+actually windy right now (20 kn). Measure the venue before designing around its
+weather; the probe is in §8.
+
 | Venue wind | What it means for the music |
 |---|---|
 | Heavy (Glacier Sound, Redrock, Lagoon squalls) | Put the identity **low** — horn, cello, baritone guitar, floor toms. Shakers, ride cymbals and bowed-glass shimmer will trade with the gust, which on Glacier is the point |
@@ -99,8 +105,15 @@ assertion in the suite that can see a silent-but-healthy graph.
 | `racing` + `racing-<venue>` | 1 house + 10 | 4–6 min | `spinnaker-run`, `racing-bay` |
 | `results` | 1–2 | 2 min | `harbor-results` |
 
-A race is about 213 s, so a 4-minute race track never loops in a normal race —
-the loop is insurance. Bluewater Bonanza's distance course wants 6 minutes.
+**Length is measured on the LOOP BODY, not the file.** What plays is
+`loopEnd - loopStart`; everything else is discarded. A 3-minute file whose ending
+is denser than its opening can yield barely 2 minutes of usable loop.
+
+The target follows from on-water time: the prestart is ~30 s and a race about
+213 s, so **a body of ~4 minutes means a normal race never loops at all** and the
+loop is pure insurance. Bluewater Bonanza's distance course wants 6. Below about
+2 minutes of body you hear the seam twice a race, every race, which is where
+loop fatigue starts to bite.
 
 **There is no prestart cue** (Aug 1 2026). The venue's track starts at the
 PRESTART and runs straight through the gun — prestart and racing resolve to the
@@ -148,6 +161,12 @@ reliably than negatives written into the style. Leave Lyrics empty.
 Sliders: **Weirdness** as listed (low keeps a loop predictable, which is what
 background music wants); **Style Influence 85** unless noted, so the tags actually
 bind.
+
+**Ask for length up front.** Suno's default take runs 2–2:30, which after loop
+trimming leaves under 2 minutes of body — half what §4 asks for. Generating long
+beats extending: an Extend joins mid-body where nothing can hide it, whereas the
+loop seam gets a 0.6 s crossfade. Extend only when a take has a quality worth
+protecting that a regeneration might not reproduce.
 
 Every line ends in the same loop contract: *seamless loop, no intro, no outro,
 ends as it began*.
@@ -204,7 +223,14 @@ Sparse acoustic instrumental, 84 BPM, fingerpicked nylon guitar and solo flute, 
 **Exclude** `vocals, wordless vocalise, dense percussion`
 Weirdness **20** · *the arrangement must have holes in it — silence is the mechanic*
 
-### Pearl Lagoon
+### Pearl Lagoon — **done**
+Filled by `pearl-lagoon.mp3` (C major at r=0.91, the cleanest key reading in the
+project, and 118.5 s of loop body from a 119.0 s file — no intro, no outro,
+nothing discarded). ⚠️ It measures **39.4%** in the wind band, against advice
+below that says put a windy venue's identity low. Accepted because the squalls
+are not built yet and the venue currently races at 13 kn, the same as Lighthouse
+Cove. **Re-measure when the identity pass lands the squalls.** The prompt below
+is the one that produced it.
 **Style**
 ```
 Bright island instrumental, 106 BPM, steel pan lead, offbeat guitar skank, shaker and hand percussion, sunlit major key, one urgent double-time squall section, seamless loop, no intro, no outro, ends as it began
@@ -265,9 +291,11 @@ Weirdness **30**
 the gust — when a katabatic hits, the wind takes the high end and the music holds
 the floor. That is the venue's story, not a compromise.*
 
-### Lighthouse Cove — optional
-Already filled by `breezy-race` (117 BPM, D major, the brightest track in the
-set). Only generate if you want to replace it.
+### Lighthouse Cove — **done**
+Filled by `lighthouse-cove.mp3` (112 BPM on a 112 BPM brief, tonic D with an
+ambiguous third, 29.3% in the wind band against `breezy-race`'s 47.7%). It
+replaced `breezy-race`, which is retired to unassigned. The prompt below is the
+one that produced it.
 **Style**
 ```
 Bright acoustic sailing instrumental, 112 BPM, D major, penny whistle and concertina over strummed guitar, upright bass, brushed kit, easy club-race swing, seamless loop, no intro, no outro, ends as it began
@@ -327,6 +355,31 @@ in order of effort:
    **Do not hand-edit any of the three.**
 4. `npm run test:audio` — asserts the file exists, the cue resolves, and the loop
    point sits inside the track.
+5. When there is a CHOICE to make — two takes, or a candidate against a track
+   already in the slot — measure both over their loop bodies:
+   ```
+   python3 regatta/art/music_spec.py "regatta/assets/audio/<name>.mp3:<loopStart>:<loopEnd>"
+   ```
+   It prints the wind-band share (§3), dynamics, the third/fifth ratio a brief like
+   Glacier Sound's is really asking for, and how much the harmony moves. It picked
+   Glacier Sound between two takes and retired `breezy-race` from Lighthouse Cove.
+   ⚠️ It cannot identify an instrument, so it cannot decide venue FIT — that stays
+   a listening call against the registry in §6.
+
+⚠️ **The suite races seatrials and arctic, not your venue.** A new track gets the
+static loop-map check and nothing more, so drive the actual venue over http once:
+```
+node regatta/eval/_probe_audio.js <venue>
+```
+It confirms the cue resolves, that real signal reaches the bus, and — the part a
+file measurement cannot tell you — how far the wind bed sits under the music **at
+that venue's own breeze**. A wind-band share is a property of the track; headroom
+is a property of the pairing. Measured Aug 1 2026: bay 13.4 dB, lagoon 12.1 dB,
+arctic 6.4 dB, the last deliberately tight.
+
+⚠️ Pin the venue through `localStorage`, never `settings.venue = x`: `resetGame()`
+calls `loadSettings()` and stomps it, and the probe then measures whatever venue
+was already loaded while appearing to pass.
 
 **Size.** Suno's MP3s run ~190 kbps, about 4–7 MB per track; ten venue tracks is
 ~50 MB, all lazily loaded per cue. If that becomes a problem, 128 kbps roughly
@@ -340,7 +393,11 @@ halves it — but no MP3 encoder is installed on this machine, so that needs
 - [ ] Loops without drawing attention to the seam — listen through it three times
 - [ ] Tempo matches the registry; no BPM collision with another venue
 - [ ] The owned instrument is audible in the first fifteen seconds
-- [ ] Nothing in it competes with a wind gust on a windy venue (§3)
+- [ ] Nothing in it competes with a wind gust on a windy venue (§3) — `music_spec.py`
+      puts a number on it; the set runs 5.4% (arctic) to 47.7% (breezy-race, retired)
+- [ ] Loop BODY is long enough: `loopEnd - loopStart` against ~245 s of prestart +
+      race. Under ~120 s the seam comes round twice or more, which raises the bar on
+      how clean it is rather than ruling the track out
 - [ ] No hook you can hum after one race — for race tracks, that is a failure
 - [ ] Sits with its neighbours: play it straight after the venue before and after
       it in the registry, not on its own

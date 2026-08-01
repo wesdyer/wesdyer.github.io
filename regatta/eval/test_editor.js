@@ -485,6 +485,82 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     check('a ring never falls below three points', vs.arenaFloor >= 3, `${vs.arenaFloor}`);
     await page.evaluate(() => { while (window.EditorApp._state().histIdx > 0) window.EditorApp._undo(); });
 
+    // ── The Direct arrow grabs a vertex under a REAL POINTER ────────────────
+    // Everything above reaches vsel through the test hooks, which is why the layer shipped
+    // for a while with vertices that could not be clicked at all: a leftover floe-only hit
+    // test returned before the vertex test ever ran, so the hooks said yes and the mouse
+    // said no. Press, drag and release, like a hand does.
+    console.log('\nvertex gestures under a real pointer');
+    const vg = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('#layer-list [data-layer="land"]').click();
+        A._pickTool('direct');
+        // A small floe well clear of the coast, so a press near it cannot land inside
+        // some other shape and be read as selecting that instead.
+        const shape = A._state().doc.shapes.slice().sort((a, b) => a.r - b.r)[0];
+        A._selectShape(shape.id);
+        const cv = document.getElementById('schematic');
+        const r = cv.getBoundingClientRect();
+        const sc = 120 / Math.max(1, shape.r);
+        A._setView(shape.c[0], shape.c[1], sc);
+        const toS = (x, y) => ({ x: (x - shape.c[0]) * sc + cv.clientWidth / 2,
+                                 y: (y - shape.c[1]) * sc + cv.clientHeight / 2 });
+        const down = (p, mods) => cv.dispatchEvent(new MouseEvent('mousedown', Object.assign({
+            clientX: r.left + p.x, clientY: r.top + p.y, button: 0, bubbles: true }, mods || {})));
+        const move = (p) => window.dispatchEvent(new MouseEvent('mousemove', {
+            clientX: r.left + p.x, clientY: r.top + p.y, bubbles: true }));
+        const up = (mods) => window.dispatchEvent(new MouseEvent('mouseup',
+            Object.assign({ bubbles: true }, mods || {})));
+
+        // Press on a vertex: it is what the hit test finds, and it starts a vertex drag.
+        const was = shape.outer.map(p => p.slice());
+        const v0 = was[0];
+        const p0 = toS(v0[0], v0[1]);
+        const h = A._hit(v0[0], v0[1]);
+        down(p0);
+        const picked = A._vselCount(), kind = A._dragKind();
+        move({ x: p0.x + 50, y: p0.y + 25 });
+        up();
+        const moved = Math.hypot(shape.outer[0][0] - v0[0], shape.outer[0][1] - v0[1]);
+        const others = shape.outer.filter((p, i) => i > 0
+            && Math.hypot(p[0] - was[i][0], p[1] - was[i][1]) > 1e-9).length;
+
+        // Shift adds a second, and then ONE grab drags both.
+        const p1 = toS(shape.outer[1][0], shape.outer[1][1]);
+        down(p1, { shiftKey: true }); up({ shiftKey: true });
+        const picked2 = A._vselCount();
+        const pair = [shape.outer[0].slice(), shape.outer[1].slice()];
+        const g = toS(shape.outer[1][0], shape.outer[1][1]);
+        down(g); move({ x: g.x - 40, y: g.y }); up();
+        const bothMoved = [0, 1].every(i =>
+            Math.abs(shape.outer[i][0] - pair[i][0]) > 1 && Math.abs(shape.outer[i][1] - pair[i][1]) < 1e-6);
+
+        // A marquee over the whole floe takes every corner it covers.
+        A._selectVerts([]);
+        const pts = shape.outer.map(p => toS(p[0], p[1]));
+        const pad = 25;
+        const a = { x: Math.min.apply(null, pts.map(p => p.x)) - pad,
+                    y: Math.min.apply(null, pts.map(p => p.y)) - pad };
+        const b = { x: Math.max.apply(null, pts.map(p => p.x)) + pad,
+                    y: Math.max.apply(null, pts.map(p => p.y)) + pad };
+        down(a);
+        const level = (A._marquee() || {}).level;
+        move({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }); move(b); up();
+        return { hitShape: h.shape, hitVert: h.vert, id: shape.id, n: shape.outer.length,
+                 picked, kind, moved, others, picked2, bothMoved, level, boxed: A._vselCount() };
+    });
+    check('the hit test finds a vertex of the selected shape', vg.hitShape === vg.id && vg.hitVert === 0,
+          `shape ${vg.hitShape}, vert ${vg.hitVert}`);
+    check('pressing on it selects that one vertex and starts a vertex drag',
+          vg.picked === 1 && vg.kind === 'vsel', `${vg.picked} picked, drag ${vg.kind}`);
+    check('...and the drag MOVES it', vg.moved > 1, `moved ${vg.moved.toFixed(1)}u`);
+    check('...and moves nothing else', vg.others === 0, `${vg.others} others moved`);
+    check('shift-click adds a second', vg.picked2 === 2, `${vg.picked2} selected`);
+    check('...and one grab drags both', vg.bothMoved === true);
+    check('a drag on open water marquees VERTICES', vg.level === 'vertex', `${vg.level}`);
+    check('...and the box takes every corner it covers', vg.boxed === vg.n, `${vg.boxed}/${vg.n}`);
+    await page.evaluate(() => { while (window.EditorApp._state().histIdx > 0) window.EditorApp._undo(); });
+
     // ── Marks & gates as an inventory, and the route as an ordering ─────────
     // The separation is the whole point: deleting a LEG must leave the gate alone, and
     // deleting a MARK must take its gate and the legs that used it.

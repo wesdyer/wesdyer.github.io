@@ -185,6 +185,13 @@
                     id: b.id,
                     name: b.name,
                     character: b.name,
+                    // The player used to be the only boat called 'Player', and every eval
+                    // script identified them by that string. Then the player became a
+                    // CHARACTER — they sail as Finley by default — and the name test
+                    // silently stopped matching. Nothing errored; the undriven player boat
+                    // just started being counted as a competitor, timing out at the cutoff
+                    // and dragging every fleet mean with it. Report the flag, not the name.
+                    isPlayer: !!b.isPlayer,
                     finished: b.raceState.finished,
                     finishTime: b.raceState.finishTime,
                     leg: b.raceState.leg,

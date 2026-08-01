@@ -53,7 +53,7 @@ function syncTool() {
          : mode === 'boundary' ? 'bcircle'
          : mode;
 }
-const NOHIT = { shape: null, mark: -1, line: -1, ice: -1, vert: -1, bvert: -1, wvert: -1, rcentre: -1, rring: -1 };
+const NOHIT = { shape: null, mark: -1, line: -1, vert: -1, bvert: -1, wvert: -1, rcentre: -1, rring: -1 };
 let sel = Object.assign({}, NOHIT);
 let hover = Object.assign({}, NOHIT);
 let hoverRoute = -1;           // route row under the cursor, highlighted on the map
@@ -783,7 +783,6 @@ function selActs() {
     const kinds = new Set(osel.map(o => o.kind));
     const noun = kinds.size > 1 ? 'objects'
                : osel[0].kind === 'shape' ? (n === 1 ? 'shape' : 'shapes')
-               : osel[0].kind === 'ice' ? (n === 1 ? 'floe' : 'floes')
                : osel[0].kind === 'arena' ? 'arena'
                : (n === 1 ? 'region' : 'regions');
     $('sel-acts-n').textContent = osel[0].kind === 'arena' ? 'arena' : `${n} ${noun}`;
@@ -4115,17 +4114,6 @@ function hit(wx, wy) {
             if (Math.hypot(bp[i][0] - wx, bp[i][1] - wy) < r) { out.bvert = i; return out; }
         }
     }
-    if (mode === 'shape' && doc) {
-        // LAST DRAWN WINS, which is now a real rule rather than an accident: the array is
-        // in paint order, so walking it backwards grabs whatever is visibly on top.
-        const fs = dshapes();
-        for (let i = fs.length - 1; i >= 0; i--) {
-            const sh = fs[i];
-            if (pointInRing(wx, wy, sh.outer)
-                && !(sh.holes || []).some(h => pointInRing(wx, wy, h))) { out.ice = i; return out; }
-        }
-        return out;
-    }
     const marks = ((mode === 'marks' || mode === 'route') && doc) ? doc.course.marks : [];
     for (let i = 0; i < marks.length; i++) {
         if (Math.hypot(marks[i].x - wx, marks[i].y - wy) < r * 1.4) { out.mark = i; return out; }
@@ -4145,7 +4133,11 @@ function hit(wx, wy) {
         }
     }
     if (!doc) return out;
-    // Land vertices only in vertex mode; land BODIES only in shape mode.
+    // Shapes are hittable only on their own layer. There is ONE test for all of them —
+    // land, ice, reed, everything — because there is one layer. A second, floe-only copy
+    // of this used to sit above the marks test and return first, which made every vertex
+    // below unreachable: it was the old Ice layer's hit test, left behind with its mode
+    // renamed when Ice and Land merged into Objects.
     if (mode !== 'shape') return out;
     // The SELECTED shape's vertices win over every body — a vertex sits ON the outline, so
     // testing bodies first would make it unreachable. Only the selected shape's handles are
@@ -4164,7 +4156,10 @@ function hit(wx, wy) {
             }
         }
     }
-    for (const l of doc.shapes) {
+    // LAST DRAWN WINS: the array is in paint order, so walking it backwards grabs whatever
+    // is visibly on top — the same rule hitObject uses at the object level.
+    for (let i = doc.shapes.length - 1; i >= 0; i--) {
+        const l = doc.shapes[i];
         if (pointInRing(wx, wy, l.outer) && !(l.holes||[]).some(h => pointInRing(wx, wy, h))) { out.shape = l.id; return out; }
     }
     return out;
@@ -4452,11 +4447,6 @@ function deleteOsel() {
     // Index-keyed kinds go from the highest down, so an earlier removal cannot invalidate
     // a later index. The arena is not deletable — a course with no bounds is not a course.
     const idxOf = (k) => osel.filter(o => o.kind === k).map(o => o.i).sort((a, b) => b - a);
-    // Splice directly, like land and the regions above. This used to call deleteIce(), which
-    // commits its OWN undo entry — so removing three floes banked three snapshots and took
-    // three presses of Cmd-Z to put back, while three islands took one. A bulk operation
-    // commits once, at the end, in the caller.
-    for (const i of idxOf('ice')) if (dshapes()[i]) { doc.shapes.splice(i, 1); n++; }
     for (const kind in REGION) {
         const list = regsOf(kind);
         for (const i of idxOf(kind)) if (list[i]) { list.splice(i, 1); n++; }
@@ -4903,34 +4893,10 @@ cv.addEventListener('mousedown', (e) => {
         drag = { kind: 'icenew', origin: w, r: 0 };
         draw(); return;
     }
-    // DIRECT: a floe's vertices, and a marquee over them on empty water. Select is NOT
-    // handled here any more — it falls through to the object block above, so Venue gets the
-    // click, shift-click, marquee, group move/rotate/scale and Delete every layer has.
-    if (mode === 'shape' && doc && sub === 'direct') {
-        const hi = hit(w.x, w.y);
-        if (hi.ice >= 0 && hi.vert >= 0) {
-            const f = dshapes()[hi.ice];
-            const ref = { kind: 'ice', id: f.id, r: hi.ice, i: hi.vert };
-            if (e.shiftKey) {
-                vsel = inSel(ref) ? vsel.filter(v => !sameRef(v, ref)) : vsel.concat([ref]);
-                refreshChrome(); draw(); return;
-            }
-            if (!inSel(ref)) vsel = [ref];
-            drag = { kind: 'vsel', last: w, moved: false, origin: w };
-            refreshChrome(); draw(); return;
-        }
-        if (hi.ice >= 0) {
-            // Clicking a floe's body under Direct selects it so its vertices appear — the
-            // white arrow's job, same as clicking a land shape.
-            const f2 = dshapes()[hi.ice];
-            if (f2 && sel.shape !== f2.id) vsel = [];
-            osel = f2 ? [{ kind: 'shape', id: f2.id }] : [];
-            syncSelFromOsel(); refreshChrome(); draw(); return;
-        }
-        marquee = { a: w, b: w, add: e.shiftKey, level: 'vertex' };
-        drag = { kind: 'marquee', add: e.shiftKey };
-        return;
-    }
+    // Direct on this layer is handled with the rest of the shape gestures below, near the
+    // vertex drag it starts. A floe-only copy of it used to sit here and swallow the click
+    // for the whole layer — it named its vertices `{kind:'ice'}`, a ref `vertexArray` has
+    // no case for, so even the drag it did start moved nothing.
     if (doc) {
         const hr = hit(w.x, w.y);
         if (hr.rcentre >= 0) { drag = { kind: 'rcentre', li: hr.rcentre, last: w, moved: false, origin: w }; return; }
@@ -5217,7 +5183,7 @@ window.addEventListener('mousemove', (e) => {
     } else {
         const h = hit(w.x, w.y);
         if (h.shape !== hover.shape || h.vert !== hover.vert || h.mark !== hover.mark
-            || h.line !== hover.line || h.ice !== hover.ice
+            || h.line !== hover.line
             || h.bvert !== hover.bvert || h.wvert !== hover.wvert
             || h.rcentre !== hover.rcentre || h.rring !== hover.rring) { hover = h; draw(); }
         // A brush follows the cursor, and so does the rubber band of a shape being drawn.

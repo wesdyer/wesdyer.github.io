@@ -84,6 +84,11 @@
         /* The player's row is ringed rather than filled: a fill would fight the portraits,
            and the ring reads at a glance without changing the row's weight. */
         .lb-me { box-shadow: inset 0 0 0 2px #fbbf24; background: rgba(251,191,36,0.10); }
+        /* Same "this row is you" language on the results page. The ring goes on the
+           coloured bar rather than the row, because the row also contains the points
+           box, which is its own white shape and should not be ringed. */
+        .res-me .res-bar { box-shadow: inset 0 0 0 2px #fbbf24; }
+        .res-me .res-name { color: #fcd34d; }
         @keyframes highlight-flash {
             0% { background-color: rgba(234, 179, 8, 0.45); }
             100% { background-color: transparent; }
@@ -126,6 +131,31 @@
         <!-- Pause is Esc only — the on-screen button is gone. Settings (F2) and
              Help (?) also have their own keys, so the pause menu is not the sole
              route to them. -->
+
+        <!-- Character picker: the whole fleet, sorted by hull hue. -->
+        <div id="character-picker" class="hidden absolute inset-0 bg-slate-900/85 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6 pointer-events-auto">
+            <div class="bg-slate-800/95 border border-white/10 rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col" style="max-height:88vh;">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
+                    <div>
+                        <h2 class="t-display italic text-white uppercase" style="font-size:26px;">Pick your character</h2>
+                    </div>
+                    <button id="character-picker-close" class="text-slate-400 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <!-- `min-height:0` is load-bearing: a grid that is also a flex child defaults
+                     to shrinking to fit its container, and with auto rows that squashed every
+                     cell to 55px and clipped the boat and the name away under overflow-hidden.
+                     With it, the grid keeps its natural row height and SCROLLS instead.
+                     `align-content:start` stops a short last row stretching. -->
+                <div id="character-grid" class="grid gap-2.5 p-5 overflow-y-auto"
+                     style="grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+                            grid-auto-rows: min-content; align-content: start;
+                            flex: 1 1 auto; min-height: 0;"></div>
+            </div>
+        </div>
 
         <!-- Help Screen -->
         <div id="help-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
@@ -236,11 +266,6 @@
                 <h2 class="text-3xl font-black text-white mb-6 uppercase tracking-wider text-center">Settings</h2>
 
                 <div class="space-y-6">
-                    <!-- Player Name -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Player Name</span>
-                        <input type="text" id="setting-player-name" class="bg-slate-700 text-white text-sm rounded-lg block p-2.5 border border-slate-600 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500 outline-none w-40 text-right" placeholder="Player" maxlength="12">
-                    </div>
 
                     <!-- Music -->
                     <div class="flex items-center justify-between">
@@ -307,52 +332,21 @@
                         </select>
                     </div>
 
-                    <!-- Colors -->
                     <div class="border-t border-slate-700 pt-6">
-                        <h3 class="text-blue-400 font-bold uppercase text-sm mb-4 tracking-wide">Boat Customization</h3>
+                        <!-- Your boat is your CHARACTER's: pick who you sail as on the pre-race screen.
+                             The telltales stay here because they are an INSTRUMENT, not a livery. -->
+                        <h3 class="text-blue-400 font-bold uppercase text-sm mb-4 tracking-wide">Instruments</h3>
 
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-slate-200 font-bold">Hull Color</span>
-                            <input type="color" id="setting-color-hull" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#f1f5f9">
-                        </div>
 
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-slate-200 font-bold">Sail Color</span>
-                            <input type="color" id="setting-color-sail" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#ffffff">
-                        </div>
 
-                        <div class="flex items-center justify-between mb-4">
-                            <span class="text-slate-200 font-bold">Cockpit Color</span>
-                            <input type="color" id="setting-color-cockpit" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#cbd5e1">
-                        </div>
 
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-200 font-bold">Spinnaker Color</span>
-                            <input type="color" id="setting-color-spinnaker" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#ef4444">
-                        </div>
 
-                        <div class="flex items-center justify-between" id="setting-color-spinnaker2-row">
-                            <span class="text-slate-200 font-bold">Spinnaker Color 2</span>
-                            <input type="color" id="setting-color-spinnaker2" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#ffffff">
-                        </div>
 
                         <div class="flex items-center justify-between mt-4">
                             <span class="text-slate-200 font-bold">Telltale Color</span>
                             <input type="color" id="setting-color-telltale" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#fbbf24">
                         </div>
 
-                        <div class="flex items-center justify-between">
-                            <span class="text-slate-200 font-bold">Spinnaker Pattern</span>
-                            <select id="setting-spinnaker-pattern" class="bg-slate-800 text-slate-200 font-bold rounded-lg px-3 py-1.5 border border-slate-600 cursor-pointer">
-                                <option value="solid">Solid</option>
-                                <option value="halves">Halves</option>
-                                <option value="crosshalves">Cross Halves</option>
-                                <option value="gores">Gores</option>
-                                <option value="stripes">Stripes</option>
-                                <option value="rays">Rays</option>
-                                <option value="triangle">Triangle</option>
-                            </select>
-                        </div>
                     </div>
                 </div>
 

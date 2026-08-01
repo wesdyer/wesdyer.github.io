@@ -1,4 +1,4 @@
-// GENERATED ONCE by art/freeze_venue_doc.js — now the SOURCE OF TRUTH.
+// GENERATED ONCE by art/export_venue_doc.js — now the SOURCE OF TRUTH.
 // Emitted as JS, not JSON: the eval harness loads over file://, where fetch is blocked.
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
@@ -37,29 +37,29 @@ window.VENUE_DOC["seatrials"] = {
       {
         "id": "sf-pin",
         "name": "Pin",
-        "x": -550.0,
-        "y": 0.0,
-        "kind": "inflatable"
+        "x": -550,
+        "y": 0,
+        "kind": "can"
       },
       {
         "id": "sf-boat",
         "name": "Boat",
-        "x": 550.0,
-        "y": 0.0,
-        "kind": "inflatable"
+        "x": 550,
+        "y": 0,
+        "kind": "can"
       },
       {
         "id": "wg-port",
         "name": "Port",
-        "x": -550.0,
-        "y": -4000.0,
+        "x": -550,
+        "y": -4000,
         "kind": "can"
       },
       {
         "id": "wg-stbd",
         "name": "Starboard",
-        "x": 550.0,
-        "y": -4000.0,
+        "x": 550,
+        "y": -4000,
         "kind": "can"
       }
     ],
@@ -113,7 +113,9 @@ window.VENUE_DOC["seatrials"] = {
         "role": "leeward",
         "finish": true
       }
-    ]
+    ],
+    "cutoff": 600,
+    "startTime": 20
   },
   "wind": {
     "regions": [
@@ -139,7 +141,7 @@ window.VENUE_DOC["seatrials"] = {
           ]
         ],
         "falloff": 400,
-        "direction": 0.0,
+        "direction": 0,
         "dirVar": 0,
         "speed": 13,
         "speedVar": 0,
