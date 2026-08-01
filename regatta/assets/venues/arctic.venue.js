@@ -29,17 +29,10 @@ window.VENUE_DOC["arctic"] = {
       "circle": null
     }
   },
-  "land": [
+  "shapes": [
     {
       "id": "coast",
-      "cls": "snow",
-      "style": "ice",
-      "soft": true,
-      "c": [
-        454.375,
-        48.95833333333334
-      ],
-      "r": 6549.371742823463,
+      "kind": "ice",
       "outer": [
         [
           -4375,
@@ -378,18 +371,16 @@ window.VENUE_DOC["arctic"] = {
           367.50000000000034
         ]
       ],
-      "holes": []
+      "holes": [],
+      "c": [
+        454.375,
+        48.95833333333334
+      ],
+      "r": 6549.371742823463
     },
     {
       "id": "isle-1",
-      "cls": "snow",
-      "style": "ice",
-      "soft": true,
-      "c": [
-        -2258.59375,
-        1838.59375
-      ],
-      "r": 869.1411271065966,
+      "kind": "ice",
       "outer": [
         [
           -2397.5,
@@ -456,18 +447,16 @@ window.VENUE_DOC["arctic"] = {
           1225.0000000000002
         ]
       ],
-      "holes": []
+      "holes": [],
+      "c": [
+        -2258.59375,
+        1838.59375
+      ],
+      "r": 869.1411271065966
     },
     {
       "id": "isle-2",
-      "cls": "snow",
-      "style": "ice",
-      "soft": true,
-      "c": [
-        2895,
-        3936.25
-      ],
-      "r": 649.9386990324548,
+      "kind": "ice",
       "outer": [
         [
           2660.0000000000005,
@@ -526,18 +515,16 @@ window.VENUE_DOC["arctic"] = {
           3692.5000000000005
         ]
       ],
-      "holes": []
+      "holes": [],
+      "c": [
+        2895,
+        3936.25
+      ],
+      "r": 649.9386990324548
     },
     {
       "id": "isle-3",
-      "cls": "snow",
-      "style": "ice",
-      "soft": true,
-      "c": [
-        194.68750000000006,
-        -1115.625
-      ],
-      "r": 508.7289806775801,
+      "kind": "ice",
       "outer": [
         [
           140.0000000000001,
@@ -572,18 +559,16 @@ window.VENUE_DOC["arctic"] = {
           -1452.4999999999998
         ]
       ],
-      "holes": []
+      "holes": [],
+      "c": [
+        194.68750000000006,
+        -1115.625
+      ],
+      "r": 508.7289806775801
     },
     {
       "id": "isle-4",
-      "cls": "snow",
-      "style": "ice",
-      "soft": true,
-      "c": [
-        -2817.5,
-        2929.0625
-      ],
-      "r": 422.50473832402156,
+      "kind": "ice",
       "outer": [
         [
           -2887.4999999999995,
@@ -618,18 +603,16 @@ window.VENUE_DOC["arctic"] = {
           2817.4999999999995
         ]
       ],
-      "holes": []
+      "holes": [],
+      "c": [
+        -2817.5,
+        2929.0625
+      ],
+      "r": 422.50473832402156
     },
     {
       "id": "granite-isle",
-      "cls": "granite",
-      "style": "granite",
-      "soft": false,
-      "c": [
-        137.5000000000001,
-        -3095
-      ],
-      "r": 405.0077159758813,
+      "kind": "granite",
       "outer": [
         [
           -35.00000000000003,
@@ -660,99 +643,16 @@ window.VENUE_DOC["arctic"] = {
           -3202.5
         ]
       ],
-      "holes": []
-    }
-  ],
-  "course": {
-    "description": "Start, round the granite island to starboard, finish on the same line.",
-    "marks": [
-      {
-        "id": "sf-pin",
-        "x": 3178.349224546451,
-        "y": 2103.5639227040565
-      },
-      {
-        "id": "sf-boat",
-        "x": 2281.650775453549,
-        "y": 1466.4360772959433
-      },
-      {
-        "id": "round-1",
-        "name": "Round granite-isle",
-        "x": 137.5000000000001,
-        "y": -3095,
-        "kind": "none"
-      }
-    ],
-    "lines": [
-      {
-        "id": "sf",
-        "marks": [
-          "sf-pin",
-          "sf-boat"
-        ],
-        "name": "Start / finish line"
-      }
-    ],
-    "route": [
-      {
-        "kind": "line",
-        "dir": 1,
-        "role": "start",
-        "lineId": "sf"
-      },
-      {
-        "kind": "round",
-        "side": "starboard",
-        "zone": 850.5162035493507,
-        "role": "rounding",
-        "markId": "round-1",
-        "radius": 405.0077159758813
-      },
-      {
-        "kind": "line",
-        "dir": -1,
-        "role": "finish",
-        "finish": true,
-        "lineId": "sf"
-      }
-    ]
-  },
-  "wind": {
-    "regions": [
-      {
-        "id": "wind-all",
-        "poly": [
-          [
-            -8750,
-            -8750
-          ],
-          [
-            8750,
-            -8750
-          ],
-          [
-            8750,
-            8750
-          ],
-          [
-            -8750,
-            8750
-          ]
-        ],
-        "falloff": 400,
-        "direction": -2.5238369280235613,
-        "dirVar": 0,
-        "speed": 19,
-        "speedVar": 0,
-        "period": 30
-      }
-    ]
-  },
-  "seeded": {},
-  "ice": [
+      "holes": [],
+      "c": [
+        137.5000000000001,
+        -3095
+      ],
+      "r": 405.0077159758813
+    },
     {
       "id": "ice-1",
+      "kind": "floe",
       "outer": [
         [
           -2564.05,
@@ -834,10 +734,12 @@ window.VENUE_DOC["arctic"] = {
           -2583.788,
           4888.403
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-2",
+      "kind": "floe",
       "outer": [
         [
           -1959.486,
@@ -895,10 +797,12 @@ window.VENUE_DOC["arctic"] = {
           -1860.482,
           3652.525
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-3",
+      "kind": "floe",
       "outer": [
         [
           1174.633,
@@ -936,10 +840,12 @@ window.VENUE_DOC["arctic"] = {
           1268.469,
           -2658.26
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-4",
+      "kind": "floe",
       "outer": [
         [
           -4231.049,
@@ -1001,10 +907,12 @@ window.VENUE_DOC["arctic"] = {
           -4195.728,
           4736.027
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-5",
+      "kind": "floe",
       "outer": [
         [
           -4297.665,
@@ -1038,10 +946,12 @@ window.VENUE_DOC["arctic"] = {
           -4351.211,
           2102.573
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-6",
+      "kind": "floe",
       "outer": [
         [
           1149.672,
@@ -1099,10 +1009,12 @@ window.VENUE_DOC["arctic"] = {
           1186.911,
           -990.889
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-7",
+      "kind": "floe",
       "outer": [
         [
           4656.376,
@@ -1128,10 +1040,12 @@ window.VENUE_DOC["arctic"] = {
           4773.49,
           1896.874
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-8",
+      "kind": "floe",
       "outer": [
         [
           4900.865,
@@ -1193,10 +1107,12 @@ window.VENUE_DOC["arctic"] = {
           4787.649,
           3290.571
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-9",
+      "kind": "floe",
       "outer": [
         [
           -2123.8,
@@ -1230,10 +1146,12 @@ window.VENUE_DOC["arctic"] = {
           -2033.795,
           -329.375
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-10",
+      "kind": "floe",
       "outer": [
         [
           1798.249,
@@ -1335,10 +1253,12 @@ window.VENUE_DOC["arctic"] = {
           1769.896,
           4538.402
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-11",
+      "kind": "floe",
       "outer": [
         [
           456.03,
@@ -1444,10 +1364,12 @@ window.VENUE_DOC["arctic"] = {
           478.401,
           3672.802
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-12",
+      "kind": "floe",
       "outer": [
         [
           -4758.012,
@@ -1501,10 +1423,12 @@ window.VENUE_DOC["arctic"] = {
           -4760.874,
           -1396.797
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-13",
+      "kind": "floe",
       "outer": [
         [
           -3536.926,
@@ -1550,10 +1474,12 @@ window.VENUE_DOC["arctic"] = {
           -3517.198,
           2370.978
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-14",
+      "kind": "floe",
       "outer": [
         [
           -4204.932,
@@ -1639,10 +1565,12 @@ window.VENUE_DOC["arctic"] = {
           -4183.514,
           1495.286
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-15",
+      "kind": "floe",
       "outer": [
         [
           487.901,
@@ -1668,10 +1596,12 @@ window.VENUE_DOC["arctic"] = {
           531.499,
           3394.288
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-16",
+      "kind": "floe",
       "outer": [
         [
           -2114.417,
@@ -1745,10 +1675,12 @@ window.VENUE_DOC["arctic"] = {
           -2118.087,
           151.947
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-17",
+      "kind": "floe",
       "outer": [
         [
           -3179.875,
@@ -1798,10 +1730,12 @@ window.VENUE_DOC["arctic"] = {
           -3166.933,
           744.637
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-18",
+      "kind": "floe",
       "outer": [
         [
           -4997.259,
@@ -1855,10 +1789,12 @@ window.VENUE_DOC["arctic"] = {
           -5033.9,
           -2608.91
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-19",
+      "kind": "floe",
       "outer": [
         [
           -4183.512,
@@ -1948,10 +1884,12 @@ window.VENUE_DOC["arctic"] = {
           -4179.125,
           4162.138
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-20",
+      "kind": "floe",
       "outer": [
         [
           -3149.596,
@@ -2021,10 +1959,12 @@ window.VENUE_DOC["arctic"] = {
           -3139.138,
           2273.79
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-21",
+      "kind": "floe",
       "outer": [
         [
           -984.294,
@@ -2074,10 +2014,12 @@ window.VENUE_DOC["arctic"] = {
           -1004.788,
           4711.055
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-22",
+      "kind": "floe",
       "outer": [
         [
           -4774.982,
@@ -2119,10 +2061,12 @@ window.VENUE_DOC["arctic"] = {
           -4770.907,
           4394.445
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-23",
+      "kind": "floe",
       "outer": [
         [
           -2983.545,
@@ -2168,10 +2112,12 @@ window.VENUE_DOC["arctic"] = {
           -2952.229,
           -539.021
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-24",
+      "kind": "floe",
       "outer": [
         [
           4531.01,
@@ -2225,10 +2171,12 @@ window.VENUE_DOC["arctic"] = {
           4535.381,
           4072.636
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-25",
+      "kind": "floe",
       "outer": [
         [
           -5036.067,
@@ -2274,10 +2222,12 @@ window.VENUE_DOC["arctic"] = {
           -4995.158,
           4988.555
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-26",
+      "kind": "floe",
       "outer": [
         [
           3952.587,
@@ -2335,10 +2285,12 @@ window.VENUE_DOC["arctic"] = {
           3969.428,
           4717.236
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-27",
+      "kind": "floe",
       "outer": [
         [
           -2184.567,
@@ -2376,10 +2328,12 @@ window.VENUE_DOC["arctic"] = {
           -2157.457,
           5081.698
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-28",
+      "kind": "floe",
       "outer": [
         [
           -2422.653,
@@ -2481,10 +2435,12 @@ window.VENUE_DOC["arctic"] = {
           -2434.824,
           4179.825
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-29",
+      "kind": "floe",
       "outer": [
         [
           -3107.087,
@@ -2558,10 +2514,12 @@ window.VENUE_DOC["arctic"] = {
           -3122.151,
           3372.46
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-30",
+      "kind": "floe",
       "outer": [
         [
           -1733.11,
@@ -2607,10 +2565,12 @@ window.VENUE_DOC["arctic"] = {
           -1769.331,
           -1915.324
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-31",
+      "kind": "floe",
       "outer": [
         [
           674.483,
@@ -2668,10 +2628,12 @@ window.VENUE_DOC["arctic"] = {
           673.349,
           3712.931
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-32",
+      "kind": "floe",
       "outer": [
         [
           -656.032,
@@ -2721,10 +2683,12 @@ window.VENUE_DOC["arctic"] = {
           -654.216,
           -3298.083
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-33",
+      "kind": "floe",
       "outer": [
         [
           1037.158,
@@ -2782,10 +2746,12 @@ window.VENUE_DOC["arctic"] = {
           1023.146,
           3702.697
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-34",
+      "kind": "floe",
       "outer": [
         [
           -894.818,
@@ -2839,10 +2805,12 @@ window.VENUE_DOC["arctic"] = {
           -860.015,
           5096.574
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-35",
+      "kind": "floe",
       "outer": [
         [
           -4633.131,
@@ -2892,10 +2860,12 @@ window.VENUE_DOC["arctic"] = {
           -4657.662,
           3043.54
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-36",
+      "kind": "floe",
       "outer": [
         [
           -2485.804,
@@ -2965,10 +2935,12 @@ window.VENUE_DOC["arctic"] = {
           -2471.143,
           168.306
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-37",
+      "kind": "floe",
       "outer": [
         [
           4976.327,
@@ -3018,10 +2990,12 @@ window.VENUE_DOC["arctic"] = {
           4991.039,
           -4805.238
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-38",
+      "kind": "floe",
       "outer": [
         [
           1551.038,
@@ -3119,10 +3093,12 @@ window.VENUE_DOC["arctic"] = {
           1565.27,
           -1374.954
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-39",
+      "kind": "floe",
       "outer": [
         [
           5124.587,
@@ -3176,10 +3152,12 @@ window.VENUE_DOC["arctic"] = {
           5088.674,
           4523.996
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-40",
+      "kind": "floe",
       "outer": [
         [
           5186.726,
@@ -3237,10 +3215,12 @@ window.VENUE_DOC["arctic"] = {
           5201.787,
           2636.89
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-41",
+      "kind": "floe",
       "outer": [
         [
           -4532.884,
@@ -3290,10 +3270,12 @@ window.VENUE_DOC["arctic"] = {
           -4539.02,
           -2683.4
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-42",
+      "kind": "floe",
       "outer": [
         [
           4668.073,
@@ -3331,10 +3313,12 @@ window.VENUE_DOC["arctic"] = {
           4669.905,
           -2733.013
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-43",
+      "kind": "floe",
       "outer": [
         [
           -3196.502,
@@ -3380,10 +3364,12 @@ window.VENUE_DOC["arctic"] = {
           -3228.925,
           -923.327
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-44",
+      "kind": "floe",
       "outer": [
         [
           -1168.7,
@@ -3421,10 +3407,12 @@ window.VENUE_DOC["arctic"] = {
           -1142.746,
           -2146.291
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-45",
+      "kind": "floe",
       "outer": [
         [
           -989.956,
@@ -3506,10 +3494,12 @@ window.VENUE_DOC["arctic"] = {
           -1013.272,
           3911.126
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-46",
+      "kind": "floe",
       "outer": [
         [
           2001.681,
@@ -3535,10 +3525,12 @@ window.VENUE_DOC["arctic"] = {
           1980.475,
           3865.074
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-47",
+      "kind": "floe",
       "outer": [
         [
           -1761.178,
@@ -3616,10 +3608,12 @@ window.VENUE_DOC["arctic"] = {
           -1744.959,
           5241.422
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-48",
+      "kind": "floe",
       "outer": [
         [
           3211.363,
@@ -3661,10 +3655,12 @@ window.VENUE_DOC["arctic"] = {
           3199.872,
           3334.549
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-49",
+      "kind": "floe",
       "outer": [
         [
           4835.068,
@@ -3722,10 +3718,12 @@ window.VENUE_DOC["arctic"] = {
           4866.381,
           -1335.239
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-50",
+      "kind": "floe",
       "outer": [
         [
           -3842.207,
@@ -3771,10 +3769,12 @@ window.VENUE_DOC["arctic"] = {
           -3800.934,
           4367.467
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-51",
+      "kind": "floe",
       "outer": [
         [
           -4575.073,
@@ -3864,10 +3864,12 @@ window.VENUE_DOC["arctic"] = {
           -4573.214,
           3525.498
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-52",
+      "kind": "floe",
       "outer": [
         [
           4944.78,
@@ -3949,10 +3951,12 @@ window.VENUE_DOC["arctic"] = {
           4956.342,
           -3862.295
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-53",
+      "kind": "floe",
       "outer": [
         [
           4678.005,
@@ -4038,10 +4042,12 @@ window.VENUE_DOC["arctic"] = {
           4696.155,
           -3442.354
         ]
-      ]
+      ],
+      "holes": []
     },
     {
       "id": "ice-54",
+      "kind": "floe",
       "outer": [
         [
           -4308.382,
@@ -4143,7 +4149,124 @@ window.VENUE_DOC["arctic"] = {
           -4299.03,
           5070.78
         ]
-      ]
+      ],
+      "holes": []
     }
-  ]
+  ],
+  "course": {
+    "description": "Start, round the granite island to starboard, finish on the same line.",
+    "marks": [
+      {
+        "id": "sf-pin",
+        "x": 3178.349224546451,
+        "y": 2103.5639227040565
+      },
+      {
+        "id": "sf-boat",
+        "x": 2281.650775453549,
+        "y": 1466.4360772959433
+      },
+      {
+        "id": "round-1",
+        "name": "Round granite-isle",
+        "x": 137.5000000000001,
+        "y": -3095,
+        "kind": "none"
+      }
+    ],
+    "lines": [
+      {
+        "id": "sf",
+        "marks": [
+          "sf-pin",
+          "sf-boat"
+        ],
+        "name": "Start / finish line"
+      }
+    ],
+    "route": [
+      {
+        "kind": "line",
+        "dir": 1,
+        "role": "start",
+        "lineId": "sf"
+      },
+      {
+        "kind": "round",
+        "side": "starboard",
+        "zone": 850.5162035493507,
+        "role": "rounding",
+        "markId": "round-1",
+        "radius": 405.0077159758813
+      },
+      {
+        "kind": "line",
+        "dir": -1,
+        "role": "finish",
+        "finish": true,
+        "lineId": "sf"
+      }
+    ]
+  },
+  "wind": {
+    "regions": [
+      {
+        "id": "wind-all",
+        "poly": [
+          [
+            -8750,
+            -8750
+          ],
+          [
+            8750,
+            -8750
+          ],
+          [
+            8750,
+            8750
+          ],
+          [
+            -8750,
+            8750
+          ]
+        ],
+        "falloff": 400,
+        "direction": -2.5238369280235613,
+        "dirVar": 0,
+        "speed": 19,
+        "speedVar": 0,
+        "period": 30
+      }
+    ]
+  },
+  "seeded": {},
+  "palette": {
+    "baseColor": "#1d4066",
+    "deepColor": "#0e2444",
+    "shallowColor": "#2e5c8f",
+    "shorelineColor": "#dbeafe",
+    "gusts": {
+      "gustDark": [
+        8,
+        24,
+        52
+      ],
+      "gustMid": [
+        14,
+        38,
+        76
+      ],
+      "lullBright": [
+        200,
+        226,
+        246
+      ],
+      "lullMid": [
+        176,
+        208,
+        236
+      ],
+      "snow": true
+    }
+  }
 };

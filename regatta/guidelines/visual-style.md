@@ -762,7 +762,7 @@ in [venue-art.md](venue-art.md).
 Venue keys, journey order: `bay` Lighthouse Cove · `lake` Stillwater Lake · `lagoon`
 Pearl Lagoon · `swamp` Gatorgrass Bayou · `river` Otter Run · `ocean` Bluewater
 Bonanza · `redrock` Redrock Reservoir · `glowtide` Glowtide Strait · `arctic` Glacier
-Sound · `seatrials` Sea Trial Bay.
+Sound · `seatrials` Clubhouse Point.
 
 ---
 

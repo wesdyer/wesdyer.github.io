@@ -163,7 +163,7 @@ function migrateVenueDoc(doc) {
     // around. It stays authored after the split, so nothing about the rounding changes.
     for (const e of (c.route || [])) {
         if (e.kind !== 'round' || e.landId == null) continue;
-        const land = (doc.land || []).find(l => l.id === e.landId);
+        const land = migrateShapes(doc).find(l => l.id === e.landId);
         if (!land) continue;
         const cx = land.c ? land.c[0] : land.outer.reduce((a, p) => a + p[0], 0) / land.outer.length;
         const cy = land.c ? land.c[1] : land.outer.reduce((a, p) => a + p[1], 0) / land.outer.length;
@@ -256,25 +256,32 @@ function validateVenueDoc(doc) {
     }
 
     const ids = new Set();
-    for (const l of (doc.land || [])) {
-        if (!l.id) { err('land shape with no id'); continue; }
-        if (ids.has(l.id)) err(`duplicate land id "${l.id}"`);
+    for (const l of migrateShapes(doc)) {
+        if (!l.id) { err('shape with no id'); continue; }
+        if (ids.has(l.id)) err(`duplicate shape id "${l.id}"`);
         ids.add(l.id);
-        if (!Array.isArray(l.outer) || l.outer.length < 3) { err(`land "${l.id}": outer ring needs >= 3 points`); continue; }
+        if (!SHAPE_KINDS[l.kind]) err(`shape "${l.id}": unknown kind "${l.kind}"`);
+        if (!Array.isArray(l.outer) || l.outer.length < 3) { err(`shape "${l.id}": outer ring needs >= 3 points`); continue; }
         const si = ringSelfIntersects(l.outer);
-        if (si) err(`land "${l.id}": outer ring self-intersects at edges ${si[0]}/${si[1]}`);
-        if (Math.abs(ringArea(l.outer)) < 1) err(`land "${l.id}": outer ring is degenerate`);
+        if (si) err(`shape "${l.id}": outer ring self-intersects at edges ${si[0]}/${si[1]}`);
+        if (Math.abs(ringArea(l.outer)) < 1) err(`shape "${l.id}": outer ring is degenerate`);
         for (let h = 0; h < (l.holes || []).length; h++) {
             const hole = l.holes[h];
-            if (!Array.isArray(hole) || hole.length < 3) { err(`land "${l.id}" hole ${h}: needs >= 3 points`); continue; }
-            if (ringSelfIntersects(hole)) err(`land "${l.id}" hole ${h}: self-intersects`);
+            if (!Array.isArray(hole) || hole.length < 3) { err(`shape "${l.id}" hole ${h}: needs >= 3 points`); continue; }
+            if (ringSelfIntersects(hole)) err(`shape "${l.id}" hole ${h}: self-intersects`);
             // Every hole vertex must sit inside the shell, not merely its centroid —
             // a hole can escape through a concavity while its centre stays in.
             if (hole.some(p => !pointInRing(p[0], p[1], l.outer))) {
-                err(`land "${l.id}" hole ${h}: not contained by its outer ring`);
+                err(`shape "${l.id}" hole ${h}: not contained by its outer ring`);
             }
         }
-        if (!l.c || l.r == null) warn(`land "${l.id}": missing baked centroid/radius, will be recomputed`);
+        // Only for shapes that SIT STILL. A baked centroid matters because island radius
+        // feeds placement, wind shadow and pathfinding, and a stale one disagrees with its
+        // own ring. A floe is compiled into local space around its own centroid every load,
+        // so it has never carried one and never needed to.
+        if (shapeTraits(l).motion === 'fixed' && (!l.c || l.r == null)) {
+            warn(`shape "${l.id}": missing baked centroid/radius, will be recomputed`);
+        }
     }
 
     const course = doc.course || {};
@@ -286,6 +293,7 @@ function validateVenueDoc(doc) {
         if (m.id == null) { err('course mark with no id'); continue; }
         if (markIds.has(m.id)) err(`duplicate mark id "${m.id}"`);
         markIds.add(m.id);
+        if (m.kind != null && !MARK_KINDS[m.kind]) err(`mark "${m.id}": unknown kind "${m.kind}"`);
     }
     const lineIds = new Set();
     for (const ln of (course.lines || [])) {
@@ -321,14 +329,44 @@ function validateVenueDoc(doc) {
     for (const e of (course.route || [])) if (e.markId != null) used.add(e.markId);
     for (const m of marks) if (m.id != null && !used.has(m.id)) warn(`mark "${m.id}" is not used by any leg`);
 
+    // A committee boat belongs on the STARBOARD end of its line — the right-hand end
+    // looking up the course. Nothing breaks if it is on the other end; the line simply
+    // reads wrong to anyone who races, which is exactly the class of mistake a document
+    // should catch before it is sailed. Warning, not error: it is a convention.
+    const cbRoute = course.route || [];
+    const midOf = (e) => {
+        if (!e) return null;
+        const lm = e.lineId != null ? lineMarks(e.lineId) : null;
+        if (lm) return { x: (marks[lm[0]].x + marks[lm[1]].x) / 2, y: (marks[lm[0]].y + marks[lm[1]].y) / 2 };
+        const mi = e.markId != null ? idxById[e.markId] : null;
+        return mi != null && marks[mi] ? { x: marks[mi].x, y: marks[mi].y } : null;
+    };
+    for (const m of marks) {
+        if (!m.kind || !(MARK_KINDS[m.kind] || {}).vessel) continue;
+        const mi = idxById[m.id];
+        let k = -1;
+        for (let e = 0; e < cbRoute.length && k < 0; e++) {
+            const lm = cbRoute[e].lineId != null ? lineMarks(cbRoute[e].lineId) : null;
+            if (lm && (lm[0] === mi || lm[1] === mi)) k = e;
+        }
+        if (k < 0) continue;
+        const here = midOf(cbRoute[k]), ahead = midOf(cbRoute[k + 1]) || null, back = midOf(cbRoute[k - 1]);
+        let tx, ty;
+        if (here && ahead) { tx = ahead.x - here.x; ty = ahead.y - here.y; }
+        else if (here && back) { tx = here.x - back.x; ty = here.y - back.y; }
+        else continue;
+        // Right hand of travel, in screen axes (y down): rotate the heading +90 degrees.
+        const dot = (m.x - here.x) * (-ty) + (m.y - here.y) * tx;
+        if (dot < 0) warn(`mark "${m.id}": a committee boat belongs on the starboard end of its line (this is the port end)`);
+    }
+
     const rt = course.route || [];
-    if (!rt.some(e => e.finish)) warn('route has no entry flagged finish');
-    // The leg engine walks the route in order and finishes when leg > legs, so the start
-    // has to be leg 0 and the finish the last entry. Anything else races wrong.
-    if (rt.length && rt[0].role !== 'start') err('route: the first entry must be the start');
-    if (rt.length && !rt[rt.length - 1].finish) err('route: the last entry must be flagged finish');
-    for (let i = 1; i < rt.length; i++) if (rt[i].role === 'start') err(`route: entry ${i} is a second start`);
-    for (let i = 0; i < rt.length - 1; i++) if (rt[i].finish) err(`route: entry ${i} is flagged finish but is not last`);
+    // The route's SHAPE — starts first, finishes last, one of each — is checked rather than
+    // enforced here. The leg engine still needs it (it walks in order and finishes when
+    // leg > legs), but a half-built route is a normal state to be in while editing, and
+    // these errors only ever reached the console. `route-ends` in venuecheck reports them
+    // where they can be seen and acted on, and the CI gate counts them.
+    if (rt.length && !Array.isArray(rt)) err('course.route must be an array');
     if (course.legs != null) warn('course.legs is ignored — the leg count is derived from the route');
     if (course.startTime != null && !(course.startTime >= 5 && course.startTime <= 600)) {
         err(`course.startTime ${course.startTime}s is outside 5–600s`);
@@ -357,26 +395,47 @@ function validateVenueDoc(doc) {
             if (r.falloff != null && r.falloff < 50) warn(`${what} region ${r.id || i}: falloff ${Math.round(r.falloff / 5)}m is very hard-edged`);
         }
     };
-    const iceIds = new Set();
-    for (let i = 0; i < ((doc.ice) || []).length; i++) {
-        const f = doc.ice[i];
-        if (!Array.isArray(f.outer) || f.outer.length < 3) { err(`ice ${f.id || i}: outer ring needs >= 3 points`); continue; }
-        if (ringSelfIntersects(f.outer)) err(`ice ${f.id || i}: outline self-intersects`);
-        if (f.id) { if (iceIds.has(f.id)) err(`duplicate ice id "${f.id}"`); iceIds.add(f.id); }
-        if (Math.abs(ringArea(f.outer)) < 1) err(`ice ${f.id || i}: outline is degenerate`);
-    }
     checkRegions((doc.wind && doc.wind.regions) || [], 'wind');
     checkRegions((doc.current && doc.current.regions) || [], 'current');
+    // A gust region is the same polygon with a different question asked of it — not "what
+    // is the wind here" but "what is BORN here" — so it takes the same shape checks and
+    // then its own four numbers on top. Every one of them is a MULTIPLIER on what the
+    // venue would have rolled, so 1 is "no opinion" and the ranges below are sanity rails
+    // rather than physics: a x12 gust is not weather, it is a typo.
+    const gustRegions = (doc.gusts && doc.gusts.regions) || [];
+    checkRegions(gustRegions, 'gust');
+    for (let i = 0; i < gustRegions.length; i++) {
+        const r = gustRegions[i], at = `gust region ${r.id || i}`;
+        if (r.count != null && !(r.count >= 0 && r.count <= 200)) err(`${at}: count must be 0–200`);
+        if (r.strength != null && !(r.strength >= 0 && r.strength <= 6)) err(`${at}: strength must be 0–6`);
+        if (r.size != null && !(r.size > 0 && r.size <= 6)) err(`${at}: size must be 0–6`);
+        if (r.life != null && !(r.life > 0 && r.life <= 6)) err(`${at}: life must be 0–6`);
+        if (r.bias != null && !(r.bias >= 0 && r.bias <= 1)) err(`${at}: bias must be 0–1`);
+        if (r.veer != null && !(r.veer >= 0 && r.veer <= 90)) err(`${at}: veer must be 0–90 degrees`);
+    }
+    // Gust regions OWN the births. There is no venue-wide puffiness behind them and no
+    // implicit open water still making puffs beside them — no source means no puffs, the
+    // same way no wind region means calm. So a set of regions that all sit at count 0 is a
+    // venue whose wind has quietly gone dead flat.
+    if (gustRegions.length && !gustRegions.some(r => (r.count != null ? r.count : 8) > 0)) {
+        warn('every gust region has a count of 0, so no puffs are born anywhere: the wind will be dead steady');
+    }
     return problems;
 }
 
 // The single direction the game still needs one answer for. Sampled at the middle of the
-// course rather than averaged over the map: a region far off to one side should not tilt
+// THE ONE ANSWER the rest of the game needs when it wants "the wind" as a single value —
+// laylines, whether a leg nets upwind, the HUD, the AI's pressure reference. DERIVED from
+// the regions, never authored: there is no venue wind variable any more, so this is the
+// only place a single number for the day comes from.
+//
+// Weighted toward the course rather than averaged over the map: a region far off to one side should not tilt
 // the laylines on the course itself.
 function representativeWind(windRegions, route, marks, doc) {
     if (!windRegions.length) {
         // Back-compat: a document that still authors a base direction keeps it.
-        return (doc.wind && typeof doc.wind.baseDirection === 'number') ? doc.wind.baseDirection : null;
+        const d0 = (doc.wind && typeof doc.wind.baseDirection === 'number') ? doc.wind.baseDirection : null;
+        return { direction: d0, speed: 0 };
     }
     let cx = 0, cy = 0, n = 0;
     for (const e of route) {
@@ -390,7 +449,7 @@ function representativeWind(windRegions, route, marks, doc) {
     if (n) { cx /= n; cy /= n; }
     // The same partition-of-unity blend getWindAt uses, with no live shift and no
     // oscillation — this is the MEAN wind, which is what laylines are drawn against.
-    let wsum = 0, ux = 0, uy = 0;
+    let wsum = 0, ux = 0, uy = 0, sacc = 0;
     for (const r of windRegions) {
         const sd = window.Arena.signedDist(r, cx, cy);
         if (sd <= 0) continue;
@@ -398,6 +457,7 @@ function representativeWind(windRegions, route, marks, doc) {
         const w = t * t * (3 - 2 * t);
         if (w <= 0) continue;
         ux += Math.sin(r.direction) * w; uy += -Math.cos(r.direction) * w;
+        sacc += (r.speed || 0) * w;
         wsum += w;
     }
     if (wsum <= 0) {
@@ -408,9 +468,9 @@ function representativeWind(windRegions, route, marks, doc) {
             const a = Math.abs(ringArea(r.poly));
             if (a > bestA) { bestA = a; best = r; }
         }
-        return best ? best.direction : 0;
+        return best ? { direction: best.direction, speed: best.speed || 0 } : { direction: 0, speed: 0 };
     }
-    return Math.atan2(ux, -uy);
+    return { direction: Math.atan2(ux, -uy), speed: sacc / wsum };
 }
 
 // ── Compile ─────────────────────────────────────────────────────────────────
@@ -421,11 +481,153 @@ function representativeWind(windRegions, route, marks, doc) {
 const VEG_INSET = { granite: 0.3, other: 0.82 };
 const FACET_LIGHT = { x: -0.55, y: -0.83 };
 
+// ── SHAPES: one list, tagged by KIND ────────────────────────────────────────
+//
+// Land and ice used to be two arrays with two schemas, edited in two layers. They are the
+// same thing: a closed polygon on the water that boats hit, that casts a wind shadow, that
+// the planner routes around, that the editor puts handles on. Every polygon verb — the two
+// selection tools, roughen, simplify, the booleans, resample, duplicate, the three-vertex
+// floor — had to be taught twice, and a long run of "make floes behave like land" fixes is
+// what a split model feels like from the outside.
+//
+// What actually differed was five behaviour bits, so those are what a shape carries:
+//
+//   motion   fixed | drift    does it sit still, or does it wander with the pack
+//   hard     true  | false    does it stop you, or shove you and cost you speed
+//   look                      which entry in ISLAND_STYLES paints it
+//   hidden                    do not draw — a collider behind something that draws the coast
+//   nav                       keep out of the A* graph — scenery a boat can never reach
+//   height   metres           how tall it stands out of the water
+//
+// HEIGHT is what decides how much breeze a thing blocks. A wind shadow runs roughly ten
+// times the obstacle's height downwind — sailing's own thumb-rule spans seven to fifteen,
+// and rigging references say 10-20 — and nothing about its footprint changes that: a
+// granite spire and a sandbar of identical outline cast completely different lees. Deriving
+// the lee from WIDTH instead cannot tell those apart, and forces an arbitrary cap to stop a
+// long coastline asking for a thirty-kilometre shadow. Height needs no cap — it is bounded
+// by what land is.
+//
+// ⚠️ EVERY KIND IS 0 BY DEFAULT, so nothing casts a lee until a designer says how tall it
+// stands. A shadow that appears by itself is a shadow nobody decided on: it would change
+// how all ten venues sail as a side effect of the feature existing, and leave a designer
+// deleting weather they never asked for. The suggested figures are in the comments, so
+// typing a real one is a lookup rather than a guess.
+//
+// A KIND is a named preset over those five. That is what makes "iceberg" a different thing
+// from "ice" rather than a different colour: the preset says it drifts slowly and stops you.
+// Any single axis can still be overridden on one shape without inventing a kind for it.
+//
+// These six reproduce EXACTLY what the ten venues did as land[] + ice[]. Nothing here is a
+// new behaviour; `iceberg` (drift + hard) and `growler` are deliberately absent and are a
+// gameplay change to make on purpose, not a side effect of a refactor.
+// What a mark LOOKS LIKE. One list, shared by the validator, the editor's dropdown and
+// script.js's sprite registry — a second copy is how a kind comes to mean two things.
+// `vessel` is the one that is not course furniture: it carries a heading and a hull, so
+// it is oriented and collided differently (see orientCourseMarks in script.js).
+const MARK_KINDS = {
+    inflatable: { label: 'Orange inflatable buoy' },
+    can:        { label: 'Yellow can buoy' },
+    committee:  { label: 'Committee boat', vessel: true },
+    none:       { label: 'No buoy (position only)' }
+};
+
+const SHAPE_KINDS = {
+    // Sandy island — bay, lake, lagoon. HARD: generateIslands only ever marked grass and
+    // redrock soft, so a tropical isle has always grounded you. Low, but it carries palms,
+    // and it is the trees a boat is really sheltering behind.
+    isle:    { motion: 'fixed', hard: true,  look: 'tropical', hidden: false, nav: true, height: 0 },   // ~14 m with its palms
+    // Grass island — the bayou's hummocks, the strait's islets. Barely stands out of the
+    // water, and shadows accordingly: you do not get a lee from a marsh.
+    reed:    { motion: 'fixed', hard: false, look: 'grass',    hidden: false, nav: true, height: 0 },   // ~4 m — you get no lee from a marsh
+    // Canyon spires and walls. The tallest thing here, and the reason Redrock's card
+    // promises wind shadows.
+    redrock: { motion: 'fixed', hard: false, look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall
+    // Bare rock. The only thing on Glacier Sound that grounds you, and the course rounds it.
+    granite: { motion: 'fixed', hard: true,  look: 'granite',  hidden: false, nav: true, height: 0 },   // ~55 m of bare rock
+    // Ice that does NOT move: shelf, shore, the sound's coastline. Soft, because RRS 31
+    // penalizes touching MARKS, not obstructions — hitting ice costs speed, not a 360.
+    ice:     { motion: 'fixed', hard: false, look: 'ice',      hidden: false, nav: true, height: 0 },   // ~20 m of shelf and shore
+    // Invisible collider. The river's 82 banks sit behind one continuous drawn shore, and
+    // feeding them to the visibility graph once caused multi-hundred-ms replan spikes.
+    bank:    { motion: 'fixed', hard: false, look: 'grass',    hidden: true,  nav: false, height: 0 },  // ~5 m of bank
+    // Drifting ice. Velocity, spin and wander are drawn from the RACE rng, never authored:
+    // the layout is the designer's, the drift is the day's. A floe is a raft — a metre or two
+    // of freeboard — so it shelters almost nothing, which is the honest answer. A berg is a
+    // different kind, and a taller one, whenever someone wants it.
+    floe:    { motion: 'drift', hard: false, look: 'ice',      hidden: false, nav: true, height: 0 }    // ~2 m of freeboard: a raft shelters nothing
+};
+
+// What a shape IS, after its kind's preset and its own overrides. One place, so nothing has
+// to remember that `soft` is the negation of `hard` or that `isBank` means two things.
+function shapeTraits(s) {
+    const k = SHAPE_KINDS[s.kind] || SHAPE_KINDS.isle;
+    return {
+        kind: SHAPE_KINDS[s.kind] ? s.kind : 'isle',
+        motion: s.motion || k.motion,
+        hard:   s.hard   !== undefined ? !!s.hard   : k.hard,
+        look:   s.look   || k.look,
+        hidden: s.hidden !== undefined ? !!s.hidden : k.hidden,
+        nav:    s.nav    !== undefined ? !!s.nav    : k.nav,
+        height: s.height !== undefined ? +s.height  : k.height
+    };
+}
+
+// ── Reading a document written before shapes existed ────────────────────────
+// `land[]` + `ice[]` become one ordered `shapes[]`, land first — which is exactly the
+// order the game drew them in, since drawIslands ran a 'land' pass and then a 'floe' pass.
+// Preserving it is what keeps a migrated venue identical rather than merely similar.
+function migrateShapes(doc) {
+    if (doc.shapes) return doc.shapes;
+    const out = [];
+    for (const l of (doc.land || [])) {
+        // The old fields say the same things in older words: `cls: 'granite'` was the rock,
+        // `style` was the look, `soft` was the negation of hard, `nav: false` was the bank.
+        const style = l.style || (l.cls === 'granite' ? 'granite' : 'ice');
+        const soft = l.soft !== undefined ? !!l.soft : l.cls !== 'granite';
+        let kind = l.nav === false ? 'bank'
+                 : style === 'granite' ? 'granite'
+                 : style === 'redrock' ? 'redrock'
+                 : style === 'tropical' ? 'isle'
+                 : style === 'grass' ? 'reed'
+                 : 'ice';
+        const s = { id: l.id, kind, outer: l.outer, holes: l.holes || [], c: l.c, r: l.r };
+        if (l.name) s.name = l.name;
+        // Only carry an override where the old document disagreed with the kind's preset,
+        // so a migrated file reads as a set of kinds rather than a pile of exceptions.
+        const t = SHAPE_KINDS[kind];
+        if (soft === t.hard) s.hard = !soft;
+        if (!!l.hidden !== t.hidden) s.hidden = !!l.hidden;
+        out.push(s);
+    }
+    for (const f of (doc.ice || [])) {
+        out.push({ id: f.id, kind: 'floe', outer: f.outer, holes: [] });
+    }
+    return out;
+}
+
+function regionBB(poly) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of poly) {
+        if (p[0] < minX) minX = p[0];
+        if (p[1] < minY) minY = p[1];
+        if (p[0] > maxX) maxX = p[0];
+        if (p[1] > maxY) maxY = p[1];
+    }
+    return { minX, minY, maxX, maxY };
+}
+
 function compileVenueDoc(doc) {
     const islands = [];
     const byId = {};
+    // Where each shape lands, IN DOCUMENT ORDER. `islands` and `ice` stay separate because
+    // the runtime builds them differently — a floe's drift comes from the race rng — but
+    // the order between them is the designer's, so it is written down rather than implied
+    // by which array a thing ended up in. Index 0 is painted FIRST, i.e. furthest back.
+    const shapeOrder = [];
 
-    for (const l of (doc.land || [])) {
+    for (const l of migrateShapes(doc)) {
+        const T = shapeTraits(l);
+        if (T.motion === 'drift') { shapeOrder.push({ drift: true, i: -1 }); continue; }
         // KEYHOLED, so the runtime's single-ring render / collision / pathfinding all see the
         // interior water. With no holes this is `outer` copied, which is why every existing
         // venue is byte-identical across this change.
@@ -441,18 +643,28 @@ function compileVenueDoc(doc) {
             cy = verts.reduce((a, v) => a + v.y, 0) / verts.length;
             radius = Math.max.apply(null, verts.map(v => Math.hypot(v.x - cx, v.y - cy)));
         }
-        const isGranite = l.cls === 'granite';
+        const isGranite = T.kind === 'granite';
         const inset = isGranite ? VEG_INSET.granite : VEG_INSET.other;
         const isl = {
             id: l.id,
+            kind: T.kind,
             x: cx, y: cy, radius, vertices: verts,
             vegVertices: verts.map(v => ({ x: cx + (v.x - cx) * inset, y: cy + (v.y - cy) * inset })),
             trees: [], rocks: [],
-            style: l.style || (isGranite ? 'granite' : 'ice'),
-            // Ice is soft (RRS 31 penalizes marks, not obstructions); granite grounds you.
-            soft: l.soft !== undefined ? !!l.soft : !isGranite,
+            style: T.look,
+            // `soft` is the runtime's word for "does not ground you" — the negation of the
+            // kind's `hard`. RRS 31 penalizes touching MARKS, not obstructions, so soft
+            // scenery costs speed rather than a 360.
+            soft: !T.hard,
             fromMask: true,
             isRock: isGranite,
+            hidden: T.hidden,
+            isBank: !T.nav,
+            // How far this thing's lee reaches, in units — authored per shape, absent means
+            // "derive it from my size". 0 is a real answer: a reef awash blocks no breeze.
+            height: T.height,
+            windShadow: l.windShadow != null ? l.windShadow : null,
+            currentShadow: l.currentShadow != null ? l.currentShadow : null,
             holes: (l.holes || []).map(h => h.map(p => ({ x: p[0], y: p[1] })))
         };
         if (isGranite) {
@@ -463,6 +675,7 @@ function compileVenueDoc(doc) {
                 return { i: j, lit: (mx / m) * FACET_LIGHT.x + (my / m) * FACET_LIGHT.y };
             });
         }
+        shapeOrder.push({ drift: false, i: islands.length });
         islands.push(isl);
         byId[l.id] = isl;
     }
@@ -553,6 +766,9 @@ function compileVenueDoc(doc) {
     scenery.x = sc.x; scenery.y = sc.y; scenery.radius = sc.r;
 
     // ── Wind regions ────────────────────────────────────────────────────────
+    // Every region kind carries one, and it is the same four numbers each time: the axis-
+    // aligned box the polygon lives in, so "is this point anywhere near that region" is
+    // four comparisons instead of a point-in-polygon walk.
     // Overlapping and ADDITIVE, not a partition. Two reasons that settled it: a
     // partition cannot produce a convergence line (you would have to draw a third
     // region where you guess it lands, authoring the effect instead of the cause),
@@ -566,20 +782,13 @@ function compileVenueDoc(doc) {
     // a wobble every two seconds or a swing over a minute).
     const windRegions = ((doc.wind && doc.wind.regions) || []).map((r, i) => {
         const poly = (r.poly || []).map(p => [p[0], p[1]]);
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const p of poly) {
-            if (p[0] < minX) minX = p[0];
-            if (p[1] < minY) minY = p[1];
-            if (p[0] > maxX) maxX = p[0];
-            if (p[1] > maxY) maxY = p[1];
-        }
         return {
             id: r.id || `wind-${i}`,
             poly,
             // Bounding box, precomputed: getWindAt runs per boat AND per particle per
             // frame, and is sampled again by the AI's lookahead, so the common case
             // (nowhere near this region) has to be four comparisons.
-            bb: { minX, minY, maxX, maxY },
+            bb: regionBB(poly),
             falloff: r.falloff != null ? r.falloff : 400,
             // ABSOLUTE mean direction — what the wind does here, not an offset from
             // somewhere else. `speed` absent means "whatever the venue is doing", which
@@ -603,17 +812,10 @@ function compileVenueDoc(doc) {
     // venue's ambient current already is.
     const currentRegions = ((doc.current && doc.current.regions) || []).map((r, i) => {
         const poly = (r.poly || []).map(p => [p[0], p[1]]);
-        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-        for (const p of poly) {
-            if (p[0] < minX) minX = p[0];
-            if (p[1] < minY) minY = p[1];
-            if (p[0] > maxX) maxX = p[0];
-            if (p[1] > maxY) maxY = p[1];
-        }
         return {
             id: r.id || `current-${i}`,
             poly,
-            bb: { minX, minY, maxX, maxY },
+            bb: regionBB(poly),
             falloff: r.falloff != null ? r.falloff : 400,
             // Flow heading, in the same convention as everything else: the direction
             // the water is GOING (forward = sin, -cos).
@@ -626,24 +828,89 @@ function compileVenueDoc(doc) {
         };
     }).filter(r => r.poly.length >= 3);
 
+    // ── Gust regions ────────────────────────────────────────────────────────
+    // The third use of the same polygon, and the only one that does not describe a state
+    // of the water. A wind region says what the wind IS at a place; a gust region says
+    // what is BORN there, and the thing born then leaves. So the fields are not a
+    // direction and a speed — a source has no direction, the wind it is handed decides
+    // that — but a share of the births and the character of what comes out.
+    //
+    // WHY SOURCE AND NOT EXTENT. A puff already drifts downwind at roughly the gradient
+    // wind and steers by the LOCAL breeze, so authoring where puffs are born gives where
+    // they land for free, and it tracks a bent wind field without being told. Redrock's
+    // "gust-bombs off the rim, sweeping across the course" is one polygon on the rim plus
+    // the wind region already drawn. Authoring both ends would be two controls that can
+    // contradict each other, and the contradiction would be invisible.
+    //
+    // A standing feature — Stillwater's glass patches — is NOT a lull parked here; it is a
+    // fact about the mean wind over that water, which is a low-speed wind region. Keeping
+    // those two apart is what stops one thing from being sayable two ways.
+    //
+    // A region states its own population and character outright. `strength`, `size` and
+    // `life` are still multipliers, but on FIXED bases now rather than on a venue roll —
+    // there is no venue roll left to multiply.
+    const gustRegions = ((doc.gusts && doc.gusts.regions) || []).map((r, i) => {
+        const poly = (r.poly || []).map(p => [p[0], p[1]]);
+        return {
+            id: r.id || `gust-${i}`,
+            poly,
+            bb: regionBB(poly),
+            // Doubles as the SPAWN PROBABILITY, which is why it needs no separate field:
+            // the same smoothstep that fades a wind region's authority at its edge makes
+            // puffs cluster toward the middle of a source and thin out at its rim.
+            falloff: r.falloff != null ? r.falloff : 400,
+            // HOW MANY CELLS THIS SOURCE KEEPS ALIVE — an absolute count, not a share.
+            // It was a weight against the other sources while the venue's `puffiness` owned
+            // the total; that variable is gone, so there is nothing left to take a share OF.
+            // A region states its own population the way a wind region states its own speed.
+            count: r.count != null ? Math.max(0, Math.round(r.count)) : 8,
+            strength: r.strength != null ? r.strength : 1,   // x on speedDelta — a breath or a bomb
+            size: r.size != null ? r.size : 1,               // x on the cell's radii
+            life: r.life != null ? r.life : 1,               // x on duration
+            // Share of births that are GUSTS rather than holes. Absolute now: there is no
+            // venue split to defer to, so 0.5 is an even mix and 0 is a pure lull factory.
+            bias: r.bias != null ? r.bias : 0.5,
+            // How far the wind turns inside a puff, in RADIANS. Was the venue's
+            // `puffShiftiness` mapped onto 8-22 degrees; 15 is the middle of that band and
+            // the default a source starts from.
+            veer: r.veer != null ? r.veer * Math.PI / 180 : 15 * Math.PI / 180
+        };
+    }).filter(r => r.poly.length >= 3 && r.count > 0);
+
     // ── Hand-placed ice ─────────────────────────────────────────────────────
     // Authored as a world-space polygon so it can be reshaped vertex by vertex, and
     // compiled to the local form makeFloe wants (a shape around its own centroid) plus
     // the centre and radius the placement and collision code reads.
-    const ice = ((doc.ice) || []).map((f, i) => {
-        const ring = (f.outer || []).map(p => [p[0], p[1]]);
-        if (ring.length < 3) return null;
-        let cx = 0, cy = 0;
-        for (const p of ring) { cx += p[0]; cy += p[1]; }
-        cx /= ring.length; cy /= ring.length;
-        let r = 0;
-        for (const p of ring) r = Math.max(r, Math.hypot(p[0] - cx, p[1] - cy));
-        return {
-            id: f.id || `ice-${i}`,
-            x: cx, y: cy, r,
-            local: ring.map(p => ({ x: p[0] - cx, y: p[1] - cy }))
-        };
-    }).filter(Boolean);
+    const ice = [];
+    {
+        // Walk the SAME ordered list again, filling in the drift slots left open above.
+        // Two passes rather than one because a floe's compiled form is different in kind —
+        // local space around its own centroid, so makeFloe can spin it — and interleaving
+        // the two constructions in one loop obscured which array an index referred to.
+        let k = -1;
+        for (const f of migrateShapes(doc)) {
+            const T = shapeTraits(f);
+            k++;
+            if (T.motion !== 'drift') continue;
+            const ring = (f.outer || []).map(p => [p[0], p[1]]);
+            if (ring.length < 3) { shapeOrder[k].i = -1; continue; }
+            let cx = 0, cy = 0;
+            for (const p of ring) { cx += p[0]; cy += p[1]; }
+            cx /= ring.length; cy /= ring.length;
+            let r = 0;
+            for (const p of ring) r = Math.max(r, Math.hypot(p[0] - cx, p[1] - cy));
+            shapeOrder[k].i = ice.length;
+            ice.push({
+                id: f.id || `ice-${ice.length}`,
+                kind: T.kind,
+                height: T.height,
+                windShadow: f.windShadow != null ? f.windShadow : null,
+                currentShadow: f.currentShadow != null ? f.currentShadow : null,
+                x: cx, y: cy, r,
+                local: ring.map(p => ({ x: p[0] - cx, y: p[1] - cy }))
+            });
+        }
+    }
 
     const rt = course.route || [];
 
@@ -666,9 +933,8 @@ function compileVenueDoc(doc) {
     // The editor computes the real thing (hull-width path + the same polar) and can write
     // it into `course.cutoff`; that is what a designed course should carry. This is the
     // fallback for a document that has not been through the editor.
-    const wb = (windRegions.length && windRegions[0].direction != null)
-        ? representativeWind(windRegions, route, marks, doc)
-        : ((doc.wind && typeof doc.wind.baseDirection === 'number') ? doc.wind.baseDirection : 0);
+    const repWind = representativeWind(windRegions, route, marks, doc);
+    const wb = repWind.direction != null ? repWind.direction : 0;
     const REF_WIND = 14;                    // knots, mid-range: this is a fallback estimate
     const gts = (typeof getTargetSpeed === 'function') ? getTargetSpeed : null;
     const vmgToward = (bearing) => {
@@ -704,6 +970,11 @@ function compileVenueDoc(doc) {
     return {
         islands,
         ice,
+        // Document order across BOTH, so the runtime can build one list that paints back to
+        // front the way the designer stacked it. Without this, order came from which array
+        // a shape happened to live in — all land, then all ice — and no floe could ever sit
+        // behind a headland.
+        shapeOrder,
         scenery,
         // ⚠️ The DERIVED limit stays deliberately generous, on the straight-line distance
         // with a beat factor. Pricing the straight line with the polar instead makes the
@@ -719,6 +990,7 @@ function compileVenueDoc(doc) {
         cutoffAuto: sailed > 0 ? (sailed / 5) * 0.1875 : null,
         windRegions,
         currentRegions,
+        gustRegions,
         marks,
         lines: (course.lines || []).map(l => ({ id: l.id, name: l.name || null, marks: l.marks.slice() })),
         route,
@@ -737,7 +1009,8 @@ function compileVenueDoc(doc) {
         // no authored base wind any more, so it is DERIVED — the region-weighted mean
         // direction at the middle of the course, which for the usual case (one region
         // covering everything) is just that region's direction.
-        windBase: representativeWind(windRegions, route, marks, doc),
+        windBase: repWind.direction,
+        windBaseSpeed: repWind.speed,
         seeded: doc.seeded || {}
     };
 }
@@ -755,6 +1028,12 @@ window.VenueDoc = {
     migrate: migrateVenueDoc,
     validate: validateVenueDoc,
     compile: compileVenueDoc,
+    // One definition of what a kind means, shared by the compiler, the editor's inspector
+    // and the converter. A second copy anywhere is how "iceberg" comes to mean two things.
+    KINDS: SHAPE_KINDS,
+    MARK_KINDS: MARK_KINDS,
+    traits: shapeTraits,
+    shapes: migrateShapes,
     resolveRefs: resolveRefs,
     pointInRing: pointInRing,
     keyholeRings: keyholeRings,

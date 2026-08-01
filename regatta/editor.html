@@ -76,12 +76,6 @@
              you have already created: you set the scatter, then you place, then the new floes
              appear below. Panels that describe the layer as a whole stay under the list. -->
         <div id="layer-settings-top">
-        <div class="mode-panel" hidden data-layer="venue">
-            <p id="venue-none" class="in-note" hidden style="padding:10px 16px;margin:0">
-                This venue has no venue-specific objects to place. Effects like snowfall and
-                aurora come from the venue definition in the code.
-            </p>
-        </div>
         </div>
 
         <div class="ed-sect top">
@@ -122,6 +116,18 @@
                     <button id="btn-scalemap" class="btn btn-fill">Apply</button>
                 </div>
             </div>
+            <!-- Turning the map is the other whole-course transform, and it carries the
+                 WIND with it — see rotateMap on why a course that turns without its breeze
+                 stops being the course you drew. -->
+            <div class="in-sect">
+                <span class="k">Rotate everything</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <label class="in-f" style="flex:1"><label>°</label>
+                        <input id="rotmap" value="0" spellcheck="false"
+                               title="clockwise, about the origin — the wind turns with it"></label>
+                    <button id="btn-rotmap" class="btn btn-fill">Apply</button>
+                </div>
+            </div>
         </div>
 
         <!-- layer: water -->
@@ -146,80 +152,15 @@
              armed tool does; a second copy of all of it here was only clutter. -->
 
         <!-- layer: marks -->
-        <div class="mode-panel" hidden data-layer="marks">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Marks</div>
-            <div id="mark-list" style="display:flex;flex-direction:column"></div>
-            <div style="display:flex;gap:6px">
-                <button id="btn-add-mark" class="btn btn-fill" style="flex:1">+ Mark</button>
-                <button id="btn-add-line" class="btn btn-fill" style="flex:1">+ Gate</button>
-            </div>
-
-            <div class="k" style="display:block;padding:14px 16px 8px;margin:0">Gates &amp; lines</div>
-            <div id="line-list" style="display:flex;flex-direction:column"></div>
-
-            <div id="mk-name-row" class="in-sect" hidden>
-                <div class="k">Selected mark</div>
-                <div id="mk-derived" class="num" style="color:var(--ed-accent-text)" style="font-size:11.5px;"></div>
-                <label class="k" style="display:block;margin:10px 0 5px">Rename it</label>
-                <input id="mk-name" class="in-wide">
-                <label class="k" style="display:block;margin:10px 0 5px">What is on the water</label>
-                <select id="mk-kind" class="in-wide">
-                    <option value="inflatable">Orange inflatable buoy</option>
-                    <option value="can">Yellow can</option>
-                    <option value="none">Nothing — just a position</option>
-                </select>
-                <div id="mk-pos" class="in-note num" style="font-size:10.5px;"></div>
-                <button id="btn-mk-del" class="btn btn-fill" style="background:#7f1d1d">Delete mark</button>
-            </div>
-            <div id="ln-name-row" class="in-sect" hidden>
-                <div class="k">Selected gate</div>
-                <div id="ln-derived" class="num" style="color:#bcdc7c" style="font-size:11.5px;"></div>
-                <label class="k" style="display:block;margin:10px 0 5px">Rename it</label>
-                <input id="ln-name" class="in-wide">
-                <div id="ln-info" class="in-note num" style="font-size:10.5px;"></div>
-                <button id="btn-ln-del" class="btn btn-fill" style="background:#7f1d1d">Delete gate</button>
-            </div>
-            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                A mark may carry a buoy, a can, or <b>nothing at all</b> — a position the
-                race marks with an indicator, which is what an island rounding or a transit
-                wants. Renaming is optional: leave the box empty and the name above it is
-                used, and it keeps up as the course changes.
-                Marks and gates live here; the <b>Route</b> is only the order you sail them,
-                so the same gate can appear in it more than once. Deleting happens HERE —
-                select on the map or in the list and press Delete. A gate whose marks are
-                deleted goes with them.
-            </p>
+        <!-- layer: marks — no panel. The mark and gate fields are in the inspector and the
+             list is the object column; these two buttons are the creation verbs the column's
+             actions click, kept out of sight rather than duplicated as visible controls. -->
+        <div hidden>
+            <button id="btn-add-mark"></button>
+            <button id="btn-add-line"></button>
         </div>
 
         <!-- layer: route -->
-        <div class="mode-panel" hidden data-layer="route">
-            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Route</div>
-            <div id="route-list" style="display:flex;flex-direction:column"></div>
-
-            <div class="k" style="display:block;padding:14px 16px 8px;margin:0">Add a leg</div>
-            <select id="rt-add-what" class="in-wide"></select>
-            <div style="display:flex;gap:6px">
-                <button id="btn-rt-add" class="btn btn-fill" style="flex:1">+ Add before finish</button>
-            </div>
-            <div id="rt-nothing" class="in-note" hidden style="font-size:10.5px; line-height:1.45;">
-                Nothing to add yet — make a mark or a gate in <b>Marks &amp; gates</b> first.
-            </div>
-
-            <div id="rt-name-row" class="in-sect" hidden>
-                <label class="k">Leg name</label>
-                <input id="rt-name" class="in-wide" placeholder="(smart default)">
-                <div id="rt-info" class="in-note num" style="font-size:10.5px;"></div>
-            </div>
-            <p class="in-note" style="font-size:10.5px; line-height:1.45;">
-                This is the ORDER, not the geometry: marks and gates are made and deleted in
-                <b>Marks &amp; gates</b>. Drag a row by its grip to reorder; the start and finish
-                stay at their ends. ✕ removes the LEG only. Click a gate or mark on the map to
-                add another leg using it — the same gate can appear as often as you like. A
-                gate is sailed <b>thru</b>, or entered and left <b>rnd</b> an end; a rounding is
-                left to a side. Hover a row to see which way that leg crosses.
-            </p>
-        </div>
-
         <!-- layer: boundary -->
         <div class="mode-panel" hidden data-layer="boundary">
             <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Arena</div>
@@ -262,12 +203,21 @@
                  belong with the tool and disappear with it, rather than sitting in the left
                  column being true of nothing whenever another tool is up. -->
             <div class="ed-toolopts" id="tool-opts" hidden>
-                <label class="to-f"><span>scatter</span>
-                    <input id="ice-scatter" class="num" value="1" spellcheck="false"
-                           title="how many floes one drag drops"></label>
-                <label class="to-f"><span>vary</span>
-                    <input id="ice-vary" class="num" value="45" spellcheck="false"
-                           title="% size spread between them"></label>
+                <!-- KIND comes first because it applies to both makers: Draw clicks a polygon
+                     out point by point, Place drags a size, and either way the question
+                     "what is this thing" is the same one and gets one answer. Scatter and
+                     vary are Place's alone and hide with it. -->
+                <label class="to-f"><span>kind</span>
+                    <select id="new-kind" class="to-sel"
+                            title="what Draw and Place make"></select></label>
+                <span id="place-opts" style="display:flex">
+                    <label class="to-f"><span>scatter</span>
+                        <input id="ice-scatter" class="num" value="1" spellcheck="false"
+                               title="how many one drag drops"></label>
+                    <label class="to-f"><span>vary</span>
+                        <input id="ice-vary" class="num" value="45" spellcheck="false"
+                               title="% size spread between them"></label>
+                </span>
             </div>
 
             <!-- Overlays, over the thing they overlay. -->
@@ -370,7 +320,18 @@
 <script src="js/venuedoc.js"></script>
 <script src="js/venuecheck.js"></script>
 <script src="js/sailcheck.js"></script>
+<!-- Every venue is a DOCUMENT. One tag each, in journey order; there is no
+     directory listing over file://, so the set is stated here. -->
+<script src="assets/venues/bay.venue.js"></script>
+<script src="assets/venues/lake.venue.js"></script>
+<script src="assets/venues/lagoon.venue.js"></script>
+<script src="assets/venues/swamp.venue.js"></script>
+<script src="assets/venues/river.venue.js"></script>
+<script src="assets/venues/ocean.venue.js"></script>
+<script src="assets/venues/redrock.venue.js"></script>
+<script src="assets/venues/glowtide.venue.js"></script>
 <script src="assets/venues/arctic.venue.js"></script>
+<script src="assets/venues/seatrials.venue.js"></script>
 <script src="js/script.js"></script>
 <script src="js/editor.js"></script>
 <script>
@@ -394,9 +355,9 @@
     // Same pipeline as competitor.html, including its review strip: a reviewer wants the
     // whole stat line, not the three the in-game panel highlights — plus the paint job,
     // which the profile only implies.
-    const STAT_ORDER = ['acceleration', 'momentum', 'handling', 'upwind', 'reach', 'downwind', 'boost'];
+    const STAT_ORDER = ['acceleration', 'momentum', 'handling', 'upwind', 'reach', 'downwind', 'pressure', 'lightAir', 'heavyAir', 'memory'];
     const STAT_ABBR = { acceleration: 'ACC', momentum: 'MOM', handling: 'HDL',
-                        upwind: 'UPW', reach: 'RCH', downwind: 'DWN', boost: 'BST' };
+                        upwind: 'UPW', reach: 'RCH', downwind: 'DWN', pressure: 'PRS', lightAir: 'LGT', heavyAir: 'HVY', memory: 'MEM' };
 
     function reviewStrip(cfg) {
         const stats = STAT_ORDER.map(k => {
@@ -416,13 +377,14 @@
         const kite = (typeof SPIN_LOOKS !== 'undefined' && SPIN_LOOKS[cfg.name]) || 'solid';
         return `
             <div class="mt-5 pt-4" style="border-top:1px solid rgba(255,255,255,0.08)">
-                <div class="grid grid-cols-7 gap-1 mb-3">${stats}</div>
+                <div class="grid grid-cols-10 gap-1 mb-3">${stats}</div>
                 <div class="flex flex-wrap gap-x-4 gap-y-1.5 items-center">
                     ${swatch('hull', cfg.hull)}
                     ${swatch('sail', cfg.sail)}
                     ${swatch('kite', cfg.spinnaker)}
                     ${swatch('kite2', cfg.spinnaker2)}
-                    <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">pattern ${kite}</span>
+                    ${swatch('kite3', cfg.spinnaker3)}
+                    <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">pattern ${kite}${typeof spinColorCount === 'function' ? ' (' + spinColorCount(kite) + ')' : ''}</span>
                     <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">archetype ${cfg.archetype || '—'}</span>
                 </div>
             </div>`;
@@ -441,22 +403,31 @@
         root.querySelectorAll('.profile-boat-canvas').forEach(c => renderProfileBoat(c, byName.get(c.dataset.boat)));
     }
 
-    // ── Venue picker: documents first, since those are the editable ones ──
+    // ── Venue picker ──────────────────────────────────────────────────────
+    // In JOURNEY ORDER — the order VENUES declares them, which is the order a player
+    // meets them: Cove, Lake, Lagoon, Bayou, Run, Bonanza, Redrock, Glowtide, Glacier,
+    // Clubhouse. It used to sort documents to the top, because they were the only
+    // editable ones and that was the fact worth saying by arrangement. Every venue has a
+    // document now, so the sort said nothing and the running order says more.
     const sel = document.getElementById('venue-select');
     const keys = Object.keys(VENUES);
-    const hasDoc = (k) => !!(window.VENUE_DOC && window.VENUE_DOC[k]);
-    keys.sort((a, b) => (hasDoc(b) - hasDoc(a)) || a.localeCompare(b));
     for (const k of keys) {
         const o = document.createElement('option');
         o.value = k;
         // NAMES, not ids. A venue is "Glacier Sound" to everyone who works on it; `arctic`
         // is the filename. The id stays the stable key in the document and in localStorage.
         o.textContent = VENUES[k].name;
-        o.dataset.doc = hasDoc(k) ? '1' : '';
         sel.appendChild(o);
     }
-    sel.value = keys.find(hasDoc) || keys[0];
+    // OPEN WHAT YOU HAD OPEN. The editor used to open on the first venue with a document,
+    // which was always Glacier Sound because it was the only one — so the rule read as "open
+    // Glacier Sound" and nobody noticed it was really "open the one you can edit". Every
+    // venue is editable now, so that rule picks a venue at random from the user's point of
+    // view. The venue you were last working on is the one you want back.
+    const last = (JSON.parse(localStorage.getItem('regatta_settings') || '{}') || {}).venue;
+    sel.value = keys.includes(last) ? last : keys[0];
     EditorApp.buildVenueMenu();
+    EditorApp.buildKindPicker();
 
     try {
         EditorApp.resize();

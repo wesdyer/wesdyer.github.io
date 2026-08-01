@@ -92,8 +92,22 @@ console.log('\nvalidation rejects what it should');
 const mutate = (fn) => { const d = JSON.parse(JSON.stringify(doc)); fn(d); return V.validate(d).filter(p => p.level === 'error'); };
 check('escaped hole vertex', mutate(d => { d.land.find(l => l.holes.length).holes[0][0] = [9e5, 9e5]; })
       .some(p => /not contained/.test(p.msg)));
-check('duplicate land id', mutate(d => { d.land[1].id = d.land[0].id; })
-      .some(p => /duplicate land id/.test(p.msg)));
+check('duplicate shape id', mutate(d => { d.land[1].id = d.land[0].id; })
+      .some(p => /duplicate shape id/.test(p.msg)));
+// This whole fixture is a document in the OLD land[] + ice[] form — export_venue_doc.js
+// still writes that, and so does anyone's copy saved before shapes existed. It validating
+// and compiling at all is the migration working; these say what it turned into.
+{
+    const shapes = V.shapes(doc);
+    check('an old land[] document migrates to shapes[]',
+          shapes.length === doc.land.length && shapes.every(sh => !!V.KINDS[sh.kind]),
+          shapes.map(sh => sh.kind).join(','));
+    check('...granite stays the hard one, and nothing else is',
+          shapes.filter(sh => V.traits(sh).hard).every(sh => sh.kind === 'granite'),
+          shapes.filter(sh => V.traits(sh).hard).map(sh => sh.kind).join(','));
+    check('...and the compiled islands come out in document order',
+          V.compile(doc).islands.map(i => i.id).join(',') === doc.land.map(l => l.id).join(','));
+}
 check('rounding references a missing mark', mutate(d => { d.course.route[1].markId = 'nope'; })
       .some(p => /missing mark/.test(p.msg)));
 check('a rounding that still names land is rejected',
@@ -172,6 +186,68 @@ console.log('\nleg count does not leak between venues');
     check('an island course reports its own leg count', legs.arctic === 2, String(legs.arctic));
     check('the next venue keeps the player setting', legs.bayAfter === legs.bayFirst,
           `bay was ${legs.bayFirst}, after arctic ${legs.bayAfter}`);
+}
+
+// ── Every venue is authored ─────────────────────────────────────────────────
+// The engine used to take the document path only when the venue carried the `mask` fx —
+// a flag only Glacier Sound had. The editor would happily open, edit and save a document
+// for any of the other nine, and the game would ignore it and generate a course instead.
+// Nothing failed; the work simply had no effect, which is the worst way for it to break.
+{
+    console.log('\nevery venue is a document, and the game races it');
+    const ALL = ['bay', 'lake', 'lagoon', 'swamp', 'river', 'ocean', 'redrock',
+                 'glowtide', 'arctic', 'seatrials'];
+    const out = execFileSync('node', ['-e', `
+        const { chromium } = require('playwright');
+        const path = require('path');
+        (async () => {
+            const b = await chromium.launch();
+            const p = await b.newPage();
+            const errs = [];
+            p.on('pageerror', e => errs.push(e.message));
+            await p.goto('file://' + path.resolve('regatta/index.html'));
+            const r = await p.evaluate((all) => {
+                let s = 90210;
+                Math.random = () => { let t = s += 0x6D2B79F5; t = Math.imul(t ^ (t >>> 15), t | 1);
+                    t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+                const o = {};
+                for (const v of all) {
+                    localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
+                    resetGame();
+                    const c = state.course;
+                    o[v] = {
+                        doc: c.doc ? c.doc.venue : null,
+                        type: c.type,
+                        marks: (c.marks || []).length,
+                        legs: state.race.totalLegs,
+                        poly: !!(c.boundary && c.boundary.poly),
+                        land: (c.landShapes || []).length,
+                        // A frozen course must not move when the wind rolls differently.
+                        mark0: Math.round(c.marks[0].x) + ',' + Math.round(c.marks[0].y)
+                    };
+                }
+                return o;
+            }, ${JSON.stringify(ALL)});
+            await b.close();
+            console.log(JSON.stringify({ r, errs }));
+        })();
+    `], { cwd: ROOT, encoding: 'utf8' }).trim();
+    const { r: got, errs } = JSON.parse(out.split('\n').pop());
+    const missing = ALL.filter(v => got[v].doc !== v);
+    check('every venue races on its own document', missing.length === 0, missing.join(', '));
+    check('no page errors loading any of them', errs.length === 0, errs.slice(0, 2).join(' | '));
+    // The type used to be hardcoded to islandRound in the document branch, which was only
+    // ever right because Glacier Sound was the only document. A beat authored as lines and
+    // gates has to report itself as a beat, or the laylines, the zone circles and the HUD
+    // waypoint all read the wrong course.
+    check('a rounding course says islandRound, a beat says wl',
+          got.arctic.type === 'islandRound' && ALL.filter(v => v !== 'arctic')
+              .every(v => got[v].type === 'wl'),
+          ALL.map(v => `${v}:${got[v].type}`).join(' '));
+    check('every arena is a polygon', ALL.every(v => got[v].poly), 
+          ALL.filter(v => !got[v].poly).join(', '));
+    check('the river kept its 82 banks', got.river.land === 82, String(got.river.land));
+    check('Glacier Sound still rounds two legs', got.arctic.legs === 2, String(got.arctic.legs));
 }
 
 console.log(`\n${failures ? 'FAIL' : 'PASS'} — ${failures} failure(s)`);

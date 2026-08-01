@@ -32,7 +32,7 @@ let selFinding = -1;
 // MODE is what you are editing; only that type is interactive, so a click can never
 // grab the wrong kind of thing. `tool` is derived from it so the render code keeps its
 // existing vocabulary.
-let mode = 'map';             // map (the Course) | shape | marks | route | boundary | wind | current | venue
+let mode = 'map';             // map (the Course) | shape | marks | route | boundary | wind | gust | current | venue
 let sub = 'drag';             // the active TOOL: drag | direct | place | sculpt | smooth | roughen | simplify | measure
 let drawing = false;          // shape mode, mid-draw
 let tool = 'select';
@@ -63,8 +63,8 @@ let detail = 120;             // the scale a brush works AT — ⇧[ and ⇧]. R
                               // point may sit off its neighbours' line before it is worth keeping.
 let selWind = -1;              // selected wind region
 let selCur = -1;               // selected current region
+let selGust = -1;              // selected gust region
 let selLine = -1;              // selected gate / line
-let selIce = -1;               // selected hand-placed floe
 // Multi-selection of vertices, shared by every mode that owns vertices: land in Vertices
 // mode, the arena in Arena mode, a region's outline in Wind mode. One implementation, so
 // marquee-select and align work the same everywhere.
@@ -74,9 +74,41 @@ let vsel = [];                 // refs, in click order — the FIRST is the alig
 // polygons, Direct (A) picks their vertices. They are two TOOLS, not two modes — the layer
 // list already says what KIND of thing you are editing, and stacking a second modal axis on
 // top of it would give a two-dimensional mode space to keep in your head.
-// `osel` is the object-level selection and holds many; `sel`/`selIce`/`selWind`/`selCur` are
+// `osel` is the object-level selection and holds many; `sel`/`selWind`/`selCur` are
 // the older single-object slots the inspectors read, kept in step by syncSelFromOsel.
-let osel = [];                 // [{kind:'land',id} | {kind:'ice'|'wind'|'current',i} | {kind:'arena'}]
+let osel = [];                 // [{kind:'land',id} | {kind:'ice'|'wind'|'current'|'gust',i} | {kind:'arena'}]
+
+// ── THE REGION KINDS ────────────────────────────────────────────────────────
+// Three layers are the same object: a polygon with a soft edge and some numbers hung off
+// it. They differ only in which list they live in, which single-selection slot the
+// inspector reads, and what the numbers mean. Every VERB is shared — draw, marquee, Select,
+// Direct, the four brushes, the booleans, duplicate, delete, rotate, scale.
+//
+// Before this table each of those verbs carried `mode === 'wind' ? … : …`, so adding a
+// third kind would have meant a third arm in about thirty places and thirty chances to
+// miss one. The mode string IS the kind, so one lookup replaces every branch.
+const REGION = {
+    wind:    { list: () => (doc && doc.wind && doc.wind.regions) || [],
+               owner: () => (doc.wind || (doc.wind = {})),
+               sel: () => selWind,  setSel: (v) => { selWind = v; } },
+    current: { list: () => (doc && doc.current && doc.current.regions) || [],
+               owner: () => (doc.current || (doc.current = {})),
+               sel: () => selCur,   setSel: (v) => { selCur = v; } },
+    gust:    { list: () => (doc && doc.gusts && doc.gusts.regions) || [],
+               owner: () => (doc.gusts || (doc.gusts = {})),
+               sel: () => selGust,  setSel: (v) => { selGust = v; } }
+};
+// ⚠️ `list` and `sel` READ ONLY. `owner` is the write path and creates the container, which
+// is right for it and wrong for them: an accessor that created `regions = []` on load
+// marked pristine documents unsaved, twice, and a dirty flag that can lie means nothing.
+const isRegionMode = (m) => !!REGION[m];
+const regsOf    = (k) => REGION[k].list();
+const regSel    = (k) => REGION[k].sel();
+const setRegSel = (k, v) => REGION[k].setSel(v);
+const clearRegSel = () => { selWind = -1; selCur = -1; selGust = -1; };
+// The region this layer currently has selected, or null. The three modes never overlap, so
+// "the selected region" is unambiguous whenever it is asked.
+const activeReg = () => (isRegionMode(mode) && regSel(mode) >= 0) ? regsOf(mode)[regSel(mode)] : null;
 let marquee = null;
 let showField = false;         // wind-field preview
 let showCurField = false;      // current-field preview
@@ -161,13 +193,27 @@ const eachRing = (l) => [l.outer].concat(l.holes || []);
 // The types ISLAND_STYLES can already draw. `style` picks the look, `cls` the
 // behaviour class — granite grounds you, everything else is currently soft. Adding a
 // type here is only useful once ISLAND_STYLES has an entry for it.
+// What a shape can BE. One row per kind in VenueDoc.KINDS, in the order they read as a
+// list rather than the order they happen to be declared: the ordinary land first, the odd
+// ones last. The behaviour is NOT restated here — it comes from the shared table, so this
+// is a label and a swatch and nothing that could disagree with the game.
+// ALPHABETICAL. Seven items is past the point where a reader scans for the one they want
+// rather than reading the list, and there is no other order here that means anything — the
+// table this labels already carries the behaviour, so any grouping would be a second,
+// weaker statement of it.
 const LAND_TYPES = [
-    { style: 'ice',      cls: 'snow',    soft: true,  label: 'Ice / snow',     swatch: '#e8edf5' },
-    { style: 'granite',  cls: 'granite', soft: false, label: 'Granite (rock)', swatch: '#8d8d8d' },
-    { style: 'tropical', cls: 'snow',    soft: true,  label: 'Tropical sand',  swatch: '#f5e6c8' },
-    { style: 'grass',    cls: 'snow',    soft: true,  label: 'Grass / marsh',  swatch: '#86a86b' },
-    { style: 'redrock',  cls: 'granite', soft: false, label: 'Red rock',       swatch: '#b4694a' }
+    { kind: 'bank',    label: 'Bank',    swatch: '#6b7280' },
+    { kind: 'floe',    label: 'Floe',    swatch: '#7dd3fc' },
+    { kind: 'granite', label: 'Granite', swatch: '#8d8d8d' },
+    { kind: 'reed',    label: 'Grass',   swatch: '#a89b6a' },
+    { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
+    { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
+    { kind: 'isle',    label: 'Sand',    swatch: '#e8dcb1' }
 ];
+// The fallback when nothing says otherwise. Named, not `LAND_TYPES[0]`: that used to be
+// ordinary land and is now Bank — a hidden collider — so an alphabetical sort would have
+// quietly made "no kind given" mean "invisible".
+const DEFAULT_KIND = 'isle';
 
 // ── History ─────────────────────────────────────────────────────────────────
 function pushHistory(label) {
@@ -231,7 +277,7 @@ function recomputeEstimate() {
     if (!doc || !course || !window.SailCheck) return;
     try {
         const t0 = (window.performance && performance.now) ? performance.now() : 0;
-        const grid = window.SailCheck.buildGrid(doc.land, course.boundary, null);
+        const grid = window.SailCheck.buildGrid(window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed'), course.boundary, null);
         // Pass the real field, not one number: the wind varies across the course, and a
         // patch with no region over it has no wind at all.
         estimate = window.SailCheck.routeEstimate(grid, course.marks, course.route,
@@ -291,7 +337,6 @@ function afterEdit(pushSnapshot, label) {
     marksInspector();
     windRefresh();
     currentRefresh();
-    venueRefresh();
     iceRefresh();
     paletteRefresh();
     draw();
@@ -321,10 +366,16 @@ function loadVenue() {
             + 'check. Its land, marks and wind are produced per seed at load.</div>';
         statsRefresh();
         info(); refreshChrome(); refreshInspector();
-        windRefresh(); currentRefresh(); venueRefresh(); iceRefresh(); fitView();
+        windRefresh(); currentRefresh(); iceRefresh(); fitView();
         return;
     }
     doc = clone(src);
+    // ONE LIST. A document may still be on disk as land[] + ice[] — export_venue_doc.js
+    // writes that, and so does any copy saved before shapes existed — so it is normalised
+    // here, at the one place a document enters the editor. Everything below assumes
+    // `doc.shapes`, and saving writes it back in the new form.
+    doc.shapes = window.VenueDoc.shapes(doc);
+    delete doc['land']; delete doc['ice'];   // bracketed: a bare rename swept these too
     // Land on the COURSE layer: the first question about a venue you have just opened is what
     // the course is, not which coastline you feel like reshaping.
     mode = 'map'; sub = 'drag'; drawing = false;
@@ -333,10 +384,10 @@ function loadVenue() {
     history = [{ doc: clone(doc), label: 'loaded' }];
     histIdx = 0;
     fileHandle = null;
-    selWind = -1; selCur = -1; selLine = -1; selRoute = -1;
+    clearRegSel(); selLine = -1; selRoute = -1;
     recompile(); info(); refreshChrome(); refreshInspector();
     marksInspector(); windRefresh(); currentRefresh();
-    venueRefresh(); iceRefresh(); paletteRefresh();
+    iceRefresh(); paletteRefresh();
 
     fitView();
 }
@@ -409,18 +460,18 @@ let menuOpen = false, menuHot = -1;
 function buildVenueMenu() {
     const sel = $('venue-select'), pop = $('venue-menu');
     if (!sel || !pop) return;
-    const opts = [...sel.options];
-    const docs = opts.filter(o => o.dataset.doc), gen = opts.filter(o => !o.dataset.doc);
+    // ONE FLAT LIST. It used to be two groups — documents first, generated below — which
+    // was a real distinction while only Glacier Sound had a document: the header told you
+    // which venues you could actually change. Every venue is a document now, so the two
+    // groups were "all of them" and "none of them", and a heading over the whole list is
+    // just a word to read.
     const tick = '<svg class="ed-opt-tick" width="12" height="12" viewBox="0 0 12 12" fill="none">'
         + '<path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" stroke-width="1.8"'
         + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    const group = (label, list) => list.length
-        ? `<div class="ed-pop-k">${label}</div>` + list.map(o =>
-            `<button class="ed-opt${o.value === sel.value ? ' on' : ''}" data-v="${o.value}"`
-            + ` role="option" aria-selected="${o.value === sel.value}">${tick}`
-            + `<span>${venueName(o.value)}</span></button>`).join('')
-        : '';
-    pop.innerHTML = group('Documents — editable', docs) + group('Generated per seed', gen);
+    pop.innerHTML = [...sel.options].map(o =>
+        `<button class="ed-opt${o.value === sel.value ? ' on' : ''}" data-v="${o.value}"`
+        + ` role="option" aria-selected="${o.value === sel.value}">${tick}`
+        + `<span>${venueName(o.value)}</span></button>`).join('');
     pop.querySelectorAll('[data-v]').forEach(el => el.addEventListener('click', () => {
         closeVenueMenu();
         if (el.dataset.v === sel.value) return;
@@ -443,28 +494,136 @@ function closeVenueMenu() {
     if (b) b.setAttribute('aria-expanded', 'false');
 }
 
+// ── Dropdowns, drawn by us ──────────────────────────────────────────────────
+// Same argument as the venue menu, applied to every other <select>: a native one pops a
+// list the OS draws — system font, system radius, system highlight, a white rectangle in
+// the middle of a dark app. Styling the closed control and leaving the open list alone made
+// the mismatch WORSE, because the thing now looked like part of the design right up until
+// you clicked it.
+//
+// The <select> stays in the DOM as the value holder, so `sel.value`, `change` events and
+// every reader of them are untouched — this replaces how the list is drawn, not what a
+// dropdown is. Re-entrant: the inspector re-renders constantly and each render is enhanced
+// once, marked by `data-enhanced`.
+const SEL_TICK = '<svg class="ed-opt-tick" width="12" height="12" viewBox="0 0 12 12" fill="none">'
+    + '<path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" stroke-width="1.8"'
+    + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+let openSel = null;
+function closeSelMenu() {
+    if (openSel) { openSel.pop.hidden = true; openSel.btn.setAttribute('aria-expanded', 'false'); }
+    openSel = null;
+}
+
+function enhanceSelect(sel) {
+    if (!sel || sel.dataset.enhanced) return;
+    sel.dataset.enhanced = '1';
+
+    const wrap = document.createElement('span');
+    wrap.className = 'ed-sel' + (sel.classList.contains('in-wide') ? ' wide' : '');
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.style.display = 'none';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ed-sel-btn' + (sel.classList.contains('to-sel') ? ' to' : '');
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    if (sel.title) btn.title = sel.title;
+
+    const pop = document.createElement('div');
+    pop.className = 'ed-pop ed-sel-pop';
+    pop.hidden = true;
+    pop.setAttribute('role', 'listbox');
+    // ⚠️ A MOUSEDOWN INSIDE THE MENU IS NOT A CLICK OUTSIDE IT. The document-level
+    // dismiss handler fired on the option's own mousedown and hid the popup, so the
+    // click that followed had nothing left to land on and the choice was silently
+    // dropped — every dropdown in the editor, not just this one.
+    //
+    // It survived because every test drove these with `el.click()`, which dispatches a
+    // click and no mousedown. Only a real pointer goes down before it goes up.
+    pop.addEventListener('mousedown', (e) => e.stopPropagation());
+
+    wrap.appendChild(btn);
+    wrap.appendChild(pop);
+
+    const label = () => {
+        const o = sel.options[sel.selectedIndex];
+        btn.innerHTML = `<span class="ed-sel-v">${o ? o.textContent : ''}</span>`
+            + '<svg class="ed-sel-c" width="10" height="7" viewBox="0 0 10 7" fill="none">'
+            + '<path d="M1 1.5L5 5.5L9 1.5" stroke="currentColor" stroke-width="1.4"'
+            + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    };
+    const build = () => {
+        pop.innerHTML = [...sel.options].map((o, i) =>
+            `<button type="button" class="ed-opt${i === sel.selectedIndex ? ' on' : ''}"`
+            + ` data-i="${i}" role="option" aria-selected="${i === sel.selectedIndex}">`
+            + `${SEL_TICK}<span>${o.textContent}</span></button>`).join('');
+        pop.querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', () => {
+            const i = +el.dataset.i;
+            closeSelMenu();
+            if (i === sel.selectedIndex) return;
+            sel.selectedIndex = i;
+            label();
+            // The real event, so every existing listener fires exactly as before.
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+        }));
+    };
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wasOpen = openSel && openSel.pop === pop;
+        closeSelMenu();
+        if (wasOpen) return;
+        build();
+        pop.hidden = false;
+        btn.setAttribute('aria-expanded', 'true');
+        openSel = { pop, btn };
+    });
+    // A change from anywhere else — code setting `.value`, a test, a keyboard user on the
+    // hidden select — still has to reach the label, or the trigger lies about the value.
+    sel.addEventListener('change', label);
+    label();
+}
+
+// Every select inside a container, after it has been rendered.
+function enhanceSelects(root) {
+    (root || document).querySelectorAll('select:not([data-enhanced])').forEach(enhanceSelect);
+}
+document.addEventListener('mousedown', () => closeSelMenu());
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSelMenu(); });
+
 // ── Layers ──────────────────────────────────────────────────────────────────
 // The layer list IS the mode switch. `mode` keeps its old names internally because
 // sixty sites gate on them; a layer adds what the list needs on top: a readable name, an
 // icon, how much of it there is, and whether it is drawn.
 //
-// There is no Objects layer — the runtime has no props yet, and a layer that can only be
-// empty is a promise, not a feature.
+// ORDER is the order you build in: the course as a whole, then the water it is sailed on
+// (its limit, then its colour), then the things in it, then the weather, then the marks and
+// the order they are sailed. Water sits under Arena because the limit is a fact about the
+// race and the colour is a fact about the picture.
 const LAYERS = [
-    // Water is the SURFACE — its colour, and nothing else. It is not an object and it cannot
-    // be hidden: it is wherever land and the arena are not, so there is nothing to turn off.
-    { id: 'water',    mode: 'water',   name: 'Water',  icon: 'wave', noEye: true,
-      count: () => null, hint: 'colour' },
-    { id: 'land',     mode: 'shape',   name: 'Land',   icon: 'land',
-      count: () => doc ? `${doc.land.length} · ${doc.land.reduce((a, l) => a + l.outer.length, 0)} pts` : null },
     // How many corners the limit has is a fact about the drawing; how much water it
     // encloses is a fact about the RACE, and that is the one worth a glance.
     { id: 'arena',    mode: 'boundary', name: 'Arena', icon: 'frame',
       count: () => doc ? fmtArea(arenaArea()) : null },
-    { id: 'venue',    mode: 'venue',   name: 'Venue',  icon: 'ice',
-      count: () => dice().length || null },
+    // Water is the SURFACE — its colour, and nothing else. It is not an object and it cannot
+    // be hidden: it is wherever land and the arena are not, so there is nothing to turn off.
+    { id: 'water',    mode: 'water',   name: 'Water',  icon: 'wave', noEye: true,
+      count: () => null, hint: 'colour' },
+    // ONE layer for everything solid. Land and ice were two, which meant two of every
+    // polygon verb and no way to say which sits in front of which.
+    { id: 'land',     mode: 'shape',   name: 'Objects', icon: 'land',
+      count: () => doc ? `${doc.shapes.length} · ${doc.shapes.reduce((a, l) => a + l.outer.length, 0)} pts` : null },
     { id: 'wind',     mode: 'wind',    name: 'Wind',   icon: 'wind',
       count: () => wregs().length || null },
+    // Under Wind, because gusts ARE wind — they are just not MEAN wind. A wind region
+    // states what the breeze is over a patch of water; a gust region states what is born
+    // there and then leaves. They could not be one object: a wind region with no speed is
+    // calm, so a gust source drawn as one would punch a dead hole in the breeze.
+    { id: 'gust',     mode: 'gust',    name: 'Gusts',  icon: 'gust',
+      count: () => gregs().length || null },
     // The current is a set of objects drawn ON the water, so it lists, selects and hides like
     // any other layer — which is exactly what it could not do while it shared Water's panel.
     { id: 'current',  mode: 'current', name: 'Current', icon: 'stream',
@@ -493,6 +652,9 @@ const LAYER_ICON = {
     frame: '<rect x="2" y="2.5" width="10" height="9" stroke="currentColor" stroke-width="1.3" fill="none"/>',
     ice:   '<path d="M7 1.5v11M2.5 4l9 6M11.5 4l-9 6" stroke="currentColor" stroke-width="1.2"/>',
     wind:  '<path d="M1.5 5.5h7a2 2 0 100-2M1.5 9h9a2 2 0 110 2" stroke="currentColor" stroke-width="1.3" fill="none"/>',
+    // A cat's paw: the dark patch a puff makes on the water, which is the thing itself
+    // rather than an arrow describing it. Wind's glyph already owns the streaming-air read.
+    gust:  '<ellipse cx="7" cy="7" rx="5.5" ry="3.2" transform="rotate(-20 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="5.2" cy="7.4" r=".9" fill="currentColor"/><circle cx="8.2" cy="6.2" r=".9" fill="currentColor"/>',
     mark:  '<circle cx="7" cy="7" r="2.2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2" stroke="currentColor" stroke-width="1.2"/>',
     route: '<path d="M2 11c4 0 3-8 7-8" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="2" cy="11" r="1.4" fill="currentColor"/><circle cx="11.5" cy="3" r="1.4" fill="currentColor"/>',
     // A folded map: the course as a whole, as opposed to any one thing on it.
@@ -575,11 +737,38 @@ function refreshChrome() {
 // ── Selection action bar ────────────────────────────────────────────────────
 // Shown only with something selected, and it names the count so the verbs are unambiguous:
 // "Delete" over three islands should say three before you press it, not after.
-// The armed tool's settings show only while that tool is armed. Right now Place is the only
-// tool with any; the bar is keyed on tool id so the next one drops in beside it.
+// The armed tool's settings show only while that tool is armed. Both MAKERS carry the kind
+// — Draw clicks a polygon out, Place drags a size, and both have to know what they are
+// making — while scatter and vary belong to Place alone.
 function toolOpts() {
     const box = $('tool-opts');
-    if (box) box.hidden = tool !== 'place';
+    if (!box) return;
+    const makes = tool === 'place' || tool === 'draw';
+    box.hidden = !makes;
+    const po = $('place-opts');
+    if (po) po.style.display = tool === 'place' ? 'flex' : 'none';
+}
+
+// What the next Draw or Place makes. Read at the moment of creation rather than stored, so
+// changing it never retroactively re-kinds anything already on the map.
+const newKind = () => {
+    const el = $('new-kind');
+    const k = el && el.value;
+    return (k && window.VenueDoc.KINDS[k]) ? k : DEFAULT_KIND;
+};
+
+function buildKindPicker() {
+    const el = $('new-kind');
+    if (!el || el.options.length) return;
+    el.innerHTML = LAND_TYPES.map(t => `<option value="${t.kind}">${t.label}</option>`).join('');
+    // Floe is what Place used to make unconditionally, so it stays the default: the tool
+    // whose gesture is "drag out a floe-shaped blob" should still offer a floe first.
+    el.value = 'floe';
+    // The hint bar names what the armed maker will make, so changing this has to redraw it.
+    // A control that silently changes what the NEXT gesture does, with nothing on screen
+    // acknowledging the change, is the same as one that does nothing.
+    el.addEventListener('change', () => refreshChrome());
+    enhanceSelect(el);
 }
 
 function selActs() {
@@ -593,7 +782,7 @@ function selActs() {
     if (bar.hidden) return;
     const kinds = new Set(osel.map(o => o.kind));
     const noun = kinds.size > 1 ? 'objects'
-               : osel[0].kind === 'land' ? (n === 1 ? 'shape' : 'shapes')
+               : osel[0].kind === 'shape' ? (n === 1 ? 'shape' : 'shapes')
                : osel[0].kind === 'ice' ? (n === 1 ? 'floe' : 'floes')
                : osel[0].kind === 'arena' ? 'arena'
                : (n === 1 ? 'region' : 'regions');
@@ -633,7 +822,7 @@ const TOOLS = [
     { id: 'direct', key: 'A', name: 'Direct', icon: '<path d="M4 3l9 6.5-4 .6L7.6 14z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>',
       on: () => sub === 'direct', enabled: () => modeObjects().length > 0 },
     { id: 'draw', key: 'P', name: 'Draw', icon: '<path d="M8 2.5l5 4-2 6H5l-2-6z" stroke="currentColor" stroke-width="1.3" fill="none"/>',
-      on: () => drawing, enabled: () => mode === 'shape' || mode === 'wind' || mode === 'current' },
+      on: () => drawing, enabled: () => mode === 'shape' || isRegionMode(mode) },
     // The brushes act on whatever outline falls under the disc, so they are enabled wherever
     // this layer HAS outlines — land, ice, the arena, a wind or current region.
     { id: 'sculpt', key: 'S', name: 'Sculpt', icon: '<circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/>',
@@ -651,7 +840,7 @@ const TOOLS = [
     // point by point, this one drags a size and scatters to a density.
     { id: 'place', key: 'N', name: 'Place', icon: '<circle cx="8" cy="9" r="4" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M12.5 3.5v4M10.5 5.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>',
       on: () => sub === 'place',
-      enabled: () => mode === 'venue' && venueHasIce() },
+      enabled: () => mode === 'shape' && !!doc },
     { id: 'measure', key: 'M', name: 'Measure', icon: '<path d="M2.5 9.5l7-7 4 4-7 7z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 7l1.5 1.5M7 5l1.5 1.5" stroke="currentColor" stroke-width="1.1"/>',
       on: () => sub === 'measure' }         // a gesture, not a place: no layer required
 ];
@@ -681,7 +870,7 @@ function pickTool(id) {
     if (id === 'draw') {
         // Only jump to Land from a layer that cannot draw at all. Forcing the layer switch
         // unconditionally meant arming Draw on Wind silently took you somewhere else.
-        if (mode !== 'shape' && mode !== 'wind' && mode !== 'current') setMode('shape');
+        if (mode !== 'shape' && !isRegionMode(mode)) setMode('shape');
         drawing = !drawing; if (!drawing) pending = null;
         sub = 'drag';
     } else {
@@ -731,7 +920,11 @@ function hintBar() {
     }
     key.hidden = false;
     key.textContent = t.key;
-    name.textContent = t.name;
+    // A MAKER says what it will make. Both read the same picker, so the hint is where the
+    // answer to "granite or floe?" is visible without looking away from the map.
+    const kindLabel = (LAND_TYPES.find(x => x.kind === newKind()) || {}).label;
+    name.textContent = (t.id === 'draw' || t.id === 'place') && kindLabel
+        ? `${t.name} — ${kindLabel}` : t.name;
     const mods = MODS[t.id] || [];
     $('hint-mods').innerHTML = mods.map(m => `<span class="mod">${m}</span>`).join('')
         || '<span class="mod">right- or middle-drag pans · wheel zooms</span>';
@@ -769,7 +962,7 @@ function bounds() {
     const add = (x, y) => { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); };
     const bd = course && course.boundary;
     if (bd) { add(bd.x - bd.radius, bd.y - bd.radius); add(bd.x + bd.radius, bd.y + bd.radius); }
-    if (doc) for (const l of doc.land) for (const p of l.outer) add(p[0], p[1]);
+    if (doc) for (const l of doc.shapes) for (const p of l.outer) add(p[0], p[1]);
     else if (course) for (const i of (course.islands || [])) for (const v of (i.vertices || [])) add(v.x, v.y);
     if (!isFinite(a)) { a = b = -2000; c = d = 2000; }
     return { a, b, c, d };
@@ -860,22 +1053,39 @@ function drawDriftingFloes() {
         ctx.strokeStyle = 'rgba(125,211,252,0.8)'; ctx.lineWidth = 1; ctx.stroke();
     }
 }
+// What each KIND is painted as. The game has its own palette (ISLAND_STYLES); this is the
+// schematic's, which reads flatter on purpose — you are looking at topology, not at weather.
+const KIND_FILL = {
+    granite: '#8d8d8d', redrock: '#c2703e', reed: '#a89b6a',
+    isle: '#e8dcb1', ice: '#e8edf5', bank: '#6b7280', floe: 'rgba(125,211,252,0.55)'
+};
+const KIND_EDGE = {
+    granite: '#c9c9c9', redrock: '#8a4a26', reed: '#7d7048',
+    isle: '#d4b483', ice: '#ffffff', bank: '#9ca3af', floe: 'rgba(224,242,254,0.7)'
+};
+
 function drawLandLayer() {
-    // Land: colour-matched to the source mask (white land, grey granite, navy
-    // water) so the schematic can be compared to the painted mask by eye.
-    const shapes = doc ? doc.land : null;
+    // EVERY shape, in the order the document stacks them — which is the order the game
+    // paints them, so what you arrange here is what you get. It used to be two painters,
+    // one per layer, and a floe could not be put behind a headland in either.
+    const shapes = doc ? doc.shapes : null;
     if (shapes && shown('land')) {
         for (const l of shapes) {
+            const kind = TR(l).kind;
             ctx.beginPath();
             for (const ring of eachRing(l)) ringPath(ring);
-            const granite = l.cls === 'granite';
-            ctx.fillStyle = granite ? '#8d8d8d' : '#e8edf5';
+            ctx.fillStyle = KIND_FILL[kind] || KIND_FILL.isle;
             ctx.fill('evenodd');                            // holes
-            const selected = inOsel({ kind: 'land', id: l.id }) || sel.shape === l.id;
+            const selected = inOsel({ kind: 'shape', id: l.id }) || sel.shape === l.id;
             const hovered = hover.shape === l.id;
-            ctx.strokeStyle = selected ? '#38bdf8' : hovered ? '#93c5fd' : (granite ? '#c9c9c9' : '#ffffff');
+            ctx.strokeStyle = selected ? '#38bdf8' : hovered ? '#93c5fd'
+                            : (KIND_EDGE[kind] || KIND_EDGE.isle);
             ctx.lineWidth = selected ? 2.5 : 1;
-            ctx.stroke();
+            // A hidden shape is a collider nobody sees in the game. It has to be visible
+            // HERE — it is still something you can select, move and reshape — so it is
+            // drawn as an outline rather than a solid, which is what "not really there" looks like.
+            if (TR(l).hidden) { ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]); }
+            else ctx.stroke();
         }
         // Vertices of the SELECTED shape only — 137 dots everywhere is noise, and a handle
         // that is drawn but not grabbable (or grabbable but not drawn) is worse than none.
@@ -1062,17 +1272,42 @@ function drawCourseLayer() {
         }
     }
 
-    // Marks, glyphed by appearance: an inflatable is a round orange floaty, a can is
-    // a yellow drum.
+    // Marks, glyphed by appearance — ONE PER KIND. There used to be two: a yellow square
+    // for a can and an orange circle for everything else, so switching a mark to a
+    // committee boat or to no buoy at all changed the document and nothing you could see.
+    // A picker whose choices look identical reads as a picker that does not work.
     (shown('marks') ? (dmarks || []) : []).forEach((m, i) => {
         const p = toS(m.x, m.y);
         const on = hover.mark === i || sel.mark === i;
         const r = on ? 8 : 6;
+        const kind = m.kind || 'inflatable';
         ctx.beginPath(); ctx.arc(p.x, p.y, r + 2, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(8,15,30,0.7)'; ctx.fill();
-        if (m.kind === 'can') {
+        if (kind === 'can') {
             ctx.fillStyle = '#facc15';
             ctx.fillRect(p.x - r, p.y - r, r * 2, r * 2);
+        } else if (kind === 'committee') {
+            // A hull, pointed and beamy — the one mark that is a VESSEL, and the one that
+            // is much bigger on the water (92 units against a buoy's 30).
+            ctx.fillStyle = '#e2e8f0';
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y - r * 1.7);
+            ctx.lineTo(p.x + r * 0.95, p.y - r * 0.1);
+            ctx.lineTo(p.x + r * 0.7, p.y + r * 1.3);
+            ctx.lineTo(p.x - r * 0.7, p.y + r * 1.3);
+            ctx.lineTo(p.x - r * 0.95, p.y - r * 0.1);
+            ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.2; ctx.stroke();
+        } else if (kind === 'none') {
+            // No buoy at all: a POSITION, not an object. Drawn as an empty ring so it can
+            // still be grabbed and moved, and so a gate with one real end and one bare
+            // corner is legible as exactly that.
+            ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.6;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI * 2); ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#94a3b8';
+            ctx.beginPath(); ctx.arc(p.x, p.y, 1.6, 0, Math.PI * 2); ctx.fill();
         } else {
             // Absent kind means inflatable, which is what the panel and the compiler
             // both already assume — drawing it differently made older marks look like
@@ -1115,40 +1350,10 @@ function drawCourseLayer() {
         }
     }
 }
+// Only the Place gesture in flight — the size you are dragging out, before there is a
+// shape to paint. The placed shapes themselves go through drawLandLayer with everything
+// else, in document order, because that is what having one list means.
 function drawPlacedIce() {
-    // Hand-placed ice, drawn from the DOCUMENT so it redraws mid-drag, and outlined when
-    // this is the mode that owns it.
-    if (doc && shown('venue')) {
-        dice().forEach((f, i) => {
-            ctx.beginPath(); ringPath(f.outer);
-            // Selected reads off `osel`, exactly as land does. It used to read `selIce`,
-            // which holds an index only when EXACTLY ONE floe is selected — so a marquee
-            // over forty of them highlighted none and multi-select looked broken.
-            const selected = mode === 'venue' && inOsel({ kind: 'ice', i });
-            const hovered = mode === 'venue' && !selected && hover.ice === i;
-            ctx.fillStyle = selected ? 'rgba(186,230,253,0.9)'
-                          : hovered ? 'rgba(186,230,253,0.72)'
-                                    : 'rgba(125,211,252,0.55)';
-            ctx.fill();
-            if (mode === 'venue') {
-                ctx.strokeStyle = selected ? '#38bdf8' : hovered ? '#bae6fd' : 'rgba(224,242,254,0.7)';
-                ctx.lineWidth = selected ? 2.5 : 1;
-                ctx.stroke();
-            }
-            // Handles belong to the DIRECT arrow only — same rule as land, where the object
-            // arrow shows a clean outline and the vertex arrow shows the points.
-            if (mode === 'venue' && sub === 'direct' && selIce === i) {
-                f.outer.forEach((p, k) => {
-                    const q = toS(p[0], p[1]);
-                    const hot = hover.ice === i && hover.vert === k;
-                    ctx.beginPath(); ctx.arc(q.x, q.y, hot ? 6.5 : 4, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(8,15,30,0.7)'; ctx.fill();
-                    ctx.beginPath(); ctx.arc(q.x, q.y, hot ? 4.5 : 2.5, 0, Math.PI * 2);
-                    ctx.fillStyle = hot ? '#fff' : '#7dd3fc'; ctx.fill();
-                });
-            }
-        });
-    }
     if (drag && drag.kind === 'icenew' && drag.r > 0) {
         const c = toS(drag.origin.x, drag.origin.y);
         ctx.strokeStyle = 'rgba(125,211,252,0.9)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
@@ -1223,13 +1428,15 @@ const LAYER_STEPS = [
     ['venue',   () => drawDriftingFloes()],
     ['land',    () => drawLandLayer()],
     ['course',  () => drawCourseLayer()],
-    ['venue',   () => drawPlacedIce()],
+    ['venue',   () => drawPlacedIce()],   // the Place gesture only; shapes paint with 'land'
     ['wind',    () => { if (shown('wind')) drawWindRegions(); }],
+    ['gust',    () => { if (shown('gust')) drawGustRegions(); }],
     ['current', () => { if (shown('current')) drawCurrentRegions(); }]
 ];
 // Marks and Route both draw the course furniture, so either one raises it.
-const ACTIVE_LAYER = { boundary: 'arena', venue: 'venue', shape: 'land',
-                       marks: 'course', route: 'course', wind: 'wind', current: 'current' };
+const ACTIVE_LAYER = { boundary: 'arena', shape: 'land',
+                       marks: 'course', route: 'course', wind: 'wind', current: 'current',
+                       gust: 'gust' };
 
 function draw() {
     ctx.clearRect(0, 0, W(), H());
@@ -1559,7 +1766,7 @@ function drawFinding() {
     if (selFinding < 0 || !findings[selFinding] || !doc) return;
     const f = findings[selFinding];
     for (const id of (f.shapes || [])) {
-        const l = doc.land.find(x => x.id === id);
+        const l = doc.shapes.find(x => x.id === id);
         if (!l) continue;
         ctx.beginPath(); ringPath(l.outer);
         ctx.strokeStyle = '#fb7185'; ctx.lineWidth = 2.5; ctx.stroke();
@@ -1730,6 +1937,10 @@ function objRefresh() {
     if (mode === 'map' || mode === 'water' || mode === 'boundary') {
         title.textContent = ''; acts.innerHTML = ''; box.innerHTML = '';
         if (hdr) hdr.hidden = true;                 // a heading over nothing is noise
+        // An EMPTY list must not claim the column's spare height, or the layer's own panel
+        // gets pushed to the bottom of an otherwise blank column — which is what Course,
+        // Arena and Water all did once the list started growing to fill the space.
+        box.classList.remove('has-rows');
         return;
     }
     if (hdr) hdr.hidden = false;
@@ -1743,81 +1954,153 @@ function objRefresh() {
         b.textContent = label; b.title = title2 || ''; b.onclick = fn;
         acts.appendChild(b);
     };
-    const row = (opts) => `<div class="ob${opts.on ? ' on' : ''}" data-i="${opts.i}">`
+    const row = (opts) => `<div class="ob${opts.on ? ' on' : ''}" data-i="${opts.i}"`
+        + `${opts.drag ? ' draggable="true"' : ''}>`
         + `<span class="ob-g">${opts.glyph || ''}</span>`
         + `<span class="ob-n">${opts.name}</span>`
         + `<span class="ob-c">${opts.count == null ? '' : opts.count}</span></div>`;
+
+    // ── Drag a row to restack ────────────────────────────────────────────────
+    // Shared with the route list, which has wanted the same gesture since it got one. The
+    // list may be displayed in a different order from the array it edits — Shapes shows
+    // front-first over an array stored back-first — so the caller maps a row slot onto an
+    // array index and does the move itself.
+    const wireReorder = (box2, count, onDrop) => {
+        let from = -1;
+        const slotAt = (el, ev) => {
+            const rect = el.getBoundingClientRect();
+            return Math.max(0, Math.min(count, +el.dataset.i + ((ev.clientY - rect.top) > rect.height / 2 ? 1 : 0)));
+        };
+        box2.querySelectorAll('.ob[draggable]').forEach(el => {
+            el.addEventListener('dragstart', (ev) => {
+                from = +el.dataset.i;
+                el.classList.add('dragging');
+                ev.dataTransfer.effectAllowed = 'move';
+                ev.dataTransfer.setData('text/plain', String(from));
+            });
+            el.addEventListener('dragend', () => {
+                el.classList.remove('dragging');
+                box2.querySelectorAll('.ob').forEach(x => x.classList.remove('dropbefore', 'dropafter'));
+            });
+            el.addEventListener('dragover', (ev) => {
+                ev.preventDefault();
+                box2.querySelectorAll('.ob').forEach(x => x.classList.remove('dropbefore', 'dropafter'));
+                const slot = slotAt(el, ev);
+                const r2 = box2.querySelector(`.ob[data-i="${slot}"]`);
+                if (r2) r2.classList.add('dropbefore');
+                else {
+                    const last = box2.querySelector(`.ob[data-i="${count - 1}"]`);
+                    if (last) last.classList.add('dropafter');
+                }
+            });
+            el.addEventListener('drop', (ev) => {
+                ev.preventDefault();
+                const f = from >= 0 ? from : parseInt(ev.dataTransfer.getData('text/plain'), 10);
+                if (!(f >= 0 && f < count)) return;
+                let to = slotAt(el, ev);
+                if (f < to) to--;
+                if (to === f) return;
+                onDrop(f, to);
+            });
+        });
+    };
 
     if (mode === 'shape') {
         // No "+ Draw" here: Draw (P) is a tool on the strip, and a second button for the
         // same verb is a second thing to keep true.
         // The list is a VIEW of the object selection, so it shows all of it and Shift+click
         // extends it — the same gesture as on the map, because it is the same selection.
-        box.innerHTML = doc.land.map((l, i) => {
-            const on = inOsel({ kind: 'land', id: l.id });
-            return row({ i, on, glyph: on ? '◆' : '◇', name: landLabel(l), count: l.outer.length });
-        }).join('') || '<div class="ob-empty">No land yet — Draw to make some.</div>';
-        wire(box, (i, add) => {
-            const ref = { kind: 'land', id: doc.land[i].id };
+        // REVERSED. The array is stored in paint order — index 0 goes down first, furthest
+        // back — and a layers list reads the other way round, front at the top, because
+        // that is the order you see them stacked on the map.
+        const zList = doc.shapes.map((l, i) => ({ l, i })).reverse();
+        box.innerHTML = zList.map(({ l, i }, row_i) => {
+            const on = inOsel({ kind: 'shape', id: l.id });
+            return row({ i: row_i, on, glyph: on ? '◆' : '◇',
+                         name: landLabel(l), count: l.outer.length, drag: true });
+        }).join('') || '<div class="ob-empty">Nothing here yet — Draw (P) or Place (N) to make some.</div>';
+        wire(box, (row_i, add) => {
+            const ref = { kind: 'shape', id: zList[row_i].l.id };
             if (add) osel = inOsel(ref) ? osel.filter(x => !sameObj(x, ref)) : osel.concat([ref]);
             else osel = [ref];
             vsel = [];
             syncSelFromOsel(); refreshChrome(); draw();
         });
-    } else if (mode === 'venue') {
-        box.innerHTML = dice().map((f, i) => {
-            const c = iceCentre(f);
-            const on = inOsel({ kind: 'ice', i });
-            return row({ i, on, glyph: on ? '◆' : '◇', name: f.id, count: fmtM(c.r * 2) });
-        }).join('') || '<div class="ob-empty">No ice yet — Place (N) drags one out.</div>';
-        wire(box, (i, add) => {
-            const ref = { kind: 'ice', i };
-            if (add) osel = inOsel(ref) ? osel.filter(x => !sameObj(x, ref)) : osel.concat([ref]);
-            else osel = [ref];
-            vsel = [];
-            syncSelFromOsel(); refreshChrome(); draw();
+        // Restacking. The list runs front-to-back and the array back-to-front, so a row
+        // slot is mirrored onto an array index — dragging a shape UP the list moves it
+        // LATER in the array, which is what "draw it in front" means.
+        wireReorder(box, zList.length, (f, t) => {
+            const arr = doc.shapes, n = arr.length;
+            const from = n - 1 - f;
+            const to = n - 1 - t;
+            arr.splice(to, 0, arr.splice(from, 1)[0]);
+            afterEdit(true, 'restack');
         });
     } else if (mode === 'marks') {
+        // Two kinds of thing on one layer, so the column carries its own second heading —
+        // ruled off, in the same kicker as the column's own title, with the verb that makes
+        // one sitting in it. "+ Mark" stays in the header, which is the MARKS section.
         act('+ Mark', () => $('btn-add-mark').click());
-        act('+ Gate', () => $('btn-add-line').click());
         const ml = dmarksOf().map((m, i) => row({
-            i, on: sel.mark === i, glyph: m.kind === 'can' ? '▣' : m.kind === 'none' ? '◌' : '●',
-            name: markLabel(i), count: MARK_KIND_LABEL[m.kind] || 'buoy' })).join('');
+            i, on: sel.mark === i,
+            glyph: m.kind === 'can' ? '▣' : m.kind === 'none' ? '◌' : m.kind === 'committee' ? '⛴' : '●',
+            name: markLabel(i), count: MARK_KIND_LABEL[m.kind] || 'buoy' })).join('')
+            || '<div class="ob-empty">No marks yet.</div>';
         const ll = dlines().map((ln, i) => {
             const ends = lineEnds(ln.id);
             const len = ends ? Math.hypot(ends[1].x - ends[0].x, ends[1].y - ends[0].y) : 0;
             return `<div class="ob${selLine === i ? ' on' : ''}" data-line="${i}">`
                  + `<span class="ob-g">━</span><span class="ob-n">${lineLabel(ln.id)}</span>`
                  + `<span class="ob-c">${fmtM(len)}</span></div>`;
-        }).join('');
-        box.innerHTML = ml + (ll ? `<div class="ob-empty" style="padding-top:10px">Gates &amp; lines</div>` + ll : '');
+        }).join('') || '<div class="ob-empty">No gates yet.</div>';
+        box.innerHTML = ml
+            + '<div class="ob-head"><span class="k">Gates</span>'
+            + '<button class="btn btn-ghost" id="ob-add-gate">+ Gate</button></div>'
+            + ll;
         wire(box, (i) => selectMark(i));
         box.querySelectorAll('[data-line]').forEach(el => el.addEventListener('click',
             () => selectLine(+el.dataset.line)));
+        const ag = box.querySelector('#ob-add-gate');
+        if (ag) ag.addEventListener('click', () => $('btn-add-line').click());
     } else if (mode === 'route') {
+        // One action, next to the title: add a leg on the END. What it uses is then a
+        // field on the leg itself, so there is no picker to choose from before you can add.
+        act('+ Leg', () => {
+            const first = dlines()[0] ? `line:${dlines()[0].id}`
+                        : dmarksOf()[0] ? `mark:${dmarksOf()[0].id}` : null;
+            if (!first) { toast('Make a mark or a gate first', true); return; }
+            if (addToRoute(first, 'through')) {
+                afterEdit(true, 'add leg');
+                toast('Leg added at the end — set what it uses on the right');
+            }
+        });
         routeRefresh(box);
         return;
-    } else if (mode === 'wind' || mode === 'current') {
-        const rs = mode === 'wind' ? wregs() : cregs();
-        const selR = mode === 'wind' ? selWind : selCur;
+    } else if (isRegionMode(mode)) {
+        const kind = mode;
+        const rs = regsOf(kind), selR = regSel(kind);
         // "+ Here" is gone: Draw (P) makes a region of whatever shape you want. "Whole
         // course" stays because it is NOT the same gesture — it is the one-click answer to
         // "the wind over this whole course differs from the venue", and drawing a rectangle
         // round the entire map by hand is not that.
-        act('+ Whole course', () => {
-            if (mode === 'wind') addWholeCourseWind(); else addWholeCourseCurrent();
-        });
+        act('+ Whole course', () => addWholeCourseRegion(kind));
+        // What a row SAYS is the one thing that differs between the kinds, because it is
+        // the one thing the object is: a wind is a bearing and a speed, a current is a
+        // speed and a set, a gust source is a share of the puffs and what they are like.
+        const summary = (r) =>
+              kind === 'wind'    ? `${degOf(r.direction || 0)}°${r.speed != null ? ' ' + r.speed.toFixed(0) + 'kt' : ''}`
+            : kind === 'current' ? `${(r.speed || 0).toFixed(1)}kt ${degOf(r.direction || 0)}°`
+            : gustCount(r);
         box.innerHTML = rs.map((r, i) => row({
-            i, on: inOsel({ kind: mode === 'wind' ? 'wind' : 'current', i }) || selR === i,
-            glyph: '▭', name: r.name || r.id,
-            count: mode === 'wind'
-                ? `${degOf(r.direction || 0)}°${r.speed != null ? ' ' + r.speed.toFixed(0) + 'kt' : ''}`
-                : `${(r.speed || 0).toFixed(1)}kt ${degOf(r.direction || 0)}°`
-        })).join('') || `<div class="ob-empty">${mode === 'wind'
-            ? 'No regions. Outside a wind region there is no wind at all, so a course needs its water covered.'
-            : 'No current. Water with no region over it simply does not flow.'}</div>`;
+            i, on: inOsel({ kind, i }) || selR === i,
+            glyph: '▭', name: r.name || r.id, count: summary(r)
+        })).join('') || `<div class="ob-empty">${
+              kind === 'wind'    ? 'No regions. Outside a wind region there is no wind at all, so a course needs its water covered.'
+            : kind === 'current' ? 'No current. Water with no region over it simply does not flow.'
+            : 'No gust sources — puffs are born evenly over the whole arena, as they are on a venue that says nothing. Draw one where the pressure should come from.'
+        }</div>`;
         wire(box, (i, add) => {
-            const ref = { kind: mode === 'wind' ? 'wind' : 'current', i };
+            const ref = { kind, i };
             if (add) osel = inOsel(ref) ? osel.filter(x => !sameObj(x, ref)) : osel.concat([ref]);
             else osel = [ref];
             vsel = [];
@@ -1826,6 +2109,11 @@ function objRefresh() {
     } else {
         box.innerHTML = '<div class="ob-empty">Nothing to list for this tool.</div>';
     }
+    // Only a list with ROWS in it grows to fill the column. A note saying "nothing here yet"
+    // is one line, and a one-line list stretched over 500px of empty panel — with the layer's
+    // own settings pinned to the floor beneath it — reads as a layout fault, which is what
+    // Course, Arena and Water all looked like.
+    box.classList.toggle('has-rows', !!box.querySelector('.ob'));
 }
 function wire(box, fn) {
     box.querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', (ev) => {
@@ -1867,38 +2155,54 @@ function inspectorRefresh() {
     }
     if (mode === 'shape' && sel.shape) {
         const l = shapeById(sel.shape);
-        if (l) { k = 'Land shape'; n = landLabel(l);
+        // ONE panel for every shape. A floe used to get its own, with a Transform section
+        // and nothing else — no name, no kind — which is exactly the asymmetry that made a
+        // floe feel like a different class of object from a coastline.
+        if (l) { k = 'Shape'; n = landLabel(l);
             m = `${l.outer.length} pts · ${(l.holes || []).length ? (l.holes.length + ' holes') : 'closed'}`;
             html = inspLand(l); }
-    } else if (mode === 'venue' && selIce >= 0 && dice()[selIce]) {
-        const f = dice()[selIce];
-        k = 'Ice floe'; n = f.id; m = `${f.outer.length} pts`;
-        html = inspIce(f);
     } else if (mode === 'marks' && sel.mark >= 0) {
-        k = 'Mark'; n = markLabel(sel.mark);
         const mk = dmarksOf()[sel.mark];
-        m = mk.name ? 'renamed' : 'automatic';
-        html = '';                       // its own panel section carries the fields
+        k = 'Mark'; n = markLabel(sel.mark);
+        // Not the kind — the Type field directly below says that, and a header that repeats
+        // the control under it is a second place to keep true.
+        m = `${Math.round(uToM(mk.x))}, ${Math.round(uToM(mk.y))} m`;
+        html = inspMark(mk, sel.mark);
     } else if (mode === 'marks' && selLine >= 0) {
-        k = 'Gate'; n = lineLabel(dlines()[selLine].id); m = dlines()[selLine].name ? 'renamed' : 'automatic';
-    } else if (mode === 'route' && selRoute >= 0) {
-        k = 'Leg'; n = entryLabel(routeOf()[selRoute], selRoute);
-        m = `leg ${selRoute} of ${routeOf().length - 1}`;
+        const ln = dlines()[selLine];
+        const ends = lineEnds(ln.id);
+        const len = ends ? Math.hypot(ends[1].x - ends[0].x, ends[1].y - ends[0].y) : 0;
+        k = 'Gate'; n = lineLabel(ln.id);
+        m = ends ? `${fmtM(len)} · ${fmtBL(len)}` : '';
+        html = inspGate(ln);
+    } else if (mode === 'route' && selRoute >= 0 && routeOf()[selRoute]) {
+        const e = routeOf()[selRoute];
+        k = e.role === 'start' ? 'Start' : e.finish ? 'Finish' : 'Leg';
+        n = entryLabel(e, selRoute);
+        m = '';
+        html = inspLeg(e, selRoute);
     } else if (mode === 'boundary' && osel.some(o => o.kind === 'arena')) {
         const bp = doc.world.boundary.poly;
         k = 'Arena'; n = 'Sailing limit';
         m = bp ? `${bp.length} corners · ${fmtArea(arenaArea())}` : `circle · ${fmtArea(arenaArea())}`;
         if (bp) html = inspArena(bp);
-    } else if (mode === 'wind' && selWind >= 0 && wregs()[selWind]) {
-        const r = wregs()[selWind];
+    } else if (mode === 'wind' && activeReg()) {
+        const r = activeReg();
         k = 'Wind region'; n = r.name || r.id;
         m = `from ${degOf(r.direction || 0)}° ${compassOf(r.direction || 0)}`;
         html = inspWind(r);
-    } else if (mode === 'current' && selCur >= 0 && cregs()[selCur]) {
-        const r = cregs()[selCur];
+    } else if (mode === 'current' && activeReg()) {
+        const r = activeReg();
         k = 'Current region'; n = r.name || r.id;
         m = `${(r.speed || 0).toFixed(1)} kt toward ${degOf(r.direction || 0)}° ${compassOf(r.direction || 0)}`;
         html = inspCurrent(r);
+    } else if (mode === 'gust' && activeReg()) {
+        const r = activeReg();
+        k = 'Gust source'; n = r.name || r.id;
+        // A source has no bearing to report — the wind it is handed decides where its puffs
+        // go — so the header says how many it keeps on the water instead.
+        m = gustCount(r);
+        html = inspGust(r);
     } else {
         // Nothing selected: the header still names where you are. The COURSE is the whole
         // thing, so it shows the course's name rather than a layer's.
@@ -1914,22 +2218,71 @@ function inspectorRefresh() {
     if (head) head.hidden = !html;
     kick.textContent = k; name.textContent = n; meta.textContent = m;
     obj.innerHTML = html;
+    enhanceSelects(obj);      // the panel re-renders constantly; each render is done once
     obj.querySelectorAll('[data-num]').forEach(el => el.addEventListener('change', () => numEdit(el)));
     obj.querySelectorAll('[data-act]').forEach(el => el.addEventListener('click', () => shapeAct(el.dataset.act)));
     obj.querySelectorAll('[data-rename]').forEach(el => el.addEventListener('change', () => renameSel(el)));
+    // Which geometry the leg uses. Switching a gate leg to a mark (or back) changes its
+    // KIND, so the fields it needs change with it — hence a full re-render, not a patch.
+    obj.querySelectorAll('[data-legref]').forEach(el => el.addEventListener('change', () => {
+        const e = routeOf()[selRoute]; if (!e) return;
+        const [what, id] = el.value.split(':');
+        if (what === 'line') {
+            e.kind = 'gate'; e.lineId = id; delete e.markId;
+            if (e.dir == null) e.dir = 1;
+            if (!e.pass && e.role !== 'start' && !e.finish) e.pass = 'through';
+        } else {
+            e.kind = 'round'; e.markId = id; delete e.lineId;
+            if (!e.side) e.side = 'starboard';
+        }
+        afterEdit(true, 'leg geometry');
+    }));
+    obj.querySelectorAll('[data-legseg]').forEach(seg =>
+        seg.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+            const e = routeOf()[selRoute]; if (!e) return;
+            const key = seg.dataset.legseg, v = btn.dataset.v;
+            if (key === 'side') e.side = v;
+            else if (key === 'dir' || key === 'windward') e.dir = +v;
+            else if (key === 'pass') e.pass = v;
+            afterEdit(true, `leg ${key}`);
+        })));
+    // Point the leg straight at (or straight away from) the breeze where it starts, keeping
+    // its length. With the Length field beside it, "exactly 800 m dead upwind" is two moves.
+    obj.querySelectorAll('[data-legact]').forEach(el => el.addEventListener('click', () => {
+        const up = upwindFrom(legFrom(selRoute));
+        if (up == null) { toast('No wind at the start of that leg', true); return; }
+        const brg = el.dataset.legact === 'upwind' ? up : up + Math.PI;
+        if (!setLegPolar(selRoute, { brg })) { toast('That leg has nothing to move', true); return; }
+        afterEdit(true, 'leg bearing');
+        toast(`Pointed ${el.dataset.legact === 'upwind' ? 'dead upwind' : 'dead downwind'}`
+              + ` — ${Math.round(degOf(brg))}°`);
+    }));
+    obj.querySelectorAll('[data-gateact]').forEach(el => el.addEventListener('click', () => {
+        const ln = dlines()[selLine]; if (!ln) return;
+        const res = alignGateToWind(ln);
+        if (!res) { toast('No wind over that gate to square it to', true); return; }
+        afterEdit(true, 'square gate to wind');
+        toast(`Squared to the wind — turned ${Math.abs(res.turned).toFixed(0)}°,`
+              + ` wind from ${res.wind}°`);
+    }));
+    obj.querySelectorAll('[data-mkkind]').forEach(el => el.addEventListener('change', () => {
+        const mk = dmarksOf()[sel.mark]; if (!mk) return;
+        mk.kind = el.value;
+        afterEdit(true, 'mark type');
+    }));
     // Material and softness are the shape's own properties, so they live in its inspector
     // rather than in a panel off to the side.
-    obj.querySelectorAll('[data-mat]').forEach(el => el.addEventListener('click', () => {
+    const mat = obj.querySelector('#in-mat');
+    if (mat) mat.addEventListener('change', () => {
         const l = shapeById(sel.shape); if (!l) return;
-        const t = LAND_TYPES[+el.dataset.mat];
-        l.style = t.style; l.cls = t.cls; l.soft = t.soft;
-        afterEdit(true, 'material');
-    }));
-    const sf = obj.querySelector('#in-soft');
-    if (sf) sf.addEventListener('change', () => {
-        const l = shapeById(sel.shape); if (!l) return;
-        l.soft = sf.checked;
-        afterEdit(true, 'soft');
+        l.kind = LAND_TYPES[+mat.value].kind;
+        // Per-shape overrides are exceptions to the OLD kind and mean nothing against the
+        // new one — a floe carrying `hard: true` because it used to be granite would be a
+        // berg nobody asked for. The kind is a fresh answer, so the exceptions to the
+        // previous answer go with it.
+        delete l.hard; delete l.hidden; delete l.nav; delete l.look; delete l.motion;
+        delete l.style; delete l.cls; delete l.soft;      // the words this replaced
+        afterEdit(true, 'kind');
     });
     relatedChecks();
 }
@@ -1974,6 +2327,32 @@ const landLabel = (l) => (l && (l.name || l.id)) || '—';
 const attr = (v) => String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
                                               .replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// What this shape's lee currently comes to, asked of the GAME so the editor cannot answer
+// it differently. `auto` is derived from the silhouette the wind sees, so it changes as the
+// map turns — which is worth showing rather than implying with a blank box.
+// A wake is a question about the WATER COLUMN — does this thing reach the bottom — and
+// `motion` already answers it: fixed is grounded, drift is afloat and the stream goes under.
+// So the box suggests a real figure for land and says nothing is expected of a floe.
+function curPh(l) {
+    const isl = (course && course.islands || []).find(i => i.id === l.id);
+    if (!isl || typeof window.shadowSuggest !== 'function') return 'none';
+    const v = window.shadowSuggest(isl);
+    return v > 0 ? `~${Math.round(uToM(v))}` : 'afloat';
+}
+
+function leeSays(l) {
+    const isl = (course && course.islands || []).find(i => i.id === l.id);
+    if (!isl || typeof window.shadowLengthOf !== 'function') return 'how far downwind the breeze stays thin';
+    const w = window.shadowLengthOf(isl, 'wind'), c = window.shadowLengthOf(isl, 'current');
+    if (!(w > 0) && !(c > 0)) {
+        return window.VenueDoc.traits(l).motion === 'drift'
+            ? 'afloat — the wind passes over it and the stream under it'
+            : 'flat to the water — casts no lee. Give it a height.';
+    }
+    const say = (v, authored) => v > 0 ? `${Math.round(uToM(v))} m${authored ? '' : ' from its height'}` : 'none';
+    return `wind ${say(w, l.windShadow != null)} · current ${say(c, l.currentShadow != null)}`;
+}
+
 function inspLand(l) {
     const bb = ringBox(eachRing(l));
     const area = Math.abs(window.VenueDoc.ringArea(l.outer));
@@ -1989,7 +2368,7 @@ function inspLand(l) {
         return Math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy));
     };
     let gap = null, gapTo = null;
-    for (const o of doc.land) {
+    for (const o of doc.shapes) {
         if (o.id === l.id) continue;
         for (const ringA of eachRing(l)) for (const ringB of eachRing(o)) {
             for (const q of ringA) for (let i = 0; i < ringB.length; i++) {
@@ -2002,17 +2381,31 @@ function inspLand(l) {
             }
         }
     }
-    const t = LAND_TYPES.findIndex(x => x.style === l.style);
+    const T = TR(l);
+    const t = LAND_TYPES.findIndex(x => x.kind === T.kind);
+    // What this kind DOES, read off the shared table rather than written out again. Three
+    // facts, because they are the three a designer is choosing between: does it move, does
+    // it stop you, and is it there to be seen at all.
+    const says = [T.motion === 'drift' ? 'drifts' : 'fixed',
+                  T.hard ? 'grounds you' : 'soft collision',
+                  T.hidden ? 'not drawn' : null,
+                  T.nav ? null : 'no pathfinding'].filter(Boolean).join(' · ');
     return `
 <div class="in-sect"><span class="k">Name</span>
   <input class="in-wide" data-rename="shape" value="${attr(l.name || '')}" placeholder="${attr(l.id)}">
 </div>
-<div class="in-sect"><span class="k">Material</span>
-  <div class="in-seg" id="in-mat">${LAND_TYPES.map((x, i) =>
-    `<button class="${i === t ? 'on' : ''}" data-mat="${i}">${x.label.split(' ')[0]}</button>`).join('')}</div>
-  <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12.5px">
-    <input type="checkbox" id="in-soft"${l.soft ? ' checked' : ''}> Soft Collision
-  </label>
+<div class="in-sect"><span class="k">Kind</span>
+  <select class="in-wide" id="in-mat">${LAND_TYPES.map((x, i) =>
+    `<option value="${i}"${i === t ? ' selected' : ''}>${x.label}</option>`).join('')}</select>
+  <div class="in-sub" id="in-kindsays">${says}</div>
+</div>
+<div class="in-sect"><span class="k">Lee</span>
+  <div class="in-grid">
+    ${numF('Height', 'shape.hgt', l.height != null ? f1(l.height) : '', 'm', false, '0')}
+    ${numF('Wind', 'shape.wsh', l.windShadow != null ? f1(uToM(l.windShadow)) : '', 'm', false, 'from height')}
+    ${numF('Current', 'shape.csh', l.currentShadow != null ? f1(uToM(l.currentShadow)) : '', 'm', false, curPh(l))}
+  </div>
+  <div class="in-sub">${leeSays(l)}</div>
 </div>
 <div class="in-sect"><span class="k">Transform</span>
   <div class="in-grid">
@@ -2076,6 +2469,274 @@ function inspWind(r) {
 // A current region's own numbers, beside the wind's. The one wording difference is load-
 // bearing: a current is named by where it SETS — the water is going that way — where a wind
 // is named by where it comes from. Both draw arrows along the flow.
+// Which sign of `dir` crosses this gate TOWARD the wind — i.e. upwind. The crossing vector
+// is `(dy, -dx) * dir` (the same normal the map arrow is drawn from), and the direction the
+// wind comes from is `(sin w, -cos w)`; if they agree, that sign is upwind. Returns 0 when
+// the gate lies along the wind and neither crossing is meaningfully up or down it.
+function dirTowardWind(e, probe) {
+    const ends = entryEnds(e);
+    if (!ends || typeof getWindAt !== 'function') return 0;
+    const [m0, m1] = ends;
+    const mx = (m0.x + m1.x) / 2, my = (m0.y + m1.y) / 2;
+    const w = getWindAt(mx, my);
+    if (!w || !(w.speed > 0.01)) return 0;
+    let nx = (m1.y - m0.y) * probe, ny = -(m1.x - m0.x) * probe;
+    const nl = Math.hypot(nx, ny) || 1; nx /= nl; ny /= nl;
+    const ux = Math.sin(w.direction), uy = -Math.cos(w.direction);   // toward the SOURCE
+    const dot = nx * ux + ny * uy;
+    return Math.abs(dot) < 0.08 ? 0 : (dot > 0 ? probe : -probe);
+}
+
+// Square a gate to the wind ACROSS it: rotate both its marks about their midpoint until the
+// line is perpendicular to the breeze at that point. A start line is square to the wind, and
+// on a course with a bend the honest answer is the wind where the gate IS, not the venue mean.
+function alignGateToWind(ln) {
+    const ends = lineEnds(ln.id);
+    if (!ends || typeof getWindAt !== 'function') return null;
+    const [a, b] = ends;
+    const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+    const w = getWindAt(cx, cy);
+    if (!w || !(w.speed > 0.01)) return null;
+    // Bearings: a heading d points along (sin d, -cos d), so a vector's bearing is
+    // atan2(dx, -dy). Square to the wind means the line's own bearing is the wind's + 90.
+    const cur = Math.atan2(b.x - a.x, -(b.y - a.y));
+    let delta = (w.direction + Math.PI / 2) - cur;
+    // A line is symmetric, so turn the SHORT way and leave which mark is which end alone —
+    // swapping the ends would silently invert what `dir` means for every leg using it.
+    delta = ((delta + Math.PI / 2) % Math.PI + Math.PI) % Math.PI - Math.PI / 2;
+    const cs = Math.cos(delta), sn = Math.sin(delta);
+    for (const m of [a, b]) {
+        const dx = m.x - cx, dy = m.y - cy;
+        m.x = cx + dx * cs - dy * sn;
+        m.y = cy + dx * sn + dy * cs;
+    }
+    return { turned: delta * 180 / Math.PI, wind: degOf(w.direction) };
+}
+
+// A LEG's fields. The list says where it sits in the order; this says what it is — which
+// gate or mark it uses, and which way you take it. Changing the geometry a leg refers to is
+// an edit to the ROUTE, not to the water: the marks and gates themselves are untouched.
+// ── A leg's LENGTH and BEARING ──────────────────────────────────────────────
+// The answer to "make the windward gate exactly 800 m upwind". A race officer does not
+// think in coordinates — they think "the beat is 800 metres and it is square to the
+// breeze" — and the document already models a course as a route of legs, so the leg is
+// where those two numbers belong. Typing them is how a course is laid precisely; dragging
+// a mark and reading a distance off the ruler is how it is laid approximately.
+//
+// A leg is measured from the point the PREVIOUS entry sends you to, which is what a leg is.
+// The first entry has no previous, so it has no length — nothing has happened yet.
+const entryPoint = (e) => {
+    if (!e) return null;
+    if (e.kind === 'round') {
+        const k = markIndex(e.markId);
+        const m = dmarksOf()[k];
+        return m ? { x: m.x, y: m.y } : null;
+    }
+    const ends = entryEnds(e);
+    return ends ? { x: (ends[0].x + ends[1].x) / 2, y: (ends[0].y + ends[1].y) / 2 } : null;
+};
+const legFrom = (i) => entryPoint(routeOf()[i - 1]);
+
+// Move what this leg SENDS YOU TO, keeping its shape. A gate translates as a whole, so its
+// width and orientation survive — you are moving the gate, not one of its marks. A gate used
+// by more than one leg moves for all of them, which is the same gate being in one place.
+function moveEntryTo(e, pt) {
+    const at = entryPoint(e);
+    if (!at || !pt) return false;
+    const dx = pt.x - at.x, dy = pt.y - at.y;
+    if (e.kind === 'round') {
+        const m = dmarksOf()[markIndex(e.markId)];
+        if (!m) return false;
+        m.x += dx; m.y += dy;
+        return true;
+    }
+    const ends = entryEnds(e);
+    if (!ends) return false;
+    for (const m of ends) { m.x += dx; m.y += dy; }
+    return true;
+}
+
+// Bearing convention, as everywhere else: 0 = north = up, clockwise, so east is 90.
+const bearingOf = (from, to) => Math.atan2(to.x - from.x, -(to.y - from.y));
+
+// Where "straight into the wind" points, from the leg's own starting point — so on a course
+// with a bend the beat follows the breeze where the beat actually begins.
+function upwindFrom(pt) {
+    if (!pt || typeof getWindAt !== 'function') return null;
+    const w = getWindAt(pt.x, pt.y);
+    if (!w || !(w.speed > 0.01)) return null;
+    return w.direction;      // wind is NAMED by where it comes from, which is where you beat to
+}
+
+// Set one of the two and keep the other. This is what makes the pair usable: typing a
+// length must not swing the leg, and typing a bearing must not stretch it.
+function setLegPolar(i, opts) {
+    const e = routeOf()[i], from = legFrom(i), at = entryPoint(e);
+    if (!e || !from || !at) return false;
+    const curLen = Math.hypot(at.x - from.x, at.y - from.y);
+    const len = opts.len != null ? opts.len : curLen;
+    const brg = opts.brg != null ? opts.brg : bearingOf(from, at);
+    if (!(len > 0)) return false;
+    return moveEntryTo(e, { x: from.x + Math.sin(brg) * len,
+                            y: from.y - Math.cos(brg) * len });
+}
+
+function inspLeg(e, i) {
+    const opts = [];
+    for (const ln of dlines())
+        opts.push(`<option value="line:${ln.id}"${e.lineId === ln.id ? ' selected' : ''}>`
+                + `${attr(lineLabel(ln.id))}</option>`);
+    dmarksOf().forEach((m, k) =>
+        opts.push(`<option value="mark:${m.id}"${e.markId === m.id ? ' selected' : ''}>`
+                + `${attr(markLabel(k))}</option>`));
+
+    // What "which way" means depends on the kind: a gate is crossed in a direction, a mark
+    // is left to a side. Offering both at once would be two controls where one applies.
+    let way = '';
+    if (e.kind === 'round') {
+        way = `<div class="in-sect"><span class="k">Leave it to</span>
+  <div class="in-seg" data-legseg="side">
+    <button data-v="port"${e.side === 'port' ? ' class="on"' : ''}>Port</button>
+    <button data-v="starboard"${e.side !== 'port' ? ' class="on"' : ''}>Starboard</button>
+  </div>
+</div>`;
+    } else {
+        const passRow = (e.role === 'start' || e.finish) ? '' : `
+  <span class="k" style="display:block;margin-top:10px">Sailed</span>
+  <div class="in-seg" data-legseg="pass">
+    <button data-v="through"${e.pass === 'through' ? ' class="on"' : ''}>Through</button>
+    <button data-v="round"${e.pass !== 'through' ? ' class="on"' : ''}>Round an end</button>
+  </div>`;
+        // Which way a gate is crossed has a NAME on a race course — you cross the start
+        // line going upwind and the finish coming down — so it can be set by that name and
+        // not only by "one way / the other". The wind is sampled AT the gate, so on a course
+        // with a bend these follow the breeze where the gate actually is.
+        const up = dirTowardWind(e, +1);
+        const upLabel = up === 0 ? '' : `
+  <span class="k" style="display:block;margin-top:10px">Or by the wind</span>
+  <div class="in-seg" data-legseg="windward">
+    <button data-v="${up}"${e.dir === up ? ' class="on"' : ''}>Upwind</button>
+    <button data-v="${-up}"${e.dir === -up ? ' class="on"' : ''}>Downwind</button>
+  </div>`;
+        way = `<div class="in-sect"><span class="k">Crossed</span>
+  <div class="in-seg" data-legseg="dir">
+    <button data-v="1"${e.dir > 0 ? ' class="on"' : ''}>One way</button>
+    <button data-v="-1"${e.dir > 0 ? '' : ' class="on"'}>The other</button>
+  </div>${upLabel}${passRow}
+</div>`;
+    }
+    // ── Where this leg goes, as a length and a bearing ──────────────────────
+    // The first entry has no previous point, so there is no leg yet — nothing to measure.
+    let geom = '';
+    const from = legFrom(i), at = entryPoint(e);
+    if (from && at) {
+        const len = Math.hypot(at.x - from.x, at.y - from.y);
+        const brg = degOf(bearingOf(from, at));
+        const up = upwindFrom(from);
+        // How far off the breeze this leg runs — the difference between a beat and a reach,
+        // and the number that says whether "upwind" is a fair description of it.
+        const off = up == null ? null
+            : Math.abs(((degOf(bearingOf(from, at)) - degOf(up) + 540) % 360) - 180);
+        const says = off == null ? 'no wind here to measure against'
+            : off < 5  ? 'dead upwind'
+            : off < 45 ? `${Math.round(off)}° off the wind — a beat`
+            : off > 175 ? 'dead downwind'
+            : off > 135 ? `${Math.round(180 - off)}° off dead downwind — a run`
+            : `${Math.round(off)}° off the wind — a reach`;
+        geom = `
+<div class="in-sect"><span class="k">Leg</span>
+  <div class="in-grid">
+    ${numF('Length', 'leg.len', f1(uToM(len)), 'm')}
+    ${numF('Bearing', 'leg.brg', Math.round(brg), '°')}
+  </div>
+  <div class="in-sub">${says}</div>
+  ${up == null ? '' : '<div class="ed-acts-in"><button class="btn btn-line btn-sm"'
+      + ' data-legact="upwind">Dead upwind</button>'
+      + '<button class="btn btn-line btn-sm" data-legact="downwind">Dead downwind</button></div>'}
+</div>`;
+    }
+    return `
+<div class="in-sect"><span class="k">Name</span>
+  <input class="in-wide" data-rename="leg" value="${attr(e.name || '')}" placeholder="${attr(entryLabel(e, i))}">
+</div>
+<div class="in-sect"><span class="k">Goal</span>
+  <select class="in-wide" data-legref>${opts.join('')}</select>
+</div>
+${geom}${way}`;
+}
+
+// A mark's own fields, in the panel that shows the selected object. Name follows the same
+// rule every other name field does: blank falls back to the derived label, which is shown as
+// the placeholder so the box explains itself.
+function inspMark(m, i) {
+    const derived = markLabel(i);
+    return `
+<div class="in-sect"><span class="k">Name</span>
+  <input class="in-wide" data-rename="mark" value="${attr(m.name || '')}" placeholder="${attr(derived)}">
+</div>
+<div class="in-sect"><span class="k">Type</span>
+  <select class="in-wide" data-mkkind>
+    ${MARK_KINDS.map(k => `<option value="${k}"${(m.kind || 'inflatable') === k ? ' selected' : ''}>${MARK_KIND_TITLE[k]}</option>`).join('')}
+  </select>
+</div>`;
+}
+
+// A gate is a NAMED PAIR of marks. Its length and its ends are facts about the marks, so
+// they are reported in the header rather than repeated as fields you cannot edit here.
+function inspGate(ln) {
+    return `
+<div class="in-sect"><span class="k">Name</span>
+  <input class="in-wide" data-rename="gate" value="${attr(ln.name || '')}" placeholder="${attr(lineLabel(ln.id))}">
+</div>
+<div class="in-sect"><span class="k">Set the line</span>
+  <button class="btn btn-fill" data-gateact="square" style="width:100%;justify-content:center">Square to the wind</button>
+</div>`;
+}
+
+// How many live cells this source keeps on the water. An absolute count now, not a share of
+// a venue-wide population — that variable is gone, so there is nothing left to take a share
+// of. A source states its own population the way a wind region states its own speed.
+const gustCount = (r) => `${r.count != null ? r.count : 8} puffs`;
+
+// A GUST SOURCE's numbers. Not a state of the water — a birthplace — so there is no
+// direction and no speed here: the wind at the source carries the puff away.
+//
+// Nothing falls back to the venue. Gusts are stated by sources exactly as the wind is stated
+// by wind regions, so a course with no sources has a steady breeze — which is a legitimate
+// course, and the one every venue has until someone draws one.
+function inspGust(r) {
+    const bias = Math.round((r.bias != null ? r.bias : 0.5) * 100);
+    return `
+<div class="in-sect"><span class="k">Name</span>
+  <input class="in-wide" data-rename="gust" value="${attr(r.name || '')}" placeholder="${attr(r.id)}">
+</div>
+<div class="in-sect"><span class="k">Born here</span>
+  <div class="in-grid">
+    ${numF('puffs', 'gr.count', r.count != null ? r.count : 8, '')}
+    ${numF('gusts', 'gr.bias', bias, '%')}
+  </div>
+  <div class="in-note">Puffs is how many cells this source keeps alive at once — its own
+    population, not a share of anyone else's. Gusts % is how many of them are pressure
+    rather than holes: 50 is an even mix, 0 makes nothing but dead patches.</div>
+</div>
+<div class="in-sect"><span class="k">What comes out</span>
+  <div class="in-grid">
+    ${numF('strength', 'gr.strength', r.strength != null ? r.strength : 1, '×')}
+    ${numF('size', 'gr.size', r.size != null ? r.size : 1, '×')}
+    ${numF('life', 'gr.life', r.life != null ? r.life : 1, '×')}
+    ${numF('veer', 'gr.veer', r.veer != null ? r.veer : 15, '°')}
+  </div>
+  <div class="in-note">Veer is how far the wind turns inside one of its puffs.</div>
+  <div class="in-grid">
+    ${numF('falloff', 'gr.falloff', Math.round(uToM(r.falloff != null ? r.falloff : 400)), 'm')}
+  </div>
+  <div class="in-note">A puff drifts downwind and steers by the breeze where it is, so this
+    says where the pressure COMES FROM and the wind decides where it lands. Life is how long
+    it lives: short dies where it is born, long crosses the course. Falloff is the soft edge
+    — puffs cluster in the middle of a source and thin out at its rim.</div>
+</div>`;
+}
+
 function inspCurrent(r) {
     return `
 <div class="in-sect"><span class="k">Name</span>
@@ -2090,22 +2751,6 @@ function inspCurrent(r) {
 </div>`;
 }
 
-function inspIce(f) {
-    const bb = ringBox([f.outer]);
-    const c = iceCentre(f);
-    return `
-<div class="in-sect"><span class="k">Transform</span>
-  <div class="in-grid">
-    ${numF('X', 'ice.x', f1(uToM(bb.cx)), 'm')}
-    ${numF('Y', 'ice.y', f1(uToM(bb.cy)), 'm')}
-    ${numF('W', 'ice.w', f1(uToM(bb.w)), 'm')}
-    ${numF('H', 'ice.h', f1(uToM(bb.h)), 'm')}
-    ${numF('∠ by', 'ice.rot', '', '°', false, '0')}
-    ${numF('Across', 'ice.r', f1(uToM(c.r * 2)), 'm', true)}
-  </div>
-</div>
-`;
-}
 
 // One handler for every framed field: the key says what to do.
 function numEdit(el) {
@@ -2114,12 +2759,42 @@ function numEdit(el) {
     // PROPERTIES rather than moving geometry, so they branch out before the transform code.
     if (what === 'wr') { windEdit(key, el.value); return; }
     if (what === 'cr') { currentEdit(key, el.value); return; }
+    if (what === 'gr') { gustEdit(key, el.value); return; }
+    // The lee lengths are PROPERTIES of the shape, not geometry, so they branch out before
+    // the transform code — the same shape of exception a wind region's fields make.
+    if (what === 'shape' && (key === 'wsh' || key === 'csh' || key === 'hgt')) {
+        const l = shapeById(sel.shape); if (!l) return;
+        const f = key === 'wsh' ? 'windShadow' : key === 'csh' ? 'currentShadow' : 'height';
+        // An empty box means AUTO — the field is absent, not zero, and those differ: zero is
+        // "this casts no lee", absent is "work it out from my size".
+        if (el.value.trim() === '') delete l[f];
+        else { const v = parseFloat(el.value); if (!isFinite(v) || v < 0) { inspectorRefresh(); return; }
+               // HEIGHT is a height, in metres — the only vertical measurement in the
+               // document, and not a distance across the map, so it is not scaled to world
+               // units the way the two lee lengths are.
+               l[f] = (key === 'hgt') ? v : mToU(v); }
+        afterEdit(true, `lee ${key}`);
+        return;
+    }
+
+    // A LEG is stated as a length and a bearing rather than as a position, because that is
+    // how a course is described to the people sailing it.
+    if (what === 'leg') {
+        const v0 = parseFloat(el.value);
+        if (!isFinite(v0)) { inspectorRefresh(); return; }
+        const ok = key === 'len' ? setLegPolar(selRoute, { len: mToU(v0) })
+                 : key === 'brg' ? setLegPolar(selRoute, { brg: v0 * Math.PI / 180 })
+                 : false;
+        if (ok) afterEdit(true, `leg ${key}`); else inspectorRefresh();
+        return;
+    }
     const v = parseFloat(el.value);
     if (!isFinite(v)) { inspectorRefresh(); return; }
     let rings = null, land = null;
-    if (what === 'ice') {
-        const f = dice()[selIce]; if (!f) return; rings = [f.outer];
-    } else if (what === 'arena') {
+    // No `ice` arm: a floe's transform fields are a SHAPE's transform fields, resolved by
+    // the selected shape like every other one, and rebaked like every other one — which a
+    // floe never was, so its centroid and radius went stale after a nudge.
+    if (what === 'arena') {
         const bp = doc && doc.world.boundary.poly; if (!bp) return; rings = [bp];
     } else {
         land = shapeById(sel.shape); if (!land) return; rings = eachRing(land);
@@ -2185,6 +2860,43 @@ function currentEdit(key, value) {
     afterEdit(true, `current ${key}`);
 }
 
+// A gust source's numbers. `bias` used to be three-state — blank meaning "the venue's own
+// split" — but there is no venue split any more, so blank is simply invalid and 0 means
+// nothing but holes.
+function gustEdit(key, value) {
+    const r = activeReg(); if (!r) return;
+    const raw = String(value).trim();
+    if (key === 'bias') {
+        if (!raw) { inspectorRefresh(); return; }
+        const p = parseFloat(raw);
+        if (!isFinite(p) || p < 0 || p > 100) { toast('Gusts must be 0–100%', true); inspectorRefresh(); return; }
+        r.bias = p / 100;
+        afterEdit(true, 'gust bias');
+        return;
+    }
+    const v = parseFloat(raw);
+    if (!isFinite(v)) { inspectorRefresh(); return; }
+    if (key === 'count') {
+        // Zero is allowed and means it: a source turned off without being deleted, which is
+        // how you A/B a course's pressure without losing the polygon you drew.
+        if (v < 0 || v > 200) { toast('Puffs must be 0–200', true); inspectorRefresh(); return; }
+        r.count = Math.round(v);
+    } else if (key === 'veer') {
+        if (v < 0 || v > 90) { toast('Veer must be 0–90°', true); inspectorRefresh(); return; }
+        r.veer = v;
+    } else if (key === 'strength' || key === 'size' || key === 'life') {
+        // The rails are the validator's, so a document typed by hand and one typed here
+        // are rejected for the same reasons. Size and life multiply a duration and a
+        // radius, and zero of either is a puff that does not exist.
+        const min = key === 'strength' ? 0 : 0.05;
+        if (v < min || v > 6) { toast(`${key} must be ${min}–6×`, true); inspectorRefresh(); return; }
+        r[key] = v;
+    } else if (key === 'falloff') {
+        r.falloff = Math.max(mToU(2), mToU(v));
+    } else return;
+    afterEdit(true, `gust ${key}`);
+}
+
 // Blank means "no name", which falls back to the id — the same rule the mark, gate and leg
 // name fields follow, so clearing a box always visibly reverts to the automatic label.
 function renameSel(el) {
@@ -2201,13 +2913,29 @@ function renameSel(el) {
         const r = cregs()[selCur]; if (!r) return;
         if (v) r.name = v; else delete r.name;
         afterEdit(true, 'current region name');
+    } else if (el.dataset.rename === 'gust') {
+        const r = gregs()[selGust]; if (!r) return;
+        if (v) r.name = v; else delete r.name;
+        afterEdit(true, 'gust region name');
+    } else if (el.dataset.rename === 'mark') {
+        const mk = dmarksOf()[sel.mark]; if (!mk) return;
+        if (v) mk.name = v; else delete mk.name;
+        afterEdit(true, 'mark name');
+    } else if (el.dataset.rename === 'gate') {
+        const ln = dlines()[selLine]; if (!ln) return;
+        if (v) ln.name = v; else delete ln.name;
+        afterEdit(true, 'gate name');
+    } else if (el.dataset.rename === 'leg') {
+        const e = routeOf()[selRoute]; if (!e) return;
+        if (v) e.name = v; else delete e.name;
+        afterEdit(true, 'leg name');
     }
 }
 
 // Kept for the inspector's remaining per-object actions. The commands that act on the
 // SELECTION (duplicate, resample, delete) live on the map's action bar instead.
 function shapeAct(a) {
-    if (a === 'delice') { if (selIce >= 0) deleteIce(selIce); return; }
+
 }
 
 // ── Related checks ──────────────────────────────────────────────────────────
@@ -2217,7 +2945,6 @@ function relatedChecks() {
     const obj = $('insp-obj');
     if (!obj || !doc) return;
     const subject = (mode === 'shape' && sel.shape) ? sel.shape
-                  : (mode === 'venue' && selIce >= 0 && dice()[selIce]) ? dice()[selIce].id
                   : (mode === 'marks' && sel.mark >= 0) ? (dmarksOf()[sel.mark] || {}).id
                   : null;
     if (!subject) return;
@@ -2324,8 +3051,13 @@ function lineEnds(id) {
 }
 const entryEnds = (e) => (e && e.lineId != null) ? lineEnds(e.lineId) : null;
 const routeOf = () => (doc && doc.course.route) || [];
-const startEntry = () => routeOf()[0] || null;
-const finishEntry = () => routeOf()[routeOf().length - 1] || null;
+// ⚠️ BY FLAG, NOT BY POSITION. These read `routeOf()[0]` and `[length-1]`, which was only
+// ever true because the panel refused to build a route any other way. Now that + Leg appends
+// and every row drags, the last entry is routinely NOT the finish — and a positional finish
+// made deleteLine refuse to delete an ordinary gate because it happened to be last.
+// The project already settled this once for the leg engine: identify by role/finish.
+const startEntry = () => routeOf().find(e => e.role === 'start') || null;
+const finishEntry = () => routeOf().find(e => e.finish) || null;
 // "Shared start/finish" was never a separate concept: it means both entries name the
 // same line, each with its own crossing direction.
 const finishShared = () => {
@@ -2389,21 +3121,21 @@ function duplicateShape() {
     if (!l) return;
     const copy = clone(l);
     let n = 2;
-    while (doc.land.some(x => x.id === `${l.id}-${n}`)) n++;
+    while (doc.shapes.some(x => x.id === `${l.id}-${n}`)) n++;
     copy.id = `${l.id}-${n}`;
     if (l.name) copy.name = `${l.name} ${n}`;
     // Offset so the copy is visibly its own object rather than hidden underneath.
     const off = Math.max(120, l.r * 0.25);
     for (const ring of eachRing(copy)) for (const p of ring) { p[0] += off; p[1] += off; }
     rebake(copy);
-    doc.land.push(copy);
+    doc.shapes.push(copy);
     sel = { shape: copy.id, mark: -1, vert: -1, bvert: -1 };
 }
 
 function deleteSelectedShape() {
     // Land is land: nothing in the route points at it any more, so there is no reference
     // to repoint. A rounding names a MARK, which may happen to sit on this shape.
-    doc.land = doc.land.filter(l => l.id !== sel.shape);
+    doc.shapes = doc.shapes.filter(l => l.id !== sel.shape);
     sel = { shape: null, mark: -1, vert: -1, bvert: -1 };
     return true;
 }
@@ -2413,8 +3145,12 @@ function deleteSelectedShape() {
 // and roundings in any order — which is what makes this panel worth having.
 // What is physically on the water. `none` is a position with no buoy — an island you
 // round, a transit — which the race marks with an indicator instead of a sprite.
-const MARK_KINDS = ['inflatable', 'can', 'none'];
-const MARK_KIND_LABEL = { inflatable: 'orange buoy', can: 'yellow can', none: 'no buoy' };
+// The list and the long labels come from VenueDoc so the dropdown, the validator and
+// the game's sprite registry cannot drift apart; the short labels are this panel's own.
+const MARK_KINDS = Object.keys(window.VenueDoc.MARK_KINDS);
+const MARK_KIND_TITLE = {};
+for (const k of MARK_KINDS) MARK_KIND_TITLE[k] = window.VenueDoc.MARK_KINDS[k].label;
+const MARK_KIND_LABEL = { inflatable: 'orange buoy', can: 'yellow can', committee: 'committee boat', none: 'no buoy' };
 
 // A leg's readable name. Authored `name` wins; otherwise derive it from what the leg IS.
 // A leg is a USE of a mark or a gate, so its label names the thing plus what this use
@@ -2445,35 +3181,28 @@ function routeRefresh(into) {
     if (!box) return;
     if (!doc) { box.innerHTML = ''; return; }
     const r = routeOf();
-    // The leg engine walks the route in order, so the start must stay first and the
-    // finish last. Everything between them is free to move.
-    const movable = (i) => i > 0 && i < r.length - 1;
-    box.innerHTML = r.map((e, i) => {
-        const ctl = e.kind === 'round'
-            ? `<b data-act="side" data-i="${i}" title="port / starboard">${e.side === 'port' ? '↺' : '↻'}</b>`
-            : `<b data-act="dir" data-i="${i}" title="flip crossing direction">${e.dir > 0 ? '→' : '←'}</b>`;
-        const modeBtn = (e.kind === 'gate' || (e.kind === 'line' && e.role !== 'start' && !e.finish))
-            ? `<b data-act="pass" data-i="${i}" title="sailed through / entered then left round an end"`
-              + ` style="font-size:10px">${e.pass === 'through' ? 'thru' : 'rnd'}</b>` : '';
-        const share = e.finish
-            ? `<b data-act="share" data-i="${i}" title="share the start line, or give the finish its own">⇄</b>` : '';
-        const del = movable(i) ? `<b data-act="del" data-i="${i}" title="remove this LEG — the marks stay">✕</b>` : '';
-        const n = useCount(e);
-        const reused = n > 1 ? `<span title="used by ${n} legs" style="opacity:.55">×${n}</span>` : '';
-        return `<div class="ob${i === selRoute ? ' on' : ''}${movable(i) ? '' : ' pinned'}"`
-             + ` data-i="${i}"${movable(i) ? ' draggable="true"' : ''}>`
-             + `<span class="grip" title="${movable(i) ? 'drag to reorder' : 'the start and finish are fixed in place'}">⠿</span>`
-             + `<span class="ob-g">${i === 0 ? 'S' : i === r.length - 1 ? 'F' : i}</span>`
-             + `<span class="ob-n">${entryLabel(e, i)}</span>${reused}`
-             + `${modeBtn}${share}${ctl}${del}</div>`;
-    }).join('');
+    // EVERY row moves. Pinning the ends made sense while the validator enforced start-first
+    // and finish-last; now that the shape is CHECKED instead, pinning would let you append a
+    // leg past the finish and then refuse to let you drag the finish back — a rule enforced
+    // in one direction only. The `route-ends` check says whether the order is raceable.
+    const movable = () => true;
+    // The list is the ORDER. Which way a leg is crossed, which side a mark is left, what a
+    // gate is called — those are properties of the leg, so they live in the inspector with
+    // every other object's properties. A row carries what you need to READ the order: where
+    // it sits, what it is, and whether the same geometry appears more than once.
+    // Just the order and the name. The position is the row's position — numbering it said
+    // the same thing twice — and how often a gate is reused is a fact about the GATE, which
+    // its own layer reports. Delete is the Delete key on the selection, as everywhere else.
+    box.innerHTML = r.map((e, i) =>
+        `<div class="ob${i === selRoute ? ' on' : ''}" data-i="${i}" draggable="true">`
+        + '<span class="grip" title="drag to reorder">⠿</span>'
+        + `<span class="ob-n">${entryLabel(e, i)}</span></div>`).join('');
 
     // Selecting a row is what the name field edits. On `click`, not mousedown: a
     // mousedown re-render would replace the row mid-gesture and the drag would never
     // start. A completed drag does not fire click, so the two never collide.
     box.querySelectorAll('.ob').forEach(el => {
-        el.addEventListener('click', (ev) => {
-            if (ev.target.tagName === 'B') return;              // buttons do their own thing
+        el.addEventListener('click', () => {
             selRoute = +el.dataset.i;
             refreshChrome(); marksInspector(); draw();
         });
@@ -2483,13 +3212,14 @@ function routeRefresh(into) {
         el.addEventListener('mouseleave', () => { hoverRoute = -1; draw(); });
     });
 
-    // DRAG TO REORDER. Only the middle entries move: the leg engine walks the route in
-    // order, so the start must stay first and the finish last.
+    // DRAG TO REORDER, anywhere in the list.
     let dragFrom = -1;
     const dropSlot = (el, ev) => {
         const rect = el.getBoundingClientRect();
         const after = (ev.clientY - rect.top) > rect.height / 2;
-        return Math.max(1, Math.min(r.length - 1, +el.dataset.i + (after ? 1 : 0)));
+        // 0..length: a leg may now be dropped at either END too, which is the only way to
+        // put a finish back last after appending past it.
+        return Math.max(0, Math.min(r.length, +el.dataset.i + (after ? 1 : 0)));
     };
     box.querySelectorAll('.ob[draggable]').forEach(el => {
         el.addEventListener('dragstart', (ev) => {
@@ -2507,16 +3237,24 @@ function routeRefresh(into) {
         el.addEventListener('dragover', (ev) => {
             ev.preventDefault();
             box.querySelectorAll('.ob').forEach(x => x.classList.remove('dropbefore', 'dropafter'));
-            // Think in insertion SLOTS, clamped to the movable band, so the indicator can
-            // never promise a drop the reorder will refuse. Slot len-1 draws above the
-            // finish row and means "last leg before the finish".
-            const row = box.querySelector(`.ob[data-i="${dropSlot(el, ev)}"]`);
+            // Insertion SLOTS, 0..length. The indicator is drawn from the same slot the
+            // drop will use, so it can never promise a placement the reorder refuses; slot
+            // `length` has no row of its own, so it marks the last row as "after".
+            const slot = dropSlot(el, ev);
+            const row = box.querySelector(`.ob[data-i="${slot}"]`);
             if (row) row.classList.add('dropbefore');
+            else {
+                const last = box.querySelector(`.ob[data-i="${r.length - 1}"]`);
+                if (last) last.classList.add('dropafter');
+            }
         });
         el.addEventListener('drop', (ev) => {
             ev.preventDefault();
             const from = dragFrom >= 0 ? dragFrom : parseInt(ev.dataTransfer.getData('text/plain'), 10);
-            if (!(from >= 1 && from <= r.length - 2)) return;
+            // Any row, including the first and the last. The band this used to clamp to was
+            // the old "start first, finish last" rule; with that rule now a CHECK, refusing
+            // the drag would leave a route you are told is wrong and cannot put right.
+            if (!(from >= 0 && from < r.length)) return;
             let to = dropSlot(el, ev);
             if (from < to) to--;                            // removing shifts the target
             if (to === from) return;
@@ -2527,44 +3265,6 @@ function routeRefresh(into) {
         });
     });
 
-    box.querySelectorAll('b').forEach(el => el.addEventListener('click', () => {
-        const i = +el.dataset.i, act = el.dataset.act, rr = doc.course.route, e = rr[i];
-        if (act === 'dir') e.dir = -(e.dir || 1);
-        else if (act === 'side') e.side = (e.side === 'port') ? 'starboard' : 'port';
-        else if (act === 'pass') {
-            e.pass = (e.pass === 'through') ? 'round' : 'through';
-            e.kind = 'gate';
-        }
-        else if (act === 'share') {
-            const res = toggleFinishOwnLine();
-            if (res) toast(res === 'own' ? 'Finish now has its own line — drag it into place'
-                                        : 'Finish shares the start line again');
-        }
-        else if (act === 'del') {
-            // The ordering is all that is removed. The marks and the gate stay on the
-            // water — they may be used by another leg, and deleting geometry as a side
-            // effect of an ordering change is not what anyone means by ✕.
-            rr.splice(i, 1);
-            if (selRoute >= rr.length) selRoute = -1;
-        }
-        afterEdit(true, 'route');
-    }));
-
-    // What can be added: every line and every mark already on the water, plus the land
-    // shapes, since an island is a legitimate thing to round.
-    const add = $('rt-add-what');
-    if (add) {
-        const opts = [];
-        for (const ln of dlines()) opts.push(`<option value="line:${ln.id}">${lineLabel(ln.id)} — cross or round</option>`);
-        dmarksOf().forEach((m, i) => opts.push(`<option value="mark:${m.id}">${markLabel(i)} — round it</option>`));
-        for (const l of doc.land) opts.push(`<option value="land:${l.id}">${l.id} — round the island</option>`);
-        const keep = add.value;
-        add.innerHTML = opts.join('');
-        if (keep) add.value = keep;
-        add.hidden = !opts.length;
-        $('btn-rt-add').hidden = !opts.length;
-        $('rt-nothing').hidden = !!opts.length;
-    }
 }
 
 // ── The inventory: what exists on the water ─────────────────────────────────
@@ -2594,50 +3294,10 @@ function newMarkPair(span) {
     ];
 }
 
-// Name fields for the selected leg, mark and gate. Blank means "use the smart default",
-// so a course reads sensibly before anyone types and stays that way if they never do.
-function marksInspector() {
-    const rtRow = $('rt-name-row'), mkRow = $('mk-name-row'), lnRow = $('ln-name-row');
-    if (!rtRow || !mkRow || !lnRow) return;
-    const r = routeOf();
-    const e = (selRoute >= 0) ? r[selRoute] : null;
-    rtRow.hidden = !e;
-    if (e) {
-        $('rt-name').value = e.name || '';
-        $('rt-name').placeholder = entryLabel(e, selRoute);
-        const n = useCount(e);
-        $('rt-info').textContent = `leg ${selRoute} of ${r.length - 1}`
-            + (n > 1 ? ` · this ${e.kind === 'round' ? 'mark' : 'gate'} is used by ${n} legs` : '');
-    }
-
-    const m = (sel.mark >= 0) ? dmarksOf()[sel.mark] : null;
-    mkRow.hidden = !m;
-    if (m) {
-        // The label above the box is the name in force. The box itself is empty unless a
-        // name was typed, and its placeholder repeats that label — so "what goes in this
-        // field" answers itself, and clearing it visibly returns to the default.
-        const derived = markLabel(sel.mark);
-        $('mk-derived').textContent = derived + (m.name ? '  (renamed)' : '  (automatic)');
-        $('mk-name').value = m.name || '';
-        $('mk-name').placeholder = derived;
-        $('mk-kind').value = m.kind || 'inflatable';
-        $('mk-pos').textContent = `${MARK_KIND_LABEL[m.kind] || MARK_KIND_LABEL.inflatable}`
-            + ` · ${Math.round(uToM(m.x))}, ${Math.round(uToM(m.y))} m · id ${m.id}`;
-    }
-
-    const ln = (selLine >= 0) ? dlines()[selLine] : null;
-    lnRow.hidden = !ln;
-    if (ln) {
-        const dl = lineLabel(ln.id);
-        $('ln-derived').textContent = dl + (ln.name ? '  (renamed)' : '  (automatic)');
-        $('ln-name').value = ln.name || '';
-        $('ln-name').placeholder = dl;
-        const ends = lineEnds(ln.id);
-        const len = ends ? Math.hypot(ends[1].x - ends[0].x, ends[1].y - ends[0].y) : 0;
-        const uses = routeOf().filter(e2 => e2.lineId === ln.id).length;
-        $('ln-info').textContent = `${fmtM(len)} long · ${fmtBL(len)} · used by ${uses} leg(s) · id ${ln.id}`;
-    }
-}
+// Marks, gates and legs render their own fields in the INSPECTOR now, so there is nothing
+// left to fill in here. Kept as the name every mark/gate/route edit calls, so whatever the
+// right panel is showing gets rebuilt.
+function marksInspector() { inspectorRefresh(); }
 
 // ── Creating things ─────────────────────────────────────────────────────────
 function nextId(prefix, taken) {
@@ -2689,7 +3349,11 @@ function addRoundingMark() {
 function addToRoute(ref, passMode) {
     const [what, id] = String(ref).split(':');
     const rr = doc.course.route;
-    const at = Math.max(1, rr.length - 1);
+    // APPEND. It used to insert before the finish, which quietly kept the finish last and
+    // made "add a leg" mean something different from what the list showed. The order is the
+    // route: a new leg goes on the end, and the checks say whether the result starts and
+    // ends the way a race has to.
+    const at = rr.length;
     let entry = null;
     if (what === 'line') entry = { kind: 'gate', lineId: id, dir: 1, role: 'gate', pass: passMode || 'through' };
     else if (what === 'mark') entry = { kind: 'round', markId: id, side: 'starboard', role: 'rounding' };
@@ -2705,6 +3369,7 @@ function addToRoute(ref, passMode) {
     if (!entry) return false;
     rr.splice(at, 0, entry);
     selRoute = at;
+    osel = [];
     return true;
 }
 
@@ -2844,6 +3509,111 @@ function addWindRegion() {
 // wherever land and the arena are not — so this mode edits what the water DOES.
 const cregs = () => (doc && doc.current && doc.current.regions) || [];
 
+// ── Gust regions ────────────────────────────────────────────────────────────
+// The third use of the same polygon, and the only one that is not a state of the water. A
+// wind region says what the wind IS here; a gust region says what is BORN here — and what
+// is born then leaves, downwind, steered by the breeze it meets on the way.
+//
+// So there is no direction to author and no speed: a source has no bearing of its own. What
+// it has is a share of the day's puffs and the character of them, all stated as multipliers
+// on the venue's own gustiness so a source can be dropped anywhere without first knowing
+// what the weather there is.
+//
+// NO REGIONS is not "no gusts" — it is the uniform scatter the game has always done, and it
+// stays byte-for-byte that, because the RNG draw count is what every venue's races are
+// pinned to.
+const gregs = () => (doc && doc.gusts && doc.gusts.regions) || [];
+
+// Puffs, drawn where they come from. Not arrows: a source points nowhere, and borrowing the
+// wind layer's arrow grid would say it had a direction it does not have. The dots ARE the
+// thing — cat's paws on the water — and their density carries the source's `count` the way arrow
+// length carries speed, thinning toward the rim exactly as the spawn weighting does.
+function drawGustRegions() {
+    if (!doc) return;
+    const rs = gregs();
+    let total = 0;
+    for (const r of rs) total += (r.count != null ? r.count : 8);
+    for (let i = 0; i < rs.length; i++) {
+        const r = rs[i];
+        if (!r.poly || r.poly.length < 3) continue;
+        const on = i === selGust;
+        // WARM for a source that mostly makes pressure, COOL for one that mostly makes
+        // holes — the same amber/blue the pressure overlay uses, so a dead patch never
+        // reads as a gust factory at a glance.
+        const bias = r.bias != null ? r.bias : 0.5;
+        const rgb = bias >= 0.5 ? '251,191,36' : '129,140,248';
+        ctx.beginPath(); ringPath(r.poly);
+        ctx.fillStyle = `rgba(${rgb},${on ? 0.15 : 0.07})`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(${rgb},${on ? 1 : 0.55})`;
+        ctx.lineWidth = on ? 2 : 1.2;
+        ctx.setLineDash([2, 6]); ctx.stroke(); ctx.setLineDash([]);
+
+        if (mode === 'gust') drawGustStipple(r, on, rgb, total);
+
+        if (on) {
+            r.poly.forEach((p, k) => {
+                const q = toS(p[0], p[1]);
+                const onV = hover.wvert === k;
+                const rad = onV ? 8 : 5.5;
+                ctx.beginPath(); ctx.arc(q.x, q.y, rad + 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(8,15,30,0.75)'; ctx.fill();
+                ctx.beginPath(); ctx.arc(q.x, q.y, rad, 0, Math.PI * 2);
+                ctx.fillStyle = onV ? '#fef3c7' : `rgb(${rgb})`; ctx.fill();
+            });
+        }
+    }
+}
+
+// The stipple. A screen-space grid like the arrow grid, so density reads the same at any
+// zoom, and each cell either gets a dot or does not — decided by the SAME smoothstep the
+// spawner rejection-samples against. What you see is literally where puffs will be born.
+//
+// The jitter is derived from the grid cell, never from Math.random(): the editor redraws on
+// every mouse move, and a random stipple would boil.
+function drawGustStipple(r, on, rgb, total) {
+    const poly = r.poly;
+    const fall = r.falloff != null ? r.falloff : 400;
+    const share = total > 0 ? (r.count != null ? r.count : 8) / total : 0;
+    const step = 26;
+    let box = null;
+    for (const q of poly) {
+        const sp = toS(q[0], q[1]);
+        if (!box) box = { x0: sp.x, y0: sp.y, x1: sp.x, y1: sp.y };
+        box.x0 = Math.min(box.x0, sp.x); box.y0 = Math.min(box.y0, sp.y);
+        box.x1 = Math.max(box.x1, sp.x); box.y1 = Math.max(box.y1, sp.y);
+    }
+    if (!box) return;
+    const x0 = Math.max(0, Math.floor(box.x0 / step) * step);
+    const y0 = Math.max(0, Math.floor(box.y0 / step) * step);
+    const x1 = Math.min(W(), box.x1), y1 = Math.min(H(), box.y1);
+    for (let sy = y0 + step / 2; sy < y1; sy += step) {
+        for (let sx = x0 + step / 2; sx < x1; sx += step) {
+            // A stable hash of the cell: enough scatter that the dots do not read as a grid,
+            // and identical every frame.
+            const h = Math.abs(Math.sin(sx * 12.9898 + sy * 78.233) * 43758.5453) % 1;
+            const h2 = Math.abs(Math.sin(sx * 39.3468 + sy * 11.135) * 24634.6345) % 1;
+            const px = sx + (h - 0.5) * step * 0.8, py = sy + (h2 - 0.5) * step * 0.8;
+            const w = toW(px, py);
+            if (!pointInRing(w.x, w.y, poly)) continue;
+            let sd = Infinity;
+            for (let i = 0; i < poly.length; i++)
+                sd = Math.min(sd, distToSeg(w.x, w.y, poly[i], poly[(i + 1) % poly.length]));
+            const t = Math.min(1, sd / fall);
+            const wt = t * t * (3 - 2 * t);
+            // The dot survives with the same probability a puff would be born here, and
+            // carries the region's share of all the births as its weight against a
+            // neighbouring source's.
+            if (h * 0.9 > wt * Math.min(1, share * 3)) continue;
+            const a = (on ? 0.85 : 0.45) * (0.3 + 0.7 * wt);
+            ctx.beginPath();
+            ctx.arc(px, py, 1.6 + 1.4 * wt, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${rgb},${a.toFixed(3)})`;
+            ctx.fill();
+        }
+    }
+}
+
 // ── Water colour ────────────────────────────────────────────────────────────
 // The document may override the venue's water palette. The swatches show whatever is in
 // force — the document's colour if it has one, otherwise the venue's — so they never
@@ -2981,7 +3751,7 @@ function drawCurrentField() {
             const w = toW(sx, sy);
             // Skip land: a flow arrow over a coastline is describing something that is
             // not there.
-            if (doc && doc.land.some(l => pointInRing(w.x, w.y, l.outer)
+            if (doc && doc.shapes.some(l => pointInRing(w.x, w.y, l.outer)
                 && !(l.holes || []).some(h => pointInRing(w.x, w.y, h)))) continue;
             const f = getCurrentAt(w.x, w.y);
             if (!f || f.speed < 0.02) continue;
@@ -3003,11 +3773,18 @@ function drawCurrentField() {
 // other outline. What the game randomizes per race is the MOTION — drift, spin, wander —
 // which is what keeps a designed ice field from playing out the same way twice.
 const EMPTY = [];
-const dice = () => (doc && doc.ice) || EMPTY;
-const onLand = (x, y) => !!(doc && doc.land.some(l => pointInRing(x, y, l.outer)
+const dshapes = () => (doc && doc.shapes) || EMPTY;
+// What a shape IS, from the shared kinds table — never a second copy of it here.
+const TR = (sh) => window.VenueDoc.traits(sh);
+const isFloe = (sh) => TR(sh).motion === 'drift';
+// Is this point on something that SITS STILL? Scattering rejects candidates that land on
+// it. Drifting shapes are excluded on purpose: two floes may legitimately be laid touching,
+// and once the array held both, "on land" quietly started meaning "on anything".
+const onLand = (x, y) => !!(doc && doc.shapes.some(l =>
+    TR(l).motion === 'fixed' && pointInRing(x, y, l.outer)
     && !(l.holes || []).some(h => pointInRing(x, y, h))));
 // The one place allowed to create the array is the code about to put something in it.
-const diceW = () => { if (!doc.ice) doc.ice = []; return doc.ice; };
+const dshapesW = () => { if (!doc.shapes) doc.shapes = []; return doc.shapes; };
 
 // The outline generator is the GAME's own (script.js), so hand-placed ice is shaped by
 // exactly the same harmonics as the scattered kind — otherwise authored floes would read
@@ -3035,16 +3812,28 @@ function addIce(cx, cy, radius) {
     for (let k = 0; k < n; k++) {
         const rr = Math.max(mToU(4), each * (1 - vary / 2 + Math.random() * vary));
         let px = cx, py = cy;
+        let ring = null;
         if (n > 1) {
             // Keep the pieces apart: two floes on top of each other read as one bigger
             // one, so a scatter that overlaps is not the density it claims to be. A few
             // tries, then place anyway — refusing silently would leave you short.
+            //
+            // The OUTLINE is generated per try and tested by its own centroid, not by the
+            // candidate point. A floe outline is deliberately lopsided — makeFloeOutline's
+            // f=1 harmonic shoves the mass off-centre, which is what stops a floe reading
+            // as a flower — so its centroid sits well away from where it was seeded. Testing
+            // the seed meant the tool refused land it was about to cover and accepted land
+            // it was about to sit on, at random, a few percent of the time.
             let placed = false;
             for (let t = 0; t < 18 && !placed; t++) {
                 const a = Math.random() * Math.PI * 2;
                 const d = Math.sqrt(Math.random()) * Math.max(0, radius - rr);
                 px = cx + Math.cos(a) * d; py = cy + Math.sin(a) * d;
-                placed = !onLand(px, py) && !made.some(o => {
+                ring = iceOutline(px, py, rr);
+                let gx = 0, gy = 0;
+                for (const q of ring) { gx += q[0]; gy += q[1]; }
+                gx /= ring.length; gy /= ring.length;
+                placed = !onLand(gx, gy) && !made.some(o => {
                     const c = iceCentre(o);
                     return Math.hypot(c.x - px, c.y - py) < (c.r + rr) * 0.95;
                 });
@@ -3052,12 +3841,15 @@ function addIce(cx, cy, radius) {
             if (!placed) continue;              // no room here; place fewer, not badly
         }
         let m = 1;
-        while (dice().some(f => f.id === `ice-${m}`)) m++;
-        const f = { id: `ice-${m}`, outer: iceOutline(px, py, rr) };
-        diceW().push(f);
+        while (dshapes().some(f => f.id === `ice-${m}`)) m++;
+        // KIND, always. A shape with none falls back to the table's first entry, which is
+        // fixed land — so a scattered floe read as an island, and the placer then refused to
+        // drop the next one anywhere near it.
+        const f = { id: `ice-${m}`, kind: newKind(),
+                    outer: ring || iceOutline(px, py, rr), holes: [] };
+        dshapesW().push(f);
         made.push(f);
     }
-    selIce = dice().length - 1;
     if (made.length && onLand(cx, cy) && n === 1) {
         toast('That floe is sitting on land — drag it into the water', true);
     }
@@ -3071,26 +3863,21 @@ function iceCentre(f) {
              r: Math.max.apply(null, f.outer.map(p => Math.hypot(p[0] - cx / f.outer.length, p[1] - cy / f.outer.length))) };
 }
 
-// Which venue-specific objects this venue can hold. Ice is the arctic's; the frame is here
-// for whatever the next venue turns out to need. The COUNT and the selected floe's stats
-// used to live here too — both are on the layer row and in the inspector, and saying them a
-// third time was a third place to keep true.
-const venueHasIce = () => !!(doc && state.race && state.race.venueFx && state.race.venueFx.ice);
-function venueRefresh() {
-    const none = $('venue-none');
-    if (none) none.hidden = venueHasIce();
-}
+// ICE IS A SHAPE KIND, NOT A VENUE PRIVILEGE. This used to ask the venue's `fx.ice`, so the
+// Place tool would only drop a floe on Glacier Sound — the one venue that already had ice
+// was the only one you could add it to. The `fx` system is gone and geometry is whatever the
+// document says it is, so any course can be given drifting ice by drawing some.
+const venueHasIce = () => !!doc;
 
-// Kept as the name every venue-object edit calls when its list changes. There is nothing
-// left for it to paint — the floe list, its count and the selected floe's numbers are all
-// rendered elsewhere — but the layer row's count comes from layerRefresh.
+// The layer row's count. Kept under this name because a dozen call sites say it; there is
+// nothing else left for it to paint, since the shape list, its count and the selected
+// shape's numbers all render from layerRefresh and refreshInspector.
 function iceRefresh() { layerRefresh(); }
 
 function deleteIce(i) {
-    if (!doc || !dice()[i]) return false;
-    const id = dice()[i].id;
-    doc.ice.splice(i, 1);
-    selIce = -1;
+    if (!doc || !dshapes()[i]) return false;
+    const id = dshapes()[i].id;
+    doc.shapes.splice(i, 1);
     afterEdit(true, 'delete ice');
     toast(`Removed ${id}`);
     return true;
@@ -3107,23 +3894,27 @@ function commitPending() {
     if (!pending || pending.length < 3) { pending = null; draw(); return; }
     const ring = pending.map(p => [p[0], p[1]]);
     pending = null;
-    if (mode === 'wind' || mode === 'current') {
+    if (isRegionMode(mode)) {
         const r = addRegion(mode, ring);
         afterEdit(true, `draw ${mode} region`);
-        toast(`Added ${r.id} — set its direction and speed on the right`);
+        toast(mode === 'gust'
+            ? `Added ${r.id} — puffs are born here now; say what kind on the right`
+            : `Added ${r.id} — set its direction and speed on the right`);
         return;
     }
     let n = 1;
-    while (doc.land.some(x => x.id === `shape-${n}`)) n++;
-    const t = LAND_TYPES[0];
-    const l = { id: `shape-${n}`, cls: t.cls, style: t.style, soft: t.soft,
+    while (doc.shapes.some(x => x.id === `shape-${n}`)) n++;
+    // A shape without a KIND is not a shape yet: the compiler falls back to the first entry
+    // in the table, so an unkinded polygon silently became a sandy island, and the validator
+    // rightly called it an unknown kind. Every maker states one.
+    const l = { id: `shape-${n}`, kind: newKind(),
                 outer: ring, holes: [], c: [0, 0], r: 0 };
     rebake(l);
-    doc.land.push(l);
+    doc.shapes.push(l);
     sel = { shape: l.id, mark: -1, vert: -1, bvert: -1 };
-    osel = [{ kind: 'land', id: l.id }];
+    osel = [{ kind: 'shape', id: l.id }];
     afterEdit(true, 'draw shape');
-    toast(`Added ${l.id} — sculpt with S, set its material on the right`);
+    toast(`Added ${l.id} — sculpt with S, set its kind on the right`);
 }
 
 // What a NEW region starts at. Seeded from the venue's own wind once, so drawing a region on
@@ -3135,14 +3926,13 @@ function defaultWindSpeed() {
     return Math.round(isFinite(v) && v > 0 ? v : 12);
 }
 
-// One maker for both region kinds. `poly` is whatever outline you drew; the rest are the
-// neutral defaults a new region starts from.
+// One maker for every region kind. `poly` is whatever outline you drew; the rest are the
+// neutral defaults a new region of that kind starts from.
 function addRegion(kind, poly) {
-    // `doc.current` may not exist at all on a venue that has never had one — this is a
-    // WRITE path, so creating the container here is right. (The accessors that only READ
-    // must never do this: doing so marked pristine documents unsaved on load, twice.)
-    if (kind === 'current' && !doc.current) doc.current = {};
-    const owner = kind === 'wind' ? doc.wind : doc.current;
+    // `doc.current`/`doc.gusts` may not exist at all on a venue that has never had one —
+    // this is a WRITE path, so creating the container here is right. (The accessors that
+    // only READ must never do this: it marked pristine documents unsaved on load, twice.)
+    const owner = REGION[kind].owner();
     const list = owner.regions || (owner.regions = []);
     let n = 1;
     while (list.some(r => r.id === `${kind}-${n}`)) n++;
@@ -3158,11 +3948,18 @@ function addRegion(kind, poly) {
         // not three boxes to leave lying about meaning nothing. `period: 0` is what the
         // engine reads as "no oscillation"; it still SUPPORTS all three, so bringing tides
         // back is a panel change and not an engine one.
-        : { id: `current-${n}`, poly, falloff: 300, direction: 0,
-            speed: 0.5, dirVar: 0, speedVar: 0, period: 0 };
+        : kind === 'current'
+        ? { id: `current-${n}`, poly, falloff: 300, direction: 0,
+            speed: 0.5, dirVar: 0, speedVar: 0, period: 0 }
+        // A gust source starts NEUTRAL in every way but position: an equal share of the
+        // births, and puffs exactly like the ones this venue was already making. Drawing
+        // one says WHERE, and nothing else, until you say otherwise. `bias` is deliberately
+        // absent rather than 0.5 — absent means "the venue's own split", and writing a
+        // number would silently override a venue tuned to be gusty or holey.
+        : { id: `gust-${n}`, poly, falloff: 300, count: 8, strength: 1, size: 1, life: 1, bias: 0.5, veer: 15 };
     list.push(r);
     const i = list.length - 1;
-    if (kind === 'wind') selWind = i; else selCur = i;
+    setRegSel(kind, i);
     osel = [{ kind, i }];
     vsel = [];
     return r;
@@ -3179,35 +3976,29 @@ function modeVertexRefs() {
     if (mode === 'shape' && sel.shape) {
         const l = shapeById(sel.shape);
         if (l) {
-            l.outer.forEach((p, i) => out.push({ kind: 'land', id: l.id, ring: -1, i, x: p[0], y: p[1] }));
+            l.outer.forEach((p, i) => out.push({ kind: 'shape', id: l.id, ring: -1, i, x: p[0], y: p[1] }));
             (l.holes || []).forEach((h, hi) => h.forEach((p, i) =>
-                out.push({ kind: 'land', id: l.id, ring: hi, i, x: p[0], y: p[1] })));
+                out.push({ kind: 'shape', id: l.id, ring: hi, i, x: p[0], y: p[1] })));
         }
-    } else if (mode === 'venue' && selIce >= 0 && dice()[selIce]) {
-        const f = dice()[selIce];
-        f.outer.forEach((p, i) => out.push({ kind: 'ice', id: f.id, r: selIce, i, x: p[0], y: p[1] }));
-    } else if (mode === 'boundary') {
+        } else if (mode === 'boundary') {
         const bp = doc.world.boundary.poly;
         if (bp) bp.forEach((p, i) => out.push({ kind: 'arena', i, x: p[0], y: p[1] }));
-    } else if (mode === 'wind' && selWind >= 0 && wregs()[selWind]) {
-        wregs()[selWind].poly.forEach((p, i) => out.push({ kind: 'wind', r: selWind, i, x: p[0], y: p[1] }));
-    } else if (mode === 'current' && selCur >= 0 && cregs()[selCur]) {
-        cregs()[selCur].poly.forEach((p, i) => out.push({ kind: 'current', r: selCur, i, x: p[0], y: p[1] }));
+    } else if (activeReg()) {
+        const r = regSel(mode);
+        activeReg().poly.forEach((p, i) => out.push({ kind: mode, r, i, x: p[0], y: p[1] }));
     }
     return out;
 }
 function vertexArray(ref) {
     if (!doc) return null;
-    if (ref.kind === 'land') {
+    if (ref.kind === 'shape') {
         const l = shapeById(ref.id);
         if (!l) return null;
         const ring = ref.ring < 0 ? l.outer : (l.holes || [])[ref.ring];
         return ring ? ring[ref.i] : null;
     }
     if (ref.kind === 'arena') return (doc.world.boundary.poly || [])[ref.i];
-    if (ref.kind === 'wind') { const w = wregs()[ref.r]; return w ? w.poly[ref.i] : null; }
-    if (ref.kind === 'current') { const c = cregs()[ref.r]; return c ? c.poly[ref.i] : null; }
-    if (ref.kind === 'ice') { const f = dice().find(x => x.id === ref.id); return f ? f.outer[ref.i] : null; }
+    if (isRegionMode(ref.kind)) { const g = regsOf(ref.kind)[ref.r]; return g ? g.poly[ref.i] : null; }
     return null;
 }
 const sameRef = (a, b) => a.kind === b.kind && a.i === b.i && a.id === b.id
@@ -3216,7 +4007,7 @@ const inSel = (ref) => vsel.some(v => sameRef(v, ref));
 
 function rebakeTouched() {
     if (!doc) return;
-    const ids = new Set(vsel.filter(v => v.kind === 'land').map(v => v.id));
+    const ids = new Set(vsel.filter(v => v.kind === 'shape').map(v => v.id));
     for (const id of ids) { const l = shapeById(id); if (l) rebake(l); }
 }
 
@@ -3250,7 +4041,7 @@ function snapCandidates(ref) {
     const out = [];
     if (!ref) return out;
     const push = (p) => { if (p) out.push({ x: p[0], y: p[1] }); };
-    if (ref.kind === 'land') {
+    if (ref.kind === 'shape') {
         const l = shapeById(ref.id);
         if (!l) return out;
         const ring = ref.ring < 0 ? l.outer : (l.holes || [])[ref.ring];
@@ -3262,17 +4053,12 @@ function snapCandidates(ref) {
         if (!bp || bp.length < 2) return out;
         push(bp[(ref.i - 1 + bp.length) % bp.length]);
         push(bp[(ref.i + 1) % bp.length]);
-    } else if (ref.kind === 'wind' || ref.kind === 'current') {
-        const reg = ref.kind === 'wind' ? wregs()[ref.r] : cregs()[ref.r];
+    } else if (isRegionMode(ref.kind)) {
+        const reg = regsOf(ref.kind)[ref.r];
         if (!reg || reg.poly.length < 2) return out;
         push(reg.poly[(ref.i - 1 + reg.poly.length) % reg.poly.length]);
         push(reg.poly[(ref.i + 1) % reg.poly.length]);
-    } else if (ref.kind === 'ice') {
-        const f = dice().find(x => x.id === ref.id);
-        if (!f || f.outer.length < 2) return out;
-        push(f.outer[(ref.i - 1 + f.outer.length) % f.outer.length]);
-        push(f.outer[(ref.i + 1) % f.outer.length]);
-    }
+        }
     return out;
 }
 
@@ -3314,10 +4100,9 @@ function hit(wx, wy) {
             if (Math.abs(d - e.mark.zone) < r) { out.rring = li; return out; }
         }
     }
-    // Region outlines: wind and current use the same vertex slot, since only one of the
-    // two modes is ever active.
-    const activeRegion = (mode === 'wind' && selWind >= 0) ? wregs()[selWind]
-                       : (mode === 'current' && selCur >= 0) ? cregs()[selCur] : null;
+    // Region outlines: every region kind uses the same vertex slot, since only one of the
+    // region modes is ever active.
+    const activeRegion = activeReg();
     if (doc && sub === 'direct' && activeRegion && activeRegion.poly) {
         const wp = activeRegion.poly;
         for (let i = 0; i < wp.length; i++) {
@@ -3330,19 +4115,14 @@ function hit(wx, wy) {
             if (Math.hypot(bp[i][0] - wx, bp[i][1] - wy) < r) { out.bvert = i; return out; }
         }
     }
-    if (mode === 'venue' && doc) {
-        const fs = dice();
-        // The selected floe's vertices win over every body: a handle sits ON its outline,
-        // so testing bodies first would make it unreachable.
-        if (sub === 'direct' && selIce >= 0 && fs[selIce]) {
-            const ring = fs[selIce].outer;
-            for (let i = 0; i < ring.length; i++) {
-                if (Math.hypot(ring[i][0] - wx, ring[i][1] - wy) < r) { out.ice = selIce; out.vert = i; return out; }
-            }
-        }
-        // Last drawn wins, so the piece on top is the one you grab.
+    if (mode === 'shape' && doc) {
+        // LAST DRAWN WINS, which is now a real rule rather than an accident: the array is
+        // in paint order, so walking it backwards grabs whatever is visibly on top.
+        const fs = dshapes();
         for (let i = fs.length - 1; i >= 0; i--) {
-            if (pointInRing(wx, wy, fs[i].outer)) { out.ice = i; return out; }
+            const sh = fs[i];
+            if (pointInRing(wx, wy, sh.outer)
+                && !(sh.holes || []).some(h => pointInRing(wx, wy, h))) { out.ice = i; return out; }
         }
         return out;
     }
@@ -3384,12 +4164,12 @@ function hit(wx, wy) {
             }
         }
     }
-    for (const l of doc.land) {
+    for (const l of doc.shapes) {
         if (pointInRing(wx, wy, l.outer) && !(l.holes||[]).some(h => pointInRing(wx, wy, h))) { out.shape = l.id; return out; }
     }
     return out;
 }
-const shapeById = (id) => doc && doc.land.find(l => l.id === id);
+const shapeById = (id) => doc && doc.shapes.find(l => l.id === id);
 
 // ── Edit operations ─────────────────────────────────────────────────────────
 function translateShape(l, dx, dy) {
@@ -3448,16 +4228,12 @@ function modeObjects() {
     if (!doc) return [];
     const out = [];
     if (mode === 'shape') {
-        for (const l of doc.land) out.push({ ref: { kind: 'land', id: l.id }, rings: eachRing(l), land: l });
-    } else if (mode === 'venue') {
-        dice().forEach((f, i) => { if (f.outer) out.push({ ref: { kind: 'ice', i }, rings: [f.outer], land: null }); });
-    } else if (mode === 'boundary') {
+        for (const l of doc.shapes) out.push({ ref: { kind: 'shape', id: l.id }, rings: eachRing(l), land: l });
+        } else if (mode === 'boundary') {
         const bp = doc.world.boundary.poly;
         if (bp) out.push({ ref: { kind: 'arena' }, rings: [bp], land: null });
-    } else if (mode === 'wind') {
-        wregs().forEach((r, i) => { if (r.poly) out.push({ ref: { kind: 'wind', i }, rings: [r.poly], land: null }); });
-    } else if (mode === 'current') {
-        cregs().forEach((r, i) => { if (r.poly) out.push({ ref: { kind: 'current', i }, rings: [r.poly], land: null }); });
+    } else if (isRegionMode(mode)) {
+        regsOf(mode).forEach((r, i) => { if (r.poly) out.push({ ref: { kind: mode, i }, rings: [r.poly], land: null }); });
     }
     return out;
 }
@@ -3498,15 +4274,13 @@ function oselTransform(fn) {
 function syncSelFromOsel() {
     const only = (k) => { const m = osel.filter(o => o.kind === k); return m.length === 1 ? m[0] : null; };
     if (mode === 'shape') {
-        const l = only('land');
+        const l = only('shape');
         sel = Object.assign({}, NOHIT, { shape: l ? l.id : null });
         refreshInspector();
-    } else if (mode === 'venue') {
-        const f = only('ice'); selIce = f ? f.i : -1; iceRefresh();
-    } else if (mode === 'wind') {
-        const r = only('wind'); selWind = r ? r.i : -1; windRefresh();
-    } else if (mode === 'current') {
-        const r = only('current'); selCur = r ? r.i : -1; currentRefresh();
+    } else if (isRegionMode(mode)) {
+        const r = only(mode);
+        setRegSel(mode, r ? r.i : -1);
+        objRefresh(); layerRefresh();
     }
 }
 // ── Object-level COMMANDS ───────────────────────────────────────────────────
@@ -3531,27 +4305,19 @@ function oselDuplicate() {
     for (const o of oselObjects()) {
         const off = Math.max(120, (o.land ? o.land.r : ringBox(o.rings).w * 0.5) * 0.25);
         const shift = (ring) => ring.map(q => [q[0] + off, q[1] + off]);
-        if (o.ref.kind === 'land') {
+        if (o.ref.kind === 'shape') {
             const l = o.land, copy = clone(l);
             let n = 2;
-            while (doc.land.some(x => x.id === `${l.id}-${n}`)) n++;
+            while (doc.shapes.some(x => x.id === `${l.id}-${n}`)) n++;
             copy.id = `${l.id}-${n}`;
             if (l.name) copy.name = `${l.name} ${n}`;
             copy.outer = shift(l.outer);
             copy.holes = (l.holes || []).map(shift);
             rebake(copy);
-            doc.land.push(copy);
-            made.push({ kind: 'land', id: copy.id });
-        } else if (o.ref.kind === 'ice') {
-            const f = clone(dice()[o.ref.i]);
-            let n = 2;
-            while (dice().some(x => x.id === `${f.id}-${n}`)) n++;
-            f.id = `${f.id}-${n}`;
-            f.outer = shift(f.outer);
-            doc.ice.push(f);
-            made.push({ kind: 'ice', i: doc.ice.length - 1 });
-        } else if (o.ref.kind === 'wind' || o.ref.kind === 'current') {
-            const list = o.ref.kind === 'wind' ? doc.wind.regions : doc.current.regions;
+            doc.shapes.push(copy);
+            made.push({ kind: 'shape', id: copy.id });
+            } else if (isRegionMode(o.ref.kind)) {
+            const list = regsOf(o.ref.kind);
             const r = clone(list[o.ref.i]);
             let n = 2;
             while (list.some(x => x.id === `${r.id}-${n}`)) n++;
@@ -3632,10 +4398,10 @@ function oselBoolean(op) {
     }
     const base = objs[0];
     const made = [];
-    if (base.ref.kind === 'land') {
+    if (base.ref.kind === 'shape') {
         const proto = base.land;
         const keepIds = new Set(objs.map(o => o.ref.id));
-        doc.land = doc.land.filter(l => !keepIds.has(l.id));
+        doc.shapes = doc.shapes.filter(l => !keepIds.has(l.id));
         result.forEach((poly, i) => {
             const l = clone(proto);
             l.id = i === 0 ? proto.id : uniqueLandId(`${proto.id}-${i + 1}`);
@@ -3643,23 +4409,12 @@ function oselBoolean(op) {
             l.outer = fromPCRing(poly[0]);
             l.holes = poly.slice(1).map(fromPCRing);
             rebake(l);
-            doc.land.push(l);
-            made.push({ kind: 'land', id: l.id });
+            doc.shapes.push(l);
+            made.push({ kind: 'shape', id: l.id });
         });
-    } else if (base.ref.kind === 'ice') {
-        const proto = clone(dice()[base.ref.i]);
-        const drop = new Set(objs.map(o => o.ref.i));
-        doc.ice = dice().filter((_, i) => !drop.has(i));
-        result.forEach((poly, i) => {
-            const f = clone(proto);
-            f.id = i === 0 ? proto.id : `${proto.id}-${i + 1}`;
-            f.outer = fromPCRing(poly[0]);      // a floe is a single ring; extra rings are dropped
-            doc.ice.push(f);
-            made.push({ kind: 'ice', i: doc.ice.length - 1 });
-        });
-    } else {
-        const key = base.ref.kind === 'wind' ? 'wind' : 'current';
-        const list = key === 'wind' ? doc.wind.regions : doc.current.regions;
+        } else {
+        const key = base.ref.kind;
+        const list = regsOf(key);
         const proto = clone(list[base.ref.i]);
         const drop = new Set(objs.map(o => o.ref.i));
         const kept = list.filter((_, i) => !drop.has(i));
@@ -3674,25 +4429,25 @@ function oselBoolean(op) {
         });
     }
     osel = made; vsel = [];
-    selIce = -1; selWind = -1; selCur = -1;
+    clearRegSel();
     syncSelFromOsel();
     const holes = result.reduce((a, poly) => a + poly.length - 1, 0);
     return { pieces: made.length, holes };
 }
 function uniqueLandId(want) {
     let id = want, n = 2;
-    while (doc.land.some(l => l.id === id)) id = `${want}-${n++}`;
+    while (doc.shapes.some(l => l.id === id)) id = `${want}-${n++}`;
     return id;
 }
 
 function deleteOsel() {
     if (!doc || !osel.length) return 0;
     let n = 0;
-    const lands = new Set(osel.filter(o => o.kind === 'land').map(o => o.id));
+    const lands = new Set(osel.filter(o => o.kind === 'shape').map(o => o.id));
     if (lands.size) {
-        const before = doc.land.length;
-        doc.land = doc.land.filter(l => !lands.has(l.id));
-        n += before - doc.land.length;
+        const before = doc.shapes.length;
+        doc.shapes = doc.shapes.filter(l => !lands.has(l.id));
+        n += before - doc.shapes.length;
     }
     // Index-keyed kinds go from the highest down, so an earlier removal cannot invalidate
     // a later index. The arena is not deletable — a course with no bounds is not a course.
@@ -3701,11 +4456,13 @@ function deleteOsel() {
     // commits its OWN undo entry — so removing three floes banked three snapshots and took
     // three presses of Cmd-Z to put back, while three islands took one. A bulk operation
     // commits once, at the end, in the caller.
-    for (const i of idxOf('ice')) if (dice()[i]) { doc.ice.splice(i, 1); n++; }
-    for (const i of idxOf('wind')) if (wregs()[i]) { doc.wind.regions.splice(i, 1); n++; }
-    for (const i of idxOf('current')) if (cregs()[i]) { doc.current.regions.splice(i, 1); n++; }
+    for (const i of idxOf('ice')) if (dshapes()[i]) { doc.shapes.splice(i, 1); n++; }
+    for (const kind in REGION) {
+        const list = regsOf(kind);
+        for (const i of idxOf(kind)) if (list[i]) { list.splice(i, 1); n++; }
+    }
     osel = []; vsel = [];
-    selIce = -1; selWind = -1; selCur = -1;
+    clearRegSel();
     syncSelFromOsel();
     return n;
 }
@@ -3718,16 +4475,12 @@ function brushRings() {
     if (!doc) return [];
     const out = [];
     if (mode === 'shape') {
-        for (const l of doc.land) for (const ring of eachRing(l)) out.push({ ring, land: l });
-    } else if (mode === 'venue') {
-        for (const f of dice()) if (f.outer) out.push({ ring: f.outer, land: null });
-    } else if (mode === 'boundary') {
+        for (const l of doc.shapes) for (const ring of eachRing(l)) out.push({ ring, land: l });
+        } else if (mode === 'boundary') {
         const bp = doc.world.boundary.poly;
         if (bp) out.push({ ring: bp, land: null });
-    } else if (mode === 'wind') {
-        for (const r of wregs()) if (r.poly) out.push({ ring: r.poly, land: null });
-    } else if (mode === 'current') {
-        for (const r of cregs()) if (r.poly) out.push({ ring: r.poly, land: null });
+    } else if (isRegionMode(mode)) {
+        for (const r of regsOf(mode)) if (r.poly) out.push({ ring: r.poly, land: null });
     }
     return out;
 }
@@ -3833,19 +4586,11 @@ function modeRings() {
         const l = shapeById(sel.shape);
         return l ? eachRing(l).map(ring => ({ ring, land: l })) : [];
     }
-    if (mode === 'venue' && selIce >= 0 && dice()[selIce]) {
-        return [{ ring: dice()[selIce].outer, land: null }];
-    }
     if (mode === 'boundary') {
         const bp = doc.world.boundary.poly;
         return bp ? [{ ring: bp, land: null }] : [];
     }
-    if (mode === 'wind' && selWind >= 0 && wregs()[selWind]) {
-        return [{ ring: wregs()[selWind].poly, land: null }];
-    }
-    if (mode === 'current' && selCur >= 0 && cregs()[selCur]) {
-        return [{ ring: cregs()[selCur].poly, land: null }];
-    }
+    if (activeReg()) return [{ ring: activeReg().poly, land: null }];
     return [];
 }
 
@@ -3882,16 +4627,12 @@ function deleteSelectedVertices() {
         // TOOL; it could never be true, so the land fallback had been dead since.
         if (mode === 'shape' && hover.shape && hover.vert >= 0) {
             const l = shapeById(hover.shape);
-            if (l && hover.vert < l.outer.length) refs = [{ kind: 'land', id: l.id, ring: -1, i: hover.vert }];
+            if (l && hover.vert < l.outer.length) refs = [{ kind: 'shape', id: l.id, ring: -1, i: hover.vert }];
         } else if (mode === 'boundary' && hover.bvert >= 0) {
             refs = [{ kind: 'arena', i: hover.bvert }];
-        } else if (mode === 'wind' && hover.wvert >= 0 && selWind >= 0) {
-            refs = [{ kind: 'wind', r: selWind, i: hover.wvert }];
-        } else if (mode === 'current' && hover.wvert >= 0 && selCur >= 0) {
-            refs = [{ kind: 'current', r: selCur, i: hover.wvert }];
-        } else if (mode === 'venue' && hover.ice >= 0 && hover.vert >= 0 && dice()[hover.ice]) {
-            refs = [{ kind: 'ice', id: dice()[hover.ice].id, r: hover.ice, i: hover.vert }];
-        }
+        } else if (isRegionMode(mode) && hover.wvert >= 0 && regSel(mode) >= 0) {
+            refs = [{ kind: mode, r: regSel(mode), i: hover.wvert }];
+            }
     }
     if (!refs.length) return false;
 
@@ -3906,7 +4647,7 @@ function deleteSelectedVertices() {
     let removed = 0;
     for (const { ref, idx } of groups.values()) {
         let ring = null, land = null;
-        if (ref.kind === 'land') {
+        if (ref.kind === 'shape') {
             land = shapeById(ref.id);
             if (!land) continue;
             ring = ref.ring < 0 ? land.outer : (land.holes || [])[ref.ring];
@@ -3916,10 +4657,7 @@ function deleteSelectedVertices() {
         // then reported the 3-point floor, which was not the reason. Every kind that has
         // grabbable vertices has to be able to lose one. Ice resolves by id like
         // vertexArray does, since an index shifts when a floe is removed.
-        else if (ref.kind === 'ice') {
-            const f = dice().find(x => x.id === ref.id) || dice()[ref.r];
-            ring = f && f.outer;
-        } else if (ref.kind === 'current') { const c = cregs()[ref.r]; ring = c && c.poly; }
+ else if (ref.kind === 'current') { const c = cregs()[ref.r]; ring = c && c.poly; }
         if (!ring) continue;
         const keep = Math.max(0, ring.length - 3);
         const sorted = idx.slice().sort((a, b) => b - a).slice(0, keep);
@@ -3997,18 +4735,20 @@ function scaleMap(k) {
         dirx = dx / (keepLen || 1); diry = dy / (keepLen || 1);
     }
 
-    for (const l of doc.land) transformShape(l, (x, y) => ({ x: x*k, y: y*k }));
+    // EVERYTHING scales, or the map is no longer the same map: every shape, every mark,
+    // every rounding's zone and the size of what it stands at, and the wind and current
+    // regions with their falloff bands. Leaving any of them behind silently changes the
+    // course — ice that no longer fits its channel, a region that no longer covers water.
+    //
+    // ONE loop over the shapes. There used to be two, one for land and one for ice, and
+    // when the two arrays became one they both ran over it — scaling to 50% gave 25%.
+    for (const l of doc.shapes) transformShape(l, (x, y) => ({ x: x*k, y: y*k }));
     for (const m of doc.course.marks) { m.x *= k; m.y *= k; }
-    // EVERYTHING scales, or the map is no longer the same map: hand-placed ice, every
-    // rounding's zone and the size of what it stands at, and the wind and current regions
-    // with their falloff bands. Leaving any of them behind silently changes the course —
-    // ice that no longer fits its channel, a wind region that no longer covers the water.
-    for (const f of dice()) for (const p of f.outer) { p[0] *= k; p[1] *= k; }
     for (const e of doc.course.route) {
         if (e.zone) e.zone *= k;
         if (e.radius) e.radius *= k;
     }
-    for (const r of wregs().concat(cregs())) {
+    for (const r of wregs().concat(cregs(), gregs())) {
         r.poly = r.poly.map(p => [p[0] * k, p[1] * k]);
         if (r.falloff) r.falloff *= k;
     }
@@ -4032,6 +4772,40 @@ function scaleMap(k) {
     }
 }
 
+// Turn the WHOLE map about the origin. The sibling of scaleMap, and it has to touch one
+// thing scaling does not: the WIND.
+//
+// A course is laid on its breeze — the start line square to it, the beat running up it — so
+// rotating the geometry without rotating the wind turns a windward-leeward into a reach and
+// puts the fleet on the wrong side of its own start line. Scaling is exempt because a
+// uniform scale preserves every angle; a rotation preserves none of them, so every stored
+// DIRECTION turns with the map: each wind region's mean and each current region's flow.
+//
+// Lengths are untouched, so there is no start-line special case here: a rotation is rigid,
+// and the line comes out the length it went in. Zones and falloffs likewise.
+function rotateMap(deg) {
+    const a = deg * Math.PI / 180, cs = Math.cos(a), sn = Math.sin(a);
+    const rot = (x, y) => ({ x: x * cs - y * sn, y: x * sn + y * cs });
+    const rotRing = (ring) => ring.map(p => { const q = rot(p[0], p[1]); return [q.x, q.y]; });
+
+    for (const l of doc.shapes) transformShape(l, rot);
+    for (const m of doc.course.marks) { const q = rot(m.x, m.y); m.x = q.x; m.y = q.y; }
+    for (const r of wregs().concat(cregs(), gregs())) {
+        r.poly = rotRing(r.poly);
+        // The region's own heading, in the same convention everything else uses.
+        if (r.direction != null) r.direction = normDir(r.direction + a);
+    }
+    if (doc.world.boundary.poly) {
+        doc.world.boundary.poly = rotRing(doc.world.boundary.poly);
+        doc.world.boundary.circle = null;      // the poly is the arena; no stale twin
+    } else if (doc.world.boundary.circle) {
+        const c = doc.world.boundary.circle, q = rot(c.x, c.y);
+        c.x = q.x; c.y = q.y;                  // a circle turns into itself; only its centre moves
+    }
+}
+// Bearings stay in [0, 2pi) so the inspector never shows 400 degrees or a negative one.
+const normDir = (r) => ((r % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+
 // ── Mouse ───────────────────────────────────────────────────────────────────
 let lastMouse = null;
 
@@ -4054,7 +4828,7 @@ cv.addEventListener('mousedown', (e) => {
     }
     if (e.button !== 0) return;
 
-    if ((mode === 'shape' || mode === 'wind' || mode === 'current') && drawing && doc) {
+    if ((mode === 'shape' || isRegionMode(mode)) && drawing && doc) {
         if (!pending) pending = [];
         // Clicking the first point closes the shape — the gesture people reach for before
         // they find Enter, and the preview lights that point up to promise it. The radius is
@@ -4104,8 +4878,7 @@ cv.addEventListener('mousedown', (e) => {
     // The Select arrow acts on whole polygons. Venue and Arena keep their own gestures for
     // now (placing ice, sizing the bounds), so they are not routed through here.
     if (doc && sub === 'drag' && !drawing
-        && (mode === 'shape' || mode === 'wind' || mode === 'current' || mode === 'boundary'
-            || mode === 'venue')) {
+        && (mode === 'shape' || isRegionMode(mode) || mode === 'boundary')) {
         const o = hitObject(w.x, w.y);
         if (o) {
             // Shift toggles. A plain click on something ALREADY selected keeps the whole
@@ -4125,18 +4898,18 @@ cv.addEventListener('mousedown', (e) => {
     }
     // PLACE: the only gesture that creates a floe, and it creates one wherever you drag —
     // on top of an existing floe included, which is how you build a dense field.
-    if (mode === 'venue' && doc && sub === 'place') {
-        selIce = -1; osel = []; vsel = []; iceRefresh(); refreshChrome();
+    if (mode === 'shape' && doc && sub === 'place') {
+        osel = []; vsel = []; iceRefresh(); refreshChrome();
         drag = { kind: 'icenew', origin: w, r: 0 };
         draw(); return;
     }
     // DIRECT: a floe's vertices, and a marquee over them on empty water. Select is NOT
     // handled here any more — it falls through to the object block above, so Venue gets the
     // click, shift-click, marquee, group move/rotate/scale and Delete every layer has.
-    if (mode === 'venue' && doc && sub === 'direct') {
+    if (mode === 'shape' && doc && sub === 'direct') {
         const hi = hit(w.x, w.y);
         if (hi.ice >= 0 && hi.vert >= 0) {
-            const f = dice()[hi.ice];
+            const f = dshapes()[hi.ice];
             const ref = { kind: 'ice', id: f.id, r: hi.ice, i: hi.vert };
             if (e.shiftKey) {
                 vsel = inSel(ref) ? vsel.filter(v => !sameRef(v, ref)) : vsel.concat([ref]);
@@ -4149,9 +4922,10 @@ cv.addEventListener('mousedown', (e) => {
         if (hi.ice >= 0) {
             // Clicking a floe's body under Direct selects it so its vertices appear — the
             // white arrow's job, same as clicking a land shape.
-            if (selIce !== hi.ice) { selIce = hi.ice; vsel = []; }
-            osel = [{ kind: 'ice', i: hi.ice }];
-            iceRefresh(); refreshChrome(); draw(); return;
+            const f2 = dshapes()[hi.ice];
+            if (f2 && sel.shape !== f2.id) vsel = [];
+            osel = f2 ? [{ kind: 'shape', id: f2.id }] : [];
+            syncSelFromOsel(); refreshChrome(); draw(); return;
         }
         marquee = { a: w, b: w, add: e.shiftKey, level: 'vertex' };
         drag = { kind: 'marquee', add: e.shiftKey };
@@ -4232,11 +5006,11 @@ cv.addEventListener('mousedown', (e) => {
         const l = shapeById(h.shape);
         let ref = null;
         if (l) {
-            if (h.vert < l.outer.length) ref = { kind: 'land', id: l.id, ring: -1, i: h.vert };
+            if (h.vert < l.outer.length) ref = { kind: 'shape', id: l.id, ring: -1, i: h.vert };
             else {
                 let rest = h.vert - l.outer.length;
                 (l.holes || []).some((hr, hi) => {
-                    if (rest < hr.length) { ref = { kind: 'land', id: l.id, ring: hi, i: rest }; return true; }
+                    if (rest < hr.length) { ref = { kind: 'shape', id: l.id, ring: hi, i: rest }; return true; }
                     rest -= hr.length; return false;
                 });
             }
@@ -4259,7 +5033,7 @@ cv.addEventListener('mousedown', (e) => {
         if (h.shape) {
             if (sel.shape !== h.shape) {
                 sel = Object.assign({}, NOHIT, { shape: h.shape });
-                osel = [{ kind: 'land', id: h.shape }];
+                osel = [{ kind: 'shape', id: h.shape }];
                 vsel = [];
                 refreshInspector();
             }
@@ -4276,7 +5050,6 @@ cv.addEventListener('mousedown', (e) => {
     // pan, so left-drag is free for selection — which is the point of the mouse model.
     if (doc && sub === 'direct'
         && ((mode === 'shape' && sel.shape) || mode === 'boundary'
-            || (mode === 'venue' && selIce >= 0)
             || (mode === 'wind' && selWind >= 0) || (mode === 'current' && selCur >= 0))) {
         marquee = { a: w, b: w, add: e.shiftKey, level: 'vertex' };
         drag = { kind: 'marquee', add: e.shiftKey };
@@ -4492,7 +5265,6 @@ window.addEventListener('mouseup', () => {
         // except Escape, because empty water had become marquee territory.
         if (tiny && level === 'vertex' && !hits.length && !d.add) {
             if (mode === 'shape') { sel = Object.assign({}, NOHIT); osel = []; refreshInspector(); info(); }
-            if (mode === 'venue') { selIce = -1; osel = []; iceRefresh(); }
         }
         refreshChrome(); draw();
         return;
@@ -4569,6 +5341,17 @@ window.addEventListener('keydown', (e) => {
     if (e.key === '}') { detail = Math.min(4000, detail * 1.25); draw(); return; }
     if (e.key === 'Delete' || e.key === 'Backspace') {
         if (!doc) return;
+        // A LEG is deleted like anything else: select it, press Delete. The geometry it
+        // referred to is untouched — the route is only an ordering of what is on the water.
+        if (mode === 'route' && selRoute >= 0) {
+            const rr = routeOf();
+            if (rr[selRoute]) {
+                rr.splice(selRoute, 1);
+                if (selRoute >= rr.length) selRoute = rr.length - 1;
+                afterEdit(true, 'delete leg');
+            }
+            return;
+        }
         // Marks and gates are deleted HERE, on the water — never as a side effect of a
         // route edit, since the route is only an ordering of them.
         if (mode === 'marks') {
@@ -4592,7 +5375,7 @@ window.addEventListener('keydown', (e) => {
             const n = deleteOsel();
             if (n) { afterEdit(true, n === 1 ? 'delete shape' : `delete ${n} shapes`); return; }
         }
-        if (mode === 'venue' && selIce >= 0) { deleteIce(selIce); return; }
+
         if (mode === 'shape' && sel.shape && deleteSelectedShape()) afterEdit(true, 'delete shape');
         return;
     }
@@ -4617,13 +5400,17 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && sub === 'measure') { pickTool('select'); return; }
     // Escape clears whatever is selected, in any mode.
     if (e.key === 'Escape' && (sel.shape || sel.mark >= 0 || selLine >= 0 || selRoute >= 0
-                               || selIce >= 0 || vsel.length || osel.length)) {
-        sel = Object.assign({}, NOHIT); selLine = -1; selRoute = -1; selIce = -1;
+                               || vsel.length || osel.length)) {
+        sel = Object.assign({}, NOHIT); selLine = -1; selRoute = -1;
         vsel = []; osel = [];
         refreshInspector(); marksInspector(); iceRefresh(); refreshChrome(); draw(); return;
     }
+    // Gusts takes 0 rather than 6, pushing the rest along: these keys are muscle memory and
+    // the digits have never matched the layer column's order anyway (1 is Objects, which
+    // sits fourth). Renumbering four layers to seat one new arrival is the worse trade.
     const modes = { '1': 'shape', '2': 'marks', '3': 'route', '4': 'boundary',
-                    '5': 'wind', '6': 'current', '7': 'venue', '8': 'map', '9': 'water' };
+                    '5': 'wind', '6': 'current', '7': 'venue', '8': 'map', '9': 'water',
+                    '0': 'gust' };
     if (modes[e.key]) { setMode(modes[e.key]); return; }
     // Tool keys, routed through pickTool and gated by the SAME `enabled` predicate the strip
     // uses — so a key can never arm a tool the button next to it shows as unavailable. This
@@ -4685,12 +5472,6 @@ function boatLabel() {
                 + `${twaDeg < 38 ? ' — inside the no-go zone' : ''}`,
             `ring ${(BOAT_L * 3) / 5} m, three hull lengths`];
 }
-$('rt-name').addEventListener('change', () => {
-    const e = doc && doc.course.route[selRoute]; if (!e) return;
-    const v = $('rt-name').value.trim();
-    if (v) e.name = v; else delete e.name;      // blank falls back to the derived label
-    afterEdit(true, 'leg name');
-});
 $('btn-align-x').addEventListener('click', () => { if (alignSel('x')) afterEdit(true, 'align X'); });
 $('btn-align-y').addEventListener('click', () => { if (alignSel('y')) afterEdit(true, 'align Y'); });
 // Selection commands. Each reports what it did, because "Duplicate" over six shapes and
@@ -4737,15 +5518,28 @@ $('btn-fit').addEventListener('click', fitView);
 // differs from the venue default" as a single editable object, rather than having a base-wind
 // control and regions competing to describe the same thing. Draw cannot replace this — it is
 // a click, not a rectangle traced round the entire map.
-function addWholeCourseWind() {
+// One rectangle over the whole map, for whichever region layer asked. The pad differs by
+// kind for one reason: a WIND region has to reach past the arena or the particles drawn
+// outside it blow in a calm, while a current or a gust source only has to cover water
+// anyone sails on.
+const WHOLE_COURSE = {
+    wind:    { pad: 400, msg: 'Whole-course region added — it starts neutral, so give it a direction' },
+    current: { pad: 200, msg: 'Current over the whole course — set which way it sets on the right' },
+    // A gust source over everything is the uniform scatter made VISIBLE and editable: on
+    // its own it reproduces what the venue already did, and it exists so a second, denser
+    // source can be drawn beside it and mean something relative to it.
+    gust:    { pad: 200, msg: 'Puffs born everywhere — as before, but now you can draw a hotter source beside it' }
+};
+function addWholeCourseRegion(kind) {
     if (!doc) return;
     const e2 = window.Arena.extent(course.boundary);
-    const pad = 400;
-    const r = addRegion('wind', [[e2.minX - pad, e2.minY - pad], [e2.maxX + pad, e2.minY - pad],
-                                 [e2.maxX + pad, e2.maxY + pad], [e2.minX - pad, e2.maxY + pad]]);
-    afterEdit(true, 'whole-course region');
-    toast('Whole-course region added — it starts neutral, so give it a direction');
+    const pad = WHOLE_COURSE[kind].pad;
+    addRegion(kind, [[e2.minX - pad, e2.minY - pad], [e2.maxX + pad, e2.minY - pad],
+                     [e2.maxX + pad, e2.maxY + pad], [e2.minX - pad, e2.maxY + pad]]);
+    afterEdit(true, `whole-course ${kind}`);
+    toast(WHOLE_COURSE[kind].msg);
 }
+function addWholeCourseWind() { addWholeCourseRegion('wind'); }
 
 // ── Arena ──────────────────────────────────────────────────────────────────
 $('btn-brect').addEventListener('click', () => {
@@ -4762,6 +5556,15 @@ $('btn-scalemap').addEventListener('click', () => {
     const pct = parseFloat($('scalemap').value);
     if (!isFinite(pct) || pct <= 0) { toast('Enter a percentage', true); return; }
     scaleMap(pct / 100); afterEdit(true, 'scale map');
+});
+
+$('btn-rotmap').addEventListener('click', () => {
+    if (!doc) return;
+    const deg = parseFloat($('rotmap').value);
+    if (!isFinite(deg)) { toast('Enter an angle in degrees', true); return; }
+    if (!(deg % 360)) { toast('That is a full turn — nothing would move'); return; }
+    rotateMap(deg); afterEdit(true, 'rotate map');
+    toast(`Turned the map ${deg}°, wind and all`);
 });
 
 // ── Field previews: top-level, because "what is the weather doing here" is a question you
@@ -4806,39 +5609,8 @@ $('btn-add-line').addEventListener('click', () => {
     const id = addLine(); afterEdit(true, 'add gate');
     toast(`Added ${lineLabel(id)} — no leg uses it yet; add one in Route`);
 });
-$('btn-mk-del').addEventListener('click', () => { if (doc && sel.mark >= 0) deleteMark(sel.mark); });
-$('btn-ln-del').addEventListener('click', () => { if (doc && selLine >= 0) deleteLine(selLine); });
-$('mk-name').addEventListener('change', () => {
-    const m = doc && sel.mark >= 0 && dmarksOf()[sel.mark]; if (!m) return;
-    const v = $('mk-name').value.trim();
-    if (v) m.name = v; else delete m.name;      // blank falls back to the derived label
-    afterEdit(true, 'mark name');
-});
-$('mk-kind').addEventListener('change', () => {
-    const m = doc && sel.mark >= 0 && dmarksOf()[sel.mark]; if (!m) return;
-    m.kind = $('mk-kind').value;
-    afterEdit(true, 'mark kind');
-});
-$('ln-name').addEventListener('change', () => {
-    const ln = doc && selLine >= 0 && dlines()[selLine]; if (!ln) return;
-    const v = $('ln-name').value.trim();
-    if (v) ln.name = v; else delete ln.name;
-    afterEdit(true, 'gate name');
-});
 
 // ── Route ──────────────────────────────────────────────────────────────────
-$('btn-rt-add').addEventListener('click', () => {
-    if (!doc) return;
-    const ref = $('rt-add-what').value;
-    if (!ref) { toast('Nothing to add — make a mark or a gate first', true); return; }
-    if (addToRoute(ref, 'through')) { afterEdit(true, 'add leg'); toast('Leg added before the finish'); }
-});
-$('rt-name').addEventListener('change', () => {
-    const e = doc && routeOf()[selRoute]; if (!e) return;
-    const v = $('rt-name').value.trim();
-    if (v) e.name = v; else delete e.name;
-    afterEdit(true, 'leg name');
-});
 
 // ── Course identity and timing ─────────────────────────────────────────────
 // Blank means "absent", which means the default — so a document that says nothing about
@@ -4874,15 +5646,7 @@ $('btn-use-est').addEventListener('click', () => {
 // ── Current regions ────────────────────────────────────────────────────────
 // One stream over the whole course, the counterpart of the wind's. Draw (P) makes any other
 // shape, so this is the only current-specific creation left.
-function addWholeCourseCurrent() {
-    if (!doc) return;
-    const ex = window.Arena.extent(course.boundary);
-    const pad = 200;
-    addRegion('current', [[ex.minX - pad, ex.minY - pad], [ex.maxX + pad, ex.minY - pad],
-                          [ex.maxX + pad, ex.maxY + pad], [ex.minX - pad, ex.maxY + pad]]);
-    afterEdit(true, 'whole-course current');
-    toast('Current over the whole course — set which way it sets on the right');
-}
+function addWholeCourseCurrent() { addWholeCourseRegion('current'); }
 
 // ── Water colour ───────────────────────────────────────────────────────────
 for (const id in PAL_KEYS) {
@@ -4922,14 +5686,14 @@ setInterval(() => {
 window.addEventListener('resize', resize);
 window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
-window.EditorApp = { resize, fitView, loadVenue, draw,
+window.EditorApp = { resize, fitView, loadVenue, draw, buildKindPicker,
     // exposed for headless tests
     _state: () => ({ doc, findings, history: history.length, histIdx, dirty: isDirty(), tool, sel }),
     _setTool: (t) => { tool = t; refreshChrome(); },
     _sculpt: sculpt, _roughen: roughen, _simplify: simplify, _brushRings: brushRings,
     _setMode: (m) => setMode(m),
     _brush: (b, d) => { if (b != null) brush = b; if (d != null) detail = d; return { brush, detail }; },
-    _scaleMap: scaleMap, _afterEdit: afterEdit, _undo: undo, _redo: redo,
+    _scaleMap: scaleMap, _rotateMap: rotateMap, _afterEdit: afterEdit, _undo: undo, _redo: redo,
     _resample: resampleShape, _shapeById: shapeById, _recompile: recompile,
     _boundaryToRect: boundaryToRect,
     _toggleFinishOwnLine: toggleFinishOwnLine, _markLabel: (i) => markLabel(i),
@@ -4951,6 +5715,8 @@ window.EditorApp = { resize, fitView, loadVenue, draw,
     _degOf: (r) => degOf(r),
     _compassOf: (r) => compassOf(r),
     _pickTool: (t) => pickTool(t),
+    // Close a ring the way the Draw tool does, without synthesising the clicks.
+    _drawRing: (ring) => { pending = ring.map(p => [p[0], p[1]]); commitPending(); },
     buildVenueMenu,
     _venueMenu: () => ({ open: menuOpen, label: $('venue-label').textContent,
         options: [...$('venue-menu').querySelectorAll('[data-v]')].map(o => o.dataset.v) }),
@@ -4959,7 +5725,7 @@ window.EditorApp = { resize, fitView, loadVenue, draw,
         if (boatProbe) { boatProbe.x = x; boatProbe.y = y; } boatInfo(); draw(); },
     _addIce: (x, y, r) => addIce(x, y, r),
     _selectShape: (id) => { sel = Object.assign({}, NOHIT, { shape: id });
-        osel = id ? [{ kind: 'land', id }] : []; refreshInspector(); refreshChrome(); },
+        osel = id ? [{ kind: 'shape', id }] : []; refreshInspector(); refreshChrome(); },
     _osel: () => osel.slice(),
     _vsel: () => vsel.slice(),
     _marquee: () => marquee && { a: marquee.a, b: marquee.b, level: marquee.level },
@@ -4972,9 +5738,12 @@ window.EditorApp = { resize, fitView, loadVenue, draw,
     _booleanWhy: () => oselBooleanWhy(),
     _translateShape: (l, dx, dy) => translateShape(l, dx, dy),
     _deleteIce: (i) => deleteIce(i),
-    _selIce: () => selIce,
-    _selectIce: (i) => { selIce = i; vsel = []; osel = i >= 0 ? [{ kind: 'ice', i }] : [];
-        iceRefresh(); refreshChrome(); draw(); },
+    // `selIce` is gone: it was a second name for `sel.shape`, kept in step by hand, and a
+    // floe's handles went missing whenever the two disagreed. Selecting one IS selecting a shape.
+    _selIce: () => (sel.shape ? doc.shapes.findIndex(sh => sh.id === sel.shape) : -1),
+    _selectIce: (i) => { const f = dshapes()[i];
+        vsel = []; osel = f ? [{ kind: 'shape', id: f.id }] : [];
+        syncSelFromOsel(); refreshChrome(); draw(); },
     _snapPoint: (w, ref) => snapPoint(w, snapCandidates(ref)),
     _previewSeed: (v) => { if (v != null) previewSeed = v; return previewSeed; },
     // exposed for headless tests of the selection layer

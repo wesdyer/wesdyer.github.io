@@ -9,7 +9,7 @@
 // quietly reintroduce it.
 const { chromium } = require('playwright');
 const path = require('path');
-const LAYERS = ['course','water','land','arena','venue','wind','current','marks','route'];
+const LAYERS = ['course','water','land','arena','wind','current','marks','route'];
 console.log('panels fit the column they live in\n');
 (async () => {
   const b = await chromium.launch();

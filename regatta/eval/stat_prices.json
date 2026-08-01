@@ -1,0 +1,14 @@
+{
+  "_comment": "Stat prices fitted from a measurement whose AI_CONFIG matched it. NEVER re-fit current stats against a stored measurement: the deltas were produced by the stats as they were AT MEASURE TIME, so refitting after any roster edit regresses new inputs on old outputs and silently corrupts every coefficient. Re-measure, then re-fit, then overwrite this file.",
+  "source": "1200 races, seatrials, post-speedScale-removal, pre-rework-of-11",
+  "r2": 0.953,
+  "intercept": -0.197,
+  "stats": {
+    "acceleration": -0.373, "momentum": -0.220, "handling": -0.289,
+    "upwind": -0.966, "reach": -0.193, "downwind": -1.555, "pressure": -0.761
+  },
+  "archetypes": {
+    "bully": 0.0, "corner": -0.370, "freight": 1.240, "gambler": -0.377,
+    "leech": 0.057, "metronome": 0.264, "rocket": -1.295, "shift": -0.476
+  }
+}

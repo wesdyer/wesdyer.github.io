@@ -33,6 +33,29 @@ VENUES = {
     "flats":     ("warm amber-gold drying sandbars", "deep saturated slate-blue channel water, rust-red withy markers"),
 }
 
+# The base style was written for top-down props and asserts flat two-tone shading. Portraits
+# deliberately go the other way (see the portrait class add-on, decision 3), so a portrait
+# built from the unmodified base ARGUES WITH ITSELF — and a generator resolves that by
+# ignoring one half at random. One stated substitution beats a contradiction.
+BASE_PROP_SHADING = "hard two-tone shading and no soft gradients; "
+BASE_PORTRAIT_SHADING = "soft controlled shading modelled inside large clean value masses; "
+
+# Portrait-only negatives: reinforce the uniform, and the two failures both trial
+# generations shared.
+PORTRAIT_NEGATIVE = (
+    ", hat, cap, sunglasses, hoodie, leather jacket, moto jacket, tactical vest, armour, "
+    "badge, patch, insignia, glossy specular highlight, wet plastic sheen, pure black outline, "
+    # the first Talon return curved the whole body into a disc (silhouette-vs-disc IoU 0.78)
+    # because the framing clause said the figure sits "inside a circle". Say it here too.
+    "circular crop, circle frame, round frame, ring border, outer rim, roundel, medallion, coin, "
+    "badge shape, emblem, sticker die-cut, rounded blob body, body clipped to a circle, vignette, "
+    "smooth unbroken curved bottom edge, shoulderless torso, glossy highlight, shiny, "
+    "reflective, lacquered, plastic, true black, human hand, five-fingered hand, fingers, "
+    "thumb, palm, human arm, hand on a fin, anthropomorphic hands, vinyl, latex, wet look, "
+    "neutral black, black outline, mismatched fins, one limb shorter than the other, "
+    "scalloped shading, overlapping crescent strokes"
+)
+
 BASE = (
     "Stylized polished 2D game art for SaltyCritter Yacht Club; colorful nautical "
     "adventure; vivid saturated jewel-toned color; bold simplified shapes with crisp "
@@ -75,11 +98,86 @@ CLASS_ADDON = {
         "Give the eye a path through the water. One focal element; corners quiet; bottom "
         "fifth simple enough for a name scrim."
     ),
+    # Rewritten after a review of all 82 portraits plus one generated trial. Four decisions,
+    # each of which the roster was measurably failing:
+    #
+    # (1) THE PFD IS A UNIFORM. ~18 of 82 wore leather, moto, tactical or hoodie garments. The
+    #     vest is the only shared element making 82 unrelated species read as one CLUB, and it
+    #     is where the hull colour lives — the sole visual link from a portrait to the boat.
+    # (2) ONE PROPORTION SYSTEM. The roster was bimodal, chibi blob vs leather-jacket hero, and
+    #     both poles sit on visual-style.md 3's Avoid list.
+    # (3) ILLUSTRATION, NOT STICKER. Set beside the venue cards, the flattest portraits read as
+    #     stickers and the modelled ones sit closer to the cards. Soft modelling is WANTED here;
+    #     the no-gloss rule belongs to props drawn at 26-92px, not to a 128px profile portrait.
+    # (4) FORELIMBS STAY CLOSE. Measured on a Bruce trial: adding shoulders and arms shrank the
+    #     head and the portrait lost ink against the leaderboard plate versus the art it
+    #     replaced (0.128 vs 0.164). The old limbless-blob convention was partly a legibility
+    #     adaptation to a circular crop. Limbs are allowed; widening the silhouette is not.
     "portrait": (
-        "Anthropomorphic sailing competitor, upper-body three-quarter portrait, transparent "
-        "background, expressive face, strong dark outer outline, simplified interior "
-        "linework, distinctive modern life jacket with zipper and belt hardware, clean cel "
-        "shading, readable at 64px, no scenery."
+        "Anthropomorphic sailing competitor, upper-body three-quarter "
+        "portrait, turned slightly off-centre with enough asymmetry to carry personality. "
+        "{bg} "
+        "PROPORTIONS: a large expressive head on a "
+        "compact upper body. Not a baby and not a limbless chibi blob; not a realistic "
+        "naturalistic bust either. Personality is carried by the FACE, the gaze and the "
+        "gesture — never by making the body rounder and cuter or squarer and tougher. "
+        "ANATOMY IS EXACTLY WHAT THE SUBJECT PARAGRAPH SAYS IT IS, AND THAT OVERRIDES EVERY "
+        "OTHER INSTRUCTION HERE. The subject names this creature's limbs and its body "
+        "covering; those are the only ones it has. Do not add a limb it was not given, do not "
+        "swap one kind of limb for another, and do not borrow anatomy or surface texture from "
+        "any other animal. If the subject says it has no limbs, it has none — nothing to raise "
+        "or wave, and the pose is carried entirely by the set of the head and the curve of the "
+        "body, with the jacket simply sitting around it. Nothing here has human hands, human "
+        "fingers, a thumb or a palm unless the subject says so in as many words. "
+        "PAIRED LIMBS MATCH. If this creature has two of the same limb, both are the same "
+        "length and the same shape. The three-quarter turn may foreshorten the far one, but "
+        "it still reads as the twin of the near one — never stunted, cropped or half-drawn. "
+        "FORELIMBS ARE PRESENT BUT HELD CLOSE to the body — folded, resting forward, or one "
+        "raised near the chin. They must NOT widen the silhouette or push the head smaller: "
+        "the head occupies roughly half the total height. "
+        "FRAMING IS A RULE ABOUT WHERE THINGS SIT, NOT ABOUT SHAPE. Keep the head and face "
+        "near the centre of the square and leave the four corners quiet, because one part of "
+        "the interface later masks this image to a circle. That masking is done afterwards by "
+        "software and MUST NOT be drawn. The character keeps its own natural bust silhouette, "
+        "with real shoulders. THE LOWER HALF OF THE OUTLINE IS BUILT FROM ANATOMY: "
+        "going down each side, the contour CHANGES DIRECTION at least twice — out across the shoulder, in at the notch where the "
+        "limb meets the body, then down along the flank. A silhouette whose bottom is one "
+        "smooth unbroken curve from side to side is WRONG, however well the face is drawn: it "
+        "reads as a coin or a sticker rather than as a creature. Do NOT curve the body into a "
+        "disc or a round blob, do NOT let a mass of body covering fill out a circle, do NOT "
+        "trim the shoulders to an arc, and do NOT draw any circular border, ring, outer rim, "
+        "badge, emblem, medallion, coin or die-cut sticker edge. There is no frame in this "
+        "picture — there is a character, and there is transparent background. "
+        "THE LIFE JACKET IS SPECIFIED EXACTLY, and it is safety equipment rather than fashion: "
+        "a front-zip sailing PFD with a full-length centre zipper, two or "
+        "three clearly panelled foam sections, a horizontal webbing waist belt, and one "
+        "visible buckle at the centre of that belt. NO leather, no "
+        "moto or biker styling, no tactical or armoured plating, no hoodie, no jacket, no "
+        "badges, patches or insignia, and no hats, sunglasses or accessories of any kind. "
+        "RENDERING IS POLISHED GAME ILLUSTRATION: model the form with soft, controlled "
+        "shading INSIDE each shape rather than "
+        "leaving flat sticker fills. EVERY SURFACE IS MATTE, like gouache or coloured paper — the creature's own surface and the jacket fabric both absorb light rather than reflecting it. Highlights are broad, soft and dull, never a bright spot. ABSOLUTELY NO glossy specular "
+        "highlights or wet-plastic sheen ANYWHERE on the creature or on the jacket. "
+        "THE JACKET IS MADE OF CLOSED-CELL FOAM "
+        "UNDER A DRY MATTE NYLON SHELL: a dusty, slightly fibrous fabric that scatters light "
+        "completely. It is not vinyl, not latex, not leather and not wet. Shade it with flat "
+        "steps of value across the panels, never with a bright band down the middle. "
+        "SHADE WITH LONG STROKES THAT FOLLOW THE FORM. Do NOT build a surface out of rows of "
+        "small overlapping scallops, crescents, leaf shapes or chevrons: that mark-making "
+        "invents a texture the creature does not have, whatever the covering is said to be. "
+        "A surface described as smooth is drawn with unbroken planes and clean value steps. "
+        "Build on large clean value masses first and put the modelling inside "
+        "them, so the silhouette and the three or four main value groups still read when the "
+        "whole image is reduced to a small thumbnail. "
+        "THE DARKEST INK IN THIS PICTURE IS A COLOUR, NOT A BLACK: every outline, every shadow "
+        "and every dark marking is drawn in a deep desaturated BLUE-GREY, the colour of wet "
+        "slate or a navy work coat in shade (#23262E). Nothing in the image is neutral black. "
+        "The outer contour is that blue-grey, confident and continuous at roughly "
+        "4-8px on a 500px master; interior lines thinner and only where they clarify form. "
+        "Eyes large and clear with one simple highlight. "
+        "THE FIGURE FILLS THE FRAME — it reaches close to the top and bottom edges with only a "
+        "small margin, and never floats small in the middle of a large empty square. No "
+        "scenery, no ground, no cast shadow, no props, no text."
     ),
     "ui-icon": (
         "Flat interface icon, transparent background, heavy optical padding, one clear "
@@ -167,7 +265,9 @@ BACKGROUNDS = {
 def build(asset, profiles, bg="transparent"):
     prof = profiles[asset["class"]]
     display = asset.get("world", prof.get("reduceTest", 64))
-    parts = [BASE, CLASS_ADDON[asset["class"]].format(
+    base = (BASE.replace(BASE_PROP_SHADING, BASE_PORTRAIT_SHADING)
+            if asset["class"] == "portrait" else BASE)
+    parts = [base, CLASS_ADDON[asset["class"]].format(
         display=display, bg=BACKGROUNDS[bg])]
 
     if asset.get("role"):
@@ -218,8 +318,17 @@ def emit(asset, profiles, bg="transparent"):
     print(line)
     print("=" * 72)
     print(build(asset, profiles, bg))
-    neg = NEGATIVE if asset.get("allowSymmetry") else NEGATIVE + ARRANGEMENT_NEGATIVE
+    if asset["class"] == "portrait":
+        neg = NEGATIVE.replace("perspective view, ", "") + PORTRAIT_NEGATIVE
+    else:
+        neg = NEGATIVE if asset.get("allowSymmetry") else NEGATIVE + ARRANGEMENT_NEGATIVE
     print("\nNEGATIVE: " + neg)
+    if asset.get("rework"):
+        # AFTER the prompt, never inside it: this is a note to whoever is running the queue,
+        # and pasting "the existing art wears a leather jacket" into a generator turns a
+        # generation request into an edit request.
+        print(f"\n[operator note] REWORK {asset['rework']['priority']} — "
+              f"{asset['rework']['why']}. The prompt above is a fresh generation, not an edit.")
     key = asset["key"]
     if bg == "transparent":
         print(f"\n-> save master as regatta/art/inbox/{key}.png, "
@@ -235,6 +344,10 @@ def main():
     ap.add_argument("keys", nargs="*")
     ap.add_argument("--venue")
     ap.add_argument("--all-slots", action="store_true")
+    ap.add_argument("--rework", action="store_true",
+                    help="every asset carrying a `rework` block, worst first (P0, P1, P2). "
+                         "These are SHIPPED assets with a recorded defect, so they do not "
+                         "appear under --all-slots, which only lists undrawn work.")
     ap.add_argument("--bg", choices=sorted(BACKGROUNDS), default="transparent",
                     help="how to ask for the background. 'transparent' for models "
                          "with real alpha (OpenAI); 'magenta'/'green' for models "
@@ -244,7 +357,10 @@ def main():
     m = json.loads(MANIFEST.read_text())
     assets, profiles = m["assets"], m["profiles"]
 
-    if args.venue:
+    if args.rework:
+        sel = sorted((a for a in assets if a.get("rework")),
+                     key=lambda a: (a["rework"]["priority"], a["key"]))
+    elif args.venue:
         sel = [a for a in assets if a.get("venue") == args.venue]
     elif args.all_slots:
         sel = [a for a in assets if a["status"] == "slot"]

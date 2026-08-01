@@ -1,118 +1,559 @@
 [
   {
-    "name": "Finley",
+    "name": "Torrent",
     "avgPts": 10,
-    "avgTime": 227.45000000007315,
+    "avgTime": 173.9166666666972,
     "starts": 1,
     "points": 10,
     "wins": 1,
     "top3": 1,
     "finishTimes": [
-      227.45000000007315
+      173.9166666666972
     ],
     "dnf": 0
   },
   {
-    "name": "Brine",
+    "name": "Ripple",
+    "avgPts": 10,
+    "avgTime": 160.5500000000199,
+    "starts": 1,
+    "points": 10,
+    "wins": 1,
+    "top3": 1,
+    "finishTimes": [
+      160.5500000000199
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Chomp",
+    "avgPts": 10,
+    "avgTime": 190.83333333337734,
+    "starts": 1,
+    "points": 10,
+    "wins": 1,
+    "top3": 1,
+    "finishTimes": [
+      190.83333333337734
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Jester",
+    "avgPts": 10,
+    "avgTime": 196.8500000000488,
+    "starts": 1,
+    "points": 10,
+    "wins": 1,
+    "top3": 1,
+    "finishTimes": [
+      196.8500000000488
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Bixby",
     "avgPts": 9,
-    "avgTime": 232.81666666674408,
+    "avgTime": 178.9166666667012,
+    "starts": 2,
+    "points": 18,
+    "wins": 0,
+    "top3": 2,
+    "finishTimes": [
+      177.9166666667004,
+      179.91666666670199
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Crush",
+    "avgPts": 9,
+    "avgTime": 236.43333333341363,
     "starts": 1,
     "points": 9,
     "wins": 0,
     "top3": 1,
     "finishTimes": [
-      232.81666666674408
+      236.43333333341363
     ],
     "dnf": 0
   },
   {
-    "name": "Torrent",
+    "name": "Torch",
+    "avgPts": 9,
+    "avgTime": 176.78333333336616,
+    "starts": 1,
+    "points": 9,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      176.78333333336616
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Sunshine",
+    "avgPts": 9,
+    "avgTime": 201.31666666671902,
+    "starts": 1,
+    "points": 9,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      201.31666666671902
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Crimson",
+    "avgPts": 9,
+    "avgTime": 204.08333333338788,
+    "starts": 1,
+    "points": 9,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      204.08333333338788
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Breeze",
+    "avgPts": 8.666666666666666,
+    "avgTime": 201.21111111116338,
+    "starts": 3,
+    "points": 26,
+    "wins": 2,
+    "top3": 2,
+    "finishTimes": [
+      236.26666666674683,
+      188.93333333337583,
+      178.43333333336747
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Whiskers",
     "avgPts": 8,
-    "avgTime": 237.0500000000808,
+    "avgTime": 178.71666666670103,
     "starts": 1,
     "points": 8,
     "wins": 0,
     "top3": 1,
     "finishTimes": [
-      237.0500000000808
+      178.71666666670103
     ],
     "dnf": 0
   },
   {
-    "name": "Splat",
+    "name": "Pebble",
+    "avgPts": 8,
+    "avgTime": 181.25000000003638,
+    "starts": 1,
+    "points": 8,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      181.25000000003638
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Frond",
+    "avgPts": 8,
+    "avgTime": 206.05000000005612,
+    "starts": 1,
+    "points": 8,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      206.05000000005612
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Clutch",
+    "avgPts": 8,
+    "avgTime": 186.33333333337376,
+    "starts": 1,
+    "points": 8,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      186.33333333337376
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Skitter",
+    "avgPts": 8,
+    "avgTime": 204.28333333338804,
+    "starts": 1,
+    "points": 8,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      204.28333333338804
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Regal",
     "avgPts": 7,
-    "avgTime": 241.38333333341757,
+    "avgTime": 210.7166666667265,
     "starts": 1,
     "points": 7,
     "wins": 0,
     "top3": 0,
     "finishTimes": [
-      241.38333333341757
+      210.7166666667265
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Flash",
+    "avgPts": 7,
+    "avgTime": 190.55000000004378,
+    "starts": 1,
+    "points": 7,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      190.55000000004378
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Nimbus",
+    "avgPts": 6.333333333333333,
+    "avgTime": 217.5333333333986,
+    "starts": 3,
+    "points": 19,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      245.46666666675415,
+      186.40000000004048,
+      220.73333333340113
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Snap",
+    "avgPts": 6,
+    "avgTime": 207.58333333339067,
+    "starts": 3,
+    "points": 18,
+    "wins": 0,
+    "top3": 1,
+    "finishTimes": [
+      185.76666666670664,
+      237.8666666667481,
+      199.11666666671726
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Puff",
+    "avgPts": 6,
+    "avgTime": 217.05000000006487,
+    "starts": 1,
+    "points": 6,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      217.05000000006487
     ],
     "dnf": 0
   },
   {
     "name": "Tangle",
     "avgPts": 6,
-    "avgTime": 248.9166666667569,
+    "avgTime": 198.1666666667165,
     "starts": 1,
     "points": 6,
     "wins": 0,
     "top3": 0,
     "finishTimes": [
-      248.9166666667569
+      198.1666666667165
     ],
     "dnf": 0
   },
   {
     "name": "Skim",
+    "avgPts": 5.5,
+    "avgTime": 215.25833333339676,
+    "starts": 2,
+    "points": 11,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      182.66666666670417,
+      247.85000000008938
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Bruce",
+    "avgPts": 5.5,
+    "avgTime": 220.75833333340114,
+    "starts": 2,
+    "points": 11,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      222.3333333334024,
+      219.1833333333999
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Viper",
     "avgPts": 5,
-    "avgTime": 251.91666666675928,
+    "avgTime": 227.72500000007335,
+    "starts": 2,
+    "points": 10,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      242.48333333341844,
+      212.9666666667283
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Bulkhead",
+    "avgPts": 5,
+    "avgTime": 197.40000000004923,
     "starts": 1,
     "points": 5,
     "wins": 0,
     "top3": 0,
     "finishTimes": [
-      251.91666666675928
+      197.40000000004923
     ],
     "dnf": 0
   },
   {
-    "name": "Scoop",
+    "name": "Roll",
+    "avgPts": 5,
+    "avgTime": 220.86666666673457,
+    "starts": 1,
+    "points": 5,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      220.86666666673457
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Mistral",
+    "avgPts": 5,
+    "avgTime": 225.7500000000718,
+    "starts": 1,
+    "points": 5,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      225.7500000000718
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Bramble",
+    "avgPts": 4.5,
+    "avgTime": 210.4416666667263,
+    "starts": 2,
+    "points": 9,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      181.26666666670306,
+      239.6166666667495
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Spike",
     "avgPts": 4,
-    "avgTime": 257.40000000009456,
+    "avgTime": 249.95000000009105,
     "starts": 1,
     "points": 4,
     "wins": 0,
     "top3": 0,
     "finishTimes": [
-      257.40000000009456
+      249.95000000009105
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Razor",
+    "avgPts": 4,
+    "avgTime": 205.8166666667226,
+    "starts": 1,
+    "points": 4,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      205.8166666667226
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Stomp",
+    "avgPts": 4,
+    "avgTime": 199.5833333333843,
+    "starts": 1,
+    "points": 4,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      199.5833333333843
     ],
     "dnf": 0
   },
   {
     "name": "Skerry",
+    "avgPts": 4,
+    "avgTime": 229.66666666674158,
+    "starts": 1,
+    "points": 4,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      229.66666666674158
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Blaze",
     "avgPts": 3,
-    "avgTime": 268.85000000008415,
+    "avgTime": 221.3083333334016,
+    "starts": 2,
+    "points": 6,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      196.5166666667152,
+      246.100000000088
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Rift",
+    "avgPts": 3,
+    "avgTime": 197.7666666667162,
     "starts": 1,
     "points": 3,
     "wins": 0,
     "top3": 0,
     "finishTimes": [
-      268.85000000008415
+      197.7666666667162
     ],
     "dnf": 0
   },
   {
-    "name": "Wiggle",
+    "name": "Petal",
+    "avgPts": 3,
+    "avgTime": 250.9000000000918,
+    "starts": 1,
+    "points": 3,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      250.9000000000918
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Slipstream",
+    "avgPts": 3,
+    "avgTime": 231.3833333334096,
+    "starts": 1,
+    "points": 3,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      231.3833333334096
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Scuttle",
+    "avgPts": 3,
+    "avgTime": 211.1333333333935,
+    "starts": 1,
+    "points": 3,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      211.1333333333935
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Lure",
+    "avgPts": 3,
+    "avgTime": 238.76666666674882,
+    "starts": 1,
+    "points": 3,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      238.76666666674882
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Saffron",
     "avgPts": 2,
-    "avgTime": 315.8500000000414,
+    "avgTime": 205.66666666672248,
     "starts": 1,
     "points": 2,
     "wins": 0,
     "top3": 0,
     "finishTimes": [
-      315.8500000000414
+      205.66666666672248
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Vex",
+    "avgPts": 2,
+    "avgTime": 264.983333333421,
+    "starts": 1,
+    "points": 2,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      264.983333333421
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Dart",
+    "avgPts": 2,
+    "avgTime": 213.25000000006185,
+    "starts": 1,
+    "points": 2,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      213.25000000006185
+    ],
+    "dnf": 0
+  },
+  {
+    "name": "Gasket",
+    "avgPts": 2,
+    "avgTime": 221.86666666673537,
+    "starts": 1,
+    "points": 2,
+    "wins": 0,
+    "top3": 0,
+    "finishTimes": [
+      221.86666666673537
     ],
     "dnf": 0
   }

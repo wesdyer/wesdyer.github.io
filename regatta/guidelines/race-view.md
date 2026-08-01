@@ -106,7 +106,7 @@ color system and the reason venues read as different places at race scale.
 | Redrock Reservoir `redrock` | `#189DB5` | `#0C6478` | `#5CD6D6` | `#E8A06A` |
 | Glowtide Strait `glowtide` | `#1A2560` | `#0A0F30` | `#27407E` | `#67E8F9` |
 | Glacier Sound `arctic` | `#1D4066` | `#0E2444` | `#2E5C8F` | `#DBEAFE` |
-| Sea Trial Bay `seatrials` * | `#0EA5E9` | `#0369A1` | `#38BDF8` | `#4ADE80` |
+| Clubhouse Point `seatrials` * | `#0EA5E9` | `#0369A1` | `#38BDF8` | `#4ADE80` |
 
 \* `bay` and `seatrials` define no `palette` and inherit `WATER_CONFIG` defaults.
 

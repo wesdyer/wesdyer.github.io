@@ -716,6 +716,22 @@
       "markType": "permanent"
     },
     {
+      "key": "committee-boat",
+      "class": "world-prop",
+      "role": "traffic",
+      "world": 92,
+      "anchor": "center",
+      "status": "art",
+      "fillTo": 0.92,
+      "subject": "A race committee boat anchored at the end of a start line, seen from DIRECTLY OVERHEAD, floating level, bow pointing to the TOP of the frame. It is a beamy 30-foot club launch \u2014 a working motorboat, never a yacht and never a racing hull: a long hull with a full wide midsection, near-parallel sides through the middle, a bluntly rounded bow, and a SQUARE cut-off transom across the stern. ABSOLUTELY NO SAIL, NO MAST, NO BOOM, NO RIGGING, no sail number, and nothing triangular anywhere on the deck \u2014 seen from directly above a racing sailboat is a pair of white triangles, and the single worst failure this sprite can have is being mistaken for one of the boats racing around it. THE READ IS A DARK CORE INSIDE A WHITE OUTLINE, which is the exact inverse of a sailboat's white sails inside a dark hull line \u2014 this is the whole point of the design. Working from the bow aft: a short pale foredeck with a small dark windlass block at its tip; then a hard-edged RECTANGULAR DECKHOUSE filling the forward half of the boat, its flat roof CHARCOAL and the darkest thing in the sprite, carrying one small pale dome at its centre; then a clear step of pale open deck; then a MID-NAVY canvas awning stretched over the open aft cockpit as a second rectangle, clearly LIGHTER than the charcoal roof so the two never merge into one smear. The white of the hull survives only as a clean margin running all the way around that dark core, widening at the bow and across the transom. THE SIGNATURE IS AN ORANGE FLAG, and it must be unmistakable. A short staff stands on the after deck and a bold rectangular safety-orange flag streams STRAIGHT AFT from it, out past the transom and clear of the hull, breaking the silhouette at the stern \u2014 the boat lies head to wind, so the flag blows down the frame. Render it as one flat solid orange rectangle with a slight ripple in its trailing edge, big enough to be the second thing the eye finds after the hull. This flag is what tells the player where the starting line ends, so it is functional information: keep it true safety orange and never shift it toward the colour of the water. COLOUR AND VALUE: clean off-white hull and deck with a single crisp deep-navy stripe following the sheerline the whole way around, charcoal deckhouse roof, mid-navy awning, safety-orange flag. Those extremes are deliberate \u2014 this sprite has to be findable on near-black polar water, where the white hull and the flag carry it, AND on pale turquoise shallows, where the charcoal roof and the navy stripe carry it. CONVERTED TO GREYSCALE the hull margin, the two roof rectangles and the flag must still read as separate steps. Flat hard-edged shading in clear steps of lightness, absolutely no gloss, no shine, no specular highlight, no smooth gradient, no plastic sheen, no reflection. A thin clean dark contour, no heavier than the rest of the set. Drawn at only about 85 pixels: bold simple shapes and no detail that would not survive that size. No crew, no figures, no water, no wake, no spray, no ripple, no anchor line, no cast shadow, no numbers, no letters, no lettering on the hull",
+      "markType": "committee",
+      "note": "SHIPPED. A third mark KIND for the line ends, alongside the orange inflatable (temporary) and the yellow can (permanent): the vessel the line is sighted from. venuedoc's MARK_KINDS is now the one list \u2014 validator, editor dropdown and script.js's sprite registry all read it \u2014 and the eval fixtures already named the ends `sf-pin` and `sf-boat`, so the concept predated the art. VENUE-NEUTRAL like mark/zodiac/buoy-channel-*: race furniture at all ten venues, no palette clause. ROLE IS `traffic`, NOT `nav`, even though it is functionally a mark \u2014 the nav add-on emits 'use canonical buoyage shape and colour coding', which is buoy language and would push a boat toward red/green. The contract that binds is traffic's: never confusable with a competitor. The mark-function requirements (the orange flag, the line end) live in the subject text instead. SIZING: world 92 with fillTo 0.92 gives 37x85px = 9.2m at 9.2px/m, a 30ft club launch and 1.5x the 56px racing boat. That gap is the OPPOSITE call from the zodiac, which is deliberately SHORTER than a racer: a support RIB stays off the competitor read by being small, a committee boat by being big, boxy and white. 85px on an 1100-unit start line is 7.7% of it. Content filled 0.757 of the master, so fillTo upscales 1.22x \u2014 visible softening at 1024, invisible at 85. MEASURED CONTRAST (WCAG vs median water, at true race scale): Glacier Sound median 1.28:1 but brightest 10% 9.74:1; Pearl Lagoon median 2.84:1 with darkest 10% 5.32:1. That split IS the design \u2014 the white hull carries it on near-black water, the charcoal roof on pale turquoise \u2014 and both ends beat the zodiac (2.53 / 2.27 median). Judge it on the plates, as the zodiac's note argues: the player's own hull is 2.01:1 on lagoon. THREE RECORDED DEVIATIONS, none blocking. (1) The orange flag does NOT break the silhouette as the subject demanded: it is 107px of a 337px beam, entirely inside the hull footprint, and streams to starboard rather than aft. At 85px it is a ~12px orange dash on the white transom and still reads on both plates, but it is less findable than the macaroni-crest trick intended. If the line end is ever hard to spot, that is what to redraw. (2) A ~14px transparent slot separates a detached 13px navy contour ring from the hull, a background-remover artifact; 1.5px at race scale and invisible on the plates. (3) Teak deck striping is microtexture beyond spec and blurs to tan. Ingest passed with no warnings. ENGINE, ALL THREE BLOCKERS NOW FIXED. (1) drawMarkBodies resolved a single global markImg; it now resolves MARK_SPRITES[kind], which also lights up mark-can-yellow after a week shipped-but-unused. (2) It rotated every mark by an arbitrary per-position scramble, right for a tetrahedron and wrong for a vessel. orientCourseMarks() now freezes a heading from the LINE'S OWN NORMAL, signed by the direction of travel on the line's FIRST route use \u2014 not from the live wind (which oscillates every frame, so the hull would swing with every puff and the baked flag would fight the real breeze) and not per leg (a line sailed twice would spin the boat 180 degrees when the fleet came back to finish). The wobble stays: on a hull it reads as lying to an anchor. (3) markRadius 12 is now a per-mark body \u2014 a 3-circle r=19 capsule for the hull, and the sprite is nudged 19 units outboard along the line so the line's sailable span stays clear with the flagstaff on the mark point. Every consumer is written as (constant + bodyR) so a buoy's bodyR of 12 reproduces the old 50 and 115 exactly. Covered by eval/test_marks.js. The committee boat belongs on the STARBOARD end of its line; venuedoc warns when it is not, rather than enforcing it, because it is a convention. NOT YET PLACED ON ANY VENUE \u2014 that is an authoring decision, and it must not land on Sea Trial Bay, which is the eval anchor.",
+      "anchorPx": [
+        0.4995,
+        0.5
+      ]
+    },
+    {
       "key": "zodiac",
       "class": "world-prop",
       "role": "traffic",
@@ -729,6 +745,810 @@
         0.5,
         0.5
       ]
+    },
+    {
+      "key": "talon",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Bald Eagle. EXPRESSION: fierce, imperious, utterly unblinking. GESTURE: head turned in three-quarter profile, wings folded tight against the body, one taloned foot just visible at the lower edge. LIMBS \u2014 Bald Eagle has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is deep bronze-brown (#804408); the foam panels across the chest and the shoulder straps are dark vivid blue (#09078C); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a snow-white head and tail against a dark chocolate-brown body, with a heavy hooked YELLOW beak and a pale yellow eye. Keep the white head clean and uncluttered \u2014 it is the whole read at small size. Wings stay folded; a spread wingspan would wreck the silhouette",
+      "note": "Competitor portrait. Talon the Bald Eagle, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "latch",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Remora. EXPRESSION: patient, faintly smug, eyes fixed forward. GESTURE: locked on and unblinking, one slender pectoral fin lifted a little from the flank. LIMBS \u2014 Remora has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is teal (#54CCC2); the foam panels across the chest and the shoulder straps are vivid magenta (#B20985); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: THE SIGNATURE IS ON TOP OF THE HEAD: a flat oval sucking disc with fine transverse ridges, like a ribbed sandal sole laid across the skull. It must be clearly visible from this angle \u2014 it is the entire animal. Slim dark-grey torpedo body with a pale belly",
+      "note": "Competitor portrait. Latch the Remora, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "spar",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Blue Marlin. EXPRESSION: imperious, unhurried, entirely certain. GESTURE: the bill angled up and across the frame, tall dorsal fin raised. LIMBS \u2014 Blue Marlin has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright blue (#4338D9); the foam panels across the chest and the shoulder straps are vivid amber-gold (#B28809); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a ROUNDED spear-like bill, a tall pointed sail-like dorsal fin, and vertical cobalt-blue stripes down a silver flank. CRITICAL: the bill is ROUNDED in cross-section like a spear, never flat and broad like a swordfish's, and the vertical stripes must be clearly present",
+      "note": "Competitor portrait. Spar the Blue Marlin, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "skip",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Green Basilisk. EXPRESSION: wide-eyed, jittery, already leaving. GESTURE: both short front legs raised at the chest, weight tipped forward, head crest up. LIMBS \u2014 Green Basilisk has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in dry overlapping scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark vivid green (#0B8C08); the foam panels across the chest and the shoulder straps are vivid blue (#1109B2); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a brilliant emerald-green lizard with a tall crest on the head and a second crest along the back, a bold pale stripe along the flank, and a large golden eye",
+      "note": "Competitor portrait. Skip the Green Basilisk, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "chroma",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Cuttlefish. EXPRESSION: curious, calculating, quietly amused. GESTURE: two tapering feeding arms curled loosely in front, narrowing to points. LIMBS \u2014 Cuttlefish has tapering ARMS: two of its tapering arms curl loosely in front \u2014 arms that narrow to a point, never fingers. BODY COVERING: this creature is covered in smooth soft skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is teal (#2BA4A6); the foam panels across the chest and the shoulder straps are dark vivid purple (#7B0E8C); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: the W-SHAPED PUPIL is the signature and must be unmistakable. A broad mantle with a fine undulating fin skirt down each side, and two or three bold bands of shifting colour across the skin \u2014 bands, not a rainbow smear",
+      "note": "Competitor portrait. Chroma the Cuttlefish, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "sable",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Great Cormorant. EXPRESSION: composed, watchful, faintly severe. GESTURE: wings held half-open in the drying posture but kept close so the silhouette stays compact. LIMBS \u2014 Great Cormorant has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright teal (#3FF2F2); the foam panels across the chest and the shoulder straps are bright vivid purple (#C624F2); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: glossy blue-black plumage with a bronze sheen, a long hook-tipped bill, a bright turquoise eye and a yellow-white throat patch",
+      "note": "Competitor portrait. Sable the Great Cormorant, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "seam",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Rainbow Trout. EXPRESSION: alert, poised, reading something the others cannot see. GESTURE: one pectoral fin swept forward, body angled as if holding station. LIMBS \u2014 Rainbow Trout has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark vivid magenta (#730D51); the foam panels across the chest and the shoulder straps are bright teal (#49EFF2); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a broad MAGENTA-PINK lateral stripe running the length of an olive-green flank, over a silver belly, with bold sparse black spotting on the back and tail. Keep the spots few and large \u2014 fine speckling will mush",
+      "note": "Competitor portrait. Seam the Rainbow Trout, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "lateen",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic By-the-wind Sailor. EXPRESSION: blissful, serene, going wherever this is going. GESTURE: no limbs at all \u2014 the pose is entirely the tilt of the float and the set of the sail. LIMBS \u2014 By-the-wind Sailor has NONE \u2014 it is a drifting colony: it has no fins, arms or legs of any kind; the pose is entirely the tilt of the float and the set of the sail above it. BODY COVERING: this creature is covered in translucent gelatinous tissue, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark vivid chartreuse (#698C07); the foam panels across the chest and the shoulder straps are vivid blue (#130CCC); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: this is a Velella \u2014 a small oval deep-cobalt jelly float with a RIGID TRANSLUCENT TRIANGULAR SAIL standing upright on its back and set at a clear DIAGONAL across the body. The sail is the entire character and must read instantly as a sail: stiff, clear, faintly iridescent, with fine radiating ribs. Short tidy fringe of stubby tentacles beneath, never a long trailing mess",
+      "note": "Competitor portrait. Lateen the By-the-wind Sailor, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "riffle",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic American Dipper. EXPRESSION: bright, restless, caught mid-bob. GESTURE: body crouched low, one foot lifted, as if about to walk straight into the water. LIMBS \u2014 American Dipper has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is blue (#444494); the foam panels across the chest and the shoulder straps are bright vivid chartreuse (#A9FC03); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a plain stocky slate-grey songbird with a short cocked tail and a fine dark bill. Its ONE marking is a white upper eyelid that flashes when it blinks \u2014 show it. Resist adding any other colour; the plainness is the character",
+      "note": "Competitor portrait. Riffle the American Dipper, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "needle",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Gharial. EXPRESSION: sly, patient, faintly pleased with itself. GESTURE: the long snout turned across the frame, both short front legs resting forward. LIMBS \u2014 Gharial has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in dry overlapping scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid chartreuse (#97F20F); the foam panels across the chest and the shoulder straps are dark violet (#5F3F8C); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: an EXTREMELY NARROW needle-thin snout lined with fine interlocking teeth, ending in a bulbous rounded knob at the tip. Olive-green with darker banding. CRITICAL: this is not a crocodile \u2014 a broad heavy jaw would be the wrong animal entirely",
+      "note": "Competitor portrait. Needle the Gharial, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "ribbon",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Yellow-lipped Sea Krait. EXPRESSION: cool, unhurried, faintly superior. GESTURE: body coiled once in front of itself, head raised \u2014 no limbs to lift. LIMBS \u2014 Yellow-lipped Sea Krait has NONE \u2014 it is limbless: it has no limbs whatsoever: nothing to raise, nothing to fold. The pose is the set of the head and one easy coil of the body. BODY COVERING: this creature is covered in dry overlapping scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright chartreuse (#C1D938); the foam panels across the chest and the shoulder straps are vivid azure blue (#082AA6); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: bold black bands ringing a pale blue-grey body, with a bright YELLOW snout and upper lip and a paddle-shaped flattened tail. Keep the bands wide and few",
+      "note": "Competitor portrait. Ribbon the Yellow-lipped Sea Krait, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "lunker",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Largemouth Bass. EXPRESSION: sullen, immovable, jaw set. GESTURE: mouth slightly agape, one pectoral fin braced against the water. LIMBS \u2014 Largemouth Bass has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright green (#6FF23F); the foam panels across the chest and the shoulder straps are vivid violet (#440899); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: the enormous jaw hinging BEHIND the eye is the species signature \u2014 it is what makes it a largemouth. Olive-green back, a ragged dark horizontal blotch stripe along the flank, pale belly",
+      "note": "Competitor portrait. Lunker the Largemouth Bass, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "sovereign",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Napoleon Wrasse. EXPRESSION: serene, grand, faintly bored. GESTURE: one broad pectoral fin raised, thick lips slightly pursed. LIMBS \u2014 Napoleon Wrasse has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark vivid teal (#088074); the foam panels across the chest and the shoulder straps are bright vivid green (#6BD90B); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a pronounced bulbous forehead hump above the eyes and thick fleshy lips, with fine maze-like turquoise scribble markings across the face over a blue-green body",
+      "note": "Competitor portrait. Sovereign the Napoleon Wrasse, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "bloom",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Portuguese Man-of-War. EXPRESSION: blissful, oblivious, entirely at peace. GESTURE: no purposeful gesture at all \u2014 it has no limbs and no say in where it goes. LIMBS \u2014 Portuguese Man-of-War has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in translucent gelatinous tissue, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid magenta (#F21BF2); the foam panels across the chest and the shoulder straps are bright green (#88F26D); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a translucent pink-and-violet gas-filled float with a raised crest ridge running along the top like a cockscomb, iridescent at the edges. Tentacles beneath kept SHORT and tidy so the silhouette stays compact",
+      "note": "Competitor portrait. Bloom the Portuguese Man-of-War, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "plunge",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Northern Gannet. EXPRESSION: intense, committed, already past the point of no return. GESTURE: wings swept back close to the body, dagger bill forward. LIMBS \u2014 Northern Gannet has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is vivid yellow (#ADB20B); the foam panels across the chest and the shoulder straps are bright vivid blue (#450BD9); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a brilliant white body with sharply black wingtips and a buff-GOLDEN wash over the crown and nape, with a pale blue-grey dagger bill and a hard pale eye ringed in dark blue",
+      "note": "Competitor portrait. Plunge the Northern Gannet, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "flare",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Siamese Fighting Fish. EXPRESSION: furious, affronted, spoiling for it. GESTURE: gill covers flared wide, every fin fully spread. LIMBS \u2014 Siamese Fighting Fish has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright purple (#F063F2); the foam panels across the chest and the shoulder straps are dark vivid teal (#078C7F); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: enormous flowing veil fins and tail, and the flared gill membrane fanned out below the head like a beard. Render the fins as BOLD SIMPLE SHAPES with a few strong ribs \u2014 lace or fine fraying will disintegrate at small size",
+      "note": "Competitor portrait. Flare the Siamese Fighting Fish, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "snag",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Hellbender. EXPRESSION: half-lidded, immovable, extremely old. GESTURE: both short front legs planted flat and square. LIMBS \u2014 Hellbender has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in smooth moist skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is vivid amber-gold (#B2750B); the foam panels across the chest and the shoulder straps are bright green (#49F29D); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a broad flattened head, tiny beady eyes set far apart, and heavy wrinkled skin folds running along each flank like ruffled curtains. Mottled brown over a paler belly",
+      "note": "Competitor portrait. Snag the Hellbender, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "chisel",
+      "class": "portrait",
+      "status": "slot",
+      "subject": "Anthropomorphic Humpback Chub. EXPRESSION: stoic, weathered, unbothered. GESTURE: still and square-on, one pectoral fin steadying. LIMBS \u2014 Humpback Chub has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is vivid sea green (#19BF9E); the foam panels across the chest and the shoulder straps are dark maroon (#571A05); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a pronounced fleshy NUCHAL HUMP rising immediately behind the head, tapering to a notably narrow tail stalk \u2014 the silhouette is the whole species. Olive-bronze back over a silver flank, with a small underslung mouth",
+      "note": "Competitor portrait. Chisel the Humpback Chub, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker, ordered by the same luma rule the profile header band uses (hull as shell unless its luma is <50 or >200, then the spinnaker takes over) so the portrait, the band and the boat on the water all agree."
+    },
+    {
+      "key": "cheer",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Pom Pom Crab. EXPRESSION: cheerful and fun loving, always positive and enthuiastic. GESTURE: level, even and unhurried. LIMBS \u2014 Pom Pom Crab has CLAWS: both claws held up at chest height, pincers clearly hinged. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright muted magenta (#FF9ECF); the foam panels across the chest and the shoulder straps are bright vivid teal (#00E5FF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: two fluffy white anemone pom-poms gripped one in each claw \u2014 the whole reason for the name; a small squat pink-and-white crab behind them. REQUIRED: Cut the figure cleanly, with no dark fringe at the edge",
+      "rework": {
+        "priority": "P2",
+        "why": "a dark matte halo on the cut edge"
+      },
+      "note": "Competitor portrait. Cheer the Pom Pom Crab, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "bixby",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Sea Otter. EXPRESSION: relaxed veteran who instinctively finds perfect wind. GESTURE: head turned to read something just off-frame. LIMBS \u2014 Sea Otter has true PAWS with digits: both forepaws held together at the chest \u2014 this animal genuinely has digits, so paws are correct here. BODY COVERING: this creature is covered in dense fur, and nothing else \u2014 no feathers and no plumage, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid azure blue (#0046ff); the foam panels across the chest and the shoulder straps are bright vivid amber-gold (#FFD400); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: dense chocolate fur, a broad pale muzzle with a dark button nose and long whiskers, small round ears set low, and dexterous forepaws held together at the chest. REQUIRED: Dense soft fur with warm brown modelling, and a clear value step between the pale muzzle, the darker head and the vest",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a quilted puffer vest"
+      },
+      "note": "Competitor portrait. Bixby the Sea Otter, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "skim",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Flying Fish. EXPRESSION: flashy opportunist thriving on speed bursts. GESTURE: weight tipped forward, already going. LIMBS \u2014 Flying Fish has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright cyan (#8FD3FF); the foam panels across the chest and the shoulder straps are bright vivid pink (#FF2D95); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: enormously enlarged pectoral fins spread like glider wings, translucent and faintly blue-veined, on a slim silver body with a deeply forked tail",
+      "note": "Competitor portrait. Skim the Flying Fish, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "wobble",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Platypus. EXPRESSION: awkward, unpredictable, deadly effective in chaos. GESTURE: committed and leaning to one side. LIMBS \u2014 Platypus has true PAWS with digits: both forepaws held together at the chest \u2014 this animal genuinely has digits, so paws are correct here. BODY COVERING: this creature is covered in dense fur, and nothing else \u2014 no feathers and no plumage, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid orange (#FF8C1A); the foam panels across the chest and the shoulder straps are bright violet (#7B4FD4); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a broad flat rubbery DUCK BILL in soft blue-grey, tiny dark eyes set well back, and dense brown otter fur \u2014 the bill is the whole animal",
+      "note": "Competitor portrait. Wobble the Platypus, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "pinch",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic American Lobster. EXPRESSION: aggressive bully dominating the starting line. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 American Lobster has CLAWS: both claws held up at chest height, pincers clearly hinged. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid red (#E10600); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: two massive asymmetric claws, one heavy crusher and one slimmer cutter, long antennae sweeping back over a deep blue-black shell mottled with orange. REQUIRED: The vest stays a clear value step lighter than the red shell so the two separate",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a black-and-white biker vest"
+      },
+      "note": "Competitor portrait. Pinch the American Lobster, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "bruce",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Great White. EXPRESSION: cold, relentless presence forcing others to react. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Great White has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid red (#ff0606); the foam panels across the chest and the shoulder straps are near-black (#121212); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a conical snout, black lifeless eyes, and a mouth of triangular serrated teeth; slate-grey above with a hard straight line where it meets the white belly. REQUIRED: The garment is the standard PFD and nothing else \u2014 no lapels, no collar, no studs, no leather. All the menace lives in the face and the set of the shoulders",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a black leather biker jacket"
+      },
+      "note": "Competitor portrait. Bruce the Great White, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "strut",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Flamingo. EXPRESSION: stylish confidence with daring, showy sailing. GESTURE: level, even and unhurried. LIMBS \u2014 Flamingo has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright pink (#FF4F9A); the foam panels across the chest and the shoulder straps are near-black (#1A1A1A); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a slender S-curved neck, a thick down-curved bill that is pale pink with a black tip, and vivid coral-pink plumage. REQUIRED: No eyewear. The long neck is coiled so the figure fills the square",
+      "rework": {
+        "priority": "P1",
+        "why": "wears sunglasses and a black moto jacket, and occupies a quarter of the frame"
+      },
+      "note": "Competitor portrait. Strut the Flamingo, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "gasket",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic American Beaver. EXPRESSION: methodical and stubborn, grinding out advantages. GESTURE: level, even and unhurried. LIMBS \u2014 American Beaver has true PAWS with digits: both forepaws held together at the chest \u2014 this animal genuinely has digits, so paws are correct here. BODY COVERING: this creature is covered in dense fur, and nothing else \u2014 no feathers and no plumage, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is vivid azure blue (#1F6FB2); the foam panels across the chest and the shoulder straps are bright vivid yellow (#FFE600); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: huge orange chisel-shaped incisors, a broad flat cross-hatched paddle tail visible behind, small round ears and a blunt wet nose. REQUIRED: No badge or insignia anywhere. Deliver at exactly 500x500 pixels",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a work jacket with a badge, and the file is 499x499"
+      },
+      "note": "Competitor portrait. Gasket the American Beaver, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "chomp",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Saltwater Crocodile. EXPRESSION: patient hunter striking without warning. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Saltwater Crocodile has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in dry overlapping scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is green (#2ECC71); the foam panels across the chest and the shoulder straps are chartreuse (#9CBF28); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a broad heavy snout with the fourth tooth showing outside the closed jaw, armoured scutes along the back, and a vertical cat-slit pupil in a golden eye. REQUIRED: Group the greens into three or four clean value masses rather than scale-by-scale detail, so the figure holds together when reduced",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a tactical vest, and the art is so busy it mushes when reduced"
+      },
+      "note": "Competitor portrait. Chomp the Saltwater Crocodile, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "whiskers",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Walrus. EXPRESSION: massive, steady, unbeatable in heavy conditions. GESTURE: settled square-on and still. LIMBS \u2014 Walrus has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in dense fur, and nothing else \u2014 no feathers and no plumage, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is orange (#C49A6C); the foam panels across the chest and the shoulder straps are vivid pink (#8E0038); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: two long ivory TUSKS descending past the chin, a dense bristly moustache of whiskers, and heavy folds of cinnamon-brown hide",
+      "note": "Competitor portrait. Whiskers the Walrus, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "vex",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Water Dragon. EXPRESSION: slippery tactician exploiting tiny mistakes. GESTURE: upright and composed, perfectly balanced. LIMBS \u2014 Water Dragon has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in dry overlapping scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid green (#0fe367); the foam panels across the chest and the shoulder straps are off-white (#D9D9D9); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a spiny crest running from the crown down the neck, a large round eardrum disc behind the eye, and emerald-green scales with a golden iris. REQUIRED: No plating and no badge of any kind. The head and crest carry the character",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a grey armoured plate vest with a paw badge"
+      },
+      "note": "Competitor portrait. Vex the Water Dragon, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "hug",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Ochre Sea Star. EXPRESSION: chill vibes, relentless endurance. GESTURE: level, even and unhurried. LIMBS \u2014 Ochre Sea Star has RAYS: one of its five tapering rays lifts slightly; rays, never fingers. BODY COVERING: this creature is covered in a pebbled leathery surface, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid violet (#9900ff); the foam panels across the chest and the shoulder straps are bright muted purple (#E8A6FF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: five thick tapering rays with a pebbled surface of small pale tubercles, deep purple graded to burnt orange. REQUIRED: Build the life jacket exactly as described above, in the colours named",
+      "rework": {
+        "priority": "P2",
+        "why": "the garment colour matches neither its hull nor its spinnaker \u2014 the only unlinked vest in the roster"
+      },
+      "note": "Competitor portrait. Hug the Ochre Sea Star, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "ripple",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Bottlenose Dolphin. EXPRESSION: cheerful speedster seeking clean lanes. GESTURE: head turned to read something just off-frame. LIMBS \u2014 Bottlenose Dolphin has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in smooth bare hide, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid cyan (#00B3FF); the foam panels across the chest and the shoulder straps are bright vivid amber-gold (#FFD400); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a permanent upturned smile in a short beak-like rostrum, a smooth glossy-grey melon forehead and a tall falcate dorsal fin behind",
+      "note": "Competitor portrait. Ripple the Bottlenose Dolphin, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "clutch",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Red Rock Crab. EXPRESSION: defensive and stubborn off the line. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Red Rock Crab has CLAWS: both claws held up at chest height, pincers clearly hinged. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is vivid red (#B00020); the foam panels across the chest and the shoulder straps are bright amber-gold (#FFD166); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a wide fan-shaped carapace in brick red, two stout equal claws with black tips, and stalked eyes set at the front corners",
+      "note": "Competitor portrait. Clutch the Red Rock Crab, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "glide",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Wandering Albatross. EXPRESSION: patient perfectionist who never blunders. GESTURE: level, even and unhurried. LIMBS \u2014 Wandering Albatross has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid azure blue (#1F4FFF); the foam panels across the chest and the shoulder straps are off-white (#E8F1F8); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: an immense narrow wingspan folded back, a heavy pale hooked bill in segmented plates, and pure white plumage with black-edged wings. REQUIRED: The vest colours are in this order deliberately, so it does not vanish against a white bird",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a blue jacket"
+      },
+      "note": "Competitor portrait. Glide the Wandering Albatross, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "fathom",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Orca. EXPRESSION: silent dominance unleashed at full power. GESTURE: settled square-on and still. LIMBS \u2014 Orca has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in smooth bare hide, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright azure blue (#3D8BFF); the foam panels across the chest and the shoulder straps are very dark blue (#1C1C3C); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a glossy true-black back with a crisp white oval eye patch, a white chin and belly, and a tall triangular dorsal fin. REQUIRED: The vest is one clean blue mass with no piping, no glowing trim and no panel lighting. The orca's own black-and-white is the graphic",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a piped techwear jacket with glowing trim"
+      },
+      "note": "Competitor portrait. Fathom the Orca, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "scuttle",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Hermit Crab. EXPRESSION: erratic survivor thriving in congestion. GESTURE: committed and leaning to one side. LIMBS \u2014 Hermit Crab has CLAWS: both claws held up at chest height, pincers clearly hinged. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid amber-gold (#FFB703); the foam panels across the chest and the shoulder straps are bright azure blue (#3A86FF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a borrowed spiral snail shell worn on the back, one oversized claw sealing the entrance, and small stalked eyes peering out",
+      "note": "Competitor portrait. Scuttle the Hermit Crab, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "finley",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Yellowfin Tuna. EXPRESSION: pure speed and relentless pressure. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Yellowfin Tuna has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is vivid cyan (#0077B6); the foam panels across the chest and the shoulder straps are bright vivid amber-gold (#ffd900); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a torpedo body of polished blue-black over silver, a row of small yellow finlets running to the tail, and a tall stiff yellow dorsal",
+      "note": "Competitor portrait. Finley the Yellowfin Tuna, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "torch",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Fire Salamander. EXPRESSION: explosive starts, reckless aggression. GESTURE: weight tipped forward, already going. LIMBS \u2014 Fire Salamander has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in smooth moist skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright red (#FF3B30); the foam panels across the chest and the shoulder straps are bright vivid amber-gold (#FFD60A); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: glossy jet-black skin blotched with vivid poison-yellow, a broad blunt head with bulging dark eyes, and a heavy tail. REQUIRED: The contour is dark charcoal grey throughout",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a moto jacket, and the contour is pure black"
+      },
+      "note": "Competitor portrait. Torch the Fire Salamander, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "nimbus",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Cloud Ray. EXPRESSION: effortlessly surfing invisible shifts. GESTURE: head turned to read something just off-frame. LIMBS \u2014 Cloud Ray has enormous WING-LIKE pectoral fins: its vast pectoral fins sweep out from the body like wings and fold back close \u2014 flat blades, never hands. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright blue (#6A7FDB); the foam panels across the chest and the shoulder straps are off-white (#F1F7FF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a vast diamond of wing-like pectoral fins, a broad flat head with cephalic lobes curling forward, and pale dappled blue-grey above. REQUIRED: The mid-blue vest is the largest value mass in the picture, and the pale body carries a clearly darker underside and contour so the figure separates from a light background",
+      "rework": {
+        "priority": "P0",
+        "why": "near-white on near-white \u2014 it disappears against a pale background"
+      },
+      "note": "Competitor portrait. Nimbus the Cloud Ray, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "tangle",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Common Octopus. EXPRESSION: trap-setting master of dirty air. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Common Octopus has tapering ARMS: two of its tapering arms curl loosely in front \u2014 arms that narrow to a point, never fingers. BODY COVERING: this creature is covered in smooth soft skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is purple (#7A1FA2); the foam panels across the chest and the shoulder straps are bright vivid sea green (#00E676); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a soft bulbous mantle, huge horizontal-slit eyes, and eight tapering arms lined with suckers, two curled forward",
+      "note": "Competitor portrait. Tangle the Common Octopus, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "brine",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Florida Manatee. EXPRESSION: looks slow, impossible to pass. GESTURE: settled square-on and still. LIMBS \u2014 Florida Manatee has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in smooth bare hide, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark muted cyan (#5E7C8A); the foam panels across the chest and the shoulder straps are bright muted red (#FFB4A2); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a heavy grey-blue barrel body, a blunt bristled snout with a cleft upper lip, tiny deep-set eyes and a rounded paddle tail",
+      "note": "Competitor portrait. Brine the Florida Manatee, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "razor",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Barracuda. EXPRESSION: surgical aggression at the worst moments. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Barracuda has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid red (#EF233C); the foam panels across the chest and the shoulder straps are very dark muted blue (#2D3142); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a long silver body with a protruding lower jaw and needle fangs, a row of dark chevron blotches along the flank",
+      "note": "Competitor portrait. Razor the Barracuda, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "pebble",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Adelie Penguin. EXPRESSION: precise and unshakable in traffic. GESTURE: level, even and unhurried. LIMBS \u2014 Adelie Penguin has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid teal (#00B4D8); the foam panels across the chest and the shoulder straps are near-black (#1F1F1F); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a plain black head and back against a white front with NO crest and NO yellow anywhere, a white eye-ring and a short dull pink bill",
+      "note": "Competitor portrait. Pebble the Adelie Penguin, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "saffron",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Lined Seahorse. EXPRESSION: graceful wildcard favoring wide tactics. GESTURE: committed and leaning to one side. LIMBS \u2014 Lined Seahorse has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid amber-gold (#FFB000); the foam panels across the chest and the shoulder straps are violet (#7B2CBF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a curled prehensile tail, a long tubular snout, a bony ridged crown, and a golden body ringed with fine darker bands",
+      "note": "Competitor portrait. Saffron the Lined Seahorse, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "bramble",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Sea Urchin. EXPRESSION: spiky defender denying easy lanes. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Sea Urchin has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in a pebbled leathery surface, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright blue (#A78BFA); the foam panels across the chest and the shoulder straps are very dark muted blue (#2B2E4A); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a dense globe of long sharp purple spines radiating outward from a small dark test",
+      "note": "Competitor portrait. Bramble the Sea Urchin, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "mistral",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Common Swift. EXPRESSION: constantly sniffing out pressure. GESTURE: head turned to read something just off-frame. LIMBS \u2014 Common Swift has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright red (#E63946); the foam panels across the chest and the shoulder straps are bright muted teal (#A8DADC); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a scythe-shaped swept wing profile, a tiny bill on a blunt head, and sooty brown plumage with a pale throat. REQUIRED: The wings stay FOLDED against the body, so the bird itself is the subject rather than a small shape between two wings. Cut the figure cleanly with no dark fringe at the edge",
+      "rework": {
+        "priority": "P0",
+        "why": "the wingspan is so wide the bird is a dot between the wings, and the existing file carries a dark matte halo"
+      },
+      "note": "Competitor portrait. Mistral the Common Swift, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "drift",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Sea Nettle. EXPRESSION: harmless-looking, slips through gaps. GESTURE: committed and leaning to one side. LIMBS \u2014 Sea Nettle has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in translucent gelatinous tissue, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright pink (#FF70A6); the foam panels across the chest and the shoulder straps are bright violet (#9B6FE0); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a translucent pink bell with faint radial canals and four horseshoe-shaped gonads showing through, over long fine trailing tentacles",
+      "note": "Competitor portrait. Drift the Sea Nettle, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "anchor",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Sea Turtle. EXPRESSION: conservative, resilient, brutally consistent. GESTURE: level, even and unhurried. LIMBS \u2014 Sea Turtle has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in a hard plated shell and scaly skin, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is muted green (#96C47A); the foam panels across the chest and the shoulder straps are bright vivid amber-gold (#FFD016); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a hexagon-plated olive-green shell, a beaked face with a scaly patterned head, and broad flipper-like forelimbs",
+      "note": "Competitor portrait. Anchor the Sea Turtle, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "zing",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Flying Squirrel. EXPRESSION: hyperactive chaos opportunist. GESTURE: weight tipped forward, already going. LIMBS \u2014 Flying Squirrel has true PAWS with digits: both forepaws held together at the chest \u2014 this animal genuinely has digits, so paws are correct here. BODY COVERING: this creature is covered in dense fur, and nothing else \u2014 no feathers and no plumage, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright violet (#9B5DE5); the foam panels across the chest and the shoulder straps are bright amber-gold (#FEE440); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a loose furred gliding membrane stretched between limbs, enormous black eyes for night vision, and a flat feathered tail",
+      "note": "Competitor portrait. Zing the Flying Squirrel, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "knot",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Chambered Nautilus. EXPRESSION: cerebral planner playing long games. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Chambered Nautilus has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in a hard shell over a soft mantle, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is red (#C8553D); the foam panels across the chest and the shoulder straps are green (#6FAF58); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a spiral shell in cream banded with rust-red flame stripes, a hood of short tentacles at the opening, and a small pinhole eye",
+      "note": "Competitor portrait. Knot the Chambered Nautilus, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "flash",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Mackerel. EXPRESSION: speed-first, consequences later. GESTURE: weight tipped forward, already going. LIMBS \u2014 Mackerel has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright azure blue (#3A86FF); the foam panels across the chest and the shoulder straps are bright yellow (#F5E050); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a steel-blue back crossed by bold dark wavy stripes over a bright silver flank, streamlined with a deeply forked tail",
+      "note": "Competitor portrait. Flash the Mackerel, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "pearl",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Pacific Oyster. EXPRESSION: quiet patience, strikes at perfect moments. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Pacific Oyster has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in a hard shell over a soft mantle, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright muted violet (#C7A6FF); the foam panels across the chest and the shoulder straps are near-black (#2E2E2E); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a rough grey fluted shell, its two valves slightly parted to show a soft pale mantle inside",
+      "note": "Competitor portrait. Pearl the Pacific Oyster, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "bluff",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Polar Bear. EXPRESSION: imposing calm daring mistakes. GESTURE: settled square-on and still. LIMBS \u2014 Polar Bear has true PAWS with digits: both forepaws held together at the chest \u2014 this animal genuinely has digits, so paws are correct here. BODY COVERING: this creature is covered in dense fur, and nothing else \u2014 no feathers and no plumage, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is azure blue (#2E5FD0); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a small head on a long neck, tiny black eyes and a jet-black nose against cream-white fur, with heavy shoulders",
+      "note": "Competitor portrait. Bluff the Polar Bear, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "regal",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Mute Swan. EXPRESSION: elegant lane thief with ruthless timing. GESTURE: upright and composed, perfectly balanced. LIMBS \u2014 Mute Swan has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid red (#E10600); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a pure white body, a long S-curved neck, and a bright ORANGE bill with a black basal knob at the forehead",
+      "note": "Competitor portrait. Regal the Mute Swan, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "sunshine",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Mahi-Mahi. EXPRESSION: flashy speed attacking on reaches. GESTURE: weight tipped forward, already going. LIMBS \u2014 Mahi-Mahi has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid sea green (#00E676); the foam panels across the chest and the shoulder straps are bright yellow (#FFEB3B); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a blunt vertical forehead, a long continuous dorsal fin running the length of the back, and electric blue-green over gold",
+      "note": "Competitor portrait. Sunshine the Mahi-Mahi, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "pulse",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Tree Frog. EXPRESSION: sticky feet, sticky cover \u2014 impossible to shake loose. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Tree Frog has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in smooth moist skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid green (#00FF6A); the foam panels across the chest and the shoulder straps are bright vivid violet (#7A00FF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: huge round eyes with golden irises, orange toe pads on splayed sticky fingers, and a smooth lime-green back over a cream belly",
+      "note": "Competitor portrait. Pulse the Tree Frog, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "splat",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Blobfish. EXPRESSION: looks doomed, but somehow always survives. GESTURE: committed and leaning to one side. LIMBS \u2014 Blobfish has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright muted red (#E7A6B4); the foam panels across the chest and the shoulder straps are dark vivid magenta (#6a1051); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a gelatinous drooping face, a bulbous down-turned nose, and a permanently downcast mouth in blotchy pink. REQUIRED: The PFD carries full hardware: centre zipper, panelled foam, webbing belt and buckle. The body has a defined contour so it reads as a creature rather than a shapeless lump",
+      "rework": {
+        "priority": "P1",
+        "why": "the garment has no zipper, panels or buckle"
+      },
+      "note": "Competitor portrait. Splat the Blobfish, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "dart",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Kingfisher. EXPRESSION: pure speed, energetic, very competitive. GESTURE: weight tipped forward, already going. LIMBS \u2014 Kingfisher has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid cyan (#00C2FF); the foam panels across the chest and the shoulder straps are bright orange (#FF9433); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a dagger-straight bill, an electric blue-green crown and back, and a bright rust-orange breast",
+      "note": "Competitor portrait. Dart the Kingfisher, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "roll",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Harbor Seal. EXPRESSION: playful feints hiding brutal positioning skills. GESTURE: upright and composed, perfectly balanced. LIMBS \u2014 Harbor Seal has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in dense fur, and nothing else \u2014 no feathers and no plumage, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is muted azure blue (#7D8597); the foam panels across the chest and the shoulder straps are bright amber-gold (#FFD166); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a rounded head with no visible ear flaps, large liquid dark eyes, long white whiskers and a mottled silver-grey coat",
+      "note": "Competitor portrait. Roll the Harbor Seal, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "spike",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Narwhal. EXPRESSION: leads with the horn \u2014 makes his own right of way. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Narwhal has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in smooth bare hide, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright blue (#6B7FD7); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a single long straight spiralled ivory TUSK projecting from the forehead, over a mottled blue-grey body with no dorsal fin",
+      "note": "Competitor portrait. Spike the Narwhal, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "flicker",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Arctic Tern. EXPRESSION: constant repositioning, never predictable. GESTURE: committed and leaning to one side. LIMBS \u2014 Arctic Tern has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright red (#EE6C4D); the foam panels across the chest and the shoulder straps are off-white (#E0FBFC); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a black cap over a white face, a blood-red pointed bill, long trailing tail streamers and pale grey wings",
+      "note": "Competitor portrait. Flicker the Arctic Tern, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "croak",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic American Bullfrog. EXPRESSION: patient swamp tactician who waits for the wind to die. GESTURE: head turned to read something just off-frame. LIMBS \u2014 American Bullfrog has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in smooth moist skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark green (#386641); the foam panels across the chest and the shoulder straps are chartreuse (#A7C957); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a huge circular eardrum disc behind each eye, a broad flat head with a wide grin, and an inflatable throat sac. REQUIRED: The vest stays a clear value step from the green body",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a hoodie"
+      },
+      "note": "Competitor portrait. Croak the American Bullfrog, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "snap",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Snapping Turtle. EXPRESSION: grouchy, old salty sailor who likes to beat the young whippersnappers. GESTURE: level, even and unhurried. LIMBS \u2014 Snapping Turtle has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in a hard plated shell and scaly skin, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark chartreuse (#4B5D23); the foam panels across the chest and the shoulder straps are bright vivid red (#ef3629); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a heavily ridged and knobbed dark carapace, a hooked beak, a thick spiky tail and a long wrinkled neck",
+      "note": "Competitor portrait. Snap the Snapping Turtle, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "rift",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Moray Eel. EXPRESSION: lurks quietly, strikes savagely at marks. GESTURE: upright and composed, perfectly balanced. LIMBS \u2014 Moray Eel has NONE \u2014 it is limbless: it has no limbs whatsoever: nothing to raise, nothing to fold. The pose is the set of the head and one easy coil of the body. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright magenta (#FF61DF); the foam panels across the chest and the shoulder straps are bright vivid chartreuse (#d4ff07); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a long ribbon body with a continuous fin along the spine, a permanently open mouth of needle teeth, and green-yellow mottling",
+      "note": "Competitor portrait. Rift the Moray Eel, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "skerry",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Atlantic Puffin. EXPRESSION: fearless gap-threader thriving in traffic. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Atlantic Puffin has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid orange (#FF5400); the foam panels across the chest and the shoulder straps are dark azure blue (#1D3557); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a huge triangular bill striped orange, yellow and blue-grey, a white face patch with a dark eye-triangle, and a black-and-white body",
+      "note": "Competitor portrait. Skerry the Atlantic Puffin, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "crush",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Mantis Shrimp. EXPRESSION: explosive reactions with devastating timing. GESTURE: upright and composed, perfectly balanced. LIMBS \u2014 Mantis Shrimp has CLAWS: both claws held up at chest height, pincers clearly hinged. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid sea green (#00F5D4); the foam panels across the chest and the shoulder straps are bright magenta (#F15BB5); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: two folded raptorial club-arms held under the chin, stalked compound eyes that swivel independently, and iridescent teal and orange banding. REQUIRED: Build the whole figure on ONE compact mass with the claws tucked inside the silhouette. Every line carries the full contour weight \u2014 no hairlines and no spindly limbs",
+      "rework": {
+        "priority": "P0",
+        "why": "hairline linework and spindly limbs that dissolve on reduction"
+      },
+      "note": "Competitor portrait. Crush the Mantis Shrimp, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "torrent",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Swordfish. EXPRESSION: straight-line dominance with brutal acceleration. GESTURE: weight tipped forward, already going. LIMBS \u2014 Swordfish has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is vivid azure blue (#083fa6); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a long FLAT BROAD sword-like bill, a tall crescent dorsal fin, and a dark metallic purple back \u2014 note it has no pelvic fins",
+      "note": "Competitor portrait. Torrent the Swordfish, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "jester",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Clownfish. EXPRESSION: cheerful chaos masking shrewd cunning. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Clownfish has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid orange (#ffa000); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: bold white bands edged in black across a vivid orange body, and a rounded blunt face",
+      "note": "Competitor portrait. Jester the Clownfish, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "breeze",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Nudibranch. EXPRESSION: chill, stylish, always finds unexpected pressure. GESTURE: head turned to read something just off-frame. LIMBS \u2014 Nudibranch has NO limbs \u2014 a sea slug: it has no fins and no arms: a soft muscular foot beneath and a pair of rhinophore horns on the head, nothing to raise. BODY COVERING: this creature is covered in smooth soft skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright magenta (#ff3fa7); the foam panels across the chest and the shoulder straps are dark vivid blue (#000080); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a soft slug body with a pair of rhinophore horns on the head and a ruff of feathery gills on the back, in electric purple and orange",
+      "note": "Competitor portrait. Breeze the Nudibranch, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "petal",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Roseate Spoonbill. EXPRESSION: elegant lane snatcher with impeccable timing. GESTURE: upright and composed, perfectly balanced. LIMBS \u2014 Roseate Spoonbill has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright pink (#FF6FAE); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a long flat SPATULATE spoon-shaped bill, a bare greenish crown, and rose-pink plumage deepening to crimson at the shoulders. REQUIRED: The figure fills the frame, with the long neck coiled rather than stretched across the square",
+      "rework": {
+        "priority": "P0",
+        "why": "pale, thin, and floating small in a large empty square"
+      },
+      "note": "Competitor portrait. Petal the Roseate Spoonbill, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "stomp",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Blue-Footed Booby. EXPRESSION: clumsy confidence hiding fearless lane attacks. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Blue-Footed Booby has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid teal (#00B4D8); the foam panels across the chest and the shoulder straps are off-white (#F5F7FA); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: vivid TURQUOISE-BLUE webbed FEET, a long pale dagger bill, and a brown-and-white body with a streaky head. REQUIRED: The cyan vest is the dominant mass. The bright blue feet stay visible as the second colour note, and the wingtips are dark enough to hold the silhouette",
+      "rework": {
+        "priority": "P0",
+        "why": "a white bird in a white vest \u2014 the whole image washes out"
+      },
+      "note": "Competitor portrait. Stomp the Blue-Footed Booby, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "crimson",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Red Snapper. EXPRESSION: calm, surgical tactician striking at perfect moments. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Red Snapper has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid red (#ed1515); the foam panels across the chest and the shoulder straps are bright vivid blue (#2643E9); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a deep scarlet body with a sharply sloping forehead, large dark eyes and spiny dorsal rays",
+      "note": "Competitor portrait. Crimson the Red Snapper, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "viper",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Green Tree Snake. EXPRESSION: coils around your wind and waits for the twitch. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Green Tree Snake has NONE \u2014 it is limbless: it has no limbs whatsoever: nothing to raise, nothing to fold. The pose is the set of the head and one easy coil of the body. BODY COVERING: this creature is covered in dry overlapping scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is vivid green (#49c100); the foam panels across the chest and the shoulder straps are bright chartreuse (#C4E63C); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a slender emerald body with a long tapering tail and a narrow head, large round eyes and a flicking blue-black tongue",
+      "note": "Competitor portrait. Viper the Green Tree Snake, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "skitter",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Atlantic Mudskipper. EXPRESSION: erratic scrambler who thrives where the water runs out. GESTURE: committed and leaning to one side. LIMBS \u2014 Atlantic Mudskipper has muscular PECTORAL FINS it props itself on: propped up on two thick muscular pectoral fins used like crutches \u2014 fins doing a leg\u2019s job, never hands. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid red (#e33d28); the foam panels across the chest and the shoulder straps are bright vivid green (#15f121); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: bulging periscope eyes on top of a broad flat head, a wide grinning mouth, and a mottled olive body propped on muscular pectoral fins",
+      "note": "Competitor portrait. Skitter the Atlantic Mudskipper, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "veil",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Vampire Squid. EXPRESSION: calm, shadowy predator striking without warning. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Vampire Squid has tapering ARMS: two of its tapering arms curl loosely in front \u2014 arms that narrow to a point, never fingers. BODY COVERING: this creature is covered in smooth soft skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is purple (#7A1FA2); the foam panels across the chest and the shoulder straps are bright vivid red (#E10600); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a dark red-black webbed cloak joining the arms, enormous globe-like blue eyes, and pale spine-like cirri lining the inner web",
+      "note": "Competitor portrait. Veil the Vampire Squid, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "puff",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Mandarin Dragonet. EXPRESSION: super chill vibes, effortless flow, always smiling. GESTURE: settled square-on and still. LIMBS \u2014 Mandarin Dragonet has rounded PECTORAL FINS: broad rounded pectoral fins fanned out beside the body \u2014 this is a FISH, not a reptile, and it has no legs. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid blue (#0032FF); the foam panels across the chest and the shoulder straps are bright orange (#F0A040); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a psychedelic maze of electric blue swirls over an orange ground, with a small blunt face and broad fan-like fins",
+      "note": "Competitor portrait. Puff the Mandarin Dragonet, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "lure",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Black Seadevil. EXPRESSION: patient darkness, sudden lethal strikes. GESTURE: settled square-on and still. LIMBS \u2014 Black Seadevil has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright green (#6AFF3D); the foam panels across the chest and the shoulder straps are very dark azure blue (#0B0F1A); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a luminous green ESCA dangling on a long rod arched forward over the head, above a cavernous mouth of glassy fangs, all in matte near-black",
+      "note": "Competitor portrait. Lure the Black Seadevil, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "wiggle",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Axolotl. EXPRESSION: cute chaos, surprisingly competitive. GESTURE: committed and leaning to one side. LIMBS \u2014 Axolotl has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in smooth moist skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright pink (#FF4FA3); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a feathery pink crown of external gills on each side of the head, a permanent wide smile, and a pale translucent body. REQUIRED: The vest colours are in this order deliberately, so it does not vanish against a white body. The feathery gills read as a bold shape rather than fine strands",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a mint hoodie"
+      },
+      "note": "Competitor portrait. Wiggle the Axolotl, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "zeffir",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Herring Gull. EXPRESSION: always lifted, always smiling. GESTURE: head turned to read something just off-frame. LIMBS \u2014 Herring Gull has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid orange (#FF7A00); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a white head and body with pale grey wings tipped black, a yellow bill with a red spot on the lower mandible, and a pale eye",
+      "note": "Competitor portrait. Zeffir the Herring Gull, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "scoop",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Brown Pelican. EXPRESSION: big moves, surprisingly precise. GESTURE: level, even and unhurried. LIMBS \u2014 Brown Pelican has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright muted amber-gold (#D8C6A3); the foam panels across the chest and the shoulder straps are bright azure blue (#5499DC); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: an enormous long bill with a slack expandable throat pouch beneath it, a white head and a heavy brown body. REQUIRED: No hat. The vest colours are in this order deliberately, so the vest separates from the bird's own tan",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a captain's hat"
+      },
+      "note": "Competitor portrait. Scoop the Brown Pelican, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "popper",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Pufferfish. EXPRESSION: defensive chaos, punishes reckless pressure. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Pufferfish has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid red (#E10600); the foam panels across the chest and the shoulder straps are bright amber-gold (#FFD84D); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a body inflated into a spiny sphere, huge protruding eyes, and a small beaked mouth with two fused front teeth",
+      "note": "Competitor portrait. Popper the Pufferfish, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "frond",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Leafy Seadragon. EXPRESSION: graceful drifter, impossible to read. GESTURE: head turned to read something just off-frame. LIMBS \u2014 Leafy Seadragon has small delicate PECTORAL FINS: tiny near-transparent pectoral fins fluttering beside the head \u2014 this is a FISH, not a reptile, and it has no legs. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is green (#5FAF6E); the foam panels across the chest and the shoulder straps are bright muted green (#C8E8B8); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: leaf-shaped skin appendages sprouting all along the body like drifting seaweed, a long tubular snout, and olive-gold with pale bars",
+      "note": "Competitor portrait. Frond the Leafy Seadragon, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "bulkhead",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Elephant Seal. EXPRESSION: a wall of calm \u2014 unbothered, unhurried, unmoved. GESTURE: level, even and unhurried. LIMBS \u2014 Elephant Seal has FLIPPERS: one flipper raised a little from the body \u2014 a flat paddle, never a hand. BODY COVERING: this creature is covered in dense fur, and nothing else \u2014 no feathers and no plumage, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark muted azure blue (#6B7280); the foam panels across the chest and the shoulder straps are bright vivid orange (#FF7A00); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: an enormous inflatable pendulous PROBOSCIS hanging over the mouth, a massively thick neck and heavy wrinkled grey hide",
+      "note": "Competitor portrait. Bulkhead the Elephant Seal, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "slipstream",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Sockeye Salmon. EXPRESSION: relentless endurance, explosive late surges. GESTURE: settled square-on and still. LIMBS \u2014 Sockeye Salmon has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is off-white (#B6BCC6); the foam panels across the chest and the shoulder straps are green (#4FBF3C); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a brilliant crimson body with a bright green head, a hooked upper jaw and a humped back in spawning colours",
+      "note": "Competitor portrait. Slipstream the Sockeye Salmon, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "blaze",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Mako Shark. EXPRESSION: blisteringly fast attacker forcing races into constant reaction mode. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Mako Shark has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark azure blue (#1F3C5B); the foam panels across the chest and the shoulder straps are off-white (#FFFFFF); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a sharply pointed conical snout, huge black eyes, and a deep metallic indigo back over a bright silver belly. REQUIRED: Cut the figure cleanly, with no dark fringe at the edge",
+      "rework": {
+        "priority": "P2",
+        "why": "a dark matte halo on the cut edge"
+      },
+      "note": "Competitor portrait. Blaze the Mako Shark, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "cruz",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic California Newt. EXPRESSION: unhurried, unbothered, and never once out of position. GESTURE: level, even and unhurried. LIMBS \u2014 California Newt has short FRONT LEGS: both short front legs planted forward, splayed toes visible. BODY COVERING: this creature is covered in smooth moist skin, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid orange (#F08A1E); the foam panels across the chest and the shoulder straps are very dark muted azure blue (#2E3440); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a warm orange-brown back over a vivid orange belly, a broad blunt head with bulging dark eyes, and granular skin",
+      "note": "Competitor portrait. Cruz the California Newt, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "prism",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Maxima Clam. EXPRESSION: a slow strange jewel that arrives faster than it has any right to. GESTURE: settled square-on and still. LIMBS \u2014 Maxima Clam has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in a hard shell over a soft mantle, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid teal (#00D9CB); the foam panels across the chest and the shoulder straps are dark vivid blue (#2A1070); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: thick fluted shell lips with a mantle of intense electric blue and green patterning, rendered in a few bold hard-edged steps. REQUIRED: Render the mantle's iridescence as a few BOLD hard-edged hue and value steps \u2014 saturated, but with no glow, no bloom and no haze",
+      "rework": {
+        "priority": "P0",
+        "why": "airbrushed neon with a bloom halo; the only uncontrolled-neon asset in the game outside Glowtide"
+      },
+      "note": "Competitor portrait. Prism the Maxima Clam, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "ember",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Firefish. EXPRESSION: burns hot off the line and dares the fleet to keep up. GESTURE: weight tipped forward, already going. LIMBS \u2014 Firefish has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright violet (#A855E8); the foam panels across the chest and the shoulder straps are bright orange (#F5A03C); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: long flowing red-and-white banded fan fins spread wide, and a striped body with feathery pectoral rays",
+      "note": "Competitor portrait. Ember the Firefish, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "torpedo",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Northern Pike. EXPRESSION: learns the water once, then hunts it from memory. GESTURE: settled square-on and still. LIMBS \u2014 Northern Pike has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark chartreuse (#7A8C3C); the foam panels across the chest and the shoulder straps are bright red (#D8402F); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a long duck-billed snout full of teeth, a dorsal fin set far back near the tail, and olive-green flanks marked with pale bean-shaped spots",
+      "note": "Competitor portrait. Torpedo the Northern Pike, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "flaunt",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Anemone Shrimp. EXPRESSION: dazzling, theatrical, and quietly stealing your lane the whole time. GESTURE: committed and leaning to one side. LIMBS \u2014 Anemone Shrimp has CLAWS: both claws held up at chest height, pincers clearly hinged. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright red (#F58BA0); the foam panels across the chest and the shoulder straps are bright vivid teal (#00C2E0); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: translucent pink body with white banding, long trailing white antennae, and delicate purple-tipped claws",
+      "note": "Competitor portrait. Flaunt the Anemone Shrimp, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "piper",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Sanderling. EXPRESSION: threads gaps at the mark that nobody else even sees. GESTURE: upright and composed, perfectly balanced. LIMBS \u2014 Sanderling has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright azure blue (#2E9BF0); the foam panels across the chest and the shoulder straps are bright muted amber-gold (#E8DCC0); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a plump pale grey-and-white shorebird with a short straight black bill, dark shoulder patch and black legs",
+      "note": "Competitor portrait. Piper the Sanderling, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "stripes",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Tiger Shark. EXPRESSION: eats mistakes. sail clean and he has nothing to work with. GESTURE: locked on, watching one point without blinking. LIMBS \u2014 Tiger Shark has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is deep bronze-brown (#8A6A3A); the foam panels across the chest and the shoulder straps are bright amber-gold (#F0C82E); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: dark vertical tiger bars down a blunt-nosed grey body, a broad square head and a notably large first dorsal fin. REQUIRED: The dark dorsal banding stays a bold graphic, not fine stripes",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a hoodie"
+      },
+      "note": "Competitor portrait. Stripes the Tiger Shark, archetype leech. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "anvil",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Hammerhead Shark. EXPRESSION: wide, heavy and utterly immovable once he owns the lane. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Hammerhead Shark has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark muted azure blue (#6E7A85); the foam panels across the chest and the shoulder straps are bright vivid orange (#F5851F); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a wide flattened HAMMER-shaped head with an eye at each far tip, over a slim bronze-grey body",
+      "note": "Competitor portrait. Anvil the Hammerhead Shark, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "paddle",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Mallard Duck. EXPRESSION: cheerful, forgiving and happiest when the breeze goes soft. GESTURE: level, even and unhurried. LIMBS \u2014 Mallard Duck has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is green (#2FAE5C); the foam panels across the chest and the shoulder straps are bright vivid orange (#F58A00); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: an iridescent BOTTLE-GREEN head, a bright yellow bill, a narrow white neck ring and a chestnut breast",
+      "note": "Competitor portrait. Paddle the Mallard Duck, archetype metronome. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "etienne",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Red Swamp Crayfish. EXPRESSION: scrappy bayou grinder who would rather hold a lane than win one. GESTURE: upright and composed, perfectly balanced. LIMBS \u2014 Red Swamp Crayfish has CLAWS: both claws held up at chest height, pincers clearly hinged. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright red (#DE4F3C); the foam panels across the chest and the shoulder straps are sea green (#50B090); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a deep red-brown crayfish with two long slender pincers, sweeping antennae, and a segmented tail fanned behind. REQUIRED: No hat and no neckerchief. The bayou character comes from the face and the claws alone",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a pirate hat, a neckerchief and a striped shirt \u2014 a full costume"
+      },
+      "note": "Competitor portrait. Etienne the Red Swamp Crayfish, archetype corner. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "frenzy",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Red-Bellied Piranha. EXPRESSION: feeds on a messy start and gets bored in clean air. GESTURE: committed and leaning to one side. LIMBS \u2014 Red-Bellied Piranha has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is red (#CE3B3B); the foam panels across the chest and the shoulder straps are dark green (#1E7A4A); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a deep disc-shaped silver body with a blood-red belly and throat, a blunt underslung jaw and interlocking triangular teeth",
+      "note": "Competitor portrait. Frenzy the Red-Bellied Piranha, archetype gambler. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "tiny",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Antarctic Krill. EXPRESSION: all twitch and no mass \u2014 turns like nothing else afloat. GESTURE: weight tipped forward, already going. LIMBS \u2014 Antarctic Krill has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright red (#F26E6E); the foam panels across the chest and the shoulder straps are azure blue (#3D6FC4); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a small translucent pink shrimp-like body with a large black eye and visible internal green gut line",
+      "note": "Competitor portrait. Tiny the Antarctic Krill, archetype rocket. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "grip",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Acorn Barnacle. EXPRESSION: immovable. wins the one metre he is standing on and nothing else. GESTURE: chin up and leaning into the frame, crowding it. LIMBS \u2014 Acorn Barnacle has NONE \u2014 no arms or legs: it has no arms or legs to gesture with; the pose is carried by the head and body alone, with the vest sitting around it. BODY COVERING: this creature is covered in a hard jointed shell, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is mid grey (#8A8D93); the foam panels across the chest and the shoulder straps are dark green (#2E7D32); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a squat volcano-shaped shell of overlapping chalk-white plates with a diamond-shaped opening at the summit",
+      "note": "Competitor portrait. Grip the Acorn Barnacle, archetype bully. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "splash",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Hippopotamus. EXPRESSION: enormous, delighted, and genuinely dangerous with the kite up. GESTURE: settled square-on and still. LIMBS \u2014 Hippopotamus has short stout LEGS with blunt toes: both stumpy forelegs planted square, blunt toes visible \u2014 no fingers. BODY COVERING: this creature is covered in smooth bare hide, and nothing else \u2014 no feathers and no plumage, no fur, no scales, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is dark muted azure blue (#6F7782); the foam panels across the chest and the shoulder straps are bright red (#EE3B2B); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: an enormous barrel head with a wide mouth, tiny ears and eyes set high on the skull, and thick pinkish-grey hide",
+      "note": "Competitor portrait. Splash the Hippopotamus, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "dozer",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Nurse Shark. EXPRESSION: sleeps through the start and wakes up somewhere near your transom. GESTURE: settled square-on and still. LIMBS \u2014 Nurse Shark has PECTORAL FINS: one pectoral fin lifted a little from the flank \u2014 a flat flexible blade, never a hand. BODY COVERING: this creature is covered in smooth wet skin with fine scales, and nothing else \u2014 no feathers and no plumage, no fur, no wings. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is orange (#B0824F); the foam panels across the chest and the shoulder straps are bright sea green (#7DE2C3); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: a broad flattened head with two fleshy BARBELS hanging beside the mouth, tiny eyes and a smooth tan-brown body. REQUIRED: The vest sits cleanly over the sleepy, heavy-lidded head that carries this character",
+      "rework": {
+        "priority": "P1",
+        "why": "wears a mint hoodie"
+      },
+      "note": "Competitor portrait. Dozer the Nurse Shark, archetype freight. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
+    },
+    {
+      "key": "muninn",
+      "class": "portrait",
+      "status": "art",
+      "subject": "Anthropomorphic Common Raven. EXPRESSION: remembers every shift he has ever seen, and sails you with it. GESTURE: head turned to read something just off-frame. LIMBS \u2014 Common Raven has WINGS: wings folded close against the body, one wingtip lifted just clear. BODY COVERING: this creature is covered in feathers, and nothing else \u2014 no fur, no scales. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is bright vivid cyan (#12A0FF); the foam panels across the chest and the shoulder straps are very dark blue (#1B2038); the waist webbing is charcoal with a plain metal buckle. Those two colours are the character's identity \u2014 hold them, and do not drift toward a more obvious pairing. SPECIES SIGNATURE: glossy blue-black plumage with a shaggy throat hackle, a heavy curved bill and a wedge-shaped tail",
+      "note": "Competitor portrait. Muninn the Common Raven, archetype shift. Vest colours are the AI_CONFIG hull and spinnaker ordered by the same luma rule the profile band uses."
     }
   ],
   "scale": {

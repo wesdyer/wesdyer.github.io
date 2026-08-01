@@ -20,10 +20,10 @@ const shots = [
   { mode: 'water', name: 'water', setup: (p) => p.evaluate(() => {}) },
   { mode: 'shape', name: 'land', setup: (p) => p.evaluate(() => {
       const A = window.EditorApp;
-      A._selectShape(A._state().doc.land[1].id);
+      A._selectShape(A._state().doc.shapes[1].id);
       const el = document.querySelector('#insp-obj [data-rename="shape"]');
       el.value = 'Granite Isle'; el.dispatchEvent(new Event('change'));
-      A._selectShape(A._state().doc.land[1].id);
+      A._selectShape(A._state().doc.shapes[1].id);
   }) },
   { mode: 'current', name: 'current', setup: (p) => p.evaluate(() => {
       [...document.querySelectorAll('#objs-actions .btn')]

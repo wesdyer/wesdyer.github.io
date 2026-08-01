@@ -25,6 +25,12 @@ const ONLY_VENUE = val('--venue', null);
 const SEED_BASE = parseInt(val('--seed-base', '90210'), 10);
 // Leg count is not persisted in settings, so the default 4 is all a trace ever
 // sees unless asked. Legs 5+ exercise course logic that 4 legs cannot reach.
+//
+// ⚠️ A DESIGNED course authors its own leg count and overrides this — every venue does,
+// now that every venue has a document. `--legs 6` therefore races 4 unless the venue's
+// route says otherwise, and the run reports which venues ignored it rather than quietly
+// writing a golden named for a leg count nobody sailed. To exercise longer courses,
+// author a longer route in the editor.
 const LEGS = parseInt(val('--legs', '4'), 10);
 
 const GOLDEN = path.resolve(LEGS === 4
@@ -126,6 +132,20 @@ function firstCheckpointDiff(a, b) {
 
     await browser.close();
     const mins = ((Date.now() - t0) / 60000).toFixed(1);
+
+    // Say when the requested leg count did not happen. A designed course authors its own,
+    // and the slider is a player preference the design overrides — so `--legs 6` can race
+    // 4 and write a file called traces-6leg.json describing four-leg races. Silence there
+    // is how a golden comes to mean something other than its name.
+    const ignored = Object.entries(results)
+        .map(([v, runs]) => [v, Object.values(runs)[0].summary.legs])
+        .filter(([, n]) => n != null && n !== LEGS);
+    if (ignored.length) {
+        console.log(`\n  --legs ${LEGS} was overridden by the venue's own route on `
+            + `${ignored.length}/${venues.length} venue(s): `
+            + ignored.map(([v, n]) => `${v} sailed ${n}`).join(', '));
+        console.log('  A course authors its leg count. To trace a longer one, author a longer route.');
+    }
 
     // ---- Persist / compare -------------------------------------------------
     fs.mkdirSync(path.dirname(GOLDEN), { recursive: true });

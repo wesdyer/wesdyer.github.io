@@ -65,10 +65,10 @@
 <script>
     window.requestAnimationFrame = window.__realRAF;
 
-    const STAT_ORDER = ['acceleration', 'momentum', 'handling', 'upwind', 'reach', 'downwind', 'boost'];
+    const STAT_ORDER = ['acceleration', 'momentum', 'handling', 'upwind', 'reach', 'downwind', 'pressure', 'lightAir', 'heavyAir', 'memory'];
     const STAT_ABBR = {
         acceleration: 'ACC', momentum: 'MOM', handling: 'HDL',
-        upwind: 'UPW', reach: 'RCH', downwind: 'DWN', boost: 'BST'
+        upwind: 'UPW', reach: 'RCH', downwind: 'DWN', pressure: 'PRS', lightAir: 'LGT', heavyAir: 'HVY', memory: 'MEM'
     };
 
     // A reviewer wants the whole stat line, not just the three the in-game
@@ -91,13 +91,14 @@
         const kite = (typeof SPIN_LOOKS !== 'undefined' && SPIN_LOOKS[cfg.name]) || 'solid';
         return `
             <div class="mt-5 pt-4" style="border-top:1px solid rgba(255,255,255,0.08)">
-                <div class="grid grid-cols-7 gap-1 mb-3">${stats}</div>
+                <div class="grid grid-cols-10 gap-1 mb-3">${stats}</div>
                 <div class="flex flex-wrap gap-x-4 gap-y-1.5 items-center">
                     ${swatch('hull', cfg.hull)}
                     ${swatch('sail', cfg.sail)}
                     ${swatch('kite', cfg.spinnaker)}
                     ${swatch('kite2', cfg.spinnaker2)}
-                    <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">pattern ${kite}</span>
+                    ${swatch('kite3', cfg.spinnaker3)}
+                    <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">pattern ${kite}${typeof spinColorCount === 'function' ? ' (' + spinColorCount(kite) + ')' : ''}</span>
                     <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">archetype ${cfg.archetype || '—'}</span>
                 </div>
             </div>`;

@@ -22,7 +22,9 @@ const check = (name, cond, detail) => {
 
 // Controls that are deliberately read rather than listened to: their value is picked up
 // when a nearby button is pressed. Anything not here needs a handler.
-const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary', 'rt-add-what']);
+// Fields a BUTTON reads at the moment it is pressed. They carry a value rather than
+// triggering anything, so having no listener is what they are, not a gap.
+const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', 'ice-vary']);
 
 (async () => {
     const html = fs.readFileSync('regatta/editor.html', 'utf8');
@@ -30,7 +32,12 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
 
     console.log('every control is wired\n');
     const ids = [...html.matchAll(/<(?:button|input|select)[^>]*id="([^"]+)"/g)].map(m => m[1]);
-    check('the page has a plausible number of controls', ids.length > 40, `${ids.length} found`);
+    // ⚠️ A FLOOR, and a shrinking one. This counts controls declared in editor.html; as each
+    // layer moved its fields into the INSPECTOR they stopped being in the file at all and
+    // started being rendered by inspLand/inspWind/inspLeg/… at runtime. So a falling number
+    // here is expected, and what it no longer proves is that those fields are wired — the
+    // per-layer probes in test_editor cover that, one field at a time.
+    check('the page still declares controls to check', ids.length > 20, `${ids.length} found`);
 
     const browser = await chromium.launch();
     const page = await browser.newPage();
@@ -79,10 +86,12 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
     const followed = results.filter(r => r.loaded === r.v);
     check('switching venue loads the venue you picked', followed.length === venues.length,
           results.filter(r => r.loaded !== r.v).map(r => `${r.v} -> ${r.loaded}`).join(', '));
-    check('a document venue arrives as a document',
-          results.some(r => r.doc === r.v), 'no venue loaded its own document');
-    check('a generated venue arrives with no document',
-          results.some(r => r.doc === null), 'every venue claimed a document');
+    // EVERY venue, not merely one. The editor could once open a document for a venue
+    // that would never race it; the test that a venue "arrives as a document" only asked
+    // for one such venue, which passed the whole time nine of them were unauthorable.
+    check('every venue arrives as its own document',
+          results.every(r => r.doc === r.v),
+          results.filter(r => r.doc !== r.v).map(r => `${r.v} -> ${r.doc}`).join(', '));
     check('every venue produced a course', results.every(r => r.marks >= 2),
           results.filter(r => r.marks < 2).map(r => r.v).join(', '));
     check('no page errors across every venue', errs.length === 0, errs.slice(0, 3).join(' | '));
@@ -99,6 +108,7 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
         const opened = A._venueMenu().open;
         const opts = A._venueMenu().options;
         const groups = [...document.querySelectorAll('#venue-menu .ed-pop-k')].map(e => e.textContent);
+        const order = [...document.querySelectorAll('#venue-menu .ed-opt')].map(e => e.dataset.v);
         const ticked = [...document.querySelectorAll('#venue-menu .ed-opt.on')].map(e => e.dataset.v);
         const before = label();
         // Clicking outside must dismiss it.
@@ -106,8 +116,21 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
         const dismissed = !A._venueMenu().open;
         document.getElementById('venue-btn').click();
         document.querySelector('#venue-menu [data-v="seatrials"]').click();
-        return { closed, opened, opts, groups, ticked, before, dismissed,
+        return { closed, opened, opts, groups, order, ticked, before, dismissed,
                  after: label(), stillOpen: A._venueMenu().open,
+                 // What the label SHOULD read, stated as the RULE rather than by calling
+                 // editor.js's `venueName` (which is private to its IIFE): a document may
+                 // override the venue's name, otherwise `VENUES` wins. Pinning the literal
+                 // display name here meant a venue rename failed this test instead of the
+                 // thing a rename can actually break — see redundantNames below.
+                 expectedAfter: (window.VENUE_DOC.seatrials || {}).name || VENUES.seatrials.name,
+                 // `doc.name` is an OVERRIDE that `venueName()` prefers over `VENUES`. One
+                 // equal to the stock name overrides nothing and is a rename landmine: the
+                 // freezer used to write it for every venue, so renaming Sea Trial Bay to
+                 // Clubhouse Point moved the game and left the editor saying the old name.
+                 redundantNames: Object.keys(window.VENUE_DOC).filter(k =>
+                     window.VENUE_DOC[k].name && (typeof VENUES !== 'undefined') &&
+                     VENUES[k] && window.VENUE_DOC[k].name === VENUES[k].name),
                  loaded: JSON.parse(localStorage.getItem('regatta_settings')).venue,
                  anyIds: [...document.querySelectorAll('#venue-menu .ed-opt span')]
                      .map(e => e.textContent).filter(t => /^[a-z]+$/.test(t)) };
@@ -115,17 +138,25 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
     check('the menu starts closed', menu.closed === false);
     check('the button opens it', menu.opened === true);
     check('it lists every venue', menu.opts.length >= 10, `${menu.opts.length}`);
-    check('documents are grouped ahead of generated venues',
-          menu.groups.length === 2 && /document/i.test(menu.groups[0]) && /generated/i.test(menu.groups[1]),
+    // One flat list in journey order. The old two groups separated editable venues from
+    // generated ones, a distinction that stopped existing when every venue got a document.
+    check('the venues are one flat list — no group headings', menu.groups.length === 0,
           menu.groups.join(' | '));
+    check('...in journey order, the Bay first and the benchmark last',
+          menu.order[0] === 'bay' && menu.order[menu.order.length - 1] === 'seatrials',
+          menu.order.join(' '));
+    check('no document overrides its venue name with the same name',
+          menu.redundantNames.length === 0,
+          `${menu.redundantNames.join(', ')} — a rename would move the game and not the editor`);
     check('the current venue is ticked', menu.ticked.length === 1, menu.ticked.join(','));
     check('clicking outside dismisses it', menu.dismissed === true);
     // NAMES, not ids: "Glacier Sound", never "arctic".
     check('the trigger shows the venue NAME', /\s/.test(menu.before) && menu.before !== 'arctic', menu.before);
     check('...and so does every row', menu.anyIds.length === 0, `id-looking rows: ${menu.anyIds.join(',')}`);
     check('picking one loads it and closes the menu',
-          menu.loaded === 'seatrials' && menu.stillOpen === false && menu.after === 'Sea Trial Bay',
-          `${menu.loaded} · label ${menu.after}`);
+          menu.loaded === 'seatrials' && menu.stillOpen === false &&
+          menu.after === menu.expectedAfter && /\s/.test(menu.after),
+          `${menu.loaded} · label ${menu.after}, expected ${menu.expectedAfter}`);
     check('no "document" suffix anywhere in the picker',
           !/·\s*document/.test(await page.evaluate(() => document.getElementById('venue-menu').textContent)));
 
@@ -172,7 +203,7 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
     }
     // A floor, not a count: the point is that the sweep found REAL controls, so it cannot
     // quietly pass over an empty selector the way it once did when a rename emptied it.
-    check('the sweep actually clicked something', clicked > 8, `${clicked} buttons total`);
+    check('the sweep actually clicked something', clicked > 5, `${clicked} buttons total`);
 
     // The tool strip, likewise: every tool switchable, none throwing. All but the two
     // always-available ones (Select and the ruler) need a layer with outlines on it —
@@ -206,6 +237,9 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
     check('the checks drawer opens and closes', misc.before && misc.opened && misc.closed);
     // Every layer that DRAWS something gets an eye. Water is the exception: it is the surface
     // the rest sits on, not an overlay, so there is nothing to turn off.
+    // Seven: Arena, Objects, Wind, Gusts, Current, Marks, Route. (Land and Venue became one
+    // Objects layer, so there is one eye for everything solid rather than one for coastlines
+    // and another for ice; Gusts arrived beside Wind.)
     check('every drawable layer has a visibility eye, and Water has none',
           misc.eyes === 7 && misc.waterEye === false, `${misc.eyes} eyes · water eye ${misc.waterEye}`);
     check('no page errors from the drawer', errs.length === 0, errs.slice(0, 2).join(' | '));
@@ -232,7 +266,7 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'ice-scatter', 'ice-vary',
     // differed. When the question is "did the canvas change", ask the canvas.
     const shot = () => page.evaluate(() => document.getElementById('schematic').toDataURL());
 
-    for (const L of ['current', 'land', 'arena', 'venue', 'wind', 'marks', 'route']) {
+    for (const L of ['current', 'land', 'arena', 'wind', 'marks', 'route']) {
         const on = await shot();
         await page.evaluate((l) => document.querySelector(`#layer-list [data-eye="${l}"]`).click(), L);
         await page.waitForTimeout(200);

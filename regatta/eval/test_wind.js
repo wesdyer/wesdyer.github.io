@@ -98,6 +98,164 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
             shadowStill: typeof state.course.navIslands !== 'undefined'
         };
     });
+    // ── An AUTHORED current is a current the whole game can see ─────────────
+    // Every readout used to ask `state.race.riverCurrent`, which was the same question as
+    // "does this venue have a stream" only while the river was the only venue with one. A
+    // region authored on any other venue pushed the fleet around while the water tile
+    // showed the static blurb, the streamlines never spawned, and the current knob offered
+    // to override a field it could not see.
+    console.log('\nan authored current region');
+    const cur = await page.evaluate(() => {
+        localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'seatrials' }));
+        resetGame();
+        // getCurrentAt returns NULL, not a zero vector, when nothing is flowing —
+        // ambientCurrentAt hands back `conditions.current`, which is null by default.
+        const before = { vc: !!venueCurrent(), at: (getCurrentAt(0, 0) || {}).speed || 0 };
+        // A 2000-unit square about the origin, flowing due EAST at 2 kn. Falloff 500, so
+        // the middle is at full strength and the rim is calm.
+        const poly = [[-1000, -1000], [1000, -1000], [1000, 1000], [-1000, 1000]];
+        state.course.currentRegions = [{
+            id: 'test-stream', poly,
+            bb: { minX: -1000, minY: -1000, maxX: 1000, maxY: 1000 },
+            falloff: 500, direction: Math.PI / 2, speed: 2, speedVar: 0, dirVar: 0,
+            period: 0, phase: 0
+        }];
+        const mid = getCurrentAt(0, 0);
+        const out = getCurrentAt(4000, 4000);
+        const vc = venueCurrent();
+        return {
+            before,
+            midSpeed: mid.speed, midDir: mid.direction,
+            outSpeed: (out && out.speed) || 0,
+            vcMax: vc && vc.max, vcText: vc && vc.text
+        };
+    });
+    check('a venue with no region has no current at all',
+          cur.before.vc === false && cur.before.at === 0, JSON.stringify(cur.before));
+    check('inside the region the water runs at the authored speed',
+          near(cur.midSpeed, 2, 0.01), `${cur.midSpeed} kn`);
+    check('...in the authored direction — due east', nearAng(cur.midDir, Math.PI / 2, 0.01),
+          `${(cur.midDir * 180 / Math.PI).toFixed(1)}°`);
+    check('outside it the water is still', cur.outSpeed === 0, `${cur.outSpeed} kn`);
+    check('the venue reports the stream it owns', near(cur.vcMax, 2, 0.01) && !!cur.vcText,
+          `${cur.vcMax} · ${cur.vcText}`);
+    // The pre-race "customize conditions" panel is gone — a course's current is stated by
+    // its document, so there is no knob left to lock and nothing on that screen to read it
+    // back to. What the venue reports is still checked, one assertion up.
+
+    // ── Shadows: the lee of a solid thing ───────────────────────────────────
+    // Wind shadow existed and was switched OFF for every venue: the guard skipped anything
+    // with `fromMask`, which meant "traced from a painted mask" (one venue) until compile
+    // started setting it on every authored shape (all ten). The fix is the same one that
+    // lets a coastline cast a shadow at all — cast it from the SILHOUETTE rather than from
+    // a centroid and a bounding radius.
+    console.log('\nwind and current shadows');
+    const shade = await page.evaluate(() => {
+        localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'lake' }));
+        resetGame();
+        const o = {}, isl = state.course.navIslands.filter(i => !i.isFloe);
+        const s = isl[0];
+        // NOTHING casts a lee until it is given a height — that is the default, deliberately,
+        // so the feature existing does not change how ten venues sail.
+        o.silentByDefault = shadowAt(s.x + 1, s.y + 1, state.wind.direction, 'wind') === 1
+            && isl.every(i => !(i.height > 0));
+        s.height = 40; s._sil = null;         // 40 m of rock -> 400 m of bad air, at 10 heights
+        const at = (dir, k) => shadowAt(s.x - Math.sin(dir) * s.radius * 2 * (k === 'lee' ? 1 : -1) * -1,
+                                        s.y + Math.cos(dir) * s.radius * 2 * (k === 'lee' ? 1 : -1) * -1,
+                                        dir, 'wind');
+        // Downwind is thin, upwind is untouched — at EVERY wind direction, because a shadow
+        // that does not turn with the breeze is in the wrong place the moment it shifts.
+        o.lee = [], o.luff = [];
+        for (let d = 0; d < 360; d += 45) {
+            const r = d * Math.PI / 180, fx = -Math.sin(r), fy = Math.cos(r);
+            o.lee.push(+shadowAt(s.x + fx * s.radius * 2, s.y + fy * s.radius * 2, r, 'wind').toFixed(2));
+            o.luff.push(+shadowAt(s.x - fx * s.radius * 2, s.y - fy * s.radius * 2, r, 'wind').toFixed(2));
+        }
+        // One FIXED point is shadowed at one wind angle and clear at the rest.
+        o.fixed = [];
+        for (let d = 0; d < 360; d += 45)
+            o.fixed.push(+shadowAt(s.x + s.radius * 2, s.y, d * Math.PI / 180, 'wind').toFixed(2));
+        // It fades with distance rather than stopping at a wall.
+        const d0 = state.wind.direction, fx = -Math.sin(d0), fy = Math.cos(d0);
+        const len = window.shadowLengthOf(s, 'wind');
+        // Sampled as FRACTIONS OF THE PLUME, not as multiples of the island's radius. The
+        // radius version happened to straddle the end of the shadow at one particular value
+        // of SHADOW_HEIGHTS and reported a false wall the moment that constant moved — so it
+        // was testing the constant, not the property. The last sample is past the tail by
+        // construction, which is what "ends in clear air" actually means.
+        o.profile = [0.1, 0.3, 0.5, 0.8, 1.2].map(k =>
+            +shadowAt(s.x + fx * (s.radius + len * k), s.y + fy * (s.radius + len * k), d0, 'wind').toFixed(2));
+        // Step sizes along the plume: an S-curve's are small, large, small.
+        const walk = [];
+        for (let t = 0; t <= 1.0001; t += 0.1)
+            walk.push(shadowAt(s.x + fx * (s.radius + len * t), s.y + fy * (s.radius + len * t), d0, 'wind'));
+        o.steps = walk.map(v => +v.toFixed(2));
+        const step = walk.slice(1).map((v, i) => v - walk[i]);
+        const mid = step[Math.floor(step.length / 2)];
+        o.sCurve = mid > step[0] * 1.5 && mid > step[step.length - 1] * 1.5;
+
+        // Authoring the LENGTH directly overrides the height-derived one, and 0 means none.
+        s.windShadow = 0; s._sil = null;
+        o.zeroCastsNone = shadowAt(s.x + fx * s.radius * 2, s.y + fy * s.radius * 2, d0, 'wind') === 1;
+        s.windShadow = s.radius * 12; s._sil = null;
+        o.longerReaches = shadowAt(s.x + fx * s.radius * 8, s.y + fy * s.radius * 8, d0, 'wind') < 0.99;
+        delete s.windShadow; s._sil = null;
+        // Height is what sets it: taller casts further, which is the whole model.
+        const at3r = () => shadowAt(s.x + fx * s.radius * 3, s.y + fy * s.radius * 3, d0, 'wind');
+        s.height = 10; s._sil = null; const shortH = at3r();
+        s.height = 90; s._sil = null; const tallH = at3r();
+        o.tallerCastsFurther = tallH < shortH;
+        s.height = 40; s._sil = null;
+
+        // A COASTLINE must shadow a band, not the map — the failure that switched the whole
+        // model off. Measured as the share of open water in any degree of lee.
+        localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'arctic' }));
+        resetGame();
+        // 20 m of shelf and shore, authored here because the venue does not author it.
+        for (const i of state.course.navIslands) { i.height = 20; i._sil = null; }
+        const b = state.course.boundary, dA = state.wind.direction;
+        let n = 0, dim = 0;
+        const onLand = (x, y) => state.course.landShapes.some(L => {
+            let inside = false; const v = L.vertices;
+            for (let a = 0, c = v.length - 1; a < v.length; c = a++) {
+                const xi = v[a].x, yi = v[a].y, xj = v[c].x, yj = v[c].y;
+                if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-9) + xi)) inside = !inside;
+            } return inside; });
+        for (let i = 0; i < 30; i++) for (let j = 0; j < 30; j++) {
+            const x = b.x + (i / 29 - 0.5) * b.radius * 1.6, y = b.y + (j / 29 - 0.5) * b.radius * 1.6;
+            if (!Arena.contains(b, x, y, 0) || onLand(x, y)) continue;
+            n++; if (shadowAt(x, y, dA, 'wind') < 0.999) dim++;
+        }
+        o.coastShare = Math.round(100 * dim / n);
+        o.coastCasts = dim > 0;
+        return o;
+    });
+    check('nothing casts a lee until it is given a height', shade.silentByDefault === true);
+    check('downwind of an island the breeze is thin, at every wind direction',
+          shade.lee.every(v => v < 0.75), shade.lee.join(' '));
+    check('...and upwind of it is untouched', shade.luff.every(v => v === 1), shade.luff.join(' '));
+    check('the shadow TURNS with the wind — one spot, shadowed at one angle',
+          shade.fixed.filter(v => v < 1).length === 1, shade.fixed.join(' '));
+    check('it fades with distance rather than ending at a wall',
+          shade.profile.every((v, i) => i === 0 || v >= shade.profile[i - 1] - 1e-9)
+          && shade.profile[0] < 0.5 && shade.profile[shade.profile.length - 1] === 1,
+          shade.profile.join(' '));
+    // SMOOTHSTEP, not linear. A wake holds its deficit in the near field, recovers through
+    // the middle and asymptotes — so the curve is flat at both ENDS and steepest in the
+    // MIDDLE. Linear was flat nowhere and met clear air with a crease you could see.
+    check('...on an S-curve: flat near the obstacle, flat at the tail, steep between',
+          shade.sCurve === true, shade.steps.join(' '));
+    check('a length of 0 casts no lee at all', shade.zeroCastsNone === true);
+    check('...and a longer one reaches further', shade.longerReaches === true);
+    // The point of height: a spire and a sandbar of identical outline are different weather.
+    check('a TALLER shape shadows further than a short one of the same outline',
+          shade.tallerCastsFurther === true);
+    // The old model cast from the centroid with the bounding radius, so Glacier Sound's
+    // coast — 9400 units of bounding circle centred inland — killed the breeze everywhere.
+    check('a COASTLINE shadows a band of water, not the map',
+          shade.coastCasts === true && shade.coastShare > 2 && shade.coastShare < 45,
+          `${shade.coastShare}% of open water in some lee`);
+
     await browser.close();
 
     console.log('wind regions: absolute and averaged\n');

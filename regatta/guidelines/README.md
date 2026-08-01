@@ -11,11 +11,14 @@ implements it.
 | [race-view.md](race-view.md) | Everything drawn on the water: camera, water, venue palettes, land, course overlay, wakes, particles, weather, race-scale sprites | **v1.0** — current |
 | [venue-art.md](venue-art.md) | Venue illustration: art direction, owned-hue registry, base prompt, delivery pipeline, acceptance checklist | current |
 | [art-pipeline.md](art-pipeline.md) | How art gets *made*: asset classes, roles, anchors, the six-step workflow, acceptance. Tooling in `../art/` | current |
+| [music.md](music.md) | The score: house style, the owned-instrument registry, per-venue Suno prompts, delivery, acceptance checklist | **v0.1** — current |
+| [skills.md](skills.md) | Competitor stats, archetypes, traits, character shape, venue natives, colour and pattern policy | **v0.1** — proposal |
 | [debt.md](debt.md) | The single register of verified visual defects, across all three | current |
 
 **Planned.** `gameplay.md` (course design, venue mechanics, difficulty, feel) ·
-`ai.md` (bot behavior, archetypes, tuning philosophy, eval discipline) · `audio.md`.
-Add them here as siblings; keep each one narrow.
+`ai.md` (bot behavior, archetypes, tuning philosophy, eval discipline) · `sfx.md`
+(the non-musical half of audio: the wind bed, cues, mix). Add them here as
+siblings; keep each one narrow.
 
 ## The seam
 

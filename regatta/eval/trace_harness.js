@@ -343,7 +343,12 @@ window.traceHarness = {
                 dns: window.state.boats.filter(b => b.raceState.resultStatus === 'DNS').length,
                 penalties: window.state.boats.reduce((a, b) => a + (b.raceState.totalPenalties || 0), 0),
                 courseType: (window.state.course && window.state.course.type) || null,
-                islands: (window.state.course && window.state.course.islands || []).length
+                islands: (window.state.course && window.state.course.islands || []).length,
+                // What the race actually sailed, which is not always what was asked for:
+                // a DESIGNED course's leg count is authored, and the request is a player
+                // preference the design overrides. Recorded so run_traces can say so
+                // instead of writing a file named for a leg count nobody sailed.
+                legs: window.state.race.totalLegs
             }
         };
     }

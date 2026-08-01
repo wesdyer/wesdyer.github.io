@@ -97,7 +97,11 @@ function runChecks(ctx) {
     const add = (level, id, title, detail, extra) =>
         out.push(Object.assign({ level, id, title, detail }, extra || {}));
 
-    const land = doc.land || [];
+    // The FIXED shapes. The checks below are about geography a course is laid on — how far
+    // land sits from a mark, whether scenery reaches past the arena — and a drifting floe
+    // is somewhere else by the time the gun goes, so it is not that.
+    const land = window.VenueDoc.shapes(doc)
+        .filter(s => window.VenueDoc.traits(s).motion === 'fixed');
     const bnd = compiled.boundary;
     const marks = compiled.marks || [];
     const rm = compiled.roundMark;
@@ -153,6 +157,34 @@ function runChecks(ctx) {
         }
         return (best && bestD <= Math.max(mk.zone || 0, 200)) ? best : null;
     };
+    // ── Does this route start and finish? ───────────────────────────────────
+    // A race needs a start to cross and a finish to cross, and the leg engine walks the
+    // route in ORDER — so they have to be the first and last entries. This used to be a
+    // hard error in the validator that only ever reached the console; it belongs here,
+    // where it is visible while you are building the route that broke it.
+    const rt = (doc.course && doc.course.route) || [];
+    const starts = rt.filter(e => e.role === 'start').length;
+    const finishes = rt.filter(e => e.finish).length;
+    const problems = [];
+    if (!starts) problems.push('no start');
+    else if (rt[0].role !== 'start') problems.push('the start is not the first leg');
+    if (starts > 1) problems.push(`${starts} starts`);
+    if (!finishes) problems.push('no finish');
+    else if (!rt[rt.length - 1].finish) problems.push('the finish is not the last leg');
+    if (finishes > 1) problems.push(`${finishes} finishes`);
+    if (!rt.length) {
+        add('error', 'route-ends', 'Route', 'The route is empty — there is nothing to sail');
+    } else if (problems.length) {
+        add('error', 'route-ends', 'Route start and finish',
+            `${problems.join(', ')} — the race is sailed in this order, so it has to begin`
+            + ' with a start gate and end with a finish gate');
+    } else {
+        add('ok', 'route-ends', 'Route start and finish',
+            `Starts at ${rt[0].name || 'the start gate'} and finishes at `
+            + `${rt[rt.length - 1].name || 'the finish gate'}, over ${rt.length - 1} leg`
+            + `${rt.length === 2 ? '' : 's'}`);
+    }
+
     if (rm) {
         const rock = landAtMark(rm);
         if (!rock) {

@@ -8,7 +8,7 @@ course because mark positions depend on where the convergence actually lands, an
 because regions are the low-risk half. Each phase ships independently and reverts
 independently.
 
-**Standing constraint:** Sea Trial Bay is the eval anchor and must not change in
+**Standing constraint:** Clubhouse Point is the eval anchor and must not change in
 any phase. Every gate below is measured against its pinned baseline —
 `100t → Race 213.30/209.72, Pen 0.30, collB 0.56, DNS/DNF 0%`.
 

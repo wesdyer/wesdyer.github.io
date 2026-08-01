@@ -85,7 +85,7 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 | 7 | Redrock Reservoir | **Distance Loop** | is the narrows doubled or dead today? | the venturi firing you out the slot |
 | 8 | Glowtide Strait | **Slalom** | do I follow the glow or trust my own line? | chasing a glowing wake through lit gates |
 | 9 | Glacier Sound | **Out & Back** | how close do I dare sail to the ice? | a calving that reshapes your return leg |
-| 10 | Sea Trial Bay | **W/L — FROZEN** | — | — |
+| 10 | Clubhouse Point | **W/L — FROZEN** | — | — |
 | 11 | Spoonbill Flats | **Loop**, 2 channels | is the shortcut still open? | taking it one lap too late |
 | 12 | Emberfall Isle | **Round the Cans** | round the cone now, or wait for the vent? | timing a rounding between eruptions |
 | 13 | Fallwater Fjord | **Out & Back** | take the downdraft or sail around it? | punching through the fall at speed |
@@ -684,14 +684,27 @@ easter egg) · sea smoke (weather prop). *Orca slots declared in the manifest.*
 
 ---
 
-# 10. Sea Trial Bay `seatrials`
+# 10. Clubhouse Point `seatrials`
 
-**Tagline** Clipboard & Stopwatch · **Chips** NO SURPRISES, TRUE BASELINE
+**Tagline** Cans & Consistency · **Chips** NO SURPRISES, TRUE BASELINE
+
+*Renamed July 31 2026 from **Sea Trial Bay** (tagline "Clipboard & Stopwatch").
+Every other venue is named after a place; this one was named after a procedure,
+and it read cold in a set whose brand is warmth. The key stays `seatrials` —
+see the standing constraint below.*
 
 **Description.** The measuring stick. Nothing happens here on purpose.
 
-**Character & narrative.** Deliberately none. A committee boat and an orange
-mark. The story is *the number*.
+**Character & narrative.** The Wednesday-night club series: same course, same
+evening breeze, same fleet, every week all season. This is the rename earning its
+keep — **beer-can racing is the most repeatable racing there is**, so the name now
+*explains* why nothing here ever changes instead of sitting awkwardly beside it.
+Warmth is allowed in the copy and the music; it is not allowed in the course. The
+story is still *the number*.
+
+⚠️ **A friendly name must not become a friendly venue.** The risk this rename
+carries is pressure to make the place fun — a hazard, a bit of flavour, one gator.
+The chips and the standing constraint below are what hold that line.
 
 **Art.** Plain honest blue. 0.055 value contrast, by far the flattest card, which
 is correct for a benchmark.
@@ -703,7 +716,7 @@ is correct for a benchmark.
 ⚠️ **This venue is the eval anchor.** The harness pins it via `localStorage`
 (`eval/eval_harness.js:17`) so AI numbers stay comparable across every change to
 every other venue. Its course, wind and conditions must never change —
-**including when course types ship.** Whatever else the game gains, Sea Trials
+**including when course types ship.** Whatever else the game gains, Clubhouse Point
 keeps racing the 2026 windward-leeward, or the entire regression history becomes
 meaningless.
 
@@ -970,7 +983,7 @@ This split falls out naturally and should drive implementation:
 | Wind | any direction | constrained to a **venue wind sector** |
 | Terrain | sparse or symmetric — must not break any rotation | dense, authored, the point |
 | Shapes | W/L, Triangle, Trapezoid | Loop, Out & Back, Round the Cans, Slalom |
-| Venues | Lake, Lagoon, Bay, Ocean, **Sea Trials** | Otter Run, Redrock, Bayou, Flats, Emberfall, Glowtide, Glacier Sound |
+| Venues | Lake, Lagoon, Bay, Ocean, **Clubhouse Point** | Otter Run, Redrock, Bayou, Flats, Emberfall, Glowtide, Glacier Sound |
 
 **Geography-fixed venues need a wind sector**, and that constraint is itself
 characterful: canyon wind blows down-canyon, a fjord funnels, a river valley
@@ -1006,7 +1019,7 @@ it sounds: same terrain, different mark set and rounding order.
 
 ### Costs and risks, honestly
 
-- **AI must be validated per venue.** Today the AI is tuned on Sea Trials and
+- **AI must be validated per venue.** Today the AI is tuned on Clubhouse Point and
   generalises because every course is the same open-water W/L. Bespoke geography
   — narrow slots, single-file braids, bridge arches — is much harder to path
   through. **The river venue already took five fixes**, and that was one current
@@ -1015,7 +1028,7 @@ it sounds: same terrain, different mark set and rounding order.
 - **Authoring load.** 12 venues × terrain + marks. It's data, not code, but it's
   a genuine content pass and it needs an editor or a hand-written format.
 - **Eval stability improves.** Designed courses *reduce* the RNG surface, which
-  helps determinism — as long as Sea Trials is untouched.
+  helps determinism — as long as Clubhouse Point is untouched.
 
 ### Suggested sequencing
 

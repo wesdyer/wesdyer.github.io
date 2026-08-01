@@ -53,7 +53,7 @@ const check = (name, cond, detail) => {
 
             const doc = window.VENUE_DOC[v];
             const S = window.SailCheck;
-            const grid = S.buildGrid(doc.land, state.course.boundary, null);
+            const grid = S.buildGrid(window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed'), state.course.boundary, null);
             const marks = state.course.marks, route = state.course.route;
             const wps = S.routeWaypoints(marks, route, grid);
 

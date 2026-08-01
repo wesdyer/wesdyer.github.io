@@ -9,10 +9,18 @@ randomized (nine venues) or hand-wired into `initCourse` with hardcoded logic
 reading green pixels off a mask (Glacier Sound). Neither scales. The editor makes
 a venue a *document* you author, and the game a thing that *reads* documents.
 
-**Standing constraint:** Sea Trial Bay is the eval anchor and must not change.
-It has no document and never gets one — it takes the generator path, and the gate
-on every phase is that its numbers are byte-identical:
-`100t → Race 213.30/209.72, Pen 0.30, collB 0.56, DNS/DNF 0%`.
+**Standing constraint — LIFTED July 31 2026.** It read: *Clubhouse Point is the eval
+anchor and must not change. It has no document and never gets one.* That held the
+whole build, and the build is now what retired it: with every layer authored and
+every check green, a venue nobody can edit is the odd one out, so all ten were
+frozen into documents — Clubhouse Point included, by decision.
+
+The anchor moved once, deliberately, and was re-measured. It is a **better** anchor
+now: every seed sails the identical course, so a difference between two runs is the
+AI or the physics rather than which way the wind happened to roll. Glacier Sound's
+golden traces were byte-identical across the engine change, which is the evidence
+that the refactor preserved behaviour; the nine frozen venues' goldens were
+re-recorded because their layouts changed by design.
 
 ---
 
@@ -70,7 +78,7 @@ just needs to run per-venue and record more than summary stats:
    roundings. Commit the hashes.
 2. **Refactor.** Hashes byte-identical ⇒ provably behaviour-preserving. Any drift
    points at a specific venue and step.
-3. **Sea Trial Bay stays the headline gate** on top of that, unchanged.
+3. **Clubhouse Point stays the headline gate** on top of that, unchanged.
 
 `playwright` and `jsdom` are already dev deps, so the infrastructure exists and is
 currently unused for anything but the AI eval.
@@ -258,7 +266,7 @@ per placement. The polygon equivalent is rejection sampling inside the bounding
 box, which consumes a **variable** number.
 
 That changes the RNG stream, which changes every generated venue, **which moves
-the eval anchor.** Sea Trial Bay's numbers would shift for a reason that has
+the eval anchor.** Clubhouse Point's numbers would shift for a reason that has
 nothing to do with sailing.
 
 So the boundary carries its analytic form when it has one:
@@ -1530,6 +1538,277 @@ Encoded here so the next session doesn't re-find them.
 
 ---
 
+## 6b. GUST REGIONS — where the puffs are born (BUILT, July 31 2026)
+
+Gusts and lulls are one system: a cell is an ellipse with a signed `speedDelta`, so a lull is
+a negative gust. `updateGusts` keeps `5 + puffiness × 20` alive, drifting downwind and
+rotating to the local breeze; `spawnGlobalGust` used to place each one **uniformly over the
+whole arena**. That was the gap. Redrock's card promises gust-bombs off the rim and
+Stillwater's promises glass patches you can read — uniform spawning cannot express either.
+
+### What the real thing does
+
+Checked before building, because the model was worth calibrating against something. Sources
+at the bottom of this section.
+
+| | reality | what the code already did |
+|---|---|---|
+| across-wind size | 100–200 m at 10–12 kn, double at 20 | `radiusY` 150–750 u = 30–150 m half-width ✓ |
+| shape | streamwise streaks, longer than wide | `radiusX` ≈ 2 × `radiusY`, aligned to the wind ✓ |
+| duration | 2–4 min before it is dragged back to the gradient wind | 90–240 s ✓ |
+| strength | +30–40% in a puff | +20–50% gust, −10–40% lull ✓ |
+| travel | downwind at a fraction of the wind | 0.72× — matches the comment claiming "gradient wind" ✓ |
+| coverage | the water is about 50% gust, 50% lull | `gustStrengthBias`, per venue ✓ |
+| wind shadow | **7–15 × the obstacle's height** (rigging refs say 10–20) | was 6 × — **raised to 10** |
+| origination | mixes down from aloft, in streets aligned with the mean wind | uniform ✗ — **this is what got built** |
+
+So the cell model was already sound and only the *placement* was wrong. Two numbers moved:
+`SHADOW_HEIGHTS` 6 → 10, which changes nothing today because no venue authors a height, and
+the comment in `venuedoc.js` that claimed "five to eight times" now says what the sources do.
+
+### The shape of a puff (built after the layer, measured separately)
+
+Three changes to the cell itself, all inside `getWindAt`'s sampling loop. The ellipse stays —
+a polygon would buy an outline you never see twice, and the sample runs per boat AND per
+particle per frame over every live cell. What the ellipse lacked was not detail but ASYMMETRY.
+
+- **Smoothstep falloff.** The cell was the last soft edge in the game still on a linear ramp,
+  while wind regions, current regions and the shadows all smoothstep. Linear met clear air
+  with a crease; smoothstep is flat at both ends and steepest in the middle, which is how a
+  puff arrives — you see it, then it comes on.
+- **A nose and a tail.** `PUFF_NOSE 0.65 / PUFF_TAIL 1.35` scale the along-wind coordinate
+  before the ellipse test, compressing the gradient at the leading edge and stretching it
+  behind. That is the half-moon the research describes, at the cost of one branch. The two
+  average to 1, so a cell keeps its length; only the balance moves.
+- **The fan.** Air spreads outward from where a puff lands, so one flank veers the wind and
+  the other backs it — the read that makes a puff a DECISION rather than free speed. A lull
+  converges instead, so the sign follows `speedDelta` and one constant serves both.
+
+⚠️ **The fan must be applied to the RESULTANT, not to the puff's own vector.** Turning only
+the puff's contribution and letting it sum with the base wind is arithmetically tidy and
+physically wrong: it damped an 18-degree fan to **0.7 degrees felt**, because the puff is a
+small part of the total. The surface wind inside a puff IS the descended air — that is what a
+puff is — so the whole local vector turns, weighted by `intensity`. Accumulated across cells
+and clamped to one puff's worth, so three overlapping flanks cannot spin the wind further
+than the strongest single one.
+
+Measured profile, one +4 kt puff on a 13 kt base, sampled across it:
+
+```
+across   0    0.1    0.2    0.3    0.4    0.5    0.6    0.7    0.8    0.9    1.0
+shift    0  -1.75  -3.23  -4.23  -4.67  -4.50  -3.80  -2.72  -1.50  -0.45     0
+boost    4   3.89   3.58   3.14   2.59   2.00   1.41   0.86   0.42   0.11     0
+```
+
+Zero on the axis (dead ahead of a puff is pressure, not a shift), peak 4.7 degrees at 0.4 of
+the way to the flank, zero at the rim. `_fan_profile.js` prints this table.
+
+**Both DRAW sites move with the field.** `drawGusts` and the minimap each centred a symmetric
+sprite on `(g.x, g.y)`; the skewed cell's extent is centred at `-PUFF_SKEW * radiusX` along
+the local axis, so both offset by that. A puff you can see but cannot feel where you see it is
+worse than no puff at all.
+
+### Why a separate layer and not a field on wind regions
+
+**A wind region STATES the wind there, and a region with no speed is CALM** — settled
+earlier, and there is a test asserting it. So a gust source drawn as a wind region with the
+speed left blank punches a dead hole in the breeze; to avoid it you would have to give every
+gust source a mean wind it does not mean.
+
+The places also genuinely differ. Redrock's mean wind bends *down the slot* while the
+gust-bombs come *off the rim* — two polygons, and one object cannot hold both.
+
+**Layer order: Course, Arena, Water, Objects, Wind, Gusts, Current, Marks, Route.** Gusts sit
+under Wind because they are wind; they are just not *mean* wind.
+
+### The SOURCE only
+
+A cell already drifts downwind on its own, so authoring where gusts are BORN gives where they
+land for free — Redrock's "born at the rim, sweeps across the course" is one polygon.
+Authoring both ends would be twice the controls and two things that can contradict each other
+invisibly.
+
+⚠️ **Be precise about what carries the cell.** It travels on the GLOBAL wind, not the local
+region-blended one — and that is correct rather than a shortcut. A puff is air mixed down
+from aloft, and the layer it came from is not bent by the headland the surface wind is
+bending around, so a cell crossing a wind region does *not* turn with it. What the wind
+region does own is the breeze the boat feels when the puff arrives: `getWindAt` adds the
+cell's `dirDelta` to the LOCAL blended direction, so a puff crossing a bend is felt as a
+veer on the bent wind rather than on the venue mean. The composition is real; it just runs
+through the sampling and not through the drift.
+
+**A gust region does NOT contain where gusts may go.** The case containment would serve is
+already a wind region:
+
+| primitive | says | moves? |
+|---|---|---|
+| Wind region | the wind's mean HERE | no — it is a place |
+| Gust region | where transients are BORN | the cells do; the region does not |
+
+A **standing** feature — Stillwater's glass patches — is a fact about the mean wind in that
+water, so it is a wind region with a low speed. A **travelling** puff is a gust. Keeping them
+apart is what stops one thing from being sayable two ways.
+
+### The fields
+
+| field | does | default |
+|---|---|---|
+| `density` | share of births this region takes, as a WEIGHT | 1 |
+| `strength` | × on the cell's `speedDelta` | 1 |
+| `size` | × on both radii | 1 |
+| `life` | × on duration — dies here, or crosses the course | 1 |
+| `bias` | share of births that are gusts rather than holes | **absent** = the venue's own split |
+| `falloff` | the soft edge — and the spawn probability | 300 u |
+
+Every one is a MULTIPLIER on what the venue's conditions already rolled, so a source dropped
+on a course changes only WHERE, never WHAT, until you say otherwise. `bias` is the one field
+where blank is a third value rather than a zero — the same distinction the shape lee lengths
+make, and for the same reason.
+
+`density` is a weight, not a count: the venue's `puffiness` still owns how many cells exist
+and a region owns where they come from. The inspector shows the weight as a **percentage of
+all sources**, because "a third of the pressure comes off the rim" is a number you can reason
+about and a bare `3` is not.
+
+**Falloff does double duty for free**: it is already a 0..1 weight per point, so it becomes
+the spawn probability. The spawner rejection-samples the polygon against it, so puffs cluster
+toward the middle of a source and thin at its edges with no new concept — and the editor's
+stipple is drawn from the *same* smoothstep, so the dots are literally where puffs will be
+born rather than a decoration that resembles it.
+
+Deliberately no *destination* and no *rate*: the wind carries the cell, and `puffiness` sets
+the rate. Both would be a second way to say something already said.
+
+### What got reused
+
+The point of the exercise. A third region kind cost one table:
+
+- **`REGION` in editor.js** — `{list, owner, sel, setSel}` per kind, keyed by the mode string.
+  Every verb that used to branch `mode === 'wind' ? … : …` now looks the kind up: draw,
+  marquee, Select, Direct, all four brushes, the booleans, duplicate, delete, rotate, scale,
+  the vertex refs, the object list. About thirty sites became lookups, and the third kind
+  joined all of them at once.
+- **`regionBB`** in venuedoc.js — the bounding-box loop was written out three times.
+- **`addWholeCourseRegion(kind)`** — the two hand-written whole-course helpers became a table
+  of a pad and a message.
+- `Arena.signedDist` + the smoothstep, `numEdit`'s prefix dispatch (`gr.` beside `wr.`/`cr.`),
+  the layer system, the inspector's `numF` grid.
+
+The only genuinely new drawing is the **stipple**, because a source has no direction and
+borrowing the arrow grid would claim it had one.
+
+### ⚠️ Two things that would have bitten
+
+**RNG draw count.** With no gust regions the spawn path is byte-identical: three draws to
+place (angle, distance, gust-or-lull) and six to build the cell. `test_gusts.js` asserts the
+number is **9** and says why. Region-weighted spawning is a different, variable count and only
+runs where a designer opted in. Every region multiplier is applied to the RESULT of an
+existing draw, never by adding one.
+
+**A test that encoded the constant.** Raising `SHADOW_HEIGHTS` failed `test_wind.js`'s "fades
+with distance" check — it sampled at fixed multiples of the island's radius, which happened to
+straddle the end of the plume at 6 heights. It was testing the constant, not the property. Now
+it samples fractions of the plume's own length, with the last one past the tail by
+construction.
+
+### Settled since — the weather moved too
+
+`puffiness`, `gustStrengthBias`, `puffShiftiness`, `shiftiness`, `variability` and the wind
+speed range are now `doc.conditions`, split across the two layers that own them:
+
+| layer | fields |
+|---|---|
+| Wind | `wind` (speed range), `shiftiness`, `variability` |
+| Gusts | `puffiness`, `gustStrengthBias`, `puffShiftiness` |
+
+That split is not cosmetic. A gust region's `bias` IS a per-source override of
+`gustStrengthBias`, and putting the two on one panel is what makes that legible.
+
+Each field is a **[min, max] range drawn once per race** — variety within a character, which
+is why a single number would be the wrong model. Shown as a pair of boxes with the venue's own
+values as **placeholders**, so an unauthored field still tells you what this course sails in.
+Blank is not zero: clearing either box drops the whole field back to the venue's.
+
+⚠️ **The draw order is a fixed list** (`COND_KEYS` in script.js), not `Object.keys` of whatever
+source happens to supply it — so a document authoring ONE field cannot reorder or resize the
+other four. `test_conditions.js` pins the count at **9** for a venue that states weather (wind,
+five conditions, three island params that are now dead weight but still in the stream) and
+**0** for Lighthouse Cove, which states nothing so the Bay stays resetGame's own randomisation.
+
+The one honest exception, pinned in the test rather than left to be rediscovered: authoring a
+field on Lighthouse Cove takes it from 0 draws to 1 and *does* move its races. That is correct
+— it is opt-in — but it is the single case where opening the panel and typing changes an
+existing course.
+
+**Sources.** [Bethwaite's spectrum of the wind (SailZing)](https://sailzing.com/spectrum-of-the-wind/),
+[Understanding how puffs work (Sailing World)](https://www.sailingworld.com/how-to/understanding-how-puffs-work/),
+[Seeing wind on the water (SailZing)](https://sailzing.com/seeing-wind-on-the-water/),
+[What is a wind shadow (surfertoday)](https://www.surfertoday.com/windsurfing/what-is-a-wind-shadow),
+[How to calculate wind shadows (Rigging Doctor)](https://www.riggingdoctor.com/life-aboard/2021/10/1/p82t3xd1l8qgfywafnagdn72bsu981),
+[Horizontal convective rolls (Wikipedia)](https://en.wikipedia.org/wiki/Horizontal_convective_rolls).
+
+## 6c. WHAT A VENUE STILL PROGRAMS (audit, July 31 2026)
+
+Measured, not read: `eval/_venue_audit.js` instruments the generated-land path and resets all
+ten venues. **Land generation ran for zero of them**; every document authors `wind + shapes +
+marks + route` and nothing else — no palette, no conditions, no gusts, no current anywhere.
+
+What is left outside the document, in four kinds:
+
+**1. Bespoke mechanics (`fx`), ~280 lines on three venues.** `river` (current, shore, banks,
+the bank-corridor clamp), `ice` (brash, floe colonies, a faster AI replan timer), `weeds`,
+`swell`, `snowfall`. The sharpest case is the RIVER'S CURRENT: the document has a whole
+current-region system and the river authors none of it, so one venue's water moves for a
+reason the editor cannot see.
+
+**2. Two dead flags.** `fx.mask` has NO reader anywhere. `fx.islandCourse` is read at exactly
+one site inside the generated branch that never runs. Also dead: the `islands: {count,
+maxSize, clustering, style}` block on eight venues — ⚠️ but `applyVenueConditions` still rolls
+THREE RNG DRAWS from it, so deleting it moves eight venues unless the draws are kept.
+
+**3. Hardcoded venue keys, bypassing `fx` entirely.** `orcaActive()` is
+`settings.venue === 'arctic'` — not even a flag. Orcas and penguins are ALREADY sprites
+(`orcaImg`, `penguinImgs`); what they are not is AUTHORED — penguins are attached to floes by
+`populateFloeColony`. "Make them placeable" is the job, and it is the same shape as weeds and
+brash: a polygon plus a density.
+
+**4. Identity and briefing.** `name`, `label`, `emoji`, `tagline`, `water`, `obstacles`,
+`tags`, `blurb` — the whole art-card picker and briefing sidebar, on all ten venues, in no
+document. Plus the art at `assets/images/venues/<key>.png`.
+
+### Settled: overpowered is physics, not geography
+
+`fx.overpowered` gated a speed penalty above 18 kt to Glacier Sound alone. It is now
+`overpoweredFactor(stats, wind)`, applied beside the polar on the boat's own `effectiveWind`.
+**The threshold is the gate**, and it gates better than the venue list did:
+
+| venue | base wind | % of samples > 18 kt | peak |
+|---|---|---|---|
+| arctic | 16-22 | 98.7% | 24.5 |
+| ocean | 12-20 | 1.3% | 20.6 |
+| all others | — | 0% | <= 17.3 |
+
+⚠️ I predicted "a balance change on ~7 venues" from base ranges plus gust percentages, and was
+WRONG: a gust rarely delivers its full `speedDelta` once `intensity` scales it down.
+`eval/_overpowered_reach.js` prints the table. Measure the reach before predicting the blast.
+
+⚠️ **Do NOT also feed `windGrooveFactor` the local wind.** A comment at its CALL SITE (not at
+its definition) defeats it: `effectiveWind` is pressure-modulated, so a low-pressure boat
+feels deeper lulls and would earn more `lightAir` credit for its own weakness. The groove asks
+"what kind of DAY suits you"; `pressure` asks "how you handle the deviations". Overpowered
+sits BESIDE the groove, keyed on local wind, not inside it.
+
+### Agreed, not yet built
+- **Swell to Water, optional.** The pre-race briefing already files it there
+  (`script.js`: "Water = what the water itself is doing: current, swell, glass, chop"). Note
+  swell is PHYSICS, not decoration — `polarBias` and `surge` run through the speed factor.
+- **Snowfall to Course**, not a new Weather layer: Wind and Gusts already ARE weather, so a
+  sibling called Weather makes the taxonomy ambiguous, and snowfall is screen-space with
+  nothing to select. Promote to a layer called **Sky** if rain/fog/light ever join it.
+- Both should become NUMBERS rather than booleans on the way, like everything else authored.
+
+---
+
 ## 7. Decisions
 
 **Settled:**
@@ -1541,10 +1820,22 @@ Encoded here so the next session doesn't re-find them.
   Analytic circle kept as a sampling fast path to protect the RNG stream.
 - Import once, then edit in the editor — never re-import as a workflow.
 
+**Settled since:**
+- **All ten venues have documents** (July 31 2026). `initCourse` takes the document
+  path for any venue that has one; the `mask` fx no longer gates it. Course type is
+  derived from the route rather than hardcoded. `art/freeze_venue_doc.js` ran the
+  generator once at seed 90210 and wrote down what it made.
+- **A document authors GEOMETRY; the venue keeps its character.** Land, arena, marks,
+  route, wind, current and ice are authored. Weed beds, brash, the river's shore and
+  its stream, swell and snowfall stay generated per race from the seed — freezing them
+  would fix the part of a venue that is meant to feel alive.
+
 **Still open:**
-1. **Do the other nine venues get documents?** Recommended no, not yet. They work,
-   and Sea Trial Bay must not change. Documents are for *designed* venues; a
-   randomized venue can gain one later if it wants designed land.
+1. **Does the river's stream become authorable?** Not yet. Its lateral profile reverses
+   into a back-eddy near the banks and its along-course envelope slackens at the line;
+   both were tuned against DNF rates over several passes, and a single falloff region
+   reproduces neither. Authored current regions ADD to it, so a designer can already lay
+   a stream on the river — or on any other venue — without re-deriving one.
 2. **Where does the 3–5 minute check live** — an editor estimate, or a headless
    "sail it" run? Estimate is cheap and approximate, the harness accurate and slow.
    Recommended: estimate in the editor, harness button once editing works. The

@@ -16,10 +16,11 @@ panels = len(re.findall(r'class="mode-panel"', s))
 ids = re.findall(r'id="([^"]+)"', s)
 import collections
 dupes = [k for k,v in collections.Counter(ids).items() if v > 1]
-# SIX layer panels: five under the object list plus Venue's ABOVE it (which now holds only
+# FOUR layer panels: three under the object list plus Venue's ABOVE it (which now holds only
 # the no-placeable-objects note). Land, WIND and CURRENT have none — their tools are on the
-# strip and their per-object fields are in the inspector. The ruler has none either.
-ok = not miss and panels == 6 and not dupes
+# strip and their per-object fields are in the inspector — as do Land, Wind, Current and
+# MARKS and ROUTE. The ruler has none either.
+ok = not miss and panels == 4 and not dupes
 print(('OK  ' if ok else 'BAD ') + f'panels={panels} dupes={dupes or "none"}'
       + (f' MISSING={miss}' if miss else ''))
 sys.exit(0 if ok else 1)

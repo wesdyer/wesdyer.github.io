@@ -65,7 +65,7 @@ eye-path, focal element, wildlife witness).
 | Redrock Reservoir | orange/rust sandstone | turquoise water (the inverted lagoon) |
 | Glowtide Strait | near-black indigo night | electric cyan biolume + red lit buoy + moon gold |
 | Glacier Sound | steel navy + faceted ice blue-white | penguin yellow, orca black |
-| Sea Trials | plain honest blue | one orange mark + committee boat |
+| Clubhouse Point | plain honest blue | one orange mark + committee boat |
 | Curlew Flats | warm amber-gold sandbars | deep slate-blue channels, rust-red withies |
 
 Unclaimed hue territory for future venues: greys (storm/fog), volcanic black +
@@ -98,7 +98,7 @@ the venue plays from the top fifth alone. Rule 5's cartoon-cumulus recipe is the
 | Redrock Reservoir | terrain wind, williwaws | towering thermal build over the rim, dust haze low in the canyon |
 | Glowtide Strait | night information game | clear moonlit night, minimal cloud. Already correct |
 | Glacier Sound | katabatic, ice | low grey overcast, sea smoke off the water, snow streaks. Already correct |
-| Sea Trials | it is a benchmark | deliberately plain and evenly lit — blandness is the identity. Flatter than everything else |
+| Clubhouse Point | it is a benchmark | deliberately plain and evenly lit — blandness is the identity. Flatter than everything else |
 | Curlew Flats | falling tide, building current | wide open estuary sky, varied blob-stack cumulus at mixed sizes plus thin streaks |
 | Emberfall Isle | vents & pumice | ash plume drifting downwind, ember-lit from beneath |
 
@@ -106,7 +106,7 @@ the venue plays from the top fifth alone. Rule 5's cartoon-cumulus recipe is the
 shaft), **Lake** (12 small puffs), **Bay** (sea-breeze line — land:water cloud
 ratio 4.1:1 → 11.3:1), **Otter Run** (cirrus only — sky max luminance 254 → 191).
 All four moved saturation up and held contrast. **Redrock** keeps its bare sky by
-choice; **Sea Trials** stays plain on purpose (0.055 contrast, by far the flattest
+choice; **Clubhouse Point** stays plain on purpose (0.055 contrast, by far the flattest
 card, which is correct for a benchmark).
 
 **Ocean: attempted and parked.** Cloud shadows on the water are the right idea —
