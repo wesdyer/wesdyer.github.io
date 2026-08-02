@@ -82,33 +82,79 @@
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
         }
         /* The player's row is ringed rather than filled: a fill would fight the portraits,
-           and the ring reads at a glance without changing the row's weight. */
-        .lb-me { box-shadow: inset 0 0 0 2px #fbbf24; background: rgba(251,191,36,0.10); }
-        /* Same "this row is you" language on the results page. The ring goes on the
-           row's surface (.res-bar) rather than the row wrapper, so the row can carry
-           spacing without the ring inheriting it. */
-        .res-me .res-bar { box-shadow: inset 0 0 0 2px #fbbf24; }
-        .res-me .res-name { color: #fcd34d; }
+           and the ring reads at a glance without changing the row's weight. The ring's
+           COLOUR is the player's own and is painted from JS — see updateLeaderboard. */
+        /* "This row is you", on the results page, in YOUR colour — the border, the wash and
+           the glow are all painted from the boat's own hue in JS (see renderResultsRows),
+           because gold is the colour of first place and cannot also be the colour of you.
+           It goes on the row's SURFACE (.res-bar) rather than the row wrapper, so the row
+           can carry spacing without the marker inheriting it, and every row already
+           reserves a transparent border so lighting one up moves nothing. */
 
         /* ── Results screen ("Finish Line") ─────────────────────────────────
            ONE definition of the column track. The header row and every result row
            read from it, so a column cannot drift out of alignment with its label —
-           which is exactly what happens when the template is pasted in two places. */
+           which is exactly what happens when the template is pasted in two places.
+
+           The flexible column is now GAP TO WINNER, not the name: the name needs a fixed
+           150px and no more, and the dead space in the middle of the row is exactly where
+           a picture of the finish belongs. */
         .res-grid {
             display: grid;
-            grid-template-columns: 58px 44px minmax(120px, 1fr) 96px 92px 92px 84px 92px 64px;
-            gap: 12px;
+            grid-template-columns: 52px 40px 150px minmax(140px, 1fr) 80px 84px 70px 84px 70px 84px 70px 56px;
+            gap: 10px;
             align-items: center;
         }
         .res-r { text-align: right; }
+        /* The gap ruler: a datum hairline at the winner's time, one marker per boat, and the
+           far end is the last boat home (see fleetGapScale). Nothing ever pins, because the
+           scale is the fleet's own spread — the header states it, since it differs race to
+           race. */
+        .res-gap { position: relative; height: 24px; min-width: 0; }
+        .res-gap-axis { position: absolute; top: 0; bottom: 0; left: 8px; width: 1px; background: rgba(255,255,255,0.12); }
+        .res-gap-mark { position: absolute; top: 2px; margin-left: 8px; display: flex; align-items: center; gap: 4px; }
+        .res-gap-tri {
+            width: 0; height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 16px solid currentColor;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+        }
+        /* A split tile. In CSS rather than inline because it has to be able to give ground:
+           a tile's min-content is its TIME plus its padding, and five of them have to sit
+           beside a 288px record card in a 470px column at 1280 (with a scrollbar taking its
+           cut). At the full size that needs 522px, so the fifth leg wrapped onto a row of
+           its own. Tighter padding and a hair off the time buys the 5-across everywhere;
+           above 1400 nothing is given up at all. */
+        .res-split {
+            background: #141d31;
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 12px;
+            padding: 11px 12px;
+            min-width: 0;
+        }
+        .res-split-time { font-size: 19px; font-weight: 600; margin-top: 4px; }
+        /* THE FLOOR IS WHAT PICKS THE COLUMN COUNT, not the tile's own min-content: auto-fit
+           divides by (floor + gap), so a floor 1px above what fits drops a whole column and
+           strands the fifth leg on a row of its own. Both numbers move together at the
+           breakpoint — the floor must never sit below the tile it is sizing, or the time
+           spills out of the box. */
+        #res-splits { display: grid; grid-template-columns: repeat(auto-fit, minmax(98px, 1fr)); gap: 8px; }
+        @media (max-width: 1400px) {
+            .res-split { padding: 11px 8px; }
+            .res-split-time { font-size: 17.5px; }
+            #res-splits { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+        }
+        /* NO HOVER STATE AND NO TRANSITION. The rows are a printed result, not a menu:
+           nothing here is clickable, so a hover fill was a promise the row could not keep —
+           and while boats are still finishing the table re-renders six times a second, so
+           any animated background flashed the whole list on every tick. */
         .res-row .res-bar {
             border-radius: 10px;
-            padding: 9px 14px;
+            padding: 8px 14px;
             background: rgba(255,255,255,0.02);
             border: 1px solid transparent;
-            transition: background-color 0.15s;
         }
-        .res-row:hover .res-bar { background: rgba(255,255,255,0.05); }
         .res-me .res-bar { background: rgba(242,193,78,0.07); }
         .res-btn {
             border: 1px solid rgba(255,255,255,0.18);
@@ -252,14 +298,16 @@
            <!-- Header: which leg, and how many are left. The pips say the second thing
                 without arithmetic — four dashes, two lit. -->
            <div id="lb-header" class="px-4 py-2.5 rounded-t-xl flex justify-between items-center"
-                style="background:#232a37; border:1px solid #38415240; border-bottom:none;">
+                style="background:#263747; border:1px solid #38415240; border-bottom:none;">
                <span id="lb-leg" class="t-display" style="font-size:15px; letter-spacing:3px; color:#5eead4;">LEG 1/4</span>
                <span id="lb-pips" class="flex items-center gap-1"></span>
            </div>
            <!-- Rows. No dividers: the rows are separated by their own spacing, and a grid of
-                hairlines under ten portraits reads as noise. -->
+                hairlines under ten portraits reads as noise. Deep navy, near-opaque: the panel
+                has to stay dark over BRIGHT water too, and the portraits and the gold "you"
+                ring only read against a surface darker than any of them. -->
            <div id="lb-rows" class="relative rounded-b-xl px-1.5 py-1.5 backdrop-blur-md shadow-2xl"
-                style="background:#2b3240E6; border:1px solid #38415240; border-top:none;">
+                style="background:#132537F2; border:1px solid #38415240; border-top:none;">
                <!-- Items injected via JS -->
            </div>
         </div>
@@ -591,14 +639,18 @@
 
             <div class="flex items-center justify-between gap-4" style="padding:22px 36px; border-bottom:1px solid rgba(255,255,255,0.07);">
                 <div class="flex items-center gap-4">
-                    <!-- Start pennant, in the one accent red the page allows itself. -->
-                    <div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:24px solid #ec3013;"></div>
+                    <!-- The club's own burgee, flying — the same mark that flies over the race
+                         on the HUD. The red pennant was a shape that appeared nowhere else. -->
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt=""
+                         class="h-11 w-auto burgee-flutter" draggable="false">
                     <div>
-                        <div class="t-display italic uppercase" style="font-size:27px; line-height:1;">Race Results</div>
+                        <div class="t-display uppercase" style="font-size:27px; line-height:1;">Race Results</div>
                         <div id="res-subtitle" class="t-label" style="font-size:10px; letter-spacing:0.28em; color:#7787a0; margin-top:6px;"></div>
                     </div>
                 </div>
-                <div id="res-status" class="t-mono" style="background:#141d31; border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:9px 15px; font-size:12.5px; color:#9fb2cc; white-space:nowrap;"></div>
+                <!-- A STATE, NOT A CONTROL. Boxed and bordered it read as a button, and the one
+                     thing it must never invite is a click. Dot plus text, no chrome. -->
+                <div id="res-status" class="t-mono flex items-center gap-2" style="font-size:12.5px; color:#9fb2cc; white-space:nowrap;"></div>
             </div>
 
             <!-- You, then your own race: the splits are the only place a single race can
@@ -608,15 +660,22 @@
                 <div style="width:1px; align-self:stretch; background:rgba(255,255,255,0.08);"></div>
                 <div style="flex:1; min-width:0;">
                     <div id="res-splits-label" class="t-label" style="font-size:10px; letter-spacing:0.16em; color:#66748c; margin-bottom:8px;">Your Splits</div>
-                    <div id="res-splits" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:8px;"></div>
+                    <!-- Grid sizing lives in the stylesheet (see #res-splits) — it has to
+                         change at the breakpoint, and an inline style cannot. -->
+                    <div id="res-splits"></div>
                 </div>
             </div>
 
             <div style="padding:20px 36px 8px;">
                 <div class="res-grid t-label" style="padding:0 14px 10px; font-size:10px; letter-spacing:0.14em; color:#66748c;">
                     <div>Pos</div><div></div><div>Skipper</div>
-                    <div class="res-r">Time</div><div class="res-r">Delta</div><div class="res-r">Top Spd</div>
+                    <!-- The ruler states its own scale (filled in by renderResultsHeader from
+                         the fleet's spread), or the markers are a picture with no units. -->
+                    <div id="res-gap-head" style="padding-left:8px;">Gap to winner</div>
+                    <div class="res-r">Time</div><div class="res-r">Delta</div>
+                    <div class="res-r">Start</div><div class="res-r">Top Spd</div>
                     <div class="res-r">Avg</div><div class="res-r">Dist km</div><div class="res-r">Pen</div>
+                    <div class="res-r">Pts</div>
                 </div>
                 <div id="results-list"></div>
             </div>

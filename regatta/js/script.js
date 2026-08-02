@@ -2179,19 +2179,90 @@ function applyVenueConditions() {
 //
 // `handlingRelief` is gone; it had been 0 since the relief moved to the heavyAir stat, and a
 // dead constant in a tuning struct is a trap for whoever tunes it next.
-const OVERPOWERED = { threshold: 18, costPerKnot: 0.03, heavyAirRelief: 0.08, maxCost: 0.25 };
+// Apparent wind angle close-hauled: where the sheet comes fully in. True wind angle
+// upwind is ~45 degrees, but the boat's own speed drags the apparent forward to ~25.
+const AWA_CLOSE_HAULED = 25 * Math.PI / 180;
+// Where a kite pays, in APPARENT. A boat carries a spinnaker by what the rig feels, which
+// is why a fast boat holds one deeper than a slow one.
+//
+// TWO thresholds, not one, because the hoist takes FIVE SECONDS (`switchSpeed = dt / 5.0`)
+// and halfway through it `jibFactor` and `spinFactor` are BOTH zero — a boat mid-hoist is
+// carrying no sail at all. With a single threshold the decision chatters across it and the
+// boat parks in that hole: measured 49% of beam-reach and 45% of running frames mid-hoist,
+// costing a full 1.7 knots on the run. (The single-threshold TWA rule this replaces was
+// already doing it at 38%/29% — the hysteresis is a fix for a defect that predates the
+// apparent-wind move, which merely made it louder.)
+//
+// It is also just what a crew does. You hoist when it will clearly draw and you carry it
+// through a brief luff rather than dousing and re-hoisting every few seconds.
+// What a sail change costs at its worst, halfway through: both sails up, neither trimmed.
+const SAIL_CHANGE_COST = 0.08;
+const AWA_KITE_SET = 100 * Math.PI / 180;    // hoist once the apparent is this far aft
+const AWA_KITE_DOUSE = 82 * Math.PI / 180;   // ...and do not douse until it comes this far forward
+
+const OVERPOWERED = {
+    threshold: 18,          // kt of TRUE wind the calibration is anchored at (see refMoment)
+    // AWS^2 * sin(AWA) for a beam reach in `threshold` knots: a boat making 8 kt at TWA 90
+    // sees AWS 19.7 at AWA 66, so 19.7^2 * sin(66) = 355. Pressure is reported relative to
+    // this, so heel == 1.0 means "as pressed as a beam reach in 18 knots".
+    refMoment: 355,
+    heelThreshold: 1.0,     // nothing is charged below this
+    // ...and this much speed per unit of pressure above it. Calibrated so a BEAM REACH —
+    // where heel peaks — pays about the 21% the old flat rule charged at 25 kt true. That
+    // keeps phase 1 a change of SHAPE and not of size: what moves is that the beat pays
+    // less than the reach and the run pays nothing at all, which the old rule could not
+    // express because it never looked at the angle.
+    costPerHeel: 0.45,
+    heavyAirRelief: 0.08,
+    maxCost: 0.25,
+    lagSeconds: 1.5         // heel is STATE. The lag is what makes it a situation you sail
+                            // out of rather than a multiplier you look up.
+};
 
 // Keyed on the wind the BOAT measures — local, so a puff overpowers you and the lull after it
 // does not, and reduced by dirty air because sitting in someone's bad air is less wind, not
 // more. A boat with a high `pressure` stat feels gusts harder and so is exposed to this
 // sooner: that is the trade for extracting more from them, and `heavyAir` is what buys it
 // back.
-function overpoweredFactor(stats, wind) {
-    if (wind <= OVERPOWERED.threshold) return 1.0;
-    const excess = wind - OVERPOWERED.threshold;
-    // heavyAir, not handling — one stat owns wind strength.
+// ── HEELING PRESSURE ────────────────────────────────────────────────────────────
+// How hard the rig is being pressed, as a multiple of "as much as this boat wants".
+//
+//     heeling moment  ~  AWS^2 * sin(AWA)
+//
+// Sail force goes as the SQUARE of apparent wind speed; the athwartships component of it
+// goes as the SINE of apparent wind angle. Those two terms produce the entire behaviour
+// with no special cases anywhere:
+//
+//   close-hauled   AWS high (boat speed adds), AWA ~30    ->  pressed
+//   beam reach     AWS highest, AWA ~75-90               ->  MOST pressed
+//   broad / run    AWS low (boat speed SUBTRACTS), AWA ~150 -> barely pressed at all
+//
+// which is why bearing away in a blow is a real escape and not just a smaller penalty: it
+// cuts both terms at once. It is also why the polar above is allowed to keep climbing
+// downwind in 30 knots — a boat that deep is not overpowered, she is planing.
+//
+// Returns 1.0 at exactly the pressure a beam reach generates in OVERPOWERED.threshold
+// knots of true wind, which is where the old flat rule started charging.
+function heelPressure(aws, awa) {
+    return (aws * aws * Math.sin(Math.abs(awa))) / OVERPOWERED.refMoment;
+}
+
+// The speed cost of being pressed. Replaces a flat tax on TRUE WIND SPEED that took no
+// angle at all — under it a boat running dead downwind in 25 kt paid exactly what a boat
+// beating in 25 kt paid, so the point of sail that should be FASTEST was penalised as hard
+// as the one that should be slowest. Combined with the polar flatlining at 20 kt, 25 knots
+// downwind came out strictly slower than 20.
+//
+// Magnitude is deliberately unchanged: a beam reach in 25 kt still pays about the 21% the
+// old rule charged. The SHAPE moves, the SIZE does not — the beat pays less, the run pays
+// nothing, and the total is calibrated at the same point it always was.
+function overpoweredFactor(stats, heel) {
+    // heavyAir, not handling — one stat owns wind strength. A heavy-air specialist carries
+    // more pressure before it costs anything, which is the same trade the old rule made.
     const cope = Math.max(0.3, 1 - (stats.heavyAir || 0) * OVERPOWERED.heavyAirRelief);
-    return 1 - Math.min(OVERPOWERED.maxCost, excess * OVERPOWERED.costPerKnot * cope);
+    const over = heel - OVERPOWERED.heelThreshold;
+    if (over <= 0) return 1.0;
+    return 1 - Math.min(OVERPOWERED.maxCost, over * OVERPOWERED.costPerHeel * cope);
 }
 
 
@@ -2905,6 +2976,48 @@ const J111_POLARS = {
         20: {
             spinnaker: [0.0, 0.0, 1.2, 2.4, 3.6, 4.8, 6.5, 10.43, 10.87, 11.01, 10.81, 9.98, 8.88],
             nonSpinnaker: [0.0, 0.0, 8.2, 8.7, 9.26, 9.6, 9.98, 10.43, 9.77, 9.35, 8.4, 7.42, 6.66]
+        },
+        // ── ABOVE 20 KNOTS: EXTRAPOLATED, and it has to be ──────────────────────────
+        // Rows 6-20 are ORC VPP data, and 6/8/10/12/14/16/20 is not a coincidence — it is
+        // exactly the wind set the ORC VPP solves for. ORC publishes NOTHING above 20 kt:
+        // its own rule says that when the scoring wind exceeds 20 knots the 20-knot time
+        // allowances are used, and implied wind is "not extrapolated beyond the range of
+        // calculations of the ORC VPP".
+        //
+        // That rule is a RATING-FAIRNESS convention, not a claim about boats — and the game
+        // had inherited it as physics (`if (windSpeed >= 20) { lower = 20; upper = 20 }`),
+        // which made 25 knots downwind no faster than 20 and, once overpowered took its cut,
+        // strictly slower. So these two rows are built rather than cited.
+        //
+        // The shape comes from the measured rows: from 16 to 20 kt the boat gains 5.7% at
+        // 38 degrees, 10.7% at 90 and 18.7% at 180 — upwind is ALREADY SATURATING while
+        // downwind is still accelerating hard. Both trends simply continue:
+        //   20 -> 25 kt   +2% upwind, +10% at 90, +18-20% deep
+        //   25 -> 30 kt    0% upwind,  +8% at 90, +17-18% deep
+        // Upwind flattening IS being overpowered: the rig is depowered and the bow is in
+        // the waves, so more wind buys nothing. Downwind DOES NOT TAPER, and that is the
+        // point — past 17-18 kt the boat is planing, and a planing hull keeps taking what
+        // the breeze offers instead of settling at a wave-making limit.
+        //
+        // ⚠️ Do not "correct" these toward the ORC curve's flattening. ORC's VPP is a
+        // RATING predictor and is conservative about planing: it puts a J/111 at 8.75 kt in
+        // 12 kt of breeze at 120 degrees, while a J/111 on the water planes at 12-13 kt in
+        // that same 12 knots. The game's planing multiplier already carries part of that
+        // gap; these rows carry the rest. Sanity check at the top end: 25 kt at 120 degrees
+        // is 12.99 kt of polar, about 15.6 with the planing bonus — and real J/111s are
+        // documented in the high teens with peaks past 20 (one clocked at 20.2).
+        //
+        // Sources: ORC VPP documentation (the 6-20 kt solve set and the 20 kt scoring cap);
+        // North Sails J/111 Worlds speed guide (planes at 17-18 kt TWS, crossover ~17 kt,
+        // jib carried above 25 kt, A2 to 24-28 kt); blur.se J/111 Piranha test (12-13 kt
+        // planing in 12 kt of breeze; other boats "close to, or top, 20 knots").
+        25: {
+            spinnaker: [0.0, 0.0, 1.22, 2.46, 3.71, 4.97, 6.89, 11.47, 12.61, 12.99, 12.86, 11.98, 10.57],
+            nonSpinnaker: [0.0, 0.0, 8.36, 8.92, 9.54, 9.94, 10.58, 11.47, 11.33, 11.03, 10.0, 8.9, 7.93]
+        },
+        30: {
+            spinnaker: [0.0, 0.0, 1.22, 2.47, 3.75, 5.04, 7.17, 12.39, 14.38, 15.07, 15.05, 14.14, 12.37],
+            nonSpinnaker: [0.0, 0.0, 8.36, 8.96, 9.64, 10.09, 11.0, 12.39, 12.92, 12.79, 11.7, 10.5, 9.28]
         }
     }
 };
@@ -3506,6 +3619,7 @@ class Boat {
         this.manualSailAngle = 0;
         this.boomSide = 1;
         this.targetBoomSide = 1;
+        this.heel = 0;          // lagged heeling pressure, 1.0 == a beam reach in OVERPOWERED.threshold kt
         this.luffing = false;
         this.luffIntensity = 0;
         this.spinnaker = false;
@@ -3560,6 +3674,14 @@ class Boat {
             // advanceLeg), so the cost is one O(n) scan per rounding.
             startRank: 0,
             legRanks: [],
+            // THE WIND THAT ACTUALLY BLEW, off the player's own masthead — see updateBoat.
+            // The pre-race board quotes a forecast over the whole course; a result should be
+            // able to say what the race itself felt, which no field average can reconstruct
+            // afterwards because it depends on where you sailed.
+            windObsMin: Infinity,
+            windObsMax: 0,
+            windObsSum: 0,
+            windObsN: 0,
             legManeuvers: new Array(32).fill(0),
             legTopSpeeds: new Array(32).fill(0),
             legDistances: new Array(32).fill(0),
@@ -5575,20 +5697,35 @@ function renderVenueDetail(key) {
     // fact about you, not about the venue, so it does not belong in the stack of venue
     // readouts at the bottom — and up here it is the first thing you see on a course you
     // have raced before.
+    // TWO RECORDS IN ONE PILL, divided. The clock is what you came back to beat, to the
+    // thousandth because that is the precision it gets beaten by; the finish beside it is a
+    // different race on a different day and was never the same fact — a light-air win is
+    // slower than a windy eighth. They share a pill because the header row already carries
+    // two chips and a third would run into them; the divider keeps them two claims.
+    const bestValue = (label, value, color) =>
+        `<span class="t-label t-label-sm" style="color:${color}; margin-right:6px;">${label}</span>`
+      + `<span style="color:${color};">${value}</span>`;
     const bestChip = best
         ? `<span class="t-mono shrink-0" style="background:rgba(242,193,78,0.14); border:1px solid rgba(242,193,78,0.4);
-                   border-radius:999px; padding:5px 13px; font-size:12.5px; color:#f2c14e; white-space:nowrap;">
-               <span class="t-label t-label-sm" style="color:#f2c14e; margin-right:6px;">Your best</span>${best.pos ? `${ordinalOf(best.pos)} · ` : ''}${formatTime(best.t)}
+                   border-radius:999px; padding:5px 13px; font-size:12.5px; white-space:nowrap;">
+               ${bestValue('Your best', formatBestTime(best.t), '#f2c14e')}
+               ${best.bestPos ? `<span style="color:rgba(242,193,78,0.35); margin:0 8px;">|</span>`
+                              + bestValue('Finish', ordinalOf(best.bestPos), '#dbeafe') : ''}
            </span>`
         : '';
 
     UI.venueDetail.innerHTML = `
-        <div class="flex gap-2 shrink-0 items-start justify-between">
+        <!-- WRAPS. Four nowrap chips do not fit a 386px venue column at 1280, and without
+             this the left pair and the best pill simply drew on top of each other — which
+             they were already doing, narrowly, before the finish record joined them. The
+             second line comes out of the slack above the readouts (pinned by margin-top:auto),
+             not out of the title. -->
+        <div class="flex flex-wrap gap-2 shrink-0 items-start justify-between">
             <div class="flex gap-2" style="min-width:0;">
                 <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">Venue ${idx} of ${Object.keys(VENUES).length}</span>
                 <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${v.label}</span>
             </div>
-            ${bestChip}
+            <div class="flex gap-2 shrink-0">${bestChip}</div>
         </div>
         <div class="t-display uppercase pr-venue-title${longName}">${v.name || v.label}</div>
         <div class="pr-blurb">${v.blurb || ''}</div>
@@ -6631,12 +6768,22 @@ function formatTime(s) {
     return `${s < 0 ? "-" : ""}${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 }
 
+// ⚠️ ROUNDED TO THE MILLISECOND, AND DERIVED FROM IT. Truncating `(s % 1) * 1000` printed a
+// 271.743s record as 4:31.742, because 271.743 is really 271.74299999… in binary — the
+// display was showing float noise as a lost thousandth. Taking whole milliseconds first and
+// splitting minutes and seconds back out of them also makes the carry at .9996 free.
 function formatSplitTime(s) {
-    const m = Math.floor(Math.abs(s) / 60);
-    const sec = Math.floor(Math.abs(s) % 60);
-    const ms = Math.floor((Math.abs(s) % 1) * 1000);
-    return `${m}:${sec.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
+    const total = Math.round(Math.abs(s) * 1000);
+    const m = Math.floor(total / 60000);
+    const sec = Math.floor((total % 60000) / 1000);
+    return `${m}:${sec.toString().padStart(2, '0')}.${(total % 1000).toString().padStart(3, '0')}`;
 }
+
+// A RECORD IS A STOPWATCH READING, not a clock time. `formatTime` rounds to the second,
+// which is fine for a finish order and useless for the one number you are trying to beat:
+// two runs a third of a second apart both printed 04:03. Thousandths, minutes unpadded —
+// 4:31.743 — the same face the mid-race split banner already uses.
+const formatBestTime = formatSplitTime;
 
 function getClosestPointOnSegment(px, py, ax, ay, bx, by) {
     const dx = bx - ax, dy = by - ay, t = Math.min(1, Math.max(0, ((px - ax) * dx + (py - ay) * dy) / (dx * dx + dy * dy)));
@@ -6685,7 +6832,7 @@ function showToast(text) {
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
     const angles = J111_POLARS.angles;
-    const speeds = [6, 8, 10, 12, 14, 16, 20];
+    const speeds = [6, 8, 10, 12, 14, 16, 20, 25, 30];
 
     const getPolarSpeed = (ws) => {
         const data = J111_POLARS.speeds[ws];
@@ -6705,8 +6852,11 @@ function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
          return getPolarSpeed(6) * (windSpeed / 6.0);
     }
 
-    let lower = 6, upper = 20;
-    if (windSpeed >= 20) { lower = 20; upper = 20; }
+    let lower = 6, upper = 30;
+    // Flatlines at 30 now, not 20. Above 30 there is genuinely nothing left to say — no
+    // venue authors a mean above 29 kt, and a boat that far past its limit is being handled
+    // by the heel/overpowered model, not by the polar.
+    if (windSpeed >= 30) { lower = 30; upper = 30; }
     else {
         for (let i = 0; i < speeds.length - 1; i++) {
             if (windSpeed >= speeds[i] && windSpeed <= speeds[i+1]) { lower = speeds[i]; upper = speeds[i+1]; break; }
@@ -6950,10 +7100,26 @@ function updateAI(boat, dt) {
         boat.ai.forcedLuff = 0;
     }
 
-    // Spinnaker Logic
-    const windDir = state.wind.direction; // Approximate
-    const windAngle = Math.abs(normalizeAngle(windDir - boat.heading));
-    boat.spinnaker = (windAngle > Math.PI * 0.65) && (speedLimit > 0.8);
+    // Spinnaker logic — decided in APPARENT, and on the wind HERE.
+    //
+    // Two things were wrong. It used `state.wind.direction`, the route-centroid blend (its own
+    // comment said "Approximate"), so a boat in a bend of the breeze set its kite by a wind
+    // 2 km away. And it used the TRUE angle, which is not what the decision is about: a kite
+    // fills when the apparent has gone aft enough, so the faster the boat the DEEPER she has
+    // to sail before it will draw. That is why a quick boat carries one lower than a slow one.
+    //
+    // AWA_SPINNAKER is calibrated to be roughly where the old TWA 117-degree rule already
+    // fired in mid conditions (16 kt, 7.5 kt of boat speed) — phase 0 changes the SHAPE of
+    // the decision, not its typical position.
+    const aWind = boat.apparentWind || getWindAt(boat.x, boat.y);
+    const windAngle = Math.abs(normalizeAngle(aWind.direction - boat.heading));
+    const drawing = windAngle > (boat.spinnaker ? AWA_KITE_DOUSE : AWA_KITE_SET);
+    // No hysteresis on `speedLimit`, deliberately. It is not a wind condition — it is the
+    // AI's throttle, and below 0.9 the bot answers it by FORCE-LUFFING (`forcedLuff` in
+    // updateAITrim eases the sheet up to 90 degrees past optimal). Holding the kite through
+    // that window put boats on a run flying a spinnaker while deliberately spilling it:
+    // trim quality 0.64 on the run against 0.93-0.99 everywhere else, and 1.5 knots gone.
+    boat.spinnaker = drawing && speedLimit > 0.8;
 }
 
 function triggerPenalty(boat, info) {
@@ -7023,6 +7189,45 @@ function updateBoat(boat, dt) {
     // Physics
     const localWind = getWindAt(boat.x, boat.y);
     const angleToWind = Math.abs(normalizeAngle(boat.heading - localWind.direction));
+
+    // Log the breeze the PLAYER sailed through, for the results header. Player only and
+    // three comparisons a frame — the same reasoning as the split ranks: it is a reading
+    // taken while the race runs because it cannot be taken afterwards.
+    if (boat.isPlayer && state.race.status === 'racing' && !boat.raceState.finished) {
+        const rs = boat.raceState;
+        if (localWind.speed < rs.windObsMin) rs.windObsMin = localWind.speed;
+        if (localWind.speed > rs.windObsMax) rs.windObsMax = localWind.speed;
+        rs.windObsSum += localWind.speed;
+        rs.windObsN++;
+    }
+
+    // ── APPARENT WIND, computed before anything that trims to it ────────────
+    // Apparent = the air's motion minus the boat's own. It was worked out further down and
+    // used only for the flag, the telltales and the HUD, which left the RIG being trimmed to
+    // the true wind — so the boat never sheeted in as it accelerated and the "a boat makes
+    // its own wind" loop never closed.
+    //
+    // Uses LAST frame's speed, deliberately. Apparent depends on boat speed and boat speed
+    // depends on trim, so resolving them in the same frame is a circular reference; a
+    // one-frame lag is the standard answer and is invisible at 60 Hz.
+    //
+    // ⚠️ Speed still comes from the POLAR, indexed on TRUE wind — see overpowered-plan.md §3.
+    // A polar table is defined against TWS/TWA and already has the apparent physics inside
+    // it; indexing it by apparent would double-count and close a runaway loop.
+    {
+        const Wkn = localWind.speed;                 // true wind, knots
+        const Bkn = boat.speed / 0.25;               // boat speed, knots
+        const awx = -Math.sin(localWind.direction) * Wkn - Math.sin(boat.heading) * Bkn;
+        const awy =  Math.cos(localWind.direction) * Wkn + Math.cos(boat.heading) * Bkn;
+        boat.apparentWind = {
+            direction: normalizeAngle(Math.atan2(-awx, awy)), // heading the wind comes FROM
+            speed: Math.hypot(awx, awy)
+        };
+    }
+    // The angle the RIG feels. Always forward of the true wind angle, and further forward
+    // the faster the boat goes — which is exactly why a quick boat sheets in and carries a
+    // kite deeper than a slow one.
+    const awa = Math.abs(normalizeAngle(boat.heading - boat.apparentWind.direction));
 
     // Update Turbulence Particles
     updateTurbulence(boat, dt);
@@ -7095,9 +7300,21 @@ function updateBoat(boat, dt) {
     boat.boomSide += (boat.targetBoomSide - boat.boomSide) * swingSpeed;
     if (Math.abs(boat.targetBoomSide - boat.boomSide) < 0.01) boat.boomSide = boat.targetBoomSide;
 
-    // Sail Angle Logic: Map TWA 45-180 to Sail Angle 0-90.
-    // Range is 135 deg (3PI/4). Target is 90 deg (PI/2). Ratio = 2/3.
-    let optimalSailAngle = Math.max(0, (angleToWind - (Math.PI / 4)) * (2.0 / 3.0));
+    // Sail angle: map APPARENT wind angle 25-160 onto sheeting angle 0-90.
+    //
+    // A sailor trims to the telltales, and the telltales are in the apparent wind. Mapping
+    // from TWA meant the sheeting angle never moved as the boat accelerated — the rig was
+    // being trimmed for a wind nobody on board could feel.
+    //
+    // Same 135-degree span and the same 2/3 ratio as the true-wind version it replaces; only
+    // the origin moves, from 45 degrees of true to AWA_CLOSE_HAULED of apparent. Close-hauled
+    // apparent sits near 25 degrees, which is where the sheet comes right in.
+    // Clamped at square to the centreline: the old TWA form reached exactly 90 degrees at
+    // TWA 180 and so never needed saying, but AWA 160-180 runs past it, and a boom eased
+    // beyond square is not a thing. Without the clamp the AI chases an unreachable target
+    // downwind and `trimEfficiency` — which prices |actual - optimal| — charges it for the
+    // gap it can never close.
+    let optimalSailAngle = Math.min(Math.PI / 2, Math.max(0, (awa - AWA_CLOSE_HAULED) * (2.0 / 3.0)));
     if (optimalSailAngle > Math.PI / 2.0) optimalSailAngle = Math.PI / 2.0;
 
     if (boat.manualTrim && boat.isPlayer) {
@@ -7119,8 +7336,20 @@ function updateBoat(boat, dt) {
     else boat.spinnakerDeployProgress = Math.max(0, boat.spinnakerDeployProgress - switchSpeed);
 
     const progress = boat.spinnakerDeployProgress;
-    const jibFactor = Math.max(0, 1 - progress * 2);
-    const spinFactor = Math.max(0, (progress - 0.5) * 2);
+    // ── THE HOIST CROSSFADE — weights that SUM TO ONE ───────────────────────
+    // These were `max(0, 1 - p*2)` and `max(0, (p-0.5)*2)`. Both are zero at p = 0.5, and
+    // they are the weights of a WEIGHTED SUM (`targetKnots` below), so a boat halfway
+    // through a sail change had a target speed of exactly ZERO — as though the rig had been
+    // taken down. The hoist runs at `dt / 5.0`, five full seconds, so that hole is wide:
+    // measured 38-49% of beam-reach frames and 29-45% of running frames sitting in it.
+    //
+    // A boat changing sails always has SOMETHING up. Crossfade linearly, and charge the
+    // change an explicit, bounded price instead of everything.
+    const jibFactor = 1 - progress;
+    const spinFactor = progress;
+    // 4p(1-p) peaks at exactly 1.0 at half-hoist and is zero at both ends, so the cost is a
+    // smooth dip through the change and nothing at all once it is done.
+    const changeCost = 1 - SAIL_CHANGE_COST * 4 * progress * (1 - progress);
 
     // Pressure Stat: Affects wind handling
     // Pressure (+/-25%): Benefit from gusts, lose less from lulls/bad air.
@@ -7152,11 +7381,20 @@ function updateBoat(boat, dt) {
 
     let targetKnotsJib = getTargetSpeed(angleToWind, false, effectiveWind);
     let targetKnotsSpin = getTargetSpeed(angleToWind, true, effectiveWind);
-    let targetKnots = targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor;
+    let targetKnots = (targetKnotsJib * jibFactor + targetKnotsSpin * spinFactor) * changeCost;
 
-    const actualMagnitude = Math.abs(boat.sailAngle);
+    // THE SHEET, not the boom. `sailAngle` is `manualSailAngle * boomSide`, and `boomSide`
+    // is not a side flag — it is a continuous gybe ANIMATION that sweeps through zero (0.79,
+    // 0.50, 0.25, -0.81 ... all observed in one race). So |sailAngle| collapses toward zero
+    // mid-gybe and this term scored a correctly trimmed boat as completely mistrimmed every
+    // time she gybed: 30% of running frames read a 44-80 degree trim error, trim quality
+    // 0.64 on the run against 0.96 broad, which dropped the fleet out of planing (38% vs
+    // 65%) and cost 1.5 knots. Trim quality is a question about where the SHEET is.
+    const actualMagnitude = Math.abs(boat.manualSailAngle);
     const angleDiff = Math.abs(actualMagnitude - optimalSailAngle);
     const trimEfficiency = Math.max(0, 1.0 - angleDiff * 2.0);
+    boat.trimEfficiency = trimEfficiency;   // read by the heavy-air rig, and by the HUD later
+    boat.optimalSailAngle = optimalSailAngle;
     targetKnots *= trimEfficiency;
 
     // PLANING LOGIC
@@ -7271,7 +7509,14 @@ function updateBoat(boat, dt) {
     // the day's mean; this asks what the boat is doing about the wind it is in RIGHT NOW,
     // keyed to the wind it measures. Folding them together would force one answer on both,
     // and a boat in a 25-knot puff on a 14-knot day would sail as though it were not.
-    targetKnots *= overpoweredFactor(boat.stats, effectiveWind);
+    // Heel is LAGGED state, not an instantaneous read — a rig takes a moment to load up and
+    // a moment to come back, and that delay is the whole mechanic: it makes being
+    // overpowered something a sailor sails INTO and back OUT of. Phase 4 hangs the amber/red
+    // warning and the broach off this same number.
+    const heelNow = heelPressure(boat.apparentWind.speed * (1.0 - effectiveBadAir), awa);
+    const lag = Math.min(1, dt / OVERPOWERED.lagSeconds);
+    boat.heel = (boat.heel || 0) + (heelNow - (boat.heel || 0)) * lag;
+    targetKnots *= overpoweredFactor(boat.stats, boat.heel);
 
 
     let targetGameSpeed = targetKnots * 0.25;
@@ -7283,8 +7528,17 @@ function updateBoat(boat, dt) {
          if (checkBoundaryExiting(boat)) window.onRaceEvent('collision_boundary', { boat });
     }
 
-    const effectiveAoA = angleToWind - actualMagnitude;
-    const luffStartThreshold = 0.5;
+    // Angle of attack is a fact about the AIR OVER THE SAIL, so it is measured against the
+    // apparent wind. On true wind a boat could be sheeted correctly and still be reported as
+    // luffing (or vice versa) the moment it had any speed of its own.
+    const effectiveAoA = awa - actualMagnitude;
+    // 0.5 rad (28.6 deg) was calibrated against the TRUE-wind angle of attack, where a
+    // close-hauled boat read 39 deg and sat clear of it. In apparent it reads about 27 deg —
+    // a perfectly good angle of attack — so the old threshold had every correctly trimmed
+    // boat shaking its sails upwind. At optimal trim AoA bottoms out near 17 deg close-
+    // hauled, so the threshold has to sit below that; what is left triggers on genuine
+    // pinching and on a sail eased too far, which is what luffing is.
+    const luffStartThreshold = 14 * Math.PI / 180;
     if (effectiveAoA < luffStartThreshold) {
         boat.luffIntensity = Math.min(1.0, Math.max(0, 1.0 - (effectiveAoA / luffStartThreshold)));
         boat.luffing = true;
@@ -7380,21 +7634,6 @@ function updateBoat(boat, dt) {
     const boatDirY = -Math.cos(cogHeading);
     boat.velocity.x = boatDirX * boat.speed;
     boat.velocity.y = boatDirY * boat.speed;
-
-    // Apparent wind = true wind (air motion) minus the boat's own motion. As the boat
-    // accelerates, the apparent wind creeps forward and strengthens — "the boat makes
-    // its own wind." Used for the flag/telltales and HUD so fast points of sail feel
-    // alive. (Speed/VMG model stays on TRUE wind angle, which is correct for polars.)
-    {
-        const Wkn = localWind.speed;                 // true wind, knots
-        const Bkn = boat.speed / 0.25;               // boat speed, knots
-        const awx = -Math.sin(localWind.direction) * Wkn - Math.sin(boat.heading) * Bkn;
-        const awy =  Math.cos(localWind.direction) * Wkn + Math.cos(boat.heading) * Bkn;
-        boat.apparentWind = {
-            direction: normalizeAngle(Math.atan2(-awx, awy)), // heading the wind comes FROM
-            speed: Math.hypot(awx, awy)
-        };
-    }
 
     // Apply Current (spatial in the river venue, uniform otherwise)
     const boatCurrent = getCurrentAt(boat.x, boat.y);
@@ -8689,7 +8928,7 @@ const WIND_WATER_RECHECK = 0.12;  // seconds between "am I still over water" tes
 // the ceilings no pressure reading, jitter roll, gust or venue document can push past —
 // see the note in streakChannels for why they are clamps rather than coefficients.
 const STREAK_MAX_ALPHA = 0.55;      // never opaque: boats, marks and labels stay on top
-const STREAK_MAX_HALFWIDTH = 4.6;   // world units, so ~9 px across the head at 1:1
+const STREAK_MAX_HALFWIDTH = 2.3;   // world units, so ~4.6 px across the head at 1:1
 const STREAK_MAX_SPAWN = 0.20;      // per attempt, 2 attempts a frame — the density ceiling
 const WIND_BEACH_FADE = 0.35;     // seconds to fade out on reaching land — and the
                                   // look-ahead, so the fade finishes AT the shore
@@ -8739,7 +8978,10 @@ const COMET = {
     // Thin and solid rather than broad and soft: a broad streak has to be faint to stay
     // under the fleet, and a faint broad streak is the shimmery, distracting thing.
     a0: 0.36, a1: 0.40, aPow: 1.2,   // alpha at the cold end, added at the hot end, its curve
-    w0: 1.8,  w1: 2.1,               // half-width, same
+    // ⚠️ HALVED Aug 2 2026 (was 1.8 / 2.1). The layer reads as pressure either way; at the
+    // old width the streaks were competing with the boats for the eye rather than sitting
+    // under them. STREAK_MAX_HALFWIDTH came down with them so the ceiling still bites.
+    w0: 0.9,  w1: 1.05,              // half-width, same
     wLight: 0.50,                    // width multiplier in the lightest air the layer draws
     taper: 0.45,                     // body profile: 1 = straight cone, lower = holds width
     dens0: 0.035, dens1: 0.21        // spawn chance floor and pressure-weighted span
@@ -10830,32 +11072,48 @@ function loadVenueBests() {
 }
 function venueBestKey(venue) { return `${venue || settings.venue}:${state.race.totalLegs}`; }
 
-// A stored best, normalised. ⚠️ The first version of this stored a bare number; a save
-// from then still reads, it just has no place to show on the race-day board.
+// TWO RECORDS, KEPT APART. A time and a finish are not the same achievement and do not
+// move together: a light-air race you win can be a minute slower than a windy one you come
+// eighth in, so hanging the place off the fastest time ("2nd · 4:12") reported a placing
+// that had nothing to do with why the row was there. The clock is the record; the best
+// finish is its own line, with the time it was set in so it stays a memory of a race.
+//
+// A stored best, normalised. ⚠️ Two older shapes still read: a bare number (the first
+// version) and { t, pos } (the second, where `pos` was the place in the fastest race).
+// That `pos` seeds `bestPos` — it is a real finish that really happened here.
 function bestForVenue(venue) {
     const rec = loadVenueBests()[venueBestKey(venue)];
-    if (typeof rec === 'number') return { t: rec, pos: 0 };
-    return (rec && typeof rec.t === 'number') ? rec : null;
+    if (typeof rec === 'number') return { t: rec, bestPos: 0, bestPosT: 0 };
+    if (!rec || typeof rec.t !== 'number') return null;
+    return {
+        t: rec.t,
+        bestPos: rec.bestPos || rec.pos || 0,
+        bestPosT: rec.bestPosT || (rec.bestPos ? 0 : rec.t) || 0
+    };
 }
 
 // Called once per race, from the first showResults() of that race — see `bestChecked`.
-// Returns { previous, isBest } where `previous` is the time to beat BEFORE this race.
+// Returns what there was to beat on each record, and whether this race beat it.
 function recordVenueBest(seconds, pos) {
     const bests = loadVenueBests();
     const key = venueBestKey();
-    const prevRec = bests[key];
-    const previous = typeof prevRec === 'number' ? prevRec
-                   : (prevRec && typeof prevRec.t === 'number') ? prevRec.t : null;
+    const prev = bestForVenue();
+    const previous = prev ? prev.t : null;
+    const previousPos = (prev && prev.bestPos) ? prev.bestPos : null;
+
     const isBest = previous === null || seconds < previous;
-    if (isBest) {
-        // The PLACE goes in with the time: the race-day board's "your best" row is a
-        // memory of a race, and "2nd · 4:12" is a memory in a way that "4:12" is not.
-        bests[key] = { t: seconds, pos: pos || 0 };
+    const isBestPos = !!pos && (previousPos === null || pos < previousPos);
+    if (isBest || isBestPos) {
+        bests[key] = {
+            t: isBest ? seconds : previous,
+            bestPos: isBestPos ? pos : (previousPos || 0),
+            bestPosT: isBestPos ? seconds : (prev ? prev.bestPosT : 0)
+        };
         // Same reasoning as saveSettings: a storage failure must not take the screen with
         // it. Losing a personal best is a nuisance; throwing here would blank the results.
         try { localStorage.setItem(RESULT_BESTS_KEY, JSON.stringify(bests)); } catch (e) { /* no store */ }
     }
-    return { previous, isBest };
+    return { previous, isBest, previousPos, isBestPos };
 }
 
 // Distances are recorded in world units. 5 units = 1 metre (VenueDoc.U_PER_M), and a race
@@ -10863,6 +11121,56 @@ function recordVenueBest(seconds, pos) {
 function unitsToKm(u) { return u / 5 / 1000; }
 
 const RES_MEDALS = ['#f2c14e', '#c8d3e3', '#c98a4b'];   // gold, silver, bronze
+
+// OFF THE PODIUM THERE IS NO METAL. Fourth gets the page's own white — full weight, still
+// the loudest thing on the screen, but not a fourth medal colour, because inventing one
+// would say the game awards something for fourth. Not finishing is the table's own red,
+// the colour DNF already wears in the results rows.
+const RES_PLACE_PLAIN = '#eef3fb';
+const RES_PLACE_DNF = '#f87171';
+const placeColor = (pos, dnf) => dnf ? RES_PLACE_DNF : (RES_MEDALS[pos - 1] || RES_PLACE_PLAIN);
+
+// 10 for a win, down to 1 for tenth. Position, not fleet size: a win is worth ten whoever
+// turns up, and nobody who sailed the race scores nothing.
+const POINTS_FOR_PLACE = (pos) => Math.max(1, 11 - pos);
+
+// THE RULER IS THE RACE ITSELF: winner at the datum, last boat home at the far end, and
+// everyone spaced between them. A fixed scale had to pick a number that suits every race
+// and suits none — `eval/_gapspread.js` measured last place finishing anywhere from 35s to
+// 107s back, so a 30s ruler stacked a third of the fleet against the end and a 60s one
+// squeezed the close races into the first third. Fitting it to the fleet spends the whole
+// column on the boats that are actually in it, and nothing ever pins.
+//
+// The price is that the scale changes race to race, so the header states it (see
+// renderResultsHeader) — otherwise the picture would be unreadable between races.
+function fleetGapScale() {
+    const home = state.boats
+        .filter(b => b.raceState.finished && !b.raceState.resultStatus)
+        .map(b => b.raceState.finishTime);
+    return home.length < 2 ? 0 : Math.max(...home) - Math.min(...home);
+}
+
+// The boat's own colour as a glow. `deepBandFor` already answers "which of these three
+// colours IS this boat" and pins it to a luminance that reads on a dark page — a dark hull
+// would otherwise glow black. All that is missing is the alpha.
+function boatGlow(boat, alpha) {
+    const c = deepBandFor(boat.colors.hull, boat.colors.spinnaker, boat.colors.spinAccent);
+    const m = c.match(/\d+/g) || [148, 163, 184];
+    return `rgba(${m[0]},${m[1]},${m[2]},${alpha})`;
+}
+
+// What the wind DID, measured off the player's masthead through the race (see updateBoat),
+// rather than `state.wind.baseSpeed` — which is the field at ONE point and describes a
+// course nobody sailed. Falls back to the forecast range if there is nothing observed,
+// which is the DNS case: you cannot report a breeze you never went out in.
+function observedWindText() {
+    const p = state.boats.find(b => b.isPlayer) || state.boats[0];
+    const rs = p && p.raceState;
+    if (!rs || !rs.windObsN) return windRangeText();
+    const lo = Math.round(rs.windObsMin), hi = Math.round(rs.windObsMax);
+    return (hi - lo >= 2) ? `${lo}–${hi} kt observed`
+                          : `${Math.round(rs.windObsSum / rs.windObsN)} kt observed`;
+}
 
 function showResults() {
     if (!UI.resultsOverlay || !UI.resultsList) return;
@@ -10889,37 +11197,88 @@ function showResults() {
 
     const leader = sorted[0];
     const player = state.boats.find(b => b.isPlayer) || state.boats[0];
-    // The fastest single burst anyone managed — the one number in the table worth
-    // colouring, because "who was quickest" is not answered anywhere else on the page.
-    const fleetTop = Math.max(...state.boats.map(b => Math.max(...b.raceState.legTopSpeeds)));
 
-    renderResultsHeader(sorted);
+    const gapScale = fleetGapScale();
+
+    renderResultsHeader(sorted, gapScale);
     renderResultsHero(sorted, player, leader);
-    renderResultsRows(sorted, leader, fleetTop);
+    // Called from HERE, not from inside the hero. The hero redraws only when the hero's own
+    // signature changes, and a split tile can go stale without it: "fleet fastest" is taken
+    // away by a boat still out on the water sailing a quicker leg than you did.
+    renderResultsSplits(player);
+    renderResultsRows(sorted, leader, fleetExtremes(), gapScale);
     renderResultsFootnote(leader);
 }
 
 // Venue, breeze, fleet size — and whether the race is actually over, which it often is
 // not: the overlay opens when YOU finish, with boats still on the water behind you.
-function renderResultsHeader(sorted) {
+function renderResultsHeader(sorted, gapScale) {
     const sub = document.getElementById('res-subtitle');
     const status = document.getElementById('res-status');
     const v = VENUES[settings.venue];
+
+    // The ruler states the span it is drawn to, and re-states it as boats finish — the
+    // scale is the fleet's own, so without the caption the markers would be a picture with
+    // no units. Written from the same number the markers are placed with.
+    const gapHead = document.getElementById('res-gap-head');
+    const scaleText = gapScale > 0 ? `— 0 to +${gapScale.toFixed(1)}s` : '';
+    if (gapHead && gapHead.dataset.scale !== scaleText) {
+        gapHead.dataset.scale = scaleText;
+        gapHead.innerHTML = `Gap to winner <span style="color:#4a5a72;letter-spacing:0.05em;">${scaleText}</span>`;
+    }
     if (sub) {
         sub.textContent = [
             (v && v.name) || 'Open Water',
-            `${Math.round(state.wind.baseSpeed)} kt`,
+            observedWindText(),
             `${state.boats.length} boats`
         ].join(' · ').toUpperCase();
     }
     if (status) {
         const racing = state.boats.filter(b => !b.raceState.finished).length;
         const out = state.boats.filter(b => b.raceState.resultStatus).length;
-        status.textContent = racing ? `${racing} still racing`
+        const text = racing ? `${racing} still racing`
             : out ? `${state.boats.length - out} home · ${out} did not finish`
             : 'All boats home';
-        status.style.color = racing ? '#f2c14e' : '#9fb2cc';
+        // The DOT carries the state and the text stays quiet: green once everyone is in,
+        // amber while the race is still running. Rewritten only when it changes — this runs
+        // six times a second, and replacing the markup every tick is exactly the churn that
+        // made the rest of the page flicker.
+        const dot = racing ? '#f2c14e' : '#34d399';
+        if (status.dataset.sig !== text) {
+            status.dataset.sig = text;
+            status.innerHTML = `<span style="width:7px;height:7px;border-radius:50%;flex:none;`
+                + `background:${dot};"></span><span>${text}</span>`;
+        }
+        status.style.color = '#9fb2cc';
     }
+}
+
+// THE RECORD, AS A CARD. It was a chip, and a chip can hold a time or a delta but not the
+// three things that make a lap time mean anything: what the mark was, what you did, and the
+// difference. Two states — one for beating it, a quiet one for missing it — and nothing at
+// all when there is no mark yet, because a first race here beat nobody.
+function recordCard(best, rs) {
+    if (!best || best.previous === null) return '';
+    const won = best.isBest;
+    const delta = Math.abs(rs.finishTime - best.previous).toFixed(2);
+    const frame = won
+        ? 'background:linear-gradient(150deg,rgba(242,193,78,0.16),rgba(242,193,78,0.05));border:1px solid rgba(242,193,78,0.5);'
+        : 'background:#141d31;border:1px solid rgba(255,255,255,0.09);';
+    return `
+        <div style="flex:none;${frame}border-radius:14px;padding:16px 20px;text-align:center;">
+            <div class="t-label" style="font-size:11px;letter-spacing:0.22em;color:${won ? '#f2c14e' : '#9fb2cc'};">
+                ${won ? '✦ New Course Record ✦' : 'Course Record'}
+            </div>
+            <!-- The time you just set, and what it was worth. The old time struck through
+                 with an arrow to the new one was three numbers to say one thing, and the
+                 delta underneath already carries the one you cannot work out yourself. -->
+            <div class="flex items-baseline justify-center gap-2" style="margin-top:6px;">
+                <span class="t-mono" style="font-size:30px;font-weight:900;color:${won ? '#f2c14e' : '#eef3fb'};">${formatBestTime(won ? rs.finishTime : best.previous)}</span>
+            </div>
+            <div class="t-mono" style="font-size:11px;font-weight:800;color:${won ? '#34d399' : '#7787a0'};margin-top:2px;">
+                ${won ? '−' + delta + 's off the record' : '+' + delta + 's off the record'}
+            </div>
+        </div>`;
 }
 
 // You: portrait, the place you took, the gap that decided it, and your splits. Rebuilt
@@ -10942,7 +11301,8 @@ function renderResultsHero(sorted, player, leader) {
     const best = state.race.bestOutcome;
 
     const sig = [pos, rs.finished, rs.resultStatus, rs.finishTime.toFixed(2),
-                 rs.totalPenalties, rs.legTimes.length, best && best.isBest].join('|');
+                 rs.totalPenalties, rs.legTimes.length,
+                 best && best.isBest, best && best.isBestPos].join('|');
     if (host.dataset.sig === sig) return;
     host.dataset.sig = sig;
 
@@ -10968,37 +11328,51 @@ function renderResultsHero(sorted, player, leader) {
         `<span style="background:${bg};border:1px solid ${border};border-radius:999px;padding:4px 12px;`
       + `font-size:11px;font-weight:800;letter-spacing:0.02em;color:${color};white-space:nowrap;">${text}</span>`;
     const chips = [];
-    // ⚠️ A FIRST TIME AT A VENUE IS NOT A PERSONAL BEST — there was nothing to beat. The
-    // gold chip only fires against a time you actually had to beat; otherwise the screen
-    // congratulates every player on every new venue and the chip stops meaning anything.
-    if (best && best.isBest && best.previous !== null) {
-        chips.push(chip('VENUE BEST ✦ ' + formatTime(best.previous) + ' → ' + formatTime(rs.finishTime),
+    // The clock record has its own card beside the hero now (see `recordCard`) — a chip
+    // could not carry "old → new, and by how much" without becoming a sentence.
+    //
+    // The OTHER record stays a chip. Only when it is news, and only when there was
+    // something to beat: ⚠️ A FIRST RACE AT A VENUE IS NOT A PERSONAL BEST, or the screen
+    // congratulates every player on every new venue and the praise stops meaning anything.
+    if (best && best.isBestPos && best.previousPos !== null) {
+        chips.push(chip('BEST FINISH HERE ✦ ' + ordinalOf(best.previousPos).toUpperCase()
+                        + ' → ' + ordinalOf(pos).toUpperCase(),
                         '#f2c14e', 'rgba(242,193,78,0.4)', 'rgba(242,193,78,0.1)'));
-    } else if (best && !best.isBest && best.previous !== null) {
-        chips.push(chip('YOUR BEST HERE ' + formatTime(best.previous), '#9fb2cc', 'rgba(255,255,255,0.09)', '#141d31'));
     }
     chips.push(rs.totalPenalties > 0
         ? chip(`${rs.totalPenalties} PENALT${rs.totalPenalties > 1 ? 'IES' : 'Y'}`, '#fca5a5', 'rgba(239,68,68,0.4)', 'rgba(239,68,68,0.12)')
         : chip('CLEAN RACE — NO PENALTIES', '#34d399', 'rgba(255,255,255,0.09)', '#141d31'));
 
+    // THE PLACE IS SAID IN METAL, and the label says it with the number — one statement in
+    // one colour. Gold, silver, bronze for the podium and the page's white for everyone
+    // else; the screen used to shout every result in gold, which made a seventh look like a
+    // win until you read the number.
+    const pc = placeColor(pos, dnf);
+    // The band's wash is the PLAYER'S colour, not a gold that belongs to first place. It is
+    // the same colour as the glow behind the portrait sitting in it, at a third the alpha.
+    if (host.parentElement) {
+        host.parentElement.style.background =
+            `radial-gradient(700px 200px at 30% 0%, ${boatGlow(player, 0.14)}, transparent)`;
+    }
     host.innerHTML = `
-        <div style="width:104px;height:124px;flex:none;filter:drop-shadow(0 6px 20px rgba(242,193,78,0.25));">
-            <img src="assets/images/competitors/${player.name.toLowerCase()}.png" alt="${escapeHTMLText(player.name)}"
-                 style="width:100%;height:100%;object-fit:contain;" draggable="false">
-        </div>
-        <div>
-            <div class="t-label" style="font-size:12px;letter-spacing:0.24em;color:#f2c14e;">${dnf ? 'You Did Not Finish' : 'You Finished'}</div>
-            <div class="flex items-baseline gap-3.5" style="margin-top:4px;">
-                <span class="t-display italic" style="font-size:${dnf ? 46 : 72}px;line-height:1;color:#f2c14e;">${headline}</span>
-                <div>
-                    <div class="t-display-8 t-display uppercase" style="font-size:19px;letter-spacing:0.02em;">${escapeHTMLText(player.name)}${dnf ? '' : ' · ' + formatTime(rs.finishTime)}</div>
-                    <div style="font-size:13px;color:#9fb2cc;margin-top:2px;">${gap}</div>
-                </div>
+        <div class="flex items-center" style="flex:none; gap:18px;">
+            <div style="width:110px;height:130px;flex:none;filter:drop-shadow(0 6px 22px ${boatGlow(player, 0.5)});">
+                <img src="assets/images/competitors/${player.name.toLowerCase()}.png" alt="${escapeHTMLText(player.name)}"
+                     style="width:100%;height:100%;object-fit:contain;" draggable="false">
             </div>
-            <div class="flex gap-2" style="margin-top:10px;">${chips.join('')}</div>
-        </div>`;
-
-    renderResultsSplits(player);
+            <div>
+                <div class="t-label" style="font-size:12px;letter-spacing:0.24em;color:${pc};">${dnf ? 'You Did Not Finish' : 'You Finished'}</div>
+                <div class="flex items-baseline gap-3.5" style="margin-top:4px;">
+                    <span class="t-display italic" style="font-size:${dnf ? 46 : 72}px;line-height:1;color:${pc};">${headline}</span>
+                    <div>
+                        <div class="t-display-8 t-display uppercase" style="font-size:19px;letter-spacing:0.02em;">${escapeHTMLText(player.name)}${dnf ? '' : ' · ' + formatTime(rs.finishTime)}</div>
+                        <div style="font-size:13px;color:#9fb2cc;margin-top:2px;">${gap}</div>
+                    </div>
+                </div>
+                <div class="flex gap-2" style="margin-top:10px;">${chips.join('')}</div>
+            </div>
+        </div>
+        ${recordCard(best, rs)}`;
 }
 
 // START + one tile per leg: the time, where you stood when you got there, and which way
@@ -11012,7 +11386,21 @@ function renderResultsSplits(player) {
     const legs = rs.legTimes.length;
     const started = rs.startTimeDisplay > 0;
 
-    const sig = `${started}|${legs}|${rs.legTimes.map(t => t.toFixed(2)).join(',')}`;
+    // Fastest round each leg, over everyone who has sailed it — `legTimes` is recorded for
+    // every boat, so this is the whole fleet's answer and not just the finishers'. It is in
+    // the signature because a boat still out there can take "fleet fastest" off your tile.
+    const fleetLegBest = [];
+    for (let i = 0; i < legs; i++) {
+        let bestT = Infinity;
+        for (const b of state.boats) {
+            const t = b.raceState.legTimes[i];
+            if (typeof t === 'number' && t < bestT) bestT = t;
+        }
+        fleetLegBest.push(bestT);
+    }
+
+    const sig = `${started}|${legs}|${rs.legTimes.map(t => t.toFixed(2)).join(',')}`
+              + `|${fleetLegBest.map(t => t.toFixed(2)).join(',')}`;
     if (host.dataset.sig === sig) return;
     host.dataset.sig = sig;
 
@@ -11022,22 +11410,46 @@ function renderResultsSplits(player) {
     }
 
     const tiles = [];
-    const tile = (name, time, rank, prevRank) => {
-        let trend = '', trendColor = '#66748c';
+    // A TAG ON THE LEG THAT DID SOMETHING, and the tile's border carries it to the eye from
+    // across the panel. Places won and lost outrank the speed note, because they are the
+    // only thing on the tile that changed the race — a leg you sailed quicker than anyone
+    // and still went backwards on is a fact about the boat ahead. When both are true the
+    // ✦ rides along on the end of the place tag.
+    const GREEN = { color: '#34d399', border: '1px solid rgba(52,211,153,0.5)' };
+    const RED = { color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)' };
+    const TEAL = { color: '#7ff0d4', border: '1px solid rgba(127,240,212,0.5)' };
+    const tile = (name, time, rank, prevRank, fastest, startTag) => {
+        let trend = '', trendColor = '#66748c', tag = null, moved = 0;
         if (rank && prevRank) {
             const d = prevRank - rank;
-            if (d > 0) { trend = `▲${d}`; trendColor = '#34d399'; }
-            else if (d < 0) { trend = `▼${-d}`; trendColor = '#f87171'; }
+            if (d > 0) { trend = `▲${d}`; trendColor = '#34d399'; moved = d; }
+            else if (d < 0) { trend = `▼${-d}`; trendColor = '#f87171'; moved = d; }
             else { trend = '–'; }
         }
+        const places = (n) => Math.abs(n) === 1 ? 'a place' : `${Math.abs(n)} places`;
+        if (moved) {
+            tag = { ...(moved > 0 ? GREEN : RED),
+                    text: `${moved > 0 ? 'Gained' : 'Lost'} ${places(moved)}${fastest ? ' ✦' : ''}` };
+        } else if (fastest) {
+            tag = { ...TEAL, text: 'Fleet fastest ✦' };
+        } else if (startTag) {
+            tag = startTag;
+        }
         tiles.push(`
-        <div style="background:#141d31;border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:11px 12px;min-width:0;">
+        <div class="res-split" ${tag ? `style="border:${tag.border};"` : ''}>
             <div class="t-label" style="font-size:9px;letter-spacing:0.1em;color:#66748c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-            <div class="t-mono" style="font-size:19px;font-weight:600;margin-top:4px;">${time}</div>
+            <div class="res-split-time t-mono">${time}</div>
             <div class="flex items-baseline gap-1.5" style="margin-top:3px;">
                 <span style="font-size:12px;font-weight:800;color:#9fb2cc;">${rank ? ordinalOf(rank) : '—'}</span>
                 <span style="font-size:11px;font-weight:800;color:${trendColor};">${trend}</span>
             </div>
+            <!-- The slot is always there, tag or no tag: five tiles with four heights is a
+                 ragged row, and the tags are the thing you are meant to scan for.
+                 ⚠️ NOT nowrap. "Fleet fastest ✦" set on one line is 90px, which made it —
+                 not the split time — the thing deciding how narrow a tile can be, and at
+                 1280 that pushed the fifth leg onto a row of its own. Let it break; the
+                 grid stretches the other tiles to match. -->
+            <div class="t-label" style="font-size:8.5px;letter-spacing:0.08em;color:${tag ? tag.color : 'transparent'};margin-top:3px;min-height:10px;">${tag ? tag.text : '—'}</div>
         </div>`);
     };
 
@@ -11050,11 +11462,23 @@ function renderResultsSplits(player) {
         return `${m}:${s.padStart(4, '0')}`;
     };
 
-    if (started) tile('Start', '+' + rs.startTimeDisplay.toFixed(1) + 's', rs.startRank || 0, 0);
-    let prev = rs.startRank || 0;
+    // The start has no previous place to move from, so it is judged on where it PUT you:
+    // top three off the line is the start that wins races, back three is the one you spend
+    // the first leg paying for. Read against the fleet, so it still means the same thing if
+    // the fleet size ever changes.
+    const fleetN = state.boats.length;
+    const sr = rs.startRank || 0;
+    const startTag = !sr ? null
+        : sr <= 3 ? { ...GREEN, text: 'Top 3 off the line' }
+        : sr > fleetN - 3 ? { ...RED, text: 'Back 3 off the line' }
+        : null;
+
+    if (started) tile('Start', '+' + rs.startTimeDisplay.toFixed(1) + 's', sr, 0, false, startTag);
+    let prev = sr;
     for (let i = 0; i < legs; i++) {
         const rank = rs.legRanks[i] || 0;
-        tile('Leg ' + (i + 1), splitTime(rs.legTimes[i]), rank, prev);
+        tile('Leg ' + (i + 1), splitTime(rs.legTimes[i]), rank, prev,
+             rs.legTimes[i] <= fleetLegBest[i] + 1e-9, null);
         if (rank) prev = rank;
     }
     if (!tiles.length) {
@@ -11063,9 +11487,58 @@ function renderResultsSplits(player) {
     host.innerHTML = tiles.join('');
 }
 
+// The measured columns, read for the whole boat. One definition each, because the row and
+// the fleet-wide comparison have to be computing the same number.
+//
+// ⚠️ ROUNDED TO WHAT THE COLUMN PRINTS. Comparing full precision marked one boat's 0.91 as
+// the shortest way round while the boat beside it printed 0.91 in plain white — the two
+// differed in the third decimal, which the column does not show. A highlight has to be
+// checkable against the number next to it.
+function boatAvgSpeed(b) {
+    const rs = b.raceState;
+    const duration = rs.finished ? rs.finishTime : state.race.timer;
+    const sum = rs.legSpeedSums ? rs.legSpeedSums.reduce((a, c) => a + c, 0) : 0;
+    return Math.round((duration > 0.1 ? sum / duration : 0) * 10) / 10;
+}
+function boatTopSpeed(b) { return Math.round(Math.max(...b.raceState.legTopSpeeds) * 10) / 10; }
+// Seconds after the gun that this boat crossed the line. Recorded for the whole fleet, not
+// just the player — 0 means it never got away (a DNS), which is not a slow start but the
+// absence of one, so it stays out of both the column and the comparison.
+function boatStartTime(b) {
+    const t = b.raceState.startTimeDisplay;
+    return t > 0 ? Math.round(t * 10) / 10 : null;
+}
+function boatDistKm(b) {
+    return Math.round(unitsToKm(b.raceState.legDistances.reduce((a, c) => a + c, 0)) * 100) / 100;
+}
+
+// BEST AND WORST OF EACH MEASURED COLUMN — quickest and slowest burst, quickest and slowest
+// average, shortest and longest way round.
+//
+// ⚠️ OVER BOATS THAT FINISHED THE COURSE, and only those. A boat still on the water has
+// sailed a shorter distance than everyone home for the obvious reason, and it would take
+// "shortest way round" every time until it crossed the line. Nothing is marked until two
+// boats are home, because the only boat in is not the best or the worst of anything.
+// The START is the exception, and reads against a different set: it is complete the moment
+// a boat crosses the line, so every boat that got away is comparable — including one that
+// went on to retire. Nothing else in the row is settled until the boat is home.
+function fleetExtremes() {
+    const span = (list, f) => {
+        const v = list.map(f).filter(x => x !== null);
+        return v.length < 2 ? null : { hi: Math.max(...v), lo: Math.min(...v) };
+    };
+    const done = state.boats.filter(b => b.raceState.finished && !b.raceState.resultStatus);
+    return {
+        top: done.length < 2 ? null : span(done, boatTopSpeed),
+        avg: done.length < 2 ? null : span(done, boatAvgSpeed),
+        dist: done.length < 2 ? null : span(done, boatDistKm),
+        start: span(state.boats, boatStartTime),
+    };
+}
+
 // The fleet. One row per boat, built once and patched — boats are still finishing behind
 // you while this is on screen.
-function renderResultsRows(sorted, leader, fleetTop) {
+function renderResultsRows(sorted, leader, ext, gapScale) {
     if (!UI.resultRows) UI.resultRows = {};
 
     sorted.forEach((boat, index) => {
@@ -11079,42 +11552,65 @@ function renderResultsRows(sorted, leader, fleetTop) {
             row.style.marginBottom = '2px';
             row.innerHTML = `
                 <div class="res-bar res-grid">
-                    <div class="flex items-center gap-2">
-                        <span class="res-medal" style="width:8px;height:8px;border-radius:50%;flex:none;"></span>
-                        <span class="res-pos t-display italic" style="font-size:16px;"></span>
-                    </div>
+                    <!-- The place, in metal. The little medal dot that used to sit beside it
+                         said the same thing twice for the podium and drew an empty ring for
+                         everyone else — the colour of the numeral is the whole signal. -->
+                    <div class="res-pos t-display italic" style="font-size:16px;"></div>
                     <div style="width:32px;height:32px;">
                         <img class="res-face" src="assets/images/competitors/${boat.name.toLowerCase()}.png"
                              alt="${escapeHTMLText(boat.name)}" draggable="false"
                              style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
                     </div>
-                    <div class="flex items-baseline gap-2" style="min-width:0;">
-                        <span class="res-name t-display-8 t-display uppercase truncate" style="font-size:15px;letter-spacing:0.03em;"></span>
-                        <span class="res-you t-label" style="font-size:9px;letter-spacing:0.12em;color:#0c1322;background:#f2c14e;border-radius:4px;padding:2px 5px;display:none;">You</span>
+                    <!-- items-center, not items-baseline: the "You" tag is a badge with its
+                         own box, and sitting a padded box on the name's baseline hangs it
+                         low. Centre the two and the tag reads as a marker on the name. -->
+                    <div class="flex items-center gap-2" style="min-width:0;">
+                        <span class="res-name t-display-8 t-display uppercase truncate" style="font-size:14px;letter-spacing:0.03em;"></span>
+                        <span class="res-you t-label" style="font-size:9px;letter-spacing:0.12em;color:#0c1322;background:#f2c14e;border-radius:4px;padding:2px 5px;line-height:1.15;display:none;">You</span>
+                    </div>
+                    <!-- The finish, drawn. The number beside it is exact; this is the one
+                         place on the page you can see the shape of the race — who sailed
+                         away, who was in a pack, who is still out there. -->
+                    <div class="res-gap">
+                        <div class="res-gap-axis"></div>
+                        <div class="res-gap-mark" style="display:none;">
+                            <div class="res-gap-tri"></div>
+                        </div>
                     </div>
                     <div class="res-time res-r t-mono" style="font-size:13px;"></div>
                     <div class="res-delta res-r t-mono" style="font-size:12px;color:#7787a0;"></div>
+                    <div class="res-start res-r t-mono" style="font-size:12px;"></div>
                     <div class="res-top res-r t-mono" style="font-size:12px;"></div>
                     <div class="res-avg res-r t-mono" style="font-size:12px;color:#9fb2cc;"></div>
                     <div class="res-dist res-r t-mono" style="font-size:12px;color:#9fb2cc;"></div>
                     <div class="res-pen res-r t-mono" style="font-size:12px;"></div>
+                    <div class="res-pts res-r t-display" style="font-size:16px;"></div>
                 </div>`;
-            // The boat's own colour, as a ring on the portrait rather than a bar behind the
-            // row: ten filled colour bars is the wash the old screen drowned in, and the ring
-            // still answers "which hull is that out on the water".
-            row.querySelector('.res-face').style.boxShadow = `0 0 0 2px ${boat.colors.hull}`;
+            // NO RING. The coloured ring was here to answer "which hull is that out on the
+            // water" — the gap marker answers it now, in the same colour, and ten ringed
+            // portraits beside ten coloured arrows was the same fact drawn twice.
             row.querySelector('.res-name').textContent = boat.name;
-            if (boat.isPlayer) row.querySelector('.res-you').style.display = '';
+            // YOUR ROW GLOWS IN YOUR OWN COLOUR — the same hue as the portrait glow on the
+            // hero and the badge on your name. The NAME stays white like every other boat's:
+            // the row is already marked three ways, and a coloured name on top of a coloured
+            // row read as a different kind of row rather than as the same fleet.
+            if (boat.isPlayer) {
+                const c = deepBandFor(boat.colors.hull, boat.colors.spinnaker, boat.colors.spinAccent);
+                const bar = row.querySelector('.res-bar');
+                bar.style.borderColor = boatGlow(boat, 0.55);
+                bar.style.background = boatGlow(boat, 0.10);
+                bar.style.boxShadow = `0 0 18px ${boatGlow(boat, 0.30)}`;
+                const you = row.querySelector('.res-you');
+                you.style.background = c;
+                you.style.display = '';
+            }
             UI.resultRows[boat.id] = row;
         }
 
         const q = (c) => row.querySelector('.' + c);
-        const medal = q('res-medal');
-        medal.style.background = index < 3 ? RES_MEDALS[index] : 'transparent';
-        medal.style.boxShadow = index < 3 ? 'none' : 'inset 0 0 0 1px rgba(255,255,255,0.14)';
         const posEl = q('res-pos');
         posEl.textContent = index + 1;
-        posEl.style.color = index < 3 ? RES_MEDALS[index] : '#7787a0';
+        posEl.style.color = index < 3 ? RES_MEDALS[index] : '#66748c';
 
         const timeEl = q('res-time');
         if (rs.resultStatus) {
@@ -11130,27 +11626,81 @@ function renderResultsRows(sorted, leader, fleetTop) {
 
         const clean = rs.finished && !rs.resultStatus;
         const leaderClean = leader.raceState.finished && !leader.raceState.resultStatus;
-        q('res-delta').textContent = (index > 0 && clean && leaderClean)
-            ? '+' + (rs.finishTime - leader.raceState.finishTime).toFixed(2) : '—';
+        const behind = (clean && leaderClean) ? rs.finishTime - leader.raceState.finishTime : null;
+        q('res-delta').textContent = (index > 0 && behind !== null) ? '+' + behind.toFixed(2) : '—';
 
-        const top = Math.max(...rs.legTopSpeeds);
+        // The gap, as a marker on a fixed ruler. Only boats with a settled gap get one: a
+        // boat still on the water has no gap to the winner yet, and neither has a DNF.
+        const mark = q('res-gap-mark');
+        if (behind === null) {
+            mark.style.display = 'none';
+        } else {
+            // Winner at 0, last boat home at 1. A one-boat fleet has no spread to draw, so
+            // everyone sits on the datum rather than dividing by nothing.
+            const f = gapScale > 0 ? behind / gapScale : 0;
+            mark.style.display = '';
+            // The 24px keeps the marker inside the column at full scale; `calc` does the
+            // work so the ruler stays fluid with the layout.
+            mark.style.left = `calc(${f.toFixed(4)} * (100% - 24px))`;
+            // Every marker is its own boat's colour, yours included — the ruler is a picture
+            // of the fleet, and a gold arrow in it would have read as the winner's.
+            q('res-gap-tri').style.color =
+                deepBandFor(boat.colors.hull, boat.colors.spinnaker, boat.colors.spinAccent);
+        }
+
+        // THE ENDS OF EACH COLUMN, GREEN AND RED. Best in the fleet reads green, worst
+        // reads red, everyone in between stays quiet — the column is a ranking you can
+        // read without reading it. Only a boat that finished can hold either end (see
+        // `fleetExtremes`), and "best" is not the same direction in every column: high for
+        // speed, LOW for the distance you sailed to get here.
+        const edge = (v, s, lowIsGood, gate) => {
+            if (!s || !(gate === undefined ? clean : gate)) return '#9fb2cc';
+            const good = lowIsGood ? s.lo : s.hi, bad = lowIsGood ? s.hi : s.lo;
+            if (Math.abs(v - good) < 1e-9) return '#34d399';
+            if (Math.abs(v - bad) < 1e-9) return '#ef4444';
+            return '#9fb2cc';
+        };
+        // Time to cross the line — the first thing you can win or lose, and the one number
+        // here that is settled while the rest of the race is still being sailed.
+        const start = boatStartTime(boat);
+        const startEl = q('res-start');
+        startEl.textContent = start === null ? '—' : '+' + start.toFixed(1) + 's';
+        startEl.style.color = start === null ? '#4a5a72'
+            : edge(start, ext && ext.start, true, true);
+
+        const top = boatTopSpeed(boat), avg = boatAvgSpeed(boat), dist = boatDistKm(boat);
         const topEl = q('res-top');
         topEl.textContent = top.toFixed(1);
-        // The fleet's best turn of speed, and only that one, gets the green.
-        topEl.style.color = (top >= fleetTop - 0.05) ? '#34d399' : '#9fb2cc';
+        topEl.style.color = edge(top, ext && ext.top, false);
 
-        const duration = rs.finished ? rs.finishTime : state.race.timer;
-        const speedSum = rs.legSpeedSums ? rs.legSpeedSums.reduce((a, b) => a + b, 0) : 0;
-        q('res-avg').textContent = (duration > 0.1 ? speedSum / duration : 0).toFixed(1);
-        q('res-dist').textContent = unitsToKm(rs.legDistances.reduce((a, b) => a + b, 0)).toFixed(2);
+        const avgEl = q('res-avg');
+        avgEl.textContent = avg.toFixed(1);
+        avgEl.style.color = edge(avg, ext && ext.avg, false);
+
+        const distEl = q('res-dist');
+        distEl.textContent = dist.toFixed(2);
+        distEl.style.color = edge(dist, ext && ext.dist, true);
 
         const penEl = q('res-pen');
         penEl.textContent = rs.totalPenalties > 0 ? rs.totalPenalties : '—';
         penEl.style.color = rs.totalPenalties > 0 ? '#ef4444' : '#4a5a72';
 
-        // Appending an element that is already in the list MOVES it, which is how the
-        // order stays right as boats finish behind you.
-        UI.resultsList.appendChild(row);
+        // POINTS, and only for a boat that finished the course. A place you were holding
+        // when the screen opened is not a result, and neither is a DNF — scoring either
+        // would put a number in the column that the race has not decided yet.
+        const ptsEl = q('res-pts');
+        ptsEl.textContent = clean ? POINTS_FOR_PLACE(index + 1) : '—';
+        // No metal here. The medal colour is already on the place three columns left, and
+        // saying it twice made the row look like it was scoring the colour, not the boat.
+        ptsEl.style.color = clean ? '#eef3fb' : '#4a5a72';
+
+        // Appending an element that is already in the list MOVES it, which is how the order
+        // stays right as boats finish behind you — but a move is a REMOVE + INSERT, and doing
+        // ten of them six times a second is what made the finished table flicker. Only touch
+        // the DOM when this row is not already where it belongs.
+        if (UI.resultsList.children[index] !== row) {
+            UI.resultsList.insertBefore(row, UI.resultsList.children[index] || null);
+        }
     });
 }
 
@@ -11278,17 +11828,14 @@ function updateLeaderboard() {
                 // EVERY ROW SHOWS A FACE, yours included. The player used to get a star
                 // because the player had no portrait — but the player IS a character now, and
                 // showing whose boat you picked is the point of picking one. Which row is
-                // yours is already said by the gold ring and the gold type, so the star was
-                // carrying a meaning that was no longer its own.
+                // yours is already said by the ring around the row and its type, so the star
+                // was carrying a meaning that was no longer its own.
                 //
-                // (It was also reading `settings.hullColor` for its fill, which stopped
-                // existing when the custom-appearance settings went — so it had quietly
-                // become a black star.)
+                // No ring and no fill behind it: the portraits are cut-outs, so a disc of
+                // panel-coloured background WAS the circle. The src is set in the update
+                // pass, not here — see the note there.
                 const img = document.createElement('img');
-                img.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
-                img.className = "w-9 h-9 rounded-full border-2 object-cover";
-                img.style.borderColor = deepBandFor(boat.colors.hull, boat.colors.spinnaker, boat.colors.spinAccent);
-                img.style.background = "#1e2531";
+                img.className = "lb-face w-9 h-9 rounded-full object-cover";
                 iconContainer.appendChild(img);
 
                 const nameDiv = document.createElement('div');
@@ -11321,21 +11868,40 @@ function updateLeaderboard() {
             const distDiv = row.querySelector('.lb-dist');
             const nameDiv = row.querySelector('.lb-name');
             const trendDiv = row.querySelector('.lb-trend');
+            const faceImg = row.querySelector('.lb-face');
+
+            // ⚠️ THE FACE FOLLOWS THE BOAT'S IDENTITY, WHICH CAN CHANGE UNDER A LIVE ROW.
+            // Picking a new character does not rebuild the fleet — `applyPlayerCharacter`
+            // renames boat 0 in place (and `swapClashingOpponent` can re-identify an AI) —
+            // so a src set once at row creation left the OLD portrait on the row while the
+            // name beside it updated. Cheap to re-check: a string compare per row per draw.
+            if (faceImg && faceImg.dataset.face !== boat.name) {
+                faceImg.dataset.face = boat.name;
+                faceImg.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
+            }
 
             const dnx = boat.raceState.leg === 0 && !boat.raceState.finished;
             let rowClass = "lb-row flex items-center transition-colors duration-500";
             if (boat.isPlayer) rowClass += " lb-me";
             row.className = rowClass;
-            row.style.background = boat.isPlayer ? 'rgba(251,191,36,0.10)'
-                                 : boat.raceState.finished ? 'rgba(16,185,129,0.14)'
-                                 : (index % 2 ? 'rgba(255,255,255,0.028)' : 'transparent');
 
-            // GOLD MEANS YOU, and nothing else. It was on the leader too, so on any race
-            // you were not leading the panel had two golds competing for the same meaning.
-            rankDiv.style.color = boat.isPlayer ? '#fbbf24'
-                                : dnx ? '#475569' : '#64748b';
+            // YOU ARE YOUR OWN COLOUR, not gold — the same hue the results page rings your
+            // row with and the same one your gap marker carries there. Gold had to mean two
+            // things at once on a panel that also ranks a fleet.
+            const me = boat.isPlayer
+                ? deepBandFor(boat.colors.hull, boat.colors.spinnaker, boat.colors.spinAccent) : null;
+            if (me) row.style.boxShadow = `inset 0 0 0 2px ${me}`;
+
+            // Only MEANINGFUL rows carry a fill — you, and anyone who has finished. The
+            // zebra striping was a third fill that said nothing, and on the dark panel it
+            // read as banding rather than as rows.
+            row.style.background = boat.isPlayer ? boatGlow(boat, 0.12)
+                                 : boat.raceState.finished ? 'rgba(16,185,129,0.14)'
+                                 : 'transparent';
+
+            rankDiv.style.color = me ? me : dnx ? '#475569' : '#64748b';
             nameDiv.style.color = boat.raceState.penalty ? '#f87171'
-                                : boat.isPlayer ? '#fbbf24'
+                                : me ? me
                                 : dnx ? '#64748b' : '#ffffff';
             nameDiv.textContent = boat.name;
             rankDiv.textContent = index + 1;
@@ -11728,15 +12294,17 @@ function draw() {
         // around. No venue gate any more: it asks the same question the physics asks, which
         // is whether THIS boat is in too much breeze right now, so it lights up wherever
         // that is true rather than only in the Arctic.
+        // Asks the SAME question the physics asks, which is now heel and not wind speed. On
+        // the old true-wind test the badge lit for the whole of a windy race — including
+        // dead downwind, where the boat is at her fastest and nothing is wrong — so it read
+        // as "it is breezy" rather than "you are pressing too hard right now". Keyed on
+        // heel it goes out the moment the player bears away, which is what makes it a cue
+        // rather than a label.
         if (UI.overpoweredBadge) {
-            const op = player.effectiveWindNow !== undefined
-                && player.effectiveWindNow > OVERPOWERED.threshold
+            const op = (player.heel || 0) > OVERPOWERED.heelThreshold
                 && state.race.status === 'racing' && !player.raceState.finished;
             UI.overpoweredBadge.classList.toggle('hidden', !op);
         }
-
-        const isBoost = localWind.speed > state.wind.speed + 0.1;
-        const isLoss = localWind.speed < state.wind.speed - 0.1;
 
         if (UI.speed) {
             UI.speed.textContent = (player.speed*4).toFixed(1);
@@ -11780,13 +12348,38 @@ function draw() {
              // Remove all potential color classes
              UI.windSpeed.classList.remove('text-rose-300', 'text-emerald-300', 'text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
 
+             // ── MORE OR LESS PRESSURE THAN NORMAL *FOR THIS COURSE* ─────────────
+             // This used to compare against `state.wind.speed` — the region blend at ONE
+             // POINT, the route centroid — with a 0.1 kt deadband. That is fine on the nine
+             // venues that state a single uniform wind region and meaningless on the one
+             // that does not: on Glacier Sound the centroid sits in the katabatic tongue at
+             // 20 kt while the racing corridor runs 12-18, so "below average" was true on
+             // 100% of frames and the readout was permanently red. It was reporting where
+             // the centroid is, not what the sailor is in.
+             //
+             // The course's own p10/p90 (`computeWindPressureScale`, over sailable water
+             // inside the mark box, averaged across the oscillation and widened to at least
+             // +/-18% of the median) is the honest reference, and it is already computed —
+             // it is what the wind comets are drawn from. Sharing it means the number turns
+             // gold exactly when the comets around the boat do, instead of the HUD and the
+             // water disagreeing about the same breeze.
+             //
+             // `hi` also carries headroom for half the largest authored gust, so on a venue
+             // with puffs green means A PUFF rather than "slightly windier over here".
+             const P = state.wind.pressure;
+             const refMed = P ? P.med : state.wind.speed;
+             const refLo = P ? P.lo : refMed - 0.1;
+             const refHi = P ? P.hi : refMed + 0.1;
              const effectiveSpeed = localWind.speed * (1.0 - player.badAirIntensity);
-             const isEffectiveBoost = effectiveSpeed > state.wind.speed + 0.1;
-             const isEffectiveLoss = effectiveSpeed < state.wind.speed - 0.1;
 
-             if (isEffectiveBoost) {
+             if (player.badAirIntensity > 0.05) {
+                 // Dirty air is its own answer and outranks the field: the number is down
+                 // because of the boat in front, which is a thing to sail out of rather
+                 // than a patch of water to look for.
+                 UI.windSpeed.classList.add('text-rose-300');
+             } else if (effectiveSpeed > refHi) {
                  UI.windSpeed.classList.add('text-emerald-300');
-             } else if (isEffectiveLoss) {
+             } else if (effectiveSpeed < refLo) {
                  UI.windSpeed.classList.add('text-rose-300');
              } else {
                  UI.windSpeed.classList.add('text-white');
@@ -13408,6 +14001,12 @@ function resetGame() {
     }
 
     repositionBoats();
+    // THE CAMERA IS PART OF SETTING THE COURSE. It follows the player by lerping 10% a
+    // frame, so a race that starts with it parked over the LAST race's finish line spends
+    // its first seconds flying across the water and spinning to the new wind — which is
+    // what a Rematch looked like. Boats placed, course built, camera put where the boats
+    // are: only then is there anything worth drawing.
+    snapCameraToStart();
 
     state.particles = [];
     state.waveStates.clear();
@@ -13429,6 +14028,20 @@ function resetGame() {
 
     if (settings.soundEnabled || settings.musicEnabled) Sound.init();
     else Sound.updateMusic();
+}
+
+// Put the view where the race is, with no travel: the same answer the follow camera would
+// converge on a second or two later, taken as the starting value instead. Rotation is read
+// from the mode the player chose, so North stays north and Wind stays on the new breeze.
+function snapCameraToStart() {
+    const p = state.boats[0];
+    if (!p) return;
+    state.camera.target = 'boat';
+    state.camera.x = p.x;
+    state.camera.y = p.y;
+    state.camera.rotation = state.camera.mode === 'north' ? 0
+                          : state.camera.mode === 'wind' ? state.wind.direction
+                          : p.heading;
 }
 
 function restartRace() { resetGame(); togglePause(false); }

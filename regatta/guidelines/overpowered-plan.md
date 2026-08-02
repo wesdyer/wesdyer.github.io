@@ -1,6 +1,6 @@
 # Overpowered, apparent wind, and heavy-air speed — **Intent**
 
-**Date:** August 1, 2026 · **Status:** planned, not started
+**Date:** August 1, 2026 · **Status:** phases 0, 1 and 2 **BUILT** (Aug 2); phases 3-4 intent
 **Companion docs:** [race-view.md](race-view.md) · [realism](../../README.md) · `js/script.js`
 
 Markers follow visual-style.md §0: **Observed** = what the code does today, **Rule** = a
@@ -109,23 +109,75 @@ trim something to earn. `luffIntensity` and `windGrooveFactor` are today's parti
 Ordered so each step is separately measurable, and so the pieces that share arithmetic land
 together.
 
-**Phase 0 — trim, luff and kite onto apparent.**
+**Phase 0 — trim, luff and kite onto apparent. — BUILT**
 `optimalSailAngle` currently maps **TWA** 45–180° onto sheeting angle, and `luffIntensity`
 uses TWA minus the sail's actual angle. Both move to AWA; spinnaker set/douse moves to AWA
 too (which is why a fast boat carries a kite deeper than a slow one). First because heel is
 computed from the same apparent quantities and they should be derived once.
-*Expect:* the "boat makes its own wind" loop finally closes — accelerate, apparent comes
-forward, sheet in, accelerate. Reaching should feel different immediately.
+*Measured:* the loop closes — `corr(boat speed, sheet angle)` on a beat went from **−0.07
+to −0.66** (12 kt) and **−0.07 to −0.47** (25 kt). It cannot be positive: faster boat →
+apparent forward → sheet in.
 
-**Phase 1 — heel from AWS, point-of-sail aware.**
-Introduce `boat.heel` and replace `overpoweredFactor`'s trigger. **Keep the present
-magnitude** so the change is isolated: the shape of the penalty moves, its size does not.
+Three defects surfaced doing it, all of them older than this work and all found by
+measurement rather than reading:
 
-**Phase 2 — unclamp the polar above 20 kt.**
-Extrapolate rather than flatline, and verify heavy-air downwind is genuinely fast.
-⚠️ Interacts with the planing gate: the player already cannot reach `entrySpeed: 8.5 kt` at
-Clubhouse Point because the 13 kt polar peaks at 8.97, and [pitfalls] records that this is
-currently load-bearing for balance. Re-check that after unclamping, not before.
+1. **The hoist crossfade had a hole in the middle.** `jibFactor = max(0, 1-2p)` and
+   `spinFactor = max(0, 2p-1)` are the weights of a weighted sum and are **both zero at
+   p = 0.5**, so a boat halfway through a five-second sail change had a target speed of
+   *exactly zero*. Measured 38–49% of beam-reach and 29–45% of running frames sitting in
+   it. Weights now sum to one, with an explicit bounded `SAIL_CHANGE_COST` (8% at worst).
+2. **The kite decision had no hysteresis** against that five-second hoist, so it chattered
+   across its own threshold. Two thresholds now: `AWA_KITE_SET` 100°, `AWA_KITE_DOUSE` 82°.
+   ⚠️ Do NOT extend hysteresis to the `speedLimit` term — that is the AI's throttle, and
+   holding a kite through it means flying a spinnaker while deliberately spilling it.
+3. ⚠️ **`trimEfficiency` was pricing the BOOM, not the SHEET.** `boat.sailAngle` is
+   `manualSailAngle * boomSide`, and `boomSide` is not a side flag — it is a continuous
+   gybe *animation* sweeping through zero. So `|sailAngle|` collapsed mid-gybe and every
+   gybe scored as a total mistrim: run trim quality **0.64** against 0.96 broad, which
+   dropped the fleet out of planing (38% vs 65%) and cost 1.5 kt. Now reads
+   `manualSailAngle`; trim quality is **1.000 at every point of sail**.
+
+The luff threshold also had to move: `0.5 rad` (28.6°) was calibrated against *true*-wind
+angle of attack. In apparent, a correctly trimmed close-hauled boat reads ~27°, so the old
+value had **every** upwind boat shaking its sails. Now 14°, which leaves a 9° margin at the
+worst reachable state and 0 luffing frames in 7,919 close-hauled samples (`_luffcheck.js`).
+
+**Phase 1 — heel from AWS, point-of-sail aware. — BUILT**
+`heelPressure(aws, awa) = aws² · sin(awa) / refMoment`, lagged into `boat.heel` over
+`lagSeconds: 1.5`. `refMoment: 355` is a beam reach in 18 kt, so **heel 1.0 means "as
+pressed as the old rule's threshold"**. `costPerHeel: 0.45` is calibrated so a beam reach in
+25 kt still pays ≈21% — the size is held, only the shape moves.
+
+*Measured heel by point of sail, 25 kt:* beat 1.36, close reach 1.46, **beam 1.43**,
+broad 0.89, run 0.66. Exactly the table in §2 — and the run is now free, which is the whole
+point. Downwind at 25 kt went **9.0 → 13.4 kt broad and 9.4 → 13.1 kt on the run**.
+
+⚠️ The HUD badge moved onto `heel` too. On the true-wind test it lit for an entire windy
+race *including dead downwind*, where the boat is at her fastest and nothing is wrong — so
+it read as "it is breezy" rather than "you are pressing too hard".
+
+⚠️ **Heel exceeds 1.0 on 96-99% of upwind frames at 25 kt.** Fine as a speed-cost trigger,
+FATAL as phase 4's amber (§4 warns amber must stay uncommon). Phase 4 needs its own, higher
+threshold — do not reuse `heelThreshold`.
+
+**Phase 2 — unclamp the polar above 20 kt. — BUILT**
+Rows for **25 and 30 kt** added; the flatline moved from 20 to 30. The measured rows stop at
+20 because `6/8/10/12/14/16/20` *is* the ORC VPP solve set, and ORC's "use the 20-knot
+allowances above 20 knots" is a **rating-fairness rule, not a claim about boats** — the game
+had inherited it as physics.
+
+Extrapolated by continuing the trends the measured rows already show between 16 and 20 kt:
+upwind **saturates** (+5.7% over those 4 kt → +2% then 0%), downwind **does not** (+18.7%
+→ +18-20% then +17-18%), because past 17-18 kt the boat is planing and a planing hull keeps
+taking what it is offered. ⚠️ Do not "correct" these toward ORC's flattening: ORC is a
+rating VPP and is conservative about planing — it puts a J/111 at 8.75 kt in 12 kt of breeze
+at 120°, where real ones plane at 12-13 kt.
+
+*Sanity:* 25 kt at 120° is 12.99 kt of polar, ~15.6 with the planing bonus; real J/111s are
+documented in the high teens with peaks past 20 (one at 20.2).
+
+The planing gate survived unchanged: at 12 kt the fleet makes 7.8 kt broad, still under the
+`entrySpeed: 8.5` gate, so the balance [pitfalls] records is intact.
 
 **Phase 3 — heel → leeway.**
 Feed `boat.heel` into the existing leeway term instead of adding a second one.
