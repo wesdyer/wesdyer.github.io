@@ -334,26 +334,31 @@ def cmd_sync(args):
     h = {**auth_headers(), "Content-Type": "application/json"}
 
     def one(k):
-        for attempt in range(4):
+        last = None
+        for attempt in range(6):
             try:
                 r = requests.post(f"{API}/images/generations", headers=h,
                                   json=body_for(by_key[k], m["profiles"], args.quality),
-                                  timeout=600)
+                                  timeout=900)
                 if r.status_code == 429 or r.status_code >= 500:
-                    time.sleep(2 ** attempt * 5)
+                    # Honour Retry-After when the server sends one; image endpoints
+                    # rate-limit on images-per-minute, which 6 workers hit easily.
+                    wait = float(r.headers.get("retry-after", 0)) or min(90, 2 ** attempt * 8)
+                    last = f"{r.status_code} (waited {wait:.0f}s)"
+                    time.sleep(wait)
                     continue
                 if r.status_code >= 400:
-                    # The body is the only thing that says WHY a 400 happened;
-                    # raise_for_status() throws it away and reports the status line.
                     try:
                         msg = r.json().get("error", {}).get("message") or r.text[:600]
                     except ValueError:
                         msg = r.text[:600]
                     return k, RuntimeError(f"{r.status_code}: {msg}")
                 return k, base64.b64decode(r.json()["data"][0]["b64_json"])
-            except requests.RequestException:
-                time.sleep(2 ** attempt * 5)
-        return k, RuntimeError("gave up after retries")
+            except requests.RequestException as exc:
+                # Record it. "gave up after retries" with no reason is not a diagnosis.
+                last = f"{type(exc).__name__}: {str(exc)[:160]}"
+                time.sleep(min(90, 2 ** attempt * 8))
+        return k, RuntimeError(f"gave up after 6 attempts — last: {last}")
 
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         for k, res in ex.map(one, keys):

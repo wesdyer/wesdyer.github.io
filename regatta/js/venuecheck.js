@@ -481,11 +481,15 @@ function runChecks(ctx) {
         // A limit is a promise that the slow boats get to finish. 1.6x the leader is where
         // the eval's spread puts the last of them.
         const limit = (compiled.cutoff != null) ? compiled.cutoff : compiled.cutoffAuto;
-        const want = best * 1.6;
+        // The SAME recommendation the editor's button offers and the game falls back to:
+        // twice the best time round the course, to the nearest minute. It used to suggest
+        // 1.6x here while the button offered 1.6x a different estimate and the game used a
+        // per-metre rule — three answers to one question.
+        const want = compiled.cutoffAuto || Math.max(60, Math.ceil(best * 2 / 60) * 60);
         if (compiled.cutoff == null) {
             add('warn', 'cutoff-derived', 'Time limit is derived',
                 `No authored limit, so the game uses twice the best time along the course path,`
-                + ` to the nearest minute: ${Math.floor(compiled.cutoffAuto / 60)}:`
+                + ` rounded up to the minute: ${Math.floor(compiled.cutoffAuto / 60)}:`
                 + String(Math.round(compiled.cutoffAuto % 60)).padStart(2, '0')
                 + `. The slowest of the fleet want about `
                 + `${Math.floor(want / 60)}:${String(Math.round(want % 60)).padStart(2, '0')}`

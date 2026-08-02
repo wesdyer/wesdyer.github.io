@@ -92,6 +92,22 @@ def check_master(img, prof, key):
     return None, notes
 
 
+def wrap_resize(img, m):
+    """Resample a TILING texture without breaking its wrap.
+
+    A plain resize clamps at the border, so the filter reads the edge pixels against
+    themselves and the two edges stop matching — a seam appears at every tile boundary
+    in game, which is the one failure mode this asset class has. Tiling 3x3 first hands
+    the filter the neighbours it will actually have on screen.
+    """
+    w = img.width
+    big = Image.new(img.mode, (w * 3, w * 3))
+    for i in range(3):
+        for j in range(3):
+            big.paste(img, (i * w, j * w))
+    return big.resize((m * 3, m * 3), Image.LANCZOS).crop((m, m, m * 2, m * 2))
+
+
 def ingest(asset, profiles, check_only=False):
     key = asset["key"]
     prof = profiles[asset["class"]]
@@ -115,7 +131,8 @@ def ingest(asset, profiles, check_only=False):
     src_w = img.width
     m = prof["master"]
     if img.size != (m, m):
-        img = img.resize((m, m), Image.LANCZOS)
+        img = (wrap_resize(img, m) if prof.get("tileWorld")
+               else img.resize((m, m), Image.LANCZOS))
 
     MASTERS.mkdir(exist_ok=True)
     img.save(paths.store(MASTERS, asset, PREFIXES))

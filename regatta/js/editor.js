@@ -944,12 +944,15 @@ function statsRefresh() {
     const pathSecs = d2 && d2.estSecs;
     $('stat-dist').textContent = d2 && d2.sailedDist ? fmtM(d2.sailedDist) : (est ? fmtM(est.dist) : '—');
     $('stat-best').textContent = pathSecs ? mmss(pathSecs) : (est ? mmss(est.secs) : '—');
-    // The fleet mean is what the 3–5 minute target was about, so that is what gets coloured.
+    // Coloured on the BEST TIME itself. The old form scaled it by 1.35 to guess a fleet mean
+    // and judged that against the 3–5 minute target — a second model layered on the first,
+    // from before the limit was simply twice the best. One number, judged directly.
     const baseSecs = pathSecs || (est ? est.secs : 0);
-    const mean = baseSecs * 1.35;
-    const band = mean >= 180 && mean <= 300;
+    const band = baseSecs >= 90 && baseSecs <= 150;
     $('stat-best').className = 'st-v num' + (baseSecs ? (band ? ' ok' : ' warn') : '');
-    $('stat-best').title = baseSecs ? `fleet ~${mmss(mean)} — ${band ? 'inside' : 'outside'} the 3–5 min target` : '';
+    $('stat-best').title = baseSecs
+        ? `${mmss(baseSecs)} best — ${band ? 'inside' : 'outside'} the 1:30–2:30 target, so a ${mmss(Math.max(60, Math.ceil(baseSecs * 2 / 60) * 60))} limit`
+        : '';
     $('stat-limit').textContent = cutoff ? mmss(cutoff) : '—';
     $('stat-limit').title = authored ? 'authored' : 'derived, and blind to the land the path goes around';
     $('stat-legs').textContent = doc ? Math.max(1, routeOf().length - 1) : '—';
@@ -3056,6 +3059,16 @@ function relatedChecks() {
 const row = (k, v) => `<div class="in-row"><span>${k}</span><span class="num">${v}</span></div>`;
 const mmss = s => `${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,'0')}`;
 
+// The suggested time limit: twice the best time along the course path, to the nearest
+// minute. Computed by compile so the editor's recommendation and the game's own fallback
+// are the same number — two formulas for "how long should this race be allowed" is how they
+// come to disagree by a minute and nobody notices which one raced.
+function suggestedCutoff() {
+    if (!doc) return 0;
+    const c = window.VenueDoc.compile(doc);
+    return c.cutoffAuto || 0;
+}
+
 function info() {
     if (!course) return;
     const m = course.marks || [];
@@ -3088,24 +3101,32 @@ function info() {
         cutoff = uToM(dist) * 0.1875;
 
     }
-    // A limit has to let the tail of the fleet finish, not just the winner. The eval's
-    // measured spread puts the fleet mean around 1.35x the leader and the last boat near
-    // 1.6x, so that is the margin — stated, rather than folded into a magic constant.
-    const estLimit = estimate ? estimate.secs * 1.6 : 0;
-    // The fleet mean runs about 1.35x the leader (measured in the eval), and the 3–5 minute
-    // target has always been about how long the RACE is, not how fast the winner is.
-    const mean = estimate ? estimate.secs * 1.35 : 0;
-    const band = estimate && mean >= 180 && mean <= 300;
-    const straight = doc ? (window.VenueDoc.compile(doc).sailedDist || 0) : 0;
+    // THE RECOMMENDATION IS THE DERIVED LIMIT. Twice the best time along the course path,
+    // to the nearest minute — the same number `cutoffAuto` gives the game when nothing is
+    // authored, so the button sets what the venue would already have done rather than a
+    // second, slightly different figure (it used to offer 1.6x SailCheck's estimate).
+    const suggested = suggestedCutoff();
+    // BEST TIME COMES FROM THE PATH, the same number the limit is twice of. It used to be
+    // SailCheck's grid estimate while the recommendation used compile's, so Clubhouse Point
+    // read "best 3:23" beside "set the limit to 6:00" — 2x3:23 is 6:46, and the two numbers
+    // simply were not about the same lap.
+    const pathBest = doc ? (window.VenueDoc.compile(doc).estSecs || 0) : 0;
+    const band = pathBest >= 90 && pathBest <= 150;
+    const straight = doc ? (window.VenueDoc.compile(doc).courseDist || 0) : 0;
     $('info-time').innerHTML =
         row('sailable path', `${fmtM(dist)}  ·  ${fmtBL(dist)}`) +
+        // ⚠️ Compared against the COURSE PATH, not "the straight line". `sailedDist` stopped
+        // being a straight line when the estimate moved onto the path, and it carries the
+        // 1.45x tacking allowance on top — so this row was dividing a path by a longer path
+        // and reporting 0.95x, which reads as "shorter than a straight line".
         (estimate && straight > 0
-            ? row('vs straight line', `${(estimate.dist / straight).toFixed(2)}×  (${fmtM(straight)})`) : '') +
+            ? row('vs course path', `${(estimate.dist / straight).toFixed(2)}×  (${fmtM(straight)})`) : '') +
+        (pathBest
+            ? `<div class="in-row"><span>best time</span><span class="num" style="color:${band ? 'var(--ed-ok)' : 'var(--ed-warn)'}">`
+              + `${mmss(pathBest)}${band ? '' : '  ⚠'}</span></div>`
+            : '') +
         (estimate
-            ? row('best time', mmss(estimate.secs))
-              + `<div class="in-row"><span>fleet ~1.35×</span><span class="num" style="color:${band ? 'var(--ed-ok)' : 'var(--ed-warn)'}">`
-              + `${mmss(mean)}${band ? '' : '  ⚠'}</span></div>`
-              + (estimate.slowest
+            ? (estimate.slowest
                   ? `<div class="text-slate-500 mt-1" style="font-size:11px">slowest leg ${estimate.slowest.leg}: `
                     + `${fmtM(estimate.slowest.dist)} at ${estimate.slowest.twaDeg}° TWA, `
                     + `VMG ${estimate.slowest.vmg ? estimate.slowest.vmg.toFixed(1) : '?'} kt, `
@@ -3116,8 +3137,8 @@ function info() {
 
     const useBtn = $('btn-use-est');
     if (useBtn) {
-        useBtn.disabled = !estimate;
-        useBtn.textContent = estimate ? `Set the limit to ${mmss(estLimit)}` : 'No estimate available';
+        useBtn.disabled = !suggested;
+        useBtn.textContent = suggested ? `Set the limit to ${mmss(suggested)}` : 'No estimate available';
     }
 
 }
@@ -5697,10 +5718,11 @@ $('course-name').addEventListener('change', () => {
     buildVenueMenu();
 });
 $('btn-use-est').addEventListener('click', () => {
-    if (!doc || !estimate) return;
-    doc.course.cutoff = Math.round(estimate.secs * 1.6);
+    const secs = suggestedCutoff();
+    if (!doc || !secs) return;
+    doc.course.cutoff = secs;
     afterEdit(true, 'cutoff from estimate');
-    toast(`Limit set to ${mmss(doc.course.cutoff)} — 1.6x the estimated best time`);
+    toast(`Limit set to ${mmss(secs)} — twice the best time round the course`);
 });
 
 // ── Current regions ────────────────────────────────────────────────────────

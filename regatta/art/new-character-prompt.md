@@ -196,7 +196,7 @@ Creatures: Acorn Barnacle, Adelie Penguin, American Beaver, American Bullfrog,
 American Lobster, Anemone Shrimp, Antarctic Krill, Arctic Tern, Atlantic
 Mudskipper, Atlantic Puffin, Axolotl, Barracuda, Black Seadevil,
 Blobfish, Blue-Footed Booby, Bottlenose Dolphin, Brown Pelican,
-California Newt, Chambered Nautilus, Cloud Ray, Clownfish, Common
+California Newt, Chambered Nautilus, Clownfish, Common
 Octopus, Common Raven, Common Swift, Elephant Seal, Fire Salamander,
 Firefish, Flamingo, Florida Manatee, Flying Fish, Flying Squirrel, Great
 White Shark, Green Tree Snake, Hammerhead Shark, Harbor Seal, Hermit Crab,
@@ -207,7 +207,7 @@ Nudibranch, Nurse Shark, Ochre Sea Star, Orca, Pacific Oyster, Platypus,
 Polar Bear, Pom Pom Crab, Pufferfish, Red Rock Crab, Red Snapper, Red
 Swamp Crayfish, Red-Bellied Piranha, Roseate Spoonbill, Saltwater
 Crocodile, Sanderling, Sea Nettle, Sea Otter, Sea Turtle, Sea Urchin,
-Snapping Turtle, Sockeye Salmon, Swordfish, Tiger Shark, Tree Frog,
+Snapping Turtle, Sockeye Salmon, Spotted Eagle Ray, Swordfish, Tiger Shark, Tree Frog,
 Vampire Squid, Walrus, Wandering Albatross, Water Dragon, Yellowfin Tuna
 
 ────────────────────────────────────────────────────────────────────────

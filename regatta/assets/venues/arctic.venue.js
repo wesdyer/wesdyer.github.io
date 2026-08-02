@@ -8278,7 +8278,7 @@ window.VENUE_DOC["arctic"] = {
       }
     ],
     "startTime": 20,
-    "cutoff": 600
+    "cutoff": 420
   },
   "wind": {
     "regions": [

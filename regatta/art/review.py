@@ -202,6 +202,19 @@ def cmd_sheet(args):
         for k, v, n in parse_feedback():
             if v != "?" or n:
                 prior[k] = (v, n)
+    # Carry the previous round's note alongside, so a reroll can be judged against
+    # what was actually asked for rather than from memory.
+    said = {}
+    for arch in sorted(OUT.glob("feedback-round*.md")):
+        for ln in arch.read_text().splitlines():
+            ln = ln.strip()
+            if not ln.startswith("|"):
+                continue
+            c = [x.strip() for x in ln.strip("|").split("|")]
+            if len(c) < 8 or c[0] in ("key", "verdict") or set(c[0]) <= set("-: "):
+                continue
+            if c[7]:
+                said[c[0]] = c[7]
     md = [
         "# Portrait review",
         "",
@@ -222,15 +235,16 @@ def cmd_sheet(args):
         "",
         "Flagged rows are listed first.",
         "",
-        "| key | verdict | a | vA | vB | ink | auto | notes |",
-        "|---|---|---|---|---|---|---|---|",
+        "| key | verdict | a | vA | vB | ink | auto | notes | previously said |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for r in sorted(rows, key=lambda r: (not r["flags"], r["key"])):
         vA = f"{r['d_animal']:.0f}" if r["d_animal"] is not None else "-"
         vB = f"{r['d_band']:.0f}" if r["d_band"] is not None else "-"
         pv, pn = prior.get(r["key"], ("?", ""))
         md.append(f"| {r['key']} | {pv} | {r['new']['aspect']:.2f} | {vA} | {vB} | "
-                  f"{100*r['new']['contour']:.0f}% | {' '.join(r['flags']) or ''} | {pn} |")
+                  f"{100*r['new']['contour']:.0f}% | {' '.join(r['flags']) or ''} | {pn} | "
+                  f"{said.get(r['key'],'')} |")
     FEEDBACK.write_text("\n".join(md) + "\n")
     print(f"\n  {FEEDBACK.relative_to(REPO.parent)}   ({len(rows)} rows, flagged first"
           f"{f'; carried over {len(prior)} verdict(s)' if prior else ''})")
@@ -255,6 +269,14 @@ def parse_feedback():
 
 
 def cmd_apply(args):
+    # ⚠️ Archive, never delete. Round 1's candidates were cleared between rounds and
+    # then seven reviews came back saying "last round was better" — with nothing left
+    # to go back to. Every round's stage is kept.
+    import shutil
+    n = 1 + max([int(p.name.split("round")[-1] or 0) for p in OUT.glob("candidates-round*")] or [0])
+    if CAND.exists() and any(CAND.iterdir()):
+        shutil.copytree(CAND, OUT / f"candidates-round{n}", dirs_exist_ok=True)
+        print(f"  archived this round's candidates to art/review/candidates-round{n}/")
     rows = parse_feedback()
     buckets = {"ingest": [], "keep": [], "reroll": [], "?": []}
     for key, verdict, notes in rows:

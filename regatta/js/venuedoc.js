@@ -977,6 +977,17 @@ function compileVenueDoc(doc) {
     const REF_WIND = 14;                    // knots, mid-range: this is a fallback estimate
     let sailed = 0, secs = 0, geom = 0;
     const addPriced = (r) => { geom += r.geom; sailed += r.sailed; secs += r.secs; };
+    // ⚠️ venuedoc.js is also loaded in a bare NODE context by test_venuedoc, where planner.js
+    // (CoursePath) and the polar (getTargetSpeed) do not exist. The path branch below cannot
+    // run there anyway — it needs both — but the straight-line fallback must, so it prices
+    // geometry only rather than assuming the shared function is present.
+    const upx = Math.sin(wb), upy = -Math.cos(wb);
+    const priceSeg = (a, b) => {
+        if (typeof CoursePath !== 'undefined') return CoursePath.priceLeg([a, b], wb, REF_WIND);
+        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+        const up = (dx * upx + dy * upy) > d * 0.25;
+        return { geom: d, sailed: d * (up ? 1.45 : 1.0), secs: 0, upwind: up ? d : 0 };
+    };
 
     let paths = null;
     if (typeof CoursePath !== 'undefined' && typeof RoutePlanner !== 'undefined') {
@@ -1026,7 +1037,7 @@ function compileVenueDoc(doc) {
         for (let i = 1; i < route.length; i++) {
             const p = legPt(route[i]);
             if (!prev || !p) { prev = p || prev; continue; }
-            addPriced(CoursePath.priceLeg([prev, p], wb, REF_WIND));
+            addPriced(priceSeg(prev, p));
             prev = p;
         }
     }
@@ -1054,13 +1065,15 @@ function compileVenueDoc(doc) {
         pathMeasured: !!paths,                  // false = straight-line fallback
         estSecs: secs > 0 ? secs : null,          // priced along the PATH, per segment
         estSecsStraight: secs > 0 ? secs : null,  // legacy name, same number
-        // TWICE THE BEST TIME, to the nearest minute. The old form was 0.1875 s per metre of
+        // TWICE THE BEST TIME, rounded UP to the minute — a limit should never be shorter
+        // than the rule it states, and rounding to nearest can shave up to 29 seconds off it.
+        // The old form was 0.1875 s per metre of
         // STRAIGHT-LINE distance — a rule of thumb that could not see the land the course
         // goes around, and that had no relationship to how fast the boats actually sail it.
         // `secs` is now the polar's time along the real path, with the beat priced by VMG,
         // so doubling it is a limit expressed in the only currency that matters: a fleet
         // gets twice as long as a perfectly sailed lap.
-        cutoffAuto: secs > 0 ? Math.max(60, Math.round(secs * 2 / 60) * 60) : null,
+        cutoffAuto: secs > 0 ? Math.max(60, Math.ceil(secs * 2 / 60) * 60) : null,
         windRegions,
         currentRegions,
         gustRegions,

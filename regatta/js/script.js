@@ -1910,7 +1910,7 @@ const AI_CONFIG = [
     { name: 'Scuttle', creature: 'Hermit Crab', hull: '#FFB703', spinnaker: '#3A86FF', spinnaker2: '#FFB703', sail: '#000000', cockpit: '#BFAF92', personality: "Erratic survivor thriving in congestion." , beat: 'Deny the chaos — in a clean race he is just slow.', archetype: 'gambler', stats: { acceleration: -4, momentum: -3, handling: -3, upwind: -3, reach: 1, downwind: -2, pressure: 5, lightAir: 2, heavyAir: -1, memory: -1 } },
     { name: 'Finley', creature: 'Yellowfin Tuna', hull: '#0077B6', spinnaker: '#ffd900', spinnaker2: '#0077B6', sail: '#FFFFFF', cockpit: '#A7B8C8', personality: "Pure speed and relentless pressure." , beat: 'Break cover downwind — his speed lives on the beat.', archetype: 'leech', stats: { acceleration: -2, momentum: -3, handling: -3, upwind: 5, reach: -2, downwind: 1, pressure: -1, lightAir: -1, heavyAir: 4, memory: 2 } },
     { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', spinnaker2: '#FF3B30', spinnaker3: '#FFFFFF', sail: '#000000', cockpit: '#5E5E5E', personality: "Explosive starts, reckless aggression." , beat: 'Let the fire burn out — he keeps nothing through lulls or turns.', archetype: 'rocket', stats: { acceleration: 1, momentum: -5, handling: -3, upwind: -1, reach: 4, downwind: -1, pressure: 4, lightAir: 2, heavyAir: -1, memory: 1 } },
-    { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', spinnaker2: '#6A7FDB', sail: '#FFFFFF', cockpit: '#C9D0E0', personality: "Effortlessly surfing invisible shifts." , beat: 'Chase him downwind — clouds stall when the wind goes aft.', archetype: 'shift', stats: { acceleration: 4, momentum: -5, handling: -4, upwind: 1, reach: 1, downwind: -5, pressure: 0, lightAir: 4, heavyAir: -3, memory: -1 } },
+    { name: 'Nimbus', creature: 'Spotted Eagle Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', spinnaker2: '#6A7FDB', sail: '#FFFFFF', cockpit: '#C9D0E0', personality: "Effortlessly surfing invisible shifts." , beat: 'Chase him downwind — clouds stall when the wind goes aft.', archetype: 'shift', stats: { acceleration: 4, momentum: -5, handling: -4, upwind: 1, reach: 1, downwind: -5, pressure: 0, lightAir: 4, heavyAir: -3, memory: -1 } },
     { name: 'Tangle', creature: 'Common Octopus', hull: '#7A1FA2', spinnaker: '#00E676', spinnaker2: '#7A1FA2', sail: '#FFFFFF', cockpit: '#B8ACC9', personality: "Trap-setting master of dirty air." , beat: 'Dive downwind — the trap-setter unravels on the runs.', archetype: 'leech', stats: { acceleration: -1, momentum: 1, handling: -3, upwind: -2, reach: -1, downwind: -5, pressure: 5, lightAir: 1, heavyAir: -2, memory: 5 } },
     { name: 'Brine', creature: 'Florida Manatee', hull: '#A65A45', spinnaker: '#FFB4A2', spinnaker2: '#FFFFFF', spinnaker3: '#8FB8D8', sail: '#FFFFFF', cockpit: '#C3CCD2', personality: "Looks slow, impossible to pass." , beat: 'Break his rhythm at the marks — restarts are agony for a manatee.', archetype: 'freight', stats: { acceleration: -5, momentum: 3, handling: 3, upwind: 3, reach: -2, downwind: 4, pressure: -4, lightAir: -2, heavyAir: -4, memory: 1 } },
     { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', spinnaker2: '#2D3142', sail: '#FFFFFF', cockpit: '#5C5F6A', personality: "Surgical aggression at the worst moments." , beat: 'No weak stat — refuse the fight and race your own boat.', archetype: 'bully', stats: { acceleration: 0, momentum: 4, handling: 5, upwind: -1, reach: 0, downwind: -1, pressure: -1, lightAir: -2, heavyAir: 2, memory: 1 } },
@@ -2007,6 +2007,7 @@ const DEFAULT_SETTINGS = {
     bgSoundEnabled: true,
     musicEnabled: false,
     penaltiesEnabled: true,
+    surf: true,               // breaking seas on the windward shore — see drawSurf
     cameraMode: 'heading',
     // WHO YOU SAIL AS. The custom hull/sail/cockpit/spinnaker/pattern settings are gone:
     // you pick a character from the fleet and get their boat, their name and their face.
@@ -2090,7 +2091,7 @@ const VENUES = {
         name: 'Glacier Sound',
         tagline: 'Glacier Wind & Ice', water: 'Steep cold chop', obstacles: 'Drifting bergs & floes', tags: [['DRIFTING ICE','warn'],['OVERPOWERED','warn'],['GUST TIMING','ok']],
         label: 'Arctic', emoji: '🧊',
-        blurb: 'Freezing squalls pour off the ice cap and the pack drifts where it pleases. Mind the bergs, tame the gusts, survive to the finish.',
+        blurb: 'Freezing katabatic winds pour off the ice cap and the pack drifts where it pleases. Mind the bergs, tame the gusts, survive to the finish.',
         // `overpowered` left here because too much breeze costs any boat anywhere — it is
         // physics keyed on the wind a boat measures, not a trait of this venue. `mask` and
         // `islandCourse` left because nothing read them: land comes from the document and
@@ -3017,6 +3018,51 @@ burgeeImg.src = 'assets/images/misc/salty-crew-yacht-club-burgee.png';
 const palmImg = new Image();
 palmImg.src = 'assets/images/misc/palm.png';
 
+// ── Land textures ───────────────────────────────────────────────────────────
+// An ISLAND_STYLE with an entry here is filled with a tiling surface instead of
+// one flat colour. Only FIXED land: floes and bergs keep their baked faceted
+// sprite, because a floe spins and a world-anchored pattern would slide across
+// it as it turned.
+//
+// `tile` is the world units one square covers, from the asset's `tileWorld` in
+// art/manifest.json. The camera is translate-only at 1:1, so a tile is downscaled
+// ONCE into its pattern source rather than resampled per fill — and because the
+// fill happens in world space, the texture stays nailed to the land underneath it
+// while the camera moves over.
+//
+// `alpha` is baked into the pattern source, not applied at fill time. Compositing
+// the tile over the flat colour once, here, costs one drawImage per style; doing it
+// with globalAlpha would cost a second full-screen fill on every frame. The result
+// is identical because land is opaque — the flat body colour is what would be under
+// it. 0 is the old flat fill, 1 is the raw tile.
+const LAND_TEXTURES = {
+    ice:     { src: 'assets/images/terrain/arctic/snow.png',    tile: 512, alpha: 0.3 },
+    granite: { src: 'assets/images/terrain/arctic/granite.png', tile: 256, alpha: 0.3 }
+};
+for (const k in LAND_TEXTURES) {
+    const t = LAND_TEXTURES[k];
+    t.img = new Image();
+    t.img.src = t.src;
+    t.patterns = {};   // keyed by the base colour it is blended over
+}
+
+function getLandPattern(ctx, style, base) {
+    const t = LAND_TEXTURES[style];
+    if (!t) return null;
+    if (t.patterns[base]) return t.patterns[base];
+    if (!t.img.complete || !t.img.naturalWidth) return null;   // flat fill until it lands
+    const c = document.createElement('canvas');
+    c.width = c.height = t.tile;
+    const g = c.getContext('2d');
+    g.fillStyle = base;
+    g.fillRect(0, 0, t.tile, t.tile);
+    g.globalAlpha = t.alpha;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(t.img, 0, 0, t.tile, t.tile);
+    t.patterns[base] = ctx.createPattern(c, 'repeat');
+    return t.patterns[base];
+}
+
 // Boat part sprites (uniform 16 px/world-unit on 1024^2 transparent canvases;
 // exported from the vector shapes — drop-in replaceable with painted art).
 // Anchors: hull sprite has the boat origin at px (512,472); each sail sprite
@@ -3508,6 +3554,12 @@ class Boat {
             nextWaypoint: { x: 0, y: 0, dist: 0, angle: 0 },
             trace: [],
             legTimes: [],
+            // Where the player stood at the start and at each mark. UI only — the results
+            // screen's splits are the one place a race says WHERE it was won, and a place
+            // cannot be reconstructed after the fact. Recorded for the player alone (see
+            // advanceLeg), so the cost is one O(n) scan per rounding.
+            startRank: 0,
+            legRanks: [],
             legManeuvers: new Array(32).fill(0),
             legTopSpeeds: new Array(32).fill(0),
             legDistances: new Array(32).fill(0),
@@ -4438,6 +4490,11 @@ function computeWindPressureScale() {
     if (!phasesUsed) return fallback();
 
     const med = Math.max(1, medAcc / phasesUsed);
+    // THE HONEST SPREAD, before the ramp widens it. `lo`/`hi` below are a drawing ramp and
+    // are deliberately never narrower than ±18% — but a briefing that quoted those would
+    // invent a range on the nine venues whose wind is one uniform region. The forecast
+    // reads these instead. See windRangeText().
+    state.wind.spread = { lo: loAcc / phasesUsed, hi: hiAcc / phasesUsed, med };
     let lo = Math.min(loAcc / phasesUsed, med * (1 - PRESSURE_MIN_SPAN));
     let hi = Math.max(hiAcc / phasesUsed, med * (1 + PRESSURE_MIN_SPAN));
 
@@ -5319,11 +5376,11 @@ const UI = {
     resultsOverlay: document.getElementById('results-overlay'),
     resultsList: document.getElementById('results-list'),
     resultsRestartButton: document.getElementById('results-restart-button'),
+    resultsRematchButton: document.getElementById('results-rematch-button'),
     preRaceOverlay: document.getElementById('pre-race-overlay'),
     // Config Sliders
     venuePicker: document.getElementById('venue-picker'),
     venueDetail: document.getElementById('venue-detail'),
-    competitorDetail: document.getElementById('competitor-detail'),
 
     // Obstacles UI
     valIslandCount: document.getElementById('val-island-count'),
@@ -5354,11 +5411,12 @@ const UI = {
 ;
 
 // --- Venue picker ----------------------------------------------------------
+// The strip under the hero: every venue as its own square art tile. Square because the
+// art IS square (1254x1254) — the same master the hero shows at full size, downscaled,
+// so there is no second crop to keep in sync with the first.
 function renderVenuePicker() {
     if (!UI.venuePicker) return;
     const selected = (settings.venue && VENUES[settings.venue]) ? settings.venue : 'bay';
-
-    // All eight venues visible, Clubhouse Point leading top-left
     const visibleKeys = Object.keys(VENUES);
 
     if (UI.venuePicker._keys !== visibleKeys.join()) {
@@ -5368,45 +5426,127 @@ function renderVenuePicker() {
             const v = VENUES[key];
             const btn = document.createElement('button');
             btn.dataset.venue = key;
-            // Venue art card: thumbnail fill + name/tagline scrim (full-size
-            // art lives in assets/images/venues/<key>.png for other uses)
+            btn.className = 'pr-venue-tile';
+            // THE NAME SITS ON THE PICTURE. A caption outside the tile costs a line of
+            // height per row — two rows, two lines — and that height is the picture's. On
+            // the art, over a scrim, it costs nothing and labels the thing it names.
             btn.innerHTML = `
-                <img src="assets/images/venues/thumbs/${key}.png" alt="${v.label}" class="absolute inset-0 w-full h-full object-cover" draggable="false">
-                <span class="absolute inset-x-0 bottom-0 pt-8 pb-2 px-3 bg-gradient-to-t from-slate-950/95 via-slate-950/55 to-transparent text-left">
-                    <span class="t-display block uppercase text-white leading-tight" style="font-size:20px;">${v.name || v.label}</span>
-                    <span class="t-label t-label-sm block" style="color:#a7b4cc;">${v.tagline}</span>
-                </span>`;
+                <div class="pr-venue-shot">
+                    <img src="assets/images/venues/thumbs/${key}.png" alt="${v.label}" draggable="false">
+                    <span class="pr-venue-name t-display-8 uppercase">${v.name || v.label}</span>
+                </div>`;
             btn.addEventListener('click', (e) => { e.preventDefault(); selectVenue(key); });
             UI.venuePicker.appendChild(btn);
         }
     }
 
     for (const btn of UI.venuePicker.children) {
-        const active = btn.dataset.venue === selected;
-        btn.className = 'relative aspect-[4/3] overflow-hidden rounded-xl border-2 transition-all ' +
-            (active
-                ? 'border-sky-400 ring-2 ring-sky-400/40 shadow-lg'
-                : 'border-white/10 opacity-85 hover:opacity-100 hover:border-white/40');
+        btn.classList.toggle('sel', btn.dataset.venue === selected);
     }
+    sizeRaceDayHero();
     renderVenueDetail(selected);
-
-    // Customize toggle: venue-only by default; the condition/course panels
-    // only appear for tinkerers.
+    renderPreRaceBrief(selected);
 }
 
-// Selected-venue detail: blurb + live condition tiles + hazard/skill chips.
-// Wind reflects the ACTUAL rolled conditions for this race.
+// ⚠️ THE HERO'S HEIGHT IS SET BY ITS OWN WIDTH, and only JS can say so. The art panel is
+// square and takes the hero's full height, so the hero must never be taller than the share
+// of the column the art is allowed to have — otherwise the panel hits its max-width, stops
+// being square, and the art letterboxes onto the gradient. CSS cannot express "my height
+// depends on my width", so this runs on every render and on resize.
+const HERO_ART_SHARE = 0.58;   // of the column's WIDTH — the art is square
+const VENUE_TILE_MAX = 210;    // a tile is a picture of a place you can actually read
+const VENUE_STRIP_SHARE = 0.48; // of the column's HEIGHT — the hero keeps the rest
+function sizeRaceDayHero() {
+    const hero = document.getElementById('venue-hero');
+    const art = document.getElementById('venue-art');
+    const picker = document.getElementById('venue-picker');
+    const col = hero && hero.parentElement;
+    if (!hero || !art || !col) return;
+    const w = col.clientWidth, h = col.clientHeight;
+    if (w <= 0) return;
+
+    const side = Math.round(w * HERO_ART_SHARE);
+    // ⚠️ ONE NUMBER GOVERNS BOTH ENDS. The height cap and the art's width ceiling have to be
+    // the same share of the column: cap the height higher than the width and the square
+    // panel hits its width limit, stops being square, and the art letterboxes.
+    hero.style.maxHeight = side + 'px';
+    art.style.maxWidth = side + 'px';
+
+    // ⚠️ TWO ROWS OF VENUE TILES WILL EAT THE HERO IF LET. Five tiles stretched across a
+    // 1450px column are 280px each, so the strip alone is 600px and the hero is left with
+    // a 240px square. So the tile is capped twice — by taste (150px) and by the strip's
+    // share of the column's height — and the row spreads whatever is left over as gaps
+    // rather than growing the tiles.
+    if (picker && h > 0) {
+        const LABEL = 0, GAP = 10, ROWS = 2;   // the name is ON the picture now
+        const budget = h * VENUE_STRIP_SHARE;
+        const tile = Math.max(64, Math.min(VENUE_TILE_MAX, Math.floor((budget - ROWS * LABEL - GAP) / ROWS)));
+        picker.style.gridTemplateColumns = `repeat(5, minmax(0, ${tile}px))`;
+    }
+}
+
+// THE BREEZE A BRIEFING SHOULD QUOTE. Not `state.wind.baseSpeed`, which is the region
+// blend at ONE POINT (the route centroid) — on Glacier Sound that point reads 20 while the
+// katabatic corner blows 29 and the far side sits in 14, so the board called a course that
+// varies by half its own strength "20 kt steady".
+//
+// `state.wind.spread` is the p10/p90 of the MEAN field over the racecourse, measured across
+// a full oscillation period (computeWindPressureScale). Gust sources add their knots on top
+// of that, because a puff is a deviation from the mean rather than part of it.
+//
+// "Steady" is then a claim the numbers have to earn: under a knot and a half of spread, and
+// only then.
+function windRangeText() {
+    const sp = state.wind.spread;
+    let lo = sp ? sp.lo : state.wind.baseSpeed;
+    let hi = sp ? sp.hi : state.wind.baseSpeed;
+    let gust = 0;
+    for (const r of ((state.course && state.course.gustRegions) || [])) {
+        if (r.count > 0 && r.gustKt > gust) gust = r.gustKt;
+    }
+    // HALF the stated gust, the same headroom the pressure ramp allows itself: a puff can
+    // reach ~1.4x its source's knots at full spread, but a forecast that quotes the one
+    // biggest puff of the race describes weather nobody sails in most of the time.
+    if (gust > 0) { hi += gust * 0.5; lo -= gust * 0.5 * LULL_RATIO; }
+    lo = Math.max(0, Math.round(lo));
+    hi = Math.round(hi);
+    return hi - lo >= 2 ? `${lo}–${hi} kt` : `${Math.round((lo + hi) / 2)} kt steady`;
+}
+
+// Two colours mixed in hex space. Only ever used on the venue's own water palette, to
+// take the deep end darker still so white type has something to sit on.
+function mixHex(a, b, t) {
+    const [ar, ag, ab] = _rgbOf(a), [br, bg, bb] = _rgbOf(b);
+    const m = (x, y) => Math.round(x + (y - x) * t);
+    return `rgb(${m(ar, br)},${m(ag, bg)},${m(ab, bb)})`;
+}
+
+// THE HERO. The selected venue at full size: its square art on the short side, the
+// briefing on the wide one, over a gradient built from the venue's OWN water colours —
+// the same palette you are about to sail on, so the board is already telling you what
+// the water looks like.
 function renderVenueDetail(key) {
     if (!UI.venueDetail) return;
     const v = VENUES[key];
+    const hero = document.getElementById('venue-hero');
+    const art = document.getElementById('venue-art');
 
-    const windVal = Math.round(state.wind.baseSpeed);
-    // The strongest puff any SOURCE on this course can make, at its own bias. With no gust
-    // regions there is nothing to promise, so the readout says the steady breeze.
-    const gregs0 = (state.course && state.course.gustRegions) || [];
-    let gustPct = 0;
-    for (const r of gregs0) if (r.bias > 0) gustPct = Math.max(gustPct, 0.50 * r.strength);
-    const gustVal = Math.round(state.wind.baseSpeed * (1 + gustPct));
+    const pal = ((window.VenueDoc && window.VenueDoc.get(key)) || {}).palette || {};
+    const deep = pal.deepColor || '#0e7490';
+    const base = pal.baseColor || '#0e6f84';
+    if (hero) {
+        // Dark at the text end, the venue's own water at the art end. The mix toward the
+        // page colour is what keeps 14px body type legible on a bright lagoon.
+        hero.style.background = `linear-gradient(115deg, ${mixHex(deep, '#0c1322', 0.55)} 0%, ${deep} 58%, ${base} 100%)`;
+    }
+    if (art) {
+        art.innerHTML = `
+            <img src="assets/images/venues/${key}.png" alt="${v.name || v.label}" draggable="false"
+                 style="width:100%; height:100%; object-fit:contain; display:block;">
+            <div style="position:absolute; inset:0; pointer-events:none;
+                        background:linear-gradient(90deg, ${mixHex(deep, '#0c1322', 0.55)} 0%, rgba(12,19,34,0) 26%);"></div>`;
+    }
+
 
     // Water = what the water itself is doing: current, swell, glass, chop.
     // Live values win over the static description when a flow exists.
@@ -5415,26 +5555,71 @@ function renderVenueDetail(key) {
     if (vcTile) waterVal = vcTile.max.toFixed(1) + ' kt stream';
     else if (state.race.conditions.current) waterVal = state.race.conditions.current.speed.toFixed(1) + ' kt set';
 
-    // Sidebar briefing: banner crop, display name, lead/remainder blurb
-    // hierarchy, stat rows (labels in Archivo caps, numeric readouts in mono).
-    const row = (label, value, mono) => `
-        <div class="flex items-center justify-between bg-slate-950/60 rounded-lg px-4 py-3 border border-white/5">
-            <span class="t-label t-label-sm">${label}</span>
-            <span class="${mono ? 't-mono' : 'font-bold'} text-right ml-4" style="font-size:13.5px; color:#eef4ff;">${value}</span>
+    const row = (label, value, gold) => `
+        <div class="pr-row flex items-center justify-between gap-5"
+             style="background:${gold ? 'rgba(242,193,78,0.14)' : 'rgba(6,14,26,0.45)'};
+                    border:1px solid ${gold ? 'rgba(242,193,78,0.4)' : 'transparent'};">
+            <span class="t-label t-label-sm" style="color:${gold ? '#f2c14e' : '#9fd3dd'};">${label}</span>
+            <span class="t-mono" style="font-size:12.5px; color:${gold ? '#f2c14e' : '#ffffff'};">${value}</span>
         </div>`;
 
+    const idx = Object.keys(VENUES).indexOf(key) + 1;
+    const best = bestForVenue(key);
+    // The names run from "Redrock" to "Bluewater Bonanza", so the long ones step down a
+    // size. Everything else about this block's type is in CSS, where a short window can
+    // restyle it — see the max-height rules. Measuring the hero here would read a height
+    // flex has not settled on the first paint.
+    const longName = (v.name || v.label).length > 14 ? ' long' : '';
+
+    // YOUR BEST sits at the TOP RIGHT of the gradient, opposite the venue chips: it is a
+    // fact about you, not about the venue, so it does not belong in the stack of venue
+    // readouts at the bottom — and up here it is the first thing you see on a course you
+    // have raced before.
+    const bestChip = best
+        ? `<span class="t-mono shrink-0" style="background:rgba(242,193,78,0.14); border:1px solid rgba(242,193,78,0.4);
+                   border-radius:999px; padding:5px 13px; font-size:12.5px; color:#f2c14e; white-space:nowrap;">
+               <span class="t-label t-label-sm" style="color:#f2c14e; margin-right:6px;">Your best</span>${best.pos ? `${ordinalOf(best.pos)} · ` : ''}${formatTime(best.t)}
+           </span>`
+        : '';
+
     UI.venueDetail.innerHTML = `
-        <img src="assets/images/venues/${key}.png" alt="${v.name || v.label}" class="w-full h-64 object-cover rounded-xl border border-white/10" draggable="false">
-        <div class="flex items-baseline justify-between mt-4">
-            <span class="t-display uppercase text-white" style="font-size:31px;">${v.name || v.label}</span>
-            ${v.name && v.name !== v.label ? `<span class="t-label t-label-sm">${v.label}</span>` : ''}
+        <div class="flex gap-2 shrink-0 items-start justify-between">
+            <div class="flex gap-2" style="min-width:0;">
+                <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">Venue ${idx} of ${Object.keys(VENUES).length}</span>
+                <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${v.label}</span>
+            </div>
+            ${bestChip}
         </div>
-        <div class="mt-2" style="font-size:15px; font-weight:450; color:#c2cde0; line-height:1.6;">${v.blurb || ''}</div>
-        <div class="flex flex-col gap-2 mt-4">
-            ${row('Wind', `${windVal}–${gustVal} kt`, true)}
-            ${row('Water', waterVal, false)}
-            ${row('Obstacles', v.obstacles, false)}
+        <div class="t-display uppercase pr-venue-title${longName}">${v.name || v.label}</div>
+        <div class="pr-blurb">${v.blurb || ''}</div>
+        <div class="flex flex-col gap-1.5 shrink-0" style="margin-top:auto; padding-top:16px; max-width:360px;">
+            ${row('Wind', windRangeText())}
+            ${row('Water', waterVal)}
+            ${row('Hazards', v.obstacles)}
         </div>`;
+}
+
+// The start bar's readouts: what you are about to sail, in one line, so the decision is
+// re-checkable without looking back up at the hero.
+function renderPreRaceBrief(key) {
+    const el = document.getElementById('pr-brief');
+    if (!el) return;
+    const v = VENUES[key] || {};
+    const cell = (label, value) => `
+        <div>
+            <div class="t-label" style="font-size:10px; letter-spacing:0.16em; color:#66748c;">${label}</div>
+            <div style="font-size:14px; font-weight:800; margin-top:2px;">${value}</div>
+        </div>`;
+    const rule = `<div style="width:1px; height:30px; background:rgba(255,255,255,0.1);"></div>`;
+    el.innerHTML = [
+        cell('Venue', v.name || v.label || '—'),
+        rule,
+        cell('Forecast', `${windRangeText()} · ${v.tagline || ''}`),
+        rule,
+        cell('Fleet', `${state.boats.length} boats · One Design`),
+        rule,
+        cell('Course', `${state.race.totalLegs} legs`)
+    ].join('');
 }
 
 // --- Competitor scouting (sidebar, below the venue briefing) ---------------
@@ -5444,30 +5629,23 @@ let selectedCompetitor = null;
 // themselves after one.
 const PLAYER_CARD_KEY = '__player__';
 
+// Clicking a badge opens that boat's scouting notes underneath it, in the list. Clicking
+// it again closes them. There is no separate detail panel any more: with the fleet listed
+// as badges, the notes belong to the badge you clicked, and a second panel would have been
+// a second place to look for one boat.
 function selectCompetitor(name) {
     selectedCompetitor = selectedCompetitor === name ? null : name; // toggle
-    if (UI.prCompetitorsGrid) {
-        for (const card of UI.prCompetitorsGrid.children) {
-            card.classList.toggle('ring-2', card.dataset.name === selectedCompetitor);
-            card.classList.toggle('ring-amber-400', card.dataset.name === selectedCompetitor);
-        }
+    renderCompetitorGrid();
+    // The list scrolls, so an expansion below the fold is an expansion nobody sees.
+    if (selectedCompetitor && UI.prCompetitorsGrid) {
+        const item = UI.prCompetitorsGrid.querySelector(`[data-name="${selectedCompetitor}"]`);
+        if (item && item.scrollIntoView) item.scrollIntoView({ block: 'nearest' });
     }
-    renderCompetitorDetail();
 }
 
-function renderCompetitorDetail() {
-    if (!UI.competitorDetail) return;
-    if (selectedCompetitor === PLAYER_CARD_KEY) { renderPlayerDetail(); return; }
-    const config = selectedCompetitor ? AI_CONFIG.find(c => c.name === selectedCompetitor) : null;
-    if (!config) {
-        UI.competitorDetail.classList.add('hidden');
-        UI.competitorDetail.innerHTML = '';
-        return;
-    }
-    UI.competitorDetail.innerHTML = `<div class="t-label mb-3">Competitor Profile</div>` + competitorProfileHTML(config);
-    UI.competitorDetail.classList.remove('hidden');
-    renderProfileBoat(UI.competitorDetail.querySelector('.profile-boat-canvas'), config);
-}
+// Kept as the name the pre-race setup and the venue switch call: selection state lives in
+// the list now, so re-rendering the list IS re-rendering the detail.
+function renderCompetitorDetail() { renderCompetitorGrid(); }
 
 // Perceived brightness of a hex color. Three callers now (fleet cards, the
 // competitor profile band, the player card), all asking the same question:
@@ -5567,8 +5745,23 @@ function speciesLine(creature, size) {
 //
 // `opts.archetype` false drops the gold archetype line but keeps its box, so a band with one
 // and a band without still stack to the same height in a grid.
+//
+// `opts.compact` is the band at the size the race-day board's fleet list uses: a smaller
+// portrait and name so ten of them stack in a 470px column.
+//
+// `opts.boat` keeps or drops the rig preview at the right-hand end; it defaults to ON for a
+// full-size band and OFF for a compact one. ⚠️ IT IS NOT A TASTE CALL: `renderProfileBoat`
+// claims 36% of the band's width, so the name and the species run underneath it once the
+// band is narrower than about 420px. Pass `boat: true` on a compact band only when the
+// column is wide enough to carry both — the fleet list at 470px is, a 380px panel is not.
+// `opts.label` replaces the gold archetype line with a line of your own. The fleet list
+// uses it to put YOU on your own badge — an archetype names the AI behaviour driving a
+// character's stats, and on the boat you are steering there is no such behaviour to name.
 function profileBandHTML(config, opts) {
-    const showArch = !opts || opts.archetype !== false;
+    const o = opts || {};
+    const showArch = o.archetype !== false;
+    const compact = !!o.compact;
+    const withBoat = o.boat !== undefined ? !!o.boat : !compact;
     const archDef = (typeof ARCHETYPES !== 'undefined' && config.archetype) ? ARCHETYPES[config.archetype] : null;
     // Header band in the competitor's racing colors (same hull-vs-spinnaker
     // luma pick as the fleet cards, so the panel matches their card)
@@ -5576,25 +5769,24 @@ function profileBandHTML(config, opts) {
     return `
         <div class="rounded-xl overflow-hidden border border-white/10 relative"
              style="background: linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)">
-            <canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130" data-boat="${config.name}"></canvas>
-            <div class="flex items-center gap-5 relative">
-                <img src="assets/images/competitors/${config.name.toLowerCase()}.png" alt="${config.name}" class="w-32 h-32 object-cover shrink-0" draggable="false">
-                <div class="py-4">
-                    <div class="t-display text-white uppercase leading-tight" style="font-size:36px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
-                    ${speciesLine(config.creature)}
-                    <div class="t-label mt-1" style="font-size:13px; letter-spacing:2.5px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${showArch && archDef ? archDef.label : ''}</div>
+            ${withBoat ? `<canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130" data-boat="${config.name}"></canvas>` : ''}
+            <div class="flex items-center relative" style="gap:${compact ? 14 : 20}px;">
+                <img src="assets/images/competitors/${config.name.toLowerCase()}.png" alt="${config.name}" class="object-cover shrink-0" draggable="false"
+                     style="width:${compact ? 92 : 128}px; height:${compact ? 92 : 128}px;">
+                <div style="padding:${compact ? '10px 12px 10px 0' : '16px 0'}; min-width:0;">
+                    <div class="t-display text-white uppercase leading-tight truncate" style="font-size:${compact ? 26 : 36}px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
+                    ${speciesLine(config.creature, compact ? 11 : 13)}
+                    <div class="t-label mt-1" style="font-size:${compact ? 11 : 13}px; letter-spacing:${compact ? 1.8 : 2.5}px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${o.label !== undefined ? o.label : (showArch && archDef ? archDef.label : '')}</div>
                 </div>
             </div>
         </div>`;
 }
 
-// `asSelf` is the PLAYER looking at the character they have chosen. It keeps only what you
-// actually take on — the face, the name, the species and the boat — and drops everything
-// that describes a RIVAL: the stat bars (you take none of their stats), the archetype label
-// (that is the AI behaviour driving those stats), the personality quote (they are not
-// speaking, you are steering) and the counter-tactic, which would tell you how to beat
-// yourself.
-function competitorProfileHTML(config, asSelf) {
+// THE SCOUTING NOTES: what this rival does, the three stats that say it, and how to beat
+// them. Split out from the profile because the race-day board shows them on their own,
+// under the badge you clicked — the badge is already there, so repeating it would be the
+// same face twice in 90px.
+function scoutingNotesHTML(config, compact) {
     const archDef = (typeof ARCHETYPES !== 'undefined' && config.archetype) ? ARCHETYPES[config.archetype] : null;
 
     // Highlight the character's three most extreme stats (base ±5 design
@@ -5604,7 +5796,8 @@ function competitorProfileHTML(config, asSelf) {
         upwind: 'Upwind', reach: 'Reach', downwind: 'Downwind', pressure: 'Pressure',
         lightAir: 'Light Air', heavyAir: 'Heavy Air', memory: 'Memory'
     };
-    const sorted = Object.entries(config.stats).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+    const stats = config.stats || {};
+    const sorted = Object.entries(stats).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
     const top3 = sorted.slice(0, 3);
     // A profile should show both sides: if the three most extreme stats are
     // all weaknesses (or all strengths), swap the last for the best of the
@@ -5622,22 +5815,36 @@ function competitorProfileHTML(config, asSelf) {
     const bars = top3.map(([key, v]) => {
         const pos = v >= 0;
         return `
-        <div class="flex items-center gap-3">
-            <span class="t-label t-label-sm w-28">${STAT_NAMES[key]}</span>
-            <div class="flex-1 h-2.5 rounded-full relative overflow-hidden" style="background:#293346;">
+        <div class="flex items-center" style="gap:${compact ? 8 : 12}px;">
+            <span class="t-label t-label-sm" style="width:${compact ? 84 : 112}px;">${STAT_NAMES[key]}</span>
+            <div class="flex-1 rounded-full relative overflow-hidden" style="height:${compact ? 6 : 10}px; background:#293346;">
                 <div class="absolute inset-y-0 left-1/2 w-px bg-white/20"></div>
                 <div class="absolute inset-y-0 ${pos ? 'left-1/2 bg-emerald-400' : 'right-1/2 bg-rose-400'} rounded-full" style="width:${Math.abs(v) * 10}%"></div>
             </div>
-            <span class="t-mono w-8 text-right ${pos ? 'text-emerald-300' : 'text-rose-300'}" style="font-size:14.5px;">${v > 0 ? '+' : ''}${v}</span>
+            <span class="t-mono w-8 text-right ${pos ? 'text-emerald-300' : 'text-rose-300'}" style="font-size:${compact ? 12.5 : 14.5}px;">${v > 0 ? '+' : ''}${v}</span>
         </div>`;
     }).join('');
 
-    return profileBandHTML(config, { archetype: !asSelf })
-        + (asSelf ? `` : `
-        <div class="italic mt-4 pl-3" style="font-size:16px; color:#e6ecf8; border-left:3px solid #fcd34d;">${config.personality || ''}</div>
-        <div class="flex flex-col gap-3 mt-5">${bars}</div>
-        <div class="t-label t-label-sm mt-5">How to Beat Them</div>
-        <div class="mt-1 leading-snug" style="font-size:15px; font-weight:500; color:#9fe6c4;">${config.beat || (archDef ? archDef.weakness : '')}</div>`);
+    const S = compact
+        ? { quote: 13.5, quoteTop: 0, barsTop: 10, barGap: 7, headTop: 10, beat: 13 }
+        : { quote: 16, quoteTop: 16, barsTop: 20, barGap: 12, headTop: 20, beat: 15 };
+
+    return `
+        <div class="italic pl-3" style="margin-top:${S.quoteTop}px; font-size:${S.quote}px; color:#e6ecf8; border-left:3px solid #fcd34d;">${config.personality || ''}</div>
+        <div class="flex flex-col" style="gap:${S.barGap}px; margin-top:${S.barsTop}px;">${bars}</div>
+        <div class="t-label t-label-sm" style="margin-top:${S.headTop}px;">How to Beat Them</div>
+        <div class="mt-1 leading-snug" style="font-size:${S.beat}px; font-weight:500; color:#9fe6c4;">${config.beat || (archDef ? archDef.weakness : '')}</div>`;
+}
+
+// `asSelf` is the PLAYER looking at the character they have chosen. It keeps only what you
+// actually take on — the face, the name, the species and the boat — and drops everything
+// that describes a RIVAL: the stat bars (you take none of their stats), the archetype label
+// (that is the AI behaviour driving those stats), the personality quote (they are not
+// speaking, you are steering) and the counter-tactic, which would tell you how to beat
+// yourself.
+function competitorProfileHTML(config, asSelf, compact) {
+    return profileBandHTML(config, { archetype: !asSelf, compact: !!compact })
+        + (asSelf ? `` : `<div style="margin-top:${compact ? 12 : 16}px;">${scoutingNotesHTML(config, compact)}</div>`);
 }
 
 // Cockpit sole, wheel and mast, in the hull sprite's own coordinates. The sprite
@@ -5912,24 +6119,11 @@ function playerCharacter() {
 }
 function playerBoatConfig() { return playerCharacter(); }
 
-// Called on build and again whenever the character changes.
-// Identical in shape to a rival's fleet card — portrait, name, species — because you
-// ARE one of these characters now. Only the label differs: where a rival names its
-// archetype (the AI behaviour you are about to race), yours says "You".
-function renderPlayerCardInto(card) {
-    const cfg = playerBoatConfig();
-    const bgColor = bandColorFor(cfg.hull, cfg.spinnaker);
-    card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
-    card.innerHTML = `
-        <div class="w-full aspect-square relative overflow-hidden">
-            <img src="assets/images/competitors/${cfg.name.toLowerCase()}.png" alt="${escapeHTMLText(cfg.name)}"
-                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" draggable="false">
-        </div>
-        <div class="p-3 bg-slate-900/60 flex-1">
-            <div class="t-display t-display-8 text-white uppercase leading-tight truncate" style="font-size:17.5px;">${escapeHTMLText(cfg.name)}</div>
-            ${speciesLine(cfg.creature, 10.5)}
-            <div class="t-label t-label-sm mt-0.5" style="color:#7dd3fc;">You</div>
-        </div>`;
+// The character can change from the picker, so everything that says who you are re-reads
+// it: the header chip, your face in the fleet, and the panel if it happens to be open.
+// Visuals only.
+function refreshPlayerAppearance() {
+    if (UI.prCompetitorsGrid && UI.prCompetitorsGrid.children.length) renderCompetitorGrid();
 }
 
 // Player names are free text and land in innerHTML in two places here.
@@ -5937,33 +6131,6 @@ function escapeHTMLText(s) {
     return String(s).replace(/[&<>"']/g, ch => (
         { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
     ));
-}
-
-function renderPlayerDetail() {
-    const cfg = playerBoatConfig();
-    UI.competitorDetail.innerHTML = `
-        <div class="t-label mb-3">You</div>
-        ${competitorProfileHTML(cfg, true)}
-        <div class="flex justify-center">
-          <button id="player-pick-character"
-                  class="mt-5 px-7 py-4 rounded-lg t-label pointer-events-auto whitespace-nowrap"
-                  style="background:#1d4ed8; color:#fff; letter-spacing:2px; font-size:16px;">Change Character</button>
-        </div>`;
-    UI.competitorDetail.classList.remove('hidden');
-    renderProfileBoat(UI.competitorDetail.querySelector('.profile-boat-canvas'), cfg);
-    const btn = UI.competitorDetail.querySelector('#player-pick-character');
-    if (btn) btn.addEventListener('click', openCharacterPicker);
-}
-
-// The character can change from the picker, so the fleet card and the open panel both
-// re-read it. Visuals only.
-function refreshPlayerAppearance() {
-    if (!UI.prCompetitorsGrid) return;
-    const card = UI.prCompetitorsGrid.querySelector(`[data-name="${PLAYER_CARD_KEY}"]`);
-    if (card) renderPlayerCardInto(card);
-    // The panel is read-only now, so a full re-render is both simpler and safer than
-    // patching individual nodes — there is no input whose caret it could fight.
-    if (selectedCompetitor === PLAYER_CARD_KEY && UI.competitorDetail) renderPlayerDetail();
 }
 
 function selectVenue(key) {
@@ -6060,43 +6227,55 @@ function setupPreRaceOverlay() {
 // safety net, it is a silent failure.
 function renderCompetitorGrid() {
     if (!UI.prCompetitorsGrid) return;
+    const scrollTop = UI.prCompetitorsGrid.scrollTop;   // survive a re-render on selection
     UI.prCompetitorsGrid.innerHTML = '';
-    // Skip Player (boats[0])
-    const competitors = state.boats.slice(1);
+    const count = document.getElementById('pr-fleet-count');
+    if (count) count.textContent = `${state.boats.length} boats`;
 
-    // Player leads the fleet: 1 + 9 competitors fills the 5-col grid to 5x2.
-    const playerCard = document.createElement('div');
-    playerCard.className = "rounded-xl border border-sky-400/25 flex flex-col relative overflow-hidden group cursor-pointer transition-shadow hover:border-sky-300/50";
-    playerCard.dataset.name = PLAYER_CARD_KEY;
-    playerCard.addEventListener('click', () => selectCompetitor(PLAYER_CARD_KEY));
-    UI.prCompetitorsGrid.appendChild(playerCard);
-    renderPlayerCardInto(playerCard);
+    // ONE BADGE PER BOAT, listed — the same identity band the picker and the results screen
+    // use, boat preview and all, so a rival looks the same everywhere you meet them. Ten do
+    // not fit the column and are not meant to: this panel scrolls.
+    for (const boat of state.boats) {
+        const config = AI_CONFIG.find(c => c.name === boat.name) || boat;
+        const key = boat.isPlayer ? PLAYER_CARD_KEY : boat.name;
+        const selected = selectedCompetitor === key;
 
-    // Simplified fleet cards (design ref): portrait + name + archetype.
-    // The scouting detail (personality, threat, weakness) lives elsewhere.
-    competitors.forEach(boat => {
-        const config = AI_CONFIG.find(c => c.name === boat.name);
-        const archDef = config && config.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[config.archetype] : null;
+        const item = document.createElement('div');
+        // ⚠️ The player's item keeps the PLAYER_CARD_KEY name and a `.t-display` label —
+        // test_character_swap reads both to prove a character swap reached the screen.
+        item.dataset.name = key;
+        item.className = 'pr-fleet-item' + (boat.isPlayer ? ' me' : '') + (selected ? ' sel' : '');
 
-        const bgColor = bandColorFor(boat.colors.hull, boat.colors.spinnaker);
+        const badge = document.createElement('button');
+        badge.type = 'button';
+        badge.className = 'block w-full text-left';
+        badge.innerHTML = profileBandHTML(config, {
+            compact: true, boat: true,
+            // Your badge says YOU where a rival's says what kind of sailor they are, and it
+            // carries the control that swaps you for someone else.
+            label: boat.isPlayer ? 'You <span class="pr-change-pill">Change</span>' : undefined
+        });
+        // YOUR badge is the way to change character — there is no header chip any more, and
+        // your own badge has no scouting notes to open, so its click is free to mean the
+        // one thing you would want from it.
+        badge.addEventListener('click', () => boat.isPlayer ? openCharacterPicker() : selectCompetitor(key));
+        item.appendChild(badge);
 
-        const card = document.createElement('div');
-        card.className = "rounded-xl border border-white/5 flex flex-col relative overflow-hidden group cursor-pointer transition-shadow hover:border-white/25";
-        card.dataset.name = boat.name;
-        card.addEventListener('click', () => selectCompetitor(boat.name));
-        card.style.background = `linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, ${bgColor} 100%)`;
-        card.innerHTML = `
-            <div class="w-full aspect-square relative overflow-hidden">
-                <img src="assets/images/competitors/${boat.name.toLowerCase()}.png" alt="${boat.name}"
-                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" draggable="false">
-            </div>
-            <div class="p-3 bg-slate-900/60 flex-1">
-                <div class="t-display t-display-8 text-white uppercase leading-tight" style="font-size:17.5px;">${boat.name}</div>
-                ${speciesLine(config && config.creature, 10.5)}
-                <div class="t-label t-label-sm mt-0.5" style="color:#fcd34d;">${archDef ? archDef.label : ''}</div>
-            </div>`;
-        UI.prCompetitorsGrid.appendChild(card);
-    });
+        // YOUR badge does not open scouting notes. There is nothing to scout — you take no
+        // stats from the character, and "how to beat them" would be about you.
+        if (selected && !boat.isPlayer) {
+            const notes = document.createElement('div');
+            notes.className = 'pr-fleet-notes';
+            notes.innerHTML = scoutingNotesHTML(config);
+            item.appendChild(notes);
+        }
+        UI.prCompetitorsGrid.appendChild(item);
+
+        // The rig preview, painted once the canvas is in the document (it sizes itself from
+        // the band it sits in).
+        renderProfileBoat(item.querySelector('.profile-boat-canvas'), config);
+    }
+    UI.prCompetitorsGrid.scrollTop = scrollTop;
 }
 
 function startRace() {
@@ -6274,7 +6453,10 @@ if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.prev
 if (UI.settingsButton) UI.settingsButton.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.settingsButton.blur(); });
 if (UI.closeSettings) UI.closeSettings.addEventListener('click', () => toggleSettings(false));
 if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSettings(false));
+// Two ways off the results page, where a series would have offered "next race": back to
+// the clubhouse to change venue or character, or straight into another race here.
 if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
+if (UI.resultsRematchButton) UI.resultsRematchButton.addEventListener('click', (e) => { e.preventDefault(); rematchRace(); });
 if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preventDefault(); startRace(); });
 
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(Sound.playerWindSpeed()); });
@@ -6296,6 +6478,8 @@ if (UI.settingTelltaleColor) UI.settingTelltaleColor.addEventListener('input', (
 let minimapCtx = null;
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize);
+// The race-day hero is sized from its column's width, so it has to be re-sized with it.
+window.addEventListener('resize', sizeRaceDayHero);
 resize();
 
 window.addEventListener('click', () => {
@@ -7439,6 +7623,10 @@ function updateBoatRaceState(boat, dt) {
     // finish; the W/L path did the opposite.
     const advanceLeg = () => {
         const rs = boat.raceState;
+        // The place you were in as you got here, for the results splits. Read BEFORE the
+        // leg advances: a boat one leg further along outranks the whole fleet by
+        // definition, and the boat rounding this mark is about to become that boat.
+        const rankHere = boat.isPlayer ? fleetRank(boat) : 0;
         rs.leg++;
         if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: rs.leg - 1, time: state.race.timer });
         rs.isRounding = false;
@@ -7448,7 +7636,10 @@ function updateBoatRaceState(boat, dt) {
         rs._wrongRound = false;
         const split = state.race.timer - rs.legStartTime;
         rs.lastLegDuration = split;
-        if (rs.leg > 1) rs.legTimes.push(split);
+        if (rs.leg > 1) {
+            rs.legTimes.push(split);
+            if (boat.isPlayer) rs.legRanks.push(rankHere);
+        }
         rs.legSplitTimer = 5.0;
         rs.legStartTime = state.race.timer;
 
@@ -7603,6 +7794,10 @@ function updateBoatRaceState(boat, dt) {
                     if (legEntry.role === 'start') {
                         if (crossingDir === requiredDirection) {
                             if (!boat.raceState.ocs) {
+                                // Where the start put you, for the results splits — read
+                                // BEFORE the leg advances, or you outrank the whole fleet
+                                // by virtue of being the one boat already on leg 1.
+                                if (boat.isPlayer) boat.raceState.startRank = fleetRank(boat);
                                 boat.raceState.leg++;
                                 boat.raceState.roundSweep = 0;
                                 boat.raceState.roundWrong = 0;
@@ -8333,6 +8528,7 @@ function update(dt) {
     }
     updateParticles(dt);
     updateWindWaves(dt);
+    updateSurf(dt);
 }
 
 function createParticle(x, y, type, props = {}) { state.particles.push({ x, y, type, life: 1.0, ...props }); }
@@ -9663,6 +9859,294 @@ function drawGusts(ctx) {
     }
 }
 
+// ── SURF: the sea breaking on the shore it is running at ────────────────────
+//
+// Only the coast facing INTO the waves. race-view.md §9 is explicit that a shoreline must
+// never be outlined with an identical white ribbon — a halo all the way round says nothing
+// about the sea, and the whole point of surf is that it tells you which way the weather is
+// coming from before you look at anything else. The lee shore stays glassy.
+//
+// It cannot live in the island bake (§5: islands blit from a sprite, no per-frame
+// procedural detail) because WHICH shore is exposed depends on the wave direction, and on
+// Glacier Sound that varies across the map and oscillates. So it is its own pass, drawn
+// over the land the way the wakes and comets are.
+//
+// Strength reads the same field the comets do, so the two cannot disagree about the wind:
+// a shore under the 28-knot katabatic corner breaks hard while the sheltered side is bare.
+const SURF_MAX_ALPHA = 0.55;      // the same restraint the comet layer keeps: under the fleet
+const SURF_MIN_WIND = 4;          // knots — below this the sea does not break
+const SURF_REACH = 40;            // how far the crest runs in, world units — far
+                                  // enough that the travel is legible, not a twitch
+const SURF_STEP = 110;            // foam breaks at its own scale, not the coastline's —
+                                  // long enough that a crest is a WAVE and not a tick mark
+const SURF_BREAK = 0.88;          // where in the run-in the crest breaks: peak, then gone
+const SURF_FOAM_BUDGET = 14;      // foam blobs per frame — a long coast must not flood
+
+// Which way is OUT of this polygon? Winding is consistent around a ring, so this is one
+// test per shape, cached — not one per edge per frame.
+function surfOutwardSign(isl) {
+    if (isl._outSign) return isl._outSign;
+    // ⚠️ MEASURED, NOT DERIVED. The shoelace sign depends on winding AND on the y-axis
+    // direction, and I got it wrong twice reasoning about it — once drawing no surf at all,
+    // once drawing it on the lee shore. So: take a real edge, step off it by a hair along
+    // the candidate normal, and ASK the polygon whether that point is inside. No sign
+    // convention to get backwards.
+    const v = isl.vertices;
+    let sign = 1;
+    for (let i = 0, j = v.length - 1; i < v.length; j = i++) {
+        const a = v[j], b = v[i];
+        const ex = b.x - a.x, ey = b.y - a.y;
+        const len = Math.hypot(ex, ey);
+        if (len < 8) continue;                       // too short to trust the normal
+        const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        const nx = ey / len, ny = -ex / len;
+        const probe = Math.min(6, len * 0.25);
+        const outIn = pointInPoly(mx + nx * probe, my + ny * probe, v);
+        const inIn = pointInPoly(mx - nx * probe, my - ny * probe, v);
+        if (outIn === inIn) continue;                // ambiguous here — try another edge
+        sign = outIn ? -1 : 1;
+        break;
+    }
+    isl._outSign = sign;
+    return sign;
+}
+
+// ── FOAM LEFT BEHIND WHERE A CREST BREAKS ───────────────────────────────────
+//
+// ⚠️ THIS LIVES IN UPDATE, NOT IN drawSurf, and that is not a style preference. Spawning
+// particles from the render path is the bug this codebase has already been bitten by: the
+// spawn point is chosen near the camera, so the number of RNG draws depended on where you
+// were looking, and race 2 in a session diverged from race 1. Particles get their own
+// stream (fxRand) and are created from the simulation side. Breaking that rule here would
+// reintroduce exactly that failure.
+//
+// A crest's phase is stateless — derived from `state.time` — so "did this one break since
+// the last frame" is just: is p inside the slice the phase advanced through. No per-stretch
+// bookkeeping, and it cannot double-fire or miss.
+function updateSurf(dt) {
+    if (!state.course.islands || settings.surf === false || dt <= 0) return;
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewR = Math.max(canvas.width, canvas.height) * 0.7;
+    const viewR2 = viewR * viewR;
+    const t = state.time;
+    let budget = SURF_FOAM_BUDGET;          // per frame, so a long coastline cannot flood
+
+    for (const isl of state.course.islands) {
+        if (budget <= 0) break;
+        // NOT ON DRIFTING BERGS. A floe is a small object adrift on the water, not a coast:
+        // surf round every one of Glacier Sound's 112 floes is fussy detail that fights the
+        // fleet for attention, and they move, so it never settles. Fixed ice IS a shoreline
+        // and keeps its breakers.
+        if (isl.hidden || isl.isFloe || !isl.vertices || isl.vertices.length < 3) continue;
+        const dxi = isl.x - camX, dyi = isl.y - camY;
+        if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
+        const sgn = surfOutwardSign(isl), V = isl.vertices;
+
+        for (let i = 0, j = V.length - 1; i < V.length; j = i++) {
+            if (budget <= 0) break;
+            const a = V[j], b = V[i];
+            const ex = b.x - a.x, ey = b.y - a.y;
+            const len = Math.hypot(ex, ey);
+            if (len < 12) continue;
+            const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+            if ((mx - camX) ** 2 + (my - camY) ** 2 > viewR2) continue;
+
+            const nx = (ey / len) * sgn, ny = (-ex / len) * sgn;
+            const w = regionWindAt(mx, my);
+            if (w.speed < SURF_MIN_WIND) continue;
+            const face = -(nx * -Math.sin(w.direction) + ny * Math.cos(w.direction));
+            if (face <= 0.02) continue;
+            const power = face * face * Math.max(0, Math.min(1, (w.speed - SURF_MIN_WIND) / 12));
+            if (power < 0.25) continue;                 // a gentle shore does not throw foam
+
+            const hash = (u, w2) => { const h = Math.sin(u * 12.9898 + w2 * 78.233) * 43758.5453; return h - Math.floor(h); };
+            const n = Math.max(1, Math.round(len / SURF_STEP));
+            for (let k = 0; k < n && budget > 0; k++) {
+                const u0 = k / n;
+                const cx0 = a.x + ex * u0, cy0 = a.y + ey * u0;
+                const r1 = hash(cx0, cy0), r2 = hash(cy0, cx0);
+                if (r2 < 0.28) continue;
+                const speed = 0.85 + power * 0.75;
+                for (let c = 0; c < 2 && budget > 0; c++) {
+                    const p = (t * speed + r1 + c * 0.5) % 1;
+                    const step = speed * dt;
+                    // Did this crest cross the break within the last frame?
+                    if (p < SURF_BREAK || p >= SURF_BREAK + step) continue;
+                    // Foam lands ON the beach, scattered along the crest it came off.
+                    const along = 0.2 + fxRand() * 0.6;
+                    const bx = a.x + ex * (u0 + along / n) + nx * SURF_REACH * 0.12;
+                    const by = a.y + ey * (u0 + along / n) + ny * SURF_REACH * 0.12;
+                    const blobs = 1 + (power > 0.6 ? 1 : 0);
+                    for (let q = 0; q < blobs; q++) {
+                        const sp = (fxRand() - 0.5) * SURF_STEP * 0.5;
+                        createParticle(bx + (ex / len) * sp, by + (ey / len) * sp, 'wake',
+                                       { scale: 0.8 + fxRand() * 1.5 * power });
+                        budget--;
+                    }
+                }
+            }
+        }
+    }
+}
+
+function drawSurf(ctx) {
+    // Default ON: a saved settings blob from before this existed has no `surf` key, and
+    // testing it truthily made the layer silently absent for every existing player.
+    if (!state.course.islands || settings.surf === false) return;
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 120;
+    const viewR2 = viewR * viewR;
+    const t = state.time;
+
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const isl of state.course.islands) {
+        // NOT ON DRIFTING BERGS. A floe is a small object adrift on the water, not a coast:
+        // surf round every one of Glacier Sound's 112 floes is fussy detail that fights the
+        // fleet for attention, and they move, so it never settles. Fixed ice IS a shoreline
+        // and keeps its breakers.
+        if (isl.hidden || isl.isFloe || !isl.vertices || isl.vertices.length < 3) continue;
+        const dxi = isl.x - camX, dyi = isl.y - camY;
+        if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
+        const sgn = surfOutwardSign(isl);
+        const v = isl.vertices;
+
+        for (let i = 0, j = v.length - 1; i < v.length; j = i++) {
+            const a = v[j], b = v[i];
+            const ex = b.x - a.x, ey = b.y - a.y;
+            const len = Math.hypot(ex, ey);
+            if (len < 4) continue;
+            const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+            if ((mx - camX) ** 2 + (my - camY) ** 2 > viewR2) continue;
+
+            // Outward normal of this edge.
+            const nx = (ey / len) * sgn, ny = (-ex / len) * sgn;
+            // The mean field, not getWindAt: surf is a large-scale feature and this runs per
+            // edge — the puff loop and the lee recursion are not worth it here.
+            const w = regionWindAt(mx, my);
+            if (w.speed < SURF_MIN_WIND) continue;
+            // Waves run with the wind: toward (-sin, +cos).
+            const tx = -Math.sin(w.direction), ty = Math.cos(w.direction);
+            // Facing the seas means the outward normal opposes their travel.
+            const face = -(nx * tx + ny * ty);
+            if (face <= 0.02) continue;
+
+            // Squared, so the exposed shore is unmistakable and the shoulders fade out
+            // instead of stopping dead at a corner.
+            const power = face * face * Math.max(0, Math.min(1, (w.speed - SURF_MIN_WIND) / 12));
+            // ⚠️ SUBDIVIDED, not one dash per authored edge. Glacier Sound's coast is 88
+            // vertices over 13 km — edges average 500 units, so a dash per edge put ONE
+            // stroke on screen. Foam breaks at its own scale, not the coastline's.
+            //
+            // ⚠️ AND THE CRESTS HAVE TO TRAVEL. Foam that only pulses in place reads as a
+            // dashed BORDER however irregular you make it — the eye takes regular repetition
+            // for a line style. What says "wave" is the motion: a crest forms well offshore
+            // and RUNS IN, shoaling as it goes (shorter, wider, brighter) until it breaks on
+            // the beach and is gone. That is the standard top-down treatment — distance from
+            // shore drives the shape, and a direction vector animates it.
+            //
+            // Each stretch runs its own train of crests, offset by a position hash so
+            // neighbours never break in step. The hash is stable, so foam does not crawl,
+            // and it never touches an RNG stream.
+            const hash = (u, w2) => {
+                const h = Math.sin(u * 12.9898 + w2 * 78.233) * 43758.5453;
+                return h - Math.floor(h);
+            };
+            const n = Math.max(1, Math.round(len / SURF_STEP));
+            for (let k = 0; k < n; k++) {
+                const u0 = k / n;
+                const cx0 = a.x + ex * u0, cy0 = a.y + ey * u0;
+                const r1 = hash(cx0, cy0), r2 = hash(cy0, cx0);
+                // Bare stretches between the breaks. Without them the coast is a continuous
+                // train of crests, which is the dashed-border read again at a larger size.
+                if (r2 < 0.28) continue;
+
+                // TWO crests in the water at once, half a cycle apart, so a set is arriving
+                // while the last one is still washing up.
+                for (let c = 0; c < 2; c++) {
+                    // p: 0 just formed, well offshore — 1 broken on the beach.
+                    //
+                    // ⚠️ FAST. A crest crossing its run-in in three or four seconds does not
+                    // read as a wave — it reads as a slowly brightening mark. Real surf
+                    // arrives; the whole point of the motion is that you see it coming AND
+                    // it gets there. At ~1 cycle a second a crest covers its stand-off in
+                    // about the time it takes to say so, which is what sells it.
+                    const speed = 0.85 + power * 0.75;
+                    let p = (t * speed + r1 + c * 0.5) % 1;
+                    // ⚠️ POSITION AND SHAPE ARE SEPARATE THINGS, and conflating them made a
+                    // crest FADE IN WHERE IT SITS. Stand-off was `1 - p²`, which barely moves
+                    // for the first third of the run — so the wave brightened from nothing
+                    // while parked offshore and only then set off. A wave is moving before
+                    // you can see it; it should already be running in as it appears.
+                    //
+                    // So travel is very nearly linear (a touch of ease near the beach, where a
+                    // real crest does slow as it shoals), and `shoal` — which drives how
+                    // gathered and steep it LOOKS — keeps its own curve.
+                    const travel = Math.pow(1 - p, 1.15);
+                    const shoal = p * p;
+                    const off = SURF_REACH * travel * (0.9 + 0.5 * r2);
+                    // ⚠️ THE ARC OF A WAVE: appear, BUILD, crash, gone. A symmetric hump
+                    // peaks halfway through the run-in and is already fading by the time it
+                    // reaches the beach — which is backwards, and reads as a mark brightening
+                    // and dimming rather than as water arriving. A crest is faintest when it
+                    // forms offshore, strongest at the instant it breaks, and then simply is
+                    // not there any more.
+                    const life = p < SURF_BREAK
+                        ? Math.pow(p / SURF_BREAK, 0.75)                 // building as it comes in
+                        : Math.pow(1 - (p - SURF_BREAK) / (1 - SURF_BREAK), 1.6);   // crashed, gone
+                    const alpha = Math.min(SURF_MAX_ALPHA, power * life * 0.95);
+                    if (alpha <= 0.02) continue;
+
+                    // Long, with a clear gap to its neighbour: 55-85% of its stretch, so the
+                    // eye reads a wave with water either side rather than a dotted line. It
+                    // still gathers as it shoals — shorter and wider, the way a crest steepens.
+                    const span = (0.55 + 0.30 * r1 - 0.10 * shoal) / n;
+                    const s0 = u0, s1 = Math.min(1, u0 + span);
+                    const p0x = a.x + ex * s0 + nx * off, p0y = a.y + ey * s0 + ny * off;
+                    const p1x = a.x + ex * s1 + nx * off, p1y = a.y + ey * s1 + ny * off;
+                    // ── SHAPED LIKE THE WIND CRESTS ─────────────────────────────
+                    // Same vocabulary as drawWindWaves: a STITCHED polyline — jittered points
+                    // drawn as separate segments with some skipped — rather than one smooth
+                    // curve. A single clean arc is what kept reading as a drawn LINE; a
+                    // broken, slightly ragged crest reads as water. Plus the faint echo
+                    // trailing behind that the wind waves use to give a crest thickness
+                    // without widening the stroke.
+                    //
+                    // Bowed seaward across the crest, jittered from a position hash so the
+                    // raggedness is stable rather than boiling frame to frame.
+                    const bow = SURF_REACH * 0.35 * (0.4 + 0.6 * r1) * (1 - shoal * 0.5);
+                    const SEG = 5;
+                    ctx.strokeStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+                    const lw = 1.4 + power * 3.2 * (0.4 + shoal);
+                    ctx.lineWidth = lw;
+                    let px = 0, py = 0;
+                    for (let q = 0; q <= SEG; q++) {
+                        const f = q / SEG;
+                        const jit = (hash(cx0 + q * 7.7, cy0 - q * 3.1) - 0.5) * SURF_REACH * 0.18;
+                        const arch = Math.sin(f * Math.PI) * bow;
+                        const qx = p0x + (p1x - p0x) * f + nx * (arch + jit);
+                        const qy = p0y + (p1y - p0y) * f + ny * (arch + jit);
+                        if (q > 0 && hash(cx0 + q * 2.3, cy0 + q * 5.9) > 0.22) {
+                            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(qx, qy); ctx.stroke();
+                        }
+                        px = qx; py = qy;
+                    }
+                    if (r1 > 0.45 && alpha > 0.12) {
+                        const eo = SURF_REACH * 0.16 * (0.5 + shoal);
+                        ctx.strokeStyle = `rgba(255,255,255,${(alpha * 0.45).toFixed(3)})`;
+                        ctx.lineWidth = lw * 0.8;
+                        ctx.beginPath();
+                        ctx.moveTo(p0x + (p1x - p0x) * 0.2 + nx * eo, p0y + (p1y - p0y) * 0.2 + ny * eo);
+                        ctx.lineTo(p0x + (p1x - p0x) * 0.8 + nx * eo, p0y + (p1y - p0y) * 0.8 + ny * eo);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+    }
+    ctx.restore();
+}
+
 function drawIslandShadows(ctx) {
     if (!state.course.islands) return;
     const windDir = state.wind.direction;
@@ -10283,6 +10767,103 @@ function legacyBoatProgress(boat) {
     return legTargetsWindward(leg) ? (leg - 1) * L + relP : leg * L - relP;
 }
 
+// ── THE RESULTS SCREEN: "FINISH LINE" ───────────────────────────────────────
+// YOUR finish is the headline; the fleet is one restrained table underneath it. The
+// old screen gave all ten boats the same shouting treatment — ten skewed colour bars,
+// ten 24px italic names, a white points wedge on each — so the one row a player
+// actually looks for was the hardest thing on the page to find.
+//
+// COLOUR ONLY WHERE IT CARRIES A FACT: gold is you, the medal dot is the podium, red is
+// a penalty, green is the fleet's fastest turn of speed. Everything else is grey, which
+// is what lets a number be compared down a column.
+//
+// ⚠️ NO POINTS, NO STANDINGS, NO "NEXT RACE". All three are SERIES furniture and there is
+// no series yet — points in a one-off race are the position column doing arithmetic, and
+// a "next race" button has nowhere to go. They come back when a season does.
+//
+// ⚠️ THIS RUNS ~6 TIMES A SECOND while the overlay is open (updateLeaderboard hands over
+// to it), because boats are often still finishing behind you. So the rows are built once
+// per boat and patched; the hero and splits are rebuilt only when their signature changes.
+
+// 1ST, 2ND, 3RD, 4TH… with the teens all TH.
+function ordinalOf(n) {
+    const t = n % 100;
+    return n + ((t >= 11 && t <= 13) ? 'TH' : (['TH', 'ST', 'ND', 'RD'][n % 10] || 'TH'));
+}
+
+// Where a boat stands RIGHT NOW, in the leaderboard's own order. `lbRank` would be the
+// free answer, but it is written by the render loop — a headless race never runs one, and
+// the splits would then record "1ST" for everybody. Only ever called for the player, at a
+// mark rounding, so the O(n) scan costs nothing.
+//
+// ⚠️ IT DELIBERATELY DOES NOT CALL `getBoatProgress`. That function is not a pure read: it
+// stores a per-boat path-projection hint (`_dmcS`, and the leg it belongs to) so each
+// reading continues from the last. Calling it for the whole fleet from inside the update
+// pass — which is where a mark rounding happens — would advance those hints at a moment
+// nothing else does, and the AI reads progress. A UI nicety must not be able to move the
+// simulation. Distance to the next mark is already on every boat and reads the same order
+// within a leg.
+function fleetRank(boat) {
+    const A = boat.raceState;
+    let ahead = 1;
+    for (const o of state.boats) {
+        if (o === boat) continue;
+        const B = o.raceState;
+        if (B.finished !== A.finished) { if (B.finished) ahead++; continue; }
+        if (A.finished) { if (B.finishTime < A.finishTime) ahead++; continue; }
+        if (B.leg !== A.leg) { if (B.leg > A.leg) ahead++; continue; }
+        if ((B.nextWaypoint.dist || 0) < (A.nextWaypoint.dist || 0)) ahead++;
+    }
+    return ahead;
+}
+
+// --- The player's own record book -------------------------------------------
+// A single race has no standings to compare against, so the one honest superlative left
+// is your own history at this venue.
+//
+// ⚠️ KEYED BY VENUE **AND LEG COUNT**. A two-leg race and a four-leg race around the same
+// marks are not the same event, and a "best" that mixes them is a lie the first time
+// someone shortens the course.
+const RESULT_BESTS_KEY = 'regatta_bests';
+function loadVenueBests() {
+    try { return JSON.parse(localStorage.getItem(RESULT_BESTS_KEY)) || {}; } catch (e) { return {}; }
+}
+function venueBestKey(venue) { return `${venue || settings.venue}:${state.race.totalLegs}`; }
+
+// A stored best, normalised. ⚠️ The first version of this stored a bare number; a save
+// from then still reads, it just has no place to show on the race-day board.
+function bestForVenue(venue) {
+    const rec = loadVenueBests()[venueBestKey(venue)];
+    if (typeof rec === 'number') return { t: rec, pos: 0 };
+    return (rec && typeof rec.t === 'number') ? rec : null;
+}
+
+// Called once per race, from the first showResults() of that race — see `bestChecked`.
+// Returns { previous, isBest } where `previous` is the time to beat BEFORE this race.
+function recordVenueBest(seconds, pos) {
+    const bests = loadVenueBests();
+    const key = venueBestKey();
+    const prevRec = bests[key];
+    const previous = typeof prevRec === 'number' ? prevRec
+                   : (prevRec && typeof prevRec.t === 'number') ? prevRec.t : null;
+    const isBest = previous === null || seconds < previous;
+    if (isBest) {
+        // The PLACE goes in with the time: the race-day board's "your best" row is a
+        // memory of a race, and "2nd · 4:12" is a memory in a way that "4:12" is not.
+        bests[key] = { t: seconds, pos: pos || 0 };
+        // Same reasoning as saveSettings: a storage failure must not take the screen with
+        // it. Losing a personal best is a nuisance; throwing here would blank the results.
+        try { localStorage.setItem(RESULT_BESTS_KEY, JSON.stringify(bests)); } catch (e) { /* no store */ }
+    }
+    return { previous, isBest };
+}
+
+// Distances are recorded in world units. 5 units = 1 metre (VenueDoc.U_PER_M), and a race
+// is a couple of kilometres, so kilometres is the unit that reads without counting zeros.
+function unitsToKm(u) { return u / 5 / 1000; }
+
+const RES_MEDALS = ['#f2c14e', '#c8d3e3', '#c98a4b'];   // gold, silver, bronze
+
 function showResults() {
     if (!UI.resultsOverlay || !UI.resultsList) return;
 
@@ -10292,257 +10873,297 @@ function showResults() {
     UI.leaderboard.classList.add('hidden');
     Sound.updateMusic();
 
-    // Sort by finish order (or progress)
+    // Finish order: finishers by time, then DNF, then DNS, then anyone still racing.
     const sorted = [...state.boats].sort((a, b) => {
-        // Scoring helper: 0=Finished, 1=DNF, 2=DNS, 3=Racing
         const getScore = (boat) => {
             if (!boat.raceState.finished) return 3;
             if (boat.raceState.resultStatus === 'DNS') return 2;
             if (boat.raceState.resultStatus === 'DNF') return 1;
             return 0;
         };
-
-        const scoreA = getScore(a);
-        const scoreB = getScore(b);
-
+        const scoreA = getScore(a), scoreB = getScore(b);
         if (scoreA !== scoreB) return scoreA - scoreB;
-
-        // Tie-breaking within same category
-        if (scoreA === 0) return a.raceState.finishTime - b.raceState.finishTime; // Time asc
-        // For DNF/DNS, sort by progress (descending)
+        if (scoreA === 0) return a.raceState.finishTime - b.raceState.finishTime;
         return getBoatProgress(b) - getBoatProgress(a);
     });
 
     const leader = sorted[0];
+    const player = state.boats.find(b => b.isPlayer) || state.boats[0];
+    // The fastest single burst anyone managed — the one number in the table worth
+    // colouring, because "who was quickest" is not answered anywhere else on the page.
+    const fleetTop = Math.max(...state.boats.map(b => Math.max(...b.raceState.legTopSpeeds)));
 
-    // CSS Grid Layout Class
-    const gridClass = "grid grid-cols-[4rem_4rem_1fr_4.5rem_4.5rem_5rem_5rem_5rem_5rem_5rem] gap-4 items-center px-4";
+    renderResultsHeader(sorted);
+    renderResultsHero(sorted, player, leader);
+    renderResultsRows(sorted, leader, fleetTop);
+    renderResultsFootnote(leader);
+}
 
-    // Header
-    let header = UI.resultsList.querySelector('.res-header');
-    if (!header) {
-        // Only clear if we are initializing clean
-        if (UI.resultsList.children.length === 0 || !UI.resultsList.querySelector('.res-header')) {
-             UI.resultsList.innerHTML = '';
-        }
-        header = document.createElement('div');
-        header.className = `${gridClass} py-2 text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 res-header`;
-        header.innerHTML = `
-            <div class="text-center">Position</div>
-            <div></div>
-            <div>Sailor</div>
-            <div class="text-right">Time</div>
-            <div class="text-right">Delta</div>
-            <div class="text-right">Top Spd</div>
-            <div class="text-right">Average</div>
-            <div class="text-right">Distance</div>
-            <div class="text-center">Penalties</div>
-            <div class="text-center text-white">Points</div>
-        `;
-        UI.resultsList.appendChild(header);
+// Venue, breeze, fleet size — and whether the race is actually over, which it often is
+// not: the overlay opens when YOU finish, with boats still on the water behind you.
+function renderResultsHeader(sorted) {
+    const sub = document.getElementById('res-subtitle');
+    const status = document.getElementById('res-status');
+    const v = VENUES[settings.venue];
+    if (sub) {
+        sub.textContent = [
+            (v && v.name) || 'Open Water',
+            `${Math.round(state.wind.baseSpeed)} kt`,
+            `${state.boats.length} boats`
+        ].join(' · ').toUpperCase();
+    }
+    if (status) {
+        const racing = state.boats.filter(b => !b.raceState.finished).length;
+        const out = state.boats.filter(b => b.raceState.resultStatus).length;
+        status.textContent = racing ? `${racing} still racing`
+            : out ? `${state.boats.length - out} home · ${out} did not finish`
+            : 'All boats home';
+        status.style.color = racing ? '#f2c14e' : '#9fb2cc';
+    }
+}
+
+// You: portrait, the place you took, the gap that decided it, and your splits. Rebuilt
+// only when something in it changes — this function runs six times a second, and
+// re-writing the <img> every tick would flicker the portrait.
+function renderResultsHero(sorted, player, leader) {
+    const host = document.getElementById('res-hero');
+    if (!host) return;
+    const rs = player.raceState;
+    const pos = sorted.indexOf(player) + 1;
+    const ahead = pos > 1 ? sorted[pos - 2] : null;
+
+    // The venue best is decided ONCE per race, on the first render, and only by a boat
+    // that actually finished the course.
+    if (!state.race.bestChecked) {
+        state.race.bestChecked = true;
+        state.race.bestOutcome = (rs.finished && !rs.resultStatus)
+            ? recordVenueBest(rs.finishTime, pos) : null;
+    }
+    const best = state.race.bestOutcome;
+
+    const sig = [pos, rs.finished, rs.resultStatus, rs.finishTime.toFixed(2),
+                 rs.totalPenalties, rs.legTimes.length, best && best.isBest].join('|');
+    if (host.dataset.sig === sig) return;
+    host.dataset.sig = sig;
+
+    const dnf = !!rs.resultStatus;
+    const headline = dnf ? rs.resultStatus : ordinalOf(pos);
+    // The gap that decided your race — to the boat AHEAD, because that is the one you were
+    // sailing against. The winner gets the gap they won by instead.
+    let gap = '';
+    if (dnf) {
+        gap = rs.resultStatus === 'DNS' ? 'Never started' : 'Did not finish';
+    } else if (ahead && ahead.raceState.finished && !ahead.raceState.resultStatus) {
+        gap = `+${(rs.finishTime - ahead.raceState.finishTime).toFixed(2)}s behind ${ahead.name}`;
+    } else if (pos === 1) {
+        const next = sorted[1];
+        gap = (next && next.raceState.finished && !next.raceState.resultStatus)
+            ? `Won by ${(next.raceState.finishTime - rs.finishTime).toFixed(2)}s`
+            : 'First home';
+    } else {
+        gap = 'Racing continues behind you';
     }
 
-    const getLuma = (c) => {
-        let r=0, g=0, b=0;
-        if(c.startsWith('#')) {
-            const hex = c.substring(1);
-            if(hex.length===3) { r=parseInt(hex[0]+hex[0],16); g=parseInt(hex[1]+hex[1],16); b=parseInt(hex[2]+hex[2],16); }
-            else { r=parseInt(hex.substring(0,2),16); g=parseInt(hex.substring(2,4),16); b=parseInt(hex.substring(4,6),16); }
+    const chip = (text, color, border, bg) =>
+        `<span style="background:${bg};border:1px solid ${border};border-radius:999px;padding:4px 12px;`
+      + `font-size:11px;font-weight:800;letter-spacing:0.02em;color:${color};white-space:nowrap;">${text}</span>`;
+    const chips = [];
+    // ⚠️ A FIRST TIME AT A VENUE IS NOT A PERSONAL BEST — there was nothing to beat. The
+    // gold chip only fires against a time you actually had to beat; otherwise the screen
+    // congratulates every player on every new venue and the chip stops meaning anything.
+    if (best && best.isBest && best.previous !== null) {
+        chips.push(chip('VENUE BEST ✦ ' + formatTime(best.previous) + ' → ' + formatTime(rs.finishTime),
+                        '#f2c14e', 'rgba(242,193,78,0.4)', 'rgba(242,193,78,0.1)'));
+    } else if (best && !best.isBest && best.previous !== null) {
+        chips.push(chip('YOUR BEST HERE ' + formatTime(best.previous), '#9fb2cc', 'rgba(255,255,255,0.09)', '#141d31'));
+    }
+    chips.push(rs.totalPenalties > 0
+        ? chip(`${rs.totalPenalties} PENALT${rs.totalPenalties > 1 ? 'IES' : 'Y'}`, '#fca5a5', 'rgba(239,68,68,0.4)', 'rgba(239,68,68,0.12)')
+        : chip('CLEAN RACE — NO PENALTIES', '#34d399', 'rgba(255,255,255,0.09)', '#141d31'));
+
+    host.innerHTML = `
+        <div style="width:104px;height:124px;flex:none;filter:drop-shadow(0 6px 20px rgba(242,193,78,0.25));">
+            <img src="assets/images/competitors/${player.name.toLowerCase()}.png" alt="${escapeHTMLText(player.name)}"
+                 style="width:100%;height:100%;object-fit:contain;" draggable="false">
+        </div>
+        <div>
+            <div class="t-label" style="font-size:12px;letter-spacing:0.24em;color:#f2c14e;">${dnf ? 'You Did Not Finish' : 'You Finished'}</div>
+            <div class="flex items-baseline gap-3.5" style="margin-top:4px;">
+                <span class="t-display italic" style="font-size:${dnf ? 46 : 72}px;line-height:1;color:#f2c14e;">${headline}</span>
+                <div>
+                    <div class="t-display-8 t-display uppercase" style="font-size:19px;letter-spacing:0.02em;">${escapeHTMLText(player.name)}${dnf ? '' : ' · ' + formatTime(rs.finishTime)}</div>
+                    <div style="font-size:13px;color:#9fb2cc;margin-top:2px;">${gap}</div>
+                </div>
+            </div>
+            <div class="flex gap-2" style="margin-top:10px;">${chips.join('')}</div>
+        </div>`;
+
+    renderResultsSplits(player);
+}
+
+// START + one tile per leg: the time, where you stood when you got there, and which way
+// that had moved. A single race cannot tell you much, but it can tell you where you won
+// or lost it — which the old screen, showing only the total, never did.
+function renderResultsSplits(player) {
+    const host = document.getElementById('res-splits');
+    const label = document.getElementById('res-splits-label');
+    if (!host) return;
+    const rs = player.raceState;
+    const legs = rs.legTimes.length;
+    const started = rs.startTimeDisplay > 0;
+
+    const sig = `${started}|${legs}|${rs.legTimes.map(t => t.toFixed(2)).join(',')}`;
+    if (host.dataset.sig === sig) return;
+    host.dataset.sig = sig;
+
+    if (label) {
+        label.innerHTML = `Your Splits <span style="color:#4a5a72;letter-spacing:0.05em;">— `
+            + (started ? `start + ${legs} leg${legs === 1 ? '' : 's'}` : 'no clean start') + `</span>`;
+    }
+
+    const tiles = [];
+    const tile = (name, time, rank, prevRank) => {
+        let trend = '', trendColor = '#66748c';
+        if (rank && prevRank) {
+            const d = prevRank - rank;
+            if (d > 0) { trend = `▲${d}`; trendColor = '#34d399'; }
+            else if (d < 0) { trend = `▼${-d}`; trendColor = '#f87171'; }
+            else { trend = '–'; }
         }
-        return 0.299*r + 0.587*g + 0.114*b;
+        tiles.push(`
+        <div style="background:#141d31;border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:11px 12px;min-width:0;">
+            <div class="t-label" style="font-size:9px;letter-spacing:0.1em;color:#66748c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+            <div class="t-mono" style="font-size:19px;font-weight:600;margin-top:4px;">${time}</div>
+            <div class="flex items-baseline gap-1.5" style="margin-top:3px;">
+                <span style="font-size:12px;font-weight:800;color:#9fb2cc;">${rank ? ordinalOf(rank) : '—'}</span>
+                <span style="font-size:11px;font-weight:800;color:${trendColor};">${trend}</span>
+            </div>
+        </div>`);
     };
 
+    // Tenths, not thousandths. `formatSplitTime` reports 0:58.999 because a mid-race split
+    // banner is a stopwatch; a tile you read at a glance next to four others is a
+    // comparison, and three decimals of noise is what stops five of them lining up.
+    const splitTime = (t) => {
+        const m = Math.floor(t / 60);
+        const s = (t % 60).toFixed(1);
+        return `${m}:${s.padStart(4, '0')}`;
+    };
+
+    if (started) tile('Start', '+' + rs.startTimeDisplay.toFixed(1) + 's', rs.startRank || 0, 0);
+    let prev = rs.startRank || 0;
+    for (let i = 0; i < legs; i++) {
+        const rank = rs.legRanks[i] || 0;
+        tile('Leg ' + (i + 1), splitTime(rs.legTimes[i]), rank, prev);
+        if (rank) prev = rank;
+    }
+    if (!tiles.length) {
+        tiles.push(`<div style="font-size:13px;color:#66748c;">No splits — you never crossed the line.</div>`);
+    }
+    host.innerHTML = tiles.join('');
+}
+
+// The fleet. One row per boat, built once and patched — boats are still finishing behind
+// you while this is on screen.
+function renderResultsRows(sorted, leader, fleetTop) {
     if (!UI.resultRows) UI.resultRows = {};
-    const totalBoats = state.boats.length;
 
     sorted.forEach((boat, index) => {
-        let points = totalBoats - index;
-        if (boat.raceState.resultStatus === 'DNS' || boat.raceState.resultStatus === 'DNF') {
-            points = 0;
-        }
-
+        const rs = boat.raceState;
         let row = UI.resultRows[boat.id];
-        let isNew = false;
-
-        // The player is a character now and carries colours on the boat like everyone
-        // else, so there is no isPlayer branch to make here. This was the last of the
-        // `isPlayer ? settings.x : boat.colors.x` pairs, and it was CRASHING the
-        // leaderboard: settings.hullColor stopped existing with the custom-appearance
-        // settings, so getLuma(undefined) threw on .startsWith and took the whole race
-        // with it. Seed-dependent only because it needed a race to reach the results.
-        const hullColor = boat.colors.hull;
-        const spinColor = boat.colors.spinnaker;
-        const hullLuma = getLuma(hullColor);
-        const useSpin = hullLuma < 50 || hullLuma > 200;
-        const bgColor = useSpin ? spinColor : hullColor;
-
         if (!row) {
-            isNew = true;
             row = document.createElement('div');
             // `res-me` gives the player the same gold ring + gold type the leaderboard
             // uses, so "which one is me" is answered the same way on every screen.
-            row.className = "relative mb-3 h-16 w-full res-row" + (boat.isPlayer ? " res-me" : "");
-
-            // Background Bar
-            const bar = document.createElement('div');
-            bar.className = "res-bar absolute inset-0 right-12 overflow-hidden drop-shadow-lg transition-transform hover:scale-[1.01] origin-left";
-            // Set initial background
-            bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 50%)`;
-
-            // Gloss & Fade
-            const gloss = document.createElement('div');
-            gloss.className = "absolute inset-0 bg-gradient-to-b from-white/20 to-black/10 pointer-events-none";
-            bar.appendChild(gloss);
-            const fade = document.createElement('div');
-            fade.className = "absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-r from-transparent to-white/10 mix-blend-overlay";
-            bar.appendChild(fade);
-
-            row.appendChild(bar);
-
-            // Line
-            const line = document.createElement('div');
-            line.className = "absolute bottom-0 left-0 right-[25px] h-[1px] bg-white";
-            row.appendChild(line);
-
-            // Content
-            const content = document.createElement('div');
-            content.className = `relative z-10 ${gridClass} w-full h-full`;
-
-            // Rank Container
-            const rankDiv = document.createElement('div');
-            rankDiv.className = `res-rank flex justify-center items-center`;
-            content.appendChild(rankDiv);
-
-            // Image Container
-            const imgDiv = document.createElement('div');
-            imgDiv.className = `flex items-center justify-center`;
-            // EVERY row shows a face, the player's included — they are one of these
-            // characters now. The player used to get a white star here because there was
-            // no portrait to show; there is one, and the star was also the last thing on
-            // this row still saying "you" through a special case instead of through the
-            // row highlight below.
-            //
-            // ⚠️ Both branches used to end with `imgDiv.appendChild(imgBox)`, but the
-            // competitor branch put its <img> straight into imgDiv — so every rival row
-            // also carried a stray empty 48x48 box beside the portrait.
-            const imgBox = document.createElement('div');
-            imgBox.className = "w-12 h-12";
-            const img = document.createElement('img');
-            img.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
-            img.className = "w-full h-full rounded-md object-cover drop-shadow-md";
-            img.draggable = false;
-            img.alt = boat.name;
-            imgBox.appendChild(img);
-            imgDiv.appendChild(imgBox);
-            content.appendChild(imgDiv);
-
-            // Name
-            const nameDiv = document.createElement('div');
-            nameDiv.className = `res-name font-black text-2xl italic uppercase tracking-tighter truncate text-white drop-shadow-md`;
-            nameDiv.textContent = boat.name;
-            content.appendChild(nameDiv);
-
-            // Helper for stats
-            const createStat = (cls) => {
-                const d = document.createElement('div');
-                d.className = `${cls} font-sans font-bold text-sm text-white drop-shadow-sm text-right`;
-                return d;
-            };
-
-            content.appendChild(createStat('res-time'));
-            content.appendChild(createStat('res-delta')); // Has text-white/70 logic
-            content.appendChild(createStat('res-top'));
-            content.appendChild(createStat('res-avg'));
-            content.appendChild(createStat('res-dist'));
-
-            const penDiv = document.createElement('div');
-            penDiv.className = `res-pen text-center font-sans font-bold text-sm text-white/30`;
-            content.appendChild(penDiv);
-
-            row.appendChild(content);
-
-            // Points Box
-            const ptsBox = document.createElement('div');
-            ptsBox.className = "absolute right-0 top-0 bottom-0 w-24 bg-white transform -skew-x-12 origin-bottom-right flex items-center justify-center shadow-md z-20 border-l-4 border-white/50 rounded-br-2xl";
-            const ptsText = document.createElement('div');
-            ptsText.className = "res-points transform skew-x-12 text-slate-900 font-black text-3xl";
-            ptsBox.appendChild(ptsText);
-            row.appendChild(ptsBox);
-
+            row.className = 'res-row' + (boat.isPlayer ? ' res-me' : '');
+            row.style.marginBottom = '2px';
+            row.innerHTML = `
+                <div class="res-bar res-grid">
+                    <div class="flex items-center gap-2">
+                        <span class="res-medal" style="width:8px;height:8px;border-radius:50%;flex:none;"></span>
+                        <span class="res-pos t-display italic" style="font-size:16px;"></span>
+                    </div>
+                    <div style="width:32px;height:32px;">
+                        <img class="res-face" src="assets/images/competitors/${boat.name.toLowerCase()}.png"
+                             alt="${escapeHTMLText(boat.name)}" draggable="false"
+                             style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                    </div>
+                    <div class="flex items-baseline gap-2" style="min-width:0;">
+                        <span class="res-name t-display-8 t-display uppercase truncate" style="font-size:15px;letter-spacing:0.03em;"></span>
+                        <span class="res-you t-label" style="font-size:9px;letter-spacing:0.12em;color:#0c1322;background:#f2c14e;border-radius:4px;padding:2px 5px;display:none;">You</span>
+                    </div>
+                    <div class="res-time res-r t-mono" style="font-size:13px;"></div>
+                    <div class="res-delta res-r t-mono" style="font-size:12px;color:#7787a0;"></div>
+                    <div class="res-top res-r t-mono" style="font-size:12px;"></div>
+                    <div class="res-avg res-r t-mono" style="font-size:12px;color:#9fb2cc;"></div>
+                    <div class="res-dist res-r t-mono" style="font-size:12px;color:#9fb2cc;"></div>
+                    <div class="res-pen res-r t-mono" style="font-size:12px;"></div>
+                </div>`;
+            // The boat's own colour, as a ring on the portrait rather than a bar behind the
+            // row: ten filled colour bars is the wash the old screen drowned in, and the ring
+            // still answers "which hull is that out on the water".
+            row.querySelector('.res-face').style.boxShadow = `0 0 0 2px ${boat.colors.hull}`;
+            row.querySelector('.res-name').textContent = boat.name;
+            if (boat.isPlayer) row.querySelector('.res-you').style.display = '';
             UI.resultRows[boat.id] = row;
         }
 
-        // Update Content
-        const bar = row.querySelector('.res-bar');
-        if (bar) bar.style.background = `linear-gradient(to right, transparent 0%, ${bgColor} 50%)`;
+        const q = (c) => row.querySelector('.' + c);
+        const medal = q('res-medal');
+        medal.style.background = index < 3 ? RES_MEDALS[index] : 'transparent';
+        medal.style.boxShadow = index < 3 ? 'none' : 'inset 0 0 0 1px rgba(255,255,255,0.14)';
+        const posEl = q('res-pos');
+        posEl.textContent = index + 1;
+        posEl.style.color = index < 3 ? RES_MEDALS[index] : '#7787a0';
 
-        // Update Rank
-        const rankDiv = row.querySelector('.res-rank');
-        if (rankDiv) {
-            // Check if we need to update rank style
-            // Simple check: clear and rebuild if type changes (medal vs text)
-            // Or just clear and rebuild always (lightweight)
-            rankDiv.innerHTML = '';
-            if (index <= 2) {
-                 const colors = [
-                     "text-yellow-900 bg-yellow-400 border-yellow-200", // Gold
-                     "text-slate-900 bg-slate-300 border-slate-200",   // Silver
-                     "text-amber-900 bg-amber-600 border-amber-400"    // Bronze
-                 ];
-                 const medal = document.createElement('div');
-                 medal.className = `w-10 h-10 rounded-full flex items-center justify-center text-lg font-black border-2 shadow-md ${colors[index]}`;
-                 medal.textContent = index + 1;
-                 rankDiv.appendChild(medal);
-            } else {
-                 const txt = document.createElement('div');
-                 txt.className = `text-2xl font-black italic text-white/80`;
-                 txt.textContent = index + 1;
-                 rankDiv.appendChild(txt);
-            }
+        const timeEl = q('res-time');
+        if (rs.resultStatus) {
+            timeEl.textContent = rs.resultStatus;
+            timeEl.style.color = '#f87171';
+        } else if (!rs.finished) {
+            timeEl.textContent = 'racing';
+            timeEl.style.color = '#66748c';
+        } else {
+            timeEl.textContent = formatTime(rs.finishTime);
+            timeEl.style.color = '#eef3fb';
         }
 
-        // Stats
-        let finishTime = formatTime(boat.raceState.finishTime);
-        if (boat.raceState.resultStatus) {
-            finishTime = boat.raceState.resultStatus;
-        }
+        const clean = rs.finished && !rs.resultStatus;
+        const leaderClean = leader.raceState.finished && !leader.raceState.resultStatus;
+        q('res-delta').textContent = (index > 0 && clean && leaderClean)
+            ? '+' + (rs.finishTime - leader.raceState.finishTime).toFixed(2) : '—';
 
-        const delta = (index > 0 && leader.raceState.finished && boat.raceState.finished)
-            ? "+" + (boat.raceState.finishTime - leader.raceState.finishTime).toFixed(2)
-            : "-";
-        const topSpeed = Math.max(...boat.raceState.legTopSpeeds).toFixed(1);
+        const top = Math.max(...rs.legTopSpeeds);
+        const topEl = q('res-top');
+        topEl.textContent = top.toFixed(1);
+        // The fleet's best turn of speed, and only that one, gets the green.
+        topEl.style.color = (top >= fleetTop - 0.05) ? '#34d399' : '#9fb2cc';
 
-        const duration = boat.raceState.finished ? boat.raceState.finishTime : state.race.timer;
-        const totalSpeedSum = boat.raceState.legSpeedSums ? boat.raceState.legSpeedSums.reduce((a, b) => a + b, 0) : 0;
-        const avgSpeed = (duration > 0.1 ? (totalSpeedSum / duration) : 0).toFixed(1);
+        const duration = rs.finished ? rs.finishTime : state.race.timer;
+        const speedSum = rs.legSpeedSums ? rs.legSpeedSums.reduce((a, b) => a + b, 0) : 0;
+        q('res-avg').textContent = (duration > 0.1 ? speedSum / duration : 0).toFixed(1);
+        q('res-dist').textContent = unitsToKm(rs.legDistances.reduce((a, b) => a + b, 0)).toFixed(2);
 
-        const totalDist = Math.round(boat.raceState.legDistances.reduce((a, b) => a + b, 0));
-        const penalties = boat.raceState.totalPenalties;
+        const penEl = q('res-pen');
+        penEl.textContent = rs.totalPenalties > 0 ? rs.totalPenalties : '—';
+        penEl.style.color = rs.totalPenalties > 0 ? '#ef4444' : '#4a5a72';
 
-        const updateText = (cls, val) => { const el = row.querySelector('.'+cls); if(el) el.textContent = val; return el; };
-
-        const tEl = updateText('res-time', finishTime);
-        if (tEl) {
-             // Ensure it is always white (resetting any potential previous red state)
-             tEl.classList.remove('text-red-400');
-             tEl.classList.add('text-white');
-        }
-
-        const dEl = updateText('res-delta', delta);
-        if (dEl) dEl.className = `res-delta font-sans font-bold text-sm text-right ${delta==='-' ? 'text-white/30' : 'text-white/70'}`;
-
-        updateText('res-top', topSpeed);
-        updateText('res-avg', avgSpeed);
-        updateText('res-dist', totalDist);
-
-        const pEl = updateText('res-pen', penalties > 0 ? penalties : "-");
-        if (pEl) pEl.className = `res-pen text-center font-sans font-bold text-sm ${penalties > 0 ? 'text-white' : 'text-white/30'}`;
-
-        updateText('res-points', points);
-
-        // Ensure order by appending (moves element to end)
+        // Appending an element that is already in the list MOVES it, which is how the
+        // order stays right as boats finish behind you.
         UI.resultsList.appendChild(row);
     });
+}
+
+// The race's own one-line story, where a series would have put "next stop".
+function renderResultsFootnote(leader) {
+    const el = document.getElementById('res-footnote');
+    if (!el) return;
+    const rs = leader.raceState;
+    const v = VENUES[settings.venue];
+    el.innerHTML = (rs.finished && !rs.resultStatus)
+        ? `<span style="color:#eef3fb;font-weight:800;">${escapeHTMLText(leader.name)}</span> takes `
+          + `${(v && v.name) || 'the race'} in <span class="t-mono" style="color:#eef3fb;">${formatTime(rs.finishTime)}</span>`
+        : `${(v && v.name) || 'The race'} — still on the water`;
 }
 
 function updateLeaderboard() {
@@ -10981,6 +11602,8 @@ function draw() {
 
     drawDisturbedAir(ctx);
     drawIslands(ctx);
+    // Surf sits ON the shore, so it goes over the land and under the air layer.
+    drawSurf(ctx);
     drawParticles(ctx, 'air');
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
@@ -12077,7 +12700,10 @@ function drawIslands(ctx) {
             for (let i = 1; i < isl.vertices.length; i++) ctx.lineTo(isl.vertices[i].x, isl.vertices[i].y);
             ctx.closePath();
             const st = ISLAND_STYLES[isl.style] || ISLAND_STYLES.ice;
-            ctx.fillStyle = st.body;
+            // A style with a LAND_TEXTURES entry gets the tiling surface; everything
+            // else stays a flat fill. This is the FIXED-land path, so a floe never
+            // reaches it — bergs keep their faceted sprite and underwater shelf.
+            ctx.fillStyle = getLandPattern(ctx, isl.style, st.body) || st.body;
             ctx.fill('evenodd');
             ctx.strokeStyle = st.stroke;
             ctx.lineWidth = 6;
@@ -12725,6 +13351,16 @@ function resetGame() {
     UI.boatRows = {};
     if (UI.resultsList) UI.resultsList.innerHTML = '';
     UI.resultRows = {};
+    // The hero and the splits redraw only when their signature changes (they run six times
+    // a second), so a new race has to invalidate that signature — otherwise the next
+    // results page opens showing the last race's finish. The venue best is likewise
+    // decided once per race, on the first render.
+    for (const id of ['res-hero', 'res-splits']) {
+        const el = document.getElementById(id);
+        if (el) delete el.dataset.sig;
+    }
+    state.race.bestChecked = false;
+    state.race.bestOutcome = null;
 
     // Create Boats (Initialized at 0,0, positioned by repositionBoats)
     const pc = playerCharacter();
@@ -12796,6 +13432,12 @@ function resetGame() {
 }
 
 function restartRace() { resetGame(); togglePause(false); }
+
+// Same venue, same fleet, straight back onto the water — the results page's primary
+// action, since without a series there is no "next race" to send anyone to. It goes
+// through `startRace()` rather than setting the status itself, so the prestart, the audio
+// and the leaderboard all come up exactly as they do from the clubhouse.
+function rematchRace() { resetGame(); togglePause(false); startRace(); }
 
 // Batch Simulation Harness
 window.runBatchSim = function(count = 50) {

@@ -56,7 +56,9 @@ const pass = (m) => console.log(`  ok   ${m}`);
     await p.evaluate(() => { setupPreRaceOverlay(); selectCompetitor(PLAYER_CARD_KEY); });
     await p.waitForTimeout(400);
     await step('character', 'character picker', async () => {
-        await p.click('#player-pick-character');
+        // Your own badge, at the top of the fleet list, is the way in: the header chip and
+        // the scouting panel's button are both gone, so this is the only route to the picker.
+        await p.click('#pr-competitors-grid [data-name="__player__"] button');
         await p.waitForTimeout(700);
         const target = await p.evaluate(() => charactersAlphabetical().find(c => c.name !== settings.character).name);
         await p.click(`#character-grid [data-char="${target}"]`);

@@ -40,6 +40,20 @@ VENUES = {
 BASE_PROP_SHADING = "hard two-tone shading and no soft gradients; "
 BASE_PORTRAIT_SHADING = "soft controlled shading modelled inside large clean value masses; "
 
+# Same reasoning for a TILING TEXTURE, which contradicts the base on three counts. A tile
+# has no silhouette (it is a surface, not an object); a baked light direction repeats as
+# visible banding every tile width; and jewel-toned saturation is wrong for the thing every
+# boat, mark and prop is drawn ON TOP of. Faceted planes and minimal microtexture survive
+# unchanged — they are exactly the language a low-poly ground wants.
+BASE_TEXTURE_SUBS = (
+    ("crisp readable silhouette; ",
+     "no silhouette and no single subject — a continuous surface; "),
+    ("consistent directional lighting; ",
+     "flat even ambient light with no light direction; "),
+    ("vivid saturated jewel-toned color",
+     "restrained color held in a narrow value range"),
+)
+
 # Portrait-only negatives: reinforce the uniform, and the two failures both trial
 # generations shared.
 PORTRAIT_NEGATIVE = (
@@ -62,6 +76,12 @@ PORTRAIT_NEGATIVE = (
     "collar opening filled with jacket, head resting on top of the jacket, back lying on top "
     "of the jacket, floating shoulder strap, strap with no shoulder under it, "
     "jacket stopping at the near flank, "
+        # (9) bust crop, (10) opaque jacket, (11) two eyes — 38 of 68 rerolls in the first review
+        "legs, feet, paws, standing figure, full body, tail, tail curling into frame, lower body, "
+        "hips, ground, floor, cast shadow beneath, hood, hooded jacket, collar turned up, cowl, "
+        "body visible through the jacket, markings drawn over the jacket, fin overlapping the chest "
+        "panels, spine through the vest, four eyes, extra eyes, second pair of eyes, mismatched "
+        "fins, one fin and one arm, arm where a fin belongs, elbow, wrist, shoulder joint on a fish, "
     # (6) bounded silhouette and (7) accent drift — see the decision notes on the add-on
     "tall narrow figure, long thin silhouette, wide flat silhouette, stretched silhouette, "
     "bill pointing straight up, snout sticking straight out of the frame, limb extending past "
@@ -115,6 +135,39 @@ CLASS_ADDON = {
     "terrain": (
         "Strict top-down orthographic terrain tile, transparent background, crisp faceted "
         "edges, no baked water and no shoreline foam (the engine draws those)."
+    ),
+    # A tile fails in ways a sprite cannot, and every clause here is one of them:
+    #   - it is not an object, so "one clear subject, centred" is exactly wrong;
+    #   - the player sees the same square dozens of times, so any distinctive feature
+    #     becomes a countable stamp — repetition is read as a bug, not as texture;
+    #   - the four edges have to wrap, which no other class asks for;
+    #   - a light direction, a vignette or any across-frame gradient repeats as banding
+    #     on a fixed period, which is the single most obvious tiling tell;
+    #   - it is the surface everything else is drawn ON, so it must lose the contrast
+    #     fight with boats, marks and props on purpose.
+    "texture": (
+        "SEAMLESS TILING GROUND TEXTURE, not an object. Strict top-down orthographic view "
+        "of a flat surface, filling the whole square edge to edge, fully opaque, no "
+        "background and no transparency anywhere. There is no subject, no focal point and "
+        "no composition: the engine fills a whole landmass with this one square repeated "
+        "over and over, so ANY distinctive feature — one big rock, one dark hollow, one "
+        "bright patch — becomes a stamped-out repeat the player can count. Spread the "
+        "detail evenly at roughly the same density everywhere, and keep every feature "
+        "small: nothing may run more than about a third of the way across the frame. "
+        "IT MUST WRAP. The right edge continues the left edge exactly and the bottom edge "
+        "continues the top edge exactly, so anything crossing an edge reappears at the "
+        "matching point on the opposite side, unbroken and at the same size and angle. No "
+        "border, no frame, no vignette, no darkened or lightened edges, no corner shading, "
+        "no gradient across the frame, and no feature deliberately centred. "
+        "FLAT EVEN AMBIENT LIGHT, no light direction, no cast shadows, no highlights from a "
+        "sun — a baked light direction repeats as visible banding every tile. Relief comes "
+        "from the material's own tone changes alone. "
+        "QUIET AND LOW CONTRAST: this is the surface every boat, mark and prop is drawn on "
+        "top of, so it must lose the contrast fight with them. Hold the whole image inside "
+        "a narrow value range. "
+        "SCALE: the square covers {tileworld} world units and draws at about {tileworld}px "
+        "on screen, so the smallest feature that matters must be at least {minfeature}px "
+        "across in this image or it dissolves into grey noise when reduced."
     ),
     "illustration": (
         "Square aerial-oblique venue illustration, opaque, no text or lettering, no humans. "
@@ -188,13 +241,18 @@ CLASS_ADDON = {
         "others. It borrows no anatomy and no surface texture from any other kind of animal. A "
         "creature described with no limbs has none — nothing to raise or wave, and its pose is "
         "the set of the head and the curve of the body, with the jacket sitting around it. No "
+        "A FIN IS NOT AN ARM. Where the subject says this creature has pectoral fins, flippers or no limbs at all, it does not get arms: no shoulder joint, no elbow, no forearm, no wrist, no hand. A pectoral fin is one flat blade hinged flush to the side of the body, and a limbless animal has nothing at all in that position. Draw the limb the subject names and no other. No "
         "human hands, no human fingers, no thumbs and no palms. "
-        "PAIRED LIMBS MATCH. If this creature has two of the same limb, both are the same "
-        "length and the same shape. The three-quarter turn may foreshorten the far one, but "
-        "it still reads as the twin of the near one — never stunted, cropped or half-drawn. "
+        "PAIRED LIMBS MATCH, AND THIS IS CHECKED LAST. If this creature has two of the same limb "
+        "— two pectoral fins, two wings, two flippers, two forelegs — then before finishing, compare "
+        "them: same length, same width, same outline, same number of rays or feathers, same colour. "
+        "The three-quarter turn may foreshorten the far one, but it still reads as the twin of the "
+        "near one. Never give one side a fin and the other an arm, never draw one large and one "
+        "stunted, never leave one half-drawn when the pose shows both, and never grow a third. "
         "FORELIMBS ARE PRESENT BUT HELD CLOSE to the body — folded, resting forward, or one "
         "raised near the chin. They must NOT widen the silhouette or push the head smaller: "
         "the head occupies roughly half the total height. "
+        "THE PICTURE STOPS AT THE WAIST. It is a BUST: head, shoulders, chest and the top of the belly, cut off cleanly at the bottom edge of the frame just below the jacket's waist belt. NOTHING BELOW THAT IS DRAWN — no hips, no legs, no feet, no paws or claws resting on anything, no tail, no lower body curling round into shot, and no ground underneath. A fish, an eel or a snake is cut at the waist exactly as a mammal is; its tail is simply not in the picture. The only thing that may cross that cut is a limb already raised into the upper body, such as a fin held near the chin. "
         "FRAMING IS A RULE ABOUT WHERE THINGS SIT, NOT ABOUT SHAPE. Keep the head and face "
         "near the centre of the square and leave the four corners quiet, because one part of "
         "the interface later masks this image to a circle. That masking is done afterwards by "
@@ -239,6 +297,7 @@ CLASS_ADDON = {
         "visible buckle at the centre of that belt. NO leather, no "
         "moto or biker styling, no tactical or armoured plating, no hoodie, no jacket, no "
         "badges, patches or insignia, and no hats, sunglasses or accessories of any kind. "
+        "THE JACKET IS OPAQUE AND HIDES WHAT IS BEHIND IT. It is solid fabric over foam: the chest, belly and back it covers are NOT visible through it and NOT drawn on top of it. No spine, dorsal ridge, fin, scale pattern, stripe, fur or marking continues across the jacket, and no part of the animal floats in front of the chest panels. Above the collar you see the head and throat; below the hem you see nothing, because the picture ends there. "
         "THE JACKET IS WORN, AND IT WRAPS THE WHOLE TORSO. The body goes INSIDE it, entering "
         "from the top and leaving at the bottom. At the top, the throat and shoulders pass "
         "THROUGH the collar opening: the collar and the shoulder straps run BEHIND the head and "
@@ -300,6 +359,7 @@ CLASS_ADDON = {
         "slate or a navy work coat in shade (#23262E). Nothing in the image is neutral black. "
         "The outer contour is that blue-grey, confident and continuous at roughly "
         "4-8px on a 500px master; interior lines thinner and only where they clarify form. "
+        "THE CREATURE HAS EXACTLY TWO EYES, one either side of the midline — however many the real animal has and however wide or strange the head is. A hammerhead has two, at the ends of the hammer. A mantis shrimp has two, on its stalks. Never add a second pair. "
         "Eyes large and clear with one simple highlight. "
         "THE FIGURE FILLS THE FRAME — it reaches close to the top and bottom edges with only a "
         "small margin, and never floats small in the middle of a large empty square. No "
@@ -353,6 +413,18 @@ ARRANGEMENT_NEGATIVE = (
     "pattern, tiled pattern"
 )
 
+# Textures take these INSTEAD of ARRANGEMENT_NEGATIVE, which forbids "tiled pattern" and
+# "evenly spaced" — the two things a tile is required to be. A class-level swap, not an
+# `allowSymmetry` flag: the contradiction belongs to the class, not to any one asset.
+TEXTURE_NEGATIVE = (
+    ", seam, visible seam, tile edge, grid lines, border, frame, vignette, darkened "
+    "corners, cast shadow, drop shadow, sun glare, specular highlight, light direction, "
+    "gradient across the image, single focal feature, one large object, centred "
+    "composition, object on a background, subject, silhouette, transparent background, "
+    "alpha channel, checkerboard, horizon, sky, perspective, isometric, photographic "
+    "noise, film grain, footprints, tracks, wildlife, high contrast, deep black shadow"
+)
+
 # How to ask for the background, per generator. Some models cannot produce real
 # alpha and instead PAINT a transparency checkerboard into the pixels — asking
 # them harder yields more checkerboards, so ask for a flat key color and remove
@@ -388,13 +460,26 @@ BACKGROUNDS = {
 }
 
 
+def tile_world(asset, prof):
+    """World units one texture tile spans. The camera is 1:1, so this is also its px size."""
+    return asset.get("tileWorld", prof.get("tileWorld", 512))
+
+
 def build(asset, profiles, bg="transparent"):
     prof = profiles[asset["class"]]
     display = asset.get("world", prof.get("reduceTest", 64))
-    base = (BASE.replace(BASE_PROP_SHADING, BASE_PORTRAIT_SHADING)
-            if asset["class"] == "portrait" else BASE)
+    base = BASE
+    if asset["class"] == "portrait":
+        base = base.replace(BASE_PROP_SHADING, BASE_PORTRAIT_SHADING)
+    elif asset["class"] == "texture":
+        for old, new in BASE_TEXTURE_SUBS:
+            base = base.replace(old, new)
+    tile = tile_world(asset, prof)
+    # A feature has to survive the master -> screen reduction; 4 screen px is the floor
+    # the reduction ladder shows detail dying below.
+    minfeature = max(4, round(4 * prof["master"] / tile))
     parts = [base, CLASS_ADDON[asset["class"]].format(
-        display=display, bg=BACKGROUNDS[bg])]
+        display=display, bg=BACKGROUNDS[bg], tileworld=tile, minfeature=minfeature)]
 
     if asset.get("role"):
         parts.append(ROLE_ADDON[asset["role"]])
@@ -406,6 +491,29 @@ def build(asset, profiles, bg="transparent"):
             parts.append(
                 f"Palette is committed to {dominant}, with {accent} as the only accent. "
                 "Do not introduce hues outside that commitment."
+            )
+        elif asset["class"] == "texture":
+            # REWRITTEN when the second texture was declared. The first version had textures
+            # COMMIT to the venue's dominant hue, like a venue card. That was right for
+            # arctic-snow only by coincidence — snow IS ice blue-white. Granite is dark grey
+            # rock in the same venue, and committing would have asked for blue rock.
+            #
+            # A ground is a MATERIAL, so its colour comes from what it is made of, exactly
+            # as a prop's does. What a texture DOES still take from the venue is the accent
+            # EXCLUSION, which the prop clause has no reason to state: an accent belongs to
+            # the objects standing on the ground, and one spread across the whole landmass
+            # identifies nothing. (Re-running the arctic-snow prompt through this is safe —
+            # its subject already names its own colours in three places, so the old commit
+            # clause was never doing the work there.)
+            parts.append(
+                f"VENUE CONTEXT, NOT A COLOUR INSTRUCTION: this ground is seen against "
+                f"{dominant} and has to belong in that world — nothing neon or tropical. "
+                "But a ground is a MATERIAL, and the material's own true colour is always "
+                "right, even when it looks nothing like the venue's dominant hue: bare rock "
+                "is rock-coloured next to blue ice. Take the colour from the subject below, "
+                f"not from the venue. The venue's accents ({accent}) belong to the objects "
+                "placed on this ground and appear NOWHERE in it — an accent repeated across "
+                "the whole landmass stops identifying anything."
             )
         else:
             # A prop is an OBJECT IN a venue, not a picture OF one. Telling it to
@@ -432,9 +540,13 @@ def build(asset, profiles, bg="transparent"):
 def emit(asset, profiles, bg="transparent"):
     prof = profiles[asset["class"]]
     print("=" * 72)
+    bg_note = "n/a (full-bleed)" if asset["class"] == "texture" else bg
     print(f"{asset['key']}  [{asset['class']}/{asset.get('role', '-')}]  "
-          f"venue={asset.get('venue', '-')}  status={asset['status']}  bg={bg}")
+          f"venue={asset.get('venue', '-')}  status={asset['status']}  bg={bg_note}")
     line = f"master {prof['master']}x{prof['master']} {prof['background']}"
+    if asset["class"] == "texture":
+        t = tile_world(asset, prof)
+        line += f"   tile {t} world units ({prof['master'] / t:g}x supersample)"
     if "world" in asset:
         line += f"   world {asset['world']}px"
     if "anchor" in asset:          # elements carry no anchor; they are composed, not placed
@@ -446,6 +558,9 @@ def emit(asset, profiles, bg="transparent"):
     print(build(asset, profiles, bg))
     if asset["class"] == "portrait":
         neg = NEGATIVE.replace("perspective view, ", "") + PORTRAIT_NEGATIVE
+    elif asset["class"] == "texture":
+        # "ground plane" is a prop negative and the one thing a ground texture must be.
+        neg = NEGATIVE.replace("ground plane, ", "") + TEXTURE_NEGATIVE
     else:
         neg = NEGATIVE if asset.get("allowSymmetry") else NEGATIVE + ARRANGEMENT_NEGATIVE
     print("\nNEGATIVE: " + neg)
@@ -456,7 +571,13 @@ def emit(asset, profiles, bg="transparent"):
         print(f"\n[operator note] REWORK {asset['rework']['priority']} — "
               f"{asset['rework']['why']}. The prompt above is a fresh generation, not an edit.")
     key = asset["key"]
-    if bg == "transparent":
+    if asset["class"] == "texture":
+        # No background to key out — the tile IS the whole image, so --bg never applies.
+        print(f"\n-> save master as regatta/art/inbox/{key}.png, "
+              f"then: python3 regatta/art/ingest.py {key}"
+              f"\n   CHECK THE WRAP FIRST: roll the image by half its width and half its "
+              f"height and look at the two seams that land in the middle.\n")
+    elif bg == "transparent":
         print(f"\n-> save master as regatta/art/inbox/{key}.png, "
               f"then: python3 regatta/art/ingest.py {key}\n")
     else:

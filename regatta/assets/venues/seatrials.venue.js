@@ -114,7 +114,7 @@ window.VENUE_DOC["seatrials"] = {
         "finish": true
       }
     ],
-    "cutoff": 600,
+    "cutoff": 360,
     "startTime": 20
   },
   "wind": {

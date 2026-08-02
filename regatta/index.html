@@ -85,10 +85,146 @@
            and the ring reads at a glance without changing the row's weight. */
         .lb-me { box-shadow: inset 0 0 0 2px #fbbf24; background: rgba(251,191,36,0.10); }
         /* Same "this row is you" language on the results page. The ring goes on the
-           coloured bar rather than the row, because the row also contains the points
-           box, which is its own white shape and should not be ringed. */
+           row's surface (.res-bar) rather than the row wrapper, so the row can carry
+           spacing without the ring inheriting it. */
         .res-me .res-bar { box-shadow: inset 0 0 0 2px #fbbf24; }
         .res-me .res-name { color: #fcd34d; }
+
+        /* ── Results screen ("Finish Line") ─────────────────────────────────
+           ONE definition of the column track. The header row and every result row
+           read from it, so a column cannot drift out of alignment with its label —
+           which is exactly what happens when the template is pasted in two places. */
+        .res-grid {
+            display: grid;
+            grid-template-columns: 58px 44px minmax(120px, 1fr) 96px 92px 92px 84px 92px 64px;
+            gap: 12px;
+            align-items: center;
+        }
+        .res-r { text-align: right; }
+        .res-row .res-bar {
+            border-radius: 10px;
+            padding: 9px 14px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid transparent;
+            transition: background-color 0.15s;
+        }
+        .res-row:hover .res-bar { background: rgba(255,255,255,0.05); }
+        .res-me .res-bar { background: rgba(242,193,78,0.07); }
+        .res-btn {
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 12px;
+            padding: 15px 28px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #c4d2e6;
+            cursor: pointer;
+            background: transparent;
+            transition: background-color 0.15s, color 0.15s;
+        }
+        .res-btn:hover { background: rgba(255,255,255,0.06); color: #eef3fb; }
+        .res-btn-primary {
+            background: #2f6bff;
+            border-color: transparent;
+            color: #fff;
+            font-weight: 900;
+            font-style: italic;
+            font-size: 16px;
+            padding: 15px 36px;
+            box-shadow: 0 6px 24px rgba(47,107,255,0.4);
+        }
+        .res-btn-primary:hover { background: #4a80ff; color: #fff; }
+
+        /* ── Race-day board (pre-race) ──────────────────────────────────────
+           Two grids of square art: the venue strip and the fleet. Both say
+           "selected" the same way the rest of the game does — a ring, not a
+           fill, so the artwork keeps its own colour. */
+        .pr-venue-tile { opacity: 0.78; transition: opacity 0.15s; }
+        .pr-venue-tile:hover { opacity: 1; }
+        .pr-venue-shot {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        .pr-venue-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* THE NAME ON THE ART, over a scrim that starts transparent — the picture is what
+           you are choosing between, so the label must not take a bite out of it. Two lines
+           are allowed ("Gatorgrass Bayou" does not fit one at this size) and the scrim is
+           tall enough to carry both. */
+        .pr-venue-name {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            padding: 22px 9px 7px;
+            font-size: 12.5px;
+            letter-spacing: 0.03em;
+            line-height: 1.15;
+            color: #e8eefb;
+            text-align: left;
+            text-shadow: 0 1px 5px rgba(0,0,0,0.9);
+            background: linear-gradient(to top, rgba(4,10,20,0.94), rgba(4,10,20,0.6) 46%, rgba(4,10,20,0));
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+        }
+        .pr-venue-tile.sel { opacity: 1; }
+        .pr-venue-tile.sel .pr-venue-shot { box-shadow: 0 0 0 2px #5aa7ff, 0 6px 18px rgba(90,167,255,0.35); }
+        .pr-venue-tile.sel .pr-venue-name { color: #ffffff; }
+
+        /* The hero briefing. Sized here rather than inline because a short window has to
+           restyle it — and the alternative, measuring the hero in JS, reads a height flex
+           has not settled on the first paint. */
+        .pr-venue-title { margin-top: 16px; font-size: 48px; line-height: 0.98; }
+        .pr-venue-title.long { font-size: 38px; }
+        .pr-blurb {
+            margin-top: 10px; font-size: 14px; line-height: 1.5; color: #d5ecf5; max-width: 460px;
+            flex: 0 1 auto; min-height: 0;
+            display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+        }
+        .pr-row { border-radius: 8px; padding: 7px 12px; }
+        /* ⚠️ A 800px-tall window gives the hero about 300px, and the briefing wants 365 —
+           at which point the blurb, being the only thing allowed to shrink, vanished
+           entirely. Step the type down instead: a smaller name and two lines of prose
+           beat a full-size name and none. */
+        @media (max-height: 900px) {
+            .pr-venue-title { margin-top: 10px; font-size: 34px; }
+            .pr-venue-title.long { font-size: 29px; }
+            .pr-blurb { margin-top: 8px; font-size: 13px; -webkit-line-clamp: 2; }
+            .pr-row { padding: 5px 12px; }
+        }
+        /* The fleet list. The badge brings its own border and gradient, so an item adds only
+           the ring: gold for you, white when its scouting notes are open. */
+        .pr-fleet-item { border-radius: 12px; transition: box-shadow 0.15s; }
+        .pr-fleet-item:hover { box-shadow: 0 0 0 2px rgba(255,255,255,0.22); }
+        .pr-fleet-item.me { box-shadow: 0 0 0 2px #f2c14e; }
+        .pr-fleet-item.sel { box-shadow: 0 0 0 2px #eef3fb; }
+        .pr-fleet-item.me.sel { box-shadow: 0 0 0 2px #f2c14e; }
+        .pr-fleet-notes { padding: 12px 14px 14px; background: #141d31; border-radius: 0 0 12px 12px; }
+        /* The badge inside an item squares off its bottom corners when notes are open, so
+           the two read as one card rather than a card with a tray under it. */
+        .pr-fleet-item.sel > button > div { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        /* ⚠️ The chip carries the CHARACTER'S GRADIENT now, so hover must not repaint the
+           background — that would wipe the identity it exists to show. Ring it instead. */
+        /* ⚠️ CHANGING CHARACTER LIVES ON YOUR OWN BADGE. The header chip that used to carry
+           it is gone, so the badge at the top of the fleet is the only way in — this pill
+           is what says so. It is deliberately unlike the name beside it: small,
+           letterspaced and blue, so the identity and the action do not read alike. */
+        .pr-change-pill {
+            font-size: 10.5px;
+            letter-spacing: 0.18em;
+            color: #a8cbff;
+            border: 1px solid rgba(168,203,255,0.45);
+            border-radius: 999px;
+            padding: 3px 10px;
+            margin-left: 10px;
+            background: rgba(6,14,26,0.35);
+            white-space: nowrap;
+            transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .pr-fleet-item.me:hover .pr-change-pill { background: #2f6bff; border-color: #2f6bff; color: #fff; }
         @keyframes highlight-flash {
             0% { background-color: rgba(234, 179, 8, 0.45); }
             100% { background-color: transparent; }
@@ -368,84 +504,131 @@
              bled through — 5% of a bright Arctic ice field is very visible behind
              dark chrome. backdrop-blur dropped with it: it does nothing behind an
              opaque layer and was blurring the whole viewport every frame. -->
-        <div id="pre-race-overlay" class="absolute inset-0 bg-slate-900 z-50 flex flex-col pointer-events-auto overflow-hidden">
-            <!-- Header -->
-            <div class="flex items-center gap-6 p-8 pb-4 border-b border-white/10 bg-slate-900/50">
-                <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-24 w-auto drop-shadow-2xl burgee-flutter">
-                <div>
-                    <h1 class="t-wordmark text-5xl font-black text-white uppercase tracking-tighter italic">Salty Critter <span class="text-blue-400">Yacht Club</span></h1>
-                    <div class="text-slate-400 mt-1" style="font-family:'IBM Plex Mono',monospace; font-size:13px; letter-spacing:3px;">FAIR WINDS • SALTY RIVALS</div>
+        <!-- Pre-Race Overlay — "Race Day" (design 2a).
+             THE VENUE ART IS SQUARE (1254x1254) and is shown 1:1, never cropped: the art
+             panel takes the hero's full height and matches its width to it, and the
+             briefing fills whatever the wide side leaves. That is the whole idea of 2a —
+             one square master per venue, no second crop to maintain.
+
+             ⚠️ NOTHING ON THIS SCREEN SCROLLS. It is a race-day board, not a document: the
+             header, the hero, the venue strip, the fleet and the start bar are all sized
+             from the viewport, and the hero is the piece that gives (min 220, max 520) so
+             the rest keeps its shape. The one exception is picking a character, which is
+             100 bands and has its own scrolling sheet.
+
+             Palette is the results screen's (#0c1322 page, #141d31 panels, #101a2e bar), so
+             the two ends of a race now look like the same game. -->
+        <div id="pre-race-overlay" class="absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-hidden"
+             style="background:#0c1322; color:#eef3fb;">
+
+            <!-- The club, and you. The burgee is the club's own; the chip on the right is
+                 the character you are about to sail, and clicking it goes and changes them. -->
+            <div class="flex items-center justify-between gap-6 shrink-0"
+                 style="padding:14px 32px; border-bottom:1px solid rgba(255,255,255,0.07);">
+                <div class="flex items-center gap-4">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
+                    <div>
+                        <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:31px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
+                        <div class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">FAIR WINDS &middot; SALTY RIVALS</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex-1 grid grid-cols-12 gap-8 p-8 overflow-hidden">
-                <!-- Left Column: Venues + Fleet -->
-                <div class="col-span-8 flex flex-col gap-6 h-full overflow-y-auto pr-2">
+            <div class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) 470px; padding:18px 32px 0; min-height:0;">
 
-                    <!-- Venue -->
-                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl shrink-0">
-                        <h2 class="t-display italic text-white uppercase mb-4 flex items-center gap-2" style="font-size:24px;">
-                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 inline-block"></span>
-                            Venue
-                        </h2>
-                        <div id="venue-picker" class="grid grid-cols-4 gap-3"></div>
+                <div class="flex flex-col gap-3" style="min-width:0; min-height:0;">
+                    <!-- Hero: the briefing on the wide side, the square art on the short one -->
+                    <div id="venue-hero" class="flex overflow-hidden shrink-0"
+                         style="border-radius:16px; flex:1 1 auto; min-height:220px;">
+                        <div id="venue-detail" class="flex flex-col" style="flex:1 1 auto; min-width:0; padding:24px 28px;"></div>
+                        <div id="venue-art" class="relative shrink-0" style="height:100%; aspect-ratio:1;"></div>
                     </div>
-
-
-                    <!-- The Fleet -->
-                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
-                        <h2 class="t-display italic text-white uppercase mb-4 flex items-center gap-2" style="font-size:24px;">
-                            <span class="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span>
-                            The Fleet
-                        </h2>
-                        <div class="grid grid-cols-5 gap-3" id="pr-competitors-grid">
-                            <!-- Competitor Cards Injected Here -->
-                        </div>
-                    </div>
+                    <!-- Same square art again, downscaled. No second crop to maintain.
+                         Two rows of five rather than one row of ten: at this size the tile
+                         is a picture of somewhere rather than a swatch, and the name sits
+                         ON TOP where it reads as a heading for the picture under it. -->
+                    <div id="venue-picker" class="grid shrink-0" style="grid-template-columns:repeat(5,minmax(0,150px)); gap:10px; justify-content:space-between;"></div>
                 </div>
 
-                <!-- Right Column: Venue Briefing + Competitor Sidebar -->
-                <div class="col-span-4 h-full overflow-y-auto pr-1 flex flex-col gap-6">
-                    <div class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
-                        <div class="t-label mb-3">Venue Briefing</div>
-                        <div id="venue-detail"></div>
+                <div class="flex flex-col gap-3" style="min-height:0;">
+                    <div class="flex items-baseline justify-between shrink-0">
+                        <div class="t-display italic uppercase" style="font-size:23px; letter-spacing:0.04em;"><span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> The Fleet</div>
+                        <!-- Set in the same face as "4 legs" in the start bar, so the two
+                             counts on this screen match each other rather than one being an
+                             instrument readout and the other a label. -->
+                        <div id="pr-fleet-count" style="font-size:15px; font-weight:800; color:#9fb2cc; letter-spacing:0.02em;"></div>
                     </div>
-                    <div id="competitor-detail" class="hidden bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl"></div>
+                    <!-- THE FLEET AS A LIST OF BADGES — the same identity band the character
+                         picker and the results screen use, boat preview and all. Ten of them
+                         do not fit a column, and that is fine: this one panel scrolls, and
+                         clicking a badge opens that boat's scouting notes underneath it. -->
+                    <div id="pr-competitors-grid" class="flex flex-col" style="gap:8px; flex:1 1 auto; min-height:0; overflow-y:auto;"></div>
                 </div>
             </div>
 
-            <!-- Footer -->
-            <div class="p-8 pt-4 flex justify-center bg-gradient-to-t from-slate-900 via-slate-900 to-transparent flex-col items-center">
-                <button id="start-race-btn" class="t-display italic group relative px-12 py-6 bg-blue-600 hover:bg-blue-500 text-white uppercase rounded-full shadow-[0_0_40px_rgba(37,99,235,0.6)] hover:shadow-[0_0_60px_rgba(37,99,235,0.8)] transition-all transform hover:scale-105 active:scale-95 border-2 border-white/20" style="font-size:27px; letter-spacing:1px;">
-                    <span class="relative z-10 flex items-center gap-4">
-                        Start Race
-                        <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
-                    </span>
-                </button>
+            <div class="flex items-center justify-between gap-6 shrink-0"
+                 style="margin:16px 32px 20px; background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:13px 13px 13px 24px;">
+                <div id="pr-brief" class="flex items-center" style="gap:26px;"></div>
+                <button id="start-race-btn" class="res-btn res-btn-primary shrink-0" style="font-size:19px; padding:16px 42px;">Start Race &rarr;</button>
             </div>
         </div>
 
-        <!-- Results Overlay -->
-        <!-- Same reasoning as the pre-race overlay: a full-screen results page is
+        <!-- Results Overlay — "Finish Line" (design 3a).
+             YOUR finish is the headline and the fleet is one restrained table underneath
+             it. Colour appears only where it carries a fact: gold is you, the medal dot is
+             the podium, red is a penalty, everything else is grey so the numbers read
+             across a row.
+
+             ⚠️ NO POINTS COLUMN, NO STANDINGS, NO "NEXT RACE". Every one of those is a
+             SERIES fact and there is no series yet — points in a one-off race are the
+             position column doing arithmetic. They come back when a season does.
+
+             Same reasoning as the pre-race overlay: a full-screen results page is
              not a scrim, and /95 let the ice through behind it. -->
-        <div id="results-overlay" class="hidden absolute inset-0 bg-slate-900 z-50 flex flex-col items-center justify-start pt-24 p-8 pointer-events-auto overflow-y-auto">
-             <h1 class="text-6xl font-black text-white italic tracking-tighter uppercase mb-2 drop-shadow-2xl text-center shrink-0">Race Results</h1>
-             <div class="h-1 w-32 bg-gradient-to-r from-transparent via-blue-500 to-transparent mb-8 shrink-0"></div>
+        <div id="results-overlay" class="hidden absolute inset-0 z-50 pointer-events-auto overflow-y-auto"
+             style="background:#0c1322; color:#eef3fb;">
+          <div class="mx-auto w-full flex flex-col" style="max-width:1440px;">
 
-             <div class="w-full max-w-5xl bg-slate-800/50 border border-slate-700/50 rounded-3xl shadow-2xl p-6 overflow-hidden shrink-0">
-                  <div id="results-list" class="flex flex-col gap-4">
-                       <!-- Result Items will be injected here -->
-                  </div>
-             </div>
+            <div class="flex items-center justify-between gap-4" style="padding:22px 36px; border-bottom:1px solid rgba(255,255,255,0.07);">
+                <div class="flex items-center gap-4">
+                    <!-- Start pennant, in the one accent red the page allows itself. -->
+                    <div style="width:0;height:0;border-top:14px solid transparent;border-bottom:14px solid transparent;border-left:24px solid #ec3013;"></div>
+                    <div>
+                        <div class="t-display italic uppercase" style="font-size:27px; line-height:1;">Race Results</div>
+                        <div id="res-subtitle" class="t-label" style="font-size:10px; letter-spacing:0.28em; color:#7787a0; margin-top:6px;"></div>
+                    </div>
+                </div>
+                <div id="res-status" class="t-mono" style="background:#141d31; border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:9px 15px; font-size:12.5px; color:#9fb2cc; white-space:nowrap;"></div>
+            </div>
 
-             <div class="mt-8 flex gap-4">
-                  <button id="results-restart-button" class="bg-blue-600 hover:bg-blue-500 text-white font-black text-xl py-4 px-12 rounded-full transition-transform hover:scale-105 shadow-lg flex items-center gap-3 uppercase tracking-widest border border-blue-400/30">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Start New Race
-                  </button>
-             </div>
+            <!-- You, then your own race: the splits are the only place a single race can
+                 tell you HOW it went rather than just where it ended. -->
+            <div class="flex items-center gap-7" style="padding:26px 36px; border-bottom:1px solid rgba(255,255,255,0.07); background:radial-gradient(700px 200px at 30% 0%, rgba(242,193,78,0.09), transparent);">
+                <div id="res-hero" class="flex items-center gap-5" style="flex:none;"></div>
+                <div style="width:1px; align-self:stretch; background:rgba(255,255,255,0.08);"></div>
+                <div style="flex:1; min-width:0;">
+                    <div id="res-splits-label" class="t-label" style="font-size:10px; letter-spacing:0.16em; color:#66748c; margin-bottom:8px;">Your Splits</div>
+                    <div id="res-splits" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:8px;"></div>
+                </div>
+            </div>
+
+            <div style="padding:20px 36px 8px;">
+                <div class="res-grid t-label" style="padding:0 14px 10px; font-size:10px; letter-spacing:0.14em; color:#66748c;">
+                    <div>Pos</div><div></div><div>Skipper</div>
+                    <div class="res-r">Time</div><div class="res-r">Delta</div><div class="res-r">Top Spd</div>
+                    <div class="res-r">Avg</div><div class="res-r">Dist km</div><div class="res-r">Pen</div>
+                </div>
+                <div id="results-list"></div>
+            </div>
+
+            <div class="flex items-center justify-between gap-6" style="margin:18px 36px 32px; background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px 16px 16px 24px;">
+                <div id="res-footnote" style="font-size:13px; font-weight:700; color:#9fb2cc;"></div>
+                <div class="flex gap-2.5 shrink-0">
+                    <button id="results-restart-button" class="res-btn">Back to Clubhouse</button>
+                    <button id="results-rematch-button" class="res-btn res-btn-primary">Rematch &#8635;</button>
+                </div>
+            </div>
+          </div>
         </div>
 
         <!-- Top Center Timer -->

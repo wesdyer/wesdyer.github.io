@@ -11,7 +11,9 @@ const { chromium } = require('playwright');
     document.getElementById('pr-competitors-grid').scrollIntoView({block:'center'}); });
   await p.waitForTimeout(600);
   await p.screenshot({ path: __dirname + '/_pk_fleet.png' });
-  await p.evaluate(() => document.getElementById('competitor-detail').scrollIntoView({block:'center'}));
+  // The separate scouting panel is gone — the notes open inside the fleet list now.
+  await p.evaluate(() => { const n = document.querySelector('.pr-fleet-notes');
+    if (n) n.scrollIntoView({block:'center'}); });
   await p.waitForTimeout(400);
   await p.screenshot({ path: __dirname + '/_pk_detail.png' });
   await p.evaluate(() => openCharacterPicker());
