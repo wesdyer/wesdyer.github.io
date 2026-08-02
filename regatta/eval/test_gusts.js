@@ -97,6 +97,46 @@ const check = (name, cond, detail) => {
         for (let i = 0; i < 300; i++) updateGusts(1 / 60);
         o.zeroSilent = state.gusts.every(g => g.src === 'e') && state.gusts.length === 4;
 
+        // ── 2b. A PUFF IS STEERED BY THE BREEZE IT IS IN ────────────────────
+        // Two wind regions 90 degrees apart, and a source sitting squarely in the second.
+        // Its cells must set off along the wind THERE, not along the venue's representative
+        // wind — which is what they used to do, so a source drawn in a katabatic tongue
+        // emitted puffs that crossed it and left. Glacier Sound measured 3 cells alive and
+        // 0.04 of them inside the arena before this.
+        const wsave = JSON.parse(JSON.stringify(d.wind));
+        const RR = b.radius;
+        d.wind = { regions: [
+            { id: 'w-main', poly: box(b.x, b.y, RR * 0.95), falloff: 150, direction: 0, speed: 12 },
+            { id: 'w-corner', poly: box(b.x + RR * 0.45, b.y, RR * 0.3), falloff: 60, direction: Math.PI / 2, speed: 12 }
+        ] };
+        race([{ id: 'corner', poly: box(b.x + RR * 0.45, b.y, RR * 0.12), falloff: 100, count: 6 }], 777);
+        const localDir = regionWindAt(b.x + RR * 0.45, b.y).direction;
+        const globalDir = state.wind.direction;
+        o.dirsDiffer = Math.abs(((localDir - globalDir + Math.PI * 3) % (Math.PI * 2)) - Math.PI) > 0.6;
+        const start = state.gusts.map(g => ({ g, x: g.x, y: g.y }));
+        for (let i = 0; i < 240; i++) updateGusts(1 / 60);
+        // WHICH WIND DID IT ACTUALLY FOLLOW? Compare the bearing the cells travelled on to
+        // the two candidate winds and take the nearer. Threshold-free, and it states the
+        // claim exactly. (A component test is wrong here: the two winds are 90 degrees apart
+        // but the regions overlap, so a cell correctly BENDS toward the main wind as it
+        // leaves the corner and picks up a real component along both.)
+        const live = start.filter(p => state.gusts.includes(p.g));
+        const mdx = live.reduce((a, p) => a + (p.g.x - p.x), 0) / (live.length || 1);
+        const mdy = live.reduce((a, p) => a + (p.g.y - p.y), 0) / (live.length || 1);
+        const travelFrom = Math.atan2(-mdx, mdy);          // the wind such cells came FROM
+        const angOff = (a, bb) => Math.abs(((a - bb + Math.PI * 3) % (Math.PI * 2)) - Math.PI) * 180 / Math.PI;
+        o.offLocal = +angOff(travelFrom, localDir).toFixed(1);
+        o.offGlobal = +angOff(travelFrom, globalDir).toFixed(1);
+        o.travelled = +Math.hypot(mdx, mdy).toFixed(0);
+        o.steeredLocally = live.length > 0 && o.travelled > 50 && o.offLocal < o.offGlobal;
+        // ...and a cell lies ACROSS the breeze it is in, so it re-aims as it crosses a bend.
+        o.rotatesLocally = state.gusts.every(g => {
+            const w = regionWindAt(g.x, g.y);
+            const want = w.direction + g.dirDelta + Math.PI / 2;
+            return Math.abs(((g.rotation - want + Math.PI * 3) % (Math.PI * 2)) - Math.PI) < 1e-9;
+        });
+        d.wind = wsave;
+
         // ── 3. CHARACTER IS THE SOURCE'S, NOT THE VENUE'S ───────────────────
         const shapeOf = (extra) => {
             race([Object.assign({ id: 'x', poly: box(cx, cy, half), falloff: 200, count: 1 }, extra)], 5150);
@@ -105,9 +145,24 @@ const check = (name, cond, detail) => {
                      sd: +Math.abs(g.speedDelta).toFixed(4), veer: +Math.abs(g.dirDelta).toFixed(5) };
         };
         const base = shapeOf({});
-        o.strengthScales = Math.abs(shapeOf({ strength: 3 }).sd - base.sd * 3) < 1e-3;
-        o.sizeScales     = Math.abs(shapeOf({ size: 2 }).rx - base.rx * 2) < 1e-3;
-        o.lifeScales     = Math.abs(shapeOf({ life: 2.5 }).dur - base.dur * 2.5) < 1e-3;
+        // The three are stated in KNOTS, METRES and SECONDS now, so each is checked against
+        // the quantity it names rather than against a multiple of an unstated base.
+        o.gustIsKnots   = Math.abs(shapeOf({ gustKt: 12 }).sd - base.sd * (12 / 5)) < 1e-3;   // default 5 kt
+        o.sizeIsMetres  = Math.abs(shapeOf({ sizeM: 600 }).rx - base.rx * 2) < 1e-3;          // default 300 m
+        o.lifeIsSeconds = Math.abs(shapeOf({ lifeS: 180 }).dur - base.dur * 2) < 1e-3;        // default 90 s
+        // The stated number is the MEAN of what comes out, which is what makes it checkable
+        // against the course. Sampled across many births rather than asserted on one.
+        race([{ id: 'm', poly: box(cx, cy, half), falloff: 200, count: 60, bias: 1, gustKt: 10, sizeM: 400, lifeS: 120 }]);
+        const many = state.gusts;
+        const mean = (f) => many.reduce((a, g) => a + f(g), 0) / many.length;
+        o.meanKt    = +mean(g => Math.abs(g.speedDelta)).toFixed(2);
+        o.meanSizeM = +(mean(g => g.maxRadiusX) * 2 / 5).toFixed(0);
+        o.meanLifeS = +mean(g => g.duration).toFixed(0);
+        o.meansAreStated = Math.abs(o.meanKt - 10) < 1.2 && Math.abs(o.meanSizeM - 400) < 60 && Math.abs(o.meanLifeS - 120) < 15;
+        // A hole is the shallower half of the same signal.
+        race([{ id: 'l', poly: box(cx, cy, half), falloff: 200, count: 60, bias: 0, gustKt: 10 }]);
+        o.meanLullKt = +(state.gusts.reduce((a, g) => a + Math.abs(g.speedDelta), 0) / state.gusts.length).toFixed(2);
+        o.lullIsShallower = o.meanLullKt < o.meanKt && o.meanLullKt > 5;
         // Veer is the SOURCE's now — it was the venue's `puffShiftiness` mapped onto 8-22°.
         const v30 = shapeOf({ veer: 30 });
         o.veerIsPerSource = v30.veer > base.veer * 1.5;
@@ -127,7 +182,7 @@ const check = (name, cond, detail) => {
         o.defaultCount = mixed;
 
         // ── 5. THE PUFFS ARE REAL WIND ──────────────────────────────────────
-        race([{ id: 'w', poly: box(cx, cy, half), falloff: 200, count: 8, bias: 1, strength: 2 }]);
+        race([{ id: 'w', poly: box(cx, cy, half), falloff: 200, count: 8, bias: 1, gustKt: 10 }]);
         updateGusts(1 / 60);
         const cell = state.gusts.find(g => g.age > 10 && g.age < g.duration - 10 && g.radiusX > 100);
         if (cell) {
@@ -210,9 +265,19 @@ const check = (name, cond, detail) => {
           `w ${r.perSource.w}, e ${r.perSource.e}, total ${r.total}`);
     check('a source at count 0 is off without being deleted', r.zeroSilent === true);
 
-    check('strength scales the pressure', r.strengthScales === true);
-    check('size scales the radii', r.sizeScales === true);
-    check('life scales the duration', r.lifeScales === true);
+    check('a source in a bend emits puffs along the breeze THERE, not the venue average',
+          r.steeredLocally === true,
+          `travelled ${r.travelled}u, ${r.offLocal} deg off the LOCAL wind vs ${r.offGlobal} deg off the venue average`);
+    check('...and the two winds really do differ, so the test can tell them apart', r.dirsDiffer === true);
+    check('...and a cell lies across the breeze it is in, re-aiming as it crosses', r.rotatesLocally === true);
+
+    check('gust is stated in KNOTS on the anemometer', r.gustIsKnots === true);
+    check('size is stated in METRES across the long axis', r.sizeIsMetres === true);
+    check('life is stated in SECONDS', r.lifeIsSeconds === true);
+    check('...and each stated number is the MEAN of what the source emits',
+          r.meansAreStated === true, `${r.meanKt} kt / ${r.meanSizeM} m / ${r.meanLifeS} s asked for 10 / 400 / 120`);
+    check('a hole is the shallower half of the same signal', r.lullIsShallower === true,
+          `lull ${r.meanLullKt} kt vs gust ${r.meanKt} kt`);
     // This was `puffShiftiness`, a venue variable. Two sources on one course can now turn
     // the wind by different amounts, which is the whole point of moving it.
     check('veer belongs to the SOURCE, not the venue', r.veerIsPerSource === true, r.veerPair);

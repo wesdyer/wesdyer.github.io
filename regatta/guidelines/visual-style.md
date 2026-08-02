@@ -760,7 +760,7 @@ in [venue-art.md](venue-art.md).
 - Brand & misc `../assets/images/misc/` (burgee, marks, podium icons)
 
 Venue keys, journey order: `bay` Lighthouse Cove · `lake` Stillwater Lake · `lagoon`
-Pearl Lagoon · `swamp` Gatorgrass Bayou · `river` Otter Run · `ocean` Bluewater
+Pearl Lagoon · `swamp` Gatorgrass Bayou · `river` Sockeye Run · `ocean` Bluewater
 Bonanza · `redrock` Redrock Reservoir · `glowtide` Glowtide Strait · `arctic` Glacier
 Sound · `seatrials` Clubhouse Point.
 

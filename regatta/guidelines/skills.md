@@ -292,7 +292,7 @@ where it fought an established character:
 | `memory` | intelligence, territoriality, site fidelity, natal homing | no brain, sessile, pure drift |
 
 Worked examples: **Slipstream** memory +5 (salmon natal homing is the most famous
-memory in nature, and he is the Salmon Run native), **Drift** 5/−5/−5 (a jellyfish
+memory in nature, and he is the Sockeye Run native), **Drift** 5/−5/−5 (a jellyfish
 has literally no brain and drifts), **Pebble** memory +5 (a penguin returns to the
 same nest and the same pebble), **Whiskers** −4/+5 (which makes his existing blurb,
 *"unbeatable in heavy conditions"*, mechanically true for the first time).
@@ -496,7 +496,7 @@ the roster is attached; two thirds stay free.
 | Stillwater Lake | **Gasket** | beaver — *builds the still water* | Paddle ○, Trout ✎ |
 | Pearl Lagoon | **Pearl** | oyster — venue is named for her | Puff, Jester |
 | Gatorgrass Bayou | **Chomp** | saltwater croc | Etienne ○, Skitter |
-| Salmon Run | **Slipstream** | salmon — venue is named for it | Vex, or dipper ✎ |
+| Sockeye Run | **Slipstream** | sockeye salmon — venue is named for him | Vex, or dipper ✎ |
 | Bluewater Bonanza | **Finley** | tuna — pelagic distance racer | Blaze, Skim |
 | Redrock Reservoir | **Torpedo** ○ | pike, or a canyon fish ✎ | Golden Eagle ✎ |
 | Glowtide Strait | **Drift** | jellyfish | Lure, Veil |
@@ -506,9 +506,13 @@ the roster is attached; two thirds stay free.
 
 ○ = orphan, art exists · ✎ = to be created
 
-**Otter Run is renamed Salmon Run.** Bixby is a *sea* otter and belongs on the coast;
-a second river otter would confuse the two. Slipstream is the venue's native and his
-existing beat line — *"salmon cannot run downstream"* — is already the joke.
+**Otter Run is renamed Sockeye Run** (Aug 1 2026; specced here first as "Salmon Run").
+Bixby is a *sea* otter and belongs on the coast; a second river otter would confuse the
+two. Slipstream is the venue's native and his existing beat line — *"salmon cannot run
+downstream"* — is already the joke. **Sockeye** over Salmon because Slipstream is
+literally a *Sockeye Salmon* on the roster, so it names the venue for its witness
+exactly; it also avoids colliding with a well-known game mode of the same name, and
+spawning-red is a colour no other venue claims.
 
 ### 9.4 The map — unbuilt venues
 
@@ -558,5 +562,5 @@ gating fact, not a failed stat.
 | `pressure` rename | nothing | yes |
 | `speedScale` removal + shift over-tacking | nothing | yes |
 | `memory` | a multi-region wind course | no — authoring, coming soon |
-| `currentSense` | eddies, gradients, tidal inversion | no — Otter Run identity pass |
+| `currentSense` | eddies, gradients, tidal inversion | no — Sockeye Run identity pass |
 | `planning` | fields worth routing through | partial |

@@ -484,11 +484,12 @@ function runChecks(ctx) {
         const want = best * 1.6;
         if (compiled.cutoff == null) {
             add('warn', 'cutoff-derived', 'Time limit is derived',
-                `No authored limit, so the game falls back to ${M(compiled.sailedDist)} of straight line`
-                + ` at 0.1875 s/m = ${Math.floor(compiled.cutoffAuto / 60)}:`
+                `No authored limit, so the game uses twice the best time along the course path,`
+                + ` to the nearest minute: ${Math.floor(compiled.cutoffAuto / 60)}:`
                 + String(Math.round(compiled.cutoffAuto % 60)).padStart(2, '0')
-                + ` — which cannot see the land the path goes around. Set it to ~`
-                + `${Math.floor(want / 60)}:${String(Math.round(want % 60)).padStart(2, '0')} in the Overview.`);
+                + `. The slowest of the fleet want about `
+                + `${Math.floor(want / 60)}:${String(Math.round(want % 60)).padStart(2, '0')}`
+                + ` — author it in the Overview if that is tight.`);
         } else {
             const ok = limit >= want * 0.9;
             add(ok ? 'ok' : 'warn', 'cutoff-enough', 'Time limit',

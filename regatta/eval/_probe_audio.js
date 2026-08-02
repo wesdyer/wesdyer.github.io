@@ -68,7 +68,22 @@ const serve = root => new Promise(resolve => {
         out.trueWind = +state.wind.speed.toFixed(1);
         out.apparent = p && p.apparentWind ? +p.apparentWind.speed.toFixed(1) : null;
         out.bedDb = +db(Sound.windGain.gain.value).toFixed(1);
+        // Where playback actually is, read BEFORE the seek below — this is what
+        // proves a cue entered at loopStart rather than at zero.
+        out.enteredAt = +Sound.activeVoice.el.currentTime.toFixed(1);
         if (Sound.musicBus) {
+            // ⚠️ Sample the MIDDLE of the loop body, not the opening. Sampling where
+            // playback happens to be only measures steady state for a track that
+            // starts at full level; Glowtide Strait opens 6.4 dB down and builds for
+            // ~25 s, and measuring that stretch reported 3.4 dB of headroom for a
+            // track that really has about 10. Headroom is a claim about the whole
+            // track, so measure representative material.
+            const def = MUSIC_TRACKS[Sound.activeTrack] || {};
+            const mid = ((def.loopStart || 0) + (def.loopEnd || 60)) / 2;
+            try { Sound.activeVoice.el.currentTime = mid; } catch (e) { /* not seekable */ }
+            await sleep(500);
+            out.sampledAt = +Sound.activeVoice.el.currentTime.toFixed(1);
+
             const an = Sound.ctx.createAnalyser(); an.fftSize = 2048;
             Sound.musicBus.connect(an);
             const buf = new Float32Array(an.fftSize);
@@ -82,7 +97,6 @@ const serve = root => new Promise(resolve => {
             out.musicRmsDb = +db(Math.sqrt(sum / n)).toFixed(1);
             out.headroomDb = +(out.musicRmsDb - out.bedDb).toFixed(1);
         }
-        out.enteredAt = +Sound.activeVoice.el.currentTime.toFixed(1);
         return out;
     }, VENUE);
     console.log(r, errors.length ? errors.slice(0, 2) : 'no page errors');

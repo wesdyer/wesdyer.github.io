@@ -58,7 +58,7 @@ const pass = (m) => console.log(`  ok   ${m}`);
     await step('character', 'character picker', async () => {
         await p.click('#player-pick-character');
         await p.waitForTimeout(700);
-        const target = await p.evaluate(() => charactersByHue().find(c => c.name !== settings.character).name);
+        const target = await p.evaluate(() => charactersAlphabetical().find(c => c.name !== settings.character).name);
         await p.click(`#character-grid [data-char="${target}"]`);
         await p.waitForTimeout(400);
     });

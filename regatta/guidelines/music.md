@@ -1,403 +1,699 @@
-# Music — Direction, Prompts & Delivery
+# Music — Guide & Reference
 
-**Version:** 0.1 · **Date:** July 31, 2026
-**Scope:** the score. What each venue sounds like, how to generate it, how to
-install it, and how to judge it.
+**Version:** 1.0 · **Date:** August 1, 2026
+**Scope:** the score. What the game sounds like, how to write a prompt that gets it,
+how to install a track, and how to judge one.
 **Companion docs:** [visual-style.md](visual-style.md) (brand, §1 personality) ·
 [venue-art.md](venue-art.md) (the model this document follows) ·
 [venues.md](venues.md) (what each venue is *about*)
 
-Markers follow [visual-style.md](visual-style.md) §0: **Observed** goes stale if
-the code changes, **Rule** is binding on new work, **Intent** is direction not yet
-realized.
+Markers follow [visual-style.md](visual-style.md) §0: **Observed** goes stale if the
+code changes, **Rule** is binding on new work, **Intent** is direction not yet realised.
+
+**How to use this.** **Part I** is the guide — read §3 before writing any prompt, and
+§6 before judging a take. **Part II** is the reference — what exists, what it measures,
+and the exact prompt that produced each track. Every claim here was measured; where a
+number is quoted, the tool that produces it is named in §14.
+
+**Status:** all 13 cues are filled and purpose-written — ten venues, menu, results, and
+a house fallback. Four more tracks exist for venues that have not been built yet.
 
 ---
 
+# PART I — THE GUIDE
+
 ## 1. The style in one sentence — **Rule**
 
-> A small live acoustic ensemble playing sailing-club music — plucked strings,
-> upright bass, brushed kit, one folk lead voice — bright, unhurried and
-> confident, where each venue changes the lead instrument and the rhythmic feel
-> but never the ensemble.
+> A warm, hand-played score for a club racing game — piano, guitar, upright bass and
+> brushed kit at its centre — where every venue borrows one or two instruments from
+> its own place and plays them in the house's unhurried, confident register.
 
-## 2. Six rules — **Rule**
+⚠️ **This replaced an earlier sentence that had gone stale, and the failure is
+instructive.** The original read *"a small live acoustic ensemble… one folk lead
+voice."* It was written before any track existed, and by the time ten had shipped it
+described **about half the album** — not the analog-synth nocturne, the orchestral
+swell piece, the taiko-and-struck-metal venue or the nyckelharpa fjord. It stayed true
+of Lighthouse Cove, Stillwater, Gatorgrass and Sockeye Run, **so it described the
+album's folk corner and got mistaken for the album.** A menu brief written straight
+from it came back too folksy for a game spanning zydeco to volcanic percussion.
 
-1. **One ensemble, ten dialects.** Every venue owns a lead instrument and a
-   rhythmic feel that no other venue uses. §5 is that registry, and it works the
-   way the palette registry in [venue-art.md](venue-art.md) does: a new venue must
-   claim unclaimed territory.
-2. **Instrumentation carries the PLACE. Tempo, density and form carry the
-   MECHANIC.** This is the music's version of "the palette carries the place, the
-   sky advertises the mechanic," and it is why you never have to choose between
-   flavour and function. Gatorgrass gets a Cajun accordion because of *where* it
-   is, and drags behind the beat because of *how it plays*.
-3. **Borrow instruments, not genres.** One or two signature instruments per
-   venue, played by the house ensemble in the house idiom. Ten full regional
-   genres is a novelty world-tour album: jarring venue to venue, and a couple of
-   the picks land close to tourist cliché. The precedent is Wind Waker — Dragon
-   Roost is pan flute and flamenco guitar and still unmistakably the same score.
-4. **Tempo is the difficulty dial**, not volume and not density. Keep the ladder
-   in §5 explicit; no two venues share a BPM.
-5. **Race music has no hook.** It plays for three and a half minutes behind
-   tactical decisions. Ostinato, texture and groove. Tunes belong in the menu and
-   results cues, where the player is not thinking.
-6. **Never write a track that ends.** Every prompt carries *seamless loop, no
-   intro, no outro, ends as it began*. A track that fades is a track with a hole
-   in its loop; one that ends denser than it began has a step in it instead.
+**The replacement above is Intent until confirmed.** It changes nothing that shipped;
+it changes what the next brief is written from.
 
-**Instrumental, with no exceptions, on every race track.** Lyrics measurably cost
-about 5–10% in strategy games because vocals compete with the same faculties as
-tactical thinking. That includes wordless "ooh/ahh" vocalise, which is also Suno
-v5's most-reported unwanted behaviour — so it gets an explicit exclusion, every
-time, not just an "instrumental" checkbox.
+## 2. The rules — **Rule**
 
-## 3. What the wind bed leaves you — **Observed** (`script.js`, `WIND_SOUND`)
+1. **One ensemble, many dialects.** Every venue owns a lead instrument and a rhythmic
+   feel no other venue uses. §10 is that registry, and it works the way the palette
+   registry in [venue-art.md](venue-art.md) does: a new venue must claim unclaimed
+   territory.
+2. **Instrumentation carries the PLACE. Tempo, density and form carry the MECHANIC.**
+   The music's version of "the palette carries the place, the sky advertises the
+   mechanic." Gatorgrass gets a Cajun accordion because of *where* it is, and drags
+   behind the beat because of *how it plays*.
+3. **Borrow instruments, not genres.** One or two signature instruments per venue,
+   played in the house register. Ten full regional genres is a novelty world-tour
+   album. The precedent is Wind Waker — Dragon Roost is pan flute and flamenco guitar
+   and still unmistakably the same score.
+4. **Tempo is the difficulty dial**, not volume and not density. ⚠️ See the saturation
+   warning in §10: with fourteen venues this is now a matter of **bands**, not exact
+   values.
+5. **Race music has no hook.** It plays for three and a half minutes behind tactical
+   decisions. Ostinato, texture and groove. Tunes belong in the menu cue.
+6. **Never write a track that ends.** Every prompt carries *seamless loop, no intro,
+   no outro, ends as it began*. A track that fades has a hole in its loop; one that
+   ends denser than it began has a step in it.
 
-⚠️ **This inverted in July 2026 and old advice is wrong.** The wind bed used to be
-lowpassed 300→1200 Hz, i.e. parked on guitar body, bass and kick. It is now
-highpassed at **900 Hz** and sweeps up to **6.5 kHz**, with a quiet rumble below
-180 Hz.
+**Instrumental, with no exceptions, on every race track.** Lyrics measurably cost about
+5–10% in strategy games because vocals compete with the same faculties as tactical
+thinking. That includes wordless "ooh/ahh" vocalise, which is also Suno v5's
+most-reported unwanted behaviour, so it gets an explicit exclusion every time — not
+just an "instrumental" checkbox. Vocals are *permitted* on menu and results; §12.2
+explains why the menu track should still not have them.
 
-So the band to protect is now the **upper mids and highs**, and the low-mid is
-free. Concretely:
+## 3. How to write a prompt — **Rule**
 
-⚠️ **This table is written against the venues as PLANNED, not as they race today.**
-Measured Aug 1 2026: Pearl Lagoon runs 13 kn, the same as Lighthouse Cove, because
-its squalls are not built — so its "heavy" row is a forecast. Only Glacier Sound is
-actually windy right now (20 kn). Measure the venue before designing around its
-weather; the probe is in §8.
+Suno Custom mode. **Instrumental ON.** Paste the Style line into *Style of Music* and
+the Exclude line into *Exclude Styles* — the dedicated field is parsed more reliably
+than negatives written into the style. Leave Lyrics empty.
 
-| Venue wind | What it means for the music |
+### 3.1 The shape of a Style line
+
+Elements in this order. The order matters: the front of the line binds hardest.
+
+1. **Key and mode** — *"D major"*, *"A minor"*. Name the tonic; never name an exotic
+   mode (§3.3).
+2. **One genre-or-register phrase** — *"orchestral sailing instrumental"*, *"dry desert
+   instrumental"*. One, not three.
+3. **Tempo** — *"96 BPM"*.
+4. **The signature instruments** — the venue's claim from §10, two at most.
+5. **The mechanism** — what the players actually *do*: who alternates with whom, what
+   repeats, what the bass is doing. This is the load-bearing clause; see §3.2.
+6. **One or two colour words** — *"sun-bleached canyon space"*.
+7. **The loop contract, verbatim** — *seamless loop, no intro, no outro, ends as it
+   began*.
+
+**Ask for length up front.** Suno's default take runs 2–2:30, which after loop trimming
+leaves under 2 minutes of body. Generating long beats extending: an Extend joins
+mid-body where nothing hides it, whereas the loop seam gets a 0.6 s crossfade.
+
+### 3.2 ⚠️⚠️ Specify the MECHANISM, not the adjective — the central rule
+
+**Suno reliably obeys instructions about instrumentation and arrangement, and reliably
+ignores instructions about outcomes.** Two independent proofs, both expensive:
+
+| asked for | got | what worked instead |
+|---|---|---|
+| **dynamics** — *"rise and fall away to almost nothing every 40 seconds"*, plus `constant intensity` excluded (Bluewater, three takes) | flatter every time: 11.4 → 5.5 → **3.8 dB** | *"alternating sections: solo cello and acoustic guitar alone, then full orchestra"* → **8.6 dB**, with real 30 s swell sets |
+| **melody** — *"memorable piano melody"* (menu, take 2) | **0.109 chroma flux** — near the least melodically active track in the project | *"a short phrase that repeats and answers itself"*, *"call and response between piano and guitar"* → **0.200** |
+
+**An adjective describes the result you want; only a mechanism produces it.** Before
+writing any brief, translate each quality into the arrangement that causes it:
+
+| you want | ask for |
 |---|---|
-| Heavy (Glacier Sound, Redrock, Lagoon squalls) | Put the identity **low** — horn, cello, baritone guitar, floor toms. Shakers, ride cymbals and bowed-glass shimmer will trade with the gust, which on Glacier is the point |
-| Light (Gatorgrass, Stillwater) | The bed nearly vanishes. These venues can use the whole spectrum, and Gatorgrass can be the warmest, fullest track in the game |
+| loud / quiet passages | *who is playing* — "solo cello alone, then full orchestra" |
+| memorable | *what repeats* — "a short phrase that repeats and answers itself" |
+| energy | *what the rhythm section does* — "walking upright bass", "brushed snare with a bounce" |
+| space | *who stops* — but never at the start; see §5 |
+| speed, without changing tempo | *subdivision* — "sixteenth-note string ostinato" |
+| grandeur | *range* — "soaring high violins over cello and low brass" |
 
-The bed is also keyed to **apparent** wind, so it falls away downwind and builds
-as a boat accelerates. Downwind is where the music is most exposed.
+### 3.3 ⚠️ Words that do not mean what you think — **Rule**
 
-**And it is quieter than you may expect.** In play it sits around -40 dB (13 kn
-apparent), reaching about -34 dB in a hard breeze, with a gust front opening
-roughly 9 dB above the bed for a second or so. It is also **silent on the venue
-picker and the scoreboard** — `Sound.windAudible()`; the bed belongs to being on
-the water. So the music is on its own in the menus and carries those screens by
-itself; only the race tracks share the mix with weather.
+Three separate ways the prompt vocabulary bites. All were paid for.
 
-Level and shape are separate knobs: `WIND_SOUND.masterDb` moves the whole bed
-without touching the balance between calm, breeze and gust.
+**(a) Some "adjectives" are read as instruments.** A menu brief said *"catchy
+whistleable piano tune"* meaning *hummable*, and the take came back **with whistling on
+it** — past `vocals` and `wordless vocalise`, since whistling is strictly neither.
+**Never describe an effect with a word that names a sound.** *Whistleable, singable,
+hummable, anthemic, chanting, orchestral, cinematic* can all be literally performed.
 
-⚠️ **Auditioning a track over `file://` will not tell you how it sounds.** A media
-element opened from the filesystem is cross-origin, so `createMediaElementSource`
-returns a node that outputs SILENCE while the element still plays, `currentTime`
-still advances and every gain still reads normal — nothing throws, nothing logs.
-The player detects `file:` and falls back to the element's own volume, so music
-*is* audible there, but it takes a different path through the mix and skips the
-bus. **Judge a track over http** (`python3 -m http.server`, then
-`http://localhost:8000/regatta/`). `test_audio.js` serves the tree on an ephemeral
-port and measures real signal on the bus for exactly this reason: it is the only
-assertion in the suite that can see a silent-but-healthy graph.
+**(b) Mood words carry a tempo and a density.**
 
-## 4. The cue map — **Observed** (`script.js`, `MUSIC_TRACKS`)
+| word | what it also means |
+|---|---|
+| *epic, huge, vast, heroic* | loud and continuous — it will flatten your dynamics |
+| *unhurried, patient, open, airy, cinematic* | slow and spacious — it will drain your energy |
+| *distant* | reverbed, filtered, far away — it buried Bluewater take 1 at 4.2% above 2 kHz |
 
-| Cue | Count | Length | Status |
-|---|---|---|---|
-| `menu` — picker, briefing, competitor list | 1 | 3 min | `yacht-club` |
-| `prestart` | **none — the venue track starts here** | — | see below |
-| `racing` + `racing-<venue>` | 1 house + 10 | 4–6 min | `spinnaker-run`, `racing-bay` |
-| `results` | 1–2 | 2 min | `harbor-results` |
+**(c) Two exclusions are known not to work.**
+
+- ⚠️ **`minor key` does not hold the third.** Three data points: Clubhouse Point, and
+  menu takes 3 (omitted it → A minor) and 4 (included it → A minor). The **tonic**
+  holds when you name it; the **third** drifts.
+- ⚠️ **Naming an exotic mode never works — 5 briefed, 5 flattened.** dorian → aeolian,
+  aeolian → F major, mixolydian → F major, lydian → G major twice. The second lydian
+  attempt carried the proposed mitigation (*"G lydian, major with a sharp fourth"*,
+  mode first) and made no difference. **Ask for major or minor only.** The Mode column
+  in §10 is now a record of what shipped, not an instruction.
+
+### 3.4 What Suno obeys, and what it does not — **Observed**
+
+| reliable | unreliable |
+|---|---|
+| instrumentation and arrangement | dynamics and level |
+| **the tonic**, when named (6 of 8 briefs) | **the mode**, always (0 of 5 exotic) |
+| tempo, to about ±5 BPM | any outcome adjective |
+| the loop contract (with the §5 caveat) | negatives written into the Style line rather than Exclude |
+
+**Sliders.** Weirdness as listed per track; **20 produces safe, even bed-making**,
+which is the failure mode behind two rejected takes — use 25–35 when a track needs
+character. **Style Influence 85** unless noted, so the tags actually bind.
+
+## 4. What the mix leaves you — **Observed** (`script.js`, `WIND_SOUND`)
+
+The wind bed is **highpassed at 900 Hz**, sweeping to **6.5 kHz**, with a quiet rumble
+below 180 Hz. ⚠️ This inverted in July 2026 — it used to be lowpassed onto guitar body,
+bass and kick, so **any advice about keeping a track bright is backwards now.** The
+band to protect is the upper mids and highs; the low-mid is free.
+
+**It is quieter than you expect**: around −40 dB at 13 kn apparent, reaching −34 dB in
+a hard breeze, with a gust front opening ~9 dB above the bed for a second. It follows
+**apparent** wind, so it falls away downwind — downwind is where music is most exposed.
+`WIND_SOUND.masterDb` moves the whole bed without touching the calm/breeze/gust balance.
+
+⚠️ **The bed is SILENT on the venue picker and the scoreboard** (`Sound.windAudible()`)
+— it belongs to being on the water. **So §4 does not constrain the menu and results
+cues at all**, and they are the only two tracks free to be as bright as they like.
+
+**Measured venue winds** — design against these, not against the plan:
+
+| wind | venues | what it means |
+|---|---|---|
+| Heavy — **Glacier Sound only, 20 kn** | `arctic` | Put the identity **low** — horn, cello, baritone guitar, floor toms. Shakers, rides and bowed-glass shimmer trade with the gust, which here is the point |
+| Light — 6.5–9 kn | `swamp`, `lake` | The bed nearly vanishes; use the whole spectrum. Borne out — they carry the two widest headrooms in the game |
+| Everything else, 11–16 kn | the other seven | No constraint worth designing around |
+
+⚠️ Redrock and Pearl Lagoon were both briefed *heavy* and both race at 12–13 kn; their
+weather is an unbuilt identity pass, not a live constraint. **Re-measure if it lands.**
+
+⚠️⚠️ **This section says what to keep OUT of the band and never what a track needs to
+HAVE.** Two takes were rejected for being too dark — Bluewater take 1 at 4.2% above
+2 kHz, Stillwater take 1 at 3.7% — while scoring *perfectly* by the rule above.
+**Dark is cheap here and it is usually wrong: majesty and beauty both need a top.**
+Read §4 as a constraint and §10 as the goal.
+
+⚠️ **Auditioning over `file://` will not tell you how it sounds.** A media element
+loaded from the filesystem is cross-origin, so `createMediaElementSource` returns a
+node that outputs **silence** while the element still plays, `currentTime` still
+advances and every gain still reads normal — nothing throws, nothing logs. The player
+detects `file:` and falls back to element volume, so music *is* audible, but it takes
+a different path and skips the bus. **Judge over http.**
+
+## 5. Loops, length and the loopStart trap — **Rule**
 
 **Length is measured on the LOOP BODY, not the file.** What plays is
-`loopEnd - loopStart`; everything else is discarded. A 3-minute file whose ending
-is denser than its opening can yield barely 2 minutes of usable loop.
+`loopEnd - loopStart`; everything else is discarded. A 3-minute file whose ending is
+denser than its opening can yield barely 2 minutes of usable loop.
 
-The target follows from on-water time: the prestart is ~30 s and a race about
-213 s, so **a body of ~4 minutes means a normal race never loops at all** and the
-loop is pure insurance. Bluewater Bonanza's distance course wants 6. Below about
-2 minutes of body you hear the seam twice a race, every race, which is where
-loop fatigue starts to bite.
+On-water time is ~30 s prestart + ~213 s race, so:
 
-**There is no prestart cue** (Aug 1 2026). The venue's track starts at the
-PRESTART and runs straight through the gun — prestart and racing resolve to the
-same cue, so nothing re-triggers at the start. The music is already going when the
-race begins rather than announcing it, and the whole time you are on the water is
-scored by one continuous piece: the countdown is part of the race, not a lobby for
-it. It also means **a race track's first minute is heard during the countdown**,
-so write the opening for manoeuvring, not for a starting gun.
-`prestart-countdown.mp3` and `harbor-glow.mp3` both ship, both unassigned.
+| body | consequence |
+|---|---|
+| ≥ ~245 s | the seam is never reached in a normal race |
+| ~120–245 s | heard once or twice |
+| < ~120 s | heard two or three times, every race — loop fatigue |
 
-**A cue ENTERS at `loopStart`.** Anything before it is unused material — see §8.
+⚠️ **A short body with a clean seam beats a long body with an audible one.** The menu
+track has 127.5 s and a **0.2 dB** seam; an earlier take had 361 s and 2.1 dB. Take the
+first. Only the menu loops repeatedly *within* one sitting, so it is the one cue where
+length is worth chasing on its own.
 
-Per-venue tracks are one table row: `'racing-<venuekey>'`. Absent a row, the venue
-races to the house track, and `test_audio.js` asserts every venue reaches one.
+⚠️⚠️ **NEVER ask for a build-in, an intro, or a slow start — the game deletes it.**
+Playback **enters at `loopStart`**, and `music_loop.py` puts `loopStart` past any
+opening too sparse to loop back into. A build-in is therefore *measured, skipped and
+discarded*: Clubhouse Point lost 20.5 s and Bluewater take 1 lost 27 s exactly this way.
+**A track must be able to start at full tilt, because it will.** Dynamic range has to
+live **mid-track**, as troughs between peaks — which is also the only shape that
+satisfies "ends as it began."
 
-## 5. The registry — **Rule**
+⚠️ **`loopStart` tests DENSITY, not level**, so an opening that is *dense but quiet*
+passes and then thumps at the seam. Seen three times: Glowtide (6.4 dB down for 25 s),
+Spoonbill Flats, and the results track (6.2 dB down for 7 s). If a track's opening
+matters, check its level profile by hand.
 
-Instruments carry the place; tempo, density and form carry the mechanic.
+## 6. Judging a take — **Rule**
 
-| Venue | Signature instrument(s) — *place* | Feel / form — *mechanic* | BPM | Mode |
-|---|---|---|---|---|
-| Gatorgrass Bayou | Cajun accordion, washboard, resonator slide | dragging behind the beat | 72 | dorian blues |
-| Stillwater Lake | fingerpicked nylon, solo flute | stops and restarts — real silences | 84 | lydian major |
-| Glacier Sound | low horn drone, bowed double bass | slow pressure, no melody | 88 | open fifths, no third |
-| Bluewater Bonanza | cello over acoustic guitar | one long patient build | 92 | major |
-| Redrock Reservoir | baritone tremolo guitar, floor toms | dry, spacious, big slapback | 96 | mixolydian |
-| Clubhouse Point | woodblock, upright bass, brushes — no lead | metronomic, warm, forgettable on purpose | 100 | C major |
-| Glowtide Strait | glass marimba, analog synth arp | kinetic nocturnal pulse | 104 | aeolian |
-| Pearl Lagoon | steel pan, hand percussion | island offbeat + a squall gear | 106 | major |
-| Lighthouse Cove | penny whistle, concertina | easy club-race 4/4 — the reference | 112 | D major |
-| Otter Run | banjo roll, fiddle | continuous ostinato, never rests | 120 | major |
+Run `music_spec.py` over the loop body (§14) and read it like this:
 
-⚠️ **Gatorgrass is Cajun/zydeco, not bluegrass.** Bluegrass is Appalachian —
-banjo-led, fast, bright, virtuosic. The bayou is Louisiana, and zydeco is also the
-better *mechanical* fit: low and rolling for a venue whose whole mechanic is that
-you cannot get moving. The banjo went to Otter Run, where a perpetual roll *is*
-the current. The two prompts exclude each other's instrument to hold the line.
+| number | what it means | healthy range |
+|---|---|---|
+| **wind band 900 Hz–6.5 kHz** | how much the music argues with the weather | under ~30% is comfortable; only matters on a windy venue |
+| **above 2 kHz / centroid** | brightness — **is there a top at all?** | under ~10% / under ~600 Hz is murk unless the venue is Glacier Sound |
+| **dynamics** | swing of the half-second RMS | ⚠️ meaningless except against the brief — see below |
+| **key / third / fifth** | tonic and mode | ⚠️ needs harmonic content; unreliable on percussion-led tracks |
+| **chroma flux** | how much the harmony and melody MOVE | race tracks 0.09–0.24; **under ~0.12 on a track that wants a tune is "not catchy"** |
+| **tempo** | peak family plus a resolved pulse | sanity check only; ±4 BPM near 100 |
 
-## 6. Prompts — **Rule**
+⚠️⚠️ **A dynamics number means nothing on its own.** Sockeye Run ships at 3.4 dB and
+that is a **pass** — its brief is *perpetual motion with no rest in the rhythm*, and
+the ostinato that never rests *is* the current. The same figure failed Bluewater three
+times, because that brief is contrast. **Judge against the brief, then check WHERE the
+energy sits**: a flat track and a track with one ramp report similar numbers. Bluewater
+take 2 reached full intensity at 13 s and never moved again.
 
-Suno Custom mode. **Instrumental ON.** Paste the Style line into *Style of Music*
-and the Exclude line into *Exclude Styles* — the dedicated field is parsed more
-reliably than negatives written into the style. Leave Lyrics empty.
+⚠️ **Flat level is not the same as flat music.** Stillwater ships at 3.8 dB over 2 s
+frames with **no periodicity** and is right, because its motion is *harmonic* — 0.166
+flux. The failure case is flat on *both*: Bluewater take 3 measured 3.1 dB **and** 0.119
+flux **and** no periodicity.
 
-Sliders: **Weirdness** as listed (low keeps a loop predictable, which is what
-background music wants); **Style Influence 85** unless noted, so the tags actually
-bind.
-
-**Ask for length up front.** Suno's default take runs 2–2:30, which after loop
-trimming leaves under 2 minutes of body — half what §4 asks for. Generating long
-beats extending: an Extend joins mid-body where nothing can hide it, whereas the
-loop seam gets a 0.6 s crossfade. Extend only when a take has a quality worth
-protecting that a regeneration might not reproduce.
-
-Every line ends in the same loop contract: *seamless loop, no intro, no outro,
-ends as it began*.
-
-**"Ends as it began" was added after the first generation came back** (Clubhouse
-Point, Aug 1 2026). "No intro" stops Suno prepending a separate intro *section*;
-it does not stop it opening on a bare pulse and filling the texture in over the
-first twenty seconds. That begins at full LEVEL, so it passes every loudness
-check, and then drops the texture floor 36 dB every time the loop comes round.
-The property a loop needs is not *density* but **symmetry** — which is why the
-tag is "ends as it began" and not "no build". Bluewater Bonanza is supposed to
-build and Stillwater Lake is supposed to be sparse; both are fine, so long as the
-last bar matches the first.
-
-**Naming.** A venue track is saved as `regatta/assets/audio/<venuekey>.mp3` and
-takes the `MUSIC_TRACKS` row key `racing-<venuekey>` — the keys are the ones in
-`VENUES` (`bay`, `lake`, `lagoon`, `swamp`, `river`, `ocean`, `redrock`,
-`glowtide`, `arctic`, `seatrials`). Nothing else needs touching: `resolveTrack`
-finds the row, and `test_audio.js` asserts every venue reaches a track.
-
-### Clubhouse Point — generate this one first
-
-**Style**
-```
-Bright C major club bed, instrumental, 100 BPM, soft woodblock pulse, warm upright bass, lightly brushed kit, no melody at all, unhurried and even, warm acoustic room, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude**
-```
-vocals, wordless vocalise, melodic lead, minor key
-```
-Weirdness **10** · Style Influence **90** · target 2 min
-*It should be the least memorable track in the game. That is the brief, not a
-failure — this is the eval anchor, and blandness is its identity, the same way
-its card is deliberately the flattest of the ten.*
-
-⚠️ **Revised Aug 1 2026 after the first take came back in D minor.** The key had
-been buried mid-line behind the tempo; it now LEADS, and "minor key" replaced
-"orchestral strings" in the excludes — the strings exclusion was defending against
-something this brief was never going to produce anyway. One sample is not a
-finding, so treat this as a reasonable precaution rather than a proven fix; but
-put the key first in any prompt where the key is load-bearing.
-
-*The July 31 rename changed this track's TEMPERATURE, not its brief. It was
-specced dry, neutral and pad-led, which was correct for a venue called Sea Trial
-Bay and made it the one cold track in a warm album. "No melody at all" and "even
-dynamics" stay — the function is unchanged — but the room is warm now and the
-woodblock reads as the club's five-minute gun rather than a lab metronome.*
-
-### Stillwater Lake
-**Style**
-```
-Sparse acoustic instrumental, 84 BPM, fingerpicked nylon guitar and solo flute, lydian major, long rests between phrases, brushed upright bass, glassy and patient, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, dense percussion`
-Weirdness **20** · *the arrangement must have holes in it — silence is the mechanic*
-
-### Pearl Lagoon — **done**
-Filled by `pearl-lagoon.mp3` (C major at r=0.91, the cleanest key reading in the
-project, and 118.5 s of loop body from a 119.0 s file — no intro, no outro,
-nothing discarded). ⚠️ It measures **39.4%** in the wind band, against advice
-below that says put a windy venue's identity low. Accepted because the squalls
-are not built yet and the venue currently races at 13 kn, the same as Lighthouse
-Cove. **Re-measure when the identity pass lands the squalls.** The prompt below
-is the one that produced it.
-**Style**
-```
-Bright island instrumental, 106 BPM, steel pan lead, offbeat guitar skank, shaker and hand percussion, sunlit major key, one urgent double-time squall section, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, EDM synth`
-Weirdness **25** · *the double-time section is the squall; keep it inside the loop*
-
-### Gatorgrass Bayou
-**Style**
-```
-Slow swamp instrumental, 72 BPM, Cajun accordion and resonator slide guitar, washboard and triangle, dorian blues, humid and dragging behind the beat, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, bluegrass banjo`
-Weirdness **25** · *no wind bed to fight here — warmest, lowest, fullest track in the set*
-
-### Otter Run
-**Style**
-```
-Driving old-time instrumental, 120 BPM, continuous banjo roll and fiddle, upright bass, bright major key, perpetual motion with no rest in the rhythm, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, accordion`
-Weirdness **20** · *the ostinato that never rests is the current*
-
-### Bluewater Bonanza
-**Style**
-```
-Wide open instrumental, 92 BPM, solo cello over steady acoustic guitar, slow harmonic movement, distant swelling strings, patient oceanic build, major key, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, drum kit`
-Weirdness **20** · Style Influence **80** · target **6 min** — Extend once
-*the one venue where an orchestral swell is allowed; it is the passage*
-
-### Redrock Reservoir
-**Style**
-```
-Dry desert instrumental, 96 BPM, baritone tremolo guitar with deep slapback echo, sparse floor toms, no cymbals, mixolydian, sun-bleached canyon space, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, cymbals`
-Weirdness **30** · *the slapback is the canyon; low register keeps it clear of the gusts*
-
-### Glowtide Strait
-**Style**
-```
-Nocturnal electronic instrumental, 104 BPM, glass marimba and soft analog synth arpeggio, deep sub bass, brushed rim, aeolian minor, gliding and weightless, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, acoustic guitar`
-Weirdness **35** · *the only venue that leaves the acoustic ensemble, exactly as it
-is the only venue allowed neon in the art registry*
-
-### Glacier Sound
-**Style**
-```
-Cold sparse instrumental, 88 BPM, low horn drone and bowed double bass, open fifths with no third, restrained log drum, texture not melody, vast and still, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, melodic lead`
-Weirdness **30**
-*Low on purpose. This is the windiest venue, so the top of the spectrum belongs to
-the gust — when a katabatic hits, the wind takes the high end and the music holds
-the floor. That is the venue's story, not a compromise.*
-
-### Lighthouse Cove — **done**
-Filled by `lighthouse-cove.mp3` (112 BPM on a 112 BPM brief, tonic D with an
-ambiguous third, 29.3% in the wind band against `breezy-race`'s 47.7%). It
-replaced `breezy-race`, which is retired to unassigned. The prompt below is the
-one that produced it.
-**Style**
-```
-Bright acoustic sailing instrumental, 112 BPM, D major, penny whistle and concertina over strummed guitar, upright bass, brushed kit, easy club-race swing, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, sea shanty chorus`
-Weirdness **20**
-
-### Shared cues — optional
-**Prestart** — *no longer needed; the venue track now covers the countdown (§4).
-Kept in case that decision is revisited:*
-```
-Tense instrumental countdown bed, 88 BPM, ticking rim and shaker, low pulsing bass, rising string tremolo, building pressure that never resolves, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, triumphant fanfare` · Weirdness **25** · 40 s
-
-**Results — victory variant**, the one genuine gap in the cue map:
-```
-Warm acoustic celebration instrumental, 104 BPM, C major, concertina and mandolin over strummed guitar, brushed kit, generous and relaxed, harbour evening, seamless loop, no intro, no outro, ends as it began
-```
-**Exclude** `vocals, wordless vocalise, orchestral fanfare` · Weirdness **20**
-*Vocals are allowed on menu and results if you want them — only race tracks are
-under the hard rule.*
-
-## 7. Making it one album — **Intent**
-
-The registry keeps venues distinct; something has to keep them related. Two levers,
-in order of effort:
-
-1. **Build a Persona from a track you already own** and base every venue on it. A
-   Persona saves a song's sonic essence — ensemble, production, room — and reuses
-   it. Use *Salty Critter Yacht Club* (the title track, the house sound) or
-   *Breezy Race to Windward*. Do **not** build it from Clubhouse Point: a Persona made
-   from a deliberately characterless bed gives you a characterless album.
-2. **A motif.** One six-to-eight note figure in the menu track that hides inside
-   every venue track — different instrument, different tempo, sometimes only in
-   the bass. This is what makes Wind Waker cohere. Suno cannot reuse a motif from
-   text alone; Cover preserves melody while changing style, so the route is a
-   single motif seed put through Cover per venue. Untested — try it on two venues
-   before committing.
-
-## 8. Delivery — **Observed**
+## 7. Delivery — **Observed**
 
 1. Download the MP3 from Suno at the highest quality offered.
-2. Save as `regatta/assets/audio/<name>.mp3`.
-3. Measure it and paste the row it prints into `MUSIC_TRACKS` in `script.js`:
+2. Save as `regatta/assets/audio/<venuekey>.mp3` — keys are the ones in `VENUES`
+   (`bay`, `lake`, `lagoon`, `swamp`, `river`, `ocean`, `redrock`, `glowtide`,
+   `arctic`, `seatrials`).
+3. Measure it and paste the row it prints into `MUSIC_TRACKS`:
    ```
    python3 regatta/art/music_loop.py regatta/assets/audio/<name>.mp3
    ```
-   `loopEnd` is where the music stops and the fade begins. `loopStart` is where the
-   texture becomes dense enough to loop back INTO — not the same question, and the
-   one that catches people out: Suno likes to open a bed with a bare pulse and fill
-   it in over the first half-minute, which begins at full LEVEL and would still drop
-   the floor out by 36 dB every time the loop came round. Playback ENTERS at
-   `loopStart` as well as returning to it: a cue starting is the moment the music
-   most needs to be present, so a sparse opening is skipped, not savoured.
-   `trim` normalises level to the set's -17 dB mean.
-   **Do not hand-edit any of the three.**
-4. `npm run test:audio` — asserts the file exists, the cue resolves, and the loop
-   point sits inside the track.
-5. When there is a CHOICE to make — two takes, or a candidate against a track
-   already in the slot — measure both over their loop bodies:
+   **Do not hand-edit `loopStart`, `loopEnd` or `trim`.**
+4. `npm run test:audio` — asserts the file exists, the cue resolves, and the loop point
+   sits inside the track.
+5. **Drive the venue once over http**, because the suite races `seatrials` and `arctic`
+   only:
    ```
-   python3 regatta/art/music_spec.py "regatta/assets/audio/<name>.mp3:<loopStart>:<loopEnd>"
+   node regatta/eval/_probe_audio.js <venue>
    ```
-   It prints the wind-band share (§3), dynamics, the third/fifth ratio a brief like
-   Glacier Sound's is really asking for, and how much the harmony moves. It picked
-   Glacier Sound between two takes and retired `breezy-race` from Lighthouse Cove.
-   ⚠️ It cannot identify an instrument, so it cannot decide venue FIT — that stays
-   a listening call against the registry in §6.
+   It confirms real signal reaches the bus and reports **headroom** — how far the bed
+   sits under the music at that venue's own breeze. A wind-band share is a property of
+   the file; headroom is a property of the pairing.
+6. **When choosing between takes**, measure both over their loop bodies with
+   `music_spec.py` (§14) and compare on the axis the brief cares about.
 
-⚠️ **The suite races seatrials and arctic, not your venue.** A new track gets the
-static loop-map check and nothing more, so drive the actual venue over http once:
-```
-node regatta/eval/_probe_audio.js <venue>
-```
-It confirms the cue resolves, that real signal reaches the bus, and — the part a
-file measurement cannot tell you — how far the wind bed sits under the music **at
-that venue's own breeze**. A wind-band share is a property of the track; headroom
-is a property of the pairing. Measured Aug 1 2026: bay 13.4 dB, lagoon 12.1 dB,
-arctic 6.4 dB, the last deliberately tight.
+⚠️ **A track for a venue that does not exist must NOT get a `MUSIC_TRACKS` row.** An
+unreachable row is dead weight — three such rows were cleaned out in the July 2026
+plumbing pass. Save the file, record the row in §12.3, wire it when the venue lands.
 
-⚠️ Pin the venue through `localStorage`, never `settings.venue = x`: `resetGame()`
-calls `loadSettings()` and stomps it, and the probe then measures whatever venue
-was already loaded while appearing to pass.
+⚠️ **Pin the venue through `localStorage`, never `settings.venue = x`** — `resetGame()`
+calls `loadSettings()` and stomps it, and the probe then measures whatever venue was
+already loaded while appearing to pass.
 
-**Size.** Suno's MP3s run ~190 kbps, about 4–7 MB per track; ten venue tracks is
-~50 MB, all lazily loaded per cue. If that becomes a problem, 128 kbps roughly
-halves it — but no MP3 encoder is installed on this machine, so that needs
-`brew install lame` or ffmpeg first. Not urgent.
+**Size.** Suno MP3s run ~190 kbps, 4–7 MB per track; the full set is ~50 MB, lazily
+loaded per cue. 128 kbps would roughly halve it but needs `lame` or `ffmpeg` installed.
 
-## 9. Acceptance checklist — **Rule**
+## 8. Acceptance checklist — **Rule**
 
-- [ ] Instrumental, and no wordless vocalise anywhere in it
-- [ ] No fade: `music_loop.py` reports under ~2 s trimmed, ideally "already tight"
-- [ ] Loops without drawing attention to the seam — listen through it three times
-- [ ] Tempo matches the registry; no BPM collision with another venue
+- [ ] Instrumental, no wordless vocalise, no whistling
+- [ ] No fade: `music_loop.py` reports under ~2 s trimmed
+- [ ] Loop body long enough for the cue (§5), and the seam clean enough for how often
+      it is heard
 - [ ] The owned instrument is audible in the first fifteen seconds
-- [ ] Nothing in it competes with a wind gust on a windy venue (§3) — `music_spec.py`
-      puts a number on it; the set runs 5.4% (arctic) to 47.7% (breezy-race, retired)
-- [ ] Loop BODY is long enough: `loopEnd - loopStart` against ~245 s of prestart +
-      race. Under ~120 s the seam comes round twice or more, which raises the bar on
-      how clean it is rather than ruling the track out
-- [ ] No hook you can hum after one race — for race tracks, that is a failure
-- [ ] Sits with its neighbours: play it straight after the venue before and after
-      it in the registry, not on its own
+- [ ] **It has a top** — check above-2 kHz and centroid against §6 before anything else;
+      two takes died of murk while passing every other test
+- [ ] **It has the shape the brief asked for** — and if the brief asked for dynamics,
+      the prompt asked for *arrangement*, not level (§3.2)
+- [ ] Tempo in the right band (§10); mode ignored as unmeasurable (§3.3c)
+- [ ] Nothing competes with a gust on a windy venue — but only Glacier Sound is windy
+- [ ] No hook you can hum after one race — for race tracks that is a failure; for the
+      menu it is the requirement
+- [ ] Sits with its neighbours: play it straight after the venues either side of it in
+      the registry, not on its own
+
+---
+
+# PART II — THE REFERENCE
+
+## 9. The cue map — **Observed** (`script.js`, `MUSIC_TRACKS`)
+
+| Cue | File | Loop | Notes |
+|---|---|---|---|
+| `menu` | `yacht-club.mp3` | 0 → 127.5, trim 0.85 | the Game's Song; Dec 2025 original retired to `yacht-club-2025.mp3` |
+| `prestart` | — | — | **deliberately none**; the venue track covers the countdown |
+| `racing` | `spinnaker-run.mp3` | 0 → 264.5, trim 0.96 | house fallback; nothing reaches it now, kept for an 11th venue |
+| `racing-<venue>` | ten files | see §11 | one per venue |
+| `results` | `harbor-glow.mp3` | 0 → 120.0, trim 1.02 | `harbor-results.mp3` retired to unassigned |
+
+**There is no prestart cue.** Prestart and racing resolve to the same cue, so the
+venue's track starts on the water and runs straight through the gun with nothing
+re-triggering. ⚠️ **Consequence for writing: a race track's first minute is heard during
+the COUNTDOWN**, so its opening should suit manoeuvring, not a starting gun.
+
+**Unassigned files kept on disk:** `yacht-club-2025`, `yacht-club-take2/3`,
+`harbor-results`, `breezy-race`, `prestart-countdown`, `ocean-take1/2/3`, `lake-take1`.
+Unassigning is how a track leaves the game; deleting is not.
+
+## 10. The registry — **Rule**
+
+Instruments carry the place; tempo, density and form carry the mechanic. A new venue
+must claim unclaimed territory.
+
+| Venue | key | Signature instruments — *place* | Feel / form — *mechanic* | BPM briefed → shipped | Key shipped |
+|---|---|---|---|---|---|
+| Gatorgrass Bayou | `swamp` | Cajun accordion, washboard, resonator slide | dragging behind the beat | 72 → 68 | D minor |
+| Stillwater Lake | `lake` | fingerpicked nylon, airy high flute | continuous arpeggios; harmony drifts like the shifts | 84 → 83 | G major |
+| Glacier Sound | `arctic` | low horn drone, bowed double bass | slow pressure, no melody | 88 → 83 | C major |
+| Bluewater Bonanza | `ocean` | solo cello + guitar alternating with full orchestra | swell sets — troughs are an ARRANGEMENT, not a fade | 92 → 96 | D major |
+| Redrock Reservoir | `redrock` | baritone tremolo guitar, floor toms | dry, spacious, big slapback | 96 → 96 | F major |
+| Clubhouse Point | `seatrials` | woodblock, upright bass, brushes — no lead | metronomic, warm, forgettable on purpose | 100 → 99 | C major |
+| Glowtide Strait | `glowtide` | glass marimba, analog synth arp | kinetic nocturnal pulse | 104 → 99 | F major |
+| Pearl Lagoon | `lagoon` | steel pan, hand percussion | island offbeat + a squall gear | 106 → 89 | C major |
+| Lighthouse Cove | `bay` | penny whistle, concertina | easy club-race 4/4 — the reference | 112 → 112 | D (amb. third) |
+| Sockeye Run | `river` | banjo roll, fiddle | continuous ostinato, never rests | 120 → 136 | D major |
+
+**Unbuilt venues — claimed here so nothing collides later:**
+
+| Venue | key | Signature instruments | Feel / form | BPM | Key |
+|---|---|---|---|---|---|
+| Spoonbill Flats | `flats` | hammered dulcimer, bass clarinet | figures that fall and restart — the tide | 76 | E minor |
+| Flamingo Reach | `wetland` | muted trumpet, vibraphone | a groove that circles and never resolves, plus one flurry | 108 | E major |
+| Fallwater Fjord | `fjord` | nyckelharpa, frame drum | driving; the falls are the slalom | 124 | A minor |
+| Emberfall Isle | `volcanic` | struck metal (anvil, brake drums), taiko | percussion-led, the only one — the gauntlet | 132 | C minor |
+
+⚠️⚠️ **Rule 4 does not scale past about ten venues.** Ten used
+72/84/88/92/96/100/104/106/112/120; four more can only slot 4–8 BPM from a neighbour,
+while **Suno's tolerance is ~±5 BPM and the measurement cannot resolve better than ±4
+near 100.** Treat the column as **bands** — slow 70–85 · mid 88–108 · fast 112–136 —
+and require distinctness *within a band*, not to the beat. Flamingo Reach is the proof:
+briefed 108 to sit between Glowtide and Lighthouse Cove, it came back at 99, on
+Clubhouse Point's rung.
+
+⚠️ **The Mode column records what shipped, not what to ask for** (§3.3c). Note the
+collisions this produced: **Glowtide and Redrock both landed in F major**, the closest
+in the set, and only instrumentation separates them.
+
+⚠️ **Gatorgrass is Cajun/zydeco, not bluegrass.** Bluegrass is Appalachian —
+banjo-led, fast, bright. The bayou is Louisiana, and zydeco is also the better
+*mechanical* fit: low and rolling for a venue whose whole mechanic is that you cannot
+get moving. The banjo went to Sockeye Run, where a perpetual roll *is* the current.
+The two prompts exclude each other's instrument to hold the line.
+
+## 11. Measured properties of every track — **Observed**
+
+Measured over the loop body. `*` = venue not built; track saved but unwired.
+
+| Venue | key | body s | wind band | >2 kHz | centroid | dyn | key | flux | pulse |
+|---|---|---|---|---|---|---|---|---|---|
+| Lighthouse Cove | bay | 94.0 | 29.3% | 28.6% | 1955 | 3.8 | D minor | **0.205** | 112 |
+| Stillwater Lake | lake | 240.5 | 12.8% | 16.2% | 1313 | 6.3 | G major | 0.166 | 83 |
+| Pearl Lagoon | lagoon | 118.5 | 39.4% | 45.3% | 2793 | 4.8 | C major | 0.147 | 89 |
+| Gatorgrass Bayou | swamp | 172.5 | 18.8% | 15.8% | 1110 | 9.4 | D minor | 0.119 | 68 |
+| Sockeye Run | river | 479.0 | 23.6% | 36.4% | 2530 | 3.4 | D major | 0.180 | 136 |
+| Bluewater Bonanza | ocean | 222.5 | 29.6% | 22.6% | 1240 | 8.6 | D major | 0.123 | 96 |
+| Redrock Reservoir | redrock | 148.5 | 26.7% | 24.7% | 1530 | 8.0 | F major | 0.183 | 96 |
+| Glowtide Strait | glowtide | 238.5 | 15.7% | 16.1% | 1209 | **13.5** | F major | 0.226 | 99 |
+| Glacier Sound | arctic | 122.5 | **5.4%** | **2.4%** | **309** | 13.2 | C major | 0.129 | 83 |
+| Clubhouse Point | seatrials | 99.0 | 21.4% | 16.4% | 1116 | 13.4 | C major | **0.235** | 99 |
+| **Menu** | menu | 127.5 | 23.8% | 22.8% | 1619 | 4.3 | A minor | 0.200 | 112 |
+| **Results** | results | 120.0 | 32.0% | 29.8% | 1875 | 11.2 | F major | 0.140 | 89 |
+| Fallwater Fjord | fjord* | 133.5 | 26.2% | 21.8% | 1319 | 8.6 | A minor | 0.164 | 123 |
+| Emberfall Isle | volcanic* | 225.0 | **44.6%** | 41.2% | 2269 | 9.0 | C major | 0.129 | 66 |
+| Flamingo Reach | wetland* | 241.0 | 16.9% | 20.0% | 1472 | 6.8 | A minor | 0.168 | 99 |
+| Spoonbill Flats | flats* | 139.5 | 24.1% | 21.0% | 1491 | 11.9 | D minor | 0.156 | 76 |
+
+**Headroom** — music RMS over the wind bed, at each venue's own breeze:
+
+| venue | bed | headroom | | venue | bed | headroom |
+|---|---|---|---|---|---|---|
+| Gatorgrass `swamp` | −44.6 dB | **18.4** | | Sockeye Run `river` | −41.4 | 14.1 |
+| Glowtide `glowtide` | −42.0 | 17.0 | | Pearl Lagoon `lagoon` | −40.8 | 13.7 |
+| Stillwater `lake` | −43.1 | 16.1 | | Lighthouse Cove `bay` | −40.8 | 13.3 |
+| Redrock `redrock` | −41.4 | 15.9 | | Bluewater `ocean` | −39.1 | 12.2 |
+| Clubhouse Point `seatrials` | −41.4 | 14.9 | | Glacier Sound `arctic` | −38.8 | **10.2** |
+
+The ladder is the venues' own wind, in order, which is the shape it should have.
+
+## 12. The prompts — **Reference**
+
+Each is the line that produced the track now in the slot. Loop contract omitted for
+brevity — **every one ends** `seamless loop, no intro, no outro, ends as it began`.
+
+### 12.1 Venues
+
+**Lighthouse Cove** `bay` · Weirdness 20 · *the reference track*
+```
+Bright acoustic sailing instrumental, 112 BPM, D major, penny whistle and concertina over strummed guitar, upright bass, brushed kit, easy club-race swing
+```
+`vocals, wordless vocalise, sea shanty chorus`
+
+**Stillwater Lake** `lake` · Weirdness 20 · SI 85 · 4–6 min
+```
+G lydian, major with a sharp fourth — bright sunlit acoustic instrumental, 84 BPM, continuous flowing fingerpicked nylon guitar arpeggios that never stop, airy high flute above them, brushed upright bass, shimmering like sunlight on open water, gently drifting harmony
+```
+`vocals, wordless vocalise, dense percussion, sparse arrangement, long silences, ambient drone, dark, muffled`
+*Take 1 was rejected as too sleepy — and was a faithful execution of a brief that asked
+for `sparse`, `long rests between phrases` and "silence is the mechanic". **The brief
+was the bug**: the venue's mechanic is the patient read, and patience got translated
+into emptiness. A lake can be still and still be alive. The fix was brightness (3.7% →
+16.2% above 2 kHz) and a filled-in third (0.29 → 0.68), not tempo.*
+
+**Pearl Lagoon** `lagoon` · Weirdness 25
+```
+Bright island instrumental, 106 BPM, steel pan lead, offbeat guitar skank, shaker and hand percussion, sunlit major key, one urgent double-time squall section
+```
+`vocals, wordless vocalise, EDM synth`
+*Keep the double-time section inside the loop. Its 39.4% wind band is second-worst in
+the set and does not matter — the squalls are not built and it races at 13 kn.*
+
+**Gatorgrass Bayou** `swamp` · Weirdness 25
+```
+Slow swamp instrumental, 72 BPM, Cajun accordion and resonator slide guitar, washboard and triangle, dorian blues, humid and dragging behind the beat
+```
+`vocals, wordless vocalise, bluegrass banjo`
+*The one venue §4 does not constrain — 6.5 kn, the quietest bed and the widest headroom
+in the game. Briefed dorian, shipped aeolian; accepted, because a strong A7 dominant is
+more idiomatically Cajun than a modal sixth.*
+
+**Sockeye Run** `river` · Weirdness 20
+```
+Driving old-time instrumental, 120 BPM, continuous banjo roll and fiddle, upright bass, bright major key, perpetual motion with no rest in the rhythm
+```
+`vocals, wordless vocalise, accordion`
+*⚠️ Its 3.4 dB dynamics is a **pass** — the ostinato that never rests is the current.
+The identical figure failed Bluewater three times. Cleanest seam in the project at
+0.6 dB. Listen for a hook: 0.180 flux, and a fiddle tune has one by nature.*
+
+**Bluewater Bonanza** `ocean` · Weirdness 25 · SI 85 · 4–6 min
+```
+D major orchestral sailing instrumental, 92 BPM, alternating sections: solo cello and acoustic guitar alone, then full orchestra with soaring violins, sixteenth-note string ostinato, timpani, long quiet passages between the big ones
+```
+`vocals, wordless vocalise, epic choir, rock drum kit, minor key, distant, muffled, lo-fi, constant intensity`
+*Four takes, and the source of §3.2. Take 1 was too dark (4.2% above 2 kHz) and too
+small; takes 2–3 fixed the spectrum and lost all dynamics by asking for level. **Take 4
+asked for arrangement and got 8.6 dB with real 30 s swell sets.** It is also the only
+take with spectral width rather than one extreme.*
+
+**Redrock Reservoir** `redrock` · Weirdness 30
+```
+Dry desert instrumental, 96 BPM, baritone tremolo guitar with deep slapback echo, sparse floor toms, no cymbals, mixolydian, sun-bleached canyon space
+```
+`vocals, wordless vocalise, cymbals`
+*Briefed heavy-wind; races at 12 kn, so the low-register rationale is a forecast.
+Its loop points are the first from the length-aware pair search (§14).*
+
+**Glowtide Strait** `glowtide` · Weirdness 35 · *the only electronic venue*
+```
+Nocturnal electronic instrumental, 104 BPM, glass marimba and soft analog synth arpeggio, deep sub bass, brushed rim, aeolian minor, gliding and weightless
+```
+`vocals, wordless vocalise, acoustic guitar`
+*Widest dynamics in the game (13.5 dB) and it is real shape, not a ramp. ⚠️ It opens
+6.4 dB down for ~25 s and `music_loop` did not flag it — dense but quiet. Costs nothing
+only because its 238.5 s body outlasts the race. The build lands on the gun, since the
+prestart is ~30 s; **adding a `loopStart` would delete that.***
+
+**Glacier Sound** `arctic` · Weirdness 30
+```
+Cold sparse instrumental, 88 BPM, low horn drone and bowed double bass, open fifths with no third, restrained log drum, texture not melody, vast and still
+```
+`vocals, wordless vocalise, melodic lead`
+*Low on purpose — the windiest venue, so the top of the spectrum belongs to the gust.
+Chosen between two takes on third/fifth ratio: 0.31 against 0.62.*
+
+**Clubhouse Point** `seatrials` · Weirdness 10 · SI 90 · 2 min
+```
+Bright C major club bed, instrumental, 100 BPM, soft woodblock pulse, warm upright bass, lightly brushed kit, no melody at all, unhurried and even, warm acoustic room
+```
+`vocals, wordless vocalise, melodic lead, minor key`
+*It should be the least memorable track in the game. That is the brief, not a failure —
+this is the eval anchor, and blandness is its identity. ⚠️ **Do not build the album
+Persona from it** (§13).*
+
+### 12.2 Menu and results
+
+These two are unlike the race tracks in four ways, and the differences drive the briefs:
+
+1. **The wind bed is silent here** (§4), so nothing constrains the spectrum. The menu
+   track puts 23.8% in the wind band and it is irrelevant.
+2. **A melody is allowed — but the licence is not equal.** The menu is heard by choice
+   while browsing; results fires **after every race**, making it the most-repeated cue
+   per second of attention in the game. **Menu: a melody you can hum. Results: a
+   resolution you can sit through.** `big melodic hook` is excluded on results — the
+   one place in this document where that would be wrong anywhere else.
+3. **Opposite loop profiles.** The menu loops repeatedly within one sitting and wants
+   length; results is heard for 20–40 s from its start, so **its opening is the cue**,
+   and it is the only place a cadence belongs.
+4. **The menu is the Persona source** (§13), so it must be the most characterful track
+   in the set — and **must stay instrumental**, because a vocal in the Persona would
+   bleed into venue tracks under the hard no-vocals rule. That is a technical reason,
+   not a taste one.
+
+**Menu — the Game's Song** · Weirdness 25 · SI 85 · 6 min
+```
+A major upbeat acoustic club-band instrumental, 116 BPM, warm clarinet lead playing a short catchy phrase that repeats and answers itself, call and response between clarinet and piano, piano comping, walking upright bass, brushed snare with a bounce, bright and lively, small close-miked room, playful and driving
+```
+`vocals, wordless vocalise, whistling, minor key, mandolin, banjo, fiddle, accordion, penny whistle, sea shanty, bluegrass, celtic folk, sustained strings, ambient pad, cinematic, slow, sparse, dark, muffled, EDM synth, epic trailer`
+
+*Four takes, and both §3.2 and §3.3a came out of them. **It must not be folksy** — the
+menu is the umbrella over an album spanning a Cajun bayou, an analog-synth nocturne, a
+taiko volcano and an orchestral ocean, and a folk lead announces one dialect and
+mislabels the rest. It also crowds Sockeye Run, the album's actual folk corner. **The
+excludes name every folk instrument that is a venue's signature**, which is the only
+reliable way to stop Suno reaching for the genre they imply. Shipped in A minor against
+a brief asking for major — `minor key` does not work (§3.3c).*
+
+**Results** · Weirdness 20 · SI 85 · 3 min
+```
+B flat major warm acoustic instrumental, 96 BPM, piano and acoustic guitar over upright bass and brushed kit, soft strings beneath, opening on a full warm chord that settles and resolves, easy forward motion, understated and companionable, evening after racing
+```
+`vocals, wordless vocalise, mandolin, banjo, fiddle, accordion, sea shanty, orchestral fanfare, triumphant brass, stadium drums, big melodic hook, dark, muffled, minor key`
+
+*Four jobs that constrain each other: encouraging, conclusive, neutral enough for
+eighth as well as first, and repeat-tolerant. **The resolution is warmth and a cadence,
+never a statement** — anything written to be noticed is what you will be sick of by the
+tenth race. **Generous, not triumphant**, is a product call: `targetCue()` returns
+`'results'` whatever happened, so a fanfare after eighth is worse than a warm track
+after a win.*
+
+*The slot is filled by `harbor-glow`, which had been unassigned since Dec 2025 and won
+on three numbers that are this brief exactly: 11.2 dB dynamics, F major, and an
+unhurried 89 BPM. ⚠️ It opens 6.2 dB down for 7 s where the brief asked for a full
+chord — accepted, because a short settle before the arrival is defensible on a
+scoreboard in a way it never would be on a menu. `loopStart: 8.0` would make the
+conclusion land immediately, at the cost of 8 s of body.*
+
+**Optional — a victory variant.** The one genuine gap in the cue map. Needs
+`targetCue()` returning `'results-win'` on a top-three finish plus one `MUSIC_TRACKS`
+row; `resolveTrack` degrades cleanly if the file is absent. Weirdness 20 · 2 min
+```
+B flat major warm acoustic celebration instrumental, 104 BPM, mandolin and concertina trading the lead over strummed guitar, upright bass, brushed kit, bright and open, a win worth a handshake not a trophy
+```
+`vocals, wordless vocalise, orchestral fanfare, stadium drums, dark, muffled, minor key`
+*Club racing, not a podium — the game's register is a Wednesday-night beer-can fleet.*
+
+**Prestart — not needed.** The venue track covers the countdown. Kept only in case that
+is revisited. Weirdness 25 · 40 s
+```
+Tense instrumental countdown bed, 88 BPM, ticking rim and shaker, low pulsing bass, rising string tremolo, building pressure that never resolves
+```
+`vocals, wordless vocalise, triumphant fanfare`
+
+### 12.3 Unbuilt venues — tracks in hand, **not wired**
+
+All four files are on disk and **deliberately absent from `MUSIC_TRACKS`** (§7). Add
+the row the day the venue lands.
+
+**Spoonbill Flats** `flats` · *the clock* · Weirdness 25 · SI 85 · 4–6 min
+`'racing-flats': { file: 'assets/audio/flats.mp3', loopEnd: 139.5, trim: 0.92 }`
+```
+E minor hammered dulcimer instrumental, 76 BPM, bright ringing dulcimer figures that fall and restart continuously, low bass clarinet beneath, brushed frame drum, wide open estuary with a quiet unease
+```
+`vocals, wordless vocalise, dark, muffled, ambient drone, long silences, sparse arrangement`
+*⚠️ Listening check: 11.8% of frames sit more than 6 dB under the median — most of any
+candidate. Probably the dulcimer's decay envelope rather than arrangement gaps, but
+this is the venue whose brief excluded `long silences`. Does it breathe, or does it stop?*
+
+**Flamingo Reach** `wetland` · *where can I possibly pass?* · Weirdness 25 · SI 85 · 4–6 min
+`'racing-wetland': { file: 'assets/audio/wetland.mp3', loopEnd: 241.0, trim: 0.99 }`
+```
+E major humid instrumental, 108 BPM, muted trumpet lead over vibraphone, upright bass and brushed rim, a circling groove that never quite resolves, one sudden bright flurry where the whole band lifts at once
+```
+`vocals, wordless vocalise, steel pan, accordion, dark, muffled`
+*Best-behaved file in the project: 241.0 s of body from a 241.0 s file, nothing
+discarded. The flurry is measurable — a −4.1 dB drop at 151 s, then a sustained lift.*
+
+**Fallwater Fjord** `fjord` · *take the downdraft or sail around it?* · Weirdness 30 · SI 85 · 4–6 min
+`'racing-fjord': { file: 'assets/audio/fjord.mp3', loopStart: 14.0, loopEnd: 147.5, trim: 0.65 }`
+```
+A minor nordic folk instrumental, 124 BPM, nyckelharpa lead with ringing sympathetic drone strings, driving frame drum, low strings, green summer fjord, urgent and mythic
+```
+`vocals, wordless vocalise, chanting, throat singing, choir, viking metal, distorted guitar, dark, muffled, icy`
+*Cleanest key reading anywhere — A minor at r=0.92, tonic and mode both hit. ⚠️ **Norse
+is the strongest vocal trigger in the set**, so chanting/throat singing/choir are
+excluded by name; and the venues doc requires a **summer** fjord to vacate Glacier
+Sound's palette, hence `icy`. ⚠️ Its 3.98 dB seam is the worst in the project and the
+tool will not fix it — see §14.*
+
+**Emberfall Isle** `volcanic` · *the gauntlet* · Weirdness 35 · SI 85 · 4–6 min
+`'racing-volcanic': { file: 'assets/audio/volcanic.mp3', loopStart: 14.5, loopEnd: 239.5, trim: 0.87 }`
+```
+C minor percussive instrumental, 132 BPM, struck metal — anvil, brake drums and tuned bells — over deep taiko drums, low prepared piano ostinato, alien and dangerous, hard edged and bright
+```
+`vocals, wordless vocalise, epic choir, trailer braams, orchestral strings, dark, muffled`
+*The only percussion-led venue. ⚠️ 44.6% wind band, worst of any live track — struck
+metal lives exactly in the bed's band, a risk this brief created by asking for metal
+**and** brightness. `_probe_audio.js volcanic` is mandatory before accepting; if the
+venue turns out breezy, let the taiko carry more and the bells less. ⚠️ Its key reading
+is unmeasurable (§14).*
+
+## 13. Making it one album — **Intent**
+
+The registry keeps venues distinct; something has to keep them related.
+
+1. **Build a Persona from a track you already own.** A Persona saves a song's sonic
+   essence — ensemble, production, room — and reuses it. **Use the current
+   `yacht-club.mp3`**: four takes existed precisely to make it the most characterful
+   track in the set, and at 0.200 chroma flux it is second only to Lighthouse Cove.
+   ⚠️ **Not** Clubhouse Point (a Persona from a deliberately characterless bed gives a
+   characterless album) and **not** `yacht-club-2025.mp3` (4.1 dB dynamics at a mean of
+   −19.0 dB — the flattest and quietest file in the project).
+2. **A motif.** One six-to-eight note figure from the menu track hiding inside every
+   venue track — different instrument, different tempo, sometimes only in the bass.
+   This is what makes Wind Waker cohere. Suno cannot reuse a motif from text alone, but
+   **Cover preserves melody and structure**, so the route is one motif seed put through
+   Cover per venue. Untested — try two venues before committing.
+
+⚠️ **Cover is the right tool only when you want the structure too.** It was wrong for
+Bluewater, where the form was the thing being changed. It is right for a results
+variant that reprises the menu theme, and right for motif work.
+
+## 14. The tools — **Observed**
+
+| tool | question it answers |
+|---|---|
+| `art/music_loop.py <file>` | where does this loop, and what row do I paste? |
+| `art/music_spec.py "<file>:<start>:<end>"` | should we ship it? (§6) |
+| `eval/_probe_audio.js <venue>` | does it make real sound in the game, and how much headroom? |
+| `npm run test:audio` | does the whole cue map still resolve and sound? |
+
+**`music_loop.py`.** `loopEnd` is where the music stops and the fade begins; `loopStart`
+is where the texture becomes dense enough to loop back *into*. When no early point
+matches the ending it searches start/end **pairs** and trims the tail too.
+
+- ⚠️ Among pairs whose seam is within 0.5 dB of the tightest it takes the **longest
+  body**, guarded so it only fires when the gain is ≥1.15×. Without that, Redrock got
+  an 87.5 s body to win 0.03 dB where 148.5 s was available. **The guard matters** —
+  an earlier version regressed Lighthouse Cove for 3.5 s of body.
+- ⚠️ **`FLOOR_TOL` (4.0 dB) is a loose gate.** Fallwater Fjord's 3.98 dB one-sided seam
+  sits just under it, so the pair search never runs even though a 0.26 dB pair exists at
+  a longer body. Tightening it re-measures every shipped track; **do not** "fix" this by
+  running the search unconditionally (perturbs 18 of 20 assets) or by adding a
+  body-retention guard (hands yacht-club back its 7.9 dB seam). Both were tried.
+
+**`music_spec.py`.** Weighted by **magnitude, not power** — power weighting buries
+everything under the bass and reports Glacier Sound at 0.2% where the number on record
+is 5.4%. Nothing measured that way is comparable.
+
+- ⚠️ **Tempo** is a peak family plus a resolved pulse, because the strongest peak is
+  usually the fastest thing moving, not the beat. The pulse is the family member
+  explaining the most of the family through **octave relations only** — admitting 3/2
+  lets an artifact win. **Resolution is coarse and worsens with tempo**: adjacent bins
+  near 100 BPM are 99.4 and 103.4, so a reported 99 cannot be told from 103. Trust it
+  at slow tempos; treat anything near 100 as ±4.
+- ⚠️ **The key estimate needs harmonic content.** On a percussion-led track struck metal
+  and drums smear energy across all twelve pitch classes, the chroma comes back nearly
+  uniform, and the mode reading is noise however confident `r` looks. **Check the chroma
+  profile is peaked before believing it.** Two readings within ~0.02 of each other mean
+  the third is *ambiguous*, not that the track is minor.
+
+**`_probe_audio.js`.** ⚠️ It **seeks to the middle of the loop body** before measuring
+and reports `sampledAt` alongside `enteredAt`. It used to sample wherever playback
+happened to be, 3–6 s in, which only measures steady state for a track that opens at
+full level — it reported 3.4 dB of headroom for a track that has 17. Four of six
+recorded headroom numbers moved when this was fixed.
+
+**`test_audio.js`** serves the tree over http on an ephemeral port and taps
+`Sound.musicBus` with an AnalyserNode. ⚠️ It is **the only assertion in the suite that
+measures sound rather than state** — every state-based check passed while the score was
+silent over `file://`. ⚠️ Its server implements HTTP **Range**, which is required: without
+it `el.seekable` is empty and `currentTime = loopStart` is silently ignored, so every
+track looks like it starts at 0.

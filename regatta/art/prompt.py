@@ -55,7 +55,28 @@ PORTRAIT_NEGATIVE = (
     "neutral black, black outline, mismatched fins, one limb shorter than the other, "
     "scalloped shading, overlapping crescent strokes, busy repeating texture, "
     "individually drawn scales, camouflaged garment, jacket blending into the body, "
-    "rainbow, prismatic, iridescent, many-coloured, colour spectrum, tie-dye"
+    "rainbow, prismatic, iridescent, many-coloured, colour spectrum, tie-dye, "
+    # the Lunker trial: head sat on the jacket, collar opening filled with jacket, one strap
+    # floating with no shoulder under it, dorsal line passing over the vest instead of out of it
+    "bib, apron, jacket pasted flat on the front of the body, jacket butted against the chin, "
+    "collar opening filled with jacket, head resting on top of the jacket, back lying on top "
+    "of the jacket, floating shoulder strap, strap with no shoulder under it, "
+    "jacket stopping at the near flank, "
+    # (6) bounded silhouette and (7) accent drift — see the decision notes on the add-on
+    "tall narrow figure, long thin silhouette, wide flat silhouette, stretched silhouette, "
+    "bill pointing straight up, snout sticking straight out of the frame, limb extending past "
+    "the body, small head on a large body, head dwarfed by the shoulders, "
+    "jacket tinted with the body colour, jacket harmonised with the animal, tone-on-tone "
+    "jacket, panel the same colour as the creature, jacket in the animal's own hue, "
+    # Plunge: both wings held out despite a GESTURE line reading "wings swept back close to
+    # the body", and vest straps landing dE 34 from the bird's own golden crown.
+    "wings held away from the body, wings opened out to the sides, outstretched wings, "
+    "spread wingspan, wings framing the character, "
+    "jacket matching the animal's markings, strap the same colour as a crest or crown, "
+    # Sharks and Fathom kept coming back as bodybuilders — see decision (8)
+    "muscular shoulders, deltoids, defined pectoral muscles, biceps, bodybuilder torso, "
+    "V-taper torso, broad chest tapering to a narrow waist, anatomical human musculature, "
+    "gym physique, fin drawn as a muscular arm"
 )
 
 BASE = (
@@ -100,7 +121,7 @@ CLASS_ADDON = {
         "Give the eye a path through the water. One focal element; corners quiet; bottom "
         "fifth simple enough for a name scrim."
     ),
-    # Rewritten after a review of all 82 portraits plus one generated trial. Four decisions,
+    # Rewritten after a review of all 82 portraits plus one generated trial. Seven decisions,
     # each of which the roster was measurably failing:
     #
     # (1) THE PFD IS A UNIFORM. ~18 of 82 wore leather, moto, tactical or hoodie garments. The
@@ -115,6 +136,46 @@ CLASS_ADDON = {
     #     head and the portrait lost ink against the leaderboard plate versus the art it
     #     replaced (0.128 vs 0.164). The old limbless-blob convention was partly a legibility
     #     adaptation to a circular crop. Limbs are allowed; widening the silhouette is not.
+    # (5) THE JACKET IS WORN, NOT PASTED ON. Added after the Lunker trial. The add-on specified
+    #     the PFD's construction, colour separation, material and shading, and said nothing
+    #     about how it MEETS the body — so the generator butted the jacket flat against the
+    #     underside of the jaw, filled the collar opening with more jacket, and left a shoulder
+    #     strap floating with no shoulder under it. FISH FAIL THIS HARDEST: there is no neck to
+    #     hang a collar on, so the head simply rests on top of the vest and the dorsal line
+    #     passes over it. Mammals and birds get the joint for free, which is why 82 portraits
+    #     shipped before anyone noticed the clause was missing.
+    # (6) THE SILHOUETTE IS BOUNDED. The portrait is fitted on its LONGEST dimension, so a
+    #     silhouette stretched in either direction spends its 64 pixels on empty frame and
+    #     shrinks the head. Measured on the shipped roster the tight silhouette runs aspect
+    #     0.78-1.23; two trials fell outside it and both lost the face — Spar at 0.67 with the
+    #     bill raised (43px wide at display size, head ~20px), Bruce at 1.11 with the pectoral
+    #     fins spread. The fix is orientation, not size: Torrent solves the identical bill
+    #     problem at 1.22 by laying it ACROSS the frame, and Spar's own second roll came back
+    #     at 0.95 doing the same. Needle is the accepted edge at 1.37, allowed because a
+    #     needle-thin snout is nearly all transparent frame and the body keeps its area.
+    #     STRENGTHENED after Plunge: the first roll under the clause to fail it, at 1.11 with
+    #     both wings held out, even though his own GESTURE line reads "wings swept back close
+    #     to the body". Stating the bound was not enough — the clause now says the widest
+    #     points belong to the BODY, describes what a folded wing actually looks like, and
+    #     makes a folded/close/swept-back GESTURE line binding over the animal's usual pose.
+    # (7) THE JACKET IS NOT A SHADE OF THE ANIMAL. Six trials in a row returned a jacket accent
+    #     pulled toward the creature's own hue — Snag amber-on-brown, Lunker chartreuse 6deg off
+    #     its olive, Spar blue-on-blue, Bloom magenta 4deg off its violet and invisible at 64px.
+    #     The subjects were NOT at fault: measured in CIELAB, every one of those pairs is well
+    #     separated, so the model was harmonising the kit to the animal on its own. It is worth
+    #     stating because these two colours become the boat's hull and spinnaker, and a kite
+    #     that matches the hull is the one thing `npm run test:livery` exists to prevent.
+    #     EXTENDED after Plunge, whose vest straps came back dE 34 from the bird's own golden
+    #     crown: the drift lands on a species MARKING as readily as on the base colour, and a
+    #     yoke the same note as the crest erases the marking that identifies the animal.
+    # (8) NO INVENTED MUSCULATURE. The framing clause said the character "keeps its own natural
+    #     bust silhouette, with real shoulders" — which, on an animal that has no shoulders,
+    #     reads as an instruction to draw deltoids. Fathom came back a bodybuilder in a wetsuit
+    #     and a Blaze trial had pectoral fins drawn as biceps. It does not hit every shark:
+    #     Stripes, Dozer and Spike are clean, because their subjects lead with blunt, sleepy or
+    #     heavy reads. It hits the ones whose species says FAST or PREDATOR, where the model
+    #     supplies an athletic build to match. "Real shoulders" is now conditional, and the
+    #     smooth-taper body plan is stated for fish, sharks, rays and cetaceans.
     "portrait": (
         "Anthropomorphic sailing competitor, upper-body three-quarter "
         "portrait, turned slightly off-centre with enough asymmetry to carry personality. "
@@ -138,7 +199,16 @@ CLASS_ADDON = {
         "near the centre of the square and leave the four corners quiet, because one part of "
         "the interface later masks this image to a circle. That masking is done afterwards by "
         "software and MUST NOT be drawn. The character keeps its own natural bust silhouette, "
-        "with real shoulders. THE LOWER HALF OF THE OUTLINE IS BUILT FROM ANATOMY: "
+        "with real shoulders WHERE THE ANIMAL HAS THEM. "
+        "A CREATURE WITH NO SHOULDERS IS NOT GIVEN ANY. On a fish, a shark, a ray, a whale or a "
+        "dolphin the body is ONE SMOOTH CONTINUOUS TAPER from head to tail: no shoulder mass, no "
+        "deltoid bulge, no pectoral muscle, no arm muscle, no broad chest narrowing to a waist. "
+        "A pectoral fin meets a smooth flank flush, as a flat blade hinged to the side of a tube "
+        "— it is never the end of an arm and never sits on a rounded shoulder cap. Any shoulder "
+        "visible in the picture belongs to the JACKET, which is padded and sits on top of the "
+        "animal; the animal underneath stays smooth. Draw the creature's real build, not an "
+        "athletic one: a fast species is fast because it is streamlined, not because it is "
+        "muscular. THE LOWER HALF OF THE OUTLINE IS BUILT FROM ANATOMY: "
         "going down each side, the contour CHANGES DIRECTION at least twice — out across the shoulder, in at the notch where the "
         "limb meets the body, then down along the flank. A silhouette whose bottom is one "
         "smooth unbroken curve from side to side is WRONG, however well the face is drawn: it "
@@ -147,12 +217,41 @@ CLASS_ADDON = {
         "trim the shoulders to an arc, and do NOT draw any circular border, ring, outer rim, "
         "badge, emblem, medallion, coin or die-cut sticker edge. There is no frame in this "
         "picture — there is a character, and there is transparent background. "
+        "THE WHOLE CHARACTER STAYS ROUGHLY AS WIDE AS IT IS TALL, and fills that square. It is "
+        "drawn large and shown small, scaled to fit whichever dimension is longer, so a "
+        "silhouette stretched tall or stretched wide spends its size on empty frame and the "
+        "head comes out too small to read. A LONG PART — a bill, a snout, a beak, a horn, an "
+        "antenna, a tail, a trailing fin or tentacle — is TURNED so it lies ACROSS the picture "
+        "on a diagonal, crossing in front of or behind the body, instead of pointing straight "
+        "up or straight out and stretching the outline after it. "
+        "THE WIDEST POINTS OF THE PICTURE BELONG TO THE BODY, never to a limb. Wings, fins, "
+        "flippers and arms are held IN against the flanks: a wing folds so its leading edge "
+        "lies flat down the side and the tip comes to rest near the tail, and it is not lifted "
+        "away from the body, not opened out to either side, and not arranged so it frames the "
+        "character. The single exception is a subject that explicitly asks for a limb to be "
+        "spread or fanned. Where the GESTURE line says folded, close, swept back or tucked, "
+        "that wording is binding and it outranks the pose this animal is usually drawn in. "
+        "When a long part will not fit, turn it further across the frame — never answer by "
+        "shrinking the head. "
         "THE LIFE JACKET IS SPECIFIED EXACTLY, and it is safety equipment rather than fashion: "
         "a front-zip sailing PFD with a full-length centre zipper, two or "
         "three clearly panelled foam sections, a horizontal webbing waist belt, and one "
         "visible buckle at the centre of that belt. NO leather, no "
         "moto or biker styling, no tactical or armoured plating, no hoodie, no jacket, no "
         "badges, patches or insignia, and no hats, sunglasses or accessories of any kind. "
+        "THE JACKET IS WORN, AND IT WRAPS THE WHOLE TORSO. The body goes INSIDE it, entering "
+        "from the top and leaving at the bottom. At the top, the throat and shoulders pass "
+        "THROUGH the collar opening: the collar and the shoulder straps run BEHIND the head and "
+        "disappear behind it, and a clear wedge of the animal's own body — throat and upper "
+        "chest, in the animal's own colour — is visible inside the V of the open jacket. At the "
+        "back, the spine, dorsal ridge or dorsal fin rises out from BEHIND the jacket's shoulder "
+        "line, and the far side of the collar shows over the far shoulder, so the jacket clearly "
+        "continues around the far side of the body instead of stopping at the near flank. On a "
+        "creature with no neck — a fish, a seal, a squid — the jaw, gill line and dorsal contour "
+        "still overlap the collar, and the collar still passes behind them. Do NOT butt the "
+        "jacket flat against the underside of the head, do NOT let the head or the back rest on "
+        "top of the jacket, do NOT fill the collar opening with more jacket, and do NOT leave a "
+        "shoulder strap floating with no shoulder beneath it. "
         "RENDERING IS POLISHED GAME ILLUSTRATION: model the form with soft, controlled "
         "shading INSIDE each shape rather than "
         "leaving flat sticker fills. EVERY SURFACE IS MATTE, like gouache or coloured paper — the creature's own surface and the jacket fabric both absorb light rather than reflecting it. Highlights are broad, soft and dull, never a bright spot. ABSOLUTELY NO glossy specular "
@@ -168,6 +267,19 @@ CLASS_ADDON = {
         "around the jacket, and a clean dark contour runs along the whole edge of it, so there "
         "is an unmistakable value step where garment meets body. The jacket reads as a separate "
         "object at a glance. "
+        "THE TWO JACKET COLOURS ARE NOT SHADES OF THE ANIMAL. Each is named in the subject and "
+        "each belongs to a different part of the spectrum from the creature's own colour. "
+        "Neither may drift toward it: do not warm a green jacket toward an olive animal, do not "
+        "lighten a dark panel until it sits at the same value as pale skin, do not tint the "
+        "foam with the body colour so the two agree. They are supposed to clash slightly — this "
+        "is issued safety kit pulled from a bin, not the creature's own markings, and the same "
+        "two colours get painted on this character's boat, where they have to be picked out "
+        "across open water. If a named jacket colour is starting to look like the animal, push "
+        "it FURTHER from the animal rather than meeting it halfway. This covers the creature's "
+        "MARKINGS as much as its main colour: where the animal has a golden crown, a coloured "
+        "stripe, a bright patch or a crest, the jacket does not pick that colour up either. "
+        "The markings say which animal this is and the jacket says which boat is his, and the "
+        "two must never land on the same note. "
         "THE JACKET IS MADE OF CLOSED-CELL FOAM "
         "UNDER A DRY MATTE NYLON SHELL: a dusty, slightly fibrous fabric that scatters light "
         "completely. It is not vinyl, not latex, not leather and not wet. Shade it with flat "

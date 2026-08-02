@@ -1651,24 +1651,55 @@ apart is what stops one thing from being sayable two ways.
 
 ### The fields
 
-| field | does | default |
-|---|---|---|
-| `density` | share of births this region takes, as a WEIGHT | 1 |
-| `strength` | × on the cell's `speedDelta` | 1 |
-| `size` | × on both radii | 1 |
-| `life` | × on duration — dies here, or crosses the course | 1 |
-| `bias` | share of births that are gusts rather than holes | **absent** = the venue's own split |
-| `falloff` | the soft edge — and the spawn probability | 300 u |
+**As shipped** (Aug 1 2026 — the table below replaces the multiplier form this plan
+originally proposed):
 
-Every one is a MULTIPLIER on what the venue's conditions already rolled, so a source dropped
-on a course changes only WHERE, never WHAT, until you say otherwise. `bias` is the one field
-where blank is a third value rather than a zero — the same distinction the shape lee lengths
-make, and for the same reason.
+| field | does | unit | default |
+|---|---|---|---|
+| `count` | cells this source keeps alive at once — its OWN population, not a share | puffs | 8 |
+| `bias` | share of births that are gusts rather than holes | % | 50 |
+| `gustKt` | what a puff is worth on the anemometer; a hole is worth 70% of it | **knots** | 5 |
+| `sizeM` | across the puff's long axis — the short axis is half it | **metres** | 300 |
+| `lifeS` | how long it lives | **seconds** | 90 |
+| `veer` | how far the wind turns inside one puff | degrees | 15 |
+| `falloff` | where births CLUSTER — not the edge of a puff | metres | 60 |
 
-`density` is a weight, not a count: the venue's `puffiness` still owns how many cells exist
-and a region owns where they come from. The inspector shows the weight as a **percentage of
-all sources**, because "a third of the pressure comes off the rim" is a number you can reason
-about and a bare `3` is not.
+Each of the three quantities is the **mean**; the engine keeps its own spread around it.
+
+**They are stated in real units, not as multipliers.** `strength`/`size`/`life` were the last
+bare `1×` fields in the editor, and the ×-on-a-hidden-base form hid two things that mattered.
+A puff's strength was a fraction of `state.wind.speed` — the blend at the *route centroid* —
+so a bomb born in Glacier Sound's 29-knot katabatic tongue was sized by the 20-knot average
+two kilometres away, and no number on the source's own panel said so. And `life 1×` meant
+90–240 s on a course a puff crosses in **42 s**, so cells spent most of their lives off the
+map *still counting against `count`* — the source read full while the water was empty. A
+number in knots, metres and seconds can be checked against the course; a multiplier can only
+be checked against itself.
+
+That comparison is now made for you: the panel prints **how far a puff actually drifts in the
+life you gave it, against the size of the map** (`gustReach`). Rule of thumb on a 1750 m
+course: `lifeS ≈ 30`.
+
+`count` is absolute, not a weight. It was a share while the venue's `puffiness` owned the
+total; that variable is gone, so there is nothing left to take a share of.
+
+### A puff is steered by the breeze it is in
+
+`updateGusts` re-reads `regionWindAt` at each cell's own position every frame, so a cell
+crossing a bend turns with it, one entering a stronger region speeds up, and one born in a
+tongue sets off *along* the tongue and lies across it. `regionWindAt` and not `getWindAt`:
+the mean field, without puffs and without lees — steering cells with `getWindAt` would be
+O(n²) and self-referential, a puff riding its own pressure.
+
+This was the whole reason placing a source anywhere meant anything, and until Aug 1 2026 it
+did not hold: every cell was drifted and rotated by `state.wind.direction`, the route-centroid
+blend. On a venue whose wind is uniform that is the same number everywhere and the bug is
+invisible — which is why nine of the ten venues never showed it. On Glacier Sound the source
+sits in a 45° katabatic tongue while the centroid reads 130°, so puffs were carried 85° off
+their own breeze and left the arena in under ten seconds. Measured: **3 cells alive, 0.04 of
+them inside the arena, and not one ever within 900 units of the racing corridor.** After the
+fix, at the same settings: **2.74 of 3 inside the arena.** Guarded by `test_gusts.js`
+("a source in a bend emits puffs along the breeze THERE, not the venue average").
 
 **Falloff does double duty for free**: it is already a 0..1 weight per point, so it becomes
 the spawn probability. The spawner rejection-samples the polygon against it, so puffs cluster

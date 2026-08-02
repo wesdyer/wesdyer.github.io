@@ -25,6 +25,11 @@ PEAK_DROP = 12.0           # content this far under peak counts as fade, not mus
 FLOOR_WINDOW = 8.0         # seconds; the window the density floor is taken over
 FLOOR_TOL = 4.0            # dB of density mismatch tolerated at the loop seam
 END_KEEP = 0.6             # a two-sided search may not cut past this much of the track
+SEAM_SLACK = 0.5           # dB; among pairs this close to the best seam, keep the
+                           # LONGEST body. A 0.03 dB seam is not audibly worse than a
+                           # 0.00 dB one, but 38 s less music is audibly worse.
+SEAM_MIN_GAIN = 1.15       # ...and only if that body is at least this much longer, so
+                           # the rule fires on Redrock (1.70x) and not on marginal cases
 
 
 def decode(path):
@@ -71,20 +76,52 @@ def measure(path):
     # one-sided search always fails on it — but there is usually a pair further in that
     # matches perfectly, at the cost of a few seconds off the tail nobody will miss.
     # Bounded so it trims rather than truncates.
+    # ⚠️ FLOOR_TOL is a LOOSE gate and that is a known limitation, not a bug. Fallwater
+    # Fjord measures a one-sided seam of 3.98 dB — the worst in the project, audible,
+    # and with a 0.26 dB pair available at a LONGER body — but it sits just under the
+    # tolerance so the search never runs. Two attempted fixes were both worse and were
+    # reverted: running the search unconditionally perturbed 18 of 20 assets (it moved
+    # arctic's loopStart from 15.0 to 0.5, undoing a deliberately measured sparse-
+    # opening skip), and adding a body-retention test to the acceptance rejected
+    # yacht-club's two-sided pair and handed back its original 7.9 dB seam.
+    # Tightening FLOOR_TOL is the real fix and it re-measures every shipped track, so
+    # it waits until something actually needs it.
     two_sided = False
     fade_end = loop_end
     if seam_step > FLOOR_TOL and len(floor) > win:
         lo = int(loop_end * 2 * END_KEEP)
-        best = None
+        pairs = []
         for e in range(lo, len(floor)):
             for s in range(0, int(e * 0.5)):
-                step = abs(float(floor[s]) - float(floor[e]))
-                if best is None or step < best[0]:
-                    best = (step, s, e)
-        if best and best[0] < seam_step:
-            seam_step, loop_start = best[0], round(best[1] * 0.5, 1)
-            loop_end = round(best[2] * 0.5, 1)
-            two_sided = True
+                pairs.append((abs(float(floor[s]) - float(floor[e])), s, e))
+        # ⚠️ Minimising the step ALONE throws away music for nothing. Redrock Reservoir
+        # is the case that showed it: the best-step pair is a 0.00 dB seam on an 87.5 s
+        # body, and there is a 0.03 dB seam available on a 126 s body — 38 s more music
+        # for a difference no one can hear, on a venue where §4 says a short body is the
+        # real defect. So among pairs whose seam is already inaudible, take the LONGEST.
+        # The one-sided branch above needs no equivalent: it takes the EARLIEST matching
+        # point, which is already the longest body it could choose.
+        if pairs:
+            tightest = min(pairs, key=lambda p: p[0])
+            longest = max((p for p in pairs if p[0] <= tightest[0] + SEAM_SLACK),
+                          key=lambda p: p[2] - p[1])
+            # ...but only take the longer body if the gain is worth paying seam for.
+            # Without this guard the rule fires on marginal cases too: Lighthouse Cove
+            # would trade its 3.0 s loopStart for 3.5 s more body, which moves the cue's
+            # ENTRY into sparser material to win nothing. Redrock clears it easily —
+            # 87.5 s to 148.5 s — which is the shape of case this is for.
+            gain = (longest[2] - longest[1]) / max(1, tightest[2] - tightest[1])
+            # Prefer the longer body, but FALL BACK to the tightest rather than giving
+            # up: `longest` has a slightly worse step by construction, and if that step
+            # fails the acceptance test below, taking it would abandon a two-sided fix
+            # that `tightest` would have passed. Caught on lake-take1, which otherwise
+            # lost its pair entirely and reverted to a one-sided seam above FLOOR_TOL.
+            for cand in ((longest, tightest) if gain >= SEAM_MIN_GAIN else (tightest,)):
+                if cand[0] < seam_step:
+                    seam_step, loop_start = cand[0], round(cand[1] * 0.5, 1)
+                    loop_end = round(cand[2] * 0.5, 1)
+                    two_sided = True
+                    break
 
     # Level is measured over the LOOPED region only. Averaging the fade in as well
     # drags the mean down and over-trims exactly the tracks with the longest fades.

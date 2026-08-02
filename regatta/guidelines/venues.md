@@ -80,7 +80,7 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 | 2 | Stillwater Lake | **W/L**, long beat | which side of the island has the breeze? | the whole fleet splitting round an island |
 | 3 | Pearl Lagoon | **Triangle** | round the squall or through it? | reef gate on the reach, rain arriving |
 | 4 | Gatorgrass Bayou | **Loop** | wide and windy, or short and gator-infested? | the log drifting into the gap you chose |
-| 5 | Otter Run | **Out & Back**, 1 lap | fast water or slack water — and it inverts? | parking in an eddy to shake a rival |
+| 5 | Sockeye Run | **Out & Back**, 1 lap | fast water or slack water — and it inverts? | parking in an eddy to shake a rival |
 | 6 | Bluewater Bonanza | **Distance Triangle** | where is the pressure, an hour from now? | the long surf home under kite |
 | 7 | Redrock Reservoir | **Distance Loop** | is the narrows doubled or dead today? | the venturi firing you out the slot |
 | 8 | Glowtide Strait | **Slalom** | do I follow the glow or trust my own line? | chasing a glowing wake through lit gates |
@@ -171,7 +171,7 @@ and swimming) · **great white shark** (ambient) · rocky islet (hazard).
 collision penalty would be the first rule in the game its own fiction doesn't
 support. A fin crossing your line that costs you nothing is worth more than a rule
 players would resent — and it lands harder in a venue whose real dangers are all
-made of steel and air. Character kin: Bruce is a Great White (race-view.md 10.5).
+made of steel and air. Character kin: Bruce is a Great White Shark (race-view.md 10.5).
 
 **The gulls are the venue's one reactive element.** A tight rounding at the
 lighthouse scatters them, which makes a good rounding *visible* — to you and to
@@ -355,7 +355,7 @@ reactive)** · lily-pad raft (ambient) · cattails (ambient) · stilt shack
 
 ---
 
-# 5. Otter Run `river`
+# 5. Sockeye Run `river`
 
 **Tagline** Current & Rocks · **Chips** READ THE WATER, LANE CHOICE
 
@@ -655,7 +655,7 @@ and inherit collision, avoidance, pathfinding and wind shadow by being islands.
 return runs the sheltered side of the sound.** One leg is survival, the other is
 tactics — and the venue uniquely earns that asymmetry.
 
-It differs from Otter Run's out-and-back on every axis that matters: there the
+It differs from Sockeye Run's out-and-back on every axis that matters: there the
 asymmetry is **current**, here it's **wind**, and here the channel itself changes
 because the ice moves while you're racing.
 
@@ -733,7 +733,7 @@ meaningless.
 
 > **Naming.** Specced as "Curlew Flats"; the art landed on spoon-billed
 > sandpipers and they're better. **Spoonbill Flats** follows the convention that
-> a venue is named for its witness (Otter Run/Bixby, Gatorgrass/Chomp).
+> a venue is named for its witness (Sockeye Run/Slipstream, Gatorgrass/Chomp).
 
 **Description.** A wide estuary emptying itself. The tide falls all race: bars
 surface, channels narrow, and the water runs harder through what's left.
@@ -756,7 +756,7 @@ cheap and coherent:
 
 Plus **wind-over-tide chop** and a **slack-water window** to race for.
 
-**Cheaper than it looks.** Otter Run already ships a spatial current field; this
+**Cheaper than it looks.** Sockeye Run already ships a spatial current field; this
 adds a time axis rather than a new system. The AI needs no time-aware planner —
 if emerging bars join the hazard set, the periodic replan handles them
 reactively. `AI_STAT_BONUS` covers the resulting asymmetry.
@@ -898,8 +898,8 @@ grass islands, wading birds everywhere.
 
 **Known collisions** (evaluate at trim time): olive/yellow-green dominant is
 Gatorgrass Bayou's exact registry claim; pale turquoise water is Pearl Lagoon's;
-the art's foreground creature is an **otter**, and Otter Run is named for its
-otter. Mechanically it overlaps Spoonbill Flats without the tide hook.
+the art's foreground creature is an **otter**, which no venue is named for any
+more — but see the no-otter rule below, which still stands. Mechanically it overlaps Spoonbill Flats without the tide hook.
 
 **To be worth a slot it needs** a palette that is neither Bayou-olive nor
 Lagoon-turquoise — deep sedge-green with **flamingo pink** as the accent nobody
@@ -945,7 +945,7 @@ randomize everything that blows across it.
 ### Why this document forces the question
 
 Almost every course above depends on authored geography. Redrock's slot canyon,
-Otter Run's bridge arches, the Cove's harbour gate, Flats' two channels,
+Sockeye Run's bridge arches, the Cove's harbour gate, Flats' two channels,
 Emberfall's cones-as-marks, Glacier Sound's calving face, Lake's island in the
 middle of the beat. **None of these survive randomization** — a randomly placed
 slot canyon isn't learnable, and a random bridge is just a rock.
@@ -983,7 +983,7 @@ This split falls out naturally and should drive implementation:
 | Wind | any direction | constrained to a **venue wind sector** |
 | Terrain | sparse or symmetric — must not break any rotation | dense, authored, the point |
 | Shapes | W/L, Triangle, Trapezoid | Loop, Out & Back, Round the Cans, Slalom |
-| Venues | Lake, Lagoon, Bay, Ocean, **Clubhouse Point** | Otter Run, Redrock, Bayou, Flats, Emberfall, Glowtide, Glacier Sound |
+| Venues | Lake, Lagoon, Bay, Ocean, **Clubhouse Point** | Sockeye Run, Redrock, Bayou, Flats, Emberfall, Glowtide, Glacier Sound |
 
 **Geography-fixed venues need a wind sector**, and that constraint is itself
 characterful: canyon wind blows down-canyon, a fjord funnels, a river valley
@@ -1033,7 +1033,7 @@ it sounds: same terrain, different mark set and rounding order.
 ### Suggested sequencing
 
 1. Keep every shipped venue wind-relative for now — nothing breaks.
-2. Author **one** geography-fixed venue end to end as the pilot. **Otter Run** is
+2. Author **one** geography-fixed venue end to end as the pilot. **Sockeye Run** is
    the right choice: it already has a current field, a natural wind sector
    (down-valley), and the simplest fixed geometry (a channel and a bridge).
 3. Measure the AI cost there before committing to the rest.
@@ -1067,7 +1067,7 @@ game today, and gators are the right place to prove it.
 
 1. **Triangle at Pearl Lagoon.** One extra mark, unlocks reaching for the whole
    game, turns an existing mechanic into a real decision.
-2. **Out & Back at Otter Run.** Nearly free — narrow boundary, two marks — and
+2. **Out & Back at Sockeye Run.** Nearly free — narrow boundary, two marks — and
    the current asymmetry does the design work.
 3. **Distance Triangle at Bluewater Bonanza.** Reuses step 1 with a longer
    `legLength`, one lap, and a seamount for the far mark.

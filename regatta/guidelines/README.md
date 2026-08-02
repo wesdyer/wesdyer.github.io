@@ -11,7 +11,7 @@ implements it.
 | [race-view.md](race-view.md) | Everything drawn on the water: camera, water, venue palettes, land, course overlay, wakes, particles, weather, race-scale sprites | **v1.0** — current |
 | [venue-art.md](venue-art.md) | Venue illustration: art direction, owned-hue registry, base prompt, delivery pipeline, acceptance checklist | current |
 | [art-pipeline.md](art-pipeline.md) | How art gets *made*: asset classes, roles, anchors, the six-step workflow, acceptance. Tooling in `../art/` | current |
-| [music.md](music.md) | The score: house style, the owned-instrument registry, per-venue Suno prompts, delivery, acceptance checklist | **v0.1** — current |
+| [music.md](music.md) | The score. Guide (how to write a prompt, judge a take, install it) + reference (cue map, registry, every prompt, every measurement) | **v1.0** — current |
 | [skills.md](skills.md) | Competitor stats, archetypes, traits, character shape, venue natives, colour and pattern policy | **v0.1** — proposal |
 | [debt.md](debt.md) | The single register of verified visual defects, across all three | current |
 

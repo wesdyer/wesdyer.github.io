@@ -156,7 +156,7 @@ const compassOf = (rad) => COMPASS[Math.round(degOf(rad) / 22.5) % 16];
 // 5 world units = 1 metre, and 55u = 11m = one boat length (a J111 — the game's 165u
 // RRS zone is three of them). Panels speak metres; world units survive only in the
 // cursor HUD, where they are the coordinates you would type into a document.
-const U_PER_M = 5;
+const U_PER_M = window.VenueDoc.U_PER_M;
 const U_PER_BL = 55;
 const uToM = (u) => u / U_PER_M;
 const mToU = (m) => m * U_PER_M;
@@ -936,13 +936,20 @@ function statsRefresh() {
     const authored = doc && doc.course.cutoff != null;
     const d2 = doc ? window.VenueDoc.compile(doc) : null;
     const cutoff = authored ? doc.course.cutoff : (d2 ? d2.cutoffAuto || 0 : 0);
-    $('stat-dist').textContent = est ? fmtM(est.dist) : (d2 ? fmtM(d2.sailedDist || 0) : '—');
-    $('stat-best').textContent = est ? mmss(est.secs) : '—';
+    // FROM THE PATH, the same geometry DMC ranks on and the route layer draws — so the
+    // header, the drawn leg lengths and the leaderboard all quote one course. SailCheck's
+    // grid estimate stays in the checks panel; it answers a different question ("is this
+    // sailable at hull width"), and having it drive the headline meant the number and the
+    // picture could disagree.
+    const pathSecs = d2 && d2.estSecs;
+    $('stat-dist').textContent = d2 && d2.sailedDist ? fmtM(d2.sailedDist) : (est ? fmtM(est.dist) : '—');
+    $('stat-best').textContent = pathSecs ? mmss(pathSecs) : (est ? mmss(est.secs) : '—');
     // The fleet mean is what the 3–5 minute target was about, so that is what gets coloured.
-    const mean = est ? est.secs * 1.35 : 0;
+    const baseSecs = pathSecs || (est ? est.secs : 0);
+    const mean = baseSecs * 1.35;
     const band = mean >= 180 && mean <= 300;
-    $('stat-best').className = 'st-v num' + (est ? (band ? ' ok' : ' warn') : '');
-    $('stat-best').title = est ? `fleet ~${mmss(mean)} — ${band ? 'inside' : 'outside'} the 3–5 min target` : '';
+    $('stat-best').className = 'st-v num' + (baseSecs ? (band ? ' ok' : ' warn') : '');
+    $('stat-best').title = baseSecs ? `fleet ~${mmss(mean)} — ${band ? 'inside' : 'outside'} the 3–5 min target` : '';
     $('stat-limit').textContent = cutoff ? mmss(cutoff) : '—';
     $('stat-limit').title = authored ? 'authored' : 'derived, and blind to the land the path goes around';
     $('stat-legs').textContent = doc ? Math.max(1, routeOf().length - 1) : '—';
@@ -1145,6 +1152,45 @@ function drawCourseLayer() {
         ctx.lineTo(tip.x + ny * head * 0.62 - nx * head, tip.y - nx * head * 0.62 - ny * head);
         ctx.closePath(); ctx.fill();
     };
+
+    // ── THE SELECTED LEG'S COURSE PATH ──────────────────────────────────────
+    // The ruler DMC is measured on: the land-avoiding route from the previous target to
+    // this one, including the arc round a rounding mark. Drawn from `course.dmc`, which is
+    // literally the object the game ranks with, so what a designer sees here is what the
+    // leaderboard will use — not a second implementation that can drift from it.
+    //
+    // It updates on COMMIT rather than during a drag, because it is rebuilt by the same
+    // recompile that rebuilds the course. The authored geometry keeps tracking the drag
+    // live, so the path snapping into place is the visible difference between "what I am
+    // drawing" and "what that compiles to".
+    if (mode === 'route' && selRoute >= 0 && course && course.dmc && course.dmc.legs[selRoute]) {
+        const L = course.dmc.legs[selRoute];
+        if (L.pts.length >= 2) {
+            const sp = L.pts.map(q => toS(q.x, q.y));
+            // Dark under-stroke first: this crosses pale ice and dark water on the same
+            // venue, and a single-colour line disappears into one of them.
+            for (const pass of [{ w: 7, c: 'rgba(6,14,26,0.55)' }, { w: 3, c: '#22d3ee' }]) {
+                ctx.strokeStyle = pass.c; ctx.lineWidth = pass.w;
+                ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(sp[0].x, sp[0].y);
+                for (let i = 1; i < sp.length; i++) ctx.lineTo(sp[i].x, sp[i].y);
+                ctx.stroke();
+            }
+            // Its LENGTH, in metres, at the midpoint — the number the designer is actually
+            // shaping, and the one the race-length estimate is built from.
+            let half = 0;
+            while (half < L.cum.length - 2 && L.cum[half + 1] < L.length / 2) half++;
+            const mid = sp[half];
+            const label = `${Math.round(uToM(L.length))} m`;
+            ctx.font = '600 12px ui-monospace, monospace';
+            const w = ctx.measureText(label).width + 12;
+            ctx.fillStyle = 'rgba(6,14,26,0.82)';
+            ctx.beginPath(); ctx.roundRect(mid.x - w / 2, mid.y - 26, w, 18, 4); ctx.fill();
+            ctx.fillStyle = '#a5f3fc'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(label, mid.x, mid.y - 17);
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        }
+    }
 
     (shown('route') ? droute : []).forEach((e, li) => {
         if (e.kind === 'round') {
@@ -2580,6 +2626,22 @@ function setLegPolar(i, opts) {
                             y: from.y - Math.cos(brg) * len });
 }
 
+// WHAT THIS LEG COSTS, priced by the same function as the course total and the auto time
+// limit (CoursePath.priceLeg) — so a designer reading a leg's best time is reading the
+// number it contributes, not a lookalike computed a second way.
+//
+// Measured along the PATH the route layer draws, not mark to mark: on a leg that goes round
+// a headland those are very different, and the path is the one a boat sails.
+function legBest(i) {
+    const L = course && course.dmc && course.dmc.legs[i];
+    if (!L || !L.pts || L.pts.length < 2) return '';
+    const r = CoursePath.priceLeg(L.pts, windBase(), 14);
+    if (!(r.secs > 0)) return '';
+    const upPct = Math.round(100 * r.upwind / Math.max(1, r.geom));
+    return `<div class="in-sub">best <b>${mmss(r.secs)}</b> along ${fmtM(r.geom)} of path`
+         + `${upPct > 5 ? ` — ${upPct}% of it upwind, so ${fmtM(r.sailed)} sailed` : ''}</div>`;
+}
+
 function inspLeg(e, i) {
     const opts = [];
     for (const ln of dlines())
@@ -2649,6 +2711,7 @@ function inspLeg(e, i) {
     ${numF('Bearing', 'leg.brg', Math.round(brg), '°')}
   </div>
   <div class="in-sub">${says}</div>
+  ${legBest(i)}
   ${up == null ? '' : '<div class="ed-acts-in"><button class="btn btn-line btn-sm"'
       + ' data-legact="upwind">Dead upwind</button>'
       + '<button class="btn btn-line btn-sm" data-legact="downwind">Dead downwind</button></div>'}
@@ -2703,6 +2766,31 @@ const gustCount = (r) => `${r.count != null ? r.count : 8} puffs`;
 // Nothing falls back to the venue. Gusts are stated by sources exactly as the wind is stated
 // by wind regions, so a course with no sources has a steady breeze — which is a legitimate
 // course, and the one every venue has until someone draws one.
+// ── HOW FAR A PUFF GETS BEFORE IT DIES ──────────────────────────────────────
+// `life` in seconds is only meaningful next to the distance it buys, and that distance is
+// what decides whether a source works at all. A puff drifts at ~0.75x the wind, so on a
+// 1.75 km course it clears the whole map in well under a minute. A source asking for
+// 165-second puffs there is asking for cells that spend three quarters of their lives off
+// the map — and because a departed cell still counts against `count`, the source reads full
+// while the water is empty. That failure is silent, it is easy to author, and this line is
+// the only place a designer would ever see it.
+function gustReach(r) {
+    const lifeS = r.lifeS != null ? r.lifeS : 90;
+    const kt = state && state.wind ? state.wind.speed : 0;
+    if (!(kt > 0)) return '';
+    const driftMps = uToM(kt * 15 * 0.75);          // units/s = knots x 15; puffs ride ~0.75x
+    const reachM = Math.round(driftMps * lifeS);
+    const mapM = Math.round(uToM((doc && doc.world && doc.world.size) || 8750));
+    const ratio = reachM / mapM;
+    const verdict = ratio > 1.6
+        ? `<b>outlives the map ${ratio.toFixed(1)}x</b> — most of its life is spent off the course, still counting against Puffs`
+        : ratio < 0.25
+            ? `dies well short of crossing — a local flutter rather than a puff you can chase`
+            : `crosses about ${Math.round(ratio * 100)}% of the map`;
+    return `<div class="in-note">At this venue's ${Math.round(kt)} kt a puff drifts
+      <b>${reachM} m</b> in ${lifeS} s. The map is ${mapM} m across, so it ${verdict}.</div>`;
+}
+
 function inspGust(r) {
     const bias = Math.round((r.bias != null ? r.bias : 0.5) * 100);
     return `
@@ -2720,19 +2808,21 @@ function inspGust(r) {
 </div>
 <div class="in-sect"><span class="k">What comes out</span>
   <div class="in-grid">
-    ${numF('strength', 'gr.strength', r.strength != null ? r.strength : 1, '×')}
-    ${numF('size', 'gr.size', r.size != null ? r.size : 1, '×')}
-    ${numF('life', 'gr.life', r.life != null ? r.life : 1, '×')}
+    ${numF('gust', 'gr.gustKt', r.gustKt != null ? r.gustKt : 5, 'kt')}
+    ${numF('size', 'gr.sizeM', r.sizeM != null ? r.sizeM : 300, 'm')}
+    ${numF('life', 'gr.lifeS', r.lifeS != null ? r.lifeS : 90, 's')}
     ${numF('veer', 'gr.veer', r.veer != null ? r.veer : 15, '°')}
   </div>
-  <div class="in-note">Veer is how far the wind turns inside one of its puffs.</div>
+  <div class="in-note">Gust is what a puff is worth on the anemometer; a hole is worth about
+    70% of it. Size is across the puff's long axis — the short axis is half that. Veer is how
+    far the wind turns inside one. Each is a MEAN: the source spreads around it.</div>
+  ${gustReach(r)}
   <div class="in-grid">
     ${numF('falloff', 'gr.falloff', Math.round(uToM(r.falloff != null ? r.falloff : 400)), 'm')}
   </div>
-  <div class="in-note">A puff drifts downwind and steers by the breeze where it is, so this
-    says where the pressure COMES FROM and the wind decides where it lands. Life is how long
-    it lives: short dies where it is born, long crosses the course. Falloff is the soft edge
-    — puffs cluster in the middle of a source and thin out at its rim.</div>
+  <div class="in-note">Falloff is where puffs are BORN, not the edge of one — they cluster in
+    the middle of a source and thin out at its rim. A puff drifts downwind from here and the
+    wind decides where it lands.</div>
 </div>`;
 }
 
@@ -2883,13 +2973,17 @@ function gustEdit(key, value) {
     } else if (key === 'veer') {
         if (v < 0 || v > 90) { toast('Veer must be 0–90°', true); inspectorRefresh(); return; }
         r.veer = v;
-    } else if (key === 'strength' || key === 'size' || key === 'life') {
-        // The rails are the validator's, so a document typed by hand and one typed here
-        // are rejected for the same reasons. Size and life multiply a duration and a
-        // radius, and zero of either is a puff that does not exist.
-        const min = key === 'strength' ? 0 : 0.05;
-        if (v < min || v > 6) { toast(`${key} must be ${min}–6×`, true); inspectorRefresh(); return; }
-        r[key] = v;
+    } else if (key === 'gustKt') {
+        // The rails are the validator's, so a document typed by hand and one typed here are
+        // rejected for the same reasons.
+        if (v < 0 || v > 30) { toast('Gust must be 0–30 kt', true); inspectorRefresh(); return; }
+        r.gustKt = v;
+    } else if (key === 'sizeM') {
+        if (v < 1 || v > 2000) { toast('Size must be 1–2000 m', true); inspectorRefresh(); return; }
+        r.sizeM = v;
+    } else if (key === 'lifeS') {
+        if (v < 1 || v > 900) { toast('Life must be 1–900 s', true); inspectorRefresh(); return; }
+        r.lifeS = v;
     } else if (key === 'falloff') {
         r.falloff = Math.max(mToU(2), mToU(v));
     } else return;
@@ -3951,11 +4045,11 @@ function addRegion(kind, poly) {
         ? { id: `current-${n}`, poly, falloff: 300, direction: 0,
             speed: 0.5, dirVar: 0, speedVar: 0, period: 0 }
         // A gust source starts NEUTRAL in every way but position: an equal share of the
-        // births, and puffs exactly like the ones this venue was already making. Drawing
-        // one says WHERE, and nothing else, until you say otherwise. `bias` is deliberately
-        // absent rather than 0.5 — absent means "the venue's own split", and writing a
-        // number would silently override a venue tuned to be gusty or holey.
-        : { id: `gust-${n}`, poly, falloff: 300, count: 8, strength: 1, size: 1, life: 1, bias: 0.5, veer: 15 };
+        // births, and an ordinary puff: 5 knots on the anemometer, 300 m across, gone in 90
+        // seconds. Drawing one says WHERE, and nothing else, until you say otherwise — and
+        // now the "nothing else" is legible, because a stated default in knots and metres
+        // can be judged against the course where `1x` could only be judged against itself.
+        : { id: `gust-${n}`, poly, falloff: 300, count: 8, gustKt: 5, sizeM: 300, lifeS: 90, bias: 0.5, veer: 15 };
     list.push(r);
     const i = list.length - 1;
     setRegSel(kind, i);
@@ -5665,6 +5759,10 @@ window.EditorApp = { resize, fitView, loadVenue, draw, buildKindPicker,
     _toggleFinishOwnLine: toggleFinishOwnLine, _markLabel: (i) => markLabel(i),
     _lineLabel: (id) => lineLabel(id),
     _entryLabel: (i) => entryLabel(doc.course.route[i], i),
+    // Selecting a route LEG. The UI does this from the object list; exposing it lets the
+    // path-visualization test drive the same state without synthesising a click.
+    _selectLeg: (i) => { setMode('route'); selRoute = i; osel = []; inspectorRefresh(); draw(); return selRoute; },
+    _selRoute: () => selRoute,
     _selectMark: (i) => selectMark(i),
     _selectLine: (i) => selectLine(i),
     _selLine: () => selLine,

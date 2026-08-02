@@ -60,7 +60,7 @@ eye-path, focal element, wildlife witness).
 | Stillwater Lake | deep lake blue + pine green | warm cabin lights, red/green buoys |
 | Pearl Lagoon | pale glowing turquoise + sand | coral pinks/purples under water |
 | Gatorgrass Bayou | olive/yellow-green everything | rust roof, cattail brown |
-| Otter Run | whitewater teal + tan rock | stone bridge, foam swirls |
+| Sockeye Run | whitewater teal + tan rock | stone bridge, foam swirls |
 | Bluewater Bonanza | deep open-ocean cobalt | white clouds, whale blow |
 | Redrock Reservoir | orange/rust sandstone | turquoise water (the inverted lagoon) |
 | Glowtide Strait | near-black indigo night | electric cyan biolume + red lit buoy + moon gold |
@@ -93,7 +93,7 @@ the venue plays from the top fifth alone. Rule 5's cartoon-cumulus recipe is the
 | Stillwater Lake | glass patches & puffs | near-empty pale sky, a scatter of *tiny* fair-weather cumulus — small clouds are the puffs |
 | Pearl Lagoon | mobile rain squalls | dark squall curtain with a visible rain shaft marching in, bright trade sky behind it |
 | Gatorgrass Bayou | dead air | no sky — canopy, heat haze, god-rays. Already correct |
-| Otter Run | current & rocks | high thin cirrus only. Wind here is terrain-driven, not thermal — no cumulus |
+| Sockeye Run | current & rocks | high thin cirrus only. Wind here is terrain-driven, not thermal — no cumulus |
 | Bluewater Bonanza | cloud-shadow pressure cells | *Parked July 2026 — see note below. Card keeps its original sky* |
 | Redrock Reservoir | terrain wind, williwaws | towering thermal build over the rim, dust haze low in the canyon |
 | Glowtide Strait | night information game | clear moonlit night, minimal cloud. Already correct |
@@ -104,7 +104,7 @@ the venue plays from the top fifth alone. Rule 5's cartoon-cumulus recipe is the
 
 **Status (July 2026).** Reworked and shipped: **Lagoon** (squall cell + rain
 shaft), **Lake** (12 small puffs), **Bay** (sea-breeze line — land:water cloud
-ratio 4.1:1 → 11.3:1), **Otter Run** (cirrus only — sky max luminance 254 → 191).
+ratio 4.1:1 → 11.3:1), **Sockeye Run** (cirrus only — sky max luminance 254 → 191).
 All four moved saturation up and held contrast. **Redrock** keeps its bare sky by
 choice; **Clubhouse Point** stays plain on purpose (0.055 contrast, by far the flattest
 card, which is correct for a benchmark).

@@ -25,6 +25,11 @@ What it reports, and why each one is here:
   key / third / fifth  a brief asking for "open fifths with no third" is asking
                        for a LOW third/fifth ratio, and that ratio is what chose
                        between the two Glacier candidates (0.31 vs 0.62).
+                       ⚠️ It needs HARMONIC content. On a percussion-led track
+                       (Emberfall Isle) struck metal and drums smear energy over all
+                       twelve pitch classes, the chroma comes back nearly uniform,
+                       and the mode reading is noise however confident r looks —
+                       check the profile is peaked before believing it.
                        ⚠️ The key estimate is a correlation, not a transcription.
                        Two readings within ~0.02 of each other (Lighthouse Cove:
                        D minor 0.721, D major 0.717) mean the third is AMBIGUOUS,
@@ -32,8 +37,15 @@ What it reports, and why each one is here:
                        claiming Suno ignored the key.
   chroma flux          how much the harmony moves. "Texture not melody" briefs
                        want this low; a race track with a hook measures high.
-  tempo                autocorrelation of the onset envelope; octave errors are
-                       normal, so read it as a sanity check on the brief.
+  tempo                autocorrelation of the onset envelope. Reported as the
+                       PEAK FAMILY plus a resolved pulse, because the strongest
+                       peak is usually the fastest thing moving, not the beat:
+                       Bluewater Bonanza's sixteenth-note surface peaks at 172
+                       over an 86 BPM pulse, and a search clamped to 60-180 (as
+                       this was) reports 172 and hides the 86.
+                       ⚠️ Still a sanity check. It cannot see a tempo the onsets
+                       do not state, and a track with a double-time section
+                       (Pearl Lagoon) defeats autocorrelation outright.
 
 ⚠️ Weighting is by MAGNITUDE, not power. Power weighting buries everything under
 the bass — it reports Glacier Sound at 0.2% in the wind band where the number on
@@ -41,7 +53,7 @@ record is 5.4% — and nothing measured that way is comparable to the numbers in
 [[regatta-music]] or in guidelines/music.md.
 
 ⚠️ None of this identifies an INSTRUMENT, so none of it can decide venue fit.
-That call is made by ear against the registry in guidelines/music.md §6; these
+That call is made by ear against the registry in guidelines/music.md §10; these
 numbers only say whether a track can survive the mix it has to live in.
 
 Requires only macOS `afconvert` and numpy — no ffmpeg.
@@ -118,20 +130,51 @@ def analyse(path, lo=None, hi=None):
     third = prof[(root + (4 if key[3] else 3)) % 12]
     fifth = prof[(root + 7) % 12]
 
-    # tempo: autocorrelation of the onset envelope
+    # tempo: autocorrelation of the onset envelope, over a range wide enough to
+    # SEE the octave rather than clamp it away. The strongest peak is whatever
+    # moves fastest, so report the family and resolve a pulse out of it.
     env = np.maximum(0, np.diff(np.sqrt(P.sum(1))))
     env -= env.mean()
     ac = np.correlate(env, env, 'full')[len(env) - 1:]
     fps = SR / HOP
-    lagmin, lagmax = int(fps * 60 / 180), int(fps * 60 / 60)
-    bpm = 60 * fps / (lagmin + int(np.argmax(ac[lagmin:lagmax])))
+    lagmin, lagmax = int(fps * 60 / 320), int(fps * 60 / 40)
+    seg = ac[lagmin:lagmax]
+    seg = seg / (seg.max() + 1e-12)
+    peaks = sorted(((seg[i], 60 * fps / (lagmin + i))
+                    for i in range(1, len(seg) - 1)
+                    if seg[i] > seg[i - 1] and seg[i] > seg[i + 1] and seg[i] > 0.25),
+                   reverse=True)
+    fam, strength = [], {}
+    for s, b in peaks:                      # dedupe near-identical lags
+        if not any(abs(b - x) < 3 for x in fam):
+            fam.append(b)
+            strength[b] = s
+    bpm = fam[0] if fam else 0.0
+    # The pulse is the family member that EXPLAINS the most of the family — the
+    # beat every other peak is a multiple or subdivision of — not the strongest
+    # peak. Clubhouse Point is why: its peaks are 66/50/199/99 against a 100 BPM
+    # brief, and 66 is both the strongest and a triplet artifact of 199, while 99
+    # accounts for all four. Strength alone would report 66 and call the brief missed.
+    #   ⚠️ OCTAVES ONLY. Admitting 3/2 and 2/3 relations lets spurious peaks vote:
+    #   with those allowed, 66 explains MORE of Clubhouse Point's family than 99
+    #   does (3.72 vs 3.41) and still wins. A pulse relates to its own subdivisions
+    #   by powers of two; the 1.5x neighbours are the artifacts being screened out.
+    RATIOS = (0.25, 0.5, 1.0, 2.0, 4.0)
+
+    def explains(b):
+        return sum(strength[o] for o in fam
+                   if any(abs(o - b * r) <= 0.05 * o for r in RATIOS))
+
+    inrange = [b for b in fam if 60 <= b <= 140]
+    pulse = max(inrange, key=lambda b: (round(explains(b), 3), strength[b])) if inrange else bpm
 
     print(f'{os.path.basename(path):<26} body {len(body)/SR:6.1f}s of {dur:6.1f}s')
     print(f'  wind band 900-6.5k  {wind_share*100:5.1f}%      above 2 kHz {hi2k*100:5.1f}%')
     print(f'  centroid  {centroid:6.0f} Hz     mean {mean_db:6.1f} dB   dynamics {dyn:5.1f} dB')
     print(f'  key ~{key[1]:<9} (r={key[0]:.2f})  third {third:.3f} / fifth {fifth:.3f}'
           f' = {third/(fifth+1e-9):.2f}')
-    print(f'  chroma flux {flux:.3f}          tempo ~{bpm:.0f} BPM')
+    fams = '/'.join(f'{b:.0f}' for b in fam[:4])
+    print(f'  chroma flux {flux:.3f}          tempo peaks {fams} -> pulse ~{pulse:.0f} BPM')
 
 
 for arg in sys.argv[1:]:

@@ -199,7 +199,7 @@ Blobfish, Blue-Footed Booby, Bottlenose Dolphin, Brown Pelican,
 California Newt, Chambered Nautilus, Cloud Ray, Clownfish, Common
 Octopus, Common Raven, Common Swift, Elephant Seal, Fire Salamander,
 Firefish, Flamingo, Florida Manatee, Flying Fish, Flying Squirrel, Great
-White, Green Tree Snake, Hammerhead Shark, Harbor Seal, Hermit Crab,
+White Shark, Green Tree Snake, Hammerhead Shark, Harbor Seal, Hermit Crab,
 Herring Gull, Hippopotamus, Kingfisher, Leafy Seadragon, Lined Seahorse,
 Mackerel, Mahi-Mahi, Mako Shark, Mallard Duck, Mandarin Dragonet, Mantis
 Shrimp, Maxima Clam, Moray Eel, Mute Swan, Narwhal, Northern Pike,

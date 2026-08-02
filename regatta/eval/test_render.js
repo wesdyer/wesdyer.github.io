@@ -60,14 +60,27 @@ const check = (name, cond, detail) => {
             // Every leg, plus one past the finish — the state a finished player sits
             // in while the rest of the fleet is still racing, and the one most likely
             // to fall off the end of a route table.
+            // EVERY RACING LEG MUST HAVE SOMETHING FOR THE MINIMAP TO POINT AT. The
+            // minimap's whole job is "where next", and it highlighted `legMarks()` alone —
+            // which returns null for a ROUNDING, because a rounding entry carries `markId`
+            // and not `marks`. So on an island course the mark you were sailing to drew as
+            // one more grey pip and the map answered nothing. A leg kind nobody taught the
+            // minimap about is the failure to guard against, not this one instance of it.
+            const unaimed = [];
             for (let leg = 0; leg <= maxLeg; leg++) {
                 player.raceState.leg = leg;
                 player.raceState.finished = leg > state.race.totalLegs;
+                if (leg <= state.race.totalLegs) {
+                    const e = routeLeg(leg);
+                    const aimable = !!(legMarks(leg) || (e && e.kind === 'round' && e.mark));
+                    if (!aimable) unaimed.push(`${leg}:${e ? e.kind : 'no-entry'}`);
+                }
                 for (const aids of [false, true]) {
                     state.showNavAids = aids;
                     attempt(`racing leg=${leg} aids=${aids}`);
                 }
             }
+            if (unaimed.length) problems.push(`minimap has no active target on leg(s) ${unaimed.join(', ')}`);
 
             // Race over, and camera modes that use different boundary/mark maths.
             state.race.status = 'finished';

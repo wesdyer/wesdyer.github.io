@@ -132,9 +132,9 @@
              Help (?) also have their own keys, so the pause menu is not the sole
              route to them. -->
 
-        <!-- Character picker: the whole fleet, sorted by hull hue. -->
+        <!-- Character picker: the whole fleet, A to Z, each one on its fleet-display band. -->
         <div id="character-picker" class="hidden absolute inset-0 bg-slate-900/85 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6 pointer-events-auto">
-            <div class="bg-slate-800/95 border border-white/10 rounded-2xl shadow-2xl w-full max-w-6xl flex flex-col" style="max-height:88vh;">
+            <div class="bg-slate-800/95 border border-white/10 rounded-2xl shadow-2xl w-full flex flex-col" style="max-width:1560px; max-height:88vh;">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
                     <div>
                         <h2 class="t-display italic text-white uppercase" style="font-size:26px;">Pick your character</h2>
@@ -149,9 +149,14 @@
                      to shrinking to fit its container, and with auto rows that squashed every
                      cell to 55px and clipped the boat and the name away under overflow-hidden.
                      With it, the grid keeps its natural row height and SCROLLS instead.
-                     `align-content:start` stops a short last row stretching. -->
-                <div id="character-grid" class="grid gap-2.5 p-5 overflow-y-auto"
-                     style="grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+                     `align-content:start` stops a short last row stretching.
+
+                     480px is the fleet-display band's own minimum (see the roster sheet):
+                     narrower than that and a long name runs under the boat at the right end.
+                     Three columns on a wide screen, two at 1152px, one on a laptop — fewer
+                     across than the old 210px tiles, which is the trade the band is worth. -->
+                <div id="character-grid" class="grid gap-3 p-5 overflow-y-auto"
+                     style="grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
                             grid-auto-rows: min-content; align-content: start;
                             flex: 1 1 auto; min-height: 0;"></div>
             </div>
@@ -633,6 +638,8 @@
     <script src="js/ai-quotes.js"></script>
     <script src="js/water.js"></script>
     <script src="js/planner.js"></script>
+    <!-- Grid pathing: the course-path ruler needs it for keyholed land (see CoursePath). -->
+    <script src="js/sailcheck.js"></script>
     <script src="js/rules.js"></script>
     <script src="js/script.js"></script>
 </body>

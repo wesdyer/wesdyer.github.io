@@ -9,3 +9,23 @@ clear-for-action/.DS_Store
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .obsidian/
+
+# OpenAI batch scratch — request payloads and the in-flight batch id
+regatta/art/batch_input.jsonl
+regatta/art/.batch_state.json
+
+# Credentials — never commit. The OpenAI key belongs in the shell profile or in
+# ~/.config/openai/regatta-key (outside the repo), never in a tracked file.
+.env
+.env.*
+*.key
+*-key
+*_key
+**/openai-key
+**/secrets.json
+
+# Portrait review scratch — contact sheets and the feedback file
+regatta/art/review/
+
+# Generated portrait candidates awaiting a review decision
+regatta/art/candidates/

@@ -261,7 +261,9 @@ def main():
             failed += 1
 
     if changed:
-        MANIFEST.write_text(json.dumps(m, indent=2) + "\n")
+        # ensure_ascii=False, or json escapes every em-dash in the file to a \\uXXXX
+        # sequence and one status flip lands as a ~350-line diff nobody can review.
+        MANIFEST.write_text(json.dumps(m, indent=2, ensure_ascii=False) + "\n")
         print("\nmanifest updated")
     sys.exit(1 if failed else 0)
 

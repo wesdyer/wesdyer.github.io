@@ -152,6 +152,25 @@ function migrateVenueDoc(doc) {
         // a run — see legGoesUpwind / pointOfSail in script.js.
         if ('beat' in e) delete e.beat;
     }
+
+    // ── GUST SOURCES: multipliers -> knots, metres, seconds ─────────────────────
+    // The old `strength` was a multiplier on a fraction of the venue's own wind, so its
+    // knots depend on the document's breeze. Converted here against the mean of the wind
+    // regions, which is the closest thing to "the venue's wind" that exists at migration
+    // time — the whole point of the new units is that the number stops moving when the
+    // breeze does, so this conversion happens exactly once.
+    const gregs = (doc.gusts && doc.gusts.regions) || [];
+    if (gregs.some(r => r.strength != null || r.size != null || r.life != null)) {
+        const wr = (doc.wind && doc.wind.regions) || [];
+        const meanKt = wr.length ? wr.reduce((a, r) => a + (r.speed || 0), 0) / wr.length : 14;
+        for (const r of gregs) {
+            // The old means: 0.35 x the venue wind, radiusX 900u (= 360 m across), 165 s.
+            if (r.gustKt == null && r.strength != null) r.gustKt = Math.round(r.strength * 0.35 * meanKt * 10) / 10;
+            if (r.sizeM == null && r.size != null) r.sizeM = Math.round(r.size * 360);
+            if (r.lifeS == null && r.life != null) r.lifeS = Math.round(r.life * 165);
+            delete r.strength; delete r.size; delete r.life;
+        }
+    }
     // A ROUNDING NAMES A MARK, never a land shape. `landId` made the two one object:
     // the mark WAS the island's centroid, so dragging the mark dragged the island, and
     // the island could not be moved without moving the course. They are separate things
@@ -399,19 +418,24 @@ function validateVenueDoc(doc) {
     checkRegions((doc.current && doc.current.regions) || [], 'current');
     // A gust region is the same polygon with a different question asked of it — not "what
     // is the wind here" but "what is BORN here" — so it takes the same shape checks and
-    // then its own four numbers on top. Every one of them is a MULTIPLIER on what the
-    // venue would have rolled, so 1 is "no opinion" and the ranges below are sanity rails
-    // rather than physics: a x12 gust is not weather, it is a typo.
+    // then its own numbers on top. Those numbers are now in the units the thing is measured
+    // in — knots, metres, seconds — so the rails below are real quantities: a 40-knot puff
+    // is not weather, it is a typo, and a 2 km puff is bigger than the arena it is in.
     const gustRegions = (doc.gusts && doc.gusts.regions) || [];
     checkRegions(gustRegions, 'gust');
+    const worldM = ((doc.world && doc.world.size) || 8750) / U_PER_M;
     for (let i = 0; i < gustRegions.length; i++) {
         const r = gustRegions[i], at = `gust region ${r.id || i}`;
         if (r.count != null && !(r.count >= 0 && r.count <= 200)) err(`${at}: count must be 0–200`);
-        if (r.strength != null && !(r.strength >= 0 && r.strength <= 6)) err(`${at}: strength must be 0–6`);
-        if (r.size != null && !(r.size > 0 && r.size <= 6)) err(`${at}: size must be 0–6`);
-        if (r.life != null && !(r.life > 0 && r.life <= 6)) err(`${at}: life must be 0–6`);
+        if (r.gustKt != null && !(r.gustKt >= 0 && r.gustKt <= 30)) err(`${at}: gust must be 0–30 kt`);
+        if (r.sizeM != null && !(r.sizeM > 0 && r.sizeM <= 2000)) err(`${at}: size must be 1–2000 m`);
+        if (r.lifeS != null && !(r.lifeS > 0 && r.lifeS <= 900)) err(`${at}: life must be 1–900 s`);
         if (r.bias != null && !(r.bias >= 0 && r.bias <= 1)) err(`${at}: bias must be 0–1`);
         if (r.veer != null && !(r.veer >= 0 && r.veer <= 90)) err(`${at}: veer must be 0–90 degrees`);
+        // A puff wider than the map is a fill, not a puff — and the old x-form made this
+        // easy to type without noticing.
+        if (r.sizeM != null && r.sizeM > worldM * 0.6)
+            warn(`${at}: a ${Math.round(r.sizeM)} m puff on a ${Math.round(worldM)} m map covers most of the course at once`);
     }
     // Gust regions OWN the births. There is no venue-wide puffiness behind them and no
     // implicit open water still making puffs beside them — no source means no puffs, the
@@ -846,9 +870,16 @@ function compileVenueDoc(doc) {
     // fact about the mean wind over that water, which is a low-speed wind region. Keeping
     // those two apart is what stops one thing from being sayable two ways.
     //
-    // A region states its own population and character outright. `strength`, `size` and
-    // `life` are still multipliers, but on FIXED bases now rather than on a venue roll —
-    // there is no venue roll left to multiply.
+    // A region states its own population and character IN REAL UNITS. These were the last
+    // three bare multipliers in the editor — "strength 1×, size 1×, life 1×" told a designer
+    // nothing about what would appear on the water, and the ×-on-a-hidden-base form hid two
+    // things that mattered: that `life 1` meant a puff outlived its own arena by four times
+    // over, and that a puff's strength was keyed to the ROUTE-CENTROID wind rather than to
+    // the breeze where it was born. A number in knots, metres and seconds can be checked
+    // against the course; a multiplier can only be guessed at.
+    //
+    // Each is the MEAN of what the source emits — the engine keeps its natural spread around
+    // it (see PUFF_SPREAD / PUFF_SIZE_SPREAD / PUFF_LIFE_SPREAD in script.js).
     const gustRegions = ((doc.gusts && doc.gusts.regions) || []).map((r, i) => {
         const poly = (r.poly || []).map(p => [p[0], p[1]]);
         return {
@@ -864,9 +895,17 @@ function compileVenueDoc(doc) {
             // the total; that variable is gone, so there is nothing left to take a share OF.
             // A region states its own population the way a wind region states its own speed.
             count: r.count != null ? Math.max(0, Math.round(r.count)) : 8,
-            strength: r.strength != null ? r.strength : 1,   // x on speedDelta — a breath or a bomb
-            size: r.size != null ? r.size : 1,               // x on the cell's radii
-            life: r.life != null ? r.life : 1,               // x on duration
+            // KNOTS a puff is worth on the anemometer — the mean; a hole is worth LULL_RATIO
+            // of it. Absolute, not a fraction of the venue's wind: the old form read
+            // `state.wind.speed`, the blend at the route centroid, so a bomb born in a 29-knot
+            // katabatic tongue was sized by the 20-knot average two kilometres away.
+            gustKt: r.gustKt != null ? r.gustKt : 5,
+            // METRES across the puff's long axis, mean. A cell is an ellipse and the short
+            // axis is half this.
+            sizeM: r.sizeM != null ? r.sizeM : 300,
+            // SECONDS it lives, mean. Check it against how long a puff takes to cross this
+            // course — `estimate.puffDriftMps` is here for exactly that comparison.
+            lifeS: r.lifeS != null ? r.lifeS : 90,
             // Share of births that are GUSTS rather than holes. Absolute now: there is no
             // venue split to defer to, so 0.5 is an even mix and 0 is a pure lull factory.
             bias: r.bias != null ? r.bias : 0.5,
@@ -936,35 +975,60 @@ function compileVenueDoc(doc) {
     const repWind = representativeWind(windRegions, route, marks, doc);
     const wb = repWind.direction != null ? repWind.direction : 0;
     const REF_WIND = 14;                    // knots, mid-range: this is a fallback estimate
-    const gts = (typeof getTargetSpeed === 'function') ? getTargetSpeed : null;
-    const vmgToward = (bearing) => {
-        if (!gts) return null;
-        const twaCourse = Math.abs(((bearing - wb + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
-        let best = 0;
-        for (let d = 0; d <= 180; d += 4) {
-            const twa = d * Math.PI / 180;
-            const v = gts(twa, d > 90, REF_WIND) * Math.cos(twa - twaCourse);
-            if (v > best) best = v;
+    let sailed = 0, secs = 0, geom = 0;
+    const addPriced = (r) => { geom += r.geom; sailed += r.sailed; secs += r.secs; };
+
+    let paths = null;
+    if (typeof CoursePath !== 'undefined' && typeof RoutePlanner !== 'undefined') {
+        try {
+            if (!compileVenueDoc._planner) compileVenueDoc._planner = new RoutePlanner();
+            // The same grid the ruler uses. Without it the estimate is measured on a path
+            // that runs through Glacier Sound's island — the visibility planner cannot
+            // handle a keyholed coastline and silently returns the straight line.
+            let grid = null;
+            if (window.SailCheck && boundary) {
+                const fixed = migrateShapes(doc).filter(sh => shapeTraits(sh).motion === 'fixed');
+                grid = window.SailCheck.buildGrid(fixed, boundary, null);
+            }
+            paths = CoursePath.build(marks, route, islands, compileVenueDoc._planner,
+                                     'est-' + islands.length + '-' + (doc.venue || ''), grid);
+        } catch (e) { paths = null; }
+    }
+
+    if (paths) {
+        // Priced by the SHARED function, per leg, so the editor's per-leg readout and this
+        // total cannot drift apart. Stamped back onto the leg for that readout to use.
+        for (const L of paths.legs) {
+            const r = CoursePath.priceLeg(L.pts, wb, REF_WIND);
+            L.secs = r.secs; L.sailed = r.sailed; L.upwind = r.upwind;
+            addPriced(r);
         }
-        return best;
-    };
-    let sailed = 0, secs = 0;
-    let prev = legPt(route[0]);
-    for (let i = 1; i < route.length; i++) {
-        const p = legPt(route[i]);
-        if (!prev || !p) { prev = p || prev; continue; }
-        const dx = p.x - prev.x, dy = p.y - prev.y;
-        const d = Math.hypot(dx, dy);
-        const bearing = Math.atan2(dx, -dy);
-        // A leg that nets upwind cannot be sailed in a straight line, so it costs more
-        // distance than it measures.
-        const upx = Math.sin(wb), upy = -Math.cos(wb);
-        const upwind = (dx * upx + dy * upy) > d * 0.25;
-        sailed += d * (upwind ? 1.45 : 1.0);
-        // The polar's opinion, for REPORTING only — see the note on cutoffAuto below.
-        const vmg = vmgToward(bearing);
-        if (vmg && vmg > 0.2) secs += d / (vmg * 15);   // units/s = knots * 15
-        prev = p;
+        // THE ROUNDING THE RULER DELIBERATELY OMITS. DMC holds steady while a boat circles an
+        // out-and-back mark, because position alone cannot order a closed loop — but the boat
+        // still sails it, and a time limit that ignores it cuts the race off early. Counted
+        // here, at zone radius, for distance and time only; the ranking ruler is untouched.
+        for (const L of paths.legs) {
+            // The path records the sweep it used. Near zero means an out-and-back, where the
+            // real manoeuvre is a full circuit — so price one, at the same zone radius the
+            // rest of the arc would have used.
+            if (L.roundSweep == null || L.roundSweep >= 0.2) continue;
+            const arc = Math.PI * 2 * L.roundZone;
+            geom += arc; sailed += arc;
+            // A circle averages to a beam reach; priced by the shared function on a
+            // synthetic beam-reach segment so it uses the same polar.
+            const bx = Math.sin(wb + Math.PI / 2) * arc, by = -Math.cos(wb + Math.PI / 2) * arc;
+            secs += CoursePath.priceLeg([{ x: 0, y: 0 }, { x: bx, y: by }], wb, REF_WIND).secs;
+        }
+    } else {
+        // Fallback for a context with no planner loaded: straight mark to mark, which can
+        // run across land. Glacier Sound's sailable path is 2.1x its straight line.
+        let prev = legPt(route[0]);
+        for (let i = 1; i < route.length; i++) {
+            const p = legPt(route[i]);
+            if (!prev || !p) { prev = p || prev; continue; }
+            addPriced(CoursePath.priceLeg([prev, p], wb, REF_WIND));
+            prev = p;
+        }
     }
 
     return {
@@ -986,8 +1050,17 @@ function compileVenueDoc(doc) {
         // computes the honest number and writes it into `course.cutoff`; this is only what
         // an unauthored document falls back to, and the checks say so out loud.
         sailedDist: sailed,
-        estSecsStraight: secs > 0 ? secs : null,
-        cutoffAuto: sailed > 0 ? (sailed / 5) * 0.1875 : null,
+        courseDist: geom,                       // the path itself, before any tacking allowance
+        pathMeasured: !!paths,                  // false = straight-line fallback
+        estSecs: secs > 0 ? secs : null,          // priced along the PATH, per segment
+        estSecsStraight: secs > 0 ? secs : null,  // legacy name, same number
+        // TWICE THE BEST TIME, to the nearest minute. The old form was 0.1875 s per metre of
+        // STRAIGHT-LINE distance — a rule of thumb that could not see the land the course
+        // goes around, and that had no relationship to how fast the boats actually sail it.
+        // `secs` is now the polar's time along the real path, with the beat priced by VMG,
+        // so doubling it is a limit expressed in the only currency that matters: a fleet
+        // gets twice as long as a perfectly sailed lap.
+        cutoffAuto: secs > 0 ? Math.max(60, Math.round(secs * 2 / 60) * 60) : null,
         windRegions,
         currentRegions,
         gustRegions,
@@ -1023,7 +1096,14 @@ const getVenueDoc = (key) => {
     return d ? migrateVenueDoc(d) : null;
 };
 
+const U_PER_M = 5;
+
 window.VenueDoc = {
+    // THE GAME'S ONE LENGTH CONVERSION, in the file both the game and the editor already
+    // load. It was about to exist in three places at once — the editor's uToM/mToU, the
+    // validator's rails, and the gust sizes in script.js — and three copies of "how long is
+    // a metre" is exactly the kind of thing that comes to mean two things.
+    U_PER_M,
     get: getVenueDoc,
     migrate: migrateVenueDoc,
     validate: validateVenueDoc,

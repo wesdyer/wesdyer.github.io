@@ -101,7 +101,7 @@ color system and the reason venues read as different places at race scale.
 | Stillwater Lake `lake` | `#0E7490` | `#155E75` | `#22D3EE` | `#4ADE80` |
 | Pearl Lagoon `lagoon` | `#1FB6C9` | `#0E7490` | `#7EE8E0` | `#FDE68A` |
 | Gatorgrass Bayou `swamp` | `#606C38` | `#3A4423` | `#7D8A4E` | `#8A9A5B` |
-| Otter Run `river` | `#3F6F5F` | `#2C5248` | `#5C8F7A` | `#A3B18A` |
+| Sockeye Run `river` | `#3F6F5F` | `#2C5248` | `#5C8F7A` | `#A3B18A` |
 | Bluewater Bonanza `ocean` | `#0369A1` | `#1E3A8A` | `#0EA5E9` | `#93C5FD` |
 | Redrock Reservoir `redrock` | `#189DB5` | `#0C6478` | `#5CD6D6` | `#E8A06A` |
 | Glowtide Strait `glowtide` | `#1A2560` | `#0A0F30` | `#27407E` | `#67E8F9` |
@@ -224,12 +224,7 @@ buys the ratio on every venue at once. [debt.md](debt.md) item 1.
 
 ### 6.4 Three things the references do that we don't — **Intent**
 
-1. **Pressure as colored streaks.** `references/sailgp-halifax-pressure.jpg` shades
-   the course with short directional streaks colored by wind speed (teal → yellow →
-   orange). We model the wind field precisely and surface it only through gust
-   tinting and whitecap density. This would make information the AI already uses
-   visible to the player, and it fits the venue design language exactly — *the water
-   tells you the truth if you look*.
+1. ~~**Pressure as colored streaks.**~~ **BUILT** — see §8.1.
 2. **Labels on a leader line.** SailGP raises each label on a thin pole so it never
    overlaps the boat or its neighbours. Ours sits at a fixed 50px offset and collides
    in a crowded start.
@@ -258,12 +253,69 @@ buys the ratio on every venue at once. [debt.md](debt.md) item 1.
 - Gust and lull tints come from the venue's `palette.gusts` (§4), never a generic
   blue — a cat's-paw is *this* water moving, not a patch laid on top.
 
+### 8.1 Wind comets — **Observed** (`drawParticles(ctx, 'air')`)
+
+The pressure overlay §6.4 asked for. A streak is one parcel of air, drawn along **its
+own track** over the last `WIND_TAIL_PTS × WIND_TAIL_STEP` seconds — so its direction
+and its length are measurements, not formulas, and it curves where the breeze bends.
+
+Four channels, all read off `pressureAt()` so they cannot disagree:
+
+| channel | carries | why |
+|---|---|---|
+| **density** | pressure (strongest cue) | Real water is bare below ~6 kt and streaked in a fresh breeze. A lull is drawn as **absent streaks**, which is what a sailor sees and the only encoding that survives on a dark palette. |
+| **length** | wind speed, exactly | distance covered in a fixed window of time |
+| **width** | pressure **and absolute wind** | `t` alone made a 6.5 kt Gatorgrass streak as fat as a 16 kt Bluewater one at half the length — stubby. Scaling with the breeze too keeps a comet's *shape* constant and lets its *size* report the wind. Aspect ratio now sits at 12–17:1 on every venue. |
+| **colour** | pressure, cool → warm | after the LiveLine reference |
+
+**The ramp is anchored to the course, not to absolute knots** (`computeWindPressureScale`):
+p10/p90 of the mean field sampled over sailable water **inside the mark box**, averaged
+across one oscillation period, widened to at least ±18% of the median. 18 knots is a hole
+on Glacier Sound and a squall on Gatorgrass; and nine of the ten venues state one uniform
+wind region, so without the widening `lo === hi` and the ramp has no denominator.
+
+**This layer is information, never the subject of the frame.** Thickness and density are the
+two channels that turn a reading into a curtain, so both have **hard ceilings that are clamps,
+not coefficients** — `STREAK_MAX_ALPHA`, `STREAK_MAX_HALFWIDTH`, `STREAK_MAX_SPAWN`. A
+coefficient is a number someone later raises for a venue that "needs more", and the failure it
+produces is a wall of ink over a mark rounding. The arithmetic could otherwise reach alpha
+**1.008** — a fully opaque streak — and that is not a rare corner: `pressureAt` clamps at the
+course's p90 and a gust pushes local wind straight past it, so every channel pins to maximum
+exactly where the fleet is and exactly where the boats most need to be visible.
+
+Verified by forcing the whole view to the top of the ramp (`_comet_ceiling.js`), including
+with the config knobs deliberately abused: alpha holds at 0.55, half-width at 4.6, and the
+population moves 67 → 72 on screen. Alpha-weighted ink stays near **1% of the viewport**.
+
+Rules this layer must keep:
+
+- **Warm, not orange.** The reference's hot end is saturated orange — the hull colour of
+  four boats and the fill of every inflatable mark. Gold keeps the cool→warm polarity and
+  separates from the fleet by *saturation*, which is the right hierarchy anyway.
+- **A streak is a mark on WATER.** Culled to the arena and off land at spawn, rechecked
+  every `WIND_WATER_RECHECK` seconds as it drifts.
+- **Nothing in this layer may disappear while visible.** Killing a beached streak outright
+  made it blink out at full strength *against the shoreline* — the eye goes straight to a
+  disappearance, so a cull meant to be invisible was the loudest thing the layer did. It
+  fades over `WIND_BEACH_FADE`, and the water test is thrown **ahead** by exactly the
+  distance the streak covers while fading, so it dies out approaching the shore and
+  arrives already gone. Guarded by `_comet_beach.js`: zero removals above env 0.05.
+- **Streaks drift at 0.6–0.9× the true wind**, the same band the puff cells use, so a
+  streak inside a cat's-paw travels with it instead of sliding through it.
+- **The tail ends at a fixed AGE, not at a stored sample.** Retiring the oldest sample
+  whole made the tip jump ~16× the head's step on 6.5% of frames — a visible twitch on
+  every streak, ten times a second. `streakSpine` keeps one spare sample and interpolates.
+
+Diagnostics: `eval/_comet_probe.js` (drawn vs `getWindAt`), `_comet_flicker.js` (tip
+smoothness), `_comet_venues.js` (all ten), `_comet_cost.js`, `_comet_look.js` (variant
+sheets), `_dir_check.js` (which way a comet points). Tunables live on `window.__COMET`.
+
 ---
 
 ## 9. Effects & weather — **Rule**
 
 **Wind** — sparse directional streaks, varied length and opacity, aligned to the wind
-field. Stronger wind increases density and length, not brightness alone.
+field. Stronger wind increases density and length, not brightness alone. See §8.1.
 
 **Rain and snow** — a few clear directional layers rather than uniform particle
 noise. Snow broader and softer than rain. Keep precipitation behind labels and
@@ -342,7 +394,7 @@ decoration (visual-style.md §7.4).
   wildlife in the world is not a mascot (visual-style.md §9).
 - Strong readable key poses over fluid but ambiguous motion.
 - Hazards telegraph danger before collision through motion, shape or contrast.
-- Per-venue wildlife is often **character kin** (Otter Run ← Bixby, Gatorgrass ←
+- Per-venue wildlife is often **character kin** (Sockeye Run ← Slipstream, Gatorgrass ←
   Chomp, Glacier Sound ← Pebble). Keep that thread.
 
 ---

@@ -1911,7 +1911,13 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
             return n;
         };
         A._setMode('gust'); A.fitView();
-        o.startsEmpty = !(((A._state().doc.gusts || {}).regions) || []).length;
+        // Counted RELATIVE to what the venue authors. This used to assert the layer starts
+        // empty, which was a property of no venue having a gust source rather than of the
+        // layer — Glacier Sound authors one now, so the claim it was really making ("the
+        // layer invents nothing") has to be made as a delta.
+        const regs0 = () => ((A._state().doc.gusts || {}).regions) || [];
+        const start = regs0().length;
+        o.startsFromDocument = start === (((window.VENUE_DOC[A._state().doc.venue] || {}).gusts || {}).regions || []).length;
         o.blankNoDots = amber();
         const windBefore = (A._state().doc.wind.regions || []).length;
 
@@ -1922,15 +1928,16 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         const h = c.r * 0.35;
         A._drawRing([[c.x - h, c.y - h], [c.x + h, c.y - h], [c.x + h, c.y + h], [c.x - h, c.y + h]]);
         const regs = () => (A._state().doc.gusts || {}).regions || [];
-        o.madeOne = regs().length === 1;
-        o.madeAGust = o.madeOne && regs()[0].id === 'gust-1';
+        const iNew = start;                       // the one Draw just added
+        o.madeOne = regs().length === start + 1;
+        o.madeAGust = o.madeOne && /^gust-\d+$/.test(regs()[iNew].id);
         // ...and NOT a wind region, which is the mistake a shared maker would make.
         o.noStrayWind = (A._state().doc.wind.regions || []).length === windBefore;
         // Neutral by construction: drawing says WHERE and nothing else.
-        const r0 = regs()[0];
-        o.neutral = r0.count === 8 && r0.strength === 1 && r0.size === 1 && r0.life === 1
+        const r0 = regs()[iNew];
+        o.neutral = r0.count === 8 && r0.gustKt === 5 && r0.sizeM === 300 && r0.lifeS === 90
                  && r0.bias === 0.5 && r0.veer === 15;
-        o.selected = JSON.stringify(A._osel()) === JSON.stringify([{ kind: 'gust', i: 0 }]);
+        o.selected = JSON.stringify(A._osel()) === JSON.stringify([{ kind: 'gust', i: iNew }]);
 
         A.fitView();
         o.dots = amber();
@@ -1944,38 +1951,39 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
             el.dispatchEvent(new Event('change', { bubbles: true }));
             return true;
         };
-        o.hasFields = ['count', 'strength', 'size', 'life', 'bias', 'veer', 'falloff']
+        o.hasFields = ['count', 'gustKt', 'sizeM', 'lifeS', 'bias', 'veer', 'falloff']
             .every(k => !!document.querySelector(`#insp-obj [data-num="gr.${k}"]`));
         // A source has NO bearing and NO speed — the wind it is handed decides where its
         // puffs go — so offering either would be a control that means nothing.
         o.noBearing = !document.querySelector('#insp-obj [data-num="gr.dir"]')
                    && !document.querySelector('#insp-obj [data-num="gr.speed"]');
-        setNum('count', 3); setNum('strength', 2.5); setNum('life', 0.5); setNum('veer', 25);
-        const r1 = regs()[0];
-        o.edited = r1.count === 3 && r1.strength === 2.5 && r1.life === 0.5 && r1.veer === 25;
+        setNum('count', 3); setNum('gustKt', 9); setNum('lifeS', 45); setNum('veer', 25);
+        const r1 = regs()[iNew];
+        o.edited = r1.count === 3 && r1.gustKt === 9 && r1.lifeS === 45 && r1.veer === 25;
         // Out-of-range is refused rather than clamped, and the document keeps its old value.
-        setNum('strength', 99);
-        o.refusesSilly = regs()[0].strength === 2.5;
+        // In real units the rail is a real quantity: 99 kt is not a puff, it is a typo.
+        setNum('gustKt', 99);
+        o.refusesSilly = regs()[iNew].gustKt === 9;
         // Zero bias is a lull factory. There is no venue split left to defer to, so a blank
         // box is simply refused rather than meaning a third thing.
         setNum('bias', 0);
-        o.biasZero = regs()[0].bias === 0;
+        o.biasZero = regs()[iNew].bias === 0;
         setNum('bias', '');
-        o.biasBlankRefused = regs()[0].bias === 0;
+        o.biasBlankRefused = regs()[iNew].bias === 0;
 
         // A second source. Each states its own population; neither is a share of the other.
         A._setMode('gust');
         A._drawRing([[c.x - h * 3, c.y - h], [c.x - h * 1.2, c.y - h],
                      [c.x - h * 1.2, c.y + h], [c.x - h * 3, c.y + h]]);
-        o.two = regs().length === 2;
-        A._setOsel([{ kind: 'gust', i: 0 }]);
+        o.two = regs().length === start + 2;
+        A._setOsel([{ kind: 'gust', i: iNew }]);
         o.shareShown = (document.querySelector('#in-meta') || {}).textContent || '';
 
         // SELECT and DELETE, the two object-level verbs that had to learn a third kind.
-        o.hitPicksGust = JSON.stringify(A._hitObject(c.x, c.y)) === JSON.stringify({ kind: 'gust', i: 0 });
-        A._setOsel([{ kind: 'gust', i: 0 }, { kind: 'gust', i: 1 }]);
+        o.hitPicksGust = JSON.stringify(A._hitObject(c.x, c.y)) === JSON.stringify({ kind: 'gust', i: iNew });
+        A._setOsel([{ kind: 'gust', i: iNew }, { kind: 'gust', i: iNew + 1 }]);
         o.deleted = A._deleteOsel();
-        o.goneAfterDelete = regs().length === 0;
+        o.goneAfterDelete = regs().length === start;
 
         while (A._state().histIdx > 0) A._undo();
         A._setMode('shape');
@@ -1984,8 +1992,8 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     // Emptiness is asserted on the DOCUMENT, not on the canvas: this venue's sand is amber
     // too, so a pixel count of an empty layer measures the map rather than the layer. The
     // count is kept only as the baseline the stipple has to rise above.
-    check('the Gusts layer starts empty — no venue is changed by the layer existing',
-          gu.startsEmpty === true);
+    check('the Gusts layer shows exactly what the document authors, and invents nothing',
+          gu.startsFromDocument === true);
     check('Draw makes a GUST source on the gusts layer', gu.madeAGust === true);
     check('...and not a stray wind region', gu.noStrayWind === true);
     check('a new source starts from stated defaults, not from the venue', gu.neutral === true);

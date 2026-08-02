@@ -1188,11 +1188,7 @@ class BotController {
 
     getLineDistance() {
         const [m0, m1] = startLinePts();
-        const lineDx = m1.x - m0.x;
-        const lineDy = m1.y - m0.y;
-        const nx = lineDy, ny = -lineDx; // Normal perpendicular to line (points upwind)
-        const bDx = this.boat.x - m0.x, bDy = this.boat.y - m0.y;
-        return bDx * nx + bDy * ny; // positive = above/upwind of line
+        return hullLineOffset(this.boat, m0, m1, false); // positive = above/upwind of line
     }
 
     getApproachTime(distance, currentSpeed, stats) {
@@ -1236,8 +1232,13 @@ class BotController {
         const wd = state.wind.direction;
         const downwind = wd + Math.PI;
 
-        // Signed perpendicular distance to the line (>0 = course side / over early).
-        const pDist = ((boat.x - m0.x) * dy - (boat.y - m0.y) * dx) / lineLen;
+        // Signed perpendicular distance to the line (>0 = course side / over early), measured
+        // at the HULL'S LEADING EDGE — the same thing the rule is judged on. Aiming the
+        // CENTRE at the line puts the bow 25 units over it, so once the crossing test became
+        // hull-based (RRS: "any part of her hull") this boat was OCS every time it hit its
+        // own mark. Measured cost of the mismatch: mark touches ran 2-4x while the fleet
+        // milled around the committee boat recovering.
+        const pDist = hullLineOffset(boat, m0, m1, true);
         const behind = Math.max(0, -pDist);
 
         const P = (typeof window !== 'undefined' && window.__START) ? window.__START : {};
@@ -1895,7 +1896,7 @@ const AI_CONFIG = [
     { name: 'Skim', creature: 'Flying Fish', hull: '#8FD3FF', spinnaker: '#FF2D95', spinnaker2: '#FFFFFF', spinnaker3: '#8FD3FF', sail: '#FFFFFF', cockpit: '#AEB4BF', personality: "Flashy opportunist thriving on speed bursts." , beat: 'Survive her start, then turn hard and often — she hates corners.', archetype: 'rocket', stats: { acceleration: 5, momentum: 0, handling: -4, upwind: 0, reach: -4, downwind: -1, pressure: 0, lightAir: 4, heavyAir: -4, memory: -2 } },
     { name: 'Wobble', creature: 'Platypus', hull: '#FF8C1A', spinnaker: '#7B4FD4', spinnaker2: '#FF8C1A', sail: '#FFFFFF', cockpit: '#B0B0B0', personality: "Awkward, unpredictable, deadly effective in chaos." , beat: 'Ignores the wind to get there — sail the middle and collect.', archetype: 'gambler', stats: { acceleration: 5, momentum: -1, handling: -2, upwind: -3, reach: 3, downwind: 0, pressure: 4, lightAir: 2, heavyAir: -2, memory: 1 } },
     { name: 'Pinch', creature: 'American Lobster', hull: '#E10600', spinnaker: '#FFFFFF', spinnaker2: '#E10600', sail: '#FFFFFF', cockpit: '#5A5A5A', personality: "Aggressive bully dominating the starting line." , beat: 'Stay clean upwind, then walk away downwind — he parks there.', archetype: 'bully', stats: { acceleration: 1, momentum: -2, handling: 0, upwind: 2, reach: -1, downwind: -5, pressure: 2, lightAir: -2, heavyAir: 2, memory: 3 } },
-    { name: 'Bruce', creature: 'Great White', hull: '#121212', spinnaker: '#ff0606', spinnaker2: '#000000', sail: '#FFFFFF', cockpit: '#3A3A3A', personality: "Cold, relentless presence forcing others to react." , beat: 'Force restarts and tacking duels — he cannot get moving again.', archetype: 'bully', stats: { acceleration: -5, momentum: -4, handling: -5, upwind: 1, reach: 3, downwind: 4, pressure: 2, lightAir: -4, heavyAir: 5, memory: 3 } },
+    { name: 'Bruce', creature: 'Great White Shark', hull: '#121212', spinnaker: '#ff0606', spinnaker2: '#000000', sail: '#FFFFFF', cockpit: '#3A3A3A', personality: "Cold, relentless presence forcing others to react." , beat: 'Force restarts and tacking duels — he cannot get moving again.', archetype: 'bully', stats: { acceleration: -5, momentum: -4, handling: -5, upwind: 1, reach: 3, downwind: 4, pressure: 2, lightAir: -4, heavyAir: 5, memory: 3 } },
     { name: 'Strut', creature: 'Flamingo', hull: '#FF4F9A', spinnaker: '#1A1A1A', spinnaker2: '#FF4F9A', spinnaker3: '#FFFFFF', sail: '#FFFFFF', cockpit: '#B0BEC5', personality: "Stylish confidence with daring, showy sailing." , beat: 'Push her into maneuvers — every turn costs her the strut.', archetype: 'metronome', stats: { acceleration: -3, momentum: -3, handling: -5, upwind: 5, reach: -2, downwind: 1, pressure: 2, lightAir: 2, heavyAir: -1, memory: 0 } },
     { name: 'Gasket', creature: 'American Beaver', hull: '#FFE600', spinnaker: '#1F6FB2', spinnaker2: '#FFE600', sail: '#000000', cockpit: '#C4BEB2', personality: "Methodical and stubborn, grinding out advantages." , beat: 'Match him upwind, pull away when the spinnakers go up.', archetype: 'metronome', stats: { acceleration: 3, momentum: -3, handling: 3, upwind: 0, reach: 0, downwind: -4, pressure: -3, lightAir: 4, heavyAir: -3, memory: 4 } },
     { name: 'Chomp', creature: 'Saltwater Crocodile', hull: '#2ECC71', spinnaker: '#9CBF28', spinnaker2: '#1A1A1A', sail: '#000000', cockpit: '#C1B58A', personality: "Patient hunter striking without warning." , beat: 'Tack early, tack often — the ambusher cannot follow through turns.', archetype: 'leech', stats: { acceleration: 2, momentum: 3, handling: -5, upwind: 1, reach: -3, downwind: -2, pressure: 0, lightAir: 4, heavyAir: 1, memory: 3 } },
@@ -1911,7 +1912,7 @@ const AI_CONFIG = [
     { name: 'Torch', creature: 'Fire Salamander', hull: '#FF3B30', spinnaker: '#FFD60A', spinnaker2: '#FF3B30', spinnaker3: '#FFFFFF', sail: '#000000', cockpit: '#5E5E5E', personality: "Explosive starts, reckless aggression." , beat: 'Let the fire burn out — he keeps nothing through lulls or turns.', archetype: 'rocket', stats: { acceleration: 1, momentum: -5, handling: -3, upwind: -1, reach: 4, downwind: -1, pressure: 4, lightAir: 2, heavyAir: -1, memory: 1 } },
     { name: 'Nimbus', creature: 'Cloud Ray', hull: '#6A7FDB', spinnaker: '#F1F7FF', spinnaker2: '#6A7FDB', sail: '#FFFFFF', cockpit: '#C9D0E0', personality: "Effortlessly surfing invisible shifts." , beat: 'Chase him downwind — clouds stall when the wind goes aft.', archetype: 'shift', stats: { acceleration: 4, momentum: -5, handling: -4, upwind: 1, reach: 1, downwind: -5, pressure: 0, lightAir: 4, heavyAir: -3, memory: -1 } },
     { name: 'Tangle', creature: 'Common Octopus', hull: '#7A1FA2', spinnaker: '#00E676', spinnaker2: '#7A1FA2', sail: '#FFFFFF', cockpit: '#B8ACC9', personality: "Trap-setting master of dirty air." , beat: 'Dive downwind — the trap-setter unravels on the runs.', archetype: 'leech', stats: { acceleration: -1, momentum: 1, handling: -3, upwind: -2, reach: -1, downwind: -5, pressure: 5, lightAir: 1, heavyAir: -2, memory: 5 } },
-    { name: 'Brine', creature: 'Florida Manatee', hull: '#5E7C8A', spinnaker: '#FFB4A2', spinnaker2: '#FFFFFF', spinnaker3: '#8FB8D8', sail: '#FFFFFF', cockpit: '#C3CCD2', personality: "Looks slow, impossible to pass." , beat: 'Break his rhythm at the marks — restarts are agony for a manatee.', archetype: 'freight', stats: { acceleration: -5, momentum: 3, handling: 3, upwind: 3, reach: -2, downwind: 4, pressure: -4, lightAir: -2, heavyAir: -4, memory: 1 } },
+    { name: 'Brine', creature: 'Florida Manatee', hull: '#A65A45', spinnaker: '#FFB4A2', spinnaker2: '#FFFFFF', spinnaker3: '#8FB8D8', sail: '#FFFFFF', cockpit: '#C3CCD2', personality: "Looks slow, impossible to pass." , beat: 'Break his rhythm at the marks — restarts are agony for a manatee.', archetype: 'freight', stats: { acceleration: -5, momentum: 3, handling: 3, upwind: 3, reach: -2, downwind: 4, pressure: -4, lightAir: -2, heavyAir: -4, memory: 1 } },
     { name: 'Razor', creature: 'Barracuda', hull: '#2D3142', spinnaker: '#EF233C', spinnaker2: '#2D3142', sail: '#FFFFFF', cockpit: '#5C5F6A', personality: "Surgical aggression at the worst moments." , beat: 'No weak stat — refuse the fight and race your own boat.', archetype: 'bully', stats: { acceleration: 0, momentum: 4, handling: 5, upwind: -1, reach: 0, downwind: -1, pressure: -1, lightAir: -2, heavyAir: 2, memory: 1 } },
     { name: 'Pebble', creature: 'Adelie Penguin', hull: '#1F1F1F', spinnaker: '#00B4D8', spinnaker2: '#FFFFFF', spinnaker3: '#1F1F1F', sail: '#FFFFFF', cockpit: '#C7CCD1', personality: "Precise and unshakable in traffic." , beat: 'Reach across her line — precision cannot fix a slow reach.', archetype: 'metronome', stats: { acceleration: -2, momentum: 5, handling: 3, upwind: 5, reach: -4, downwind: 4, pressure: -2, lightAir: -1, heavyAir: 4, memory: 5 } },
     { name: 'Saffron', creature: 'Lined Seahorse', hull: '#FFB000', spinnaker: '#7B2CBF', spinnaker2: '#FFB000', sail: '#FFFFFF', cockpit: '#CBBFA6', personality: "Graceful wildcard favoring wide tactics." , beat: 'She bets it all on the reaches — win the beats and it is over.', archetype: 'gambler', stats: { acceleration: -4, momentum: -2, handling: 3, upwind: -5, reach: 5, downwind: 0, pressure: 5, lightAir: 5, heavyAir: -5, memory: 0 } },
@@ -1963,7 +1964,7 @@ const AI_CONFIG = [
     { name: 'Flaunt', creature: 'Anemone Shrimp', hull: '#F58BA0', spinnaker: '#00C2E0', spinnaker2: '#FF3B5C', spinnaker3: '#FFFFFF', sail: '#FFFFFF', cockpit: '#E8D4DA', personality: "Dazzling, theatrical, and quietly stealing your lane the whole time.", beat: 'Sail your own race — every trick she has costs her when the breeze gets up.', archetype: 'gambler', stats: { acceleration: 5, momentum: -4, handling: 5, upwind: -3, reach: 2, downwind: 0, pressure: 2, lightAir: 3, heavyAir: -4, memory: 1 } },
     { name: 'Piper', creature: 'Sanderling', hull: '#E8DCC0', spinnaker: '#2E9BF0', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Threads gaps at the mark that nobody else even sees.", beat: 'Take her downwind and stretch — precision is worth nothing on an empty run.', archetype: 'corner', stats: { acceleration: 3, momentum: -4, handling: 5, upwind: 1, reach: 0, downwind: -3, pressure: 2, lightAir: 2, heavyAir: -2, memory: 3 } },
     { name: 'Stripes', creature: 'Tiger Shark', hull: '#8A6A3A', spinnaker: '#F0C82E', spinnaker2: '#2B2B2B', sail: '#000000', cockpit: '#B8AE96', personality: "Eats mistakes. Sail clean and he has nothing to work with.", beat: 'Give him no errors — the tiger has no plan of his own.', archetype: 'leech', stats: { acceleration: 1, momentum: 4, handling: 0, upwind: 1, reach: 0, downwind: 1, pressure: -2, lightAir: -2, heavyAir: 3, memory: 3 } },
-    { name: 'Anvil', creature: 'Hammerhead Shark', hull: '#6E7A85', spinnaker: '#F5851F', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C2C8CE', personality: "Wide, heavy and utterly immovable once he owns the lane.", beat: 'Beat him off the line — the hammer needs a lane before it is worth anything.', archetype: 'bully', stats: { acceleration: -4, momentum: 3, handling: -3, upwind: 4, reach: 2, downwind: 1, pressure: -3, lightAir: -3, heavyAir: 4, memory: 1 } },
+    { name: 'Anvil', creature: 'Hammerhead Shark', hull: '#6E7A85', spinnaker: '#F5851F', spinnaker2: '#1C709A', sail: '#FFFFFF', cockpit: '#C2C8CE', personality: "Wide, heavy and utterly immovable once he owns the lane.", beat: 'Beat him off the line — the hammer needs a lane before it is worth anything.', archetype: 'bully', stats: { acceleration: -4, momentum: 3, handling: -3, upwind: 4, reach: 2, downwind: 1, pressure: -3, lightAir: -3, heavyAir: 4, memory: 1 } },
     { name: 'Paddle', creature: 'Mallard Duck', hull: '#2FAE5C', spinnaker: '#F58A00', spinnaker2: '#6B4A2A', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Cheerful, forgiving and happiest when the breeze goes soft.", beat: 'Wait for it to blow — the duck is a puddle sailor at heart.', archetype: 'metronome', stats: { acceleration: 1, momentum: 1, handling: 1, upwind: 0, reach: -1, downwind: -1, pressure: -2, lightAir: 3, heavyAir: -2, memory: 2 } },
     { name: 'Etienne', creature: 'Red Swamp Crayfish', hull: '#DE4F3C', spinnaker: '#50B090', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C6B49A', personality: "Scrappy bayou grinder who would rather hold a lane than win one.", beat: 'Race him in open water — the crawdad only understands a narrow channel.', archetype: 'corner', stats: { acceleration: -1, momentum: 3, handling: 1, upwind: 1, reach: -2, downwind: -2, pressure: -1, lightAir: 4, heavyAir: -3, memory: 2 } },
     { name: 'Frenzy', creature: 'Red-Bellied Piranha', hull: '#CE3B3B', spinnaker: '#1E7A4A', spinnaker2: '#FFFFFF', sail: '#000000', cockpit: '#A8B4B8', personality: "Feeds on a messy start and gets bored in clean air.", beat: 'Keep it tidy — with nothing to bite, the piranha simply drifts.', archetype: 'gambler', stats: { acceleration: 3, momentum: -3, handling: -1, upwind: -4, reach: 0, downwind: 0, pressure: 0, lightAir: 1, heavyAir: -1, memory: -1 } },
@@ -1972,6 +1973,27 @@ const AI_CONFIG = [
     { name: 'Splash', creature: 'Hippopotamus', hull: '#6F7782', spinnaker: '#EE3B2B', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C9CCD6', personality: "Enormous, delighted, and genuinely dangerous with the kite up.", beat: 'Never let him start a run in front — everywhere else he is a barge.', archetype: 'freight', stats: { acceleration: -4, momentum: 5, handling: -5, upwind: -4, reach: -2, downwind: 4, pressure: -3, lightAir: -4, heavyAir: 4, memory: 1 } },
     { name: 'Dozer', creature: 'Nurse Shark', hull: '#B0824F', spinnaker: '#7DE2C3', spinnaker2: '#FFFFFF', sail: '#FFFFFF', cockpit: '#C6BBA6', personality: "Sleeps through the start and wakes up somewhere near your transom.", beat: 'Put a lap on him early — the nurse shark needs the whole race to get going.', archetype: 'freight', stats: { acceleration: -5, momentum: 5, handling: -4, upwind: 0, reach: -1, downwind: 1, pressure: -4, lightAir: -2, heavyAir: 3, memory: 2 } },
     { name: 'Muninn', creature: 'Common Raven', hull: '#1B2038', spinnaker: '#12A0FF', spinnaker2: '#FFFFFF', spinnaker3: '#6B4FD6', sail: '#101014', cockpit: '#C3C7D2', personality: "Remembers every shift he has ever seen, and sails you with it.", beat: 'Run him downwind — memory is worth nothing on water he has not learned.', archetype: 'shift', traits: { windFast: 1.75 }, stats: { acceleration: 2, momentum: -3, handling: 4, upwind: 3, reach: 3, downwind: -2, pressure: 5, lightAir: 2, heavyAir: -1, memory: 5 } },
+
+    // ── The hundred. Eighteen added Aug 1 2026; colours are measured from each
+    // shipped portrait so the boat matches the face. See art/new-character-prompt.md.
+    { name: 'Talon', creature: 'Bald Eagle', hull: '#0A39A1', spinnaker: '#8A4A1D', spinnaker2: '#F2F2F0', sail: '#FFFFFF', cockpit: '#C3C7D2', personality: "Commits the instant he sees an opening, and never looks twice.", beat: 'Take him downwind — all that height is worth nothing with the wind behind.', archetype: 'rocket', stats: { acceleration: 5, momentum: -4, handling: 3, upwind: 5, reach: 4, downwind: -3, pressure: 3, lightAir: 1, heavyAir: 1, memory: 0 } },
+    { name: 'Latch', creature: 'Remora', hull: '#C40A60', spinnaker: '#029E99', spinnaker2: '#F0EDE4', sail: '#FFFFFF', cockpit: '#BFC4CC', personality: "Finds the fastest boat in the fleet and simply stays there.", beat: 'Break the tow — nobody has ever seen him accelerate on his own.', archetype: 'leech', stats: { acceleration: -3, momentum: 5, handling: 1, upwind: 1, reach: 2, downwind: -1, pressure: 5, lightAir: 0, heavyAir: -2, memory: 2 } },
+    { name: 'Skip', creature: 'Green Basilisk', hull: '#0C3FC0', spinnaker: '#3F8B0A', spinnaker2: '#F5E14A', spinnaker3: '#0C3FC0', sail: '#FFFFFF', cockpit: '#C7CBD4', personality: "Leaves before the gun and asks questions afterwards.", beat: 'Make it a long leg — he spends everything in ten seconds and has nothing left to carry.', archetype: 'rocket', stats: { acceleration: 5, momentum: -5, handling: 0, upwind: -4, reach: 3, downwind: -2, pressure: 0, lightAir: 2, heavyAir: 0, memory: -2 } },
+    { name: 'Sable', creature: 'Great Cormorant', hull: '#17CCC1', spinnaker: '#AF25CF', spinnaker2: '#1E2430', sail: '#101014', cockpit: '#C9CCD6', personality: "Rounds every mark as though it had been measured beforehand.", beat: 'Crowd her — she sails a clean lane or none at all, and dirty air undoes her.', archetype: 'corner', stats: { acceleration: 1, momentum: 0, handling: 5, upwind: 0, reach: 1, downwind: -1, pressure: -3, lightAir: -1, heavyAir: 2, memory: 3 } },
+    { name: 'Seam', creature: 'Rainbow Trout', hull: '#009078', spinnaker: '#F00030', spinnaker2: '#F2EAD2', sail: '#FFFFFF', cockpit: '#C5C9D1', personality: "Sees the shift a beat before it arrives, and takes it every time.", beat: 'Wait for it to blow — she reads the light stuff beautifully and drowns above sixteen knots.', archetype: 'shift', stats: { acceleration: 1, momentum: -4, handling: 3, upwind: 4, reach: 1, downwind: -3, pressure: 3, lightAir: 4, heavyAir: -4, memory: 1 } },
+    { name: 'Snag', creature: 'Hellbender', hull: '#78CE33', spinnaker: '#C8912A', spinnaker2: '#2B2118', sail: '#101014', cockpit: '#BCC0C7', personality: "Has been in this river longer than the river has.", beat: 'Force him to turn — a tacking duel is the one thing he cannot answer.', archetype: 'metronome', stats: { acceleration: -4, momentum: 5, handling: -4, upwind: -3, reach: 3, downwind: -2, pressure: 2, lightAir: -1, heavyAir: 3, memory: 5 } },
+    { name: 'Lunker', creature: 'Largemouth Bass', hull: '#4520A6', spinnaker: '#A0E203', spinnaker2: '#12121A', sail: '#FFFFFF', cockpit: '#C2C6CF', personality: "Picks a side of the course and dares you to disagree.", beat: 'Wait for a light day — he needs pressure to move, and he cannot turn when it arrives.', archetype: 'gambler', stats: { acceleration: -4, momentum: 2, handling: -3, upwind: -1, reach: -5, downwind: 0, pressure: 4, lightAir: -3, heavyAir: 3, memory: -4 } },
+    { name: 'Flare', creature: 'Siamese Fighting Fish', hull: '#9444C0', spinnaker: '#1B8D84', spinnaker2: '#F0143C', sail: '#FFFFFF', cockpit: '#CBCFD8', personality: "Would rather win the argument than the race.", beat: 'Let him pick the fight, then leave downwind — that is exactly where he is slowest.', archetype: 'bully', stats: { acceleration: 4, momentum: -3, handling: 4, upwind: -3, reach: -4, downwind: -3, pressure: 1, lightAir: 2, heavyAir: 1, memory: -3 } },
+    { name: 'Spar', creature: 'Blue Marlin', hull: '#326EC6', spinnaker: '#FCC20E', spinnaker2: '#EDF2F5', spinnaker3: '#12306B', sail: '#FFFFFF', cockpit: '#C6CAD3', personality: "Arrives at speed and expects the water to be clear.", beat: 'Attack at every mark — he rounds wide and cannot turn back inside you.', archetype: 'freight', stats: { acceleration: -3, momentum: 5, handling: -4, upwind: 2, reach: 5, downwind: 1, pressure: -1, lightAir: -2, heavyAir: 3, memory: 0 } },
+    { name: 'Bloom', creature: 'Portuguese Man-of-War', hull: '#9FDC4A', spinnaker: '#EA7EFA', spinnaker2: '#3A2E5C', sail: '#FFFFFF', cockpit: '#CDD1D9', personality: "Has no rudder, no plan, and an uncanny amount of luck.", beat: 'Put a beat in front of her — she goes where the wind goes and cannot fight upwind.', archetype: 'gambler', stats: { acceleration: 2, momentum: 4, handling: -5, upwind: -3, reach: -4, downwind: -3, pressure: -1, lightAir: -3, heavyAir: 5, memory: -4 } },
+    { name: 'Needle', creature: 'Gharial', hull: '#4C269C', spinnaker: '#DEEA49', spinnaker2: '#1A1A22', sail: '#FFFFFF', cockpit: '#C4C8D1', personality: "Threads gaps that were not there a moment earlier.", beat: 'Take him downwind — the precision that wins him marks is worth nothing on a run.', archetype: 'corner', stats: { acceleration: -1, momentum: -2, handling: 5, upwind: 3, reach: 1, downwind: -3, pressure: -1, lightAir: 2, heavyAir: 0, memory: 4 } },
+    { name: 'Sovereign', creature: 'Napoleon Wrasse', hull: '#80D81B', spinnaker: '#E82393', spinnaker2: '#0E5C55', spinnaker3: '#F2F0E6', sail: '#FFFFFF', cockpit: '#C8CCD5', personality: "Treats the racecourse as a formality he has already won.", beat: 'Sail on his wind — grandeur does not survive being covered.', archetype: 'corner', stats: { acceleration: -3, momentum: 3, handling: 3, upwind: 4, reach: 4, downwind: -1, pressure: -4, lightAir: -1, heavyAir: 3, memory: 2 } },
+    { name: 'Lateen', creature: 'By-the-wind Sailor', hull: '#D1DE09', spinnaker: '#16389A', spinnaker2: '#E8EEF5', sail: '#FFFFFF', cockpit: '#C0C4CD', personality: "Sets one sail, forever, and lets the day decide the rest.", beat: 'Send her upwind — a sail she cannot trim is no use against the breeze.', archetype: 'shift', stats: { acceleration: -4, momentum: -3, handling: -5, upwind: -4, reach: 4, downwind: 0, pressure: 5, lightAir: 2, heavyAir: -3, memory: -4 } },
+    { name: 'Ribbon', creature: 'Yellow-lipped Sea Krait', hull: '#ADDA16', spinnaker: '#0B5EC0', spinnaker2: '#F5E23A', spinnaker3: '#14202E', sail: '#101014', cockpit: '#C1C5CE', personality: "Slides through the fleet without appearing to hurry.", beat: 'Take her air — she needs a clean lane and will not fight you for one.', archetype: 'corner', stats: { acceleration: 4, momentum: 1, handling: 4, upwind: 1, reach: 1, downwind: -2, pressure: -3, lightAir: 4, heavyAir: -3, memory: 1 } },
+    { name: 'Plunge', creature: 'Northern Gannet', hull: '#1643AB', spinnaker: '#F9C915', spinnaker2: '#20242E', spinnaker3: '#F7F4E8', sail: '#FFFFFF', cockpit: '#C9CDD6', personality: "Picks a lane, folds, and commits — there is no second thought.", beat: 'Race him in a drifter — he needs wind to throw himself at, and dies without it.', archetype: 'rocket', stats: { acceleration: 5, momentum: -1, handling: -5, upwind: -3, reach: 0, downwind: -1, pressure: 2, lightAir: -4, heavyAir: 4, memory: 0 } },
+    { name: 'Riffle', creature: 'American Dipper', hull: '#2A71B5', spinnaker: '#CFD213', spinnaker2: '#5E646B', sail: '#FFFFFF', cockpit: '#BEC2CB', personality: "Never stops moving, and never stops being right about the wind.", beat: 'Wait for a windy day — she is quick and clever until it blows, then she is just small.', archetype: 'shift', stats: { acceleration: 3, momentum: -3, handling: 4, upwind: -2, reach: -2, downwind: -2, pressure: 3, lightAir: 4, heavyAir: -3, memory: -3 } },
+    { name: 'Chisel', creature: 'Humpback Chub', hull: '#32AD78', spinnaker: '#571A05', spinnaker2: '#E0CE93', sail: '#FFFFFF', cockpit: '#BDC1C9', personality: "Has one speed, and has never needed a second.", beat: 'Make him manoeuvre — he has no way of finding that speed again.', archetype: 'freight', stats: { acceleration: -4, momentum: 5, handling: -4, upwind: 0, reach: 3, downwind: 0, pressure: 3, lightAir: -3, heavyAir: 4, memory: 1 } },
+    { name: 'Chroma', creature: 'Cuttlefish', hull: '#0AA79C', spinnaker: '#952FAC', spinnaker2: '#E8C77A', sail: '#FFFFFF', cockpit: '#C7CBD3', personality: "Reads the whole course, changes her mind, and is usually right.", beat: 'Push her into heavy air — the thinking stops working above sixteen knots.', archetype: 'shift', stats: { acceleration: 0, momentum: 0, handling: 3, upwind: -1, reach: 1, downwind: 1, pressure: 4, lightAir: 5, heavyAir: -4, memory: -5 } },
 ];
 
 
@@ -2033,9 +2055,15 @@ const VENUES = {
         blurb: 'Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel — patience beats pace in here.'
     },
     river: {
-        name: 'Otter Run',
+        // Renamed from Sockeye Run (Aug 1 2026). Named for its witness, per the venues
+        // doc convention — and the witness is Slipstream, who is already a SOCKEYE
+        // salmon on the roster, whose beat line is "salmon cannot run downstream".
+        // Bixby is a SEA otter and belongs on the coast; two otters confused them.
+        // ⚠️ The key stays `river`: the document, the card art, the audio file and the
+        // golden traces are all filed under it.
+        name: 'Sockeye Run',
         tagline: 'Current & Rocks', water: 'Fast midstream', obstacles: 'Rocky banks', tags: [['SHALLOW BANKS','warn'],['LANE CHOICE','ok']],
-        label: 'River', emoji: '🛶',
+        label: 'River', emoji: '🐟',
         blurb: 'The stream runs hard down the middle and dawdles along the banks. Pick the lane that pays and let the river carry you past the fleet.'
     },
     ocean: {
@@ -3295,6 +3323,24 @@ const SPIN_LOOKS = {
     Splash: 'solid',
     Dozer: 'halves',
     Muninn: 'solid',
+    Talon: 'rays',
+    Latch: 'stripes',
+    Skip: 'sunburst',
+    Sable: 'solid',
+    Seam: 'gores',
+    Snag: 'solid',
+    Lunker: 'triangle',
+    Flare: 'crosshalves',
+    Spar: 'tricolour',
+    Bloom: 'rays',
+    Needle: 'triangle',
+    Sovereign: 'thirds',
+    Lateen: 'halves',
+    Ribbon: 'chevron',
+    Plunge: 'chevron',
+    Riffle: 'stripes',
+    Chisel: 'gores',
+    Chroma: 'halves',
 };
 // colorC is OPTIONAL and falls back to colorB, so every pattern authored before the
 // third colour existed renders byte-identically. A region is either a bare function
@@ -3767,21 +3813,33 @@ const PUFF_FAN = 18 * Math.PI / 180;
 // `reg` is the gust region it was born in, or null for the uniform case. A region never
 // decides the PHYSICS — it multiplies what the venue's conditions already rolled — so a
 // region left at its defaults changes only where puffs come from.
+// The spread the engine puts around each authored MEAN. These reproduce the ranges the old
+// multiplier form had exactly — size 300-1500 x 150-750 units, life 90-240 s, strength
+// 0.275-0.425 of the base wind — so converting a document changes its units and nothing else.
+const U_PER_M = window.VenueDoc.U_PER_M;            // the game's one length conversion
+const PUFF_SPREAD_LO = 0.572, PUFF_SPREAD_SPAN = 0.856;   // ±21% around the stated knots
+const PUFF_SIZE_LO = 0.333, PUFF_SIZE_SPAN = 1.334;       // ±67% around the stated metres
+const PUFF_LIFE_LO = 0.545, PUFF_LIFE_SPAN = 0.909;       // ±45% around the stated seconds
+const LULL_RATIO = 0.7;                             // a hole is worth ~70% of a puff
+
 function createGust(x, y, type, initial, reg) {
     const conditions = state.race.conditions;
-    const baseSpeed = state.wind.speed; // Current global speed
-    const windDir = state.wind.direction; // Current global direction
+    // THE WIND WHERE THE CELL IS BORN, not the venue's average — same reason as the drift in
+    // updateGusts. A source drawn in a katabatic tongue emits cells that set off along the
+    // tongue and lie across it, which is the only reason placing the polygon there means
+    // anything. `regionWindAt` for the same reason too: the mean field, no puffs to recurse
+    // through and no lee to deflect a feature this large.
+    const born = regionWindAt(x, y);
+    const baseSpeed = born.speed > 0.1 ? born.speed : state.wind.speed;
+    const windDir = born.speed > 0.1 ? born.direction : state.wind.direction;
 
-    // Varied size and shape (Puffiness affects size?)
-    // "Average size" bias
-    // Default 300-1500 X, 150-750 Y
-    // A FIXED base range, scaled by the source's own `size`. It used to be scaled by the
-    // venue's `puffiness` as well, which meant the same source made different puffs
-    // depending on which course it sat on — the thing that made gusts a venue variable
-    // rather than a property of a place.
-    const sizeMul = reg.size;
-    const maxRadiusX = (300 + Math.random() * 1200) * sizeMul;
-    const maxRadiusY = (150 + Math.random() * 600) * sizeMul;
+    // THE SOURCE STATES A MEAN AND THE ENGINE SPREADS AROUND IT. `sizeM` is how wide a puff
+    // is across its long axis, in metres; the short axis is half that. The spreads below
+    // reproduce the ranges these fields had as multipliers exactly, so the only thing that
+    // changed is that the number in the editor is now measured in something.
+    const halfU = (reg.sizeM * U_PER_M) / 2;
+    const maxRadiusX = halfU * (PUFF_SIZE_LO + Math.random() * PUFF_SIZE_SPAN);
+    const maxRadiusY = halfU * 0.5 * (PUFF_SIZE_LO + Math.random() * PUFF_SIZE_SPAN);
 
     let speedDelta = 0;
     let dirDelta = 0;
@@ -3794,20 +3852,16 @@ function createGust(x, y, type, initial, reg) {
     const bias = 0.5;
     const strengthFactor = (strengthRandom + bias) * 0.5; // 0 to 1
 
-    // 20-50% more breeze in a puff, 10-40% less in a hole: a real gust is worth about
-    // a third again on the anemometer, which is what makes chasing one worth the extra
-    // distance sailed. A region's `strength` scales that — a whisper off a low bank, a
-    // bomb off a cliff rim.
-    const strengthMul = reg.strength;
-    if (type === 'gust') {
-        // Range 0.20 to 0.50
-        const pct = 0.20 + strengthFactor * 0.30;
-        speedDelta = baseSpeed * pct * strengthMul;
-    } else {
-        // Range 0.10 to 0.40 reduction
-        const pct = 0.10 + strengthFactor * 0.30;
-        speedDelta = -baseSpeed * pct * strengthMul;
-    }
+    // WHAT A PUFF IS WORTH ON THE ANEMOMETER, in knots, stated by the source. A hole is
+    // worth LULL_RATIO of a puff — real lulls are the shallower half of the same signal.
+    //
+    // This used to be a percentage of `state.wind.speed`, which is the region blend at the
+    // ROUTE CENTROID. On a course whose wind actually varies that is the wrong reference:
+    // a bomb born in Glacier Sound's 29-knot katabatic tongue was sized by the 20-knot
+    // average two kilometres away, and a source could not be given a strength without
+    // knowing a number that is nowhere on its own panel.
+    const spread = PUFF_SPREAD_LO + strengthFactor * PUFF_SPREAD_SPAN;
+    speedDelta = reg.gustKt * spread * (type === 'gust' ? 1 : -LULL_RATIO);
 
     // Gust-shift coupling (Northern Hemisphere): a gust is faster, more-veered
     // upper-level air mixed down to the surface, so the wind VEERS (clockwise) in a
@@ -3839,12 +3893,13 @@ function createGust(x, y, type, initial, reg) {
     const vx = -Math.sin(moveDir) * moveSpeed;
     const vy = Math.cos(moveDir) * moveSpeed;
 
-    // Longer-lived puffs (90-240s) persist long enough to read, chase, and ride,
-    // instead of flickering in and out. That matches the real thing: a puff stays legible
-    // on the water for two to four minutes before it is dragged back to the gradient wind.
-    // A region's `life` decides whether its puffs die where they are born or cross the
-    // whole course.
-    const duration = (90 + Math.random() * 150) * reg.life;
+    // HOW LONG IT LIVES, in seconds, stated by the source. The number that makes this
+    // authorable is the one it has to be compared against: a puff drifts at ~0.75x the
+    // wind, so on a 1.75 km course it is gone in well under a minute. A source asking for
+    // 165-second puffs on that course is asking for cells that spend three quarters of
+    // their lives off the map — still counting against its own `count`, so the source
+    // reads "full" while the water is empty. In multiplier form that was invisible.
+    const duration = reg.lifeS * (PUFF_LIFE_LO + Math.random() * PUFF_LIFE_SPAN);
     const age = initial ? Math.random() * duration : 0;
 
     return {
@@ -3928,20 +3983,46 @@ function updateGusts(dt) {
     }
 
     const timeScale = dt * 60;
-    const globalWindSpeed = state.wind.speed;
-    const globalWindDir = state.wind.direction;
+    // ── A PUFF IS STEERED BY THE BREEZE IT IS IN ────────────────────────────────
+    // These two used to be `state.wind.speed` / `state.wind.direction` — the region blend at
+    // the ROUTE CENTROID — applied to every cell on the map. On a course whose wind is
+    // uniform that is the same number everywhere and the bug is invisible; on one whose wind
+    // actually varies it is simply the wrong wind. Glacier Sound's gust source sits in a 45°
+    // katabatic tongue while the centroid reads 130°, so every puff born there was carried
+    // 85° off its own breeze and left the arena within ten seconds, heading away from the
+    // course. Measured before the fix: 3 cells alive, 0.04 of them inside the arena on
+    // average, and not one ever within 900 units of the racing corridor.
+    //
+    // Both the design note in getWindAt ("a gust crossing a bend bends with it") and the
+    // editor's own panel text ("a puff drifts downwind and steers by the breeze where it is")
+    // already described the behaviour this now has.
+    //
+    // regionWindAt, NOT getWindAt: the mean field, without puffs and without lees. getWindAt
+    // loops every cell, so steering cells with it would be O(n^2) and self-referential — a
+    // puff would ride on its own pressure. A puff is a large-scale feature carried by the
+    // gradient flow anyway, not something a boat-scale wind shadow deflects.
+    const fallbackSpeed = state.wind.speed;
+    const fallbackDir = state.wind.direction;
 
     for (let i = state.gusts.length - 1; i >= 0; i--) {
         const g = state.gusts[i];
 
-        // Update Velocity to follow global wind
-        const moveSpeed = globalWindSpeed * g.moveSpeedFactor;
-        const moveDir = globalWindDir + g.moveDirOffset;
+        // The mean wind HERE, re-read every frame, so a cell crossing a bend turns with it
+        // and one entering a stronger region speeds up. A cell that has drifted into water
+        // no region covers has nothing to steer by, so it keeps the venue's own wind rather
+        // than parking where it stopped.
+        const local = regionWindAt(g.x, g.y);
+        const wSpeed = local.speed > 0.1 ? local.speed : fallbackSpeed;
+        const wDir = local.speed > 0.1 ? local.direction : fallbackDir;
+
+        const moveSpeed = wSpeed * g.moveSpeedFactor;
+        const moveDir = wDir + g.moveDirOffset;
         g.vx = -Math.sin(moveDir) * moveSpeed;
         g.vy = Math.cos(moveDir) * moveSpeed;
 
-        // Update Rotation to align with local wind direction (Global + Delta)
-        g.rotation = globalWindDir + g.dirDelta + Math.PI / 2;
+        // The cell lies ACROSS the breeze it is in, plus its own shift — so a puff crossing
+        // a bend re-aims rather than staying square to a wind two kilometres away.
+        g.rotation = wDir + g.dirDelta + Math.PI / 2;
 
         g.x += g.vx * timeScale;
         g.y += g.vy * timeScale;
@@ -4279,6 +4360,113 @@ function regionWindAt(x, y) {
     return { direction: dir, speed: spd };
 }
 
+// ── THE COURSE'S PRESSURE RANGE ─────────────────────────────────────────────
+// What "a lot of wind" means HERE. Pressure is only ever readable against a reference:
+// 18 knots is a hole on Glacier Sound and a squall on Gatorgrass, so a streak layer that
+// paints pressure needs to know which course it is painting.
+//
+// The reference used to be `state.wind.speed`, which is the region blend at the ROUTE
+// CENTROID — a single point. On Glacier Sound that point reads 20 while the start line
+// sits in 16, so every streak at the start reported a lull and the layer said "no
+// pressure anywhere" on the one venue whose wind actually varies across the water.
+//
+// So: sample the MEAN field (no puffs, no lee — those are the deviations we want to
+// read AGAINST it) over sailable water and take its p10/p90. Sampled across a full
+// oscillation period, because a region that breathes ±7 knots has a range no single
+// instant shows. Then widened to at least ±18% of the median, because nine of the ten
+// venues state one uniform wind region: without the widening lo === hi, the ramp has no
+// denominator, and an island's lee — real pressure variation on a "steady" course —
+// would have nothing to resolve against.
+const PRESSURE_MIN_SPAN = 0.18;   // half-width of the narrowest ramp, as a fraction of the median
+function computeWindPressureScale() {
+    const med0 = Math.max(1, state.wind.baseSpeed || 10);
+    const fallback = () => { state.wind.pressure = { lo: med0 * (1 - PRESSURE_MIN_SPAN), hi: med0 * (1 + PRESSURE_MIN_SPAN), med: med0 }; };
+    const bnd = state.course && state.course.boundary;
+    if (!bnd || typeof Arena === 'undefined') return fallback();
+
+    // OVER THE RACECOURSE, not over the arena. Glacier Sound's arena is 8.75 km across and
+    // the breeze at the far edge of it is never sailed; letting that water set the ramp put
+    // the entire start box below `lo`, so every streak the player could see sat pinned at
+    // the cold end with no gradient in it. The pressure that matters is the pressure on the
+    // legs, so the marks decide the window — padded, because boats work the edges.
+    let ext = Arena.extent(bnd);
+    const mk = state.course.marks;
+    const mlist = mk ? (Array.isArray(mk) ? mk : Object.values(mk)) : [];
+    const pts = mlist.filter(m => m && typeof m.x === 'number');
+    if (pts.length >= 2) {
+        let a = { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity };
+        for (const m of pts) { a.minX = Math.min(a.minX, m.x); a.maxX = Math.max(a.maxX, m.x); a.minY = Math.min(a.minY, m.y); a.maxY = Math.max(a.maxY, m.y); }
+        const pad = Math.max(500, 0.35 * Math.max(a.maxX - a.minX, a.maxY - a.minY));
+        ext = {
+            minX: Math.max(ext.minX, a.minX - pad), maxX: Math.min(ext.maxX, a.maxX + pad),
+            minY: Math.max(ext.minY, a.minY - pad), maxY: Math.min(ext.maxY, a.maxY + pad)
+        };
+    }
+
+    // The longest period any region breathes on; 0 phases means one sample is the truth.
+    let period = 0;
+    for (const r of (state.course.windRegions || [])) if (r.period > period) period = r.period;
+    const phases = period > 0 ? 6 : 1;
+
+    // Each phase's own SPATIAL spread, then averaged — deliberately not one pooled
+    // percentile over every phase at once. Pooling folds the breathing into the ramp, and
+    // on a venue whose regions swing ±7 knots that leaves the spatial gradient — the
+    // thing a player steers on — squeezed into half the ramp. Averaged, the gradient uses
+    // most of the ramp at any instant, and a course-wide build still pushes the whole
+    // field warm, which is the cue it should be.
+    const t0 = state.time;
+    const N = 26;
+    let loAcc = 0, hiAcc = 0, medAcc = 0, phasesUsed = 0;
+    for (let k = 0; k < phases; k++) {
+        state.time = t0 + (period * k) / phases;
+        const speeds = [];
+        for (let i = 0; i <= N; i++) {
+            const x = ext.minX + (ext.maxX - ext.minX) * (i / N);
+            for (let j = 0; j <= N; j++) {
+                const y = ext.minY + (ext.maxY - ext.minY) * (j / N);
+                if (!Arena.contains(bnd, x, y, 0)) continue;
+                if (!inMaskWater(x, y)) continue;
+                speeds.push(regionWindAt(x, y).speed);
+            }
+        }
+        if (speeds.length < 16) continue;
+        speeds.sort((a, b) => a - b);
+        const q = (f) => speeds[Math.round(f * (speeds.length - 1))];
+        loAcc += q(0.10); hiAcc += q(0.90); medAcc += q(0.50); phasesUsed++;
+    }
+    state.time = t0;
+    if (!phasesUsed) return fallback();
+
+    const med = Math.max(1, medAcc / phasesUsed);
+    let lo = Math.min(loAcc / phasesUsed, med * (1 - PRESSURE_MIN_SPAN));
+    let hi = Math.max(hiAcc / phasesUsed, med * (1 + PRESSURE_MIN_SPAN));
+
+    // HEADROOM FOR PUFFS. This ramp is built from the MEAN field on purpose — a puff is a
+    // deviation and we want to read it AGAINST the mean, not fold it in. But a puff still
+    // has to have somewhere to go: now that a gust's only wind cue is what it does to this
+    // field, a cell landing on the windiest water was pinning colour, width and density to
+    // the clamp with nothing left to say. Measured on Glacier Sound: a 7-knot puff on top
+    // of its 28-knot katabatic corner moved every channel except length by exactly zero.
+    //
+    // HALF the stated gust, not all of it. Every knot of headroom costs the spatial
+    // gradient — "which side has more pressure" — resolution, and that is the primary read.
+    let biggest = 0;
+    for (const r of (state.course.gustRegions || [])) if (r.count > 0 && r.gustKt > biggest) biggest = r.gustKt;
+    if (biggest > 0) { hi += biggest * 0.5; lo -= biggest * 0.5 * LULL_RATIO; }
+
+    state.wind.pressure = { lo: Math.max(0, lo), hi, med };
+}
+
+// 0 at the course's light end, 1 at its heavy end. Every channel the streak layer varies
+// — hue, width, alpha, how many streaks are born — reads off this one number, so they can
+// never disagree about where the pressure is.
+function pressureAt(speed) {
+    const p = state.wind.pressure;
+    if (!p) return 0.5;
+    const t = (speed - p.lo) / Math.max(0.001, p.hi - p.lo);
+    return t < 0 ? 0 : t > 1 ? 1 : t;
+}
+
 function getWindAt(x, y) {
     const mean = regionWindAt(x, y);
     const dir = mean.direction, spd = mean.speed;
@@ -4460,19 +4648,44 @@ function drawDisturbedAir(ctx) {
 // there, so anything before it is unused material. music_loop.py measures it by DENSITY
 // (the local floor), not by level, because level cannot see sparseness at all.
 const MUSIC_TRACKS = {
-    menu:         { file: 'assets/audio/yacht-club.mp3',         loopStart: 6.0,  loopEnd: 150.5, trim: 1.28 },
+    // The Game's Song, and the fourth attempt at it. This is the track the player hears
+    // first and the one guidelines/music.md §13 wants every venue bred from, so it is the only cue briefed
+    // for a HOOK — the ten venue tracks are texture and this is the tune they belong to.
+    //   chroma flux 0.200 is what "catchy" measures, and it is the best of the menu
+    //   line (0.109 -> 0.152 -> 0.200), just under lighthouse-cove's 0.205. It got
+    //   there by asking for a MECHANISM, not an adjective: "a short phrase that repeats
+    //   and answers itself" and "call and response", where "memorable piano melody"
+    //   had produced the least melodic track in the project.
+    //   ⚠️ Its 127.5 s body is short for the one cue that loops inside a sitting, and
+    //   that is fine: the seam measures 0.2 dB. A seam nobody can hear heard often
+    //   beats an audible one heard rarely — take 2 had 361 s of body and a 2.1 dB seam.
+    //   ⚠️ A minor against a brief that asked for major twice. `minor key` in the
+    //   excludes does not work (three data points); the TONIC holds when named, the
+    //   third drifts. Accepted — a minor theme can be plenty warm.
+    //   The Dec 2025 original is retired to yacht-club-2025.mp3, unassigned.
+    menu:         { file: 'assets/audio/yacht-club.mp3',         loopEnd: 127.5, trim: 0.85 },
     racing:       { file: 'assets/audio/spinnaker-run.mp3',      loopEnd: 264.5, trim: 0.96 },
-    results:      { file: 'assets/audio/harbor-results.mp3',     loopEnd: 118.0, trim: 0.90 },
+    // Results, and the most-repeated cue in the game: it fires after EVERY race, so
+    // familiarity fatigue beats loop fatigue as the risk. harbor-glow wins the slot on
+    // three numbers that are exactly this brief — 11.2 dB dynamics (harbor-results has
+    // 6.3, and this cue needs to feel alive), F major r=0.88 (harbor-results is A
+    // MINOR, which reads "you lost" whatever you actually finished), and an unhurried
+    // 89 BPM. 120.0 s of body from a 120.3 s file, so nothing is discarded.
+    //   ⚠️ It is generous rather than triumphant on purpose: `targetCue()` returns
+    //   'results' whatever happened, so this same track plays for a win and for eighth.
+    //   A fanfare after eighth is worse than a warm track after a win.
+    //   harbor-results.mp3 is retired to unassigned, not deleted.
+    results:      { file: 'assets/audio/harbor-glow.mp3',        loopEnd: 120.0, trim: 1.02 },
     'racing-seatrials': { file: 'assets/audio/seatrials.mp3',    loopStart: 20.5, loopEnd: 119.5, trim: 0.84 },
     'racing-arctic':    { file: 'assets/audio/arctic.mp3',       loopStart: 15.0, loopEnd: 137.5, trim: 0.78 },
     // Pearl Lagoon is the best-behaved file in the set: no intro and no outro, so
     // 118.5 s of its 119.0 s is loop body and nothing is discarded, and C major reads
     // at r=0.91 against a brief that asked for a sunlit major — the cleanest key in
     // the project.
-    //   Its 39.4% in the wind band is second-worst here, and §3 says put a WINDY
+    //   Its 39.4% in the wind band is second-worst here, and music.md §4 says put a WINDY
     //   venue's identity low. Measured rather than assumed: this venue races at 13 kn,
     //   the same as Lighthouse Cove, so the bed sits 12.1 dB under the music's RMS
-    //   (bay 13.4, arctic 6.4 — arctic is the tight one). The conflict §3 warns about
+    //   (bay 13.4, arctic 6.4 — arctic is the tight one). The conflict §4 warns about
     //   is not present today because THE SQUALLS ARE NOT BUILT YET. When the identity
     //   pass lands them, re-measure this venue before trusting the steel pan: a squall
     //   is exactly the event that takes the band this track lives in.
@@ -4482,13 +4695,100 @@ const MUSIC_TRACKS = {
     // breezy-race, which is now unassigned: breezy-race puts 47.7% of its energy in
     // the 900 Hz-6.5 kHz band the wind bed was highpassed into, the worst in the set,
     // so the property that once justified it (brightest track here, 2795 Hz centroid)
-    // is exactly what §3's inversion turned into a liability. The purpose-written
+    // is exactly what music.md §4's inversion turned into a liability. The purpose-written
     // track lands 29.3% and 112 BPM against a brief that asked for 112.
     //   ⚠️ Its 94.0 s loop body is the shortest in the project, so the seam comes
     //   round ~2.5 times in a race where breezy-race's came round once. The seam
     //   itself measures 0.0 dB (breezy-race: 2.0), which is the trade that makes it
     //   acceptable — a clean seam heard three times beats an audible one heard once.
     'racing-bay': { file: 'assets/audio/lighthouse-cove.mp3',    loopStart: 3.0,  loopEnd: 97.0,  trim: 0.79 },
+    // Bluewater Bonanza, take 4 — ACCEPTED, and the take that proved the method.
+    // Three earlier takes are unassigned beside it (`ocean-take1..3.mp3`).
+    //   The venue's brief is contrast, and three takes failed to deliver it because
+    //   the prompt kept ASKING FOR LEVEL, which Suno does not control: dynamics went
+    //   11.4 -> 5.5 -> 3.8 dB as the demand got more explicit. Take 4 asked for
+    //   ARRANGEMENT instead ("alternating sections: solo cello and guitar alone, then
+    //   full orchestra") and dropped the words epic/huge/vast/heroic, which mean
+    //   "loud and continuous" to the model. Result: 8.6 dB, and real swell SETS —
+    //   a 30 s period at r=0.20 where take 3 had no periodicity at all.
+    //   It is also the only take with spectral WIDTH rather than one extreme:
+    //   22.6% above 2 kHz and a 1240 Hz centroid sit between take 1's murk (4.2%,
+    //   445 Hz) and take 3's glare (42.9%, 2394 Hz). The wind band came back down to
+    //   29.6% with it, level with lighthouse-cove.
+    //   ⚠️ Its 3.8 dB seam is the one defect, and 222.5 s of body against ~243 s of
+    //   prestart+race means it IS heard, once, about 20 s before the finish. Accepted
+    //   because the alternative takes trade a rarer seam for no dynamics at all.
+    'racing-ocean': { file: 'assets/audio/ocean.mp3',            loopStart: 2.0, loopEnd: 224.5, trim: 0.77 },
+    // Gatorgrass Bayou, and the one venue where music.md §4 imposes nothing: it races at
+    // 6.5 kn, the lightest in the game, so the wind bed is all but absent and the
+    // whole spectrum is free. Its 18.8% wind band is therefore not a number to
+    // defend — the bed sits at -44.6 dB here, the quietest anywhere, and headroom
+    // measures 18.4 dB, the widest in the project (glowtide 17.0, arctic 10.2).
+    //   Two dynamics numbers that disagree, both wanted: music_spec reports 9.4 dB
+    //   (half-second frames — washboard and accordion transients, i.e. NOT squashed)
+    //   while the long-term bucket swing is 4.0 dB (it breathes without ramping).
+    //   Bluewater take 2 is the contrast: flat on both, 5.5 and 2.7.
+    //   ⚠️ Briefed dorian, came back aeolian — B flat outweighs B natural 2:1, and
+    //   dorian's whole identity is that raised sixth. Accepted: the venue is carried
+    //   by the accordion and the drag, and a strong A7 dominant (C# at 7.6%) is more
+    //   Cajun than a modal sixth would have been. See guidelines/music.md §10.
+    'racing-swamp': { file: 'assets/audio/swamp.mp3',            loopEnd: 172.5, trim: 0.79 },
+    // Glowtide Strait. Widest dynamics in the project (13.5 dB) and it is real shape,
+    // not a ramp — peak at 141 s, a genuine trough at 200-226 s.
+    //   ⚠️ It opens 6.4 dB down and takes ~25 s to arrive, and `music_loop.py` did NOT
+    //   set a loopStart for it, because loopStart tests DENSITY and this opening is
+    //   dense but QUIET — a full arpeggio at low level. That is why the seam measures
+    //   3.8 dB, the worst here. It costs nothing at this venue and only here: 238.5 s
+    //   of body against ~245 s of prestart+race means the seam is reached once, at the
+    //   very end. On a shorter track the same gap would thump every loop.
+    //   The happy accident worth protecting: the ~25 s build lands almost exactly on
+    //   the gun, because the prestart is ~30 s. Adding a loopStart would DELETE that.
+    'racing-glowtide': { file: 'assets/audio/glowtide.mp3',      loopEnd: 238.5, trim: 0.76 },
+    // Sockeye Run. ⚠️ Its 3.4 dB dynamics would be a failure at Bluewater and are a PASS
+    // here — this venue's brief is "perpetual motion with no rest in the rhythm", and
+    // the ostinato that never rests IS the current. Same number, opposite verdict:
+    // a dynamics figure only means something against the brief.
+    //   Cleanest seam in the project at 0.6 dB. Tempo reads 136 against a briefed 120
+    //   and that gap is real, not measurement noise (bins here are 123/129/136) — it
+    //   collides with no other venue and makes the fastest venue faster still, which
+    //   serves the difficulty ladder rather than fighting it.
+    //   ⚠️ The weak third (F# 4.9% under F 6.3%, third/fifth 0.30) is the fiddle
+    //   droning on open strings, not a missed key: tonic D is unambiguous and D-G-A
+    //   carry 44% of the chroma. Same category as lighthouse-cove, not Glowtide.
+    //   ⚠️ 479 s of body against a ~245 s race means half of it never plays, in a
+    //   12.4 MB file. Same overshoot as Bluewater take 3; ~4 min is the target.
+    'racing-river': { file: 'assets/audio/river.mp3',            loopEnd: 479.0, trim: 0.80 },
+    // Redrock Reservoir. ⚠️ Its loop points are the FIRST to come from music_loop's
+    // length-aware pair search, added because this track exposed the gap: the old
+    // seam-only objective picked an 87.5 s body — shortest in the project, seam heard
+    // ~2.8x a race — to win 0.03 dB over a 148.5 s alternative. See art/music_loop.py.
+    //   ⚠️ Briefed mixolydian, came back plain F major: E outweighs Eb 8.5% to 3.6%
+    //   and the flat seventh IS mixolydian. Third exotic-mode miss out of three
+    //   (dorian, aeolian, mixolydian all flattened). Accepted — the venue is carried
+    //   by the baritone guitar and the slapback, not by a mode nobody names aloud.
+    //   ⚠️ It shares F major with Glowtide, the closest key collision in the set;
+    //   glass marimba against baritone tremolo guitar is what still separates them.
+    //   Pulse 96 is exactly the brief. Bluewater also reads 96 against a briefed 92,
+    //   but that is one autocorrelation bin, so the two are probably not colliding.
+    'racing-redrock': { file: 'assets/audio/redrock.mp3',        loopStart: 13.0, loopEnd: 161.5, trim: 0.85 },
+    // Stillwater Lake, take 2 — the last venue, and the one where the BRIEF was the
+    // bug. Take 1 (`lake-take1.mp3`, unassigned) asked for "sparse", "long rests
+    // between phrases" and "silence is the mechanic", got exactly that, and was too
+    // sleepy to use. The venue's mechanic is the patient read; the old brief had
+    // translated patience into emptiness. A lake can be still and still be alive.
+    //   Take 2 fixed it by asking for BRIGHTNESS and MOTION: 3.7% -> 16.2% above
+    //   2 kHz, centroid 415 -> 1313 Hz, and the hollow third filled in (third/fifth
+    //   0.29 -> 0.68) — which is what turns vague into lovely. Body 77 -> 240.5 s, so
+    //   a ~243 s race essentially never reaches the seam.
+    //   ⚠️ Its level is steady (3.8 dB over 2 s frames) and that is correct here: the
+    //   movement is HARMONIC, not dynamic — chroma flux 0.166, the highest of any
+    //   accepted track bar Clubhouse Point and Sockeye Run. Light on water shifts
+    //   without getting louder. Do not read the flat level as the Bluewater failure.
+    //   ⚠️ Briefed LYDIAN, came back plain G major: C natural still beats C# 12.8% to
+    //   5.2%, and the sharp fourth IS lydian. This take carried the mitigation that
+    //   had been proposed and never tested — mode first, named as a scale degree —
+    //   and it made no difference. Five exotic modes briefed, five flattened.
+    'racing-lake': { file: 'assets/audio/lake.mp3',              loopEnd: 240.5, trim: 0.98 },
 };
 
 const MUSIC_VOLUME = 0.3;       // master, before per-track trim
@@ -5242,7 +5542,7 @@ function deepBandFor(primary, fallback, accent) {
 // pre-race sidebar and the competitor.html roster sheet, so the roster always
 // shows exactly what a player sees.
 // The SPECIES, under the name. A competitor's name is invented ("Bruce") and its
-// creature is the fact ("Great White") — the profile said the first and never the
+// creature is the fact ("Great White Shark") — the profile said the first and never the
 // second, so the roster read as 81 names rather than 81 animals.
 //
 // Set in mono rather than in the display or label face on purpose. The band already
@@ -5258,6 +5558,34 @@ function speciesLine(creature, size) {
     const s = size || 13;
     return `<div class="t-mono" style="font-size:${s}px; letter-spacing:0.4px; margin-top:${s > 11 ? 3 : 2}px;`
          + ` color:rgba(255,255,255,0.72); text-shadow:0 1px 4px rgba(0,0,0,0.75);">${creature}</div>`;
+}
+
+// THE IDENTITY BAND: portrait, name, species, archetype, boat. This is the fleet display —
+// the block a player already reads when scouting a rival and when looking at themselves — so
+// it is a function rather than markup inlined in one panel. The character picker is its third
+// caller and shows exactly the same block, minus the archetype (see openCharacterPicker).
+//
+// `opts.archetype` false drops the gold archetype line but keeps its box, so a band with one
+// and a band without still stack to the same height in a grid.
+function profileBandHTML(config, opts) {
+    const showArch = !opts || opts.archetype !== false;
+    const archDef = (typeof ARCHETYPES !== 'undefined' && config.archetype) ? ARCHETYPES[config.archetype] : null;
+    // Header band in the competitor's racing colors (same hull-vs-spinnaker
+    // luma pick as the fleet cards, so the panel matches their card)
+    const bandColor = bandColorFor(config.hull, config.spinnaker);
+    return `
+        <div class="rounded-xl overflow-hidden border border-white/10 relative"
+             style="background: linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)">
+            <canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130" data-boat="${config.name}"></canvas>
+            <div class="flex items-center gap-5 relative">
+                <img src="assets/images/competitors/${config.name.toLowerCase()}.png" alt="${config.name}" class="w-32 h-32 object-cover shrink-0" draggable="false">
+                <div class="py-4">
+                    <div class="t-display text-white uppercase leading-tight" style="font-size:36px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
+                    ${speciesLine(config.creature)}
+                    <div class="t-label mt-1" style="font-size:13px; letter-spacing:2.5px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${showArch && archDef ? archDef.label : ''}</div>
+                </div>
+            </div>
+        </div>`;
 }
 
 // `asSelf` is the PLAYER looking at the character they have chosen. It keeps only what you
@@ -5304,23 +5632,7 @@ function competitorProfileHTML(config, asSelf) {
         </div>`;
     }).join('');
 
-    // Header band in the competitor's racing colors (same hull-vs-spinnaker
-    // luma pick as the fleet cards, so the panel matches their card)
-    const bandColor = bandColorFor(config.hull, config.spinnaker);
-
-    return `
-        <div class="rounded-xl overflow-hidden border border-white/10 relative"
-             style="background: linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)">
-            <canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130" data-boat="${config.name}"></canvas>
-            <div class="flex items-center gap-5 relative">
-                <img src="assets/images/competitors/${config.name.toLowerCase()}.png" alt="${config.name}" class="w-32 h-32 object-cover shrink-0" draggable="false">
-                <div class="py-4">
-                    <div class="t-display text-white uppercase leading-tight" style="font-size:36px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
-                    ${speciesLine(config.creature)}
-                    <div class="t-label mt-1" style="font-size:13px; letter-spacing:2.5px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${asSelf ? '' : (archDef ? archDef.label : '')}</div>
-                </div>
-            </div>
-        </div>`
+    return profileBandHTML(config, { archetype: !asSelf })
         + (asSelf ? `` : `
         <div class="italic mt-4 pl-3" style="font-size:16px; color:#e6ecf8; border-left:3px solid #fcd34d;">${config.personality || ''}</div>
         <div class="flex flex-col gap-3 mt-5">${bars}</div>
@@ -5420,6 +5732,12 @@ function drawProfileBoatArt(g, cfg) {
 // Re-derive it (alpha > 8 over a scratch render) if the pose or art changes.
 const PROFILE_BOAT_BOUNDS = { x: -26, y: -26, w: 77, h: 59 };
 
+// Can a profile boat be drawn at all yet? Both callers below need the answer: one to
+// re-schedule itself, the other to decide whether the result is worth caching.
+function boatSpritesReady() {
+    return ['hull', 'main', 'spin'].every(k => boatSprites[k].complete && boatSprites[k].naturalWidth);
+}
+
 function renderProfileBoat(canvas, cfg) {
     if (!canvas) return;
     // Claim the right end of the header band, but give ground on narrow panels
@@ -5436,8 +5754,7 @@ function renderProfileBoat(canvas, cfg) {
     const g = canvas.getContext('2d');
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, canvas.width, canvas.height);
-    const ready = ['hull', 'main', 'spin'].every(k => boatSprites[k].complete && boatSprites[k].naturalWidth);
-    if (!ready) {
+    if (!boatSpritesReady()) {
         // sprites still loading (first open) — retry once they're in, unless
         // the panel has been swapped out from under us in the meantime
         setTimeout(() => { if (canvas.isConnected) renderProfileBoat(canvas, cfg); }, 300);
@@ -5483,136 +5800,82 @@ function applyBoatIdentity(boat, config, isPlayer) {
 }
 
 // ── THE CHARACTER PICKER ────────────────────────────────────────────────────
-// A grid of the whole fleet: each cell is the BOAT — the thing you look at for the entire
-// race, and where the colour actually lives — with the portrait as a badge and the name
-// underneath. The portrait is your leaderboard identity and stays readable at 28px because
-// it is drawn as an avatar; the boat carries the hull, the kite and its pattern.
+// Every cell IS THE FLEET DISPLAY — the same portrait + name + species + boat band the
+// pre-race panel puts on a rival and on you (`profileBandHTML`). One block in three places,
+// so the character you are choosing looks exactly like the character you become. A band is
+// wide, so the grid fits two or three per row where the old tiles fit five; the boat, the
+// face and the species are all legible at a glance, which the tiles never quite managed.
 //
-// SORTED BY HULL HUE, not by archetype. The player takes no stats, so `freight` versus
-// `rocket` has no effect on anything you do — sorting by it would imply a difference that
-// does not exist. Colour is the only axis that matters here, and "the teal one" is a
-// findable thought in a way that "the metronome" is not.
+// THE ARCHETYPE LINE IS DROPPED HERE. It labels the AI behaviour driving that character's
+// stats, and the player takes NO stats (see applyBoatIdentity) — "line bully" on a card you
+// are about to pick promises a way of sailing that picking it cannot deliver.
+//
+// SORTED ALPHABETICALLY. With 100 characters this is where you come to find a NAME you have
+// already met — on the leaderboard, in a profile, in someone's beat line — and A to Z is the
+// only order that answers "where is Clutch". (It was sorted by hull hue when the cells were
+// colour swatches and the fleet was smaller; a hue wheel is a fine way to browse and a
+// useless way to look something up.)
 let characterOrder = null;
-function charactersByHue() {
-    if (characterOrder) return characterOrder;
-    const hueOf = (hex) => {
-        const [r, g, b] = _rgbOf(hex);
-        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
-        // A near-neutral has no hue to sort on; park those at the end rather than letting
-        // rounding scatter them through the spectrum.
-        if (d < 18) return { h: 1000, l: 0.299 * r + 0.587 * g + 0.114 * b };
-        let h = mx === r ? ((g - b) / d + 6) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
-        return { h: h * 60, l: 0.299 * r + 0.587 * g + 0.114 * b };
-    };
-    characterOrder = AI_CONFIG.slice().sort((a, b) => {
-        const A = hueOf(a.hull), B = hueOf(b.hull);
-        return A.h - B.h || A.l - B.l;
-    });
+function charactersAlphabetical() {
+    if (!characterOrder) characterOrder = AI_CONFIG.slice().sort((a, b) => a.name.localeCompare(b.name));
     return characterOrder;
 }
 
-// Baked once per character and reused. 82 boats is 82 canvases of tinted sprite
+// Baked once per character and reused. 100 boats is 100 canvases of tinted sprite
 // compositing; doing that every time the picker opens is waste, and `renderProfileBoat`
-// re-schedules itself every 300ms until the boat sprites load — 82 of those racing each
+// re-schedules itself every 300ms until the boat sprites load — 100 of those racing each
 // other on first open is worse than waste.
 const _charBoatCache = new Map();
 function characterBoatCanvas(cfg) {
+    // ⚠️ NOTHING IS CACHED UNTIL THE SPRITES ARE IN. `renderProfileBoat` draws nothing while
+    // they load and retries only for as long as its canvas `isConnected` — which a detached
+    // bake canvas never is. Caching that blank would leave the boat blank for the session.
+    if (!boatSpritesReady()) return null;
     const hit = _charBoatCache.get(cfg.name);
     if (hit) return hit;
+    // Detached on purpose. `renderProfileBoat` sizes itself from its parent, so baking inside
+    // the grid would re-bake at a different size after every window resize; with no parent it
+    // falls back to the 480px band it was designed for, which is the picker's column minimum.
     const c = document.createElement('canvas');
-    _charBoatCache.set(cfg.name, c);
     renderProfileBoat(c, cfg);
-    // ⚠️ `renderProfileBoat` sizes itself from `canvas.parentElement.clientWidth` and writes
-    // an inline style.width — it was built to claim the right end of a profile HEADER BAND.
-    // In a grid cell that inline width wins over the layout class and the canvas overflows
-    // its cell, cropping the boat and pushing the name bar out of view. The backing store is
-    // what we want; the CSS size is the cell's business.
-    c.style.width = ''; c.style.height = '';
-    c.className = 'block w-full h-auto';
+    _charBoatCache.set(cfg.name, c);
     return c;
-}
-
-// One Sea Trials water patch, baked once and shared by all 82 cells as a CSS background.
-// The colours are read from the live water config rather than copied, so the picker keeps
-// matching the water you actually race on if that palette is ever retuned. Sea Trials
-// carries no palette override, so this IS its water.
-let _charWaterURL = null;
-function characterWaterPatch() {
-    if (_charWaterURL) return _charWaterURL;
-    const W = 220, H = 165;
-    const c = document.createElement('canvas');
-    c.width = W; c.height = H;
-    const g = c.getContext('2d');
-    const cfg = (typeof WATER_CONFIG !== 'undefined') ? WATER_CONFIG : {};
-    const grd = g.createLinearGradient(0, 0, 0, H);
-    grd.addColorStop(0, cfg.shallowColor || '#38bdf8');
-    grd.addColorStop(0.45, cfg.baseColor || '#0ea5e9');
-    grd.addColorStop(1, cfg.deepColor || '#0369a1');
-    g.fillStyle = grd; g.fillRect(0, 0, W, H);
-    // Soft swell streaks. Deterministic on purpose — a Math.random() here would be a draw
-    // taken during a UI action, and the whole venue system is pinned to the draw sequence.
-    g.lineCap = 'round';
-    for (let i = 0; i < 11; i++) {
-        const y = (i * 37 % H) + (i % 3) * 5;
-        const w = 26 + (i * 17) % 60;
-        const x = (i * 53) % W;
-        g.globalAlpha = 0.05 + (i % 4) * 0.022;
-        g.strokeStyle = i % 3 === 0 ? '#0c4a6e' : '#e0f2fe';
-        g.lineWidth = 1.6 + (i % 3) * 0.9;
-        g.beginPath();
-        g.moveTo(x, y);
-        g.quadraticCurveTo(x + w / 2, y - 3.5, x + w, y);
-        g.stroke();
-    }
-    g.globalAlpha = 1;
-    _charWaterURL = c.toDataURL('image/png');
-    return _charWaterURL;
 }
 
 function openCharacterPicker() {
     if (!UI.characterPicker) return;
     const grid = UI.characterPicker.querySelector('#character-grid');
+    // Unhide BEFORE filling it: `renderProfileBoat` measures its parent, and a display:none
+    // grid measures zero — which would shrink every boat to the 104px floor.
+    UI.characterPicker.classList.remove('hidden');
     grid.innerHTML = '';
-    const water = characterWaterPatch();
-    for (const cfg of charactersByHue()) {
+    for (const cfg of charactersAlphabetical()) {
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.dataset.char = cfg.name;
-        // `flex flex-col` explicitly: a <button> lays its children out INLINE by default, so
-        // the name bar sat beside the boat instead of under it and was clipped away.
-        cell.className = 'group relative rounded-xl overflow-hidden border transition-colors text-left flex flex-col';
         const me = cfg.name === settings.character;
-        const band = deepBandFor(cfg.hull, cfg.spinnaker, cfg.spinnaker2);
-        cell.style.cssText = `background:${band};`
-            + `border-color:${me ? '#fbbf24' : 'rgba(255,255,255,0.10)'};`
-            + (me ? 'box-shadow: inset 0 0 0 2px #fbbf24;' : '');
-        // The boat sits ON WATER, not on a colour swatch — it reads as a boat you could sail
-        // rather than a product tile. The character's own colour stays on the name bar below,
-        // which is where it still does identifying work.
-        const sea = document.createElement('div');
-        sea.className = 'relative w-full';
-        sea.style.cssText = `background-image:url(${water}); background-size:cover; background-position:center;`;
-        const boat = characterBoatCanvas(cfg);
-        const live = boat.cloneNode(true);
-        live.style.width = ''; live.style.height = '';
-        live.className = 'block w-full h-auto';
-        sea.appendChild(live);
-        // cloneNode copies attributes, not pixels — blit the baked one in.
-        live.getContext('2d').drawImage(boat, 0, 0);
-        cell.appendChild(sea);
-        // The portrait is square and unringed: a circular crop eats the ears, hats and fins
-        // that tell two green lizards apart, and at this size the silhouette IS the label.
-        const bar = document.createElement('div');
-        bar.className = 'flex items-center gap-2.5 px-2.5 py-2';
-        bar.style.background = 'rgba(15,23,42,0.72)';
-        bar.innerHTML = `<img src="assets/images/competitors/${cfg.name.toLowerCase()}.png"
-                              class="w-16 h-16 rounded-md object-cover shrink-0" draggable="false" alt="">
-                         <span class="t-display truncate text-white uppercase" style="font-size:19px;">${cfg.name}</span>`;
-        cell.appendChild(bar);
+        // The band brings its own border, rounding and gradient, so the cell adds only the
+        // ring: amber for the character you are already sailing, white on hover to say the
+        // rest are live. A ring rather than a border — a border would resize the band and
+        // shift the row.
+        cell.className = 'block w-full text-left rounded-xl transition '
+            + (me ? 'ring-2 ring-amber-400' : 'hover:ring-2 hover:ring-white/30');
+        cell.innerHTML = profileBandHTML(cfg, { archetype: false });
         cell.addEventListener('click', () => pickCharacter(cfg.name));
         grid.appendChild(cell);
+
+        // Painted after the cell is in the document: the baked-canvas path needs no layout,
+        // but the fallback below does — both its size and its retry come from being connected.
+        const canvas = cell.querySelector('.profile-boat-canvas');
+        const baked = characterBoatCanvas(cfg);
+        if (baked) {
+            canvas.width = baked.width; canvas.height = baked.height;
+            canvas.style.width = baked.style.width; canvas.style.height = baked.style.height;
+            canvas.getContext('2d').drawImage(baked, 0, 0);
+        } else {
+            renderProfileBoat(canvas, cfg);   // sprites still loading; it will retry itself
+        }
     }
-    UI.characterPicker.classList.remove('hidden');
 }
 function closeCharacterPicker() {
     if (UI.characterPicker) UI.characterPicker.classList.add('hidden');
@@ -7012,6 +7275,54 @@ function updateBoat(boat, dt) {
     boat.prevHeading = boat.heading;
 }
 
+// ── DID ANY PART OF THE BOAT CROSS THIS LINE? ───────────────────────────────
+// RRS 28 and the definitions of Start and Finish are all written about the HULL, not about a
+// point: "a boat starts when ... any part of her hull crosses the starting line", and she
+// finishes when any part of her hull crosses the finishing line. This used to sweep the
+// boat's CENTRE, so a bow over the line was not over the line — you finished roughly half a
+// boat-length late, and could sit with the bow past the start without being OCS.
+//
+// The event is the LEADING EDGE changing sides, not "some vertex touched the line". A
+// 55-unit boat straddles a line for many frames and during all of them some vertex is
+// sweeping across it, so a touch test fires every frame of the passage — on a gate sailed
+// through twice that advanced two legs in one pass (test_gates caught it: "sailing back DOWN
+// through the same gate completes leg 2" reported leg 4).
+//
+// So: track the hull's extreme signed offset either way. `max` turning positive is the first
+// moment any part of the boat reaches the far side; `min` turning negative is the same going
+// back. Each happens exactly once per passage, whatever the hull does in between — and
+// unlike a straddle-lockout it still works for the gate EXTENSIONS, which are collinear with
+// the gate itself and would otherwise be suppressed for the whole rounding.
+//
+// The segment test then confirms the crossing happened BETWEEN the marks rather than around
+// an end, which is the distinction the extensions exist to make.
+function hullCrossedLine(boat, ax, ay, bx, by) {
+    // The previous hull is the current one TRANSLATED back to `lastPos`, not rebuilt from a
+    // stored previous heading. A hull is rigid and a boat turns a degree or two per frame, so
+    // the swept shape is the same either way — and this depends on one piece of history
+    // (`lastPos`) instead of two. `prevHeading` is only maintained by updateBoat, so anything
+    // driving updateBoatRaceState directly carried a stale one; that silently mis-rotated the
+    // previous hull and lost the second crossing of a reused gate.
+    const rs = boat.raceState;
+    const prev = hullPolygonAt(rs.lastPos.x, rs.lastPos.y, boat.heading);
+    const cur = hullPolygonAt(boat.x, boat.y, boat.heading);
+    const ex = bx - ax, ey = by - ay;
+    let minP = Infinity, maxP = -Infinity, minC = Infinity, maxC = -Infinity;
+    for (let i = 0; i < prev.length; i++) {
+        const sp = (prev[i].x - ax) * ey - (prev[i].y - ay) * ex;
+        if (sp < minP) minP = sp;
+        if (sp > maxP) maxP = sp;
+        const sc = (cur[i].x - ax) * ey - (cur[i].y - ay) * ex;
+        if (sc < minC) minC = sc;
+        if (sc > maxC) maxC = sc;
+    }
+    if (!((maxP <= 0 && maxC > 0) || (minP >= 0 && minC < 0))) return false;
+    for (let i = 0; i < cur.length; i++) {
+        if (checkLineIntersection(prev[i].x, prev[i].y, cur[i].x, cur[i].y, ax, ay, bx, by)) return true;
+    }
+    return false;
+}
+
 function updateBoatRaceState(boat, dt) {
     // Timers
     if (boat.raceState.startTimeDisplayTimer > 0) boat.raceState.startTimeDisplayTimer -= dt;
@@ -7235,8 +7546,16 @@ function updateBoatRaceState(boat, dt) {
         // sweep; and the leg completes when the boat has passed the mark and is
         // leaving. The small minimum only rejects degenerate cases — a boat nudging
         // the zone edge and retreating has not passed anything.
+        // HOW FAR ROUND THIS COURSE REQUIRES, not a constant. `Math.PI / 4` was applied to
+        // every mark on every course: a 60-degree nibble at Glacier Sound's isle completed a
+        // leg whose geometry needs the whole circle, because the boat leaves for the line it
+        // arrived from. `reqSweep` comes from where the previous and next marks are.
+        //
+        // ROUND_SWEEP_TOL leaves room for a wide rounding, which sweeps a little less than
+        // the ideal — the sweep only accumulates inside ROUND_ACTIVE zone radii.
+        const need = (rm.reqSweep != null ? rm.reqSweep * ROUND_SWEEP_TOL : Math.PI / 4);
         if (rs.roundArmed && d2 > (rm.zone * 1.25) ** 2 && d2 > d2prev
-            && (rs.roundSweep || 0) > Math.PI / 4) {
+            && (rs.roundSweep || 0) >= need) {
             advanceLeg();
         }
     }
@@ -7258,7 +7577,8 @@ function updateBoatRaceState(boat, dt) {
 
         if (gateIndices.length > 0) {
             const m1 = marks[gateIndices[0]], m2 = marks[gateIndices[1]];
-            const intersect = checkLineIntersection(boat.raceState.lastPos.x, boat.raceState.lastPos.y, boat.x, boat.y, m1.x, m1.y, m2.x, m2.y);
+            // ANY PART OF THE HULL, not the centre — see hullCrossedLine.
+            const intersect = hullCrossedLine(boat, m1.x, m1.y, m2.x, m2.y);
 
             if (intersect) {
                 const gateDx = m2.x - m1.x, gateDy = m2.y - m1.y;
@@ -7338,8 +7658,19 @@ function updateBoatRaceState(boat, dt) {
                 const nx = gDy, ny = -gDx; // Upwind normal
                 const extLen = 10000;
 
+                // ⚠️ THE CENTRE, deliberately, unlike the gate line itself.
+                //
+                // An extension is not a line you cross in the rules sense — it is a
+                // geometric side-test asking "did she leave round the OUTSIDE of this mark",
+                // and the boat's answer to that is one point, not a shape. Rounding a gate
+                // mark close aboard swings 55 units of hull across the extension while the
+                // boat is still very much on the mark, so the hull test completed the leg
+                // early; the AI then turned onto the next leg from alongside the buoy and
+                // hit it. Rule 31 touches went 3 -> 22 on Bluewater and 6 -> 37 on
+                // Stillwater before this was put back.
                 const checkExt = (ax, ay, bx, by) => {
-                    if (checkLineIntersection(boat.raceState.lastPos.x, boat.raceState.lastPos.y, boat.x, boat.y, ax, ay, bx, by)) {
+                    if (checkLineIntersection(boat.raceState.lastPos.x, boat.raceState.lastPos.y,
+                                              boat.x, boat.y, ax, ay, bx, by)) {
                         const moveDx = boat.x - boat.raceState.lastPos.x, moveDy = boat.y - boat.raceState.lastPos.y;
                         return (moveDx * nx + moveDy * ny > 0) ? 1 : -1;
                     }
@@ -7429,16 +7760,35 @@ function updateBoatRaceState(boat, dt) {
 }
 
 // Collision Helpers
-function getHullPolygon(boat) {
-    const locals = [
-        {x: 0, y: -25}, {x: 15, y: -5}, {x: 15, y: 20},
-        {x: 12, y: 30}, {x: -12, y: 30}, {x: -15, y: 20}, {x: -15, y: -5}
-    ];
-    const cos = Math.cos(boat.heading), sin = Math.sin(boat.heading);
-    return locals.map(p => ({
-        x: boat.x + (p.x * cos - p.y * sin),
-        y: boat.y + (p.x * sin + p.y * cos)
+const HULL_LOCALS = [
+    {x: 0, y: -25}, {x: 15, y: -5}, {x: 15, y: 20},
+    {x: 12, y: 30}, {x: -12, y: 30}, {x: -15, y: 20}, {x: -15, y: -5}
+];
+// Taking a POSE rather than a boat, so the previous frame's hull can be reconstructed from
+// `lastPos` + `prevHeading` instead of cached alongside them. A cached copy is a second
+// source of truth for where the boat was, and it went stale the moment anything drove
+// updateBoatRaceState without going through updateBoat — which the gate tests do.
+function hullPolygonAt(x, y, heading) {
+    const cos = Math.cos(heading), sin = Math.sin(heading);
+    return HULL_LOCALS.map(p => ({
+        x: x + (p.x * cos - p.y * sin),
+        y: y + (p.x * sin + p.y * cos)
     }));
+}
+function getHullPolygon(boat) { return hullPolygonAt(boat.x, boat.y, boat.heading); }
+
+// How far the boat's LEADING EDGE is over a line — the quantity RRS judges a start by, and
+// therefore the one the start AI has to steer. `normalize` scales to real units; unnormalized
+// keeps the raw cross-product the approach timer was written against.
+function hullLineOffset(boat, m0, m1, normalize) {
+    const dx = m1.x - m0.x, dy = m1.y - m0.y;
+    const len = normalize ? (Math.hypot(dx, dy) || 1) : 1;
+    let best = -Infinity;
+    for (const p of hullPolygonAt(boat.x, boat.y, boat.heading)) {
+        const d = ((p.x - m0.x) * dy - (p.y - m0.y) * dx) / len;
+        if (d > best) best = d;
+    }
+    return best;
 }
 
 function projectPolygon(axis, poly) {
@@ -7919,17 +8269,67 @@ function update(dt) {
         }
     }
 
-    // Wind streaks: pressure-weighted spawns — gusts breed streaks, lulls go
-    // near-silent, so streak density itself reports the wind field
-    if (fxRand() < 0.5) {
-        const range = Math.max(canvas.width, canvas.height) * 1.5;
-        const sx = state.camera.x + (fxRand()-0.5)*range;
-        const sy = state.camera.y + (fxRand()-0.5)*range;
-        const rel = getWindAt(sx, sy).speed / Math.max(1, state.wind.speed);
-        const chance = Math.max(0.07, (rel - 0.85) * 1.6);
-        if (fxRand() < chance) {
-            createParticle(sx, sy, 'wind', { life: fxRand() + 0.7, jit: fxRand() });
-        }
+    // ── WIND STREAKS: where a streak is BORN is the primary pressure cue ────────
+    //
+    // Real water tells you this by presence and absence. Below about six knots the
+    // surface is glassy and there are no wind streaks at all; the along-wind lines
+    // (Langmuir streaks) start showing in a moderate breeze and cover the water in a
+    // fresh one. So a lull is drawn as BARE WATER, not as a dim streak — which is both
+    // what a sailor actually sees and the only encoding that survives on a dark palette,
+    // where "faint white" and "nothing" look identical anyway.
+    //
+    // Two independent gates, because they answer two different questions:
+    //   absolute (`windiness`) — is there enough breeze here to mark the water at all?
+    //   relative (`pressureAt`) — is this the windy side of THIS course?
+    // Absolute alone would make a light venue uniformly bare and a fresh one uniformly
+    // covered; relative alone would paint 7-knot swamp water like a squall.
+    //
+    // The old rule was `max(0.07, (rel - 0.85) * 1.6)` against the route-centroid wind.
+    // On nine of the ten venues the wind field is spatially uniform, so `rel` was exactly
+    // 1 everywhere and the floor was doing all the work: density was flat, and so was
+    // every other channel. This layer varied nothing on nine venues and read the tenth
+    // backwards.
+    const spawnTries = 2;
+    for (let s = 0; s < spawnTries; s++) {
+        const range = Math.max(canvas.width, canvas.height) * 1.35;
+        const sx = state.camera.x + (fxRand() - 0.5) * range;
+        const sy = state.camera.y + (fxRand() - 0.5) * range;
+        // A streak is a mark on the WATER, and this is the cheapest rejection — the plain
+        // box around the camera laid them over headlands, bergs and the ice shelf, where
+        // there is no water to mark.
+        if (!Arena.contains(state.course.boundary, sx, sy, 0)) continue;
+        if (!inMaskWater(sx, sy)) continue;
+        const spd = getWindAt(sx, sy).speed;
+        const windiness = Math.max(0, Math.min(1, (spd - STREAK_MIN_WIND) / 9));
+        if (windiness <= 0) continue;                       // glassy: the water is not marked
+        const t = pressureAt(spd);
+        // Squared, so the windy side is unmistakably denser rather than slightly denser.
+        // Capped well below saturation: at the top of Glacier Sound's ramp the first
+        // tuning put ~300 streaks on screen and the fleet raced through a curtain. This
+        // layer is the water talking, and it stays under the boats and the labels
+        // (race-view.md §8) — ~2.5x the density of the light corner is plenty to read.
+        // Capped for the same reason the other two channels are: density is the strongest
+        // pressure cue AND the one that most easily becomes a curtain. The gradient below
+        // the ceiling is what carries the reading; the ceiling is what keeps it readable.
+        const _c = cometCfg();
+        const chance = Math.min(STREAK_MAX_SPAWN, _c.dens0 + _c.dens1 * windiness * (0.3 + 0.7 * t * t));
+        if (fxRand() >= chance) continue;
+        createParticle(sx, sy, 'wind', {
+            life: 1.0,
+            jit: fxRand(),
+            // Each streak rides at its own share of the true wind, in the same 0.6-0.9
+            // band the puff cells use — so a streak inside a cat's-paw travels WITH it
+            // instead of sliding through it. The spread is also the only source of
+            // streak-to-streak LENGTH variety, and it stays inside that physical band:
+            // 1.5x of scatter against the 1.9x the wind varies across Glacier Sound and
+            // the 2.4x it varies between venues, so length still READS as wind speed
+            // rather than becoming decoration on top of one.
+            drift: 0.60 + fxRand() * 0.30,
+            trail: [{ x: sx, y: sy }],
+            trailT: 0,
+            beach: 1,
+            waterT: fxRand() * WIND_WATER_RECHECK
+        });
     }
     updateParticles(dt);
     updateWindWaves(dt);
@@ -7957,9 +8357,61 @@ function updateParticles(dt) {
             p.alpha = p.life*0.25;
         }
         else if (p.type === 'wind') {
+             decay = 1 / (WIND_LIFE * 60);   // life 1 -> 0 over WIND_LIFE seconds
              const local = getWindAt(p.x, p.y);
-             p.x -= Math.sin(local.direction)*timeScale * (local.speed / 10);
-             p.y += Math.cos(local.direction)*timeScale * (local.speed / 10);
+             // THE GAME'S ONE CONVERSION: units/second = knots * 15 (a knot is 0.25
+             // units/frame at 60fps, which is what boat.speed and the current both use).
+             // This used to be `speed / 10` per frame — units/s = knots * 6, i.e. 0.40x
+             // the true wind. The puff cells travel at 0.58-0.86x, so streaks visibly
+             // lagged the cat's-paws they are supposed to be the texture of.
+             const v = local.speed * 15 * p.drift * dt;
+             p.x -= Math.sin(local.direction) * v;
+             p.y += Math.cos(local.direction) * v;
+             p.spd = local.speed;
+
+             // THE COMET'S TAIL IS THE PARCEL'S OWN TRACK. Nothing is inferred: the streak
+             // curves where the breeze bends, stretches where it blows harder and shortens
+             // where it dies, because that is literally where this air has been. It cannot
+             // point the wrong way, and its LENGTH reports wind speed for free — a fixed
+             // window of time times the distance covered in it.
+             p.trailT += dt;
+             if (p.trailT >= WIND_TAIL_STEP) {
+                 // Carry the overshoot rather than zeroing it, so the window really is
+                 // WIND_TAIL_STEP and not "the next frame after it" — otherwise every tail
+                 // is a frame-time longer than the speed it claims to report.
+                 p.trailT -= WIND_TAIL_STEP;
+                 p.trail.unshift({ x: p.x, y: p.y });
+                 // ONE SPARE sample beyond the drawn window. The tail end is interpolated
+                 // between the last two (see streakSpine), so dropping the oldest never
+                 // moves anything that is on screen.
+                 if (p.trail.length > WIND_TAIL_PTS + 1) p.trail.pop();
+             }
+
+             // ── REACHING THE BEACH ──────────────────────────────────────────────
+             // A streak that drifts onto a berg or out of the arena stops being a mark on
+             // water. Killing it outright made it BLINK OUT at full strength against the
+             // shoreline — the eye is drawn straight to a disappearance, so a cull meant to
+             // be invisible was the most conspicuous thing the layer did.
+             //
+             // So it fades, and it starts fading BEFORE it lands: the test point is thrown
+             // ahead by exactly the distance this streak covers while it fades. Streaks
+             // therefore die out approaching the shore and reach the sand already gone —
+             // which is also what real streaks do in the lee of land.
+             //
+             // Rechecked on a stagger rather than every frame: this is a point-in-polygon
+             // against every land shape, and it does not need 60Hz.
+             p.waterT -= dt;
+             if (p.waterT <= 0) {
+                 p.waterT = WIND_WATER_RECHECK;
+                 const look = local.speed * 15 * p.drift * WIND_BEACH_FADE;
+                 const lx = p.x - Math.sin(local.direction) * look;
+                 const ly = p.y + Math.cos(local.direction) * look;
+                 if (!Arena.contains(state.course.boundary, lx, ly, 0) || !inMaskWater(lx, ly)) p.beached = true;
+             }
+             if (p.beached) {
+                 p.beach -= dt / WIND_BEACH_FADE;
+                 if (p.beach <= 0) p.life = 0;
+             }
         } else if (p.type === 'current' || p.type === 'mark-wake') {
              const c = getCurrentAt(p.x, p.y);
              const speed = c ? c.speed : 0;
@@ -8021,6 +8473,162 @@ function drawWakes(ctx) {
     ctx.restore();
 }
 
+// ── THE WIND-STREAK LAYER ───────────────────────────────────────────────────
+// Below this the water is glassy and carries no along-wind streaks at all — real
+// water starts showing them somewhere in a moderate breeze, and drawing a streak in
+// four knots claims pressure that is not there. It is also what makes a lull legible:
+// a lull is BARE WATER, which survives on a dark palette in a way that "dimmer white"
+// never did.
+const STREAK_MIN_WIND = 5.5;      // knots
+const WIND_LIFE = 4.5;            // seconds a streak persists
+const WIND_FADE_IN = 0.55;        // seconds — exactly the tail window, so a streak reaches
+                                  // full strength at the same moment it reaches full length
+const WIND_FADE_OUT = 1.3;        // seconds
+const WIND_TAIL_PTS = 5;          // history samples behind the live head
+const WIND_TAIL_STEP = 0.11;      // seconds between samples -> a 0.44-0.55s window of track
+const WIND_WATER_RECHECK = 0.12;  // seconds between "am I still over water" tests
+
+// ── THE GUARDRAILS ──────────────────────────────────────────────────────────
+// The streak layer reports the wind field; it is never the subject of the frame. These are
+// the ceilings no pressure reading, jitter roll, gust or venue document can push past —
+// see the note in streakChannels for why they are clamps rather than coefficients.
+const STREAK_MAX_ALPHA = 0.55;      // never opaque: boats, marks and labels stay on top
+const STREAK_MAX_HALFWIDTH = 4.6;   // world units, so ~9 px across the head at 1:1
+const STREAK_MAX_SPAWN = 0.20;      // per attempt, 2 attempts a frame — the density ceiling
+const WIND_BEACH_FADE = 0.35;     // seconds to fade out on reaching land — and the
+                                  // look-ahead, so the fade finishes AT the shore
+
+// Pressure ramp, cool -> warm, after the LiveLine pressure overlay in
+// guidelines/references/sailgp-halifax-pressure.jpg (teal -> yellow -> orange). Anchored
+// to the COURSE's own p10/p90 (see computeWindPressureScale), not to absolute knots:
+// what a player needs off this layer is "the pressure is over there", and 18 knots is a
+// hole on one venue and a squall on another. Absolute wind is carried by the other two
+// channels — how many streaks there are, and how long each one is.
+//
+// Deliberately NOT drawn from `palette.gusts`. Those tints are the venue's own WATER
+// showing through a cat's-paw (race-view.md §8); this is the course talking to the
+// player, and it stays one language across all ten venues so warm always means pressure.
+const STREAK_LUT = (() => {
+    // WARM, NOT ORANGE. The reference's hot end is a saturated orange, and at this
+    // palette that is exactly the hull colour of four boats and the fill of every
+    // inflatable mark — side by side, a streak and Cruz's topsides were the same swatch.
+    // Backing the top stop off to gold keeps the cool->warm polarity (which is what
+    // carries "more pressure") and separates from the fleet by SATURATION instead, which
+    // is the right hierarchy anyway: the foreground is chromatic, the field is not.
+    const stops = [
+        [0.00, [136, 190, 228]],
+        [0.45, [226, 240, 252]],
+        [0.78, [255, 228, 158]],
+        [1.00, [255, 198,  96]]
+    ];
+    const N = 48, lut = [];
+    for (let i = 0; i < N; i++) {
+        const t = (i + 0.5) / N;
+        let a = stops[0], b = stops[stops.length - 1];
+        for (let s = 0; s < stops.length - 1; s++) if (t >= stops[s][0] && t <= stops[s + 1][0]) { a = stops[s]; b = stops[s + 1]; break; }
+        const f = b[0] === a[0] ? 0 : (t - a[0]) / (b[0] - a[0]);
+        lut.push([0, 1, 2].map(k => Math.round(a[1][k] + (b[1][k] - a[1][k]) * f)));
+    }
+    return lut;
+})();
+
+// The three per-streak channels, in ONE place. The diagnostics read pressure off the same
+// function the renderer draws with, so a probe can never quietly measure a formula the
+// screen stopped using — which is exactly how the first pass reported half-width 1.4 on a
+// layer that was drawing 2.0. Writes into a scratch object: this runs per streak per frame.
+// Tunables, overridable from the console / a diagnostic as `window.__COMET`, the same way
+// __START and __NAV work. Comparing two ramps by editing the file and reloading compares
+// two different races as well as two different ramps.
+const COMET = {
+    // Thin and solid rather than broad and soft: a broad streak has to be faint to stay
+    // under the fleet, and a faint broad streak is the shimmery, distracting thing.
+    a0: 0.36, a1: 0.40, aPow: 1.2,   // alpha at the cold end, added at the hot end, its curve
+    w0: 1.8,  w1: 2.1,               // half-width, same
+    wLight: 0.50,                    // width multiplier in the lightest air the layer draws
+    taper: 0.45,                     // body profile: 1 = straight cone, lower = holds width
+    dens0: 0.035, dens1: 0.21        // spawn chance floor and pressure-weighted span
+};
+const cometCfg = () => (typeof window !== 'undefined' && window.__COMET) ? Object.assign({}, COMET, window.__COMET) : COMET;
+
+const _streakCh = { alpha: 0, halfWidth: 0, color: null };
+function streakChannels(t, jit, spd) {
+    // The cold end has to be a MARK on the water, not a hairline. Light air is already
+    // carried by there being fewer streaks and each one being shorter; if the survivors are
+    // invisible too then a lull and a broken renderer look identical, which is the failure
+    // the old layer had.
+    const c = cometCfg();
+    // ±20% of per-streak scatter on top. Nine of the ten venues state ONE uniform wind
+    // region, so on those courses every streak carries an identical reading and the layer
+    // tiles into wallpaper without it (race-view.md §8: vary spacing and length). Width and
+    // alpha share `jit` deliberately — a heavier streak being both wider and brighter is
+    // coherent, where independent rolls just look noisy.
+    // WIDTH ANSWERS TO ABSOLUTE WIND AS WELL AS TO PRESSURE. `t` is relative to the
+    // course, so on its own it made a 6.5-knot Gatorgrass streak exactly as fat as a
+    // 16-knot Bluewater one — but length is absolute, so the light-air streak came out
+    // half as long at the same width and read stubby. Scaling width with the breeze too
+    // keeps a comet's SHAPE constant and lets its SIZE report the wind: fine, delicate
+    // marks in light air, broad ones in a fresh breeze, which is how the water looks.
+    const abs = Math.max(0, Math.min(1, (spd - STREAK_MIN_WIND) / 9));
+    // ── THE CEILING IS A CLAMP, NOT A TUNING VALUE ──────────────────────────────
+    // This layer is INFORMATION. It has to stay under the boats, the marks and the labels
+    // (race-view.md §2, §8) no matter what a venue authors, and the arithmetic could reach
+    // alpha 1.008 — a fully opaque streak — at the top of the ramp with a high jitter roll.
+    // That top is not a rare corner either: `pressureAt` clamps at the course's p90, and a
+    // gust pushes local wind straight past it, so every channel pins to maximum exactly
+    // where the fleet is looking and exactly where the player most needs to see the boats.
+    //
+    // Clamped here rather than by choosing gentler coefficients, because a coefficient is a
+    // number someone will later raise for a venue that "needs more" — and the failure it
+    // produces is a wall of ink over a mark rounding. A clamp cannot be tuned past by
+    // accident, and STREAK_MAX_* are the numbers to argue about if it ever must move.
+    const rawAlpha = (c.a0 + c.a1 * Math.pow(t, c.aPow)) * (0.80 + jit * 0.40);
+    const rawWidth = (c.w0 + c.w1 * t) * (c.wLight + (1 - c.wLight) * abs) * (0.80 + jit * 0.40);
+    _streakCh.alpha = Math.min(STREAK_MAX_ALPHA, rawAlpha);
+    _streakCh.halfWidth = Math.min(STREAK_MAX_HALFWIDTH, rawWidth);
+    _streakCh.color = STREAK_LUT[Math.min(STREAK_LUT.length - 1, (t * STREAK_LUT.length) | 0)];
+    return _streakCh;
+}
+
+// ── THE DRAWN SPINE: a tail that ends at a fixed AGE, not at a stored sample ─────────
+//
+// The track is sampled on a clock, so the oldest sample used to be dropped whole every
+// WIND_TAIL_STEP and the tail tip jumped back a full segment each time — a visible twitch
+// on every streak on screen, ten times a second. Keeping one spare sample past the window
+// and interpolating the end point between the last two makes the tip SLIDE: the streak
+// ends at exactly `WIND_TAIL_PTS * WIND_TAIL_STEP` seconds of age, always, and nothing on
+// screen moves when a sample is retired.
+//
+// `u` is age/window rather than index/count, so the taper slides with it instead of
+// re-spacing itself whenever the sample count changes. While the history is still filling,
+// the window is whatever track exists — so a newborn streak grows smoothly out of its head.
+// Scratch array, reused per streak: this runs for every streak, every frame.
+const _spine = [];
+for (let i = 0; i < WIND_TAIL_PTS + 2; i++) _spine.push({ x: 0, y: 0, u: 0 });
+function streakSpine(p) {
+    const trail = p.trail, len = trail.length, step = WIND_TAIL_STEP, frac = p.trailT;
+    if (len < 2) return 0;
+    const full = len > WIND_TAIL_PTS;
+    const span = full ? WIND_TAIL_PTS * step : frac + (len - 1) * step;
+    if (span <= 1e-6) return 0;
+    let n = 0;
+    let s = _spine[n++]; s.x = p.x; s.y = p.y; s.u = 0;
+    const last = full ? WIND_TAIL_PTS - 1 : len - 1;
+    for (let j = 0; j <= last; j++) {
+        s = _spine[n++];
+        s.x = trail[j].x; s.y = trail[j].y; s.u = (frac + j * step) / span;
+    }
+    if (full) {
+        // f runs 1 -> 0 across each step, and at f = 1 it lands exactly on the sample that
+        // was just retired — so the handover from "stored point" to "interpolated point"
+        // is continuous in both position and width.
+        const f = (step - frac) / step;
+        const a = trail[WIND_TAIL_PTS - 1], b = trail[WIND_TAIL_PTS];
+        s = _spine[n++];
+        s.x = a.x + (b.x - a.x) * f; s.y = a.y + (b.y - a.y) * f; s.u = 1;
+    }
+    return n;
+}
+
 function drawParticles(ctx, layer) {
     // Viewport cull: with 10 boats laying wakes across the whole course,
     // hundreds of particles are off-screen at any moment — skip them before
@@ -8065,38 +8673,77 @@ function drawParticles(ctx, layer) {
         }
         ctx.globalAlpha = 1.0;
     } else if (layer === 'air') {
-        // SailGP-style comet streaks: a thick bright head leading downwind with a
-        // thin tapering tail — the asymmetry alone shows wind direction. Length
-        // and width scale with local wind; color warms white -> amber inside
-        // gusts so pressure reads at a glance.
-        const base = Math.max(1, state.wind.speed);
+        // ── WIND COMETS ────────────────────────────────────────────────────────
+        //
+        // A bright head with a tapering tail laid along the parcel's OWN TRACK. The
+        // asymmetry gives direction; four channels give pressure, and every one of them
+        // reads off `pressureAt`, so they cannot disagree with each other or with the
+        // field the boats are sailing in:
+        //
+        //   DENSITY  how many streaks exist here — decided at spawn, the strongest cue
+        //   LENGTH   distance covered in a fixed window of time, i.e. wind speed exactly
+        //   WIDTH    the course's pressure ramp
+        //   COLOUR   the same ramp, cool -> warm, after LiveLine's pressure overlay
+        //
+        // Direction and length are now facts rather than formulas: the comet is where the
+        // air has been. The previous version drew a straight streak from a single sample
+        // and a `34 + speed * 4.5` length — a 34-unit stub in dead calm, and a fixed
+        // pedestal that squeezed 6-28 knots into a 1.6x length range.
+        const windR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 320;
+        const windR2 = windR * windR;
         for (const p of state.particles) {
             if (p.type !== 'wind') continue;
-            if (!onScreen(p)) continue;
-            const local = getWindAt(p.x, p.y);
-            const rel = local.speed / base;
-            const L = 34 + local.speed * 4.5;
-            const mx = -Math.sin(local.direction), my = Math.cos(local.direction);
-            const nx = -my, ny = mx;
-            const hx = p.x + mx * L * 0.3, hy = p.y + my * L * 0.3;
-            const tx = p.x - mx * L * 0.7, ty = p.y - my * L * 0.7;
-            const gust = Math.max(0, Math.min(1, (rel - 1.03) / 0.3));
-            const lull = Math.max(0, Math.min(1, (0.97 - rel) / 0.25));
-            const alpha = Math.min(p.life, 1) * (0.15 + rel * 0.13 + gust * 0.22) * (1 - lull * 0.65);
-            if (alpha <= 0.015) continue;
-            const cg = Math.round(255 - 69 * gust), cb = Math.round(255 - 191 * gust);
-            const wH = (2.3 + (p.jit || 0.5) * 0.8) * (1 + gust * 1.1);
-            ctx.fillStyle = `rgba(255,${cg},${cb},${alpha.toFixed(3)})`;
+            const dxv = p.x - camX, dyv = p.y - camY;
+            if (dxv * dxv + dyv * dyv > windR2) continue;
+            const trail = p.trail;
+            if (!trail || trail.length < 2) continue;
+
+            const t = pressureAt(p.spd || 0);
+            // Streaks arrive and leave. The fade-in also covers the half second the tail
+            // takes to form, so a newborn stub is never seen. (The old envelope was
+            // min(life, 1) on a life that STARTED above 1 — every streak snapped on at
+            // full strength and only the death was animated.)
+            const age = (1 - p.life) * WIND_LIFE, left = p.life * WIND_LIFE;
+            const env = Math.min(1, age / WIND_FADE_IN, left / WIND_FADE_OUT, p.beach);
+            if (env <= 0.02) continue;
+
+            const ch = streakChannels(t, p.jit || 0.5, p.spd || 0);
+            const alpha = env * ch.alpha, wH = ch.halfWidth, col = ch.color;
+
+            const n = streakSpine(p);
+            if (n < 2) continue;
+
+            // One filled outline: down the left flank of the track, back up the right.
+            // Half-width tapers to nothing at the end of the age window.
+            const taper = cometCfg().taper;
+            ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${alpha.toFixed(3)})`;
             ctx.beginPath();
-            ctx.moveTo(hx + nx * wH, hy + ny * wH);
-            ctx.lineTo(hx - nx * wH, hy - ny * wH);
-            ctx.lineTo(tx, ty);
+            for (let side = 0; side < 2; side++) {
+                for (let k = 0; k < n; k++) {
+                    const i = side === 0 ? k : n - 1 - k;
+                    const a = _spine[i];
+                    // Tangent from the neighbours, so the outline follows the bend
+                    const b = _spine[Math.max(0, i - 1)], c = _spine[Math.min(n - 1, i + 1)];
+                    let tx = c.x - b.x, ty = c.y - b.y;
+                    const tl = Math.hypot(tx, ty) || 1;
+                    tx /= tl; ty /= tl;
+                    // Holds its width through the front half and then runs out to a point.
+                    // A steeper taper (0.75 was the first try) gives a ball on a needle —
+                    // all the mass in the head cap and a hairline behind it.
+                    const w = wH * Math.pow(1 - a.u, taper) * (side === 0 ? 1 : -1);
+                    const px2 = a.x - ty * w, py2 = a.y + tx * w;
+                    if (side === 0 && k === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+                }
+            }
             ctx.closePath();
             ctx.fill();
-            // rounded bright head cap
-            ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.9).toFixed(3)})`;
+
+            // Rounded head, brighter but still TINTED — the eye goes to the brightest
+            // point of a comet, and forcing that point to pure white (as it was) threw
+            // away the colour exactly where the pressure read is being taken.
+            ctx.fillStyle = `rgba(${Math.min(255, col[0] + 24)},${Math.min(255, col[1] + 20)},${Math.min(255, col[2] + 16)},${(alpha * 1.1).toFixed(3)})`;
             ctx.beginPath();
-            ctx.arc(hx, hy, wH * 0.7, 0, Math.PI * 2);
+            ctx.arc(p.x, p.y, wH * 0.82, 0, Math.PI * 2);
             ctx.fill();
         }
     }
@@ -8941,9 +9588,20 @@ function drawWater(ctx) {
 // offscreen canvas, then each gust is a single drawImage. Building 25 fresh
 // gradients + huge ellipse fills per frame was one of the biggest paint costs.
 let GUST_SPRITES = null;
+// ── A PUFF IS A PATCH OF DIFFERENT-COLOURED WATER, AND NOTHING ELSE ─────────
+//
+// A cat's-paw is the water going dark and rough; a hole is the water going glassy and
+// pale. That is the whole visual. It does NOT get its own wind graphic — the wind it
+// carries is already in the field, so the comet layer draws it: inside a puff the streaks
+// run longer, wider, denser and warmer, because `getWindAt` says the wind there is
+// stronger. Two layers drawing "wind" is two layers to reconcile, and they never agreed.
+//
+// Glacier Sound's puffs used to bake white flurry streaks along their own axis
+// (`palette.gusts.snow`). They read as a second wind direction laid over the first, at a
+// different angle from the comets, and they are gone. The field is the single source.
 function bakeGustSprites() {
     const gc = activeGustColors;
-    const make = (stops, withSnow) => {
+    const make = (stops) => {
         const c = document.createElement('canvas');
         c.width = c.height = 256;
         const g2 = c.getContext('2d');
@@ -8951,37 +9609,16 @@ function bakeGustSprites() {
         for (const [pos, color] of stops) grad.addColorStop(pos, color);
         g2.fillStyle = grad;
         g2.fillRect(0, 0, 256, 256);
-
-        // Arctic squalls: white flurry streaks along the wind axis, clipped
-        // to the puff's own alpha via source-atop. Seeded PRNG — this bakes
-        // lazily mid-race and must never touch Math.random (eval RNG).
-        if (withSnow) {
-            const prand = mulberry32(9377);
-            g2.globalCompositeOperation = 'source-atop';
-            g2.lineCap = 'round';
-            for (let i = 0; i < 70; i++) {
-                const y = 128 + (prand() + prand() - 1) * 100;
-                const x = prand() * 236;
-                const len = 8 + prand() * 26;
-                g2.strokeStyle = `rgba(255, 255, 255, ${0.18 + prand() * 0.3})`;
-                g2.lineWidth = 1.5 + prand() * 1.5;
-                g2.beginPath();
-                g2.moveTo(x, y);
-                g2.lineTo(x + len, y + (prand() - 0.5) * 4);
-                g2.stroke();
-            }
-            g2.globalCompositeOperation = 'source-over';
-        }
         return c;
     };
     GUST_SPRITES = {
         // Relative alpha profile is baked in; per-gust intensity is applied
-        // via globalAlpha at draw time — output matches the old gradients.
+        // via globalAlpha at draw time.
         gust: make([
             [0, `rgba(${gc.gustDark[0]}, ${gc.gustDark[1]}, ${gc.gustDark[2]}, 1)`],
             [0.55, `rgba(${gc.gustMid[0]}, ${gc.gustMid[1]}, ${gc.gustMid[2]}, 0.45)`],
             [1, `rgba(${gc.gustMid[0]}, ${gc.gustMid[1]}, ${gc.gustMid[2]}, 0)`]
-        ], !!gc.snow),
+        ]),
         lull: make([
             [0, `rgba(${gc.lullBright[0]}, ${gc.lullBright[1]}, ${gc.lullBright[2]}, 0.9)`],
             [0.55, `rgba(${gc.lullMid[0]}, ${gc.lullMid[1]}, ${gc.lullMid[2]}, 0.4)`],
@@ -9361,6 +9998,34 @@ function drawMinimap() {
     }
 
 
+    // ── PUFFS: WATER, SO THEY GO UNDER THE LAND ─────────────────────────────
+    // Drawn here rather than after the islands, which is where they used to be — a puff
+    // whose centre sits on a berg painted a violet blob across the ice, and a patch of
+    // rough water on a glacier is not a thing. Land is painted next and covers them, the
+    // same way the main view already handles it.
+    //
+    // Tinted from the venue's own `palette.gusts` rather than a hardcoded navy/cyan, so a
+    // cat's-paw here is the same water it is out on the course (race-view.md §4, §8).
+    const _gc = (typeof activeGustColors !== 'undefined' && activeGustColors) || null;
+    if (_gc) for (const g of state.gusts) {
+        const pos = t(g.x, g.y);
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(g.rotation);
+        ctx.scale(1, g.radiusY / g.radiusX);
+        ctx.beginPath();
+        // Same upwind shift as the main draw — the minimap is the one place you read the
+        // whole fleet against the whole pressure field, so it is the last place the two
+        // should disagree. (Drawn in the scaled frame, so the offset scales with it.)
+        ctx.arc(-PUFF_SKEW * g.radiusX * scale, 0, g.radiusX * scale, 0, Math.PI * 2);
+        const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
+        const alpha = 0.12 + strength * 0.18;  // stays under the boats
+        const c = g.type === 'gust' ? _gc.gustDark : _gc.lullBright;
+        ctx.fillStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha.toFixed(3)})`;
+        ctx.fill();
+        ctx.restore();
+    }
+
     // Islands (style-aware: ice reads as pale glacial blue, not land)
     const MINIMAP_ISLAND = {
         tropical: { body: '#fde6b1', top: '#84cc16' },
@@ -9410,32 +10075,6 @@ function drawMinimap() {
         }
     }
 
-    // Gusts
-    for (const g of state.gusts) {
-        const pos = t(g.x, g.y);
-        ctx.save();
-        ctx.translate(pos.x, pos.y);
-        ctx.rotate(g.rotation);
-        ctx.scale(1, g.radiusY / g.radiusX);
-
-        ctx.beginPath();
-        // Same upwind shift as the main draw — the minimap is the one place you read the
-        // whole fleet against the whole pressure field, so it is the last place the two
-        // should disagree. (Drawn in the scaled frame, so the offset scales with it.)
-        ctx.arc(-PUFF_SKEW * g.radiusX * scale, 0, g.radiusX * scale, 0, Math.PI * 2);
-
-        const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
-        const alpha = 0.12 + strength * 0.18;  // was 0.2+0.3 — outshouted the boats
-
-        if (g.type === 'gust') {
-             ctx.fillStyle = `rgba(0, 0, 80, ${alpha})`;
-        } else {
-             ctx.fillStyle = `rgba(150, 245, 255, ${alpha})`;
-        }
-        ctx.fill();
-        ctx.restore();
-    }
-
     // Trace (Player Only)
     if (player.raceState.trace.length) {
          ctx.lineWidth = 1.5;
@@ -9454,20 +10093,39 @@ function drawMinimap() {
          ctx.stroke();
     }
 
-    // Marks
-    let active = legMarks(player.raceState.leg) || [];
-    if (state.race.status === 'finished') active = [];
+    // ── WHERE TO GO NEXT ────────────────────────────────────────────────────
+    //
+    // This is what the minimap is FOR. Everything else on it — the coastline, the fleet,
+    // the rest of the course — is context for one question, so the active target gets the
+    // strongest treatment on the map and everything inactive gets out of its way.
+    //
+    // Two things were wrong. `legMarks()` returns null for a ROUNDING (a rounding entry
+    // carries `markId`, not `marks`), so on an island course — Glacier Sound's whole race —
+    // nothing was highlighted at all and the mark you were sailing to drew as one more grey
+    // pip. And on a document venue every mark is scaled by 0.6, so even a gate's "active"
+    // dot was 2.4px: emphasis that shrank exactly when the map got busy.
+    const legNow = player.raceState.leg;
+    const entry = routeLeg(legNow);
+    const racing = state.race.status !== 'finished';
+    const active = (racing && legMarks(legNow)) || [];
+    const roundMark = (racing && entry && entry.kind === 'round') ? entry.mark : null;
 
-    // Gates
-    const drawG = (i1, i2, a) => {
-        const p1 = t(state.course.marks[i1].x, state.course.marks[i1].y);
-        const p2 = t(state.course.marks[i2].x, state.course.marks[i2].y);
-        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
-        ctx.strokeStyle = a ? '#facc15' : 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = a ? 2 : 1; ctx.stroke();
-    };
     // Gates come from the ROUTE, not from the hardcoded pairs (0,1) and (2,3). A
     // course with one line and a rounding has no second gate, and reading marks[2]
     // on a two-mark course crashed the whole minimap.
+    const drawG = (i1, i2, a) => {
+        const m1 = state.course.marks[i1], m2 = state.course.marks[i2];
+        if (!m1 || !m2) return;
+        const p1 = t(m1.x, m1.y), p2 = t(m2.x, m2.y);
+        ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+        // Inactive geometry is nearly gone. It still says "there is a gate here" for
+        // orientation, and says nothing louder than that. MID-SLATE rather than a dim
+        // white: this minimap is pale ice on Glacier Sound and deep blue on Lighthouse
+        // Cove, and a near-white line at 0.14 disappears completely on the first one.
+        ctx.strokeStyle = a ? '#fde047' : 'rgba(148, 163, 184, 0.5)';
+        ctx.lineWidth = a ? 2.5 : 1;
+        ctx.stroke();
+    };
     const drawn = {};
     for (const e of (state.course.route || [])) {
         if (!e.marks) continue;
@@ -9477,14 +10135,45 @@ function drawMinimap() {
         drawG(e.marks[0], e.marks[1], active.indexOf(e.marks[0]) !== -1);
     }
 
-    // Marks Points — every mark the course actually has, now that placeholder marks
-    // are gone and the array length means what it says.
-    const markCount = state.course.marks.length;
-    for (let i=0; i<markCount; i++) {
-        const p = t(state.course.marks[i].x, state.course.marks[i].y);
-        const mkR = state.course.doc ? 0.6 : 1;
-        ctx.beginPath(); ctx.arc(p.x, p.y, (active.includes(i) ? 4 : 3) * mkR, 0, Math.PI*2);
-        ctx.fillStyle = active.includes(i) ? '#f97316' : '#94a3b8'; ctx.fill();
+    // Every other mark: small, cool and quiet.
+    const mkR = state.course.doc ? 0.6 : 1;
+    for (let i = 0; i < state.course.marks.length; i++) {
+        if (active.includes(i)) continue;
+        const m = state.course.marks[i];
+        if (roundMark && m === roundMark) continue;
+        const p = t(m.x, m.y);
+        ctx.beginPath(); ctx.arc(p.x, p.y, 2.6 * mkR, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.55)'; ctx.fill();
+    }
+
+    // ── THE BEACON ──────────────────────────────────────────────────────────
+    // Drawn last so nothing buries it, and deliberately NOT scaled by `mkR` — the same
+    // rule the player arrow follows: the one thing you are hunting for must not shrink
+    // when the map gets harder to read. The halo PULSES, which makes it the only moving
+    // thing on the map besides the boats; the eye goes to it without being told to.
+    const beacon = (px, py, coreR) => {
+        const pulse = 0.5 + 0.5 * Math.sin(state.time * 3.0);
+        ctx.beginPath(); ctx.arc(px, py, coreR + 4 + pulse * 4, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(253, 224, 71, ${(0.30 + pulse * 0.45).toFixed(3)})`;
+        ctx.lineWidth = 2; ctx.stroke();
+        ctx.beginPath(); ctx.arc(px, py, coreR, 0, Math.PI * 2);
+        ctx.fillStyle = '#f97316'; ctx.fill();
+        ctx.strokeStyle = '#0b1c2b'; ctx.lineWidth = 1.4; ctx.stroke();
+    };
+    for (const i of active) {
+        const m = state.course.marks[i];
+        if (m) { const p = t(m.x, m.y); beacon(p.x, p.y, 4.2); }
+    }
+    if (roundMark) {
+        const p = t(roundMark.x, roundMark.y);
+        // A rounding's zone is the thing you have to get inside, so draw it: the ring is
+        // the instruction, not decoration. Floored in pixels so it survives a whole-map
+        // venue where the real zone is a few pixels across.
+        const zoneR = Math.max(9, (roundMark.zone || 0) * scale);
+        ctx.beginPath(); ctx.arc(p.x, p.y, zoneR, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(253, 224, 71, 0.35)';
+        ctx.setLineDash([3, 3]); ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
+        beacon(p.x, p.y, 4.6);
     }
 
     // Boats
@@ -9534,53 +10223,64 @@ function drawMinimap() {
 
 let frameCount = 0;
 
+// ── DISTANCE MADE ON COURSE ─────────────────────────────────────────────────
+// How far round the course a boat is, in world units, measured along the shared per-leg
+// path (CoursePath in planner.js). Finished legs contribute their whole length; the
+// current leg contributes the boat's furthest projection onto it.
+//
+// This is a RANKING number and the leaderboard's distance deltas. It is deliberately
+// measured on the course, not on the water the boat actually sailed: two boats on
+// opposite tacks up the same beat are then directly comparable, which is the entire
+// reason the metric exists and is what race telemetry reports.
+//
+// The straight-axis version this replaces only worked on alternating windward/leeward
+// courses. See the note on CoursePath for what it did to an island rounding.
 function getBoatProgress(boat) {
+    const rs = boat.raceState;
+    const dmc = state.course && state.course.dmc;
+
+    if (rs.finished) {
+        // Finished boats rank by TIME, above everyone still racing. Kept as one comparable
+        // scalar so the sort has a single key.
+        const total = dmc ? dmc.total : (courseAxis() ? courseAxis().len * state.race.totalLegs : 1);
+        return total + (1000000 - rs.finishTime);
+    }
+
+    if (!dmc || !dmc.legs.length) return legacyBoatProgress(boat);
+
+    const leg = Math.max(0, Math.min(rs.leg, dmc.legs.length - 1));
+
+    // Before the start there is no path yet — the fleet is milling about behind the line and
+    // the leg-0 entry is the line itself, not a course to sail. Rank by closeness to it, so
+    // the number is continuous through the gun (it reaches ~0 as the line is crossed, which
+    // is where leg 1's path begins).
+    if (rs.leg === 0) {
+        const m = legMid(0);
+        return m ? -Math.hypot(boat.x - m.x, boat.y - m.y) : 0;
+    }
+
+    const path = dmc.legs[leg];
+    if (!path || !path.pts.length) return legacyBoatProgress(boat);
+    // The reading continues from this boat's last one — see CoursePath.project. Reset when
+    // the leg changes, because the new leg's arc lengths mean something else entirely.
+    if (rs._dmcLeg !== leg) { rs._dmcLeg = leg; rs._dmcS = null; }
+    const s = CoursePath.project(path, boat.x, boat.y, rs._dmcS);
+    rs._dmcS = s;
+    return path.base + s;
+}
+
+// The pre-DMC metric, kept as the fallback for a course whose paths could not be built
+// (no route, or a planner failure). It is wrong on anything but a windward/leeward course,
+// which is why it is a fallback and not the answer.
+function legacyBoatProgress(boat) {
     const _ax = courseAxis();
-    const c1x = _ax.start.x, c1y = _ax.start.y;
-    const c2x = _ax.windward.x, c2y = _ax.windward.y;
-    const dx = _ax.dx, dy = _ax.dy;
-    const len = _ax.len;
+    if (!_ax) return 0;
     const wx = _ax.ux, wy = _ax.uy;
-
-    const totalLegs = state.race.totalLegs;
-    if (boat.raceState.finished) {
-        // Finished boats are ranked by finish time, but for progress calculation we can assume they are at the end.
-        // Or better, handle them separately in sorting.
-        return totalLegs*len + (1000000 - boat.raceState.finishTime); // Higher is better (lower time = higher score)
-    }
-
-    // Project onto course axis (Start -> Upwind)
-    const p = boat.x*wx + boat.y*wy;
-    const startP = c1x*wx + c1y*wy;
-    const relP = p - startP;
-
-    // Leg Progress
-    // Leg 0: relP (Starts neg, target 0).
-    // Leg 1 (Up): relP (0 to L). Base: 0
-    // Leg 2 (Down): 2L - relP (L to 0). Base: L + (L - relP) = 2L - relP
-    // Leg 3 (Up): 2L + relP (0 to L). Base: 2L + relP
-    // Leg 4 (Down): 4L - relP (L to 0). Base: 3L + (L - relP) = 4L - relP
-
-    // Formula:
-    // If Leg is Odd (Upwind): (Leg-1)*L + relP
-    // If Leg is Even (Downwind): Leg*L - relP
-
-    const L = len;
-
-    let progress = 0;
+    const L = _ax.len;
+    const relP = (boat.x * wx + boat.y * wy) - (_ax.start.x * wx + _ax.start.y * wy);
     const leg = boat.raceState.leg;
-
-    if (leg === 0) {
-        progress = relP;
-    } else {
-        if (legTargetsWindward(leg)) {   // beating to the windward gate
-            progress = (leg - 1) * L + relP;
-        } else {                          // running back to the leeward line
-            progress = leg * L - relP;
-        }
-    }
-
-    return progress;
+    if (leg === 0) return relP;
+    return legTargetsWindward(leg) ? (leg - 1) * L + relP : leg * L - relP;
 }
 
 function showResults() {
@@ -9861,7 +10561,10 @@ function updateLeaderboard() {
     const c2x = _ax.windward.x, c2y = _ax.windward.y;
     const dx = _ax.dx, dy = _ax.dy;
     const len = _ax.len;
-    const totalRaceDist = state.race.totalLegs * len;
+    // THE WHOLE COURSE, measured on the path DMC is read against — not `legs x axis length`,
+    // which is the straight-line axis and understates any course with land on it. The
+    // "distance to finish" delta has to be in the same units as the progress it subtracts.
+    const totalRaceDist = (state.course.dmc && state.course.dmc.total) || (state.race.totalLegs * len);
 
 
     if (state.race.status === 'prestart') {
@@ -10970,7 +11673,16 @@ function checkCourseNavigability(islands, marks) {
 // the pass-within distance; this is the go-round-it distance. Generous enough that a
 // wide, seamanlike rounding registers, bounded so circling far away does not.
 const ROUND_ACTIVE = 2.5;
+// A wide rounding sweeps a little less than the ideal, so the requirement is not the
+// full geometric angle. Low enough to accept honest wide roundings, high enough that
+// passing near the mark cannot pretend to be one.
+const ROUND_SWEEP_TOL = 0.75;
 
+// CLEARANCE radius, not the collider. The boat is 30 wide and 55 long, so 30 is roughly its
+// half-LENGTH — the room it needs to turn in, which is the right question for "does this gap
+// admit a boat" and the wrong one for "did I touch that berg". Collision uses the hull
+// itself (getHullPolygon, HULL_DISCS); sailcheck.js keeps its own copy of this number for
+// the same planning purpose and should stay conservative.
 const HULL_R = 30;
 
 // Circle vs (possibly concave, possibly keyholed) polygon. Returns the same
@@ -10996,6 +11708,38 @@ function circlePolyCollide(cx, cy, r, verts) {
     let nx = (cx - bx) / (d || 1), ny = (cy - by) / (d || 1);
     if (inside) { nx = -nx; ny = -ny; }
     return { axis: { x: -nx, y: -ny }, overlap: inside ? d + r : r - d };
+}
+
+// ── THE HULL AGAINST CONCAVE LAND ───────────────────────────────────────────
+// Land traced from a mask is concave and keyholed, and SAT is a convex test, so this path
+// used ONE circle of radius HULL_R = 30 about the boat's centre instead. The hull is 30 wide
+// and 55 long — half-beam 15 — so that circle was TWICE the boat's actual beam. You could be
+// most of a boat-width clear of a berg abeam and still ground on it, which is what "I
+// collided with an island when I hadn't actually hit it" is.
+//
+// A chain of discs down the centreline instead, each sized to the hull's real half-width
+// there, so the collider tapers into the bow the way the boat does. Still exact against
+// concave outlines (each disc is a circle-vs-polygon test, the primitive that was already
+// right), still cheap, and it no longer claims beam the boat does not have.
+//
+// Offsets are read off getHullPolygon: x = ±15 between y = -5 and y = +20, tapering to a
+// point at the bow (y = -25) and to ±12 at the transom (y = +30).
+const HULL_DISCS = [
+    { y: -20, r: 4.5 }, { y: -12, r: 10 }, { y: -3, r: 15 },
+    { y:   8, r: 15 }, { y:  19, r: 15 }, { y: 27, r: 12 }
+];
+function hullPolyCollide(boat, verts) {
+    const cos = Math.cos(boat.heading), sin = Math.sin(boat.heading);
+    let worst = null;
+    for (const d of HULL_DISCS) {
+        // Local (0, d.y) rotated into the world — the discs sit on the centreline.
+        const wx = boat.x - d.y * sin, wy = boat.y + d.y * cos;
+        const hit = circlePolyCollide(wx, wy, d.r, verts);
+        // Deepest wins, so the push-out clears the worst-embedded part of the hull rather
+        // than whichever disc happened to be tested last.
+        if (hit && (!worst || hit.overlap > worst.overlap)) worst = hit;
+    }
+    return worst;
 }
 
 function checkIslandCollisions(dt) {
@@ -11025,7 +11769,7 @@ function checkIslandCollisions(dt) {
             // most of the map and reads as invisible walls all over open water.
             // Circle-vs-polygon instead: exact for concave shapes, and cheap.
             const res = isl.fromMask
-                ? circlePolyCollide(boat.x, boat.y, HULL_R, isl.vertices)
+                ? hullPolyCollide(boat, isl.vertices)
                 : satPolygonPolygon(boatPoly, isl.vertices);
             if (res) {
                  // Push boat OUT
@@ -11068,10 +11812,17 @@ function checkIslandCollisions(dt) {
                      triggerPenalty(squeezer, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'no-contact' });
                  }
 
-                 // Soft shores (river banks, swamp marsh) cost speed but not a
-                 // rules penalty — otherwise every graze becomes a 360°-spiral.
-                 // A squeezed boat is excused entirely: she was denied room.
-                 if (state.race.status === 'racing' && !isl.soft && !squeezer) triggerPenalty(boat, { reason: 'Ran Aground', kind: 'contact' });
+                 // ── NO PENALTY FOR RUNNING AGROUND ──────────────────────────
+                 // Land is not a mark. RRS 31 is "touching a mark", and the rest of Part 2
+                 // is boat-on-boat — there is no rule against hitting an island, because
+                 // the rocks already administer the punishment. Grounding cost a 360° turn
+                 // here, which was both wrong as a rule and wrong as a game: the boat has
+                 // already lost 60% of its speed, and the spin was a second, larger, purely
+                 // invented penalty on top.
+                 //
+                 // What SURVIVES is Rule 19 above: if another boat denied you room at the
+                 // obstruction, that is a real foul and it is HERS. That is the only
+                 // penalty land can produce, and it is still assessed against the squeezer.
                  if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat });
             }
         }
@@ -11780,6 +12531,11 @@ function initCourse() {
         // so the tail below is the generated-course path and returns here without ever
         // reaching it.
         settleFloes();
+        // Same reason, and the same trap: this is the path every venue takes. It samples
+        // the mean wind over sailable WATER, so it needs the boundary and every land shape
+        // — floes included — already settled.
+        computeWindPressureScale();
+        buildCoursePaths();
         return;
     }
 
@@ -11844,6 +12600,45 @@ function initCourse() {
     // walking out of a headland it was authored inside. After navIslands, because the push
     // reads landShapes and rebuilds each floe's collider.
     settleFloes();
+    // Last, because it samples the mean wind over sailable WATER — it needs the boundary
+    // and every land shape already in place, floes included.
+    computeWindPressureScale();
+    buildCoursePaths();
+}
+
+// THE RULER, built once per course. See CoursePath in planner.js for why it is one shared
+// path per leg rather than one per boat, and why it avoids only static land.
+function buildCoursePaths() {
+    state.course.dmc = null;
+    // WHAT THIS COURSE REQUIRES OF EACH ROUNDING. Stamped here so the leg engine tests
+    // against the geometry rather than a constant — see CoursePath.requiredSweep.
+    if (typeof CoursePath !== 'undefined' && state.course.route) {
+        for (let i = 0; i < state.course.route.length; i++) {
+            const e = state.course.route[i];
+            if (e && e.kind === 'round' && e.mark) e.mark.reqSweep = CoursePath.requiredSweep(state.course.marks, state.course.route, i);
+        }
+    }
+    if (typeof CoursePath === 'undefined' || !state.course.marks || !state.course.route) return;
+    try {
+        // THE GRID FIRST. A visibility graph cannot path a keyholed coastline — Glacier
+        // Sound's land is one such ring, and the planner emitted a straight line through
+        // the island. The grid only supplies LAND AVOIDANCE here; the waypoints are the
+        // course's own (start line, gate midpoints, zone rim, rounding arc), with no wind
+        // and no tactical approach offsets in them.
+        let grid = null;
+        const doc = window.VenueDoc && window.VenueDoc.get(settings.venue);
+        if (window.SailCheck && doc) {
+            const fixed = window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed');
+            grid = window.SailCheck.buildGrid(fixed, state.course.boundary, null);
+        }
+        if (!state._dmcPlanner) state._dmcPlanner = new RoutePlanner();
+        state.course.dmc = CoursePath.build(state.course.marks, state.course.route,
+                                            state.course.islands || [], state._dmcPlanner,
+                                            'dmc-' + (state.course.navVersion || 0), grid);
+    } catch (e) {
+        console.warn('[dmc] course path build failed', e);
+        state.course.dmc = null;
+    }
 }
 
 function resetGame() {
