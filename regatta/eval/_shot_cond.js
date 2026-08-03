@@ -8,11 +8,10 @@ const path = require('path');
   p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve('regatta/editor.html'));
   await p.waitForTimeout(1800);
-  // Lighthouse Cove states no weather of its own — pick one that does. The editor reopens
-  // the last venue from localStorage, so set it and reload.
-  await p.evaluate(() => localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'lake' })));
-  await p.reload();
-  await p.waitForTimeout(1800);
+  // Lighthouse Cove states no weather of its own — pick one that does. The editor
+  // boots blank now, so load it directly.
+  await p.evaluate(() => window.EditorApp.loadVenue('lake'));
+  await p.waitForTimeout(1200);
   for (const L of ['wind', 'gust']) {
     await p.evaluate((l) => { const A = window.EditorApp; A._setMode(l); A._setOsel([]); A.fitView(); }, L);
     await p.waitForTimeout(300);

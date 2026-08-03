@@ -16,7 +16,10 @@ console.log('panels fit the column they live in\n');
   const p = await b.newPage({ viewport: { width: 1500, height: 900 } });   // a narrow-ish window
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve('regatta/editor.html'));
-  await p.waitForTimeout(1500);
+  await p.waitForTimeout(900);
+  // The editor boots blank; give the measurements a document to measure.
+  await p.evaluate(() => window.EditorApp.loadVenue('arctic'));
+  await p.waitForTimeout(600);
   // Give the region layers something to show, so their inspector rows are measured too.
   // Wind's "+ Whole course" is an object-column ACTION now — its panel button is gone, so
   // the layer has to be active for the action to exist.

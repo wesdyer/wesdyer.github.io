@@ -25,12 +25,14 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     page.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
     // This suite tests GLACIER SOUND's document specifically — its coast, its rounding
     // zone, its six land shapes. Say so, rather than relying on it being the venue the
-    // editor happens to open: it used to open there because it was the only document,
-    // and now the editor reopens whatever you had open last.
+    // editor happens to open: the editor boots blank, and the suite opens its subject
+    // itself.
     await page.goto('file://' + path.resolve('regatta/editor.html'));
-    await page.evaluate(() => localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'arctic' })));
-    await page.reload();
-    await page.waitForTimeout(1600);
+    await page.waitForTimeout(900);
+    // The editor boots BLANK now — a venue is a file you open — so the suite loads its
+    // subject explicitly, the same way the file-open path lands a document.
+    await page.evaluate(() => window.EditorApp.loadVenue('arctic'));
+    await page.waitForTimeout(700);
 
     const snap = () => page.evaluate(() => {
         const s = window.EditorApp._state();
@@ -613,21 +615,32 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     const del = await page.evaluate(() => {
         const A = window.EditorApp;
         const c = () => A._state().doc.course;
-        // A start-line mark is structural: refusing is better than a course with no start.
+        // No mark is protected any more: a start-line mark deletes like any other, takes
+        // its line and its legs with it, and the route-ends CHECK reports the missing
+        // start instead of the editor refusing. Undone afterwards, so the rest of the
+        // suite still has its course.
         const startLine = c().route[0].lineId;
         const pinId = c().lines.find(l => l.id === startLine).marks[0];
         const pinIdx = c().marks.findIndex(m => m.id === pinId);
-        const refused = A._deleteMark(pinIdx) === false && c().marks.some(m => m.id === pinId);
+        const deleted = A._deleteMark(pinIdx) === true
+            && !c().marks.some(m => m.id === pinId)
+            && !c().lines.some(l => l.id === startLine)
+            && !c().route.some(e => e.lineId === startLine);
+        A._undo();
+        const restored = c().marks.some(m => m.id === pinId)
+            && c().route[0] && c().route[0].lineId === startLine;
         // A free mark deletes, and takes any leg that rounded it.
         const id = A._addMark('can'); A._afterEdit(true, 'add mark');
         A._addToRoute(`mark:${id}`); A._afterEdit(true, 'add leg');
         const legs0 = c().route.length;
         const idx = c().marks.findIndex(m => m.id === id);
         const ok = A._deleteMark(idx);
-        return { refused, ok, gone: !c().marks.some(m => m.id === id),
+        return { deleted, restored, ok, gone: !c().marks.some(m => m.id === id),
                  legsDropped: legs0 - c().route.length };
     });
-    check('a start-line mark refuses to be deleted', del.refused === true);
+    check('a start-line mark deletes like any other, taking its line and legs',
+          del.deleted === true, String(del.deleted));
+    check('...and undo restores the start', del.restored === true);
     check('a free mark deletes, and its rounding leg goes with it',
           del.ok === true && del.gone === true && del.legsDropped === 1,
           `dropped ${del.legsDropped} leg(s)`);
@@ -663,8 +676,11 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         A._addToRoute(`mark:${mid}`); A._afterEdit(true, 'leg');
     });
     const rows = page.locator('#obj-list .ob');
+    // Start and finish are POSITIONS now: first entry and last entry, when they are gates.
     const kindsOf = () => page.evaluate(() => window.EditorApp._state().doc.course.route
-        .map(e => e.role === 'start' ? 'start' : e.finish ? 'finish' : (e.pass || e.kind)));
+        .map((e, i, rt) => (i === 0 && e.lineId != null) ? 'start'
+            : (i === rt.length - 1 && i > 0 && e.lineId != null) ? 'finish'
+            : (e.pass || e.kind)));
     const order0 = await kindsOf();
     check('the route now has two movable legs', order0.length >= 4, order0.join(','));
 
@@ -677,22 +693,22 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
           `${order0.join(',')} -> ${order1.join(',')}`);
     // The ORDER is now the author's, not the panel's: + Leg appends at the end and every row
     // drags, including onto either end. What used to be enforced is reported instead, so the
-    // test is that the REPORT is right — a route whose finish is not last must say so, and
-    // must stop saying so once it is put back.
+    // test is that the REPORT is right — a route that no longer ends with a gate must say
+    // so, and must stop saying so once a gate is last again.
     const endsFinding = () => page.evaluate(() => (window.EditorApp._state().findings || [])
         .find(f => f.id === 'route-ends') || null);
     const broken = await endsFinding();
-    check('a route whose finish is not last is reported, not silently allowed',
-          broken && broken.level === 'error' && /finish is not the last/.test(broken.detail),
+    check('a route that does not end with a gate is reported, not silently allowed',
+          broken && broken.level === 'error' && /last leg is not a gate/.test(broken.detail),
           broken ? `${broken.level}: ${broken.detail}` : 'no route-ends finding');
 
-    // Drag the finish back to the end and the finding must clear.
-    const finishAt = (await kindsOf()).indexOf('finish');
-    await rows.nth(finishAt).dragTo(rows.nth((await kindsOf()).length - 1),
-                                    { targetPosition: { x: 40, y: rowH * 0.9 } });
+    // Drag the trailing rounding up one row, so a gate ends the route — the finding
+    // must clear, and the last entry reads as the finish by position.
+    const n1 = (await kindsOf()).length;
+    await rows.nth(n1 - 1).dragTo(rows.nth(n1 - 2), { targetPosition: { x: 40, y: rowH * 0.2 } });
     const fixed = await kindsOf();
     const healed = await endsFinding();
-    check('...and putting it back last clears the finding',
+    check('...and putting a gate back last clears the finding',
           fixed[fixed.length - 1] === 'finish' && healed && healed.level === 'ok',
           `${fixed.join(',')} · ${healed ? healed.level : 'none'}`);
 
@@ -959,13 +975,12 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         el.value = 'The Sound'; el.dispatchEvent(new Event('change'));
         return { stored: A._state().doc.name,
                  header: document.getElementById('venue-label').textContent,
-                 field: document.getElementById('course-name').value,
-                 menu: [...document.querySelectorAll('#venue-menu .ed-opt.on span')].map(e => e.textContent)[0] };
+                 field: document.getElementById('course-name').value };
     });
     check('a typed course name is stored', named.stored === 'The Sound', named.stored);
-    check('...and read by the header, the field and the venue menu',
-          named.header === 'The Sound' && named.field === 'The Sound' && named.menu === 'The Sound',
-          `${named.header} / ${named.field} / ${named.menu}`);
+    check('...and read by the header and the field',
+          named.header === 'The Sound' && named.field === 'The Sound',
+          `${named.header} / ${named.field}`);
     await page.evaluate(() => {
         const el = document.getElementById('course-name');
         el.value = ''; el.dispatchEvent(new Event('change'));
@@ -2639,9 +2654,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     const legGeom = await page.evaluate(() => {
         const A = window.EditorApp, o = {};
         // Sea Trial Bay: a plain windward-leeward, so leg 1 IS the beat.
-        localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'seatrials' }));
-        const selv = document.getElementById('venue-select');
-        selv.value = 'seatrials'; selv.dispatchEvent(new Event('change'));
+        A.loadVenue('seatrials');
 
         const d = () => A._state().doc.course;
         const mk = (id) => d().marks.find(m => m.id === id);
@@ -2713,10 +2726,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     check('every step is one undo', legGeom.undoOneStep === true);
     check('...and undoing back restores the venue', legGeom.restored === 800,
           `${legGeom.restored} m`);
-    await page.evaluate(() => {
-        const selv = document.getElementById('venue-select');
-        selv.value = 'arctic'; selv.dispatchEvent(new Event('change'));
-    });
+    await page.evaluate(() => { window.EditorApp.loadVenue('arctic'); });
 
     // ── Turning the whole map ───────────────────────────────────────────────
     // The sibling of scaling, and the one that has to carry the WIND. A course is laid on

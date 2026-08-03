@@ -60,9 +60,13 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         const inB  = sample(600, 0);               // deep inside B only
         const both = sample(-900, 0);              // the overlap
 
-        // Edge ramp: walk INWARD from A's left edge across its 300u falloff band.
+        // Edge ramp: the falloff band is CENTERED on the outline — half-weight on the
+        // drawn edge, calm at falloff/2 outside, full at falloff/2 inside (that is what
+        // lets two abutting regions blend breeze into breeze instead of dipping to calm).
+        // Walk from just outside the band to just inside it: -2850 is falloff/2 outside
+        // A's left edge at -2700, and 8 x 45u ends 210u inside, past the +150u ramp end.
         const ramp = [];
-        for (let k = 0; k <= 8; k++) ramp.push(sample(-2700 + k * 45, 0).s);
+        for (let k = 0; k <= 8; k++) ramp.push(sample(-2850 + k * 45, 0).s);
 
         // Direction must average as UNIT VECTORS. 350 and 10 degrees average to 0, not 180.
         d.wind.regions = [

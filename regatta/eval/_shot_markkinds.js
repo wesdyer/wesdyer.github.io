@@ -6,8 +6,9 @@ const path = require('path');
   const p = await b.newPage({ viewport: { width: 1500, height: 900 } });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve('regatta/editor.html'));
-  await p.evaluate(() => localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'seatrials' })));
-  await p.reload(); await p.waitForTimeout(1600);
+  await p.waitForTimeout(900);
+  await p.evaluate(() => window.EditorApp.loadVenue('seatrials'));
+  await p.waitForTimeout(700);
   const out = await p.evaluate(() => {
     const A = window.EditorApp;
     const d = A._state().doc;

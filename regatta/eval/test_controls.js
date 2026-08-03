@@ -63,18 +63,16 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
           unlistened.join(', '));
     console.log(`         ${Object.keys(listened).length} elements carry listeners`);
 
-    console.log('\nthe venue picker actually switches');
-    const venues = await page.evaluate(() =>
-        [...document.getElementById('venue-select').options].map(o => o.value));
-    check('the picker lists every venue', venues.length >= 10, `${venues.length}: ${venues.join(', ')}`);
+    console.log('\nloading a venue actually switches');
+    const venues = await page.evaluate(() => Object.keys(window.VENUE_DOC || {}));
+    check('every bundled venue has a document to load', venues.length >= 10,
+          `${venues.length}: ${venues.join(', ')}`);
 
     const results = [];
     for (const v of venues) {
         const r = await page.evaluate((venue) => {
-            const sel = document.getElementById('venue-select');
-            sel.value = venue;
-            sel.dispatchEvent(new Event('change'));
             const A = window.EditorApp;
+            A.loadVenue(venue);
             return {
                 loaded: JSON.parse(localStorage.getItem('regatta_settings') || '{}').venue,
                 doc: A._state().doc ? A._state().doc.venue : null,
@@ -96,69 +94,53 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
           results.filter(r => r.marks < 2).map(r => r.v).join(', '));
     check('no page errors across every venue', errs.length === 0, errs.slice(0, 3).join(' | '));
 
-    // ── The venue menu ──────────────────────────────────────────────────────
-    // It is our markup now, not the OS's, so the things a <select> gave for free have to be
-    // tested: it opens, it lists everything, picking one loads it, and it shuts.
-    console.log('\nthe venue menu');
-    const menu = await page.evaluate(() => {
+    // ── The file lifecycle ──────────────────────────────────────────────────
+    // The dropdown is gone: a venue is a FILE. The header shows the open venue's NAME,
+    // Open/Save/Save As are the whole lifecycle, and opening arbitrary text (the picker's
+    // job, driven here through the test hook) must load, register and relabel.
+    console.log('\nthe file lifecycle');
+    const file = await page.evaluate(() => {
         const A = window.EditorApp;
         const label = () => document.getElementById('venue-label').textContent;
-        const closed = A._venueMenu().open;
-        document.getElementById('venue-btn').click();
-        const opened = A._venueMenu().open;
-        const opts = A._venueMenu().options;
-        const groups = [...document.querySelectorAll('#venue-menu .ed-pop-k')].map(e => e.textContent);
-        const order = [...document.querySelectorAll('#venue-menu .ed-opt')].map(e => e.dataset.v);
-        const ticked = [...document.querySelectorAll('#venue-menu .ed-opt.on')].map(e => e.dataset.v);
-        const before = label();
-        // Clicking outside must dismiss it.
-        document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
-        const dismissed = !A._venueMenu().open;
-        document.getElementById('venue-btn').click();
-        document.querySelector('#venue-menu [data-v="seatrials"]').click();
-        return { closed, opened, opts, groups, order, ticked, before, dismissed,
-                 after: label(), stillOpen: A._venueMenu().open,
-                 // What the label SHOULD read, stated as the RULE rather than by calling
-                 // editor.js's `venueName` (which is private to its IIFE): a document may
-                 // override the venue's name, otherwise `VENUES` wins. Pinning the literal
-                 // display name here meant a venue rename failed this test instead of the
-                 // thing a rename can actually break — see redundantNames below.
-                 expectedAfter: (window.VENUE_DOC.seatrials || {}).name || VENUES.seatrials.name,
-                 // `doc.name` is an OVERRIDE that `venueName()` prefers over `VENUES`. One
-                 // equal to the stock name overrides nothing and is a rename landmine: the
-                 // freezer used to write it for every venue, so renaming Sea Trial Bay to
-                 // Clubhouse Point moved the game and left the editor saying the old name.
-                 redundantNames: Object.keys(window.VENUE_DOC).filter(k =>
-                     window.VENUE_DOC[k].name && (typeof VENUES !== 'undefined') &&
-                     VENUES[k] && window.VENUE_DOC[k].name === VENUES[k].name),
-                 loaded: JSON.parse(localStorage.getItem('regatta_settings')).venue,
-                 anyIds: [...document.querySelectorAll('#venue-menu .ed-opt span')]
-                     .map(e => e.textContent).filter(t => /^[a-z]+$/.test(t)) };
+        A.loadVenue('seatrials');
+        const after = label();
+        // What the label SHOULD read, stated as the RULE rather than by calling
+        // editor.js's `venueName` (which is private to its IIFE): the document's own
+        // name wins, then the VENUES table's.
+        const expectedAfter = (window.VENUE_DOC.seatrials || {}).name || VENUES.seatrials.name;
+        // A COPY under its own key, opened as text — the Save As → reopen workflow.
+        const copy = JSON.parse(JSON.stringify(window.VENUE_DOC.seatrials));
+        copy.venue = 'testcopy'; copy.name = 'Copied Point';
+        const wrapped = 'window.VENUE_DOC = window.VENUE_DOC || {};\n'
+            + `window.VENUE_DOC["testcopy"] = ${JSON.stringify(copy)};\n`;
+        const openedOk = A._openDocText(wrapped, 'testcopy.venue.js');
+        const opened = {
+            ok: openedOk,
+            doc: A._state().doc && A._state().doc.venue,
+            label: label(),
+            registered: !!window.VENUE_DOC.testcopy,
+            loaded: JSON.parse(localStorage.getItem('regatta_settings')).venue,
+            marks: (window.state.course.marks || []).length
+        };
+        // Bare JSON must open too — the other on-disk form.
+        const jsonOk = A._openDocText(JSON.stringify(copy), 'testcopy.json');
+        delete window.VENUE_DOC.testcopy;
+        A.loadVenue('seatrials');
+        return { after, expectedAfter, opened, jsonOk,
+                 buttons: ['btn-open', 'btn-save', 'btn-saveas'].map(id => !!document.getElementById(id)) };
     });
-    check('the menu starts closed', menu.closed === false);
-    check('the button opens it', menu.opened === true);
-    check('it lists every venue', menu.opts.length >= 10, `${menu.opts.length}`);
-    // One flat list in journey order. The old two groups separated editable venues from
-    // generated ones, a distinction that stopped existing when every venue got a document.
-    check('the venues are one flat list — no group headings', menu.groups.length === 0,
-          menu.groups.join(' | '));
-    check('...in journey order, the Bay first and the benchmark last',
-          menu.order[0] === 'bay' && menu.order[menu.order.length - 1] === 'seatrials',
-          menu.order.join(' '));
-    check('no document overrides its venue name with the same name',
-          menu.redundantNames.length === 0,
-          `${menu.redundantNames.join(', ')} — a rename would move the game and not the editor`);
-    check('the current venue is ticked', menu.ticked.length === 1, menu.ticked.join(','));
-    check('clicking outside dismisses it', menu.dismissed === true);
-    // NAMES, not ids: "Glacier Sound", never "arctic".
-    check('the trigger shows the venue NAME', /\s/.test(menu.before) && menu.before !== 'arctic', menu.before);
-    check('...and so does every row', menu.anyIds.length === 0, `id-looking rows: ${menu.anyIds.join(',')}`);
-    check('picking one loads it and closes the menu',
-          menu.loaded === 'seatrials' && menu.stillOpen === false &&
-          menu.after === menu.expectedAfter && /\s/.test(menu.after),
-          `${menu.loaded} · label ${menu.after}, expected ${menu.expectedAfter}`);
-    check('no "document" suffix anywhere in the picker',
-          !/·\s*document/.test(await page.evaluate(() => document.getElementById('venue-menu').textContent)));
+    check('loading a venue relabels the header with its NAME',
+          file.after === file.expectedAfter && /\s/.test(file.after),
+          `label ${file.after}, expected ${file.expectedAfter}`);
+    check('Open, Save and Save As are all present', file.buttons.every(Boolean),
+          file.buttons.join(','));
+    check('opened file text becomes the document, under its own key',
+          file.opened.ok === true && file.opened.doc === 'testcopy'
+          && file.opened.registered === true && file.opened.loaded === 'testcopy',
+          JSON.stringify(file.opened));
+    check('...its NAME labels the header', file.opened.label === 'Copied Point', file.opened.label);
+    check('...and it compiles to a sailable course', file.opened.marks >= 2, String(file.opened.marks));
+    check('bare JSON opens too', file.jsonOk === true);
 
     // The field overlays belong over the map, not among the file controls.
     const overlay = await page.evaluate(() => {
@@ -175,10 +157,7 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
     // this section once swept zero elements and passed — a test that finds nothing to do and
     // says "ok" is worse than no test.
     console.log('\nclicking through every layer');
-    await page.evaluate(() => {
-        const sel = document.getElementById('venue-select');
-        sel.value = 'arctic'; sel.dispatchEvent(new Event('change'));
-    });
+    await page.evaluate(() => { window.EditorApp.loadVenue('arctic'); });
     const layers = await page.evaluate(() =>
         [...document.querySelectorAll('#layer-list [data-layer]')].map(b => b.dataset.layer));
     check('the layer list has layers', layers.length >= 7, `${layers.length}: ${layers.join(', ')}`);

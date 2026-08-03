@@ -3045,10 +3045,26 @@ function applyVenuePalette(venueKey) {
 // A venue is now its NAME and its document. There is no weather table left to apply — wind,
 // gusts and current are all stated by regions in the document, and the palette moved there
 // too — so this only records which venue is being sailed.
+//
+// A key counts if it has a DOCUMENT, not only if it sits in the built-in VENUES table:
+// the editor opens venue files under their own keys, and falling back to 'bay' here read
+// the wrong document's palette for any of them.
 function applyVenueConditions() {
-    const key = (settings.venue && VENUES[settings.venue]) ? settings.venue : 'bay';
+    const known = settings.venue
+        && (VENUES[settings.venue] || (window.VenueDoc && window.VenueDoc.get(settings.venue)));
+    const key = known ? settings.venue : 'bay';
     state.race.venue = key;
     applyVenuePalette(key);
+}
+
+// What a venue is CALLED, wherever a person reads it. The document's own name wins —
+// it is the file's, and a file may not be in the VENUES table at all — then the table's
+// menu chrome, then the key.
+function venueDisplayName(key) {
+    const d = window.VenueDoc && window.VenueDoc.get(key);
+    if (d && d.name) return d.name;
+    const v = VENUES[key];
+    return (v && (v.name || v.label)) || key || null;
 }
 
 // --- Venue mechanics -------------------------------------------------------
@@ -3218,14 +3234,12 @@ function getCurrentAt(x, y) {
         cy = -Math.cos(base.direction) * base.speed;
     }
     for (const r of creg) {
-        const bb = r.bb;
-        if (x < bb.minX - 1 || x > bb.maxX + 1 || y < bb.minY - 1 || y > bb.maxY + 1) continue;
+        // Edge ramp centered on the outline, exactly as wind regions do — see
+        // VenueDoc.regionWeight. The cull box pads by falloff/2 for the outside half.
+        const bb = r.bb, pad = (r.falloff || 0) / 2 + 1;
+        if (x < bb.minX - pad || x > bb.maxX + pad || y < bb.minY - pad || y > bb.maxY + pad) continue;
         const sd = Arena.signedDist(r, x, y);
-        if (sd <= 0) continue;
-        // Smoothstep in from the edge, exactly as wind regions do: the polygon is where
-        // the stream ENDS and it reaches full strength `falloff` inside.
-        const t = Math.min(1, sd / r.falloff);
-        const intensity = t * t * (3 - 2 * t);
+        const intensity = VenueDoc.regionWeight(sd, r.falloff);
         if (intensity <= 0) continue;
         const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
         const dir = r.direction + r.dirVar * osc;
@@ -5097,9 +5111,8 @@ function spawnRegionGust(regs, initial) {
         const x = bb.minX + Math.random() * bw;
         const y = bb.minY + Math.random() * bh;
         const sd = Arena.signedDist(reg, x, y);
-        if (sd <= 0) continue;
-        const u = Math.min(1, sd / reg.falloff);
-        if (Math.random() < u * u * (3 - 2 * u)) { gx = x; gy = y; break; }
+        const u = VenueDoc.regionWeight(sd, reg.falloff);
+        if (u > 0 && Math.random() < u) { gx = x; gy = y; break; }
     }
     if (gx === null) {
         // Give up on the weighting rather than on the puff: the middle of the box is
@@ -5476,16 +5489,12 @@ function regionWindAt(x, y) {
         const liveShift = baseDir - state.wind.baseDirection;
         let wsum = 0, ux = 0, uy = 0, sacc = 0;
         for (const r of wregions) {
-            const bb = r.bb;
-            if (x < bb.minX - 1 || x > bb.maxX + 1 || y < bb.minY - 1 || y > bb.maxY + 1) continue;
+            // The edge ramp is centered on the outline (VenueDoc.regionWeight), so a
+            // region reaches falloff/2 OUTSIDE its polygon — the cull box pads by that.
+            const bb = r.bb, pad = (r.falloff || 0) / 2 + 1;
+            if (x < bb.minX - pad || x > bb.maxX + pad || y < bb.minY - pad || y > bb.maxY + pad) continue;
             const sd = Arena.signedDist(r, x, y);
-            if (sd <= 0) continue;
-            // Smoothstep in from the edge: the polygon is where the region ENDS, and it
-            // reaches full weight `falloff` inside. A region narrower than twice its
-            // falloff never reaches full weight, which is honest and visible in the
-            // editor's field preview.
-            const t = Math.min(1, sd / r.falloff);
-            const w = t * t * (3 - 2 * t);
+            const w = VenueDoc.regionWeight(sd, r.falloff);
             if (w <= 0) continue;
             // Mean plus an oscillation with an explicit time scale. state.time is
             // deterministic and no RNG is touched, so regions cannot shift the seeded
@@ -6730,7 +6739,7 @@ function renderPreRaceBrief(key) {
         </div>`;
     const rule = `<div style="width:1px; height:30px; background:rgba(255,255,255,0.1);"></div>`;
     el.innerHTML = [
-        cell('Venue', v.name || v.label || '—'),
+        cell('Venue', venueDisplayName(key) || '—'),
         rule,
         cell('Forecast', `${windRangeText()} · ${v.tagline || ''}`),
         rule,
@@ -12233,7 +12242,7 @@ function renderResultsHeader(sorted, gapScale) {
     }
     if (sub) {
         sub.textContent = [
-            (v && v.name) || 'Open Water',
+            venueDisplayName(settings.venue) || 'Open Water',
             observedWindText(),
             `${state.boats.length} boats`
         ].join(' · ').toUpperCase();
@@ -12714,11 +12723,11 @@ function renderResultsFootnote(leader) {
     const el = document.getElementById('res-footnote');
     if (!el) return;
     const rs = leader.raceState;
-    const v = VENUES[settings.venue];
+    const vn = venueDisplayName(settings.venue);
     el.innerHTML = (rs.finished && !rs.resultStatus)
         ? `<span style="color:#eef3fb;font-weight:800;">${escapeHTMLText(leader.name)}</span> takes `
-          + `${(v && v.name) || 'the race'} in <span class="t-mono" style="color:#eef3fb;">${formatTime(rs.finishTime)}</span>`
-        : `${(v && v.name) || 'The race'} — still on the water`;
+          + `${vn || 'the race'} in <span class="t-mono" style="color:#eef3fb;">${formatTime(rs.finishTime)}</span>`
+        : `${vn || 'The race'} — still on the water`;
 }
 
 function updateLeaderboard() {
@@ -13431,8 +13440,8 @@ function draw() {
         }
 
         if (UI.legInfo) {
-             const v = VENUES[settings.venue];
-             UI.legInfo.textContent = (v && v.name) ? v.name.toUpperCase() : "";
+             const vn = venueDisplayName(settings.venue);
+             UI.legInfo.textContent = vn ? vn.toUpperCase() : "";
         }
 
         if (UI.legTimes) {

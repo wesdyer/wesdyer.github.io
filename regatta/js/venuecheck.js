@@ -162,22 +162,21 @@ function runChecks(ctx) {
     // route in ORDER — so they have to be the first and last entries. This used to be a
     // hard error in the validator that only ever reached the console; it belongs here,
     // where it is visible while you are building the route that broke it.
+    // Start and finish are POSITIONS: the race is sailed in route order, so the first
+    // entry is the start crossing and the last is the finish crossing — and each has to
+    // be a GATE, because a rounding is not a thing a fleet can start or finish across.
     const rt = (doc.course && doc.course.route) || [];
-    const starts = rt.filter(e => e.role === 'start').length;
-    const finishes = rt.filter(e => e.finish).length;
+    const isGateEntry = (e) => e && e.lineId != null;
     const problems = [];
-    if (!starts) problems.push('no start');
-    else if (rt[0].role !== 'start') problems.push('the start is not the first leg');
-    if (starts > 1) problems.push(`${starts} starts`);
-    if (!finishes) problems.push('no finish');
-    else if (!rt[rt.length - 1].finish) problems.push('the finish is not the last leg');
-    if (finishes > 1) problems.push(`${finishes} finishes`);
+    if (rt.length && !isGateEntry(rt[0])) problems.push('the first leg is not a gate, so there is no start line');
+    if (rt.length < 2) problems.push('the route needs at least a start and a finish');
+    else if (!isGateEntry(rt[rt.length - 1])) problems.push('the last leg is not a gate, so there is no finish line');
     if (!rt.length) {
         add('error', 'route-ends', 'Route', 'The route is empty — there is nothing to sail');
     } else if (problems.length) {
         add('error', 'route-ends', 'Route start and finish',
             `${problems.join(', ')} — the race is sailed in this order, so it has to begin`
-            + ' with a start gate and end with a finish gate');
+            + ' and end with a gate');
     } else {
         add('ok', 'route-ends', 'Route start and finish',
             `Starts at ${rt[0].name || 'the start gate'} and finishes at `
