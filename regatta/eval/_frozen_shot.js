@@ -9,10 +9,7 @@ const path = require('path');
         page.on('pageerror', e => console.error(`  ${v} PAGE ERROR:`, e.message));
         await page.goto('file://' + path.resolve('regatta/editor.html'));
         await page.waitForTimeout(700);
-        await page.evaluate((k) => {
-            const sel = document.getElementById('venue-select');
-            sel.value = k; sel.dispatchEvent(new Event('change'));
-        }, v);
+        await page.evaluate((k) => { window.EditorApp.loadVenue(k); }, v);
         await page.waitForTimeout(900);
         const info = await page.evaluate(() => {
             const A = window.EditorApp, d = A._state().doc;

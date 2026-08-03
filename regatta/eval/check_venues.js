@@ -28,9 +28,7 @@ const COLOR = { error: '\x1b[31m', warn: '\x1b[33m', ok: '\x1b[32m', off: '\x1b[
         // Drive the editor's own loader so the checks see exactly the course the
         // game builds, not a second interpretation of the document.
         const findings = await page.evaluate((venue) => {
-            const sel = document.getElementById('venue-select');
-            sel.value = venue;
-            sel.dispatchEvent(new Event('change'));
+            window.EditorApp.loadVenue(venue);
             // Read the editor's own findings array rather than scraping its markup: this
             // scraped `.find` elements, and when the redesign renamed the class it reported
             // zero findings and PASSED. A gate that can silently measure nothing is not a gate.

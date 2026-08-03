@@ -151,6 +151,12 @@ function migrateVenueDoc(doc) {
         // `beat` was removed when it turned out a single leg can be a beat, a reach AND
         // a run — see legGoesUpwind / pointOfSail in script.js.
         if ('beat' in e) delete e.beat;
+        // START AND FINISH ARE POSITIONS, not flags. The race is sailed in route order,
+        // so the first entry is the start and the last is the finish; the flags only
+        // ever restated that (route-ends enforced the order), and two sources of truth
+        // is one too many. The compiler stamps them back on for the runtime.
+        if ('role' in e) delete e.role;
+        if ('finish' in e) delete e.finish;
     }
 
     // ── GUST SOURCES: multipliers -> knots, metres, seconds ─────────────────────
@@ -406,12 +412,12 @@ function validateVenueDoc(doc) {
             if (!Array.isArray(r.poly) || r.poly.length < 3) { err(`${what} region ${i}: poly needs >= 3 points`); continue; }
             if (ringSelfIntersects(r.poly)) err(`${what} region ${r.id || i}: poly self-intersects`);
             if (r.id) { if (seen.has(r.id)) err(`duplicate ${what} region id "${r.id}"`); seen.add(r.id); }
-            if (r.falloff != null && r.falloff <= 0) err(`${what} region ${r.id || i}: falloff must be > 0`);
+            if (r.falloff != null && r.falloff < 0) err(`${what} region ${r.id || i}: falloff cannot be negative`);
             if (r.speedMul != null && r.speedMul < 0) err(`${what} region ${r.id || i}: speedMul cannot be negative`);
             if (r.speed != null && r.speed < 0) err(`${what} region ${r.id || i}: speed cannot be negative`);
-            // Hard edges feel awful and are not physical, so a zero-falloff region is a
-            // stencil rather than weather.
-            if (r.falloff != null && r.falloff < 50) warn(`${what} region ${r.id || i}: falloff ${Math.round(r.falloff / 5)}m is very hard-edged`);
+            // A zero falloff is a deliberate hard edge; a tiny positive one is usually a
+            // typo for either 0 or something soft.
+            if (r.falloff != null && r.falloff > 0 && r.falloff < 50) warn(`${what} region ${r.id || i}: falloff ${Math.round(r.falloff / 5)}m is very hard-edged`);
         }
     };
     checkRegions((doc.wind && doc.wind.regions) || [], 'wind');
@@ -455,6 +461,25 @@ function validateVenueDoc(doc) {
 //
 // Weighted toward the course rather than averaged over the map: a region far off to one side should not tilt
 // the laylines on the course itself.
+
+// ── The one region edge weight ──────────────────────────────────────────────
+// A region's influence at a point, from the signed distance to its outline (positive
+// inside) and its falloff. The ramp is CENTERED on the drawn edge: 0 at falloff/2
+// outside, 0.5 on the line, 1 at falloff/2 inside. Centered, two abutting regions with
+// matching falloff sum to exactly 1 across their shared edge (smoothstep(t) +
+// smoothstep(1-t) = 1), so a seam blends breeze into breeze instead of dipping toward
+// calm — the blend's leftover weight is calm by design, and an inward-only ramp made
+// every abutment leak it. A lone edge still fades smoothly to nothing, and falloff 0 is
+// a legal hard edge rather than a division by zero.
+//
+// Every consumer of falloff goes through here — the wind blend, the current sum, the
+// gust spawner, the editor's overlays — so "how wide is an edge" means one thing.
+function regionWeight(sd, falloff) {
+    if (!(falloff > 0)) return sd > 0 ? 1 : 0;
+    const t = Math.min(1, Math.max(0, 0.5 + sd / falloff));
+    return t * t * (3 - 2 * t);
+}
+
 function representativeWind(windRegions, route, marks, doc) {
     if (!windRegions.length) {
         // Back-compat: a document that still authors a base direction keeps it.
@@ -476,9 +501,7 @@ function representativeWind(windRegions, route, marks, doc) {
     let wsum = 0, ux = 0, uy = 0, sacc = 0;
     for (const r of windRegions) {
         const sd = window.Arena.signedDist(r, cx, cy);
-        if (sd <= 0) continue;
-        const t = Math.min(1, sd / r.falloff);
-        const w = t * t * (3 - 2 * t);
+        const w = regionWeight(sd, r.falloff);
         if (w <= 0) continue;
         ux += Math.sin(r.direction) * w; uy += -Math.cos(r.direction) * w;
         sacc += (r.speed || 0) * w;
@@ -729,6 +752,14 @@ function compileVenueDoc(doc) {
             if (lm) e.marks = lm;
         }
         if (e.markId != null && refs.idxById[e.markId] != null) e.markIdx = refs.idxById[e.markId];
+    }
+    // The runtime asks flag-shaped questions — `role === 'start'` for OCS, `finish` to
+    // end the race — so the compiler stamps both from POSITION, which is the document's
+    // single source of truth (migrate deletes the flags from documents). Stamped on the
+    // COMPILED route only; the document never sees them.
+    if (route.length) {
+        route[0].role = 'start';
+        if (route.length > 1) route[route.length - 1].finish = true;
     }
     for (const e of route) {
         if (e.kind !== 'round') continue;
@@ -1125,6 +1156,7 @@ window.VenueDoc = {
     // and the converter. A second copy anywhere is how "iceberg" comes to mean two things.
     KINDS: SHAPE_KINDS,
     MARK_KINDS: MARK_KINDS,
+    regionWeight: regionWeight,
     traits: shapeTraits,
     shapes: migrateShapes,
     resolveRefs: resolveRefs,

@@ -110,12 +110,13 @@ body {
 .ed-tab.on { background: var(--ed-fg); color: var(--ed-ink); font-weight: 600; }
 
 /* ── Header controls ───────────────────────────────────────────────────── */
+/* The open venue's NAME — a label now, not a menu button: the venue is a file, and
+   Open/Save/Save As beside it are the whole lifecycle. */
 .ed-venue {
-  display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px;
   font-family: var(--font-heading); font-weight: 600; font-size: 13px;
   background: none; border: 0; color: var(--ed-fg); padding: 0;
 }
-.ed-venue:hover { color: var(--ed-accent-text); }
 
 /* ── In-window menu ──────────────────────────────────────────────────────
    A native <select> pops a list drawn by the OS: system font, system radius, system
@@ -408,6 +409,18 @@ body {
 .ed-hint .mod { color: var(--ed-dimmer); white-space: nowrap; }
 .ed-hint .now { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
 .ed-scalebar { width: 56px; height: 2px; background: var(--ed-fg); }
+
+/* ── The field probe ─────────────────────────────────────────────────────
+   Wind and current under the cursor, tucked into the map's bottom-right corner just
+   above the hint bar. Pointer-events off: it reports the water, it is not on it. */
+.ed-probe {
+  position: absolute; right: 14px; bottom: 44px; z-index: 3;
+  background: color-mix(in srgb, var(--ed-ink) 88%, transparent);
+  border: 1px solid var(--ed-line-2); padding: 7px 11px;
+  font-family: var(--ed-mono); font-size: 11px; line-height: 1.7;
+  color: var(--ed-dim); pointer-events: none; white-space: nowrap; text-align: right;
+}
+.ed-probe b { color: var(--ed-fg); font-weight: 700; }
 
 /* ── Inspector ───────────────────────────────────────────────────────────
    One panel, one rule: it inspects the selected object, or the layer when nothing

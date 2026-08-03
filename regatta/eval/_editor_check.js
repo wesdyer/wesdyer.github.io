@@ -17,7 +17,7 @@ const path = require('path');
   console.log('errors:', errs.length ? errs.slice(0,6) : 'none');
 
   const info = await p.evaluate(() => ({
-    venues: document.getElementById('venue-select').options.length,
+    venues: Object.keys(window.VENUE_DOC || {}).length,
     course: document.getElementById('info-course').innerText,
     time: document.getElementById('info-time').innerText,
     land: document.getElementById('info-land').innerText

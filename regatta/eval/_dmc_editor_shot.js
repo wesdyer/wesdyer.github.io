@@ -6,9 +6,10 @@ const OUT = '/private/tmp/claude-501/-Users-wesdyer-Documents-GitHub-wesdyer-git
   const b = await chromium.launch();
   const p = await b.newPage({ viewport: { width: 1500, height: 950 }, deviceScaleFactor: 2 });
   const errs = []; p.on('pageerror', e => errs.push(e.message));
-  await p.addInitScript(() => localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'arctic' })));
   await p.goto('file://' + path.resolve('regatta/editor.html'));
-  await p.waitForTimeout(3500);
+  await p.waitForTimeout(1500);
+  await p.evaluate(() => window.EditorApp.loadVenue('arctic'));
+  await p.waitForTimeout(2000);
   const info = await p.evaluate(() => {
     const A = window.EditorApp, s = A._state();
     return { venue: s.doc && s.doc.venue, legs: s.doc ? s.doc.course.route.length : 0,

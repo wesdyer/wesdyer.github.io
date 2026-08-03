@@ -327,6 +327,36 @@ function checksRefresh() {
     }));
 }
 
+// ── Live path while a mark drags ────────────────────────────────────────────
+// The full recompile (resetGame + grid + checks + estimate) is a commit-time cost; a
+// drag needs only the PATH to follow the mark. So: mirror the document's mark
+// positions onto the compiled course (compile preserves mark order), refresh each
+// rounding's resolved mark, and rebuild `course.dmc` on the grid the last compile
+// already built. Throttled, because a BFS per leg per mousemove is real work.
+let livePathAt = 0;
+function livePathRefresh() {
+    if (!doc || !course || typeof CoursePath === 'undefined') return;
+    const now = performance.now();
+    if (now - livePathAt < 120) return;
+    livePathAt = now;
+    const dm = dmarksOf();
+    for (let i = 0; i < dm.length && i < (course.marks || []).length; i++) {
+        course.marks[i].x = dm[i].x; course.marks[i].y = dm[i].y;
+    }
+    for (const e of (course.route || [])) {
+        if (e.kind === 'round' && e.mark && e.markIdx != null && course.marks[e.markIdx]) {
+            e.mark.x = course.marks[e.markIdx].x;
+            e.mark.y = course.marks[e.markIdx].y;
+        }
+    }
+    try {
+        if (!state._dmcPlanner && typeof RoutePlanner === 'function') state._dmcPlanner = new RoutePlanner();
+        course.dmc = CoursePath.build(course.marks, course.route, course.islands || [],
+                                      state._dmcPlanner, 'dmc-' + (course.navVersion || 0),
+                                      course._botGridStatic || course.botGrid || null);
+    } catch (err) { /* an unroutable mid-drag position keeps the last good path */ }
+}
+
 // Called after any committed edit.
 function afterEdit(pushSnapshot, label) {
     if (pushSnapshot) pushHistory(label || 'edit');
@@ -343,32 +373,17 @@ function afterEdit(pushSnapshot, label) {
 }
 
 // ── Load / save ─────────────────────────────────────────────────────────────
+// A venue is a FILE. Open reads one, Save writes back to it, Save As writes a copy and
+// keeps editing the copy — the ordinary file lifecycle, instead of a dropdown of the
+// bundled venues. The bundled ones still load at boot (the game preview needs them in
+// VENUE_DOC anyway), and opening assets/venues/<key>.venue.js is how you edit one.
 let fileHandle = null;
 
-function loadVenue() {
-    const key = $('venue-select').value;
-    const src = window.VenueDoc.get(key);
+// The shared tail of every way a document arrives — bundled at boot, or opened from a
+// file. `src` is a MIGRATED document; `handle` is where Save writes without asking.
+function loadDoc(src, handle) {
     selFinding = -1;
     sel = Object.assign({}, NOHIT);
-    if (!src) {
-        // Generated venue: nothing authored to edit. Show it read-only rather than
-        // pretending otherwise.
-        doc = null; fileHandle = null; savedJSON = null;
-        history = []; histIdx = -1;
-        const seed = previewSeed;
-        localStorage.setItem('regatta_settings', JSON.stringify({ venue: key }));
-        const real = Math.random; Math.random = mulberry32(seed);
-        try { resetGame(); } finally { Math.random = real; }
-        course = state.course;
-        floes = (course.islands || []).filter(i => !i.fromMask);
-        findings = [];
-        $('checks').innerHTML = '<div class="in-none">Generated venue — no document to edit or '
-            + 'check. Its land, marks and wind are produced per seed at load.</div>';
-        statsRefresh();
-        info(); refreshChrome(); refreshInspector();
-        windRefresh(); currentRefresh(); iceRefresh(); fitView();
-        return;
-    }
     doc = clone(src);
     // ONE LIST. A document may still be on disk as land[] + ice[] — export_venue_doc.js
     // writes that, and so does any copy saved before shapes existed — so it is normalised
@@ -383,8 +398,10 @@ function loadVenue() {
     savedJSON = JSON.stringify(doc);
     history = [{ doc: clone(doc), label: 'loaded' }];
     histIdx = 0;
-    fileHandle = null;
+    fileHandle = handle || null;
     clearRegSel(); selLine = -1; selRoute = -1;
+    const label = $('venue-label');
+    if (label) label.textContent = venueName(doc.venue);
     recompile(); info(); refreshChrome(); refreshInspector();
     marksInspector(); windRefresh(); currentRefresh();
     iceRefresh(); paletteRefresh();
@@ -392,7 +409,117 @@ function loadVenue() {
     fitView();
 }
 
-async function save() {
+// The boot state: NOTHING OPEN. A venue is a file, and the session starts when one is
+// opened — so the editor starts as an empty canvas that says so, not as whichever
+// document it decided you wanted.
+function loadBlank() {
+    doc = null; course = null; fileHandle = null; savedJSON = null;
+    history = []; histIdx = -1;
+    floes = []; findings = [];
+    selFinding = -1;
+    sel = Object.assign({}, NOHIT);
+    clearRegSel(); selLine = -1; selRoute = -1;
+    const label = $('venue-label');
+    if (label) label.textContent = 'No venue open';
+    $('checks').innerHTML = '<div class="in-none">Nothing open. Open… a .venue.js to edit it'
+        + ' — Save As makes a copy to work on.</div>';
+    statsRefresh();
+    info(); refreshChrome(); refreshInspector();
+    windRefresh(); currentRefresh(); iceRefresh();
+    draw();
+}
+
+// A bundled venue, by key — how the tests and the checker drive the editor without a
+// file picker; the same shared tail an Open… lands in.
+function loadVenue(key) {
+    const src = window.VenueDoc.get(key);
+    if (!src) {
+        // Generated venue: nothing authored to edit. Show it read-only rather than
+        // pretending otherwise.
+        selFinding = -1;
+        sel = Object.assign({}, NOHIT);
+        doc = null; fileHandle = null; savedJSON = null;
+        history = []; histIdx = -1;
+        const seed = previewSeed;
+        localStorage.setItem('regatta_settings', JSON.stringify({ venue: key }));
+        const real = Math.random; Math.random = mulberry32(seed);
+        try { resetGame(); } finally { Math.random = real; }
+        course = state.course;
+        floes = (course.islands || []).filter(i => !i.fromMask);
+        findings = [];
+        const label = $('venue-label');
+        if (label) label.textContent = venueName(key);
+        $('checks').innerHTML = '<div class="in-none">Generated venue — no document to edit or '
+            + 'check. Its land, marks and wind are produced per seed at load.</div>';
+        statsRefresh();
+        info(); refreshChrome(); refreshInspector();
+        windRefresh(); currentRefresh(); iceRefresh(); fitView();
+        return;
+    }
+    loadDoc(src, null);
+}
+
+// A venue file's text, whichever of its two on-disk forms it is in: the `.venue.js`
+// wrapper (`window.VENUE_DOC[key] = {...}`), or bare JSON. The wrapper is executed
+// against a STUB window, so the file's own assignment is what registers it — no regex
+// guessing at where the object starts.
+function parseVenueText(text) {
+    const t = String(text).trim();
+    if (t.startsWith('{')) return JSON.parse(t);
+    const stub = { VENUE_DOC: {} };
+    new Function('window', text)(stub);
+    const keys = Object.keys(stub.VENUE_DOC || {});
+    if (!keys.length) throw new Error('no VENUE_DOC entry in this file');
+    return stub.VENUE_DOC[keys[0]];
+}
+
+// Text from ANY source — picker, input fallback, a test — becomes the open document.
+// Registered under its own venue key so the game preview compiles it; the key falls
+// back to the filename so an id-less file is still openable.
+function openDocText(text, handle, fname) {
+    let src;
+    try {
+        src = window.VenueDoc.migrate(parseVenueText(text));
+    } catch (e) {
+        toast(`Could not read ${fname || 'file'}: ${e && e.message}`, true);
+        return false;
+    }
+    if (!src.venue) src.venue = String(fname || 'venue').replace(/(\.venue)?\.(js|json)$/i, '');
+    window.VENUE_DOC[src.venue] = src;
+    loadDoc(src, handle);
+    toast(`Opened ${fname || src.venue}`);
+    return true;
+}
+
+async function openFile() {
+    if (doc && isDirty() && !confirm('Discard unsaved changes?')) return;
+    try {
+        if (window.showOpenFilePicker) {
+            const [h] = await window.showOpenFilePicker({
+                types: [{ description: 'Venue document',
+                          accept: { 'text/javascript': ['.js'], 'application/json': ['.json'] } }]
+            });
+            const file = await h.getFile();
+            openDocText(await file.text(), h, file.name);
+        } else {
+            // Fallback for browsers without the File System Access API: an input can
+            // still READ a file; Save falls back to a download the same way.
+            const input = document.createElement('input');
+            input.type = 'file'; input.accept = '.js,.json';
+            input.addEventListener('change', async () => {
+                const f = input.files && input.files[0];
+                if (f) openDocText(await f.text(), null, f.name);
+            });
+            input.click();
+        }
+    } catch (e) {
+        if (e && e.name === 'AbortError') return;      // user cancelled the picker
+        toast('Open failed: ' + (e && e.message), true);
+    }
+}
+
+async function save(saveAs) {
+    if (!doc) return;
     const text = '// GENERATED ONCE by art/export_venue_doc.js — now the SOURCE OF TRUTH.\n'
         + '// Emitted as JS, not JSON: the eval harness loads over file://, where fetch is blocked.\n'
         + '// Edited in editor.html.\n'
@@ -401,7 +528,8 @@ async function save() {
     const name = `${doc.venue}.venue.js`;
     try {
         if (window.showSaveFilePicker) {
-            if (!fileHandle) {
+            // Save As always asks; Save asks only when there is nowhere to write yet.
+            if (saveAs || !fileHandle) {
                 fileHandle = await window.showSaveFilePicker({
                     suggestedName: name,
                     types: [{ description: 'Venue document', accept: { 'text/javascript': ['.js'] } }]
@@ -418,7 +546,7 @@ async function save() {
             URL.revokeObjectURL(a.href);
         }
         savedJSON = JSON.stringify(doc);
-        toast(`Saved ${name}`);
+        toast(`Saved ${fileHandle && fileHandle.name ? fileHandle.name : name}`);
         refreshChrome();
     } catch (e) {
         if (e && e.name === 'AbortError') return;      // user cancelled the picker
@@ -451,48 +579,6 @@ const venueName = (key) => {
     const v = (typeof VENUES !== 'undefined') ? VENUES[key] : null;
     return (v && v.name) || key || '—';
 };
-
-// ── The venue menu ──────────────────────────────────────────────────────────
-// Drawn in-window rather than by the OS. Documents are grouped first because those are the
-// editable ones — which is the fact the old "· document" suffix was carrying, said by
-// arrangement instead of by appending a word to every name.
-let menuOpen = false, menuHot = -1;
-function buildVenueMenu() {
-    const sel = $('venue-select'), pop = $('venue-menu');
-    if (!sel || !pop) return;
-    // ONE FLAT LIST. It used to be two groups — documents first, generated below — which
-    // was a real distinction while only Glacier Sound had a document: the header told you
-    // which venues you could actually change. Every venue is a document now, so the two
-    // groups were "all of them" and "none of them", and a heading over the whole list is
-    // just a word to read.
-    const tick = '<svg class="ed-opt-tick" width="12" height="12" viewBox="0 0 12 12" fill="none">'
-        + '<path d="M2 6.5l2.5 2.5L10 3.5" stroke="currentColor" stroke-width="1.8"'
-        + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
-    pop.innerHTML = [...sel.options].map(o =>
-        `<button class="ed-opt${o.value === sel.value ? ' on' : ''}" data-v="${o.value}"`
-        + ` role="option" aria-selected="${o.value === sel.value}">${tick}`
-        + `<span>${venueName(o.value)}</span></button>`).join('');
-    pop.querySelectorAll('[data-v]').forEach(el => el.addEventListener('click', () => {
-        closeVenueMenu();
-        if (el.dataset.v === sel.value) return;
-        sel.value = el.dataset.v;
-        sel.dispatchEvent(new Event('change'));
-    }));
-    $('venue-label').textContent = venueName(sel.value);
-}
-function openVenueMenu() {
-    menuOpen = true; menuHot = -1;
-    buildVenueMenu();
-    $('venue-menu').hidden = false;
-    $('venue-btn').setAttribute('aria-expanded', 'true');
-}
-function closeVenueMenu() {
-    menuOpen = false;
-    const pop = $('venue-menu');
-    if (pop) pop.hidden = true;
-    const b = $('venue-btn');
-    if (b) b.setAttribute('aria-expanded', 'false');
-}
 
 // ── Dropdowns, drawn by us ──────────────────────────────────────────────────
 // Same argument as the venue menu, applied to every other <select>: a native one pops a
@@ -1156,16 +1242,31 @@ function drawCourseLayer() {
         ctx.closePath(); ctx.fill();
     };
 
-    // ── THE SELECTED LEG'S COURSE PATH ──────────────────────────────────────
+    // ── THE COURSE PATH ─────────────────────────────────────────────────────
     // The ruler DMC is measured on: the land-avoiding route from the previous target to
     // this one, including the arc round a rounding mark. Drawn from `course.dmc`, which is
     // literally the object the game ranks with, so what a designer sees here is what the
     // leaderboard will use — not a second implementation that can drift from it.
     //
-    // It updates on COMMIT rather than during a drag, because it is rebuilt by the same
-    // recompile that rebuilds the course. The authored geometry keeps tracking the drag
-    // live, so the path snapping into place is the visible difference between "what I am
-    // drawing" and "what that compiles to".
+    // It tracks a drag LIVE: the mark/gate drag arms call livePathRefresh(), which
+    // remaps the compiled marks and rebuilds just the planner path, so the route bends
+    // while you move the mark instead of snapping on release.
+    //
+    // In marks mode the WHOLE course path draws, faint — that is the mode marks are
+    // dragged in, so it is where the live rebuild has to be visible.
+    if (mode === 'marks' && course && course.dmc) {
+        for (const L of course.dmc.legs) {
+            if (!L.pts || L.pts.length < 2) continue;
+            const sp = L.pts.map(q => toS(q.x, q.y));
+            for (const pass of [{ w: 5, c: 'rgba(6,14,26,0.35)' }, { w: 2, c: 'rgba(34,211,238,0.55)' }]) {
+                ctx.strokeStyle = pass.c; ctx.lineWidth = pass.w;
+                ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(sp[0].x, sp[0].y);
+                for (let i = 1; i < sp.length; i++) ctx.lineTo(sp[i].x, sp[i].y);
+                ctx.stroke();
+            }
+        }
+    }
     if (mode === 'route' && selRoute >= 0 && course && course.dmc && course.dmc.legs[selRoute]) {
         const L = course.dmc.legs[selRoute];
         if (L.pts.length >= 2) {
@@ -1250,7 +1351,9 @@ function drawCourseLayer() {
         if (!ends || !ends[0] || !ends[1]) return;
         const m0 = ends[0], m1 = ends[1];
         const A = toS(m0.x, m0.y), B = toS(m1.x, m1.y);
-        const isStart = e.role === 'start' || e.finish;
+        // First and last entries by POSITION — the route order is what makes them the
+        // start and the finish.
+        const isStart = li === 0 || li === droute.length - 1;
         // ONE ENTRY AT A TIME when a row is picked out. A shared start/finish line is
         // crossed in both directions, so drawing every entry's arrow at once put a saltire
         // on the line and said nothing about which crossing you were looking at. With a
@@ -1277,7 +1380,7 @@ function drawCourseLayer() {
               lit ? '#fff' : isStart ? '#38bdf8' : '#a3e635', len);
         // Say which crossing this is, so "start" and "finish" on one line are told apart.
         if (lit) {
-            const label = e.role === 'start' ? 'START' : e.finish ? 'FINISH'
+            const label = li === 0 ? 'START' : li === droute.length - 1 ? 'FINISH'
                         : (e.pass === 'through' ? 'THROUGH' : 'IN, THEN ROUND AN END');
             ctx.font = '800 11px Archivo, system-ui, sans-serif';
             const tw = ctx.measureText(label).width;
@@ -1490,6 +1593,20 @@ function draw() {
     ctx.clearRect(0, 0, W(), H());
     ctx.fillStyle = '#0b1220'; ctx.fillRect(0, 0, W(), H());
     grid();
+
+    // NOTHING OPEN: an empty canvas that says how to stop being empty, instead of
+    // layer steps dereferencing a course that does not exist.
+    if (!doc && !course) {
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = '600 15px Archivo, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(148,163,184,0.85)';
+        ctx.fillText('No venue open', W() / 2, H() / 2 - 12);
+        ctx.font = '400 12.5px Archivo, system-ui, sans-serif';
+        ctx.fillStyle = 'rgba(100,116,139,0.85)';
+        ctx.fillText('Open… a .venue.js file to edit it  ·  ⌘O', W() / 2, H() / 2 + 12);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+        return;
+    }
 
     const active = ACTIVE_LAYER[mode] || null;
     for (const [key, fn] of LAYER_STEPS) if (key !== active) fn();
@@ -1706,20 +1823,23 @@ function drawRegionArrows(r, on, kind) {
         box.x0 = Math.min(box.x0, sp.x); box.y0 = Math.min(box.y0, sp.y);
         box.x1 = Math.max(box.x1, sp.x); box.y1 = Math.max(box.y1, sp.y);
     }
-    const x0 = Math.max(0, Math.floor(box.x0 / step) * step);
-    const y0 = Math.max(0, Math.floor(box.y0 / step) * step);
-    const x1 = Math.min(W(), box.x1), y1 = Math.min(H(), box.y1);
+    // The edge ramp is centered on the outline, so influence reaches falloff/2 outside
+    // the polygon — the sampled box pads by that much, in screen pixels.
+    const o0 = toS(0, 0), o1 = toS(1, 0);
+    const padPx = (fall / 2) * Math.hypot(o1.x - o0.x, o1.y - o0.y);
+    const x0 = Math.max(0, Math.floor((box.x0 - padPx) / step) * step);
+    const y0 = Math.max(0, Math.floor((box.y0 - padPx) / step) * step);
+    const x1 = Math.min(W(), box.x1 + padPx), y1 = Math.min(H(), box.y1 + padPx);
     for (let sy = y0 + step / 2; sy < y1; sy += step) {
         for (let sx = x0 + step / 2; sx < x1; sx += step) {
             const w = toW(sx, sy);
-            if (!pointInRing(w.x, w.y, poly)) continue;
-            // Distance IN from the outline — the engine's `signedDist`, computed here so it
-            // reads the document being edited rather than the last compile.
-            let sd = Infinity;
+            // Signed distance to the outline — the engine's `signedDist`, computed here so
+            // it reads the document being edited rather than the last compile.
+            let d = Infinity;
             for (let i = 0; i < poly.length; i++)
-                sd = Math.min(sd, distToSeg(w.x, w.y, poly[i], poly[(i + 1) % poly.length]));
-            const t = Math.min(1, sd / fall);
-            const wt = t * t * (3 - 2 * t);
+                d = Math.min(d, distToSeg(w.x, w.y, poly[i], poly[(i + 1) % poly.length]));
+            const sd = pointInRing(w.x, w.y, poly) ? d : -d;
+            const wt = VenueDoc.regionWeight(sd, fall);
             if (wt <= 0.02) continue;
             const len = 15 * Math.max(0.35, Math.min(1.8, rel)) * (0.35 + 0.65 * wt);
             const a = (on ? 0.85 : 0.5) * (0.35 + 0.65 * wt);
@@ -2179,9 +2299,14 @@ function inspectorRefresh() {
     let k = 'Course', n = doc ? venueName(doc.venue) : '—', m = '', html = '';
 
     if (!doc) {
-        obj.innerHTML = '<div class="in-none">This venue is generated per seed — there is no document to edit. '
-            + 'Pick a venue marked <b>document</b> to author one.</div>';
-        kick.textContent = 'Generated venue'; name.textContent = '—'; meta.textContent = '';
+        // Two ways to have no document: nothing open at all (the boot state), or a
+        // generated venue loaded read-only for preview.
+        obj.innerHTML = course
+            ? '<div class="in-none">This venue is generated per seed — there is no document to edit.</div>'
+            : '<div class="in-none">Nothing open. <b>Open…</b> a .venue.js file to edit it — '
+              + 'Save As makes a copy to work on.</div>';
+        kick.textContent = course ? 'Generated venue' : 'No venue';
+        name.textContent = '—'; meta.textContent = '';
         return;
     }
 
@@ -2225,7 +2350,7 @@ function inspectorRefresh() {
         html = inspGate(ln);
     } else if (mode === 'route' && selRoute >= 0 && routeOf()[selRoute]) {
         const e = routeOf()[selRoute];
-        k = e.role === 'start' ? 'Start' : e.finish ? 'Finish' : 'Leg';
+        k = e === startEntry() ? 'Start' : e === finishEntry() ? 'Finish' : 'Leg';
         n = entryLabel(e, selRoute);
         m = '';
         html = inspLeg(e, selRoute);
@@ -2278,7 +2403,7 @@ function inspectorRefresh() {
         if (what === 'line') {
             e.kind = 'gate'; e.lineId = id; delete e.markId;
             if (e.dir == null) e.dir = 1;
-            if (!e.pass && e.role !== 'start' && !e.finish) e.pass = 'through';
+            if (!e.pass && e !== startEntry() && e !== finishEntry()) e.pass = 'through';
         } else {
             e.kind = 'round'; e.markId = id; delete e.lineId;
             if (!e.side) e.side = 'starboard';
@@ -2629,6 +2754,18 @@ function setLegPolar(i, opts) {
                             y: from.y - Math.cos(brg) * len });
 }
 
+// The rounding circle's radius, typed. Same floor as the ring drag: never smaller than
+// the thing being rounded, or the rounding could be satisfied without going round it.
+function setLegZone(i, zu) {
+    const e = routeOf()[i];
+    if (!e || e.kind !== 'round' || !(zu > 0)) return false;
+    const cm = (course && course.route[i] && course.route[i].mark) || null;
+    const minR = cm ? (cm.radius || 12) * 1.05 + 40 : 80;
+    e.zone = Math.max(minR, zu);
+    if (cm) cm.zone = e.zone;
+    return true;
+}
+
 // WHAT THIS LEG COSTS, priced by the same function as the course total and the auto time
 // limit (CoursePath.priceLeg) — so a designer reading a leg's best time is reading the
 // number it contributes, not a lookalike computed a second way.
@@ -2658,14 +2795,24 @@ function inspLeg(e, i) {
     // is left to a side. Offering both at once would be two controls where one applies.
     let way = '';
     if (e.kind === 'round') {
-        way = `<div class="in-sect"><span class="k">Leave it to</span>
+        // The rounding circle is a property of the LEG — the same mark can be rounded
+        // wide on one lap and tight on another. Typed here or dragged on the map.
+        const cm = (course && course.route[i] && course.route[i].mark) || null;
+        const zoneU = e.zone != null ? e.zone : (cm && cm.zone != null ? cm.zone : 165);
+        way = `<div class="in-sect"><span class="k">Rounding</span>
   <div class="in-seg" data-legseg="side">
-    <button data-v="port"${e.side === 'port' ? ' class="on"' : ''}>Port</button>
+    <button data-v="port"${e.side === 'port' ? ' class="on"' : ''}>Leave to port</button>
     <button data-v="starboard"${e.side !== 'port' ? ' class="on"' : ''}>Starboard</button>
   </div>
+  <div class="in-grid" style="margin-top:10px">
+    ${numF('circle', 'leg.zone', Math.round(uToM(zoneU)), 'm')}
+  </div>
+  <div class="in-sub">The rounding circle's radius — drag its ring on the map, or type it.</div>
 </div>`;
     } else {
-        const passRow = (e.role === 'start' || e.finish) ? '' : `
+        // Crossing the first or last gate IS the start or the finish — "through" versus
+        // "round an end" only means something for a gate in the middle of the course.
+        const passRow = (e === startEntry() || e === finishEntry()) ? '' : `
   <span class="k" style="display:block;margin-top:10px">Sailed</span>
   <div class="in-seg" data-legseg="pass">
     <button data-v="through"${e.pass === 'through' ? ' class="on"' : ''}>Through</button>
@@ -2746,15 +2893,20 @@ function inspMark(m, i) {
 </div>`;
 }
 
-// A gate is a NAMED PAIR of marks. Its length and its ends are facts about the marks, so
-// they are reported in the header rather than repeated as fields you cannot edit here.
+// A gate is a NAMED PAIR of marks. Width resizes the line about its midpoint, keeping
+// its bearing — moving or swinging it stays a map gesture.
 function inspGate(ln) {
+    const ends = lineEnds(ln.id);
+    const len = ends ? Math.hypot(ends[1].x - ends[0].x, ends[1].y - ends[0].y) : 0;
     return `
 <div class="in-sect"><span class="k">Name</span>
   <input class="in-wide" data-rename="gate" value="${attr(ln.name || '')}" placeholder="${attr(lineLabel(ln.id))}">
 </div>
-<div class="in-sect"><span class="k">Set the line</span>
-  <button class="btn btn-fill" data-gateact="square" style="width:100%;justify-content:center">Square to the wind</button>
+<div class="in-sect"><span class="k">Line</span>
+  <div class="in-grid">
+    ${numF('width', 'gate.width', Math.round(uToM(len)), 'm')}
+  </div>
+  <button class="btn btn-fill" data-gateact="square" style="width:100%;justify-content:center;margin-top:10px">Square to the wind</button>
 </div>`;
 }
 
@@ -2876,8 +3028,29 @@ function numEdit(el) {
         if (!isFinite(v0)) { inspectorRefresh(); return; }
         const ok = key === 'len' ? setLegPolar(selRoute, { len: mToU(v0) })
                  : key === 'brg' ? setLegPolar(selRoute, { brg: v0 * Math.PI / 180 })
+                 : key === 'zone' ? setLegZone(selRoute, mToU(v0))
                  : false;
         if (ok) afterEdit(true, `leg ${key}`); else inspectorRefresh();
+        return;
+    }
+
+    // A GATE's width, set about its midpoint along its own bearing — you are resizing the
+    // line, not moving it or swinging it.
+    if (what === 'gate' && key === 'width') {
+        const v0 = parseFloat(el.value);
+        if (!isFinite(v0)) { inspectorRefresh(); return; }
+        const ln = dlines()[selLine];
+        const ends = ln && lineEnds(ln.id);
+        if (!ends) { inspectorRefresh(); return; }
+        const wU = mToU(v0);
+        if (!(wU >= mToU(5))) { toast('A gate needs at least 5 m of width', true); inspectorRefresh(); return; }
+        const [a, b] = ends;
+        const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
+        const len = Math.hypot(b.x - a.x, b.y - a.y);
+        const ux = len > 0 ? (b.x - a.x) / len : 1, uy = len > 0 ? (b.y - a.y) / len : 0;
+        a.x = cx - ux * wU / 2; a.y = cy - uy * wU / 2;
+        b.x = cx + ux * wU / 2; b.y = cy + uy * wU / 2;
+        afterEdit(true, 'gate width');
         return;
     }
     const v = parseFloat(el.value);
@@ -2932,7 +3105,7 @@ function windEdit(key, value) {
     else if (key === 'dirvar') r.dirVar = v * Math.PI / 180;
     else if (key === 'speedvar') r.speedVar = v;
     else if (key === 'period') r.period = v;
-    else if (key === 'falloff') r.falloff = mToU(v);
+    else if (key === 'falloff') r.falloff = Math.max(0, mToU(v));
     else return;
     afterEdit(true, `wind ${key}`);
 }
@@ -2947,7 +3120,7 @@ function currentEdit(key, value) {
     else if (key === 'speed') {
         if (v < 0 || v > 20) { toast('Current must be 0–20 kt', true); inspectorRefresh(); return; }
         r.speed = v;
-    } else if (key === 'falloff') r.falloff = Math.max(mToU(2), mToU(v));
+    } else if (key === 'falloff') r.falloff = Math.max(0, mToU(v));
     else return;
     afterEdit(true, `current ${key}`);
 }
@@ -2988,7 +3161,7 @@ function gustEdit(key, value) {
         if (v < 1 || v > 900) { toast('Life must be 1–900 s', true); inspectorRefresh(); return; }
         r.lifeS = v;
     } else if (key === 'falloff') {
-        r.falloff = Math.max(mToU(2), mToU(v));
+        r.falloff = Math.max(0, mToU(v));
     } else return;
     afterEdit(true, `gust ${key}`);
 }
@@ -3165,13 +3338,14 @@ function lineEnds(id) {
 }
 const entryEnds = (e) => (e && e.lineId != null) ? lineEnds(e.lineId) : null;
 const routeOf = () => (doc && doc.course.route) || [];
-// ⚠️ BY FLAG, NOT BY POSITION. These read `routeOf()[0]` and `[length-1]`, which was only
-// ever true because the panel refused to build a route any other way. Now that + Leg appends
-// and every row drags, the last entry is routinely NOT the finish — and a positional finish
-// made deleteLine refuse to delete an ordinary gate because it happened to be last.
-// The project already settled this once for the leg engine: identify by role/finish.
-const startEntry = () => routeOf().find(e => e.role === 'start') || null;
-const finishEntry = () => routeOf().find(e => e.finish) || null;
+// BY POSITION. There is no special start or finish object any more: the race is sailed
+// in route order, so the FIRST entry is the start and the LAST is the finish, whatever
+// they are. "A route must begin and end with a gate" is a CHECK (venuecheck route-ends)
+// rather than an editing restriction — any gate can be deleted, any row can be dragged,
+// and the checker says what the result is missing. These return null when the entry in
+// that position is not a gate, which is exactly the state the check reports.
+const startEntry = () => { const rt = routeOf(); return (rt.length && rt[0].lineId != null) ? rt[0] : null; };
+const finishEntry = () => { const rt = routeOf(); const e = rt[rt.length - 1]; return (rt.length > 1 && e.lineId != null) ? e : null; };
 // "Shared start/finish" was never a separate concept: it means both entries name the
 // same line, each with its own crossing direction.
 const finishShared = () => {
@@ -3271,8 +3445,8 @@ const MARK_KIND_LABEL = { inflatable: 'orange buoy', can: 'yellow can', committe
 // asks of it — the same gate can appear twice, sailed differently each time.
 function entryLabel(e, i) {
     if (e.name) return e.name;
-    if (e.role === 'start') return finishShared() ? 'Start (shared line)' : 'Start line';
-    if (e.finish) return finishShared() ? 'Finish (shared line)' : 'Finish line';
+    if (e === startEntry()) return finishShared() ? 'Start (shared line)' : 'Start line';
+    if (e === finishEntry()) return finishShared() ? 'Finish (shared line)' : 'Finish line';
     if (e.kind === 'round') {
         const mi = markIndex(e.markId);
         const what = mi >= 0 ? markLabel(mi) : String(e.markId);
@@ -3469,8 +3643,8 @@ function addToRoute(ref, passMode) {
     // ends the way a race has to.
     const at = rr.length;
     let entry = null;
-    if (what === 'line') entry = { kind: 'gate', lineId: id, dir: 1, role: 'gate', pass: passMode || 'through' };
-    else if (what === 'mark') entry = { kind: 'round', markId: id, side: 'starboard', role: 'rounding' };
+    if (what === 'line') entry = { kind: 'gate', lineId: id, dir: 1, pass: passMode || 'through' };
+    else if (what === 'mark') entry = { kind: 'round', markId: id, side: 'starboard' };
     else if (what === 'land') {
         // Rounding an island means laying a MARK on it. The two stay separate objects, so
         // the island can be reshaped or moved without dragging the course with it.
@@ -3478,7 +3652,7 @@ function addToRoute(ref, passMode) {
         if (!l) return false;
         const mid = nextId('round', dmarksOf());
         doc.course.marks.push({ id: mid, name: `Round ${id}`, x: l.c[0], y: l.c[1], kind: 'inflatable' });
-        entry = { kind: 'round', markId: mid, radius: l.r, side: 'starboard', role: 'rounding' };
+        entry = { kind: 'round', markId: mid, radius: l.r, side: 'starboard' };
     }
     if (!entry) return false;
     rr.splice(at, 0, entry);
@@ -3489,24 +3663,13 @@ function addToRoute(ref, passMode) {
 
 // ── Deleting things ─────────────────────────────────────────────────────────
 // Deletion belongs to the inventory, so it has to say what else goes with it: a mark
-// takes its gates, and a gate takes the legs that sailed it. What it must NOT do is
-// leave the course without a start or a finish, which no amount of undo makes obvious.
-function structuralMark(m) {
-    const s0 = startEntry(), f = finishEntry();
-    for (const e of [s0, f]) {
-        const ends = entryEnds(e);
-        if (ends && (ends[0] === m || ends[1] === m)) return true;
-    }
-    return false;
-}
-
+// takes its gates, and a gate takes the legs that sailed it. No gate or mark is
+// protected — deleting the first or last gate leaves a route that no longer starts or
+// finishes, and the route-ends CHECK reports that, visibly, until another gate takes
+// the position.
 function deleteMark(i) {
     const m = dmarksOf()[i];
     if (!m) return false;
-    if (structuralMark(m)) {
-        toast('That is a start or finish mark — a course needs its line. Move it instead.', true);
-        return false;
-    }
     const goneLines = dlines().filter(l => (l.marks || []).includes(m.id));
     const goneLegs = routeOf().filter(e => e.markId === m.id
         || goneLines.some(l => l.id === e.lineId)).length;
@@ -3525,11 +3688,6 @@ function deleteMark(i) {
 function deleteLine(i) {
     const ln = dlines()[i];
     if (!ln) return false;
-    const s0 = startEntry(), f = finishEntry();
-    if ((s0 && s0.lineId === ln.id) || (f && f.lineId === ln.id)) {
-        toast('That is the start or finish line — a course needs it. Move its marks instead.', true);
-        return false;
-    }
     const legs = routeOf().filter(e => e.lineId === ln.id).length;
     // Its marks go with it: a gate's two marks exist to BE that gate, and leaving them
     // behind as unexplained orphans is the bug this replaces.
@@ -3709,12 +3867,11 @@ function drawGustStipple(r, on, rgb, total) {
             const h2 = Math.abs(Math.sin(sx * 39.3468 + sy * 11.135) * 24634.6345) % 1;
             const px = sx + (h - 0.5) * step * 0.8, py = sy + (h2 - 0.5) * step * 0.8;
             const w = toW(px, py);
-            if (!pointInRing(w.x, w.y, poly)) continue;
-            let sd = Infinity;
+            let d = Infinity;
             for (let i = 0; i < poly.length; i++)
-                sd = Math.min(sd, distToSeg(w.x, w.y, poly[i], poly[(i + 1) % poly.length]));
-            const t = Math.min(1, sd / fall);
-            const wt = t * t * (3 - 2 * t);
+                d = Math.min(d, distToSeg(w.x, w.y, poly[i], poly[(i + 1) % poly.length]));
+            const sd = pointInRing(w.x, w.y, poly) ? d : -d;
+            const wt = VenueDoc.regionWeight(sd, fall);
             // The dot survives with the same probability a puff would be born here, and
             // carries the region's share of all the births as its weight against a
             // neighbouring source's.
@@ -3869,15 +4026,12 @@ function drawCurrentField() {
                 && !(l.holes || []).some(h => pointInRing(w.x, w.y, h)))) continue;
             const f = getCurrentAt(w.x, w.y);
             if (!f || f.speed < 0.02) continue;
+            // An ARROW pointing where the water flows, sized by how fast — the same
+            // grammar as the wind field, so both fields read the same way at a glance.
+            // Reference is 1.5 kt, the same as the per-region current arrows.
             const ux = Math.sin(f.direction), uy = -Math.cos(f.direction);
-            const len = Math.min(22, 6 + f.speed * 9);
-            ctx.strokeStyle = 'rgba(125,211,252,0.8)'; ctx.lineWidth = 1.6;
-            ctx.beginPath();
-            ctx.moveTo(sx - ux * len, sy - uy * len);
-            ctx.lineTo(sx + ux * len, sy + uy * len);
-            ctx.stroke();
-            ctx.fillStyle = 'rgba(224,242,254,0.9)';
-            ctx.beginPath(); ctx.arc(sx + ux * len, sy + uy * len, 2, 0, Math.PI * 2); ctx.fill();
+            const len = 11 * Math.max(0.35, Math.min(1.8, f.speed / 1.5));
+            windArrow(sx, sy, ux, uy, len, 'rgba(125,211,252,0.85)', 1.6);
         }
     }
 }
@@ -4757,12 +4911,9 @@ function deleteSelectedVertices() {
             if (!land) continue;
             ring = ref.ring < 0 ? land.outer : (land.holes || [])[ref.ring];
         } else if (ref.kind === 'arena') ring = doc.world.boundary.poly;
-        else if (ref.kind === 'wind') { const w = wregs()[ref.r]; ring = w && w.poly; }
-        // ICE and CURRENT were missing, so Delete on a floe's corner did nothing at all and
-        // then reported the 3-point floor, which was not the reason. Every kind that has
-        // grabbable vertices has to be able to lose one. Ice resolves by id like
-        // vertexArray does, since an index shifts when a floe is removed.
- else if (ref.kind === 'current') { const c = cregs()[ref.r]; ring = c && c.poly; }
+        // Every region kind resolves through the one REGION table — gust was missing here,
+        // so Delete on a gust region's corner did nothing at all.
+        else if (REGION[ref.kind]) { const r = regsOf(ref.kind)[ref.r]; ring = r && r.poly; }
         if (!ring) continue;
         const keep = Math.max(0, ring.length - 3);
         const sorted = idx.slice().sort((a, b) => b - a).slice(0, keep);
@@ -5017,12 +5168,21 @@ cv.addEventListener('mousedown', (e) => {
         if (hr.rcentre >= 0) { drag = { kind: 'rcentre', li: hr.rcentre, last: w, moved: false, origin: w }; return; }
         if (hr.rring >= 0)   { drag = { kind: 'rring',   li: hr.rring,   moved: false, origin: w }; return; }
     }
-    // Region outlines. Gated on the mode's OWN selection: this used to ask whether a WIND
-    // region was selected, so a current region's corners could never be grabbed.
-    const regionSelected = (mode === 'wind' && selWind >= 0) || (mode === 'current' && selCur >= 0);
-    if (doc && sub === 'direct' && regionSelected) {
+    // Region outlines — wind, current AND gust, through the one REGION table. Through
+    // `vsel` like every other outline: a bespoke one-vertex drag used to start here and
+    // select nothing, so Delete had nothing to act on and removed the whole region.
+    if (doc && sub === 'direct' && isRegionMode(mode) && regSel(mode) >= 0) {
         const hw = hit(w.x, w.y);
-        if (hw.wvert >= 0) { drag = { kind: 'wvert', i: hw.wvert, moved: false, origin: w }; return; }
+        if (hw.wvert >= 0) {
+            const ref = { kind: mode, r: regSel(mode), i: hw.wvert };
+            if (e.shiftKey) {
+                vsel = inSel(ref) ? vsel.filter(v => !sameRef(v, ref)) : vsel.concat([ref]);
+                refreshChrome(); draw(); return;
+            }
+            if (!inSel(ref)) vsel = [ref];
+            drag = { kind: 'vsel', last: w, moved: false, origin: w };
+            refreshChrome(); draw(); return;
+        }
     }
     if (doc && sub === 'direct') {
         const hb = hit(w.x, w.y);
@@ -5131,7 +5291,7 @@ cv.addEventListener('mousedown', (e) => {
     // pan, so left-drag is free for selection — which is the point of the mouse model.
     if (doc && sub === 'direct'
         && ((mode === 'shape' && sel.shape) || mode === 'boundary'
-            || (mode === 'wind' && selWind >= 0) || (mode === 'current' && selCur >= 0))) {
+            || (isRegionMode(mode) && regSel(mode) >= 0))) {
         marquee = { a: w, b: w, add: e.shiftKey, level: 'vertex' };
         drag = { kind: 'marquee', add: e.shiftKey };
         return;
@@ -5200,6 +5360,7 @@ window.addEventListener('mousemove', (e) => {
             const mi = markIndex(e.markId);
             const m = dmarksOf()[mi];
             if (m) { m.x = w.x; m.y = w.y; }
+            livePathRefresh();
             drag.last = w; drag.moved = true; draw();
         } else if (drag.kind === 'rring') {
             const e = doc.course.route[drag.li];
@@ -5211,13 +5372,7 @@ window.addEventListener('mousemove', (e) => {
                 e.zone = Math.max(minR, Math.hypot(w.x - cm.x, w.y - cm.y));
                 cm.zone = e.zone;
             }
-            drag.moved = true; draw();
-        } else if (drag.kind === 'wvert') {
-            const reg = (mode === 'current') ? cregs()[selCur] : wregs()[selWind];
-            w = snapPoint(w, snapCandidates({ kind: mode === 'current' ? 'current' : 'wind',
-                                             r: mode === 'current' ? selCur : selWind, i: drag.i }));
-            const wp = reg.poly;
-            wp[drag.i][0] = w.x; wp[drag.i][1] = w.y;
+            livePathRefresh();
             drag.moved = true; draw();
         } else if (drag.kind === 'sculpt') {
             sculpt(w.x, w.y, w.x - drag.last.x, w.y - drag.last.y);
@@ -5257,6 +5412,7 @@ window.addEventListener('mousemove', (e) => {
             rebake(l); drag.moved = true; draw();
         } else if (drag.kind === 'mark') {
             doc.course.marks[drag.i].x = w.x; doc.course.marks[drag.i].y = w.y;
+            livePathRefresh();
             drag.moved = true; draw();
         } else if (drag.kind === 'line') {
             const ln = dlines()[drag.i];
@@ -5265,6 +5421,7 @@ window.addEventListener('mousemove', (e) => {
                 const dx = w.x - drag.last.x, dy = w.y - drag.last.y;
                 for (const m of ends) { m.x += dx; m.y += dy; }
             }
+            livePathRefresh();
             drag.last = w; drag.moved = true; draw();
         } else if (drag.kind === 'zone') {
             const rEntry = doc.course.route.find(x => x.kind === 'round');
@@ -5313,7 +5470,41 @@ window.addEventListener('mousemove', (e) => {
         + (tool === 'roughen'  ? `  ·  detail ${Math.round(uToM(Math.max(20, detail)))} m` : '')
         + (tool === 'simplify' ? `  ·  tol ${Math.round(uToM(Math.max(2, detail) * 0.5))} m` : '');
     $('hud-zoom').textContent = `${view.scale.toFixed(3)}×`;
+    fieldProbe();
 });
+
+// ── What the weather is doing UNDER THE CURSOR ──────────────────────────────
+// Wind and current at the mouse, bottom-right of the map — shown whenever a field
+// layer (wind, gusts, current) or a field overlay is active, because that is when the
+// numbers on the water are the thing being authored. Sampled from the MEAN field
+// (gusts parked, oscillation pinned), exactly as the field overlays draw it, so the
+// probe and the arrows never disagree.
+function fieldProbe() {
+    const el = $('field-probe');
+    if (!el) return;
+    const active = isRegionMode(mode) || showField || showCurField;
+    if (!doc || !active || !lastMouse || typeof getWindAt !== 'function') { el.hidden = true; return; }
+    const { x, y } = lastMouse.w;
+    const g = state.gusts, d0 = state.wind.direction;
+    state.gusts = []; state.wind.direction = state.wind.baseDirection;
+    let wf = null, cf = null;
+    try {
+        wf = getWindAt(x, y);
+        if (typeof getCurrentAt === 'function') cf = getCurrentAt(x, y);
+    } finally {
+        state.gusts = g; state.wind.direction = d0;
+    }
+    const deg3 = (d) => String(degOf(d)).padStart(3, '0');
+    const rows = [];
+    rows.push(wf && wf.speed > 0.05
+        ? `wind <b>${wf.speed.toFixed(1)} kt</b> from ${deg3(wf.direction)}°`
+        : 'wind <b>calm</b>');
+    rows.push(cf && cf.speed > 0.005
+        ? `current <b>${cf.speed.toFixed(2)} kt</b> toward ${deg3(cf.direction)}°`
+        : 'current <b>slack</b>');
+    el.innerHTML = rows.join('<br>');
+    el.hidden = false;
+}
 
 window.addEventListener('mouseup', () => {
     cv.classList.remove('dragging');
@@ -5395,7 +5586,13 @@ window.addEventListener('keydown', (e) => {
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
-    if (mod && e.key.toLowerCase() === 's') { e.preventDefault(); if (doc && isDirty()) save(); return; }
+    if (mod && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        // Shift makes it Save As; a plain Save with nothing dirty is a no-op.
+        if (doc && (e.shiftKey || isDirty())) save(e.shiftKey);
+        return;
+    }
+    if (mod && e.key.toLowerCase() === 'o') { e.preventDefault(); openFile(); return; }
     if (mod && e.key.toLowerCase() === 'd') {
         e.preventDefault();
         const n = oselDuplicate();
@@ -5412,8 +5609,8 @@ window.addEventListener('keydown', (e) => {
         hintBar(); draw();
         return;
     }
-    if (e.key.toLowerCase() === 'w') { showField = !showField; syncFieldButtons(); draw(); return; }
-    if (e.key.toLowerCase() === 'c' && !mod) { showCurField = !showCurField; syncFieldButtons(); draw(); return; }
+    if (e.key.toLowerCase() === 'w') { showField = !showField; syncFieldButtons(); fieldProbe(); draw(); return; }
+    if (e.key.toLowerCase() === 'c' && !mod) { showCurField = !showCurField; syncFieldButtons(); fieldProbe(); draw(); return; }
     if (e.key === '[') { brush = Math.max(40, brush / 1.25); draw(); return; }
     if (e.key === ']') { brush = Math.min(4000, brush * 1.25); draw(); return; }
     // Shift+[ ] — the scale the brush works at, as distinct from how far it reaches. Two
@@ -5466,18 +5663,6 @@ window.addEventListener('keydown', (e) => {
     // so it needs an explicit way out.
     // Esc cancels the measurement; a second Esc puts the ruler down.
     if (e.key === 'Escape' && measure) { measure = null; draw(); return; }
-    if (menuOpen) {
-        const opts = [...$('venue-menu').querySelectorAll('[data-v]')];
-        if (e.key === 'Escape') { closeVenueMenu(); return; }
-        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-            e.preventDefault();
-            menuHot = (menuHot + (e.key === 'ArrowDown' ? 1 : -1) + opts.length) % opts.length;
-            opts.forEach((o, i) => o.classList.toggle('hot', i === menuHot));
-            opts[menuHot].scrollIntoView({ block: 'nearest' });
-            return;
-        }
-        if (e.key === 'Enter' && menuHot >= 0) { e.preventDefault(); opts[menuHot].click(); return; }
-    }
     if (e.key === 'Escape' && sub === 'measure') { pickTool('select'); return; }
     // Escape clears whatever is selected, in any mode.
     if (e.key === 'Escape' && (sel.shape || sel.mark >= 0 || selLine >= 0 || selRoute >= 0
@@ -5535,7 +5720,7 @@ function setMode(next) {
     if (sub === 'direct' && !modeObjects().length) sub = 'drag';
     if (sub === 'place' && next !== 'venue') sub = 'drag';
     drawing = false; pending = null; vsel = []; osel = []; marquee = null;
-    refreshChrome(); draw();
+    refreshChrome(); fieldProbe(); draw();
 }
 document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 // The boat's numbers belong beside the boat, not in a panel across the window: you are
@@ -5593,7 +5778,9 @@ $('btn-sel-del').addEventListener('click', () => {
 });
 $('btn-undo').addEventListener('click', undo);
 $('btn-redo').addEventListener('click', redo);
-$('btn-save').addEventListener('click', save);
+$('btn-open').addEventListener('click', openFile);
+$('btn-save').addEventListener('click', () => save(false));
+$('btn-saveas').addEventListener('click', () => save(true));
 $('btn-fit').addEventListener('click', fitView);
 // One region covering the whole arena: the consistent way to say "the wind over this course
 // differs from the venue default" as a single editable object, rather than having a base-wind
@@ -5655,29 +5842,10 @@ function syncFieldButtons() {
     $('btn-field-cur').classList.toggle('btn-primary', showCurField);
 }
 $('btn-field-wind').addEventListener('click', () => {
-    showField = !showField; syncFieldButtons(); draw();
+    showField = !showField; syncFieldButtons(); fieldProbe(); draw();
 });
 $('btn-field-cur').addEventListener('click', () => {
-    showCurField = !showCurField; syncFieldButtons(); draw();
-});
-
-// ── Venue picker ───────────────────────────────────────────────────────────
-$('venue-btn').addEventListener('click', (e) => {
-    e.stopPropagation();
-    menuOpen ? closeVenueMenu() : openVenueMenu();
-});
-// Click anywhere else, or press Escape, and the menu goes away — the two things every
-// menu is expected to do and a native <select> gave for free.
-document.addEventListener('mousedown', (e) => {
-    if (menuOpen && !e.target.closest('.ed-menu')) closeVenueMenu();
-});
-$('venue-menu').addEventListener('keydown', (e) => e.stopPropagation());
-$('venue-select').addEventListener('change', () => {
-    if (doc && isDirty() && !confirm('Discard unsaved changes?')) {
-        $('venue-select').value = doc.venue; return;
-    }
-    loadVenue();
-    $('venue-label').textContent = venueName($('venue-select').value);
+    showCurField = !showCurField; syncFieldButtons(); fieldProbe(); draw();
 });
 
 $('btn-add-mark').addEventListener('click', () => {
@@ -5710,12 +5878,13 @@ timeField('course-cutoff', 'cutoff', 30, 7200, 'Time limit');
 $('course-name').addEventListener('change', () => {
     if (!doc) return;
     const v = $('course-name').value.trim();
-    const stock = (typeof VENUES !== 'undefined' && VENUES[doc.venue]) ? VENUES[doc.venue].name : '';
-    // Storing a name identical to the venue's would be an override that overrides nothing, so
-    // it is dropped — the field repopulates with the same word either way.
-    if (v && v !== stock) doc.name = v; else delete doc.name;
+    // The name LIVES IN THE FILE. It used to be dropped when it matched the built-in
+    // VENUES table's name, which made the document depend on a table it may never see
+    // again once it is opened as a plain file. Blank still means "no authored name".
+    if (v) doc.name = v; else delete doc.name;
     afterEdit(true, 'course name');
-    buildVenueMenu();
+    const label = $('venue-label');
+    if (label) label.textContent = venueName(doc.venue);
 });
 $('btn-use-est').addEventListener('click', () => {
     const secs = suggestedCutoff();
@@ -5768,7 +5937,7 @@ setInterval(() => {
 window.addEventListener('resize', resize);
 window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
-window.EditorApp = { resize, fitView, loadVenue, draw, buildKindPicker,
+window.EditorApp = { resize, fitView, loadVenue, loadBlank, draw, buildKindPicker,
     // exposed for headless tests
     _state: () => ({ doc, findings, history: history.length, histIdx, dirty: isDirty(), tool, sel }),
     _setTool: (t) => { tool = t; refreshChrome(); },
@@ -5803,9 +5972,9 @@ window.EditorApp = { resize, fitView, loadVenue, draw, buildKindPicker,
     _pickTool: (t) => pickTool(t),
     // Close a ring the way the Draw tool does, without synthesising the clicks.
     _drawRing: (ring) => { pending = ring.map(p => [p[0], p[1]]); commitPending(); },
-    buildVenueMenu,
-    _venueMenu: () => ({ open: menuOpen, label: $('venue-label').textContent,
-        options: [...$('venue-menu').querySelectorAll('[data-v]')].map(o => o.dataset.v) }),
+    // File lifecycle, drivable without a picker: tests hand text straight in.
+    _openDocText: (text, name) => openDocText(text, null, name),
+    _venueLabel: () => $('venue-label').textContent,
     _view: () => ({ x: view.x, y: view.y, scale: view.scale }),
     _setView: (x, y, sc) => { view.x = x; view.y = y; view.scale = sc;
         if (boatProbe) { boatProbe.x = x; boatProbe.y = y; } boatInfo(); draw(); },

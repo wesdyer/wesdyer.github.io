@@ -28,27 +28,16 @@ const path = require('path');
   });
   console.log('dirty on load:', dirt.dirty, dirt.diffs.length ? '\n  ' + dirt.diffs.join('\n  ') : '');
 
-  const venues = await p.evaluate(() =>
-    [...document.getElementById('venue-select').options].map(o => o.value));
-  console.log('picker:', venues.join(', '));
+  const venues = await p.evaluate(() => Object.keys(window.VENUE_DOC || {}));
+  console.log('documents:', venues.join(', '));
   for (const v of venues) {
     errs.length = 0;
     const r = await p.evaluate((venue) => {
-      const sel = document.getElementById('venue-select');
-      sel.value = venue;
-      let ran = 'listener';
       try {
-        sel.dispatchEvent(new Event('change'));
-        // Did the listener do anything? If not, call the loader directly to find out
-        // whether the bug is the wiring or the loader.
-        if (window.EditorApp._state().doc && window.EditorApp._state().doc.venue !== venue
-            && venue !== 'arctic') {
-          ran = 'direct';
-          window.EditorApp.loadVenue();
-        }
-      } catch (e) { return { threw: (e && e.message) + ' via ' + ran }; }
+        window.EditorApp.loadVenue(venue);
+      } catch (e) { return { threw: (e && e.message) }; }
       const A = window.EditorApp;
-      return { doc: !!A._state().doc, venue: sel.value, dirty: A._state().dirty,
+      return { doc: !!A._state().doc, venue: (A._state().doc || {}).venue, dirty: A._state().dirty,
                docKeys: Object.keys(window.VENUE_DOC || {}).join('+'),
                settingsVenue: JSON.parse(localStorage.getItem('regatta_settings') || '{}').venue,
                ran, marks: (window.state.course.marks || []).length };

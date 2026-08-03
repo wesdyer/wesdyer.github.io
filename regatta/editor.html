@@ -40,25 +40,18 @@
     <div style="flex:1"></div>
     <div id="course-controls" style="display:flex;align-items:center;gap:8px;font-size:13px">
         <span id="toast"></span>
-        <!-- The venue menu. A native <select> pops an OS list that ignores the design
-             system entirely, so the list is drawn in-window; the select stays as the value
-             holder so everything already listening for its change event keeps working. -->
-        <div class="ed-menu">
-            <button id="venue-btn" class="ed-venue" aria-haspopup="listbox" aria-expanded="false">
-                <span id="venue-label">—</span>
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.6"
-                          stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-            <div id="venue-menu" class="ed-pop" role="listbox" hidden></div>
-            <select id="venue-select" hidden></select>
-        </div>
+        <!-- The venue is a FILE: its name here, and the ordinary open/save lifecycle
+             beside it. No dropdown — Open reads any .venue.js (or bare JSON), Save
+             writes back to it, Save As writes a copy and keeps editing the copy. -->
+        <span class="ed-venue" id="venue-label">—</span>
         <span class="ed-sep"></span>
         <span id="dirty" class="ed-saved"></span>
         <span class="ed-sep"></span>
         <button id="btn-undo" class="btn btn-sm btn-line" title="Cmd/Ctrl+Z">Undo</button>
         <button id="btn-redo" class="btn btn-sm btn-line" title="Cmd/Ctrl+Shift+Z">Redo</button>
+        <button id="btn-open" class="btn btn-sm btn-line" title="Cmd/Ctrl+O">Open…</button>
         <button id="btn-save" class="btn btn-sm btn-cyan" title="Cmd/Ctrl+S">Save</button>
+        <button id="btn-saveas" class="btn btn-sm btn-line" title="Cmd/Ctrl+Shift+S">Save As…</button>
     </div>
 </header>
 
@@ -247,6 +240,10 @@
                 <div id="checks"></div>
             </div>
 
+            <!-- Wind and current under the CURSOR — shown when a field layer or a field
+                 overlay is active, so the numbers on the water read straight off it. -->
+            <div class="ed-probe" id="field-probe" hidden></div>
+
             <div class="ed-hint">
                 <span class="now"><span class="key" id="hint-key">V</span><span id="hint-tool">Select</span></span>
                 <span id="hint-mods" style="display:flex;gap:18px;min-width:0;overflow:hidden"></span>
@@ -403,35 +400,15 @@
         root.querySelectorAll('.profile-boat-canvas').forEach(c => renderProfileBoat(c, byName.get(c.dataset.boat)));
     }
 
-    // ── Venue picker ──────────────────────────────────────────────────────
-    // In JOURNEY ORDER — the order VENUES declares them, which is the order a player
-    // meets them: Cove, Lake, Lagoon, Bayou, Run, Bonanza, Redrock, Glowtide, Glacier,
-    // Clubhouse. It used to sort documents to the top, because they were the only
-    // editable ones and that was the fact worth saying by arrangement. Every venue has a
-    // document now, so the sort said nothing and the running order says more.
-    const sel = document.getElementById('venue-select');
-    const keys = Object.keys(VENUES);
-    for (const k of keys) {
-        const o = document.createElement('option');
-        o.value = k;
-        // NAMES, not ids. A venue is "Glacier Sound" to everyone who works on it; `arctic`
-        // is the filename. The id stays the stable key in the document and in localStorage.
-        o.textContent = VENUES[k].name;
-        sel.appendChild(o);
-    }
-    // OPEN WHAT YOU HAD OPEN. The editor used to open on the first venue with a document,
-    // which was always Glacier Sound because it was the only one — so the rule read as "open
-    // Glacier Sound" and nobody noticed it was really "open the one you can edit". Every
-    // venue is editable now, so that rule picks a venue at random from the user's point of
-    // view. The venue you were last working on is the one you want back.
-    const last = (JSON.parse(localStorage.getItem('regatta_settings') || '{}') || {}).venue;
-    sel.value = keys.includes(last) ? last : keys[0];
-    EditorApp.buildVenueMenu();
+    // ── Boot blank ────────────────────────────────────────────────────────
+    // The editor opens on NOTHING: a venue is a file, and the session starts when you
+    // Open one (or the tests load one by key). Booting into some venue meant every
+    // session began by looking at a document you may not have asked for.
     EditorApp.buildKindPicker();
 
     try {
         EditorApp.resize();
-        EditorApp.loadVenue();
+        EditorApp.loadBlank();
     } catch (err) {
         const f = document.getElementById('fatal');
         f.textContent = 'Editor failed to start:\n\n' + (err && err.stack || err);
