@@ -814,6 +814,19 @@ crossing itself. Three attempts to route that into the bots:
   PACE toward the 420 cutoff and every pace metric moved; committed
   separately so one revert flips it if the 900s tail is weighted higher.
 
+### ✅ HELD-OUT VALIDATION (16 fresh seeds 9200-9215, 144 boats): THE STACK
+### TRANSFERS
+Full overnight stack (margins + wall-tack + tight-orbit, e65cc75) vs the
+original clean HEAD (5f4c816), seeds never used in any decision tonight:
+**rounders 79→104 (+25), finishers 47→76 (+29, +62%), finMed 689→690 (equal
+on a 62% larger, tail-heavier finisher set), paired leg-1 −7 med/−31 mean,
+leg-2 −39 med, finish −7 med/−30 mean, sweep −13 med. DNS 0/144 both.**
+This is the transfer test that rejected all four RL policies — the
+human-evidence classical stack passes it on the first try. (On these seeds
+the tight-orbit uncapped-finisher concern does not manifest.) In-time
+finishes: 1 vs 1 here — the 9100-9107 in-time gains are seed-dependent;
+pace to the 420 line remains the open frontier.
+
 ## Ideas queue
 - Gap-aware channel selection: route around the *pack*, not through it, when the time
   cost table says the detour is cheap (the "wider than narrowest channel" idea).
