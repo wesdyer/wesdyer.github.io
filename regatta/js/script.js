@@ -886,7 +886,16 @@ class BotController {
                         // same solo-good/fleet-bad signature as the orbit-hold.
                         // 0.85 stays. Solo-env optima do not transfer to traffic.)
                         let aA = brgA + sgnA * 0.85;
-                        const RA = Math.min(rm.zone * 1.6, Math.max(dRm + 140, rm.zone * 0.8));
+                        // ORBIT AT THE HUMAN RING, NOT AN OUTWARD SPIRAL. Every
+                        // recorded human rounding sweeps at 0.5-0.9x zone (med
+                        // ~0.75) and only leaves the ring to exit; the old
+                        // dRm+140 target walked the radius out to 1.6x zone —
+                        // roughly double the circumference for the same sweep
+                        // (bot sweep-phase med 159s vs human 35s). Far boats
+                        // still close on the ring; inside, the target now sits
+                        // at 0.85x zone instead of 140u further out than
+                        // wherever the boat happens to be.
+                        const RA = Math.min(rm.zone * 1.6, Math.max(rm.zone * 0.85, dRm - 80));
                         // RL pilot hook (sweep-policy research): inert unless the
                         // headless harness injected __rl. actFor(boat) — the
                         // fleet-gate path — outranks the single-hero act.

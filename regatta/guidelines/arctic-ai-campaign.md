@@ -786,6 +786,34 @@ noise vs 95.7/6, no collapse). DNS-like 0/72.** Unlike the three rejected
 mechanisms this does not commit boats to lines — it removes a forbidden
 transition exactly at the trap. Open venues: provably inert (grid-gated).
 
+### Experiment 5/6: RING-BASIN PACE — the sweep phase is 159s vs the human 35s
+Human armed-phase data (12 runs): radius med 0.45-0.9x zone, min ~0.35x,
+sweep rate 0.12-0.20 rad/s, armed 21-54s; max radius ~1.24x = the exit
+crossing itself. Three attempts to route that into the bots:
+- Tight-first armed widen ladder: **proven byte-identical no-op** (order only
+  matters when multiple rungs are clear at once — rare at density). Reverted.
+- Sector-adaptive DMC arc (planner _arc: per-bearing radius, human envelope,
+  slope-capped) + trust-the-arc widen: geometry landed (arc dips to 475u ≈
+  0.56x zone through clear sectors, leg1 −418u) but **behaviour byte-identical
+  again** — ⚠️ ARMED BOATS NEVER READ THE ARC OR widen(): "ARMED = PURE
+  ORBIT" (getNavigationTarget) owns them outright. Both reverted as inert
+  scaffolding (the arc change also moves course-length metadata). Lesson
+  recorded: on the rounding leg, radius decisions live in the ORBIT TARGET
+  ONLY — everything else is display.
+- **✅ TIGHT ORBIT (the live lever, ACCEPTED as a JUDGMENT CALL):** the armed
+  orbit target was an outward spiral `max(dRm+140, 0.8z)` capped 1.6x zone —
+  double the human circumference. Now `min(1.6z, max(0.85z, dRm−80))`: far
+  boats still close on the ring; inside, the target sits at the human 0.85x
+  ring instead of 140u beyond wherever the boat is.
+  Fleet paired vs walltack: rounders flat 61, **finMed 701→611, paired finish
+  −23 med/−51 mean, sweep-phase −21 med, IN-TIME (≤420) finishes 1→3, seed
+  9101 = 9/9 finishers**; solo 95.8/6 ties the record with faster arrivals
+  (4244 309→279, two new rounders). COST: uncapped-window finishers 45→42.
+  Capped 420s eval cannot discriminate (both sides ~saturated; pen/boat
+  2.07→1.94 favours tight). Accepted because the campaign's stated mission is
+  PACE toward the 420 cutoff and every pace metric moved; committed
+  separately so one revert flips it if the 900s tail is weighted higher.
+
 ## Ideas queue
 - Gap-aware channel selection: route around the *pack*, not through it, when the time
   cost table says the detour is cheap (the "wider than narrowest channel" idea).
