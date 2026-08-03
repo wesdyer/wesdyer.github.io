@@ -260,6 +260,13 @@ class BotController {
         this.updateTimer -= dt;
         if (this.updateTimer > 0) return;
         this.updateTimer = 0.1; // 10Hz updates
+        // ⚠️ THE BODY RUNS AT 10Hz BUT dt IS THE FRAME STEP (1/60), so a `± dt`
+        // timer in here runs six times slower than its comment claims: a "5 second"
+        // wiggle held for 30 and the stall detector needed 18s to notice. TICK is
+        // the body's true clock. The risk-assessment timers keep the old scale on
+        // purpose — they were tuned as-built, and retiming them retunes every
+        // avoidance number at once.
+        const TICK = 0.1;
 
         // Update Wind Tracker
         this.updateWindTracker();
@@ -276,7 +283,7 @@ class BotController {
 
             // Velocity Check (Hysteresis)
             if (this.boat.speed * 4 < 1.0) {
-                this.lowSpeedTimer += dt;
+                this.lowSpeedTimer += TICK;
             } else if (this.boat.speed * 4 > 2.5) { // Only reset if truly moving fast
                 this.lowSpeedTimer = 0;
             }
@@ -289,6 +296,22 @@ class BotController {
                 if (timeSinceStart > 30 || this.lowSpeedTimer > 10.0) {
                     this.livenessState = 'force';
                 } else if (timeSinceStart > 10 || this.lowSpeedTimer > 5.0) {
+                    this.livenessState = 'recovery';
+                } else {
+                    this.livenessState = 'normal';
+                }
+            } else if (state.course._gridFixed && state.course._gridFixed.length) {
+                // RACING LEGS TOO — on LAND venues. A boat pinned against ice mid-leg
+                // used to have only the wiggle, which beam-reaches it straight back
+                // into the same pocket; whole Glacier Sound fleets sat at 0.1 speed
+                // for six minutes in 'normal'. Slower thresholds than leg 0 — a boat
+                // luffing through a rounding or a penalty turn is slow on purpose.
+                // Open venues keep the classic behavior (no mid-race liveness): there
+                // is nothing to be pinned ON, and recovery mode hijacking a slow
+                // rounding measurably costs time.
+                if (this.lowSpeedTimer > 18.0) {
+                    this.livenessState = 'force';
+                } else if (this.lowSpeedTimer > 8.0) {
                     this.livenessState = 'recovery';
                 } else {
                     this.livenessState = 'normal';
@@ -308,10 +331,40 @@ class BotController {
         let desiredHeading = this.boat.heading;
         let speedRequest = 1.0;
 
+        // THE OUTBOUND LATCH LIVES HERE, where it always runs. It used to live in
+        // getNavigationTarget — which the wiggle/escape branches skip — so during
+        // the exact seconds the sweep peaked (boat grinding in the ring, recovery
+        // mechanisms in charge) nobody was watching the sweep, and 2.89-rad
+        // roundings evaporated unbanked. While outbound, the wiggle stands down:
+        // the boat has a rounding to bank and navigation must steer the exit.
+        {
+            const rmL = state.course.roundMark, rsL = this.boat.raceState;
+            if (isRacing && rmL && rmL.reqSweep != null && rsL.leg >= 1 && !rsL.finished
+                && typeof ROUND_SWEEP_TOL !== 'undefined') {
+                if (this._outboundLeg !== rsL.leg) { this._outboundLeg = rsL.leg; this._outbound = false; }
+                const needL = rmL.reqSweep * ROUND_SWEEP_TOL;
+                // Bank a BUFFER before turning for the exit: the fight out through
+                // the ring in a 25-knot katabatic costs ~0.2-0.4 rad of unwind, and
+                // leaving at exactly the requirement meant arriving outside it.
+                if ((rsL.roundSweep || 0) >= needL + 0.25) this._outbound = true;
+                else if ((rsL.roundSweep || 0) < needL * 0.8) this._outbound = false;
+                if (this._outbound) { this.wiggleActive = false; this.wiggleDuration = 0; }
+            }
+        }
+
         // Wiggle / Unstick Logic (Overrides Strategy)
-        if (this.lowSpeedTimer > 3.0 && !this.wiggleActive) {
+        // Eagerness is a fact about the VENUE. On land venues (Glacier Sound)
+        // eager wiggles are what break up shore rafts — a 5s trigger was A/B'd
+        // and cost 8 points of DNS. On open venues a slow boat is jammed in the
+        // FLEET, not on rocks, and the old lazy trigger (an accidental 18s real,
+        // via the 6x-slow clock this replaced) is what the start pack is tuned
+        // around — eager wiggles there cost Clubhouse +2s at the line.
+        const wiggleAfter = (state.course._gridFixed && state.course._gridFixed.length) ? 3.0 : 18.0;
+        if (this.lowSpeedTimer > wiggleAfter && !this.wiggleActive) {
             this.wiggleActive = true;
-            this.wiggleDuration = 5.0; // Lock in for 5 seconds
+            // Land venues: quick 5s bursts (shore rafts need cadence). Open venues:
+            // the tuned effective duration the 6x-slow clock actually shipped.
+            this.wiggleDuration = (state.course._gridFixed && state.course._gridFixed.length) ? 5.0 : 30.0;
 
             // Determine best wiggle direction (Away from nearest obstacle)
             let closestObs = null;
@@ -330,6 +383,19 @@ class BotController {
                 }
             }
 
+            // MID-ROUNDING: wiggle the way ROUND (see the escape's tie-break — a
+            // wrong-way wiggle refunds hard-won sweep).
+            const rmW = state.course.roundMark, rsW = this.boat.raceState;
+            if (rmW && rsW.roundArmed && !rsW.finished
+                && Math.hypot(this.boat.x - rmW.x, this.boat.y - rmW.y) < rmW.zone * 1.5) {
+                const sgnW = rmW.side === 'port' ? -1 : 1;
+                const brgW = Math.atan2(this.boat.y - rmW.y, this.boat.x - rmW.x);
+                const txW = -Math.sin(brgW) * sgnW, tyW = Math.cos(brgW) * sgnW;
+                const lwW = getWindAt(this.boat.x, this.boat.y).direction;
+                const w1 = Math.sin(lwW + 1.75) * txW - Math.cos(lwW + 1.75) * tyW;
+                const w2 = Math.sin(lwW - 1.75) * txW - Math.cos(lwW - 1.75) * tyW;
+                this.wiggleSide = w1 >= w2 ? 1 : -1;
+            } else
             // If we've been stuck a long time, the smart logic failed. Try Random.
             if (this.lowSpeedTimer > 8.0) {
                  this.wiggleSide = (Math.random() > 0.5) ? 1 : -1;
@@ -343,9 +409,13 @@ class BotController {
         }
 
         if (this.wiggleActive) {
-            this.wiggleDuration -= dt;
+            this.wiggleDuration -= TICK;
 
-            const windDir = state.wind.direction;
+            // LOCAL wind, not the course-centroid blend. On a venue whose regions
+            // differ across the water (Glacier Sound: 60-140°), the global direction
+            // aimed the "beam reach" escape ~17° off the true wind — in irons, pinned
+            // for the whole wiggle. Everywhere else the two are identical.
+            const windDir = getWindAt(this.boat.x, this.boat.y).direction;
             if (this.boat.raceState.leg === 0) {
                 // Start unstick: a stuck boat in the pack must NOT beam-reach hundreds
                 // of units off the line (that turns a brief jam into a 40-90s recovery
@@ -367,24 +437,29 @@ class BotController {
             if (this.wiggleDuration <= 0) {
                 this.wiggleActive = false;
                 // If STILL stuck, this wiggle failed. Don't reset timer fully so we trigger again immediately.
-                // But switch side next time.
+                // Flip sides only every SECOND failure: alternating every time just
+                // reverses a half-built escape and dumps the momentum it earned.
                 if (this.lowSpeedTimer > 5.0) {
-                     this.wiggleSide *= -1; // Flip for next attempt
+                     this.wiggleFails = (this.wiggleFails || 0) + 1;
+                     if (this.wiggleFails % 2 === 0) this.wiggleSide *= -1;
                 } else {
                      this.lowSpeedTimer = 0; // Success
-                     // Enter Clearance Mode
-                     this.clearanceTimer = 3.0;
+                     this.wiggleFails = 0;
+                     // Land venues: short, or the escape carries the boat hundreds of
+                     // units off its route. Open venues: the tuned effective value.
+                     this.clearanceTimer = (state.course._gridFixed && state.course._gridFixed.length) ? 1.5 : 18.0;
                      this.clearanceHeading = desiredHeading; // Keep sailing this way
                 }
             }
         } else if (this.clearanceTimer > 0) {
-            this.clearanceTimer -= dt;
+            this.clearanceTimer -= TICK;
             desiredHeading = this.clearanceHeading;
             speedRequest = 1.0;
         } else {
             this.wiggleTimer = 0;
             // 1. Navigation (Where do we want to go?)
             const nav = this.getNavigationTarget();
+            this._lastNav = nav;
 
             // 2. Strategy (Tack/Gybe/Laylines)
             desiredHeading = this.getStrategicHeading(nav);
@@ -426,7 +501,18 @@ class BotController {
                 }
                 const clear = nearest > 120 * 120;
                 const deadline = rsP.penaltyFlagTime > 12;
-                if (!markNear && (clear || deadline) && this.riskState !== 'IMMINENT' && this.riskState !== 'HIGH') {
+                // Never spiral against the ICE either. A 360 needs a boat-length
+                // circle of clear water; taken while pinned in a floe pocket it
+                // grinds the whole turn against the pack (fresh contacts, fresh
+                // fouls, and a spinning boat blocking everyone else's escape).
+                // Even past the deadline, wait for sea room.
+                let iceNear = false;
+                const gclr = state.course.botGrid;
+                if (gclr && gclr._clear) {
+                    const c = gclr.cell(this.boat.x, this.boat.y);
+                    if (gclr.at(c[0], c[1]) && gclr._clear[c[1] * gclr.n + c[0]] < 3) iceNear = true;
+                }
+                if (!markNear && !iceNear && (clear || deadline) && this.riskState !== 'IMMINENT' && this.riskState !== 'HIGH') {
                     // Spin away from the nearest boat's side; default starboard-round.
                     this.penaltySpin = true;
                     this.penaltySpinDir = (rsP.penaltyRot !== 0) ? Math.sign(rsP.penaltyRot) : 1;
@@ -500,6 +586,63 @@ class BotController {
             this.forcedAvoidTimer = Math.max(0, (this.forcedAvoidTimer || 0) - 0.1);
         }
 
+        // 3.7 Local trajectory refinement through drifting ice — see
+        // planFloeTrajectory. Strategy picked WHERE to sail; this picks the line
+        // through the next nine seconds of moving pack. Escapes and wiggles keep
+        // priority (they own genuinely stuck boats).
+        this._trajFloe = false;
+        if (isRacing && !isPrestart && !this.wiggleActive && !(this.clearanceTimer > 0)
+            && !(this.iceEscapeTimer > 0) && this._lastNav
+            && state.course._gridFixed && state.course._gridFixed.length) {
+            const tj = this.planFloeTrajectory(desiredHeading, this._lastNav);
+            if (tj != null) { desiredHeading = tj; this._trajFloe = true; }
+        }
+
+        // Island / floe contact override — same reflex as mark contact below. The
+        // rocks have already taken 60% of our speed per frame of overlap; commit a
+        // short turn straight away from the contact normal. Runs AFTER avoidance on
+        // purpose: in a raft-up the neighbours' collision costs veto every escape
+        // heading and the whole raft freezes (measured: DNS tripled when this fed
+        // through the cost function).
+        if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
+             const col = this.boat.ai.collisionData;
+             if (this.boat.speed < 1.0 || !this.iceEscapeTimer || this.iceEscapeTimer <= 0) {
+                 let escH = Math.atan2(-col.normal.x, col.normal.y);
+                 // MID-ROUNDING, ESCAPE THE WAY ROUND. An escape that reverses the
+                 // rotation refunds sweep the boat bled for (measured +0.6 -> -0.85).
+                 // Near the zone, pick the sailable heading that is both outward and
+                 // toward the required rotation tangent.
+                 const rmE = state.course.roundMark, rsE = this.boat.raceState;
+                 if (rmE && rsE.roundArmed && !rsE.finished
+                     && Math.hypot(this.boat.x - rmE.x, this.boat.y - rmE.y) < rmE.zone * 1.5) {
+                     const outX = -col.normal.x, outY = -col.normal.y;
+                     const sgnE = rmE.side === 'port' ? -1 : 1;
+                     const brgE = Math.atan2(this.boat.y - rmE.y, this.boat.x - rmE.x);
+                     // Sweeping: bias along the rotation tangent. OUTBOUND (sweep
+                     // banked): bias RADIALLY OUT — the tangent bias that saved the
+                     // sweep was trapping banked boats in eternal orbit under the
+                     // shell, escape after escape curving them around instead of out.
+                     const tx = this._outbound ? Math.cos(brgE) : -Math.sin(brgE) * sgnE;
+                     const ty = this._outbound ? Math.sin(brgE) : Math.cos(brgE) * sgnE;
+                     const lwE = getWindAt(this.boat.x, this.boat.y).direction;
+                     let bestS = -Infinity;
+                     for (const off of [1.05, -1.05, 1.75, -1.75]) {
+                         const h = normalizeAngle(lwE + off);
+                         const sc = (Math.sin(h) * outX - Math.cos(h) * outY)
+                                  + 0.7 * (Math.sin(h) * tx - Math.cos(h) * ty);
+                         if (sc > bestS) { bestS = sc; escH = h; }
+                     }
+                 }
+                 this.iceEscapeHeading = escH;
+                 this.iceEscapeTimer = 2.0;
+             }
+        }
+        if (this.iceEscapeTimer > 0) {
+             this.iceEscapeTimer -= TICK;
+             desiredHeading = this.iceEscapeHeading;
+             speedRequest = 1.0;
+        }
+
         // Mark Collision Override (Immediate Turn Away + Latch)
         if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'mark') {
              const col = this.boat.ai.collisionData;
@@ -511,14 +654,39 @@ class BotController {
              // If we are stuck (slow) or just hit it, calculate escape
              if (this.boat.speed < 0.5) {
                  this.markEscapeHeading = Math.atan2(awayX, -awayY);
-                 this.markContactTimer = 2.0; // Commit to this direction for 2s
+                 // "2s" shipped on the 6x-slow clock — the tuned reality was a 12s
+                 // commit, and the fleet's mark behavior is calibrated to it.
+                 this.markContactTimer = 12.0;
              }
         }
 
         if (this.markContactTimer > 0) {
-             this.markContactTimer -= dt;
+             this.markContactTimer -= TICK;
              desiredHeading = this.markEscapeHeading;
              speedRequest = 1.0;
+        }
+
+        // PACK SPEED DISCIPLINE. In floe-risk water an ice pilot comes down to
+        // manoeuvring speed: the turn radius tightens, there is time to react to
+        // drift, and a graze at half speed is a nudge instead of a stop. Depower
+        // only when there is way on (never throttle an acceleration out of a
+        // stall), and scale with handling so the fleet stays diverse — a deft
+        // boat carries more speed through the same ice.
+        // Only when trouble is actually PREDICTED (trajectory rollout saw contact
+        // within ~5s) — a blanket slow-down in all risk water traded pace for
+        // nothing once the planner learned to dodge.
+        if (speedRequest >= 1.0 && this.boat.speed > 1.2 && !this.wiggleActive
+            && !this._outbound
+            && !(this.iceEscapeTimer > 0) && this._trajRisk != null && this._trajRisk < 3) {
+            const deft = this.boat.stats ? Math.max(0, Math.min(1, this.boat.stats.handling / 10)) : 0.5;
+            speedRequest = 0.7 + 0.15 * deft;
+        }
+        this._trajRisk = null;
+
+        // RL pilot hook (see the armed orbit) — speed half of the action.
+        if (typeof window !== 'undefined' && window.__rl && window.__rl.act
+            && this.boat === window.__hero && this.boat.raceState.roundArmed) {
+            speedRequest = Math.min(speedRequest, Math.max(0.4, window.__rl.act[1]));
         }
 
         // Apply
@@ -545,22 +713,364 @@ class BotController {
                 destX = boat.x; destY = boat.y - 1000;
             }
         } else if (state.course.type === 'islandRound' && boat.raceState.leg >= 1 && state.course.roundMark) {
-            // ISLAND COURSE. Leg 1: sail to a point off the mountain on the side
-            // the rounding starts from, so the boat arrives already turning the
-            // right way instead of driving at the rock and having to swerve.
-            // Leg 2: the finish line.
+            // ISLAND COURSE. Follow THE RULER: the DMC leg path is the course's own
+            // ideal line — grid-routed around static land, tangent in, the checked
+            // rounding arc at a radius proven navigable, tangent out. Chase a point a
+            // few lengths ahead of our own progress along it. The old orbit math
+            // aimed at zone geometry with no notion of what water the arc crossed,
+            // and on Glacier Sound the fleet milled in the island's lee forever.
             const rm = state.course.roundMark;
             const rs = boat.raceState;
-            if (rs.leg === 1) {
+            const dmcLeg = state.course.dmc && state.course.dmc.legs && state.course.dmc.legs[rs.leg];
+            if (dmcLeg && dmcLeg.pts && dmcLeg.pts.length >= 2 && typeof CoursePath !== 'undefined') {
+                // ONCE THE SWEEP IS MADE, GET OUT. The rounding leg's ideal path ends
+                // at the exit tangent — INSIDE the completion radius (zone*1.25), so a
+                // boat that faithfully follows it to the end hovers there, stalls, and
+                // the net-sweep accounting unwinds its rounding as it drifts back. The
+                // moment the sweep is essentially complete, the thing to follow is the
+                // NEXT leg's path, outbound.
+                let followLeg = rs.leg;
+                let followPath = dmcLeg;
+                const swept = (rs.roundSweep || 0);
+                const needSw = (rm && rm.reqSweep != null) ? rm.reqSweep * ROUND_SWEEP_TOL : Math.PI / 4;
+                const nextPath = state.course.dmc.legs[rs.leg + 1];
+                // LATCHED handoff: the sweep oscillates around the threshold as the
+                // boat weaves (measured 2.90 peak against a 2.55 requirement with no
+                // completion — outbound/orbit flapped at the boundary). Once earned,
+                // outbound holds unless the sweep genuinely collapses.
+                // The pre-bank handoff to the next leg's path is GONE: it preempted
+                // the armed exit-hunt (dmcFollowLeg flipped to leg+1 the moment the
+                // sweep banked, so the boat detoured toward home through the pack
+                // instead of punching out through the scanned exit sector). The
+                // follower switches paths only when the ENGINE actually advances
+                // rs.leg. (The outbound latch itself lives in update().)
+                void nextPath;
+                const dmcLegF = followPath;
+                if (this.dmcFollowLeg !== followLeg) { this.dmcFollowLeg = followLeg; this.dmcHint = null; this.dmcCarrotS = null; }
+                const s = CoursePath.project(dmcLegF, boat.x, boat.y, this.dmcHint);
+                this.dmcHint = s;
+                const LOOKP = 450;
+                const cum = dmcLegF.cum, pts = dmcLegF.pts;
+
+                // ROUTE FREEDOM UNTIL THE ROUNDING. Sticky ruler carrots pin the boat
+                // to the ideal line at 450u hops, so the grid router can only ever
+                // detour WITHIN a hop — measured: a drifting pack across the line at
+                // one bend held a fast boat for 300 seconds while a 1.5km-wide open
+                // corridor sat next door. Far from the mark, the destination is the
+                // ruler's ZONE-APPROACH point and the whole distance belongs to the
+                // floe-aware time-cost router, which is free to go wide. The ruler
+                // takes over only for the approach and the arc itself.
+                // Hysteresis on the mode boundary, or the two targets (zone-entry
+                // point vs ruler carrot) alternate as the boat's distance wobbles
+                // across the line — measured as a 150s orbit of the whole basin ring
+                // at d≈1500-2300 straddling the old single threshold.
+                const dRm = rm ? Math.hypot(boat.x - rm.x, boat.y - rm.y) : Infinity;
+                if (this._rulerMode && dRm > rm.zone * 2.8) this._rulerMode = false;
+                if (!this._rulerMode && dRm < rm.zone * 2.1) this._rulerMode = true;
+
+                // ROUNDING MACHINERY ONLY ON THE ROUNDING LEG. After the bank,
+                // roundArmed resets — and the entrance hunt was RE-ARMING on the
+                // return leg, steering finished rounders back into the zone they
+                // had just fought out of (measured: banked t=330, then 470s lost,
+                // ending at the map corner). A non-rounding leg is pure route
+                // freedom: aim at the leg's end, the router owns the water.
+                const isRoundLeg = state.course.route && state.course.route[rs.leg]
+                    && state.course.route[rs.leg].kind === 'round';
+                if (!isRoundLeg) {
+                    const lastP = pts[pts.length - 1];
+                    destX = lastP.x; destY = lastP.y;
+                } else {
+
+                // HUNT THE ENTRANCE. At full density the pack rafts onto the ruler's
+                // entry bearing (drift piles floes on the down-drift side), while
+                // the windward sector is swept clean — a fixed entry bearing is a
+                // fair-weather suggestion. Scan the zone's sectors against the LIVE
+                // grid, pick the clearest radial (cheapest to reach going the
+                // required way round), ride the ring to it, cut in. Arming and the
+                // orbit-to-sweep machinery take over from there.
+                let entryHandled = false;
+                if (rm && followLeg === rs.leg && this._rulerMode && !rs.roundArmed
+                    && dRm > rm.zone * 0.95 && state.course.botGrid) {
+                    const gE = state.course.botGrid;
+                    const sgnR = rm.side === 'port' ? -1 : 1;
+                    const myBrg = Math.atan2(boat.y - rm.y, boat.x - rm.x);
+                    this._entryT = (this._entryT || 0) - 0.1;
+                    if (this._entryBrg == null || this._entryT <= 0) {
+                        this._entryT = 2.0;
+                        // CROWDING: rivals nearer the mark own their approach sector.
+                        // Everyone scoring sectors the same way rafts the whole fleet
+                        // onto one slot (the convergence trap) — and a slot only
+                        // admits one boat when it cracks. Push later arrivals to the
+                        // next-best sector; waiting is fine, queueing is not.
+                        const rivals = [];
+                        for (const ob of state.boats) {
+                            if (ob === boat || ob.isPlayer || ob.raceState.finished) continue;
+                            if (ob.raceState.leg !== rs.leg || ob.raceState.roundArmed) continue;
+                            const dOb = Math.hypot(ob.x - rm.x, ob.y - rm.y);
+                            if (dOb < rm.zone * 2.5 && dOb < dRm) {
+                                rivals.push(Math.atan2(ob.y - rm.y, ob.x - rm.x));
+                            }
+                        }
+                        let bestA = null, bestScore = -Infinity;
+                        for (let k = 0; k < 16; k++) {
+                            const a = k / 16 * Math.PI * 2;
+                            let clear = 0, blocked = 0, churn = 0;
+                            for (const rr of [1.5, 1.3, 1.1, 0.95, 0.8, 0.7]) {
+                                const px = rm.x + Math.cos(a) * rm.zone * rr;
+                                const py = rm.y + Math.sin(a) * rm.zone * rr;
+                                const cc = gE.cell(px, py);
+                                const idE = cc[1] * gE.n + cc[0];
+                                if (gE.at(cc[0], cc[1])) clear += (gE._futBlk && gE._futBlk[idE]) ? 0.3 : 1;
+                                else if (gE._soft && gE._soft[idE] === 1) clear += 0.5;
+                                else blocked++;
+                                // CHURN, not just clearance: a sector that is open right
+                                // now but thick with drifting ice is a washing machine —
+                                // measured 104 of 146 armed seconds lost in one such
+                                // sector while the risk-free windward sectors swept
+                                // 0.8 rad in ~10s each.
+                                if (gE._floeRisk && gE._floeRisk[idE]) churn++;
+                            }
+                            let da = (a - myBrg) * sgnR;
+                            while (da < 0) da += Math.PI * 2;
+                            while (da >= Math.PI * 2) da -= Math.PI * 2;
+                            let crowd = 0;
+                            for (const rb of rivals) {
+                                const dAng = Math.abs(normalizeAngle(a - rb));
+                                if (dAng < 0.6) crowd += (1 - dAng / 0.6);
+                            }
+                            const score = clear * 10 - blocked * 8 - churn * 4 - da * 3 - crowd * 7;
+                            if (score > bestScore) { bestScore = score; bestA = a; }
+                        }
+                        this._entryBrg = bestA;
+                    }
+                    if (this._entryBrg != null) {
+                        let da = (this._entryBrg - myBrg) * sgnR;
+                        while (da < 0) da += Math.PI * 2;
+                        while (da >= Math.PI * 2) da -= Math.PI * 2;
+                        if (da > 0.4 && da < Math.PI * 2 - 0.4) {
+                            // Ride the ring the required way toward the chosen sector.
+                            const aNext = myBrg + sgnR * 0.55;
+                            destX = rm.x + Math.cos(aNext) * rm.zone * 1.35;
+                            destY = rm.y + Math.sin(aNext) * rm.zone * 1.35;
+                        } else {
+                            // On the sector: cut in.
+                            destX = rm.x + Math.cos(this._entryBrg) * rm.zone * 0.72;
+                            destY = rm.y + Math.sin(this._entryBrg) * rm.zone * 0.72;
+                        }
+                        entryHandled = true;
+                    }
+                }
+
+                // ARMED = PURE ORBIT, from ANY distance, in ANY mode. Once the zone
+                // is nicked, every other navigation mode fights the sweep: the
+                // widened sticky carrot froze across the ring; far-mode dragged
+                // blown-out boats back to the rafted SW entry through the whole
+                // pack. The orbit target adapts its radius (tight inside the ring,
+                // 1.6x zone outside, straight back toward the ring from far away)
+                // and the lead angle carries the boat the required way round.
+                if (!entryHandled && rm && rs.roundArmed) {
+                    const brgA = Math.atan2(boat.y - rm.y, boat.x - rm.x);
+                    const sgnA = rm.side === 'port' ? -1 : 1;
+                    if (!this._outbound) {
+                        // OUTWARD SPIRAL, WIDE THROUGH CHURN. Sweep credit runs to
+                        // 2.5x zone, and 75s/lap was being lost wading the orbit
+                        // through drifting ice the entrance hunt had rightly
+                        // avoided — swing the target out past risky water.
+                        // (The trough-timed lead that lived here was dead code after
+                        // hold-and-charge was retired — its wind EMA no longer exists.)
+                        // (#47 A/B: the RL env's grid said advance 1.1 beats 0.85
+                        // solo — and the FLEET rejected it 51->41 rounders, the
+                        // same solo-good/fleet-bad signature as the orbit-hold.
+                        // 0.85 stays. Solo-env optima do not transfer to traffic.)
+                        let aA = brgA + sgnA * 0.85;
+                        const RA = Math.min(rm.zone * 1.6, Math.max(dRm + 140, rm.zone * 0.8));
+                        // RL pilot hook (sweep-policy research): inert unless the
+                        // headless harness injected __rl and this is its hero.
+                        if (typeof window !== 'undefined' && window.__rl && window.__rl.act
+                            && boat === window.__hero) {
+                            aA = brgA + sgnA * window.__rl.act[0];
+                        }
+                        // (A/B Aug 4: widening the orbit target out of _floeRisk water
+                        // regressed the benchmark 92.3->91.3 — the longer arc costs
+                        // more than the churn it avoids. And ORBIT-HOLD — station-
+                        // keeping when the arc ahead is plugged — was solo-best-ever
+                        // (93.2/4 roundings) but fleet-negative in ALL THREE rival
+                        // gatings (unconditional: sweep 125->238s, gridlock; armed-
+                        // rival gate: finishers 30->20; any-rival gate: 30->26, the
+                        // hold hurts the HOLDER too). Engine economics: soft cells
+                        // are passable and contact is cheap — GRIND, don't wait.)
+                        destX = rm.x + Math.cos(aA) * RA;
+                        destY = rm.y + Math.sin(aA) * RA;
+                    } else {
+                        // SWEEP EARNED — HUNT THE EXIT. A blind outward spiral hits
+                        // the ring's outer shell wherever it happens to sit and the
+                        // boat orbits UNDER it forever (measured: sweep 4.32 banked
+                        // in the accumulator, radius pinned under 1063 for 380s).
+                        // The engine banks on ANY outward breach — so scan the
+                        // sectors like the entrance hunt and punch out through the
+                        // clearest one ahead in the rotation.
+                        const gX = state.course.botGrid;
+                        this._exitT = (this._exitT || 0) - 0.1;
+                        if (gX && (this._exitBrg == null || this._exitT <= 0)) {
+                            this._exitT = 2.0;
+                            let bestX = null, bestSc = -Infinity;
+                            for (let k = 0; k < 16; k++) {
+                                const a = k / 16 * Math.PI * 2;
+                                let clear = 0, blocked = 0, churn = 0;
+                                for (const rr of [1.05, 1.2, 1.35, 1.5, 1.65]) {
+                                    const px = rm.x + Math.cos(a) * rm.zone * rr;
+                                    const py = rm.y + Math.sin(a) * rm.zone * rr;
+                                    const cc = gX.cell(px, py);
+                                    const idX = cc[1] * gX.n + cc[0];
+                                    if (gX.at(cc[0], cc[1])) clear += (gX._futBlk && gX._futBlk[idX]) ? 0.3 : 1;
+                                    else if (gX._soft && gX._soft[idX] === 1) clear += 0.5;
+                                    else blocked++;
+                                    if (gX._floeRisk && gX._floeRisk[idX]) churn++;
+                                }
+                                let da = (a - brgA) * sgnA;
+                                while (da < 0) da += Math.PI * 2;
+                                while (da >= Math.PI * 2) da -= Math.PI * 2;
+                                // Exits are not entries: ANY breach banks the leg, so
+                                // a decent sector NOW beats a perfect one half a ring
+                                // away (a boat chased re-shopped far exits for 1.5 laps).
+                                const sc = clear * 10 - blocked * 8 - churn * 4 - da * 9;
+                                if (sc > bestSc) { bestSc = sc; bestX = a; }
+                            }
+                            this._exitBrg = bestX;
+                        }
+                        if (this._exitBrg != null) {
+                            let da = (this._exitBrg - brgA) * sgnA;
+                            while (da < 0) da += Math.PI * 2;
+                            while (da >= Math.PI * 2) da -= Math.PI * 2;
+                            // COMMIT once nearly there: re-shopping the exit every 2s
+                            // while the shell drifts kept one boat riding the ring for
+                            // a lap and a half (5.65 rad) without ever punching. Soft
+                            // ice grinds; the breach only needs seconds.
+                            if (da <= 0.6 || da >= Math.PI * 2 - 0.6) this._exitT = 15.0;
+                            if (da > 0.35 && da < Math.PI * 2 - 0.35) {
+                                // Keep rotating toward the exit sector at the ring.
+                                const aA = brgA + sgnA * 0.6;
+                                destX = rm.x + Math.cos(aA) * Math.max(dRm, rm.zone * 0.95);
+                                destY = rm.y + Math.sin(aA) * Math.max(dRm, rm.zone * 0.95);
+                            } else {
+                                // On the sector: punch out.
+                                destX = rm.x + Math.cos(this._exitBrg) * rm.zone * 1.7;
+                                destY = rm.y + Math.sin(this._exitBrg) * rm.zone * 1.7;
+                            }
+                        } else {
+                            const aA = brgA + sgnA * 0.7;
+                            const RAo = Math.min(rm.zone * 1.7, dRm + 320);
+                            destX = rm.x + Math.cos(aA) * RAo;
+                            destY = rm.y + Math.sin(aA) * RAo;
+                        }
+                    }
+                    entryHandled = true;
+                }
+
+                if (!entryHandled && rm && followLeg === rs.leg && !this._rulerMode) {
+                    if (this._sEnter == null || this._sEnterLeg !== rs.leg) {
+                        this._sEnterLeg = rs.leg;
+                        this._sEnter = dmcLegF.length;
+                        for (let k = 0; k < pts.length; k++) {
+                            // ⚠️ The far destination must sit INSIDE the ruler-mode
+                            // switch radius (zone*2.1), or there is a dead band:
+                            // dest reached, mode unswitched, and the boat ORBITS ITS
+                            // OWN DESTINATION — measured as a 300u mill at full
+                            // speed, misread twice as an ice problem.
+                            if (Math.hypot(pts[k].x - rm.x, pts[k].y - rm.y) < rm.zone * 1.8) {
+                                this._sEnter = cum[k];
+                                this._sEnterPt = { x: pts[k].x, y: pts[k].y };
+                                break;
+                            }
+                        }
+                    }
+                    const fd = this._sEnterPt || pts[pts.length - 1];
+                    destX = fd.x; destY = fd.y;
+                } else if (!entryHandled) {
+                // ROUND WIDE WHERE THE WATER ALLOWS. The ruler's arc is the tight
+                // ideal; in a blow, in drifting ice, a sailor stands off where there
+                // is room to tack and comes in only where the land pinches. Widening
+                // past zone*1.25 has a second payoff: the whole arc is sailed beyond
+                // the completion radius, so the leg releases the moment the sweep is
+                // made instead of demanding a separate departure.
+                const gridW = state.course.botGrid;
+                const widen = (p) => {
+                    if (!rm || !gridW) return p;
+                    const dx0 = p.x - rm.x, dy0 = p.y - rm.y;
+                    const d0 = Math.hypot(dx0, dy0);
+                    if (d0 > rm.zone * 1.1 || d0 < 1) return p;
+                    const ux = dx0 / d0, uy = dy0 / d0;
+                    // BEFORE arming: never wider than the ZONE — arming requires
+                    // actually entering it (a 1250u "wide rounding" never armed and
+                    // the pre-arming sweep was lost). AFTER arming: the opposite —
+                    // sweep credit runs out to 2.5x zone and completion requires
+                    // being OUTSIDE 1.25x zone, so the fast rounding at full density
+                    // is: nick the zone at the clearest sector, then swing OUT past
+                    // the floe ring and run the sweep in open water at speed.
+                    const ladder = rs.roundArmed
+                        ? [rm.zone * 1.75, rm.zone * 1.45, rm.zone * 1.2, rm.zone * 0.94]
+                        : [rm.zone * 0.94, rm.zone * 0.82];
+                    for (const R of ladder) {
+                        if (R < d0) break;
+                        const px = rm.x + ux * R, py = rm.y + uy * R;
+                        const c = gridW.cell(px, py);
+                        const id = c[1] * gridW.n + c[0];
+                        if (gridW.at(c[0], c[1]) && (!gridW._clear || gridW._clear[id] >= 3)) {
+                            return { x: px, y: py };
+                        }
+                    }
+                    return p;
+                };
+                const pointAt = (target) => {
+                    if (target >= dmcLegF.length) return widen(pts[pts.length - 1]);
+                    let k = 1;
+                    while (k < cum.length - 1 && cum[k] < target) k++;
+                    const t = (target - cum[k - 1]) / Math.max(1e-6, cum[k] - cum[k - 1]);
+                    return widen({ x: pts[k - 1].x + (pts[k].x - pts[k - 1].x) * t,
+                             y: pts[k - 1].y + (pts[k].y - pts[k - 1].y) * t });
+                };
+                // UNDER-SWEPT AT THE PATH END: a boat that armed late (entered the
+                // zone partway round) reaches the exit tangent with less sweep than
+                // the leg requires and the path has nothing more to give. The move a
+                // sailor makes is obvious — keep going round. Orbit on, the required
+                // way, until the sweep is made; the next-leg handoff above then
+                // releases the boat outbound.
+                if (false) {
+                } else {
+                // STICKY CARROT. A carrot that glides s+LOOK ahead recedes as the boat
+                // advances, and on the beat around the rounding arc the boat lays a
+                // moving target forever — measured half-kilometre tacks AWAY from the
+                // mark. Chase one fixed point; only when it is nearly fetched does the
+                // carrot hop to the next. Fixed targets terminate laylines.
+                if (this.dmcCarrotS == null || this.dmcCarrotS < s + 100) this.dmcCarrotS = s + LOOKP;
+                let cw = pointAt(this.dmcCarrotS);
+                if ((boat.x - cw.x) ** 2 + (boat.y - cw.y) ** 2 < 220 * 220) {
+                    this.dmcCarrotS = Math.min(dmcLegF.length, this.dmcCarrotS + LOOKP);
+                    cw = pointAt(this.dmcCarrotS);
+                }
+                destX = cw.x; destY = cw.y;
+                }
+                }
+                }
+            } else if (rs.leg === 1) {
                 const bearing = Math.atan2(boat.y - rm.y, boat.x - rm.x);
                 // Starboard rounding sweeps the bearing POSITIVE (see the
                 // derivation in updateBoatRaceState), so the entry lies at a
                 // bearing BEHIND the boat's current one. Once inside the zone,
                 // lead the target around the mark so the boat keeps turning.
                 const lead = rs.roundArmed ? 1.05 : 0.55;
-                const a = bearing + lead;
-                destX = rm.x + Math.cos(a) * (rm.zone * 0.92);
-                destY = rm.y + Math.sin(a) * (rm.zone * 0.92);
+                const sgn = rm.side === 'port' ? -1 : 1;
+                const a = bearing + sgn * lead;
+                // Orbit on the NAVIGABLE rounding circle, not a fraction of the zone.
+                // The ruler already solves this (CoursePath._roundR walks a radius
+                // ladder and keeps the first whole circle that is clear water) — on
+                // Glacier Sound zone*0.92 runs through the fixed-ice gap the venue
+                // check flags at 1.3 hulls, and bots orbited into it forever.
+                const RR = (typeof CoursePath !== 'undefined' && state.course.botGrid)
+                    ? Math.min(rm.zone * 1.15, CoursePath._roundR(rm, state.course.botGrid) + 45)
+                    : rm.zone * 0.92;
+                destX = rm.x + Math.cos(a) * RR;
+                destY = rm.y + Math.sin(a) * RR;
             } else {
                 const m1 = marks[0], m2 = marks[1];
                 const gDx = m2.x - m1.x, gDy = m2.y - m1.y;
@@ -592,7 +1102,10 @@ class BotController {
 
                 const laneX = m1.x + (m2.x - m1.x) * pct;
                 const laneY = m1.y + (m2.y - m1.y) * pct;
-                const wd = state.wind.direction;
+                // Local wind: the dip-back and drive-up vectors must be square to the
+                // wind ON THE LINE, not to the course-centroid blend (Glacier Sound's
+                // differ by ~110°, which aimed every recovery into the pin-end pocket).
+                const wd = getWindAt(laneX, laneY).direction;
 
                 // Signed position relative to the line (>0 = course side / above).
                 const lineDx = m2.x - m1.x, lineDy = m2.y - m1.y;
@@ -724,13 +1237,143 @@ class BotController {
                         // ABORTS the rounding and loops it back (measured: DNFs).
                         const past = (boat.x - mark.x) * (dx/len) + (boat.y - mark.y) * (dy/len);
                         if (past > 15) {
-                            const wdr = state.wind.direction;
+                            const wdr = getWindAt(boat.x, boat.y).direction;
                             const sgn = legTargetsWindward(leg) ? -1 : 1;
                             destX += Math.sin(wdr) * roundTurn * sgn;
                             destY -= Math.cos(wdr) * roundTurn * sgn;
                         }
                     }
                 }
+            }
+        }
+
+        // 1.5 GRID ROUTE AROUND STATIC LAND. On a designed venue the coastline can be
+        // one keyholed ring, which the visibility planner below cannot inflate (its
+        // documented failure mode is a confident straight line THROUGH the island —
+        // that parked the whole Glacier Sound fleet against the ice). The sailability
+        // grid answers "is this cell water" exactly, so the long way round comes from
+        // it: route to the leg target on the grid, then steer for the first waypoint
+        // still ahead. Floes stay with the visibility planner — they drift, the grid
+        // is static.
+        // Only when there is LAND to route around. On an open course the grid can
+        // only ever repeat the straight line — at best it is redundant, and any
+        // wind/edge weighting it applies is pure distortion of legs the strategy
+        // layer already sails optimally.
+        const botGrid = (state.course._gridFixed && state.course._gridFixed.length)
+            ? state.course.botGrid : null;
+        if (botGrid && window.SailCheck) {
+            if (this.gridTimer == null) this.gridTimer = 0;
+            this.gridTimer -= 0.1;
+            this.gridAge = (this.gridAge || 0) + 0.1;
+            const goalMoved = !this.gridGoal ||
+                (destX - this.gridGoal.x) ** 2 + (destY - this.gridGoal.y) ** 2 > 300 * 300;
+            // ROUTE STABILITY. Replanning every couple of seconds through a drifting
+            // pack threads a DIFFERENT micro-gap each time — the boat turns toward
+            // each new thread and commits to none (measured: 500u mill pockets, the
+            // carrot flipping between four targets). Keep the chosen thread until it
+            // is actually blocked, the goal moved, or it has grown genuinely stale.
+            let needFull = goalMoved || !this.gridPath || !this.gridPath.length || (this.gridAge > 12);
+            if (!needFull && this.gridTimer <= 0 && this.gridPath) {
+                for (let pi = 0; pi < Math.min(12, this.gridPath.length); pi++) {
+                    const pp = this.gridPath[pi];
+                    const pc = botGrid.cell(pp.x, pp.y);
+                    if (!botGrid.at(pc[0], pc[1])) {
+                        // A soft (floe-plugged) cell on the thread is a grind the
+                        // route may have chosen on purpose — not a reason to replan.
+                        const idT = pc[1] * botGrid.n + pc[0];
+                        if (botGrid._soft && botGrid._soft[idT]) continue;
+                        needFull = true; break;
+                    }
+                }
+                if (!needFull) this.gridTimer = 2.0;   // thread still open — keep it
+            }
+            if ((this.gridTimer <= 0 || goalMoved) && needFull) {
+                this.gridGoal = { x: destX, y: destY };
+                this.gridAge = 0;
+                // Sailable = clearance-weighted: mid-channel when there is a channel.
+                // Left at cell granularity — the waypoint-ahead pruning below turns the
+                // stair-steps into a smooth carrot ~170u in front of the boat, and any
+                // string-pulled shortcut would hug the very corners the weights avoid.
+                const seg = window.SailCheck.pathSailable(botGrid, [boat.x, boat.y], [destX, destY]);
+                if (seg && seg.length > 1) {
+                    const pts = seg.map(q => ({ x: q[0], y: q[1] }));
+                    pts[pts.length - 1] = { x: destX, y: destY };
+                    this.gridPath = pts.slice(1);   // drop the boat's own cell
+                } else if (!seg) {
+                    // No route right now (a drifting pocket closed). A stale path
+                    // beats a straight line into the ice — keep the old one and
+                    // retry next replan; the pocket moves.
+                    if (!this.gridPath) this.gridPath = null;
+                }
+                // Deterministic jitter (spread replans across the fleet WITHOUT touching
+                // the seeded RNG stream — every venue is a document now, so a draw here
+                // would shift every race on every venue and retire the golden traces).
+                this.gridTimer = 2.0 + ((this.boat.id * 0.37) % 1);
+            }
+            if (this.gridPath && this.gridPath.length) {
+                // PURE PURSUIT, not proximity pruning. Pruning-on-arrival goes stale
+                // the moment an escape manoeuvre throws the boat sideways: the old
+                // carrot sits behind the boat, the boat sails BACK to it, and the
+                // fleet ping-pongs along the ice wall. Chase the point a fixed
+                // distance ahead of wherever on the path the boat actually is.
+                const pts = this.gridPath;
+                let i0 = 0, best = Infinity;
+                for (let i = 0; i < pts.length; i++) {
+                    const d2 = (boat.x - pts[i].x) ** 2 + (boat.y - pts[i].y) ** 2;
+                    if (d2 < best) { best = d2; i0 = i; }
+                }
+                if (best > 400 * 400) {
+                    // Blown far off the plan (wiggle, avoidance, drift): the old line
+                    // is fiction now. Replan from where we really are, next tick.
+                    this.gridTimer = 0;
+                }
+                if (i0 > 0) pts.splice(0, i0);   // passed water is passed
+                // Lookahead scales with sea room. A close carrot in open water makes
+                // the beat re-decide its tack every few lengths — endless short
+                // tacks, half of them into the hysteresis penalty. A far carrot in a
+                // narrows cuts the corner into the ice. Clearance at the boat is the
+                // honest signal for which water this is.
+                let LOOK = 300;
+                if (botGrid._clear) {
+                    const c0 = botGrid.cell(boat.x, boat.y);
+                    const cl = botGrid._clear[Math.max(0, Math.min(botGrid.n * botGrid.n - 1,
+                        c0[1] * botGrid.n + c0[0]))];
+                    LOOK = Math.max(250, Math.min(900, cl * botGrid.res * 1.2));
+                }
+                // CROSS-TRACK CONTROL: a far carrot barely bends the course when the
+                // boat has drifted abeam of the corridor — leeway walks it onto the
+                // next shore before anything corrects. Shrinking the lookahead as
+                // cross-track error grows steepens the recovery angle (pure-pursuit
+                // basics), so the boat closes the corridor first, then runs it.
+                const xtk = Math.sqrt(best);
+                if (xtk > 150) LOOK *= Math.max(0.4, 1 - (xtk - 150) / 400);
+                // A close carrot dead to windward is unfetchable in one board — the
+                // boat tacks around it forever (measured: a full-speed orbit of a
+                // 250u-upwind carrot, the same disease sticky carrots cured on the
+                // ruler path). Beats need reach: enforce a minimum lookahead when
+                // the path ahead runs upwind.
+                {
+                    const lwL = getWindAt(boat.x, boat.y).direction;
+                    let jj = 0, accL = 0;
+                    while (jj < pts.length - 1 && accL < LOOK) {
+                        accL += Math.hypot(pts[jj + 1].x - pts[jj].x, pts[jj + 1].y - pts[jj].y);
+                        jj++;
+                    }
+                    const cw0 = pts[Math.min(jj, pts.length - 1)];
+                    const brgC = Math.atan2(cw0.x - boat.x, -(cw0.y - boat.y));
+                    // Dead-downwind carrots gybe-loop exactly like upwind ones tack-
+                    // loop (measured: a 75s gybing mill on the return leg, tgt
+                    // flipping between gybes every tick around a close carrot).
+                    const offUp = Math.abs(normalizeAngle(brgC - lwL));
+                    if ((offUp < 0.96 || offUp > Math.PI - 0.5) && LOOK < 420) LOOK = 420;
+                }
+                let j = 0, acc = 0;
+                while (j < pts.length - 1 && acc < LOOK) {
+                    acc += Math.hypot(pts[j + 1].x - pts[j].x, pts[j + 1].y - pts[j].y);
+                    j++;
+                }
+                const w = (j >= pts.length - 1) ? { x: destX, y: destY } : pts[j];
+                destX = w.x; destY = w.y;
             }
         }
 
@@ -743,8 +1386,12 @@ class BotController {
         if (!this.finalTarget || (destX-this.finalTarget.x)**2 + (destY-this.finalTarget.y)**2 > 50*50) needsReplan = true;
 
         // If pathable islands exist, use planner (banks are excluded — the
-        // river corridor is handled by the clamp + reactive avoidance)
-        const navIslands = state.course.navIslands || state.course.islands;
+        // river corridor is handled by the clamp + reactive avoidance).
+        // With a grid in play the graph gets ONLY the drifting floes: static land is
+        // the grid's job, and one keyholed ring in this list poisons every answer.
+        const navIslands = botGrid
+            ? (state.course.navIslands || state.course.islands || []).filter(i => i.isFloe)
+            : (state.course.navIslands || state.course.islands);
         if (navIslands && navIslands.length > 0) {
             if (needsReplan) {
                 this.finalTarget = { x: destX, y: destY };
@@ -803,7 +1450,12 @@ class BotController {
              if (this.forceTack === 0 || Math.abs(twa) > 0.4) {
                  this.forceTack = twa > 0 ? 1 : -1;
              }
-             return normalizeAngle(wd + this.forceTack * 0.75);
+             // Leg 0 keeps the close-hauled drive (it exists to cross the start line
+             // upwind). Mid-race recovery wants POWER first: from a standstill in a
+             // blow, close-hauled barely accelerates, so drive a close reach and let
+             // navigation take over once there is way on.
+             const driveTWA = this.boat.raceState.leg === 0 ? 0.75 : 1.05;
+             return normalizeAngle(wd + this.forceTack * driveTWA);
         }
         this.forceTack = 0;
 
@@ -1044,7 +1696,34 @@ class BotController {
             // 4c. Land feasibility: a tack whose projected position is inside
             // an island (or beyond the river's sailable water) ends in an
             // avoidance scramble and a forced tack-back — tax it up front.
-            if (state.course.islands && state.course.islands.length) {
+            // With a grid the test is EXACT — the old bounding-circle check was
+            // satisfied everywhere inside Glacier Sound's keyholed coast (r 8685),
+            // taxing both tacks equally, i.e., not at all. This is what makes a
+            // bot take the offshore tack off a lee shore instead of knife-edging
+            // along it on leeway until it grinds.
+            // Race legs only: in the packed start the projections land in the
+            // fleet/line clutter and the taxes overwhelm lane discipline (measured:
+            // DNS tripled when these ran on leg 0). Land venues only: on an open
+            // course the only "shore" is the arena wall, and taxing tacks near it
+            // re-tuned every layline on Clubhouse (tacks halved, +12s).
+            const gT = (this.boat.raceState.leg >= 1
+                && state.course._gridFixed && state.course._gridFixed.length)
+                ? state.course.botGrid : null;
+            if (gT) {
+                // DECISIVE, not advisory: on a beat the two tacks differ by well
+                // under 1.0 in VMG score, so a shore tax that is smaller than that
+                // never changes the choice and the boat knife-edges the lee shore
+                // on leeway until it grinds. A tack that ends in trouble must LOSE.
+                for (const [mult, wgt] of [[1, 1], [2.5, 0.6]]) {
+                    const px = boat.x + (projX - boat.x) * mult;
+                    const py = boat.y + (projY - boat.y) * mult;
+                    const cc = gT.cell(px, py);
+                    const idT = cc[1] * gT.n + cc[0];
+                    if (!gT.at(cc[0], cc[1])) { score -= 3.0 * wgt; }
+                    else if (gT._clear && gT._clear[idT] < 3) { score -= 1.5 * wgt; }
+                    else if (gT._leeW && gT._leeW[idT] > 1.2) { score -= 0.7 * wgt; }
+                }
+            } else if (state.course.islands && state.course.islands.length) {
                 for (const isl of state.course.islands) {
                     const dIsl2 = (projX - isl.x) ** 2 + (projY - isl.y) ** 2;
                     if (dIsl2 < isl.radius * isl.radius) { score -= 0.6; break; }
@@ -1177,6 +1856,15 @@ class BotController {
             return (currentTack === 1) ? hStarboard : hPort;
         }
 
+        // NO TACKING WITHOUT WAY ON IN A BLOW. Above ~16 kt a boat that tacks slow
+        // parks head-to-wind mid-turn and takes half a minute to recover — sail on,
+        // build speed close-hauled, and take the tack with steerage. (The layline
+        // return above still fires: missing the mark is worse than a slow tack.)
+        if (targetTackSign !== currentTack && this.boat.speed < 1.1
+            && getWindAt(this.boat.x, this.boat.y).speed > 16) {
+            return (currentTack === 1) ? hStarboard : hPort;
+        }
+
         if (targetTackSign !== currentTack) {
              this.tackCooldown = 5.0; // Reset cooldown on switch
         }
@@ -1192,8 +1880,10 @@ class BotController {
     }
 
     getApproachTime(distance, currentSpeed, stats) {
-        // Mini physics simulation matching updateBoat() acceleration
-        const targetGameSpeed = getTargetSpeed(0.7, false, state.wind.baseSpeed) * 0.25; // close-hauled ~40° TWA
+        // Mini physics simulation matching updateBoat() acceleration.
+        // Local wind speed: the crossing run happens where the boat is, and on a
+        // region-varied venue the venue-mean can be 5+ knots adrift of the line.
+        const targetGameSpeed = getTargetSpeed(0.7, false, getWindAt(this.boat.x, this.boat.y).speed) * 0.25; // close-hauled ~40° TWA
         const accelMod = 1.0 + stats.acceleration * 0.024;
 
         let speed = currentSpeed;
@@ -1229,7 +1919,11 @@ class BotController {
         this.startLinePct = Math.max(0.1, Math.min(0.9, this.startLinePct));
         const targetX = m0.x + dx * this.startLinePct;
         const targetY = m0.y + dy * this.startLinePct;
-        const wd = state.wind.direction;
+        // The wind AT THE LANE, not the course-centroid blend. Staging, the timed
+        // crossing run and OCS dips are all vectors off this direction; on Glacier
+        // Sound the global blend is ~110° adrift of the line's own wind and the whole
+        // prestart geometry silently rotated into the lee shore.
+        const wd = getWindAt(targetX, targetY).direction;
         const downwind = wd + Math.PI;
 
         // Signed perpendicular distance to the line (>0 = course side / over early), measured
@@ -1407,6 +2101,82 @@ class BotController {
         }
     }
 
+    // ── SHORT-HORIZON TRAJECTORY PLANNER ─────────────────────────────────────
+    // The reactive layer scores STRAIGHT probes; it cannot express "turn between
+    // these two floes, then bear away", which is the whole skill of pack sailing.
+    // This rolls out ~9s of simple boat kinematics (turn-toward then straight) for
+    // a fan of headings, moves every nearby floe along its KNOWN drift during the
+    // rollout, and scores progress toward the nav target minus predicted trouble.
+    // If the strategy's own heading rolls out clean it is kept untouched — the
+    // planner exists to resolve conflicts, not to re-steer clean water.
+    planFloeTrajectory(desiredHeading, navTarget) {
+        const boat = this.boat;
+        const g = state.course.botGrid;
+        const floesAll = state.course._floeObjs;
+        if (!g || !floesAll || !floesAll.length || !navTarget) return null;
+        const speedU = Math.max(70, boat.speed * 60);
+        const T = 9, DT = 0.75, STEPS = 12;
+        const reach = speedU * T + 150;
+        const floes = [];
+        for (const f of floesAll) {
+            const dx = f.x - boat.x, dy = f.y - boat.y;
+            if (dx * dx + dy * dy < (reach + f.radius) * (reach + f.radius)) floes.push(f);
+        }
+        if (!floes.length) return null;
+        const TURN = 0.85 * (1 + (boat.stats ? boat.stats.handling * 0.03 : 0));
+        const tux = navTarget.x - boat.x, tuy = navTarget.y - boat.y;
+        const tl = Math.hypot(tux, tuy) || 1;
+        const ux = tux / tl, uy = tuy / tl;
+        // Bold boats accept nearer contact; deft ones weave harder. Per-boat
+        // weights keep the fleet from converging on identical lines.
+        const aggro = boat.traits ? (boat.traits.aggro || 0) : 0;
+        const contactW = 5200 * (1 - 0.25 * aggro);
+
+        const roll = (off) => {
+            let x = boat.x, y = boat.y, hd = boat.heading;
+            const h0 = normalizeAngle(desiredHeading + off);
+            let score = -Math.pow(Math.abs(off), 1.3) * 40;
+            let contactT = Infinity;
+            for (let stp = 1; stp <= STEPS; stp++) {
+                const t = stp * DT;
+                const dh = normalizeAngle(h0 - hd);
+                hd += Math.sign(dh) * Math.min(Math.abs(dh), TURN * DT);
+                x += Math.sin(hd) * speedU * DT;
+                y += -Math.cos(hd) * speedU * DT;
+                const cc = g.cell(x, y);
+                if (!g.at(cc[0], cc[1])) {
+                    const idc = cc[1] * g.n + cc[0];
+                    if (g._soft && g._soft[idc]) { score -= (g._soft[idc] === 1 ? 120 : 420); }
+                    else { score -= 5000 * (1 - (t / T) * 0.8); break; }   // land
+                }
+                for (const f of floes) {
+                    const fx = f.x + (f.driftVx || 0) * t, fy = f.y + (f.driftVy || 0) * t;
+                    const rr = f.radius + 45;
+                    if ((x - fx) * (x - fx) + (y - fy) * (y - fy) < rr * rr) {
+                        if (t < contactT) contactT = t;
+                    }
+                }
+            }
+            if (contactT < Infinity) score -= contactW * Math.max(0, 1 - contactT / T);
+            score += (x - boat.x) * ux + (y - boat.y) * uy;
+            return { score, contactT };
+        };
+
+        const base = roll(0);
+        this._trajRisk = base.contactT;   // speed discipline reads this
+        // Deviate only for REAL trouble, and only for clearly better lines: micro
+        // dodges around 6-9s-away floes made the track a permanent zigzag (made-good
+        // ratio ~0.3 at full boat speed).
+        if (base.contactT > 4.5) return null;
+        let bestOff = 0, bestScore = base.score + 50;
+        for (const off of [0.15, -0.15, 0.35, -0.35, 0.6, -0.6, 0.9, -0.9, 1.3, -1.3, 1.7, -1.7]) {
+            const r = roll(off);
+            if (r.score > bestScore) { bestScore = r.score; bestOff = off; }
+        }
+        if (bestOff === 0) return null;
+        return normalizeAngle(desiredHeading + bestOff);
+    }
+
     /**
      * applyAvoidance() — RRS-aware collision avoidance cost function
      *
@@ -1448,6 +2218,12 @@ class BotController {
             1.2, -1.2,
             1.6, -1.6 // Wider options for emergency bailouts
         ];
+        // Near-reversals: the only exit when nosed into a berg or wall — a LAND
+        // problem. In an open-water start pack they are cheap chaos (at jam speeds
+        // the reversal surcharge is waived), so open venues keep the classic fan.
+        if (state.course._gridFixed && state.course._gridFixed.length) {
+            candidates.push(2.2, -2.2, 3.0, -3.0);
+        }
 
         let bestHeading = desiredHeading;
         let minCost = Infinity;
@@ -1535,6 +2311,15 @@ class BotController {
             }
         }
 
+        // JAM FACTOR — the RRS SHAPING terms (hold-course, bow-cross, duck,
+        // Rule 16) assume boats with way on. In a floe-narrowed channel at
+        // 0.3-1.0 kt they price full detours for boats that could not reach
+        // each other inside the lookahead, and five boats' detours feed each
+        // other — traced as a 300s five-boat mill on the return leg (seed
+        // 9104). Scale the SHAPING by fleet way-on; the hard collision terms
+        // below keep full weight at every speed, so Rule 14 never softens.
+        const jamF = Math.min(1, this.boat.speed / 1.4);
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
             
@@ -1551,9 +2336,9 @@ class BotController {
             // IMMINENT: No hold-course bonus — pure Rule 14 emergency avoidance.
             if (this.avoidanceRole === 'STAND_ON') {
                 if (this.riskState === 'MEDIUM') {
-                    cost += Math.abs(offset) * 3000;
+                    cost += Math.abs(offset) * 3000 * jamF;
                 } else if (this.riskState === 'HIGH') {
-                    cost += Math.abs(offset) * 1000;
+                    cost += Math.abs(offset) * 1000 * jamF;
                 }
             }
 
@@ -1590,8 +2375,8 @@ class BotController {
                         const dotForward = dx * ofx + dy * ofy;
 
                         // Penalize crossing bow (dotForward > 0), Reward ducking (dotForward < 0)
-                        if (dotForward > 0) cost += 1500;
-                        else cost -= 800;
+                        if (dotForward > 0) cost += 1500 * jamF;
+                        else cost -= 800 * jamF;
                     }
                 }
 
@@ -1604,7 +2389,7 @@ class BotController {
                     const newDelta = Math.abs(normalizeAngle(h - toOther));
                     if (newDelta < currentDelta - 0.05) {
                         // Heading toward other boat — Rule 16 penalty
-                        cost += 2000;
+                        cost += 2000 * jamF;
                     }
                 }
 
@@ -1669,40 +2454,130 @@ class BotController {
             // 3. Boundary - Segment Check
             if (state.course.boundary) {
                 const b = state.course.boundary;
-                // Check future point first (simple)
-                const dFut = Math.sqrt((futureX - b.x)**2 + (futureY - b.y)**2);
-                if (dFut > b.radius - 80) staticCollision = true;
+                if (b.poly && typeof Arena !== 'undefined') {
+                    // POLYGON arena: the bounding circle is far outside the real wall
+                    // (Glacier Sound's by kilometres), so the circle test below never
+                    // fired and boats drove flat into the invisible wall and pinned.
+                    // signedDist is positive inside; small or negative = at the wall.
+                    const sdFut = Arena.signedDist(b, futureX, futureY);
+                    if (sdFut < 80) staticCollision = true;
+                    else if (sdFut < 120) {
+                        // Same 80/120 margins the circle check used — a wider band
+                        // shied the whole fleet off the course edges and cost
+                        // Clubhouse seconds per beat.
+                        const sdCur = Arena.signedDist(b, boat.x, boat.y);
+                        if (sdFut < sdCur) proximityCost += 5000 * (120 - sdFut) / 120;
+                    }
+                } else {
+                    // Check future point first (simple)
+                    const dFut = Math.sqrt((futureX - b.x)**2 + (futureY - b.y)**2);
+                    if (dFut > b.radius - 80) staticCollision = true;
 
-                // Or check a few points if boundary is complex, but circle is easy.
-                // If we are heading OUT, future dist > current dist.
-                const dCurr = Math.sqrt((boat.x - b.x)**2 + (boat.y - b.y)**2);
-                if (dFut > dCurr && dFut > b.radius - 120) {
-                     proximityCost += 5000 * (dFut - (b.radius - 120)) / 120;
+                    // Or check a few points if boundary is complex, but circle is easy.
+                    // If we are heading OUT, future dist > current dist.
+                    const dCurr = Math.sqrt((boat.x - b.x)**2 + (boat.y - b.y)**2);
+                    if (dFut > dCurr && dFut > b.radius - 120) {
+                         proximityCost += 5000 * (dFut - (b.radius - 120)) / 120;
+                    }
                 }
             }
 
             // 4. Island - Collision Check (Local Layer)
+            // ⚠️ LAND GOES THROUGH THE GRID, NOT THE POLYGON TEST. The doc coastline
+            // is a KEYHOLED ring: its slit is a pair of coincident edges crossing
+            // open water, and segmentIntersectsPoly fires on them — an invisible
+            // wall. Solo boats with nothing around were measured being deflected
+            // dev 1.6-3.0 at the slit until they piled on the real shore. The grid
+            // answers "is this water" exactly, keyholes and all.
+            // When the trajectory planner steered this tick, floes are ITS domain —
+            // probing the floe-stamped grid here re-vetoes the exact thread it chose
+            // (stamps are hull+clearance+prediction, fatter than the rollout's truth)
+            // and the two deciders saw the rudder in opposite directions. Probe LAND
+            // ONLY (static grid) in that case.
+            const gAv = this._trajFloe
+                ? (state.course._botGridStatic || state.course.botGrid)
+                : state.course.botGrid;
+            if (gAv) {
+                const segLen = Math.hypot(futureX - boat.x, futureY - boat.y);
+                const stepsAv = Math.max(2, Math.min(8, Math.ceil(segLen / (gAv.res * 0.6))));
+                for (let sI = 1; sI <= stepsAv; sI++) {
+                    const frac = sI / stepsAv;
+                    const cc = gAv.cell(boat.x + (futureX - boat.x) * frac,
+                                        boat.y + (futureY - boat.y) * frac);
+                    if (!gAv.at(cc[0], cc[1])) {
+                        // Floe-plugged (SOFT) water is a grind, not a wall — the
+                        // route may deliberately cross it. Land is a wall.
+                        const idS = cc[1] * gAv.n + cc[0];
+                        if (gAv._soft && gAv._soft[idS]) {
+                            // Opening lead: light touch. Staying plugged: costly but
+                            // committable — when the route decides the narrows must
+                            // be ground through, the local layer has to let it
+                            // (weaving in front of a plugged gateway was measured
+                            // at 160s vs a ~25s grind).
+                            proximityCost += (gAv._soft[idS] === 1 ? 6000 : 12000) * (1 - frac * 0.5);
+                            continue;
+                        }
+                        // NEAR-TERM blockage is a wall; FAR blockage along a straight
+                        // 4-second probe is not — a probe that overshoots a gap into
+                        // the ice behind it must not veto the gap the router chose.
+                        // Hard zone is a fixed DISTANCE (a couple of boat-lengths of
+                        // turning room), not a fraction: at speed, 40% of the probe
+                        // was 190u and vetoed every thread the pack offered.
+                        if (frac * segLen <= 140) { staticCollision = true; cost += 500000; }
+                        else { proximityCost += 30000 * (1 - frac); }
+                        break;
+                    }
+                }
+                if (!staticCollision && gAv._clear) {
+                    const ce = gAv.cell(futureX, futureY);
+                    const idAv = ce[1] * gAv.n + ce[0];
+                    const clr = gAv._clear[idAv];
+                    if (clr > 0 && clr < 3) proximityCost += 10000 * (1 - clr / 3);
+                }
+            }
             if (nearIslands && nearIslands.length) {
                 // We use the segment from boat to future position
                 const start = { x: boat.x, y: boat.y };
                 const end = { x: futureX, y: futureY };
 
                 for (const isl of nearIslands) {
-                    // Drifting floes move ~50-150u within the lookahead window;
-                    // static geometry checks aim boats at where the gap WAS.
-                    // Padding the floe's effective radius by its possible
-                    // travel restores the margin (74% of arctic penalties were
-                    // floe groundings before this). Scaled with the drift speed
-                    // when the ice was sped up — the pad has to track it.
-                    const movePad = isl.isFloe ? 170 : 0;
+                    // Fixed land is the grid's job (above); the polygon test stays
+                    // for drifting floes, whose movement the grid only sees at its
+                    // refresh cadence. When the trajectory planner has already
+                    // steered this tick, floes are ITS job — double-counting them
+                    // here re-vetoes the thread it chose.
+                    if (isl.fromMask && gAv) continue;
+                    if (isl.isFloe && this._trajFloe) continue;
+                    // PREDICT the floe, don't pad it. Drift velocity is known
+                    // exactly, so test the candidate segment against the floe where
+                    // it WILL BE mid-lookahead (equivalently: shift the segment the
+                    // other way). The old blanket 170-unit pad closed every gap in
+                    // the pack whether the ice was coming or going; the honest
+                    // margin is prediction error, which is a fraction of that.
+                    const tMid = (lookaheadFrames / 60) * 0.5;
+                    const shX = isl.isFloe ? (isl.driftVx || 0) * tMid : 0;
+                    const shY = isl.isFloe ? (isl.driftVy || 0) * tMid : 0;
+                    const movePad = isl.isFloe ? 70 : 0;
+                    const startS = { x: start.x - shX, y: start.y - shY };
+                    const endS = { x: end.x - shX, y: end.y - shY };
                     // Quick Bounding Box/Circle Check
-                    const d = Geom.distToSegment({x: isl.x, y: isl.y}, start, end);
+                    const d = Geom.distToSegment({x: isl.x, y: isl.y}, startS, endS);
                     if (d < isl.radius + 30 + movePad) { // Close to island
-                        // Detailed Polygon Check
-                        // Check if segment intersects or if end point is inside
-                        if (Geom.segmentIntersectsPoly(start, end, isl.vertices) || (isl.isFloe && d < isl.radius + movePad * 0.6)) {
+                        // NEAR/FAR grading, like the land probe: a floe the probe
+                        // meets in its far half is seconds away — the next replan
+                        // and the router deal with it. Hard-vetoing everything the
+                        // 4s probe touches made the pack unthreadable, and this
+                        // venue is DESIGNED so the fast line threads the pack.
+                        const midS = { x: (startS.x + endS.x) / 2, y: (startS.y + endS.y) / 2 };
+                        const nearHit = Geom.segmentIntersectsPoly(startS, midS, isl.vertices)
+                            || (isl.isFloe && Geom.distToSegment({x: isl.x, y: isl.y}, startS, midS) < isl.radius + movePad * 0.6);
+                        const farHit = !nearHit && (Geom.segmentIntersectsPoly(midS, endS, isl.vertices)
+                            || (isl.isFloe && d < isl.radius + movePad * 0.6));
+                        if (nearHit) {
                             staticCollision = true;
                             cost += 500000; // HUGE penalty (Hard Constraint)
+                        } else if (farHit) {
+                            proximityCost += 25000;
                         } else {
                             // Proximity penalty (Buffer zone)
                             // Use Circle approx for proximity cost
@@ -1747,11 +2622,29 @@ class BotController {
 
             cost += proximityCost;
 
+            // COMMITMENT. The cost landscape in cluttered water is noisy tick to
+            // tick, and an argmin that re-picks freely at 10Hz saws the rudder.
+            // ⚠️ The discount must only break NEAR-TIES. At -400 it exceeded every
+            // deviation cost and became a lock: one wide dodge at the start and the
+            // boat kept "committing" to a reversal for thirty seconds, sailing away
+            // from the course at full speed against its own strategy.
+            if (this._lastAvoidChoice != null && this.boat.speed > 1.0 &&
+                state.course._gridFixed && state.course._gridFixed.length &&
+                Math.abs(normalizeAngle(h - this._lastAvoidChoice)) < 0.12) {
+                cost -= 60;
+            }
+            // A near-reversal is an emergency manoeuvre, not a preference. Its
+            // pow(|offset|,1.5) base cost is pocket change next to collision terms,
+            // which is correct in an emergency and wrong the rest of the time. A
+            // boat with way on shouldn't throw it away; a stuck boat may need to.
+            if (Math.abs(offset) > 1.8 && this.boat.speed > 1.0) cost += 250;
+
             if (cost < minCost) {
                 minCost = cost;
                 bestHeading = h;
             }
         }
+        this._lastAvoidChoice = bestHeading;
         
         // Expose how far avoidance pushed us off our intended course — the
         // no-contact foul detector reads this as "avoiding action taken".
@@ -2688,6 +3581,93 @@ const fxRand = mulberry32(0x5EED17);
 // amount of drama pays for.
 
 
+// The bots' grid, refreshed with the floes where they ARE. The static build knows
+// only authored land, so the router threaded floe fields blind and the fleet ground
+// through the pack at 60% speed loss per contact-frame. Rebuilding nav+clearance a
+// few times a minute keeps route, carrot and escape all seeing the same true water.
+// The wind fields ride along from the static build — regions don't move.
+function refreshBotGrid() {
+    const c = state.course;
+    if (!c || !c._gridFixed || !c._botGridStatic || !window.SailCheck) return;
+    if (c._botGridT != null && state.time - c._botGridT < 4) return;
+    c._botGridT = state.time;
+    // Floes go in as their HULL POLYGONS, not bounding circles. A lobed floe's
+    // circle is fatter than its collider almost everywhere — with 112 of them the
+    // circle-stamped grid closed 200-unit gaps that physically exist, and the
+    // "impossible" rounding maze was partly an artifact of the AI's own map.
+    // Positions at the MID-CADENCE prediction (+2s), like before.
+    const floePolys = [];
+    const floeCircles = [];
+    for (const f of (c.islands || [])) {
+        if (!f.isFloe) continue;
+        const sx = (f.driftVx || 0) * 2, sy = (f.driftVy || 0) * 2;
+        if (f.vertices && f.vertices.length >= 3) {
+            floePolys.push({ outer: f.vertices.map(v => [v.x + sx, v.y + sy]), holes: [] });
+        } else {
+            floeCircles.push({ x: f.x + sx, y: f.y + sy, radius: (f.radius || 0) + 15 });
+        }
+    }
+    const g = window.SailCheck.buildGrid(c._gridFixed.concat(floePolys), c.boundary, floeCircles);
+    g._leeW = c._botGridStatic._leeW;
+    g._wfx = c._botGridStatic._wfx;
+    g._wfy = c._botGridStatic._wfy;
+    g._wbin = c._botGridStatic._wbin;
+    // FLOE RISK: water near drifting ice is worth avoiding when open water is
+    // affordable — the router should go AROUND a pack unless threading it is
+    // clearly cheaper on the polar (this is what lets a route be "wider than the
+    // narrowest channel"). Bounded like every hint, so it can never invert the
+    // topology; a pack across the only channel still gets threaded.
+    const risk = new Uint8Array(g.n * g.n);
+    for (const f0 of (c.islands || [])) {
+        if (!f0.isFloe) continue;
+        const f = { x: f0.x + (f0.driftVx || 0) * 2, y: f0.y + (f0.driftVy || 0) * 2, radius: f0.radius || 0 };
+        const rr = f.radius + 120;
+        const c0 = g.cell(f.x - rr, f.y - rr), c1 = g.cell(f.x + rr, f.y + rr);
+        for (let j = Math.max(0, c0[1]); j <= Math.min(g.n - 1, c1[1]); j++) {
+            for (let i = Math.max(0, c0[0]); i <= Math.min(g.n - 1, c1[0]); i++) {
+                const [wx, wy] = g.world(i, j);
+                if ((wx - f.x) ** 2 + (wy - f.y) ** 2 < rr * rr) risk[j * g.n + i] = 1;
+            }
+        }
+    }
+    g._floeRisk = risk;
+    // Live floe objects, cached for the bots' trajectory planner (allocating a
+    // filtered list per controller tick is pure garbage pressure).
+    c._floeObjs = (c.islands || []).filter(i => i.isFloe);
+    // SOFT CELLS + LEADS. Water blocked by FLOES ONLY (navigable on the land-only
+    // static grid) is soft — ice contact costs speed, not a penalty. And because
+    // every floe's drift is KNOWN, each soft cell can be priced by its FUTURE:
+    // a lead that is OPENING (floe gone in ~8s) is water you arrive at as it
+    // clears; one that stays plugged is nearly a wall. Sea-ice pilots route on
+    // exactly this: take the opening lead, never the closing one.
+    const HORIZON = 8;
+    const futureBlk = new Uint8Array(g.n * g.n);
+    for (const f0 of (c.islands || [])) {
+        if (!f0.isFloe) continue;
+        const fx = f0.x + (f0.driftVx || 0) * HORIZON, fy = f0.y + (f0.driftVy || 0) * HORIZON;
+        const rr = (f0.radius || 0) + 15 + 44;
+        const c0 = g.cell(fx - rr, fy - rr), c1 = g.cell(fx + rr, fy + rr);
+        for (let j = Math.max(0, c0[1]); j <= Math.min(g.n - 1, c1[1]); j++) {
+            for (let i = Math.max(0, c0[0]); i <= Math.min(g.n - 1, c1[0]); i++) {
+                const [wx, wy] = g.world(i, j);
+                if ((wx - fx) ** 2 + (wy - fy) ** 2 < rr * rr) futureBlk[j * g.n + i] = 1;
+            }
+        }
+    }
+    // _soft: 0 = not soft; 1 = OPENING lead; 2 = staying plugged.
+    const soft = new Uint8Array(g.n * g.n);
+    const statNav = c._botGridStatic.nav;
+    for (let ii = 0; ii < soft.length; ii++) {
+        if (statNav[ii] === 1 && g.nav[ii] === 0) soft[ii] = futureBlk[ii] ? 2 : 1;
+    }
+    g._soft = soft;
+    // Persist the +8s occupancy for the ring scans: a sector that is clear NOW
+    // but CLOSING is the worst place to wait (measured 104/146 armed seconds
+    // lost in one) — the scans discount it and prefer opening leads.
+    g._futBlk = futureBlk;
+    c.botGrid = g;   // _clear is rebuilt lazily on first pathSailable
+}
+
 function updateIceFloes(dt) {
     if (!state.course.islands) return;
     const boundary = state.course.boundary;
@@ -2700,6 +3680,7 @@ function updateIceFloes(dt) {
 
     // Floes moved: invalidate the planner's inflated-island cache
     if (state.course.navVersion !== undefined) state.course.navVersion++;
+    refreshBotGrid();
 
     const floes = [];
     for (const isl of state.course.islands) {
@@ -6941,7 +7922,7 @@ function getBestVMGAngle(mode, windSpeed) {
 
 function getCharacterOptimalVMGAngle(mode, windSpeed, stats) {
     const angles = J111_POLARS.angles;
-    const speeds = [6, 8, 10, 12, 14, 16, 20];
+    const speeds = [6, 8, 10, 12, 14, 16, 20, 25, 30];
 
     // Apply pressure stat to effective wind (same formula as physics line 3582)
     const pressureFactor = stats.pressure * 0.05;
@@ -6952,7 +7933,10 @@ function getCharacterOptimalVMGAngle(mode, windSpeed, stats) {
     } else {
         ws = baseWind + (ws - baseWind) * (1.0 - pressureFactor);
     }
-    ws = Math.max(6, Math.min(20, ws));
+    // The physics polar was extended to 25 and 30 kt (overpowered phases 0-2);
+    // clamping the OPTIMIZER at 20 left the AI choosing angles for a wind it was
+    // not in, and blind to the heel tax it was about to pay.
+    ws = Math.max(6, Math.min(30, ws));
 
     let lower = 6, upper = 6;
     for (let i = 0; i < speeds.length - 1; i++) {
@@ -6960,7 +7944,7 @@ function getCharacterOptimalVMGAngle(mode, windSpeed, stats) {
             lower = speeds[i]; upper = speeds[i + 1]; break;
         }
     }
-    if (ws >= 20) { lower = 20; upper = 20; }
+    if (ws >= 30) { lower = 30; upper = 30; }
 
     const getSpeed = (wsKey, angleIdx) => {
         const data = J111_POLARS.speeds[wsKey];
@@ -6995,6 +7979,17 @@ function getCharacterOptimalVMGAngle(mode, windSpeed, stats) {
         boatSpeed *= (1.0 + posStat);
 
         const aRad = a * Math.PI / 180;
+        // Price the heel tax INTO the angle choice. The physics charges
+        // overpoweredFactor on the wind the boat is in; an optimizer that ignores
+        // it recommends polar-pretty angles that sail pressed and slow. Steady-
+        // state apparent wind from the candidate speed is enough of an estimate.
+        if (ws > OVERPOWERED.threshold - 2) {
+            const ax = ws * Math.cos(aRad) + boatSpeed;
+            const ay = ws * Math.sin(aRad);
+            const aws = Math.hypot(ax, ay);
+            const awa = Math.atan2(ay, ax);
+            boatSpeed *= overpoweredFactor(stats, heelPressure(aws, awa));
+        }
         const vmg = mode === 'upwind'
             ? boatSpeed * Math.cos(aRad)
             : boatSpeed * Math.cos(Math.PI - aRad);
@@ -7682,9 +8677,19 @@ function updateBoat(boat, dt) {
         // is how the river banks once ground boats along a wall to DNF.
         const c = Arena.clamp(state.course.boundary, boat.x, boat.y);
         if (c.clamped) {
+            const preX = boat.x, preY = boat.y;
             boat.x = c.x; boat.y = c.y;
             if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
                 window.onRaceEvent('collision_boundary', { boat });
+            }
+            // The wall is a contact like any other. Without this the AI had no
+            // reflex at the arena edge at all — the clamp silently killed speed and
+            // boats parked on the lee wall for minutes (the wiggle only knows boats
+            // and marks). Normal points from boat INTO the wall, like the island's.
+            if (boat.ai && !boat.isPlayer) {
+                const dxw = preX - c.x, dyw = preY - c.y;
+                const dw = Math.hypot(dxw, dyw) || 1;
+                boat.ai.collisionData = { type: 'island', normal: { x: dxw / dw, y: dyw / dw }, isWall: true };
             }
         }
     }
@@ -12995,6 +14000,13 @@ function checkIslandCollisions(dt) {
                  // Grounding Penalty: Lose 60% speed instantly + massive drag
                  boat.speed *= 0.4;
 
+                 // Tell the AI it is ON the ice, exactly as mark contact does. Without
+                 // this the avoidance cost function sees every candidate blocked (the
+                 // hull is inside the collider), falls back to least-deviation, and
+                 // holds course INTO the floe — measured 16-second grinds at 120
+                 // contacts/second on Glacier Sound.
+                 if (boat.ai) boat.ai.collisionData = { type: 'island', normal: res.axis, isFloe: !!isl.isFloe };
+
                  // Groundings are the Arctic's real cost driver — surface them
                  // so the eval harness can measure ice avoidance directly
                  // instead of inferring it from race time.
@@ -13039,7 +14051,8 @@ function checkIslandCollisions(dt) {
                  // What SURVIVES is Rule 19 above: if another boat denied you room at the
                  // obstruction, that is a real foul and it is HERS. That is the only
                  // penalty land can produce, and it is still assessed against the squeezer.
-                 if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat });
+                 // (The measurement event already fired above, once, with its isFloe tag —
+                 // this used to fire a second copy and every grounding counted double.)
             }
         }
     }
@@ -13700,7 +14713,13 @@ function initCourse() {
         // wander are drawn from the race RNG, so the layout is yours and every race
         // still plays out differently. Added BEFORE the generator so generated floes
         // reject candidates that would land on top of authored ones.
-        if (c.ice && c.ice.length) {
+        // Diagnostic ablation knobs (same spirit as window.__START / window.__NAV):
+        // __NOFLOES strips the drifting ice entirely; __FLOEFRAC (0..1) keeps a
+        // deterministic fraction of it — a difficulty dial for isolating where the
+        // AI's pack-handling breaks.
+        const floeFrac = (typeof window !== 'undefined' && window.__NOFLOES) ? 0
+            : (typeof window !== 'undefined' && window.__FLOEFRAC != null) ? window.__FLOEFRAC : 1;
+        if (c.ice && c.ice.length && floeFrac > 0) {
             const rngI = state.race.seed ? mulberry32(state.race.seed + 11) : Math.random;
             const authored = c.ice.map(f => {
                 const floe = makeFloe(f.x, f.y, f.r, rngI, f.local.map(p => ({ x: p.x, y: p.y })));
@@ -13711,6 +14730,14 @@ function initCourse() {
                 floe.currentShadow = f.currentShadow;
                 return floe;
             });
+            // Density dial: null out the decimated entries AFTER the map, so the
+            // shapeOrder indices below still line up (they index the authored array
+            // by document position). RNG draws above are untouched either way.
+            if (floeFrac < 1) {
+                for (let fi = 0; fi < authored.length; fi++) {
+                    if (Math.floor((fi + 1) * floeFrac) === Math.floor(fi * floeFrac)) authored[fi] = null;
+                }
+            }
             // IN DOCUMENT ORDER, not land-then-ice. `islands` is painted back to front and
             // is also the order collision and the nav graph walk, so it is the designer's
             // stacking rather than an artifact of which array a shape was stored in. A
@@ -13849,6 +14876,62 @@ function buildCoursePaths() {
         if (window.SailCheck && doc) {
             const fixed = window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed');
             grid = window.SailCheck.buildGrid(fixed, state.course.boundary, null);
+            // Kept for the periodic floe-aware rebuild (refreshBotGrid): same land,
+            // fresh floe circles, every few seconds.
+            state.course._gridFixed = fixed;
+        }
+        // The bots route on this same grid. Their visibility planner cannot inflate a
+        // keyholed coastline (see RoutePlanner.updateIslands), so on a designed venue
+        // static land belongs to the grid and only drifting floes stay in the graph.
+        state.course.botGrid = grid;
+        state.course._botGridStatic = grid;
+        state.course._botGridT = null;
+        // LEE-SHORE MASK for the bots' sailable router. A cell with blocked water a
+        // few cells DOWNWIND is a place the breeze sets a boat onto the rocks; tax
+        // it so routes run along windward shores and channel spines instead. Uses
+        // the mean regional field (no gusts, race start phase) — a one-time build.
+        if (grid) {
+            const N = grid.n, lee = new Float32Array(N * N);
+            const wfx = new Float32Array(N * N), wfy = new Float32Array(N * N);
+            // Per-cell wind, quantized for the TIME-COST table (16 direction bins x
+            // 6 speed bins — see SailCheck.buildTimeCost). Routing on TIME from the
+            // real polar is what the sailing-routing literature (isochrone methods)
+            // does: beating, reaching and running then price themselves and the
+            // router stops needing hand-tuned upwind fudges.
+            const wbin = new Uint8Array(N * N);
+            const SPDS = [8, 12, 16, 20, 25, 30];
+            const MARCH = 5, LEE_W = 2.5;
+            for (let j = 0; j < N; j++) {
+                for (let i = 0; i < N; i++) {
+                    const id = j * N + i;
+                    if (!grid.nav[id]) continue;
+                    const [wx, wy] = grid.world(i, j);
+                    const w = getWindAt(wx, wy);
+                    const wd = w.direction;
+                    // Unit vector TOWARD the wind (the unsailable direction), per cell —
+                    // the router prices beating with it, see pathSailable.
+                    wfx[id] = Math.sin(wd); wfy[id] = -Math.cos(wd);
+                    const dBin = ((Math.round(wd / (Math.PI * 2 / 16)) % 16) + 16) % 16;
+                    let sBin = 0, sBest = Infinity;
+                    for (let s = 0; s < SPDS.length; s++) {
+                        const dd = Math.abs((w.speed || 0) - SPDS[s]);
+                        if (dd < sBest) { sBest = dd; sBin = s; }
+                    }
+                    wbin[id] = dBin * 6 + sBin;
+                    // Flow direction (where the wind pushes you): downwind of here.
+                    const fx = -Math.sin(wd), fy = Math.cos(wd);
+                    for (let k = 1; k <= MARCH; k++) {
+                        const ci = Math.round(i + fx * k), cj = Math.round(j + fy * k);
+                        if (!grid.at(ci, cj)) {
+                            lee[id] = LEE_W * (MARCH - k + 1) / MARCH;
+                            break;
+                        }
+                    }
+                }
+            }
+            grid._leeW = lee;
+            grid._wfx = wfx; grid._wfy = wfy;
+            grid._wbin = wbin;
         }
         if (!state._dmcPlanner) state._dmcPlanner = new RoutePlanner();
         state.course.dmc = CoursePath.build(state.course.marks, state.course.route,

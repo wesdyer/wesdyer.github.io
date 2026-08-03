@@ -111,7 +111,10 @@ class RoutePlanner {
         // Fixed generous buffer for static land: 100 units. Drifting floes get
         // more — they move 20-60u between replans, eating the margin.
         this.inflatedIslands = islands.map(isl => {
-            const MARGIN = isl.isFloe ? 190 : 100;
+            // Floe margin shrank 190 -> 120 when avoidance learned to PREDICT floe
+            // drift instead of padding for it; an over-inflated pack reads as
+            // closed water and the planner refuses gaps boats can actually take.
+            const MARGIN = isl.isFloe ? 120 : 100;
             return {
                 x: isl.x, y: isl.y,
                 // Still the BOUNDING circle, and still only a broad-phase reject. A mitred
@@ -146,6 +149,22 @@ class RoutePlanner {
         if (this.inflatedIslands.length !== islands.length || this._islandsVersion !== version) {
             this.updateIslands(islands);
             this._islandsVersion = version;
+        }
+
+        // A target INSIDE an inflated obstacle is unreachable by construction: A*
+        // finds no incoming edge, falls through to the straight-line fallback, and
+        // the boat drives into the very thing being avoided. A carrot waypoint that
+        // lands within a drifting floe's margin does this constantly. Project such
+        // a target out through the obstacle's centre to just past its ring first.
+        for (const isl of this.inflatedIslands) {
+            const dx = target.x - isl.x, dy = target.y - isl.y;
+            const d2 = dx * dx + dy * dy;
+            if (d2 > isl.radius * isl.radius) continue;
+            if (!Geom.pointInPolygon(target, isl.vertices)) continue;
+            const d = Math.sqrt(d2) || 1;
+            const out = isl.radius + 20;
+            target = { x: isl.x + (dx / d) * out, y: isl.y + (dy / d) * out };
+            break;
         }
 
         // 1. Check direct line

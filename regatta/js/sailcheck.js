@@ -355,9 +355,229 @@ function routeEstimate(grid, marks, route, windDir, windSpeed, windAt) {
              calm, refKnots: REF, windDir, windSpeed };
 }
 
+// ── Clearance-weighted routing, for a boat that actually has to SAIL the path ──
+// `pathBetween` answers "does a hull fit" — its shortest path legitimately shaves
+// every corner at hull width and runs the length of walls. A boat under sail in a
+// breeze cannot hold a 44-unit offset line: it tacks, it heels, it gets set down.
+// So the AI routes on the same grid with a soft cost for water near the edges —
+// mid-channel when there is a channel, hull-width only when there is nothing else.
+
+// Chebyshev distance (in cells) from every navigable cell to the nearest blocked
+// one, by multi-source BFS. Blocked includes outside-the-arena, so the boundary
+// wall repels exactly like land does.
+function clearanceField(grid) {
+    const N = grid.n, size = N * N;
+    const dist = new Int16Array(size).fill(-1);
+    let q = [];
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+        const id = j * N + i;
+        if (!grid.nav[id]) { dist[id] = 0; q.push(id); }
+    }
+    let d = 0;
+    while (q.length) {
+        const next = [];
+        d++;
+        for (const cur of q) {
+            const ci = cur % N, cj = (cur - ci) / N;
+            for (const [di, dj] of NB) {
+                const a = ci + di, b = cj + dj;
+                if (a < 0 || b < 0 || a >= N || b >= N) continue;
+                const nid = b * N + a;
+                if (dist[nid] !== -1) continue;
+                dist[nid] = d;
+                next.push(nid);
+            }
+        }
+        q = next;
+    }
+    return dist;
+}
+
+// ── TIME-COST TABLE ─────────────────────────────────────────────────────────
+// What the sailing-routing literature actually optimizes is TIME, not distance:
+// each step is priced by the best speed the polar can make TOWARD that bearing in
+// that cell's wind (which is VMG when the bearing is upwind — tacking prices
+// itself). 16 wind-direction bins x 6 speed bins x 8 step directions, built once
+// from getTargetSpeed the first time a route is asked for.
+let _tfTab = null, _tfMin = 1;
+function buildTimeCost() {
+    const gts = (typeof window !== 'undefined') && window.getTargetSpeed;
+    if (!gts) return null;
+    const SPDS = [8, 12, 16, 20, 25, 30];
+    const tab = new Float32Array(16 * 6 * 8);
+    let lo = Infinity;
+    for (let d = 0; d < 16; d++) {
+        const wd = d * Math.PI * 2 / 16;
+        for (let s = 0; s < SPDS.length; s++) {
+            const ws = SPDS[s];
+            for (let k = 0; k < 8; k++) {
+                const bearing = Math.atan2(NB[k][0], -NB[k][1]);
+                let best = 0.5;
+                for (let twa = 25; twa <= 180; twa += 5) {
+                    const tr = twa * Math.PI / 180;
+                    const v = gts(tr, twa > 95, ws);
+                    for (const sgn of [1, -1]) {
+                        const toward = Math.cos((wd + sgn * tr) - bearing) * v;
+                        if (toward > best) best = toward;
+                    }
+                }
+                const tf = Math.min(4, Math.max(0.6, 10 / best));   // "time per unit", 10kt reference
+                tab[(d * 6 + s) * 8 + k] = tf;
+                if (tf < lo) lo = tf;
+            }
+        }
+    }
+    _tfMin = lo;
+    return tab;
+}
+
+// A* over the grid where a step near the edge costs extra. PAD is how many cells of
+// clearance stop mattering; the penalty at the wall multiplies a step, decaying
+// linearly to 1 at PAD. When the course build supplied per-cell wind (_wbin), the
+// BASE cost of a step is sailing time from the polar rather than distance.
+function pathSailable(grid, from, to) {
+    if (!grid._clear) grid._clear = clearanceField(grid);
+    const clear = grid._clear;
+    // Strong preference for wide water. A boat beats and makes leeway: a 300-unit
+    // channel costs it constant contact, so narrow water has to price like the
+    // detour it really is. At PAD 8 a wall-adjacent step costs 7x — a 300u-wide
+    // channel (all cells ≤3 clear) runs ~4-5x, so a parallel channel twice as far
+    // but wide still wins.
+    const PAD = 8, EDGE_W = 6.0;
+    // Endpoint snapping accepts SOFT (floe-plugged) cells: a goal inside drifting
+    // ice is a real goal — snapping it to the nearest hard-open water relocated
+    // every zone-interior target OUTSIDE the pack ring, and no rounding could
+    // ever be aimed at, let alone armed.
+    const okCell = (i, j) => {
+        if (grid.at(i, j)) return true;
+        if (!grid._soft || i < 0 || j < 0 || i >= grid.n || j >= grid.n) return false;
+        return grid._soft[j * grid.n + i] > 0;
+    };
+    const snap = (wx, wy) => {
+        const [ci, cj] = grid.cell(wx, wy);
+        if (okCell(ci, cj)) return [ci, cj];
+        for (let r = 1; r <= 18; r++) {
+            for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+                if (Math.max(Math.abs(di), Math.abs(dj)) !== r) continue;
+                if (okCell(ci + di, cj + dj)) return [ci + di, cj + dj];
+            }
+        }
+        return null;
+    };
+    const s = snap(from[0], from[1]);
+    const g = snap(to[0], to[1]);
+    if (!s || !g) return null;
+    const N = grid.n, size = N * N;
+    // Float64, and improvements must clear an epsilon: storing float64 candidates
+    // into a float32 table let two cells "improve" each other by rounding noise
+    // forever — an unbounded heap and a 4GB OOM in about a minute.
+    const gScore = new Float64Array(size).fill(Infinity);
+    const prev = new Int32Array(size).fill(-1);
+    const si = s[1] * N + s[0], gi = g[1] * N + g[0];
+    // Binary heap of [f, id]
+    const heap = [];
+    const push = (f, id) => {
+        heap.push([f, id]);
+        let k = heap.length - 1;
+        while (k > 0) {
+            const p = (k - 1) >> 1;
+            if (heap[p][0] <= heap[k][0]) break;
+            const t = heap[p]; heap[p] = heap[k]; heap[k] = t; k = p;
+        }
+    };
+    const pop = () => {
+        const top = heap[0], last = heap.pop();
+        if (heap.length) {
+            heap[0] = last;
+            let k = 0;
+            for (;;) {
+                const l = 2 * k + 1, r = l + 1;
+                let m = k;
+                if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+                if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+                if (m === k) break;
+                const t = heap[m]; heap[m] = heap[k]; heap[k] = t; k = m;
+            }
+        }
+        return top;
+    };
+    if (_tfTab === null && grid._wbin) _tfTab = buildTimeCost();
+    const TF = grid._wbin ? _tfTab : null;
+    const wbin = grid._wbin;
+    const gx = gi % N, gy = (gi - gx) / N;
+    // Admissible with time-costs: no step is cheaper than the fastest point of
+    // sail in the strongest wind on the table.
+    const hMul = TF ? _tfMin : 1;
+    const h = (id) => {
+        const ci = id % N, cj = (id - ci) / N;
+        return Math.hypot(ci - gx, cj - gy) * hMul;
+    };
+    gScore[si] = 0;
+    push(h(si), si);
+    while (heap.length) {
+        const [f, cur] = pop();
+        if (cur === gi) break;
+        const ci = cur % N, cj = (cur - ci) / N;
+        if (f - h(cur) > gScore[cur] + 1e-6) continue;   // stale heap entry
+        for (let k = 0; k < 8; k++) {
+            const di = NB[k][0], dj = NB[k][1];
+            const a = ci + di, b = cj + dj;
+            // SOFT cells (floe-plugged water, land-free) are passable at a stiff
+            // multiplier — grinding through a drifted plug beats waiting minutes
+            // for it to open, and this venue is designed around that trade.
+            const soft = grid._soft ? (id2) => grid._soft[id2] === 1 : null;
+            const passable = (ai, bi) => grid.at(ai, bi) ||
+                (soft && ai >= 0 && bi >= 0 && ai < N && bi < N && soft(bi * N + ai));
+            if (!passable(a, b)) continue;
+            if (di && dj && (!passable(ci + di, cj) || !passable(ci, cj + dj))) continue;
+            const nid = b * N + a;
+            const isSoft = !grid.at(a, b);
+            const c = clear[nid];
+            // BASE COST IS SAILING TIME when the wind table exists: the polar's best
+            // speed toward this step's bearing, in this cell's wind. Beating prices
+            // itself (VMG), reaches are cheap, and time is a true objective — unlike
+            // hint weights it cannot invert the topology.
+            const base = TF ? TF[wbin[nid] * 8 + k] : 1;
+            // ⚠️ REMAINING WEIGHTS ARE ROUTE HINTS, NOT WALLS — bounded, so the
+            // worst hint-driven detour stays small (the 7x-wall-cost cove loop
+            // lives in memory as the cautionary tale).
+            const narrow = c >= PAD ? 0 : (PAD - c) / PAD;
+            // Softened once the local layers (trajectory planner, graded probes,
+            // hull stamps) proved they can execute tighter water — the wide-loop
+            // conservatism was costing ~2km per transit against a 420s clock.
+            let extra = 1.0 * narrow;                       // stand off walls
+            if (grid._leeW) extra += Math.min(0.7, grid._leeW[nid] * 0.28);  // lee shore
+            if (grid._floeRisk && grid._floeRisk[nid]) extra += 0.55;        // drifting-ice water
+            if (grid._wfx && !TF) {
+                const sl = Math.hypot(di, dj);
+                const up = (di * grid._wfx[nid] + dj * grid._wfy[nid]) / sl;
+                if (up > 0.7) extra += ((up - 0.7) / 0.3) * (0.9 * narrow);
+            }
+            let w = base * (1 + Math.min(1.2, extra));
+            // 1 = opening lead (arrive as it clears), 2 = staying plugged (a grind
+            // that is nearly a wall — only worth it against a huge detour).
+            if (isSoft) w *= (grid._soft[nid] === 1 ? 2.5 : 6);
+            const step = (di && dj ? Math.SQRT2 : 1) * w;
+            const cand = gScore[cur] + step;
+            if (cand < gScore[nid] - 1e-4) {
+                gScore[nid] = cand;
+                prev[nid] = cur;
+                push(cand + h(nid), nid);
+            }
+        }
+    }
+    if (prev[gi] === -1 && gi !== si) return null;
+    const out = [];
+    let cur = gi;
+    while (cur !== si) { const ci = cur % N; out.push(grid.world(ci, (cur - ci) / N)); cur = prev[cur]; }
+    out.push(grid.world(s[0], s[1]));
+    out.reverse();
+    return out;
+}
+
 window.SailCheck = {
     HULL_R, CLEARANCE, RES,
     buildGrid, pathBetween, nearestNav, roundingArc, routeWaypoints,
-    legVMG, routeEstimate
+    legVMG, routeEstimate, pathSailable, clearanceField
 };
 })();
