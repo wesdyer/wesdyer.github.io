@@ -6021,6 +6021,20 @@ const MUSIC_TRACKS = {
     //   had been proposed and never tested — mode first, named as a scale degree —
     //   and it made no difference. Five exotic modes briefed, five flattened.
     'racing-lake': { file: 'assets/audio/lake.mp3',              loopEnd: 240.5, trim: 0.98 },
+    // Duckling Pond — ingested ahead of the venue itself, so this cue is INERT until a
+    // venue registers under the `duckling` key; targetCue only builds keys from venues
+    // that exist. Numbers from music_loop/music_spec, per the header rule:
+    //   The 0.0 dB seam is the headline. Its 89.5 s body is the new shortest in the
+    //   project (lighthouse-cove held it at 94.0), which is the same trade that entry
+    //   documents — a seam nobody can hear, heard often, beats an audible one heard
+    //   rarely. 24 s of finale plus a 4.2 s fade are discarded past loopEnd: the ending
+    //   is denser than anything it could return to, which is what an ending is.
+    //   8.0% in the 900 Hz–6.5 kHz wind band is the LOWEST of any accepted track
+    //   (swamp held it at 18.8) — music.md §4 wants a venue's identity out of the
+    //   bed's band, and a pond for beginners should leave the most room of anywhere.
+    //   C major r=0.86, ~66 BPM pulse, centroid 797 Hz, 12.2 dB dynamics: warm, slow,
+    //   and alive without being loud — ducklings at sunset, as briefed.
+    'racing-duckling': { file: 'assets/audio/duckling-pond.mp3', loopStart: 1.5, loopEnd: 91.0, trim: 0.87 },
 };
 
 const MUSIC_VOLUME = 0.3;       // master, before per-track trim
