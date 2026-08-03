@@ -276,12 +276,25 @@ function runChecks(ctx) {
         const x0 = ex.minX, y0 = ex.minY;
         const idx = (i, j) => j * n + i;
         const water = new Uint8Array(n * n);
+        // Shape bounding boxes once, not per cell: the raster asks every cell about
+        // every shape, and on a hundred-shape venue the ring tests were the whole cost.
+        const lbb = land.map(l => {
+            let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+            for (const p of l.outer) {
+                if (p[0] < a) a = p[0]; if (p[1] < b) b = p[1];
+                if (p[0] > c) c = p[0]; if (p[1] > d) d = p[1];
+            }
+            return { l, a, b, c, d };
+        });
         for (let j = 0; j < n; j++) {
             for (let i = 0; i < n; i++) {
                 const wx = x0 + (i + 0.5) * res, wy = y0 + (j + 0.5) * res;
                 if (!window.Arena.contains(bnd, wx, wy)) continue;
                 let onLand = false;
-                for (const l of land) if (pointOnLand(wx, wy, l)) { onLand = true; break; }
+                for (const s of lbb) {
+                    if (wx < s.a || wx > s.c || wy < s.b || wy > s.d) continue;
+                    if (pointOnLand(wx, wy, s.l)) { onLand = true; break; }
+                }
                 if (!onLand) water[idx(i, j)] = 1;
             }
         }
@@ -339,11 +352,12 @@ function runChecks(ctx) {
             const half = size / 2;
             let inMap = 0, inArena = 0, inBoth = 0;
             const N = 160;
+            // Sample over the union's bounding box so both fractions are valid. The box
+            // is loop-invariant — it was being recomputed for all 25,600 samples.
+            const ae = window.Arena.extent(bnd);
+            const ext = Math.max(half, (ae.maxX - ae.minX) / 2, (ae.maxY - ae.minY) / 2) * 1.02;
             for (let j = 0; j < N; j++) {
                 for (let i = 0; i < N; i++) {
-                    // Sample over the union's bounding box so both fractions are valid.
-                    const ae = window.Arena.extent(bnd);
-                    const ext = Math.max(half, (ae.maxX - ae.minX) / 2, (ae.maxY - ae.minY) / 2) * 1.02;
                     const wx = (ae.minX + ae.maxX) / 2 - ext + (2 * ext) * (i + 0.5) / N;
                     const wy = (ae.minY + ae.maxY) / 2 - ext + (2 * ext) * (j + 0.5) / N;
                     const m = Math.abs(wx) <= half && Math.abs(wy) <= half;

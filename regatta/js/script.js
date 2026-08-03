@@ -3214,11 +3214,21 @@ function ambientCurrentAt(x, y) {
 
 function getCurrentAt(x, y) {
     const base = ambientCurrentAt(x, y);
-    // AUTHORED CURRENT REGIONS. Same construction as wind regions — polygon, soft edge,
-    // additive — but the quantity is a FLOW rather than a modifier: a patch of water
-    // either has a stream running through it or it does not, so a region carries an
-    // absolute direction and speed. Summed as VECTORS on top of the ambient current, so
-    // two overlapping streams produce a resultant instead of one of them winning.
+    // AUTHORED CURRENT REGIONS. The same construction as wind regions — polygon,
+    // centered soft edge, and overlapping regions AVERAGED as a partition of unity,
+    // with the leftover weight going to the ambient stream.
+    //
+    // Averaging is deliberate, and it replaced summing. A region states the flow THERE —
+    // an absolute set and rate — and summing meant two statements about the same water
+    // reinforced each other: the river mouth read 2.2 kt where the strongest authored
+    // stream was 2.0, and the bay read 1.35 kt where nothing authored more than 0.3,
+    // because three faint drift regions and the river's soft edge all piled up.
+    // Averaged, overlap means BLEND: the river's jet dies smoothly into the bay drift it
+    // overlaps, and nothing anywhere can run faster than the strongest thing authored.
+    //
+    // Direction averages as unit vectors and speed as a scalar, exactly as the wind
+    // blend does and for the same reason: two opposed streams should hand over from one
+    // to the other, not cancel into invented slack halfway.
     //
     // Touches no RNG (state.time only), so a current region cannot move the eval anchor.
     const creg = state.course.currentRegions;
@@ -3228,28 +3238,38 @@ function getCurrentAt(x, y) {
         return f === 1 ? base : { speed: base.speed * f, direction: base.direction };
     }
 
-    let cx = 0, cy = 0, touched = false;
-    if (base && base.speed > 0) {
-        cx = Math.sin(base.direction) * base.speed;
-        cy = -Math.cos(base.direction) * base.speed;
-    }
+    let wsum = 0, ux = 0, uy = 0, sacc = 0;
     for (const r of creg) {
         // Edge ramp centered on the outline, exactly as wind regions do — see
         // VenueDoc.regionWeight. The cull box pads by falloff/2 for the outside half.
         const bb = r.bb, pad = (r.falloff || 0) / 2 + 1;
         if (x < bb.minX - pad || x > bb.maxX + pad || y < bb.minY - pad || y > bb.maxY + pad) continue;
         const sd = Arena.signedDist(r, x, y);
-        const intensity = VenueDoc.regionWeight(sd, r.falloff);
-        if (intensity <= 0) continue;
+        const w = VenueDoc.regionWeight(sd, r.falloff);
+        if (w <= 0) continue;
         const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
         const dir = r.direction + r.dirVar * osc;
-        const spd = Math.max(0, r.speed + r.speedVar * osc) * intensity;
-        cx += Math.sin(dir) * spd;
-        cy += -Math.cos(dir) * spd;
-        touched = true;
+        ux += Math.sin(dir) * w;
+        uy += -Math.cos(dir) * w;
+        sacc += Math.max(0, r.speed + r.speedVar * osc) * w;
+        wsum += w;
     }
-    if (!touched) return base;
-    const out = { speed: Math.hypot(cx, cy), direction: Math.atan2(cx, -cy) };
+    if (wsum <= 0) {
+        // Outside every region the water is the ambient stream, shaded like any flow.
+        if (!base || !(base.speed > 0.001)) return base;
+        const f = shadowAt(x, y, base.direction, 'current');
+        return f === 1 ? base : { speed: base.speed * f, direction: base.direction };
+    }
+    // The leftover weight is the ambient stream's share — a region's soft edge fades
+    // into whatever the water was already doing, which is slack on most venues.
+    const wBase = Math.max(0, 1 - wsum);
+    if (base && base.speed > 0 && wBase > 0) {
+        ux += Math.sin(base.direction) * wBase;
+        uy += -Math.cos(base.direction) * wBase;
+        sacc += base.speed * wBase;
+    }
+    const total = wsum + wBase;
+    const out = { speed: total > 0 ? sacc / total : 0, direction: Math.atan2(ux, -uy) };
     // Slack water behind a solid thing. Applied to the RESULTANT, because what a rock
     // shelters you from is whatever is actually flowing there — ambient stream and authored
     // regions together — not one contribution to it.
@@ -14900,6 +14920,16 @@ function buildCoursePaths() {
         // it so routes run along windward shores and channel spines instead. Uses
         // the mean regional field (no gusts, race start phase) — a one-time build.
         if (grid) {
+            // The mask samples the wind in EVERY cell — N² region blends — so it is keyed
+            // on what it depends on and skipped when nothing changed. The grid object
+            // itself is cached by SailCheck now, so the mask rides along on it: dragging a
+            // mark rebuilds neither the grid nor this.
+            let leeKey = `${state.wind.baseDirection}|${state.wind.baseSpeed}`;
+            for (const r of (state.course.windRegions || [])) {
+                leeKey += `|${r.direction},${r.speed},${r.dirVar},${r.speedVar},${r.period},${r.falloff},${r.bb ? r.bb.minX + r.bb.maxY : 0},${r.poly ? r.poly.length : 0}`;
+            }
+            if (grid._leeKey !== leeKey) {
+            grid._leeKey = leeKey;
             const N = grid.n, lee = new Float32Array(N * N);
             const wfx = new Float32Array(N * N), wfy = new Float32Array(N * N);
             // Per-cell wind, quantized for the TIME-COST table (16 direction bins x
@@ -14941,6 +14971,7 @@ function buildCoursePaths() {
             grid._leeW = lee;
             grid._wfx = wfx; grid._wfy = wfy;
             grid._wbin = wbin;
+            }
         }
         if (!state._dmcPlanner) state._dmcPlanner = new RoutePlanner();
         state.course.dmc = CoursePath.build(state.course.marks, state.course.route,
@@ -14953,6 +14984,11 @@ function buildCoursePaths() {
 }
 
 function resetGame() {
+    // The compile cache exists so ONE reset's many compile consumers (the editor's
+    // checks, stats and inspectors) pay for one compile. A new reset may follow a
+    // document edited in place — the editor's, or a test's — so the cache dies here,
+    // at the one gate every rebuild passes through.
+    if (window.VenueDoc && window.VenueDoc.invalidateCompile) window.VenueDoc.invalidateCompile();
     loadSettings();
     if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
     state.camera.target = 'boat';

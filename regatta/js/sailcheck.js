@@ -38,7 +38,43 @@ function segDist(px, py, a, b) {
 // A gap narrower than a hull simply is not there. That is the difference between this
 // and the plain flood fill in venuecheck, which happily reported Glacier Sound
 // navigable through channels a boat cannot fit down.
+// ── Grid cache ──────────────────────────────────────────────────────────────
+// Rasterising the grid walks every cell against every shape edge — hundreds of
+// milliseconds on a big venue — and one editor commit asks for the same grid several
+// times (the compile's stats path, the course path build, the estimate). The inputs
+// are pure geometry, so a cheap content FINGERPRINT (counts + coordinate sums, which
+// any real edit perturbs) keys a small cache. Entries are shared, not cloned: every
+// consumer treats `nav` as read-only, and the fields some attach (_leeW, _wbin,
+// _timeCost) are keyed caches in their own right.
+const _gridCache = [];   // [{ key, grid }], most recent last, max 3
+function _gridKey(land, arena, obstacles) {
+    let h = 0, n = 0;
+    const add = (v) => { h += v * (++n * 0.6180339887 % 1 + 1); };
+    for (const l of (land || [])) {
+        for (const ring of [l.outer].concat(l.holes || [])) {
+            add(ring.length);
+            for (const p of ring) { add(p[0]); add(p[1]); }
+        }
+    }
+    if (arena) {
+        if (arena.poly) for (const p of arena.poly) { add(p[0]); add(p[1]); }
+        else { add(arena.x || 0); add(arena.y || 0); add(arena.radius || 0); }
+    }
+    for (const o of (obstacles || [])) { add(o.x); add(o.y); add(o.radius || 0); }
+    return `${(land || []).length}|${n}|${h}`;
+}
 function buildGrid(land, arena, obstacles) {
+    const key = _gridKey(land, arena, obstacles);
+    for (let i = _gridCache.length - 1; i >= 0; i--) {
+        if (_gridCache[i].key === key) return _gridCache[i].grid;
+    }
+    const grid = buildGridRaw(land, arena, obstacles);
+    _gridCache.push({ key, grid });
+    if (_gridCache.length > 3) _gridCache.shift();
+    return grid;
+}
+
+function buildGridRaw(land, arena, obstacles) {
     const ex = window.Arena.extent(arena);
     const n = Math.ceil(Math.max(ex.maxX - ex.minX, ex.maxY - ex.minY) / RES) + 1;
     const x0 = ex.minX, y0 = ex.minY;

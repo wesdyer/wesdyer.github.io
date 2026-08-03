@@ -16,7 +16,8 @@ and the exact prompt that produced each track. Every claim here was measured; wh
 number is quoted, the tool that produces it is named in §14.
 
 **Status:** all 13 cues are filled and purpose-written — ten venues, menu, results, and
-a house fallback. Four more tracks exist for venues that have not been built yet.
+a house fallback. Four more tracks exist for venues that have not been built yet, and a
+brief for a proposed tutorial cue is recorded in §12.4.
 
 ---
 
@@ -333,6 +334,9 @@ the COUNTDOWN**, so its opening should suit manoeuvring, not a starting gun.
 `harbor-results`, `breezy-race`, `prestart-countdown`, `ocean-take1/2/3`, `lake-take1`.
 Unassigning is how a track leaves the game; deleting is not.
 
+A tutorial venue — Duckling Pond, `pond`, [venues.md](venues.md) §15 — is specced
+but unbuilt; its cue brief is §12.4. Nothing in code yet.
+
 ## 10. The registry — **Rule**
 
 Instruments carry the place; tempo, density and form carry the mechanic. A new venue
@@ -359,6 +363,7 @@ must claim unclaimed territory.
 | Flamingo Reach | `wetland` | muted trumpet, vibraphone | a groove that circles and never resolves, plus one flurry | 108 | E major |
 | Fallwater Fjord | `fjord` | nyckelharpa, frame drum | driving; the falls are the slalom | 124 | A minor |
 | Emberfall Isle | `volcanic` | struck metal (anvil, brake drums), taiko | percussion-led, the only one — the gauntlet | 132 | C minor |
+| Duckling Pond | `pond` | felt piano | short phrases that always resolve — the lesson | 88 | C major |
 
 ⚠️⚠️ **Rule 4 does not scale past about ten venues.** Ten used
 72/84/88/92/96/100/104/106/112/120; four more can only slot 4–8 BPM from a neighbour,
@@ -624,6 +629,69 @@ metal lives exactly in the bed's band, a risk this brief created by asking for m
 **and** brightness. `_probe_audio.js volcanic` is mandatory before accepting; if the
 venue turns out breezy, let the taiko carry more and the bells less. ⚠️ Its key reading
 is unmeasurable (§14).*
+
+### 12.4 Tutorial — Duckling Pond `pond` — proposed, **Intent** · *venue specced, not built*
+
+The learn-to-sail tutorial has a venue: **Duckling Pond** ([venues.md](venues.md) §15),
+a small club pond, mode-gated behind Sailing School. It is unbuilt, so per §7 there
+must be **no `MUSIC_TRACKS` row** until it lands — this section records the brief and
+the reasoning so the track can be generated and judged ahead of need.
+
+**What the cue is.** The player is *reading and doing* — instructional text on screen,
+one manoeuvre at a time, at their own pace. That makes the tutorial kin to Clubhouse
+Point, not to the menu: the music is a bed under sustained attention, and anything
+written to be noticed is competing with the lesson. But it is not Clubhouse Point's
+slot. The eval anchor is *forgettable on purpose*; the tutorial should be **patient and
+encouraging** — a first sail with a friendly instructor, not a metronome. The
+difference is warmth, not melody.
+
+**Constraints that fall out of the design:**
+
+1. **On the water at ~7 kn steady, so §4 barely constrains it.** The pond sits in the
+   light band with `swamp` and `lake`, where the bed nearly vanishes — the whole
+   spectrum is available, which is exactly right for music under instruction text.
+   Give it a top anyway (§4's murk warning), and re-measure headroom if the venue's
+   wind changes.
+2. **Unbounded session length.** A tutorial has no 213 s clock; a slow reader may sit
+   on one step for minutes. The seam will be heard **more often than any race track's**,
+   so this cue values a clean seam the way the menu does — ask for 4–6 min, but per §5
+   take the cleaner seam over the longer body if they conflict.
+3. **Starts at full density, gently** (§5). The cue fires when the tutorial opens, and
+   `loopStart` will delete any build-in. "Gentle" must be an *arrangement* that is
+   already complete at bar one, not a track that assembles itself.
+4. **No hook, stricter than anywhere else.** A phrase you can hum after ten minutes of
+   tacking practice is a phrase you resent. But `melodic lead` excluded outright gave
+   Clubhouse Point its blandness — here the mechanism is **short phrases that always
+   resolve**: nothing left hanging, nothing to wait for, nothing to remember.
+5. **Instrumental, obviously** — the one cue where a lyric would collide with literal
+   on-screen text, not just tactical thinking.
+
+**Registry note.** The claim is recorded in §10: **felt piano as lead** — soft attack,
+close, unhurried, the right voice for a classroom — over the house core (upright bass,
+brushed kit), which claims no territory. Nylon guitar is Stillwater's claim; keep it
+out. Slow-band neighbours are Spoonbill Flats at 76 and Glacier Sound/Stillwater at 83
+— at 88 with a piano lead nothing collides.
+
+**Duckling Pond** `pond` · Weirdness 15 · SI 85 · 4–6 min
+```
+C major calm acoustic instrumental, 88 BPM, soft felt piano playing short two-bar phrases that always resolve, warm upright bass, lightly brushed kit, steady and even from the first bar, small warm room, patient and reassuring
+```
+`vocals, wordless vocalise, whistling, melodic hook, strings, cinematic, epic, dark, muffled, sparse arrangement, long silences, ambient drone, build-up`
+
+*Judging notes, ahead of a take: expect flux in the 0.10–0.14 band — below Stillwater,
+above nothing-happening; a reading over ~0.15 means it is too interesting for the job.
+Dynamics should be modest and **aperiodic** — this brief is Sockeye Run's kind of flat
+(steadiness is the point), not Bluewater's kind of failure. Check the §5 density trap by
+hand: "soft felt piano" is precisely the *dense but quiet* opening `loopStart` cannot
+see. And play it straight after `seatrials` — they are neighbours in function and must
+read as siblings, not as the same track twice.*
+
+**Wiring, when the venue lands:** because the tutorial *is* a venue, no `targetCue()`
+change is needed — prestart and racing resolve to `racing-pond` through the standard
+mechanism, exactly like every other venue. One `MUSIC_TRACKS` row from
+`music_loop.py` (§7 — never hand-edited), file at `assets/audio/pond.mp3`, then
+`_probe_audio.js pond` to confirm headroom against the live bed — expect it near the
+top of the §11 ladder, beside `swamp`.
 
 ## 13. Making it one album — **Intent**
 

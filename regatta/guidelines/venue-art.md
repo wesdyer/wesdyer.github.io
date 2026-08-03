@@ -67,6 +67,7 @@ eye-path, focal element, wildlife witness).
 | Glacier Sound | steel navy + faceted ice blue-white | penguin yellow, orca black |
 | Clubhouse Point | plain honest blue | one orange mark + committee boat |
 | Curlew Flats | warm amber-gold sandbars | deep slate-blue channels, rust-red withies |
+| Duckling Pond | fresh meadow green (lawn to the water's edge) | buttercup yellow — training sails, ducklings |
 
 Unclaimed hue territory for future venues: greys (storm/fog), volcanic black +
 ember red.
@@ -101,6 +102,7 @@ the venue plays from the top fifth alone. Rule 5's cartoon-cumulus recipe is the
 | Clubhouse Point | it is a benchmark | deliberately plain and evenly lit — blandness is the identity. Flatter than everything else |
 | Curlew Flats | falling tide, building current | wide open estuary sky, varied blob-stack cumulus at mixed sizes plus thin streaks |
 | Emberfall Isle | vents & pumice | ash plume drifting downwind, ember-lit from beneath |
+| Duckling Pond | light, steady, safe — nothing is coming | early-morning gradient, buttery gold low to pale blue high, essentially cloudless — first-lesson light. ⚠️ Distinct from Lake's near-empty *midday* pale: the warmth is the difference, and Lake owns the tiny-cumulus scatter |
 
 **Status (July 2026).** Reworked and shipped: **Lagoon** (squall cell + rain
 shaft), **Lake** (12 small puffs), **Bay** (sea-breeze line — land:water cloud

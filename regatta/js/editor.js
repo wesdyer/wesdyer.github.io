@@ -225,7 +225,20 @@ function pushHistory(label) {
 }
 function undo() { if (histIdx > 0) { histIdx--; doc = clone(history[histIdx].doc); afterEdit(false); } }
 function redo() { if (histIdx < history.length - 1) { histIdx++; doc = clone(history[histIdx].doc); afterEdit(false); } }
-const isDirty = () => savedJSON !== null && JSON.stringify(doc) !== savedJSON;
+// Dirty is "the document no longer matches what was saved", answered by comparing the
+// serialised forms — but serialising a big venue costs real milliseconds and the chrome
+// asks three times per refresh, so the answer is cached per EDIT GENERATION.
+// `dirtyChanged()` is called wherever the truth can move: a committed edit (which
+// includes undo and redo), a save, and a load.
+let dirtyGen = 0, _dirtyAt = -1, _dirtyVal = false;
+const dirtyChanged = () => { dirtyGen++; };
+const isDirty = () => {
+    if (_dirtyAt !== dirtyGen) {
+        _dirtyVal = savedJSON !== null && JSON.stringify(doc) !== savedJSON;
+        _dirtyAt = dirtyGen;
+    }
+    return _dirtyVal;
+};
 
 // ── Recompile: let the GAME build the course from the edited document ────────
 // Anything else is a second interpretation of the document, and the point of the
@@ -359,6 +372,7 @@ function livePathRefresh() {
 
 // Called after any committed edit.
 function afterEdit(pushSnapshot, label) {
+    dirtyChanged();
     if (pushSnapshot) pushHistory(label || 'edit');
     recompile();
     info();
@@ -396,6 +410,7 @@ function loadDoc(src, handle) {
     mode = 'map'; sub = 'drag'; drawing = false;
     iceCache = null; iceCacheSeed = null;      // a fresh venue gets fresh ice
     savedJSON = JSON.stringify(doc);
+    dirtyChanged();
     history = [{ doc: clone(doc), label: 'loaded' }];
     histIdx = 0;
     fileHandle = handle || null;
@@ -546,6 +561,7 @@ async function save(saveAs) {
             URL.revokeObjectURL(a.href);
         }
         savedJSON = JSON.stringify(doc);
+        dirtyChanged();
         toast(`Saved ${fileHandle && fileHandle.name ? fileHandle.name : name}`);
         refreshChrome();
     } catch (e) {

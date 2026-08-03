@@ -1,4 +1,4 @@
-# Venue Spec — All 14 Candidates
+# Venue Spec — All 15 Candidates
 
 *Spec only. No code changes. Each venue is designed here on its own merits and
 pushed as far as it will go — trimming comes after, once we can see what each one
@@ -90,6 +90,7 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 | 12 | Emberfall Isle | **Round the Cans** | round the cone now, or wait for the vent? | timing a rounding between eruptions |
 | 13 | Fallwater Fjord | **Out & Back** | take the downdraft or sail around it? | punching through the fall at speed |
 | 14 | Flamingo Reach | **Round the Cans** | where can I possibly pass? | the flock erupting across your bow |
+| 15 | Duckling Pond | **Lessons → mini W/L** | where is the wind, and what does that let me do? | the graduation horn, ducklings escorting you over the line |
 
 ---
 
@@ -937,6 +938,95 @@ spoonbill/egret (ambient).
 
 ---
 
+# 15. Duckling Pond `pond` — *tutorial venue, mode-gated*
+
+**Proposed tagline** Lawns & Ducklings · **Chips** FLAT WATER, LEARN THE ROPES
+
+> **Naming.** The *mode* is called **Sailing School** on the menu; the *venue*
+> is named for its witness, per convention (Sockeye Run/Slipstream,
+> Gatorgrass/Chomp, Spoonbill Flats). "Sailing School" as a venue name would
+> repeat the Sea Trial Bay mistake — a procedure, not a place (see §10's rename
+> note). The witness writes itself: a line of ducklings following their mother
+> is a beginner fleet following the instructor's launch.
+
+**Description.** The smallest water in the game. A club pond ringed by mown
+lawn — a floating pontoon, a rack of training dinghies, the instructor's launch
+puttering nearby. Nowhere is far from shore, and nothing here can hurt you.
+
+**Character & narrative.** Nobody learns to sail on the ocean; everybody learns
+on a pond. First-lesson morning: dew on the lawn, sails flapping on the
+pontoon, other students wobbling through their tacks, a parent watching from
+the dock. The ducklings cross the course in perfect formation, unbothered,
+doing effortlessly what you are struggling to learn. The story is *your first
+time*.
+
+**Traits.** ~7 kn, unusually steady — minimal shifts, no gusts, flat water.
+Teaching needs clean cause and effect: when the boat stalls, it must be because
+you pointed too high, never because the wind moved. (Side effect, per
+music.md §4: at this wind band the audio bed nearly vanishes, freeing the whole
+spectrum for music under instruction text.)
+
+**Art.** **Fresh meadow green + buttercup yellow** — lawn to the water's edge,
+yellow training sails, the ducklings. Saturated per the struck-pastels rule in
+venue-art.md, not spring-pastel; it should be the warmest card in the set.
+Sky: early-morning gradient, buttery gold low to pale blue high, essentially
+cloudless — first-lesson light, and distinct at thumbnail size from
+Stillwater's near-empty midday pale.
+
+**Key mechanics.** Two monopolies, both cheap:
+
+1. **Objectives instead of a race.** Each lesson is one verb, one buoy: sail a
+   reach to a buoy (the easiest, fastest point of sail — a win in the first
+   sixty seconds); *try* to sail straight upwind and discover the no-go zone by
+   failing safely — that failure is the pedagogical heart of the tutorial; tack
+   a zigzag to windward; run and gybe home; round a mark; time a start.
+2. **Teaching overlays exist only here** — wind arrow, the no-go cone drawn on
+   the water, laylines. Gating them to this venue keeps the rest of the game's
+   presentation clean and gives the venue a genuine mechanical monopoly.
+
+**Wind-relative, deliberately.** Lesson buoys are placed from
+`state.wind.baseDirection` exactly the way `initCourse()` places marks today —
+"the windward buoy" is wind-relative by definition, so the lessons survive any
+wind seed with no authored geography and no wind sector.
+
+### Course — Lessons, then a mini W/L
+
+The lesson sequence above, then graduation: **a one-lap windward-leeward at
+roughly a third of standard leg length, against two or three wobbly AI
+classmates**, the instructor's launch as the committee boat. It is a real
+race — real start, real gun, real finish — and it is the bridge that hands the
+player to Lighthouse Cove, the friendly front door for people who now actually
+sail.
+
+**The question it asks.** *Where is the wind coming from, and what does that
+let me do?* — the most fundamental question in sailing, and the one every other
+venue assumes you can already answer.
+
+**Course hazards.** None, ever — but for the opposite reason to Clubhouse
+Point: not a frozen baseline, a safe classroom.
+
+**Signature moment.** The graduation horn, with the ducklings falling in behind
+you as you cross the line.
+
+**Key assets.** Floating pontoon with sails drying (terrain) · instructor's
+launch (traffic, committee boat) · training dinghies at the rack (ambient) ·
+**mother duck + duckling line (ambient + reactive — the witness)** · lesson
+buoy (nav) · clubhouse lawn and dock with one watching parent (ambient).
+
+### Standing constraints
+
+- **Hidden from the normal venue picker.** Reachable through Sailing School and
+  a "replay tutorial" entry only — it is not part of the rotation.
+- **Excluded from eval sweeps and the AI validation matrix.** Zero benchmark
+  surface, all warmth — the exact inverse of Clubhouse Point, and the venue
+  that absorbs the friendliness pressure so the eval anchor never has to.
+- ⚠️ **A teaching venue must not become a shallow venue** — the mirror of
+  Clubhouse Point's "a friendly name must not become a friendly venue." The
+  lessons must be individually skippable at speed for a player who half-knows
+  sailing, and the graduation race must be a real race, however small.
+
+---
+
 ## Designed vs randomized
 
 **Recommendation: designed stage, randomized weather.** Author the geography;
@@ -983,7 +1073,7 @@ This split falls out naturally and should drive implementation:
 | Wind | any direction | constrained to a **venue wind sector** |
 | Terrain | sparse or symmetric — must not break any rotation | dense, authored, the point |
 | Shapes | W/L, Triangle, Trapezoid | Loop, Out & Back, Round the Cans, Slalom |
-| Venues | Lake, Lagoon, Bay, Ocean, **Clubhouse Point** | Sockeye Run, Redrock, Bayou, Flats, Emberfall, Glowtide, Glacier Sound |
+| Venues | Lake, Lagoon, Bay, Ocean, **Clubhouse Point**, Duckling Pond | Sockeye Run, Redrock, Bayou, Flats, Emberfall, Glowtide, Glacier Sound |
 
 **Geography-fixed venues need a wind sector**, and that constraint is itself
 characterful: canyon wind blows down-canyon, a fjord funnels, a river valley

@@ -75,7 +75,13 @@ function signedDist(b, x, y) {
     return b.radius - Math.hypot(x - b.x, y - b.y);
 }
 
-const contains = (b, x, y, inset) => signedDist(b, x, y) >= (inset || 0);
+// With no inset only the SIGN matters, and a crossing test answers that without
+// measuring the distance to every edge — `contains` is asked per raster cell by the
+// grids and the checks, where the nearest-edge scan was most of their cost.
+const contains = (b, x, y, inset) => {
+    if (!inset && b.poly) return pointInPoly(x, y, b.poly);
+    return signedDist(b, x, y) >= (inset || 0);
+};
 
 // Nearest position inside the arena. Used by the physics clamp, so it must return a
 // point ON the edge when the boat is outside rather than merely near it — otherwise

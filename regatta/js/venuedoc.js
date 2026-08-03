@@ -1140,6 +1140,49 @@ const getVenueDoc = (key) => {
     return d ? migrateVenueDoc(d) : null;
 };
 
+// ── Compile cache ───────────────────────────────────────────────────────────
+// Compiling is EXPENSIVE — it rasterises a nav grid and runs the planner for the stats
+// band — and one editor commit asks for the same compile seven times over (the game
+// preview, the checks, the stats band, the inspectors). The result is pure in the
+// document, so it is computed once and every caller gets its own structuredClone — the
+// same isolation as seven real compiles, without six of them.
+//
+// Documents are mutated IN PLACE (the editor's, and any test's), so neither reference
+// identity nor an explicit invalidation call can be trusted to notice every change —
+// a version bump missed one direct `compile()` after a mutation and served a course
+// with a shape missing from it. The key is a CONTENT fingerprint instead: a weighted
+// walk of every number and string in the document, a few milliseconds where a compile
+// is hundreds, and any in-place edit is simply a cache miss. `invalidateCompile()`
+// stays as a belt-and-braces version bump in the key (resetGame calls it).
+let _ccKey = null, _ccOut = null;
+let _compileVersion = 0;
+function invalidateCompile() { _compileVersion++; }
+function docFingerprint(v) {
+    let h = 0, n = 0;
+    const walk = (x) => {
+        if (x == null) { h += 0.1234567; return; }
+        const t = typeof x;
+        if (t === 'number') { n++; h += x * ((n % 97) + 1); }
+        else if (t === 'string') {
+            n++; let s = 0;
+            for (let i = 0; i < x.length; i++) s = (s * 31 + x.charCodeAt(i)) % 1e9;
+            h += s * ((n % 89) + 1);
+        } else if (t === 'boolean') { n++; h += x ? 7.7 : 3.3; }
+        else if (Array.isArray(x)) { h += 1.618; for (const y of x) walk(y); }
+        else if (t === 'object') { for (const k of Object.keys(x)) { walk(k); walk(x[k]); } }
+    };
+    walk(v);
+    return `${n}|${h}`;
+}
+function compileCached(doc) {
+    const key = `${_compileVersion}|${docFingerprint(doc)}`;
+    if (_ccOut && _ccKey === key) return structuredClone(_ccOut);
+    const out = compileVenueDoc(doc);
+    _ccKey = key;
+    _ccOut = structuredClone(out);
+    return out;
+}
+
 const U_PER_M = 5;
 
 window.VenueDoc = {
@@ -1151,7 +1194,8 @@ window.VenueDoc = {
     get: getVenueDoc,
     migrate: migrateVenueDoc,
     validate: validateVenueDoc,
-    compile: compileVenueDoc,
+    compile: compileCached,
+    invalidateCompile: invalidateCompile,
     // One definition of what a kind means, shared by the compiler, the editor's inspector
     // and the converter. A second copy anywhere is how "iceberg" comes to mean two things.
     KINDS: SHAPE_KINDS,
