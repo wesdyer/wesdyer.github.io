@@ -838,10 +838,16 @@ human-competitive through decile 8. The LAST MOUNTAIN, isolated:
   hold 0.5-0.9x radius CONTINUOUSLY (sweep rate 0.12-0.20 rad/s with no
   pauses), grind soft ice rather than deviate, and never surrender the
   rotation direction. Bot sweep is bursts separated by churn/blocked-arc
-  stalls. Candidate levers: armed-phase speed discipline exemption (pack
-  discipline slows armed boats mid-sweep), per-sector orbit radius (the
-  orbit target is one global radius; humans cut sectors), or the CREW-level
-  RL scope (densest reward, now with a 131s target to beat).
+  stalls. Candidate levers: per-sector orbit radius (the orbit target is one
+  global radius; humans cut sectors), or the CREW-level RL scope (densest
+  reward, now with a 131s target to beat).
+- ❌ Armed-phase speed-discipline exemption: TRIED (Aug 6 dawn) and
+  REJECTED — sweep −11 paired med but leg-2 +33 med, in-time 3→1, rounders
+  −3. Full-speed sweeps double ice contacts and the exits come out worse.
+  Same lesson as the sub-20u margin knee: bots cannot cash human-level
+  slack — the throttle is protective, not just conservative. Do not retry
+  as a blanket exemption; if revisited, gate on the trajectory rollout
+  being CLEAN (contact >5s), not on armed status.
 
 ## Ideas queue
 - Gap-aware channel selection: route around the *pack*, not through it, when the time
