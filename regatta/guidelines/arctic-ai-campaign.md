@@ -827,6 +827,22 @@ the tight-orbit uncapped-finisher concern does not manifest.) In-time
 finishes: 1 vs 1 here — the 9100-9107 in-time gains are seed-dependent;
 pace to the 420 line remains the open frontier.
 
+### NEXT SESSION TARGET (post-stack phase split, held-out data)
+Leg 2 is essentially solved (≤22 s/boat per decile). Leg-1 transit is
+human-competitive through decile 8. The LAST MOUNTAIN, isolated:
+- reach-80%-of-leg1 → ARM: **med 9s** (entry hunt + margins fixed this)
+- **ARM → outbound: med 131s, p75 223s — vs the human 35s.** This is the
+  whole game now. The armed sweep resisted 10 classical mechanisms + 4 RL
+  policies; tight-orbit took the first real bite (159→131). What the humans
+  do differently INSIDE the sweep (from pin_report + armed-phase stats):
+  hold 0.5-0.9x radius CONTINUOUSLY (sweep rate 0.12-0.20 rad/s with no
+  pauses), grind soft ice rather than deviate, and never surrender the
+  rotation direction. Bot sweep is bursts separated by churn/blocked-arc
+  stalls. Candidate levers: armed-phase speed discipline exemption (pack
+  discipline slows armed boats mid-sweep), per-sector orbit radius (the
+  orbit target is one global radius; humans cut sectors), or the CREW-level
+  RL scope (densest reward, now with a 131s target to beat).
+
 ## Ideas queue
 - Gap-aware channel selection: route around the *pack*, not through it, when the time
   cost table says the detour is cheap (the "wider than narrowest channel" idea).
