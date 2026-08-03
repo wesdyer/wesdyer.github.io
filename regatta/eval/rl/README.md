@@ -22,6 +22,21 @@ node_modules).
   Solo by default; `window.__rlFleet = true` for traffic. Consumed by hooks in
   script.js gated on `window.__rl` (inert in play/eval — bench-verified).
 - `rl_const_grid.js` — constant-action grid search through SweepEnv.
+- `rl_shared.js` — shared in-page source: rival-aware 42-float obs (26 original
+  + 16-sector rival ring occupancy), tanh-squashed linear policy (86 params,
+  init = classical 0.85/1.0), whole-episode in-page rollout (batch stepping),
+  and `__rlInstallActFor` (policy drives EVERY armed bot via the script.js
+  `window.__rl.actFor` hook — still inert without the flags).
+- `rl_train_cem.js` — CEM trainer: parallel page pool, common-random-number
+  seeds per iteration, elite 25%, decaying sigma noise. `--stage solo` (rivals
+  parked) / `--stage fleet` (rivals race classically; adds the arc-blocking
+  proxy: -0.05/step per armed rival within 350u). `--probe` = reset-only
+  arming probe. Fleet-arming seeds: 4242,4244,4245,4246,4247,4248,4250,4251,
+  4252 (4243/4249/4253 never arm in traffic). Checkpoints rl_policy_<stage>.json.
+- `rl_gate.js` — THE acceptance gate for a trained policy: fleet_leg2's exact
+  measurement with the policy driving every armed bot; seeds parallel across
+  pages. `--baseline` (hooks inert) byte-diffs against the stored accepted-
+  stack JSON. `rl_pair.js` — paired comparison of two fleet_leg2 JSONs.
 - `solo_trace.js` / `jam_trace.js` — 1Hz steering traces (solo hero / all bots).
 - `fleet_leg2_phases.json` / `fleet_leg2_gapfc.json` — accepted-stack baseline
   runs for paired comparison.
