@@ -320,17 +320,25 @@ land; treeA re-synced only between benches):
 Non-goals overnight: neural RL (decision deferred until 1-3 report), new
 venues, engine sweep-semantics changes (owner-consult only).
 
-## CARRY-FORWARD PROMPT (for the next session / overnight continuation)
-"Continue the arctic AI campaign, section: FROM HUMAN EVIDENCE TO BOT PACE.
-Read regatta/guidelines/arctic-ai-campaign.md (this section + the four-level
-architecture + RL rounds 1-2b) and memory regatta-arctic-ai. Repo is committed
-clean at the session-close checkpoint; treeA snapshot convention per
-regatta/eval/rl/README.md; human data in regatta/eval/rl/traj/ with
-traj_report.js. Run experiments 1-3 above under the standing gates (paired
-fleet_leg2 vs fleet_leg2_basecheck.json, solo bench ref 91.3/2, DNS 0%,
-Clubhouse anchor 204.34/200.44, goldens npm run trace). Keep the A/B ledger in
-this doc; commit accepted checkpoints; leave a session-close STATE entry in
-memory."
+## CARRY-FORWARD PROMPT (next session — the armed sweep, post-Aug-6)
+"Continue the arctic AI campaign, section: THE ARMED SWEEP (131s vs human
+35s). Read regatta/guidelines/arctic-ai-campaign.md (the Aug 6 overnight
+round, the four-level architecture, RL rounds 1-2b) and memory
+regatta-arctic-ai. The Aug 6 classical list is CLOSED — margins, wall-tack
+and tight-orbit are landed; unstick-v2, LOS-carrot, armed-speed-exemption
+and per-sector-ring are rejected with mechanisms (do not retry). The last
+mountain is isolated: reach-80%→ARM is 9s med; ARM→outbound is 131s med
+(human 35s) — everything else is human-competitive. Approved direction:
+CREW-level RL per the four-level architecture (densest reward, venue-
+agnostic, BC warm-start from the 26 trajectories in regatta/eval/rl/traj/;
+the actFor hook and treeA convention are in place, README in
+regatta/eval/rl/). Gates: paired fleet_leg2 vs fleet_leg2_walltack.json /
+fleet_leg2_tightorbit.json (FRESH-baseline rule: re-run headcheck on the
+session's HEAD first), 12-seed solo bench (last: 95.8/6), DNS 0% with
+start-registration check, seatrials anchor 204.34/200.44 (restored, exact),
+goldens npm run trace. Judge fleet changes on held-out seeds before
+accepting (the 9200+ block is now burned — use a fresh block). Keep the A/B
+ledger here; commit accepted checkpoints; leave a STATE entry in memory."
 
 ## RL PILOT ROUND 2b (score-v2): REJECTED — LINEAR-POLICY CHAPTER CLOSED
 Score-v2 (gated per-leg DMC incl. leg-2 credit, finisher bonus 3.0, seedsPer 4,
