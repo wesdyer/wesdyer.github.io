@@ -695,6 +695,14 @@
              <div id="hud-timer" class="t-mono text-5xl text-white drop-shadow-xl tracking-widest">01:00</div>
              <div id="hud-start-time" class="t-mono text-xl text-green-300 drop-shadow-md mt-1 hidden"></div>
              <div id="hud-message" class="mt-2 text-lg font-bold text-yellow-300 bg-slate-900/80 px-4 py-1 rounded-full border border-yellow-500/50 shadow-lg hidden"></div>
+             <!-- OCS state is easy to mistake for a missed line crossing: the boat
+                  holds its own return course while the player wonders why nothing
+                  registered. Persistent + pulsing while the flag is up; the arrow
+                  points at the nearest point of the start line (screen space). -->
+             <div id="hud-ocs" class="hidden mt-2 flex items-center gap-3 bg-red-950/90 px-5 py-2 rounded-xl border-2 border-red-500 shadow-2xl animate-pulse">
+                 <div id="hud-ocs-arrow" class="text-red-300 text-2xl will-change-transform" style="line-height:1;">&#9650;</div>
+                 <div class="font-black text-red-300 text-xl tracking-wide">OCS &mdash; RETURN BEHIND THE LINE</div>
+             </div>
         </div>
 
         <!-- Top Right Container -->

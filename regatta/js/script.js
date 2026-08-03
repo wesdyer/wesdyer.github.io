@@ -2156,7 +2156,11 @@ class BotController {
                 }
                 for (const f of floes) {
                     const fx = f.x + (f.driftVx || 0) * t, fy = f.y + (f.driftVy || 0) * t;
-                    const rr = f.radius + 45;
+                // +45 -> +14 (human clearance floor is 14-19u to the HULL; this
+                // radius is on the fatter bounding circle, so 14 keeps real
+                // slack. +10 tested worse: rollouts stopped flagging contacts
+                // the boat could not actually dodge).
+                const rr = f.radius + 14;
                     if ((x - fx) * (x - fx) + (y - fy) * (y - fy) < rr * rr) {
                         if (t < contactT) contactT = t;
                     }
@@ -2562,7 +2566,12 @@ class BotController {
                     const tMid = (lookaheadFrames / 60) * 0.5;
                     const shX = isl.isFloe ? (isl.driftVx || 0) * tMid : 0;
                     const shY = isl.isFloe ? (isl.driftVy || 0) * tMid : 0;
-                    const movePad = isl.isFloe ? 70 : 0;
+                    // 70 -> 21: recorded human races clear floes at 14-19u every
+                    // run; the pad has to stay above that floor (bots lack human
+                    // reflexes) but 70 refused threads the venue is designed
+                    // around. Staged A/B found the knee: 35 and 21 both paid
+                    // (fleet finishers 24->33->43); 14 collapsed solo seeds.
+                    const movePad = isl.isFloe ? 21 : 0;
                     const startS = { x: start.x - shX, y: start.y - shY };
                     const endS = { x: end.x - shX, y: end.y - shY };
                     // Quick Bounding Box/Circle Check
@@ -3660,7 +3669,7 @@ function refreshBotGrid() {
     for (const f0 of (c.islands || [])) {
         if (!f0.isFloe) continue;
         const f = { x: f0.x + (f0.driftVx || 0) * 2, y: f0.y + (f0.driftVy || 0) * 2, radius: f0.radius || 0 };
-        const rr = f.radius + 120;
+        const rr = f.radius + 36;
         const c0 = g.cell(f.x - rr, f.y - rr), c1 = g.cell(f.x + rr, f.y + rr);
         for (let j = Math.max(0, c0[1]); j <= Math.min(g.n - 1, c1[1]); j++) {
             for (let i = Math.max(0, c0[0]); i <= Math.min(g.n - 1, c1[0]); i++) {
@@ -3684,7 +3693,7 @@ function refreshBotGrid() {
     for (const f0 of (c.islands || [])) {
         if (!f0.isFloe) continue;
         const fx = f0.x + (f0.driftVx || 0) * HORIZON, fy = f0.y + (f0.driftVy || 0) * HORIZON;
-        const rr = (f0.radius || 0) + 15 + 44;
+        const rr = (f0.radius || 0) + 15 + 13;
         const c0 = g.cell(fx - rr, fy - rr), c1 = g.cell(fx + rr, fy + rr);
         for (let j = Math.max(0, c0[1]); j <= Math.min(g.n - 1, c1[1]); j++) {
             for (let i = Math.max(0, c0[0]); i <= Math.min(g.n - 1, c1[0]); i++) {
@@ -6510,6 +6519,8 @@ const UI = {
     lbPips: document.getElementById('lb-pips'),
     characterPicker: document.getElementById('character-picker'),
     overpoweredBadge: document.getElementById('hud-overpowered'),
+    ocsBanner: document.getElementById('hud-ocs'),
+    ocsArrow: document.getElementById('hud-ocs-arrow'),
     resultsOverlay: document.getElementById('results-overlay'),
     resultsList: document.getElementById('results-list'),
     resultsRestartButton: document.getElementById('results-restart-button'),
@@ -13485,6 +13496,23 @@ function draw() {
     if (UI.windArrow) UI.windArrow.style.transform = `rotate(${localWind.direction}rad)`;
     if (UI.waypointArrow) UI.waypointArrow.style.transform = `rotate(${player.raceState.nextWaypoint.angle}rad)`;
     if (UI.headingArrow) UI.headingArrow.style.transform = `rotate(${player.heading - state.camera.rotation}rad)`;
+
+    // OCS banner: persistent while the flag is up (the transient race message is
+    // easy to miss, and a correct OCS hold then reads as a missed crossing). The
+    // arrow tracks the nearest point of the start line every frame so it stays
+    // honest under camera rotation.
+    if (UI.ocsBanner) {
+        const ocsOn = state.race.status === 'racing' && player.raceState.ocs && !player.raceState.finished;
+        UI.ocsBanner.classList.toggle('hidden', !ocsOn);
+        if (ocsOn && UI.ocsArrow) {
+            try {
+                const [mo0, mo1] = startLinePts();
+                const cl = getClosestPointOnSegment(player.x, player.y, mo0.x, mo0.y, mo1.x, mo1.y);
+                const ang = Math.atan2(cl.x - player.x, -(cl.y - player.y));
+                UI.ocsArrow.style.transform = `rotate(${ang - state.camera.rotation}rad)`;
+            } catch (e) {}
+        }
+    }
 
     if (frameCount % 10 === 0) {
         updateLeaderboard();

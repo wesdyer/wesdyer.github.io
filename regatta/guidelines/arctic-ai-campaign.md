@@ -654,6 +654,123 @@ ONLY (static grid). **Benchmark: mean 86.1 (record), min 55, max 100, roundings 
   sectors so one policy can be right at all densities. Reserve for the neural
   stage / if full-density signal goes sparse.
 
+## ═══ OVERNIGHT ROUND (Aug 5→6): FROM HUMAN EVIDENCE TO BOT PACE ═══
+
+### Baseline re-measurement (FIRST, before any experiment — the standing rule)
+Clean HEAD (5f4c816) does NOT reproduce either stored gate number:
+- 12-seed solo: **92.8 / min 80 / 1 rounding** (stored ref 91.3/74/2 — STALE)
+- fleet_leg2 seeds 9100-9107: **45/72 rounders, 24 finishers, finMed 705**
+  (stored basecheck 51/30 — STALE; paired deltas vs stored: leg1 med +33,
+  leg2 med +157 on n=3)
+The recorder-v7/RL-hook landing was goldens-verified on the golden seeds, but
+these bench seeds shuffled (chaotic sensitivity, the known ±30%-per-seed
+lesson). Tonight's pairings therefore use the FRESH JSONs:
+`fleet_leg2_headcheck.json` + solo headcheck. Stall dwell on HEAD baseline:
+108s/boat of leg-1 slow time (<0.5 spd at 15s samples), 72/72 boats pin ≥15s,
+longest-pin med 30s (humans: all pins ≤13s).
+
+### Human evidence (26 trajectories, traj_report.js + pin_report.js)
+- Arctic (15 runs, ALL finished): finT med 213.7, leg1 med 126 (min 120),
+  leg2 med ~84, armed med 35s. Clearance floor 14-19u in EVERY contested run.
+- **All 8 recorded pin escapes are ONE maneuver: rotate IN PLACE (10-40°/s at
+  zero speed, swinging up to 230° hunting the lane) until the bow points down
+  an open lane at a powered wind angle, then hold heading DEAD STEADY and
+  accelerate out (0→1.0 in ~3-4s), passing ice at 50-80u.** Zero back-outs,
+  zero pure rotations, zero wiggling. The old "reverse-out sternway" idea in
+  the queue below is REFUTED by data — do not build it.
+- Leg-1 dwell per progress decile, bot vs human (s/boat):
+  bots 44/15/37/86/40/43/28/68/193/106 vs humans 14/11/10/9/11/12/14/17/15/22.
+  Bots bleed everywhere; hemorrhage in deciles 9-10 (ring basin + north-shore
+  pile-up above the island) and decile 4 (west-corridor pack).
+
+### Experiment 1: MARGIN REDUCTION stage 1 (~50% of pads) — ✅ ACCEPTED
+Knobs (all floe-specific pads, land pads untouched): reactive movePad 70→35,
+planner floe MARGIN 120→60, traj-planner contact rr +45→+25, grid futureBlk
+pad +44→+22, router _floeRisk band +120→+60.
+**Fleet paired vs headcheck: rounders 45→48, finishers 24→33 (+9 — the biggest
+single-change finisher jump of the campaign), finMed 705→675; paired leg-1 med
+−3, leg-2 med −76, finish med −58; sweep-phase med +13 (small ring cost, paid
+back double on the return leg). Stall dwell 108→101 s/boat, longest pin max
+105→90. DNS-like (never reached leg 1) 0/72 both sides (start registration
+verified per owner's warning). Solo: 92.8→91.4 mean — the delta is ENTIRELY
+seed 4249 collapsing 96→39 (1833 ice contacts, entrapment class); 2 roundings
+(was 1) and the FIRST-EVER in-time solo finish (4247 rounds t=279, finishes
+t=387).** The human-evidence hypothesis holds: the pads, not the boats, were
+refusing the threads. Stage 2 (~30% of original: 21/36/+14/+13/+36) queued.
+
+### Experiment 1 stage 2 (~30% of original pads) — ✅ ACCEPTED (record night)
+movePad 21, planner 36, traj +14, futBlk +13, floeRisk +36.
+**Fleet vs stage 1: rounders 48→57, finishers 33→43, finMed 675→635, paired
+leg-1 med −44, sweep-phase med −23. Cumulative vs clean HEAD: rounders 45→57,
+finishers 24→43 (+19), paired finish med −101s; FOUR in-time (<420) fleet
+finishes in one bench (380/403/404/409) — previous record was ~1/run. Solo:
+mean 95.7 RECORD / min 78 / 6 roundings of 12 (record; 4249 recovered 39→93).
+DNS-like 0/72.** Failure-mode watch: stall tail slightly longer (one 150s pin,
+was 90s max) — the entrapment class survives at reduced margins but does not
+spread. Stage 3 probe (~15%: movePad 14, planner 24, traj +10, futBlk +9,
+floeRisk +24) queued to find the knee; human floor is 14-19u.
+
+### Experiment 1 stage 3 (~15% probe) — ❌ REVERTED; THE KNEE IS AT STAGE 2
+movePad 14, planner 24, traj +10, futBlk +9, floeRisk +24.
+Fleet: rounders 57→61 but finishers FLAT 43, finMed 635→658, paired deltas
+neutral (leg-1 med +16, finish med +2). Solo: mean 95.7→87.5, roundings 6→1,
+two fresh seed collapses (4242 100→51, 4247 100→69) — below ~20u pads the
+rollout stops flagging contacts the boat cannot dodge and the reflexes can't
+cash the thinner slack. **FINAL margin config (accepted): movePad 21, planner
+MARGIN 36, traj rr +14, futBlk +13, floeRisk +36 — fleet 57/43/635 vs HEAD
+45/24/705, solo 95.7/6-roundings record.** The pads were sized for pre-#12
+avoidance; predictive avoidance + human evidence retired two-thirds of them.
+
+### Experiment 2: UNSTICK V2 (human pin-escape reflex)
+Wall-pin trace (seed 9100 "Seam", channel pocket, wall_trace.js): 3 pins in
+30s at one spot — carrot demands blocked NNE, avoidance command flip-flops
+tick to tick (tgt 174→−14→−86 in 3s), wiggle's beam-reach escapes but the
+1.5s clearance releases straight back into the pocket. Built the human
+maneuver: pickEscapeLane (16 powered headings scored by grid-clear distance,
+soft cells half credit, nav bias) + steer-the-lane wiggle burst (6s) + 3.5s
+clearance + re-pick-away-from-contact on floe touch (1s rate limit).
+- **v2 first cut (lane everywhere): fleet-REJECTED with the pace-for-tails
+  signature** — survivors paired finish −106s med (!), but finishers 43→35,
+  stall dwell 99→120 s/boat. Solo was fine (95.9, rounding t=212 record).
+  Same shape as #46/#47: a 9.5s committed escape is wrong in a RAFT, and
+  raft-mates all picking the same best lane converge (round-5-8 lesson).
+- **v2b: lane escape gated to TRAFFIC-FREE pins** (no unfinished rival within
+  300u): fleet-REJECTED HARDER — finishers 34, paired leg-1 +50 med, stall
+  dwell 113 s/boat, and the survivor-pace win evaporated too (finish med −7).
+- **❌ UNSTICK V2 REVERTED ENTIRELY (both variants).** Mechanism understood:
+  the lane scan is a STATIC snapshot of a DRIFTING pack, and the 6s+3.5s
+  commitment suppresses planFloeTrajectory exactly when the boat is driving
+  at floes it can no longer dodge. v1's short blind burst + immediate return
+  to normal control beats a smart-but-stale plan. ⚠️ Do not retry
+  committed-lane escapes; the human maneuver works because humans keep
+  re-perceiving during the drive-out.
+- **The REAL finding from the pin analysis: bot pins recur because the CARROT
+  keeps demanding the same blocked pocket** (Seam re-entered one pocket 3× in
+  30s; the wiggle escaped fine every time). Post-margin stall dwell med is
+  30s, not 300s — escape mechanics are no longer the bottleneck; the
+  re-approach cycle is. That is pursuit territory → experiment 3.
+
+### Experiment 3: LEG-1 LINE STUDY → LOS carrot — ❌ REJECTED
+Overlay result first (the study's actual finding): bots take the SAME route
+as humans (start arc → eastern channel beat → NE approach) — the difference
+is EXECUTION SPREAD, not line choice, and the margin acceptance closed most
+of it (stage-2 bot cloud hugs the human ribbon). Remaining sinks: ring basin
+(decile 9: 161 s/boat vs human 15) and the channel walls (decile 4: 86 vs 9 —
+boats ride tacks into the shore; humans tack short of it).
+The ONE change tried: line-of-sight carrot (walk the pursuit carrot forward
+to ~2.2× lookahead until the boat→carrot line is land-free on the static
+grid; nearest-point fallback). Fleet: finishers 43→34, rounders 57→55,
+paired finish −85s med for survivors — REJECTED, third occurrence of the
+same trade signature.
+**⚠️ PATTERN (three independent mechanisms, one night): at the accepted
+margins the fleet sits at a finisher-count optimum where ANY change that
+makes individual lines more direct/committed (lane escape, LOS carrot)
+produces faster survivors and fewer finishers. Traffic redistribution, not
+individual routing, now binds the tail. Next classical lever should target
+TRAFFIC (stagger, spacing, queue shaping) or the ring basin itself — not
+transit lines. The land-layline tack idea (tack BEFORE the channel wall)
+remains untried and is the most human-evidenced residual candidate.**
+
 ## Ideas queue
 - Gap-aware channel selection: route around the *pack*, not through it, when the time
   cost table says the detour is cheap (the "wider than narrowest channel" idea).

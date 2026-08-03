@@ -111,10 +111,13 @@ class RoutePlanner {
         // Fixed generous buffer for static land: 100 units. Drifting floes get
         // more — they move 20-60u between replans, eating the margin.
         this.inflatedIslands = islands.map(isl => {
-            // Floe margin shrank 190 -> 120 when avoidance learned to PREDICT floe
-            // drift instead of padding for it; an over-inflated pack reads as
-            // closed water and the planner refuses gaps boats can actually take.
-            const MARGIN = isl.isFloe ? 120 : 100;
+            // Floe margin stepped 190 -> 120 -> 36: first when avoidance learned
+            // to PREDICT drift instead of padding for it, then when the recorded
+            // human races (14-19u clearance floor, every run) proved the tighter
+            // water genuinely sailable. An over-inflated pack reads as closed
+            // water and the planner refuses gaps boats can take. 24 overshot:
+            // solo seeds collapsed against walls the planner no longer feared.
+            const MARGIN = isl.isFloe ? 36 : 100;
             return {
                 x: isl.x, y: isl.y,
                 // Still the BOUNDING circle, and still only a broad-phase reject. A mitred
