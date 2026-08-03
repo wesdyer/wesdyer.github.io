@@ -229,6 +229,200 @@ around eval_harness + a small policy (even a table/linear baseline first), behav
 clone from the 93.2-solo trajectories, then fleet-fine-tune with the gridlock
 lesson in the reward (penalize blocking arcs).
 
+## RL PILOT ROUND 1 (Aug 2 2026 session, evening): loop BUILT, first policies fleet-REJECTED
+The full training loop from the pilot scope now exists in `regatta/eval/rl/`:
+- **Batch stepping**: whole episodes run inside ONE page.evaluate (policy computed
+  in-page) — was 601 round-trips per episode.
+- **Parallel envs**: pool of headless pages (6 used; 12 logical cores).
+- **Rival positions in obs**: 42 floats = the 26 + a 16-sector rival-occupancy
+  ring around the mark (each rival within zone*2.5 adds 1−d/R to its sector).
+- **Policy**: LINEAR, 86 params, tanh-squashed into the action box, initialized
+  at the classical constants (0.85 advance / 1.0 speed). CEM: pop 16 solo /
+  12 fleet, elite 25%, common seeds per iteration, decaying sigma noise.
+- **Fleet episodes**: `--stage fleet` leaves the 8 rivals racing classically and
+  adds an arc-blocking proxy (−0.05/step per armed rival within 350u).
+- **Gate**: `rl_gate.js` = fleet_leg2's exact measurement with the policy driving
+  EVERY armed bot via the new `window.__rl.actFor(boat)` hook in script.js
+  (inert without the flag — PROVEN: a baseline gate rerun was byte-identical to
+  the stored accepted-stack JSON after stripping the newer tArm/tOut fields).
+
+Arming probes: all 12 solo seeds arm (t=203–439); in traffic 9/12 (4243/4249/
+4253 never arm). Training learns on matched seed windows in both stages (solo
+window B best −96.8→−36.3 across revisits; fleet window B −100.4→−60.2, hard
+window banked 1/3→3/3). Learned weights are sensible: advance head keys on
+drift dir + ice/rival sectors, speed head almost entirely on rival sectors.
+
+**GATE (sole criterion, seeds 9100-9107 paired vs accepted stack 51/72 rounders,
+30/72 finishers):**
+- bestEver candidate: 43/72 rounders, 23 finishers — REJECTED (survivors faster:
+  paired leg-1 −13s med, leg-2 −37s; throughput down = the #46/#47 signature).
+- Final CEM mean: **48/72 rounders, 25 finishers — REJECTED, but nearly
+  paired-neutral on times** (leg-1 +10s med, finish −1s med, sweep-phase −21s
+  mean). The gap is 3 rounders / 5 finishers of marginal-boat throughput.
+
+**Diagnosis**: even with rival obs + fleet episodes, training still optimizes
+HERO return in classical traffic while the gate scores ALL-bots-policy fleet
+throughput. Two mismatches remain: (a) credit — hero reward can't see the
+throughput of the other 8; (b) regime — training traffic is classical, gate
+traffic is the policy itself. **Next lever (cheap, ~9 min/iter feasible): CEM
+scored directly on fleet-level return — install actFor for all bots in the
+training episode and score rounders/finish-time over a 600s window. That
+optimizes the exact gate quantity.** After that: neural policy, and extending
+scope to the approach beat (owner play-report: bots stuck head-to-wind on the
+push up to the glacier, refusing sailable gaps, weak upwind — the beat is
+outside the current pilot scope).
+
+## RL PILOT ROUND 2 (same session, late): FLEET-RETURN CEM — gate-REJECTED but
+## the picture changed
+`--stage fleetret`: CEM scored on the GATE QUANTITY itself — all 9 bots run the
+candidate (actFor), score = rounders/finishers + time & leg-1-progress credit
+over a 700s window, cached CLASSICAL reference per training seed, gate seeds
+9100-9107 strictly held out. 8 iters, pop 12, 3 seeds/iter, init from round-1
+fleet mean. TRAINING: elites beat classical on 3 of 4 first-visit windows; on
+revisits the MEAN beat classical on windows B (9.86 vs 8.99, +2 fins) and D
+(11.72 vs 10.91, +3 fins), lost A and C. **HELD-OUT GATE: 43/72 rounders, 24
+finishers vs 51/30 — REJECTED (3rd rejection: 43/23, 48/25, 43/24).** But: the
+survivors are FAR faster (paired finish −39s med / −98s mean, leg-1 −35s mean),
+and seed 9102 produced the FIRST PERFECT RACE in venue history (9/9 finishers,
+two in-time 391/414) plus another in-time at 9107 (404). The policy trades
+tail-boats for speed; classical nurses tails at the cost of pace. ⚠️ LESSON:
+training-window wins on 12 seeds did NOT transfer to 8 held-out seeds — a
+LINEAR policy at this budget overfits seed-specific structure. Queued rerun
+prescription: score-v2 (gated per-leg DMC — current score has NO leg-2 gradient
+for non-finishers, penalizing exactly the tail-nursing the gate rewards),
+seedsPer 4-6 for less noisy elites, more training seeds (any seed works for
+fleetret — no arming precondition), then neural if linear still overfits.
+
+## ═══ NEXT MAJOR SECTION (approved Aug 5 night, owner going to bed): ═══
+## FROM HUMAN EVIDENCE TO BOT PACE — trajectory-informed classical round
+The 26-trajectory human reference (traj/, traj_report.js) replaces guesswork
+with measured targets. Overnight scope, in priority order, ALL under the
+standing discipline (A/B ledger; paired fleet_leg2 vs basecheck + 12-seed solo
+bench as gates; DNS 0% held; Clubhouse anchor + goldens re-verified before any
+land; treeA re-synced only between benches):
+
+1. **MARGIN REDUCTION A/B** — the 15-for-15 finding: human clearance floor
+   14-19u vs bot reactive pads 70-120u (movePad 70, planner floe margin 120,
+   grid floe stamps, traj-planner contact thresholds). Step them toward the
+   human envelope (not TO it — bots lack human reflexes; try ~50%, ~30%).
+   Hypothesis: leg-1 transit med 465 drops materially; watch groundings and
+   the 4246-entrapment class for the failure mode.
+2. **UNSTICK REFLEX v2** — first ANALYZE the 8 recorded human escapes (heading
+   vs motion-vector during pins: do they back out, rotate, or power through?),
+   then build the reflex the data describes; gate = pinned-boat dwell in
+   fleet_leg2 stalls + solo bench. The human pins all resolved ≤13s; bots sit
+   30-300s.
+3. **LEG-1 LINE STUDY** — overlay human tracks vs bot routes (same course
+   doc); find the systematic line difference behind human 129-185s vs bot
+   249-465s; derive at most ONE router/pursuit change and A/B it.
+4. (stretch) **OCS BANNER** — owner mistook a correct OCS hold for a missed
+   crossing; make the OCS state loud (banner + return arrow). UI-only.
+Non-goals overnight: neural RL (decision deferred until 1-3 report), new
+venues, engine sweep-semantics changes (owner-consult only).
+
+## CARRY-FORWARD PROMPT (for the next session / overnight continuation)
+"Continue the arctic AI campaign, section: FROM HUMAN EVIDENCE TO BOT PACE.
+Read regatta/guidelines/arctic-ai-campaign.md (this section + the four-level
+architecture + RL rounds 1-2b) and memory regatta-arctic-ai. Repo is committed
+clean at the session-close checkpoint; treeA snapshot convention per
+regatta/eval/rl/README.md; human data in regatta/eval/rl/traj/ with
+traj_report.js. Run experiments 1-3 above under the standing gates (paired
+fleet_leg2 vs fleet_leg2_basecheck.json, solo bench ref 91.3/2, DNS 0%,
+Clubhouse anchor 204.34/200.44, goldens npm run trace). Keep the A/B ledger in
+this doc; commit accepted checkpoints; leave a session-close STATE entry in
+memory."
+
+## RL PILOT ROUND 2b (score-v2): REJECTED — LINEAR-POLICY CHAPTER CLOSED
+Score-v2 (gated per-leg DMC incl. leg-2 credit, finisher bonus 3.0, seedsPer 4,
+init from v1 mean): training again beat classical on window revisits (window 2
+mean 9.19->11.29 vs classical 9.92; iter-7 best 13.71 = 19r/12f), and the gate
+again rejected the mean: **42/72 rounders, 18 finishers vs 51/30** — the leg-2
+credit bought tail-nursing by GIVING BACK ring pace (paired sweep-phase +60s
+med) and still overfit the 12 training seeds. **Four-verdict ledger: 43/23,
+48/25, 43/24, 42/18.** Conclusion, evidence-backed from four angles: an
+86-param LINEAR policy at CEM budgets of this size cannot hold pace AND tails
+across unseen seeds — the policy class is the binding constraint now, not the
+objective (three different objectives produced the same transfer failure).
+Escalation options (owner decision): (a) small NEURAL policy (2-layer, ~1-2k
+params) on the fleetret objective — needs bigger budgets, likely overnight
+runs; (b) FIRST: the cheap classical experiment the human trajectories
+motivated — cut reactive floe margins toward the measured 14-19u human
+clearance (bots use 70-120u pads) and A/B at the gate; (c) crew-level RL with
+BC warm-start from the recorded trajectories. Recommendation: (b) next — it's
+an hour, it's evidence-driven, and its result informs whether (a) is even
+needed at the tactician level.
+
+## THE FOUR-LEVEL PLANNING ARCHITECTURE (owner proposal, Aug 5 — working direction)
+⚠️ **OWNER RULE (Aug 5): everything in this section — and the RL-per-level
+priority and scoring ideas below — is HYPOTHESIS until an experiment supports
+it.** Nothing here is pre-accepted: each refactor toward the levels must hold
+the Clubhouse anchor + trace goldens like any change, and each RL-scoped level
+must pass its own paired fleet_leg2 gate ALONE before it ships or stacks.
+Wes: structure the AI as four levels with real-life parallels — **navigator**
+(high-level path planning / routing), **tactician** (localized sailing planning:
+wind, tacking, gybing, current), **driver** (near-term response to moving objects:
+boats, bergs), **crew** (controls: turning and trim done well).
+
+**Why this is right for THIS codebase:** the game already has proto-versions of
+all four (grid A* router ≈ navigator; scoreTack/getStrategicHeading ≈ tactician;
+planFloeTrajectory + applyAvoidance ≈ driver; wiggle/escape/speed-discipline ≈
+crew) — but they are tangled, and most of this campaign's root causes were LAYER
+VIOLATIONS, not missing capability: #34 two deciders sawing the rudder (planner
+threads a gap, grid probe vetoes it), #11 a reactive commitment discount
+overriding strategy for 30s, #14/#15 frozen nav targets in the seam between
+router and pursuit, #7/#31 rounding handoff fights, and the round-5-8 lesson
+that wiggle/escape/avoidance deadlock when ownership is unclear. The proposal's
+value is CONTRACTS, not new machinery.
+
+**The contracts (target state):**
+- Each level owns ONE question at ONE horizon, and outputs a clean artifact to
+  the level below. Navigator: corridor route + time costs (recompute ~4s).
+  Tactician: a "board plan" — target TWA/tack, maneuver schedule, speed plan
+  (~1s cadence, 10–30s horizon; owns laylines, shift/pressure timing, current).
+  Driver: a trajectory honoring the board plan while dodging moving obstacles
+  (0.1s cadence, 2–10s horizon; owns velocity-obstacle reasoning). Crew:
+  rudder/trim execution with GUARANTEES — never park in irons, carry way
+  through tacks, turn at the rate the boat can actually turn.
+- ONE owner of the rudder per tick. Intent flows down; lower levels have
+  BOUNDED, EXPIRING authority to deviate (the ≤2.5 router-weight cap and the
+  −60 tie-break commitment are the proven sizing pattern). Hard-safety
+  (Rule 14, grounding-imminent) may bypass upward but must be visible in traces.
+- Every level readable in one trace line (goal/board/traj/helm) — the
+  goal/gp0/navT/strH/tgt trace that cracked #11 becomes the standard format.
+
+**Mapping the owner's play observations to levels:** head-to-wind hangs on the
+glacier push = missing CREW guarantee (irons is always a controls failure even
+when the plan is bad); refusing sailable gaps / not turning hard enough =
+DRIVER (13-heading fan too coarse for "hard turn now"; candidate costs can't
+express commit-through-a-closing-gap); weak upwind in the katabatic =
+TACTICIAN (VMG/shift timing at 25–32kt).
+
+**RL mapping (why the levels help the RL campaign):** a level is a trainable
+scope with a clean observation/action/reward seam and a classical fallback —
+swap ONE level at a time. The sweep pilot is a phase-scoped TACTICIAN policy.
+Driver and crew have the densest rewards (contact avoided, way kept on) and the
+shortest horizons — the best next RL candidates, and exactly where the play
+observations point. Navigator stays classical (A* with time costs is already
+near-optimal and debuggable).
+
+**RL-per-level priority (owner + assessment, Aug 5): CREW first, then DRIVER,
+tactician already in flight, navigator never.** Crew is the best RL target in
+the whole stack: densest reward (VMG to commanded heading, way kept on, no
+irons time), shortest horizon, tiny obs/action, and VENUE-AGNOSTIC (pure boat
+physics + wind — one trained crew works everywhere, validatable on open-water
+anchors). Driver second (replaces planFloeTrajectory's fan scoring; local
+occupancy + drift obs; progress-minus-predicted-contact reward). Tactician is
+measurably the hardest (sparse reward, traffic coupling — round 1 proved it);
+finish the in-flight pilot but don't start new work there first. Train
+BOTTOM-UP (a tactician atop a flaky crew learns bug compensations), ONE learned
+level at a time, each behind its own inert flag-gated hook (the actFor
+pattern), each passing the fleet_leg2 gate ALONE before stacking.
+
+**Migration rule — no big-bang rewrite:** every new fix or mechanism DECLARES
+its level and goes through that level's interface; refactor toward the
+contracts as files are touched. The venue-scoped gating pattern (land venues
+only) stays orthogonal to the levels.
+
 ## Fixed root causes (chronological)
 1. Visibility planner blind to keyholed coast → bots route on SailCheck grid.
 2. Global vs local wind in wiggle/start/nav (110° apart here) → getWindAt everywhere tactical.
@@ -446,6 +640,19 @@ ONLY (static grid). **Benchmark: mean 86.1 (record), min 55, max 100, roundings 
    drift prediction — nothing keys on this venue's constants.
 2. Verify at 25-30 seeds once something moves.
 3. RL local policy remains the approved escalation if classical pace work plateaus.
+
+## Ideas queue (RL scoring — owner suggestions Aug 5, assessed)
+- **Gated per-leg DMC as the fleetret score v2** (ADOPT on next rerun): keep the
+  rounding/finish bonuses as gates, add continuous DMC credit on leg 1
+  (pre-round) AND leg 2 (post-round) — the current score has no leg-2 gradient
+  for non-finishers. Raw ungated DMC is a REWARD-HACKING TRAP: it's lateral
+  projection onto the path, orbiting boats farm it, and it cannot see sweep.
+- **Ice curriculum**: sequential annealing (low→high ice) is risky with CEM
+  (sigma collapses around low-ice optima = the #46/#47 aggressive-orbit style
+  that full density rejects). Safer: MIXED-DENSITY scoring within an iteration
+  (__FLOEFRAC 0.5/0.75/1.0 on the same seeds, summed) — obs includes ice
+  sectors so one policy can be right at all densities. Reserve for the neural
+  stage / if full-density signal goes sparse.
 
 ## Ideas queue
 - Gap-aware channel selection: route around the *pack*, not through it, when the time

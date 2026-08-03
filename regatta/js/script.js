@@ -684,9 +684,12 @@ class BotController {
         this._trajRisk = null;
 
         // RL pilot hook (see the armed orbit) — speed half of the action.
-        if (typeof window !== 'undefined' && window.__rl && window.__rl.act
-            && this.boat === window.__hero && this.boat.raceState.roundArmed) {
-            speedRequest = Math.min(speedRequest, Math.max(0.4, window.__rl.act[1]));
+        // __rl.actFor(boat) (fleet gate: policy drives every armed bot) takes
+        // precedence over the single-hero __rl.act used by the training env.
+        if (typeof window !== 'undefined' && window.__rl && this.boat.raceState.roundArmed) {
+            const a = window.__rl.actFor ? window.__rl.actFor(this.boat)
+                : (this.boat === window.__hero ? window.__rl.act : null);
+            if (a) speedRequest = Math.min(speedRequest, Math.max(0.4, a[1]));
         }
 
         // Apply
@@ -885,10 +888,12 @@ class BotController {
                         let aA = brgA + sgnA * 0.85;
                         const RA = Math.min(rm.zone * 1.6, Math.max(dRm + 140, rm.zone * 0.8));
                         // RL pilot hook (sweep-policy research): inert unless the
-                        // headless harness injected __rl and this is its hero.
-                        if (typeof window !== 'undefined' && window.__rl && window.__rl.act
-                            && boat === window.__hero) {
-                            aA = brgA + sgnA * window.__rl.act[0];
+                        // headless harness injected __rl. actFor(boat) — the
+                        // fleet-gate path — outranks the single-hero act.
+                        if (typeof window !== 'undefined' && window.__rl) {
+                            const a = window.__rl.actFor ? window.__rl.actFor(boat)
+                                : (boat === window.__hero ? window.__rl.act : null);
+                            if (a) aA = brgA + sgnA * a[0];
                         }
                         // (A/B Aug 4: widening the orbit target out of _floeRisk water
                         // regressed the benchmark 92.3->91.3 — the longer arc costs
@@ -9773,6 +9778,167 @@ function update(dt) {
     updateParticles(dt);
     updateWindWaves(dt);
     updateSurf(dt);
+
+    recordTrajectory(dt);
+}
+
+// HUMAN TRAJECTORY RECORDER (instrument, off by default — enable with
+// localStorage.setItem('regatta_record','1')). Samples the player at 10Hz and
+// auto-downloads a JSON when they finish (or the race ends). Read-only: no sim
+// state or RNG is touched, so traces and evals are unaffected with the flag off.
+// Near a rounding mark it also samples the 16 ring sectors THROUGH THE SAME
+// GRID LENS the RL policy observes, plus rival positions, so human samples are
+// comparable to policy observations. Uses: human-vs-bot segment diagnostics,
+// BC warm-starts for crew/driver policies (see arctic-ai-campaign.md).
+let recTraj = null, recFlag = false, recFlagCk = 0;
+function recordTrajectory(dt) {
+    try {
+        // Off by default: the ONLY per-frame cost with the flag unset is this
+        // countdown — the localStorage flag is re-read about once a second.
+        if (--recFlagCk <= 0) {
+            recFlagCk = 60;
+            recFlag = localStorage.getItem('regatta_record') === '1';
+        }
+        if (!recFlag) return;
+        const player = state.boats && state.boats.find(b => b.isPlayer);
+        if (!player) return;
+        const st = state.race.status;
+        if ((st === 'prestart' || st === 'racing') && !player.raceState.finished) {
+            if (!recTraj) recTraj = {
+                venue: (typeof settings !== 'undefined' && settings.venue) || '?',
+                started: new Date().toISOString(), legs: state.race.totalLegs,
+                // Course meta so analysis needs nothing but this file: without
+                // the mark position, distance-from-ring can't be derived offline.
+                course: {
+                    roundMark: state.course.roundMark ? {
+                        x: Math.round(state.course.roundMark.x), y: Math.round(state.course.roundMark.y),
+                        zone: Math.round(state.course.roundMark.zone),
+                        reqSweep: +(state.course.roundMark.reqSweep || 0).toFixed(3),
+                    } : null,
+                    legLens: state.course.dmc && state.course.dmc.legs
+                        ? state.course.dmc.legs.map(l => Math.round(l.length)) : [],
+                    startLine: (() => { try {
+                        return startLinePts().map(p => [Math.round(p.x), Math.round(p.y)]);
+                    } catch (e) { return null; } })(),
+                },
+                // Floe hull polygons, body frame, recorded ONCE — with the
+                // per-sample [id,x,y,spin] this gives exact extents at every
+                // instant (bounding circles misstate clearance on long floes).
+                floeHulls: (() => { try {
+                    const h = {};
+                    (state.course.islands || []).forEach((i2, idx) => {
+                        if (i2.isFloe && i2.localHull)
+                            h[idx] = i2.localHull.map(p => [Math.round(p.x), Math.round(p.y)]);
+                    });
+                    return h;
+                } catch (e) { return null; } })(),
+                events: [], // [t, type] — penalties and ice contacts
+                format: ['t', 'phase', 'x', 'y', 'hdg', 'spd', 'windDir', 'windSpd',
+                         'leg', 'sweep', 'armed', 'ringSect16(0clear3closing5lead8plug10hard)|0', 'rivals[x,y,hdg,spd,tack(1=stbd,-1=port)]',
+                         'legProg(dmc-projection u)', 'floes<=1200u[hullId,x,y,spin,vx,vy]',
+                         'giveWayN(<=600u rivals with ROW over player)', 'ocs', 'penaltyTurnsOwed',
+                         'awa(signed rad)', 'aws', 'playerTack(1=stbd,-1=port)'],
+                samples: [], acc: 0,
+            };
+            // Player penalty/contact events, timestamped — sampling can miss them.
+            if (!window.__recEvWrapped) {
+                window.__recEvWrapped = true;
+                const inner = window.onRaceEvent;
+                window.onRaceEvent = (ty, d) => {
+                    try {
+                        if (recTraj && d && d.boat && d.boat.isPlayer
+                            && (ty === 'penalty' || ty === 'collision_island' || ty === 'collision_boundary'
+                                || ty === 'collision_boat' || ty === 'collision_mark')
+                            && recTraj.events.length < 2000) {
+                            // Contact events fire per overlap frame — a sustained
+                            // grind would flood the log. One entry per type per 0.5s.
+                            const last = recTraj._evT && recTraj._evT[ty];
+                            if (last == null || state.race.timer - last >= 0.5) {
+                                (recTraj._evT = recTraj._evT || {})[ty] = state.race.timer;
+                                const ev = [+state.race.timer.toFixed(1), ty];
+                                if (ty === 'collision_boat' && d.other) ev.push(d.other.name);
+                                if (ty === 'collision_island') ev.push(d.isFloe ? 'floe' : 'land');
+                                recTraj.events.push(ev);
+                            }
+                        }
+                    } catch (e) {}
+                    return inner && inner(ty, d);
+                };
+            }
+            recTraj.acc += dt;
+            if (recTraj.acc < 0.1 || recTraj.samples.length > 18000) return;
+            recTraj.acc = 0;
+            const lw = getWindAt(player.x, player.y);
+            const rm = state.course.roundMark, g = state.course.botGrid;
+            let sect = 0;
+            if (rm && g && Math.hypot(player.x - rm.x, player.y - rm.y) < rm.zone * 3) {
+                sect = [];
+                for (let k = 0; k < 16; k++) {
+                    const a = k / 16 * Math.PI * 2;
+                    const cc = g.cell(rm.x + Math.cos(a) * rm.zone * 1.1, rm.y + Math.sin(a) * rm.zone * 1.1);
+                    const id = cc[1] * g.n + cc[0];
+                    sect.push(g.at(cc[0], cc[1]) ? (g._futBlk && g._futBlk[id] ? 3 : 0)
+                        : (g._soft && g._soft[id] === 1 ? 5 : g._soft && g._soft[id] === 2 ? 8 : 10));
+                }
+            }
+            recTraj.samples.push([
+                +state.race.timer.toFixed(2), st === 'prestart' ? 0 : 1,
+                +player.x.toFixed(1), +player.y.toFixed(1),
+                +player.heading.toFixed(4), +player.speed.toFixed(3),
+                +lw.direction.toFixed(4), +lw.speed.toFixed(2),
+                player.raceState.leg, +(player.raceState.roundSweep || 0).toFixed(3),
+                player.raceState.roundArmed ? 1 : 0, sect,
+                // Tack comes from Rules.getTack — the engine's OWN rights-of-way
+                // input — so close crossings reconstruct exactly as adjudicated.
+                state.boats.filter(b => !b.isPlayer && !b.raceState.finished)
+                    .map(b => [Math.round(b.x), Math.round(b.y), +b.heading.toFixed(2), +b.speed.toFixed(2),
+                               window.Rules ? window.Rules.getTack(b) : 0]),
+                // Course progress: DMC projection onto the current leg — the join
+                // key for aligning human and bot trajectories by position.
+                (() => {
+                    const lg = player.raceState.leg, dmc = state.course.dmc;
+                    if (!dmc || !dmc.legs || !dmc.legs[lg]) return -1;
+                    if (recTraj.hintLg !== lg) { recTraj.hint = null; recTraj.hintLg = lg; }
+                    recTraj.hint = CoursePath.project(dmc.legs[lg], player.x, player.y, recTraj.hint);
+                    return Math.round(recTraj.hint);
+                })(),
+                // Nearby moving-object state — NOT reconstructible offline (live
+                // play is not seed-pinned), so it must be captured here.
+                (state.course.islands || []).reduce((a, i2, idx) => {
+                    if (i2.isFloe && Math.hypot(i2.x - player.x, i2.y - player.y) < 1200)
+                        a.push([idx, Math.round(i2.x), Math.round(i2.y), +(i2.spin || 0).toFixed(3),
+                                +(i2.driftVx || 0).toFixed(2), +(i2.driftVy || 0).toFixed(2)]);
+                    return a;
+                }, []),
+                // RRS role: how many nearby rivals hold right of way over the
+                // player — separates avoidance maneuvers from tactical ones.
+                !window.Rules ? -1 : state.boats.reduce((n, b) => {
+                    if (b.isPlayer || b.raceState.finished
+                        || Math.hypot(b.x - player.x, b.y - player.y) > 600) return n;
+                    const r = window.Rules.getRightOfWay(player, b);
+                    return n + (r && r.boat === b ? 1 : 0);
+                }, 0),
+                // Obligation state: OCS and owed penalty turns mark the windows
+                // where the trajectory is rules-driven, not preference-driven.
+                player.raceState.ocs ? 1 : 0,
+                player.raceState.penaltyTurnsOwed || 0,
+                // Apparent wind FROM THE MODEL (leeway included) — not exactly
+                // derivable offline from true wind + heading + scalar speed.
+                player.apparentWind ? +normalizeAngle(player.apparentWind.direction - player.heading).toFixed(3) : 0,
+                player.apparentWind ? +player.apparentWind.speed.toFixed(2) : -1,
+                window.Rules ? window.Rules.getTack(player) : 0,
+            ]);
+        } else if (recTraj && recTraj.samples.length > 50) {
+            const t = recTraj; recTraj = null;
+            t.finished = !!player.raceState.finished;
+            t.finishTime = player.raceState.finishTime || null;
+            delete t.acc;
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(t)], { type: 'application/json' }));
+            a.download = 'traj_' + t.venue + '_' + Date.now() + '.json';
+            a.click(); URL.revokeObjectURL(a.href);
+        } else if (recTraj) recTraj = null; // too short to keep (e.g. instant reset)
+    } catch (e) { /* the recorder must never break the game */ }
 }
 
 function createParticle(x, y, type, props = {}) { state.particles.push({ x, y, type, life: 1.0, ...props }); }
