@@ -57,6 +57,9 @@
             this.logIncident(data.boat, 'collision_mark');
         } else if (type === 'collision_boundary') {
             this.logIncident(data.boat, 'collision_boundary');
+        } else if (type === 'collision_island') {
+            // Land vs floe split matches the human recorder's event tags.
+            this.logIncident(data.boat, data.isFloe ? 'collision_floe' : 'collision_land');
         }
     },
 
@@ -152,11 +155,18 @@
             });
         };
 
+        // OCS-after-the-gun: raceState.ocs can only be SET during prestart, so a
+        // boat with the flag up while racing was over the line when the gun went
+        // and is paying the return. A hold that cleared before the gun never
+        // shows here — that is the "penalized early start" the scoreboard wants.
+        const ocsRacing = new Set();
+
         // Loop
         while (iterations < maxIterations) {
             if (state.race.status === 'racing') {
                 if (state.race.timer > maxTime) break;
                 if (state.boats.every(b => b.raceState.finished)) break;
+                for (const b of state.boats) if (b.raceState.ocs) ocsRacing.add(b.id);
                 sample();
             }
 
@@ -202,6 +212,7 @@
                     x: Math.round(b.x), y: Math.round(b.y),
                     speed: Math.round((b.speed || 0) * 100) / 100,
                     ocs: !!b.raceState.ocs,
+                    ocsStart: ocsRacing.has(b.id),
                     resultStatus: b.raceState.resultStatus || null,
                     prestartPhase: (b.controller && b.controller.prestartPhase) || null,
                     // Keep the trajectory for any boat still on leg 0 at the end

@@ -16,15 +16,20 @@ function legDurs(run, inf) {
     return d;
 }
 const perLeg = {}; const fins = []; const starts = []; const pens = [];
+const col = { boat: 0, land: 0, mark: 0, floe: 0, bounds: 0 }; let ocsN = 0, colInstr = false;
 for (const run of A) for (const inf of run.info) {
     const d = legDurs(run, inf);
     for (let lg = 1; lg <= 6; lg++) if (d[lg] != null) (perLeg[lg] = perLeg[lg] || []).push(d[lg]);
     if (inf.fin != null) fins.push(inf.fin);
     if (d.start != null) starts.push(d.start);
     pens.push(inf.pen || 0);
+    if (inf.ocs) ocsN++;
+    if (inf.col) { colInstr = true; for (const c in col) col[c] += inf.col[c] || 0; }
 }
 const n = A.length * A[0].info.length;
-console.log(`${process.argv[2] || 'base'}: ${A.length} seeds, ${fins.length}/${n} finishers, fin med ${med(fins)} min ${Math.min(...fins)} | start-cross med ${med(starts)} | pens/boat ${(pens.reduce((a, b) => a + b, 0) / pens.length).toFixed(2)}`);
+const mean = a => a.reduce((x, y) => x + y, 0) / a.length;
+console.log(`${process.argv[2] || 'base'}: ${A.length} seeds, ${fins.length}/${n} finishers, fin med ${med(fins)} mean ${mean(fins).toFixed(1)} min ${Math.min(...fins)} max ${Math.max(...fins)} | start-cross med ${med(starts)} mean ${mean(starts).toFixed(1)} min ${Math.min(...starts)} max ${Math.max(...starts)} | pens/boat ${mean(pens).toFixed(2)} | OCS ${(100 * ocsN / n).toFixed(1)}%`);
+if (colInstr) console.log(`collisions/boat-race: boat ${(col.boat / n).toFixed(2)} land ${(col.land / n).toFixed(2)} mark ${(col.mark / n).toFixed(2)} floe ${(col.floe / n).toFixed(2)} bounds ${(col.bounds / n).toFixed(2)}  (0.5s dedup, prestart incl.)`);
 console.log('leg   bot-med  bot-min  human   delta');
 let sum = 0;
 for (let lg = 1; lg <= 6; lg++) {

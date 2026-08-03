@@ -53,15 +53,16 @@ function modeDiscrete(values) {
 }
 
 function calculateStats(values, type = 'continuous') {
-    if (values.length === 0) return { n: 0, mean: 0, median: 0, mode: 0, max: 0 };
+    if (values.length === 0) return { n: 0, mean: 0, median: 0, mode: 0, max: 0, min: 0 };
     const sum = values.reduce((a, b) => a + b, 0);
     const mean = sum / values.length;
     const max = Math.max(...values);
+    const min = Math.min(...values);
     const sorted = [...values].sort((a, b) => a - b);
     const mid = Math.floor(sorted.length / 2);
     const median = sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
     const mode = type === 'continuous' ? modeContinuous(values) : modeDiscrete(values);
-    return { n: values.length, mean, median, mode, max };
+    return { n: values.length, mean, median, mode, max, min };
 }
 
 (async () => {
@@ -113,7 +114,7 @@ function calculateStats(values, type = 'continuous') {
         start: { time: [], dns_count: 0 },
         upwind: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], attempt_count: 0, finish_count: 0 },
         downwind: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], attempt_count: 0, finish_count: 0 },
-        race: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], dnf: 0, count: 0 },
+        race: { time: [], penalties: [], coll_boat: [], coll_mark: [], coll_bound: [], coll_land: [], coll_floe: [], dnf: 0, count: 0, ocs_count: 0 },
         placement: [],
         tackCount: []
     };
@@ -239,6 +240,9 @@ function calculateStats(values, type = 'continuous') {
                 target.coll_boat.push(countType('collision_boat'));
                 target.coll_mark.push(countType('collision_mark'));
                 target.coll_bound.push(countType('collision_boundary'));
+                target.coll_land.push(countType('collision_land'));
+                target.coll_floe.push(countType('collision_floe'));
+                if (boat.ocsStart) target.ocs_count++;
             };
 
             pushRace(bGlobal.race);
@@ -281,6 +285,9 @@ function calculateStats(values, type = 'continuous') {
                 coll_boat: calculateStats(b.race.coll_boat, 'discrete'),
                 coll_mark: calculateStats(b.race.coll_mark, 'discrete'),
                 coll_bound: calculateStats(b.race.coll_bound, 'discrete'),
+                coll_land: calculateStats(b.race.coll_land, 'discrete'),
+                coll_floe: calculateStats(b.race.coll_floe, 'discrete'),
+                ocs_percent: b.race.count > 0 ? (b.race.ocs_count / b.race.count) * 100 : 0,
                 dnf_percent: (b.race.dnf / b.race.count) * 100
             }
         };
@@ -308,7 +315,7 @@ function calculateStats(values, type = 'continuous') {
 
     console.log("\nOVERALL METRICS:");
     const o = aggregated.overall;
-    console.log(`Start Time Mean: ${fmt(o.start_time.mean)}s | Median: ${fmt(o.start_time.median)}s (DNS: ${fmt(o.dns_percent)}%)`);
+    console.log(`Start Time Mean: ${fmt(o.start_time.mean)}s | Median: ${fmt(o.start_time.median)}s | Min: ${fmt(o.start_time.min)}s | Max: ${fmt(o.start_time.max)}s (DNS: ${fmt(o.dns_percent)}%, OCS: ${fmt(o.race.ocs_percent)}%)`);
     console.log(`Race Time Mean: ${fmt(o.race.time.mean)}s | Median: ${fmt(o.race.time.median)}s (DNF: ${fmt(o.race.dnf_percent)}%)`);
     console.log(`Avg Placement: ${fmt(o.placement.mean)} | Avg Tacks: ${fmt(o.tack_count.mean)}`);
     console.log(`Upwind Time Mean: ${fmt(o.upwind.time.mean)}s | Downwind Time Mean: ${fmt(o.downwind.time.mean)}s`);
@@ -317,6 +324,7 @@ function calculateStats(values, type = 'continuous') {
     console.log(`Avg Boat Collisions/Race: ${fmt(o.race.coll_boat.mean)}`);
     console.log(`Avg Mark Collisions/Race: ${fmt(o.race.coll_mark.mean)}`);
     console.log(`Avg Bound Collisions/Race: ${fmt(o.race.coll_bound.mean)}`);
+    console.log(`Avg Land Collisions/Race: ${fmt(o.race.coll_land.mean)} | Avg Floe Collisions/Race: ${fmt(o.race.coll_floe.mean)}`);
 
     console.log("\nPER CHARACTER (Summary):");
     console.log("Char".padEnd(16) + "RaceTime".padEnd(10) + "DNF%".padEnd(8) + "DNS%".padEnd(8) + "Pen/R".padEnd(8) + "ColB/R".padEnd(8));

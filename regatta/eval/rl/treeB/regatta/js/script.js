@@ -347,6 +347,10 @@ class BotController {
                 // Bank a BUFFER before turning for the exit: the fight out through
                 // the ring in a 25-knot katabatic costs ~0.2-0.4 rad of unwind, and
                 // leaving at exactly the requirement meant arriving outside it.
+                // (A 0.10 buffer on floe-free water was A/B'd on Lighthouse Cove —
+                // paired -2 med / -3.3 mean vs 0.25: the exit path curves, so the
+                // unwind is real even with nothing to grind through. 0.25 stays
+                // everywhere.)
                 if ((rsL.roundSweep || 0) >= needL + 0.25) this._outbound = true;
                 else if ((rsL.roundSweep || 0) < needL * 0.8) this._outbound = false;
                 if (this._outbound) { this.wiggleActive = false; this.wiggleDuration = 0; }
@@ -851,6 +855,11 @@ class BotController {
                             const score = clear * 10 - blocked * 8 - churn * 4 - da * 3 - crowd * 7;
                             if (score > bestScore) { bestScore = score; bestA = a; }
                         }
+                        // (Ruler-entry on clean uncontested rings was A/B'd here —
+                        // skip the hunt, let the DMC follower carry the approach —
+                        // and REJECTED: paired gain fell from +8.0s to +1.6s. The
+                        // sector hunt's cut-in beats the tangent follower on this
+                        // engine even alone in open water.)
                         this._entryBrg = bestA;
                     }
                     if (this._entryBrg != null) {
@@ -934,7 +943,7 @@ class BotController {
                         this._exitT = (this._exitT || 0) - 0.1;
                         if (gX && (this._exitBrg == null || this._exitT <= 0)) {
                             this._exitT = 2.0;
-                            let bestX = null, bestSc = -Infinity;
+                            let bestX = null, bestSc = -Infinity, ringDirty = false;
                             for (let k = 0; k < 16; k++) {
                                 const a = k / 16 * Math.PI * 2;
                                 let clear = 0, blocked = 0, churn = 0;
@@ -944,9 +953,9 @@ class BotController {
                                     const cc = gX.cell(px, py);
                                     const idX = cc[1] * gX.n + cc[0];
                                     if (gX.at(cc[0], cc[1])) clear += (gX._futBlk && gX._futBlk[idX]) ? 0.3 : 1;
-                                    else if (gX._soft && gX._soft[idX] === 1) clear += 0.5;
-                                    else blocked++;
-                                    if (gX._floeRisk && gX._floeRisk[idX]) churn++;
+                                    else if (gX._soft && gX._soft[idX] === 1) { clear += 0.5; ringDirty = true; }
+                                    else { blocked++; ringDirty = true; }
+                                    if (gX._floeRisk && gX._floeRisk[idX]) { churn++; ringDirty = true; }
                                 }
                                 let da = (a - brgA) * sgnA;
                                 while (da < 0) da += Math.PI * 2;
@@ -957,9 +966,52 @@ class BotController {
                                 const sc = clear * 10 - blocked * 8 - churn * 4 - da * 9;
                                 if (sc > bestSc) { bestSc = sc; bestX = a; }
                             }
+                            // CLEAN RING: no shell to breach. The sector machinery is
+                            // pack-ice logic — ride the ring to the clearest radial,
+                            // punch out to 1.7x — and on open water it exits wherever
+                            // the sweep happened to bank, then turns around (measured
+                            // on Lighthouse Cove: +3-7s at EVERY rounding, the largest
+                            // per-leg sink on the venue). With nothing to dodge, the
+                            // exit that matters is the one the NEXT leg starts with.
+                            this._exitClean = false;
+                            if (!ringDirty) {
+                                const nxt = state.course.dmc && state.course.dmc.legs
+                                    && state.course.dmc.legs[rs.leg + 1];
+                                if (nxt && nxt.pts && nxt.pts.length) {
+                                    // ~600u along the next path clears the arc geometry
+                                    // near the mark before committing to a bearing.
+                                    let tp = nxt.pts[nxt.pts.length - 1];
+                                    for (let k = 0; k < nxt.pts.length; k++) {
+                                        if (nxt.cum[k] > 600) { tp = nxt.pts[k]; break; }
+                                    }
+                                    const bOut = Math.atan2(tp.y - rm.y, tp.x - rm.x);
+                                    // TRUE RUNS only (the strategy layer's own
+                                    // downwind boundary). Aimed exits were A/B'd at
+                                    // three thresholds: dead-upwind aim pinched, a
+                                    // forced close-hauled tack lost 3-4s on the beat
+                                    // leg, and even a 49° gate still aimed the
+                                    // beat-feeding exit at a close reach toward the
+                                    // shore corridor (-4s paired, three runs in a
+                                    // row). Upwind and reach first boards belong to
+                                    // the strategy layer; the old radial exit hands
+                                    // over to it cleanly.
+                                    const lwX = getWindAt(rm.x, rm.y).direction;
+                                    const twaOut = normalizeAngle(bOut - lwX);
+                                    if (Math.abs(twaOut) >= Math.PI * 0.7) {
+                                        bestX = bOut;
+                                        this._exitClean = true;
+                                    }
+                                }
+                            }
                             this._exitBrg = bestX;
                         }
-                        if (this._exitBrg != null) {
+                        if (this._exitBrg != null && this._exitClean) {
+                            // Straight out along the next leg — any outward motion
+                            // banks the rounding; no ring ride, no radial ritual.
+                            const RXo = Math.max(rm.zone * 1.45, dRm + 120);
+                            destX = rm.x + Math.cos(this._exitBrg) * RXo;
+                            destY = rm.y + Math.sin(this._exitBrg) * RXo;
+                        } else if (this._exitBrg != null) {
                             let da = (this._exitBrg - brgA) * sgnA;
                             while (da < 0) da += Math.PI * 2;
                             while (da >= Math.PI * 2) da -= Math.PI * 2;
@@ -1533,9 +1585,18 @@ class BotController {
             mode = 'downwind';
             optTWA = getCharacterOptimalVMGAngle('downwind', localWind.speed, boat.stats);
 
-            // Planing Check
-            if (state.wind.speed > J111_PLANING.minTWS) {
-                 optTWA = 140 * Math.PI/180;
+            // Planing Check — LOCAL wind, and only if THIS boat can actually reach
+            // the planing entry gate at the hot angle. The old check read the
+            // GLOBAL wind: one venue region above minTWS heated every run in the
+            // bay to 140° boards (1/cos40 = +31% distance) in 10-11 kt water where
+            // the polar tops out below entrySpeed and the plane never engages —
+            // the human sails those legs at 150-170° and beats the fleet on pure
+            // geometry. Heat only when the plane is genuinely on offer.
+            if (localWind.speed > J111_PLANING.minTWS) {
+                const t140 = (140 - 102.5) / (145 - 102.5);
+                const pos140 = boat.stats.reach * 0.018 + t140 * (boat.stats.downwind * 0.015 - boat.stats.reach * 0.018);
+                const s140 = getTargetSpeed(140 * Math.PI / 180, true, localWind.speed) * (1 + pos140);
+                if (s140 >= J111_PLANING.entrySpeed) optTWA = 140 * Math.PI / 180;
             }
         }
 

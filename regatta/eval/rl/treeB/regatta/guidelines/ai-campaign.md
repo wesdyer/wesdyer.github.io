@@ -28,8 +28,7 @@ OCS hold that returns cleanly before the gun is NOT one).
 |---|---|---|---|---|---|---|---|
 | 2026-08-06 anchor @100t (fb9f641) | bots | 0 | n/i | 3.31 | 6.51 | — | — |
 | 2026-08-03 stack @40t (855379a) | bots | 0 | n/i | 3.19 | 6.25 | — | 49.1 |
-| 2026-08-03 instr @100t (a0c3633) | bots | 0 | 14.7 | 3.41 | 6.30 | 0.0 | 62.5 |
-| 2026-08-03 (12 traj) | human | 0 | 11 (1/9 v7) | 2.3 | 3.3 | 0.7 | 13.9 |
+| 2026-08-03 (12 traj) | human | 0 | n/i | 2.3 | 3.3 | 0.7 | 13.9 |
 
 ### Course (finish time, s)
 
@@ -37,13 +36,7 @@ OCS hold that returns cleanly before the gun is NOT one).
 |---|---|---|---|---|---|---|
 | 2026-08-06 anchor @100t (fb9f641) | bots | 0 | 200.44 | 204.34 | — | — |
 | 2026-08-03 stack @40t (855379a) | bots | 0 | 200.47 | 204.67 | — | 360.0 |
-| 2026-08-03 instr @100t (a0c3633) | bots | 0 | 199.63 | 203.55 | — | — |
 | 2026-08-03 (12 traj) | human | 0 | 192.2 | 191.4 | 180.9 | 200.6 |
-
-The a0c3633 row is the fresh 100t reading on the tree that contains the Aug-6
-overnight arctic stack (fb9f641 + 14 commits); slightly better than the stored
-fb9f641 anchor, so the anchor HOLDS on current HEAD. Instrumentation itself is
-byte-inert (10t A/B: identical 204.42/200.75 with the old and new harness).
 
 ### Collisions (per boat-race)
 
@@ -56,11 +49,7 @@ Penalties are a SEPARATE table — a penalty is a rules event (RRS infraction +
 | Snapshot | Who | Boat | Land | Mark | Other |
 |---|---|---|---|---|---|
 | 2026-08-03 stack @40t (855379a) | bots | 0.52 | n/a | 0.25 | 0.00 (bounds) |
-| 2026-08-03 instr @100t (a0c3633) | bots | 0.50 | n/a | 0.19 | 0.02 (bounds) |
 | 2026-08-03 (12 traj) | human | 0.25 (3 in 12) | n/a | 0 | 0 |
-
-Bot rows here use run_eval's incident convention (2s cooldown per boat+type,
-legs ≥ 1); the human recorder counts one event per type per 0.5s from prestart.
 
 ### Penalties (per boat-race)
 
@@ -68,7 +57,6 @@ legs ≥ 1); the human recorder counts one event per type per 0.5s from prestart
 |---|---|---|
 | 2026-08-06 anchor @100t (fb9f641) | bots | 0.44 |
 | 2026-08-03 stack @40t (855379a) | bots | 0.50 |
-| 2026-08-03 instr @100t (a0c3633) | bots | 0.42 |
 | 2026-08-03 (12 traj) | human | 0 |
 
 **Read:** the median bot start and finish are within ~8s of the human median;
@@ -81,12 +69,8 @@ cleaner race (0 pens vs 0.50). The bot tail — not the bot median — is the ga
 
 Protocol: `regatta/eval/rl/bay_bench.js 20-seed set (9100-9119)`, cutoff 900,
 9 bots (player parked). `bay_report.js <label> [labelB]` prints these + paired
-deltas. Human = 7 trajectories. Since 2026-08-03 the bench counts per-boat
-contacts (0.5s dedup per category, prestart included — the human recorder's
-convention), true penalties (`raceState.totalPenalties`), and OCS.
-⚠️ The 855379a "0.00 penalties" row was a bug: the bench read `b.penalties`,
-a field that does not exist on live boats (the engine stores
-`raceState.totalPenalties`). True pens/boat on the same races is 0.57.
+deltas. Human = 7 trajectories. ⚠️ Bot collision counts NOT yet instrumented
+in bay_bench (TODO next round) — only penalties are.
 
 ### Starts (time to cross, s)
 
@@ -94,8 +78,7 @@ a field that does not exist on live boats (the engine stores
 |---|---|---|---|---|---|---|---|
 | 2026-08-03 baseline (614b20b) | bots | 0 | n/i | 5 | — | — | — |
 | 2026-08-03 stack (855379a) | bots | 0 | n/i | 5 | 9.3 | 0 | 147 |
-| 2026-08-03 instr (a0c3633) | bots | 0 | 3.9 | 5 | 9.3 | 0 | 147 |
-| 2026-08-03 (7 traj) | human | 0 | 0 (0/7) | 0.9 | 4.5 | 0.6 | 19.1 |
+| 2026-08-03 (7 traj) | human | 0 | n/i | 0.9 | 4.5 | 0.6 | 19.1 |
 
 ### Course (finish time, s)
 
@@ -103,11 +86,7 @@ a field that does not exist on live boats (the engine stores
 |---|---|---|---|---|---|---|
 | 2026-08-03 baseline (614b20b) | bots | 0 | 277 | — | 216 | — |
 | 2026-08-03 stack (855379a) | bots | 0 | 268 | 269.7 | 215 | 365 |
-| 2026-08-03 instr (a0c3633) | bots | 0 | 268 | 269.7 | 215 | 365 |
 | 2026-08-03 (7 traj) | human | 0 | 226.1 | 226.7 | 219.5 | 241.1 |
-
-(instr row = byte-identical races to the stack — instrumentation verified
-inert against the stored stack JSON — with the new columns now measured.)
 
 Per-leg medians vs human (stack): L1 +3, L2 +1, L3 +6, L4 +6, L5 +6, L6 +5.
 
@@ -116,31 +95,20 @@ Per-leg medians vs human (stack): L1 +3, L2 +1, L3 +6, L4 +6, L5 +6, L6 +5.
 | Snapshot | Who | Boat | Land | Mark | Other |
 |---|---|---|---|---|---|
 | 2026-08-03 stack (855379a) | bots | n/i | n/i | n/i | n/a |
-| 2026-08-03 instr (a0c3633) | bots | 1.89 | 0.31 | 0.91 | 0.00 (bounds) |
 | 2026-08-03 (7 traj) | human | 0.14 (1 in 7) | 0 | 0 | n/a |
 
 ### Penalties (per boat-race)
 
 | Snapshot | Who | Penalties |
 |---|---|---|
-| 2026-08-03 stack (855379a) | bots | 0.00 (BUG — see protocol note; true 0.57) |
-| 2026-08-03 instr (a0c3633) | bots | 0.57 |
+| 2026-08-03 stack (855379a) | bots | 0.00 |
 | 2026-08-03 (7 traj) | human | 0 |
 
-**Read:** the whole gap is pace (median −42s vs human), but the race is NOT
-as clean as previously believed: 0.57 pens/boat and 1.89 boat contacts per
-race (human: 0, 0.14). The winning bot (min 215) edges the human best (219.5).
-**L1 tail diagnosis (2026-08-03, l1diag bench + per-tack traces):** the
-"early starters get buried" story is FALSE — corr(L1 duration, start time) =
-−0.08. The tail is EXCESS TACKING: corr(L1, tacks) = 0.72; tail boats (L1 ≥
-60s) tack med 7 (up to 14) vs fleet med 3 vs human 2, while dirty-air time
-(5%/5%) and headed-tack share (52%/54%) are IDENTICAL between tail and rest
-(the human sails headed 35-58% of their beat too — nobody meaningfully plays
-the 45-120s oscillation inside a 40s leg). Per-tack attribution: ~40% of tail
-tacks are AVOIDANCE-forced (traffic dodges through head-to-wind), and the
-rest chain off them — after an avoidance flip, scoreTack's tackCooldown was
-never set (it only arms on its OWN switches), so the strategic layer tacks
-straight back: two deciders sawing (bursts of 5 flips in 3s observed).
+**Read:** every bot finishes cleanly; the whole gap is pace (median −42s vs
+human). The winning bot (min 215) now edges the human best (219.5). Biggest
+remaining sinks: L1 mid-beat tail (31/180 boats lose 20-100s and they are
+EARLY starters getting buried — see the 147s start-cross max), the east-
+pressure gybe bulge on the runs, entry-overshoot tails at marks 2/3.
 
 ---
 
@@ -156,8 +124,7 @@ race-condition finisher count). Human = 16 trajectories. ⚠️ A fresh capped
 | Snapshot | Who | DNS% | OCS% | Median | Mean | Min | Max |
 |---|---|---|---|---|---|---|---|
 | 2026-08-03 stack (855379a) | bots | 0 | n/i | 4 | 8.7 | 0 | 113 |
-| 2026-08-03 instr (a0c3633) | bots | 0 | 6.9 | 4 | 8.7 | 0 | 113 |
-| 2026-08-03 (16 traj) | human | 0 | 0 (0/13 v7) | 1.2 | 3.6 | 0.1 | 22.6 |
+| 2026-08-03 (16 traj) | human | 0 | n/i | 1.2 | 3.6 | 0.1 | 22.6 |
 
 ### Course (finish time, s; uncapped-900 protocol)
 
@@ -165,30 +132,20 @@ race-condition finisher count). Human = 16 trajectories. ⚠️ A fresh capped
 |---|---|---|---|---|---|---|---|
 | 2026-08-03 HEAD baseline (614b20b) | bots | 6.9 (10/144) | — | 530 | — | — | — |
 | 2026-08-03 stack (855379a) | bots | 9.0 (13/144) | 35/144 (24%) | 538 | 537.6 | 257 | 899 |
-| 2026-08-03 instr (a0c3633) | bots | 9.0 (13/144) | 35/144 (24%) | 538 | 537.6 | 257 | 899 |
 | 2026-08-03 (16 traj) | human | 0 | 16/16 | 229.1 | 230.3 | 200.1 | 299.2 |
-
-(instr row = byte-identical races to stackcheck16 — verified — with the new
-columns measured; 143/144 rounders.)
 
 ### Collisions (per boat-race)
 
 | Snapshot | Who | Boat | Land | Mark | Other (floes) |
 |---|---|---|---|---|---|
 | 2026-08-03 stack (855379a) | bots | n/i | n/i | n/i | n/i |
-| 2026-08-03 instr (a0c3633) | bots | 8.84 | 29.93 | 0.69 | 24.25 (+0.11 bounds) |
 | 2026-08-03 (16 traj) | human | 0.6/run | 0.4/run | 0 | 4.4/run (0-24; grind-through is cheap) |
-
-Same 0.5s-dedup convention as the human recorder. Bot land contact is ~75x
-the human's; floes ~6x. Contact discipline, not just routing, separates the
-fleets here.
 
 ### Penalties (per boat-race)
 
 | Snapshot | Who | Penalties |
 |---|---|---|
 | 2026-08-03 stack (855379a) | bots | n/i in fleet_leg2 |
-| 2026-08-03 instr (a0c3633) | bots | 1.96 |
 | 2026-08-03 (16 traj) | human | 0.13 (2 in 16) |
 
 **Read:** every human run finishes inside the 420 cutoff; only ~24% of bot
@@ -202,19 +159,15 @@ obsolete — never compare against it again.
 
 ## Instrumentation TODO (to make the tables complete)
 
-DONE 2026-08-03 (a0c3633 + instr commit): items 1-3 — bay_bench/fleet_leg2
-count per-boat boat/land/mark/floe/bounds contacts (0.5s dedup, prestart
-incl.), true penalties and OCS; eval_harness logs collision_island as
-land/floe and tracks OCS-after-the-gun per boat; run_eval prints OCS%,
-land/floe columns and start min/max; traj_report decodes human OCS from
-recorder-v7 sample field 16 (racing-phase `raceState.ocs`). OCS definition
-everywhere: the flag can only be SET during prestart, so ocs-while-racing =
-over at the gun, paying the return.
-
-Remaining:
-1. A capped arctic_eval round per snapshot for true DNS/DNF at 420.
-2. run_eval race-time min/max onto the course rows (in eval_results.json now,
-   not yet in the console line).
+1. `bay_bench.js` / `fleet_leg2.js`: count per-boat boat/land/mark/other
+   contacts + penalties (arctic_eval.js already shows how: `b.penalties`,
+   `iceCounts`). Then every venue fills Collisions AND Penalties.
+2. **OCS%** everywhere: benches should record boats penalized for an early
+   start (rules event, distinct from a clean pre-gun return); run_eval needs
+   the same. Human OCS is already in the recorder's event stream (v7) — decode
+   it in `traj_report.js` and backfill the human rows.
+3. Capture bot start min (run_eval reports median/mean/max only).
+4. A capped arctic_eval round per snapshot for true DNS/DNF at 420.
 
 ## Next session brief (prepared 2026-08-03, tree at ba33366)
 
