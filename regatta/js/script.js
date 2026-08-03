@@ -8918,12 +8918,24 @@ function updateBoatRaceState(boat, dt) {
     // block above targets the unused windward gate, so override it here.
     if (state.course.type === 'islandRound' && state.course.roundMark && marks && marks.length >= 2) {
         const rs0 = boat.raceState;
+        const e0 = routeLeg(Math.min(rs0.leg, state.race.totalLegs));
         let tx, ty;
         if (rs0.leg <= 1) {
-            tx = state.course.roundMark.x; ty = state.course.roundMark.y;
+            // Outbound: the first rounding, even before the gun — Glacier Sound's
+            // mountain, the first can at Lighthouse Cove.
+            const rm0 = (e0 && e0.kind === 'round' && e0.mark) ? e0.mark : state.course.roundMark;
+            tx = rm0.x; ty = rm0.y;
+        } else if (e0 && e0.kind === 'round' && e0.mark) {
+            // Any later rounding: THIS leg's mark. `roundMark` is only the first one,
+            // and the old start-line fallback pointed a five-rounding course home
+            // from leg 2 onward.
+            tx = e0.mark.x; ty = e0.mark.y;
         } else {
-            const [s0, s1] = startLinePts();
-            const c = getClosestPointOnSegment(boat.x, boat.y, s0.x, s0.y, s1.x, s1.y);
+            // A line or gate leg: the leg's own line — which on Lighthouse Cove is a
+            // finish line that is NOT the start line.
+            const lm = (e0 && e0.marks) ? e0.marks : startLineMarks();
+            const l0 = marks[lm[0]], l1 = marks[lm[1]];
+            const c = getClosestPointOnSegment(boat.x, boat.y, l0.x, l0.y, l1.x, l1.y);
             tx = c.x; ty = c.y;
         }
         const wdx = tx - boat.x, wdy = ty - boat.y;
@@ -10821,63 +10833,90 @@ function drawRoundingArrows(ctx) {
 // ... Reused standard draw functions ...
 function drawActiveGateLine(ctx) {
     const player = state.boats[0];
-    let indices;
+    const finished = state.race.status === 'finished' || player.raceState.finished;
+    const leg = player.raceState.leg;
+    const totalLegs = state.race.totalLegs;
+
+    // One crossing line, with the shared treatment: bright when it is what the player is
+    // being asked for, slate furniture otherwise, label facing the approaching racer.
+    const drawLine = (indices, target, color, label, dir) => {
+        const m1 = state.course.marks[indices[0]], m2 = state.course.marks[indices[1]];
+        if (!m1 || !m2) return;
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(m1.x, m1.y); ctx.lineTo(m2.x, m2.y);
+        ctx.shadowColor = color; ctx.shadowBlur = target ? 15 : 0;
+        ctx.strokeStyle = color; ctx.lineWidth = target ? 5 : 3;
+        ctx.globalAlpha = target ? 1 : 0.4;
+        ctx.lineDashOffset = -state.time * 20; ctx.stroke();
+        if (label) {
+            ctx.fillStyle = color; ctx.font = FONT.display(24); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            // Face approaching racers: the text's top points in the direction of travel
+            // through the line — the crossing normal n = (dy, -dx) times the entry's own
+            // crossing sign. (This used to look up "the other gate" as marks[2]/[3] —
+            // which do not exist on a course with one line and a rounding, so it read
+            // undefined and crashed the whole draw.)
+            const angle = Math.atan2(m2.y - m1.y, m2.x - m1.x);
+            const tx = (m2.y - m1.y) * dir, ty = -(m2.x - m1.x) * dir;
+            ctx.translate((m1.x + m2.x) / 2, (m1.y + m2.y) / 2);
+            let rot = angle;
+            if (Math.sin(rot) * tx - Math.cos(rot) * ty < 0) rot += Math.PI;
+            ctx.rotate(rot); ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+            ctx.strokeText(label, 0, 0); ctx.fillText(label, 0, 0);
+        }
+        ctx.restore();
+    };
+
     if (state.course.type === 'islandRound') {
-        // One line, and it is both start and finish — always drawn.
-        indices = [0, 1];
-    } else if (state.race.status === 'finished' || player.raceState.finished) {
+        // A rounding course keeps its lines on the water for the whole race — they are
+        // fixed furniture you will come back to. Read them off the ROUTE: on Glacier
+        // Sound start and finish are the same pair; on Lighthouse Cove they are two
+        // different lines, and BOTH draw — the finish permanently labelled so the two
+        // can never be confused.
+        const route = state.course.route || [];
+        const startE = route[0] || {};
+        const sIdx = startE.marks || [0, 1];
+        const finE = route[totalLegs] || route[route.length - 1] || {};
+        const fIdx = finE.marks || sIdx;
+        const sameLine = fIdx[0] === sIdx[0] && fIdx[1] === sIdx[1];
+
+        const finTarget = finished || leg >= totalLegs;
+        if (sameLine) {
+            // One line playing both roles — the original single-line logic.
+            const target = finTarget || leg === 0;
+            let color = '#ffffff';
+            if (finished) color = '#4ade80';
+            else if (leg === 0 && state.race.status === 'prestart') color = '#ef4444';
+            // The same slate the greyed-out buoys use, so "not the thing you are sailing
+            // to" looks the same whatever piece of furniture is saying it.
+            else if (!target) color = '#94a3b8';
+            const label = leg === 0 ? 'START' : (finTarget ? 'FINISH' : '');
+            const dir = ((routeLeg(Math.min(leg, totalLegs)) || {}).dir) || 1;
+            drawLine(sIdx, target, color, label, dir);
+        } else {
+            const startTarget = !finished && leg === 0;
+            let sColor = '#94a3b8';
+            if (startTarget) sColor = state.race.status === 'prestart' ? '#ef4444' : '#ffffff';
+            drawLine(sIdx, startTarget, sColor, startTarget ? 'START' : '', startE.dir || 1);
+            const fColor = finished ? '#4ade80' : (finTarget ? '#ffffff' : '#94a3b8');
+            drawLine(fIdx, finTarget, fColor, 'FINISH', finE.dir || 1);
+        }
+        return;
+    }
+
+    // Windward-leeward: the line appears only when it is the thing to cross.
+    let indices;
+    if (finished) {
         indices = finishMarks() || [0, 1];
     } else {
-        if (player.raceState.leg !== 0 && player.raceState.leg !== state.race.totalLegs) return;
-        indices = legMarks(player.raceState.leg) || [0, 1];
+        if (leg !== 0 && leg !== totalLegs) return;
+        indices = legMarks(leg) || [0, 1];
     }
-    const m1 = state.course.marks[indices[0]], m2 = state.course.marks[indices[1]];
-    ctx.save();
-    const dashOffset = -state.time * 20;
-    ctx.beginPath(); ctx.moveTo(m1.x, m1.y); ctx.lineTo(m2.x, m2.y);
-
-    // IS THIS LINE WHAT THE PLAYER IS BEING ASKED FOR? On an island course it is drawn for the
-    // whole race — it is both the start and the finish — so through the middle of the race it
-    // has to say it is not the target. A white line reads as "cross me", and it was still
-    // reading that way while the rounding was the live instruction.
-    const lineIsTarget = state.race.status === 'finished' || player.raceState.finished
-        || player.raceState.leg === 0 || player.raceState.leg >= state.race.totalLegs;
-
     let color = '#ffffff';
-    if (state.race.status === 'finished' || player.raceState.finished) color = '#4ade80';
-    else if (player.raceState.leg === 0 && state.race.status === 'prestart') color = '#ef4444';
-    // The same slate the greyed-out buoys use, so "not the thing you are sailing to" looks
-    // the same whatever piece of furniture is saying it.
-    else if (!lineIsTarget) color = '#94a3b8';
-
-    ctx.shadowColor = color; ctx.shadowBlur = lineIsTarget ? 15 : 0;
-    ctx.strokeStyle = color; ctx.lineWidth = lineIsTarget ? 5 : 3;
-    ctx.globalAlpha = lineIsTarget ? 1 : 0.4;
-    ctx.lineDashOffset = dashOffset; ctx.stroke();
-
-    ctx.save(); ctx.fillStyle = color; ctx.font = FONT.display(24); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    const midX = (m1.x+m2.x)/2, midY = (m1.y+m2.y)/2;
-    let label = (player.raceState.leg === 0) ? "START" : ((player.raceState.leg === state.race.totalLegs || state.race.status === 'finished' || player.raceState.finished) ? "FINISH" : "");
-    if (label) {
-        const angle = Math.atan2(m2.y - m1.y, m2.x - m1.x);
-        // Face approaching racers: the text's top points in the direction of travel
-        // through the line (START: toward the first gate; FINISH: away from the last gate)
-        // Direction of travel THROUGH the line: the crossing normal n = (dy, -dx)
-        // times the required crossing sign. This used to look up "the other gate"
-        // as marks[2]/[3] — which do not exist on a course with one line and a
-        // rounding, so it read undefined and crashed the whole draw. `dir` already
-        // encodes travel direction, so no separate FINISH negation is needed:
-        // the start crosses with dir +1 and the finish with dir -1.
-        const _le = routeLeg(Math.min(player.raceState.leg, state.race.totalLegs)) || {};
-        const _ds = _le.dir || 1;
-        const tx = (m2.y - m1.y) * _ds, ty = -(m2.x - m1.x) * _ds;
-        ctx.translate(midX, midY);
-        let rot = angle;
-        if (Math.sin(rot) * tx - Math.cos(rot) * ty < 0) rot += Math.PI;
-        ctx.rotate(rot); ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4; ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-        ctx.strokeText(label, 0, 0); ctx.fillText(label, 0, 0);
-    }
-    ctx.restore(); ctx.restore();
+    if (finished) color = '#4ade80';
+    else if (leg === 0 && state.race.status === 'prestart') color = '#ef4444';
+    const label = (leg === 0 && !finished) ? 'START' : 'FINISH';
+    const dir = ((routeLeg(Math.min(leg, totalLegs)) || {}).dir) || 1;
+    drawLine(indices, true, color, label, dir);
 }
 
 function drawLadderLines(ctx) {
@@ -11088,18 +11127,26 @@ function drawMarkZones(ctx) {
         ctx.restore();
     }
 
-    // Island course: ONE zone circle around the rounding mark. Marks 2/3 are
-    // parked beside the granite island for code that indexes them, and drawing
-    // their zones put a phantom gate at the rounding.
+    // Rounding course: the zone circle belongs to whatever mark THIS leg rounds — read
+    // it off the route entry, not off `roundMark`, which is only the first rounding of
+    // the course. Keying on `leg !== 1` left Lighthouse Cove's legs 2-5 with no circle
+    // at all, and always drawing `roundMark` put leg 1's circle on the wrong can.
+    //
+    // Drawn SOLID: the zone is hard course geometry, same as a gate's — the dashes read
+    // as a suggestion. And amber the moment the hull is inside it, exactly like a gate.
     if (state.course.type === 'islandRound') {
-        const rm = state.course.roundMark;
-        if (!rm || player.raceState.leg !== 1) return;
+        const e = routeLeg(player.raceState.leg);
+        const rm = (e && e.kind === 'round' && e.mark) ? e.mark : null;
+        if (!rm) return;
+        const h = player.heading, sinH = Math.sin(h), cosH = Math.cos(h);
+        const bowX = player.x + 25 * sinH, bowY = player.y - 25 * cosH;
+        const sternX = player.x - 30 * sinH, sternY = player.y + 30 * cosH;
+        const closest = getClosestPointOnSegment(rm.x, rm.y, bowX, bowY, sternX, sternY);
+        const inZone = (closest.x - rm.x) ** 2 + (closest.y - rm.y) ** 2 < rm.zone * rm.zone;
         ctx.save();
-        ctx.strokeStyle = `rgba(${NAV_RGB}, 0.55)`;
-        ctx.lineWidth = 5; ctx.setLineDash([26, 20]);
-        ctx.lineDashOffset = -state.time * 18;
+        ctx.strokeStyle = inZone ? 'rgba(251, 191, 36, 0.95)' : `rgba(${NAV_RGB}, 0.55)`;
+        ctx.lineWidth = inZone ? 5.5 : 5;
         ctx.beginPath(); ctx.arc(rm.x, rm.y, rm.zone, 0, Math.PI * 2); ctx.stroke();
-        ctx.setLineDash([]);
         ctx.restore();
         return;
     }
@@ -11741,6 +11788,10 @@ function drawMarkBodies(ctx) {
         if (state.race.status !== 'finished') {
             const act = legMarks(player.raceState.leg) || [];
             if (act.indexOf(i) !== -1) active = true;
+            // A ROUNDING leg has no `marks` pair — legMarks() is null — so the very mark
+            // being rounded was failing this test and drawing grey while active.
+            const e = routeLeg(player.raceState.leg);
+            if (e && e.kind === 'round' && e.mark && e.mark.markIdx === i) active = true;
         }
         // The slate tint says "not the mark you are sailing to". That is a statement
         // about a piece of course furniture, and a crewed vessel is not one — a greyed
@@ -12152,7 +12203,7 @@ function drawMinimap() {
         const zoneR = Math.max(9, (roundMark.zone || 0) * scale);
         ctx.beginPath(); ctx.arc(p.x, p.y, zoneR, 0, Math.PI * 2);
         ctx.strokeStyle = 'rgba(253, 224, 71, 0.35)';
-        ctx.setLineDash([3, 3]); ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
+        ctx.lineWidth = 1.2; ctx.stroke();
         beacon(p.x, p.y, 4.6);
     }
 
@@ -13319,7 +13370,11 @@ function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
 
     if (markIndex !== null) {
         let start, end, ccw;
-        if (markIndex === 0)      { start = 0;       end = Math.PI; ccw = false; }
+        // A rounding leg passes the SIDE ('port'/'starboard') instead of a gate index —
+        // same chirality convention as drawRoundingArrows: port rounds are the ccw ones.
+        if (markIndex === 'port' || markIndex === 'starboard') {
+                                    start = 0;       end = Math.PI; ccw = markIndex === 'port'; }
+        else if (markIndex === 0) { start = 0;       end = Math.PI; ccw = false; }
         else if (markIndex === 1) { start = Math.PI; end = 0;       ccw = true; }
         else if (markIndex === 2) { start = 0;       end = Math.PI; ccw = true; }
         else                      { start = Math.PI; end = 0;       ccw = false; }
@@ -13489,26 +13544,38 @@ function draw() {
         if (state.showNavAids) {
             const leg = player.raceState.leg;
             const marks = state.course.marks;
-            if (leg > 0 && leg < state.race.totalLegs && marks && marks.length >= 4) {
-                // Gate leg: one indicator per gate mark, each showing its rounding direction.
-                const indices = legMarks(leg) || [];
-                for (const idx of indices) {
+            // ROUTE-DRIVEN, not shape-guessed. The old split ("gate legs if the course has
+            // four marks, otherwise the single waypoint") left every ROUNDING leg with no
+            // indicator at all — legMarks() is null there — and gave the start and finish
+            // lines a single pip at the nearest point instead of one per end.
+            const e = routeLeg(Math.min(leg, state.race.totalLegs));
+            if (e && e.kind === 'round' && e.mark) {
+                // Rounding leg: point straight at the mark, whatever the path to it looks
+                // like — the indicator answers "where is it", not "how do I get there".
+                const rm = e.mark;
+                const p = toScreen(rm.x, rm.y);
+                // AN EDGE INDICATOR IS FOR THINGS OFF THE EDGE. Once the mark itself is
+                // in view it is the better thing to look at.
+                if (!p.onScreen) {
+                    const d = Math.sqrt((rm.x-player.x)**2 + (rm.y-player.y)**2) * 0.2;
+                    drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(d) + 'm', rm.side || null, rot);
+                }
+            } else if (e && e.marks && marks) {
+                // A line or a gate: BOTH ends get an indicator — a line's whole span is
+                // crossable, and which end you favour is a tactical choice the display
+                // should not make for you. Mid-race gate marks also carry the mini
+                // rounding-direction arc; the start and finish ends do not.
+                const isGate = e.kind === 'gate' && !e.finish && leg > 0 && leg < state.race.totalLegs;
+                for (const idx of e.marks) {
                     const mk = marks[idx];
+                    if (!mk) continue;
                     const p = toScreen(mk.x, mk.y);
-                    // AN EDGE INDICATOR IS FOR THINGS OFF THE EDGE. Once the mark itself is
-                    // in view it is the better thing to look at, and this was drawing its
-                    // green pip and cyan rounding arc straight over the buoy — hiding the
-                    // object it exists to point at. The rounding ZONE and the big arrow on
-                    // the water stay; they sit around the mark rather than on it.
-                    //
-                    // The competitor indicators below have always done this. The marks did
-                    // not, which is why they were the ones you noticed.
                     if (p.onScreen) continue;
                     const d = Math.sqrt((mk.x-player.x)**2 + (mk.y-player.y)**2) * 0.2;
-                    drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(d) + 'm', idx, rot);
+                    drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(d) + 'm', isGate ? idx : null, rot);
                 }
             } else {
-                // Start/finish: a line you cross, not a mark you round — single indicator.
+                // No route entry to read (defensive): the single waypoint pip, as before.
                 const wp = player.raceState.nextWaypoint;
                 const p = toScreen(wp.x, wp.y);
                 if (!p.onScreen) drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(wp.dist) + 'm', null, rot);

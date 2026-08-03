@@ -1,7 +1,9 @@
 # Overpowered, apparent wind, and heavy-air speed — **Intent**
 
 **Date:** August 1, 2026 · **Status:** phases 0, 1 and 2 **BUILT** (Aug 2); phases 3-4 intent
-**Companion docs:** [race-view.md](race-view.md) · [realism](../../README.md) · `js/script.js`
+**Companion docs:** **[overpowered-remaining.md](overpowered-remaining.md) — the resume
+point: what is left, why it paused, and every constant and trap you need** ·
+[race-view.md](race-view.md) · [realism](../../README.md) · `js/script.js`
 
 Markers follow visual-style.md §0: **Observed** = what the code does today, **Rule** = a
 decision new work must follow, **Intent** = direction not yet realized.
