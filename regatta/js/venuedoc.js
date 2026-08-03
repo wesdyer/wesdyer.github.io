@@ -1005,6 +1005,36 @@ function compileVenueDoc(doc) {
     // fallback for a document that has not been through the editor.
     const repWind = representativeWind(windRegions, route, marks, doc);
     const wb = repWind.direction != null ? repWind.direction : 0;
+
+    // GATE ROLES ARE DERIVED, like start and finish: windward/leeward is a fact
+    // about the course standing in its own wind, not an authoring choice, so the
+    // compiler stamps it from geometry (migrate deletes the flags from documents).
+    // The AI asks `role === 'windward'` to pick the whole beat playbook — gate-END
+    // approach with inset vs centre, laylines, leech cover, RRS 16.2, mark-room
+    // gate selection — and losing the labels sent beating fleets to the gate
+    // CENTRE like a run: seatrials leg 1 measured 191s vs 63s, the whole broken
+    // 330s/360-capped anchor. A leg whose net travel has any upwind component
+    // targets the windward gate; otherwise leeward (a square reach gets leeward,
+    // i.e. the centre approach — the safer default of the two).
+    {
+        const upxR = Math.sin(wb), upyR = -Math.cos(wb);
+        const anchorOf = (e) => {
+            if (e.kind === 'round' && e.mark) return { x: e.mark.x, y: e.mark.y };
+            if (e.marks && marks[e.marks[0]] && marks[e.marks[1]]) {
+                return { x: (marks[e.marks[0]].x + marks[e.marks[1]].x) / 2,
+                         y: (marks[e.marks[0]].y + marks[e.marks[1]].y) / 2 };
+            }
+            return null;
+        };
+        for (let i = 1; i < route.length; i++) {
+            const e = route[i];
+            if (e.kind !== 'gate' || e.role) continue;
+            const a = anchorOf(route[i - 1]), b2 = anchorOf(e);
+            if (!a || !b2) continue;
+            const up = (b2.x - a.x) * upxR + (b2.y - a.y) * upyR;
+            e.role = up > 0 ? 'windward' : 'leeward';
+        }
+    }
     const REF_WIND = 14;                    // knots, mid-range: this is a fallback estimate
     let sailed = 0, secs = 0, geom = 0;
     const addPriced = (r) => { geom += r.geom; sailed += r.sailed; secs += r.secs; };
