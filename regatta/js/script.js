@@ -347,6 +347,10 @@ class BotController {
                 // Bank a BUFFER before turning for the exit: the fight out through
                 // the ring in a 25-knot katabatic costs ~0.2-0.4 rad of unwind, and
                 // leaving at exactly the requirement meant arriving outside it.
+                // (A 0.10 buffer on floe-free water was A/B'd on Lighthouse Cove —
+                // paired -2 med / -3.3 mean vs 0.25: the exit path curves, so the
+                // unwind is real even with nothing to grind through. 0.25 stays
+                // everywhere.)
                 if ((rsL.roundSweep || 0) >= needL + 0.25) this._outbound = true;
                 else if ((rsL.roundSweep || 0) < needL * 0.8) this._outbound = false;
                 if (this._outbound) { this.wiggleActive = false; this.wiggleDuration = 0; }
