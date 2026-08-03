@@ -1865,9 +1865,29 @@ class BotController {
         // parks head-to-wind mid-turn and takes half a minute to recover — sail on,
         // build speed close-hauled, and take the tack with steerage. (The layline
         // return above still fires: missing the mark is worse than a slow tack.)
+        // ...EXCEPT INTO A WALL. The one thing worse than parking head-to-wind
+        // is grinding the shore the current board points at: the channel-wall
+        // pins line both shores of the eastern beat (dwell 86 s/boat vs the
+        // human 9), and a slow boat here was physically FORBIDDEN to tack away.
+        // The recorded human pins prove a hull rotates fine at zero speed —
+        // slow is a cost, the wall is a trap. Hard blockage (land or a stamped
+        // floe, not grindable soft ice) within ~180u dead ahead waives the guard.
         if (targetTackSign !== currentTack && this.boat.speed < 1.1
             && getWindAt(this.boat.x, this.boat.y).speed > 16) {
-            return (currentTack === 1) ? hStarboard : hPort;
+            let wallAhead = false;
+            const gW = (state.course._gridFixed && state.course._gridFixed.length)
+                ? state.course.botGrid : null;
+            if (gW) {
+                const hNow = (currentTack === 1) ? hStarboard : hPort;
+                for (const dW of [90, 180]) {
+                    const cc = gW.cell(this.boat.x + Math.sin(hNow) * dW, this.boat.y - Math.cos(hNow) * dW);
+                    if (!gW.at(cc[0], cc[1])) {
+                        const idW = cc[1] * gW.n + cc[0];
+                        if (!(gW._soft && gW._soft[idW])) { wallAhead = true; break; }
+                    }
+                }
+            }
+            if (!wallAhead) return (currentTack === 1) ? hStarboard : hPort;
         }
 
         if (targetTackSign !== currentTack) {

@@ -771,6 +771,21 @@ TRAFFIC (stagger, spacing, queue shaping) or the ring basin itself — not
 transit lines. The land-layline tack idea (tack BEFORE the channel wall)
 remains untried and is the most human-evidenced residual candidate.**
 
+### Experiment 4: WALL-TACK GUARD EXCEPTION — ✅ ACCEPTED (2nd win)
+The >16kt low-speed no-tack guard (scoreTack) FORBADE exactly the escape the
+channel walls demand: a boat slowed under 1.1 near the shore could not tack
+away and had to grind (decile-4 dwell 86 s/boat vs human 9). Exception: hard
+grid blockage (land or stamped floe, soft ice excused) within 90/180u dead
+ahead on the current board waives the guard — the human pins prove a hull
+rotates fine without way on; slow is a cost, the wall is a trap.
+**Fleet paired vs margin30: rounders 57→61, finishers 43→45, paired finish
+med −8 (survivors NOT traded — the finMed 635→701 rise is composition: two
+more tail-boats now finish late), leg-1 dwell 99→91 s/boat, longest pin max
+150→90; new fastest in-time finish 371s (seed 9107). Solo 94.8/4 (reshuffle
+noise vs 95.7/6, no collapse). DNS-like 0/72.** Unlike the three rejected
+mechanisms this does not commit boats to lines — it removes a forbidden
+transition exactly at the trap. Open venues: provably inert (grid-gated).
+
 ## Ideas queue
 - Gap-aware channel selection: route around the *pack*, not through it, when the time
   cost table says the detour is cheap (the "wider than narrowest channel" idea).
