@@ -21,11 +21,14 @@ canonical; 40t noise band ≈ ±0.5s on medians). Human = 12 trajectories.
 
 ### Starts (time to cross after gun, s)
 
-| Snapshot | Who | DNS% | Median | Mean | Min | Max |
-|---|---|---|---|---|---|---|
-| 2026-08-06 anchor @100t (fb9f641) | bots | 0 | 3.31 | 6.51 | — | — |
-| 2026-08-03 stack @40t (855379a) | bots | 0 | 3.19 | 6.25 | — | 49.1 |
-| 2026-08-03 (12 traj) | human | 0 | 2.3 | 3.3 | 0.7 | 13.9 |
+OCS% = share of boat-races penalized for an early start (a rules event — an
+OCS hold that returns cleanly before the gun is NOT one).
+
+| Snapshot | Who | DNS% | OCS% | Median | Mean | Min | Max |
+|---|---|---|---|---|---|---|---|
+| 2026-08-06 anchor @100t (fb9f641) | bots | 0 | n/i | 3.31 | 6.51 | — | — |
+| 2026-08-03 stack @40t (855379a) | bots | 0 | n/i | 3.19 | 6.25 | — | 49.1 |
+| 2026-08-03 (12 traj) | human | 0 | n/i | 2.3 | 3.3 | 0.7 | 13.9 |
 
 ### Course (finish time, s)
 
@@ -35,12 +38,26 @@ canonical; 40t noise band ≈ ±0.5s on medians). Human = 12 trajectories.
 | 2026-08-03 stack @40t (855379a) | bots | 0 | 200.47 | 204.67 | — | 360.0 |
 | 2026-08-03 (12 traj) | human | 0 | 192.2 | 191.4 | 180.9 | 200.6 |
 
-### Collisions & penalties (per boat-race)
+### Collisions (per boat-race)
 
-| Snapshot | Who | Pen | Boat | Mark | Bounds |
+Categories, uniform across venues: **Boat** (boat-on-boat), **Land** (shore/
+banks/islands), **Mark**, **Other** (venue objects: floes, bergs; plus arena
+bounds). "n/a" = the venue has none of that object; "n/i" = not instrumented.
+Penalties are a SEPARATE table — a penalty is a rules event (RRS infraction +
+360 turn), not a contact event; each can occur without the other.
+
+| Snapshot | Who | Boat | Land | Mark | Other |
 |---|---|---|---|---|---|
-| 2026-08-03 stack @40t (855379a) | bots | 0.50 | 0.52 | 0.25 | 0.00 |
-| 2026-08-03 (12 traj) | human | 0 | 0.25 (3 in 12 runs) | 0 | 0 |
+| 2026-08-03 stack @40t (855379a) | bots | 0.52 | n/a | 0.25 | 0.00 (bounds) |
+| 2026-08-03 (12 traj) | human | 0.25 (3 in 12) | n/a | 0 | 0 |
+
+### Penalties (per boat-race)
+
+| Snapshot | Who | Penalties |
+|---|---|---|
+| 2026-08-06 anchor @100t (fb9f641) | bots | 0.44 |
+| 2026-08-03 stack @40t (855379a) | bots | 0.50 |
+| 2026-08-03 (12 traj) | human | 0 |
 
 **Read:** the median bot start and finish are within ~8s of the human median;
 the human's edge is consistency (max 200.6 vs bot max at the 360 cap) and a
@@ -57,11 +74,11 @@ in bay_bench (TODO next round) — only penalties are.
 
 ### Starts (time to cross, s)
 
-| Snapshot | Who | DNS% | Median | Mean | Min | Max |
-|---|---|---|---|---|---|---|
-| 2026-08-03 baseline (614b20b) | bots | 0 | 5 | — | — | — |
-| 2026-08-03 stack (855379a) | bots | 0 | 5 | 9.3 | 0 | 147 |
-| 2026-08-03 (7 traj) | human | 0 | 0.9 | 4.5 | 0.6 | 19.1 |
+| Snapshot | Who | DNS% | OCS% | Median | Mean | Min | Max |
+|---|---|---|---|---|---|---|---|
+| 2026-08-03 baseline (614b20b) | bots | 0 | n/i | 5 | — | — | — |
+| 2026-08-03 stack (855379a) | bots | 0 | n/i | 5 | 9.3 | 0 | 147 |
+| 2026-08-03 (7 traj) | human | 0 | n/i | 0.9 | 4.5 | 0.6 | 19.1 |
 
 ### Course (finish time, s)
 
@@ -73,12 +90,19 @@ in bay_bench (TODO next round) — only penalties are.
 
 Per-leg medians vs human (stack): L1 +3, L2 +1, L3 +6, L4 +6, L5 +6, L6 +5.
 
-### Collisions & penalties (per boat-race)
+### Collisions (per boat-race)
 
-| Snapshot | Who | Pen | Boat | Mark | Bounds |
+| Snapshot | Who | Boat | Land | Mark | Other |
 |---|---|---|---|---|---|
-| 2026-08-03 stack (855379a) | bots | 0.00 | not instrumented | n/i | n/i |
-| 2026-08-03 (7 traj) | human | 0 | 0.14 (1 in 7 runs) | 0 | 0 |
+| 2026-08-03 stack (855379a) | bots | n/i | n/i | n/i | n/a |
+| 2026-08-03 (7 traj) | human | 0.14 (1 in 7) | 0 | 0 | n/a |
+
+### Penalties (per boat-race)
+
+| Snapshot | Who | Penalties |
+|---|---|---|
+| 2026-08-03 stack (855379a) | bots | 0.00 |
+| 2026-08-03 (7 traj) | human | 0 |
 
 **Read:** every bot finishes cleanly; the whole gap is pace (median −42s vs
 human). The winning bot (min 215) now edges the human best (219.5). Biggest
@@ -97,10 +121,10 @@ race-condition finisher count). Human = 16 trajectories. ⚠️ A fresh capped
 
 ### Starts (time to cross, s)
 
-| Snapshot | Who | DNS% | Median | Mean | Min | Max |
-|---|---|---|---|---|---|---|
-| 2026-08-03 stack (855379a) | bots | 0 | 4 | 8.7 | 0 | 113 |
-| 2026-08-03 (16 traj) | human | 0 | 1.2 | 3.6 | 0.1 | 22.6 |
+| Snapshot | Who | DNS% | OCS% | Median | Mean | Min | Max |
+|---|---|---|---|---|---|---|---|
+| 2026-08-03 stack (855379a) | bots | 0 | n/i | 4 | 8.7 | 0 | 113 |
+| 2026-08-03 (16 traj) | human | 0 | n/i | 1.2 | 3.6 | 0.1 | 22.6 |
 
 ### Course (finish time, s; uncapped-900 protocol)
 
@@ -110,12 +134,19 @@ race-condition finisher count). Human = 16 trajectories. ⚠️ A fresh capped
 | 2026-08-03 stack (855379a) | bots | 9.0 (13/144) | 35/144 (24%) | 538 | 537.6 | 257 | 899 |
 | 2026-08-03 (16 traj) | human | 0 | 16/16 | 229.1 | 230.3 | 200.1 | 299.2 |
 
-### Collisions & penalties
+### Collisions (per boat-race)
 
-| Snapshot | Who | Pen | Floe | Land | Boat |
+| Snapshot | Who | Boat | Land | Mark | Other (floes) |
 |---|---|---|---|---|---|
-| 2026-08-03 stack | bots | not instrumented in fleet_leg2 | n/i | n/i | n/i |
-| 2026-08-03 (16 traj) | human | 0.13 (2 in 16) | 4.4/run (0-24; grind-through is cheap) | 0.4/run | 0.6/run |
+| 2026-08-03 stack (855379a) | bots | n/i | n/i | n/i | n/i |
+| 2026-08-03 (16 traj) | human | 0.6/run | 0.4/run | 0 | 4.4/run (0-24; grind-through is cheap) |
+
+### Penalties (per boat-race)
+
+| Snapshot | Who | Penalties |
+|---|---|---|
+| 2026-08-03 stack (855379a) | bots | n/i in fleet_leg2 |
+| 2026-08-03 (16 traj) | human | 0.13 (2 in 16) |
 
 **Read:** every human run finishes inside the 420 cutoff; only ~24% of bot
 races do. The bot median race is 2.3x the human's. Per the arctic campaign
@@ -128,11 +159,15 @@ obsolete — never compare against it again.
 
 ## Instrumentation TODO (to make the tables complete)
 
-1. `bay_bench.js` / `fleet_leg2.js`: count per-boat floe/land/boat/mark
+1. `bay_bench.js` / `fleet_leg2.js`: count per-boat boat/land/mark/other
    contacts + penalties (arctic_eval.js already shows how: `b.penalties`,
-   `iceCounts`). Then every venue fills its Collisions table.
-2. Capture bot start min (run_eval reports median/mean/max only).
-3. A capped arctic_eval round per snapshot for true DNS/DNF at 420.
+   `iceCounts`). Then every venue fills Collisions AND Penalties.
+2. **OCS%** everywhere: benches should record boats penalized for an early
+   start (rules event, distinct from a clean pre-gun return); run_eval needs
+   the same. Human OCS is already in the recorder's event stream (v7) — decode
+   it in `traj_report.js` and backfill the human rows.
+3. Capture bot start min (run_eval reports median/mean/max only).
+4. A capped arctic_eval round per snapshot for true DNS/DNF at 420.
 
 ## Next session brief (prepared 2026-08-03, tree at ba33366)
 
