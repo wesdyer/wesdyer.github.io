@@ -838,9 +838,15 @@ human-competitive through decile 8. The LAST MOUNTAIN, isolated:
   hold 0.5-0.9x radius CONTINUOUSLY (sweep rate 0.12-0.20 rad/s with no
   pauses), grind soft ice rather than deviate, and never surrender the
   rotation direction. Bot sweep is bursts separated by churn/blocked-arc
-  stalls. Candidate levers: per-sector orbit radius (the orbit target is one
-  global radius; humans cut sectors), or the CREW-level RL scope (densest
-  reward, now with a 131s target to beat).
+  stalls. Remaining lever: the CREW-level RL scope (densest reward, now
+  with a 131s target to beat) — the classical list below is exhausted.
+- ❌ Per-sector orbit radius (0.6/0.7/0.85x rungs, 3-point ahead-sector scan,
+  1s rate limit): REJECTED (Aug 6 dawn) — finishers 42→36, finMed 611→686,
+  in-time 3→0, sweep med 102→134. The tighter rings thread the island-lee
+  churn the entry hunt exists to avoid; ONE ring at the human MEDIAN (0.85x,
+  = tight-orbit) is the bot optimum. Do not retry finer ring-cutting
+  classically — humans pull it off with continuous re-perception the fan
+  architecture doesn't have. This closes the overnight classical list.
 - ❌ Armed-phase speed-discipline exemption: TRIED (Aug 6 dawn) and
   REJECTED — sweep −11 paired med but leg-2 +33 med, in-time 3→1, rounders
   −3. Full-speed sweeps double ice contacts and the exits come out worse.
