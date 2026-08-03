@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCYC — Regatta Editor</title>
+    <link rel="icon" type="image/png" href="assets/images/misc/salty-crew-yacht-club-burgee.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..900&family=IBM+Plex+Mono:wght@400;600&family=Saira:ital,wdth,wght@0,50..125,100..900;1,50..125,100..900&display=swap" rel="stylesheet">
+    <!-- The design system, vendored from the Claude Design project, then the editor's own
+         theme over it. Tailwind is still here for the Fleet roster's markup, so it loads
+         FIRST and the design system wins every tie. -->
+    <link rel="stylesheet" href="css/ds.css">
+    <link rel="stylesheet" href="css/editor.css">
+    <style>
+        /* Type utilities the Fleet roster's generated markup still uses. The editor chrome
+           is on the design system; this is scoped to that one view. */
+        .t-display { font-family: 'Saira', 'Archivo', sans-serif; font-stretch: 81%; font-weight: 900; }
+        .t-label { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase;
+                   font-size: 11px; letter-spacing: 2px; color: var(--ed-dim); }
+        .t-label-sm { font-size: 10.5px; letter-spacing: 1.6px; }
+        .t-mono { font-family: var(--ed-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+        canvas { display: block; }
+    </style>
+</head>
+<body class="ed-shell">
+
+<!-- The engine is loaded for its data, its course compiler and its sprite
+     pipeline. It needs this canvas to exist at parse time; it is never drawn to. -->
+<canvas id="gameCanvas" width="1280" height="720" style="display:none"></canvas>
+
+<header class="ed-head">
+    <div class="ed-brand">REGATTA<span>EDITOR</span></div>
+    <nav class="ed-tabs">
+        <div class="ed-tab on" data-view="course">Course</div>
+        <div class="ed-tab" data-view="fleet">Fleet</div>
+    </nav>
+    <div style="flex:1"></div>
+    <div id="course-controls" style="display:flex;align-items:center;gap:8px;font-size:13px">
+        <span id="toast"></span>
+        <!-- The venue is a FILE: its name here, and the ordinary open/save lifecycle
+             beside it. No dropdown — Open reads any .venue.js (or bare JSON), Save
+             writes back to it, Save As writes a copy and keeps editing the copy. -->
+        <span class="ed-venue" id="venue-label">—</span>
+        <span class="ed-sep"></span>
+        <span id="dirty" class="ed-saved"></span>
+        <span class="ed-sep"></span>
+        <button id="btn-undo" class="btn btn-sm btn-line" title="Cmd/Ctrl+Z">Undo</button>
+        <button id="btn-redo" class="btn btn-sm btn-line" title="Cmd/Ctrl+Shift+Z">Redo</button>
+        <button id="btn-open" class="btn btn-sm btn-line" title="Cmd/Ctrl+O">Open…</button>
+        <button id="btn-save" class="btn btn-sm btn-cyan" title="Cmd/Ctrl+S">Save</button>
+        <button id="btn-saveas" class="btn btn-sm btn-line" title="Cmd/Ctrl+Shift+S">Save As…</button>
+    </div>
+</header>
+
+<!-- ── Course view ─────────────────────────────────────────────────────── -->
+<!-- LAYERS left, CANVAS middle, INSPECTOR right. The layer list is the mode switch:
+     picking a layer is what makes that kind of thing interactive, and the inspector
+     shows the selected OBJECT — or the layer itself when nothing is selected. -->
+<main id="view-course" class="ed-body">
+
+    <aside class="ed-left">
+        <div class="ed-sect"><span class="k">Layers</span></div>
+        <div id="layer-list"></div>
+
+        <!-- Settings that govern what you are about to CREATE belong above the list of what
+             you have already created: you set the scatter, then you place, then the new floes
+             appear below. Panels that describe the layer as a whole stay under the list. -->
+        <div id="layer-settings-top">
+        </div>
+
+        <div class="ed-sect top">
+            <span class="k" id="objs-title">Objects</span>
+            <span id="objs-actions" style="display:flex;gap:6px"></span>
+        </div>
+        <div id="obj-list" class="ed-objs"></div>
+
+        <!-- LAYER-WIDE settings live on the left, with the layer they belong to. The right
+             panel is for the thing you have selected — one column for "what this layer is",
+             one for "what this object is". -->
+        <div id="layer-settings">
+        <!-- layer: course — the course as a whole: what it is called, how long it runs,
+             and the one number the whole thing is judged by. -->
+        <div class="mode-panel" data-layer="map">
+            <div class="in-sect">
+                <span class="k">Course name</span>
+                <input id="course-name" class="in-wide" placeholder="Glacier Sound">
+                <div class="in-row" style="margin-top:8px"><span>venue</span>
+                    <span class="num" id="course-venue">—</span></div>
+            </div>
+            <div class="in-sect">
+                <span class="k">Timing</span>
+                <div class="in-grid">
+                    <label class="in-f"><label>Prestart</label>
+                        <input id="course-start" placeholder="30" spellcheck="false"><span class="dim" style="font-size:11px">s</span></label>
+                    <label class="in-f"><label>Limit</label>
+                        <input id="course-cutoff" placeholder="auto" spellcheck="false"><span class="dim" style="font-size:11px">s</span></label>
+                </div>
+                <div id="info-time" style="margin-top:10px"></div>
+                <button id="btn-use-est" class="btn btn-fill" style="margin-top:10px">Use the estimate</button>
+            </div>
+            <div class="in-sect">
+                <span class="k">Scale everything</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <label class="in-f" style="flex:1"><label>%</label>
+                        <input id="scalemap" value="100" spellcheck="false"></label>
+                    <button id="btn-scalemap" class="btn btn-fill">Apply</button>
+                </div>
+            </div>
+            <!-- Turning the map is the other whole-course transform, and it carries the
+                 WIND with it — see rotateMap on why a course that turns without its breeze
+                 stops being the course you drew. -->
+            <div class="in-sect">
+                <span class="k">Rotate everything</span>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <label class="in-f" style="flex:1"><label>°</label>
+                        <input id="rotmap" value="0" spellcheck="false"
+                               title="clockwise, about the origin — the wind turns with it"></label>
+                    <button id="btn-rotmap" class="btn btn-fill">Apply</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- layer: water -->
+        <!-- The water's COLOUR. The current that runs through it is its own layer: one is a
+             property of the whole map, the other is a set of objects drawn on it. -->
+        <div class="mode-panel" hidden data-layer="water">
+            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Water colour</div>
+            <canvas id="pal-preview" width="230" height="200"
+                    style="height:200px;border-radius:8px;display:block;
+                           border:1px solid rgba(255,255,255,0.1)"></canvas>
+            <div class="in-grid" style="align-items:center;font-size:11.5px;">
+                <label class="k">surface</label>
+                <input id="pal-base" type="color" class="in-wide" style="padding:1px;height:26px">
+                <label class="k">deep</label>
+                <input id="pal-deep" type="color" class="in-wide" style="padding:1px;height:26px">
+            </div>
+            <button id="btn-pal-reset" class="btn btn-fill">Restore colours</button>
+        </div>
+
+        <!-- layer: shape — no panel. Draw, Sculpt and Smooth are on the tool strip beside
+             the canvas, the brush is sized with [ ], and the hint bar spells out what the
+             armed tool does; a second copy of all of it here was only clutter. -->
+
+        <!-- layer: marks -->
+        <!-- layer: marks — no panel. The mark and gate fields are in the inspector and the
+             list is the object column; these two buttons are the creation verbs the column's
+             actions click, kept out of sight rather than duplicated as visible controls. -->
+        <div hidden>
+            <button id="btn-add-mark"></button>
+            <button id="btn-add-line"></button>
+        </div>
+
+        <!-- layer: route -->
+        <!-- layer: boundary -->
+        <div class="mode-panel" hidden data-layer="boundary">
+            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Arena</div>
+            <div style="display:flex;align-items:center;gap:8px;padding:0 16px 8px">
+                <input id="brect-inset" class="in-wide num" style="width:62px" value="140" title="inset from the map edge, in metres">
+                <span class="in-note" style="font-size:11px;">m in</span>
+                <button id="btn-brect" class="btn btn-fill" style="flex:1">Fit rect</button>
+            </div>
+        </div>
+
+        <!-- layer: wind -->
+                </div>
+    </aside>
+
+    <div class="ed-mid">
+        <!-- The numbers a course is judged by, and the check tally. -->
+        <div class="ed-stats">
+            <div class="st"><span class="st-k">Dist</span><span class="st-v num" id="stat-dist">—</span></div>
+            <div class="st"><span class="st-k">Best</span><span class="st-v num" id="stat-best">—</span></div>
+            <div class="st"><span class="st-k">Limit</span><span class="st-v num" id="stat-limit">—</span></div>
+            <div class="st"><span class="st-k">Legs</span><span class="st-v num" id="stat-legs">—</span></div>
+            <div style="flex:1"></div>
+            <button class="ed-tally" id="btn-drawer" title="Show every check">
+                <span id="tally-body">—</span>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" id="tally-chev"
+                     style="transition:transform .15s"><path d="M2 4l4 4 4-4" stroke="currentColor"
+                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+        </div>
+
+        <div class="ed-canvas-wrap">
+            <canvas id="schematic"></canvas>
+
+            <!-- Tools act on whatever the active layer owns, and only the ones that mean
+                 something for that layer are enabled. -->
+            <div class="ed-tools" id="tool-strip"></div>
+
+            <!-- The armed tool's OWN settings, beside the tool that uses them. They are not
+                 a property of the layer — they decide what the next drag makes — so they
+                 belong with the tool and disappear with it, rather than sitting in the left
+                 column being true of nothing whenever another tool is up. -->
+            <div class="ed-toolopts" id="tool-opts" hidden>
+                <!-- KIND comes first because it applies to both makers: Draw clicks a polygon
+                     out point by point, Place drags a size, and either way the question
+                     "what is this thing" is the same one and gets one answer. Scatter and
+                     vary are Place's alone and hide with it. -->
+                <label class="to-f"><span>kind</span>
+                    <select id="new-kind" class="to-sel"
+                            title="what Draw and Place make"></select></label>
+                <span id="place-opts" style="display:flex">
+                    <label class="to-f"><span>scatter</span>
+                        <input id="ice-scatter" class="num" value="1" spellcheck="false"
+                               title="how many one drag drops"></label>
+                    <label class="to-f"><span>vary</span>
+                        <input id="ice-vary" class="num" value="45" spellcheck="false"
+                               title="% size spread between them"></label>
+                </span>
+            </div>
+
+            <!-- Overlays, over the thing they overlay. -->
+            <div class="ed-fields">
+                <button id="btn-field-wind" class="btn btn-toggle" title="Show the wind field (W)">Wind</button>
+                <button id="btn-field-cur" class="btn btn-toggle cur" title="Show the current field (C)">Current</button>
+            </div>
+
+            <!-- Commands on the SELECTION, over the map the selection is on. They act on
+                 however many polygons are selected, which is why they cannot live in the
+                 inspector — that shows one object. Hidden entirely when nothing is
+                 selected: an action bar offering verbs with no object is just clutter. -->
+            <div class="ed-acts" id="sel-acts" hidden>
+                <span class="ed-acts-n" id="sel-acts-n">—</span>
+                <button id="btn-sel-dup" class="btn" title="Duplicate (Cmd/Ctrl+D)">Duplicate</button>
+                <button id="btn-sel-resample" class="btn" title="Space the points evenly">Resample</button>
+                <span class="ed-acts-sep" id="sel-acts-sep"></span>
+                <button id="btn-sel-union" class="btn" title="Merge them into one">Union</button>
+                <button id="btn-sel-intersect" class="btn" title="Keep only what they all share">Intersect</button>
+                <button id="btn-sel-subtract" class="btn" title="Remove the others from the first one selected">Subtract</button>
+                <button id="btn-sel-symdiff" class="btn" title="Keep what only ONE of them covers — the overlap goes">Difference</button>
+                <button id="btn-sel-del" class="btn danger" title="Delete (Del)">Delete</button>
+            </div>
+
+            <div id="drawer" class="ed-drawer" hidden>
+                <div class="k" style="margin-bottom:8px">Checks</div>
+                <div id="checks"></div>
+            </div>
+
+            <!-- Wind and current under the CURSOR — shown when a field layer or a field
+                 overlay is active, so the numbers on the water read straight off it. -->
+            <div class="ed-probe" id="field-probe" hidden></div>
+
+            <div class="ed-hint">
+                <span class="now"><span class="key" id="hint-key">V</span><span id="hint-tool">Select</span></span>
+                <span id="hint-mods" style="display:flex;gap:18px;min-width:0;overflow:hidden"></span>
+                <span style="flex:1"></span>
+                <span class="num dim" id="hud">—</span>
+                <span class="num dim" id="hud-zoom">—</span>
+                <span class="num dim" style="display:inline-flex;align-items:center;gap:6px">
+                    <span class="ed-scalebar" id="scalebar"></span><span id="scaletext">—</span>
+                </span>
+                <button id="btn-fit" class="btn btn-sm btn-line">Fit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- The right panel is for the thing you have SELECTED. Layer-wide settings live on the
+         left, with the layer they belong to. -->
+    <aside class="ed-right">
+        <div class="in-head">
+            <div class="k k-accent" id="in-kicker">Course</div>
+            <div class="in-title">
+                <span class="in-name" id="in-name">—</span>
+                <span class="in-meta" id="in-meta"></span>
+            </div>
+        </div>
+        <div class="ed-insp" id="inspector">
+            <div id="insp-obj"></div>
+            <!-- Shared by every layer that owns outlines. Appears once something is selected. -->
+            <div id="vsel-row" class="in-sect" style="display:none">
+                <span class="k">Vertex selection</span>
+                <div id="vsel-count" class="in-note" style="margin:0 0 8px"></div>
+                <div style="display:flex;gap:6px">
+                    <button id="btn-align-x" class="btn btn-fill" style="flex:1" title="same X as the anchor">Align X</button>
+                    <button id="btn-align-y" class="btn btn-fill" style="flex:1" title="same Y as the anchor">Align Y</button>
+                </div>
+            </div>
+        </div>
+    </aside>
+</main>
+
+<!-- ── Fleet view ──────────────────────────────────────────────────────── -->
+<main id="view-fleet" class="flex-1 overflow-y-auto hidden" style="min-height:0">
+    <div class="max-w-[1800px] mx-auto px-8 py-8">
+        <div class="flex items-baseline gap-4 flex-wrap mb-6">
+            <h2 class="t-display italic uppercase text-white" style="font-size:26px;">Competitor Roster</h2>
+            <span id="roster-count" class="t-mono text-slate-400" style="font-size:14px;"></span>
+        </div>
+        <div id="roster"></div>
+    </div>
+</main>
+
+<div id="fatal" hidden></div>
+
+<script>
+    // Keep the game dormant: script.js starts its animation loop at the end of the
+    // file, and an editor must not have a race running underneath it.
+    window.__realRAF = window.requestAnimationFrame.bind(window);
+    window.requestAnimationFrame = () => 0;
+</script>
+<script src="js/ai-quotes.js"></script>
+<script src="js/water.js"></script>
+<script src="js/planner.js"></script>
+<script src="js/rules.js"></script>
+<script src="js/arena.js"></script>
+<!-- polygon-clipping 0.15.7 (MIT), the published UMD build VENDORED UNMODIFIED — see
+     js/polygon-clipping.LICENSE.md. Martinez-Rueda sweep-line boolean ops: it handles the
+     degeneracies (collinear edges, shared vertices, touching-not-crossing) you get the moment
+     you union two islands you snapped together, which is exactly where a short
+     Greiner-Hormann falls over. EDITOR ONLY — the game never needs a boolean, and index.html
+     must not load it. Same rule as venuecheck.js. -->
+<script src="js/polygon-clipping.js"></script>
+<script src="js/venuedoc.js"></script>
+<script src="js/venuecheck.js"></script>
+<script src="js/sailcheck.js"></script>
+<!-- Every venue is a DOCUMENT. One tag each, in journey order; there is no
+     directory listing over file://, so the set is stated here. -->
+<script src="assets/venues/bay.venue.js"></script>
+<script src="assets/venues/lake.venue.js"></script>
+<script src="assets/venues/lagoon.venue.js"></script>
+<script src="assets/venues/swamp.venue.js"></script>
+<script src="assets/venues/river.venue.js"></script>
+<script src="assets/venues/ocean.venue.js"></script>
+<script src="assets/venues/redrock.venue.js"></script>
+<script src="assets/venues/glowtide.venue.js"></script>
+<script src="assets/venues/arctic.venue.js"></script>
+<script src="assets/venues/seatrials.venue.js"></script>
+<script src="js/script.js"></script>
+<script src="js/editor.js"></script>
+<script>
+(function () {
+    window.requestAnimationFrame = window.__realRAF;
+
+    // ── Tabs ────────────────────────────────────────────────────────────
+    const views = { course: document.getElementById('view-course'), fleet: document.getElementById('view-fleet') };
+    let rosterBuilt = false;
+    document.querySelectorAll('.ed-tab[data-view]').forEach(t => t.addEventListener('click', () => {
+        document.querySelectorAll('.ed-tab[data-view]').forEach(x => x.classList.remove('on'));
+        t.classList.add('on');
+        const v = t.dataset.view;
+        for (const k in views) views[k].classList.toggle('hidden', k !== v);
+        document.getElementById('course-controls').classList.toggle('hidden', v !== 'course');
+        if (v === 'fleet' && !rosterBuilt) { buildRoster(); rosterBuilt = true; }
+        if (v === 'course') EditorApp.resize();
+    }));
+
+    // ── Fleet roster ─────────────────────────────────────────────────────
+    // Same pipeline as competitor.html, including its review strip: a reviewer wants the
+    // whole stat line, not the three the in-game panel highlights — plus the paint job,
+    // which the profile only implies.
+    const STAT_ORDER = ['acceleration', 'momentum', 'handling', 'upwind', 'reach', 'downwind', 'pressure', 'lightAir', 'heavyAir', 'memory'];
+    const STAT_ABBR = { acceleration: 'ACC', momentum: 'MOM', handling: 'HDL',
+                        upwind: 'UPW', reach: 'RCH', downwind: 'DWN', pressure: 'PRS', lightAir: 'LGT', heavyAir: 'HVY', memory: 'MEM' };
+
+    function reviewStrip(cfg) {
+        const stats = STAT_ORDER.map(k => {
+            const v = (cfg.stats && cfg.stats[k]) ?? 0;
+            const tone = v > 0 ? 'color:#6ee7b7' : v < 0 ? 'color:#fda4af' : 'color:#64748b';
+            return `<div class="text-center">
+                        <div class="t-label t-label-sm" style="letter-spacing:1px;">${STAT_ABBR[k]}</div>
+                        <div class="t-mono" style="font-size:15px; ${tone}">${v > 0 ? '+' : ''}${v}</div>
+                    </div>`;
+        }).join('');
+        const swatch = (label, color) => color
+            ? `<span class="inline-flex items-center gap-1.5">
+                   <span style="width:11px;height:11px;border-radius:3px;background:${color};box-shadow:inset 0 0 0 1px rgba(255,255,255,0.25)"></span>
+                   <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">${label} ${color}</span>
+               </span>`
+            : '';
+        const kite = (typeof SPIN_LOOKS !== 'undefined' && SPIN_LOOKS[cfg.name]) || 'solid';
+        return `
+            <div class="mt-5 pt-4" style="border-top:1px solid rgba(255,255,255,0.08)">
+                <div class="grid grid-cols-10 gap-1 mb-3">${stats}</div>
+                <div class="flex flex-wrap gap-x-4 gap-y-1.5 items-center">
+                    ${swatch('hull', cfg.hull)}
+                    ${swatch('sail', cfg.sail)}
+                    ${swatch('kite', cfg.spinnaker)}
+                    ${swatch('kite2', cfg.spinnaker2)}
+                    ${swatch('kite3', cfg.spinnaker3)}
+                    <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">pattern ${kite}${typeof spinColorCount === 'function' ? ' (' + spinColorCount(kite) + ')' : ''}</span>
+                    <span class="t-mono" style="font-size:11.5px;color:#8ea0bd">archetype ${cfg.archetype || '—'}</span>
+                </div>
+            </div>`;
+    }
+
+    function buildRoster() {
+        const root = document.getElementById('roster');
+        const fleet = [...AI_CONFIG].sort((a, b) => a.name.localeCompare(b.name));
+        document.getElementById('roster-count').textContent = fleet.length + ' competitors';
+        root.innerHTML = fleet.map(cfg =>
+            `<section class="bg-slate-800/50 rounded-2xl p-6 border border-white/10 shadow-xl">
+                ${competitorProfileHTML(cfg)}
+                ${reviewStrip(cfg)}
+             </section>`).join('');
+        const byName = new Map(fleet.map(c => [c.name, c]));
+        root.querySelectorAll('.profile-boat-canvas').forEach(c => renderProfileBoat(c, byName.get(c.dataset.boat)));
+    }
+
+    // ── Boot blank ────────────────────────────────────────────────────────
+    // The editor opens on NOTHING: a venue is a file, and the session starts when you
+    // Open one (or the tests load one by key). Booting into some venue meant every
+    // session began by looking at a document you may not have asked for.
+    EditorApp.buildKindPicker();
+
+    try {
+        EditorApp.resize();
+        EditorApp.loadBlank();
+    } catch (err) {
+        const f = document.getElementById('fatal');
+        f.textContent = 'Editor failed to start:\n\n' + (err && err.stack || err);
+        f.classList.remove('hidden');
+        throw err;
+    }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+  venue=arctic boats=10
+
+=== cap_tightorbit — arctic 10t seeds 9100.. (90 boat-races) ===
+DNS 0.00% (0)   DNF 0.00% (0)
+race time  med 420.0  p90 420.0  max 420.0  mean 419.4  (n=90)
+pen/boat 1.94   groundings/boat 1003.61
+
+slowest characters (med):
+  Seam           n=2 med 420.0 fails 0
+  Glide          n=3 med 420.0 fails 0
+  Scuttle        n=2 med 420.0 fails 0
+  Anvil          n=3 med 420.0 fails 0
+  Ember          n=3 med 420.0 fails 0
+  Bixby          n=1 med 420.0 fails 0
+  Chomp          n=2 med 420.0 fails 0
+  Bramble        n=2 med 420.0 fails 0

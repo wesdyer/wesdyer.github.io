@@ -1,0 +1,8 @@
+stage=solo pages=6 pop=16 seedsPer=4 iters=6
+iter 0 seeds=[4242,4243,4244,4245] best -50.72 (banked 3/4) | meanPolicy -76.32 (banked 1/4) | elite mean -71.99 | 6.0 min
+iter 1 seeds=[4246,4247,4248,4249] best -96.82 (banked 4/4) | meanPolicy -190.83 (banked 2/4) | elite mean -111.50 | 6.8 min
+iter 2 seeds=[4250,4251,4252,4253] best -135.46 (banked 4/4) | meanPolicy -200.75 (banked 3/4) | elite mean -151.80 | 7.1 min
+iter 3 seeds=[4242,4243,4244,4245] best -62.72 (banked 3/4) | meanPolicy -209.84 (banked 2/4) | elite mean -83.12 | 5.3 min
+iter 4 seeds=[4246,4247,4248,4249] best -36.34 (banked 3/4) | meanPolicy -125.00 (banked 3/4) | elite mean -53.64 | 6.3 min
+iter 5 seeds=[4250,4251,4252,4253] best -57.93 (banked 2/4) | meanPolicy -394.51 (banked 2/4) | elite mean -92.48 | 7.2 min
+saved /Users/wesdyer/Documents/GitHub/wesdyer.github.io/regatta/eval/rl/rl_policy_solo.json
