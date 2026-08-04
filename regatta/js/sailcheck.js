@@ -122,6 +122,75 @@ function buildGridRaw(land, arena, obstacles) {
              at: (i, j) => (i < 0 || j < 0 || i >= n || j >= n) ? 0 : nav[j * n + i] };
 }
 
+// ── STAMPING THE ICE ONTO A GRID THAT ALREADY KNOWS THE LAND ────────────────
+// The bots' floe map is `static land AND NOT under ice`, and the land half of that
+// never changes. Rebuilding the whole grid to find out where the ice is re-tests all
+// 36100 cells against every land shape to re-derive an answer that was already on
+// disk — 55 ms, which was affordable at one rebuild every 16.7 s and is a visible
+// three-frame hitch at one every 2. Ice covers a few thousand cells, so stamp those.
+//
+// ⚠️ THIS AGREES WITH buildGrid EXACTLY, and it has to: the same point-in-ring test,
+// the same CLEARANCE edge distance, the same bounding-box slack. A cell already set
+// in `base.nav` has passed the arena test and every land test, so
+// `stamped = base AND NOT ice` is not an approximation of what buildGrid would say,
+// it IS what buildGrid says. (_grid_stamp_check.js asserts that cell for cell across
+// a race; a fast answer that is a DIFFERENT answer would be a silent behaviour
+// change wearing a performance commit's clothes.)
+//
+// The bbox bounds round outward on purpose. A cell centre outside `bb ± CLEARANCE`
+// is further than CLEARANCE from every ring point in that axis, so testing a few
+// extra cells costs a little arithmetic and can never change a verdict.
+function stampFloes(base, polys, circles) {
+    if (!(polys && polys.length) && !(circles && circles.length)) return base;
+    const n = base.n, x0 = base.x0, y0 = base.y0, res = base.res;
+    const nav = base.nav.slice();
+    const lo = (v) => Math.max(0, Math.floor((v - x0) / res));
+    const loY = (v) => Math.max(0, Math.floor((v - y0) / res));
+    const hi = (v) => Math.min(n - 1, Math.ceil((v - x0) / res));
+    const hiY = (v) => Math.min(n - 1, Math.ceil((v - y0) / res));
+    for (const p of (polys || [])) {
+        const ring = p.outer;
+        if (!ring || ring.length < 3) continue;
+        let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+        for (const q of ring) {
+            if (q[0] < a) a = q[0]; if (q[1] < b) b = q[1];
+            if (q[0] > c) c = q[0]; if (q[1] > d) d = q[1];
+        }
+        const i0 = lo(a - CLEARANCE), i1 = hi(c + CLEARANCE);
+        const j0 = loY(b - CLEARANCE), j1 = hiY(d + CLEARANCE);
+        for (let j = j0; j <= j1; j++) {
+            const wy = y0 + (j + 0.5) * res;
+            for (let i = i0; i <= i1; i++) {
+                const id = j * n + i;
+                if (!nav[id]) continue;
+                const wx = x0 + (i + 0.5) * res;
+                if (pointInRing(wx, wy, ring)) { nav[id] = 0; continue; }
+                for (let e = 0; e < ring.length; e++) {
+                    if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < CLEARANCE) { nav[id] = 0; break; }
+                }
+            }
+        }
+    }
+    for (const o of (circles || [])) {
+        const R = (o.radius || 0) + CLEARANCE, R2 = R * R;
+        const i0 = lo(o.x - R), i1 = hi(o.x + R);
+        const j0 = loY(o.y - R), j1 = hiY(o.y + R);
+        for (let j = j0; j <= j1; j++) {
+            const wy = y0 + (j + 0.5) * res;
+            for (let i = i0; i <= i1; i++) {
+                const id = j * n + i;
+                if (!nav[id]) continue;
+                const wx = x0 + (i + 0.5) * res;
+                if ((wx - o.x) ** 2 + (wy - o.y) ** 2 < R2) nav[id] = 0;
+            }
+        }
+    }
+    return { n, x0, y0, res, nav,
+             cell: (wx, wy) => [Math.floor((wx - x0) / res), Math.floor((wy - y0) / res)],
+             world: (i, j) => [x0 + (i + 0.5) * res, y0 + (j + 0.5) * res],
+             at: (i, j) => (i < 0 || j < 0 || i >= n || j >= n) ? 0 : nav[j * n + i] };
+}
+
 const NB = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
 
 // Nearest navigable cell to a point, so a waypoint that lands just inside land or just
@@ -613,7 +682,7 @@ function pathSailable(grid, from, to) {
 
 window.SailCheck = {
     HULL_R, CLEARANCE, RES,
-    buildGrid, pathBetween, nearestNav, roundingArc, routeWaypoints,
+    buildGrid, stampFloes, pathBetween, nearestNav, roundingArc, routeWaypoints,
     legVMG, routeEstimate, pathSailable, clearanceField
 };
 })();
