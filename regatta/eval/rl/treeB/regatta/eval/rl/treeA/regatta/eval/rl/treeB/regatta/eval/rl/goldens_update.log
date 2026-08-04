@@ -1,0 +1,40 @@
+
+> trace:update
+> node regatta/eval/run_traces.js --update --seeds 3
+
+Golden traces — mode=update, venues=10, seeds=3, limit=300s, legs=4
+  bay/90210             a1883f9bfcc2f2a4  19801f  300s  fin=9 pen=3
+  bay/90211             80b31d5b325c8979  19801f  300s  fin=9 pen=2
+  bay/90212             03db3862080e5f08  19801f  300s  fin=9 pen=5
+  lake/90210            01eb5c841e22250e  19801f  300s  fin=6 pen=7
+  lake/90211            5b14e3290b3a9318  19801f  300s  fin=5 pen=4
+  lake/90212            713dba1bf279afaa  19801f  300s  fin=4 pen=2
+  lagoon/90210          986bc3c39811936a  19801f  300s  fin=9 pen=5
+  lagoon/90211          7c15645c099e8406  19801f  300s  fin=9 pen=6
+  lagoon/90212          f9e3f6ede306ede6  19801f  300s  fin=8 pen=5
+  swamp/90210           e5cb46495e3a3905  19801f  300s  fin=0 pen=7
+  swamp/90211           b06d7b07c130ea5d  19801f  300s  fin=0 pen=7
+  swamp/90212           60f7ee5a94537cfa  19801f  300s  fin=0 pen=3
+  river/90210           5f826e6e96e458d8  19801f  300s  fin=9 pen=5
+  river/90211           0f6fa9779e831bb2  19801f  300s  fin=8 pen=7
+  river/90212           1e5a4b1a7fa29d26  19801f  300s  fin=7 pen=5
+  ocean/90210           a1d103472ce90f94  19801f  300s  fin=9 pen=10
+  ocean/90211           067eaf43bd012492  19801f  300s  fin=9 pen=1
+  ocean/90212           39c2b8748e66aeca  19801f  300s  fin=9 pen=3
+  redrock/90210         fb692975600b537a  19801f  300s  fin=6 pen=6
+  redrock/90211         0fe05a745abf9abb  19801f  300s  fin=8 pen=5
+  redrock/90212         ef1aabb558f73ce6  19801f  300s  fin=9 pen=4
+  glowtide/90210        8fededd7b8c3ef74  19801f  300s  fin=7 pen=9
+  glowtide/90211        0a1d547851c64252  19801f  300s  fin=9 pen=5
+  glowtide/90212        9baca5d6c5810fe1  19801f  300s  fin=8 pen=5
+  arctic/90210          7cc3c5af93cfcaec  19200f  300s  fin=0 pen=14
+  arctic/90211          8353a18137527ba7  19200f  300s  fin=0 pen=6
+  arctic/90212          0657a28be9f17b46  19200f  300s  fin=0 pen=9
+  seatrials/90210       c90a84af5e01e9b4  19200f  300s  fin=8 pen=9
+  seatrials/90211       39ac96d0dc67a098  19200f  300s  fin=9 pen=3
+  seatrials/90212       2f7659c10083e48f  19200f  300s  fin=9 pen=3
+
+  --legs 4 was overridden by the venue's own route on 1/10 venue(s): arctic sailed 2
+  A course authors its leg count. To trace a longer one, author a longer route.
+
+Wrote regatta/eval/golden/traces.json (4.2 min)

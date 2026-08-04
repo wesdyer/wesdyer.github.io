@@ -1,0 +1,36 @@
+seed 9100 done
+seed 9101 done
+seed 9102 done
+seed 9103 done
+seed 9104 done
+seed 9105 done
+seed 9106 done
+seed 9107 done
+
+DMC TWA demand (t=0 wind, dist share): leg1 up 0.42 reach 0.33 run 0.25 | leg2 up 0.19 reach 0.31 run 0.5
+
+TRANSIT (n=72, dmcLen 12467):
+  time   med 247 mean 268
+  dist ratio med 1.90   odo mean 25939  dmc-progress mean 13934
+  slow   med 37.2 mean 44  (share 16%)
+  grind  med 12.9 mean 17  (share 6%)
+  EXCESS mean 13498u  =  rec 994 | turn 2159 | avoid 6639 | offrt 2824 | sail 883
+  avoid sub-bins: boat 2451 | static 923 | both 842 | none 2422   mean dev 47deg
+  form: weave 405u vs lateral 13096u
+  tacks med 16 mean 16.9  gybes med 12 mean 13.8
+  falsebeat 6% of sail-mode dist  | hdg-vs-carrot mean 23deg
+  xtrack mean 564u  >300u 61% of samples  | carrotJump 13.5/min
+
+RET (n=71, dmcLen 11274):
+  time   med 153 mean 174
+  dist ratio med 1.71   odo mean 21260  dmc-progress mean 12154
+  slow   med 10.1 mean 19  (share 11%)
+  grind  med 6.1 mean 8  (share 5%)
+  EXCESS mean 9374u  =  rec 602 | turn 1180 | avoid 3902 | offrt 3310 | sail 380
+  avoid sub-bins: boat 927 | static 797 | both 319 | none 1858   mean dev 46deg
+  form: weave 238u vs lateral 9138u
+  tacks med 5 mean 7.4  gybes med 7 mean 8.6
+  falsebeat 2% of sail-mode dist  | hdg-vs-carrot mean 11deg
+  xtrack mean 936u  >300u 71% of samples  | carrotJump 18.5/min
+
+wrote transit_attrib_probe_cadence1.json

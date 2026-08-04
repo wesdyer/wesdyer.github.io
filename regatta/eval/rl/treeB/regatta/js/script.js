@@ -660,7 +660,34 @@ class BotController {
 
              // If we are stuck (slow) or just hit it, calculate escape
              if (this.boat.speed < 0.5) {
-                 this.markEscapeHeading = Math.atan2(awayX, -awayY);
+                 // SAILABLE ESCAPE, NEVER RADIAL. The old escape was the raw
+                 // away-from-mark bearing; on the upwind side of a hairpin
+                 // rounding that is dead into the wind, and the 12s latch below
+                 // parked the boat at ~0.15 speed for its whole duration (bay
+                 // L3/L5 traces: every 15-17s "park" starts at d 28-53 = mark
+                 // contact). Same move as the island escape: pick the off-wind
+                 // candidate that best points away from the mark — and, while
+                 // armed, the way round (a wrong-way escape refunds sweep).
+                 let escM = Math.atan2(awayX, -awayY);
+                 const lwM = getWindAt(this.boat.x, this.boat.y).direction;
+                 const rsM = this.boat.raceState;
+                 const rmM = legRoundMark(rsM.leg) || state.course.roundMark;
+                 const armedM = rmM && rsM.roundArmed && !rsM.finished;
+                 let txM = 0, tyM = 0;
+                 if (armedM) {
+                     const sgnM = rmM.side === 'port' ? -1 : 1;
+                     const brgM = Math.atan2(this.boat.y - rmM.y, this.boat.x - rmM.x);
+                     txM = this._outbound ? Math.cos(brgM) : -Math.sin(brgM) * sgnM;
+                     tyM = this._outbound ? Math.sin(brgM) : Math.cos(brgM) * sgnM;
+                 }
+                 let bestM = -Infinity;
+                 for (const off of [1.05, -1.05, 1.75, -1.75]) {
+                     const h = normalizeAngle(lwM + off);
+                     const sc = (Math.sin(h) * awayX - Math.cos(h) * awayY)
+                              + (armedM ? 0.7 * (Math.sin(h) * txM - Math.cos(h) * tyM) : 0);
+                     if (sc > bestM) { bestM = sc; escM = h; }
+                 }
+                 this.markEscapeHeading = escM;
                  // "2s" shipped on the 6x-slow clock — the tuned reality was a 12s
                  // commit, and the fleet's mark behavior is calibrated to it.
                  this.markContactTimer = 12.0;
@@ -2838,7 +2865,7 @@ class BotController {
             }
         }
         this._lastAvoidChoice = bestHeading;
-        
+
         // Expose how far avoidance pushed us off our intended course — the
         // no-contact foul detector reads this as "avoiding action taken".
         this.lastAvoidDeviation = Math.abs(normalizeAngle(bestHeading - desiredHeading));
@@ -3178,6 +3205,9 @@ function applyVenueConditions() {
     const known = settings.venue && window.VenueDoc && window.VenueDoc.get(settings.venue);
     const key = known ? settings.venue : 'bay';
     state.race.venue = key;
+    // Purely visual atmosphere the document opts into (fx.snowfall on Glacier
+    // Sound). Nothing in the sim reads this — it gates screen-space paint only.
+    state.race.venueFx = (known && known.fx) || {};
     applyVenuePalette(key);
 }
 
@@ -3670,7 +3700,7 @@ function makeFloe(cx, cy, r, rng, artOverride) {
         driftVy: -Math.cos(dir) * speed,
         // Ice spins as it drifts. Small pans twirl, bergs barely turn.
         spin: rng() * Math.PI * 2,
-        spinRate: (rng() < 0.5 ? -1 : 1) * (0.08 + rng() * 0.27) * (r > 220 ? 0.4 : 1),
+        spinRate: clampSpin((rng() < 0.5 ? -1 : 1) * (0.08 + rng() * 0.27) * (r > 220 ? 0.4 : 1), r),
         // Slow heading curl so paths curve instead of running straight
         wanderPhase: rng() * Math.PI * 2,
         wanderRate: 0.1 + rng() * 0.25
@@ -3952,8 +3982,8 @@ function updateIceFloes(dt) {
                 // becomes angular impulse, scaled down by size so a berg shrugs
                 // it off while a small pan gets kicked into a twirl.
                 const vRelT = (a.driftVx - b.driftVx) * -ny + (a.driftVy - b.driftVy) * nx;
-                a.spinRate = clampSpin(a.spinRate - vRelT * 0.9 / a.radius);
-                b.spinRate = clampSpin(b.spinRate + vRelT * 0.9 / b.radius);
+                a.spinRate = clampSpin(a.spinRate - vRelT * 0.9 / a.radius, a.radius);
+                b.spinRate = clampSpin(b.spinRate + vRelT * 0.9 / b.radius, b.radius);
             }
         }
     }
@@ -4108,7 +4138,16 @@ function settleFloes() {
 // relocated at all, so there is no random destination left to veto.)
 
 // Ice that spins faster than this reads as a cartoon top, not a floe
-function clampSpin(w) { return Math.max(-0.75, Math.min(0.75, w)); }
+// Radius-aware: big ice may not spin fast. A flat cap let a collision-kicked
+// berg sweep its rim at hundreds of u/s — invisible to every predictor that
+// extrapolates floes by drift alone, and measured as the dominant motion in
+// floe contacts (median 28.6 u/s rotational vs 5 drift). min(0.75, 30/r)
+// leaves small pans twirling (r<100 median |w| 0.28) and holds every rim to
+// ~30 u/s, the same order as drift.
+function clampSpin(w, r) {
+    const cap = Math.min(0.75, 30 / Math.max(1, r));
+    return Math.max(-cap, Math.min(cap, w));
+}
 
 // ---------------------------------------------------------------------------
 
@@ -4830,6 +4869,9 @@ class Boat {
             finishTime: 0,
             startTimeDisplay: 0,
             startTimeDisplayTimer: 0,
+            // Did AUTO TRIM touch this run? Sampled every frame; decides which record
+            // board the run competes on (see runTrimBoard).
+            usedAutoTrim: false,
             legStartTime: 0,
             lastLegDuration: 0,
             startLegDuration: null,
@@ -6667,6 +6709,13 @@ const UI = {
     settingsButton: document.getElementById('settings-button'),
     closeSettings: document.getElementById('close-settings'),
     saveSettings: document.getElementById('save-settings'),
+    abandonScreen: document.getElementById('abandon-screen'),
+    abandonButton: document.getElementById('abandon-button'),
+    abandonKeep: document.getElementById('abandon-keep'),
+    abandonConfirm: document.getElementById('abandon-confirm'),
+    pauseContext: document.getElementById('pause-context'),
+    abandonContext: document.getElementById('abandon-context'),
+    preRaceSettingsBtn: document.getElementById('prerace-settings-btn'),
     settingSound: document.getElementById('setting-sound'),
     settingBgSound: document.getElementById('setting-bg-sound'),
     settingMusic: document.getElementById('setting-music'),
@@ -6890,61 +6939,62 @@ function renderVenueDetail(key) {
     // flex has not settled on the first paint.
     const longName = (c.name || c.tag || key).length > 14 ? ' long' : '';
 
-    // YOUR BEST sits at the TOP RIGHT of the gradient, opposite the venue chips: it is a
-    // fact about you, not about the venue, so it does not belong in the stack of venue
-    // readouts at the bottom — and up here it is the first thing you see on a course you
-    // have raced before.
-    // TWO RECORDS IN ONE PILL, divided. The clock is what you came back to beat, to the
-    // thousandth because that is the precision it gets beaten by; the finish beside it is a
-    // different race on a different day and was never the same fact — a light-air win is
-    // slower than a windy eighth. They share a pill because the header row already carries
-    // two chips and a third would run into them; the divider keeps them two claims.
-    const bestValue = (label, value, color) =>
-        `<span class="t-label t-label-sm" style="color:${color}; margin-right:6px;">${label}</span>`
-      + `<span style="color:${color};">${value}</span>`;
-    const bestChip = best
-        ? `<span class="t-mono shrink-0" style="background:rgba(242,193,78,0.14); border:1px solid rgba(242,193,78,0.4);
-                   border-radius:999px; padding:5px 13px; font-size:12.5px; white-space:nowrap;">
-               ${bestValue('Your best', formatBestTime(best.t), '#f2c14e')}
-               ${best.bestPos ? `<span style="color:rgba(242,193,78,0.35); margin:0 8px;">|</span>`
-                              + bestValue('Finish', ordinalOf(best.bestPos), '#dbeafe') : ''}
-           </span>`
-        : '';
+    // THE RECORD GIVEN A HOME (design 9a): the header chip moved into the hero's
+    // empty middle as the challenge block. THE CLOCK ONLY — a best finish caps at
+    // 1st and then stops being chaseable, so it is not a challenge and does not
+    // belong here (the records book still keeps it). Gold = a time YOU set here.
+    // When you have none, the course's provisional target stands instead — "time
+    // to beat", in white, because it is held by nobody. With neither, the block
+    // still stands with an em dash: the first run founds the book, and ALL
+    // RECORDS is still the way in.
+    const prov = provisionalRecord(key);
+    const rec = best ? { label: 'Your best time', t: best.t, mine: true }
+              : { label: 'Time to beat', t: prov, mine: false };
+    const recordBlock = `
+        <div class="pr-record shrink-0" style="background:rgba(6,14,26,0.4); border-radius:14px;
+                    border:1px solid ${rec.mine ? 'rgba(242,193,78,0.4)' : 'rgba(255,255,255,0.18)'};">
+            <div class="flex items-center justify-between gap-4">
+                <span class="t-label t-label-sm" style="color:${rec.mine ? '#f2c14e' : '#dbeafe'};">${rec.label}</span>
+                <button class="t-label t-label-sm" onclick="openRecordsOverlay()"
+                        style="background:none; border:none; padding:0; cursor:pointer; color:#8fd8d0;
+                               text-decoration:underline; text-underline-offset:3px; white-space:nowrap;">All records &rarr;</button>
+            </div>
+            <div class="t-mono pr-record-time" style="color:${rec.mine ? '#f2c14e' : '#ffffff'};">${rec.t != null ? formatBestTime(rec.t) : '&mdash;'}</div>
+        </div>`;
 
     UI.venueDetail.innerHTML = `
-        <!-- WRAPS. Four nowrap chips do not fit a 386px venue column at 1280, and without
-             this the left pair and the best pill simply drew on top of each other — which
-             they were already doing, narrowly, before the finish record joined them. The
-             second line comes out of the slack above the readouts (pinned by margin-top:auto),
-             not out of the title. -->
-        <div class="flex flex-wrap gap-2 shrink-0 items-start justify-between">
-            <div class="flex gap-2" style="min-width:0;">
-                <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">Venue ${idx} of ${VENUE_ORDER.length}</span>
-                <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${c.tag || key}</span>
-            </div>
-            <div class="flex gap-2 shrink-0">${bestChip}</div>
+        <div class="flex gap-2 shrink-0">
+            <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">Venue ${idx} of ${VENUE_ORDER.length}</span>
+            <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${c.tag || key}</span>
         </div>
         <div class="t-display uppercase pr-venue-title${longName}">${c.name || c.tag || key}</div>
         <div class="pr-blurb">${c.blurb || ''}</div>
-        <!-- FACTS LEFT, CHART RIGHT. The Course row carries the numbers (legs and
-             distance, measured along the computed paths); the chart is the picture of
-             the same fact, unlabeled — so nothing is said twice whether it shows or
-             not. The facts column gives ground first (360 down to 240) so the chart
-             earns a readable width before it appears at all. -->
-        <div class="flex items-stretch shrink-0" style="margin-top:auto; padding-top:16px; gap:14px;">
-            <div class="flex flex-col gap-1.5" style="flex:0 1 360px; min-width:240px;">
+        ${recordBlock}
+        <!-- CHART LEFT, FACTS RIGHT (design 9a). The chart is the picture and gets
+             the room: this row takes ALL the slack the briefing leaves (flex-grow,
+             not margin-top:auto), so the chart scales up into it — as big as the
+             vertical space allows, cropped to the course's own aspect. The facts
+             stay a fixed-width readout column, anchored to the bottom edge like
+             the chart so the two read as one baseline. The Course row still
+             carries the numbers, so nothing is lost when the chart yields. -->
+        <div class="flex" style="flex:1 1 auto; padding-top:16px; gap:14px;">
+            <!-- The box is the AVAILABLE room; the inner card crops itself to the
+                 course's own aspect inside it (drawCourseMiniMap sizes it), pinned
+                 to the bottom-left so growth spends the slack upward. -->
+            <div id="venue-course-box" class="relative" style="flex:1 1 auto; min-width:0;">
+                <div id="venue-course-inner" style="position:absolute; left:0; bottom:0; border-radius:8px; background:rgba(6,14,26,0.45); overflow:hidden;">
+                    <canvas id="venue-course-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+                </div>
+                <!-- The record book rides in whatever water the chart leaves — see
+                     drawCourseMiniMap, which places it and decides if it fits. -->
+                <div id="venue-records-inline" style="position:absolute; bottom:0; right:0; display:none; min-width:0; overflow:hidden;"></div>
+            </div>
+            <div class="flex flex-col gap-1.5" style="flex:0 1 360px; min-width:240px; align-self:flex-end;">
                 ${row('Wind', windRangeText())}
                 ${row('Water', waterVal || '&mdash;')}
                 ${row('Hazards', c.hazards || '—')}
                 ${row('Course', courseSummaryText())}
-            </div>
-            <!-- The box is the AVAILABLE room; the inner card crops itself to the
-                 course's own aspect inside it (drawCourseMiniMap sizes it), so a tall
-                 course gets a tall panel and no letterboxed dead water. -->
-            <div id="venue-course-box" class="relative" style="flex:1 0 150px; min-width:0;">
-                <div id="venue-course-inner" style="position:absolute; left:0; top:50%; transform:translateY(-50%); border-radius:8px; background:rgba(6,14,26,0.45); overflow:hidden;">
-                    <canvas id="venue-course-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
-                </div>
+                ${row('Time Limit', timeLimitText())}
             </div>
         </div>`;
     layoutVenueCourseMap();
@@ -6976,6 +7026,20 @@ function courseSummaryText() {
     return `${state.race.totalLegs} legs${km >= 0.1 ? ` &middot; ${km.toFixed(1)} km` : ''}`;
 }
 
+// The race's cutoff, as the briefing states it — THE SAME RULE the race enforces
+// (see the dynamic cutoff in updateRace): the course's authored/compiled limit
+// when it has one, otherwise derived from the course length. Anyone still on the
+// water at this time is scored DNF.
+function timeLimitText() {
+    const cutoff = (state.course && state.course.cutoff != null)
+        ? state.course.cutoff
+        : (state.race.totalLegs * state.race.legLength) / 5 * 0.1875;
+    if (cutoff <= 0) return '&mdash;';
+    // Unpadded minutes — "7:00", not the race clock's "07:00": this is a stated
+    // limit, not a running readout that needs stable digits.
+    return `${Math.floor(cutoff / 60)}:${String(Math.floor(cutoff % 60)).padStart(2, '0')}`;
+}
+
 // The chart earns its place only when the briefing can carry facts and a chart side by
 // side. Below ~400px of section width the facts column would be crushed, so the chart
 // yields — the Course row states its numbers either way. (At 1280 the whole briefing
@@ -6987,6 +7051,15 @@ function layoutVenueCourseMap() {
     const show = !!(state.course && state.course.route && state.course.route.length)
         && section.clientWidth >= 404;
     box.style.display = show ? 'block' : 'none';
+    // Redraw whenever the box actually changes size — the first draw happens before
+    // the web fonts land, and when they do the fact rows grow and the box with them;
+    // without this the chart stayed sized to the pre-font stack, visibly short of
+    // the Wind and Course rows it sits beside.
+    if (typeof ResizeObserver !== 'undefined') {
+        if (_chartAnim.ro) _chartAnim.ro.disconnect();
+        _chartAnim.ro = new ResizeObserver(() => drawCourseMiniMap());
+        _chartAnim.ro.observe(box);
+    }
     if (show) drawCourseMiniMap();
 }
 
@@ -7028,16 +7101,30 @@ function drawCourseMiniMap() {
     // No boundary in the frame: it was tried, and it pulled every chart out to water
     // nobody races on. The COURSE is the subject — marks, zones and the sailed paths,
     // padded a touch — and whatever land falls inside that frame is the context.
-    // CROP, don't letterbox: scale to fit the room, then take only the panel the
-    // course actually needs — a tall course gets a tall panel, and the empty water
-    // that used to pad the sides goes back to the page. (The floor is the caption.)
-    const PAD = 16; // room for arrowheads and the caption row
+    // AS BIG AS THE BOX ALLOWS, CROPPED BOTH WAYS. The chart scales until it runs
+    // out of width or height, then the panel takes only what the course's aspect
+    // needs — no letterboxed dead water on either axis. It is pinned bottom-left,
+    // so the facts column beside it shares its baseline and growth spends the
+    // vertical slack upward.
+    const PAD = 16; // room for arrowheads
     const spanX = Math.max(200, maxX - minX), spanY = Math.max(200, maxY - minY);
     const scale = Math.min((availW - 2 * PAD) / spanX, (availH - 2 * PAD) / spanY);
     const w = Math.max(96, Math.round(spanX * scale) + 2 * PAD);
-    const h = Math.round(spanY * scale) + 2 * PAD;
+    const h = Math.max(96, Math.round(spanY * scale) + 2 * PAD);
     inner.style.width = w + 'px';
     inner.style.height = h + 'px';
+    // The record book fills the water the chart leaves, when there is enough of it.
+    const recEl = document.getElementById('venue-records-inline');
+    if (recEl) {
+        const remain = availW - w - 16;
+        if (remain >= 215) {
+            recEl.style.left = (w + 16) + 'px';
+            recEl.style.display = 'block';
+            renderVenueRecordsInline(recEl);
+        } else {
+            recEl.style.display = 'none';
+        }
+    }
     const dpr = window.devicePixelRatio || 1;
     canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
     // The chart is STATIC and the wind is not: everything below draws once into an
@@ -7089,92 +7176,18 @@ function drawCourseMiniMap() {
         }
     }
 
-    const arrow = (x, y, dx, dy, size, color) => {
-        const len = Math.hypot(dx, dy) || 1;
-        const ux = dx / len, uy = dy / len;
+    // THE TOUR, not the atlas. The legs, lines and roundings are no longer painted
+    // into this layer all at once — chartTourFrame walks them leg by leg on top of
+    // it every frame (see the course-tour block below), showing how the course is
+    // SAILED rather than where its furniture sits. The static layer keeps only
+    // land and a dim pip per mark, so the frame still reads as a chart while the
+    // tour is between goals. Reduced motion gets the whole course at once instead
+    // (chartStaticCourse) — a walkthrough nobody watches move is a slow diagram.
+    for (const mk of marks) {
         ctx.beginPath();
-        ctx.moveTo(x + ux * size, y + uy * size);
-        ctx.lineTo(x - ux * size * 0.6 - uy * size * 0.6, y - uy * size * 0.6 + ux * size * 0.6);
-        ctx.lineTo(x - ux * size * 0.6 + uy * size * 0.6, y - uy * size * 0.6 - ux * size * 0.6);
-        ctx.closePath();
-        ctx.fillStyle = color;
+        ctx.arc(X(mk.x), Y(mk.y), 2, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(238,243,251,0.3)';
         ctx.fill();
-    };
-
-    // The legs, in sail order — each drawn as its COMPUTED path (the same ruler the
-    // AI follows: grid-routed around land, tangent into the rounding arcs), so a leg
-    // that detours reads as a detour. Straight line only when no path was built.
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = 'round';
-    for (let leg = 1; leg <= legs; leg++) {
-        const P = dmc && dmc.legs && dmc.legs[leg] && dmc.legs[leg].pts;
-        if (P && P.length >= 2) {
-            ctx.beginPath();
-            P.forEach((q, i) => i ? ctx.lineTo(X(q.x), Y(q.y)) : ctx.moveTo(X(q.x), Y(q.y)));
-            ctx.stroke();
-            // Direction arrow at ~42% along the path, on its LOCAL heading. Not the
-            // midpoint: an out-and-back pair would stamp both arrowheads on the same
-            // spot and read as a star instead of two directions.
-            const i = Math.max(1, Math.round((P.length - 1) * 0.42));
-            arrow(X(P[i].x), Y(P[i].y), X(P[i].x) - X(P[i - 1].x), Y(P[i].y) - Y(P[i - 1].y),
-                  5, 'rgba(255,255,255,0.75)');
-            continue;
-        }
-        const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
-        if (!a || !b) continue;
-        ctx.beginPath();
-        ctx.moveTo(X(a.x), Y(a.y));
-        ctx.lineTo(X(b.x), Y(b.y));
-        ctx.stroke();
-        const t = 0.42;
-        const mx = X(a.x + (b.x - a.x) * t), my = Y(a.y + (b.y - a.y) * t);
-        arrow(mx, my, X(b.x) - X(a.x), Y(b.y) - Y(a.y), 5, 'rgba(255,255,255,0.75)');
-    }
-
-    // Lines and gates: start in the water's green, finish white and dashed — dashed so
-    // a shared start/finish line shows both without one painting over the other.
-    for (const e of route) {
-        if ((e.kind !== 'line' && e.kind !== 'gate') || !e.marks) continue;
-        const m1 = marks[e.marks[0]], m2 = marks[e.marks[1]];
-        if (!m1 || !m2) continue;
-        const isStart = e.role === 'start', isFinish = !!e.finish;
-        ctx.beginPath();
-        ctx.moveTo(X(m1.x), Y(m1.y)); ctx.lineTo(X(m2.x), Y(m2.y));
-        ctx.setLineDash(isFinish ? [4, 3] : []);
-        ctx.strokeStyle = isStart ? '#34d399' : isFinish ? '#eef3fb' : 'rgba(255,255,255,0.6)';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.setLineDash([]);
-        for (const m of [m1, m2]) {
-            ctx.beginPath();
-            ctx.arc(X(m.x), Y(m.y), 2.5, 0, Math.PI * 2);
-            ctx.fillStyle = isStart ? '#34d399' : '#eef3fb';
-            ctx.fill();
-        }
-    }
-
-    // Roundings: the mark in gold, and a curled arrow saying which way around. A port
-    // rounding keeps the mark to port — counterclockwise seen from above, and the
-    // world renders north-up, so the screen agrees with the water.
-    for (const e of route) {
-        if (e.kind !== 'round' || !e.mark) continue;
-        const mx = X(e.mark.x), my = Y(e.mark.y);
-        ctx.beginPath();
-        ctx.arc(mx, my, 3, 0, Math.PI * 2);
-        ctx.fillStyle = '#f2c14e';
-        ctx.fill();
-        const r = 8.5, ccw = e.mark.side === 'port';
-        const a0 = -Math.PI / 2, a1 = a0 + (ccw ? -1.55 : 1.55) * Math.PI;
-        ctx.beginPath();
-        ctx.arc(mx, my, r, a0, a1, ccw);
-        ctx.strokeStyle = 'rgba(242,193,78,0.85)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        // arrowhead at the arc's end, tangent to it
-        const tx = Math.cos(a1), ty = Math.sin(a1);
-        arrow(mx + Math.cos(a1) * r, my + Math.sin(a1) * r,
-              ccw ? ty : -ty, ccw ? -tx : tx, 4, 'rgba(242,193,78,0.9)');
     }
 
     // Wind is MOTION, not a glyph: comet streaks fly downwind across the chart —
@@ -7186,13 +7199,33 @@ function drawCourseMiniMap() {
     A.static = off; A.w = w; A.h = h; A.dpr = dpr; A.last = 0;
     // The chart-to-world transform, inverted — the field lives in world units.
     A.scale = scale; A.cx = cx; A.cy = cy;
-    const count = Math.max(20, Math.min(80, Math.round(w * h / 1200)));
+    A.X = X; A.Y = Y;
+    // Screen-space polyline per leg, measured once — the tour draws partial
+    // lengths every frame and should not re-project the ruler each time.
+    A.legPaths = [];
+    for (let leg = 1; leg <= legs; leg++) {
+        const P = dmc && dmc.legs && dmc.legs[leg] && dmc.legs[leg].pts;
+        let pp = [];
+        if (P && P.length >= 2) pp = P.map(q => [X(q.x), Y(q.y)]);
+        else {
+            const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
+            if (a && b) pp = [[X(a.x), Y(a.y)], [X(b.x), Y(b.y)]];
+        }
+        const cum = [0];
+        for (let i = 1; i < pp.length; i++)
+            cum.push(cum[i - 1] + Math.hypot(pp[i][0] - pp[i - 1][0], pp[i][1] - pp[i - 1][1]));
+        A.legPaths[leg] = { pts: pp, cum, total: cum[cum.length - 1] || 0 };
+    }
+    A.tour = { leg: 1, phase: 'origin', t: 0, clock: 0 };
+    const count = Math.max(30, Math.min(140, Math.round(w * h / 400)));
     A.comets = [];
     for (let i = 0; i < count; i++) A.comets.push(spawnChartComet());
 
     const draw2d = canvas.getContext('2d');
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        // One still frame: the same streaks at mid-life, pointing the way, no loop.
+        // One still frame: the whole course at once, and the same streaks at
+        // mid-life, pointing the way, no loop.
+        chartStaticCourse(ctx, X, Y);
         draw2d.setTransform(1, 0, 0, 1, 0, 0);
         draw2d.drawImage(off, 0, 0);
         draw2d.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -7215,33 +7248,286 @@ function chartWindAt(sx, sy) {
     const wind = regionWindAt(A.cx + (sx - A.w / 2) / A.scale,
                               A.cy + (sy - A.h / 2) / A.scale);
     return { fx: -Math.sin(wind.direction), fy: Math.cos(wind.direction),
-             px: 4 + Math.min(44, wind.speed * 2.0) };
+             px: 3 + Math.min(60, wind.speed * 2.6), kt: wind.speed };
 }
 
 function spawnChartComet() {
     const A = _chartAnim;
     const cm = { x: fxRand() * A.w, y: fxRand() * A.h,
                  ttl: 1.8 + fxRand() * 2.2, age: fxRand() * 1.8,   // desynced fades
-                 len: 8 + fxRand() * 7 };
+                 jit: 0.75 + fxRand() * 0.5 };                     // per-comet size character
     const lw = chartWindAt(cm.x, cm.y);   // the still frame needs a heading too
-    cm.fx = lw.fx; cm.fy = lw.fy;
+    cm.fx = lw.fx; cm.fy = lw.fy; cm.kt = lw.kt;
     return cm;
 }
 
+// THE STREAK IS THE ANEMOMETER: length, brightness and weight all follow the LOCAL
+// knots, so a katabatic corner reads as long hard strokes and a glassy patch as
+// short faint drifters — the difference is visible in a still, not only in motion.
 function drawChartComet(ctx, cm) {
-    const a = Math.sin(Math.PI * Math.min(1, cm.age / cm.ttl)) * 0.5;
-    if (a <= 0) return;
-    const tx = cm.x - cm.fx * cm.len, ty = cm.y - cm.fy * cm.len;
+    const env = Math.sin(Math.PI * Math.min(1, cm.age / cm.ttl));
+    const kt = cm.kt || 0;
+    const a = env * Math.min(0.8, 0.22 + kt * 0.025);
+    if (a <= 0.01) return;
+    const len = cm.jit * Math.min(30, 4 + kt * 0.9);
+    const tx = cm.x - cm.fx * len, ty = cm.y - cm.fy * len;
     const grad = ctx.createLinearGradient(cm.x, cm.y, tx, ty);
     grad.addColorStop(0, `rgba(190,220,255,${a.toFixed(3)})`);
     grad.addColorStop(1, 'rgba(190,220,255,0)');
     ctx.strokeStyle = grad;
-    ctx.lineWidth = 1.4;
+    ctx.lineWidth = Math.min(2, 1 + kt * 0.035);
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(cm.x, cm.y);
     ctx.lineTo(tx, ty);
     ctx.stroke();
+}
+
+// ── The course tour ─────────────────────────────────────────────────────────
+// The chart doesn't show the whole route at once — it SAILS it. One leg at a
+// time: the origin goal appears (the start line first), the path draws itself
+// toward the next goal, the goal lands — a rounding's curl sweeping around its
+// mark in the side's colour, on repeat — then the spent goal and path clear and
+// the next leg begins from the goal just reached. After the finish the whole
+// picture holds a beat and the tour restarts. The point is the ORDER: how to
+// move through the course, not just where its furniture sits.
+
+function chartArrowGlyph(ctx, x, y, dx, dy, size, color) {
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len;
+    ctx.beginPath();
+    ctx.moveTo(x + ux * size, y + uy * size);
+    ctx.lineTo(x - ux * size * 0.6 - uy * size * 0.6, y - uy * size * 0.6 + ux * size * 0.6);
+    ctx.lineTo(x - ux * size * 0.6 + uy * size * 0.6, y - uy * size * 0.6 - ux * size * 0.6);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+}
+
+// One route entry's goal, at `alpha`. Lines and gates keep their standing
+// colours — start green, gate gold, finish white-dashed. A rounding is the mark
+// plus its curled arrow in the SIDE'S OWN colour (red for port, green for
+// starboard — the same red and green the water means by those words), and
+// `clock` makes the curl sweep around the mark on repeat, tracing the turn the
+// way it will be sailed; pass null for the full static curl (reduced motion).
+function chartGoalGlyph(ctx, e, marks, X, Y, alpha, clock) {
+    if (!e || alpha <= 0.01) return;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if ((e.kind === 'line' || e.kind === 'gate') && e.marks) {
+        const m1 = marks[e.marks[0]], m2 = marks[e.marks[1]];
+        if (m1 && m2) {
+            const col = e.role === 'start' ? '#34d399'
+                      : e.kind === 'gate' && !e.finish ? '#f2c14e' : '#eef3fb';
+            ctx.beginPath();
+            ctx.moveTo(X(m1.x), Y(m1.y)); ctx.lineTo(X(m2.x), Y(m2.y));
+            ctx.strokeStyle = col;
+            ctx.lineWidth = 2;
+            if (e.finish) ctx.setLineDash([4, 3]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            for (const m of [m1, m2]) {
+                ctx.beginPath();
+                ctx.arc(X(m.x), Y(m.y), 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = col;
+                ctx.fill();
+            }
+        }
+    } else if (e.kind === 'round' && e.mark) {
+        const port = e.mark.side === 'port';
+        const col = port ? '#f87171' : '#4ade80';
+        const mx = X(e.mark.x), my = Y(e.mark.y);
+        ctx.beginPath();
+        ctx.arc(mx, my, 3, 0, Math.PI * 2);
+        ctx.fillStyle = col;
+        ctx.fill();
+        // The curl grows around the mark, holds a beat, fades, goes again. A port
+        // rounding keeps the mark to port — counterclockwise seen from above, and
+        // the world renders north-up, so the screen agrees with the water.
+        let frac = 1, curlA = 0.9;
+        if (clock !== null) {
+            const p = (clock % 1.7) / 1.7;
+            frac = p < 0.65 ? 1 - Math.pow(1 - p / 0.65, 2) : 1;
+            if (p > 0.88) curlA *= (1 - p) / 0.12;
+        }
+        const r = 8.5, ccw = port;
+        const a1 = -Math.PI / 2 + (ccw ? -1.55 : 1.55) * Math.PI * frac;
+        ctx.globalAlpha = alpha * curlA;
+        ctx.beginPath();
+        ctx.arc(mx, my, r, -Math.PI / 2, a1, ccw);
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // arrowhead at the arc's end, tangent to it
+        const tx = Math.cos(a1), ty = Math.sin(a1);
+        chartArrowGlyph(ctx, mx + tx * r, my + ty * r, ccw ? ty : -ty, ccw ? -tx : tx, 4, col);
+    }
+    ctx.restore();
+}
+
+// Point (and local heading) at arc-length `s` along a measured screen polyline.
+function chartPathPoint(path, s) {
+    const pts = path.pts, cum = path.cum;
+    for (let i = 1; i < pts.length; i++) {
+        if (cum[i] >= s || i === pts.length - 1) {
+            const f = Math.max(0, Math.min(1, (s - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1)));
+            return { x: pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f,
+                     y: pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f,
+                     dx: pts[i][0] - pts[i - 1][0], dy: pts[i][1] - pts[i - 1][1] };
+        }
+    }
+    return null;
+}
+
+// The leg's path drawn to `prog` of its length, like a pen: an arrowhead rides
+// the growing tip while drawing and leaves with it — once the line is complete
+// the revealed goal says where it was going, and a leftover mid-path arrow is
+// clutter.
+function chartTourPath(ctx, path, prog, alpha) {
+    if (!path || path.pts.length < 2 || prog <= 0 || alpha <= 0.01) return;
+    const target = path.total * Math.min(1, prog);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(path.pts[0][0], path.pts[0][1]);
+    for (let i = 1; i < path.pts.length && path.cum[i] <= target; i++)
+        ctx.lineTo(path.pts[i][0], path.pts[i][1]);
+    const tip = chartPathPoint(path, target);
+    if (tip) {
+        ctx.lineTo(tip.x, tip.y);
+        ctx.stroke();
+        if (prog < 1) chartArrowGlyph(ctx, tip.x, tip.y, tip.dx, tip.dy, 5, 'rgba(255,255,255,0.85)');
+    } else {
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
+// The tour's phase clock. The draw phase paces to the leg's on-screen length —
+// a long beat takes longer to trace than a short hop — everything else is a
+// fixed beat, and the finish holds longest: the last goal lingers before the
+// loop wipes and restarts.
+function chartTourDur(phase, leg) {
+    if (phase === 'draw') {
+        const p = _chartAnim.legPaths && _chartAnim.legPaths[leg];
+        return Math.max(0.6, Math.min(1.8, ((p && p.total) || 150) / 240));
+    }
+    return { origin: 0.45, reveal: 0.35, hold: 1.2, holdFinal: 2.6, fade: 0.4 }[phase];
+}
+
+// One frame of the walkthrough: advance the phase clock, then draw at most three
+// things — the start line (leg 1 only), the leg's path (partial while drawing),
+// and its destination goal. 'fade' clears the WHOLE leg, goal included: a goal
+// already shown as one leg's end is not re-shown as the next leg's beginning —
+// the next path simply draws from where it stood, and the picture never carries
+// more than one leg.
+function chartTourFrame(ctx, dt) {
+    const A = _chartAnim, T = A.tour;
+    const route = (state.course && state.course.route) || [];
+    const marks = (state.course && state.course.marks) || [];
+    const legs = route.length - 1;
+    if (!T || legs < 1) return;
+    T.clock += dt;
+    T.t += dt;
+    const durOf = (ph) => chartTourDur(ph === 'hold' && T.leg === legs ? 'holdFinal' : ph, T.leg);
+    let d;
+    while (T.t >= (d = durOf(T.phase))) {
+        T.t -= d;
+        if (T.phase === 'origin') T.phase = 'draw';
+        else if (T.phase === 'draw') T.phase = 'reveal';
+        else if (T.phase === 'reveal') T.phase = 'hold';
+        else if (T.phase === 'hold') T.phase = 'fade';
+        else if (T.leg === legs) { T.leg = 1; T.phase = 'origin'; }
+        else { T.leg++; T.phase = 'draw'; }
+    }
+    const k = Math.min(1, T.t / durOf(T.phase));
+    let originA = 1, pathProg = 1, pathA = 1, destA = 1;
+    if (T.phase === 'origin')      { originA = k; pathProg = pathA = destA = 0; }
+    else if (T.phase === 'draw')   { pathProg = k; destA = 0; }
+    else if (T.phase === 'reveal') { destA = k; }
+    else if (T.phase === 'fade')   { originA = pathA = destA = 1 - k; }
+    // The start line is the only goal ever shown at a leg's beginning — every
+    // later leg starts from a goal the viewer just watched land, so re-drawing
+    // it would only restate the obvious.
+    if (T.leg === 1) chartGoalGlyph(ctx, route[0], marks, A.X, A.Y, originA, T.clock);
+    chartTourPath(ctx, A.legPaths[T.leg], pathProg, pathA);
+    chartGoalGlyph(ctx, route[T.leg], marks, A.X, A.Y, destA, T.clock);
+}
+
+// The whole course at once — the pre-tour chart, kept for reduced motion where
+// a leg-by-leg walkthrough would never move. Physical lines are merged across
+// roles (a windward-leeward reuses one pair of marks as start, leeward gate and
+// finish): the start's green outranks the gate's gold, and the finish rides on
+// top as white dashes over any base.
+function chartStaticCourse(ctx, X, Y) {
+    const marks = state.course.marks || [];
+    const route = state.course.route || [];
+    const dmc = state.course.dmc;
+    const legs = route.length - 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    for (let leg = 1; leg <= legs; leg++) {
+        const P = dmc && dmc.legs && dmc.legs[leg] && dmc.legs[leg].pts;
+        if (P && P.length >= 2) {
+            ctx.beginPath();
+            P.forEach((q, i) => i ? ctx.lineTo(X(q.x), Y(q.y)) : ctx.moveTo(X(q.x), Y(q.y)));
+            ctx.stroke();
+            const i = Math.max(1, Math.round((P.length - 1) * 0.42));
+            chartArrowGlyph(ctx, X(P[i].x), Y(P[i].y), X(P[i].x) - X(P[i - 1].x), Y(P[i].y) - Y(P[i - 1].y),
+                            5, 'rgba(255,255,255,0.75)');
+            continue;
+        }
+        const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
+        if (!a || !b) continue;
+        ctx.beginPath();
+        ctx.moveTo(X(a.x), Y(a.y));
+        ctx.lineTo(X(b.x), Y(b.y));
+        ctx.stroke();
+        const t = 0.42;
+        chartArrowGlyph(ctx, X(a.x + (b.x - a.x) * t), Y(a.y + (b.y - a.y) * t),
+                        X(b.x) - X(a.x), Y(b.y) - Y(a.y), 5, 'rgba(255,255,255,0.75)');
+    }
+    const segs = new Map();
+    for (const e of route) {
+        if ((e.kind !== 'line' && e.kind !== 'gate') || !e.marks) continue;
+        const m1 = marks[e.marks[0]], m2 = marks[e.marks[1]];
+        if (!m1 || !m2) continue;
+        const key = Math.min(e.marks[0], e.marks[1]) + '|' + Math.max(e.marks[0], e.marks[1]);
+        const g = segs.get(key) || { m1, m2, start: false, finish: false, gate: false };
+        if (e.role === 'start') g.start = true;
+        if (e.finish) g.finish = true;
+        if (e.kind === 'gate') g.gate = true;
+        segs.set(key, g);
+    }
+    for (const g of segs.values()) {
+        const col = g.start ? '#34d399' : g.gate ? '#f2c14e' : g.finish ? '#eef3fb' : 'rgba(255,255,255,0.6)';
+        ctx.setLineDash([]);
+        ctx.beginPath();
+        ctx.moveTo(X(g.m1.x), Y(g.m1.y)); ctx.lineTo(X(g.m2.x), Y(g.m2.y));
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        if (g.finish && col !== '#eef3fb') {
+            ctx.setLineDash([4, 3]);
+            ctx.strokeStyle = '#eef3fb';
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+        for (const m of [g.m1, g.m2]) {
+            ctx.beginPath();
+            ctx.arc(X(m.x), Y(m.y), 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = col;
+            ctx.fill();
+        }
+    }
+    for (const e of route) {
+        if (e.kind === 'round' && e.mark) chartGoalGlyph(ctx, e, marks, X, Y, 1, null);
+    }
 }
 
 // Self-terminating: the loop lives only while the race-day board is up and the chart
@@ -7263,10 +7549,11 @@ function chartCometFrame(ts) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(A.static, 0, 0);
     ctx.setTransform(A.dpr, 0, 0, A.dpr, 0, 0);
+    chartTourFrame(ctx, dt);
     const M = 18; // wrap margin: a comet leaves fully before it re-enters fully
     for (const cm of A.comets) {
         const lw = chartWindAt(cm.x, cm.y);
-        cm.fx = lw.fx; cm.fy = lw.fy;
+        cm.fx = lw.fx; cm.fy = lw.fy; cm.kt = lw.kt;
         cm.x += lw.fx * lw.px * dt;
         cm.y += lw.fy * lw.px * dt;
         cm.age += dt;
@@ -7277,7 +7564,7 @@ function chartCometFrame(ts) {
             cm.ttl = 1.8 + fxRand() * 2.2;
             cm.x = fxRand() * A.w;
             cm.y = fxRand() * A.h;
-            cm.len = 8 + fxRand() * 7;
+            cm.jit = 0.75 + fxRand() * 0.5;
         }
         drawChartComet(ctx, cm);
     }
@@ -7970,6 +8257,9 @@ function loadSettings() {
     }
     // Migration: the Polar venue was renamed to Arctic (July 2026)
     if (settings.venue === 'polar') settings.venue = 'arctic';
+    // Migration: the Wind and Gate camera modes were removed (August 2026) — a
+    // saved one would leave the camera in a mode nothing updates or displays.
+    if (settings.cameraMode === 'wind' || settings.cameraMode === 'gate') settings.cameraMode = 'heading';
     // Migration: the Semicircle kite panel became Triangle (July 2026) — without
     // this a saved 'bullseye' falls through to a plain solid sail
     // Migration: the Manual Trim toggle became Auto Trim (July 2026), flipping the
@@ -8054,18 +8344,60 @@ function applySettings() {
     refreshPlayerAppearance();
 }
 
+// The pause card keeps the race on it — venue, leg, standing — so pausing reads
+// as a held breath, not a different app. Standing comes from fleetRank (the
+// leaderboard's own order); before the gun there is no standing to report.
+function raceContextLine() {
+    const p = state.boats[0];
+    const venue = (venueDisplayName(state.race.venue) || '').toUpperCase();
+    const total = state.race.totalLegs;
+    const leg = p ? p.raceState.leg : 0;
+    if (!p || leg === 0) return `${venue} · PRESTART`;
+    if (p.raceState.finished) return `${venue} · FINISHED`;
+    return `${venue} · LEG ${Math.min(leg, total)}/${total} · <span style="color:#f2c14e">YOU'RE ${ordinalOf(fleetRank(p))}</span>`;
+}
+
+// What abandoning costs, in the race's own terms — the honest version of "are
+// you sure?". Staying in the race is the default (and what ESC does).
+function abandonContextLine() {
+    const p = state.boats[0];
+    const total = state.race.totalLegs;
+    const leg = p ? p.raceState.leg : 0;
+    if (!p || leg === 0) return "The race hasn't started — back to the clubhouse to change venue or skipper.";
+    if (p.raceState.finished) return "You've already finished — this just heads in to the clubhouse.";
+    const left = Math.max(0, total - leg);
+    const standing = `You're ${ordinalOf(fleetRank(p)).toLowerCase()}`;
+    const clause = left === 0 ? `${standing} on the last leg` : `${standing} with ${left} leg${left === 1 ? '' : 's'} to go`;
+    return `${clause}. This race won't count — the fleet sails on without you.`;
+}
+
 function togglePause(show) {
     const isPaused = state.paused;
     const shouldPause = show !== undefined ? show : !isPaused;
     if (shouldPause) {
         state.paused = true;
+        if (UI.pauseContext) UI.pauseContext.innerHTML = raceContextLine();
         if (UI.pauseScreen) UI.pauseScreen.classList.remove('hidden');
         if (UI.helpScreen) UI.helpScreen.classList.add('hidden');
         if (UI.settingsScreen) UI.settingsScreen.classList.add('hidden');
+        if (UI.abandonScreen) UI.abandonScreen.classList.add('hidden');
     } else {
         state.paused = false;
         if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
+        if (UI.abandonScreen) UI.abandonScreen.classList.add('hidden');
         lastTime = 0;
+    }
+}
+
+// The abandon confirm sits OVER the pause menu (its scrim is darker), so
+// "keep racing" still shows where you'd land if you stayed.
+function toggleAbandon(show) {
+    if (!UI.abandonScreen) return;
+    if (show) {
+        if (UI.abandonContext) UI.abandonContext.textContent = abandonContextLine();
+        UI.abandonScreen.classList.remove('hidden');
+    } else {
+        UI.abandonScreen.classList.add('hidden');
     }
 }
 
@@ -8078,11 +8410,31 @@ function toggleHelp(show) {
         UI.helpScreen.classList.remove('hidden');
         if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
         if (UI.settingsScreen) UI.settingsScreen.classList.add('hidden');
+        if (UI.abandonScreen) UI.abandonScreen.classList.add('hidden');
     } else {
         UI.helpScreen.classList.add('hidden');
         state.paused = false;
         lastTime = 0;
     }
+}
+
+// The camera segments and telltale swatches are faces on the hidden select and
+// color input (script wiring reads and writes those); this repaints the faces
+// from the current values. Called on open because the 'C' key changes the
+// camera without going through the select.
+function paintSettingsControls() {
+    if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
+    const mode = UI.settingCameraMode ? UI.settingCameraMode.value : settings.cameraMode;
+    document.querySelectorAll('#camera-segs .ov-seg').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    const color = ((UI.settingTelltaleColor && UI.settingTelltaleColor.value) || settings.telltaleColor || '#fbbf24').toLowerCase();
+    let matched = false;
+    document.querySelectorAll('.ov-swatch[data-color]').forEach(b => {
+        const on = b.dataset.color.toLowerCase() === color;
+        b.classList.toggle('active', on);
+        matched = matched || on;
+    });
+    const custom = document.getElementById('telltale-custom');
+    if (custom) custom.classList.toggle('active', !matched);
 }
 
 function toggleSettings(show) {
@@ -8091,9 +8443,11 @@ function toggleSettings(show) {
     const shouldShow = show !== undefined ? show : !isVisible;
     if (shouldShow) {
         state.paused = true;
+        paintSettingsControls();
         UI.settingsScreen.classList.remove('hidden');
         if (UI.pauseScreen) UI.pauseScreen.classList.add('hidden');
         if (UI.helpScreen) UI.helpScreen.classList.add('hidden');
+        if (UI.abandonScreen) UI.abandonScreen.classList.add('hidden');
     } else {
         UI.settingsScreen.classList.add('hidden');
         state.paused = false;
@@ -8106,15 +8460,51 @@ if (UI.helpButton) UI.helpButton.addEventListener('click', (e) => { e.preventDef
 if (UI.closeHelp) UI.closeHelp.addEventListener('click', () => toggleHelp(false));
 if (UI.resumeHelp) UI.resumeHelp.addEventListener('click', () => toggleHelp(false));
 if (UI.resumeButton) UI.resumeButton.addEventListener('click', (e) => { e.preventDefault(); togglePause(false); });
-if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
+// RESTART re-races NOW (same venue, same fleet). Leaving for the clubhouse is
+// its own action — ABANDON, behind a confirm — so restart no longer silently
+// dumps you on the pre-race board.
+if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.preventDefault(); rematchRace(); });
+if (UI.abandonButton) UI.abandonButton.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(true); UI.abandonButton.blur(); });
+if (UI.abandonKeep) UI.abandonKeep.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); togglePause(false); });
+if (UI.abandonConfirm) UI.abandonConfirm.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); restartRace(); });
 if (UI.settingsButton) UI.settingsButton.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.settingsButton.blur(); });
+if (UI.preRaceSettingsBtn) UI.preRaceSettingsBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.preRaceSettingsBtn.blur(); });
 if (UI.closeSettings) UI.closeSettings.addEventListener('click', () => toggleSettings(false));
 if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSettings(false));
+// Segments/swatches write through the hidden controls so the existing change/
+// input listeners (and anything else watching them) keep working unchanged.
+document.querySelectorAll('#camera-segs .ov-seg').forEach(b => b.addEventListener('click', () => {
+    if (!UI.settingCameraMode) return;
+    UI.settingCameraMode.value = b.dataset.mode;
+    state.camera.mode = b.dataset.mode; // live, like the C key
+    UI.settingCameraMode.dispatchEvent(new Event('change'));
+    paintSettingsControls();
+}));
+document.querySelectorAll('.ov-swatch[data-color]').forEach(b => b.addEventListener('click', () => {
+    if (!UI.settingTelltaleColor) return;
+    UI.settingTelltaleColor.value = b.dataset.color;
+    UI.settingTelltaleColor.dispatchEvent(new Event('input'));
+    paintSettingsControls();
+}));
+{
+    const customSwatch = document.getElementById('telltale-custom');
+    if (customSwatch && UI.settingTelltaleColor) {
+        customSwatch.addEventListener('click', () => UI.settingTelltaleColor.click());
+        UI.settingTelltaleColor.addEventListener('input', paintSettingsControls);
+    }
+}
 // Two ways off the results page, where a series would have offered "next race": back to
 // the clubhouse to change venue or character, or straight into another race here.
 if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
 if (UI.resultsRematchButton) UI.resultsRematchButton.addEventListener('click', (e) => { e.preventDefault(); rematchRace(); });
 if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preventDefault(); startRace(); });
+{
+    const rc = document.getElementById('records-close');
+    if (rc) rc.addEventListener('click', () => closeRecordsOverlay());
+    const ro = document.getElementById('records-overlay');
+    // Clicking the scrim closes the book, same as every other overlay here.
+    if (ro) ro.addEventListener('click', (e) => { if (e.target === ro) closeRecordsOverlay(); });
+}
 
 if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { settings.soundEnabled = e.target.checked; saveSettings(); if (settings.soundEnabled) Sound.init(); Sound.updateWindSound(Sound.playerWindSpeed()); });
 if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { settings.bgSoundEnabled = e.target.checked; saveSettings(); Sound.updateWindSound(Sound.playerWindSpeed()); });
@@ -8146,7 +8536,18 @@ window.addEventListener('click', () => {
 });
 
 window.addEventListener('keydown', (e) => {
-    if (state.race.status === 'waiting') return;
+    if (state.race.status === 'waiting') {
+        // Settings and the record book are reachable from the clubhouse, so their
+        // keys work there too; everything else on this handler is race-only and
+        // stays gated. Settings stacks above the book, so ESC peels it first.
+        const settingsOpen = UI.settingsScreen && !UI.settingsScreen.classList.contains('hidden');
+        const recordsEl = document.getElementById('records-overlay');
+        const recordsOpen = recordsEl && !recordsEl.classList.contains('hidden');
+        if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
+        else if (e.key === 'Escape' && settingsOpen) toggleSettings(false);
+        else if (e.key === 'Escape' && recordsOpen) closeRecordsOverlay();
+        return;
+    }
 
     if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
 
@@ -8160,7 +8561,7 @@ window.addEventListener('keydown', (e) => {
 
     // View & System
     if (e.key.toLowerCase() === 'c') {
-        const modes = ['heading', 'north', 'wind', 'gate'];
+        const modes = ['heading', 'north'];
         state.camera.mode = modes[(modes.indexOf(state.camera.mode) + 1) % modes.length];
         settings.cameraMode = state.camera.mode;
         state.camera.message = state.camera.mode.toUpperCase();
@@ -8201,7 +8602,9 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
     if (e.key === '?' || (e.shiftKey && e.key === '/')) toggleHelp();
     if (e.key === 'Escape') {
-        if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) toggleHelp(false);
+        // On the abandon confirm, ESC is KEEP RACING — straight back on the water.
+        if (UI.abandonScreen && !UI.abandonScreen.classList.contains('hidden')) { toggleAbandon(false); togglePause(false); }
+        else if (UI.helpScreen && !UI.helpScreen.classList.contains('hidden')) toggleHelp(false);
         else if (UI.settingsScreen && !UI.settingsScreen.classList.contains('hidden')) toggleSettings(false);
         else togglePause();
     }
@@ -9315,6 +9718,9 @@ function hullCrossedLine(boat, ax, ay, bx, by) {
 function updateBoatRaceState(boat, dt) {
     // Timers
     if (boat.raceState.startTimeDisplayTimer > 0) boat.raceState.startTimeDisplayTimer -= dt;
+    // One touch of auto trim makes this an auto-board run — sampled here because the
+    // Tab toggle can flip mid-race and only a per-frame check catches every regime.
+    if (boat.isPlayer && !boat.manualTrim) boat.raceState.usedAutoTrim = true;
     if (boat.raceState.legSplitTimer > 0) boat.raceState.legSplitTimer -= dt;
 
     // Waypoint
@@ -9455,7 +9861,15 @@ function updateBoatRaceState(boat, dt) {
         rs.lastLegDuration = split;
         if (rs.leg > 1) {
             rs.legTimes.push(split);
-            if (boat.isPlayer) rs.legRanks.push(rankHere);
+            if (boat.isPlayer) {
+                rs.legRanks.push(rankHere);
+                // Leg records commit as they happen — and say so, mid-race.
+                const li = rs.legTimes.length - 1;
+                if (commitLegRecord(runTrimBoard(rs), li, split)) {
+                    (state.race.legRecordsSet = state.race.legRecordsSet || []).push(li);
+                    showToast(`\u2726 LEG ${li + 1} RECORD \u2014 ${formatSplitTime(split)}`);
+                }
+            }
         }
         rs.legSplitTimer = 5.0;
         rs.legStartTime = state.race.timer;
@@ -9471,6 +9885,12 @@ function updateBoatRaceState(boat, dt) {
             // golden traces — noted rather than relied upon.
             rs.trace.push({ x: boat.x, y: boat.y, leg: rs.leg });
             if (boat.isPlayer) {
+                // The record book closes at the line: track record, top speed,
+                // shortest track and quickest start all commit here, and the course
+                // record announces itself over the finish banner.
+                const rr = finalizeRaceRecords(boat);
+                state.race.recordResults = rr;
+                if (rr.track) showToast(`✦ COURSE RECORD — ${formatBestTime(rs.finishTime)}`);
                 showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                 Sound.playFinish();
                 if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
@@ -10217,17 +10637,6 @@ function update(dt) {
     } else if (state.camera.mode === 'north') {
         let diff = normalizeAngle(0 - state.camera.rotation);
         state.camera.rotation += diff * camLerp;
-    } else if (state.camera.mode === 'wind') {
-        let diff = normalizeAngle(state.wind.direction - state.camera.rotation);
-        state.camera.rotation += diff * camLerp;
-    } else if (state.camera.mode === 'gate') {
-        if (!player.raceState.finished) {
-            let diff = normalizeAngle(player.raceState.nextWaypoint.angle - state.camera.rotation);
-            state.camera.rotation += diff * camLerp;
-        } else {
-             let diff = normalizeAngle(player.heading - state.camera.rotation);
-            state.camera.rotation += diff * camLerp;
-        }
     }
 
     if (state.camera.messageTimer > 0) state.camera.messageTimer -= dt;
@@ -12919,6 +13328,231 @@ function recordVenueBest(seconds, pos) {
 // is a couple of kilometres, so kilometres is the unit that reads without counting zeros.
 function unitsToKm(u) { return u / 5 / 1000; }
 
+// ── VENUE RECORDS ───────────────────────────────────────────────────────────
+// The record BOOK, as opposed to the personal-best chip above: per venue, per leg
+// count, and per TRIM BOARD — hand-trimmed runs compete only with hand-trimmed runs,
+// because auto trim is an assist and a record must say what it took to set.
+//
+// A board holds: the track record (with the leg splits of that run — the record run's
+// own story), the best time ever sailed round each individual leg, the top speed, the
+// shortest distance sailed, and the quickest start. Every entry remembers WHICH
+// CHARACTER the player was sailing as: records belong to avatars, not to the browser.
+//
+// ⚠️ The run's board is decided by USE, not by the setting: touch auto trim once and
+// the run is an auto run (rs.usedAutoTrim, sampled every frame).
+const RECORDS_KEY = 'regatta_records';
+function loadAllRecords() {
+    try { return JSON.parse(localStorage.getItem(RECORDS_KEY)) || {}; } catch (e) { return {}; }
+}
+function saveAllRecords(r) {
+    // Same reasoning as saveSettings: a storage failure must not take the race with it.
+    try { localStorage.setItem(RECORDS_KEY, JSON.stringify(r)); } catch (e) { /* no store */ }
+}
+function runTrimBoard(rs) { return (rs && rs.usedAutoTrim) ? 'auto' : 'manual'; }
+function recordsBoardKey(board, venue, legs) {
+    return `${venue || settings.venue}:${legs || state.race.totalLegs}:${board}`;
+}
+const EMPTY_BOARD = () => ({ track: null, legs: [], topSpeed: null, minDist: null, start: null });
+function recordsFor(board, venue, legs) {
+    return loadAllRecords()[recordsBoardKey(board, venue, legs)] || EMPTY_BOARD();
+}
+
+// The venue document may state a PROVISIONAL track record — the designer's target
+// (aimed at the 75th percentile of real runs). It stands on both boards, held by
+// nobody, until a player beats it.
+function provisionalRecord(venue) {
+    const d = window.VenueDoc && window.VenueDoc.get(venue || settings.venue);
+    const t = d && d.records && d.records.provisional;
+    return (typeof t === 'number' && t > 0) ? t : null;
+}
+
+// What there is to beat on a board: the stored record, else the legacy personal best
+// (pre-records saves were set with the assist available, so they seed the AUTO board
+// only), else the document's provisional. `char: null` means no avatar to show.
+function trackRecordFor(board, venue) {
+    const rec = recordsFor(board, venue);
+    let best = rec.track ? { ...rec.track } : null;
+    if (!best && board === 'auto') {
+        const legacy = bestForVenue(venue);
+        if (legacy) best = { t: legacy.t, char: null };
+    }
+    const prov = provisionalRecord(venue);
+    if (prov != null && (!best || prov < best.t)) best = { t: prov, char: null, provisional: true };
+    return best;
+}
+
+// A leg record is committed THE MOMENT it is sailed — abandoning a race later does
+// not unhappen a great leg. ⚠️ Returns true only when a PREVIOUS record was beaten:
+// the first run over a course founds every entry in the book, and founding is not
+// breaking — announcing it would paint the whole first results screen gold.
+function commitLegRecord(board, legIdx, t) {
+    const all = loadAllRecords();
+    const key = recordsBoardKey(board);
+    const rec = all[key] || (all[key] = EMPTY_BOARD());
+    const prev = rec.legs[legIdx];
+    if (prev && prev.t <= t) return false;
+    rec.legs[legIdx] = { t, char: settings.character };
+    saveAllRecords(all);
+    return !!prev;
+}
+
+// Everything a FINISHED run can set, committed at the line: the track record (with
+// this run's splits), top speed, shortest distance, quickest start. Player only, and
+// only for a boat that sailed the whole course. Returns what this run took, for the
+// results screen to paint gold.
+function finalizeRaceRecords(player) {
+    const rs = player.raceState;
+    const board = runTrimBoard(rs);
+    const all = loadAllRecords();
+    const key = recordsBoardKey(board);
+    const rec = all[key] || (all[key] = EMPTY_BOARD());
+    const me = settings.character;
+    const out = { board, track: false, topSpeed: false, minDist: false, start: false,
+                  legs: (state.race.legRecordsSet || []).slice() };
+
+    // Same founding-vs-breaking rule everywhere: the entry is written either way,
+    // but `out` — which drives the toast, the gold tiles and the pills — only says
+    // so when something that already stood was beaten. (The provisional counts as
+    // standing: beating the designer's target is a real record.)
+    const beating = trackRecordFor(board);   // provisional and legacy included
+    if (!beating || rs.finishTime < beating.t) {
+        rec.track = { t: rs.finishTime, char: me, legs: rs.legTimes.slice() };
+        out.track = !!beating;
+    }
+    const ts = boatTopSpeed(player);
+    if (ts > 0 && (!rec.topSpeed || ts > rec.topSpeed.v)) { out.topSpeed = !!rec.topSpeed; rec.topSpeed = { v: ts, char: me }; }
+    const dk = boatDistKm(player);
+    if (dk > 0 && (!rec.minDist || dk < rec.minDist.d)) { out.minDist = !!rec.minDist; rec.minDist = { d: dk, char: me }; }
+    const st = boatStartTime(player);
+    if (st !== null && (!rec.start || st < rec.start.t)) { out.start = !!rec.start; rec.start = { t: st, char: me }; }
+    saveAllRecords(all);
+    return out;
+}
+
+// ── The record book, readable ───────────────────────────────────────────────
+// FACELESS BY CHOICE. Every entry still RECORDS the character that set it
+// (entry.char — kept for a future rivals book), but the display shows no
+// avatars: today every record is the player's own, and a page of identical
+// faces says nothing. The one badge left is PROV — the designer's standing
+// target, which is a status, not a holder.
+const recHolderHTML = (entry) => {
+    if (!entry || !entry.provisional) return '';
+    return `<span class="t-label t-label-xs" style="color:#8fa3bd;letter-spacing:0.12em;">PROV</span>`;
+};
+
+// The record book as ONE comparison table (design 10a): AUTO and MANUAL are
+// columns of the same rows, because how the two boards compare IS the reading.
+// The two track records headline it; the leg splits and the other bests share
+// one grid underneath. No avatars anywhere — see recHolderHTML.
+function openRecordsOverlay() {
+    const ov = document.getElementById('records-overlay');
+    const content = document.getElementById('records-content');
+    if (!ov || !content) return;
+    // No .toUpperCase() here — it would mangle courseSummaryText's &middot;
+    // entity, and .t-label already uppercases in CSS.
+    const sub = document.getElementById('records-subtitle');
+    if (sub) sub.innerHTML = `${venueDisplayName(settings.venue) || ''} &middot; ${courseSummaryText()}`;
+
+    const recs = { auto: recordsFor('auto'), manual: recordsFor('manual') };
+    const tracks = { auto: trackRecordFor('auto'), manual: trackRecordFor('manual') };
+    const current = settings.autoTrim ? 'auto' : 'manual';
+
+    // A REAL record fills its card gold; a provisional stands in grey with a
+    // TARGET chip; an empty card is dashed — an invitation, not a blank.
+    const headCard = (board) => {
+        const t = tracks[board];
+        const real = t && !t.provisional;
+        const accent = real ? '#f2c14e' : '#8fa3bd';
+        return `
+        <div style="flex:1;min-width:0;background:${real ? 'rgba(242,193,78,0.1)' : '#141d31'};
+                    border:1px ${real ? 'solid rgba(242,193,78,0.45)' : 'dashed rgba(255,255,255,0.16)'};
+                    border-radius:12px;padding:13px 18px;">
+            <div class="t-label t-label-sm" style="color:${accent};">Track record &middot; ${board} trim</div>
+            <div class="flex items-center" style="gap:10px;margin-top:7px;">
+                <span class="t-mono" style="font-size:31px;font-weight:900;line-height:1;color:${accent};">${t ? formatBestTime(t.t) : '&mdash;'}</span>
+                ${t && t.provisional ? `<span class="t-label t-label-xs" style="color:#0c1322;background:#8fa3bd;border-radius:4px;padding:2px 6px;">Target</span>` : ''}
+            </div>
+        </div>`;
+    };
+
+    // One cell of the comparison grid: the number, nothing else.
+    const cell = (entry, fmt) => `
+        <div class="flex items-center justify-end" style="min-width:0;">
+            <span class="t-mono" style="font-size:13px;color:${entry ? '#eef3fb' : '#4a5a72'};">${entry ? fmt(entry) : '—'}</span>
+        </div>`;
+    const GRID = 'display:grid;grid-template-columns:minmax(0,1fr) 120px 120px;gap:10px;align-items:center;';
+    const dataRow = (label, autoEntry, manualEntry, fmt) => `
+        <div style="${GRID}padding:7px 14px;border-top:1px solid rgba(255,255,255,0.05);">
+            <span class="t-label t-label-sm" style="color:#9fb2cc;">${label}</span>
+            ${cell(autoEntry, fmt)}
+            ${cell(manualEntry, fmt)}
+        </div>`;
+    // The current trim board's column header runs teal: that is the board the
+    // player is set up to attack right now.
+    const sectionRow = (label) => `
+        <div style="${GRID}padding:10px 14px 8px;">
+            <span class="t-label t-label-sm" style="color:#66748c;">${label}</span>
+            <span class="t-label t-label-sm" style="text-align:right;color:${current === 'auto' ? '#7ff0d4' : '#66748c'};">Auto</span>
+            <span class="t-label t-label-sm" style="text-align:right;color:${current === 'manual' ? '#7ff0d4' : '#66748c'};">Manual</span>
+        </div>`;
+
+    const legRows = [];
+    for (let i = 0; i < state.race.totalLegs; i++) {
+        legRows.push(dataRow(`Leg ${i + 1}`, recs.auto.legs[i], recs.manual.legs[i], (e) => formatSplitTime(e.t)));
+    }
+    content.innerHTML = `
+        <div class="flex items-stretch" style="gap:10px;">
+            ${headCard('auto')}${headCard('manual')}
+        </div>
+        <div style="margin-top:8px;">
+            ${sectionRow('Leg splits')}
+            ${legRows.join('')}
+            <div style="border-top:1px solid rgba(255,255,255,0.1);margin-top:6px;">${sectionRow('Other bests')}</div>
+            ${dataRow('Top speed', recs.auto.topSpeed, recs.manual.topSpeed, (e) => e.v.toFixed(1) + ' kt')}
+            ${dataRow('Shortest track', recs.auto.minDist, recs.manual.minDist, (e) => e.d.toFixed(2) + ' km')}
+            ${dataRow('Best start', recs.auto.start, recs.manual.start, (e) => '+' + e.t.toFixed(1) + 's')}
+        </div>`;
+    ov.classList.remove('hidden');
+}
+function closeRecordsOverlay() {
+    const ov = document.getElementById('records-overlay');
+    if (ov) ov.classList.add('hidden');
+}
+
+// The inline record book: the empty water to the RIGHT of the course chart, on
+// screens wide enough to have any. Shows the board the player is currently set up to
+// attack (their trim setting), with the full book one click away — which is also the
+// only route on small screens, via the Records chip in the hero header.
+function renderVenueRecordsInline(el) {
+    const board = settings.autoTrim ? 'auto' : 'manual';
+    const rec = recordsFor(board);
+    const track = trackRecordFor(board);
+    const line = (label, value, holder) => `
+        <div class="flex items-center justify-between" style="gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span class="t-label t-label-sm" style="color:#9fb2cc;">${label}</span>
+            <span class="flex items-center" style="gap:7px;">
+                <span class="t-mono" style="font-size:12px;color:#eef3fb;white-space:nowrap;">${value}</span>
+                ${recHolderHTML(holder, 18)}
+            </span>
+        </div>`;
+    const legBits = [];
+    for (let i = 0; i < state.race.totalLegs; i++) {
+        const lr = rec.legs[i];
+        if (lr) legBits.push(`L${i + 1} ${formatSplitTime(lr.t)}`);
+    }
+    el.innerHTML = `
+        <div class="flex items-baseline justify-between" style="margin-bottom:4px;">
+            <span class="t-label t-label-sm" style="color:#f2c14e;">✦ Records &middot; ${board === 'auto' ? 'auto' : 'manual'} trim</span>
+            <button class="t-label t-label-xs" onclick="openRecordsOverlay()"
+                    style="color:#a8cbff;border:1px solid rgba(168,203,255,0.4);border-radius:999px;padding:2px 9px;cursor:pointer;background:transparent;">All records</button>
+        </div>
+        ${line('Track', track ? formatBestTime(track.t) : '—', track)}
+        ${legBits.length ? `<div class="t-mono" style="font-size:10px;color:#66748c;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">${legBits.join(' &middot; ')}</div>` : ''}
+        ${line('Top speed', rec.topSpeed ? rec.topSpeed.v.toFixed(1) + ' kt' : '—', rec.topSpeed)}
+        ${line('Shortest', rec.minDist ? rec.minDist.d.toFixed(2) + ' km' : '—', rec.minDist)}
+        ${line('Best start', rec.start ? '+' + rec.start.t.toFixed(1) + 's' : '—', rec.start)}`;
+}
+
 const RES_MEDALS = ['#f2c14e', '#c8d3e3', '#c98a4b'];   // gold, silver, bronze
 
 // OFF THE PODIUM THERE IS NO METAL. Fourth gets the page's own white — full weight, still
@@ -13056,7 +13690,25 @@ function renderResultsHeader(sorted, gapScale) {
 // difference. Two states — one for beating it, a quiet one for missing it — and nothing at
 // all when there is no mark yet, because a first race here beat nobody.
 function recordCard(best, rs) {
-    if (!best || best.previous === null) return '';
+    // The measured records this run took — top speed, shortest way round, quickest
+    // start — as gold pills under the time card. The track record has the card
+    // itself; these are the record book's other pages.
+    const rr = state.race.recordResults;
+    const pills = [];
+    if (rr) {
+        const pill = (text) => pills.push(
+            `<span class="t-mono" style="background:rgba(242,193,78,0.14);border:1px solid rgba(242,193,78,0.5);`
+            + `border-radius:999px;padding:3px 10px;font-size:10.5px;color:#f2c14e;white-space:nowrap;">✦ ${text}</span>`);
+        if (rr.topSpeed) pill(`Top speed ${boatTopSpeed(state.boats[0]).toFixed(1)} kt`);
+        if (rr.minDist) pill(`Shortest track ${boatDistKm(state.boats[0]).toFixed(2)} km`);
+        if (rr.start) pill(`Best start +${(boatStartTime(state.boats[0]) || 0).toFixed(1)}s`);
+    }
+    const pillRow = pills.length
+        ? `<div class="flex flex-wrap justify-center" style="gap:6px;margin-top:10px;max-width:230px;">${pills.join('')}</div>`
+        : '';
+    if (!best || best.previous === null) {
+        return pillRow ? `<div style="flex:none;text-align:center;">${pillRow}</div>` : '';
+    }
     const won = best.isBest;
     const delta = Math.abs(rs.finishTime - best.previous).toFixed(2);
     const frame = won
@@ -13076,6 +13728,7 @@ function recordCard(best, rs) {
             <div class="t-mono" style="font-size:11px;font-weight:800;color:${won ? '#34d399' : '#7787a0'};margin-top:2px;">
                 ${won ? '−' + delta + 's off the record' : '+' + delta + 's off the record'}
             </div>
+            ${pillRow}
         </div>`;
 }
 
@@ -13197,8 +13850,10 @@ function renderResultsSplits(player) {
         fleetLegBest.push(bestT);
     }
 
+    const rrSig = state.race.recordResults
+        ? `${state.race.recordResults.legs.join('.')}|${state.race.recordResults.start}` : '';
     const sig = `${started}|${legs}|${rs.legTimes.map(t => t.toFixed(2)).join(',')}`
-              + `|${fleetLegBest.map(t => t.toFixed(2)).join(',')}`;
+              + `|${fleetLegBest.map(t => t.toFixed(2)).join(',')}|${rrSig}`;
     if (host.dataset.sig === sig) return;
     host.dataset.sig = sig;
 
@@ -13216,7 +13871,11 @@ function renderResultsSplits(player) {
     const GREEN = { color: '#34d399', border: '1px solid rgba(52,211,153,0.5)' };
     const RED = { color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)' };
     const TEAL = { color: '#7ff0d4', border: '1px solid rgba(127,240,212,0.5)' };
-    const tile = (name, time, rank, prevRank, fastest, startTag) => {
+    // GOLD OUTRANKS EVERYTHING: a leg that entered the record book is the headline of
+    // that leg whatever places it gained or lost — the place move still shows in the
+    // trend arrow beside the rank.
+    const GOLD = { color: '#f2c14e', border: '1px solid rgba(242,193,78,0.65)' };
+    const tile = (name, time, rank, prevRank, fastest, startTag, record) => {
         let trend = '', trendColor = '#66748c', tag = null, moved = 0;
         if (rank && prevRank) {
             const d = prevRank - rank;
@@ -13225,7 +13884,9 @@ function renderResultsSplits(player) {
             else { trend = '–'; }
         }
         const places = (n) => Math.abs(n) === 1 ? 'a place' : `${Math.abs(n)} places`;
-        if (moved) {
+        if (record) {
+            tag = { ...GOLD, text: (typeof record === 'string' ? record : 'Leg record') + ' ✦' };
+        } else if (moved) {
             tag = { ...(moved > 0 ? GREEN : RED),
                     text: `${moved > 0 ? 'Gained' : 'Lost'} ${places(moved)}${fastest ? ' ✦' : ''}` };
         } else if (fastest) {
@@ -13271,12 +13932,16 @@ function renderResultsSplits(player) {
         : sr > fleetN - 3 ? { ...RED, text: 'Back 3 off the line' }
         : null;
 
-    if (started) tile('Start', '+' + rs.startTimeDisplay.toFixed(1) + 's', sr, 0, false, startTag);
+    // What this run wrote into the record book, for the gold tiles.
+    const rr = state.race.recordResults;
+    const recLegs = new Set(rr ? rr.legs : []);
+    if (started) tile('Start', '+' + rs.startTimeDisplay.toFixed(1) + 's', sr, 0, false,
+                      rr && rr.start ? null : startTag, rr && rr.start ? 'Start record' : false);
     let prev = sr;
     for (let i = 0; i < legs; i++) {
         const rank = rs.legRanks[i] || 0;
         tile('Leg ' + (i + 1), splitTime(rs.legTimes[i]), rank, prev,
-             rs.legTimes[i] <= fleetLegBest[i] + 1e-9, null);
+             rs.legTimes[i] <= fleetLegBest[i] + 1e-9, null, recLegs.has(i));
         if (rank) prev = rank;
     }
     if (!tiles.length) {
@@ -13913,6 +14578,69 @@ function drawNpcEdgeIndicator(ctx, x, y, boat) {
     ctx.restore();
 }
 
+// Screen-space snowfall (Arctic): soft flakes drifting down with a light wind
+// slant and a per-flake flutter. Own seeded PRNG (`snowRand`) — never
+// Math.random (would desync the eval RNG stream). Draw-side only: nothing in
+// the sim reads or depends on it.
+let SNOW = null;
+let SNOW_SPRITE = null;
+// One soft radial blob, baked once and drawImage'd per flake — fuzzy edges
+// without paying for per-flake gradients or shadowBlur.
+function snowFlakeSprite() {
+    if (SNOW_SPRITE) return SNOW_SPRITE;
+    const s = 32, c = document.createElement('canvas');
+    c.width = c.height = s;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.4, 'rgba(255,255,255,0.85)');
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, s, s);
+    SNOW_SPRITE = c;
+    return c;
+}
+function drawSnowOverlay(ctx) {
+    if (!state.race.venueFx || !state.race.venueFx.snowfall) { SNOW = null; return; }
+    const w = ctx.canvas.width, h = ctx.canvas.height;
+
+    // draw() has no dt; derive one (clamped so tab-switches don't teleport flakes)
+    const now = performance.now();
+    const dt = SNOW ? Math.min(0.05, Math.max(0, (now - SNOW.t) / 1000)) : 1 / 60;
+
+    if (!SNOW || SNOW.w !== w || SNOW.h !== h) {
+        SNOW = { w, h, t: now, flakes: [] };
+        for (let i = 0; i < 160; i++) {
+            SNOW.flakes.push({
+                x: snowRand() * w, y: snowRand() * h,
+                spd: 35 + snowRand() * 55,           // px/sec fall — snow floats, rain doesn't
+                size: 3 + snowRand() * 6,            // sprite draw size, px
+                sway: snowRand() * Math.PI * 2,      // flutter phase
+                flut: 0.8 + snowRand() * 1.6,        // flutter frequency
+                amp: 8 + snowRand() * 18,            // flutter amplitude, px/sec
+                depth: 0.4 + snowRand() * 0.6        // parallax-ish alpha/speed/size tier
+            });
+        }
+    }
+
+    SNOW.t = now;
+    const spr = snowFlakeSprite();
+    const slant = 0.18; // gentle wind drift — a steeper diagonal reads as sleet
+    ctx.save();
+    for (const f of SNOW.flakes) {
+        f.y += f.spd * f.depth * dt;
+        f.x += (f.spd * slant * f.depth + Math.cos(state.time * f.flut + f.sway) * f.amp) * dt;
+        if (f.y > h + 8) { f.y = -8; f.x = snowRand() * w; }
+        if (f.x > w + 8) f.x = -8;
+        else if (f.x < -8) f.x = w + 8;
+
+        const d = f.size * (0.6 + f.depth);
+        ctx.globalAlpha = 0.45 + f.depth * 0.45;
+        ctx.drawImage(spr, f.x - d / 2, f.y - d / 2, d, d);
+    }
+    ctx.restore();
+}
+
 function draw() {
     frameCount++;
 
@@ -13972,7 +14700,6 @@ function draw() {
     drawIslands(ctx);
     // Surf sits ON the shore, so it goes over the land and under the air layer.
     drawSurf(ctx);
-    drawParticles(ctx, 'air');
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
     drawRulesOverlay(ctx);
@@ -13990,7 +14717,8 @@ function draw() {
         ctx.restore();
     }
 
-    // A blow is vapour hanging in the air, so it passes over hulls and sails too.
+    // Wind comets are air, not water — they pass over hulls and sails, not under them.
+    drawParticles(ctx, 'air');
 
     // Draw Indicators
     for (const boat of state.boats) {
@@ -14007,6 +14735,7 @@ function draw() {
     ctx.restore();
 
     // Screen-space weather (Arctic snowfall) — over the world, under the UI
+    drawSnowOverlay(ctx);
 
     // Camera Message
     if (state.camera.messageTimer > 0) {
@@ -14023,6 +14752,13 @@ function draw() {
     if (state.race.status !== 'finished') {
         const m = 40, hw = Math.max(10, canvas.width/2-m), hh = Math.max(10, canvas.height/2-m);
         const rot = -state.camera.rotation;
+        // THE HUD SITS ON TOP OF THE CANVAS, and that is fine: indicators track
+        // the edge band honestly and pass under the panels. The instruments
+        // (top right) are translucent, so an indicator sliding behind them stays
+        // readable; the leaderboard is near-opaque, so IT is the one that yields —
+        // it sits inset from the left edge (see index.html) leaving the band
+        // clear. No dodging: every scheme that slid indicators around the panels
+        // flickered, because near a corner the choice of escape side is unstable.
         // Project a world point into screen space, clamped to the screen edge band.
         const toScreen = (wx, wy) => {
             const dx = wx - state.camera.x, dy = wy - state.camera.y;
@@ -15562,6 +16298,8 @@ function resetGame() {
         if (el) delete el.dataset.sig;
     }
     state.race.bestChecked = false;
+    state.race.legRecordsSet = [];
+    state.race.recordResults = null;
     state.race.bestOutcome = null;
 
     // Create Boats (Initialized at 0,0, positioned by repositionBoats)
@@ -15641,16 +16379,14 @@ function resetGame() {
 
 // Put the view where the race is, with no travel: the same answer the follow camera would
 // converge on a second or two later, taken as the starting value instead. Rotation is read
-// from the mode the player chose, so North stays north and Wind stays on the new breeze.
+// from the mode the player chose, so North stays north.
 function snapCameraToStart() {
     const p = state.boats[0];
     if (!p) return;
     state.camera.target = 'boat';
     state.camera.x = p.x;
     state.camera.y = p.y;
-    state.camera.rotation = state.camera.mode === 'north' ? 0
-                          : state.camera.mode === 'wind' ? state.wind.direction
-                          : p.heading;
+    state.camera.rotation = state.camera.mode === 'north' ? 0 : p.heading;
 }
 
 function restartRace() { resetGame(); togglePause(false); }

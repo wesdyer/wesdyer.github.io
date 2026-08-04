@@ -1,0 +1,15 @@
+seed 9100: rounders 8/9 finishers 3 finT 632,404,824
+seed 9101: rounders 9/9 finishers 8 finT 713,879,738,882,595,446,882,863
+seed 9102: rounders 9/9 finishers 7 finT 409,805,893,403,798,682,581
+seed 9103: rounders 5/9 finishers 4 finT 668,848,621,736
+seed 9104: rounders 9/9 finishers 7 finT 736,616,727,867,585,753,431
+seed 9105: rounders 3/9 finishers 3 finT 587,567,559
+seed 9106: rounders 6/9 finishers 4 finT 666,826,557,441
+seed 9107: rounders 8/9 finishers 7 finT 545,496,535,380,550,635,710
+saved fleet_leg2.json  nLegs 3 legLens 0,12467,11274
+A (fleet_leg2_margin50.json): rounders 48/72, finishers 33, finMed 675
+B (fleet_leg2_margin30.json): rounders 57/72, finishers 43, finMed 635
+paired leg-1 delta (n=40): med -44 mean -11.3
+paired sweep-phase (tOut-tArm) delta (n=38): med -23 mean -36.7
+paired leg-2 delta (n=23): med -6 mean 21.8
+paired finish delta (n=23): med -8 mean -3.5

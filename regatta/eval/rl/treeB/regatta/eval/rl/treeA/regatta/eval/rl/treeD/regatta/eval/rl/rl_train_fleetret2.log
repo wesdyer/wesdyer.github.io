@@ -1,0 +1,11 @@
+stage=fleetret pages=6 pop=12 seedsPer=4 iters=8
+init mean from rl_policy_fleetret.json
+iter 0 seeds=[4242,4243,4244,4245] best 11.19 (rounders 16, fins 8) | meanPolicy 10.27 (rounders 13, fins 8) | CLASSICAL 12.22 (rounders 17, fins 10) | elite mean 11.06 | 8.5 min
+iter 1 seeds=[4246,4247,4248,4249] best 12.03 (rounders 16, fins 10) | meanPolicy 9.19 (rounders 14, fins 5) | CLASSICAL 9.92 (rounders 14, fins 6) | elite mean 11.66 | 8.6 min
+iter 2 seeds=[4250,4251,4252,4253] best 13.74 (rounders 19, fins 12) | meanPolicy 10.45 (rounders 17, fins 6) | CLASSICAL 15.48 (rounders 24, fins 13) | elite mean 12.93 | 8.5 min
+iter 3 seeds=[4242,4243,4244,4245] best 11.69 (rounders 16, fins 9) | meanPolicy 10.41 (rounders 15, fins 7) | CLASSICAL 12.22 (rounders 17, fins 10) | elite mean 10.95 | 7.6 min
+iter 4 seeds=[4246,4247,4248,4249] best 11.90 (rounders 17, fins 9) | meanPolicy 11.29 (rounders 15, fins 9) | CLASSICAL 9.92 (rounders 14, fins 6) | elite mean 11.24 | 7.7 min
+iter 5 seeds=[4250,4251,4252,4253] best 13.78 (rounders 26, fins 9) | meanPolicy 10.46 (rounders 15, fins 7) | CLASSICAL 15.48 (rounders 24, fins 13) | elite mean 13.31 | 7.8 min
+iter 6 seeds=[4242,4243,4244,4245] best 12.01 (rounders 16, fins 10) | meanPolicy 9.47 (rounders 11, fins 7) | CLASSICAL 12.22 (rounders 17, fins 10) | elite mean 11.62 | 7.7 min
+iter 7 seeds=[4246,4247,4248,4249] best 13.71 (rounders 19, fins 12) | meanPolicy 9.51 (rounders 13, fins 6) | CLASSICAL 9.92 (rounders 14, fins 6) | elite mean 12.33 | 7.6 min
+saved /Users/wesdyer/Documents/GitHub/wesdyer.github.io/regatta/eval/rl/rl_policy_fleetret2.json

@@ -1,0 +1,830 @@
+Starting Eval: 100 trials, Seed Base: 100
+Running Trial 1/100...
+Trial 1 boats: 10 [
+  'Finley',   'Petal',
+  'Bulkhead', 'Nimbus',
+  'Clutch',   'Mistral',
+  'Splat',    'Plunge',
+  'Pinch',    'Crimson'
+]
+Trial 2 boats: 10 [
+  'Finley', 'Gasket',
+  'Roll',   'Dozer',
+  'Spike',  'Lunker',
+  'Jester', 'Hug',
+  'Bruce',  'Rift'
+]
+Trial 3 boats: 10 [
+  'Finley',  'Fathom',
+  'Viper',   'Needle',
+  'Muninn',  'Dozer',
+  'Torpedo', 'Splash',
+  'Flash',   'Wiggle'
+]
+Trial 4 boats: 10 [
+  'Finley',  'Glide',
+  'Pinch',   'Whiskers',
+  'Bramble', 'Skitter',
+  'Roll',    'Strut',
+  'Rift',    'Prism'
+]
+Trial 5 boats: 10 [
+  'Finley',  'Bruce',
+  'Plunge',  'Bulkhead',
+  'Tiny',    'Stomp',
+  'Skitter', 'Bloom',
+  'Roll',    'Sovereign'
+]
+Trial 6 boats: 10 [
+  'Finley', 'Drift',
+  'Flare',  'Crush',
+  'Breeze', 'Pearl',
+  'Lunker', 'Lateen',
+  'Spar',   'Chisel'
+]
+Trial 7 boats: 10 [
+  'Finley',  'Hug',
+  'Scoop',   'Chisel',
+  'Scuttle', 'Crush',
+  'Torch',   'Cruz',
+  'Skerry',  'Stripes'
+]
+Trial 8 boats: 10 [
+  'Finley', 'Regal',
+  'Pinch',  'Lure',
+  'Lunker', 'Petal',
+  'Strut',  'Knot',
+  'Bixby',  'Stripes'
+]
+Trial 9 boats: 10 [
+  'Finley',  'Muninn',
+  'Skitter', 'Flare',
+  'Mistral', 'Pearl',
+  'Strut',   'Dozer',
+  'Anchor',  'Spike'
+]
+Trial 10 boats: 10 [
+  'Finley',  'Tiny',
+  'Flicker', 'Chomp',
+  'Bramble', 'Rift',
+  'Anchor',  'Skitter',
+  'Ribbon',  'Razor'
+]
+Running Trial 11/100...
+Trial 11 boats: 10 [
+  'Finley',  'Prism',
+  'Scuttle', 'Lateen',
+  'Anchor',  'Sable',
+  'Chroma',  'Stripes',
+  'Roll',    'Mistral'
+]
+Trial 12 boats: 10 [
+  'Finley', 'Petal',
+  'Piper',  'Drift',
+  'Stomp',  'Muninn',
+  'Chomp',  'Sunshine',
+  'Paddle', 'Nimbus'
+]
+Trial 13 boats: 10 [
+  'Finley',  'Ribbon',
+  'Vex',     'Flash',
+  'Petal',   'Bramble',
+  'Pebble',  'Spike',
+  'Scuttle', 'Lateen'
+]
+Trial 14 boats: 10 [
+  'Finley',  'Frenzy',
+  'Talon',   'Crimson',
+  'Torpedo', 'Drift',
+  'Skitter', 'Bramble',
+  'Dart',    'Riffle'
+]
+Trial 15 boats: 10 [
+  'Finley', 'Clutch',
+  'Breeze', 'Plunge',
+  'Viper',  'Wiggle',
+  'Bruce',  'Crimson',
+  'Pulse',  'Snag'
+]
+Trial 16 boats: 10 [
+  'Finley',     'Frenzy',
+  'Veil',       'Cruz',
+  'Scoop',      'Paddle',
+  'Slipstream', 'Jester',
+  'Flicker',    'Skip'
+]
+Trial 17 boats: 10 [
+  'Finley',  'Cruz',
+  'Sable',   'Skerry',
+  'Nimbus',  'Paddle',
+  'Bramble', 'Glide',
+  'Piper',   'Anvil'
+]
+Trial 18 boats: 10 [
+  'Finley', 'Mistral',
+  'Puff',   'Flare',
+  'Sable',  'Crimson',
+  'Ripple', 'Torch',
+  'Hug',    'Blaze'
+]
+Trial 19 boats: 10 [
+  'Finley', 'Strut',
+  'Flash',  'Chomp',
+  'Anvil',  'Drift',
+  'Hug',    'Ribbon',
+  'Puff',   'Latch'
+]
+Trial 20 boats: 10 [
+  'Finley',     'Sunshine',
+  'Mistral',    'Regal',
+  'Crimson',    'Scuttle',
+  'Slipstream', 'Splash',
+  'Sable',      'Frenzy'
+]
+Running Trial 21/100...
+Trial 21 boats: 10 [
+  'Finley',  'Bloom',
+  'Skitter', 'Mistral',
+  'Blaze',   'Zing',
+  'Nimbus',  'Flare',
+  'Sable',   'Clutch'
+]
+Trial 22 boats: 10 [
+  'Finley', 'Glide',
+  'Razor',  'Paddle',
+  'Gasket', 'Blaze',
+  'Plunge', 'Jester',
+  'Petal',  'Lateen'
+]
+Trial 23 boats: 10 [
+  'Finley', 'Pinch',
+  'Flaunt', 'Latch',
+  'Glide',  'Chomp',
+  'Ember',  'Saffron',
+  'Tangle', 'Tiny'
+]
+Trial 24 boats: 10 [
+  'Finley',  'Flicker',
+  'Frond',   'Chroma',
+  'Nimbus',  'Bixby',
+  'Zeffir',  'Pulse',
+  'Crimson', 'Scoop'
+]
+Trial 25 boats: 10 [
+  'Finley', 'Pulse',
+  'Dart',   'Pinch',
+  'Tangle', 'Cruz',
+  'Blaze',  'Skerry',
+  'Knot',   'Cheer'
+]
+Trial 26 boats: 10 [
+  'Finley', 'Blaze',
+  'Frenzy', 'Skerry',
+  'Petal',  'Piper',
+  'Plunge', 'Crimson',
+  'Riffle', 'Ember'
+]
+Trial 27 boats: 10 [
+  'Finley',   'Bramble',
+  'Ember',    'Skim',
+  'Seam',     'Blaze',
+  'Knot',     'Frenzy',
+  'Sunshine', 'Paddle'
+]
+Trial 28 boats: 10 [
+  'Finley',  'Plunge',
+  'Stripes', 'Petal',
+  'Skip',    'Wiggle',
+  'Flash',   'Rift',
+  'Skitter', 'Breeze'
+]
+Trial 29 boats: 10 [
+  'Finley', 'Torrent',
+  'Ripple', 'Flare',
+  'Skim',   'Tiny',
+  'Prism',  'Mistral',
+  'Vex',    'Chroma'
+]
+Trial 30 boats: 10 [
+  'Finley',  'Zeffir',
+  'Tiny',    'Whiskers',
+  'Torpedo', 'Roll',
+  'Viper',   'Blaze',
+  'Ember',   'Chroma'
+]
+Running Trial 31/100...
+Trial 31 boats: 10 [
+  'Finley',  'Skim',
+  'Chisel',  'Dart',
+  'Gasket',  'Nimbus',
+  'Lure',    'Flash',
+  'Stripes', 'Ripple'
+]
+Trial 32 boats: 10 [
+  'Finley',     'Grip',
+  'Strut',      'Bulkhead',
+  'Frenzy',     'Dart',
+  'Slipstream', 'Prism',
+  'Whiskers',   'Petal'
+]
+Trial 33 boats: 10 [
+  'Finley',  'Muninn',
+  'Puff',    'Lure',
+  'Ribbon',  'Anvil',
+  'Saffron', 'Drift',
+  'Spar',    'Veil'
+]
+Trial 34 boats: 10 [
+  'Finley',    'Skim',
+  'Blaze',     'Scoop',
+  'Nimbus',    'Knot',
+  'Sovereign', 'Bulkhead',
+  'Lure',      'Piper'
+]
+Trial 35 boats: 10 [
+  'Finley',  'Torrent',
+  'Torpedo', 'Latch',
+  'Pulse',   'Roll',
+  'Bixby',   'Anvil',
+  'Blaze',   'Prism'
+]
+Trial 36 boats: 10 [
+  'Finley', 'Petal',
+  'Pebble', 'Lure',
+  'Tiny',   'Nimbus',
+  'Grip',   'Pinch',
+  'Roll',   'Wobble'
+]
+Trial 37 boats: 10 [
+  'Finley', 'Slipstream',
+  'Snag',   'Ribbon',
+  'Talon',  'Torrent',
+  'Lateen', 'Frenzy',
+  'Dart',   'Pebble'
+]
+Trial 38 boats: 10 [
+  'Finley',  'Clutch',
+  'Needle',  'Flicker',
+  'Spar',    'Zing',
+  'Mistral', 'Piper',
+  'Skerry',  'Sunshine'
+]
+Trial 39 boats: 10 [
+  'Finley',    'Latch',
+  'Pebble',    'Ripple',
+  'Sovereign', 'Petal',
+  'Bluff',     'Sunshine',
+  'Wiggle',    'Gasket'
+]
+Trial 40 boats: 10 [
+  'Finley', 'Etienne',
+  'Knot',   'Vex',
+  'Tangle', 'Rift',
+  'Tiny',   'Pulse',
+  'Breeze', 'Splash'
+]
+Running Trial 41/100...
+Trial 41 boats: 10 [
+  'Finley', 'Lateen',
+  'Frenzy', 'Petal',
+  'Torch',  'Torrent',
+  'Grip',   'Ember',
+  'Clutch', 'Wiggle'
+]
+Trial 42 boats: 10 [
+  'Finley', 'Tiny',
+  'Popper', 'Ripple',
+  'Pearl',  'Snap',
+  'Brine',  'Mistral',
+  'Bixby',  'Chroma'
+]
+Trial 43 boats: 10 [
+  'Finley',  'Latch',
+  'Bloom',   'Sable',
+  'Bruce',   'Sovereign',
+  'Etienne', 'Razor',
+  'Ribbon',  'Pearl'
+]
+Trial 44 boats: 10 [
+  'Finley',   'Splat',
+  'Bloom',    'Etienne',
+  'Stomp',    'Flaunt',
+  'Pebble',   'Riffle',
+  'Whiskers', 'Croak'
+]
+Trial 45 boats: 10 [
+  'Finley', 'Torch',
+  'Splash', 'Skitter',
+  'Pearl',  'Anvil',
+  'Razor',  'Chomp',
+  'Petal',  'Piper'
+]
+Trial 46 boats: 10 [
+  'Finley',  'Gasket',
+  'Stripes', 'Spar',
+  'Latch',   'Tiny',
+  'Skim',    'Petal',
+  'Torrent', 'Skerry'
+]
+Trial 47 boats: 10 [
+  'Finley', 'Sovereign',
+  'Blaze',  'Roll',
+  'Jester', 'Skip',
+  'Flaunt', 'Strut',
+  'Snag',   'Gasket'
+]
+Trial 48 boats: 10 [
+  'Finley', 'Sunshine',
+  'Viper',  'Wiggle',
+  'Cruz',   'Nimbus',
+  'Grip',   'Lure',
+  'Razor',  'Skim'
+]
+Trial 49 boats: 10 [
+  'Finley', 'Anchor',
+  'Splat',  'Muninn',
+  'Bixby',  'Pebble',
+  'Scoop',  'Knot',
+  'Plunge', 'Torrent'
+]
+Trial 50 boats: 10 [
+  'Finley',     'Scoop',
+  'Roll',       'Spike',
+  'Bulkhead',   'Mistral',
+  'Slipstream', 'Popper',
+  'Bruce',      'Drift'
+]
+Running Trial 51/100...
+Trial 51 boats: 10 [
+  'Finley',  'Nimbus',
+  'Etienne', 'Cheer',
+  'Torch',   'Bluff',
+  'Grip',    'Seam',
+  'Drift',   'Pebble'
+]
+Trial 52 boats: 10 [
+  'Finley', 'Sovereign',
+  'Snap',   'Bramble',
+  'Zing',   'Mistral',
+  'Torch',  'Veil',
+  'Bloom',  'Scuttle'
+]
+Trial 53 boats: 10 [
+  'Finley',     'Regal',
+  'Grip',       'Scuttle',
+  'Sunshine',   'Wiggle',
+  'Slipstream', 'Skitter',
+  'Snag',       'Pearl'
+]
+Trial 54 boats: 10 [
+  'Finley',  'Jester',
+  'Tangle',  'Bluff',
+  'Plunge',  'Ripple',
+  'Frenzy',  'Drift',
+  'Torrent', 'Dart'
+]
+Trial 55 boats: 10 [
+  'Finley',  'Ripple',
+  'Pebble',  'Bixby',
+  'Crimson', 'Viper',
+  'Scoop',   'Flash',
+  'Frond',   'Jester'
+]
+Trial 56 boats: 10 [
+  'Finley', 'Skim',
+  'Zeffir', 'Puff',
+  'Dart',   'Needle',
+  'Drift',  'Pinch',
+  'Snag',   'Lunker'
+]
+Trial 57 boats: 10 [
+  'Finley',   'Dozer',
+  'Scuttle',  'Pebble',
+  'Roll',     'Anchor',
+  'Chomp',    'Muninn',
+  'Sunshine', 'Rift'
+]
+Trial 58 boats: 10 [
+  'Finley', 'Skim',
+  'Hug',    'Pebble',
+  'Bluff',  'Torpedo',
+  'Roll',   'Scuttle',
+  'Seam',   'Lure'
+]
+Trial 59 boats: 10 [
+  'Finley', 'Dart',
+  'Pearl',  'Stomp',
+  'Cruz',   'Saffron',
+  'Anvil',  'Bulkhead',
+  'Seam',   'Drift'
+]
+Trial 60 boats: 10 [
+  'Finley', 'Flaunt',
+  'Ribbon', 'Splat',
+  'Dart',   'Torrent',
+  'Pebble', 'Regal',
+  'Fathom', 'Cheer'
+]
+Running Trial 61/100...
+Trial 61 boats: 10 [
+  'Finley', 'Mistral',
+  'Tiny',   'Brine',
+  'Regal',  'Breeze',
+  'Dozer',  'Frond',
+  'Chomp',  'Skip'
+]
+Trial 62 boats: 10 [
+  'Finley', 'Pebble',
+  'Lunker', 'Zing',
+  'Pinch',  'Fathom',
+  'Spar',   'Snag',
+  'Anvil',  'Chomp'
+]
+Trial 63 boats: 10 [
+  'Finley',  'Zing',
+  'Crush',   'Torch',
+  'Lateen',  'Splash',
+  'Bramble', 'Breeze',
+  'Pulse',   'Skitter'
+]
+Trial 64 boats: 10 [
+  'Finley', 'Anchor',
+  'Chroma', 'Zing',
+  'Crush',  'Pebble',
+  'Tangle', 'Sovereign',
+  'Roll',   'Skip'
+]
+Trial 65 boats: 10 [
+  'Finley',     'Pearl',
+  'Roll',       'Torch',
+  'Razor',      'Ribbon',
+  'Bixby',      'Anvil',
+  'Slipstream', 'Flaunt'
+]
+Trial 66 boats: 10 [
+  'Finley', 'Latch',
+  'Strut',  'Puff',
+  'Razor',  'Skerry',
+  'Wobble', 'Viper',
+  'Gasket', 'Glide'
+]
+Trial 67 boats: 10 [
+  'Finley',     'Bramble',
+  'Viper',      'Lateen',
+  'Breeze',     'Spar',
+  'Torch',      'Anchor',
+  'Slipstream', 'Grip'
+]
+Trial 68 boats: 10 [
+  'Finley',  'Clutch',
+  'Snap',    'Lateen',
+  'Chroma',  'Ripple',
+  'Stripes', 'Vex',
+  'Etienne', 'Plunge'
+]
+Trial 69 boats: 10 [
+  'Finley', 'Riffle',
+  'Chisel', 'Popper',
+  'Brine',  'Regal',
+  'Snap',   'Stripes',
+  'Tiny',   'Skerry'
+]
+Trial 70 boats: 10 [
+  'Finley', 'Latch',
+  'Strut',  'Scuttle',
+  'Regal',  'Drift',
+  'Talon',  'Stripes',
+  'Brine',  'Skerry'
+]
+Running Trial 71/100...
+Trial 71 boats: 10 [
+  'Finley', 'Wobble',
+  'Paddle', 'Ribbon',
+  'Crush',  'Prism',
+  'Tiny',   'Dozer',
+  'Anchor', 'Talon'
+]
+Trial 72 boats: 10 [
+  'Finley', 'Chroma',
+  'Strut',  'Splash',
+  'Latch',  'Pulse',
+  'Lure',   'Snag',
+  'Skerry', 'Tiny'
+]
+Trial 73 boats: 10 [
+  'Finley',   'Tiny',
+  'Tangle',   'Knot',
+  'Bulkhead', 'Stripes',
+  'Popper',   'Stomp',
+  'Bramble',  'Paddle'
+]
+Trial 74 boats: 10 [
+  'Finley', 'Ember',
+  'Muninn', 'Splat',
+  'Grip',   'Slipstream',
+  'Razor',  'Skip',
+  'Zing',   'Scoop'
+]
+Trial 75 boats: 10 [
+  'Finley', 'Stomp',
+  'Grip',   'Skim',
+  'Spike',  'Regal',
+  'Breeze', 'Croak',
+  'Ribbon', 'Frond'
+]
+Trial 76 boats: 10 [
+  'Finley',  'Seam',
+  'Crush',   'Lunker',
+  'Bramble', 'Muninn',
+  'Piper',   'Pearl',
+  'Ember',   'Viper'
+]
+Trial 77 boats: 10 [
+  'Finley', 'Frenzy',
+  'Knot',   'Paddle',
+  'Pinch',  'Brine',
+  'Pulse',  'Bluff',
+  'Spike',  'Breeze'
+]
+Trial 78 boats: 10 [
+  'Finley',  'Torrent',
+  'Popper',  'Paddle',
+  'Seam',    'Needle',
+  'Skim',    'Vex',
+  'Bramble', 'Muninn'
+]
+Trial 79 boats: 10 [
+  'Finley', 'Riffle',
+  'Puff',   'Popper',
+  'Bruce',  'Chisel',
+  'Lateen', 'Bixby',
+  'Vex',    'Nimbus'
+]
+Trial 80 boats: 10 [
+  'Finley',  'Flash',
+  'Puff',    'Rift',
+  'Glide',   'Ripple',
+  'Chomp',   'Vex',
+  'Skitter', 'Scoop'
+]
+Running Trial 81/100...
+Trial 81 boats: 10 [
+  'Finley',   'Flicker',
+  'Bulkhead', 'Lure',
+  'Hug',      'Riffle',
+  'Seam',     'Pulse',
+  'Splash',   'Torpedo'
+]
+Trial 82 boats: 10 [
+  'Finley', 'Flaunt',
+  'Bloom',  'Puff',
+  'Cheer',  'Riffle',
+  'Chisel', 'Plunge',
+  'Rift',   'Pulse'
+]
+Trial 83 boats: 10 [
+  'Finley', 'Chomp',
+  'Riffle', 'Zeffir',
+  'Skim',   'Spar',
+  'Chroma', 'Torch',
+  'Zing',   'Sunshine'
+]
+Trial 84 boats: 10 [
+  'Finley',  'Slipstream',
+  'Chroma',  'Bloom',
+  'Bruce',   'Sable',
+  'Crimson', 'Lure',
+  'Grip',    'Vex'
+]
+Trial 85 boats: 10 [
+  'Finley', 'Crimson',
+  'Snap',   'Spike',
+  'Riffle', 'Skerry',
+  'Crush',  'Roll',
+  'Pulse',  'Flash'
+]
+Trial 86 boats: 10 [
+  'Finley',    'Dart',
+  'Sovereign', 'Flash',
+  'Viper',     'Lateen',
+  'Crush',     'Dozer',
+  'Chroma',    'Stripes'
+]
+Trial 87 boats: 10 [
+  'Finley', 'Flicker',
+  'Chroma', 'Splat',
+  'Wiggle', 'Dozer',
+  'Lateen', 'Needle',
+  'Pinch',  'Skim'
+]
+Trial 88 boats: 10 [
+  'Finley',  'Razor',
+  'Blaze',   'Flash',
+  'Popper',  'Paddle',
+  'Puff',    'Talon',
+  'Scuttle', 'Etienne'
+]
+Trial 89 boats: 10 [
+  'Finley',  'Spike',
+  'Flash',   'Crush',
+  'Riffle',  'Spar',
+  'Brine',   'Croak',
+  'Mistral', 'Bulkhead'
+]
+Trial 90 boats: 10 [
+  'Finley',  'Dart',
+  'Anchor',  'Popper',
+  'Veil',    'Sable',
+  'Strut',   'Ripple',
+  'Skitter', 'Cruz'
+]
+Running Trial 91/100...
+Trial 91 boats: 10 [
+  'Finley', 'Tangle',
+  'Pearl',  'Plunge',
+  'Bloom',  'Jester',
+  'Bruce',  'Flicker',
+  'Anchor', 'Chisel'
+]
+Trial 92 boats: 10 [
+  'Finley', 'Pebble',
+  'Petal',  'Bruce',
+  'Fathom', 'Hug',
+  'Skip',   'Sunshine',
+  'Bluff',  'Razor'
+]
+Trial 93 boats: 10 [
+  'Finley', 'Talon',
+  'Fathom', 'Snap',
+  'Bixby',  'Sunshine',
+  'Scoop',  'Mistral',
+  'Pulse',  'Bulkhead'
+]
+Trial 94 boats: 10 [
+  'Finley', 'Frond',
+  'Bixby',  'Brine',
+  'Latch',  'Rift',
+  'Razor',  'Tangle',
+  'Regal',  'Dart'
+]
+Trial 95 boats: 10 [
+  'Finley',  'Scoop',
+  'Scuttle', 'Flare',
+  'Anchor',  'Pulse',
+  'Torrent', 'Skim',
+  'Clutch',  'Ribbon'
+]
+Trial 96 boats: 10 [
+  'Finley', 'Breeze',
+  'Flash',  'Latch',
+  'Flaunt', 'Stomp',
+  'Vex',    'Pinch',
+  'Razor',  'Piper'
+]
+Trial 97 boats: 10 [
+  'Finley', 'Stomp',
+  'Wobble', 'Chisel',
+  'Pebble', 'Popper',
+  'Petal',  'Chomp',
+  'Fathom', 'Talon'
+]
+Trial 98 boats: 10 [
+  'Finley',  'Nimbus',
+  'Mistral', 'Flicker',
+  'Frond',   'Bloom',
+  'Flaunt',  'Flash',
+  'Riffle',  'Lunker'
+]
+Trial 99 boats: 10 [
+  'Finley',   'Latch',
+  'Paddle',   'Brine',
+  'Whiskers', 'Wobble',
+  'Vex',      'Flicker',
+  'Dart',     'Muninn'
+]
+Trial 100 boats: 10 [
+  'Finley',     'Bluff',
+  'Scuttle',    'Bixby',
+  'Bloom',      'Torpedo',
+  'Gasket',     'Grip',
+  'Slipstream', 'Bramble'
+]
+Processing Results...
+
+=== AI RACE EVAL REPORT ===
+Trials: 100, Seed: 100
+
+OVERALL METRICS:
+Start Time Mean: 6.40s | Median: 3.31s (DNS: 0.00%)
+Race Time Mean: 330.42s | Median: 360.00s (DNF: 0.00%)
+Avg Placement: 5.57 | Avg Tacks: 32.39
+Upwind Time Mean: 127.83s | Downwind Time Mean: 45.27s
+Upwind DNF: 24.48% | Downwind DNF: 7.52%
+Avg Penalties/Race: 2.66
+Avg Boat Collisions/Race: 2.76
+Avg Mark Collisions/Race: 1.38
+Avg Bound Collisions/Race: 0.02
+
+PER CHARACTER (Summary):
+Char            RaceTime  DNF%    DNS%    Pen/R   ColB/R  
+Petal           344.44    0.00    0.00    3.60    2.67    
+Bulkhead        356.18    0.00    0.00    2.73    2.73    
+Nimbus          338.06    0.00    0.00    2.50    2.50    
+Clutch          315.22    0.00    0.00    2.30    2.20    
+Mistral         343.28    0.00    0.00    2.53    2.05    
+Splat           333.04    0.00    0.00    2.64    1.82    
+Plunge          331.14    0.00    0.00    2.12    1.94    
+Pinch           342.95    0.00    0.00    2.39    2.39    
+Crimson         331.46    0.00    0.00    2.11    1.61    
+Gasket          327.66    0.00    0.00    3.29    2.18    
+Roll            341.84    0.00    0.00    3.21    1.92    
+Dozer           319.70    0.00    0.00    1.89    1.68    
+Spike           319.37    0.00    0.00    1.55    1.35    
+Lunker          333.50    0.00    0.00    3.00    2.15    
+Jester          324.85    0.00    0.00    2.05    2.05    
+Hug             327.38    0.00    0.00    2.73    2.14    
+Bruce           337.83    0.00    0.00    2.04    1.88    
+Rift            340.55    0.00    0.00    2.62    2.04    
+Fathom          319.20    0.00    0.00    2.04    2.21    
+Viper           334.20    0.00    0.00    2.50    2.25    
+Needle          337.19    0.00    0.00    2.44    1.92    
+Muninn          335.37    0.00    0.00    2.42    2.06    
+Torpedo         330.15    0.00    0.00    2.53    2.37    
+Splash          322.81    0.00    0.00    2.23    1.77    
+Flash           328.69    0.00    0.00    2.39    2.05    
+Wiggle          327.03    0.00    0.00    2.06    1.68    
+Glide           330.46    0.00    0.00    2.18    1.85    
+Whiskers        331.88    0.00    0.00    2.97    2.35    
+Bramble         330.92    0.00    0.00    2.51    2.05    
+Skitter         335.12    0.00    0.00    2.67    2.58    
+Strut           332.09    0.00    0.00    2.42    2.84    
+Prism           331.69    0.00    0.00    2.76    2.71    
+Tiny            334.64    0.00    0.00    2.92    3.06    
+Stomp           337.91    0.00    0.00    2.85    3.38    
+Bloom           336.49    0.00    0.00    2.67    3.17    
+Sovereign       339.61    0.00    0.00    3.50    3.77    
+Drift           337.86    0.00    0.00    2.73    3.02    
+Flare           335.80    0.00    0.00    3.04    3.13    
+Crush           340.90    0.00    0.00    3.02    3.29    
+Breeze          335.73    0.00    0.00    2.74    2.91    
+Pearl           336.70    0.00    0.00    2.97    2.88    
+Lateen          335.14    0.00    0.00    2.81    3.06    
+Spar            335.23    0.00    0.00    2.92    3.05    
+Chisel          339.79    0.00    0.00    3.38    3.26    
+Scoop           334.70    0.00    0.00    3.29    3.15    
+Scuttle         339.35    0.00    0.00    3.20    3.35    
+Torch           331.54    0.00    0.00    3.22    3.36    
+Cruz            334.57    0.00    0.00    3.15    3.10    
+Skerry          337.37    0.00    0.00    3.15    2.97    
+Stripes         335.59    0.00    0.00    3.11    3.19    
+Regal           339.52    0.00    0.00    3.39    3.19    
+Lure            334.35    0.00    0.00    3.43    3.25    
+Knot            335.24    0.00    0.00    3.17    3.18    
+Bixby           333.92    0.00    0.00    3.12    3.17    
+Anchor          334.57    0.00    0.00    2.89    3.00    
+Flicker         333.41    0.00    0.00    2.89    3.01    
+Chomp           335.24    0.00    0.00    3.13    3.24    
+Ribbon          337.79    0.00    0.00    3.33    3.25    
+Razor           333.38    0.00    0.00    2.94    2.97    
+Sable           337.15    0.00    0.00    3.21    3.33    
+Chroma          337.03    0.00    0.00    3.15    3.28    
+Piper           336.53    0.00    0.00    3.12    3.29    
+Sunshine        331.32    0.00    0.00    3.00    3.08    
+Paddle          333.28    0.00    0.00    3.12    3.13    
+Vex             334.70    0.00    0.00    3.14    3.10    
+Pebble          334.75    0.00    0.00    3.10    3.17    
+Frenzy          329.16    0.00    0.00    2.77    2.87    
+Talon           331.58    0.00    0.00    2.92    3.00    
+Dart            332.01    0.00    0.00    2.74    2.88    
+Riffle          332.90    0.00    0.00    2.87    2.98    
+Pulse           334.16    0.00    0.00    2.74    2.86    
+Snag            333.13    0.00    0.00    2.69    2.86    
+Veil            332.45    0.00    0.00    2.71    2.85    
+Slipstream      331.75    0.00    0.00    2.68    2.77    
+Skip            332.80    0.00    0.00    2.67    2.77    
+Anvil           332.30    0.00    0.00    2.65    2.77    
+Puff            332.81    0.00    0.00    2.71    2.74    
+Ripple          331.89    0.00    0.00    2.58    2.77    
+Blaze           330.99    0.00    0.00    2.62    2.83    
+Latch           332.59    0.00    0.00    2.73    2.99    
+Zing            331.75    0.00    0.00    2.83    3.03    
+Flaunt          333.95    0.00    0.00    2.79    3.00    
+Ember           333.77    0.00    0.00    2.82    3.05    
+Saffron         332.57    0.00    0.00    2.89    3.07    
+Tangle          333.72    0.00    0.00    2.81    3.06    
+Frond           333.53    0.00    0.00    2.81    3.03    
+Zeffir          333.32    0.00    0.00    2.85    3.06    
+Cheer           333.28    0.00    0.00    2.76    2.93    
+Skim            332.37    0.00    0.00    2.71    2.92    
+Seam            331.74    0.00    0.00    2.69    2.91    
+Torrent         330.55    0.00    0.00    2.63    2.77    
+Grip            332.47    0.00    0.00    2.71    2.92    
+Wobble          331.36    0.00    0.00    2.68    2.78    
+Bluff           331.23    0.00    0.00    2.67    2.76    
+Etienne         331.02    0.00    0.00    2.69    2.78    
+Popper          330.49    0.00    0.00    2.69    2.77    
+Snap            331.06    0.00    0.00    2.70    2.80    
+Brine           330.58    0.00    0.00    2.75    2.79    
+Croak           330.86    0.00    0.00    2.77    2.83    
+
+Full results saved to regatta/eval/eval_results.json

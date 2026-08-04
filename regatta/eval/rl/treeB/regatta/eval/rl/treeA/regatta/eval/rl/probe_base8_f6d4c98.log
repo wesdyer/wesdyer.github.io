@@ -1,0 +1,36 @@
+seed 9100 done
+seed 9101 done
+seed 9102 done
+seed 9103 done
+seed 9104 done
+seed 9105 done
+seed 9106 done
+seed 9107 done
+
+DMC TWA demand (t=0 wind, dist share): leg1 up 0.42 reach 0.33 run 0.25 | leg2 up 0.19 reach 0.31 run 0.5
+
+TRANSIT (n=72, dmcLen 12467):
+  time   med 227 mean 258
+  dist ratio med 1.83   odo mean 25651  dmc-progress mean 13875
+  slow   med 35.2 mean 39  (share 15%)
+  grind  med 9.9 mean 15  (share 6%)
+  EXCESS mean 13133u  =  rec 968 | turn 2064 | avoid 6546 | offrt 2676 | sail 880
+  avoid sub-bins: boat 2303 | static 882 | both 866 | none 2495   mean dev 47deg
+  form: weave 385u vs lateral 12751u
+  tacks med 14 mean 15.6  gybes med 11 mean 12.7
+  falsebeat 6% of sail-mode dist  | hdg-vs-carrot mean 22deg
+  xtrack mean 566u  >300u 61% of samples  | carrotJump 14.2/min
+
+RET (n=70, dmcLen 11274):
+  time   med 147 mean 174
+  dist ratio med 1.70   odo mean 20954  dmc-progress mean 11820
+  slow   med 12.4 mean 19  (share 11%)
+  grind  med 5.4 mean 9  (share 5%)
+  EXCESS mean 9384u  =  rec 667 | turn 1259 | avoid 3951 | offrt 3086 | sail 421
+  avoid sub-bins: boat 775 | static 725 | both 332 | none 2120   mean dev 46deg
+  form: weave 245u vs lateral 9141u
+  tacks med 6 mean 7.7  gybes med 8 mean 9.2
+  falsebeat 2% of sail-mode dist  | hdg-vs-carrot mean 11deg
+  xtrack mean 914u  >300u 69% of samples  | carrotJump 18.0/min
+
+wrote transit_attrib_probe_base8_f6d4c98.json

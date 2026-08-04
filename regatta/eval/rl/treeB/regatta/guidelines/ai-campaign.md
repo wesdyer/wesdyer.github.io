@@ -30,6 +30,7 @@ OCS hold that returns cleanly before the gun is NOT one).
 | 2026-08-03 stack @40t (855379a) | bots | 0 | n/i | 3.19 | 6.25 | — | 49.1 |
 | 2026-08-03 instr @100t (a0c3633) | bots | 0 | 14.7 | 3.41 | 6.30 | 0.0 | 62.5 |
 | 2026-08-03 tacktax @40t (6aa46ea) | bots | 0 | 13.6 | 3.37 | 6.36 | 0.0 | 53.3 |
+| 2026-08-03e anchor @100t (f6d4c98) | bots | 0 | 16.9 | 3.55 | 6.58 | 0.0 | 102.4 |
 | 2026-08-03 (12 traj) | human | 0 | 11 (1/9 v7) | 2.3 | 3.3 | 0.7 | 13.9 |
 
 ### Course (finish time, s)
@@ -41,7 +42,9 @@ OCS hold that returns cleanly before the gun is NOT one).
 | 2026-08-03 instr @100t (a0c3633) | bots | 0 | 199.63 | 203.55 | — | — |
 | 2026-08-03 tacktax @40t (6aa46ea) | bots | 0 | 199.25 | 203.21 | — | — |
 | 2026-08-03 post-merge @40t (721e8ce) | bots | 0 | 200.25 | 202.87 | — | — |
+| 2026-08-03e anchor @100t (f6d4c98) | bots | 0 | 199.33 | 202.56 | 175.2 | 347.6 |
 | 2026-08-03 (12 traj) | human | 0 | 192.2 | 191.4 | 180.9 | 200.6 |
+| 2026-08-03e (13 traj) | human | 0 | 192.2 | 192.5 | 180.9 | 205.8 |
 
 ⚠️ Owner merge 11a8f4b (VENUES card copy → venue documents) shifts init RNG
 draws: every seed reshuffles, goldens were re-recorded (PASS at 721e8ce),
@@ -117,7 +120,10 @@ a field that does not exist on live boats (the engine stores
 | 2026-08-03 instr (a0c3633) | bots | 0 | 268 | 269.7 | 215 | 365 |
 | 2026-08-03 tacktax (6aa46ea) | bots | 0 | 261 | 265.1 | 218 | 365 |
 | 2026-08-03 post-merge (721e8ce) | bots | 0 | 264 | 266.8 | 220 | 351 |
+| 2026-08-03f fresh base @cap (bayv2abase) | bots | 0 | 264 | 266.8 | 220 | 351 |
+| 2026-08-03f MARK ESCAPE (c3e1313) | bots | 0 | 265 | 267.5 | 211 | 351 |
 | 2026-08-03 (7 traj) | human | 0 | 226.1 | 226.7 | 219.5 | 241.1 |
+| 2026-08-03e (11 traj) | human | 0 | 226.2 | 228.4 | 217.8 | 243.3 |
 
 (instr row = byte-identical races to the stack — instrumentation verified
 inert against the stored stack JSON — with the new columns now measured.)
@@ -135,6 +141,7 @@ Per-leg medians vs human (stack): L1 +3, L2 +1, L3 +6, L4 +6, L5 +6, L6 +5.
 | 2026-08-03 stack (855379a) | bots | n/i | n/i | n/i | n/a |
 | 2026-08-03 instr (a0c3633) | bots | 1.89 | 0.31 | 0.91 | 0.00 (bounds) |
 | 2026-08-03 tacktax (6aa46ea) | bots | 2.54 | 0.27 | 0.61 | 0.00 (bounds) |
+| 2026-08-03f mark escape (c3e1313) | bots | 2.35 | 0.14 | 0.79 | 0.00 (bounds) |
 | 2026-08-03 (7 traj) | human | 0.14 (1 in 7) | 0 | 0 | n/a |
 
 ⚠️ tacktax raised boat rubs (1.89→2.54, penalties flat — non-foul contact:
@@ -216,6 +223,9 @@ classes, not per-seed values, across it.
 | 2026-08-03d post-merge base (d363cde) | bots | 9.7 (14/144) | 29/144 (20%) | 517 | 546.7 | 315 | 896 |
 | 2026-08-03d floe grind-pricing (15c0be2) | bots | 6.9 (10/144) | 40/144 (28%) | 498 | 522.2 | 285 | — |
 | 2026-08-03d notch2 (band 1200/farHit 3500/clr disc) | bots | 9.0 (13/144) | 40/144 (28%) | 500 | 504.9 | 270 | — |
+| 2026-08-03f fresh base @ab30d3d (headbase16d) | bots | 9.0 (13/144) | 40/144 (28%) | 500 | 504.9 | 270 | — |
+| 2026-08-03f SPIN CAP (d065d0a, world change) | bots | 6.9 (10/144) | 32/144 (22%) | 520 | 528.9 | 247 | — |
+| 2026-08-03f MARK ESCAPE (c3e1313) | bots | 9.0 (13/144) | 34/144 (24%) | 514 | 525.9 | 266 | — |
 | 2026-08-03 (16 traj) | human | 0 | 16/16 | 229.1 | 230.3 | 200.1 | 299.2 |
 
 (floe grind-pricing: rounders 137→140; paired +13 med / +25.0 mean n=125,
@@ -291,87 +301,342 @@ recorder-v7 sample field 16 (racing-phase `raceState.ocs`). OCS definition
 everywhere: the flag can only be SET during prestart, so ocs-while-racing =
 over at the gun, paying the return.
 
-Remaining:
-1. A capped arctic_eval round per snapshot for true DNS/DNF at 420.
-2. run_eval race-time min/max onto the course rows (in eval_results.json now,
-   not yet in the console line).
+Remaining: none — 2026-08-03e closed both: run_eval prints race Min/Max on
+the console line (9e4c608), and the capped arctic_eval per snapshot ran for
+the notch2/f6d4c98 snapshot (row in the session notes below; re-run it per
+future snapshot).
 
-## Next session brief (prepared 2026-08-03d, tree at notch2 HEAD)
+---
 
-✅ Owner merge bdcbc41 (post-notch2, achievements/music/roster docs + 413
-script.js lines + 2-line bay.venue.js) VERIFIED goldens-PASS 20/20 byte-
-identical — NO seed reshuffle this time; every 2026-08-03d baseline
-(fleet_leg2_notch2, bay_bench_bulge, anchor 202.87/200.25) remains valid
-across this merge line.
+## Session notes 2026-08-03e (tree at f6d4c98; NO behaviour change landed)
 
-Read `regatta-bay-ai.md` + `regatta-arctic-ai.md` memory first. treeA/B/D =
-HEAD-before-notch2, treeC = notch2 (now == HEAD) — refresh ALL from HEAD
-before the first bench. Arctic 16-seed baseline for the next A/B =
-`fleet_leg2_notch2.json` (500 med / 504.9 mean / min 270 / in-time 40 /
-fins@900 131). Bay 20-seed baseline = still `bay_bench_bulge.json` (264 med;
-no bay behaviour change landed). Seatrials anchor = 202.87/200.25 pen 0.33
-@40t — byte-reproduced twice this session. ⚠️ Run the 100t anchor before the
-first big landing (only 40t spots were run on 2026-08-03d).
+**Four probe-level rejections closed every cheap classical lever on the
+post-notch2 arctic transit wall** (8-seed _transit_probe gate vs a fresh
+treeB baseline that byte-reproduced the ledger: transit 227 / ret 147):
+
+| Candidate | Mechanism tried | Probe verdict | Why it fails |
+|---|---|---|---|
+| transit lane stagger | per-boat ±260u lateral offset of transit dest (boat.id hash, 700-1500u taper) | 227→234 / 147→167, avoid-boat UP 2303→2506 | ~60u lanes pin neighbors abeam inside the 150u give-way bubble; fleet can't string out; return offset fights gybe angles |
+| replan path continuity | pathSailable prevPath stamp, +0.18 off-thread hint | 227→237 / 147→179, turn flat, carrotJump flat | old ribbon goes stale vs pack drift; re-approach cycles (sticky-carrot disease from the route side) |
+| urgency-graded RRS | duck −800 / bow +1500 / R16 +2000 ×0.35 at MEDIUM | 227→244 / 147→164, avoid-boat UP | flat terms RESOLVE encounters early; weakened, threats escalate to HIGH and cost more (grind 15→19s) |
+| floe notch3 | farHit 3500→2000, band 1200→700, cScale 4000→2500 | 227→248 / 147→159, grind med 9.9→12.8 | **KNEE FOUND — notch2 is the optimum** of the grind-pricing family |
+| transit board commitment | scoreTack stickiness ×2.5+0.3 on grid-venue transit | 227→247 / 147→153, tacks UP 14→16 | flips are avoidance/carrot-fed, not score-hysteresis-fed; stickier boards hold bad lines longer, then swing harder |
+
+Mean avoidance deflection sat pinned at 46-48° through every experiment —
+the swing size is not chosen by the terms we re-priced; open-water traffic
+is at a local optimum, like the ring constants were. ⇒ Remaining transit
+gains live at DRIVER level (RL, the approved escalation) or in the world
+itself (spin cap below).
+
+**Avoid-none attributed** (_transit_probe2.js, byte-identical run): transit
+2495u = lat-static 701 (±30° rays the old 3-point probe missed) + floe<250u
+777 + boat<300u 349 + true-none 664. Probe2 also adds SECONDS-per-class and
+a park counter — the distance attribution is blind to parks (a boat at
+speed 0.15 loses 15-20s with odo≈0); time baseline banked (probe_time8):
+**avoid-mode windows own 112s of the 258s mean transit (43% of transit
+TIME) and 67s of 174 on the return**; parks are negligible on arctic (5s).
+Time-wise, avoidance dominates even harder than distance-wise — the
+driver-level escalation should be scored on avoid-mode seconds.
+
+**Owner question ANSWERED WITH DATA — fast-spinning bergs** (_floe_spin_probe,
+8 seeds, 1223 contact episodes): median floe contact = ice surface moving
+**28.6 u/s rotationally vs 5 u/s drift** (~6× the motion every AI predictor
+can see); 47% of contacts >30 u/s edge speed, 14% >60; big bergs (r≥300,
+11.7% of contacts) sweep 46 med / 74 p90; population max ω·r observed
+**821 u/s**. Boats are near-stationary at contact (med speed 0.06) — pinned
+boats struck by rotating rims, not boats sailing into ice. The recommended
+cap ω ≤ min(0.75, ~30/r) leaves small pans untouched (r<100 med |ω| 0.28 ≈
+the cap) and removes exactly the tail translation-only predictors cannot
+see. Physics/venue-feel change — Wes's call on constant + goldens re-record.
+
+**Bay attributions** (no behaviour change; instruments 9e4c608):
+- Fat tail: L3 tail (13/72, med 63s vs lean 43s) is TRAFFIC-owned (61% of
+  windows have a rival <350u; avoid 1874 of 3643 excess). L5 tail (6/72) is
+  OPEN-WATER avoid-none (1128u, no rival, no dead-ahead blockage). Sub-binned
+  (probe v2): bay avoid-none is **TRUE-NONE dominated** (L3 tail 903 of 995,
+  L5 tail 1051 of 1128; lat-static literally 0) — unlike arctic, where
+  lat-static+floes explain ~60%. Suspects: CPA-range threats (a converging
+  rival 400u+ away sets GIVE_WAY on distCPA<70/tCPA<8s while the probe's
+  <300u-now check misses it) and land/boundary inside avoidance's 400-600u
+  segment checks but past the probe's 360u rays.
+- Hairpin ≥16s class (6/61) splits: (a) WRONG-WAY SWEEP AT ARMING — armed at
+  −4.3 rad vs +3.19 required after curling the wrong side on the hot run
+  approach; 1500u excursion + re-loop to unwind (36s, 35s cases); (b)
+  POST-HAIRPIN HEAD-TO-WIND PARK — carve the run→beat hairpin, park at
+  speed ~0.15 for 15+s (36s, 30s cases). Entry-state problems both; exits
+  clean. Mechanisms to design: approach-side discipline, powered-carve
+  guard (no commands through head-to-wind below ~0.9 speed while armed).
+
+**Capped arctic_eval @420, 16 seeds 9100.., notch2/f6d4c98 snapshot (144
+boat-races):** DNS 0.00%, DNF 0.00%, race med 420.0 (cutoff-capped) / mean
+400.6, pen/boat 1.50, groundings/boat 627 (raw contact fires, not dedup'd).
+True in-time arrival is the fleet_leg2 in-time count (40/144 = 28%); this
+row exists so DNS/DNF-at-420 is tracked per snapshot going forward.
+
+**Fresh anchors:** seatrials 100t @ f6d4c98 = 202.56/199.33 pen 0.33
+OCS 16.9% min 175.2 max 347.6 (rows above). Goldens NOT re-recorded — no
+behaviour change this session; all 2026-08-03d baselines stay exactly valid.
+
+## Next session brief (prepared 2026-08-03e, tree at post-instruments HEAD)
+
+NO behaviour change landed this session — every 2026-08-03d baseline stays
+EXACTLY valid: arctic 16-seed = `fleet_leg2_notch2.json` (500 med / 504.9
+mean / min 270 / in-time 40 / fins@900 131), bay 20-seed =
+`bay_bench_bulge.json` (264 med), goldens NOT re-recorded. Fresh seatrials
+anchor = **100t @ f6d4c98: 202.56/199.33 pen 0.33 OCS 16.9%** (use this, not
+the 40t spot). Trees A/C/D reverted to HEAD after each experiment; treeB
+committed at HEAD (bbc8537). Read `regatta-arctic-ai.md` +
+`regatta-bay-ai.md` memory first — the 2026-08-03e entries carry four fresh
+probe-level rejections with mechanisms; do not retry any of them blind.
 
 Priorities, in order:
 
-1. **Arctic transit, remaining bins** (attribution now in _transit_probe.js
-   — run it 8 seeds before/after every candidate; excess after notch2:
-   avoid-boat 2303 / avoid-none 2495 / offrt 2676 / turn 2064 / rec+sail
-   ~1800; transit ratio 1.83, return 1.70, vs human 1.21/1.16):
-   (a) **Turn churn — target PLAN CHURN, not carrot stickiness.** ⚠️ JUDGED
-   2026-08-03d: sticky grid carrot (DMC-style: hold the pursuit point until
-   fetched 220u / behind / off-plan 260u / blocked, transit-scoped) is
-   REJECTED at the probe level — WORSE everywhere (transit med 227→240, ret
-   147→178, turn bin +23%) and carrotJump barely moved (14.2→13.4/min).
-   Mechanism: the jumps are REPLAN churn — drifting-pack replans move the
-   whole path >260u, forcing adoption as often as the glide re-aimed, while
-   a held point goes stale against moving ice. Next levers for the 2.1k turn
-   bin: replan path continuity (reuse the previous thread as A* guidance /
-   penalize plans that diverge from the current one), or scoreTack board
-   re-decision cadence on transit. Bots tack 14-16 per transit vs human 3.
-   (b) **avoid-boat (RRS dances on the shared line)**: 9 boats converge on
-   one DMC line; give-way bubbles (150u), duck rewards (−800) and R16 terms
-   produce 49° mean deflections in open water. Spacing/stagger vein (per-boat
-   lateral offset of the far-mode destination?) — untried, touchy (start-pack
-   tuning is sacred; racing legs only).
-   (c) **Floe-shaping notch3** (band <1200 / farHit <3500): the knee was NOT
-   found — both notches paid. But notch2 already churned fins@900 134→131;
-   watch the 900-cap finisher count FIRST, and stop at the first tail price.
-   (d) **avoid-none attribution**: 2495u of deflection with no boat threat
-   and no blockage within 360u dead ahead — the 3-point probe look may just
-   be too coarse (diagonal/lateral shaping, `_clear` gradients). Extend the
-   sub-binning before attacking it.
-2. **Bay, what's left** (angle-level bulge vein CLOSED 2026-08-03d — three
-   measured non-landings in the scoreboard note; do not retry blind):
-   (a) **Fat-tail runs**: ratio ≥1.7 boats sail 60s L3/L5 legs with 5 gybes
-   — traffic/rounding-driven, the lean half already sails 1.18. Instrument
-   WHERE the tail's time goes (per-tail-boat 1Hz traces on bay_bulge JSONs).
-   (b) **L3→L4 hairpin entry overshoot** (10% of leg-3→4 roundings ≥16s
-   armed-to-advance, p90 16s max 61) — needs a NEW mechanism (ruler-entry
-   skip is rejected).
-   (c) **Traffic contact discipline** (rubs 2.54/race vs human 0.14,
-   penalties flat) — try-the-plane cut rubs to 1.67 as a side effect but was
-   pace-neutral; there may be a discipline win hiding in that direction.
-3. **Owner question in flight (2026-08-03d): fast-spinning bergs.** Wes asked
-   whether to cap floe rotational speed. Recommendation given: cap EDGE speed
-   (ω·r), not angular rate — collision spin-up runs to the flat ±0.75 rad/s
-   clampSpin regardless of size, so a big berg's lobes sweep at 100-225 u/s
-   (2-7× boat speed) while every AI predictor (grid stamps, movePad drift
-   shift, planner rollouts, futBlk) is TRANSLATION-ONLY and cannot see
-   rotation at all. `clampSpin` radius-aware (ω ≤ min(0.75, ~30/r)) keeps
-   small-pan twirl, kills the big rotors, matches the authored "bergs barely
-   turn" intent. If taken up: it's a venue-feel change (goldens re-record,
-   Wes's call on the constant); optionally first extend the contact
-   instrumentation to attribute floe contacts by ω·r at contact to size the
-   AI benefit honestly.
-4. **Instrumentation remainder**: capped arctic_eval per snapshot (true
-   DNS/DNF at 420); race min/max in run_eval console line; 100t anchor.
+1. **Arctic: the classical transit list is EXHAUSTED post-notch2** (stagger,
+   continuity, urgency-grading, notch3 all probe-rejected 2026-08-03e; knee
+   found at notch2; mean deflection pinned 46-48° through every candidate —
+   traffic is at a local optimum). Two live escalations, either/both:
+   (a) **DRIVER-level RL on transit** per the four-level architecture — the
+   evidence bar the campaign doc demanded (classical plateau) is now met at
+   probe level. Scope per the crew-RL infra pattern (rl/ has the training
+   loop; obs needs the DMC path lens + floe ring + rival ring; act = target
+   heading bias + speed; gate = fleet_leg2 16-seed paired, the only gate
+   that has ever told the truth here).
+   (b) **Iceberg spin cap** (world-side; OWNER CALL — numbers are in the
+   2026-08-03e session notes: median contact 28.6 u/s rotational vs 5 drift,
+   47% of contacts >30 u/s, berg rims sweep to 821 u/s; cap ω≤min(0.75,30/r)
+   spares small pans, kills the unpredictable tail). If Wes approves: land
+   the cap, re-record goldens (venue-feel change), THEN re-run
+   _transit_probe2 + a 16-seed fleet gate to size the realized AI benefit
+   before aiming any RL at the post-cap world.
+2. **Bay, two designed mechanisms owed** (diagnosis complete, 2026-08-03e):
+   (a) **Hairpin wrong-way arm** (worst class, 35-36s): boats arm at −4.3 rad
+   vs +3.19 required after curling the wrong side on the hot run approach.
+   Mechanism to try: approach-side discipline — when closing a hairpin
+   rounding (next-leg bearing reverses), bias the pre-arm approach point to
+   the REQUIRED side of the mark so the first zone crossing sweeps the
+   right sign. Gate: _bay_hairpin_probe before/after (≥16s count 6/61 →
+   target ≤2), then bay 20-seed paired.
+   (b) **Post-hairpin head-to-wind park** (30-36s): powered-carve guard —
+   while armed, don't command headings within ~0.35 rad of dead upwind
+   below speed ~0.9; carve wider on the current tack until way is on.
+   Judge with probe2-style SECONDS bins (parks are invisible to distance
+   bins — probe_time8 is the banked time baseline).
+   (c) L5 avoid-none sub-binning (1128u, no floes on bay — the arctic
+   detail probe's floe bin doesn't transfer; write the bay variant).
+   ⚠️ For the L3 traffic tail: urgency-weakening of RRS shaping is
+   arctic-REJECTED — expect the same local-optimum defense on bay.
+3. **Roundabout ideas**: scoreTack board-commitment on transit was probed
+   same session — REJECTED (fifth entry in the table above; flips are
+   avoidance-fed). Bay contact-discipline vein (rubs 2.54 vs human 0.14)
+   still open via try-the-plane's side-effect direction. The human bank
+   now holds a ZERO-floe-contact arctic run (207.0s, minFloe 26u) — the
+   contact-discipline ceiling is proven, not hypothetical.
+4. Instrumentation: DONE this session (run_eval min/max, capped arctic_eval
+   row, avoid-none detail, seconds-per-class + park counter). Keep running
+   the capped arctic_eval per future snapshot.
+5. **TRAFFIC GAUNTLET — Wes is leaning REDROCK RESERVOIR as the host**
+   (2026-08-03e chat). Doc facts: 13000 world, only 4 rock-spire shapes,
+   uniform 12kt dirVar 0, NO current, currently a generic W/L route. Build
+   notes: author the gauntlet route in the open basin with every leg
+   >600u from spires (grid stays ON — matches arctic/bay code paths —
+   but geometrically irrelevant, so attribution stays clean); KEEP THE
+   WIND UNIFORM for the lab role — the card's promised wind-shadows/
+   gust-bombs would reintroduce the exact confounds the venue exists to
+   remove, so add drama only AFTER baselines are banked, as a protocol
+   break. Also noted: river doc has NO current authored (82 bank shapes,
+   uniform 12kt) — it is a corridor/Rule-19 lab, not a current venue;
+   "tidal flats" has no doc yet. Original design spec (recommended
+   2026-08-03e: open water, no land/floes/current, uniform ~12kt wind, long
+   beat to a single windward mark → long run → 270° hairpin into a beat →
+   wide-gate control leg → finish; ~180-200s ideal pace): first session on
+   it = wire `gauntlet_bench` (mirror bay_bench), bank a 20-seed baseline +
+   human trajectories, then re-run the rejected RRS-shaping candidates
+   there — it isolates boat-on-boat cause (the pinned-47° mystery and the
+   bay true-none bin) and cuts gate wall-clock ~4x. Keep its start line
+   wide and ordinary (start-pack tuning is sacred).
 
 Gates, unchanged: paired A/B at 20 seeds bay / 16 seeds arctic on the target
-venue; seatrials anchor 40t spot each landing, 100t before big stacks;
-goldens (`npm run trace`, re-record only WITH an accepted behaviour change —
-re-recorded twice at 2026-08-03d, both times arctic-only); judge tails by
-paired per-boat deltas (positive = experiment faster, `_fleet_pair.js` /
-bay_report paired line — ⚠️ the report's "negative = A faster" parenthetical
-is misworded; trust the ledger convention).
+venue; seatrials anchor 40t spot each landing (fresh 100t exists at
+f6d4c98); goldens re-record only WITH an accepted behaviour change; judge
+tails by paired per-boat deltas (positive = experiment faster,
+`_fleet_pair.js` — the report's "negative = A faster" parenthetical is
+misworded; trust the ledger convention). Byte-check treeB vs stored
+baselines before analyzing any A/B.
+
+---
+
+## Session notes 2026-08-03f (research session; owner approved spin cap + autonomous run)
+
+**LITERATURE RESEARCH LANDED (two web passes; full digest in memory
+`regatta-avoidance-research.md`).** Headline: the pinned 46-48° mean
+avoidance deflection is a DOCUMENTED pathology, not a tuning residue.
+Koren & Borenstein (ICRA 1991) proved oscillation/over-deflection is
+inherent to instantaneous cost-argmin steering; the Freezing Robot Problem
+(Trautman, IROS 2010) explains the pin — a one-tick argmin cannot see the
+low-deflection corridor that exists only if the rival also gives way, so
+its argmin sits in the big-swing valley at ANY pricing. The five 2026-08-03e
+probe rejections were the predicted outcome. The "classical list is
+EXHAUSTED" verdict is REVISED: classical *re-pricing* is exhausted; the
+literature's structural fixes were never tried. Consensus fixes, ranked by
+cross-field convergence (ORCA/crowd + COLREGs-ASV — the latter is RRS's
+near-exact analog): (1) maneuver commitment/episodes (entry gate, locked
+passing side, min hold, switch penalty); (2) reciprocal responsibility
+split by right-of-way role (ORCA half-planes; ROW boat's near-zero share =
+RRS 16 for free); (3) horizon planning in velocity/maneuver space;
+(4) deterministic side agreement (HRVO/asymmetric domains). Also: the 4x
+RL seed-transfer failure matches documented protocol overfitting (fixed
+training seeds are memorized — Zhang 1804.06893, Cobbe 1812.02341); the
+corrected recipe (bounded zero-init residual policy, seed rotation,
+held-out validation) is banked in the same memory file.
+
+**Fleet-boat traffic under racing rules is essentially UNPUBLISHED** — no
+prior art for dense RRS fleet racing; nearest donors are COLREGs ASV work
+and one pairwise RRS-sailboat paper (Qi 2019). We are on our own past the
+structural principles above.
+
+**Owner decisions this session:** iceberg spin cap APPROVED ("looks very
+unrealistic"); Wes building Redrock in a separate checkout (only redrock
+changes — this checkout stable for A/B; expect an RNG reshuffle when his
+branch merges, re-verify baselines then, per the 11a8f4b precedent).
+
+**In flight:** (a) spin cap ω≤min(0.75,30/r) — radius-aware clampSpin at
+spawn + collision kick (was flat ±0.75: a collision-kicked r=1100 berg
+could sweep its rim at 821 u/s); gating on fresh 16-seed pair
+headbase16d(treeB=HEAD ab30d3d) vs spincap1(treeA) — fresh baseline forced
+by owner merge f444da9 (+1048 lines script.js, seed-class break); seatrials
+40t pair must be byte-identical (clampSpin is floe-only code).
+(b) Avoidance commitment layer v1 designed (episode side-lock keyed to the
+existing threatBoat pairing, 2500·jamF wrong-side tax, racing legs≥1 only;
+avoidance-forced-flip arms scoreTack tackCooldown 2.5s — closes the
+two-deciders saw from the bay L1 diagnosis); builds after the cap verdict.
+
+**SPIN CAP LANDED (d065d0a) + PRICED.** Seatrials 40t BYTE-IDENTICAL
+(floe-only code). Fresh 16-seed baseline on Wes's new HEAD ab30d3d
+reproduced the notch2 ledger EXACTLY (500/504.9/min 270/in-time 40/fins
+131) — f444da9's 1048-line script.js change did NOT shift either seed
+class; all stored baselines stay valid. The cap itself: paired −20 med /
+−22.2 mean (n=125), in-time 40→32, fins@900 131→134, min 270→247,
+loser-heavy tails. Read: ROTATING ICE WAS A LEAD-OPENER — spin churned
+pack gaps open; capped ice locks a bad orientation in and the router
+detours (probe: return med 147→174, offrt/none bins up; avoid-boat
+DOWN 2303→1963 as predicted — rims are now predictable). Accepted as an
+owner realism call, not an AI lever; the AI campaign re-anchors on the
+post-cap world: **arctic 16-seed baseline = fleet_leg2_spincap1.json
+(520/528.9/min 247/in-time 32/fins 134), transit probe baseline =
+transit_attrib_postcap_base.json (transit med 235 ratio 1.86, ret 174
+ratio 1.78)**. The cap constant (30/r) is dialable if Wes wants pack
+churn back (60/r would kill only the >60 u/s tail = 14% of contacts).
+Human trajectory bank was recorded in the SPINNING world — cross-world
+human comparisons carry that asterisk until re-recorded.
+
+**Commitment layer v1 (bundled) probe-REJECTED, split in flight.** v1 =
+side-lock (2500·jamF wrong-side tax, bearing-sign side key) + forced-flip
+tackCooldown arming, gated on the post-cap probe: transit mean 254→265,
+avoid-boat 1963→2618, tacks 14→16 — WORSE. Suspected flaw: bearing-sign
+side key degenerates near CPA (sign flips fast exactly where commitment
+must be geometric, not angular — HRVO locks side in VELOCITY space).
+Split probes running: v2a = flip-cooldown alone; v2b = side-lock alone
+with near-CPA suspension (tCPA<1.5s or dist<90 frees the argmin).
+
+**Commitment family REJECTED ON ARCTIC at probe level, all three shapes**
+(8-seed _transit_probe vs transit_attrib_postcap_base, post-cap world,
+baseline transit EXCESS 12865 / avoid-boat 1963 / ret EXCESS 9947):
+
+| Variant | Mechanism | Verdict |
+|---|---|---|
+| v1 bundle | side-lock (bearing-sign key) + flip-cooldown | EXCESS 13781, avoid-boat 2618, tacks 14→16 — worst |
+| v2a | flip-cooldown 2.5s alone | EXCESS 14010, avoid-boat 2299, turn 1909→2189 |
+| v2b | side-lock alone, near-CPA suspended (tCPA<1.5 or <90u free) | EXCESS 13800, turn 2313, ret n=72→70 (two boats never completed) |
+
+Mechanism-level read: against DRIFTING ice+boat compound scenes, per-tick
+re-picking is ADAPTIVE — single-boat commitment holds stale geometry
+longer and pays exactly where it binds. The literature's warning stands
+in a sharper form: commitment kills dances only when paired with
+RECIPROCITY (the other boat's predictable response); alone, in a moving
+pack, it is a tax. Deflection stayed pinned 45-48° through all three
+(eighth consecutive candidate). ⇒ Arctic escalation is now firmly
+candidate #2 (RRS-asymmetric ORCA underlay) or driver-level RL.
+v2a gets ONE focused bay 20-seed gate (its evidence base — the L1
+two-deciders saw — is bay-native, and bay traffic is static-water):
+bay_v2abase(treeA) vs bay_v2a(treeC) running.
+
+**v2a bay gate: REJECTED — commitment family closed (4 variants, 2 venues).**
+bayv2abase reproduced the stored 264-med baseline exactly (bay seed class
+intact post-f444da9/post-cap; cap inert on bay end-to-end). v2a: fin med
+266 (+2), mean +4.9 paired slower (n=180), pens 0.58→0.66, boat rubs
+1.89→2.15 — BUT L1 med 48→46: the mechanism is RIGHT about the saw on the
+diagnosed leg and still loses fleet-wide (held boards export cost to L3+
+traffic). Ledger total: NINE traffic candidates rejected across the
+campaign. Goldens re-recorded PASS 20/20 at b133b5d (f444da9 had silently
+diverged all 20 hashes; verified FAIL on clean HEAD before re-record).
+Live candidate in probe: cpagrad1 (reciprocal CPA gradient, τ=8s,
+RRS-asymmetric shares 0.85/0.15/0.5, smooth credit for minimal-deviation
+resolution — the first candidate that changes the OBJECTIVE SHAPE rather
+than re-pricing it).
+
+**cpagrad1 probe-REJECTED — TENTH traffic candidate; traffic thread CLOSED
+this session.** Reciprocal CPA gradient (τ=8s, role shares 0.85/0.15/0.5,
+smooth 1400·jamF credit under rDes): transit avoid 6264→7267 (boat
+1963→2578), mean dev 47→50°, ratio 1.86→2.02, ret 174→184 med. Mechanism
+of failure: ADDED on top of the existing binary terms it charges rent for
+every sub-rDes CPA against every rival inside 700u — net MORE deviation
+pressure. The honest ORCA is a REPLACEMENT of the boat-shaping objective
+(binary bubbles + duck/bow swapped for half-plane constraints), which is
+start-pack-adjacent surgery that should be built and gated on the REDROCK
+GAUNTLET when Wes's venue lands, not patched into the pack blind.
+Session traffic ledger: 10 rejections, 3 families (re-pricing ×5 prior,
+commitment ×4, additive gradient ×1). Deflection pinned 45-50° through
+ALL. ⇒ Next escalations, in order: (1) gauntlet-hosted avoidance-objective
+replacement (ORCA-style, full swap); (2) driver-level transit RL with the
+corrected protocol (bounded zero-init residual, ≥200-seed rotating pool,
+held-out validation — memory regatta-avoidance-research.md has the recipe).
+
+**Bay mechanisms 2a/2b in flight (treeC):** fresh hairpin probe baseline
+reproduced the class (L3 6/61 ≥16s, L5 1/52; traces confirm both
+anatomies: wrong-way arm at sw −4.32 with 1500u downwind blow-through
+re-loop, and armed head-to-wind parks at speed 0.15 for 15-17s).
+Implemented: powered-carve guard (armed + speed<0.9 ⇒ commands held
+≥0.35 rad off dead upwind, close reach on current tack) + hairpin
+approach-side bias (entry-sector scan biased toward the DMC tangent-in
+sector, weight 9·hairpinness, FLOE-FREE venues only — arctic hunt
+untouched per the ruler-entry rejection). Probe gate: ≥16s count 6→≤2.
+
+**Capped arctic_eval @420, 16 seeds, spin-cap snapshot (d065d0a):** DNS
+0.00%, DNF 0.00%, race med 420.0 (cap) / mean 403.7, pen/boat 1.50→1.23
+(cap CUT penalties — fewer rim-strike fouls), groundings/boat 628.7
+(flat; raw fires, not dedup'd). In-time truth stays the fleet_leg2
+in-time count (32/144 = 22%).
+
+**BAY PARK CLASS ROOT-CAUSED — it was the MARK-ESCAPE LATCH, not the
+carve.** Split probes: entry-side bias alone = the whole bundle regression
+(L3 6→9, L5 1→4, max 73.6s — it rafts the fleet onto the tangent-in
+sector, reproducing the REJECTED ruler-entry geometry; do not re-price).
+Carve guard alone = zero class effect (fired, changed nothing — the
+strategy layer never commands the park). Fresh eyes on the traces: EVERY
+park starts at d 28-53 from the mark = contact range. The escape latch
+(`markEscapeHeading` = raw radial away-from-mark, wind-blind, 12.0s hold,
+speedRequest 1.0) points dead upwind on a hairpin's windward side — the
+15-17s parks are that latch, to the second. FIX (treeC): mark escape now
+picks the best off-wind candidate ±1.05/±1.75 rad scored for
+away-from-mark + 0.7·way-round tangent while armed (the island-escape
+pattern, verbatim philosophy: never command an unsailable escape).
+Probe: L5 ≥16s 1→0 (max 34.7→13), mark parks now recover in 4-5s;
+L3 count flat at 6 but composition FLIPPED to the wrong-way-arm class
+(sw −4.1 at arming) + traffic stops — the remaining L3 tail is entry-side
++ traffic, cleanly isolated. Full gate suite running (bay 20-seed,
+seatrials 40t — mark rubs exist there, NOT inert — arctic 16-seed).
+
+**✅ MARK ESCAPE ACCEPTED + COMMITTED c3e1313** (rows above). Bay: paired
+med 0 / mean −0.7 with mark contacts 0.98→0.79, land 0.37→0.14,
+start-cross max 120→62, fleet min 211 — FIRST bot run under the banked
+human best (217.8). Boat rubs 1.89→2.35 (the tacktax trade again — held
+boats rub instead of parking). Seatrials 40t 203.54/200.08 pen 0.36
+(holds). Arctic: paired med 0 / mean +1.3, in-time 32→34, med 520→514,
+winners-tilted tails, fins@900 134→131 churn priced per precedent.
+Accepted quality-first at pace-neutral: the killed class (15-17s
+head-to-wind park AT the mark) is the most player-visible AI stupidity
+on the course. Goldens re-recording. NEW ARCTIC BASELINE =
+fleet_leg2_markesc16.json; BAY BASELINE = bay_bench_baymarkesc.json.
+Remaining bay L3 tail after this: wrong-way-arm class (sw −4.1 at
+arming; entry-side bias REJECTED — needs a mechanism that doesn't raft
+the fleet onto one sector) + traffic stops (the closed traffic thread).

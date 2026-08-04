@@ -1,0 +1,30 @@
+
+> trace
+> node regatta/eval/run_traces.js
+
+Golden traces — mode=verify, venues=10, seeds=2, limit=300s, legs=4
+  bay/90210             f43b44ad103c779f  19801f  300s  fin=7 pen=6
+  bay/90211             e075a7b01e910867  19801f  300s  fin=8 pen=4
+  lake/90210            5c6f95b1116ec602  19801f  300s  fin=7 pen=4
+  lake/90211            ac8c3c7dd205f140  19801f  300s  fin=8 pen=2
+  lagoon/90210          c234cbda2283c4b8  19801f  300s  fin=9 pen=5
+  lagoon/90211          5cdaa83148e4d3ef  19801f  300s  fin=9 pen=4
+  swamp/90210           767889dd5197c629  19801f  300s  fin=0 pen=6
+  swamp/90211           a3d049a19c799425  19801f  300s  fin=1 pen=4
+  river/90210           7b4ee67e7271f0d0  19801f  300s  fin=9 pen=4
+  river/90211           d7110a2524cffede  19801f  300s  fin=9 pen=4
+  ocean/90210           972f7d6d94dee090  19801f  300s  fin=9 pen=6
+  ocean/90211           ccc38ecfaa518e84  19801f  300s  fin=9 pen=4
+  redrock/90210         f7cdc8087838022d  19801f  300s  fin=8 pen=4
+  redrock/90211         afc3b4a97fb631ed  19801f  300s  fin=9 pen=4
+  glowtide/90210        9ba71e415eca0637  19801f  300s  fin=7 pen=5
+  glowtide/90211        2cf582c087428580  19801f  300s  fin=9 pen=4
+  arctic/90210          4205e63d7e678b04  19200f  300s  fin=0 pen=15
+  arctic/90211          5352d657a38b04e1  19200f  300s  fin=0 pen=14
+  seatrials/90210       4dbe8e5d7344555b  19200f  300s  fin=9 pen=4
+  seatrials/90211       ea67cf79b3d12299  19200f  300s  fin=9 pen=3
+
+  --legs 4 was overridden by the venue's own route on 2/10 venue(s): bay sailed 6, arctic sailed 2
+  A course authors its leg count. To trace a longer one, author a longer route.
+
+PASS — 20 traces checked, 0 behaviour changes, 0 geometry-only, 0 new  (2.9 min)

@@ -1,0 +1,770 @@
+
+> test
+> node regatta/eval/test_arena.js && node regatta/eval/test_venuedoc.js && node regatta/eval/test_course_model.js && node regatta/eval/test_route.js && node regatta/eval/test_gates.js && node regatta/eval/test_marks.js && node regatta/eval/test_wind.js && node regatta/eval/test_gusts.js && node regatta/eval/test_sailable.js && node regatta/eval/test_editor.js && node regatta/eval/test_controls.js && node regatta/eval/test_fit.js && node regatta/eval/test_start_line.js && node regatta/eval/test_character_swap.js && node regatta/eval/test_results.js && node regatta/eval/test_persistence.js && node regatta/eval/test_render.js && node regatta/eval/test_boundary_race.js && node regatta/eval/test_livery.js && node regatta/eval/test_audio.js && node regatta/eval/test_contact.js && node regatta/eval/test_dmc.js && node regatta/eval/test_rounding.js && node regatta/eval/test_apparent.js && node regatta/eval/check_venues.js
+
+extent
+  ok    circle extent
+  ok    poly extent
+
+signedDist: positive inside, negative outside, magnitude = distance to edge
+  ok    circle centre
+  ok    circle on the edge
+  ok    circle 300 outside
+  ok    poly centre
+  ok    poly near one wall
+  ok    poly outside a wall
+  ok    poly outside a corner
+
+contains honours the inset
+  ok    circle inside with inset
+  ok    circle fails a too-large inset
+  ok    poly inside with inset
+  ok    poly fails near a wall
+
+clamp returns a point ON the edge when outside, untouched when inside
+  ok    circle inside is untouched
+  ok    circle outside lands on the rim
+  ok    poly inside is untouched
+  ok    poly outside lands on the wall
+  ok    poly outside a corner lands on the corner
+
+outward normals point out of bounds
+  ok    circle normal
+  ok    poly normal outside a wall
+  ok    poly normal from inside still points out
+
+rayHit
+  ok    circle ray east from centre
+  ok    poly ray east from centre
+  ok    poly ray diagonal hits a wall not a corner distance
+  ok    ray from outside pointing away misses
+
+rimPoint sits inside, near the edge, in the given direction
+  ok    circle rim north
+  ok    poly rim east is inside
+  ok    poly rim east is near the wall
+
+sample stays inside, with the inset
+  ok    400 circle samples all respect the inset
+  ok    400 poly samples all respect the inset
+
+RNG NEUTRALITY — the property that protects the eval anchor
+  ok    circle sample consumes exactly 2 draws
+  ok    circle sample matches the retired inline formula exactly
+
+boundingCircle + rectPoly
+  ok    bounding circle of a square
+  ok    rectPoly is 4 points
+
+PASS — 0 failure(s)
+bake + import
+
+hole detection
+  ok    exactly one shape has a hole
+  ok    the hole has >= 4 vertices
+  ok    granite has no hole
+  ok    hole area is ~16% of the outer ring
+
+baked centroid/radius agree with the vertices
+  ok    c and r are derivable from outer
+
+validation accepts a sound document
+  ok    no problems reported
+
+validation rejects what it should
+  ok    escaped hole vertex
+  ok    duplicate shape id
+  ok    an old land[] document migrates to shapes[]
+  ok    ...granite stays the hard one, and nothing else is
+  ok    ...and the compiled islands come out in document order
+  ok    rounding references a missing mark
+  ok    a rounding that still names land is rejected
+  ok    bad rounding side
+  ok    line references a missing mark
+  ok    leg references a missing line
+  ok    a line with the same mark at both ends
+  ok    duplicate mark id
+  ok    degenerate outer ring
+  ok    wrong schema
+
+self-intersection detection
+  ok    bowtie detected
+  ok    square accepted
+  ok    concave L accepted
+
+compile carries holes to the runtime island
+  ok    compiled island keeps its hole
+  ok    granite island gets facets
+  ok    rounding resolves to its mark
+  ok    the rounding mark sits on the granite island
+  ok    the rounding zone captures the island it stands on
+
+leg count does not leak between venues
+  ok    an island course reports its own leg count
+  ok    the next venue keeps the player setting
+
+every venue is a document, and the game races it
+  ok    every venue races on its own document
+  ok    no page errors loading any of them
+  ok    a rounding course says islandRound, a beat says wl
+  ok    every arena is a polygon
+  ok    the river kept its 82 banks
+  ok    Glacier Sound still rounds two legs
+
+PASS — 0 failure(s)
+migration from index references
+
+  ok    one line created from the repeated mark pair
+  ok    start and finish now name the SAME line
+  ok    the rounding references its mark by id
+  ok    index/beat/legs fields are gone
+  ok    course.type became a description
+  ok    compile still emits mark INDICES for the engine
+  ok    legs are derived from the route
+  ok    migrating twice changes nothing
+  ok    the migrated document validates
+
+reuse: one gate, two legs
+  ok    a route reusing one gate validates
+  ok    totalLegs derived as 3
+  ok    both uses compiled to the same marks, opposite directions
+  ok    crossing the start advances to leg 1
+  ok    sailing up through the gate completes leg 1
+  ok    sailing back DOWN through the same gate completes leg 2
+  ok    the race finishes
+
+PASS — 0 failure(s)
+mixed route: line -> gate -> rounding -> line
+
+  ok    no page errors
+  ok    document validates
+  ok    route compiled with 4 entries
+  ok    the rounding entry resolved a mark
+  ok    totalLegs is 3
+  ok    crossing the start advanced to leg 1
+  ok    crossing the gate armed the rounding
+  ok    leaving the gate advanced to leg 2
+  ok    dipping inside the zone armed the rounding
+  ok    a WIDE sweep outside the zone still advanced to leg 3
+  ok    rounding the WRONG side did not advance the leg
+  ok    the correct rounding had a positive net sweep (correct side)
+         wide rounding swept only 114deg — a fixed 160deg threshold would have rejected it
+  ok    crossing the finish ended the race
+  ok    three leg splits recorded
+         leg reached at: {"0":0,"1":0,"2":0,"3":0,"4":0}
+
+PASS — 0 failure(s)
+through gates vs round gates
+
+  ok    no page errors
+  ROUND gate
+  ok    crossing the start advances to leg 1
+  ok    sailing up through it does NOT complete the leg
+  ok    ...it arms the rounding instead
+  ok    coming back down through it does not complete it either
+  ok    ...and it disarms — the rounding is aborted
+  ok    re-crossing the gate re-arms it
+  ok    then leaving it round an END does complete it
+  THROUGH gate
+  ok    crossing the start advances to leg 1
+  ok    sailing through it completes the leg immediately
+  ok    coming back down afterwards changes nothing
+
+PASS — 0 failure(s)
+
+committee boat: a vessel, oriented by its line
+  ok    bow points the way the fleet starts
+  ok    hull sits outboard of the line, clear of the span
+  ok    the mark POINT itself is untouched
+  ok    hull is a 3-circle capsule down the centreline
+  ok    body radius grows past a buoy's 12
+
+a plain buoy is left exactly as it was
+  ok    sf-pin: no heading, no offset, 12-unit body
+  ok    gate-a: no heading, no offset, 12-unit body
+
+the heading is frozen at FIRST use, not re-derived per leg
+  ok    a line used twice keeps one heading
+
+the starboard-end convention is checked, not enforced
+  ok    starboard end passes quietly
+  ok    port end warns
+  ok    no page errors
+
+PASS — 0 failure(s)
+
+an authored current region
+  ok    a venue with no region has no current at all
+  ok    inside the region the water runs at the authored speed
+  ok    ...in the authored direction — due east
+  ok    outside it the water is still
+  ok    the venue reports the stream it owns
+
+wind and current shadows
+  ok    nothing casts a lee until it is given a height
+  ok    downwind of an island the breeze is thin, at every wind direction
+  ok    ...and upwind of it is untouched
+  ok    the shadow TURNS with the wind — one spot, shadowed at one angle
+  ok    it fades with distance rather than ending at a wall
+  ok    ...on an S-curve: flat near the obstacle, flat at the tail, steep between
+  ok    a length of 0 casts no lee at all
+  ok    ...and a longer one reaches further
+  ok    a TALLER shape shadows further than a short one of the same outline
+  ok    a COASTLINE shadows a band of water, not the map
+wind regions: absolute and averaged
+
+  ok    no page errors
+  ok    outside every region the water is CALM
+  ok    deep inside a region the wind is what that region says
+  ok    ...and the other region likewise
+  ok    in the overlap the directions AVERAGE
+  ok    ...and the strength does NOT grow
+  ok    the edge is a monotone ramp, not a step
+  ok    the ramp spans from calm to the region wind
+  ok    direction averages as VECTORS, not as numbers
+  ok    the day's shift still rides on top of a region's mean
+  ok    a region with no speed is CALM, not the venue's wind
+  ok    sampling the field consumes no rng draws
+  ok    the representative direction is derived from the regions
+  ok    island wind shadowing is still in play
+
+PASS — 0 failure(s)
+gust regions: the only source of puffs
+
+  ok    no page errors
+  ok    a course with no gust source has NO puffs, at rest or running
+  ok    ...and its wind really is steady, minutes apart
+  ok    a source births its own stated count
+  ok    ...and holds it as cells live and die
+  ok    every puff is born inside the source that made it
+  ok    ...and then travels DOWNWIND from it, which is why only the source is authored
+  ok    two sources each converge on their OWN number, not a shared pool
+  ok    a source at count 0 is off without being deleted
+  ok    a source in a bend emits puffs along the breeze THERE, not the venue average
+  ok    ...and the two winds really do differ, so the test can tell them apart
+  ok    ...and a cell lies across the breeze it is in, re-aiming as it crosses
+  ok    gust is stated in KNOTS on the anemometer
+  ok    size is stated in METRES across the long axis
+  ok    life is stated in SECONDS
+  ok    ...and each stated number is the MEAN of what the source emits
+  ok    a hole is the shallower half of the same signal
+  ok    veer belongs to the SOURCE, not the venue
+  ok    bias 1 makes nothing but gusts
+  ok    bias 0 makes nothing but holes
+  ok    an unstated bias is an even mix — there is no venue split left to defer to
+  ok    a puff from a source is real wind in getWindAt
+
+the shape of a puff
+  ok    the cell falls off on a smoothstep, not a straight line
+  ok    the puff reaches further UPWIND of its centre than downwind — a nose and a tail
+  ok    the flanks of a puff turn the wind OPPOSITE ways — it fans out as it lands
+  ok    ...and dead on its axis there is no shift at all, just pressure
+  ok    a lull CONVERGES instead — the same constant, the other sign
+  ok    a venue has no weather variables left at all
+
+PASS — 0 failure(s)
+Sailability — 10 document venue(s): bay, lake, lagoon, swamp, river, ocean, redrock, glowtide, arctic, seatrials
+
+bay
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 426 path points, 25416 navigable cells
+         leg first reached at path point: {"0":1,"1":6,"2":118,"3":227,"4":340,"5":419}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+lake
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 426 path points, 24991 navigable cells
+         leg first reached at path point: {"0":1,"1":6,"2":118,"3":227,"4":340,"5":419}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+lagoon
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 426 path points, 25200 navigable cells
+         leg first reached at path point: {"0":1,"1":6,"2":118,"3":227,"4":340,"5":419}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+swamp
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 426 path points, 25134 navigable cells
+         leg first reached at path point: {"0":1,"1":6,"2":118,"3":227,"4":340,"5":419}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+river
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 424 path points, 6038 navigable cells
+         leg first reached at path point: {"0":1,"1":6,"2":117,"3":226,"4":338,"5":418}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+ocean
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 426 path points, 25416 navigable cells
+         leg first reached at path point: {"0":1,"1":6,"2":118,"3":227,"4":340,"5":419}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+redrock
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 426 path points, 24989 navigable cells
+         leg first reached at path point: {"0":1,"1":6,"2":118,"3":227,"4":340,"5":419}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+glowtide
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 426 path points, 25206 navigable cells
+         leg first reached at path point: {"0":1,"1":6,"2":118,"3":227,"4":340,"5":419}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+arctic
+  route: line/start -> round -> line/finish
+  ok    leg 1: room to get all the way round (295deg open at 457u)
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         50 waypoints, 455 path points, 18525 navigable cells
+         leg first reached at path point: {"0":1,"1":7,"2":279,"3":450}
+         rounding: 194 sub-steps armed, net sweep ranged -8..225 deg (sign decides the side)
+
+seatrials
+  route: line/start -> gate -> gate -> gate -> gate/finish
+  ok    every leg registered
+  ok    the system recognised the finish
+  ok    the ideal path never puts the hull in land
+  ok    the ideal path never leaves the arena
+         16 waypoints, 433 path points, 18648 navigable cells
+         leg first reached at path point: {"0":1,"1":7,"2":119,"3":232,"4":344,"5":426}
+         rounding: 0 sub-steps armed, net sweep ranged 0..0 deg (sign decides the side)
+
+PASS — 0 failure(s)
+load
+  FAIL  document loaded — 123 shapes
+  ok    not dirty on load
+  ok    history seeded with one entry
+  ok    document validates clean
+  ok    no page errors
+
+sculpt brush
+  ok    some vertices moved, not all
+  ok    vertex under the cursor moved ~the full delta
+  ok    vertex outside the brush did not move
+  ok    became dirty
+  ok    history grew
+  ok    centroid rebaked
+  ok    edit reached the compiled island radius
+  ok    still validates clean after sculpting
+
+undo / redo
+  ok    undo restored vertex count
+  ok    undo restored centroid exactly
+  ok    undo recompiled the course
+  ok    undo is clean again
+  ok    redo re-applied the sculpt
+
+ice stability
+  ok    editing land does not move the ice
+  ok    recompiling does not move it either
+  ok    a different seed leaves the LAYOUT alone — it is authored
+  ok    ...but gives every floe a fresh drift and spin
+
+scale whole map
+  ok    world size scaled
+  ok    boundary scaled
+  ok    rounding zone scaled
+  ok    start line midpoint scaled
+  ok    land radius scaled
+  ok    start line LENGTH preserved (fleet-sized, not geography-sized)
+  ok    fleet still lays out in lanes after scaling, not stacked in a column
+  ok    compiled boundary followed
+  ok    compiled rounding zone followed
+  ok    still valid after scaling
+  ok    the race-length check reports a best time both times
+  ok    scaling to 60% shortens the race by roughly 40%
+         before: 5.11 km of sailable path (0.95x the straight line) — best ~2:55, fleet ~3:57 (in the 3–5 min band)
+         after:  3.16 km of sailable path (0.96x the straight line) — best ~2:05, fleet ~2:49 — outside the 3–5 min target
+  ok    land-outside is unchanged by uniform scaling (ratio preserved)
+
+scale everything
+  ok    world scaled with the map
+  ok    arena scaled with the map
+  ok    land scaled with the map
+  ok    iceSpan scaled with the map
+  ok    iceX scaled with the map
+  ok    zone scaled with the map
+  ok    radius scaled with the map
+  ok    markX scaled with the map
+  ok    windSpan scaled with the map
+  ok    windFall scaled with the map
+  ok    curSpan scaled with the map
+  ok    curFall scaled with the map
+
+boundary radius
+  ok    no land outside the arena once it circumscribes the map
+  ok    arena coverage check reacts
+         Arena r=1.24 km on a 1.75 km square map: 37% of the arena is unpainted water (0% of the map lies outside the arena, as scenery)
+
+polygon arena
+  ok    rect arena reaches the compiled course
+  ok    stale sampling circle is dropped with a poly
+  FAIL  arena flush with the map edge is flagged — was ok
+  ok    land now continues past the sailing limit
+  ok    arena is fully painted after the rect fit
+  ok    course is still navigable
+  ok    document still validates
+         4-gon arena on a 1.75 km square map: 0% of the arena is unpainted water (17% of the map lies outside the arena, as scenery)
+
+resample
+  ok    vertex count preserved
+  ok    spacing became more even
+  ok    spacing stays even after seven passes
+  ok    vertex 0 stays put across repeated resamples
+  ok    the shape does not collapse over seven passes
+         perimeter 60722 -> 58872 -> 56802u, spacing CV 2.395 -> 0.058 -> 0.006
+
+vertex selection
+  ok    four vertices selected
+  ok    dragging moves the whole selection
+  ok    ...and leaves everything else alone
+  ok    align X snaps to the anchor
+  ok    align Y snaps to the anchor
+  ok    double-click on an edge inserts a vertex under the DIRECT arrow
+  ok    ...and does nothing under the object arrow
+  ok    ...and works the same on the arena outline
+  ok    an arena edge accepts an inserted vertex
+  ok    an arena vertex can be deleted
+  ok    a ring never falls below three points
+
+vertex gestures under a real pointer
+  ok    the hit test finds a vertex of the selected shape
+  ok    pressing on it selects that one vertex and starts a vertex drag
+  ok    ...and the drag MOVES it
+  ok    ...and moves nothing else
+  ok    shift-click adds a second
+  ok    ...and one grab drags both
+  ok    a drag on open water marquees VERTICES
+  ok    ...and the box takes every corner it covers
+
+marks, gates and the route
+  ok    a gate can be created without touching the route
+  ok    the same gate can be used by two legs, sailed differently
+  ok    removing a LEG leaves the gate and its marks alone
+  ok    deleting the GATE takes its marks and its remaining leg
+  ok    a start-line mark refuses to be deleted
+  ok    a free mark deletes, and its rounding leg goes with it
+  ok    a gate is grabbable along its span
+  ok    ...but a mark still wins at its own position
+  ok    a gate has a readable name
+
+route reorder and naming
+  ok    the route now has two movable legs
+  ok    dragging a leg down moves it
+  ok    a route whose finish is not last is reported, not silently allowed
+  ok    ...and putting it back last clears the finding
+  ok    an unnamed leg reads as what it is
+  ok    selecting a leg opens its name field in the inspector
+  ok    a typed leg name is stored and shown
+  ok    blanking the field restores the smart default
+  ok    selecting a mark opens its name field
+  ok    ...with the smart default as the placeholder
+  ok    a typed mark name wins over the derived label
+  ok    the mark type can be changed
+  ok    blanking a mark name restores the default
+  ok    a gate can be named too
+  ok    blanking a gate name restores its default
+
+measure
+  ok    a drag measures one leg
+  ok    shift-click extends it into a path
+  ok    a plain drag starts a new measurement
+
+land names
+  ok    a land shape can be renamed
+  ok    ...and keeps its id, which the file and the checks use
+  ok    ...the object list shows the name
+  ok    ...so does the inspector header
+  ok    ...and a neighbour's channel row uses the name, not the id
+  ok    clearing the box goes back to the id
+  ok    a rename is ONE undo
+
+water colour
+  ok    the water panel offers exactly the colours the renderer reads
+  ok    pal-base changes the preview
+  ok    pal-deep changes the preview
+  ok    the preview carries the game's wind ripples
+  ok    ...drawn by the game's own water renderer
+
+current
+  ok    a whole-course current region is created
+  ok    speed and flow direction are stored
+  ok    the game reads the flow inside the region
+  ok    ...pointing where the region says
+  ok    outside every region the ambient current is returned untouched
+  ok    sampling the current consumes no rng draws
+  ok    the root layer row reads Course
+  ok    the name field carries the name, not a placeholder
+  ok    the venue is shown as its ID
+  ok    the right panel is empty with nothing selected — header and all
+  ok    ...with no number beside it
+  ok    the route layer is called Route
+  ok    the object column is blank, not apologetic
+  ok    only Measure is live on the Course layer
+  ok    a typed course name is stored
+  ok    ...and read by the header, the field and the venue menu
+
+rounding mark vs island
+  ok    the route no longer references a land shape
+  ok    moving the rounding mark leaves the island alone
+  ok    ...and the compiled rounding follows the mark
+  ok    moving the island leaves the mark alone
+  ok    the rounding still knows how big the thing it stands at is
+
+hand-placed ice
+  ok    reading the ice list does not mark the document unsaved
+  ok    a drag places one floe with a generated outline
+  ok    scatter places several, all inside the drag
+  ok    ...and a scattered floe is never dropped on land
+  ok    the game builds every authored floe
+  ok    ...each with its authored shape
+  ok    ...and a fresh drift and spin per race
+  ok    ice can be deleted
+
+vertex snapping
+  ok    a vertex snaps to its neighbour's axis when close
+  ok    ...on that axis only
+  ok    ...and not when it is deliberately elsewhere
+  ok    the vertex panel stays out of the way with nothing selected
+  ok    ...and appears as soon as something is selected
+  ok    ...in whichever mode owns it
+  ok    a plain drag moves a floe
+  ok    Cmd/Ctrl+drag ROTATES it — its size does not change
+  ok    Alt+drag SCALES it
+
+current regions and the boat
+  ok    a current region corner is grabbable on the Current layer
+  ok    ...and moves when dragged
+  ok    a wind bearing round-trips as a compass number
+  ok    ...and 215° reads as south-west
+  ok    ...pointing back at where the wind came from (south-west of the boat)
+  ok    B shows a boat while the ruler is up
+  ok    ...and B again puts it away
+  ok    ...but B does nothing with the ruler down
+  ok    the ruler has no panel, no boat checkbox, no Clear button
+  ok    a plain drag MOVES it, like a shape
+  ok    Cmd/Ctrl+drag ROTATES it, like a shape
+  ok    picking the ruler keeps the layer you were editing
+  ok    ...and leaves that layer's settings exactly as they were, adding none of its own
+  ok    the hint bar names both ruler keys, B and Esc
+  ok    Esc cancels the measurement first, keeping the ruler
+  ok    ...and a second Esc puts the ruler down
+
+selection commands
+  ok    the action bar stays away with nothing selected
+  ok    ...and names what it will act on
+  ok    ...in the plural when there are several
+  ok    Duplicate copies every selected shape
+  ok    ...and leaves the COPIES selected
+  ok    Resample respaces every selected shape
+  ok    ...preserving each point count
+  ok    Delete removes every selected shape
+  ok    ...and the bar goes with the selection
+  ok    Cmd/Ctrl+D duplicates too
+  ok    the inspector no longer offers the selection commands
+  ok    the arena can be respaced but not copied or deleted
+
+booleans
+  ok    Union merges into one shape of the right area
+  ok    Intersect keeps only the overlap
+  ok    Subtract can carve a HOLE, not a second shape
+  ok    ...and the compiled ring reads that lagoon as WATER
+  ok    ...which the outer ring alone would get wrong
+  ok    Subtract can split one shape into two
+  ok    Intersecting shapes that do not overlap refuses and keeps them
+  ok    a boolean needs two objects
+  ok    ...of the same kind
+
+drawing, panning, and tool-scoped commands
+  ok    the object commands hide under the vertex arrow
+  ok    Difference keeps what only ONE shape covers
+  ok    right-drag pans without zooming
+  ok    ...and the OS context menu stays out of the way
+  ok    ...and panning is not an edit
+  ok    the shape being drawn is visible while you draw it
+  ok    ...and its rubber band follows the cursor, not the last click
+  ok    ...and clicking the first point closes it
+
+arena layer
+  ok    an arena corner selects on click
+  ok    ...and Shift adds another
+  FAIL  ...and a marquee takes them all — 7
+  FAIL  Delete removes arena corners down to the 3-point floor — 7->3
+  ok    ...and at the floor it refuses rather than deleting the arena
+  ok    ...and a 3-point LAND shape is not destroyed by a vertex Delete
+  ok    a selected arena corner LOOKS selected
+  ok    ...and its neighbours do not
+  ok    a selected arena LOOKS selected as a polygon
+  ok    the Arena layer row reports enclosed water in km², not corner count
+  ok    ...and the object column is gone entirely
+  ok    "Back to circle" is gone
+  ok    the object arrow selects the arena
+  ok    ...but it can never be duplicated or deleted
+  ok    ...and it takes the same numeric transform as a land shape
+  ok    ...with the area following the edit
+
+vertex delete parity
+  ok    Delete on a floe corner removes that corner, exactly as on land
+  ok    ...one selected removes one, two remove two
+  ok    ...the floe itself is never taken with them
+  ok    ...and the pair comes back in one undo
+  FAIL  a 4-gon arena stops at the 3-point floor — 7->6->5
+
+wind arrows and context menus
+  ok    right-click opens no menu anywhere in the editor
+  FAIL  a wind region draws arrows pointing the way the wind BLOWS — 0:up 90:up 180:up 270:up
+  FAIL  ...with a head you can actually tell from the tail — 1.09 1.09 1.09 1.09
+  ok    with the field OFF the wind layer draws its regions' own arrows
+  FAIL  ...and with the field ON they give way to it entirely — 4993 vs 4992
+
+gusts layer
+  ok    the Gusts layer shows exactly what the document authors, and invents nothing
+  ok    Draw makes a GUST source on the gusts layer
+  ok    ...and not a stray wind region
+  ok    a new source starts from stated defaults, not from the venue
+  ok    ...and comes out selected, ready to be told what it is
+  ok    a source stipples the water it makes puffs over
+  ok    the inspector offers the seven fields a source has
+  ok    ...and offers neither a bearing nor a speed, which a source does not have
+  ok    its numbers round-trip through the gr. prefix
+  ok    ...and an out-of-range one is refused, not clamped
+  ok    bias 0 is a lull factory
+  ok    ...and a blank bias is refused — there is no venue split left to mean
+  ok    a source reports its own population, not a share of anyone else's
+  ok    Select picks a source up like any other polygon
+  ok    Delete removes them, in one undo step
+
+the dropdowns work under a real pointer
+  ok    a real click opens the menu
+  ok    ...and a real click on an option applies it
+  ok    ...and the trigger then reads the value it chose
+  ok    ...and the menu closes behind it
+
+no venue weather panel
+  ok    neither weather layer offers venue-wide conditions any more
+  ok    ...and no document carries a conditions block
+  ok    a wind region still states its own wander, which is where variation lives now
+
+gate and leg detail
+  ok    a mark's header no longer repeats its Type
+  ok    a skewed gate squares to the wind exactly
+  ok    ...keeping its length, its midpoint and which mark is which end
+  ok    a gate leg can be crossed by name — Upwind or Downwind
+  ok    the leg panel says Goal, and no longer counts legs
+
+undo parity
+  ok    undo behaves identically on Land and Venue
+  ok    ...selecting is never an edit
+  ok    ...and a bulk delete is ONE undo, however many it removed
+
+floe / land parity
+  ok    floes behave exactly like land polygons (12 behaviours)
+  ok    ...and both layers actually do all of them
+
+shapes panel
+  ok    scatter and vary live on the map, not the left column
+  ok    ...shown only while Place is armed
+  ok    ...tucked against the tool strip
+  ok    ...and gone when the layer cannot place anything
+  ok    the list carries every shape, coastline and floe alike
+  ok    the venue blurb, ice stats, Remove-all and prose are gone
+  ok    ...and scatter still drives how many Place drops
+
+place tool
+  ok    Place is available on the Shapes layer
+  ok    ...and only there
+  ok    Select on empty water marquees instead of creating
+  ok    ...and the selected floes move as a group
+  ok    Place is what creates a floe
+
+ice inspector
+  ok    clicking a shape on the MAP fills the inspector
+  ok    ...showing Name, Kind and Transform
+  ok    ...with no explanatory prose
+  ok    ...and its fields still move the shape
+
+active layer on top
+  ok    a shape last in the list paints in front
+  ok    ...and first in the list paints behind the coast
+  ok    the arena edge is buried under land until Arena is active
+
+the kind picker
+  ok    the picker offers every kind
+  ok    it is up for both makers and down for everything else
+  ok    ...and scatter/vary belong to Place alone
+  ok    the hint says what the armed maker will make
+  ok    Place makes the chosen kind, not always a floe
+  ok    ...and so does Draw
+
+laying a leg to an exact length
+  ok    a leg states its length and its bearing
+  ok    Sea Trial Bay ships an 800 m beat, dead upwind
+  ok    typing a length puts the gate at exactly that distance
+  ok    ...moving the gate as a gate — width and orientation untouched
+  ok    a bearing swings the leg without stretching it
+  ok    ...and it names what it now is
+  ok    Dead upwind points at the breeze, still without stretching it
+  ok    every step is one undo
+  ok    ...and undoing back restores the venue
+
+rotate everything
+  ok    rotating turns the marks and the land together
+  ok    ...and the WIND with them — a course keeps its relationship to its breeze
+  ok    ...while nothing changes size (a rotation is rigid)
+  ok    ...and one undo puts it all back
+
+layer order and empty columns
+  ok    the layers read in build order
+  ok    a layer with no objects keeps its panel at the TOP of the column
+
+the object list fills its column
+  ok    the list reaches the bottom of the column
+  ok    ...and scrolls inside itself, not by scrolling the column
+  FAIL  ...with every shape in it — 123 rows
+
+save output
+  ok    saved text round-trips to an identical document
+  ok    round-tripped document validates
+         160.8 KB — snapshot undo at 100 levels ≈ 15.7 MB
+
+integrity
+  ok    no page errors across the whole session
+
+FAIL — 9 failure(s)

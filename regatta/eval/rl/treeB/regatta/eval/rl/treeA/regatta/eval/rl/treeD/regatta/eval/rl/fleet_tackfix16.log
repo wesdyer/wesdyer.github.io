@@ -1,0 +1,11 @@
+seed 9100: rounders 9/9 finishers 8 finT 561,426,700,703,723,838,673,790
+seed 9101: rounders 8/9 finishers 8 finT 862,556,483,311,462,449,376,458
+seed 9102: rounders 9/9 finishers 9 finT 303,383,439,370,583,390,672,589,674
+node:internal/process/promises:332
+    triggerUncaughtException(err, true /* fromPromise */);
+    ^
+
+page.evaluate: Target page, context or browser has been closed
+    at /Users/wesdyer/Documents/GitHub/wesdyer.github.io/regatta/eval/rl/fleet_leg2.js:46:30
+
+Node.js v25.2.1

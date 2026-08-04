@@ -1,0 +1,13 @@
+iter 0 epSeeds=[10000,10001,10002,10003,10004,10005] best dR -0.098 | meanPolicy dR -0.098 | elite -0.130 | 0.1 min
+iter 1 epSeeds=[10006,10007,10008,10009,10010,10011] best dR -0.049 | meanPolicy dR -0.063 | elite -0.075 | 0.1 min
+iter 2 epSeeds=[10012,10013,10014,10015,10016,10017] best dR -0.006 | meanPolicy dR -0.027 | elite -0.019 | 0.1 min
+iter 3 epSeeds=[10018,10019,10020,10021,10022,10023] best dR 0.004 | meanPolicy dR -0.013 | elite -0.017 | 0.1 min
+iter 4 epSeeds=[10024,10025,10026,10027,10028,10029] best dR -0.000 | meanPolicy dR -0.025 | elite -0.012 | 0.1 min
+iter 5 epSeeds=[10030,10031,10032,10033,10034,10035] best dR 0.029 | meanPolicy dR -0.008 | elite 0.005 | 0.1 min
+iter 6 epSeeds=[10036,10037,10038,10039,10040,10041] best dR 0.094 | meanPolicy dR 0.038 | elite 0.074 | 0.1 min
+iter 7 epSeeds=[10042,10043,10044,10045,10046,10047] best dR 0.145 | meanPolicy dR 0.113 | elite 0.118 | 0.1 min
+iter 8 epSeeds=[10048,10049,10050,10051,10052,10053] best dR 0.128 | meanPolicy dR 0.064 | elite 0.111 | 0.1 min
+iter 9 epSeeds=[10054,10055,10056,10057,10058,10059] best dR 0.000 | meanPolicy dR -0.001 | elite -0.002 | 0.1 min
+iter 10 epSeeds=[10060,10061,10062,10063,10064,10065] best dR 0.002 | meanPolicy dR -0.012 | elite -0.006 | 0.1 min
+iter 11 epSeeds=[10066,10067,10068,10069,10070,10071] best dR 0.008 | meanPolicy dR -0.067 | elite -0.000 | 0.1 min
+saved /Users/wesdyer/Documents/GitHub/wesdyer.github.io/regatta/eval/rl/crew_policy.json

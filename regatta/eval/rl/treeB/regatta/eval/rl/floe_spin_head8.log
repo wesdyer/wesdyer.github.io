@@ -1,0 +1,27 @@
+seed 9100: 155 floe-contact episodes
+seed 9101: 223 floe-contact episodes
+seed 9102: 110 floe-contact episodes
+seed 9103: 141 floe-contact episodes
+seed 9104: 108 floe-contact episodes
+seed 9105: 200 floe-contact episodes
+seed 9106: 113 floe-contact episodes
+seed 9107: 173 floe-contact episodes
+
+=== FLOE CONTACTS (n=1223, 8 seeds, 0.5s dedup) ===
+edge speed |w|*r at hull: med 28.6 mean 33.9 p90 66.5 max 133.9
+floe drift speed:         med 5 p90 14.7
+boat speed (raw knots-ish units): med 0.06
+contact radius: med 108  floe radius: med 111 p90 312
+  contacts with edge > 10 u/s: 1052 (86.0%)
+  contacts with edge > 30 u/s: 577 (47.2%)
+  contacts with edge > 60 u/s: 175 (14.3%)
+  contacts with edge > 100 u/s: 29 (2.4%)
+big-berg (r>=300) contacts: 143 (11.7%), edge med 45.7 p90 73.5
+
+=== POPULATION CENSUS (t=120/300, n=1792 floe-samples) ===
+  r 0-100: n 608  |w| med 0.28 p90 0.67  edge med 19 p90 42.6 max 71.8
+  r 100-200: n 512  |w| med 0.25 p90 0.5  edge med 34.3 p90 67.6 max 132.5
+  r 200-300: n 368  |w| med 0.1 p90 0.29  edge med 26 p90 64.8 max 196.9
+  r 300-max: n 304  |w| med 0.08 p90 0.15  edge med 37.7 p90 82 max 821.1
+
+wrote floe_spin_head8.json

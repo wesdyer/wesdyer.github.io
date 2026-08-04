@@ -1,0 +1,17 @@
+seed 9100: rounders 8/9 finishers 3 finT 894,830,793
+seed 9101: rounders 9/9 finishers 8 finT 543,457,530,685,520,661,496,860
+seed 9102: rounders 9/9 finishers 8 finT 684,629,440,665,838,667,406,557
+seed 9103: rounders 5/9 finishers 2 finT 717,896
+seed 9104: rounders 9/9 finishers 4 finT 433,814,671,647
+seed 9105: rounders 5/9 finishers 2 finT 627,544
+seed 9106: rounders 3/9 finishers 2 finT 527,664
+seed 9107: rounders 6/9 finishers 6 finT 492,540,642,844,509,765
+saved fleet_leg2.json  nLegs 3 legLens 0,12467,11274
+A (fleet_leg2_margin30.json): rounders 57/72, finishers 43, finMed 635
+B (fleet_leg2_unstick2.json): rounders 54/72, finishers 35, finMed 647
+paired leg-1 delta (n=46): med 10 mean -12.7
+paired sweep-phase (tOut-tArm) delta (n=39): med 4 mean -5.1
+paired leg-2 delta (n=26): med 23 mean 15.9
+paired finish delta (n=26): med -106 mean -89.0
+fleet_leg2_margin30.json: leg1 slow-samples 475 (99s/boat) leg2 111 | boats with a pin 71/72, longest-pin med 30s max 150s
+fleet_leg2_unstick2.json: leg1 slow-samples 575 (120s/boat) leg2 152 | boats with a pin 72/72, longest-pin med 45s max 105s
