@@ -1351,3 +1351,178 @@ ladder finds `zone*0.75 = 187.5`, which IS open for marks 3 and 5 — so the
 fleet grinds round the wide way and bleeds boats at legs 4-6. A gauntlet
 baseline banked on this course would be measuring the venue's geometry, not the
 AI, so **no baseline is banked until the marks are fixed.**
+
+---
+
+# ⚡ 8-HOUR AUTONOMOUS PUSH QUEUE (prepared 2026-08-04b, for a FRESH INSTANCE)
+
+## PRIME DIRECTIVE — work the whole eight hours
+
+The previous push stopped after ~2.5 hours of wall clock, and the reason was
+structural, not a lack of things to do: the queue was front-loaded with two
+phases (SIPP router, RHEA planner) that a single measurement cancelled in the
+first forty minutes, and there was nothing independent queued behind them.
+Three rules follow, and they are not optional:
+
+1. **KEEP AT LEAST FOUR PROBES IN FLIGHT.** This machine has 12 cores and a
+   probe is ~1 core. Last time long stretches ran 1-2 concurrent while waiting
+   on a gate. Launch the next candidate BEFORE reading the previous verdict.
+2. **NEVER LET THE BACKGROUND GO IDLE.** Phase A below is a multi-hour training
+   job on purpose — it is the floor under the whole session. If it dies, restart
+   it, then continue the classical stream.
+3. **CHECK `date`, DO NOT ESTIMATE ELAPSED TIME.** Last session's own narration
+   was off by four hours because probes finished faster than assumed. Log the
+   real clock at each phase boundary.
+
+**When a candidate is rejected, that is a result, not a stopping point.** Nine
+of the eleven probes last session were rejections and several were worth more
+than the wins. Write the mechanism down and launch the next one. Do not wind
+down early, do not "prepare a handoff" until the eighth hour, and do not ask
+for permission mid-push — the owner is asleep. If the entire queue below is
+exhausted, generate new candidates from the attribution bins and keep going.
+
+## STATE AT HANDOFF (all verified on HEAD `3c2cbbc`)
+
+**Anchors — byte-check before any A/B (see `_transit_probe.js` usage):**
+- arctic 16-seed = `fleet_leg2_cad2x16.json` — 426 med / 459 mean / min 219 /
+  in-time 71 / fins 142 / rounders 144/144
+- bay 20-seed = `bay_bench_baycutlead.json` — 260 med / 263.8 mean / min 214,
+  180/180 finishers, pens 0.62, OCS 5.6%
+- transit probe = `transit_attrib_cad2.json` — transit **179 med, ratio 1.54,
+  EXCESS 9601, dev 42°**; return 148 med, ratio 1.68
+- seatrials 100t = 202.64 / 199.05 pen 0.31 OCS 16.9% min 175.0
+- goldens 18/20 PASS. **redrock/90210 and /90211 are deliberately RED** — the
+  venue is unraceable and re-recording would bake a broken course into the
+  reference. Do not re-record them. Do not "fix" them.
+- trees A/C/D are at HEAD; **treeB is TRACKED IN GIT and holds the PRE-cadence
+  build** — leave it, it is the before/after reference.
+
+**REDROCK IS OUT OF SCOPE THIS PUSH.** Three of its four rounding marks are
+planted in rock (diagnosis + `_redrock_marks.js` above). The gauntlet bench is
+wired and waiting. Do not baseline it, do not tune against it, do not try to
+fix the venue — that is the owner's authoring call.
+
+**Known-failing tests, ALL pre-existing, none yours:** `test_sailable` (7 —
+bay 4-of-7 legs, redrock 1-of-6), `test_editor` (10), `test_results` (3),
+`test_persistence` (UI timeout). Do not sink time here; the suite is otherwise
+green and is a usable gate.
+
+## THE THREE CLOSED LISTS — do not reopen
+
+1. **Traffic/avoidance re-pricing: TWELVE rejections.** Re-pricing, commitment
+   (×4), reciprocity, additive CPA gradient. Mechanisms documented above.
+2. **Transit ROUTING: retired by measurement.** `_route_attrib` says the plan is
+   0.78× the ruler remaining and the boat sits 126u off its own plan while the
+   odometer is 1.54×. The route is not the problem. `hgrade` confirmed it.
+3. **Ice HORIZONS: every knee verified on BOTH sides** — opening-lead 8s,
+   route-thread 12s, rollout 9s, rival lookahead 4s. The cadence was the only
+   one that was wrong.
+
+⚠️ **A rejected MECHANISM stays rejected. A tuned CONSTANT may be re-swept** if
+the world it was tuned in has changed — that distinction is what the horizon
+sweep tested, and every horizon held, which is evidence the constants are
+robust. Weigh that before spending time on sweeps.
+
+## PHASE A (start FIRST, runs for hours in the background) — DRIVER-LEVEL RESIDUAL ES
+
+The approved escalation, never started, and now the largest remaining headroom.
+Full recipe in memory `regatta-avoidance-research.md`; the ground under it
+improved overnight — the classical driver is 88s/race faster, avoidance is
+active in 45% of transit frames rather than 51%, and **the observation is no
+longer poisoned by a stale map**, which is what a residual policy sees.
+
+Build (reuse `rl_shared.js` / `rl_train_cem.js` scaffolding — they exist for the
+SWEEP phase; this is the transit analogue):
+- **Hook**: `window.__rlT`-gated, inert otherwise, applied to the classical
+  desired heading BEFORE `applyAvoidance`. Bounded zero-init residual
+  Δψ ∈ ±25° via tanh, 2Hz with a slew limit. Worst case ≈ the classical floor,
+  which is what protects the gate.
+- **Obs** ~45-55 dims egocentric: own/plan ~10 (incl. avoid-mode flag + class),
+  floes as a 16-sector radial ring ×2ch (edge distance, closing rate), 3-4
+  nearest rivals with ROW flag, 2-3 route lookahead points (Sophy: lookahead
+  beats rangefinder-only).
+- **Policy** MLP 2×32 tanh, final layer zero-init. **Trainer** sep-CMA-ES or CEM.
+- **Fitness** CRN-paired against a frozen-classical twin on the same seed:
+  1.0·progress + 0.5·symmetric windowed passing (−20/+40u) − 4·any-contact
+  − 5·at-fault − small floe-grind term. **LEXICOGRAPHIC foul gate.**
+- **Seed protocol — this is what failed before, it was PROTOCOL not policy
+  class**: pool ≥200 seeds, RESAMPLE 16-24 per generation (fixed CRN within a
+  generation, rotate across), held-out ~32-seed validation every ~5 gens,
+  checkpoint by VALIDATION, final acceptance on a DISJOINT 16-seed fleet gate.
+- Cut first if short on time: the BC prior. Cut second: the passing term.
+- Budget truth: ~10k evals per 8h at 8 seeds/candidate. **Expect single-digit
+  percent, not a miracle.** Report honestly if it does not beat the classical
+  floor — that is a publishable result given twelve classical rejections.
+
+## PHASE B (the headline CLASSICAL candidate) — ICE COMMITMENT
+
+`look150`/`split_s150` proved a sized trade: shortening the static ice probe
+buys ~1000u of excess (ratio 1.54→1.39, avoidance 4204→3298, deflection 41°)
+and pays every unit of it back in grind (4.5→7.2) and slow time (17.2→25.8).
+Anything that holds the straighter line WITHOUT the extra contact banks it.
+
+**The idea, and why it is not on the closed list:** commitment was rejected FOUR
+times — but every one of those was commitment against RIVALS, and the
+documented failure mechanism is reciprocity ("commitment kills dances only when
+paired with the other boat's predictable response; alone, in a moving pack, it
+is a tax"). **Ice does not react back.** A floe has no opinion about which side
+you pass it, so the mutual re-reaction that killed boat-commitment cannot
+occur. Commitment against ICE is a different mechanism wearing a similar name.
+
+Shape: see the gap early (keep the 4s probe), CHOOSE a side once with a
+DCPA/TCPA-style entry gate, lock it for a minimum hold, and re-run only the
+magnitude within the committed side — never the side. Score the choice on
+predicted clearance at the CURRENT prediction horizon, not per-tick.
+Gate: 8-seed transit probe, EXCESS must fall ≥400u with grind median NOT above
+4.5 and pens/OCS flat; then the 16-seed arctic fleet gate.
+
+## PHASE C (parallel stream) — BAY BOAT-RUB VEIN
+
+Bay boat contacts are **2.32/race against a human 0.14** — a 16× gap and the
+largest untouched number on that venue; the bay median (260) is already inside
+sight of the human 226. Attribution FIRST (mirror `_transit_probe`'s method):
+which leg, which phase, rounding vs open water, overtaking vs converging,
+and what the rules engine says the ROW was. Then design against what it shows.
+Gate: `_bay_hairpin_probe` class check + bay 20-seed vs `bay_bench_baycutlead`.
+
+## PHASE D (cheap parallel filler, run whenever a core is free)
+
+- **Constants tuned against the broken map**, one probe each, one mechanism per
+  tree: planner floe `MARGIN 36`, `_floeRisk` +0.55, soft multipliers 2.5/6.
+  ⚠️ The horizon sweep found every knee held, so expect these to hold too —
+  they are filler, not a thesis. Do not spend the session here.
+- **Measure, DO NOT LAND, the two remaining `state.time`-as-seconds bugs**:
+  `foulCooldowns[id] = state.time + 20` (really **83s**) and rules.js
+  `now - data.rowChangeTime < 2.0` (really **8.3s**). Both RAISE penalty counts
+  when fixed, so they fail the lexicographic gate by construction and are
+  rules-correctness calls the owner must make. Produce the numbers and write
+  them up; landing them is explicitly NOT authorised.
+- **Re-record bay's goldens?** No. Nothing should change them this push unless a
+  bay mechanism lands, in which case re-record as normal.
+
+## PHASE E (ONLY if everything above is exhausted or blocked)
+
+The twelve traffic rejections were all measured against the BROKEN map, and the
+deflection they were chasing moved 47°→42° when it was fixed. The owner has NOT
+authorised re-testing them and the default is that the list stays closed. If —
+and only if — the primary queue is genuinely exhausted, re-probe at most THREE
+whose stated failure mechanism was explicitly about stale or phantom geometry,
+label them clearly as re-tests, and **report rather than land** anything that
+flips. Escalate to the owner instead of accepting.
+
+## GROUND RULES (unchanged, non-negotiable)
+
+- Probe-gate at 8 seeds before any 16/20-seed bench. Judge AI changes at 20
+  seeds, never 2-6.
+- A/B in the treeA-D snapshots, **one mechanism per tree**. Never bundle.
+- **Lexicographic acceptance**: penalties / OCS / DNF must not rise before pace
+  counts. If penalties move, check whether it is noise (per-seed spread) and say
+  so with the numbers either way.
+- Byte-check reproduction before every A/B. Re-verify all anchors if a merge
+  appears (the 11a8f4b rule — and note `930bb36` was verified AI-neutral).
+- Goldens re-record ONLY with an accepted behaviour change, and only the venues
+  that should have moved.
+- Commit accepted work as you go, small commits, one mechanism each. **Push
+  waits for the owner.**
+- Append dated results to this doc as verdicts land — rejections WITH their
+  mechanism, not just the verdict.
