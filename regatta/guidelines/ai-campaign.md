@@ -2370,3 +2370,153 @@ deflections it produces are the price of the contacts it prevents.** That is the
 seventh constant verified at its knee on both sides this session, and it means
 the 42-45% avoidance bin cannot be reached by adjusting when the existing cost
 function speaks. It has to be a different cost function.
+
+---
+
+# ⚡ 2026-08-04b OWNER DIRECTION — SAIL THE RULES, DON'T RUN A POTENTIAL FIELD
+
+Owner, mid-session: *"The rules of sailing dictate who has rights in every
+circumstance… which allows boats to cross safely at remarkably small gaps. If a
+boat doesn't have rights it must adjust to make sure that crossing happens
+safely. If a boat does have rights it should by default keep sailing a proper
+course so that it remains predictable… A clean race is a fast race."*
+
+The measurement that arrived the same minute is the empirical case for exactly
+that, and it is the strongest single number the campaign has produced.
+
+## THE MEASUREMENT — `_minimal_escape_probe.js`
+
+At every avoidance onset with exactly ONE rival inside 250u (the arity probe says
+that is 87-93% of the deciding cases), search the heading circle for the SMALLEST
+deflection whose predicted closest approach clears 80u assuming the rival holds
+course. Compare it to what the boat actually did.
+
+                              bay                arctic
+    pairwise onsets           989                1706
+    ALREADY CLEARING at 80u   860  (87%)         1391 (82%)
+    deflection TAKEN   med     23°  p90  92°       23°  p90 126°
+    minimal NEEDED     med      0°  p90   2°        0°  p90   3°
+    took MORE than needed     954/970 (98%)      1557/1579 (99%)
+    took LESS (unresolved)     16  (2%)            22  (1%)
+
+**Four boats in five were already going to pass clear, and the fleet swerved a
+median 23° anyway.** This is not a tuning error in a good design; it is the wrong
+kind of controller. A cost-sum argmin has no concept of "this crossing is already
+safe" or "this is not my obligation" — it only has a gradient, and a gradient is
+never zero.
+
+## THE CODE AUDIT — what the engine actually implements
+
+**Correct today.** ROW determination for Rule 21 (OCS/penalty boats keep clear),
+Rule 13 (while tacking), Rule 10 (opposite tacks), Rule 11 (same tack,
+overlapped), Rule 12 (clear astern), Rule 18 (mark-room) and Rule 19 (room at an
+obstruction). Contact fault is assigned to the NON-right-of-way boat, with
+mark-room immunity, and both boats are penalised when there is no ROW.
+
+**⚠️ Rules 15, 16.2 and 17 are computed and then thrown away.** They are pushed
+into `result.constraints`, and `constraints` has exactly ONE consumer in the
+entire codebase — `getDebugInfo()`, which feeds the debug overlay. No penalty
+path reads them. No AI path reads them. So:
+- **Rule 15** (a boat acquiring right of way shall initially give room) — detected, never enforced.
+- **Rule 16.2** — detected, never enforced.
+- **Rule 17** (leeward boat overlapped from clear astern shall not sail above her proper course) — detected, never enforced.
+
+**⚠️ There is no concept of PROPER COURSE in the AI at all.** `grep -c
+"properCourse\|proper course"` over script.js returns 1, and it is a comment. A
+stand-on boat gets a hold-course *bonus* scaled by speed (`jamF`), but it has no
+defended course, and it still pays the same collision and proximity costs as
+everyone else — so it swerves, which is precisely what makes it unpredictable to
+the boat that is supposed to be planning around it.
+
+**⚠️ Infringing rights without contact is effectively unpunished.** The
+no-contact foul exists (script.js §4, `kind: 'no_contact'`) but its gate is very
+narrow: STAND_ON role, risk HIGH or IMMINENT, and a sustained >20° forced
+deviation held for 0.8s — and a role is only assigned when predicted CPA is
+already under 70u. Measured firing rate: **3 fouls per 72 bay boat-races and 18
+per 72 arctic**, against 2.0-2.3 CONTACTS per boat-race. Under the real rules,
+forcing a right-of-way boat to alter course at all is a foul; here it almost
+never is. The owner's suspicion was right.
+
+**⚠️ Roles are assigned against ONE worst threat and only above LOW risk**, so
+42-43% of avoidance onsets happen with NO right-of-way role in play.
+
+**Confound removed.** The first cut of the probe could have been measuring
+deflections taken for a mark or the shore with a rival merely nearby, so it was
+re-run requiring genuinely clear water — no mark within 300u and at least 4
+cells of grid clearance. ⚠️ The first attempt at that filter used island
+BOUNDING-CIRCLE radii and excluded 989 of 989 onsets, because a shoreline
+polygon's bounding circle covers the venue; clear water is what the navigation
+grid says it is, not what a bounding circle says.
+
+    bay, CLEAR WATER only     621 onsets (368 excluded)
+      ALREADY CLEARING at 80u     531  (86%)
+      deflection TAKEN      p25 11   MED 11   p75 46   p90 92  degrees
+      minimal NEEDED        p25  0   MED  0   p75  0   p90  2  degrees
+      took MORE than needed       598/605 (99%), median excess 11°, mean 34°
+
+The finding survives the confound: **86% of clear-water pairwise encounters
+needed no deflection at all.**
+
+## THE PLAN — RRS-first avoidance, in the order it should be built
+
+**1. Make the rules real in the ENGINE (correctness first, and it is testable
+without touching the AI).** Enforce Rules 15, 16.2 and 17 instead of formatting
+them for the debug overlay, which needs a real `properCourse` definition — the
+course a boat would sail absent the other boat, which the AI already computes
+every tick as `desiredHeading` before `applyAvoidance` and simply never names.
+Then widen the no-contact infringement so that FORCING a right-of-way boat to
+alter course is a foul at realistic thresholds, not just at CPA<70u with a
+sustained 20° deviation. ⚠️ Expect penalty counts to RISE, which fails the
+standing lexicographic gate by construction — this is a rules-correctness call
+for the owner, and it should be judged on whether the fouls are CORRECT, not on
+whether the count went down.
+
+**2. Then make the AI sail them.** The asymmetry is the whole point and it is
+also, per the avoidance research memo, the documented anti-dance mechanism:
+exactly one boat reacts.
+   - **Right-of-way boat: hold proper course.** Do not pay a proximity gradient
+     against a boat you have rights over; deviate only when Rule 14 bites (it is
+     clear the other boat is not keeping clear). A ROW boat that swerves is
+     unpredictable, and its swerve is what makes the give-way boat's plan wrong.
+   - **Give-way boat: plan against that predictability, and take the MINIMUM.**
+     Replace the cost-sum argmin for the give-way pairing with a minimal-escape
+     computation against the ROW boat's projected proper course — the smallest
+     course change that clears by a sailor's margin, not the argmin of a sum of
+     penalties. This is the ORCA-style objective REPLACEMENT the campaign already
+     identified as its last structural candidate, but grounded in RRS rather than
+     in symmetric reciprocity, which is strictly better: RRS already says who
+     yields, so there is no reciprocity to negotiate.
+   - **Rule 13:** a boat that tacks LOSES rights while tacking. The tack decision
+     should price that — tacking into a converging rival converts you from
+     stand-on to keep-clear mid-manoeuvre.
+   - **Rule 19:** room at obstructions exists (`rule19Pairs`) and should be
+     extended to the ice, since a floe is an obstruction and the give-way boat
+     must be left room to pass it safely.
+
+**3. Gate on BAY.** The arity probe says 35% of arctic avoidance frames have no
+rival within 600u (they are ice, which no boat-to-boat structure can reach)
+against 15% on bay, and bay's bench runs in six minutes.
+
+**First probe of step 2, run at the session's end (`rowhold`):** a stand-on boat
+stops paying the soft-proximity gradient against the boat it has rights over.
+The hard Rule-14 collision term is untouched, so a boat that genuinely is not
+keeping clear is still avoided. Result below.
+
+**`rowhold` RESULT — the halves are not separable, which is itself the finding.**
+
+    bay 20-seed vs HEAD    fin med 257 -> 258, paired 0 med / -3.6 mean
+                           boat rubs 1.91 -> 2.10, pens 0.50 -> 0.53
+    arctic 8-seed screen   med 398 -> 399, in-time 43 -> 45, finishers 72 -> 70,
+                           paired -5 med / +4.3 mean
+
+Slightly negative on bay, mixed on arctic. **Mechanism: a right-of-way boat that
+stops avoiding is only safe if the give-way boat is actually keeping clear, and
+today it is not — it is running the same undifferentiated cost sum.** Removing
+the ROW boat's contribution without simultaneously replacing the give-way boat's
+planner just holds course into a boat that was never going to yield enough.
+
+That is the same shape as this session's accepted penalty-turn change, where
+neither the shorter deadline nor the sea-room ask worked alone and the pair
+worked well. **Steps 2a (ROW holds proper course) and 2b (give-way takes the
+minimal escape against that course) must land TOGETHER.** Probing either half on
+its own will read as a rejection and should not be taken as one.
