@@ -1291,3 +1291,63 @@ static probe, and it is unlocked by CONTACT DISCIPLINE (arriving at ice with
 speed and a plan) rather than by the horizon constant, which only chooses which
 side of the trade to pay on. Explicitly NOT an avoidance-pricing problem, so
 not part of the closed traffic thread.
+
+---
+
+## 2026-08-04b — post-merge verification + Redrock gauntlet prep
+
+**Wes's merge `930bb36` is AI-NEUTRAL — verified, not assumed.** It brought
+1473 lines of `redrock.venue.js` and 37 lines of `script.js`. The script lines
+are a wind-streak spawn RESAMPLE (up to 6 rolls instead of 1), a comment, and
+the results-screen gold-tile rule. The resample draws extra RNG, which is
+exactly the class of change that has retired baselines before (11a8f4b) — but
+it draws from `fxRand`, the isolated visuals stream (comets, particles, wakes;
+no gameplay consumer). Confirmed empirically:
+- 8-seed arctic transit probe **byte-identical** to `transit_attrib_cad2.json`
+- goldens: **18 of 20 bit-identical**; the two that moved are redrock/90210 and
+  redrock/90211, i.e. exactly the venue whose document was rewritten
+⇒ **All four anchors from 2026-08-04a stand unchanged.** Redrock's two goldens
+are deliberately NOT re-recorded: the venue is not raceable yet (below), and
+baking a broken course into the reference would make the check pass on a course
+nobody can sail.
+
+**⚠️ REDROCK IS NOT READY TO BE THE GAUNTLET — three of four rounding marks are
+planted inside rock.** `test_sailable`: the ideal path completes **1 leg of 6**
+and never finishes; legs 1, 2 and 3 report "0deg open at 64u". New instrument
+`_redrock_marks.js` reports what a fix needs, per mark, at a ladder of radii:
+
+| leg | mark | side | centre on water | nearest water | best unbroken arc by radius | verdict |
+|---|---|---|---|---|---|---|
+| 1 | mark-3 | port | **NO** | 140u @ 25° | 0° @64-100, 345° @180, **360° @220** | roundable WIDE only |
+| 2 | mark-4 | stbd | **NO** | 100u @ 100° | 0° @64, 135° @140, **180° max @180** | **NOT ROUNDABLE at any radius to 420u** |
+| 3 | mark-5 | stbd | **NO** | 120u @ 50° | 0° @64-100, **360° @180-260** | roundable WIDE only |
+| 4 | mark-6 | stbd | yes | — | **360° @64-140** | fine |
+
+All three bad marks carry `markRadius 12, zone 250` — a dinghy buoy's radius,
+planted in a spire. The tight rounding radius the sailability check tests is
+`max(radius + CLEARANCE + 8, radius*1.12)` = **64u**, which is solid rock.
+
+**The precedent is already in the repo — arctic solves this exactly.** Glacier
+Sound's rounding mark is also planted in land, and it passes:
+
+| | radius | zone | tight rounding radius | arc there |
+|---|---|---|---|---|
+| arctic `round-1` | **405** | **851** | 457u | 295° open — PASSES |
+| redrock `mark-3/4/5` | 12 | 250 | 64u | 0° — FAILS |
+
+⇒ **Fix shape: size the mark to the thing it is mounted on.** A mark on a spire
+has the spire's radius (~150-180 here), and a zone that clears it. That makes
+the geometry honest, makes the engine's `_roundR` ladder pick a radius a sailor
+would recognise, and makes the check pass for the right reason rather than by
+loosening it. `mark-4` needs more than a radius: at its BEST radius it still has
+only 180° of unbroken water, so it has to move (nearest open water 100u at
+bearing 100°) or the spires around it need a gap.
+
+**The bots are not fully blocked, which is why this needs saying carefully.**
+`gauntlet_bench.js` is wired (mirrors `bay_bench`, player parked at −6000,6000)
+and a 2-seed smoke run completes: legs reached 9/9/9/7/7/6, **finishers 6 and 5
+of 9**, finish times **510-828s** (bay 260, arctic 426). The engine's `_roundR`
+ladder finds `zone*0.75 = 187.5`, which IS open for marks 3 and 5 — so the
+fleet grinds round the wide way and bleeds boats at legs 4-6. A gauntlet
+baseline banked on this course would be measuring the venue's geometry, not the
+AI, so **no baseline is banked until the marks are fixed.**
