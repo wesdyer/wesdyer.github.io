@@ -5914,7 +5914,7 @@ const MUSIC_TRACKS = {
     // first and the one guidelines/music.md §13 wants every venue bred from, so it is the only cue briefed
     // for a HOOK — the ten venue tracks are texture and this is the tune they belong to.
     //   chroma flux 0.200 is what "catchy" measures, and it is the best of the menu
-    //   line (0.109 -> 0.152 -> 0.200), just under lighthouse-cove's 0.205. It got
+    //   line (0.109 -> 0.152 -> 0.200), just under lighthouse-cove's 0.209. It got
     //   there by asking for a MECHANISM, not an adjective: "a short phrase that repeats
     //   and answers itself" and "call and response", where "memorable piano melody"
     //   had produced the least melodic track in the project.
@@ -5957,13 +5957,18 @@ const MUSIC_TRACKS = {
     // breezy-race, which is now unassigned: breezy-race puts 47.7% of its energy in
     // the 900 Hz-6.5 kHz band the wind bed was highpassed into, the worst in the set,
     // so the property that once justified it (brightest track here, 2795 Hz centroid)
-    // is exactly what music.md §4's inversion turned into a liability. The purpose-written
-    // track lands 29.3% and 112 BPM against a brief that asked for 112.
-    //   ⚠️ Its 94.0 s loop body is the shortest in the project, so the seam comes
-    //   round ~2.5 times in a race where breezy-race's came round once. The seam
-    //   itself measures 0.0 dB (breezy-race: 2.0), which is the trade that makes it
-    //   acceptable — a clean seam heard three times beats an audible one heard once.
-    'racing-bay': { file: 'assets/audio/lighthouse-cove.mp3',    loopStart: 3.0,  loopEnd: 97.0,  trim: 0.79 },
+    // is exactly what music.md §4's inversion turned into a liability. Its successor
+    // (retired to lighthouse-cove-take1.mp3) proved a seam can measure 0.0 dB and
+    // still jar: its 94.0 s body landed ~half a beat off the bar grid, a defect a
+    // LEVEL match cannot see. The Aug 2026 take fixes both exposures at once —
+    // 170.6 s of body from a 172.5 s file, so the seam plays about once a race, at a
+    // steady 108 BPM with no tempo drift, and 21.0% in the wind band (take1: 29.3%).
+    //   ⚠️ loopEnd is 170.6, not music_loop.py's 171.0: hand-snapped to the beat
+    //   grid by onset-envelope phase (~2 ms error, chroma r=0.96 across the seam) —
+    //   the one row where the "never hand-edit" rule yields, because the tool
+    //   measures level and the previous take's jar was beat phase. The trade is a
+    //   ~1.5 dB level step at the seam, blurred by the 0.6 s crossfade.
+    'racing-bay': { file: 'assets/audio/lighthouse-cove.mp3',    loopEnd: 170.6, trim: 0.82 },
     // Bluewater Bonanza, take 4 — ACCEPTED, and the take that proved the method.
     // Three earlier takes are unassigned beside it (`ocean-take1..3.mp3`).
     //   The venue's brief is contrast, and three takes failed to deliver it because
@@ -5976,7 +5981,8 @@ const MUSIC_TRACKS = {
     //   It is also the only take with spectral WIDTH rather than one extreme:
     //   22.6% above 2 kHz and a 1240 Hz centroid sit between take 1's murk (4.2%,
     //   445 Hz) and take 3's glare (42.9%, 2394 Hz). The wind band came back down to
-    //   29.6% with it, level with lighthouse-cove.
+    //   29.6% with it, level with the lighthouse-cove of the day (29.3%; the Aug
+    //   2026 lighthouse take reads 21.0%).
     //   ⚠️ Its 3.8 dB seam is the one defect, and 222.5 s of body against ~243 s of
     //   prestart+race means it IS heard, once, about 20 s before the finish. Accepted
     //   because the alternative takes trade a rarer seam for no dynamics at all.
@@ -6016,7 +6022,8 @@ const MUSIC_TRACKS = {
     //   serves the difficulty ladder rather than fighting it.
     //   ⚠️ The weak third (F# 4.9% under F 6.3%, third/fifth 0.30) is the fiddle
     //   droning on open strings, not a missed key: tonic D is unambiguous and D-G-A
-    //   carry 44% of the chroma. Same category as lighthouse-cove, not Glowtide.
+    //   carry 44% of the chroma. Same category as lighthouse-cove-take1's ambiguous
+    //   third, not Glowtide. (The Aug 2026 lighthouse take reads a clean D major.)
     //   ⚠️ 479 s of body against a ~245 s race means half of it never plays, in a
     //   12.4 MB file. Same overshoot as Bluewater take 3; ~4 min is the target.
     'racing-river': { file: 'assets/audio/river.mp3',            loopEnd: 479.0, trim: 0.80 },
@@ -6055,7 +6062,7 @@ const MUSIC_TRACKS = {
     // venue registers under the `duckling` key; targetCue only builds keys from venues
     // that exist. Numbers from music_loop/music_spec, per the header rule:
     //   The 0.0 dB seam is the headline. Its 89.5 s body is the new shortest in the
-    //   project (lighthouse-cove held it at 94.0), which is the same trade that entry
+    //   project (lighthouse-cove's retired take1 held it at 94.0), which is the same trade that entry
     //   documents — a seam nobody can hear, heard often, beats an audible one heard
     //   rarely. 24 s of finale plus a 4.2 s fade are discarded past loopEnd: the ending
     //   is denser than anything it could return to, which is what an ending is.
@@ -6770,16 +6777,19 @@ function renderVenueDetail(key) {
 
 
     // Water = what the water itself is doing: current, swell, glass, chop.
-    // Live values win over the static description when a flow exists — but only flow
-    // ON THE COURSE, measured along the route (courseCurrentMax), and named for what
-    // it is: a knot or more is a stream, less is a drift, and a course the current
-    // barely reaches keeps its static description.
+    // THE AUTHOR'S LINE WINS. The card is written against the real course in the
+    // editor now, and "Slight ebb" is a better briefing than any number derived from
+    // it. The measured values speak only when the card says nothing: the strongest
+    // on-course set (courseCurrentMax — a knot or more is a stream, less a drift)
+    // for a venue that authors current, the player's uniform dial otherwise.
     let waterVal = c.conditions;
-    const onCourse = courseCurrentMax();
-    if (onCourse != null) {
-        if (onCourse >= 0.15) waterVal = onCourse.toFixed(1) + (onCourse >= 0.9 ? ' kt stream' : ' kt drift');
-    } else if (state.race.conditions.current) {
-        waterVal = state.race.conditions.current.speed.toFixed(1) + ' kt set';
+    if (!waterVal) {
+        const onCourse = courseCurrentMax();
+        if (onCourse != null) {
+            if (onCourse >= 0.15) waterVal = onCourse.toFixed(1) + (onCourse >= 0.9 ? ' kt stream' : ' kt drift');
+        } else if (state.race.conditions.current) {
+            waterVal = state.race.conditions.current.speed.toFixed(1) + ' kt set';
+        }
     }
 
     const row = (label, value, gold) => `
@@ -6834,13 +6844,362 @@ function renderVenueDetail(key) {
         </div>
         <div class="t-display uppercase pr-venue-title${longName}">${c.name || c.tag || key}</div>
         <div class="pr-blurb">${c.blurb || ''}</div>
-        <div class="flex flex-col gap-1.5 shrink-0" style="margin-top:auto; padding-top:16px; max-width:360px;">
-            ${row('Wind', windRangeText())}
-            ${row('Water', waterVal)}
-            ${row('Hazards', c.hazards || '—')}
-            ${row('Fleet', `${state.boats.length} boats &middot; One Design`)}
-            ${row('Course', `${state.race.totalLegs} legs`)}
+        <!-- FACTS LEFT, CHART RIGHT. The Course row carries the numbers (legs and
+             distance, measured along the computed paths); the chart is the picture of
+             the same fact, unlabeled — so nothing is said twice whether it shows or
+             not. The facts column gives ground first (360 down to 240) so the chart
+             earns a readable width before it appears at all. -->
+        <div class="flex items-stretch shrink-0" style="margin-top:auto; padding-top:16px; gap:14px;">
+            <div class="flex flex-col gap-1.5" style="flex:0 1 360px; min-width:240px;">
+                ${row('Wind', windRangeText())}
+                ${row('Water', waterVal || '&mdash;')}
+                ${row('Hazards', c.hazards || '—')}
+                ${row('Course', courseSummaryText())}
+            </div>
+            <!-- The box is the AVAILABLE room; the inner card crops itself to the
+                 course's own aspect inside it (drawCourseMiniMap sizes it), so a tall
+                 course gets a tall panel and no letterboxed dead water. -->
+            <div id="venue-course-box" class="relative" style="flex:1 0 150px; min-width:0;">
+                <div id="venue-course-inner" style="position:absolute; left:0; top:50%; transform:translateY(-50%); border-radius:8px; background:rgba(6,14,26,0.45); overflow:hidden;">
+                    <canvas id="venue-course-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+                </div>
+            </div>
         </div>`;
+    layoutVenueCourseMap();
+}
+
+// ── The course chart ────────────────────────────────────────────────────────
+// "4 legs" says almost nothing about a race; the SHAPE of the course says how to sail
+// it. This is the race-day board's chart: the route the fleet will sail, zoomed to the
+// marks — start line, each leg with its direction, each rounding with the side it is
+// taken on, the finish — with the venue's land for context and the wind and any
+// on-course drift as arrows. Everything here is read from the same compiled course the
+// boats race (state.course), so the chart cannot disagree with the water.
+
+// The course in one line: legs, and the distance actually sailed — the sum of the
+// computed leg paths (the same ruler the chart draws), falling back to straight legs
+// when no path was built. Units are the game's own; U_PER_M turns them into km.
+function courseSummaryText() {
+    let units = 0;
+    const dmc = state.course && state.course.dmc;
+    if (dmc && dmc.total > 0) {
+        units = dmc.total;
+    } else {
+        for (let leg = 1; leg <= state.race.totalLegs; leg++) {
+            const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
+            if (a && b) units += Math.hypot(b.x - a.x, b.y - a.y);
+        }
+    }
+    const km = units / ((window.VenueDoc && window.VenueDoc.U_PER_M) || 5) / 1000;
+    return `${state.race.totalLegs} legs${km >= 0.1 ? ` &middot; ${km.toFixed(1)} km` : ''}`;
+}
+
+// The chart earns its place only when the briefing can carry facts and a chart side by
+// side. Below ~400px of section width the facts column would be crushed, so the chart
+// yields — the Course row states its numbers either way. (At 1280 the whole briefing
+// is cramped — the blurb collapses there too; this is the same trade.)
+function layoutVenueCourseMap() {
+    const box = document.getElementById('venue-course-box');
+    if (!box) return;
+    const section = box.parentElement;
+    const show = !!(state.course && state.course.route && state.course.route.length)
+        && section.clientWidth >= 404;
+    box.style.display = show ? 'block' : 'none';
+    if (show) drawCourseMiniMap();
+}
+
+function drawCourseMiniMap() {
+    const box = document.getElementById('venue-course-box');
+    const inner = document.getElementById('venue-course-inner');
+    const canvas = document.getElementById('venue-course-map');
+    if (!box || !inner || !canvas) return;
+    const availW = box.clientWidth, availH = box.clientHeight;
+    if (availW < 40 || availH < 40) return;
+
+    const marks = state.course.marks || [];
+    const route = state.course.route || [];
+    const legs = route.length - 1;
+    if (legs < 1) return;
+
+    // THE COURSE sets the frame: marks, rounding zones, and the computed paths the
+    // legs actually take (a detour around land must not leave the picture).
+    const dmc = state.course.dmc;
+    const pts = [];
+    for (const e of route) {
+        if (e.kind === 'round' && e.mark) {
+            const z = e.mark.zone || 165;
+            pts.push([e.mark.x - z, e.mark.y - z], [e.mark.x + z, e.mark.y + z]);
+        } else if (e.marks) {
+            for (const i of e.marks) if (marks[i]) pts.push([marks[i].x, marks[i].y]);
+        }
+    }
+    for (let leg = 1; leg <= legs; leg++) {
+        const P = dmc && dmc.legs && dmc.legs[leg] && dmc.legs[leg].pts;
+        if (P) for (const q of P) pts.push([q.x, q.y]);
+    }
+    if (pts.length < 2) return;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const [x, y] of pts) {
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+    }
+    // No boundary in the frame: it was tried, and it pulled every chart out to water
+    // nobody races on. The COURSE is the subject — marks, zones and the sailed paths,
+    // padded a touch — and whatever land falls inside that frame is the context.
+    // CROP, don't letterbox: scale to fit the room, then take only the panel the
+    // course actually needs — a tall course gets a tall panel, and the empty water
+    // that used to pad the sides goes back to the page. (The floor is the caption.)
+    const PAD = 16; // room for arrowheads and the caption row
+    const spanX = Math.max(200, maxX - minX), spanY = Math.max(200, maxY - minY);
+    const scale = Math.min((availW - 2 * PAD) / spanX, (availH - 2 * PAD) / spanY);
+    const w = Math.max(96, Math.round(spanX * scale) + 2 * PAD);
+    const h = Math.round(spanY * scale) + 2 * PAD;
+    inner.style.width = w + 'px';
+    inner.style.height = h + 'px';
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    // The chart is STATIC and the wind is not: everything below draws once into an
+    // offscreen layer, and the animation loop blits it under the moving wind comets
+    // each frame instead of re-tracing land and legs sixty times a second.
+    const off = document.createElement('canvas');
+    off.width = canvas.width; off.height = canvas.height;
+    const ctx = off.getContext('2d');
+    ctx.scale(dpr, dpr);
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    const X = (x) => w / 2 + (x - cx) * scale;
+    const Y = (y) => h / 2 + (y - cy) * scale;
+
+    // Land, faintly — context, not subject. `hidden` shapes draw here too: hidden
+    // means "the venue's own art already paints me" (the river's banks sit behind one
+    // continuous drawn shore), and the chart has no such art — a collider is land.
+    // ONE fill for all of it: translucent fills painted shape by shape stack where
+    // shapes overlap, and the river's 82 overlapping banks read as bubbles instead of
+    // a shore. A single path with nonzero winding fills the union at one flat alpha.
+    // Outlines only on shapes the venue itself draws — an invisible collider gets no
+    // internal seams.
+    // NORMALIZED WINDING, one ring direction for everything: the mask baker emits
+    // rings wound either way, and under nonzero fill two overlapping rings of
+    // opposite winding cancel — land over land read as a hole in the terrain. Wound
+    // the same way, overlap is union, which is what land on land is.
+    const ringPath = (vs) => {
+        let area = 0;
+        for (let i = 0, n = vs.length; i < n; i++) {
+            const p2 = vs[i], q2 = vs[(i + 1) % n];
+            area += p2.x * q2.y - q2.x * p2.y;
+        }
+        const seq = area < 0 ? [...vs].reverse() : vs;
+        seq.forEach((v, i) => i ? ctx.lineTo(X(v.x), Y(v.y)) : ctx.moveTo(X(v.x), Y(v.y)));
+        ctx.closePath();
+    };
+    const landShapes = (state.course.landShapes || []).filter(l => l.vertices && l.vertices.length >= 3);
+    if (landShapes.length) {
+        ctx.beginPath();
+        for (const isl of landShapes) ringPath(isl.vertices);
+        ctx.fillStyle = 'rgba(238,243,251,0.10)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(238,243,251,0.18)';
+        ctx.lineWidth = 1;
+        for (const isl of landShapes) {
+            if (isl.hidden) continue;
+            ctx.beginPath();
+            ringPath(isl.vertices);
+            ctx.stroke();
+        }
+    }
+
+    const arrow = (x, y, dx, dy, size, color) => {
+        const len = Math.hypot(dx, dy) || 1;
+        const ux = dx / len, uy = dy / len;
+        ctx.beginPath();
+        ctx.moveTo(x + ux * size, y + uy * size);
+        ctx.lineTo(x - ux * size * 0.6 - uy * size * 0.6, y - uy * size * 0.6 + ux * size * 0.6);
+        ctx.lineTo(x - ux * size * 0.6 + uy * size * 0.6, y - uy * size * 0.6 - ux * size * 0.6);
+        ctx.closePath();
+        ctx.fillStyle = color;
+        ctx.fill();
+    };
+
+    // The legs, in sail order — each drawn as its COMPUTED path (the same ruler the
+    // AI follows: grid-routed around land, tangent into the rounding arcs), so a leg
+    // that detours reads as a detour. Straight line only when no path was built.
+    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+    ctx.lineWidth = 1.5;
+    ctx.lineJoin = 'round';
+    for (let leg = 1; leg <= legs; leg++) {
+        const P = dmc && dmc.legs && dmc.legs[leg] && dmc.legs[leg].pts;
+        if (P && P.length >= 2) {
+            ctx.beginPath();
+            P.forEach((q, i) => i ? ctx.lineTo(X(q.x), Y(q.y)) : ctx.moveTo(X(q.x), Y(q.y)));
+            ctx.stroke();
+            // Direction arrow at ~42% along the path, on its LOCAL heading. Not the
+            // midpoint: an out-and-back pair would stamp both arrowheads on the same
+            // spot and read as a star instead of two directions.
+            const i = Math.max(1, Math.round((P.length - 1) * 0.42));
+            arrow(X(P[i].x), Y(P[i].y), X(P[i].x) - X(P[i - 1].x), Y(P[i].y) - Y(P[i - 1].y),
+                  5, 'rgba(255,255,255,0.75)');
+            continue;
+        }
+        const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
+        if (!a || !b) continue;
+        ctx.beginPath();
+        ctx.moveTo(X(a.x), Y(a.y));
+        ctx.lineTo(X(b.x), Y(b.y));
+        ctx.stroke();
+        const t = 0.42;
+        const mx = X(a.x + (b.x - a.x) * t), my = Y(a.y + (b.y - a.y) * t);
+        arrow(mx, my, X(b.x) - X(a.x), Y(b.y) - Y(a.y), 5, 'rgba(255,255,255,0.75)');
+    }
+
+    // Lines and gates: start in the water's green, finish white and dashed — dashed so
+    // a shared start/finish line shows both without one painting over the other.
+    for (const e of route) {
+        if ((e.kind !== 'line' && e.kind !== 'gate') || !e.marks) continue;
+        const m1 = marks[e.marks[0]], m2 = marks[e.marks[1]];
+        if (!m1 || !m2) continue;
+        const isStart = e.role === 'start', isFinish = !!e.finish;
+        ctx.beginPath();
+        ctx.moveTo(X(m1.x), Y(m1.y)); ctx.lineTo(X(m2.x), Y(m2.y));
+        ctx.setLineDash(isFinish ? [4, 3] : []);
+        ctx.strokeStyle = isStart ? '#34d399' : isFinish ? '#eef3fb' : 'rgba(255,255,255,0.6)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        for (const m of [m1, m2]) {
+            ctx.beginPath();
+            ctx.arc(X(m.x), Y(m.y), 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = isStart ? '#34d399' : '#eef3fb';
+            ctx.fill();
+        }
+    }
+
+    // Roundings: the mark in gold, and a curled arrow saying which way around. A port
+    // rounding keeps the mark to port — counterclockwise seen from above, and the
+    // world renders north-up, so the screen agrees with the water.
+    for (const e of route) {
+        if (e.kind !== 'round' || !e.mark) continue;
+        const mx = X(e.mark.x), my = Y(e.mark.y);
+        ctx.beginPath();
+        ctx.arc(mx, my, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#f2c14e';
+        ctx.fill();
+        const r = 8.5, ccw = e.mark.side === 'port';
+        const a0 = -Math.PI / 2, a1 = a0 + (ccw ? -1.55 : 1.55) * Math.PI;
+        ctx.beginPath();
+        ctx.arc(mx, my, r, a0, a1, ccw);
+        ctx.strokeStyle = 'rgba(242,193,78,0.85)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        // arrowhead at the arc's end, tangent to it
+        const tx = Math.cos(a1), ty = Math.sin(a1);
+        arrow(mx + Math.cos(a1) * r, my + Math.sin(a1) * r,
+              ccw ? ty : -ty, ccw ? -tx : tx, 4, 'rgba(242,193,78,0.9)');
+    }
+
+    // Wind is MOTION, not a glyph: comet streaks fly downwind across the chart —
+    // and they fly the FIELD, not one average. Each comet samples regionWindAt at
+    // its own position every frame, so the streaks bend where the authored regions
+    // bend, park in the dead spots, and stream where the breeze is real.
+    const A = _chartAnim;
+    if (A.raf) { cancelAnimationFrame(A.raf); A.raf = 0; }
+    A.static = off; A.w = w; A.h = h; A.dpr = dpr; A.last = 0;
+    // The chart-to-world transform, inverted — the field lives in world units.
+    A.scale = scale; A.cx = cx; A.cy = cy;
+    const count = Math.max(20, Math.min(80, Math.round(w * h / 1200)));
+    A.comets = [];
+    for (let i = 0; i < count; i++) A.comets.push(spawnChartComet());
+
+    const draw2d = canvas.getContext('2d');
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        // One still frame: the same streaks at mid-life, pointing the way, no loop.
+        draw2d.setTransform(1, 0, 0, 1, 0, 0);
+        draw2d.drawImage(off, 0, 0);
+        draw2d.setTransform(dpr, 0, 0, dpr, 0, 0);
+        for (const cm of A.comets) { cm.age = cm.ttl / 2; drawChartComet(draw2d, cm); }
+        return;
+    }
+    A.raf = requestAnimationFrame(chartCometFrame);
+}
+
+// The chart's one animation. Comets ride on fxRand — the seeded VISUALS stream — so
+// an idle clubhouse never advances the race's own RNG.
+const _chartAnim = { raf: 0 };
+
+// The LOCAL wind, in chart terms: the same blended field the boats sail
+// (regionWindAt — direction is where the wind comes FROM), turned downwind and
+// mapped from knots to chart px/s with enough contrast that a dead spot visibly
+// parks its comets while a katabatic corner streams.
+function chartWindAt(sx, sy) {
+    const A = _chartAnim;
+    const wind = regionWindAt(A.cx + (sx - A.w / 2) / A.scale,
+                              A.cy + (sy - A.h / 2) / A.scale);
+    return { fx: -Math.sin(wind.direction), fy: Math.cos(wind.direction),
+             px: 4 + Math.min(44, wind.speed * 2.0) };
+}
+
+function spawnChartComet() {
+    const A = _chartAnim;
+    const cm = { x: fxRand() * A.w, y: fxRand() * A.h,
+                 ttl: 1.8 + fxRand() * 2.2, age: fxRand() * 1.8,   // desynced fades
+                 len: 8 + fxRand() * 7 };
+    const lw = chartWindAt(cm.x, cm.y);   // the still frame needs a heading too
+    cm.fx = lw.fx; cm.fy = lw.fy;
+    return cm;
+}
+
+function drawChartComet(ctx, cm) {
+    const a = Math.sin(Math.PI * Math.min(1, cm.age / cm.ttl)) * 0.5;
+    if (a <= 0) return;
+    const tx = cm.x - cm.fx * cm.len, ty = cm.y - cm.fy * cm.len;
+    const grad = ctx.createLinearGradient(cm.x, cm.y, tx, ty);
+    grad.addColorStop(0, `rgba(190,220,255,${a.toFixed(3)})`);
+    grad.addColorStop(1, 'rgba(190,220,255,0)');
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(cm.x, cm.y);
+    ctx.lineTo(tx, ty);
+    ctx.stroke();
+}
+
+// Self-terminating: the loop lives only while the race-day board is up and the chart
+// is showing. Everything that re-opens or re-sizes the chart goes through
+// drawCourseMiniMap, which restarts it.
+function chartCometFrame(ts) {
+    const A = _chartAnim;
+    const box = document.getElementById('venue-course-box');
+    const canvas = document.getElementById('venue-course-map');
+    const boardUp = UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden');
+    if (!A.static || !box || !canvas || box.style.display === 'none' || !boardUp) {
+        A.raf = 0;
+        return;
+    }
+    const dt = A.last ? Math.min(0.05, (ts - A.last) / 1000) : 0.016;
+    A.last = ts;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(A.static, 0, 0);
+    ctx.setTransform(A.dpr, 0, 0, A.dpr, 0, 0);
+    const M = 18; // wrap margin: a comet leaves fully before it re-enters fully
+    for (const cm of A.comets) {
+        const lw = chartWindAt(cm.x, cm.y);
+        cm.fx = lw.fx; cm.fy = lw.fy;
+        cm.x += lw.fx * lw.px * dt;
+        cm.y += lw.fy * lw.px * dt;
+        cm.age += dt;
+        if (cm.x < -M) cm.x += A.w + 2 * M; else if (cm.x > A.w + M) cm.x -= A.w + 2 * M;
+        if (cm.y < -M) cm.y += A.h + 2 * M; else if (cm.y > A.h + M) cm.y -= A.h + 2 * M;
+        if (cm.age > cm.ttl) {
+            cm.age = 0;
+            cm.ttl = 1.8 + fxRand() * 2.2;
+            cm.x = fxRand() * A.w;
+            cm.y = fxRand() * A.h;
+            cm.len = 8 + fxRand() * 7;
+        }
+        drawChartComet(ctx, cm);
+    }
+    A.raf = requestAnimationFrame(chartCometFrame);
 }
 
 // --- Competitor scouting (sidebar, below the venue briefing) ---------------
@@ -7696,6 +8055,8 @@ function resize() { canvas.width = window.innerWidth; canvas.height = window.inn
 window.addEventListener('resize', resize);
 // The race-day hero is sized from its column's width, so it has to be re-sized with it.
 window.addEventListener('resize', sizeRaceDayHero);
+// After the hero re-sizes, the chart's box has a new width — re-decide and re-draw.
+window.addEventListener('resize', layoutVenueCourseMap);
 resize();
 
 window.addEventListener('click', () => {

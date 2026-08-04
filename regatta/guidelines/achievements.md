@@ -1,9 +1,40 @@
 # Achievements — How the Ninety Are Earned
 
 *Aug 3 2026. Companion to `roster-ranking.md`. The starting ten (Bixby, Bruce, Cheer,
-Pinch, Glide, Wobble, Sunshine, Tangle, Whiskers, Roll) are free; the other ninety are
+Pinch, Glide, Wobble, Sunshine, Tangle, Whiskers, Rift) are free; the other ninety are
 achievements. This doc designs the base cases, assigns all ninety, and audits how the
 design shakes out against what the code actually tracks today.*
+
+---
+
+## The Starting Ten — free from race one
+
+The initial fleet: chosen in `roster-ranking.md` for personality coverage, ten
+distinct hull colors, species variety, and all eight AI archetypes in the opposing
+fleet. Everyone else in this document is earned.
+
+| # | Name | Species | Hull | Archetype | The slot they fill |
+|---|------|---------|------|-----------|--------------------|
+| 1 | **Bixby** | Sea Otter | royal blue | shift | I'm chill |
+| 2 | **Bruce** | Great White Shark | black | bully | I'm here to win |
+| 3 | **Cheer** | Pom Pom Crab | pink | metronome | I'm happy |
+| 4 | **Pinch** | American Lobster | red | bully | I'm scrappy |
+| 5 | **Glide** | Wandering Albatross | white | metronome | I'm a sailor |
+| 6 | **Wobble** | Platypus | orange | gambler | I'm weird |
+| 7 | **Sunshine** | Mahi-Mahi | yellow | rocket | I like bright colors |
+| 8 | **Tangle** | Common Octopus | purple | leech | I'm clever |
+| 9 | **Whiskers** | Walrus | tan | freight | I'm an old salt |
+| 10 | **Rift** | Moray Eel | chartreuse | corner | I'm sly |
+
+*(Amended Aug 3 2026: Rift replaced Roll the Harbor Seal — the ten carried three
+marine mammals and barely one fish, and a harbor seal belongs to a lighthouse
+harbor anyway. Roll is now Lighthouse Cove's witness, giving the home venue a
+non-series unlock. Art check: Rift's chartreuse vs Sunshine's yellow is the
+closest hull pair in the ten — verify they read apart on the water.)*
+
+Two starters also seed achievement chains: **Bruce** anchors the shark-pack ladder
+(beat him 3 straight for Blaze) and **Whiskers** is the elder you out-sail to earn
+Snap.
 
 ---
 
@@ -61,6 +92,7 @@ design shakes out against what the code actually tracks today.*
 | Per-leg average speed | **new, small** (leg times exist in splits; leg distance from course geometry) | Doldrums, Negative Split burgees |
 | Career distance odometer | **new, trivial** (`unitsToKm` already computes race distance) | Passage Maker burgee |
 | Assist flags at race end | exists (`settings.autoTrim`, `settings.navAids`) | Corinthian burgee |
+| Manual-trim-all-race flag (voided if auto-trim toggled on mid-race) | **new, trivial** (watch the setting between gun and finish) | the 10 venue trim masters |
 | Per-boat sailed distance | exists (`raceState.legDistances`, every boat, `script.js:12759`) | Dart, Flicker |
 | Overtake events (live place swaps vs a specific boat, 10s debounce) | **new, small** (live standings already computed for the HUD) | Frenzy, Hunter burgee |
 | Give-way attribution (AI avoidance fires while player is `rowBoat`, with reason) | **new, small** — `rules.js` already computes ROW owner + reason per pair; needs only the hook on AI avoidance | Spike, Starboard!/Luffing Rights burgees |
@@ -76,7 +108,7 @@ design shakes out against what the code actually tracks today.*
 | Character | Title | Earned by |
 |---|---|---|
 | **Ripple** (Dolphin) | Welcome Aboard | Finish your first race. The day-one gift. |
-| **Wiggle** (Axolotl) | On the Podium | First top-3 finish. |
+| **Wiggle** (Axolotl) | Everything Grows Back | Serve a penalty turn and clear it. Deliberately easy: your first penalty is the game's worst moment, and the axolotl — the animal that regrows anything — arrives to flip it into a gift. Weak boat (−2), so the gift never bites back. (First podium became the Silverware burgee.) |
 | **Scuttle** (Hermit Crab) | Clean Hands | Finish a race with zero penalties. |
 | **Fathom** (Orca) | Champion | Win your first regatta. *(series)* |
 | **Anchor** (Sea Turtle) | Steady On | Top-5 in 5 consecutive races. |
@@ -85,7 +117,7 @@ design shakes out against what the code actually tracks today.*
 | **Splat** (Blobfish) | Still Afloat | Finish last 5 times — and keep showing up. Hidden gag; the loss that pays out. |
 | **Snap** (Snapping Turtle) | Respect Your Elders | Finish directly ahead of Whiskers (a starter, so always available). |
 | **Hug** (Sea Star) | Ironclad | Finish 25 races. |
-| **Cruz** (California Newt) | Mid-Fleet Zen | Finish exactly 5th, 3 times. The +2-everything newt, earned by perfect averageness. Hidden gag. |
+| **Knot** (Nautilus) | Dead Reckoning | Finish exactly 5th, 3 times. The cerebral planner, earned by hitting a precise target on purpose — and at −11 one of the gentlest boats you can add to a young fleet. Hidden gag. (Swapped criteria with Cruz — see the difficulty audit.) |
 
 ### B · The Start Line (3)
 
@@ -101,7 +133,7 @@ design shakes out against what the code actually tracks today.*
 |---|---|---|
 | **Stripes** (Tiger Shark) | No Mistakes | 10 consecutive races without a penalty. |
 | **Regal** (Mute Swan) | White Gloves | Win a regatta with zero penalties. *(series)* |
-| **Stomp** (Blue-Footed Booby) | Shake It Off | Serve a penalty turn and clear it. Deliberately easy: your first penalty is the game's worst moment, and this flips it into a gift — the clumsy booby arrives to say everyone stomps sometimes. |
+| **Stomp** (Blue-Footed Booby) | Shake It Off | Win a race in which you served a penalty. The comeback-from-your-own-mess feat — and properly hard, because Stomp is the 5th-strongest boat in the file (+12): elite stats hiding under clown feet must be earned, not gifted. (His penalty-freebie criterion moved to Wiggle, whose −2 statline is safe to hand a beginner.) |
 | **Bramble** (Sea Urchin) | Untouchable | Take zero penalties in a race where 3+ rivals get penalized. |
 
 ### D · Close Racing (4)
@@ -113,12 +145,11 @@ design shakes out against what the code actually tracks today.*
 | **Flare** (Fighting Fish) | Grudge Match | Beat the same rival 5 races in a row. |
 | **Popper** (Pufferfish) | Hold the Door | Win with 2nd place within 3 lengths at the final mark. |
 
-### E · Leg & Mark Craft (8)
+### E · Leg & Mark Craft (7)
 
 | Character | Title | Earned by |
 |---|---|---|
 | **Flaunt** (Anemone Shrimp) | Wire to Wire | Lead at every mark and win. |
-| **Rift** (Moray Eel) | Ambush | Gain 2+ places on a single leg. |
 | **Vex** (Water Dragon) | Daylight Robbery | Take the lead on the final leg and win. |
 | **Needle** (Gharial) | Threading | Gain at least one place on every leg. |
 | **Sable** (Cormorant) | Perfect Roundings | Never lose a place at any mark, whole race. |
@@ -148,7 +179,7 @@ pair, so a "force" = the AI's avoidance firing against a player who holds ROW.)
 
 | Character | Title | Earned by |
 |---|---|---|
-| **Frenzy** (Piranha) | Feeding Frenzy | Overtake 9 boats in one race, no penalties. Nine gross passes in a ten-boat fleet reads as "ate through the whole fleet" — debounce re-passes of the same boat (10s) so a luffing duel can't be farmed. (Moved from the bayou table; his old win-with-a-penalty criterion is covered by the Spin Cycle burgee.) |
+| **Frenzy** (Piranha) | Feeding Frenzy | Overtake 9 boats in one race, no penalties. Nine gross passes in a ten-boat fleet reads as "ate through the whole fleet" — debounce re-passes of the same boat (10s) so a luffing duel can't be farmed. (Moved from the bayou table; the win-with-a-penalty idea is now Stomp's, venue-agnostic.) |
 | **Spike** (Narwhal) | Makes His Own Right of Way | Force 5 rivals to give way in one race — duck, tack, or bear away while you hold right of way — with no penalties on you. His personality line already says exactly this; the achievement was hiding in the roster all along. (Moved from the Glacier Sound table.) |
 
 ### F3 · The Odometer Pair (2)
@@ -168,7 +199,7 @@ self-handicapping, which is its own challenge mode.
 
 | Character | Title | Earned by |
 |---|---|---|
-| **Knot** (Nautilus) | The Long Game | Complete 10 regattas. *(series)* |
+| **Cruz** (California Newt) | Unhurried | Complete 10 regattas. *(series)* "Never once out of position," week after week — and deliberately late: his flat +2-everything statline is quietly the strongest total in the file (+14), so he arrives when the player can handle a rival with no weak leg. |
 | **Mistral** (Swift) | World Tour | Win a race at all 10 venues. |
 | **Muninn** (Raven) | The Rememberer | Unlock all 99 other characters. The final character; the only one with a special trait (`windFast`). |
 
@@ -181,29 +212,42 @@ Each unlock becomes the next opponent; the pack is a ladder you climb.
 | **Blaze** (Mako) | Faster Fish | Beat Bruce (starter) 3 consecutive races. |
 | **Anvil** (Hammerhead) | Harder Fish | Beat Blaze 3 consecutive races. |
 | **Dozer** (Nurse Shark) | Wide Awake | Cross the start line dead last, then finish on the podium — he sleeps through the start and wakes up near your transom, and so did you. |
-| **Razor** (Barracuda) | Apex | Own every shark: Bruce, Blaze, Anvil, Stripes, Dozer. Capstone. |
+| **Razor** (Barracuda) | Swims With Sharks | Finish ahead of every shark in a race with 3+ sharks in the fleet. Not the capstone — a barracuda can't crown the shark collection — but the fish that hangs with sharks and fears none, earned by out-menacing them in open water. Late by construction: you need three sharks unlocked before it can even be attempted. |
+
+*(The shark saga's true capstone is **Dapple the Whale Shark**, on the bench in
+`roster-ranking.md`: own every shark in the game, and the last to arrive is the
+biggest, gentlest fish in the sea. The bench also adds Woebegone the Wobbegong —
+who takes Dozer's orphaned last-at-halfway criterion — and Bruiser the Bull
+Shark, completing the Big Three via a freshwater-venues feat, with Lash, Relic,
+Goblin, and Blacktip sketched behind them.)*
 
 ### I · Venue tracks — the ten live venues (37)
 
-The template per venue: **first win → the witness/local**, then deeper feats. Venue
-achievements live on the venue card, so lagoon players see lagoon goals.
+The template per venue: **first win → the witness/local**, then deeper feats, and
+**one trim master** — a character gated on winning at the venue with manual trim
+(auto-trim OFF from gun to finish; toggling it mid-race voids the attempt). The
+trim rung is every venue's expert tier: same skill, ten different waters. Nav aids
+may stay on — the double-assists-off feat remains the Corinthian burgee. Future
+venues should designate their trim master when they ship. Venue achievements live
+on the venue card, so lagoon players see lagoon goals.
 
 **Lighthouse Cove `bay`** — the starter venue; most general milestones happen here anyway.
-| **Piper** (Sanderling) | Home Waters | Win a regatta at the Cove. *(series)* |
+| **Roll** (Harbor Seal) | The Witness | First win at the Cove — the harbor seal is the harbor's own, and the adorable early gift the Cove was missing. (Swapped out of the starting ten for Rift; his old corner-craft feat became the Ambush burgee.) |
+| **Piper** (Sanderling) | Home Waters | **Trim master:** win at the Cove with manual trim. The precise little bird that never stops adjusting — and the home venue hosts most players' first hand-trimmed win. (Was the Cove regatta; no longer series-gated.) |
 |---|---|---|
 
 **Stillwater Lake `lake`**
 | Character | Title | Earned by |
 |---|---|---|
 | **Lunker** (Largemouth Bass) | Trophy Catch | First win at the Lake. |
-| **Torpedo** (Pike) | Knows the Water | Win at the Lake 3 times — he hunts from memory; so did you. |
+| **Torpedo** (Pike) | Knows the Water | **Trim master:** win at the Lake with manual trim — he hunts by feel; so did you. (Was 3 lake wins.) |
 
 **Pearl Lagoon `lagoon`** — the flagship venue carries the reef pack.
 | Character | Title | Earned by |
 |---|---|---|
 | **Jester** (Clownfish) | Found Him | First win at the Lagoon. |
 | **Saffron** (Seahorse) | Light Touch | Lagoon win with average wind ≤ 8 kn. |
-| **Puff** (Mandarin Dragonet) | Lagoon Local | 5 lagoon podiums. |
+| **Puff** (Mandarin Dragonet) | Effortless | **Trim master:** win at the Lagoon with manual trim. "Effortless flow" is the joke — hand trimming only looks effortless when mastered. (Was 5 lagoon podiums.) |
 | **Breeze** (Nudibranch) | House Style | Set the lagoon venue record. |
 | **Nimbus** (Eagle Ray) | Glide Path | Win a lagoon regatta. *(series)* |
 | **Pearl** (Oyster) | Flawless | Sweep a lagoon regatta of 8+ races — win every one. *(series)* |
@@ -215,14 +259,14 @@ achievements live on the venue card, so lagoon players see lagoon goals.
 |---|---|---|
 | **Chomp** (Crocodile) | The Witness | First win at the Bayou. |
 | **Croak** (Bullfrog) | When the Wind Dies | Bayou win with average wind ≤ 6 kn. |
-| **Etienne** (Crayfish) | Bayou Classic | Win a bayou regatta. *(series)* |
+| **Etienne** (Crayfish) | Bayou Classic | Set the Gatorgrass venue record. (Gave the trim-master slot to Beau the Alligator, whose bench stats are being set at +5 for the role — a −1 crawdad shouldn't pay off the hardest skill gate. Until Beau ships, the Bayou's trim slot simply waits.) |
 
 **Sockeye Run `river`**
 | Character | Title | Earned by |
 |---|---|---|
 | **Slipstream** (Sockeye) | The Witness | First win on the Run. |
-| **Seam** (Rainbow Trout) | Reading Water | Set the river venue record. |
-| **Riffle** (American Dipper) | River Regular | 3 river podiums. |
+| **Seam** (Rainbow Trout) | Reading Water | **Trim master:** win on the Run with manual trim — the title always meant "by feel"; now the criterion does too. (+5, swapped with Riffle to strengthen the trim cohort.) |
+| **Riffle** (American Dipper) | High-Water Mark | Set the river venue record. (Seam's old criterion.) |
 | **Snag** (Hellbender) | Older Than the River | Win a river regatta. *(series)* |
 
 **Bluewater Bonanza `ocean`**
@@ -230,14 +274,14 @@ achievements live on the venue card, so lagoon players see lagoon goals.
 |---|---|---|
 | **Spar** (Blue Marlin) | Big Game | First win on the Bonanza. |
 | **Torrent** (Swordfish) | Blue Streak | Set the ocean venue record. |
-| **Talon** (Bald Eagle) | The Strike | Ocean win with average wind ≥ 16 kn. |
-| **Finley** (Yellowfin) | Bluewater Champion | Win an ocean regatta. *(series)* |
+| **Talon** (Bald Eagle) | Feathered | **Trim master:** win on the Bonanza with manual trim. Eagles fly by adjusting individual feathers, and "feathering" is literal sail-trim vocabulary — at +13 he's the strongest trim reward in the game, on the hardest ocean. (Swapped with Finley: a −5 boat can't pay off the game's hardest skill gate.) |
+| **Finley** (Yellowfin) | Full Pressure | Ocean win with average wind ≥ 16 kn — "relentless pressure" and a +4 heavyAir stat say the tuna always wanted the heavy-air feat anyway. (Talon's old criterion; a strict theme upgrade for both.) |
 
 **Redrock Reservoir `redrock`**
 | Character | Title | Earned by |
 |---|---|---|
 | **Gasket** (Beaver) | Built This Place | First win at Redrock — who else builds reservoirs? |
-| **Chisel** (Humpback Chub) | Canyon Endemic | Set the Redrock venue record. |
+| **Chisel** (Humpback Chub) | Canyon Endemic | **Trim master:** win at Redrock with manual trim — one speed, found by hand. (Was the Redrock record, which lives on in the par-times family.) |
 
 **Glowtide Strait `glowtide`**
 | Character | Title | Earned by |
@@ -246,23 +290,24 @@ achievements live on the venue card, so lagoon players see lagoon goals.
 | **Veil** (Vampire Squid) | Dark Passage | Glowtide win with zero penalties. |
 | **Drift** (Sea Nettle) | Night Drift | Glowtide podium with average wind ≤ 8 kn. |
 | **Bloom** (Man-of-War) | Dumb Luck | Glowtide win having never led until the final gate. Hidden gag. |
-| **Prism** (Maxima Clam) | Refraction | Set the Glowtide venue record. |
+| **Prism** (Maxima Clam) | Refraction | **Trim master:** win at Glowtide with manual trim — trimming by feel in a venue where you can barely see the sails. The hardest trim in the game, on purpose. (Was the Glowtide record.) |
 
 **Glacier Sound `arctic`**
 | Character | Title | Earned by |
 |---|---|---|
 | **Bluff** (Polar Bear) | The Witness | First win at the Sound. |
 | **Tiny** (Krill) | Smallest Sailor | Sound win with average wind ≤ 7 kn. |
-| **Pebble** (Adelie Penguin) | Polar Champion | Win a Sound regatta. *(series)* |
+| **Pebble** (Adelie Penguin) | Precision | **Trim master:** win at the Sound with manual trim — "precise and unshakable," now demonstrably. (Was the Sound regatta; no longer series-gated.) |
 
-*(Glacier Sound is down to 3 unlocks after Spike and Flicker moved to general feats —
-same as the Bayou. If it feels thin, the Sound record — Flicker's old criterion — is
-an open slot for a future character or a venue burgee.)*
+*(Glacier Sound is down to 3 unlocks after Spike and Flicker moved to general feats.
+The open Sound-record slot is claimed by **Relic the Greenland Shark** on the bench
+in `roster-ranking.md` — a 400-year-old shark for the oldest, coldest water. The
+Bayou's matching thinness is fixed by Beau the Alligator, also benched there.)*
 
 **Clubhouse Point `seatrials`** — the beer-can venue wants series achievements by nature.
 | Character | Title | Earned by |
 |---|---|---|
-| **Zeffir** (Herring Gull) | Regular | Complete a Clubhouse series, any length. *(series)* |
+| **Zeffir** (Herring Gull) | Always Lifted | **Trim master:** win at the Point with manual trim — gulls trim their wings to every gust; that is what "always lifted" costs. (Was completing a series; Scoop keeps the club championship.) |
 | **Scoop** (Pelican) | Club Champion | Win a full-length Clubhouse series. *(series)* |
 
 ### J · Reserved — ship with their venues (8)
@@ -310,7 +355,9 @@ Seed set, all trackable today:
 | Frame Perfect | Start within 0.1s of the gun | The HUD already shows `+0.083s` — this makes that number a target. Legendary-rare by design. |
 | Holeshot | First across the start line | The single-race version of Clutch's streak. |
 | Fashionably Late | Cross the start last and still gain a place by mark 1 | The joke version of Dozer's feat. |
-| Spin Cycle | Serve 2 penalties in one race and still finish top-half | Sequel to Stomp's freebie. |
+| Spin Cycle | Serve 2 penalties in one race and still finish top-half | Sequel to Wiggle's freebie. |
+| Silverware | First top-3 finish | Wiggle's old criterion, kept as an early flag. |
+| Ambush | Gain 2+ places on a single leg | Rift's old criterion, kept when he joined the starting ten. |
 | Dead Heat | Finish within 0.5s of any rival | The near-miss version of Pulse/Latch. |
 | Venue Regular | 10 races at one venue (tiers: 10/25/50) | Per-venue; pairs with the bests panel. |
 | Century | 100 career races (tiers: 100/250/500) | The long-haul flag; picks up where Hug's 25 leaves off. |
@@ -376,7 +423,7 @@ and where each landed:
 
 ## How it shakes out — the audit
 
-**Count check.** 11 + 3 + 4 + 4 + 8 + 7 + 2 + 2 + 3 + 4 + 34 + 8 = **90** (general
+**Count check.** 11 + 3 + 4 + 4 + 7 + 7 + 2 + 2 + 3 + 4 + 35 + 8 = **90** (general
 families + legal aggression + odometer pair + prestige + shark pack + venue tracks
 + reserved). Every non-starter character has exactly one achievement; no achievement
 grants two characters. Four characters have migrated from venue tables to general
@@ -389,17 +436,84 @@ a place with locals.
 Scuttle (clean race), maybe Crush (win a start) — 3–4 unlocks in the first hour, each
 a real character with a face. The venue tracks then pay one witness per venue visited,
 so exploring the venue list is itself a harvest. Mid-game is feats and regattas;
-endgame is capstones (Razor, Sovereign), World Tour (Mistral) and finally Muninn.
+endgame is capstones (Sovereign, and Dapple once the bench ships), Razor's
+all-sharks-beaten feat, World Tour (Mistral) and finally Muninn.
 Rough phases: **~15 unlocks in the first few sessions, ~45 through venue play, ~20
 through skill feats, ~10 endgame.**
 
-**The series system is the long pole.** 12 achievements (Fathom, Regal, Knot, Piper,
-Nimbus, Pearl, Etienne, Snag, Finley, Pebble, Zeffir, Scoop) need regattas to exist.
-Everything else works on the current single-race game. Ship order: career + unlock
-stores first (78 achievements live), series second (the remaining 12 — and Fathom the
+**The difficulty curve — audited Aug 3 2026.** Every unlock is also a new opponent,
+so the achievement map IS the difficulty curve. Scoring each character by the sum
+of their 7 performance stats (each takes the +4 AI bonus at build), the pool's
+average power by unlock phase, after the swaps below:
+
+| Phase | Boats | Avg power | Range |
+|---|---|---|---|
+| Starters (free) | 10 | **+0.3** | −6 … +7 |
+| First sessions | 8 | **−4.9** | −11 … +3 |
+| Venue witnesses (first win each venue) | 9 | −0.3 | −7 … +9 |
+| Mid feats + venue depth | 49 | −0.4 | −15 … +13 |
+| Series-gated | 12 | **+3.0** | −8 … +14 |
+| Capstones + prestige | 4 | **+8.5** | +6 … +12 |
+| Reserved (venue launches) | 8 | −2.5 | −14 … +4 |
+
+*(Starter row updated after the Roll→Rift swap: Rift is +1 where Roll was −2, so
+the ten sum to +3 instead of 0 — still effectively neutral.)*
+
+The starter fleet balances to near zero; the first wave of unlocks *softens* the
+fleet (a beginner's pool gets friendlier before it gets meaner); the endgame pool
+averages +8.5. The game scales with you.
+
+Two criterion swaps were required to get this shape, both of which improved the
+themes they touched:
+
+- **Stomp ↔ Wiggle.** Stomp (+12, 5th-strongest boat in the file) was gated behind
+  the game's *easiest* achievement — first penalty served. The fleet got harder at
+  the exact moment a player proved they were struggling. Now Wiggle (−2, and the
+  axolotl regrows anything) is the penalty-freebie gift, and Stomp costs a real
+  feat: win a race despite serving a penalty.
+- **Cruz ↔ Knot.** Cruz's flat +2-everything is quietly the strongest total in the
+  file (+14) and was earned by an early-mid gag. Now the gag (finish exactly 5th
+  3×) belongs to Knot the planner (−11, harmless early), and Cruz waits behind 10
+  completed regattas — the unhurried rival who arrives when you're ready for a
+  boat with no weak leg.
+
+**The trim-master cohort is a deliberate late-game power wave — and its rewards
+must be strong boats.** Manual trim is the hardest skill gate in the game, so a
+weak character behind it is an anticlimax; the cohort was re-picked to enforce a
+**+3 floor**. The ten (Piper +4, Torpedo +7, Puff +11, Beau +5 [bench sketch],
+Seam +5, Talon +13, Chisel +3, Prism +6, Pebble +9, Zeffir +5) average **+6.8**,
+the strongest cohort in the game after capstones — correct, because these boats
+join the pool only after the player has out-skilled the assist. The rewards also
+loosely grade with venue difficulty: the home Cove pays the gentlest (+4), the
+open-ocean Bonanza the apex (Talon +13). Standing rule for future venues: **a
+trim master must be a +3 or better boat.**
+
+Deliberate exceptions, kept on purpose: **Fathom (+13) arrives at your first
+regatta win** — a boss introducing itself at the moment of triumph, amplified by
+the new-unlock-races-you rule; **Hug (+12) at 25 races** and **Talon (+13) behind
+an ocean heavy-air win** are mid-game spikes a competent player can absorb; **Lure
+(+9) is a venue witness**, so Glowtide's first win stiffens the pool early for
+explorers — acceptable because visiting Glowtide at all is self-selected. On the
+other end, weak boats late (Scoop −3 for a full Clubhouse series) are fine:
+late-game unlocks are collection joy, not all of them need teeth.
+
+Variety was re-checked after the swaps (flavor, appeal, color, species — the same
+lenses as the starter ten): the first-session wave is Ripple (dolphin, blue),
+Wiggle (axolotl, white/pink), Scuttle (hermit crab, amber), Crush (mantis shrimp,
+teal), Skim (flying fish, sky blue), Splat (blobfish, pink), Snap (turtle, olive),
+Knot (nautilus, rust) — eight species families, eight hull colors, two
+high-appeal darlings, two gags, one grump. The easy wave isn't just the weak
+boats; it's a real cross-section of the roster.
+
+**The series system is the long pole — but a shorter pole than it was.** 7
+achievements (Fathom, Regal, Cruz, Nimbus, Pearl, Snag, Scoop) need regattas to
+exist; the trim-master pass converted five former series criteria (Piper, Etienne,
+Finley, Pebble, Zeffir) into manual-trim venue wins that work today. Everything
+else runs on the current single-race game. Ship order: career + unlock stores
+first (**83 achievements live**), series second (the remaining 7 — and Fathom the
 orca is the flagship reason to build it). When the 4/8/10/full formats land, only
-two achievements care which format you sailed (Pearl, Scoop); the other ten light up
-with the shortest format on day one.
+two achievements care which format you sailed (Pearl, Scoop); the other five light
+up with the shortest format on day one.
 
 **Telemetry gaps are small.** New requirements beyond stores: finish margins, a tack
 counter, a spinnaker-hoist flag, lead-change count. Everything else (splits, start
@@ -426,5 +540,5 @@ pull later, move a general feat (e.g. Viper's Tacking Duel) onto its card.
   Croak's ≤ 6 kn at the Bayou and Spike's ≥ 16 kn at the Sound match those venues'
   stated conditions; Saffron/Tiny/Talon thresholds need the same check when wind
   regions are tuned.
-- *Hidden gags must stay rare* — currently 6 (Splat, Cruz, Skip, Grip, Lateen,
+- *Hidden gags must stay rare* — currently 6 (Splat, Knot, Skip, Grip, Lateen,
   Bloom). That's the right count; more and hidden becomes the norm.
