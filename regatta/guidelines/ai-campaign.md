@@ -40,7 +40,13 @@ OCS hold that returns cleanly before the gun is NOT one).
 | 2026-08-03 stack @40t (855379a) | bots | 0 | 200.47 | 204.67 | — | 360.0 |
 | 2026-08-03 instr @100t (a0c3633) | bots | 0 | 199.63 | 203.55 | — | — |
 | 2026-08-03 tacktax @40t (6aa46ea) | bots | 0 | 199.25 | 203.21 | — | — |
+| 2026-08-03 post-merge @40t (721e8ce) | bots | 0 | 200.25 | 202.87 | — | — |
 | 2026-08-03 (12 traj) | human | 0 | 192.2 | 191.4 | 180.9 | 200.6 |
+
+⚠️ Owner merge 11a8f4b (VENUES card copy → venue documents) shifts init RNG
+draws: every seed reshuffles, goldens were re-recorded (PASS at 721e8ce),
+and rows before/after the merge are NOT seed-comparable — compare classes,
+not per-seed values, across that line. Anchor and bay medians held.
 
 The a0c3633 row is the fresh 100t reading on the tree that contains the Aug-6
 overnight arctic stack (fb9f641 + 14 commits); slightly better than the stored
@@ -110,6 +116,7 @@ a field that does not exist on live boats (the engine stores
 | 2026-08-03 stack (855379a) | bots | 0 | 268 | 269.7 | 215 | 365 |
 | 2026-08-03 instr (a0c3633) | bots | 0 | 268 | 269.7 | 215 | 365 |
 | 2026-08-03 tacktax (6aa46ea) | bots | 0 | 261 | 265.1 | 218 | 365 |
+| 2026-08-03 post-merge (721e8ce) | bots | 0 | 264 | 266.8 | 220 | 351 |
 | 2026-08-03 (7 traj) | human | 0 | 226.1 | 226.7 | 219.5 | 241.1 |
 
 (instr row = byte-identical races to the stack — instrumentation verified
@@ -254,11 +261,12 @@ baselines if the tree hasn't moved.
 Priorities, in order:
 
 1. **Bay pace, next levers** (gap now −35s median, was −42):
-   (a) **East-pressure gybe bulge on L3/L5** (+5/+6 med, the largest
-   remaining legs): bots gybe toward the 13-kt east pressure; the human takes
-   the shorter 10-11kt west corridor. scoreTack pressure-vs-distance trade —
-   instrument the actual sailed-distance ratio + pressure sampled along track
-   for L3/L5 before touching the pressureCoeff.
+   (a) **East-pressure gybe bulge on L3/L5** — QUANTIFIED 2026-08-03c
+   (bay_bench odo/wavg fields, run 'bulge' on merged HEAD): bots sail L3 at
+   ratio 1.34 in 13.0kt vs human 0.99 in 12.6kt (+35% track for +0.4kt);
+   L5 1.34@11.9 vs 1.10@12.5; corr(L3 time, wind sailed) = +0.60 — the
+   pressure chase is net-negative on runs. A/B in flight at session end:
+   pressureCoeff ×0.4 when mode==='downwind' ('pressdw' vs 'bulge').
    (b) **L3→L4 hairpin entry overshoot** (fresh numbers on instr20: 10% of
    leg-3→4 roundings take ≥16s armed-to-advance, p90 16s max 61; other marks
    are 2-5%) — the rejected ruler-entry mechanism is in the bay ledger; the
@@ -269,17 +277,17 @@ Priorities, in order:
    traffic went UP (1.89→2.54, penalties flat) — a contact-discipline vein.
    Do NOT retry: consolidate-after-any-tack cooldown; ruler-entry skip;
    reach-angle exits; thin sweep buffer (ledger has mechanisms).
-2. **Arctic DRIVER-level scope** (the campaign's real wall on current HEAD):
-   transit med 257 vs human ~100, return 195 vs 83, with 30 land + 25 floe
-   contact episodes/boat-race (human 0.4/4.4). The armed sweep is SOLVED
-   (19s med vs human 35) — do not aim anything at the ring. Start by
-   instrumenting WHERE transit time goes per boat (moving-slow vs contact-
-   grinding vs detouring; wall_trace.js / stall_count.js exist), then scope
-   driver-level improvements to planFloeTrajectory execution (per the
-   four-level notes in arctic-ai-campaign.md). CREW RL is closed: parity —
-   don't reopen without new evidence. If classical driver work plateaus,
-   driver-level RL is the pre-approved escalation (dense reward: progress −
-   predicted contact).
+2. **Arctic DRIVER-level scope — decomposition DONE 2026-08-03c**
+   (_transit_probe.js, 8 seeds, merged HEAD): **bots sail 2x the track —
+   transit dist ratio med 1.99 (human 0.94), return 1.97 (human 0.99)**;
+   slow time is 15% and contact-grind 6% — secondary. The wall is TRACK
+   LENGTH (weave/detour), worth ~170s of the ~310s gap if cut to ~1.2.
+   Next: attribute the excess track (avoidance weave amplitude vs grid-route
+   detour vs tack count vs DMC cross-track oscillation — extend the probe to
+   sample heading-vs-carrot at 1Hz), then fix the biggest source. The armed
+   sweep is SOLVED (19s med vs human 35) — do not aim anything at the ring.
+   CREW RL is closed: parity. Driver-level RL is the pre-approved escalation
+   if classical work plateaus (dense reward: progress − predicted contact).
 3. **Instrumentation remainder**: capped arctic_eval per snapshot (true
    DNS/DNF at 420); race min/max in run_eval console line.
 
