@@ -265,8 +265,14 @@ Priorities, in order:
    (bay_bench odo/wavg fields, run 'bulge' on merged HEAD): bots sail L3 at
    ratio 1.34 in 13.0kt vs human 0.99 in 12.6kt (+35% track for +0.4kt);
    L5 1.34@11.9 vs 1.10@12.5; corr(L3 time, wind sailed) = +0.60 — the
-   pressure chase is net-negative on runs. A/B in flight at session end:
-   pressureCoeff ×0.4 when mode==='downwind' ('pressdw' vs 'bulge').
+   pressure chase is net-negative on runs. ⚠️ JUDGED: pressureCoeff ×0.4
+   downwind = NO-OP (paired 0, ratios unchanged) — scoreTack's pressure term
+   is NOT the mechanism; do not re-damp it. Next: find where the east
+   displacement accumulates — sample nav-target x/y vs the DMC line at 1Hz
+   on L3/L5 (is getNavigationTarget aiming east, or is it gybe-angle choice:
+   polar-optimal ~150° zigzag vs the human's deep 150-170° near-straight?
+   the planing heat-to-140° gate fires on the 16kt east region — check
+   whether heated boards are the bulge).
    (b) **L3→L4 hairpin entry overshoot** (fresh numbers on instr20: 10% of
    leg-3→4 roundings take ≥16s armed-to-advance, p90 16s max 61; other marks
    are 2-5%) — the rejected ruler-entry mechanism is in the bay ledger; the
