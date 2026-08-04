@@ -2270,3 +2270,15 @@ of avoiding frames swing 69° or more. Any structural replacement should be
 judged on whether it moves the TAIL, not the mean — the mean has now sat at
 42-43° through twelve re-pricings, three ice commitments, and a map fix that
 moved everything else.
+
+**BAY deflection histogram** (`_defl_hist.js` now takes a venue argument),
+alongside arctic for comparison:
+
+                  6°    11°    23°    34°    46°    69°    92°   126°   172°   | >=69°
+    bay   30%   25.7   13.3   14.9   11.2    9.1   10.1    7.5    5.6    2.4   |  25.6%
+    arctic 47%  15.7   10.0   19.4   11.4    8.7   11.4   12.2    7.2    4.0   |  34.8%
+
+(the leading % is the share of ALL frames carrying any deviation). Bay avoids
+less often and swings slightly less hard, but **the shape is the same on both
+venues: a large mass of small corrections plus a hard tail where a quarter to a
+third of avoiding frames swing 69° or more.** That tail is the target.
