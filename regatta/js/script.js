@@ -3872,7 +3872,11 @@ function refreshBotGrid() {
             floeCircles.push({ x: f.x + sx, y: f.y + sy, radius: (f.radius || 0) + 15 });
         }
     }
-    const g = window.SailCheck.buildGrid(c._gridFixed.concat(floePolys), c.boundary, floeCircles);
+    // Stamped onto the static land nav, not rebuilt from scratch: the land half of
+    // this answer never changes, and at a 2s cadence re-deriving it costs 48.8ms a
+    // rebuild against 1.4ms. Cell-for-cell identical to buildGrid — asserted by
+    // eval/rl/_grid_stamp_check.js, not assumed.
+    const g = window.SailCheck.stampFloes(c._botGridStatic, floePolys, floeCircles);
     g._leeW = c._botGridStatic._leeW;
     g._wfx = c._botGridStatic._wfx;
     g._wfy = c._botGridStatic._wfy;
