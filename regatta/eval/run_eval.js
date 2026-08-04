@@ -316,7 +316,7 @@ function calculateStats(values, type = 'continuous') {
     console.log("\nOVERALL METRICS:");
     const o = aggregated.overall;
     console.log(`Start Time Mean: ${fmt(o.start_time.mean)}s | Median: ${fmt(o.start_time.median)}s | Min: ${fmt(o.start_time.min)}s | Max: ${fmt(o.start_time.max)}s (DNS: ${fmt(o.dns_percent)}%, OCS: ${fmt(o.race.ocs_percent)}%)`);
-    console.log(`Race Time Mean: ${fmt(o.race.time.mean)}s | Median: ${fmt(o.race.time.median)}s (DNF: ${fmt(o.race.dnf_percent)}%)`);
+    console.log(`Race Time Mean: ${fmt(o.race.time.mean)}s | Median: ${fmt(o.race.time.median)}s | Min: ${fmt(o.race.time.min)}s | Max: ${fmt(o.race.time.max)}s (DNF: ${fmt(o.race.dnf_percent)}%)`);
     console.log(`Avg Placement: ${fmt(o.placement.mean)} | Avg Tacks: ${fmt(o.tack_count.mean)}`);
     console.log(`Upwind Time Mean: ${fmt(o.upwind.time.mean)}s | Downwind Time Mean: ${fmt(o.downwind.time.mean)}s`);
     console.log(`Upwind DNF: ${fmt(o.upwind.dnf_percent)}% | Downwind DNF: ${fmt(o.downwind.dnf_percent)}%`);
