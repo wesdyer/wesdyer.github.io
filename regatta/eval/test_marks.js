@@ -55,7 +55,10 @@ const near = (a, b, tol) => Math.abs(a - b) <= (tol == null ? 1e-6 : tol);
             wind: { mode: 'fixed', baseDirection: 0 },
             seeded: {}
         });
-        VENUES.marktest = { name: 'Mark Test', label: 'MT', emoji: '⛴️', fx: { mask: true } };
+        // (A `VENUES.marktest = {...}` registration stood here. That global was the
+        // pre-document venue registry and no longer exists in the source — a venue IS
+        // its document now — so this threw ReferenceError on clean HEAD and took the
+        // whole `npm test` chain down with it. The VENUE_DOC entry is the registration.)
 
         const race = (boatEnd) => {
             window.VENUE_DOC.marktest = mk(boatEnd);

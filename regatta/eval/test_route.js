@@ -60,8 +60,10 @@ const check = (name, cond, detail) => {
             wind: { mode: 'fixed', baseDirection: 0 },
             seeded: {}
         };
-        // Give it the venue flags a document venue needs, then load it.
-        VENUES.testroute = { name: 'Route Test', label: 'Test', emoji: '🧪', fx: { mask: true } };
+        // (A `VENUES.testroute = {...}` registration stood here. That global was the
+        // pre-document venue registry and no longer exists in the source — a venue IS
+        // its document now — so this threw ReferenceError on clean HEAD and took the
+        // whole `npm test` chain down with it. The VENUE_DOC entry is the registration.)
         localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'testroute' }));
 
         let s = 4242;

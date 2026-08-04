@@ -101,7 +101,7 @@ const check = (name, cond, detail) => {
         const venueTracks = await page.evaluate(() => {
             const out = {};
             const saved = state.race.venue;
-            for (const key of Object.keys(VENUES)) {
+            for (const key of Object.keys(window.VENUE_DOC)) {
                 state.race.venue = key;
                 const t = Sound.resolveTrack('racing');
                 out[key] = [t, !!MUSIC_TRACKS[t]];

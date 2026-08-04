@@ -141,8 +141,12 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
     check('...in the authored direction — due east', nearAng(cur.midDir, Math.PI / 2, 0.01),
           `${(cur.midDir * 180 / Math.PI).toFixed(1)}°`);
     check('outside it the water is still', cur.outSpeed === 0, `${cur.outSpeed} kn`);
-    check('the venue reports the stream it owns', near(cur.vcMax, 2, 0.01) && !!cur.vcText,
-          `${cur.vcMax} · ${cur.vcText}`);
+    // ⚠️ THE MAX IS THE WHOLE CONTRACT. This also asserted a `text` field, which
+    // venueCurrent() stopped returning when the briefing's wording moved to the
+    // on-course sampler (courseCurrentMax, which returns a bare number) — so the
+    // assertion has been failing on clean HEAD, undetected, because the suite ahead
+    // of it was already dying on a stale `VENUES` global.
+    check('the venue reports the stream it owns', near(cur.vcMax, 2, 0.01), `${cur.vcMax}`);
     // The pre-race "customize conditions" panel is gone — a course's current is stated by
     // its document, so there is no knob left to lock and nothing on that screen to read it
     // back to. What the venue reports is still checked, one assertion up.

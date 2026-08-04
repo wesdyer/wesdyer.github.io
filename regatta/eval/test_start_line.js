@@ -112,7 +112,7 @@ const MEASURE = () => {
             const m = doc.course.marks;
             doc.course.marks = [m[2], m[3], m[0], m[1]];
             window.VENUE_DOC.__reorder = Object.assign(doc, { venue: '__reorder' });
-            VENUES.__reorder = Object.assign({}, VENUES.seatrials, { key: '__reorder' });
+            // (The matching `VENUES.__reorder` clone stood here — see test_route.js.)
             localStorage.setItem('regatta_settings', JSON.stringify({ venue: '__reorder' }));
             resetGame();
             const c = state.course;

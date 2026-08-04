@@ -67,7 +67,7 @@ const pass = (m) => console.log(`  ok   ${m}`);
 
     // --- venue, by clicking its card ----------------------------------------
     await step('venue', 'venue card', async () => {
-        const key = await p.evaluate(() => Object.keys(VENUES).find(k => k !== settings.venue));
+        const key = await p.evaluate(() => Object.keys(window.VENUE_DOC).find(k => k !== settings.venue));
         // No silent fallback to selectVenue(): that would quietly test the programmatic
         // path and report a pass for a card that no longer responds to a click.
         const clicked = await p.evaluate((k) => {

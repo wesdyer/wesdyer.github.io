@@ -106,11 +106,19 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
         const after = label();
         // What the label SHOULD read, stated as the RULE rather than by calling
         // editor.js's `venueName` (which is private to its IIFE): the document's own
-        // name wins, then the VENUES table's.
-        const expectedAfter = (window.VENUE_DOC.seatrials || {}).name || VENUES.seatrials.name;
+        // CARD name. The fallback this used to name — a `VENUES` registry — no longer
+        // exists, and the document's name does not live at the top level: editor.js's
+        // venueName reads `doc.card.name || doc.card.tag`, so that is the rule to state.
+        const card = ((window.VENUE_DOC.seatrials || {}).card) || {};
+        const expectedAfter = card.name || card.tag || 'seatrials';
         // A COPY under its own key, opened as text — the Save As → reopen workflow.
         const copy = JSON.parse(JSON.stringify(window.VENUE_DOC.seatrials));
-        copy.venue = 'testcopy'; copy.name = 'Copied Point';
+        // ⚠️ card.name, NOT a top-level `name`. venuedoc's own migration says it: the
+        // top-level field predates the card block and now has one home, `doc.card.name`
+        // — and the migration only fills it in when the card has none, so a copy that
+        // already carries Clubhouse Point's card kept showing Clubhouse Point.
+        copy.venue = 'testcopy';
+        copy.card = Object.assign({}, copy.card, { name: 'Copied Point' });
         const wrapped = 'window.VENUE_DOC = window.VENUE_DOC || {};\n'
             + `window.VENUE_DOC["testcopy"] = ${JSON.stringify(copy)};\n`;
         const openedOk = A._openDocText(wrapped, 'testcopy.venue.js');

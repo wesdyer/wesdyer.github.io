@@ -238,7 +238,7 @@ const check = (name, cond, detail) => {
         // are each stated by their own regions, so a venue document has no `conditions`
         // block and the game has no table to roll one from.
         o.noCondTable = !window.VenueDoc.COND;
-        o.noCondOnDocs = Object.keys(VENUES).every(k => !(window.VenueDoc.get(k) || {}).conditions);
+        o.noCondOnDocs = Object.keys(window.VENUE_DOC).every(k => !(window.VenueDoc.get(k) || {}).conditions);
 
         delete d.gusts;
         state.gusts = [];

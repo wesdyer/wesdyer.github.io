@@ -48,7 +48,10 @@ const check = (name, cond, detail) => {
             wind: { mode: 'fixed', baseDirection: 0 },
             seeded: {}
         });
-        VENUES.gatetest = { name: 'Gate Test', label: 'GT', emoji: '🚪', fx: { mask: true } };
+        // (A `VENUES.gatetest = {...}` registration stood here. That global was the
+        // pre-document venue registry and no longer exists in the source — a venue IS
+        // its document now — so this threw ReferenceError on clean HEAD and took the
+        // whole `npm test` chain down with it. The VENUE_DOC entry is the registration.)
 
         // Sail up through the gate, then straight back DOWN through it — never round an end.
         const throughAndBack = (pass) => {

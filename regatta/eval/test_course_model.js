@@ -115,7 +115,11 @@ const check = (name, cond, detail) => {
             },
             wind: { mode: 'fixed', baseDirection: 0 }, seeded: {}
         };
-        VENUES.reuse = { name: 'Reuse', label: 'RU', emoji: '🔁', fx: { mask: true } };
+        // (A `VENUES.reuse = {...}` registration stood here. That global was the
+        // pre-document venue registry and no longer exists anywhere in the source —
+        // a venue IS its document now — so the line threw ReferenceError and took
+        // the whole `npm test` chain down with it on clean HEAD. The VENUE_DOC entry
+        // above is the entire registration a venue needs.)
         localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'reuse' }));
         let s = 4242;
         Math.random = () => { let t = s += 0x6D2B79F5; t = Math.imul(t ^ (t >>> 15), t | 1);

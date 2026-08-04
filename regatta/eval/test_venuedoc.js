@@ -222,6 +222,9 @@ console.log('\nleg count does not leak between venues');
                         legs: state.race.totalLegs,
                         poly: !!(c.boundary && c.boundary.poly),
                         land: (c.landShapes || []).length,
+                        // What the ROUTE asks for, so the check below can compare the
+                        // reported type against the authored course instead of a list.
+                        rounds: (c.route || []).some(e => e && e.kind === 'round'),
                         // A frozen course must not move when the wind rolls differently.
                         mark0: Math.round(c.marks[0].x) + ',' + Math.round(c.marks[0].y)
                     };
@@ -240,10 +243,15 @@ console.log('\nleg count does not leak between venues');
     // ever right because Glacier Sound was the only document. A beat authored as lines and
     // gates has to report itself as a beat, or the laylines, the zone circles and the HUD
     // waypoint all read the wrong course.
+    // ⚠️ DERIVED FROM THE ROUTE, not from a list of venue names. This assertion used to
+    // name arctic as the one rounding course, which quietly went stale the day Lighthouse
+    // Cove was authored as a five-rounding course: the suite has been failing on clean
+    // HEAD ever since, which costs far more than the check is worth — a permanently red
+    // gate stops being read. A venue whose route contains a `round` entry IS a rounding
+    // course, and that is the fact the type is supposed to report.
     check('a rounding course says islandRound, a beat says wl',
-          got.arctic.type === 'islandRound' && ALL.filter(v => v !== 'arctic')
-              .every(v => got[v].type === 'wl'),
-          ALL.map(v => `${v}:${got[v].type}`).join(' '));
+          ALL.every(v => got[v].type === (got[v].rounds ? 'islandRound' : 'wl')),
+          ALL.map(v => `${v}:${got[v].type}${got[v].rounds ? '(rounds)' : ''}`).join(' '));
     check('every arena is a polygon', ALL.every(v => got[v].poly), 
           ALL.filter(v => !got[v].poly).join(', '));
     check('the river kept its 82 banks', got.river.land === 82, String(got.river.land));
