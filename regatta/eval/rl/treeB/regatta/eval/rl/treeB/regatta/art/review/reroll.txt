@@ -1,2 +1,0 @@
-rift	Still has arms!
-torch	Look at the currently in use body color - use that. Then change the pfd to be black.
