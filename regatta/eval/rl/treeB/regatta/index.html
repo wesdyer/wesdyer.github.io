@@ -28,6 +28,48 @@
         .t-label-bright { color: #cbd5e1; }
         .t-mono { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-variant-numeric: tabular-nums; }
 
+        /* ── In-race overlay kit (pause / settings / controls / abandon) ─────
+           One dark-glass card language for everything that interrupts the race:
+           near-opaque navy so it reads over bright water, ONE primary action per
+           screen (blue, with its key on the button), quiet rows for the rest.
+           Red is reserved for the one destructive act — abandoning the race. */
+        .ov-card { background: rgba(7,19,34,.92); border: 1px solid rgba(255,255,255,.14); border-radius: 16px; box-shadow: 0 16px 50px rgba(4,16,28,.55); color: #eef3fb; }
+        /* Overlay titles and primary labels are ARCHIVO Black Italic — the design's
+           "one typeface" — not the clubhouse's Saira display face (t-display). */
+        .ov-title { font-family: 'Archivo', sans-serif; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: .02em; }
+        .ov-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 13px 18px; cursor: pointer; color: #eef3fb; transition: background .15s, border-color .15s; }
+        .ov-row:hover { background: rgba(255,255,255,.12); }
+        .ov-row-danger:hover { background: rgba(236,48,19,.15); border-color: rgba(236,48,19,.4); }
+        .ov-primary { background: #2f6bff; border-color: transparent; box-shadow: 0 6px 24px rgba(47,107,255,.4); }
+        .ov-primary:hover { background: #4a80ff; }
+        .ov-danger-fill { background: rgba(236,48,19,.14); border-color: rgba(236,48,19,.45); color: #ff8a75; }
+        .ov-danger-fill:hover { background: rgba(236,48,19,.28); border-color: rgba(236,48,19,.6); }
+        /* Key chip ON a button: "this button has a key". Dim variant for quiet rows. */
+        .ov-kbd { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.35); border-radius: 5px; padding: 2px 7px; white-space: nowrap; }
+        .ov-kbd-dim { color: #66748c; border-color: rgba(255,255,255,.18); }
+        /* Keycap in the controls table: drawn as a key, scannable at a glance. */
+        .ov-key { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: #eef3fb; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-bottom-width: 2px; border-bottom-color: rgba(255,255,255,.3); border-radius: 6px; padding: 3px 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .ov-sec { font-size: 10px; letter-spacing: .2em; font-weight: 800; color: #8fd8d0; text-transform: uppercase; }
+        .ov-setting { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .ov-setting-label { font-size: 13.5px; font-weight: 700; color: #dce6f2; }
+        /* Toggle: teal = on, matching the game's "live instrument" teal. */
+        .ov-toggle { position: relative; display: inline-block; width: 38px; height: 21px; flex: none; cursor: pointer; }
+        .ov-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+        .ov-toggle .ov-track { position: absolute; inset: 0; border-radius: 11px; background: rgba(255,255,255,.14); transition: background .15s; pointer-events: none; }
+        .ov-toggle .ov-track::after { content: ''; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: #dce6f2; transition: transform .15s, background .15s; }
+        .ov-toggle input:checked + .ov-track { background: #2dd4bf; }
+        .ov-toggle input:checked + .ov-track::after { transform: translateX(17px); background: #06302a; }
+        /* Segmented control (camera mode) */
+        .ov-segs { display: flex; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; overflow: hidden; }
+        .ov-seg { padding: 6px 9px; font-size: 10.5px; font-weight: 800; letter-spacing: .02em; color: #8fa3bd; background: transparent; border: none; cursor: pointer; }
+        .ov-seg:hover { background: rgba(255,255,255,.08); }
+        .ov-seg.active { background: #2dd4bf; color: #06302a; }
+        /* Curated swatches (telltale color); the ring marks the live choice. */
+        .ov-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); cursor: pointer; padding: 0; flex: none; }
+        /* Dark gap then gold ring, so the ring reads on every swatch color —
+           a plain gold border vanishes on the gold (default) swatch. */
+        .ov-swatch.active { border: 2px solid #0b1626; box-shadow: 0 0 0 2px #f2c14e; }
+
         @media (prefers-reduced-motion: reduce) {
             .burgee-flutter { animation: none; }
             .lb-row { transition: none; }
@@ -231,6 +273,12 @@
             display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
         }
         .pr-row { border-radius: 8px; padding: 7px 12px; }
+        /* The record block (design 9a): the header's record chip given a home in the
+           hero's empty middle, as the challenge. Gold frame = a time YOU set here;
+           the neutral frame carries the course's provisional target ("time to
+           beat"), which stands until somebody beats it. */
+        .pr-record { margin-top: 18px; padding: 13px 18px 15px; }
+        .pr-record-time { font-size: 32px; font-weight: 900; line-height: 1; margin-top: 7px; }
         /* ⚠️ A 800px-tall window gives the hero about 300px, and the briefing wants 365 —
            at which point the blurb, being the only thing allowed to shrink, vanished
            entirely. Step the type down instead: a smaller name and two lines of prose
@@ -240,6 +288,8 @@
             .pr-venue-title.long { font-size: 29px; }
             .pr-blurb { margin-top: 8px; font-size: 13px; -webkit-line-clamp: 2; }
             .pr-row { padding: 5px 12px; }
+            .pr-record { margin-top: 10px; padding: 8px 14px 10px; }
+            .pr-record-time { font-size: 22px; margin-top: 4px; }
         }
         /* The fleet list. The badge brings its own border and gradient, so an item adds only
            the ring: gold for you, white when its scouting notes are open. */
@@ -293,8 +343,11 @@
             </div>
         </div>
 
-        <!-- Leaderboard -->
-        <div id="leaderboard" class="absolute top-24 left-4 z-10 flex flex-col gap-0 pointer-events-none transition-opacity duration-300 w-72 hidden">
+        <!-- Leaderboard. Inset from the left edge (left-16, not left-4) on purpose:
+             the off-screen edge indicators ride a band 40px in from the screen edge,
+             and this panel is near-opaque — the inset leaves that lane visible
+             instead of swallowing the indicators. -->
+        <div id="leaderboard" class="absolute top-24 left-16 z-10 flex flex-col gap-0 pointer-events-none transition-opacity duration-300 w-72 hidden">
            <!-- Header: which leg, and how many are left. The pips say the second thing
                 without arithmetic — four dashes, two lit. -->
            <div id="lb-header" class="px-4 py-2.5 rounded-t-xl flex justify-between items-center"
@@ -315,6 +368,32 @@
         <!-- Pause is Esc only — the on-screen button is gone. Settings (F2) and
              Help (?) also have their own keys, so the pause menu is not the sole
              route to them. -->
+
+        <!-- Course records (design 10a): ONE comparison table instead of two stacks —
+             AUTO and MANUAL as columns, because the comparison is the point. The two
+             track records headline it; a column with no record is an invitation, not
+             a blank. Opened from the race-day board. -->
+        <div id="records-overlay" class="hidden absolute inset-0 bg-slate-900/85 backdrop-blur-md z-[60] flex items-center justify-center p-6 pointer-events-auto">
+            <div class="ov-card w-full flex flex-col" style="max-width:760px; max-height:86vh;">
+                <div class="flex items-center justify-between shrink-0" style="padding:20px 28px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <div class="flex items-center gap-3">
+                        <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-8 h-auto">
+                        <div>
+                            <h2 id="records-title" class="ov-title text-white" style="font-size:21px; line-height:1.1;">Course records</h2>
+                            <div id="records-subtitle" class="t-label" style="font-size:10px; letter-spacing:2.4px; color:#7787a0; margin-top:4px;"></div>
+                        </div>
+                    </div>
+                    <button id="records-close" style="font-size:15px; color:#66748c;" class="hover:text-white transition-colors">✕</button>
+                </div>
+                <div id="records-content" class="overflow-y-auto" style="padding:18px 28px 0; min-height:0;"></div>
+                <div class="flex justify-end shrink-0" style="padding:14px 28px 22px;">
+                    <button onclick="closeRecordsOverlay()" class="ov-row ov-primary" style="width:auto; padding:12px 26px; gap:10px;">
+                        <span class="ov-title" style="font-size:13px; letter-spacing:.04em;">Close</span>
+                        <span class="ov-kbd">ESC</span>
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <!-- Character picker: the whole fleet, A to Z, each one on its fleet-display band. -->
         <div id="character-picker" class="hidden absolute inset-0 bg-slate-900/85 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6 pointer-events-auto">
@@ -346,204 +425,178 @@
             </div>
         </div>
 
-        <!-- Help Screen -->
-        <div id="help-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
-            <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-2xl w-full shadow-2xl relative">
-                <button id="close-help" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-
-                <h2 class="text-3xl font-black text-white mb-6 uppercase tracking-wider text-center">Controls</h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-slate-200">
-                    <div>
-                        <h3 class="text-blue-400 font-bold uppercase text-sm mb-3 tracking-wide border-b border-slate-700 pb-1">Steering & Sails</h3>
-                        <ul class="space-y-2 text-sm t-mono">
-                            <li class="flex justify-between"><span>Steer</span> <span class="text-white font-bold">Arrow Left / Right</span></li>
-                            <li class="flex justify-between"><span>Steer (Alt)</span> <span class="text-white font-bold">A / D</span></li>
-                            <li class="flex justify-between"><span>Fine Steering</span> <span class="text-white font-bold">Shift + Steer</span></li>
-                            <li class="flex justify-between"><span>Spinnaker</span> <span class="text-white font-bold">Space</span></li>
-                            <li class="flex justify-between"><span>Trim Mode</span> <span class="text-white font-bold">Tab</span></li>
-                            <li class="flex justify-between"><span>Sheet In/Out</span> <span class="text-white font-bold">Arrow Down / Up</span></li>
-                            <li class="flex justify-between"><span>Sheet In/Out (Alt)</span> <span class="text-white font-bold">S / W</span></li>
-                        </ul>
+        <!-- Controls ("Help") Screen — keys drawn as keycaps so the table scans
+             at a glance; the developer rows are a footnote, not a section. -->
+        <div id="help-screen" class="hidden absolute inset-0 bg-slate-900/55 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 660px; padding: 24px 30px 20px;">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-7 h-auto">
+                        <span class="ov-title" style="font-size: 24px;">Controls</span>
                     </div>
+                    <button id="close-help" style="font-size: 15px; color: #66748c;" class="hover:text-white transition-colors">✕</button>
+                </div>
 
+                <div class="grid grid-cols-2 mt-4" style="gap: 0 36px;">
                     <div>
-                        <h3 class="text-blue-400 font-bold uppercase text-sm mb-3 tracking-wide border-b border-slate-700 pb-1">View & System</h3>
-                        <ul class="space-y-2 text-sm t-mono">
-                            <li class="flex justify-between"><span>Camera Mode</span> <span class="text-white font-bold">C</span></li>
-                            <li class="flex justify-between"><span>Toggle Nav Aids</span> <span class="text-white font-bold">N</span></li>
-                            <li class="flex justify-between"><span>Toggle Sailing Rules</span> <span class="text-white font-bold">P</span></li>
-                            <li class="flex justify-between"><span>Pause Game</span> <span class="text-white font-bold">Esc</span></li>
-                            <li class="flex justify-between"><span>Screenshot</span> <span class="text-white font-bold">F12</span></li>
-                            <li class="flex justify-between"><span>Settings</span> <span class="text-white font-bold">F2</span></li>
-                            <li class="flex justify-between"><span>Toggle Mute</span> <span class="text-white font-bold">M</span></li>
-                            <li class="flex justify-between"><span>Toggle Music</span> <span class="text-white font-bold">Shift + M</span></li>
-                            <li class="flex justify-between"><span>Help</span> <span class="text-white font-bold">?</span></li>
-                        </ul>
-                        <div class="mt-4 pt-2 border-t border-slate-700">
-                             <h3 class="text-blue-400 font-bold uppercase text-xs mb-2 tracking-wide">Developer</h3>
-                             <ul class="space-y-2 text-sm t-mono">
-                                 <li class="flex justify-between"><span>Debug Info</span> <span class="text-white font-bold">F8</span></li>
-                                 <li class="flex justify-between"><span>Game Speed</span> <span class="text-white font-bold">[ / ]</span></li>
-                             </ul>
-                        </div>
+                        <div class="ov-sec" style="padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.12);">Steering &amp; sails</div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Steer</span><span><span class="ov-key">◀ ▶</span> <span class="ov-key">A / D</span></span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Fine steering</span><span style="font-size: 12px; color: #8fa3bd;"><span class="ov-key">SHIFT</span> + steer</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Sheet in / out</span><span><span class="ov-key">▼ ▲</span> <span class="ov-key">S / W</span></span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Spinnaker</span><span class="ov-key">SPACE</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Trim mode</span><span class="ov-key">TAB</span></div>
+                    </div>
+                    <div>
+                        <div class="ov-sec" style="padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.12);">View &amp; system</div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Camera mode</span><span class="ov-key">C</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Nav aids</span><span class="ov-key">N</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Sailing rules</span><span class="ov-key">P</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Mute / music</span><span><span class="ov-key">M</span> <span class="ov-key">SHIFT+M</span></span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Screenshot</span><span class="ov-key">F12</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Settings</span><span class="ov-key">F2</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Controls</span><span class="ov-key">?</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Pause</span><span class="ov-key">ESC</span></div>
                     </div>
                 </div>
 
-                <div class="mt-8 text-center">
-                    <button id="resume-help" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-8 rounded-full transition-colors shadow-lg">
-                        Resume Race
+                <div class="flex items-center justify-between mt-4">
+                    <span style="font-size: 11px; font-weight: 700; color: #66748c;">Developer: Debug info <span style="color: #8fa3bd;">F8</span> · Game speed <span style="color: #8fa3bd;">[ / ]</span></span>
+                    <button id="resume-help" class="ov-row ov-primary" style="width: auto; padding: 12px 24px; gap: 10px;">
+                        <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">RESUME RACE</span>
+                        <span class="ov-kbd">ESC</span>
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Pause Screen -->
-        <div id="pause-screen" class="hidden absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex flex-col items-center justify-center pointer-events-auto">
-            <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-sm w-full shadow-2xl flex flex-col items-center gap-6">
-                <div class="text-4xl font-black text-white tracking-widest drop-shadow-2xl uppercase">Paused</div>
-
-                <div class="flex flex-col gap-4 w-full">
-                    <button id="resume-button" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Resume Race
+        <!-- Pause Screen — a held breath, not a different app: the race context
+             (venue, leg, standing) stays on the card, the world stays visible
+             behind light glass, and the one bright thing is the way back in. -->
+        <div id="pause-screen" class="hidden absolute inset-0 bg-slate-900/55 backdrop-blur-sm z-50 flex flex-col items-center justify-center pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 340px; padding: 26px 26px 22px;">
+                <div class="flex items-center gap-2.5">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-8 h-auto burgee-flutter">
+                    <span class="ov-title" style="font-size: 26px;">Paused</span>
+                </div>
+                <div id="pause-context" class="t-label" style="margin-top: 6px; color: #8fd8d0; letter-spacing: 1.6px;"></div>
+                <div class="flex flex-col gap-2 mt-5">
+                    <button id="resume-button" class="ov-row ov-primary">
+                        <span class="ov-title" style="font-size: 15px; letter-spacing: .04em;">RESUME RACE</span>
+                        <span class="ov-kbd">ESC</span>
                     </button>
-
-                    <button id="restart-button" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 border border-slate-500/50">
-                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                        </svg>
-                        Restart Race
+                    <button id="restart-button" class="ov-row">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">RESTART RACE</span>
+                        <span style="font-size: 12px; color: #66748c;">↻</span>
                     </button>
-
-                    <button id="settings-button" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 border border-slate-500/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        Settings
+                    <button id="settings-button" class="ov-row">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">SETTINGS</span>
+                        <span class="ov-kbd ov-kbd-dim">F2</span>
                     </button>
-
-                    <button id="help-button" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-3 px-6 rounded-xl transition-colors shadow-lg flex items-center justify-center gap-2 border border-slate-500/50">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Help
+                    <button id="help-button" class="ov-row">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">CONTROLS</span>
+                        <span class="ov-kbd ov-kbd-dim">?</span>
+                    </button>
+                    <button id="abandon-button" class="ov-row ov-row-danger">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">ABANDON RACE</span>
                     </button>
                 </div>
-
-                <div class="text-slate-400 text-sm t-mono mt-2">Press ESC to Resume</div>
             </div>
         </div>
 
-        <!-- Settings Screen -->
-        <div id="settings-screen" class="hidden absolute inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
-            <div class="bg-slate-800 border border-slate-600 rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
-                <button id="close-settings" class="absolute top-4 right-4 text-slate-400 hover:text-white transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-
-                <h2 class="text-3xl font-black text-white mb-6 uppercase tracking-wider text-center">Settings</h2>
-
-                <div class="space-y-6">
-
-                    <!-- Music -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Music</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-music" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-
-                    <!-- Sound Effects -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Sound Effects</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-sound" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-
-                    <!-- Background Sound Effects -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Background Sound Effects</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-bg-sound" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-
-                    <!-- Sailing Rules -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Sailing Rules</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-penalties" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-
-                    <!-- Nav Aids -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Navigational Aids</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-navaids" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-
-                    <!-- Auto Trim -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Auto Trim</span>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="setting-trim" class="sr-only peer">
-                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-
-                    <!-- Camera Mode -->
-                    <div class="flex items-center justify-between">
-                        <span class="text-slate-200 font-bold">Camera Mode</span>
-                        <select id="setting-camera-mode" class="bg-slate-700 text-white text-sm rounded-lg block p-2.5 border border-slate-600 placeholder-slate-400 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                            <option value="heading">Heading</option>
-                            <option value="north">North</option>
-                            <option value="wind">Wind</option>
-                            <option value="gate">Gate</option>
-                        </select>
-                    </div>
-
-                    <div class="border-t border-slate-700 pt-6">
-                        <!-- Your boat is your CHARACTER's: pick who you sail as on the pre-race screen.
-                             The telltales stay here because they are an INSTRUMENT, not a livery. -->
-                        <h3 class="text-blue-400 font-bold uppercase text-sm mb-4 tracking-wide">Instruments</h3>
-
-
-
-
-
-
-                        <div class="flex items-center justify-between mt-4">
-                            <span class="text-slate-200 font-bold">Telltale Color</span>
-                            <input type="color" id="setting-color-telltale" class="h-8 w-14 bg-transparent border-0 cursor-pointer" value="#fbbf24">
-                        </div>
-
-                    </div>
+        <!-- Abandon confirm — over the pause menu, staying in the race is the default. -->
+        <div id="abandon-screen" class="hidden absolute inset-0 bg-slate-900/70 backdrop-blur z-[55] flex flex-col items-center justify-center pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 330px; padding: 26px; border-color: rgba(236,48,19,.45);">
+                <div class="flex items-center gap-2.5">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-7 h-auto">
+                    <span class="ov-title" style="font-size: 22px;">Abandon race?</span>
                 </div>
-
-                <div class="mt-8 text-center">
-                    <button id="save-settings" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-8 rounded-full transition-colors shadow-lg">
-                        Close
+                <div id="abandon-context" style="margin-top: 12px; font-size: 13px; line-height: 1.5; color: #9fb2cc; text-wrap: pretty;"></div>
+                <div class="flex flex-col gap-2 mt-5">
+                    <button id="abandon-keep" class="ov-row ov-primary">
+                        <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">KEEP RACING</span>
+                        <span class="ov-kbd">ESC</span>
+                    </button>
+                    <button id="abandon-confirm" class="ov-row ov-danger-fill">
+                        <span style="font-size: 13px; font-weight: 800; letter-spacing: .04em;">ABANDON — BACK TO CLUBHOUSE</span>
                     </button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen — grouped SOUND / SAILING AIDS / CAMERA & INSTRUMENTS
+             so six identical toggles stop reading as a wall. The telltales stay
+             here because they are an INSTRUMENT, not a livery; your boat is your
+             CHARACTER's — pick who you sail as on the pre-race screen. -->
+        <!-- z-[70]: settings is reachable from the clubhouse too, and the pre-race
+             overlay is an OPAQUE later sibling at z-50 — same z would bury this. -->
+        <div id="settings-screen" class="hidden absolute inset-0 bg-slate-900/55 backdrop-blur-sm z-[70] flex flex-col items-center justify-center p-4 pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 380px; padding: 24px 26px 20px;">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-7 h-auto">
+                        <span class="ov-title" style="font-size: 24px;">Settings</span>
+                    </div>
+                    <button id="close-settings" style="font-size: 15px; color: #66748c;" class="hover:text-white transition-colors">✕</button>
+                </div>
+
+                <div class="ov-sec" style="margin-top: 16px;">Sound</div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Music</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-music"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Sound effects</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-sound"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Background effects</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-bg-sound"><span class="ov-track"></span></label>
+                </div>
+
+                <div class="ov-sec" style="margin-top: 16px;">Sailing aids</div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Sailing rules</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-penalties"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Navigational aids</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-navaids"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Auto trim</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-trim"><span class="ov-track"></span></label>
+                </div>
+
+                <div class="ov-sec" style="margin-top: 16px;">Camera &amp; instruments</div>
+                <div class="ov-setting" style="padding: 10px 0;">
+                    <span class="ov-setting-label">Camera mode</span>
+                    <!-- The select stays the source of truth (script.js reads and writes
+                         .value); the segments are its face. -->
+                    <select id="setting-camera-mode" class="hidden">
+                        <option value="heading">Heading</option>
+                        <option value="north">North</option>
+                    </select>
+                    <div id="camera-segs" class="ov-segs">
+                        <button class="ov-seg" data-mode="heading">HEADING</button>
+                        <button class="ov-seg" data-mode="north">NORTH UP</button>
+                    </div>
+                </div>
+                <div class="ov-setting" style="padding: 10px 0; border-bottom: none;">
+                    <span class="ov-setting-label">Telltale color</span>
+                    <div class="flex items-center gap-2">
+                        <button class="ov-swatch" data-color="#fbbf24" style="background: #fbbf24;" title="Gold"></button>
+                        <button class="ov-swatch" data-color="#ec3013" style="background: #ec3013;" title="Red"></button>
+                        <button class="ov-swatch" data-color="#f97316" style="background: #f97316;" title="Orange"></button>
+                        <button class="ov-swatch" data-color="#f3f2f2" style="background: #f3f2f2;" title="White"></button>
+                        <button class="ov-swatch" id="telltale-custom" style="background: conic-gradient(#ec3013, #f2c14e, #34d399, #2f6bff, #a78bfa, #ec3013);" title="Custom"></button>
+                        <input type="color" id="setting-color-telltale" class="sr-only" value="#fbbf24">
+                    </div>
+                </div>
+
+                <button id="save-settings" class="ov-row ov-primary" style="margin-top: 14px;">
+                    <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">DONE</span>
+                    <span class="ov-kbd">ESC</span>
+                </button>
             </div>
         </div>
 
@@ -581,7 +634,15 @@
                         <div class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">FAIR WINDS &middot; SALTY RIVALS</div>
                     </div>
                 </div>
-                <button id="start-race-btn" class="res-btn res-btn-primary shrink-0" style="font-size:18px; padding:14px 38px;">Start Race &rarr;</button>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button id="start-race-btn" class="res-btn res-btn-primary" style="font-size:18px; padding:14px 38px;">Start Race &rarr;</button>
+                    <button id="prerace-settings-btn" class="res-btn" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) 470px; padding:18px 32px 20px; min-height:0;">
@@ -702,8 +763,9 @@
              </div>
         </div>
 
-        <!-- Top Right Container -->
-        <div class="absolute top-4 right-4 flex flex-col items-center pointer-events-none">
+        <!-- Top Right Container. Translucent by design: the off-screen edge
+             indicators pass under it and stay readable through it. -->
+        <div id="hud-instruments" class="absolute top-4 right-4 flex flex-col items-center pointer-events-none">
 
             <div class="relative w-40 h-40">
                 <!-- Main Background -->

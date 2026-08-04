@@ -299,8 +299,10 @@ achievements can be weird, specific, and beloved by the 5% who get them.
     overtaken.
 97. **Bulkhead (Elephant Seal, metronome)** — The heavy-air wall; survive-the-gale
     achievement.
-98. **Gasket (Beaver, metronome)** — The boatwright. Natural Redrock Reservoir
-    unlock — who else builds reservoirs?
+98. **Gasket (Beaver, metronome)** — The boatwright. Reserved for Stillwater Lake:
+    beavers dam streams to make still water, so the lake is his own work. (Earlier
+    drafts placed him at Redrock for the reservoir joke; Wes's venue map says
+    Stillwater, and the joke is better there anyway.)
 99. **Lateen (By-the-wind Sailor, shift)** — The deepest sailing joke in the
     roster: an animal that literally IS a sail, named for a rig. Sailing-nerd
     badge — win a race without ever luffing, or just gift it to whoever reads the

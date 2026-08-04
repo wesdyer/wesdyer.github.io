@@ -3270,6 +3270,14 @@ function info() {
         $('card-blurb').value = card.blurb || '';
         $('card-conditions').value = card.conditions || '';
         $('card-hazards').value = card.hazards || '';
+        const prov = doc.records && doc.records.provisional;
+        if (prov) {
+            const ss = Math.round((prov % 60) * 10) / 10;
+            const sStr = (Number.isInteger(ss) ? String(ss) : ss.toFixed(1)).padStart(Number.isInteger(ss) ? 2 : 4, '0');
+            $('card-provisional').value = `${Math.floor(prov / 60)}:${sStr}`;
+        } else {
+            $('card-provisional').value = '';
+        }
         // And the venue is its ID: the name belongs to the card now, so showing the venue's
         // name here said the same word twice and hid which file this is.
         $('course-venue').textContent = doc.venue;
@@ -5913,6 +5921,28 @@ cardField('card-tag', 'tag', 'card tag');
 cardField('card-blurb', 'blurb', 'card description');
 cardField('card-conditions', 'conditions', 'card conditions');
 cardField('card-hazards', 'hazards', 'card hazards');
+
+// The PROVISIONAL RECORD is a time, not copy, and lives with the records
+// (`doc.records.provisional`), not on the card. Accepts m:ss, m:ss.t or bare
+// seconds; blank clears it. The field re-renders the canonical form on commit so
+// what you typed and what got stored can never quietly differ.
+$('card-provisional').addEventListener('change', () => {
+    if (!doc) return;
+    const raw = $('card-provisional').value.trim();
+    let secs = null;
+    const m = /^(\d+):(\d{1,2}(?:\.\d+)?)$/.exec(raw);
+    if (m) secs = (+m[1]) * 60 + (+m[2]);
+    else if (/^\d+(?:\.\d+)?$/.test(raw)) secs = +raw;
+    if (secs != null && secs > 0) {
+        doc.records = doc.records || {};
+        doc.records.provisional = Math.round(secs * 1000) / 1000;
+    } else if (doc.records) {
+        delete doc.records.provisional;
+        if (!Object.keys(doc.records).length) delete doc.records;
+    }
+    afterEdit(true, 'provisional record');
+    info();
+});
 $('btn-use-est').addEventListener('click', () => {
     const secs = suggestedCutoff();
     if (!doc || !secs) return;

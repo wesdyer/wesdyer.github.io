@@ -660,7 +660,34 @@ class BotController {
 
              // If we are stuck (slow) or just hit it, calculate escape
              if (this.boat.speed < 0.5) {
-                 this.markEscapeHeading = Math.atan2(awayX, -awayY);
+                 // SAILABLE ESCAPE, NEVER RADIAL. The old escape was the raw
+                 // away-from-mark bearing; on the upwind side of a hairpin
+                 // rounding that is dead into the wind, and the 12s latch below
+                 // parked the boat at ~0.15 speed for its whole duration (bay
+                 // L3/L5 traces: every 15-17s "park" starts at d 28-53 = mark
+                 // contact). Same move as the island escape: pick the off-wind
+                 // candidate that best points away from the mark — and, while
+                 // armed, the way round (a wrong-way escape refunds sweep).
+                 let escM = Math.atan2(awayX, -awayY);
+                 const lwM = getWindAt(this.boat.x, this.boat.y).direction;
+                 const rsM = this.boat.raceState;
+                 const rmM = legRoundMark(rsM.leg) || state.course.roundMark;
+                 const armedM = rmM && rsM.roundArmed && !rsM.finished;
+                 let txM = 0, tyM = 0;
+                 if (armedM) {
+                     const sgnM = rmM.side === 'port' ? -1 : 1;
+                     const brgM = Math.atan2(this.boat.y - rmM.y, this.boat.x - rmM.x);
+                     txM = this._outbound ? Math.cos(brgM) : -Math.sin(brgM) * sgnM;
+                     tyM = this._outbound ? Math.sin(brgM) : Math.cos(brgM) * sgnM;
+                 }
+                 let bestM = -Infinity;
+                 for (const off of [1.05, -1.05, 1.75, -1.75]) {
+                     const h = normalizeAngle(lwM + off);
+                     const sc = (Math.sin(h) * awayX - Math.cos(h) * awayY)
+                              + (armedM ? 0.7 * (Math.sin(h) * txM - Math.cos(h) * tyM) : 0);
+                     if (sc > bestM) { bestM = sc; escM = h; }
+                 }
+                 this.markEscapeHeading = escM;
                  // "2s" shipped on the 6x-slow clock — the tuned reality was a 12s
                  // commit, and the fleet's mark behavior is calibrated to it.
                  this.markContactTimer = 12.0;
@@ -2838,7 +2865,7 @@ class BotController {
             }
         }
         this._lastAvoidChoice = bestHeading;
-        
+
         // Expose how far avoidance pushed us off our intended course — the
         // no-contact foul detector reads this as "avoiding action taken".
         this.lastAvoidDeviation = Math.abs(normalizeAngle(bestHeading - desiredHeading));
@@ -3673,7 +3700,7 @@ function makeFloe(cx, cy, r, rng, artOverride) {
         driftVy: -Math.cos(dir) * speed,
         // Ice spins as it drifts. Small pans twirl, bergs barely turn.
         spin: rng() * Math.PI * 2,
-        spinRate: (rng() < 0.5 ? -1 : 1) * (0.08 + rng() * 0.27) * (r > 220 ? 0.4 : 1),
+        spinRate: clampSpin((rng() < 0.5 ? -1 : 1) * (0.08 + rng() * 0.27) * (r > 220 ? 0.4 : 1), r),
         // Slow heading curl so paths curve instead of running straight
         wanderPhase: rng() * Math.PI * 2,
         wanderRate: 0.1 + rng() * 0.25
@@ -3955,8 +3982,8 @@ function updateIceFloes(dt) {
                 // becomes angular impulse, scaled down by size so a berg shrugs
                 // it off while a small pan gets kicked into a twirl.
                 const vRelT = (a.driftVx - b.driftVx) * -ny + (a.driftVy - b.driftVy) * nx;
-                a.spinRate = clampSpin(a.spinRate - vRelT * 0.9 / a.radius);
-                b.spinRate = clampSpin(b.spinRate + vRelT * 0.9 / b.radius);
+                a.spinRate = clampSpin(a.spinRate - vRelT * 0.9 / a.radius, a.radius);
+                b.spinRate = clampSpin(b.spinRate + vRelT * 0.9 / b.radius, b.radius);
             }
         }
     }
@@ -4111,7 +4138,16 @@ function settleFloes() {
 // relocated at all, so there is no random destination left to veto.)
 
 // Ice that spins faster than this reads as a cartoon top, not a floe
-function clampSpin(w) { return Math.max(-0.75, Math.min(0.75, w)); }
+// Radius-aware: big ice may not spin fast. A flat cap let a collision-kicked
+// berg sweep its rim at hundreds of u/s — invisible to every predictor that
+// extrapolates floes by drift alone, and measured as the dominant motion in
+// floe contacts (median 28.6 u/s rotational vs 5 drift). min(0.75, 30/r)
+// leaves small pans twirling (r<100 median |w| 0.28) and holds every rim to
+// ~30 u/s, the same order as drift.
+function clampSpin(w, r) {
+    const cap = Math.min(0.75, 30 / Math.max(1, r));
+    return Math.max(-cap, Math.min(cap, w));
+}
 
 // ---------------------------------------------------------------------------
 

@@ -240,6 +240,7 @@ on the venue card, so lagoon players see lagoon goals.
 | Character | Title | Earned by |
 |---|---|---|
 | **Lunker** (Largemouth Bass) | Trophy Catch | First win at the Lake. |
+| **Gasket** (Beaver) | Built This Place | Set the Stillwater venue record — beavers dam streams to make still water; the lake IS his work, and the joke lands better here than it ever did at the reservoir. (Moved from Redrock, where he was witness — reserved for Stillwater per Wes.) |
 | **Torpedo** (Pike) | Knows the Water | **Trim master:** win at the Lake with manual trim — he hunts by feel; so did you. (Was 3 lake wins.) |
 
 **Pearl Lagoon `lagoon`** — the flagship venue carries the reef pack.
@@ -273,15 +274,14 @@ on the venue card, so lagoon players see lagoon goals.
 | Character | Title | Earned by |
 |---|---|---|
 | **Spar** (Blue Marlin) | Big Game | First win on the Bonanza. |
-| **Torrent** (Swordfish) | Blue Streak | Set the ocean venue record. |
-| **Talon** (Bald Eagle) | Feathered | **Trim master:** win on the Bonanza with manual trim. Eagles fly by adjusting individual feathers, and "feathering" is literal sail-trim vocabulary — at +13 he's the strongest trim reward in the game, on the hardest ocean. (Swapped with Finley: a −5 boat can't pay off the game's hardest skill gate.) |
-| **Finley** (Yellowfin) | Full Pressure | Ocean win with average wind ≥ 16 kn — "relentless pressure" and a +4 heavyAir stat say the tuna always wanted the heavy-air feat anyway. (Talon's old criterion; a strict theme upgrade for both.) |
+| **Torrent** (Swordfish) | Honed | **Trim master:** win on the Bonanza with manual trim — the blade sharpened by hand. (+4, clears the trim floor; his old ocean record lives on in the par-times family. Talon held this slot for one draft, but the canyon eagle is reserved for Redrock.) |
+| **Finley** (Yellowfin) | Full Pressure | Ocean win with average wind ≥ 16 kn — "relentless pressure" and a +4 heavyAir stat say the tuna always wanted the heavy-air feat anyway. |
 
 **Redrock Reservoir `redrock`**
 | Character | Title | Earned by |
 |---|---|---|
-| **Gasket** (Beaver) | Built This Place | First win at Redrock — who else builds reservoirs? |
-| **Chisel** (Humpback Chub) | Canyon Endemic | **Trim master:** win at Redrock with manual trim — one speed, found by hand. (Was the Redrock record, which lives on in the par-times family.) |
+| **Chisel** (Humpback Chub) | Canyon Endemic | First win at Redrock. The endemic IS the witness — the humpback chub exists nowhere but this canyon water, so he greets you on arrival. (Gasket's departure for Stillwater promoted him from record to witness; the Redrock record folds into the par-times family.) |
+| **Talon** (Bald Eagle) | Feathered | **Trim master:** win at Redrock with manual trim. Reserved for Redrock — the eagle over his own canyon — and at +13 the strongest trim reward in the game. Eagles fly by adjusting individual feathers, and "feathering" is literal sail-trim vocabulary. |
 
 **Glowtide Strait `glowtide`**
 | Character | Title | Earned by |
@@ -450,7 +450,7 @@ average power by unlock phase, after the swaps below:
 |---|---|---|---|
 | Starters (free) | 10 | **+0.3** | −6 … +7 |
 | First sessions | 8 | **−4.9** | −11 … +3 |
-| Venue witnesses (first win each venue) | 9 | −0.3 | −7 … +9 |
+| Venue witnesses (first win each venue) | 9 | +0.4 | −7 … +9 |
 | Mid feats + venue depth | 49 | −0.4 | −15 … +13 |
 | Series-gated | 12 | **+3.0** | −8 … +14 |
 | Capstones + prestige | 4 | **+8.5** | +6 … +12 |
@@ -481,17 +481,17 @@ themes they touched:
 must be strong boats.** Manual trim is the hardest skill gate in the game, so a
 weak character behind it is an anticlimax; the cohort was re-picked to enforce a
 **+3 floor**. The ten (Piper +4, Torpedo +7, Puff +11, Beau +5 [bench sketch],
-Seam +5, Talon +13, Chisel +3, Prism +6, Pebble +9, Zeffir +5) average **+6.8**,
-the strongest cohort in the game after capstones — correct, because these boats
-join the pool only after the player has out-skilled the assist. The rewards also
-loosely grade with venue difficulty: the home Cove pays the gentlest (+4), the
-open-ocean Bonanza the apex (Talon +13). Standing rule for future venues: **a
-trim master must be a +3 or better boat.**
+Seam +5, Torrent +4, Talon +13 [Redrock — he's reserved for the canyon], Prism +6,
+Pebble +9, Zeffir +5) average **+6.9**, the strongest cohort in the game after
+capstones — correct, because these boats join the pool only after the player has
+out-skilled the assist. The home Cove pays the gentlest reward (+4); Redrock pays
+the apex, because the eagle owns the canyon. Standing rule for future venues:
+**a trim master must be a +3 or better boat.**
 
 Deliberate exceptions, kept on purpose: **Fathom (+13) arrives at your first
 regatta win** — a boss introducing itself at the moment of triumph, amplified by
-the new-unlock-races-you rule; **Hug (+12) at 25 races** and **Talon (+13) behind
-an ocean heavy-air win** are mid-game spikes a competent player can absorb; **Lure
+the new-unlock-races-you rule; **Hug (+12) at 25 races** and **Stomp (+12) behind
+win-despite-a-penalty** are mid-game spikes a competent player can absorb; **Lure
 (+9) is a venue witness**, so Glowtide's first win stiffens the pool early for
 explorers — acceptable because visiting Glowtide at all is self-selected. On the
 other end, weak boats late (Scoop −3 for a full Clubhouse series) are fine:
@@ -538,7 +538,7 @@ pull later, move a general feat (e.g. Viper's Tacking Duel) onto its card.
 - *Light/heavy-wind achievements depend on venue wind ranges* — verify each venue
   can actually produce ≤ 7 kn / ≥ 18 kn averages, or the achievement is a lie.
   Croak's ≤ 6 kn at the Bayou and Spike's ≥ 16 kn at the Sound match those venues'
-  stated conditions; Saffron/Tiny/Talon thresholds need the same check when wind
+  stated conditions; Saffron/Tiny/Finley thresholds need the same check when wind
   regions are tuned.
 - *Hidden gags must stay rare* — currently 6 (Splat, Knot, Skip, Grip, Lateen,
   Bloom). That's the right count; more and hidden becomes the norm.
