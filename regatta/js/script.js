@@ -7013,7 +7013,7 @@ function renderVenueDetail(key) {
         </div>`;
 
     UI.venueDetail.innerHTML = `
-        <div class="flex gap-2 shrink-0">
+        <div class="pr-chips flex gap-2 shrink-0">
             <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">Venue ${idx} of ${VENUE_ORDER.length}</span>
             <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${c.tag || key}</span>
         </div>
@@ -7027,7 +7027,7 @@ function renderVenueDetail(key) {
              stay a fixed-width readout column, anchored to the bottom edge like
              the chart so the two read as one baseline. The Course row still
              carries the numbers, so nothing is lost when the chart yields. -->
-        <div class="flex" style="flex:1 1 auto; padding-top:16px; gap:14px;">
+        <div class="pr-bottom flex" style="flex:1 1 auto; gap:14px;">
             <!-- The box is the AVAILABLE room; the inner card crops itself to the
                  course's own aspect inside it (drawCourseMiniMap sizes it), pinned
                  to the bottom-left so growth spends the slack upward. -->
@@ -7039,7 +7039,7 @@ function renderVenueDetail(key) {
                      drawCourseMiniMap, which places it and decides if it fits. -->
                 <div id="venue-records-inline" style="position:absolute; bottom:0; right:0; display:none; min-width:0; overflow:hidden;"></div>
             </div>
-            <div class="flex flex-col gap-1.5" style="flex:0 1 360px; min-width:240px; align-self:flex-end;">
+            <div class="pr-facts flex flex-col gap-1.5" style="flex:0 1 360px; min-width:240px; align-self:flex-end;">
                 ${row('Wind', windRangeText())}
                 ${row('Water', waterVal || '&mdash;')}
                 ${row('Hazards', c.hazards || '—')}
