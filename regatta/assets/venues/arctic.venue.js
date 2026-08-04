@@ -13,6 +13,9 @@ window.VENUE_DOC["arctic"] = {
     "conditions": "Steep cold chop",
     "hazards": "Drifting bergs & floes"
   },
+  "fx": {
+    "snowfall": true
+  },
   "world": {
     "size": 8750,
     "boundary": {
