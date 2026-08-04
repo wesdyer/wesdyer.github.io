@@ -890,6 +890,14 @@ class BotController {
                         this._entryBrg = bestA;
                     }
                     if (this._entryBrg != null) {
+                        // FLOE-FREE VENUES ONLY. On a packed ring the scored sector IS
+                        // the water — leading off it aims at exactly the ice the scan
+                        // avoided — so the arctic entrance hunt stays untouched, the
+                        // same line the ruler-entry rejection drew.
+                        if (state.course._hasFloes == null) {
+                            state.course._hasFloes = (state.course.islands || []).some(i => i.isFloe);
+                        }
+                        const ENTRY_CUT_LEAD = state.course._hasFloes ? 0 : 0.6;
                         let da = (this._entryBrg - myBrg) * sgnR;
                         while (da < 0) da += Math.PI * 2;
                         while (da >= Math.PI * 2) da -= Math.PI * 2;
@@ -899,9 +907,29 @@ class BotController {
                             destX = rm.x + Math.cos(aNext) * rm.zone * 1.35;
                             destY = rm.y + Math.sin(aNext) * rm.zone * 1.35;
                         } else {
-                            // On the sector: cut in.
-                            destX = rm.x + Math.cos(this._entryBrg) * rm.zone * 0.72;
-                            destY = rm.y + Math.sin(this._entryBrg) * rm.zone * 0.72;
+                            // On the sector: cut in — LEADING the required way round,
+                            // not radially at the mark.
+                            //
+                            // A radial dive crosses the zone rim with no tangential
+                            // velocity at all, and inside the zone angular rate is v/r:
+                            // at 150 u/s and 65 units off the mark that is 2.3 rad per
+                            // SECOND, so whichever side the boat happens to drift to is
+                            // the way it banks. Five of the six ≥16s bay roundings arm
+                            // with sweep already between −0.69 and −1.99 (probe
+                            // bay_hairpin_hp_markesc, zone 165, first sample at d 64-184)
+                            // and then run it out to −4.8 before unwinding: they entered
+                            // the wrong way round and paid 7 rad to undo one second.
+                            //
+                            // Aiming a lead angle ahead in the ROTATION makes the entry
+                            // tangential on the required side, so the first second of
+                            // sweep is banked the right way by construction. This is a
+                            // per-boat aim point — each boat leads off its OWN chosen
+                            // sector. It deliberately does NOT touch the shared sector
+                            // SCORE, which is what rafted the fleet onto one slot when
+                            // that was tried (entry-sector bias, rejected 2026-08-03f).
+                            const aCut = this._entryBrg + sgnR * ENTRY_CUT_LEAD;
+                            destX = rm.x + Math.cos(aCut) * rm.zone * 0.72;
+                            destY = rm.y + Math.sin(aCut) * rm.zone * 0.72;
                         }
                         entryHandled = true;
                     }
@@ -3802,24 +3830,42 @@ const fxRand = mulberry32(0x5EED17);
 
 // The bots' grid, refreshed with the floes where they ARE. The static build knows
 // only authored land, so the router threaded floe fields blind and the fleet ground
-// through the pack at 60% speed loss per contact-frame. Rebuilding nav+clearance a
-// few times a minute keeps route, carrot and escape all seeing the same true water.
+// through the pack at 60% speed loss per contact-frame. Rebuilding nav+clearance
+// often keeps route, carrot and escape all seeing the same true water.
 // The wind fields ride along from the static build — regions don't move.
+//
+// ⚠️ `state.time` IS NOT SECONDS. It is the world clock, which advances at
+// WORLD_CLOCK of real time — it exists to phase animations, not to measure them.
+// Gating this rebuild on `state.time - t < 4` therefore bought a 16.67-SECOND
+// cadence, not the 4 it reads as, while the floe positions carried a lead sized for
+// a 4s one. Measured on arctic before the fix: rebuilds landed 16.68s apart, NO
+// floe-blocked cell changed state within 8s (the map was simply frozen for five to
+// eight consecutive replans), then 24% flipped by 30s and the whole far plan snapped
+// at once. Boats were routing, probing and dodging against ice that had already
+// drifted away — which is why every attempt to re-price the avoidance cost failed
+// against it, including the mean deflection pinned at 46-48° through twelve
+// candidates. It moved to 42° the moment the map became true.
+const BOT_GRID_EVERY = 2;                       // SECONDS between floe-map rebuilds
+// How far ahead of the rebuild the stamped floe positions sit. Held at the literal 2s
+// the 16-seed gate actually ran on. A derived half-cadence lead — genuinely mid-life
+// for the map rather than always running late — is a separate candidate under its own
+// probe, and tidier arithmetic is not a reason to ship an ungated number.
+const BOT_GRID_LEAD = 2;
 function refreshBotGrid() {
     const c = state.course;
     if (!c || !c._gridFixed || !c._botGridStatic || !window.SailCheck) return;
-    if (c._botGridT != null && state.time - c._botGridT < 4) return;
+    if (c._botGridT != null && state.time - c._botGridT < BOT_GRID_EVERY * WORLD_CLOCK) return;
     c._botGridT = state.time;
     // Floes go in as their HULL POLYGONS, not bounding circles. A lobed floe's
     // circle is fatter than its collider almost everywhere — with 112 of them the
     // circle-stamped grid closed 200-unit gaps that physically exist, and the
     // "impossible" rounding maze was partly an artifact of the AI's own map.
-    // Positions at the MID-CADENCE prediction (+2s), like before.
+    // Positions at the MID-CADENCE prediction, which is now genuinely mid-cadence.
     const floePolys = [];
     const floeCircles = [];
     for (const f of (c.islands || [])) {
         if (!f.isFloe) continue;
-        const sx = (f.driftVx || 0) * 2, sy = (f.driftVy || 0) * 2;
+        const sx = (f.driftVx || 0) * BOT_GRID_LEAD, sy = (f.driftVy || 0) * BOT_GRID_LEAD;
         if (f.vertices && f.vertices.length >= 3) {
             floePolys.push({ outer: f.vertices.map(v => [v.x + sx, v.y + sy]), holes: [] });
         } else {
@@ -3839,7 +3885,7 @@ function refreshBotGrid() {
     const risk = new Uint8Array(g.n * g.n);
     for (const f0 of (c.islands || [])) {
         if (!f0.isFloe) continue;
-        const f = { x: f0.x + (f0.driftVx || 0) * 2, y: f0.y + (f0.driftVy || 0) * 2, radius: f0.radius || 0 };
+        const f = { x: f0.x + (f0.driftVx || 0) * BOT_GRID_LEAD, y: f0.y + (f0.driftVy || 0) * BOT_GRID_LEAD, radius: f0.radius || 0 };
         const rr = f.radius + 36;
         const c0 = g.cell(f.x - rr, f.y - rr), c1 = g.cell(f.x + rr, f.y + rr);
         for (let j = Math.max(0, c0[1]); j <= Math.min(g.n - 1, c1[1]); j++) {
@@ -10512,8 +10558,13 @@ function checkNearMisses(dt) {
     }
 }
 
+// The world clock runs slow on purpose: `state.time` phases animation (floe heading
+// curl, wave sets, flag flutter, telltales) and 0.24 is what those were tuned
+// against. Anything that wants SECONDS must scale by this, never read it raw —
+// see refreshBotGrid for what reading it raw cost.
+const WORLD_CLOCK = 0.24;
 function update(dt) {
-    state.time += 0.24 * dt;
+    state.time += WORLD_CLOCK * dt;
     const timeScale = dt * 60;
 
     if (window.Rules) window.Rules.update(dt);
