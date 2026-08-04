@@ -2201,3 +2201,46 @@ tuning problem, and the next attempt on it should be the structural one
 Also note `form: weave 174u vs lateral 7067u` — as on arctic, the excess is
 LATERAL displacement, not curvature. The boats are not wiggling; they are going
 somewhere else.
+
+## PHASE A — DRIVER-LEVEL RESIDUAL ES: BUILT, GATED, AND NEGATIVE
+
+Infrastructure committed (`f0e290e`): `rlt_shared.js` (observation, bounded
+residual, episode), `rlt_train.js` (mirrored ES), `rlt_inert.js` (the floor
+proof), `rlt_gate.js` (fleet_leg2's exact protocol with the policy installed).
+**The script.js seam is deliberately NOT committed** — the approach was
+rejected, and the one block needed to re-enable it is in that commit message.
+
+    held-out validation, 16 seeds disjoint from the 200-seed training pool:
+      gen 4  -8.8s (6/16 wins)      gen 14  -8.1s (6/16)     gen 24 -10.5s (8/16)
+      gen 9 -21.1s (4/16)           gen 19 -12.3s (5/16)
+
+    FINAL GATE, 16 seeds disjoint from training AND validation:
+      rounders 144->142  finishers 142->140  med 426->451  in-time 71->52
+      paired -17 med / -19.9 mean
+
+**The floor held throughout, and that is the part worth keeping.** With zero
+parameters the residual is exactly 0 and the race is BYTE-IDENTICAL to
+classical; the classical reference run through the gate reproduces the stored
+`cad2x16` numbers exactly (144/142/71/426). So the negative result is a
+statement about the POLICY, not about a leaky harness.
+
+**Two rebuilds were needed and both are reusable lessons.** (1) CEM walked the
+mean 41s below the classical floor in two generations — with 45 parameters and a
+fleet-level score, elite selection is mostly selecting noise, and an elite MEAN
+inherits every mistake. Mirrored ES with antithetic pairs cancels that noise in
+the difference. (2) 44 observation dimensions starved at ~1 evaluation per
+parameter per generation, and the log said so: for three straight generations
+**the best of twelve perturbations WAS the unperturbed mean.** Twelve signed
+dimensions was the workable size.
+
+Three implementation facts that would matter to any retry: centre the
+observation (always-positive features turn any random weight into a constant
+lean), FREEZE the bias at zero (a constant lean is the easiest direction for a
+perturbation to find and it is catastrophic — the bias-only control costs
+202->333), and gate the residual to contested frames.
+
+**Honest reading:** a bounded residual has large destructive power and small
+constructive power against a stack this well tuned, and the budget arithmetic is
+the binding constraint — episodes cost ~20s of wall clock, so ~25 generations is
+what eight hours buys at a useful seed count. Any retry should fix the episode
+cost first, or drop to a handful of parameters.
