@@ -2686,7 +2686,22 @@ class BotController {
                     const ce = gAv.cell(futureX, futureY);
                     const idAv = ce[1] * gAv.n + ce[0];
                     const clr = gAv._clear[idAv];
-                    if (clr > 0 && clr < 3) proximityCost += 10000 * (1 - clr / 3);
+                    if (clr > 0 && clr < 3) {
+                        // FLOE-caused narrowness is grindable; LAND-caused is not.
+                        // When the static (land-only) grid says this water is clear,
+                        // the low clearance here comes from stamped ice — price it
+                        // at grind scale, keep full lee-shore caution near land.
+                        // (Inert without floes: static and stamped clearance agree.)
+                        let cScale = 10000;
+                        const gStat = state.course._botGridStatic;
+                        if (gStat && gStat !== gAv && window.SailCheck) {
+                            // static _clear is lazy (only pathSailable builds it) and
+                            // routing runs on the stamped grid — build it once here.
+                            if (!gStat._clear) gStat._clear = window.SailCheck.clearanceField(gStat);
+                            if (gStat._clear[idAv] >= 3) cScale = 4000;
+                        }
+                        proximityCost += cScale * (1 - clr / 3);
+                    }
                 }
             }
             if (nearIslands && nearIslands.length) {
@@ -2750,13 +2765,18 @@ class BotController {
                             // ratio 1.99 vs 0.94. At 6000/2500 the 16-seed gate paid
                             // +13 med paired, in-time 29->40, grind time DOWN (less
                             // deflection = less pinning). Land keeps wall prices.
-                            proximityCost += isl.isFloe ? 6000 : 25000;
+                            // (notch2: 6000→3500 and band 2500→1200 paid a further
+                            // +12 med / +18.8 mean paired on the 16-seed gate, return
+                            // ratio 1.91→1.70, min 270 — priced by 3 fins@900 churn,
+                            // in-time flat 40. The knee is somewhere below; a notch3
+                            // must watch the 900-cap finisher count first.)
+                            proximityCost += isl.isFloe ? 3500 : 25000;
                         } else {
                             // Proximity penalty (Buffer zone)
                             // Use Circle approx for proximity cost
                             const band = 80 + movePad;
                             if (d < isl.radius + band) {
-                                proximityCost += (isl.isFloe ? 2500 : 10000) * (1.0 - (d - isl.radius)/band);
+                                proximityCost += (isl.isFloe ? 1200 : 10000) * (1.0 - (d - isl.radius)/band);
                             }
                         }
                     }
