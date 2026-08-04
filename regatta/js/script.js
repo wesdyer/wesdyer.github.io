@@ -660,7 +660,34 @@ class BotController {
 
              // If we are stuck (slow) or just hit it, calculate escape
              if (this.boat.speed < 0.5) {
-                 this.markEscapeHeading = Math.atan2(awayX, -awayY);
+                 // SAILABLE ESCAPE, NEVER RADIAL. The old escape was the raw
+                 // away-from-mark bearing; on the upwind side of a hairpin
+                 // rounding that is dead into the wind, and the 12s latch below
+                 // parked the boat at ~0.15 speed for its whole duration (bay
+                 // L3/L5 traces: every 15-17s "park" starts at d 28-53 = mark
+                 // contact). Same move as the island escape: pick the off-wind
+                 // candidate that best points away from the mark — and, while
+                 // armed, the way round (a wrong-way escape refunds sweep).
+                 let escM = Math.atan2(awayX, -awayY);
+                 const lwM = getWindAt(this.boat.x, this.boat.y).direction;
+                 const rsM = this.boat.raceState;
+                 const rmM = legRoundMark(rsM.leg) || state.course.roundMark;
+                 const armedM = rmM && rsM.roundArmed && !rsM.finished;
+                 let txM = 0, tyM = 0;
+                 if (armedM) {
+                     const sgnM = rmM.side === 'port' ? -1 : 1;
+                     const brgM = Math.atan2(this.boat.y - rmM.y, this.boat.x - rmM.x);
+                     txM = this._outbound ? Math.cos(brgM) : -Math.sin(brgM) * sgnM;
+                     tyM = this._outbound ? Math.sin(brgM) : Math.cos(brgM) * sgnM;
+                 }
+                 let bestM = -Infinity;
+                 for (const off of [1.05, -1.05, 1.75, -1.75]) {
+                     const h = normalizeAngle(lwM + off);
+                     const sc = (Math.sin(h) * awayX - Math.cos(h) * awayY)
+                              + (armedM ? 0.7 * (Math.sin(h) * txM - Math.cos(h) * tyM) : 0);
+                     if (sc > bestM) { bestM = sc; escM = h; }
+                 }
+                 this.markEscapeHeading = escM;
                  // "2s" shipped on the 6x-slow clock — the tuned reality was a 12s
                  // commit, and the fleet's mark behavior is calibrated to it.
                  this.markContactTimer = 12.0;
