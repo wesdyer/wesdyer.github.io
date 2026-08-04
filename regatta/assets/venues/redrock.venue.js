@@ -6,6 +6,13 @@ window.VENUE_DOC["redrock"] = {
   "schema": 1,
   "venue": "redrock",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on \u2014 edit in editor.html. Re-freezing discards edits.",
+  "card": {
+    "name": "Redrock Reservoir",
+    "tag": "Reservoir",
+    "blurb": "Sandstone walls carve the breeze into shadows, funnels and sudden gust-bombs. Learn the canyon and it fights for you.",
+    "conditions": "Flat, wind-shadowed",
+    "hazards": "Rock spires & canyon walls"
+  },
   "world": {
     "size": 13000,
     "boundary": {

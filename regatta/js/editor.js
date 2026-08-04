@@ -583,17 +583,14 @@ function toast(msg, bad) {
 // A venue's NAME is what it is called; its id is its filename. Everything a person reads
 // says the name — the id survives in the document, in localStorage and in the saved file,
 // where it is a stable key rather than a label.
-// ⚠️ `VENUES` is a top-level `const` in script.js, so it lives in the script scope and NOT
-// on `window` — a `window.VENUES &&` guard is always false and silently falls back to the id.
-// That is why the picker read "arctic" instead of "Glacier Sound".
-// A COURSE has a name; so does the VENUE it is laid on. They are the same today and will
-// not be forever — one venue's ice and weather could carry several different courses — so a
-// document may override it, and everything a person reads goes through here.
+// The name lives on the document's CARD (`doc.card.name`) with the rest of the clubhouse
+// copy. The OPEN document wins over the bundled registry: a file opened from disk is not
+// in `window.VENUE_DOC`, and reading the registry showed the shipped name while you were
+// editing a different one.
 const venueName = (key) => {
-    const d = (window.VENUE_DOC || {})[key];
-    if (d && d.name) return d.name;
-    const v = (typeof VENUES !== 'undefined') ? VENUES[key] : null;
-    return (v && v.name) || key || '—';
+    const d = (doc && doc.venue === key) ? doc : (window.VENUE_DOC || {})[key];
+    const c = d && d.card;
+    return (c && (c.name || c.tag)) || key || '—';
 };
 
 // ── Dropdowns, drawn by us ──────────────────────────────────────────────────
@@ -3265,10 +3262,15 @@ function info() {
     // The venue this course is laid on, and nothing else: legs, marks, gates, regions and
     // the arena are each a count on their own layer row, which is where they belong.
     if (doc) {
-        // The field shows the name in force, not a placeholder of it — you should be able to
-        // read the course's name without clicking into the box.
+        // The fields show the card in force, not placeholders of it — you should be able
+        // to read the venue's copy without clicking into the boxes.
+        const card = doc.card || {};
         $('course-name').value = venueName(doc.venue);
-        // And the venue is its ID: the name belongs to the course now, so showing the venue's
+        $('card-tag').value = card.tag || '';
+        $('card-blurb').value = card.blurb || '';
+        $('card-conditions').value = card.conditions || '';
+        $('card-hazards').value = card.hazards || '';
+        // And the venue is its ID: the name belongs to the card now, so showing the venue's
         // name here said the same word twice and hid which file this is.
         $('course-venue').textContent = doc.venue;
         $('course-start').value = doc.course.startTime != null ? doc.course.startTime : '';
@@ -5891,17 +5893,26 @@ const timeField = (id, key, lo, hi, what) => $(id).addEventListener('change', ()
 });
 timeField('course-start', 'startTime', 5, 600, 'Prestart');
 timeField('course-cutoff', 'cutoff', 30, 7200, 'Time limit');
-$('course-name').addEventListener('change', () => {
-    if (!doc) return;
-    const v = $('course-name').value.trim();
-    // The name LIVES IN THE FILE. It used to be dropped when it matched the built-in
-    // VENUES table's name, which made the document depend on a table it may never see
-    // again once it is opened as a plain file. Blank still means "no authored name".
-    if (v) doc.name = v; else delete doc.name;
-    afterEdit(true, 'course name');
-    const label = $('venue-label');
-    if (label) label.textContent = venueName(doc.venue);
-});
+// The card copy LIVES IN THE FILE (`doc.card`) — name, tag, blurb, conditions,
+// hazards, exactly the strings the clubhouse shows. Blank means "not authored":
+// the field is deleted rather than saved empty, and the venue key stands in
+// wherever a name is needed.
+const cardField = (id, key, label) => {
+    $(id).addEventListener('change', () => {
+        if (!doc) return;
+        const v = $(id).value.trim();
+        if (!doc.card) doc.card = {};
+        if (v) doc.card[key] = v; else delete doc.card[key];
+        afterEdit(true, label);
+        const vl = $('venue-label');
+        if (vl) vl.textContent = venueName(doc.venue);
+    });
+};
+cardField('course-name', 'name', 'card name');
+cardField('card-tag', 'tag', 'card tag');
+cardField('card-blurb', 'blurb', 'card description');
+cardField('card-conditions', 'conditions', 'card conditions');
+cardField('card-hazards', 'hazards', 'card hazards');
 $('btn-use-est').addEventListener('click', () => {
     const secs = suggestedCutoff();
     if (!doc || !secs) return;

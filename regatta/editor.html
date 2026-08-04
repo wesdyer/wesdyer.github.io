@@ -84,9 +84,17 @@
         <!-- layer: course — the course as a whole: what it is called, how long it runs,
              and the one number the whole thing is judged by. -->
         <div class="mode-panel" data-layer="map">
+            <!-- The CARD: every string the clubhouse shows for this venue — the name and
+                 tag on the tile and chips, the blurb under the title, and the static
+                 conditions/hazards readouts. Saved in the document (`doc.card`). -->
             <div class="in-sect">
-                <span class="k">Course name</span>
-                <input id="course-name" class="in-wide" placeholder="Glacier Sound">
+                <span class="k">Card</span>
+                <input id="course-name" class="in-wide" placeholder="Name — Glacier Sound">
+                <input id="card-tag" class="in-wide" style="margin-top:6px" placeholder="Tag — Arctic">
+                <textarea id="card-blurb" class="in-wide" rows="3" style="margin-top:6px; resize:vertical"
+                          placeholder="Description — the two-line pitch on the race-day board"></textarea>
+                <input id="card-conditions" class="in-wide" style="margin-top:6px" placeholder="Conditions — Steep cold chop">
+                <input id="card-hazards" class="in-wide" style="margin-top:6px" placeholder="Hazards — Drifting bergs &amp; floes">
                 <div class="in-row" style="margin-top:8px"><span>venue</span>
                     <span class="num" id="course-venue">—</span></div>
             </div>

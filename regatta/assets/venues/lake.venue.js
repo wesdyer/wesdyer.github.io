@@ -6,6 +6,13 @@ window.VENUE_DOC["lake"] = {
   "schema": 1,
   "venue": "lake",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on \u2014 edit in editor.html. Re-freezing discards edits.",
+  "card": {
+    "name": "Stillwater Lake",
+    "tag": "Lake",
+    "blurb": "Mirror water and fickle mountain air. The breeze only whispers — racers who listen sail away from everyone parked in the glass.",
+    "conditions": "Flat glass",
+    "hazards": "Islands, skiffs & shoals"
+  },
   "world": {
     "size": 13000,
     "boundary": {

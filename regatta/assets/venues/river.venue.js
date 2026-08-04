@@ -6,6 +6,13 @@ window.VENUE_DOC["river"] = {
   "schema": 1,
   "venue": "river",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on \u2014 edit in editor.html. Re-freezing discards edits.",
+  "card": {
+    "name": "Sockeye Run",
+    "tag": "River",
+    "blurb": "The stream runs hard down the middle and dawdles along the banks. Pick the lane that pays and let the river carry you past the fleet.",
+    "conditions": "Fast midstream",
+    "hazards": "Rocky banks"
+  },
   "world": {
     "size": 11000,
     "boundary": {

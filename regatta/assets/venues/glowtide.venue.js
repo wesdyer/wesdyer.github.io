@@ -6,6 +6,13 @@ window.VENUE_DOC["glowtide"] = {
   "schema": 1,
   "venue": "glowtide",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on \u2014 edit in editor.html. Re-freezing discards edits.",
+  "card": {
+    "name": "Glowtide Strait",
+    "tag": "Strait",
+    "blurb": "Race by moonlight on water that burns blue where it moves. The dark hides the breeze — the glow gives it away, if you know how to look.",
+    "conditions": "Dark & glowing",
+    "hazards": "Rocky shores & lit marks"
+  },
   "world": {
     "size": 13000,
     "boundary": {
