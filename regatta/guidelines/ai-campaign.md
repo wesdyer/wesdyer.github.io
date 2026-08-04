@@ -2322,3 +2322,51 @@ where avoidance is bending the heading >0.12 rad:
 arctic.** Arctic's avoidance bin is majority-ice, which is exactly the part the
 structure cannot address; bay's is majority-boats, and bay's excess is already
 42% avoidance with a bench that runs in six minutes.
+
+## ⚡ CPA AT AVOIDANCE ONSET — the trigger fires on passes that would already clear
+
+`_cpa_onset_probe.js` (new). At the frame avoidance FIRST engages on a boat,
+what is the geometry with the rival that caused it? (`getRiskMetrics` is pure
+math on positions and headings, so this is read-only.)
+
+    BAY    2950 onsets   with a closing rival 74%   |  ice/land only 26%
+      tCPA   p10 0.2  p25 0.5  MED 1.2  p75 2.5  p90 5.9   seconds
+      dCPA   p10  58  p25 116  MED 209  p75 345  p90 455   units
+      role at onset  NONE 43% | GIVE_WAY 42% | STAND_ON 15%
+      risk at onset  LOW 43% | MEDIUM 38% | HIGH 12% | IMMINENT 7%
+
+    ARCTIC 8454 onsets   with a closing rival 45%   |  ice/land only 55%
+      tCPA   p10 0.3  p25 0.7  MED 1.6  p75 3.4  p90 6.8
+      dCPA   p10  50  p25 111  MED 205  p75 331  p90 451
+      role   NONE 42% | GIVE_WAY 41% | STAND_ON 17%
+      risk   LOW 42% | MEDIUM 33% | HIGH 16% | IMMINENT 10%
+
+Two venues, independent runs, and the distributions are nearly the same shape.
+
+**The headline: the median onset has a predicted closest approach of ~207 units
+— about 2.6x the 80-unit safety bubble — and 42-43% of onsets happen at LOW risk
+with NO right-of-way role assigned at all.** These are not encounters being
+resolved; they are the soft-proximity gradient nudging the argmin for passes
+that were already going to clear. It is the same picture the deflection
+histogram gave from the other side (45% of avoiding frames under 23°).
+
+**And for anyone sizing a τ for a velocity-obstacle underlay: 80-85% of real
+encounters are engaged with tCPA ≤ 4s and 88-90% by 6s** — which is a strong
+independent confirmation of the rival-lookahead knee already found at 4s, from a
+completely different measurement.
+
+**The obvious lever off that measurement was tested, and 250u is a knee too.**
+The soft-proximity band (`distSq < 250*250`) is what fires on those clearing
+passes, and the world it was tuned in HAS changed twice this session, so it was
+re-swept both ways on the bay 20-seed bench:
+
+    band 180u   fin med 259  paired -3 med / -4.2 mean   rubs 1.91 -> 2.61  pens 0.50 -> 0.61
+    band 250u   fin med 257  (HEAD)                      rubs 1.91          pens 0.50
+    band 320u   fin med 260  paired -6 med / -5.1 mean   rubs 1.91 -> 1.81  pens 0.50 -> 0.58
+
+Narrowing it costs contacts badly (rubs +37%), widening it buys a few contacts
+and costs pace. **So the band is not miscalibrated — the "unnecessary"
+deflections it produces are the price of the contacts it prevents.** That is the
+seventh constant verified at its knee on both sides this session, and it means
+the 42-45% avoidance bin cannot be reached by adjusting when the existing cost
+function speaks. It has to be a different cost function.
