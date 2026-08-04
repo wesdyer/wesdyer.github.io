@@ -225,6 +225,15 @@ const ARENA_SIDES = 64;
 
         const out = path.resolve(`regatta/assets/venues/${venue}.venue.js`);
         fs.mkdirSync(path.dirname(out), { recursive: true });
+        // THE CARD SURVIVES A RE-FREEZE. The card block (name, tag, blurb, conditions,
+        // hazards) is authored copy, not generator output — a freeze replaces the
+        // geometry and the weather, not what the clubhouse calls the place.
+        if (fs.existsSync(out)) {
+            const prev = fs.readFileSync(out, 'utf8').match(/^  "card": (\{[\s\S]*?\n  \}),?\n/m);
+            if (prev) {
+                try { doc.card = JSON.parse(prev[1]); } catch (e) { /* malformed: freeze without it */ }
+            }
+        }
         fs.writeFileSync(out,
             '// GENERATED ONCE by art/freeze_venue_doc.js — now the SOURCE OF TRUTH.\n'
             + '// Emitted as JS, not JSON: the eval harness loads over file://, where fetch is blocked.\n'

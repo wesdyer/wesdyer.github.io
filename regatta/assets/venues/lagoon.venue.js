@@ -6,6 +6,13 @@ window.VENUE_DOC["lagoon"] = {
   "schema": 1,
   "venue": "lagoon",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on \u2014 edit in editor.html. Re-freezing discards edits.",
+  "card": {
+    "name": "Pearl Lagoon",
+    "tag": "Lagoon",
+    "blurb": "Turquoise flats, coral gates, and squalls marching down the trades. Duck the rain or ride it — the brave get wet and get ahead.",
+    "conditions": "Clear & flat",
+    "hazards": "Coral heads & reef passes"
+  },
   "world": {
     "size": 13000,
     "boundary": {

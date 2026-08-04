@@ -3071,91 +3071,24 @@ const DEFAULT_SETTINGS = {
 let settings = { ...DEFAULT_SETTINGS };
 
 // --- Venues -------------------------------------------------------------------
-// A venue is now a NAME and a DOCUMENT. What used to be here — wind range, condition
-// ranges, island config, fx flags, water palette — is all gone: the wind is stated by wind
-// regions, the puffs by gust sources, the stream by current regions, the geometry by shapes
-// and marks, and the colours by the document's palette. What is left is the card copy the
-// picker and the briefing show.
-const VENUES = {
-    bay: {
-        name: 'Lighthouse Cove',
-        tagline: 'Buoys & Breeze', water: 'Light chop', obstacles: 'Buoys, shore & traffic', tags: [['HONEST BREEZE','ok'],['ALL-ROUND TEST','ok']],
-        label: 'Bay', emoji: '⛵',
-        blurb: 'Buoys to port, lighthouse to starboard, no excuses anywhere. Fair water and honest breeze — every part of your game gets tested here.'
-    },
-    lake: {
-        name: 'Stillwater Lake',
-        tagline: 'Glass & Puffs', water: 'Flat glass', obstacles: 'Islands, skiffs & shoals', tags: [['DEAD SPOTS','warn'],['SHIFT READING','ok']],
-        label: 'Lake', emoji: '🏞️',
-        blurb: 'Mirror water and fickle mountain air. The breeze only whispers — racers who listen sail away from everyone parked in the glass.'
-    },
-    lagoon: {
-        name: 'Pearl Lagoon',
-        tagline: 'Squalls & Coral', water: 'Clear & flat', obstacles: 'Coral heads & reef passes', tags: [['RAIN SQUALLS','warn'],['CORAL HEADS','warn'],['SQUALL RIDING','ok']],
-        label: 'Lagoon', emoji: '🐚',
-        blurb: 'Turquoise flats, coral gates, and squalls marching down the trades. Duck the rain or ride it — the brave get wet and get ahead.',
-        // Squalls + reef passes arrive in the Pearl Lagoon identity pass
-    },
-    swamp: {
-        name: 'Gatorgrass Bayou',
-        tagline: 'Dead Air & Weed', water: 'Still & weedy', obstacles: 'Grass islands & weed beds', tags: [['WEED BEDS','warn'],['KEEP HER MOVING','ok']],
-        label: 'Swamp', emoji: '🐊',
-        blurb: 'Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel — patience beats pace in here.'
-    },
-    river: {
-        // Renamed from Sockeye Run (Aug 1 2026). Named for its witness, per the venues
-        // doc convention — and the witness is Slipstream, who is already a SOCKEYE
-        // salmon on the roster, whose beat line is "salmon cannot run downstream".
-        // Bixby is a SEA otter and belongs on the coast; two otters confused them.
-        // ⚠️ The key stays `river`: the document, the card art, the audio file and the
-        // golden traces are all filed under it.
-        name: 'Sockeye Run',
-        tagline: 'Current & Rocks', water: 'Fast midstream', obstacles: 'Rocky banks', tags: [['SHALLOW BANKS','warn'],['LANE CHOICE','ok']],
-        label: 'River', emoji: '🐟',
-        blurb: 'The stream runs hard down the middle and dawdles along the banks. Pick the lane that pays and let the river carry you past the fleet.'
-    },
-    ocean: {
-        name: 'Bluewater Bonanza',
-        tagline: 'Swell & Speed', water: 'Long rolling swell', obstacles: 'None — open water', tags: [['UPWIND SLOG','warn'],['SURF THE SETS','ok']],
-        label: 'Ocean', emoji: '🌊',
-        blurb: 'Nothing out here but you, a steady breeze, and a mile of rolling swell. Surf hard downwind, grind out the beat — pure speed wins.'
-    },
-    redrock: {
-        name: 'Redrock Reservoir',
-        tagline: 'Cliffs & Gusts', water: 'Flat, wind-shadowed', obstacles: 'Rock spires & canyon walls', tags: [['WIND SHADOWS','warn'],['ROCK SPIRES','warn'],['LOCAL KNOWLEDGE','ok']],
-        label: 'Reservoir', emoji: '🏜️',
-        blurb: 'Sandstone walls carve the breeze into shadows, funnels and sudden gust-bombs. Learn the canyon and it fights for you.',
-        // Terrain-shaped wind (wall shadows, venturi, williwaws) arrives in the identity pass
-    },
-    glowtide: {
-        name: 'Glowtide Strait',
-        tagline: 'Moonlight & Glow', water: 'Dark & glowing', obstacles: 'Rocky shores & lit marks', tags: [['NIGHT RACING','warn'],['GLOW READING','ok']],
-        label: 'Strait', emoji: '🌙',
-        blurb: 'Race by moonlight on water that burns blue where it moves. The dark hides the breeze — the glow gives it away, if you know how to look.',
-        // Night rendering (dimmed world, glowing wakes/gust-threads) arrives in the identity pass
-    },
-    arctic: {
-        name: 'Glacier Sound',
-        tagline: 'Glacier Wind & Ice', water: 'Steep cold chop', obstacles: 'Drifting bergs & floes', tags: [['DRIFTING ICE','warn'],['OVERPOWERED','warn'],['GUST TIMING','ok']],
-        label: 'Arctic', emoji: '🧊',
-        blurb: 'Freezing katabatic winds pour off the ice cap and the pack drifts where it pleases. Mind the bergs, tame the gusts, survive to the finish.',
-        // `overpowered` left here because too much breeze costs any boat anywhere — it is
-        // physics keyed on the wind a boat measures, not a trait of this venue. `mask` and
-        // `islandCourse` left because nothing read them: land comes from the document and
-        // the course type is derived from the route.
-    },
-    // ⚠️ The KEY is `seatrials` and must stay that way whatever the venue is called.
-    // It is the eval anchor: the harness pins it through localStorage
-    // (`eval/eval_harness.js`), the document is `assets/venues/seatrials.venue.js`, the
-    // card art is `assets/images/venues/seatrials.png`, and the golden traces are filed
-    // under it. The display name below is the only part anyone is free to change.
-    seatrials: {
-        name: 'Clubhouse Point',
-        tagline: 'Cans & Consistency', water: 'Calm, standard', obstacles: 'None', tags: [['NO SURPRISES','ok'],['TRUE BASELINE','ok']],
-        label: 'Clubhouse', emoji: '⚓',
-        blurb: 'Round the cans off the clubhouse — same course, same evening breeze, every week all season. Nothing out here is trying to beat you, which leaves only your own boatspeed to blame.'
-    },
-};
+// A venue is a KEY and a DOCUMENT — including its card copy now (`doc.card`: name,
+// tag, blurb, conditions, hazards), edited in editor.html with everything else. What
+// remains here is only the SET AND ORDER of the clubhouse picker: journey order,
+// matching the script tags in index.html. A doc the list does not name (an editor
+// scratch file) still opens under its own key; it just gets no tile.
+//
+// ⚠️ `seatrials` is the eval anchor: the harness pins it via localStorage
+// (`eval/eval_harness.js`), and the document, card art and golden traces are all
+// filed under it. `river` is Sockeye Run — the key stays `river` for the same
+// reason. KEYS ARE IDENTITY; the card copy is what is free to change.
+const VENUE_ORDER = ['bay', 'lake', 'lagoon', 'swamp', 'river', 'ocean', 'redrock', 'glowtide', 'arctic', 'seatrials'];
+
+// The card copy for a key, straight from the document. Always an object, so callers
+// read fields without guarding — a missing card just briefs blank.
+function venueCard(key) {
+    const d = window.VenueDoc && window.VenueDoc.get(key);
+    return (d && d.card) || {};
+}
 
 // Bay palette = whatever water.js shipped with; captured at load so venue
 // switches can restore it.
@@ -3200,25 +3133,19 @@ function applyVenuePalette(venueKey) {
 // gusts and current are all stated by regions in the document, and the palette moved there
 // too — so this only records which venue is being sailed.
 //
-// A key counts if it has a DOCUMENT, not only if it sits in the built-in VENUES table:
-// the editor opens venue files under their own keys, and falling back to 'bay' here read
-// the wrong document's palette for any of them.
+// A key counts if it has a DOCUMENT — the editor opens venue files under their own
+// keys, and falling back to 'bay' here read the wrong document's palette for any of them.
 function applyVenueConditions() {
-    const known = settings.venue
-        && (VENUES[settings.venue] || (window.VenueDoc && window.VenueDoc.get(settings.venue)));
+    const known = settings.venue && window.VenueDoc && window.VenueDoc.get(settings.venue);
     const key = known ? settings.venue : 'bay';
     state.race.venue = key;
     applyVenuePalette(key);
 }
 
-// What a venue is CALLED, wherever a person reads it. The document's own name wins —
-// it is the file's, and a file may not be in the VENUES table at all — then the table's
-// menu chrome, then the key.
+// What a venue is CALLED, wherever a person reads it: the document's card, then the key.
 function venueDisplayName(key) {
-    const d = window.VenueDoc && window.VenueDoc.get(key);
-    if (d && d.name) return d.name;
-    const v = VENUES[key];
-    return (v && (v.name || v.label)) || key || null;
+    const c = venueCard(key);
+    return c.name || c.tag || key || null;
 }
 
 // --- Venue mechanics -------------------------------------------------------
@@ -3348,13 +3275,48 @@ function overpoweredFactor(stats, heel) {
 function venueCurrent() {
     const regs = state.course && state.course.currentRegions;
     if (!regs || !regs.length) return null;
-    // The strongest stream on the map, at its peak of the cycle: what a sailor would be
-    // told to expect, not an average over water they may never sail.
+    // The strongest stream on the map, at its peak of the cycle. ⚠️ THE MAP, not the
+    // course: right for "does this venue have moving water at all" (the particle
+    // spawner's question), wrong for a briefing — see courseCurrentMax.
     let max = 0;
     for (const r of regs) max = Math.max(max, r.speed + Math.abs(r.speedVar || 0));
-    return { max,
-             text: regs.length === 1 ? 'ONE STREAM ACROSS PART OF THE COURSE'
-                                     : `${regs.length} STREAMS ACROSS PARTS OF THE COURSE` };
+    return { max };
+}
+
+// WHAT THE WATER DOES ON THE COURSE. venueCurrent()'s map-wide max is what the Water
+// readout used to quote, and it lied the moment a venue authored strong flow off the
+// racing area: Lighthouse Cove keeps a 2 kt stream entirely west of its westernmost
+// mark, and the board promised a stream the fleet never touches — the real racing
+// water there is a 0.2–0.5 kt drift. So sample the BLENDED field (getCurrentAt, the
+// same answer the boats get) along the route actually sailed, at several phases of
+// the slowest oscillation so a tidal peak is not missed, and report the strongest
+// set found. Null when the venue authors no current of its own.
+function courseCurrentMax() {
+    if (!venueCurrent() || !state.course.route) return null;
+    const wpts = [];
+    for (let leg = 0; leg <= state.race.totalLegs; leg++) {
+        const p = legTargetPoint(leg);
+        if (p) wpts.push(p);
+    }
+    if (wpts.length < 2) return null;
+    let period = 0;
+    for (const r of state.course.currentRegions) period = Math.max(period, r.period || 0);
+    const phases = period > 0 ? [0, 1, 2, 3, 4, 5, 6, 7].map(i => i / 8 * period) : [0];
+    const t0 = state.time;
+    let max = 0;
+    for (const ph of phases) {
+        state.time = t0 + ph;
+        for (let i = 1; i < wpts.length; i++) {
+            const a = wpts[i - 1], b = wpts[i];
+            const n = Math.max(2, Math.min(24, Math.ceil(Math.hypot(b.x - a.x, b.y - a.y) / 200)));
+            for (let s = 0; s <= n; s++) {
+                const c = getCurrentAt(a.x + (b.x - a.x) * s / n, a.y + (b.y - a.y) * s / n);
+                if (c && c.speed > max) max = c.speed;
+            }
+        }
+    }
+    state.time = t0;
+    return max;
 }
 
 // The ambient stream — a uniform set over the whole course, when a race has one. The
@@ -6684,9 +6646,6 @@ const UI = {
     venuePicker: document.getElementById('venue-picker'),
     venueDetail: document.getElementById('venue-detail'),
 
-    // Obstacles UI
-    valIslandCount: document.getElementById('val-island-count'),
-
     // Current UI
     valCurrentDir: document.getElementById('val-current-direction'),
     valCurrentSpeed: document.getElementById('val-current-speed'),
@@ -6718,14 +6677,14 @@ const UI = {
 // so there is no second crop to keep in sync with the first.
 function renderVenuePicker() {
     if (!UI.venuePicker) return;
-    const selected = (settings.venue && VENUES[settings.venue]) ? settings.venue : 'bay';
-    const visibleKeys = Object.keys(VENUES);
+    const selected = (settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay';
+    const visibleKeys = VENUE_ORDER;
 
     if (UI.venuePicker._keys !== visibleKeys.join()) {
         UI.venuePicker._keys = visibleKeys.join();
         UI.venuePicker.innerHTML = '';
         for (const key of visibleKeys) {
-            const v = VENUES[key];
+            const c = venueCard(key);
             const btn = document.createElement('button');
             btn.dataset.venue = key;
             btn.className = 'pr-venue-tile';
@@ -6734,8 +6693,8 @@ function renderVenuePicker() {
             // the art, over a scrim, it costs nothing and labels the thing it names.
             btn.innerHTML = `
                 <div class="pr-venue-shot">
-                    <img src="assets/images/venues/thumbs/${key}.png" alt="${v.label}" draggable="false">
-                    <span class="pr-venue-name t-display-8 uppercase">${v.name || v.label}</span>
+                    <img src="assets/images/venues/thumbs/${key}.png" alt="${c.tag || key}" draggable="false">
+                    <span class="pr-venue-name t-display-8 uppercase">${c.name || c.tag || key}</span>
                 </div>`;
             btn.addEventListener('click', (e) => { e.preventDefault(); selectVenue(key); });
             UI.venuePicker.appendChild(btn);
@@ -6747,7 +6706,6 @@ function renderVenuePicker() {
     }
     sizeRaceDayHero();
     renderVenueDetail(selected);
-    renderPreRaceBrief(selected);
 }
 
 // ⚠️ THE HERO'S HEIGHT IS SET BY ITS OWN WIDTH, and only JS can say so. The art panel is
@@ -6756,8 +6714,7 @@ function renderVenuePicker() {
 // being square, and the art letterboxes onto the gradient. CSS cannot express "my height
 // depends on my width", so this runs on every render and on resize.
 const HERO_ART_SHARE = 0.58;   // of the column's WIDTH — the art is square
-const VENUE_TILE_MAX = 210;    // a tile is a picture of a place you can actually read
-const VENUE_STRIP_SHARE = 0.48; // of the column's HEIGHT — the hero keeps the rest
+const VENUE_STRIP_SHARE = 0.55; // of the column's HEIGHT — the hero keeps the rest
 function sizeRaceDayHero() {
     const hero = document.getElementById('venue-hero');
     const art = document.getElementById('venue-art');
@@ -6774,16 +6731,17 @@ function sizeRaceDayHero() {
     hero.style.maxHeight = side + 'px';
     art.style.maxWidth = side + 'px';
 
-    // ⚠️ TWO ROWS OF VENUE TILES WILL EAT THE HERO IF LET. Five tiles stretched across a
-    // 1450px column are 280px each, so the strip alone is 600px and the hero is left with
-    // a 240px square. So the tile is capped twice — by taste (150px) and by the strip's
-    // share of the column's height — and the row spreads whatever is left over as gaps
-    // rather than growing the tiles.
+    // THE TILES FILL THE ROW; the strip's height share is what stops two rows of them
+    // eating the hero. With the start bar gone the strip owns more of the column (0.55),
+    // and a tile is the smaller of "a fifth of the row" and "half the strip's budget" —
+    // width-limited on a laptop, height-limited on a big screen, never scrolling either
+    // way. Only when height wins does space-between have any slack to spread.
     if (picker && h > 0) {
-        const LABEL = 0, GAP = 10, ROWS = 2;   // the name is ON the picture now
-        const budget = h * VENUE_STRIP_SHARE;
-        const tile = Math.max(64, Math.min(VENUE_TILE_MAX, Math.floor((budget - ROWS * LABEL - GAP) / ROWS)));
-        picker.style.gridTemplateColumns = `repeat(5, minmax(0, ${tile}px))`;
+        const GAP = 10, ROWS = 2, COLS = 5;
+        const widthTile = Math.floor((w - (COLS - 1) * GAP) / COLS);
+        const heightTile = Math.floor((h * VENUE_STRIP_SHARE - (ROWS - 1) * GAP) / ROWS);
+        const tile = Math.max(64, Math.min(widthTile, heightTile));
+        picker.style.gridTemplateColumns = `repeat(${COLS}, minmax(0, ${tile}px))`;
     }
 }
 
@@ -6829,7 +6787,7 @@ function mixHex(a, b, t) {
 // the water looks like.
 function renderVenueDetail(key) {
     if (!UI.venueDetail) return;
-    const v = VENUES[key];
+    const c = venueCard(key);
     const hero = document.getElementById('venue-hero');
     const art = document.getElementById('venue-art');
 
@@ -6842,20 +6800,30 @@ function renderVenueDetail(key) {
         hero.style.background = `linear-gradient(115deg, ${mixHex(deep, '#0c1322', 0.55)} 0%, ${deep} 58%, ${base} 100%)`;
     }
     if (art) {
+        // A GENTLE seam, not a shadow: just enough of the panel colour bleeding onto the
+        // art's left edge to avoid a hard cut. Semi-transparent and narrow — at full
+        // opacity over a quarter of the frame it was eating the picture's left side.
+        const seam = mixHex(deep, '#0c1322', 0.55).replace('rgb(', 'rgba(').replace(')', ',0.5)');
         art.innerHTML = `
-            <img src="assets/images/venues/${key}.png" alt="${v.name || v.label}" draggable="false"
+            <img src="assets/images/venues/${key}.png" alt="${c.name || c.tag || key}" draggable="false"
                  style="width:100%; height:100%; object-fit:contain; display:block;">
             <div style="position:absolute; inset:0; pointer-events:none;
-                        background:linear-gradient(90deg, ${mixHex(deep, '#0c1322', 0.55)} 0%, rgba(12,19,34,0) 26%);"></div>`;
+                        background:linear-gradient(90deg, ${seam} 0%, rgba(12,19,34,0) 14%);"></div>`;
     }
 
 
     // Water = what the water itself is doing: current, swell, glass, chop.
-    // Live values win over the static description when a flow exists.
-    let waterVal = v.water;
-    const vcTile = venueCurrent();
-    if (vcTile) waterVal = vcTile.max.toFixed(1) + ' kt stream';
-    else if (state.race.conditions.current) waterVal = state.race.conditions.current.speed.toFixed(1) + ' kt set';
+    // Live values win over the static description when a flow exists — but only flow
+    // ON THE COURSE, measured along the route (courseCurrentMax), and named for what
+    // it is: a knot or more is a stream, less is a drift, and a course the current
+    // barely reaches keeps its static description.
+    let waterVal = c.conditions;
+    const onCourse = courseCurrentMax();
+    if (onCourse != null) {
+        if (onCourse >= 0.15) waterVal = onCourse.toFixed(1) + (onCourse >= 0.9 ? ' kt stream' : ' kt drift');
+    } else if (state.race.conditions.current) {
+        waterVal = state.race.conditions.current.speed.toFixed(1) + ' kt set';
+    }
 
     const row = (label, value, gold) => `
         <div class="pr-row flex items-center justify-between gap-5"
@@ -6865,13 +6833,13 @@ function renderVenueDetail(key) {
             <span class="t-mono" style="font-size:12.5px; color:${gold ? '#f2c14e' : '#ffffff'};">${value}</span>
         </div>`;
 
-    const idx = Object.keys(VENUES).indexOf(key) + 1;
+    const idx = VENUE_ORDER.indexOf(key) + 1;
     const best = bestForVenue(key);
     // The names run from "Redrock" to "Bluewater Bonanza", so the long ones step down a
     // size. Everything else about this block's type is in CSS, where a short window can
     // restyle it — see the max-height rules. Measuring the hero here would read a height
     // flex has not settled on the first paint.
-    const longName = (v.name || v.label).length > 14 ? ' long' : '';
+    const longName = (c.name || c.tag || key).length > 14 ? ' long' : '';
 
     // YOUR BEST sits at the TOP RIGHT of the gradient, opposite the venue chips: it is a
     // fact about you, not about the venue, so it does not belong in the stack of venue
@@ -6902,41 +6870,20 @@ function renderVenueDetail(key) {
              not out of the title. -->
         <div class="flex flex-wrap gap-2 shrink-0 items-start justify-between">
             <div class="flex gap-2" style="min-width:0;">
-                <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">Venue ${idx} of ${Object.keys(VENUES).length}</span>
-                <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${v.label}</span>
+                <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">Venue ${idx} of ${VENUE_ORDER.length}</span>
+                <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${c.tag || key}</span>
             </div>
             <div class="flex gap-2 shrink-0">${bestChip}</div>
         </div>
-        <div class="t-display uppercase pr-venue-title${longName}">${v.name || v.label}</div>
-        <div class="pr-blurb">${v.blurb || ''}</div>
+        <div class="t-display uppercase pr-venue-title${longName}">${c.name || c.tag || key}</div>
+        <div class="pr-blurb">${c.blurb || ''}</div>
         <div class="flex flex-col gap-1.5 shrink-0" style="margin-top:auto; padding-top:16px; max-width:360px;">
             ${row('Wind', windRangeText())}
             ${row('Water', waterVal)}
-            ${row('Hazards', v.obstacles)}
+            ${row('Hazards', c.hazards || '—')}
+            ${row('Fleet', `${state.boats.length} boats &middot; One Design`)}
+            ${row('Course', `${state.race.totalLegs} legs`)}
         </div>`;
-}
-
-// The start bar's readouts: what you are about to sail, in one line, so the decision is
-// re-checkable without looking back up at the hero.
-function renderPreRaceBrief(key) {
-    const el = document.getElementById('pr-brief');
-    if (!el) return;
-    const v = VENUES[key] || {};
-    const cell = (label, value) => `
-        <div>
-            <div class="t-label" style="font-size:10px; letter-spacing:0.16em; color:#66748c;">${label}</div>
-            <div style="font-size:14px; font-weight:800; margin-top:2px;">${value}</div>
-        </div>`;
-    const rule = `<div style="width:1px; height:30px; background:rgba(255,255,255,0.1);"></div>`;
-    el.innerHTML = [
-        cell('Venue', venueDisplayName(key) || '—'),
-        rule,
-        cell('Forecast', `${windRangeText()} · ${v.tagline || ''}`),
-        rule,
-        cell('Fleet', `${state.boats.length} boats · One Design`),
-        rule,
-        cell('Course', `${state.race.totalLegs} legs`)
-    ].join('');
 }
 
 // --- Competitor scouting (sidebar, below the venue briefing) ---------------
@@ -7451,19 +7398,14 @@ function escapeHTMLText(s) {
 }
 
 function selectVenue(key) {
-    if (!VENUES[key] || state.race.status !== 'waiting') return;
+    if (!(window.VenueDoc && window.VenueDoc.get(key)) || state.race.status !== 'waiting') return;
     settings.venue = key;
     saveSettings();
 
-    // Bay has no ranges of its own (resetGame's randomization IS the Bay), so
-    // returning to it from another venue re-rolls the default conditions here.
-    if (key === 'bay' || key === 'seatrials') {
-        state.wind.baseSpeed = 8 + Math.random() * 10;
-        state.wind.speed = state.wind.baseSpeed;
-        const c = state.race.conditions;
-        c.islandCount = 0;
-    }
-
+    // No per-venue conditions here: every venue's day is stated by its document's
+    // regions, and initCourse()'s compile writes them over whatever the last venue
+    // left behind. (Bay once had no doc and needed a re-roll on return; it is a
+    // designed venue now like everything else.)
     applyVenueConditions();
     initCourse();
     if (window.WaterRenderer) window.WaterRenderer.init();
@@ -9790,7 +9732,8 @@ function update(dt) {
         }
     }
 
-    // Venue: drifting ice floes (Polar)
+    // Drifting ice floes — authored by the venue document (`c.ice`); a no-op
+    // wherever none are.
     updateIceFloes(dt);
 
     // Sound (the player's APPARENT wind — see Sound.playerWindSpeed). Whether the bed
@@ -12671,7 +12614,6 @@ function showResults() {
 function renderResultsHeader(sorted, gapScale) {
     const sub = document.getElementById('res-subtitle');
     const status = document.getElementById('res-status');
-    const v = VENUES[settings.venue];
 
     // The ruler states the span it is drawn to, and re-states it as boats finish — the
     // scale is the fleet's own, so without the caption the markers would be a picture with
@@ -14078,301 +14020,6 @@ function repositionBoats() {
     }
 }
 
-// Island Logic
-function generateIslands(boundary) {
-    const islands = [];
-    // User Settings
-    const islandCount = state.race.conditions.islandCount || 0;
-    if (islandCount <= 0) return [];
-
-    const maxSizeSetting = state.race.conditions.islandMaxSize !== undefined ? state.race.conditions.islandMaxSize : 0.5;
-    const clustering = state.race.conditions.islandClustering !== undefined ? state.race.conditions.islandClustering : 0.5;
-
-    // Use seeded RNG if available, else standard random (fallback)
-    const rng = state.race.seed ? mulberry32(state.race.seed) : Math.random;
-
-    // Radius Range logic
-    // Smallest possible island: 100 units
-    // Max size setting 1.0 -> 1200 units
-    // Min size setting 0.0 -> 200 units (max for that setting)
-
-    // "Max size of Islands" determines the upper bound for the first island and the random range for others.
-    const absoluteMinR = 80;
-    const absoluteMaxR = 200 + maxSizeSetting * 1000; // 200 to 1200
-
-    // Boundary Constraints
-    const maxWorldR = boundary.radius - 200;
-
-    // Avoidance Geometry
-    const marks = state.course.marks;
-    if (!marks || marks.length < 4) return [];
-
-    const _ax = courseAxis();
-    const mStart = _ax.start, mUpwind = _ax.windward;
-    
-    // Helper: Generate a jagged polygon for a body
-    const createIslandBody = (bx, by, br) => {
-        const vertices = [];
-        const points = 7 + Math.floor(rng() * 6);
-        for(let j=0; j<points; j++) {
-            const theta = (j / points) * Math.PI * 2;
-            const r = br * (0.7 + rng() * 0.6);
-            vertices.push({
-                x: bx + Math.cos(theta) * r,
-                y: by + Math.sin(theta) * r
-            });
-        }
-        // Veg Poly (Inner)
-        const vegVertices = vertices.map(v => ({
-            x: bx + (v.x - bx) * 0.75,
-            y: by + (v.y - by) * 0.75
-        }));
-        // Trees
-        const trees = [];
-        const treeCount = Math.floor(2 + (br/60) * 2 + rng() * 3);
-        for(let k=0; k<treeCount; k++) {
-             const ang = rng() * Math.PI * 2;
-             const dst = rng() * br * 0.4;
-             trees.push({
-                 x: bx + Math.cos(ang)*dst,
-                 y: by + Math.sin(ang)*dst,
-                 size: 14 + rng()*10,
-                 rotation: rng() * Math.PI * 2
-             });
-        }
-        // Rocks
-        const rocks = [];
-        const rockCount = Math.floor(1 + (br/50) * 3 + rng() * 2);
-        for(let k=0; k<rockCount; k++) {
-             const ang = rng() * Math.PI * 2;
-             const dst = br * (0.65 + rng() * 0.15);
-             rocks.push({
-                 x: bx + Math.cos(ang)*dst,
-                 y: by + Math.sin(ang)*dst,
-                 size: 8 + rng() * 12,
-                 rotation: rng() * Math.PI * 2
-             });
-        }
-        // Venue styling: swamp grass islands are marsh — soft groundings
-        // (speed loss but no rules penalty), and rendered as grass.
-        const style = state.race.conditions.islandStyle || 'tropical';
-        return { x: bx, y: by, radius: br, vertices, vegVertices, trees, rocks, style, soft: style === 'grass' || style === 'redrock' };
-    };
-
-    // Helper: Validate a circle
-    const isValidCircle = (cx, cy, cr) => {
-         // Boundary
-         if ((cx-boundary.x)**2 + (cy-boundary.y)**2 > (maxWorldR - cr)**2) return false;
-
-         // Marks (Strict)
-         const markClearance = 350 + cr;
-         for (const m of marks) {
-            if ((cx-m.x)**2 + (cy-m.y)**2 < markClearance**2) return false;
-         }
-
-         // Start/Finish Boxes
-         const boxClearance = 500 + cr;
-         if ((cx-mStart.x)**2 + (cy-mStart.y)**2 < boxClearance**2) return false;
-         if ((cx-mUpwind.x)**2 + (cy-mUpwind.y)**2 < boxClearance**2) return false;
-
-         // Overlap with existing islands
-         for (const isl of islands) {
-             const dSq = (cx-isl.x)**2 + (cy-isl.y)**2;
-             const minDist = cr + isl.radius + 30;
-             if (dSq < minDist**2) return false;
-         }
-         return true;
-    };
-
-    // Main Generation Loop
-    let clusterCenter = null;
-    let fails = 0;
-
-    for (let i = 0; i < islandCount; i++) {
-        if (fails > 50) break;
-
-        // Size Determination
-        let r = 0;
-        if (i === 0) {
-            // First island is "Biggest" (according to size setting)
-            // But if user selected "Small", biggest is small.
-            // If user selected "Large", biggest is large.
-            // Let's use the absoluteMaxR derived from setting.
-            r = absoluteMaxR;
-        } else {
-            // Others are random sizes up to that size
-            r = absoluteMinR + rng() * (absoluteMaxR - absoluteMinR);
-        }
-        
-        // Position
-        let x, y, valid = false, attempts = 0;
-
-        // Dispersion Logic
-        // Clustering 0: Scattered (use full map)
-        // Clustering 1: Grouped (tight cluster around first island)
-        let center = { x: boundary.x, y: boundary.y };
-        let radiusLimit = maxWorldR;
-
-        if (i > 0 && clusterCenter) {
-            // If we have a cluster center (first island), we bias towards it.
-            // 0 clustering -> infinite range (bounded by world)
-            // 1 clustering -> tight range (e.g. 1.5 * maxR)
-            center = clusterCenter;
-
-            // Map clustering 0-1 to range
-            // 1.0 -> tight (r * 1.5)
-            // 0.0 -> loose (world size)
-
-            // Actually, "clustered based on clustering setting" suggests probabilistic or bounded.
-            // Let's use a bounded circle around the first island.
-            const tightDist = absoluteMaxR * 1.5;
-            const looseDist = boundary.radius * 2; // Full map
-            const searchDist = tightDist + (1.0 - clustering) * (looseDist - tightDist);
-
-            radiusLimit = searchDist;
-        }
-
-        while (!valid && attempts < 50) {
-            attempts++;
-
-            let dist, angle;
-            if (i === 0 || clustering < 0.1) {
-                // First island or totally scattered: Random in world
-                angle = rng() * Math.PI * 2;
-                dist = Math.sqrt(rng()) * maxWorldR;
-                x = boundary.x + Math.cos(angle) * dist;
-                y = boundary.y + Math.sin(angle) * dist;
-            } else {
-                // Biased towards cluster center
-                angle = rng() * Math.PI * 2;
-                dist = Math.sqrt(rng()) * radiusLimit; // Bias towards center? sqrt(rng) is uniform in circle.
-                // To make it more clustered, maybe power of rng?
-                // But limiting radius is enough.
-
-                x = center.x + Math.cos(angle) * dist;
-                y = center.y + Math.sin(angle) * dist;
-            }
-
-            if (isValidCircle(x, y, r)) {
-                valid = true;
-            } else {
-                // Retry with smaller radius?
-                if (i > 0 && attempts > 20) {
-                    r *= 0.9;
-                    if (r < absoluteMinR) r = absoluteMinR;
-                }
-            }
-        }
-
-        if (valid) {
-            const body = createIslandBody(x, y, r);
-            islands.push(body);
-            if (i === 0) {
-                clusterCenter = { x: x, y: y };
-            }
-        } else {
-            fails++;
-            // Don't increment i (retry this island count? No, loop continues)
-            // To retry the count, we should decrement i, but prevent infinite loop.
-            // Here we just skip it if we fail too much.
-        }
-    }
-    
-    return islands;
-}
-
-function checkCourseNavigability(islands, marks) {
-    if (!islands || islands.length === 0) return true;
-    
-    // Grid Flood Fill
-    // Define bounds based on course boundary radius
-    const radius = state.course.boundary ? state.course.boundary.radius : 4000;
-    const pad = 200;
-    const minX = state.course.boundary.x - radius - pad;
-    const maxX = state.course.boundary.x + radius + pad;
-    const minY = state.course.boundary.y - radius - pad;
-    const maxY = state.course.boundary.y + radius + pad;
-
-    const resolution = 100; // 100 unit grid
-    const cols = Math.ceil((maxX - minX) / resolution);
-    const rows = Math.ceil((maxY - minY) / resolution);
-    
-    const grid = new Uint8Array(cols * rows); // 0=water, 1=island
-    
-    // Rasterize islands roughly
-    // optimization: only check cells near islands
-    for(const isl of islands) {
-        // Bounding box in grid coords
-        const c1 = Math.floor((isl.x - isl.radius - minX) / resolution);
-        const c2 = Math.ceil((isl.x + isl.radius - minX) / resolution);
-        const r1 = Math.floor((isl.y - isl.radius - minY) / resolution);
-        const r2 = Math.ceil((isl.y + isl.radius - minY) / resolution);
-        
-        for(let c=c1; c<c2; c++) {
-            for(let r=r1; r<r2; r++) {
-                if(c>=0 && c<cols && r>=0 && r<rows) {
-                    const wx = minX + c * resolution + resolution/2;
-                    const wy = minY + r * resolution + resolution/2;
-                    if ((wx-isl.x)**2 + (wy-isl.y)**2 < isl.radius**2) {
-                        grid[r*cols + c] = 1;
-                    }
-                }
-            }
-        }
-    }
-    
-    // Start Point (Start Line Center)
-    const _ax0 = courseAxis();
-    const sx = _ax0.start.x;
-    const sy = _ax0.start.y;
-    const startC = Math.floor((sx - minX) / resolution);
-    const startR = Math.floor((sy - minY) / resolution);
-    
-    // Target Point (Upwind Gate Center)
-    const tx = _ax0.windward.x;
-    const ty = _ax0.windward.y;
-    const targetC = Math.floor((tx - minX) / resolution);
-    const targetR = Math.floor((ty - minY) / resolution);
-    
-    if (grid[startR*cols + startC] === 1) return false; // Start blocked (unlikely due to generation checks)
-    if (grid[targetR*cols + targetC] === 1) return false; // Target blocked
-    
-    // BFS
-    const queue = [startR*cols + startC];
-    const visited = new Uint8Array(cols * rows);
-    visited[startR*cols + startC] = 1;
-    
-    let found = false;
-    while(queue.length > 0) {
-        const idx = queue.shift();
-        if (idx === targetR*cols + targetC) {
-            found = true;
-            break;
-        }
-        
-        const r = Math.floor(idx / cols);
-        const c = idx % cols;
-        
-        // Neighbors (4-way)
-        const neighbors = [
-            {r: r+1, c: c}, {r: r-1, c: c},
-            {r: r, c: c+1}, {r: r, c: c-1}
-        ];
-        
-        for(const n of neighbors) {
-            if (n.r >= 0 && n.r < rows && n.c >= 0 && n.c < cols) {
-                const nIdx = n.r*cols + n.c;
-                if (!visited[nIdx] && grid[nIdx] === 0) {
-                    visited[nIdx] = 1;
-                    queue.push(nIdx);
-                }
-            }
-        }
-    }
-    
-    return found;
-}
-
 // Boat hull half-width for coarse collision against concave mask coastlines.
 // How far out a rounding still counts, as a multiple of the mark's zone. The zone is
 // the pass-within distance; this is the go-round-it distance. Generous enough that a
@@ -15297,26 +14944,10 @@ function initCourse() {
     if (state.course.type === 'islandRound') state.race.totalLegs = 2;
     state.course.route = buildRoute(state.course.type, state.race.totalLegs);
 
-    // Generate Islands
-    let islands = [];
-    let attempts = 0;
-    let valid = false;
-    
-    // Only attempt if islands are requested
-    if (state.race.conditions.islandCount > 0) {
-        while(!valid && attempts < 5) {
-            attempts++;
-            islands = generateIslands(state.course.boundary);
-            if (checkCourseNavigability(islands, state.course.marks)) {
-                valid = true;
-            }
-        }
-        if (!valid) {
-            console.warn("Failed to generate navigable course with islands.");
-            islands = []; 
-        }
-    }
-    state.course.islands = islands;
+    // No islands on a generated course: land is a thing a DOCUMENT authors. The random
+    // island generator (and its navigability flood-fill) is gone — nothing had set
+    // islandCount above zero since land moved into the venue documents.
+    state.course.islands = [];
 
     // A GENERATED course has no venue features left to add. Weed beds, brash, the river's
     // banks and shore, the drifting floes and the wildlife on them were all per-race
@@ -15472,22 +15103,13 @@ function resetGame() {
     // +/- 0.1 to 0.2 radians
     const directionBias = (Math.random() < 0.5 ? -1 : 1) * (0.1 + Math.random() * 0.1);
 
-    // Obstacle Defaults
-    // Default to no islands
-    const islandCount = 0;
-    const islandMaxSize = Math.random();
-    const islandClustering = Math.random();
-
     // Current Generation
     // Default to no current
     let currentData = null;
 
     state.race.conditions = {
         directionBias,
-        current: currentData,
-        islandCount,
-        islandMaxSize,
-        islandClustering
+        current: currentData
     };
 
     // Venue overrides (no-op for Bay — see applyVenueConditions)
