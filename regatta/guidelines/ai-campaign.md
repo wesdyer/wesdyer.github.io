@@ -298,6 +298,12 @@ Remaining:
 
 ## Next session brief (prepared 2026-08-03d, tree at notch2 HEAD)
 
+✅ Owner merge bdcbc41 (post-notch2, achievements/music/roster docs + 413
+script.js lines + 2-line bay.venue.js) VERIFIED goldens-PASS 20/20 byte-
+identical — NO seed reshuffle this time; every 2026-08-03d baseline
+(fleet_leg2_notch2, bay_bench_bulge, anchor 202.87/200.25) remains valid
+across this merge line.
+
 Read `regatta-bay-ai.md` + `regatta-arctic-ai.md` memory first. treeA/B/D =
 HEAD-before-notch2, treeC = notch2 (now == HEAD) — refresh ALL from HEAD
 before the first bench. Arctic 16-seed baseline for the next A/B =
