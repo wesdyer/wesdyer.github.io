@@ -1759,6 +1759,11 @@ class BotController {
             // We compare future effective wind vs base wind (or current effective?)
             // Comparing to base makes sense as absolute value
             const windBonus = (futureEffective - state.wind.baseSpeed);
+            // NOTE (2026-08-03 A/B, do not re-damp): scaling this term ×0.4 for
+            // mode==='downwind' was a measured NO-OP on the Lighthouse Cove run
+            // bulge — paired fin delta 0, L3/L5 sailed-distance ratio unchanged
+            // at 1.34 vs the human's 0.99-1.10. The +35%-track-for-+0.4kt east
+            // bulge is NOT chosen here; it lives at the angle/navigation level.
             const pressureCoeff = 0.1 * (1.0 + pressureFactor) * traits.pressureSense;
             score += windBonus * pressureCoeff;
 
