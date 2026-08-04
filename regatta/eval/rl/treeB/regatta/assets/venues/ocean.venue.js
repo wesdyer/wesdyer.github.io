@@ -6,6 +6,13 @@ window.VENUE_DOC["ocean"] = {
   "schema": 1,
   "venue": "ocean",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on \u2014 edit in editor.html. Re-freezing discards edits.",
+  "card": {
+    "name": "Bluewater Bonanza",
+    "tag": "Ocean",
+    "blurb": "Nothing out here but you, a steady breeze, and a mile of rolling swell. Surf hard downwind, grind out the beat — pure speed wins.",
+    "conditions": "Long rolling swell",
+    "hazards": "None — open water"
+  },
   "world": {
     "size": 13000,
     "boundary": {

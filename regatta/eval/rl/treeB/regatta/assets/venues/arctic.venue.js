@@ -6,6 +6,13 @@ window.VENUE_DOC["arctic"] = {
   "schema": 1,
   "venue": "arctic",
   "note": "Imported once from arctic-geo.js by art/export_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-importing replaces land and discards edits.",
+  "card": {
+    "name": "Glacier Sound",
+    "tag": "Arctic",
+    "blurb": "Freezing katabatic winds pour off the ice cap and the pack drifts where it pleases. Mind the bergs, tame the gusts, survive to the finish.",
+    "conditions": "Steep cold chop",
+    "hazards": "Drifting bergs & floes"
+  },
   "world": {
     "size": 8750,
     "boundary": {

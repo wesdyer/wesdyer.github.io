@@ -123,7 +123,16 @@ const ringArea = (ring) => {
 // would mark it unsaved on load, and an absent field already means "use the
 // default" in compile.
 function migrateVenueDoc(doc) {
-    const c = doc && doc.course;
+    if (!doc) return doc;
+    // Card copy: a top-level `name` predates the card block (the editor's authored-name
+    // field wrote it). One home now — `doc.card.name` — so the game, the editor and the
+    // saved file all read the same string.
+    if (doc.name) {
+        doc.card = doc.card || {};
+        if (!doc.card.name) doc.card.name = doc.name;
+        delete doc.name;
+    }
+    const c = doc.course;
     if (!c) return doc;
     const marks = c.marks || [];
     marks.forEach((m, i) => { if (!m.id) m.id = `mark-${i}`; });

@@ -6,6 +6,13 @@ window.VENUE_DOC["bay"] = {
   "schema": 1,
   "venue": "bay",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.",
+  "card": {
+    "name": "Lighthouse Cove",
+    "tag": "Bay",
+    "blurb": "Buoys to port, lighthouse to starboard, no excuses anywhere. Fair water and honest breeze — every part of your game gets tested here.",
+    "conditions": "Light chop",
+    "hazards": "Buoys, shore & traffic"
+  },
   "world": {
     "size": 5200,
     "boundary": {

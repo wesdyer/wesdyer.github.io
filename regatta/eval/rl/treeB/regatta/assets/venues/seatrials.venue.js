@@ -6,6 +6,13 @@ window.VENUE_DOC["seatrials"] = {
   "schema": 1,
   "venue": "seatrials",
   "note": "The measuring stick. Deliberately the plainest course on the card: no land, a rectangular arena, one steady breeze from due north, and an 800 m beat. Every AI change is judged here, so anything that makes it interesting makes it worse.",
+  "card": {
+    "name": "Clubhouse Point",
+    "tag": "Clubhouse",
+    "blurb": "Round the cans off the clubhouse — same course, same evening breeze, every week all season. Nothing out here is trying to beat you, which leaves only your own boatspeed to blame.",
+    "conditions": "Calm, standard",
+    "hazards": "None"
+  },
   "world": {
     "size": 13000,
     "boundary": {
