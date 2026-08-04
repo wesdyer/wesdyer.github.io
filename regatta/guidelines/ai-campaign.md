@@ -1207,3 +1207,49 @@ Priorities, in order:
 6. **Bay**: the wrong-way-arm class is cut (L3 ≥16s 6→2) but not gone. Two
    remain, plus the traffic stops. Bay boat rubs are 2.32/race against a human
    0.14 — the largest untouched gap on that venue.
+
+### One horizon that had NEVER been checked — and it is a knee too
+
+`applyAvoidance`'s `lookaheadFrames = 240` (4s) is the only horizon in the
+steering stack that is not about ice, so it does not inherit the ~5s floe
+validity limit — boats sail smoothly, ice bounces. It had never been probed.
+Both ways, against cad2:
+
+| | cad2 base | `look150` (2.5s) | `look360` (6s) |
+|---|---|---|---|
+| transit med / mean | 179 / 202 | **179** / 204 | 227 / 253 |
+| dist ratio | 1.54 | **1.39** | 1.85 |
+| EXCESS | 9601 | **8794** | 13572 |
+| ├ avoid (boat / none) | 4204 (1650/1487) | **3556 (1266/1282)** | 7160 (2465/3121) |
+| └ turn | 1388 | **1090** | 2343 |
+| grind med / share | 4.5 / 5% | **7.7 / 8%** | 7.6 / 5% |
+| slow med | 17.2 | 21 | 27.4 |
+
+**`look360` REJECTED** decisively (+48s median) — a 6s bubble makes every
+neighbour a permanent threat, and avoid-none doubles (1487→3121): the boat is
+dodging things that are not going to be there.
+
+**`look150` REJECTED, and it is the most interesting rejection of the session.**
+It produces the largest distance improvement anything has produced here —
+ratio 1.54→**1.39**, EXCESS −807, avoid-boat −384, turn −298 — and converts
+NONE of it into time: median exactly flat at 179, mean +2. The reason is in the
+next row: grind median 4.5→7.7 and its share 5%→8%. A shorter lookahead buys a
+straighter track by paying in ice contact, and on this engine contact is
+expensive (60% speed loss per contact-frame). Lexicographically it fails
+outright — contact up, pace not improved — so it does not go to a fleet gate.
+
+⇒ **4s is a knee, like the other three.** But it is a knee on a TRADE CURVE
+(distance against contact) rather than a plateau, which makes it the one place
+a better mechanism could still bank something: anything that lets a boat hold
+the straighter 2.5s line WITHOUT the extra grind converts ~800u of excess
+directly. That is a real, sized, open lead for the next session — and it is
+about contact discipline, not about avoidance pricing, so it is not in the
+closed traffic thread.
+
+**Capped arctic_eval @420, 16 seeds, cad2 HEAD (144 boat-races):** DNS 0.00%,
+DNF 0.00%, race med 420.0 (cutoff-capped) / mean **395.4** (was 403.7 at the
+03f snapshot), pen/boat **1.26** (was 1.23 — flat), groundings/boat 681
+(raw contact fires, not dedup'd; was 628.7). True in-time arrival is the
+fleet_leg2 count, **71/144 = 49%** — was 22%. The capped row is cutoff-bound
+and will stay 420 median until the fleet median clears the cutoff; the honest
+headline is the uncapped 426 and the in-time count more than doubling.
