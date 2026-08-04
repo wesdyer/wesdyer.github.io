@@ -10,7 +10,7 @@ window.VENUE_DOC["bay"] = {
     "name": "Lighthouse Cove",
     "tag": "Bay",
     "blurb": "Buoys to port, lighthouse to starboard, no excuses anywhere. Fair water and honest breeze — every part of your game gets tested here.",
-    "conditions": "Light chop",
+    "conditions": "Slight ebb",
     "hazards": "Buoys, shore & traffic"
   },
   "world": {

@@ -42,15 +42,18 @@ player. So the starting ten is a **merchandising problem, not a balance problem*
 | 7 | **Sunshine** | Mahi-Mahi | yellow / green kite | rocket | I like bright colors |
 | 8 | **Tangle** | Common Octopus | purple / green kite | leech | I'm clever |
 | 9 | **Whiskers** | Walrus | tan / burgundy kite | freight | I'm an old salt |
-| 10 | **Roll** | Harbor Seal | gray / gold kite | corner | I'm adorable |
+| 10 | **Rift** | Moray Eel | chartreuse / pink kite | corner | I'm sly |
 
-**Fleet math.** Hulls: blue, black, pink, red, white, orange, yellow, purple, tan,
-gray — ten distinct swatches, no two adjacent on the water. Species: mammal ×3
-(otter, walrus, seal), shark, crustacean ×2 (crab, lobster), bird, monotreme, fish,
-cephalopod. Archetypes: all eight present — bully ×2 (Bruce, Pinch), metronome ×2
-(Cheer, Glide), one each of shift, gambler, rocket, leech, freight, corner. The
-doubles are the right doubles: two bullies make the start line feel contested from
-race one, and two metronomes give the beginner someone beatable to pace against.
+**Fleet math** *(amended Aug 3 2026: Rift replaced Roll — see his entry below)*.
+Hulls: blue, black, pink, red, white, orange, yellow, purple, tan, chartreuse —
+ten distinct swatches; the chartreuse/yellow pair (Rift/Sunshine) is the closest
+and deserves an on-water art check. Species: mammal ×2 (otter, walrus), fish ×2
+(mahi-mahi, moray eel) plus the shark, crustacean ×2 (crab, lobster), bird,
+monotreme, cephalopod — the mammal-heavy tilt of the first draft is gone.
+Archetypes: all eight present — bully ×2 (Bruce, Pinch), metronome ×2 (Cheer,
+Glide), one each of shift, gambler, rocket, leech, freight, corner. The doubles
+are the right doubles: two bullies make the start line feel contested from race
+one, and two metronomes give the beginner someone beatable to pace against.
 
 ### Why each one
 
@@ -97,10 +100,15 @@ race one, and two metronomes give the beginner someone beatable to pace against.
    immovable object downwind, which is exactly what an old salt should be.
    (Snap wanted this slot; two grumpy elders in ten is one too many, and Glacier
    Sound doesn't need the walrus the way it needs the polar bear.)
-10. **Roll (Harbor Seal, corner)** — The adorable one. Harbor seals are the puppies
-    of the sea, and "playful feints hiding brutal positioning" is charm with teeth.
-    Gray hull with a gold kite rounds out the palette, and his corner archetype
-    completes the eight-archetype set — the fleet's mark-rounding artist.
+10. **Rift (Moray Eel, corner)** — The sly one. *(Replaced Roll the Harbor Seal,
+    Aug 3 2026: the ten carried three marine mammals against barely one fish, and
+    a harbor seal is the natural mascot of a lighthouse harbor — Roll is now
+    Lighthouse Cove's witness unlock, which also gives the home venue an earnable
+    character before the series system ships.)* "Lurks quietly, strikes savagely
+    at marks" hands the starter fleet a trickster slot none of the other nine
+    cover, the chartreuse hull with a hot-pink kite is unmissable on the water,
+    and his corner archetype completes the eight-archetype set — the fleet's
+    mark-rounding menace instead of its mark-rounding artist.
 
 ---
 
@@ -265,8 +273,11 @@ achievements can be weird, specific, and beloved by the 5% who get them.
 83. **Sable (Great Cormorant, corner)** — Mark-rounding precision: perfect
     roundings, whole race.
 84. **Vex (Water Dragon, corner)** — Corner-banker; punish-the-gambler achievement.
-85. **Rift (Moray Eel, corner)** — Mark ambusher; pass two boats inside one
-    rounding.
+85. **Roll (Harbor Seal, corner)** — Lighthouse Cove's witness (first win at the
+    Cove). Listed at Rift's old rank only because they traded places — by appeal
+    he belongs near the dolphin tier: harbor seals are the puppies of the sea,
+    and earning one early at the home venue is a gift. (Rift's old mark-ambush
+    criterion lives on as the Ambush burgee.)
 86. **Needle (Gharial, corner)** — Precision threader; narrowest-gap achievement.
 87. **Crimson (Red Snapper, leech)** — The surgical tactician; quiet mid-list
     unlock.
@@ -315,3 +326,108 @@ achievements can be weird, specific, and beloved by the 5% who get them.
   difficulty curve: the starter ten's stat spreads are moderate; monsters like
   Mistral, Razor and Muninn arriving late keeps the fleet growing meaner as the
   player grows better.
+
+---
+
+## The Bench — approved expansions beyond the hundred (Aug 3 2026)
+
+Seven characters approved for building, each with a design sketch ready for the
+`art/new-character-prompt.md` pipeline (which produces the final AI_CONFIG record,
+kite pattern, quotes, and portrait — **all colours below are provisional until
+measured from a shipped portrait**, per pipeline rule). Plus the shark-saga
+expansion plan. When a bench character ships, its achievement joins the map in
+`achievements.md` under the noted section; none of them changes the live 90.
+
+Note: shipping the bench takes the roster past 100 — the code comment ("The
+hundred") and any picker copy that says so will need updating.
+
+### Build now (7)
+
+1. **Beau — American Alligator** · freight · Gatorgrass Bayou local (the venue
+   finally keeps its name's promise; also restores the bayou from the 3-unlock
+   floor). *Personality:* "The bayou's unhurried landlord — always exactly where
+   the channel narrows." *Beat:* 'Turn him — ten feet of gator does not tack.'
+   *Stats sketch:* acc −3, mom +5, hand −2, up +1, reach +2, down 0, press +2
+   (sum +5, deliberately strong — see achievement); lightAir +4 (bayou tops at
+   8 kn — he is armed for home water), heavyAir −3, memory +4. *Achievement:*
+   **Landlord — trim master: win at the Bayou with manual trim.** Trim-master
+   rewards must be strong boats (design rule from the difficulty audit), which is
+   why his sketch runs +5; Etienne keeps the Gatorgrass record instead. Until
+   Beau ships, the Bayou's trim slot waits. *Colours:* moss-olive hull, bone
+   kite — must read apart from Chomp's bright green and Snap's dark olive; flag
+   for the livery test.
+2. **Woebegone — Tasselled Wobbegong** · leech · shark pack #6. *Personality:*
+   "Lies flat, looks miserable, and is somehow already underneath the fleet."
+   *Beat:* 'Keep the race moving — the carpet only catches what slows down near
+   it.' *Stats sketch:* acc −3, mom +2, hand −2, up −1, reach +1, down 0, press +3
+   (sum 0); lightAir +1, heavyAir 0, memory +3. *Achievement:* **The Rug Moves —
+   podium after being last at the halfway mark** (Dozer's orphaned criterion,
+   finally with its true owner). Counts toward Dapple's capstone on ship.
+   *Colours:* mottled rust-grey — must not collide with Dozer's tan; livery test.
+3. **Bruiser — Bull Shark** · bully · completes the Big Three apex predators
+   (Bruce the white, Stripes the tiger, Bruiser the bull). Named for the brawl,
+   not the barnyard. *Personality:* "Turns up
+   where no shark has any business being, and picks the fight anyway."
+   *Beat:* 'Meet him in open water — the brawler needs a bank to pin you on.'
+   *Stats sketch:* acc +2, mom +3, hand −2, up +2, reach 0, down −1, press +1
+   (sum +5, mid-strong — properly gated); lightAir −2, heavyAir +3, memory +1.
+   *Achievement:* **Fresh Water — win at Stillwater Lake, Sockeye Run, AND
+   Redrock Reservoir.** The shark that swims up rivers, earned by conquering all
+   three freshwater venues — a mini world tour no other achievement asks for.
+4. **Banks — Atlantic Cod** · metronome · Fallwater Fjord bench (ships with the
+   venue; the fjord's third local after Skerry and Plunge). *Personality:*
+   "Punches the clock, reads the weather, feeds the whole town." *Beat:*
+   'Out-dash him — honest work has no sprint in it.' *Stats sketch:* acc −2,
+   mom +1, hand 0, up +2, reach −1, down 0, press +1 (sum +1); lightAir −2,
+   heavyAir +3, memory +2. *Achievement:* **Grand Banks — set the Fjord venue
+   record.**
+5. **Fizz — Sea Goldie (Anthias)** · rocket · reef bench (ships with a second
+   reef venue, alongside Blacktip below). *Personality:* "Sparkles in a crowd,
+   darts on a whim, worries about nothing." *Beat:* 'Lean on her in a blow —
+   glitter is not ballast.' *Stats sketch:* acc +4, mom −4, hand +3, up −1,
+   reach 0, down −1, press +1 (sum +2); lightAir +4, heavyAir −4, memory −1.
+   *Achievement:* podium 3 times at the second reef venue.
+6. **Sway — Sea Anemone** · bully (zone denial, like Bramble and Grip — but a
+   pressure specialist, not a momentum wall) · lagoon-adjacent. *Personality:*
+   "Goes nowhere, misses nothing, and keeps a room made up for the clownfish."
+   *Beat:* 'Stay out of arm's reach — she cannot chase what she cannot touch.'
+   *Stats sketch:* acc −5, mom +4, hand −4, up −2, reach −2, down −1, press +5
+   (sum −5, gentle); lightAir +2, heavyAir −2, memory 0. *Achievement:* **Anemone
+   Home — win a race with Jester in the fleet.** A soft chain: the clownfish must
+   be unlocked first, and his anemone follows him home.
+7. **Mola — Ocean Sunfish** · freight · the approved weird fish. *Personality:*
+   "Enormous, ridiculous, and completely at peace with both." *Beat:* 'Attack
+   every corner — three tons of sunbather does not turn.' *Stats sketch:* acc −5,
+   mom +5, hand −5, up −2, reach +2, down +2, press −1 (sum −4, gentle);
+   lightAir +3, heavyAir −2, memory −2. *Achievement:* **Sunbather — win a race
+   in which you were becalmed (under 2 kn boatspeed) for 30+ continuous
+   seconds.** Parked like a mola on its side, and won anyway.
+
+### The shark saga — full structure once the bench ships
+
+The sharks become the roster's flagship collection, with four ways in:
+
+- **The ladder** (rivalry chain): Bruce →beat 3× → Blaze →beat 3× → Anvil
+  →beat 3× → **Lash the Thresher Shark** (future: the tail-whip finisher — build
+  when the ladder needs a fourth rung).
+- **The feat sharks:** Stripes (10 clean races), Dozer (start last → podium),
+  Woebegone (last at halfway → podium).
+- **The venue sharks:** Bruiser (freshwater triple), plus future — **Relic the
+  Greenland Shark** (arctic: 400 years old, memory +5, slowest boat in the file;
+  claims the open Glacier Sound record slot and restores the Sound from the
+  3-unlock floor — the strongest case among the future sharks), **Goblin the
+  Goblin Shark** (Glowtide: the deep-sea nightmare belongs in the dark venue),
+  **Blacktip Reef Shark** (ships with reef venue 2).
+- **The capstone: Dapple the Whale Shark.** Own every shark in the game, and the
+  last one to arrive is the biggest, gentlest fish in the sea. (Promoted from
+  far-future to THE capstone — a barracuda crowning the shark collection was a
+  category error; Razor instead earns his stripes by *beating* sharks: finish
+  ahead of every shark in a race with 3+ of them in the fleet, "Swims With
+  Sharks." Since Dapple caps the set, he moves up the build queue: he should ship
+  while the shark saga is still being collected, not after.)
+
+On **Oceanic Whitetip vs Blacktip**: build at most one "tip" shark — two
+near-identical names and fin patterns will blur at picker scale. Blacktip wins
+the slot on purpose (a reef venue needs a reef shark); the Whitetip's hook — the
+ship-following ocean wanderer — is better served someday as a Bluewater distance
+feat than as a lookalike character.

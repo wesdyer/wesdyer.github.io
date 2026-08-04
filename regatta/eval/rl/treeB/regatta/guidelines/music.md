@@ -352,7 +352,7 @@ must claim unclaimed territory.
 | Clubhouse Point | `seatrials` | woodblock, upright bass, brushes — no lead | metronomic, warm, forgettable on purpose | 100 → 99 | C major |
 | Glowtide Strait | `glowtide` | glass marimba, analog synth arp | kinetic nocturnal pulse | 104 → 99 | F major |
 | Pearl Lagoon | `lagoon` | steel pan, hand percussion | island offbeat + a squall gear | 106 → 89 | C major |
-| Lighthouse Cove | `bay` | saxophone, penny whistle | easy club-race 4/4 with a light swing — the reference | 112 → 112 | D (amb. third) |
+| Lighthouse Cove | `bay` | penny whistle, concertina | easy club-race 4/4 — the reference | 112 → 108 | D major |
 | Sockeye Run | `river` | banjo roll, fiddle | continuous ostinato, never rests | 120 → 136 | D major |
 
 **Unbuilt venues — claimed here so nothing collides later:**
@@ -383,18 +383,18 @@ banjo-led, fast, bright. The bayou is Louisiana, and zydeco is also the better
 get moving. The banjo went to Sockeye Run, where a perpetual roll *is* the current.
 The two prompts exclude each other's instrument to hold the line.
 
-⚠️ **Lighthouse Cove's claim is saxophone + penny whistle, not the concertina it was
-briefed with** (changed Aug 2026, ahead of a planned regeneration — see §12.1). The
-shipped take's best-loved feature is its saxophone phrases, and the brief never asked
-for them: Suno volunteered the sax, and the concertina it *was* asked for is not what
-anyone remembers about the track. Claiming the sax **before** the regen is the point —
-instrumentation is what Suno reliably obeys (§3.2), so an unrecorded accident is
-exactly the thing a regeneration loses. Two consequences: the concertina is freed, and
-§12.2's victory-variant draft already reaches for it; and **Flamingo Reach now needs a
-fence** — sax with an easy swing at 112 and muted trumpet + vibraphone circling at 108
-are the album's two jazz-adjacent corners, separated only by instrument and feel. Per
-Rule 3 the jazziness stays a borrowed instrument and a swing, not a genre: neither
-brief should ever say "jazz", and each should exclude the other's horn.
+⚠️ **Lighthouse Cove briefly claimed the saxophone (Aug 2026) and the claim is
+reverted — the experiment is worth recording.** The previous take's best-loved feature
+was an unbriefed saxophone Suno volunteered, so ahead of a regeneration the claim
+moved to sax and the brief named it (§3.2: instrumentation is what Suno obeys). It
+obeyed too well: the sax-forward take came back too jazzy for the house register.
+**That is Rule 3's limit found from the other side** — the rule says borrow
+instruments, not genres, and some instruments at the front of a style line *are* a
+genre. A sax lead pulls swing, harmony and production in with it in a way a penny
+whistle or a concertina never does. The shipped replacement came from the original
+brief unchanged; penny whistle + concertina hold the claim, and the sax is unclaimed
+again — treat it as hazardous material for any future venue: brief it deep in the
+line, not as the lead.
 
 ## 11. Measured properties of every track — **Observed**
 
@@ -402,7 +402,7 @@ Measured over the loop body. `*` = venue not built; track saved but unwired.
 
 | Venue | key | body s | wind band | >2 kHz | centroid | dyn | key | flux | pulse |
 |---|---|---|---|---|---|---|---|---|---|
-| Lighthouse Cove | bay | 94.0 | 29.3% | 28.6% | 1955 | 3.8 | D minor | **0.205** | 112 |
+| Lighthouse Cove | bay | 170.6 | 21.0% | 18.5% | 1274 | 4.7 | D major | **0.209** | 108 |
 | Stillwater Lake | lake | 240.5 | 12.8% | 16.2% | 1313 | 6.3 | G major | 0.166 | 83 |
 | Pearl Lagoon | lagoon | 118.5 | 39.4% | 45.3% | 2793 | 4.8 | C major | 0.147 | 89 |
 | Gatorgrass Bayou | swamp | 172.5 | 18.8% | 15.8% | 1110 | 9.4 | D minor | 0.119 | 68 |
@@ -443,17 +443,17 @@ brevity — **every one ends** `seamless loop, no intro, no outro, ends as it be
 Bright acoustic sailing instrumental, 112 BPM, D major, penny whistle and concertina over strummed guitar, upright bass, brushed kit, easy club-race swing
 ```
 `vocals, wordless vocalise, sea shanty chorus`
-*⚠️ **A regeneration is planned, and this line predates the claim change in §10.** The
-take it produced is loved for its saxophone phrases — which it never asked for — and
-its 94.0 s body is the shortest in the project, so the seam comes round ~2.5× a race
-and lands mid-bar (~half a beat off the grid; the 0.0 dB level match cannot see beat
-phase). The next brief must name the sax and ask for length. Working draft, unshipped:*
-```
-D major, bright acoustic sailing instrumental, 112 BPM, saxophone and penny whistle over strummed guitar, walking upright bass, brushed kit with an easy swing, relaxed saxophone phrases answering the whistle, easy club-race feel
-```
-*4–6 min · exclude `vocals, wordless vocalise, sea shanty chorus, smooth jazz, lounge,
-muted trumpet`. When a take ships, replace the recorded line above — this section
-records what produced the track in the slot, nothing else.*
+*This line has now produced the slot's track twice. The first take (retired to
+`lighthouse-cove-take1.mp3`) is the project's beat-phase lesson: its seam measured
+0.0 dB and still jarred, because the 94.0 s body landed ~half a beat off the bar grid —
+a defect no level measurement can see. A sax-forward rewrite of the brief was tried
+first and rejected as too jazzy (§10). The Aug 2026 take is the same line rerun, picked
+from five candidates by seam quality: 172.5 s, steady 108 BPM with no tempo drift,
+D major at last (r=0.81), 21.0% wind band, and a 170.6 s body so the seam plays about
+once a race. ⚠️ Its `loopEnd: 170.6` is hand-snapped to the beat grid from
+`music_loop.py`'s 171.0 (onset-envelope phase error ~2 ms, chroma r=0.96 across the
+seam) — the one row where §7's never-hand-edit rule yields, traded for a ~1.5 dB level
+step the 0.6 s crossfade blurs.*
 
 **Stillwater Lake** `lake` · Weirdness 20 · SI 85 · 4–6 min
 ```
@@ -628,10 +628,7 @@ E major humid instrumental, 108 BPM, muted trumpet lead over vibraphone, upright
 ```
 `vocals, wordless vocalise, steel pan, accordion, dark, muffled`
 *Best-behaved file in the project: 241.0 s of body from a 241.0 s file, nothing
-discarded. The flurry is measurable — a −4.1 dB drop at 151 s, then a sustained lift.
-⚠️ If this is ever regenerated, add `saxophone` to the excludes: Lighthouse Cove now
-claims the sax (§10), and these two are the album's jazz-adjacent corners — the fence
-runs both ways, and Lighthouse's draft already excludes `muted trumpet`.*
+discarded. The flurry is measurable — a −4.1 dB drop at 151 s, then a sustained lift.*
 
 **Fallwater Fjord** `fjord` · *take the downdraft or sail around it?* · Weirdness 30 · SI 85 · 4–6 min
 `'racing-fjord': { file: 'assets/audio/fjord.mp3', loopStart: 14.0, loopEnd: 147.5, trim: 0.65 }`
