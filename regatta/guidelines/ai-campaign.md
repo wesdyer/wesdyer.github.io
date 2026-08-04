@@ -2166,3 +2166,38 @@ from REMOVING a mechanism rather than adding one. Candidate work, in order:
 ⚠️ Whatever is tried, benchmark it at the resolution the metric needs: bay
 mechanism at 2-4 boats then verified at 9; bay contact metrics at 20 seeds, not
 8; arctic in-time on 32 seeds or on the paired per-boat median.
+
+## THE BAY BIN TABLE — `_bay_traffic_attrib.js` (new, committed)
+
+The bay analogue of the arctic transit attribution: per boat-second, one owning
+mode, excess distance = odometer − DMC progress. Run at both densities so the
+traffic share is separated from the geometry share.
+
+    9 BOATS   total excess 7241u/boat-race
+      leg |    rec   turn  avoid  offrt   sail
+      L1  |     26    197    793    593    285
+      L3  |      0    319    454    270    234
+      L4  |      0    281    513    304    349
+      L5  |      0    261    601    249    232
+      ALL |     36   1375   3059   1479   1292      weave 174u vs lateral 7067u
+
+    2 BOATS   total excess 6298u/boat-race
+      ALL |      0    851   1996   2002   1449      weave 123u vs lateral 6175u
+
+**Avoidance is the largest single bin at BOTH densities — 3059u of 7241 (42%) —
+and it is the bin that density inflates: +1063u going from 2 boats to 9, with
+turn adding +524u and `offrt` actually FALLING.** L1 alone carries +636u of
+avoidance excess between the two densities, which at ~95 u/s is most of that
+leg's measured 9.6s density cost.
+
+The proportion is almost identical to arctic transit (avoid 4100 of 9182 = 45%),
+which is worth noticing: **two very different venues, two independent
+attributions, and the same 42-45% of excess distance owned by the avoidance
+layer.** That is the campaign's largest single quantity and it now has twelve
+re-pricing rejections and seven commitment rejections against it. It is not a
+tuning problem, and the next attempt on it should be the structural one
+(objective REPLACEMENT), not another term.
+
+Also note `form: weave 174u vs lateral 7067u` — as on arctic, the excess is
+LATERAL displacement, not curvature. The boats are not wiggling; they are going
+somewhere else.
