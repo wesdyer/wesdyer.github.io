@@ -1253,3 +1253,41 @@ DNF 0.00%, race med 420.0 (cutoff-capped) / mean **395.4** (was 403.7 at the
 fleet_leg2 count, **71/144 = 49%** — was 22%. The capped row is cutoff-bound
 and will stay 420 median until the fleet median clears the cutoff; the honest
 headline is the uncapped 426 and the in-time count more than doubling.
+
+### The lookahead 2×2, mapped — and the trade is real in both directions
+
+`lookaheadFrames` drove BOTH the rival projection and the static/ice probe
+segment (marks, boundary, grid walk, floe polygons all test `boat → future`).
+Those two want opposite things, so the constant was split (`staticFrames`) and
+all four corners measured. All against cad2:
+
+| boat / static | med | mean | ratio | EXCESS | avoid (boat) | grind med | slow med | dev |
+|---|---|---|---|---|---|---|---|---|
+| **4.0 / 4.0 (shipped)** | **179** | 202 | 1.54 | 9601 | 4204 (1650) | **4.5** | **17.2** | 42° |
+| 2.5 / 2.5 (`look150`) | **179** | 204 | **1.39** | 8794 | 3556 (1266) | 7.7 | 21.0 | 43° |
+| 2.5 / 4.0 (`split150`) | 197 | 215 | 1.61 | 10297 | 4722 (**1799**) | 6.3 | 18.9 | 44° |
+| 4.0 / 2.5 (`split_s150`) | 195 | **198** | 1.50 | **8549** | **3298 (1214)** | 7.2 | 25.8 | **41°** |
+
+**All three alternatives REJECTED on the median.** What the grid buys is a
+clean decomposition of a result that was ambiguous when the two horizons were
+one number:
+
+- **The rival horizon wants 4s.** Shortening it ALONE (`split150`) is the only
+  change that raises avoid-boat (1650→**1799**): a rival reacted to late needs
+  a harder swerve, and the harder swerve is the cost. 6s is worse still
+  (`look360`, avoid-none doubled). 4s is a genuine two-sided knee.
+- **The static probe sits on a trade, not a knee.** Shortening it reliably buys
+  distance and avoidance — `split_s150` posts the LOWEST excess (8549), lowest
+  avoidance (3298), lowest deflection (41°) and best mean (198) of anything
+  measured this session — and reliably pays it back in grind (4.5→7.2) and slow
+  time (17.2→25.8). Seeing ice later means deviating for it less and hitting it
+  more, and on this engine a contact frame costs 60% of speed.
+- **`look150`'s distance win was never about boats.** It came entirely from the
+  short static probe; the split proves it by separating them.
+
+⇒ The shipped 4/4 is the MEDIAN optimum and stays. The open lead is unchanged
+in shape but now precisely sized and located: ~1000u of excess sits behind the
+static probe, and it is unlocked by CONTACT DISCIPLINE (arriving at ice with
+speed and a plan) rather than by the horizon constant, which only chooses which
+side of the trade to pay on. Explicitly NOT an avoidance-pricing problem, so
+not part of the closed traffic thread.
