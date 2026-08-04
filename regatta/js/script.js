@@ -506,7 +506,18 @@ class BotController {
                     }
                 }
                 const clear = nearest > 120 * 120;
-                const deadline = rsP.penaltyFlagTime > 12;
+                // A 360 needs water that can hold it. In OPEN water (no drifting
+                // pack) the turn is cheap and the wait is what costs — bay rub
+                // attribution: 57% of boat contacts involve a penalty carried a
+                // median 7.9s, because a flagged boat is give-way to everyone
+                // under Rule 21 and respected by none. In a FLOE FIELD the
+                // premise inverts: sea room is scarce, spinning among ice is
+                // expensive, and waiting is the right call. Measured both ways —
+                // the same shortened deadline that wins on bay cost arctic 5 of
+                // 43 in-time finishes, and the stricter sea-room ask cost a
+                // paired median of 44 seconds there.
+                const openWater = !(state.course._floeObjs && state.course._floeObjs.length);
+                const deadline = rsP.penaltyFlagTime > (openWater ? 6 : 12);
                 // Never spiral against the ICE either. A 360 needs a boat-length
                 // circle of clear water; taken while pinned in a floe pocket it
                 // grinds the whole turn against the pack (fresh contacts, fresh
@@ -514,9 +525,18 @@ class BotController {
                 // Even past the deadline, wait for sea room.
                 let iceNear = false;
                 const gclr = state.course.botGrid;
-                if (gclr && gclr._clear) {
-                    const c = gclr.cell(this.boat.x, this.boat.y);
-                    if (gclr.at(c[0], c[1]) && gclr._clear[c[1] * gclr.n + c[0]] < 3) iceNear = true;
+                if (gclr) {
+                    // `_clear` is lazily built by pathSailable, so on a venue that
+                    // never routes through tight water this guard was silently
+                    // dead. Build it — but only in open water, so ice venues stay
+                    // byte-identical.
+                    if (openWater && !gclr._clear && window.SailCheck && window.SailCheck.clearanceField)
+                        gclr._clear = window.SailCheck.clearanceField(gclr);
+                    if (gclr._clear) {
+                        const c = gclr.cell(this.boat.x, this.boat.y);
+                        const need = openWater ? 5 : 3;
+                        if (gclr.at(c[0], c[1]) && gclr._clear[c[1] * gclr.n + c[0]] < need) iceNear = true;
+                    }
                 }
                 if (!markNear && !iceNear && (clear || deadline) && this.riskState !== 'IMMINENT' && this.riskState !== 'HIGH') {
                     // Spin away from the nearest boat's side; default starboard-round.
