@@ -784,7 +784,12 @@ function compileVenueDoc(doc) {
             // boat lengths), or wide enough to capture an island rather than skim it.
             // Three hull lengths is the RRS zone (165u for a buoy); a mark standing at
             // something large needs a zone that captures it rather than skimming it.
-            zone: e.zone != null ? e.zone : Math.max(165, radius * 2.1),
+            //
+            // An AUTHORED zone may only ever be WIDER than that floor. The zone is
+            // where a rounding ARMS — below three hull lengths, an ordinary rounding
+            // sails past outside it and the leg silently never completes (Lighthouse
+            // Cove shipped a stray 128 on its first mark, exactly this trap).
+            zone: Math.max(e.zone != null ? e.zone : 0, 165, radius * 2.1),
             side: e.side || 'starboard',
             markIdx: e.markIdx
         };

@@ -622,8 +622,7 @@ window.VENUE_DOC["bay"] = {
         "dir": 1,
         "pass": "through",
         "markId": "mark-1",
-        "side": "port",
-        "zone": 127.67566425039459
+        "side": "port"
       },
       {
         "kind": "round",

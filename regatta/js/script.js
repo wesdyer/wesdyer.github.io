@@ -338,7 +338,8 @@ class BotController {
         // roundings evaporated unbanked. While outbound, the wiggle stands down:
         // the boat has a rounding to bank and navigation must steer the exit.
         {
-            const rmL = state.course.roundMark, rsL = this.boat.raceState;
+            const rsL = this.boat.raceState;
+            const rmL = legRoundMark(rsL.leg) || state.course.roundMark;
             if (isRacing && rmL && rmL.reqSweep != null && rsL.leg >= 1 && !rsL.finished
                 && typeof ROUND_SWEEP_TOL !== 'undefined') {
                 if (this._outboundLeg !== rsL.leg) { this._outboundLeg = rsL.leg; this._outbound = false; }
@@ -346,6 +347,10 @@ class BotController {
                 // Bank a BUFFER before turning for the exit: the fight out through
                 // the ring in a 25-knot katabatic costs ~0.2-0.4 rad of unwind, and
                 // leaving at exactly the requirement meant arriving outside it.
+                // (A 0.10 buffer on floe-free water was A/B'd on Lighthouse Cove —
+                // paired -2 med / -3.3 mean vs 0.25: the exit path curves, so the
+                // unwind is real even with nothing to grind through. 0.25 stays
+                // everywhere.)
                 if ((rsL.roundSweep || 0) >= needL + 0.25) this._outbound = true;
                 else if ((rsL.roundSweep || 0) < needL * 0.8) this._outbound = false;
                 if (this._outbound) { this.wiggleActive = false; this.wiggleDuration = 0; }
@@ -385,7 +390,8 @@ class BotController {
 
             // MID-ROUNDING: wiggle the way ROUND (see the escape's tie-break — a
             // wrong-way wiggle refunds hard-won sweep).
-            const rmW = state.course.roundMark, rsW = this.boat.raceState;
+            const rsW = this.boat.raceState;
+            const rmW = legRoundMark(rsW.leg) || state.course.roundMark;
             if (rmW && rsW.roundArmed && !rsW.finished
                 && Math.hypot(this.boat.x - rmW.x, this.boat.y - rmW.y) < rmW.zone * 1.5) {
                 const sgnW = rmW.side === 'port' ? -1 : 1;
@@ -612,7 +618,8 @@ class BotController {
                  // rotation refunds sweep the boat bled for (measured +0.6 -> -0.85).
                  // Near the zone, pick the sailable heading that is both outward and
                  // toward the required rotation tangent.
-                 const rmE = state.course.roundMark, rsE = this.boat.raceState;
+                 const rsE = this.boat.raceState;
+                 const rmE = legRoundMark(rsE.leg) || state.course.roundMark;
                  if (rmE && rsE.roundArmed && !rsE.finished
                      && Math.hypot(this.boat.x - rmE.x, this.boat.y - rmE.y) < rmE.zone * 1.5) {
                      const outX = -col.normal.x, outY = -col.normal.y;
@@ -722,8 +729,12 @@ class BotController {
             // few lengths ahead of our own progress along it. The old orbit math
             // aimed at zone geometry with no notion of what water the arc crossed,
             // and on Glacier Sound the fleet milled in the island's lee forever.
-            const rm = state.course.roundMark;
             const rs = boat.raceState;
+            // THIS leg's rounding mark. Every orbit, entrance-hunt and exit decision
+            // below is geometry about `rm` — pinned to `roundMark` (the course's FIRST
+            // rounding), a five-rounding course deadlocked on leg 2: the walker watched
+            // mark two while the armed orbit dutifully circled mark one, forever.
+            const rm = legRoundMark(rs.leg) || state.course.roundMark;
             const dmcLeg = state.course.dmc && state.course.dmc.legs && state.course.dmc.legs[rs.leg];
             if (dmcLeg && dmcLeg.pts && dmcLeg.pts.length >= 2 && typeof CoursePath !== 'undefined') {
                 // ONCE THE SWEEP IS MADE, GET OUT. The rounding leg's ideal path ends
@@ -844,6 +855,11 @@ class BotController {
                             const score = clear * 10 - blocked * 8 - churn * 4 - da * 3 - crowd * 7;
                             if (score > bestScore) { bestScore = score; bestA = a; }
                         }
+                        // (Ruler-entry on clean uncontested rings was A/B'd here —
+                        // skip the hunt, let the DMC follower carry the approach —
+                        // and REJECTED: paired gain fell from +8.0s to +1.6s. The
+                        // sector hunt's cut-in beats the tangent follower on this
+                        // engine even alone in open water.)
                         this._entryBrg = bestA;
                     }
                     if (this._entryBrg != null) {
@@ -927,7 +943,7 @@ class BotController {
                         this._exitT = (this._exitT || 0) - 0.1;
                         if (gX && (this._exitBrg == null || this._exitT <= 0)) {
                             this._exitT = 2.0;
-                            let bestX = null, bestSc = -Infinity;
+                            let bestX = null, bestSc = -Infinity, ringDirty = false;
                             for (let k = 0; k < 16; k++) {
                                 const a = k / 16 * Math.PI * 2;
                                 let clear = 0, blocked = 0, churn = 0;
@@ -937,9 +953,9 @@ class BotController {
                                     const cc = gX.cell(px, py);
                                     const idX = cc[1] * gX.n + cc[0];
                                     if (gX.at(cc[0], cc[1])) clear += (gX._futBlk && gX._futBlk[idX]) ? 0.3 : 1;
-                                    else if (gX._soft && gX._soft[idX] === 1) clear += 0.5;
-                                    else blocked++;
-                                    if (gX._floeRisk && gX._floeRisk[idX]) churn++;
+                                    else if (gX._soft && gX._soft[idX] === 1) { clear += 0.5; ringDirty = true; }
+                                    else { blocked++; ringDirty = true; }
+                                    if (gX._floeRisk && gX._floeRisk[idX]) { churn++; ringDirty = true; }
                                 }
                                 let da = (a - brgA) * sgnA;
                                 while (da < 0) da += Math.PI * 2;
@@ -950,9 +966,52 @@ class BotController {
                                 const sc = clear * 10 - blocked * 8 - churn * 4 - da * 9;
                                 if (sc > bestSc) { bestSc = sc; bestX = a; }
                             }
+                            // CLEAN RING: no shell to breach. The sector machinery is
+                            // pack-ice logic — ride the ring to the clearest radial,
+                            // punch out to 1.7x — and on open water it exits wherever
+                            // the sweep happened to bank, then turns around (measured
+                            // on Lighthouse Cove: +3-7s at EVERY rounding, the largest
+                            // per-leg sink on the venue). With nothing to dodge, the
+                            // exit that matters is the one the NEXT leg starts with.
+                            this._exitClean = false;
+                            if (!ringDirty) {
+                                const nxt = state.course.dmc && state.course.dmc.legs
+                                    && state.course.dmc.legs[rs.leg + 1];
+                                if (nxt && nxt.pts && nxt.pts.length) {
+                                    // ~600u along the next path clears the arc geometry
+                                    // near the mark before committing to a bearing.
+                                    let tp = nxt.pts[nxt.pts.length - 1];
+                                    for (let k = 0; k < nxt.pts.length; k++) {
+                                        if (nxt.cum[k] > 600) { tp = nxt.pts[k]; break; }
+                                    }
+                                    const bOut = Math.atan2(tp.y - rm.y, tp.x - rm.x);
+                                    // TRUE RUNS only (the strategy layer's own
+                                    // downwind boundary). Aimed exits were A/B'd at
+                                    // three thresholds: dead-upwind aim pinched, a
+                                    // forced close-hauled tack lost 3-4s on the beat
+                                    // leg, and even a 49° gate still aimed the
+                                    // beat-feeding exit at a close reach toward the
+                                    // shore corridor (-4s paired, three runs in a
+                                    // row). Upwind and reach first boards belong to
+                                    // the strategy layer; the old radial exit hands
+                                    // over to it cleanly.
+                                    const lwX = getWindAt(rm.x, rm.y).direction;
+                                    const twaOut = normalizeAngle(bOut - lwX);
+                                    if (Math.abs(twaOut) >= Math.PI * 0.7) {
+                                        bestX = bOut;
+                                        this._exitClean = true;
+                                    }
+                                }
+                            }
                             this._exitBrg = bestX;
                         }
-                        if (this._exitBrg != null) {
+                        if (this._exitBrg != null && this._exitClean) {
+                            // Straight out along the next leg — any outward motion
+                            // banks the rounding; no ring ride, no radial ritual.
+                            const RXo = Math.max(rm.zone * 1.45, dRm + 120);
+                            destX = rm.x + Math.cos(this._exitBrg) * RXo;
+                            destY = rm.y + Math.sin(this._exitBrg) * RXo;
+                        } else if (this._exitBrg != null) {
                             let da = (this._exitBrg - brgA) * sgnA;
                             while (da < 0) da += Math.PI * 2;
                             while (da >= Math.PI * 2) da -= Math.PI * 2;
@@ -1526,9 +1585,18 @@ class BotController {
             mode = 'downwind';
             optTWA = getCharacterOptimalVMGAngle('downwind', localWind.speed, boat.stats);
 
-            // Planing Check
-            if (state.wind.speed > J111_PLANING.minTWS) {
-                 optTWA = 140 * Math.PI/180;
+            // Planing Check — LOCAL wind, and only if THIS boat can actually reach
+            // the planing entry gate at the hot angle. The old check read the
+            // GLOBAL wind: one venue region above minTWS heated every run in the
+            // bay to 140° boards (1/cos40 = +31% distance) in 10-11 kt water where
+            // the polar tops out below entrySpeed and the plane never engages —
+            // the human sails those legs at 150-170° and beats the fleet on pure
+            // geometry. Heat only when the plane is genuinely on offer.
+            if (localWind.speed > J111_PLANING.minTWS) {
+                const t140 = (140 - 102.5) / (145 - 102.5);
+                const pos140 = boat.stats.reach * 0.018 + t140 * (boat.stats.downwind * 0.015 - boat.stats.reach * 0.018);
+                const s140 = getTargetSpeed(140 * Math.PI / 180, true, localWind.speed) * (1 + pos140);
+                if (s140 >= J111_PLANING.entrySpeed) optTWA = 140 * Math.PI / 180;
             }
         }
 
@@ -8970,24 +9038,35 @@ function updateBoatRaceState(boat, dt) {
         const rx1 = boat.x - rm.x, ry1 = boat.y - rm.y;
         const d2 = rx1 * rx1 + ry1 * ry1;
 
-        // TWO separate requirements, which were previously one:
+        // THE ZONE DOES NOT GATE COMPLETION. The circle is a RULES construct — where
+        // mark-room applies, where the AI switches to its orbit machinery — and a
+        // rounding is complete the way the racing rules say it is: pass the mark on
+        // the required side, in sequence. The string rule cares which side you left
+        // it on, not how close you came, so a wide rounding outside the circle is a
+        // legitimate (if slow) rounding. Zone entry used to ARM the sweep, and a
+        // player who gave the first can a sensible berth sailed a perfect rounding
+        // that silently never counted.
         //
-        //   1. You must PASS the mark — come within its zone at least once. That is
-        //      what proves you rounded this mark rather than something else.
-        //   2. You must go ROUND it — sweep the bearing the correct way while it is the
-        //      active mark.
-        //
-        // Sweep used to accumulate only while inside the zone, so a WIDE rounding
-        // accumulated nothing and never registered, even though the boat had plainly
-        // gone round. Now the zone arms it and the sweep counts out to a generous
-        // radius, bounded so a boat cannot "round" a mark by circling half a mile away.
+        // So the signed sweep accumulates for the WHOLE leg, at any distance. The
+        // sign carries the side: a pass on the wrong side sweeps negative and can
+        // never reach the requirement, however close or far it was.
         //
         // Note the sweep is only ever read for its SIGN — see the completion test
         // below for why a magnitude threshold cannot work.
-        if (d2 < rm.zone * rm.zone) rs.roundArmed = true;
+        //
+        // ARMED BY THE HULL, not the centre — armed now feeds only the AI's rounding
+        // machinery and the wrong-way warning, but it should still flip exactly when
+        // the drawn ring lights amber, and both test the hull per RRS 18.1.
+        if (!rs.roundArmed) {
+            const sinH = Math.sin(boat.heading), cosH = Math.cos(boat.heading);
+            const hp = getClosestPointOnSegment(rm.x, rm.y,
+                boat.x + 25 * sinH, boat.y - 25 * cosH,
+                boat.x - 30 * sinH, boat.y + 30 * cosH);
+            if ((hp.x - rm.x) ** 2 + (hp.y - rm.y) ** 2 < rm.zone * rm.zone) rs.roundArmed = true;
+        }
         const activeR = rm.zone * ROUND_ACTIVE;
         const d2prev = (rs.lastPos.x - rm.x) ** 2 + (rs.lastPos.y - rm.y) ** 2;
-        if (rs.roundArmed && d2 < activeR * activeR) {
+        {
             const rx0 = rs.lastPos.x - rm.x, ry0 = rs.lastPos.y - rm.y;
             let dA = Math.atan2(ry1, rx1) - Math.atan2(ry0, rx0);
             while (dA > Math.PI) dA -= Math.PI * 2;
@@ -9000,12 +9079,18 @@ function updateBoatRaceState(boat, dt) {
             // a wrong-way excursion must be able to cancel, or you could bank credit
             // one way and then pass on the wrong side.
             rs.roundSweep = (rs.roundSweep || 0) + prog;
-            if (prog < 0) rs.roundWrong = (rs.roundWrong || 0) - prog;
-            if (rs.roundWrong > Math.PI * 0.55 && boat.isPlayer && !rs._wrongRound) {
-                rs._wrongRound = true;
-                showRaceMessage(`WRONG WAY ROUND — LEAVE IT TO ${String(rm.side).toUpperCase()}`,
-                                "text-orange-500", "border-orange-500/50");
-                setTimeout(hideRaceMessage, 2500);
+            // The WARNING stays gated to the mark's neighbourhood. Far from the mark
+            // the bearing wobbles with every tack of an ordinary beat, and those
+            // wobbles accumulate one-directionally here — ungated, a long approach
+            // could scold a boat that never put a foot wrong.
+            if (prog < 0 && d2 < activeR * activeR) {
+                rs.roundWrong = (rs.roundWrong || 0) - prog;
+                if (rs.roundWrong > Math.PI * 0.55 && boat.isPlayer && !rs._wrongRound) {
+                    rs._wrongRound = true;
+                    showRaceMessage(`WRONG WAY ROUND — LEAVE IT TO ${String(rm.side).toUpperCase()}`,
+                                    "text-orange-500", "border-orange-500/50");
+                    setTimeout(hideRaceMessage, 2500);
+                }
             }
         }
 
@@ -9028,10 +9113,13 @@ function updateBoatRaceState(boat, dt) {
         // leg whose geometry needs the whole circle, because the boat leaves for the line it
         // arrived from. `reqSweep` comes from where the previous and next marks are.
         //
-        // ROUND_SWEEP_TOL leaves room for a wide rounding, which sweeps a little less than
-        // the ideal — the sweep only accumulates inside ROUND_ACTIVE zone radii.
+        // ROUND_SWEEP_TOL leaves room for a rounding that sweeps a little less than the
+        // ideal tangent-to-tangent arc.
+        //
+        // No zone requirement here — the departure radius only stops the leg completing
+        // in the middle of a tight turn; a wide rounding is already outside it.
         const need = (rm.reqSweep != null ? rm.reqSweep * ROUND_SWEEP_TOL : Math.PI / 4);
-        if (rs.roundArmed && d2 > (rm.zone * 1.25) ** 2 && d2 > d2prev
+        if (d2 > (rm.zone * 1.25) ** 2 && d2 > d2prev
             && (rs.roundSweep || 0) >= need) {
             advanceLeg();
         }
@@ -14370,6 +14458,10 @@ function buildRoute(type, totalLegs) {
 const routeLeg  = (leg) => (state.course && state.course.route) ? (state.course.route[leg] || null) : null;
 // Marks bounding the leg's target gate/line, or null for a rounding (no gate).
 const legMarks  = (leg) => { const r = routeLeg(leg); return (r && r.marks) ? r.marks : null; };
+// THE mark this leg rounds, or null if it is not a rounding leg. `course.roundMark`
+// is only the FIRST rounding of the course — any consumer that wants "the mark I am
+// rounding NOW" must ask the route, or a multi-rounding course pins it to mark one.
+const legRoundMark = (leg) => { const r = routeLeg(leg); return (r && r.kind === 'round' && r.mark) ? r.mark : null; };
 const legDir    = (leg) => { const r = routeLeg(leg); return r ? r.dir : 1; };
 // Is this leg sailed upwind? Leg 0 counts: the start is a beat to the line.
 // Where a leg is sailed TO: a gate/line midpoint, or a rounding mark.
