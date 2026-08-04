@@ -2244,3 +2244,29 @@ constructive power against a stack this well tuned, and the budget arithmetic is
 the binding constraint — episodes cost ~20s of wall clock, so ~25 generations is
 what eight hours buys at a useful seed count. Any retry should fix the episode
 cost first, or drop to a handful of parameters.
+
+## REFRESHED ARCTIC DIAGNOSTICS ON THE FINAL HEAD (for the next session)
+
+`_transit_probe2.js` (avoid-none sub-attribution) and `_defl_hist.js`, 8 seeds:
+
+    TRANSIT  med 180  ratio 1.50  EXCESS 9182 = rec 448 | turn 1331 | avoid 4100
+                                                | offrt 2500 | sail 803
+    avoid sub-bins   boat 1596 | static 527 | both 436 | none 1541   mean dev 43°
+    avoid-none       lat-static 574 | floe<250u 346 | boat<300u 216 | latch 4
+                     | TRUE-none 401
+    SECONDS by class rec 14 | turn 23 | avoid 77 | offrt 47 | sail 36  (park 3s)
+    falsebeat 4% of sail-mode distance | heading-vs-carrot 19° | xtrack mean 491u
+
+    DEFLECTION HISTOGRAM  47% of transit frames carry a deviation
+      6°  15.7% | 11°  10.0% | 23°  19.4% | 34°  11.4% | 46°   8.7%
+     69°  11.4% | 92°  12.2% | 126°  7.2% | 172°  4.0%
+      => 23% of avoiding frames deflect 69° OR MORE, and 4% are near-reversals
+
+Two things to carry forward. **`true-none` is only 401u of 9182 (4%)** — the
+avoidance layer is almost always responding to something real, so "spurious
+avoidance" is not the bin. And **the deflection distribution is bimodal**: a
+large mass of small corrections (45% under 23°) plus a hard tail where a quarter
+of avoiding frames swing 69° or more. Any structural replacement should be
+judged on whether it moves the TAIL, not the mean — the mean has now sat at
+42-43° through twelve re-pricings, three ice commitments, and a map fix that
+moved everything else.

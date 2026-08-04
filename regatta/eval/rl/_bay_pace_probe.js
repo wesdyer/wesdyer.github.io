@@ -16,6 +16,10 @@ const fs = require('fs'); const path = require('path');
 const TRIALS = parseInt(process.argv[2]) || 8;
 const SEED0 = parseInt(process.argv[3]) || 9100;
 const ROOT = path.join(__dirname, process.argv[4] || 'treeA');
+// Optional: race only the first N bots (the rest are parked finished). The
+// banked human sails in clear air most of the way; if the fleet's extra
+// distance is traffic rather than tactics, it should fall out with density.
+const NBOATS = parseInt(process.argv[5] || '0');
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 
 (async () => {
@@ -32,12 +36,16 @@ const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[M
     let legLens = null;
     for (let i = 0; i < TRIALS; i++) {
         const seed = SEED0 + i;
-        const r = await page.evaluate(async (seed) => {
+        const r = await page.evaluate(async ([seed, NB]) => {
             window.evalHarness.seed = seed;
             window.resetGame(); window.startRace();
             state.course.cutoff = 900;
-            const bots = state.boats.filter(b => !b.isPlayer);
+            let bots = state.boats.filter(b => !b.isPlayer);
             const pl = state.boats.find(b => b.isPlayer); pl.x = 5900; pl.y = -6100;
+            if (NB > 0 && NB < bots.length) {
+                bots.slice(NB).forEach((b, i) => { b.x = 9000 + i * 150; b.y = -9000; b.raceState.finished = true; });
+                bots = bots.slice(0, NB);
+            }
             const st = bots.map(b => ({ leg: -1, t0: 0, odo: 0, px: b.x, py: b.y, twa: 0, n: 0, rows: [] }));
             const dt = 1 / 60;
             for (let it = 0; it < 60 * 940; it++) {
@@ -51,9 +59,13 @@ const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[M
                     if (s.leg !== b.raceState.leg) {
                         if (s.leg >= 1) s.rows.push({ leg: s.leg, dur: state.race.timer - s.t0,
                                                       odo: s.odo, near: s.odoNear || 0, far: s.odoFar || 0,
-                                                      twa: s.n ? s.twa / s.n : 0 });
+                                                      twa: s.n ? s.twa / s.n : 0,
+                                                      bad: s.n ? s.bad / s.n : 0,
+                                                      av: s.n ? s.av / s.n : 0,
+                                                      hi: s.n ? s.hi / s.n : 0,
+                                                      flips: s.flips || 0 });
                         s.leg = b.raceState.leg; s.t0 = state.race.timer; s.odo = 0; s.twa = 0; s.n = 0;
-                        s.odoNear = 0; s.odoFar = 0;
+                        s.odoNear = 0; s.odoFar = 0; s.bad = 0; s.av = 0; s.hi = 0; s.flips = 0; s.tk = null;
                     }
                     // WHERE in the leg is the extra distance spent? Split the
                     // odometer by distance to THIS leg's rounding mark: the last
@@ -71,6 +83,16 @@ const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[M
                     if (it % 6 === 0) {
                         const w = getWindAt(b.x, b.y);
                         s.twa += Math.abs(normalizeAngle(b.heading - w.direction)); s.n++;
+                        // WHERE DOES DENSITY COST ITS TIME? Sample the three
+                        // candidate sinks at 10Hz: dirty air, avoidance deflection,
+                        // and manoeuvres. Tacks counted by close-hauled sign flip.
+                        const c = b.controller || {};
+                        s.bad = (s.bad || 0) + (b.badAirIntensity || 0);
+                        if (Math.abs(c.lastAvoidDeviation || 0) > 0.12) s.av = (s.av || 0) + 1;
+                        if (c.riskState === 'HIGH' || c.riskState === 'IMMINENT') s.hi = (s.hi || 0) + 1;
+                        const tk = normalizeAngle(b.heading - w.direction) > 0 ? 1 : -1;
+                        if (s.tk != null && tk !== s.tk) s.flips = (s.flips || 0) + 1;
+                        s.tk = tk;
                     }
                 }
             }
@@ -78,7 +100,7 @@ const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[M
             for (let L = 1; L < state.course.dmc.legs.length; L++)
                 if (state.course.dmc.legs[L]) lens[L] = state.course.dmc.legs[L].length;
             return { rows: st.flatMap(s => s.rows), lens };
-        }, seed);
+        }, [seed, NBOATS]);
         bot.push(...r.rows); legLens = r.lens;
         console.log(`seed ${seed}: ${r.rows.length} leg records`);
     }
@@ -123,6 +145,12 @@ const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[M
             `${bd.toFixed(1).padStart(7)} ${String(Math.round(bo)).padStart(5)} ${(bo / len).toFixed(2).padStart(6)} ${bs.toFixed(1).padStart(6)}  |  ` +
             `${hd.toFixed(1).padStart(8)} ${String(Math.round(ho)).padStart(5)} ${(ho / len).toFixed(2).padStart(6)} ${hs.toFixed(1).padStart(6)}  | ` +
             `${gap > 0 ? '+' : ''}${gap.toFixed(1)}s = ${distPart.toFixed(1)}s dist + ${spdPart.toFixed(1)}s speed`);
+    }
+    console.log('  density sinks — share of leg time in each state, and board flips:');
+    for (let L = 1; L <= 6; L++) {
+        const B = bot.filter(r => r.leg === L && r.av != null);
+        if (!B.length) continue;
+        console.log(`   L${L}  dirtyAir ${med(B.map(r => r.bad)).toFixed(3)}  avoidActive ${(100 * med(B.map(r => r.av))).toFixed(0)}%  highRisk ${(100 * med(B.map(r => r.hi))).toFixed(0)}%  flips ${med(B.map(r => r.flips)).toFixed(1)}`);
     }
     console.log('  odometer split — FAR (>3x zone from the mark) vs NEAR (the approach + rounding):');
     for (let L = 1; L <= 6; L++) {
