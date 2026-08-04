@@ -1526,3 +1526,77 @@ flips. Escalate to the owner instead of accepting.
   waits for the owner.**
 - Append dated results to this doc as verdicts land — rejections WITH their
   mechanism, not just the verdict.
+
+## HARNESS QUICKSTART — exact commands, and the traps that cost time
+
+**Run everything from `regatta/eval/rl/` unless stated.** ⚠️ The Bash tool's
+working directory PERSISTS between calls: a `cd` in one command silently
+changes where the next one runs. Last session that caused a test to be run from
+`treeB`'s copy and a "failure" to be misattributed for ten minutes. `cd` to an
+absolute path in the same command whenever it matters.
+
+⚠️ **THE ARGUMENT ORDER IS NOT CONSISTENT BETWEEN SCRIPTS.** Getting it wrong
+silently benchmarks the wrong tree — the worst possible failure, because it
+looks like a result:
+
+    _transit_probe.js     <trials> <seed0> <TREE> <LABEL>      # tree, then label
+    _bay_hairpin_probe.js <trials> <seed0> <TREE> <LABEL>      # tree, then label
+    _route_attrib.js      <trials> <seed0> <TREE> <LABEL>      # tree, then label
+    fleet_leg2.js         <trials> <seed0> <LABEL> <TREE>      # LABEL, then tree
+    bay_bench.js          <trials> <seed0> <LABEL> <TREE>      # LABEL, then tree
+    gauntlet_bench.js     <trials> <seed0> <LABEL> <TREE>      # LABEL, then tree
+
+**The gates:**
+
+    # 8-seed transit probe (arctic) — the cheap gate, ~8 min solo
+    node _transit_probe.js 8 9100 treeC mylabel
+    cmp transit_attrib_mylabel.json transit_attrib_cad2.json   # byte-check a no-op
+
+    # 16-seed arctic fleet gate — THE acceptance gate, ~40 min
+    node fleet_leg2.js 16 9100 mylabel treeC
+    node _fleet_pair.js mylabel cad2x16        # positive delta = experiment faster
+
+    # 20-seed bay gate, ~30 min
+    node bay_bench.js 20 9100 mylabel treeA
+    node bay_report.js mylabel baycutlead
+    # ⚠️ bay_report's header says "negative = A faster". It is WRONG — the code
+    # computes baseline − experiment, so POSITIVE means the experiment is faster.
+
+    # bay rounding-class probe, ~10 min
+    node _bay_hairpin_probe.js 8 9100 treeA mylabel
+
+    # seatrials anchor — MUST run with cwd = the tree root
+    cd treeA && node regatta/eval/run_eval.js 100 100
+
+    # capped arctic (DNS/DNF row per snapshot)
+    node arctic_eval.js mylabel 16 9100 treeA --json arctic_eval_mylabel.json
+
+    # goldens, from the REPO ROOT
+    npm run trace                                  # verify
+    node regatta/eval/run_traces.js --update       # re-record (accepted change only)
+
+**Diagnostics already built (reuse before writing new ones):**
+`_route_attrib` (is the plan long, or is the boat off it), `_defl_hist`
+(deflection distribution across the candidate fan), `_drift_pred` (how
+predictable the ice is), `_map_validity` (cell flip + plan churn vs horizon),
+`_grid_stamp_check` (stampFloes ≡ buildGrid, cell for cell), `_grid_cost`,
+`_redrock_marks` (per-mark rounding clearance, works on any venue),
+`_transit_probe2` (avoid-none sub-attribution), `_floe_spin_probe`.
+
+**Costs, measured:** 8-seed transit probe ~8 min alone, ~15-20 min with three
+concurrent. 16-seed fleet gate ~40 min. 20-seed bay ~30 min. 100-trial
+seatrials ~25 min. Budget accordingly and run them CONCURRENTLY — that is the
+whole point of the four trees.
+
+**Housekeeping:** `pkill -9 -f chrome-headless` between long runs to clear
+orphans, but NEVER while a bench is running. `rsync -a --delete <repo>/regatta/js/
+treeX/regatta/js/` to sync a tree to HEAD. treeA/C/D are gitignored scratch;
+**treeB is tracked and holds the pre-cadence build — do not touch it.**
+
+## REPORTING RHYTHM
+
+Post a progress update roughly hourly: what landed, what was rejected and WHY
+(the mechanism, not just the verdict), and what is in flight. Append the same to
+this doc as verdicts land, so the record survives the session. State elapsed
+time from `date`, not from estimate. If something is still running when the
+owner returns, say so plainly rather than guessing at its result.
