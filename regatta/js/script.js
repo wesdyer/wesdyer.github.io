@@ -2426,12 +2426,55 @@ class BotController {
         // below keep full weight at every speed, so Rule 14 never softens.
         const jamF = Math.min(1, this.boat.speed / 1.4);
 
+        // UNPLANNED-TACK TAX (beats only). A candidate that crosses head-to-wind
+        // is a whole tack — momentum lost, and the strategic layer then fights to
+        // tack back (traced on Lighthouse Cove L1: avoidance-initiated flips start
+        // 5-in-3s saw bursts; tail boats tack 7-14x a beat vs the human's 2, and
+        // corr(L1 time, tacks) = 0.72). Under the old costs a crash-tack ran
+        // ~13-20 (deviation term) — nearly free next to the ±800-1500 duck/bow
+        // shaping, so dodges flipped the hull when a same-board duck existed.
+        // Guards: only while the strategy wants to STAY on this board (a
+        // commanded tack is never taxed), racing legs (start-pack tuning is
+        // sacred), way-on scaled like the other RRS shaping terms (jammed boats
+        // pivot cheaply — hold-friendliness per the Round-10 lesson stands: this
+        // taxes CROSSING the wind, never holding near it), and it is shaping-
+        // sized: the 5e5-scale Rule-14 terms roll over it in any real emergency.
+        const wdAv = getWindAt(this.boat.x, this.boat.y).direction;
+        const desTwaAv = normalizeAngle(desiredHeading - wdAv);
+        const hullTkAv = normalizeAngle(this.boat.heading - wdAv) > 0 ? 1 : -1;
+        let taxTack = Math.abs(desTwaAv) < Math.PI / 3.5
+            && (desTwaAv > 0 ? 1 : -1) === hullTkAv
+            && this.boat.raceState.leg >= 1;
+        // ...but never when the current board is about to hit something HARD:
+        // in Glacier Sound's floe churn a crash-tack is often the only sane
+        // escape, and taxing it cost 7 in-time finishes (arctic 16-seed gate).
+        // Same waiver shape as the >16kt no-tack guard: hard grid blockage
+        // (land or stamped floe, not grindable soft ice) within ~180u dead
+        // ahead frees the flip. Open water keeps the tax.
+        if (taxTack && state.course._gridFixed && state.course._gridFixed.length) {
+            const gTx = state.course.botGrid;
+            if (gTx) {
+                for (const dTx of [90, 180]) {
+                    const cc = gTx.cell(this.boat.x + Math.sin(this.boat.heading) * dTx,
+                                        this.boat.y - Math.cos(this.boat.heading) * dTx);
+                    if (!gTx.at(cc[0], cc[1])) {
+                        const idTx = cc[1] * gTx.n + cc[0];
+                        if (!(gTx._soft && gTx._soft[idTx])) { taxTack = false; break; }
+                    }
+                }
+            }
+        }
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
-            
+
             // Base Cost: Deviation from desired course
             // Non-linear cost to strongly prefer small deviations
             let cost = Math.pow(Math.abs(offset), 1.5) * 10;
+
+            if (taxTack && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) {
+                cost += 600 * jamF;
+            }
 
             // RRS Rule 16/14: Stand-on boat holds course...
             // but Rule 14 requires evasive action when "it becomes clear
@@ -8239,6 +8282,25 @@ function updateAI(boat, dt) {
         aiTurnRate = getTurnSpeed() * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
     }
 
+    // CREW-LEVEL RL HOOK (inert in play/eval: only a headless harness installs
+    // window.__rlCrew). The policy owns EXECUTION of the tactician's command —
+    // signed turn rate toward targetHeading and sail power — never the command
+    // itself. Authority is bounded by the same physics as the classical crew:
+    // the steerage/handling-capped turn rate, and a power ceiling at the
+    // commanded speedLimit (the throttle is a tactician decision; the crew may
+    // spill extra to execute a maneuver but never power past the command).
+    // Wiggle keeps the classical snap-turn (escape ownership stays untouched).
+    let crewAct = null;
+    if (typeof window !== 'undefined' && window.__rlCrew && !boat.controller.wiggleActive) {
+        crewAct = window.__rlCrew.actFor ? window.__rlCrew.actFor(boat) : null;
+    }
+    if (crewAct) {
+        const turnCmd = Math.max(-1, Math.min(1, crewAct[0]));
+        boat.heading += turnCmd * aiTurnRate;
+        boat.heading = normalizeAngle(boat.heading);
+        const power = Math.max(0, Math.min(crewAct[1], speedLimit < 0.9 ? speedLimit : 1));
+        boat.ai.forcedLuff = 1.0 - power;
+    } else {
     // If very far off, turn faster?
     const turnAmt = Math.sign(diff) * Math.min(Math.abs(diff), aiTurnRate);
     boat.heading += turnAmt;
@@ -8249,6 +8311,7 @@ function updateAI(boat, dt) {
         boat.ai.forcedLuff = 1.0 - speedLimit;
     } else {
         boat.ai.forcedLuff = 0;
+    }
     }
 
     // Spinnaker logic — decided in APPARENT, and on the wind HERE.
