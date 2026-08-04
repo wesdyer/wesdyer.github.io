@@ -44,6 +44,7 @@ OCS hold that returns cleanly before the gun is NOT one).
 | 2026-08-03 post-merge @40t (721e8ce) | bots | 0 | 200.25 | 202.87 | — | — |
 | 2026-08-03e anchor @100t (f6d4c98) | bots | 0 | 199.33 | 202.56 | 175.2 | 347.6 |
 | 2026-08-03 (12 traj) | human | 0 | 192.2 | 191.4 | 180.9 | 200.6 |
+| 2026-08-03e (13 traj) | human | 0 | 192.2 | 192.5 | 180.9 | 205.8 |
 
 ⚠️ Owner merge 11a8f4b (VENUES card copy → venue documents) shifts init RNG
 draws: every seed reshuffles, goldens were re-recorded (PASS at 721e8ce),
@@ -120,6 +121,7 @@ a field that does not exist on live boats (the engine stores
 | 2026-08-03 tacktax (6aa46ea) | bots | 0 | 261 | 265.1 | 218 | 365 |
 | 2026-08-03 post-merge (721e8ce) | bots | 0 | 264 | 266.8 | 220 | 351 |
 | 2026-08-03 (7 traj) | human | 0 | 226.1 | 226.7 | 219.5 | 241.1 |
+| 2026-08-03e (11 traj) | human | 0 | 226.2 | 228.4 | 217.8 | 243.3 |
 
 (instr row = byte-identical races to the stack — instrumentation verified
 inert against the stored stack JSON — with the new columns now measured.)
@@ -312,6 +314,7 @@ treeB baseline that byte-reproduced the ledger: transit 227 / ret 147):
 | replan path continuity | pathSailable prevPath stamp, +0.18 off-thread hint | 227→237 / 147→179, turn flat, carrotJump flat | old ribbon goes stale vs pack drift; re-approach cycles (sticky-carrot disease from the route side) |
 | urgency-graded RRS | duck −800 / bow +1500 / R16 +2000 ×0.35 at MEDIUM | 227→244 / 147→164, avoid-boat UP | flat terms RESOLVE encounters early; weakened, threats escalate to HIGH and cost more (grind 15→19s) |
 | floe notch3 | farHit 3500→2000, band 1200→700, cScale 4000→2500 | 227→248 / 147→159, grind med 9.9→12.8 | **KNEE FOUND — notch2 is the optimum** of the grind-pricing family |
+| transit board commitment | scoreTack stickiness ×2.5+0.3 on grid-venue transit | 227→247 / 147→153, tacks UP 14→16 | flips are avoidance/carrot-fed, not score-hysteresis-fed; stickier boards hold bad lines longer, then swing harder |
 
 Mean avoidance deflection sat pinned at 46-48° through every experiment —
 the swing size is not chosen by the terms we re-priced; open-water traffic
@@ -343,8 +346,13 @@ see. Physics/venue-feel change — Wes's call on constant + goldens re-record.
 **Bay attributions** (no behaviour change; instruments 9e4c608):
 - Fat tail: L3 tail (13/72, med 63s vs lean 43s) is TRAFFIC-owned (61% of
   windows have a rival <350u; avoid 1874 of 3643 excess). L5 tail (6/72) is
-  OPEN-WATER avoid-none (1128u, no rival, no dead-ahead blockage) — needs
-  its own sub-binning (no floes on bay).
+  OPEN-WATER avoid-none (1128u, no rival, no dead-ahead blockage). Sub-binned
+  (probe v2): bay avoid-none is **TRUE-NONE dominated** (L3 tail 903 of 995,
+  L5 tail 1051 of 1128; lat-static literally 0) — unlike arctic, where
+  lat-static+floes explain ~60%. Suspects: CPA-range threats (a converging
+  rival 400u+ away sets GIVE_WAY on distCPA<70/tCPA<8s while the probe's
+  <300u-now check misses it) and land/boundary inside avoidance's 400-600u
+  segment checks but past the probe's 360u rays.
 - Hairpin ≥16s class (6/61) splits: (a) WRONG-WAY SWEEP AT ARMING — armed at
   −4.3 rad vs +3.19 required after curling the wrong side on the hot run
   approach; 1500u excursion + re-loop to unwind (36s, 35s cases); (b)
@@ -411,14 +419,35 @@ Priorities, in order:
    detail probe's floe bin doesn't transfer; write the bay variant).
    ⚠️ For the L3 traffic tail: urgency-weakening of RRS shaping is
    arctic-REJECTED — expect the same local-optimum defense on bay.
-3. **Roundabout ideas NOT tried yet** (for after 1-2): scoreTack board
-   re-decision cadence on transit was designed but never probed (the
-   continuity failure suggests the flips are avoidance-fed, not
-   score-fed); bay contact-discipline vein (rubs 2.54 vs human 0.14) still
-   open via try-the-plane's side-effect direction.
+3. **Roundabout ideas**: scoreTack board-commitment on transit was probed
+   same session — REJECTED (fifth entry in the table above; flips are
+   avoidance-fed). Bay contact-discipline vein (rubs 2.54 vs human 0.14)
+   still open via try-the-plane's side-effect direction. The human bank
+   now holds a ZERO-floe-contact arctic run (207.0s, minFloe 26u) — the
+   contact-discipline ceiling is proven, not hypothetical.
 4. Instrumentation: DONE this session (run_eval min/max, capped arctic_eval
    row, avoid-none detail, seconds-per-class + park counter). Keep running
    the capped arctic_eval per future snapshot.
+5. **TRAFFIC GAUNTLET — Wes is leaning REDROCK RESERVOIR as the host**
+   (2026-08-03e chat). Doc facts: 13000 world, only 4 rock-spire shapes,
+   uniform 12kt dirVar 0, NO current, currently a generic W/L route. Build
+   notes: author the gauntlet route in the open basin with every leg
+   >600u from spires (grid stays ON — matches arctic/bay code paths —
+   but geometrically irrelevant, so attribution stays clean); KEEP THE
+   WIND UNIFORM for the lab role — the card's promised wind-shadows/
+   gust-bombs would reintroduce the exact confounds the venue exists to
+   remove, so add drama only AFTER baselines are banked, as a protocol
+   break. Also noted: river doc has NO current authored (82 bank shapes,
+   uniform 12kt) — it is a corridor/Rule-19 lab, not a current venue;
+   "tidal flats" has no doc yet. Original design spec (recommended
+   2026-08-03e: open water, no land/floes/current, uniform ~12kt wind, long
+   beat to a single windward mark → long run → 270° hairpin into a beat →
+   wide-gate control leg → finish; ~180-200s ideal pace): first session on
+   it = wire `gauntlet_bench` (mirror bay_bench), bank a 20-seed baseline +
+   human trajectories, then re-run the rejected RRS-shaping candidates
+   there — it isolates boat-on-boat cause (the pinned-47° mystery and the
+   bay true-none bin) and cuts gate wall-clock ~4x. Keep its start line
+   wide and ordinary (start-pack tuning is sacred).
 
 Gates, unchanged: paired A/B at 20 seeds bay / 16 seeds arctic on the target
 venue; seatrials anchor 40t spot each landing (fresh 100t exists at

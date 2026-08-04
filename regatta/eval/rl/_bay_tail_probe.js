@@ -36,6 +36,7 @@ const LABEL = process.argv[5] || null;
             const mkSeg = () => ({ t: 0, d: 0, ds: 0, weave: 0, lateral: 0,
                 exRec: 0, exTurn: 0, exAvoid: 0, exOffrt: 0, exSail: 0,
                 exAvBoat: 0, exAvStatic: 0, exAvNone: 0,
+                exAvNLat: 0, exAvNMark: 0, exAvNLatch: 0, exAvNTrue: 0,
                 trafW: 0, armW: 0, winN: 0,
                 exTraf: 0, exArm: 0, exOpen: 0,
                 tacks: 0, gybes: 0 });
@@ -133,7 +134,34 @@ const LABEL = process.argv[5] || null;
                         }
                         if (hadBoat) g.exAvBoat += excessW;
                         else if (hadStatic) g.exAvStatic += excessW;
-                        else g.exAvNone += excessW;
+                        else {
+                            g.exAvNone += excessW;
+                            // bay has no floes: what bends the helm when nothing
+                            // sits dead ahead? lateral isles, mark berth costs,
+                            // a held commit, or genuinely nothing.
+                            let lat = false;
+                            const gr2 = state.course.botGrid;
+                            if (gr2 && c && c.prevDesired != null) {
+                                outer:
+                                for (const ang of [-0.52, 0.52]) {
+                                    for (const dd of [140, 280]) {
+                                        const px = b.x + Math.sin(c.prevDesired + ang) * dd;
+                                        const py = b.y - Math.cos(c.prevDesired + ang) * dd;
+                                        const cc = gr2.cell(px, py);
+                                        if (!gr2.at(cc[0], cc[1])) { lat = true; break outer; }
+                                    }
+                                }
+                            }
+                            let markNear = false;
+                            for (const m of (state.course.marks || [])) {
+                                if (Math.hypot(b.x - m.x, b.y - m.y) < 160) { markNear = true; break; }
+                            }
+                            const latch = !!(c && c.avoidanceCommitTimer > 0);
+                            if (lat) g.exAvNLat += excessW;
+                            else if (markNear) g.exAvNMark += excessW;
+                            else if (latch) g.exAvNLatch += excessW;
+                            else g.exAvNTrue += excessW;
+                        }
                     }
                     // traffic + rounding-phase ownership of the window
                     g.winN++;
@@ -174,6 +202,7 @@ const LABEL = process.argv[5] || null;
             console.log(`\n${ph} ${name} (n=${g.length}, dmcLen ${L}):`);
             console.log(`  time med ${med(g.map(r => r[ph].t)).toFixed(0)}  ratio med ${med(g.map(r => r[ph].d / L)).toFixed(2)}  tacks ${S('tacks').toFixed(1)} gybes ${S('gybes').toFixed(1)}`);
             console.log(`  EXCESS mean ${exTot.toFixed(0)}u = rec ${S('exRec').toFixed(0)} | turn ${S('exTurn').toFixed(0)} | avoid ${S('exAvoid').toFixed(0)} (boat ${S('exAvBoat').toFixed(0)}/static ${S('exAvStatic').toFixed(0)}/none ${S('exAvNone').toFixed(0)}) | offrt ${S('exOffrt').toFixed(0)} | sail ${S('exSail').toFixed(0)}`);
+            console.log(`  avoid-none detail: lat-static ${S('exAvNLat').toFixed(0)} | mark<160u ${S('exAvNMark').toFixed(0)} | latch ${S('exAvNLatch').toFixed(0)} | true-none ${S('exAvNTrue').toFixed(0)}`);
             console.log(`  ownership: traffic ${S('exTraf').toFixed(0)}u | rounding ${S('exArm').toFixed(0)}u | open ${S('exOpen').toFixed(0)}u   (window shares: traf ${(100 * S('trafW') / Math.max(1, S('winN'))).toFixed(0)}% arm ${(100 * S('armW') / Math.max(1, S('winN'))).toFixed(0)}%)`);
         }
     }
