@@ -963,9 +963,11 @@ before it cost anything: share by rung 0.1→13.8%, 0.2→9.2%, 0.4→16.4%,
 0.6→11.2%, 0.8→9.3%, 1.2→11.9%, 1.6→14.3%, 2.2→9.1%, 3.0→4.8%. Nearly FLAT
 across the whole fan — no quantization pile-up, so the 47° mean is a broad
 distribution's average and finer candidates buy nothing. The real shape
-worth naming: **28% of avoiding frames are ≥1.2 rad (69°+) and 14% are
-≥1.6 rad (92°+), with 4.8% at the ±3.0 near-reversal rungs that exist for
-"nosed into a berg or wall".** The tail, not the mean, is the story.
+worth naming: **40% of avoiding frames are ≥1.2 rad (69°+) and 28% are ≥1.6 rad
+(92°+), with 4.8% at the ±3.0 near-reversal rungs that exist for "nosed into a
+berg or wall".** The tail, not the mean, is the story. (Those two shares were
+first written here as 28% and 14% — read off the wrong side of the cumulative
+column. The corrected figures are above and in the post-fix table below.)
 
 **CADENCE SWEEP CLOSED — knee at 2s.** cad1 (1s) is WORSE than cad2:
 transit med 200 / mean 220, ratio 1.63, EXCESS 10142, grind 7.6, dev 44°
@@ -1025,3 +1027,183 @@ bay 20-seed = `bay_bench_baycutlead.json` (260 med / 263.8 mean / min 214),
 transit probe = `transit_attrib_cad2.json` (transit med 179 ratio 1.54,
 ret 148 ratio 1.68), seatrials 100t = 202.64/199.05 pen 0.31 OCS 16.9%
 (UNCHANGED — it is the anchor precisely because nothing here touches it).
+
+### The prediction-validity family, probed against the new cad2 baseline
+
+The cadence win came from one idea — *the AI's model of the ice must not
+outrun the window in which the ice is knowable*. Two more places make the same
+assumption, so both were probed. **Both failed, and the failures sharpen the
+idea rather than repeating it.**
+
+| | cad2 base | `lead4` (soft horizon 8→4s) | `roll5` (rollout 9→5s) |
+|---|---|---|---|
+| transit med / mean | 179 / 202 | 186 / 214 | 188 / **199** |
+| dist ratio | 1.54 | 1.62 | **1.53** |
+| EXCESS | 9601 | 10114 | **9208** |
+| ├ avoid | 4204 | 4222 | **4145** |
+| ├ offrt | 2500 | 2909 | **2237** |
+| └ rec | 627 | 755 | **548** |
+| slow med / grind med | 17.2 / 4.5 | 25.8 / 6.6 | 18.3 / 5.5 |
+| mean deflection | 42° | 43° | 43° |
+
+**`lead4` REJECTED — and it corrects the idea.** Shortening the opening-lead
+classifier made everything worse (offrt +409, slow +8.6s, ratio +0.08). The
+classifier is not a position estimate, it is a BINARY BET on whether a plugged
+cell will open, and its cost of being wrong is asymmetric: call an opening lead
+plugged and the router pays ×6 to route around water that will be clear. At 4s
+almost nothing opens within the horizon, so nearly every plug reads as a wall.
+A noisy 8s bet beats a precise 4s "no". ⇒ Prediction error bounds where a
+POSITION may be trusted, not where a decision may look.
+
+**`roll5` REJECTED on its gate, but it is a real split.** Better on every
+aggregate — mean −3, EXCESS −393, offrt −263, rec −79, weave and lateral both
+down — and WORSE on the median (179→188), which is the mission metric. Its
+Phase-2 gate (avoid-mode −10%) came in at −1.4%. Mechanism: cutting the horizon
+removes fictional far contacts (the aggregates) and the real early warning with
+them (the median). ⇒ The horizon is not the wrong knob, it is the wrong SHAPE
+of knob: a point estimate at t=8 is either precisely wrong or invisible.
+
+**⇒ `cone8` in flight** — keep the 9s horizon and grow the floe's radius with
+the prediction it rests on (`+8·t`, half the measured error growth), so a late
+contact reads as a fat maybe instead of a sharp miss. And **`lead12`**, pushing
+the classifier the way `lead4` says it wants to go.
+
+**`age4` REJECTED HARD — map freshness and plan stickiness are COMPLEMENTS,
+not substitutes.** Reasoning that a 12s cap on the route thread lets a boat
+follow a plan six map generations old, it was cut to 4s (two generations):
+transit med 179→**214** (+35s), mean 202→223, ratio 1.54→1.66, EXCESS
+9601→11081, avoid 4204→**5235** (boat 1650→2296), turn 1388→1843, deflection
+42→45°. The worst single probe of the session.
+
+The mechanism is the router comment's own warning, reasserting itself in a
+world where it finally applies: "replanning every couple of seconds through a
+drifting pack threads a DIFFERENT micro-gap each time." Under the FROZEN map
+that warning was dormant — replanning against an unchanged map returns the same
+path, so the stickiness was costing nothing and protecting nothing. Now the map
+genuinely moves, so every replan really does re-thread, and the 12s cap is load
+bearing for the first time. ⇒ **Fixing the map made route commitment MORE
+valuable, not less.** Probing the other way (`age20`) rather than assuming 12
+is the knee.
+
+### HORIZON FAMILY CLOSED — every knee confirmed on BOTH sides
+
+Six probes, all against the cad2 baseline (transit med 179 / EXCESS 9601 /
+ratio 1.54 / dev 42°). Each of the AI's three ice horizons was pushed both
+ways, which is the only way to tell a knee from a direction:
+
+| knob | shorter | **current** | longer |
+|---|---|---|---|
+| opening-lead classifier (`HORIZON`) | `lead4`: med 186, EXC 10114, slow 25.8 | **8s — optimum** | `lead12`: med 205, EXC 10409, grind 10.8 |
+| route-thread staleness (`gridAge`) | `age4`: med **214**, EXC 11081, avoid 5235 | **12s — optimum** | `age20`: med 198, EXC 10832, avoid 4973 |
+| trajectory rollout (`T`) | `roll5`: med 188, EXC **9208** (mean better, median worse) | **9s — optimum** | `cone8` (uncertainty cone +8·t): med **221**, EXC 12227 |
+
+**⇒ THE CADENCE WAS THE ONLY MISTUNED HORIZON.** Every other horizon in the
+ice model was already sitting at a local optimum, and three of them are now
+verified on both sides rather than merely inherited. That is worth as much as
+a win: it says the remaining transit excess is NOT a horizon-tuning problem,
+and the next session should not spend an hour rediscovering it.
+
+`cone8` deserves its own line because it failed the way the memory warned:
+growing the floe radius with prediction uncertainty (+8 u/s, half the measured
+error growth) reproduced the classic over-inflation pathology exactly — "an
+over-inflated pack reads as closed water and the planner refuses gaps boats can
+take" — offrt 2500→3166, avoid-boat 1650→2040, ratio 1.54→1.77. Uncertainty
+belongs in the WEIGHT, not in the radius; the existing `1 − contactT/T` term
+already discounts far contacts and is apparently enough.
+
+### The world after the fix — re-measured, so the next session starts from truth
+
+Every bin below was re-run on the committed HEAD. The old numbers describe a
+world that no longer exists; do not pair against them.
+
+| | pre-fix HEAD | **cad2 HEAD** |
+|---|---|---|
+| plan / dmc-remaining | 0.81 | **0.78** |
+| off-own-plan | 155u | **126u** |
+| cross-track to ruler | 543u | **441u** |
+| transit frames with avoidance active | 51% | **45%** |
+| deflection ≥69° / ≥92° / near-reversal | 40% / 28% / 4.8% | **35% / 23% / 3.7%** |
+| mean deflection | 47° | **42°** |
+
+The deflection histogram is still near-flat across the fan, so the
+fan-resolution reading holds: the rungs are not the quantizer. What changed is
+that the whole distribution slid down a rung — fewer frames avoiding at all,
+and the ones that do avoid swing less. Consistent with the mechanism: a
+correct map produces fewer phantom threats AND smaller responses to the real
+ones.
+
+**Where the remaining transit excess lives (9601u mean, cad2):** avoid 4204
+(sub-bins: boat 1650, none 1487, static 600, both 466), offrt 2500, turn 1388,
+sail 883, rec 627. Avoidance is still the largest single bin and is still
+BOAT-dominated, which is the closed traffic thread — twelve rejections, and the
+next escalations remain (1) the ORCA-style objective REPLACEMENT hosted on the
+Redrock gauntlet and (2) driver-level RL. Both were and are the standing plan.
+
+## Next session brief (prepared 2026-08-04a, HEAD = session close)
+
+**ANCHORS — all re-measured on this HEAD, all committed:**
+- arctic 16-seed = `fleet_leg2_cad2x16.json` — **426 med / 459 mean / min 219 /
+  in-time 71 / fins 142 / rounders 144/144**
+- bay 20-seed = `bay_bench_baycutlead.json` — **260 med / 263.8 mean / min 214**,
+  180/180 finishers, pens 0.62, OCS 5.6%
+- transit probe = `transit_attrib_cad2.json` — transit **179 med, ratio 1.54**,
+  EXCESS 9601, dev 42°; return 148 med, ratio 1.68
+- seatrials 100t = **202.64 / 199.05 pen 0.31 OCS 16.9% min 175.0 — UNCHANGED**,
+  and it stays the anchor precisely because nothing this session touched it
+- goldens PASS 20/20 at close; `npm test` runs end to end for the first time in
+  a while (three genuine content failures remain, listed below)
+- all four trees synced to HEAD except treeB, which is TRACKED IN GIT and still
+  holds the pre-fix build — useful as a before/after reference, and the reason
+  not to rsync it casually
+
+**What this session did, in one line each:** found the bots' floe map refreshing
+every 16.7s instead of 4 (`state.time` is a 0.24x world clock, not seconds),
+fixed it, swept the cadence to a 2s knee, and took the arctic median 514→426;
+landed the bay wrong-way-arm mechanism the previous session owed; cancelled
+SIPP on a measurement before writing it; made the rebuild 35x cheaper so the
+new cadence is affordable; and repaired an `npm test` chain that had been dying
+early since the venue-document migration.
+
+Priorities, in order:
+
+1. **DO NOT re-tune the ice horizons.** All three are now verified knees on
+   BOTH sides (opening-lead 8s, route-thread 12s, rollout 9s). The cadence was
+   the only one that was wrong. An hour spent here is an hour wasted.
+
+2. **Driver-level transit RL** (approved escalation, recipe in memory
+   `regatta-avoidance-research.md`). This is now the strongest remaining lever
+   and the ground under it has improved: the classical driver is 88s/race
+   faster than when the RL plan was written, avoidance is active in 45% of
+   transit frames rather than 51%, and — importantly for a residual policy —
+   the observation is no longer poisoned by a stale map, so what the policy
+   sees is what is there. Fresh CRN baseline first (`transit_attrib_cad2`).
+
+3. **ORCA objective replacement on the Redrock gauntlet** when the venue lands.
+   Avoidance is still the largest excess bin (4204 of 9601) and still
+   boat-dominated (1650). Twelve traffic candidates are dead; replacement, not
+   re-pricing, is the only classical move left. Note the deflection is no
+   longer "pinned" — it moved 47→42 when the map was fixed — so the
+   Freezing-Robot reading should be re-derived on this HEAD before designing
+   against it.
+
+4. **Two more `state.time`-as-seconds instances, deliberately NOT fixed** —
+   both would move penalties, which the lexicographic gate forbids without
+   their own gates, and both are owner calls about rules behaviour rather than
+   AI pace:
+   - `foulCooldowns[id] = state.time + 20` — a "20 second" no-contact-foul
+     cooldown that is really **83 seconds**, i.e. the same pair is
+     under-penalised for over a minute.
+   - `rules.js`: `now - data.rowChangeTime < 2.0` — "2 seconds" of ROW-change
+     hysteresis that is really **8.3 seconds**.
+   Fixing either RAISES penalty counts (more fouls caught), so they need to be
+   judged as rules correctness, not as pace.
+
+5. **Three genuine test failures now visible** (all fail identically on the
+   pre-fix HEAD — they were hidden behind the broken chain, not caused by it):
+   - `test_sailable`: Lighthouse Cove's IDEAL path registers 4 of 7 legs and
+     never finishes. This is the check whose entire job is to catch that.
+   - `test_editor` 10 failures, `test_results` 3 failures.
+
+6. **Bay**: the wrong-way-arm class is cut (L3 ≥16s 6→2) but not gone. Two
+   remain, plus the traffic stops. Bay boat rubs are 2.32/race against a human
+   0.14 — the largest untouched gap on that venue.
