@@ -1667,7 +1667,21 @@ class BotController {
             // the polar tops out below entrySpeed and the plane never engages —
             // the human sails those legs at 150-170° and beats the fleet on pure
             // geometry. Heat only when the plane is genuinely on offer.
-            if (localWind.speed > J111_PLANING.minTWS) {
+            // THE PLANING BET IS OFF ON TECHNICAL COURSES (2026-08-04b). Heating
+            // to 140 buys hull speed and spends distance — 1/cos(35) on a course
+            // that runs nearly dead downwind. Measured three ways:
+            //   bay  20 seeds x2 disjoint sets: paired +3 med both, pens 0.57->0.50
+            //   arctic 8-seed fleet: paired +4 med / +12.9 mean, in-time 43->44
+            //   Clubhouse 100t: mean 202.83 -> 204.56, PENALTIES 0.31 -> 0.37
+            // The venues that gain are the ones with authored land: confined water,
+            // real rounding marks, and a fleet that cannot spread. The one that
+            // loses is open-water windward-leeward, where two gybes SEPARATE the
+            // fleet and the extra distance is cheap — which is also why its
+            // penalties rise when the boats stop spreading. Scoped on the same
+            // `_gridFixed` test every other navigation change in this stack uses,
+            // so the eval anchor is byte-identical by construction.
+            const technical = !!(state.course._gridFixed && state.course._gridFixed.length);
+            if (!technical && localWind.speed > J111_PLANING.minTWS) {
                 const t140 = (140 - 102.5) / (145 - 102.5);
                 const pos140 = boat.stats.reach * 0.018 + t140 * (boat.stats.downwind * 0.015 - boat.stats.reach * 0.018);
                 const s140 = getTargetSpeed(140 * Math.PI / 180, true, localWind.speed) * (1 + pos140);
