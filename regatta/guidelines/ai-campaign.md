@@ -2282,3 +2282,43 @@ alongside arctic for comparison:
 less often and swings slightly less hard, but **the shape is the same on both
 venues: a large mass of small corrections plus a hard tail where a quarter to a
 third of avoiding frames swing 69° or more.** That tail is the target.
+
+## ⚡ ENCOUNTER ARITY — how much of the avoidance bin a pairwise structure could even reach
+
+`_encounter_arity_probe.js` (new). The handoff's recommendation for the
+avoidance bin is a structural replacement, and the literature candidate
+(ORCA/VO) is PAIRWISE by construction — one half-plane per neighbour, exact for
+a 1-on-1 crossing and progressively over-constraining as neighbours are added.
+So: how many boats are actually in these encounters? Measured at every frame
+where avoidance is bending the heading >0.12 rad:
+
+    ARCTIC (113202 avoiding frames, 45650 in the >=69° tail)
+      rivals within 600u   0:35%  1:27%  2:19%  3:10%  4:3%  5+:5%
+      rivals within 250u   0:71%  1:22%  2:4%   3:1%   4+:2%
+      tail, within 250u    0:67%  1:24%  2:6%   3:2%   4+:1%
+      DEFLECTING WITH NO RIVAL INSIDE 600u:  35% of all frames, 31% of the tail
+
+    BAY (56483 avoiding frames, 12484 in the tail)
+      rivals within 600u   0:15%  1:20%  2:26%  3:17%  4:10%  5+:12%
+      rivals within 250u   0:55%  1:32%  2:8%   3:2%   4+:3%
+      tail, within 250u    0:43%  1:35%  2:12%  3:4%   4+:6%
+      DEFLECTING WITH NO RIVAL INSIDE 600u:  15% of all frames, 12% of the tail
+
+**Two facts that should shape the next design before a line is written.**
+
+1. **At the radius that actually forces a manoeuvre, encounters ARE pairwise.**
+   Within 250u, 93% of arctic and 87% of bay avoiding frames involve at most one
+   rival. A pairwise half-plane structure is not obviously the wrong shape —
+   these are not multi-boat scrums where ORCA would over-constrain.
+
+2. **But a third of arctic avoidance is not about boats at all.** 35% of arctic
+   avoiding frames (and 31% of the hard tail) have NO rival within 600u — they
+   are deflections around ICE. No boat-to-boat structure can touch them, and
+   the ice side of this problem has now absorbed three commitment rejections and
+   six pricing rejections. On bay the ice share is only 15%, so a pairwise
+   replacement has roughly three times the reachable surface there.
+
+⇒ **If the ORCA-style replacement gets built, build and gate it on BAY, not
+arctic.** Arctic's avoidance bin is majority-ice, which is exactly the part the
+structure cannot address; bay's is majority-boats, and bay's excess is already
+42% avoidance with a bench that runs in six minutes.
