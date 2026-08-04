@@ -2838,7 +2838,7 @@ class BotController {
             }
         }
         this._lastAvoidChoice = bestHeading;
-        
+
         // Expose how far avoidance pushed us off our intended course — the
         // no-contact foul detector reads this as "avoiding action taken".
         this.lastAvoidDeviation = Math.abs(normalizeAngle(bestHeading - desiredHeading));
@@ -3673,7 +3673,7 @@ function makeFloe(cx, cy, r, rng, artOverride) {
         driftVy: -Math.cos(dir) * speed,
         // Ice spins as it drifts. Small pans twirl, bergs barely turn.
         spin: rng() * Math.PI * 2,
-        spinRate: (rng() < 0.5 ? -1 : 1) * (0.08 + rng() * 0.27) * (r > 220 ? 0.4 : 1),
+        spinRate: clampSpin((rng() < 0.5 ? -1 : 1) * (0.08 + rng() * 0.27) * (r > 220 ? 0.4 : 1), r),
         // Slow heading curl so paths curve instead of running straight
         wanderPhase: rng() * Math.PI * 2,
         wanderRate: 0.1 + rng() * 0.25
@@ -3955,8 +3955,8 @@ function updateIceFloes(dt) {
                 // becomes angular impulse, scaled down by size so a berg shrugs
                 // it off while a small pan gets kicked into a twirl.
                 const vRelT = (a.driftVx - b.driftVx) * -ny + (a.driftVy - b.driftVy) * nx;
-                a.spinRate = clampSpin(a.spinRate - vRelT * 0.9 / a.radius);
-                b.spinRate = clampSpin(b.spinRate + vRelT * 0.9 / b.radius);
+                a.spinRate = clampSpin(a.spinRate - vRelT * 0.9 / a.radius, a.radius);
+                b.spinRate = clampSpin(b.spinRate + vRelT * 0.9 / b.radius, b.radius);
             }
         }
     }
@@ -4111,7 +4111,16 @@ function settleFloes() {
 // relocated at all, so there is no random destination left to veto.)
 
 // Ice that spins faster than this reads as a cartoon top, not a floe
-function clampSpin(w) { return Math.max(-0.75, Math.min(0.75, w)); }
+// Radius-aware: big ice may not spin fast. A flat cap let a collision-kicked
+// berg sweep its rim at hundreds of u/s — invisible to every predictor that
+// extrapolates floes by drift alone, and measured as the dominant motion in
+// floe contacts (median 28.6 u/s rotational vs 5 drift). min(0.75, 30/r)
+// leaves small pans twirling (r<100 median |w| 0.28) and holds every rim to
+// ~30 u/s, the same order as drift.
+function clampSpin(w, r) {
+    const cap = Math.min(0.75, 30 / Math.max(1, r));
+    return Math.max(-cap, Math.min(cap, w));
+}
 
 // ---------------------------------------------------------------------------
 
