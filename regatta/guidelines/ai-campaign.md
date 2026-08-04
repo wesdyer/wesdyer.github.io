@@ -313,13 +313,17 @@ Priorities, in order:
    — run it 8 seeds before/after every candidate; excess after notch2:
    avoid-boat 2303 / avoid-none 2495 / offrt 2676 / turn 2064 / rec+sail
    ~1800; transit ratio 1.83, return 1.70, vs human 1.21/1.16):
-   (a) **Turn churn / sticky grid carrot**: grid-pursuit carrots GLIDE (the
-   DMC follower's sticky-carrot cure was never applied to the grid path) and
-   jump >150u every ~4s (14/min) — every jump can flip scoreTack's board;
-   bots tack 14-16 per transit vs human 3. Mechanism: keep chasing the OLD
-   carrot point until fetched (~220u) or blocked, survive replans. ⚠️ solo
-   escape-staleness was the original reason for pure pursuit — test fleet,
-   not solo.
+   (a) **Turn churn — target PLAN CHURN, not carrot stickiness.** ⚠️ JUDGED
+   2026-08-03d: sticky grid carrot (DMC-style: hold the pursuit point until
+   fetched 220u / behind / off-plan 260u / blocked, transit-scoped) is
+   REJECTED at the probe level — WORSE everywhere (transit med 227→240, ret
+   147→178, turn bin +23%) and carrotJump barely moved (14.2→13.4/min).
+   Mechanism: the jumps are REPLAN churn — drifting-pack replans move the
+   whole path >260u, forcing adoption as often as the glide re-aimed, while
+   a held point goes stale against moving ice. Next levers for the 2.1k turn
+   bin: replan path continuity (reuse the previous thread as A* guidance /
+   penalize plans that diverge from the current one), or scoreTack board
+   re-decision cadence on transit. Bots tack 14-16 per transit vs human 3.
    (b) **avoid-boat (RRS dances on the shared line)**: 9 boats converge on
    one DMC line; give-way bubbles (150u), duck rewards (−800) and R16 terms
    produce 49° mean deflections in open water. Spacing/stagger vein (per-boat
