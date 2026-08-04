@@ -31,6 +31,7 @@ OCS hold that returns cleanly before the gun is NOT one).
 | 2026-08-03 instr @100t (a0c3633) | bots | 0 | 14.7 | 3.41 | 6.30 | 0.0 | 62.5 |
 | 2026-08-03 tacktax @40t (6aa46ea) | bots | 0 | 13.6 | 3.37 | 6.36 | 0.0 | 53.3 |
 | 2026-08-03e anchor @100t (f6d4c98) | bots | 0 | 16.9 | 3.55 | 6.58 | 0.0 | 102.4 |
+| 2026-08-03f anchor @100t (post cap+markesc) | bots | 0 | 16.9 | 3.55 | 7.20 | 0.0 | 140.7 |
 | 2026-08-03 (12 traj) | human | 0 | 11 (1/9 v7) | 2.3 | 3.3 | 0.7 | 13.9 |
 
 ### Course (finish time, s)
@@ -43,6 +44,7 @@ OCS hold that returns cleanly before the gun is NOT one).
 | 2026-08-03 tacktax @40t (6aa46ea) | bots | 0 | 199.25 | 203.21 | — | — |
 | 2026-08-03 post-merge @40t (721e8ce) | bots | 0 | 200.25 | 202.87 | — | — |
 | 2026-08-03e anchor @100t (f6d4c98) | bots | 0 | 199.33 | 202.56 | 175.2 | 347.6 |
+| 2026-08-03f anchor @100t (post cap+markesc) | bots | 0 | 199.05 | 202.64 | 175.0 | 360.0 |
 | 2026-08-03 (12 traj) | human | 0 | 192.2 | 191.4 | 180.9 | 200.6 |
 | 2026-08-03e (13 traj) | human | 0 | 192.2 | 192.5 | 180.9 | 205.8 |
 
@@ -82,6 +84,7 @@ legs ≥ 1); the human recorder counts one event per type per 0.5s from prestart
 | 2026-08-03 stack @40t (855379a) | bots | 0.50 |
 | 2026-08-03 instr @100t (a0c3633) | bots | 0.42 |
 | 2026-08-03 tacktax @40t (6aa46ea) | bots | 0.47 |
+| 2026-08-03f anchor @100t (post cap+markesc) | bots | 0.31 |
 | 2026-08-03 (12 traj) | human | 0 |
 
 **Read:** the median bot start and finish are within ~8s of the human median;
@@ -640,3 +643,41 @@ fleet_leg2_markesc16.json; BAY BASELINE = bay_bench_baymarkesc.json.
 Remaining bay L3 tail after this: wrong-way-arm class (sw −4.1 at
 arming; entry-side bias REJECTED — needs a mechanism that doesn't raft
 the fleet onto one sector) + traffic stops (the closed traffic thread).
+
+## Next session brief (prepared 2026-08-03f, HEAD = session close)
+
+**EVAL ANCHOR: 100t @ post cap+markesc HEAD = 202.64/199.05 pen 0.31 OCS
+16.9% min 175.0 (canonical — supersedes f6d4c98).** Baselines: arctic
+16-seed = fleet_leg2_markesc16.json (514/525.9/min 266/in-time 34/fins
+131), bay 20-seed = bay_bench_baymarkesc.json (265/267.5/min 211),
+transit probe = transit_attrib_postcap_base.json (PRE-markesc — re-run an
+8-seed baseline before any transit A/B). Goldens PASS 20/20 at session
+close. All four trees synced to session HEAD. ⚠️ Wes's Redrock branch
+will merge from a separate checkout: expect a possible RNG reshuffle at
+that merge (11a8f4b precedent) — byte-check baselines before any A/B on
+the merged tree.
+
+Priorities:
+1. **Redrock gauntlet, when Wes's venue lands**: wire gauntlet_bench
+   (mirror bay_bench), bank 20-seed baseline + human trajectories, THEN
+   build the ORCA-style avoidance-objective REPLACEMENT there (swap the
+   binary bubble + duck/bow shaping for reciprocal half-plane constraints
+   in the traffic regime, racing legs only; the ten-rejection ledger says
+   additive/re-priced variants are all dead — replacement is the only
+   classical move left). Design notes in memory
+   regatta-avoidance-research.md.
+2. **Driver-level transit RL** (arctic, approved escalation): recipe in
+   the same memory file — bounded zero-init residual Δψ≤25° at 2Hz on the
+   classical navigator, MLP 2×32, CEM, ≥200-seed rotating pool, held-out
+   validation, fitness = paired delta vs frozen-classical twin scored on
+   avoid-mode seconds + finish. Fresh transit-probe baseline first.
+3. **Bay wrong-way-arm class** (last designed mechanism owed): 6/61 L3
+   roundings still ≥16s, now dominated by wrong-side arming (sw −4.1) +
+   1100u blow-through. Entry-sector bias is REJECTED (rafts the fleet);
+   design a PER-BOAT approach-line mechanism instead (e.g. bias each
+   boat's own pre-zone approach point toward the required side, leaving
+   the shared sector scan untouched). Also open: bay boat-rub vein
+   (2.35/race vs human 0.14).
+4. **Spin-cap constant**: 30/r landed; if Wes wants pack churn back
+   (the −20s arctic cost), 60/r is the next notch — kills only the >60u/s
+   rim tail (14% of contacts). World-side; his call.
