@@ -56,6 +56,7 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeA');
             const info = bots.map(b => ({ name: b.name, legT: {}, fin: null, prog: [], hint: null, pen: 0, tArm: {}, ocs: 0 }));
             const dt = 1 / 60; let last = -999;
             for (let it = 0; it < 60 * 940; it++) {
+                const fr6 = it % 6;
                 window.update(dt);
                 if (state.race.status === 'finished') break;
                 if (state.race.status !== 'racing') continue;
@@ -69,6 +70,21 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeA');
                     if (b.raceState.finished) { inf.fin = Math.round(t); inf.pen = b.raceState.totalPenalties || 0; continue; }
                     if (b.raceState.ocs) inf.ocs = 1; // OCS while racing = penalized early start
                     const lg = b.raceState.leg;
+                    // Per-leg odometer + local-wind-speed integral (pressure
+                    // actually sailed in) — the L3/L5 gybe-bulge diagnostics:
+                    // distance ratio vs leg length, and mean TWS along track.
+                    if (lg >= 1) {
+                        if (inf._oLg !== lg) { inf._oLg = lg; inf._ox = b.x; inf._oy = b.y; }
+                        const dStep = Math.hypot(b.x - inf._ox, b.y - inf._oy);
+                        inf._ox = b.x; inf._oy = b.y;
+                        inf.odo = inf.odo || {}; inf.odo[lg] = (inf.odo[lg] || 0) + dStep;
+                        if (fr6 === 0) { // 10Hz wind sampling
+                            const lw2 = getWindAt(b.x, b.y);
+                            inf.wsum = inf.wsum || {}; inf.wn = inf.wn || {};
+                            inf.wsum[lg] = (inf.wsum[lg] || 0) + lw2.speed;
+                            inf.wn[lg] = (inf.wn[lg] || 0) + 1;
+                        }
+                    }
                     // L1 tail diagnostics: dirty-air time, headed-tack time (by the
                     // boat's OWN wind tracker — the quantity scoreTack reasons with).
                     if (lg === 1) {
@@ -102,9 +118,13 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeA');
                 if (info[k].fin == null) info[k].pen = b.raceState.totalPenalties || 0;
                 info[k].col = window.__cc[b.name] || {};
                 info[k].l1tacks = b.raceState.legManeuvers[1] || 0;
+                info[k].mans = b.raceState.legManeuvers.slice(1, 7);
                 info[k].l1dirty = +((info[k]._df || 0) / 60).toFixed(1); delete info[k]._df;
                 info[k].l1hdr = +((info[k]._hf || 0) / 60).toFixed(1); delete info[k]._hf;
                 info[k].l1up = +((info[k]._uf || 0) / 60).toFixed(1); delete info[k]._uf;
+                if (info[k].odo) for (const lg in info[k].odo) info[k].odo[lg] = Math.round(info[k].odo[lg]);
+                if (info[k].wsum) { info[k].wavg = {}; for (const lg in info[k].wsum) info[k].wavg[lg] = +(info[k].wsum[lg] / info[k].wn[lg]).toFixed(1); }
+                delete info[k].wsum; delete info[k].wn; delete info[k]._ox; delete info[k]._oy; delete info[k]._oLg;
             }
             return { nLegs, legLens: state.course.dmc.legs.map(l => Math.round(l.length)), info };
         }, seed);

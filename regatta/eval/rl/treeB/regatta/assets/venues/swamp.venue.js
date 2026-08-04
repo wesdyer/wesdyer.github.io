@@ -6,6 +6,13 @@ window.VENUE_DOC["swamp"] = {
   "schema": 1,
   "venue": "swamp",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on \u2014 edit in editor.html. Re-freezing discards edits.",
+  "card": {
+    "name": "Gatorgrass Bayou",
+    "tag": "Swamp",
+    "blurb": "Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel — patience beats pace in here.",
+    "conditions": "Still & weedy",
+    "hazards": "Grass islands & weed beds"
+  },
   "world": {
     "size": 13000,
     "boundary": {

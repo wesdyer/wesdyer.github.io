@@ -320,7 +320,32 @@ land; treeA re-synced only between benches):
 Non-goals overnight: neural RL (decision deferred until 1-3 report), new
 venues, engine sweep-semantics changes (owner-consult only).
 
-## CARRY-FORWARD PROMPT (next session — the armed sweep, post-Aug-6)
+## 2026-08-03b: THE ARMED-SWEEP WALL IS STALE — CARRY-FORWARD BELOW SUPERSEDED
+
+Measured on fleet_leg2_instr16 (16 seeds, current HEAD a0c3633, byte-identical
+races to stackcheck16): **ARM→outbound med 14s; ARM→leg2 med 19s / mean 39s —
+vs the human's 35s armed median. The rounding is now FASTER than the human.**
+The "131s ARM→outbound" this section targets came from an older tree; the
+overnight stack already broke it. Armed-phase execution probe
+(`_armed_exec_probe.js`, 8 seeds): irons 13% / rudder-chase 31% of a 19s-mean
+window — nothing there is worth an RL campaign.
+
+CREW-level RL round 1 ran anyway (open-water command-following, the
+venue-agnostic scope): **parity** — held-out dR −0.035 vs the classical
+executor (matches at 12-28kt, loses light air). Infra kept: `__rlCrew` hook
+in updateAI (inert), crew_shared.js / crew_train_cem.js / crew_gate.js.
+Verdict: the classical crew is not the bottleneck anywhere we can measure.
+
+**Where the race is actually lost on current HEAD (fin med 538 vs human
+229):** TRANSIT start→ARM med 257 (human ~100 for the same ground incl.
+approach) and RETURN leg2→fin med 195 (human 83). The new contact
+instrumentation says why: 29.9 LAND + 24.3 FLOE contact episodes per
+boat-race (human: 0.4 / 4.4). The fleet grinds its way across the sound.
+**Next escalation: DRIVER-level (transit trajectory quality / contact
+discipline), per the four-level priority — crew is done, tactician stays
+closed, navigator stays classical.**
+
+## CARRY-FORWARD PROMPT (next session — the armed sweep, post-Aug-6) [SUPERSEDED 2026-08-03b — see section above]
 "Continue the arctic AI campaign, section: THE ARMED SWEEP (131s vs human
 35s). Read regatta/guidelines/arctic-ai-campaign.md (the Aug 6 overnight
 round, the four-level architecture, RL rounds 1-2b) and memory

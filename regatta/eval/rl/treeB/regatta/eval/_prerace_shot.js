@@ -35,7 +35,7 @@ const OUT = process.env.OUT || '/private/tmp/claude-501/-Users-wesdyer-Documents
         myBadge: document.querySelector('#pr-competitors-grid [data-name="__player__"]').innerText.split('\n'),
         venueTiles: document.getElementById('venue-picker').children.length,
         fleetCells: document.getElementById('pr-competitors-grid').children.length,
-        brief: document.getElementById('pr-brief').innerText.split('\n'),
+        detailRows: document.getElementById('venue-detail').innerText.split('\n'),
         best: document.getElementById('venue-detail').innerText.includes('2ND'),
         blurbVisible: document.querySelector('.pr-blurb').clientHeight > 10,
         venueLabels: [...document.querySelectorAll('.pr-venue-name')].map(e => e.scrollHeight <= e.clientHeight + 1 ? 'ok' : 'clipped'),
