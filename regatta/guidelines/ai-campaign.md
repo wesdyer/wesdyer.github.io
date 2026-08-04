@@ -681,3 +681,81 @@ Priorities:
 4. **Spin-cap constant**: 30/r landed; if Wes wants pack churn back
    (the −20s arctic cost), 60/r is the next notch — kills only the >60u/s
    rim tail (14% of contacts). World-side; his call.
+
+---
+
+## 10-HOUR AUTONOMOUS PUSH QUEUE (prepared 2026-08-03f; Redrock NOT ready — all work arctic/bay-hosted)
+
+Research base: memory `regatta-sipp-routing.md` (space-time routing) +
+`regatta-avoidance-research.md` (residual RL recipe + Sophy/RHEA digest).
+Mission metric: ARCTIC MEDIAN (514 → down; human 229). Gates as always:
+paired 16-seed arctic / 20-seed bay, seatrials 40t spot per landing,
+goldens re-record only with accepted change, lexicographic acceptance —
+pens/OCS/DNF not above baseline before pace counts.
+
+**PHASE 0 (0.5h) — anchors.** Fresh 8-seed transit probe baseline on HEAD
+(transit_attrib_markesc_base — RUNNING at queue time). Byte-check
+fleet_leg2_markesc16 reproduces. If Wes merged anything: full re-baseline
+first (11a8f4b rule).
+
+**PHASE 1 (2.5-3.5h) — SIPP ROUTER + TIME-INDEXED CARROT (highest
+conviction).** 2D safe-interval A* in sailcheck.js (pathSailableST):
+per-cell safe intervals CLOSED-FORM from known floe drift (quadratic per
+floe-cell pair, only floes whose swept corridor crosses the cell); wait ≈
+sail-slow or forbidden; per-heading edge times from a coarse polar band;
+output (x,y,t); follower carrot = plan position at t+lookahead (NO
+nearest-point projection); replan ONLY on tracking deviation >threshold /
+goal change / floe-velocity change events (curl makes drift quasi-linear —
+re-check intervals against curl staleness ~10-15s); keep planFloeTrajectory
+as contact layer; VENUE-GATED to floe courses (bay/seatrials byte-inert —
+verify). Kill the 4s refreshBotGrid stamp cadence for routing (keep grid
+for avoidance probes). Expected bins: offrt 2788, carrotJump 14/min, part
+of avoid 6264. Go/no-go: 8-seed transit probe — dist ratio med 1.86 must
+drop ≥0.15 with grind not up; then 16-seed gate. FALLBACK if too invasive
+mid-build: TEB-lite band ((x,y,t) nodes, gradient repel from floes at
+node timestamps, homotopy switch w/ hysteresis) — smaller, same staleness
+fix.
+
+**PHASE 2 (2-3h) — RHEA MACRO-ACTION UPGRADE of planFloeTrajectory.** The
+existing 9s one-shot fan IS half an MPC; upgrade per PTSP-competition
+findings: macro-actions (5-7 steering intents held ~1s, 6-9 genes),
+population 10-14 × 3-5 generations, SHIFT BUFFER (carry last plan, pop
+first gene), elites ALWAYS include (a) shifted previous plan (b) the
+classical controller's own trajectory — planner provably ≥ today's AI.
+Leaf value = progress-per-step along route + VMG − graded floe/RRS cost
+(NEVER position-shaped — zig-zag farming). Round-robin boats to fit frame
+budget. Go/no-go: 8-seed probe, avoid-mode seconds (112s of 258 transit)
+must drop ≥10% with contacts flat; then 16-seed.
+
+**PHASE 3 (3-4h) — RESIDUAL ES ON THE DRIVER (approved escalation,
+corrected protocol), only after 1-2 verdicts.** Bounded zero-init residual
+Δψ≤25° @2Hz on the (possibly new) navigator; obs = own/plan ~10 + 16-sector
+floe ring ×2ch + 3-4 nearest-rival slots w/ ROW flag + 2-3 route lookahead
+points (Sophy: lookahead beats rangefinder-only). Trainer sep-CMA-ES/CEM,
+CRN-paired vs frozen-classical twin, fitness = Sophy-shaped: 1.0·progress
++ 0.5·symmetric windowed passing term (−20u/+40u) − 4·any-contact −
+5·rules-engine-at-fault − small floe-grind term; LEXICOGRAPHIC foul gate.
+Seed protocol: ≥200-seed pool, resample 16-24/generation, ~32-seed
+held-out validation every 5 gens, checkpoint by validation, final 16-seed
+gate disjoint. Scenario mix per generation at FIXED proportions: solo
+transit / light traffic / full pack / spawned-mid-pack (Sophy stratified
+pool; pure self-play rejected there). BC PRIOR (cheap multiplier, cut
+first if time-short): relabel 16 human trajs as residuals (human − classical
+at same obs), fit the MLP (GMM head unnecessary at 1-2 dim; short action
+chunking), + ~200 DART-noised classical rollouts for recovery states;
+checkpoint by ROLLOUT not loss; if greedy BC ≥ baseline−5% on 8 seeds →
+CMA mean-init, else one seed individual. Budget truth: ~10k evals per 8h
+at 8 seeds/candidate — plan for modest single-digit-% gains, not miracles.
+
+**PARALLEL FILLER (while gates run) — bay wrong-way-arm.** Per-boat
+approach-line bias (bias each boat's OWN pre-zone approach point toward
+the required side; NEVER the shared sector score — rafting rejection).
+Gate: hairpin probe ≥16s 6→≤3 without L5 regression, then bay 20-seed.
+
+**EXPLICITLY DEFERRED:** ORCA objective replacement (needs Redrock lab);
+Eureka/FunSearch-style LLM search (viable shape = LLM proposes planner-
+cost variants gated by a 3→8→16 seed cascade — good SECOND 10h push once
+SIPP/RHEA land); QD/PBT (skip per research); AlphaZero-style (skip).
+
+Cut order if behind: BC prior → Phase 3 entirely → Phase 2 (Phase 1 has
+the strongest evidence and the cheapest verdict).
