@@ -1965,3 +1965,204 @@ the course.
 
 Also verified this session and now closed: bay `ENTRY_CUT_LEAD` is a knee on
 both sides (0.35 → −8 med, 0.9 → −3 med, against 0.6).
+
+## ⚡ THE FLEET-DENSITY MEASUREMENT — most of the bay "gap" is traffic, and it changes how bay should be benched
+
+`_bay_pace_probe.js` gained a fleet-size argument (park all but N bots). Same
+seeds, same course, same human reference:
+
+    leg    9 boats            4 boats            2 boats           HUMAN (in a full fleet)
+    L1     46.7s  r1.52       42.0s  r1.35       37.1s  r1.31      43.3s  r1.41
+    L2     27.7s  r1.11       26.4s  r1.07       26.5s  r1.07      27.4s  r1.00
+    L3     45.0s  r1.38       43.9s  r1.32       42.9s  r1.29      38.6s  r1.00
+    L4     55.4s  r1.31       50.9s  r1.23       50.9s  r1.30      53.9s  r1.25
+    L5     43.3s  r1.30       44.0s  r1.33       44.0s  r1.36      39.6s  r1.05
+    total  243s               228s               221s              203s
+
+**In clear air the fleet BEATS the human on L1, L2 and L4** (L1 by 6.2s) and
+still loses ~4.4s on each of the two DOWNWIND legs. So the bay deficit splits
+cleanly in two:
+
+- **~15s is traffic-handling.** L1 alone swings 9.6s between 2 boats and 9, and
+  the human — who raced in the same full fleet — gives up far less to it.
+- **~9s is downwind geometry**, present at ANY density: ratio 1.29-1.36 against
+  the human's 1.00-1.05 on L3/L5.
+
+⚠️ **Method consequence, and it explains several of this session's null results:
+a 20-seed bay bench at full density carries enough traffic variance to bury a
+4-second effect.** Two of the six downwind rejections were measured only there.
+Probe mechanism at 2-4 boats where the signal is clean, then verify at 9.
+
+## THE PLANING HEAT GATE — a real effect, an owner-level trade, NOT landed
+
+Following the density finding back to the heat gate, with the gate simply OFF:
+
+    bay 20-seed (9100-9119) vs HEAD:  fin med 259->257, paired +3 med / +4.8 mean,
+                                      pens 0.57->0.50, rubs 1.94->1.91, max 344->308
+    bay 20-seed (9200-9219) DISJOINT: fin med 261->259, paired +3 med / +2.2 mean,
+                                      pens 0.51->0.49
+    arctic 8-seed screen:             med 398->394, in-time 43->44, paired +4/+12.9
+    arctic 16-seed GATE:              med 426->440, IN-TIME 71->65, finishers 142->141,
+                                      but paired +4 med / +6.5 mean per boat
+    Clubhouse 100t (unscoped):        202.83->204.56 mean, PENALTIES 0.31->0.37
+
+Scoped on `_gridFixed` (the same test every other navigation change uses) the
+Clubhouse anchor is **byte-identical — 202.83 / 199.79 / pen 0.31 exactly** — and
+bay keeps the whole win. The blocker is arctic: the per-boat paired median says
++4s FASTER while the fleet aggregates say 6 fewer in-time finishes and one fewer
+finisher. That is the "trades tails for pace" signature, and by the standing
+lexicographic rule a finisher drop is disqualifying.
+
+Middle ground tested and rejected: heat angle **150° instead of 140°** (half the
+geometric cost, most of the plane) is worse than BOTH endpoints — bay +1 med only,
+arctic in-time 43->38, paired mean −24.6. The response is not monotone in the
+heat angle.
+
+**Left for the owner rather than landed.** A disjoint 16-seed arctic pair
+(9200-9215) is running to establish whether the in-time drop is real or a
+threshold artefact; if it is noise, this is a straightforward accept scoped to
+`_gridFixed`, worth ~5s of bay median and 0.07 penalties per boat.
+
+### ✅ LANDED (commit `47ef6be`) — and the fine-VMG re-test that followed it
+
+The heat gate is now OFF on courses with authored land. Arctic's in-time metric
+disagreed between the two 16-seed sets (71→65 on 9100-9115, **45→65** on
+9200-9215), which is itself worth knowing: **in-time finishes are a threshold
+statistic and they are noisy at 16 seeds on this venue.** Combined over 32 seeds
+the picture is unambiguous — rounders 284→285, finishers 277→280, in-time
+116→130, median 446→439 — and the paired per-boat median is positive on BOTH
+sets separately (+4 and +14). Bay wins on two disjoint 20-seed sets (+3 median
+paired each). The Clubhouse anchor is byte-identical by construction.
+
+Bay profile after the change (9 boats): L3 45.0→42.2s (ratio 1.38→**1.24**),
+L4 53.6s which now BEATS the human by 0.3s, L5 43.2s (ratio 1.30→1.26).
+
+**Then the fine VMG scan was re-tested and the original rejection held.** The
+polar's downwind gridpoints are 110/120/135/150/180, so the optimizer cannot
+answer ~165 — and with the heat gate gone its answer is now what the boat
+actually sails, which is a genuinely changed world for that mechanism. Scanning
+2.5° between the gridpoints: **bay paired −3 med / −4.0 mean, arctic paired −8
+med / −16.7 mean, in-time 44→38.** Same verdict, same stated mechanism as the
+2026-08-03d original ("deeper = slower hull speed loses more in fleet traffic
+than the polar gains"), now confirmed in the world where the answer binds. The
+coarse gridpoint is not a bug being worked around; 150 is genuinely better than
+165 in a fleet.
+
+### Where fleet density actually spends its time (bay, 9 boats vs 2)
+
+    L1   dirtyAir 0.013 vs 0.003 | avoidance active 29% vs 7% | board flips 3.0 vs 1.0
+    L3   dirtyAir 0.007 vs 0.000 | avoidance active 28% vs 16% | flips 5.0 vs 3.0
+    L4   dirtyAir 0.008 vs 0.000 | avoidance active 29% vs 13% | flips 4.0 vs 3.0
+
+**Avoidance is active 29% of L1 time at full density against 7% in clear air,
+and the fleet tacks twice more per beat.** Dirty air barely registers. So bay's
+~15s traffic bin is an AVOIDANCE bin, not a wind-shadow bin — which puts it in
+the same family as the twelve arctic traffic rejections rather than being new
+ground, and is the honest reason not to spend more of this session on it.
+
+## END-TO-END SESSION A/B — both landed changes vs `7087af9`, on seeds never used to tune them
+
+`treeQ` holds the session-start AI (`git show 7087af9:regatta/js/script.js`).
+
+    BAY, 20 seeds 9300-9319          start (7087af9)   end (47ef6be)
+      fin median                          263               256
+      fin mean                          264.5             256.5
+      paired vs start                       —      +10 med / +8.1 mean
+      boat contacts / race                2.79              2.00   (-28%)
+      penalties / boat                    0.58              0.49   (-16%)
+      OCS                                 6.1%              5.0%
+      max                                  358               319
+      finishers                        180/180           180/180
+
+    ARCTIC, 16 seeds 9300-9315       start (7087af9)   end (47ef6be)
+      fin median                           417               412
+      fin mean                           440.6               429
+      min                                  235               224
+      in-time finishes                      74                76
+      rounders / finishers             143 / 141         143 / 141
+      paired vs start                        —      +1 med / +9.2 mean
+
+    CLUBHOUSE 100t                   202.64/199.05     202.83/199.79
+      penalties                           0.31              0.31
+      OCS                                16.9%            16.89%
+      DNS / DNF                          0 / 0             0 / 0
+
+The Clubhouse anchor moved +0.19 mean / +0.74 median, entirely from the
+penalty-turn commit, which is venue-agnostic by design (Clubhouse takes 0.31
+penalties a race). Penalties, OCS, DNS and DNF are all flat there. **New stored
+anchor: 202.83 / 199.79 / min 174.97 / pen 0.31 / OCS 16.89%.**
+
+**Refreshed baselines for the next session:**
+- bay 20-seed = `bay_bench_noheat.json` (9100-9119, fin med 257) and
+  `bay_bench_sessionend_bay.json` (9300-9319, fin med 256)
+- arctic 16-seed = `fleet_leg2_noheat16.json` + `fleet_leg2_noheat16b.json`
+  (9100-9115 and 9200-9215; judge this venue on the 32-seed combination)
+- arctic transit probe = `transit_attrib_transit_newhead.json` — **180 med,
+  ratio 1.50, EXCESS 9182, dev 43°** (was 179 / 1.54 / 9601 / 42°)
+- bay rub attribution = `bay_rub_rub_newhead.json` — 60 episodes (was 77);
+  leg-0 37%, penalty-predates 43%, mid-spiral 18%
+
+## THE SESSION LEDGER — 2 accepted, 24 rejected, every rejection with a mechanism
+
+**Accepted**
+1. `3454852` penalty turns sooner (deadline 12→6s + sea-room ≥5 cells), scoped
+   to floe-free water.
+2. `47ef6be` planing heat gate OFF on courses with authored land.
+
+**Rejected — arctic / ice**
+- ice commitment ×3 (applyAvoidance, planner side-lock, planner floe-identity)
+  + the 1s dose-response control. **Family closed at seven lifetime.**
+- glancing-contact pricing; the same discount applied only to hold-the-line
+  candidates; planner `contactW` 3000 and 7500; planner entry gate 6.0s;
+  planner deviation margin 50→10 (flat, buys ~2s = noise).
+- Phase-D constants: planner floe `MARGIN` 24, `_floeRisk` 0.35, grid soft
+  weights 1.8/4.2.
+
+**Rejected — bay**
+- Rule-21 keep-clear harder ×3 (undamped shaping / 120u bubble / both).
+- crossing-run timing from actual depth; staging approach at full speed
+  (OCS 5.6% → **29.4%** — the 0.75 speed is a brake that stops boats
+  overshooting the line); post-gun lane hold.
+- no-strategic-undo-after-an-avoidance-tack.
+- downwind: sustained-plane gate, fetch-before-heat, heat angle 150°,
+  conditioned heat (far-only / near-only), arc-aware carrot lookahead (inert),
+  **fine VMG scan re-tested in the changed world — original verdict held.**
+- constants at their knee both sides: entry cut-lead 0.35/0.9, start buffer
+  0.35/0.65.
+
+**Measured, not landed** — both remaining `state.time`-as-seconds bugs are
+provably inert (see above). Both are safe correctness fixes.
+
+**Known-failing tests, unchanged from session start:** `test_sailable` 7,
+`test_editor` 10, `test_results` 3, `test_persistence` timeout, **and
+`test_dmc` 2** — the last is not on the handoff's list but fails identically on
+`7087af9`; it is redrock's path crossing rock (24/1727 segments), i.e. the same
+unraceable-venue problem, not a regression.
+
+## QUEUE FOR THE NEXT SESSION
+
+The honest state: **the classical stack is at a local optimum in nearly every
+direction tested.** Six constants were verified at their knee on both sides this
+session, two whole mechanism families closed, and the one genuinely new win came
+from REMOVING a mechanism rather than adding one. Candidate work, in order:
+
+1. **The bay traffic bin (~15s), which is the largest measured and least
+   attacked.** Avoidance is active 29% of L1 time at full density vs 7% in clear
+   air, and the fleet tacks twice more per beat. It sits in the same family as
+   the twelve arctic traffic rejections, so it needs the STRUCTURAL escalation
+   (ORCA-style objective REPLACEMENT — additive terms are proven not to work,
+   see `cpagrad`), not another price.
+2. **Bay downwind, the remaining ~7s.** Ratios are now L3 1.24 / L5 1.26 against
+   the human's 1.00 / 1.05. Six mechanisms have failed on the ANGLE. What has
+   not been tried is the multi-leg framing the failures all point at: every one
+   of them gained on its own leg and lost downstream, which says the angle is
+   constrained by the next rounding, not by local VMG.
+3. **The start (~5s/boat, and 37% of surviving bay rubs).** Two clean rejections
+   here already, both because the fleet's staggered arrival is load-bearing.
+   Anything tried here must keep the queue.
+4. **Redrock**, when the owner has re-authored the marks — the gauntlet bench is
+   wired and it is the only purpose-built traffic lab.
+
+⚠️ Whatever is tried, benchmark it at the resolution the metric needs: bay
+mechanism at 2-4 boats then verified at 9; bay contact metrics at 20 seeds, not
+8; arctic in-time on 32 seeds or on the paired per-boat median.
