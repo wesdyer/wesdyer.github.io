@@ -32,4 +32,6 @@ regatta/art/candidates/
 
 # RL training scratch — the frozen repo snapshot the benches run against, and run logs
 regatta/eval/rl/treeA/
+regatta/eval/rl/treeC/
+regatta/eval/rl/treeD/
 regatta/eval/rl/*.log

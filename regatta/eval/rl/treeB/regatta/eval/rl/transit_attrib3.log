@@ -1,0 +1,36 @@
+seed 9100 done
+seed 9101 done
+seed 9102 done
+seed 9103 done
+seed 9104 done
+seed 9105 done
+seed 9106 done
+seed 9107 done
+
+DMC TWA demand (t=0 wind, dist share): leg1 up 0.42 reach 0.33 run 0.25 | leg2 up 0.19 reach 0.31 run 0.5
+
+TRANSIT (n=72, dmcLen 12467):
+  time   med 235 mean 264
+  dist ratio med 1.92   odo mean 26339  dmc-progress mean 13745
+  slow   med 32 mean 40  (share 15%)
+  grind  med 9.5 mean 14  (share 5%)
+  EXCESS mean 13709u  =  rec 1027 | turn 2116 | avoid 6695 | offrt 2978 | sail 893
+  avoid sub-bins: boat 2441 | static 885 | both 768 | none 2601   mean dev 49deg
+  form: weave 386u vs lateral 13326u
+  tacks med 15 mean 16.3  gybes med 10 mean 12.1
+  falsebeat 7% of sail-mode dist  | hdg-vs-carrot mean 22deg
+  xtrack mean 564u  >300u 60% of samples  | carrotJump 14.2/min
+
+RET (n=72, dmcLen 11274):
+  time   med 171 mean 194
+  dist ratio med 1.91   odo mean 22943  dmc-progress mean 12533
+  slow   med 14.7 mean 23  (share 12%)
+  grind  med 6.4 mean 11  (share 6%)
+  EXCESS mean 10650u  =  rec 759 | turn 1550 | avoid 4570 | offrt 3327 | sail 444
+  avoid sub-bins: boat 1111 | static 825 | both 453 | none 2182   mean dev 46deg
+  form: weave 290u vs lateral 10363u
+  tacks med 8 mean 9.2  gybes med 9 mean 9.8
+  falsebeat 1% of sail-mode dist  | hdg-vs-carrot mean 12deg
+  xtrack mean 880u  >300u 68% of samples  | carrotJump 17.4/min
+
+wrote transit_attrib_floeshaping.json

@@ -40,3 +40,20 @@ node_modules).
 - `solo_trace.js` / `jam_trace.js` — 1Hz steering traces (solo hero / all bots).
 - `fleet_leg2_phases.json` / `fleet_leg2_gapfc.json` — accepted-stack baseline
   runs for paired comparison.
+
+## Lighthouse Cove (bay) instruments (Aug 3 2026)
+
+Same treeA-snapshot convention; treeB = a second snapshot holding baseline
+script.js (git HEAD) so experiment and baseline benches run concurrently.
+
+- `bay_bench.js <trials> <seed0> <label> <tree>` — fleet profiler for the bay
+  (7-leg, 5-rounding course; player parked at 5900,-6100; cutoff 900).
+  Reference: base20 (seeds 9100-9119, clean HEAD) = 180/180 finishers,
+  fin med 277, 0 pens. Accepted stack (clean-run exits + local planing gate):
+  fin med 268, paired +6/-6.8 med/mean vs base20.
+- `bay_report.js <label> [labelB]` — per-leg durations vs the HUMAN reference
+  (7 trajs: fin med 226; legs 42/27/39/53/40/20), plus paired deltas.
+- `bay_trace.js <seed> [maxT] [tree]` — 1Hz all-bot traces (twa, planing,
+  exitClean, outbound) for line-quality diagnosis vs the human trajectories.
+- `bay_diag.js <seed>` — per-leg dur/dist-ratio/tacks/slow-secs vs human.
+- `bay_dmc_dump.js [tree]` — course type, marks, DMC ruler paths (bay_dmc.json).

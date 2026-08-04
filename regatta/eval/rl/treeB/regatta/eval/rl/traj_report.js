@@ -28,7 +28,7 @@ const med = a => { if (!a.length) return null; const s = [...a].sort((x, y) => x
 
 const files = fs.readdirSync(DIR).filter(f => f.endsWith('.json'))
     .filter(f => !VENUE || f.includes(VENUE));
-const agg = { finT: [], leg1: [], leg2: [], armed: [], minFloe: [], contacts: [], pens: [], pinned: [] };
+const agg = { finT: [], leg1: [], leg2: [], armed: [], minFloe: [], contacts: [], pens: [], pinned: [], ocs: [], ocsKnown: 0 };
 for (const f of files.sort()) {
     const t = JSON.parse(fs.readFileSync(path.join(DIR, f)));
     const S = t.samples;
@@ -67,6 +67,13 @@ for (const f of files.sort()) {
     const racing = S.filter(s => s[1] === 1);
     const gw = racing.filter(s => (s[15] ?? 0) > 0).length;
     const stbd = racing.filter(s => s[20] === 1).length;
+    // OCS-after-the-gun (v7+: s[16] = raceState.ocs). The flag can only be SET
+    // during prestart, so a racing-phase sample with it up means the sailor was
+    // over the line at the gun and paying the return — the scoreboard's
+    // "penalized early start". A hold cleared before the gun never shows here.
+    const ocsRecorded = S.some(s => s[16] !== undefined);
+    const ocsStart = racing.some(s => s[16] === 1 || s[16] === true);
+    const ocsDur = racing.filter(s => s[16] === 1 || s[16] === true).length * 0.1;
 
     // Per-leg splits, generalized to any leg count (leg N start -> leg N+1 start).
     const legIds = Object.keys(legStart).map(Number).sort((a, b) => a - b).filter(l => l >= 1);
@@ -87,6 +94,7 @@ for (const f of files.sort()) {
         ` | minFloeDist ${isFinite(minFloe) ? minFloe.toFixed(0) + 'u@t' + minFloeT.toFixed(0) : '-'}` +
         ` | giveWay ${(100 * gw / Math.max(1, racing.length)).toFixed(0)}%` +
         (racing.some(s => s[20] !== undefined) ? ` stbd ${(100 * stbd / racing.length).toFixed(0)}%` : '') +
+        (ocsRecorded ? (ocsStart ? ` | OCS-AT-GUN (${ocsDur.toFixed(1)}s returning)` : ' | ocs clean') : '') +
         (pinned.length ? ` | PINNED ${pinned.map(p => p[1] + 's@t' + p[0]).join(',')}` : ''));
     if (t.finishTime) agg.finT.push(t.finishTime);
     if (leg1) agg.leg1.push(leg1);
@@ -96,10 +104,12 @@ for (const f of files.sort()) {
     agg.contacts.push(evs.filter(e => e[1].startsWith('collision')).length);
     agg.pens.push(nCol('penalty'));
     agg.pinned.push(...pinned);
+    if (ocsRecorded) { agg.ocsKnown++; agg.ocs.push(ocsStart ? 1 : 0); }
 }
 console.log(`\nAGGREGATE (${files.length} runs${VENUE ? ', ' + VENUE : ''}):` +
     ` finT med ${med(agg.finT) && med(agg.finT).toFixed(1)} | leg1 med ${med(agg.leg1) && med(agg.leg1).toFixed(0)}` +
     ` | leg2 med ${med(agg.leg2) && med(agg.leg2).toFixed(0)} | armed med ${med(agg.armed) && med(agg.armed).toFixed(0)}` +
     ` | minFloe med ${med(agg.minFloe) && med(agg.minFloe).toFixed(0)}u` +
-    ` | contacts/run ${med(agg.contacts)} | pens/run ${med(agg.pens)} | pinned episodes ${agg.pinned.length}`);
+    ` | contacts/run ${med(agg.contacts)} | pens/run ${med(agg.pens)} | pinned episodes ${agg.pinned.length}` +
+    (agg.ocsKnown ? ` | OCS ${agg.ocs.reduce((a, b) => a + b, 0)}/${agg.ocsKnown} runs` : ' | OCS n/i (pre-v7 trajs)'));
 console.log('Bot reference (fleet_leg2 accepted stack): leg1 med 465s (min 249), leg2 med 243s (min 104), sweep med 125s; best in-time finish 391s.');

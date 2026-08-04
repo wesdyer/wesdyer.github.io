@@ -2686,7 +2686,22 @@ class BotController {
                     const ce = gAv.cell(futureX, futureY);
                     const idAv = ce[1] * gAv.n + ce[0];
                     const clr = gAv._clear[idAv];
-                    if (clr > 0 && clr < 3) proximityCost += 10000 * (1 - clr / 3);
+                    if (clr > 0 && clr < 3) {
+                        // FLOE-caused narrowness is grindable; LAND-caused is not.
+                        // When the static (land-only) grid says this water is clear,
+                        // the low clearance here comes from stamped ice — price it
+                        // at grind scale, keep full lee-shore caution near land.
+                        // (Inert without floes: static and stamped clearance agree.)
+                        let cScale = 10000;
+                        const gStat = state.course._botGridStatic;
+                        if (gStat && gStat !== gAv && window.SailCheck) {
+                            // static _clear is lazy (only pathSailable builds it) and
+                            // routing runs on the stamped grid — build it once here.
+                            if (!gStat._clear) gStat._clear = window.SailCheck.clearanceField(gStat);
+                            if (gStat._clear[idAv] >= 3) cScale = 4000;
+                        }
+                        proximityCost += cScale * (1 - clr / 3);
+                    }
                 }
             }
             if (nearIslands && nearIslands.length) {
@@ -2736,13 +2751,32 @@ class BotController {
                             staticCollision = true;
                             cost += 500000; // HUGE penalty (Hard Constraint)
                         } else if (farHit) {
-                            proximityCost += 25000;
+                            // GRIND-PRICED for floes. The recorded humans pass ice at
+                            // 14-19u and grind through the pack when the line is short
+                            // (24 contacts in a 220s finish); the margin round cut the
+                            // hard pads to match (movePad 21) but left these GRADED
+                            // terms at wall prices — so a candidate that merely passed
+                            // a floe inside 100u cost thousands while a 25-45deg swing
+                            // cost ~13-59 (pow(offset,1.5)*10), and the argmin bought
+                            // the swing every time. Measured (1Hz transit attribution,
+                            // 8 seeds, 2026-08-03d): 50% of the fleet's 15.3k-u excess
+                            // transit distance was sailed under active avoidance
+                            // deflection (mean 49deg), tacks 16 vs the human's 3, dist
+                            // ratio 1.99 vs 0.94. At 6000/2500 the 16-seed gate paid
+                            // +13 med paired, in-time 29->40, grind time DOWN (less
+                            // deflection = less pinning). Land keeps wall prices.
+                            // (notch2: 6000→3500 and band 2500→1200 paid a further
+                            // +12 med / +18.8 mean paired on the 16-seed gate, return
+                            // ratio 1.91→1.70, min 270 — priced by 3 fins@900 churn,
+                            // in-time flat 40. The knee is somewhere below; a notch3
+                            // must watch the 900-cap finisher count first.)
+                            proximityCost += isl.isFloe ? 3500 : 25000;
                         } else {
                             // Proximity penalty (Buffer zone)
                             // Use Circle approx for proximity cost
                             const band = 80 + movePad;
                             if (d < isl.radius + band) {
-                                proximityCost += 10000 * (1.0 - (d - isl.radius)/band);
+                                proximityCost += (isl.isFloe ? 1200 : 10000) * (1.0 - (d - isl.radius)/band);
                             }
                         }
                     }
