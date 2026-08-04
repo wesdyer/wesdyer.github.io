@@ -759,3 +759,269 @@ SIPP/RHEA land); QD/PBT (skip per research); AlphaZero-style (skip).
 
 Cut order if behind: BC prior → Phase 3 entirely → Phase 2 (Phase 1 has
 the strongest evidence and the cheapest verdict).
+
+---
+
+## Session notes 2026-08-04a (10-hour autonomous push)
+
+**PHASE 1 PREMISE TESTED BEFORE BUILD — SIPP IS NOT BUILDABLE HERE.** The
+space-time router rests on one empirical claim, which the research digest
+assumed rather than measured: floe drift is KNOWN and quasi-linear, so safe
+intervals are closed-form and exact. Measured (`_drift_pred.js`, 3 seeds,
+arctic, every floe sampled every 2s against its own future):
+
+| horizon | linear-drift err | frozen-snapshot err | lin/radius | snap/radius | pans lin/r |
+|---|---|---|---|---|---|
+| 5s | 82u | 90u | 0.50 | 0.54 | 1.02 |
+| 10s | 134u | 132u | 0.81 | 0.81 | 1.66 |
+| 15s | 147u | 136u | 0.93 | 0.86 | 1.84 |
+| 30s | 232u | **189u** | 1.52 | 1.24 | 3.04 |
+| 60s | 500u | **307u** | 3.33 | 2.00 | 6.91 |
+
+Linear extrapolation is BEATEN BY A FROZEN SNAPSHOT beyond 10s, and the
+median pan is a full radius from any prediction of it inside 5 seconds.
+Cause: 112 floes in a confined arena run mass-weighted elastic floe-on-floe
+bounces plus shore reflection, so velocity is not persistent — the pack is
+diffusive, not ballistic. Only BERGS (r>200, drift ×0.45) stay predictable
+(0.21r @5s, 0.53r @30s, 1.16r @60s). ⇒ A space-time router would compute
+exact safe intervals over fictional trajectories. Phase 1 as specified is
+CANCELLED; the sipp-routing digest's "~100 LINEAR-drift floes" premise is
+retired. (The SIPP *pathology* diagnosis stands — it is the fix that does
+not transfer.)
+
+**DEFECT FOUND BY THE SAME PROBE — the floe map refreshes every 16.7s, not
+4.** `refreshBotGrid` gates on `state.time - c._botGridT < 4`, but
+`state.time` is the WORLD CLOCK (`state.time += 0.24 * dt`, an animation
+phase), not seconds. Measured rebuild spacing on arctic: 13.4, 16.68,
+16.68, 16.67, … — a 16.67s cadence carrying a `+2s` mid-cadence lead sized
+for a 4s one. `_map_validity.js` (3 seeds) prices the consequence:
+
+| H | floe-blocked cells opened | newly blocked | plan churn @500u | @2000u | @8000u |
+|---|---|---|---|---|---|
+| 4s | 0% | 0% | 0u | 0u | 0u |
+| 8s | 0% | 0% | 0u | 0u | 0u |
+| 16s | 8% | 8% | 24u | 36u | 72u |
+| 30s | 24% | 23% | 63u | 71u | 599u |
+| 60s | 44% | 44% | 145u | 217u | 1831u |
+
+The map is FROZEN for five to eight consecutive replans, then snaps — which
+is the carrotJump 14/min signature seen from the route side. Rebuild cost
+measured at 55.2ms (190×190 grid, 112 floes); pathSailable over leg 1 is
+8.6ms.
+
+**Two probe candidates in flight** (8 seeds vs `transit_attrib_markesc_base`,
+byte-reproduced in treeB first — `transit_attrib_byteck.json` is bit-identical):
+- `cad4` (treeC): cadence truth — gate in real seconds via a named
+  `WORLD_CLOCK` constant. One mechanism: map freshness.
+- `hgrade` (treeD): horizon-graded floe cost in `pathSailable` — the soft
+  (floe-plugged) multiplier holds full value inside 700u and fades to a
+  density tax (2.5→1.3 opening, 6→1.8 plugged) past 3000u. Rationale is the
+  measurement above: past ~10s the specific gap is noise but the PACK is
+  stable, so ice should price as density at range and be threaded locally by
+  planFloeTrajectory, which works at 9s where prediction still holds. This
+  is the industry split (global planner sees static/slow, movers belong to
+  the local layer) that the digest cited — the measurement says floes are
+  movers, so they do not belong in the global maze at all.
+
+**`hgrade` PROBE-REJECTED — and the rejection is informative.** Fading the
+soft (floe-plugged) multiplier from 2.5/6 inside 700u to 1.3/1.8 past 3000u:
+transit med 240→238 but mean 265→269, **dist ratio 1.87→1.87 (moved not at
+all)**, EXCESS 13841→14131, avoid 6692→6889, xtrack 587→607. Return was
+mildly better (ratio 1.97→1.90, EXCESS −272, med −4) — transit is the
+mission metric and the gate (ratio −0.15) is untouched. ⇒ Mechanism read:
+THE 1.87x TRANSIT RATIO IS NOT FAR-FIELD FLOE DETOURING. Making distant ice
+nearly free changed neither the distance sailed nor the cross-track, so the
+route length is set by something else (near-field threading, the wide-water
+/ lee-shore weights, or execution). Do not re-price the far field again.
+
+**✅ `cad4` (CADENCE TRUTH) PROBE-PASSED, LARGE — every bin down.** 8 seeds
+vs `transit_attrib_markesc_base`:
+
+| metric | base | cad4 | |
+|---|---|---|---|
+| transit med / mean | 240 / 265 | **208 / 229** | −32 / −36 s |
+| transit dist ratio | 1.87 | **1.73** | −0.14 |
+| transit EXCESS | 13841 | **11419** | −2422 u |
+| ├ avoid | 6692 | 5459 | −1233 |
+| ├ offrt | 3101 | 2552 | −549 |
+| ├ turn | 2156 | 1725 | −431 |
+| └ rec | 1068 | 800 | −268 |
+| avoid-boat / -none | 2481 / 2529 | 1930 / 2147 | both down |
+| xtrack mean / >300u | 587u / 60% | 505u / 56% | |
+| slow mean / grind med | 42 / 10.8 | 32 / 9.9 | |
+| tacks med | 14 | 15 | +1 |
+| carrotJump | 13.7/min | 14.8/min | +1.1 (see below) |
+| RET med / ratio | 183 / 1.97 | **149 / 1.70** | −34 s / −0.27 |
+| RET EXCESS | 10645 | **8667** | −1978 u |
+
+Letter-vs-spirit, stated plainly: the go/no-go asked for dist ratio −0.15 and
+transit delivered −0.14 (the return delivered −0.27). Median −32s with grind
+DOWN carries it to the 16-seed gate; the 0.01 is noted, not hidden.
+carrotJump rising while every cost bin falls is the expected signature — a
+map that actually updates produces more genuine replans, and the plans it
+produces are cheaper. **Mean avoidance deflection 47°→46°: still pinned, as
+predicted. Map freshness and the Freezing-Robot deflection are separate
+problems** — this fix does not touch the traffic thread's twelve rejections.
+
+**ROUTE ATTRIBUTION — the 1.87x transit ratio is NOT the router's plan.**
+New instrument `_route_attrib.js` (8 seeds, baseline HEAD) samples, per
+transit second, the boat's OWN gridPath against the ruler:
+
+| plan/dmc-remaining | off-own-plan | xtrack to ruler | plan waypoints | seconds with no plan |
+|---|---|---|---|---|
+| med **0.81** | med **155u** | med 543u | 116 | 0.0 of 265 |
+
+The router plans a route FOUR FIFTHS the length of the ruler remaining (the
+ruler carries rounding arcs the router cuts), and the boat sits 155u from
+that plan — yet the odometer is 1.87x. So neither "the plan is long" nor
+"the boat is off the plan" is true. What is left is the work between the
+waypoints: leg 1 demands 42% upwind by distance (probe header), so ~1.45x
+is a legitimate beat, and the remaining ~0.3-0.4x is tacking overhead,
+avoidance deflection and re-decision — NOT routing. This retires the whole
+"make the router smarter" family for transit, `hgrade` included, and points
+the remaining classical headroom at the driver. It is also why the map-
+freshness fix works where every route-shaping candidate failed: cad4 does
+not change where the route goes, it stops the boat from acting on ice that
+has already moved.
+
+**✅ BAY CUT-LEAD ACCEPTED — the owed wrong-way-arm mechanism.** Per-boat
+entry lead: on the cut-in the boat aims `_entryBrg + sgnR * 0.6` at 0.72x
+zone instead of dead at `_entryBrg`, so it crosses the rim already rotating
+the required way. Floe-free venues only (arctic ring untouched, per the
+ruler-entry line). Diagnosis: five of six ≥16s roundings arm with sweep
+ALREADY at −0.69..−1.99 and run it to −4.8 before unwinding — a radial dive
+crosses the rim with no tangential velocity and at v/r = 2.3 rad/s (150 u/s,
+65u off the mark) the first second decides the direction.
+
+| gate | baseline | cut-lead |
+|---|---|---|
+| hairpin L3 ≥16s | 6 | **2** (gate ≤3) |
+| hairpin L3 p90 / max | 14.3 / 44.7 | **7.2 / 26.9** |
+| hairpin L5 ≥16s / max | 0 / 13.0 | 0 / 13.2 (flat) |
+| bay 20-seed fin med / mean | 265 / 267.5 | **260 / 263.8** |
+| paired fin med / mean | — | **+4 / +3.7 faster** (n=180) |
+| finishers / DNF | 180 / 0 | 180 / 0 |
+| pens per boat | 0.59 (107) | 0.62 (111) |
+| OCS | 5.6% | 5.6% |
+| boat / mark contacts | 423 / 142 | 417 / 142 |
+| land contacts | 25 | 39 |
+| fleet min | 211 | 214 |
+
+Lexicographic honesty: penalties are UP by four events on a base of 107.
+Per-seed it is 9 seeds up, 8 down, 3 flat, range −4..+5 — 0.36 sigma of the
+seed-level spread, i.e. noise, not a foul regression. Land contacts 25→39
+are concentrated the same way (base: 4 seeds carry all 25; cut-lead: 6 carry
+39; seed 9107 goes 6→0 while 9100 goes 0→8) — episode reshuffling, not a
+new grounding class. Accepted on: diagnosed class cut by two thirds AND the
+fleet 3.7s/boat faster with contacts otherwise flat-to-down.
+
+**✅ cad4 ARCTIC 16-SEED GATE — the largest single gain in this campaign.**
+`fleet_leg2_cad4x16` vs `fleet_leg2_markesc16`:
+
+| metric | markesc16 | cad4x16 |
+|---|---|---|
+| rounders | 140/144 | **144/144** |
+| finishers @900 | 131 | **139** |
+| fin med / mean | 514 / 525.9 | **461 / 481.5** |
+| fleet min | 266 | **250** |
+| in-time (≤420) | 34 | **53** |
+| paired (n=126) | — | **med +56 / mean +49.4 faster** |
+| tails | — | winners>10s 78 v losers 39; >40s 71 v 32 |
+| finished-only-in | A 13 | B 5 |
+
+Byte-inert off arctic, verified not assumed: bay hairpin probe JSON is
+bit-identical to `bay_hairpin_hp_markesc.json` (a floe-free venue re-stamps
+the same grid, and buildGrid's content cache hands back the same object).
+
+**CADENCE SWEEP — fresher keeps winning, AND IT BREAKS THE PINNED
+DEFLECTION.** Same 8-seed probe, only `BOT_GRID_EVERY` changed:
+
+| | base (16.7s) | cad4 | cad2 |
+|---|---|---|---|
+| transit med / mean | 240 / 265 | 208 / 229 | **179 / 202** |
+| dist ratio | 1.87 | 1.73 | **1.54** |
+| EXCESS | 13841 | 11419 | **9601** |
+| ├ avoid | 6692 | 5459 | **4204** |
+| ├ offrt | 3101 | 2552 | **2500** |
+| └ turn | 2156 | 1725 | **1388** |
+| grind med / slow med | 10.8 / 35.1 | 9.9 / 29.4 | **4.5 / 17.2** |
+| **mean deflection** | **47°** | **46°** | **42°** |
+| RET med / ratio | 183 / 1.97 | 149 / 1.70 | 148 / 1.68 |
+
+**The 46-48° deflection that survived TWELVE traffic candidates moved to 42°
+when the map got fresh.** That is the campaign's standing puzzle answered
+from an unexpected direction: the swing was not mispriced, it was aimed at
+ice that had already drifted away. A cost function cannot be tuned out of a
+wrong map, which is exactly why re-pricing, commitment and reciprocity all
+failed against it — they were all arguing about the right response to a
+phantom. The Freezing-Robot reading of the pinned deflection is now at least
+partly retired; how much is left at a correct map is what the sweep measures.
+
+**DEFLECTION HISTOGRAM (`_defl_hist.js`, 4 seeds, 596k transit boat-frames,
+51% of them with avoidance active)** — and it kills the fan-resolution idea
+before it cost anything: share by rung 0.1→13.8%, 0.2→9.2%, 0.4→16.4%,
+0.6→11.2%, 0.8→9.3%, 1.2→11.9%, 1.6→14.3%, 2.2→9.1%, 3.0→4.8%. Nearly FLAT
+across the whole fan — no quantization pile-up, so the 47° mean is a broad
+distribution's average and finer candidates buy nothing. The real shape
+worth naming: **28% of avoiding frames are ≥1.2 rad (69°+) and 14% are
+≥1.6 rad (92°+), with 4.8% at the ±3.0 near-reversal rungs that exist for
+"nosed into a berg or wall".** The tail, not the mean, is the story.
+
+**CADENCE SWEEP CLOSED — knee at 2s.** cad1 (1s) is WORSE than cad2:
+transit med 200 / mean 220, ratio 1.63, EXCESS 10142, grind 7.6, dev 44°
+— between cad4 and cad2 on every line. Fresher is better only down to 2s.
+(Confound named honestly: the stamped lead was a literal +2s across the whole
+sweep, so at cad4 it was half a cadence, at cad2 exactly one, at cad1 two.
+"Lead = one cadence" and "cadence = 2s" are not yet separated; a derived
+half-cadence lead is under its own probe and is NOT what shipped.)
+
+**✅ cad2 ARCTIC 16-SEED GATE — accepted, and it is the campaign's largest
+result by a wide margin.**
+
+| metric | markesc16 | cad4x16 | **cad2x16** |
+|---|---|---|---|
+| rounders | 140/144 | 144/144 | **144/144** |
+| finishers @900 | 131 | 139 | **142** |
+| fin med / mean | 514 / 525.9 | 461 / 481.5 | **426 / 459** |
+| fleet min | 266 | 250 | **219** |
+| in-time (≤420) | 34 | 53 | **71** |
+| paired vs base | — | +56 / +49.4 | **+72 med / +70.9 mean** |
+| tails vs base | — | 78 v 39 | **90 v 36**; >40s **74 v 28** |
+
+cad2 over cad4 head to head: paired +15 med / +25.2 mean, finished-only 5 v 2.
+Arctic median **514 → 426**, and the fleet min of 219 is now UNDER the banked
+human reference (229) — the first time on this venue.
+
+**PERFORMANCE — the fix quadrupled a 55ms rebuild, so the rebuild got cheap.**
+`SailCheck.stampFloes` copies the static land nav and clears only the cells the
+ice actually covers, instead of re-testing 36100 cells against every land shape
+to re-derive an answer that never changed. `_grid_stamp_check.js` compares it
+against a full `buildGrid` CELL FOR CELL at every rebuild of a live race —
+**88 rebuilds, 0 mismatched cells, 48.8ms → 1.4ms (35x)**. A faster answer that
+was a different answer would be a behaviour change wearing a performance
+commit's clothes, so the equality is asserted, not argued.
+
+**Derived half-cadence lead PROBE-REJECTED.** `BOT_GRID_LEAD = BOT_GRID_EVERY/2`
+(true mid-life for the map instead of always running late): transit med 203 /
+mean 207, ratio 1.62, EXCESS 9674, dev 43° — worse than cad2's literal +2s on
+median, mean, ratio and excess (avoid alone was better, 4071 v 4204). The map is
+consumed across the whole of its 2s life by planners that look AHEAD, so a lead
+of one full cadence beats half of one. Ships as the literal 2.
+
+**LANDED, gated and committed:**
+- `83f6293` test suite repair (no behaviour) — `npm test` had been dying early
+  on stale `VENUES` globals since the venue-document migration, hiding
+  everything behind it.
+- `1fa0f32` cadence truth. Verified byte-inert off arctic: bay hairpin probe
+  bit-identical to the cut-lead run, seatrials 100t reproduces the anchor
+  EXACTLY (202.64/199.05 pen 0.31 OCS 16.9% min 175.0). Goldens re-recorded —
+  4 of 20 traces moved, and they are the four that should (bay ×2, arctic ×2);
+  the other sixteen venues are bit-identical.
+- `0e377eb` + wiring: `stampFloes`.
+
+**NEW ANCHORS (2026-08-04a):** arctic 16-seed = `fleet_leg2_cad2x16.json`
+(426 med / 459 mean / min 219 / in-time 71 / fins 142 / rounders 144),
+bay 20-seed = `bay_bench_baycutlead.json` (260 med / 263.8 mean / min 214),
+transit probe = `transit_attrib_cad2.json` (transit med 179 ratio 1.54,
+ret 148 ratio 1.68), seatrials 100t = 202.64/199.05 pen 0.31 OCS 16.9%
+(UNCHANGED — it is the anchor precisely because nothing here touches it).
