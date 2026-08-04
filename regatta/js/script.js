@@ -10789,13 +10789,19 @@ function update(dt) {
     const spawnTries = 2;
     for (let s = 0; s < spawnTries; s++) {
         const range = Math.max(canvas.width, canvas.height) * 1.35;
-        const sx = state.camera.x + (fxRand() - 0.5) * range;
-        const sy = state.camera.y + (fxRand() - 0.5) * range;
-        // A streak is a mark on the WATER, and this is the cheapest rejection — the plain
-        // box around the camera laid them over headlands, bergs and the ice shelf, where
-        // there is no water to mark.
-        if (!Arena.contains(state.course.boundary, sx, sy, 0)) continue;
-        if (!inMaskWater(sx, sy)) continue;
+        // A streak is a mark on the WATER. A single roll rejected on land used to be
+        // the whole story — which on open water changed nothing, but in Redrock's
+        // canyon maze most of the box IS land, so the layer thinned out exactly
+        // where the wind does its wildest work. Resample a few times instead: the
+        // WATER keeps its density whatever the land fraction around it. Extra
+        // draws are safe — fxRand is the visuals-only stream.
+        let sx = 0, sy = 0, onWater = false;
+        for (let r = 0; r < 6 && !onWater; r++) {
+            sx = state.camera.x + (fxRand() - 0.5) * range;
+            sy = state.camera.y + (fxRand() - 0.5) * range;
+            onWater = Arena.contains(state.course.boundary, sx, sy, 0) && inMaskWater(sx, sy);
+        }
+        if (!onWater) continue;
         const spd = getWindAt(sx, sy).speed;
         const windiness = Math.max(0, Math.min(1, (spd - STREAK_MIN_WIND) / 9));
         if (windiness <= 0) continue;                       // glassy: the water is not marked
@@ -11377,6 +11383,10 @@ function drawParticles(ctx, layer) {
 
             // One filled outline: down the left flank of the track, back up the right.
             // Half-width tapers to nothing at the end of the age window.
+            // (A dark keel under each streak was tried for bright-water contrast and
+            // reverted — it read as a different, heavier layer. Legibility in the
+            // canyons is carried by spawn density instead: see the resampling note
+            // at the spawn site.)
             const taper = cometCfg().taper;
             ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${alpha.toFixed(3)})`;
             ctx.beginPath();
@@ -13926,9 +13936,11 @@ function renderResultsSplits(player) {
     const GREEN = { color: '#34d399', border: '1px solid rgba(52,211,153,0.5)' };
     const RED = { color: '#ef4444', border: '1px solid rgba(239,68,68,0.5)' };
     const TEAL = { color: '#7ff0d4', border: '1px solid rgba(127,240,212,0.5)' };
-    // GOLD OUTRANKS EVERYTHING: a leg that entered the record book is the headline of
-    // that leg whatever places it gained or lost — the place move still shows in the
-    // trend arrow beside the rank.
+    // Gold is reserved for the START RECORD tile. Leg tiles used to go gold when a
+    // leg entered the record book, but early in a course's life that is most legs
+    // of most races — a page of gold that drowned the green/red story of places
+    // won and lost, which is what the tiles are for. The record book still keeps
+    // every leg record; the toast still announces one the moment it is sailed.
     const GOLD = { color: '#f2c14e', border: '1px solid rgba(242,193,78,0.65)' };
     const tile = (name, time, rank, prevRank, fastest, startTag, record) => {
         let trend = '', trendColor = '#66748c', tag = null, moved = 0;
@@ -13987,16 +13999,15 @@ function renderResultsSplits(player) {
         : sr > fleetN - 3 ? { ...RED, text: 'Back 3 off the line' }
         : null;
 
-    // What this run wrote into the record book, for the gold tiles.
+    // What this run wrote into the record book — only the start still paints gold.
     const rr = state.race.recordResults;
-    const recLegs = new Set(rr ? rr.legs : []);
     if (started) tile('Start', '+' + rs.startTimeDisplay.toFixed(1) + 's', sr, 0, false,
                       rr && rr.start ? null : startTag, rr && rr.start ? 'Start record' : false);
     let prev = sr;
     for (let i = 0; i < legs; i++) {
         const rank = rs.legRanks[i] || 0;
         tile('Leg ' + (i + 1), splitTime(rs.legTimes[i]), rank, prev,
-             rs.legTimes[i] <= fleetLegBest[i] + 1e-9, null, recLegs.has(i));
+             rs.legTimes[i] <= fleetLegBest[i] + 1e-9, null, false);
         if (rank) prev = rank;
     }
     if (!tiles.length) {
