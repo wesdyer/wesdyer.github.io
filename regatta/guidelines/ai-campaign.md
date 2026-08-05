@@ -3517,3 +3517,34 @@ fleet actually sails round Glacier Sound's island instead of banking a rounding 
 never made. That was the owner's explicit instruction for this item and it is reported,
 not rejected. If the price is judged too high, the single lever is `ROUND_SWEEP_TOL`
 and the whole thing reverses with it — but that lever IS the cheat.
+
+## ⛔ THE ORBIT LEAD ANGLE IS NOT THE LEVER FOR THE ARCTIC WANDER
+
+`_round_cost_probe` says most of arctic's extra distance is wander, not arc (ratio 3.89
+against a clean circle's 1.0, while sweep only went 1.73 -> 2.70 rad). The orbit lead —
+`aA = brgA + sgnA * 0.85`, last A/B'd in a world where ring time was a third of what it
+is now — was the obvious re-test. Four variants, arctic 16-seed paired vs `anchorfixA`:
+
+    lead 0.65                    -5 med /  -2.1 mean
+    lead 1.10  (9100)            +1 med / +13.0 mean
+    lead 1.10  (9200, DISJOINT)  +7 med /  -1.6 mean     <- does not replicate
+    lead 1.35  (9100)            +6 med /  +8.8 mean
+    lead = 0.85 + 0.5*(radius/zone)   (arctic 1.09, bay 0.89)
+               (9100)           +19 med / +20.7 mean
+               (9200, DISJOINT)  -1 med /  -2.5 mean     <- does not replicate
+
+**Rejected in both forms.** The 32-seed combination is weakly pace-positive but
+finishers go 271 -> 267 and in-time 67 -> 62, which fails the gate; bay rejects the flat
+1.10 outright on contacts (land 0.08 -> 0.31, mark 0.31 -> 0.66 — on a 12-unit can a
+large lead aims the boat through the mark). The geometry-scaled form was the principled
+one and it is the one that most clearly did not replicate.
+
+⚠️ **And it does not do what it was aimed at.** With the scaled lead the wander ratio
+only moved 3.89 -> 3.70 and time in the ring went UP, 116.6 -> 128.4s. Whatever is
+making the fleet wander round that island, it is not the lead angle. Next candidates
+are elsewhere: an orbit target that scans for a clear RADIUS the way the entrance and
+exit hunts scan for a clear SECTOR, or giving the sweep phase the same floe-aware
+time-cost routing the transit already gets.
+
+⚠️ **Third time tonight a 16-seed arctic result failed to replicate on the disjoint
+set** (rules 22/23.2, lead 1.10, lead-scaled). On this venue a 16-seed pair is a SCREEN.
