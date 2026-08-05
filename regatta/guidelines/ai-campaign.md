@@ -3687,10 +3687,15 @@ in the previous queue section, which stands.
     in flight      `treeW2b` (winding test on the corrected base) — bay 248 med,
                    180/180, paired 0 med / -0.2 mean; **12-seed string truth came back
                    1/108 = 1%, against master's 6%** — the best correctness measured on
-                   this venue and it is bay-neutral. Only the arctic 9100/9200 pace pair
-                   is missing, and that is the whole decision: the earlier engine-only
-                   version stranded 12 boats in 144, the coupled one recovered 10 of
-                   them, so watch FINISHERS and ROUNDERS, not just the paired median. Logs in the session
+                   this venue and it is bay-neutral.
+                   **arctic 9100 came in: paired 0 med / -7.9 mean, rounders 140 -> 139,
+                   finishers 140 -> 137, in-time 37 -> 35.** So on the corrected base it
+                   costs 3 finishers and ~8s mean on that set for 6% -> 1% of roundings
+                   that never wrapped the mark. ONLY 9200 IS OUTSTANDING, and arctic at
+                   16 seeds is a screen — three results failed to replicate on 9200 in
+                   one night, so run it before deciding. Watch FINISHERS and ROUNDERS,
+                   not just the paired median: the engine-only version stranded 12 boats
+                   in 144 and the coupled one recovered 10 of them. Logs in the session
                    scratchpad as w2bA/w2bB/st_w2b; re-run rather than trust them if the
                    merge moved bay/arctic at all.
     new probes     `_sailable_stall_probe.js` (why a leg stalls on the ideal path),
