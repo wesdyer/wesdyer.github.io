@@ -4456,3 +4456,11 @@ contacts and penalties DOWN.
 - Rule 20 (room to tack at an obstruction): needs a hail mechanism, predicate not counted.
 - Phase 5 (pressure): ocean authors dirVar 0.21 rad and speedVar 4 kt on a 120 s period,
   so there IS something to find. Not probed.
+
+### POST-LANDING VERIFICATION
+
+    goldens     PASS — 20 traces, 0 behaviour changes, 0 new   (a4bb4d5)
+    seatrials   198.79 / 194.53, pen 0.31, OCS 13.33%, DNS/DNF 0%, min 174.15, max 360.00
+                — IDENTICAL to the pre-landing run, as it must be: seatrials' route is
+                  line -> gate -> gate -> gate -> gate and has no rounding leg at all
+    test_sailable   PASS 0 failures, all ten venues
