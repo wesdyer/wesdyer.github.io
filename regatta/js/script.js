@@ -2604,22 +2604,39 @@ class BotController {
                 const ovx = (other.velocity && other.velocity.x) ? other.velocity.x * 60 : Math.sin(other.heading)*other.speed*60;
                 const ovy = (other.velocity && other.velocity.y) ? other.velocity.y * 60 : -Math.cos(other.heading)*other.speed*60;
 
-                // Strategic Positioning (Duck Stern / Go Above)
-                if (this.avoidanceRole === 'GIVE_WAY' && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
-                    const t = lookaheadFrames / 60;
-                    const myFut = { x: futureX, y: futureY };
-                    const otherFut = { x: other.x + ovx * t, y: other.y + ovy * t };
-                    const dx = myFut.x - otherFut.x;
-                    const dy = myFut.y - otherFut.y;
-
-                    if (dx*dx + dy*dy < 250*250) {
-                        const oh = other.heading;
-                        const ofx = Math.sin(oh), ofy = -Math.cos(oh);
-                        const dotForward = dx * ofx + dy * ofy;
-
-                        // Penalize crossing bow (dotForward > 0), Reward ducking (dotForward < 0)
-                        if (dotForward > 0) cost += 1500 * jamF;
-                        else cost -= 800 * jamF;
+                // KEEP CLEAR BY ENOUGH, AND NO MORE (2026-08-04b, half 2b).
+                // The old shaping paid a flat -800 for ducking a stern and +1500 for
+                // crossing a bow, which is a DIRECTION preference with no notion of
+                // "enough": against a base deviation cost of pow(offset,1.5)*10 —
+                // about 2.5 at 23 degrees — an 800-unit reward buys any swing the fan
+                // offers. Measured consequence: 86% of clear-water pairwise onsets
+                // were ALREADY clearing by 80u and the boat deflected a median 11deg
+                // anyway (p90 92), against a minimal need of 0.
+                //
+                // Instead, the give-way boat's obligation is stated the way the rule
+                // states it: keep clear. Cost falls to ZERO as soon as this candidate
+                // clears the safe gap, so the base deviation cost then selects the
+                // SMALLEST course change that satisfies it — a minimal escape, which
+                // is what lets sailors cross at small gaps. The bow/stern preference
+                // survives only as a tie-break at equal clearance.
+                if (this.avoidanceRole === 'GIVE_WAY' && other === this.threatBoat
+                    && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
+                    const px = other.x - boat.x, py = other.y - boat.y;
+                    const rvx = ovx - vx, rvy = ovy - vy;
+                    const v2 = rvx * rvx + rvy * rvy;
+                    let tc = v2 > 1e-6 ? -(px * rvx + py * rvy) / v2 : 0;
+                    if (tc < 0) tc = 0;
+                    if (tc > lookaheadFrames / 60) tc = lookaheadFrames / 60;
+                    const cpa = Math.hypot(px + rvx * tc, py + rvy * tc);
+                    const KEEP = 110;                       // the gap we owe her
+                    if (cpa < KEEP) {
+                        const short = (KEEP - cpa) / KEEP;
+                        cost += 2600 * short * short * jamF;
+                        // Tie-break only: at equal clearance, prefer her stern.
+                        const dxT = futureX - (other.x + ovx * tc);
+                        const dyT = futureY - (other.y + ovy * tc);
+                        if (dxT * Math.sin(other.heading) - dyT * Math.cos(other.heading) > 0)
+                            cost += 120 * jamF;
                     }
                 }
 
@@ -2666,8 +2683,21 @@ class BotController {
                             } catch(e) {}
                         }
                     } else if (distSq < 250 * 250 && this.livenessState === 'normal') {
-                        // Soft avoidance (Proximity)
-                        proximityCost += 5000 / (distSq + 10);
+                        // A RIGHT-OF-WAY BOAT SAILS HER PROPER COURSE (2026-08-04b).
+                        // RRS 14: the right-of-way boat need not act to avoid contact
+                        // until it is clear the other boat is not keeping clear — and
+                        // being predictable is what lets the give-way boat plan a
+                        // small, safe crossing. Paying a proximity gradient against a
+                        // boat we have rights over makes us swerve for a crossing
+                        // that was already going to happen at a comfortable gap, and
+                        // measurement says that is most of what the fleet does:
+                        // 86% of clear-water pairwise avoidance onsets were ALREADY
+                        // clearing by 80u, and the boat deflected a median 11deg
+                        // anyway. The hard Rule-14 collision term below is untouched,
+                        // so a boat that is genuinely not keeping clear is still
+                        // avoided; only the standing-on nudge goes away.
+                        if (!(this.avoidanceRole === 'STAND_ON' && other === this.threatBoat))
+                            proximityCost += 5000 / (distSq + 10);
                     }
                 }
             }
