@@ -3255,3 +3255,29 @@ require that to be inside a hull's width. With that guard the detector fires **0
 in 12 bay races at BOTH threshold settings**, which is the honest answer: there are
 currently no genuine no-contact infringements on that venue, because the fleet
 over-avoids so thoroughly that nobody is ever actually forced.
+
+### E, continued — the fix, and how much of the problem it reaches
+
+⚠️ **`_foul_truth_probe` must count ONE PER EPISODE.** `triggerPenalty` fires its
+event on every eligible frame and only converts it into a turn when the boat is not
+already flagged, so raw event counts read 577 fouls in 8 arctic races against a real
+rate near 1.5 a boat. Deduped on the flag (which is set AFTER the event, so it still
+reads false on the frame that counts):
+
+    ARCTIC, 8 seeds                    master    + need guard
+    distinct no-contact fouls          46        27
+    correct (contact threshold)        26%       33%
+    correct (most favourable)          28%       44%
+    median gap on proper courses       101u      70u
+
+    BAY, 12 seeds                      4 fouls, 0 correct -> 0 fouls
+
+The guard removes 41% of arctic fouls and the ones it removes are disproportionately
+the wrong ones. ⚠️ **The residual is probably smaller than it looks**: the probe scores
+"correct" against CONTACT (55u), while the engine's own keep-clear gap is 80-110u, and
+the surviving fouls sit at a median 70u — inside the gap she is owed, so a boat forced
+there arguably did need to act. Read 33-44% as a floor, not the number.
+
+Pace: bay 249 med, paired 0 med / -0.9 mean, penalties 0.35 -> 0.33. Arctic 16-seed
+0 med / -6.6 mean, rounders 144 -> 141. Judged on correctness per the owner's standing
+instruction for this item; the disjoint arctic set is running.
