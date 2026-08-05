@@ -3713,3 +3713,83 @@ in the previous queue section, which stands.
                    merge moved bay/arctic at all.
     new probes     `_sailable_stall_probe.js` (why a leg stalls on the ideal path),
                    `_side_check.js` (authored mark side vs the winding the course needs)
+
+---
+
+# 2026-08-05 AFTERNOON SESSION — VERDICTS AS THEY LAND
+
+## ✅ THE MERGE IS INERT ON BAY AND ARCTIC (10:15)
+
+`bay_bench_mergechk.json` (20 seeds, 9100) is **byte-identical** to
+`bay_bench_anchorfixbay.json`; `fleet_leg2_mergechk.json` (16 seeds, 9100) is
+**byte-identical** to `fleet_leg2_anchorfixA.json`. The swell is scoped to ocean as
+claimed. **Every anchor in the handover plan survives the merge and needs no re-basing.**
+
+Method note: candidate trees are now built by `regatta/eval/rl/mktree.sh`, which copies
+the code and SYMLINKS `assets/`. A `cp -R regatta ...` into `regatta/eval/rl/` recurses
+into itself and `eval/` is 100 GB.
+
+## ✅ PHASE 1 LANDED — `805889c` — the venue gate is trustworthy again
+
+`test_sailable`: **7 failures -> 0, all ten venues.** All three failing venues were the
+CHECKER's fault, and the new `_sailable_stall_probe.js` says which of the engine's
+conditions was still false when the ideal path ran out. Three defects, compounding:
+
+    roundingArc asked ONE radius (mark.radius + clearance) — the buoy, not what it is
+      planted on. Bluewater's mark is a seamount: 0deg of water at 64u, i.e. "cannot be
+      rounded", when the truth was "wrong radius". Now searches out to zone*0.92 and
+      takes the tightest all-water circle:  ocean leg 1  0deg@64u -> 360deg@742u
+    the arc swept a flat 220 deg — four of the eleven authored rounding legs need more
+    the approach was RADIAL on the most-open bearing, ignoring where the boat came
+      from, so it banked NEGATIVE winding the rounding then had to undo: bay leg 3
+      trough -84 deg against a 183 requirement, ocean leg 1 ranged -113..+8
+
+Replaced with tangent in / the arc the geometry requires / tangent out — the shape
+`CoursePath.requiredSweep` is itself derived from, so checker and engine now agree by
+construction. Game-inert: `routeWaypoints` and `roundingArc` have no runtime consumers.
+
+## ⚠️ FINDING 3 OF THE HANDOVER SURVEY IS A MISDIAGNOSIS — measured
+
+`_sweep_rule_check.js` prints, for every authored rounding leg, the raw tangent arc, what
+`requiredSweep` returns, and the string rule. **The `sweep < 0.2` guard fires on NO leg of
+NO venue today.** Redrock leg 3's 184 degrees is the tangent formula's ordinary output.
+
+And its 1 degree is not the winding the course requires — it is the SUBTENDED ANGLE at
+the mark between the previous and next anchors, which for that leg is 0.8 deg. Both
+anchors lie in the SAME direction from the mark, at 4023u and 2688u: that is a HAIRPIN,
+and the winding a hairpin requires is a full 360, not 1. The string rule reads 1 there
+only because it is degenerate at subtend 0 — the answer is 0-or-2pi on sign noise, which
+is the same reason the guard exists.
+
+The real defect in that family is bigger and different: **the tangent formula measures
+only the ARC, tangent to tangent, while the engine accumulates winding for the WHOLE
+leg.** It is short by the two tangent legs' contribution at every mark:
+
+    leg           bay1  bay2  bay3  bay4  bay5  ocn1  ocn2  rr1  rr2  rr3  rr4  arc1
+    requiredSweep   92    83   183   183    74    89   107   46  171  184  139   195
+    string rule    269   260   360   360   251   248   286  217  347  360  315   360
+
+That is the documented "too lenient" bias. Not landed blind — it is a threshold change on
+both anchor venues and it gets benched like one.
+
+## ✅ THE WINDING TEST LANDED — `35d6e25` — re-measured on the post-merge base
+
+Reproduced from scratch (`treeW2c` = HEAD + the patch, byte-checked), not trusted from
+the pre-merge logs:
+
+    correctness   roundings whose string never wrapped the mark   6% -> 1%
+    bay 20        248 med, 180/180, paired 0 med / -0.2 mean
+    arctic 9100   paired 0 med / -7.9 mean, rounders 140->139, fins 140->137
+    arctic 9200   paired 0 med / -4.5 mean, rounders 138->138, fins 131->130
+    seatrials     inert by construction — no rounding leg in its route
+
+Both arctic sets reproduce the pre-merge numbers to the boat.
+
+## ⚠️ 11 EDITOR-TEST FAILURES CAME IN WITH THE MERGE
+
+`npm test` now fails 11 lines, ALL in `test_editor.js` ("document loaded — 123 shapes",
+"a typed course name is stored", the arena-corner floor, the wind-region arrows, "scaling
+to 60% shortens the race by roughly 40% — 1.02x"). Verified byte-identical on the
+pre-session HEAD with my changes stashed, so **they are not mine and they are not the
+sailability failures** — those are gone. Flagging: they look like the editor tests
+asserting against the OLD redrock document.
