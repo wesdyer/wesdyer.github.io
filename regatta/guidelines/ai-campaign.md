@@ -3688,14 +3688,27 @@ in the previous queue section, which stands.
                    180/180, paired 0 med / -0.2 mean; **12-seed string truth came back
                    1/108 = 1%, against master's 6%** — the best correctness measured on
                    this venue and it is bay-neutral.
-                   **arctic 9100 came in: paired 0 med / -7.9 mean, rounders 140 -> 139,
-                   finishers 140 -> 137, in-time 37 -> 35.** So on the corrected base it
-                   costs 3 finishers and ~8s mean on that set for 6% -> 1% of roundings
-                   that never wrapped the mark. ONLY 9200 IS OUTSTANDING, and arctic at
-                   16 seeds is a screen — three results failed to replicate on 9200 in
-                   one night, so run it before deciding. Watch FINISHERS and ROUNDERS,
-                   not just the paired median: the engine-only version stranded 12 boats
-                   in 144 and the coupled one recovered 10 of them. Logs in the session
+                   **BOTH ARCTIC SETS ARE NOW IN, AND IT REPLICATES:**
+
+                       9100  paired 0 med / -7.9 mean, rounders 140->139, fins 140->137,
+                             in-time 37->35
+                       9200  paired 0 med / -4.5 mean, rounders 138->138, fins 131->130,
+                             in-time 30->27          (DISJOINT — it replicates, which
+                             three other results last night did not)
+                       32    rounders 278->277, finishers 271->267, in-time 67->62
+                       bay   248 med, 180/180, paired 0 med / -0.2 mean
+                       correctness  6% -> 1% of roundings whose string never wrapped
+
+                   ⇒ **THE DECISION IS FULLY MEASURED AND I RECOMMEND LANDING IT.** The
+                   trade is 4 finishers in 288 and ~6s of mean, with the MEDIAN FLAT on
+                   both sets, in exchange for five sixths of the remaining fake
+                   roundings. That is the trade the owner asked for in as many words
+                   ("cheating is worse than losses in time"), and it is a far better one
+                   than the version measured on the reverted base (7 finishers for
+                   12%->2%). Not landed here only because a fresh instance is taking
+                   over and two hands on the same file is how the give-back got reverted.
+                   `treeW2b` is ready; it is a straight copy of its script.js once the
+                   merge has been verified inert on arctic. Logs in the session
                    scratchpad as w2bA/w2bB/st_w2b; re-run rather than trust them if the
                    merge moved bay/arctic at all.
     new probes     `_sailable_stall_probe.js` (why a leg stalls on the ideal path),
