@@ -4033,3 +4033,32 @@ handover flagged. The water is a thin web: at 50-unit cells and hull-width clear
 **This is an authoring decision, not a bug to fix in the AI**, and it is the owner's call:
 either the channels widen, or Redrock is a specialist venue the current fleet cannot race.
 Reporting it rather than quietly tuning around it.
+
+## ⛔ RULES 18.3 AND 18.4 ARE NOT WORTH IMPLEMENTING — the predicate, measured first (11:45)
+
+The campaign has already spent four implementations on rule 22 before discovering its
+predicate was wrong. So this time the predicate was counted before a line was written.
+`_rule18_incidence.js`, bay, 6 races, 54 boat-races, verbatim rule text from the
+2025-2028 PDF (not a paraphrase):
+
+    18.3  "If a boat passes head to wind from port to starboard tack in the zone of a
+           mark to be left to port, rule 18.2 does not apply between her and another boat
+           on starboard tack that is FETCHING the mark."
+
+           head to wind port->starboard inside a port mark's zone     7 events
+           ...of which with a starboard boat fetching — THE RULE      1 event
+                                                                     0.02 per boat-race
+
+    18.4  "When an inside overlapped right-of-way boat must gybe at a mark to sail her
+           proper course, until she gybes she shall sail no farther from the mark than
+           needed to sail that course."
+
+           inside boat at a mark whose proper course needs a gybe     0.7 s per boat-race
+
+**One event in fifty-four boat-races, and seven tenths of a second.** Neither can move a
+bench, and neither is worth the risk of touching the mark-room path that three corrections
+landed on yesterday. Rule 20 was not even counted: it needs a hail mechanism, and its
+predicate is a subset of 18.3's — close-hauled, at an obstruction, with a boat to windward.
+
+⇒ **These three go on the "correct but inert" list, not the queue.** If a future venue
+authors a windward mark with a crowded zone the count changes and this probe re-runs.
