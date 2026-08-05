@@ -2900,3 +2900,148 @@ because on arctic a third of the problem is not a boat.
 Interim option if the bay win is wanted now: scope keep-clear on `_floeObjs` the
 way the penalty-turn and heat-gate changes already are — it would be the third
 use of that pattern, and it is a stopgap, not the fix.
+
+---
+
+# ⚡ OVERNIGHT QUEUE (prepared 2026-08-05 00:10, for a FRESH INSTANCE)
+
+## READ FIRST — the two things that make this session different
+
+**1. THE BOATS CHEAT AT ROUNDINGS, AND CORRECTNESS OUTRANKS PACE HERE.** Owner,
+explicitly: *"Since they were cheating, once you fix this I expect numbers to
+drop a bit. But cheating is worse than losses in time."* So the standing
+lexicographic gate DOES NOT apply to the rounding fix. Judge it on whether
+roundings are real, and report the pace cost honestly rather than treating it as
+a rejection.
+
+**2. ROUNDING HAS BEEN GOT WRONG SEVERAL TIMES BEFORE.** Owner: *"be careful —
+it's probably worth setting up small tests."* `regatta/eval/test_rounding_string.js`
+is that test and it is **deliberately RED on HEAD**. Do not wire it into
+`npm test` until it passes. Make it pass; do not edit it to agree with the code.
+
+## WHAT THE CHEAT IS — measured, and it is ONE CONSTANT
+
+`ROUND_SWEEP_TOL = 0.75` (script.js ~15297). A rounding completes at 75% of the
+geometric requirement, and **the AI targets that same discounted number** —
+`reqSweep * ROUND_SWEEP_TOL` appears in the bot's own outbound/exit logic at
+three sites (~343-354, ~796). The boats did not find a loophole; they were aimed
+at 75% of a rounding.
+
+`_rounding_truth_probe.js` (committed), 8 seeds:
+
+    bay      360 completed roundings: 34% banked LESS than the full requirement,
+             18% under 80%, 28% NEVER ENTERED THE ZONE, min fraction 0.74
+    arctic    72 completed roundings: 85% under the full requirement,
+             median 0.83, min 0.75 — the typical island rounding is 83% of a real one
+
+Owner has seen it on **bay's windward mark** and **arctic's rounding island (the
+more serious one)** — which matches: arctic is 85%.
+
+**⚠️ It does NOT invalidate this session's A/B results.** The tolerance is
+identical in baseline and experiment, so it inflates absolute rounding counts on
+both sides equally. It invalidates "the fleet rounds N marks", not "change X is
+worth +Y seconds". The owner independently confirms the AI gains are visible in
+play.
+
+## WHAT THE RULE ACTUALLY SAYS (read it, do not paraphrase from memory)
+
+RRS 2025-2028 **Sail the Course**: *a string representing her track, when drawn
+taut, (1) passes each mark on the required side and in the correct order, and
+(2) **TOUCHES each mark designated in the sailing instructions to be a rounding
+mark**.*
+
+- (1) applies to EVERY mark. (2) is what makes a rounding a rounding, and it is
+  the geometric definition: **the taut string must TOUCH the mark** — the track
+  has to bend around it.
+- **There is NO proximity requirement.** Going all the way round at a distance is
+  a legal rounding, merely slow. `test_rounding_string.js` pins this in both
+  directions and the current engine already gets it right — a full rounding at
+  2.5x zone completes. **Do not "fix" this by adding a zone requirement.**
+- There is no tolerance in either sentence.
+
+⇒ The engine's `reqSweep` (the angle the taut string wraps, derived from the
+previous and next marks) appears to be the CORRECT quantity. The bug looks like
+the 0.75 discount alone. **Verify that before changing anything else** — the
+test's 80%-completes / 60%-does-not result is exactly `TOL = 0.75` and nothing
+more.
+
+⚠️ Changing TOL to 1.0 will strand boats unless the AI is re-aimed at the same
+time: it steers to `need = reqSweep * TOL` at three sites. Change both together
+and expect the first bench to look bad.
+
+## THE QUEUE
+
+**A. THE ROUNDING FIX (highest value, owner-flagged, correctness-graded).**
+Make `test_rounding_string.js` pass. Re-aim the AI's exit logic at the same
+moment. Then re-measure with `_rounding_truth_probe.js` — the target is a median
+fraction of ~1.0 with nothing below it. Report the pace cost; do not reject on it.
+
+**B. MARK-ROOM / ROUNDING PRIORITY (owner-reported, rules 18.2-18.4).** Owner:
+*"they don't adhere to the priority as they enter the rounding circle — first in
+gets rights (still subject to tack rules)."* The precise rule is 18.2(a): at the
+moment the FIRST of two boats reaches the zone, if they are overlapped the
+OUTSIDE boat gives the inside boat mark-room; if they are not overlapped, the
+boat that has NOT reached the zone gives the other mark-room — and it continues
+even if the overlap later changes (18.2(a) final sentence). The engine has a
+`zoneSnapshot` and implements 18.1(a)(1) only; **18.1(a)(2), (a)(3) "between a
+boat approaching a mark and one leaving it", (a)(4), 18.1(b), 18.3 Tacking in the
+Zone and 18.4 Gybing in the Zone are all absent.** Also owner: *"they could round
+tighter when they do round correctly."*
+
+**C. THE OBSTRUCTION MODEL — the thing four changes have now stalled on.**
+Every rules-correctness win this session goes bay-positive and arctic-neutral or
+negative (penalty turns, heat gate, `rrspair`, keep-clear). It is not ice being
+harder: **35% of arctic avoidance frames have no rival within 600u at all**, and
+the rules layer has no obstruction model — no *continuing obstruction* (every
+shoreline here is one, which routes to rule 19 and not 18), no *"a boat racing IS
+an obstruction to a boat required to keep clear of her"*, and no rule 20 (room to
+tack at an obstruction) at all. Build this and the arctic half of the last four
+changes should come back. **Then remove the `_floeObjs` scope from keep-clear**
+(script.js, `openWaterKC`) and re-gate.
+
+**D. RULES 22 + 23.2 — built, measured, NOT landed.** Sitting in `treeH`
+(identifiable by the `otherAground` and `otherProtected` markers; note treeH also
+has the UNSCOPED keep-clear beneath it, so lift only those two hunks). Rule 22:
+a boat AGROUND is avoided by everyone. Rule 23.2: no interference with a boat
+taking a penalty, on another leg, or returning — with the exemption doing the
+work, since *"does not apply when the boat is sailing her proper course"* maps
+exactly onto the undeflected candidate, so it constrains DEVIATIONS only. Bay
+9100 +1 med with rubs 1.67→1.52; bay 9200 −2 med with rubs 1.21→1.06; arctic 8
+screen mixed. Needs full gates.
+
+**E. WIDEN THE NO-CONTACT FOUL — LAST, and deliberately so.** Owner: *"if the
+boat with rights NEEDS to adjust (not just chooses to) then it is a penalty"* —
+which is literally the Keep Clear definition part (a). The detector exists and
+fires 3 times per 72 bay boat-races against 2.0 contacts. ⚠️ Do this only after
+A-C, or it will penalise the AI's own timidity rather than real infringement:
+86% of clear-water pairwise encounters were already clearing and the fleet
+deflected anyway. Penalty counts WILL rise — judge on whether the fouls are
+correct.
+
+**F. MORE TESTS, per the owner's instruction.** `test_rounding_string.js` is the
+model: small, deterministic, no full races, written against the rule text. The
+obvious next ones are a ROW test (tack from local wind, leeward from local wind,
+clear-astern with divergent headings, rule 13's port-side case — all four were
+wrong until today) and a mark-room test for B.
+
+## STATE AT HANDOFF
+
+    HEAD              af7ac41 + fd2a905, tree CLEAN, goldens 18/20
+                      (redrock's two deliberately red — leave them)
+    seatrials 100t    198.77 / 194.53, pen 0.31, OCS 13.33%, DNS/DNF 0
+    bay 20-seed       fin med 255, rubs 1.67, pens 0.39, OCS 0.0%
+                      (`bay_bench_kcscoped.json`, seeds 9100-9119)
+    arctic 32-seed    rounders 286, finishers 281, in-time 137, med 422
+                      (`fleet_leg2_combo16.json` + `combo16b.json`)
+    trees             treeA/treeG clean at HEAD, treeB tracked (do not touch),
+                      treeH = the un-landed D candidate, treeL = HEAD, treeQ =
+                      session start 7087af9. Clone more with `cp -Rc treeG treeX`
+                      (APFS, instant). `regatta/eval/rl/*.json` is now gitignored.
+    human reference   arctic med 212.1 best 190.4 (NEW, was 229.1/200.1),
+                      bay 229.1/220.5, seatrials 187.7/184.1 — 51 trajectories
+
+⚠️ Benching resolution, learned the hard way this session: a 20-seed bay bench at
+full density buries a 4s effect (probe mechanism at 2-4 boats, verify at 9); an
+8-seed bay bench INVERTED a contact metric that 20 seeds reversed; and arctic
+in-time finishes disagreed between two 16-seed sets THREE separate times — read
+the 32-seed combination or the paired per-boat median on that venue.
