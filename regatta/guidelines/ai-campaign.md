@@ -2520,3 +2520,44 @@ neither the shorter deadline nor the sea-room ask worked alone and the pair
 worked well. **Steps 2a (ROW holds proper course) and 2b (give-way takes the
 minimal escape against that course) must land TOGETHER.** Probing either half on
 its own will read as a rejection and should not be taken as one.
+
+## ⚡ BOTH HALVES TOGETHER (`rrspair`) — the rules version works
+
+Half 2a (right-of-way boat stops paying a proximity gradient against the boat she
+has rights over) plus half 2b: the give-way boat's flat "duck the stern" reward
+(−800) and "don't cross the bow" penalty (+1500) are REPLACED by the obligation
+as the rule states it — **keep clear by enough, and no more.** Cost falls to zero
+as soon as the candidate clears a 110u gap, so the base deviation cost then picks
+the SMALLEST course change that satisfies the obligation. Bow/stern survives only
+as a tie-break at equal clearance.
+
+The old shaping was a DIRECTION preference with no notion of enough: −800 against
+a base deviation cost of ~2.5 at 23° buys any swing the fan offers, which is
+exactly the 86%-already-clearing result.
+
+    bay 20 seeds 9100-9119 vs HEAD    fin med 257->256   paired 0 med / +0.6 mean
+      boat rubs   1.91 -> 1.54  (-19%)
+      penalties   0.50 -> 0.42  (-16%)
+      OCS         5.6% -> 0.0%
+    bay 20 seeds 9200-9219 (DISJOINT) fin med 259->253   paired +5 med / +5.3 mean
+      boat rubs   1.88 -> 1.84
+      penalties   0.49 -> 0.39  (-20%)
+      OCS         8.9% -> 2.2%
+      land 0.04 -> 0.00, mark 0.67 -> 0.43
+    arctic 8-seed screen              med 398->392  paired +3 med / +5.6 mean
+      in-time 43 -> 42, finishers 72 -> 71
+
+**Cleaner on every rules metric on both disjoint seed sets, and not slower.** The
+owner's claim that a clean race is a fast race shows up directly: penalties
+−16-20%, OCS collapsing, mark and land contacts down, and pace neutral to +5s.
+
+⚠️ **NOT LANDED — the session ended with its gates still running.** Outstanding
+before it can land: the seatrials 100t anchor (this touches every venue and is
+NOT `_gridFixed`-scoped), the arctic 16-seed fleet gate, and goldens. Both were
+launched at 17:05. Start-crossing time rises (mean 7.6→10.3 on the first set),
+which is plausibly correct — a give-way boat that actually keeps clear does not
+barge at the line — but it should be checked rather than assumed.
+
+⚠️ Note the ordering trap this session hit twice: probe each half alone and BOTH
+read as rejections (`rowhold` alone was −3.6 mean). The pair is the unit. The
+working tree for it is `regatta/eval/rl/treeD`.
