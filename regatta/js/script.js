@@ -2627,10 +2627,53 @@ class BotController {
                     let tc = v2 > 1e-6 ? -(px * rvx + py * rvy) / v2 : 0;
                     if (tc < 0) tc = 0;
                     if (tc > lookaheadFrames / 60) tc = lookaheadFrames / 60;
-                    const cpa = Math.hypot(px + rvx * tc, py + rvy * tc);
-                    const KEEP = 110;                       // the gap we owe her
-                    if (cpa < KEEP) {
-                        const short = (KEEP - cpa) / KEEP;
+                    // KEEP CLEAR IS TWO DIFFERENT TESTS, and the definition says
+                    // which is which:
+                    //   (a) "if the right-of-way boat can sail her course with no
+                    //       need to take avoiding action" — a CPA condition, and
+                    //       it is satisfied at a SMALL gap. This is why sailors
+                    //       cross at gaps that look alarming: a crossing that will
+                    //       clear needs no action, so nothing is owed.
+                    //   (b) "when the boats are OVERLAPPED, if the right-of-way
+                    //       boat can also change course in BOTH DIRECTIONS without
+                    //       immediately making contact" — not a CPA condition at
+                    //       all. A leeward boat may luff; a windward boat that is
+                    //       merely on a diverging track is still not keeping clear
+                    //       if the luff would hit her. That is a LATERAL room
+                    //       condition, off the right-of-way boat's centreline.
+                    // Using a CPA gap for both (the 110u constant this replaces)
+                    // is too strict for crossings and too weak alongside.
+                    // ⚠️ SCOPED to floe-free water, as an interim. The (a)/(b) split
+                    // is a large win on bay (rubs 1.67->1.21, pens 0.51->0.36, OCS
+                    // 2.8->0.6% on the disjoint set) and costs arctic 5 in-time
+                    // finishes over 32 seeds — the fourth time this session a
+                    // rules-correctness improvement has split that way. The cause is
+                    // named in the audit and is NOT this rule: 35% of arctic
+                    // avoidance frames have no rival within 600u at all, and the
+                    // rules layer has no obstruction model (no continuing-obstruction
+                    // definition, no "a racing boat is an obstruction to one that
+                    // must keep clear of her", no rule 20). Remove this scope once
+                    // that is built — it is a stopgap, not the fix.
+                    const openWaterKC = !(state.course._floeObjs && state.course._floeObjs.length);
+                    const overlapped = openWaterKC && !!(window.Rules && window.Rules.isOverlapped
+                                          && window.Rules.isOverlapped(boat, other));
+                    let owed, have;
+                    if (overlapped) {
+                        // How far can she swing her bow "immediately"? Her own turn
+                        // rate for ~1.2s, swept by her hull length — plus our beam.
+                        const turn = 0.85 * (1 + (other.stats ? other.stats.handling * 0.03 : 0));
+                        owed = 55 * Math.sin(Math.min(1.2, turn * 1.2)) + 22;
+                        // Lateral offset of our candidate from her centreline.
+                        const ohx = Math.sin(other.heading), ohy = -Math.cos(other.heading);
+                        const rx = futureX - (other.x + ovx * (lookaheadFrames / 60));
+                        const ry = futureY - (other.y + ovy * (lookaheadFrames / 60));
+                        have = Math.abs(rx * -ohy + ry * ohx);
+                    } else {
+                        owed = openWaterKC ? 80 : 110;   // ice venues keep the old gap
+                        have = Math.hypot(px + rvx * tc, py + rvy * tc);
+                    }
+                    if (have < owed) {
+                        const short = (owed - have) / owed;
                         cost += 2600 * short * short * jamF;
                         // Tie-break only: at equal clearance, prefer her stern.
                         const dxT = futureX - (other.x + ovx * tc);
