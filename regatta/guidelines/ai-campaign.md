@@ -4260,3 +4260,17 @@ first reported the cheat.
 
 Outstanding before it can land: the disjoint 9200 arctic set, and a comparison against
 `treeH2`, which aims at the same defect with a sharper instrument.
+
+## ⚡ `treeH2` IS FREE ON BAY — paired -1.0 against H1's -8.5 (11:30)
+
+    bay 20 seeds     A = HEAD                  B = treeH2
+      finish med     248.0                     248.0
+      paired         -1.0 med / -0.3 mean over 180 boats
+      finishers      180/180                   180/180
+      boat rubs      1.31                      1.11
+      mark contacts  0.38                      0.33
+      penalties      0.36                      0.28
+
+Eight times cheaper than H1 on bay, and it takes rubs, mark contacts and penalties DOWN
+rather than up — which is what a change that makes boats round tighter and earlier should
+do. Arctic's correctness and pace are the remaining question.
