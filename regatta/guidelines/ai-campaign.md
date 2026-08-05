@@ -3548,3 +3548,146 @@ time-cost routing the transit already gets.
 
 ⚠️ **Third time tonight a 16-seed arctic result failed to replicate on the disjoint
 set** (rules 22/23.2, lead 1.10, lead-scaled). On this venue a 16-seed pair is a SCREEN.
+
+---
+
+# ⚡ PLAN FOR A FRESH INSTANCE (prepared 2026-08-05 ~10:00, after the ocean/redrock pull)
+
+## WHAT CHANGED UNDER US
+
+Merge `20fb9b0` brought: a rewritten **ocean** cut, a rewritten **redrock** cut, and
+**`regatta/js/swell.js`** (514 lines) with ~85 lines of call sites in script.js. Also
+three new probes: `_swellmeasure.js`, `_ridetrace.js`, `_swellrace.js`.
+
+⚠️ **The swell is scoped to ocean** — `Swell.active()` is false elsewhere and every call
+site is behind it — so bay/arctic/seatrials should be byte-identical across the merge.
+**VERIFY THAT FIRST** (one bay bench + one arctic bench against `bay_bench_anchorfixbay`
+/ `fleet_leg2_anchorfixA`). If it holds, the anchors below survive the merge. If it does
+not, everything measured on 2026-08-05 needs re-basing.
+
+## SURVEY FINDINGS — measured this morning, NOT yet acted on
+
+**1. `test_sailable` fails on bay, redrock and ocean; arctic passes.** Root cause found,
+and it is in the CHECKER, not the game: `SailCheck.routeWaypoints` builds the rounding
+arc as `steps = min(bestRun, 44)` at 5 degrees a step — **capped at 220 degrees**. The
+winding those courses actually require:
+
+    bay      legs 1,2,5   269 / 260 / 251 deg      legs 3,4   360 / 360 deg
+    ocean    legs 1,2     248 / 286 deg
+    redrock  legs 1,2,4   217 / 347 / 315 deg      leg 3      1 deg  (see finding 3)
+    arctic   leg 1        360 deg   <-- passes anyway; the approach and departure legs
+                                        of an out-and-back contribute the remainder
+
+So the ideal path cannot deliver the sweep on any mark needing more than 220 degrees,
+and the venue-authoring gate cries wolf on three venues — **including both of the new
+ones, which is exactly when you need it to be trustworthy.**
+
+**2. Same builder, second defect:** `bestStart` is chosen purely by open water, ignoring
+which bearing the boat approaches from, so the approach can bank NEGATIVE sweep that the
+rounding then has to undo. Observed on ocean: net sweep ranged **-113 to +8 degrees** —
+the path winds the wrong way round the mark. The function's own comment names this
+hazard and then does not guard against it.
+
+**3. ⚠️ A REAL GAME BUG, on redrock, in `CoursePath.requiredSweep`.** It ends with
+`if (sweep < 0.2) sweep = Math.PI * 2;` — a degenerate-geometry guard. **Redrock leg 3's
+mark is nearly collinear with its neighbours: the winding the course requires is ONE
+DEGREE.** The guard fires and the engine demands **184 degrees** of sweep at a mark that
+needs almost none, so a boat sailing the natural line can never complete that leg. This
+is engine code, it affects real races, and it is the first thing to fix after the gates.
+⚠️ Do not just delete the guard — it exists because a genuine out-and-back also reads as
+near-zero winding. The two cases have to be told apart (an out-and-back has the previous
+and next anchors in nearly the SAME place; a collinear pass-by has them on OPPOSITE
+sides).
+
+**4. Redrock's marks are fixed in the new cut** — all four legs now report 360 degrees of
+open water (leg 1 at 142u, the rest at 64u). The old cut had three planted in rock.
+`_redrock_marks.js` is the probe; it sweeps radii properly, unlike `test_sailable`'s
+single buoy-sized 64u check, which is why the two disagree on island marks.
+
+**5. The two courses are DISTANCE courses, and nothing in the AI has been gated on one.**
+
+    ocean    gate/start -> round -> round -> gate/finish     191,389 navigable cells,
+             seamount mark carries a 1000-unit zone
+    redrock  gate/start -> round -> round -> round -> round -> gate/finish   4,015 cells
+
+Every bench in this campaign is a lap course. No leg repeats on either of these.
+
+## ⚡ THE BIG ONE: THE SWELL IS A WORLD THE AI CANNOT READ
+
+`swell.js` adds four physical effects, each derived rather than tuned:
+
+    1. YAW        applied on top of the heading the controller just chose
+    2. poundMul   multiplies TARGET speed upwind — makes footing worse than pointing,
+                  which is why a seaway is sailed higher than flat water
+    3. surfKt     added to ACTUAL speed down a face — puts the boat where its own polar
+                  cannot go, and trips the planing state machine
+    4. drift      orbital velocity on the ground track — sets you to leeward while the
+                  log reads the same
+
+**The AI models none of them.** `getStrategicHeading`/`scoreTack` choose an angle from
+the POLAR and the wind. In a seaway the polar is no longer the boat's speed: it is wrong
+upwind by `poundMul` and wrong downwind by `surfKt`, and neither error is uniform across
+angle — which is precisely what makes the correct angle different. There is no wave-phase
+term at all, so the AI cannot choose an angle that catches and holds a set, and the
+leeward drift is uncompensated (the AI's leeway correction is built for current, not
+orbital velocity).
+
+On the venue whose whole identity is *the long surf home*, the fleet will sail it like
+flat water. **This is the largest single AI gap on the board and it is brand new.**
+
+## THE PLAN, IN ORDER
+
+**PHASE 1 — MAKE THE VENUE GATE TRUSTWORTHY (half a day, no game code).**
+Fix `routeWaypoints`: sweep the winding the course actually requires (`CoursePath`
+already computes it) instead of a flat 220-degree cap, and choose `bestStart` from the
+approach bearing rather than from open water alone. Then `test_sailable` becomes a real
+authoring gate for the two new venues instead of noise. ⚠️ Redrock's and bay's failures
+should CLEAR; if one does not, that residue is a genuine course defect and worth a shout.
+
+**PHASE 2 — THE DEGENERATE `requiredSweep` GUARD (engine, small, testable).**
+Tell an out-and-back from a collinear pass-by and require the right thing for each. Write
+the test first, in the style of `test_markroom.js` — hand-placed geometry, asserted
+preconditions, no races. Gate on bay + arctic (must be inert) and redrock (must change).
+
+**PHASE 3 — MEASURE THE AI IN THE SWELL BEFORE CHANGING IT.** `_swellmeasure.js` already
+drives the real `updateBoat` at held wind angles with the sea on and off; it is the right
+instrument and it exists. Build the AI-facing version: for a fleet on ocean, how far is
+the angle the AI chooses from the angle that is actually fastest IN THE SEA, upwind and
+down? And what fraction of the downwind leg is spent on a face versus climbing one? That
+number is the size of the prize and nothing should be tuned before it exists.
+
+**PHASE 4 — THE AI IN THE SWELL.** Expected shape, to be confirmed by Phase 3, not
+assumed: upwind the polar needs the pound multiplier folded in before VMG is taken, or
+the AI foots when it should point; downwind it needs a wave-phase term so it sails to
+catch and hold rather than to a static angle. ⚠️ **The downwind-angle family is CLOSED at
+six rejections on bay** — do not reopen it there. This is a different mechanism on a
+different venue and must be scoped to `Swell.active()` so it cannot touch the anchor.
+
+**PHASE 5 — PRESSURE.** Bluewater Bonanza's design question is *"where will the pressure
+be an hour from now"*, and with shiftiness 0.05-0.2 pressure is the ONLY tactical lever
+there. `scoreTack` has a pressure term and `pressureSense` scales it per archetype, but
+neither has ever been measured on a venue where it decides the race. Probe first.
+
+**PHASE 6 — CARRY-OVER FROM 2026-08-05.** The winding-test candidate (`treeW2b`), the
+arctic wander (ratio 3.89, and it is NOT the orbit radius or the lead angle — both
+eliminated with measurements), rules 18.3/18.4/20, and a ROW unit test. All are described
+in the previous queue section, which stands.
+
+## STATE
+
+    HEAD           20fb9b0 (my work 7dcbf76..0a12b94, then the owner's merge)
+    anchors        bay `bay_bench_anchorfixbay.json` 250 med / 250.3 mean, rubs 1.19,
+                   land 0.08, mark 0.31, pens 0.33, 180/180
+                   arctic `fleet_leg2_anchorfixA/B.json` rounders 140+138,
+                   finishers 140+131, in-time 37+30, med 498/501
+                   seatrials 198.77 / 194.53, pen 0.31, OCS 13.33%
+                   ⚠️ ALL MEASURED PRE-MERGE — verify against the merge before use
+    goldens        18/20 pre-merge (redrock's two). The merge rewrote redrock and ocean,
+                   so those four traces WILL differ; re-record and splice redrock.
+    in flight      `treeW2b` (winding test on the corrected base) — bay came back
+                   248 med, 180/180, paired 0 med / -0.2 mean; arctic 9100/9200 and the
+                   12-seed string-truth run were still going. Logs in the session
+                   scratchpad as w2bA/w2bB/st_w2b; re-run rather than trust them if the
+                   merge moved bay/arctic at all.
+    new probes     `_sailable_stall_probe.js` (why a leg stalls on the ideal path),
+                   `_side_check.js` (authored mark side vs the winding the course needs)
