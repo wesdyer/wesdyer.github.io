@@ -3201,3 +3201,57 @@ Rule 22 (a boat AGROUND is avoided by everybody, Section D removing Section A
 between them) measures INERT on both venues: bay 0 med / -0.2 mean, arctic +5 med
 / -3.1 mean. It is a rule the engine genuinely lacked and it costs nothing; it is
 held for a re-gate on the final rounding tree rather than landed on this evidence.
+
+## C. THE OBSTRUCTION MODEL — ✅ LANDED, and the premise needed one correction
+
+The `openWaterKC` scope was doing **TWO** jobs, and that is why four changes stalled
+on it. It gated the keep-clear (a)/(b) split AND chose the non-overlapped gap (110
+on ice, 80 in open water). Unscoping both together is the -13 med paired that has
+been read as "arctic rejects the rules work" four times. **Unscoping only the split
+and leaving the ice gap alone is -3 med — nothing.** The split never needed
+protecting from the ice; the 110-unit gap did.
+
+Then **RRS 19.2(c)** pays for the rest. The overlapped keep-clear test is the WEAKER
+of the two (a 60u swing off her centreline against an 80-110u gap), so switching it
+on in floe-packed water let boats sail closer in the one place there is nowhere to
+go. 19.2(c) says the boat squeezed between a rival and a continuing obstruction with
+no room to pass is not entitled to room, keeps clear, and rules 10 and 11 do not
+apply between them — read off the floe-stamped grid.
+
+    arctic 9100  med 469 -> 468, in-time 42 -> 45, rounders 143 -> 144,
+                 slowest finisher 262 -> 302,  paired -3 med / +5.9 mean
+    arctic 9200  med 528 -> 497, in-time 24 -> 31, finishers 133 -> 135,
+                 paired +19 med / +22.1 mean     (DISJOINT)
+    arctic 32    in-time 66 -> 76, finishers 273 -> 275
+    bay 20       250 med flat, paired 0 / -0.9, land 0.08 -> 0.05
+
+Landed `bddf04b`. ⚠️ The lesson generalises: **when a change is scoped off a venue,
+check what else the scope flag is switching.** This one hid a tuned constant behind a
+rules gate for four sessions.
+
+## E. THE NO-CONTACT FOUL — the premise is WRONG, and it is measured
+
+The queue said the detector is too NARROW (3 fires per 72 bay boat-races against 2.0
+contacts) and should be widened. `_foul_truth_probe.js` (new) reconstructs what would
+have happened had the right-of-way boat held her proper course:
+
+    bay, 12 seeds, shipped thresholds     4 fouls, 0 CORRECT (0%)
+      gap on proper courses               med 568u, min 323u  (least favourable)
+      gap on proper courses               med 454u, min 323u  (MOST favourable)
+    bay, 12 seeds, dev 0.15 / hold 0.5    4 fouls, 0 CORRECT (0%)
+
+**Every no-contact foul the build fires is against an encounter that would have passed
+300-800 units clear.** The detector is not narrow, it is aimed at the wrong quantity:
+it reads `lastAvoidDeviation`, which is the boat's TOTAL deflection from every cause
+at once — a floe, a mark, a third boat, the arena wall — so a stand-on boat dodging
+ice is recorded as having been FORCED by her give-way rival, and the rival is
+penalised for it. Widening the thresholds multiplies wrong fouls; it cannot make a
+right one.
+
+The fix is attribution, not thresholds: compute the closest the two would come if she
+sails her PROPER COURSE and the other boat holds hers — Keep Clear (a) verbatim, "the
+right-of-way boat can sail her course with no need to take avoiding action" — and
+require that to be inside a hull's width. With that guard the detector fires **0 times
+in 12 bay races at BOTH threshold settings**, which is the honest answer: there are
+currently no genuine no-contact infringements on that venue, because the fleet
+over-avoids so thoroughly that nobody is ever actually forced.
