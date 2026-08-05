@@ -3486,3 +3486,34 @@ Measured ON THE REVERTED BASE (so these numbers need redoing before it lands):
 was going to buy (10 points of correctness for 7 lost finishers across 32 seeds) is
 probably not the trade any more. Re-measure it against `anchorfix*` before deciding.
 The tree is preserved.
+
+## ✅ FINAL, CORRECTED ANCHOR — 2026-08-05, HEAD `7af74bd`
+
+    goldens        18/20, redrock's two the only reds (re-recorded on 467c9dd,
+                   redrock spliced from the ORIGINAL pre-session copy)
+    npm test       7 failures, BYTE-IDENTICAL to HEAD before this session — not ours
+    seatrials 100t 198.77 / 194.53, pen 0.31, OCS 13.33%, DNS/DNF 0 — UNCHANGED
+
+    bay 20-seed    `bay_bench_anchorfixbay.json` (9100-9119)
+                   fin med 250 mean 250.3, 180/180 finishers, min 211
+                   rubs 1.19  land 0.08  mark 0.31  pens 0.33  OCS 0.0%
+                   HEAD was 255/254.6, rubs 1.67, land 0.12, mark 0.39, pen 0.39
+
+    arctic 32-seed `fleet_leg2_anchorfixA.json` + `...fixB.json`
+                   9100: rounders 140 finishers 140 in-time 37 med 498 mean 523.5
+                   9200: rounders 138 finishers 131 in-time 30 med 501 mean 523.5
+                   paired vs HEAD: -80 med / -78.8 mean (A), -43 / -61.7 (B)
+                   HEAD was 286 rounders / 281 finishers / 137 in-time / ~426 med
+
+    CORRECTNESS    arctic roundings short of the requirement   81% -> ~0-7%
+                   arctic string never wrapped the mark        31% -> 6%
+                   arctic closest approach to the island       0.84 -> 0.39 zone radii
+                   arctic never entered the zone at all         7% -> 0%
+                   bay roundings under 80% of the requirement  20% -> 0%
+
+**The trade, stated plainly.** Bay is faster and cleaner. Clubhouse is untouched. Arctic
+pays about seventy seconds a boat and loses ten finishers in 288, and in exchange the
+fleet actually sails round Glacier Sound's island instead of banking a rounding it
+never made. That was the owner's explicit instruction for this item and it is reported,
+not rejected. If the price is judged too high, the single lever is `ROUND_SWEEP_TOL`
+and the whole thing reverses with it — but that lever IS the cheat.
