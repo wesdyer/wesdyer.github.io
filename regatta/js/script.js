@@ -351,7 +351,7 @@ class BotController {
                 // the departure test saw it — the latch removes that reason, and with
                 // the requirement no longer discounted the buffer is a quarter-radian
                 // of extra orbit, sailed in an island's lee, for nothing.
-                if (rsL.roundBanked) this._outbound = true;
+                if (rsL.roundBanked && rsL.roundWrapped !== false) this._outbound = true;
                 else if ((rsL.roundSweep || 0) < needL * 0.8) this._outbound = false;
                 if (this._outbound) { this.wiggleActive = false; this.wiggleDuration = 0; }
             }
@@ -5120,6 +5120,8 @@ class Boat {
             roundWrong: 0,
             roundArmed: false,
             roundBanked: false,
+            roundFrom: null,
+            roundWrapped: true,
             isTacking: false, // Rule 13
             inZone: false,
             zoneEnterTime: 0,
@@ -10159,6 +10161,7 @@ function updateBoatRaceState(boat, dt) {
         rs.roundWrong = 0;
         rs.roundArmed = false;
         rs.roundBanked = false;
+        rs.roundFrom = { x: boat.x, y: boat.y };
         rs._wrongRound = false;
         const split = state.race.timer - rs.legStartTime;
         rs.lastLegDuration = split;
@@ -10330,7 +10333,51 @@ function updateBoatRaceState(boat, dt) {
         // Glacier Sound's rounding mark has a zone of 851, so it held boats on the
         // rounding leg's path for another 213 units of outbound transit, orbiting an
         // island instead of steering the next leg.
-        if (d2 > rm.zone ** 2 && d2 > d2prev && rs.roundBanked) {
+        // AND THE STRING MUST ACTUALLY HAVE WRAPPED THE MARK.
+        //
+        // The swept-angle threshold is a PROXY for the rule, and `reqSweep` lands within
+        // about fifteen degrees of the real boundary on Glacier Sound — so the half
+        // radian of give-back the latch allows can carry a boat back across it. Measured
+        // (`_string_truth_probe`, 12 arctic seeds): the rounding work alone left 2% of
+        // completed roundings with a track that never wrapped the mark, and the fleet
+        // changes on top of it drifted that back to 12%, all of them sitting within a
+        // few hundredths of a radian of the boundary.
+        //
+        // So test the rule itself as well. Over a leg the net winding about the mark
+        // takes one of exactly two values 2*pi apart — the larger is the one where the
+        // taut string wraps the mark — so this is a two-class decision with a full pi of
+        // margin, and it needs no tolerance of its own:
+        //
+        //   required = the signed angle from (mark -> where she began the leg) to
+        //              (mark -> the next mark), taken the required way round, in (0,2pi]
+        //   actual   = roundSweep + the short-way sweep still to come on a run to that
+        //              next mark from where she is now
+        //   WRAPPED iff actual >= required - pi
+        //
+        // It is an AND, never an OR: it can only ever hold a boat in, and a boat held in
+        // is a boat still rounding, which is what she is supposed to be doing. When the
+        // geometry cannot be read — no next anchor, no recorded start — it stands aside.
+        let wrapped = true;
+        if (rs.roundFrom && typeof CoursePath !== 'undefined' && state.course.route) {
+            const nextA = CoursePath.anchor(state.course.route[rs.leg + 1], state.course.marks);
+            if (nextA) {
+                const bTo = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+                const bFrom = Math.atan2(rs.roundFrom.y - rm.y, rs.roundFrom.x - rm.x);
+                let needW = (bTo - bFrom) * sgn;
+                while (needW <= 0) needW += Math.PI * 2;
+                while (needW > Math.PI * 2) needW -= Math.PI * 2;
+                let rem = bTo - Math.atan2(ry1, rx1);
+                while (rem > Math.PI) rem -= Math.PI * 2;
+                while (rem < -Math.PI) rem += Math.PI * 2;
+                wrapped = ((rs.roundSweep || 0) + rem * sgn) >= needW - Math.PI;
+            }
+        }
+        // The AI has to see this too, or she banks the sweep, turns for the exit on
+        // `roundBanked` alone, and sails away from a mark she has not been round —
+        // measured at 12 boats in 144 failing to finish. Same coupling as the
+        // tolerance and the exit latch: half of this change strands boats.
+        rs.roundWrapped = wrapped;
+        if (d2 > rm.zone ** 2 && d2 > d2prev && rs.roundBanked && wrapped) {
             advanceLeg();
         }
     }
@@ -10387,6 +10434,7 @@ function updateBoatRaceState(boat, dt) {
                                 boat.raceState.roundWrong = 0;
                                 boat.raceState.roundArmed = false;
                                 boat.raceState.roundBanked = false;
+                                boat.raceState.roundFrom = { x: boat.x, y: boat.y };
                                 if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 0, time: state.race.timer });
                                 if (boat.isPlayer) {
                                     Sound.playGateClear();
