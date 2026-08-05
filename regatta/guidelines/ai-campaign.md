@@ -2723,3 +2723,75 @@ exist; and rule 22 (avoid a boat AGROUND) does not exist while arctic bots groun
    which is the arctic-shaped hole this verdict just exposed.
 4. Then re-gate `rrspair`. If arctic still splits, scope it the way the
    penalty-turn change is scoped, on `_floeObjs`.
+
+---
+
+# ⚡ THE RULES ENGINE WAS TELLING THE AI THE WRONG THING
+
+`_row_truth_probe.js` (new) compares the engine's own verdicts against the
+definitions, on every close pair (<300u) at 2Hz.
+
+⚠️ **A first run of this probe reported a 99.4% tack disagreement. That was the
+PROBE, not the engine** — its sign convention was inverted. The mapping was then
+established empirically instead of derived: with the boom settled and
+head-to-wind/by-the-lee excluded, sign(TWA) vs sign(boomSide) separates
+perfectly — twa<0 ↔ boom+ (1499 samples), twa>0 ↔ boom− (830), zero
+counter-examples. **TWA < 0 is starboard tack.** Corrected numbers:
+
+                                                  BAY      ARCTIC
+    tack differs from the definition              6.1%      9.0%
+    ...and that FLIPS the opposite-tacks test     5.9%      8.7%   (rule 10)
+    leeward boat differs, local vs global wind   10.3%     51.7%   (rule 11)
+    local-vs-global wind angle              med 12.3°   med 83.2°
+                                            p90 27.4°   p90 166.4°
+    stern projects ahead of bow                  22.6%     30.7%   (clear astern)
+    both boats tacking at once                    3.7%      3.0%   (rule 13)
+
+**On arctic the engine picks the wrong leeward boat for MORE THAN HALF of close
+pairs**, because rule 11 is decided from `state.wind.direction` — the
+course-centroid blend — which runs a median 83° from the wind between the boats.
+Root cause #2 of this entire campaign was that same blend; the AI was moved to
+`getWindAt` and **the rules engine never was.**
+
+## The four corrections (`treeK`)
+
+1. **`getTack`** — from the LOCAL wind angle, not `boomSide`. `boomSide` is an
+   animation (`boomSide += (target - boomSide) * swingSpeed`), so a boom-derived
+   tack flips when the sail finishes swinging rather than when the boat crosses
+   the wind. The boom is kept for the one case the definition makes it decisive:
+   sailing by the lee or dead downwind.
+2. **`getLeewardBoat`** — local wind at the midpoint between the boats.
+3. **`isClearAstern`** — project BOTH hull ends of the behind boat and take the
+   foremost. "Her hull and equipment" is the whole boat; the bow-only test is
+   correct only while the headings are within ~90°.
+4. **Rule 13, both boats tacking** — the rule's own test ("the one on the other's
+   PORT SIDE or the one astern"), not a fall-through to rules 10/11, which rule
+   13 explicitly suspends.
+
+Verified after: tack disagreement **6.1% → 0.0%**, opposite-tacks flips
+**5.9% → 0.0%**. (The leeward and stern-ahead figures measure how often the WORLD
+presents the condition, not whether the code handles it, so they do not move.)
+
+## What it does to racing — and it splits exactly as the error rates predict
+
+    ENGINE FIX ALONE
+      bay 20-seed      fin med 257 -> 260, paired -6 med / -4.6 mean,
+                       pens 0.50 -> 0.54, rubs 1.91 -> 2.03, OCS 5.6 -> 8.3%
+      arctic 8-seed    med 398 -> 386, paired +17 med, in-time 43 -> 44,
+                       finishers 72 = 72
+
+**Bay gets worse and arctic gets better, and that is the predicted sign.** Bay's
+leeward error was 10.3%, so correcting it mostly reshuffles; arctic's was 51.7%,
+so correcting it is worth a paired median of +17s. ⚠️ The bay regression is not
+evidence the fix is wrong — **the AI was tuned against the buggy verdicts**, and
+its stand-on/give-way shaping now fires on different pairings than it was
+calibrated for.
+
+    CORRECTED ENGINE + THE RRS AI (`rrspair`) TOGETHER — `treeR`
+      bay 20-seed      fin med 255 (best of all four builds), paired +1 med,
+                       pens 0.44, OCS 5.6% -> 1.1%, land 0.16 -> 0.05
+
+The AI half recovers the engine fix's bay cost (−6 med → +1 med) and gives the
+best bay median measured this session. The arctic 16-seed gate for the pair is
+the deciding run — the hypothesis being tested is that `rrspair` failed on arctic
+BECAUSE the verdicts it faithfully obeys were a coin flip there.
