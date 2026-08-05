@@ -4338,3 +4338,39 @@ arctic correctness are worth 7.5 s of bay, since H2 gets the first 38 points for
 H3's 2 of 72 against H1's 0 of 72 is inside sampling noise. **Both fix arctic; H2 alone
 does not.** So the pair adds H2's cheaper, more principled measurement window without
 giving up H1's correctness — pace on both venues in flight.
+
+## ⚖️ THE FULL COMPARISON, AND THE CALL (11:50)
+
+                       bay pace   bay hairpin   arctic pace   arctic fins   arctic never
+                       (paired)   wrong         (paired)      (of 144)      went round
+    HEAD               —          5.5%          —             137           55.6%
+    H1 full circuit    -8.5       ~0%           -21 / -23.5   135 / 117     0.0%
+       at a hairpin                             (9100/9200)
+    H2 re-base the     -1.0       1.5%          -22           134           18.1%
+       sweep on arrival
+    H3 both            -17.0      0.0%          -56           126            2.8%
+
+**H3 is DOMINATED — the two compound rather than complement.** H2 makes the requirement
+harder to EARN (it must be won near the mark) and H1 raises the requirement itself, so
+together they charge 56 s of arctic and 17 of bay for correctness H1 delivers alone.
+
+**H2 is dominated ON ARCTIC** — the same 22 s as H1 for a third of the correctness. Its
+virtue is bay, where it is nearly free and takes rubs, mark contacts and penalties DOWN.
+
+⇒ **H1 is the recommendation, and it is the one I am landing.** Arctic pays about the same
+whichever way it goes, so take the version that buys the whole fix. The rule it states is
+statable rather than tuned — *a hairpin is a full circuit* — and it is the same trade the
+owner has already accepted once, at a LOWER price:
+
+    the rounding fix already accepted   ~70 s a boat, 10 finishers in 288, for 31% -> 6%
+    H1                                  ~22 s a boat, 15 finishers in 288, for 56% -> 0%
+
+⚠️ Bay pays 8.5 s for correctness it mostly already had (5.5% -> ~0%). That is the honest
+cost of a rule that does not know which venue it is on, and it is the right way round: a
+tuned per-venue scope is how a constant ends up hiding behind a rules gate — see the
+`_floeObjs` story in [[regatta-obstruction-model]].
+
+⚠️ **`treeH2` IS PRESERVED AND IS NOT A REJECTION.** Re-basing the sweep on arrival is the
+correct measurement window and it is free on bay. It is parked because on arctic it does
+not go far enough alone and stacks badly with H1. If a future session finds a cheaper way
+to close arctic's last 18 points, H2 is the better base to build it on.
