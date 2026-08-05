@@ -4205,3 +4205,33 @@ full circuit removes the approach's contribution from the decision by constructi
 Bay's price is 8.5 s of paired median for 5.5% -> ~0% on 37% of its roundings. Arctic's
 is being benched. **The owner's standing instruction is that cheating is worse than losses
 in time**, and 56% is not a residue.
+
+## ANCHORS RE-CONFIRMED AT SESSION HEAD (11:20)
+
+    seatrials 100t   198.79 / 194.53, pen 0.31, OCS 13.33%, DNS/DNF 0%,
+                     min 174.15, max 360.00
+                     (pre-session: 198.77 / 194.53, pen 0.31, OCS 13.33% — identical on
+                      every figure but the mean, and seatrials has no rounding leg at all,
+                      so today's rounding work is inert on it by construction)
+
+## `treeH2` — THE BETTER MECHANISM FOR THE SAME PROBLEM (in flight)
+
+H1 asks for a whole circuit at a hairpin. That is a blunt instrument aimed at a precise
+defect, and it charges bay 8.5 s for a class bay already sails correctly. The defect is
+this, exactly:
+
+**`roundSweep` accumulates from LEG START at any distance.** That is right for the SIDE
+judgement — the sign carries it — and wrong for the magnitude, because a long off-axis
+approach banks bearing change the boat never spent rounding. It is the documented "too
+lenient when she approaches off the mark's beam" bias, and Glacier Sound is its worst case:
+5458 units of approach to a 405-unit island.
+
+So H2 re-bases the accumulator on ARRIVAL instead: the first time the boat comes within
+`zone * 2`, `roundSweep` resets to zero and `roundFrom` moves to where she is. Once per
+leg — leaving and re-entering does not re-arm it, or a boat could shed a wrong-way
+excursion by stepping outside and back. Everything downstream reads the same accumulator,
+so the threshold, the winding test and the AI's exit latch re-base together.
+
+Why it should be cheaper than H1: it is anchored on the mark's OWN zone, so it scales from
+a 12-unit can to an 810-unit island with no second constant, and on bay — where the
+approach banks almost nothing — it should be close to inert.
