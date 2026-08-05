@@ -506,7 +506,18 @@ class BotController {
                     }
                 }
                 const clear = nearest > 120 * 120;
-                const deadline = rsP.penaltyFlagTime > 12;
+                // A 360 needs water that can hold it. In OPEN water (no drifting
+                // pack) the turn is cheap and the wait is what costs — bay rub
+                // attribution: 57% of boat contacts involve a penalty carried a
+                // median 7.9s, because a flagged boat is give-way to everyone
+                // under Rule 21 and respected by none. In a FLOE FIELD the
+                // premise inverts: sea room is scarce, spinning among ice is
+                // expensive, and waiting is the right call. Measured both ways —
+                // the same shortened deadline that wins on bay cost arctic 5 of
+                // 43 in-time finishes, and the stricter sea-room ask cost a
+                // paired median of 44 seconds there.
+                const openWater = !(state.course._floeObjs && state.course._floeObjs.length);
+                const deadline = rsP.penaltyFlagTime > (openWater ? 6 : 12);
                 // Never spiral against the ICE either. A 360 needs a boat-length
                 // circle of clear water; taken while pinned in a floe pocket it
                 // grinds the whole turn against the pack (fresh contacts, fresh
@@ -514,9 +525,18 @@ class BotController {
                 // Even past the deadline, wait for sea room.
                 let iceNear = false;
                 const gclr = state.course.botGrid;
-                if (gclr && gclr._clear) {
-                    const c = gclr.cell(this.boat.x, this.boat.y);
-                    if (gclr.at(c[0], c[1]) && gclr._clear[c[1] * gclr.n + c[0]] < 3) iceNear = true;
+                if (gclr) {
+                    // `_clear` is lazily built by pathSailable, so on a venue that
+                    // never routes through tight water this guard was silently
+                    // dead. Build it — but only in open water, so ice venues stay
+                    // byte-identical.
+                    if (openWater && !gclr._clear && window.SailCheck && window.SailCheck.clearanceField)
+                        gclr._clear = window.SailCheck.clearanceField(gclr);
+                    if (gclr._clear) {
+                        const c = gclr.cell(this.boat.x, this.boat.y);
+                        const need = openWater ? 5 : 3;
+                        if (gclr.at(c[0], c[1]) && gclr._clear[c[1] * gclr.n + c[0]] < need) iceNear = true;
+                    }
                 }
                 if (!markNear && !iceNear && (clear || deadline) && this.riskState !== 'IMMINENT' && this.riskState !== 'HIGH') {
                     // Spin away from the nearest boat's side; default starboard-round.
@@ -1647,7 +1667,21 @@ class BotController {
             // the polar tops out below entrySpeed and the plane never engages —
             // the human sails those legs at 150-170° and beats the fleet on pure
             // geometry. Heat only when the plane is genuinely on offer.
-            if (localWind.speed > J111_PLANING.minTWS) {
+            // THE PLANING BET IS OFF ON TECHNICAL COURSES (2026-08-04b). Heating
+            // to 140 buys hull speed and spends distance — 1/cos(35) on a course
+            // that runs nearly dead downwind. Measured three ways:
+            //   bay  20 seeds x2 disjoint sets: paired +3 med both, pens 0.57->0.50
+            //   arctic 8-seed fleet: paired +4 med / +12.9 mean, in-time 43->44
+            //   Clubhouse 100t: mean 202.83 -> 204.56, PENALTIES 0.31 -> 0.37
+            // The venues that gain are the ones with authored land: confined water,
+            // real rounding marks, and a fleet that cannot spread. The one that
+            // loses is open-water windward-leeward, where two gybes SEPARATE the
+            // fleet and the extra distance is cheap — which is also why its
+            // penalties rise when the boats stop spreading. Scoped on the same
+            // `_gridFixed` test every other navigation change in this stack uses,
+            // so the eval anchor is byte-identical by construction.
+            const technical = !!(state.course._gridFixed && state.course._gridFixed.length);
+            if (!technical && localWind.speed > J111_PLANING.minTWS) {
                 const t140 = (140 - 102.5) / (145 - 102.5);
                 const pos140 = boat.stats.reach * 0.018 + t140 * (boat.stats.downwind * 0.015 - boat.stats.reach * 0.018);
                 const s140 = getTargetSpeed(140 * Math.PI / 180, true, localWind.speed) * (1 + pos140);
@@ -2570,22 +2604,82 @@ class BotController {
                 const ovx = (other.velocity && other.velocity.x) ? other.velocity.x * 60 : Math.sin(other.heading)*other.speed*60;
                 const ovy = (other.velocity && other.velocity.y) ? other.velocity.y * 60 : -Math.cos(other.heading)*other.speed*60;
 
-                // Strategic Positioning (Duck Stern / Go Above)
-                if (this.avoidanceRole === 'GIVE_WAY' && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
-                    const t = lookaheadFrames / 60;
-                    const myFut = { x: futureX, y: futureY };
-                    const otherFut = { x: other.x + ovx * t, y: other.y + ovy * t };
-                    const dx = myFut.x - otherFut.x;
-                    const dy = myFut.y - otherFut.y;
-
-                    if (dx*dx + dy*dy < 250*250) {
-                        const oh = other.heading;
-                        const ofx = Math.sin(oh), ofy = -Math.cos(oh);
-                        const dotForward = dx * ofx + dy * ofy;
-
-                        // Penalize crossing bow (dotForward > 0), Reward ducking (dotForward < 0)
-                        if (dotForward > 0) cost += 1500 * jamF;
-                        else cost -= 800 * jamF;
+                // KEEP CLEAR BY ENOUGH, AND NO MORE (2026-08-04b, half 2b).
+                // The old shaping paid a flat -800 for ducking a stern and +1500 for
+                // crossing a bow, which is a DIRECTION preference with no notion of
+                // "enough": against a base deviation cost of pow(offset,1.5)*10 —
+                // about 2.5 at 23 degrees — an 800-unit reward buys any swing the fan
+                // offers. Measured consequence: 86% of clear-water pairwise onsets
+                // were ALREADY clearing by 80u and the boat deflected a median 11deg
+                // anyway (p90 92), against a minimal need of 0.
+                //
+                // Instead, the give-way boat's obligation is stated the way the rule
+                // states it: keep clear. Cost falls to ZERO as soon as this candidate
+                // clears the safe gap, so the base deviation cost then selects the
+                // SMALLEST course change that satisfies it — a minimal escape, which
+                // is what lets sailors cross at small gaps. The bow/stern preference
+                // survives only as a tie-break at equal clearance.
+                if (this.avoidanceRole === 'GIVE_WAY' && other === this.threatBoat
+                    && (this.riskState === 'MEDIUM' || this.riskState === 'HIGH')) {
+                    const px = other.x - boat.x, py = other.y - boat.y;
+                    const rvx = ovx - vx, rvy = ovy - vy;
+                    const v2 = rvx * rvx + rvy * rvy;
+                    let tc = v2 > 1e-6 ? -(px * rvx + py * rvy) / v2 : 0;
+                    if (tc < 0) tc = 0;
+                    if (tc > lookaheadFrames / 60) tc = lookaheadFrames / 60;
+                    // KEEP CLEAR IS TWO DIFFERENT TESTS, and the definition says
+                    // which is which:
+                    //   (a) "if the right-of-way boat can sail her course with no
+                    //       need to take avoiding action" — a CPA condition, and
+                    //       it is satisfied at a SMALL gap. This is why sailors
+                    //       cross at gaps that look alarming: a crossing that will
+                    //       clear needs no action, so nothing is owed.
+                    //   (b) "when the boats are OVERLAPPED, if the right-of-way
+                    //       boat can also change course in BOTH DIRECTIONS without
+                    //       immediately making contact" — not a CPA condition at
+                    //       all. A leeward boat may luff; a windward boat that is
+                    //       merely on a diverging track is still not keeping clear
+                    //       if the luff would hit her. That is a LATERAL room
+                    //       condition, off the right-of-way boat's centreline.
+                    // Using a CPA gap for both (the 110u constant this replaces)
+                    // is too strict for crossings and too weak alongside.
+                    // ⚠️ SCOPED to floe-free water, as an interim. The (a)/(b) split
+                    // is a large win on bay (rubs 1.67->1.21, pens 0.51->0.36, OCS
+                    // 2.8->0.6% on the disjoint set) and costs arctic 5 in-time
+                    // finishes over 32 seeds — the fourth time this session a
+                    // rules-correctness improvement has split that way. The cause is
+                    // named in the audit and is NOT this rule: 35% of arctic
+                    // avoidance frames have no rival within 600u at all, and the
+                    // rules layer has no obstruction model (no continuing-obstruction
+                    // definition, no "a racing boat is an obstruction to one that
+                    // must keep clear of her", no rule 20). Remove this scope once
+                    // that is built — it is a stopgap, not the fix.
+                    const openWaterKC = !(state.course._floeObjs && state.course._floeObjs.length);
+                    const overlapped = openWaterKC && !!(window.Rules && window.Rules.isOverlapped
+                                          && window.Rules.isOverlapped(boat, other));
+                    let owed, have;
+                    if (overlapped) {
+                        // How far can she swing her bow "immediately"? Her own turn
+                        // rate for ~1.2s, swept by her hull length — plus our beam.
+                        const turn = 0.85 * (1 + (other.stats ? other.stats.handling * 0.03 : 0));
+                        owed = 55 * Math.sin(Math.min(1.2, turn * 1.2)) + 22;
+                        // Lateral offset of our candidate from her centreline.
+                        const ohx = Math.sin(other.heading), ohy = -Math.cos(other.heading);
+                        const rx = futureX - (other.x + ovx * (lookaheadFrames / 60));
+                        const ry = futureY - (other.y + ovy * (lookaheadFrames / 60));
+                        have = Math.abs(rx * -ohy + ry * ohx);
+                    } else {
+                        owed = openWaterKC ? 80 : 110;   // ice venues keep the old gap
+                        have = Math.hypot(px + rvx * tc, py + rvy * tc);
+                    }
+                    if (have < owed) {
+                        const short = (owed - have) / owed;
+                        cost += 2600 * short * short * jamF;
+                        // Tie-break only: at equal clearance, prefer her stern.
+                        const dxT = futureX - (other.x + ovx * tc);
+                        const dyT = futureY - (other.y + ovy * tc);
+                        if (dxT * Math.sin(other.heading) - dyT * Math.cos(other.heading) > 0)
+                            cost += 120 * jamF;
                     }
                 }
 
@@ -2632,8 +2726,21 @@ class BotController {
                             } catch(e) {}
                         }
                     } else if (distSq < 250 * 250 && this.livenessState === 'normal') {
-                        // Soft avoidance (Proximity)
-                        proximityCost += 5000 / (distSq + 10);
+                        // A RIGHT-OF-WAY BOAT SAILS HER PROPER COURSE (2026-08-04b).
+                        // RRS 14: the right-of-way boat need not act to avoid contact
+                        // until it is clear the other boat is not keeping clear — and
+                        // being predictable is what lets the give-way boat plan a
+                        // small, safe crossing. Paying a proximity gradient against a
+                        // boat we have rights over makes us swerve for a crossing
+                        // that was already going to happen at a comfortable gap, and
+                        // measurement says that is most of what the fleet does:
+                        // 86% of clear-water pairwise avoidance onsets were ALREADY
+                        // clearing by 80u, and the boat deflected a median 11deg
+                        // anyway. The hard Rule-14 collision term below is untouched,
+                        // so a boat that is genuinely not keeping clear is still
+                        // avoided; only the standing-on nudge goes away.
+                        if (!(this.avoidanceRole === 'STAND_ON' && other === this.threatBoat))
+                            proximityCost += 5000 / (distSq + 10);
                     }
                 }
             }

@@ -117,7 +117,29 @@
          * (left), so wind comes from starboard → STARBOARD tack.
          */
         getTack: function(boat) {
-            return (boat.boomSide > 0) ? STARBOARD : PORT;
+            // ⚠️ `boomSide` is an ANIMATION: script.js eases it toward its target
+            // (`boomSide += (targetBoomSide - boomSide) * swingSpeed`), so a
+            // boom-derived tack flips when the SAIL finishes swinging, not when
+            // the boat crosses the wind. Measured against the definition on close
+            // pairs: 5.9% of bay pairs and 8.7% of arctic pairs disagree about
+            // whether the boats are even on OPPOSITE TACKS — the rule 10
+            // precondition.
+            //
+            // The definition is an angle: a boat is on the tack corresponding to
+            // her WINDWARD SIDE. The one case where the boom really is decisive is
+            // the one the Leeward/Windward definition calls out — "when sailing by
+            // the lee or directly downwind, her leeward side is the side on which
+            // her mainsail lies" — so the boom keeps that case.
+            //
+            // ⚠️ Sign verified empirically, not derived: with the boom settled,
+            // sign(TWA) vs sign(boomSide) separates perfectly, twa<0 <-> boom+
+            // (1499 samples) and twa>0 <-> boom- (830), zero counter-examples.
+            const st = window.state;
+            const w = (typeof getWindAt === 'function')
+                ? getWindAt(boat.x, boat.y) : st.wind;
+            const twa = normalizeAngle(boat.heading - w.direction);
+            if (Math.abs(twa) > 2.9) return (boat.boomSide > 0) ? STARBOARD : PORT;
+            return (twa < 0) ? STARBOARD : PORT;
         },
 
         /**
@@ -145,17 +167,21 @@
             const fwdX = Math.sin(h);
             const fwdY = -Math.cos(h);
 
-            // Behind boat's bow (local 0, -25) in world coords
+            // "her HULL AND EQUIPMENT in normal position are behind a line abeam"
+            // — the whole boat, not one point of it. Testing only the bow is right
+            // ONLY while the two headings are within ~90 degrees; once they
+            // diverge the behind boat's STERN projects further forward than her
+            // bow, and the test then reports clear astern for a boat that is not.
+            // Measured: that geometry holds for 22.6% of close bay pairs and 30.7%
+            // of arctic ones. Project both ends and take the foremost.
             const bH = behind.heading;
             const bSin = Math.sin(bH), bCos = Math.cos(bH);
-            const bowX = behind.x + (0 * bCos - (-25) * bSin);
-            const bowY = behind.y + (0 * bSin + (-25) * bCos);
-
-            const dx = bowX - sternX;
-            const dy = bowY - sternY;
-
-            // Negative dot → bow is behind the abeam line
-            return (dx * fwdX + dy * fwdY) < -0.1;
+            const bowX = behind.x + 25 * bSin, bowY = behind.y - 25 * bCos;
+            const aftX = behind.x - 30 * bSin, aftY = behind.y + 30 * bCos;
+            const fwdMost = Math.max(
+                (bowX - sternX) * fwdX + (bowY - sternY) * fwdY,
+                (aftX - sternX) * fwdX + (aftY - sternY) * fwdY);
+            return fwdMost < -0.1;
         },
 
         /**
@@ -196,7 +222,16 @@
          */
         getLeewardBoat: function(b1, b2) {
             const state = window.state;
-            const wd = state.wind.direction;
+            // ⚠️ `state.wind.direction` is the COURSE-CENTROID BLEND. Root cause #2
+            // of this whole campaign was that it runs ~110 degrees adrift of the
+            // real wind on a multi-region venue; the AI was moved to getWindAt and
+            // the RULES ENGINE never was. Rule 11 is decided here, and measured on
+            // close pairs the blend picks the WRONG leeward boat 10.3% of the time
+            // on bay and 51.7% of the time on arctic, where the local-vs-global
+            // angle has a median of 83 degrees. Ask the water between the boats.
+            const wd = (typeof getWindAt === 'function')
+                ? getWindAt((b1.x + b2.x) / 2, (b1.y + b2.y) / 2).direction
+                : state.wind.direction;
             const t1 = this.getTack(b1);
             const dx = b2.x - b1.x;
             const dy = b2.y - b1.y;
@@ -441,19 +476,25 @@
             // fall through to Rules 10/11/12 as underlying basis.
             if (b1.raceState.isTacking || b2.raceState.isTacking) {
                 if (b1.raceState.isTacking && b2.raceState.isTacking) {
-                    // Both tacking — Rule 13 applies to both but doesn't
-                    // resolve who keeps clear. Use underlying Rules 10/11/12.
+                    // RRS 13, third sentence: "If two boats are subject to this
+                    // rule at the same time, the one on the other's PORT SIDE or
+                    // the one ASTERN shall keep clear." The rule also says that
+                    // during this time "rules 10, 11 and 12 do not apply" — so
+                    // falling through to a rule 10/11 basis, as this did, decides
+                    // the pair by exactly the rules the rule suspends. It is a
+                    // geometric test, not a tack test. (3.0-3.7% of close pairs
+                    // have both boats tacking at once.)
                     result.rule = "Rule 13";
                     if (this.isClearAstern(b1, b2)) { result.rowBoat = b2; result.reason = "Tacking (Astern)"; }
                     else if (this.isClearAstern(b2, b1)) { result.rowBoat = b1; result.reason = "Tacking (Astern)"; }
-                    else if (t1 !== t2) {
-                        // Opposite tacks → Rule 10 basis
-                        result.rowBoat = (t1 === STARBOARD) ? b1 : b2;
-                        result.reason = "Both Tacking (Starboard)";
-                    } else {
-                        // Same tack → Rule 11 basis
-                        result.rowBoat = this.getLeewardBoat(b1, b2);
-                        result.reason = "Both Tacking (Leeward)";
+                    else {
+                        // Port side of a boat heading h is -(cos h, sin h).
+                        const dx = b1.x - b2.x, dy = b1.y - b2.y;
+                        const b1OnB2Port = (dx * -Math.cos(b2.heading) + dy * -Math.sin(b2.heading)) > 0;
+                        const b2OnB1Port = (-dx * -Math.cos(b1.heading) + -dy * -Math.sin(b1.heading)) > 0;
+                        if (b1OnB2Port && !b2OnB1Port) { result.rowBoat = b2; result.reason = "Tacking (Port Side)"; }
+                        else if (b2OnB1Port && !b1OnB2Port) { result.rowBoat = b1; result.reason = "Tacking (Port Side)"; }
+                        else { result.rowBoat = null; result.reason = "Both Tacking"; }
                     }
                 } else if (b1.raceState.isTacking) {
                     result.rowBoat = b2;

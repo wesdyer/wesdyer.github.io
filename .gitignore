@@ -35,3 +35,23 @@ regatta/eval/rl/treeA/
 regatta/eval/rl/treeC/
 regatta/eval/rl/treeD/
 regatta/eval/rl/*.log
+regatta/eval/rl/treeE/
+regatta/eval/rl/treeF/
+regatta/eval/rl/treeG/
+regatta/eval/rl/treeH/
+regatta/eval/rl/treeI/
+regatta/eval/rl/treeJ/
+regatta/eval/rl/treeK/
+regatta/eval/rl/treeL/
+regatta/eval/rl/treeM/
+regatta/eval/rl/treeN/
+regatta/eval/rl/treeO/
+regatta/eval/rl/treeP/
+regatta/eval/rl/treeQ/
+regatta/eval/rl/treeR/
+
+# Bench and probe OUTPUT under regatta/eval/rl — scratch by default. Files already
+# tracked stay tracked (git does not ignore what it is already following), so the
+# committed baselines and attributions are unaffected; this only stops the next
+# session's hundred bench JSONs from showing up as untracked noise.
+regatta/eval/rl/*.json

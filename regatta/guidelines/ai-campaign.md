@@ -1291,3 +1291,1757 @@ static probe, and it is unlocked by CONTACT DISCIPLINE (arriving at ice with
 speed and a plan) rather than by the horizon constant, which only chooses which
 side of the trade to pay on. Explicitly NOT an avoidance-pricing problem, so
 not part of the closed traffic thread.
+
+---
+
+## 2026-08-04b — post-merge verification + Redrock gauntlet prep
+
+**Wes's merge `930bb36` is AI-NEUTRAL — verified, not assumed.** It brought
+1473 lines of `redrock.venue.js` and 37 lines of `script.js`. The script lines
+are a wind-streak spawn RESAMPLE (up to 6 rolls instead of 1), a comment, and
+the results-screen gold-tile rule. The resample draws extra RNG, which is
+exactly the class of change that has retired baselines before (11a8f4b) — but
+it draws from `fxRand`, the isolated visuals stream (comets, particles, wakes;
+no gameplay consumer). Confirmed empirically:
+- 8-seed arctic transit probe **byte-identical** to `transit_attrib_cad2.json`
+- goldens: **18 of 20 bit-identical**; the two that moved are redrock/90210 and
+  redrock/90211, i.e. exactly the venue whose document was rewritten
+⇒ **All four anchors from 2026-08-04a stand unchanged.** Redrock's two goldens
+are deliberately NOT re-recorded: the venue is not raceable yet (below), and
+baking a broken course into the reference would make the check pass on a course
+nobody can sail.
+
+**⚠️ REDROCK IS NOT READY TO BE THE GAUNTLET — three of four rounding marks are
+planted inside rock.** `test_sailable`: the ideal path completes **1 leg of 6**
+and never finishes; legs 1, 2 and 3 report "0deg open at 64u". New instrument
+`_redrock_marks.js` reports what a fix needs, per mark, at a ladder of radii:
+
+| leg | mark | side | centre on water | nearest water | best unbroken arc by radius | verdict |
+|---|---|---|---|---|---|---|
+| 1 | mark-3 | port | **NO** | 140u @ 25° | 0° @64-100, 345° @180, **360° @220** | roundable WIDE only |
+| 2 | mark-4 | stbd | **NO** | 100u @ 100° | 0° @64, 135° @140, **180° max @180** | **NOT ROUNDABLE at any radius to 420u** |
+| 3 | mark-5 | stbd | **NO** | 120u @ 50° | 0° @64-100, **360° @180-260** | roundable WIDE only |
+| 4 | mark-6 | stbd | yes | — | **360° @64-140** | fine |
+
+All three bad marks carry `markRadius 12, zone 250` — a dinghy buoy's radius,
+planted in a spire. The tight rounding radius the sailability check tests is
+`max(radius + CLEARANCE + 8, radius*1.12)` = **64u**, which is solid rock.
+
+**The precedent is already in the repo — arctic solves this exactly.** Glacier
+Sound's rounding mark is also planted in land, and it passes:
+
+| | radius | zone | tight rounding radius | arc there |
+|---|---|---|---|---|
+| arctic `round-1` | **405** | **851** | 457u | 295° open — PASSES |
+| redrock `mark-3/4/5` | 12 | 250 | 64u | 0° — FAILS |
+
+⇒ **Fix shape: size the mark to the thing it is mounted on.** A mark on a spire
+has the spire's radius (~150-180 here), and a zone that clears it. That makes
+the geometry honest, makes the engine's `_roundR` ladder pick a radius a sailor
+would recognise, and makes the check pass for the right reason rather than by
+loosening it. `mark-4` needs more than a radius: at its BEST radius it still has
+only 180° of unbroken water, so it has to move (nearest open water 100u at
+bearing 100°) or the spires around it need a gap.
+
+**The bots are not fully blocked, which is why this needs saying carefully.**
+`gauntlet_bench.js` is wired (mirrors `bay_bench`, player parked at −6000,6000)
+and a 2-seed smoke run completes: legs reached 9/9/9/7/7/6, **finishers 6 and 5
+of 9**, finish times **510-828s** (bay 260, arctic 426). The engine's `_roundR`
+ladder finds `zone*0.75 = 187.5`, which IS open for marks 3 and 5 — so the
+fleet grinds round the wide way and bleeds boats at legs 4-6. A gauntlet
+baseline banked on this course would be measuring the venue's geometry, not the
+AI, so **no baseline is banked until the marks are fixed.**
+
+---
+
+# ⚡ 8-HOUR AUTONOMOUS PUSH QUEUE (prepared 2026-08-04b, for a FRESH INSTANCE)
+
+## PRIME DIRECTIVE — work the whole eight hours
+
+The previous push stopped after ~2.5 hours of wall clock, and the reason was
+structural, not a lack of things to do: the queue was front-loaded with two
+phases (SIPP router, RHEA planner) that a single measurement cancelled in the
+first forty minutes, and there was nothing independent queued behind them.
+Three rules follow, and they are not optional:
+
+1. **KEEP AT LEAST FOUR PROBES IN FLIGHT.** This machine has 12 cores and a
+   probe is ~1 core. Last time long stretches ran 1-2 concurrent while waiting
+   on a gate. Launch the next candidate BEFORE reading the previous verdict.
+2. **NEVER LET THE BACKGROUND GO IDLE.** Phase A below is a multi-hour training
+   job on purpose — it is the floor under the whole session. If it dies, restart
+   it, then continue the classical stream.
+3. **CHECK `date`, DO NOT ESTIMATE ELAPSED TIME.** Last session's own narration
+   was off by four hours because probes finished faster than assumed. Log the
+   real clock at each phase boundary.
+
+**When a candidate is rejected, that is a result, not a stopping point.** Nine
+of the eleven probes last session were rejections and several were worth more
+than the wins. Write the mechanism down and launch the next one. Do not wind
+down early, do not "prepare a handoff" until the eighth hour, and do not ask
+for permission mid-push — the owner is asleep. If the entire queue below is
+exhausted, generate new candidates from the attribution bins and keep going.
+
+## STATE AT HANDOFF (all verified on HEAD `3c2cbbc`)
+
+**Anchors — byte-check before any A/B (see `_transit_probe.js` usage):**
+- arctic 16-seed = `fleet_leg2_cad2x16.json` — 426 med / 459 mean / min 219 /
+  in-time 71 / fins 142 / rounders 144/144
+- bay 20-seed = `bay_bench_baycutlead.json` — 260 med / 263.8 mean / min 214,
+  180/180 finishers, pens 0.62, OCS 5.6%
+- transit probe = `transit_attrib_cad2.json` — transit **179 med, ratio 1.54,
+  EXCESS 9601, dev 42°**; return 148 med, ratio 1.68
+- seatrials 100t = 202.64 / 199.05 pen 0.31 OCS 16.9% min 175.0
+- goldens 18/20 PASS. **redrock/90210 and /90211 are deliberately RED** — the
+  venue is unraceable and re-recording would bake a broken course into the
+  reference. Do not re-record them. Do not "fix" them.
+- trees A/C/D are at HEAD; **treeB is TRACKED IN GIT and holds the PRE-cadence
+  build** — leave it, it is the before/after reference.
+
+**REDROCK IS OUT OF SCOPE THIS PUSH.** Three of its four rounding marks are
+planted in rock (diagnosis + `_redrock_marks.js` above). The gauntlet bench is
+wired and waiting. Do not baseline it, do not tune against it, do not try to
+fix the venue — that is the owner's authoring call.
+
+**Known-failing tests, ALL pre-existing, none yours:** `test_sailable` (7 —
+bay 4-of-7 legs, redrock 1-of-6), `test_editor` (10), `test_results` (3),
+`test_persistence` (UI timeout). Do not sink time here; the suite is otherwise
+green and is a usable gate.
+
+## THE THREE CLOSED LISTS — do not reopen
+
+1. **Traffic/avoidance re-pricing: TWELVE rejections.** Re-pricing, commitment
+   (×4), reciprocity, additive CPA gradient. Mechanisms documented above.
+2. **Transit ROUTING: retired by measurement.** `_route_attrib` says the plan is
+   0.78× the ruler remaining and the boat sits 126u off its own plan while the
+   odometer is 1.54×. The route is not the problem. `hgrade` confirmed it.
+3. **Ice HORIZONS: every knee verified on BOTH sides** — opening-lead 8s,
+   route-thread 12s, rollout 9s, rival lookahead 4s. The cadence was the only
+   one that was wrong.
+
+⚠️ **A rejected MECHANISM stays rejected. A tuned CONSTANT may be re-swept** if
+the world it was tuned in has changed — that distinction is what the horizon
+sweep tested, and every horizon held, which is evidence the constants are
+robust. Weigh that before spending time on sweeps.
+
+## PHASE A (start FIRST, runs for hours in the background) — DRIVER-LEVEL RESIDUAL ES
+
+The approved escalation, never started, and now the largest remaining headroom.
+Full recipe in memory `regatta-avoidance-research.md`; the ground under it
+improved overnight — the classical driver is 88s/race faster, avoidance is
+active in 45% of transit frames rather than 51%, and **the observation is no
+longer poisoned by a stale map**, which is what a residual policy sees.
+
+Build (reuse `rl_shared.js` / `rl_train_cem.js` scaffolding — they exist for the
+SWEEP phase; this is the transit analogue):
+- **Hook**: `window.__rlT`-gated, inert otherwise, applied to the classical
+  desired heading BEFORE `applyAvoidance`. Bounded zero-init residual
+  Δψ ∈ ±25° via tanh, 2Hz with a slew limit. Worst case ≈ the classical floor,
+  which is what protects the gate.
+- **Obs** ~45-55 dims egocentric: own/plan ~10 (incl. avoid-mode flag + class),
+  floes as a 16-sector radial ring ×2ch (edge distance, closing rate), 3-4
+  nearest rivals with ROW flag, 2-3 route lookahead points (Sophy: lookahead
+  beats rangefinder-only).
+- **Policy** MLP 2×32 tanh, final layer zero-init. **Trainer** sep-CMA-ES or CEM.
+- **Fitness** CRN-paired against a frozen-classical twin on the same seed:
+  1.0·progress + 0.5·symmetric windowed passing (−20/+40u) − 4·any-contact
+  − 5·at-fault − small floe-grind term. **LEXICOGRAPHIC foul gate.**
+- **Seed protocol — this is what failed before, it was PROTOCOL not policy
+  class**: pool ≥200 seeds, RESAMPLE 16-24 per generation (fixed CRN within a
+  generation, rotate across), held-out ~32-seed validation every ~5 gens,
+  checkpoint by VALIDATION, final acceptance on a DISJOINT 16-seed fleet gate.
+- Cut first if short on time: the BC prior. Cut second: the passing term.
+- Budget truth: ~10k evals per 8h at 8 seeds/candidate. **Expect single-digit
+  percent, not a miracle.** Report honestly if it does not beat the classical
+  floor — that is a publishable result given twelve classical rejections.
+
+## PHASE B (the headline CLASSICAL candidate) — ICE COMMITMENT
+
+`look150`/`split_s150` proved a sized trade: shortening the static ice probe
+buys ~1000u of excess (ratio 1.54→1.39, avoidance 4204→3298, deflection 41°)
+and pays every unit of it back in grind (4.5→7.2) and slow time (17.2→25.8).
+Anything that holds the straighter line WITHOUT the extra contact banks it.
+
+**The idea, and why it is not on the closed list:** commitment was rejected FOUR
+times — but every one of those was commitment against RIVALS, and the
+documented failure mechanism is reciprocity ("commitment kills dances only when
+paired with the other boat's predictable response; alone, in a moving pack, it
+is a tax"). **Ice does not react back.** A floe has no opinion about which side
+you pass it, so the mutual re-reaction that killed boat-commitment cannot
+occur. Commitment against ICE is a different mechanism wearing a similar name.
+
+Shape: see the gap early (keep the 4s probe), CHOOSE a side once with a
+DCPA/TCPA-style entry gate, lock it for a minimum hold, and re-run only the
+magnitude within the committed side — never the side. Score the choice on
+predicted clearance at the CURRENT prediction horizon, not per-tick.
+Gate: 8-seed transit probe, EXCESS must fall ≥400u with grind median NOT above
+4.5 and pens/OCS flat; then the 16-seed arctic fleet gate.
+
+## PHASE C (parallel stream) — BAY BOAT-RUB VEIN
+
+Bay boat contacts are **2.32/race against a human 0.14** — a 16× gap and the
+largest untouched number on that venue; the bay median (260) is already inside
+sight of the human 226. Attribution FIRST (mirror `_transit_probe`'s method):
+which leg, which phase, rounding vs open water, overtaking vs converging,
+and what the rules engine says the ROW was. Then design against what it shows.
+Gate: `_bay_hairpin_probe` class check + bay 20-seed vs `bay_bench_baycutlead`.
+
+## PHASE D (cheap parallel filler, run whenever a core is free)
+
+- **Constants tuned against the broken map**, one probe each, one mechanism per
+  tree: planner floe `MARGIN 36`, `_floeRisk` +0.55, soft multipliers 2.5/6.
+  ⚠️ The horizon sweep found every knee held, so expect these to hold too —
+  they are filler, not a thesis. Do not spend the session here.
+- **Measure, DO NOT LAND, the two remaining `state.time`-as-seconds bugs**:
+  `foulCooldowns[id] = state.time + 20` (really **83s**) and rules.js
+  `now - data.rowChangeTime < 2.0` (really **8.3s**). Both RAISE penalty counts
+  when fixed, so they fail the lexicographic gate by construction and are
+  rules-correctness calls the owner must make. Produce the numbers and write
+  them up; landing them is explicitly NOT authorised.
+- **Re-record bay's goldens?** No. Nothing should change them this push unless a
+  bay mechanism lands, in which case re-record as normal.
+
+## PHASE E (ONLY if everything above is exhausted or blocked)
+
+The twelve traffic rejections were all measured against the BROKEN map, and the
+deflection they were chasing moved 47°→42° when it was fixed. The owner has NOT
+authorised re-testing them and the default is that the list stays closed. If —
+and only if — the primary queue is genuinely exhausted, re-probe at most THREE
+whose stated failure mechanism was explicitly about stale or phantom geometry,
+label them clearly as re-tests, and **report rather than land** anything that
+flips. Escalate to the owner instead of accepting.
+
+## GROUND RULES (unchanged, non-negotiable)
+
+- Probe-gate at 8 seeds before any 16/20-seed bench. Judge AI changes at 20
+  seeds, never 2-6.
+- A/B in the treeA-D snapshots, **one mechanism per tree**. Never bundle.
+- **Lexicographic acceptance**: penalties / OCS / DNF must not rise before pace
+  counts. If penalties move, check whether it is noise (per-seed spread) and say
+  so with the numbers either way.
+- Byte-check reproduction before every A/B. Re-verify all anchors if a merge
+  appears (the 11a8f4b rule — and note `930bb36` was verified AI-neutral).
+- Goldens re-record ONLY with an accepted behaviour change, and only the venues
+  that should have moved.
+- Commit accepted work as you go, small commits, one mechanism each. **Push
+  waits for the owner.**
+- Append dated results to this doc as verdicts land — rejections WITH their
+  mechanism, not just the verdict.
+
+## HARNESS QUICKSTART — exact commands, and the traps that cost time
+
+**Run everything from `regatta/eval/rl/` unless stated.** ⚠️ The Bash tool's
+working directory PERSISTS between calls: a `cd` in one command silently
+changes where the next one runs. Last session that caused a test to be run from
+`treeB`'s copy and a "failure" to be misattributed for ten minutes. `cd` to an
+absolute path in the same command whenever it matters.
+
+⚠️ **THE ARGUMENT ORDER IS NOT CONSISTENT BETWEEN SCRIPTS.** Getting it wrong
+silently benchmarks the wrong tree — the worst possible failure, because it
+looks like a result:
+
+    _transit_probe.js     <trials> <seed0> <TREE> <LABEL>      # tree, then label
+    _bay_hairpin_probe.js <trials> <seed0> <TREE> <LABEL>      # tree, then label
+    _route_attrib.js      <trials> <seed0> <TREE> <LABEL>      # tree, then label
+    fleet_leg2.js         <trials> <seed0> <LABEL> <TREE>      # LABEL, then tree
+    bay_bench.js          <trials> <seed0> <LABEL> <TREE>      # LABEL, then tree
+    gauntlet_bench.js     <trials> <seed0> <LABEL> <TREE>      # LABEL, then tree
+
+**The gates:**
+
+    # 8-seed transit probe (arctic) — the cheap gate, ~8 min solo
+    node _transit_probe.js 8 9100 treeC mylabel
+    cmp transit_attrib_mylabel.json transit_attrib_cad2.json   # byte-check a no-op
+
+    # 16-seed arctic fleet gate — THE acceptance gate, ~40 min
+    node fleet_leg2.js 16 9100 mylabel treeC
+    node _fleet_pair.js mylabel cad2x16        # positive delta = experiment faster
+
+    # 20-seed bay gate, ~30 min
+    node bay_bench.js 20 9100 mylabel treeA
+    node bay_report.js mylabel baycutlead
+    # ⚠️ bay_report's header says "negative = A faster". It is WRONG — the code
+    # computes baseline − experiment, so POSITIVE means the experiment is faster.
+
+    # bay rounding-class probe, ~10 min
+    node _bay_hairpin_probe.js 8 9100 treeA mylabel
+
+    # seatrials anchor — MUST run with cwd = the tree root
+    cd treeA && node regatta/eval/run_eval.js 100 100
+
+    # capped arctic (DNS/DNF row per snapshot)
+    node arctic_eval.js mylabel 16 9100 treeA --json arctic_eval_mylabel.json
+
+    # goldens, from the REPO ROOT
+    npm run trace                                  # verify
+    node regatta/eval/run_traces.js --update       # re-record (accepted change only)
+
+**Diagnostics already built (reuse before writing new ones):**
+`_route_attrib` (is the plan long, or is the boat off it), `_defl_hist`
+(deflection distribution across the candidate fan), `_drift_pred` (how
+predictable the ice is), `_map_validity` (cell flip + plan churn vs horizon),
+`_grid_stamp_check` (stampFloes ≡ buildGrid, cell for cell), `_grid_cost`,
+`_redrock_marks` (per-mark rounding clearance, works on any venue),
+`_transit_probe2` (avoid-none sub-attribution), `_floe_spin_probe`.
+
+**Costs, measured:** 8-seed transit probe ~8 min alone, ~15-20 min with three
+concurrent. 16-seed fleet gate ~40 min. 20-seed bay ~30 min. 100-trial
+seatrials ~25 min. Budget accordingly and run them CONCURRENTLY — that is the
+whole point of the four trees.
+
+**Housekeeping:** `pkill -9 -f chrome-headless` between long runs to clear
+orphans, but NEVER while a bench is running. `rsync -a --delete <repo>/regatta/js/
+treeX/regatta/js/` to sync a tree to HEAD. treeA/C/D are gitignored scratch;
+**treeB is tracked and holds the pre-cadence build — do not touch it.**
+
+## REPORTING RHYTHM
+
+Post a progress update roughly hourly: what landed, what was rejected and WHY
+(the mechanism, not just the verdict), and what is in flight. Append the same to
+this doc as verdicts land, so the record survives the session. State elapsed
+time from `date`, not from estimate. If something is still running when the
+owner returns, say so plainly rather than guessing at its result.
+
+---
+
+# 2026-08-04b — THE 8-HOUR PUSH (session log, appended as verdicts land)
+
+Started 09:42 PDT on HEAD `7087af9`. Anchors byte-checked before any A/B:
+`_transit_probe.js 8 9100 treeA repro` reproduced `transit_attrib_cad2.json`
+**byte for byte** (179 med, ratio 1.54, EXCESS 9601, dev 42°), so the harness,
+treeA and the stored baseline all agree on this machine.
+
+Trees: A/C/D were re-synced to HEAD (C and D still held the split-horizon
+experiment). **treeE, treeF, treeG added** as APFS clones (instant, copy-on-
+write) and gitignored — six scratch trees is what "keep four probes in flight"
+actually costs. treeB untouched, as instructed.
+
+## PHASE D (filler, run first because it needed no new code) — 3 REJECTIONS
+
+All three constants were tuned against the 16.7s-stale map, all three were
+re-swept on the fresh one, and all three HELD. 8-seed transit probe vs the
+`cad2` baseline (179 med / ratio 1.54 / EXCESS 9601 / grind 4.5):
+
+| probe | change | transit med | ratio | EXCESS | grind med | verdict |
+|---|---|---|---|---|---|---|
+| `pd_margin24` | planner floe `MARGIN` 36→24 | **209** | 1.74 | 10556 | 5.8 | REJECT |
+| `pd_risk35` | `_floeRisk` grid tax 0.55→0.35 | **192** | 1.62 | 10236 | 6.1 | REJECT |
+
+**Mechanism, and it is the same one twice: these constants are not detour
+taxes, they are plan-quality terms.** Tightening the planner's floe pad does
+not shorten the route — the router threads closer to drifting ice, the boat
+meets it, and the REACTIVE layer pays: avoid excess 4204→4766 and grind
+4.5→5.8. Discounting the grid's drifting-ice tax does the same thing one layer
+up, routing the thread through churn (avoid 4204→4597, grind 4.5→6.1). Both
+buy their "saving" in planner units and pay it back with interest in driver
+units. The knee the margin round found at 36 is still the knee on a correct
+map.
+
+| `pd_soft18` | grid soft-cell weights 2.5/6 → 1.8/4.2 | **184** | 1.62 | 10476 | 4.8 | REJECT |
+
+Same mechanism a third time, one layer up again: cheapening plugged-ice cells
+routes the thread THROUGH churn and the avoid bin pays for it (4204→4910).
+**Phase D's constants are closed: 3 probed, 3 held.** The queue predicted this
+("expect these to hold") and it was right; the useful part is that the reason
+is uniform — every one of these constants buys route-level SEPARATION, and the
+excess they look like they are causing is charged in a different currency
+(planner/grid units) from the one they are actually paying (driver units).
+
+## PHASE B — ICE COMMITMENT: v1 REJECTED, AND THE MECHANISM IS NOT RECIPROCITY
+
+The queue's argument for re-opening commitment against ice was sound as far as
+it went — a floe does not re-react, so the reciprocity failure that killed the
+four rival-commitment probes cannot apply. It is still wrong, for a reason the
+rival experiments could not have exposed.
+
+`icecommit1` (treeC — commitment inside `applyAvoidance`: per-side cheapest
+candidate, entry gate on the undeflected line carrying floe cost, 3s min hold,
+8s hard cap, contact-scale escape hatch):
+
+    transit med  179 → 226        ratio 1.54 → 1.73      EXCESS 9601 → 12146
+    grind med    4.5 → 11.3       dev 42° → 47°          avoid 4204 → 5645
+
+**Mechanism: the failure is IDENTITY, not reciprocity.** A committed side is
+only meaningful relative to ONE obstacle. Ice is not an obstacle, it is a
+FIELD — the thing blocking the boat changes every couple of seconds as the pack
+drifts and the boat moves through it. A lock keyed on nothing but a sign
+therefore decays into a plain heading bias, and it holds that bias into
+whatever has drifted into the committed side since. Grind time is the tell: it
+went from 4.5s to 11.3s, which is the boat sailing into ice it had already
+decided to pass on that side. Deflection went UP, not down (42°→47°), so it did
+not even buy the straighter line the trade was supposed to fund.
+
+Follow-ups launched immediately rather than stopping on the verdict:
+`icecommit2` (treeH) moves the episode to `planFloeTrajectory`, which is where
+ice decisions are actually made — `applyAvoidance` SKIPS floes entirely on any
+tick the trajectory planner steered (`if (isl.isFloe && this._trajFloe)
+continue`), so v1 was partly committing in a layer that cannot see the ice.
+`icecommit3` (treeJ) keys the episode on the BLOCKING FLOE ITSELF: the lock is
+(floe, side), the magnitude-only search runs while that same floe is the one
+the undeflected 9s rollout hits, and the episode ends the moment a different
+floe becomes the blocker. If identity is the flaw, v3 is the version that
+tests the queue's actual hypothesis.
+
+### v2 and v3 REJECTED TOO — and the three verdicts together retire "reciprocity"
+
+    baseline (cad2)          transit 179   ratio 1.54   EXCESS  9601   grind 4.5   dev 42°
+    icecommit1 applyAvoid    transit 226   ratio 1.73   EXCESS 12146   grind 11.3  dev 47°
+    icecommit2 planner side  transit 217   ratio 1.78   EXCESS 12756   grind 10.2  dev 44°
+    icecommit3 floe identity transit 222   ratio 1.81   EXCESS 12639   grind  8.2  dev 44°
+
+Three implementations, three layers, three scopings of the episode — and all
+three land in the same place, about +40s of transit and +3000u of excess.
+Keying the episode on the blocking FLOE (v3), which was the fix the v1 diagnosis
+implied, bought nothing.
+
+**⚡ THE MECHANISM, AND IT UNIFIES SEVEN REJECTIONS: commitment is a bet that
+the scene persists, and in this venue the scene does not persist.** The four
+rival-commitment rejections were explained by RECIPROCITY (the other boat
+re-reacts, so your lock is a tax). That explanation is now incomplete at best:
+ice does not re-react and commitment fails against ice just as hard. What both
+families actually share is a DRIFTING WORLD. Against a moving pack, per-tick
+re-decision is not a "dance" to be cured — it is ADAPTATION, and every hold,
+however carefully scoped, is a wager on a stale scene. Grind time is the
+receipt: 4.5s → 8.2-11.3s across all three, i.e. the committed boat sailing
+into ice that arrived after the decision was made.
+
+Consequences for the campaign:
+- **The commitment family is closed at SEVEN lifetime rejections** (4 rival, 3
+  ice). Do not re-open it for a different obstacle class; the failure is not
+  about what you commit against.
+- Of the four structural candidates in `regatta-avoidance-research.md`, #1
+  (commitment) is now dead, and #3 (anticipatory rollout) is what
+  `planFloeTrajectory` ALREADY is. That leaves ORCA-style objective REPLACEMENT
+  and driver-level learning — which is the session's Phase A.
+
+### The dose-response control — the HOLD is the cost, and one second is already too long
+
+Before accepting three rejections it is worth knowing whether the loss came from
+the mechanism or from my restriction plumbing. Same tree as v3, hard cap
+8.0s → **1.0s**:
+
+    hold  0s (baseline)   transit 179   EXCESS  9601   grind 4.5
+    hold  1s              transit 204   EXCESS 11213   grind 8.0
+    hold  8s              transit 222   EXCESS 12639   grind 8.2
+
+Monotone in hold duration, and **a ONE-SECOND commitment already costs +25s of
+transit**. The plumbing is not the problem; holding is. It also puts a number on
+how fast this world goes stale, and that number is consistent with the map
+cadence knee (2s good, 4s worse): **the scene a decision was made in survives
+about a second.**
+
+## PHASE C — BAY BOAT RUBS: THE ATTRIBUTION FOUND A RULES TRAP, AND IT PAID
+
+`_bay_rub_probe.js` (new, committed): per contact episode, 0.5s dedup per PAIR,
+recording leg, phase, mark distance and zone membership, encounter geometry,
+speeds, and the rules engine's OWN standing verdict — read from
+`Rules.interactions[key].rowOwner`, never by calling `evaluate()`, which writes
+`rowOwner`/`rowChangeTime` and would perturb the race it is measuring.
+
+8 seeds, 72 boat-races, 77 rub episodes (1.07/boat-race by pair; the bench's
+2.32 counts both boats):
+
+    leg:       L4 32% | L1 31% | L0 (pre-line) 27% | rest 10%
+    geometry:  crossing 52% | head-on 22% | overtaken 14% | overtaking 9%
+    in zone:   0% (100% of rubs happen OUTSIDE any mark zone — not a mark-room
+               problem, which is where I would have looked first)
+    own speed <1.0: 62%
+    EITHER BOAT MID-PENALTY: 61%
+
+The last line is confounded on its own — a penalty is awarded AT a contact — so
+the probe was extended with `penaltyFlagTime` and the live `penaltySpin` flag:
+
+    penalty PREDATES the rub (>2s outstanding): 57%   (median 7.9s, p75 12.3s, max 36.5s)
+    a boat was mid-360 SPIRAL at the rub:        9%
+    BOTH boats flagged:                         13 of 77
+    flagged rubs cluster on L4/L1; UNFLAGGED rubs cluster on L0 (the start)
+
+**The mechanism: a flagged boat is give-way to EVERYONE (Rule 21) and respected
+by no one, and it was carrying that flag for a median 8 and up to 36 seconds.**
+It is not the 360 that is dangerous — only 9% of rubs happen during one. It is
+the WAIT. And the wait was structural: the gate to start the turn requires
+`!markNear && !iceNear && (clear || deadline) && risk not HIGH/IMMINENT`, and a
+boat in traffic is essentially always at HIGH, so the 12s deadline never fired.
+
+### The candidate, its knee, and the venue split
+
+Two ingredients, each isolated on the bay 8-seed bench (baseline `base8`:
+rubs 2.11, pens 0.64):
+
+| variant | boat rubs | land | pens | paired pace |
+|---|---|---|---|---|
+| deadline 12→6s ALONE | 1.74 | 0.33 | 0.65 | −0.6s |
+| sea-room guard ALONE (clearance ≥5, field built if absent) | 2.10 | 0.19 | 0.68 | −1.8s |
+| **both** (`penroom`) | **1.46** | 0.39 | **0.60** | **+1.2s** |
+
+Neither ingredient works alone and the guard alone is actively bad — it just
+extends the wait. Together they are a real interaction: shortening the deadline
+creates turn opportunities, and the guard makes sure the turns happen in water
+that can hold them. Knee swept on both sides of both parameters:
+
+    d4/c5  rubs 1.71  land 0.51  pens 0.67  pace −1.4      (too eager)
+    d6/c5  rubs 1.46  land 0.39  pens 0.60  pace +1.2      ← knee
+    d8/c5  rubs 1.90  land 0.19  pens 0.61  pace +0.2      (gives half the win back)
+    d6/c7  rubs 1.46  land 0.36  pens 0.64  pace −0.9      (guard too strict)
+
+**Bay 20-seed gate vs `baycutlead`: rubs 2.32 → 1.94 (−16%), pens 0.62 → 0.57,
+OCS flat 5.6%, 180/180 finishers, fin med 260 → 259, paired mean +1.7s
+(median 0).** 13 of 20 seeds are BYTE-IDENTICAL — it fires only where a penalty
+is actually carried into traffic — and of the 7 that move, 6 are faster and
+penalties never rise on any seed. Seatrials anchor 202.83/199.79 pen 0.31 OCS
+16.89 (stored 202.64/199.05/0.31/16.9): pens and OCS flat, pace +0.19 mean /
++0.74 median. Not byte-exact, and it should not be — this is a venue-agnostic
+change to penalty timing and Clubhouse takes 0.31 penalties a race.
+
+**⚠️ THEN THE ARCTIC FLEET GATE REJECTED IT.** 16 seeds vs `cad2x16`:
+
+    rounders 144 → 141   finishers 142 → 140   med 426 → 446   IN-TIME 71 → 57
+    paired med −8 / mean −11.7 (negative = experiment slower)
+
+**Mechanism: the sea-room ask is a different quantity in a floe field.** On bay
+"clearance ≥5 cells" is common water; in Glacier Sound the grid is stamped with
+112 floes and that clearance is scarce, so a stricter guard does not schedule
+better turns, it TRAPS THE FLAG — which is the exact pathology the change was
+built to remove. The bay-only measurement could not see this because bay has no
+floes at all.
+
+Follow-up in flight: `penbound` (treeO) bounds the wait from BOTH ends — ask for
+clearance ≥5 early, relax to ≥2 past 15 seconds, so the flag can never be
+carried indefinitely no matter how tight the water is. On bay it reproduces the
+full win (rubs 1.46, pens 0.60, pace +1.2); the arctic screen is running, along
+with 8-seed arctic isolations of each ingredient.
+
+## THE ARCTIC PLANNER CONSTANTS — a fourth knee, verified on both sides
+
+`glance1/2/3` and `trajgate6/trajmarg10/trajcw7500` probed the one lead the
+queue named as genuinely open ("contact discipline: arriving at ice with speed
+and a plan", ~1000u):
+
+| probe | change | transit | ratio | grind | dev |
+|---|---|---|---|---|---|
+| baseline | — | 179 | 1.54 | 4.5 | 42° |
+| `glance1` | contact cost × incidence, all candidates | 203 | 1.69 | 8.4 | 45° |
+| `glance2` | planner `contactW` 5200→3000 | 217 | 1.68 | 12.2 | 45° |
+| `glance3` | incidence discount on hold-the-line only | 203 | 1.67 | 9.4 | 43° |
+| `trajcw7500` | planner `contactW` 5200→**7500** | 193 | 1.66 | 5.9 | 43° |
+| `trajgate6` | planner entry gate 4.5s→6.0s | 193 | 1.52 | 6.5 | 42° |
+| `trajmarg10` | planner deviation margin 50→10 | **177** | **1.51** | 4.6 | 42° |
+
+`glance1` failed for a legible reason worth keeping: discounting every
+candidate's graze made "deflect AND graze" the cheapest option, so deflection
+went UP. But the corrected forms failed too, and `contactW` is now a knee
+verified on BOTH sides (3000 much worse, 7500 worse). Only the deviation margin
+moves freely, and it buys ~2s of median — inside noise on 72 boat-races.
+**`planFloeTrajectory` is at a local optimum in all three of its constants.**
+Together with the twelve traffic re-pricings, the transit routing retirement and
+the ice horizons, the classical arctic transit levers are now exhausted at every
+layer that has been found.
+
+## PHASE D, part 2 — THE TWO REMAINING `state.time` BUGS, MEASURED (NOT LANDED)
+
+Both are real units bugs. **Both are also provably inert to racing behaviour**,
+which was not the expectation going in (the queue predicted they would RAISE
+penalty counts and fail the lexicographic gate by construction). They do not,
+and the reason is different for each.
+
+**1. `foulCooldowns[id] = state.time + 20` — an 83-second per-pair cooldown, not
+20.** It gates only the NO-CONTACT foul (RRS "keep clear" with no touch), and
+that path barely fires. `_pen_kind_probe.js` (new, committed), 8 seeds each:
+
+    bay:    3 no-contact fouls in 72 boat-races (0.04/race); same-pair repeats
+            within 20s: 0, within 83s: 0
+    arctic: 18 in 72 boat-races (0.25/race);  repeats within 20s: 0, within 83s: 0
+
+The cooldown can only matter when the SAME claimant re-fouls the SAME victim
+inside the window, and that never happens in 144 boat-races across two venues.
+Empirical confirmation: a bay 8-seed bench on the fixed tree is **byte-identical**
+to baseline. Fixing the units is free and changes nothing.
+
+**2. rules.js `now - data.rowChangeTime < 2.0` — an 8.3-second Rule 15 grace,
+not 2.** Its only effect is `result.constraints.push("Rule 15")`, and
+`constraints` has exactly ONE consumer in the codebase: `getDebugInfo()`, which
+feeds the debug overlay. No AI path, no scoring path, no penalty path reads it.
+This is a DISPLAY-duration bug. Bay 8-seed bench on the fixed tree: **byte-
+identical** to baseline.
+
+**Recommendation to the owner: both are safe to land as pure correctness fixes.**
+Neither moves a single race. Landing them costs nothing and removes two live
+instances of the `state.time`-as-seconds class before something else starts
+depending on the wrong number. Still not landed here, per instruction.
+
+### LANDED (commit `3454852`) — and then four more Phase C candidates rejected
+
+`penscoped` is the landed form: deadline 6s + sea-room ≥5, **scoped to floe-free
+water** via `state.course._floeObjs`. Bay keeps the full win (byte-identical to
+the unscoped `penroom20`); the arctic 8-seed fleet is **byte-identical to
+baseline**, so no regression is possible by construction. Goldens re-recorded for
+the nine floe-free venues that legitimately moved; arctic untouched; redrock's
+two left deliberately red.
+
+⚠️ **A trap worth writing down: `run_traces.js --update --venue X` REWRITES the
+whole golden file with only that venue's traces.** Updating seven venues one at
+a time left a file with 2 entries and 18 "new". Recovery is `git checkout` the
+golden, run a FULL `--update`, then splice redrock's entry back from the HEAD
+copy. There is no merge mode.
+
+Then the remaining bins were attacked, and all four attempts failed:
+
+**`r21undamped` / `r21shape` / `r21bubble` — Rule 21 keep-clear, harder.** Half
+the surviving rubs still involve a carried penalty, and the classical layer has
+a real hole there: jam damping (#40) scales the RRS shaping by speed, and a
+flagged boat is usually slow (62% of rubs under 1.0), so exactly when Rule 21
+binds hardest the shaping is switched off. Three forms: undamp her keep-clear
+shaping, hold her give-way bubble at 120u through recovery liveness, or both.
+On the 8-seed bench the isolated halves looked like wins (bubble: rubs
+1.46→1.32, pens 0.60→0.54, +0.9s). **At 20 seeds it reversed completely: rubs
+1.94→2.41, pens 0.57→0.65, paired mean −3.9s, and the arctic screen lost 7
+in-time finishes.** Mechanism: this is the `cpagrad` failure again — the
+obligation is fleetwide but the response is per-threat, so honouring it harder
+does not remove the contact, it RELOCATES it into a third boat, and charges rent
+against every rival on the way. ⚠️ Method note: an 8-seed bay bench is a SCREEN,
+not a verdict, for contact metrics — this one inverted at 20.
+
+**`startdepth` — crossing-run timing from actual depth.** `_bay_start_probe.js`
+(new) found something clean: boats that cross >12s after the gun sit ~75u deeper
+than the on-time group at EVERY sample from −6s, at equal or higher speed, in
+`normal` mode with no rival inside 95u. Not jammed, not stopped, not in irons —
+just too far back. And the cause was visible in one line: `tCross` is computed
+from the NOMINAL staging depth (`STAGE`), never from the boat's actual `behind`,
+so a deep boat commits at the same countdown as a perfectly-placed one and
+crosses late by exactly its extra depth. Fixing it made things worse:
+**boat rubs 1.46 → 3.17** and the mean crossing time got WORSE (7.4 → 8.2s).
+**Mechanism: the staggered arrival is not a bug, it is a queue.** Synchronising
+the fleet onto the line puts ten boats into adjacent lanes at the same instant,
+and the traffic costs more than the late arrival did. The nominal-depth timing is
+load-bearing for the same reason the lane layout is.
+
+## ⚡ THE BAY GAP IS DISTANCE, NOT SPEED — measured against the banked human
+
+`_bay_pace_probe.js` (new, committed) puts the bots and the recorded human on
+the same footing: per leg, odometer, DMC leg length, ratio, and mean speed.
+
+    leg   len     BOT dur  odo  ratio  spd   |  HUMAN dur  odo  ratio  spd   | decomposition
+    L1   2943      46.7  4470  1.52   95.7  |     43.3  4148  1.41   95.8  | +3.4s = 3.4 dist + 0.0 speed
+    L2   3088      27.7  3424  1.11  123.7  |     27.4  3078  1.00  112.4  | +0.3s = 3.1 dist − 2.8 speed
+    L3   4295      45.0  5940  1.38  131.9  |     38.6  4290  1.00  111.1  | +6.4s = 14.8 dist − 8.4 speed
+    L4   4456      55.4  5834  1.31  105.3  |     53.9  5578  1.25  103.6  | +1.6s = 2.5 dist − 0.9 speed
+    L5   4125      43.3  5377  1.30  124.1  |     39.6  4348  1.05  109.9  | +3.8s = 9.4 dist − 5.6 speed
+
+**The fleet is FASTER than the human on every leg and loses anyway, because it
+sails 30-38% further on the downwind legs.** The human's L3 ratio is 1.00 — she
+sails the ruler's own length — while the fleet sails 1.38 of it at 19% more
+speed. That is the whole bay deficit, stated as a trade the fleet is losing:
++14.8s of distance bought with 8.4s of speed on L3 alone.
+
+Split by position in the leg (`>3x zone from the mark` vs the approach):
+L3 far 4890u / near 998u against a leg of 4295 — so roughly two thirds of the
+excess is in the BODY of the leg (the gybing angles), one third in the approach.
+
+### …and the angle family that causes it is now closed at SIX rejections
+
+    (1) downwind fine-VMG scan (deeper polar optimum)   −8 med  (2026-08-03d)
+    (2) static heat margin (entry +0.5kt)               bay +2 / seatrials −2.9
+    (3) try-the-plane gate (6s try / 15s cooldown)      neutral
+    (4) sustained-plane gate (3s continuous hold        bay 20-seed −2 med / −2.1 mean
+        required, else 30s cooldown)                    pens 0.57→0.61
+    (5) fetch-before-heat (heat only when the mark      bay 20-seed −4 med / −3.2 mean
+        cannot be fetched at the deep optimum)          L3 +1 but L4 −2, L5 −1, L6 −1
+    (6) arc-aware carrot lookahead (LOOKP 150/250       INERT — inside 2.5x zone the
+        inside 2.5x zone)                               ruler carrot is not steering
+
+(4) and (5) are this session's, and each was designed against the STATED failure
+mechanism of its predecessor — (4) answers "the plane flickers just often enough
+to reset the try timer" with a 3-second continuous-hold test; (5) answers the
+geometry directly by refusing to throw away a fetchable mark. Both still lost,
+and **both lost the same way: L3 improves by ~1s and L4/L5/L6 give back more.**
+
+**⚡ The unifying mechanism: the hot angle is not a local mistake, it is an
+equilibrium.** Every attempt to sail the geometrically-correct deeper line gains
+on the leg where it is applied and loses more downstream — through arrival state
+at the next rounding, and through being slower in traffic while it happens.
+Six independent mechanisms, one wall. The "bots sail too hot" reading that the
+angle-level bulge measurement suggested is TRUE as a description and FALSE as a
+lever: the fleet is at a constrained optimum, and the constraint is the rest of
+the course.
+
+Also verified this session and now closed: bay `ENTRY_CUT_LEAD` is a knee on
+both sides (0.35 → −8 med, 0.9 → −3 med, against 0.6).
+
+## ⚡ THE FLEET-DENSITY MEASUREMENT — most of the bay "gap" is traffic, and it changes how bay should be benched
+
+`_bay_pace_probe.js` gained a fleet-size argument (park all but N bots). Same
+seeds, same course, same human reference:
+
+    leg    9 boats            4 boats            2 boats           HUMAN (in a full fleet)
+    L1     46.7s  r1.52       42.0s  r1.35       37.1s  r1.31      43.3s  r1.41
+    L2     27.7s  r1.11       26.4s  r1.07       26.5s  r1.07      27.4s  r1.00
+    L3     45.0s  r1.38       43.9s  r1.32       42.9s  r1.29      38.6s  r1.00
+    L4     55.4s  r1.31       50.9s  r1.23       50.9s  r1.30      53.9s  r1.25
+    L5     43.3s  r1.30       44.0s  r1.33       44.0s  r1.36      39.6s  r1.05
+    total  243s               228s               221s              203s
+
+**In clear air the fleet BEATS the human on L1, L2 and L4** (L1 by 6.2s) and
+still loses ~4.4s on each of the two DOWNWIND legs. So the bay deficit splits
+cleanly in two:
+
+- **~15s is traffic-handling.** L1 alone swings 9.6s between 2 boats and 9, and
+  the human — who raced in the same full fleet — gives up far less to it.
+- **~9s is downwind geometry**, present at ANY density: ratio 1.29-1.36 against
+  the human's 1.00-1.05 on L3/L5.
+
+⚠️ **Method consequence, and it explains several of this session's null results:
+a 20-seed bay bench at full density carries enough traffic variance to bury a
+4-second effect.** Two of the six downwind rejections were measured only there.
+Probe mechanism at 2-4 boats where the signal is clean, then verify at 9.
+
+## THE PLANING HEAT GATE — a real effect, an owner-level trade, NOT landed
+
+Following the density finding back to the heat gate, with the gate simply OFF:
+
+    bay 20-seed (9100-9119) vs HEAD:  fin med 259->257, paired +3 med / +4.8 mean,
+                                      pens 0.57->0.50, rubs 1.94->1.91, max 344->308
+    bay 20-seed (9200-9219) DISJOINT: fin med 261->259, paired +3 med / +2.2 mean,
+                                      pens 0.51->0.49
+    arctic 8-seed screen:             med 398->394, in-time 43->44, paired +4/+12.9
+    arctic 16-seed GATE:              med 426->440, IN-TIME 71->65, finishers 142->141,
+                                      but paired +4 med / +6.5 mean per boat
+    Clubhouse 100t (unscoped):        202.83->204.56 mean, PENALTIES 0.31->0.37
+
+Scoped on `_gridFixed` (the same test every other navigation change uses) the
+Clubhouse anchor is **byte-identical — 202.83 / 199.79 / pen 0.31 exactly** — and
+bay keeps the whole win. The blocker is arctic: the per-boat paired median says
++4s FASTER while the fleet aggregates say 6 fewer in-time finishes and one fewer
+finisher. That is the "trades tails for pace" signature, and by the standing
+lexicographic rule a finisher drop is disqualifying.
+
+Middle ground tested and rejected: heat angle **150° instead of 140°** (half the
+geometric cost, most of the plane) is worse than BOTH endpoints — bay +1 med only,
+arctic in-time 43->38, paired mean −24.6. The response is not monotone in the
+heat angle.
+
+**Left for the owner rather than landed.** A disjoint 16-seed arctic pair
+(9200-9215) is running to establish whether the in-time drop is real or a
+threshold artefact; if it is noise, this is a straightforward accept scoped to
+`_gridFixed`, worth ~5s of bay median and 0.07 penalties per boat.
+
+### ✅ LANDED (commit `47ef6be`) — and the fine-VMG re-test that followed it
+
+The heat gate is now OFF on courses with authored land. Arctic's in-time metric
+disagreed between the two 16-seed sets (71→65 on 9100-9115, **45→65** on
+9200-9215), which is itself worth knowing: **in-time finishes are a threshold
+statistic and they are noisy at 16 seeds on this venue.** Combined over 32 seeds
+the picture is unambiguous — rounders 284→285, finishers 277→280, in-time
+116→130, median 446→439 — and the paired per-boat median is positive on BOTH
+sets separately (+4 and +14). Bay wins on two disjoint 20-seed sets (+3 median
+paired each). The Clubhouse anchor is byte-identical by construction.
+
+Bay profile after the change (9 boats): L3 45.0→42.2s (ratio 1.38→**1.24**),
+L4 53.6s which now BEATS the human by 0.3s, L5 43.2s (ratio 1.30→1.26).
+
+**Then the fine VMG scan was re-tested and the original rejection held.** The
+polar's downwind gridpoints are 110/120/135/150/180, so the optimizer cannot
+answer ~165 — and with the heat gate gone its answer is now what the boat
+actually sails, which is a genuinely changed world for that mechanism. Scanning
+2.5° between the gridpoints: **bay paired −3 med / −4.0 mean, arctic paired −8
+med / −16.7 mean, in-time 44→38.** Same verdict, same stated mechanism as the
+2026-08-03d original ("deeper = slower hull speed loses more in fleet traffic
+than the polar gains"), now confirmed in the world where the answer binds. The
+coarse gridpoint is not a bug being worked around; 150 is genuinely better than
+165 in a fleet.
+
+### Where fleet density actually spends its time (bay, 9 boats vs 2)
+
+    L1   dirtyAir 0.013 vs 0.003 | avoidance active 29% vs 7% | board flips 3.0 vs 1.0
+    L3   dirtyAir 0.007 vs 0.000 | avoidance active 28% vs 16% | flips 5.0 vs 3.0
+    L4   dirtyAir 0.008 vs 0.000 | avoidance active 29% vs 13% | flips 4.0 vs 3.0
+
+**Avoidance is active 29% of L1 time at full density against 7% in clear air,
+and the fleet tacks twice more per beat.** Dirty air barely registers. So bay's
+~15s traffic bin is an AVOIDANCE bin, not a wind-shadow bin — which puts it in
+the same family as the twelve arctic traffic rejections rather than being new
+ground, and is the honest reason not to spend more of this session on it.
+
+## END-TO-END SESSION A/B — both landed changes vs `7087af9`, on seeds never used to tune them
+
+`treeQ` holds the session-start AI (`git show 7087af9:regatta/js/script.js`).
+
+    BAY, 20 seeds 9300-9319          start (7087af9)   end (47ef6be)
+      fin median                          263               256
+      fin mean                          264.5             256.5
+      paired vs start                       —      +10 med / +8.1 mean
+      boat contacts / race                2.79              2.00   (-28%)
+      penalties / boat                    0.58              0.49   (-16%)
+      OCS                                 6.1%              5.0%
+      max                                  358               319
+      finishers                        180/180           180/180
+
+    ARCTIC, 16 seeds 9300-9315       start (7087af9)   end (47ef6be)
+      fin median                           417               412
+      fin mean                           440.6               429
+      min                                  235               224
+      in-time finishes                      74                76
+      rounders / finishers             143 / 141         143 / 141
+      paired vs start                        —      +1 med / +9.2 mean
+
+    CLUBHOUSE 100t                   202.64/199.05     202.83/199.79
+      penalties                           0.31              0.31
+      OCS                                16.9%            16.89%
+      DNS / DNF                          0 / 0             0 / 0
+
+The Clubhouse anchor moved +0.19 mean / +0.74 median, entirely from the
+penalty-turn commit, which is venue-agnostic by design (Clubhouse takes 0.31
+penalties a race). Penalties, OCS, DNS and DNF are all flat there. **New stored
+anchor: 202.83 / 199.79 / min 174.97 / pen 0.31 / OCS 16.89%.**
+
+**Refreshed baselines for the next session:**
+- bay 20-seed = `bay_bench_noheat.json` (9100-9119, fin med 257) and
+  `bay_bench_sessionend_bay.json` (9300-9319, fin med 256)
+- arctic 16-seed = `fleet_leg2_noheat16.json` + `fleet_leg2_noheat16b.json`
+  (9100-9115 and 9200-9215; judge this venue on the 32-seed combination)
+- arctic transit probe = `transit_attrib_transit_newhead.json` — **180 med,
+  ratio 1.50, EXCESS 9182, dev 43°** (was 179 / 1.54 / 9601 / 42°)
+- bay rub attribution = `bay_rub_rub_newhead.json` — 60 episodes (was 77);
+  leg-0 37%, penalty-predates 43%, mid-spiral 18%
+
+## THE SESSION LEDGER — 2 accepted, 24 rejected, every rejection with a mechanism
+
+**Accepted**
+1. `3454852` penalty turns sooner (deadline 12→6s + sea-room ≥5 cells), scoped
+   to floe-free water.
+2. `47ef6be` planing heat gate OFF on courses with authored land.
+
+**Rejected — arctic / ice**
+- ice commitment ×3 (applyAvoidance, planner side-lock, planner floe-identity)
+  + the 1s dose-response control. **Family closed at seven lifetime.**
+- glancing-contact pricing; the same discount applied only to hold-the-line
+  candidates; planner `contactW` 3000 and 7500; planner entry gate 6.0s;
+  planner deviation margin 50→10 (flat, buys ~2s = noise).
+- Phase-D constants: planner floe `MARGIN` 24, `_floeRisk` 0.35, grid soft
+  weights 1.8/4.2.
+
+**Rejected — bay**
+- Rule-21 keep-clear harder ×3 (undamped shaping / 120u bubble / both).
+- crossing-run timing from actual depth; staging approach at full speed
+  (OCS 5.6% → **29.4%** — the 0.75 speed is a brake that stops boats
+  overshooting the line); post-gun lane hold.
+- no-strategic-undo-after-an-avoidance-tack.
+- downwind: sustained-plane gate, fetch-before-heat, heat angle 150°,
+  conditioned heat (far-only / near-only), arc-aware carrot lookahead (inert),
+  **fine VMG scan re-tested in the changed world — original verdict held.**
+- constants at their knee both sides: entry cut-lead 0.35/0.9, start buffer
+  0.35/0.65.
+
+**Measured, not landed** — both remaining `state.time`-as-seconds bugs are
+provably inert (see above). Both are safe correctness fixes.
+
+**Known-failing tests, unchanged from session start:** `test_sailable` 7,
+`test_editor` 10, `test_results` 3, `test_persistence` timeout, **and
+`test_dmc` 2** — the last is not on the handoff's list but fails identically on
+`7087af9`; it is redrock's path crossing rock (24/1727 segments), i.e. the same
+unraceable-venue problem, not a regression.
+
+## QUEUE FOR THE NEXT SESSION
+
+The honest state: **the classical stack is at a local optimum in nearly every
+direction tested.** Six constants were verified at their knee on both sides this
+session, two whole mechanism families closed, and the one genuinely new win came
+from REMOVING a mechanism rather than adding one. Candidate work, in order:
+
+1. **The bay traffic bin (~15s), which is the largest measured and least
+   attacked.** Avoidance is active 29% of L1 time at full density vs 7% in clear
+   air, and the fleet tacks twice more per beat. It sits in the same family as
+   the twelve arctic traffic rejections, so it needs the STRUCTURAL escalation
+   (ORCA-style objective REPLACEMENT — additive terms are proven not to work,
+   see `cpagrad`), not another price.
+2. **Bay downwind, the remaining ~7s.** Ratios are now L3 1.24 / L5 1.26 against
+   the human's 1.00 / 1.05. Six mechanisms have failed on the ANGLE. What has
+   not been tried is the multi-leg framing the failures all point at: every one
+   of them gained on its own leg and lost downstream, which says the angle is
+   constrained by the next rounding, not by local VMG.
+3. **The start (~5s/boat, and 37% of surviving bay rubs).** Two clean rejections
+   here already, both because the fleet's staggered arrival is load-bearing.
+   Anything tried here must keep the queue.
+4. **Redrock**, when the owner has re-authored the marks — the gauntlet bench is
+   wired and it is the only purpose-built traffic lab.
+
+⚠️ Whatever is tried, benchmark it at the resolution the metric needs: bay
+mechanism at 2-4 boats then verified at 9; bay contact metrics at 20 seeds, not
+8; arctic in-time on 32 seeds or on the paired per-boat median.
+
+## THE BAY BIN TABLE — `_bay_traffic_attrib.js` (new, committed)
+
+The bay analogue of the arctic transit attribution: per boat-second, one owning
+mode, excess distance = odometer − DMC progress. Run at both densities so the
+traffic share is separated from the geometry share.
+
+    9 BOATS   total excess 7241u/boat-race
+      leg |    rec   turn  avoid  offrt   sail
+      L1  |     26    197    793    593    285
+      L3  |      0    319    454    270    234
+      L4  |      0    281    513    304    349
+      L5  |      0    261    601    249    232
+      ALL |     36   1375   3059   1479   1292      weave 174u vs lateral 7067u
+
+    2 BOATS   total excess 6298u/boat-race
+      ALL |      0    851   1996   2002   1449      weave 123u vs lateral 6175u
+
+**Avoidance is the largest single bin at BOTH densities — 3059u of 7241 (42%) —
+and it is the bin that density inflates: +1063u going from 2 boats to 9, with
+turn adding +524u and `offrt` actually FALLING.** L1 alone carries +636u of
+avoidance excess between the two densities, which at ~95 u/s is most of that
+leg's measured 9.6s density cost.
+
+The proportion is almost identical to arctic transit (avoid 4100 of 9182 = 45%),
+which is worth noticing: **two very different venues, two independent
+attributions, and the same 42-45% of excess distance owned by the avoidance
+layer.** That is the campaign's largest single quantity and it now has twelve
+re-pricing rejections and seven commitment rejections against it. It is not a
+tuning problem, and the next attempt on it should be the structural one
+(objective REPLACEMENT), not another term.
+
+Also note `form: weave 174u vs lateral 7067u` — as on arctic, the excess is
+LATERAL displacement, not curvature. The boats are not wiggling; they are going
+somewhere else.
+
+## PHASE A — DRIVER-LEVEL RESIDUAL ES: BUILT, GATED, AND NEGATIVE
+
+Infrastructure committed (`f0e290e`): `rlt_shared.js` (observation, bounded
+residual, episode), `rlt_train.js` (mirrored ES), `rlt_inert.js` (the floor
+proof), `rlt_gate.js` (fleet_leg2's exact protocol with the policy installed).
+**The script.js seam is deliberately NOT committed** — the approach was
+rejected, and the one block needed to re-enable it is in that commit message.
+
+    held-out validation, 16 seeds disjoint from the 200-seed training pool:
+      gen 4  -8.8s (6/16 wins)      gen 14  -8.1s (6/16)     gen 24 -10.5s (8/16)
+      gen 9 -21.1s (4/16)           gen 19 -12.3s (5/16)
+
+    FINAL GATE, 16 seeds disjoint from training AND validation:
+      rounders 144->142  finishers 142->140  med 426->451  in-time 71->52
+      paired -17 med / -19.9 mean
+
+**The floor held throughout, and that is the part worth keeping.** With zero
+parameters the residual is exactly 0 and the race is BYTE-IDENTICAL to
+classical; the classical reference run through the gate reproduces the stored
+`cad2x16` numbers exactly (144/142/71/426). So the negative result is a
+statement about the POLICY, not about a leaky harness.
+
+**Two rebuilds were needed and both are reusable lessons.** (1) CEM walked the
+mean 41s below the classical floor in two generations — with 45 parameters and a
+fleet-level score, elite selection is mostly selecting noise, and an elite MEAN
+inherits every mistake. Mirrored ES with antithetic pairs cancels that noise in
+the difference. (2) 44 observation dimensions starved at ~1 evaluation per
+parameter per generation, and the log said so: for three straight generations
+**the best of twelve perturbations WAS the unperturbed mean.** Twelve signed
+dimensions was the workable size.
+
+Three implementation facts that would matter to any retry: centre the
+observation (always-positive features turn any random weight into a constant
+lean), FREEZE the bias at zero (a constant lean is the easiest direction for a
+perturbation to find and it is catastrophic — the bias-only control costs
+202->333), and gate the residual to contested frames.
+
+**Honest reading:** a bounded residual has large destructive power and small
+constructive power against a stack this well tuned, and the budget arithmetic is
+the binding constraint — episodes cost ~20s of wall clock, so ~25 generations is
+what eight hours buys at a useful seed count. Any retry should fix the episode
+cost first, or drop to a handful of parameters.
+
+## REFRESHED ARCTIC DIAGNOSTICS ON THE FINAL HEAD (for the next session)
+
+`_transit_probe2.js` (avoid-none sub-attribution) and `_defl_hist.js`, 8 seeds:
+
+    TRANSIT  med 180  ratio 1.50  EXCESS 9182 = rec 448 | turn 1331 | avoid 4100
+                                                | offrt 2500 | sail 803
+    avoid sub-bins   boat 1596 | static 527 | both 436 | none 1541   mean dev 43°
+    avoid-none       lat-static 574 | floe<250u 346 | boat<300u 216 | latch 4
+                     | TRUE-none 401
+    SECONDS by class rec 14 | turn 23 | avoid 77 | offrt 47 | sail 36  (park 3s)
+    falsebeat 4% of sail-mode distance | heading-vs-carrot 19° | xtrack mean 491u
+
+    DEFLECTION HISTOGRAM  47% of transit frames carry a deviation
+      6°  15.7% | 11°  10.0% | 23°  19.4% | 34°  11.4% | 46°   8.7%
+     69°  11.4% | 92°  12.2% | 126°  7.2% | 172°  4.0%
+      => 23% of avoiding frames deflect 69° OR MORE, and 4% are near-reversals
+
+Two things to carry forward. **`true-none` is only 401u of 9182 (4%)** — the
+avoidance layer is almost always responding to something real, so "spurious
+avoidance" is not the bin. And **the deflection distribution is bimodal**: a
+large mass of small corrections (45% under 23°) plus a hard tail where a quarter
+of avoiding frames swing 69° or more. Any structural replacement should be
+judged on whether it moves the TAIL, not the mean — the mean has now sat at
+42-43° through twelve re-pricings, three ice commitments, and a map fix that
+moved everything else.
+
+**BAY deflection histogram** (`_defl_hist.js` now takes a venue argument),
+alongside arctic for comparison:
+
+                  6°    11°    23°    34°    46°    69°    92°   126°   172°   | >=69°
+    bay   30%   25.7   13.3   14.9   11.2    9.1   10.1    7.5    5.6    2.4   |  25.6%
+    arctic 47%  15.7   10.0   19.4   11.4    8.7   11.4   12.2    7.2    4.0   |  34.8%
+
+(the leading % is the share of ALL frames carrying any deviation). Bay avoids
+less often and swings slightly less hard, but **the shape is the same on both
+venues: a large mass of small corrections plus a hard tail where a quarter to a
+third of avoiding frames swing 69° or more.** That tail is the target.
+
+## ⚡ ENCOUNTER ARITY — how much of the avoidance bin a pairwise structure could even reach
+
+`_encounter_arity_probe.js` (new). The handoff's recommendation for the
+avoidance bin is a structural replacement, and the literature candidate
+(ORCA/VO) is PAIRWISE by construction — one half-plane per neighbour, exact for
+a 1-on-1 crossing and progressively over-constraining as neighbours are added.
+So: how many boats are actually in these encounters? Measured at every frame
+where avoidance is bending the heading >0.12 rad:
+
+    ARCTIC (113202 avoiding frames, 45650 in the >=69° tail)
+      rivals within 600u   0:35%  1:27%  2:19%  3:10%  4:3%  5+:5%
+      rivals within 250u   0:71%  1:22%  2:4%   3:1%   4+:2%
+      tail, within 250u    0:67%  1:24%  2:6%   3:2%   4+:1%
+      DEFLECTING WITH NO RIVAL INSIDE 600u:  35% of all frames, 31% of the tail
+
+    BAY (56483 avoiding frames, 12484 in the tail)
+      rivals within 600u   0:15%  1:20%  2:26%  3:17%  4:10%  5+:12%
+      rivals within 250u   0:55%  1:32%  2:8%   3:2%   4+:3%
+      tail, within 250u    0:43%  1:35%  2:12%  3:4%   4+:6%
+      DEFLECTING WITH NO RIVAL INSIDE 600u:  15% of all frames, 12% of the tail
+
+**Two facts that should shape the next design before a line is written.**
+
+1. **At the radius that actually forces a manoeuvre, encounters ARE pairwise.**
+   Within 250u, 93% of arctic and 87% of bay avoiding frames involve at most one
+   rival. A pairwise half-plane structure is not obviously the wrong shape —
+   these are not multi-boat scrums where ORCA would over-constrain.
+
+2. **But a third of arctic avoidance is not about boats at all.** 35% of arctic
+   avoiding frames (and 31% of the hard tail) have NO rival within 600u — they
+   are deflections around ICE. No boat-to-boat structure can touch them, and
+   the ice side of this problem has now absorbed three commitment rejections and
+   six pricing rejections. On bay the ice share is only 15%, so a pairwise
+   replacement has roughly three times the reachable surface there.
+
+⇒ **If the ORCA-style replacement gets built, build and gate it on BAY, not
+arctic.** Arctic's avoidance bin is majority-ice, which is exactly the part the
+structure cannot address; bay's is majority-boats, and bay's excess is already
+42% avoidance with a bench that runs in six minutes.
+
+## ⚡ CPA AT AVOIDANCE ONSET — the trigger fires on passes that would already clear
+
+`_cpa_onset_probe.js` (new). At the frame avoidance FIRST engages on a boat,
+what is the geometry with the rival that caused it? (`getRiskMetrics` is pure
+math on positions and headings, so this is read-only.)
+
+    BAY    2950 onsets   with a closing rival 74%   |  ice/land only 26%
+      tCPA   p10 0.2  p25 0.5  MED 1.2  p75 2.5  p90 5.9   seconds
+      dCPA   p10  58  p25 116  MED 209  p75 345  p90 455   units
+      role at onset  NONE 43% | GIVE_WAY 42% | STAND_ON 15%
+      risk at onset  LOW 43% | MEDIUM 38% | HIGH 12% | IMMINENT 7%
+
+    ARCTIC 8454 onsets   with a closing rival 45%   |  ice/land only 55%
+      tCPA   p10 0.3  p25 0.7  MED 1.6  p75 3.4  p90 6.8
+      dCPA   p10  50  p25 111  MED 205  p75 331  p90 451
+      role   NONE 42% | GIVE_WAY 41% | STAND_ON 17%
+      risk   LOW 42% | MEDIUM 33% | HIGH 16% | IMMINENT 10%
+
+Two venues, independent runs, and the distributions are nearly the same shape.
+
+**The headline: the median onset has a predicted closest approach of ~207 units
+— about 2.6x the 80-unit safety bubble — and 42-43% of onsets happen at LOW risk
+with NO right-of-way role assigned at all.** These are not encounters being
+resolved; they are the soft-proximity gradient nudging the argmin for passes
+that were already going to clear. It is the same picture the deflection
+histogram gave from the other side (45% of avoiding frames under 23°).
+
+**And for anyone sizing a τ for a velocity-obstacle underlay: 80-85% of real
+encounters are engaged with tCPA ≤ 4s and 88-90% by 6s** — which is a strong
+independent confirmation of the rival-lookahead knee already found at 4s, from a
+completely different measurement.
+
+**The obvious lever off that measurement was tested, and 250u is a knee too.**
+The soft-proximity band (`distSq < 250*250`) is what fires on those clearing
+passes, and the world it was tuned in HAS changed twice this session, so it was
+re-swept both ways on the bay 20-seed bench:
+
+    band 180u   fin med 259  paired -3 med / -4.2 mean   rubs 1.91 -> 2.61  pens 0.50 -> 0.61
+    band 250u   fin med 257  (HEAD)                      rubs 1.91          pens 0.50
+    band 320u   fin med 260  paired -6 med / -5.1 mean   rubs 1.91 -> 1.81  pens 0.50 -> 0.58
+
+Narrowing it costs contacts badly (rubs +37%), widening it buys a few contacts
+and costs pace. **So the band is not miscalibrated — the "unnecessary"
+deflections it produces are the price of the contacts it prevents.** That is the
+seventh constant verified at its knee on both sides this session, and it means
+the 42-45% avoidance bin cannot be reached by adjusting when the existing cost
+function speaks. It has to be a different cost function.
+
+---
+
+# ⚡ 2026-08-04b OWNER DIRECTION — SAIL THE RULES, DON'T RUN A POTENTIAL FIELD
+
+Owner, mid-session: *"The rules of sailing dictate who has rights in every
+circumstance… which allows boats to cross safely at remarkably small gaps. If a
+boat doesn't have rights it must adjust to make sure that crossing happens
+safely. If a boat does have rights it should by default keep sailing a proper
+course so that it remains predictable… A clean race is a fast race."*
+
+The measurement that arrived the same minute is the empirical case for exactly
+that, and it is the strongest single number the campaign has produced.
+
+## THE MEASUREMENT — `_minimal_escape_probe.js`
+
+At every avoidance onset with exactly ONE rival inside 250u (the arity probe says
+that is 87-93% of the deciding cases), search the heading circle for the SMALLEST
+deflection whose predicted closest approach clears 80u assuming the rival holds
+course. Compare it to what the boat actually did.
+
+                              bay                arctic
+    pairwise onsets           989                1706
+    ALREADY CLEARING at 80u   860  (87%)         1391 (82%)
+    deflection TAKEN   med     23°  p90  92°       23°  p90 126°
+    minimal NEEDED     med      0°  p90   2°        0°  p90   3°
+    took MORE than needed     954/970 (98%)      1557/1579 (99%)
+    took LESS (unresolved)     16  (2%)            22  (1%)
+
+**Four boats in five were already going to pass clear, and the fleet swerved a
+median 23° anyway.** This is not a tuning error in a good design; it is the wrong
+kind of controller. A cost-sum argmin has no concept of "this crossing is already
+safe" or "this is not my obligation" — it only has a gradient, and a gradient is
+never zero.
+
+## THE CODE AUDIT — what the engine actually implements
+
+**Correct today.** ROW determination for Rule 21 (OCS/penalty boats keep clear),
+Rule 13 (while tacking), Rule 10 (opposite tacks), Rule 11 (same tack,
+overlapped), Rule 12 (clear astern), Rule 18 (mark-room) and Rule 19 (room at an
+obstruction). Contact fault is assigned to the NON-right-of-way boat, with
+mark-room immunity, and both boats are penalised when there is no ROW.
+
+**⚠️ Rules 15, 16.2 and 17 are computed and then thrown away.** They are pushed
+into `result.constraints`, and `constraints` has exactly ONE consumer in the
+entire codebase — `getDebugInfo()`, which feeds the debug overlay. No penalty
+path reads them. No AI path reads them. So:
+- **Rule 15** (a boat acquiring right of way shall initially give room) — detected, never enforced.
+- **Rule 16.2** — detected, never enforced.
+- **Rule 17** (leeward boat overlapped from clear astern shall not sail above her proper course) — detected, never enforced.
+
+**⚠️ There is no concept of PROPER COURSE in the AI at all.** `grep -c
+"properCourse\|proper course"` over script.js returns 1, and it is a comment. A
+stand-on boat gets a hold-course *bonus* scaled by speed (`jamF`), but it has no
+defended course, and it still pays the same collision and proximity costs as
+everyone else — so it swerves, which is precisely what makes it unpredictable to
+the boat that is supposed to be planning around it.
+
+**⚠️ Infringing rights without contact is effectively unpunished.** The
+no-contact foul exists (script.js §4, `kind: 'no_contact'`) but its gate is very
+narrow: STAND_ON role, risk HIGH or IMMINENT, and a sustained >20° forced
+deviation held for 0.8s — and a role is only assigned when predicted CPA is
+already under 70u. Measured firing rate: **3 fouls per 72 bay boat-races and 18
+per 72 arctic**, against 2.0-2.3 CONTACTS per boat-race. Under the real rules,
+forcing a right-of-way boat to alter course at all is a foul; here it almost
+never is. The owner's suspicion was right.
+
+**⚠️ Roles are assigned against ONE worst threat and only above LOW risk**, so
+42-43% of avoidance onsets happen with NO right-of-way role in play.
+
+**Confound removed.** The first cut of the probe could have been measuring
+deflections taken for a mark or the shore with a rival merely nearby, so it was
+re-run requiring genuinely clear water — no mark within 300u and at least 4
+cells of grid clearance. ⚠️ The first attempt at that filter used island
+BOUNDING-CIRCLE radii and excluded 989 of 989 onsets, because a shoreline
+polygon's bounding circle covers the venue; clear water is what the navigation
+grid says it is, not what a bounding circle says.
+
+    bay, CLEAR WATER only     621 onsets (368 excluded)
+      ALREADY CLEARING at 80u     531  (86%)
+      deflection TAKEN      p25 11   MED 11   p75 46   p90 92  degrees
+      minimal NEEDED        p25  0   MED  0   p75  0   p90  2  degrees
+      took MORE than needed       598/605 (99%), median excess 11°, mean 34°
+
+The finding survives the confound: **86% of clear-water pairwise encounters
+needed no deflection at all.**
+
+## THE PLAN — RRS-first avoidance, in the order it should be built
+
+**1. Make the rules real in the ENGINE (correctness first, and it is testable
+without touching the AI).** Enforce Rules 15, 16.2 and 17 instead of formatting
+them for the debug overlay, which needs a real `properCourse` definition — the
+course a boat would sail absent the other boat, which the AI already computes
+every tick as `desiredHeading` before `applyAvoidance` and simply never names.
+Then widen the no-contact infringement so that FORCING a right-of-way boat to
+alter course is a foul at realistic thresholds, not just at CPA<70u with a
+sustained 20° deviation. ⚠️ Expect penalty counts to RISE, which fails the
+standing lexicographic gate by construction — this is a rules-correctness call
+for the owner, and it should be judged on whether the fouls are CORRECT, not on
+whether the count went down.
+
+**2. Then make the AI sail them.** The asymmetry is the whole point and it is
+also, per the avoidance research memo, the documented anti-dance mechanism:
+exactly one boat reacts.
+   - **Right-of-way boat: hold proper course.** Do not pay a proximity gradient
+     against a boat you have rights over; deviate only when Rule 14 bites (it is
+     clear the other boat is not keeping clear). A ROW boat that swerves is
+     unpredictable, and its swerve is what makes the give-way boat's plan wrong.
+   - **Give-way boat: plan against that predictability, and take the MINIMUM.**
+     Replace the cost-sum argmin for the give-way pairing with a minimal-escape
+     computation against the ROW boat's projected proper course — the smallest
+     course change that clears by a sailor's margin, not the argmin of a sum of
+     penalties. This is the ORCA-style objective REPLACEMENT the campaign already
+     identified as its last structural candidate, but grounded in RRS rather than
+     in symmetric reciprocity, which is strictly better: RRS already says who
+     yields, so there is no reciprocity to negotiate.
+   - **Rule 13:** a boat that tacks LOSES rights while tacking. The tack decision
+     should price that — tacking into a converging rival converts you from
+     stand-on to keep-clear mid-manoeuvre.
+   - **Rule 19:** room at obstructions exists (`rule19Pairs`) and should be
+     extended to the ice, since a floe is an obstruction and the give-way boat
+     must be left room to pass it safely.
+
+**3. Gate on BAY.** The arity probe says 35% of arctic avoidance frames have no
+rival within 600u (they are ice, which no boat-to-boat structure can reach)
+against 15% on bay, and bay's bench runs in six minutes.
+
+**First probe of step 2, run at the session's end (`rowhold`):** a stand-on boat
+stops paying the soft-proximity gradient against the boat it has rights over.
+The hard Rule-14 collision term is untouched, so a boat that genuinely is not
+keeping clear is still avoided. Result below.
+
+**`rowhold` RESULT — the halves are not separable, which is itself the finding.**
+
+    bay 20-seed vs HEAD    fin med 257 -> 258, paired 0 med / -3.6 mean
+                           boat rubs 1.91 -> 2.10, pens 0.50 -> 0.53
+    arctic 8-seed screen   med 398 -> 399, in-time 43 -> 45, finishers 72 -> 70,
+                           paired -5 med / +4.3 mean
+
+Slightly negative on bay, mixed on arctic. **Mechanism: a right-of-way boat that
+stops avoiding is only safe if the give-way boat is actually keeping clear, and
+today it is not — it is running the same undifferentiated cost sum.** Removing
+the ROW boat's contribution without simultaneously replacing the give-way boat's
+planner just holds course into a boat that was never going to yield enough.
+
+That is the same shape as this session's accepted penalty-turn change, where
+neither the shorter deadline nor the sea-room ask worked alone and the pair
+worked well. **Steps 2a (ROW holds proper course) and 2b (give-way takes the
+minimal escape against that course) must land TOGETHER.** Probing either half on
+its own will read as a rejection and should not be taken as one.
+
+## ⚡ BOTH HALVES TOGETHER (`rrspair`) — the rules version works
+
+Half 2a (right-of-way boat stops paying a proximity gradient against the boat she
+has rights over) plus half 2b: the give-way boat's flat "duck the stern" reward
+(−800) and "don't cross the bow" penalty (+1500) are REPLACED by the obligation
+as the rule states it — **keep clear by enough, and no more.** Cost falls to zero
+as soon as the candidate clears a 110u gap, so the base deviation cost then picks
+the SMALLEST course change that satisfies the obligation. Bow/stern survives only
+as a tie-break at equal clearance.
+
+The old shaping was a DIRECTION preference with no notion of enough: −800 against
+a base deviation cost of ~2.5 at 23° buys any swing the fan offers, which is
+exactly the 86%-already-clearing result.
+
+    bay 20 seeds 9100-9119 vs HEAD    fin med 257->256   paired 0 med / +0.6 mean
+      boat rubs   1.91 -> 1.54  (-19%)
+      penalties   0.50 -> 0.42  (-16%)
+      OCS         5.6% -> 0.0%
+    bay 20 seeds 9200-9219 (DISJOINT) fin med 259->253   paired +5 med / +5.3 mean
+      boat rubs   1.88 -> 1.84
+      penalties   0.49 -> 0.39  (-20%)
+      OCS         8.9% -> 2.2%
+      land 0.04 -> 0.00, mark 0.67 -> 0.43
+    arctic 8-seed screen              med 398->392  paired +3 med / +5.6 mean
+      in-time 43 -> 42, finishers 72 -> 71
+
+**Cleaner on every rules metric on both disjoint seed sets, and not slower.** The
+owner's claim that a clean race is a fast race shows up directly: penalties
+−16-20%, OCS collapsing, mark and land contacts down, and pace neutral to +5s.
+
+⚠️ **NOT LANDED — the session ended with its gates still running.** Outstanding
+before it can land: the seatrials 100t anchor (this touches every venue and is
+NOT `_gridFixed`-scoped), the arctic 16-seed fleet gate, and goldens. Both were
+launched at 17:05. Start-crossing time rises (mean 7.6→10.3 on the first set),
+which is plausibly correct — a give-way boat that actually keeps clear does not
+barge at the line — but it should be checked rather than assumed.
+
+⚠️ Note the ordering trap this session hit twice: probe each half alone and BOTH
+read as rejections (`rowhold` alone was −3.6 mean). The pair is the unit. The
+working tree for it is `regatta/eval/rl/treeD`.
+
+### `rrspair` GATES — anchor is a big WIN, arctic is one finisher-count short
+
+    SEATRIALS 100t          HEAD 202.83 / 199.79   RRS pair 199.87 / 195.59
+      penalties             0.31                   0.31   (flat)
+      OCS                   16.89%                 12.67%
+      start time mean/med   7.14 / 3.55            5.87 / 2.46
+      min                   174.97                 174.32     DNS/DNF 0 both
+
+**The eval anchor improves by ~3s mean and ~4s median with penalties flat and
+OCS down 4 points.** That anchor has sat at 202-204 for the entire campaign, and
+this is a venue the change was not tuned on — it is not `_gridFixed`-scoped, so
+Clubhouse takes it in full.
+
+    ARCTIC 16-seed gate (9100-9115)   med 440 -> 426, mean 453.4 -> 443.7
+      paired +7 med / +8.3 mean, in-time 65 -> 66, rounders 143 = 143
+      ⚠️ FINISHERS 141 -> 137
+
+⛔ **NOT LANDED.** Faster on every pace measure and cleaner on every rules
+measure, but four fewer boats finish inside the 900s window, and a finisher drop
+is disqualifying under the standing lexicographic rule. ⚠️ It is also exactly the
+metric this venue disagreed with itself about earlier today (the heat-gate change
+read in-time 71→65 on one 16-seed set and 45→65 on another), so the honest next
+step is the DISJOINT set — launched at 17:26 as `rrspair16b` (seeds 9200-9215),
+comparable against `fleet_leg2_noheat16b.json`.
+
+**If the finisher count holds up on the second set, this lands as-is.** If it
+does not, the likely culprit is the 110u KEEP gap being generous in a floe field
+where boats also owe room at obstructions (RRS 19) — sweep it at 90 and 130 on
+the arctic gate before touching anything else. The tree is `regatta/eval/rl/treeD`.
+
+---
+
+# RULES AUDIT AGAINST THE ACTUAL TEXT (RRS 2025-2028, owner-supplied PDF)
+
+Read from `2025-2028-RRS-with-Changes-and-Corrections.pdf` (World Sailing, incl.
+corrections to 20 Apr 2026): Definitions (book p.8-11) and Part 2 in full
+(p.16-22). The earlier audit in this doc was against a web summary; this one is
+against the text, and it finds more.
+
+## Definitions the engine needs and does not have
+
+**Keep Clear** — *"A boat keeps clear of a right-of-way boat (a) if the
+right-of-way boat can sail her course with no need to take avoiding action, and
+(b) when the boats are overlapped, if the right-of-way boat can also change
+course in both directions without immediately making contact."*
+
+⚠️ **(b) is not modelled at all.** The engine's keep-clear test is proximity and
+CPA. For OVERLAPPED boats the rule demands the ROW boat be able to turn EITHER
+WAY without contact — a materially larger lateral gap than any CPA test implies,
+and it is exactly why real boats hold a specific separation when overlapped.
+**This directly sizes the `KEEP` constant in the `rrspair` give-way planner: 110u
+of CPA is the wrong quantity when overlapped; it should be a both-directions
+clearance test.**
+
+**Proper Course** — *"A course a boat would choose in order to sail the course as
+quickly as possible in the absence of the other boats referred to in the rule
+using the term. A boat has no proper course before her starting signal."*
+
+That is precisely `desiredHeading` immediately before `applyAvoidance`, computed
+every tick and never named. ⚠️ Note the second sentence: **no proper course
+before the starting signal** — so any proper-course logic must be gated off in
+the prestart, which also means rule 17 cannot bind there.
+
+**Room** — *"The space a boat needs in the existing conditions, including space
+to comply with her obligations under the rules of Part 2 and rule 31, while
+manoeuvring promptly in a seamanlike way."* Room is therefore SPEED- and
+STATE-dependent, not a constant; the engine treats room as fixed distances.
+
+**Obstruction** — an object that could not be passed without changing course
+substantially from one hull length away; *"a boat racing is not an obstruction to
+other boats unless they are required to keep clear of her."* ⚠️ So a right-of-way
+boat IS an obstruction to the boat that must keep clear — which is what makes
+three-boat situations resolvable, and is not modelled.
+
+**Continuing Obstruction** — one the boat will pass alongside for at least three
+hull lengths. ⚠️ **Every shoreline in this game is a continuing obstruction**, and
+under 18.1(a)(4) that means rule 19 applies and rule 18 does not.
+
+## Rules absent from the engine entirely
+
+- **Rule 18.3 Tacking in the Zone** and **18.4 Gybing in the Zone** — 0 matches.
+- **Rule 20 Room to Tack at an Obstruction** — 0 matches. In a channel or a floe
+  field a close-hauled boat that needs to tack away from land has no way to ask
+  for room, and no boat is obliged to give it. A plausible contributor to the
+  shore pins and to the L1 tack churn.
+- **Rule 22 Capsized, Anchored or AGROUND** — 0 matches. *"If possible, a boat
+  shall avoid a boat that is … aground."* **The bots ground constantly** —
+  583-713 groundings per boat-race on arctic — and nothing makes the fleet avoid
+  a grounded boat, which is both a rules break and a collision source.
+- **Rule 23.2 Interfering** — 0 matches. *"a boat shall not interfere with a boat
+  that is taking a penalty, sailing on another leg, or subject to rule 21.1."*
+  ⚠️ **This is the rule that should have protected the flagged boats this session
+  spent the morning working around** — and the "another leg" clause covers the
+  17-25% of bay rubs that are between boats on different legs.
+- **Rule 21.3** (moving astern / backing a sail) — absent.
+
+## Rules present but wrong or incomplete
+
+- **⚠️ Rule 13 is WRONG when both boats are tacking.** The text: *"If two boats
+  are subject to this rule at the same time, the one on the other's PORT SIDE or
+  the one ASTERN shall keep clear."* The engine gets clear-astern right, then for
+  the side case falls through to a rule 10/11 basis ("Both Tacking (Starboard)",
+  "Both Tacking (Leeward)") — but rule 13 says explicitly that *"during that time
+  rules 10, 11 and 12 do not apply."* It should be the boat on the other's PORT
+  SIDE that keeps clear, which is a geometric test, not a tack test.
+- **Rule 18.1 exceptions: only (a)(1) is implemented.** Missing (a)(2) opposite
+  tacks where the proper course at the mark for one but not both is to tack;
+  **(a)(3) between a boat approaching a mark and one leaving it** — which these
+  multi-leg courses generate constantly; (a)(4) continuing obstruction; and
+  (b) rule 18 stops applying once mark-room has been given.
+- **Rules 15, 16.1, 16.2 and 17 are computed and discarded** — confirmed against
+  the text. `constraints` has one consumer, `getDebugInfo()`.
+- **Contact fault is assigned to the non-ROW boat only.** Rule 14 binds BOTH
+  boats; a right-of-way boat that could have avoided contact once it was clear
+  the other was not keeping clear also breaks it. The engine never penalises a
+  ROW boat.
+
+## `rrspair` VERDICT — bay and Clubhouse yes, arctic no; the venue split repeats
+
+The disjoint arctic set settled it, and it settled it against landing as-is:
+
+    ARCTIC, 32 SEEDS COMBINED        HEAD          rrspair
+      rounders                        285            286
+      finishers                       280            276
+      IN-TIME                         130            119
+      median / mean               439 / 452.6    444 / 455.7
+
+    per set (they disagree, again):
+      set1 9100-9115   med 440->426  in-time 65->66  fins 141->137  paired +7 / +8.3
+      set2 9200-9215   med 435->454  in-time 65->53  fins 139->139  paired +1 / -13.7
+
+⚠️ The finisher drop from set 1 did NOT replicate (139→139 on set 2), so that
+part was noise — but in-time is down 11 across 32 seeds and the median is up.
+**Arctic rejects it.**
+
+    BAY (2 disjoint 20-seed sets)   pens -16% / -20%, OCS 5.6->0.0% and 8.9->2.2%,
+                                    rubs -19%, pace +0.6 and +5.3 paired
+    CLUBHOUSE 100t                  202.83/199.79 -> 199.87/195.59, pens FLAT 0.31,
+                                    OCS 16.89% -> 12.67%
+
+**This is the same venue split as the penalty-turn change earlier today, and
+probably the same cause: the rules-correct behaviour is calibrated for boat-on-
+boat in open water, and arctic is a floe field.** The audit above says exactly
+what is missing for the ice case — a boat racing is an OBSTRUCTION to the boat
+that must keep clear of her; every shoreline is a CONTINUING obstruction, which
+routes to rule 19 not 18; rule 20 (room to tack at an obstruction) does not
+exist; and rule 22 (avoid a boat AGROUND) does not exist while arctic bots ground
+583-713 times a boat-race.
+
+**So the next step is not to tune `KEEP` — it is to finish the rules.** In order:
+1. `keep clear` definition part (b): when OVERLAPPED, the ROW boat must be able
+   to change course in BOTH directions without immediately making contact. That
+   is the correct quantity for the give-way planner's clearance, and it replaces
+   the 110u CPA constant with something the rule actually defines.
+2. Rule 23.2 (do not interfere with a boat taking a penalty or on another leg)
+   and rule 22 (avoid a boat aground) — both cheap, both currently absent, and
+   both target measured contact classes.
+3. Rule 19 at ICE (a floe is an obstruction; a shoreline is a continuing one),
+   which is the arctic-shaped hole this verdict just exposed.
+4. Then re-gate `rrspair`. If arctic still splits, scope it the way the
+   penalty-turn change is scoped, on `_floeObjs`.
+
+---
+
+# ⚡ THE RULES ENGINE WAS TELLING THE AI THE WRONG THING
+
+`_row_truth_probe.js` (new) compares the engine's own verdicts against the
+definitions, on every close pair (<300u) at 2Hz.
+
+⚠️ **A first run of this probe reported a 99.4% tack disagreement. That was the
+PROBE, not the engine** — its sign convention was inverted. The mapping was then
+established empirically instead of derived: with the boom settled and
+head-to-wind/by-the-lee excluded, sign(TWA) vs sign(boomSide) separates
+perfectly — twa<0 ↔ boom+ (1499 samples), twa>0 ↔ boom− (830), zero
+counter-examples. **TWA < 0 is starboard tack.** Corrected numbers:
+
+                                                  BAY      ARCTIC
+    tack differs from the definition              6.1%      9.0%
+    ...and that FLIPS the opposite-tacks test     5.9%      8.7%   (rule 10)
+    leeward boat differs, local vs global wind   10.3%     51.7%   (rule 11)
+    local-vs-global wind angle              med 12.3°   med 83.2°
+                                            p90 27.4°   p90 166.4°
+    stern projects ahead of bow                  22.6%     30.7%   (clear astern)
+    both boats tacking at once                    3.7%      3.0%   (rule 13)
+
+**On arctic the engine picks the wrong leeward boat for MORE THAN HALF of close
+pairs**, because rule 11 is decided from `state.wind.direction` — the
+course-centroid blend — which runs a median 83° from the wind between the boats.
+Root cause #2 of this entire campaign was that same blend; the AI was moved to
+`getWindAt` and **the rules engine never was.**
+
+## The four corrections (`treeK`)
+
+1. **`getTack`** — from the LOCAL wind angle, not `boomSide`. `boomSide` is an
+   animation (`boomSide += (target - boomSide) * swingSpeed`), so a boom-derived
+   tack flips when the sail finishes swinging rather than when the boat crosses
+   the wind. The boom is kept for the one case the definition makes it decisive:
+   sailing by the lee or dead downwind.
+2. **`getLeewardBoat`** — local wind at the midpoint between the boats.
+3. **`isClearAstern`** — project BOTH hull ends of the behind boat and take the
+   foremost. "Her hull and equipment" is the whole boat; the bow-only test is
+   correct only while the headings are within ~90°.
+4. **Rule 13, both boats tacking** — the rule's own test ("the one on the other's
+   PORT SIDE or the one astern"), not a fall-through to rules 10/11, which rule
+   13 explicitly suspends.
+
+Verified after: tack disagreement **6.1% → 0.0%**, opposite-tacks flips
+**5.9% → 0.0%**. (The leeward and stern-ahead figures measure how often the WORLD
+presents the condition, not whether the code handles it, so they do not move.)
+
+## What it does to racing — and it splits exactly as the error rates predict
+
+    ENGINE FIX ALONE
+      bay 20-seed      fin med 257 -> 260, paired -6 med / -4.6 mean,
+                       pens 0.50 -> 0.54, rubs 1.91 -> 2.03, OCS 5.6 -> 8.3%
+      arctic 8-seed    med 398 -> 386, paired +17 med, in-time 43 -> 44,
+                       finishers 72 = 72
+
+**Bay gets worse and arctic gets better, and that is the predicted sign.** Bay's
+leeward error was 10.3%, so correcting it mostly reshuffles; arctic's was 51.7%,
+so correcting it is worth a paired median of +17s. ⚠️ The bay regression is not
+evidence the fix is wrong — **the AI was tuned against the buggy verdicts**, and
+its stand-on/give-way shaping now fires on different pairings than it was
+calibrated for.
+
+    CORRECTED ENGINE + THE RRS AI (`rrspair`) TOGETHER — `treeR`
+      bay 20-seed      fin med 255 (best of all four builds), paired +1 med,
+                       pens 0.44, OCS 5.6% -> 1.1%, land 0.16 -> 0.05
+
+The AI half recovers the engine fix's bay cost (−6 med → +1 med) and gives the
+best bay median measured this session. The arctic 16-seed gate for the pair is
+the deciding run — the hypothesis being tested is that `rrspair` failed on arctic
+BECAUSE the verdicts it faithfully obeys were a coin flip there.
+
+## ✅ LANDED — `b67d610` (engine) + `649a234` (AI) + `0aca536` (goldens)
+
+The disjoint arctic set disagreed with the first AGAIN (set1 in-time 65→76,
+set2 65→61 — the third time this venue has contradicted itself in one day), so
+the verdict is read on the 32-seed combination, which is what has been reliable:
+
+    ARCTIC, 32 SEEDS            HEAD        corrected engine + RRS AI
+      rounders / finishers    285 / 280            286 / 281
+      IN-TIME                     130                  137
+      median / mean         439 / 452.6          422 / 453.3
+
+    BAY 9100-9119    fin med 257 → 255, paired +1, pens 0.50 → 0.44, OCS 5.6 → 1.1%
+    BAY 9200-9219    fin med 259 → 257, paired +3, rubs 1.88 → 1.67, OCS 8.9 → 2.8%
+     (DISJOINT)
+    SEATRIALS 100t   202.83/199.79 → 198.75/194.91, pens 0.31 → 0.29,
+                     OCS 16.89% → 14.89%, max 360.00 → 312.00, DNS/DNF 0
+
+**Nothing reaches the 360-second cutoff on the anchor any more**, and the anchor
+is the fastest it has been in the campaign's recorded history with penalties
+DOWN. Lexicographic: penalties down on three of four measures and +0.02 on the
+fourth (noise), OCS down everywhere, finishers up, then pace.
+
+Goldens re-recorded for all 18; redrock's two left deliberately red.
+
+**⚠️ Neither half is separable, and probing either alone reads as a rejection:**
+the engine fix alone costs bay a paired 6 seconds (the AI was tuned against the
+buggy verdicts), and the AI alone lost arctic (finishers 280→276, in-time
+130→119) because it faithfully obeyed verdicts that were a coin flip there. That
+is now the third time this session a change has only worked as a pair.
+
+### What remains, in order
+
+1. **`keep clear` definition part (b)** — when OVERLAPPED, the right-of-way boat
+   must be able to change course in BOTH DIRECTIONS without immediately making
+   contact. This is the principled replacement for the `KEEP = 110` CPA constant
+   the give-way planner currently uses, and the rule defines the quantity.
+2. **Rule 23.2** (do not interfere with a boat taking a penalty or on another
+   leg) and **rule 22** (avoid a boat aground) — both absent, both cheap, both
+   aimed at measured contact classes.
+3. **Rule 19 at ice** — a floe is an obstruction and every shoreline is a
+   CONTINUING obstruction, which routes to rule 19 rather than 18.
+4. **Then** widen the no-contact foul to the real standard ("the right-of-way
+   boat can sail her course with no need to take avoiding action"). ⚠️ LAST, and
+   deliberately so: done before the deflections collapse it would penalise the
+   AI's own timidity rather than real infringement. Expect penalty counts to
+   RISE, which fails the lexicographic gate by construction — judge it on whether
+   the fouls called are CORRECT.
+
+## KEEP-CLEAR (a)/(b) and RULES 22 + 23.2 — measured, NOT landed
+
+**keep-clear split** (`treeD`): the definition gives two different tests and the
+code was using one for both. (a) *"the right-of-way boat can sail her course with
+no need to take avoiding action"* is a CPA condition satisfied at a SMALL gap —
+which is exactly why sailors cross at gaps that look alarming. (b) *"when the
+boats are OVERLAPPED, if the right-of-way boat can also change course in BOTH
+DIRECTIONS without immediately making contact"* is not a CPA condition at all: a
+windward boat on a diverging track still is not keeping clear if a luff would hit
+her. That is LATERAL room off her centreline, sized by how far she can swing her
+bow immediately (her turn rate × ~1.2s × hull length + our beam). The `KEEP = 110`
+CPA constant was too strict for crossings and too weak alongside.
+
+    bay 9100-9119   fin med 255->255 (mean 257.4->254.6), paired +2 med / +2.8 mean
+                    pens 0.44->0.39, OCS 1.1->0.0%, rubs 1.91->1.67, max 375->301
+    bay 9200-9219   fin med 257->251, paired +6 med / +5.9 mean
+     (DISJOINT)     pens 0.51->0.36, OCS 2.8->0.6%, RUBS 1.67->1.21
+    arctic 32 seeds rounders 286->285, finishers 281->281, in-time 137->132,
+                    med 422->432, mean 453.3->448.8
+    seatrials 100t  198.75/194.91 -> 198.77/194.53, OCS 14.89->13.33%,
+                    pens 0.29->0.31, MAX 312->360
+
+**rules 22 + 23.2** (`treeH`, on top): a boat AGROUND is avoided by everyone
+(Section D removes Section A between them — she has neither rights nor
+obligations, and the arctic fleet grounds 583-713 times a boat-race). And no
+interference with a boat taking a penalty, on another leg, or returning — ⚠️ with
+the exemption doing the real work: *"this rule does not apply when the boat is
+sailing her proper course"*, and our proper course is exactly the UNDEFLECTED
+candidate, so the rule constrains our DEVIATIONS and costs nothing while we are
+simply racing.
+
+    bay 9100-9119   fin med 255->252, paired +1, rubs 1.67->1.52, land 0.12->0.04
+    bay 9200-9219   fin med 251->251, paired -2, RUBS 1.21->1.06, mark 0.43->0.34
+    arctic 8 screen finishers 72->71, med 397->396, paired +6 med / -12.0 mean
+
+⛔ **Neither is landed. The venue split has now repeated FOUR times** (penalty
+turns, heat gate, `rrspair`, keep-clear): every rules-correctness improvement
+wins on bay and Clubhouse and goes neutral-to-negative on arctic. That is not a
+coincidence and it is not ice being "harder" — **the audit already named the
+hole. Arctic's avoidance is 35% ICE (no rival within 600u at all), and the rules
+layer has no proper obstruction model:**
+- rule 19 exists and does iterate `state.course.islands` (so floes are included),
+  but the definition of *continuing obstruction* — every shoreline here — is
+  absent, and 18.1(a)(4) routes those to rule 19 rather than 18;
+- *"a boat racing IS an obstruction to other boats… required to keep clear of
+  her"* is not modelled, which is what makes three-boat situations resolvable;
+- rule 20 (room to tack at an obstruction) does not exist at all, so a boat
+  close-hauled at the ice has no way to be given room.
+
+**⇒ The next unit of work is the OBSTRUCTION MODEL, not more keep-clear tuning.**
+Bay measurements will keep improving without it and arctic will keep refusing,
+because on arctic a third of the problem is not a boat.
+
+Interim option if the bay win is wanted now: scope keep-clear on `_floeObjs` the
+way the penalty-turn and heat-gate changes already are — it would be the third
+use of that pattern, and it is a stopgap, not the fix.
+
+---
+
+# ⚡ OVERNIGHT QUEUE (prepared 2026-08-05 00:10, for a FRESH INSTANCE)
+
+## READ FIRST — the two things that make this session different
+
+**1. THE BOATS CHEAT AT ROUNDINGS, AND CORRECTNESS OUTRANKS PACE HERE.** Owner,
+explicitly: *"Since they were cheating, once you fix this I expect numbers to
+drop a bit. But cheating is worse than losses in time."* So the standing
+lexicographic gate DOES NOT apply to the rounding fix. Judge it on whether
+roundings are real, and report the pace cost honestly rather than treating it as
+a rejection.
+
+**2. ROUNDING HAS BEEN GOT WRONG SEVERAL TIMES BEFORE.** Owner: *"be careful —
+it's probably worth setting up small tests."* `regatta/eval/test_rounding_string.js`
+is that test and it is **deliberately RED on HEAD**. Do not wire it into
+`npm test` until it passes. Make it pass; do not edit it to agree with the code.
+
+## WHAT THE CHEAT IS — measured, and it is ONE CONSTANT
+
+`ROUND_SWEEP_TOL = 0.75` (script.js ~15297). A rounding completes at 75% of the
+geometric requirement, and **the AI targets that same discounted number** —
+`reqSweep * ROUND_SWEEP_TOL` appears in the bot's own outbound/exit logic at
+three sites (~343-354, ~796). The boats did not find a loophole; they were aimed
+at 75% of a rounding.
+
+`_rounding_truth_probe.js` (committed), 8 seeds:
+
+    bay      360 completed roundings: 34% banked LESS than the full requirement,
+             18% under 80%, 28% NEVER ENTERED THE ZONE, min fraction 0.74
+    arctic    72 completed roundings: 85% under the full requirement,
+             median 0.83, min 0.75 — the typical island rounding is 83% of a real one
+
+Owner has seen it on **bay's windward mark** and **arctic's rounding island (the
+more serious one)** — which matches: arctic is 85%.
+
+**⚠️ It does NOT invalidate this session's A/B results.** The tolerance is
+identical in baseline and experiment, so it inflates absolute rounding counts on
+both sides equally. It invalidates "the fleet rounds N marks", not "change X is
+worth +Y seconds". The owner independently confirms the AI gains are visible in
+play.
+
+## WHAT THE RULE ACTUALLY SAYS (read it, do not paraphrase from memory)
+
+RRS 2025-2028 **Sail the Course**: *a string representing her track, when drawn
+taut, (1) passes each mark on the required side and in the correct order, and
+(2) **TOUCHES each mark designated in the sailing instructions to be a rounding
+mark**.*
+
+- (1) applies to EVERY mark. (2) is what makes a rounding a rounding, and it is
+  the geometric definition: **the taut string must TOUCH the mark** — the track
+  has to bend around it.
+- **There is NO proximity requirement.** Going all the way round at a distance is
+  a legal rounding, merely slow. `test_rounding_string.js` pins this in both
+  directions and the current engine already gets it right — a full rounding at
+  2.5x zone completes. **Do not "fix" this by adding a zone requirement.**
+- There is no tolerance in either sentence.
+
+⇒ The engine's `reqSweep` (the angle the taut string wraps, derived from the
+previous and next marks) appears to be the CORRECT quantity. The bug looks like
+the 0.75 discount alone. **Verify that before changing anything else** — the
+test's 80%-completes / 60%-does-not result is exactly `TOL = 0.75` and nothing
+more.
+
+⚠️ Changing TOL to 1.0 will strand boats unless the AI is re-aimed at the same
+time: it steers to `need = reqSweep * TOL` at three sites. Change both together
+and expect the first bench to look bad.
+
+## THE QUEUE
+
+**A. THE ROUNDING FIX (highest value, owner-flagged, correctness-graded).**
+Make `test_rounding_string.js` pass. Re-aim the AI's exit logic at the same
+moment. Then re-measure with `_rounding_truth_probe.js` — the target is a median
+fraction of ~1.0 with nothing below it. Report the pace cost; do not reject on it.
+
+**B. MARK-ROOM / ROUNDING PRIORITY (owner-reported, rules 18.2-18.4).** Owner:
+*"they don't adhere to the priority as they enter the rounding circle — first in
+gets rights (still subject to tack rules)."* The precise rule is 18.2(a): at the
+moment the FIRST of two boats reaches the zone, if they are overlapped the
+OUTSIDE boat gives the inside boat mark-room; if they are not overlapped, the
+boat that has NOT reached the zone gives the other mark-room — and it continues
+even if the overlap later changes (18.2(a) final sentence). The engine has a
+`zoneSnapshot` and implements 18.1(a)(1) only; **18.1(a)(2), (a)(3) "between a
+boat approaching a mark and one leaving it", (a)(4), 18.1(b), 18.3 Tacking in the
+Zone and 18.4 Gybing in the Zone are all absent.** Also owner: *"they could round
+tighter when they do round correctly."*
+
+**C. THE OBSTRUCTION MODEL — the thing four changes have now stalled on.**
+Every rules-correctness win this session goes bay-positive and arctic-neutral or
+negative (penalty turns, heat gate, `rrspair`, keep-clear). It is not ice being
+harder: **35% of arctic avoidance frames have no rival within 600u at all**, and
+the rules layer has no obstruction model — no *continuing obstruction* (every
+shoreline here is one, which routes to rule 19 and not 18), no *"a boat racing IS
+an obstruction to a boat required to keep clear of her"*, and no rule 20 (room to
+tack at an obstruction) at all. Build this and the arctic half of the last four
+changes should come back. **Then remove the `_floeObjs` scope from keep-clear**
+(script.js, `openWaterKC`) and re-gate.
+
+**D. RULES 22 + 23.2 — built, measured, NOT landed.** Sitting in `treeH`
+(identifiable by the `otherAground` and `otherProtected` markers; note treeH also
+has the UNSCOPED keep-clear beneath it, so lift only those two hunks). Rule 22:
+a boat AGROUND is avoided by everyone. Rule 23.2: no interference with a boat
+taking a penalty, on another leg, or returning — with the exemption doing the
+work, since *"does not apply when the boat is sailing her proper course"* maps
+exactly onto the undeflected candidate, so it constrains DEVIATIONS only. Bay
+9100 +1 med with rubs 1.67→1.52; bay 9200 −2 med with rubs 1.21→1.06; arctic 8
+screen mixed. Needs full gates.
+
+**E. WIDEN THE NO-CONTACT FOUL — LAST, and deliberately so.** Owner: *"if the
+boat with rights NEEDS to adjust (not just chooses to) then it is a penalty"* —
+which is literally the Keep Clear definition part (a). The detector exists and
+fires 3 times per 72 bay boat-races against 2.0 contacts. ⚠️ Do this only after
+A-C, or it will penalise the AI's own timidity rather than real infringement:
+86% of clear-water pairwise encounters were already clearing and the fleet
+deflected anyway. Penalty counts WILL rise — judge on whether the fouls are
+correct.
+
+**F. MORE TESTS, per the owner's instruction.** `test_rounding_string.js` is the
+model: small, deterministic, no full races, written against the rule text. The
+obvious next ones are a ROW test (tack from local wind, leeward from local wind,
+clear-astern with divergent headings, rule 13's port-side case — all four were
+wrong until today) and a mark-room test for B.
+
+## STATE AT HANDOFF
+
+    HEAD              af7ac41 + fd2a905, tree CLEAN, goldens 18/20
+                      (redrock's two deliberately red — leave them)
+    seatrials 100t    198.77 / 194.53, pen 0.31, OCS 13.33%, DNS/DNF 0
+    bay 20-seed       fin med 255, rubs 1.67, pens 0.39, OCS 0.0%
+                      (`bay_bench_kcscoped.json`, seeds 9100-9119)
+    arctic 32-seed    rounders 286, finishers 281, in-time 137, med 422
+                      (`fleet_leg2_combo16.json` + `combo16b.json`)
+    trees             treeA/treeG clean at HEAD, treeB tracked (do not touch),
+                      treeH = the un-landed D candidate, treeL = HEAD, treeQ =
+                      session start 7087af9. Clone more with `cp -Rc treeG treeX`
+                      (APFS, instant). `regatta/eval/rl/*.json` is now gitignored.
+    human reference   arctic med 212.1 best 190.4 (NEW, was 229.1/200.1),
+                      bay 229.1/220.5, seatrials 187.7/184.1 — 51 trajectories
+
+⚠️ Benching resolution, learned the hard way this session: a 20-seed bay bench at
+full density buries a 4s effect (probe mechanism at 2-4 boats, verify at 9); an
+8-seed bay bench INVERTED a contact metric that 20 seeds reversed; and arctic
+in-time finishes disagreed between two 16-seed sets THREE separate times — read
+the 32-seed combination or the paired per-boat median on that venue.
