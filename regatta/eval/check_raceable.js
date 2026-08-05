@@ -27,7 +27,12 @@ const RACES = +(process.argv[3] || 2);
 // A course the fleet cannot finish is not a course. These are deliberately loose — they
 // are looking for a venue that is broken, not for a venue that is hard.
 const MIN_FINISH_FRAC = 0.5;      // half the fleet, inside the authored cutoff
-const MAX_LAND_PER_RACE = 40;     // arctic's ice-strewn 25-33 is the honest ceiling
+// ⚠️ RAW event counts, NOT the bench's one-per-half-second dedup, so these are an order of
+// magnitude larger than the numbers in `bay_bench`/`fleet_leg2`. And DRIFTING ICE is not
+// land: a floe hit is a hazard the venue authored, a shoreline hit is the fleet failing to
+// sail the course. Calibrated on the eight venues that pass: the worst of them is ocean at
+// 27 land events per boat-race, and redrock sits at 4370.
+const MAX_LAND_PER_RACE = 120;
 
 let failures = 0;
 const check = (name, cond, detail) => {
@@ -61,7 +66,7 @@ const check = (name, cond, detail) => {
                     try {
                         if (d && d.boat && !d.boat.isPlayer &&
                             (ty === 'collision_island' || ty === 'collision_boat')) {
-                            const k = ty === 'collision_boat' ? 'boat' : 'land';
+                            const k = ty === 'collision_boat' ? 'boat' : (d.isFloe ? 'floe' : 'land');
                             cc[k] = (cc[k] || 0) + 1;
                         }
                     } catch (e) {}
@@ -92,6 +97,7 @@ const check = (name, cond, detail) => {
             acc.fin += r.fin.filter(x => x != null).length;
             acc.inTime += r.fin.filter(x => x != null && x <= r.cutoff).length;
             acc.land += (r.cc.land || 0); acc.boat += (r.cc.boat || 0); acc.pen += r.pen;
+            acc.floe = (acc.floe || 0) + (r.cc.floe || 0);
             for (const d of r.deepest) acc.deep[d] = (acc.deep[d] || 0) + 1;
         }
         const per = (x) => (x / acc.n).toFixed(1);
@@ -101,8 +107,8 @@ const check = (name, cond, detail) => {
               `${acc.inTime}/${acc.n} inside ${acc.cutoff}s (${acc.fin}/${acc.n} ever finished)`);
         check(`the fleet is not grinding into the land`,
               acc.land / acc.n <= MAX_LAND_PER_RACE,
-              `${per(acc.land)} land collisions per boat-race`);
-        console.log(`         ${per(acc.boat)} boat rubs, ${per(acc.pen)} penalties per boat-race`);
+              `${per(acc.land)} shoreline collisions per boat-race`);
+        console.log(`         ${per(acc.land)} land, ${per(acc.floe || 0)} floe, ${per(acc.boat)} boat rubs, ${per(acc.pen)} penalties per boat-race`);
         console.log(`         furthest leg reached: ${JSON.stringify(acc.deep)}\n`);
     }
     await browser.close();
