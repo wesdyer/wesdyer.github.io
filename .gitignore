@@ -49,3 +49,9 @@ regatta/eval/rl/treeO/
 regatta/eval/rl/treeP/
 regatta/eval/rl/treeQ/
 regatta/eval/rl/treeR/
+
+# Bench and probe OUTPUT under regatta/eval/rl — scratch by default. Files already
+# tracked stay tracked (git does not ignore what it is already following), so the
+# committed baselines and attributions are unaffected; this only stops the next
+# session's hundred bench JSONs from showing up as untracked noise.
+regatta/eval/rl/*.json
