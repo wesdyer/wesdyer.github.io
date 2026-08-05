@@ -248,19 +248,40 @@ function pathBetween(grid, from, to) {
 // A reachable mark is not a roundable mark. This samples the whole way round at hull
 // width — the check that would have caught the granite island sitting 43u from the
 // coast: perfectly reachable, and impossible to get round.
+// ⚠️ THE RADIUS IS SEARCHED, NOT ASSUMED. `mark.radius` is the mark's NOMINAL size — the
+// buoy — and says nothing about what it is planted on. Glacier Sound's mark is an island
+// of radius 405; Bluewater's is a seamount. A single circle at `radius + clearance` then
+// sits INSIDE the land and reports zero degrees of water, which reads as "this mark cannot
+// be rounded" when the truth is "you asked at the wrong radius". Same defect, same fix, as
+// `CoursePath._roundR` in the planner: step outward and take the tightest circle that is
+// all water, and if none is, report the widest opening found and the radius it was at.
 function roundingArc(grid, mark) {
-    const rIn = Math.min(mark.zone * 0.92, Math.max(mark.radius + CLEARANCE + 8, mark.radius * 1.12));
     const N = 72;                                        // 5 degree steps
-    const ok = [];
-    for (let k = 0; k < N; k++) {
-        const a = (k / N) * Math.PI * 2;
-        const [i, j] = grid.cell(mark.x + Math.cos(a) * rIn, mark.y + Math.sin(a) * rIn);
-        ok.push(grid.at(i, j) ? 1 : 0);
+    const rMin = Math.max(mark.radius + CLEARANCE + 8, mark.radius * 1.12);
+    const rMax = Math.max(rMin, mark.zone * 0.92);
+    const scan = (R) => {
+        const ok = [];
+        for (let k = 0; k < N; k++) {
+            const a = (k / N) * Math.PI * 2;
+            const [i, j] = grid.cell(mark.x + Math.cos(a) * R, mark.y + Math.sin(a) * R);
+            ok.push(grid.at(i, j) ? 1 : 0);
+        }
+        let best = 0, run = 0;
+        for (let k = 0; k < N * 2; k++) { run = ok[k % N] ? run + 1 : 0; if (run > best) best = run; }
+        return { arcDeg: Math.round(Math.min(best, N) / N * 360), radius: Math.round(R),
+                 openFrac: ok.reduce((a, b) => a + b, 0) / N };
+    };
+    let bestSoFar = null;
+    // 24 rungs is one every ~35 units on a 851-unit zone: fine enough that a channel is
+    // not stepped over, cheap enough to run per mark at authoring time.
+    const rungs = 24;
+    for (let s = 0; s <= rungs; s++) {
+        const R = rMin + (rMax - rMin) * (s / rungs);
+        const r = scan(R);
+        if (r.openFrac === 1) return r;                  // all water: done, and tightest
+        if (!bestSoFar || r.arcDeg > bestSoFar.arcDeg) bestSoFar = r;
     }
-    let best = 0, run = 0;
-    for (let k = 0; k < N * 2; k++) { run = ok[k % N] ? run + 1 : 0; if (run > best) best = run; }
-    return { arcDeg: Math.round(Math.min(best, N) / N * 360), radius: Math.round(rIn),
-             openFrac: ok.reduce((a, b) => a + b, 0) / N };
+    return bestSoFar;
 }
 
 // ── The ideal path through a route ──────────────────────────────────────────
@@ -278,35 +299,63 @@ function routeWaypoints(marks, route, grid) {
             const arc = roundingArc(grid, m);
             const r = arc.radius;
             const sgn = (m.side === 'port') ? -1 : 1;
-            // Enter on a bearing whose whole sweep is open, then go round the correct
-            // way in small steps. 200 degrees, so the engine's 160 is comfortably met
-            // even if entry and exit are a little wide.
-            let bestStart = 0, bestRun = -1;
-            const N = 72;
-            for (let s0 = 0; s0 < N; s0++) {
-                let run = 0;
-                while (run < N) {
-                    const a = ((s0 + run * sgn + N * 4) % N) / N * Math.PI * 2;
-                    const [i, j] = grid.cell(m.x + Math.cos(a) * r, m.y + Math.sin(a) * r);
-                    if (!grid.at(i, j)) break;
-                    run++;
-                }
-                if (run > bestRun) { bestRun = run; bestStart = s0; }
-            }
-            // Approach from OUTSIDE the zone, radially, on the bearing the arc starts
-            // at. Sweep accumulates from the moment the zone is entered, so a path that
-            // curls the wrong way round the mark on the way in banks negative credit
-            // the rounding then has to undo. That is a real requirement of the
-            // mechanic, not a quirk — so the ideal path has to respect it.
-            const a0 = ((bestStart + N * 4) % N) / N * Math.PI * 2;
-            const rOut = m.zone * 1.35;
-            push(m.x + Math.cos(a0) * rOut, m.y + Math.sin(a0) * rOut, `approach${li}`);
+            // ⚠️ TANGENT IN, REQUIRED ARC, TANGENT OUT — the shape the engine's own
+            // requirement is derived from (`CoursePath.requiredSweep` measures exactly
+            // this arc), so checker and engine agree by construction instead of by two
+            // similar-looking formulas.
+            //
+            // What was here before did two things wrong and they compounded:
+            //
+            //   1. it swept a FLAT 220 degrees (`min(bestRun, 44)` at 5 a step), which
+            //      is less than four of the eleven authored rounding legs require;
+            //   2. it entered RADIALLY on whichever bearing had the most open water,
+            //      ignoring where the boat was coming from. Sweep accumulates for the
+            //      whole leg, so an approach that curls the wrong way round the mark
+            //      banks NEGATIVE winding the rounding then has to undo. Measured on
+            //      Lighthouse Cove leg 3: -84 degrees banked on the way in against a
+            //      183-degree requirement, so 220 degrees of arc delivered 136 and the
+            //      leg never registered. On Bluewater the net ranged -113..+8.
+            //
+            // The tangent entry cannot do that: approaching along the tangent line winds
+            // the SAME way as the rounding, by construction, so the whole leg's winding
+            // is the arc plus two positive contributions.
+            const prev = wps.length ? wps[wps.length - 1] : null;
+            const P = prev || CoursePath.anchor(route[li - 1], marks) || { x: m.x - 1000, y: m.y };
+            const Q = CoursePath.anchor(route[li + 1], marks) || P;
+            const tang = (p, entering) => {
+                const dx = p.x - m.x, dy = p.y - m.y;
+                const d = Math.hypot(dx, dy), base = Math.atan2(dy, dx);
+                if (!(d > r + 1)) return base;
+                const beta = Math.acos(Math.max(-1, Math.min(1, r / d)));
+                return base + (entering ? sgn * beta : -sgn * beta);
+            };
+            const a0 = tang(P, true), a1 = tang(Q, false);
+            let sweep = (a1 - a0) * sgn;
+            while (sweep < 0) sweep += Math.PI * 2;
+            while (sweep > Math.PI * 2) sweep -= Math.PI * 2;
+            // A tangent arc of nothing is a pass-by so close to collinear that the two
+            // legs lie on one line. The engine treats that as a full circuit (the
+            // `sweep < 0.2` guard in `requiredSweep`), so the ideal path does too — the
+            // point of this function is to sail what the engine asks for.
+            if (sweep < 0.2) sweep = Math.PI * 2;
 
-            const steps = Math.min(bestRun, 44);           // 44 * 5deg = 220 degrees
+            // Run in far enough outside the zone that the leg before this one has
+            // registered its departure before this one starts.
+            const lead = Math.max(m.zone * 1.35, r * 1.6);
+            const T = (a) => [m.x + Math.cos(a) * r, m.y + Math.sin(a) * r];
+            // Travel direction along the circle at bearing `a`: d/da of (cos a, sin a),
+            // taken in the rounding's own sense.
+            const dir = (a) => [-Math.sin(a) * sgn, Math.cos(a) * sgn];
+            const [t0x, t0y] = T(a0), [d0x, d0y] = dir(a0);
+            push(t0x - d0x * lead, t0y - d0y * lead, `approach${li}`);
+
+            const steps = Math.max(2, Math.ceil(sweep / (Math.PI / 36)));   // <= 5 deg
             for (let k = 0; k <= steps; k++) {
-                const a = ((bestStart + k * sgn + N * 4) % N) / N * Math.PI * 2;
+                const a = a0 + sgn * sweep * (k / steps);
                 push(m.x + Math.cos(a) * r, m.y + Math.sin(a) * r, `round${li}`);
             }
+            const [t1x, t1y] = T(a1), [d1x, d1y] = dir(a1);
+            push(t1x + d1x * lead, t1y + d1y * lead, `exit${li}`);
             continue;
         }
         if (!e.marks) continue;
