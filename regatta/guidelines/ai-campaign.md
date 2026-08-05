@@ -3281,3 +3281,27 @@ there arguably did need to act. Read 33-44% as a floor, not the number.
 Pace: bay 249 med, paired 0 med / -0.9 mean, penalties 0.35 -> 0.33. Arctic 16-seed
 0 med / -6.6 mean, rounders 144 -> 141. Judged on correctness per the owner's standing
 instruction for this item; the disjoint arctic set is running.
+
+## D. RULE 22 — ⛔ CLOSED AT FOUR IMPLEMENTATIONS, and the reason is the PREDICATE
+
+Every reading of "a boat shall avoid a boat that is aground" was measured, and the
+more faithfully it was implemented the WORSE it got:
+
+    cost term only, bay (old master)             0 med / -0.2 mean
+    cost term only, arctic (old master)         +5 med / -3.1 mean
+    cost term only, arctic (final master)       -2 med / -5.3 mean
+    OUT of the ROW evaluation only, arctic       0 med / -11.2 mean, in-time 45->38
+    BOTH halves (out of ROW + avoided), arctic -11 med / -22.4 mean, in-time 45->37
+
+**The rule is right; the predicate is wrong.** `iceEscapeTimer > 0 && speed < 1.0` is
+not a boat aground in the RRS sense — it is a boat that touched ice half a second ago
+and is executing a two-second escape, and on Glacier Sound that happens 583-713 times
+per boat-race. Treating a boat who will be moving again in two seconds as a fixed
+object, with a 130-unit exclusion zone, closes gaps the fleet needs; ALSO removing her
+from the right-of-way evaluation (which the Section D preamble does require) deletes
+the rules that were coordinating the pair, and the two together are the worst of all.
+
+⇒ **Do not retry rule 22 until the engine has a real aground state** — grounded and
+not moving for several seconds, distinct from contact-recovery. Without one there is
+nothing for the rule to attach to. The Section D preamble reading is CORRECT and is
+not what failed; the classifier under it is.
