@@ -4084,3 +4084,34 @@ threshold is already the right classifier. H1 asks for the WHOLE circuit at a ha
 instead of the halfway point — a strictly stronger demand — and it is only worth its 8.5 s
 if boats that cross halfway do not in fact finish the turn. That is what the corrected
 realised-track probe is for.
+
+
+## ✅ THE CORRECTED HAIRPIN NUMBERS — the cheat is NOT alive there (11:50)
+
+With the probe armed properly (`_string_realised_probe.js`), bay, 8 races, 197 roundings
+whose record closed:
+
+       leg  kind       n   never wrapped    realised winding p10 / med / p90 (deg)
+         1  ordinary  72     5  (7%)            257 /  264 /  270
+         3  HAIRPIN   56     2  (4%)            355 /  357 /  358
+         4  HAIRPIN   17     2 (12%)             -2 /  358 /  360
+         5  ordinary  52     3  (6%)            247 /  250 /  251
+
+       ORDINARY  124 roundings,  8 never wrapped   (6.5%)
+       HAIRPIN    73 roundings,  4 never wrapped   (5.5%)
+
+**The boats deliver 357 degrees at a mark the threshold only asks 183 of.** They go round.
+The threshold is the halfway boundary and they sail past it — which is exactly what the
+two-class argument predicts and what my artifact had hidden.
+
+⇒ **`treeH1` is REJECTED.** Bay pays **8.5 s of paired median and 9.0 of mean** (180/180
+finishers, pens 0.36 -> 0.32) to take a class that is already 94.5% correct to about 100%,
+i.e. bay's overall 6.1% -> 4.1%. Against that, the winding test landed this morning bought
+6% -> 1% for ZERO median. Wrong end of the curve, and it is not close.
+
+⚠️ The realised-track criterion is STRICTER than the engine's own predicted one: 6.5% of
+ordinary bay roundings fail it against the 1% the in-engine test reports. The difference is
+boats whose prediction was true at the moment of completion and who then turned back — the
+engine cannot wait for the end of the leg to decide the leg is over, and that residue is
+the honest cost of an online test. It is the right next target for correctness work, and it
+wants a mechanism other than raising the threshold.
