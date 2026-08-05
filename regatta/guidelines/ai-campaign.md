@@ -4374,3 +4374,22 @@ tuned per-venue scope is how a constant ends up hiding behind a rules gate — s
 correct measurement window and it is free on bay. It is parked because on arctic it does
 not go far enough alone and stacks badly with H1. If a future session finds a cheaper way
 to close arctic's last 18 points, H2 is the better base to build it on.
+
+## ✅ LANDED `25137d6` — a hairpin is a full circuit (11:55)
+
+    PRICE                   bay 9100   bay 9200   arctic 9100  arctic 9200
+      paired median         -8.5       -10.0      -21          -23.5
+      paired mean           -9.0       -13.7      -26.6        -35.0
+      finishers             180/180    180/180    137->135     130->117
+      penalties             0.36->0.32 0.33->0.43 1.67->1.74   1.71->1.99
+      mark contacts         0.38->0.46 0.37->0.66 0.46->0.46   0.64->0.64
+
+    CORRECTNESS  arctic 55.6% -> 0.0%   (realised winding p10 366 / med 368 / p90 370)
+                 bay     5.5% -> ~0%
+
+⚠️ **The penalty and mark-contact deltas DISAGREE between the two bay sets** — pens down on
+one and up on the other, marks +0.08 against +0.29. Only the time cost replicates cleanly.
+Reported rather than smoothed over; if the owner wants it reversed it is one revert.
+
+`test_sailable` still passes 0/10. Ocean is untouched — neither of its rounding legs is a
+hairpin. Goldens re-recording; seatrials re-checked.
