@@ -4062,3 +4062,25 @@ predicate is a subset of 18.3's — close-hauled, at an obstruction, with a boat
 
 ⇒ **These three go on the "correct but inert" list, not the queue.** If a future venue
 authors a windward mark with a crowded zone the count changes and this probe re-runs.
+
+## ⚡ `requiredSweep` IS THE TWO-CLASS BOUNDARY, BY CONSTRUCTION — not a sloppy proxy
+
+Laying the three columns side by side (`_sweep_rule_check.js`) makes the relationship exact
+rather than approximate:
+
+    leg          bay1 bay2 bay3 bay4 bay5 ocn1 ocn2  rr1  rr2  rr4 arc1
+    requiredSweep  92   83  183  183   74   89  107   46  171  139  195
+    string rule   269  260  360  360  251  248  286  217  347  315  360
+    string - 180   89   80  180  180   71   68  106   37  167  135  180
+
+The tangent arc is `string - beta_P - beta_Q`, and both tangent half-angles go to 90 degrees
+as the anchors get far away — so **the tangent formula IS `string - pi`, which is exactly
+the boundary of the two-class decision the string rule poses.** The two outliers (ocean
+leg 1 at +21, arctic at +15) are the two marks with big bodies, where the half-angles are
+visibly less than 90.
+
+That is worth stating plainly because it changes what `treeH1` is. It is NOT a bug fix: the
+threshold is already the right classifier. H1 asks for the WHOLE circuit at a hairpin
+instead of the halfway point — a strictly stronger demand — and it is only worth its 8.5 s
+if boats that cross halfway do not in fact finish the turn. That is what the corrected
+realised-track probe is for.
