@@ -4115,3 +4115,57 @@ boats whose prediction was true at the moment of completion and who then turned 
 engine cannot wait for the end of the leg to decide the leg is over, and that residue is
 the honest cost of an online test. It is the right next target for correctness work, and it
 wants a mechanism other than raising the threshold.
+
+---
+
+# ⚡ WHERE THIS SESSION LEFT IT (2026-08-05 afternoon)
+
+## LANDED
+
+    805889c  the venue gate — test_sailable 7 failures -> 0 on all ten venues
+    35d6e25  the winding test — roundings whose string never wrapped 6% -> 1%
+    b50cf58  goldens re-recorded, PASS 20/20, plus four sea probes
+    dd5a878  check_raceable.js — the gate test_sailable is not
+
+## REJECTED, EACH WITH A MECHANISM
+
+    treeS1  crab for the swell's steady set     +2.5 med on one ocean set, +0.5 on the
+                                                disjoint one; the 10 Hz nav loop already
+                                                closes a 3-4 degree feed-forward error
+    treeS2  fine downwind VMG in a sea          +2 med / +4.2 mean on one set, 0 / -5.4 on
+                                                the disjoint one; the extra gybes cost more
+                                                than the angle gains  => SEVENTH rejection
+                                                of the downwind-angle family, third venue
+    treeH1  a full circuit at a hairpin         bay -8.5 med to take a 94.5%-correct class
+                                                to 100%; wrong end of the curve
+    18.3 / 18.4                                 predicate measured FIRST: 1 event in 54
+                                                boat-races, and 0.7 s per boat-race
+
+## THE THREE THINGS A FRESH INSTANCE SHOULD KNOW
+
+**1. REDROCK IS NOT RACEABLE AND IT IS THE OWNER'S CALL.** 1 finisher in 72 boat-races,
+237 land collisions per boat-race, 4015 navigable cells against bay's 36174. `test_sailable`
+passes it because an ideal path CAN sail it. `check_raceable.js redrock` fails it 0/18.
+Do not tune the AI around this; the course wants wider water or a different fleet.
+
+**2. THE SWELL PRIZE IS SMALL, AND THAT IS A MEASUREMENT, NOT A SHRUG.** The sea moves the
+best upwind angle 0.3 degrees and the best downwind angle 1.6. Binned by the angle actually
+sailed, the fleet is at or above the held-angle ceiling in ten of thirteen downwind bins and
+at it in the 45.6% of upwind time it spends at its own optimum. ⚠️ The verdict is about
+BLUEWATER'S COURSE as much as the AI: its legs happen to point at 159.5 degrees against a
+best-in-sea 165.5. A course whose run does not would re-open every question here.
+
+**3. THE NEXT CORRECTNESS TARGET IS THE ONLINE-vs-REALISED GAP, NOT THE THRESHOLD.**
+`requiredSweep` is exactly `string - pi`, the two-class boundary, and is right. But the
+engine must decide the leg is over while the boat is still sailing it, and 6.5% of ordinary
+bay roundings that pass the online test fail the REALISED one. Raising the threshold is the
+wrong tool (that is what treeH1 was). It wants a mechanism that defers or revisits.
+
+## OPEN, UNTOUCHED
+
+- **11 editor-test failures** came in with the merge (byte-identical on the pre-session
+  HEAD) — they look like `test_editor.js` asserting against the OLD redrock document.
+- The arctic wander (ratio 3.89) — still the biggest known pace deficit, still unexplained.
+- Rule 20 (room to tack at an obstruction): needs a hail mechanism, predicate not counted.
+- Phase 5 (pressure): ocean authors dirVar 0.21 rad and speedVar 4 kt over a 120 s period,
+  so there IS something to find there. Not probed.
