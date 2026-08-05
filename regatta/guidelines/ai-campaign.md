@@ -3684,9 +3684,13 @@ in the previous queue section, which stands.
                    ⚠️ ALL MEASURED PRE-MERGE — verify against the merge before use
     goldens        18/20 pre-merge (redrock's two). The merge rewrote redrock and ocean,
                    so those four traces WILL differ; re-record and splice redrock.
-    in flight      `treeW2b` (winding test on the corrected base) — bay came back
-                   248 med, 180/180, paired 0 med / -0.2 mean; arctic 9100/9200 and the
-                   12-seed string-truth run were still going. Logs in the session
+    in flight      `treeW2b` (winding test on the corrected base) — bay 248 med,
+                   180/180, paired 0 med / -0.2 mean; **12-seed string truth came back
+                   1/108 = 1%, against master's 6%** — the best correctness measured on
+                   this venue and it is bay-neutral. Only the arctic 9100/9200 pace pair
+                   is missing, and that is the whole decision: the earlier engine-only
+                   version stranded 12 boats in 144, the coupled one recovered 10 of
+                   them, so watch FINISHERS and ROUNDERS, not just the paired median. Logs in the session
                    scratchpad as w2bA/w2bB/st_w2b; re-run rather than trust them if the
                    merge moved bay/arctic at all.
     new probes     `_sailable_stall_probe.js` (why a leg stalls on the ideal path),
