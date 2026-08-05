@@ -2678,3 +2678,48 @@ under 18.1(a)(4) that means rule 19 applies and rule 18 does not.
   boats; a right-of-way boat that could have avoided contact once it was clear
   the other was not keeping clear also breaks it. The engine never penalises a
   ROW boat.
+
+## `rrspair` VERDICT — bay and Clubhouse yes, arctic no; the venue split repeats
+
+The disjoint arctic set settled it, and it settled it against landing as-is:
+
+    ARCTIC, 32 SEEDS COMBINED        HEAD          rrspair
+      rounders                        285            286
+      finishers                       280            276
+      IN-TIME                         130            119
+      median / mean               439 / 452.6    444 / 455.7
+
+    per set (they disagree, again):
+      set1 9100-9115   med 440->426  in-time 65->66  fins 141->137  paired +7 / +8.3
+      set2 9200-9215   med 435->454  in-time 65->53  fins 139->139  paired +1 / -13.7
+
+⚠️ The finisher drop from set 1 did NOT replicate (139→139 on set 2), so that
+part was noise — but in-time is down 11 across 32 seeds and the median is up.
+**Arctic rejects it.**
+
+    BAY (2 disjoint 20-seed sets)   pens -16% / -20%, OCS 5.6->0.0% and 8.9->2.2%,
+                                    rubs -19%, pace +0.6 and +5.3 paired
+    CLUBHOUSE 100t                  202.83/199.79 -> 199.87/195.59, pens FLAT 0.31,
+                                    OCS 16.89% -> 12.67%
+
+**This is the same venue split as the penalty-turn change earlier today, and
+probably the same cause: the rules-correct behaviour is calibrated for boat-on-
+boat in open water, and arctic is a floe field.** The audit above says exactly
+what is missing for the ice case — a boat racing is an OBSTRUCTION to the boat
+that must keep clear of her; every shoreline is a CONTINUING obstruction, which
+routes to rule 19 not 18; rule 20 (room to tack at an obstruction) does not
+exist; and rule 22 (avoid a boat AGROUND) does not exist while arctic bots ground
+583-713 times a boat-race.
+
+**So the next step is not to tune `KEEP` — it is to finish the rules.** In order:
+1. `keep clear` definition part (b): when OVERLAPPED, the ROW boat must be able
+   to change course in BOTH directions without immediately making contact. That
+   is the correct quantity for the give-way planner's clearance, and it replaces
+   the 110u CPA constant with something the rule actually defines.
+2. Rule 23.2 (do not interfere with a boat taking a penalty or on another leg)
+   and rule 22 (avoid a boat aground) — both cheap, both currently absent, and
+   both target measured contact classes.
+3. Rule 19 at ICE (a floe is an obstruction; a shoreline is a continuing one),
+   which is the arctic-shaped hole this verdict just exposed.
+4. Then re-gate `rrspair`. If arctic still splits, scope it the way the
+   penalty-turn change is scoped, on `_floeObjs`.
