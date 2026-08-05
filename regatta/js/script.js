@@ -596,7 +596,10 @@ class BotController {
             // Leaky accumulator: deviation oscillates tick-to-tick as the cost
             // function re-picks candidates, so charge while forced and bleed
             // (rather than reset) between — a hard reset never reached HOLD.
-            if (eligible && this.lastAvoidDeviation > DEV) {
+            // ...and she must actually have NEEDED to act. See applyAvoidance for the
+            // measurement that says why this guard exists.
+            const needed = this.properCourseCPA != null && this.properCourseCPA < FOUL_NEED_GAP;
+            if (eligible && needed && this.lastAvoidDeviation > DEV) {
                 this.forcedAvoidTimer = Math.min((this.forcedAvoidTimer || 0) + 0.1, 1.5);
                 if (this.forcedAvoidTimer >= HOLD) {
                     const info = this.threatRowRes ? { rule: this.threatRowRes.rule, reason: this.threatRowRes.reason, kind: 'no_contact' } : { kind: 'no_contact' };
@@ -2557,6 +2560,41 @@ class BotController {
                     }
                 }
             }
+        }
+
+        // KEEP CLEAR (a) — "a boat keeps clear of a right-of-way boat if the right-of-way
+        // boat can sail her course with NO NEED to take avoiding action." NEED is the
+        // word doing the work, and the no-contact foul detector had no way to test it.
+        // It read `lastAvoidDeviation`, which is this boat's TOTAL deflection from every
+        // cause at once — a floe, a mark, a third boat, the arena wall — so a stand-on
+        // boat dodging ice was recorded as having been FORCED by her give-way rival, and
+        // the rival was penalised for it.
+        //
+        // Measured, `_foul_truth_probe` over 12 bay races: every single no-contact foul
+        // the build fired was against an encounter that would have passed 323-861 units
+        // clear had she held her course — 0 of 4 correct, under both reconstructions of
+        // the deflection's sign. The detector was not too narrow. It was aimed at the
+        // wrong quantity.
+        //
+        // So compute the quantity itself: the closest the two of them would come if she
+        // sails her proper course and the other boat holds hers. Below a hull's width
+        // she has to act and the give-way boat has broken her rule; above it, whatever
+        // this boat chose to do, she did not need to.
+        this.properCourseCPA = null;
+        if (this.avoidanceRole === 'STAND_ON' && this.threatBoat && !this.threatBoat.raceState.finished) {
+            const o = this.threatBoat;
+            const ovxP = (o.velocity && o.velocity.x) ? o.velocity.x * 60 : Math.sin(o.heading) * o.speed * 60;
+            const ovyP = (o.velocity && o.velocity.y) ? o.velocity.y * 60 : -Math.cos(o.heading) * o.speed * 60;
+            const mvxP = Math.sin(desiredHeading) * speed, mvyP = -Math.cos(desiredHeading) * speed;
+            let bestP = Infinity;
+            const tEndP = lookaheadFrames / 60;
+            for (let t = 0; t <= tEndP; t += tEndP / 12) {
+                const dxP = (this.boat.x + mvxP * t) - (o.x + ovxP * t);
+                const dyP = (this.boat.y + mvyP * t) - (o.y + ovyP * t);
+                const dP = Math.hypot(dxP, dyP);
+                if (dP < bestP) bestP = dP;
+            }
+            this.properCourseCPA = bestP;
         }
 
         for (const offset of candidates) {
@@ -15427,6 +15465,13 @@ function repositionBoats() {
         if (boat.raceState) boat.raceState.lastPos = { x: boat.x, y: boat.y };
     }
 }
+
+// HOW CLOSE COUNTS AS "NEEDING TO TAKE AVOIDING ACTION". The hulls are 55 long and 30
+// wide, so two boats whose centres pass inside 60 units are in contact or within a few
+// feet of it, and a right-of-way boat has to do something about it. Above that she may
+// still choose to bear away — sailors do — but the Keep Clear definition asks whether
+// she NEEDED to, and she did not.
+const FOUL_NEED_GAP = 60;
 
 // Boat hull half-width for coarse collision against concave mask coastlines.
 // How far out a rounding still counts, as a multiple of the mark's zone. The zone is
