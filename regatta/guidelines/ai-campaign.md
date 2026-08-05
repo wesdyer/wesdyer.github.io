@@ -4330,3 +4330,11 @@ it charges 8.5 s against H2's 1.0 — and bay barely has the defect.
 
 That reframes the choice. It is not "which mechanism" — it is whether the last 18 points of
 arctic correctness are worth 7.5 s of bay, since H2 gets the first 38 points for nothing.
+
+### H3 (THE PAIR) ON ARCTIC CORRECTNESS: 2.8%
+
+    arctic correctness   HEAD 55.6%  ->  H1 0.0%  ->  H2 18.1%  ->  H3 2.8%
+
+H3's 2 of 72 against H1's 0 of 72 is inside sampling noise. **Both fix arctic; H2 alone
+does not.** So the pair adds H2's cheaper, more principled measurement window without
+giving up H1's correctness — pace on both venues in flight.
