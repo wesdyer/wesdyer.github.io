@@ -374,9 +374,14 @@ const CoursePath = {
         // Measured after: arctic 55.6% -> 0.0%, realised winding p10 366 / med 368 / p90
         // 370 — a single class where there were two.
         //
-        // The two degenerate geometries are told apart by WHERE THE ANCHORS ARE, not by
-        // the arithmetic's residue: co-directional is a hairpin and needs a circuit,
-        // opposite is a pass-by and needs half a turn (the guard above).
+        // The two degenerate geometries are told apart by WHERE THE ANCHORS ARE rather
+        // than by the arithmetic's residue: CO-DIRECTIONAL anchors are a hairpin, tested
+        // here. OPPOSITE anchors are a collinear PASS-BY, which is what the `sweep < 0.2`
+        // guard above actually catches — and ⚠️ that guard answers a full circuit where a
+        // pass-by only needs half a turn. It is wrong and it is inert: no leg of any
+        // authored venue is a pass-by (`_sweep_rule_check.js` prints the subtend for all
+        // of them, and the nearest is 12.6 degrees from co-directional). Left alone rather
+        // than "fixed" untested.
         const bP = Math.atan2(from.y - e.mark.y, from.x - e.mark.x);
         const bQ = Math.atan2(to.y - e.mark.y, to.x - e.mark.x);
         let sub = bQ - bP;
