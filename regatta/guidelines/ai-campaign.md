@@ -3914,3 +3914,50 @@ that a racing boat is never held at 60 for long.
 ⇒ **There is no angle-choice prize upwind either.** The 11.7% the sea costs upwind is the
 pinch mechanic working as designed, and the only lever against it is to sail less upwind,
 which the course decides.
+
+### ⛔ `treeS2` REJECTED — the fine downwind VMG angle, scoped to a running sea (11:20)
+
+The polar table's 30-degree hole means the optimiser can only answer 150 or 180 downwind,
+and above 16 kt it answers 180. `getFineOptimalVMGAngle` resolves the same objective on a
+1-degree grid through `getTargetSpeed`, which interpolates — so it returns the table's real
+peak (165) instead of the nearest rung. Scoped to `Swell.active()` because the unscoped
+version is one of the six closed bay rejections. **Bay 20-seed bench BYTE-IDENTICAL.**
+
+    ocean 9300   paired +2 med / +4.2 mean, med 225.5->218
+    ocean 9400   paired  0 med / -5.4 mean, pens 0.41->0.51, rubs 1.71->2.41,
+       (DISJOINT)         marks 0.36->0.65
+
+**MECHANISM, measured directly** (`_fetchgate_probe.js`, 11772 downwind-branch samples):
+
+    base:  FETCHING straight at the mark 100.0%   GYBE-SAILING 0.0%
+           optimum angle used 180 deg at every single sample
+           mean angle to the target 159.5 deg
+
+So on Bluewater the boats never VMG-sail downwind at all — and the course points them at
+159.5 degrees, which is 6 degrees off the sea's own best angle of 165.5. **The geometry was
+already delivering the right angle.** S2 makes the gate fail whenever the target is deeper
+than 165, the boats gybe instead of fetching, and the extra manoeuvres and traffic cost
+more than the angle gains: rubs +41%, mark contacts +80%.
+
+⇒ **The downwind-angle family is now closed at SEVEN rejections across THREE venues**, and
+the mechanism is the same one bay found: the geometrically-correct deeper line gains on its
+own leg and loses more downstream. It is not a flat-water artifact.
+
+### ⇒ THE ANSWER TO "HOW BIG IS THE SWELL PRIZE": SMALL, AND HERE IS WHY
+
+    the sea moves the best upwind angle      0.3 deg   -> nothing to collect
+    the sea moves the best downwind angle    1.6 deg   -> nothing to collect
+    fleet vs the held-angle ceiling, binned  at or above it in 10 of 13 downwind bins,
+                                             and at it in the 45.6% of upwind time it
+                                             spends at its own optimum
+    downwind time on a face                  77% (the held-angle ceiling is 87%)
+    what the sea is worth to the fleet       +5 s median on a 225 s race
+
+The AI cannot read the swell, and on this course it does not need to: the two things it
+could do about it are unavailable (the optimum barely moves) or already achieved by the
+ordinary navigation loop. **Both candidates built from the measurement were rejected on
+their disjoint sets, and both had a mechanism, not a shrug.**
+
+⚠️ What would change this verdict is a DIFFERENT COURSE — one whose downwind leg does not
+happen to point at 159 degrees. Bluewater's four legs are what make the angle question
+moot; the finding is about this course as much as about this AI.
