@@ -3367,3 +3367,74 @@ the boundary.
 
 ⚠️ **Six seeds is not enough for this statistic** — the same trap as arctic in-time
 finishes. Read it at twelve or more.
+
+---
+
+# ⚡ QUEUE FOR THE NEXT SESSION (prepared 2026-08-05 04:0x)
+
+## READ FIRST
+
+1. **The rounding cheat is FIXED and the arctic price is real.** Do not "recover" it by
+   loosening `ROUND_SWEEP_TOL`, `ROUND_GIVEBACK` or the completion radius — those are
+   the cheat, in three pieces. Recover it by making the fleet SAIL the rounding better.
+2. **`_string_truth_probe.js` is the correctness instrument now**, not the swept-angle
+   fraction. Read it at 12+ seeds. The swept-angle proxy is wrong in both directions.
+3. **A change that passed its gate before 2026-08-05 is not thereby passed now.** Rules
+   22/23.2 both flipped sign once roundings became honest. Re-gate before believing.
+
+## THE QUEUE
+
+**A. THE ARCTIC WANDER — the biggest number on the board.** `_round_cost_probe.js`:
+time in the ring 50s (HEAD) -> 117s (now), distance 4892 -> 8448u, **wander ratio 2.37
+-> 3.89**. Sweep only went 1.73 -> 2.70 rad, so most of the extra distance is NOT arc,
+it is wandering. That is where the ~50s a boat is. ⛔ It is NOT the orbit radius
+(`_orbit_radius_probe`: the AI orbits at 0.85z=723 against the planner's own
+`_roundR`=713, and NO radius round that island is clean — 49-71% water at every radius
+from 0.6z to 1.4z; it is drifting ice). Candidates not yet tried: the orbit LEAD ANGLE
+(0.85 rad, last A/B'd in the old world where ring time was a third of what it is now);
+an orbit target that scans for a clear RADIUS the way the entrance and exit hunts scan
+for a clear SECTOR; and giving the sweep phase the same time-cost routing the transit
+gets.
+
+**B. RULE 18's REMAINING HOLES, with tests.** 18.1(a)(2), **18.1(a)(3) "between a boat
+approaching a mark and one leaving it"** (constant on these multi-leg courses and the
+population rules 23.2 got wrong), 18.1(b), 18.2(c)/(d)/(e), **18.3 tacking in the
+zone**, **18.4 gybing in the zone**. `test_markroom.js` is the model — and note how it
+asserts its own preconditions, because two earlier versions passed on a broken engine.
+
+**C. RULE 20 (room to tack at an obstruction) is still entirely absent**, as is "a boat
+racing IS an obstruction to a boat required to keep clear of her". 19.2(a) and 19.2(b)
+proper are absent too — only the `rule19Pairs` squeeze-detector and the new 19.2(c)
+exist.
+
+**D. A ROW UNIT TEST**, per the owner's standing request for small tests: tack from
+local wind, leeward from local wind, clear-astern with divergent headings, rule 13's
+port-side case. All four were wrong until 2026-08-04c and only a full-race probe
+caught them.
+
+**E. `test_sailable.js` IS RED ON BAY AND REDROCK AND HAS BEEN FOR A WHILE.** "every leg
+registered — reached leg 4 of 7" and "the system recognised the finish". The ideal
+path itself does not complete the course. That is a real bug in either the path or the
+leg machinery and nobody has looked at it; it is not part of redrock's deliberate reds.
+
+**F. NO REAL AGROUND STATE.** Rule 22 is closed at four implementations because
+`iceEscapeTimer > 0 && speed < 1.0` means "touched ice half a second ago", not
+"aground". Build a real one (grounded and not moving for several seconds) and rule 22
+becomes implementable; until then it has nothing to attach to.
+
+## HARNESS NOTES ADDED THIS SESSION
+
+- `_string_truth_probe.js`   the winding of the track — the rule, not the proxy
+- `_rounding_truth_probe.js` the swept-angle fraction — a proxy, keep for continuity
+- `_round_cost_probe.js`     time/distance/wander per rounding passage
+- `_string_rule_check.js`    the string rule across radii on any venue
+- `_sweep_delivery_probe.js` what a scripted arc actually banks
+- `_stray_cause_probe.js`    what displaces a boat off a scripted arc
+- `_orbit_radius_probe.js`   is the orbit ring on water
+- `_foul_truth_probe.js`     did the right-of-way boat NEED to adjust
+- `test_markroom.js`         RRS 18 unit tests (wire into npm test when green)
+
+⚠️ **Bench labels can collide with tracked baselines.** `base2` overwrote
+`bay_bench_base2.json` from an earlier session. `git status` after benching.
+⚠️ **`_foul_truth_probe` must dedup on `raceState.penalty`** — the penalty EVENT fires
+every eligible frame, so raw counts read 577 where the real rate is ~1.5 a boat.
