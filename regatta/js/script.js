@@ -2655,8 +2655,52 @@ class BotController {
                     // must keep clear of her", no rule 20). Remove this scope once
                     // that is built — it is a stopgap, not the fix.
                     const openWaterKC = !(state.course._floeObjs && state.course._floeObjs.length);
-                    const overlapped = openWaterKC && !!(window.Rules && window.Rules.isOverlapped
+                    // ⚠️ The scope used to do TWO things at once — gate the (a)/(b)
+                    // split AND choose the non-overlapped gap (110 on ice, 80 in open
+                    // water). Unscoping both together confounds them. Only the split is
+                    // unscoped here; the ice gap below is left alone.
+                    let overlapped = !!(window.Rules && window.Rules.isOverlapped
                                           && window.Rules.isOverlapped(boat, other));
+                    // RRS 19.2(c) — THE SQUEEZE AT A CONTINUING OBSTRUCTION.
+                    // "While boats are passing a continuing obstruction, if a boat that
+                    // was clear astern and required to keep clear becomes overlapped
+                    // between the other boat and the obstruction and, at the moment the
+                    // overlap begins, there is not room for her to pass between them,
+                    // (1) she is not entitled to room under rule 19.2(b), and (2) while
+                    // the boats remain overlapped, she shall keep clear and rules 10 and
+                    // 11 do not apply."
+                    //
+                    // This is the rule the ice needed. The overlapped keep-clear test is
+                    // the WEAKER of the two — a 60-unit swing off her centreline against
+                    // an 80-110 unit gap — so switching it on in floe-packed water let
+                    // boats sail closer to each other in exactly the water where there is
+                    // nowhere to go. The rule says the boat squeezed between a rival and
+                    // an obstruction does not get that benefit: she keeps clear, at the
+                    // full gap, and her overlap buys her nothing.
+                    //
+                    // "Not room to pass between them" is read off the same grid the bots
+                    // route on: if the water a boat-width outboard of us, on the side
+                    // away from her, is not navigable, we are the one against the shore.
+                    if (overlapped) {
+                        // The FLOE-STAMPED grid, not the static one: on Glacier Sound
+                        // the obstruction that squeezes boats is drifting ice, and a
+                        // floe qualifies as a continuing obstruction whenever a boat
+                        // passes alongside it for three hull lengths (165u) — which the
+                        // large ones do. (Approximation, stated: the rule also asks that
+                        // the squeezed boat BECAME overlapped from clear astern, and the
+                        // engine's overlap tracker only records that within two hull
+                        // lengths, for rule 17. Applying the geometric squeeze to
+                        // whichever boat is against the obstruction is the conservative
+                        // reading — it is always the inside boat.)
+                        const gx = state.course.botGrid || state.course._botGridStatic;
+                        const sx = boat.x - other.x, sy = boat.y - other.y;
+                        const sl = Math.hypot(sx, sy);
+                        if (gx && sl > 1 && sl < 110 + HULL_R) {
+                            const ux = sx / sl, uy = sy / sl;
+                            const cc = gx.cell(boat.x + ux * (HULL_R * 2), boat.y + uy * (HULL_R * 2));
+                            if (!gx.at(cc[0], cc[1])) overlapped = false;
+                        }
+                    }
                     let owed, have;
                     if (overlapped) {
                         // How far can she swing her bow "immediately"? Her own turn
@@ -10201,9 +10245,10 @@ function updateBoatRaceState(boat, dt) {
         // handled here instead of paid for with a discount.
         //
         // She can still GIVE IT BACK — by sailing back round the other way, which is
-        // what the net signed accumulator measures. See ROUND_GIVEBACK for how much.
+        // what the net signed accumulator measures. Half a turn of reversal is not
+        // drift, so that clears the latch.
         if ((rs.roundSweep || 0) >= need) rs.roundBanked = true;
-        else if (rs.roundBanked && (rs.roundSweep || 0) < need - ROUND_GIVEBACK) rs.roundBanked = false;
+        else if (rs.roundBanked && (rs.roundSweep || 0) < need - Math.PI / 2) rs.roundBanked = false;
         // SHE HAS LEFT THE ZONE — the rules' own boundary for being finished with a
         // mark (18.2(b) ends mark-room when the boat entitled to it "leaves the zone").
         // This was zone*1.25, a margin whose stated job was to stop the leg completing
@@ -15388,16 +15433,6 @@ function repositionBoats() {
 // the pass-within distance; this is the go-round-it distance. Generous enough that a
 // wide, seamanlike rounding registers, bounded so circling far away does not.
 const ROUND_ACTIVE = 2.5;
-// HOW MUCH BANKED SWEEP SHE MAY GIVE BACK AND STILL BE ROUND. The latch exists to
-// survive the unwind of fighting out through the ring, which measures 0.19-0.40 rad; it
-// is NOT a licence to sail back round the other way. At half a turn's grace,
-// `_string_truth_probe` caught arctic boats completing after giving back 0.52-1.10 rad,
-// with the winding of their own track saying flatly that the string never wrapped the
-// mark (actual -0.03 against a required 6.25). Half a radian covers the measured unwind
-// with margin and nothing else. Scan, 6 arctic seeds, roundings whose string never
-// touched the mark: half a turn 9%, 0.75 rad 6%, 0.5 rad 4%.
-const ROUND_GIVEBACK = 0.5;
-
 // THERE IS NO TOLERANCE IN THE RULE. RRS Sail the Course: the taut string "touches
 // each mark designated in the sailing instructions to be a rounding mark". A track
 // that sweeps less than the geometric requirement does not bend around the mark, so
