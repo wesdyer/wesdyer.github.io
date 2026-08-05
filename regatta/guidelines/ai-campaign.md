@@ -2561,3 +2561,33 @@ barge at the line — but it should be checked rather than assumed.
 ⚠️ Note the ordering trap this session hit twice: probe each half alone and BOTH
 read as rejections (`rowhold` alone was −3.6 mean). The pair is the unit. The
 working tree for it is `regatta/eval/rl/treeD`.
+
+### `rrspair` GATES — anchor is a big WIN, arctic is one finisher-count short
+
+    SEATRIALS 100t          HEAD 202.83 / 199.79   RRS pair 199.87 / 195.59
+      penalties             0.31                   0.31   (flat)
+      OCS                   16.89%                 12.67%
+      start time mean/med   7.14 / 3.55            5.87 / 2.46
+      min                   174.97                 174.32     DNS/DNF 0 both
+
+**The eval anchor improves by ~3s mean and ~4s median with penalties flat and
+OCS down 4 points.** That anchor has sat at 202-204 for the entire campaign, and
+this is a venue the change was not tuned on — it is not `_gridFixed`-scoped, so
+Clubhouse takes it in full.
+
+    ARCTIC 16-seed gate (9100-9115)   med 440 -> 426, mean 453.4 -> 443.7
+      paired +7 med / +8.3 mean, in-time 65 -> 66, rounders 143 = 143
+      ⚠️ FINISHERS 141 -> 137
+
+⛔ **NOT LANDED.** Faster on every pace measure and cleaner on every rules
+measure, but four fewer boats finish inside the 900s window, and a finisher drop
+is disqualifying under the standing lexicographic rule. ⚠️ It is also exactly the
+metric this venue disagreed with itself about earlier today (the heat-gate change
+read in-time 71→65 on one 16-seed set and 45→65 on another), so the honest next
+step is the DISJOINT set — launched at 17:26 as `rrspair16b` (seeds 9200-9215),
+comparable against `fleet_leg2_noheat16b.json`.
+
+**If the finisher count holds up on the second set, this lands as-is.** If it
+does not, the likely culprit is the 110u KEEP gap being generous in a floe field
+where boats also owe room at obstructions (RRS 19) — sweep it at 90 and 130 on
+the arctic gate before touching anything else. The tree is `regatta/eval/rl/treeD`.
