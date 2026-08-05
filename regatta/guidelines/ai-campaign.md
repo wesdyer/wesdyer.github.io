@@ -3305,3 +3305,45 @@ the rules that were coordinating the pair, and the two together are the worst of
 not moving for several seconds, distinct from contact-recovery. Without one there is
 nothing for the rule to attach to. The Section D preamble reading is CORRECT and is
 not what failed; the classifier under it is.
+
+## STATE AT THE END OF THE 2026-08-05 OVERNIGHT PUSH
+
+    HEAD           f6f89d5 + gitignore + log commits; tree CLEAN
+    goldens        18/20, the two reds redrock's own (verified after re-record)
+    npm test       7 failures — ⚠️ BYTE-IDENTICAL ON HEAD BEFORE THIS SESSION.
+                   redrock's three deliberate reds, plus a bay AND redrock
+                   "every leg registered / recognised the finish" stall in
+                   test_sailable.js that predates all of this. NOT a regression;
+                   worth someone's attention on its own.
+
+    seatrials 100t 198.77 / 194.53, pen 0.31, OCS 13.33%, DNS/DNF 0
+                   — UNCHANGED from HEAD to the printed precision. Clubhouse has
+                   no rounding mark, so none of the rounding work touches it.
+
+    bay 20-seed    `bay_bench_base3.json` (9100-9119)
+                   fin med 249 mean 250.5, 180/180 finishers, min 211
+                   rubs 1.28  land 0.00  mark 0.31  pens 0.34  OCS 0.0%
+                   (HEAD was 255/254.6, rubs 1.67, land 0.12, mark 0.39, pen 0.39)
+
+    arctic 32-seed `fleet_leg2_anchor0805A.json` + `...B.json` (9100-9115, 9200-9215)
+                   rounders 283, finishers 275, in-time 74, med ~481
+                   (HEAD was 286 / 281 / 137 / ~426)
+                   paired vs HEAD: -67 med / -49.2 mean (A), -36 / -55.4 (B)
+
+    human ref      arctic med 212.1 best 190.4, bay 229.1/220.5, seatrials 187.7/184.1
+
+**Read the arctic row with the correctness rows next to it.** Roundings short of the
+geometric requirement went 81% -> 0%; roundings whose taut string never wrapped the
+mark went 30% -> the low teens; closest approach to the island 0.84 -> 0.39 zone radii;
+NEVER-ENTERED-THE-ZONE 7% -> 0%. The fleet used to bank a rounding at Glacier Sound
+without going round the island. It does not any more, and that costs about fifty
+seconds a boat on that venue. Owner's standing instruction: report it, do not treat it
+as a rejection.
+
+    trees          treeBase = master. treeL = pre-session HEAD. treeB tracked, untouched.
+                   treeR1..R7 (rounding ladder), treeM/M1/M2/M3 (mark-room),
+                   treeC1/C2/C3 (obstruction), treeD1..D7 (rules 22/23.2),
+                   treeE1/E2 (no-contact foul). All now gitignored.
+    ⚠️ bench labels `base2` COLLIDED with a tracked baseline from an earlier session
+       (`bay_bench_base2.json`, committed in 855379a). It was restored; this session's
+       run is `bay_bench_0805base.json`. **Check `git status` after a bench run.**
