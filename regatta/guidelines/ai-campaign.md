@@ -3438,3 +3438,51 @@ becomes implementable; until then it has nothing to attach to.
 `bay_bench_base2.json` from an earlier session. `git status` after benching.
 ⚠️ **`_foul_truth_probe` must dedup on `raceState.penalty`** — the penalty EVENT fires
 every eligible frame, so raw counts read 577 where the real rate is ~1.5 a boat.
+
+## ⚠️⚠️ CORRECTION TO THE CORRECTION — A COMMIT SILENTLY REVERTED AN EARLIER ONE
+
+**`bddf04b` (the obstruction squeeze) put back the whole of `script.js` from `treeC3`,
+which had been cloned BEFORE `1083ab6` (the give-back) existed — and so deleted
+`ROUND_GIVEBACK` and restored the half-a-turn grace.** Caught at 04:46 when a `sed` for
+the constant found nothing in master. Restored in `467c9dd`.
+
+This is the campaign's own standing rule — **never move a whole file out of a tree
+unless that tree is at HEAD** — and it cost a wrong diagnosis. The string-rule ladder
+read 2% -> 8% -> 12% and that was attributed to the later commits changing the races.
+Wrong: **8% and 12% ARE the half-a-turn numbers**, because the trees carrying those
+changes predated the give-back. The corrected ladder, arctic, 12 seeds:
+
+    HEAD                                         33/108   31%
+    the rounding work alone (treeR6, 0.5 rad)     2/108    2%
+    master WITH the give-back restored            6/108    6%
+    [the half-a-turn builds that were measured   9-13/108  8-12%  <- not a real state]
+
+⚠️ **What is and is not invalidated.** The A/B VERDICTS for the obstruction squeeze and
+the no-contact guard stand — baseline and experiment both lacked the constant, so the
+comparisons are internally valid. The ABSOLUTE anchor set measured between 01:56 and
+04:46 does not: `bay_bench_base3` and `fleet_leg2_anchor0805A/B` were all taken on a
+build missing the give-back. Re-measured as `anchorfixbay` / `anchorfixA` / `anchorfixB`.
+
+## THE WINDING TEST — a ready candidate, NOT landed, and why
+
+`treeW2` adds the rule itself as an AND alongside the swept-angle threshold: complete
+only when the winding of her track actually wraps the mark (`roundSweep + short-way
+remaining >= required - pi`), with `rs.roundWrapped` exposed so the AI's exit turn reads
+it too. **That coupling is essential** — the engine-only version (`treeW1`) stranded 12
+boats in 144, because the AI still turned for the exit on the banked flag alone and
+sailed away from a mark she had not been round.
+
+Measured ON THE REVERTED BASE (so these numbers need redoing before it lands):
+
+    correctness   12% -> 2%   (arctic, 12 seeds)
+    bay           248 med, 180/180, paired 0 med / -0.1 mean — neutral
+    arctic 9100   paired 0 med / -21.8 mean, rounders 141 flat, finishers 140 -> 139
+    arctic 9200   paired 0 med / -11.2 mean, rounders 142 -> 136, finishers 135 -> 129
+    seatrials     198.79/194.53 vs 198.77/194.53 — Clubhouse has NO rounding entry
+                  (route: line -> gate -> gate -> gate -> gate), so the +0.02 is field
+                  declaration noise, not behaviour
+
+**Not landed** because on the corrected base master is already at 6%, so the trade it
+was going to buy (10 points of correctness for 7 lost finishers across 32 seeds) is
+probably not the trade any more. Re-measure it against `anchorfix*` before deciding.
+The tree is preserved.
