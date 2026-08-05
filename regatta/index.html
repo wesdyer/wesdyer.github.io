@@ -273,23 +273,73 @@
             display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
         }
         .pr-row { border-radius: 8px; padding: 7px 12px; }
+        /* The chart+facts row's top padding lives here (not inline) so the
+           short-window steps below can compress it. */
+        .pr-bottom { padding-top: 16px; }
         /* The record block (design 9a): the header's record chip given a home in the
            hero's empty middle, as the challenge. Gold frame = a time YOU set here;
            the neutral frame carries the course's provisional target ("time to
            beat"), which stands until somebody beats it. */
         .pr-record { margin-top: 18px; padding: 13px 18px 15px; }
+        .pr-record .t-label { white-space: nowrap; }
+        /* Narrow desktop (≤1180px viewport): the fleet column gives some width, and
+           the HERO caps its height — the square art is as wide as the hero is
+           tall, so an uncapped hero starves the briefing beside it. The facts
+           column narrows too (long values wrap to a second line instead).
+           !important where the value being beaten is inline on the element. */
+        @media (max-width: 1180px) {
+            #pr-columns { grid-template-columns: minmax(0,1fr) 400px !important; }
+            /* The art stops driving the layout: instead of a square as wide as the
+               hero is tall (which starves the briefing), it takes 40% of the hero
+               and scales its square image inside — smaller, never cropped. */
+            #venue-art { aspect-ratio: auto !important; width: 40%; min-width: 180px; }
+            .pr-facts { min-width: 200px !important; }
+            .pr-record { gap: 8px; flex-wrap: wrap; }
+        }
         .pr-record-time { font-size: 32px; font-weight: 900; line-height: 1; margin-top: 7px; }
         /* ⚠️ A 800px-tall window gives the hero about 300px, and the briefing wants 365 —
            at which point the blurb, being the only thing allowed to shrink, vanished
            entirely. Step the type down instead: a smaller name and two lines of prose
            beat a full-size name and none. */
-        @media (max-height: 900px) {
+        /* ── Height steps. Every fixed thing on this screen (picker tiles, the
+           record block, the readouts) gives ground in stages so the hero keeps
+           ALL its facts at every desktop height. Tested at 947 / 830 / 789 / 754
+           / 645 / 609 viewports.
+           ≤1120px: the record block folds to ONE LINE (label · link · time
+           across), the picker tiles step down, type compresses a notch. */
+        @media (max-height: 1120px) {
             .pr-venue-title { margin-top: 10px; font-size: 34px; }
             .pr-venue-title.long { font-size: 29px; }
             .pr-blurb { margin-top: 8px; font-size: 13px; -webkit-line-clamp: 2; }
             .pr-row { padding: 5px 12px; }
-            .pr-record { margin-top: 10px; padding: 8px 14px 10px; }
-            .pr-record-time { font-size: 22px; margin-top: 4px; }
+            .pr-record { display: flex; align-items: center; gap: 14px; margin-top: 10px; padding: 7px 14px; }
+            .pr-record > div:first-child { flex: 1 1 auto; }
+            .pr-record-time { font-size: 17px; margin-top: 0; }
+            #venue-picker { grid-template-columns: repeat(5, minmax(0, 132px)) !important; }
+        }
+        /* ≤780px — a 1366×768 laptop leaves ~650px of viewport. */
+        @media (max-height: 780px) {
+            .pr-venue-title { margin-top: 6px; font-size: 27px; }
+            .pr-venue-title.long { font-size: 24px; }
+            .pr-blurb { margin-top: 6px; font-size: 12.5px; }
+            .pr-row { padding: 4px 10px; }
+            #venue-picker { grid-template-columns: repeat(5, minmax(0, 112px)) !important; }
+        }
+        /* Shortest (720p laptops: ~610px of viewport). The venue chips and the
+           blurb give way — the name carries the identity, and the essentials are
+           the record line and the readouts. !important: the Tailwind CDN sheet is
+           injected after this one, so its .flex ties on specificity and wins
+           without it. */
+        @media (max-height: 680px) {
+            .pr-chips { display: none !important; }
+            .pr-venue-title { margin-top: 0; font-size: 24px; }
+            .pr-venue-title.long { font-size: 21px; }
+            .pr-blurb { display: none; }
+            .pr-record { margin-top: 6px; padding: 5px 12px; }
+            .pr-row { padding: 3px 10px; }
+            .pr-bottom { padding-top: 8px; }
+            /* !important: the padding is inline on the element */
+            #venue-detail { padding: 14px 24px 16px !important; }
         }
         /* The fleet list. The badge brings its own border and gradient, so an item adds only
            the ring: gold for you, white when its scouting notes are open. */
@@ -645,7 +695,7 @@
                 </div>
             </div>
 
-            <div class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) 470px; padding:18px 32px 20px; min-height:0;">
+            <div id="pr-columns" class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) 470px; padding:18px 32px 20px; min-height:0;">
 
                 <div class="flex flex-col gap-3" style="min-width:0; min-height:0;">
                     <!-- Hero: the briefing on the wide side, the square art on the short one -->
