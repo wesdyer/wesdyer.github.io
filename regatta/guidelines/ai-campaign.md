@@ -3793,3 +3793,85 @@ to 60% shortens the race by roughly 40% — 1.02x"). Verified byte-identical on 
 pre-session HEAD with my changes stashed, so **they are not mine and they are not the
 sailability failures** — those are gone. Flagging: they look like the editor tests
 asserting against the OLD redrock document.
+
+## ⚡ PHASE 3 — THE AI IN THE SWELL, MEASURED (11:00)
+
+Four probes, all driving the game's own `updateBoat` and `update`: `_swellangle.js`
+(VMG on a 2-degree grid of held true wind angles, sea on and off, 60 s each),
+`_vmgangle_check.js` (the AI's optimiser against the polar table it reads),
+`_swellrace_angles.js` and `_swellprize.js` (real races, the same seeds with the sea
+switched off, binned by the angle actually sailed).
+
+### THE HEADLINE NUMBERS
+
+    UPWIND, held angle, 18 kt          flat        sea
+      fastest angle                    38.5 deg    38.8 deg     <- the sea moves it 0.3 deg
+      VMG there                        5.09 kt     5.20 kt
+      the AI's optimiser says          38.0 deg -> costs 0.08 kt = 1.6%
+      VMG at 60 deg                    4.42 kt     3.44 kt      <- footing costs 13% flat,
+                                                                   34% in the sea
+      leeward set                      0.03-0.14   0.37-0.63 kt
+
+    DOWNWIND, held angle               flat        sea
+      fastest angle                    163.9       165.5        <- the sea moves it 1.6 deg
+      VMG there                        10.55 kt    13.99 kt     <- the sea is worth +33%
+      the AI's optimiser says          180.0 deg   (11.31 kt)
+      on a face at the AI's angle                  56%
+
+    IN A REAL RACE (6 seeds, 54 boats, the same races with the sea off)
+      upwind VMG made                  4.92 kt     4.35 kt      <- the sea costs 11.7%
+      downwind VMG made                10.03 kt    12.17 kt     <- the sea pays 21.4%
+      on a face                        0%          77%
+      surfing                          0%          53%
+      share of the race downwind                   47%
+      finish, paired                   the sea makes her 5 s median / 1.7 s mean FASTER
+
+### ⚠️ THE ANGLE ERROR IS NOT THE PRIZE, AND THE MEASUREMENT SAYS SO
+
+Two corrections to the expected shape, both against my own first reading of the data:
+
+**1. Upwind, folding `poundMul` into the VMG optimiser would do NOTHING.** The pound
+multiplier is 0.968 at 38 deg and 0.920 at 56 — it costs speed, but it is almost flat
+across the top of a sharply peaked VMG curve, so the optimum moves 0.3 deg. Measured, not
+assumed. What the sea DOES do is make footing 2.6x dearer (13% -> 34% of VMG from 38 to
+60 deg), and the AI's strategic layer already sails 38, so there is nothing to collect
+there either.
+
+**2. Downwind, the fleet is AT THE CEILING at the angles it sails.** The aggregate
+comparison — fleet 12.17 kt against the best held angle's 13.99 — looks like a 13% gap
+and is an artifact of mixing the angle distribution. Binned by the angle actually being
+sailed, against the held-angle curve at the same angle:
+
+    TWA    130   134   138   142   146   150   154   158   162   166   170   174   178
+    held  9.02  9.28  9.62  9.93 11.01 12.60 13.66 13.87 13.92 13.99 13.05 11.38 11.27
+    fleet 9.82 11.14 11.41 10.82  9.06 11.53 13.22 14.02 14.32 14.52 13.53 13.27 13.17
+
+The fleet is at or above the ceiling in ten of thirteen bins. A boat moving through a
+varying wind field and gybing catches waves a held angle does not. **The static
+downwind-angle hypothesis is refuted on this venue.**
+
+### ⚠️ A REAL BUG FOUND ON THE WAY, and it is NOT the swell
+
+`getOptimalVMGAngle` searches only the polar table's own angle grid, and that grid is
+`[..., 120, 135, 150, 180]` — **a 30-degree hole between 150 and 180.** So the optimiser
+can only ever answer 150 or 180 downwind, and at 16 kt and above 180 wins:
+
+    the table's own downwind VMG at 18 kt:  150 -> 8.04   165 -> 8.43   180 -> 8.18
+
+The peak is at 165 at EVERY wind speed in the table and the optimiser can never return it.
+Consequence on Bluewater (18 kt) and Redrock (16 kt): `optTWA = 180`, and the downwind
+fetch gate is `absTWA < optTWA`, so **the boats never VMG-sail downwind at all** — the
+gate cannot fail.
+
+⛔ Do NOT fix this with a fine-VMG scan: that is one of the SIX closed rejections in
+[[regatta-bay-density]] (−8 med, re-tested −3 bay / −8 arctic). The mechanism there was
+that the geometrically-correct deeper line gains on its own leg and loses more downstream.
+Anything here must be scoped to `Swell.active()`.
+
+### WHAT THE MEASUREMENT DOES POINT AT
+
+The one quantity where the AI is measurably blind and the size is real:
+**0.37 kt of leeward set close-hauled, rising to 0.63 kt at 60 degrees, against 0.03-0.14
+in the same water with the sea off** — and `getStrategicHeading` computes a crab angle for
+the CURRENT and has never known about the sea. Over a 4000-unit leg at 8 kt that is ~250
+units of set she never corrects for. Candidate `treeS1` is in flight.
