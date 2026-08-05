@@ -48,6 +48,8 @@ const SEED0 = +(process.argv[3] || 9300);
         // error and no mark to lay.
         const BIN = 4, B0 = 100, NB = 21;                       // 100..184 in 4-degree bins
         const bins = Array.from({ length: NB }, () => ({ d: 0, t: 0, hdErr: 0, n: 0 }));
+        const UB = 2, U0 = 28, UN = 24;                         // 28..76 in 2-degree bins
+        const ubins = Array.from({ length: UN }, () => ({ d: 0, t: 0, hdErr: 0, n: 0 }));
         const dt = 1 / 60;
         for (let it = 0; it < 60 * 940; it++) {
           const prev = bots.map(bt => ({ x: bt.x, y: bt.y }));
@@ -63,7 +65,16 @@ const SEED0 = +(process.argv[3] || 9300);
             // ground travel resolved on the wind axis: + upwind, - downwind
             const ux = Math.sin(wd[k]), uy = -Math.cos(wd[k]);
             const vm = (bt.x - prev[k].x) * ux + (bt.y - prev[k].y) * uy;
-            if (twa < 75) { f.upD += vm; f.upT += dt; }
+            if (twa < 75) {
+              f.upD += vm; f.upT += dt;
+              const ui = Math.floor((twa - U0) / UB);
+              if (ui >= 0 && ui < UN) {
+                const q = ubins[ui];
+                q.d += vm; q.t += dt; q.n++;
+                const c = bt.controller;
+                q.hdErr += Math.abs(norm(bt.heading - ((c && c.targetHeading != null) ? c.targetHeading : bt.heading))) * 180 / Math.PI;
+              }
+            }
             else if (twa > 105) {
               f.dnD += -vm; f.dnT += dt;
               if (bt.swell) {
@@ -85,7 +96,8 @@ const SEED0 = +(process.argv[3] || 9300);
           if (inf.every(f => f.fin != null)) break;
         }
         return { seed, mode, swellOn: !!(window.Swell.active && window.Swell.active()), inf,
-                 bins: bins.map((q, i) => ({ twa: B0 + i * BIN + BIN / 2, ...q })) };
+                 bins: bins.map((q, i) => ({ twa: B0 + i * BIN + BIN / 2, ...q })),
+                 ubins: ubins.map((q, i) => ({ twa: U0 + i * UB + UB / 2, ...q })) };
       }, [SEED0 + i, mode]);
       runs[mode].push(r);
     }
@@ -110,12 +122,13 @@ const SEED0 = +(process.argv[3] || 9300);
              nfin: fins.length, n, dnShare: 100 * dnT / (dnT + upT) };
   };
   const S = agg(runs.sea), F = agg(runs.flat);
-  const binAgg = (rs) => {
+  const binAgg = (rs, key) => {
+    key = key || 'bins';
     const out = [];
-    for (let i = 0; i < rs[0].bins.length; i++) {
+    for (let i = 0; i < rs[0][key].length; i++) {
       let d = 0, t = 0, h = 0, n = 0;
-      for (const r of rs) { d += r.bins[i].d; t += r.bins[i].t; h += r.bins[i].hdErr; n += r.bins[i].n; }
-      out.push({ twa: rs[0].bins[i].twa, kt: t > 0 ? (d / t) / 15 : null, hdErr: n ? h / n : null,
+      for (const r of rs) { d += r[key][i].d; t += r[key][i].t; h += r[key][i].hdErr; n += r[key][i].n; }
+      out.push({ twa: rs[0][key][i].twa, kt: t > 0 ? (d / t) / 15 : null, hdErr: n ? h / n : null,
                  share: n });
     }
     const tot = out.reduce((a, c) => a + c.share, 0) || 1;
@@ -123,6 +136,7 @@ const SEED0 = +(process.argv[3] || 9300);
     return out;
   };
   const BS = binAgg(runs.sea), BF = binAgg(runs.flat);
+  const US = binAgg(runs.sea, 'ubins'), UF = binAgg(runs.flat, 'ubins');
   // paired per boat
   const key = (r, f) => r.seed + ':' + f.name;
   const A = {}, B = {};
@@ -150,6 +164,15 @@ const SEED0 = +(process.argv[3] || 9300);
     console.log(`  ${String(BS[i].twa).padStart(4)}   ${s1 == null ? '  -  ' : s1.toFixed(2).padStart(6)}   ${f1 == null ? '  -  ' : f1.toFixed(2).padStart(6)}    ` +
                 `${(s1 != null && f1 != null) ? (s1 - f1).toFixed(2).padStart(6) : '   -  '}       ${BS[i].share.toFixed(1).padStart(5)}%          ` +
                 `${BS[i].hdErr == null ? '-' : BS[i].hdErr.toFixed(1)} / ${BF[i].hdErr == null ? '-' : BF[i].hdErr.toFixed(1)}`);
+  }
+  console.log('\n  UPWIND VMG MADE GOOD, BINNED BY THE ANGLE ACTUALLY SAILED');
+  console.log('   TWA    sea kt   flat kt   sea-flat   share of upwind   helm error (sea/flat)');
+  for (let i = 0; i < US.length; i++) {
+    if (US[i].share < 0.5 && UF[i].share < 0.5) continue;
+    const s1 = US[i].kt, f1 = UF[i].kt;
+    console.log(`  ${String(US[i].twa).padStart(4)}   ${s1 == null ? '  -  ' : s1.toFixed(2).padStart(6)}   ${f1 == null ? '  -  ' : f1.toFixed(2).padStart(6)}    ` +
+                `${(s1 != null && f1 != null) ? (s1 - f1).toFixed(2).padStart(6) : '   -  '}       ${US[i].share.toFixed(1).padStart(5)}%          ` +
+                `${US[i].hdErr == null ? '-' : US[i].hdErr.toFixed(1)} / ${UF[i].hdErr == null ? '-' : UF[i].hdErr.toFixed(1)}`);
   }
   if (errs.length) console.log('\nERRORS: ' + errs.slice(0, 4).join(' | '));
   await b.close();

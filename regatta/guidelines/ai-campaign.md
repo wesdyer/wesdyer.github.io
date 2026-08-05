@@ -3875,3 +3875,42 @@ The one quantity where the AI is measurably blind and the size is real:
 in the same water with the sea off** — and `getStrategicHeading` computes a crab angle for
 the CURRENT and has never known about the sea. Over a 4000-unit leg at 8 kt that is ~250
 units of set she never corrects for. Candidate `treeS1` is in flight.
+
+### ⛔ `treeS1` REJECTED — crabbing for the sea's set (11:05)
+
+Fold the swell's drift, low-passed over ~0.8 s to strip the orbital oscillation, into the
+crab angle `getStrategicHeading` already computes for the current. Inert off Bluewater by
+construction (`boat.swell` is null) — **bay 20-seed bench BYTE-IDENTICAL, confirmed.**
+
+    ocean 9300   paired +2.5 med / 0.0 mean   pens 0.52->0.41   marks 0.56->0.33
+    ocean 9400   paired +0.5 med / +0.1 mean  pens 0.41->0.44   rubs 1.71->2.31
+       (DISJOINT — it does not replicate)
+
+**MECHANISM:** the set is 0.4-0.6 kt against a hull doing 8 kt, so the crab is 3-4 degrees,
+and the controller re-plans against the boat's ACTUAL position at 10 Hz. The cross-track
+error a slow set builds is already being closed by feedback; feeding it forward as well
+buys nothing and puts every boat on the same offset, which is why the rubs rose.
+
+**Generalise:** feed-forward compensation for a SMALL, SLOW disturbance is redundant when
+the controller closes the loop on ground truth faster than the disturbance accumulates.
+Ask what the existing feedback already removes before modelling a disturbance.
+
+### THE UPWIND BINS SAY THE SAME THING AS THE DOWNWIND ONES
+
+VMG made good, binned by the angle actually sailed (8 seeds, sea vs the same races flat):
+
+    TWA     29    31    33    35    37    39    41    43    45    49    53    61    69
+    share  1.1%  1.6%  2.2%  1.5% 22.3% 23.3%  3.1% 11.5%  3.2%  4.1%  1.5%  2.9%  1.5%
+    sea    4.82  3.90  4.19  4.52  5.06  4.95  4.54  4.30  4.18  4.09  3.56  3.03  2.21
+    flat   5.31  5.06  5.21  5.32  5.60  5.49  5.07  4.88  4.80  4.73  4.27  3.56  2.93
+    delta -0.49 -1.16 -1.01 -0.80 -0.55 -0.54 -0.53 -0.58 -0.62 -0.64 -0.71 -0.54 -0.73
+
+The fleet spends 45.6% of its upwind time at 37-39 degrees — its own optimum, and the
+held-angle ceiling there is 5.11 kt against the 5.06 it makes. **It is at the ceiling.**
+And the sea's cost is a nearly FLAT 0.55 kt at every angle in a real race, where the
+held-angle measurement showed it growing from 0.03 at 38 to 0.98 at 60. The difference is
+that a racing boat is never held at 60 for long.
+
+⇒ **There is no angle-choice prize upwind either.** The 11.7% the sea costs upwind is the
+pinch mechanic working as designed, and the only lever against it is to sail less upwind,
+which the course decides.
