@@ -2591,3 +2591,90 @@ comparable against `fleet_leg2_noheat16b.json`.
 does not, the likely culprit is the 110u KEEP gap being generous in a floe field
 where boats also owe room at obstructions (RRS 19) — sweep it at 90 and 130 on
 the arctic gate before touching anything else. The tree is `regatta/eval/rl/treeD`.
+
+---
+
+# RULES AUDIT AGAINST THE ACTUAL TEXT (RRS 2025-2028, owner-supplied PDF)
+
+Read from `2025-2028-RRS-with-Changes-and-Corrections.pdf` (World Sailing, incl.
+corrections to 20 Apr 2026): Definitions (book p.8-11) and Part 2 in full
+(p.16-22). The earlier audit in this doc was against a web summary; this one is
+against the text, and it finds more.
+
+## Definitions the engine needs and does not have
+
+**Keep Clear** — *"A boat keeps clear of a right-of-way boat (a) if the
+right-of-way boat can sail her course with no need to take avoiding action, and
+(b) when the boats are overlapped, if the right-of-way boat can also change
+course in both directions without immediately making contact."*
+
+⚠️ **(b) is not modelled at all.** The engine's keep-clear test is proximity and
+CPA. For OVERLAPPED boats the rule demands the ROW boat be able to turn EITHER
+WAY without contact — a materially larger lateral gap than any CPA test implies,
+and it is exactly why real boats hold a specific separation when overlapped.
+**This directly sizes the `KEEP` constant in the `rrspair` give-way planner: 110u
+of CPA is the wrong quantity when overlapped; it should be a both-directions
+clearance test.**
+
+**Proper Course** — *"A course a boat would choose in order to sail the course as
+quickly as possible in the absence of the other boats referred to in the rule
+using the term. A boat has no proper course before her starting signal."*
+
+That is precisely `desiredHeading` immediately before `applyAvoidance`, computed
+every tick and never named. ⚠️ Note the second sentence: **no proper course
+before the starting signal** — so any proper-course logic must be gated off in
+the prestart, which also means rule 17 cannot bind there.
+
+**Room** — *"The space a boat needs in the existing conditions, including space
+to comply with her obligations under the rules of Part 2 and rule 31, while
+manoeuvring promptly in a seamanlike way."* Room is therefore SPEED- and
+STATE-dependent, not a constant; the engine treats room as fixed distances.
+
+**Obstruction** — an object that could not be passed without changing course
+substantially from one hull length away; *"a boat racing is not an obstruction to
+other boats unless they are required to keep clear of her."* ⚠️ So a right-of-way
+boat IS an obstruction to the boat that must keep clear — which is what makes
+three-boat situations resolvable, and is not modelled.
+
+**Continuing Obstruction** — one the boat will pass alongside for at least three
+hull lengths. ⚠️ **Every shoreline in this game is a continuing obstruction**, and
+under 18.1(a)(4) that means rule 19 applies and rule 18 does not.
+
+## Rules absent from the engine entirely
+
+- **Rule 18.3 Tacking in the Zone** and **18.4 Gybing in the Zone** — 0 matches.
+- **Rule 20 Room to Tack at an Obstruction** — 0 matches. In a channel or a floe
+  field a close-hauled boat that needs to tack away from land has no way to ask
+  for room, and no boat is obliged to give it. A plausible contributor to the
+  shore pins and to the L1 tack churn.
+- **Rule 22 Capsized, Anchored or AGROUND** — 0 matches. *"If possible, a boat
+  shall avoid a boat that is … aground."* **The bots ground constantly** —
+  583-713 groundings per boat-race on arctic — and nothing makes the fleet avoid
+  a grounded boat, which is both a rules break and a collision source.
+- **Rule 23.2 Interfering** — 0 matches. *"a boat shall not interfere with a boat
+  that is taking a penalty, sailing on another leg, or subject to rule 21.1."*
+  ⚠️ **This is the rule that should have protected the flagged boats this session
+  spent the morning working around** — and the "another leg" clause covers the
+  17-25% of bay rubs that are between boats on different legs.
+- **Rule 21.3** (moving astern / backing a sail) — absent.
+
+## Rules present but wrong or incomplete
+
+- **⚠️ Rule 13 is WRONG when both boats are tacking.** The text: *"If two boats
+  are subject to this rule at the same time, the one on the other's PORT SIDE or
+  the one ASTERN shall keep clear."* The engine gets clear-astern right, then for
+  the side case falls through to a rule 10/11 basis ("Both Tacking (Starboard)",
+  "Both Tacking (Leeward)") — but rule 13 says explicitly that *"during that time
+  rules 10, 11 and 12 do not apply."* It should be the boat on the other's PORT
+  SIDE that keeps clear, which is a geometric test, not a tack test.
+- **Rule 18.1 exceptions: only (a)(1) is implemented.** Missing (a)(2) opposite
+  tacks where the proper course at the mark for one but not both is to tack;
+  **(a)(3) between a boat approaching a mark and one leaving it** — which these
+  multi-leg courses generate constantly; (a)(4) continuing obstruction; and
+  (b) rule 18 stops applying once mark-room has been given.
+- **Rules 15, 16.1, 16.2 and 17 are computed and discarded** — confirmed against
+  the text. `constraints` has one consumer, `getDebugInfo()`.
+- **Contact fault is assigned to the non-ROW boat only.** Rule 14 binds BOTH
+  boats; a right-of-way boat that could have avoided contact once it was clear
+  the other was not keeping clear also breaks it. The engine never penalises a
+  ROW boat.
