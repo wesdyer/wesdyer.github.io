@@ -4274,3 +4274,21 @@ Outstanding before it can land: the disjoint 9200 arctic set, and a comparison a
 Eight times cheaper than H1 on bay, and it takes rubs, mark contacts and penalties DOWN
 rather than up — which is what a change that makes boats round tighter and earlier should
 do. Arctic's correctness and pace are the remaining question.
+
+## THE THREE CANDIDATES SIDE BY SIDE (11:35)
+
+                            bay pace      bay hairpin   arctic pace   arctic never
+                            (paired)      wrong         (paired)      went round
+    HEAD                    —             5.5%          —             55.6%
+    H1  full circuit at     -8.5 med      ~0%           -21 med       0.0%
+        a hairpin           -9.0 mean                   -26.6 mean
+    H2  re-base the sweep   -1.0 med      1.5%          (in flight)   18.1%
+        on arrival          -0.3 mean
+    H3  both                (in flight)
+
+**H2 is eight times cheaper on bay and buys two thirds of arctic's correctness.** It also
+takes bay's boat rubs 1.31 -> 1.11, mark contacts 0.38 -> 0.33 and penalties 0.36 -> 0.28 —
+a change that makes boats round tighter and earlier should do exactly that, and it does.
+
+⚠️ **They are ORTHOGONAL and can be landed together**: H1 changes what the leg REQUIRES, H2
+changes the WINDOW the requirement is measured over. H3 measures the pair.
