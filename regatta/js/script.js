@@ -10201,10 +10201,9 @@ function updateBoatRaceState(boat, dt) {
         // handled here instead of paid for with a discount.
         //
         // She can still GIVE IT BACK — by sailing back round the other way, which is
-        // what the net signed accumulator measures. Half a turn of reversal is not
-        // drift, so that clears the latch.
+        // what the net signed accumulator measures. See ROUND_GIVEBACK for how much.
         if ((rs.roundSweep || 0) >= need) rs.roundBanked = true;
-        else if (rs.roundBanked && (rs.roundSweep || 0) < need - Math.PI / 2) rs.roundBanked = false;
+        else if (rs.roundBanked && (rs.roundSweep || 0) < need - ROUND_GIVEBACK) rs.roundBanked = false;
         // SHE HAS LEFT THE ZONE — the rules' own boundary for being finished with a
         // mark (18.2(b) ends mark-room when the boat entitled to it "leaves the zone").
         // This was zone*1.25, a margin whose stated job was to stop the leg completing
@@ -15389,6 +15388,16 @@ function repositionBoats() {
 // the pass-within distance; this is the go-round-it distance. Generous enough that a
 // wide, seamanlike rounding registers, bounded so circling far away does not.
 const ROUND_ACTIVE = 2.5;
+// HOW MUCH BANKED SWEEP SHE MAY GIVE BACK AND STILL BE ROUND. The latch exists to
+// survive the unwind of fighting out through the ring, which measures 0.19-0.40 rad; it
+// is NOT a licence to sail back round the other way. At half a turn's grace,
+// `_string_truth_probe` caught arctic boats completing after giving back 0.52-1.10 rad,
+// with the winding of their own track saying flatly that the string never wrapped the
+// mark (actual -0.03 against a required 6.25). Half a radian covers the measured unwind
+// with margin and nothing else. Scan, 6 arctic seeds, roundings whose string never
+// touched the mark: half a turn 9%, 0.75 rad 6%, 0.5 rad 4%.
+const ROUND_GIVEBACK = 0.5;
+
 // THERE IS NO TOLERANCE IN THE RULE. RRS Sail the Course: the taut string "touches
 // each mark designated in the sailing instructions to be a rounding mark". A track
 // that sweeps less than the geometric requirement does not bend around the mark, so
