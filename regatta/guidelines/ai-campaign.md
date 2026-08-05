@@ -3347,3 +3347,23 @@ as a rejection.
     ⚠️ bench labels `base2` COLLIDED with a tracked baseline from an earlier session
        (`bay_bench_base2.json`, committed in 855379a). It was restored; this session's
        run is `bay_bench_0805base.json`. **Check `git status` after a bench run.**
+
+## ⚠️ CORRECTION — THE STRING-RULE NUMBERS, MEASURED PROPERLY AT 12 SEEDS
+
+The 4% figure quoted for the give-back commit was a SIX-seed measurement of an
+intermediate tree. At twelve seeds (~108 completed roundings each) the ladder is:
+
+    HEAD                                          33/108   31%
+    the rounding work alone (treeR6)               2/108    2%
+    + mark-room + RRS 19.2(c)   (treeC3)           9/108    8%
+    + the no-contact need guard (master)          13/108   12%
+
+**The rounding work alone gets it to 2%.** The two later commits drift it back to 12%,
+and the mechanism is understood: neither touches the completion rule, but both change
+the RACES, and `reqSweep` sits only about fifteen degrees above the true winding
+boundary on Glacier Sound — so the half radian of give-back the latch allows can carry
+a boat back across it. Every failing case sits within a few hundredths of a radian of
+the boundary.
+
+⚠️ **Six seeds is not enough for this statistic** — the same trap as arctic in-time
+finishes. Read it at twelve or more.
