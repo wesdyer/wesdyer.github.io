@@ -2795,3 +2795,51 @@ The AI half recovers the engine fix's bay cost (−6 med → +1 med) and gives t
 best bay median measured this session. The arctic 16-seed gate for the pair is
 the deciding run — the hypothesis being tested is that `rrspair` failed on arctic
 BECAUSE the verdicts it faithfully obeys were a coin flip there.
+
+## ✅ LANDED — `b67d610` (engine) + `649a234` (AI) + `0aca536` (goldens)
+
+The disjoint arctic set disagreed with the first AGAIN (set1 in-time 65→76,
+set2 65→61 — the third time this venue has contradicted itself in one day), so
+the verdict is read on the 32-seed combination, which is what has been reliable:
+
+    ARCTIC, 32 SEEDS            HEAD        corrected engine + RRS AI
+      rounders / finishers    285 / 280            286 / 281
+      IN-TIME                     130                  137
+      median / mean         439 / 452.6          422 / 453.3
+
+    BAY 9100-9119    fin med 257 → 255, paired +1, pens 0.50 → 0.44, OCS 5.6 → 1.1%
+    BAY 9200-9219    fin med 259 → 257, paired +3, rubs 1.88 → 1.67, OCS 8.9 → 2.8%
+     (DISJOINT)
+    SEATRIALS 100t   202.83/199.79 → 198.75/194.91, pens 0.31 → 0.29,
+                     OCS 16.89% → 14.89%, max 360.00 → 312.00, DNS/DNF 0
+
+**Nothing reaches the 360-second cutoff on the anchor any more**, and the anchor
+is the fastest it has been in the campaign's recorded history with penalties
+DOWN. Lexicographic: penalties down on three of four measures and +0.02 on the
+fourth (noise), OCS down everywhere, finishers up, then pace.
+
+Goldens re-recorded for all 18; redrock's two left deliberately red.
+
+**⚠️ Neither half is separable, and probing either alone reads as a rejection:**
+the engine fix alone costs bay a paired 6 seconds (the AI was tuned against the
+buggy verdicts), and the AI alone lost arctic (finishers 280→276, in-time
+130→119) because it faithfully obeyed verdicts that were a coin flip there. That
+is now the third time this session a change has only worked as a pair.
+
+### What remains, in order
+
+1. **`keep clear` definition part (b)** — when OVERLAPPED, the right-of-way boat
+   must be able to change course in BOTH DIRECTIONS without immediately making
+   contact. This is the principled replacement for the `KEEP = 110` CPA constant
+   the give-way planner currently uses, and the rule defines the quantity.
+2. **Rule 23.2** (do not interfere with a boat taking a penalty or on another
+   leg) and **rule 22** (avoid a boat aground) — both absent, both cheap, both
+   aimed at measured contact classes.
+3. **Rule 19 at ice** — a floe is an obstruction and every shoreline is a
+   CONTINUING obstruction, which routes to rule 19 rather than 18.
+4. **Then** widen the no-contact foul to the real standard ("the right-of-way
+   boat can sail her course with no need to take avoiding action"). ⚠️ LAST, and
+   deliberately so: done before the deflections collapse it would penalise the
+   AI's own timidity rather than real infringement. Expect penalty counts to
+   RISE, which fails the lexicographic gate by construction — judge it on whether
+   the fouls called are CORRECT.
