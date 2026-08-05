@@ -4292,3 +4292,21 @@ a change that makes boats round tighter and earlier should do exactly that, and 
 
 ⚠️ **They are ORTHOGONAL and can be landed together**: H1 changes what the leg REQUIRES, H2
 changes the WINDOW the requirement is measured over. H3 measures the pair.
+
+### H1 ON THE DISJOINT ARCTIC SET — the finisher cost is heavier than 9100 said
+
+    arctic 9200 (DISJOINT)   paired -23.5 med / -35.0 mean over 108 boats
+                             finishers 130 -> 117     rounders 138 -> 130
+                             pens 1.71 -> 1.99        22 finished in A only, 9 in B only
+
+    combined 32 seeds        finishers 267 -> 252 (15 in 288), rounders 277 -> 270
+
+The median holds at about -22 across both sets, but the FINISHER cost is 2 boats on 9100
+and 13 on 9200 — the sort of disagreement between arctic 16-seed sets this campaign has
+been bitten by four times, and the reason the standing rule is to read 32 seeds or the
+paired median. Read as 15 finishers in 288.
+
+⚖️ Against the precedent (~70 s a boat and 10 finishers in 288 to take 31% -> 6%), H1 is
+**cheaper in time and dearer in finishers, for more than twice the correctness**. It is a
+defensible trade on the owner's stated standard. Whether it is the RIGHT one depends on
+what H2 achieves for almost nothing.
