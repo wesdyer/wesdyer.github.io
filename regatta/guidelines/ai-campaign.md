@@ -4310,3 +4310,23 @@ paired median. Read as 15 finishers in 288.
 **cheaper in time and dearer in finishers, for more than twice the correctness**. It is a
 defensible trade on the owner's stated standard. Whether it is the RIGHT one depends on
 what H2 achieves for almost nothing.
+
+### H2 ON ARCTIC: same price as H1, a third of the correctness
+
+    arctic 9100   paired -22 med / -20.7 mean over 129 boats
+                  finishers 137 -> 134,  rounders 139 -> 142,  pens 1.67 -> 1.68
+                  boat rubs 7.63 -> 7.31
+
+**H1 and H2 cost arctic the SAME median (-21 vs -22) and H1 takes the cheat to 0% where H2
+takes it to 18%.** So on arctic H1 dominates. The whole of H1's extra cost is on BAY, where
+it charges 8.5 s against H2's 1.0 — and bay barely has the defect.
+
+    UPDATED TABLE           bay pace   bay hairpin   arctic pace   arctic never
+                            (paired)   wrong         (paired)      went round
+    HEAD                    —          5.5%          —             55.6%
+    H1  full circuit        -8.5       ~0%           -21           0.0%
+    H2  re-base on arrival  -1.0       1.5%          -22           18.1%
+    H3  both                (in flight)
+
+That reframes the choice. It is not "which mechanism" — it is whether the last 18 points of
+arctic correctness are worth 7.5 s of bay, since H2 gets the first 38 points for nothing.
