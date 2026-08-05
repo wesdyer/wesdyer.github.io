@@ -3961,3 +3961,63 @@ their disjoint sets, and both had a mechanism, not a shrug.**
 ⚠️ What would change this verdict is a DIFFERENT COURSE — one whose downwind leg does not
 happen to point at 159 degrees. Bluewater's four legs are what make the angle question
 moot; the finding is about this course as much as about this AI.
+
+## ⚡⚡ THE CHEAT IS STILL ALIVE AT HAIRPIN MARKS — and it is most of two bay legs (11:35)
+
+`_string_realised_probe.js` (new) applies the string rule to the REALISED track. The
+engine's own winding test has to PREDICT the rest of the leg at the moment the rounding
+completes; this predicts nothing — it keeps accumulating the boat's winding about the mark
+AFTER the leg completes, all the way to the next anchor, and then asks the rule.
+
+    bay, 8 races, 246 roundings observed
+
+      ORDINARY legs   119 roundings,   7 never wrapped the mark   (5.9%)
+      HAIRPIN  legs   127 roundings, 103 NEVER WENT ROUND         (81.1%)
+
+       leg  kind       n   never wrapped    realised winding p10 / med / p90 (deg)
+         1  ordinary  72     5  (7%)            257 /  264 /  270
+         3  HAIRPIN   56    55 (98%)              0 /    0 /    0
+         4  HAIRPIN   71    48 (68%)              0 /    0 /  360
+         5  ordinary  47     2  (4%)            249 /  250 /  251
+
+**A realised winding of ZERO is a boat that sailed up one side of the mark and back down
+the same side.** She banks the required 183 degrees on the far side, the leg completes
+there, and she unwinds every degree of it on the way home. The mark was on her left going
+up and on her right coming back — she never left it on the required side at all.
+
+### WHY 183 AND NOT 360 — the mechanism
+
+`CoursePath.requiredSweep` measures the ARC between the two tangent points and nothing
+else, while the engine accumulates winding for the WHOLE leg. At an ordinary corner the
+difference is a bias; at a HAIRPIN it is the whole answer. A windward mark is the textbook
+case: you arrive from the south and leave to the south, so you must pass on one side and
+return on the other, and your bearing about the mark sweeps a full turn. The tangent
+arithmetic reads 2*pi minus the two tangent half-angles — about 180 — and the guard that
+was supposed to catch degenerate geometry (`sweep < 0.2`) fires on the OPPOSITE case, a
+collinear pass-by, and on no leg of any authored venue.
+
+`treeH1` tells the two apart by where the anchors are (subtend < 14 deg = hairpin =>
+2*pi). Authored courses sit at 0.0-0.8 deg and the nearest non-hairpin leg is at 12.6, so
+the classes are cleanly separated. Affects bay legs 3 and 4, arctic leg 1, redrock leg 3.
+Benching now — this is a THRESHOLD change on both anchor venues and it gets treated as one.
+
+## ⚠️⚠️ REDROCK IS NOT RACEABLE — 1 FINISHER IN 72 BOAT-RACES
+
+The new cut passes `test_sailable` (the IDEAL path completes it), so a perfect sailor can
+sail it. The fleet cannot. 8 races, cutoff raised to 900 against the venue's authored 360:
+
+    finishers                    1 of 72
+    furthest leg reached         leg 3: 56 boats   leg 2: 6   leg 4: 6   leg 5: 3
+    land collisions              236.9 per boat-race     (bay 0.08, arctic 25-33)
+    boat rubs                     17.7 per boat-race     (bay 1.2)
+    penalties                      4.35 per boat         (bay 0.33)
+    navigable cells                4015                  (bay 36174, arctic 18525,
+                                                          ocean 191389)
+
+Fifty-six of seventy-two boats die on **leg 3 — the hairpin**, which is the same leg the
+handover flagged. The water is a thin web: at 50-unit cells and hull-width clearance,
+4015 cells is an order of magnitude less room than any venue the AI has ever sailed.
+
+**This is an authoring decision, not a bug to fix in the AI**, and it is the owner's call:
+either the channels widen, or Redrock is a specialist venue the current fleet cannot race.
+Reporting it rather than quietly tuning around it.

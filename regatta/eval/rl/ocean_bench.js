@@ -1,5 +1,6 @@
-// Bluewater Bonanza (ocean) fleet bench, tree-parameterised like bay_bench/fleet_leg2.
-//   node ocean_bench.js <trials> <seed0> <label> <tree>
+// Open-water fleet bench, tree- AND venue-parameterised (bay_bench/fleet_leg2 are each
+// welded to one venue; this one is not, because the two new venues need benching too).
+//   node ocean_bench.js <trials> <seed0> <label> <tree> [venue]
 // Records per boat: finish time, penalties, OCS, contacts, and the two quantities the
 // sea decides — VMG made good upwind and downwind, and the share of downwind time spent
 // on a wave face rather than climbing one.
@@ -9,13 +10,14 @@ const TRIALS = parseInt(process.argv[2]) || 8;
 const SEED0 = parseInt(process.argv[3]) || 9300;
 const LABEL = process.argv[4] || 'x';
 const ROOT = path.join(__dirname, process.argv[5] || 'treeA');
+const VENUE = process.argv[6] || 'ocean';
 (async () => {
     const browser = await chromium.launch();
     const page = await browser.newPage();
     page.on('pageerror', e => console.log('PAGE ERROR:', String(e).slice(0, 300)));
-    await page.addInitScript(() => {
-        localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'ocean' }));
-    });
+    await page.addInitScript((v) => {
+        localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
+    }, VENUE);
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
     await page.evaluate(() => {
@@ -97,6 +99,6 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeA');
         console.log(`seed ${seed}: finishers ${fins.length} finT ${fins.join(',')}`);
     }
     fs.writeFileSync(path.join(__dirname, 'ocean_bench_' + LABEL + '.json'), JSON.stringify(out));
-    console.log('saved ocean_bench_' + LABEL + '.json  nLegs', out[0].nLegs);
+    console.log('saved ocean_bench_' + LABEL + '.json  venue', VENUE, ' nLegs', out[0].nLegs);
     await browser.close();
 })();
