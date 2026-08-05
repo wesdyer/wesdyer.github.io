@@ -4169,3 +4169,39 @@ wrong tool (that is what treeH1 was). It wants a mechanism that defers or revisi
 - Rule 20 (room to tack at an obstruction): needs a hail mechanism, predicate not counted.
 - Phase 5 (pressure): ocean authors dirVar 0.21 rad and speedVar 4 kt over a 120 s period,
   so there IS something to find there. Not probed.
+
+
+---
+
+## ⚡⚡ AND ON ARCTIC THE CHEAT IS STILL ALIVE — 56% (12:10)
+
+The corrected probe splits the two venues cleanly, which the artifact had hidden:
+
+    bay      hairpin legs   73 roundings,  4 never went round   (5.5%)
+                            realised winding median 357-358 — THEY GO ROUND
+    arctic   hairpin leg    72 roundings, 40 never went round  (55.6%)
+                            realised winding p10 7 / MEDIAN 10 / p90 369 — BIMODAL
+
+**Glacier Sound's island is the only rounding mark on the venue, and over half the fleet
+never gets round it.** The distribution is the two classes the string rule predicts, 2*pi
+apart, and 56% of the mass is in the wrong one.
+
+### WHY ARCTIC AND NOT BAY — the mechanism
+
+`reqSweep` accumulates from LEG START at any distance, and arctic's leg starts 5458 units
+from a mark whose body is 405 units of rock. **A long off-axis approach banks bearing
+change the boat never spent rounding** — that is the documented "too lenient when she
+approaches off the mark's beam" bias, and on Glacier Sound the approach alone can deliver
+most of the 195 degrees the threshold asks. She passes the island on one side, banks the
+requirement from approach geometry, completes the leg, and comes back the same side. On
+bay the anchors are 3741 units from a 12-unit buoy and the approach banks almost nothing,
+so the same threshold bites properly.
+
+⇒ **`treeH1` is the right change for the wrong reason I first gave it.** Not "the tangent
+formula is short at a hairpin" (it is exactly `string - pi`, the correct boundary) but
+"the boundary is unreachable-by-cheating only when the approach is short". Requiring the
+full circuit removes the approach's contribution from the decision by construction.
+
+Bay's price is 8.5 s of paired median for 5.5% -> ~0% on 37% of its roundings. Arctic's
+is being benched. **The owner's standing instruction is that cheating is worse than losses
+in time**, and 56% is not a residue.
