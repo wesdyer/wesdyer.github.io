@@ -3962,7 +3962,7 @@ their disjoint sets, and both had a mechanism, not a shrug.**
 happen to point at 159 degrees. Bluewater's four legs are what make the angle question
 moot; the finding is about this course as much as about this AI.
 
-## ⚡⚡ THE CHEAT IS STILL ALIVE AT HAIRPIN MARKS — and it is most of two bay legs (11:35)
+## ⛔ RETRACTED — "THE CHEAT IS STILL ALIVE AT HAIRPIN MARKS" WAS MY OWN PROBE'S BUG
 
 `_string_realised_probe.js` (new) applies the string rule to the REALISED track. The
 engine's own winding test has to PREDICT the rest of the leg at the moment the rounding
@@ -3980,8 +3980,20 @@ AFTER the leg completes, all the way to the next anchor, and then asks the rule.
          4  HAIRPIN   71    48 (68%)              0 /    0 /  360
          5  ordinary  47     2  (4%)            249 /  250 /  251
 
-**A realised winding of ZERO is a boat that sailed up one side of the mark and back down
-the same side.** She banks the required 183 degrees on the far side, the leg completes
+⛔ **THE NUMBERS ABOVE ARE WRONG AND THE CAUSE IS THE PROBE.** It closed each record when
+the boat came within a zone-radius of the NEXT anchor — and on an out-and-back the next
+anchor is where she came FROM, so at leg start she was already sitting on top of it and the
+record closed on frame one with a winding of exactly zero. That is why every hairpin leg
+read exactly 0 at p10, median AND p90, and why arctic read 72 of 72. **A statistic that is
+exactly zero at every percentile is not a finding, it is a bug**, and it should have been
+caught before the entry below was written rather than twenty minutes after.
+
+The probe now ARMS on leaving (`dn > closeAt * 2.5`) before it can close. Corrected
+numbers below. Kept in the log rather than deleted, because the failure mode — a proximity
+close whose predicate is already true at the moment the record opens — will recur.
+
+**A realised winding of ZERO would be a boat that sailed up one side of the mark and back
+down the same side.** She banks the required 183 degrees on the far side, the leg completes
 there, and she unwinds every degree of it on the way home. The mark was on her left going
 up and on her right coming back — she never left it on the required side at all.
 

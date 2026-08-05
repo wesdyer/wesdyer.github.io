@@ -69,7 +69,13 @@ const ROOT = process.argv[5] ? path.resolve(process.argv[5]) : path.resolve('.')
             if (lastB[k] != null) rec.wind += norm(bNow - lastB[k]) * rec.sgn;
             lastB[k] = bNow;
             const dn = Math.hypot(bt.x - rec.nx, bt.y - rec.ny);
-            if (dn < rec.closeAt || rs.finished) { done.push(rec); open[k] = null; lastB[k] = null; }
+            // ⚠️ ARM BEFORE CLOSING. On an out-and-back the NEXT anchor is where she came
+            // FROM, so at leg start she is already sitting on top of it and a naive
+            // proximity close fires on frame one with a winding of exactly zero. That
+            // artifact reads as "100% of roundings never went round", which is how it was
+            // caught. The record only becomes closeable once she has actually left.
+            if (dn > rec.closeAt * 2.5) rec.armed = true;
+            if ((rec.armed && dn < rec.closeAt) || rs.finished) { done.push(rec); open[k] = null; lastB[k] = null; }
           }
           if (rs.leg !== lastLeg[k]) {
             lastLeg[k] = rs.leg;
@@ -87,7 +93,7 @@ const ROOT = process.argv[5] ? path.resolve(process.argv[5]) : path.resolve('.')
                 // subtend at the mark between where she started and the next anchor
                 const sub = Math.abs(norm(bQ - bP));
                 open[k] = { leg: rs.leg, name: bt.name, mx: m.x, my: m.y, sgn,
-                            nx: nA.x, ny: nA.y, need, sub, wind: 0,
+                            nx: nA.x, ny: nA.y, need, sub, wind: 0, armed: false,
                             closeAt: Math.max(200, m.zone * 0.9) };
                 lastB[k] = bP;
               }
