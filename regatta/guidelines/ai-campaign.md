@@ -2843,3 +2843,60 @@ is now the third time this session a change has only worked as a pair.
    AI's own timidity rather than real infringement. Expect penalty counts to
    RISE, which fails the lexicographic gate by construction — judge it on whether
    the fouls called are CORRECT.
+
+## KEEP-CLEAR (a)/(b) and RULES 22 + 23.2 — measured, NOT landed
+
+**keep-clear split** (`treeD`): the definition gives two different tests and the
+code was using one for both. (a) *"the right-of-way boat can sail her course with
+no need to take avoiding action"* is a CPA condition satisfied at a SMALL gap —
+which is exactly why sailors cross at gaps that look alarming. (b) *"when the
+boats are OVERLAPPED, if the right-of-way boat can also change course in BOTH
+DIRECTIONS without immediately making contact"* is not a CPA condition at all: a
+windward boat on a diverging track still is not keeping clear if a luff would hit
+her. That is LATERAL room off her centreline, sized by how far she can swing her
+bow immediately (her turn rate × ~1.2s × hull length + our beam). The `KEEP = 110`
+CPA constant was too strict for crossings and too weak alongside.
+
+    bay 9100-9119   fin med 255->255 (mean 257.4->254.6), paired +2 med / +2.8 mean
+                    pens 0.44->0.39, OCS 1.1->0.0%, rubs 1.91->1.67, max 375->301
+    bay 9200-9219   fin med 257->251, paired +6 med / +5.9 mean
+     (DISJOINT)     pens 0.51->0.36, OCS 2.8->0.6%, RUBS 1.67->1.21
+    arctic 32 seeds rounders 286->285, finishers 281->281, in-time 137->132,
+                    med 422->432, mean 453.3->448.8
+    seatrials 100t  198.75/194.91 -> 198.77/194.53, OCS 14.89->13.33%,
+                    pens 0.29->0.31, MAX 312->360
+
+**rules 22 + 23.2** (`treeH`, on top): a boat AGROUND is avoided by everyone
+(Section D removes Section A between them — she has neither rights nor
+obligations, and the arctic fleet grounds 583-713 times a boat-race). And no
+interference with a boat taking a penalty, on another leg, or returning — ⚠️ with
+the exemption doing the real work: *"this rule does not apply when the boat is
+sailing her proper course"*, and our proper course is exactly the UNDEFLECTED
+candidate, so the rule constrains our DEVIATIONS and costs nothing while we are
+simply racing.
+
+    bay 9100-9119   fin med 255->252, paired +1, rubs 1.67->1.52, land 0.12->0.04
+    bay 9200-9219   fin med 251->251, paired -2, RUBS 1.21->1.06, mark 0.43->0.34
+    arctic 8 screen finishers 72->71, med 397->396, paired +6 med / -12.0 mean
+
+⛔ **Neither is landed. The venue split has now repeated FOUR times** (penalty
+turns, heat gate, `rrspair`, keep-clear): every rules-correctness improvement
+wins on bay and Clubhouse and goes neutral-to-negative on arctic. That is not a
+coincidence and it is not ice being "harder" — **the audit already named the
+hole. Arctic's avoidance is 35% ICE (no rival within 600u at all), and the rules
+layer has no proper obstruction model:**
+- rule 19 exists and does iterate `state.course.islands` (so floes are included),
+  but the definition of *continuing obstruction* — every shoreline here — is
+  absent, and 18.1(a)(4) routes those to rule 19 rather than 18;
+- *"a boat racing IS an obstruction to other boats… required to keep clear of
+  her"* is not modelled, which is what makes three-boat situations resolvable;
+- rule 20 (room to tack at an obstruction) does not exist at all, so a boat
+  close-hauled at the ice has no way to be given room.
+
+**⇒ The next unit of work is the OBSTRUCTION MODEL, not more keep-clear tuning.**
+Bay measurements will keep improving without it and arctic will keep refusing,
+because on arctic a third of the problem is not a boat.
+
+Interim option if the bay win is wanted now: scope keep-clear on `_floeObjs` the
+way the penalty-turn and heat-gate changes already are — it would be the third
+use of that pattern, and it is a stopgap, not the fix.
