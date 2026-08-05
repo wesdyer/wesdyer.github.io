@@ -3111,3 +3111,93 @@ sail. `_string_rule_check.js` (new) sweeps the radius on any venue:
 So the engine has NO proximity requirement — proven to 3.0 zone radii on open water,
 which is what that test line exists to guarantee. Passing it on arctic would need a
 3.2% tolerance, which is the thing being removed. The test was not edited.
+
+## A, continued — WHERE THE ARCTIC 87 SECONDS ACTUALLY WENT
+
+`_round_cost_probe.js` (new) separates "sailing the arc she used to skip" from
+"grinding". Arctic, 6 seeds, per rounding passage:
+
+                        HEAD      tolerance fix
+    time in the ring    50.1s     142.5s
+    distance sailed     4892u     11360u
+    sweep banked        1.73 rad  3.28 rad
+    mean speed          92.4      84.3 u/s
+    WANDER RATIO        2.37      4.56      (1.0 = a circle sailed cleanly)
+    passages over 60s   39%       94%
+
+Sweep +90%, distance +132%, speed barely down. **She is not sailing further round,
+she is wandering** — so a real share of the cost was AI, not honesty, and two
+re-aims took it back:
+
+    +12 med paired   the AI's exit turn reads the ENGINE's banked flag instead of
+                     recomputing a discounted threshold and adding a 0.25 buffer
+    +26 med paired   the leg completes when she has LEFT THE ZONE (18.2(b)'s own
+                     boundary), not at 1.25x it — 213 units of extra outbound
+                     orbit on Glacier Sound
+    net              arctic -87 -> -50 med paired vs HEAD; finishers 135 -> 140,
+                     in-time 33 -> 42. Bay improved too: 251 -> 250, mark
+                     contacts 0.41 -> 0.33.
+
+⛔ **NOT the orbit radius.** `_orbit_radius_probe.js`: the AI orbits at 0.85z =
+723 against the planner's own `_roundR` = 713, and **no radius round that island
+is clean** — 49-71% water at every radius from 0.6z to 1.4z. It is drifting ice
+in the ring, not a mis-set constant. Do not re-tune the orbit radius on this
+evidence.
+
+## THE STRONGER CORRECTNESS TEST — `_string_truth_probe.js` (new)
+
+The swept-angle threshold is a PROXY and it is wrong in both directions: too
+lenient when she approaches off the mark's beam (the straight-line approach banks
+bearing change she never spent rounding anything), too strict when she approaches
+straight at it. The rule is a WINDING condition, and winding is a homotopy
+invariant — over a leg it takes one of exactly two values 2*pi apart, so the
+classifier has a full pi of margin and needs no tolerance:
+
+    required = signed angle from (mark -> where she began the leg) to
+               (mark -> the next mark), the required way round, in (0, 2pi]
+    actual   = roundSweep + the short-way sweep still to come
+    ROUNDED iff actual >= required - pi
+
+Arctic completed roundings whose string never wrapped the mark:
+
+    HEAD                                    30%
+    tolerance fix + latch                   19%
+    + leave-the-zone completion              9%
+    + latch give-back 0.5 rad not half a turn 4%
+
+The 19%->4% step is worth reading: at half a turn of grace the latch was letting
+boats complete after giving BACK 0.52-1.10 rad, with the winding saying flatly
+that the string never wrapped (actual -0.03 against a required 6.25). The latch
+exists to survive the 0.19-0.40 rad unwind of an exit through the ring; half a
+radian covers that and nothing else.
+
+## D. RULES 22 AND 23.2 — SPLIT, AND 23.2 IS REJECTED WITH A MECHANISM
+
+Lifted from `treeH` (only the two rules hunks; treeH also predates the cosmetic
+merge and would have reverted it). Gated ON TOP OF the rounding fix — which
+matters, because the interaction is the whole story.
+
+    bay 20 seeds, vs the rounding fix       fin med   rubs   pens   marks
+    rounding fix (baseline)                 251       1.20   0.37   0.41
+    + rule 22 only                          251  0/-0.2   1.21   0.37   0.41
+    + rule 23.2 only                        254 -1/-3.0   1.77   0.43   0.57
+    + 23.2 without the "another leg" clause  252  0/-3.3   1.68   0.46   0.58
+
+⛔ **RULE 23.2 REJECTED at two scopings.** Dropping the leg clause did not save
+it, so the clause is not the fault — **the mechanism is.** 23.2 is implemented as
+a TAX ON DEVIATION near a protected boat, and deviation is the only tool this
+planner has for not hitting her. Taxing it makes the fleet hit the protected
+boats MORE: penalties 0.37 -> 0.46, rubs 1.20 -> 1.68. A correct 23.2 has to be a
+constraint on FORCING HER TO CHANGE COURSE — which is item E's no-contact
+detector — not a proximity cost. Do not retry it as a cost term.
+
+⚠️ Note the interaction that made this visible: the first bay gate of the pair
+read +1 med with rubs 1.67->1.52 on the OLD baseline. Once roundings became
+honest, boats near a mark are far more often on different legs (one rounding it,
+one leaving), so the same term fired across the whole mark area. **A change that
+passed its gate before the rounding fix is not thereby passed now.**
+
+Rule 22 (a boat AGROUND is avoided by everybody, Section D removing Section A
+between them) measures INERT on both venues: bay 0 med / -0.2 mean, arctic +5 med
+/ -3.1 mean. It is a rule the engine genuinely lacked and it costs nothing; it is
+held for a re-gate on the final rounding tree rather than landed on this evidence.
