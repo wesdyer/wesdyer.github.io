@@ -543,7 +543,12 @@ def emit(asset, profiles, bg="transparent"):
     bg_note = "n/a (full-bleed)" if asset["class"] == "texture" else bg
     print(f"{asset['key']}  [{asset['class']}/{asset.get('role', '-')}]  "
           f"venue={asset.get('venue', '-')}  status={asset['status']}  bg={bg_note}")
-    line = f"master {prof['master']}x{prof['master']} {prof['background']}"
+    # Per-asset master/gen, or the header lies to whoever hand-runs this: the cove
+    # cargo family is generated 1024x1536 onto a 1536 master, not the profile's 1024.
+    m = asset.get("master", prof["master"])
+    line = f"master {m}x{m} {prof['background']}"
+    if "gen" in asset:
+        line += f"   generate at {asset['gen']}"
     if asset["class"] == "texture":
         t = tile_world(asset, prof)
         line += f"   tile {t} world units ({prof['master'] / t:g}x supersample)"

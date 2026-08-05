@@ -38,14 +38,38 @@ class Fail(Exception):
     pass
 
 
-def check_master(img, prof, key):
+def master_for(asset, prof, delivered):
+    """Working master size, and the note explaining any move off the profile.
+
+    Two departures from "the profile decides". First, a PER-ASSET OVERRIDE: master
+    size is a per-subject question, not a per-class one, because it is really asking
+    how many px of SUBJECT the biggest consumer of this asset needs. A buoy at world
+    40 is finished at 1024; the cove cargo ship is drawn at world 720 and is not.
+    Raising the whole profile to suit the ship would force every other world-prop to
+    be regenerated to match.
+
+    Second, THE MASTER IS NEVER UPSCALED to meet the target. A 1024 file resampled up
+    to 1536 and then baked down to 1440 carries exactly the information it had at
+    1024, having paid for two resamples instead of one, and it writes a master to the
+    archive that claims a resolution it does not have. The declared master is a
+    ceiling and a request to the generator, not a promise about files already on
+    disk.
+    """
+    m = asset.get("master", prof["master"])
+    if delivered == m:
+        return m, None
+    if delivered > m:
+        return m, f"master is {delivered}px, target {m}px — will downsample"
+    return delivered, (f"master is {delivered}px but this asset asks for {m}px — "
+                       f"baking from {delivered} rather than upscaling; regenerate "
+                       f"at {m}px to get the resolution the asset is sized for")
+
+
+def check_master(img, prof, key, m):
     """Structural checks that are cheap now and expensive after 80 files."""
     notes = []
-    m = prof["master"]
     if img.width != img.height:
         raise Fail(f"not square: {img.width}x{img.height}")
-    if img.width != m:
-        notes.append(f"master is {img.width}px, profile wants {m}px — will resample")
 
     if prof["background"] == "transparent":
         if img.mode != "RGBA":
@@ -116,7 +140,10 @@ def ingest(asset, profiles, check_only=False):
         raise Fail(f"no master at {src.relative_to(REPO.parent)}")
 
     img = Image.open(src)
-    bbox, notes = check_master(img, prof, key)
+    m, size_note = master_for(asset, prof, img.width)
+    bbox, notes = check_master(img, prof, key, m)
+    if size_note:
+        notes.insert(0, size_note)
 
     for n in notes:
         print(f"    warn: {n}")
@@ -129,7 +156,6 @@ def ingest(asset, profiles, check_only=False):
     # Dividing by the profile master instead silently corrupts the anchor whenever
     # the delivered master is a different size (a 2048px file lands the anchor at 1.0).
     src_w = img.width
-    m = prof["master"]
     if img.size != (m, m):
         img = (wrap_resize(img, m) if prof.get("tileWorld")
                else img.resize((m, m), Image.LANCZOS))
@@ -211,10 +237,25 @@ def ingest(asset, profiles, check_only=False):
             fw, fh = (bbox[2] - bbox[0]) / m, (bbox[3] - bbox[1]) / m
             print(f"    fill normalized to {asset['fillTo']:.0%} — content {fw:.0%}x{fh:.0%} "
                   f"of frame, visible at {round(asset['world']*fw)}x{round(asset['world']*fh)}px")
-        size = asset["world"] * prof["bake"]
+        # Per-asset bake override. The profile's 4x is oversampling for device pixel
+        # ratio plus margin — the camera is 1:1 and nothing zooms — and at small
+        # `world` it is free. It stops being free at the top of the size range: the
+        # master holds `master * fillTo` px of content and no more, so a bake of
+        # `world * 4` starts UPSCALING the master once world passes master/4, and
+        # every px past that is invented. The cove cargo ship is the first asset to
+        # want a world larger than that ceiling (a container ship 4x a racing hull is
+        # simply the wrong size for the subject), so it trades zoom headroom it was
+        # never going to spend for length it visibly needs. Lower this rather than
+        # raising `world` past master/bake and quietly shipping a soft sprite.
+        bake = asset.get("bake", prof["bake"])
+        size = round(asset["world"] * bake)
         game = img.resize((size, size), Image.LANCZOS)
         game.save(dest)
-        print(f"    -> {shown}  ({size}px bake for {asset['world']}px display)")
+        content = size * (asset.get("fillTo") or 1.0)
+        have = src_w * (asset.get("fillTo") or 1.0)
+        print(f"    -> {shown}  ({size}px bake at {bake}x for {asset['world']}px display)")
+        print(f"    resolution: {content:.0f}px of ship from a {have:.0f}px master "
+              f"= {content / have:.2f}x" + ("  UPSCALED" if content > have * 1.02 else ""))
         if bbox:
             anchor = [round((bbox[0] + bbox[2]) / 2 / src_w, 4),
                       round((bbox[1] + bbox[3]) / 2 / src_w, 4)]

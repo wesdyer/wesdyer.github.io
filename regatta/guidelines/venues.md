@@ -946,8 +946,10 @@ spoonbill/egret (ambient).
 > is named for its witness, per convention (Sockeye Run/Slipstream,
 > Gatorgrass/Chomp, Spoonbill Flats). "Sailing School" as a venue name would
 > repeat the Sea Trial Bay mistake — a procedure, not a place (see §10's rename
-> note). The witness writes itself: a line of ducklings following their mother
-> is a beginner fleet following the instructor's launch.
+> note). The witness writes itself: a line of ducklings following the drake
+> **is** a beginner fleet following the instructor's launch — so the witness and
+> the instructor are one character, **Paddle**, who is also the venue's unlock.
+> See [tutorial.md](tutorial.md) §13.
 
 **Description.** The smallest water in the game. A club pond ringed by mown
 lawn — a floating pontoon, a rack of training dinghies, the instructor's launch
@@ -1010,7 +1012,8 @@ you as you cross the line.
 
 **Key assets.** Floating pontoon with sails drying (terrain) · instructor's
 launch (traffic, committee boat) · training dinghies at the rack (ambient) ·
-**mother duck + duckling line (ambient + reactive — the witness)** · lesson
+**Paddle the mallard drake + his duckling line (ambient + reactive — the witness,
+and the tutorial's instructor; see [tutorial.md](tutorial.md) §13)** · lesson
 buoy (nav) · clubhouse lawn and dock with one watching parent (ambient).
 
 ### Standing constraints

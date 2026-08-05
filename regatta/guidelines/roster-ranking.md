@@ -180,7 +180,12 @@ characters ARE their venues; earning them anywhere else would be a continuity er
 36. **Tiny (Antarctic Krill, rocket)** — The polar joke-hero: the smallest critter
     in the coldest venue. Krill among whales.
 37. **Paddle (Mallard Duck, metronome)** — The Duckling Pond / sailing-school
-    witness — mother duck leads the beginner venue's unlock.
+    witness *and its instructor* — a **drake**, with the duckling line as his
+    beginner class behind him. The drake's green head is the most recognizable
+    marking in waterfowl, which is why the venue's witness is the male; "great dad
+    running the kids' class" is also a warmer character than the clip-art mother
+    duck. He is the voice of the whole tutorial and its closing unlock — see
+    [tutorial.md](tutorial.md) §13.
 38. **Croak (Bullfrog, shift)** — Bayou light-air specialist; win Gatorgrass in a
     whisper of wind.
 39. **Etienne (Red Swamp Crayfish, corner)** — Bayou local color; the channel-lane

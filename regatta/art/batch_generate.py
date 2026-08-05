@@ -62,6 +62,30 @@ UNIT_COST = {"high": 0.133, "medium": 0.034, "low": 0.009}
 
 SPAN, CX, CY = 0.86, 0.51, 0.50  # roster framing, measured off the shipped set
 
+# A SQUARE FRAME IS A CHOICE, NOT A CONSTRAINT, and for a long subject it is the
+# wrong one. The model also takes 1024x1536 and 1536x1024, and the long axis is the
+# only one that limits how big a sprite can be drawn: the master holds
+# `master * fillTo` px of subject, ingest bakes down from that, and everything past
+# it is invented. A container ship in a square frame spends three quarters of the
+# frame on empty water and comes out capped at 8.6 boat lengths; the same ship in a
+# portrait frame is capped at 12.8. Per-asset via `gen` in the manifest, because
+# this is a question about the SUBJECT's shape — most assets are genuinely square
+# and should stay that way.
+GEN_SIZES = {"1024x1024", "1024x1536", "1536x1024"}
+
+
+def size_for(asset):
+    size = asset.get("gen", SIZE)
+    if size not in GEN_SIZES:
+        sys.exit(f"{asset['key']}: gen {size!r} is not one of {sorted(GEN_SIZES)}")
+    return size
+
+
+def cost_of(size, quality, batched):
+    """UNIT_COST is quoted per 1024x1024; the API bills output area, so scale by it."""
+    w, h = (int(v) for v in size.split("x"))
+    return UNIT_COST[quality] * (w * h) / (1024 * 1024) * (0.5 if batched else 1.0)
+
 
 KEYFILE = pathlib.Path.home() / ".config" / "openai" / "regatta-key"
 
@@ -111,7 +135,7 @@ def body_for(asset, profiles, quality):
         "model": MODEL,
         "prompt": full_prompt(asset, profiles),
         "n": 1,
-        "size": SIZE,
+        "size": size_for(asset),
         "quality": quality,
         "background": "transparent",
         "output_format": "png",
@@ -189,16 +213,27 @@ def normalise(png_bytes, master=1024):
     return canvas, int(floating.sum()), im.width / im.height
 
 
-def save(key, png_bytes, dest_dir=None):
+def master_of(asset, profiles):
+    """The square canvas this asset's master is written on. Mirrors ingest's
+    master_for: per-asset override, else the profile's. A portrait generation is
+    letterboxed into it — the master stays square because ingest, fillTo and the
+    anchor all assume that, and only the LONG axis was ever the limit."""
+    if not asset:
+        return 1024
+    return asset.get("master", profiles[asset["class"]]["master"])
+
+
+def save(key, png_bytes, dest_dir=None, asset=None, profiles=None):
     dest_dir = dest_dir or CANDIDATES
     dest_dir.mkdir(exist_ok=True)
-    canvas, stripped, aspect = normalise(png_bytes)
+    m = master_of(asset, profiles)
+    canvas, stripped, aspect = normalise(png_bytes, m)
     dest = dest_dir / f"{key}.png"
     canvas.save(dest)
     corners = [canvas.split()[-1].getpixel(p) for p in
-               ((2, 2), (1021, 2), (2, 1021), (1021, 1021))]
+               ((2, 2), (m - 3, 2), (2, m - 3), (m - 3, m - 3))]
     warn = "  <-- CORNERS NOT CLEAR, ingest will reject" if max(corners) > 8 else ""
-    print(f"  {key:12s} -> {dest.parent.name}/{key}.png   aspect {aspect:.2f}   "
+    print(f"  {key:12s} -> {dest.parent.name}/{key}.png   {m}px   aspect {aspect:.2f}   "
           f"stripped {stripped}{warn}")
     return dest
 
@@ -220,18 +255,22 @@ def select(args, by_key):
     return keys
 
 
-def estimate(keys, quality, batched):
-    unit = UNIT_COST[quality] * (0.5 if batched else 1.0)
-    return len(keys) * unit, unit
+def estimate(keys, quality, batched, by_key=None):
+    """Total and a per-size breakdown — a portrait frame is 1.5x the area, so a
+    mixed selection no longer has one unit price."""
+    sizes = [size_for(by_key[k]) if by_key else SIZE for k in keys]
+    per = {s: cost_of(s, quality, batched) for s in set(sizes)}
+    return sum(per[s] for s in sizes), per
 
 
 # ── commands ───────────────────────────────────────────────────────────────────
 def cmd_submit(args):
     m, by_key = load()
     keys = select(args, by_key)
-    total, unit = estimate(keys, args.quality, batched=True)
-    print(f"\n{len(keys)} image(s), {MODEL} {SIZE} {args.quality}, Batch API "
-          f"(~${unit:.3f} each) = ~${total:.2f}\n")
+    total, per = estimate(keys, args.quality, batched=True, by_key=by_key)
+    breakdown = ", ".join(f"{s} ~${c:.3f} each" for s, c in sorted(per.items()))
+    print(f"\n{len(keys)} image(s), {MODEL} {args.quality}, Batch API "
+          f"({breakdown}) = ~${total:.2f}\n")
     lines = []
     for k in keys:
         lines.append(json.dumps({
@@ -288,6 +327,7 @@ def cmd_status(args):
 
 
 def cmd_fetch(args):
+    man, by_key = load()          # needed for each asset's master size
     h = auth_headers()
     bid = _batch_id(args)
     r = requests.get(f"{API}/batches/{bid}", headers=h, timeout=60)
@@ -314,7 +354,8 @@ def cmd_fetch(args):
             print(f"  {key:12s} no image in response")
             continue
         try:
-            save(key, base64.b64decode(data[0]["b64_json"]))
+            save(key, base64.b64decode(data[0]["b64_json"]),
+                 asset=by_key.get(key), profiles=man["profiles"])
             n += 1
         except Exception as exc:                                   # noqa: BLE001
             print(f"  {key:12s} FAILED to normalise: {exc}")
@@ -325,9 +366,10 @@ def cmd_fetch(args):
 def cmd_sync(args):
     m, by_key = load()
     keys = select(args, by_key)
-    total, unit = estimate(keys, args.quality, batched=False)
-    print(f"\n{len(keys)} image(s), {MODEL} {SIZE} {args.quality}, direct "
-          f"(~${unit:.3f} each) = ~${total:.2f}\n")
+    total, per = estimate(keys, args.quality, batched=False, by_key=by_key)
+    breakdown = ", ".join(f"{s} ~${c:.3f} each" for s, c in sorted(per.items()))
+    print(f"\n{len(keys)} image(s), {MODEL} {args.quality}, direct "
+          f"({breakdown}) = ~${total:.2f}\n")
     if args.dry_run:
         print("--dry-run: nothing sent.")
         return
@@ -366,7 +408,7 @@ def cmd_sync(args):
                 print(f"  {k:12s} FAILED: {res}")
             else:
                 try:
-                    save(k, res)
+                    save(k, res, asset=by_key.get(k), profiles=m["profiles"])
                 except Exception as exc:                            # noqa: BLE001
                     print(f"  {k:12s} FAILED to normalise: {exc}")
     print("\nNothing shipped was touched. Next: python3 regatta/art/review.py sheet")

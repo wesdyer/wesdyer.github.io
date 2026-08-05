@@ -4408,8 +4408,35 @@ palmImg.src = 'assets/images/misc/palm.png';
 // is identical because land is opaque — the flat body colour is what would be under
 // it. 0 is the old flat fill, 1 is the raw tile.
 const LAND_TEXTURES = {
-    ice:     { src: 'assets/images/terrain/arctic/snow.png',    tile: 512, alpha: 0.3 },
-    granite: { src: 'assets/images/terrain/arctic/granite.png', tile: 256, alpha: 0.3 }
+    ice:      { src: 'assets/images/terrain/arctic/snow.png',    tile: 512, alpha: 0.3 },
+    granite:  { src: 'assets/images/terrain/arctic/granite.png', tile: 256, alpha: 0.3 },
+    // Beach sand. Keyed to `tropical`, not to one venue: every sandy isle in the
+    // game is the same material, so the cove, the lake islets and the lagoon all
+    // inherit it rather than the bay owning a look the others fake with a flat
+    // fill.
+    //
+    // 128, a QUARTER of the tile this asset was first authored against, and the
+    // number is measured rather than picked. The other two textures size their
+    // tile so the repeat is not countable across a big mass; this one is sized so
+    // the features that CAN be resolved land at true size. At the art scale of
+    // 9.2 world units per metre, 128 puts the shell chips at 4.9cm median and
+    // 14cm at p95 — a shell fragment and a small beach stone. The old 512 made
+    // those 20cm cobbles, which is why it read as a photograph zoomed too far in.
+    //
+    // Note what 128 is NOT doing: it is not what fixed the ripples the first art
+    // had. Retiling cannot fix a periodicity problem — 512 -> 90 moved the
+    // measured periodicity 5.44 -> 6.70, i.e. not at all, because a smaller tile
+    // makes ripples smaller and never fewer. That took redrawing the asset. See
+    // the manifest note; it is the transferable lesson here.
+    //
+    // 0.7 is a CONTRAST knob and nothing else, because the flat body above is set
+    // to this tile's own mean: the blend cannot move the colour, only the spread
+    // around it. That retires the mean-luma-shift warning the two arctic textures
+    // carry, and it is why this alpha could be tuned on looks alone. 0.7 lands
+    // on-screen surface contrast at 4.12, between the smooth-beach reference
+    // (2.95) and the Varkala plate (8.33), which keeps the ground losing the
+    // contrast fight with the boats as the texture class requires.
+    tropical: { src: 'assets/images/terrain/bay/bay-sand.png',   tile: 128, alpha: 0.7 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];
@@ -15393,7 +15420,13 @@ function checkIslandCollisions(dt) {
 
 // Per-style palettes: tropical (default), grass (swamp/river banks), ice (polar floes)
 const ISLAND_STYLES = {
-    tropical: { body: '#fde6b1', stroke: '#d4b483', veg: '#84cc16', rock: '#9ca3af', trees: true },
+    // Sand body measured off aerial beach reference, not picked: the mean of the dry
+    // sand in the Varkala plate (p5-p95 #cdb79f..#ecd6b7). The old #fde6b1 was a
+    // buttery yellow no beach is. It is ALSO the sand tile's own mean, deliberately —
+    // with base and tile equal, LAND_TEXTURES' alpha scales contrast without moving
+    // colour, so the mean-luma shift the arctic textures have to warn about cannot
+    // happen here.
+    tropical: { body: '#ddc39a', stroke: '#b89b78', veg: '#84cc16', rock: '#9ca3af', trees: true },
     grass:    { body: '#a89b6a', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#c2703e', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },
