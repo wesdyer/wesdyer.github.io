@@ -49,6 +49,9 @@ regatta/eval/rl/treeO/
 regatta/eval/rl/treeP/
 regatta/eval/rl/treeQ/
 regatta/eval/rl/treeR/
+# Multi-character tree names (treeR1, treeM3, treeBase, ...). The single-letter list
+# above predates them and a night's work adds a dozen full repo copies.
+regatta/eval/rl/tree[A-Z]?*/
 
 # Bench and probe OUTPUT under regatta/eval/rl — scratch by default. Files already
 # tracked stay tracked (git does not ignore what it is already following), so the
