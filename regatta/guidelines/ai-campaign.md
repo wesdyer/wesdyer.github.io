@@ -4235,3 +4235,28 @@ so the threshold, the winding test and the AI's exit latch re-base together.
 Why it should be cheaper than H1: it is anchored on the mark's OWN zone, so it scales from
 a 12-unit can to an 810-unit island with no second constant, and on bay — where the
 approach banks almost nothing — it should be close to inert.
+
+## ⚡⚡ `treeH1` ON ARCTIC: 56% -> 0%, FOR 21 SECONDS (11:25)
+
+    CORRECTNESS (realised track, 8 races, 72 roundings)
+      never went round        40 of 72 (55.6%)  ->  0 of 72 (0.0%)
+      realised winding        p10 7 / med 10 / p90 369  ->  p10 366 / med 368 / p90 370
+
+    PACE  arctic 9100 (16 seeds)
+      paired                  -21 med / -26.6 mean over 131 boats
+      finishers               137 -> 135        rounders 139 -> 140
+      pens                    1.67 -> 1.74
+    PACE  bay 9100 (20 seeds)
+      paired                  -8.5 med / -9.0 mean, 180/180, pens 0.36 -> 0.32
+
+**Every boat now goes all the way round the island.** The distribution is no longer
+bimodal — it is a single class at 368 degrees, which is what a rounding is.
+
+⚖️ **Judge it against the curve, not against zero.** The rounding work already accepted
+cost arctic ~70 s a boat and 10 finishers in 288 to take "never wrapped the mark" from 31%
+to 6%. This costs **21 s and 2 finishers in 144 to take arctic's only rounding from 56% to
+0%.** That is a better trade than one the owner has already taken, on the venue where they
+first reported the cheat.
+
+Outstanding before it can land: the disjoint 9200 arctic set, and a comparison against
+`treeH2`, which aims at the same defect with a sharper instrument.
