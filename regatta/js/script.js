@@ -9331,6 +9331,17 @@ function updateBoat(boat, dt) {
 
     // Physics
     const localWind = getWindAt(boat.x, boat.y);
+
+    // ── SEA STATE (ocean only — see swell.js) ───────────────────────────────
+    // `trim` is null on every venue whose document authors no swell, and each of the four
+    // uses below is behind that, so nothing outside Bluewater Bonanza changes by a unit.
+    //
+    // The yaw lands FIRST, on top of the heading the helm or the controller just chose: a
+    // wave does not ask what you were steering, and having to hold a course against it is
+    // the whole of what steering in a seaway is.
+    const swell = window.Swell && window.Swell.active() ? window.Swell.trim(boat, localWind.direction) : null;
+    if (swell) boat.heading = normalizeAngle(boat.heading + swell.yawRate * dt);
+
     const angleToWind = Math.abs(normalizeAngle(boat.heading - localWind.direction));
 
     // Log the breeze the PLAYER sailed through, for the results header. Player only and
@@ -9661,6 +9672,11 @@ function updateBoat(boat, dt) {
     boat.heel = (boat.heel || 0) + (heelNow - (boat.heel || 0)) * lag;
     targetKnots *= overpoweredFactor(boat.stats, boat.heel);
 
+    // THE SEA'S TAX ON DRIVING HARD UPWIND. Multiplies the target rather than the speed
+    // because it is a sustained state of the boat, not an impulse — and it is the one term
+    // that makes footing worse than pointing, which is why a seaway is sailed higher than
+    // flat water. Ocean only; 1.0 everywhere else. See swell.js §4.
+    if (swell) targetKnots *= swell.poundMul;
 
     let targetGameSpeed = targetKnots * 0.25;
 
@@ -9718,6 +9734,15 @@ function updateBoat(boat, dt) {
     }
 
     boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
+
+    // ── SURFING ─────────────────────────────────────────────────────────────
+    // Gravity along the wave face, added to SPEED and not to the target. That is the whole
+    // difference between surfing and simply going fast: the wave puts the boat somewhere its
+    // own polar cannot, the log shows it, and because the planing state machine above keys
+    // off actual boat speed, a good ride is what trips the boat into a plane. The same term
+    // with the sign reversed is the drag of climbing the back of the next one.
+    // knots/second -> game speed: knots = speed x 4.
+    if (swell) boat.speed = Math.max(0, boat.speed + (swell.surfKt * 0.25) * dt);
 
     // AI Boost: If wiggle is active, ensure minimum speed to slide off obstacles
     if (!boat.isPlayer && boat.controller && boat.controller.wiggleActive) {
@@ -9788,6 +9813,16 @@ function updateBoat(boat, dt) {
 
         boat.velocity.x += cVx;
         boat.velocity.y += cVy;
+    }
+
+    // ORBITAL DRIFT AND THE SET TO LEEWARD. Beside the current and for the same reason: the
+    // water itself is moving, so it belongs on the velocity over the ground and must never
+    // touch boat.speed — the log reads the same while the sea carries you sideways, which is
+    // exactly why being set to leeward upwind is so hard to notice and so expensive.
+    // units/second -> units/frame.
+    if (swell) {
+        boat.velocity.x += swell.driftX / 60;
+        boat.velocity.y += swell.driftY / 60;
     }
 
     boat.x += boat.velocity.x * timeScale;
@@ -10709,6 +10744,10 @@ function update(dt) {
 
     updateBaseWind(dt);
     updateGusts(dt);
+    // The swell's own clock. Advanced from dt like everything else, so it pauses with the
+    // race and is identical for a given seed — a wave field is pure trigonometry and must
+    // never reach for the RNG stream. No-op off the ocean.
+    if (window.Swell) window.Swell.update(dt);
 
     // Current Visuals (uniform current, or the river's spatial field)
     if (venueCurrent() || (state.race.conditions.current && state.race.conditions.current.speed > 0.1)) {
@@ -14857,6 +14896,11 @@ function draw() {
 
     // all lay over a submerged animal, which is most of what sells the depth.
 
+    // SWELL FIRST, under everything else on the water. It is the shape of the sea itself —
+    // the biggest, slowest structure there is — so the wakes, the cat's-paws and the
+    // wind-wave crests all ride ON it. Drawing it over them would read as a decal.
+    if (window.Swell) window.Swell.draw(ctx, state);
+
     drawWakes(ctx);
     drawParticles(ctx, 'surface');
     drawGusts(ctx);
@@ -14913,6 +14957,15 @@ function draw() {
         ctx.save();
         ctx.translate(boat.x, boat.y);
         ctx.rotate(boat.heading);
+        // RIDING THE SWELL, as parallax. A hull on a crest is nearer the camera than one in a
+        // trough. Strictly this is a couple of percent of scale from a realistic camera
+        // height — and a couple of percent turned out to be invisible. Pushed to 7.5%, which
+        // reads as a fleet heaving over a big sea and gives you the lift under the bow as you
+        // climb one. Picture only; the physics never reads it. No-op off the ocean.
+        if (window.Swell && window.Swell.active()) {
+            const s = 1 + window.Swell.lift(boat.x, boat.y) * 0.075;
+            ctx.scale(s, s);
+        }
         drawBoat(ctx, boat);
         ctx.restore();
     }
@@ -15107,6 +15160,29 @@ function draw() {
             if (planingLabel) {
                 if (player.raceState.isPlaning) planingLabel.classList.remove('hidden');
                 else planingLabel.classList.add('hidden');
+            }
+
+            // ── SURFING, the sibling cue ────────────────────────────────────
+            // PLANING says the hull has climbed onto its own bow wave; SURFING says the sea
+            // is carrying you, which is a different thing you did and worth its own word.
+            // They stack — a good ride down a face is what trips the plane — so the surf
+            // label sits above the planing one rather than replacing it.
+            //
+            // Latched in Swell.hud, not sampled: a crest passes every three seconds and a
+            // label blinking at that rate beside the speedo is noise, not information.
+            const surf = window.Swell && window.Swell.active() ? window.Swell.hud(player) : null;
+            let surfLabel = document.getElementById('hud-surfing-label');
+            if (!surfLabel && UI.speed.parentElement) {
+                surfLabel = document.createElement('div');
+                surfLabel.id = 'hud-surfing-label';
+                surfLabel.className = 'absolute -top-9 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-amber-300 hidden';
+                surfLabel.textContent = 'SURFING';
+                UI.speed.parentElement.style.position = 'relative';
+                UI.speed.parentElement.appendChild(surfLabel);
+            }
+            if (surfLabel) {
+                if (surf && surf.surfing) surfLabel.classList.remove('hidden');
+                else surfLabel.classList.add('hidden');
             }
         }
         if (UI.windSpeed) {
@@ -16258,6 +16334,12 @@ function initCourse() {
         // the mean wind over sailable WATER, so it needs the boundary and every land shape
         // — floes included — already settled.
         computeWindPressureScale();
+        // SEA STATE, and the same trap a third time — this is the path every venue takes,
+        // and the tail of initCourse is never reached. After the compile has written the
+        // day's mean wind, because the swell is aligned with the breeze that built it and
+        // cannot be laid out before the breeze is known. A document with no `swell` block
+        // gets none, which is every venue but Bluewater Bonanza.
+        if (window.Swell) window.Swell.configure(doc, state.wind.baseDirection);
         buildCoursePaths();
         return;
     }
@@ -16310,6 +16392,9 @@ function initCourse() {
     // Last, because it samples the mean wind over sailable WATER — it needs the boundary
     // and every land shape already in place, floes included.
     computeWindPressureScale();
+    // No document, so no sea state — and clear whatever the last venue laid out, so a
+    // generated course can never inherit the ocean's swell.
+    if (window.Swell) window.Swell.configure(null, 0);
     buildCoursePaths();
 }
 

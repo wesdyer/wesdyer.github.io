@@ -82,7 +82,7 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 | 4 | Gatorgrass Bayou | **Loop** | wide and windy, or short and gator-infested? | the log drifting into the gap you chose |
 | 5 | Sockeye Run | **Out & Back**, 1 lap | fast water or slack water — and it inverts? | parking in an eddy to shake a rival |
 | 6 | Bluewater Bonanza | **Distance Triangle** | where is the pressure, an hour from now? | the long surf home under kite |
-| 7 | Redrock Reservoir | **Distance Loop** | is the narrows doubled or dead today? | the venturi firing you out the slot |
+| 7 | Redrock Reservoir | **Distance Loop** | where is the pressure, and can I get there before someone blocks me? | diving inside the spire to break an overlap |
 | 8 | Glowtide Strait | **Slalom** | do I follow the glow or trust my own line? | chasing a glowing wake through lit gates |
 | 9 | Glacier Sound | **Out & Back** | how close do I dare sail to the ice? | a calving that reshapes your return leg |
 | 10 | Clubhouse Point | **W/L — FROZEN** | — | — |
@@ -521,11 +521,12 @@ whitecap fragments (terrain).
 **Description.** Sandstone walls, turquoise water, and a breeze that does what
 the rock tells it. The only warm palette in the game.
 
-**Character & narrative.** Silent and enormous. Bighorn on the ledges, ravens, an
+**Character & narrative.** Silent and enormous — until the fleet arrives, and
+then it is the loudest venue in the game. Bighorn on the ledges, ravens, an
 eagle riding a thermal you can't use. The story is *the local* — you learned the
 canyon and it paid.
 
-**Traits.** Strongest gust bias outside the Arctic (`0.6–0.8`). Punchy and
+**Traits.** Strongest gust bias outside the Arctic. Punchy and
 location-dependent.
 
 **Art.** Orange/rust sandstone + turquoise water. Sky: **bare, by choice** —
@@ -534,38 +535,113 @@ distinctive by absence, excluded from the sky rework.
 **Key mechanics.** **Terrain-shaped wind** — its own mechanic class: fixed,
 learnable geography-wind rather than random weather.
 
-### Course — Distance Loop, one long circuit
+### Course — Distance Loop, one circuit that folds back through its own water
 
-Down one canyon arm and back up a *different* one, so no leg repeats and you
-never see the boats ahead. Every leg sits at a different angle to both wind and
-rock: one dead in a wall's lee, one accelerating through the narrows, one exposed
-to williwaws off the rim.
+> ⚠️ **Identity changed August 2026, and the doc is the thing that was wrong.**
+> This venue was specced as a lonely expedition — *"down one canyon arm and back
+> up a different one, so no leg repeats and you never see the boats ahead."* The
+> authored course does the opposite: it doubles back through the same narrows,
+> and those narrows are tighter than the fleet. **That is better, and it is now
+> the venue's identity.** Redrock is **the traffic venue** — the one place in the
+> game where the boat ahead of you is a wall. The old "lonely distance" brief is
+> retired and not reassigned; nothing else in the set needs it.
 
-Running it as **distance rather than laps** is what separates it from the other
-loops: this is a single expedition through a fixed puzzle, not repeated circuits.
-Learning happens across *races*, which is what "LOCAL KNOWLEDGE" should mean.
+**The maze is the mechanic, and it is already built.** Measured off the authored
+geography:
 
-**The awesome part is the slot canyon.** One leg squeezes between walls close
-enough that the wind is either **doubled by the venturi or completely dead**, and
-which one it is depends on the day's wind angle — but **you can read it off the
-water surface before you commit.** Ripples or glass. Enter wrong and you park in
-a wind hole with no room to escape and the fleet sailing past outside.
+- **20%** of the sailable water is under 2 boat lengths wide, **46%** under 4.
+- **Legs 1 and 5 share 100% of their water, running in opposite directions.**
+  Legs 2 and 3 share 67%, legs 4 and 5 share 46%.
+- Legs 1, 3 and 5 **cross each other** in a junction 40 m across.
 
-**The question it asks.** *Is the narrows working today?* — and the water tells
-you if you look.
+So the fleet meets itself three times a lap, head-on, in water where two boats
+abreast is a squeeze. No hazard had to be invented for this; it falls out of the
+shape of the canyon.
+
+**Distance, not laps — for now.** One long circuit means you meet each pinch
+once. ⚠️ **A traffic venue wants laps**, because congestion compounds with
+repetition and the second time through a junction — fleet strung out, leaders
+lapping — is where the stories are. That change needs the course rethinking from
+scratch, so it is deliberately deferred rather than forgotten.
+
+### The wind pass — what the slots actually do
+
+**The venue authored 25 wind regions, more than any other venue in the game, and
+every one of them carried 16 knots.** Only direction varied. The consequences
+were exact and measurable, and they are worth writing down because any
+geography-fixed venue can make the same mistake:
+
+- **Every fork was a coin flip.** Leg 1 offers two genuinely separate routes,
+  446 m and 492 m. Priced with the game's polar including the lees, both took
+  **24.2 seconds**. The geometry for a decision was built; the reason to prefer
+  a branch was not.
+- **The breeze was drawn to follow the channels**, so every leg lay along its own
+  corridor: measured TWA of 18°, 65°, 144°, 36°, 150°. The race was 44% beat,
+  **13% reach**, 43% run — and a "beat" up a channel six boat lengths wide is
+  nine forced tacks in twenty-four seconds, which is a metronome, not tactics.
+- **There were no gust sources at all**, so no puff or lull ever appeared on the
+  water, on the venue whose card promises "sudden gust-bombs".
+
+**A slot's speed is a fact about its geometry, so that is where the numbers come
+from.** A slot whose axis lines up with the breeze funnels it; a slot lying
+across the breeze, or tucked in behind a wall, goes dead. Speeds now run **7 to
+24 knots** across the course, assigned by that rule rather than sprinkled — the
+narrows at `wind-14` and `wind-16` lie along the wind and blow 24 and 22, the
+cross-slots at `wind-8` and `wind-3` sit at 7 and 11.
+
+**Four regions were turned ACROSS their channels rather than along them.** This
+is the change that gives the venue angles: a bent canyon is the one geometry
+that hands you every point of sail for free, and aligning the breeze with the
+corridor throws all of it away. The race is now **26% beat / 39% reach / 35%
+run** — the most balanced split in the set — and reaching in a four-boat-length
+channel with a rival to leeward is the passing moment the venue previously had
+none of.
+
+**Three gust sources sit on the rim**, over land, upwind of the course. Their
+puffs fall onto the water 3–10 seconds after birth, which is what a williwaw is:
+it drops off the cliff beside you rather than announcing itself from a mile away.
+The *learnable* half of the venue is the static speed map; the *sudden* half is
+these. Keeping those two apart is what stops "local knowledge" from meaning
+"memorise the weather".
+
+**The question it asks.** *Where is the pressure, and can I get to it before
+someone parks in front of me?* Two questions welded together, which is what
+makes it this venue and not a bigger Stillwater.
+
+**The forks are traffic decisions, not speed decisions — and that is right
+here.** Leg 1's two lanes cost the same time but the short one is 6.1 boat
+lengths wide and the long one is 2.7. You take the narrow lane to escape dirty
+air and you pay for it if you meet someone coming the other way. On leg 5 the
+narrow lane is actually *faster* by 2.4 s, which makes it a genuine risk taken
+for a real reward.
 
 **Course hazards.** **Rock spires stand mid-channel** where the wind is best, so
-the fast line threads them. **Wall shadows** are invisible hazards that park you
-if you cut a corner. **Williwaws** drop off the rim at fixed, learnable points
-and will overpower you if forgotten. The **slot narrows** are a hard gate with no
-passing room.
+the fast line threads them — and four of them now carry a height, so each throws
+a short ribbon of bad air you can be on the wrong side of. **Wall shadows** are
+invisible hazards that park you if you cut a corner; every leg spends 2–11% of
+its length under 6 knots. **Williwaws** drop off the rim at three fixed,
+learnable points. The **narrows** are a hard gate with no passing room. And
+**the fleet itself** is the hazard the venue is named for.
 
-**Signature moment.** Reading ripples in the slot, committing, and getting fired
-out the far side past a boat that hesitated at the entrance.
+⚠️ **Leg 4 contains a pinch 1.3 boat lengths wide.** That is narrower than the
+project's own passability floor and it pre-dates the wind pass. It is either the
+venue's best gate or its worst bug, and it should be measured with real boats
+before anyone decides which.
 
-**Key assets.** Rock spire (hazard) · canyon wall (terrain) · **slot-canyon
-narrows (terrain, gate)** · bighorn on a ledge (ambient) · raven (ambient) ·
-golden eagle (ambient) · dust haze (weather prop).
+**The Sentinel.** `mark-1`, the junction mark every boat converges on, is no
+longer an orange inflatable: it is a sandstone spire the course rounds, laid as
+a `redrock` shape with the mark set to `none` and the rounding radius taken from
+the rock. It stands 15 m, so it trails 150 m of bad air, and the two lanes past
+it are not the same width. This is the cheapest flavour in the document —
+Emberfall's cones and the Cove's lighthouse want the same treatment.
+
+**Signature moment.** Diving inside The Sentinel on the narrow side to break an
+overlap, with the boat you just passed sailing back down the same channel on the
+other tack.
+
+**Key assets.** Rock spire (hazard) · **The Sentinel — spire as rounding mark** ·
+canyon wall (terrain) · **slot narrows (terrain, gate)** · bighorn on a ledge
+(ambient) · raven (ambient) · golden eagle (ambient) · dust haze (weather prop).
 
 ---
 
@@ -1083,6 +1159,15 @@ characterful: canyon wind blows down-canyon, a fjord funnels, a river valley
 channels. Without it, a random wind direction eventually makes a narrow channel
 dead upwind with no room to tack — unsailable, not hard.
 
+⚠️ **But do not lay the breeze ALONG every channel, which is the obvious way to
+express that and is a trap.** Redrock shipped that way and it cost the venue its
+tactics: when the corridor and the wind share an axis, every leg is dead upwind
+or dead downwind, there is no side of the course to choose, and a "beat" up a
+six-boat-length channel is a forced tack every three seconds. A bent channel is
+the one geometry that hands you every point of sail for nothing — **turn the
+breeze across two or three of the bends and take the reaches.** Redrock went from
+13% reaching to 39% by rotating four region directions and touching no polygon.
+
 **Wind-relative venues keep today's behaviour**, which matters most for Sea
 Trials: it stays exactly as it is, marks rotating with the breeze, nothing
 authored, eval anchor intact.
@@ -1098,10 +1183,13 @@ Plenty, and it's the part that actually varies a race:
   cargo-ship schedule at the Cove
 - Wildlife appearances, and the 9-of-66 fleet draw
 
-A fixed course under a rotating wind produces genuinely different races. Redrock's
-slot is a venturi or a dead zone *depending on the day's wind angle* — that's
-written into its spec above and only works if the slot is always in the same
-place.
+A fixed course under a rotating wind produces genuinely different races. Redrock
+is the worked example: its slots are venturis or dead zones by geometry, so the
+map of *where the pressure lives* is fixed and learnable, and only works because
+the slots are always in the same place — while the puffs falling off the rim land
+somewhere new every race. **The fixed part is what you learn; the random part is
+what you read.** A venue that randomises the first has nothing to teach, and one
+that omits the second has nothing to look at.
 
 ### Variety without randomness: course cards
 
