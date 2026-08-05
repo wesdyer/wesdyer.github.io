@@ -4393,3 +4393,66 @@ Reported rather than smoothed over; if the owner wants it reversed it is one rev
 
 `test_sailable` still passes 0/10. Ocean is untouched — neither of its rounding legs is a
 hairpin. Goldens re-recording; seatrials re-checked.
+
+
+---
+
+# ⚡ FINAL STATE — 2026-08-05 afternoon session
+
+## LANDED (7 commits of code, all with numbers in the message)
+
+    805889c  the venue gate            test_sailable 7 failures -> 0 on all ten venues
+    35d6e25  the winding test          roundings whose string never wrapped  6% -> 1%
+    25137d6  a hairpin is a circuit    ARCTIC'S ONLY ROUNDING MARK  56% -> 0%
+    2bfc90a  a comment correction      the sweep<0.2 guard answers a pass-by wrongly
+    dd5a878  check_raceable.js         the authoring gate test_sailable is not
+    e55c380  ...floes are not land     and the ceiling calibrated on the passing venues
+    b50cf58  goldens + four sea probes
+    a4bb4d5  goldens re-recorded       PASS 20/20 after the hairpin fix
+
+## MEASURED AND REJECTED, EACH WITH A MECHANISM
+
+    treeS1   crab for the swell's set    replicates on neither set; the 10 Hz nav loop
+                                         already closes a 3-4 degree feed-forward error
+    treeS2   fine downwind VMG in a sea  +2/+4.2 on one set, 0/-5.4 on the disjoint one;
+                                         SEVENTH rejection of the downwind-angle family,
+                                         and the first on a third venue
+    treeH2   re-base sweep on arrival    dominated ON ARCTIC (same 22 s, 18% vs 0%) but
+                                         nearly free on bay — PRESERVED, not rejected
+    treeH3   H1 + H2                     dominated: they compound, 56 s of arctic
+    18.3 / 18.4                          predicate counted BEFORE implementing: 1 event
+                                         in 54 boat-races, and 0.7 s per boat-race
+
+## THE THREE THINGS THE NEXT INSTANCE SHOULD KNOW
+
+**1. REDROCK IS NOT RACEABLE AND IT IS THE OWNER'S CALL.** 1 finisher in 72 boat-races,
+4370 shoreline collisions per boat-race, 4015 navigable cells against bay's 36174. It
+PASSES `test_sailable` because an ideal path can sail it. `check_raceable.js redrock`
+fails it 0/18. Do not tune the AI around this.
+
+**2. THE SWELL PRIZE IS SMALL, MEASURED.** The sea moves the best upwind angle 0.3 degrees
+and the best downwind angle 1.6. Binned by the angle actually sailed the fleet is at or
+above the held-angle ceiling in ten of thirteen downwind bins. ⚠️ The verdict is about
+BLUEWATER'S COURSE as much as the AI — its legs point at 159.5 degrees against a
+best-in-sea 165.5. A course whose run does not would re-open every question here.
+
+**3. THE NEXT CORRECTNESS TARGET IS THE ONLINE-vs-REALISED GAP.** `requiredSweep` is
+exactly `string - pi`, the two-class boundary, and is right. But the engine must decide the
+leg is over while the boat is still sailing it, and **6.5-8.7% of ORDINARY bay roundings
+that pass the online test fail the realised one**. Raising the threshold is the wrong tool
+— that is what H1 was, and it is why H1 costs bay 9 s for almost nothing. It wants a
+mechanism that defers or revisits the judgement. **`treeH2` is the better base to build
+that on**: re-basing the accumulator on arrival is free on bay and takes rubs, mark
+contacts and penalties DOWN.
+
+## OPEN, UNTOUCHED
+
+- **11 editor-test failures** came in with the merge (byte-identical on the pre-session
+  HEAD) — they look like `test_editor.js` asserting against the OLD redrock document.
+- **Arctic's authored cutoff of 420 s no longer matches its fleet**: 4 of 18 finish inside
+  it, and today's landing makes that worse. Either the cutoff is re-authored or the wander
+  is fixed.
+- The arctic wander (ratio 3.89) — still the biggest known pace deficit, still unexplained.
+- Rule 20 (room to tack at an obstruction): needs a hail mechanism, predicate not counted.
+- Phase 5 (pressure): ocean authors dirVar 0.21 rad and speedVar 4 kt on a 120 s period,
+  so there IS something to find. Not probed.
