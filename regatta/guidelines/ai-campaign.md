@@ -3045,3 +3045,69 @@ full density buries a 4s effect (probe mechanism at 2-4 boats, verify at 9); an
 8-seed bay bench INVERTED a contact metric that 20 seeds reversed; and arctic
 in-time finishes disagreed between two 16-seed sets THREE separate times — read
 the 32-seed combination or the paired per-boat median on that venue.
+
+---
+
+# 2026-08-05 — THE OVERNIGHT PUSH (session log, appended as verdicts land)
+
+Started 00:27 PDT on HEAD `3629a65`. Baselines byte-checked before any A/B:
+`bay_bench.js 20 9100 repro treeL` reproduced `bay_bench_kcscoped.json` byte for
+byte, and `fleet_leg2.js 16 9100 arepro treeL` reproduced `fleet_leg2_combo16.json`
+byte for byte.
+
+## A. THE ROUNDING CHEAT — the constant was only half of it
+
+`ROUND_SWEEP_TOL 0.75 -> 1.0` re-aims engine and AI in one edit (all four sites read
+the same constant). But **at 1.0 the requirement is unreachable**, and that is the
+part the handoff did not know:
+
+`_sweep_delivery_probe.js` (new) walks a scripted arc and reports what the engine
+actually banks. The scripted arc delivers faithfully — ratio 1.000-1.006 — but the
+sweep **PEAKS INSIDE the completion radius** and unwinds before the departure test can
+see it. The ideal path's exit tangent lies inside `zone*1.25`, so on arctic the boat
+banked **3.44 rad against a 3.40 requirement and had only 2.97 left** by the time she
+was far enough out to be asked. With 0.75 there was slack to absorb that; at 1.0 there
+is none. So the fix is a PAIR:
+
+    ROUND_SWEEP_TOL = 1.0        the rule states no tolerance
+    rs.roundBanked               a rounding, once made, stays made — the string is
+                                 drawn over her whole track, so the wrap is a fact
+                                 about the track, not about where she is standing when
+                                 the departure test fires. Half a turn of reversal
+                                 clears it (she really can sail back round the other way).
+
+**Correctness, measured (`_rounding_truth_probe.js`, 8 seeds):**
+
+    ARCTIC   short of the requirement   81% -> 0%      median fraction 0.83 -> 1.77
+             closest approach            0.84 -> 0.39 zone radii
+    BAY      under 80% of it             20% -> 0%     min fraction 0.74 -> 0.99
+
+**Pace, honestly:**
+
+    bay 20-seed   fin med 255 -> 251, paired +2 med / +2.7 mean
+                  boat rubs 1.67 -> 1.20, land 0.12 -> 0.04, pens 0.39 -> 0.37
+    seatrials     198.77/194.53 pen 0.31 OCS 13.33% — UNCHANGED. Clubhouse has no
+                  rounding mark, so the change is correctly scoped to rounding legs.
+    arctic 16     med 412 -> 518, finishers 143 -> 135, IN-TIME 76 -> 33,
+                  paired -83 med / -87.1 mean
+
+Bay gets faster while rounding honestly. **Arctic pays 87 seconds a boat**, which is
+the size of the cheat on that venue and is reported, not rejected, per the owner's
+instruction. Whether any of it is recoverable is the next question — see the exit-latch
+probe below.
+
+## `test_rounding_string.js`: 2 failures -> 1, and the survivor is the FIXTURE
+
+The remaining line is "a FULL rounding well outside the zone still completes" at 2.5
+zone radii on arctic. **That circle is not water.** `_stray_cause_probe.js` (new):
+`collision_island` 230 and `collision_boundary` 143 in a single scripted arc, the boat
+displaced up to 1100 units in one frame, and she banks 0.968 of the arc she was told to
+sail. `_string_rule_check.js` (new) sweeps the radius on any venue:
+
+    BAY     0.8z 1.0z 1.5z 2.0z 2.5z 3.0z   all pass, delivery 1.001-1.006, 0% off water
+    ARCTIC  0.8z 1.0z 1.5z pass;  2.0z 2.5z 3.0z fail, delivery 0.990/0.968/0.952,
+            with 62%/49%/50% of the circle on land
+
+So the engine has NO proximity requirement — proven to 3.0 zone radii on open water,
+which is what that test line exists to guarantee. Passing it on arctic would need a
+3.2% tolerance, which is the thing being removed. The test was not edited.
