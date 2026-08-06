@@ -117,7 +117,12 @@ const VENUE = process.argv[5] || 'lake';
             + ` p90 ${q(d, .9).toFixed(1).padStart(5)}  ZERO(<5) ${(100 * d.filter(x => x < 5).length / d.length).toFixed(0).padStart(3)}%`
             + `  tacked ${(100 * E.filter(e => e[2]).length / E.length).toFixed(0).padStart(3)}%`
             + `  cpa med ${String(q(c, .5)).padStart(4)}`
-            + `  spd@cpa ${q(sr, .5).toFixed(2)}`);
+            // DOES SHE EASE INSTEAD OF SWERVING? Same statistic the human ledger prints,
+            // so the two are finally like-for-like: applyAvoidance returns a heading and
+            // nothing else, so if the human's answer to traffic is the throttle rather
+            // than the rudder, that is a MISSING ACTION, not a mis-priced one.
+            + `  spd@cpa ${q(sr, .5).toFixed(2)}`
+            + `  slowed>10% ${(100 * sr.filter(x => x < 0.9).length / sr.length).toFixed(0).padStart(3)}%`);
     }
     await browser.close();
 })();

@@ -6452,3 +6452,55 @@ binding constraint. Tonight's two landings did not add freedom — the fan added
 RESOLUTION between options that already existed, and the no-go tax REMOVED options that
 were never real. **On a narrow venue, more freedom is not obviously good; more precision
 and fewer illusions are.**
+## ⛔ CLOSED BY MEASUREMENT: the missing SPEED action — the human does not use it either
+
+`applyAvoidance` returns a heading and nothing else. The fleet's only avoidance action is
+the rudder, and on Stillwater Lake the fleet sails ~1.5x the human's distance with roughly
+half the excess spent on deflection — so "she eases the sheet and lets him cross, which
+costs seconds and zero distance" is the obvious missing action, and a genuine action-set
+change of exactly the kind that has produced both of tonight's landings.
+
+It is wrong, and the recordings say so before any code was written. `_human_ledger.py`
+already carried `dspd` (speed at CPA over speed at encounter onset); `_fleet_ledger.js`
+now prints the same statistic, so the two are finally the same quantity:
+
+    no-tack encounters      human spd@cpa   fleet spd@cpa   human slowed>10%  fleet
+      Stillwater Lake            1.02           1.04              8%            9%
+      Lighthouse Cove            1.02           1.02              1%            3%
+    (human, ALL venues: 1.00-1.03; the largest "slowed" share anywhere is 8%)
+
+**The human does not slow down for traffic, and neither does the fleet.** She keeps her
+speed and either holds her course or moves the helm a little. There is no throttle gap to
+close, on any venue, and the cost of learning it was one statistic already in the file.
+
+What the same table does show is that the gap is entirely in the RUDDER, and it is a gap
+in how OFTEN she uses it as much as by how much:
+
+    no-tack, at CPA        deflection med      holds course (<5 deg)
+      lake   human               8.7 deg              38%
+             fleet              23.2 deg              18%
+      bay    human               8.0 deg              40%
+             fleet              16.6 deg              26%
+
+## ⛔ REJECTED (lake) / OPEN (bay): a margin to leave the proper course (`treeDEAD`)
+
+The escape is `if (cost < minCost)` with offset 0 first in the list, so holding course
+wins only EXACT ties: a candidate cheaper by one unit takes the helm. Against the table
+above that looks like the whole story, and the fix is one line. `_margin.js` (new) priced
+it first, and the answer is venue-split for a reason worth keeping:
+
+    per avoidance decision, leg>=1        lake            bay
+      moved the helm                      51.6%           39.9%
+      margin cost(0)-min   p10             236.9             1.6
+                           p25            3389.8            55.4
+                           med            7495.4          7539.8
+      cost(0) itself       med           10133.8          7500.0
+      a deadband of 100 converts           9.6%           39.4% of moves
+
+**On lake the deflections are not near-ties.** The winner beats holding course by a
+median 7495 against a cost(0) of 10134 — holding course is not narrowly rejected, it is
+priced at ten thousand and buried. No deadband small enough to leave Rule 14 alone can
+touch that, so the lake half of this candidate is closed without a bench.
+
+Bay is the opposite shape — a quarter of its moves are decided by a margin under 55 —
+and that half IS worth the bench it is getting.
