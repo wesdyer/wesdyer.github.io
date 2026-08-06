@@ -5286,3 +5286,87 @@ placement analysis. The current-doc corridor facts stand on their own: 4015 nav 
 clearance histogram peaking at 1-2 cells (100-200u), corridors 50-150u at the pinches.
 If the owner has a redrock recording made on the CURRENT document, it would reopen the
 placement question ("does the human tack in sub-150u water, or tack where there is room?").
+
+
+# ⚡ 2026-08-06 OVERNIGHT PUSH — PHASE 0: RE-BASELINE ON THE OWNER'S HEAD, AND A NEW VENUE
+
+The plan above was written on `5350cae`. The owner then landed five commits, two of which
+move the world: **`b60ba9d` clamps the gust stack** (the bug the last entry reported —
+overlapping puffs now add at most the strongest single one of them, and ocean's cells were
+re-authored 25x1000m -> 12x600m), and **`4909c1e`+`b60ba9d` add STILLWATER LAKE**, the first
+venue to author `dirVar` and the first light-air venue in the game. Three human recordings
+came with it.
+
+## RE-BASELINE (HEAD = b60ba9d, all benches on treeHEAD built after it)
+
+    venue    bench                          med    vs the plan's anchor
+    bay      bay_bench_headbay 20@9100      257.0  UNCHANGED (corrbay 257.0)
+    ocean    ocean_bench_headocean 20@9300  193.0  MOVED -5 (corrocean 198.0) — the gust
+             ocean_bench_headoc2 20@9320    193.0  clamp + re-authoring, owner's change
+    arctic   fleet_leg2_headarc 16@9100     535.0  UNCHANGED (corrarc16 535, 139 fins)
+                                            139/144 finishers, 97%
+    lake     ocean_bench_headlake 20@9100   407.5  NEW
+
+⚠️ **Every ocean anchor from before `b60ba9d` is void.** Bay and arctic are byte-comparable.
+
+## ⚡ STILLWATER LAKE IS THE BIGGEST GAP ON THE BOARD
+
+    venue    fleet med   human med (in fleet)   gap
+    bay      257.0       226.2                  +31 s
+    ocean    193.0       182.5                  +11 s
+    lake     407.5       223.0 (3 runs: 209.6/223.0/278.0)   +184 s, 1.83x
+    arctic   535.0       ~222                   2.4x
+
+and the fleet does not merely lose — **21% of it would DNF**: lake authors a 480 s cutoff and
+the bench (cutoff raised to 900) finishes 143 of 180 boats inside 480. The fastest bot in 180
+boat-races is 240 s; the human's SLOWEST of three runs is 278 s and her best is 209.6 s.
+
+## THE MECHANISM, MEASURED
+
+`_ground_probe.js` (new) records every `collision_island` with the state that produced it,
+against a control histogram of the water the fleet actually sailed in.
+
+    land contacts per boat-race     lake 30.63   |  bay 0.22   arctic 27.54 (+32.5 floe)
+    speed AT the contact            med 0.24 kt, 78% of them under 0.5 kt
+    local wind at the contact       med 6.79 kt  <- NOT a light-air hole; she is ashore
+    avoidance deflecting her        median 0 deg; >5 deg on only 29% <- not traffic
+    liveness state                  'normal' on 92% <- the stuck-watchdog never engages
+    fleet time under 1 kt           8.3%   |  the three humans: 0.0%, 0.0%, 1.6%
+    where                           44% of 765 hits in ONE place, 340-680u NNW of mark-5
+
+and the human-vs-fleet track map (`_tracks.js`, new) shows the fleet sailing up a blind
+finger of water north of mark-5 that the human never enters.
+
+**THE RATCHET.** `applyAvoidance` probes each candidate heading along a segment of length
+`boat.speed x 4 s`. Land is checked against that segment. A shore rub costs 60% of speed
+(`boat.speed *= 0.4`), so the probe SHORTENS — at 5 kt it is 300 units, at 1 kt it is 60,
+which is shorter than its own 140-unit hard-collision zone. Below that, every candidate that
+touches land reads as an unavoidable collision, the argmin falls back to least-deviation, and
+the boat holds her course into the beach. Then she is slower still. This is the same failure
+the floe comment at `collision_island` describes ("sees every candidate blocked... falls back
+to least-deviation, and holds course INTO the floe") arriving through the length of the probe
+rather than the width of the collider.
+
+Land does not move. It is the ONE obstacle here whose probe has no reason to be time-scaled.
+
+## ROUTER SPEED BINS — a real defect, and a SMALL one (measured, not assumed)
+
+The time-cost table's wind-speed bins were `[8,12,16,20,25,30]`, nearest-binned, so every cell
+under 10 kt shared one bin. On lake — 7-9 kt authored, 2-kt shore holes, 2.9% of its water
+dead calm — **all 4447 navigable cells landed in bin 0**: the router could not tell a nine-knot
+lane from glass. Confirmed by construction and by `_lake_wind.js`.
+
+Extending to `[2,4,6,8,12,16,20,25,30]` is provably scoped: bay's lightest cell is 7.01 kt and
+the new 6/8 boundary is 7.0, arctic's is 15.05, ocean's 18, river 12 — **only lake re-bins**.
+But `_route_wind.js` (new — prices a planned route in SECONDS by integrating the polar along
+it) says the prize is small: total planned time 193.4 s -> 193.1 s, with leg 3's exposure to
+sub-4-kt water halved (8.2% -> 4.9% of path) for +271 units. And a TF_MAX sweep (the cost
+ceiling, which at 4 was below the honest cost of light air) moves the planned route by 1.1 s
+across 4..20. **The route layer is not where lake's 184 seconds are.** Kept as a cheap accuracy
+fix to bench alongside, not as the candidate.
+
+⚠️ **I hit the exact hazard the new comment warns about**: my first candidate tree patched the
+bin list in `sailcheck.js` but the string replace against `script.js` missed on indentation, so
+the table was built with stride 9 and indexed with stride 6. Every cost was garbage and the
+first TF_MAX sweep was meaningless. `SPDS` is now exported from SailCheck and read by the
+course build — one array, one source.
