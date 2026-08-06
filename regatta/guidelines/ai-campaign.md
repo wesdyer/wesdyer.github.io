@@ -7622,3 +7622,15 @@ all in that region). The upwind slot becomes reach + arc. The fleet's jam cluste
 authored-rock version of the canyon law, surgical — prefer a reach CONTINUATION
 over an upwind slot when both connect (the unscoped quadratic repriced the whole
 maze and lost; the target is this one decision shape).
+
+## ⛔ P2 RESEARCH DIRECTION CLOSED BY MEASUREMENT — arrival-time gap projection
+`_gap_decay.js` (new), 2223 plans over 6 arctic seeds: corridor min-clearance along
+the boat's own plan decays a MEDIAN of -10u over 8s (from 132u at plan time) —
+gaps are STABLE at plan timescale, so scoring them "where they will be" wins
+nothing at the median. The loss lives in the worst decile (-68u/8s, half the
+corridor) — gaps that close fast, which the drift-unpredictability result says
+cannot be projected, only margined against; and the margin constants are at
+verified knees. The owner's strategy works because the LARGEST gap is robust to
+the tail — and largest-gap preference is already what clearance-weighted routing
++ the canyon law implement. Arctic's residual is the tail scenes themselves:
+46% boat-traffic squeezes and 42% wiggle recoveries. Driver-level or nothing.
