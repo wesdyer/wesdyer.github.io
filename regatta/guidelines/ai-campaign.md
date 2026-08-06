@@ -5496,3 +5496,38 @@ action to the escape would be imitating something the human does not do. Not bui
 
 ⇒ Which leaves the ACTION-SET resolution as the live lever in this family, and that is
 exactly what the densified fan is.
+
+# ⚡ CANDIDATE 1: DENSIFY THE ESCAPE FAN — and gate it on drifting ice
+
+`applyAvoidance` picks its escape by argmin over a fixed list of heading offsets:
+`{0, ±.1, ±.2, ±.4, ±.6, ±.8, ±1.2, ±1.6}` (+`±2.2, ±3.0` on land venues — the list is
+ALREADY venue-conditional, so gating it further is idiomatic here). The gaps from 0.2 to
+0.8 are 11.5 degrees each, and that spacing IS the resolution of every dodge the fleet
+makes: a boat needing 17 degrees to clear is offered 11, then 23, and buys 23. This is
+the standing explanation for why twelve candidates re-priced the avoidance COST and the
+mean deflection never left 44-48 degrees. Adding `±.3, ±.5, ±.7` costs nothing else —
+same bubbles, same costs, six more points on the fan.
+
+    venue    bench                                 paired med   paired mean   note
+    lake     20@9100 vs headlake                     -29.0        -38.1       pens 1.32->1.05,
+                                                                              mark 2.83->1.52,
+                                                                              land 30.6->27.8
+    bay      20@9100 vs headbay                       -5.0         -3.4       pens 0.37->0.48
+    bay      20@9200 vs headbay2                      -2.0         -3.1       pens flat
+    ocean    20@9300 / 20@9320                        -1.6 mean / -0.1 mean   inert
+    arctic   16@9100 vs headarc                       +2.0         +3.8       finishers 139->132,
+                                                                              pens 1.64->2.11,
+                                                                              floe AND land contacts up
+
+**Arctic rejects it, with a mechanism.** Finer resolution buys a TIGHTER miss, and a
+tighter miss is only as good as the prediction underneath it. A rival boat is also
+steering and also keeping clear; a floe does neither, and its drift is not predictable
+past a few seconds — that measurement is what cancelled SIPP. So the extra resolution is
+gated on `state.course._floeObjs` being empty, the same flag the keep-clear terms already
+use, and the ice list is the stock list unchanged (byte-identical behaviour on Glacier
+Sound by construction).
+
+⚠️ **The two lists are ordered and the order is the tie-break** (`cost < minCost` keeps
+the earlier candidate), so the open-water list is written out in sorted order identical
+to the one bay/ocean/lake were benched on rather than pushed onto the end — otherwise
+those four 20-seed sets would not have been measuring the shipped code.
