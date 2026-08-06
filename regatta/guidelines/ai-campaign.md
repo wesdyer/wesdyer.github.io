@@ -7512,3 +7512,10 @@ after the landing decision) is weaker than the old-head comparison quoted in the
 commit: paired -2.5 med / -11.5 mean, in-time 20->23, fins 140=140. Still positive,
 and set A (-8.0/-14.6, in-time 24->40, 144/144 fins, floe -18% land -25%) stands as
 recorded. Pooled: positive on both disjoint sets, dirt down on both.
+
+## Bay post-landing rub attribution (12 seeds, same probe): -39% EPISODES
+1.52 -> 0.93 episodes/boat-race (human 0.14). Pre-existing penalty 56% -> 39%,
+mid-spiral 17% -> 8% — the cascade is substantially broken. Residual: leg-1
+crossings 40%, LEG 0 post-gun 28% (start pack, sacred tuning), 71% under 1 kt,
+51% near marks. Diminishing returns on this thread; the funnel-metering wave
+covers the mark-adjacent share.
