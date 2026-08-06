@@ -5407,11 +5407,18 @@ the grid's own 44u navigation band plus a 30u hull, and it is the tightest mark 
 by a factor of two. It is worth moving into the basin 300u southwest — but it is worth ~10 s,
 and this session did not spend itself there because the probe said not to.
 
-### ⛔ REJECTED: land-probe distance floor alone (`treeLAND`)
+### ✅ THE LAND-PROBE DISTANCE FLOOR IS A LAKE WIN — and I nearly threw it away on the wrong metric
 
-Floor the land probe at 240u so a slowed boat still sees ahead. Lake groundings
-71.1 -> 68.8 per 1000 boat-seconds. Real, tiny. The ratchet exists; it is not the binding
-constraint.
+Floor the land probe at 240u so a slowed boat still sees ahead of herself.
+
+    judged on groundings   71.1 -> 68.8 hits per 1000 boat-seconds   "real, tiny"
+    judged on TIME         lake 20@9100 paired med -19.0 s, mean -16.5, fleet med 407 -> 385
+
+⚠️ **The grounding rate was the wrong objective and it said the opposite of the truth.**
+Contacts per boat-race went UP (30.63 -> 34.48) while races got 19 seconds shorter: the
+boats sail past the same shores faster, so they bank more rubs per race and fewer seconds
+per rub. Hits-per-boat-second divides by a denominator the change is trying to shrink.
+Judge a steering change on the clock.
 
 ### ⛔ REJECTED: grading the blocked candidates by distance-to-blockage (`treeBLOCK`)
 
@@ -5434,3 +5441,40 @@ a venue whose whole problem is already track length.
 **The lesson for this family**: the clearance band is not a hazard, it is the map's margin,
 and any term that treats "inside the band" as a cost will re-price ordinary sailing on
 every narrow venue. A stranded-boat rescue has to be gated on being stranded.
+
+### LAKE'S EXCESS DISTANCE, ATTRIBUTED (`_transit_probe`, now venue-parameterised)
+
+    leg          dist ratio   EXCESS      of which avoid   mean deflection   tacks (human)
+    L1 (beat)      1.86       3781u       1911u = 51%          45 deg        8 med (5-12)
+    L2             1.69       5752u       2495u = 43%          51 deg        6 med
+
+**Half of lake's excess distance is avoidance deflection**, and the tack counts match the
+human's — which kills the "light air makes the shift term dominate the VMG term, so the
+fleet over-tacks" hypothesis before anything was built for it. Lake is not a light-air
+problem wearing a traffic mask; it is the SAME traffic problem as Lighthouse Cove, made
+expensive by a venue with 4447 navigable cells and corridors of 150-350u.
+
+Set that beside the human ledger below and the family is clear.
+
+## ⚡ THE HUMAN'S TRAFFIC LEDGER (`_human_ledger.py`, new) — the number this campaign never had
+
+Mined per ENCOUNTER (a rival inside 600u and closing) across all 59 recordings.
+
+⚠️ **A TACK IS NOT A DEFLECTION.** The first cut reported the human deflecting a median
+48-69 deg per encounter — LARGER than the fleet's 44-48 — and it was an artefact: 26-69%
+of encounters contain a deliberate tack, which is ~90 deg of heading change that had
+nothing to do with the rival. Split on that, the picture inverts and the campaign's
+standing prior is CONFIRMED:
+
+    venue   no-tack encounters   deflection AT CPA          under 5 deg   median CPA
+    bay          n=272           med  8.0  mean 26.7  p90 74.7    40%        355u
+    ocean        n= 15           med  5.2  mean  8.8  p90 12.7    47%        455u
+    lake         n= 40           med  8.7  mean 24.3  p90 62.6    38%        312u
+    arctic       n=127           med 14.6  mean 33.1                          —
+
+    the fleet, same quantity (`rl/_defl_hist.js`, `_transit_probe`)   mean 44-51 deg
+
+She does not swerve. When she does react hard she TACKS (35% of bay encounters, median
+115 deg of it) — she converts an encounter into a tactical move rather than a dodge. The
+fleet's mean deflection is ~1.7x her mean and ~5x her median, and it is spending that
+difference in distance on every venue with traffic.
