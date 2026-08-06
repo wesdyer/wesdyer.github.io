@@ -5689,3 +5689,37 @@ Two things worth carrying:
   - **`narrow` is 14.3% here against lake's 33%**, because arctic's stamped-floe grid
     lets `cScale` fall to 4000 while a floe-free venue always pays 10000. The clearance
     term is therefore a LAND-VENUE cost in practice, and lake is where it bites.
+
+
+# ⚡ ARCTIC PHASE 1a: THE SOFT MULTIPLIERS, MEASURED — and one of them is DEAD CODE
+
+The plan asked for the real through-soft-cell speed against the router's 2.5x/6x charges.
+`_soft_speed.js` (new): classify every bot at 10 Hz by the `_soft` value of the cell she
+stands in, and take her speed as a fraction of what the polar says for HER heading in HER
+wind. Arctic, 3 races, 128547 samples:
+
+    class                              share    frac-of-polar   cost vs OPEN   charged
+    OPEN (navigable)                   91.3%       0.815            1.00x         1x
+    SOFT=1 opening lead                 0.8%       0.358            2.28x        2.5x  ok
+    SOFT=2 staying plugged              4.7%       0.214            3.81x          6x  ?
+    HARD (land / blocked)               3.2%       0.158            5.16x         wall
+
+So the lead is priced correctly and the plug looked 1.6x over-charged. Setting 6 -> 4 and
+benching arctic 16@9100 returned **paired med 0.0, mean 0.0, p25 0.0, p75 0.0 — every
+statistic byte-identical.**
+
+⛔ **Because the branch is unreachable.** `pathSailable`'s passability test is
+`(id2) => grid._soft[id2] === 1`, so a plugged cell is not passable at all; `isSoft`
+therefore always implies `_soft === 1`, and `? 2.5 : 6` always takes the 2.5. The 6 has
+never priced anything. The comment above it describes a trade — *"a grind that is nearly
+a wall — only worth it against a huge detour"* — that **the router has never been able to
+make**: the grind was not on the menu, so every plugged narrows has always cost a full
+detour however long it was.
+
+⇒ The measurement's real implication is not a cheaper plug, it is an ENTERABLE one:
+`treeSOFT2` admits `_soft > 0` and charges the measured 4x. Benching.
+
+⚠️ Two lessons for the campaign: a bench that returns EXACTLY zero on every statistic is
+evidence about reachability, not about the constant — treat it the way the
+zero-at-every-percentile rule treats a suspicious zero. And a tuned constant that no
+measurement has ever moved may not be tuned at all.
