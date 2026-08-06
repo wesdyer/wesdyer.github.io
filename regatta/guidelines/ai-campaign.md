@@ -5774,8 +5774,10 @@ shared.
 
 The term is a third of every deflection the fleet makes on lake. Re-pricing it is INERT:
 
-    lake 20@9200 vs the landed tree   paired med +1.0  mean +0.2
-                                      boat contacts 4.16 -> 5.70 (+37%), pen 1.14 -> 1.22
+    lake 20@9200 vs the landed tree   paired med  +1.0  mean  +0.2   contacts 4.16 -> 5.70
+    lake 20@9100 vs the landed tree   paired med +11.0  mean +11.8   land 18.3 -> 21.1,
+                                                                     pen 0.96 -> 1.16
+    — two disjoint sets, both the wrong way
 
 **And that is the campaign's own thesis being confirmed rather than a surprise.** Twelve
 earlier candidates re-priced the avoidance COST and the 44-48 degree mean deflection never
