@@ -6029,3 +6029,32 @@ so the gate would be circular.
 round: ocean pays +1.8 mean on a venue 14 s from the human, and lake keeps 10 s of median
 and 9 land contacts a boat on a venue 129 s from her. Recorded so the next session does
 not re-derive it.
+
+### ⛔ REJECTED: shortening the boat-conflict prediction horizon (`treeHORIZON`) — and this one explains the thread
+
+    lake 20@9100 vs the landed tree   paired med +13.0  mean +5.2
+                                      BOAT contacts 3.62 -> 3.45, mark 1.85 -> 1.73
+                                      LAND contacts 18.28 -> 26.49  (+45%)
+
+It did what it was designed to do — the fleet held course through far-off crossings, and
+boat and mark contacts both fell. It cost 13 seconds because **holding course longer makes
+the eventual escape LATE AND LARGE, and in 150-350u corridors a late large escape ends on
+the beach.**
+
+⇒ **The fleet over-deflects because it must.** Its early reaction is not waste; it is what
+keeps it off the shore. The human holds her course through the same crossings because she
+POSITIONED for them — she arrives at the encounter already on a line that works, which is
+why she passes WIDER (355u vs 259u on bay) while steering LESS (8.0 deg vs 16.2). The
+fleet is reacting where she is planning, and no adjustment to the reaction's trigger,
+price, resolution or horizon can convert one into the other. Tonight tested all four:
+
+    resolution   densified fan            LANDED  -29 to -53 s on lake, -3 to -5 on bay
+    price        clearance cost 10000->3000  ⛔    +11.0 and +1.0
+    trigger      commitment lock fix         ⛔    +4.0
+    horizon      hard only within 2.4 s      ⛔    +13.0
+
+Only the one that gave the reaction MORE CHOICES paid. The remaining gap is a planning
+gap, and the honest next candidate for it is lane choice on the approach to a crossing —
+which is a strategic-layer change (`getStrategicHeading` / the router's carrot), not
+another term in `applyAvoidance`. That function has now been measured from every side it
+has.
