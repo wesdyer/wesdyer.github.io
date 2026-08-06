@@ -6084,3 +6084,27 @@ horizon change made the reaction later, this makes it EARLIER AND SMALLER:
 Benching lake and bay, and running `_fleet_ledger` on the candidate as well — the bench
 gives the verdict, the ledger says whether the MECHANISM moved (does CPA widen and
 deflection shrink toward 355u/8 deg, or did the clock move for some other reason).
+
+## THE LEDGER ON THE CANDIDATE: the mechanism moved, and only half of it
+
+`_fleet_ledger` on `treePOSN` vs the landed code, lake, no-tack encounters:
+
+                          landed    +positioning    the human
+      CPA median           299u        361u           312u
+      encounters <150u      47          37             —
+      deflection at CPA    23.0        27.3            8.7
+      held course (<5deg)   17%         14%            38%
+      tacked                69%         66%            49%
+
+**They really do position wider** — the median passing distance moves past the human's own
+312u and close encounters fall 21%. **But they buy the width with rudder**: deflection
+went UP and course-holding went DOWN. The human gets width AND stillness; this gets width
+by steering more, which is the thing it was built to avoid.
+
+⚠️ This is why the ledger was run alongside the bench rather than after it. A clock result
+alone — either sign — would have been read as "positioning works / does not work", when
+what actually happened is that one of the two properties moved and the other moved the
+wrong way. Whatever the bench says, the design conclusion is already available: **a
+long-range CPA term produces early WIDTH but not early CALM**, because widening the pass
+is itself a course change, and nothing in the term prefers achieving it sooner and
+smaller.
