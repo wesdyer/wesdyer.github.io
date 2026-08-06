@@ -7467,3 +7467,17 @@ narrow canyon", the exact thing the owner says a human never attempts. Candidate
 uncap/steepen pathSailable's narrow-upwind law (currently min(20, 1+loss/W)) so the
 router buys distance through sailable canyons; if no alternative exists A* keeps the
 same route and the change is inert by construction.
+
+## LAKE post-landing attribution (treeHEAD2, same 10 seeds): -21% episodes, residual = MARK QUEUES
+2.77 -> 2.19 episodes/boat-race. Still 80% mid-penalty / 79% pre-existing, and the mark
+share ROSE to 72% (mark-5 41%, mark-3 27%), 85% under 1 kt. The flagged boat in a
+rounding funnel has nowhere to clear out to, and the spiral (correctly) won't run
+within 220u of a mark — she carries the penalty through the queue and is rubbed in it.
+Upstream capability: FOUL GENERATION at tight roundings (lake pens 0.81/boat vs bay
+0.42). The next lake candidate should reduce fouls at the funnel, not re-route rubs.
+
+## REDROCK canyon law: INCONCLUSIVE-NEGATIVE on redrock (parked)
+treeCANYON (sub-tack-width upwind quadratic, cap 20->90): finishers 10 -> 6 of 72,
+leg-3 jam unchanged, rubs 61 -> 45. Route change either unavailable on this document
+or no better. The wall is EXECUTION of sub-tack-width beats. Parked pending the
+arctic guard; do not land without a demonstrated gain anywhere.
