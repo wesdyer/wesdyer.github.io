@@ -13,6 +13,16 @@
 // Human side (same definition) from `traj/*.json`:
 //     arctic 1.2 per race / 0.3 per min | lake 0.0 | bay 0.0 | ocean 0.0
 //
+// ⚠️ THE COUNT IS GOOD; THE "what she hit" SPLIT IS NOT — it is printed for debugging
+// only and must not be quoted. Attributing by nearest object reads 100.0% land on a
+// course carrying 112 floes, and that is geometry, not a coding error: arctic's land
+// radii are 8685/3245/2787 against a floe's ~69, so a boat is nearly always within a
+// few hundred units of SOME point on a huge island's circumference while a small floe
+// registers only when she is beside it (at random moments it reads 8 land : 1 floe).
+// "Nearest edge" is not "what she hit" when obstacle sizes differ by two orders of
+// magnitude. For the class split use the harness's own per-class collision counters,
+// which every bench already reports as `col: {floe, land, boat}`.
+//
 //   node _thump.js <trials> <seed0> <tree> [venue]
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
@@ -86,7 +96,7 @@ const VENUE = process.argv[5] || 'arctic';
     console.log(`  THUMPS  ${thumps}  =  ${(thumps / Math.max(1, boatRaces)).toFixed(1)} per boat-race`
         + `  =  ${(thumps / Math.max(0.1, boatMin)).toFixed(1)} per boat-minute`);
     console.log(`  knots shed in them: ${(lost / Math.max(1, boatRaces)).toFixed(1)} per boat-race`);
-    console.log('  what she hit, by nearest object at the moment of impact:');
+    console.log('  [DEBUG ONLY — biased, do not quote] nearest object at impact:');
     for (const [k, v] of Object.entries(kind).sort((x, y) => y[1] - x[1]))
         console.log(`    ${k.padEnd(14)} ${String(v).padStart(5)}  ${(100 * v / Math.max(1, thumps)).toFixed(1)}%`);
     console.log(`  human, same detector: arctic 1.2/race 0.3/min | lake 0.0 | bay 0.0 | ocean 0.0`);
