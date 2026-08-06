@@ -7611,3 +7611,14 @@ OWNER'S FOUR NOTES (near-verbatim, binding):
      course." -> minimal-change give-way; over-deviation INTO obstacles is the bug.
  (4) "Redrock is very much a maze and that's working as intended - routing and
      traffic are keys."
+
+## Redrock leg-3, the actual route difference (4 new recordings vs the DMC)
+Her median off-DMC distance on leg 3 is 49-70u — SAME canyon sequence — except at
+the wall: the DMC turns WEST at (-71,636) into the dead-upwind cl-1 slot
+((-571,786)->(-971,1336), twa 2-33 deg); she EXTENDS THE REACH due north along
+x~-60 to y~1200-1400 and arcs onto m5 from the north (max divergence 545-630u,
+all in that region). The upwind slot becomes reach + arc. The fleet's jam cluster
+(0,600-1200) is boats dying in/near the same north channel. Next-push candidate:
+authored-rock version of the canyon law, surgical — prefer a reach CONTINUATION
+over an upwind slot when both connect (the unscoped quadratic repriced the whole
+maze and lost; the target is this one decision shape).
