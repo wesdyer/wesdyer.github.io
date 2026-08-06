@@ -6914,3 +6914,41 @@ candidate on this** — the family already carries ten rejections at the avoidan
 this would be an eleventh built on a mis-read statistic. The next step is a probe that
 measures the carrot's motion ALONG the path separately from `LOOK`'s contribution, which
 nothing currently does.
+
+## ⚡ ARCTIC, THE REAL SHAPE: the router re-solves at its FLOOR and still changes its mind
+
+`_replan.js` (new) counts what `carrotJump` does not — how often `pathSailable` is actually
+re-solved, which the controller marks by resetting `gridAge`. Arctic, 4 races, 16423
+boat-seconds:
+
+      FULL RE-SOLVES                          5.5 /min per boat
+        (the thread is held 2 s minimum and ages out at 12 s, so ~5/min IS the floor)
+      new-vs-old path departure at 250/500/1000u ahead:
+        med 177u   p75 460u   p90 845u   max 2796u
+      re-solves returning essentially the SAME corridor (<100u):   33%
+      carrot movement per 0.1 s sample:  med 0u   p90 71u   p99 290u
+
+**The router is not thrashing — it replans as rarely as its own design permits — and it
+still changes its mind about the corridor two times in three.** Put beside the map
+measurement, the mechanism is legible and it is not drifting ice:
+
+      re-solve from a FIXED point, 4-8 s apart   ->  plans differ by 8-17u
+      re-solve from where the BOAT actually is   ->  plans differ by 177u median
+
+Between replans the boat has sailed ~12 s. The ice barely moved (3-5% of cells flip at
+4-8 s), so the near-identical map is yielding a materially different plan **because the
+start point moved**. That is not decay, it is **solution instability**: the
+clearance-weighted grid holds several near-equal corridors, and a small change in where
+the search starts flips which one wins.
+
+⚠️ **This is tonight's finding one layer up.** `applyAvoidance` was an argmin with near-ties
+and no preference for the incumbent heading, and the fix was to make holding course
+meaningfully cheaper. `pathSailable` is an argmin with near-ties and no preference for the
+incumbent CORRIDOR. The candidate is therefore a hysteresis in the ROUTER'S COST — a
+discount on cells the previous path already used — and NOT the route-commitment-in-TIME
+candidate this log proposed two entries ago, which is already satisfied (5.5/min is the
+floor) and which would have been an eleventh rejection in the commitment family.
+
+**Not benched** — a routing change needs 16-32 seed arctic sets and the window closed.
+Handed over measured, with the instrument (`_replan.js`) that scores it: drive "same
+corridor" up from 33% and see whether the 1.67x odometer follows.
