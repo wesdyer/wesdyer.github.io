@@ -24,6 +24,7 @@ const VENUE = process.argv[5] || 'arctic';
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
     const tot = { n: 0, boat: 0, stat: 0, rule: 0, proxOnly: 0, nothing: 0, devSum: 0, threat: 0, noThreat: 0 };
+    const addAll = (dst, src) => { for (const k in src) dst[k] = (dst[k] || 0) + (src[k] || 0); };
     for (let i = 0; i < TRIALS; i++) {
         const r = await page.evaluate(async (seed) => {
             window.evalHarness.seed = seed;
@@ -42,7 +43,7 @@ const VENUE = process.argv[5] || 'arctic';
             }
             return window.__avWhy;
         }, SEED0 + i);
-        if (r) for (const k of Object.keys(tot)) tot[k] += r[k] || 0;
+        if (r) addAll(tot, r);
         console.error('seed ' + (SEED0 + i) + ' done');
     }
     const pc = (v) => `${(100 * v / Math.max(1, tot.n)).toFixed(1).padStart(5)}%`;
@@ -54,6 +55,12 @@ const VENUE = process.argv[5] || 'arctic';
     console.log(`    an RRS rule violation                  ${pc(tot.rule)}`);
     console.log(`    nothing hard — only a proximity cost   ${pc(tot.proxOnly)}`);
     console.log(`    nothing at all (course held was free)  ${pc(tot.nothing)}`);
+    const px = Object.keys(tot).filter(k => k.startsWith('px_') && tot[k]);
+    if (px.length) {
+        console.log(`  of the proximity-only ones, the LARGEST term was...`);
+        for (const k of px.sort((a, b) => tot[b] - tot[a]))
+            console.log(`    ${k.slice(3).padEnd(38)} ${pc(tot[k])}`);
+    }
     console.log(`  and a formal threatBoat existed on ${pc(tot.threat)} of them`
         + ` (so ${pc(tot.noThreat)} are invisible to a threatBoat-based classifier)`);
     await browser.close();

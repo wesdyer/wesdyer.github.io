@@ -5644,3 +5644,29 @@ objected to, because a heading near her last dodge was scoring -60 against a fre
 Candidate `treeCOMMIT`: apply the discount only when offset 0 was NOT free. Offset 0 is
 the first candidate scored, so the flag is available by the time the discount is applied,
 and in traffic (where the anti-saw purpose lives) nothing changes at all.
+
+
+## THE PROXIMITY-ONLY BIN, BROKEN DOWN BY TERM
+
+Same instrument, now tagging each `proximityCost` contribution at its source and charging
+the largest one whenever nothing hard vetoed holding course.
+
+    lake, 2 races, 32138 deflections >0.12 rad, mean 61.4 deg
+
+      a BOAT inside the safety bubble          25.1%
+      STATIC (land / grid / boundary)          18.1%
+      NOTHING AT ALL (the commitment lock)     12.5%
+      proximity only, largest term = `narrow`  33.0%   <- the clearance cost
+      proximity only, largest term = `farLand` 11.4%   <- blockage beyond 140u
+
+**A third of every deflection the fleet makes on Stillwater Lake is the CLEARANCE term.**
+`proximityCost += cScale * (1 - clr/3)` fires whenever the projected position lands in
+water with under 3 cells (150u) of clearance, at `cScale` 10000 for land-caused
+narrowness and 4000 for floe-caused. Lake's corridors are 150-350u wide and its clearance
+histogram sits at 2-4 cells nearly everywhere, so on this venue the term is not flagging a
+pinch — the whole course is a pinch, and it is charging up to 10000 (two thirds of the
+`staticCollision` surcharge) for aiming at ordinary water.
+
+This is the same shape as the `clearAt` term I built and rejected earlier tonight: **the
+clearance band is the map's margin, not a hazard.** Next candidate on this venue, on top
+of the ship tree: unify `cScale` at the floe value and bench lake/bay/arctic.
