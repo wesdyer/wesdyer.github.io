@@ -6210,3 +6210,43 @@ And the clock, on both venues:
 
 It reduced boat contacts exactly as designed and cost 11-17 seconds doing it. Family
 closed on both the mechanism (dose-response) and the clock (two venues).
+The clock dose-response matches the ledger's:
+
+    amplitude 1.2   lake paired med  +3.0  mean  +9.1
+    amplitude 6.0   lake paired med +17.0  mean +11.3   |  bay +11.0 / +8.4
+
+# ⚡ WHAT ACTUALLY PUTS THE FLEET HEAD TO WIND (`_irons_entry.js`, new)
+
+Rather than try a second fix in the stall family, attribute the ENTRY. 119 entries into
+irons, lake, 3 races, classified by what the boat was doing in the two seconds before:
+
+      AVOID     deflected into the no-go by avoidance    43.7%
+      PENALTY   serving a turn (legitimate)              21.8%
+      TACK      the strategy layer crossed the wind      19.3%
+      WIGGLE    the unstick manoeuvre                    13.4%
+      DRIFT     lost way and rounded up                   1.7%
+      ROUNDING                                            0.0%
+
+      duration med 1.8 s, p90 3.6 s
+      speed TWO SECONDS BEFORE ENTRY: med 2.20 kt, p90 5.13 kt
+
+**She was sailing when it started.** This is not light air killing a drifting boat — it is
+her own escape steering her into the no-go. And it explains the previous rejection
+exactly: tacks are 19.3% of entries, so gating slow tacks could never move the total by
+more than that, and it moved it by 5%.
+
+## THE DEFECT: the fan contains headings that are not courses
+
+`applyAvoidance` taxes a candidate that CROSSES to the other tack (`taxTack`, 600·jamF)
+and says nothing about one that simply lands head to wind — yet from close-hauled a
+0.8 rad escape to windward IS the no-go zone. Nothing in the cost function knows that such
+a candidate does not escape anywhere; the projection flies the boat along it at her
+current speed, which is exactly the speed she is about to lose.
+
+`treeNOGO`: tax a candidate by how far inside the no-go it lands (0 at ~31 degrees TWA,
+500·jamF at head to wind), shaped and scaled like the tack tax beside it — waived for a
+boat with no way on, and three orders below the Rule-14 terms so luffing head to wind
+remains available when it is genuinely the only way out.
+
+⚠️ Note this is an ACTION-SET change, not a re-pricing: it removes candidates that were
+never sailable. That is the one class that has paid tonight.
