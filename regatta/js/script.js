@@ -2429,13 +2429,21 @@ class BotController {
         // Benched: Stillwater Lake -29.0 paired median, Lighthouse Cove -5.0 and -2.0 on
         // two disjoint 20-seed sets, ocean inert.
         //
-        // ⚠️ NOT ON GLACIER SOUND, and the honest reason is that it could not be shown
-        // to help there: 16@9100 said +2.0 median with 7 fewer finishers, 16@9200 said
-        // -9.0 with finishers unchanged, and pooled over 32 seeds it is -5.0 median with
-        // 262 -> 255 finishers. Ambiguous both ways. A mechanism was written here first
+        // ⚠️ NOT ON GLACIER SOUND, and the honest reason is that FOUR 16-seed sets could
+        // not tell it from zero there:
+        //
+        //     9100  paired med  +4.0  mean  +3.8 | finishers 139 -> 132 of 144
+        //     9200  paired med  -9.0  mean -12.7 | finishers 123 -> 123
+        //     9300  paired med -13.0  mean  -4.3 | finishers 134 -> 134
+        //     9400  paired med +10.0  mean  -0.6 | finishers 135 -> 138
+        //     POOLED 64 seeds, n=491 | med -4.0  mean -3.1 | 531 -> 527 of 576
+        //
+        // The set medians alternate sign across a +-13 s range, which is what a threshold
+        // statistic on a marginal venue looks like (Glacier Sound DNFs ~8% of the fleet
+        // at 900 s) — not what a mechanism looks like. A mechanism WAS drafted here
         // ("a floe neither holds still nor keeps clear, so a tighter miss is worth less")
-        // and set 2 did not support it, so it is not claimed. The gate is a
-        // conservatism: do not move a marginal venue on mixed evidence.
+        // and set 2 refuted it, so it is not claimed. The gate is a conservatism: do not
+        // move a marginal venue for an effect indistinguishable from noise.
         //
         // ⚠️ The two lists are ordered and the order is the tie-break (`cost < minCost`
         // keeps the earlier candidate). The ice list is the stock list, unchanged.
