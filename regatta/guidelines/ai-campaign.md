@@ -6176,3 +6176,29 @@ knot against the human's 0.0%. Classified by cause (3 races, 580 of 9106 boat-se
    wind, and the strategy layer has no concept of building speed before tacking. This is
    a STRATEGY-layer thread, not an avoidance one, which is the right place to be now that
    `applyAvoidance` is exhausted.
+
+### ⛔ REJECTED (mechanism): extending the "no tacking without way on" guard to light air
+
+The guard exists — `speed < 1.1 && wind > 16` — and its own comment says the failure it
+prevents is a boat that "tacks slow and parks head-to-wind mid-turn". That is a
+NO-MOMENTUM failure, so it should bite hardest in a drifter, and lake (7-9 kt) never gets
+it. Added a separate light-air branch at a RELATIVE threshold (a third of close-hauled
+target, ~1.4 kt on lake — the absolute 1.1 units is 4.4 kt and lake's fleet averages 4.1,
+so the existing test would have forbidden nearly every tack there). Arctic's branch
+untouched.
+
+    `_stall_probe`, lake, 3 races      landed        + light-air guard
+      in irons                        31.5% (183s)   28.7% (174s)   -5%
+      ashore                          44.3% (257s)   50.7% (307s)   +19%
+      episodes                        188            187            unchanged
+      boat-seconds of racing          9106           9815           races got LONGER
+
+**The stalls are not caused by the tack DECISION.** Blocking slow tacks left the episode
+count identical to the boat and simply traded the failure mode: "sail on and build speed
+close-hauled" keeps her on a board that is pointing at the shore, so ashore time rose 19%.
+
+⇒ Something else is putting these boats head to wind. I have spent tonight attributing
+DEFLECTIONS and never attributed this: the next probe should classify what the boat was
+doing at the MOMENT she entered irons — a commanded tack, an avoidance swerve, a wiggle,
+a rounding, or a penalty turn. Same shape as `_avwhy`, applied to a different event.
+⚠️ Do not build another fix in this family until that exists.
