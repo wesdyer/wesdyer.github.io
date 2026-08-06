@@ -6436,6 +6436,8 @@ the tack decision is untouched). `scoreTack` already prices exactly what footing
                                       land 0.12 -> 0.35, pen 0.37 -> 0.48
     lake 20@9100 vs the landed tree   paired med +14.0  mean +16.5
                                       boat contacts 2.61 -> 4.58 (+75%)
+    arctic 16@9100 vs HEAD            paired med +20.0  mean +16.3
+                                      finishers 139 -> 134, land 27.5 -> 30.8
 
 **Venue-split against the venue that matters.** Bay is faster and dirtier; lake — 4447
 navigable cells, corridors 150-350u — is much slower, because a footed boat is a boat
