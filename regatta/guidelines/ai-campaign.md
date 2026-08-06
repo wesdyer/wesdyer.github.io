@@ -5599,8 +5599,11 @@ benched — `--check` reports without writing). Four regions, all in `applyAvoid
     [x] bay    20@9100  ship vs head        -3.0 med / -2.9 mean
     [x] bay    20@9100/9200 fan alone       -5.0 / -2.0 med  (the fan half, two sets)
     [x] ocean  20@9300/9320 fan alone       -1.6 / -0.1 mean (inert)
+    [x] ocean  20@9300  ship vs head         0.0 med / +1.8 mean (inert; 2 boats short
+                                             of finishing — noted, within lake-free noise)
     [x] lake   20@9100  ship vs head       -53.0 med / -58.6 mean
-    [ ] lake   20@9200  ship vs head       (disjoint-set confirmation)
+    [x] lake   20@9200  ship vs head      -32.0 med / -43.7 mean  (386 -> 358,
+                                            land contacts 27.8 -> 21.2, 180/180 finish)
     [ ] arctic 16@9100  ship vs head       (probe floor only; fan gated off)
     [ ] arctic 16@9200  fan alone          (confirms the rejection that motivated the gate)
     [ ] ocean  20@9300  ship vs head       (safety)
