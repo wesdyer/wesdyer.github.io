@@ -6301,3 +6301,9 @@ lost.** That is the single most useful sentence in this file for the next sessio
 
 Confirming on lake 9200, and checking bay and arctic (this term is ungated — a no-go zone
 is a fact about sailing, not about a venue — so both need to be measured).
+    bay  20@9100 vs the landed tree   paired med -3.0  mean -1.8
+                                      boat 1.56 -> 1.31, mark 0.68 -> 0.53,
+                                      land 0.20 -> 0.12, pen 0.41 -> 0.37
+
+Two venues, both faster and CLEANER on every contact class at once — which is the
+signature of removing a bad option rather than trading one cost against another.
