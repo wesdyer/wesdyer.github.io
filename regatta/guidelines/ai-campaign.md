@@ -4832,3 +4832,99 @@ deflection. Phase 0's replay prices it: how much of the 15 s is recoverable at a
     73% -> 39%; neither half moved it at all.
   - **Judge at 20 seeds, and on a disjoint set.** Three results this session reversed
     between 3 and 20 races, or between 9100 and 9200.
+
+---
+
+# 2026-08-05 ~20:45 — PLAN REVIEW BEFORE EXECUTION (new session)
+
+Preconditions verified: freeze_venues --check all four match; npm test exactly the 6
+pre-existing editor failures; anchors usable as stated.
+
+## Literature check (web, this evening): the gap claim HOLDS
+
+qtVlm / Expedition / Adrena expose per-maneuver tack penalties; Dalang et al. (JORS 2015,
+America's Cup) and Sidoti & Pattipati (IEEE 2023) charge a fixed switching cost in open
+water; robotic-sailing work (Stelzer & Pröll hysteresis) lengthens boards implicitly.
+Nobody converts channel width into degraded VMG. One partial exception: a 2025 Ocean
+Engineering inshore-routing paper (Marseille venue) takes "side distance available for
+maneuvering" as a feasibility input — not a VMG_eff(B) pricing. The closed form is the
+standard distance-made-good-per-cycle derivation, never published as corridor pricing.
+Two refinements it does support: t_c varies with wind speed / sea state (measure per speed
+bin), and there is a MINIMUM BOARD TIME — below the speed-rebuild time the formula is
+OPTIMISTIC, the boat never regains full V between tacks.
+
+## ⚠️ THREE CORRECTIONS TO PHASE 1, FOUND BEFORE BUILDING
+
+1. **The plan's falsification contradicts its own table.** It expects bay/ocean (550-700u)
+   to price "within 15% of free VMG", but raw f(B) = B/(B + t_c·V·sinθ) gives 0.70-0.75
+   there — the raw model charges open water 25-30%, because it assumes a tack every
+   board-width even where boats naturally tack far less. **Normalize at the natural board
+   width**: factor(B) = min(1, f(B)/f(B_nat)), B_nat from measured open-water tracks
+   (ocean beat: 7 tacks / 8356u sailed → board ≈ 1194u → B_nat ≈ 800u cross-corridor).
+   Then 550-700u prices 0.93-0.97 (inert, as the falsification demands) and 100u prices
+   ~0.38. Without this, Phase 1 moves bay/ocean and the falsification kills a correct
+   model for the wrong reason.
+2. **The tf clamp caps the fix.** `buildTimeCost` clamps `tf = min(4, max(0.6, 10/best))`.
+   Free upwind tf ≈ 2; a 0.29 corridor factor wants tf ≈ 7 — clamped to 4, the correction
+   arrives halved. The corridor-banded table needs the cap raised (~12). Heuristic
+   admissibility is unaffected (`hMul = _tfMin`, the table MINIMUM).
+3. **B from clearance is coarse.** `clear[nid]` is Chebyshev cells-to-nearest-blocked;
+   mid-channel of a W-wide channel reads c ≈ ceil(W/100), so B(c) = (2c-1)·50 is the
+   honest lower-ish band edge {50, 150, 250, ...}. Bands, not precision — and the penalty
+   should key on |heading − bearing| of the maximizing candidate (delta = 0 → directly
+   sailable → NO penalty at any width; this scopes the correction to the no-go cone by
+   construction and prices corridor gybing too, mildly).
+
+## Also noted
+
+- Arctic must be benched alongside bay/ocean: the bots' grid stamps FLOES, so arctic's
+  corridors are exactly the water this repricing touches. Not covered by the plan's
+  "bay/ocean inert" falsification.
+- Redrock's raceability verdict is superseded by the owner's 221s hand-sailed run — the
+  memory index's "NOT RACEABLE" entry predates it.
+
+---
+
+# ⚡ 2026-08-05 ~21:30 — PHASE 0 INSTRUMENTS BUILT, AND TWO OF THEM ALREADY SETTLED THINGS
+
+## 1. VMG_eff(B) MEASURED IN THE ENGINE (`_vmgeff_probe.js`) — the model was 2-3x too harsh
+
+An ideal rate-limited helm (player physics: getTurnSpeed · steerageFactor, in-irons decay
+and rebuild all live) short-tacks up a virtual corridor; VMG over a bounded climb.
+⚠️ First cut ran on a clock, sailed to the arena wall, and reported byte-identical VMG at
+every width — the exactly-equal-everywhere rule caught it; now it times a fixed climb.
+
+    usedB(u)   123   150   200   250   351   450   651   852   1251   free
+    frac      .639  .688  .747  .788  .834  .870  .899  .920   .943  1.000
+    (seatrials 13kt, optTWA 38; free run reproduces the polar: 5.73 vs 5.81 kn.
+     Lagoon replicates the corridor VMGs to ±0.04 kn; its free lane is contaminated
+     by its own geography — seatrials is the reference.)
+
+**Single-parameter fit: frac = W/(W+K), K ≈ 70u ± 5 at 13 kt ⇒ t_c ≈ 1.0 s against polar
+speed.** The game's tacks are CHEAP (natural-maneuver probe `_tackcost.js` agrees: med
+0.2-1.3 s across wind bins). Consequences:
+  - a 100u slot prices ~0.6 of free VMG, not the plan's 29% — corridor arithmetic
+    explains ~1.6x of redrock leg 1's 5.64x, so EXECUTION is the bigger half (Phase 3).
+  - per-step form for the router: tf' = tf · (1 + L/W), L = t_c·v_best·|sin δ_best|·15,
+    which is ZERO for directly-sailable bearings — self-scoping to the no-go cone,
+    prices corridor gybing mildly, and needs no normalization to be open-water-inert.
+
+## 2. TRAFFIC, PRICED DIRECTLY (`_solo_beat.js`) — the fleet-vs-human gap largely IS the fleet
+
+Same seed, same boat, all other bots parked off-map at the first prestart frame.
+⚠️ Every stored human run has rivals=0 — the owner sailed ALONE. So solo-bot vs
+solo-human is the honest comparison, and it says the core boat is ALREADY human-par:
+
+    OCEAN 20 seeds (9300-19): beat leg paired fleet−solo med +11.3 s / mean +12.8.
+      Solo beat 63-73 s (med ~70) vs human 68.8; solo dist ~7.1-7.4k vs human 6906.
+      Solo finishes med ~175 vs human 182.5 — the solo bot BEATS the human's race.
+    BAY 20 seeds (9100-19): solo fin med 224.2 vs human med 226.2 (11 runs);
+      solo best 213.2 vs human best 217.8; 8 of 20 solo runs beat the human's best.
+      Paired fleet−solo: L1 med +11s; whole race med ≈ +38 s.
+
+⇒ **The ocean-beat thread's "what is left is traffic" is CONFIRMED and PRICED (~11 s of
+the 15), and bay's ~35 s fleet-median gap to the human is fleet-racing cost, not boat
+speed.** The competitive question is now: does the AI pay MORE for traffic than a human
+in traffic would? (Human rubs 0.14/race vs fleet 2.0 says yes, some of it.) No human
+in-fleet recording exists to calibrate against — worth asking the owner for one
+race-with-rivals recording per venue.
