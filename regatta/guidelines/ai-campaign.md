@@ -5043,6 +5043,37 @@ mean, arctic +1 med / -16.2 mean — the verified configuration wins on medians)
     arctic 16@9200            fleet_leg2_corrarc9200.json   535 med, 125 finishers
     goldens                   PASS 20/20 (re-recorded)
 
+# ⚡ WHERE THE NEXT PUSH SHOULD AIM — the venue-by-venue decomposition, measured tonight
+
+The question "is the AI competitive with the human?" now has a per-venue answer, and it
+is a DIFFERENT problem on each venue:
+
+1. **ARCTIC is the core-AI prize.** Solo bot 318-580 s vs solo human ~222 med (22 runs).
+   The deficit is HALF SPEED (grinding within 120u of ice at 0.56 polar — 72% of all
+   slow time), HALF LINE (46% of excess distance is avoidance-bent, a third of that
+   with no identified boat/static threat — i.e., drifting ice deflection). Candidates,
+   in priced order: (a) re-run `_ice_slow`/`_transit_probe` on the corridor-landed HEAD
+   to re-baseline; (b) measure the REAL grind speed through soft plugs vs the A*'s
+   2.5x/6x multipliers and set them to the measurement; (c) an ice-standoff term in the
+   LOCAL layer (the route layer now has one — that was tonight's landing). ⚠️ The fleet
+   OPENS LEADS (solo/keep-5 both ~90-180 s slower than 9-up): never bench arctic solo.
+2. **REDROCK is an authoring decision, with numbers.** Corridors 50-150u vs a MEASURED
+   123u minimum tack width; keep-N: 1 boat sails leg 1 at 1.2x plan and can finish,
+   3 boats already gridlock, 9 never finish (246 rubs/boat-race); even solo, LEG 3
+   (50u median) never completes by 900 s. Options: widen to ~250u+, small-fleet or
+   time-trial format, or accept. A hand-sailed run on the CURRENT doc would settle
+   whether leg 3 is human-possible at all.
+3. **BAY/OCEAN are fleet-efficiency problems, not boat problems.** Solo bot = human-par
+   on both. The fleet costs itself ~38 s (bay) / ~11-16 s (ocean beat) paired. The open
+   question the closed traffic threads never answered: does the AI pay MORE for traffic
+   than a human WOULD? No in-fleet human recording exists. **Ask the owner for one
+   recorded race WITH rivals per venue** — it prices the whole remaining family in one
+   file.
+4. **Instruments that should outlive the session**: `_solo_beat` (keep-N), `_vmgeff_probe`,
+   `_corridor_price`, `_track_floor`, `_ice_slow`, `paired_compare`. The corridor
+   arithmetic (W/(W+70u), 123u min tack width) belongs in venue-authoring guidance —
+   `check_raceable` could flag corridors under 2x tack width at authoring time.
+
 ## ⚡ REDROCK CAPACITY, MEASURED (keep-N sweep, seeds 9100-9103)
 
     keep 1   L1 50-68 s, ~1.2x plan, one FINISH (583 s) in 4
