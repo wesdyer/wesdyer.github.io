@@ -4695,3 +4695,32 @@ new mechanism. Start there.
       treeLAY one-sided layline                 fires on gybes too; scoped, still nothing
       treeLAY2 layline against the MARK         the target IS 1717u wrong; fixing it is 0
       18.3 / 18.4                               predicate: 1 event in 54 boat-races
+
+### ⛔ THE LAYLINE THREAD, CLOSED IN FOUR MEASUREMENTS
+
+    HEAD                          layline armed 185, she TOOK it 27%, DID NOT 73%
+    treeLAY2 (aim at the MARK)    armed 195, took 30%, did not 70%   -> aim is not it
+    treeLAY  (one-sided test)     ocean paired -0.8 mean            -> test is not it
+    treeLAY3 (BOTH)               armed 270, took 61%, did not 39%   <- the pair DOES work
+                                  ...and TACKS 6 -> 13, overstood 49.4% -> 53.7%,
+                                     leg time 82 -> 94 s            -> and it is WORSE
+
+**The pair does move the behaviour and the behaviour was the wrong target.** Once a boat is
+past the layline the one-sided condition is PERMANENTLY true, so overriding the cooldown
+lets it fire every tick: she tacks, is immediately past the layline on the new tack too
+(because she was well past), and tacks back. That is precisely the flapping the cooldown
+exists to prevent — my own comment said so while removing it.
+
+⇒ **The overstanding is NOT a layline-logic problem.** Four variants, four rejections, and
+the one that changed the behaviour made it worse. What is left:
+
+  - **traffic.** The human sailed alone; the fleet beats 9-up on a first beat. Mean
+    avoidance deflection on that leg is 10.6-13.8 degrees. A boat pushed past the layline
+    did not choose to be there, and no tactical rule will bring her back cheaply.
+  - **it may not be worth what it looks like.** The fleet is 46-49% overstood against a
+    human's 37.7% and loses 15 s on the leg — but every attempt to convert overstanding
+    into time has come back flat or negative. The correlation may not be the cost.
+
+⚠️ **Next time, test the DIRECTION of the effect before building the mechanism**: a probe
+that answers "if these boats had tacked at the layline, how much would they have saved?"
+is one trajectory replay, and it would have priced this thread before four trees were cut.
