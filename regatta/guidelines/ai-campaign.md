@@ -7532,3 +7532,57 @@ JAM-qualified trigger: lake contacts 5.07->4.21 (A) and 4.70->4.33 (B), pens
 arctic BYTE-IDENTICAL (open-water gate — unscoped it put boat contacts 12.1->13.5:
 holding manoeuvring speed beside a jam in drifting ice means taking hits);
 seatrials 199.59/194.13 OCS 14.78% pen 0.40 (baseline-equivalent).
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION CLOSE 2026-08-06 DAY — THREE LANDINGS, THE VENUE REPORT
+# ═══════════════════════════════════════════════════════════════════════════
+
+Landed: 6d6cc4a (Rule 21 both ways) + 56387c7 (canyon law, icy grids) + 125032f
+(funnel metering, jam-qualified, open water). Goldens re-recorded per landing.
+npm test = the 6 known editor failures throughout.
+
+## THE VENUE REPORT (owner's standing format: human | pre-session bot | post-session bot)
+
+Clock = fleet median finish (disjoint seed sets shown as A/B). Dirt in parentheses.
+
+  VENUE      HUMAN                    PRE-SESSION BOT               POST-SESSION BOT
+  bay        226.2 med / 217.8 best   244/244  (boat 2.83/2.38,     242/245  (boat 2.04/1.73 [-28%],
+             0 boat impacts                     pen .46/.54)                  pen .43/.50)
+  ocean      182.5 med                193      (boat 1.80)          193      (boat 2.12, pen .44, paired -1.5)
+  lake       223 med / 209.6 best     295/289  (boat 5.01/3.93,     292/294  (boat 4.21/4.33 [-17/-8%],
+             (3 traces only)                    land 8.1/9.3)                 land 8.8/8.6, pen .81/.83)
+  arctic     212.1 med / 190.4 best   458/462  (in-time 23/14,      424/451  (in-time 40/23, fins 144+140,
+             3.9 floe hits/race                 fins 142+142,                 floe 30.3/34.1 [-18/-11%],
+             (8 of 19 races: zero)              floe 37.3/38.3)               land 19.2 [-25%])
+  seatrials  ~190 med / 180.9 best    194.43   (OCS 14.78%,         194.13   (OCS 14.78%, pen .40)
+             OCS 1 in 16 races                  pen .41)
+  redrock    140.3 — OLD DOCUMENT     10/72 fins, best 611          11/72 fins, best 442
+             (current course has NO   (rubs 61.3, pen 9.06,         (rubs 37.2 [-39%], pen 7.47,
+             human recording)          leg-3 wall: 55 boats)         leg-3 wall: 49 boats)
+
+Reading guide: bay/lake/redrock moved mostly on DIRT (the owner's stated priority);
+arctic moved on both clock (-34 med set A) and dirt; ocean/seatrials were already
+near-human and are unchanged within noise (ocean boat 1.80->2.12 is 20-seed noise
+on a small count; flagged, not explained). The remaining big gaps, in order:
+arctic 2x (residual composition 46% boat-threat + 42% wiggle at impact — the next
+lever is research-scale: arrival-time gap routing or driver-level), lake ~70s
+(stall composition now 41% ashore / 27% irons / 24% penalty turns), redrock
+(execution of sub-tack-width beats; NEEDS a human recording on the current doc).
+
+## WHAT THE OWNER CAN DO THAT NOBODY ELSE CAN
+  1. Race the CURRENT redrock document once — the 140.3s reference predates the
+     venue edit; nobody knows if the 360 cutoff is achievable on this course.
+  2. Recordings for glowtide/lagoon/river/swamp (still zero human data).
+  3. A couple more lake races (3 traces is the thinnest reference among the
+     raceable venues, and lake is the biggest open clock gap after arctic).
+
+## SESSION METHOD NOTES (for the next instance)
+  - The capability frame (owner, this session) paid off immediately: the canyon
+    law was built FOR redrock and landed FOR arctic; metering was built for lake
+    and its biggest single number was redrock's front (611->442).
+  - Two zero-statistic bugs caught by the standing rule (impact classifier's land
+    radii; narrow% with unbuilt _clear). ARM the rule: a probe returning zero at
+    every percentile is a bug until proven a finding.
+  - Baselines on final HEAD = bay_bench_meter2bayA/finalbayB, ocean_bench_meter2lakeA/B,
+    ocean_bench_finaloc, fleet_leg2_canyonarcA/B (arctic byte-identical to final),
+    ocean_bench_finalrr, seatrials_meter2.log. Trees treeMETER2 == final HEAD.
