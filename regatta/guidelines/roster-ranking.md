@@ -436,5 +436,94 @@ The sharks become the roster's flagship collection, with four ways in:
 On **Oceanic Whitetip vs Blacktip**: build at most one "tip" shark — two
 near-identical names and fin patterns will blur at picker scale. Blacktip wins
 the slot on purpose (a reef venue needs a reef shark); the Whitetip's hook — the
-ship-following ocean wanderer — is better served someday as a Bluewater distance
-feat than as a lookalike character.
+ship-following ocean wanderer — is now housed by **Roam the Blue Shark** at
+Bluewater Bonanza (see below), which is the better animal for it anyway.
+
+---
+
+## The Expansion — 48 new characters (Aug 5 2026)
+
+The achievement pass of Aug 5 moved venues onto a **five-rung template** (first
+win · key mechanic · venue record · venue secret · manual-trim record) across
+**sixteen racing venues**, which reserves 80+ characters for venue play. The
+roster goes from 100 to **160**. Full criteria live in
+[achievements.md](achievements.md); this is the build list.
+
+**60 characters are unbuilt in total**: the 12 already sketched (the 7 on the
+bench above, plus Lash, Relic, Goblin, Blacktip and Dapple from the shark saga)
+and the 48 below — 45 named, 3 still unnamed at Reef 2.
+
+**Species rule, set by Wes:** real wildlife of that venue, and **at least part
+aquatic** — a platypus or a fishing bald eagle qualifies, a marina cat does not.
+This vetoed a dock cat at Lighthouse Cove and a club Labrador at Clubhouse Point,
+both of which were otherwise the strongest picks for their slots.
+
+**All colours below are provisional until measured from a shipped portrait**, per
+the `art/new-character-prompt.md` pipeline rule. Stat sketches are noted only
+where a design rule constrains them.
+
+### Venue characters (34)
+
+| Character | Species | Venue · rung | Hook |
+|---|---|---|---|
+| **Wake** | Harbour Porpoise | Cove · mechanic | Works the ship channel, crosses ahead of everything. ⚠️ silhouette check vs Ripple |
+| **Ketch** | Osprey | Cove · record | Hits the water from height and comes out with what it aimed at |
+| **Wheel** | Black-legged Kittiwake | Cove · secret | Wheels around the light; the gulls a tight rounding scatters |
+| **Diver** | Common Loon | Lake · mechanic | Picks a side, disappears, surfaces ahead |
+| **Timber** | Moose | Lake · secret | Swims, dives for pond weed, the most Stillwater animal alive |
+| **Flit** | Dragonfly | Bayou · secret | Larval life underwater, adult life a foot above it |
+| **Grizzle** | Brown Bear | River · secret | Up to his knees in the salmon run |
+| **Roam** | Blue Shark | Ocean · record | The trans-ocean traveller that follows ships for weeks. Shark #6 |
+| **Sound** | Humpback Whale | Ocean · secret | The one that surfaces once a race |
+| **Sawbill** | Common Merganser | Redrock · mechanic | Runs the channel single file and does not deviate |
+| **Ridge** | Razorback Sucker | Redrock · record | The other Colorado endemic, beside Chisel |
+| **Echo** | Canyon Bat | Redrock · secret | Drinks on the wing off the water, navigates the narrows by echo. No bat exists in the file |
+| **Chime** | Beluga | Arctic · secret | The sea canary; knows where the orcas are |
+| **Compass** | Compass Jellyfish | Clubhouse · mechanic | A bell patterned with a compass rose, at the venue about the number |
+| **Pilot** | Pilot Fish | Clubhouse · record | Holds station on a shark, at zero distance, forever |
+| **Trace** | Ghost Pipefish | Clubhouse · secret | Invisible improvement |
+| **Wick** | Storm Petrel | Clubhouse · trim | Mother Carey's chickens — the sailor's own bird. Sketch +5 (trim floor) |
+| **Curl** | Eurasian Curlew | Flats · record | The venue's original name, kept by right |
+| **Wink** | Fiddler Crab | Flats · secret | Waves one oversized claw from newly-dry mud |
+| **Rake** | Oystercatcher | Flats · trim | One job, one bill, done perfectly. Sketch ≥+3 |
+| **Basalt** | Marine Iguana | Emberfall · record | The only lizard that feeds in the sea |
+| **Vent** | Yeti Crab | Emberfall · secret | Farms bacteria on its own furry arms at hydrothermal vents |
+| **Soot** | Sooty Tern | Emberfall · trim | Nests by the million on volcanic islands. Sketch ≥+3 |
+| **Gape** | Basking Shark | Fjord · secret | Second-largest fish alive, mouth open. Shark #9 |
+| **Spray** | White-tailed Sea Eagle | Fjord · trim | Europe's largest eagle; the northern Talon. Sketch ≥+3 |
+| **Silver** | Tarpon | Reach · mechanic | The biggest thing that fits down a marsh braid |
+| **Sedge** | Scarlet Ibis | Reach · record | The most saturated bird alive, for the venue that must own a colour |
+| **Kite** | Snail Kite | Reach · secret | A marsh raptor named for a spinnaker |
+| **Quill** | Anhinga | Reach · trim | Swims submerged, then hangs itself out to dry. Sketch ≥+3 |
+| **Nook** | Tidepool Sculpin | Tide Pool · witness | Breathes air, survives stranding, always finds its own pool |
+| **Surge** | Gooseneck Barnacle | Tide Pool · mechanic | Lives where the water hits hardest. ⚠️ silhouette check vs Grip |
+| **Scar** | Owl Limpet | Tide Pool · record | Returns to the exact same millimetre of rock every tide |
+| **Trinket** | Decorator Crab | Tide Pool · secret | Glues everything it finds onto its own shell |
+| **Plate** | Gumboot Chiton | Tide Pool · trim | Armoured, brick-red, impossible to prise off. Sketch ≥+3 |
+
+Plus **three unnamed** for Reef 2 (record, secret, trim) once that venue is
+specced, and **four** for Duckling Pond (**Fuzz** the Duckling, **Oar** the Water
+Boatman, **Puddle** the Pond Snail, **Wisp** the Great Crested Grebe) at
+deliberately reduced stakes — the Pond is where a seven-year-old meets the game.
+
+### General characters (7)
+
+| Character | Species | Family | Hook |
+|---|---|---|---|
+| **Spin** | Spinner Dolphin | Boat Handling | Leaves the water and rotates on its long axis. Viper's downwind twin (12+ gybes) |
+| **Corsair** | Frigatebird | Legal Aggression | The kleptoparasite that harasses other birds in the air until they drop what they carry — the dirty-air achievement |
+| **Tempo** | Snapping Shrimp | Series | The loudest, fastest snap in the ocean, fired on command — every start inside a second |
+| **Titan** | Giant Trevally | Series | The reef predator anglers call unfair — win every race by 5+ seconds |
+| **Lance** | Sailfish | Series | Slashes through a bait ball again and again. ⚠️ third billfish after Spar and Torrent — differentiate hard |
+| **Huddle** | Emperor Penguin | Series | Does the hardest sustained thing in nature by not breaking formation |
+| **Renew** | Immortal Jellyfish | Series | *Turritopsis dohrnii* reverts to its juvenile form — literally a drop race |
+
+### Watch list for the art pass
+
+1. **Crustaceans are saturating** — Cheer, Pinch, Scuttle, Clutch, Crush,
+   Etienne, Wink, Vent, Surge, Trinket. Four are crabs. Check the picker at
+   portrait scale before building the last of them.
+2. **Twelve sharks** is a deliberate collection and can carry the load; **three
+   billfish** is not a set and needs art separation or a species change.
+3. **Aquatic mammals** are back (moose, bear, porpoise, beluga, humpback, bat)
+   but spread across six venues — keep it to one per venue.
