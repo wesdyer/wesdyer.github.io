@@ -6421,3 +6421,32 @@ rule: DELETE OR ADD options; do not re-aim the ones that are there.**
 that "the grid knows where land is" holds equally in ice. It does — and it lost there too,
 for the ordinary reason rather than the ice-specific one. Not every change in this function
 divides along `openWaterAv`; this one is simply wrong everywhere.
+
+## ⛔ REJECTED: footing and pinching on the beat (`treeFOOT`)
+
+`getStrategicHeading` chooses between exactly TWO headings, `wd ± optTWA`, so this fleet
+physically cannot sail a few degrees low to build speed through a lull or a few degrees
+high to hold a lane — a two-element action set, argmin'd, one layer above the escape fan.
+Added ±4 and ±8 degrees of trim on the CHOSEN tack only (every guard above compares
+`preferredHeading` by identity, and the layline and no-way-on branches return earlier, so
+the tack decision is untouched). `scoreTack` already prices exactly what footing trades.
+
+    bay  20@9100 vs the landed tree   paired med  -3.0  mean  -1.4   252 -> 250
+                                      but boat 1.31 -> 1.77, mark 0.53 -> 0.72,
+                                      land 0.12 -> 0.35, pen 0.37 -> 0.48
+    lake 20@9100 vs the landed tree   paired med +14.0  mean +16.5
+                                      boat contacts 2.61 -> 4.58 (+75%)
+
+**Venue-split against the venue that matters.** Bay is faster and dirtier; lake — 4447
+navigable cells, corridors 150-350u — is much slower, because a footed boat is a boat
+sailing WIDER, and wide is exactly what that venue does not have. The extra option is
+real and it is priced correctly; the problem is that on narrow water the price
+`scoreTack` computes does not include what the wider track will cost her later in
+traffic and shore contacts.
+
+⚠️ It is worth noting what this shares with the wiggle rejection: both ADD or RE-AIM
+options for a boat in open-ended water, and both lose on the venue where space is the
+binding constraint. Tonight's two landings did not add freedom — the fan added
+RESOLUTION between options that already existed, and the no-go tax REMOVED options that
+were never real. **On a narrow venue, more freedom is not obviously good; more precision
+and fewer illusions are.**
