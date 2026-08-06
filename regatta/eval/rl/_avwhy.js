@@ -6,7 +6,15 @@
 // mystery. This asks the cost function directly: whenever the chosen escape deviates
 // more than 0.12 rad from the desired heading, which term rejected holding course?
 //
-// Requires a tree instrumented with the `__avWhy` counter (see treeWHY).
+// Requires a tree instrumented with the `__avWhy` counter. To rebuild it on a new base:
+//   1. `mktree.sh treeWHY` then copy the base's script.js over it
+//   2. in applyAvoidance, `if (offset === 0) this._p0 = {};` at the top of the candidate
+//      loop, and `this._av0 = {boat, stat, rule, prox, cost}` at the bottom of the
+//      offset-0 iteration
+//   3. tag each `proximityCost +=` at its source into `this._p0`
+//   4. after the loop, when the chosen heading deviates >0.12 rad, fold `_av0`/`_p0`
+//      into `window.__avWhy`
+// It is a PROBE tree on purpose — none of this belongs in the shipping cost function.
 //   node _avwhy.js <trials> <seed0> <tree> [venue]
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
