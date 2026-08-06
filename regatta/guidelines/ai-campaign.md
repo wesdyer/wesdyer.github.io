@@ -6137,3 +6137,11 @@ paid) and commitment (the lock).
 ⚠️ And note the method: the DOSE-RESPONSE is what makes this a closed family rather than
 one more rejected constant. Same discipline as the commitment thread's 1-second hold
 control. One amplitude would have read as "needs tuning".
+And the clock agrees with the ledger, on both venues:
+
+    bay  20@9100 vs the landed tree (amp 6)   paired med +11.0  mean +8.4
+                                              boat contacts 1.56 -> 1.77
+
+⇒ `applyAvoidance` is now measured from every side it has: resolution (LANDED), price,
+trigger, horizon, outcome-shaped positioning, and commitment. Only the action set paid.
+The remaining traffic gap is a planning gap and it does not live in this function.
