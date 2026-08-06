@@ -6809,3 +6809,32 @@ looked because the fan was measured on race time, not on OCS.
   - **Mark 5 on Stillwater Lake sits in 100u of clearance**, tightest in the game by 2x,
     worth ~10-15 s. An authoring fix, not a tuning one.
   - **The router's 6x ice-plug price is dead code** (`pathSailable` admits only `_soft===1`).
+
+## ⛔ REJECTED, and it explains the shipped shape: the PHYSICAL deviation cost (`treePHYS`)
+
+The session-close entry named this as the obvious successor to the hand-tuned `pow3*200`:
+what a deviation actually costs is PROGRESS, so price it as the distance given up over the
+lookahead, `K * speed * t * (1 - cos(offset))`, with K=5 chosen to match pow3*200 at the
+172-degree reversal so the two are comparable at the top of the range.
+
+    vs the shipped term, 20@9100 each
+      lake   paired med +5.0 / mean +2.0 faster   BUT land contacts 8.04 -> 15.90 (2x)
+                                                  and 180 -> 179 finishers
+      bay    paired med +1.5 / mean +2.5 faster   contacts ~neutral, pen 0.46 -> 0.47
+
+**A wash on the clock, and it gives back half of what the land probe and the near-reversal
+gate were landed for.** The mechanism is in the units:
+
+    const speed = Math.max(2.0, boat.speed * 60);   // ranges 2 (stopped) to ~120 (fast)
+
+That is a SIXTY-FOLD span, so the physical cost of a 172-degree reversal is 5400 for a boat
+at speed but **80 for a boat nearly stopped** — and the boat that most needs restraining is
+exactly the slow one pinned against the shore, where lake takes 81% of its groundings.
+The physics is right about the world and wrong about the control problem: the term is not
+paying for lost distance, it is holding a boat to her course, and a boat with no way on
+still needs holding.
+
+A speed floor would repair it — but a floor is speed-independence, which is what
+`pow(|offset|,3) * 200` already is. **This is a rejection that explains the landing**: the
+shipped shape is not a hand-tuned stand-in for a physical law that nobody got round to
+deriving. Speed-independence is the feature.
