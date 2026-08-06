@@ -6875,3 +6875,42 @@ next candidate, and it should be built with the measurement above as its target:
 
 **Not attempted here** — a routing change needs 16-32 seed arctic sets to resolve, which
 did not fit the remaining window. Handing it over measured rather than half-benched.
+
+### ⚠️ CORRECTION to the entry above — `carrotJump` does not support a churn story
+
+The entry above concluded "the excess is plan instability" and named a route-commitment
+candidate. **Two further measurements withdraw that conclusion**, and the second is another
+instance of this session's recurring trap: a statistic that does not measure what its name
+suggests.
+
+**1. The map is stable, and so are the re-solved plans** (`_map_validity`, arctic):
+
+      H(s)   floe cells that flipped    plan difference over the first 2000u
+        4            3%                          8-12u
+        8            5%                         13-17u
+       16            8%                         15-36u
+       30           30%                        114-278u
+
+Over the 4-8 s horizon the router actually re-plans on, the map barely moves and two
+independently-solved plans agree to within noise. So the plan is not thrashing because the
+ice moved — the premise a commitment fix would be built on is already satisfied.
+
+**2. `carrotJump` counts the LOOKAHEAD changing, not the plan changing.** It increments
+whenever the nav target moves >150u between 1 Hz samples (`_transit_probe:220`). But the
+target is a pure-pursuit point at distance `LOOK` ahead, and `LOOK` is not constant:
+
+      LOOK = clamp(clearance * res * 1.2, 250, 900)        // scales with sea room
+      if (xtk > 150) LOOK *= max(0.4, 1 - (xtk-150)/400)   // shrinks with cross-track
+
+so a clearance change or a cross-track excursion moves the carrot hundreds of units in one
+sample **by design** — that is the cross-track controller steepening the recovery angle,
+which is the behaviour the comment above it argues for. Counting those as "churn" and then
+fixing them would be removing a working controller.
+
+⛔ **So the arctic 1.67x odometer is NOT yet explained**, and the honest state is: not
+router policy (plan 0.79x), not execution (96u off plan), not map decay (3-5% at 4-8 s),
+and not carrot churn on the evidence offered. **Do not build the route-commitment
+candidate on this** — the family already carries ten rejections at the avoidance layer and
+this would be an eleventh built on a mis-read statistic. The next step is a probe that
+measures the carrot's motion ALONG the path separately from `LOOK`'s contribution, which
+nothing currently does.
