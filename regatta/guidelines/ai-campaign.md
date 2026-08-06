@@ -5562,3 +5562,12 @@ also miss them.
 ⚠️ **Judge a steering change on the clock.** The probe floor was nearly discarded because
 `hits per 1000 boat-seconds` barely moved (71.1 -> 68.8) — a denominator the change is
 trying to shrink.
+
+### The floe gate is live from frame 1 (checked, because it nearly was not)
+
+`state.course._floeObjs` is populated by `refreshBotGrid`, not by `resetGame` — so
+straight after a reset it reads EMPTY on Glacier Sound, and a gate written against it
+would hand the ice venue the open-water fan for the first frames. Measured: 0 after
+`resetGame()`, **112 after a single `update(1/60)`**, and `applyAvoidance` cannot run
+before the first update. The gate is sound. (The two existing `openWater` reads at the
+keep-clear terms have the same property and the same answer.)
