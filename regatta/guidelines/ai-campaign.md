@@ -4545,3 +4545,71 @@ completes the moment she is genuinely on her way out, and not before.
     bay correctness   ordinary legs 6.5% -> 0.7% never wrapped the mark
                       overall 6.1% -> 1.9%
     bay pace          paired -10.5 med / -10.9 mean, 180/180, marks 0.38 -> 0.67
+
+## ⚡ TWO HUMAN TRAJECTORIES, AND WHAT THEY SAY (2026-08-05 evening)
+
+The owner sailed both new venues by hand and handed over the recordings. They settle two
+arguments that no amount of bench-staring would have.
+
+### REDROCK IS RACEABLE — 221 s against a 360 s cutoff, five legs, comfortably
+
+    HUMAN                                     FLEET (3 races, 27 boats)
+     leg   time    dist   medTWA  up%  down%    time    dist   medTWA  up%  down%
+      1    37.7    2798      42    97     0    116.5    7953      67    55    24
+      2    73.3    7790     166     7    88    227.7   13845      84    45    28
+      3    68.3    8001     151     1    80    501.6   26399      97    37    34
+      4    15.9    1911     165     0    93    129.7    5588     100    40    37
+      5    24.6    2855     168     0   100     (the fleet never got here)
+
+**Beat to the first mark, then run the corridors** — exactly what the owner said. The
+fleet instead reaches and beats through the rock garden: 45% UPWIND on a leg the human
+sails 88% downwind, 3.3x the distance on leg 3, 4354 shoreline collisions per boat-race.
+
+⚠️ **And the router is NOT the culprit — it plans corridor routes.** Asked directly, it
+returns 4347 units for leg 2 against a 2034-unit straight line (2.14x) and 6858 for leg 3
+(1.7x). It is wind-aware (`_wbin` present, 25 wind regions, the polar time-cost table).
+**Two things are wrong instead:**
+
+  1. **its own plan is 64% upwind through water 50 units wide** on leg 2. The time cost
+     prices beating correctly as VMG — but a boat cannot physically tack in a 50-unit
+     channel, and nothing in the cost says so. The `narrow` term is a bounded route HINT.
+  2. **the boats sail 3.2x their own plan anyway** (13845 against 4347). Whatever the plan
+     says, the local layer is not executing it in this water.
+
+⇒ **The core-AI item: an upwind cost that knows whether there is room to tack.**
+
+### BLUEWATER IS CLOSE — human 182.5 s, fleet ~198 s, and it is ALL ONE LEG
+
+    leg 1 (beat)   human 68.8s / 6906u      fleet 83.7s / 8356u    <- -15s, +21% distance
+    leg 2 (reach)  human 30.4s / 3754u      fleet 27.9s            <- fleet FASTER
+    leg 3 (run)    human 81.4s / 18749u     fleet 76.2s            <- fleet FASTER
+
+The fleet beats the human downwind — the swell work says why it can — and loses the whole
+race on the beat, **at the same true wind angle** (38 vs 40). Distance, not speed.
+
+`_beat_attrib.js` (new) attributes it:
+
+    TACKS                  human 4        fleet 7
+    % of leg OVERSTOOD     human 37.7%    fleet 46.0%
+    distance               6906u          8116u
+
+### ⚠️ A REAL BUG IN THE LAYLINE CALL — it is a WINDOW that can be missed
+
+    if (Math.abs(otherError) < 0.1 * traits.laylineTight) {
+        if (this.tackCooldown <= 0) { ...tack... }
+    }
+
+Two failures in three lines. The test is a **window**: sail through it and `otherError`
+keeps growing, the absolute test goes false, and the layline is never called again — the
+boat just keeps going. And the **cooldown can veto the one moment the window is open**
+(5-10 s, which at 120 u/s is up to 1200 units past the layline).
+
+The sign was determined by MEASUREMENT rather than by reasoning about tack conventions
+(`otherError * currentTack`, 1513 upwind samples on Bluewater):
+
+    the other tack does NOT yet lay the mark    negative,  94% of samples
+    the other tack DOES lay it (overstood)      positive, 100% of samples
+    ...and 22% of all upwind samples were already past the layline
+
+`treeLAY` makes the test one-sided (at the layline OR past it) and stops the cooldown
+vetoing it once genuinely past. Benching.
