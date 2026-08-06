@@ -7094,3 +7094,42 @@ built this session total 27 MB.
 `*_bench_*.json` files (51 MB total at the top level), not in the trees, so the numbers in
 this log survive their removal. But an old tree is the only way to re-run an old
 comparison, so this is a judgement about which history is worth 106 GB.
+
+## ⛔ FOURTH ELIMINATION: floes ARE mispriced 7-8x, and fixing it barely moves anything
+
+Reading the collision response settles a question the cost function assumes: **a floe costs
+exactly what a rock costs.**
+
+      script.js:16081    boat.speed *= 0.4;      // applied to BOTH; `isFloe` is only
+                                                 // carried along for reporting
+
+Yet avoidance prices floe proximity at 3500/1200 against land's 25000/10000 — 7-8x cheaper
+for an identical consequence. By the standard this session established (a price that does
+not match the thing it prices is structural, not a knob) that is a genuine defect. Pricing
+floes as land (`treeFLOEPX`, 4 arctic races, 36 boat-races):
+
+      HEAD          23.0 impacts/boat-race   3.0/min   73.3 kt shed
+      floe=land     21.6 impacts/boat-race   2.9/min   71.5 kt shed     (-6%)
+
+**Real, and far too small to be the answer** — and not separately verified on a second set,
+because it does not clear the bar to be worth one. The fleet is not hitting ice because it
+under-values ice.
+
+⚡ **And that is the sharpest statement of tonight's lesson, from the other side.** The
+deviation term was mispriced by THREE ORDERS OF MAGNITUDE and correcting it was worth
+71-86 s a boat on this venue. Floe proximity is mispriced by 7-8x — genuinely, verifiably
+mispriced — and correcting it is worth 6% of an impact rate. **The magnitude of the
+mismatch is the whole signal, not its existence.** A campaign that goes looking for
+"mispriced terms" will find them everywhere and mostly waste its time; the question to ask
+is whether the term is in the same UNITS as what it is weighed against.
+
+### The arctic elimination list now reads:
+
+    NOT escape-fan resolution   densifying the ice fan: 23.1 vs 23.0
+    NOT drift blindness         floes are predicted to mid-lookahead, inside the ~5 s
+                                window drift was measured predictable over
+    NOT double-counting         `_trajFloe` handoff is deliberate
+    NOT floe under-pricing      correcting a real 7-8x mismatch: -6%
+
+Four eliminations, no answer. The next session should start here rather than from any of
+these — and should be suspicious of any candidate whose story is "a constant is wrong".
