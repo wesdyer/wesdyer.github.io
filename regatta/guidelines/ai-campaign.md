@@ -5821,3 +5821,24 @@ describing a grind-vs-detour trade have never done anything. Either the branch s
 or the trade should be made possible on purpose and priced by an UNBIASED measurement (a
 probe that forces a route through a plug and times it end to end, against the same boat
 routed around).
+
+
+## ARCTIC AND THE FAN: CLOSED AT 64 SEEDS — it is noise
+
+    set 9100  paired med  +4.0  mean  +3.8 | finishers 139 -> 132 of 144
+    set 9200  paired med  -9.0  mean -12.7 | finishers 123 -> 123
+    set 9300  paired med -13.0  mean  -4.3 | finishers 134 -> 134
+    set 9400  paired med +10.0  mean  -0.6 | finishers 135 -> 138
+    POOLED n=491 pairs    med  -4.0  mean  -3.1 | finishers 531 -> 527 of 576
+
+The set medians alternate sign across a 23-second range. That is a threshold statistic on
+a venue that already DNFs ~8% of its fleet at 900 s, not a mechanism. **The gate stays,
+and the reason is now the strongest evidence in the session rather than the weakest**: not
+"the fan hurts arctic" (it does not), but "four 16-seed sets cannot distinguish it from
+zero, and a marginal venue is not worth moving for that." The shipped comment carries the
+whole table so the next session does not re-run it.
+
+⇒ **Standing note for arctic benching**: 16 seeds is not enough for ANY effect under about
+15 seconds on this venue. Two sets was already the campaign's rule; this says the real
+number is four, or a different statistic (paired per-boat median over pooled sets, which
+is what the table above reports).
