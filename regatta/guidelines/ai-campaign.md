@@ -6642,3 +6642,35 @@ where the trade is not clean: 23 s a boat against +20% penalties and +68% boat c
 Arctic is being re-run on a disjoint 16-seed set before any decision — a 16-seed arctic
 set cannot resolve under ~15 s, which is why the paired per-boat median is the statistic
 being read.
+
+## THE LANDING DECISION: the gate alone, not the pair
+
+Both candidates work on lake and they overlap. Four disjoint 20-seed sets:
+
+                          lake 9100   lake 9200   bay 9100   bay 9200
+      nose gate alone       +41.0       +55.0       +0.5      -2.5      (med 349->307, 350->303)
+      pow3*200 alone        +34.0         --        +5.0        --
+      both together         +56.0       +46.0       +5.0        --      (med 349->295, 350->303)
+
+Pooled over both lake sets the gate alone averages ~+48 s and the pair ~+51 s — **the same
+win inside the noise** — and they differ sharply in what they cost elsewhere:
+
+      bay penalties/boat    HEAD 0.37 | gate 0.44, 0.45 | pow3 0.49 | both 0.57
+      bay boat contacts     HEAD 1.31 | gate 1.51, 1.73 | pow3 2.31 | both 2.68
+
+So `treeNOSE2` lands and `treeDEVP` does not. The pair buys ~3 s of lake for +54% bay
+penalties, and the owner's standing preference is that dirtier sailing is worse than
+slower sailing.
+
+⚠️ **`treeDEVP` IS NOT REJECTED — it is a real, unlanded effect** (+34.0 lake, +5.0 bay,
+mark contacts held at 0.53 -> 0.56 where the flat 100x version sent them to 2.07). It is
+the correct fix for a term that is genuinely out of scale, and it should be revisited with
+the deviation cost made proportional to something physical — the DISTANCE the deviation
+actually costs over the lookahead, `speed * t * (1 - cos(offset))` — rather than a
+hand-set power. Its bay penalty cost is the sign that a flat shape is still the wrong one.
+
+⚠️ **Contact counts do not replicate at 20 seeds; the clock does.** The gate's lake boat
+contacts went 2.61 -> 3.32 on set 1 and 4.13 -> 3.96 on set 2 (opposite directions), and
+its bay penalties went +19% then +5%. Both lake clock numbers agree (+41, +55) and both
+bay clock numbers agree (inert). Read the clock; treat a single-set contact delta as a
+hypothesis.
