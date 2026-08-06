@@ -7040,3 +7040,31 @@ spend a session rediscovering them:
 So the 23-per-race is caused by something other than escape resolution, drift blindness,
 or double-counting. That is three eliminations and no answer — recorded as such, because
 the next session should start from the elimination list rather than from these three.
+
+### ⚠️ `_thump.js`'s impact CLASSIFIER is geometrically biased — do not trust its split
+
+`_thump.js` counts impacts reliably (that is the number in the table above, and both sides
+use the same rule). An attempt to also classify WHAT was hit — nearest object at the moment
+of the thump — reported **100.0% land, 0 floes, on a course carrying 112 floes.** A
+statistic that lands on exactly 100% is a bug, per the standing rule.
+
+The first cut used signed `dist - radius`, which is hugely NEGATIVE everywhere inside
+arctic's enclosing shoreline ring, so that ring won every comparison. Switching to distance
+to the EDGE, `|dist - radius|`, changed nothing, and the reason is not a coding error:
+
+      arctic land radii: 8685, 3245, 2787, 1137, 869, 650 ...   floe radius ~69
+
+A 2787-radius island has an enormous circumference, so a boat is almost always within a few
+hundred units of SOME point on its edge; a 69-radius floe qualifies only when she is right
+beside it. Sampled at random moments (not at impacts) the same classifier reads 8 land to
+1 floe. **"Nearest edge" is not "what she hit"** on a course whose obstacles differ by two
+orders of magnitude in size.
+
+⛔ So the split is withdrawn. The class attribution already exists and needs no new probe —
+the harness counts collisions by class in every bench:
+
+      arctic per boat-race, HEAD:   floe 32.5   land 27.5   boat 7.7
+      after this session's landing: floe 38.3   land 27.7   boat 10.6
+
+**Floes are the largest class and the only one that rose.** That stands, it comes from the
+harness's own counters, and it is what the next candidate should aim at.

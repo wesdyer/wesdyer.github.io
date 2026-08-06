@@ -29,7 +29,7 @@ const VENUE = process.argv[5] || 'arctic';
     }, VENUE);
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
-    let thumps = 0, boatMin = 0, races = 0, boatRaces = 0, lost = 0;
+    let thumps = 0, boatMin = 0, races = 0, boatRaces = 0, lost = 0; const kind = {};
     for (let i = 0; i < TRIALS; i++) {
         const r = await page.evaluate(async (seed) => {
             window.evalHarness.seed = seed;
@@ -37,7 +37,7 @@ const VENUE = process.argv[5] || 'arctic';
             state.course.cutoff = 900;
             const bots = state.boats.filter(b => !b.isPlayer);
             const pl = state.boats.find(b => b.isPlayer); pl.x = 1e6; pl.y = 1e6;
-            const out = { thumps: 0, boatSec: 0, boats: bots.length, lostKt: 0 };
+            const out = { thumps: 0, boatSec: 0, boats: bots.length, lostKt: 0, kind: {} };
             const prevSpd = bots.map(() => 0);
             const dt = 1 / 60; let acc = 0;
             for (let it = 0; it < 60 * 940; it++) {
@@ -53,7 +53,24 @@ const VENUE = process.argv[5] || 'arctic';
                     out.boatSec += 0.1;
                     const a = prevSpd[k], c = b.speed;
                     // same rule as the recordings: >1 kt before, lost >40% of it
-                    if (a > 0.25 && c < a * 0.6) { out.thumps++; out.lostKt += (a - c) / 0.25; }
+                    if (a > 0.25 && c < a * 0.6) {
+                        out.thumps++; out.lostKt += (a - c) / 0.25;
+                        // WHAT DID SHE HIT? Nearest thing at the moment of the thump —
+                        // where to aim depends entirely on this, and the harness's
+                        // col{} counts contact FRAMES, not the impacts that cost speed.
+                        let best = 'none', bd = 1e9;
+                        for (const isl of (state.course.islands || [])) {
+                            const d = Math.hypot(b.x - isl.x, b.y - isl.y) - isl.radius;
+                            if (d < bd) { bd = d; best = isl.isFloe ? 'floe' : 'land'; }
+                        }
+                        for (const o of state.boats) {
+                            if (o === b || o.isPlayer) continue;
+                            const d = Math.hypot(b.x - o.x, b.y - o.y) - 40;
+                            if (d < bd) { bd = d; best = 'boat'; }
+                        }
+                        if (bd > 120) best = 'nothing-near';
+                        out.kind[best] = (out.kind[best] || 0) + 1;
+                    }
                     prevSpd[k] = c;
                 }
                 if (bots.every(b => b.raceState.finished)) break;
@@ -62,12 +79,16 @@ const VENUE = process.argv[5] || 'arctic';
         }, SEED0 + i);
         thumps += r.thumps; boatMin += r.boatSec / 60; races++; boatRaces += r.boats;
         lost += r.lostKt;
+        for (const k in r.kind) kind[k] = (kind[k] || 0) + r.kind[k];
         console.error(`seed ${SEED0 + i} thumps=${r.thumps} boatSec=${r.boatSec.toFixed(0)}`);
     }
     console.log(`\nvenue=${VENUE}  ${races} races  ${boatRaces} boat-races  ${boatMin.toFixed(1)} boat-minutes`);
     console.log(`  THUMPS  ${thumps}  =  ${(thumps / Math.max(1, boatRaces)).toFixed(1)} per boat-race`
         + `  =  ${(thumps / Math.max(0.1, boatMin)).toFixed(1)} per boat-minute`);
     console.log(`  knots shed in them: ${(lost / Math.max(1, boatRaces)).toFixed(1)} per boat-race`);
+    console.log('  what she hit, by nearest object at the moment of impact:');
+    for (const [k, v] of Object.entries(kind).sort((x, y) => y[1] - x[1]))
+        console.log(`    ${k.padEnd(14)} ${String(v).padStart(5)}  ${(100 * v / Math.max(1, thumps)).toFixed(1)}%`);
     console.log(`  human, same detector: arctic 1.2/race 0.3/min | lake 0.0 | bay 0.0 | ocean 0.0`);
     await browser.close();
 })();
