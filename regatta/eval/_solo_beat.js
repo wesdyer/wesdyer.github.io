@@ -42,12 +42,13 @@ const KEEP = parseInt(A[3]) || 1;
       }
     }
     const dt = 1 / 60; let it = 0;
+    const MAXIT = 940 * 60;
     const legAt = {};       // leg -> race timer at entry
     let lastLeg = kept.raceState.leg, dist = 0, px = kept.x, py = kept.y;
     const legDist = {}, legTacks = {};
     const norm = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
     let lastSide = 0;
-    while (it < 700 * 60) {
+    while (it < MAXIT) {
       if (state.race.status === 'racing') {
         if (kept.raceState.finished) break;
         const lg = kept.raceState.leg;
@@ -68,7 +69,8 @@ const KEEP = parseInt(A[3]) || 1;
       window.update(dt); it++;
     }
     return { name: kept.name, fin: kept.raceState.finished ? kept.raceState.finishTime : null,
-             legAt, legDist, legTacks, pen: kept.raceState.totalPenalties || 0 };
+             legAt, legDist, legTacks, pen: kept.raceState.totalPenalties || 0,
+             lastLeg: kept.raceState.leg };
   }, { seed, solo, KEEP });
 
   const rows = [];
@@ -83,7 +85,7 @@ const KEEP = parseInt(A[3]) || 1;
       fleetL1t: fleet.legTacks[1] || 0, soloL1t: solo.legTacks[1] || 0,
       fleetFin: fleet.fin, soloFin: solo.fin });
     const r = rows[rows.length - 1];
-    console.log(`seed ${seed} ${r.name}: L1 fleet ${r.fleetL1?.toFixed(1)}s/${Math.round(r.fleetL1d)}u/${r.fleetL1t}tk  solo ${r.soloL1?.toFixed(1)}s/${Math.round(r.soloL1d)}u/${r.soloL1t}tk  fin ${r.fleetFin?.toFixed(1)} vs ${r.soloFin?.toFixed(1)}`);
+    console.log(`seed ${seed} ${r.name}: L1 fleet ${r.fleetL1?.toFixed(1)}s/${Math.round(r.fleetL1d)}u/${r.fleetL1t}tk  solo ${r.soloL1?.toFixed(1)}s/${Math.round(r.soloL1d)}u/${r.soloL1t}tk  fin ${r.fleetFin?.toFixed(1)} vs ${r.soloFin?.toFixed(1)}  legs fleet@${JSON.stringify(fleet.legAt)} dieLeg ${fleet.lastLeg}  solo@${JSON.stringify(solo.legAt)} dieLeg ${solo.lastLeg}`);
   }
   const ok = rows.filter(r => r.fleetL1 != null && r.soloL1 != null);
   if (ok.length) {

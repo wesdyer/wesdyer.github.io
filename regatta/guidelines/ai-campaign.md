@@ -5017,6 +5017,32 @@ Ocean's +3.3/+3.5 mean replicates across sets — the price of shore-adjacent re
 `treeCORR5` (gate c<5, W<=400u only) benching on ocean 9320 + arctic 9100 to decide the
 gate; then LAND.
 
+**✅ LANDED `c4de193` (gate c < PAD; the c<5 variant was no better: ocean +5 med / +1.6
+mean, arctic +1 med / -16.2 mean — the verified configuration wins on medians).**
+
+## POST-LANDING VERIFICATION (2026-08-05 21:45)
+
+    npm test     the SAME 6 pre-existing editor failures, nothing new
+                 (test_sailable — the edited file's own suite — green on all ten venues)
+    seatrials    100t seed 100: 198.94 / 194.61, pen 0.32, OCS 14.78%, DNS/DNF 0%
+                 — IDENTICAL to the anchor; open water is stock by construction,
+                 and its two golden traces were byte-identical before re-record
+    goldens      17/20 diverged as expected (route-cell churn everywhere; seatrials x2
+                 and swamp/90211 held) -> full --update -> PASS 20/20. Redrock's traces
+                 were GREEN at HEAD (the "deliberately red" memory note is stale), so
+                 no splice was needed. Pre-update copy kept at
+                 regatta/eval/golden/traces.pre-corridor.json.
+
+## NEW ANCHORS (HEAD = goldens commit after c4de193)
+
+    seatrials 100t seed 100   198.94 / 194.61, pen 0.32, OCS 14.78%, DNS/DNF 0%
+    bay 20@9100               bay_bench_corrbay.json        257.0 med
+    ocean 20@9300             ocean_bench_corrocean.json    198.0 med
+    ocean 20@9320             ocean_bench_corroc9320.json   196.0 med
+    arctic 16@9100            fleet_leg2_corrarc16.json     535 med, 139 finishers
+    arctic 16@9200            fleet_leg2_corrarc9200.json   535 med, 125 finishers
+    goldens                   PASS 20/20 (re-recorded)
+
 ## ⚡ REDROCK CAPACITY, MEASURED (keep-N sweep, seeds 9100-9103)
 
     keep 1   L1 50-68 s, ~1.2x plan, one FINISH (583 s) in 4

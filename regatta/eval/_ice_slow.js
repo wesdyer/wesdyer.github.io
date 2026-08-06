@@ -31,24 +31,16 @@ const SEED = parseInt(A[0]) || 9100, MAXT = parseInt(A[1]) || 700, GRAZE = parse
     const norm = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
     const bots = state.boats.filter(b => !b.isPlayer);
     const cls = { ICE: { t: 0, fp: 0, slow: 0 }, NEAR: { t: 0, fp: 0, slow: 0 }, OPEN: { t: 0, fp: 0, slow: 0 } };
+    // Distance to the nearest ICE EDGE by center-minus-radius. Hull formats vary
+    // (the first cut assumed [x,y] arrays, got NaN on every floe, and classed 100%
+    // of the race OPEN — zero-at-every-percentile again); the circle bound is
+    // format-proof and good to a hull's lobe depth, which is fine at a 120u graze.
     const floeDist = (x, y) => {
       let best = Infinity;
       for (const isl of state.course.islands || []) {
         if (!isl.isFloe) continue;
-        const dx = x - isl.x, dy = y - isl.y;
-        const d2 = dx * dx + dy * dy;
-        const rr = (isl.radius || 0) + GRAZE * 2 + 200;
-        if (d2 > rr * rr) continue;
-        const hull = isl.localHull;
-        if (hull) {
-          for (const q of hull) {
-            const d = Math.hypot(x - (isl.x + q[0]), y - (isl.y + q[1]));
-            if (d < best) best = d;
-          }
-        } else {
-          const d = Math.sqrt(d2) - (isl.radius || 0);
-          if (d < best) best = d;
-        }
+        const d = Math.hypot(x - isl.x, y - isl.y) - (isl.radius || 0);
+        if (d < best) best = d;
       }
       return best;
     };
