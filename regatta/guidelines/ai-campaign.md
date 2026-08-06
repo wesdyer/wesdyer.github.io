@@ -5946,3 +5946,6 @@ COST FUNCTION IS DEMANDING A BIG MISS — `safeDist` (80-150u) evaluated over a 
 straight-line projection, against a human who passes at a 336-355u median CPA having
 deflected 8 degrees. That is the bubble, and it is the one part of this function tonight
 has not touched.
+    bay   20@9100  vs the landed tree   paired med  0.0  mean -0.3   <- unaffected, as
+    bay   20@9100  vs pre-session HEAD  paired med -3.0  mean -3.2      predicted from its
+                                                                        6-23 cell clearance
