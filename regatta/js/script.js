@@ -11623,6 +11623,19 @@ function recordTrajectory(dt) {
             if (recTraj && recTraj._lastSt === 'racing' && st === 'prestart') recTraj = null;
             if (!recTraj) recTraj = {
                 venue: (typeof settings !== 'undefined' && settings.venue) || '?',
+                schema: 2,
+                // Venue-document fingerprint (djb2 over the doc JSON). The Aug-6
+                // redrock confusion — a 140.3s human reference silently invalidated
+                // by a venue edit — is exactly what this catches; benches already
+                // stamp theirs, recordings now match.
+                venueFingerprint: (() => { try {
+                    const doc = window.VENUE_DOC && settings && window.VENUE_DOC[settings.venue];
+                    if (!doc) return null;
+                    const str = JSON.stringify(doc);
+                    let h = 5381;
+                    for (let i = 0; i < str.length; i++) h = ((h * 33) ^ str.charCodeAt(i)) >>> 0;
+                    return h.toString(16) + ':' + str.length;
+                } catch (e) { return null; } })(),
                 started: new Date().toISOString(), legs: state.race.totalLegs,
                 // WHO the rivals were, once — the per-sample tuples are anonymous,
                 // and a human-vs-bot comparison needs the fleet and its difficulty.
@@ -11640,6 +11653,22 @@ function recordTrajectory(dt) {
                         ? state.course.dmc.legs.map(l => Math.round(l.length)) : [],
                     startLine: (() => { try {
                         return startLinePts().map(p => [Math.round(p.x), Math.round(p.y)]);
+                    } catch (e) { return null; } })(),
+                    // Every mark and every leg's rounding geometry, so rounding
+                    // analysis (owner's request, Aug 6) is self-contained and
+                    // survives venue edits.
+                    marks: (() => { try {
+                        return (state.course.marks || []).map(m => [Math.round(m.x), Math.round(m.y), m.bodyR || 12]);
+                    } catch (e) { return null; } })(),
+                    legRounds: (() => { try {
+                        const out = [];
+                        for (let lg = 0; lg <= (state.race.totalLegs || 0); lg++) {
+                            const rm = (typeof legRoundMark === 'function') && legRoundMark(lg);
+                            out.push(rm ? { x: Math.round(rm.x), y: Math.round(rm.y),
+                                zone: Math.round(rm.zone || 0), side: rm.side || null,
+                                reqSweep: +(rm.reqSweep || 0).toFixed(3) } : null);
+                        }
+                        return out;
                     } catch (e) { return null; } })(),
                 },
                 // Floe hull polygons, body frame, recorded ONCE — with the
@@ -11661,7 +11690,7 @@ function recordTrajectory(dt) {
                 format: ['t', 'phase', 'x', 'y', 'hdg', 'spd', 'windDir', 'windSpd',
                          'leg', 'sweep', 'armed', 'ringSect16', 'rivals',
                          'legProg', 'floes', 'giveWayN', 'ocs', 'penaltyTurnsOwed',
-                         'awa', 'aws', 'playerTack'],
+                         'awa', 'aws', 'playerTack', 'rivalsX', 'current'],
                 formatNotes: {
                     ringSect16: '0clear 3closing 5lead 8plug 10hard, scalar 0 when >3 zones from the round mark',
                     rivals: 'unfinished rivals as [x,y,hdg,spd,tack(1=stbd,-1=port)]',
@@ -11669,6 +11698,8 @@ function recordTrajectory(dt) {
                     floes: 'floes <=1200u as [hullId,x,y,spin,vx,vy]',
                     giveWayN: 'rivals <=600u holding right of way over the player',
                     awa: 'signed rad from the apparent-wind model', playerTack: '1=stbd -1=port',
+                    rivalsX: 'aligned with rivals: [boatIdx, leg, flags(1=penalty 2=spiraling 4=ocs)] — stable identity across frames + rule-21 state',
+                    current: 'local water current at the player [vx,vy] u/s, [0,0] where the venue has none',
                 },
                 samples: [], acc: 0,
             };
@@ -11690,6 +11721,8 @@ function recordTrajectory(dt) {
                                 const ev = [+state.race.timer.toFixed(1), ty];
                                 if (ty === 'collision_boat' && d.other) ev.push(d.other.name);
                                 if (ty === 'collision_island') ev.push(d.isFloe ? 'floe' : 'land');
+                                // trailing position — where it happened (contact maps)
+                                ev.push(Math.round(d.boat.x), Math.round(d.boat.y));
                                 recTraj.events.push(ev);
                             }
                         }
@@ -11723,7 +11756,7 @@ function recordTrajectory(dt) {
                 player.raceState.roundArmed ? 1 : 0, sect,
                 // Tack comes from Rules.getTack — the engine's OWN rights-of-way
                 // input — so close crossings reconstruct exactly as adjudicated.
-                state.boats.filter(b => !b.isPlayer && !b.raceState.finished)
+                (recTraj._riv = state.boats.filter(b => !b.isPlayer && !b.raceState.finished))
                     .map(b => [Math.round(b.x), Math.round(b.y), +b.heading.toFixed(2), +b.speed.toFixed(2),
                                window.Rules ? window.Rules.getTack(b) : 0]),
                 // Course progress: DMC projection onto the current leg — the join
@@ -11760,12 +11793,22 @@ function recordTrajectory(dt) {
                 player.apparentWind ? +normalizeAngle(player.apparentWind.direction - player.heading).toFixed(3) : 0,
                 player.apparentWind ? +player.apparentWind.speed.toFixed(2) : -1,
                 window.Rules ? window.Rules.getTack(player) : 0,
+                // rivalsX: stable identity + rule-21 state, aligned with rivals.
+                recTraj._riv.map(b => [state.boats.indexOf(b), b.raceState.leg,
+                    (b.raceState.penalty ? 1 : 0)
+                    | (b.controller && b.controller.penaltySpin ? 2 : 0)
+                    | (b.raceState.ocs ? 4 : 0)]),
+                // local current at the player (drift attribution on current venues)
+                (() => { try {
+                    const c = (typeof getCurrentAt === 'function') && getCurrentAt(player.x, player.y);
+                    return c ? [+(c.x || 0).toFixed(2), +(c.y || 0).toFixed(2)] : [0, 0];
+                } catch (e) { return [0, 0]; } })(),
             ]);
         } else if (recTraj && recTraj.samples.length > 50) {
             const t = recTraj; recTraj = null;
             t.finished = !!player.raceState.finished;
             t.finishTime = player.raceState.finishTime || null;
-            delete t.acc; delete t._lastSt; delete t._evT; delete t.hint; delete t.hintLg;
+            delete t.acc; delete t._lastSt; delete t._evT; delete t.hint; delete t.hintLg; delete t._riv;
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([JSON.stringify(t)], { type: 'application/json' }));
             a.download = 'traj_' + t.venue + '_' + Date.now() + '.json';
