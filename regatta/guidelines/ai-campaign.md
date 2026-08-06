@@ -4724,3 +4724,6 @@ the one that changed the behaviour made it worse. What is left:
 ⚠️ **Next time, test the DIRECTION of the effect before building the mechanism**: a probe
 that answers "if these boats had tacked at the layline, how much would they have saved?"
 is one trajectory replay, and it would have priced this thread before four trees were cut.
+
+    CONFIRMED on the bench:  treeLAY3   ocean paired -11.0 med / -11.1 mean
+                                        bay   paired  -2.0 med /  -3.5 mean
