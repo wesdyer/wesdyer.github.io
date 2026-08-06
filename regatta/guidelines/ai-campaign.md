@@ -6608,3 +6608,37 @@ against is not a mistuned knob, it is a structural bug, and the twelve inert re-
 were all on the OTHER side of the ratio (they lowered threat costs; 25000 -> 8000 leaves
 a 52-point U-turn just as free). Amended rule: **check that a term is in the same units
 as the function before concluding that its value does not matter.**
+
+## ⚡ THE NEAR-REVERSAL GATE — the effect size tracks the measured share, on all three venues
+
+`candidates.push(2.2, -2.2, 3.0, -3.0)` now requires that a hard grid cell actually lies
+within ~180u dead ahead (the same test the unplanned-tack waiver uses), and racing legs
+only. `treeNOSE2`:
+
+    venue    share of moves >=1.9 rad     paired median        contacts
+    lake              17.3%              +41.0 (349 -> 307)   land 19.4 -> 9.6, mark 2.0 -> 1.0
+                                          mean +49.1          pen 0.97 -> 0.77, boat 2.61 -> 3.32
+                                          max 675 -> 516, min 229 -> 223
+    arctic            15.0%              -23.0 faster         land 27.5 -> 25.4, floe 32.5 -> 36.4
+                                          (535 -> 511)        pen 1.64 -> 1.96, boat 7.66 -> 12.9
+                                          139 -> 139 finishers
+    bay                2.3%               +0.5 / mean -1.4    INERT, OCS clean
+                                                              pen 0.37 -> 0.44
+
+**The size of the win is predicted by the measured share of the fan that these candidates
+win, on three venues with three different values.** That is the strongest mechanism
+confirmation this campaign has produced — the number was measured BEFORE the bench, and
+bay's 2.3% correctly predicted its own null result.
+
+Two independent reasons the old gate was wrong:
+  1. it tested a property of the COURSE (`_gridFixed` = "this venue has land"), never of
+     the boat's predicament, so a 172-degree turn sat in the fan for the whole race;
+  2. the predicament it names — nosed into a wall — is already owned by `wiggleActive`,
+     which returns out of `applyAvoidance` at the top and fires after 3 s below speed.
+
+⚠️ **This is the first change of the session to move Glacier Sound.** All three prior
+landings are `openWaterAv`-gated and leave it byte-identical. It is also the only venue
+where the trade is not clean: 23 s a boat against +20% penalties and +68% boat contacts.
+Arctic is being re-run on a disjoint 16-seed set before any decision — a 16-seed arctic
+set cannot resolve under ~15 s, which is why the paired per-boat median is the statistic
+being read.
