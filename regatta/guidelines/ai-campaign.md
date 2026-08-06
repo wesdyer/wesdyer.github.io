@@ -7011,3 +7011,32 @@ whose obstacle drifts — which is exactly why every open-water fix this session
 away from them. The next candidate should aim at the floe-contact rate specifically, with
 `_thump.js` as its scoreboard, and it should be judged on the human's 1.2 rather than on
 an incremental improvement over 23.
+
+### ⛔ ...and it is NOT the ice fan's resolution (`treeICEFAN`, measured on the new statistic)
+
+The densified escape fan was gated off Glacier Sound because four 16-seed sets could not
+tell it from zero on the CLOCK (+4.0, -9.0, -13.0, +10.0; pooled -4.0). The impact rate is
+a far sharper instrument than race time, so the question was worth re-asking with it.
+Giving the ice branch the same density as open water:
+
+      HEAD          23.0 thumps/boat-race   3.0/min   73.3 kt shed
+      ice fan       23.1 thumps/boat-race   3.2/min   71.8 kt shed
+
+**Inert, and now unambiguously so.** Two things follow. The arctic gate on the fan was the
+right call and is confirmed by a better statistic than the one that made it. And more
+usefully: **the impact rate is not limited by the resolution of the escape options.** The
+fleet is not hitting ice because it lacked a fine enough dodge.
+
+Two further causes were checked in the code and are already handled correctly, so do not
+spend a session rediscovering them:
+
+  - **floe drift IS predicted, not padded** (`applyAvoidance` ~3160): each floe is tested
+    where it WILL BE at mid-lookahead via `driftVx * tMid`, with the honest margin being
+    prediction error rather than a blanket pad. The 4 s lookahead sits inside the ~5 s
+    window drift was measured to be predictable over, so this is sound;
+  - **floes are skipped here only when the trajectory planner already steered this tick**
+    (`_trajFloe`), to avoid double-vetoing the thread it chose.
+
+So the 23-per-race is caused by something other than escape resolution, drift blindness,
+or double-counting. That is three eliminations and no answer — recorded as such, because
+the next session should start from the elimination list rather than from these three.
