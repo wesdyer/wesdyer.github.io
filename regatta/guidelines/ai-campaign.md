@@ -5788,3 +5788,24 @@ seconds, and re-pricing the single largest cost term in the same function paid n
 ACTIONS, not the prices.** Any future candidate of the form "term X is too big/small"
 should be required to explain why it will change WHICH CANDIDATE WINS, not merely by how
 much it wins.
+
+### ⛔ REJECTED: making ice plugs enterable at their measured price (`treeSOFT2`)
+
+    arctic 16@9100   paired med -2.0  mean +13.3
+                     finishers 139 -> 131, pen 1.64 -> 2.17
+                     FLOE contacts 32.5 -> 45.8 (+41%), land 27.5 -> 35.5
+
+**Mechanism: the measurement was survivorship-biased and I should have said so before
+benching it.** `_soft_speed` measures the speed of boats WHO ARE IN a plug — and today
+those are only the boats that got caught in one, since the router refuses to route through
+them. Letting the router choose plugs adds the boats that would otherwise have gone round,
+which is a different population. And a plug's price is not only speed: each rub costs 60%
+of it (`boat.speed *= 0.4`) and carries penalty risk, none of which appears in a
+fraction-of-polar figure.
+
+⇒ The dead-code finding stands on its own and is worth the owner's attention regardless:
+`pathSailable` admits only `_soft === 1`, so the `: 6` multiplier and the comment
+describing a grind-vs-detour trade have never done anything. Either the branch should go,
+or the trade should be made possible on purpose and priced by an UNBIASED measurement (a
+probe that forces a route through a plug and times it end to end, against the same boat
+routed around).
