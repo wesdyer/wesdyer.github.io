@@ -6674,3 +6674,18 @@ contacts went 2.61 -> 3.32 on set 1 and 4.13 -> 3.96 on set 2 (opposite directio
 its bay penalties went +19% then +5%. Both lake clock numbers agree (+41, +55) and both
 bay clock numbers agree (inert). Read the clock; treat a single-set contact delta as a
 hypothesis.
+
+### ✅ The arctic baseline was verified rather than assumed
+
+`fleet_leg2_headarc.json` was recorded at 23:17, BEFORE both of tonight's landings, and
+every arctic comparison in this session is measured against it. That is only legitimate if
+the `openWaterAv` gating really does leave Glacier Sound untouched — a claim, not a fact.
+Re-ran HEAD arctic 16@9100 on the verified-HEAD tree (`headarcT`, `treeNOGO2`):
+
+      headarc  (23:17, pre-landing tree)  139 finishers  med 535  mean 545.3
+      headarcT (true HEAD, treeNOGO2)     139 finishers  med 535  mean 545.3
+
+Identical on every statistic. The gating holds and the arctic numbers stand. ⚠️ Worth the
+16 seeds: the session had already been burned once by a stale tree (`treeLANDED` turned
+out to predate the no-go tax, and three decomposition probes had to be re-run against
+`treeNOGO2`).
