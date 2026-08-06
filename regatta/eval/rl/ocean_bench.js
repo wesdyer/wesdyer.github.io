@@ -6,6 +6,18 @@
 // on a wave face rather than climbing one.
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
+const crypto = require('crypto');
+// ⚠️ STAMP THE VENUE THIS RAN ON. Every baseline is numbers produced on ONE version of a
+// venue document; edit the venue and the baseline silently becomes incomparable. The
+// comparison scripts refuse to compare across different fingerprints. See
+// regatta/eval/venues/README.md for the policy.
+const venueFingerprint = (v) => {
+    try {
+        const f = path.resolve(__dirname, '../../assets/venues/' + v + '.venue.js');
+        return crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex').slice(0, 16);
+    } catch (e) { return null; }
+};
+
 const TRIALS = parseInt(process.argv[2]) || 8;
 const SEED0 = parseInt(process.argv[3]) || 9300;
 const LABEL = process.argv[4] || 'x';
@@ -99,6 +111,10 @@ const VENUE = process.argv[6] || 'ocean';
         console.log(`seed ${seed}: finishers ${fins.length} finT ${fins.join(',')}`);
     }
     fs.writeFileSync(path.join(__dirname, 'ocean_bench_' + LABEL + '.json'), JSON.stringify(out));
+    // ⚠️ SIDECAR, not a key on the array — JSON.stringify drops properties set on an
+    // array, and every existing baseline reader expects a bare list. Same file stem.
+    fs.writeFileSync(path.join(__dirname, 'ocean_bench_' + LABEL + '.meta.json'),
+        JSON.stringify({ venue: VENUE, fingerprint: venueFingerprint(VENUE), trials: TRIALS, seed0: SEED0 }, null, 2));
     console.log('saved ocean_bench_' + LABEL + '.json  venue', VENUE, ' nLegs', out[0].nLegs);
     await browser.close();
 })();

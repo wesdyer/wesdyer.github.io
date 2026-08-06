@@ -118,10 +118,26 @@ const check = (name, cond, detail) => {
 
         boat.x = track2[0][0]; boat.y = track2[0][1];
         boat.raceState.lastPos = { x: boat.x, y: boat.y };
+        // ⚠️ AND IT MUST REGISTER PROMPTLY. "It failed to detect another rounding until an
+        // absurdly late period" is the same defect seen from the other side: a requirement
+        // the boat only satisfies long after she has finished the turn. So record WHERE on
+        // the track the leg advanced, as a fraction of the exit run — 0 means the moment
+        // she completed the arc, 1 means not until she reached the next mark.
+        boat.x = track2[0][0]; boat.y = track2[0][1];
+        boat.raceState.lastPos = { x: boat.x, y: boat.y };
         arm(); peakSweep = 0;
-        run(track2);
+        const arcEnd = track2.length - Math.round((Z * 2.2 - R) / 40) - 1;
+        let advAt = null;
+        for (let i = 0; i < track2.length; i++) {
+            put(track2[i][0], track2[i][1]);
+            const sw = boat.raceState.roundSweep || 0; if (sw > peakSweep) peakSweep = sw;
+            if (advAt === null && boat.raceState.leg !== lg) advAt = i;
+        }
+        const exitRun = Math.max(1, track2.length - arcEnd);
         const honest = { advanced: boat.raceState.leg !== lg,
-                         sweepDeg: Math.round(peakSweep * 180 / Math.PI) };
+                         sweepDeg: Math.round(peakSweep * 180 / Math.PI),
+                         advAt, arcEnd, total: track2.length,
+                         lateness: advAt === null ? null : +((advAt - arcEnd) / exitRun).toFixed(2) };
 
         return { skip: false, venue: v, lg, side: m.side, zone: Math.round(Z),
                  reqDeg: nibble.reqDeg, nibble, honest };
@@ -130,11 +146,15 @@ const check = (name, cond, detail) => {
     if (r.skip) { console.log(`${VENUE}: no rounding leg`); await browser.close(); return; }
     console.log(`${r.venue} — first rounding leg is ${r.lg} (${r.side}, zone ${r.zone}, requires ${r.reqDeg} deg)\n`);
     console.log(`  the NIBBLE  swept ${r.nibble.sweepDeg} deg, banked=${r.nibble.banked}, leg advanced=${r.nibble.advanced}`);
-    console.log(`  the HONEST  swept ${r.honest.sweepDeg} deg, leg advanced=${r.honest.advanced}\n`);
+    console.log(`  the HONEST  swept ${r.honest.sweepDeg} deg, leg advanced=${r.honest.advanced}, ` +
+                `registered ${r.honest.lateness === null ? 'never' : Math.round(r.honest.lateness * 100) + '% along the exit run'}\n`);
     check('the honest rounding COUNTS (precondition)', r.honest.advanced === true,
           'the test track does not round this mark — fix the fixture, not the engine');
     check('touching the zone and tacking away does NOT count', r.nibble.advanced === false,
           `swept ${r.nibble.sweepDeg} deg against a ${r.reqDeg} deg requirement and the leg completed`);
+    check('...and the honest one registers PROMPTLY on the way out', r.honest.lateness !== null && r.honest.lateness <= 0.5,
+          r.honest.lateness === null ? 'never registered'
+            : `registered ${Math.round(r.honest.lateness * 100)}% of the way to the next mark, not on the exit`);
     await browser.close();
     if (errs.length) console.log('page errors: ' + errs.slice(0, 3).join(' | '));
     console.log(`${failures ? 'FAIL' : 'PASS'} — ${failures} failure(s)`);

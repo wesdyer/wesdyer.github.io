@@ -8,6 +8,29 @@ are excluded from the pairing and reported separately.
 """
 import json, sys, statistics as st
 
+
+def meta(p):
+    """The venue fingerprint this bench ran on, if it was stamped."""
+    import os, json as _j
+    m = p[:-5] + '.meta.json'
+    try:
+        return _j.load(open(m))
+    except Exception:
+        return None
+
+def check_comparable(pa, pb):
+    """⚠️ REFUSE a comparison across two different venue cuts. A baseline is numbers
+    produced on ONE version of a venue document; comparing across an edit is how a
+    conclusion goes quietly wrong. Unstamped files predate the policy and pass."""
+    ma, mb = meta(pa), meta(pb)
+    if ma and mb and ma.get('fingerprint') and mb.get('fingerprint') \
+       and ma['fingerprint'] != mb['fingerprint']:
+        print(f"REFUSED: these ran on different cuts of {ma.get('venue')} — "
+              f"{ma['fingerprint']} vs {mb['fingerprint']}.")
+        print("A baseline is only comparable within one venue version. "
+              "See regatta/eval/venues/README.md.")
+        raise SystemExit(2)
+
 def load(p):
     return json.load(open(p))
 
@@ -45,6 +68,7 @@ def paired(a, b):
     return (st.median(d) if d else None, round(st.mean(d), 1) if d else None, len(d), onlyA, onlyB)
 
 pa, pb = sys.argv[1], sys.argv[2]
+check_comparable(pa, pb)
 a, b = load(pa), load(pb)
 ga, gb = agg(a), agg(b)
 w = max(len(pa), len(pb), 12)
