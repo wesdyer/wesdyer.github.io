@@ -5370,3 +5370,67 @@ bin list in `sailcheck.js` but the string replace against `script.js` missed on 
 the table was built with stride 9 and indexed with stride 6. Every cost was garbage and the
 first TF_MAX sweep was meaningless. `SPDS` is now exported from SailCheck and read by the
 course build — one array, one source.
+
+## LAKE, DECOMPOSED — and three rejections with mechanisms
+
+The grounding story above is real but it is NOT where the 184 seconds are. Measured:
+
+    fleet speed (time-weighted, `_ground_probe` histogram)   4.14 kt
+    human speed (3 recordings)                               4.8-5.1 kt      -> -17%
+    fleet leg times   L1 154   L2 140   L3 ~110
+    human leg times   L1  84   L2  70   L3   56              -> 1.8-2.0x each
+    implied fleet distance on L1  ~9550u  vs human 6299u  vs route 4834u
+
+So roughly **a sixth of it is speed and the rest is DISTANCE — the fleet sails 1.5x the
+human's track on every leg**, and the deficit is spread across all three legs rather than
+concentrated anywhere.
+
+### ⛔ MARK-5 IS TIGHT, AND IT IS NOT THE CAUSE (the measurement that stopped a wrong fix)
+
+`_markroom.js` (new — free water around every mark) says lake's mark-5 is planted in
+**100 units of clearance**, with the largest fully-navigable circle around it at 80u and
+only 43% of the circle at 220u navigable. Every bay mark has 300-1150u and a clean circle
+to 400-600u; lake's own mark-3 has 200u. 44% of all shoreline contacts happen within
+~680u of mark-5. It looks like the answer.
+
+It is not. `_queue_probe.js` (new — occupancy and dwell inside a mark's working water):
+
+    mark      peak boats   mean boats   dwell/boat med   max     of which <1.5 kt
+    mark-5        5           0.76         35.0 s       114 s      7 s (max 33)
+    mark-3        6           0.56         28.5 s        51 s      3.5 s (max 8)
+    gate marks    5           0.13-0.22     7.5-13.5 s   31 s      1 s
+
+Mark-5 costs about **6 s more dwell and 3.5 s more crawling than mark-3** — call it 10-15 s
+a boat, not 184. There is no standing queue (mean occupancy 0.76 boats). ⚠️ **Owner note,
+for authoring rather than for tuning**: 100u of clearance around a rounding mark is inside
+the grid's own 44u navigation band plus a 30u hull, and it is the tightest mark in the game
+by a factor of two. It is worth moving into the basin 300u southwest — but it is worth ~10 s,
+and this session did not spend itself there because the probe said not to.
+
+### ⛔ REJECTED: land-probe distance floor alone (`treeLAND`)
+
+Floor the land probe at 240u so a slowed boat still sees ahead. Lake groundings
+71.1 -> 68.8 per 1000 boat-seconds. Real, tiny. The ratchet exists; it is not the binding
+constraint.
+
+### ⛔ REJECTED: grading the blocked candidates by distance-to-blockage (`treeBLOCK`)
+
+Flat `+500000` on every blocked candidate makes them tie, so the argmin falls through to
+deviation and picks the smallest turn — into the beach. Grading by how soon each hits:
+71.1 -> 67.9. **The reason it barely moves is worth keeping**: the grid marks every cell
+within CLEARANCE (44u) of land unnavigable, so a boat against a shore has her FIRST probe
+sample blocked on every heading and they tie *again*, one term further down.
+
+### ⛔ REJECTED, AND IT MADE THINGS WORSE: free-water escape scoring (`treeESC`)
+
+Walk the ray past the initial blocked run and charge `40000 x clearAt/140` for how long a
+heading stays inside the clearance band before reaching open water. Groundings
+71.1 -> **84.3** per 1000 boat-seconds, and boat-seconds per race went UP (10752 -> 12178:
+the races got LONGER). Mechanism: on a keyholed basin with only 4447 navigable cells, a
+large share of the legitimate water IS within 44u of something, so the term is not a
+stranded-boat rescue — it is a permanent mid-channel bias that lengthens every track on
+a venue whose whole problem is already track length.
+
+**The lesson for this family**: the clearance band is not a hazard, it is the map's margin,
+and any term that treats "inside the band" as a cost will re-price ordinary sailing on
+every narrow venue. A stranded-boat rescue has to be gated on being stranded.
