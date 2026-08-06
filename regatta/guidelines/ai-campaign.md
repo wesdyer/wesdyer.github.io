@@ -4835,7 +4835,7 @@ deflection. Phase 0's replay prices it: how much of the 15 s is recoverable at a
 
 ---
 
-# 2026-08-05 ~20:45 — PLAN REVIEW BEFORE EXECUTION (new session)
+# 2026-08-05 20:45 — PLAN REVIEW BEFORE EXECUTION (new session)
 
 Preconditions verified: freeze_venues --check all four match; npm test exactly the 6
 pre-existing editor failures; anchors usable as stated.
@@ -4885,7 +4885,7 @@ OPTIMISTIC, the boat never regains full V between tacks.
 
 ---
 
-# ⚡ 2026-08-05 ~21:30 — PHASE 0 INSTRUMENTS BUILT, AND TWO OF THEM ALREADY SETTLED THINGS
+# ⚡ 2026-08-05 ~21:00 — PHASE 0 INSTRUMENTS BUILT, AND TWO OF THEM ALREADY SETTLED THINGS
 
 ## 1. VMG_eff(B) MEASURED IN THE ENGINE (`_vmgeff_probe.js`) — the model was 2-3x too harsh
 
@@ -4928,3 +4928,50 @@ speed.** The competitive question is now: does the AI pay MORE for traffic than 
 in traffic would? (Human rubs 0.14/race vs fleet 2.0 says yes, some of it.) No human
 in-fleet recording exists to calibrate against — worth asking the owner for one
 race-with-rivals recording per venue.
+
+⚡ **ARCTIC INVERTS: solo is ~90-105 s WORSE paired (8 seeds, 3 solo DNFs vs 0).** The
+fleet appears to OPEN LEADS through the pack (same physics family as "rotating ice was a
+lead-opener" from the spin-cap thread). Dose-response arm (keep 5 of 9) running to rule
+out a probe artifact. Either way: the arctic solo bot (318-580 s) is far behind the solo
+human (~229 s best) — arctic's gap is CORE ice navigation, not traffic.
+
+## 3. CORRIDOR PRICING, PRE-PRICED ON EVERY VENUE (`_corridor_price.js`) — Phase 1's gate FAILS BY CONSTRUCTION
+
+Stock A* vs corridor-priced A*, per leg, zero shipping-code changes:
+
+    redrock: paths DO NOT REROUTE (70-95% shared, upW% 92->87 at best) — the stock
+             planner ALREADY follows the only corridors; there is no wider alternative.
+             The honest price rises (leg 3 est 54->66 s). The 2.7-5.6x sailed/plan is
+             EXECUTION, not planning.
+    bay/ocean: est moves <= 1-2 s per leg (falsification PASSES); path-cell churn in
+             wide water is cost-degenerate tie-breaking, not route change.
+    arctic:  est 96->99 / 88->91 s — near-inert on the doc grid (legs barely upwind).
+
+⇒ Phase 1's stated gate ("redrock's planned leg 1 stops being 98% upwind") is
+unreachable — not because the model is wrong but because redrock has nothing to reroute
+to. The remaining case for landing the cost change is DYNAMIC (in-race floe corridors on
+arctic) + honest ETAs; treeCORR benches (arctic 16@9100, bay 20@9100, ocean 20@9300)
+are running and will decide land/reject.
+
+## 4. THE REDROCK EXECUTION SMOKING GUN, and treeLOOK
+
+The pure-pursuit lookahead FLOORS at 250u (`LOOK = max(250, min(900, cl·res·1.2))`) and
+at 420u when the path ahead runs upwind — in corridors 100-150u wide that turn inside
+one hop. The carrot is structurally off-corridor in exactly the water where the fleet
+grinds 4370 shoreline hits a race; the boat cuts every wall pure pursuit tells it to.
+The floors exist to stop tack-thrash in OPEN water; clearance is already computed at the
+boat and is the honest regime signal. `treeLOOK` scales the floors by sea room
+(min(250, 2·seaRoom) / upwind floor gated on seaRoom >= 300u); `check_raceable redrock`
+12 races vs stock, running.
+
+## ⚠️ DATA PROVENANCE: the redrock human recording predates the current redrock document
+
+`traj_redrock_1785825518447.json` (Aug 3, 140.3 s) — its ENTIRE track lies in cells the
+CURRENT redrock document marks as land/off-grid (every sampled cell nav=0; caught by the
+zero-at-every-percentile rule while trying to measure the human's tack placement).
+Redrock is not among the four frozen venues and the owner's Aug 5 merge changed it. Any
+human-vs-fleet redrock table derived from this file is cross-document; do not use it for
+placement analysis. The current-doc corridor facts stand on their own: 4015 nav cells,
+clearance histogram peaking at 1-2 cells (100-200u), corridors 50-150u at the pinches.
+If the owner has a redrock recording made on the CURRENT document, it would reopen the
+placement question ("does the human tack in sub-150u water, or tack where there is room?").

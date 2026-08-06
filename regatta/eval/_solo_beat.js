@@ -9,13 +9,16 @@
 // The kept boat is the first non-player boat (deterministic per seed). Parked boats
 // are marked finished and moved to 1e6 so rules, avoidance and bad-air never see them.
 //
-// Usage: node regatta/eval/_solo_beat.js [venue=ocean] [seed0=9300] [n=5]
+// Usage: node regatta/eval/_solo_beat.js [venue=ocean] [seed0=9300] [n=5] [keep=1]
+// `keep` = how many bots stay on the course in the "solo" arm (dose-response for
+// fleet-mediated effects like lead-opening through arctic ice).
 // Prints per-seed paired rows and a summary of leg-1 (and whole-race) deltas.
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
 const A = process.argv.slice(2);
 const VENUE = A[0] || 'ocean';
 const SEED0 = parseInt(A[1]) || 9300, NUM = parseInt(A[2]) || 5;
+const KEEP = parseInt(A[3]) || 1;
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage();
@@ -24,7 +27,7 @@ const SEED0 = parseInt(A[1]) || 9300, NUM = parseInt(A[2]) || 5;
   await page.goto('file://' + path.resolve('regatta/index.html'));
   await page.addScriptTag({ content: fs.readFileSync('regatta/eval/eval_harness.js', 'utf8') });
 
-  const runOne = (seed, solo) => page.evaluate(({ seed, solo }) => {
+  const runOne = (seed, solo) => page.evaluate(({ seed, solo, KEEP }) => {
     window.evalHarness.seed = seed;
     window.resetGame(); window.startRace();
     state.course.cutoff = 900;
@@ -33,7 +36,7 @@ const SEED0 = parseInt(A[1]) || 9300, NUM = parseInt(A[2]) || 5;
     const bots = state.boats.filter(b => !b.isPlayer);
     const kept = bots[0];
     if (solo) {
-      for (const b of bots.slice(1)) {
+      for (const b of bots.slice(KEEP)) {
         b.x = 1e6 + b.id * 4000; b.y = 1.2e6;
         b.raceState.finished = true; b.raceState.resultStatus = 'DNF';
       }
@@ -66,7 +69,7 @@ const SEED0 = parseInt(A[1]) || 9300, NUM = parseInt(A[2]) || 5;
     }
     return { name: kept.name, fin: kept.raceState.finished ? kept.raceState.finishTime : null,
              legAt, legDist, legTacks, pen: kept.raceState.totalPenalties || 0 };
-  }, { seed, solo });
+  }, { seed, solo, KEEP });
 
   const rows = [];
   for (let i = 0; i < NUM; i++) {
