@@ -2473,7 +2473,40 @@ class BotController {
         // problem. In an open-water start pack they are cheap chaos (at jam speeds
         // the reversal surcharge is waived), so open venues keep the classic fan.
         if (state.course._gridFixed && state.course._gridFixed.length) {
-            candidates.push(2.2, -2.2, 3.0, -3.0);
+            // ...but ONLY WHEN SHE IS ACTUALLY NOSED INTO ONE, and only while racing.
+            //
+            // The gate used to be "this venue has authored land", which is a property of
+            // the COURSE, not of the boat's predicament — so a 126- and a 172-degree turn
+            // sat in the fan for the entire race. `_margin.js` counts how often they win:
+            // 17.3% of every helm movement on Stillwater Lake, 15.0% on Glacier Sound,
+            // 2.3% on Lighthouse Cove. The pow(|offset|,1.5) base cost plus the 250
+            // surcharge below is pocket change beside a median cost(0) of 7500-15000, and
+            // that surcharge is waived under 1.0 kt — exactly the state a boat pinned in
+            // narrow water is in.
+            //
+            // The genuinely stuck boat is NOT this code's problem: `wiggleActive` returns
+            // out of applyAvoidance at the top of the function and fires after 3 s below
+            // speed on any land venue. These candidates were justified by a predicament
+            // another system already owns.
+            //
+            // Same test the unplanned-tack waiver above uses: hard grid blockage within
+            // ~180u dead ahead. Benched (paired median, two disjoint 20/16-seed sets):
+            //   lake   +41.0 / +55.0 faster   349 -> 307, 350 -> 303, land 19.4 -> 9.6
+            //   arctic -23.0 / -38.0 faster   535 -> 511, 534 -> 498, finishers +0 / +10
+            //   bay     +0.5 /  -2.5          inert, and its 2.3% share predicted that
+            //
+            // ⚠️ leg >= 1: ungated, this took Lighthouse Cove from 0 to 2.2% OCS — the
+            // start pack turns back off the line with these. Start tuning is sacred.
+            let nosedIn = false;
+            const gNR = state.course.botGrid;
+            if (gNR && this.boat.raceState.leg >= 1) {
+                for (const dNR of [90, 180]) {
+                    const cc = gNR.cell(this.boat.x + Math.sin(this.boat.heading) * dNR,
+                                        this.boat.y - Math.cos(this.boat.heading) * dNR);
+                    if (!gNR.at(cc[0], cc[1])) { nosedIn = true; break; }
+                }
+            }
+            if (nosedIn || this.boat.raceState.leg < 1) candidates.push(2.2, -2.2, 3.0, -3.0);
         }
 
         let bestHeading = desiredHeading;
@@ -2650,7 +2683,37 @@ class BotController {
 
             // Base Cost: Deviation from desired course
             // Non-linear cost to strongly prefer small deviations
-            let cost = Math.pow(Math.abs(offset), 1.5) * 10;
+            // WHAT DOES IT COST TO LEAVE YOUR PROPER COURSE?
+            //
+            // It used to be pow(|offset|,1.5)*10 — a 172-degree reversal priced at 52 and
+            // a 92-degree swerve at 20, against proximity terms of 3500-25000, a hard
+            // constraint of 500000, and a measured median cost(0) of 7500-15000. The
+            // proper-course term was not a term, it was a tiebreaker three orders of
+            // magnitude below everything it was weighed against.
+            //
+            // ⚠️ THIS IS WHY ~12 PREVIOUS RE-PRICINGS WERE INERT. Every one of them
+            // LOWERED a threat cost (the clearance cost went 10000 -> 3000 and did
+            // nothing), and 25000 -> 8000 leaves a 52-point U-turn just as free. The
+            // deviation side had never been raised. A term in the wrong ORDER OF
+            // MAGNITUDE is a structural bug, not a knob at its knee.
+            //
+            // Raise the POWER, not the coefficient. Flat pow1.5*1000 is also fast (lake
+            // +44.0, bay +9.0) but taxes small deviations too — and a mark rounding IS a
+            // sustained small deviation, so bay mark contacts went 0.53 -> 2.07 and a boat
+            // failed to round. pow3*200 prices the 172-degree turn the same (5400 vs 5196)
+            // and leaves a 17-degree nudge at 5 instead of 164:
+            //
+            //   offset      0.3    0.8    1.6    3.0
+            //   was         1.6    7.2   20.2   52.0
+            //   pow1.5*1000 164    716   2024   5196    <- taxes the rounding too
+            //   pow3*200      5    102    819   5400    <- same U-turn, small dodge free
+            //
+            // It taxes only the manoeuvres the human never makes: she turns >=80 deg in a
+            // second in 0 of 6041 lake windows and 0 of 27784 bay windows (`_hdgrate.js`).
+            // Racing legs only, for the same OCS reason as the gate above.
+            let cost = (this.boat.raceState.leg >= 1)
+                ? Math.pow(Math.abs(offset), 3) * 200
+                : Math.pow(Math.abs(offset), 1.5) * 10;
 
             if (taxTack && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) {
                 cost += 600 * jamF;
