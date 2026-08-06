@@ -6504,3 +6504,45 @@ touch that, so the lake half of this candidate is closed without a bench.
 
 Bay is the opposite shape — a quarter of its moves are decided by a margin under 55 —
 and that half IS worth the bench it is getting.
+
+## 📐 MEASURED: what the fleet actually chooses, and what it costs her to choose it
+
+`_margin.js` records the winning offset on every avoidance decision. The distribution is
+the most useful thing measured this session, because the campaign has spent twenty-odd
+candidates re-pricing a cost function without ever looking at which candidate WON.
+
+    share of helm movements, by size of the chosen turn
+                      >=1.9 rad     1.4-1.9 rad    total >=1.4 rad
+      Glacier Sound     15.0%          25.8%           40.8%
+      Stillwater Lake   17.3%          17.0%           34.3%
+      Lighthouse Cove    2.3%          16.8%           19.1%
+    (>=1.9 rad is the near-reversal pair 2.2/3.0 = 126 and 172 degrees;
+     the human's median deflection at CPA, same definition, is 8 degrees)
+
+Two structural facts explain it, and neither is a tuning constant.
+
+**1. The near-reversals are gated on the COURSE, not on the boat.** `candidates.push(2.2,
+-2.2, 3.0, -3.0)` fires whenever `state.course._gridFixed` is non-empty — "this venue has
+authored land" — so on every land venue a 172-degree turn sits in the fan for the entire
+race. The comment above it says they are "the only exit when nosed into a berg or wall",
+which is a description of a PREDICAMENT that nothing in the gate tests. The 250 surcharge
+below is waived under 1.0 kt, i.e. exactly when a boat pinned in narrow water is slow.
+
+**2. Leaving your proper course is priced three orders of magnitude below arriving at a
+rock.** The whole deviation term is `Math.pow(Math.abs(offset), 1.5) * 10`:
+
+      172-degree reversal     52          proximity to a floe     3500
+      92-degree swerve        20          proximity to land      25000
+      17-degree nudge          0.7        hard constraint       500000
+
+This is the missing piece behind a long line of rejections. Twelve candidates re-priced
+avoidance and "the mean deflection never left 44-48 degrees"; the clearance cost was cut
+10000 -> 3000 and was INERT. Every one of them lowered a THREAT cost — and 25000 -> 8000
+leaves a 52-point U-turn just as free as it was. **The deviation side had never been
+raised.** That is not a tuning knob at its knee; it is a term that has never been in the
+same units as the function it lives in.
+
+Post-landing decomposition confirms the shape of what is left (`_transit_probe`, HEAD,
+lake 6 seeds): the two landings cut L1 excess 3781 -> 3342u and L2 5752 -> 4032u, but the
+mean deviation is unchanged at 44/50 degrees and avoidance is still ~half of all excess
+distance. **The races got shorter; the dodges did not get smaller.**
