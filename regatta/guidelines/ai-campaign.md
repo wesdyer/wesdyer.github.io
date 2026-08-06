@@ -7068,3 +7068,29 @@ the harness counts collisions by class in every bench:
 
 **Floes are the largest class and the only one that rose.** That stands, it comes from the
 harness's own counters, and it is what the next candidate should aim at.
+
+## 🗄️ HOUSEKEEPING: 106 GB of `regatta/eval/rl` is 37 pre-`mktree.sh` candidate trees
+
+Not a finding about the AI, but worth an owner decision. `regatta/eval/rl` is **106 GB**,
+and it is almost entirely legacy candidate trees built by `cp -R regatta/` before
+`mktree.sh` existed:
+
+      37 trees over 1 GB, ~2.9 GB each
+        treeA treeB treeBase treeC1-C3 treeD1-D7 treeE1 treeE2 treeG treeH treeL
+        treeLD65 treeLD110 treeLD135 treeLDg treeM treeM1-M3 treeQ treeR1-R4 treeR6 treeR7
+        treeW1 treeW2 treeW2b treeW3
+
+      inside ONE of them (treeR3):
+        regatta/eval/     2.4 GB   <- a nested copy of eval/, containing its own rl/
+        regatta/art/      331 MB
+        regatta/assets/   188 MB   <- mktree.sh symlinks this now
+        regatta/js/       1.6 MB   <- the only part a candidate tree actually needs
+
+This is exactly the hazard `mktree.sh`'s own header warns about ("A full cp -R of regatta/
+pulls in eval/ (100G+) and recurses"). Trees built with `mktree.sh` are **1.8 MB** — the 15
+built this session total 27 MB.
+
+⚠️ **NOT deleted — owner's call.** The bench RESULTS these trees produced live in the
+`*_bench_*.json` files (51 MB total at the top level), not in the trees, so the numbers in
+this log survive their removal. But an old tree is the only way to re-run an old
+comparison, so this is a judgement about which history is worth 106 GB.
