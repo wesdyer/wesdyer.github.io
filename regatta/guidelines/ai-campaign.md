@@ -6838,3 +6838,40 @@ A speed floor would repair it — but a floor is speed-independence, which is wh
 `pow(|offset|,3) * 200` already is. **This is a rejection that explains the landing**: the
 shipped shape is not a hand-tuned stand-in for a physical law that nobody got round to
 deriving. Speed-independence is the feature.
+
+## 📐 ARCTIC, AFTER THE LANDING: the excess is PLAN INSTABILITY, not plan quality
+
+With avoidance now much improved, Glacier Sound's biggest excess bin is no longer `avoid`
+(2594u) but `offrt` (3630u) — being off the planned route. `_route_attrib` on post-landing
+HEAD (6 seeds, 54 boat-races, 1 Hz) says that bin is misnamed:
+
+      plan / dmc-remaining ratio    med 0.79   <- the plan is SHORT, not long
+      boat off its OWN plan         med  96u   <- she follows it faithfully
+      cross-track to the ruler      med 403u
+      plan waypoints                mean 118
+      seconds with NO plan          0.0 of 184
+
+**At every instant the plan is efficient and the boat is on it — and the odometer still
+runs 1.67x the ruler.** Neither of the two stories the probe was built to separate is
+true: it is not ROUTER POLICY (the plan is 0.79x) and it is not EXECUTION (96u off). The
+excess lives in the third place, which is between the samples: the plan is re-solved
+constantly and the SEQUENCE of plans wanders. `carrotJump` is 20.6 per minute on the return
+leg, xtrack mean 867u. The boat does something locally sensible twenty times a minute and
+integrates to 1.67x.
+
+⚠️ **This is the pathology the SIPP research named and it is NOT what SIPP was retired
+for.** That thread was cancelled on a measurement — floe drift is not predictable past ~5s,
+so a plan that assumes known drift is worthless. Plan STABILITY is a separate claim and
+does not require prediction: committing to a chosen plan for N seconds, or a time-indexed
+carrot that cannot be re-adopted backwards, both kill churn by construction without
+forecasting anything.
+
+⚠️ **But note what this session did to that family**: hysteresis and commitment have been
+rejected TEN times at the avoidance layer. Nothing has tested them at the ROUTING layer,
+which is a different loop with a different time constant — a route commitment of a few
+seconds is not the same object as holding an escape heading for one. That is the honest
+next candidate, and it should be built with the measurement above as its target: drive
+`carrotJump` down and see whether the 1.67x follows.
+
+**Not attempted here** — a routing change needs 16-32 seed arctic sets to resolve, which
+did not fit the remaining window. Handing it over measured rather than half-benched.
