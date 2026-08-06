@@ -6952,3 +6952,31 @@ floor) and which would have been an eleventh rejection in the commitment family.
 **Not benched** — a routing change needs 16-32 seed arctic sets and the window closed.
 Handed over measured, with the instrument (`_replan.js`) that scores it: drive "same
 corridor" up from 33% and see whether the 1.67x odometer follows.
+
+### ⚠️ ...and the third venue refutes the tidy version of that story
+
+The entry above was one measurement away from claiming that router instability explains
+arctic's gap. It does not. All three land venues, same probe:
+
+      venue    re-solves/min   departure med   SAME corridor   gap vs human
+      arctic       5.5             177u            33%            2.08x
+      bay          5.4             121u            38%            1.08x
+      lake         4.5              94u            50%            1.32x
+
+**Bay is LESS stable than lake and far closer to the human.** The near-reversal share
+predicted its own effect across three venues (17.3 / 15.0 / 2.3% → +41 / -23 / inert) and
+that is why it was trustworthy; this statistic does not. So:
+
+  - the instability is REAL and it is UNIVERSAL — every venue replans at its floor and
+    still changes corridor half the time or worse. It is a property of `pathSailable`, not
+    of any venue's ice or geometry;
+  - it therefore CANNOT by itself be why Glacier Sound is 2.08x the human while Lighthouse
+    Cove is 1.08x. Something else carries arctic's gap and is still unidentified;
+  - a router-cost hysteresis is still the right candidate, but it is a GLOBAL change with
+    no prior reason to expect arctic benefits most. Bench it on all three, expect the
+    effect to track nothing in particular, and let the clock decide.
+
+⚠️ Recorded this way on purpose. Two candidates were nearly published tonight on a
+correlation that a third data point would have killed — and the one instrument this
+session trusted most (`_margin.js`) earned that trust by predicting bay's null result
+BEFORE the bench. A cross-venue statistic that does not predict is not a mechanism.
