@@ -553,12 +553,17 @@ function clearanceField(grid) {
 // that cell's wind (which is VMG when the bearing is upwind — tacking prices
 // itself). 16 wind-direction bins x 6 speed bins x 8 step directions, built once
 // from getTargetSpeed the first time a route is asked for.
-let _tfTab = null, _tfMin = 1;
+let _tfTab = null, _tfMin = 1, _lossTab = null;
+// Seconds a tack costs against polar speed, MEASURED (_vmgeff_probe: short-tacking
+// VMG in a corridor of width W is VMG_free · W/(W+K), K = TACK_SEC·v·sinδ·15 ≈ 70u
+// at 13 kt; the same probe puts the free-water run on the polar to within 1.5%).
+const TACK_SEC = 1.0;
 function buildTimeCost() {
     const gts = (typeof window !== 'undefined') && window.getTargetSpeed;
     if (!gts) return null;
     const SPDS = [8, 12, 16, 20, 25, 30];
     const tab = new Float32Array(16 * 6 * 8);
+    const loss = new Float32Array(16 * 6 * 8);
     let lo = Infinity;
     for (let d = 0; d < 16; d++) {
         const wd = d * Math.PI * 2 / 16;
@@ -566,22 +571,29 @@ function buildTimeCost() {
             const ws = SPDS[s];
             for (let k = 0; k < 8; k++) {
                 const bearing = Math.atan2(NB[k][0], -NB[k][1]);
-                let best = 0.5;
+                let best = 0.5, bestV = 0, bestDelta = 0;
                 for (let twa = 25; twa <= 180; twa += 5) {
                     const tr = twa * Math.PI / 180;
                     const v = gts(tr, twa > 95, ws);
                     for (const sgn of [1, -1]) {
                         const toward = Math.cos((wd + sgn * tr) - bearing) * v;
-                        if (toward > best) best = toward;
+                        if (toward > best) { best = toward; bestV = v; bestDelta = (wd + sgn * tr) - bearing; }
                     }
                 }
                 const tf = Math.min(4, Math.max(0.6, 10 / best));   // "time per unit", 10kt reference
                 tab[(d * 6 + s) * 8 + k] = tf;
+                // Corridor loss, in units: making good along a bearing whose best
+                // heading is δ off it means a tack every board, and each tack throws
+                // away TACK_SEC of polar speed's cross-corridor component. Zero when
+                // the bearing is directly sailable — the term scopes itself to the
+                // no-go cone (and prices corridor gybing mildly).
+                loss[(d * 6 + s) * 8 + k] = TACK_SEC * bestV * 15 * Math.abs(Math.sin(bestDelta));
                 if (tf < lo) lo = tf;
             }
         }
     }
     _tfMin = lo;
+    _lossTab = loss;
     return tab;
 }
 
@@ -691,7 +703,18 @@ function pathSailable(grid, from, to) {
             // speed toward this step's bearing, in this cell's wind. Beating prices
             // itself (VMG), reaches are cheap, and time is a true objective — unlike
             // hint weights it cannot invert the topology.
-            const base = TF ? TF[wbin[nid] * 8 + k] : 1;
+            let base = TF ? TF[wbin[nid] * 8 + k] : 1;
+            // CORRIDOR-AWARE UPWIND COST: in water narrower than PAD cells the best
+            // achievable speed toward an unsailable bearing degrades by W/(W+L) —
+            // measured, not derived (see buildTimeCost). Gated to c < PAD so open
+            // water prices EXACTLY as stock and route choice there cannot churn.
+            // Benched 2026-08-05: arctic paired -7/-12 med on two disjoint 16-seed
+            // sets (in-race floe corridors are the water this decides); bay 0.0 med;
+            // ocean 0.0 med / +3.4 mean, the price of shore-adjacent repricing.
+            if (TF && _lossTab && c < PAD) {
+                const W = Math.max(60, 2 * c * grid.res);
+                base = Math.min(20, base * (1 + _lossTab[wbin[nid] * 8 + k] / W));
+            }
             // ⚠️ REMAINING WEIGHTS ARE ROUTE HINTS, NOT WALLS — bounded, so the
             // worst hint-driven detour stays small (the 7x-wall-cost cove loop
             // lives in memory as the cautionary tale).

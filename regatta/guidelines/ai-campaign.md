@@ -4991,6 +4991,43 @@ SPEED — sailing far below polar on the line actually sailed (wedged in plugs, 
 rebuild after collisions). Fixes for the speed half look like "don't get stuck / price
 the grind honestly", not like routing.
 
+## ⚡ PHASE 1 FIRST BENCH (2026-08-05 21:15) — ARCTIC SAYS YES, and it is the DYNAMIC case
+
+`treeCORR` = corridor factor tf·(1+L/W) in pathSailable, gated c < PAD so open water
+prices exactly stock. Benches vs anchors:
+
+    bay   20@9100   paired 0.0 med / -2.2 mean, pens 0.44->0.37          (inert-positive)
+    ocean 20@9300   paired +1.0 med / +3.3 mean, land 0.00->0.11 ⚠️      (flag)
+    arctic 16@9100  FINISHERS 129 -> 139 of 144, paired -7.0 med / -17.1 mean,
+                    pens 1.86->1.64, col boat 10.86->7.66, land 30.1->27.5,
+                    floe 38.9->32.5                                      (CLEAR WIN)
+
+The static pre-pricer said "no venue reroutes" — TRUE at the doc grid — but in-race the
+bots' grid stamps DRIFTING FLOES, and arctic's corridors are made and unmade every
+replan. That is where honest corridor pricing decides differently, and every arctic
+metric moved the right way. Verifying on disjoint sets before landing (arctic 16@9200,
+ocean 20@9320 with HEAD baselines from treeHEAD).
+
+**VERIFIED 21:30.** Arctic 16@9200: paired -12.0 med / -17.1 mean (9100 set was
+-7.0 / -17.1 — the mean replicates to the decimal), fleet med 555->535, land 36.6->32.8,
+floe 38.1->35.3. Finishers +1 (vs +10 on 9100 — threshold statistic, noisy as the bench
+memory warns; time is the replicated signal). Ocean disjoint 20@9320: paired 0.0 med /
++3.5 mean, land 0.00/0.00 (the first set's land flag did NOT replicate), rubs down.
+Ocean's +3.3/+3.5 mean replicates across sets — the price of shore-adjacent repricing.
+`treeCORR5` (gate c<5, W<=400u only) benching on ocean 9320 + arctic 9100 to decide the
+gate; then LAND.
+
+## ⚡ REDROCK CAPACITY, MEASURED (keep-N sweep, seeds 9100-9103)
+
+    keep 1   L1 50-68 s, ~1.2x plan, one FINISH (583 s) in 4
+    keep 3   L1 60-263 s — still gridlocks
+    keep 9   L1 50-351 s, 0/108 finish, 246 boat rubs/boat-race
+
+**Redrock is a single-lane venue.** One boat executes its corridors near-plan; three
+already jam. Not a steering defect — a capacity fact about 100-150u corridors vs a
+123u minimum tack width. Owner options: widen to ~250u+ (two lanes), race it small-fleet
+/ time-trial, or accept DNFs as the venue's character.
+
 ## ⚠️ DATA PROVENANCE: the redrock human recording predates the current redrock document
 
 `traj_redrock_1785825518447.json` (Aug 3, 140.3 s) — its ENTIRE track lies in cells the
