@@ -5919,3 +5919,30 @@ measured inert there anyway); Stillwater Lake sits at 2-4 nearly everywhere, whi
 exactly the water the floor was built for.
 
 Benching lake (both sets) and bay to confirm the gain survives the narrower predicate.
+
+## LAKE RE-ATTRIBUTED ON THE LANDED CODE — the landing hit what it aimed at
+
+    leg 1 (beat)          HEAD                LANDED
+    EXCESS                3781u               3011u   (-20%)
+      avoid               1911u               1428u   (-25%)
+        of which static    244u                 42u   (-83%)
+        of which boat      988u                935u   (unchanged)
+      turn                 333u                272u
+      rec                  298u                171u
+    mean deflection        45 deg              41 deg
+    dist ratio             1.86                 —
+
+    leg 2                 5752u               5185u   (-10%), avoid 2495 -> 2376,
+                                                       rec 1240 -> 920, dev 51 deg both
+
+**Static-cause avoidance is gone from the beat**, which is precisely what a land probe
+that can see far enough should do. What is left on this venue is BOAT traffic (935u and
+706u) plus off-route wandering (430u / 1124u), and a mean deflection still at 41-51 deg
+against the human's 8 deg median / 24-27 mean.
+
+⇒ The next lever on lake is not another cost or another probe. The action set is now
+5.7 degrees fine from 0 to 0.8 rad and the fleet still chooses 41 degrees, which means the
+COST FUNCTION IS DEMANDING A BIG MISS — `safeDist` (80-150u) evaluated over a 4-second
+straight-line projection, against a human who passes at a 336-355u median CPA having
+deflected 8 degrees. That is the bubble, and it is the one part of this function tonight
+has not touched.
