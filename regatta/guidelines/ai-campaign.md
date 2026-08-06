@@ -6108,3 +6108,32 @@ wrong way. Whatever the bench says, the design conclusion is already available: 
 long-range CPA term produces early WIDTH but not early CALM**, because widening the pass
 is itself a course change, and nothing in the term prefers achieving it sooner and
 smaller.
+
+## ⛔ THE WHOLE SHAPE IS WRONG, BY DOSE-RESPONSE — CPA-costed positioning cannot be "early and small"
+
+Ran the amplitude at 6 and at 1.2 (the latter capped deliberately below the deviation cost
+of a 14-degree turn, so it could only ever tip a near-tie). `_fleet_ledger`, lake, no-tack:
+
+      amplitude      CPA med     deflection at CPA     held course (<5 deg)
+      0 (landed)      299u            23.0                   17%
+      1.2             329u            29.0                   15%
+      6.0             361u            27.3                   14%
+      the human       312u             8.7                   38%
+
+**Cutting the term five-fold still widens the pass AND still raises the rudder**, and
+course-holding falls monotonically with amplitude. This is not a constant that needs
+tuning — it is the SHAPE of the term. A cost written on the projected CPA prices the
+OUTCOME of a correction and is completely indifferent to WHEN the correction is made, so
+the cheapest way for the argmin to satisfy it is always to turn now, a bit more. Early and
+small and late and large look identical to it.
+
+⇒ **Standing conclusion for the planning thread: to get early-and-small you must cost the
+correction's LATENESS, not its result.** That means a term over the boat's own recent
+heading history or over the schedule of the manoeuvre — not another function of the
+predicted geometry. Every geometric term in this file has now been tried: distance
+(clearance), time (horizon), outcome (CPA), resolution (the fan, which is the one that
+paid) and commitment (the lock).
+
+⚠️ And note the method: the DOSE-RESPONSE is what makes this a closed family rather than
+one more rejected constant. Same discipline as the commitment thread's 1-second hold
+control. One amplitude would have read as "needs tuning".
