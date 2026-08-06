@@ -2656,6 +2656,40 @@ class BotController {
                 cost += 600 * jamF;
             }
 
+            // A HEADING INSIDE THE NO-GO IS NOT A COURSE, IT IS A STOP. The tax above
+            // catches a candidate that CROSSES to the other tack; it says nothing about
+            // one that simply lands head to wind, and the fan is full of those — from
+            // close-hauled, a 0.8 rad escape to windward IS the no-go zone. Nothing else
+            // in this function knows that such a candidate does not escape anywhere: the
+            // projection below happily flies the boat along it at her current speed.
+            //
+            // Measured on Stillwater Lake (`_stall_probe` + `_irons_entry`, new): the
+            // fleet spends 6.4% of the race under one knot against the human's 0.0%,
+            // 31.5% of that is head to wind, and **43.7% of every entry into irons is
+            // this** — the boat deflected into the no-go by avoidance. She was doing
+            // 2.20 kt median two seconds earlier, so it is not light air killing her; it
+            // is her own escape. (Tacks are only 19.3%, which is why gating slow tacks
+            // moved the total by 5%.)
+            //
+            // Scaled and shaped like the tack tax next to it: shaping-sized, so the
+            // Rule-14 terms still roll over it when luffing head to wind is genuinely
+            // the only way out, and waived for a boat with no way on — she can pivot
+            // wherever she likes because she has nothing to lose.
+            {
+                const twaCand = Math.abs(normalizeAngle(h - wdAv));
+                // ⚠️ OPEN WATER ONLY, and this is the third change tonight to need that
+                // gate for the same underlying fact. Where the obstacle is DRIFTING ICE,
+                // luffing head to wind is often the correct escape — you stop, rather
+                // than hit a floe that will not keep clear for you — so the option this
+                // tax removes is the fleet's best emergency out on exactly the venue
+                // where obstacles do not get out of the way. Benched on Glacier Sound:
+                // +24.0 paired median, 139 -> 126 finishers, and every contact class up
+                // (boat 7.66 -> 11.49, land 27.5 -> 32.9, floe 32.5 -> 38.1).
+                if (twaCand < 0.55 && this.boat.raceState.leg >= 1 && openWaterAv) {
+                    cost += 500 * jamF * (1 - twaCand / 0.55);
+                }
+            }
+
             // RRS Rule 16/14: Stand-on boat holds course...
             // but Rule 14 requires evasive action when "it becomes clear
             // the other boat is not keeping clear."
