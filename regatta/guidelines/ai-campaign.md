@@ -5604,14 +5604,24 @@ benched — `--check` reports without writing). Four regions, all in `applyAvoid
     [x] lake   20@9100  ship vs head       -53.0 med / -58.6 mean
     [x] lake   20@9200  ship vs head      -32.0 med / -43.7 mean  (386 -> 358,
                                             land contacts 27.8 -> 21.2, 180/180 finish)
-    [ ] arctic 16@9100  ship vs head       (probe floor only; fan gated off)
-    [ ] arctic 16@9200  fan alone          (confirms the rejection that motivated the gate)
-    [ ] ocean  20@9300  ship vs head       (safety)
-    [ ] seatrials 100t seed 100            ⚠️ WILL MOVE: seatrials has no floes, so it
-                                            takes the dense fan. Expect the anchor to
-                                            change; record the new one.
+    [x] arctic 16@9100  ship vs head       BYTE-IDENTICAL by construction; golden traces
+                                            arctic/90210 + 90211 PASS with 0 behaviour
+                                            changes (the 2 of 20 that held)
+    [~] arctic fan alone, 48 seeds         -7.0 pooled paired med, finishers 396 -> 389,
+                                            the loss confined to set 1 — set 4 pending
+    [x] ocean  20@9300  ship vs head        0.0 med / +1.8 mean (inert)
+    [x] seatrials 100t seed 100            199.15 mean / 194.73 med, pen 0.386,
+                                            OCS 14.89%, DNS/DNF 0%, min 174.25
+                                            (was 198.94 / 194.61 / 0.32 / 14.78%)
+                                            — it takes the dense fan and barely notices:
+                                            +0.12 s on the median, which is what ocean
+                                            said too. Penalties 0.32 -> 0.386 is the one
+                                            number that moved and it is worth watching.
     [ ] goldens: full `--update` (NOT per-venue — that rewrites the file with one venue)
-    [ ] npm test: 6 test_editor failures = clean (the 6 wind-shadow ones are FIXED)
+    [x] npm test: 6 test_editor failures = clean (the 6 wind-shadow ones are FIXED)
+    [x] test_sailable: PASS on all ten venues
+    [ ] goldens: full --update (deferred until the arctic-fan question resolves, so the
+        traces are recorded once rather than twice)
 
 
 # ⚡ THE `avoid: none` BIN, NAMED — and a lock that survived being fixed once
