@@ -7634,3 +7634,31 @@ verified knees. The owner's strategy works because the LARGEST gap is robust to
 the tail — and largest-gap preference is already what clearance-weighted routing
 + the canyon law implement. Arctic's residual is the tail scenes themselves:
 46% boat-traffic squeezes and 42% wiggle recoveries. Driver-level or nothing.
+
+## ⚡ THE ROUNDING COMPARISON (owner's request #2) — ANSWERED, with the next candidate named
+
+Same metrics both sides (_rounding_shape.py + _rounding_shape_fleet.js, both new):
+
+                     minD      carry   near-zone   tacks   peak turn
+    bay    human      47u       99%      4.1s        1       55 deg/s
+           fleet     117u       99%      4.1s        1       56
+    redrock human     62u       98%      3.5s        0       56
+           fleet      96u      103%      8.4s        1       59
+    lake   human      48u       97%      5.5s        0       53
+
+**The entire difference is the RADIUS.** Speed-carry, zone time, tack count and turn
+rate are IDENTICAL on bay — the fleet simply rounds 2.5x wider. ~200u of extra arc
+per rounding x 6 roundings ≈ ~15s of bay's remaining 16s gap, plus redrock's 2.4x
+zone exposure in a maze where exposure is contact.
+
+⛔ REJECTED on the way: collapsing avoidance's soft mark zone while armed (treeSHAVE,
+hard+20): minD did NOT move (118u) — avoidance was never the binding constraint —
+and the removed shaping cost bay +4.5/dirt up, redrock 11->7 fins. **The binding
+constraint is the ORBIT TARGET: `RR = min(zone*1.15, CoursePath._roundR + 45)`
+(script.js ~1293).** The +45 pad and the zone fallback put the carrot at 115-138u.
+
+▶ NEXT-PUSH P1: tighten the orbit target toward the human's 47u (e.g. _roundR + 20
+with a hard-radius floor), benched against the FULL rounding regression suite — the
+winding test, requiredSweep, Glacier Sound's ice-gap orbit history and the hairpin
+all live on this constant. Do NOT rush it; it is worth ~15s on bay alone and touches
+every venue's roundings.
