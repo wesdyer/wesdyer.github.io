@@ -344,14 +344,14 @@ class BotController {
                 && typeof ROUND_SWEEP_TOL !== 'undefined') {
                 if (this._outboundLeg !== rsL.leg) { this._outboundLeg = rsL.leg; this._outbound = false; }
                 const needL = rmL.reqSweep * ROUND_SWEEP_TOL;
-                // Bank a BUFFER before turning for the exit: the fight out through
-                // the ring in a 25-knot katabatic costs ~0.2-0.4 rad of unwind, and
-                // leaving at exactly the requirement meant arriving outside it.
-                // (A 0.10 buffer on floe-free water was A/B'd on Lighthouse Cove —
-                // paired -2 med / -3.3 mean vs 0.25: the exit path curves, so the
-                // unwind is real even with nothing to grind through. 0.25 stays
-                // everywhere.)
-                if ((rsL.roundSweep || 0) >= needL + 0.25) this._outbound = true;
+                // ASK THE ENGINE, don't keep a second copy of the threshold. The engine
+                // latches `roundBanked` the moment the swept angle reaches the
+                // requirement, and from that moment the only thing left to do is leave.
+                // The old +0.25 buffer existed because the sweep could UNWIND before
+                // the departure test saw it — the latch removes that reason, and with
+                // the requirement no longer discounted the buffer is a quarter-radian
+                // of extra orbit, sailed in an island's lee, for nothing.
+                if (rsL.roundBanked && rsL.roundWrapped !== false) this._outbound = true;
                 else if ((rsL.roundSweep || 0) < needL * 0.8) this._outbound = false;
                 if (this._outbound) { this.wiggleActive = false; this.wiggleDuration = 0; }
             }
@@ -596,7 +596,10 @@ class BotController {
             // Leaky accumulator: deviation oscillates tick-to-tick as the cost
             // function re-picks candidates, so charge while forced and bleed
             // (rather than reset) between — a hard reset never reached HOLD.
-            if (eligible && this.lastAvoidDeviation > DEV) {
+            // ...and she must actually have NEEDED to act. See applyAvoidance for the
+            // measurement that says why this guard exists.
+            const needed = this.properCourseCPA != null && this.properCourseCPA < FOUL_NEED_GAP;
+            if (eligible && needed && this.lastAvoidDeviation > DEV) {
                 this.forcedAvoidTimer = Math.min((this.forcedAvoidTimer || 0) + 0.1, 1.5);
                 if (this.forcedAvoidTimer >= HOLD) {
                     const info = this.threatRowRes ? { rule: this.threatRowRes.rule, reason: this.threatRowRes.reason, kind: 'no_contact' } : { kind: 'no_contact' };
@@ -2559,6 +2562,41 @@ class BotController {
             }
         }
 
+        // KEEP CLEAR (a) — "a boat keeps clear of a right-of-way boat if the right-of-way
+        // boat can sail her course with NO NEED to take avoiding action." NEED is the
+        // word doing the work, and the no-contact foul detector had no way to test it.
+        // It read `lastAvoidDeviation`, which is this boat's TOTAL deflection from every
+        // cause at once — a floe, a mark, a third boat, the arena wall — so a stand-on
+        // boat dodging ice was recorded as having been FORCED by her give-way rival, and
+        // the rival was penalised for it.
+        //
+        // Measured, `_foul_truth_probe` over 12 bay races: every single no-contact foul
+        // the build fired was against an encounter that would have passed 323-861 units
+        // clear had she held her course — 0 of 4 correct, under both reconstructions of
+        // the deflection's sign. The detector was not too narrow. It was aimed at the
+        // wrong quantity.
+        //
+        // So compute the quantity itself: the closest the two of them would come if she
+        // sails her proper course and the other boat holds hers. Below a hull's width
+        // she has to act and the give-way boat has broken her rule; above it, whatever
+        // this boat chose to do, she did not need to.
+        this.properCourseCPA = null;
+        if (this.avoidanceRole === 'STAND_ON' && this.threatBoat && !this.threatBoat.raceState.finished) {
+            const o = this.threatBoat;
+            const ovxP = (o.velocity && o.velocity.x) ? o.velocity.x * 60 : Math.sin(o.heading) * o.speed * 60;
+            const ovyP = (o.velocity && o.velocity.y) ? o.velocity.y * 60 : -Math.cos(o.heading) * o.speed * 60;
+            const mvxP = Math.sin(desiredHeading) * speed, mvyP = -Math.cos(desiredHeading) * speed;
+            let bestP = Infinity;
+            const tEndP = lookaheadFrames / 60;
+            for (let t = 0; t <= tEndP; t += tEndP / 12) {
+                const dxP = (this.boat.x + mvxP * t) - (o.x + ovxP * t);
+                const dyP = (this.boat.y + mvyP * t) - (o.y + ovyP * t);
+                const dP = Math.hypot(dxP, dyP);
+                if (dP < bestP) bestP = dP;
+            }
+            this.properCourseCPA = bestP;
+        }
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -2655,8 +2693,52 @@ class BotController {
                     // must keep clear of her", no rule 20). Remove this scope once
                     // that is built — it is a stopgap, not the fix.
                     const openWaterKC = !(state.course._floeObjs && state.course._floeObjs.length);
-                    const overlapped = openWaterKC && !!(window.Rules && window.Rules.isOverlapped
+                    // ⚠️ The scope used to do TWO things at once — gate the (a)/(b)
+                    // split AND choose the non-overlapped gap (110 on ice, 80 in open
+                    // water). Unscoping both together confounds them. Only the split is
+                    // unscoped here; the ice gap below is left alone.
+                    let overlapped = !!(window.Rules && window.Rules.isOverlapped
                                           && window.Rules.isOverlapped(boat, other));
+                    // RRS 19.2(c) — THE SQUEEZE AT A CONTINUING OBSTRUCTION.
+                    // "While boats are passing a continuing obstruction, if a boat that
+                    // was clear astern and required to keep clear becomes overlapped
+                    // between the other boat and the obstruction and, at the moment the
+                    // overlap begins, there is not room for her to pass between them,
+                    // (1) she is not entitled to room under rule 19.2(b), and (2) while
+                    // the boats remain overlapped, she shall keep clear and rules 10 and
+                    // 11 do not apply."
+                    //
+                    // This is the rule the ice needed. The overlapped keep-clear test is
+                    // the WEAKER of the two — a 60-unit swing off her centreline against
+                    // an 80-110 unit gap — so switching it on in floe-packed water let
+                    // boats sail closer to each other in exactly the water where there is
+                    // nowhere to go. The rule says the boat squeezed between a rival and
+                    // an obstruction does not get that benefit: she keeps clear, at the
+                    // full gap, and her overlap buys her nothing.
+                    //
+                    // "Not room to pass between them" is read off the same grid the bots
+                    // route on: if the water a boat-width outboard of us, on the side
+                    // away from her, is not navigable, we are the one against the shore.
+                    if (overlapped) {
+                        // The FLOE-STAMPED grid, not the static one: on Glacier Sound
+                        // the obstruction that squeezes boats is drifting ice, and a
+                        // floe qualifies as a continuing obstruction whenever a boat
+                        // passes alongside it for three hull lengths (165u) — which the
+                        // large ones do. (Approximation, stated: the rule also asks that
+                        // the squeezed boat BECAME overlapped from clear astern, and the
+                        // engine's overlap tracker only records that within two hull
+                        // lengths, for rule 17. Applying the geometric squeeze to
+                        // whichever boat is against the obstruction is the conservative
+                        // reading — it is always the inside boat.)
+                        const gx = state.course.botGrid || state.course._botGridStatic;
+                        const sx = boat.x - other.x, sy = boat.y - other.y;
+                        const sl = Math.hypot(sx, sy);
+                        if (gx && sl > 1 && sl < 110 + HULL_R) {
+                            const ux = sx / sl, uy = sy / sl;
+                            const cc = gx.cell(boat.x + ux * (HULL_R * 2), boat.y + uy * (HULL_R * 2));
+                            if (!gx.at(cc[0], cc[1])) overlapped = false;
+                        }
+                    }
                     let owed, have;
                     if (overlapped) {
                         // How far can she swing her bow "immediately"? Her own turn
@@ -5037,6 +5119,11 @@ class Boat {
             roundSweep: 0,
             roundWrong: 0,
             roundArmed: false,
+            roundBanked: false,
+            roundFrom: null,
+            roundRebased: false,
+            roundEntryB: null,
+            roundWrapped: true,
             isTacking: false, // Rule 13
             inZone: false,
             zoneEnterTime: 0,
@@ -10075,6 +10162,10 @@ function updateBoatRaceState(boat, dt) {
         rs.roundSweep = 0;
         rs.roundWrong = 0;
         rs.roundArmed = false;
+        rs.roundBanked = false;
+        rs.roundRebased = false;
+        rs.roundEntryB = null;
+        rs.roundFrom = { x: boat.x, y: boat.y };
         rs._wrongRound = false;
         const split = state.race.timer - rs.legStartTime;
         rs.lastLegDuration = split;
@@ -10166,6 +10257,24 @@ function updateBoatRaceState(boat, dt) {
                 boat.x - 30 * sinH, boat.y + 30 * cosH);
             if ((hp.x - rm.x) ** 2 + (hp.y - rm.y) ** 2 < rm.zone * rm.zone) rs.roundArmed = true;
         }
+        // ⚠️ THE APPROACH BANKS WINDING SHE NEVER SPENT ROUNDING — re-base on arrival.
+        //
+        // `roundSweep` accumulates from LEG START at any distance. That is right for the
+        // SIDE judgement — the sign carries it — and wrong for the MAGNITUDE, because an
+        // approach even slightly off the mark's beam banks bearing change the boat never
+        // spent rounding. Owner, sailing Redrock by hand: "I hit the first rounding circle
+        // and tacked outside to get high enough to round and it counted as rounding."
+        //
+        // So the requirement is asked of the winding made from the moment she ARRIVES in
+        // the mark's neighbourhood. Once per leg — leaving and re-entering does not re-arm
+        // it, or a boat could shed a wrong-way excursion by stepping outside and back.
+        if (!rs.roundRebased && d2 < (rm.zone * ROUND_NEAR) ** 2) {
+            rs.roundRebased = true;
+            rs.roundSweep = 0;
+            rs.roundBanked = false;
+            rs.roundFrom = { x: boat.x, y: boat.y };
+            rs.roundEntryB = Math.atan2(ry1, rx1);
+        }
         const activeR = rm.zone * ROUND_ACTIVE;
         const d2prev = (rs.lastPos.x - rm.x) ** 2 + (rs.lastPos.y - rm.y) ** 2;
         {
@@ -10215,14 +10324,117 @@ function updateBoatRaceState(boat, dt) {
         // leg whose geometry needs the whole circle, because the boat leaves for the line it
         // arrived from. `reqSweep` comes from where the previous and next marks are.
         //
-        // ROUND_SWEEP_TOL leaves room for a rounding that sweeps a little less than the
-        // ideal tangent-to-tangent arc.
+        // ROUND_SWEEP_TOL is 1: the rule states no tolerance, and the AI's exit logic
+        // reads the same constant, so any discount here is also an instruction to the
+        // fleet to stop short. See the constant for the rule text.
         //
         // No zone requirement here — the departure radius only stops the leg completing
         // in the middle of a tight turn; a wide rounding is already outside it.
         const need = (rm.reqSweep != null ? rm.reqSweep * ROUND_SWEEP_TOL : Math.PI / 4);
-        if (d2 > (rm.zone * 1.25) ** 2 && d2 > d2prev
-            && (rs.roundSweep || 0) >= need) {
+        // A ROUNDING, ONCE MADE, STAYS MADE. The string is drawn over her track "until
+        // she finishes", so the wrap is a fact about the track and not about where she
+        // happens to be standing when the departure test fires. Without this, the
+        // requirement is unreachable at the margin: the sweep PEAKS inside the
+        // completion radius — the ideal path's exit tangent lies inside zone*1.25 — and
+        // unwinds a couple of tenths of a radian as she fights out through the ring,
+        // measured 3.44 rad banked against a 3.40 requirement and only 2.97 left by the
+        // time she was far enough out to be asked. That unwind is the same one the AI's
+        // exit buffer exists to cover; with no tolerance left in `need` it has to be
+        // handled here instead of paid for with a discount.
+        //
+        // She can still GIVE IT BACK — by sailing back round the other way, which is
+        // what the net signed accumulator measures. See ROUND_GIVEBACK for how much.
+        // ⚠️ THE REQUIREMENT IS TO REACH THE EXIT BEARING, NOT TO BANK A NUMBER.
+        //
+        // A swept-angle threshold cannot tell a rounding from a near miss, because coming
+        // close to a mark and turning away genuinely DOES swing your bearing about it a
+        // long way. Measured (`test_rounding_nibble.js`): a boat that touches the zone and
+        // tacks off banks 82 degrees on Redrock against a 46-degree requirement, 126
+        // against 92 on bay, 126 against 89 on ocean — completing all three legs without
+        // going round the mark at all. Raising the number does not fix it; it only makes
+        // real roundings register late, which is the other half of the same complaint.
+        //
+        // What actually separates the two is WHERE SHE IS GOING. A rounding ends with the
+        // boat leaving for the next mark; a near miss ends with her leaving the way she
+        // came. So the requirement is the winding from her ARRIVAL bearing round to the
+        // bearing of the next anchor, taken the required way — a per-boat, per-leg fact
+        // about the geometry she actually sailed, not a course constant.
+        //
+        // The tolerance is DERIVED, not tuned: she leaves on a TANGENT, so at distance d
+        // from a mark she rounds at radius R her bearing falls short of the exit bearing
+        // by exactly acos(R/d). Allowing that and no more means the leg completes the
+        // moment she is genuinely on her way out, and not a moment before.
+        let needExit = need;
+        if (rs.roundEntryB != null && typeof CoursePath !== 'undefined' && state.course.route) {
+            const nextA = CoursePath.anchor(state.course.route[rs.leg + 1], state.course.marks);
+            if (nextA) {
+                const bQ = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+                let w = (bQ - rs.roundEntryB) * sgn;
+                while (w <= 0) w += Math.PI * 2;
+                while (w > Math.PI * 2) w -= Math.PI * 2;
+                const R = (typeof CoursePath._roundR === 'function')
+                    ? CoursePath._roundR(rm, null) : Math.max(90, (rm.radius || 12) + 70);
+                const dNow = Math.sqrt(d2);
+                const beta = Math.acos(Math.max(0, Math.min(1, R / Math.max(R, dNow))));
+                needExit = Math.max(need, w - beta - ROUND_EXIT_SLACK);
+            }
+        }
+        if ((rs.roundSweep || 0) >= needExit) rs.roundBanked = true;
+        else if (rs.roundBanked && (rs.roundSweep || 0) < needExit - ROUND_GIVEBACK) rs.roundBanked = false;
+        // SHE HAS LEFT THE ZONE — the rules' own boundary for being finished with a
+        // mark (18.2(b) ends mark-room when the boat entitled to it "leaves the zone").
+        // This was zone*1.25, a margin whose stated job was to stop the leg completing
+        // in the middle of a tight turn. `roundBanked` does that job properly: it does
+        // not latch until the whole geometric requirement is swept, so a boat mid-turn
+        // cannot complete however far out she wanders. The extra 25% is not free —
+        // Glacier Sound's rounding mark has a zone of 851, so it held boats on the
+        // rounding leg's path for another 213 units of outbound transit, orbiting an
+        // island instead of steering the next leg.
+        // AND THE STRING MUST ACTUALLY HAVE WRAPPED THE MARK.
+        //
+        // The swept-angle threshold is a PROXY for the rule, and `reqSweep` lands within
+        // about fifteen degrees of the real boundary on Glacier Sound — so the half
+        // radian of give-back the latch allows can carry a boat back across it. Measured
+        // (`_string_truth_probe`, 12 arctic seeds): the rounding work alone left 2% of
+        // completed roundings with a track that never wrapped the mark, and the fleet
+        // changes on top of it drifted that back to 12%, all of them sitting within a
+        // few hundredths of a radian of the boundary.
+        //
+        // So test the rule itself as well. Over a leg the net winding about the mark
+        // takes one of exactly two values 2*pi apart — the larger is the one where the
+        // taut string wraps the mark — so this is a two-class decision with a full pi of
+        // margin, and it needs no tolerance of its own:
+        //
+        //   required = the signed angle from (mark -> where she began the leg) to
+        //              (mark -> the next mark), taken the required way round, in (0,2pi]
+        //   actual   = roundSweep + the short-way sweep still to come on a run to that
+        //              next mark from where she is now
+        //   WRAPPED iff actual >= required - pi
+        //
+        // It is an AND, never an OR: it can only ever hold a boat in, and a boat held in
+        // is a boat still rounding, which is what she is supposed to be doing. When the
+        // geometry cannot be read — no next anchor, no recorded start — it stands aside.
+        let wrapped = true;
+        if (rs.roundFrom && typeof CoursePath !== 'undefined' && state.course.route) {
+            const nextA = CoursePath.anchor(state.course.route[rs.leg + 1], state.course.marks);
+            if (nextA) {
+                const bTo = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+                const bFrom = Math.atan2(rs.roundFrom.y - rm.y, rs.roundFrom.x - rm.x);
+                let needW = (bTo - bFrom) * sgn;
+                while (needW <= 0) needW += Math.PI * 2;
+                while (needW > Math.PI * 2) needW -= Math.PI * 2;
+                let rem = bTo - Math.atan2(ry1, rx1);
+                while (rem > Math.PI) rem -= Math.PI * 2;
+                while (rem < -Math.PI) rem += Math.PI * 2;
+                wrapped = ((rs.roundSweep || 0) + rem * sgn) >= needW - Math.PI;
+            }
+        }
+        // The AI has to see this too, or she banks the sweep, turns for the exit on
+        // `roundBanked` alone, and sails away from a mark she has not been round —
+        // measured at 12 boats in 144 failing to finish. Same coupling as the
+        // tolerance and the exit latch: half of this change strands boats.
+        rs.roundWrapped = wrapped;
+        if (d2 > rm.zone ** 2 && d2 > d2prev && rs.roundBanked && wrapped) {
             advanceLeg();
         }
     }
@@ -10258,7 +10470,12 @@ function updateBoatRaceState(boat, dt) {
                     // The start line, identified by its route role rather than by
                     // being "the pair that happens to begin at index 0".
                     if (legEntry && legEntry.role === 'start') {
-                        if (crossingDir === 1) {
+                        // ⚠️ AGAINST THE ROUTE'S OWN DIRECTION, not against +1. The racing
+                        // branch below already compares `crossingDir === requiredDirection`;
+                        // this one hardcoded the sign, so on a line authored `dir: -1` the
+                        // test was INVERTED — a boat crossing to the course side was
+                        // cleared, and a boat correctly returning was flagged OCS.
+                        if (crossingDir === requiredDirection) {
                             boat.raceState.ocs = true;
                             if (boat.isPlayer) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
                         } else {
@@ -10278,6 +10495,10 @@ function updateBoatRaceState(boat, dt) {
                                 boat.raceState.roundSweep = 0;
                                 boat.raceState.roundWrong = 0;
                                 boat.raceState.roundArmed = false;
+                                boat.raceState.roundBanked = false;
+                                boat.raceState.roundRebased = false;
+                                boat.raceState.roundEntryB = null;
+                                boat.raceState.roundFrom = { x: boat.x, y: boat.y };
                                 if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 0, time: state.race.timer });
                                 if (boat.isPlayer) {
                                     Sound.playGateClear();
@@ -10451,12 +10672,25 @@ function getHullPolygon(boat) { return hullPolygonAt(boat.x, boat.y, boat.headin
 // How far the boat's LEADING EDGE is over a line — the quantity RRS judges a start by, and
 // therefore the one the start AI has to steer. `normalize` scales to real units; unnormalized
 // keeps the raw cross-product the approach timer was written against.
-function hullLineOffset(boat, m0, m1, normalize) {
+// ⚠️ SIGNED THE WAY THE ROUTE SAYS THE LINE IS CROSSED, not the way its two marks happen
+// to be ordered in the array. `startCrossNormal()` already makes that point for the
+// placement and the OCS test; this function is the AI's own view of the same line and it
+// was the one place still reading the raw mark order.
+//
+// Two of the ten venues author their start entry with `dir: -1` (Bluewater and Redrock,
+// both gate starts). On those, every caller here got the sign INVERTED — so the prestart
+// read a boat correctly sitting behind the line as OVER EARLY, and `getStartCommand`'s
+// retreat branch backs off by `STAGE + pDist`, which grows as she retreats. A runaway.
+// Measured before the fix: the fleet's median distance from the line went -386 -> -1731
+// on ocean and -383 -> -1078 on redrock through the prestart, against -419 -> -128 on bay.
+// They sailed away from the line for the whole prestart and only turned for it at the gun.
+function hullLineOffset(boat, m0, m1, normalize, sgn) {
     const dx = m1.x - m0.x, dy = m1.y - m0.y;
     const len = normalize ? (Math.hypot(dx, dy) || 1) : 1;
+    const s = sgn != null ? sgn : startCrossSign();
     let best = -Infinity;
     for (const p of hullPolygonAt(boat.x, boat.y, boat.heading)) {
-        const d = ((p.x - m0.x) * dy - (p.y - m0.y) * dx) / len;
+        const d = s * ((p.x - m0.x) * dy - (p.y - m0.y) * dx) / len;
         if (d > best) best = d;
     }
     return best;
@@ -10794,6 +11028,47 @@ function update(dt) {
         if (state.race.timer <= 0) {
             state.race.status = 'racing';
             state.race.timer = 0;
+
+            // ⚠️ OCS IS A FACT ABOUT POSITION AT THE STARTING SIGNAL, NOT A HISTORY OF
+            // CROSSINGS. RRS 29.1: "when at her starting signal any part of a boat's hull
+            // is on the course side of the starting line". The flag was only ever set by a
+            // crossing EVENT during the prestart, so a boat that arrived on the course side
+            // without one — sliding in laterally from beyond a mark, a crossing that fell
+            // between two frames, a clear-then-re-cross — started clean.
+            //
+            // Measured (`_ocs_truth.js`, 3 races a venue, 270 boat-starts): SIX boats over
+            // the line at the gun and not flagged, one of them 182 units over, and NONE
+            // wrongly flagged. Judging by position closes every one by construction,
+            // whatever the cause was.
+            //
+            // The line has ENDS: a hull past the pin is not on the course side of the
+            // starting line, she is past it. Both tests are applied per hull point.
+            {
+                const [sm0, sm1] = startLinePts();
+                if (sm0 && sm1) {
+                    const sdx = sm1.x - sm0.x, sdy = sm1.y - sm0.y;
+                    const sL = Math.hypot(sdx, sdy) || 1;
+                    const ss = startCrossSign();
+                    for (const b of state.boats) {
+                        if (b.raceState.finished) continue;
+                        let over = false;
+                        for (const q of hullPolygonAt(b.x, b.y, b.heading)) {
+                            const d = ss * ((q.x - sm0.x) * sdy - (q.y - sm0.y) * sdx) / sL;
+                            if (d <= 0) continue;
+                            const along = ((q.x - sm0.x) * sdx + (q.y - sm0.y) * sdy) / sL;
+                            if (along >= 0 && along <= sL) { over = true; break; }
+                        }
+                        if (over !== !!b.raceState.ocs) {
+                            b.raceState.ocs = over;
+                            if (b.isPlayer) {
+                                if (over) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
+                                else hideRaceMessage();
+                            }
+                        }
+                    }
+                }
+            }
+
             Sound.playStart();
             Sound.updateMusic();
 
@@ -11036,9 +11311,19 @@ function recordTrajectory(dt) {
         if (!player) return;
         const st = state.race.status;
         if ((st === 'prestart' || st === 'racing') && !player.raceState.finished) {
+            // A RESTART (racing -> prestart) VOIDS the attempt. The recorder used to
+            // keep appending, and one arctic file held three prestarts and two
+            // abandoned races — every phase==racing analysis on it silently blended
+            // attempts (found by traj_audit.js). The aborted samples are not the
+            // race the file's finishTime describes, so they must not share it.
+            if (recTraj && recTraj._lastSt === 'racing' && st === 'prestart') recTraj = null;
             if (!recTraj) recTraj = {
                 venue: (typeof settings !== 'undefined' && settings.venue) || '?',
                 started: new Date().toISOString(), legs: state.race.totalLegs,
+                // WHO the rivals were, once — the per-sample tuples are anonymous,
+                // and a human-vs-bot comparison needs the fleet and its difficulty.
+                fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name),
+                aiStatBonus: (typeof AI_STAT_BONUS !== 'undefined') ? AI_STAT_BONUS : null,
                 // Course meta so analysis needs nothing but this file: without
                 // the mark position, distance-from-ring can't be derived offline.
                 course: {
@@ -11065,11 +11350,22 @@ function recordTrajectory(dt) {
                     return h;
                 } catch (e) { return null; } })(),
                 events: [], // [t, type] — penalties and ice contacts
+                // ⚠️ BARE column names only — a consumer indexed F.rivals against the
+                // old decorated name 'rivals[x,y,...]', read undefined, and published
+                // "the human sailed alone" from a column that does not exist. The
+                // shapes live in formatNotes; the names are the lookup keys.
                 format: ['t', 'phase', 'x', 'y', 'hdg', 'spd', 'windDir', 'windSpd',
-                         'leg', 'sweep', 'armed', 'ringSect16(0clear3closing5lead8plug10hard)|0', 'rivals[x,y,hdg,spd,tack(1=stbd,-1=port)]',
-                         'legProg(dmc-projection u)', 'floes<=1200u[hullId,x,y,spin,vx,vy]',
-                         'giveWayN(<=600u rivals with ROW over player)', 'ocs', 'penaltyTurnsOwed',
-                         'awa(signed rad)', 'aws', 'playerTack(1=stbd,-1=port)'],
+                         'leg', 'sweep', 'armed', 'ringSect16', 'rivals',
+                         'legProg', 'floes', 'giveWayN', 'ocs', 'penaltyTurnsOwed',
+                         'awa', 'aws', 'playerTack'],
+                formatNotes: {
+                    ringSect16: '0clear 3closing 5lead 8plug 10hard, scalar 0 when >3 zones from the round mark',
+                    rivals: 'unfinished rivals as [x,y,hdg,spd,tack(1=stbd,-1=port)]',
+                    legProg: 'DMC projection onto the current leg, units',
+                    floes: 'floes <=1200u as [hullId,x,y,spin,vx,vy]',
+                    giveWayN: 'rivals <=600u holding right of way over the player',
+                    awa: 'signed rad from the apparent-wind model', playerTack: '1=stbd -1=port',
+                },
                 samples: [], acc: 0,
             };
             // Player penalty/contact events, timestamped — sampling can miss them.
@@ -11097,6 +11393,7 @@ function recordTrajectory(dt) {
                     return inner && inner(ty, d);
                 };
             }
+            recTraj._lastSt = st;
             recTraj.acc += dt;
             if (recTraj.acc < 0.1 || recTraj.samples.length > 18000) return;
             recTraj.acc = 0;
@@ -11164,7 +11461,7 @@ function recordTrajectory(dt) {
             const t = recTraj; recTraj = null;
             t.finished = !!player.raceState.finished;
             t.finishTime = player.raceState.finishTime || null;
-            delete t.acc;
+            delete t.acc; delete t._lastSt; delete t._evT; delete t.hint; delete t.hintLg;
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([JSON.stringify(t)], { type: 'application/json' }));
             a.download = 'traj_' + t.venue + '_' + Date.now() + '.json';
@@ -15432,15 +15729,46 @@ function repositionBoats() {
     }
 }
 
+// HOW CLOSE COUNTS AS "NEEDING TO TAKE AVOIDING ACTION". The hulls are 55 long and 30
+// wide, so two boats whose centres pass inside 60 units are in contact or within a few
+// feet of it, and a right-of-way boat has to do something about it. Above that she may
+// still choose to bear away — sailors do — but the Keep Clear definition asks whether
+// she NEEDED to, and she did not.
+const FOUL_NEED_GAP = 60;
+
 // Boat hull half-width for coarse collision against concave mask coastlines.
 // How far out a rounding still counts, as a multiple of the mark's zone. The zone is
 // the pass-within distance; this is the go-round-it distance. Generous enough that a
 // wide, seamanlike rounding registers, bounded so circling far away does not.
 const ROUND_ACTIVE = 2.5;
-// A wide rounding sweeps a little less than the ideal, so the requirement is not the
-// full geometric angle. Low enough to accept honest wide roundings, high enough that
-// passing near the mark cannot pretend to be one.
-const ROUND_SWEEP_TOL = 0.75;
+// HOW MUCH BANKED SWEEP SHE MAY GIVE BACK AND STILL BE ROUND. The latch exists to
+// survive the unwind of fighting out through the ring, which measures 0.19-0.40 rad; it
+// is NOT a licence to sail back round the other way. At half a turn's grace,
+// `_string_truth_probe` caught arctic boats completing after giving back 0.52-1.10 rad,
+// with the winding of their own track saying flatly that the string never wrapped the
+// mark (actual -0.03 against a required 6.25). Half a radian covers the measured unwind
+// with margin and nothing else. Scan, 6 arctic seeds, roundings whose string never
+// touched the mark: half a turn 9%, 0.75 rad 6%, 0.5 rad 4%.
+const ROUND_GIVEBACK = 0.5;
+
+// THERE IS NO TOLERANCE IN THE RULE. RRS Sail the Course: the taut string "touches
+// each mark designated in the sailing instructions to be a rounding mark". A track
+// that sweeps less than the geometric requirement does not bend around the mark, so
+// the string does not touch it, so it is not a rounding — at any distance. This was
+// 0.75, which completed a rounding at three-quarters of the requirement (bay's
+// hairpin: 137 degrees banked against 183 needed) and, because the AI's own exit
+// logic reads the same constant, AIMED the fleet at three-quarters of a rounding.
+// Note the rule has no PROXIMITY requirement either: a full rounding at a distance
+// is legal, merely slow, which is why the test above the completion check pins a
+// wide full rounding as valid. Keep this at 1.
+const ROUND_SWEEP_TOL = 1.0;
+// How close is "arrived at the mark", as a multiple of its own zone. Two: outside the
+// rules zone, well inside the approach, and it scales with the mark rather than being a
+// second tuned distance.
+const ROUND_NEAR = 2.0;
+// Slack on the exit bearing, on top of the tangent angle the geometry already allows.
+// A sixth of a radian — a helm's width, not a discount.
+const ROUND_EXIT_SLACK = 0.17;
 
 // CLEARANCE radius, not the collider. The boat is 30 wide and 55 long, so 30 is roughly its
 // half-LENGTH — the room it needs to turn in, which is the right question for "does this gap
@@ -16021,6 +16349,14 @@ const startLinePts = () => {
 // Deliberately NOT derived from the wind. A line is crossed the way its route says, and on a
 // venue whose breeze bends across the course there is no single wind to ask — asking the
 // global mean is what put the fleet alongside the line instead of behind it.
+// +1 or -1: the sense in which the opening route entry says its line is crossed. ONE
+// definition, so the placement, the AI's prestart geometry and the OCS test cannot
+// disagree about which side is pre-start.
+const startCrossSign = () => {
+    const r = state.course && state.course.route && state.course.route[0];
+    return (r && r.dir < 0) ? -1 : 1;
+};
+
 const startCrossNormal = () => {
     const r = state.course && state.course.route && state.course.route[0];
     const [a, b] = startLineMarks();

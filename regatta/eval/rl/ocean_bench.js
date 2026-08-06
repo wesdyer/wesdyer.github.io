@@ -1,5 +1,9 @@
-// Fleet return-leg profiler: full fleet, cutoff raised to 900, per-boat leg
-// timestamps + leg-2 progress sampling. node fleet_leg2.js <trials> <seed0>
+// Open-water fleet bench, tree- AND venue-parameterised (bay_bench/fleet_leg2 are each
+// welded to one venue; this one is not, because the two new venues need benching too).
+//   node ocean_bench.js <trials> <seed0> <label> <tree> [venue]
+// Records per boat: finish time, penalties, OCS, contacts, and the two quantities the
+// sea decides — VMG made good upwind and downwind, and the share of downwind time spent
+// on a wave face rather than climbing one.
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
 const crypto = require('crypto');
@@ -15,21 +19,19 @@ const venueFingerprint = (v) => {
 };
 
 const TRIALS = parseInt(process.argv[2]) || 8;
-const SEED0 = parseInt(process.argv[3]) || 9100;
+const SEED0 = parseInt(process.argv[3]) || 9300;
 const LABEL = process.argv[4] || 'x';
 const ROOT = path.join(__dirname, process.argv[5] || 'treeA');
+const VENUE = process.argv[6] || 'ocean';
 (async () => {
     const browser = await chromium.launch();
     const page = await browser.newPage();
     page.on('pageerror', e => console.log('PAGE ERROR:', String(e).slice(0, 300)));
-    await page.addInitScript(() => {
-        localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'arctic' }));
-    });
+    await page.addInitScript((v) => {
+        localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
+    }, VENUE);
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
-    // Per-boat contact counter, same convention as the human recorder: counted
-    // from prestart through finish, one count per (boat, category) per 0.5s.
-    // The prestart timer counts DOWN, so dedup runs on a monotonic clock.
     await page.evaluate(() => {
         const inner = window.onRaceEvent;
         window.__cc = {}; window.__ccT = {};
@@ -61,52 +63,58 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeA');
             window.__cc = {}; window.__ccT = {};
             state.course.cutoff = 900;
             const bots = state.boats.filter(b => !b.isPlayer);
-            const pl = state.boats.find(b => b.isPlayer); pl.x = -4500; pl.y = 4700;
+            const pl = state.boats.find(b => b.isPlayer); pl.x = 1e6; pl.y = 1e6;
+            const norm = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
             const nLegs = state.course.dmc.legs.length;
-            const info = bots.map(b => ({ name: b.name, legT: {}, fin: null, prog: [], hint: null, tArm: null, tOut: null, pen: 0, ocs: 0 }));
-            const dt = 1 / 60; let last = -999;
+            const info = bots.map(b => ({ name: b.name, legT: {}, fin: null, pen: 0, ocs: 0,
+                                          upD: 0, upT: 0, dnD: 0, dnT: 0, face: 0, climb: 0, xtrk: 0, xN: 0 }));
+            const dt = 1 / 60;
             for (let it = 0; it < 60 * 940; it++) {
+                const prev = bots.map(b => ({ x: b.x, y: b.y }));
+                const wd = bots.map(b => getWindAt(b.x, b.y).direction);
                 window.update(dt);
                 if (state.race.status === 'finished') break;
                 if (state.race.status !== 'racing') continue;
-                if (state.race.timer > 900) break;
                 const t = state.race.timer;
-                const snap = t - last >= 15;
-                if (snap) last = t;
+                if (t > 900) break;
                 for (let k = 0; k < bots.length; k++) {
-                    const b = bots[k], inf = info[k];
-                    if (inf.fin != null) continue;
-                    if (b.raceState.finished) { inf.fin = Math.round(t); inf.pen = b.raceState.totalPenalties || 0; continue; }
-                    if (b.raceState.ocs) inf.ocs = 1; // OCS while racing = penalized early start
+                    const b = bots[k], f = info[k];
+                    if (b.raceState.finished) { if (f.fin == null) { f.fin = Math.round(t); f.pen = b.raceState.totalPenalties || 0; f.ocs = b.raceState.wasOCS ? 1 : 0; } continue; }
                     const lg = b.raceState.leg;
-                    if (inf.legT[lg] == null) inf.legT[lg] = Math.round(t);
-                    if (inf.tArm == null && b.raceState.roundArmed) inf.tArm = Math.round(t);
-                    if (inf.tOut == null && b.controller && b.controller._outbound) inf.tOut = Math.round(t);
-                    if (snap && lg >= 1 && state.course.dmc.legs[lg]) {
-                        if (inf.hintLg !== lg) { inf.hint = null; inf.hintLg = lg; }
-                        const s = CoursePath.project(state.course.dmc.legs[lg], b.x, b.y, inf.hint);
-                        inf.hint = s;
-                        inf.prog.push([Math.round(t), lg, Math.round(s), Math.round(b.x), Math.round(b.y), +b.speed.toFixed(2)]);
+                    if (f.legT[lg] == null) f.legT[lg] = Math.round(t);
+                    const twa = Math.abs(norm(b.heading - wd[k])) * 180 / Math.PI;
+                    const ux = Math.sin(wd[k]), uy = -Math.cos(wd[k]);
+                    const vm = (b.x - prev[k].x) * ux + (b.y - prev[k].y) * uy;
+                    if (twa < 75) { f.upD += vm; f.upT += dt; }
+                    else if (twa > 105) {
+                        f.dnD += -vm; f.dnT += dt;
+                        if (b.swell) { if (b.swell.surfKt > 0) f.face++; else f.climb++; }
+                    }
+                    // How far off the straight line to the leg's target she is running —
+                    // the quantity an uncompensated set moves and a compensated one does not.
+                    const c = b.controller;
+                    if (c && c.navTarget && it % 30 === 0) {
+                        const tx = c.navTarget.x - b.x, ty = c.navTarget.y - b.y;
+                        f.xtrk += Math.hypot(tx, ty); f.xN++;
                     }
                 }
                 if (info.every(f => f.fin != null)) break;
             }
             for (const [k, b] of bots.entries()) {
-                if (info[k].fin == null) info[k].pen = b.raceState.totalPenalties || 0;
+                if (info[k].fin == null) { info[k].pen = b.raceState.totalPenalties || 0; info[k].ocs = b.raceState.wasOCS ? 1 : 0; }
                 info[k].col = window.__cc[b.name] || {};
             }
-            return { nLegs, legLens: state.course.dmc.legs.map(l => Math.round(l.length)), info };
+            return { nLegs, info };
         }, seed);
         out.push({ seed, ...r });
-        const fins = r.info.filter(f => f.fin != null).length;
-        const rounders = r.info.filter(f => f.legT[2] != null).length;
-        console.log(`seed ${seed}: rounders ${rounders}/${r.info.length} finishers ${fins} finT ${r.info.filter(f=>f.fin).map(f=>f.fin).join(',')}`);
+        const fins = r.info.filter(f => f.fin != null).map(f => f.fin).sort((a, b) => a - b);
+        console.log(`seed ${seed}: finishers ${fins.length} finT ${fins.join(',')}`);
     }
-    fs.writeFileSync(path.join(__dirname, 'fleet_leg2_' + LABEL + '.json'), JSON.stringify(out));
+    fs.writeFileSync(path.join(__dirname, 'ocean_bench_' + LABEL + '.json'), JSON.stringify(out));
     // ⚠️ SIDECAR, not a key on the array — JSON.stringify drops properties set on an
     // array, and every existing baseline reader expects a bare list. Same file stem.
-    fs.writeFileSync(path.join(__dirname, 'fleet_leg2_' + LABEL + '.meta.json'),
-        JSON.stringify({ venue: 'arctic', fingerprint: venueFingerprint('arctic'), trials: TRIALS, seed0: SEED0 }, null, 2));
-    console.log('saved fleet_leg2.json  nLegs', out[0].nLegs, 'legLens', out[0].legLens.join(','));
+    fs.writeFileSync(path.join(__dirname, 'ocean_bench_' + LABEL + '.meta.json'),
+        JSON.stringify({ venue: VENUE, fingerprint: venueFingerprint(VENUE), trials: TRIALS, seed0: SEED0 }, null, 2));
+    console.log('saved ocean_bench_' + LABEL + '.json  venue', VENUE, ' nLegs', out[0].nLegs);
     await browser.close();
 })();

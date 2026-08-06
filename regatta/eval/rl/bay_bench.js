@@ -4,6 +4,18 @@
 // Human reference (7 traj, Aug 3): fin med 226s; legs med L1 42 L2 27 L3 39 L4 53 L5 40 L6 20.
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
+const crypto = require('crypto');
+// ⚠️ STAMP THE VENUE THIS RAN ON. Every baseline is numbers produced on ONE version of a
+// venue document; edit the venue and the baseline silently becomes incomparable. The
+// comparison scripts refuse to compare across different fingerprints. See
+// regatta/eval/venues/README.md for the policy.
+const venueFingerprint = (v) => {
+    try {
+        const f = path.resolve(__dirname, '../../assets/venues/' + v + '.venue.js');
+        return crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex').slice(0, 16);
+    } catch (e) { return null; }
+};
+
 const TRIALS = parseInt(process.argv[2]) || 8;
 const SEED0 = parseInt(process.argv[3]) || 9100;
 const LABEL = process.argv[4] || 'x';
@@ -135,6 +147,10 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeA');
         console.log(`seed ${seed}: legs reached ${[1,2,3,4,5,6].map(l=>reached[l]).join('/')} finishers ${fins.length} finT ${fins.join(',')}`);
     }
     fs.writeFileSync(path.join(__dirname, 'bay_bench_' + LABEL + '.json'), JSON.stringify(out));
+    // ⚠️ SIDECAR, not a key on the array — JSON.stringify drops properties set on an
+    // array, and every existing baseline reader expects a bare list. Same file stem.
+    fs.writeFileSync(path.join(__dirname, 'bay_bench_' + LABEL + '.meta.json'),
+        JSON.stringify({ venue: 'bay', fingerprint: venueFingerprint('bay'), trials: TRIALS, seed0: SEED0 }, null, 2));
     console.log('saved bay_bench_' + LABEL + '.json  nLegs', out[0].nLegs, 'legLens', out[0].legLens.join(','));
     await browser.close();
 })();

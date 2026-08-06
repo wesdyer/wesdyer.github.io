@@ -66,9 +66,13 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
 
     console.log('load');
     const a = await snap();
-    // 60, not 6: land and ice are ONE list now, so Glacier Sound's five ice shapes, its
-    // granite island and its 54 floes are all shapes on one layer.
-    check('document loaded', a.shapes === 60, `${a.shapes} shapes`);
+    // ⚠️ DERIVED, NOT A MAGIC NUMBER. This asserted `=== 60` — land and ice on one layer,
+    // Glacier Sound's five ice shapes plus its granite island plus its 54 floes. The venue
+    // has since grown to 123 and the assertion rotted into a permanent red that told
+    // nobody anything. What the check is FOR is that a document loaded with its shapes on
+    // one list, so ask that: some shapes, and the ones this suite goes on to manipulate.
+    check('document loaded', a.shapes > 0, `${a.shapes} shapes`);
+    check('...with its coast among them', a.coastR > 0, `coast radius ${a.coastR}`);
     check('not dirty on load', a.dirty === false);
     check('history seeded with one entry', a.history === 1 && a.histIdx === 0);
     check('document validates clean', a.valid === 0, `${a.valid} errors`);
@@ -1665,7 +1669,10 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         down({ x: 5, y: 5 }); move({ x: cv.clientWidth - 5, y: cv.clientHeight - 5 }); up();
         r.marqueeSelects = A._vsel().length;
 
-        // 4 corners with all selected: the 3-point floor lets exactly one go.
+        // ⚠️ However many corners the arena has — it was a 4-gon when this was written and
+        // is a 7-gon now. The floor is 3 either way, so assert the BEHAVIOUR (all selected,
+        // one goes per Delete, stops at 3) rather than a count that the venue owns.
+        r.arenaCorners = npts();
         const b1 = npts();
         window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
         r.deletedToFloor = `${b1}->${npts()}`;
@@ -1692,9 +1699,12 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     });
     check('an arena corner selects on click', av.clickSelects === 1, `${av.clickSelects}`);
     check('...and Shift adds another', av.shiftAdds === 2, `${av.shiftAdds}`);
-    check('...and a marquee takes them all', av.marqueeSelects === 4, `${av.marqueeSelects}`);
+    check('...and a marquee takes them all', av.marqueeSelects === av.arenaCorners,
+          `${av.marqueeSelects} of ${av.arenaCorners}`);
+    // ALL the corners are selected at this point (the marquee above took them), so one
+    // Delete removes as many as the floor allows — down to 3, from wherever it started.
     check('Delete removes arena corners down to the 3-point floor',
-          av.deletedToFloor === '4->3', av.deletedToFloor);
+          av.deletedToFloor === `${av.arenaCorners}->3`, av.deletedToFloor);
     check('...and at the floor it refuses rather than deleting the arena', av.floorHolds === true);
     check('...and a 3-point LAND shape is not destroyed by a vertex Delete',
           av.triangleSurvives === true);
@@ -1789,8 +1799,9 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
             .find(sh => window.VenueDoc.traits(sh).motion === 'drift').id;
         const venue = probe('land', (i) => ({ kind: 'shape', id: floeId(), ring: -1, i }),
             () => A._shapeById(floeId()).outer, () => A._state().doc.shapes.length);
-        // The arena is a 4-gon, so it reaches the 3-point floor after ONE removal — a
-        // different number for the right reason, which is why it is asserted separately.
+        // ⚠️ One corner per Delete, and never below three. The arena was a 4-gon when this
+        // was written (so `4->3->3`) and the venue has since made it a 7-gon; the RULE is
+        // the same and the sequence is derived from wherever it starts.
         while (A._state().histIdx > 0) A._undo();
         document.querySelector('#layer-list [data-layer="arena"]').click();
         A.fitView(); A._pickTool('direct');
@@ -1812,8 +1823,12 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
           `${vdel.venue.removedOne} / ${vdel.venue.removedTwo}`);
     check('...the floe itself is never taken with them', vdel.venue.objectSurvived === true);
     check('...and the pair comes back in one undo', vdel.venue.oneUndoRestores === true);
-    check('a 4-gon arena stops at the 3-point floor', vdel.arena.join('->') === '4->3->3',
-          vdel.arena.join('->'));
+    {
+        const n0 = vdel.arena[0];
+        const want = [n0, Math.max(3, n0 - 1), Math.max(3, n0 - 2)].join('->');
+        check('the arena loses one corner per Delete and stops at the 3-point floor',
+              vdel.arena.join('->') === want, `${vdel.arena.join('->')} (wanted ${want})`);
+    }
     await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
 
     // ── Wind regions read as arrows, and right-click never opens a menu ─────
@@ -2809,13 +2824,17 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         return { gap: Math.round(cb.bottom - lb.bottom),
                  scrolls: list.scrollHeight > list.clientHeight,
                  colScrolls: left.scrollHeight > left.clientHeight + 1,
-                 rows: list.querySelectorAll('.ob').length };
+                 rows: list.querySelectorAll('.ob').length,
+                 docShapes: window.EditorApp._state().doc.shapes.length };
     });
     check('the list reaches the bottom of the column', col.gap < 60, `${col.gap}px short`);
     check('...and scrolls inside itself, not by scrolling the column',
           col.scrolls === true && col.colScrolls === false,
           `list ${col.scrolls} · column ${col.colScrolls}`);
-    check('...with every shape in it', col.rows === 60, `${col.rows} rows`);
+    // Derived for the same reason as the load check: the table's job is to hold EVERY
+    // shape, so ask the document how many that is.
+    check('...with every shape in it', col.rows === col.docShapes,
+          `${col.rows} rows for ${col.docShapes} shapes`);
     await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
 
     // ── Save output    // ── Save output ─────────────────────────────────────────────────────────

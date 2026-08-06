@@ -206,7 +206,49 @@
          * of the boat nearer to it."
          */
         inZone: function(boat, mark) {
-            return this.distToMark(boat, mark) < ZONE_RADIUS;
+            return this.distToMark(boat, mark) < this.zoneOf(mark);
+        },
+
+        /**
+         * THE ZONE IS THE MARK'S, NOT A CONSTANT.
+         *
+         * Three hull lengths is the default the definition gives, and it is what
+         * ZONE_RADIUS holds. But a mark planted on an island carries a zone wide enough
+         * to contain the island — Glacier Sound's rounding mark is 405 units of rock
+         * with a zone of 851 — and the course model already stores that per mark. With
+         * one hardcoded 165 here, the rules engine applied mark-room over a fifth of the
+         * water it should on that venue: two boats converging on the island had no
+         * mark-room between them until they were 165 units from its CENTRE, which is
+         * 240 units INSIDE the rock. Mark-room at that mark could therefore never be
+         * given at all.
+         */
+        zoneOf: function(mark) {
+            return (mark && mark.zone > 0) ? mark.zone : ZONE_RADIUS;
+        },
+
+        /**
+         * RRS Definition — Continuing Obstruction
+         *
+         * "An obstruction is a continuing obstruction when the boat with the shortest
+         * hull referred to in the rule using the term will pass alongside it for at
+         * least three of her hull lengths."
+         *
+         * A racing buoy is passed in about half a boat length. A mark planted on an
+         * island is passed alongside for the length of its shore. That distinction is
+         * load-bearing, because RRS 18.1(a)(4) says rule 18 does not apply when the mark
+         * is a continuing obstruction — rule 19 does, and rule 19 is a different
+         * obligation with a different geometry: room BETWEEN her and the obstruction,
+         * not room to round. Glacier Sound's rounding mark is 405 units of rock; bay's
+         * is a 12-unit can.
+         *
+         * ⚠️ This and zoneOf() are ONE change and have to land together. Alone, zoneOf
+         * switches mark-room on at Glacier Sound's island for the first time (the
+         * hardcoded 165 sat 240 units inside the rock, so it could never apply there) —
+         * and switches on the wrong rule, because 18.1(a)(4) says that mark is rule
+         * 19's, not rule 18's.
+         */
+        isContinuingObstruction: function(mark) {
+            return !!(mark && mark.radius > 0 && 2 * mark.radius >= 3 * HULL_LENGTH);
         },
 
         /**
@@ -333,7 +375,14 @@
                             const d1 = this.distToMark(b1, mark);
                             const d2 = this.distToMark(b2, mark);
 
-                            if (d1 < ZONE_RADIUS || d2 < ZONE_RADIUS) {
+                            // RRS 18.1(a)(4): rule 18 "does not apply ... if the mark
+                            // is a continuing obstruction, in which case rule 19
+                            // applies." So no zone snapshot is taken there at all and
+                            // no mark-room entitlement can arise; the room obligation
+                            // at that shore belongs to rule 19, which the avoidance
+                            // layer builds separately (rule19Pairs in script.js).
+                            if (this.isContinuingObstruction(mark)) continue;
+                            if (d1 < this.zoneOf(mark) || d2 < this.zoneOf(mark)) {
                                 // RRS 18.1: Rule 18 applies "between boats
                                 // when they are required to leave a mark on
                                 // the same side."
@@ -379,14 +428,30 @@
                                         data.zoneSnapshot.entitled = insideBoat;
                                         data.zoneSnapshot.reason = "Inside Overlapped";
                                     } else {
-                                        // RRS 18.2(b): clear-ahead boat gets mark-room
-                                        if (this.isClearAstern(b2, b1)) data.zoneSnapshot.entitled = b1.id;
-                                        else if (this.isClearAstern(b1, b2)) data.zoneSnapshot.entitled = b2.id;
+                                        // RRS 18.2(a)(2): "if the boats are not
+                                        // overlapped, the boat that HAS NOT REACHED THE
+                                        // ZONE at that moment shall give the OTHER boat
+                                        // mark-room."
+                                        //
+                                        // The test is reaching the zone. It is NOT being
+                                        // clear ahead, which is what this used to ask —
+                                        // and the two come apart in the ordinary case of
+                                        // a mark lying off to one side, where a boat can
+                                        // be clear astern of another and still be first
+                                        // into the circle. She is entitled; under the old
+                                        // test the boat outside the zone took the
+                                        // entitlement off her because she happened to be
+                                        // ahead. Owner, from watching races: "first in
+                                        // gets rights".
+                                        if (b1In && !b2In) data.zoneSnapshot.entitled = b1.id;
+                                        else if (b2In && !b1In) data.zoneSnapshot.entitled = b2.id;
                                         else {
-                                            // Fallback: closer to mark
+                                            // Both crossed inside the same frame. The
+                                            // snapshot runs at 60 Hz, so "the first of
+                                            // two boats" is the one further in.
                                             data.zoneSnapshot.entitled = insideBoat;
                                         }
-                                        data.zoneSnapshot.reason = "Clear Ahead";
+                                        data.zoneSnapshot.reason = "First to the Zone";
                                     }
                                 }
                             } else {

@@ -1,0 +1,18 @@
+{
+  "bay": {
+    "hash": "42c63f8bd5aac842",
+    "frozen": "2026-08-06"
+  },
+  "arctic": {
+    "hash": "728b73008225ff73",
+    "frozen": "2026-08-06"
+  },
+  "seatrials": {
+    "hash": "5e55ec57d54e26f3",
+    "frozen": "2026-08-06"
+  },
+  "ocean": {
+    "hash": "b1b5e90f68570567",
+    "frozen": "2026-08-06"
+  }
+}

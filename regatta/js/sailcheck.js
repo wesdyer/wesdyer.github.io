@@ -248,19 +248,40 @@ function pathBetween(grid, from, to) {
 // A reachable mark is not a roundable mark. This samples the whole way round at hull
 // width — the check that would have caught the granite island sitting 43u from the
 // coast: perfectly reachable, and impossible to get round.
+// ⚠️ THE RADIUS IS SEARCHED, NOT ASSUMED. `mark.radius` is the mark's NOMINAL size — the
+// buoy — and says nothing about what it is planted on. Glacier Sound's mark is an island
+// of radius 405; Bluewater's is a seamount. A single circle at `radius + clearance` then
+// sits INSIDE the land and reports zero degrees of water, which reads as "this mark cannot
+// be rounded" when the truth is "you asked at the wrong radius". Same defect, same fix, as
+// `CoursePath._roundR` in the planner: step outward and take the tightest circle that is
+// all water, and if none is, report the widest opening found and the radius it was at.
 function roundingArc(grid, mark) {
-    const rIn = Math.min(mark.zone * 0.92, Math.max(mark.radius + CLEARANCE + 8, mark.radius * 1.12));
     const N = 72;                                        // 5 degree steps
-    const ok = [];
-    for (let k = 0; k < N; k++) {
-        const a = (k / N) * Math.PI * 2;
-        const [i, j] = grid.cell(mark.x + Math.cos(a) * rIn, mark.y + Math.sin(a) * rIn);
-        ok.push(grid.at(i, j) ? 1 : 0);
+    const rMin = Math.max(mark.radius + CLEARANCE + 8, mark.radius * 1.12);
+    const rMax = Math.max(rMin, mark.zone * 0.92);
+    const scan = (R) => {
+        const ok = [];
+        for (let k = 0; k < N; k++) {
+            const a = (k / N) * Math.PI * 2;
+            const [i, j] = grid.cell(mark.x + Math.cos(a) * R, mark.y + Math.sin(a) * R);
+            ok.push(grid.at(i, j) ? 1 : 0);
+        }
+        let best = 0, run = 0;
+        for (let k = 0; k < N * 2; k++) { run = ok[k % N] ? run + 1 : 0; if (run > best) best = run; }
+        return { arcDeg: Math.round(Math.min(best, N) / N * 360), radius: Math.round(R),
+                 openFrac: ok.reduce((a, b) => a + b, 0) / N };
+    };
+    let bestSoFar = null;
+    // 24 rungs is one every ~35 units on a 851-unit zone: fine enough that a channel is
+    // not stepped over, cheap enough to run per mark at authoring time.
+    const rungs = 24;
+    for (let s = 0; s <= rungs; s++) {
+        const R = rMin + (rMax - rMin) * (s / rungs);
+        const r = scan(R);
+        if (r.openFrac === 1) return r;                  // all water: done, and tightest
+        if (!bestSoFar || r.arcDeg > bestSoFar.arcDeg) bestSoFar = r;
     }
-    let best = 0, run = 0;
-    for (let k = 0; k < N * 2; k++) { run = ok[k % N] ? run + 1 : 0; if (run > best) best = run; }
-    return { arcDeg: Math.round(Math.min(best, N) / N * 360), radius: Math.round(rIn),
-             openFrac: ok.reduce((a, b) => a + b, 0) / N };
+    return bestSoFar;
 }
 
 // ── The ideal path through a route ──────────────────────────────────────────
@@ -278,35 +299,63 @@ function routeWaypoints(marks, route, grid) {
             const arc = roundingArc(grid, m);
             const r = arc.radius;
             const sgn = (m.side === 'port') ? -1 : 1;
-            // Enter on a bearing whose whole sweep is open, then go round the correct
-            // way in small steps. 200 degrees, so the engine's 160 is comfortably met
-            // even if entry and exit are a little wide.
-            let bestStart = 0, bestRun = -1;
-            const N = 72;
-            for (let s0 = 0; s0 < N; s0++) {
-                let run = 0;
-                while (run < N) {
-                    const a = ((s0 + run * sgn + N * 4) % N) / N * Math.PI * 2;
-                    const [i, j] = grid.cell(m.x + Math.cos(a) * r, m.y + Math.sin(a) * r);
-                    if (!grid.at(i, j)) break;
-                    run++;
-                }
-                if (run > bestRun) { bestRun = run; bestStart = s0; }
-            }
-            // Approach from OUTSIDE the zone, radially, on the bearing the arc starts
-            // at. Sweep accumulates from the moment the zone is entered, so a path that
-            // curls the wrong way round the mark on the way in banks negative credit
-            // the rounding then has to undo. That is a real requirement of the
-            // mechanic, not a quirk — so the ideal path has to respect it.
-            const a0 = ((bestStart + N * 4) % N) / N * Math.PI * 2;
-            const rOut = m.zone * 1.35;
-            push(m.x + Math.cos(a0) * rOut, m.y + Math.sin(a0) * rOut, `approach${li}`);
+            // ⚠️ TANGENT IN, REQUIRED ARC, TANGENT OUT — the shape the engine's own
+            // requirement is derived from (`CoursePath.requiredSweep` measures exactly
+            // this arc), so checker and engine agree by construction instead of by two
+            // similar-looking formulas.
+            //
+            // What was here before did two things wrong and they compounded:
+            //
+            //   1. it swept a FLAT 220 degrees (`min(bestRun, 44)` at 5 a step), which
+            //      is less than four of the eleven authored rounding legs require;
+            //   2. it entered RADIALLY on whichever bearing had the most open water,
+            //      ignoring where the boat was coming from. Sweep accumulates for the
+            //      whole leg, so an approach that curls the wrong way round the mark
+            //      banks NEGATIVE winding the rounding then has to undo. Measured on
+            //      Lighthouse Cove leg 3: -84 degrees banked on the way in against a
+            //      183-degree requirement, so 220 degrees of arc delivered 136 and the
+            //      leg never registered. On Bluewater the net ranged -113..+8.
+            //
+            // The tangent entry cannot do that: approaching along the tangent line winds
+            // the SAME way as the rounding, by construction, so the whole leg's winding
+            // is the arc plus two positive contributions.
+            const prev = wps.length ? wps[wps.length - 1] : null;
+            const P = prev || CoursePath.anchor(route[li - 1], marks) || { x: m.x - 1000, y: m.y };
+            const Q = CoursePath.anchor(route[li + 1], marks) || P;
+            const tang = (p, entering) => {
+                const dx = p.x - m.x, dy = p.y - m.y;
+                const d = Math.hypot(dx, dy), base = Math.atan2(dy, dx);
+                if (!(d > r + 1)) return base;
+                const beta = Math.acos(Math.max(-1, Math.min(1, r / d)));
+                return base + (entering ? sgn * beta : -sgn * beta);
+            };
+            const a0 = tang(P, true), a1 = tang(Q, false);
+            let sweep = (a1 - a0) * sgn;
+            while (sweep < 0) sweep += Math.PI * 2;
+            while (sweep > Math.PI * 2) sweep -= Math.PI * 2;
+            // A tangent arc of nothing is a pass-by so close to collinear that the two
+            // legs lie on one line. The engine treats that as a full circuit (the
+            // `sweep < 0.2` guard in `requiredSweep`), so the ideal path does too — the
+            // point of this function is to sail what the engine asks for.
+            if (sweep < 0.2) sweep = Math.PI * 2;
 
-            const steps = Math.min(bestRun, 44);           // 44 * 5deg = 220 degrees
+            // Run in far enough outside the zone that the leg before this one has
+            // registered its departure before this one starts.
+            const lead = Math.max(m.zone * 1.35, r * 1.6);
+            const T = (a) => [m.x + Math.cos(a) * r, m.y + Math.sin(a) * r];
+            // Travel direction along the circle at bearing `a`: d/da of (cos a, sin a),
+            // taken in the rounding's own sense.
+            const dir = (a) => [-Math.sin(a) * sgn, Math.cos(a) * sgn];
+            const [t0x, t0y] = T(a0), [d0x, d0y] = dir(a0);
+            push(t0x - d0x * lead, t0y - d0y * lead, `approach${li}`);
+
+            const steps = Math.max(2, Math.ceil(sweep / (Math.PI / 36)));   // <= 5 deg
             for (let k = 0; k <= steps; k++) {
-                const a = ((bestStart + k * sgn + N * 4) % N) / N * Math.PI * 2;
+                const a = a0 + sgn * sweep * (k / steps);
                 push(m.x + Math.cos(a) * r, m.y + Math.sin(a) * r, `round${li}`);
             }
+            const [t1x, t1y] = T(a1), [d1x, d1y] = dir(a1);
+            push(t1x + d1x * lead, t1y + d1y * lead, `exit${li}`);
             continue;
         }
         if (!e.marks) continue;
@@ -504,12 +553,17 @@ function clearanceField(grid) {
 // that cell's wind (which is VMG when the bearing is upwind — tacking prices
 // itself). 16 wind-direction bins x 6 speed bins x 8 step directions, built once
 // from getTargetSpeed the first time a route is asked for.
-let _tfTab = null, _tfMin = 1;
+let _tfTab = null, _tfMin = 1, _lossTab = null;
+// Seconds a tack costs against polar speed, MEASURED (_vmgeff_probe: short-tacking
+// VMG in a corridor of width W is VMG_free · W/(W+K), K = TACK_SEC·v·sinδ·15 ≈ 70u
+// at 13 kt; the same probe puts the free-water run on the polar to within 1.5%).
+const TACK_SEC = 1.0;
 function buildTimeCost() {
     const gts = (typeof window !== 'undefined') && window.getTargetSpeed;
     if (!gts) return null;
     const SPDS = [8, 12, 16, 20, 25, 30];
     const tab = new Float32Array(16 * 6 * 8);
+    const loss = new Float32Array(16 * 6 * 8);
     let lo = Infinity;
     for (let d = 0; d < 16; d++) {
         const wd = d * Math.PI * 2 / 16;
@@ -517,22 +571,29 @@ function buildTimeCost() {
             const ws = SPDS[s];
             for (let k = 0; k < 8; k++) {
                 const bearing = Math.atan2(NB[k][0], -NB[k][1]);
-                let best = 0.5;
+                let best = 0.5, bestV = 0, bestDelta = 0;
                 for (let twa = 25; twa <= 180; twa += 5) {
                     const tr = twa * Math.PI / 180;
                     const v = gts(tr, twa > 95, ws);
                     for (const sgn of [1, -1]) {
                         const toward = Math.cos((wd + sgn * tr) - bearing) * v;
-                        if (toward > best) best = toward;
+                        if (toward > best) { best = toward; bestV = v; bestDelta = (wd + sgn * tr) - bearing; }
                     }
                 }
                 const tf = Math.min(4, Math.max(0.6, 10 / best));   // "time per unit", 10kt reference
                 tab[(d * 6 + s) * 8 + k] = tf;
+                // Corridor loss, in units: making good along a bearing whose best
+                // heading is δ off it means a tack every board, and each tack throws
+                // away TACK_SEC of polar speed's cross-corridor component. Zero when
+                // the bearing is directly sailable — the term scopes itself to the
+                // no-go cone (and prices corridor gybing mildly).
+                loss[(d * 6 + s) * 8 + k] = TACK_SEC * bestV * 15 * Math.abs(Math.sin(bestDelta));
                 if (tf < lo) lo = tf;
             }
         }
     }
     _tfMin = lo;
+    _lossTab = loss;
     return tab;
 }
 
@@ -642,7 +703,18 @@ function pathSailable(grid, from, to) {
             // speed toward this step's bearing, in this cell's wind. Beating prices
             // itself (VMG), reaches are cheap, and time is a true objective — unlike
             // hint weights it cannot invert the topology.
-            const base = TF ? TF[wbin[nid] * 8 + k] : 1;
+            let base = TF ? TF[wbin[nid] * 8 + k] : 1;
+            // CORRIDOR-AWARE UPWIND COST: in water narrower than PAD cells the best
+            // achievable speed toward an unsailable bearing degrades by W/(W+L) —
+            // measured, not derived (see buildTimeCost). Gated to c < PAD so open
+            // water prices EXACTLY as stock and route choice there cannot churn.
+            // Benched 2026-08-05: arctic paired -7/-12 med on two disjoint 16-seed
+            // sets (in-race floe corridors are the water this decides); bay 0.0 med;
+            // ocean 0.0 med / +3.4 mean, the price of shore-adjacent repricing.
+            if (TF && _lossTab && c < PAD) {
+                const W = Math.max(60, 2 * c * grid.res);
+                base = Math.min(20, base * (1 + _lossTab[wbin[nid] * 8 + k] / W));
+            }
             // ⚠️ REMAINING WEIGHTS ARE ROUTE HINTS, NOT WALLS — bounded, so the
             // worst hint-driven detour stays small (the 7x-wall-cost cove loop
             // lives in memory as the cautionary tale).
