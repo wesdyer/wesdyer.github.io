@@ -6980,3 +6980,34 @@ that is why it was trustworthy; this statistic does not. So:
 correlation that a third data point would have killed — and the one instrument this
 session trusted most (`_margin.js`) earned that trust by predicting bay's null result
 BEFORE the bench. A cross-venue statistic that does not predict is not a mechanism.
+
+## ⚡ ARCTIC'S GAP, AT LAST: the fleet hits the ice 23 times a race. The human hits it once.
+
+The harness counts fleet collisions directly and the recordings carry no collision field,
+so the two sides have never been compared — the same apples-to-oranges gap that hid the
+traffic numbers for months. `_thump.js` (new) uses a detector BOTH sides support: speed
+falling >40% in one 0.1 s sample from above 1 knot, which is what a contact looks like
+(a hit costs ~60% of speed). Identical rule on recordings and on live boats.
+
+      venue    fleet/race  fleet/min  knots shed/race  HUMAN/race  gap vs human
+      arctic      23.0        3.0          73.3           1.2         2.08x
+      lake         3.9        0.8          10.5           0.0         1.32x
+      bay          1.6        0.4           5.3           0.0         1.08x
+      (4 races x 9 boats per venue; human from 22/3/13 recordings)
+
+**The ordering matches the gap ordering exactly**, which is the property the router-
+instability statistic failed to have (33/38/50% "same corridor" against 2.08/1.08/1.32x —
+no relation). This one predicts, so it is worth building on.
+
+And the arctic row carries its own control. It is not "Glacier Sound has more ice": the
+human sails the SAME ice on the SAME course and takes 1.2 hits a race against the fleet's
+23.0 — **nineteen times fewer, and ten times fewer per minute.** The fleet sheds 73 knots
+of speed per boat-race in impacts, which at a ~4.5 kt cruise is roughly sixteen dead stops.
+
+⚠️ Contact-avoidance has been worked on all session and this is what is LEFT after it:
+the near-reversal gate cut arctic's land contacts 32.9 -> 27.7 and mark 0.74 -> 0.60 while
+floe contacts went UP 34.0 -> 38.3. **Floes are the untouched class**, and they are the one
+whose obstacle drifts — which is exactly why every open-water fix this session was gated
+away from them. The next candidate should aim at the floe-contact rate specifically, with
+`_thump.js` as its scoreboard, and it should be judged on the human's 1.2 rather than on
+an incremental improvement over 23.
