@@ -42,7 +42,10 @@ const ROOT = path.join(__dirname, process.argv[4] || 'treeA');
                     if (!f.isFloe) continue;
                     const sx = (f.driftVx || 0) * LEAD, sy = (f.driftVy || 0) * LEAD;
                     if (f.vertices && f.vertices.length >= 3) {
-                        polys.push({ outer: f.vertices.map(v => [v.x + sx, v.y + sy]), holes: [] });
+                        // centerOnly: drifting ice is judged at the cell centre in
+                        // buildGrid too (supersampling is for STATIC land only), so
+                        // the full rebuild stays cell-for-cell equal to stampFloes.
+                        polys.push({ outer: f.vertices.map(v => [v.x + sx, v.y + sy]), holes: [], centerOnly: true });
                     } else {
                         circles.push({ x: f.x + sx, y: f.y + sy, radius: (f.radius || 0) + 15 });
                     }
@@ -50,7 +53,10 @@ const ROOT = path.join(__dirname, process.argv[4] || 'treeA');
                 const t0 = performance.now();
                 const A = window.SailCheck.stampFloes(c._botGridStatic, polys, circles);
                 const t1 = performance.now();
-                const B = window.SailCheck.buildGrid(c._gridFixed.concat(polys), c.boundary, circles);
+                // noSubsample mirrors the game's own arctic build (icy venues keep
+                // centre-sampled land) — the rebuild must use the same sampling as
+                // the base grid it is compared against.
+                const B = window.SailCheck.buildGrid(c._gridFixed.concat(polys), c.boundary, circles, { noSubsample: true });
                 const t2 = performance.now();
                 tS += t1 - t0; tB += t2 - t1; n++;
                 checks++;

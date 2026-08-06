@@ -17159,7 +17159,12 @@ function buildCoursePaths() {
         const doc = window.VenueDoc && window.VenueDoc.get(settings.venue);
         if (window.SailCheck && doc) {
             const fixed = window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed');
-            grid = window.SailCheck.buildGrid(fixed, state.course.boundary, null);
+            // Icy venues keep centre-sampled land: sub-cell shore threads are a
+            // trap under floe drift, and every arctic margin constant was priced
+            // on this sampling. See buildGridRaw.
+            const hasDrift = window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed');
+            grid = window.SailCheck.buildGrid(fixed, state.course.boundary, null,
+                hasDrift ? { noSubsample: true } : null);
             // Kept for the periodic floe-aware rebuild (refreshBotGrid): same land,
             // fresh floe circles, every few seconds.
             state.course._gridFixed = fixed;

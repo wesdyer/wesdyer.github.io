@@ -290,7 +290,8 @@ function recomputeEstimate() {
     if (!doc || !course || !window.SailCheck) return;
     try {
         const t0 = (window.performance && performance.now) ? performance.now() : 0;
-        const grid = window.SailCheck.buildGrid(window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed'), course.boundary, null);
+        const grid = window.SailCheck.buildGrid(window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed'), course.boundary, null,
+            window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed') ? { noSubsample: true } : null);
         // Pass the real field, not one number: the wind varies across the course, and a
         // patch with no region over it has no wind at all.
         estimate = window.SailCheck.routeEstimate(grid, course.marks, course.route,

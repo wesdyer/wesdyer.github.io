@@ -63,18 +63,18 @@ function _gridKey(land, arena, obstacles) {
     for (const o of (obstacles || [])) { add(o.x); add(o.y); add(o.radius || 0); }
     return `${(land || []).length}|${n}|${h}`;
 }
-function buildGrid(land, arena, obstacles) {
-    const key = _gridKey(land, arena, obstacles);
+function buildGrid(land, arena, obstacles, opts) {
+    const key = _gridKey(land, arena, obstacles) + (opts && opts.noSubsample ? '|ns' : '');
     for (let i = _gridCache.length - 1; i >= 0; i--) {
         if (_gridCache[i].key === key) return _gridCache[i].grid;
     }
-    const grid = buildGridRaw(land, arena, obstacles);
+    const grid = buildGridRaw(land, arena, obstacles, opts);
     _gridCache.push({ key, grid });
     if (_gridCache.length > 3) _gridCache.shift();
     return grid;
 }
 
-function buildGridRaw(land, arena, obstacles) {
+function buildGridRaw(land, arena, obstacles, opts) {
     const ex = window.Arena.extent(arena);
     const n = Math.ceil(Math.max(ex.maxX - ex.minX, ex.maxY - ex.minY) / RES) + 1;
     const x0 = ex.minX, y0 = ex.minY;
@@ -88,27 +88,63 @@ function buildGridRaw(land, arena, obstacles) {
             if (p[0] < a) a = p[0]; if (p[1] < b) b = p[1];
             if (p[0] > c) c = p[0]; if (p[1] > d) d = p[1];
         }
-        shapes.push({ rings, outer: l.outer, holes: l.holes || [], bb: { a, b, c, d } });
+        // `centerOnly` marks a DRIFTING shape (a floe hull passed by a caller
+        // that mixes ice into the land list — the stamp-equivalence checker
+        // does): those must be judged at the cell CENTRE exactly as stampFloes
+        // judges them, or the fast stamp and the full rebuild disagree.
+        shapes.push({ rings, outer: l.outer, holes: l.holes || [], bb: { a, b, c, d },
+                      centerOnly: !!l.centerOnly });
     }
     // Drifting ice counts: a berg in a channel closes it just as land does.
     const circles = (obstacles || []).map(o => ({ x: o.x, y: o.y, r: o.radius || 0 }));
 
+    const admitShape = (sh, wx, wy) => {
+        const bb = sh.bb;
+        if (wx < bb.a - CLEARANCE || wx > bb.c + CLEARANCE
+            || wy < bb.b - CLEARANCE || wy > bb.d + CLEARANCE) return true;
+        if (pointInRing(wx, wy, sh.outer) && !sh.holes.some(h => pointInRing(wx, wy, h))) return false;
+        for (const ring of sh.rings) {
+            for (let e = 0; e < ring.length; e++) {
+                if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < CLEARANCE) return false;
+            }
+        }
+        return true;
+    };
+    const admit = (wx, wy) => {
+        if (!window.Arena.contains(arena, wx, wy)) return false;
+        for (let k = 0; k < shapes.length; k++) {
+            if (shapes[k].centerOnly) continue;
+            if (!admitShape(shapes[k], wx, wy)) return false;
+        }
+        return true;
+    };
     for (let j = 0; j < n; j++) {
         for (let i = 0; i < n; i++) {
             const wx = x0 + (i + 0.5) * RES, wy = y0 + (j + 0.5) * RES;
-            if (!window.Arena.contains(arena, wx, wy)) continue;
-            let ok = true;
-            for (let k = 0; k < shapes.length && ok; k++) {
-                const sh = shapes[k], bb = sh.bb;
-                if (wx < bb.a - CLEARANCE || wx > bb.c + CLEARANCE
-                    || wy < bb.b - CLEARANCE || wy > bb.d + CLEARANCE) continue;
-                if (pointInRing(wx, wy, sh.outer) && !sh.holes.some(h => pointInRing(wx, wy, h))) { ok = false; break; }
-                for (const ring of sh.rings) {
-                    for (let e = 0; e < ring.length; e++) {
-                        if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < CLEARANCE) { ok = false; break; }
-                    }
-                    if (!ok) break;
+            // RASTERISATION, NOT SAFETY. A corridor that satisfies the full
+            // CLEARANCE bar in continuous space can still miss every cell
+            // CENTRE on the 50u lattice — redrock's north channel exit is 46u
+            // clear the whole way through and read as a wall, which is why the
+            // fleet's route ran the dead-upwind slot the human never sails. A
+            // cell is navigable if ANY quarter-offset sub-point passes the
+            // SAME land test — the bar does not move, only the sampling.
+            // ⚠️ Obstacle CIRCLES (drifting floes at build time) stay a centre
+            // test: stampFloes removes cells by centre and must agree with this
+            // build cell for cell (_grid_stamp_check.js asserts it).
+            // ⚠️ FLOE-FREE GRIDS ONLY (opts.noSubsample set by the caller on icy
+            // venues): in drifting ice a sub-cell thread along shore is a trap —
+            // floe drift eats exactly the margin the thread lacks — and every
+            // arctic horizon/margin constant was priced on centre-sampled land
+            // (measured here: arctic land contacts +42%, floe +19% unscoped).
+            let ok = admit(wx, wy);
+            if (!ok && !(opts && opts.noSubsample)) {
+                const Q = RES / 4;
+                for (const [ox, oy] of [[-Q, -Q], [Q, -Q], [-Q, Q], [Q, Q]]) {
+                    if (admit(wx + ox, wy + oy)) { ok = true; break; }
                 }
+            }
+            if (ok) for (let k = 0; k < shapes.length; k++) {
+                if (shapes[k].centerOnly && !admitShape(shapes[k], wx, wy)) { ok = false; break; }
             }
             if (ok) for (const c of circles) {
                 if ((wx - c.x) ** 2 + (wy - c.y) ** 2 < (c.r + CLEARANCE) ** 2) { ok = false; break; }

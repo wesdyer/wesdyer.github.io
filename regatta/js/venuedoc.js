@@ -1074,7 +1074,11 @@ function compileVenueDoc(doc) {
             let grid = null;
             if (window.SailCheck && boundary) {
                 const fixed = migrateShapes(doc).filter(sh => shapeTraits(sh).motion === 'fixed');
-                grid = window.SailCheck.buildGrid(fixed, boundary, null);
+                // Same sampling rule as the game's grid (see buildCoursePaths):
+                // icy venues keep centre-sampled land.
+                const hasDrift = migrateShapes(doc).some(sh => shapeTraits(sh).motion !== 'fixed');
+                grid = window.SailCheck.buildGrid(fixed, boundary, null,
+                    hasDrift ? { noSubsample: true } : null);
             }
             paths = CoursePath.build(marks, route, islands, compileVenueDoc._planner,
                                      'est-' + islands.length + '-' + (doc.venue || ''), grid);
