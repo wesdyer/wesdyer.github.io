@@ -5519,13 +5519,20 @@ same bubbles, same costs, six more points on the fan.
                                                                               pens 1.64->2.11,
                                                                               floe AND land contacts up
 
-**Arctic rejects it, with a mechanism.** Finer resolution buys a TIGHTER miss, and a
-tighter miss is only as good as the prediction underneath it. A rival boat is also
-steering and also keeping clear; a floe does neither, and its drift is not predictable
-past a few seconds — that measurement is what cancelled SIPP. So the extra resolution is
-gated on `state.course._floeObjs` being empty, the same flag the keep-clear terms already
-use, and the ice list is the stock list unchanged (byte-identical behaviour on Glacier
-Sound by construction).
+⚠️ **ARCTIC DISAGREED WITH ITSELF, and the mechanism I wrote for it was wrong.** Set 1
+said +2.0 med / +3.8 mean with 7 fewer finishers; set 2 said **-9.0 med / -12.7 mean with
+finishers unchanged**. Pooled over all 32 seeds:
+
+    POOLED n=235 pairs   paired med -5.0   mean -3.7   finishers 262 -> 255 of 288
+
+i.e. slightly FASTER and slightly fewer finishers — ambiguous, not a rejection. The story
+I had written into the code ("finer resolution buys a tighter miss, and a floe neither
+holds still nor keeps clear") is a good story and set 2 does not support it. It came out
+of the comment before it was shipped. This is the standing arctic rule doing its job:
+**two 16-seed sets are not enough to call a threshold statistic on this venue** — the
+same trap that gave 71->65 and 45->65 for one change last session. A third set is
+running to break the tie; until it lands the gate is a CONSERVATISM (do not move a
+marginal venue on mixed evidence), not a mechanism.
 
 ⚠️ **The two lists are ordered and the order is the tie-break** (`cost < minCost` keeps
 the earlier candidate), so the open-water list is written out in sorted order identical
