@@ -4964,6 +4964,33 @@ boat and is the honest regime signal. `treeLOOK` scales the floors by sea room
 (min(250, 2·seaRoom) / upwind floor gated on seaRoom >= 300u); `check_raceable redrock`
 12 races vs stock, running.
 
+## ⛔ treeLOOK REJECTED (2026-08-05 ~21:05) — the lookahead floors are not the binding constraint
+
+`check_raceable redrock`, 12 races each, paired:
+
+    stock      0/108 finish, 4260 land hits/boat-race, 246 BOAT rubs, dies on leg 3 (86)
+    treeLOOK   0/108 finish, 4607 land hits,           378 boat rubs, dies on leg 3 (87)
+
+Scaling the 250u/420u carrot floors down in narrow water made pursuit LESS stable.
+Mechanism worth keeping: **leg 3's median free water is 50u — below the MEASURED minimum
+tack width (123u at an ideal helm) and barely over hull width (60u).** No steering change
+makes a boat beat in water it cannot turn around in. And 246 boat rubs/race says nine
+boats are grinding single-file in the same slots — `_solo_beat redrock` running to split
+corridor-traffic from pure execution. If the lone bot also fails, the current redrock
+document is an AUTHORING problem (corridors want >= ~250u, twice the physical tack
+width), not an AI one.
+
+## ⚡ ARCTIC LEG-1 DEFICIT IS HALF SPEED, HALF LINE (`_track_floor.js`, seed 9100, full fleet)
+
+    leg |  n | actual | speedFloor | lineFloor | speedDef | lineDef | dist
+      1 |  9 |  471.0 |     269.2 |      30.0 |    201.7 |   239.2 | 41721u
+      2 |  6 |  299.1 |     119.7 |      25.9 |    179.4 |    93.8 | 19017u
+
+The wander thread always framed arctic as a LINE problem (ratio 3.89). Half of it is
+SPEED — sailing far below polar on the line actually sailed (wedged in plugs, grinding,
+rebuild after collisions). Fixes for the speed half look like "don't get stuck / price
+the grind honestly", not like routing.
+
 ## ⚠️ DATA PROVENANCE: the redrock human recording predates the current redrock document
 
 `traj_redrock_1785825518447.json` (Aug 3, 140.3 s) — its ENTIRE track lies in cells the
