@@ -5875,3 +5875,27 @@ the mark they are working around, and it never saves them because there is nothi
 ⇒ `treeTIGHT`: the floor also requires TIGHT WATER (`_clear` at the boat under 6 cells,
 ~300u). That is a fact about where she is, not about which venue she is on — lake sits at
 2-4 cells nearly everywhere, bay at 6-23, ocean in the open. Benching ocean and lake.
+
+
+### ⛔ REJECTED: a land-only floored probe for ice venues (`treeARCLAND`)
+
+The idea that survived the arctic rejection of the probe floor: a coastline does not move
+even where there is ice, so look further ahead at the STATIC grid only, past where the
+time-based probe already reached, as a graded hint with no hard veto. Glacier Sound takes
+27.5 land contacts per boat-race, so there was something to win.
+
+    arctic 16@9100   paired med +7.0  mean +8.6
+                     finishers 139 -> 129, land contacts 27.5 -> 31.6, pen 1.64 -> 1.87
+
+**So it is not about predicting through drift after all.** A land-only probe cannot be
+wrong about where the land is, and it still cost time and finishers — which means the harm
+from a longer probe on this venue is that it makes boats DEFLECT MORE, and deflecting more
+inside the pack is what Glacier Sound punishes. That is the same finding as the twelve
+avoidance re-pricings and tonight's clearance rejection, arriving from the other side:
+on this venue the local layer is already deflecting too much, and anything that gives it
+more reasons to deflect loses.
+
+⇒ Four arctic rejections tonight (fan: ambiguous over 64 seeds and gated; probe floor;
+enterable plugs; land-only probe). The venue's remaining deficit is NOT in the local
+avoidance layer's inputs. Its own attribution says so: `boatBand` is 0.1% of deflections
+and STATIC hard blockage is 39.2%, i.e. the fleet is threading walls, not traffic.
