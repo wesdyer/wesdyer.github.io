@@ -4647,3 +4647,51 @@ the TEST changed nothing — it sharpened it against the wrong point.
 
 `treeLAY2` calls it against the mark. First read: distance 8412 -> 7955 and time 82.0 ->
 80.5 on the same seeds, overstanding barely moved (49.4% -> 46.4%). Benching properly.
+
+### ⛔ `treeLAY2` REJECTED TOO — and the negative is the useful part
+
+    ocean 20 seeds   paired 0 med / -2.5 mean, max 326 -> 530, upwind VMG 4.338 -> 4.329
+
+⚠️ **A 3-race probe said 82.0 -> 80.5 s and 8412 -> 7955 units; the 20-seed bench says
+-2.5.** Same trap the campaign has recorded twice before: judge at 20, not at 3.
+
+So the layline target IS wrong — 1717 units off, measured, and that is not in doubt — but
+**correcting it does not buy time.** That is worth more than another neutral candidate,
+because it refutes the hypothesis the whole beat investigation rested on:
+
+  ⇒ **the fleet's 46-49% overstanding is not caused by the layline test looking at the
+    wrong point, and it is not fixed by calling the layline correctly.**
+
+Something else is keeping the boats out past the layline. Three candidates, none tested:
+
+  1. the layline tack is CALLED and then vetoed or overridden downstream — `applyAvoidance`
+     runs after `getStrategicHeading`, and a tack it deflects is a tack that did not happen.
+     Testable: count layline calls against tacks actually executed within N seconds.
+  2. `scoreTack` outweighs it. The shift and pressure terms are free to hold a boat on a
+     losing board; the layline branch returns early, but only when it fires.
+  3. the fleet is overstood because it was pushed there — traffic on a crowded first beat,
+     not a tactical choice at all. The human sailed alone.
+
+⚠️ Candidate 1 is the cheapest to test and the most likely: it needs one counter, not a
+new mechanism. Start there.
+
+## THE AI SCOREBOARD AFTER THIS SESSION
+
+    LANDED (bugs, all owner-reported or owner-visible)
+      the start line's dir, and OCS judged at the gun      ocean +27 s paired
+      rounding completes at the EXIT BEARING               nibble closed, arctic 56% -> 5.6%
+      the hairpin full-circuit requirement                 REVERTED — registered too late
+      test_start_crossing.js, test_rounding_nibble.js      both in npm test
+      frozen + fingerprinted benchmark venues              a venue edit can no longer
+                                                           silently invalidate a baseline
+
+    REJECTED, each with a mechanism
+      treeS1  crab for the swell's set          feedback already closes it
+      treeS2  fine downwind VMG in a sea        7th rejection of that family, 3rd venue
+      treeH1  full circuit at a hairpin         registers late — the owner saw it
+      treeH2  re-base sweep on arrival          dominated on arctic
+      treeH3  H1 + H2                           they compound
+      treeEX  clamp the orbit to the exit       bay marks 0.67 -> 0.40 but arctic -9.9
+      treeLAY one-sided layline                 fires on gybes too; scoped, still nothing
+      treeLAY2 layline against the MARK         the target IS 1717u wrong; fixing it is 0
+      18.3 / 18.4                               predicate: 1 event in 54 boat-races
