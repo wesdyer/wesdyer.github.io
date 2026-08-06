@@ -6384,3 +6384,32 @@ session, it is that.
     predicate           light-air tack guard   ⛔ +9.0
 
 Require of any future candidate here: *why will this change which candidate WINS?*
+
+## ⛔ REJECTED: a water-aware wiggle (`treeWIG`) — and it SHARPENS the session's rule
+
+The unstick manoeuvre scans BOATS and MARKS for its nearest obstacle and then commits to
+`windDir ± 1.75`; on a land venue the thing pinning her is LAND, which it has never looked
+at, and the liveness comment already concedes the failure ("beam-reaches it straight back
+into the same pocket"). `_irons_entry` said the wiggle was 27.3% of entries into irons
+after the two landings — second only to penalty turns. Scored both escapes against free
+water on the grid and took the better.
+
+    mechanism   wiggle-caused irons entries  21 -> 14  (-33%)  <- the target moved
+                but tack-caused              19 -> 32  (+68%)
+                and avoid-caused             15 -> 32  (+113%)
+                TOTAL entries                77 -> 103 (+34%)
+    clock       lake 20@9100 vs the landed tree   paired med +18.0  mean +10.7
+                boat 2.61 -> 3.42, mark 1.99 -> 2.43, land 19.4 -> 21.0, pen 0.97 -> 1.12
+
+⚠️ **This was an ACTION-SET change and it still lost, which refines tonight's rule.** The
+distinction is not actions-versus-prices by itself — it is whether the change REMOVES A BAD
+OPTION or merely REDIRECTS TO A DIFFERENT ONE:
+
+    fan        added candidates that did not exist         LANDED
+    no-go tax  removed candidates that were never sailable LANDED
+    wiggle     picked the other of two blind headings      ⛔ +18.0
+
+Choosing better between two bad options is still choosing a bad option: the boat escapes
+into water she then has to tack or dodge out of, and the two failures she trades into cost
+more than the one she avoids. **The sharpened rule: DELETE OR ADD options; do not re-aim
+the ones that are there.**
