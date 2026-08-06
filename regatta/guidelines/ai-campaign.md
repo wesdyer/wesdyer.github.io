@@ -5899,3 +5899,23 @@ more reasons to deflect loses.
 enterable plugs; land-only probe). The venue's remaining deficit is NOT in the local
 avoidance layer's inputs. Its own attribution says so: `boatBand` is 0.1% of deflections
 and STATIC hard blockage is 39.2%, i.e. the fleet is threading walls, not traffic.
+
+## ⚡ THE PROBE FLOOR NEEDS TIGHT WATER, NOT JUST STILL WATER (`treeTIGHT`)
+
+The floor's justification was always "a boat slowed by a shore rub cannot see the next
+shore". **Tight water is that condition stated directly** — and unlike `openWaterAv` it is
+a fact about where the boat IS, not about which venue she is on.
+
+    tightAv = gAv._clear[boat's own cell] < 6        (~300u, twice a hull's turning room)
+
+    ocean 20@9300  vs the landed tree   paired med -5.0  mean -1.8   finishers 178 -> 179
+    ocean 20@9300  vs pre-session HEAD  paired med  0.0  mean +0.3   <- fully neutral again
+
+Ocean's +1.8/+4.8 mean was the floor binding at starts, roundings and penalty turns —
+the only places its fast boats drop under 4 knots, and precisely where a 240u probe
+reaches past the mark they are working around while there is nothing there to hit.
+Lighthouse Cove sits at 6-23 cells of clearance (so the floor rarely applies, and it
+measured inert there anyway); Stillwater Lake sits at 2-4 nearly everywhere, which is
+exactly the water the floor was built for.
+
+Benching lake (both sets) and bay to confirm the gain survives the narrower predicate.
