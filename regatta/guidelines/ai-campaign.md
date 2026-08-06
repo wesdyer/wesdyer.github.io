@@ -5979,3 +5979,31 @@ aimed at closing a gap that was partly an artefact of the two instruments disagr
 fleet still picks 23 degrees at a 299u CPA, so what demands the swerve is the PREDICTION:
 `safeDist` 80-150u evaluated over a 4-second straight-line extrapolation of both boats.
 At 5 knots that is 300u of straight line for two boats who are both about to turn.
+Bay, same instrument:
+
+                  n     med     mean    p90     held course (<5 deg)   CPA med
+      human     272    8.0     26.7    74.7           40%               355u
+      FLEET     300   16.2     32.5    97.3           23%               259u
+
+**She keeps a WIDER margin with LESS steering.** That is the shape of the whole thing: the
+human positions early and passes clear; the fleet reacts late and hard and still ends up
+closer. Tack rate says the same — fleet 50% of encounters vs her 35% on bay, 69% vs 49%
+on lake.
+
+## ⚡ NEXT CANDIDATE, ARGUED FROM SYMMETRY: the boat-conflict prediction has no horizon
+
+`applyAvoidance` samples the boat-vs-boat closing at t = 0.8, 1.6, 2.4, 3.2, 4.0 s and
+sets a HARD `boatCollision` if ANY of them falls inside `safeDist`. A crossing predicted
+3.8 seconds out is exactly as decisive as one 0.5 seconds out.
+
+The land probe two blocks below already refuses to do this in SPACE — hard veto inside
+140u, graded beyond, because *"a probe that overshoots a gap into the ice behind it must
+not veto the gap the router chose"*. **That argument is strictly stronger against a boat**,
+because a boat is also steering: two straight-line extrapolations four seconds out are
+300u of fiction each at 5 knots, and both boats are about to turn or tack.
+
+`treeHORIZON`: hard only within 2.4 s; beyond that a graded 4000 falling to zero at 4.0 s.
+Next tick sees the same crossing 0.8 s closer, so anything real becomes hard on its own.
+Note this is NOT a re-pricing — it changes which candidate WINS (offset 0 becomes free when
+the only conflict is three seconds out), which is the bar tonight's clearance rejection set
+for this family.
