@@ -5582,3 +5582,23 @@ keep-clear terms have the same property and the same answer.)
                `speed x 4 s` already exceeds 240u.
     arctic   probe floor only (fan gated off)      (pending)
     ocean    dense fan only, and it was inert      (pending)
+
+## WHAT REMAINS BEFORE THE LANDING COMMIT (checklist, in case this session is interrupted)
+
+The candidate is `regatta/eval/rl/treeSHIP` and it is applied with
+`python3 regatta/eval/rl/_apply_ship.py treeSHIP` (region-verbatim from the tree that was
+benched — `--check` reports without writing). Four regions, all in `applyAvoidance`.
+
+    [x] bay    20@9100  ship vs head        -3.0 med / -2.9 mean
+    [x] bay    20@9100/9200 fan alone       -5.0 / -2.0 med  (the fan half, two sets)
+    [x] ocean  20@9300/9320 fan alone       -1.6 / -0.1 mean (inert)
+    [x] lake   20@9100  ship vs head       -53.0 med / -58.6 mean
+    [ ] lake   20@9200  ship vs head       (disjoint-set confirmation)
+    [ ] arctic 16@9100  ship vs head       (probe floor only; fan gated off)
+    [ ] arctic 16@9200  fan alone          (confirms the rejection that motivated the gate)
+    [ ] ocean  20@9300  ship vs head       (safety)
+    [ ] seatrials 100t seed 100            ⚠️ WILL MOVE: seatrials has no floes, so it
+                                            takes the dense fan. Expect the anchor to
+                                            change; record the new one.
+    [ ] goldens: full `--update` (NOT per-venue — that rewrites the file with one venue)
+    [ ] npm test: 6 test_editor failures = clean (the 6 wind-shadow ones are FIXED)
