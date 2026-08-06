@@ -6307,3 +6307,13 @@ is a fact about sailing, not about a venue — so both need to be measured).
 
 Two venues, both faster and CLEANER on every contact class at once — which is the
 signature of removing a bad option rather than trading one cost against another.
+    lake 20@9200 vs the landed tree   paired med -3.0  mean -8.4
+                                      boat 4.16 -> 4.13 (flat), mark 2.47 -> 1.99,
+                                      ⚠️ land 21.23 -> 28.03 (+32%), one boat short
+
+Three benches on two venues, all negative on the clock (med -7.0 / -3.0 / -3.0, mean
+-7.3 / -8.4 / -1.8). ⚠️ **But note the land-contact behaviour is not consistent**: bay had
+every class down, lake 9100 was +6% on land, lake 9200 +32%. A boat forbidden the windward
+escape takes the leeward one, and on a narrow venue the leeward one is sometimes the
+shore. The clock says the trade is worth it on every set measured so far; the honest
+reading is that this is a trade, not a free win like bay's numbers alone would suggest.
