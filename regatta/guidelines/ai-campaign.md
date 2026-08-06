@@ -5949,3 +5949,33 @@ has not touched.
     bay   20@9100  vs the landed tree   paired med  0.0  mean -0.3   <- unaffected, as
     bay   20@9100  vs pre-session HEAD  paired med -3.0  mean -3.2      predicted from its
                                                                         6-23 cell clearance
+
+
+# ⚡ THE FLEET'S OWN LEDGER (`_fleet_ledger.js`, new) — like-for-like at last
+
+Every avoidance thread in this campaign has compared a FLEET number (mean per-tick
+avoidance DEVIATION, from `_defl_hist` / `_transit_probe`: 44-51 deg) against a HUMAN
+number (deflection per ENCOUNTER with deliberate tacks removed, from the ledger: 8 deg).
+**Those are different quantities and always were.** This runs the ledger's exact
+definition — encounter opens inside 600u closing, heading change at CPA measured against
+the 5 s pre-encounter trend, tacks split out — on the bots.
+
+    Stillwater Lake, no-tack encounters, deflection AT CPA
+
+                  n     med     mean    p90     held course (<5 deg)   CPA med
+      human      40    8.7     24.3    62.6           38%               312u
+      FLEET     199   23.0     39.9    98.4           17%               299u
+
+**At the same passing distance the fleet turns 2.6x as much and holds its course half as
+often.** It also converts 69% of its encounters into a tack against the human's 49%, and
+its tacked encounters pass closer (177u vs 201u).
+
+So the over-deflection is REAL and now correctly sized: about 14 degrees of excess median
+per no-tack encounter, at roughly 11 encounters per boat-race. It is NOT the 36-degree gap
+the old apples-to-oranges comparison implied, which matters — several past candidates were
+aimed at closing a gap that was partly an artefact of the two instruments disagreeing.
+
+⇒ And it aims the next candidate precisely. The action set is now 5.7 degrees fine and the
+fleet still picks 23 degrees at a 299u CPA, so what demands the swerve is the PREDICTION:
+`safeDist` 80-150u evaluated over a 4-second straight-line extrapolation of both boats.
+At 5 knots that is 300u of straight line for two boats who are both about to turn.
