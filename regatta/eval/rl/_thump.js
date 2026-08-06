@@ -39,7 +39,7 @@ const VENUE = process.argv[5] || 'arctic';
     }, VENUE);
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
-    let thumps = 0, boatMin = 0, races = 0, boatRaces = 0, lost = 0; const kind = {};
+    let thumps = 0, boatMin = 0, races = 0, boatRaces = 0, lost = 0, eps = 0; const kind = {};
     for (let i = 0; i < TRIALS; i++) {
         const r = await page.evaluate(async (seed) => {
             window.evalHarness.seed = seed;
@@ -47,8 +47,8 @@ const VENUE = process.argv[5] || 'arctic';
             state.course.cutoff = 900;
             const bots = state.boats.filter(b => !b.isPlayer);
             const pl = state.boats.find(b => b.isPlayer); pl.x = 1e6; pl.y = 1e6;
-            const out = { thumps: 0, boatSec: 0, boats: bots.length, lostKt: 0, kind: {} };
-            const prevSpd = bots.map(() => 0);
+            const out = { thumps: 0, episodes: 0, boatSec: 0, boats: bots.length, lostKt: 0, kind: {} };
+            const prevSpd = bots.map(() => 0); const lastHit = bots.map(() => null);
             const dt = 1 / 60; let acc = 0;
             for (let it = 0; it < 60 * 940; it++) {
                 window.update(dt);
@@ -63,8 +63,14 @@ const VENUE = process.argv[5] || 'arctic';
                     out.boatSec += 0.1;
                     const a = prevSpd[k], c = b.speed;
                     // same rule as the recordings: >1 kt before, lost >40% of it
+                    // EPISODES vs HITS — my own standing rule from Stillwater Lake
+                    // ("count grounding EPISODES, not dedup'd contacts") was never
+                    // applied here. 23 hits a race is a different problem if it is four
+                    // grinding episodes than if it is 23 separate encounters.
                     if (a > 0.25 && c < a * 0.6) {
                         out.thumps++; out.lostKt += (a - c) / 0.25;
+                        if (lastHit[k] == null || (out.boatSec - lastHit[k]) > 3.0) out.episodes++;
+                        lastHit[k] = out.boatSec;
                         // WHAT DID SHE HIT? Nearest thing at the moment of the thump —
                         // where to aim depends entirely on this, and the harness's
                         // col{} counts contact FRAMES, not the impacts that cost speed.
@@ -88,13 +94,15 @@ const VENUE = process.argv[5] || 'arctic';
             return out;
         }, SEED0 + i);
         thumps += r.thumps; boatMin += r.boatSec / 60; races++; boatRaces += r.boats;
-        lost += r.lostKt;
+        lost += r.lostKt; eps += r.episodes;
         for (const k in r.kind) kind[k] = (kind[k] || 0) + r.kind[k];
         console.error(`seed ${SEED0 + i} thumps=${r.thumps} boatSec=${r.boatSec.toFixed(0)}`);
     }
     console.log(`\nvenue=${VENUE}  ${races} races  ${boatRaces} boat-races  ${boatMin.toFixed(1)} boat-minutes`);
     console.log(`  THUMPS  ${thumps}  =  ${(thumps / Math.max(1, boatRaces)).toFixed(1)} per boat-race`
         + `  =  ${(thumps / Math.max(0.1, boatMin)).toFixed(1)} per boat-minute`);
+    console.log(`  EPISODES (hits >3 s apart) ${eps} = ${(eps / Math.max(1, boatRaces)).toFixed(1)} per boat-race`
+        + `   -> ${(thumps / Math.max(1, eps)).toFixed(1)} hits per episode`);
     console.log(`  knots shed in them: ${(lost / Math.max(1, boatRaces)).toFixed(1)} per boat-race`);
     console.log('  [DEBUG ONLY — biased, do not quote] nearest object at impact:');
     for (const [k, v] of Object.entries(kind).sort((x, y) => y[1] - x[1]))

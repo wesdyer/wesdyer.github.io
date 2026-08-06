@@ -7133,3 +7133,125 @@ is whether the term is in the same UNITS as what it is weighed against.
 
 Four eliminations, no answer. The next session should start here rather than from any of
 these — and should be suspicious of any candidate whose story is "a constant is wrong".
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PLAN FOR THE NEXT PUSH — RESEARCHED 2026-08-06 AFTER THE AVOIDANCE LANDING
+# ═══════════════════════════════════════════════════════════════════════════
+
+## PRIME DIRECTIVE (unchanged, and it worked)
+
+Keep >=4 probes in flight; never idle the background; **check `date` — do not infer
+elapsed time from how much work has gone by** (this session mis-estimated the clock by two
+hours doing exactly that, and killed four benches on a pace figure that was an artefact).
+A rejection with a mechanism is a result. Bench at 20 seeds (16 arctic) on two DISJOINT
+sets before landing. Commit per landing.
+
+## WHAT THE RESEARCH FOUND (all measured today, after the landing)
+
+### 1. Boat-on-boat contact is now the dominant dirt, on FIVE venues
+
+`check_raceable.js` across all ten venues, contact FRAMES per boat-race:
+
+      venue      land    floe   BOAT RUBS   pen    gate
+      redrock  4641.6     0.0      659.6    7.2    FAIL x2  (known broken, owner's call)
+      arctic    488.7   782.6      259.0    1.5    FAIL x2
+      bay         0.0     0.0       54.7    0.3    ok
+      lagoon      0.0     0.0       45.0    0.8    ok
+      river       0.0     0.0       44.6    0.7    ok
+      swamp       0.0     0.0       40.7    3.6    ok
+      seatrials   0.0     0.0       31.3    0.5    ok
+      lake      257.7     0.0       29.6    0.7    FAIL x1
+      glowtide    0.0     0.0       26.4    0.4    ok
+      ocean       0.0     0.0       10.6    0.6    ok
+
+⚠️ These are FRAMES, not events — the benches' `col.boat` counts events (bay 1.17-2.68 per
+boat-race). Do not mix the two; this campaign has confused frames/events/episodes three
+separate times. But the ORDERING is the finding: **Lighthouse Cove is the dirtiest raceable
+venue in the game for boat-on-boat contact, and this session's landing made it worse**
+(1.17 -> 2.26 and 1.31 -> 2.68 events, both sets). The human takes ZERO boat impacts on bay
+by the same `_thump.js` detector.
+
+### 2. Four venues have NEVER been compared to a human
+
+      recordings:  arctic 22 | seatrials 16 | bay 13 | ocean 7 | lake 3 | redrock 1
+      NONE:        glowtide, lagoon, river, swamp
+
+The entire method that produced this session's landings is a like-for-like human
+comparison. It cannot reach 40% of the venue roster. **Only the owner can produce
+recordings** — this is the single highest-leverage thing they can do for the campaign, and
+lagoon/river/swamp are exactly the venues the table above flags as dirty.
+
+### 3. Arctic's 23 impacts are 18.9 SEPARATE episodes, not a few grinds
+
+      23.0 hits / boat-race  ->  18.9 episodes (hits >3 s apart)  ->  1.2 hits per episode
+
+My own standing rule (count EPISODES, from the lake grounding work) had never been applied
+here. It rules out the recovery-loop story: she is not getting pinned and ground, she is
+having **nineteen distinct collisions a race** where the human has one.
+
+### 4. ⚠️ THE RECORDINGS HAVE THREE INCOMPATIBLE `floes` SCHEMAS
+
+      19 arctic + 13 bay + 7 ocean + 13 seatrials + 1 redrock:
+                        floes<=1200u[hullId,x,y,spin,vx,vy]     <- SHIPPING, NO RADIUS
+      3 arctic + 3 seatrials:  floes<=1200u[x,y,r,vx,vy]        <- old, HAS radius
+      3 lake:                  floes                            <- bare, third variant
+
+The header string is the only discriminator. **I parsed all 22 arctic files as the 5-field
+layout and produced an "ice exposure" result that was nonsense** — index 2 is `y` in the
+shipping schema, so a quarter of the "radii" came out negative (min -3968) and the p5
+clearance read as 1803 units INSIDE a floe. Retracted.
+
+⛔ **This BLOCKS the top arctic measurement.** "Does the human sail through less ice than
+the fleet?" needs distance to a floe EDGE, and the shipping schema dropped radius for
+`hullId`+`spin`. Unblock it one of two ways before aiming at arctic:
+  (a) recover radius by `hullId` from the venue document / runtime floe set, or
+  (b) add radius back to the recorder and ask the owner for fresh arctic recordings.
+
+## THE PUSH, IN PRIORITY ORDER
+
+### P1 — BOAT-ON-BOAT CONTACT (bay first, then lagoon/river/swamp)
+The biggest number on the board, on the most venues, and the one this session regressed.
+Bay has 13 human recordings and the human's score is ZERO impacts, so the target is
+unambiguous.
+  - measure first: `_thump.js` on bay/lagoon/river/swamp, episodes as well as hits, and
+    the `_fleet_ledger` at-CPA deflection that already says fleet 16.6 deg vs human 8.0
+  - the standing thesis says look for an ACTION that does not exist or is not real, not a
+    price — but check the SCALE of what is there first (see the rule below)
+  - ⚠️ any candidate must be checked against `treeNOSE2` (gate-only), which trades ~50 s of
+    arctic for bay's clean contact numbers. If P1 cannot fix bay's contacts, reconsider
+    landing `treeNOSE2` instead of the shipped pair — that is a live option, not a defeat.
+
+### P2 — ARCTIC PER-ENCOUNTER ICE AVOIDANCE (19 episodes vs 1)
+Blocked on the schema (item 4). Do that first, then:
+  - human ice exposure vs fleet ice exposure along track — if she routes through thinner
+    ice, arctic is a ROUTING problem and the whole avoidance thread is aimed wrong
+  - the fifth hypothesis, untested: **does the boat's own ROUTE lead it into the ice it
+    hits?** `pathSailable` plans on a grid that stamps floes at a refresh cadence; if the
+    plan threads gaps that have closed by arrival, avoidance is fire-fighting a bad plan
+    and no avoidance tuning can win. Measure: at each impact, was the floe on the boat's
+    own `gridPath` when the plan was made?
+  - four causes already ELIMINATED — do not re-propose: escape-fan resolution (23.1 vs
+    23.0), drift blindness (floes ARE predicted to mid-lookahead), double-counting
+    (`_trajFloe` is deliberate), floe under-pricing (a real 7-8x mismatch, worth 6%).
+
+### P3 — LAKE STILL FAILS ITS OWN RACEABILITY GATE
+257.7 shoreline collision frames per boat-race, `check_raceable` FAIL, even after the
+landing halved the event count. The venue is 4447 navigable cells and mark 5 sits in 100u
+of clearance. This may be an AUTHORING fix (move mark 5 ~300u southwest, worth ~10-15 s)
+rather than a tuning one — put it to the owner with the number.
+
+### P4 — OWNER-DEPENDENT
+  - recordings for glowtide, lagoon, river, swamp (P1 needs them to have a target)
+  - redrock: 4641 shoreline collisions, 2/18 ever finish — still not raceable
+  - 106 GB of `eval/rl` in 37 pre-`mktree.sh` trees
+
+## THE RULE THIS SESSION EARNED, STATED FOR NEXT TIME
+
+**A price in the wrong ORDER OF MAGNITUDE is a structural bug; a price at the right order
+is a knob, and knobs lose.** Measured from both sides in one night: the deviation term was
+3 orders out and fixing it was worth 71-86 s a boat on arctic; floe proximity is genuinely
+7-8x out and fixing it was worth 6%. **Before proposing any re-pricing, compute the ratio
+between the term and what it is weighed against.** Under ~10x, expect nothing.
+
+And the corollary that governs P1: *do not* go hunting for "wrong constants". The question
+is whether a term is in the same UNITS as the function it lives in.
