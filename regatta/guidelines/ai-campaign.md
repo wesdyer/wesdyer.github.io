@@ -6202,3 +6202,11 @@ DEFLECTIONS and never attributed this: the next probe should classify what the b
 doing at the MOMENT she entered irons — a commanded tack, an avoidance swerve, a wiggle,
 a rounding, or a penalty turn. Same shape as `_avwhy`, applied to a different event.
 ⚠️ Do not build another fix in this family until that exists.
+And the clock, on both venues:
+
+    lake 20@9100 vs the landed tree (amp 6)   paired med +17.0  mean +11.3
+                                              boat contacts 3.62 -> 3.08 (it DID work)
+    bay  20@9100 vs the landed tree (amp 6)   paired med +11.0  mean  +8.4
+
+It reduced boat contacts exactly as designed and cost 11-17 seconds doing it. Family
+closed on both the mechanism (dose-response) and the clock (two venues).
