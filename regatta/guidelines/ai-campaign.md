@@ -5531,3 +5531,34 @@ Sound by construction).
 the earlier candidate), so the open-water list is written out in sorted order identical
 to the one bay/ocean/lake were benched on rather than pushed onto the end — otherwise
 those four 20-seed sets would not have been measuring the shipped code.
+
+
+# ⚡ CANDIDATE 2: THE LAND PROBE IS A DISTANCE, NOT A DURATION — and the two compound
+
+`applyAvoidance` scores each candidate heading along a segment of length
+`boat.speed x 4 s`, and land is checked against that same segment. Every other probe in
+that function is time-based because the thing being dodged is also moving. **A shoreline
+is not.** Scaling this one with boat speed puts the fleet in a ratchet: a shore rub costs
+60% of speed (`boat.speed *= 0.4`), the shortened probe then sees less water, so she rubs
+again and it shortens again. At 1 knot the whole probe is 60 units — SHORTER THAN ITS OWN
+140-unit hard zone, so every candidate that touches land reads as an unavoidable
+collision, the argmin falls through to deviation, and the boat holds her course into the
+beach. Floored at 240u (four seconds at four knots); above that nothing changes.
+
+    lake 20@9100      paired med   paired mean   fleet med   land contacts   pen/boat
+    HEAD                  —            —           407.0        30.63          1.32
+    fan only            -29.0        -38.1         377.0        27.82          1.05
+    land probe only     -19.0        -16.5         385.0        34.48          1.41
+    BOTH                -53.0        -58.6         352.0        18.28          0.96
+    both vs fan alone   -26.0        -20.0
+
+**They compound** (-29 and -19 separately, -53 together), and together they are clean:
+every contact class falls, penalties 1.32 -> 0.96, and 180/180 finish where the land
+probe alone lost two. The fan lets a boat make a small dodge; the probe floor lets her
+see far enough ahead to know a small dodge is enough. Alone, the probe floor just made
+her sail faster past the same shores (contacts UP, time down); with the fan she can
+also miss them.
+
+⚠️ **Judge a steering change on the clock.** The probe floor was nearly discarded because
+`hits per 1000 boat-seconds` barely moved (71.1 -> 68.8) — a denominator the change is
+trying to shrink.
