@@ -139,11 +139,19 @@ def report(files, label):
         tk = 100 * sum(1 for e in E if e['tacked']) / len(E)
         cpa = sorted(e['cpa'] for e in E)
         qc = lambda p: dcp[int(p * (len(dcp) - 1))]
+        # DOES SHE EASE INSTEAD OF SWERVING? The avoidance layer has no speed action at
+        # all (applyAvoidance returns a heading and nothing else), so if the human's
+        # answer to traffic is the throttle rather than the rudder, that is a missing
+        # action rather than a mis-priced one. Ratio of her speed at CPA to her speed
+        # when the encounter opened, over encounters where she was already moving.
+        sr = sorted(e['spdAtCpa'] / e['spd0'] for e in E if e['spd0'] > 0.2)
         print('  %-22s n=%4d  maxdefl med %5.1f mean %5.1f | AT-CPA med %5.1f mean %5.1f '
               'p90 %5.1f  ZERO(<5) %3.0f%%  tacked %3.0f%%  cpa med %4.0f'
               % (name, len(E), q(.5), statistics.mean(dfl),
                  qc(.5), statistics.mean(dcp), qc(.9),
-                 100 * sum(1 for x in dcp if x < 5) / len(dcp), tk, cpa[len(cpa) // 2]))
+                 100 * sum(1 for x in dcp if x < 5) / len(dcp), tk, cpa[len(cpa) // 2])
+              + ('  spd@cpa/spd0 med %.2f  slowed>10%% %2.0f%%'
+                 % (sr[len(sr) // 2], 100 * sum(1 for x in sr if x < 0.9) / len(sr)) if sr else ''))
 
 
 if __name__ == '__main__':

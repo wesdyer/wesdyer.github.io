@@ -5470,7 +5470,7 @@ standing prior is CONFIRMED:
     bay          n=272           med  8.0  mean 26.7  p90 74.7    40%        355u
     ocean        n= 15           med  5.2  mean  8.8  p90 12.7    47%        455u
     lake         n= 40           med  8.7  mean 24.3  p90 62.6    38%        312u
-    arctic       n=127           med 14.6  mean 33.1                          —
+    arctic       n=196           med 16.4  mean 25.7  p90 70.6    25%        288u
 
     the fleet, same quantity (`rl/_defl_hist.js`, `_transit_probe`)   mean 44-51 deg
 
@@ -5478,3 +5478,21 @@ She does not swerve. When she does react hard she TACKS (35% of bay encounters, 
 115 deg of it) — she converts an encounter into a tactical move rather than a dodge. The
 fleet's mean deflection is ~1.7x her mean and ~5x her median, and it is spending that
 difference in distance on every venue with traffic.
+
+### ⛔ PRICED AND DROPPED WITHOUT BUILDING IT: "ease instead of swerve"
+
+`applyAvoidance` returns a heading and nothing else — it has no speed action at all, even
+though the machinery exists (`speedLimit`, used by the ice-pack discipline). A boat that
+could clear astern by easing 10% has to swerve 45 degrees instead. That looked like a
+missing action rather than a mis-priced one, so the ledger was asked whether the human
+uses the throttle:
+
+    speed at CPA / speed at onset      bay 1.02 med   lake 1.02   arctic 1.02
+    encounters where she slowed >10%   bay   1%       lake  8%    arctic   6%
+
+**She does not ease.** She holds her course (8 deg median deflection) and passes 336-355u
+away — in most of her encounters there was never a conflict to resolve. Adding a speed
+action to the escape would be imitating something the human does not do. Not built.
+
+⇒ Which leaves the ACTION-SET resolution as the live lever in this family, and that is
+exactly what the densified fan is.
