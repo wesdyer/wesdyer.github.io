@@ -95,7 +95,11 @@ const pass = (m) => console.log(`  ok   ${m}`);
             (lab || el).click();
         }, id));
     }
-    await step('cameraMode', '#setting-camera-mode', () => p.selectOption('#setting-camera-mode', 'wind'));
+    await step('cameraMode', '#setting-camera-mode', () => p.evaluate(() => {
+        const el = document.getElementById('setting-camera-mode');
+        el.value = 'north';
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+    }));
     await step('telltaleColor', '#setting-color-telltale', () => p.evaluate(() => {
         const el = document.getElementById('setting-color-telltale');
         el.value = '#ff00aa';

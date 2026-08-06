@@ -55,12 +55,7 @@ def replace_draw_water(content):
         return content
 
 def add_f8_listener(content):
-    target = "if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }"
-    replacement = "if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }\n    if (e.key === 'F8') { e.preventDefault(); toggleWaterDebug(); }"
-
-    if target in content and "toggleWaterDebug" not in content:
-        print("Adding F8 listener...")
-        return content.replace(target, replacement)
+    # Legacy developer tuning panel shortcut deactivated
     return content
 
 def init_water_renderer(content):
@@ -123,6 +118,7 @@ def add_debug_logic(content):
     logic = """
 // Water Debug Logic
 function toggleWaterDebug() {
+    return; // Legacy developer tuning panel deactivated
     if (!UI.waterDebug) return;
     UI.waterDebug.classList.toggle('hidden');
     if (!UI.waterDebug.classList.contains('hidden')) {

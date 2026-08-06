@@ -3633,6 +3633,9 @@ const DEFAULT_SETTINGS = {
     // character defines one.
     telltaleColor: '#fbbf24',
     venue: 'bay',
+    adaptiveScaling: true,
+    waterResolution: 0.5,
+    waveBreaking: true,
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -7299,6 +7302,9 @@ const UI = {
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
     settingTelltaleColor: document.getElementById('setting-color-telltale'),
+    settingAdaptiveScaling: document.getElementById('setting-adaptive-scaling'),
+    settingWaterResolution: document.getElementById('setting-water-resolution'),
+    settingWaveBreaking: document.getElementById('setting-wave-breaking'),
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
@@ -8906,6 +8912,18 @@ function applySettings() {
     }
     state.camera.mode = settings.cameraMode;
 
+    // Synchronize waveBreaking and surf
+    if (settings.waveBreaking !== undefined) {
+        settings.surf = settings.waveBreaking;
+    } else if (settings.surf !== undefined) {
+        settings.waveBreaking = settings.surf;
+    }
+
+    // Bind waterResolution directly to window.WATER_CONFIG.resolutionScale
+    if (window.WATER_CONFIG && settings.waterResolution !== undefined) {
+        window.WATER_CONFIG.resolutionScale = settings.waterResolution;
+    }
+
     if (UI.settingSound) UI.settingSound.checked = settings.soundEnabled;
     if (UI.settingBgSound) UI.settingBgSound.checked = settings.bgSoundEnabled;
     if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
@@ -8914,6 +8932,9 @@ function applySettings() {
     if (UI.settingTrim) UI.settingTrim.checked = settings.autoTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     if (UI.settingTelltaleColor) UI.settingTelltaleColor.value = settings.telltaleColor || '#fbbf24';
+    if (UI.settingAdaptiveScaling) UI.settingAdaptiveScaling.checked = !!settings.adaptiveScaling;
+    if (UI.settingWaterResolution) UI.settingWaterResolution.value = settings.waterResolution;
+    if (UI.settingWaveBreaking) UI.settingWaveBreaking.checked = !!settings.waveBreaking;
     // Boat colors have two editors now (this modal and the pre-race player
     // panel); both write here, so this is where they re-sync.
     refreshPlayerAppearance();
@@ -9089,6 +9110,9 @@ if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { set
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.autoTrim = e.target.checked; saveSettings(); });
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
 if (UI.settingTelltaleColor) UI.settingTelltaleColor.addEventListener('input', (e) => { settings.telltaleColor = e.target.value; saveSettings(); });
+if (UI.settingAdaptiveScaling) UI.settingAdaptiveScaling.addEventListener('change', (e) => { settings.adaptiveScaling = e.target.checked; saveSettings(); });
+if (UI.settingWaterResolution) UI.settingWaterResolution.addEventListener('input', (e) => { settings.waterResolution = parseFloat(e.target.value); saveSettings(); });
+if (UI.settingWaveBreaking) UI.settingWaveBreaking.addEventListener('change', (e) => { settings.waveBreaking = e.target.checked; saveSettings(); });
 
 // Pre-race config listeners: the venue customization panel is gone. A course's wind,
 // current, obstacles and leg count are stated by its DOCUMENT, so there is nothing on this
@@ -9203,7 +9227,7 @@ window.addEventListener('keydown', (e) => {
             showToast(`Sound: ${settings.soundEnabled ? "ON" : "OFF"}`);
         }
     }
-    if (e.key === 'F7') { e.preventDefault(); toggleWaterDebug(); }
+    // if (e.key === 'F7') { e.preventDefault(); toggleWaterDebug(); } // Legacy developer tuning panel deactivated
     // Sailing
     if (e.key === ' ' || e.code === 'Space') {
         if (state.boats.length > 0) state.boats[0].spinnaker = !state.boats[0].spinnaker;
@@ -15957,6 +15981,13 @@ function draw() {
     }
 }
 
+let adaptiveScaleState = {
+    frameTimestamps: [],
+    lowFPSDuration: 0,
+    stage: 0,
+    lastTime: null,
+};
+
 let lastTime = 0;
 function loop(timestamp) {
     if (!lastTime) lastTime = timestamp;
@@ -15973,6 +16004,53 @@ function loop(timestamp) {
             update(step);
         }
         draw();
+
+        // Performance monitor for active racing
+        const isRacing = state.race && (state.race.status === 'prestart' || state.race.status === 'racing');
+        if (isRacing && settings.adaptiveScaling) {
+            adaptiveScaleState.frameTimestamps.push(timestamp);
+            const windowDuration = 4000; // 4 seconds sliding window average (3 to 5 seconds)
+            while (adaptiveScaleState.frameTimestamps.length > 0 && adaptiveScaleState.frameTimestamps[0] < timestamp - windowDuration) {
+                adaptiveScaleState.frameTimestamps.shift();
+            }
+
+            const spanSeconds = (timestamp - adaptiveScaleState.frameTimestamps[0]) / 1000;
+            if (spanSeconds >= 2.0) {
+                const fps = (adaptiveScaleState.frameTimestamps.length - 1) / spanSeconds;
+                const evalDt = adaptiveScaleState.lastTime ? (timestamp - adaptiveScaleState.lastTime) / 1000 : 0;
+                
+                if (fps < 45) {
+                    adaptiveScaleState.lowFPSDuration += evalDt;
+                    
+                    if (adaptiveScaleState.stage === 0 && adaptiveScaleState.lowFPSDuration >= 5.0) {
+                        adaptiveScaleState.stage = 1;
+                        adaptiveScaleState.lowFPSDuration = 0;
+                        
+                        settings.waterResolution = 0.25;
+                        if (UI.settingWaterResolution) UI.settingWaterResolution.value = 0.25;
+                        saveSettings();
+                        showToast("Low performance detected. Scaling down water rendering detail.");
+                    } else if (adaptiveScaleState.stage === 1 && adaptiveScaleState.lowFPSDuration >= 5.0) {
+                        adaptiveScaleState.stage = 2;
+                        adaptiveScaleState.lowFPSDuration = 0;
+                        
+                        settings.surf = false;
+                        settings.waveBreaking = false;
+                        if (UI.settingWaveBreaking) UI.settingWaveBreaking.checked = false;
+                        saveSettings();
+                        showToast("Low performance persists. Disabling wave-breaking animations.");
+                    }
+                } else {
+                    // Decrement low performance duration if frames are healthy
+                    adaptiveScaleState.lowFPSDuration = Math.max(0, adaptiveScaleState.lowFPSDuration - evalDt);
+                }
+            }
+        } else {
+            // Non-racing context or disabled adaptive scaling: clear sliding window to prevent transient carry-over
+            adaptiveScaleState.frameTimestamps = [];
+            adaptiveScaleState.lowFPSDuration = 0;
+        }
+        adaptiveScaleState.lastTime = timestamp;
     }
     requestAnimationFrame(loop);
 }
@@ -17184,6 +17262,12 @@ function buildCoursePaths() {
 }
 
 function resetGame() {
+    adaptiveScaleState = {
+        frameTimestamps: [],
+        lowFPSDuration: 0,
+        stage: 0,
+        lastTime: null,
+    };
     // The compile cache exists so ONE reset's many compile consumers (the editor's
     // checks, stats and inspectors) pay for one compile. A new reset may follow a
     // document edited in place — the editor's, or a test's — so the cache dies here,
@@ -17446,6 +17530,7 @@ requestAnimationFrame(loop);
 
 // Water Debug Logic
 function toggleWaterDebug() {
+    return; // Legacy developer tuning panel deactivated
     if (!UI.waterDebug) return;
     UI.waterDebug.classList.toggle('hidden');
     if (!UI.waterDebug.classList.contains('hidden')) {
