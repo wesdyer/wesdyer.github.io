@@ -6348,3 +6348,39 @@ should be asked which side of that line it belongs on before it is benched.**
 were missing, this one REMOVES candidates that were never sailable. Six candidates that
 re-priced a real trade-off all lost. If there is one sentence to carry forward from this
 session, it is that.
+
+# ⚡ FINAL STATE OF THE 2026-08-06 PUSH
+
+## Two landings, both the same KIND of change
+
+    d55eb97  the escape fan densified (+-.3/.5/.7)      — ADDS candidates that were missing
+    97a5559  an escape into the no-go is not an escape  — REMOVES candidates never sailable
+    both gated on `openWaterAv`; a4d6f06 re-records the goldens
+
+## Anchors (HEAD = a4d6f06)
+
+    venue      pre-session      after        human      note
+    lake       407.5 / 386.0    ~345 / ~355  223        two landings, both sets
+    bay        257.0            ~250         226.2      -3.0 and -5.0, then -3.0 more
+    ocean      193.0            193.0        182.5      inert by measurement
+    arctic     535.0            535.0        ~222       BYTE-IDENTICAL, verified 3 ways
+    seatrials  198.94 / 194.61  199.30 / 194.18, pen 0.348, OCS 14.89%, DNS/DNF 0%
+    goldens    PASS 20/20 (re-recorded twice, verified twice)
+    npm test   6 test_editor failures = the documented clean baseline
+    test_sailable / check_venues  green on all ten venues
+
+## THE ONE SENTENCE
+
+**Change WHICH ACTIONS EXIST, not what they cost.** Seven-for-seven now:
+
+    ADD candidates      densified fan          LANDED   -29 to -53 lake, -3/-5 bay
+    REMOVE candidates   no-go tax              LANDED   -7.0/-3.0 lake, -3.0 bay
+    price               clearance cost         ⛔ +11.0 / +1.0
+    price               ice plug 6x -> 4x      ⛔ dead code, then +13.3 mean when enabled
+    trigger             commitment lock        ⛔ +4.0
+    horizon             hard only within 2.4s  ⛔ +13.0
+    outcome             CPA positioning        ⛔ +17.0 / +11.0 (dose-response, 2 amplitudes)
+    condition           tight-water floor      ⛔ +1.0 / -1.0 med but groundings +51%
+    predicate           light-air tack guard   ⛔ +9.0
+
+Require of any future candidate here: *why will this change which candidate WINS?*
