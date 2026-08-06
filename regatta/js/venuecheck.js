@@ -249,21 +249,41 @@ function runChecks(ctx) {
             { segs: nearest.at ? [[{ x: nearest.at[0], y: nearest.at[1] },
                                    { x: (p[0] + q[0]) / 2, y: (p[1] + q[1]) / 2 }]] : [] });
 
-        // Vertex ORDER sets the crossing normal n = (dy, -dx), and the start test
-        // wants it pointing up-course. Getting this backwards put the whole fleet
-        // on the wrong side of its own start line, and it is invisible until sailed.
+        // Vertex ORDER sets the crossing normal n = dir * (dy, -dx) — the same
+        // expression startCrossNormal() places and judges the fleet with. The gun
+        // sends the fleet across +n, and the first thing it must then reach is the
+        // NEXT route waypoint, so that is what the normal is tested against.
+        // It used to be tested against "the" rounding island (roundMark) instead —
+        // an assumption from the island-tour archetype, where the fleet genuinely
+        // starts away from the island it will later round. On any windward-first
+        // course with a mark rounding that test warned about a correct line, and
+        // on gate-only courses (no roundMark) it silently never ran at all.
+        // EXCEPT the island-loop archetype: when waypoint 1 is a rounding of
+        // something island-sized (arctic's granite isle, radius 405), the fleet
+        // legitimately starts upwind AWAY from it and bears away around — there
+        // is no expected orientation to judge, so the test does not run.
         const startEntry = (compiled.route || [])[0];
-        if (startEntry && rm) {
-            const nx = q[1] - p[1], ny = -(q[0] - p[0]);
-            const mx = (p[0] + q[0]) / 2, my = (p[1] + q[1]) / 2;
-            const toRound = { x: rm.x - mx, y: rm.y - my };
-            const dot = (nx * toRound.x + ny * toRound.y) * (startEntry.dir || 1);
-            // For this course the fleet starts AWAY from the rounding mark, so the
-            // up-course normal should point away from it.
-            add(dot < 0 ? 'ok' : 'warn', 'start-normal', 'Start line orientation',
-                dot < 0
-                    ? 'Crossing normal points away from the rounding mark, as intended'
-                    : 'Crossing normal points TOWARD the rounding mark — the fleet may start the wrong way');
+        const nextEntry = (compiled.route || [])[1];
+        const islandLoop = nextEntry && nextEntry.mark && nextEntry.mark.radius >= 100;
+        if (startEntry && nextEntry && !islandLoop) {
+            const lm = startEntry.marks || [0, 1];
+            const P = marks[lm[0]] || marks[0], Q = marks[lm[1]] || marks[1];
+            let target = null;
+            if (nextEntry.mark) target = { x: nextEntry.mark.x, y: nextEntry.mark.y };
+            else if (nextEntry.marks && marks[nextEntry.marks[0]] && marks[nextEntry.marks[1]]) {
+                target = { x: (marks[nextEntry.marks[0]].x + marks[nextEntry.marks[1]].x) / 2,
+                           y: (marks[nextEntry.marks[0]].y + marks[nextEntry.marks[1]].y) / 2 };
+            }
+            if (P && Q && target) {
+                const s = (startEntry.dir || 1) < 0 ? -1 : 1;
+                const nx = s * (Q.y - P.y), ny = -s * (Q.x - P.x);
+                const mx = (P.x + Q.x) / 2, my = (P.y + Q.y) / 2;
+                const dot = nx * (target.x - mx) + ny * (target.y - my);
+                add(dot > 0 ? 'ok' : 'warn', 'start-normal', 'Start line orientation',
+                    dot > 0
+                        ? 'Crossing normal points toward the first waypoint, as intended'
+                        : 'Crossing normal points AWAY from the first waypoint — the fleet would start by sailing away from its own course');
+            }
         }
     }
 

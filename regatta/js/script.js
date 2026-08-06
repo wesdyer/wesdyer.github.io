@@ -5141,9 +5141,9 @@ class Boat {
 // whose regions state no variation, and a shifty one is authored — the same rule as the
 // gusts, and as the wind's own direction and speed before them.
 //
-// ⚠️ No venue authors `dirVar` yet, so every venue currently races in a steady breeze. The
-// oscillating shift and the pick-a-side persistent veer are both real tactics and both want
-// to come back as authored region variation rather than as a global.
+// Stillwater Lake authors it (offset side regions on distinct periods plus a slow
+// full-cover swinger); the other venues still race in a steady breeze. The oscillating
+// shift and the pick-a-side persistent veer are authored region variation, not a global.
 function updateBaseWind(dt) {
     state.wind.direction = state.wind.baseDirection;
     state.wind.speed = state.wind.baseSpeed;
