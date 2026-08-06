@@ -491,11 +491,11 @@ class BotController {
         const rsP = this.boat.raceState;
         if (rsP.penalty && isRacing && rsP.leg >= 1 && !rsP.finished) {
             if (!this.penaltySpin) {
-                let nearest = Infinity;
+                let nearest = Infinity; let nbBoat = null;
                 for (const other of state.boats) {
                     if (other === this.boat || other.raceState.finished) continue;
                     const d2 = (other.x - this.boat.x) ** 2 + (other.y - this.boat.y) ** 2;
-                    if (d2 < nearest) nearest = d2;
+                    if (d2 < nearest) { nearest = d2; nbBoat = other; }
                 }
                 // Never start a spiral near a mark: fouls cluster at roundings,
                 // and a 360 swept there hits the mark (fresh foul, loop risk).
@@ -538,10 +538,32 @@ class BotController {
                         if (gclr.at(c[0], c[1]) && gclr._clear[c[1] * gclr.n + c[0]] < need) iceNear = true;
                     }
                 }
-                if (!markNear && !iceNear && (clear || deadline) && this.riskState !== 'IMMINENT' && this.riskState !== 'HIGH') {
+                // CLEAR OUT FIRST (open water only). The deadline used to mean
+                // "spin in traffic anyway" — and the rub attribution says that is
+                // where the contacts are: 78% of bay rub episodes involve a boat
+                // mid-penalty, 77% under a knot, in the lane. The missing action is
+                // to LEAVE the lane: past the deadline with a boat inside 120u,
+                // steer away from the nearest boat (kept out of the no-go so she
+                // does not stall in front of the pack), and take the spin the
+                // moment she is clear — or at a hard deadline regardless, so the
+                // +15s un-taken penalty can never become the cheaper strategy.
+                // ⚠️ Ice venues keep the OLD condition byte-for-byte: sea room is
+                // scarce there, waiting is right, and the 12s deadline was priced
+                // on arctic finishes (5 in-time over 32 seeds against a shorter one).
+                const hardDeadline = rsP.penaltyFlagTime > 14;
+                const spinNow = openWater ? (clear || hardDeadline) : (clear || deadline);
+                if (!markNear && !iceNear && spinNow && this.riskState !== 'IMMINENT' && this.riskState !== 'HIGH') {
                     // Spin away from the nearest boat's side; default starboard-round.
                     this.penaltySpin = true;
                     this.penaltySpinDir = (rsP.penaltyRot !== 0) ? Math.sign(rsP.penaltyRot) : 1;
+                } else if (openWater && deadline && !clear && nbBoat) {
+                    let awayH = Math.atan2(this.boat.x - nbBoat.x, -(this.boat.y - nbBoat.y));
+                    const wDcl = getWindAt(this.boat.x, this.boat.y).direction;
+                    const twaCl = normalizeAngle(awayH - wDcl);
+                    if (Math.abs(twaCl) < 0.7) awayH = normalizeAngle(wDcl + (twaCl >= 0 ? 0.7 : -0.7));
+                    desiredHeading = awayH;
+                    speedRequest = 1.0;
+                    // no return: avoidance still runs — she is give-way to everyone.
                 }
             }
             if (this.penaltySpin && this.riskState !== 'IMMINENT') {
@@ -2218,6 +2240,17 @@ class BotController {
                 if (metrics.distCurrent < 60 || (metrics.distCPA < 35 && metrics.tCPA > 0 && metrics.tCPA < 2.0)) {
                      risk = 'IMMINENT';
                 }
+                // RULE 21 HAZARD MODEL. A boat mid-penalty-spiral sweeps her
+                // velocity through a full circle, so the linear CPA above is noise
+                // on her — risk reads LOW while she rotates two lengths away, and
+                // the bay rub probe has 17% of contact episodes against a boat
+                // everyone could see spinning. Price her by where she IS: a
+                // stationary hazard with a berth.
+                if (other.raceState.penalty && other.controller && other.controller.penaltySpin) {
+                    if (metrics.distCurrent < 260 && risk === 'LOW') risk = 'MEDIUM';
+                    if (metrics.distCurrent < 170) risk = 'HIGH';
+                    if (metrics.distCurrent < 85) risk = 'IMMINENT';
+                }
             }
 
             if (risk !== 'LOW') {
@@ -2689,6 +2722,13 @@ class BotController {
             this.properCourseCPA = bestP;
         }
 
+        // The engine's Rule 21 gives us right of way over a penalised boat — but
+        // holding course at a boat that is SPINNING is standing on into a hazard,
+        // not sailing predictably for a rival who can respond. She cannot keep
+        // clear of anyone mid-rotation; drop the hold-course bonus against her.
+        const threatSpiral = !!(this.threatBoat && this.threatBoat.raceState.penalty
+            && this.threatBoat.controller && this.threatBoat.controller.penaltySpin);
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -2771,7 +2811,7 @@ class BotController {
             // HIGH: Reduced hold-course — give-way boat may not be keeping
             //       clear; begin accepting evasion per Rule 14.
             // IMMINENT: No hold-course bonus — pure Rule 14 emergency avoidance.
-            if (this.avoidanceRole === 'STAND_ON') {
+            if (this.avoidanceRole === 'STAND_ON' && !threatSpiral) {
                 if (this.riskState === 'MEDIUM') {
                     cost += Math.abs(offset) * 3000 * jamF;
                 } else if (this.riskState === 'HIGH') {
@@ -2795,8 +2835,13 @@ class BotController {
             for (const other of state.boats) {
                 if (other === boat || other.raceState.finished) continue;
                 
-                const ovx = (other.velocity && other.velocity.x) ? other.velocity.x * 60 : Math.sin(other.heading)*other.speed*60;
-                const ovy = (other.velocity && other.velocity.y) ? other.velocity.y * 60 : -Math.cos(other.heading)*other.speed*60;
+                // A spiraling boat is projected as STATIONARY with a wider berth —
+                // the same physical fact as the ice gate: her position over the
+                // lookahead is not a line, and she cannot keep clear while she turns.
+                const otherSpinC = other.raceState.penalty && other.controller && other.controller.penaltySpin;
+                const ovx = otherSpinC ? 0 : ((other.velocity && other.velocity.x) ? other.velocity.x * 60 : Math.sin(other.heading)*other.speed*60);
+                const ovy = otherSpinC ? 0 : ((other.velocity && other.velocity.y) ? other.velocity.y * 60 : -Math.cos(other.heading)*other.speed*60);
+                const pairSafe = otherSpinC ? Math.max(safeDist, 130) : safeDist;
 
                 // KEEP CLEAR BY ENOUGH, AND NO MORE (2026-08-04b, half 2b).
                 // The old shaping paid a flat -800 for ducking a stern and +1500 for
@@ -2948,7 +2993,7 @@ class BotController {
 
                     const distSq = (myPx - otherP.x)**2 + (myPy - otherP.y)**2;
                     
-                    if (distSq < safeDist * safeDist) {
+                    if (distSq < pairSafe * pairSafe) {
                         boatCollision = true;
                         // Weight collision by distance (avoid closer/harder collisions more)
                         cost += 500000 / (distSq + 10);

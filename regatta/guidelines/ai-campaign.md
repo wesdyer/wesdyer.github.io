@@ -7138,6 +7138,18 @@ these — and should be suspicious of any candidate whose story is "a constant i
 # PLAN FOR THE NEXT PUSH — RESEARCHED 2026-08-06 AFTER THE AVOIDANCE LANDING
 # ═══════════════════════════════════════════════════════════════════════════
 
+## ⚡ OWNER RULING (2026-08-06 morning, amends P3/P4 below — direct quote)
+
+"Lake is definitely raceable. I gave you several traces where I raced it just fine.
+Redrock is also raceable, marks being in rock is part of the course, you round the rock
+not head through it."
+
+So: **every `check_raceable` FAIL is an AI deficiency, not authoring.** P3's "move mark 5"
+option is DEAD — fix the AI. Redrock moves OUT of P4 (owner-dependent) and INTO scope as
+an AI navigation problem: the required skill is rounding rock and threading the thin web
+the human threads (1 recording exists). The push goal, stated by the owner: human or
+superhuman performance on bay, ocean, redrock, lake, arctic, seatrials.
+
 ## PRIME DIRECTIVE (unchanged, and it worked)
 
 Keep >=4 probes in flight; never idle the background; **check `date` — do not infer
@@ -7222,6 +7234,16 @@ unambiguous.
     landing `treeNOSE2` instead of the shipped pair — that is a live option, not a defeat.
 
 ### P2 — ARCTIC PER-ENCOUNTER ICE AVOIDANCE (19 episodes vs 1)
+
+⚡ **OWNER'S OWN STRATEGY (2026-08-06, direct quote):** "I scan ahead in the ice pack
+and look for where I believe there will be the largest gaps projecting forward where I
+think the rotational state will be when I get there. I then trade off the ideal route
+to my goal vs where the gaps are the largest and commit and go." Three testable claims:
+gaps priced AT ARRIVAL TIME (with rotation) not at stamp time; criterion = LARGEST gap
+(margin, robust to prediction error — not SIPP precision, which stays retired); and
+route-level commitment to the chosen gap (distinct from the avoidance-hold commitment
+family, rejected x3 and closed).
+
 Blocked on the schema (item 4). Do that first, then:
   - human ice exposure vs fleet ice exposure along track — if she routes through thinner
     ice, arctic is a ROUTING problem and the whole avoidance thread is aimed wrong
@@ -7294,3 +7316,124 @@ arctic -23.0/-38.0, and bay's contact classes unchanged rather than doubled).
        arctic 16@9100 + 16@9200   (mktree.sh a HEAD tree first; `treeNOW` is gone)
     2. `_thump.js` on bay/lagoon/river/swamp — P1 needs its starting numbers
     3. then P1 proper
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-08-06 DAY PUSH — "HUMAN OR SUPERHUMAN ON ALL SIX" (owner's goal)
+# ═══════════════════════════════════════════════════════════════════════════
+
+Started 09:40 PDT. Owner rulings recorded at the top of the previous plan: redrock
+and lake are raceable BY DESIGN; gate FAILs are AI deficiencies; no authoring fixes.
+Owner's ice strategy quoted under P2 above.
+
+## Phase 0 — baselines on HEAD (treeNOW == HEAD verified byte-identical), all NEW
+
+    bay      20@9100 / 20@9200   fin med 244 / 244   boat col 2.83 / 2.38  pen .46/.54
+    lake     20@9100 / 20@9200   fin med 295 / 289   boat 5.01/3.93 land 8.1/9.3 pen .92/.86
+    ocean    20@9300             fin med 193         boat 1.80  land 0.03
+    arctic   16@9100 / 16@9200   142 finishers both, med 458.5 / 462, in-time 23 / 14
+    seatrials 100t seed 100      199.52 / 194.43     OCS 14.78%  pen 0.41
+    redrock  check_raceable 8    6/72 finish (0 in cutoff), land 4671, boat rubs 1017/boat-race
+    files: bay_bench_base0806A/B, ocean_bench_base0806lkA/B, ocean_bench_base0806oc,
+           fleet_leg2_base0806A/B. treeNOSE2 REBUILT per recipe (surviving copy was
+           STALE — predated the fan racing-leg guard; diff caught it).
+
+⚠️ Lake is now DIRTIER than bay on boat contact (5.01/3.93 vs 2.83/2.38 events) — P1
+candidates get benched on both venues.
+
+## P1 MECHANISM FOUND — bay boat contact is a PENALTY CASCADE (`_bay_rub_probe`, 12 seeds)
+
+    164 episodes = 1.52/boat-race (human 0.14 recorded, 0 impacts by thump)
+    78% of episodes: a boat is MID-PENALTY.  56%: penalty outstanding >2s BEFORE the rub.
+    17%: a boat is actively mid-360-SPIRAL.  77% at own speed <1 kt.  100% outside zones.
+    geometry: crossing 67% | head-on 16% | overtake 14%.  legs: L1 38%, L0 22%, L4 19%.
+    45% within 400u of a mark (the Boat end of the line = 53% of those).
+
+Not "clean boats passing too close" — a flagged boat slows/spirals INSIDE the lane and
+gets hit (minting more penalties). Both sides are blind by construction:
+  - the spiral scheduler takes the turn in traffic once the 6s deadline passes
+    ("take it anyway"), and while spiraling the boat SKIPS avoidance except IMMINENT;
+  - everyone else projects her LINEARLY — a rotating boat's CPA is noise, so their
+    risk reads LOW until contact.
+Candidates (both change WHICH ACTIONS EXIST, benching now):
+  C1 treeP1: spiral = stationary hazard with a berth (risk by distance 260/170/85,
+     stationary projection, pairSafe>=130, no STAND_ON hold vs a spinning threat).
+  C2 treeP12: +CLEAR OUT FIRST — past deadline in traffic, steer away from nearest
+     boat (no-go-guarded), spin when clear or at hard deadline 14s. OPEN WATER ONLY;
+     ice venues keep the old condition byte-for-byte (12s deadline was priced there).
+
+## P2 MEASUREMENTS — the schema block dissolved, and both sides are now measured
+
+The 19 shipping-format arctic recordings carry `floeHulls` (hullId -> exact hull
+polygon; recorder comment: per-sample [id,x,y,spin] gives exact extents — spin is
+ORIENTATION). `_ice_exposure.py` (human) + `_ice_exposure_fleet.js` (fleet), SAME
+definition — signed distance to nearest floe EDGE, racing phase, 10 Hz:
+
+                       human (19 races)      fleet (8 seeds @9100)
+    clearance med          206u                  ~206-218u
+    share <100u            22.4%                 (comparable)
+    share <200u            48.7%                 47.7%
+    share <400u            78.7%                 80.0%
+    hdg-rate med <50u      14.2 deg/s            31.1 deg/s
+    hdg-rate med 50-200u   0.0                   31.0-31.2
+    hdg-rate med >400u     0.0                   3.9-12.9
+    speed med <50u         1.61 kt               0.23 kt
+    floe hits/race         3.9 events (8/19 races = ZERO)   fleet 23.0 (18.9 episodes)
+
+**Same corridors, same proximity — opposite behaviour.** The human picks her line and
+holds it (hdg-rate 0.0 outside 50u; turns are planned, p90 ~50 in every band; full
+speed through the pack). The fleet steers at 31 deg/s median in EVERY band under 200u
+and is nearly STOPPED (0.23 kt) beside the ice — reactive milling at the edge, the
+Freezing-Robot signature, now measured against the human in the same water. The
+owner's "commit and go" is not a metaphor: it is hdg-rate 0.0 at 100u from a floe.
+`_impact_plan_probe.js` (on-plan-threaded / on-plan-clear / off-plan split at each
+impact) is running to pick the candidate family.
+
+## Redrock — the human's race, measured (traj_redrock_1785825518447)
+
+    finish 140.3s (authored cutoff 360; fleet: 0 finishers inside it, 6/72 ever).
+    ZERO contact events. Never below 0.8 kt in 1300 racing samples.
+    legs: L1 beat 36.9s (86% up, 4 tacks, 1.44x authored len) | L2 reach 19.8s |
+          L3 beat 23.0s (79% up, 1 tack) | L4 27.9s (19% up) | L5 run 31.6s (3% up).
+    Fleet dies ON leg 3: 57 of 72 boats reach it and never leave (bench running for
+    the per-leg detail).
+
+## ⚡ OWNER DIRECTION (mid-session, 2026-08-06): venues are CAPABILITY TESTS
+
+"One way to look at the different venues is they test different abilities of the
+players whether human or ai. If the ai is behind the human on that venue, it shows
+specific gaps in capability vs the human. It should be the case that improving on one
+venue will often lead to gains on general ai ability - eg object avoidance in arctic
+or routing in redrock."
+
+Operational reading, binding on candidate selection:
+  - name the CAPABILITY a candidate improves, not the venue it moves;
+  - prefer mechanisms that should transfer, and CHECK the transfer (bench the
+    candidate on every venue that exercises the same capability);
+  - the current map: bay/lake = traffic discipline under RRS; arctic = moving-object
+    avoidance & committed gap-running; redrock = confined-water routing (tack-aware);
+    lake = light-air seamanship + shore margins; ocean = sea-state trim; seatrials =
+    clean-start execution (the venue with nothing else in it).
+
+⚠️ REDROCK CORRECTION (found while locating the wall): the current redrock DOCUMENT is
+NOT the one the human recording was made on — in-game DMC legs are
+2300/4472/6874/3948/3129 against the recording's 2504/2307/1733/2623/4150 (the Aug-5
+merge that broke test_editor against "the OLD redrock document" is the likely edit).
+So the 140.3s human race above is a reference for the OLD course; the CURRENT course
+has NO human recording, and its authored 360 cutoff has never been demonstrated by
+anyone. The wall leg is leg 3, m4(2847,-391) -> m5(-678,1545), a 6874u DMC thread
+through the centre web; the fleet jams at (0,600-1200): plan present 100%, 58%
+grid-blocked ahead, 33% wiggle, 0.62 kt, 61 boat rubs + 18% mid-penalty (the pileup).
+A fresh owner recording on the CURRENT document would re-anchor the venue.
+
+## ⚡ OWNER TIP (mid-session): how the human routes redrock
+
+"Look at the route the human took - it does not match the shortest path. They
+actually went through different canyons and choose to go downwind through narrow
+canyons instead of tacking through narrow canyons."
+
+Capability statement: canyon choice is DIRECTION-AWARE — a narrow canyon is cheap
+downwind and effectively impassable upwind, so the human buys distance to put beats
+in wide water. The router's narrow-upwind term exists (base * (1 + loss/W)) but is
+CAPPED AT 20x — if sub-tack-width (123u measured) upwind water is unworkable, that
+cap is an order of magnitude low and a short narrow canyon still outbids a long wide
+detour. Candidate treeCANYON: steepen/uncap the law below tack width.
