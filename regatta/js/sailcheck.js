@@ -713,7 +713,27 @@ function pathSailable(grid, from, to) {
             // ocean 0.0 med / +3.4 mean, the price of shore-adjacent repricing.
             if (TF && _lossTab && c < PAD) {
                 const W = Math.max(60, 2 * c * grid.res);
-                base = Math.min(20, base * (1 + _lossTab[wbin[nid] * 8 + k] / W));
+                let fUp = 1 + _lossTab[wbin[nid] * 8 + k] / W;
+                // BELOW TACK WIDTH the law changes shape (owner, 2026-08-06: the
+                // human "goes downwind through narrow canyons instead of tacking
+                // through narrow canyons" — buys distance to put beats in wide
+                // water). Min tack width is a measured 123u; under ~140u an upwind
+                // bearing is not slow, it is close to unworkable, and the old flat
+                // cap of 20 let a short sub-tack-width canyon outbid a long sailable
+                // one. Quadratic in the width deficit, cap raised to 90 — an order,
+                // not a knob. Downwind bearings have loss≈0 and are UNTOUCHED.
+                // ⚠️ DRIFTING-ICE WATER ONLY — the same physical line every gate in
+                // this campaign sits on. In a floe pack the narrow corridor is
+                // transient and a real alternative usually exists (arctic: 144/144
+                // finishers, in-time 24->40, paired -8/-14.6). Where the narrowness
+                // is AUTHORED shore, the reroute only trades corridor for
+                // shore-grind: lake land contacts 8.1 -> 15.4 per boat-race and
+                // redrock finishers 10 -> 6 under the unscoped law. Non-icy venues
+                // price exactly as stock, by construction.
+                const icyG = !!(typeof state !== 'undefined' && state.course
+                    && state.course._floeObjs && state.course._floeObjs.length);
+                if (icyG && W < 140 && fUp > 1.05) fUp *= (140 / W) * (140 / W);
+                base = Math.min(icyG && fUp > 1.05 && W < 140 ? 90 : 20, base * fUp);
             }
             // ⚠️ REMAINING WEIGHTS ARE ROUTE HINTS, NOT WALLS — bounded, so the
             // worst hint-driven detour stays small (the 7x-wall-cost cove loop

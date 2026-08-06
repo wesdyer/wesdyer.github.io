@@ -7481,3 +7481,28 @@ treeCANYON (sub-tack-width upwind quadratic, cap 20->90): finishers 10 -> 6 of 7
 leg-3 jam unchanged, rubs 61 -> 45. Route change either unavailable on this document
 or no better. The wall is EXECUTION of sub-tack-width beats. Parked pending the
 arctic guard; do not land without a demonstrated gain anywhere.
+
+## ✅ LANDED — the CANYON LAW, scoped to drifting ice (owner's routing insight, transferred)
+The owner: the human "goes downwind through narrow canyons instead of tacking through
+narrow canyons". pathSailable's narrow-upwind term was capped at 20x, an order low for
+sub-tack-width (123u) water. Quadratic width-deficit below 140u, cap 90 — and scoped
+to grids with drifting floes after the guards spoke: it was built FOR redrock and
+WINS ON ARCTIC instead (the transfer the capability frame predicts, arriving
+backwards). Evidence:
+    arctic A (16@9100 vs P12 head): 144/144 finishers, med 457->424, in-time 24->40,
+        paired -8.0/-14.6, floe contacts 36.9->30.3, land 25.6->19.2
+    arctic B (16@9200 vs old-head B, P12 ~neutral on arctic): med 462->451, in-time
+        14->23, paired -19.5/-17.8, floe 38.3->34.1  [new-head B baseline recording]
+    bay: paired +0.0 med (guard, unscoped variant) and now stock by construction
+    lake: UNSCOPED variant was a dirt regression (land 8.1->15.4) -> scoping earned;
+        scoped tree verified BYTE-IDENTICAL on lake (8 seeds, exact finish times)
+    redrock: unscoped variant 10->6 finishers (rock-narrow ≠ ice-narrow) -> scoped out
+
+## ⛔ REJECTED with mechanism — the SIGHTED WIGGLE (treeWIG2)
+44% of arctic floe impacts happen mid-wiggle (blind breakout, avoidance bypassed), so
+the side-choice was given a 250u grid ray. Arctic: floe contacts 36.9->42.0 UP, paired
++1.5/+6.5; lake wash. The blind wiggle's grind-through is FUNCTIONAL in pack ice — it
+pushes through the plug in the direction of travel, where the sighted version detours,
+stays slow longer, and accrues MORE exposure ("a 25s grind beats 160s of weaving", now
+measured at the wiggle layer too). The 44% is partly the price of escaping, not waste.
+Upstream (don't get stuck) is the lever, and the canyon law IS that lever.
