@@ -6689,3 +6689,37 @@ Identical on every statistic. The gating holds and the arctic numbers stand. ⚠
 16 seeds: the session had already been burned once by a stale tree (`treeLANDED` turned
 out to predate the no-go tax, and three decomposition probes had to be re-run against
 `treeNOGO2`).
+
+## ✅ LANDED `b566370` — BOTH changes, after arctic reversed the decision
+
+The earlier entry concluded "the gate alone, not the pair". **Arctic overturned that**, and
+the reason is worth keeping: the gate-alone verdict was reached from lake and bay only,
+where the two candidates overlap almost completely. On Glacier Sound they do not.
+
+    paired median vs HEAD, two disjoint sets per venue (NEGATIVE arctic = faster)
+                        lake 9100  lake 9200 | bay 9100  bay 9200 | arctic 9100  9200
+      gate alone          +41.0      +55.0   |   +0.5     -2.5    |   -23.0     -38.0
+      both together       +56.0      +46.0   |   +5.0     +2.5    |   -71.0     -86.0
+      arctic finishers                                            | 139->142  123->142
+
+The pair roughly DOUBLES the arctic gain and ties on lake. Arctic is the venue furthest
+from the human (535 against ~222) and it gains ~78 s a boat plus up to nineteen more
+finishers; declining that to spare bay one extra boat rub is the wrong trade.
+
+**Landed, and what it cost.** Reported rather than buried:
+
+      bay boat contacts   1.17 -> 2.26 and 1.31 -> 2.68 (roughly double, BOTH sets)
+      bay penalties/boat  0.43 -> 0.52 and 0.37 -> 0.57 (~+35%)
+      bay land contacts   0.13 -> 0.04 and 0.12 -> 0.24 (disagree)
+      bay mark contacts   0.73 -> 0.52 and 0.53 -> 0.56 (down / flat)
+      lake land contacts  19.4 -> 9.9   arctic land 32.9 -> 27.7, mark 0.74 -> 0.60
+
+Boats hold straighter lines, so they pass closer and touch each other more. Every venue is
+faster on the clock and no venue loses finishers; bay pays in boat-on-boat contact.
+
+### Where the two venues' numbers now stand against the human
+
+      Stillwater Lake   407.5 at session start -> 295-303   (human 223)
+      Glacier Sound     535 -> 462                          (human ~222)
+      Lighthouse Cove   252 -> 245                          (human 226.2)
+      Ocean             193, untouched                      (human 182.5)
