@@ -4613,3 +4613,37 @@ The sign was determined by MEASUREMENT rather than by reasoning about tack conve
 
 `treeLAY` makes the test one-sided (at the layline OR past it) and stops the cooldown
 vetoing it once genuinely past. Benching.
+
+### ⛔ `treeEX` (orbit clamp) and `treeLAY` (one-sided layline) — NEITHER LANDS
+
+    treeEX   clamp the orbit lead to what is left to the exit bearing
+      bay      paired  0 med / +1.3 mean,  MARK CONTACTS 0.67 -> 0.40
+      arctic   paired -3 med / -9.9 mean
+    treeLAY  one-sided layline call, cooldown cannot veto once past
+      ocean unscoped   paired 0 med / -5.2 mean, downwind VMG 12.88 -> 12.49
+      ocean scoped     paired 0 med / -0.8 mean
+      bay unscoped     paired -6 med, BOAT RUBS 1.59 -> 1.03
+
+⚠️ **The unscoped layline change also fires on downwind GYBES** — `hStarboard`/`hPort` are
+`wd ± optTWA` and optTWA is whichever angle the MODE chose, so one block serves both. That
+is the downwind regression, and scoping to `mode === 'upwind'` removes it. Worth
+remembering: anything touching that block touches gybes too.
+
+**But scoping it did not buy anything either, and the reason is the real finding.**
+
+### ⚡⚡ THE AI CALLS ITS LAYLINE AGAINST THE ROUTING CARROT, NOT THE MARK
+
+`otherError = normalizeAngle(otherCog - angleToTarget)` — and `angleToTarget` is the
+bearing to the NAV TARGET. On a rounding leg that is whatever the router is steering for:
+a ruler carrot, a zone-approach point, an entry sector. Measured on Bluewater's first leg,
+784 samples:
+
+    the nav target sits a MEAN OF 1717 UNITS from the mark, and as much as 3401
+    (the mark's own zone is 1000)
+
+So the layline is being called against the wrong point, by a margin larger than the zone.
+That is why the fleet sits at 46-49% overstood against a human's 37.7%, and why sharpening
+the TEST changed nothing — it sharpened it against the wrong point.
+
+`treeLAY2` calls it against the mark. First read: distance 8412 -> 7955 and time 82.0 ->
+80.5 on the same seeds, overstanding barely moved (49.4% -> 46.4%). Benching properly.

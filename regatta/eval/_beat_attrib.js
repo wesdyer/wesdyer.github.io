@@ -21,6 +21,7 @@ const path = require('path');
 const TRAJ = process.argv[2];
 const LEG = +(process.argv[3] || 1);
 const RACES = +(process.argv[4] || 3);
+const ROOT = process.argv[5] ? require('path').resolve(process.argv[5]) : require('path').resolve('.');
 const norm = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 
 // Layline test: with the mark at M and the wind blowing FROM wd, a boat at P is beyond the
@@ -42,9 +43,9 @@ const overstood = (px, py, mx, my, wd, beatRad) => {
   const errs = [];
   p.on('pageerror', e => errs.push(String(e).slice(0, 200)));
   await p.addInitScript((v) => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), venue);
-  await p.goto('file://' + path.resolve('regatta/index.html'));
+  await p.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
   await p.waitForFunction(() => window.state && window.update, null, { timeout: 20000 });
-  await p.addScriptTag({ content: fs.readFileSync(path.resolve('regatta/eval/eval_harness.js'), 'utf8') });
+  await p.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
 
   // Where does this leg end? Ask the course, not the trajectory.
   const anchor = await p.evaluate((lg) => {
