@@ -29,13 +29,14 @@ const TRIALS = parseInt(process.argv[2]) || 8;
 const SEED0 = parseInt(process.argv[3]) || 9100;
 const ROOT = path.join(__dirname, process.argv[4] || 'treeA');
 const LABEL = process.argv[5] || null;
+const VENUE = process.argv[6] || 'arctic';   // the attribution is venue-agnostic; only the default is arctic
 (async () => {
     const browser = await chromium.launch();
     const page = await browser.newPage();
     page.on('pageerror', e => console.log('PAGE ERROR:', String(e).slice(0, 300)));
-    await page.addInitScript(() => {
-        localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'arctic' }));
-    });
+    await page.addInitScript((v) => {
+        localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
+    }, VENUE);
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
     await page.evaluate(() => {

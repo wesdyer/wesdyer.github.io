@@ -2409,13 +2409,72 @@ class BotController {
         const boat = this.boat;
         const lookaheadFrames = 240; // 4 seconds lookahead
         const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
+        // DOES ANYTHING HERE DRIFT? Both of this function's 2026-08-06 changes assume the
+        // thing being dodged stays where the probe found it, so both are gated on the
+        // same fact. Same flag the keep-clear terms already read; `refreshBotGrid` fills
+        // it on the first update of a race, before any avoidance runs (verified: 0 after
+        // resetGame, 112 after one update(1/60) on Glacier Sound).
+        const openWaterAv = !(state.course._floeObjs && state.course._floeObjs.length);
 
-        // Candidates: more granular to find gaps
-        const candidates = [
-            0, 
-            0.1, -0.1, 
-            0.2, -0.2, 
-            0.4, -0.4, 
+        // Candidates: more granular to find gaps.
+        //
+        // FINER BETWEEN 0.2 AND 0.8 — WHERE NOTHING DRIFTS. The escape is an argmin over
+        // this list, so its spacing IS the resolution of every dodge the fleet makes: a
+        // boat that needs 17 degrees to clear is offered 11 and then 23, and buys 23.
+        // That quantization is why twelve candidates re-priced the avoidance COST and
+        // the mean deflection never left 44-48 degrees. The human's own ledger, per
+        // encounter with the deliberate tacks removed, is a median 8 degrees at CPA
+        // (bay, n=272) against the fleet's 44-51.
+        //
+        // Benched: Stillwater Lake -29.0 paired median, Lighthouse Cove -5.0 and -2.0 on
+        // two disjoint 20-seed sets, ocean inert.
+        //
+        // ⚠️ NOT ON GLACIER SOUND, and the honest reason is that FOUR 16-seed sets could
+        // not tell it from zero there:
+        //
+        //     9100  paired med  +4.0  mean  +3.8 | finishers 139 -> 132 of 144
+        //     9200  paired med  -9.0  mean -12.7 | finishers 123 -> 123
+        //     9300  paired med -13.0  mean  -4.3 | finishers 134 -> 134
+        //     9400  paired med +10.0  mean  -0.6 | finishers 135 -> 138
+        //     POOLED 64 seeds, n=491 | med -4.0  mean -3.1 | 531 -> 527 of 576
+        //
+        // The set medians alternate sign across a +-13 s range, which is what a threshold
+        // statistic on a marginal venue looks like (Glacier Sound DNFs ~8% of the fleet
+        // at 900 s) — not what a mechanism looks like. A mechanism WAS drafted here
+        // ("a floe neither holds still nor keeps clear, so a tighter miss is worth less")
+        // and set 2 refuted it, so it is not claimed. The gate is a conservatism: do not
+        // move a marginal venue for an effect indistinguishable from noise.
+        //
+        // ⚠️ The two lists are ordered and the order is the tie-break (`cost < minCost`
+        // keeps the earlier candidate). The ice list is the stock list, unchanged.
+        // ⚠️ RACING LEGS ONLY — the densified list reshapes the START otherwise.
+        // This fan landed in d55eb97 without a leg guard, and bisecting seatrials across
+        // four commits with one command found what that cost:
+        //     b60ba9d pre-session  OCS 16.67% | d55eb97 the fan  OCS 21.11%
+        //     97a5559 no-go tax    OCS 21.11% | b566370 tonight  OCS 21.11%
+        // 4.4 points of Clubhouse OCS, unnoticed because the fan was judged on race time.
+        // Restricting it here puts that back to 16.67% exactly, and costs nothing it was
+        // landed for: lake -3.5 paired median (inert, and max 592 -> 420), bay +2.0 with
+        // penalties 0.57 -> 0.46. Glacier Sound is untouched by construction — floes make
+        // `openWaterAv` false, so the ice list below is selected either way.
+        const racingLegF = this.boat.raceState.leg >= 1;
+        const candidates = (openWaterAv && racingLegF) ? [
+            0,
+            0.1, -0.1,
+            0.2, -0.2,
+            0.3, -0.3,
+            0.4, -0.4,
+            0.5, -0.5,
+            0.6, -0.6,
+            0.7, -0.7,
+            0.8, -0.8,
+            1.2, -1.2,
+            1.6, -1.6 // Wider options for emergency bailouts
+        ] : [
+            0,
+            0.1, -0.1,
+            0.2, -0.2,
+            0.4, -0.4,
             0.6, -0.6,
             0.8, -0.8,
             1.2, -1.2,
@@ -2425,7 +2484,40 @@ class BotController {
         // problem. In an open-water start pack they are cheap chaos (at jam speeds
         // the reversal surcharge is waived), so open venues keep the classic fan.
         if (state.course._gridFixed && state.course._gridFixed.length) {
-            candidates.push(2.2, -2.2, 3.0, -3.0);
+            // ...but ONLY WHEN SHE IS ACTUALLY NOSED INTO ONE, and only while racing.
+            //
+            // The gate used to be "this venue has authored land", which is a property of
+            // the COURSE, not of the boat's predicament — so a 126- and a 172-degree turn
+            // sat in the fan for the entire race. `_margin.js` counts how often they win:
+            // 17.3% of every helm movement on Stillwater Lake, 15.0% on Glacier Sound,
+            // 2.3% on Lighthouse Cove. The pow(|offset|,1.5) base cost plus the 250
+            // surcharge below is pocket change beside a median cost(0) of 7500-15000, and
+            // that surcharge is waived under 1.0 kt — exactly the state a boat pinned in
+            // narrow water is in.
+            //
+            // The genuinely stuck boat is NOT this code's problem: `wiggleActive` returns
+            // out of applyAvoidance at the top of the function and fires after 3 s below
+            // speed on any land venue. These candidates were justified by a predicament
+            // another system already owns.
+            //
+            // Same test the unplanned-tack waiver above uses: hard grid blockage within
+            // ~180u dead ahead. Benched (paired median, two disjoint 20/16-seed sets):
+            //   lake   +41.0 / +55.0 faster   349 -> 307, 350 -> 303, land 19.4 -> 9.6
+            //   arctic -23.0 / -38.0 faster   535 -> 511, 534 -> 498, finishers +0 / +10
+            //   bay     +0.5 /  -2.5          inert, and its 2.3% share predicted that
+            //
+            // ⚠️ leg >= 1: ungated, this took Lighthouse Cove from 0 to 2.2% OCS — the
+            // start pack turns back off the line with these. Start tuning is sacred.
+            let nosedIn = false;
+            const gNR = state.course.botGrid;
+            if (gNR && this.boat.raceState.leg >= 1) {
+                for (const dNR of [90, 180]) {
+                    const cc = gNR.cell(this.boat.x + Math.sin(this.boat.heading) * dNR,
+                                        this.boat.y - Math.cos(this.boat.heading) * dNR);
+                    if (!gNR.at(cc[0], cc[1])) { nosedIn = true; break; }
+                }
+            }
+            if (nosedIn || this.boat.raceState.leg < 1) candidates.push(2.2, -2.2, 3.0, -3.0);
         }
 
         let bestHeading = desiredHeading;
@@ -2602,10 +2694,74 @@ class BotController {
 
             // Base Cost: Deviation from desired course
             // Non-linear cost to strongly prefer small deviations
-            let cost = Math.pow(Math.abs(offset), 1.5) * 10;
+            // WHAT DOES IT COST TO LEAVE YOUR PROPER COURSE?
+            //
+            // It used to be pow(|offset|,1.5)*10 — a 172-degree reversal priced at 52 and
+            // a 92-degree swerve at 20, against proximity terms of 3500-25000, a hard
+            // constraint of 500000, and a measured median cost(0) of 7500-15000. The
+            // proper-course term was not a term, it was a tiebreaker three orders of
+            // magnitude below everything it was weighed against.
+            //
+            // ⚠️ THIS IS WHY ~12 PREVIOUS RE-PRICINGS WERE INERT. Every one of them
+            // LOWERED a threat cost (the clearance cost went 10000 -> 3000 and did
+            // nothing), and 25000 -> 8000 leaves a 52-point U-turn just as free. The
+            // deviation side had never been raised. A term in the wrong ORDER OF
+            // MAGNITUDE is a structural bug, not a knob at its knee.
+            //
+            // Raise the POWER, not the coefficient. Flat pow1.5*1000 is also fast (lake
+            // +44.0, bay +9.0) but taxes small deviations too — and a mark rounding IS a
+            // sustained small deviation, so bay mark contacts went 0.53 -> 2.07 and a boat
+            // failed to round. pow3*200 prices the 172-degree turn the same (5400 vs 5196)
+            // and leaves a 17-degree nudge at 5 instead of 164:
+            //
+            //   offset      0.3    0.8    1.6    3.0
+            //   was         1.6    7.2   20.2   52.0
+            //   pow1.5*1000 164    716   2024   5196    <- taxes the rounding too
+            //   pow3*200      5    102    819   5400    <- same U-turn, small dodge free
+            //
+            // It taxes only the manoeuvres the human never makes: she turns >=80 deg in a
+            // second in 0 of 6041 lake windows and 0 of 27784 bay windows (`_hdgrate.js`).
+            // Racing legs only, for the same OCS reason as the gate above.
+            let cost = (this.boat.raceState.leg >= 1)
+                ? Math.pow(Math.abs(offset), 3) * 200
+                : Math.pow(Math.abs(offset), 1.5) * 10;
 
             if (taxTack && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) {
                 cost += 600 * jamF;
+            }
+
+            // A HEADING INSIDE THE NO-GO IS NOT A COURSE, IT IS A STOP. The tax above
+            // catches a candidate that CROSSES to the other tack; it says nothing about
+            // one that simply lands head to wind, and the fan is full of those — from
+            // close-hauled, a 0.8 rad escape to windward IS the no-go zone. Nothing else
+            // in this function knows that such a candidate does not escape anywhere: the
+            // projection below happily flies the boat along it at her current speed.
+            //
+            // Measured on Stillwater Lake (`_stall_probe` + `_irons_entry`, new): the
+            // fleet spends 6.4% of the race under one knot against the human's 0.0%,
+            // 31.5% of that is head to wind, and **43.7% of every entry into irons is
+            // this** — the boat deflected into the no-go by avoidance. She was doing
+            // 2.20 kt median two seconds earlier, so it is not light air killing her; it
+            // is her own escape. (Tacks are only 19.3%, which is why gating slow tacks
+            // moved the total by 5%.)
+            //
+            // Scaled and shaped like the tack tax next to it: shaping-sized, so the
+            // Rule-14 terms still roll over it when luffing head to wind is genuinely
+            // the only way out, and waived for a boat with no way on — she can pivot
+            // wherever she likes because she has nothing to lose.
+            {
+                const twaCand = Math.abs(normalizeAngle(h - wdAv));
+                // ⚠️ OPEN WATER ONLY, and this is the third change tonight to need that
+                // gate for the same underlying fact. Where the obstacle is DRIFTING ICE,
+                // luffing head to wind is often the correct escape — you stop, rather
+                // than hit a floe that will not keep clear for you — so the option this
+                // tax removes is the fleet's best emergency out on exactly the venue
+                // where obstacles do not get out of the way. Benched on Glacier Sound:
+                // +24.0 paired median, 139 -> 126 finishers, and every contact class up
+                // (boat 7.66 -> 11.49, land 27.5 -> 32.9, floe 32.5 -> 38.1).
+                if (twaCand < 0.55 && this.boat.raceState.leg >= 1 && openWaterAv) {
+                    cost += 500 * jamF * (1 - twaCand / 0.55);
+                }
             }
 
             // RRS Rule 16/14: Stand-on boat holds course...
@@ -2896,12 +3052,45 @@ class BotController {
                 ? (state.course._botGridStatic || state.course.botGrid)
                 : state.course.botGrid;
             if (gAv) {
-                const segLen = Math.hypot(futureX - boat.x, futureY - boat.y);
+                // A SHORELINE DOES NOT MOVE, so the question a candidate heading has to
+                // answer is WHERE IT LEADS — not where four seconds of it lead. Every
+                // other probe here is time-based because the thing being dodged is also
+                // moving. Scaling this one with boat speed put the fleet in a RATCHET: a
+                // shore rub costs 60% of speed (`boat.speed *= 0.4`), the shortened probe
+                // then sees less water, so she rubs again and it shortens again. At 1
+                // knot the whole probe is 60 units — SHORTER THAN ITS OWN 140-unit hard
+                // zone — so every candidate that touched land read as an unavoidable
+                // collision, the argmin fell back to least-deviation, and the boat held
+                // her course into the beach. Measured on Stillwater Lake: 30.6 land
+                // contacts per boat-race, 78% of them taken below half a knot, against a
+                // human's zero. Floored at four seconds' worth at four knots; above that
+                // nothing changes, and the 140-unit hard zone is already a distance, so a
+                // longer probe grades the far half rather than vetoing it.
+                //
+                // ⚠️ ONLY WHERE NOTHING DRIFTS — and this gate is the argument above
+                // taken seriously. Where there is ice, `gAv` is the STAMPED grid, so a
+                // floored probe is not looking further down a coastline, it is predicting
+                // 240 units through a moving pack. Benched on Glacier Sound: +9.0 paired
+                // median and 139 -> 130 finishers with floe contacts 32.5 -> 37.8.
+                // ⚠️ The ice branch reuses the ORIGINAL expressions rather than
+                // recomputing equal ones. `Math.hypot(futureX - boat.x, ...)` and
+                // `speed * 4` are equal in arithmetic and not necessarily in floating
+                // point, and `stepsAv` and the 140-unit test both round — so a one-ULP
+                // difference is a behaviour difference, and the golden traces hash
+                // behaviour per frame. This way Glacier Sound is byte-identical, not
+                // approximately identical.
+                const LAND_PROBE_MIN = 240;
+                const landLen = openWaterAv
+                    ? Math.max(LAND_PROBE_MIN, speed * (lookaheadFrames / 60)) : 0;
+                const landFX = openWaterAv ? boat.x + Math.sin(h) * landLen : futureX;
+                const landFY = openWaterAv ? boat.y - Math.cos(h) * landLen : futureY;
+                const segLen = openWaterAv
+                    ? landLen : Math.hypot(futureX - boat.x, futureY - boat.y);
                 const stepsAv = Math.max(2, Math.min(8, Math.ceil(segLen / (gAv.res * 0.6))));
                 for (let sI = 1; sI <= stepsAv; sI++) {
                     const frac = sI / stepsAv;
-                    const cc = gAv.cell(boat.x + (futureX - boat.x) * frac,
-                                        boat.y + (futureY - boat.y) * frac);
+                    const cc = gAv.cell(boat.x + (landFX - boat.x) * frac,
+                                        boat.y + (landFY - boat.y) * frac);
                     if (!gAv.at(cc[0], cc[1])) {
                         // Floe-plugged (SOFT) water is a grind, not a wall — the
                         // route may deliberately cross it. Land is a wall.
@@ -2927,7 +3116,7 @@ class BotController {
                     }
                 }
                 if (!staticCollision && gAv._clear) {
-                    const ce = gAv.cell(futureX, futureY);
+                    const ce = gAv.cell(landFX, landFY);
                     const idAv = ce[1] * gAv.n + ce[0];
                     const clr = gAv._clear[idAv];
                     if (clr > 0 && clr < 3) {

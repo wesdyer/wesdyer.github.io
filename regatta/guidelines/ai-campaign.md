@@ -5286,3 +5286,2011 @@ placement analysis. The current-doc corridor facts stand on their own: 4015 nav 
 clearance histogram peaking at 1-2 cells (100-200u), corridors 50-150u at the pinches.
 If the owner has a redrock recording made on the CURRENT document, it would reopen the
 placement question ("does the human tack in sub-150u water, or tack where there is room?").
+
+
+# ⚡ 2026-08-06 OVERNIGHT PUSH — PHASE 0: RE-BASELINE ON THE OWNER'S HEAD, AND A NEW VENUE
+
+The plan above was written on `5350cae`. The owner then landed five commits, two of which
+move the world: **`b60ba9d` clamps the gust stack** (the bug the last entry reported —
+overlapping puffs now add at most the strongest single one of them, and ocean's cells were
+re-authored 25x1000m -> 12x600m), and **`4909c1e`+`b60ba9d` add STILLWATER LAKE**, the first
+venue to author `dirVar` and the first light-air venue in the game. Three human recordings
+came with it.
+
+## RE-BASELINE (HEAD = b60ba9d, all benches on treeHEAD built after it)
+
+    venue    bench                          med    vs the plan's anchor
+    bay      bay_bench_headbay 20@9100      257.0  UNCHANGED (corrbay 257.0)
+    ocean    ocean_bench_headocean 20@9300  193.0  MOVED -5 (corrocean 198.0) — the gust
+             ocean_bench_headoc2 20@9320    193.0  clamp + re-authoring, owner's change
+    arctic   fleet_leg2_headarc 16@9100     535.0  UNCHANGED (corrarc16 535, 139 fins)
+                                            139/144 finishers, 97%
+    lake     ocean_bench_headlake 20@9100   407.5  NEW
+
+⚠️ **Every ocean anchor from before `b60ba9d` is void.** Bay and arctic are byte-comparable.
+
+## ⚡ STILLWATER LAKE IS THE BIGGEST GAP ON THE BOARD
+
+    venue    fleet med   human med (in fleet)   gap
+    bay      257.0       226.2                  +31 s
+    ocean    193.0       182.5                  +11 s
+    lake     407.5       223.0 (3 runs: 209.6/223.0/278.0)   +184 s, 1.83x
+    arctic   535.0       ~222                   2.4x
+
+and the fleet does not merely lose — **21% of it would DNF**: lake authors a 480 s cutoff and
+the bench (cutoff raised to 900) finishes 143 of 180 boats inside 480. The fastest bot in 180
+boat-races is 240 s; the human's SLOWEST of three runs is 278 s and her best is 209.6 s.
+
+## THE MECHANISM, MEASURED
+
+`_ground_probe.js` (new) records every `collision_island` with the state that produced it,
+against a control histogram of the water the fleet actually sailed in.
+
+    land contacts per boat-race     lake 30.63   |  bay 0.22   arctic 27.54 (+32.5 floe)
+    speed AT the contact            med 0.24 kt, 78% of them under 0.5 kt
+    local wind at the contact       med 6.79 kt  <- NOT a light-air hole; she is ashore
+    avoidance deflecting her        median 0 deg; >5 deg on only 29% <- not traffic
+    liveness state                  'normal' on 92% <- the stuck-watchdog never engages
+    fleet time under 1 kt           8.3%   |  the three humans: 0.0%, 0.0%, 1.6%
+    where                           44% of 765 hits in ONE place, 340-680u NNW of mark-5
+
+and the human-vs-fleet track map (`_tracks.js`, new) shows the fleet sailing up a blind
+finger of water north of mark-5 that the human never enters.
+
+**THE RATCHET.** `applyAvoidance` probes each candidate heading along a segment of length
+`boat.speed x 4 s`. Land is checked against that segment. A shore rub costs 60% of speed
+(`boat.speed *= 0.4`), so the probe SHORTENS — at 5 kt it is 300 units, at 1 kt it is 60,
+which is shorter than its own 140-unit hard-collision zone. Below that, every candidate that
+touches land reads as an unavoidable collision, the argmin falls back to least-deviation, and
+the boat holds her course into the beach. Then she is slower still. This is the same failure
+the floe comment at `collision_island` describes ("sees every candidate blocked... falls back
+to least-deviation, and holds course INTO the floe") arriving through the length of the probe
+rather than the width of the collider.
+
+Land does not move. It is the ONE obstacle here whose probe has no reason to be time-scaled.
+
+## ROUTER SPEED BINS — a real defect, and a SMALL one (measured, not assumed)
+
+The time-cost table's wind-speed bins were `[8,12,16,20,25,30]`, nearest-binned, so every cell
+under 10 kt shared one bin. On lake — 7-9 kt authored, 2-kt shore holes, 2.9% of its water
+dead calm — **all 4447 navigable cells landed in bin 0**: the router could not tell a nine-knot
+lane from glass. Confirmed by construction and by `_lake_wind.js`.
+
+Extending to `[2,4,6,8,12,16,20,25,30]` is provably scoped: bay's lightest cell is 7.01 kt and
+the new 6/8 boundary is 7.0, arctic's is 15.05, ocean's 18, river 12 — **only lake re-bins**.
+But `_route_wind.js` (new — prices a planned route in SECONDS by integrating the polar along
+it) says the prize is small: total planned time 193.4 s -> 193.1 s, with leg 3's exposure to
+sub-4-kt water halved (8.2% -> 4.9% of path) for +271 units. And a TF_MAX sweep (the cost
+ceiling, which at 4 was below the honest cost of light air) moves the planned route by 1.1 s
+across 4..20. **The route layer is not where lake's 184 seconds are.** Kept as a cheap accuracy
+fix to bench alongside, not as the candidate.
+
+⚠️ **I hit the exact hazard the new comment warns about**: my first candidate tree patched the
+bin list in `sailcheck.js` but the string replace against `script.js` missed on indentation, so
+the table was built with stride 9 and indexed with stride 6. Every cost was garbage and the
+first TF_MAX sweep was meaningless. `SPDS` is now exported from SailCheck and read by the
+course build — one array, one source.
+
+## LAKE, DECOMPOSED — and three rejections with mechanisms
+
+The grounding story above is real but it is NOT where the 184 seconds are. Measured:
+
+    fleet speed (time-weighted, `_ground_probe` histogram)   4.14 kt
+    human speed (3 recordings)                               4.8-5.1 kt      -> -17%
+    fleet leg times   L1 154   L2 140   L3 ~110
+    human leg times   L1  84   L2  70   L3   56              -> 1.8-2.0x each
+    implied fleet distance on L1  ~9550u  vs human 6299u  vs route 4834u
+
+So roughly **a sixth of it is speed and the rest is DISTANCE — the fleet sails 1.5x the
+human's track on every leg**, and the deficit is spread across all three legs rather than
+concentrated anywhere.
+
+### ⛔ MARK-5 IS TIGHT, AND IT IS NOT THE CAUSE (the measurement that stopped a wrong fix)
+
+`_markroom.js` (new — free water around every mark) says lake's mark-5 is planted in
+**100 units of clearance**, with the largest fully-navigable circle around it at 80u and
+only 43% of the circle at 220u navigable. Every bay mark has 300-1150u and a clean circle
+to 400-600u; lake's own mark-3 has 200u. 44% of all shoreline contacts happen within
+~680u of mark-5. It looks like the answer.
+
+It is not. `_queue_probe.js` (new — occupancy and dwell inside a mark's working water):
+
+    mark      peak boats   mean boats   dwell/boat med   max     of which <1.5 kt
+    mark-5        5           0.76         35.0 s       114 s      7 s (max 33)
+    mark-3        6           0.56         28.5 s        51 s      3.5 s (max 8)
+    gate marks    5           0.13-0.22     7.5-13.5 s   31 s      1 s
+
+Mark-5 costs about **6 s more dwell and 3.5 s more crawling than mark-3** — call it 10-15 s
+a boat, not 184. There is no standing queue (mean occupancy 0.76 boats). ⚠️ **Owner note,
+for authoring rather than for tuning**: 100u of clearance around a rounding mark is inside
+the grid's own 44u navigation band plus a 30u hull, and it is the tightest mark in the game
+by a factor of two. It is worth moving into the basin 300u southwest — but it is worth ~10 s,
+and this session did not spend itself there because the probe said not to.
+
+### ✅ THE LAND-PROBE DISTANCE FLOOR IS A LAKE WIN — and I nearly threw it away on the wrong metric
+
+Floor the land probe at 240u so a slowed boat still sees ahead of herself.
+
+    judged on groundings   71.1 -> 68.8 hits per 1000 boat-seconds   "real, tiny"
+    judged on TIME         lake 20@9100 paired med -19.0 s, mean -16.5, fleet med 407 -> 385
+
+⚠️ **The grounding rate was the wrong objective and it said the opposite of the truth.**
+Contacts per boat-race went UP (30.63 -> 34.48) while races got 19 seconds shorter: the
+boats sail past the same shores faster, so they bank more rubs per race and fewer seconds
+per rub. Hits-per-boat-second divides by a denominator the change is trying to shrink.
+Judge a steering change on the clock.
+
+### ⛔ REJECTED: grading the blocked candidates by distance-to-blockage (`treeBLOCK`)
+
+Flat `+500000` on every blocked candidate makes them tie, so the argmin falls through to
+deviation and picks the smallest turn — into the beach. Grading by how soon each hits:
+71.1 -> 67.9. **The reason it barely moves is worth keeping**: the grid marks every cell
+within CLEARANCE (44u) of land unnavigable, so a boat against a shore has her FIRST probe
+sample blocked on every heading and they tie *again*, one term further down.
+
+### ⛔ REJECTED, AND IT MADE THINGS WORSE: free-water escape scoring (`treeESC`)
+
+Walk the ray past the initial blocked run and charge `40000 x clearAt/140` for how long a
+heading stays inside the clearance band before reaching open water. Groundings
+71.1 -> **84.3** per 1000 boat-seconds, and boat-seconds per race went UP (10752 -> 12178:
+the races got LONGER). Mechanism: on a keyholed basin with only 4447 navigable cells, a
+large share of the legitimate water IS within 44u of something, so the term is not a
+stranded-boat rescue — it is a permanent mid-channel bias that lengthens every track on
+a venue whose whole problem is already track length.
+
+**The lesson for this family**: the clearance band is not a hazard, it is the map's margin,
+and any term that treats "inside the band" as a cost will re-price ordinary sailing on
+every narrow venue. A stranded-boat rescue has to be gated on being stranded.
+
+### LAKE'S EXCESS DISTANCE, ATTRIBUTED (`_transit_probe`, now venue-parameterised)
+
+    leg          dist ratio   EXCESS      of which avoid   mean deflection   tacks (human)
+    L1 (beat)      1.86       3781u       1911u = 51%          45 deg        8 med (5-12)
+    L2             1.69       5752u       2495u = 43%          51 deg        6 med
+
+**Half of lake's excess distance is avoidance deflection**, and the tack counts match the
+human's — which kills the "light air makes the shift term dominate the VMG term, so the
+fleet over-tacks" hypothesis before anything was built for it. Lake is not a light-air
+problem wearing a traffic mask; it is the SAME traffic problem as Lighthouse Cove, made
+expensive by a venue with 4447 navigable cells and corridors of 150-350u.
+
+Set that beside the human ledger below and the family is clear.
+
+## ⚡ THE HUMAN'S TRAFFIC LEDGER (`_human_ledger.py`, new) — the number this campaign never had
+
+Mined per ENCOUNTER (a rival inside 600u and closing) across all 59 recordings.
+
+⚠️ **A TACK IS NOT A DEFLECTION.** The first cut reported the human deflecting a median
+48-69 deg per encounter — LARGER than the fleet's 44-48 — and it was an artefact: 26-69%
+of encounters contain a deliberate tack, which is ~90 deg of heading change that had
+nothing to do with the rival. Split on that, the picture inverts and the campaign's
+standing prior is CONFIRMED:
+
+    venue   no-tack encounters   deflection AT CPA          under 5 deg   median CPA
+    bay          n=272           med  8.0  mean 26.7  p90 74.7    40%        355u
+    ocean        n= 15           med  5.2  mean  8.8  p90 12.7    47%        455u
+    lake         n= 40           med  8.7  mean 24.3  p90 62.6    38%        312u
+    arctic       n=196           med 16.4  mean 25.7  p90 70.6    25%        288u
+
+    the fleet, same quantity (`rl/_defl_hist.js`, `_transit_probe`)   mean 44-51 deg
+
+She does not swerve. When she does react hard she TACKS (35% of bay encounters, median
+115 deg of it) — she converts an encounter into a tactical move rather than a dodge. The
+fleet's mean deflection is ~1.7x her mean and ~5x her median, and it is spending that
+difference in distance on every venue with traffic.
+
+### ⛔ PRICED AND DROPPED WITHOUT BUILDING IT: "ease instead of swerve"
+
+`applyAvoidance` returns a heading and nothing else — it has no speed action at all, even
+though the machinery exists (`speedLimit`, used by the ice-pack discipline). A boat that
+could clear astern by easing 10% has to swerve 45 degrees instead. That looked like a
+missing action rather than a mis-priced one, so the ledger was asked whether the human
+uses the throttle:
+
+    speed at CPA / speed at onset      bay 1.02 med   lake 1.02   arctic 1.02
+    encounters where she slowed >10%   bay   1%       lake  8%    arctic   6%
+
+**She does not ease.** She holds her course (8 deg median deflection) and passes 336-355u
+away — in most of her encounters there was never a conflict to resolve. Adding a speed
+action to the escape would be imitating something the human does not do. Not built.
+
+⇒ Which leaves the ACTION-SET resolution as the live lever in this family, and that is
+exactly what the densified fan is.
+
+# ⚡ CANDIDATE 1: DENSIFY THE ESCAPE FAN — and gate it on drifting ice
+
+`applyAvoidance` picks its escape by argmin over a fixed list of heading offsets:
+`{0, ±.1, ±.2, ±.4, ±.6, ±.8, ±1.2, ±1.6}` (+`±2.2, ±3.0` on land venues — the list is
+ALREADY venue-conditional, so gating it further is idiomatic here). The gaps from 0.2 to
+0.8 are 11.5 degrees each, and that spacing IS the resolution of every dodge the fleet
+makes: a boat needing 17 degrees to clear is offered 11, then 23, and buys 23. This is
+the standing explanation for why twelve candidates re-priced the avoidance COST and the
+mean deflection never left 44-48 degrees. Adding `±.3, ±.5, ±.7` costs nothing else —
+same bubbles, same costs, six more points on the fan.
+
+    venue    bench                                 paired med   paired mean   note
+    lake     20@9100 vs headlake                     -29.0        -38.1       pens 1.32->1.05,
+                                                                              mark 2.83->1.52,
+                                                                              land 30.6->27.8
+    bay      20@9100 vs headbay                       -5.0         -3.4       pens 0.37->0.48
+    bay      20@9200 vs headbay2                      -2.0         -3.1       pens flat
+    ocean    20@9300 / 20@9320                        -1.6 mean / -0.1 mean   inert
+    arctic   16@9100 vs headarc                       +2.0         +3.8       finishers 139->132,
+                                                                              pens 1.64->2.11,
+                                                                              floe AND land contacts up
+
+⚠️ **ARCTIC DISAGREED WITH ITSELF, and the mechanism I wrote for it was wrong.** Set 1
+said +2.0 med / +3.8 mean with 7 fewer finishers; set 2 said **-9.0 med / -12.7 mean with
+finishers unchanged**. Pooled over all 32 seeds:
+
+    POOLED n=235 pairs   paired med -5.0   mean -3.7   finishers 262 -> 255 of 288
+
+i.e. slightly FASTER and slightly fewer finishers — ambiguous, not a rejection. The story
+I had written into the code ("finer resolution buys a tighter miss, and a floe neither
+holds still nor keeps clear") is a good story and set 2 does not support it. It came out
+of the comment before it was shipped. This is the standing arctic rule doing its job:
+**two 16-seed sets are not enough to call a threshold statistic on this venue** — the
+same trap that gave 71->65 and 45->65 for one change last session. A third set is
+running to break the tie; until it lands the gate is a CONSERVATISM (do not move a
+marginal venue on mixed evidence), not a mechanism.
+
+⚠️ **The two lists are ordered and the order is the tie-break** (`cost < minCost` keeps
+the earlier candidate), so the open-water list is written out in sorted order identical
+to the one bay/ocean/lake were benched on rather than pushed onto the end — otherwise
+those four 20-seed sets would not have been measuring the shipped code.
+
+
+# ⚡ CANDIDATE 2: THE LAND PROBE IS A DISTANCE, NOT A DURATION — and the two compound
+
+`applyAvoidance` scores each candidate heading along a segment of length
+`boat.speed x 4 s`, and land is checked against that same segment. Every other probe in
+that function is time-based because the thing being dodged is also moving. **A shoreline
+is not.** Scaling this one with boat speed puts the fleet in a ratchet: a shore rub costs
+60% of speed (`boat.speed *= 0.4`), the shortened probe then sees less water, so she rubs
+again and it shortens again. At 1 knot the whole probe is 60 units — SHORTER THAN ITS OWN
+140-unit hard zone, so every candidate that touches land reads as an unavoidable
+collision, the argmin falls through to deviation, and the boat holds her course into the
+beach. Floored at 240u (four seconds at four knots); above that nothing changes.
+
+    lake 20@9100      paired med   paired mean   fleet med   land contacts   pen/boat
+    HEAD                  —            —           407.0        30.63          1.32
+    fan only            -29.0        -38.1         377.0        27.82          1.05
+    land probe only     -19.0        -16.5         385.0        34.48          1.41
+    BOTH                -53.0        -58.6         352.0        18.28          0.96
+    both vs fan alone   -26.0        -20.0
+
+**They compound** (-29 and -19 separately, -53 together), and together they are clean:
+every contact class falls, penalties 1.32 -> 0.96, and 180/180 finish where the land
+probe alone lost two. The fan lets a boat make a small dodge; the probe floor lets her
+see far enough ahead to know a small dodge is enough. Alone, the probe floor just made
+her sail faster past the same shores (contacts UP, time down); with the fan she can
+also miss them.
+
+⚠️ **Judge a steering change on the clock.** The probe floor was nearly discarded because
+`hits per 1000 boat-seconds` barely moved (71.1 -> 68.8) — a denominator the change is
+trying to shrink.
+
+### The floe gate is live from frame 1 (checked, because it nearly was not)
+
+`state.course._floeObjs` is populated by `refreshBotGrid`, not by `resetGame` — so
+straight after a reset it reads EMPTY on Glacier Sound, and a gate written against it
+would hand the ice venue the open-water fan for the first frames. Measured: 0 after
+`resetGame()`, **112 after a single `update(1/60)`**, and `applyAvoidance` cannot run
+before the first update. The gate is sound. (The two existing `openWater` reads at the
+keep-clear terms have the same property and the same answer.)
+
+### The two changes are venue-selective in exactly the way the mechanisms predict
+
+    venue    what the ship tree changes            paired vs HEAD
+    lake     dense fan + probe floor (both bind)   -53.0 med / -58.6 mean  (20@9100)
+    bay      dense fan only (probe floor inert)     -3.0 med /  -2.9 mean  (20@9100)
+             — and SHIP vs FAN-alone on bay is 0.0 med / +0.4 mean, i.e. the floor
+               genuinely does nothing there: bay's boats are fast enough that
+               `speed x 4 s` already exceeds 240u.
+    arctic   probe floor only (fan gated off)      (pending)
+    ocean    dense fan only, and it was inert      (pending)
+
+## WHAT REMAINS BEFORE THE LANDING COMMIT (checklist, in case this session is interrupted)
+
+The candidate is `regatta/eval/rl/treeSHIP` and it is applied with
+`python3 regatta/eval/rl/_apply_ship.py treeSHIP` (region-verbatim from the tree that was
+benched — `--check` reports without writing). Four regions, all in `applyAvoidance`.
+
+    [x] bay    20@9100  ship vs head        -3.0 med / -2.9 mean
+    [x] bay    20@9100/9200 fan alone       -5.0 / -2.0 med  (the fan half, two sets)
+    [x] ocean  20@9300/9320 fan alone       -1.6 / -0.1 mean (inert)
+    [x] ocean  20@9300  ship vs head         0.0 med / +1.8 mean (inert; 2 boats short
+                                             of finishing — noted, within lake-free noise)
+    [x] lake   20@9100  ship vs head       -53.0 med / -58.6 mean
+    [x] lake   20@9200  ship vs head      -32.0 med / -43.7 mean  (386 -> 358,
+                                            land contacts 27.8 -> 21.2, 180/180 finish)
+    [x] arctic 16@9100  ship vs head       BYTE-IDENTICAL by construction; golden traces
+                                            arctic/90210 + 90211 PASS with 0 behaviour
+                                            changes (the 2 of 20 that held)
+    [~] arctic fan alone, 48 seeds         -7.0 pooled paired med, finishers 396 -> 389,
+                                            the loss confined to set 1 — set 4 pending
+    [x] ocean  20@9300  ship vs head        0.0 med / +1.8 mean (inert)
+    [x] seatrials 100t seed 100            199.15 mean / 194.73 med, pen 0.386,
+                                            OCS 14.89%, DNS/DNF 0%, min 174.25
+                                            (was 198.94 / 194.61 / 0.32 / 14.78%)
+                                            — it takes the dense fan and barely notices:
+                                            +0.12 s on the median, which is what ocean
+                                            said too. Penalties 0.32 -> 0.386 is the one
+                                            number that moved and it is worth watching.
+    [ ] goldens: full `--update` (NOT per-venue — that rewrites the file with one venue)
+    [x] npm test: 6 test_editor failures = clean (the 6 wind-shadow ones are FIXED)
+    [x] test_sailable: PASS on all ten venues
+    [ ] goldens: full --update (deferred until the arctic-fan question resolves, so the
+        traces are recorded once rather than twice)
+
+
+# ⚡ THE `avoid: none` BIN, NAMED — and a lock that survived being fixed once
+
+Phase 1c of the plan: *"add one attribution counter inside applyAvoidance to name the
+source BEFORE building anything."* Done (`treeWHY` + `_avwhy.js`): whenever the chosen
+escape deviates more than 0.12 rad, record which term rejected offset 0.
+
+    arctic, 3 races, 84138 deflections >0.12 rad, mean deflection 69 deg
+
+      a BOAT inside the safety bubble          14.3%
+      STATIC (land / grid / boundary)          35.2%
+      an RRS rule violation                     0.0%
+      nothing hard — only a proximity cost     36.0%
+      NOTHING AT ALL — holding course was free 14.4%
+      ...and a formal threatBoat existed on only 26.2% of them
+
+**First, the bin was mostly a classifier artefact.** `_transit_probe`'s `hadBoat` test
+needs a formal `threatBoat`, and 73.8% of real deflections have none — so dodges for
+boats that never became the designated threat were landing in `none`. The mystery bin
+was the instrument, not the AI.
+
+**Second, and this one is a bug.** That last row is impossible unless some candidate
+scored NEGATIVE, and exactly one term can: the commitment discount, `cost -= 60`. The
+whole deviation cost range is 0..20 (`pow(|offset|,1.5)*10`, 20 at the widest candidate
+in the fan), so -60 outranks every deviation there is. Its own comment says it *"must
+only break NEAR-TIES"* and records being cut from -400 after it "became a lock: one wide
+dodge at the start and the boat kept committing to a reversal for thirty seconds". **-60
+is the same lock at a lower price**: 14.4% of arctic's deflections are a boat steering
+away from a course that nothing — no boat, no land, not even a proximity charge —
+objected to, because a heading near her last dodge was scoring -60 against a free 0.
+
+Candidate `treeCOMMIT`: apply the discount only when offset 0 was NOT free. Offset 0 is
+the first candidate scored, so the flag is available by the time the discount is applied,
+and in traffic (where the anti-saw purpose lives) nothing changes at all.
+
+
+## THE PROXIMITY-ONLY BIN, BROKEN DOWN BY TERM
+
+Same instrument, now tagging each `proximityCost` contribution at its source and charging
+the largest one whenever nothing hard vetoed holding course.
+
+    lake, 2 races, 32138 deflections >0.12 rad, mean 61.4 deg
+
+      a BOAT inside the safety bubble          25.1%
+      STATIC (land / grid / boundary)          18.1%
+      NOTHING AT ALL (the commitment lock)     12.5%
+      proximity only, largest term = `narrow`  33.0%   <- the clearance cost
+      proximity only, largest term = `farLand` 11.4%   <- blockage beyond 140u
+
+**A third of every deflection the fleet makes on Stillwater Lake is the CLEARANCE term.**
+`proximityCost += cScale * (1 - clr/3)` fires whenever the projected position lands in
+water with under 3 cells (150u) of clearance, at `cScale` 10000 for land-caused
+narrowness and 4000 for floe-caused. Lake's corridors are 150-350u wide and its clearance
+histogram sits at 2-4 cells nearly everywhere, so on this venue the term is not flagging a
+pinch — the whole course is a pinch, and it is charging up to 10000 (two thirds of the
+`staticCollision` surcharge) for aiming at ordinary water.
+
+This is the same shape as the `clearAt` term I built and rejected earlier tonight: **the
+clearance band is the map's margin, not a hazard.** Next candidate on this venue, on top
+of the ship tree: unify `cScale` at the floe value and bench lake/bay/arctic.
+
+Arctic, same instrument (2 races, 64607 deflections, mean 70.8 deg):
+
+      STATIC hard blockage                     39.2%   <- the dominant bin on this venue
+      a BOAT inside the safety bubble          12.1%
+      NOTHING AT ALL (the commitment lock)     14.0%   <- lake said 12.5%: venue-general
+      proximity only: narrow 14.3 | softIce 9.1 | farLand 8.2 | islandBand 1.9
+                    | bounds 0.7 | boatBand 0.1
+
+Two things worth carrying:
+  - **`boatBand` is 0.1%.** Whatever is bending arctic's line, it is not the traffic
+    proximity gradient — which is consistent with the STAND_ON nudge already having been
+    removed, and it means arctic's remaining avoidance excess is about ICE and WALLS.
+  - **`narrow` is 14.3% here against lake's 33%**, because arctic's stamped-floe grid
+    lets `cScale` fall to 4000 while a floe-free venue always pays 10000. The clearance
+    term is therefore a LAND-VENUE cost in practice, and lake is where it bites.
+
+
+# ⚡ ARCTIC PHASE 1a: THE SOFT MULTIPLIERS, MEASURED — and one of them is DEAD CODE
+
+The plan asked for the real through-soft-cell speed against the router's 2.5x/6x charges.
+`_soft_speed.js` (new): classify every bot at 10 Hz by the `_soft` value of the cell she
+stands in, and take her speed as a fraction of what the polar says for HER heading in HER
+wind. Arctic, 3 races, 128547 samples:
+
+    class                              share    frac-of-polar   cost vs OPEN   charged
+    OPEN (navigable)                   91.3%       0.815            1.00x         1x
+    SOFT=1 opening lead                 0.8%       0.358            2.28x        2.5x  ok
+    SOFT=2 staying plugged              4.7%       0.214            3.81x          6x  ?
+    HARD (land / blocked)               3.2%       0.158            5.16x         wall
+
+So the lead is priced correctly and the plug looked 1.6x over-charged. Setting 6 -> 4 and
+benching arctic 16@9100 returned **paired med 0.0, mean 0.0, p25 0.0, p75 0.0 — every
+statistic byte-identical.**
+
+⛔ **Because the branch is unreachable.** `pathSailable`'s passability test is
+`(id2) => grid._soft[id2] === 1`, so a plugged cell is not passable at all; `isSoft`
+therefore always implies `_soft === 1`, and `? 2.5 : 6` always takes the 2.5. The 6 has
+never priced anything. The comment above it describes a trade — *"a grind that is nearly
+a wall — only worth it against a huge detour"* — that **the router has never been able to
+make**: the grind was not on the menu, so every plugged narrows has always cost a full
+detour however long it was.
+
+⇒ The measurement's real implication is not a cheaper plug, it is an ENTERABLE one:
+`treeSOFT2` admits `_soft > 0` and charges the measured 4x. Benching.
+
+⚠️ Two lessons for the campaign: a bench that returns EXACTLY zero on every statistic is
+evidence about reachability, not about the constant — treat it the way the
+zero-at-every-percentile rule treats a suspicious zero. And a tuned constant that no
+measurement has ever moved may not be tuned at all.
+
+
+## ⛔ REJECTED: letting a free course beat the commitment discount (`treeCOMMIT`)
+
+The lock is real — 14.0% of arctic's deflections and 12.5% of lake's are a boat steering
+away from a course that NOTHING objected to, because a heading near her last dodge scores
+-60 against a free course's 0, and -60 outranks the entire deviation range (0..20). The
+fix (apply the discount only when offset 0 was not free) is small, correct-looking, and
+**costs time**:
+
+    lake 20@9100 vs the landed tree   paired med +4.0  mean +3.6
+                                      boat contacts 3.62 -> 4.42, land 18.3 -> 19.5,
+                                      pen 0.96 -> 1.09, one boat short of finishing
+
+**Mechanism: it is a bug in DESCRIPTION, not in effect.** The comment calls it a
+near-tie-breaker, and it is really hysteresis — and hysteresis that cannot outbid the
+momentary state is not hysteresis. "Holding course is free" flickers tick to tick as a
+rival's projection crosses the bubble edge, so a boat allowed to snap back the instant it
+goes free snaps back and forth. The -60 is buying commitment, and commitment is worth
+more than the 12-14% of deflections it wastes.
+
+⇒ If this is retried, the shape that could work is TIME, not state: allow the return to
+course only after offset 0 has been free for several consecutive decisions. Not built —
+the venue-level prize here is small and the clearance term (33% of lake's deflections) is
+three times bigger.
+
+
+## ARCTIC AND THE FAN, ON 48 SEEDS — the gate may be wrong on this half
+
+    set 9100  n=128  paired med  +4.0  mean  +3.8 | finishers 139 -> 132 of 144
+    set 9200  n=107  paired med  -9.0  mean -12.7 | finishers 123 -> 123 of 144
+    set 9300  n=126  paired med -13.0  mean  -4.3 | finishers 134 -> 134 of 144
+    POOLED    n=361  paired med  -7.0  mean  -3.9 | finishers 396 -> 389 (91.7% -> 90.0%)
+
+Two of three sets are clearly faster and **the entire finisher loss is in set 1**, which
+is also the only set that read positive on time. That is the signature of a threshold
+statistic on a marginal venue, not of a mechanism — the standing rule about 16-seed
+arctic sets, again. A fourth set (9400) is running.
+
+⚠️ Note what this does NOT change: the LAND PROBE FLOOR stays gated on arctic on its own
+evidence (+9.0 paired median, 139 -> 130 finishers, floe contacts 32.5 -> 37.8) and on its
+own argument — where there is ice, `gAv` is the stamped grid, so a floored probe predicts
+240 units through a moving pack rather than looking further down a coastline. The two
+halves of the landing are gated for different reasons and deserve to be judged separately;
+they were tied to one flag for tidiness, and if the fan un-gates, that flag stops being
+shared.
+
+## ⛔ REJECTED: re-pricing the clearance cost (`treeCLR`, 10000 -> 3000)
+
+The term is a third of every deflection the fleet makes on lake. Re-pricing it is INERT:
+
+    lake 20@9200 vs the landed tree   paired med  +1.0  mean  +0.2   contacts 4.16 -> 5.70
+    lake 20@9100 vs the landed tree   paired med +11.0  mean +11.8   land 18.3 -> 21.1,
+                                                                     pen 0.96 -> 1.16
+    — two disjoint sets, both the wrong way
+
+**And that is the campaign's own thesis being confirmed rather than a surprise.** Twelve
+earlier candidates re-priced the avoidance COST and the 44-48 degree mean deflection never
+moved; the explanation on the books was that the escape is an argmin over a QUANTIZED
+action set, so the cost decides only which of a handful of fixed offsets wins. Tonight the
+same venue answered both halves of that: densifying the action set paid -29 to -53 paired
+seconds, and re-pricing the single largest cost term in the same function paid nothing.
+
+⇒ Standing conclusion, now with both arms measured: **on this avoidance layer, change the
+ACTIONS, not the prices.** Any future candidate of the form "term X is too big/small"
+should be required to explain why it will change WHICH CANDIDATE WINS, not merely by how
+much it wins.
+
+### ⛔ REJECTED: making ice plugs enterable at their measured price (`treeSOFT2`)
+
+    arctic 16@9100   paired med -2.0  mean +13.3
+                     finishers 139 -> 131, pen 1.64 -> 2.17
+                     FLOE contacts 32.5 -> 45.8 (+41%), land 27.5 -> 35.5
+
+**Mechanism: the measurement was survivorship-biased and I should have said so before
+benching it.** `_soft_speed` measures the speed of boats WHO ARE IN a plug — and today
+those are only the boats that got caught in one, since the router refuses to route through
+them. Letting the router choose plugs adds the boats that would otherwise have gone round,
+which is a different population. And a plug's price is not only speed: each rub costs 60%
+of it (`boat.speed *= 0.4`) and carries penalty risk, none of which appears in a
+fraction-of-polar figure.
+
+⇒ The dead-code finding stands on its own and is worth the owner's attention regardless:
+`pathSailable` admits only `_soft === 1`, so the `: 6` multiplier and the comment
+describing a grind-vs-detour trade have never done anything. Either the branch should go,
+or the trade should be made possible on purpose and priced by an UNBIASED measurement (a
+probe that forces a route through a plug and times it end to end, against the same boat
+routed around).
+
+
+## ARCTIC AND THE FAN: CLOSED AT 64 SEEDS — it is noise
+
+    set 9100  paired med  +4.0  mean  +3.8 | finishers 139 -> 132 of 144
+    set 9200  paired med  -9.0  mean -12.7 | finishers 123 -> 123
+    set 9300  paired med -13.0  mean  -4.3 | finishers 134 -> 134
+    set 9400  paired med +10.0  mean  -0.6 | finishers 135 -> 138
+    POOLED n=491 pairs    med  -4.0  mean  -3.1 | finishers 531 -> 527 of 576
+
+The set medians alternate sign across a 23-second range. That is a threshold statistic on
+a venue that already DNFs ~8% of its fleet at 900 s, not a mechanism. **The gate stays,
+and the reason is now the strongest evidence in the session rather than the weakest**: not
+"the fan hurts arctic" (it does not), but "four 16-seed sets cannot distinguish it from
+zero, and a marginal venue is not worth moving for that." The shipped comment carries the
+whole table so the next session does not re-run it.
+
+⇒ **Standing note for arctic benching**: 16 seeds is not enough for ANY effect under about
+15 seconds on this venue. Two sets was already the campaign's rule; this says the real
+number is four, or a different statistic (paired per-boat median over pooled sets, which
+is what the table above reports).
+
+
+# ⚡ THE LANDED TREE ON TWO DISJOINT SETS PER VENUE (the full table)
+
+    venue    set        paired med   paired mean   fleet med        note
+    lake     20@9100      -53.0        -58.6       407 -> 352       180/180 finish
+    lake     20@9200      -32.0        -43.7       386 -> 358       180/180 finish
+    bay      20@9100       -3.0         -2.9       257 -> 253       pen 0.37 -> 0.41
+    bay      20@9200       -5.0         -5.1       257 -> 252       pen 0.43 -> 0.38
+    ocean    20@9300        0.0         +1.8       193 -> 196       180 -> 178 finish
+    ocean    20@9320       -1.0         +4.8       193 -> 196       180 -> 179 finish
+    arctic   16@9100    BYTE-IDENTICAL (verified over 300 s x 9 boats, and its two
+                        golden traces pass with 0 behaviour changes)
+    seatrials 100@100   199.15 / 194.73 vs 198.94 / 194.61 — +0.12 s on the median
+
+Groundings on lake, counted properly — **as EPISODES, not as dedup'd contacts**
+(a pinned boat generates ~5.5 contacts per episode, so the raw count flatters and
+frightens in turn):
+
+    HEAD    140 episodes over 3 races = 5.2 per boat-race
+    LANDED   77 episodes             = 2.9 per boat-race   (-44%)
+
+## ⚠️ OCEAN IS THE ONE BLEMISH, AND IT IS THE PROBE FLOOR
+
+Pooled over 40 ocean seeds: paired med 0.0, mean **+3.3** (trimmed +1.4), finishers
+360 -> 357. But the FAN ALONE on ocean measured -1.6 and -0.1 mean — so the mean cost is
+the probe floor, not the fan. Ocean's boats are fast enough that the 240u floor only binds
+at starts, roundings and penalty turns, which is exactly where a long probe reaches past
+the mark they are working around, and it never saves them because there is nothing to hit.
+
+⇒ `treeTIGHT`: the floor also requires TIGHT WATER (`_clear` at the boat under 6 cells,
+~300u). That is a fact about where she is, not about which venue she is on — lake sits at
+2-4 cells nearly everywhere, bay at 6-23, ocean in the open. Benching ocean and lake.
+
+
+### ⛔ REJECTED: a land-only floored probe for ice venues (`treeARCLAND`)
+
+The idea that survived the arctic rejection of the probe floor: a coastline does not move
+even where there is ice, so look further ahead at the STATIC grid only, past where the
+time-based probe already reached, as a graded hint with no hard veto. Glacier Sound takes
+27.5 land contacts per boat-race, so there was something to win.
+
+    arctic 16@9100   paired med +7.0  mean +8.6
+                     finishers 139 -> 129, land contacts 27.5 -> 31.6, pen 1.64 -> 1.87
+
+**So it is not about predicting through drift after all.** A land-only probe cannot be
+wrong about where the land is, and it still cost time and finishers — which means the harm
+from a longer probe on this venue is that it makes boats DEFLECT MORE, and deflecting more
+inside the pack is what Glacier Sound punishes. That is the same finding as the twelve
+avoidance re-pricings and tonight's clearance rejection, arriving from the other side:
+on this venue the local layer is already deflecting too much, and anything that gives it
+more reasons to deflect loses.
+
+⇒ Four arctic rejections tonight (fan: ambiguous over 64 seeds and gated; probe floor;
+enterable plugs; land-only probe). The venue's remaining deficit is NOT in the local
+avoidance layer's inputs. Its own attribution says so: `boatBand` is 0.1% of deflections
+and STATIC hard blockage is 39.2%, i.e. the fleet is threading walls, not traffic.
+
+## ⚡ THE PROBE FLOOR NEEDS TIGHT WATER, NOT JUST STILL WATER (`treeTIGHT`)
+
+The floor's justification was always "a boat slowed by a shore rub cannot see the next
+shore". **Tight water is that condition stated directly** — and unlike `openWaterAv` it is
+a fact about where the boat IS, not about which venue she is on.
+
+    tightAv = gAv._clear[boat's own cell] < 6        (~300u, twice a hull's turning room)
+
+    ocean 20@9300  vs the landed tree   paired med -5.0  mean -1.8   finishers 178 -> 179
+    ocean 20@9300  vs pre-session HEAD  paired med  0.0  mean +0.3   <- fully neutral again
+
+Ocean's +1.8/+4.8 mean was the floor binding at starts, roundings and penalty turns —
+the only places its fast boats drop under 4 knots, and precisely where a 240u probe
+reaches past the mark they are working around while there is nothing there to hit.
+Lighthouse Cove sits at 6-23 cells of clearance (so the floor rarely applies, and it
+measured inert there anyway); Stillwater Lake sits at 2-4 nearly everywhere, which is
+exactly the water the floor was built for.
+
+Benching lake (both sets) and bay to confirm the gain survives the narrower predicate.
+
+## LAKE RE-ATTRIBUTED ON THE LANDED CODE — the landing hit what it aimed at
+
+    leg 1 (beat)          HEAD                LANDED
+    EXCESS                3781u               3011u   (-20%)
+      avoid               1911u               1428u   (-25%)
+        of which static    244u                 42u   (-83%)
+        of which boat      988u                935u   (unchanged)
+      turn                 333u                272u
+      rec                  298u                171u
+    mean deflection        45 deg              41 deg
+    dist ratio             1.86                 —
+
+    leg 2                 5752u               5185u   (-10%), avoid 2495 -> 2376,
+                                                       rec 1240 -> 920, dev 51 deg both
+
+**Static-cause avoidance is gone from the beat**, which is precisely what a land probe
+that can see far enough should do. What is left on this venue is BOAT traffic (935u and
+706u) plus off-route wandering (430u / 1124u), and a mean deflection still at 41-51 deg
+against the human's 8 deg median / 24-27 mean.
+
+⇒ The next lever on lake is not another cost or another probe. The action set is now
+5.7 degrees fine from 0 to 0.8 rad and the fleet still chooses 41 degrees, which means the
+COST FUNCTION IS DEMANDING A BIG MISS — `safeDist` (80-150u) evaluated over a 4-second
+straight-line projection, against a human who passes at a 336-355u median CPA having
+deflected 8 degrees. That is the bubble, and it is the one part of this function tonight
+has not touched.
+    bay   20@9100  vs the landed tree   paired med  0.0  mean -0.3   <- unaffected, as
+    bay   20@9100  vs pre-session HEAD  paired med -3.0  mean -3.2      predicted from its
+                                                                        6-23 cell clearance
+
+
+# ⚡ THE FLEET'S OWN LEDGER (`_fleet_ledger.js`, new) — like-for-like at last
+
+Every avoidance thread in this campaign has compared a FLEET number (mean per-tick
+avoidance DEVIATION, from `_defl_hist` / `_transit_probe`: 44-51 deg) against a HUMAN
+number (deflection per ENCOUNTER with deliberate tacks removed, from the ledger: 8 deg).
+**Those are different quantities and always were.** This runs the ledger's exact
+definition — encounter opens inside 600u closing, heading change at CPA measured against
+the 5 s pre-encounter trend, tacks split out — on the bots.
+
+    Stillwater Lake, no-tack encounters, deflection AT CPA
+
+                  n     med     mean    p90     held course (<5 deg)   CPA med
+      human      40    8.7     24.3    62.6           38%               312u
+      FLEET     199   23.0     39.9    98.4           17%               299u
+
+**At the same passing distance the fleet turns 2.6x as much and holds its course half as
+often.** It also converts 69% of its encounters into a tack against the human's 49%, and
+its tacked encounters pass closer (177u vs 201u).
+
+So the over-deflection is REAL and now correctly sized: about 14 degrees of excess median
+per no-tack encounter, at roughly 11 encounters per boat-race. It is NOT the 36-degree gap
+the old apples-to-oranges comparison implied, which matters — several past candidates were
+aimed at closing a gap that was partly an artefact of the two instruments disagreeing.
+
+⇒ And it aims the next candidate precisely. The action set is now 5.7 degrees fine and the
+fleet still picks 23 degrees at a 299u CPA, so what demands the swerve is the PREDICTION:
+`safeDist` 80-150u evaluated over a 4-second straight-line extrapolation of both boats.
+At 5 knots that is 300u of straight line for two boats who are both about to turn.
+Bay, same instrument:
+
+                  n     med     mean    p90     held course (<5 deg)   CPA med
+      human     272    8.0     26.7    74.7           40%               355u
+      FLEET     300   16.2     32.5    97.3           23%               259u
+
+**She keeps a WIDER margin with LESS steering.** That is the shape of the whole thing: the
+human positions early and passes clear; the fleet reacts late and hard and still ends up
+closer. Tack rate says the same — fleet 50% of encounters vs her 35% on bay, 69% vs 49%
+on lake.
+
+## ⚡ NEXT CANDIDATE, ARGUED FROM SYMMETRY: the boat-conflict prediction has no horizon
+
+`applyAvoidance` samples the boat-vs-boat closing at t = 0.8, 1.6, 2.4, 3.2, 4.0 s and
+sets a HARD `boatCollision` if ANY of them falls inside `safeDist`. A crossing predicted
+3.8 seconds out is exactly as decisive as one 0.5 seconds out.
+
+The land probe two blocks below already refuses to do this in SPACE — hard veto inside
+140u, graded beyond, because *"a probe that overshoots a gap into the ice behind it must
+not veto the gap the router chose"*. **That argument is strictly stronger against a boat**,
+because a boat is also steering: two straight-line extrapolations four seconds out are
+300u of fiction each at 5 knots, and both boats are about to turn or tack.
+
+`treeHORIZON`: hard only within 2.4 s; beyond that a graded 4000 falling to zero at 4.0 s.
+Next tick sees the same crossing 0.8 s closer, so anything real becomes hard on its own.
+Note this is NOT a re-pricing — it changes which candidate WINS (offset 0 becomes free when
+the only conflict is three seconds out), which is the bar tonight's clearance rejection set
+for this family.
+
+### ⛔ REJECTED: making the probe floor require tight water as well (`treeTIGHT`)
+
+It fixed ocean (paired 0.0 med / +0.3 mean against pre-session HEAD, from +1.8/+4.8) and
+left bay untouched — but on lake it gives back half the landing's whole point:
+
+    lake 20@9100 vs the LANDED tree    paired med +1.0  mean +0.3   flat on the clock
+                                       land contacts 18.28 -> 27.56 (+51%), pen 0.96 -> 1.11
+    lake 20@9100 vs pre-session HEAD   -43.0 med / -57.5 mean  (the landed tree: -53.0 / -58.6)
+    lake 20@9200 vs the LANDED tree    paired med -1.0  mean +10.6   — both sets the wrong way
+
+**Mechanism: the predicate reads `_clear` AT THE BOAT'S OWN CELL, and by the time she is
+in tight water she is already committed.** The ratchet begins while she is still in open
+water approaching a shore — that is exactly the moment the longer probe is supposed to
+see the shore coming. Gating on where she IS answers the wrong question; the honest
+version of this idea would gate on what is AHEAD, which is what the probe itself is for,
+so the gate would be circular.
+
+⇒ **Keep the shipped `openWaterAv` gate.** The trade is explicit and it is the right way
+round: ocean pays +1.8 mean on a venue 14 s from the human, and lake keeps 10 s of median
+and 9 land contacts a boat on a venue 129 s from her. Recorded so the next session does
+not re-derive it.
+
+### ⛔ REJECTED: shortening the boat-conflict prediction horizon (`treeHORIZON`) — and this one explains the thread
+
+    lake 20@9100 vs the landed tree   paired med +13.0  mean +5.2
+                                      BOAT contacts 3.62 -> 3.45, mark 1.85 -> 1.73
+                                      LAND contacts 18.28 -> 26.49  (+45%)
+
+It did what it was designed to do — the fleet held course through far-off crossings, and
+boat and mark contacts both fell. It cost 13 seconds because **holding course longer makes
+the eventual escape LATE AND LARGE, and in 150-350u corridors a late large escape ends on
+the beach.**
+
+⇒ **The fleet over-deflects because it must.** Its early reaction is not waste; it is what
+keeps it off the shore. The human holds her course through the same crossings because she
+POSITIONED for them — she arrives at the encounter already on a line that works, which is
+why she passes WIDER (355u vs 259u on bay) while steering LESS (8.0 deg vs 16.2). The
+fleet is reacting where she is planning, and no adjustment to the reaction's trigger,
+price, resolution or horizon can convert one into the other. Tonight tested all four:
+
+    resolution   densified fan            LANDED  -29 to -53 s on lake, -3 to -5 on bay
+    price        clearance cost 10000->3000  ⛔    +11.0 and +1.0
+    trigger      commitment lock fix         ⛔    +4.0
+    horizon      hard only within 2.4 s      ⛔    +13.0
+
+Only the one that gave the reaction MORE CHOICES paid. The remaining gap is a planning
+gap, and the honest next candidate for it is lane choice on the approach to a crossing —
+which is a strategic-layer change (`getStrategicHeading` / the router's carrot), not
+another term in `applyAvoidance`. That function has now been measured from every side it
+has.
+
+# ⚡ THE PLANNING THREAD: positioning instead of reacting (`treePOSN`)
+
+The horizon rejection said the fleet reacts where the human plans. So look at what early
+signal exists at all: the boat proximity gradient is `5000/(distSq+10)` and it only runs
+inside 250u. **At 250u that is 0.08**, against a deviation cost of 0.32 for a six-degree
+turn. There is effectively NO long-range positioning signal in this function — every
+correction it makes is necessarily a late one, and `treeHORIZON` measured what late
+corrections cost in narrow water (+13.0 s, land contacts +45%).
+
+`treePOSN` is deliberately the OPPOSITE of the candidate that just failed. Where the
+horizon change made the reaction later, this makes it EARLIER AND SMALLER:
+
+  - project both boats TEN seconds out (past every hard term's four), at 2 s steps
+  - only for rivals between 200u and 600u — the ledger's encounter window, excluding
+    anyone already close enough for the real terms to own
+  - charge `6 * (1 - cpa/350)`, i.e. by how much closer than the human's median CPA the
+    candidate would pass
+  - sized to compete with the DEVIATION COST ALONE (0.32 at six degrees, 0.89 at twelve):
+    it can buy a few degrees ten seconds early and can never outbid a collision term, a
+    rule term, or any graded land cost — those are 10^3 to 10^5 larger
+  - racing legs only, `normal` liveness only: the start pack is tuned to the boat-length
+
+Benching lake and bay, and running `_fleet_ledger` on the candidate as well — the bench
+gives the verdict, the ledger says whether the MECHANISM moved (does CPA widen and
+deflection shrink toward 355u/8 deg, or did the clock move for some other reason).
+
+## THE LEDGER ON THE CANDIDATE: the mechanism moved, and only half of it
+
+`_fleet_ledger` on `treePOSN` vs the landed code, lake, no-tack encounters:
+
+                          landed    +positioning    the human
+      CPA median           299u        361u           312u
+      encounters <150u      47          37             —
+      deflection at CPA    23.0        27.3            8.7
+      held course (<5deg)   17%         14%            38%
+      tacked                69%         66%            49%
+
+**They really do position wider** — the median passing distance moves past the human's own
+312u and close encounters fall 21%. **But they buy the width with rudder**: deflection
+went UP and course-holding went DOWN. The human gets width AND stillness; this gets width
+by steering more, which is the thing it was built to avoid.
+
+⚠️ This is why the ledger was run alongside the bench rather than after it. A clock result
+alone — either sign — would have been read as "positioning works / does not work", when
+what actually happened is that one of the two properties moved and the other moved the
+wrong way. Whatever the bench says, the design conclusion is already available: **a
+long-range CPA term produces early WIDTH but not early CALM**, because widening the pass
+is itself a course change, and nothing in the term prefers achieving it sooner and
+smaller.
+
+## ⛔ THE WHOLE SHAPE IS WRONG, BY DOSE-RESPONSE — CPA-costed positioning cannot be "early and small"
+
+Ran the amplitude at 6 and at 1.2 (the latter capped deliberately below the deviation cost
+of a 14-degree turn, so it could only ever tip a near-tie). `_fleet_ledger`, lake, no-tack:
+
+      amplitude      CPA med     deflection at CPA     held course (<5 deg)
+      0 (landed)      299u            23.0                   17%
+      1.2             329u            29.0                   15%
+      6.0             361u            27.3                   14%
+      the human       312u             8.7                   38%
+
+**Cutting the term five-fold still widens the pass AND still raises the rudder**, and
+course-holding falls monotonically with amplitude. This is not a constant that needs
+tuning — it is the SHAPE of the term. A cost written on the projected CPA prices the
+OUTCOME of a correction and is completely indifferent to WHEN the correction is made, so
+the cheapest way for the argmin to satisfy it is always to turn now, a bit more. Early and
+small and late and large look identical to it.
+
+⇒ **Standing conclusion for the planning thread: to get early-and-small you must cost the
+correction's LATENESS, not its result.** That means a term over the boat's own recent
+heading history or over the schedule of the manoeuvre — not another function of the
+predicted geometry. Every geometric term in this file has now been tried: distance
+(clearance), time (horizon), outcome (CPA), resolution (the fan, which is the one that
+paid) and commitment (the lock).
+
+⚠️ And note the method: the DOSE-RESPONSE is what makes this a closed family rather than
+one more rejected constant. Same discipline as the commitment thread's 1-second hold
+control. One amplitude would have read as "needs tuning".
+And the clock agrees with the ledger, on both venues:
+
+    bay  20@9100 vs the landed tree (amp 6)   paired med +11.0  mean +8.4
+                                              boat contacts 1.56 -> 1.77
+
+⇒ `applyAvoidance` is now measured from every side it has: resolution (LANDED), price,
+trigger, horizon, outcome-shaped positioning, and commitment. Only the action set paid.
+The remaining traffic gap is a planning gap and it does not live in this function.
+
+# ⚡ A NEW FAMILY: THE FLEET STALLS HEAD TO WIND (`_stall_probe.js`, new)
+
+After the landing the fleet still spends 6.4% of its time on Stillwater Lake below one
+knot against the human's 0.0%. Classified by cause (3 races, 580 of 9106 boat-seconds):
+
+      ASHORE      (blocked cell within 2)   44.3%
+      IN IRONS    (TWA < 35 deg)            31.5%
+      PENALTY TURN                          19.2%   <- legitimate, a penalty turn is slow
+      IN A HOLE   (local wind < 2.5 kt)      0.2%
+      none of the above                      4.8%
+
+      188 episodes over 3 races (~7 per boat-race), med 3.0 s, p90 5.3 s, max 8.1 s
+      by leg: L1 221s  L2 192s  L3 161s — spread evenly, not one bad corner
+
+**Two things fall out of this.**
+
+1. ⛔ **The light air is NOT the cause of anything.** 0.2%. The fleet essentially never
+   sits in genuinely calm water, which independently confirms the earlier decomposition
+   (lake is a traffic-and-narrow-water venue that happens to be light, not a light-air
+   problem). Anyone tempted by a glass-avoidance mechanism here should read this number
+   first — and note it also explains why the router's sub-8-knot wind bins were worth
+   only ~0.3 s.
+
+2. ⚡ **A third of it is IN IRONS** — head to wind with no way on, about 6.8 s per
+   boat-race, and NOTHING in this campaign has ever looked at it. The episode profile
+   (many ~3 s stalls rather than a few long ones) is the signature of tacks that do not
+   complete: in six knots a boat that starts a tack without enough way on stops head to
+   wind, and the strategy layer has no concept of building speed before tacking. This is
+   a STRATEGY-layer thread, not an avoidance one, which is the right place to be now that
+   `applyAvoidance` is exhausted.
+
+### ⛔ REJECTED (mechanism): extending the "no tacking without way on" guard to light air
+
+The guard exists — `speed < 1.1 && wind > 16` — and its own comment says the failure it
+prevents is a boat that "tacks slow and parks head-to-wind mid-turn". That is a
+NO-MOMENTUM failure, so it should bite hardest in a drifter, and lake (7-9 kt) never gets
+it. Added a separate light-air branch at a RELATIVE threshold (a third of close-hauled
+target, ~1.4 kt on lake — the absolute 1.1 units is 4.4 kt and lake's fleet averages 4.1,
+so the existing test would have forbidden nearly every tack there). Arctic's branch
+untouched.
+
+    `_stall_probe`, lake, 3 races      landed        + light-air guard
+      in irons                        31.5% (183s)   28.7% (174s)   -5%
+      ashore                          44.3% (257s)   50.7% (307s)   +19%
+      episodes                        188            187            unchanged
+      boat-seconds of racing          9106           9815           races got LONGER
+
+    lake 20@9100 vs the landed tree   paired med +9.0  mean +10.2, pen 0.96 -> 1.20
+    — the clock confirms the mechanism reading exactly.
+
+**The stalls are not caused by the tack DECISION.** Blocking slow tacks left the episode
+count identical to the boat and simply traded the failure mode: "sail on and build speed
+close-hauled" keeps her on a board that is pointing at the shore, so ashore time rose 19%.
+
+⇒ Something else is putting these boats head to wind. I have spent tonight attributing
+DEFLECTIONS and never attributed this: the next probe should classify what the boat was
+doing at the MOMENT she entered irons — a commanded tack, an avoidance swerve, a wiggle,
+a rounding, or a penalty turn. Same shape as `_avwhy`, applied to a different event.
+⚠️ Do not build another fix in this family until that exists.
+And the clock, on both venues:
+
+    lake 20@9100 vs the landed tree (amp 6)   paired med +17.0  mean +11.3
+                                              boat contacts 3.62 -> 3.08 (it DID work)
+    bay  20@9100 vs the landed tree (amp 6)   paired med +11.0  mean  +8.4
+
+It reduced boat contacts exactly as designed and cost 11-17 seconds doing it. Family
+closed on both the mechanism (dose-response) and the clock (two venues).
+The clock dose-response matches the ledger's:
+
+    amplitude 1.2   lake paired med  +3.0  mean  +9.1
+    amplitude 6.0   lake paired med +17.0  mean +11.3   |  bay +11.0 / +8.4
+
+# ⚡ WHAT ACTUALLY PUTS THE FLEET HEAD TO WIND (`_irons_entry.js`, new)
+
+Rather than try a second fix in the stall family, attribute the ENTRY. 119 entries into
+irons, lake, 3 races, classified by what the boat was doing in the two seconds before:
+
+      AVOID     deflected into the no-go by avoidance    43.7%
+      PENALTY   serving a turn (legitimate)              21.8%
+      TACK      the strategy layer crossed the wind      19.3%
+      WIGGLE    the unstick manoeuvre                    13.4%
+      DRIFT     lost way and rounded up                   1.7%
+      ROUNDING                                            0.0%
+
+      duration med 1.8 s, p90 3.6 s
+      speed TWO SECONDS BEFORE ENTRY: med 2.20 kt, p90 5.13 kt
+
+**She was sailing when it started.** This is not light air killing a drifting boat — it is
+her own escape steering her into the no-go. And it explains the previous rejection
+exactly: tacks are 19.3% of entries, so gating slow tacks could never move the total by
+more than that, and it moved it by 5%.
+
+## THE DEFECT: the fan contains headings that are not courses
+
+`applyAvoidance` taxes a candidate that CROSSES to the other tack (`taxTack`, 600·jamF)
+and says nothing about one that simply lands head to wind — yet from close-hauled a
+0.8 rad escape to windward IS the no-go zone. Nothing in the cost function knows that such
+a candidate does not escape anywhere; the projection flies the boat along it at her
+current speed, which is exactly the speed she is about to lose.
+
+`treeNOGO`: tax a candidate by how far inside the no-go it lands (0 at ~31 degrees TWA,
+500·jamF at head to wind), shaped and scaled like the tack tax beside it — waived for a
+boat with no way on, and three orders below the Rule-14 terms so luffing head to wind
+remains available when it is genuinely the only way out.
+
+⚠️ Note this is an ACTION-SET change, not a re-pricing: it removes candidates that were
+never sailable. That is the one class that has paid tonight.
+
+## ⚡ THE NO-GO TAX MOVES ITS OWN MECHANISM — 71% of the targeted bin
+
+`_irons_entry`, lake, 3 races:
+
+                                        landed        + no-go tax
+      TOTAL entries into irons           119            77      -35%
+        of which AVOID-caused             52 (43.7%)    15 (19.5%)   -71%
+        penalty (legitimate)              26            21
+        tack                              23            19
+        wiggle                            16            21
+
+**The targeted bin fell by 71% and the total by a third, with the other causes broadly
+unchanged.** That is the first candidate tonight whose mechanism moved exactly as designed
+with nothing compensating: the light-air tack guard traded irons for groundings (ashore
++19%), the positioning term traded width for rudder (deflection up at every amplitude),
+and this one simply removes the failure. The small rise in wiggle-caused entries is the
+expected residue — the unstick manoeuvre still steers head to wind, and it is now a larger
+share of a much smaller number.
+
+Bench pending. ⚠️ If it lands, note WHY it is different from the six rejections around it:
+it does not re-price a trade-off, it withdraws candidates that were never sailable. Same
+class as the fan — the action set, not the cost.
+
+## ⚡ AND IT LANDS ON THE CLOCK: -7.0 paired median on top of the landed tree
+
+    lake 20@9100 vs the landed tree   paired med -7.0  mean -7.3
+                                      boat contacts 3.62 -> 2.61 (-28%)
+                                      pen 0.96 -> 0.97 (flat), 180/180 finish
+
+**Mechanism and clock both moved in the intended direction with nothing traded away** —
+the first candidate tonight to manage that besides the landing itself. Compare the six
+rejections around it, every one of which bought its target with something else:
+
+    tack guard      irons -5%      but ashore +19%, and +9.0 on the clock
+    positioning     CPA +62u       but deflection +4 deg at both amplitudes, +17.0/+11.0
+    horizon         boat rubs down but land contacts +45%, +13.0
+    clearance       (nothing)                              +11.0 / +1.0
+    commitment      (the lock is real)                     +4.0
+    tight water     ocean fixed    but lake's groundings +51%
+
+⇒ The pattern holds and is now five-for-five: **the changes that pay are the ones that
+change WHICH ACTIONS EXIST — the fan added candidates that were missing, this one removes
+candidates that were never sailable. Every change to the PRICE of a real trade-off has
+lost.** That is the single most useful sentence in this file for the next session.
+
+Confirming on lake 9200, and checking bay and arctic (this term is ungated — a no-go zone
+is a fact about sailing, not about a venue — so both need to be measured).
+    bay  20@9100 vs the landed tree   paired med -3.0  mean -1.8
+                                      boat 1.56 -> 1.31, mark 0.68 -> 0.53,
+                                      land 0.20 -> 0.12, pen 0.41 -> 0.37
+
+Two venues, both faster and CLEANER on every contact class at once — which is the
+signature of removing a bad option rather than trading one cost against another.
+    lake 20@9200 vs the landed tree   paired med -3.0  mean -8.4
+                                      boat 4.16 -> 4.13 (flat), mark 2.47 -> 1.99,
+                                      ⚠️ land 21.23 -> 28.03 (+32%), one boat short
+
+Three benches on two venues, all negative on the clock (med -7.0 / -3.0 / -3.0, mean
+-7.3 / -8.4 / -1.8). ⚠️ **But note the land-contact behaviour is not consistent**: bay had
+every class down, lake 9100 was +6% on land, lake 9200 +32%. A boat forbidden the windward
+escape takes the leeward one, and on a narrow venue the leeward one is sometimes the
+shore. The clock says the trade is worth it on every set measured so far; the honest
+reading is that this is a trade, not a free win like bay's numbers alone would suggest.
+
+## ⛔ ARCTIC REJECTS IT — and the gate is the same fact for the third time
+
+    arctic 16@9100 vs HEAD   paired med +24.0  mean +28.2
+                             finishers 139 -> 126
+                             boat 7.66 -> 11.49, land 27.5 -> 32.9, floe 32.5 -> 38.1
+
+**In an ice pack, luffing head to wind IS the right escape.** You stop, rather than hit a
+floe that will not keep clear for you. The tax removes the fleet's best emergency option
+on exactly the venue where the obstacles do not get out of the way — and arctic priced
+that at 13 finishers.
+
+⇒ **`openWaterAv` now gates three separate changes, and the reason has been the same each
+time**: where the obstacle is drifting ice, a different set of facts holds — it does not
+keep clear, its position is not predictable past a few seconds, and stopping is a
+legitimate answer. That is not three venue hacks; it is one physical distinction the
+avoidance layer did not previously make. **Anything future sessions add to this function
+should be asked which side of that line it belongs on before it is benched.**
+
+# ⚡ LANDED (2) `97a5559` — an escape into the no-go zone is not an escape
+
+    irons entries     119 -> 77 (-35%); the avoidance-caused ones 52 -> 15 (-71%)
+    lake 20@9100      paired med -7.0  mean -7.3   boat contacts 3.62 -> 2.61
+    lake 20@9200      paired med -3.0  mean -8.4
+    bay  20@9100      paired med -3.0  mean -1.8   every contact class down
+    arctic            BYTE-IDENTICAL (300 s x 9 boats, and its golden traces pass)
+
+**Both of tonight's landings are the same kind of change**: the fan ADDED candidates that
+were missing, this one REMOVES candidates that were never sailable. Six candidates that
+re-priced a real trade-off all lost. If there is one sentence to carry forward from this
+session, it is that.
+
+# ⚡ FINAL STATE OF THE 2026-08-06 PUSH
+
+## Two landings, both the same KIND of change
+
+    d55eb97  the escape fan densified (+-.3/.5/.7)      — ADDS candidates that were missing
+    97a5559  an escape into the no-go is not an escape  — REMOVES candidates never sailable
+    both gated on `openWaterAv`; a4d6f06 re-records the goldens
+
+## Anchors (HEAD = a4d6f06)
+
+    venue      pre-session      after        human      note
+    lake       407.5 / 386.0    ~345 / ~355  223        two landings, both sets
+    bay        257.0            ~250         226.2      -3.0 and -5.0, then -3.0 more
+    ocean      193.0            193.0        182.5      inert by measurement
+    arctic     535.0            535.0        ~222       BYTE-IDENTICAL, verified 3 ways
+    seatrials  198.94 / 194.61  199.30 / 194.18, pen 0.348, OCS 14.89%, DNS/DNF 0%
+    goldens    PASS 20/20 (re-recorded twice, verified twice)
+    npm test   6 test_editor failures = the documented clean baseline
+    test_sailable / check_venues  green on all ten venues
+
+## THE ONE SENTENCE
+
+**Change WHICH ACTIONS EXIST, not what they cost.** Seven-for-seven now:
+
+    ADD candidates      densified fan          LANDED   -29 to -53 lake, -3/-5 bay
+    REMOVE candidates   no-go tax              LANDED   -7.0/-3.0 lake, -3.0 bay
+    price               clearance cost         ⛔ +11.0 / +1.0
+    price               ice plug 6x -> 4x      ⛔ dead code, then +13.3 mean when enabled
+    trigger             commitment lock        ⛔ +4.0
+    horizon             hard only within 2.4s  ⛔ +13.0
+    outcome             CPA positioning        ⛔ +17.0 / +11.0 (dose-response, 2 amplitudes)
+    condition           tight-water floor      ⛔ +1.0 / -1.0 med but groundings +51%
+    predicate           light-air tack guard   ⛔ +9.0
+
+Require of any future candidate here: *why will this change which candidate WINS?*
+
+## ⛔ REJECTED: a water-aware wiggle (`treeWIG`) — and it SHARPENS the session's rule
+
+The unstick manoeuvre scans BOATS and MARKS for its nearest obstacle and then commits to
+`windDir ± 1.75`; on a land venue the thing pinning her is LAND, which it has never looked
+at, and the liveness comment already concedes the failure ("beam-reaches it straight back
+into the same pocket"). `_irons_entry` said the wiggle was 27.3% of entries into irons
+after the two landings — second only to penalty turns. Scored both escapes against free
+water on the grid and took the better.
+
+    mechanism   wiggle-caused irons entries  21 -> 14  (-33%)  <- the target moved
+                but tack-caused              19 -> 32  (+68%)
+                and avoid-caused             15 -> 32  (+113%)
+                TOTAL entries                77 -> 103 (+34%)
+    clock       lake 20@9100 vs the landed tree   paired med +18.0  mean +10.7
+                boat 2.61 -> 3.42, mark 1.99 -> 2.43, land 19.4 -> 21.0, pen 0.97 -> 1.12
+
+⚠️ **This was an ACTION-SET change and it still lost, which refines tonight's rule.** The
+distinction is not actions-versus-prices by itself — it is whether the change REMOVES A BAD
+OPTION or merely REDIRECTS TO A DIFFERENT ONE:
+
+    fan        added candidates that did not exist         LANDED
+    no-go tax  removed candidates that were never sailable LANDED
+    wiggle     picked the other of two blind headings      ⛔ +18.0
+
+    arctic 16@9100 vs HEAD   paired med +2.0  mean +13.5
+                             finishers 139 -> 133, floe contacts 32.5 -> 39.4
+
+Both venues, both directions of evidence. Choosing better between two bad options is still
+choosing a bad option: the boat escapes into water she then has to tack or dodge out of,
+and the two failures she trades into cost more than the one she avoids. **The sharpened
+rule: DELETE OR ADD options; do not re-aim the ones that are there.**
+
+⚠️ Note also that this candidate was benched on arctic WITHOUT a gate, on the reasoning
+that "the grid knows where land is" holds equally in ice. It does — and it lost there too,
+for the ordinary reason rather than the ice-specific one. Not every change in this function
+divides along `openWaterAv`; this one is simply wrong everywhere.
+
+## ⛔ REJECTED: footing and pinching on the beat (`treeFOOT`)
+
+`getStrategicHeading` chooses between exactly TWO headings, `wd ± optTWA`, so this fleet
+physically cannot sail a few degrees low to build speed through a lull or a few degrees
+high to hold a lane — a two-element action set, argmin'd, one layer above the escape fan.
+Added ±4 and ±8 degrees of trim on the CHOSEN tack only (every guard above compares
+`preferredHeading` by identity, and the layline and no-way-on branches return earlier, so
+the tack decision is untouched). `scoreTack` already prices exactly what footing trades.
+
+    bay  20@9100 vs the landed tree   paired med  -3.0  mean  -1.4   252 -> 250
+                                      but boat 1.31 -> 1.77, mark 0.53 -> 0.72,
+                                      land 0.12 -> 0.35, pen 0.37 -> 0.48
+    lake 20@9100 vs the landed tree   paired med +14.0  mean +16.5
+                                      boat contacts 2.61 -> 4.58 (+75%)
+    arctic 16@9100 vs HEAD            paired med +20.0  mean +16.3
+                                      finishers 139 -> 134, land 27.5 -> 30.8
+
+**Venue-split against the venue that matters.** Bay is faster and dirtier; lake — 4447
+navigable cells, corridors 150-350u — is much slower, because a footed boat is a boat
+sailing WIDER, and wide is exactly what that venue does not have. The extra option is
+real and it is priced correctly; the problem is that on narrow water the price
+`scoreTack` computes does not include what the wider track will cost her later in
+traffic and shore contacts.
+
+⚠️ It is worth noting what this shares with the wiggle rejection: both ADD or RE-AIM
+options for a boat in open-ended water, and both lose on the venue where space is the
+binding constraint. Tonight's two landings did not add freedom — the fan added
+RESOLUTION between options that already existed, and the no-go tax REMOVED options that
+were never real. **On a narrow venue, more freedom is not obviously good; more precision
+and fewer illusions are.**
+## ⛔ CLOSED BY MEASUREMENT: the missing SPEED action — the human does not use it either
+
+`applyAvoidance` returns a heading and nothing else. The fleet's only avoidance action is
+the rudder, and on Stillwater Lake the fleet sails ~1.5x the human's distance with roughly
+half the excess spent on deflection — so "she eases the sheet and lets him cross, which
+costs seconds and zero distance" is the obvious missing action, and a genuine action-set
+change of exactly the kind that has produced both of tonight's landings.
+
+It is wrong, and the recordings say so before any code was written. `_human_ledger.py`
+already carried `dspd` (speed at CPA over speed at encounter onset); `_fleet_ledger.js`
+now prints the same statistic, so the two are finally the same quantity:
+
+    no-tack encounters      human spd@cpa   fleet spd@cpa   human slowed>10%  fleet
+      Stillwater Lake            1.02           1.04              8%            9%
+      Lighthouse Cove            1.02           1.02              1%            3%
+    (human, ALL venues: 1.00-1.03; the largest "slowed" share anywhere is 8%)
+
+**The human does not slow down for traffic, and neither does the fleet.** She keeps her
+speed and either holds her course or moves the helm a little. There is no throttle gap to
+close, on any venue, and the cost of learning it was one statistic already in the file.
+
+What the same table does show is that the gap is entirely in the RUDDER, and it is a gap
+in how OFTEN she uses it as much as by how much:
+
+    no-tack, at CPA        deflection med      holds course (<5 deg)
+      lake   human               8.7 deg              38%
+             fleet              23.2 deg              18%
+      bay    human               8.0 deg              40%
+             fleet              16.6 deg              26%
+
+## ⛔ REJECTED (lake) / OPEN (bay): a margin to leave the proper course (`treeDEAD`)
+
+The escape is `if (cost < minCost)` with offset 0 first in the list, so holding course
+wins only EXACT ties: a candidate cheaper by one unit takes the helm. Against the table
+above that looks like the whole story, and the fix is one line. `_margin.js` (new) priced
+it first, and the answer is venue-split for a reason worth keeping:
+
+    per avoidance decision, leg>=1        lake            bay
+      moved the helm                      51.6%           39.9%
+      margin cost(0)-min   p10             236.9             1.6
+                           p25            3389.8            55.4
+                           med            7495.4          7539.8
+      cost(0) itself       med           10133.8          7500.0
+      a deadband of 100 converts           9.6%           39.4% of moves
+
+**On lake the deflections are not near-ties.** The winner beats holding course by a
+median 7495 against a cost(0) of 10134 — holding course is not narrowly rejected, it is
+priced at ten thousand and buried. No deadband small enough to leave Rule 14 alone can
+touch that, so the lake half of this candidate is closed without a bench.
+
+Bay is the opposite shape — a quarter of its moves are decided by a margin under 55 —
+and that half IS worth the bench it is getting.
+
+## 📐 MEASURED: what the fleet actually chooses, and what it costs her to choose it
+
+`_margin.js` records the winning offset on every avoidance decision. The distribution is
+the most useful thing measured this session, because the campaign has spent twenty-odd
+candidates re-pricing a cost function without ever looking at which candidate WON.
+
+    share of helm movements, by size of the chosen turn
+                      >=1.9 rad     1.4-1.9 rad    total >=1.4 rad
+      Glacier Sound     15.0%          25.8%           40.8%
+      Stillwater Lake   17.3%          17.0%           34.3%
+      Lighthouse Cove    2.3%          16.8%           19.1%
+    (>=1.9 rad is the near-reversal pair 2.2/3.0 = 126 and 172 degrees;
+     the human's median deflection at CPA, same definition, is 8 degrees)
+
+Two structural facts explain it, and neither is a tuning constant.
+
+**1. The near-reversals are gated on the COURSE, not on the boat.** `candidates.push(2.2,
+-2.2, 3.0, -3.0)` fires whenever `state.course._gridFixed` is non-empty — "this venue has
+authored land" — so on every land venue a 172-degree turn sits in the fan for the entire
+race. The comment above it says they are "the only exit when nosed into a berg or wall",
+which is a description of a PREDICAMENT that nothing in the gate tests. The 250 surcharge
+below is waived under 1.0 kt, i.e. exactly when a boat pinned in narrow water is slow.
+
+**2. Leaving your proper course is priced three orders of magnitude below arriving at a
+rock.** The whole deviation term is `Math.pow(Math.abs(offset), 1.5) * 10`:
+
+      172-degree reversal     52          proximity to a floe     3500
+      92-degree swerve        20          proximity to land      25000
+      17-degree nudge          0.7        hard constraint       500000
+
+This is the missing piece behind a long line of rejections. Twelve candidates re-priced
+avoidance and "the mean deflection never left 44-48 degrees"; the clearance cost was cut
+10000 -> 3000 and was INERT. Every one of them lowered a THREAT cost — and 25000 -> 8000
+leaves a 52-point U-turn just as free as it was. **The deviation side had never been
+raised.** That is not a tuning knob at its knee; it is a term that has never been in the
+same units as the function it lives in.
+
+Post-landing decomposition confirms the shape of what is left (`_transit_probe`, HEAD,
+lake 6 seeds): the two landings cut L1 excess 3781 -> 3342u and L2 5752 -> 4032u, but the
+mean deviation is unchanged at 44/50 degrees and avoidance is still ~half of all excess
+distance. **The races got shorter; the dodges did not get smaller.**
+
+### The same turn, measured on both sides (`_hdgrate.js` new, + the recordings)
+
+⚠️ A COMMANDED OFFSET IS NOT A REALISED TURN. The 34-41% above is what the argmin picked;
+the boat swings toward it at a limited rate, so a 172-degree command does not produce a
+172-degree second. Before leaning on that number, here is the quantity the recordings
+actually contain — heading now vs heading 1 s ago, 10 Hz, racing legs, both sides:
+
+                    med    p90    p99   >=45 deg/s  >=80 deg/s
+      lake human    1.7   29.0   60.2      5.46%       0.00%   (0 of 6041 windows)
+      lake fleet    7.6   50.0   65.5     13.66%       0.75%
+      bay  human    0.0   26.2   55.0      5.04%       0.00%   (0 of 27784 windows)
+      bay  fleet    3.4   43.0   63.9      9.31%       0.06%
+      (arctic human 0.04% >=80; ocean human 0.00%)
+
+So most of the commanded reversals are absorbed by the rate limit — 17.3% commanded
+becomes 0.75% realised — and the honest headline is smaller than the raw share suggested.
+
+**But the venue ratio survives the conversion, which is the check that matters.** Lake
+commands 7.5x more near-reversals than bay (17.3% vs 2.3%) and realises 12x more hard
+turns (0.75% vs 0.06%). The commanded distribution is predicting the realised one across
+venues, so it is measuring something real and not an artefact of the fan's spacing.
+
+And the plain comparison stands on either quantity: **the fleet turns 4.5x as much as the
+human at the median on lake and 2x as often past 45 deg/s, and she never once turns 80
+degrees in a second on any venue but Glacier Sound.**
+
+## ⚡ THE DEVIATION TERM IS OUT OF SCALE — and that is why the re-pricings were inert
+
+Raising `pow(|offset|,1.5) * 10` to `* 1000` (`treeDEV`, no other change):
+
+    lake 20@9100 vs HEAD   paired med +44.0  mean +52.6   349 -> 300, max 675 -> 482
+                           pen 0.97 -> 0.83, mark 1.99 -> 1.06, land 19.4 -> 15.9
+                           BUT boat contacts 2.61 -> 4.63, and 1 boat DNF
+    bay  20@9100 vs HEAD   paired med  +9.0  mean  +7.7
+                           BUT mark contacts 0.53 -> 2.07 (4x), land 0.12 -> 0.42,
+                           pen 0.37 -> 0.54, 1 boat never rounded, OCS 0.0 -> 0.6%
+
+**Both venues get faster and bay breaks.** The mechanism is legible: a mark rounding IS a
+sustained small deviation, and a flat 100x tax on deviation makes the boat resist the
+wide swing the rounding needs. The term was out of scale; multiplying it uniformly fixes
+the scale and breaks the shape.
+
+So raise the POWER, not the coefficient — `pow(|offset|,3) * 200` (`treeDEVP`):
+
+      offset    0.3    0.8    1.6    3.0
+      was       1.6    7.2   20.2   52.0
+      *1000   164.0  716.0 2024.0 5196.0     <- taxes the rounding too
+      pow3*200    5.0  102.0  819.0 5400.0   <- same U-turn price, small dodge still free
+
+This prices the 172-degree reversal identically to the flat version and leaves a
+17-degree nudge at 5 points. It taxes only the manoeuvres the human never makes: she
+turns >=80 deg/s in 0 of 6041 lake windows and 0 of 27784 bay windows.
+
+⚠️ **A PRICE CHANGE IS BEATING THE ACTION-SET CHANGES, and the thesis needs amending
+rather than defending.** Both of tonight's landings changed WHICH ACTIONS EXIST, and the
+standing rule said re-pricing loses. It does — when the price is already in the right
+order of magnitude. A term three orders of magnitude below everything it is compared
+against is not a mistuned knob, it is a structural bug, and the twelve inert re-pricings
+were all on the OTHER side of the ratio (they lowered threat costs; 25000 -> 8000 leaves
+a 52-point U-turn just as free). Amended rule: **check that a term is in the same units
+as the function before concluding that its value does not matter.**
+
+## ⚡ THE NEAR-REVERSAL GATE — the effect size tracks the measured share, on all three venues
+
+`candidates.push(2.2, -2.2, 3.0, -3.0)` now requires that a hard grid cell actually lies
+within ~180u dead ahead (the same test the unplanned-tack waiver uses), and racing legs
+only. `treeNOSE2`:
+
+    venue    share of moves >=1.9 rad     paired median        contacts
+    lake              17.3%              +41.0 (349 -> 307)   land 19.4 -> 9.6, mark 2.0 -> 1.0
+                                          mean +49.1          pen 0.97 -> 0.77, boat 2.61 -> 3.32
+                                          max 675 -> 516, min 229 -> 223
+    arctic            15.0%              -23.0 faster         land 27.5 -> 25.4, floe 32.5 -> 36.4
+                                          (535 -> 511)        pen 1.64 -> 1.96, boat 7.66 -> 12.9
+                                          139 -> 139 finishers
+    bay                2.3%               +0.5 / mean -1.4    INERT, OCS clean
+                                                              pen 0.37 -> 0.44
+
+**The size of the win is predicted by the measured share of the fan that these candidates
+win, on three venues with three different values.** That is the strongest mechanism
+confirmation this campaign has produced — the number was measured BEFORE the bench, and
+bay's 2.3% correctly predicted its own null result.
+
+Two independent reasons the old gate was wrong:
+  1. it tested a property of the COURSE (`_gridFixed` = "this venue has land"), never of
+     the boat's predicament, so a 172-degree turn sat in the fan for the whole race;
+  2. the predicament it names — nosed into a wall — is already owned by `wiggleActive`,
+     which returns out of `applyAvoidance` at the top and fires after 3 s below speed.
+
+⚠️ **This is the first change of the session to move Glacier Sound.** All three prior
+landings are `openWaterAv`-gated and leave it byte-identical. It is also the only venue
+where the trade is not clean: 23 s a boat against +20% penalties and +68% boat contacts.
+Arctic is being re-run on a disjoint 16-seed set before any decision — a 16-seed arctic
+set cannot resolve under ~15 s, which is why the paired per-boat median is the statistic
+being read.
+
+## THE LANDING DECISION: the gate alone, not the pair
+
+Both candidates work on lake and they overlap. Four disjoint 20-seed sets:
+
+                          lake 9100   lake 9200   bay 9100   bay 9200
+      nose gate alone       +41.0       +55.0       +0.5      -2.5      (med 349->307, 350->303)
+      pow3*200 alone        +34.0         --        +5.0        --
+      both together         +56.0       +46.0       +5.0        --      (med 349->295, 350->303)
+
+Pooled over both lake sets the gate alone averages ~+48 s and the pair ~+51 s — **the same
+win inside the noise** — and they differ sharply in what they cost elsewhere:
+
+      bay penalties/boat    HEAD 0.37 | gate 0.44, 0.45 | pow3 0.49 | both 0.57
+      bay boat contacts     HEAD 1.31 | gate 1.51, 1.73 | pow3 2.31 | both 2.68
+
+So `treeNOSE2` lands and `treeDEVP` does not. The pair buys ~3 s of lake for +54% bay
+penalties, and the owner's standing preference is that dirtier sailing is worse than
+slower sailing.
+
+⚠️ **`treeDEVP` IS NOT REJECTED — it is a real, unlanded effect** (+34.0 lake, +5.0 bay,
+mark contacts held at 0.53 -> 0.56 where the flat 100x version sent them to 2.07). It is
+the correct fix for a term that is genuinely out of scale, and it should be revisited with
+the deviation cost made proportional to something physical — the DISTANCE the deviation
+actually costs over the lookahead, `speed * t * (1 - cos(offset))` — rather than a
+hand-set power. Its bay penalty cost is the sign that a flat shape is still the wrong one.
+
+⚠️ **Contact counts do not replicate at 20 seeds; the clock does.** The gate's lake boat
+contacts went 2.61 -> 3.32 on set 1 and 4.13 -> 3.96 on set 2 (opposite directions), and
+its bay penalties went +19% then +5%. Both lake clock numbers agree (+41, +55) and both
+bay clock numbers agree (inert). Read the clock; treat a single-set contact delta as a
+hypothesis.
+
+### ✅ The arctic baseline was verified rather than assumed
+
+`fleet_leg2_headarc.json` was recorded at 23:17, BEFORE both of tonight's landings, and
+every arctic comparison in this session is measured against it. That is only legitimate if
+the `openWaterAv` gating really does leave Glacier Sound untouched — a claim, not a fact.
+Re-ran HEAD arctic 16@9100 on the verified-HEAD tree (`headarcT`, `treeNOGO2`):
+
+      headarc  (23:17, pre-landing tree)  139 finishers  med 535  mean 545.3
+      headarcT (true HEAD, treeNOGO2)     139 finishers  med 535  mean 545.3
+
+Identical on every statistic. The gating holds and the arctic numbers stand. ⚠️ Worth the
+16 seeds: the session had already been burned once by a stale tree (`treeLANDED` turned
+out to predate the no-go tax, and three decomposition probes had to be re-run against
+`treeNOGO2`).
+
+## ✅ LANDED `b566370` — BOTH changes, after arctic reversed the decision
+
+The earlier entry concluded "the gate alone, not the pair". **Arctic overturned that**, and
+the reason is worth keeping: the gate-alone verdict was reached from lake and bay only,
+where the two candidates overlap almost completely. On Glacier Sound they do not.
+
+    paired median vs HEAD, two disjoint sets per venue (NEGATIVE arctic = faster)
+                        lake 9100  lake 9200 | bay 9100  bay 9200 | arctic 9100  9200
+      gate alone          +41.0      +55.0   |   +0.5     -2.5    |   -23.0     -38.0
+      both together       +56.0      +46.0   |   +5.0     +2.5    |   -71.0     -86.0
+      arctic finishers                                            | 139->142  123->142
+
+The pair roughly DOUBLES the arctic gain and ties on lake. Arctic is the venue furthest
+from the human (535 against ~222) and it gains ~78 s a boat plus up to nineteen more
+finishers; declining that to spare bay one extra boat rub is the wrong trade.
+
+**Landed, and what it cost.** Reported rather than buried:
+
+      bay boat contacts   1.17 -> 2.26 and 1.31 -> 2.68 (roughly double, BOTH sets)
+      bay penalties/boat  0.43 -> 0.52 and 0.37 -> 0.57 (~+35%)
+      bay land contacts   0.13 -> 0.04 and 0.12 -> 0.24 (disagree)
+      bay mark contacts   0.73 -> 0.52 and 0.53 -> 0.56 (down / flat)
+      lake land contacts  19.4 -> 9.9   arctic land 32.9 -> 27.7, mark 0.74 -> 0.60
+
+Boats hold straighter lines, so they pass closer and touch each other more. Every venue is
+faster on the clock and no venue loses finishers; bay pays in boat-on-boat contact.
+
+### Where the two venues' numbers now stand against the human
+
+      Stillwater Lake   407.5 at session start -> 295-303   (human 223)
+      Glacier Sound     535 -> 462                          (human ~222)
+      Lighthouse Cove   252 -> 245                          (human 226.2)
+      Ocean             193, untouched                      (human 182.5)
+
+## ⚠️ FOUND WHILE VERIFYING: the escape fan has no `leg >= 1` guard, and it costs OCS
+
+Post-landing seatrials showed OCS 21.11% against a 14.89% figure recorded earlier tonight.
+The 14.89% does not reproduce, so the discrepancy was bisected with ONE command against
+four commits, and the answer is not this landing:
+
+      b60ba9d  pre-session (owner's gust fix)   OCS 16.67%   race mean 201.25
+      d55eb97  the densified escape fan         OCS 21.11%   race mean 197.03
+      97a5559  the no-go tax                    OCS 21.11%   race mean 200.29
+      b566370  tonight's landing                OCS 21.11%   race mean 197.38
+
+**The fan cost 4.4 points of Clubhouse OCS when it landed, and the check at the time did
+not catch it.** The mechanism is the one this session then learned twice more the hard way:
+`const candidates = openWaterAv ? [...]` carries NO racing-leg guard, so the densified fan
+reshapes the START, and Clubhouse is an open-water venue where it therefore always applies.
+The deadband (0 -> 1.7% OCS) and the near-reversal gate (0 -> 2.2%) both did the same thing
+on Lighthouse Cove and both were fixed with `leg >= 1` before landing.
+
+Restricting the fan to racing legs (`treeFANG`) recovers it exactly:
+
+      HEAD          OCS 21.11%   start mean 5.83   race mean 197.38  median 194.30
+      fan-gated     OCS 16.67%   start mean 4.89   race mean 199.80  median 194.28
+                        ^ back to the pre-session baseline to the digit
+
+Benching on lake and bay now to confirm the fan's racing-leg gains survive the gate — the
+fan was landed for -29.0 lake and -5.0/-2.0 bay, all of which are racing-leg effects.
+
+⚠️ **STANDING RULE, now earned three times in one session: every term in
+`applyAvoidance` needs `this.boat.raceState.leg >= 1` unless it is deliberately tuning the
+start.** The tack tax and the no-go tax already carried it; the fan did not, and nobody
+looked because the fan was measured on race time, not on OCS.
+
+# ═══ SESSION CLOSE — 2026-08-06 overnight push ═══
+
+## What landed
+
+    d55eb97  densified escape fan + land probe as a DISTANCE   (earlier in the session)
+    97a5559  an escape into the no-go zone is not an escape    (earlier in the session)
+    b566370  near-reversals gated on the boat, and the deviation cost put in scale
+    b85935d  the escape fan restricted to racing legs
+
+## Where the fleet stands against the human
+
+                      session start      close       human      gap closed
+      Stillwater Lake     407.5          ~295         223          64%
+      Glacier Sound       535            462         ~222          23%
+      Lighthouse Cove     252            ~245        226.2         27%
+      Ocean               193            193         182.5          0%   (untouched)
+      Clubhouse           OCS 16.67%     16.67%       —            n/a   (restored)
+
+## Verification at close
+
+    golden traces   PASS 20/20, 0 behaviour changes (re-recorded twice — the first
+                    run was corrupted by a git checkout during a background verify)
+    seatrials       OCS 16.67% (= pre-session baseline), median 194.28, DNS/DNF 0.00%
+    npm test        6 failures, byte-identical on pre-landing code (test_arena +
+                    test_editor, all pre-existing)
+    arctic baseline verified byte-identical to true HEAD before its comparisons were used
+
+## The three rules this session earned
+
+1. **A term in the wrong ORDER OF MAGNITUDE is a structural bug, not a knob.** Twelve
+   re-pricings were inert because every one lowered a THREAT cost; the proper-course term
+   sat three orders of magnitude below them and had never been raised. Amends, rather than
+   overturns, "change which actions exist, not what they cost" — a price at the right order
+   IS a knob, and knobs have all lost.
+2. **Every term in `applyAvoidance` needs `leg >= 1`.** Three separate terms leaked into
+   the prestart in one night, one of them already landed and shipping.
+3. **Read the clock, not the contact counts.** Contact deltas flipped sign between 20-seed
+   sets on every candidate tested; the paired clock median replicated every time.
+
+## Open, with evidence, for whoever picks this up
+
+  - ⚠️ **`treeDEVP`'s successor**: make the deviation cost proportional to the DISTANCE the
+    deviation actually costs over the lookahead — `speed * t * (1 - cos(offset))` — instead
+    of a hand-set power. The shipped pow3*200 is the right shape found by hand; the
+    physical version should be better and would explain itself.
+  - ⚠️ **Bay boat-on-boat contacts doubled** with this landing (1.17 -> 2.26, both sets).
+    Bay is the venue closest to the human and the one paying for the other two.
+  - **Arctic's biggest excess bin is now `offrt` (3630u), not `avoid` (2594u)** — being off
+    the planned route, with xtrack mean 867u and the carrot jumping 20.6x a minute. That is
+    a routing-churn problem and nothing this session touched addresses it.
+  - **Mark 5 on Stillwater Lake sits in 100u of clearance**, tightest in the game by 2x,
+    worth ~10-15 s. An authoring fix, not a tuning one.
+  - **The router's 6x ice-plug price is dead code** (`pathSailable` admits only `_soft===1`).
+
+## ⛔ REJECTED, and it explains the shipped shape: the PHYSICAL deviation cost (`treePHYS`)
+
+The session-close entry named this as the obvious successor to the hand-tuned `pow3*200`:
+what a deviation actually costs is PROGRESS, so price it as the distance given up over the
+lookahead, `K * speed * t * (1 - cos(offset))`, with K=5 chosen to match pow3*200 at the
+172-degree reversal so the two are comparable at the top of the range.
+
+    vs the shipped term, 20@9100 each
+      lake   paired med +5.0 / mean +2.0 faster   BUT land contacts 8.04 -> 15.90 (2x)
+                                                  and 180 -> 179 finishers
+      bay    paired med +1.5 / mean +2.5 faster   contacts ~neutral, pen 0.46 -> 0.47
+
+**A wash on the clock, and it gives back half of what the land probe and the near-reversal
+gate were landed for.** The mechanism is in the units:
+
+    const speed = Math.max(2.0, boat.speed * 60);   // ranges 2 (stopped) to ~120 (fast)
+
+That is a SIXTY-FOLD span, so the physical cost of a 172-degree reversal is 5400 for a boat
+at speed but **80 for a boat nearly stopped** — and the boat that most needs restraining is
+exactly the slow one pinned against the shore, where lake takes 81% of its groundings.
+The physics is right about the world and wrong about the control problem: the term is not
+paying for lost distance, it is holding a boat to her course, and a boat with no way on
+still needs holding.
+
+A speed floor would repair it — but a floor is speed-independence, which is what
+`pow(|offset|,3) * 200` already is. **This is a rejection that explains the landing**: the
+shipped shape is not a hand-tuned stand-in for a physical law that nobody got round to
+deriving. Speed-independence is the feature.
+
+## 📐 ARCTIC, AFTER THE LANDING: the excess is PLAN INSTABILITY, not plan quality
+
+With avoidance now much improved, Glacier Sound's biggest excess bin is no longer `avoid`
+(2594u) but `offrt` (3630u) — being off the planned route. `_route_attrib` on post-landing
+HEAD (6 seeds, 54 boat-races, 1 Hz) says that bin is misnamed:
+
+      plan / dmc-remaining ratio    med 0.79   <- the plan is SHORT, not long
+      boat off its OWN plan         med  96u   <- she follows it faithfully
+      cross-track to the ruler      med 403u
+      plan waypoints                mean 118
+      seconds with NO plan          0.0 of 184
+
+**At every instant the plan is efficient and the boat is on it — and the odometer still
+runs 1.67x the ruler.** Neither of the two stories the probe was built to separate is
+true: it is not ROUTER POLICY (the plan is 0.79x) and it is not EXECUTION (96u off). The
+excess lives in the third place, which is between the samples: the plan is re-solved
+constantly and the SEQUENCE of plans wanders. `carrotJump` is 20.6 per minute on the return
+leg, xtrack mean 867u. The boat does something locally sensible twenty times a minute and
+integrates to 1.67x.
+
+⚠️ **This is the pathology the SIPP research named and it is NOT what SIPP was retired
+for.** That thread was cancelled on a measurement — floe drift is not predictable past ~5s,
+so a plan that assumes known drift is worthless. Plan STABILITY is a separate claim and
+does not require prediction: committing to a chosen plan for N seconds, or a time-indexed
+carrot that cannot be re-adopted backwards, both kill churn by construction without
+forecasting anything.
+
+⚠️ **But note what this session did to that family**: hysteresis and commitment have been
+rejected TEN times at the avoidance layer. Nothing has tested them at the ROUTING layer,
+which is a different loop with a different time constant — a route commitment of a few
+seconds is not the same object as holding an escape heading for one. That is the honest
+next candidate, and it should be built with the measurement above as its target: drive
+`carrotJump` down and see whether the 1.67x follows.
+
+**Not attempted here** — a routing change needs 16-32 seed arctic sets to resolve, which
+did not fit the remaining window. Handing it over measured rather than half-benched.
+
+### ⚠️ CORRECTION to the entry above — `carrotJump` does not support a churn story
+
+The entry above concluded "the excess is plan instability" and named a route-commitment
+candidate. **Two further measurements withdraw that conclusion**, and the second is another
+instance of this session's recurring trap: a statistic that does not measure what its name
+suggests.
+
+**1. The map is stable, and so are the re-solved plans** (`_map_validity`, arctic):
+
+      H(s)   floe cells that flipped    plan difference over the first 2000u
+        4            3%                          8-12u
+        8            5%                         13-17u
+       16            8%                         15-36u
+       30           30%                        114-278u
+
+Over the 4-8 s horizon the router actually re-plans on, the map barely moves and two
+independently-solved plans agree to within noise. So the plan is not thrashing because the
+ice moved — the premise a commitment fix would be built on is already satisfied.
+
+**2. `carrotJump` counts the LOOKAHEAD changing, not the plan changing.** It increments
+whenever the nav target moves >150u between 1 Hz samples (`_transit_probe:220`). But the
+target is a pure-pursuit point at distance `LOOK` ahead, and `LOOK` is not constant:
+
+      LOOK = clamp(clearance * res * 1.2, 250, 900)        // scales with sea room
+      if (xtk > 150) LOOK *= max(0.4, 1 - (xtk-150)/400)   // shrinks with cross-track
+
+so a clearance change or a cross-track excursion moves the carrot hundreds of units in one
+sample **by design** — that is the cross-track controller steepening the recovery angle,
+which is the behaviour the comment above it argues for. Counting those as "churn" and then
+fixing them would be removing a working controller.
+
+⛔ **So the arctic 1.67x odometer is NOT yet explained**, and the honest state is: not
+router policy (plan 0.79x), not execution (96u off plan), not map decay (3-5% at 4-8 s),
+and not carrot churn on the evidence offered. **Do not build the route-commitment
+candidate on this** — the family already carries ten rejections at the avoidance layer and
+this would be an eleventh built on a mis-read statistic. The next step is a probe that
+measures the carrot's motion ALONG the path separately from `LOOK`'s contribution, which
+nothing currently does.
+
+## ⚡ ARCTIC, THE REAL SHAPE: the router re-solves at its FLOOR and still changes its mind
+
+`_replan.js` (new) counts what `carrotJump` does not — how often `pathSailable` is actually
+re-solved, which the controller marks by resetting `gridAge`. Arctic, 4 races, 16423
+boat-seconds:
+
+      FULL RE-SOLVES                          5.5 /min per boat
+        (the thread is held 2 s minimum and ages out at 12 s, so ~5/min IS the floor)
+      new-vs-old path departure at 250/500/1000u ahead:
+        med 177u   p75 460u   p90 845u   max 2796u
+      re-solves returning essentially the SAME corridor (<100u):   33%
+      carrot movement per 0.1 s sample:  med 0u   p90 71u   p99 290u
+
+**The router is not thrashing — it replans as rarely as its own design permits — and it
+still changes its mind about the corridor two times in three.** Put beside the map
+measurement, the mechanism is legible and it is not drifting ice:
+
+      re-solve from a FIXED point, 4-8 s apart   ->  plans differ by 8-17u
+      re-solve from where the BOAT actually is   ->  plans differ by 177u median
+
+Between replans the boat has sailed ~12 s. The ice barely moved (3-5% of cells flip at
+4-8 s), so the near-identical map is yielding a materially different plan **because the
+start point moved**. That is not decay, it is **solution instability**: the
+clearance-weighted grid holds several near-equal corridors, and a small change in where
+the search starts flips which one wins.
+
+⚠️ **This is tonight's finding one layer up.** `applyAvoidance` was an argmin with near-ties
+and no preference for the incumbent heading, and the fix was to make holding course
+meaningfully cheaper. `pathSailable` is an argmin with near-ties and no preference for the
+incumbent CORRIDOR. The candidate is therefore a hysteresis in the ROUTER'S COST — a
+discount on cells the previous path already used — and NOT the route-commitment-in-TIME
+candidate this log proposed two entries ago, which is already satisfied (5.5/min is the
+floor) and which would have been an eleventh rejection in the commitment family.
+
+**Not benched** — a routing change needs 16-32 seed arctic sets and the window closed.
+Handed over measured, with the instrument (`_replan.js`) that scores it: drive "same
+corridor" up from 33% and see whether the 1.67x odometer follows.
+
+### ⚠️ ...and the third venue refutes the tidy version of that story
+
+The entry above was one measurement away from claiming that router instability explains
+arctic's gap. It does not. All three land venues, same probe:
+
+      venue    re-solves/min   departure med   SAME corridor   gap vs human
+      arctic       5.5             177u            33%            2.08x
+      bay          5.4             121u            38%            1.08x
+      lake         4.5              94u            50%            1.32x
+
+**Bay is LESS stable than lake and far closer to the human.** The near-reversal share
+predicted its own effect across three venues (17.3 / 15.0 / 2.3% → +41 / -23 / inert) and
+that is why it was trustworthy; this statistic does not. So:
+
+  - the instability is REAL and it is UNIVERSAL — every venue replans at its floor and
+    still changes corridor half the time or worse. It is a property of `pathSailable`, not
+    of any venue's ice or geometry;
+  - it therefore CANNOT by itself be why Glacier Sound is 2.08x the human while Lighthouse
+    Cove is 1.08x. Something else carries arctic's gap and is still unidentified;
+  - a router-cost hysteresis is still the right candidate, but it is a GLOBAL change with
+    no prior reason to expect arctic benefits most. Bench it on all three, expect the
+    effect to track nothing in particular, and let the clock decide.
+
+⚠️ Recorded this way on purpose. Two candidates were nearly published tonight on a
+correlation that a third data point would have killed — and the one instrument this
+session trusted most (`_margin.js`) earned that trust by predicting bay's null result
+BEFORE the bench. A cross-venue statistic that does not predict is not a mechanism.
+
+## ⚡ ARCTIC'S GAP, AT LAST: the fleet hits the ice 23 times a race. The human hits it once.
+
+The harness counts fleet collisions directly and the recordings carry no collision field,
+so the two sides have never been compared — the same apples-to-oranges gap that hid the
+traffic numbers for months. `_thump.js` (new) uses a detector BOTH sides support: speed
+falling >40% in one 0.1 s sample from above 1 knot, which is what a contact looks like
+(a hit costs ~60% of speed). Identical rule on recordings and on live boats.
+
+      venue    fleet/race  fleet/min  knots shed/race  HUMAN/race  gap vs human
+      arctic      23.0        3.0          73.3           1.2         2.08x
+      lake         3.9        0.8          10.5           0.0         1.32x
+      bay          1.6        0.4           5.3           0.0         1.08x
+      (4 races x 9 boats per venue; human from 22/3/13 recordings)
+
+**The ordering matches the gap ordering exactly**, which is the property the router-
+instability statistic failed to have (33/38/50% "same corridor" against 2.08/1.08/1.32x —
+no relation). This one predicts, so it is worth building on.
+
+And the arctic row carries its own control. It is not "Glacier Sound has more ice": the
+human sails the SAME ice on the SAME course and takes 1.2 hits a race against the fleet's
+23.0 — **nineteen times fewer, and ten times fewer per minute.** The fleet sheds 73 knots
+of speed per boat-race in impacts, which at a ~4.5 kt cruise is roughly sixteen dead stops.
+
+⚠️ Contact-avoidance has been worked on all session and this is what is LEFT after it:
+the near-reversal gate cut arctic's land contacts 32.9 -> 27.7 and mark 0.74 -> 0.60 while
+floe contacts went UP 34.0 -> 38.3. **Floes are the untouched class**, and they are the one
+whose obstacle drifts — which is exactly why every open-water fix this session was gated
+away from them. The next candidate should aim at the floe-contact rate specifically, with
+`_thump.js` as its scoreboard, and it should be judged on the human's 1.2 rather than on
+an incremental improvement over 23.
+
+### ⛔ ...and it is NOT the ice fan's resolution (`treeICEFAN`, measured on the new statistic)
+
+The densified escape fan was gated off Glacier Sound because four 16-seed sets could not
+tell it from zero on the CLOCK (+4.0, -9.0, -13.0, +10.0; pooled -4.0). The impact rate is
+a far sharper instrument than race time, so the question was worth re-asking with it.
+Giving the ice branch the same density as open water:
+
+      HEAD          23.0 thumps/boat-race   3.0/min   73.3 kt shed
+      ice fan       23.1 thumps/boat-race   3.2/min   71.8 kt shed
+
+**Inert, and now unambiguously so.** Two things follow. The arctic gate on the fan was the
+right call and is confirmed by a better statistic than the one that made it. And more
+usefully: **the impact rate is not limited by the resolution of the escape options.** The
+fleet is not hitting ice because it lacked a fine enough dodge.
+
+Two further causes were checked in the code and are already handled correctly, so do not
+spend a session rediscovering them:
+
+  - **floe drift IS predicted, not padded** (`applyAvoidance` ~3160): each floe is tested
+    where it WILL BE at mid-lookahead via `driftVx * tMid`, with the honest margin being
+    prediction error rather than a blanket pad. The 4 s lookahead sits inside the ~5 s
+    window drift was measured to be predictable over, so this is sound;
+  - **floes are skipped here only when the trajectory planner already steered this tick**
+    (`_trajFloe`), to avoid double-vetoing the thread it chose.
+
+So the 23-per-race is caused by something other than escape resolution, drift blindness,
+or double-counting. That is three eliminations and no answer — recorded as such, because
+the next session should start from the elimination list rather than from these three.
+
+### ⚠️ `_thump.js`'s impact CLASSIFIER is geometrically biased — do not trust its split
+
+`_thump.js` counts impacts reliably (that is the number in the table above, and both sides
+use the same rule). An attempt to also classify WHAT was hit — nearest object at the moment
+of the thump — reported **100.0% land, 0 floes, on a course carrying 112 floes.** A
+statistic that lands on exactly 100% is a bug, per the standing rule.
+
+The first cut used signed `dist - radius`, which is hugely NEGATIVE everywhere inside
+arctic's enclosing shoreline ring, so that ring won every comparison. Switching to distance
+to the EDGE, `|dist - radius|`, changed nothing, and the reason is not a coding error:
+
+      arctic land radii: 8685, 3245, 2787, 1137, 869, 650 ...   floe radius ~69
+
+A 2787-radius island has an enormous circumference, so a boat is almost always within a few
+hundred units of SOME point on its edge; a 69-radius floe qualifies only when she is right
+beside it. Sampled at random moments (not at impacts) the same classifier reads 8 land to
+1 floe. **"Nearest edge" is not "what she hit"** on a course whose obstacles differ by two
+orders of magnitude in size.
+
+⛔ So the split is withdrawn. The class attribution already exists and needs no new probe —
+the harness counts collisions by class in every bench:
+
+      arctic per boat-race, HEAD:   floe 32.5   land 27.5   boat 7.7
+      after this session's landing: floe 38.3   land 27.7   boat 10.6
+
+**Floes are the largest class and the only one that rose.** That stands, it comes from the
+harness's own counters, and it is what the next candidate should aim at.
+
+## 🗄️ HOUSEKEEPING: 106 GB of `regatta/eval/rl` is 37 pre-`mktree.sh` candidate trees
+
+Not a finding about the AI, but worth an owner decision. `regatta/eval/rl` is **106 GB**,
+and it is almost entirely legacy candidate trees built by `cp -R regatta/` before
+`mktree.sh` existed:
+
+      37 trees over 1 GB, ~2.9 GB each
+        treeA treeB treeBase treeC1-C3 treeD1-D7 treeE1 treeE2 treeG treeH treeL
+        treeLD65 treeLD110 treeLD135 treeLDg treeM treeM1-M3 treeQ treeR1-R4 treeR6 treeR7
+        treeW1 treeW2 treeW2b treeW3
+
+      inside ONE of them (treeR3):
+        regatta/eval/     2.4 GB   <- a nested copy of eval/, containing its own rl/
+        regatta/art/      331 MB
+        regatta/assets/   188 MB   <- mktree.sh symlinks this now
+        regatta/js/       1.6 MB   <- the only part a candidate tree actually needs
+
+This is exactly the hazard `mktree.sh`'s own header warns about ("A full cp -R of regatta/
+pulls in eval/ (100G+) and recurses"). Trees built with `mktree.sh` are **1.8 MB** — the 15
+built this session total 27 MB.
+
+⚠️ **NOT deleted — owner's call.** The bench RESULTS these trees produced live in the
+`*_bench_*.json` files (51 MB total at the top level), not in the trees, so the numbers in
+this log survive their removal. But an old tree is the only way to re-run an old
+comparison, so this is a judgement about which history is worth 106 GB.
+
+## ⛔ FOURTH ELIMINATION: floes ARE mispriced 7-8x, and fixing it barely moves anything
+
+Reading the collision response settles a question the cost function assumes: **a floe costs
+exactly what a rock costs.**
+
+      script.js:16081    boat.speed *= 0.4;      // applied to BOTH; `isFloe` is only
+                                                 // carried along for reporting
+
+Yet avoidance prices floe proximity at 3500/1200 against land's 25000/10000 — 7-8x cheaper
+for an identical consequence. By the standard this session established (a price that does
+not match the thing it prices is structural, not a knob) that is a genuine defect. Pricing
+floes as land (`treeFLOEPX`, 4 arctic races, 36 boat-races):
+
+      HEAD          23.0 impacts/boat-race   3.0/min   73.3 kt shed
+      floe=land     21.6 impacts/boat-race   2.9/min   71.5 kt shed     (-6%)
+
+**Real, and far too small to be the answer** — and not separately verified on a second set,
+because it does not clear the bar to be worth one. The fleet is not hitting ice because it
+under-values ice.
+
+⚡ **And that is the sharpest statement of tonight's lesson, from the other side.** The
+deviation term was mispriced by THREE ORDERS OF MAGNITUDE and correcting it was worth
+71-86 s a boat on this venue. Floe proximity is mispriced by 7-8x — genuinely, verifiably
+mispriced — and correcting it is worth 6% of an impact rate. **The magnitude of the
+mismatch is the whole signal, not its existence.** A campaign that goes looking for
+"mispriced terms" will find them everywhere and mostly waste its time; the question to ask
+is whether the term is in the same UNITS as what it is weighed against.
+
+### The arctic elimination list now reads:
+
+    NOT escape-fan resolution   densifying the ice fan: 23.1 vs 23.0
+    NOT drift blindness         floes are predicted to mid-lookahead, inside the ~5 s
+                                window drift was measured predictable over
+    NOT double-counting         `_trajFloe` handoff is deliberate
+    NOT floe under-pricing      correcting a real 7-8x mismatch: -6%
+
+Four eliminations, no answer. The next session should start here rather than from any of
+these — and should be suspicious of any candidate whose story is "a constant is wrong".
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PLAN FOR THE NEXT PUSH — RESEARCHED 2026-08-06 AFTER THE AVOIDANCE LANDING
+# ═══════════════════════════════════════════════════════════════════════════
+
+## PRIME DIRECTIVE (unchanged, and it worked)
+
+Keep >=4 probes in flight; never idle the background; **check `date` — do not infer
+elapsed time from how much work has gone by** (this session mis-estimated the clock by two
+hours doing exactly that, and killed four benches on a pace figure that was an artefact).
+A rejection with a mechanism is a result. Bench at 20 seeds (16 arctic) on two DISJOINT
+sets before landing. Commit per landing.
+
+## WHAT THE RESEARCH FOUND (all measured today, after the landing)
+
+### 1. Boat-on-boat contact is now the dominant dirt, on FIVE venues
+
+`check_raceable.js` across all ten venues, contact FRAMES per boat-race:
+
+      venue      land    floe   BOAT RUBS   pen    gate
+      redrock  4641.6     0.0      659.6    7.2    FAIL x2  (known broken, owner's call)
+      arctic    488.7   782.6      259.0    1.5    FAIL x2
+      bay         0.0     0.0       54.7    0.3    ok
+      lagoon      0.0     0.0       45.0    0.8    ok
+      river       0.0     0.0       44.6    0.7    ok
+      swamp       0.0     0.0       40.7    3.6    ok
+      seatrials   0.0     0.0       31.3    0.5    ok
+      lake      257.7     0.0       29.6    0.7    FAIL x1
+      glowtide    0.0     0.0       26.4    0.4    ok
+      ocean       0.0     0.0       10.6    0.6    ok
+
+⚠️ These are FRAMES, not events — the benches' `col.boat` counts events (bay 1.17-2.68 per
+boat-race). Do not mix the two; this campaign has confused frames/events/episodes three
+separate times. But the ORDERING is the finding: **Lighthouse Cove is the dirtiest raceable
+venue in the game for boat-on-boat contact, and this session's landing made it worse**
+(1.17 -> 2.26 and 1.31 -> 2.68 events, both sets). The human takes ZERO boat impacts on bay
+by the same `_thump.js` detector.
+
+### 2. Four venues have NEVER been compared to a human
+
+      recordings:  arctic 22 | seatrials 16 | bay 13 | ocean 7 | lake 3 | redrock 1
+      NONE:        glowtide, lagoon, river, swamp
+
+The entire method that produced this session's landings is a like-for-like human
+comparison. It cannot reach 40% of the venue roster. **Only the owner can produce
+recordings** — this is the single highest-leverage thing they can do for the campaign, and
+lagoon/river/swamp are exactly the venues the table above flags as dirty.
+
+### 3. Arctic's 23 impacts are 18.9 SEPARATE episodes, not a few grinds
+
+      23.0 hits / boat-race  ->  18.9 episodes (hits >3 s apart)  ->  1.2 hits per episode
+
+My own standing rule (count EPISODES, from the lake grounding work) had never been applied
+here. It rules out the recovery-loop story: she is not getting pinned and ground, she is
+having **nineteen distinct collisions a race** where the human has one.
+
+### 4. ⚠️ THE RECORDINGS HAVE THREE INCOMPATIBLE `floes` SCHEMAS
+
+      19 arctic + 13 bay + 7 ocean + 13 seatrials + 1 redrock:
+                        floes<=1200u[hullId,x,y,spin,vx,vy]     <- SHIPPING, NO RADIUS
+      3 arctic + 3 seatrials:  floes<=1200u[x,y,r,vx,vy]        <- old, HAS radius
+      3 lake:                  floes                            <- bare, third variant
+
+The header string is the only discriminator. **I parsed all 22 arctic files as the 5-field
+layout and produced an "ice exposure" result that was nonsense** — index 2 is `y` in the
+shipping schema, so a quarter of the "radii" came out negative (min -3968) and the p5
+clearance read as 1803 units INSIDE a floe. Retracted.
+
+⛔ **This BLOCKS the top arctic measurement.** "Does the human sail through less ice than
+the fleet?" needs distance to a floe EDGE, and the shipping schema dropped radius for
+`hullId`+`spin`. Unblock it one of two ways before aiming at arctic:
+  (a) recover radius by `hullId` from the venue document / runtime floe set, or
+  (b) add radius back to the recorder and ask the owner for fresh arctic recordings.
+
+## THE PUSH, IN PRIORITY ORDER
+
+### P1 — BOAT-ON-BOAT CONTACT (bay first, then lagoon/river/swamp)
+The biggest number on the board, on the most venues, and the one this session regressed.
+Bay has 13 human recordings and the human's score is ZERO impacts, so the target is
+unambiguous.
+  - measure first: `_thump.js` on bay/lagoon/river/swamp, episodes as well as hits, and
+    the `_fleet_ledger` at-CPA deflection that already says fleet 16.6 deg vs human 8.0
+  - the standing thesis says look for an ACTION that does not exist or is not real, not a
+    price — but check the SCALE of what is there first (see the rule below)
+  - ⚠️ any candidate must be checked against `treeNOSE2` (gate-only), which trades ~50 s of
+    arctic for bay's clean contact numbers. If P1 cannot fix bay's contacts, reconsider
+    landing `treeNOSE2` instead of the shipped pair — that is a live option, not a defeat.
+
+### P2 — ARCTIC PER-ENCOUNTER ICE AVOIDANCE (19 episodes vs 1)
+Blocked on the schema (item 4). Do that first, then:
+  - human ice exposure vs fleet ice exposure along track — if she routes through thinner
+    ice, arctic is a ROUTING problem and the whole avoidance thread is aimed wrong
+  - the fifth hypothesis, untested: **does the boat's own ROUTE lead it into the ice it
+    hits?** `pathSailable` plans on a grid that stamps floes at a refresh cadence; if the
+    plan threads gaps that have closed by arrival, avoidance is fire-fighting a bad plan
+    and no avoidance tuning can win. Measure: at each impact, was the floe on the boat's
+    own `gridPath` when the plan was made?
+  - four causes already ELIMINATED — do not re-propose: escape-fan resolution (23.1 vs
+    23.0), drift blindness (floes ARE predicted to mid-lookahead), double-counting
+    (`_trajFloe` is deliberate), floe under-pricing (a real 7-8x mismatch, worth 6%).
+
+### P3 — LAKE STILL FAILS ITS OWN RACEABILITY GATE
+257.7 shoreline collision frames per boat-race, `check_raceable` FAIL, even after the
+landing halved the event count. The venue is 4447 navigable cells and mark 5 sits in 100u
+of clearance. This may be an AUTHORING fix (move mark 5 ~300u southwest, worth ~10-15 s)
+rather than a tuning one — put it to the owner with the number.
+
+### P4 — OWNER-DEPENDENT
+  - recordings for glowtide, lagoon, river, swamp (P1 needs them to have a target)
+  - redrock: 4641 shoreline collisions, 2/18 ever finish — still not raceable
+  - 106 GB of `eval/rl` in 37 pre-`mktree.sh` trees
+
+## THE RULE THIS SESSION EARNED, STATED FOR NEXT TIME
+
+**A price in the wrong ORDER OF MAGNITUDE is a structural bug; a price at the right order
+is a knob, and knobs lose.** Measured from both sides in one night: the deviation term was
+3 orders out and fixing it was worth 71-86 s a boat on arctic; floe proximity is genuinely
+7-8x out and fixing it was worth 6%. **Before proposing any re-pricing, compute the ratio
+between the term and what it is weighed against.** Under ~10x, expect nothing.
+
+And the corollary that governs P1: *do not* go hunting for "wrong constants". The question
+is whether a term is in the same UNITS as the function it lives in.
+
+## 🧹 EVERYTHING THE NEXT SESSION NEEDS IS TRACKED — the rest is disposable
+
+Checked before a repo clean. `git clean -fdx` under `regatta/eval/rl` deletes the candidate
+trees and every `*_bench_*.json`, and **that is fine**:
+
+  - **TRACKED, survives:** all the probes (`_thump.js`, `_margin.js`, `_replan.js`,
+    `_hdgrate.js`, `_fleet_ledger.js`, `_human_ledger.py`, `_route_attrib.js`,
+    `_map_validity.js`, ...) and `traj/` — all 59 human recordings. These are the assets;
+    they are in git.
+  - **UNTRACKED, deleted, and obsolete anyway:** every bench baseline. `b566370` and
+    `b85935d` changed fleet behaviour on lake/bay/arctic, so `bay_bench_nogobay`,
+    `ocean_bench_nogolake`, `fleet_leg2_headarc` etc. are all pre-landing and **must be
+    re-recorded against the new HEAD before any A/B**. Losing them costs nothing; USING
+    them would cost a wrong verdict.
+  - **UNTRACKED, deleted, reproducible:** the candidate trees, including `treeNOSE2`.
+
+### Rebuilding `treeNOSE2` (the gate-only fallback the plan names)
+
+It is HEAD with the deviation change reverted and the near-reversal gate kept:
+
+    regatta/eval/rl/mktree.sh treeNOSE2
+    # then in treeNOSE2/regatta/js/script.js, restore the ORIGINAL deviation term:
+    #   let cost = (this.boat.raceState.leg >= 1)
+    #       ? Math.pow(Math.abs(offset), 3) * 200
+    #       : Math.pow(Math.abs(offset), 1.5) * 10;
+    # back to:
+    #   let cost = Math.pow(Math.abs(offset), 1.5) * 10;
+    # leave the `nosedIn` gate and the fan's racing-leg guard exactly as shipped.
+
+That reproduces the tree whose numbers are in this log (lake +41.0/+55.0, bay inert,
+arctic -23.0/-38.0, and bay's contact classes unchanged rather than doubled).
+
+### First moves for the next instance, in order
+
+    1. re-record baselines on the new HEAD:  bay 20@9100 + 20@9200, lake 20@9100 + 20@9200,
+       arctic 16@9100 + 16@9200   (mktree.sh a HEAD tree first; `treeNOW` is gone)
+    2. `_thump.js` on bay/lagoon/river/swamp — P1 needs its starting numbers
+    3. then P1 proper

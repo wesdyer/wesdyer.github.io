@@ -162,7 +162,14 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'lake' }));
         resetGame();
         const o = {}, isl = state.course.navIslands.filter(i => !i.isFloe);
-        const s = isl[0];
+        // THE SMALLEST ONE, not the first. Every probe below is placed at multiples of
+        // `s.radius`, which is only meaningful for a COMPACT island. Stillwater Lake's
+        // first shape is its entire shoreline ring — 95 vertices, bounding radius 10092
+        // on a world 5733 across — so `s.radius * 2` put every sample outside the map and
+        // all five geometry assertions read "no shadow anywhere". The enormous-outline
+        // case is deliberately covered further down, on arctic's coast, and it is a
+        // DIFFERENT property.
+        const s = isl.reduce((a, b) => (b.radius < a.radius ? b : a), isl[0]);
 
         // A SHAPE CASTS ITS LEE DOWN THE WIND AT ITSELF, so these sweep the FIELD rather than
         // handing shadowAt a direction — there is no direction to hand it any more, and the
@@ -177,9 +184,19 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
 
         // NOTHING casts a lee until it is given a height — that is the default, deliberately,
         // so the feature existing does not change how ten venues sail.
-        o.silentByDefault = shadeAt(s.x + 1, s.y + 1, state.wind.direction) === 1
-            && isl.every(i => !(i.height > 0));
-        s.height = 40;                        // 40 m of rock -> 400 m of bad air, at 10 heights
+        //
+        // ⚠️ DO NOT WELD THIS TO A VENUE'S AUTHORING. It used to also assert that no island
+        // on this venue had a height, which held only while Stillwater Lake happened not to
+        // author one. The moment the lake was reshaped with `height: 20` on all eight of its
+        // islands, this read as the MODEL failing when it was a fact about the document —
+        // and, worse, the neighbouring islands then cast real lees that contaminated every
+        // probe below, so all six shadow assertions failed at once. (Same lesson as
+        // test_editor deriving arctic's expectations instead of hardcoding them.)
+        //
+        // The default under test is the CODE's, so state it: heights cleared, nothing casts.
+        for (const i of isl) { i.height = 0; i._sil = null; }
+        o.silentByDefault = shadeAt(s.x + 1, s.y + 1, state.wind.direction) === 1;
+        s.height = 40; s._sil = null;         // 40 m of rock -> 400 m of bad air, at 10 heights
         // Downwind is thin, upwind is untouched — at EVERY wind direction, because a shadow
         // that does not turn with the breeze is in the wrong place the moment it shifts.
         o.lee = [], o.luff = [];
