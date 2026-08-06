@@ -4464,3 +4464,84 @@ contacts and penalties DOWN.
                 — IDENTICAL to the pre-landing run, as it must be: seatrials' route is
                   line -> gate -> gate -> gate -> gate and has no rounding leg at all
     test_sailable   PASS 0 failures, all ten venues
+
+---
+
+# ⚡ OWNER SESSION — LIVE BUGS FOUND BY SAILING IT (2026-08-05 evening)
+
+The owner sailed Bluewater and Redrock by hand and reported four things. All four were
+real, three are fixed, and one of them was mine.
+
+## ✅ 1. "The AI sails AWAY from the start line and only tries to get across after the gun"
+
+`hullLineOffset` took its sign from the MARK ORDER and ignored the route entry's `dir`.
+Two of the ten venues author their start `dir: -1` — Bluewater and Redrock, both gate
+starts, both new. On those the prestart read a boat correctly BEHIND the line as OVER
+EARLY, and `getStartCommand`'s retreat branch backs off by `STAGE + pDist`, which grows as
+she retreats. A runaway.
+
+    fleet median distance from the line, T-30 -> the gun
+      ocean    -386 -> -1731  (furthest -1855)      after:  -386 -> -136
+      redrock  -383 -> -1078  (furthest -1105)      after:  -383 ->  -74
+      bay      -419 ->  -128   <- what it should look like
+
+    ocean 20 seeds   med 225.5 -> 198.0, paired +27 med / +35 mean, land 1.57 -> 0.00,
+                     rubs 2.14 -> 1.13, pens 0.52 -> 0.40, max 529 -> 326
+    bay 20 seeds     paired 0 / 0 — inert
+
+**The single biggest pace win of the day, and it was a bug, not a tuning change.**
+
+## ✅ 2. OCS false positives AND false negatives
+
+Two causes, both the same family:
+
+  - the PRESTART branch hardcoded `crossingDir === 1` while the racing branch three lines
+    below correctly compares `crossingDir === requiredDirection`. On a `dir: -1` line that
+    is inverted — a boat crossing to the course side was CLEARED, a boat correctly
+    returning was FLAGGED. That is the owner's false positive, and it can only be seen by
+    someone who actually reaches the line, which on those two venues the fleet never did.
+  - OCS was set only by a crossing EVENT. RRS 29.1 makes it a fact about POSITION AT THE
+    STARTING SIGNAL. Now judged from the hull at the gun, against the line BETWEEN its
+    marks (past the pin is not on the course side).
+
+    `_ocs_truth.js`, 270 boat-starts:  6 false negatives (one 182u over) -> 2, both
+    sitting exactly ON the line — a floating-point tie, not a violation.
+
+## ⛔ 3. "It failed to detect a rounding until an absurdly late period" — THAT ONE WAS MINE
+
+The hairpin full-circuit requirement landed this morning. Redrock's legs 2 and 3 have
+co-directional anchors, so it raised both to 360 degrees — and completion fires when the
+boat is outside the zone and moving away, by which point a normally-sailed rounding has
+banked only part of that circle. The leg then registers whenever the transit to the next
+mark finally accumulates the rest. **Reverted (`17c5c9f`).**
+
+⚠️ **A bench cannot see a leg registering late.** The AI absorbed it as a time cost and
+every number I had said "expensive but correct". A human noticed in one race. When a change
+alters WHEN a state transition fires, the bench measures the consequence and not the fault.
+
+## ✅ 4. "I hit the first rounding circle and tacked outside and it counted as a rounding"
+
+Reproduced exactly (`test_rounding_nibble.js`) on three venues:
+
+    venue     requires   the nibble banked   leg completed?
+    redrock      46 deg        82 deg              YES
+    bay          92 deg       126 deg              YES
+    ocean        89 deg       126 deg              YES
+    arctic      360 deg       126 deg              no   (only because of the reverted fix)
+
+**A swept-angle threshold cannot tell a rounding from a near miss**, because coming close
+to a mark and turning away genuinely does swing your bearing about it a long way. Raising
+the number does not fix it — it only makes real roundings register late, which is defect 3.
+Re-basing the accumulator on arrival does not fix it either (measured: still completes).
+
+**What separates them is WHERE SHE IS GOING.** A rounding ends with the boat leaving for
+the next mark; a near miss ends with her leaving the way she came. So the requirement is
+now the winding from her ARRIVAL bearing round to the bearing of the next anchor, taken
+the required way — a per-boat fact about the geometry she actually sailed. The tolerance
+is DERIVED: she leaves on a tangent, so at distance d from a mark she rounds at radius R
+her bearing falls short by exactly `acos(R/d)`. Allowing that and no more means the leg
+completes the moment she is genuinely on her way out, and not before.
+
+    bay correctness   ordinary legs 6.5% -> 0.7% never wrapped the mark
+                      overall 6.1% -> 1.9%
+    bay pace          paired -10.5 med / -10.9 mean, 180/180, marks 0.38 -> 0.67
