@@ -6016,6 +6016,7 @@ left bay untouched — but on lake it gives back half the landing's whole point:
     lake 20@9100 vs the LANDED tree    paired med +1.0  mean +0.3   flat on the clock
                                        land contacts 18.28 -> 27.56 (+51%), pen 0.96 -> 1.11
     lake 20@9100 vs pre-session HEAD   -43.0 med / -57.5 mean  (the landed tree: -53.0 / -58.6)
+    lake 20@9200 vs the LANDED tree    paired med -1.0  mean +10.6   — both sets the wrong way
 
 **Mechanism: the predicate reads `_clear` AT THE BOAT'S OWN CELL, and by the time she is
 in tight water she is already committed.** The ratchet begins while she is still in open
