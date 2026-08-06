@@ -5723,3 +5723,28 @@ detour however long it was.
 evidence about reachability, not about the constant — treat it the way the
 zero-at-every-percentile rule treats a suspicious zero. And a tuned constant that no
 measurement has ever moved may not be tuned at all.
+
+
+## ⛔ REJECTED: letting a free course beat the commitment discount (`treeCOMMIT`)
+
+The lock is real — 14.0% of arctic's deflections and 12.5% of lake's are a boat steering
+away from a course that NOTHING objected to, because a heading near her last dodge scores
+-60 against a free course's 0, and -60 outranks the entire deviation range (0..20). The
+fix (apply the discount only when offset 0 was not free) is small, correct-looking, and
+**costs time**:
+
+    lake 20@9100 vs the landed tree   paired med +4.0  mean +3.6
+                                      boat contacts 3.62 -> 4.42, land 18.3 -> 19.5,
+                                      pen 0.96 -> 1.09, one boat short of finishing
+
+**Mechanism: it is a bug in DESCRIPTION, not in effect.** The comment calls it a
+near-tie-breaker, and it is really hysteresis — and hysteresis that cannot outbid the
+momentary state is not hysteresis. "Holding course is free" flickers tick to tick as a
+rival's projection crosses the bubble edge, so a boat allowed to snap back the instant it
+goes free snaps back and forth. The -60 is buying commitment, and commitment is worth
+more than the 12-14% of deflections it wastes.
+
+⇒ If this is retried, the shape that could work is TIME, not state: allow the return to
+course only after offset 0 has been free for several consecutive decisions. Not built —
+the venue-level prize here is small and the clearance term (33% of lake's deflections) is
+three times bigger.
