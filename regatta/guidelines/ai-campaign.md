@@ -6193,6 +6193,9 @@ untouched.
       episodes                        188            187            unchanged
       boat-seconds of racing          9106           9815           races got LONGER
 
+    lake 20@9100 vs the landed tree   paired med +9.0  mean +10.2, pen 0.96 -> 1.20
+    — the clock confirms the mechanism reading exactly.
+
 **The stalls are not caused by the tack DECISION.** Blocking slow tacks left the episode
 count identical to the boat and simply traded the failure mode: "sail on and build speed
 close-hauled" keeps her on a board that is pointing at the shore, so ashore time rose 19%.
