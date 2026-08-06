@@ -4929,6 +4929,26 @@ in traffic would? (Human rubs 0.14/race vs fleet 2.0 says yes, some of it.) No h
 in-fleet recording exists to calibrate against — worth asking the owner for one
 race-with-rivals recording per venue.
 
+⛔⛔ **THE PARAGRAPH ABOVE IS WRONG AND CORRECTED THE NEXT MORNING (see the
+INSTRUMENTATION AUDIT entry below): the owner ALWAYS raced WITH the fleet.** The
+"rivals=0" read indexed a DECORATED format name (`F.rivals` vs
+`'rivals[x,y,...]'`) — a nonexistent column, read as undefined, reported as zero.
+All 59 recordings carry 9 rivals. The corrected like-for-like picture:
+
+    bay     human 226.2 med IN TRAFFIC   vs fleet bots 259.5 med   -> ~33 s real gap
+    ocean   human 182.5 IN TRAFFIC       vs fleet bots ~196-198    -> ~15 s real gap
+            (beat: human 68.8 in traffic ≈ a bot ALONE at ~70; traffic costs the
+             human ~nothing and costs a bot ~11-13 s)
+    arctic  human ~222 med IN THE FLEET  vs fleet bots 540 med     -> 2.4x, the
+            largest gap, and like-for-like (both get the lead-opening benefit)
+    solo bot ≈ human-in-traffic on bay (224 vs 226): the bots need EMPTY WATER to
+    do what the owner does through nine boats.
+
+⇒ The fleet-efficiency family is not "an unfair comparison" — it is THE bay/ocean
+frontier, worth ~15-33 s, and the human's near-zero traffic cost proves it is
+recoverable in principle. The owner-recorded in-fleet references were in hand all
+along.
+
 ⚡ **ARCTIC INVERTS: solo is ~90-105 s WORSE paired (8 seeds, 3 solo DNFs vs 0).** The
 fleet appears to OPEN LEADS through the pack (same physics family as "rotating ice was a
 lead-opener" from the spin-cap thread). Dose-response arm (keep 5 of 9) running to rule
@@ -5043,6 +5063,57 @@ mean, arctic +1 med / -16.2 mean — the verified configuration wins on medians)
     arctic 16@9200            fleet_leg2_corrarc9200.json   535 med, 125 finishers
     goldens                   PASS 20/20 (re-recorded)
 
+# ⚡ 2026-08-05 ~22:00 — TRAJECTORY INSTRUMENTATION AUDIT (owner-prompted)
+
+The owner: *"I've always sailed with rivals. Check that their trajectories are recorded
+correctly — in fact check instrumentation for trajectories overall."* He was right and
+the campaign log was wrong:
+
+## ⛔ "THE HUMAN SAILED ALONE" WAS FALSE — a nonexistent column read as zero
+
+All 59 recordings carry **9 rivals per sample** (falling to 3-8 late in a race as boats
+finish, `giveWayN` live at 8-70% of samples). The "rivals=0" probe indexed `F.rivals`
+against the DECORATED format name `'rivals[x,y,hdg,spd,tack(1=stbd,-1=port)]'` —
+undefined, `|| []`, zero. The zero-at-every-percentile rule was ON THE BOOKS and was not
+applied to the probe's own output. The corrected competitive picture is in the corrected
+solo-vs-fleet entry above; short form: bay/ocean gaps to the human are REAL (~33/~15 s,
+like-for-like in traffic), the human's own traffic cost is ~nothing, and arctic is 2.4x
+like-for-like.
+
+## AUDIT RESULTS (`traj_audit.js`, new, all 59 files, every column)
+
+    HEALTHY   10 Hz clock true (med 0.100 s, p99 0.120 — no world-clock units bug);
+              positions continuous; legs monotone; rivals well-formed (tacks ±1 only);
+              ringSect16 gating correct; floes present+well-formed on arctic;
+              events typed correctly; 6 older files have shorter formats (columns
+              were APPENDED over time — positional prefixes stable, consumers safe).
+    FIXED     (1) RESTARTS APPENDED: racing->prestart kept the buffer, so one arctic
+              file held THREE prestarts and two abandoned attempts — phase==racing
+              analyses silently blended attempts. Recorder now voids the attempt on
+              restart. ⚠️ Two existing files are multi-attempt and per-leg analyses
+              must split them at race-timer resets: traj_arctic_1785909214735,
+              traj_arctic_1785910345764 (their finishTime = the LAST attempt).
+              (2) DECORATED FORMAT NAMES: now bare keys + a formatNotes map, so
+              F[name] indexing can never silently miss again.
+              (3) FLEET ANONYMITY: recordings now carry the rival roster and
+              AI_STAT_BONUS once, in the header — like-for-like comparison needs it.
+    CONSUMERS _beat_attrib.js / _route_vs_human.js use bare names only (t, phase, x,
+              y, hdg, leg, windDir) — their published numbers are UNAFFECTED.
+              traj_report.js/pin_report.js index positionally — stable. Only the
+              solo-session probe misread, and only for rivals/giveWayN.
+    GOLDENS   PASS 20/20 after the recorder edits (flag-off path untouched).
+
+## ⚠️ NEW FINDING: THE WIND FIELD STACKS OVERLAPPING GUSTS WITHOUT A CAP
+
+Two ocean recordings show 37-65 kt at the player (authored base 18, speedVar 4,
+gustKt 10 → a SINGLE cell tops out ~34). `getWindAt` sums every overlapping puff
+vectorially with no clamp — 3-4 stacked cells reach 55-65 kt, and an eval-race probe
+(bots' positions only, 4 min) peaked at 29.1, so it is rare water but the player found
+it twice. The polar is only authored to 30 kt, so behavior above that is extrapolation.
+Owner call: cap the stack (e.g. strongest-cell-plus-fraction), or keep squalls as a
+feature — either way the AI's pressure-seeking and the overpowered model should know
+the true ceiling.
+
 # ⚡ WHERE THE NEXT PUSH SHOULD AIM — the venue-by-venue decomposition, measured tonight
 
 The question "is the AI competitive with the human?" now has a per-venue answer, and it
@@ -5063,12 +5134,15 @@ is a DIFFERENT problem on each venue:
    (50u median) never completes by 900 s. Options: widen to ~250u+, small-fleet or
    time-trial format, or accept. A hand-sailed run on the CURRENT doc would settle
    whether leg 3 is human-possible at all.
-3. **BAY/OCEAN are fleet-efficiency problems, not boat problems.** Solo bot = human-par
-   on both. The fleet costs itself ~38 s (bay) / ~11-16 s (ocean beat) paired. The open
-   question the closed traffic threads never answered: does the AI pay MORE for traffic
-   than a human WOULD? No in-fleet human recording exists. **Ask the owner for one
-   recorded race WITH rivals per venue** — it prices the whole remaining family in one
-   file.
+3. **BAY/OCEAN are fleet-efficiency problems, not boat problems — and the audit made
+   this SHARPER.** The human's recordings are all IN TRAFFIC: human 226 med beats the
+   fleet bots' 259.5 like-for-like on bay, and the human's own traffic cost is ~zero
+   (ocean beat 68.8 in traffic ≈ a bot ALONE at ~70, vs bots-in-traffic 83.7). The
+   in-fleet human reference the traffic threads always lacked WAS IN THE FILES ALL
+   ALONG — 59 recordings with 9 rivals each, `giveWayN` live, fleet roster now in the
+   header. Mine them: where does the human accept a duck the AI converts into a tack,
+   sail through water the AI deflects around (86% of clear-water onsets needed zero
+   deflection), or take a transom the AI gives 44 degrees for?
 4. **Instruments that should outlive the session**: `_solo_beat` (keep-N), `_vmgeff_probe`,
    `_corridor_price`, `_track_floor`, `_ice_slow`, `paired_compare`. The corridor
    arithmetic (W/(W+70u), 123u min tack width) belongs in venue-authoring guidance —

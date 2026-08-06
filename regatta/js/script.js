@@ -11311,9 +11311,19 @@ function recordTrajectory(dt) {
         if (!player) return;
         const st = state.race.status;
         if ((st === 'prestart' || st === 'racing') && !player.raceState.finished) {
+            // A RESTART (racing -> prestart) VOIDS the attempt. The recorder used to
+            // keep appending, and one arctic file held three prestarts and two
+            // abandoned races — every phase==racing analysis on it silently blended
+            // attempts (found by traj_audit.js). The aborted samples are not the
+            // race the file's finishTime describes, so they must not share it.
+            if (recTraj && recTraj._lastSt === 'racing' && st === 'prestart') recTraj = null;
             if (!recTraj) recTraj = {
                 venue: (typeof settings !== 'undefined' && settings.venue) || '?',
                 started: new Date().toISOString(), legs: state.race.totalLegs,
+                // WHO the rivals were, once — the per-sample tuples are anonymous,
+                // and a human-vs-bot comparison needs the fleet and its difficulty.
+                fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name),
+                aiStatBonus: (typeof AI_STAT_BONUS !== 'undefined') ? AI_STAT_BONUS : null,
                 // Course meta so analysis needs nothing but this file: without
                 // the mark position, distance-from-ring can't be derived offline.
                 course: {
@@ -11340,11 +11350,22 @@ function recordTrajectory(dt) {
                     return h;
                 } catch (e) { return null; } })(),
                 events: [], // [t, type] — penalties and ice contacts
+                // ⚠️ BARE column names only — a consumer indexed F.rivals against the
+                // old decorated name 'rivals[x,y,...]', read undefined, and published
+                // "the human sailed alone" from a column that does not exist. The
+                // shapes live in formatNotes; the names are the lookup keys.
                 format: ['t', 'phase', 'x', 'y', 'hdg', 'spd', 'windDir', 'windSpd',
-                         'leg', 'sweep', 'armed', 'ringSect16(0clear3closing5lead8plug10hard)|0', 'rivals[x,y,hdg,spd,tack(1=stbd,-1=port)]',
-                         'legProg(dmc-projection u)', 'floes<=1200u[hullId,x,y,spin,vx,vy]',
-                         'giveWayN(<=600u rivals with ROW over player)', 'ocs', 'penaltyTurnsOwed',
-                         'awa(signed rad)', 'aws', 'playerTack(1=stbd,-1=port)'],
+                         'leg', 'sweep', 'armed', 'ringSect16', 'rivals',
+                         'legProg', 'floes', 'giveWayN', 'ocs', 'penaltyTurnsOwed',
+                         'awa', 'aws', 'playerTack'],
+                formatNotes: {
+                    ringSect16: '0clear 3closing 5lead 8plug 10hard, scalar 0 when >3 zones from the round mark',
+                    rivals: 'unfinished rivals as [x,y,hdg,spd,tack(1=stbd,-1=port)]',
+                    legProg: 'DMC projection onto the current leg, units',
+                    floes: 'floes <=1200u as [hullId,x,y,spin,vx,vy]',
+                    giveWayN: 'rivals <=600u holding right of way over the player',
+                    awa: 'signed rad from the apparent-wind model', playerTack: '1=stbd -1=port',
+                },
                 samples: [], acc: 0,
             };
             // Player penalty/contact events, timestamped — sampling can miss them.
@@ -11372,6 +11393,7 @@ function recordTrajectory(dt) {
                     return inner && inner(ty, d);
                 };
             }
+            recTraj._lastSt = st;
             recTraj.acc += dt;
             if (recTraj.acc < 0.1 || recTraj.samples.length > 18000) return;
             recTraj.acc = 0;
@@ -11439,7 +11461,7 @@ function recordTrajectory(dt) {
             const t = recTraj; recTraj = null;
             t.finished = !!player.raceState.finished;
             t.finishTime = player.raceState.finishTime || null;
-            delete t.acc;
+            delete t.acc; delete t._lastSt; delete t._evT; delete t.hint; delete t.hintLg;
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([JSON.stringify(t)], { type: 'application/json' }));
             a.download = 'traj_' + t.venue + '_' + Date.now() + '.json';
