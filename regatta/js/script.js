@@ -10413,7 +10413,12 @@ function updateBoatRaceState(boat, dt) {
                     // The start line, identified by its route role rather than by
                     // being "the pair that happens to begin at index 0".
                     if (legEntry && legEntry.role === 'start') {
-                        if (crossingDir === 1) {
+                        // ⚠️ AGAINST THE ROUTE'S OWN DIRECTION, not against +1. The racing
+                        // branch below already compares `crossingDir === requiredDirection`;
+                        // this one hardcoded the sign, so on a line authored `dir: -1` the
+                        // test was INVERTED — a boat crossing to the course side was
+                        // cleared, and a boat correctly returning was flagged OCS.
+                        if (crossingDir === requiredDirection) {
                             boat.raceState.ocs = true;
                             if (boat.isPlayer) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
                         } else {
@@ -10608,12 +10613,25 @@ function getHullPolygon(boat) { return hullPolygonAt(boat.x, boat.y, boat.headin
 // How far the boat's LEADING EDGE is over a line — the quantity RRS judges a start by, and
 // therefore the one the start AI has to steer. `normalize` scales to real units; unnormalized
 // keeps the raw cross-product the approach timer was written against.
-function hullLineOffset(boat, m0, m1, normalize) {
+// ⚠️ SIGNED THE WAY THE ROUTE SAYS THE LINE IS CROSSED, not the way its two marks happen
+// to be ordered in the array. `startCrossNormal()` already makes that point for the
+// placement and the OCS test; this function is the AI's own view of the same line and it
+// was the one place still reading the raw mark order.
+//
+// Two of the ten venues author their start entry with `dir: -1` (Bluewater and Redrock,
+// both gate starts). On those, every caller here got the sign INVERTED — so the prestart
+// read a boat correctly sitting behind the line as OVER EARLY, and `getStartCommand`'s
+// retreat branch backs off by `STAGE + pDist`, which grows as she retreats. A runaway.
+// Measured before the fix: the fleet's median distance from the line went -386 -> -1731
+// on ocean and -383 -> -1078 on redrock through the prestart, against -419 -> -128 on bay.
+// They sailed away from the line for the whole prestart and only turned for it at the gun.
+function hullLineOffset(boat, m0, m1, normalize, sgn) {
     const dx = m1.x - m0.x, dy = m1.y - m0.y;
     const len = normalize ? (Math.hypot(dx, dy) || 1) : 1;
+    const s = sgn != null ? sgn : startCrossSign();
     let best = -Infinity;
     for (const p of hullPolygonAt(boat.x, boat.y, boat.heading)) {
-        const d = ((p.x - m0.x) * dy - (p.y - m0.y) * dx) / len;
+        const d = s * ((p.x - m0.x) * dy - (p.y - m0.y) * dx) / len;
         if (d > best) best = d;
     }
     return best;
@@ -10951,6 +10969,47 @@ function update(dt) {
         if (state.race.timer <= 0) {
             state.race.status = 'racing';
             state.race.timer = 0;
+
+            // ⚠️ OCS IS A FACT ABOUT POSITION AT THE STARTING SIGNAL, NOT A HISTORY OF
+            // CROSSINGS. RRS 29.1: "when at her starting signal any part of a boat's hull
+            // is on the course side of the starting line". The flag was only ever set by a
+            // crossing EVENT during the prestart, so a boat that arrived on the course side
+            // without one — sliding in laterally from beyond a mark, a crossing that fell
+            // between two frames, a clear-then-re-cross — started clean.
+            //
+            // Measured (`_ocs_truth.js`, 3 races a venue, 270 boat-starts): SIX boats over
+            // the line at the gun and not flagged, one of them 182 units over, and NONE
+            // wrongly flagged. Judging by position closes every one by construction,
+            // whatever the cause was.
+            //
+            // The line has ENDS: a hull past the pin is not on the course side of the
+            // starting line, she is past it. Both tests are applied per hull point.
+            {
+                const [sm0, sm1] = startLinePts();
+                if (sm0 && sm1) {
+                    const sdx = sm1.x - sm0.x, sdy = sm1.y - sm0.y;
+                    const sL = Math.hypot(sdx, sdy) || 1;
+                    const ss = startCrossSign();
+                    for (const b of state.boats) {
+                        if (b.raceState.finished) continue;
+                        let over = false;
+                        for (const q of hullPolygonAt(b.x, b.y, b.heading)) {
+                            const d = ss * ((q.x - sm0.x) * sdy - (q.y - sm0.y) * sdx) / sL;
+                            if (d <= 0) continue;
+                            const along = ((q.x - sm0.x) * sdx + (q.y - sm0.y) * sdy) / sL;
+                            if (along >= 0 && along <= sL) { over = true; break; }
+                        }
+                        if (over !== !!b.raceState.ocs) {
+                            b.raceState.ocs = over;
+                            if (b.isPlayer) {
+                                if (over) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
+                                else hideRaceMessage();
+                            }
+                        }
+                    }
+                }
+            }
+
             Sound.playStart();
             Sound.updateMusic();
 
@@ -16202,6 +16261,14 @@ const startLinePts = () => {
 // Deliberately NOT derived from the wind. A line is crossed the way its route says, and on a
 // venue whose breeze bends across the course there is no single wind to ask — asking the
 // global mean is what put the fleet alongside the line instead of behind it.
+// +1 or -1: the sense in which the opening route entry says its line is crossed. ONE
+// definition, so the placement, the AI's prestart geometry and the OCS test cannot
+// disagree about which side is pre-start.
+const startCrossSign = () => {
+    const r = state.course && state.course.route && state.course.route[0];
+    return (r && r.dir < 0) ? -1 : 1;
+};
+
 const startCrossNormal = () => {
     const r = state.course && state.course.route && state.course.route[0];
     const [a, b] = startLineMarks();
