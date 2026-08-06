@@ -6317,3 +6317,34 @@ every class down, lake 9100 was +6% on land, lake 9200 +32%. A boat forbidden th
 escape takes the leeward one, and on a narrow venue the leeward one is sometimes the
 shore. The clock says the trade is worth it on every set measured so far; the honest
 reading is that this is a trade, not a free win like bay's numbers alone would suggest.
+
+## ⛔ ARCTIC REJECTS IT — and the gate is the same fact for the third time
+
+    arctic 16@9100 vs HEAD   paired med +24.0  mean +28.2
+                             finishers 139 -> 126
+                             boat 7.66 -> 11.49, land 27.5 -> 32.9, floe 32.5 -> 38.1
+
+**In an ice pack, luffing head to wind IS the right escape.** You stop, rather than hit a
+floe that will not keep clear for you. The tax removes the fleet's best emergency option
+on exactly the venue where the obstacles do not get out of the way — and arctic priced
+that at 13 finishers.
+
+⇒ **`openWaterAv` now gates three separate changes, and the reason has been the same each
+time**: where the obstacle is drifting ice, a different set of facts holds — it does not
+keep clear, its position is not predictable past a few seconds, and stopping is a
+legitimate answer. That is not three venue hacks; it is one physical distinction the
+avoidance layer did not previously make. **Anything future sessions add to this function
+should be asked which side of that line it belongs on before it is benched.**
+
+# ⚡ LANDED (2) `97a5559` — an escape into the no-go zone is not an escape
+
+    irons entries     119 -> 77 (-35%); the avoidance-caused ones 52 -> 15 (-71%)
+    lake 20@9100      paired med -7.0  mean -7.3   boat contacts 3.62 -> 2.61
+    lake 20@9200      paired med -3.0  mean -8.4
+    bay  20@9100      paired med -3.0  mean -1.8   every contact class down
+    arctic            BYTE-IDENTICAL (300 s x 9 boats, and its golden traces pass)
+
+**Both of tonight's landings are the same kind of change**: the fan ADDED candidates that
+were missing, this one REMOVES candidates that were never sailable. Six candidates that
+re-priced a real trade-off all lost. If there is one sentence to carry forward from this
+session, it is that.
