@@ -762,6 +762,56 @@ class BotController {
         }
         this._trajRisk = null;
 
+        // FUNNEL METERING. Lake's per-leg attribution: the fleet sails legs 1-2
+        // with 44s + 19s per boat UNDER ONE KNOT, and the rub ledger puts 72% of
+        // its boat contacts within 400u of a mark at <1 kt, 80% involving a
+        // penalty — boats sail at full speed into an occupied one-boat funnel,
+        // park in the scrum, foul, and re-accelerate in light air. The action
+        // that did not exist: arrive when the funnel is clear. When two or more
+        // rivals on this leg are already inside 250u of the rounding we are
+        // approaching (and we are 250-700u out), come down to manoeuvring speed
+        // — deceleration is cheap, the parked scrum is not. Same guards as the
+        // pack-speed discipline above: never throttle a boat without way on,
+        // racing legs only, and deft boats keep more pace.
+        // ⚠️ OPEN WATER ONLY — in a floe pack, a boat holding manoeuvring speed
+        // beside a jammed rounding sits in drifting ice and takes hits for it
+        // (arctic guard: boat contacts 12.1 -> 13.5, mean +4.4 unscoped). The
+        // same line every other gate in this campaign sits on.
+        if (speedRequest >= 1.0 && this.boat.speed > 1.2 && !this.wiggleActive
+            && !this._outbound && this.boat.raceState.leg >= 1
+            && !(state.course._floeObjs && state.course._floeObjs.length)) {
+            const rsQ = this.boat.raceState;
+            // The funnel is the LEG ENDPOINT — every leg has one (gate legs
+            // included; lake's worst queues are at line marks, not the rounding).
+            let rmQ = null;
+            try {
+                const lgsQ = state.course.dmc && state.course.dmc.legs;
+                if (lgsQ && lgsQ[rsQ.leg] && lgsQ[rsQ.leg].pts.length)
+                    rmQ = lgsQ[rsQ.leg].pts[lgsQ[rsQ.leg].pts.length - 1];
+            } catch (e) {}
+            if (!rmQ) rmQ = legRoundMark(rsQ.leg);
+            if (rmQ && !rsQ.finished) {
+                const dQ = Math.hypot(this.boat.x - rmQ.x, this.boat.y - rmQ.y);
+                if (dQ > 250 && dQ < 700) {
+                    // A JAM, not a rounding train: count only rivals who are
+                    // already PARKED at the funnel (<1 kt). The raw count fired on
+                    // every healthy 9-boat rounding and cost bay +5.0 paired for
+                    // a 0.1 contact dent.
+                    let q = 0;
+                    for (const ob of state.boats) {
+                        if (ob === this.boat || ob.raceState.finished) continue;
+                        if (ob.raceState.leg !== rsQ.leg) continue;
+                        if (ob.speed >= 1.0) continue;
+                        if (Math.hypot(ob.x - rmQ.x, ob.y - rmQ.y) < 250) q++;
+                    }
+                    if (q >= 2) {
+                        const deftQ = this.boat.stats ? Math.max(0, Math.min(1, this.boat.stats.handling / 10)) : 0.5;
+                        speedRequest = 0.55 + 0.15 * deftQ;
+                    }
+                }
+            }
+        }
+
         // RL pilot hook (see the armed orbit) — speed half of the action.
         // __rl.actFor(boat) (fleet gate: policy drives every armed bot) takes
         // precedence over the single-hero __rl.act used by the training env.

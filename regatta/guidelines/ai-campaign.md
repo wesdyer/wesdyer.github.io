@@ -7519,3 +7519,16 @@ mid-spiral 17% -> 8% — the cascade is substantially broken. Residual: leg-1
 crossings 40%, LEG 0 post-gun 28% (start pack, sacred tuning), 71% under 1 kt,
 51% near marks. Diminishing returns on this thread; the funnel-metering wave
 covers the mark-adjacent share.
+
+## ✅ LANDED — FUNNEL METERING (jam-qualified, open water, third landing)
+Lake's residual is PARKING (44s+19s per boat under 1 kt on L1/L2; 72% of rubs within
+400u of a mark at <1kt). The action that did not exist: arrive when the funnel is
+clear. When >=2 rivals on this leg are already PARKED (<1 kt) inside 250u of the DMC
+leg endpoint and we are 250-700u out with way on, come down to manoeuvring speed.
+The road here was two rejections that shaped the trigger: raw count (bay +5.0 — fires
+on every healthy rounding train) and v1 on lake (+4.5 — joins the jam later). The
+JAM-qualified trigger: lake contacts 5.07->4.21 (A) and 4.70->4.33 (B), pens
+0.93->0.83 (B), clock wash both sets; bay INERT (242/242, trigger never fires);
+arctic BYTE-IDENTICAL (open-water gate — unscoped it put boat contacts 12.1->13.5:
+holding manoeuvring speed beside a jam in drifting ice means taking hits);
+seatrials 199.59/194.13 OCS 14.78% pen 0.40 (baseline-equivalent).
