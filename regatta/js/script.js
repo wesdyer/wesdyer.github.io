@@ -185,6 +185,55 @@ function getRiskMetrics(boat, other) {
     return { tCPA, distCPA, distCurrent: dist };
 }
 
+// THE RADIUS IS THE GAP (rounding comparison, Aug 6): the fleet rounds at 117u
+// where the human rounds at 47u, with identical speed-carry, zone time, tack
+// count and turn rate — the whole 2.5x is the ring the carrot rides. The human
+// ring sits just outside avoidance's hard mark zone (38 + bodyR); aim there.
+// Grid-validated per mark with the same whole-circle test as CoursePath._roundR's
+// ladder, because a tight ring is only sailable if it is all water — a mark
+// planted on an island or rock keeps the old target by returning null. Floe
+// grids return null too: the ring machinery's radii were priced against
+// drifting ice (orbit-hold, churn, widening A/Bs all live at those constants),
+// and drifting ice is the one physical line the open-water gates sit on.
+function orbitTightR(rm) {
+    if (rm._orbTight !== undefined) return rm._orbTight;
+    const grid = state.course.botGrid;
+    if (!grid) return null;
+    if (state.course._hasFloes == null) {
+        state.course._hasFloes = (state.course.islands || []).some(i => i.isFloe);
+    }
+    if (state.course._hasFloes) return (rm._orbTight = null);
+    // OPEN-WATER MARKS ONLY. The first cut validated just the tight circle and
+    // paid for it where marks stand in confined water: redrock finishers 11->6
+    // with mark contacts 2.3x, lake +1.0 med with every contact class up — a
+    // tighter ring in a rock funnel packs the queue into the pinch. A mark
+    // qualifies only if the WHOLE ring out to the approach radius is water:
+    // sampled circles from the tight ring to zone*1.15 (the widest radius the
+    // approach carrot uses). Bay/ocean marks pass; a mark with rock inside its
+    // zone keeps the stock target.
+    const tight = 38 + (rm.bodyR || 12) + 20;
+    const ringClear = (R) => {
+        for (let k = 0; k < 32; k++) {
+            const a = k / 32 * Math.PI * 2;
+            const c = grid.cell(rm.x + Math.cos(a) * R, rm.y + Math.sin(a) * R);
+            if (!grid.at(c[0], c[1])) return false;
+        }
+        return true;
+    };
+    // Out to TWO zones: the ring test at zone*1.15 still passed redrock's m4
+    // (fins 11->9, mark contacts 2.1x) — a clear ring with rock-walled
+    // APPROACHES is still a funnel, and a tighter turn inside a funnel packs
+    // the queue. Two zones of open water is what bay/ocean marks have and
+    // maze marks never do.
+    for (const R of [rm.zone * 2, rm.zone * 1.6, rm.zone * 1.15, rm.zone, (tight + rm.zone) / 2]) {
+        if (!ringClear(R)) return (rm._orbTight = null);
+    }
+    for (const R of [tight, tight * 1.25, tight * 1.5]) {
+        if (ringClear(R)) return (rm._orbTight = R);
+    }
+    return (rm._orbTight = null);
+}
+
 // AI Controller
 class BotController {
     constructor(boat) {
@@ -1023,8 +1072,10 @@ class BotController {
                             // SCORE, which is what rafted the fleet onto one slot when
                             // that was tried (entry-sector bias, rejected 2026-08-03f).
                             const aCut = this._entryBrg + sgnR * ENTRY_CUT_LEAD;
-                            destX = rm.x + Math.cos(aCut) * rm.zone * 0.72;
-                            destY = rm.y + Math.sin(aCut) * rm.zone * 0.72;
+                            const orbCut = orbitTightR(rm);
+                            const rCut = orbCut != null ? orbCut : rm.zone * 0.72;
+                            destX = rm.x + Math.cos(aCut) * rCut;
+                            destY = rm.y + Math.sin(aCut) * rCut;
                         }
                         entryHandled = true;
                     }
@@ -1061,7 +1112,9 @@ class BotController {
                         // still close on the ring; inside, the target now sits
                         // at 0.85x zone instead of 140u further out than
                         // wherever the boat happens to be.
-                        const RA = Math.min(rm.zone * 1.6, Math.max(rm.zone * 0.85, dRm - 80));
+                        const orbA = orbitTightR(rm);
+                        const RA = Math.min(rm.zone * 1.6,
+                            Math.max(orbA != null ? orbA : rm.zone * 0.85, dRm - 80));
                         // RL pilot hook (sweep-policy research): inert unless the
                         // headless harness injected __rl. actFor(boat) — the
                         // fleet-gate path — outranks the single-hero act.
@@ -1289,8 +1342,10 @@ class BotController {
                 // ladder and keeps the first whole circle that is clear water) — on
                 // Glacier Sound zone*0.92 runs through the fixed-ice gap the venue
                 // check flags at 1.3 hulls, and bots orbited into it forever.
+                const orbR = state.course.botGrid ? orbitTightR(rm) : null;
                 const RR = (typeof CoursePath !== 'undefined' && state.course.botGrid)
-                    ? Math.min(rm.zone * 1.15, CoursePath._roundR(rm, state.course.botGrid) + 45)
+                    ? Math.min(rm.zone * 1.15, orbR != null ? orbR
+                        : CoursePath._roundR(rm, state.course.botGrid) + 45)
                     : rm.zone * 0.92;
                 destX = rm.x + Math.cos(a) * RR;
                 destY = rm.y + Math.sin(a) * RR;
