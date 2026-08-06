@@ -6546,3 +6546,29 @@ Post-landing decomposition confirms the shape of what is left (`_transit_probe`,
 lake 6 seeds): the two landings cut L1 excess 3781 -> 3342u and L2 5752 -> 4032u, but the
 mean deviation is unchanged at 44/50 degrees and avoidance is still ~half of all excess
 distance. **The races got shorter; the dodges did not get smaller.**
+
+### The same turn, measured on both sides (`_hdgrate.js` new, + the recordings)
+
+⚠️ A COMMANDED OFFSET IS NOT A REALISED TURN. The 34-41% above is what the argmin picked;
+the boat swings toward it at a limited rate, so a 172-degree command does not produce a
+172-degree second. Before leaning on that number, here is the quantity the recordings
+actually contain — heading now vs heading 1 s ago, 10 Hz, racing legs, both sides:
+
+                    med    p90    p99   >=45 deg/s  >=80 deg/s
+      lake human    1.7   29.0   60.2      5.46%       0.00%   (0 of 6041 windows)
+      lake fleet    7.6   50.0   65.5     13.66%       0.75%
+      bay  human    0.0   26.2   55.0      5.04%       0.00%   (0 of 27784 windows)
+      bay  fleet    3.4   43.0   63.9      9.31%       0.06%
+      (arctic human 0.04% >=80; ocean human 0.00%)
+
+So most of the commanded reversals are absorbed by the rate limit — 17.3% commanded
+becomes 0.75% realised — and the honest headline is smaller than the raw share suggested.
+
+**But the venue ratio survives the conversion, which is the check that matters.** Lake
+commands 7.5x more near-reversals than bay (17.3% vs 2.3%) and realises 12x more hard
+turns (0.75% vs 0.06%). The commanded distribution is predicting the realised one across
+venues, so it is measuring something real and not an artefact of the fan's spacing.
+
+And the plain comparison stands on either quantity: **the fleet turns 4.5x as much as the
+human at the median on lake and 2x as often past 45 deg/s, and she never once turns 80
+degrees in a second on any venue but Glacier Sound.**
