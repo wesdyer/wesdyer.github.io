@@ -6409,7 +6409,15 @@ OPTION or merely REDIRECTS TO A DIFFERENT ONE:
     no-go tax  removed candidates that were never sailable LANDED
     wiggle     picked the other of two blind headings      ⛔ +18.0
 
-Choosing better between two bad options is still choosing a bad option: the boat escapes
-into water she then has to tack or dodge out of, and the two failures she trades into cost
-more than the one she avoids. **The sharpened rule: DELETE OR ADD options; do not re-aim
-the ones that are there.**
+    arctic 16@9100 vs HEAD   paired med +2.0  mean +13.5
+                             finishers 139 -> 133, floe contacts 32.5 -> 39.4
+
+Both venues, both directions of evidence. Choosing better between two bad options is still
+choosing a bad option: the boat escapes into water she then has to tack or dodge out of,
+and the two failures she trades into cost more than the one she avoids. **The sharpened
+rule: DELETE OR ADD options; do not re-aim the ones that are there.**
+
+⚠️ Note also that this candidate was benched on arctic WITHOUT a gate, on the reasoning
+that "the grid knows where land is" holds equally in ice. It does — and it lost there too,
+for the ordinary reason rather than the ice-specific one. Not every change in this function
+divides along `openWaterAv`; this one is simply wrong everywhere.
