@@ -5842,3 +5842,36 @@ whole table so the next session does not re-run it.
 15 seconds on this venue. Two sets was already the campaign's rule; this says the real
 number is four, or a different statistic (paired per-boat median over pooled sets, which
 is what the table above reports).
+
+
+# ⚡ THE LANDED TREE ON TWO DISJOINT SETS PER VENUE (the full table)
+
+    venue    set        paired med   paired mean   fleet med        note
+    lake     20@9100      -53.0        -58.6       407 -> 352       180/180 finish
+    lake     20@9200      -32.0        -43.7       386 -> 358       180/180 finish
+    bay      20@9100       -3.0         -2.9       257 -> 253       pen 0.37 -> 0.41
+    bay      20@9200       -5.0         -5.1       257 -> 252       pen 0.43 -> 0.38
+    ocean    20@9300        0.0         +1.8       193 -> 196       180 -> 178 finish
+    ocean    20@9320       -1.0         +4.8       193 -> 196       180 -> 179 finish
+    arctic   16@9100    BYTE-IDENTICAL (verified over 300 s x 9 boats, and its two
+                        golden traces pass with 0 behaviour changes)
+    seatrials 100@100   199.15 / 194.73 vs 198.94 / 194.61 — +0.12 s on the median
+
+Groundings on lake, counted properly — **as EPISODES, not as dedup'd contacts**
+(a pinned boat generates ~5.5 contacts per episode, so the raw count flatters and
+frightens in turn):
+
+    HEAD    140 episodes over 3 races = 5.2 per boat-race
+    LANDED   77 episodes             = 2.9 per boat-race   (-44%)
+
+## ⚠️ OCEAN IS THE ONE BLEMISH, AND IT IS THE PROBE FLOOR
+
+Pooled over 40 ocean seeds: paired med 0.0, mean **+3.3** (trimmed +1.4), finishers
+360 -> 357. But the FAN ALONE on ocean measured -1.6 and -0.1 mean — so the mean cost is
+the probe floor, not the fan. Ocean's boats are fast enough that the 240u floor only binds
+at starts, roundings and penalty turns, which is exactly where a long probe reaches past
+the mark they are working around, and it never saves them because there is nothing to hit.
+
+⇒ `treeTIGHT`: the floor also requires TIGHT WATER (`_clear` at the boat under 6 cells,
+~300u). That is a fact about where she is, not about which venue she is on — lake sits at
+2-4 cells nearly everywhere, bay at 6-23, ocean in the open. Benching ocean and lake.
