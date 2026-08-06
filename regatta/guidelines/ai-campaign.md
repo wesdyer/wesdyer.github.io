@@ -6723,3 +6723,35 @@ faster on the clock and no venue loses finishers; bay pays in boat-on-boat conta
       Glacier Sound     535 -> 462                          (human ~222)
       Lighthouse Cove   252 -> 245                          (human 226.2)
       Ocean             193, untouched                      (human 182.5)
+
+## ⚠️ FOUND WHILE VERIFYING: the escape fan has no `leg >= 1` guard, and it costs OCS
+
+Post-landing seatrials showed OCS 21.11% against a 14.89% figure recorded earlier tonight.
+The 14.89% does not reproduce, so the discrepancy was bisected with ONE command against
+four commits, and the answer is not this landing:
+
+      b60ba9d  pre-session (owner's gust fix)   OCS 16.67%   race mean 201.25
+      d55eb97  the densified escape fan         OCS 21.11%   race mean 197.03
+      97a5559  the no-go tax                    OCS 21.11%   race mean 200.29
+      b566370  tonight's landing                OCS 21.11%   race mean 197.38
+
+**The fan cost 4.4 points of Clubhouse OCS when it landed, and the check at the time did
+not catch it.** The mechanism is the one this session then learned twice more the hard way:
+`const candidates = openWaterAv ? [...]` carries NO racing-leg guard, so the densified fan
+reshapes the START, and Clubhouse is an open-water venue where it therefore always applies.
+The deadband (0 -> 1.7% OCS) and the near-reversal gate (0 -> 2.2%) both did the same thing
+on Lighthouse Cove and both were fixed with `leg >= 1` before landing.
+
+Restricting the fan to racing legs (`treeFANG`) recovers it exactly:
+
+      HEAD          OCS 21.11%   start mean 5.83   race mean 197.38  median 194.30
+      fan-gated     OCS 16.67%   start mean 4.89   race mean 199.80  median 194.28
+                        ^ back to the pre-session baseline to the digit
+
+Benching on lake and bay now to confirm the fan's racing-leg gains survive the gate — the
+fan was landed for -29.0 lake and -5.0/-2.0 bay, all of which are racing-leg effects.
+
+⚠️ **STANDING RULE, now earned three times in one session: every term in
+`applyAvoidance` needs `this.boat.raceState.leg >= 1` unless it is deliberately tuning the
+start.** The tack tax and the no-go tax already carried it; the fan did not, and nobody
+looked because the fan was measured on race time, not on OCS.
