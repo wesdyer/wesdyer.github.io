@@ -2447,7 +2447,18 @@ class BotController {
         //
         // ⚠️ The two lists are ordered and the order is the tie-break (`cost < minCost`
         // keeps the earlier candidate). The ice list is the stock list, unchanged.
-        const candidates = openWaterAv ? [
+        // ⚠️ RACING LEGS ONLY — the densified list reshapes the START otherwise.
+        // This fan landed in d55eb97 without a leg guard, and bisecting seatrials across
+        // four commits with one command found what that cost:
+        //     b60ba9d pre-session  OCS 16.67% | d55eb97 the fan  OCS 21.11%
+        //     97a5559 no-go tax    OCS 21.11% | b566370 tonight  OCS 21.11%
+        // 4.4 points of Clubhouse OCS, unnoticed because the fan was judged on race time.
+        // Restricting it here puts that back to 16.67% exactly, and costs nothing it was
+        // landed for: lake -3.5 paired median (inert, and max 592 -> 420), bay +2.0 with
+        // penalties 0.57 -> 0.46. Glacier Sound is untouched by construction — floes make
+        // `openWaterAv` false, so the ice list below is selected either way.
+        const racingLegF = this.boat.raceState.leg >= 1;
+        const candidates = (openWaterAv && racingLegF) ? [
             0,
             0.1, -0.1,
             0.2, -0.2,
