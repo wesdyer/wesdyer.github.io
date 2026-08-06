@@ -5121,6 +5121,8 @@ class Boat {
             roundArmed: false,
             roundBanked: false,
             roundFrom: null,
+            roundRebased: false,
+            roundEntryB: null,
             roundWrapped: true,
             isTacking: false, // Rule 13
             inZone: false,
@@ -10161,6 +10163,8 @@ function updateBoatRaceState(boat, dt) {
         rs.roundWrong = 0;
         rs.roundArmed = false;
         rs.roundBanked = false;
+        rs.roundRebased = false;
+        rs.roundEntryB = null;
         rs.roundFrom = { x: boat.x, y: boat.y };
         rs._wrongRound = false;
         const split = state.race.timer - rs.legStartTime;
@@ -10253,6 +10257,24 @@ function updateBoatRaceState(boat, dt) {
                 boat.x - 30 * sinH, boat.y + 30 * cosH);
             if ((hp.x - rm.x) ** 2 + (hp.y - rm.y) ** 2 < rm.zone * rm.zone) rs.roundArmed = true;
         }
+        // ⚠️ THE APPROACH BANKS WINDING SHE NEVER SPENT ROUNDING — re-base on arrival.
+        //
+        // `roundSweep` accumulates from LEG START at any distance. That is right for the
+        // SIDE judgement — the sign carries it — and wrong for the MAGNITUDE, because an
+        // approach even slightly off the mark's beam banks bearing change the boat never
+        // spent rounding. Owner, sailing Redrock by hand: "I hit the first rounding circle
+        // and tacked outside to get high enough to round and it counted as rounding."
+        //
+        // So the requirement is asked of the winding made from the moment she ARRIVES in
+        // the mark's neighbourhood. Once per leg — leaving and re-entering does not re-arm
+        // it, or a boat could shed a wrong-way excursion by stepping outside and back.
+        if (!rs.roundRebased && d2 < (rm.zone * ROUND_NEAR) ** 2) {
+            rs.roundRebased = true;
+            rs.roundSweep = 0;
+            rs.roundBanked = false;
+            rs.roundFrom = { x: boat.x, y: boat.y };
+            rs.roundEntryB = Math.atan2(ry1, rx1);
+        }
         const activeR = rm.zone * ROUND_ACTIVE;
         const d2prev = (rs.lastPos.x - rm.x) ** 2 + (rs.lastPos.y - rm.y) ** 2;
         {
@@ -10322,8 +10344,43 @@ function updateBoatRaceState(boat, dt) {
         //
         // She can still GIVE IT BACK — by sailing back round the other way, which is
         // what the net signed accumulator measures. See ROUND_GIVEBACK for how much.
-        if ((rs.roundSweep || 0) >= need) rs.roundBanked = true;
-        else if (rs.roundBanked && (rs.roundSweep || 0) < need - ROUND_GIVEBACK) rs.roundBanked = false;
+        // ⚠️ THE REQUIREMENT IS TO REACH THE EXIT BEARING, NOT TO BANK A NUMBER.
+        //
+        // A swept-angle threshold cannot tell a rounding from a near miss, because coming
+        // close to a mark and turning away genuinely DOES swing your bearing about it a
+        // long way. Measured (`test_rounding_nibble.js`): a boat that touches the zone and
+        // tacks off banks 82 degrees on Redrock against a 46-degree requirement, 126
+        // against 92 on bay, 126 against 89 on ocean — completing all three legs without
+        // going round the mark at all. Raising the number does not fix it; it only makes
+        // real roundings register late, which is the other half of the same complaint.
+        //
+        // What actually separates the two is WHERE SHE IS GOING. A rounding ends with the
+        // boat leaving for the next mark; a near miss ends with her leaving the way she
+        // came. So the requirement is the winding from her ARRIVAL bearing round to the
+        // bearing of the next anchor, taken the required way — a per-boat, per-leg fact
+        // about the geometry she actually sailed, not a course constant.
+        //
+        // The tolerance is DERIVED, not tuned: she leaves on a TANGENT, so at distance d
+        // from a mark she rounds at radius R her bearing falls short of the exit bearing
+        // by exactly acos(R/d). Allowing that and no more means the leg completes the
+        // moment she is genuinely on her way out, and not a moment before.
+        let needExit = need;
+        if (rs.roundEntryB != null && typeof CoursePath !== 'undefined' && state.course.route) {
+            const nextA = CoursePath.anchor(state.course.route[rs.leg + 1], state.course.marks);
+            if (nextA) {
+                const bQ = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+                let w = (bQ - rs.roundEntryB) * sgn;
+                while (w <= 0) w += Math.PI * 2;
+                while (w > Math.PI * 2) w -= Math.PI * 2;
+                const R = (typeof CoursePath._roundR === 'function')
+                    ? CoursePath._roundR(rm, null) : Math.max(90, (rm.radius || 12) + 70);
+                const dNow = Math.sqrt(d2);
+                const beta = Math.acos(Math.max(0, Math.min(1, R / Math.max(R, dNow))));
+                needExit = Math.max(need, w - beta - ROUND_EXIT_SLACK);
+            }
+        }
+        if ((rs.roundSweep || 0) >= needExit) rs.roundBanked = true;
+        else if (rs.roundBanked && (rs.roundSweep || 0) < needExit - ROUND_GIVEBACK) rs.roundBanked = false;
         // SHE HAS LEFT THE ZONE — the rules' own boundary for being finished with a
         // mark (18.2(b) ends mark-room when the boat entitled to it "leaves the zone").
         // This was zone*1.25, a margin whose stated job was to stop the leg completing
@@ -10439,6 +10496,8 @@ function updateBoatRaceState(boat, dt) {
                                 boat.raceState.roundWrong = 0;
                                 boat.raceState.roundArmed = false;
                                 boat.raceState.roundBanked = false;
+                                boat.raceState.roundRebased = false;
+                                boat.raceState.roundEntryB = null;
                                 boat.raceState.roundFrom = { x: boat.x, y: boat.y };
                                 if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 0, time: state.race.timer });
                                 if (boat.isPlayer) {
@@ -15681,6 +15740,13 @@ const ROUND_GIVEBACK = 0.5;
 // is legal, merely slow, which is why the test above the completion check pins a
 // wide full rounding as valid. Keep this at 1.
 const ROUND_SWEEP_TOL = 1.0;
+// How close is "arrived at the mark", as a multiple of its own zone. Two: outside the
+// rules zone, well inside the approach, and it scales with the mark rather than being a
+// second tuned distance.
+const ROUND_NEAR = 2.0;
+// Slack on the exit bearing, on top of the tangent angle the geometry already allows.
+// A sixth of a radian — a helm's width, not a discount.
+const ROUND_EXIT_SLACK = 0.17;
 
 // CLEARANCE radius, not the collider. The boat is 30 wide and 55 long, so 30 is roughly its
 // half-LENGTH — the room it needs to turn in, which is the right question for "does this gap
