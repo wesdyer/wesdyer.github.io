@@ -294,11 +294,6 @@ class RoutePlanner {
 const PROJECT_AHEAD = 900, PROJECT_BACK = 400;
 // A boat rounds close aboard: the mark's own body plus room to turn.
 const ROUND_CLEARANCE = 70, ROUND_MIN_R = 90;
-// How nearly co-directional the two anchors have to be for the leg to be a hairpin. 14
-// degrees: the authored courses sit at 0.0-0.8 deg (bay 3/4, arctic 1, redrock 3) and the
-// nearest non-hairpin leg is at 12.6 deg, so the classes are cleanly separated — but see
-// requiredSweep for why the boundary is not arbitrary either way.
-const HAIRPIN_SUBTEND = 0.25;
 const CoursePath = {
     // Where a leg is sailed TO, before any rounding detour.
     anchor(entry, marks) {
@@ -345,49 +340,6 @@ const CoursePath = {
         while (sweep < 0) sweep += Math.PI * 2;
         while (sweep > Math.PI * 2) sweep -= Math.PI * 2;
         if (sweep < 0.2) sweep = Math.PI * 2;
-        // ⚠️ A HAIRPIN IS A FULL CIRCUIT, and the tangent arithmetic cannot see it.
-        //
-        // When the previous and next anchors lie in nearly the SAME direction from the
-        // mark, the leg leaves for the side it came from — a windward mark on a beat, or
-        // Lighthouse Cove's legs 3 and 4. To leave that mark on the required side she has
-        // to pass it on one side and come back on the other, and her bearing about it
-        // therefore sweeps a whole turn. This measures only the ARC between the two
-        // tangent points and not the straight legs either side of it, so at a hairpin it
-        // reads about half a turn — 183 degrees on those two bay legs, 195 on Glacier
-        // Sound — where the truth is 360.
-        //
-        // Whether that matters depends on the APPROACH, and `_string_realised_probe.js`
-        // (the string rule applied to the completed track, not predicted at the moment of
-        // completion) says where:
-        //
-        //     bay     hairpin legs   73 roundings,  4 never went round   (5.5%)
-        //     arctic  hairpin leg    72 roundings, 40 never went round  (55.6%)
-        //
-        // `roundSweep` accumulates from LEG START at any distance. Glacier Sound's leg
-        // starts 5458 units from a 405-unit island, so a long off-axis approach banks most
-        // of the 195 degrees the threshold asks before the boat is anywhere near it: she
-        // passes the island on one side, completes the leg, and comes back the same side.
-        // Bay's anchors are 3741 units from a 12-unit buoy and the approach banks almost
-        // nothing, which is why the same threshold bites there and not here.
-        //
-        // Requiring the circuit removes the approach's contribution by construction.
-        // Measured after: arctic 55.6% -> 0.0%, realised winding p10 366 / med 368 / p90
-        // 370 — a single class where there were two.
-        //
-        // The two degenerate geometries are told apart by WHERE THE ANCHORS ARE rather
-        // than by the arithmetic's residue: CO-DIRECTIONAL anchors are a hairpin, tested
-        // here. OPPOSITE anchors are a collinear PASS-BY, which is what the `sweep < 0.2`
-        // guard above actually catches — and ⚠️ that guard answers a full circuit where a
-        // pass-by only needs half a turn. It is wrong and it is inert: no leg of any
-        // authored venue is a pass-by (`_sweep_rule_check.js` prints the subtend for all
-        // of them, and the nearest is 12.6 degrees from co-directional). Left alone rather
-        // than "fixed" untested.
-        const bP = Math.atan2(from.y - e.mark.y, from.x - e.mark.x);
-        const bQ = Math.atan2(to.y - e.mark.y, to.x - e.mark.x);
-        let sub = bQ - bP;
-        while (sub > Math.PI) sub -= Math.PI * 2;
-        while (sub < -Math.PI) sub += Math.PI * 2;
-        if (Math.abs(sub) < HAIRPIN_SUBTEND) sweep = Math.PI * 2;
         return sweep;
     },
 
