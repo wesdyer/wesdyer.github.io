@@ -6755,3 +6755,57 @@ fan was landed for -29.0 lake and -5.0/-2.0 bay, all of which are racing-leg eff
 `applyAvoidance` needs `this.boat.raceState.leg >= 1` unless it is deliberately tuning the
 start.** The tack tax and the no-go tax already carried it; the fan did not, and nobody
 looked because the fan was measured on race time, not on OCS.
+
+# ═══ SESSION CLOSE — 2026-08-06 overnight push ═══
+
+## What landed
+
+    d55eb97  densified escape fan + land probe as a DISTANCE   (earlier in the session)
+    97a5559  an escape into the no-go zone is not an escape    (earlier in the session)
+    b566370  near-reversals gated on the boat, and the deviation cost put in scale
+    b85935d  the escape fan restricted to racing legs
+
+## Where the fleet stands against the human
+
+                      session start      close       human      gap closed
+      Stillwater Lake     407.5          ~295         223          64%
+      Glacier Sound       535            462         ~222          23%
+      Lighthouse Cove     252            ~245        226.2         27%
+      Ocean               193            193         182.5          0%   (untouched)
+      Clubhouse           OCS 16.67%     16.67%       —            n/a   (restored)
+
+## Verification at close
+
+    golden traces   PASS 20/20, 0 behaviour changes (re-recorded twice — the first
+                    run was corrupted by a git checkout during a background verify)
+    seatrials       OCS 16.67% (= pre-session baseline), median 194.28, DNS/DNF 0.00%
+    npm test        6 failures, byte-identical on pre-landing code (test_arena +
+                    test_editor, all pre-existing)
+    arctic baseline verified byte-identical to true HEAD before its comparisons were used
+
+## The three rules this session earned
+
+1. **A term in the wrong ORDER OF MAGNITUDE is a structural bug, not a knob.** Twelve
+   re-pricings were inert because every one lowered a THREAT cost; the proper-course term
+   sat three orders of magnitude below them and had never been raised. Amends, rather than
+   overturns, "change which actions exist, not what they cost" — a price at the right order
+   IS a knob, and knobs have all lost.
+2. **Every term in `applyAvoidance` needs `leg >= 1`.** Three separate terms leaked into
+   the prestart in one night, one of them already landed and shipping.
+3. **Read the clock, not the contact counts.** Contact deltas flipped sign between 20-seed
+   sets on every candidate tested; the paired clock median replicated every time.
+
+## Open, with evidence, for whoever picks this up
+
+  - ⚠️ **`treeDEVP`'s successor**: make the deviation cost proportional to the DISTANCE the
+    deviation actually costs over the lookahead — `speed * t * (1 - cos(offset))` — instead
+    of a hand-set power. The shipped pow3*200 is the right shape found by hand; the
+    physical version should be better and would explain itself.
+  - ⚠️ **Bay boat-on-boat contacts doubled** with this landing (1.17 -> 2.26, both sets).
+    Bay is the venue closest to the human and the one paying for the other two.
+  - **Arctic's biggest excess bin is now `offrt` (3630u), not `avoid` (2594u)** — being off
+    the planned route, with xtrack mean 867u and the carrot jumping 20.6x a minute. That is
+    a routing-churn problem and nothing this session touched addresses it.
+  - **Mark 5 on Stillwater Lake sits in 100u of clearance**, tightest in the game by 2x,
+    worth ~10-15 s. An authoring fix, not a tuning one.
+  - **The router's 6x ice-plug price is dead code** (`pathSailable` admits only `_soft===1`).
