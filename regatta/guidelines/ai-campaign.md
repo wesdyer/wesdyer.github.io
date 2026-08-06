@@ -6007,3 +6007,24 @@ Next tick sees the same crossing 0.8 s closer, so anything real becomes hard on 
 Note this is NOT a re-pricing — it changes which candidate WINS (offset 0 becomes free when
 the only conflict is three seconds out), which is the bar tonight's clearance rejection set
 for this family.
+
+### ⛔ REJECTED: making the probe floor require tight water as well (`treeTIGHT`)
+
+It fixed ocean (paired 0.0 med / +0.3 mean against pre-session HEAD, from +1.8/+4.8) and
+left bay untouched — but on lake it gives back half the landing's whole point:
+
+    lake 20@9100 vs the LANDED tree    paired med +1.0  mean +0.3   flat on the clock
+                                       land contacts 18.28 -> 27.56 (+51%), pen 0.96 -> 1.11
+    lake 20@9100 vs pre-session HEAD   -43.0 med / -57.5 mean  (the landed tree: -53.0 / -58.6)
+
+**Mechanism: the predicate reads `_clear` AT THE BOAT'S OWN CELL, and by the time she is
+in tight water she is already committed.** The ratchet begins while she is still in open
+water approaching a shore — that is exactly the moment the longer probe is supposed to
+see the shore coming. Gating on where she IS answers the wrong question; the honest
+version of this idea would gate on what is AHEAD, which is what the probe itself is for,
+so the gate would be circular.
+
+⇒ **Keep the shipped `openWaterAv` gate.** The trade is explicit and it is the right way
+round: ocean pays +1.8 mean on a venue 14 s from the human, and lake keeps 10 s of median
+and 9 land contacts a boat on a venue 129 s from her. Recorded so the next session does
+not re-derive it.
