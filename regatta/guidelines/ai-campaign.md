@@ -7437,3 +7437,33 @@ in wide water. The router's narrow-upwind term exists (base * (1 + loss/W)) but 
 CAPPED AT 20x — if sub-tack-width (123u measured) upwind water is unworkable, that
 cap is an order of magnitude low and a short narrow canyon still outbids a long wide
 detour. Candidate treeCANYON: steepen/uncap the law below tack width.
+
+## ✅ LANDED 6d6cc4a — Rule 21 both ways (bay -28/-29% boat contacts, all guards green)
+New HEAD baselines = the p12 bench files (bay_bench_p12clearoutA/B, fleet_leg2_p12arcticA,
+ocean_bench_p12lakeA, seatrials_p12.log). treeNOW/treeP1/treeICE are all PRE-landing.
+
+## ⛔ REJECTED with mechanism — the ice SIDE-LATCH (treeICE, arctic 16@9100)
+Owner's "commit to the gap side" implemented as a 900-pt side-switch margin on
+planFloeTrajectory's argmax (steering still re-optimised every tick; latch dropped on
+own-side degradation). Paired +24.0 med / +25.8 mean AND floe contacts 37.3->39.9 —
+worse on both axes. With the heading-hold family's 3 rejections this closes the
+STICKINESS half of the strategy: the fleet's 31 deg/s churn near ice is a SYMPTOM of
+bad scenes, not the cause of the impacts. The human's 0.0 deg/s comes from choosing
+better lines EARLIER, not from refusing to switch. What remains untested from the
+owner's description is the ARRIVAL-TIME gap projection (score gaps where they will
+be, prefer the largest) and the impact-moment context (what the boat was doing in
+the last 2s — next probe).
+
+## LAKE rub attribution (pre-landing tree, 10 seeds): MORE penalty-borne than bay
+84% mid-penalty / 81% pre-existing / 6% mid-spiral, but 64% within 400u of a MARK
+(mark-3 43%, mark-5 31%), 87% under 1 kt, head-on 32%: flagged boats in ROUNDING
+QUEUES, where clear-out has nowhere to go. Post-landing rerun in flight.
+
+## REDROCK solo (1 boat, no traffic): the wall is EXECUTION, not the pileup
+Solo boats: FIN 774 (466s of it on leg 3), DNF stuck on leg 3, and one boat spent
+900s ON LEG 0 at the start gate (separate start bug, seed 9411). Stuck cluster
+(-900,900)-(-971,1336) = the DMC's dead-upwind cl1-2 stretch — "tacking through a
+narrow canyon", the exact thing the owner says a human never attempts. Candidate:
+uncap/steepen pathSailable's narrow-upwind law (currently min(20, 1+loss/W)) so the
+router buys distance through sailable canyons; if no alternative exists A* keeps the
+same route and the change is inert by construction.
