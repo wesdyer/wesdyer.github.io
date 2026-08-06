@@ -6132,6 +6132,9 @@ function getWindAt(x, y) {
     let sumWx = Math.sin(dir) * spd;
     let sumWy = -Math.cos(dir) * spd;
 
+    // Puff contributions accumulate SEPARATELY from the mean, so the total they add
+    // can be clamped to one cell's worth below — same principle as the fan clamp.
+    let puffWx = 0, puffWy = 0, puffMax = 0;
     // Net turn from every puff overlapping this point — see PUFF_FAN.
     let fanAcc = 0;
     for (const g of state.gusts) {
@@ -6172,11 +6175,28 @@ function getWindAt(x, y) {
 
                  // Add puff vector
                  // Note: gSpeed can be negative (lull)
-                 sumWx += Math.sin(gwDir) * gSpeed;
-                 sumWy += -Math.cos(gwDir) * gSpeed;
+                 puffWx += Math.sin(gwDir) * gSpeed;
+                 puffWy += -Math.cos(gwDir) * gSpeed;
+                 if (Math.abs(gSpeed) > puffMax) puffMax = Math.abs(gSpeed);
             }
         }
     }
+
+    // CLAMPED to one puff's worth, exactly like the fan below: overlapping cells must
+    // not be able to add more wind than the strongest single one of them could — a gust
+    // is descended upper air, and two patches of the same descended air overlapping is
+    // still that air, not twice it. Unclamped, ocean's 25 kilometre-long cells stacked
+    // three deep on a 27-knot mean and the anemometer read past 60; the same sum let
+    // two stacked lulls drive the resultant NEGATIVE and flip the local wind. Mixed
+    // gust-over-lull still cancels naturally — the clamp only bites when same-sign
+    // cells pile up.
+    const puffMag = Math.hypot(puffWx, puffWy);
+    if (puffMag > puffMax && puffMag > 0) {
+        const k = puffMax / puffMag;
+        puffWx *= k; puffWy *= k;
+    }
+    sumWx += puffWx;
+    sumWy += puffWy;
 
     // The local mean, which gates whether a wake reached here — the lee's AIM still comes
     // from each obstacle's own wind.

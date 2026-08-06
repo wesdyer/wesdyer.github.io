@@ -566,9 +566,9 @@ window.VENUE_DOC["ocean"] = {
           ]
         ],
         "falloff": 1000,
-        "count": 25,
+        "count": 12,
         "gustKt": 10,
-        "sizeM": 1000,
+        "sizeM": 600,
         "lifeS": 120,
         "bias": 0.75,
         "veer": 30
