@@ -4727,3 +4727,108 @@ is one trajectory replay, and it would have priced this thread before four trees
 
     CONFIRMED on the bench:  treeLAY3   ocean paired -11.0 med / -11.1 mean
                                         bay   paired  -2.0 med /  -3.5 mean
+
+---
+
+# ⚡ PLAN FOR THE NEXT PUSH — ROUTING THAT KNOWS WHETHER IT CAN TACK
+
+Researched and measured 2026-08-05 evening. The core-AI problem and the redrock routing
+problem turn out to be ONE problem, and it has a closed-form model.
+
+## THE MEASUREMENT THAT DEFINES IT
+
+The fleet's distance sailed against the ROUTER'S OWN PLAN, by how much free water the plan
+runs through (free radius = the largest all-navigable circle at that point):
+
+    venue    leg   plan(u)   fleet sailed   ratio    free water on the plan
+    bay       1-6   2797-4653   0.92-1.32x           550-700u
+    ocean     1-3   4919-18283  0.83-1.40x           700u
+    redrock    1      2352       13260  5.64x         100u    <- 98% upwind
+    redrock    2      4347       11588  2.67x          50u    <- 64% upwind
+    redrock    3      6858       20932  3.05x           0u
+
+**In open water the fleet sails 0.83-1.40x its plan. In redrock's slots it sails 2.7-5.6x.**
+The worst leg is the one that is 98% upwind through 100 units of free water.
+
+⇒ **The router plans beats through channels a boat cannot tack in, and the boat then cannot
+execute them.** Those are not two bugs. The second is the consequence of the first.
+
+## THE MODEL — closed form, derived, not tuned
+
+To make good ground upwind in a channel of width B you tack every `B / sin θ` of track and
+pay `t_c` seconds each time. So the achievable upwind VMG is
+
+        VMG_eff(B) = (B · V · cos θ) / (B + t_c · V · sin θ)
+
+which tends to `V cos θ` as B grows and to zero as B closes. At 8 kt, TWA 42, a 3-second
+tack:
+
+        channel B     VMG_eff    fraction of free-water VMG
+             50u        15.3            17%
+            100u        26.2            29%
+            200u        40.5            45%
+            400u        55.7            62%
+            800u        68.5            77%
+           1600u        77.5            87%
+
+**The router prices every one of those at 100%.** On redrock leg 1 it is wrong by 3.4x, and
+that is exactly the error that makes a beat up a slot look cheaper than a longer run.
+
+⚠️ The literature does not cover this. Weather-routing work (isochrone and DP methods,
+evolutionary routers, the A*-hybrids) treats land as a HARD CONSTRAINT and prices the polar
+— nothing models whether there is room to tack. The gap is real, and the arithmetic to fill
+it is ordinary sailing arithmetic.
+
+## THE PLAN
+
+**PHASE 0 — THE PROBE THAT PRICES A CHANGE BEFORE IT IS BUILT (half a day).**
+The layline thread cost four candidate trees to learn that a real defect was not worth
+fixing. Build the instrument that would have said so: **a trajectory replay that answers
+"if these boats had done X, what would they have saved?"** Feed it the recorded human runs
+and the fleet's own tracks. Nothing else in this plan starts until this exists.
+⚠️ It is also the answer to "judge at 20 seeds, not 3" — the beat probe said 82.0 -> 80.5 s
+on 3 races and the bench said -2.5 on 20.
+
+**PHASE 1 — CORRIDOR-AWARE UPWIND COST (the headline).**
+`SailCheck.pathSailable` already has the clearance field (`clear[nid]`, used today only as
+a bounded route HINT — the `narrow` term). Fold it into the TIME COST instead, through
+`VMG_eff(B)` above, for the upwind bins of the `buildTimeCost` table.
+  - the table is 16 directions x 6 speeds; it becomes 16 x 6 x (a few clearance bands).
+  - `t_c` is not a free parameter: measure it. Time a tack in the engine at each wind speed.
+  - GATE: redrock's planned leg 1 stops being 98% upwind; the plan's median free water
+    rises; the fleet's sailed/plan ratio falls from 5.64.
+  - ⚠️ EXPECT BAY AND OCEAN TO BE NEARLY INERT — their plans already run through 550-700u,
+    where the model is within 15% of free-water VMG. If they move much, the model is wrong.
+    That is the cheapest possible falsification and it comes for free.
+
+**PHASE 2 — RE-MEASURE THE EXECUTION GAP.**
+If Phase 1 works, redrock's plans stop asking for the impossible and the 2.7-5.6x should
+collapse on its own. Measure before building anything else: the local-layer work in Phase 3
+is only justified by what is LEFT.
+
+**PHASE 3 — THE LOCAL LAYER, ONLY IF PHASE 2 LEAVES A GAP.**
+Candidates, in order of how cheaply they can be tested:
+  - grid resolution: 50-unit cells with a 44-unit clearance cannot represent a 100-unit
+    channel. A finer grid near land, or a clearance-aware carrot, may matter more than any
+    steering change.
+  - the carrot spacing (450u hops) against a channel that turns inside one hop.
+  - `applyAvoidance` in water with nowhere to go — 4370 shoreline collisions per boat-race
+    says the avoidance layer is fighting the walls, not the boats.
+
+**PHASE 4 — THE OCEAN BEAT, WHICH IS A DIFFERENT PROBLEM.**
+15 s and 21% distance on a beat in OPEN water (700u), where the model above says nothing is
+wrong. The layline thread is closed at four rejections; what is left is **traffic** — the
+human sailed alone, the fleet beats nine-up with 10-14 degrees of mean avoidance
+deflection. Phase 0's replay prices it: how much of the 15 s is recoverable at all?
+
+## STANDING RULES FOR THIS PUSH, EARNED TODAY
+
+  - **Price the direction of an effect before building the mechanism.** Four trees died
+    proving a real defect was not worth fixing.
+  - **A bench cannot see a state transition firing LATE.** The hairpin change looked
+    "expensive but correct" on every number I had; the owner saw it in one race.
+  - **A statistic that is exactly zero at every percentile is a bug, not a finding.**
+  - **Two halves that each do nothing may still be a change.** The layline pair moved
+    73% -> 39%; neither half moved it at all.
+  - **Judge at 20 seeds, and on a disjoint set.** Three results this session reversed
+    between 3 and 20 races, or between 9100 and 9200.
