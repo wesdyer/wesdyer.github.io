@@ -5571,3 +5571,14 @@ would hand the ice venue the open-water fan for the first frames. Measured: 0 af
 `resetGame()`, **112 after a single `update(1/60)`**, and `applyAvoidance` cannot run
 before the first update. The gate is sound. (The two existing `openWater` reads at the
 keep-clear terms have the same property and the same answer.)
+
+### The two changes are venue-selective in exactly the way the mechanisms predict
+
+    venue    what the ship tree changes            paired vs HEAD
+    lake     dense fan + probe floor (both bind)   -53.0 med / -58.6 mean  (20@9100)
+    bay      dense fan only (probe floor inert)     -3.0 med /  -2.9 mean  (20@9100)
+             — and SHIP vs FAN-alone on bay is 0.0 med / +0.4 mean, i.e. the floor
+               genuinely does nothing there: bay's boats are fast enough that
+               `speed x 4 s` already exceeds 240u.
+    arctic   probe floor only (fan gated off)      (pending)
+    ocean    dense fan only, and it was inert      (pending)
