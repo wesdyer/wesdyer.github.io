@@ -7506,3 +7506,9 @@ pushes through the plug in the direction of travel, where the sighted version de
 stays slow longer, and accrues MORE exposure ("a 25s grind beats 160s of weaving", now
 measured at the wiggle layer too). The 44% is partly the price of escaping, not waste.
 Upstream (don't get stuck) is the lever, and the canyon law IS that lever.
+
+⚠️ CANYON-LAW HONESTY NOTE: set B against the PROPER new-HEAD baseline (recorded
+after the landing decision) is weaker than the old-head comparison quoted in the
+commit: paired -2.5 med / -11.5 mean, in-time 20->23, fins 140=140. Still positive,
+and set A (-8.0/-14.6, in-time 24->40, 144/144 fins, floe -18% land -25%) stands as
+recorded. Pooled: positive on both disjoint sets, dirt down on both.
