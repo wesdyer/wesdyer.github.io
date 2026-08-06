@@ -5748,3 +5748,24 @@ more than the 12-14% of deflections it wastes.
 course only after offset 0 has been free for several consecutive decisions. Not built —
 the venue-level prize here is small and the clearance term (33% of lake's deflections) is
 three times bigger.
+
+
+## ARCTIC AND THE FAN, ON 48 SEEDS — the gate may be wrong on this half
+
+    set 9100  n=128  paired med  +4.0  mean  +3.8 | finishers 139 -> 132 of 144
+    set 9200  n=107  paired med  -9.0  mean -12.7 | finishers 123 -> 123 of 144
+    set 9300  n=126  paired med -13.0  mean  -4.3 | finishers 134 -> 134 of 144
+    POOLED    n=361  paired med  -7.0  mean  -3.9 | finishers 396 -> 389 (91.7% -> 90.0%)
+
+Two of three sets are clearly faster and **the entire finisher loss is in set 1**, which
+is also the only set that read positive on time. That is the signature of a threshold
+statistic on a marginal venue, not of a mechanism — the standing rule about 16-seed
+arctic sets, again. A fourth set (9400) is running.
+
+⚠️ Note what this does NOT change: the LAND PROBE FLOOR stays gated on arctic on its own
+evidence (+9.0 paired median, 139 -> 130 finishers, floe contacts 32.5 -> 37.8) and on its
+own argument — where there is ice, `gAv` is the stamped grid, so a floored probe predicts
+240 units through a moving pack rather than looking further down a coastline. The two
+halves of the landing are gated for different reasons and deserve to be judged separately;
+they were tied to one flag for tidiness, and if the fan un-gates, that flag stops being
+shared.
