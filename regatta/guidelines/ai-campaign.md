@@ -5148,6 +5148,122 @@ is a DIFFERENT problem on each venue:
    arithmetic (W/(W+70u), 123u min tack width) belongs in venue-authoring guidance —
    `check_raceable` could flag corridors under 2x tack width at authoring time.
 
+---
+
+# ⚡ PLAN FOR THE 10-HOUR OVERNIGHT PUSH — CLOSE ON THE HUMAN, VENUE BY VENUE
+
+Researched 2026-08-05 late evening on the post-corridor HEAD. Read this WHOLE section
+before running anything. The like-for-like human gaps (all IN TRAFFIC — the audit entry
+above explains why every older "sailed alone" claim is void):
+
+    venue    human (in fleet)   fleet bots      gap        nature (measured)
+    bay      226.2 med          259.5→257 med   ~31 s      fleet-traffic efficiency
+    ocean    182.5              ~196-198 med    ~15 s      beat traffic (+11.3 s paired
+                                                           solo-vs-fleet; human's own
+                                                           traffic cost ≈ 0)
+    arctic   ~222 med           540→535 med     2.4x       CORE: half ice-grind speed,
+                                                           half line (avoidance-bent)
+    redrock  (no current-doc recording)         —          ⛔ AUTHORING — do not tune
+
+## STATE / ANCHORS (HEAD = 5350cae, all local, unpushed)
+
+    seatrials 100t seed 100   198.94/194.61 pen 0.32 OCS 14.78% DNS/DNF 0%
+    bay 20@9100  bay_bench_corrbay.json 257.0 | ocean 20@9300 corrocean 198.0,
+    20@9320 corroc9320 196.0 | arctic 16@9100 corrarc16 535/139fin,
+    16@9200 corrarc9200 535/125fin | goldens PASS 20/20 | npm test = 6 editor fails
+    ⚠️ rl/treeHEAD, treeCORR etc. are STALE (pre-landing). `mktree.sh` fresh trees
+    before ANY bench; bench args: <trials> <seed0> <label> <tree>.
+
+## STANDING RULES (all earned, several this session)
+
+  - The zero-at-every-percentile rule applies to YOUR OWN probes. When reading traj
+    files, normalize format names: `F[n.split(/[\[(<]/)[0]] = i`.
+  - NEVER bench arctic solo or small-fleet — the fleet opens leads (~90-180 s effect).
+  - Wind readings above ~34 kt are the KNOWN GUST-STACKING BUG (owner: it is a bug, do
+    not fix now). Do not tune pressure-seeking or heavy-air behavior against them.
+  - Redrock: no AI tuning. Two multi-attempt traj files: split at race-timer resets.
+  - Judge at 20 seeds on disjoint sets (bay/ocean 9100+9200 / 9300+9320); arctic on
+    two 16-seed sets or paired per-boat median; finishers are threshold-noisy.
+  - Keep >=4 probes in flight; check `date` at phase boundaries; commit per landing;
+    rebuild trees after every landing; a rejection with a mechanism is a result.
+  - A bench cannot see a state transition firing late — changes to WHEN something
+    fires need a promptness assertion, not just a bench.
+
+## PHASE 0 (first hour) — RE-BASELINE + THE HUMAN-ENCOUNTER LEDGER
+
+1. Rebuild trees; re-run on post-corridor HEAD: `rl/_transit_probe.js 6 9100 <tree>`
+   (arctic attribution — the corridor landing changed exposure: floe cols 38.9->32.5),
+   `_ice_slow.js` 2-3 seeds, `rl/_bay_traffic_attrib.js`, `rl/_bay_rub_probe.js`.
+   These are the aiming tables for Phases 1-3; do not aim from last night's numbers.
+2. **Build `_human_ledger.js`** — the instrument this campaign has never had: mine all
+   57 single-attempt recordings per ENCOUNTER (rival within 600u, closing): the
+   human's deflection (heading vs 5 s trend), speed change, giveWay state, duck/tack/
+   cross outcome, and time cost (legProg rate vs clear-air baseline). Output: the
+   human's traffic ledger — deflections per encounter class, degrees, seconds. Set it
+   beside the fleet's own numbers (`rl/_cpa_onset_probe.js`, `rl/_defl_hist.js`).
+   This prices Phase 3 BEFORE any mechanism is built. Expect from priors: the human
+   deflects rarely and small; the fleet's mean avoidance deviation is 44-46 deg.
+
+## PHASE 1 (2-3 h) — ARCTIC GRIND (the speed half: 202 s/boat below-polar, 72% of it within 120u of ice)
+
+Aim from the fresh `_ice_slow`/`_transit_probe` tables, then in cheapness order:
+  a. MEASURE the real through-soft-cell speed vs the A*'s soft multipliers (2.5x lead /
+     6x plug, sailcheck.js pathSailable). If measured grind is slower than priced,
+     boats enter plugs they should route around — set the constants to the measurement
+     and bench. One-constant change, fully priced by its own probe.
+  b. Ice STANDOFF in the local layer: boats graze hulls at 38->32 contacts/boat-race.
+     History warns: a blanket risk-water slow-down traded pace for nothing (script.js
+     ~line 733 comment) — scope any standoff to GRAZING geometry (small approach
+     angle), not all near-ice water.
+  c. The `avoid:none` sub-bin (transit probe: ~1800-2000u excess/boat bent with NO
+     rival/static identified): add one attribution counter inside applyAvoidance to
+     name the source (floes via cScale? wiggle? liveness?) BEFORE building anything.
+Bench: arctic 16@9100 + 16@9200 paired vs the corrarc anchors; bay 20@9100 for
+inertness; goldens at close.
+
+## PHASE 2 (2 h) — ARCTIC LINE (the other half: 46% of excess is avoidance-bent, 22% off-route)
+
+Only after Phase 1's re-baseline: the corridor landing may have moved these bins.
+The off-route bin (xtrack >300u on 55-74% of samples, carrot jumps 15-19/min) points
+at replan churn through moving ice — measure carrot-jump size vs floe-map refresh
+before proposing anything. ⚠️ Commitment-style holds are CLOSED (7 rejections, dose-
+response: the scene survives ~1 s) — do not retry against rivals; the ice-commitment
+exemption ("ice does not react back") remains untested and is the ONLY commitment
+variant permitted a single cheap probe.
+
+## PHASE 3 (2-3 h) — BAY/OCEAN TRAFFIC, AIMED BY THE LEDGER
+
+The standing finding that re-frames this thread (`rl/_defl_hist.js` header): twelve
+candidates re-priced the avoidance COST and the 46-48 deg mean deflection never moved,
+because the escape ACTION SET is quantized — the fan is {0, ±.1, ±.2, ±.4, ±.6, ±.8,
+±1.2, ±1.6} and the argmin lands on the first point that clears. Two candidate shapes,
+in order:
+  a. **Densify the fan between 0.2 and 0.8 rad** (add ±.3, ±.5) — pure action-set
+     change, no cost re-pricing, directly attacks the quantization. Cheap to build,
+     priced by _defl_hist before/after, then benched bay 9100+9200, ocean 9300+9320.
+  b. Whatever single encounter class the human ledger says is worth the most seconds
+     (expect: give-way onsets where zero deflection was needed — 86% of clear-water
+     onsets per the RRS-avoidance memory). Scope ONE class, bench, stop at two
+     rejections for the night.
+⚠️ Owner direction stands: sail the rules. Rules 15/16.2/17 are display-only; do not
+give the AI rule-breaking escapes.
+
+## PHASE 4 (final hour) — CLOSE CLEAN
+
+Goldens (full --update if anything landed; no redrock splice — that note is stale),
+seatrials 100t, npm test (6 editor failures = clean), campaign log entries with dated
+verdicts and mechanisms, new anchors listed, memory updated, trees left in place,
+`pkill -9 -f chrome-headless` when ALL benches are done. Commits small, mechanism in
+the message. Push waits for the owner.
+
+## BUDGET NOTES (12 cores)
+
+bay/ocean bench ~15-20 min per 20 seeds; arctic ~25-30 min per 16; goldens 3.5 min;
+seatrials 100t ~25 min. A phase = probe (minutes) -> candidate tree -> two disjoint
+benches (~1 h wall). Ten hours comfortably fits Phase 0 + three candidate cycles per
+venue thread IF benches overlap probes — keep the background full, queue the next
+candidate before reading the last verdict.
+
 ## ⚡ REDROCK CAPACITY, MEASURED (keep-N sweep, seeds 9100-9103)
 
     keep 1   L1 50-68 s, ~1.2x plan, one FINISH (583 s) in 4
