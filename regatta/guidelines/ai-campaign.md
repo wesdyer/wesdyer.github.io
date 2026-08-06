@@ -6058,3 +6058,29 @@ gap, and the honest next candidate for it is lane choice on the approach to a cr
 which is a strategic-layer change (`getStrategicHeading` / the router's carrot), not
 another term in `applyAvoidance`. That function has now been measured from every side it
 has.
+
+# ⚡ THE PLANNING THREAD: positioning instead of reacting (`treePOSN`)
+
+The horizon rejection said the fleet reacts where the human plans. So look at what early
+signal exists at all: the boat proximity gradient is `5000/(distSq+10)` and it only runs
+inside 250u. **At 250u that is 0.08**, against a deviation cost of 0.32 for a six-degree
+turn. There is effectively NO long-range positioning signal in this function — every
+correction it makes is necessarily a late one, and `treeHORIZON` measured what late
+corrections cost in narrow water (+13.0 s, land contacts +45%).
+
+`treePOSN` is deliberately the OPPOSITE of the candidate that just failed. Where the
+horizon change made the reaction later, this makes it EARLIER AND SMALLER:
+
+  - project both boats TEN seconds out (past every hard term's four), at 2 s steps
+  - only for rivals between 200u and 600u — the ledger's encounter window, excluding
+    anyone already close enough for the real terms to own
+  - charge `6 * (1 - cpa/350)`, i.e. by how much closer than the human's median CPA the
+    candidate would pass
+  - sized to compete with the DEVIATION COST ALONE (0.32 at six degrees, 0.89 at twelve):
+    it can buy a few degrees ten seconds early and can never outbid a collision term, a
+    rule term, or any graded land cost — those are 10^3 to 10^5 larger
+  - racing legs only, `normal` liveness only: the start pack is tuned to the boat-length
+
+Benching lake and bay, and running `_fleet_ledger` on the candidate as well — the bench
+gives the verdict, the ledger says whether the MECHANISM moved (does CPA widen and
+deflection shrink toward 355u/8 deg, or did the clock move for some other reason).
