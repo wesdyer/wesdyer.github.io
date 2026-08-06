@@ -7255,3 +7255,42 @@ between the term and what it is weighed against.** Under ~10x, expect nothing.
 
 And the corollary that governs P1: *do not* go hunting for "wrong constants". The question
 is whether a term is in the same UNITS as the function it lives in.
+
+## 🧹 EVERYTHING THE NEXT SESSION NEEDS IS TRACKED — the rest is disposable
+
+Checked before a repo clean. `git clean -fdx` under `regatta/eval/rl` deletes the candidate
+trees and every `*_bench_*.json`, and **that is fine**:
+
+  - **TRACKED, survives:** all the probes (`_thump.js`, `_margin.js`, `_replan.js`,
+    `_hdgrate.js`, `_fleet_ledger.js`, `_human_ledger.py`, `_route_attrib.js`,
+    `_map_validity.js`, ...) and `traj/` — all 59 human recordings. These are the assets;
+    they are in git.
+  - **UNTRACKED, deleted, and obsolete anyway:** every bench baseline. `b566370` and
+    `b85935d` changed fleet behaviour on lake/bay/arctic, so `bay_bench_nogobay`,
+    `ocean_bench_nogolake`, `fleet_leg2_headarc` etc. are all pre-landing and **must be
+    re-recorded against the new HEAD before any A/B**. Losing them costs nothing; USING
+    them would cost a wrong verdict.
+  - **UNTRACKED, deleted, reproducible:** the candidate trees, including `treeNOSE2`.
+
+### Rebuilding `treeNOSE2` (the gate-only fallback the plan names)
+
+It is HEAD with the deviation change reverted and the near-reversal gate kept:
+
+    regatta/eval/rl/mktree.sh treeNOSE2
+    # then in treeNOSE2/regatta/js/script.js, restore the ORIGINAL deviation term:
+    #   let cost = (this.boat.raceState.leg >= 1)
+    #       ? Math.pow(Math.abs(offset), 3) * 200
+    #       : Math.pow(Math.abs(offset), 1.5) * 10;
+    # back to:
+    #   let cost = Math.pow(Math.abs(offset), 1.5) * 10;
+    # leave the `nosedIn` gate and the fan's racing-leg guard exactly as shipped.
+
+That reproduces the tree whose numbers are in this log (lake +41.0/+55.0, bay inert,
+arctic -23.0/-38.0, and bay's contact classes unchanged rather than doubled).
+
+### First moves for the next instance, in order
+
+    1. re-record baselines on the new HEAD:  bay 20@9100 + 20@9200, lake 20@9100 + 20@9200,
+       arctic 16@9100 + 16@9200   (mktree.sh a HEAD tree first; `treeNOW` is gone)
+    2. `_thump.js` on bay/lagoon/river/swamp — P1 needs its starting numbers
+    3. then P1 proper
