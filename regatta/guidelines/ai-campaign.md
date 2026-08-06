@@ -5673,3 +5673,19 @@ pinch — the whole course is a pinch, and it is charging up to 10000 (two third
 This is the same shape as the `clearAt` term I built and rejected earlier tonight: **the
 clearance band is the map's margin, not a hazard.** Next candidate on this venue, on top
 of the ship tree: unify `cScale` at the floe value and bench lake/bay/arctic.
+
+Arctic, same instrument (2 races, 64607 deflections, mean 70.8 deg):
+
+      STATIC hard blockage                     39.2%   <- the dominant bin on this venue
+      a BOAT inside the safety bubble          12.1%
+      NOTHING AT ALL (the commitment lock)     14.0%   <- lake said 12.5%: venue-general
+      proximity only: narrow 14.3 | softIce 9.1 | farLand 8.2 | islandBand 1.9
+                    | bounds 0.7 | boatBand 0.1
+
+Two things worth carrying:
+  - **`boatBand` is 0.1%.** Whatever is bending arctic's line, it is not the traffic
+    proximity gradient — which is consistent with the STAND_ON nudge already having been
+    removed, and it means arctic's remaining avoidance excess is about ICE and WALLS.
+  - **`narrow` is 14.3% here against lake's 33%**, because arctic's stamped-floe grid
+    lets `cScale` fall to 4000 while a floe-free venue always pays 10000. The clearance
+    term is therefore a LAND-VENUE cost in practice, and lake is where it bites.
