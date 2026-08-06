@@ -5602,3 +5602,38 @@ benched — `--check` reports without writing). Four regions, all in `applyAvoid
                                             change; record the new one.
     [ ] goldens: full `--update` (NOT per-venue — that rewrites the file with one venue)
     [ ] npm test: 6 test_editor failures = clean (the 6 wind-shadow ones are FIXED)
+
+
+# ⚡ THE `avoid: none` BIN, NAMED — and a lock that survived being fixed once
+
+Phase 1c of the plan: *"add one attribution counter inside applyAvoidance to name the
+source BEFORE building anything."* Done (`treeWHY` + `_avwhy.js`): whenever the chosen
+escape deviates more than 0.12 rad, record which term rejected offset 0.
+
+    arctic, 3 races, 84138 deflections >0.12 rad, mean deflection 69 deg
+
+      a BOAT inside the safety bubble          14.3%
+      STATIC (land / grid / boundary)          35.2%
+      an RRS rule violation                     0.0%
+      nothing hard — only a proximity cost     36.0%
+      NOTHING AT ALL — holding course was free 14.4%
+      ...and a formal threatBoat existed on only 26.2% of them
+
+**First, the bin was mostly a classifier artefact.** `_transit_probe`'s `hadBoat` test
+needs a formal `threatBoat`, and 73.8% of real deflections have none — so dodges for
+boats that never became the designated threat were landing in `none`. The mystery bin
+was the instrument, not the AI.
+
+**Second, and this one is a bug.** That last row is impossible unless some candidate
+scored NEGATIVE, and exactly one term can: the commitment discount, `cost -= 60`. The
+whole deviation cost range is 0..20 (`pow(|offset|,1.5)*10`, 20 at the widest candidate
+in the fan), so -60 outranks every deviation there is. Its own comment says it *"must
+only break NEAR-TIES"* and records being cut from -400 after it "became a lock: one wide
+dodge at the start and the boat kept committing to a reversal for thirty seconds". **-60
+is the same lock at a lower price**: 14.4% of arctic's deflections are a boat steering
+away from a course that nothing — no boat, no land, not even a proximity charge —
+objected to, because a heading near her last dodge was scoring -60 against a free 0.
+
+Candidate `treeCOMMIT`: apply the discount only when offset 0 was NOT free. Offset 0 is
+the first candidate scored, so the flag is available by the time the discount is applied,
+and in traffic (where the anti-saw purpose lives) nothing changes at all.
