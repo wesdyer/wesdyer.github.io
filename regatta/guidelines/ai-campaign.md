@@ -7586,3 +7586,28 @@ lever is research-scale: arrival-time gap routing or driver-level), lake ~70s
   - Baselines on final HEAD = bay_bench_meter2bayA/finalbayB, ocean_bench_meter2lakeA/B,
     ocean_bench_finaloc, fleet_leg2_canyonarcA/B (arctic byte-identical to final),
     ocean_bench_finalrr, seatrials_meter2.log. Trees treeMETER2 == final HEAD.
+
+## ⚡ POST-CLOSE: THE OWNER RACED THE CURRENT REDROCK — 4 RECORDINGS, AND 4 NOTES
+
+Human on the CURRENT document: **206.6 / 226.2 / 227.1 / 231.6 — all inside the 360
+cutoff, events 0/5/1/0.** (Fleet post-session: 11/72 finishers, best 442 at cutoff
+900.) The venue report's redrock human cell is now: ~227 med / 206.6 best.
+
+Route facts (vs the fleet): her leg 2 is sailed LONG (6.7-6.9ku vs authored 4472) at
+only 10% upwind — she reaches around; the AI's upwind leg-2 canyon is, per the owner,
+"about the same and maybe even better... hard, and this is good course design." Her
+leg 3 runs 14-22% upwind vs the DMC's 33% — she avoids the dead-upwind cl-1 stretch
+where 49-55 fleet boats die.
+
+OWNER'S FOUR NOTES (near-verbatim, binding):
+ (1) The AI's upwind leg-2 choice is legitimate — venues SHOULD have choices with
+     consequences. Do not "fix" route diversity away.
+ (2) "AI roundings are not at all like human roundings — go through all of my
+     trajectories and see how I round and compare. You'll see a big difference."
+     -> THE REQUESTED ANALYSIS; run it across every venue's recordings.
+ (3) Avoidance near the human: bots "veer very early away from me in suboptimal
+     ways by plowing into other objects. If you don't have rights then you just
+     need to change enough to not have a collision if they maintain a proper
+     course." -> minimal-change give-way; over-deviation INTO obstacles is the bug.
+ (4) "Redrock is very much a maze and that's working as intended - routing and
+     traffic are keys."
