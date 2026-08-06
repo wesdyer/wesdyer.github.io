@@ -2409,13 +2409,53 @@ class BotController {
         const boat = this.boat;
         const lookaheadFrames = 240; // 4 seconds lookahead
         const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
+        // DOES ANYTHING HERE DRIFT? Both of this function's 2026-08-06 changes assume the
+        // thing being dodged stays where the probe found it, so both are gated on the
+        // same fact. Same flag the keep-clear terms already read; `refreshBotGrid` fills
+        // it on the first update of a race, before any avoidance runs (verified: 0 after
+        // resetGame, 112 after one update(1/60) on Glacier Sound).
+        const openWaterAv = !(state.course._floeObjs && state.course._floeObjs.length);
 
-        // Candidates: more granular to find gaps
-        const candidates = [
-            0, 
-            0.1, -0.1, 
-            0.2, -0.2, 
-            0.4, -0.4, 
+        // Candidates: more granular to find gaps.
+        //
+        // FINER BETWEEN 0.2 AND 0.8 — WHERE NOTHING DRIFTS. The escape is an argmin over
+        // this list, so its spacing IS the resolution of every dodge the fleet makes: a
+        // boat that needs 17 degrees to clear is offered 11 and then 23, and buys 23.
+        // That quantization is why twelve candidates re-priced the avoidance COST and
+        // the mean deflection never left 44-48 degrees. The human's own ledger, per
+        // encounter with the deliberate tacks removed, is a median 8 degrees at CPA
+        // (bay, n=272) against the fleet's 44-51.
+        //
+        // Benched: Stillwater Lake -29.0 paired median, Lighthouse Cove -5.0 and -2.0 on
+        // two disjoint 20-seed sets, ocean inert.
+        //
+        // ⚠️ NOT ON GLACIER SOUND, and the honest reason is that it could not be shown
+        // to help there: 16@9100 said +2.0 median with 7 fewer finishers, 16@9200 said
+        // -9.0 with finishers unchanged, and pooled over 32 seeds it is -5.0 median with
+        // 262 -> 255 finishers. Ambiguous both ways. A mechanism was written here first
+        // ("a floe neither holds still nor keeps clear, so a tighter miss is worth less")
+        // and set 2 did not support it, so it is not claimed. The gate is a
+        // conservatism: do not move a marginal venue on mixed evidence.
+        //
+        // ⚠️ The two lists are ordered and the order is the tie-break (`cost < minCost`
+        // keeps the earlier candidate). The ice list is the stock list, unchanged.
+        const candidates = openWaterAv ? [
+            0,
+            0.1, -0.1,
+            0.2, -0.2,
+            0.3, -0.3,
+            0.4, -0.4,
+            0.5, -0.5,
+            0.6, -0.6,
+            0.7, -0.7,
+            0.8, -0.8,
+            1.2, -1.2,
+            1.6, -1.6 // Wider options for emergency bailouts
+        ] : [
+            0,
+            0.1, -0.1,
+            0.2, -0.2,
+            0.4, -0.4,
             0.6, -0.6,
             0.8, -0.8,
             1.2, -1.2,
@@ -2896,12 +2936,45 @@ class BotController {
                 ? (state.course._botGridStatic || state.course.botGrid)
                 : state.course.botGrid;
             if (gAv) {
-                const segLen = Math.hypot(futureX - boat.x, futureY - boat.y);
+                // A SHORELINE DOES NOT MOVE, so the question a candidate heading has to
+                // answer is WHERE IT LEADS — not where four seconds of it lead. Every
+                // other probe here is time-based because the thing being dodged is also
+                // moving. Scaling this one with boat speed put the fleet in a RATCHET: a
+                // shore rub costs 60% of speed (`boat.speed *= 0.4`), the shortened probe
+                // then sees less water, so she rubs again and it shortens again. At 1
+                // knot the whole probe is 60 units — SHORTER THAN ITS OWN 140-unit hard
+                // zone — so every candidate that touched land read as an unavoidable
+                // collision, the argmin fell back to least-deviation, and the boat held
+                // her course into the beach. Measured on Stillwater Lake: 30.6 land
+                // contacts per boat-race, 78% of them taken below half a knot, against a
+                // human's zero. Floored at four seconds' worth at four knots; above that
+                // nothing changes, and the 140-unit hard zone is already a distance, so a
+                // longer probe grades the far half rather than vetoing it.
+                //
+                // ⚠️ ONLY WHERE NOTHING DRIFTS — and this gate is the argument above
+                // taken seriously. Where there is ice, `gAv` is the STAMPED grid, so a
+                // floored probe is not looking further down a coastline, it is predicting
+                // 240 units through a moving pack. Benched on Glacier Sound: +9.0 paired
+                // median and 139 -> 130 finishers with floe contacts 32.5 -> 37.8.
+                // ⚠️ The ice branch reuses the ORIGINAL expressions rather than
+                // recomputing equal ones. `Math.hypot(futureX - boat.x, ...)` and
+                // `speed * 4` are equal in arithmetic and not necessarily in floating
+                // point, and `stepsAv` and the 140-unit test both round — so a one-ULP
+                // difference is a behaviour difference, and the golden traces hash
+                // behaviour per frame. This way Glacier Sound is byte-identical, not
+                // approximately identical.
+                const LAND_PROBE_MIN = 240;
+                const landLen = openWaterAv
+                    ? Math.max(LAND_PROBE_MIN, speed * (lookaheadFrames / 60)) : 0;
+                const landFX = openWaterAv ? boat.x + Math.sin(h) * landLen : futureX;
+                const landFY = openWaterAv ? boat.y - Math.cos(h) * landLen : futureY;
+                const segLen = openWaterAv
+                    ? landLen : Math.hypot(futureX - boat.x, futureY - boat.y);
                 const stepsAv = Math.max(2, Math.min(8, Math.ceil(segLen / (gAv.res * 0.6))));
                 for (let sI = 1; sI <= stepsAv; sI++) {
                     const frac = sI / stepsAv;
-                    const cc = gAv.cell(boat.x + (futureX - boat.x) * frac,
-                                        boat.y + (futureY - boat.y) * frac);
+                    const cc = gAv.cell(boat.x + (landFX - boat.x) * frac,
+                                        boat.y + (landFY - boat.y) * frac);
                     if (!gAv.at(cc[0], cc[1])) {
                         // Floe-plugged (SOFT) water is a grind, not a wall — the
                         // route may deliberately cross it. Land is a wall.
@@ -2927,7 +3000,7 @@ class BotController {
                     }
                 }
                 if (!staticCollision && gAv._clear) {
-                    const ce = gAv.cell(futureX, futureY);
+                    const ce = gAv.cell(landFX, landFY);
                     const idAv = ce[1] * gAv.n + ce[0];
                     const clr = gAv._clear[idAv];
                     if (clr > 0 && clr < 3) {

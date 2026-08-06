@@ -9,7 +9,7 @@ that was benched — so what ships is what was measured, not a retyping of it.
 import sys, os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
-TREE = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith('--') else 'treeSHIP'
+TREE = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith('--') else 'treeSHIP2'
 CHECK = '--check' in sys.argv
 
 MASTER = os.path.join(ROOT, 'regatta/js/script.js')
@@ -27,15 +27,21 @@ cand = open(CAND).read()
 
 edits = []
 
-# 1. the escape fan (candidate list), floe-gated
+# 0. the gate both changes share, declared once
+edits.append(("""        const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
+""",
+              block(cand, """        const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
+""", "const openWaterAv = !(state.course._floeObjs && state.course._floeObjs.length);\n")))
+
+# 1. the escape fan (candidate list)
 edits.append((block(master, '        // Candidates: more granular to find gaps', '        ];'),
               block(cand, '        // Candidates: more granular to find gaps', '        ];')))
 
-# 2. the land probe: a distance, not a duration
+# 2. the land probe: a distance, not a duration — in open water only
 edits.append((block(master, '            const gAv = this._trajFloe',
                     '                const segLen = Math.hypot(futureX - boat.x, futureY - boat.y);'),
               block(cand, '            const gAv = this._trajFloe',
-                    '                const segLen = landLen;')))
+                    '                    ? landLen : Math.hypot(futureX - boat.x, futureY - boat.y);')))
 
 # 3+4. the two sample points inside that block now walk the land ray
 edits.append(("""                    const cc = gAv.cell(boat.x + (futureX - boat.x) * frac,
