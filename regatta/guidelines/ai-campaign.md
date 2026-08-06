@@ -5769,3 +5769,22 @@ own argument — where there is ice, `gAv` is the stamped grid, so a floored pro
 halves of the landing are gated for different reasons and deserve to be judged separately;
 they were tied to one flag for tidiness, and if the fan un-gates, that flag stops being
 shared.
+
+## ⛔ REJECTED: re-pricing the clearance cost (`treeCLR`, 10000 -> 3000)
+
+The term is a third of every deflection the fleet makes on lake. Re-pricing it is INERT:
+
+    lake 20@9200 vs the landed tree   paired med +1.0  mean +0.2
+                                      boat contacts 4.16 -> 5.70 (+37%), pen 1.14 -> 1.22
+
+**And that is the campaign's own thesis being confirmed rather than a surprise.** Twelve
+earlier candidates re-priced the avoidance COST and the 44-48 degree mean deflection never
+moved; the explanation on the books was that the escape is an argmin over a QUANTIZED
+action set, so the cost decides only which of a handful of fixed offsets wins. Tonight the
+same venue answered both halves of that: densifying the action set paid -29 to -53 paired
+seconds, and re-pricing the single largest cost term in the same function paid nothing.
+
+⇒ Standing conclusion, now with both arms measured: **on this avoidance layer, change the
+ACTIONS, not the prices.** Any future candidate of the form "term X is too big/small"
+should be required to explain why it will change WHICH CANDIDATE WINS, not merely by how
+much it wins.
