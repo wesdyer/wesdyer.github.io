@@ -6250,3 +6250,26 @@ remains available when it is genuinely the only way out.
 
 ⚠️ Note this is an ACTION-SET change, not a re-pricing: it removes candidates that were
 never sailable. That is the one class that has paid tonight.
+
+## ⚡ THE NO-GO TAX MOVES ITS OWN MECHANISM — 71% of the targeted bin
+
+`_irons_entry`, lake, 3 races:
+
+                                        landed        + no-go tax
+      TOTAL entries into irons           119            77      -35%
+        of which AVOID-caused             52 (43.7%)    15 (19.5%)   -71%
+        penalty (legitimate)              26            21
+        tack                              23            19
+        wiggle                            16            21
+
+**The targeted bin fell by 71% and the total by a third, with the other causes broadly
+unchanged.** That is the first candidate tonight whose mechanism moved exactly as designed
+with nothing compensating: the light-air tack guard traded irons for groundings (ashore
++19%), the positioning term traded width for rudder (deflection up at every amplitude),
+and this one simply removes the failure. The small rise in wiggle-caused entries is the
+expected residue — the unstick manoeuvre still steers head to wind, and it is now a larger
+share of a much smaller number.
+
+Bench pending. ⚠️ If it lands, note WHY it is different from the six rejections around it:
+it does not re-price a trade-off, it withdraws candidates that were never sailable. Same
+class as the fan — the action set, not the cost.
