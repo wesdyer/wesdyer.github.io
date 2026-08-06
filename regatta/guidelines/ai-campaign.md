@@ -6572,3 +6572,39 @@ venues, so it is measuring something real and not an artefact of the fan's spaci
 And the plain comparison stands on either quantity: **the fleet turns 4.5x as much as the
 human at the median on lake and 2x as often past 45 deg/s, and she never once turns 80
 degrees in a second on any venue but Glacier Sound.**
+
+## ⚡ THE DEVIATION TERM IS OUT OF SCALE — and that is why the re-pricings were inert
+
+Raising `pow(|offset|,1.5) * 10` to `* 1000` (`treeDEV`, no other change):
+
+    lake 20@9100 vs HEAD   paired med +44.0  mean +52.6   349 -> 300, max 675 -> 482
+                           pen 0.97 -> 0.83, mark 1.99 -> 1.06, land 19.4 -> 15.9
+                           BUT boat contacts 2.61 -> 4.63, and 1 boat DNF
+    bay  20@9100 vs HEAD   paired med  +9.0  mean  +7.7
+                           BUT mark contacts 0.53 -> 2.07 (4x), land 0.12 -> 0.42,
+                           pen 0.37 -> 0.54, 1 boat never rounded, OCS 0.0 -> 0.6%
+
+**Both venues get faster and bay breaks.** The mechanism is legible: a mark rounding IS a
+sustained small deviation, and a flat 100x tax on deviation makes the boat resist the
+wide swing the rounding needs. The term was out of scale; multiplying it uniformly fixes
+the scale and breaks the shape.
+
+So raise the POWER, not the coefficient — `pow(|offset|,3) * 200` (`treeDEVP`):
+
+      offset    0.3    0.8    1.6    3.0
+      was       1.6    7.2   20.2   52.0
+      *1000   164.0  716.0 2024.0 5196.0     <- taxes the rounding too
+      pow3*200    5.0  102.0  819.0 5400.0   <- same U-turn price, small dodge still free
+
+This prices the 172-degree reversal identically to the flat version and leaves a
+17-degree nudge at 5 points. It taxes only the manoeuvres the human never makes: she
+turns >=80 deg/s in 0 of 6041 lake windows and 0 of 27784 bay windows.
+
+⚠️ **A PRICE CHANGE IS BEATING THE ACTION-SET CHANGES, and the thesis needs amending
+rather than defending.** Both of tonight's landings changed WHICH ACTIONS EXIST, and the
+standing rule said re-pricing loses. It does — when the price is already in the right
+order of magnitude. A term three orders of magnitude below everything it is compared
+against is not a mistuned knob, it is a structural bug, and the twelve inert re-pricings
+were all on the OTHER side of the ratio (they lowered threat costs; 25000 -> 8000 leaves
+a 52-point U-turn just as free). Amended rule: **check that a term is in the same units
+as the function before concluding that its value does not matter.**
