@@ -927,7 +927,7 @@ window.VENUE_DOC["lake"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 360
+    "cutoff": 480
   },
   "wind": {
     "regions": [
