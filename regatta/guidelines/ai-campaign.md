@@ -6276,3 +6276,28 @@ share of a much smaller number.
 Bench pending. ⚠️ If it lands, note WHY it is different from the six rejections around it:
 it does not re-price a trade-off, it withdraws candidates that were never sailable. Same
 class as the fan — the action set, not the cost.
+
+## ⚡ AND IT LANDS ON THE CLOCK: -7.0 paired median on top of the landed tree
+
+    lake 20@9100 vs the landed tree   paired med -7.0  mean -7.3
+                                      boat contacts 3.62 -> 2.61 (-28%)
+                                      pen 0.96 -> 0.97 (flat), 180/180 finish
+
+**Mechanism and clock both moved in the intended direction with nothing traded away** —
+the first candidate tonight to manage that besides the landing itself. Compare the six
+rejections around it, every one of which bought its target with something else:
+
+    tack guard      irons -5%      but ashore +19%, and +9.0 on the clock
+    positioning     CPA +62u       but deflection +4 deg at both amplitudes, +17.0/+11.0
+    horizon         boat rubs down but land contacts +45%, +13.0
+    clearance       (nothing)                              +11.0 / +1.0
+    commitment      (the lock is real)                     +4.0
+    tight water     ocean fixed    but lake's groundings +51%
+
+⇒ The pattern holds and is now five-for-five: **the changes that pay are the ones that
+change WHICH ACTIONS EXIST — the fan added candidates that were missing, this one removes
+candidates that were never sailable. Every change to the PRICE of a real trade-off has
+lost.** That is the single most useful sentence in this file for the next session.
+
+Confirming on lake 9200, and checking bay and arctic (this term is ungated — a no-go zone
+is a fact about sailing, not about a venue — so both need to be measured).
