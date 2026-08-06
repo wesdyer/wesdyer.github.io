@@ -6145,3 +6145,34 @@ And the clock agrees with the ledger, on both venues:
 ⇒ `applyAvoidance` is now measured from every side it has: resolution (LANDED), price,
 trigger, horizon, outcome-shaped positioning, and commitment. Only the action set paid.
 The remaining traffic gap is a planning gap and it does not live in this function.
+
+# ⚡ A NEW FAMILY: THE FLEET STALLS HEAD TO WIND (`_stall_probe.js`, new)
+
+After the landing the fleet still spends 6.4% of its time on Stillwater Lake below one
+knot against the human's 0.0%. Classified by cause (3 races, 580 of 9106 boat-seconds):
+
+      ASHORE      (blocked cell within 2)   44.3%
+      IN IRONS    (TWA < 35 deg)            31.5%
+      PENALTY TURN                          19.2%   <- legitimate, a penalty turn is slow
+      IN A HOLE   (local wind < 2.5 kt)      0.2%
+      none of the above                      4.8%
+
+      188 episodes over 3 races (~7 per boat-race), med 3.0 s, p90 5.3 s, max 8.1 s
+      by leg: L1 221s  L2 192s  L3 161s — spread evenly, not one bad corner
+
+**Two things fall out of this.**
+
+1. ⛔ **The light air is NOT the cause of anything.** 0.2%. The fleet essentially never
+   sits in genuinely calm water, which independently confirms the earlier decomposition
+   (lake is a traffic-and-narrow-water venue that happens to be light, not a light-air
+   problem). Anyone tempted by a glass-avoidance mechanism here should read this number
+   first — and note it also explains why the router's sub-8-knot wind bins were worth
+   only ~0.3 s.
+
+2. ⚡ **A third of it is IN IRONS** — head to wind with no way on, about 6.8 s per
+   boat-race, and NOTHING in this campaign has ever looked at it. The episode profile
+   (many ~3 s stalls rather than a few long ones) is the signature of tacks that do not
+   complete: in six knots a boat that starts a tack without enough way on stops head to
+   wind, and the strategy layer has no concept of building speed before tacking. This is
+   a STRATEGY-layer thread, not an avoidance one, which is the right place to be now that
+   `applyAvoidance` is exhausted.
