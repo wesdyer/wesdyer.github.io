@@ -75,6 +75,45 @@ const check = (name, cond, detail) => {
 
             if (broken) return { broken, arcs, wps: wps.length, navCells: grid.nav.reduce((x,y)=>x+y,0) };
 
+            // STEER, DON'T STAIR-STEP. pathBetween returns cell centres; through a
+            // corridor barely wider than the clearance bar (redrock's north exit is
+            // 46-65u of true rock-to-rock water, admitted by the grid's sub-point
+            // sampling) a cell CENTRE can sit closer to rock than the hull is wide,
+            // while the channel's centreline clears fine. A correct sailor holds the
+            // middle of a narrow channel, so points that stand close to land are
+            // nudged (within half a cell, so the path is the same path) to the
+            // position of greatest land clearance. The hull-in-land standard below
+            // is untouched — this is the driver steering, not the test bending.
+            const landAll = state.course.landShapes || [];
+            const landDistAt = (x, y) => {
+                let best = 1e9;
+                for (const isl of landAll) {
+                    if (Math.hypot(x - isl.x, y - isl.y) > (isl.radius || 0) + 400) continue;
+                    const v = isl.vertices;
+                    for (let e = 0; e < v.length; e++) {
+                        const a2 = v[e], b2 = v[(e + 1) % v.length];
+                        const vx = b2.x - a2.x, vy = b2.y - a2.y;
+                        let t = ((x - a2.x) * vx + (y - a2.y) * vy) / (vx * vx + vy * vy || 1);
+                        t = t < 0 ? 0 : t > 1 ? 1 : t;
+                        const d = Math.hypot(x - (a2.x + vx * t), y - (a2.y + vy * t));
+                        if (d < best) best = d;
+                    }
+                }
+                return best;
+            };
+            for (const p of full) {
+                let bd = landDistAt(p[0], p[1]);
+                if (bd >= 44) continue;
+                for (const r of [12.5, 25]) {
+                    for (let k8 = 0; k8 < 8; k8++) {
+                        const a8 = k8 / 8 * Math.PI * 2;
+                        const nx = p[0] + Math.cos(a8) * r, ny = p[1] + Math.sin(a8) * r;
+                        const d8 = landDistAt(nx, ny);
+                        if (d8 > bd) { bd = d8; p[0] = nx; p[1] = ny; }
+                    }
+                }
+            }
+
             startRace();
             while (state.race.status === 'prestart') update(1 / 60);
             const boat = state.boats.find(b => b.isPlayer) || state.boats[0];
