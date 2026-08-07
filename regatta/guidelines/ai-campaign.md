@@ -8592,3 +8592,56 @@ river     | NO RECORDING (ask)  | r0A/B: med 272/273, in-360 80%/77%, land 350/3
   recovery med is 6.4s and both extension shapes are dead.
 - Queued behind these: give-way underlay (Push B remainder) + the VO-exit
   staleness de-escalation, judged on the big three when built.
+
+## ✅ SECOND LANDING — ORBIT-ARC LAND PROBE (P2 continued past the mandate)
+The rejected probe-cap named the residual: make the deflection COHERENT with
+the rounding. The arc probe does it geometrically — while a rounding is ARMED
+inside zone*1.5, the land-probe ray is cast along the CIRCLE the boat is
+sailing (radius max(70u, dist-to-mark), curving toward the mark's side of
+each candidate heading) instead of a straight line the turning boat will
+never sail. The hard-zone wall test keeps full authority along the arc: this
+moves WHERE the probe looks, not how much it cares.
+THE ROAD (three scopes, each earned by a measurement):
+  v1 unscoped: lake A/B paired med −9/−6 with land −31/−26% and the cove
+    mechanism VERIFIED (_lake_funnel on the arc tree: grounding episodes
+    90→36, stalled passes 41/78→12/74, deflection-at-grounding med 45.8°→0°)
+    — but river fins −5 with rubs ×2.1 (arc + 4kt set = fiction) and redrock
+    fins 259→235 pooled over four disjoint 8-seed sets.
+  current-class scope (arc OFF at _avCurMax ≥ 2kt): river BYTE-IDENTICAL
+    (verified 4-seed JSON identity).
+  v2 boat-clearance≥3 gate: WRONG discriminator — redrock still −17 pooled
+    while the lake win shrank to −4/−1 (the cove is clearance<3 water; the
+    gate turned the arc off exactly where it wins). Mark rings at 90u are
+    1.00 navigable on every venue — not the discriminator either.
+  DNF anatomy (_rr_dnf.js, tracked): the arc tree's extra redrock DNFs die
+    UNARMED, at 1.26kt, ~584u from mark-5 — IN THE THREAD QUEUE (11/13 vs
+    3/8 baseline). THE ARC ASSUMES AN UNOBSTRUCTED ORBIT; A QUEUE IS NOT ONE.
+  v3 queue gate (no arc when a parked rival <400u — the same parked test the
+    jam stamps use): redrock resolved NEUTRAL over SIX disjoint 8-seed sets,
+    48 seeds pooled: finishers 385→384 (set deltas +2/+2/−7/−3/−3/+8 = noise).
+FINAL GATES (all on the P3-landed baseline):
+  lake A: paired med −12 mean −11.3, land 9.11→5.63 (−38%), boat 2.73→2.04
+  lake B: paired med −12 mean −11.5, land 10.11→6.17 (−39%), boat 3.30→2.56
+    (both sets agree on EVERY metric; med 287/290 → 275/278)
+  redrock: 48-seed pooled fins −1 (NEUTRAL); land ≈ flat
+  bay A/B: 0/−2 med, rubs 2.16→1.95 / 1.62→1.83 (pooled flat) — neutral
+  ocean: med 0 mean −4.4, boat 2.49→1.88, pens down — neutral-positive
+  river: byte-identical (current-class scope, verified); arctic byte-identical
+    by construction (openWaterAv false); seatrials byte-identical (no armed
+    roundings on a gates-only course).
+Goldens fully re-recorded on the final code, PASS. NEW ANCHORS: lake
+  ocean_bench_p2b3lakeA/B, redrock ocean_bench_p2b3rr{A..F} (+ rrbase{C..F}
+  clean-tree baselines), bay bay_bench_p2b3bayA/B, ocean ocean_bench_p2b3oc;
+  arctic/seatrials/river carry (p3v2arcA/B, eval_results, r0A/B).
+LAKE STANDING: med 282/289 → 275/278 vs human 223/209.6 — the gap closes
+  ~12s AND the grounding dirt that defined the venue drops ~38%.
+
+## The venue table, FINAL (post both landings; human = traj recordings; river fleet-only)
+venue     | human med/best      | pre-session bot                          | post-session bot (final HEAD, both landings)
+bay       | 226.2 / 217.8, 0 impacts | 236 / 239, boat 1.91/1.93, pen 0.43/0.48 | 236 / 237 (p2b3bayA/B), boat 1.95/1.83, pen 0.44/0.43, OCS 0.6/1.1% — NEUTRAL
+ocean     | 182.5               | 192 (ph0oc post-merge re-baseline)       | 192 (p2b3oc), boat 1.88, mark 0.26, pen 0.39 — NEUTRAL-POSITIVE dirt
+lake      | 223 / 209.6         | 282 / 289, land 7.77/9.68               | 275 / 278 (p2b3lakeA/B), land 5.63/6.17 (−38/−39%), boat 2.04/2.56 ← ARC LANDING
+redrock   | ~227 / 206.6 (s2: 214.7) | med 687/613, fins 56+59/72, pens 5.97/5.50 | med ~604/585 region, fins 385→384 over 48 seeds ≡ P3 anchors 64+64/72 med 637/593, pens −20% ← CONGESTION LANDING (arc neutral)
+arctic    | 212.1 / 190.4       | med 425/451, in-420 70/54, floe 30.3/34.2 | med 413/450, in-420 75/53, floe 32.1/30.3, boat 12.5/9.7 (p3v2arcA/B; arc byte-identical)
+seatrials | ~190 / 180.9        | 199.65 / 194.23, OCS 15.44%              | UNCHANGED — byte-identical through both landings
+river     | NO RECORDING (ask)  | r0A/B med 272/273, in-360 80/77%, land 350/375 | UNCHANGED — byte-identical through both landings (current-class scopes)
