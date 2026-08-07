@@ -1609,6 +1609,67 @@ class BotController {
                 // Left at cell granularity — the waypoint-ahead pruning below turns the
                 // stair-steps into a smooth carrot ~170u in front of the boat, and any
                 // string-pulled shortcut would hug the very corners the weights avoid.
+                // CONGESTION-PRICED ROUTE CHOICE. Stamp the cells around rivals
+                // that are PARKED right now (<1 kt, racing legs) so the router
+                // prices the queue behind them — measured on redrock: med
+                // 25-35 s parked per boat-leg (p90 98-130 s), up to 3 boats
+                // simultaneously in one 200u bin of the north thread, while a
+                // near-equal line goes unsailed. Re-stamped at every replan
+                // (2-3 s), so a jam that clears stops pricing within one
+                // replan. Route CHOICE only — nobody holds station, the
+                // second-arriving boat just stops buying the parked lane.
+                if (botGrid._jamIds && botGrid._jamIds.length) {
+                    for (const idJ of botGrid._jamIds) botGrid._jam[idJ] = 0;
+                    botGrid._jamIds.length = 0;
+                }
+                // NOT ON STRONG-CURRENT VENUES: in a 2+ kt stream a sub-1kt
+                // boat is PINNED BY THE WATER (river's chute: grinding the
+                // bank against 3.8-5.2 kt), not queuing — and the chute has no
+                // alternative lane, so pricing the "jam" only deformed routes
+                // into rock (river fins 119→107/114→105, land +32%/+21% under
+                // the unscoped stamp; byte-identical with it off). Same
+                // venue-class knee as the ground-frame probe work: max blended
+                // current over navigable cells >= 2.0 kt. Current-free venues
+                // compute 0 here without touching getCurrentAt (no regions).
+                if (state.course._avCurMax === undefined) {
+                    let mCJ = 0;
+                    const gCJ = state.course.botGrid;
+                    if (gCJ && (state.course.currentRegions || []).length) {
+                        for (let yCJ = 0; yCJ < gCJ.n; yCJ += 4) for (let xCJ = 0; xCJ < gCJ.n; xCJ += 4) {
+                            if (!gCJ.at(xCJ, yCJ)) continue;
+                            const cwJ = getCurrentAt(gCJ.x0 + (xCJ + 0.5) * gCJ.res, gCJ.y0 + (yCJ + 0.5) * gCJ.res);
+                            if (cwJ && cwJ.speed > mCJ) mCJ = cwJ.speed;
+                        }
+                    }
+                    state.course._avCurMax = mCJ;
+                }
+                if (this.boat.raceState.leg >= 1 && state.course._avCurMax < 2.0) {
+                    for (const oJ of state.boats) {
+                        if (oJ === boat || oJ.isPlayer || oJ.raceState.finished) continue;
+                        if (oJ.raceState.leg < 1 || oJ.speed * 4 >= 1.0) continue;
+                        if (Math.hypot(oJ.x - boat.x, oJ.y - boat.y) > 1500) continue;
+                        // A queue AT a mark is the rounding itself — every boat
+                        // must pass that water and routing "around" it detours
+                        // the approach into whatever surrounds the mark (lake's
+                        // cove: land — v1 unscoped cost lake A +5 paired med,
+                        // land +30%). Only CORRIDOR jams are priceable; skip
+                        // parked boats inside any mark's 250u funnel.
+                        let atMark = false;
+                        for (const mkJ of (state.course.marks || [])) {
+                            if (Math.hypot(oJ.x - mkJ.x, oJ.y - mkJ.y) < 250) { atMark = true; break; }
+                        }
+                        if (atMark) continue;
+                        if (!botGrid._jam) { botGrid._jam = new Uint8Array(botGrid.n * botGrid.n); botGrid._jamIds = []; }
+                        const cJ = botGrid.cell(oJ.x, oJ.y);
+                        for (let dyJ = -2; dyJ <= 2; dyJ++) for (let dxJ = -2; dxJ <= 2; dxJ++) {
+                            const xJ = cJ[0] + dxJ, yJ = cJ[1] + dyJ;
+                            if (xJ < 0 || yJ < 0 || xJ >= botGrid.n || yJ >= botGrid.n) continue;
+                            const idJ = yJ * botGrid.n + xJ;
+                            if (!botGrid._jam[idJ]) botGrid._jamIds.push(idJ);
+                            if (botGrid._jam[idJ] < 250) botGrid._jam[idJ]++;
+                        }
+                    }
+                }
                 const seg = window.SailCheck.pathSailable(botGrid, [boat.x, boat.y], [destX, destY]);
                 if (seg && seg.length > 1) {
                     const pts = seg.map(q => ({ x: q[0], y: q[1] }));
