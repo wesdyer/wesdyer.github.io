@@ -8189,8 +8189,13 @@ arctic    | 212.1 / 190.4 (schema-2 current build: 215.0/194.7, ice med 2.0) | m
 seatrials | ~190 / 180.9        | 199.59 / 194.13, OCS 14.78%, pen 0.40      | 199.65 / 194.23, OCS 15.44% (within 1σ), pen 0.40, boat 0.51
 Note: bay med carries a real behavioural improvement in the start (gun
 crossing p90 18.2→11.7s, OCS A-set 2.8→0.6%) at a neutral pooled clock
-(four disjoint sets: +4.3/−2.6/−1.1/+1.0 mean paired). Ocean venue file
-remains OUT OF FREEZE (owner edit Aug 5 22:58 postdates the freeze stamp);
-all on-disk ocean baselines carry the current fingerprint `4a64ff07`, so
-A/Bs are valid — `npm run venues:check` fails on ocean until the owner
-promotes or re-freezes.
+(four disjoint sets: +4.3/−2.6/−1.1/+1.0 mean paired).
+
+## OCEAN PROMOTED (owner decision, 2026-08-06 night)
+The Aug-5 22:58 "Venue fixes" cut of ocean.venue.js is now the benchmark:
+re-frozen at fingerprint `4a64ff07746434a4` (was `b1b5e90f68570567`).
+venues:check green on all four benchmark venues. Baselines on the old cut
+are RETIRED — do not compare across the fingerprint line. The live ocean
+anchors (`ocean_bench_finaloc2` 192, `ocean_bench_meter3oc`,
+`ocean_bench_vo4oc` 192.5) were all recorded on the new cut and stand
+unchanged; no re-runs were needed.
