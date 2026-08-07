@@ -7843,3 +7843,20 @@ Unfinished 8 -> 5; only ONE truly parked (0.62 kt at the thread, (-54,1344));
 the rest are MOVING at 3.5-8 kt — lateness, not stalls. The hard-stuck class is
 substantially gone; the residual is one-lane throughput physics (9 boats, one
 46u thread) plus the leg-1 start class. Classical redrock closes here.
+
+## NEXT-PUSH P1, MEASURED TONIGHT — lake mark-3's lee-shore pocket
+16-seed ground attribution on the final HEAD (1084 hits): 71% of all lake
+groundings are on LEG 2, and the top spatial clusters ((2800,-1200) 257,
+(2800,-800) 108, (2400,-800) 98, (2000,-800) 79) are all within ~600u of
+mark-3 (2459,-867) — roughly HALF the venue's grounding dirt in one pocket.
+76% of hits at under 0.5 kt, 59% in 6-8 kt of breeze, 91% liveness normal,
+only 19% mid-wiggle: not light air, not stuck-recovery — the rounding QUEUE
+parked against a lee shore. Candidate shape: a metered/queued boat near a lee
+shore holds station TO WINDWARD (feather close-hauled) instead of parking on
+the drift line — a new action, not a price. Needs 20-seed lake benches per
+iteration (today's noise lesson) and the bay/redrock funnel guards.
+
+Bay pointer: per-leg splits vs the human now align within ~+-6s leg-for-leg
+mid-race; the residual concentrates at the GUN (median first-crossing 6.5s
+after the start) and the final leg. The start system is sacred tuning — take
+the OCS/start ledger first.
