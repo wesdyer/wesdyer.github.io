@@ -8916,3 +8916,25 @@ river     | 161.3 (1 lap)       | r0A/B med 272/273, in-360 80/77%, land 350/375
   candidate here is start-adjacent; the start stays sacred.
 - Closed families extended: VO-exit latch release; closing-lead route
   pricing (both shapes); tight-slot occupancy stamps (byte-inert).
+
+## ADDENDUM — the underlay DESIGN DOSSIER (completed with remaining push time)
+_cpa_onset_probe + _defl_hist on HEAD, the numbers the build parameterizes on:
+  ONSET (redrock 7878 onsets / river 2624): HALF of rival onsets fire on
+    encounters that would pass at dCPA ≥ 191u / 212u med untouched (p75
+    313/329); onset range dNow med 316/310u. τ: tCPA ≤6s covers 90%/78% —
+    an ORCA-style horizon of ~6s fits the encounters. 52%/49% of ALL
+    avoidance onsets have NO closing rival — canyon/bank land probes are
+    half the deflection load on the constrained class by onset count.
+  ROLE at onset: NONE 40/43% | GIVE_WAY 38/37% | STAND_ON 21/20% — the
+    responsibility split has a full spectrum to key on.
+  RESPONSE (deflection histograms, transit frames): redrock 63% of frames
+    deflected, river 38%. The spectrum is SPREAD across the fan (pricing
+    does choose) but the wide-dodge rungs 1.2/1.6 rad (69/92°) carry 23.4%
+    of redrock's and 17.0% of river's deflected time — those two rungs are
+    the excess-distance generator, and the stand-on dev medians land on
+    fan values exactly (0.5/0.6/0.7/0.8/1.2 rad). Her ledger: 6.5° med.
+  Shape this implies (next push, not built): a graded response floor —
+    onset honesty (don't engage at dCPA ≫ pairSafe), τ ≈ 6s, role-split
+    alpha, and finer/curved low-rungs so the argmin can buy 5-15°
+    responses in constrained water instead of jumping to 69°. Judge full
+    stack per the pointers above; the lake caution binds the design.
