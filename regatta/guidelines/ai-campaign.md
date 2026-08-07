@@ -8052,3 +8052,150 @@ med 301/340 solo gap stands confirmed same-build. What the laps establish:
     fire their deviation at 564-567u range in ~96% of encounters, both roles.
   - SOLO-ICE PROFILE (the residual's target): min floe clearance 15-22u,
     p5 39-51u, at speed, every lap. Corpus now 24 arctic laps, 5 current-build.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-08-06 NIGHT PUSH (started 19:31 PDT, HEAD a2d5864 = dfa59c8 + a PNG)
+# ═══════════════════════════════════════════════════════════════════════════
+
+## ⚡ P2 CLOSED AS MEASUREMENT — THE START LEDGER SAYS THE GUN LATENESS IS TRAFFIC
+`_start_ledger.js` (new, tracked): per boat-start, captures the COMMIT FRAME
+(`startCommitted` flipping false->true; `getApproachTime` is pure, so the
+controller's own estimate is recomputed there), the exact per-boat BUF
+(0.5 + traits.startBufAdj), the first leg-0 crossing gun-relative, OCS at the
+gun by the hull test, and a 10Hz post-commit traffic ledger (avoidance
+deviation > 0.12 rad, risk HIGH+, commanded speed < 0.95). Bay 20@9100 +
+seatrials 20@100 on clean HEAD (360 boat-starts):
+  - SEATRIALS clean crossers (149): median crossing +0.60s after the gun,
+    estimator error median 1.03s — THE ESTIMATE IS CALIBRATED when nothing
+    interferes. OCS 16.1% (matches the 14.78% bench), and the OCS class is a
+    13.4u-median overshoot at the gun — a fraction of a second against the
+    0.5s buffer, timing noise, not gross mis-estimation.
+  - BAY clean crossers (179, 0 OCS): median crossing +5.62s (the known 6.5s
+    residual), estimator error median 5.95s — but BLOCKED median 7.3s
+    (avoidance deviation alone 5.0s of the 11.7s median realized run), and on
+    the late tail (>4s, 68% of boats) blocked (9.2s) >= the whole estimate
+    inflation (8.2s). The "estimate error" IS the traffic: the realized run
+    is what gets bent.
+VERDICT per the sacred-tuning rule: estimate error does NOT dominate — no
+calibration candidate is justified, the start stays untouched. The bay gun
+residual is the SAME capability gap as the onset-at-detection-range class:
+boats deflecting in the run-in for encounters that resolve themselves. Push
+B's VO-entry onset is therefore also the start candidate, and the start
+ledger becomes its gate instrument.
+
+## ⛔ P1 REJECTED with mechanism — MARK-QUEUE RESERVATION (treeQRES v1, treeQW v2)
+The researched Push-A design (RRS-18-ordered transit; turn-not-come holds
+outside the pocket windward of the drift line; turn-come proceeds AT SPEED
+with the metering throttle waived), benched exactly per the brief:
+  v1 lake A/B: paired -2.0/-1.0 med, land 7.77->9.17 and 9.68->10.34, boat
+    and mark contacts up BOTH disjoint sets. v1 redrock A/B: finishers
+    56->43 and 59->57, boat contacts up both sets, pens up.
+  v2 (waiver-only, holds deleted): lake A and redrock A results IDENTICAL
+    to v1's — the holds almost never fired; ALL of the damage was the
+    WAIVER. "Entitled boat proceeds at full speed into a jammed pocket"
+    re-creates the pile-in the metering was landed to prevent; there is no
+    discrete capacity slot for a reservation to exploit in 10Hz physics
+    with liveness-parked boats draining on their own schedule.
+The queue-reservation family closes at two forms x two venues x two sets.
+Station-keeping among rivals is now 0-for-8 lifetime. Arrival spacing
+(the landed metering) IS the queue discipline this engine can express;
+the lake mark-3 pocket's open direction remains QUEUE-INTERIOR
+spacing/berth INSIDE the funnel (per the Aug-6 attribution), untouched by
+any outside-the-pocket mechanism.
+
+## ⚡ LANDED — ONSET AT VO ENTRY (Push B's measured piece), four iterations to scope
+The soft proximity gradient (script.js ~:3160, the 1/d^2 against every boat
+whose 4s projection comes inside 250u, role-blind and risk-blind — the term
+the file's own comment ties to "86% of onsets already clearing by 80u,
+median 11deg deflected anyway") is now suppressed per rival when the
+truncated velocity obstacle is NOT entered on current courses (tau 8s, CPA
+80u, heading-based metrics per Round-10; boats inside 130u always keep the
+nudge). The scoping took four measured iterations and the lesson IS the
+scoping:
+  v1 unscoped:            bay A +4.5 BUT lake land +29% boat +31%, arctic
+                          paired -15 in-time -8. Constrained water needs
+                          the early spacing.
+  v2 current-cell wide:   lake still dirty; redrock A swung +54 -> -93 on
+                          the same seeds (8-seed redrock CANNOT resolve
+                          this change class — across-trees noise).
+  v3 CPA-point wide:      bay best (+5.5, boat contacts DOWN 2.14->1.91)
+                          but lake STILL +25% dirt at ~10% suppression
+                          active — the damage is not local to where the
+                          nudge is dropped; losing en-route spacing
+                          anywhere changes the arrival configuration at
+                          the corridors.
+  v4 VENUE-CLASS gate (landed): suppression active only where the
+                          navigable water is open-scale — clearance p50
+                          over navigable cells >= 10 (measured knee:
+                          bay 10 / ocean 42 / seatrials 40 vs lake 3 /
+                          redrock 2; `_clear_dist.js` new, tracked), on
+                          top of the openWaterAv floe gate. Same shape as
+                          noSubsample: a venue-class physical property,
+                          not a venue hack.
+FINAL v4 BENCHES: lake, redrock, arctic byte-identical to HEAD (verified
+by identical bench JSONs). Bay clock NEUTRAL at four disjoint 20-seed sets
+(+4.3/-2.6/-1.1/+1.0 mean paired), contacts pooled flat, A-set OCS
+2.8->0.6. Ocean neutral-plus (mark contacts 0.43->0.26). Seatrials
+199.52/194.43 -> 199.65/194.23, pen 0.41->0.40, coll_boat 0.51 flat,
+OCS 14.78->15.44% (inside the +-0.84 binomial sigma at n=1797). No kill
+criterion met on any venue.
+THE MECHANISM WIN (why it lands despite a neutral clock — the capability
+is the goal, and the researched plan directed landing exactly this piece):
+  - `_cpa_onset_probe` bay: onsets with NO closing rival 26% -> 16%;
+    onset tCPA med 1.1 -> 0.8s; dCPA at onset 179 -> 219u.
+  - `_fleet_ledger` bay close crossings (no tack, CPA < 150u): at-CPA
+    deflection med 22.0 -> 11.2 deg (human 8.0; the plan's target was
+    "under 10"), ZERO(<5deg) 20% -> 30%, p90 103 -> 66 deg.
+  - `_start_ledger` bay: gun-crossing p90 18.2 -> 11.7s (A-set seeds).
+The full RRS-ORCA underlay (minimal escape sizing, alpha split by role,
+polar-lobe feasibility) now sits on top of THIS onset predicate; the VO
+membership set (`this._voIn`) and the venue/water gates are the underlay's
+skeleton, already in the shipping cost function behind `window.__AV`
+overrides (tau/r/wide).
+
+## Minimal-escape candidate prototyped and INERT — quantization is no longer binding
+treeME: for the give-way boat vs her VO-entered threat, bisect the
+continuous smallest clearing offset per side (CPA >= 86u, heading-based)
+and add both to the fan. Lake byte-identical by construction; bay smoke
+unchanged; `_fleet_ledger` close crossings 11.8 med / ZERO 32% vs the
+landed 11.2/30% — no mechanism movement on the stat it targets. After the
+VO-onset landing the keep-clear zero-at-clearance + pow(3) deviation
+already finds the small escapes the rungs allow; the residual vs the human
+(11.2 vs 8.0 deg at CPA; holds 30% vs 40%) is NOT fan resolution. Next
+session's underlay question is the STAND-ON/priors side (her extra 10% of
+outright holds) and the alpha split, not finer give-way offsets. Not
+benched further, not landed — an action that never wins the argmin is not
+an action.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-08-06 NIGHT PUSH — CLOSE (HEAD `abb62aa`)
+# ═══════════════════════════════════════════════════════════════════════════
+Landed: `abb62aa` ONSET AT VO ENTRY (see above). Rejected with mechanism:
+the mark-queue reservation family (P1, two forms). Closed as measurement:
+the start ledger (P2 — lateness is traffic; the start stays sacred).
+Prototyped and set aside: the minimal-escape candidate (inert). Goldens
+re-recorded and PASS 20/20 (exactly the six wide venues changed); npm test
+= the 6 known editor failures. Lake/redrock/arctic byte-identity vs the
+evening anchors re-verified with full fresh benches on the final HEAD
+(fin08* == anchors, JSON-identical, all six sets).
+
+## The venue table (final HEAD `abb62aa`; human = traj recordings, like-for-like)
+venue     | human med/best      | pre-session bot (dfa59c8)                  | post-session bot (abb62aa)
+bay       | 226.2 / 217.8, 0 impacts | 241 / 237 (A/B sets), OCS 2.8/1.1%, boat 2.14/1.79, pen 0.53/~ | 236 / 239, OCS 0.6/1.1%, boat 1.91/1.93, land 0.09/0.05, mark 0.50/0.53, pen 0.43/0.48
+ocean     | 182.5               | 192, boat 1.98, mark 0.43                  | 192.5, boat 1.93, mark 0.26, pen 0.40, OCS 0%
+lake      | 223 / 209.6         | 282 / 289, boat 2.56/3.44, land 7.77/9.68, pen 0.66/0.79, 180/180 | UNCHANGED (byte-identical, re-verified)
+redrock   | ~227 / 206.6 (schema-2: 214.7, 0 contacts) | med 674.5/613, fins 56+59 of 72, best 318/286, boat 30.8/27.9, land 199/193, pen 5.97/5.50 | UNCHANGED (byte-identical, re-verified)
+arctic    | 212.1 / 190.4 (schema-2 current build: 215.0/194.7, ice med 2.0) | med 425/451, best 262/239, in-time 70/54, fins 144/140 of 144 | UNCHANGED (byte-identical, re-verified)
+seatrials | ~190 / 180.9        | 199.59 / 194.13, OCS 14.78%, pen 0.40      | 199.65 / 194.23, OCS 15.44% (within 1σ), pen 0.40, boat 0.51
+Note: bay med carries a real behavioural improvement in the start (gun
+crossing p90 18.2→11.7s, OCS A-set 2.8→0.6%) at a neutral pooled clock
+(four disjoint sets: +4.3/−2.6/−1.1/+1.0 mean paired).
+
+## OCEAN PROMOTED (owner decision, 2026-08-06 night)
+The Aug-5 22:58 "Venue fixes" cut of ocean.venue.js is now the benchmark:
+re-frozen at fingerprint `4a64ff07746434a4` (was `b1b5e90f68570567`).
+venues:check green on all four benchmark venues. Baselines on the old cut
+are RETIRED — do not compare across the fingerprint line. The live ocean
+anchors (`ocean_bench_finaloc2` 192, `ocean_bench_meter3oc`,
+`ocean_bench_vo4oc` 192.5) were all recorded on the new cut and stand
+unchanged; no re-runs were needed.

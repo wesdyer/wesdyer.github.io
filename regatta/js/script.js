@@ -2885,6 +2885,88 @@ class BotController {
         const threatSpiral = !!(this.threatBoat && this.threatBoat.raceState.penalty
             && this.threatBoat.controller && this.threatBoat.controller.penaltySpin);
 
+        // ONSET AT VO ENTRY, not at detection range (the RRS-ORCA underlay's
+        // measured piece). Per-encounter ledgers on the owner's schema-2
+        // recordings (redrock n=17, arctic n=83, both roles): 81-100% of
+        // encounters had an UNMODIFIED CPA >= 80u — nothing needed doing —
+        // and her open-water give-way deflection is 7.5 deg; the bots fire
+        // theirs at ~565u range in ~96% of encounters, at detection, against
+        // threats that resolve themselves. The term that does it is the soft
+        // proximity gradient below: an unthresholded 1/d^2 against EVERY
+        // boat whose 4s projection comes inside 250u, role-blind and
+        // risk-blind. Gate it on the truncated velocity obstacle actually
+        // being ENTERED on current courses — tCPA in (0, tau], CPA inside
+        // the owed gap — using the same heading-based metrics the risk
+        // ladder trusts (Round-10: projections stay heading-based). Boats
+        // already close (inside 130u) keep the gradient: that is spacing
+        // pressure in a pack, not a swerve at range. The hard Rule-14
+        // collision term is untouched — a boat genuinely converging is
+        // still avoided; only the deflection against self-resolving
+        // crossings goes away. Rivals only: floes never enter this set.
+        // SCOPE: the crossing must LAND in wide water. Both constrained-
+        // water benches said the same thing (lake A: land +29%, boat +31%;
+        // arctic A: paired -15s, in-time -8): where the water closes
+        // escapes, a converging rival is a real constraint and the early
+        // spacing nudge is how the fleet keeps its options. And the wrong
+        // place to test that is my CURRENT cell — a crossing that begins in
+        // open water can land in a corridor four seconds later, which is
+        // exactly lake's failure mode. So the nudge is suppressed per rival
+        // only when the velocity obstacle is NOT entered AND my projected
+        // position at (truncated) tCPA sits in wide water: >= 8 cells of
+        // grid clearance, the measured knee that separates bay/ocean/
+        // seatrials open water (76-100% of sailed cells) from lake's
+        // corridors (10%). Projection stays heading-based (Round-10).
+        // Floe venues are fully out of scope: ice does not reciprocate and
+        // the pack constrains everything — old behavior byte-for-byte.
+        const AVQ = (typeof window !== 'undefined' && window.__AV) ? window.__AV : {};
+        const VOTAU = (AVQ.tau != null ? AVQ.tau : 8.0);
+        const VOR = (AVQ.r != null ? AVQ.r : 80);
+        const VONEED = (AVQ.wide != null ? AVQ.wide : 8);
+        if (!this._voIn) this._voIn = new Set(); else this._voIn.clear();
+        // VENUE-CLASS GATE (the fourth iteration's lesson, and the same
+        // shape as noSubsample scoping off icy grids): three within-venue
+        // scopings — none, current-cell clearance, CPA-point clearance —
+        // all left lake's contact classes up ~+25% while its clock stayed
+        // flat. Losing en-route spacing ANYWHERE in corridor-scale water
+        // changes the configuration the fleet ARRIVES at its corridors
+        // with; the damage shows up far from where the nudge was dropped.
+        // So the suppression is active only in venues whose navigable
+        // water is open-scale: clearance p50 over navigable cells >= 10
+        // (measured: bay 10, ocean 42, seatrials 40 — vs lake 3, redrock
+        // 2; arctic is already out via the floe gate). Computed once per
+        // grid and cached.
+        let clVO = null, gVO = null;
+        if (openWaterAv) {
+            gVO = state.course.botGrid;
+            if (gVO && !gVO._clear && window.SailCheck && window.SailCheck.clearanceField)
+                gVO._clear = window.SailCheck.clearanceField(gVO);
+            clVO = gVO && gVO._clear;
+            if (clVO && gVO._voWideVenue == null) {
+                const navVO = [];
+                for (let yv = 0; yv < gVO.n; yv++) for (let xv = 0; xv < gVO.n; xv++)
+                    if (gVO.at(xv, yv)) navVO.push(clVO[yv * gVO.n + xv]);
+                navVO.sort((a, b) => a - b);
+                gVO._voWideVenue = navVO.length > 0 && navVO[Math.floor(navVO.length / 2)] >= 10;
+            }
+        }
+        this._voActive = !!(openWaterAv && clVO && gVO._voWideVenue);
+        if (this._voActive) {
+            const spdVO = boat.speed * 60;
+            const hxVO = Math.sin(boat.heading), hyVO = -Math.cos(boat.heading);
+            for (const obV of state.boats) {
+                if (obV === boat || obV.raceState.finished) continue;
+                const mVO = getRiskMetrics(boat, obV);
+                if (mVO.distCurrent < 130 ||
+                    (mVO.tCPA > 0 && mVO.tCPA < VOTAU && mVO.distCPA < VOR)) { this._voIn.add(obV); continue; }
+                // VO not entered — but keep the nudge anyway if the crossing
+                // lands in narrow water.
+                const tVO = (mVO.tCPA > 0 ? Math.min(mVO.tCPA, VOTAU) : 4.0);
+                const pxVO = boat.x + hxVO * spdVO * tVO, pyVO = boat.y + hyVO * spdVO * tVO;
+                const cVO = gVO.cell(pxVO, pyVO);
+                if (!gVO.at(cVO[0], cVO[1]) || clVO[cVO[1] * gVO.n + cVO[0]] < VONEED) this._voIn.add(obV);
+            }
+        }
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -3178,7 +3260,8 @@ class BotController {
                         // anyway. The hard Rule-14 collision term below is untouched,
                         // so a boat that is genuinely not keeping clear is still
                         // avoided; only the standing-on nudge goes away.
-                        if (!(this.avoidanceRole === 'STAND_ON' && other === this.threatBoat))
+                        if (!(this.avoidanceRole === 'STAND_ON' && other === this.threatBoat)
+                            && (!this._voActive || this._voIn.has(other)))
                             proximityCost += 5000 / (distSq + 10);
                     }
                 }
