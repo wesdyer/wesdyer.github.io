@@ -8021,3 +8021,19 @@ This is direct per-encounter evidence for Push B's design premise: the
 give-way response should begin when the velocity obstacle is actually
 entered, sized to the minimal escape — not at detection range. One race, n=17;
 re-run on every new schema-2 recording.
+
+## ⚡ OWNER QUESTION ANSWERED — the arctic LEADER does finish, and it re-weights the plan
+"Does the leader typically finish on arctic? They should have less boat-on-boat."
+Per-seed winners (canyonarcA/B, 16 seeds each): med 301/340, best 239/262 —
+vs human 212.1 med / 190.4 best — with boat contacts 1.5-3.0 (fleet avg 12-13,
+essentially traffic-free) and floe contacts 7.5-14 (fleet avg 30-34, still
+6-12x the human's 1.2). VERDICT: the leader is clean of traffic and STILL
+~45-60% slow. Arctic's residual is TWO components, both real: (1) solo
+pack-sailing ~90-130s (line choice + wiggle recovery — the leader's whole gap);
+(2) traffic ~another 120s from leader to fleet median. The earlier "46%
+boat-threat" framing was fleet-impact-weighted, i.e. mid-pack. PLAN RE-WEIGHT:
+Push C's scenario pool should be SOLO ice scenes first (gap approach, wiggle
+entry, pack threading) — the leader-vs-human delta is the training corpus —
+with squeeze scenes second; Push B keeps the mid-pack 120s + the open-venue
+traffic case (today's ledger: 100% of encounters needed zero, bots move at
+570u).
