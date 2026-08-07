@@ -1230,7 +1230,7 @@ from recombining these:
 | **Static hard** | fixed, collision | spires, coral heads, cones, boulders, pylons, islets |
 | **Drifting hard** | moves, collision *(built — Arctic)* | floes, bergs, **bayou logs** |
 | **Drifting soft** | moves, drag *(momentum-scaled, built)* | pumice rafts, weed mats, glass patches |
-| **Static soft** | fixed, drag / soft grounding | shoals, reef shelves, weed beds, mud banks |
+| **Static soft** | fixed, drag *(built — `shoal`)* | shoals, reef shelves, weed beds, mud banks |
 | **Emergent** | appears mid-race | drying sandbars, calved ice |
 | **Cyclic** | dangerous on a learnable rhythm | **erupting cones**, cargo-ship schedule |
 | **Reactive** | responds to the player | **gators**, **flamingo flock**, penguins, loons |

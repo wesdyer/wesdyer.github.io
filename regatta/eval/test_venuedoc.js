@@ -222,6 +222,17 @@ console.log('\nleg count does not leak between venues');
                         legs: state.race.totalLegs,
                         poly: !!(c.boundary && c.boundary.poly),
                         land: (c.landShapes || []).length,
+                        // What the DOCUMENT says its solid ground is: fixed, and not awash.
+                        // Paired with the runtime count above, this asserts the compile
+                        // drops none of it — the fact the old hardcoded 82 reached for.
+                        // (No backticks in here: this whole probe is a template literal.)
+                        docLand: (() => {
+                            const d = window.VenueDoc.get(v);
+                            return window.VenueDoc.shapes(d).filter(s => {
+                                const t = window.VenueDoc.traits(s);
+                                return t.motion === 'fixed' && !t.awash;
+                            }).length;
+                        })(),
                         // What the ROUTE asks for, so the check below can compare the
                         // reported type against the authored course instead of a list.
                         rounds: (c.route || []).some(e => e && e.kind === 'round'),
@@ -254,7 +265,17 @@ console.log('\nleg count does not leak between venues');
           ALL.map(v => `${v}:${got[v].type}${got[v].rounds ? '(rounds)' : ''}`).join(' '));
     check('every arena is a polygon', ALL.every(v => got[v].poly), 
           ALL.filter(v => !got[v].poly).join(', '));
-    check('the river kept its 82 banks', got.river.land === 82, String(got.river.land));
+    // ⚠️ DERIVED, for the same reason the type check above is. This asked for the river's
+    // "82 banks" — true of one design of one venue, and it went red the day that venue was
+    // redrawn with 32 isles and 9 shoals, reporting a redesign as a regression. What it was
+    // really guarding is that a document's solid ground all survives the compile, so that
+    // is what it now says, for every venue. Awash shapes are excluded on both sides: a
+    // shoal is deliberately not land, and counting it here would make the check demand the
+    // bug it exists to catch.
+    const lostLand = ALL.filter(v => got[v].land !== got[v].docLand);
+    check('every solid shape in a document becomes land at runtime', lostLand.length === 0,
+          lostLand.map(v => `${v}: doc ${got[v].docLand} -> runtime ${got[v].land}`).join(', ')
+          || ALL.map(v => `${v}:${got[v].land}`).join(' '));
     check('Glacier Sound still rounds two legs', got.arctic.legs === 2, String(got.arctic.legs));
 }
 

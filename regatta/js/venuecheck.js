@@ -97,11 +97,18 @@ function runChecks(ctx) {
     const add = (level, id, title, detail, extra) =>
         out.push(Object.assign({ level, id, title, detail }, extra || {}));
 
-    // The FIXED shapes. The checks below are about geography a course is laid on — how far
-    // land sits from a mark, whether scenery reaches past the arena — and a drifting floe
-    // is somewhere else by the time the gun goes, so it is not that.
+    // The FIXED, SOLID shapes. The checks below are about geography a course is laid on —
+    // how far land sits from a mark, whether a boat physically fits between two coastlines,
+    // whether scenery reaches past the arena. A drifting floe is somewhere else by the time
+    // the gun goes, so it is not that; and an awash shape is not that either, for a
+    // different reason — every one of these checks asks whether a hull FITS, and a hull
+    // fits over a shoal at any width. Counting a bar as a wall would report a sailable
+    // course as unroundable and send a designer moving geometry that was already fine.
     const land = window.VenueDoc.shapes(doc)
-        .filter(s => window.VenueDoc.traits(s).motion === 'fixed');
+        .filter(s => {
+            const t = window.VenueDoc.traits(s);
+            return t.motion === 'fixed' && !t.awash;
+        });
     const bnd = compiled.boundary;
     const marks = compiled.marks || [];
     const rm = compiled.roundMark;
