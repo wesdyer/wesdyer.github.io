@@ -8307,3 +8307,99 @@ seatrials | ~190 / 180.9        | 199.65 / 194.23, OCS 15.44%, pen 0.40       | 
   stand-on attribution says the give-way side's visible response is ALSO the
   stand-on side's fix — 75-83% of stand-on deflections are reactions to
   give-way boats not clearing.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PLAN FOR THE NEXT PUSH — RESEARCHED 2026-08-07 MORNING (owner-directed)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner direction (verbatim intent): the human sails FAR better on lake, arctic
+and redrock — focus there now; bay/ocean/seatrials sit within ~4-5% and their
+last X% waits until the big gaps close. River has been ADDED to the roster;
+benchmark it first so we know where we stand.
+
+## P0 — RIVER (Sockeye Run): benchmark + analyze (NEW venue, no human reference)
+Venue frozen into the benchmark set 2026-08-07: `river @ 2520b114cb5c0ab4`
+(fingerprint.json; the other four re-verified matching — venues:check green).
+Document: windward-leeward 4 legs, 5 marks, cutoff 360, ~24 authored current
+regions (the stream "runs hard down the middle and dawdles along the banks"),
+rocky-bank shapes (the ~86 bank islands the avoidance perf work already
+prunes), region gusts. The capability card it likely tests: CURRENT-LANE
+CHOICE (a strategy-layer question the stack has never been benched on),
+narrow-water traffic (lake's class — expect navigable-clearance p50 < 10, so
+the VO-onset suppression should be OFF; verify with `_clear_dist.js`), and
+bank avoidance under drift.
+  P0 protocol:
+  1. check_raceable green (smoke started at plan time).
+  2. Anchors: 16-seed x 2 DISJOINT sets (9100/9200), fleet bench with leg
+     splits + contact classes (land=banks) + OCS + in-time under the 360
+     cutoff; label river_bench_r0A/B, stamped with the fingerprint.
+  3. Attribution pass: where does the time go — current-lane usage vs the
+     midstream (does the router price the current? VMG_eff vs ground speed),
+     liveness stalls on banks, start class, traffic queuing at marks.
+  4. NO human recording exists (river was in the no-recording list) — the
+     venue table carries fleet-only numbers until the owner races it; ask.
+  5. Capability mapping per the standing rule: name which existing capability
+     each river deficiency shares a line with (lake corridor spacing, redrock
+     thread, ocean current trim) — transfer targets before new mechanisms.
+
+## P1 — ARCTIC solo: stuck-recovery latency, scene-harness first
+The leader's whole 90-130s gap is solo pack-sailing; wiggle scenes are
+classical's MEASURED worst class (the rejected residual made them worse, the
+classical twin base rate is the reference). The wiggle detector waits 10-18s
+where the human recovers in seconds.
+  Candidate class: cut detection latency / earlier commit to the recovery
+  turn, judged FIRST on the surviving scene harness (180 harvested wiggle
+  scenes, paired deterministic replay, ~2.3s/scene — minutes per verdict via
+  `scn_heldout_eval.js`-style paired read with the candidate tree as "policy"),
+  THEN the full 16+16 canyonarcA/B gate. Ice-horizon knees are verified — do
+  NOT re-tune them; this is about the detector, not the horizons.
+  Second candidate if latency lands: lead choice on approach (opening vs
+  closing leads at longer range).
+
+## P2 — LAKE mark-3 pocket: queue-interior attribution -> ONE flowing candidate
+Half of ALL lake groundings are inside the 250u funnel radius where metering
+never acts (76% under 0.5kt, liveness normal — a QUEUE, not a stuck state;
+the wiggle fix will not touch it). Closed families stay closed: reservation,
+holds, station-keeping. Measure FIRST (same shape as the stand-on
+attribution): instrument the funnel interior — berth geometry of grounders vs
+survivors, who is parked where, what pushes the grounder onto the lee shore,
+roles and overlap state at grounding. Then ONE candidate expressed as flowing
+spacing/berth (arrival offset, exit-lane bias — whatever the measurement
+names). Judge on lake 20-seed x 2 disjoint sets + redrock finishers both
+sets + arctic byte-or-neutral (nonlocal rule).
+
+## P3 — REDROCK: congestion-priced route choice (measure first)
+The fleet buys ONE optimal lane (north thread) and queues for minutes; the
+owner's schema-2 lap sailed a southwest arc costing ~2s solo and finished
+214.7. The router prices time-cost but not occupancy. Measure: lane occupancy
+vs time on the thread, realized queue delay per boat, the bots' cost gap for
+the southwest arc (is it priced close?). Candidate: congestion term in route
+scoring so near-equal lines split the fleet — route CHOICE, not station-
+keeping, no closed family touched. Judge on finishers over BOTH 8-seed sets
+(8-seed redrock cannot resolve otherwise), plus lake 20x2 (nonlocal rule).
+
+## Standing
+- Give-way underlay (Push B remainder) stays queued BEHIND these, and when
+  built is judged ON the big three (arctic squeezes, redrock thread head-ons,
+  lake corridors) — constrained water is exactly where the VO-onset scoping
+  lesson bit.
+- The P2-named staleness candidate (de-escalate at VO exit + tCPA<0) waits
+  with it — same gate discipline.
+- Ingest any new schema-2 recording the day it lands (`_gw_ledger2.py`);
+  river/glowtide/lagoon/swamp still have NO human reference.
+- Close with the venue table on final HEAD — now SEVEN rows (river added,
+  fleet-only until a recording exists).
+
+## P0 SMOKE RESULT (recorded at plan time, 2 races)
+check_raceable river: half the fleet finishes inside the 360 cutoff, but the
+land gate FAILS at 22,156 shoreline collisions per boat-race (frame-scale —
+boats are grinding the banks for most of the race; boat rubs 253.9/boat-race,
+pens 1.7; furthest-leg spread {3:4, 4:14}). Per the owner ruling this is an
+AI DEFICIENCY, not an authoring problem. Leading hypothesis for P0's
+attribution to test FIRST: CURRENT SET COMPENSATION — the river's authored
+current is strong and spatially structured (24 regions, fast midstream/slack
+banks), and neither the steering projection nor the grid router has ever been
+benched against lateral set (ocean's current never punished the miss). Same
+physical-line question as floe drift: the thing moving is the WATER. Check
+where the 22k contacts happen (upwind legs vs downwind, mid-leg vs mark
+approach), whether boats are being SET onto the lee bank while aiming
+correctly in heading-space, and whether pathSailable prices current at all.
