@@ -8674,3 +8674,79 @@ bots deflect 66.5° med at 504u onset against her — river is below the
 VO-onset venue-class gate (clearance p50 5 < 10, suppression correctly off),
 so the give-way underlay remainder applies here too when it gets built.
 VENUE TABLE CORRECTION (river row): human = 161.3 (1 lap).
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PLAN FOR THE NEXT PUSH — RESEARCHED 2026-08-07 AFTERNOON (post both landings)
+# ═══════════════════════════════════════════════════════════════════════════
+Standings on `357e27d` (behavior tree = `819d85d`): redrock 2.7x, arctic ~2x,
+river 1.69x (human 161.3, 1 lap), lake ~24% (275/278 vs 223), bay/ocean/
+seatrials 4-5% and waiting. Order: redrock, river, arctic, lake.
+
+## P0 — REDROCK: post-landing attribution → ONE throughput candidate
+The congestion landing bought 13 finishers and ~30s; med 637/593 vs ~227 is
+still the biggest gap and the OLD attribution predates two landings. Measure
+FIRST on final HEAD: (a) re-run `_rr_occupancy` — where does parked time live
+now, and do boats actually take alternate lanes when jams price (route-split
+rate at replan)? (b) defile SERVICE RATE: time per boat through the north
+thread solo vs in convoy (the residual hypothesis is one-lane throughput
+physics — following distance, mid-thread stalls, re-entry after displacement);
+(c) the leg-1 start class share. Then ONE candidate named by the data.
+⚠️ JUDGING RULE (hardened today): redrock 8-seed sets swing paired med ±30-40
+across near-identical trees and set-pair finisher deltas disagree in sign —
+judge ONLY on pooled finishers across ≥4 disjoint 8-seed sets (six baseline
+sets exist on disk: p2b3rr{A..F} ARE the anchors on this HEAD, with
+p3v2rr/rrB + rrbase{C..F} as their clean-tree counterparts). Plus lake 20×2
++ arctic per the nonlocal rule.
+
+## P1 — RIVER: the TIGHT-WATER grid class (measurement = the owner's lap)
+Her line proves 18% of the chute lives inside buildGrid's 44u bank-clearance
+inflation (CLEARANCE = HULL_R 30 + 14): water with ≥ hull-width of true room
+is WALLED, so the router cannot plan the line she sails at 6kt. Candidate:
+cells within CLEARANCE of shore but with ≥ ~hull-width (30u) of true water
+become NAVIGABLE AT A PRICE — the _soft/_shoal construction, third instance
+of "price it as the seconds it costs" (grind risk priced, not walled).
+Success criteria: river fins/in-360 up with land contacts DOWN materially
+(not traded), the router's planned line through the chute approaches hers,
+and test_sailable's river hull-width assertion flips to PASS.
+⚠️ GRID-SEMANTICS CHANGE — the widest blast radius of any candidate this
+season: the 44u margin is load-bearing on lake corridors, arctic shorelines,
+and every venue's lee-shore caution. FULL stack: goldens + bay/ocean 20-seed
++ lake 20×2 + arctic 16×2 + redrock multi-set + river r0 pair. Expect the
+avoidance hard-zone (140u) to fight the tight line next — iterate by
+measurement (contact anatomy, not guesses), and remember the probe lessons:
+where the water moves ≥2kt or a rival is parked, tight-line assumptions die.
+
+## P2 — ARCTIC: lead choice on approach (the last classical solo thread)
+Recovery is measured healthy (med 6.4s); the tail re-enters the same pocket —
+an ENTRY decision. Candidate class: at approach range, score leads (gaps
+between floes) by whether drift is OPENING or CLOSING them over the next
+~5s (drift is unpredictable past ~5s — [[regatta-map-staleness]]; stay under
+that horizon), not by current width alone. Scene harness FIRST: gap n=148 +
+thread n=272 scenes via scn_tree_pair.js (counter installed — hits read 0
+otherwise), verdict in ~20 min; THEN canyonarcA/B 16×2 vs p3v2arc anchors +
+lake 20×2. Ice horizons stay at their knees; gap projection/stickiness and
+the f0e290e RL seam stay CLOSED.
+
+## P3 — LAKE: post-arc attribution only (build only if a one-liner falls out)
+The arc landing changed the venue (land −38/−39%, stall class collapsed).
+Re-run _lake_funnel + leg splits vs the 3 recordings on final HEAD; name the
+next class. ~55s residual. No candidate unless the measurement names one
+physical line; the ONE-candidate discipline resets only with a new mechanism.
+
+## Standing (updated with today's lessons)
+- When a candidate SPLITS venues, find the discriminator by FAILURE ANATOMY
+  (the _rr_dnf pattern) — two blind grid-property scopes failed today before
+  the one the DNF data named. Budget one anatomy probe per split.
+- parked-in-current ≠ queued (jam stamps + arc probe both gate on
+  _avCurMax ≥ 2kt); the arc assumes an unobstructed orbit (parked rival
+  <400u gate). Respect both scopes in any traffic/rounding candidate.
+- Queued behind the big four: give-way underlay (river's ledger now also
+  wants it: bots 66.5° at 504u vs her 6.5°) + VO-exit staleness candidate.
+- P-continuous: ingest new schema-2 recordings the day they land; ask for
+  lake/redrock/arctic laps on the current build (both big-three venues
+  changed materially today) and more river laps (n=1).
+- Anchors on `819d85d`: lake p2b3lakeA/B 275/278 (land 5.63/6.17); redrock
+  p2b3rr{A..F} 48-seed fins 384; bay p2b3bayA/B 236/237; ocean p2b3oc 192;
+  arctic p3v2arcA/B 413/450 in-420 75/53 (byte-carried); seatrials
+  199.65/194.23 OCS 15.44% (byte-carried); river r0A/B 272/273 in-360
+  80/77% (byte-carried) + HUMAN 161.3 (1 lap).
