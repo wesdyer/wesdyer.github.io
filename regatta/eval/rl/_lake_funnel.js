@@ -72,7 +72,10 @@ const ROOT = path.join(__dirname, process.argv[4] || 'treePH0');
                             try {
                                 ovl = window.Rules.isOverlapped ? !!window.Rules.isOverlapped(b, nearest) : null;
                                 const r2 = window.Rules.getRightOfWay ? window.Rules.getRightOfWay(b, nearest) : null;
-                                row = r2 === b ? 'row' : (r2 === nearest ? 'giveway' : String(r2));
+                                // getRightOfWay returns {boat, ...} — comparing the
+                                // result object to a boat read has-ROW as 0% forever.
+                                const rb = r2 && r2.boat !== undefined ? r2.boat : r2;
+                                row = rb === b ? 'row' : (rb === nearest ? 'giveway' : 'none');
                             } catch (e) {}
                         }
                         // speed history: parked (was <0.5kt for last 8s) or moving-then-pushed

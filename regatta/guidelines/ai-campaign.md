@@ -8750,3 +8750,169 @@ physical line; the ONE-candidate discipline resets only with a new mechanism.
   arctic p3v2arcA/B 413/450 in-420 75/53 (byte-carried); seatrials
   199.65/194.23 OCS 15.44% (byte-carried); river r0A/B 272/273 in-360
   80/77% (byte-carried) + HUMAN 161.3 (1 lap).
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-08-07 EVENING PUSH (started 15:03 PDT, HEAD at open b18c527)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner-directed continuation of the big gaps in order (redrock 2.7x, river
+1.69x, arctic 2x, lake ~24%). ZERO LANDINGS — four candidates built and
+rejected with mechanisms, every priority resolved by measurement, and the
+next push's candidate is now sized by data on three venues. The measure-first
+ledger extends: this session 0-for-4 on builds, 4-for-4 on attributions that
+overturned the going story.
+
+## PHASE 0 — trivial: b18c527/357e27d are docs+traj only; behavior tree is
+byte-identical to 819d85d. All anchors STAND without re-benching.
+
+## P0 — REDROCK: throughput hypothesis KILLED; residual re-attributed
+_rr_service.js (new, tracked; 170 thread transits over 4@9400): the north
+  thread SERVES FAST — solo med 7.2s, occ-1 8.7, occ-2 14.2, and legs 3/4
+  thread time is ~17s of a ~550s race. One-lane throughput physics is NOT
+  the residual. Parked time (occupancy re-run, post-landing): 29/25.5/36s
+  med per boat on legs 2/3/4 — real but minority.
+_rr_leganat.js + _rr_wander.js (new, tracked): THE RESIDUAL IS DEFLECTED
+  DISTANCE. Fleet odometer runs 2.2x route length on legs 2/4 (9626u vs
+  4359; 7266 vs 3356); per boat-race on legs 2-4: deflected-moving 194s
+  over 15535u at ~80 u/s, parked 115s, clean-moving 164s ≈ the human's
+  ENTIRE legs 2-4 (145.6s, s2 lap leg splits 64.7/51.3/29.6 vs fleet med
+  163.5/121/132). Deflection is ~2/3 rival-proximate (<500u), ~1/3 solo.
+  ⚠️ probe arithmetic trap (recorded in standing rules): every-6th-frame
+  sampling credits 0.1s per sample, not 0.6 — the first leganat run
+  inflated all time stats 6x (odometer, position-derived, was clean).
+⛔ CANDIDATE REJECTED — VO-EXIT LATCH RELEASE (treeP4VOX): release the 2s
+  risk-ladder latch when the encounter is over (tCPA<0 AND VO exited) —
+  the class _standon_attrib named. Judged per the hardened rule on pooled
+  finishers over 4 disjoint 8-seed sets: 253→243 (−10) with boat contacts
+  +21/+45/+56% on three of four sets, pens up 3/4. Mechanism: the latch
+  coast IS spacing in traffic — instant release snaps boats back onto the
+  contested line and re-engages the same corridor. The staleness class is
+  real (survivor paired meds improved) but the latch is the wrong lever.
+
+## P1 — RIVER: tight-water grid class BUILT AND REJECTED at the success bar;
+##      the mechanism survives solo and the blocker is precisely named
+THE BUILD (treeP4TIGHT, sailcheck.js + script.js): cells within CLEARANCE
+  (44u) of shore but with ≥ HULL_R (30u) of true water become grid._tight
+  (value = true clearance, judged with the SAME quarter-point subsampling
+  as nav — centre-only left the chute disconnected, the rasterisation
+  comment's exact lesson). pathBetween: tight admitted ONLY as fallback
+  when no hull-margin path exists (existing routes byte-identical by
+  construction). pathSailable: tight priced 2.5→6x graded by clearance
+  (the _soft bounds). Paths through tight cells emit the best-clearance
+  sub-point (_tightPt) so the line holds the slot's spine. NOT built on
+  noSubsample (drifting-ice) grids — same physical line as that gate.
+SOLO MECHANISM PROVEN: test_sailable river flips to PASS (all other venues
+  PASS); the fleet chute line matches the owner's lap within med |Δx| 58u
+  per 200u slice (_river_line.js, new, tracked); 29.6% of fleet chute time
+  rides tight cells; survivors run −10..−17s paired med on EVERY bench.
+THE TRADE THAT KILLED IT (both 16-seed sets, v2): fins 119→110 / 114→103,
+  land +19/+27%, boat rubs ×3.5/×2.2. Contact anatomy (_river_contacts.js,
+  new, tracked), v1 → v2 → v3:
+  v1: 88% of new boat contact = ONE exit-pocket pile-up at (2000,3400),
+    400u east of both her line and the route — the 140u avoidance hard
+    zone vetoed along-slot headings and the 5kt set carried vetoed boats
+    into the pocket.
+  v2 (tight joins the _soft water class at all avoidance sites — probe
+    pricing graded 6000→12000, wallAhead, taxTack, rollout, ring scans,
+    replan-skip): exit pocket FIXED, but the pile-up moved mid-slot
+    (800,2400) and became binary — 2 of 4 seeds develop a standing
+    raft-up when two boats enter together (96% of boat contact in that
+    bin; slot occupancy p90 3→4).
+  v3 (slot-occupancy stamp: tight cells near a rival-in-tight-water price
+    like jams at replan; flowing, no parked test): BYTE-IDENTICAL both
+    sets while the stamp verifiably fires — the raft-up rivals sit in the
+    DISPLACED pocket, off-route; followers' routes never bought those
+    cells. Route pricing cannot reach displacement-driven failures.
+THE BLOCKER, NAMED: mid-slot ENCOUNTERS. A deflection in ≥2kt cross-set is
+  a one-way door — the deflected boat cannot beat back against the stream
+  and lands in the east-bank traps. Encounter RESPONSE in the constrained/
+  current class is the gate the tight water waits behind (her stand-on med
+  is 6.5°; the fleet's is 34-69° — see the attribution below). The tight
+  construction itself is validated and shelf-ready; re-bench it the day
+  the response class lands. planFloeTrajectory note: the rollout planner
+  EARLY-RETURNS without floes — river/lake/redrock have no trajectory
+  planner at all; their avoidance is straight probes only.
+
+## P2 — ARCTIC: closing-lead route pricing DEAD AT TWO SHAPES
+v1 (one line in pathSailable: open cells under _futBlk price 2.5x — the
+  mirror of the opening-lead discount, reusing the landed 8s horizon):
+  SCENE GATE WIN — 774 scenes, +9.8u mean, W/L 209/160, ice hits/scene
+  0.846→0.748, thread class (the re-stick target) +16.9u. FULL-RACE
+  REJECT — both 16-seed sets agree: paired med −4/−7, in-420 pooled
+  128→108, fins 282→281, floe hits DOWN both sets (32.1/30.3→30.7/28.0).
+  The price detours whole routes for predictions that expire en route;
+  the local win is real and the global tax is bigger.
+v2 (approach-scoped ≤8 cells — "price a closing lead only where you arrive
+  while the +8s prediction still holds"): INERT — +1.3u, W/L 125/113,
+  thread +0.3. The decisive lead choices happen beyond 8 cells.
+Same bimodal death as the clearance-extension family (blanket negative /
+  scoped inert). Route-level lead pricing on the drift map is CLOSED at
+  two kills. Lake gates: BYTE-IDENTICAL both sets (no floes → no _futBlk),
+  the cleanest nonlocal result available.
+
+## P3 — LAKE: post-arc attribution only (per mandate; no build)
+_lake_funnel re-run (post-arc tree): pocket share of land-hit frames
+  54%→27%; 33 grounding episodes/8 seeds (30 on leg 2), grounders MOVING
+  (maxRecent8s 4.8kt), avoidance active 58% at med 17.2°, nearest rival
+  med 247u, clusters shifted to the y−1000..−1200 band + (2200,−400).
+  ⚠️ the probe's overlap-100%/ROW-0% read was artifact: ROW compared
+  getRightOfWay's OBJECT to a boat (fixed in the tracked probe), and both
+  stats only sampled rivals <150u. Rule-4 catch recorded.
+_lake_legs + _lake_l1.js (new, tracked): the "35.7s under-1kt" on L1 was
+  under-4KT (raw b.speed<1.0) — true parked is ~3s/boat. L1 slow time
+  (~30s vs human, 6x L2/L3's) lives early (gun+20..40s) and near the
+  mark-1 approach (bins 0..400,1600..2000), deflection med only 6°, local
+  wind 5.7kt: a traffic/light-air LANE class on the first beat, not a
+  queue, not deflection churn. L2 residual: the moving-deflection shore
+  band above. No single physical line → no build, mandate respected.
+
+## THE MEASUREMENT THAT NAMES THE NEXT BUILD — stand-on attribution on the
+## constrained class (_standon_attrib, HEAD tree, new venues)
+  redrock 4@9400: 694 episodes; stand-on frames deflected 52.4%; MEDIUM
+    dev med 40.1° properCPA 121u NEEDLESS 52.9%; HIGH 45.8°/111u/50.5%;
+    IMMINENT 68.8°/57u/36.7%; 3rd-boat 32-53%.
+  river 4@9100: 255 episodes; deflected 32.3%; needless 39/52/32% by
+    level; dev meds 34-69°.
+  lake 8@9100: 448 episodes; deflected 34.6%; needless 19/33/43%; dev
+    29-40°; 3rd-boat 55-65% (lake deflections are multi-boat nudges).
+  thVO = 0.0% ON ALL THREE — the whole constrained class sits below the
+  VO-onset venue gate (clearance p50 < 10); the wide-venue onset landing
+  never reaches it. Versus bay's needless 17-23%.
+FOUR datasets now converge on the same candidate: redrock deflected-
+  distance (2/3 rival-proximate), river raft-up anatomy + her 6.5° vs
+  bots' 66.5°, lake shore-band grounders, and this attribution. The
+  give-way/deflection RESPONSE in constrained water is the next build —
+  onset AND size — under the lake nonlocal caution (naive suppression
+  cost +25% contacts; judge lake 20×2 + arctic regardless).
+
+## The venue table (final HEAD b18c527 = behavior 819d85d; ZERO landings —
+## every row byte-carried from the standing anchors, which Phase 0 verified)
+venue     | human med/best      | pre-session bot                          | post-session bot (final HEAD)
+bay       | 226.2 / 217.8, 0 impacts | 236 / 237 (p2b3bayA/B), boat 1.95/1.83, pen 0.44/0.43, OCS 0.6/1.1% | UNCHANGED — byte-carried
+ocean     | 182.5               | 192 (p2b3oc), boat 1.88, mark 0.26, pen 0.39 | UNCHANGED — byte-carried
+lake      | 223 / 209.6         | 275 / 278 (p2b3lakeA/B), land 5.63/6.17, boat 2.04/2.56, 180/180 fins | UNCHANGED — byte-carried
+redrock   | ~227 / 206.6 (s2: 214.7) | p2b3rr{A..F}: 48-seed fins 384/432, med 637/593 (A/B), pens 4.75/4.49 | UNCHANGED — byte-carried
+arctic    | 212.1 / 190.4 (s2: 215.0/194.7) | 413 / 450 (p3v2arcA/B), in-420 75/53, fins 143/139, floe 32.1/30.3, boat 12.5/9.7 | UNCHANGED — byte-carried
+seatrials | ~190 / 180.9        | 199.65 / 194.23, OCS 15.44%, pen 0.40    | UNCHANGED — byte-carried
+river     | 161.3 (1 lap)       | r0A/B med 272/273, in-360 80/77%, land 350/375, boat 30/46, pen 2.0 | UNCHANGED — byte-carried
+
+## NEXT-PUSH POINTERS
+- BUILD: the constrained-class deflection response (give-way underlay) —
+  now measured on three venues (needless 32-53%, thVO 0%, dev meds 29-69°
+  vs her 6.5-8°). Onset (VO-informed, scoped INTO the constrained class
+  safely) + response size. Judge redrock pooled-finishers ≥4 sets + lake
+  20×2 + arctic 16×2 + river r0 pair + bay. The lake +25%-contacts caution
+  is the design constraint, not an afterthought.
+- RIVER: the tight-water class is BUILT and shelf-ready (treeP4TIGHT
+  work recorded above); it waits behind the response class. Re-bench
+  as-is once the underlay lands — the two compose (less deflection →
+  fewer displacements → the slot stays single-file).
+- REDROCK: deflected-distance is the gap; the VO-exit latch lever is dead;
+  throughput/service-rate is measured healthy and CLOSED as attribution.
+- ARCTIC: route-level lead pricing CLOSED (2 kills). The solo residual
+  (~90-130s) still lacks a live candidate; whatever comes next must act
+  at the waiting/entry layer, not the route price, and the scene harness
+  alone cannot green-light it (two scene-win/race-loss divergences now).
+- LAKE: L1 lane class named (traffic/light-air, deflection-free) — a
+  candidate here is start-adjacent; the start stays sacred.
+- Closed families extended: VO-exit latch release; closing-lead route
+  pricing (both shapes); tight-slot occupancy stamps (byte-inert).
