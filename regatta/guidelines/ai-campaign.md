@@ -7860,3 +7860,15 @@ Bay pointer: per-leg splits vs the human now align within ~+-6s leg-for-leg
 mid-race; the residual concentrates at the GUN (median first-crossing 6.5s
 after the start) and the final leg. The start system is sacred tuning — take
 the OCS/start ledger first.
+
+## ⛔ REJECTED with mechanism — METERED LEE-SHORE HOLD (treeLEE)
+The mark-3 pocket candidate: a metered boat with shore within 200u downwind
+feathers close-hauled (current tack) instead of parking on the drift line.
+lake A 0.0 med / +0.7 mean with land 7.77->8.36 UP; lake B 0.0/+1.4 land up;
+redrock 56->51 fins, +76 paired (in a maze "downwind is shore" is true
+everywhere — a feathering boat inside a one-lane thread IS the jam). The
+mechanism that kills it: metering operates 250-700u OUT, but the attribution's
+parked-ashore boats are INSIDE the 250u funnel radius — the scrum itself,
+where neither metering nor the hold ever applies. The pocket's fix must act on
+QUEUE-INTERIOR behaviour (spacing/berth inside the funnel while waiting to
+round), a fresh design, not a metering extension.
