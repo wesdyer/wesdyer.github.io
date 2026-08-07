@@ -7996,3 +7996,28 @@ sighted wiggle; arrival-time gap projection; SIPP; the orbit radius below the
 70u knee; metered lee-shore holds (the parked boats are inside the funnel);
 naive-budget driver ES. The 80u owed-gap calibration stays parked until the
 give-way ledger runs on schema-2 data.
+
+## ⚡ FIRST SCHEMA-2 RECORDING INGESTED (traj_redrock_1786066623197) — P3 UNBLOCKED
+Owner's redrock lap on the post-landing build: **214.7s, zero contacts, never
+below 4 kt**, legs 2.9/39.8/64.6/51.2/29.5/26.1, rivals holding ROW over her on
+16.6% of frames. Route note: with the fleet now on the north thread she sailed
+a DIFFERENT leg-3 line (southwest arc, ~2s in the thread box) — route
+diversity, per the owner's earlier ruling. Fleet on the same build: 56-59/72,
+med 613, best 286.
+
+`_gw_ledger2.py` (new, tracked): per-encounter ledger with exact identity
+(rivalsX), pair roles from the rules' own geometry, and the owner's criterion
+computed directly — the UNMODIFIED CPA (both hulls held straight from onset):
+  - 17 encounters, both roles: **ucpa >= 80u in 100%** (med 302-361u). In this
+    race NO encounter ever required a deviation from either party.
+  - Her give-way deflection at CPA: **7.5 deg median** — she reads the ucpa
+    and holds.
+  - The bots deviated in 100% of encounters, onset at **570u median range**
+    when give-way — at detection range, against threats that resolve
+    themselves. (Caveat: rival-side deflection MAGNITUDES are confounded by
+    their own strategic turns; the onset-range and ucpa columns are the clean
+    part, and they corroborate the fleet-side "86% of onsets needed zero".)
+This is direct per-encounter evidence for Push B's design premise: the
+give-way response should begin when the velocity obstacle is actually
+entered, sized to the minimal escape — not at detection range. One race, n=17;
+re-run on every new schema-2 recording.
