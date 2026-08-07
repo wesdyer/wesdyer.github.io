@@ -859,6 +859,43 @@ class BotController {
                     }
                 }
             }
+            // A DEFILE MID-LEG IS THE SAME FUNNEL. Redrock's north thread is a
+            // one-boat channel whose mouth sits 700-900u before the mark — the
+            // endpoint count above never sees the queue parked there (outside
+            // its 250u radius), and the stall probe puts 5 of 8 unfinished
+            // boats at exactly that mouth at 0.1-1.9 kt. Meter on a jam at the
+            // narrowest point of MY OWN planned path ahead: the first gridPath
+            // point 250-700u out whose corridor is under two cells of
+            // clearance, with two or more rivals already parked within 250u of
+            // it. Same jam qualification, same guards, same physical line as
+            // the endpoint form.
+            if (speedRequest >= 1.0 && this.gridPath && this.gridPath.length) {
+                const gD = state.course.botGrid;
+                const clearD = gD && gD._clear;
+                if (clearD) {
+                    let acc = 0, px = this.boat.x, py = this.boat.y, defile = null;
+                    for (const ptD of this.gridPath) {
+                        acc += Math.hypot(ptD.x - px, ptD.y - py);
+                        px = ptD.x; py = ptD.y;
+                        if (acc > 700) break;
+                        if (acc < 250) continue;
+                        const cD = gD.cell(ptD.x, ptD.y);
+                        if (clearD[cD[1] * gD.n + cD[0]] < 2) { defile = ptD; break; }
+                    }
+                    if (defile) {
+                        let qD = 0;
+                        for (const ob of state.boats) {
+                            if (ob === this.boat || ob.isPlayer || ob.raceState.finished) continue;
+                            if (ob.speed >= 1.0) continue;
+                            if (Math.hypot(ob.x - defile.x, ob.y - defile.y) < 250) qD++;
+                        }
+                        if (qD >= 2) {
+                            const deftD = this.boat.stats ? Math.max(0, Math.min(1, this.boat.stats.handling / 10)) : 0.5;
+                            speedRequest = 0.55 + 0.15 * deftD;
+                        }
+                    }
+                }
+            }
         }
 
         // RL pilot hook (see the armed orbit) — speed half of the action.
