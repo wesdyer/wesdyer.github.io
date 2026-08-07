@@ -8152,3 +8152,45 @@ polar-lobe feasibility) now sits on top of THIS onset predicate; the VO
 membership set (`this._voIn`) and the venue/water gates are the underlay's
 skeleton, already in the shipping cost function behind `window.__AV`
 overrides (tau/r/wide).
+
+## Minimal-escape candidate prototyped and INERT — quantization is no longer binding
+treeME: for the give-way boat vs her VO-entered threat, bisect the
+continuous smallest clearing offset per side (CPA >= 86u, heading-based)
+and add both to the fan. Lake byte-identical by construction; bay smoke
+unchanged; `_fleet_ledger` close crossings 11.8 med / ZERO 32% vs the
+landed 11.2/30% — no mechanism movement on the stat it targets. After the
+VO-onset landing the keep-clear zero-at-clearance + pow(3) deviation
+already finds the small escapes the rungs allow; the residual vs the human
+(11.2 vs 8.0 deg at CPA; holds 30% vs 40%) is NOT fan resolution. Next
+session's underlay question is the STAND-ON/priors side (her extra 10% of
+outright holds) and the alpha split, not finer give-way offsets. Not
+benched further, not landed — an action that never wins the argmin is not
+an action.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-08-06 NIGHT PUSH — CLOSE (HEAD `abb62aa`)
+# ═══════════════════════════════════════════════════════════════════════════
+Landed: `abb62aa` ONSET AT VO ENTRY (see above). Rejected with mechanism:
+the mark-queue reservation family (P1, two forms). Closed as measurement:
+the start ledger (P2 — lateness is traffic; the start stays sacred).
+Prototyped and set aside: the minimal-escape candidate (inert). Goldens
+re-recorded and PASS 20/20 (exactly the six wide venues changed); npm test
+= the 6 known editor failures. Lake/redrock/arctic byte-identity vs the
+evening anchors re-verified with full fresh benches on the final HEAD
+(fin08* == anchors, JSON-identical, all six sets).
+
+## The venue table (final HEAD `abb62aa`; human = traj recordings, like-for-like)
+venue     | human med/best      | pre-session bot (dfa59c8)                  | post-session bot (abb62aa)
+bay       | 226.2 / 217.8, 0 impacts | 241 / 237 (A/B sets), OCS 2.8/1.1%, boat 2.14/1.79, pen 0.53/~ | 236 / 239, OCS 0.6/1.1%, boat 1.91/1.93, land 0.09/0.05, mark 0.50/0.53, pen 0.43/0.48
+ocean     | 182.5               | 192, boat 1.98, mark 0.43                  | 192.5, boat 1.93, mark 0.26, pen 0.40, OCS 0%
+lake      | 223 / 209.6         | 282 / 289, boat 2.56/3.44, land 7.77/9.68, pen 0.66/0.79, 180/180 | UNCHANGED (byte-identical, re-verified)
+redrock   | ~227 / 206.6 (schema-2: 214.7, 0 contacts) | med 674.5/613, fins 56+59 of 72, best 318/286, boat 30.8/27.9, land 199/193, pen 5.97/5.50 | UNCHANGED (byte-identical, re-verified)
+arctic    | 212.1 / 190.4 (schema-2 current build: 215.0/194.7, ice med 2.0) | med 425/451, best 262/239, in-time 70/54, fins 144/140 of 144 | UNCHANGED (byte-identical, re-verified)
+seatrials | ~190 / 180.9        | 199.59 / 194.13, OCS 14.78%, pen 0.40      | 199.65 / 194.23, OCS 15.44% (within 1σ), pen 0.40, boat 0.51
+Note: bay med carries a real behavioural improvement in the start (gun
+crossing p90 18.2→11.7s, OCS A-set 2.8→0.6%) at a neutral pooled clock
+(four disjoint sets: +4.3/−2.6/−1.1/+1.0 mean paired). Ocean venue file
+remains OUT OF FREEZE (owner edit Aug 5 22:58 postdates the freeze stamp);
+all on-disk ocean baselines carry the current fingerprint `4a64ff07`, so
+A/Bs are valid — `npm run venues:check` fails on ocean until the owner
+promotes or re-freezes.
