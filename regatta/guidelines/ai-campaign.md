@@ -7829,3 +7829,17 @@ point of MY OWN gridPath 250-700u ahead. Verified on SIX venues:
   - bay ~11s pooled; next orbit step means re-opening the 50u hard mark zone.
   - arctic: research-scale only (see day-push close).
   - P3 give-way needs ANY schema-2 owner recording (0 of 66 have rivalsX).
+
+## ⛔ REJECTED with mechanism — ORBIT STEP 2 (treeORBIT4): the radius family's knee is 70u
+Armed hard mark zone 50->40 at qualified marks + ring at 55: minD moved 75->61
+(human 47), carry 100% — the mechanism works — and the CLOCK does not respond:
+bay A -1.0/-3.1, bay B 0.0/+0.8, mark contacts down on A / up on B (noise). The
+dose-response: 135->70u paid -4.0/-10.0; 70->55u pays ~0. Below ~75u the
+remaining bay gap is NOT arc length. Family CLOSED at the 70u knee; do not
+re-tighten without a new mechanism.
+
+## Post-metering redrock stall re-attribution (4 seeds)
+Unfinished 8 -> 5; only ONE truly parked (0.62 kt at the thread, (-54,1344));
+the rest are MOVING at 3.5-8 kt — lateness, not stalls. The hard-stuck class is
+substantially gone; the residual is one-lane throughput physics (9 boats, one
+46u thread) plus the leg-1 start class. Classical redrock closes here.
