@@ -7872,3 +7872,127 @@ parked-ashore boats are INSIDE the 250u funnel radius — the scrum itself,
 where neither metering nor the hold ever applies. The pocket's fix must act on
 QUEUE-INTERIOR behaviour (spacing/berth inside the funnel while waiting to
 round), a fresh design, not a metering extension.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# PLAN FOR THE NEXT PUSHES — RESEARCHED 2026-08-06 EVENING (post-landing reflection)
+# ═══════════════════════════════════════════════════════════════════════════
+
+## Where the stack stands (the reflection)
+
+The classical stack is six layers: start (staged-lane + timed crossing), route
+(DMC ruler + supersampled grid + pathSailable time-cost), navigation target
+(rounding orbit/entry/exit machinery), strategy (scoreTack VMG/shift/pressure),
+avoidance (candidate-fan argmin with RRS roles, keep-clear-by-enough, rule 21,
+floe trajectory rollout), liveness (wiggle/recovery), plus the metering family.
+After this session the SOLO capabilities are essentially closed: fleet min
+beats the human's best on bay; solo boats finish redrock; roundings are
+geometrically human-shaped at the 70u knee; the winding/rules integrity suite
+is green. The remaining gap table and its COMPOSITION:
+
+  seatrials  +2%    start execution (OCS 14.78% vs human ~6%)
+  ocean      +5%    sea-state trim ceiling (known, small)
+  bay        +5-6%  gun crossing (6.5s median late) + residual boat contact
+  lake       +27%   mark-3 scrum (half of all groundings, INSIDE the funnel),
+                    irons/penalty stalls
+  redrock    ~2.7x med (best +38%)  one-lane thread THROUGHPUT + leg-1 starts
+  arctic     ~2x    46% boat-threat squeezes + 42% wiggle recoveries at impact
+
+Every big residual is now a TRAFFIC/SCENE problem or START execution — not
+steering, not routing, not rounding geometry. That matches the campaign's
+trajectory: the seven-for-seven "actions not prices" wins were all single-boat
+actions; what remains is multi-boat structure.
+
+## What the literature adds (delta over the Aug-3 research passes)
+
+1. **RLPP (arXiv 2501.17311, 2025)**: residual RL on a classical pure-pursuit
+   base improves lap times up to 6.4% and transfers zero-shot — the exact seam
+   our driver residual used (`f0e290e`). Our negative result was BUDGET
+   (~600 full-race episodes at 20s wall each), not the seam: Sophy-scale runs
+   use millions of steps. Sophy's own fix applies: a MIXED SCENARIO POOL with
+   spawn-into-scenario episodes. 20-40s contested scenes at ~20x realtime =
+   1-2s wall per episode, a 10-20x budget multiplier, and the scenes ARE the
+   residual (squeezes, wiggle recoveries, scrums).
+2. **Reservation-based bottleneck management** (local-reservation conflict
+   avoidance; deadlock-free social mini-games via discrete-time CBFs, arXiv
+   2308.10966; PIBT priority inheritance): the mark scrum and the redrock
+   thread are BOTTLENECK problems, and the field's answer is an explicit,
+   locally-computed TRANSIT ORDER — not speed shaping (our metering) and not
+   station-keeping (treeLEE, rejected). Crucially the RRS already DEFINES the
+   priority order at a mark (18: entitlement by overlap at the zone); the
+   design writes the queue the rules imply.
+3. **Start timing**: the sailing literature's time-on-distance discipline is a
+   per-boat calibration problem (distance at full-speed run vs seconds to
+   gun, adjusted for line bias). Our staged start estimates approach time
+   generically; the 6.5s median late crossing + 14.78% OCS says the estimate
+   is mis-calibrated per boat/wind. Measure-first: the start ledger can
+   attribute lateness to estimate error vs traffic blocking.
+4. The Aug-3 ranked list's ONE unbuilt structural item remains the top
+   classical swing: **RRS-asymmetric ORCA/VO underlay** — objective
+   REPLACEMENT for pairwise boat avoidance (truncated VO at 6-10s, minimal
+   escape vector, responsibility split by RRS role, feasible set intersected
+   with the polar lobe). The traffic thread was closed at 10 rejections with
+   exactly this exit: "only full objective REPLACEMENT or driver RL remain."
+
+## THE PLAN — three pushes, in order
+
+### PUSH A — the queue is ordered by the rules (classical, 1 session)
+Capability: traffic discipline at bottlenecks (lake+redrock+bay+the three
+unrecorded traffic venues).
+  A1. MARK-QUEUE RESERVATION: at any funnel (zone or defile), boats compute a
+      deterministic transit order from the RRS entitlement they already track
+      (mark-room/overlap at zone entry; ties by distance-to-funnel). A boat
+      whose turn is not yet come holds OUTSIDE the pocket (>=250u, windward of
+      the drift line where shore threatens); a boat whose turn has come
+      proceeds AT SPEED (no metering slowdown — the reservation replaces the
+      jam test where an order exists). Kill criteria: lake 20-seed x2 (land +
+      clock), redrock 8@9400+8@9500 finishers, bay byte-or-neutral, arctic
+      byte-identical (floe gate).
+  A2. START TIME-ON-DISTANCE (measure first): ledger the gun-crossing error
+      per boat (estimate error vs blocked-by-traffic vs conservative BUF);
+      only then calibrate getApproachTime against the boat's own acceleration
+      curve + line bias. OCS must not rise: seatrials 100t + bay OCS are the
+      gates. The start is sacred tuning — this is a measurement item first,
+      a candidate only if the ledger shows estimate error dominates.
+
+### PUSH B — RRS-ORCA underlay (structural, 1-2 sessions)
+Capability: pairwise boat avoidance everywhere (the arctic 46% boat-threat
+class, bay/lagoon/river/swamp rubs, thread head-ons).
+  Scope: RIVAL BOATS ONLY — floes keep planFloeTrajectory + the ice constants
+  (one physical line: ice does not reciprocate). Implementation per the Aug-3
+  memo: per-pair truncated VO at tau 6-10s, minimal escape vector, alpha
+  split by RRS role (give-way ~0.9, stand-on ~0.1), feasible half-planes
+  intersected with the current polar lobe (1-D search), other tack scored
+  with tack cost. Behind a flag; the candidate fan stays as fallback for
+  multi-constraint emergencies. Bench per the capability map on SIX venues.
+  Expected: at-CPA deflection 15deg -> under 10 (human 8), holds-course
+  25% -> ~40%, arctic squeeze class down. Kill criteria: any venue's contact
+  classes up on both disjoint sets, or OCS/pens up — revert, the fan stands.
+
+### PUSH C — scenario-pool residual (learning, 1-2 sessions, arctic first)
+Capability: the last 2x on arctic (squeeze + wiggle scenes RL can shape and
+classical argmin cannot).
+  Reuse: the f0e290e seam (bounded 2Hz delta-heading residual, zero-init =
+  byte-identical floor), rlt_gate protocol (three-way seed separation), CRN
+  frozen-classical twins. CHANGE the budget arithmetic: harvest contested
+  scenes from bench races (boat-threat onset, wiggle entry, pack entry) into
+  a spawn-into-scenario pool (Sophy's mixed proportions), 20-40s episodes,
+  fitness = paired delta vs the twin on the same scene + Sophy's symmetric
+  passing/contact shaping. Target ~50-100k scene-episodes (feasible at 1-2s
+  wall each across 8 workers overnight). Accept ONLY on the full-race
+  16+16-seed gate. Kill criteria: two overnight runs without beating the
+  classical floor on held-out scenes -> the thread closes like the ES did.
+
+### Continuous (every session)
+  - Ingest the owner's new recordings the day they land: the redrock
+    schema-2 trajectory unlocks per-encounter give-way validation (rivalsX +
+    rule-21 flags) — run the minimal-change ledger split by role before any
+    P3 candidate.
+  - The venue report on final HEAD at every close; 20-seed benches for all
+    contact metrics (the across-trees noise rule).
+
+## What NOT to reopen (closed families, with their mechanisms)
+Per-tick re-pricing of threats; avoidance hold/commitment (7 rejections);
+sighted wiggle; arrival-time gap projection; SIPP; the orbit radius below the
+70u knee; metered lee-shore holds (the parked boats are inside the funnel);
+naive-budget driver ES. The 80u owed-gap calibration stays parked until the
+give-way ledger runs on schema-2 data.
