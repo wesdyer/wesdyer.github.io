@@ -8037,3 +8037,18 @@ entry, pack threading) — the leader-vs-human delta is the training corpus —
 with squeeze scenes second; Push B keeps the mid-pack 120s + the open-venue
 traffic case (today's ledger: 100% of encounters needed zero, bots move at
 570u).
+
+## ⚡ FIVE ARCTIC SCHEMA-2 LAPS INGESTED (current build) — the Push-C corpus is live
+Finishes 218.5 / 217.6 / 215.0 / 198.2 / 194.7 (med 215.0, best 194.7) — her
+historical reference (212.1/190.4) holds on the new build; the fleet winner's
+med 301/340 solo gap stands confirmed same-build. What the laps establish:
+  - CONTACTS: ice 4/4/1/1/0 (med 2.0/race; fleet 30-34). Boat rubs ONLY in the
+    gun scrum, first ~12s (13 of 17 on lap one, then a clean warm-up curve to
+    a zero-contact lap) — even the human pays start-pack rubs; the fleet's
+    start-adjacent rub class may be partly irreducible.
+  - GIVE-WAY LEDGER, ice traffic (83 encounters, 4 files): unmodified CPA
+    >= 80u in 81-91% (med 250-545). Her deflection in ice is 14-31 deg — the
+    floes constrain lines, unlike redrock's open 7.5 — but the bots still
+    fire their deviation at 564-567u range in ~96% of encounters, both roles.
+  - SOLO-ICE PROFILE (the residual's target): min floe clearance 15-22u,
+    p5 39-51u, at speed, every lap. Corpus now 24 arctic laps, 5 current-build.
