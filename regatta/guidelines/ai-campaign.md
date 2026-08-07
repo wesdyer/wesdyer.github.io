@@ -8403,3 +8403,15 @@ physical-line question as floe drift: the thing moving is the WATER. Check
 where the 22k contacts happen (upwind legs vs downwind, mid-leg vs mark
 approach), whether boats are being SET onto the lee bank while aiming
 correctly in heading-space, and whether pathSailable prices current at all.
+
+## ⚠️ PHASE 0 ADDENDUM — THE TREE MOVED (recorded 09:58, before push start)
+The owner's morning merge (78bdcb2 river venue + a05acaf scenes, merged as
+bd574bf) changes script.js by ~510 lines: the new AWASH shoal class (water a
+hull may sail over — pruned from every avoidance obstacle test and from Rule
+19), current rendering, venuedoc plumbing. River's smoke above ran on the NEW
+tree (valid). Every stored anchor (canyonarcA/B, bay vo3/vo4, lake meter3/fin,
+redrock meter3, seatrials) is PRE-merge. Standing rule 6 applies: the next
+push OPENS by re-running one bench per judged venue against its anchor —
+byte-identical JSON => the anchor stands; anything else => re-baseline that
+venue fresh on the new HEAD before any candidate is judged. Do not compare a
+candidate on the new tree against a pre-merge anchor without this check.
