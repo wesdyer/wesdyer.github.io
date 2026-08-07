@@ -7790,3 +7790,42 @@ maze middle), 6 complete the course but beyond the 900 cutoff, 3 on leg 1,
 1 on leg 4. The leg-3 wall is GONE (0 die there). Leg 4 departs m5 east — no
 head-on traffic in the north thread. The next redrock lever is whatever kills
 boats on a straight reach home; stall positions probed below.
+
+## ✅ LANDED 6048c95 — DEFILE METERING (the fourth landing, from the post-landing attribution)
+The stall probe on the new HEAD put 5 of 8 redrock non-finishers parked at
+0.1-1.9 kt at the thread mouth, 700-900u before m5 — outside the endpoint
+metering's 250u rival-count radius. Same action, same jam qualification, same
+floe-free line, one trigger wider: a jam at the first sub-two-cells-clearance
+point of MY OWN gridPath 250-700u ahead. Verified on SIX venues:
+  redrock A 8@9400: finishers 47->56, paired -48 med, all dirt down
+  redrock B 8@9500: 56->59, med 747->613, paired -57/-97, rubs -21% land -16%
+  lake 20@9100: paired -5.0 mean, land 9.99->7.77 (-22% — BELOW the
+    pre-supersampling 8.78: the supersampling land trade is RECOVERED)
+  bay BYTE-IDENTICAL / ocean 0.0 med / arctic EXACT-identical / seatrials
+    numerically identical. Goldens re-recorded PASS 20/20 (b4503df);
+    npm test = the 6 known editor failures.
+
+## FINAL VENUE REPORT (supersedes the table above; final HEAD = b4503df)
+  VENUE      HUMAN                    PRE-SESSION BOT               POST-SESSION BOT (final HEAD)
+  bay        226.2 med / 217.8 best   242/245                       241/237 paired -1.0/-10.0
+                                                                    (boat 2.14/1.79, pen .53/.46)
+  ocean      182.5 med                193                           192 (boat 1.98, mark .43, land 0)
+  lake       223 med / 209.6 best     292/294 (boat 4.21/4.33,      282/294* (boat 2.56, land 7.77,
+                                       land 8.78/8.57, pen .81/.83)  pen .66 on A; *B not re-run
+                                                                     post-metering, was 294)
+  arctic     212.1 med / 190.4 best   424/451 in-time 40/23         BYTE-IDENTICAL (verified exact x3)
+  seatrials  ~190 med / 180.9 best    194.13 OCS 14.78% pen .40     numerically IDENTICAL
+  redrock    ~227 med / 206.6 best    11/72 fins, best 442,         A: 56/72 fins best 318; B: 59/72
+                                      rubs 37.2, pen 7.47            best 286, med 613, rubs 27.9,
+                                                                     pen 5.50, land 192 (-29% vs pre)
+  Session total on redrock: finishers 11 -> 56/59 of 72 across two disjoint
+  sets, best 442 -> 286-318 (inside the authored 360), every dirt class down.
+
+## NEXT-PUSH POINTERS
+  - redrock residual: ~13-16 non-finishers/72 + med 613 vs human ~227 — the
+    thread is still single-file; candidates: alternate-corridor spreading
+    (leg-3 has only one thread), or the leg-1 start-area class (3 boats).
+  - lake ~60s: stall composition 41% ashore / 27% irons / 24% penalty turns.
+  - bay ~11s pooled; next orbit step means re-opening the 50u hard mark zone.
+  - arctic: research-scale only (see day-push close).
+  - P3 give-way needs ANY schema-2 owner recording (0 of 66 have rivalsX).
