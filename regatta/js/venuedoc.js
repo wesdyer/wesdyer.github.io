@@ -554,6 +554,8 @@ const FACET_LIGHT = { x: -0.55, y: -0.83 };
 //   hidden                    do not draw — a collider behind something that draws the coast
 //   nav                       keep out of the A* graph — scenery a boat can never reach
 //   height   metres           how tall it stands out of the water
+//   awash    true  | false    it is UNDER the surface: sailed over, not collided with
+//   drag     0..1             how much speed its shallowest water takes (awash only)
 //
 // HEIGHT is what decides how much breeze a thing blocks. A wind shadow runs roughly ten
 // times the obstacle's height downwind — sailing's own thumb-rule spans seven to fifteen,
@@ -569,13 +571,24 @@ const FACET_LIGHT = { x: -0.55, y: -0.83 };
 // deleting weather they never asked for. The suggested figures are in the comments, so
 // typing a real one is a lookup rather than a guess.
 //
-// A KIND is a named preset over those five. That is what makes "iceberg" a different thing
+// AWASH is the third answer to the water-column question the lee derivation already asks.
+// Land blocks the whole column and the stream goes around it. A floe blocks the TOP metre
+// and the water passes underneath, which is why it drifts. A shoal is the other half of
+// that: it blocks the BOTTOM, the hull sails clean over it and the keel does not. So it is
+// not a collider — pushing a boat out of a sandbar it is floating above is a lie — and it
+// is not scenery either, because shallow water is genuinely slower. `drag` is what it
+// costs, and it is graded, not a step: a bar shoals up gradually and so does the tax.
+// Awash also settles the lee by itself — a reef awash blocks no breeze and blocks no
+// stream, so both shadows read 0 whatever height someone types.
+//
+// A KIND is a named preset over those seven. That is what makes "iceberg" a different thing
 // from "ice" rather than a different colour: the preset says it drifts slowly and stops you.
 // Any single axis can still be overridden on one shape without inventing a kind for it.
 //
-// These six reproduce EXACTLY what the ten venues did as land[] + ice[]. Nothing here is a
-// new behaviour; `iceberg` (drift + hard) and `growler` are deliberately absent and are a
-// gameplay change to make on purpose, not a side effect of a refactor.
+// The first six reproduce EXACTLY what the ten venues did as land[] + ice[]; `shoal` is the
+// one deliberate addition, and it is additive — no existing shape can become awash without
+// a designer changing its kind. `iceberg` (drift + hard) and `growler` are still absent and
+// are a gameplay change to make on purpose, not a side effect of a refactor.
 // What a mark LOOKS LIKE. One list, shared by the validator, the editor's dropdown and
 // script.js's sprite registry — a second copy is how a kind comes to mean two things.
 // `vessel` is the one that is not course furniture: it carries a heading and a hull, so
@@ -610,8 +623,75 @@ const SHAPE_KINDS = {
     // the layout is the designer's, the drift is the day's. A floe is a raft — a metre or two
     // of freeboard — so it shelters almost nothing, which is the honest answer. A berg is a
     // different kind, and a taller one, whenever someone wants it.
-    floe:    { motion: 'drift', hard: false, look: 'ice',      hidden: false, nav: true, height: 0 }    // ~2 m of freeboard: a raft shelters nothing
+    floe:    { motion: 'drift', hard: false, look: 'ice',      hidden: false, nav: true, height: 0 },   // ~2 m of freeboard: a raft shelters nothing
+    // Sandy shoal. The bar you sail OVER — sand bright through the water, no coastline, no
+    // collision. It costs half your speed at its shallowest and feathers to nothing at the
+    // rim, which is both what a bar does and what makes it a decision: cutting the corner
+    // across one is priced in seconds against sailing round it. It is `nav: true` on
+    // purpose — the router must know it is there in order to price it — but it is stamped
+    // as a COST rather than a wall (see grid._shoal).
+    //
+    // A shoal with a dry heart is two shapes, not a new kind: draw an `isle` inside it. That
+    // composes, and it keeps "does this thing ground me" a single yes-or-no per shape.
+    shoal:   { motion: 'fixed', hard: false, look: 'shoal',    hidden: false, nav: true, height: 0,    // awash: no lee, and none derivable
+               awash: true, drag: 0.5 }
 };
+
+// How far in from a shoal's rim the water is still deep enough not to matter, in units.
+// 120u is 24 m — about two boat lengths, crossed in six seconds at hull speed, so the tax
+// arrives as a build rather than a wall you hit. Clamped to half the shape's own radius so
+// a small bar still reaches its full drag somewhere in the middle instead of being all rim.
+const SHOAL_FEATHER = 120;
+
+// WHAT THE WATER OVER THIS SHOAL DOES TO YOUR SPEED, as a multiplier: 1 outside it, the
+// kind's floor over the shallowest part, smoothstepped between. ONE definition, because
+// three consumers ask — the boat's speed model, the router's per-cell time, and the
+// editor's readout — and a router that prices a crossing the sailor does not pay is a
+// router that sends the fleet the long way round for nothing.
+//
+// Smoothstep, like every other soft edge in this game. A linear ramp has a corner at each
+// end, and a boat holding station on that corner is a boat whose speed oscillates with its
+// own leeway; the eased one has zero gradient where it meets deep water.
+function shoalMulAt(isl, x, y) {
+    if (!isl.awash || !isl.shoalRings) return 1;
+    const dx = x - isl.x, dy = y - isl.y;
+    if (dx * dx + dy * dy > isl.radius * isl.radius) return 1;   // outside the bounding disc
+    // Inside the outer ring and outside every hole — the same evenodd rule the renderer
+    // fills with, so what you see slow is what slows you.
+    if (!pointInRing(x, y, isl.shoalRings[0])) return 1;
+    for (let h = 1; h < isl.shoalRings.length; h++) {
+        if (pointInRing(x, y, isl.shoalRings[h])) return 1;
+    }
+    let d = Infinity;
+    for (const ring of isl.shoalRings) {
+        for (let i = 0; i < ring.length; i++) {
+            const a = ring[i], b = ring[(i + 1) % ring.length];
+            const ex = b[0] - a[0], ey = b[1] - a[1], l2 = ex * ex + ey * ey;
+            let t = l2 ? ((x - a[0]) * ex + (y - a[1]) * ey) / l2 : 0;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const px = x - (a[0] + t * ex), py = y - (a[1] + t * ey);
+            const dd = px * px + py * py;
+            if (dd < d) d = dd;
+        }
+    }
+    const f = isl.shoalFeather || SHOAL_FEATHER;
+    const t = Math.min(1, Math.sqrt(d) / f);
+    return 1 - (1 - isl.shoalMul) * (t * t * (3 - 2 * t));
+}
+
+// The whole field at a point: the SHALLOWEST shoal wins rather than the multipliers
+// stacking. Two overlapping bars are one bar with a common bottom — multiplying them
+// would invent water shallower than either, which is exactly the "deepest shadow wins"
+// rule the wind lees already follow, for the same reason.
+function shoalFieldAt(islands, x, y) {
+    let mul = 1;
+    for (const isl of (islands || [])) {
+        if (!isl.awash) continue;
+        const m = shoalMulAt(isl, x, y);
+        if (m < mul) mul = m;
+    }
+    return mul;
+}
 
 // What a shape IS, after its kind's preset and its own overrides. One place, so nothing has
 // to remember that `soft` is the negation of `hard` or that `isBank` means two things.
@@ -624,7 +704,12 @@ function shapeTraits(s) {
         look:   s.look   || k.look,
         hidden: s.hidden !== undefined ? !!s.hidden : k.hidden,
         nav:    s.nav    !== undefined ? !!s.nav    : k.nav,
-        height: s.height !== undefined ? +s.height  : k.height
+        height: s.height !== undefined ? +s.height  : k.height,
+        awash:  s.awash  !== undefined ? !!s.awash  : !!k.awash,
+        // Clamped rather than trusted: `drag: 1` is a shape that stops a boat dead in water
+        // it is floating over, with no collision to explain why, and every escape from it
+        // is upwind of nothing. 0.9 leaves a knot to crawl out on.
+        drag:   Math.max(0, Math.min(0.9, s.drag !== undefined ? +s.drag : (k.drag || 0)))
     };
 }
 
@@ -716,11 +801,31 @@ function compileVenueDoc(doc) {
             isRock: isGranite,
             hidden: T.hidden,
             isBank: !T.nav,
+            // SUBMERGED. Read by the collision pass (skips it), the renderer (paints it
+            // under the water instead of over it), the nav-island filter (it is no
+            // obstacle) and the router (it is a cost). `shoalMul` is the speed multiplier
+            // at its heart — the drag inverted once, here, so nothing downstream has to
+            // remember which way round the number reads.
+            awash: T.awash,
+            shoalMul: T.awash ? 1 - T.drag : 1,
+            shoalFeather: Math.min(SHOAL_FEATHER, radius * 0.5),
+            // The rings UNKEYHOLED, for the graded depth read. `vertices` is the keyholed
+            // trace, and the slit it cuts to reach a hole is a zero-width edge — measuring
+            // distance-to-boundary against it would lay a false strip of deep water across
+            // the bar. Only awash shapes carry this; nothing else measures depth.
+            shoalRings: T.awash
+                ? [l.outer].concat(l.holes || []).map(r => r.map(p => [p[0], p[1]]))
+                : null,
             // How far this thing's lee reaches, in units — authored per shape, absent means
             // "derive it from my size". 0 is a real answer: a reef awash blocks no breeze.
-            height: T.height,
-            windShadow: l.windShadow != null ? l.windShadow : null,
-            currentShadow: l.currentShadow != null ? l.currentShadow : null,
+            // AWASH PINS BOTH TO 0 rather than trusting the authored figure, because the
+            // comment above is literally true of a shoal: there is nothing standing in the
+            // air to shelter you, and nothing reaching the surface to turn the stream. An
+            // inherited height from a kind swap is the way a sandbar quietly acquires a
+            // 300 m lee, so the swap answers it here instead.
+            height: T.awash ? 0 : T.height,
+            windShadow: T.awash ? 0 : (l.windShadow != null ? l.windShadow : null),
+            currentShadow: T.awash ? 0 : (l.currentShadow != null ? l.currentShadow : null),
             holes: (l.holes || []).map(h => h.map(p => ({ x: p[0], y: p[1] })))
         };
         if (isGranite) {
@@ -1248,6 +1353,10 @@ window.VenueDoc = {
     // and the converter. A second copy anywhere is how "iceberg" comes to mean two things.
     KINDS: SHAPE_KINDS,
     MARK_KINDS: MARK_KINDS,
+    // The depth read, on compiled islands. Shared so the boat, the router and the editor
+    // price a shoal crossing identically — see shoalMulAt.
+    shoalMul: shoalMulAt,
+    shoalField: shoalFieldAt,
     regionWeight: regionWeight,
     traits: shapeTraits,
     shapes: migrateShapes,

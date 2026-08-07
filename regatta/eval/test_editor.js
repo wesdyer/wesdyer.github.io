@@ -2617,6 +2617,11 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         const place = document.getElementById('place-opts');
         const sel = document.getElementById('new-kind');
         o.kinds = [...sel.options].map(x => x.value);
+        // What the GAME says a shape can be. The picker is supposed to be one row per kind
+        // in the shared table, so that is what this compares against — a hardcoded count
+        // here would just be a third copy of the list, and it would fail on the next kind
+        // added whether or not the picker was actually wrong.
+        o.tableKinds = Object.keys(window.VenueDoc.KINDS);
 
         A._pickTool('select');
         o.hiddenUnderSelect = opts.hidden;
@@ -2648,7 +2653,10 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         A._pickTool('select');
         return o;
     });
-    check('the picker offers every kind', kp.kinds.length === 7, kp.kinds.join(','));
+    check('the picker offers every kind',
+          kp.kinds.length === kp.tableKinds.length
+          && kp.tableKinds.every(k => kp.kinds.includes(k)),
+          `picker ${kp.kinds.join(',')} · table ${kp.tableKinds.join(',')}`);
     check('it is up for both makers and down for everything else',
           kp.hiddenUnderSelect === true && kp.shownForDraw === true,
           `select ${kp.hiddenUnderSelect} · draw ${kp.shownForDraw}`);

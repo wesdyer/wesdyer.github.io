@@ -2068,6 +2068,11 @@ class BotController {
                 }
             } else if (state.course.islands && state.course.islands.length) {
                 for (const isl of state.course.islands) {
+                    // A shoal is water. This is the no-grid fallback for "that heading
+                    // ends on land", and a flat land-shaped veto over a bar would refuse
+                    // the crossing at any price — the grid path above already carries the
+                    // real one, in seconds.
+                    if (isl.awash) continue;
                     const dIsl2 = (projX - isl.x) ** 2 + (projY - isl.y) ** 2;
                     if (dIsl2 < isl.radius * isl.radius) { score -= 0.6; break; }
                 }
@@ -2749,6 +2754,10 @@ class BotController {
                 const dxo = other.x - boat0.x, dyo = other.y - boat0.y;
                 if (dxo * dxo + dyo * dyo > 220 * 220) continue;
                 for (const isl of state.course.islands) {
+                    // Rule 19 is room at an OBSTRUCTION — something a boat must change
+                    // course to avoid. A shoal is not one: she may sail straight over it,
+                    // so being pinned against a bar is a tactical loss and not a foul.
+                    if (isl.awash) continue;
                     const ox = other.x - isl.x, oy = other.y - isl.y;
                     const d2i = ox * ox + oy * oy;
                     const lim = isl.radius + 320;
@@ -2775,6 +2784,11 @@ class BotController {
         if (state.course.islands && state.course.islands.length) {
             nearIslands = [];
             for (const isl of state.course.islands) {
+                // Awash shapes are not obstacles at all, so they never reach the candidate
+                // loop's segment tests. Pruning them HERE rather than inside those tests
+                // keeps every one of them honest — they all mean "will this heading hit
+                // something", and over a shoal the answer is no at every heading.
+                if (isl.awash) continue;
                 const dx = isl.x - this.boat.x, dy = isl.y - this.boat.y;
                 const rr = isl.radius + reach;
                 if (dx * dx + dy * dy < rr * rr) nearIslands.push(isl);
@@ -3841,6 +3855,65 @@ let DEFAULT_WATER_PALETTE = null;
 const DEFAULT_GUST_COLORS = { gustDark: [9, 46, 130], gustMid: [11, 63, 176], lullBright: [150, 222, 255], lullMid: [120, 210, 255] };
 let activeGustColors = DEFAULT_GUST_COLORS;
 
+// ── WHAT COLOUR THE STREAM IS ───────────────────────────────────────────────
+//
+// THE DARKEST VERSION OF THIS VENUE'S OWN WATER. Not a colour of its own: a current is not
+// a substance sitting on the sea, it is the sea moving, so the one thing it must never do
+// is look like it came from somewhere else.
+//
+// This was `#0640bf` — a flat, saturated blue, with a comment above it claiming the streaks
+// were "tinted to the venue's water (river = deep green)". They never were. Sockeye Run's
+// water is #3f6f5f, a green, so the stream through it drew in cobalt: the one element on
+// screen that belonged to no palette, on the venue whose whole identity is its current.
+//
+// Taking the water's own hue to its darkest gives contrast and belonging from the same
+// move. Every venue's water is painted as a gradient from base to deep, so a value BELOW
+// the deep end cannot be confused with water anywhere on the map, while the hue keeps it
+// unmistakably this water rather than a blue decal on a green river.
+//
+// Saturation is nudged UP as lightness comes down. Scaling RGB toward black desaturates in
+// perception — the darkest green and the darkest blue converge on the same near-black — and
+// a stream that reads charcoal everywhere would be the flat constant this replaces, only
+// duller. The floor stops an already-dark venue (Glowtide's #0a0f30) going to pure black,
+// where the streak would be a hole rather than water.
+const CURRENT_L = 0.42;      // fraction of the deep water's own lightness
+const CURRENT_L_FLOOR = 0.07; // never blacker than this, whatever the venue authored
+const CURRENT_S_GAIN = 1.35;  // saturation added back as value comes off
+function rgbToHsl(r, g, b) {
+    r /= 255; g /= 255; b /= 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    if (mx === mn) return [0, 0, l];
+    const d = mx - mn;
+    const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    let h;
+    if (mx === r) h = ((g - b) / d + (g < b ? 6 : 0)) / 6;
+    else if (mx === g) h = ((b - r) / d + 2) / 6;
+    else h = ((r - g) / d + 4) / 6;
+    return [h, s, l];
+}
+function hslToRgb(h, s, l) {
+    if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    const hue = (t) => {
+        if (t < 0) t += 1; if (t > 1) t -= 1;
+        if (t < 1 / 6) return p + (q - p) * 6 * t;
+        if (t < 1 / 2) return q;
+        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+        return p;
+    };
+    return [Math.round(hue(h + 1 / 3) * 255), Math.round(hue(h) * 255), Math.round(hue(h - 1 / 3) * 255)];
+}
+const DEFAULT_CURRENT_COLOR = [3, 40, 66];
+let activeCurrentColor = DEFAULT_CURRENT_COLOR;
+function currentTintFrom(pal) {
+    const hex = String((pal && pal.deepColor) || '').replace('#', '');
+    if (hex.length !== 6) return DEFAULT_CURRENT_COLOR;
+    const [h, s, l] = rgbToHsl(parseInt(hex.substring(0, 2), 16),
+                               parseInt(hex.substring(2, 4), 16),
+                               parseInt(hex.substring(4, 6), 16));
+    return hslToRgb(h, Math.min(1, s * CURRENT_S_GAIN), Math.max(CURRENT_L_FLOOR, l * CURRENT_L));
+}
+
 function applyVenuePalette(venueKey) {
     if (!window.WATER_CONFIG) return;
     if (!DEFAULT_WATER_PALETTE) {
@@ -3864,6 +3937,9 @@ function applyVenuePalette(venueKey) {
     // `venuePal.gusts` alone, which meant `doc.palette.gusts` was silently ignored — the
     // one part of the water's look the editor could write and the game would not read.
     activeGustColors = gusts || DEFAULT_GUST_COLORS;
+    // Derived from the MERGED palette, like the puffs — so a document that authors its own
+    // water gets a stream in it without authoring a second colour that could disagree.
+    activeCurrentColor = currentTintFrom(pal);
     GUST_SPRITES = null; // rebake puff/lull sprites in the new tint
 }
 
@@ -4529,6 +4605,10 @@ function refreshBotGrid() {
     g._wfx = c._botGridStatic._wfx;
     g._wfy = c._botGridStatic._wfy;
     g._wbin = c._botGridStatic._wbin;
+    // Shoals do not drift and are not stamped, so the field carries straight over. Left
+    // off, every floe rebuild would silently hand the router a course with no bars in it
+    // and the fleet's route would flip back and forth on a two-second cadence.
+    g._shoal = c._botGridStatic._shoal;
     // FLOE RISK: water near drifting ice is worth avoiding when open water is
     // affordable — the router should go AROUND a pack unless threading it is
     // clearly cheaper on the polar (this is what lets a route be "wider than the
@@ -6389,7 +6469,9 @@ function shadowLen(isl, kind) {
 // afloat, which is the physics rather than a UI decision.
 if (typeof window !== 'undefined') {
     window.shadowSuggest = (isl) => {
-        if (isl.isFloe) return 0;
+        // Afloat or awash, the stream is undisturbed — a floe rides on it and a shoal sits
+        // under it, and neither blocks the column. Same answer, opposite reasons.
+        if (isl.isFloe || isl.awash) return 0;
         const dir = (state.wind && state.wind.direction) || 0;
         const sil = shadowSil(isl, Math.sin(dir), -Math.cos(dir), 'suggest|' + dir, '_silS');
         return sil ? sil.halfW * SHADOW_WAKE : 0;
@@ -7910,6 +7992,18 @@ function drawCourseMiniMap() {
         seq.forEach((v, i) => i ? ctx.lineTo(X(v.x), Y(v.y)) : ctx.moveTo(X(v.x), Y(v.y)));
         ctx.closePath();
     };
+    // SHALLOWS FIRST, under the land, because that is where they are. A chart is where a
+    // sailor decides whether to cut a bar, so leaving them off would hide the one hazard
+    // this view exists to plan around — but they are drawn as a WASH with no outline. An
+    // inked edge here is the difference between "you may cross this, slowly" and "sail
+    // round it", and the second one is a lie the player would plan on.
+    const chartShoals = (state.course.islands || []).filter(l => l.awash && l.vertices && l.vertices.length >= 3);
+    if (chartShoals.length) {
+        ctx.beginPath();
+        for (const isl of chartShoals) ringPath(isl.vertices);
+        ctx.fillStyle = 'rgba(232,220,177,0.16)';
+        ctx.fill();
+    }
     const landShapes = (state.course.landShapes || []).filter(l => l.vertices && l.vertices.length >= 3);
     if (landShapes.length) {
         ctx.beginPath();
@@ -10244,6 +10338,22 @@ function updateBoat(boat, dt) {
     // flat water. Ocean only; 1.0 everywhere else. See swell.js §4.
     if (swell) targetKnots *= swell.poundMul;
 
+    // SHALLOW WATER. A multiplier on the TARGET, for the same reason the pound tax is:
+    // being over a bar is a sustained state, not a bump, so the boat's own acceleration
+    // constants decide how fast it bleeds off and how fast it comes back. Sailing onto a
+    // shoal therefore feels like the drag building it is, and sailing off one gives the
+    // speed back over about five seconds rather than in a frame.
+    //
+    // Graded by depth, not a step at the outline — see VenueDoc.shoalMul. Half speed over
+    // the shallowest part of the bar, feathering to nothing at its rim, so grazing an edge
+    // is nearly free and crossing the middle is a real price you chose to pay.
+    if (state.course._hasShoals) {
+        boat.shoalMul = window.VenueDoc.shoalField(state.course.islands, boat.x, boat.y);
+        targetKnots *= boat.shoalMul;
+    } else if (boat.shoalMul !== 1) {
+        boat.shoalMul = 1;
+    }
+
     let targetGameSpeed = targetKnots * 0.25;
 
     // Penalties no longer slow the boat directly — the cost is the owed 360°
@@ -11471,9 +11581,17 @@ function update(dt) {
         const py = state.camera.y + (fxRand() - 0.5) * range;
         const local = getCurrentAt(px, py);
         if (local && local.speed > 0.15) {
-            const spawnChance = (0.2 + (local.speed / 3.0) * 0.5) * 0.25;
+            // Density is one of the three speed channels, so it leans on local speed harder
+            // than it used to and runs denser overall — a lane has to be several streaks
+            // wide before it reads as a lane rather than as scattered marks.
+            const spawnChance = (0.10 + (local.speed / 3.0) * 0.9) * 0.75;
             if (fxRand() < spawnChance) {
-                createParticle(px, py, 'current', { life: 1.0 + fxRand(), alpha: Math.min(1, local.speed / 1.5) });
+                createParticle(px, py, 'current', {
+                    trail: [{ x: px, y: py }], trailT: 0, spd: local.speed,
+                    // Jitter so a lane is a band of streaks at slightly different weights
+                    // rather than a comb of identical ones — the same trick the comets use.
+                    jit: 0.7 + fxRand() * 0.6
+                });
             }
         }
 
@@ -12077,6 +12195,24 @@ function updateParticles(dt) {
              const moveSpeed = (speed / 4.0) * timeScale;
              p.x += Math.sin(dir) * moveSpeed;
              p.y -= Math.cos(dir) * moveSpeed;
+             if (p.type === 'current') {
+                 decay = 1 / (CUR_LIFE * 60);   // life 1 -> 0 over CUR_LIFE seconds
+                 p.spd = speed;
+                 // THE STREAMLINE IS THE PARCEL'S OWN TRACK, exactly as a comet's tail is.
+                 // Nothing is inferred from a single sample, so the mark curves through a
+                 // bend because the water did, and it is longer in the fast lane because
+                 // that water covered more ground in the same seconds.
+                 p.trailT += dt;
+                 if (p.trailT >= CUR_TAIL_STEP) {
+                     // Overshoot carried, not zeroed — otherwise every streak is a frame
+                     // longer than the speed it is claiming to report.
+                     p.trailT -= CUR_TAIL_STEP;
+                     p.trail.unshift({ x: p.x, y: p.y });
+                     // One spare beyond the drawn window: the tail end is interpolated
+                     // between the last two, so retiring the oldest moves nothing on screen.
+                     if (p.trail.length > CUR_TAIL_PTS + 1) p.trail.pop();
+                 }
+             }
         }
 
         p.life -= decay * timeScale;
@@ -12144,6 +12280,52 @@ const WIND_FADE_OUT = 1.3;        // seconds
 const WIND_TAIL_PTS = 5;          // history samples behind the live head
 const WIND_TAIL_STEP = 0.11;      // seconds between samples -> a 0.44-0.55s window of track
 const WIND_WATER_RECHECK = 0.12;  // seconds between "am I still over water" tests
+
+// ── THE STREAM ──────────────────────────────────────────────────────────────
+// A current streak is the SAME IDEA as a wind comet and is built from the same parts: the
+// mark is the parcel's own track, so it bends where the stream bends and its length is the
+// distance the water covered in a fixed window — which is to say, its speed, for free.
+//
+// What it was before: a straight 4 px line from the particle to `p + direction x 80`,
+// sampled once, uniform width, hard butt ends, flat 0.4 alpha. On a river that reads badly
+// for a specific reason — a straight segment cannot show a bend, so the one place the
+// current is most worth reading (the outside of a turn, where the stream runs hardest) drew
+// as a fan of chords across the corner rather than water going round it.
+//
+// The window is LONGER and the taper GENTLER than the wind's. Air is gusty and a comet
+// should read as a dart; water is not, and a stream reads as a slick — so the streak holds
+// its width down most of its length and thins at both ends rather than running to a point
+// behind a fat head. Nothing here has a bright head at all: a highlight would make each one
+// an object on the water instead of a lane in it.
+const CUR_LIFE = 7.0;             // seconds a streamline persists
+const CUR_FADE_IN = 0.9;          // seconds
+const CUR_FADE_OUT = 1.8;         // seconds — long, so lanes dissolve rather than blink
+const CUR_TAIL_PTS = 18;          // history samples behind the live head
+const CUR_TAIL_STEP = 0.20;       // seconds between samples -> a ~3.6s window of track
+const CUR_MAX_ALPHA = 0.19;       // never opaque: this is under the boats and the nav aids
+// WIDTH IS SET BY THE STREAK'S OWN LENGTH, not by the speed. Both of the obvious choices
+// fail at one end of the range: a fixed width gave a 30:1 splinter in the fast lane (a
+// scratch on the lens, not water), and scaling width WITH speed made slow water a fat 4:1
+// leaf, because length and width then shrink together and the shape stops being a line at
+// all. Deriving it from the measured arc length holds the silhouette constant everywhere,
+// so a lane always reads as a lane and speed is left to the three channels that carry it
+// honestly: LENGTH (ground covered in a fixed window), DENSITY (spawn rate) and ALPHA.
+const CUR_ASPECT = 13.0;          // length : full width
+const CUR_HALFWIDTH_MIN = 1.1;    // world units — below this the halo has nothing to soften
+const CUR_HALFWIDTH_MAX = 4.2;    // and above it, a lane starts competing with the boats
+const CUR_REF_KT = 3.0;           // the speed at which a lane draws at full alpha
+// Flattens the lens. sin() alone puts the whole mark on a taper and only its middle has any
+// body; raising it to a fraction holds the width across the belly and pinches only near the
+// two ends, which is the difference between a lane of water and a dart.
+const CUR_PROFILE = 0.5;
+// A soft edge, in two fills rather than a blur: a wide faint halo under a narrower core.
+// shadowBlur on ~130 polygons a frame is not affordable, and a hard-edged translucent
+// polygon is exactly what made these read as slivers of glass.
+// A RIM, not a second streak. At 2.4x the halo more than doubled the apparent width and
+// took the silhouette from 7:1 to about 2.5:1 — every lane came out a leaf. It only has to
+// take the hard edge off.
+const CUR_HALO_W = 1.35;          // halo width, x the core
+const CUR_HALO_A = 0.55;          // halo alpha, x the core
 
 // ── THE GUARDRAILS ──────────────────────────────────────────────────────────
 // The streak layer reports the wind field; it is never the subject of the frame. These are
@@ -12262,17 +12444,22 @@ function streakChannels(t, jit, spd) {
 // re-spacing itself whenever the sample count changes. While the history is still filling,
 // the window is whatever track exists — so a newborn streak grows smoothly out of its head.
 // Scratch array, reused per streak: this runs for every streak, every frame.
+// PARAMETERISED over the window, because the current draws its streamlines the same way and
+// the sliding-window interpolation below is the fiddly part — a second copy of it is a
+// second thing to get subtly wrong. The wind passes its constants, the stream passes its
+// own; nothing else differs.
 const _spine = [];
-for (let i = 0; i < WIND_TAIL_PTS + 2; i++) _spine.push({ x: 0, y: 0, u: 0 });
-function streakSpine(p) {
-    const trail = p.trail, len = trail.length, step = WIND_TAIL_STEP, frac = p.trailT;
+for (let i = 0; i < Math.max(WIND_TAIL_PTS, CUR_TAIL_PTS) + 2; i++) _spine.push({ x: 0, y: 0, u: 0 });
+function streakSpine(p, step, pts) {
+    if (step === undefined) { step = WIND_TAIL_STEP; pts = WIND_TAIL_PTS; }
+    const trail = p.trail, len = trail.length, frac = p.trailT;
     if (len < 2) return 0;
-    const full = len > WIND_TAIL_PTS;
-    const span = full ? WIND_TAIL_PTS * step : frac + (len - 1) * step;
+    const full = len > pts;
+    const span = full ? pts * step : frac + (len - 1) * step;
     if (span <= 1e-6) return 0;
     let n = 0;
     let s = _spine[n++]; s.x = p.x; s.y = p.y; s.u = 0;
-    const last = full ? WIND_TAIL_PTS - 1 : len - 1;
+    const last = full ? pts - 1 : len - 1;
     for (let j = 0; j <= last; j++) {
         s = _spine[n++];
         s.x = trail[j].x; s.y = trail[j].y; s.u = (frac + j * step) / span;
@@ -12282,7 +12469,7 @@ function streakSpine(p) {
         // was just retired — so the handover from "stored point" to "interpolated point"
         // is continuous in both position and width.
         const f = (step - frac) / step;
-        const a = trail[WIND_TAIL_PTS - 1], b = trail[WIND_TAIL_PTS];
+        const a = trail[pts - 1], b = trail[pts];
         s = _spine[n++];
         s.x = a.x + (b.x - a.x) * f; s.y = a.y + (b.y - a.y) * f; s.u = 1;
     }
@@ -12303,21 +12490,71 @@ function drawParticles(ctx, layer) {
     };
 
     if (layer === 'current') {
-        // Dark streamlines, tinted to the venue's water (river = deep green)
-        ctx.strokeStyle = '#0640bf';
-        ctx.lineWidth = 4;
-
+        // The darkest version of this venue's own water — see currentTintFrom. One fill per
+        // streak, no stroke: the outline IS the shape, so width can vary along it.
+        const col = activeCurrentColor;
         for (const p of state.particles) {
-            if (p.type === 'current') {
-                if (!onScreen(p)) continue;
-                const c = getCurrentAt(p.x, p.y);
-                const dir = c ? c.direction : 0;
-                const len = 80 * (c ? Math.min(1, c.speed / 1.5) : 1);
-                ctx.globalAlpha = p.alpha * 0.4; // Semi-transparent
+            if (p.type !== 'current') continue;
+            if (!onScreen(p)) continue;
+
+            // Fade in over the window the tail takes to form, so a newborn stub is never
+            // seen at full strength, and out slowly, so a lane dissolves rather than blinks.
+            const age = (1 - p.life) * CUR_LIFE, left = p.life * CUR_LIFE;
+            const env = Math.min(1, age / CUR_FADE_IN, left / CUR_FADE_OUT);
+            if (env <= 0.02) continue;
+
+            // Speed drives weight as well as length: a 4 kt lane should look like one next
+            // to half a knot of drift, not merely be a longer mark of the same value.
+            const f = Math.min(1, (p.spd || 0) / CUR_REF_KT);
+            if (f <= 0.02) continue;
+            const alpha = env * CUR_MAX_ALPHA * (0.35 + 0.65 * f) * (p.jit || 1);
+
+            const n = streakSpine(p, CUR_TAIL_STEP, CUR_TAIL_PTS);
+            if (n < 2) continue;
+
+            // The track's own arc length, which is what the silhouette is scaled against.
+            let arc = 0;
+            for (let k = 1; k < n; k++) {
+                arc += Math.hypot(_spine[k].x - _spine[k - 1].x, _spine[k].y - _spine[k - 1].y);
+            }
+            if (arc < 6) continue;      // barely moving: no lane to draw
+            const wH = Math.max(CUR_HALFWIDTH_MIN,
+                       Math.min(CUR_HALFWIDTH_MAX, arc / (2 * CUR_ASPECT))) * (p.jit || 1);
+
+            // Down one flank of the track and back up the other, as the comets do — but on
+            // a LENS profile rather than a taper from the head. Width peaks a third of the
+            // way back and thins to nothing at both ends, which is what a slick looks like
+            // and, unlike a pointed head, gives the mark no front — a current has no
+            // leading edge to find, it is the whole lane that is moving.
+            //
+            // Twice: a wide faint halo, then the core over it. Two translucent fills of the
+            // same shape are a soft edge for the price of one extra path, and the softness
+            // is the whole difference between water and glass.
+            for (let pass = 0; pass < 2; pass++) {
+                const pw = pass === 0 ? wH * CUR_HALO_W : wH;
+                const pa = pass === 0 ? alpha * CUR_HALO_A : alpha;
+                ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${pa.toFixed(3)})`;
                 ctx.beginPath();
-                ctx.moveTo(p.x, p.y);
-                ctx.lineTo(p.x + Math.sin(dir) * len, p.y - Math.cos(dir) * len);
-                ctx.stroke();
+                for (let side = 0; side < 2; side++) {
+                    for (let k = 0; k < n; k++) {
+                        const i = side === 0 ? k : n - 1 - k;
+                        const a = _spine[i];
+                        const b = _spine[Math.max(0, i - 1)], c2 = _spine[Math.min(n - 1, i + 1)];
+                        let tx = c2.x - b.x, ty = c2.y - b.y;
+                        const tl = Math.hypot(tx, ty) || 1;
+                        tx /= tl; ty /= tl;
+                        // u is age across the window: 0 at the head, 1 at the tail. sin gives
+                        // the lens in one term, biasing u pushes the belly back off the head,
+                        // and the exponent flattens it into a band.
+                        const u = a.u;
+                        const bias = u < 0.33 ? (u / 0.33) * 0.5 : 0.5 + ((u - 0.33) / 0.67) * 0.5;
+                        const w = pw * Math.pow(Math.sin(Math.PI * bias), CUR_PROFILE) * (side === 0 ? 1 : -1);
+                        const px2 = a.x - ty * w, py2 = a.y + tx * w;
+                        if (side === 0 && k === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+                    }
+                }
+                ctx.closePath();
+                ctx.fill();
             }
         }
         ctx.globalAlpha = 1.0;
@@ -13440,7 +13677,14 @@ function updateSurf(dt) {
         // surf round every one of Glacier Sound's 112 floes is fussy detail that fights the
         // fleet for attention, and they move, so it never settles. Fixed ice IS a shoreline
         // and keeps its breakers.
-        if (isl.hidden || isl.isFloe || !isl.vertices || isl.vertices.length < 3) continue;
+        //
+        // NOR ON SHOALS, though a real bar is exactly where a sea trips and breaks. What
+        // this spawns is SHORE surf — foam that runs up a beach and dies at a waterline —
+        // and a submerged bar has no waterline for it to die at, so the ring of breakers
+        // would draw in the coastline the whole feature exists not to have. Breaking water
+        // over a shoal is a different effect and wants building as one. (drawSurf skips
+        // them on the same test, for the same reason.)
+        if (isl.hidden || isl.isFloe || isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl), V = isl.vertices;
@@ -13508,7 +13752,7 @@ function drawSurf(ctx) {
         // surf round every one of Glacier Sound's 112 floes is fussy detail that fights the
         // fleet for attention, and they move, so it never settles. Fixed ice IS a shoreline
         // and keeps its breakers.
-        if (isl.hidden || isl.isFloe || !isl.vertices || isl.vertices.length < 3) continue;
+        if (isl.hidden || isl.isFloe || isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl);
@@ -14023,10 +14267,16 @@ function drawMinimap() {
         grass:    { body: '#8a9a5b', top: '#4d7c0f' },
         ice:      { body: '#b8dcf5', top: '#f2f9ff' },
         redrock:  { body: '#c2703e', top: '#d98e57' },
-        granite:  { body: '#4b5563', top: '#374151' }
+        granite:  { body: '#4b5563', top: '#374151' },
+        // Sand, washed toward the water it is under and half transparent. A chart says
+        // where the shallows are — leaving them off would hide the one hazard you are
+        // meant to plan around — but drawn at land's weight the minimap would read as a
+        // course with an island across it, and the whole point is that you may cross.
+        shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }
     };
     if (state.course.islands) {
-        // Body first
+        // Body first. Shoals draw their body and are then skipped by the cap pass below:
+        // the cap is vegetation or snow, and a bar under water has neither.
         for (const isl of state.course.islands) {
             if (isl.isBank || isl.hidden) continue;
             ctx.fillStyle = isl.fromMask
@@ -14047,7 +14297,7 @@ function drawMinimap() {
         }
         // Center cap (vegetation on land, snow on ice)
         for (const isl of state.course.islands) {
-            if (isl.isBank || isl.hidden) continue;
+            if (isl.isBank || isl.hidden || isl.awash) continue;
             // Mask shapes are keyholed; an inset "cap" ring is meaningless and
             // paints blobs across the water.
             if (isl.fromMask) continue;
@@ -15715,6 +15965,11 @@ function draw() {
 
     // all lay over a submerged animal, which is most of what sells the depth.
 
+    // SHOALS BEFORE THE SWELL — the only thing in the world that is genuinely BELOW the
+    // surface, so it is the only thing the surface layers are allowed to run across. See
+    // drawShoals.
+    drawShoals(ctx);
+
     // SWELL FIRST, under everything else on the water. It is the shape of the sea itself —
     // the biggest, slowest structure there is — so the wakes, the cat's-paws and the
     // wind-wave crests all ride ON it. Drawing it over them would read as a decal.
@@ -16365,6 +16620,7 @@ function checkIslandCollisions(dt) {
         // Optimization: Broad phase
         let potential = false;
         for (const isl of state.course.islands) {
+            if (isl.awash) continue;
             const dx = boat.x - isl.x;
             const dy = boat.y - isl.y;
             if (dx*dx + dy*dy < (isl.radius + 50)**2) { potential = true; break; }
@@ -16374,6 +16630,12 @@ function checkIslandCollisions(dt) {
         const boatPoly = getHullPolygon(boat);
 
         for (const isl of state.course.islands) {
+            // AWASH SHAPES ARE NOT COLLIDERS. A shoal is under the boat, not in front of
+            // it — shoving a hull sideways out of water it is floating over would be a
+            // shove with nothing to push against, and it would fire `collision_island` at
+            // the eval harness for a contact that never happened. The bar's whole cost is
+            // the drag in the speed model (shoalFieldAt); there is nothing to bounce off.
+            if (isl.awash) continue;
             const dx = boat.x - isl.x;
             const dy = boat.y - isl.y;
             if (dx*dx + dy*dy > (isl.radius + 50)**2) continue;
@@ -16465,8 +16727,132 @@ const ISLAND_STYLES = {
     redrock:  { body: '#c2703e', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
-    granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false }
+    granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
+    // Sandy shoal. THE SAME SAND as `tropical` — a bar is the beach continuing under the
+    // water, and giving it its own hue would say it is a different material rather than
+    // the same one at a different depth. What makes it read as submerged is not the colour
+    // but where it is drawn (under the water's own surface layers, see drawShoals) and how
+    // much of it comes through: the alpha in drawShoals is the water above it.
+    //
+    // No trees, no rocks and no stroke worth the name — the crisp shoreline is exactly the
+    // cue that says "this is land", so a shoal must not have one. Its edge is a gradient.
+    shoal:    { body: '#ddc39a', stroke: '#c9ad84', veg: '#ddc39a', rock: '#c9ad84', trees: false }
 };
+
+// How a bar comes through the water. Two numbers, because a shoal has to answer two
+// questions at once: it must be unmistakably there (you cannot decide to cross something
+// you did not see) and unmistakably NOT land (a boat that thinks it is land sails a longer
+// course for no reason). So the sand is bright but never opaque, and the fill fades out to
+// nothing at the rim across the SAME band the drag feathers over — the picture and the
+// physics are the same shape, and the edge you can see is the edge you can feel.
+const SHOAL_ALPHA_CORE = 0.62;    // over the shallowest water, where the drag is at its floor
+const SHOAL_ALPHA_RIM  = 0.0;     // at the outline, where the water is deep and free again
+
+// ── WHAT COLOUR A SUBMERGED BAR IS ──────────────────────────────────────────
+//
+// Not the colour of sand. The colour of sand LIT BY WHATEVER LIGHT REACHES IT, which is the
+// same light that decides what colour the water is — so the tint is derived from the
+// venue's own water rather than fixed.
+//
+// This is not a nicety. Painted as flat #ddc39a it was right on Lighthouse Cove, whose
+// bright tropical water is the palette it was picked against, and badly wrong on Glowtide,
+// where a beige patch at 0.62 over near-black night water read as a spotlight pointed at
+// the seabed — brighter than the sea around it, and the one object on screen outside the
+// venue's palette. A sandbar at night is a dark warm smudge, and every venue past the first
+// would have needed its own hand-tuned exception.
+//
+// Two steps, both about light and neither about taste. MIX toward the water, because you
+// are looking at the bottom through a column of it and the water colours everything you see
+// down there. Then SCALE by how bright that water is against the tropical reference, because
+// the same bottom under less light is simply darker. The result stays inside whatever
+// palette a venue authored, automatically, on venues that do not exist yet.
+const SHOAL_IN_WATER = 0.38;      // how much of the column's own colour you see the sand through
+const SHOAL_REF_LUMA = 128;       // luma of the bright tropical water the sand was picked against
+function shoalTint() {
+    const W = window.WATER_CONFIG || {};
+    const rgb = (h, fb) => {
+        const s = String(h || '').replace('#', '');
+        if (s.length !== 6) return fb;
+        return [parseInt(s.substring(0, 2), 16), parseInt(s.substring(2, 4), 16), parseInt(s.substring(4, 6), 16)];
+    };
+    const sand = rgb((ISLAND_STYLES.shoal || {}).body, [221, 195, 154]);
+    const water = rgb(W.baseColor, [14, 165, 233]);
+    const luma = 0.299 * water[0] + 0.587 * water[1] + 0.114 * water[2];
+    // Floored well above zero: a bar you cannot see is a bar you cannot decide about, and
+    // Glowtide's night water would otherwise take it to nearly black. Capped just over 1 so
+    // an unusually bright venue cannot blow the sand out past white.
+    const gain = Math.max(0.42, Math.min(1.12, luma / SHOAL_REF_LUMA));
+    return sand.map((c, i) => Math.round((c * (1 - SHOAL_IN_WATER) + water[i] * SHOAL_IN_WATER) * gain));
+}
+
+// ── SHOALS ──────────────────────────────────────────────────────────────────
+//
+// A bar is drawn as ITS OWN DRAG FIELD, rasterised. Not "a polygon with a soft edge that
+// approximately matches" — the alpha of every pixel is VenueDoc.shoalMul at that point,
+// the same call the boat's speed model makes and the same one the router prices cells
+// with. So the sand you can see fading out is exactly the water that stops costing you,
+// to the pixel, and the three of them cannot drift apart as the constants are tuned.
+//
+// The alternative was an inset polygon or a blurred fill. Both are approximations of a
+// number this file can simply ask for, and a picture that lies about where the slow water
+// starts is worse than no picture: the player would learn the wrong edge.
+//
+// Baked ONCE per shoal per race, like every other island sprite — the per-pixel cost is a
+// point-in-polygon plus a distance to every segment, which is fine once and hopeless per
+// frame. 2.5 units per pixel: this is a smooth gradient with no detail to lose, and it
+// upscales for free (the same trade water.js makes at resolutionScale 0.5).
+const SHOAL_UNITS_PER_PX = 2.5;
+function bakeShoalSprite(isl) {
+    const R = isl.radius;
+    const px = Math.max(32, Math.min(512, Math.ceil((R * 2) / SHOAL_UNITS_PER_PX)));
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = px;
+    const g = cv.getContext('2d');
+    const img = g.createImageData(px, px);
+    const d = img.data;
+    const [sr, sg, sb] = shoalTint();
+    // The multiplier at the heart is what "fully shallow" means for THIS shoal, so a
+    // gentler bar reads as a fainter one and a 0-drag shoal is invisible rather than
+    // dividing by zero. That is the honest picture: no drag, nothing to warn about.
+    const span = 1 - isl.shoalMul;
+    const step = (R * 2) / px;
+    for (let j = 0; j < px; j++) {
+        const wy = isl.y - R + (j + 0.5) * step;
+        for (let i = 0; i < px; i++) {
+            const wx = isl.x - R + (i + 0.5) * step;
+            const t = span > 1e-6 ? (1 - window.VenueDoc.shoalMul(isl, wx, wy)) / span : 0;
+            const o = (j * px + i) * 4;
+            d[o] = sr; d[o + 1] = sg; d[o + 2] = sb;
+            d[o + 3] = Math.round(255 * (SHOAL_ALPHA_RIM + (SHOAL_ALPHA_CORE - SHOAL_ALPHA_RIM) * t));
+        }
+    }
+    g.putImageData(img, 0, 0);
+    // Keyed on the TINT, so the bake follows the water. resetGame applies the venue's
+    // palette, and the water panel can move it live — either way a sprite baked against
+    // the previous venue's light rebakes itself rather than sitting there in the wrong
+    // colour. Same reason applyVenuePalette drops the gust sprites.
+    isl._shoalSprite = { canvas: cv, r: R, tint: `${sr},${sg},${sb}` };
+}
+
+// UNDER EVERYTHING ON THE WATER, and that is the whole statement the layer makes. The
+// swell, the wakes, the cat's-paws, the wind waves and the nav aids are all things
+// happening AT the surface; the bar is beneath it, so it is painted before all of them and
+// they run across it unbroken. Draw it with the land instead and it acquires a coastline
+// the moment a wake stops at its edge.
+function drawShoals(ctx) {
+    if (!state.course || !state.course._hasShoals) return;
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const camX = state.camera.x, camY = state.camera.y;
+    const tint = shoalTint().join(',');
+    for (const isl of state.course.islands) {
+        if (!isl.awash || isl.hidden) continue;
+        const limit = viewRadius + isl.radius;
+        if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
+        if (!isl._shoalSprite || isl._shoalSprite.tint !== tint) bakeShoalSprite(isl);
+        const s = isl._shoalSprite;
+        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+    }
+}
 
 // Ice is faceted, not rounded — the style guide asks for literal low-poly
 // facets and crisp edges, and the aerial references are all hard planes and
@@ -16685,8 +17071,9 @@ function drawIslands(ctx) {
 
     for (const isl of state.course.islands) {
         // Invisible colliders: the river banks draw as one continuous mass in
-        // drawRiverShore instead.
-        if (isl.isBank || isl.hidden) continue;
+        // drawRiverShore instead. Awash shapes were already painted UNDER the water by
+        // drawShoals — this pass is the world standing above it.
+        if (isl.isBank || isl.hidden || isl.awash) continue;
         const distSq = (isl.x - camX) ** 2 + (isl.y - camY) ** 2;
         const limit = viewRadius + isl.radius;
         if (distSq > limit ** 2) continue;
@@ -17103,7 +17490,12 @@ function initCourse() {
         // POLYGONS — the landmass bounding radius is 9388, more than half the
         // world, and reasoning from it silently broke floe placement, collision and
         // wind shadow on three separate occasions.
-        state.course.landShapes = c.islands;
+        //
+        // AWASH SHAPES ARE NOT IN IT, so the name stays true and all three callers get the
+        // right answer for free: a shoal is open water to the placement test (it is), a
+        // floe drifts over one instead of being shoved off it (it floats), and the chart
+        // does not ink it as a coastline (it is not one — it draws it as shallows below).
+        state.course.landShapes = c.islands.filter(i => !i.awash);
         // Where SCENERY lives, as opposed to where boats may sail. Drifting ice is
         // placed and kept inside this, not inside the arena.
         state.course.scenery = c.scenery;
@@ -17179,9 +17571,16 @@ function initCourse() {
         // multiplies expansion (the river's 82 banks once caused multi-hundred-ms replan
         // spikes). Run UNCONDITIONALLY: it used to be skipped when no ice was added, which
         // was fine while land was one coastline and wrong the moment land could opt out.
+        // AWASH SHAPES ARE NOT NAV ISLANDS. `navIslands` is the obstacle list — the bots'
+        // visibility planner inflates it and steers round every member, and the wind lee
+        // is cast off it. A shoal is neither: there is nothing to steer round and nothing
+        // standing in the breeze. What the router DOES need to know about it is the time
+        // the crossing costs, and that arrives as a per-cell cost on the grid instead
+        // (grid._shoal in buildCoursePaths).
         const b0 = state.course.boundary;
         state.course.navIslands = state.course.islands.filter(i =>
-            !i.isBank && Arena.signedDist(b0, i.x, i.y) > -(i.radius + 120));
+            !i.isBank && !i.awash && Arena.signedDist(b0, i.x, i.y) > -(i.radius + 120));
+        state.course._hasShoals = state.course.islands.some(i => i.awash);
         orientCourseMarks();
         // Ice sits where it will actually be BEFORE anything is drawn. This has to be on the
         // DOCUMENT path, not merely at the end of initCourse: every venue is a document now,
@@ -17241,6 +17640,10 @@ function initCourse() {
     // own say-so. Feeding every one to A* is pure cost — the river's 82 banks once caused
     // multi-hundred-ms replan spikes.
     state.course.navIslands = state.course.islands.filter(i => !i.isBank);
+    // A generated course has no land at all, so no shoals either — but the flag has to be
+    // written rather than left over from the last venue raced, or a document's bar would
+    // keep taxing boats on a course that has none.
+    state.course._hasShoals = false;
     state.course.navVersion = 0; // bumped when floes drift, so the planner's inflated cache refreshes
     orientCourseMarks();
     // Ice sits where it will actually be BEFORE anything is drawn, so no berg is ever seen
@@ -17278,7 +17681,14 @@ function buildCoursePaths() {
         let grid = null;
         const doc = window.VenueDoc && window.VenueDoc.get(settings.venue);
         if (window.SailCheck && doc) {
-            const fixed = window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed');
+            // AWASH SHAPES ARE NOT LAND HERE. `fixed` becomes the grid's walls, and a
+            // shoal stamped as a wall is a shortcut the router can never take and the
+            // player can — the two would disagree about the course on every bar. It is
+            // priced instead, below, as the seconds the crossing actually costs.
+            const fixed = window.VenueDoc.shapes(doc).filter(sh => {
+                const t = window.VenueDoc.traits(sh);
+                return t.motion === 'fixed' && !t.awash;
+            });
             // Icy venues keep centre-sampled land: sub-cell shore threads are a
             // trap under floe drift, and every arctic margin constant was priced
             // on this sampling. See buildGridRaw.
@@ -17288,6 +17698,38 @@ function buildCoursePaths() {
             // Kept for the periodic floe-aware rebuild (refreshBotGrid): same land,
             // fresh floe circles, every few seconds.
             state.course._gridFixed = fixed;
+            // ── SHOAL COST, per cell ────────────────────────────────────────
+            // The multiplier the boat will actually feel, sampled at each cell centre and
+            // stored as its RECIPROCAL, because the router's base cost is time: water that
+            // sails at 0.5x takes 2x as long to cross, and 2 is what A* must add up. That
+            // makes the detour arithmetic honest all by itself — a bar is worth going round
+            // exactly when going round is shorter in seconds — so there is no hint weight
+            // here to tune, and none that could invert the topology.
+            //
+            // Keyed like the lee mask, and for the same reason: buildGrid caches grids by
+            // LAND, and shoals are no longer land, so two venues with the same coast could
+            // hand back the same grid object. The key carries the shoals, so a cached grid
+            // whose bars differ rebuilds this field instead of racing on the wrong one.
+            if (grid) {
+                const shoals = (state.course.islands || []).filter(i => i.awash);
+                let sKey = '';
+                for (const s of shoals) sKey += `|${s.id},${s.shoalMul},${s.shoalFeather},${s.x | 0},${s.y | 0},${s.radius | 0}`;
+                if (grid._shoalKey !== sKey) {
+                    grid._shoalKey = sKey;
+                    if (!shoals.length) {
+                        grid._shoal = null;
+                    } else {
+                        const N = grid.n, sc = new Float32Array(N * N);
+                        for (let j = 0; j < N; j++) {
+                            for (let i = 0; i < N; i++) {
+                                const [wx, wy] = grid.world(i, j);
+                                sc[j * N + i] = 1 / window.VenueDoc.shoalField(shoals, wx, wy);
+                            }
+                        }
+                        grid._shoal = sc;
+                    }
+                }
+            }
         }
         // The bots route on this same grid. Their visibility planner cannot inflate a
         // keyholed coastline (see RoutePlanner.updateIslands), so on a designed venue

@@ -771,6 +771,17 @@ function pathSailable(grid, from, to) {
                 if (icyG && W < 140 && fUp > 1.05) fUp *= (140 / W) * (140 / W);
                 base = Math.min(icyG && fUp > 1.05 && W < 140 ? 90 : 20, base * fUp);
             }
+            // SHOAL WATER, and NOT a hint — the one weight here that belongs on the base
+            // cost rather than in `extra`. It is already the reciprocal of the speed
+            // multiplier the boat will feel (see grid._shoal), so multiplying it into a
+            // time cost yields time: a cell that sails at 0.5x takes twice as long to
+            // cross, and the A* adds up seconds that are literally true. That is why it
+            // sits OUTSIDE the corridor cap above, which bounds a modelled loss — this is
+            // not modelled, it is the tax the speed model will actually levy, and capping
+            // it would let the router promise a shortcut the sailor cannot sail.
+            // Admissible: the field is >= 1 everywhere, so no step gets cheaper than
+            // _tfMin and the heuristic still never overestimates.
+            if (grid._shoal) base *= grid._shoal[nid];
             // ⚠️ REMAINING WEIGHTS ARE ROUTE HINTS, NOT WALLS — bounded, so the
             // worst hint-driven detour stays small (the 7x-wall-cost cove loop
             // lives in memory as the cautionary tale).

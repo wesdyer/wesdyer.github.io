@@ -153,6 +153,36 @@ shows.
 **Islands bake to a sprite once, then blit.** Any new land treatment must survive
 that: no per-frame procedural detail.
 
+### Shoals — **Observed** (`drawShoals()`, `bakeShoalSprite()`, `shoalTint()`)
+
+The `shoal` kind is the one shape that is *under* the surface, and the whole visual
+job is to make that unmistakable. Three rules, and they are the reason it does not go
+through `bakeIslandSprite` at all:
+
+1. **No outline, ever.** A crisp edge is the single cue that reads as *land*, and a
+   shoal the player believes is land costs them a longer course for nothing. Its edge
+   is a gradient — alpha `SHOAL_ALPHA_CORE` 0.62 over the shallowest water easing to 0
+   at the outline.
+2. **It is drawn as its own drag field.** Every pixel's alpha is `VenueDoc.shoalMul`
+   at that point — the same call the speed model and the router make — so the sand you
+   see fading out is exactly the water that stops costing you. Baked once per shoal per
+   race at 2.5 units/px.
+3. **First layer in the world, under the swell.** Wakes, cat's-paws, wind waves and
+   the nav aids all run across it unbroken, because they are all at the surface and it
+   is not. Drawn with the land instead, it grows a coastline the moment a wake stops
+   at its edge.
+
+Its colour is **derived from the venue's water, not fixed** (`shoalTint()`): the sand
+is mixed `SHOAL_IN_WATER` 0.38 toward `WATER_CONFIG.baseColor`, then scaled by that
+water's luma against a tropical reference of 128. A bar is lit by whatever light
+reaches the bottom, which is the same light that makes the water its colour — painted
+as flat sand it was right on Lighthouse Cove and read as a spotlight on the seabed on
+Glowtide's night water. **Test any change to it on both.**
+
+It gets **no surf.** `updateSurf` spawns *shore* foam that runs up a beach and dies at
+a waterline; a submerged bar has none, so the breakers would draw in the coastline the
+kind exists not to have. Breaking water over a shoal is a separate effect, unbuilt.
+
 A new island style supplies all four colors plus a trees flag. Body and vegetation
 belong to the venue's hue family; rock stays neutral so it reads as rock everywhere.
 

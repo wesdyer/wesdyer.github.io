@@ -197,7 +197,7 @@ const eachRing = (l) => [l.outer].concat(l.holes || []);
 // list rather than the order they happen to be declared: the ordinary land first, the odd
 // ones last. The behaviour is NOT restated here — it comes from the shared table, so this
 // is a label and a swatch and nothing that could disagree with the game.
-// ALPHABETICAL. Seven items is past the point where a reader scans for the one they want
+// ALPHABETICAL. Eight items is past the point where a reader scans for the one they want
 // rather than reading the list, and there is no other order here that means anything — the
 // table this labels already carries the behaviour, so any grouping would be a second,
 // weaker statement of it.
@@ -208,7 +208,8 @@ const LAND_TYPES = [
     { kind: 'reed',    label: 'Grass',   swatch: '#a89b6a' },
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
-    { kind: 'isle',    label: 'Sand',    swatch: '#e8dcb1' }
+    { kind: 'isle',    label: 'Sand',    swatch: '#e8dcb1' },
+    { kind: 'shoal',   label: 'Shoal',   swatch: '#cfc09a' }
 ];
 // The fallback when nothing says otherwise. Named, not `LAND_TYPES[0]`: that used to be
 // ordinary land and is now Bank — a hidden collider — so an alphabetical sort would have
@@ -276,7 +277,7 @@ function recompile(rerollIce) {
         // initCourse uses so pathfinding still ignores unreachable scenery.
         course.islands = (course.islands || []).filter(i => i.fromMask || i.authored).concat(iceCache);
         course.navIslands = course.islands.filter(i =>
-            !i.isBank && window.Arena.signedDist(course.boundary, i.x, i.y) > -(i.radius + 120));
+            !i.isBank && !i.awash && window.Arena.signedDist(course.boundary, i.x, i.y) > -(i.radius + 120));
     }
     floes = iceCache;
     runChecks();
@@ -1164,13 +1165,19 @@ function drawDriftingFloes() {
 }
 // What each KIND is painted as. The game has its own palette (ISLAND_STYLES); this is the
 // schematic's, which reads flatter on purpose — you are looking at topology, not at weather.
+// Shoal is TRANSLUCENT sand, the same device a floe already uses for "this one is not
+// solid" — you can see the water through it, which is the one thing that separates it from
+// Sand at a glance. The schematic still gives it a solid outline where the game gives it a
+// gradient: here you are dragging vertices and you have to be able to see where they are.
 const KIND_FILL = {
     granite: '#8d8d8d', redrock: '#c2703e', reed: '#a89b6a',
-    isle: '#e8dcb1', ice: '#e8edf5', bank: '#6b7280', floe: 'rgba(125,211,252,0.55)'
+    isle: '#e8dcb1', ice: '#e8edf5', bank: '#6b7280', floe: 'rgba(125,211,252,0.55)',
+    shoal: 'rgba(232,220,177,0.38)'
 };
 const KIND_EDGE = {
     granite: '#c9c9c9', redrock: '#8a4a26', reed: '#7d7048',
-    isle: '#d4b483', ice: '#ffffff', bank: '#9ca3af', floe: 'rgba(224,242,254,0.7)'
+    isle: '#d4b483', ice: '#ffffff', bank: '#9ca3af', floe: 'rgba(224,242,254,0.7)',
+    shoal: 'rgba(232,220,177,0.75)'
 };
 
 function drawLandLayer() {
@@ -2468,6 +2475,7 @@ function inspectorRefresh() {
         // berg nobody asked for. The kind is a fresh answer, so the exceptions to the
         // previous answer go with it.
         delete l.hard; delete l.hidden; delete l.nav; delete l.look; delete l.motion;
+        delete l.awash; delete l.drag;                    // a granite spire you sail through
         delete l.style; delete l.cls; delete l.soft;      // the words this replaced
         afterEdit(true, 'kind');
     });
@@ -2527,6 +2535,17 @@ function curPh(l) {
     return v > 0 ? `~${Math.round(uToM(v))}` : 'afloat';
 }
 
+// The Lee panel makes no sense on a shoal — height, wind shadow and wake are all pinned to
+// zero by the compiler, so three boxes that cannot be made to do anything is three boxes
+// that teach the wrong thing. Depth replaces it, and says the number in the terms the
+// designer is actually choosing: what a boat keeps, and how wide the ramp is.
+function shoalSays(T) {
+    if (!(T.drag > 0)) return 'no drag — sand you can see and nothing more';
+    const keep = Math.round((1 - T.drag) * 100);
+    return `keeps ${keep}% of her speed over the shallowest part, easing back to full`
+         + ` at the rim · no lee, above or below`;
+}
+
 function leeSays(l) {
     const isl = (course && course.islands || []).find(i => i.id === l.id);
     if (!isl || typeof window.shadowLengthOf !== 'function') return 'how far downwind the breeze stays thin';
@@ -2555,7 +2574,12 @@ function inspLand(l) {
         return Math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy));
     };
     let gap = null, gapTo = null;
-    for (const o of doc.shapes) {
+    // A CHANNEL IS WATER A HULL HAS TO FIT THROUGH, so an awash shape is on neither side of
+    // this measurement: a boat sails over one at any width, and the gap to one is not a gap.
+    // Reported anyway, it read "min channel 14 m" beside a bar a fleet crosses freely — the
+    // same wrong answer the venue check used to give, for the same reason.
+    const solid = (s) => !window.VenueDoc.traits(s).awash;
+    for (const o of (solid(l) ? doc.shapes.filter(solid) : [])) {
         if (o.id === l.id) continue;
         for (const ringA of eachRing(l)) for (const ringB of eachRing(o)) {
             for (const q of ringA) for (let i = 0; i < ringB.length; i++) {
@@ -2573,8 +2597,14 @@ function inspLand(l) {
     // What this kind DOES, read off the shared table rather than written out again. Three
     // facts, because they are the three a designer is choosing between: does it move, does
     // it stop you, and is it there to be seen at all.
+    //
+    // An AWASH shape answers the middle one differently enough to deserve its own words:
+    // "soft collision" would say there is a collision, and the whole point of a shoal is
+    // that there is not. So it states the crossing cost instead, which is the only thing
+    // it does to a boat.
     const says = [T.motion === 'drift' ? 'drifts' : 'fixed',
-                  T.hard ? 'grounds you' : 'soft collision',
+                  T.awash ? `sailed over · ${Math.round(T.drag * 100)}% slower at its heart`
+                          : T.hard ? 'grounds you' : 'soft collision',
                   T.hidden ? 'not drawn' : null,
                   T.nav ? null : 'no pathfinding'].filter(Boolean).join(' · ');
     return `
@@ -2586,14 +2616,19 @@ function inspLand(l) {
     `<option value="${i}"${i === t ? ' selected' : ''}>${x.label}</option>`).join('')}</select>
   <div class="in-sub" id="in-kindsays">${says}</div>
 </div>
-<div class="in-sect"><span class="k">Lee</span>
+${T.awash ? `<div class="in-sect"><span class="k">Depth</span>
+  <div class="in-grid">
+    ${numF('Drag', 'shape.drag', f1(T.drag * 100), '%', false, '50')}
+  </div>
+  <div class="in-sub">${shoalSays(T)}</div>
+</div>` : `<div class="in-sect"><span class="k">Lee</span>
   <div class="in-grid">
     ${numF('Height', 'shape.hgt', l.height != null ? f1(l.height) : '', 'm', false, '0')}
     ${numF('Wind', 'shape.wsh', l.windShadow != null ? f1(uToM(l.windShadow)) : '', 'm', false, 'from height')}
     ${numF('Current', 'shape.csh', l.currentShadow != null ? f1(uToM(l.currentShadow)) : '', 'm', false, curPh(l))}
   </div>
   <div class="in-sub">${leeSays(l)}</div>
-</div>
+</div>`}
 <div class="in-sect"><span class="k">Transform</span>
   <div class="in-grid">
     ${numF('X', 'shape.x', f1(uToM(bb.cx)), 'm')}
@@ -3032,6 +3067,24 @@ function numEdit(el) {
                // units the way the two lee lengths are.
                l[f] = (key === 'hgt') ? v : mToU(v); }
         afterEdit(true, `lee ${key}`);
+        return;
+    }
+    // DRAG is the same shape of exception, and the same rule about empty: blank is "use
+    // what this kind says", a typed 0 is "this bar costs nothing", and the two are
+    // different documents. Percent in the box because that is how the effect reads to a
+    // sailor ("half speed"); a 0-1 fraction in the file, where every other multiplier is.
+    if (what === 'shape' && key === 'drag') {
+        const l = shapeById(sel.shape); if (!l) return;
+        if (el.value.trim() === '') delete l.drag;
+        else {
+            const v = parseFloat(el.value);
+            if (!isFinite(v) || v < 0 || v > 90) {
+                toast('Drag is 0-90% — a shape that takes all of a boat’s speed has no way out of itself', true);
+                inspectorRefresh(); return;
+            }
+            l.drag = v / 100;
+        }
+        afterEdit(true, 'shoal drag');
         return;
     }
 
