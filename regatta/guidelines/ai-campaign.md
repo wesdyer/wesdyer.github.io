@@ -7662,3 +7662,131 @@ with a hard-radius floor), benched against the FULL rounding regression suite �
 winding test, requiredSweep, Glacier Sound's ice-gap orbit history and the hairpin
 all live on this constant. Do NOT rush it; it is worth ~15s on bay alone and touches
 every venue's roundings.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-08-06 EVENING PUSH — THE ORBIT RADIUS AND THE GRID THAT LIED
+# ═══════════════════════════════════════════════════════════════════════════
+
+Started 15:11 PDT on HEAD 5f929dd. Owner's priorities: P1 rounding orbit radius,
+P2 redrock leg-3 (reach-continuation over upwind-slot), P3 minimal-change
+give-way. Landed f67e1d2 (orbit) + 1fcbcd9 (grid sampling) + 7d209d7 (gate
+driver) + e097cd6 (goldens, PASS 20/20). npm test = the 6 known editor failures.
+
+## ✅ LANDED f67e1d2 — THE ORBIT RADIUS (P1, the session-opener as ordered)
+The measured 117u-vs-47u gap is the carrot family: entry cut zone*0.72 (119u),
+armed floor zone*0.85 (140u), approach min(zone*1.15, _roundR+45) (135u).
+orbitTightR(rm) aims all three at hard(38+bodyR)+20 = 70u, whole-circle
+grid-validated, cached per mark. THE SCOPE TOOK TWO ITERATIONS TO EARN:
+  A (tight circle only):  bay -4.0 med, minD 117->75 — but redrock 11->6 fins,
+     mark contacts 2.3x, lake +1/+3 dirt up.
+  B (+ring to zone*1.15): redrock STILL 11->9 / 2.14 — a clear ring with
+     rock-walled APPROACHES is still a funnel; lake one tight mark still +2.0.
+  C (+rings to zone*2, LANDED): tight orbit only where the mark has TWO ZONES
+     of open water all round. bay/ocean qualify; lake/redrock all-stock —
+     verified BYTE-IDENTICAL (exact fins) on lake, redrock, arctic (floe gate),
+     seatrials (no rounding marks; numerically identical).
+Winding regression suite IMPROVED under the tight orbit: shortfall roundings
+14->9 (4%->3%), never-entered-zone 14%->9%, closest approach 0.73->0.46 zone
+radii, no <80% completions either side; composed-tree minD 74u, carry 100%,
+tacks 1, peak 56 deg/s — every column but radius already human-identical.
+Remaining bay rounding gap to the human's 47u: she rounds INSIDE the fleet's
+hard avoidance mark zone (50u); going tighter than hard+20 means re-opening
+avoidance's mark pricing — a different candidate, not this one.
+
+## ✅ LANDED 1fcbcd9 — RASTERISATION IS NOT SAFETY (P2, and it was never the cost law)
+Probes (_rr_leg3_cost/_rr_leg3_routers/_rr_northgap/_rr_tightflood, all new):
+  - Under pathSailable's own law the human's north line prices 38.5 vs the DMC
+    tail's 84 — the router PREFERRED her line and could not have it.
+  - The DMC's corridor router is pathBetween: unweighted BFS, wind-blind. Both
+    routers looped through the west dead-upwind slot because the north corridor
+    is DISCONNECTED in the grid.
+  - The corridor passes the game's own CLEARANCE=44u bar in continuous space
+    (min 46u against raw polygons). RES=50 cell-centre sampling closes it.
+So the fix is sampling, not pricing: buildGridRaw admits a cell when ANY
+quarter-offset sub-point passes the SAME land test. Scoped OFF icy grids (floe
+drift eats sub-cell margins; unscoped: arctic land +42%, floe +19% — and every
+arctic constant was priced on centre sampling): arctic verified EXACT-identical.
+Floe hulls + obstacle circles stay centre-tested (centerOnly) so
+stampFloes == buildGrid stays exact — checker updated, IDENTICAL 88/88.
+  redrock 8@9400: finishers 11 -> 47 of 72, best 442 -> 320 (inside the
+    authored 360 for the first time by anyone but the owner), med 593, land
+    frames 270->209, rubs 37.2->33.1, pens 7.47->6.19. Mark contacts 0.94->2.94
+    (fins 1.0->2.0, nonfin 0.9->4.7): boats now REACH the funnels — flagged.
+  lake: -7.0 paired med (A), boat contacts 4.21->2.68 (-36%) / 4.33->3.74 (B),
+    pens down. THE TRADE: land events +14-19% mean (median flat 6.0->6.5), and
+    ONE pinned DNF in 360 boat-races (1324 contact-frames; would not reproduce
+    under the probe harness).
+  bay: -10.0 (B) / -1.0 (A) paired med. ocean: -3.0 mean, all dirt down.
+
+## ⛔ RETRACTED IN-SESSION — four "fixes" tuned against noise (v2-v5)
+The lake land uptick drew four remedies: probe-treats-_ss-as-wall (+gate
+exception), weighted pathBetween (3x _ss hops), _lineClear refusing _ss,
+clearanceField seeding _ss at 0, mark keep-out circles. The 8-seed lake ground
+probe read 580 -> 636 -> 687 -> 744 across them — every caution "worse" — and
+the tell was the CONTROL: HEAD repeats 465 EXACTLY (deterministic), but
+per-seed values swung 46->127 / 87->30 between trees. Any grid change reshuffles
+races; at 8 seeds the statistic is chaos. ALL FOUR STRIPPED; the landed tree is
+the minimal evidenced form, verified byte-identical to the benched v1 on
+bay/lake/redrock. ⚠️ STANDING RULE REINFORCED: lake land contact needs 20-seed
+benches, exactly like bay traffic — and a deterministic-per-tree number can
+still be pure noise ACROSS trees.
+
+## ✅ LANDED 7d209d7 — the venue gate STEERS
+The supersampled grid let the ideal path thread redrock's 46-65u channel, and
+test_sailable's driver — which teleports along raw pathBetween cell centres —
+clipped rock at 4 stair-step sub-steps the channel centreline clears. The
+driver now nudges any path point within 44u of land to the greatest-clearance
+position within half a cell. The hull-in-land standard is untouched.
+test_sailable PASS on all ten venues; the npm chain (which stops at the first
+failing script) reaches the editor suite again.
+
+## P3 — MEASURED, PARKED WITH THE MECHANISM NAMED
+Fresh HEAD ledger (8@9100 bay): no-tack AT-CPA deflection med 15.0 deg vs human
+8.0; holds-course 25% vs 40%; passing distance 331u vs 355u. The minimal action
+EXISTS (0.1-rad fan step, b566370) and minimal-change keep-clear is already the
+scoring rule (Aug 4b). The residual is the 80u owed-gap constant vs the human's
+revealed ~50u comfort — a calibration knob worth ~1-2s on bay; knobs lose, and
+the schema-2 recordings that would make per-encounter give-way tracking exact
+do not exist yet (0 of 66 traj files carry rivalsX — all predate ba536eb).
+NEXT: when the owner records ANY race on the new HEAD, the ledger can split
+give-way encounters by rule-21 state and test "deviates into objects" directly.
+
+## THE VENUE REPORT (owner's standing format; disjoint sets A/B where run)
+Clock = fleet median finish. All post-session numbers verified on the landed
+HEAD (trees byte-identical). Human redrock is the CURRENT document.
+
+  VENUE      HUMAN                    PRE-SESSION BOT               POST-SESSION BOT
+  bay        226.2 med / 217.8 best   242/245  (boat 2.04/1.73,     241/237 paired -1.0/-10.0
+             0 boat impacts                     mark .37/.52,                 (boat 2.14/1.79, mark .56/.49,
+                                                pen .43/.50)                  pen .53/.46, land .08/.11)
+  ocean      182.5 med                193      (boat 2.12, mark .53, 192 paired -1.0 med / -3.0 mean
+                                                pen .44, land .09)            (boat 1.98, mark .43, pen .42, land 0)
+  lake       223 med / 209.6 best     292/294  (boat 4.21/4.33,      288/294 paired -7.0/+1.0 (mean -2.6)
+             (3 traces only)                    land 8.78/8.57,               (boat 2.68/3.74 [-36%/-14%],
+                                                pen .81/.83)                  land 10.0/17.5*, pen .70/.80)
+                                                                     *B incl one pinned DNF boat (1324 fr),
+                                                                      179/180 finish; median land flat 6.0->6.5
+  arctic     212.1 med / 190.4 best   424/451, in-time 40/23,        BYTE-IDENTICAL (verified exact,
+             3.9 floe hits/race       fins 144+140, floe 30.3/34.1,  16@9100; floe-gate scoping)
+                                      land 19.2
+  seatrials  ~190 med / 180.9 best    194.13 OCS 14.78% pen .40      numerically IDENTICAL
+  redrock    ~227 med / 206.6 best    11/72 fins, best 442,          47/72 fins, med 593, best 320,
+             ~0 contacts              rubs 37.2, pen 7.47,           rubs 33.1, pen 6.19, land 209,
+                                      land frames 270                mark 2.94 (up — boats reach the
+                                                                     funnels now; flagged)
+
+Reading guide: the two landings moved redrock from broken (11/72 at 2.5x the
+authored cutoff) to raceable-by-most (47/72, best inside the authored limit),
+bay by ~5s pooled with roundings now geometrically human-shaped, lake by boat
+contact (-36%/-14%, its worst dirt class after land) at a measured land-mean
+trade, ocean slightly, arctic/seatrials untouched by construction. The
+remaining clock gaps, in order: arctic 2.1x (research-scale, unchanged),
+redrock med 593 vs ~227 (traffic + thread execution — see the stall
+attribution below), lake ~65s, bay ~11s.
+
+## POST-LANDING REDROCK ATTRIBUTION (vf bench, 8@9400)
+Of 25 non-finishers: 15 die on LEG 5 (the straight 2967u run home across the
+maze middle), 6 complete the course but beyond the 900 cutoff, 3 on leg 1,
+1 on leg 4. The leg-3 wall is GONE (0 die there). Leg 4 departs m5 east — no
+head-on traffic in the north thread. The next redrock lever is whatever kills
+boats on a straight reach home; stall positions probed below.
