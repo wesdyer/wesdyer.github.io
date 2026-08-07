@@ -8199,3 +8199,111 @@ are RETIRED — do not compare across the fingerprint line. The live ocean
 anchors (`ocean_bench_finaloc2` 192, `ocean_bench_meter3oc`,
 `ocean_bench_vo4oc` 192.5) were all recorded on the new cut and stand
 unchanged; no re-runs were needed.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-08-06/07 OVERNIGHT PUSH (started 22:15 PDT, HEAD e487124)
+# ═══════════════════════════════════════════════════════════════════════════
+HEAD verified e487124 = abb62aa + ocean promotion (venue fingerprint/campaign
+doc only; behavior tree byte-identical — abb62aa anchors stand).
+
+## ⚡ P2 DELIVERED AS MEASUREMENT — STAND-ON RESIDUAL ATTRIBUTED (no candidate)
+`_standon_attrib.js` (new, tracked): pure observer, 10Hz; at every stand-on
+deflection EPISODE (rising edge |lastAvoidDeviation| > 2deg, 3s merge) records
+riskState, threat geometry (range/dCPA/tCPA via getRiskMetrics), the
+properCourseCPA the engine already computes ("did anything need doing"),
+VO-set membership, third boats inside the 250u nudge radius, marks, clearance.
+Bay 20@9100 (n=760 episodes) + seatrials 20@100 (n=331), both on clean HEAD:
+  - risk=LOW n=0 BOTH venues — the role only exists once the risk ladder is
+    active; "no hold bonus at LOW" is structurally impossible as a mechanism.
+  - ~75-83% of stand-on deflection episodes are LEGITIMATE Rule-14: properCPA
+    at onset med 60/64/47u (bay M/H/I; seatrials 60/49/38) — holding course
+    would pass inside the 80u owed gap; the give-way rival is genuinely not
+    clearing. THE STAND-ON RESIDUAL IS MOSTLY DOWNSTREAM OF THE GIVE-WAY
+    SIDE — her extra 10% of holds is largely her rivals clearing for her.
+    Push B's remainder (minimal-escape sizing/alpha split) is the fix's
+    address, not any stand-on knob.
+  - The NEEDLESS class (pCPA>110: bay 23%, seatrials 17%) decomposes into two
+    named mechanisms, replicated on both venues:
+      (1) RISK-LADDER STALENESS (~14% of all bay episodes): HIGH/IMMINENT
+          deflections at NEGATIVE median tCPA (bay -1.2/-2.8s; seatrials
+          IMMINENT -4.5s at 647u range, thVO 0%) — the crossing is already
+          resolving, the VO set has correctly exited, the ladder is still
+          escalated and the hold bonus is weak (1000) or absent exactly there.
+      (2) MEDIUM STICKY-DEFLECTION (~9%): pCPA 177u says the PROPER course
+          clears while the already-deflected CURRENT course keeps the VO
+          entered — the deflection sustains itself (desired-vs-current
+          heading hysteresis).
+  - Future candidate named, NOT built (avoidance-class change: lake 20x2 +
+    arctic judgment required per the nonlocal rule): de-escalate the ladder
+    when the VO is exited and tCPA < 0. The 80u owed-gap knob stays closed.
+
+## ⛔ P1 REJECTED with mechanism — SCENARIO-POOL RESIDUAL RL (Push C), THREAD CLOSED
+The budget fix WORKED and the verdict is therefore about the SEAM, not the
+budget: 92k scene-episodes overnight (78.6k run 2 + 14k run 1; 150x the driver
+ES's ~600), 2.1-2.9 min/generation at 8 workers, spawn-into-scenario restores
+proven deterministic and inert (`scn_check.js`: DETERMINISM PASS cross-page,
+INERTNESS PASS, hook live; twin cache byte-reproducible). Pool: 3,934 scenes
+from 40 training seeds (thread 1646, squeeze 846, gap 825, wiggle 180),
+85/15 hash split.
+  Run 1 (mixed MIX, 29 gens): validation -30.5 -> -17.1, guard x2, meanPol
+    oscillating noise-shaped. Mid-run fitness fix: per-scene paired deltas
+    are TAIL-DOMINATED (a twin that wedges while the policy escapes is a
+    +-2000u outlier; clip at +-250u so a bifurcation is one win, not ten).
+  Run 2 (decisive MIX — wiggle .35 gap .35 thread .20 squeeze .10, sigma
+    0.25, 56 scenes/gen, 120 gens): 12 validations oscillating -30..+13
+    around the floor, no climb; best-by-validation gen 19 (+13.3u on the
+    120-scene subsample).
+  DEFINITIVE HELD-OUT READ (all 605 scenes, `scn_heldout_eval.js`): mean
+    +2.6u, med 0.0, win/loss 262/281, hits 0.668 vs 0.646 — and WIGGLE, the
+    class with the clearest classical headroom, is -36.8u mean (13/21): a
+    bounded 2Hz heading nudge on top of the classical command makes stuck
+    scenes WORSE (it fights the wiggle system that owns escapes). The gen-19
+    subsample score was checkpoint-selection noise.
+  FULL-RACE GATE (16+16 vs canyonarcA/B): A paired med +13.0 SLOWER, boat
+    12.10->14.10 floe 30.26->33.96 land 19.19->22.39 pens 1.81->2.03; B
+    paired med +9.0 slower, boat 13.42->15.19. Both disjoint sets slower,
+    contacts up. KILL CRITERION MET (two overnight runs without beating the
+    classical floor on held-out scenes) — the f0e290e-seam RL thread closes
+    at TWO kills (whole-race driver ES, scenario-pool residual). The arctic
+    solo-ice residual (~90-130s) goes back to CLASSICAL candidates: the
+    stuck-detector latency (wiggle scenes are where classical is measurably
+    worst) and lead choice — or a different policy class than a 12-dim
+    linear bounded residual, which is beyond this seam's mandate.
+  Artifacts: scn_shared/harvest/check/train/heldout_eval.js tracked;
+    scn_policy.json (+ run-1 copy) tracked; the 20M scene pool is
+    reproducible (scn_harvest.js, seeds 20000-20039) and not tracked. The
+    seam patch exists ONLY in treeSCN; master's behavior tree was never
+    touched (verified: diff = the 8-line inert seam block alone).
+
+## SESSION CLOSE (HEAD `e487124`, behavior tree byte-identical to `abb62aa`)
+Nothing landed in the shipping tree this session — P1 was rejected at its
+gate, P2 closed as measurement, P3 had no new recordings (newest traj files
+remain the five Aug-6 19:27 arctic laps). Final HEAD's script.js/rules/
+planner/sailcheck are the bytes the Aug-6 night close benched fresh
+(fin08* == anchors, JSON-identical, all six sets) — those benches ARE the
+post-session numbers, re-cited unchanged; no venue's behavior could have
+moved without a single byte moving.
+
+## The venue table (final HEAD `e487124` ≡ `abb62aa` behavior; human = traj recordings)
+venue     | human med/best      | pre-session bot (abb62aa anchors)           | post-session bot (e487124)
+bay       | 226.2 / 217.8, 0 impacts | 236 / 239 (A/B), OCS 0.6/1.1%, boat 1.91/1.93, pen 0.43/0.48 | UNCHANGED (byte-identical tree)
+ocean     | 182.5               | 192.5 (vo4oc), boat 1.93, mark 0.26, OCS 0% | UNCHANGED (new-cut anchors stand)
+lake      | 223 / 209.6         | 282 / 289, land 7.77/9.68, 180/180 fins     | UNCHANGED (byte-identical tree)
+redrock   | ~227 / 206.6 (s2: 214.7, 0 contacts) | med 674.5/613, fins 56+59/72, best 318/286 | UNCHANGED (byte-identical tree)
+arctic    | 212.1 / 190.4 (s2 current build: 215.0/194.7, ice med 2.0) | med 425/451 (canyonarcA/B), in-time 70/54, fins 144/140 | UNCHANGED — and re-verified LIVE this session: the gate's classical baselines re-ran canyonarcA/B's races through the paired harness
+seatrials | ~190 / 180.9        | 199.65 / 194.23, OCS 15.44%, pen 0.40       | UNCHANGED (byte-identical tree)
+
+## NEXT-PUSH POINTERS
+- Arctic solo-ice residual is now a CLASSICAL thread: (1) stuck-detector
+  latency (the wiggle corpus: 180 harvested scenes, detector 10-18s blind;
+  the human's recovery is seconds), (2) lead choice on approach. The scene
+  pool + spawn-into-scenario env survive as a MEASUREMENT harness for any
+  classical candidate (scn_heldout_eval.js paired read, no RL required).
+- P2's named candidate (NOT built): de-escalate the risk ladder when the VO
+  is exited and tCPA < 0 (staleness class, ~14% of stand-on deflections,
+  replicated bay+seatrials); MEDIUM sticky-deflection hysteresis second.
+  Avoidance-class change: judge on lake 20x2 + arctic per the nonlocal rule.
+- Push B remainder unchanged (minimal-escape sizing + alpha split): the
+  stand-on attribution says the give-way side's visible response is ALSO the
+  stand-on side's fix — 75-83% of stand-on deflections are reactions to
+  give-way boats not clearing.
