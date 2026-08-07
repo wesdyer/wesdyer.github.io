@@ -8645,3 +8645,32 @@ redrock   | ~227 / 206.6 (s2: 214.7) | med 687/613, fins 56+59/72, pens 5.97/5.5
 arctic    | 212.1 / 190.4       | med 425/451, in-420 70/54, floe 30.3/34.2 | med 413/450, in-420 75/53, floe 32.1/30.3, boat 12.5/9.7 (p3v2arcA/B; arc byte-identical)
 seatrials | ~190 / 180.9        | 199.65 / 194.23, OCS 15.44%              | UNCHANGED — byte-identical through both landings
 river     | NO RECORDING (ask)  | r0A/B med 272/273, in-360 80/77%, land 350/375 | UNCHANGED — byte-identical through both landings (current-class scopes)
+
+## ADDENDUM (same day) — THE OWNER'S RIVER LAP: test_sailable RECONCILED
+Recording landed: traj_river_1786084446572.json (schema-2, tracked). FINISH
+161.3s vs fleet med 272 / best 201 — the fleet is 1.69x. Leg splits: beat
+~51s (fleet 65), return ~29 (fleet 30), DOWNSTREAM RUN 80.9s vs the fleet's
+158 — the whole gap is the run, and she transits the rapids chute in 22.5s
+at ~6kt water speed with 4 land touches (fleet: ~350 contacts/boat-race).
+RECONCILIATION of the "no hull-width path" flag: overlaying her 1788 samples
+on the bot grid, 37 of her 209 chute samples (18%) sit in cells the grid
+walls — and those are BANK-CLEARANCE cells: buildGrid inflates every shore by
+CLEARANCE = 44u (HULL_R 30 + 14). In a 100-400u slot that eats 88u of width;
+the exit2→pre3 segment has water, just not 44u-margin water. test_sailable is
+RIGHT about the grid and the grid is the AI's own conservatism — NO AUTHORING
+LOOK NEEDED; the flag converts to a capability card: THREADING INSIDE THE
+CLEARANCE MARGIN (she sails within ~30-44u of rock at speed; the router
+cannot even plan there). Awash integration checked en route: 7/9 river awash
+shoals are correctly shoal-priced navigable water; the 2 walled centers are
+bank-clearance overlaps, not an awash bug.
+NEXT-PUSH CANDIDATE (named, not built): a TIGHT-water grid class — cells
+within CLEARANCE of shore but with ≥ hull-width of true water become
+navigable-at-a-price (the _soft/_shoal construction, a third instance of
+"price it as the seconds it costs"), scoped and judged like every grid
+change: goldens + all-venue gates; the 44u margin was tuned for open venues
+and lake corridors, so expect nonlocal effects — full stack.
+Ledger (_gw_ledger2.py, 15 encounters): her stand-on deflection med 6.5°;
+bots deflect 66.5° med at 504u onset against her — river is below the
+VO-onset venue-class gate (clearance p50 5 < 10, suppression correctly off),
+so the give-way underlay remainder applies here too when it gets built.
+VENUE TABLE CORRECTION (river row): human = 161.3 (1 lap).
