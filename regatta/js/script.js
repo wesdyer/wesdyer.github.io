@@ -910,6 +910,89 @@ class BotController {
         // Apply
         this.targetHeading = desiredHeading;
         this.speedLimit = speedRequest;
+
+        // NEVER SWEEP THE BOW ACROSS A MARK YOU ARE ABOUT TO HIT — take the
+        // turn the other way round. The m3 replay traces: the cut-in demands
+        // a heading on the far side of the wind; the rudder takes the SHORT
+        // way, the bow sweeps across the mark's bearing mid-arc with less
+        // room than the rotation needs, and the boat pins on the face in
+        // irons (51% of m3 passes). The long way (a gybe-around) keeps way
+        // on and never points at the disk. Trigger, recomputed every tick
+        // (no latch): on a rounding leg, close to the mark, when the
+        // short-way arc crosses the mark's bearing AND the travel spent
+        // rotating to that bearing exceeds the room to the berth. Floe
+        // venues excluded (the pack-speed/ice machinery owns that water).
+        this.turnBias = 0;
+        if (this.boat.raceState.leg >= 1 && !this.boat.raceState.finished
+            && !this.wiggleActive && !this.penaltySpin
+            && !(state.course._floeObjs && state.course._floeObjs.length)
+            // v4 scope: never in strong current — a spin in a ≥2kt set is
+            // the river one-way door squared (v2: river boat contacts ×2.6,
+            // fins −7/−4). The cap and the arc probe sit on the same line.
+            && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0)) {
+            const rsG = this.boat.raceState;
+            const isRoundG = state.course.route && state.course.route[rsG.leg]
+                && state.course.route[rsG.leg].kind === 'round';
+            const rmG = isRoundG && typeof legRoundMark === 'function' ? legRoundMark(rsG.leg) : null;
+            if (rmG) {
+                // v4 scope: THE LOOP NEEDS THE RING TO BE WATER — the
+                // orbitTightR family's own line ("a mark qualifies only if
+                // the ring is water"). Lake's cove mark is 81% water at the
+                // zone radius (walls from 110u) and v2 tripled its land
+                // contacts; every redrock/bay/ocean rounding mark is ~100%.
+                // Cached per mark, same shape as _orbTight.
+                if (rmG._gyOK === undefined) {
+                    rmG._gyOK = false;
+                    const gR = state.course.botGrid;
+                    if (gR) {
+                        const zR = rmG.zone || 165;
+                        let okR = true;
+                        for (let kR = 0; kR < 32; kR++) {
+                            const aR = kR / 32 * Math.PI * 2;
+                            const cR = gR.cell(rmG.x + Math.cos(aR) * zR, rmG.y + Math.sin(aR) * zR);
+                            if (!gR.at(cR[0], cR[1])) { okR = false; break; }
+                        }
+                        rmG._gyOK = okR;
+                    }
+                }
+                if (!rmG._gyOK) return;
+                const dxG = rmG.x - this.boat.x, dyG = rmG.y - this.boat.y;
+                const dG = Math.hypot(dxG, dyG);
+                const zG = rmG.zone || 165;
+                // (A clearance scope was tried here — cl ≥ 4 to keep the loop
+                // out of the thread — and REMOVED: the m3 pocket and the m5
+                // zone are both cl 3 on a res-50 grid; the field cannot
+                // separate them, and the leg-3 cost is mostly the pre-existing
+                // m5 approach class fed by m3's freed traffic, the cap
+                // landing's own trade shape. Judged on pooled finishers.)
+                if (dG < zG * 0.95 && dG > 40) {
+                    const diffG = normalizeAngle(this.targetHeading - this.boat.heading);
+                    if (Math.abs(diffG) > 0.5) {
+                        const hMkG = Math.atan2(dxG, -dyG);
+                        const offG = normalizeAngle(hMkG - this.boat.heading);
+                        const crosses = Math.sign(offG) === Math.sign(diffG)
+                            && Math.abs(offG) < Math.abs(diffG);
+                        if (crosses) {
+                            // travel while rotating to the mark's bearing, at
+                            // measured full authority (0.61 rad/s), vs the room
+                            // left outside the 75u berth (50 hard + hull).
+                            const vG = this.boat.speed * 60;
+                            if (vG * Math.abs(offG) / 0.61 > dG - 75) {
+                                this.turnBias = -Math.sign(diffG) || 0;
+                                // Ease through the gybe-around: the loop's
+                                // radius is v/ω — at 8 kt it is ~400u across
+                                // and does not fit the pocket (v1: leg-3 med
+                                // +61s, the thread cannot host fast loops);
+                                // at manoeuvring speed it is ~90u and does.
+                                // The turn and the throttle are one decision.
+                                const deftG = this.boat.stats ? Math.max(0, Math.min(1, this.boat.stats.handling / 10)) : 0.5;
+                                this.speedLimit = Math.min(this.speedLimit, 0.55 + 0.15 * deftG);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     getNavigationTarget() {
@@ -10056,7 +10139,16 @@ function updateAI(boat, dt) {
         boat.ai.forcedLuff = 1.0 - power;
     } else {
     // If very far off, turn faster?
-    const turnAmt = Math.sign(diff) * Math.min(Math.abs(diff), aiTurnRate);
+    // TURN DIRECTION IS A DECISION, NOT ALWAYS THE SHORT WAY. The controller
+    // sets turnBias (±1) when the short-way arc would sweep the bow across a
+    // mark it cannot clear (the m3 in-irons face pin); while set, rotate that
+    // way at full authority. The bias is recomputed every tick and vanishes
+    // once the short way agrees with the rotation (diff sign flips past π),
+    // so there is no latch to go stale.
+    const biasT = boat.controller && boat.controller.turnBias;
+    const turnAmt = biasT
+        ? biasT * aiTurnRate
+        : Math.sign(diff) * Math.min(Math.abs(diff), aiTurnRate);
     boat.heading += turnAmt;
     boat.heading = normalizeAngle(boat.heading);
 
