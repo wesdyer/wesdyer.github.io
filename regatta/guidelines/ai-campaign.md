@@ -10547,3 +10547,50 @@ in both directions: the +26 first set was noise, and so was the 3-set −13):
 Remaining: lake 20-seed (the +25% caution + the land watch item), set 9700,
 bay 4-seed byte. If clean: LAND per the bp2oc precedent (flat clock, dirt
 clearly better) — the day's first landing, and the m3/m5 stall classes with it.
+
+## THE OP5 LANDING — THE DAY'S FIRST BEHAVIOR CHANGE (Aug 8, late afternoon)
+The twice-shelved orbit-phase ease LANDED once every gate closed green. The
+full slate, verbatim:
+  REDROCK 6 sets pooled (9400-9900, 376 paired finishers): base med 498 →
+  cand 494, paired med −1.0 / mean −4.7 (flat clock), fins 396→399, and
+  EVERY dirt column better: boat 19.97→18.32 (−8%), mark 1.14→0.99 (−13%),
+  land 142.38→130.98 (−8%), pen 3.83→3.47 (−9%).
+  m3 stall gate: 13-14% → 9.1%. m5 same-seed: 25% → 8.9% (the scoped ease
+  COMPOSES where OP1+BP1 flooded the funnel to 26%).
+  OCEAN 8-seed: paired −6.0 / −5.6 — the venue v1 taxed +18 now GAINS
+  (dG<250 unhooked the zone-1000 arming).
+  LAKE 20-seed (the +25% caution venue + the standing land watch): paired
+  med 0.0 / mean +1.7, p25=p75=0.0; land 6.37→6.45, boat 1.98→2.07 —
+  within-noise, nothing like BH1's 6.37→16.09. PASS.
+  BAY byte-identical (36 deltas 0.0). RIVER byte-identical vs ff2rivA
+  (119 pairs 0.0, columns equal). ARCTIC byte-identical vs p3v2arcA
+  (143 pairs 0.0). SEATRIALS byte-identical vs finseaid (36 pairs 0.0).
+  The ease simply never fires on those four — wall-room/wind/orbitTightR
+  gates hold, exactly as scoped.
+  treeOP5H ≡ treeOP5 on redrock (34 deltas 0.0) — the block is the whole
+  candidate.
+LANDED: the OP5 block into regatta/js/script.js at the zG anchor (main now
+byte-identical to treeOP5H's tree file). Goldens full --update then verify:
+PASS — 20 traces, 0 behaviour changes vs the fresh recording.
+NEW ANCHORS on this HEAD: redrock ocean_bench_op5rr{9400..9900} (pooled med
+494, fins 399/432); ocean ocean_bench_op5hoc (paired −6.0 vs bp2oc); lake
+ocean_bench_op5hlakeA (med 278, land 6.45 — the watch column moved +0.08,
+recorded); bay/river/arctic/seatrials anchors CARRY byte-identical
+(bp2bayA/B, ff2rivA/B + hd8rivC/D, p3v2arcA/B, eval_results 199.58/194.13).
+The m3/m5 stall classes close with this landing: the orbit-phase ease at the
+survey's scope (wall-room ≥100, wind ≥8kt, dG<250) was the missing shape,
+and rule 20 was the missing protocol — one set said +26, three said −13,
+six said flat-with-cleaner-dirt, and only the six-set read survived contact
+with every other venue.
+
+## CLOSING VENUE TABLE (Aug 8 EOD; behavior HEAD = the OP5 landing)
+venue     | human med/best        | bot (current anchors)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (bp2bayA/B, byte-carried), boat 1.39/2.11, pen 0.28/0.40, OCS 0
+ocean     | 182.5 (pre-gust-fix)  | 186 (op5hoc, paired −6.0 vs bp2oc 192), boat 1.66, mark 0.29
+lake      | 223 / 209.6           | 278 / 276 (op5hlakeA/bp2lakeB), land 6.45/6.09 (watch), boat 2.07/3.09
+redrock   | ~227 / 206.6 (OLD, the benchmark) | 6-set pooled med 494 fins 399/432 (op5rr*), boat 18.32, mark 0.99, land 130.98, pen 3.47
+arctic    | 212.1 / 190.4 (206.2 fresh clean) | 413 / 450 (p3v2arcA/B, byte-carried) — attributed: granite service time; treeRD7 holds the solo fix
+seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13, OCS 15.44% (byte-carried)
+river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B, byte-carried), fins 119/119
+⚠️ LAKE LAND WATCH: now 6.45/6.09 (was 6.37/6.09; pre-hard-zone 5.33/5.58) —
+still open, still every lake-touching candidate's reported column.

@@ -959,6 +959,45 @@ class BotController {
                 const dxG = rmG.x - this.boat.x, dyG = rmG.y - this.boat.y;
                 const dG = Math.hypot(dxG, dyG);
                 const zG = rmG.zone || 165;
+                // OP5 — THE ORBIT-PHASE EASE, AT THE SCOPE THE SURVEY NAMED.
+                // The m3 kill is real (v1: stalls 14→4%, the residual class
+                // dies) and v1 died twice on scope: ocean's leg-1 mark-3 has
+                // ZONE 1000 (boats arm a kilometre out and v1 crawled the whole
+                // approach, +18s) with wall-room 15 (the mark sits ON its rock —
+                // the eased circle cannot fit anyway), and lake's grinder sits
+                // in 5.7 kt air (no power to sail out of the ease). The survey's
+                // separators, verbatim (_op_scope_survey): WALL-ROOM ≥ 100 (the
+                // eased ~100u circle must fit — static land clearance at the
+                // MARK's own cell, ≥2 cells at res 50), WIND ≥ 8 kt at the boat
+                // (power to accelerate out), dG < 250 (the ease is the scale of
+                // the TURN, not of the zone — this alone unhooks ocean's km-out
+                // arming). Mechanism unchanged from v1: mid-sweep, on the
+                // pursuit circle, easing shrinks the circle the boat rides;
+                // orbitTightR-null marks only (open-water rings untouched);
+                // per-tick, no latch (v2's toggle and v3's overhold are closed).
+                // ⚠️ ENTRY-side governors remain a separately closed family —
+                // this fires only after the rotation has begun (sweep > 0.05).
+                if (this.boat.raceState.roundArmed
+                    && (this.boat.raceState.roundSweep || 0) > 0.05
+                    && this.boat.speed > 1.2
+                    && dG < 250
+                    && orbitTightR(rmG) === null) {
+                    if (rmG._op5Room === undefined) {
+                        rmG._op5Room = false;
+                        const gO5 = state.course._botGridStatic;
+                        if (gO5 && window.SailCheck && window.SailCheck.clearanceField) {
+                            if (!gO5._clear) gO5._clear = window.SailCheck.clearanceField(gO5);
+                            const ccO5 = gO5.cell(rmG.x, rmG.y);
+                            const idO5 = ccO5[1] * gO5.n + ccO5[0];
+                            if (ccO5[0] >= 0 && ccO5[1] >= 0 && ccO5[0] < gO5.n && ccO5[1] < gO5.n
+                                && gO5._clear[idO5] >= 2) rmG._op5Room = true;
+                        }
+                    }
+                    if (rmG._op5Room && getWindAt(this.boat.x, this.boat.y).speed >= 8) {
+                        const deftO = this.boat.stats ? Math.max(0, Math.min(1, this.boat.stats.handling / 10)) : 0.5;
+                        this.speedLimit = Math.min(this.speedLimit, 0.55 + 0.15 * deftO);
+                    }
+                }
                 // (A clearance scope was tried here — cl ≥ 4 to keep the loop
                 // out of the thread — and REMOVED: the m3 pocket and the m5
                 // zone are both cl 3 on a res-50 grid; the field cannot
