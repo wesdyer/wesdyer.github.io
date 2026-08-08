@@ -10058,3 +10058,64 @@ candidate that touches lake must keep reporting this column.
 GOLDENS: PASS — 20 traces checked, 0 behaviour changes, 0 geometry-only, 0 new
 (4.5 min, run on the unchanged HEAD as the explicit check that the anchors carry
 rather than an assumption that they do).
+
+# POST-CLOSE CONTINUATION — THE LANE ROUTER (the shape the P0 kills named)
+# ═══════════════════════════════════════════════════════════════════════════
+The session did not stop at the write-up: the kills had named one shape and it
+was cheap enough to test. Two more builds, and the class is now bounded from
+the inside as well as the outside.
+
+## LANE1 — the state is (cell, how you arrived)
+TK2 failed because a tack cost CANNOT be expressed over cells alone: it read the
+incoming direction off prev[] with a cell-keyed gScore, which is incoherent under
+re-expansion, and its "long boards" just aimed through the pack. LANE1 widens
+pathSailable's state to cell × incoming direction (8x), charges TACK_SEC·10 on a
+genuine upwind side-change, and keeps ice as ice.
+IT WORKS AS A ROUTER: solo floe contacts 512 → 116 per race (−77%), sub4 81→60 s,
+sub1 32→22 s. The router really does find clear lanes.
+AND IT LOSES ANYWAY: solo fin med 392.4 vs 382.2, leg-1 TACKS UP (39/24/37/13 vs
+21/23/91/17). The route is long boards; the STEERING still chases a fixed 420u
+carrot, which cuts the board into pieces and hands the tack scorer a swinging
+target. ⇒ THE STAIRCASE WAS STEERING THE BOAT. Removing it without replacing
+what it did costs more than it saves.
+
+## LANE2 — the joint form: steer to the END OF THE BOARD
+Carrot walks the plan to its next real corner (direction turn > 0.6 rad, ceiling
+2200u, never nearer than the existing LOOK floor), floe venues only.
+It does exactly what it was built to do, ON THE RACES THAT WERE BROKEN:
+  seed   leg-1 tacks (HEAD → LANE2)   odo/plan0        solo fin
+  9101        23 → 15                 2.01 → 1.39      465.4 → 371.7  (−94)
+  9102        91 → 49                 2.80 → 2.21      654.2 → 492.4  (−162)
+  9100        21 → 27                 1.47 → 1.71      352 → 433.6    (+82)
+  9103        17 → 20                 1.43 → 1.40      334.9 → 416.2  (+81)
+8-seed paired deltas: −162, −94, −82, +28, +81, +82, +100, +217 — MEDIAN +54.5,
+solo med 416.2 vs 382.2. It rescues the disasters and taxes the good races, and
+the tax is bigger. NOT LANDED.
+GATES RUN: bay 4-seed BYTE-IDENTICAL (36 deltas all 0.0, dirt identical).
+⚠️ AND THE BAY GATE EARNED ITS KEEP — it caught a SCOPE BUG on the first run
+(paired +4.0, dirt moved): `grid._soft` is NOT a floe test. stampFloes returns
+the base grid untouched when a venue has no floes and the caller attaches an
+all-zero `_soft` to it anyway, so a `_soft` scope fires on EVERY venue. The
+correct test is the one the landed canyon law already uses — does the course
+carry live `_floeObjs`. Re-run byte-identical after the fix.
+
+## WHAT SEVEN SHAPES HAVE ESTABLISHED
+Every mechanism that touches the beat has now been measured: the clearance
+demand (AC1), the tack scorer's reference (TK1), a cell-keyed manoeuvre cost
+(TK2), the manoeuvre cooldown (TK3), a correct direction-aware router (LANE1),
+and that router plus board-following steering (LANE2). The tack-count gap is
+REAL (21-23 vs her 5) and every one of these moves some intended statistic —
+LANE1 cuts ice contacts 77%, LANE2 halves the tacks on the worst races — while
+NONE improves the median clock.
+The pattern across all seven: HEAD's staircase-plus-near-carrot is a locally
+CONSISTENT system, and each single-sided change breaks the consistency somewhere
+else (TK1/TK2 into the ice, LANE1 into more tacks, LANE2 into the good races).
+Her five tacks are not a smoothed version of twenty-one; they are a different
+competence — judging which gaps will STILL BE THERE when she arrives, on a field
+whose drift [[map-staleness]] already showed is unpredictable past ~5 s.
+⇒ THE NEXT SHAPE MUST BE ABOUT WHEN TO COMMIT, NOT ABOUT THE LINE: a board is
+worth holding only as long as the gap it aims at survives. That is a prediction
+problem the campaign has so far only met in the negative (SIPP), and it should
+be attacked as a measurement first — for each board the bot sails, did the gap
+it was aimed at still exist on arrival? The instrumentation for that is now
+in the tree (the lane router knows its own boards).
