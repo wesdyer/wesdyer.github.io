@@ -2045,5 +2045,33 @@ window.VENUE_DOC["redrock"] = {
         "veer": 20
       }
     ]
+  },
+  "palette": {
+    "baseColor": "#189db5",
+    "deepColor": "#0c6478",
+    "shallowColor": "#5cd6d6",
+    "shorelineColor": "#e8a06a",
+    "gusts": {
+      "gustDark": [
+        8,
+        70,
+        86
+      ],
+      "gustMid": [
+        12,
+        90,
+        108
+      ],
+      "lullBright": [
+        200,
+        240,
+        242
+      ],
+      "lullMid": [
+        180,
+        230,
+        235
+      ]
+    }
   }
 };

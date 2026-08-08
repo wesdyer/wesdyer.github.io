@@ -14447,25 +14447,62 @@ function drawMinimap() {
     // same way the main view already handles it.
     //
     // Tinted from the venue's own `palette.gusts` rather than a hardcoded navy/cyan, so a
-    // cat's-paw here is the same water it is out on the course (race-view.md §4, §8).
+    // cat's-paw here is the same water it is out on the course (race-view.md §4, §8) — but
+    // the CHART under them is dark slate, not this venue's water, so the tint keeps its HUE
+    // and has its lightness floored to stay legible there. `gustDark` painted literally was
+    // invisible ink: ten gusts on Open Ocean's minimap and not one of them on screen.
+    //
+    // And the fill is the same radial falloff the course sprite bakes, not a flat disc. A
+    // hard-edged ellipse at one alpha read as a fog bank on Stillwater Lake, where a lull
+    // outgrows the arm of the lake it sits in — strong at the centre and gone at the rim is
+    // both how the course draws it and what keeps a big cell from swallowing the chart.
     const _gc = (typeof activeGustColors !== 'undefined' && activeGustColors) || null;
-    if (_gc) for (const g of state.gusts) {
-        const pos = t(g.x, g.y);
-        ctx.save();
-        ctx.translate(pos.x, pos.y);
-        ctx.rotate(g.rotation);
-        ctx.scale(1, g.radiusY / g.radiusX);
-        ctx.beginPath();
-        // Same upwind shift as the main draw — the minimap is the one place you read the
-        // whole fleet against the whole pressure field, so it is the last place the two
-        // should disagree. (Drawn in the scaled frame, so the offset scales with it.)
-        ctx.arc(-PUFF_SKEW * g.radiusX * scale, 0, g.radiusX * scale, 0, Math.PI * 2);
-        const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
-        const alpha = 0.12 + strength * 0.18;  // stays under the boats
-        const c = g.type === 'gust' ? _gc.gustDark : _gc.lullBright;
-        ctx.fillStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${alpha.toFixed(3)})`;
-        ctx.fill();
-        ctx.restore();
+    if (_gc) {
+        const _lift = (c, floor) => {
+            const [h, s, l] = rgbToHsl(c[0], c[1], c[2]);
+            return l >= floor ? c : hslToRgb(h, s, floor);
+        };
+        const gustC = _lift(_gc.gustMid, 0.42);
+        const lullC = _gc.lullBright;                    // authored bright; already legible
+        for (const g of state.gusts) {
+            const pos = t(g.x, g.y);
+            const R = g.radiusX * scale;
+            if (R < 1.5) continue;                       // sub-2px cell: nothing to read
+            const strength = Math.min(1.0, Math.abs(g.speedDelta) / (state.wind.baseSpeed * 0.5));
+            // Stays under the boats: these are the CENTRE alphas, and the rim is zero. They
+            // run higher than the old flat fill dared, because the chart is frosted glass
+            // with the moving race behind it — at 0.3 a cell loses to the blur noise.
+            let peak = g.type === 'gust' ? 0.30 + strength * 0.45 : 0.22 + strength * 0.33;
+            // A cell's ink shrinks with the SQUARE of its on-chart radius, so the same puff
+            // that reads on Stillwater Lake is a faint dot on Open Ocean's big arena. Small
+            // cells get their alpha handed back — capped where a strong cell already sits.
+            const small = Math.max(0, Math.min(1, (10 - R) / 10));
+            peak = Math.min(0.8, peak * (1 + small * 0.6));
+            const c = g.type === 'gust' ? gustC : lullC;
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(g.rotation);
+            ctx.scale(1, g.radiusY / g.radiusX);
+            // Same upwind shift as the main draw — the minimap is the one place you read the
+            // whole fleet against the whole pressure field, so it is the last place the two
+            // should disagree. (Drawn in the scaled frame, so the offset scales with it.)
+            const ox = -PUFF_SKEW * g.radiusX * scale;
+            const grad = ctx.createRadialGradient(ox, 0, 0, ox, 0, R);
+            grad.addColorStop(0, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${peak.toFixed(3)})`);
+            grad.addColorStop(0.55, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${(peak * 0.45).toFixed(3)})`);
+            grad.addColorStop(1, `rgba(${c[0]}, ${c[1]}, ${c[2]}, 0)`);
+            ctx.beginPath();
+            ctx.arc(ox, 0, R, 0, Math.PI * 2);
+            ctx.fillStyle = grad;
+            ctx.fill();
+            // A thin ring at the cell's true extent, weather-chart style. The soft core
+            // alone loses on Open Ocean, whose chart is the same navy as its gusts — a
+            // rim is the one mark that survives any backdrop without adding real ink.
+            ctx.lineWidth = 1.2;
+            ctx.strokeStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.min(0.7, (0.20 + strength * 0.25) * (1 + small)).toFixed(3)})`;
+            ctx.stroke();
+            ctx.restore();
+        }
     }
 
     // Islands (style-aware: ice reads as pale glacial blue, not land)

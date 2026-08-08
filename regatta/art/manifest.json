@@ -693,7 +693,42 @@
       "status": "slot",
       "allowSymmetry": true,
       "subject": "coconut palm seen from directly above — a single crown of long feathered fronds radiating from a central hub, each frond one chunky tapering blade of clustered leaflet-mass in two flat greens (a sunlit top tone and a deep shade tone), with soft rounded tips. The fronds sit at UNEVEN lengths and angles, one or two drooping shorter or crossing a neighbour, so the crown reads as a living tree rather than a geometric star. At the hub, a tight cluster of three or four brown coconuts and the pale grey-brown top of the trunk just visible between the frond bases",
-      "note": "First lagoon asset — Pearl Lagoon's island palm, the lagoon counterpart to bayou-cypress. allowSymmetry because a top-down palm crown is genuinely radial, same reasoning as the mark; the subject asks for uneven frond lengths and angles so the rosette still reads organic rather than mandala. anchor trunk-base assumes a vertical palm — a leaning palm from overhead offsets crown from base, so the subject keeps it straight. world 70 ≈ 7.6m crown at 9.2 units/m, a full-grown coconut palm."
+      "note": "First lagoon asset — Pearl Lagoon's island palm, the lagoon counterpart to bayou-cypress. allowSymmetry because a top-down palm crown is genuinely radial, same reasoning as the mark; the subject asks for uneven frond lengths and angles so the rosette still reads organic rather than mandala. anchor trunk-base assumes a vertical palm — a leaning palm from overhead offsets crown from base, so the subject keeps it straight (the leaning variant is lagoon-palm-leaning). world 70 ≈ 7.6m crown at 9.2 units/m, a full-grown coconut palm."
+    },
+    {
+      "key": "lagoon-palm-leaning",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 84,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "subject": "coconut palm leaning far out sideways, seen from directly above — only the TOP of the tree is visible, never its side. The slim ringed grey-brown trunk runs as one gently curved line from its base in the lower third of the frame up to the crown in the upper third, so trunk and crown together read as a lollipop on a bent stick. The crown is a loose spray of long feathered fronds fanning out around the hub, fuller on the far side of the lean and sparser back toward the trunk, each frond one chunky tapering blade of clustered leaflet-mass in two flat greens with soft rounded tips. A couple of coconuts at the hub. The trunk's own top surface shows as a narrow lit band along the curve with a darker edge — a line with thickness, not a wire",
+      "note": "The postcard beach palm — the one shape that says 'tropical island' at race scale, and deliberately NOT radial, so it does NOT take allowSymmetry: the arrangement negatives (rosette, radial symmetry) are doing useful work here, pushing the generator away from collapsing it back into a centred star. Lean direction is toward the TOP of the frame per the class rule (sprite-up = zero heading), so code can aim the lean — over the water, downwind, wherever. ⚠️ anchor trunk-base is OFF-CENTRE by construction (base in the lower third, crown above): check what ingest measures for anchorPx and hand-correct it to the trunk-ground contact point if it defaults to bbox centre — a leaning palm anchored mid-trunk would stand in the water. world 84 is the base-to-crown-edge span, ≈9m at 9.2 units/m."
+    },
+    {
+      "key": "lagoon-palm-fan",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 60,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "allowSymmetry": true,
+      "subject": "fan palm seen from directly above — a compact crown of large ROUND PLEATED FANS, completely different from a feather palm: each fan is one stiff chunky disc of folded pleats, drawn as alternating lighter and darker wedge facets radiating within the fan like a folded paper fan opened flat, with a bluntly toothed outer edge. Five to seven fans overlap at uneven heights and angles, the upper ones casting one hard flat shade tone onto the ones beneath, so the crown reads as layered plates rather than a single rosette. Fan colour a cooler slightly grey-green than a coconut palm. At the centre, the stout trunk top just visible in the gaps, wrapped in a rough criss-cross of old leaf bases in warm brown",
+      "note": "Second lagoon canopy shape — pleated fans against lagoon-palm's feathered blades, so mixed plantings read as two species at a glance even with colour removed. The pleat wedges are exactly the house style's faceted brush planes, which is why a fan palm suits this set better than most foliage. allowSymmetry as with lagoon-palm: each fan is genuinely radial and the crown is a rough rosette of them; the uneven overlap in the subject keeps it organic. world 60 ≈ 6.5m crown — fan palms carry a tighter head than coconuts."
+    },
+    {
+      "key": "lagoon-palm-young",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 38,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "allowSymmetry": true,
+      "subject": "young trunkless palm seen from directly above — a low dense tuft of short arching fronds erupting straight out of the sand from a single point, no trunk visible at all. The fronds are shorter, broader and more upswept than a grown palm's, so from overhead they foreshorten into a compact star-burst of stubby chunky blades, in a fresher yellow-shifted green than a mature crown, two flat tones with soft rounded tips. Frond count and spacing slightly uneven, one blade folded over another, so the tuft reads as a scruffy living plant rather than a geometric badge. A hint of the pale fibrous heart at the very centre",
+      "note": "The understory scale — scattered between the big palms it breaks up size monotony, and near beaches it reads as dune vegetation. Deliberately trunkless so it stays clearly a PLANT at 38px; a mini lollipop palm would just read as lagoon-palm placed wrong. allowSymmetry as with the other radial crowns. The yellow-shifted green is real (juvenile palms are paler) and doubles as the value separation from mature crowns when a young one sits under or beside a big one. world 38 ≈ 4m spread."
     },
     {
       "key": "mark",

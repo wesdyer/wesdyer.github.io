@@ -494,14 +494,14 @@ window.VENUE_DOC["glowtide"] = {
     "shorelineColor": "#67e8f9",
     "gusts": {
       "gustDark": [
-        10,
-        30,
-        80
+        16,
+        44,
+        112
       ],
       "gustMid": [
-        14,
-        44,
-        104
+        22,
+        60,
+        142
       ],
       "lullBright": [
         124,
