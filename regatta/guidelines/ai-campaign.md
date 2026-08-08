@@ -9778,3 +9778,279 @@ schema-2 recording the day it lands.
 Close with the standing venue report — SEVEN rows, venue | human |
 pre-session bot | post-session bot, all venues benched on final HEAD, dirt
 columns included; the lake land watch item gets its own line.
+
+# SESSION 2026-08-08 MIDDAY PUSH (started 11:28 PDT, HEAD at open 9b5e983,
+# behavior HEAD a393d61) — THE ARCTIC RE-ATTRIBUTION
+# ═══════════════════════════════════════════════════════════════════════════
+Working the five researched candidates in the directive's size order. The
+headline is P0: the research session's Finding 1 ("arctic's 2x is ROUTING
+DISTANCE") does not survive its own first measurement, and four successive
+hypotheses died before the real class named itself.
+
+## PHASE 0 — the gate
+- `freeze_venues --check`: bay/arctic/seatrials/ocean/river/lake MATCH their
+  frozen copies; redrock differs (d30fe85f frozen vs e44ca786 shipping) — the
+  EXPECTED keep-both state, the benchmark is the frozen OLD red rock and the
+  shipping course is the redesign. ⚠️ The script resolves SRC/DST relative to
+  cwd: it must run from the repo root, not from eval/.
+- Owner commits since a393d61 (7655252, 4f44118, 2c77e59, a870bc7, 6317d6e,
+  9b5e983) touch ONLY eval probes, traj recordings and ai-campaign.md — zero
+  lines in js/. Behavior HEAD is a393d61 and every anchor stands unchanged; no
+  re-baseline needed.
+
+## P0 — ARCTIC: FOUR HYPOTHESES DIED, THE FIFTH IS THE CLASS
+Measure-first, per the directive. Probes added (all tracked): `_arc_clr.js`,
+`_arc_why.js`, `_arc_churn.js`, `_arc_beat.js`, `_tk_probe.js`.
+
+1. ✗ "THE ROUTER REFUSES THE LEADS SHE SAILS" — DEAD (`_arc_clr.js`, the
+   directive's own first step). The clearance gap is real: the router's OWN
+   chosen lines sit at med 328-407u against her 200u (26 laps). But it refuses
+   almost nothing — of 23-40 plans per race only 3-6 even HAD a straight
+   alternative with ≥150u of floe clearance, and only 1-3 were declined for a
+   ≥1.3x route. Its plans run just ~1.4x the straight line. And the soft-cell
+   ×2.5 "opening lead" bet, which the research memo guessed was failing (the
+   "444 grinding contacts"), NEVER FAILS: 6 win / 0 fail / 6 abandoned pooled.
+   ⚠️ Also a correction to the record: those 444 contacts are FRAMES. Deduped
+   at 0.5s (standing rule 2) a solo race has 20-33 contact EPISODES.
+2. ✗ THE PAD/EDGE_W KNEE ITSELF — BUILT, BENCHED, KILLED (treeAC1: clearance
+   demand 8→4 cells wherever the narrowness is DRIFTING ICE, land-only
+   clearance keeping full PAD). It fires exactly as designed — route clearance
+   med 373/407/353/328 → 302/315/344/308 — and it LOSES: solo fin med 494.5 vs
+   382.2, and the ODOMETER GOES UP, 51.1k vs 40.4k on the same 8 seeds. Arctic
+   fleet 16-seed set A confirms no gain. Cutting the standoff does not shorten
+   the sailed line; it buys gaps the drifting field then closes.
+3. ✗ "THE PLAN CHURNS" — DEAD (`_arc_churn.js`). Lateral churn med 30-136u,
+   flips ≤26% of replans. The plan is stable. ⚠️ TWO PROBE AUDITS (rule 18)
+   were needed to get there: measuring "400u ahead of me now" vs "400u ahead of
+   me then" scores a perfectly stable plan at ~250u because the boat ADVANCES
+   between replans, and near a mark the plan is shorter than the lookahead so
+   ptAt returns its endpoint. The first run's "churn 2095, flips 100%" was
+   entirely artifact.
+4. ✗ "THE BOT BEATS WATER SHE FETCHES" — DEAD (`_arc_beat.js`, 29 recordings vs
+   5 solo races). Her beat share 44% (leg-1 48%), |h−w| med 60°; the bot's 39%
+   (leg-1 45-50%), med 71°. Same point-of-sail mix. (⚠️ The recorder's heading
+   column is `hdg`, not `heading` — the first run printed "0 laps", rule 4.)
+
+✅ THE CLASS, NAMED: **TACK COUNT.** Her leg-1 median is 5 tacks across 29 laps
+(range 4-8). The solo bot sails 21-23. Same beat share, same wind angles, on a
+route whose FIRST plan for leg 1 (15.7-15.9k) already equals her sailed leg-1
+distance (15.1k med) — and the boat HOLDS that route (d0 med 44-52u; off-plan
+>100u only 25-30%). It then sails 23-32k. The excess is not the route, not the
+clearance demand, not churn and not the point of sail: it is the manoeuvre
+count converting the route into water.
+MECHANISM (`_tk_probe.js`): the tack is chosen by scoring starboard vs port
+VMG toward the STEERING CARROT — a point ~420u down the plan (measured carrot
+distance med 423u). In a floe field the router's upwind route is a staircase
+between floes, so that carrot alternates across the rhumb: far-vs-near bearing
+gap med 10°, p90 34°, exceeding 8.6° in 59% of ticks. The two tacks' scores
+swap with it and the boat tacks as fast as the 5 s cooldown allows.
+
+- ✗ TK1 (score the tack against a 1400u-down-plan reference, floe venues only,
+  steering carrot untouched): FIRES (the gap above) and LOSES — solo 9101
+  465→726, 9102 654→517, 9100 byte-identical. KILLED, and the kill teaches the
+  next shape: **the staircase is not noise, it is the route through the gaps.**
+  Committing to a long board across it crosses the floes the staircase threaded.
+  The human's 5 tacks are lane CHOICE, not lane averaging — the next candidate
+  must pick a lane the pack actually offers and hold it, which is a question
+  for the ROUTER (give the beat two boards) rather than for the tack scorer.
+
+  TK1 solo, 8 seeds paired vs HEAD: med 415.5 vs 382.2, moving speed 124.6 vs
+  130.6 u/s, odo med unchanged. Per-seed: 9100 =, 9101 +261, 9102 −137, 9103
+  +90, 9104 +12, 9105 =, 9107 −33. Not noise-limited — it is worse.
+
+## WHAT P0 LEAVES THE NEXT PUSH
+The arctic size estimate (~150-185 s/boat) STANDS; only its address moved. The
+target is the beat's MANOEUVRE COUNT (21-23 vs her 5), and the two shapes that
+touch the tack scorer are now both measured and dead (the clearance knee, the
+far reference). The remaining shape is the ROUTER's: pathSailable prices an
+upwind staircase and a two-board beat identically (each upwind step is charged
+its own VMG, so length decides and the staircase always wins on length). Give
+the beat a MANOEUVRE COST — a step that changes tack pays the measured tack
+seconds, the same TACK_SEC=1.0 the corridor-loss term already uses — and the
+A* will return long boards a boat can sail. ⚠️ This IS a re-pricing, so rule 1
+applies: compute the ratio first (a 21→5 tack change is 16 manoeuvres × ~1 s of
+polar speed plus the turn's distance — an order-of-magnitude structural gap,
+not a knob at its knee), and it must be judged on full races.
+
+- ✗ TK2 (the router's own manoeuvre cost: a step that CHANGES TACK on an upwind
+  bearing pays TACK_SEC·10 in the A*'s time units, floe grids only — the shape
+  the TK1 kill named): ALSO LOSES. Solo 9100 352→376.5 with floe contacts
+  444→1140, 9101 465→536 with 419→1480. The long boards the router now returns
+  cross the ice the staircase was threading.
+  ⇒ TWO independent attempts to straighten the beat (at the tack scorer, then
+  at the router) both make arctic worse in the same way: MORE ICE. The
+  staircase is load-bearing. Her 5 tacks are not a smoother version of the
+  bot's 21 — they are a different plan: she picks a LANE the pack offers and
+  holds it. Building that means choosing among candidate lanes (a route-level
+  decision over the pack's gaps), not smoothing a route computed without them.
+  That is the next push's shape, and it is now the only one left standing in
+  this class.
+
+## P1 — ROUTER CURRENT PRICING (owner-directed): BUILT, MEASURED, NOT LANDED
+Build (treeCUR1, two lines): a per-cell current VECTOR beside the existing
+_wbin wind field (sampled once at grid build — every authored current region on
+the benchmark venues has period 0, so the field is static and needs no re-key),
+and a step cost that divides by GROUND speed rather than water speed:
+v_ground = 10/base + cur·cosΔ, floored at 0.8 kt and capped at 30. The A*
+heuristic's admissibility floor is lowered by the map's strongest set, or a
+favorable chute would break it. Venues with no currentRegions have no field and
+price exactly as stock, by construction.
+RESULT — river, judged on pooled fins/med per the rub-noise rule:
+  set A (9100): med 264 → 265, paired med −1.0 / mean −0.7, finishers 119→115
+  set B (9200): med 271 → 262, paired med −7.0 / mean −11.0, finishers 119→117
+  land contacts 325→369 (A) and 322→348 (B); boat rubs down slightly in both.
+Sign-consistent on the clock but FAR from the ≤240 success bar, six finishers
+lost pooled, and the one dirt column the rub rule does not excuse (land) is up
+~10% on both sets. The physical reading is coherent: the router now buys
+favorable set, and the favorable set on this venue runs where the banks are.
+NOT LANDED. The next shape is asymmetric — price ADVERSE water honestly (that
+is real time the boat will lose) but do not let a favorable-set discount buy a
+bank-hugging line, because the grind the bank costs is not in this term.
+
+## P1b — THE CURRENT-AWARE START: SIZED OUT AT THE AUDIT
+Built (treeCST1: getApproachTime takes a `setAlong` term, the current's
+component along the crossing run in game units/sec; the loop bails at the cap
+when an adverse set exceeds boat speed). River set B benched EXACTLY
+byte-identical — all 119 paired deltas 0.0, identical dirt. Rule 17 says audit
+the scope before believing that, and the audit (`_riv_startcur.js`, new,
+tracked) settles it: the river's START LINE sits in 0.77-1.19 kt (venue max
+5.16 kt is downstream), so the ≥2 kt venue-class scope never fires.
+⚠️ AND THE SIZE DIES WITH IT, at any scope: the staged crossing run is
+STAGE/cos(0.7) ≈ 78 units, about ONE SECOND at 5 kt. A 1.1 kt set shifts that
+estimate by ~0.2 s. Finding 3's measured symptom is real (the fleet crosses med
+10 s after the gun) but its named mechanism cannot produce it — 0.2 s of
+estimate error is not 10 s of lateness. The river start's 10 s lives somewhere
+else, and finding where is a fresh measurement, not this build.
+
+## P2a — CURVED SMALL CANDIDATES: WINS RIVER, LOSES REDROCK, NOT LANDED
+Build (treeCC1): read a CURVATURE off the plan (a second sample at ~520u past
+the first, clamped to the measured 70u-knee radius) and roll the ≤0.3-rad rungs
+that are also within 0.3 rad of the plan heading on that arc, reusing the
+armed-rounding arcK rollout. ⚠️ Implementation note worth keeping: the rollout
+curvature had to be a SEPARATE variable from `arcK`, because arcK is also the
+guard that switches OFF the hard-zone scaling and the far-field waiver — reusing
+it would have silently un-landed the hard zone for the one candidate the hard
+zone exists to protect.
+  river set A: med 264 → 257, paired med −6.0 / mean −4.7, finishers 119→118,
+    land 325→332, pen 1.85→1.78 — a real if modest WIN, and river is exactly
+    where the argmin's ledger put the class (static 54% of big dodges).
+  redrock 9400: med 481 → 503, paired med +2.0 / MEAN +32.2, finishers 67→63,
+    land 130.8→149.0 (+14%), boat 14.9→18.2 (+22%), mark 1.03→1.39 (+35%).
+    Every dirt column worse; not a near-threshold call.
+THE MECHANISM OF THE SPLIT (the lesson to keep): a probe is honest only when the
+boat will actually sail the shape it probes. Under an ARMED rounding the boat IS
+steered along the arc, so the arc probe tells the truth. Following a plan, the
+boat sails the candidate HEADING until the next tick — so a curved probe clears
+water the boat will not reach and hides land it will. River's corridor bends
+gently enough that the arc is a good 4-second approximation; redrock's island
+band bends harder than the boat turns, and there the curve is a lie.
+⇒ A curved rung needs the boat's OWN achievable turn, not the plan's curvature.
+That is the shape for the next attempt; as built this cannot land globally, and
+a river-only scope would be venue-fitting, not a physical line.
+
+## P2b — BREACH HONESTY AT MEDIUM: KILLED ON ITS OWN NAMED VENUE
+Build (treeBH1): the flat 10000-point boatCollision term, at riskState MEDIUM
+only, scaled by when the projected breach actually arrives — full price inside
+2 s, floored at a third at the 4 s horizon (`bcT` = the earliest breaching
+sample over all pairs). HIGH and IMMINENT keep the binary; the 500000/(d²+10)
+weight, the rule-violation term and the stand-on Rule 16 penalty are untouched.
+LAKE 20 seeds (the venue the argmin ledger named: boatCollision buys 47% of its
+big dodges, GIVE_WAY/MEDIUM carrying 2423 of 3754): paired med +7.0, mean +4.9,
+and LAND CONTACTS 6.37 → 16.09 PER BOAT — two and a half times, on the very
+metric that is this campaign's open lake watch item. Boat rubs 1.98→2.87, pen
+0.54→0.63, one finisher lost.
+MECHANISM (and it is standing rule 11 again — constrained-water damage is
+nonlocal): the honest MEDIUM price is honest about the OTHER BOAT, who will
+indeed steer. It is not honest about the SHORE, which will not. In open water
+the accepted gap costs nothing; in lake's confined water the boat that used to
+buy its way out early now holds on, arrives at the squeeze committed, and takes
+the only remaining exit — the beach. KILLED.
+
+- ~ TK3 (raise the tack cooldown 5 s → 20 s on floe venues, racing legs — the
+  one shape that changes NEITHER the route nor the reference, only the minimum
+  board length; rule 1's order test: her ~40 s board against the bot's ~10 s is
+  8x): NEUTRAL. Solo med 405.5 vs HEAD 382.2 over the same 8 seeds, but FOUR of
+  the eight are byte-identical (9100, 9104, 9105, 9106) and the rest split
+  −142/+76/+35/. The cooldown is not what binds: the boat's tacks are being
+  re-authorised by the LAYLINE path (which sets its own 10 s cooldown and
+  returns early), not by the score-flip path this raises. No measured action
+  win ⇒ not landed, and the observation is the useful part — a future minimum-
+  board shape has to go through the layline return, not around it.
+
+## P2a REDROCK, POOLED — AND WHY THE FIRST TWO SETS BOTH LIED
+Standing rule 12 in one candidate. CC1's six anchor sets, paired med per set:
+  9400  +2.0     9500  −50.0     9600  +58.0     9700  +38.0
+Two 8-seed sets of the SAME tree disagreed by 108 seconds of paired median. Set
+9500 alone read like a landing (med −50, land −19%, boat −23%, finishers 66→69)
+and set 9400 alone read like a disaster (mean +32, every dirt column up). Neither
+was true. Pooled over the four, paired med +20.0 / mean +9.1, negative in 118 of
+247 boats — a coin flip, with dirt a shade worse.
+⇒ CC1 does not clear redrock. New probe `_pool_rr.js` (tracked) does the pooling
+and PRINTS THE PER-SET SPREAD beside the pooled figure, so the noise is visible
+instead of assumed — the next candidate should be read through it from the start.
+
+- ✗ CUR3, the asymmetric variant the CUR1 result pointed at (charge ADVERSE
+  water, take NO credit for favorable set — so no step is ever cheaper than
+  stock and the stock admissibility floor stands): WORSE than CUR1, not better.
+  River A paired med −1.0 / mean +1.9, SIX finishers lost (119→113), boat rubs
+  61.6→101.2 per boat (+64%), land 325→378 (+16%). Refusing adverse water
+  without buying fair water just squeezes the whole fleet into the same
+  remaining lanes — the fleet-level version of the same nonlocal lesson lake
+  taught P2b. The current-pricing family is two variants deep with no landing;
+  the owner's directive is satisfied at the MEASUREMENT level (the hole is real
+  and now instrumented), not at the landing level.
+FINAL (all six sets, 48 seeds): per-set paired med +2 / −50 / +58 / +38 / −4 /
++65; POOLED paired med +35.0, mean +12.9, negative in 166 of 365 boats; pooled
+med 498→507, fins 396→392; dirt boat 19.97→20.19, land 142.38→145.82, pen
+3.83→3.85. CC1 is a river-only effect that redrock rejects. NOT LANDED.
+
+## P3 — NOT REACHED
+OP5 and the new-red-rock bounds attribution were the tail of the directive and
+the session spent its machine time on the P0 re-attribution and five candidate
+verdicts instead. OP5 remains build-ready and unchanged (v1 per-tick form +
+wall-room ≥100 + wind ≥8 kt + dG<250, benched TOGETHER with the hard-zone base
+on redrock). No owner signal arrived on the new course, so it stays content.
+
+## SESSION VERDICT — NO LANDING, ONE RE-ATTRIBUTION, FIVE CANDIDATES CLOSED
+Behavior HEAD is UNCHANGED at a393d61: `git diff` over regatta/js and
+regatta/assets is empty, so every anchor carries to final HEAD by construction
+and no golden re-record was required (npm run trace untouched, no behaviour
+change to record). What the session produced is knowledge, not a diff:
+- THE ARCTIC RE-ATTRIBUTION (above): the 2x is manoeuvre count, not routing
+  distance. Four hypotheses and three builds died naming it. The size stands.
+- FIVE CANDIDATE FAMILIES CLOSED OR MEASURED with their mechanisms named:
+  the floe clearance knee (kill), the tack reference and the router's manoeuvre
+  cost (two kills, one shared lesson), MEDIUM breach honesty (kill on its own
+  named venue), router current pricing ×2 (not landed, owner's hole confirmed
+  and instrumented), the current-aware start (sized out by arithmetic), curved
+  small candidates (river win, redrock rejection, mechanism of the split named).
+- THREE STANDING RULES EARNED: lookahead probes need a fixed reference (two
+  artifacts in one probe); a path-shaping probe must model the path the boat
+  will SAIL; read redrock through pooled sets from the first verdict.
+
+## THE VENUE TABLE (final HEAD = a393d61 behavior, benchmark venues frozen)
+venue     | human med/best        | pre-session bot        | post-session bot (final HEAD)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (bp2bayA/B), boat 1.39/2.11, mark 0.05/0.28, pen 0.28/0.40, OCS 0 | UNCHANGED — no behavior diff this session
+ocean     | 182.5 (predates the gust fix) | 192 (bp2oc), boat 1.81, mark 0.36, pen 0.35 | UNCHANGED
+lake      | 223 / 209.6           | 275 / 276 (bp2lakeA/B), land 6.37/6.09, boat 1.98/3.09, mark 0.43/0.32 | UNCHANGED
+redrock   | ~227 / 206.6 (s2 214.7) — OLD red rock, the benchmark | 48-seed fins 396, pooled med 499 (per-set 481/510/497/542/564/469), land 142.4, boat 19.97, mark 1.14, pen 3.83 | UNCHANGED (re-measured this session as the CC1 baseline: pooled med 498, fins 396 — the same numbers)
+arctic    | 212.1 / 190.4 (fresh clean 206.2) | 413 / 450 (p3v2arcA/B), in-420 75/53 | UNCHANGED — and now ATTRIBUTED: solo fin med 382, odo 40.4k = 1.6x her 25.4k, leg-1 tacks 21-23 vs her 5
+seatrials | ~190 / 180.9 (fresh 193.8) | 199.58 / 194.13, OCS 15.44% | UNCHANGED
+river     | 161.3 best, n=2 (172.1) | 264 / 271 (ff2rivA/B), fins 119/119 of 144 | UNCHANGED
+⚠️ LAKE LAND WATCH ITEM: 6.37 / 6.09 per boat against the pre-hard-zone 5.33 /
+5.58 — still open, still unattributed, and it BIT this session: the MEDIUM
+breach-honesty candidate drove it to 16.09 (2.5x) and was killed for it. Any
+candidate that touches lake must keep reporting this column.
+
+## FOR THE NEXT PUSH
+1. ARCTIC LANE CHOICE (the only shape left in the biggest class): choose among
+   the lanes the pack actually offers and hold one. Not a smoothing of the
+   staircase — two smoothings are already dead.
+2. The response class survives as a target but needs the boat's ACHIEVABLE TURN
+   as the probe's ceiling (the curved-candidate lesson), not the plan's bend.
+3. The river start's 10 s is unexplained again — the current term cannot produce
+   it (0.2 s of a 1 s run). Measure where those seconds actually go.
+4. Current pricing: the hole is real and instrumented; both symmetric and
+   adverse-only pricing move the fleet into worse water. A third shape must
+   answer what the bank grind costs, which no route term currently knows.
+5. OP5 is still build-ready and still un-benched.
