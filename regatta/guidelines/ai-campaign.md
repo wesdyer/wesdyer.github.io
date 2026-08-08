@@ -9655,3 +9655,126 @@ by construction). SIZE: ~7-10s med/boat on river + the tail.
   PRICING (new #2 — owner-directed, mechanism verified, sized); 3. curved
   small candidates; 4. breach honesty at MEDIUM; 5. river current-aware
   start (folds into #2's bench wave).
+
+# NEXT-PUSH DIRECTIVE (drafted at close of Aug 8; HEAD at draft 6317d6e)
+# ═══════════════════════════════════════════════════════════════════════════
+Goal unchanged: human or superhuman on bay, ocean, redrock, lake, arctic,
+seatrials. This push works the five researched candidates in size order:
+arctic clearance scale (~150-185s/boat), router current pricing (~46s+
+river, owner-directed), then the response class (curved candidates + MEDIUM
+honesty), with OP5 and the current-aware start as the tail.
+
+⚠️ PHASE 0 GATE: HEAD at open should be 6317d6e or later. If owner commits
+moved BEHAVIOR past a393d61: freeze_venues --check first (frozen venues
+protect benches from venue edits now — only js/physics changes threaten
+anchors), then one 4-seed byte-identity per venue vs the bp2-family anchors;
+byte-identical ⇒ stands, else re-baseline (96-seed protocol if near
+threshold). Ingest any new laps day-one (_gw_ledger2 + traj_report + refs).
+Anchors on a393d61: redrock bp2rr{9400..9900} 48-seed fins 396 pooled med
+499 (+ hd8rr/bp2rr{8400..8900} evidence pairs); lake bp2lakeA/B 275/276
+(land 6.37/6.09 — WATCH); bay bp2bayA/B 231/234; ocean bp2oc 192 (hd8oc 193
+baseline, ff2oc retired at the venue cut); river ff2rivA/B 264/271
+byte-carried; arctic p3v2arcA/B 413/450 byte-carried; seatrials
+199.58/194.13 byte-carried.
+
+P0 — ARCTIC CLEARANCE SCALE (the ~150-185s/boat solo class; the biggest
+number in the campaign). Her 26 laps: 1.06x rhumb IN TRAFFIC, clearance med
+200u, 6.2% under 50u. Solo bot: 1.6-2.5x rhumb, 444 grinding contacts,
+moving speed FINE — the excess is the ROUTE (pathSailable PAD 8 ≈ 400u
+demanded clearance, EDGE_W 6: a 300u lead prices 4-5x; the pack becomes a
+wall maze). Measure FIRST (one physical line): clearance histogram along
+the ROUTER'S OWN CHOSEN LINES for her legs vs along her tracks — confirm
+the router refuses the 150-300u leads she sails. Then the build: floe-grid
+clearance-cost knee (PAD/EDGE_W scaled to her revealed ~200u on floe grids
+only; land grids keep the landed corridor pricing UNTOUCHED — lake/river/
+redrock byte-identical is the scope's own claim, verify not assume). Also
+measure (before touching): the soft-cell ×2.5 "opening lead" bet's success
+rate at arrival — [[map-staleness]] says drift is unpredictable; the 444
+grinds are the bets failing. ⚠️ Distinction to name in every candidate:
+STATIC clearance-demand scale ≠ the CLOSED closing-lead-pricing and
+clearance-extension families (both priced DYNAMIC lead changes). Gates:
+arctic 16×2 vs p3v2arcA/B + the solo probe (_arc_solo 465-med baseline,
+_arc_dist odometer 38-60k baseline) + 4-seed byte-identity on every
+non-floe venue + goldens. Success bar: solo odometer toward ≤30k, fleet
+413/450 down double digits with in-420 up; rule 16 stands (scenes cannot
+green-light — full races only).
+
+P1 — ROUTER CURRENT PRICING (owner directive: "make sure the AI plans with
+current"). Verified hole: physics/steering/tack know the water; pathSailable
+prices still water — favorable chute ≡ adverse eddy. Build: per-cell current
+projection in the step cost — time = dist/(polarSpeed + current·cosΔstep) —
+alongside the existing _wbin wind pricing; fires only where currentRegions
+exist (every current-free venue byte-identical BY CONSTRUCTION — verify
+4-seed anyway). Fold Finding 3 into the same wave as a SEPARATE line:
+current-aware start (getApproachTime with ground-speed closure; ~10s med +
+tail). ⚠️ Bench the pair TOGETHER AND separately (the OP1+BP1 m5-funnel
+anti-composition lesson is standing rule now). ⚠️ Distinctions: avoidance
+ground-frame probes are CLOSED (this is route pricing); SIPP is retired
+(drift PREDICTION — authored current is static); start CALIBRATION is
+closed (constants — this is missing physics). Gates: river pooled fins/med
+ONLY (rub noise rule — 16×2 minimum, 4 sets if near threshold), all-venue
+byte-gates, goldens. Success bar: river 264/271 → ≤240 med; her 161-172.
+treeP4TIGHT stays shelved behind the response class regardless.
+
+P2 — THE RESPONSE CLASS (as time allows; at minimum land the measurement):
+2a CURVED SMALL CANDIDATES: the ≤0.3-rad rungs rolled along the plan's
+curvature (generalize arcK from armed-rounding to plan-following — FF2/
+hard-zone's own line). The argmin's ledger says straight small candidates
+read the bend as collision: river static 54%, redrock land-band 47%.
+2b BREACH HONESTY AT MEDIUM: the 10000 boatCollision binary gated by
+VO-entry/tCPA at MEDIUM only (HIGH/IMMINENT untouched); lake GW/MEDIUM
+carries 2423/3754 of its big dodges; UL1's half-proof (needless-MEDIUM
+collapse, river IMMINENT −68%, HIGH untouched) parameterizes it.
+Order: 2a alone → 2b alone → COMPOSED, each on its OWN sets; redrock
+verdicts near threshold get the 96-seed protocol; lake 20×2 with the +25%
+caution; bay byte-protection; m3 (_rr_mstall 3) and m5 (_rr_mstall 4) stall
+gates; full goldens. Use treePROBE/_av_fanlog for any "why did it choose
+X" question — external cost models are a documented dead end.
+
+P3 — if time: OP5 (fully parameterized ease: v1 per-tick form + wall-room
+≥100 + wind ≥8kt + dG<250 — bench TOGETHER with the hard-zone base on
+redrock; m3 target 13-14%→~4%, ocean/lake byte-or-neutral gates); NEW red
+rock first attribution (the bounds-contact class, 30/boat, human-zero —
+treeNEWRR pattern) if the owner signals the new course is next.
+
+Standing constraints (additions from Aug 8 in caps): prime directive (≥4
+probes in flight, check date — read the clock, never infer); episodes not
+frames; actions not prices; one physical line per gate; measure first
+(three candidate shapes died at the measurement step today — the ledger is
+now 4-for-4 landings on anatomy-named builds); 96-SEED PROTOCOL for
+near-threshold redrock verdicts (48-seed pooled means carry ±8-10s); RIVER
+JUDGED ON POOLED FINS/MED ONLY (rubs span 6x on identical behavior); BENCH
+CANDIDATE PAIRS TOGETHER before landing either; INSTRUMENT THE ARGMIN for
+choice questions (treePROBE pattern); TWA convention (0 = head-to-wind);
+byte-perturbation reshuffle (judge candidates on their OWN sets);
+constrained-water damage is NONLOCAL; paired deltas are tail-dominated; all
+landed scopes live in any new candidate (floe venues, _avCurMax ≥ 2, _gyOK,
+250u funnel exemption, arcK, _voIn wide gate, hPlanFF alignment + the
+hard-zone's wind/no-go/arc guards); the lake land watch item (6.37/6.09 vs
+5.33/5.58) is P0-adjacent — any lake-touching candidate reports it.
+
+Closed families (do not reopen; additions in caps): ENTRY-side rounding
+governors (the ORBIT-phase distinction is mandatory and OP5 is its only
+open form); ORBIT-EASE v2 SPEED-THRESHOLD-WITHOUT-LATCH (toggles) and v3
+LATCH (overholds — stalls at sweep 306°); OP1+BP1 NAIVE COMPOSITION;
+cap-in-funnel; VO-exit latch; closing-lead route pricing ×2; tight-slot
+occupancy stamps; river ground-frame AVOIDANCE probes ×2; arctic
+clearance-extension ×2; lake armed-probe-cap + boat-clearance gate; RL on
+f0e290e ×2; mark-queue reservation; start calibration (CONSTANTS — the
+current-physics start is distinct and open); minimal-escape fan;
+hold/commitment; sighted wiggle; gap projection; SIPP; orbit radius below
+the 70u knee; metered lee-shore holds; 80u owed-gap knob; layline ×4;
+station-keeping among rivals (0-for-8 lifetime).
+
+Human refs: bay 226.2/217.8; ocean 182.5 (predates gust fix); lake
+223/209.6; OLD redrock ~227/206.6 (s2 214.7, legs 39.9/64.7/51.3/29.6/26.1);
+arctic 212.1/190.4 (fresh: 206.2 clean); seatrials ~190/180.9 (fresh:
+193.8); river 161.3 best n=2 (172.1). NEW redrock 272.5 clean / 304.4
+(n=2) — bot 1.7x, bounds class human-zero. ⚠️ ASK FOR FRESH LAPS: bay,
+lake, OLD redrock (hard-zone landing changed all three), post-gust-fix
+ocean; more new-course laps whenever it's next. P-continuous: ingest any
+schema-2 recording the day it lands.
+
+Close with the standing venue report — SEVEN rows, venue | human |
+pre-session bot | post-session bot, all venues benched on final HEAD, dirt
+columns included; the lake land watch item gets its own line.
