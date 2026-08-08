@@ -10507,3 +10507,13 @@ river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B), fins 119/119
 ⚠️ LAKE LAND WATCH ITEM (its own line, standing): 6.37/6.09 vs pre-hard-zone
 5.33/5.58 — open, unattributed; it killed BH1 today (6.37→16.09 under the
 MEDIUM honesty candidate). Any lake-touching candidate reports this column.
+
+## RD8 — THE LAST BUILD OF THE DAY, KILLED
+Per-boat orbit-radius separation (boat.id-keyed ±40u at wide zones, aimed at
+RD7's set-B rub failure): set B paired med +24.0 / mean +16.2, boat rubs
+9.70→11.55 — UNCHANGED from RD7's failure mode. The separation did not touch
+the target statistic; the B-set rubs are not parallel-orbit contact (or not
+only), and the next diagnosis belongs to the arrival-layer push with proper
+instrumentation rather than a twentieth same-day shape. KILLED; treeRD8
+removed; RD7 remains the recommended base.
+Nineteen builds. The day's verdict stands as written in the final ledger.
