@@ -476,6 +476,62 @@ function loadVenue(key) {
     loadDoc(src, null);
 }
 
+// File → New. A venue is a file, so a new one is a document with nowhere to write yet:
+// Save asks where to put it, the same as a file made anywhere else. It opens not on an
+// empty map but on the smallest course that already races — a square arena, one breeze
+// over all of it, a start line and a windward mark — because every tool here works on
+// something that exists, and a truly empty document would greet you with nothing to
+// select and a page of errors before you had done anything wrong.
+function newDoc() {
+    if (doc && isDirty() && !confirm('Discard unsaved changes?')) return;
+    // A fresh key each time: recompile registers the document in VENUE_DOC, so reusing
+    // 'untitled' would silently overwrite the last New still sitting in the registry.
+    let key = 'untitled', n = 2;
+    while (window.VENUE_DOC[key]) key = `untitled-${n++}`;
+    const size = 8000;                                   // 1.6 km of water: enough beat
+    const half = size / 2 - mToU(140);                   // the Fit-rect default inset
+    const src = window.VenueDoc.migrate({
+        schema: 1,
+        venue: key,
+        card: { name: 'Untitled' },
+        world: { size, boundary: { poly: window.Arena.rectPoly(0, 0, half, half) } },
+        shapes: [],
+        course: {
+            // Pin to port, committee boat to starboard, seen from a boat facing the
+            // breeze — and 1100u of line, the length ten boats need (see scaleMap).
+            marks: [
+                { id: 'mark-1', name: 'Pin', x: -550, y: 2700, kind: 'inflatable' },
+                { id: 'mark-2', name: 'Committee', x: 550, y: 2700, kind: 'committee' },
+                { id: 'mark-3', name: 'Windward', x: 0, y: -2700, kind: 'inflatable' }
+            ],
+            lines: [{ id: 'line-1', marks: ['mark-1', 'mark-2'] }],
+            // Up, round, and home across the same line: start and finish share it,
+            // crossed the opposite way.
+            route: [
+                { kind: 'gate', lineId: 'line-1', dir: 1, pass: 'through' },
+                { kind: 'round', markId: 'mark-3', side: 'port' },
+                { kind: 'gate', lineId: 'line-1', dir: -1, pass: 'through' }
+            ]
+        },
+        // Sampled well past the arena, like migrate's whole-map region, so particles
+        // drawn outside the boundary are not becalmed. Direction 0 blows down the map:
+        // the beat above really is a beat.
+        wind: { regions: [{
+            id: 'wind-all',
+            poly: [[-size, -size], [size, -size], [size, size], [-size, size]],
+            falloff: 400, direction: 0, dirVar: 0.25,
+            speed: 10, speedVar: 2.5, period: 60
+        }] }
+    });
+    loadDoc(src, null);
+    // Unsaved from birth: loadDoc took the document as the saved baseline, but there is
+    // no file it matches yet, and the chrome should say so.
+    savedJSON = '';
+    dirtyChanged();
+    refreshChrome();
+    toast('New venue — Save will ask where to put it');
+}
+
 // A venue file's text, whichever of its two on-disk forms it is in: the `.venue.js`
 // wrapper (`window.VENUE_DOC[key] = {...}`), or bare JSON. The wrapper is executed
 // against a STUB window, so the file's own assignment is what registers it — no regex
@@ -5858,6 +5914,7 @@ $('btn-sel-del').addEventListener('click', () => {
 });
 $('btn-undo').addEventListener('click', undo);
 $('btn-redo').addEventListener('click', redo);
+$('btn-new').addEventListener('click', newDoc);
 $('btn-open').addEventListener('click', openFile);
 $('btn-save').addEventListener('click', () => save(false));
 $('btn-saveas').addEventListener('click', () => save(true));
@@ -6048,7 +6105,7 @@ setInterval(() => {
 window.addEventListener('resize', resize);
 window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
 
-window.EditorApp = { resize, fitView, loadVenue, loadBlank, draw, buildKindPicker,
+window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildKindPicker,
     // exposed for headless tests
     _state: () => ({ doc, findings, history: history.length, histIdx, dirty: isDirty(), tool, sel }),
     _setTool: (t) => { tool = t; refreshChrome(); },
