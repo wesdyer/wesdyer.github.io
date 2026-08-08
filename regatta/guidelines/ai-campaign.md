@@ -10517,3 +10517,17 @@ only), and the next diagnosis belongs to the arrival-layer push with proper
 instrumentation rather than a twentieth same-day shape. KILLED; treeRD8
 removed; RD7 remains the recommended base.
 Nineteen builds. The day's verdict stands as written in the final ledger.
+
+## TAIL-HOURS MEASUREMENT WAVE (machine idle after build 19; two directed
+## measurements, no builds)
+1. RD7's B-SET RUBS, LOCATED (`_rub_where.js`, new, tracked; hostile seeds
+   9201-9202): 199 episodes — 77% ON LEG 1 (the beat), dRM med 1325u (well
+   OUTSIDE the ring), 74% under 2.7kt at contact, 52% while armed (arming
+   reaches 1277u, so "armed" spans the outer approach). The rubs are SLOW-BOAT
+   TRAFFIC ON THE BEAT APPROACH, not the arc's rounding: the arc frees boats
+   through the ring and on hostile draws they pack tighter upstream. RD8's
+   orbit-separation was aimed at the wrong place — the arrival/laning class is
+   the binding constraint, and this is its instrumentation baseline: the next
+   push's candidate must be judged on LEG-1 approach rubs at dRM 900-1800u.
+2. OP5's pooled protocol: sets 9500-9900 grinding in the background — the
+   shelved candidate gets its rule-20 verdict on idle machine time.
