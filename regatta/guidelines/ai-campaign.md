@@ -9466,3 +9466,22 @@ pre-existing river sailable failure (exit2→pre3) only.
   fins/med only, never on rubs, until a 32-seed+ protocol exists.
 - Lake's +19%/+9% land under the landing is the open watch item; L1/L2
   classes unchanged otherwise.
+
+## POST-LANDING ADDENDUM (final HEAD a393d61) — the close-out reads
+- LEG-3 UNDER THE LANDING, fresh-set contrast (occupancy 4@8600, HEAD vs
+  landed): leg-3 med 159.5→134.5 (−25s), leg-3 parked 51→30 s/boat-leg,
+  leg-2 101→86. (The 4@9400 probe seeds show leg-3 147→157.5 — set 9400 is
+  the landing's one positive-mean set; the 96-seed pooled clock is the
+  judge, and the fresh sets carry the mechanism's signature.) Leg 3 vs her
+  51.3s: ~2.6x, from 2.9x.
+- NEW RED ROCK FIRST-LOOK (landed AI, shipping course via treeNEWRR —
+  frozen-venue tree with the redrock symlink repointed at shipping):
+  nrr9400/nrr9500 8-seed: med 471/505, fins 67/69 of 72, land 108/101,
+  boat 8.2/8.0, mark 1.1/1.4, pen 1.6/2.0 — and ⚠️ BOUNDS 30.3/6.0
+  contacts/boat: the new course drives the fleet into the arena boundary
+  (a class the old course never had). First attribution target when the
+  new course gets human laps. No human ref exists yet.
+- LAKE L1 on the landed tree (_lake_l1 4@9100): mild + diffuse — max heat
+  bin 14 boat-s, parked mass at race-minute 20-40s (post-start sort-out),
+  nearest rival 183u, avoidance-active 56%, defl 11°, wind 6.2kt, n=50.
+  No candidate named; the class is small on this base.
