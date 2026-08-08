@@ -3470,8 +3470,47 @@ class BotController {
                 // behaviour per frame. This way Glacier Sound is byte-identical, not
                 // approximately identical.
                 const LAND_PROBE_MIN = 240;
-                const landLen = openWaterAv
-                    ? Math.max(LAND_PROBE_MIN, speed * (lookaheadFrames / 60)) : 0;
+                // THE PROBE REACHES ONLY AS FAR AS THE WATER IS WIDE. In a
+                // 300-600u canyon a 240-400u straight ray always ends in wall,
+                // so the far-blockage term taxes every corridor candidate and
+                // the argmin buys 69-92deg swings nothing physical requires
+                // (wide-dodge anatomy: land-only 39% + far-land-in-soft 34% of
+                // 4182 redrock episodes). Where the local clearance says the
+                // water is narrow (<3 cells), cap the ray at the water's own
+                // width — the sailed line bends before the wall arrives. Floor
+                // 180u: the 140u hard zone stays intact plus a graded band
+                // (the lake ratchet lived below that). Same openWaterAv gate
+                // as the floor itself — drifting-ice grids byte-identical.
+                let landLenStock = Math.max(LAND_PROBE_MIN, speed * (lookaheadFrames / 60));
+                // v2 scopes, both on landed physical lines:
+                //  - NOT in >=2kt water (the jam-stamp/arc knee): in a strong
+                //    stream a short-probe tight line is water the boat cannot
+                //    hold — river gate caught v1 (fins 119->109, rubs x2.8).
+                //  - NOT inside a mark's 250u funnel (the congestion scope's
+                //    line: the funnel IS the rounding): v1 raised redrock mark
+                //    contacts in 4/4 sets — pinch lines need the full probe.
+                //  - NOT while a rounding is ARMED (arcR set): the arc probe
+                //    IS the landed rounding geometry — shortening it re-blinds
+                //    the cove fix (v2 mark contacts stayed +52% with only the
+                //    250u funnel excluded; arcs arm out to zone*1.5).
+                const capOK = openWaterAv && gAv._clear && !arcR &&
+                    (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                if (capOK) {
+                    const ccB = gAv.cell(boat.x, boat.y);
+                    const idB = ccB[1] * gAv.n + ccB[0];
+                    const clB = gAv._clear[idB];
+                    if (clB >= 0 && clB < 3) {
+                        let inFunnel = false;
+                        for (const mF of (state.course.marks || [])) {
+                            const dxF = mF.x - boat.x, dyF = mF.y - boat.y;
+                            if (dxF * dxF + dyF * dyF < 250 * 250) { inFunnel = true; break; }
+                        }
+                        if (!inFunnel) {
+                            landLenStock = Math.max(180, Math.min(landLenStock, (clB + 1) * gAv.res * 2));
+                        }
+                    }
+                }
+                const landLen = openWaterAv ? landLenStock : 0;
                 const landFX = openWaterAv ? boat.x + Math.sin(h) * landLen : futureX;
                 const landFY = openWaterAv ? boat.y - Math.cos(h) * landLen : futureY;
                 const segLen = openWaterAv

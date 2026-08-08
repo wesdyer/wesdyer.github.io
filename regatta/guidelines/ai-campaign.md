@@ -8938,3 +8938,64 @@ _cpa_onset_probe + _defl_hist on HEAD, the numbers the build parameterizes on:
     alpha, and finer/curved low-rungs so the argmin can buy 5-15°
     responses in constrained water instead of jumping to 69°. Judge full
     stack per the pointers above; the lake caution binds the design.
+
+## ✅ LANDED (same push, evening continuation) — CLEARANCE-CAPPED LAND PROBE
+The dossier's wide-dodge anatomy named it and the full stack passed it.
+MECHANISM (one physical line): the land probe reaches only as far as the
+  water is wide — in a 300-600u canyon a 240-400u straight ray always ends
+  in wall, so the far-blockage term (30000·(1−frac)) taxed every corridor
+  candidate and the argmin bought 69-92° swings nothing physical required
+  (_rr_dodge.js, new, tracked: 4182 wide-dodge episodes on redrock — small
+  candidates blocked by land-only 39%, soft-costs-only 34%, rival-only 15%).
+  Where local clearance < 3 cells: landLen = max(180, min(stock, (cl+1)·res·2)).
+  Floor 180u keeps the 140u hard zone plus a graded band (the lake ratchet
+  lived below that).
+SCOPES (each a landed physical line): openWaterAv only (drifting-ice grids
+  byte-identical by construction — arctic 4-seed verified bit-exact);
+  OFF where _avCurMax ≥ 2kt (v1 died on the river gate fins 119→109 rubs
+  ×2.8 — a short-probe tight line in a 5kt stream is water the boat cannot
+  hold; river 4-seed verified BYTE-IDENTICAL under the scope); OFF while a
+  rounding is ARMED (arcR — the arc probe is the landed rounding geometry);
+  not inside a mark's 250u funnel (the congestion scope's line).
+REDROCK, judged on the hardened protocol (pooled finishers, SIX disjoint
+  8-seed sets, 48 seeds): fins 384→390 (+6); paired MEAN negative in ALL
+  SIX sets (−85.7/−13.4/−0.8/−1.9/−64.7/−48.1, pooled ≈ −36s/boat);
+  unpaired med 618/618/617/604/634/590 → 533/593/620/612/527/528; land
+  DOWN 5/6 (−4..−17%); boat pooled +6% (sign-mixed). THE TRADE, anatomy-
+  named (_rr_markhits.js, new, tracked): mark contacts +35% pooled — a
+  PRE-EXISTING m3 drift-stall class (83% of cap-tree mark hits: mark 3,
+  leg 2, 62% zero-rivals-in-zone, 90% armed, 0.8kt drift-on) that simply
+  receives more surviving traffic; m4 contacts collapse 32→5. Pens +8%.
+  The m3 stall is the next redrock attribution target.
+GATES: lake 20×2 A paired −4 land −10% all-dirt-down / B neutral land −10%
+  (v3 byte-identical to v2 on lake — the arc exemption never fires there);
+  bay 20×2 neutral with OCS 0.6/1.1% → 0.0/0.0 both sets; ocean 20 neutral
+  (boat rubs down); arctic BYTE-IDENTICAL (verified); river BYTE-IDENTICAL
+  (verified); seatrials 100@100 moved-neutral (med 194.225→194.125, OCS
+  identical 15.44%) — re-baselined; the HEAD-tree control run reproduced
+  the memory anchor exactly (194.23/15.44), exposing the repo
+  eval_results.json as stale-by-lineage; replaced with the landed run.
+ROAD: v1 unscoped (+12 fins but river fins −10) → v2 current+funnel scopes
+  (river byte-identical, marks still +52%) → v3 armed-arc exemption (marks
+  +35%, principled) — chosen for protecting the arc geometry and land down
+  in every set. The funnel/arc exclusions did NOT move the mark trade —
+  that is how the m3 class was proven pre-existing and traffic-fed.
+GOLDENS: 14/20 behaviour changes → FULL --update re-record on the landed
+  code, verified PASS. npm test unchanged from the clean-HEAD snapshot
+  (the river sailable failure is pre-existing and stops the chain).
+NEW ANCHORS (all fingerprint-stamped, on the landed tree): redrock
+  ocean_bench_p4cap3rr{A..F} (48-seed fins 390); lake ocean_bench_
+  p4cap3lakeA/B (med 271/274, land 5.08/5.58); bay ocean_bench_
+  p4cap3bayA/B (med 236/236, OCS 0/0); ocean ocean_bench_p4cap3oc
+  (med 193); seatrials eval_results 199.58/194.13 OCS 15.44%; arctic
+  p3v2arcA/B + river r0A/B byte-carried.
+
+## The venue table, FINAL (post-landing; human = traj recordings)
+venue     | human med/best      | pre-session bot                          | post-session bot (final HEAD, cap landed)
+bay       | 226.2 / 217.8, 0 impacts | 236 / 237, boat 1.95/1.83, OCS 0.6/1.1% | 236 / 236 (p4cap3bayA/B), boat 1.99/2.03, mark 0.36/0.54, pen 0.46/0.48, OCS 0.0/0.0
+ocean     | 182.5               | 192 (p2b3oc), boat 1.88, mark 0.26       | 193 (p4cap3oc), boat 1.60, mark 0.38, pen 0.46 — neutral
+lake      | 223 / 209.6         | 275 / 278, land 5.63/6.17, boat 2.04/2.56 | 271 / 274 (p4cap3lakeA/B), land 5.08/5.58 (−10% both), boat 1.92/3.51, mark 0.40/0.66 ← cap helps the corridors
+redrock   | ~227 / 206.6 (s2: 214.7) | 48-seed fins 384/432; A/B med 618/618 (pair-tool) | 48-seed FINS 390/432; med 533/593/620/612/527/528 per set; land −4..−17% 5/6 sets; mark 2.6→3.5 (m3 stall class, named); pens +8% ← THE CAP LANDING
+arctic    | 212.1 / 190.4 (s2: 215.0/194.7) | 413 / 450 (p3v2arcA/B), in-420 75/53 | UNCHANGED — BYTE-IDENTICAL (openWaterAv gate, verified)
+seatrials | ~190 / 180.9        | 199.65 / 194.23, OCS 15.44%              | 199.58 / 194.13, OCS 15.44% — moved-neutral, re-baselined
+river     | 161.3 (1 lap)       | r0A/B med 272/273, in-360 80/77%         | UNCHANGED — BYTE-IDENTICAL (current-class scope, verified)
