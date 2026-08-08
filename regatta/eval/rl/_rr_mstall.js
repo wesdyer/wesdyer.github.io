@@ -5,12 +5,13 @@
 // wind (in irons? luffing?), avoidance deflection, dMark, phase (sweep so
 // far), what the argmin context was (rivals near, wall side). Survivor
 // contrast: min speed through the funnel for clean passes.
-//   node _rr_m3stall.js <trials> <seed0> <tree>
+//   node _rr_mstall.js <trials> <seed0> <tree> <markIdx>
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
 const TRIALS = parseInt(process.argv[2]) || 4;
 const SEED0 = parseInt(process.argv[3]) || 9400;
 const ROOT = path.join(__dirname, process.argv[4] || 'treeP4FINAL');
+const MIDX = parseInt(process.argv[5] ?? '3');
 (async () => {
     const browser = await chromium.launch();
     const page = await browser.newPage();
@@ -23,13 +24,13 @@ const ROOT = path.join(__dirname, process.argv[4] || 'treeP4FINAL');
     const passes = [];
     for (let i = 0; i < TRIALS; i++) {
         const seed = SEED0 + i;
-        const r = await page.evaluate(async (seed) => {
+        const r = await page.evaluate(async ([seed, MIDX]) => {
             window.evalHarness.seed = seed;
             window.resetGame(); window.startRace();
             state.course.cutoff = 900;
             const bots = state.boats.filter(b => !b.isPlayer);
             const pl = state.boats.find(b => b.isPlayer); pl.x = 1e6; pl.y = 1e6;
-            const M = state.course.marks[3];
+            const M = state.course.marks[MIDX];
             const st = {}; const out = [];
             const norm = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
             const dt = 1 / 60; let fr = 0;
@@ -65,6 +66,7 @@ const ROOT = path.join(__dirname, process.argv[4] || 'treeP4FINAL');
                                 dMark: +d.toFixed(0), twa: +twa.toFixed(0), wkt: +w.speed.toFixed(1),
                                 defl: +(((c && c.lastAvoidDeviation) || 0) * 180 / Math.PI).toFixed(0),
                                 armed: !!b.raceState.roundArmed, sweep: +((b.raceState.roundSweep || 0) * 180 / Math.PI).toFixed(0),
+                                tgAge: (c && c._tgLast != null) ? +(state.race.timer - c._tgLast).toFixed(1) : null,
                                 nRival, liveness: c && c.livenessState
                             };
                         }
@@ -76,19 +78,20 @@ const ROOT = path.join(__dirname, process.argv[4] || 'treeP4FINAL');
             }
             for (const n in st) if (st[n].in) out.push(st[n].p);
             return out;
-        }, seed);
+        }, [seed, MIDX]);
         passes.push(...r);
-        console.log('seed', seed, 'm3 passes', r.length, 'stalls', r.filter(p => p.stall).length);
+        console.log('seed', seed, 'm'+MIDX+' passes', r.length, 'stalls', r.filter(p => p.stall).length);
     }
     const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : null; };
     const stalls = passes.filter(p => p.stall);
     const clean = passes.filter(p => !p.stall);
-    console.log('\nm3 funnel passes', passes.length, ' stalls(<1kt)', stalls.length,
+    console.log('\nm'+MIDX+' funnel passes', passes.length, ' stalls(<1kt)', stalls.length,
         `(${(100 * stalls.length / Math.max(1, passes.length)).toFixed(0)}%)`);
     console.log('clean passes: minKt med', med(clean.map(p => p.minKt)), ' entryKt med', med(clean.map(p => p.entryKt)));
     const brgBins = arr => { const h = {}; for (const p of arr) { const k = Math.round(p.entryBrg / 45) * 45; h[k] = (h[k] || 0) + 1; } return h; };
     console.log('entry bearing-from-mark bins CLEAN:', JSON.stringify(brgBins(clean)), ' STALL:', JSON.stringify(brgBins(stalls)));
     console.log('entry sweep med CLEAN', med(clean.map(p => p.entrySweep)), ' STALL', med(stalls.map(p => p.entrySweep)));
+    console.log('entry kt STALL med', med(stalls.map(p => p.entryKt)), ' (clean', med(clean.map(p => p.entryKt)) + ')');
     if (stalls.length) {
         const S = stalls.map(p => p.stall);
         console.log('at stall onset:');
@@ -110,6 +113,9 @@ const ROOT = path.join(__dirname, process.argv[4] || 'treeP4FINAL');
             else twaBins['irons(<50)']++;
         }
         console.log('  TWA bins:', JSON.stringify(twaBins));
+        const tg = S.filter(s => s.tgAge != null && s.tgAge < 20);
+        console.log('  governor fired <20s before stall:', tg.length + '/' + S.length,
+            ' age med', med(tg.map(s => s.tgAge)));
     }
     await browser.close();
 })();
