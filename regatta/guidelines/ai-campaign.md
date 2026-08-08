@@ -9622,3 +9622,36 @@ by construction). SIZE: ~7-10s med/boat on river + the tail.
 3. Breach honesty at MEDIUM (2b): the underlay's correct target; UL1's
    half-proof + these fan numbers parameterize it.
 4. River current-aware start (Finding 3): ~10s, small and clean.
+
+## OWNER CORRECTIONS + THE FIFTH CANDIDATE (same research session)
+- ⚠️ CORRECTION (owner): the human's arctic laps were NOT solo — verified:
+  all 9 rivals in her recordings sailed 18-22k units and progressed legs (a
+  full live fleet; her giveWay share 6-45% per lap). Her 217.6 med and the
+  1.06x-rhumb line were sailed WHILE DODGING NINE BOATS. The solo-bot
+  comparison (465s, 1.6-2.5x rhumb, zero traffic) is therefore CONSERVATIVE
+  — Finding 1 is stronger than written, not weaker.
+- FINDING 4 — THE ROUTER IS CURRENT-BLIND (owner directive: "make sure the
+  AI plans with current"). Verified layer by layer: physics applies drift ✓;
+  getStrategicHeading crab-compensates the aim locally ✓; tack choice has a
+  mild midstream-push bonus (helping×0.5) ✓; pathSailable prices edges by
+  distance/wind-polar/clearance with NO current term ✗ — a 5kt-favorable
+  chute and 5kt-adverse water of equal width price identically. This is the
+  ledger's river signature exactly: river is the ONLY venue with a large
+  moving-speed deficit vs the human (22%; everything else 0-6%) — the fleet
+  sails the wrong water at full water-speed while she plans her lines with
+  the set (her chute: 22.5s at 6kt over ground). SHAPE (measured-ready):
+  extend the _wbin per-cell wind pricing with a per-cell current projection
+  — step time = dist / (polarSpeed + current·cos(Δstep)) — so the router
+  buys favorable set and refuses adverse. ⚠️ Not blocked by closed
+  families: the river ground-frame kills were AVOIDANCE-layer probes; SIPP
+  died on drift PREDICTION — authored current regions are static. SIZE:
+  river's moving-speed share ≈ 46s/boat over her distance + line choice;
+  also swamp/lagoon (current venues, unbenched) and the river start's
+  cousin fix. Judge on river pooled fins/med (rub noise rule) + all-venue
+  byte-gates (current<2 venues untouched by construction).
+- Owner endorsement recorded: the object-avoidance direction (Findings 2a
+  curved candidates + 2b breach honesty) is confirmed as wanted.
+- NEXT-PUSH ORDER updated: 1. arctic clearance scale; 2. ROUTER CURRENT
+  PRICING (new #2 — owner-directed, mechanism verified, sized); 3. curved
+  small candidates; 4. breach honesty at MEDIUM; 5. river current-aware
+  start (folds into #2's bench wave).
