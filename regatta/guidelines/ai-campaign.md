@@ -10412,3 +10412,40 @@ needs the pooled protocol + the m5 gate); the current-pricing third shape
 boat's ACHIEVABLE TURN as the probe ceiling (CC1's lesson).
 P-continuous: fresh laps (bay, lake, OLD redrock, post-gust-fix ocean); ingest
 day-one; the lake land watch item reports in any lake-touching candidate.
+
+## THE ARRIVAL-COST CURVES (`_arrival_cost.js`, new, tracked) — THE BUDGET
+First measurement of the next-push P0, done now. One passage per boat per
+rounding (⚠️ v1 counted rim oscillations as passages and flattened the curve —
+rule 18, fixed in-probe), first zone entry → leg flip, occupancy read at entry:
+  GRANITE RING (600u, 26 passages): 0-2 boats in → transit med 123-148s;
+    4 in → 179s; 5 in → 288s. ~40+ s per extra occupant at the tail.
+  REDROCK m1 (500u, 64 passages): 0 in → 12.0s; 1 → 18.7s; 3 → 20.3s;
+    4 → 41.1s. Same shape at land scale.
+The pile has a measurable price and spreading arrivals has a computable budget.
+AR1 (built on treeRD3): the LANDED funnel-metering's floe exclusion was earned
+on a base where the arc was disabled in floe water (metered boats sat in ice,
+12.1→13.5 contacts). On the RD3 base, retry it at WIDE-ZONE floe marks only
+(zone ≥ 500 = granite; small zones keep the exclusion verbatim), radii scaled
+to the zone (0.7z/1.4z/0.7z for inner/outer/jam) so the trigger can see a pile
+that forms 300-600u out; the mid-leg defile form stays open-water-only. Every
+non-floe venue is byte-identical by construction (their constants unchanged).
+Fleet 16-seed gate running.
+
+## THE QUEUEING ANATOMY — the measurement that inverts the arrival design
+Fleet first-arrivals at the granite ring, from the RECORDINGS (the rivals are
+the AI): median inter-arrival gap 9.4s, total spread ~97s over 6 races. THE
+FLEET ALREADY ARRIVES SPREAD. The pile is not an arrival problem — it is
+SERVICE TIME: each transit takes 63-76s against her 19, so occupancy grows at
+ρ ≈ 7 regardless of spacing, and no realizable arrival gap (~60s+) could drain
+it. AR1 (occupancy-keyed approach metering) was byte-inert on two fleet seeds
+— its guard is pre-empted by the pack-speed discipline near ice — and is
+KILLED on both counts: inert as built, and aimed at the wrong lever.
+⇒ THE ONLY FLEET LEVER IS KEEPING THE FAST SERVICE ALIVE IN THE CROWD. RD3's
+24.8s solo service dies in the fleet because the arc's queued-rival gate is a
+flat "any parked rival within 400u" — the FIRST boat to park re-disables every
+other boat's arc and the 63s service resurrects itself. RD6: the disable
+narrows to its earned scope — a parked rival ON MY ORBIT (|its mark-radius −
+my arcR| < 120u); a rival parked inside or outside my circle no longer kills
+the arc. The m5 wedge lesson (165-189u zones, no room for two radii) behaves
+the same by construction; the change binds only where the water admits
+parallel orbits. Fleet 16-seed gate running — the day's last build.
