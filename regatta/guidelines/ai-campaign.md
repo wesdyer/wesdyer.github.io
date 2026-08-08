@@ -9023,3 +9023,267 @@ NEXT-PUSH ORDER suggested by the post-landing data: (1) m3 wrong-way-wrap
   wide-dodge rungs — its rival-only share of wide dodges is 15-18% after
   the cap landed the land share). River's tight-water class stays shelf-
   ready behind the response work.
+
+# ═══════════════════════════════════════════════════════════════════════════
+# SESSION 2026-08-07 NIGHT PUSH (started 17:51 PDT, HEAD at open 9c0438d)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner-directed continuation on the post-cap constraints in order: redrock m3
+wrap (P0), redrock m5/leg-3 approach (P1), the give-way underlay (P2). ZERO
+LANDINGS — three candidate families built and rejected with mechanisms, one
+probe-convention bug caught and fixed in the tracked probes, the m3 class
+attributed three layers deep, and the decomposition that REDIRECTS the
+underlay priority. The measure-first ledger extends: 0-for-3 on builds,
+4-for-4 on attributions that changed the going story.
+
+## PHASE 0 — trivial: 9c0438d is probe+docs only; behavior tree byte-identical
+to ff12c26 (treeP4FINAL diffed clean against HEAD). All anchors STAND.
+
+## P0 — m3 WRONG-WAY WRAP: attributed three layers deep, and it is not a wrap
+`_rr_m3replay.js` / `_rr_m3replay2.js` (new, tracked; per-tick replay with
+strategy/avoidance instrumented: str = getStrategicHeading, pre/pst =
+applyAvoidance in/out), 8 stall episodes + 3 cleans, seeds 9400-9401:
+1. THE APPROACH: strategy asks the correct line every time (str −16..−28
+   toward the cut-in); the avoidance argmin forces the boat +15..40° EAST
+   onto the wrong-way line — solo (nr=0), land-term-driven. The clean/stall
+   discriminator is alignment+speed at arm, not entry side.
+2. THE TURN: at arm (d ~180-190) the carrot demands 60-140° of turn; turn
+   distance at 8 kt ≈ v·χ/ω ≈ 420u (ω = 0.61 rad/s measured, full authority
+   ≥3.5 kt) — more room than exists. The miss lands ON the mark face.
+3. THE PIN, re-read: ⚠️ PROBE CONVENTION BUG (standing rule 18, fixed in
+   _rr_m3stall/_rr_mstall same-day): engine TWA 0 = HEAD-TO-WIND (the no-go
+   tax fires at twaCand < 0.55), so the probes' bins were inverted — the
+   stalls reported "RUNNING TWA 32" are IN-IRONS FACE PINS. The cut-in
+   demands a heading across the wind; the boat attempts a TACK inside the
+   funnel with the mark dead ahead mid-arc; the bow sweeps across the mark,
+   contacts, and the boat luffs pinned in irons (same family as lake's
+   43.7% deflected-into-irons class). Approach itself is a close/beam reach.
+4. Downstream: wrong-way crawl around the face (cheap side), east-wall rams
+   at 230-275u — `_rr_ringclear.js` (new, tracked): m3's ring is 100% water
+   to R=200 and the orbit's outward allowance zone*1.6=264 IS the wall; m5
+   walls 200-215u, m6 215-230u; orbitTightR null at all three (zone-scaled
+   stock radii don't fit the water). m3 is a HAIRPIN (needExit ≈ 270-340°),
+   so every wrong-way excursion costs 400°+ to undo. Blown-out re-approaches
+   (armed at 460u, argmin flapping ±90° on land tax) complete the bill.
+⛔ CANDIDATE REJECTED — TURN-FEASIBILITY GOVERNOR (treeP4TG, 3 variants, all
+mechanism-named): "arrive no faster than you can turn" via speedRequest ease
+(metering-family guards). v1 χ-vs-tangent @zone*1.5: m3 stalls 50→42%,
+anatomy unchanged. v2 @zone*2.1+margin: 38% and leg-2 med −20s — but the
+trigger geometry fires on EVERY fast radial approach (χ against the tangent
+at the current bearing ≈ 90° for any radial line): leg-3 med +25s, and the
+instrumented rerun showed the governor FIRED ON 23/23 residual stalls and
+they stalled anyway (entry 6.8 kt vs clean 5.9). v3 miss-distance-under-
+turn-authority (ease only when full rudder can no longer raise the lateral
+miss above the 75u berth): collateral eliminated (m5 fired 0/9) but fires
+~0.4s pre-stall — too late to shed way. THE SPEED LEVER IS PROVEN
+INSUFFICIENT: surgical is too late, early is a blanket tax.
+▶ THE NAMED BUILD (design push): the turn-direction choice at the cut-in.
+The rudder always takes the SHORT way to the target — through head-to-wind
+and across the mark's bearing. The long way round (gybe-around) keeps way on
+and never sweeps the bow across the mark. Also on the shelf from this
+attribution: the mark exerts ~nothing between hard 50u and soft 115u
+(18000/(dSq+100) ≈ 2-7 points) while 0.8kt drift-on turns 51u grazes into
+pins — but bay's landed orbit lives at 61-70u, so any berth change is
+bay-gated. Rudder-contract machinery: goldens WILL move; full stack.
+
+## P1 — m5/LEG-3: measured (not a wrap), one candidate killed
+`_rr_mstall.js` (new, tracked; mark-parameterized) at marks[4]: 13-16%
+stalls (vs m3's 51%) at dMark med 242 (funnel EDGE), 86% unarmed, 100%
+zero-rival, defl 40-69° — the solo wide-deflection class, not rounding
+machinery. Occupancy + service re-runs on the landed tree: thread serves
+fast (7.7-11.3s med) and SOLO transits park worse than occ-1/2 (6.8 vs
+4.0/3.8 med) — deflection, not queueing; parked clusters pool at
+(−200..0, 1000..1400).
+⛔ CANDIDATE REJECTED — CAP-IN-FUNNEL (treeP4F4, drop the 250u funnel
+exemption): m3/m5 stall rates unchanged AND leg-3 med 145→217s (+72s),
+parked 38.5→60s, m5 cluster 879→1177 boat-s. The funnel exemption is
+load-bearing on approach quality — pinch lines need the full probe (the
+scope comment's claim, now measured directly).
+
+## P2 — THE DECOMPOSITION THAT REDIRECTS THE UNDERLAY (_rr_dodge2.js, new)
+_rr_dodge re-run on the landed tree: 4009 wide-dodge edges (redrock 4@9400):
+land-only 40% / soft-costs-only 34% / rival-only 13% / land+rival 12%.
+_rr_dodge2 decomposes the soft-costs-only class by term with the argmin's
+own formulas: redrock farland 62%, none 31% (commitment-latched), irons 7%,
+boatprox 0 OF 1382, marksoft ~0. River: farland 47%, none 42%, irons 11%,
+boatprox 0. ⚡ THE RIVAL-RESPONSE SHARE OF REDROCK'S CONSTRAINED CLASS IS
+~NIL AT THE TERM LEVEL — the deflected-distance residual is the far-blockage
+LAND term (30000·(1−frac)) in water wide enough that the clearance cap never
+bites (clB ≥ 3): the stock 4s straight ray outlives the plan's bend and
+reports the bend wall as a blockage. The give-way underlay (dCPA 191-212u /
+τ≈6s / role split) remains the RIVER mid-slot + lake build; it is NOT the
+redrock leg-3 lever the plan assumed.
+⛔ CANDIDATE REJECTED (blocked-behind, the session's key compositional
+finding) — "THE FAR FIELD BELONGS TO THE ROUTER" (treeP4FF): waive the
+far-blockage tax for the candidate aligned within 0.3 rad of the local
+gridPath direction (140u hard zone untouched; guards: fresh plan <200u
+cross-track, never a no-go heading — a beat's plan direction is dead upwind
+and the irons shaping is only 500 points — never under the armed arc).
+Anatomy: wide-dodge edges −11% (soft-only 1382→1198), legs 3/4/5 odo down
+(leg 4 −14%), NO collateral signature — and leg 2 odo +24% with m3 stalls
+50→54%: the waiver holds boats on the plan line straight into the unfixed
+m3 funnel and pays the corridor gains back into wrong-way re-rounds. FF
+COMPOSES WITH THE m3 TURN FIX — bench them together after that lands, the
+same dependency shape as river's tight-water class behind the response.
+
+## The venue table (final HEAD = behavior ff12c26; ZERO landings — every row
+## byte-carried from the p4cap3 anchors, Phase 0 verified)
+venue     | human med/best      | pre-session bot                          | post-session bot (final HEAD)
+bay       | 226.2 / 217.8, 0 impacts | 236 / 236 (p4cap3bayA/B), boat 1.99/2.03, mark 0.36/0.54, pen 0.46/0.48, OCS 0.0/0.0 | UNCHANGED — byte-carried
+ocean     | 182.5               | 193 (p4cap3oc), boat 1.60, mark 0.38, pen 0.46 | UNCHANGED — byte-carried
+lake      | 223 / 209.6         | 271 / 274 (p4cap3lakeA/B), land 5.08/5.58 | UNCHANGED — byte-carried
+redrock   | ~227 / 206.6 (s2: 214.7) | p4cap3rr{A..F}: 48-seed fins 390, med 533/593/620/612/527/528, land −4..−17% 5/6, mark 3.5 | UNCHANGED — byte-carried
+arctic    | 212.1 / 190.4 (s2: 215.0/194.7) | 413 / 450 (p3v2arcA/B), in-420 75/53, fins 143/139 | UNCHANGED — byte-carried
+seatrials | ~190 / 180.9        | 199.58 / 194.13, OCS 15.44%              | UNCHANGED — byte-carried
+river     | 161.3 (1 lap)       | r0A/B med 272/273, in-360 80/77%         | UNCHANGED — byte-carried
+
+## NEXT-PUSH POINTERS (ordered by what tonight measured)
+- BUILD 1 (the unlock): m3 TURN-DIRECTION at the cut-in — never sweep the
+  bow across a mark you are about to hit; take the turn the other way round
+  (gybe-around keeps way on). Rudder-contract design build (turn-direction
+  hint from controller to updateAI's short-way smooth-turn; penaltySpin is
+  the forced-rotation precedent). Judge: m3 stall rate + redrock pooled ≥4
+  sets + lake 20×2 + bay (5 roundings!) + goldens re-record.
+- BUILD 2 (queued behind 1): treeP4FF far-field waiver — corridor gains
+  measured real (legs 3/4/5 odo down), currently paid back into the m3
+  funnel. Re-bench the day Build 1 lands.
+- The give-way underlay: RIVER (raft-up displacement chain) + lake — its
+  redrock share is ~nil at the term level (tonight's decomposition). River's
+  tight-water class stays shelf-ready behind it.
+- Orbit-vs-water (from _rr_ringclear): zone*1.6 outward allowance ≈ the m3
+  east wall; an orbitMaxR (dual of orbitTightR) capping carrot/ride radii is
+  measured-ready if wall-rams persist after Build 1.
+- ⚠️ TWA CONVENTION (now in standing rules): engine TWA 0 = head-to-wind;
+  the no-go tax is twaCand < 0.55. Two probes shipped inverted bins today.
+
+## ✅ LANDED (same push, after a clock-check caught a 3h misestimate — rule 10)
+## TURN-DIRECTION AT THE ROUNDING (the m3 build, executed tonight after all)
+MECHANISM (two sites, one physical line): NEVER SWEEP THE BOW ACROSS A MARK
+YOU ARE ABOUT TO HIT — take the turn the other way round. The rudder always
+took the SHORT way to the target; at the m3 cut-in that way crosses
+head-to-wind AND the mark's bearing, and the boat died in irons on the face
+(51% of passes). Now: when the short-way arc crosses the mark's bearing with
+less room than the rotation needs (v·|off|/0.61 > d−75), the controller sets
+turnBias and the rudder rotates the other way — and EASES through the
+gybe-around (the turn and the throttle are one decision; the 8kt loop is
+400u across and fits nothing; at manoeuvring speed it is ~90u).
+SCOPES (each a landed line): floe venues OFF (pack-speed law owns that
+water; arctic byte-identical, verified); _avCurMax ≥ 2kt OFF (a spin in a
+stream is the one-way door squared — v2 cost river boat contacts ×2.6;
+river byte-identical under the scope, verified); per-mark LOOP-ROOM ring
+gate _gyOK (ring at the zone radius fully water — the orbitTightR family
+line; lake's cove is 81% water at 165u and v2 tripled its land contacts;
+gated, lake flipped to a both-sets win); no round leg → inert (seatrials
+byte-identical, verified).
+ROAD: v1 bias-only (m3 51→26%, the face-pin class DIED — residual stalls
+are a different class at the funnel edge) → v2 +ease (m3 13%, lake/river
+casualties) → cl≥4 scope tried and REMOVED (m3 pocket and m5 zone are both
+cl 3 — the field cannot separate them) → v4 the two scopes above. A v2-vs-v4
+redrock byte-perturbation reshuffle was caught and pinned (determinism
+verified same-tree; rule 3), so v4 was judged on its OWN six sets.
+REDROCK (pooled finishers, six disjoint 8-seed sets, 48 seeds): fins
+390→392; paired mean −10.9 s/boat pooled (negative 4/6 sets: +50/−22/−50/
+−61/+3/+20); MARK CONTACTS −57% IN ALL SIX SETS (19.8→8.4 pooled); pens
+down 5/6; land flat; boat −3%. Set A pays (+50 mean, land +30) — the freed
+m3 traffic feeding the m5 approach class, the cap landing's own trade shape.
+GATES: BAY A WIN both sets (med 236→231/236→234, mean −6.2/−2.9, marks
+0.36→0.05/0.54→0.28, pens down both — the bay-vs-human gap narrows to
+~5-8s); LAKE positive both sets (med 271→269/274→273, land 5.08→4.49/
+5.58→5.52, every dirt class down); OCEAN neutral-positive (mean −3.8, marks
+−47%, boat rubs 1.60→2.10 — the recorded trade); river/arctic/seatrials
+BYTE-IDENTICAL (all three verified by 4-seed diff, not assumed).
+GOLDENS: 6 behaviour changes (divergences at m3, pen 1→0 visible in the
+diff) → full --update re-record, verify PASS 20/20. npm test: the one
+failure is the documented pre-existing river sailable line (exit2→pre3).
+NEW ANCHORS (fingerprint-stamped, on the landed tree): redrock
+ocean_bench_gy4rr{9400,9500,9600,9700,9800,9900} (48-seed fins 392; per-set
+med 599/590/548/514/529/578); lake ocean_bench_gy4lakeA/B (269/273); bay
+ocean_bench_gy4bayA/B (231/234); ocean ocean_bench_gy4oc (192); river
+r0A/B, arctic p3v2arcA/B, seatrials eval_results all byte-carried.
+
+## The venue table, FINAL (post-landing; human = traj recordings)
+venue     | human med/best      | pre-session bot                          | post-session bot (final HEAD, turn-direction landed)
+bay       | 226.2 / 217.8, 0 impacts | 236 / 236 (p4cap3bayA/B), boat 1.99/2.03, mark 0.36/0.54 | 231 / 234 (gy4bayA/B), boat 1.39/2.11, mark 0.05/0.28, pen 0.28/0.40, OCS 0/0 ← gap ~5-8s
+ocean     | 182.5               | 193 (p4cap3oc), boat 1.60, mark 0.38     | 192 (gy4oc), boat 2.10, mark 0.20, pen 0.38 — neutral-positive
+lake      | 223 / 209.6         | 271 / 274 (p4cap3lakeA/B), land 5.08/5.58 | 269 / 273 (gy4lakeA/B), land 4.49/5.52, boat 1.76/3.21, mark 0.25/0.36 — all dirt down
+redrock   | ~227 / 206.6 (s2: 214.7) | 48-seed fins 390; med 533/593/620/612/527/528 | 48-seed FINS 392; med 599/590/548/514/529/578; paired pooled −10.9s/boat; MARKS −57% all six (19.8→8.4); pens −11% ← THE TURN LANDING
+arctic    | 212.1 / 190.4 (s2: 215.0/194.7) | 413 / 450 (p3v2arcA/B), in-420 75/53 | UNCHANGED — BYTE-IDENTICAL (floe scope, verified)
+seatrials | ~190 / 180.9        | 199.58 / 194.13, OCS 15.44%              | UNCHANGED — BYTE-IDENTICAL (no round legs, verified)
+river     | 161.3 (1 lap)       | r0A/B med 272/273, in-360 80/77%         | UNCHANGED — BYTE-IDENTICAL (current scope, verified)
+
+## NEXT-PUSH POINTERS (superseding the pre-landing list above)
+- treeP4FF ("the far field belongs to the router") is UNBLOCKED: the m3
+  funnel it fed is fixed — re-bench it on the new anchors FIRST.
+- Redrock set-A's +50: the m5-approach class now carries more traffic — the
+  give-way underlay (RIVER+LAKE per the decomposition) and/or an m5-specific
+  look are the next redrock reads. orbitMaxR stays measured-ready.
+- The residual m3 stalls (13%) are a NEW class (funnel-edge, reaching, sweep
+  +2) — attribute before touching.
+- River tight-water + underlay: unchanged plan, behind the response class.
+- Ocean boat rubs 1.60→2.10 under the landing — watch it on the next pass.
+
+## ✅ SECOND LANDING, SAME PUSH — THE FAR FIELD BELONGS TO THE ROUTER (FF2)
+The waiver rejected three hours earlier as blocked-behind-m3, re-benched on
+the turn-direction base per its own dependency note — and the composition
+delivered. MECHANISM (one physical line): the route only ever crosses water,
+so land beyond the 140u turning zone ALONG THE PLAN is the plan's bend, not
+a blockage — waive the far-blockage tax (30000·(1−frac)) for the candidate
+aligned within 0.3 rad of the local gridPath direction (260u lookalong).
+The 140u hard zone stays for every candidate. Guards: fresh plan the boat is
+on (<200u cross-track), never a no-go heading (|h−wind| < 0.62 — the irons
+shaping is only 500 points and a beat's plan direction is dead upwind),
+never under the armed arc (arcK). Named by _rr_dodge2's decomposition
+(soft-only wide dodges: farland 62%, boatprox 0 of 1382).
+ANATOMY on the landed base (the dependency test): m3 stalls 13% — NO refeed
+(the pre-landing rejection was leg-2 odo +24% + m3 50→54%; with the face-pin
+class dead the corridor gains stand alone): vs the GY base at 4@9400 legs
+2/3/4 time −14/−39/−38%, odo −6/−18/−13%.
+REDROCK (pooled finishers, six disjoint 8-seed sets vs the gy4 anchors):
+fins 392→396; paired mean NEGATIVE IN ALL SIX SETS (−83/−24/−15/−13/−14/−60,
+pooled ≈ −34 s/boat); med negative 5/6; land −9% pooled (down 4/6); marks
+−18% further (8.44→6.94); pens down 5/6; boat −2%.
+GATES: BAY BIT-IDENTICAL both sets (no far land on open water — the waiver
+provably never fires; paired mean 0.00, stats byte-equal); OCEAN positive
+(mean −0.7, boat rubs 2.10→1.75 — recovers most of the turn landing's ocean
+trade, marks down); RIVER both sets faster (paired −10/−7 med, −17/−7 mean;
+fins 233→238 pooled; land −7/−14%; ⚠️ boat rubs DISAGREE in sign across
+sets: A 30→62, B 46→31 — unresolved at this resolution, recorded); LAKE
+within anchor noise (A mean +2.7 with land 4.49→5.33, B −1.0 flat — pooled
+land 10.9 vs the session-open anchor 10.7); arctic + seatrials
+BYTE-IDENTICAL (verified by diff).
+GOLDENS: 9 behaviour changes → full --update re-record + verify.
+NEW ANCHORS: redrock ocean_bench_ff2rr{9400..9900} (48-seed fins 396;
+per-set med 475/540/520/507/538/523); lake ff2lakeA/B 274/273; bay
+ff2bayA/B 231/234 (bit-identical to gy4bayA/B); ocean ff2oc 192; river
+ff2rivA/B med 264/271 (fins 119/119 of 144 — in-360 improved); arctic
+p3v2arcA/B + seatrials byte-carried.
+The redrock arc: session open 384 fins/48-seed (pre-cap) → cap 390 →
+turn-direction 392 → far-field 396, with per-set meds now 475-540 vs the
+session-open 527-620 — the deflected-distance class named two pushes ago is
+being drained by three composed landings on three physical lines.
+
+## POST-LANDING RESIDUAL (final HEAD 7b72372) — the next push's aims, measured
+- REDROCK legs (occupancy, 4@9400): med {L1 74.5, L2 96.5, L3 147, L4 49.5,
+  L5 48} vs human 39.9/64.7/51.3/29.6/26.1 — leg 3 remains the constraint
+  (2.9x) and its parked mass still pools at the m5 approach box
+  (−200..0, 1000..1400: 1343 boat-s pooled, top cluster unchanged).
+  m5 stalls 15%: solo (78%), unarmed (89%), defl 69°, at 223u — the wide-
+  deflection class, now with the land share drained by two landings; what
+  remains is displaced-off-plan boats (the FF waiver requires <200u
+  cross-track — displaced boats lose it exactly when displaced) and the
+  broad-reach bends. The underlay (river+lake per _rr_dodge2) plus a
+  displacement-tolerant plan reference are the candidate shapes.
+- THE m3 RESIDUAL CLASS (13%), replay-named (Lunker): the boat rounds
+  CORRECTLY (sweep 88→279, no face pin, no wrong way) but at 7.3 kt the
+  pursuit turn radius is v/ω ≈ 184u, so the hairpin's middle bulges to 242u
+  — into the east wall band (230-275, _rr_ringclear). The orbit phase is
+  pinched between the turning circle at speed and the canyon wall: it needs
+  either mid-sweep speed discipline (⛔ the ENTRY-side governor family is
+  closed at 3 kills; an ORBIT-PHASE ease at confined marks is a different,
+  named design — armed, sweep>0, orbitTightR-null marks) or water that
+  isn't there (orbitMaxR stays measured-ready but the carrot was already
+  inside — the excursion is pursuit dynamics, not the target). DESIGN BUILD.
+- RIVER: 264/271 med vs human 161 (1.64x, from 1.69x); fins 119/119 of 144;
+  the rub sign-split (A 30→62 / B 46→31) is the open dirt question. The
+  tight-water class (treeP4TIGHT, old base) re-ports after the underlay.
+- Session probe additions all tracked: _rr_m3replay(2), _rr_mstall (bins
+  fixed), _rr_ringclear, _rr_dodge2, _run_stack.sh.
