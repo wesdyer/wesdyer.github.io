@@ -1609,6 +1609,67 @@ class BotController {
                 // Left at cell granularity — the waypoint-ahead pruning below turns the
                 // stair-steps into a smooth carrot ~170u in front of the boat, and any
                 // string-pulled shortcut would hug the very corners the weights avoid.
+                // CONGESTION-PRICED ROUTE CHOICE. Stamp the cells around rivals
+                // that are PARKED right now (<1 kt, racing legs) so the router
+                // prices the queue behind them — measured on redrock: med
+                // 25-35 s parked per boat-leg (p90 98-130 s), up to 3 boats
+                // simultaneously in one 200u bin of the north thread, while a
+                // near-equal line goes unsailed. Re-stamped at every replan
+                // (2-3 s), so a jam that clears stops pricing within one
+                // replan. Route CHOICE only — nobody holds station, the
+                // second-arriving boat just stops buying the parked lane.
+                if (botGrid._jamIds && botGrid._jamIds.length) {
+                    for (const idJ of botGrid._jamIds) botGrid._jam[idJ] = 0;
+                    botGrid._jamIds.length = 0;
+                }
+                // NOT ON STRONG-CURRENT VENUES: in a 2+ kt stream a sub-1kt
+                // boat is PINNED BY THE WATER (river's chute: grinding the
+                // bank against 3.8-5.2 kt), not queuing — and the chute has no
+                // alternative lane, so pricing the "jam" only deformed routes
+                // into rock (river fins 119→107/114→105, land +32%/+21% under
+                // the unscoped stamp; byte-identical with it off). Same
+                // venue-class knee as the ground-frame probe work: max blended
+                // current over navigable cells >= 2.0 kt. Current-free venues
+                // compute 0 here without touching getCurrentAt (no regions).
+                if (state.course._avCurMax === undefined) {
+                    let mCJ = 0;
+                    const gCJ = state.course.botGrid;
+                    if (gCJ && (state.course.currentRegions || []).length) {
+                        for (let yCJ = 0; yCJ < gCJ.n; yCJ += 4) for (let xCJ = 0; xCJ < gCJ.n; xCJ += 4) {
+                            if (!gCJ.at(xCJ, yCJ)) continue;
+                            const cwJ = getCurrentAt(gCJ.x0 + (xCJ + 0.5) * gCJ.res, gCJ.y0 + (yCJ + 0.5) * gCJ.res);
+                            if (cwJ && cwJ.speed > mCJ) mCJ = cwJ.speed;
+                        }
+                    }
+                    state.course._avCurMax = mCJ;
+                }
+                if (this.boat.raceState.leg >= 1 && state.course._avCurMax < 2.0) {
+                    for (const oJ of state.boats) {
+                        if (oJ === boat || oJ.isPlayer || oJ.raceState.finished) continue;
+                        if (oJ.raceState.leg < 1 || oJ.speed * 4 >= 1.0) continue;
+                        if (Math.hypot(oJ.x - boat.x, oJ.y - boat.y) > 1500) continue;
+                        // A queue AT a mark is the rounding itself — every boat
+                        // must pass that water and routing "around" it detours
+                        // the approach into whatever surrounds the mark (lake's
+                        // cove: land — v1 unscoped cost lake A +5 paired med,
+                        // land +30%). Only CORRIDOR jams are priceable; skip
+                        // parked boats inside any mark's 250u funnel.
+                        let atMark = false;
+                        for (const mkJ of (state.course.marks || [])) {
+                            if (Math.hypot(oJ.x - mkJ.x, oJ.y - mkJ.y) < 250) { atMark = true; break; }
+                        }
+                        if (atMark) continue;
+                        if (!botGrid._jam) { botGrid._jam = new Uint8Array(botGrid.n * botGrid.n); botGrid._jamIds = []; }
+                        const cJ = botGrid.cell(oJ.x, oJ.y);
+                        for (let dyJ = -2; dyJ <= 2; dyJ++) for (let dxJ = -2; dxJ <= 2; dxJ++) {
+                            const xJ = cJ[0] + dxJ, yJ = cJ[1] + dyJ;
+                            if (xJ < 0 || yJ < 0 || xJ >= botGrid.n || yJ >= botGrid.n) continue;
+                            const idJ = yJ * botGrid.n + xJ;
+                            if (!botGrid._jam[idJ]) botGrid._jamIds.push(idJ);
+                            if (botGrid._jam[idJ] < 250) botGrid._jam[idJ]++;
+                        }
+                    }
+                }
                 const seg = window.SailCheck.pathSailable(botGrid, [boat.x, boat.y], [destX, destY]);
                 if (seg && seg.length > 1) {
                     const pts = seg.map(q => ({ x: q[0], y: q[1] }));
@@ -2700,6 +2761,51 @@ class BotController {
             if (nosedIn || this.boat.raceState.leg < 1) candidates.push(2.2, -2.2, 3.0, -3.0);
         }
 
+        // A BOAT MID-ROUNDING SAILS AN ARC, and its straight land-probe ray
+        // grades water it will never visit: in lake mark-3's dead-end cove
+        // every straight 240u+ ray ends in shore, every candidate is taxed,
+        // and the argmin churns the helm until the way dies (measured: 93% of
+        // cove stalls follow sustained ~34° deflection mid-arm; the human
+        // transits in 17-20s never below 4.3kt). While the rounding is ARMED
+        // and inside zone*1.5, CURVE the probe along the orbit the boat is
+        // actually sailing: radius = max(70u knee, distance to the mark),
+        // curving toward whichever side of the candidate heading the mark is
+        // on. The hard-zone wall test keeps full authority along the arc —
+        // this moves WHERE the probe looks, not how much it cares. (The
+        // shortened-probe variant was rejected: lake land +11%/+57% — caution
+        // was real, aim was wrong. This fixes the aim.)
+        // NOT ON STRONG-CURRENT VENUES: the arc rollout assumes the water
+        // stands still; in a 2+ kt stream the boat's real path is arc + set
+        // and the pure-orbit arc is as fictional as the straight ray it
+        // replaces (river under the unscoped arc: fins 119→114, boat rubs
+        // ×2.1). Same venue-class knee as the jam-stamp scope.
+        let arcR = 0, arcMx = 0, arcMy = 0;
+        if (state.course._avCurMax === undefined || state.course._avCurMax < 2.0) {
+            const rsA = this.boat.raceState;
+            const rmA = (typeof legRoundMark === 'function' ? legRoundMark(rsA.leg) : null) || state.course.roundMark;
+            if (rsA.roundArmed && rmA && !rsA.finished) {
+                const dMA = Math.hypot(boat.x - rmA.x, boat.y - rmA.y);
+                if (dMA < (rmA.zone || 165) * 1.5) {
+                    // THE ARC ASSUMES AN UNOBSTRUCTED ORBIT — A QUEUE IS NOT
+                    // ONE. With a parked rival near, the real path is dictated
+                    // by traffic, and arc-graded probes reshuffled redrock's
+                    // mark-5 thread queue into wedges (DNFs 3→11 at that mark,
+                    // unarmed, 1.26 kt — four disjoint sets, −17..−24
+                    // finishers pooled). Same parked test as the jam stamps.
+                    let queued = false;
+                    for (const oQ of state.boats) {
+                        if (oQ === boat || oQ.isPlayer || oQ.raceState.finished) continue;
+                        if (oQ.speed * 4 >= 1.0) continue;
+                        if (Math.hypot(oQ.x - boat.x, oQ.y - boat.y) < 400) { queued = true; break; }
+                    }
+                    if (!queued) {
+                        arcR = Math.max(70, dMA);
+                        arcMx = rmA.x; arcMy = rmA.y;
+                    }
+                }
+            }
+        }
+
         let bestHeading = desiredHeading;
         let minCost = Infinity;
 
@@ -3364,17 +3470,73 @@ class BotController {
                 // behaviour per frame. This way Glacier Sound is byte-identical, not
                 // approximately identical.
                 const LAND_PROBE_MIN = 240;
-                const landLen = openWaterAv
-                    ? Math.max(LAND_PROBE_MIN, speed * (lookaheadFrames / 60)) : 0;
+                // THE PROBE REACHES ONLY AS FAR AS THE WATER IS WIDE. In a
+                // 300-600u canyon a 240-400u straight ray always ends in wall,
+                // so the far-blockage term taxes every corridor candidate and
+                // the argmin buys 69-92deg swings nothing physical requires
+                // (wide-dodge anatomy: land-only 39% + far-land-in-soft 34% of
+                // 4182 redrock episodes). Where the local clearance says the
+                // water is narrow (<3 cells), cap the ray at the water's own
+                // width — the sailed line bends before the wall arrives. Floor
+                // 180u: the 140u hard zone stays intact plus a graded band
+                // (the lake ratchet lived below that). Same openWaterAv gate
+                // as the floor itself — drifting-ice grids byte-identical.
+                let landLenStock = Math.max(LAND_PROBE_MIN, speed * (lookaheadFrames / 60));
+                // v2 scopes, both on landed physical lines:
+                //  - NOT in >=2kt water (the jam-stamp/arc knee): in a strong
+                //    stream a short-probe tight line is water the boat cannot
+                //    hold — river gate caught v1 (fins 119->109, rubs x2.8).
+                //  - NOT inside a mark's 250u funnel (the congestion scope's
+                //    line: the funnel IS the rounding): v1 raised redrock mark
+                //    contacts in 4/4 sets — pinch lines need the full probe.
+                //  - NOT while a rounding is ARMED (arcR set): the arc probe
+                //    IS the landed rounding geometry — shortening it re-blinds
+                //    the cove fix (v2 mark contacts stayed +52% with only the
+                //    250u funnel excluded; arcs arm out to zone*1.5).
+                const capOK = openWaterAv && gAv._clear && !arcR &&
+                    (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                if (capOK) {
+                    const ccB = gAv.cell(boat.x, boat.y);
+                    const idB = ccB[1] * gAv.n + ccB[0];
+                    const clB = gAv._clear[idB];
+                    if (clB >= 0 && clB < 3) {
+                        let inFunnel = false;
+                        for (const mF of (state.course.marks || [])) {
+                            const dxF = mF.x - boat.x, dyF = mF.y - boat.y;
+                            if (dxF * dxF + dyF * dyF < 250 * 250) { inFunnel = true; break; }
+                        }
+                        if (!inFunnel) {
+                            landLenStock = Math.max(180, Math.min(landLenStock, (clB + 1) * gAv.res * 2));
+                        }
+                    }
+                }
+                const landLen = openWaterAv ? landLenStock : 0;
                 const landFX = openWaterAv ? boat.x + Math.sin(h) * landLen : futureX;
                 const landFY = openWaterAv ? boat.y - Math.cos(h) * landLen : futureY;
                 const segLen = openWaterAv
                     ? landLen : Math.hypot(futureX - boat.x, futureY - boat.y);
                 const stepsAv = Math.max(2, Math.min(8, Math.ceil(segLen / (gAv.res * 0.6))));
+                // Armed-rounding arc (see arcR above): constant-curvature
+                // rollout from the boat at this candidate heading, curving
+                // toward the mark's side of the heading. Straight ray
+                // otherwise — bit-for-bit the stock expressions.
+                let arcK = 0;
+                if (arcR && openWaterAv) {
+                    const brgM = Math.atan2(arcMx - boat.x, -(arcMy - boat.y));
+                    arcK = (normalizeAngle(brgM - h) >= 0 ? 1 : -1) / arcR;
+                }
                 for (let sI = 1; sI <= stepsAv; sI++) {
                     const frac = sI / stepsAv;
-                    const cc = gAv.cell(boat.x + (landFX - boat.x) * frac,
-                                        boat.y + (landFY - boat.y) * frac);
+                    let pxA, pyA;
+                    if (arcK) {
+                        const sA = frac * segLen;
+                        pxA = boat.x + (Math.cos(h) - Math.cos(h + arcK * sA)) / arcK;
+                        pyA = boat.y - (Math.sin(h + arcK * sA) - Math.sin(h)) / arcK;
+                    } else {
+                        pxA = boat.x + (landFX - boat.x) * frac;
+                        pyA = boat.y + (landFY - boat.y) * frac;
+                    }
+                    const cc = gAv.cell(pxA, pyA);
                     if (!gAv.at(cc[0], cc[1])) {
                         // Floe-plugged (SOFT) water is a grind, not a wall — the
                         // route may deliberately cross it. Land is a wall.
@@ -3400,7 +3562,10 @@ class BotController {
                     }
                 }
                 if (!staticCollision && gAv._clear) {
-                    const ce = gAv.cell(landFX, landFY);
+                    const ce = arcK
+                        ? gAv.cell(boat.x + (Math.cos(h) - Math.cos(h + arcK * segLen)) / arcK,
+                                   boat.y - (Math.sin(h + arcK * segLen) - Math.sin(h)) / arcK)
+                        : gAv.cell(landFX, landFY);
                     const idAv = ce[1] * gAv.n + ce[0];
                     const clr = gAv._clear[idAv];
                     if (clr > 0 && clr < 3) {

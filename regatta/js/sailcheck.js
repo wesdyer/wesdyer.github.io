@@ -801,6 +801,11 @@ function pathSailable(grid, from, to) {
             // 1 = opening lead (arrive as it clears), 2 = staying plugged (a grind
             // that is nearly a wall — only worth it against a huge detour).
             if (isSoft) w *= (grid._soft[nid] === 1 ? 2.5 : 6);
+            // TRAFFIC JAM: water under a parked raft prices like plugged water —
+            // the queue delay behind a parked rival is real sailing time (see the
+            // stamp site in script.js). Bounded like _soft's multipliers so the
+            // worst jam detour stays comparable to a floe-plug detour.
+            if (grid._jam && grid._jam[nid]) w *= Math.min(6, 1.5 + 1.5 * grid._jam[nid]);
             const step = (di && dj ? Math.SQRT2 : 1) * w;
             const cand = gScore[cur] + step;
             if (cand < gScore[nid] - 1e-4) {
