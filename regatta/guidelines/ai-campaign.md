@@ -9517,3 +9517,108 @@ the day they landed, per standing rule.
   med ~565u (detection range), rivals deflect 35.5-59.9° med at CPA vs the
   human's 12.6-23.4°, and 82-93% of encounters had unmodified CPA ≥ 80u.
   The response class the UL1/OP5 work targets is confirmed current.
+
+# RESEARCH SESSION 2026-08-08 MORNING (post-push, owner directive: "uncover new
+# substantial gains") — three named build families, sized, none built
+# ═══════════════════════════════════════════════════════════════════════════
+Method: the schema-2 recordings carry all 9 rivals live at 10Hz — the human
+and fleet sailed the SAME races, so gaps decompose with zero seed noise
+(_gap_ledger.js, new, tracked). Then per-venue deep probes, ending with an
+INSTRUMENTED ARGMIN (treePROBE pattern: applyAvoidance logs every candidate's
+cost + collision flags at ≥25° choices; _av_fanlog.js reads it) — the ground
+truth that superseded three rounds of external cost-model reconstruction
+(_rr_smallwhy v1-v3: its "SMALL_WINS 55-66%" was model gaps — the island
+proximity band and heading-based breach projections were missing; the
+instrumented fan says no candidate ever wins for free).
+
+## FINDING 1 — ARCTIC IS A ROUTING-DISTANCE PROBLEM (the 2x names itself)
+- Human (26 recordings, _ice_exposure/_arc_dist): odometer ~25.0-25.4k vs
+  rhumb 23.7k — SHE SAILS THE FLOE FIELD AT 1.06x STRAIGHT-LINE. Median
+  clearance from floe edges 200u, only 6.2% of race under 50u, min 15-30u.
+  L1 (the beat) 14k units = 1.12x rhumb. Fin med 217.6, ~1 contact/run.
+- Solo bot (_arc_solo/_arc_dist, no traffic at all): fin med 465 (352-654),
+  odometer 38.7-59.8k = 1.6-2.5x rhumb, 444 floe contacts med — and MOVING
+  SPEED IS FINE (130.6 u/s vs her 124.2). deflOdo only 15-29%: the excess is
+  NOT avoidance weaving. legOdo L1 23.2-43.5k vs her 14k — the excess lives
+  in the ROUTE on the beat. sub1/sub4 32/81s vs her 2/10s.
+- THE MECHANISM CANDIDATE (measured-ready, not built): pathSailable's
+  wide-water preference (PAD 8 cells ≈ 400u desired clearance, EDGE_W 6 —
+  a 300u channel prices 4-5x) is scaled for boat-width corridors; in a floe
+  FIELD it turns the pack into a wall maze and buys 15-35k units of detour,
+  while the human's revealed clearance demand is ~200u (4 cells). Next-push
+  first step: clearance-demand histogram along her tracks vs the router's
+  chosen lines; then a floe-venue PAD/EDGE_W knee (⚠️ distinct from the
+  CLOSED closing-lead pricing and clearance-extension families — those
+  priced DYNAMIC lead changes; this is the static clearance demand scale).
+  Also: soft-cell "opening lead" ×2.5 bets on drift prediction that
+  [[map-staleness]] already declared unpredictable — the solo bot's 444
+  grinding contacts are those bets failing. SIZE: solo gap is 250s/boat;
+  the distance share ≈ 150-185s. The biggest single number in the campaign.
+
+## FINDING 2 — THE BIG-DODGE ANATOMY, FROM THE ARGMIN'S OWN LEDGER
+(_av_fanlog, 8000 choice snapshots per venue: why did the best ≤15°
+candidate lose to the chosen ≥25° dodge?)
+- redrock: proxCost 47% (med 3333 — the ISLAND/land proximity band + far
+  field, 56% with NO rival within 300u), boatCollision flag 27%, static 24%.
+- river:   STATIC 54% (cost gap med 19.5k — the small straight candidate
+  hits the BEND WALL the plan curves around; only 28% had a rival near),
+  boatCollision 24%, proxCost 17%.
+- lake:    boatCollision 47% (97% rival-near, roles dominated by
+  GIVE_WAY/MEDIUM 2423/3754), proxCost 28%, static 21%.
+TWO BUILD FAMILIES FALL OUT:
+- 2a. CURVED SMALL CANDIDATES (the dossier's "finer/curved low rungs",
+  now proven needed by the argmin's own flags): in constrained water the
+  ≤0.3-rad candidates are STRAIGHT 4s rays and read the corridor's bend as
+  static collision / land proximity — while the wide dodge sees open water.
+  Roll the small candidates along the PLAN's curvature (the arcK
+  constant-curvature machinery generalized from armed-rounding to
+  plan-following; same "router owns the bend" line as FF2 + the hard-zone
+  landing). SIZE: 54% of river big dodges + the redrock land-flavored 47%
+  + the wide rungs carry 17-23% of deflected time; redrock deflected-moving
+  alone was 194 s/boat pre-cap.
+- 2b. BREACH HONESTY AT MEDIUM (the give-way underlay, now aimed at the
+  right term): the 10000-point boatCollision BINARY on small candidates
+  fires from a 4s BOTH-BOATS-FROZEN projection; at GIVE_WAY/MEDIUM range
+  (the dominant class everywhere) the other boat will steer, and the human
+  accepts exactly these gaps (fresh 132-encounter ledger: her 12.6-23.4°
+  at CPA, 82-93% of encounters needed nothing). The VO-entry landing
+  taught this lesson to the GRADIENT in wide venues; the BINARY in
+  constrained venues never learned it. Shape: tCPA-scaled or VO-entered-
+  gated breach cost at MEDIUM only (HIGH/IMMINENT keep the binary).
+  SIZE: 24-47% of big dodges by venue; UL1's gates + the lake +25%
+  caution govern.
+
+## FINDING 3 — THE RIVER START (from the same-race ledger, then live)
+Her river race: fleet crossed the start med ~32s after the gun (she: 1s;
+5 of 9 rivals 300-550u behind the line at the gun at ~2kt). Live on the
+landed tree (_riv_start.js): med 10s, p90 22.6, tail to 36s (seatrials
+control: med 3s — its lateness is OCS instead, 4 of 18). MECHANISM: the
+staged start's crossing-run estimate (getApproachTime on boat speed+stats)
+has NO current term — in a 3-5kt set the run takes 2-3x the estimate.
+⚠️ Distinct from the CLOSED start-calibration family (that tuned constants
+on correct physics; here ground-speed physics is absent). Scope: fires only
+where _avCurMax ≥ 2 (river; bay/lake/ocean/arctic/seatrials byte-identical
+by construction). SIZE: ~7-10s med/boat on river + the tail.
+
+## Corroborations + smaller facts
+- The gap ledger's same-race rows: fleet <4kt time 45s vs her 10 (arctic),
+  105 vs 15 (new redrock), 45 vs 8 (river); moving-speed deficit only
+  0-6% on arctic/redrock/seatrials but 22% on river (current handling);
+  seatrials near-parity everywhere — the control venue behaves.
+- Her arctic: minFloeDist med 16u across 26 runs; the bot's berth demand
+  vs her 15-30u shaves is part of Finding 1's clearance-scale story.
+- New-course redrock (her 2 laps): fleet loses +37s by the FIRST mark —
+  early-leg class, noted for whenever the new course is taken up.
+- Probes added (tracked): _gap_ledger.js, _arc_solo.js, _arc_dist.js,
+  _riv_start.js, _av_fanlog.js (+ treePROBE instrumentation pattern),
+  _rr_smallwhy.js (superseded by fanlog; kept as the lesson).
+
+## NEXT-PUSH ORDER (by size × mechanism confidence)
+1. Arctic clearance-demand scale (Finding 1): ~150-185s/boat solo class.
+   First step: her-track clearance histogram vs router lines; then the
+   floe-venue PAD knee, judged on arctic 16x2 + all-venue gates.
+2. Curved small candidates (2a): composes with FF2/BP2; judge on redrock
+   pooled (96-seed protocol) + river + lake + bay byte-gates.
+3. Breach honesty at MEDIUM (2b): the underlay's correct target; UL1's
+   half-proof + these fan numbers parameterize it.
+4. River current-aware start (Finding 3): ~10s, small and clean.
