@@ -8999,3 +8999,27 @@ redrock   | ~227 / 206.6 (s2: 214.7) | 48-seed fins 384/432; A/B med 618/618 (pa
 arctic    | 212.1 / 190.4 (s2: 215.0/194.7) | 413 / 450 (p3v2arcA/B), in-420 75/53 | UNCHANGED — BYTE-IDENTICAL (openWaterAv gate, verified)
 seatrials | ~190 / 180.9        | 199.65 / 194.23, OCS 15.44%              | 199.58 / 194.13, OCS 15.44% — moved-neutral, re-baselined
 river     | 161.3 (1 lap)       | r0A/B med 272/273, in-360 80/77%         | UNCHANGED — BYTE-IDENTICAL (current-class scope, verified)
+
+## POST-LANDING RESIDUAL (measured on the landed tree — the next push's aim)
+_rr_leganat re-run (times ÷6 for the probe's credit factor): legs 1-5 med
+  81/121/145/52/51 ≈ 451s total vs pre-landing 77/163/121/132/45 ≈ 538s.
+  LEG 2 −42s and LEG 4 −79s (odo 7266→4971, route-speed 55→95 u/s) — the
+  corridors the cap freed. LEG 3 WORSENED 121→145s and its slow time now
+  piles at (0..−400, 1200) — the m5 north-thread approach is the new
+  binding constraint (boats arrive faster and more bunched). Human L3 51.3.
+_rr_m3stall.js (new, tracked; 73 funnel passes): m3 stalls are 51% of ALL
+  m3 passes — at the MARK (dMark med 34u), RUNNING (TWA med 32°, wind
+  13.2kt), solo 70%, deflection 0°, armed 89%, sweep med −54° — the boat
+  wraps the WRONG WAY around the starboard rounding and dies on the mark
+  face. Entry side: stalls come from the −135° (SW) entry 32/37, but the
+  same entry yields 18 clean passes — the discriminator is the wrap
+  direction after entry, i.e. the rounding-approach setup, not the entry
+  line itself. This is winding/sweep machinery ([Rounding cheat] rules) —
+  a DESIGN build for the next push, with this dossier as its measurement.
+NEXT-PUSH ORDER suggested by the post-landing data: (1) m3 wrong-way-wrap
+  rounding approach (51% stall rate, fully attributed); (2) m5 north-
+  thread approach congestion (the new leg-3 constraint); (3) the give-way
+  underlay (dossier complete: onset dCPA 191-212u, τ≈6s, role split,
+  wide-dodge rungs — its rival-only share of wide dodges is 15-18% after
+  the cap landed the land share). River's tight-water class stays shelf-
+  ready behind the response work.
