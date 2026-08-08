@@ -9260,3 +9260,30 @@ The redrock arc: session open 384 fins/48-seed (pre-cap) → cap 390 →
 turn-direction 392 → far-field 396, with per-set meds now 475-540 vs the
 session-open 527-620 — the deflected-distance class named two pushes ago is
 being drained by three composed landings on three physical lines.
+
+## POST-LANDING RESIDUAL (final HEAD 7b72372) — the next push's aims, measured
+- REDROCK legs (occupancy, 4@9400): med {L1 74.5, L2 96.5, L3 147, L4 49.5,
+  L5 48} vs human 39.9/64.7/51.3/29.6/26.1 — leg 3 remains the constraint
+  (2.9x) and its parked mass still pools at the m5 approach box
+  (−200..0, 1000..1400: 1343 boat-s pooled, top cluster unchanged).
+  m5 stalls 15%: solo (78%), unarmed (89%), defl 69°, at 223u — the wide-
+  deflection class, now with the land share drained by two landings; what
+  remains is displaced-off-plan boats (the FF waiver requires <200u
+  cross-track — displaced boats lose it exactly when displaced) and the
+  broad-reach bends. The underlay (river+lake per _rr_dodge2) plus a
+  displacement-tolerant plan reference are the candidate shapes.
+- THE m3 RESIDUAL CLASS (13%), replay-named (Lunker): the boat rounds
+  CORRECTLY (sweep 88→279, no face pin, no wrong way) but at 7.3 kt the
+  pursuit turn radius is v/ω ≈ 184u, so the hairpin's middle bulges to 242u
+  — into the east wall band (230-275, _rr_ringclear). The orbit phase is
+  pinched between the turning circle at speed and the canyon wall: it needs
+  either mid-sweep speed discipline (⛔ the ENTRY-side governor family is
+  closed at 3 kills; an ORBIT-PHASE ease at confined marks is a different,
+  named design — armed, sweep>0, orbitTightR-null marks) or water that
+  isn't there (orbitMaxR stays measured-ready but the carrot was already
+  inside — the excursion is pursuit dynamics, not the target). DESIGN BUILD.
+- RIVER: 264/271 med vs human 161 (1.64x, from 1.69x); fins 119/119 of 144;
+  the rub sign-split (A 30→62 / B 46→31) is the open dirt question. The
+  tight-water class (treeP4TIGHT, old base) re-ports after the underlay.
+- Session probe additions all tracked: _rr_m3replay(2), _rr_mstall (bins
+  fixed), _rr_ringclear, _rr_dodge2, _run_stack.sh.
