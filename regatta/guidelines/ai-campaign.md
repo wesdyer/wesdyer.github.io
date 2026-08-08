@@ -10378,3 +10378,37 @@ m3/m5, gate approaches), built on RD3's corrected geometry, judged at full
 races. The robotics literature calls this locally-bounded coordination on
 progress-stall; the sailing literature calls it rounding the gate with less
 traffic; the recordings call it what his son did.
+
+## THE LEG-2 SURPRISE THAT COMPLETES THE PICTURE (same-race, old redrock)
+Rival leg-2 slow episodes (51 episodes, 247 s, the fleet's worst same-race leg
+at +39 s med vs her): only 7% of that time is within 600u of m3 — 74% IS
+≥1200u AWAY, clustered 300-500u AFTER m1. The fleet's biggest old-redrock leg
+loss is a PILE AT THE EXIT OF THE FIRST ROUNDING — the granite-ring class, on
+a land venue, at the mark the whole fleet rounds within seconds of each other.
+⚠️ Design constraint from the code's own history: per-boat ENTRY-SECTOR bias
+was tried and rejected 2026-08-03f ("rafted the fleet onto one slot") — the
+arrival layer must work on TIMING/SPACING of arrivals, not on biasing the
+shared sector score.
+
+# NEXT-PUSH DIRECTIVE (drafted at close of Aug 8 afternoon; behavior HEAD
+# still a393d61 — NOTHING LANDED today, and that is the finding)
+# ═══════════════════════════════════════════════════════════════════════════
+P0 — THE FLEET-ARRIVAL LAYER (the one class three independent measurements
+name): the pile at high-traffic zones — granite ring (57 s/boat/rounding, the
+son's rank-9→1 pass is the human answer), redrock post-m1 exit (74% of the
+fleet's worst-leg slow time), and by extension every mark the fleet reaches
+together. Facts the design must respect: the duck verdict (86% of give-way
+slow ticks have NO sailable escape — the jam is physical; cure is arrival,
+not response); the rejected entry-sector bias (do not touch the shared sector
+score); station-keeping 0-for-8 (no holds — spacing must come from SPEED
+SHAPING on approach or route-length diversity, flowing actions only); RD3 is
+the correct geometric base (land it WITH the arrival layer as a pair if the
+pair pays — its solo fix is real and its fleet cost is only the pile it
+currently feeds). Build on treeRD3. Measure first: arrival-time spread vs the
+human races' spread at each site (the recordings carry it).
+P1 — the shelved-but-alive tails, each behind its named blocker: OP5 (m3 9.1%,
+needs the pooled protocol + the m5 gate); the current-pricing third shape
+(needs a bank-grind term the route can see); the response class with the
+boat's ACHIEVABLE TURN as the probe ceiling (CC1's lesson).
+P-continuous: fresh laps (bay, lake, OLD redrock, post-gust-fix ocean); ingest
+day-one; the lake land watch item reports in any lake-touching candidate.
