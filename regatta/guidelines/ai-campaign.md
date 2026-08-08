@@ -10492,3 +10492,18 @@ solo rounding geometry is FIXED in a kept tree, and the next push's design is
 constrained by nine specific kills instead of open speculation. Behavior HEAD:
 a393d61, untouched; all anchors carry; goldens PASS 20/20 (verified twice);
 npm test: the one documented pre-existing river failure only.
+
+## CLOSING VENUE TABLE (end of Aug 8 afternoon session; behavior HEAD a393d61,
+## unchanged all day — every anchor carries by check: goldens PASS 20/20 ×2,
+## npm test green except the documented river sailable case)
+venue     | human med/best        | bot (anchors, unchanged)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (bp2bayA/B), boat 1.39/2.11, mark 0.05/0.28, pen 0.28/0.40, OCS 0
+ocean     | 182.5 (pre-gust-fix)  | 192 (bp2oc), boat 1.81, mark 0.36, pen 0.35
+lake      | 223 / 209.6           | 275 / 276 (bp2lakeA/B), land 6.37/6.09, boat 1.98/3.09, mark 0.43/0.32
+redrock   | ~227 / 206.6 (OLD, the benchmark) | 48-seed fins 396, pooled med 499, land 142.4, boat 19.97, mark 1.14, pen 3.83
+arctic    | 212.1 / 190.4 (206.2 fresh clean) | 413 / 450 (p3v2arcA/B) — now FULLY ATTRIBUTED: rounding service time at granite (57s/boat), solo geometry FIXED in treeRD7 (406.7→55.8 worst draw), fleet flat pooled under RD7
+seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13, OCS 15.44%
+river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B), fins 119/119
+⚠️ LAKE LAND WATCH ITEM (its own line, standing): 6.37/6.09 vs pre-hard-zone
+5.33/5.58 — open, unattributed; it killed BH1 today (6.37→16.09 under the
+MEDIUM honesty candidate). Any lake-touching candidate reports this column.
