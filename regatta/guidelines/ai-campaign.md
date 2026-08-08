@@ -10332,3 +10332,49 @@ GW/MEDIUM 47%, redrock's boat band, the underlay dossier's 35-60° vs her
 12-23°), and the next probe instruments the give-way argmin at the ring: when
 a bot goes risk-slow, was a speed-keeping DUCK (bear away astern) on the
 candidate menu, and what beat it?
+
+## THE DUCK VERDICT (`_duck_fanlog.js` + treeDUCK, new, tracked) — THE RING
+## CLASS'S FINAL ANATOMY FOR TODAY
+1771 give-way/high-risk slow ticks inside the ring (fleet, instrumented argmin):
+  the chosen candidate is a stop/luff only 11%; a wide dodge 23%.
+  A CLEAN SAILABLE DUCK EXISTED IN ONLY 21% of ticks — and where it existed it
+  was chosen or effectively tied 34% of the time (beaten by proximity 12%, by
+  other costs 54%, by ruleViolation 0%).
+  ⇒ IN 86% OF TICKS, EVERY DUCK-SHAPED CANDIDATE CARRIES A COLLISION FLAG.
+The speed-keeping escape does not LOSE the argmin — it is NOT ON THE MENU,
+because the pile of parked boats plus ice genuinely blocks it. Unlike lake's
+MEDIUM case (BH1), these flags are mostly TRUE: a frozen projection of a parked
+rival is correct. The response layer cannot cure a jam that physically exists;
+the cure is UPSTREAM — not arriving into the jam. That is the deadlock-
+avoidance coordination class from the robotics literature (stay in motion +
+locally-bounded coordination when progress stalls), and it is a DESIGN for the
+next push, not a patch for this one. The son's pass is the human version of
+exactly that: he saw the pile forming and spent his approach wide of it.
+
+## RD3 SET B — THE LANDING DIES ON THE SECOND SET
+Set B (16@9200): paired med +15.0 / mean +20.8, boat rubs 9.70→11.63, pen
+1.76→1.85 (finishers 139→141, land/floe flat). Set A was flat-with-better-
+dirt; set B is worse-with-worse-dirt — the two arctic 16-seed sets disagree
+exactly as standing rule 3 says they can, and pooled the clock does not pay.
+RD3 IS NOT LANDED. It remains the proven COMPONENT (the solo rounding geometry
+is simply correct with the arc on: 406.7→55.8 on the worst draw) and the base
+on which the fleet-arrival design must be built — but on the fleet bar, today
+produced no landing.
+
+## THE DAY'S SHAPE, honestly
+Thirteen builds across two sessions (AC1, TK1-3, LANE1-2, CUR1/3, CST1, CC1,
+BH1, RD1-5, SG1, OP5) and every fleet verdict is flat-or-worse while nearly
+every intended micro-statistic moved. The through-line is now measured from
+three independent directions (the tack ledger, the lane router, the granite
+ring): HEAD's fleet behavior is a LOCALLY CONSISTENT EQUILIBRIUM — router,
+steering, tack scorer, avoidance flags and the queue's own physics lean on
+each other, and any single-sided change is absorbed or paid for elsewhere.
+The human's superiority at the same spots is not a smoother version of one
+layer; it is arrival-scale judgement (which gaps survive, where the pile will
+be) that no current layer represents.
+NEXT-PUSH DESIGN (both today's classes point at it): a FLEET-ARRIVAL layer —
+per-boat entry timing/laning at high-traffic zones (the granite ring, redrock
+m3/m5, gate approaches), built on RD3's corrected geometry, judged at full
+races. The robotics literature calls this locally-bounded coordination on
+progress-stall; the sailing literature calls it rounding the gate with less
+traffic; the recordings call it what his son did.
