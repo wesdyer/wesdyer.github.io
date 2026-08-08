@@ -10633,3 +10633,13 @@ The fleet clock does NOT yet cash the 57s solo class — the jam physics
 The arc-on-ice is the structural PREREQUISITE: the next arctic candidate
 (the arrival/laning layer, judged on leg-1 approach rubs at dRM 900-1800u,
 where RD11 moved the queue) now has something to compose with.
+
+## FINAL VENUE TABLE (Aug 8 EOD; behavior HEAD `8146a8c` = OP5 + RD11)
+venue     | human med/best        | bot (current anchors)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (bp2bayA/B, byte-carried through both landings)
+ocean     | 182.5 (pre-gust-fix)  | 190 (rd11oc; boat rubs 1.50, flat clock vs op5hoc 186 med — same races, med shifts with the 9307 draw)
+lake      | 223 / 209.6           | 278 / 276 (op5hlakeA/bp2lakeB; land 6.45 watch)
+redrock   | ~227 / 206.6 (OLD)    | 6-set pooled med 494, fins 399/432 (op5rr*; boat 18.32, land 130.98)
+arctic    | 212.1 / 190.4         | 426 / 447 / 427 / 446 (rd11arcA-D; land −9% vs HEAD, fins 570/576; the ring jam is now the sole gate on the solo 57s class)
+seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13, OCS 15.44% (byte-carried)
+river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B, byte-carried)
