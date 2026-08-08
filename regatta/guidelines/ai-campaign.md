@@ -9498,3 +9498,22 @@ pre-existing river sailable failure (exit2→pre3) only.
   dG < 250 (the pocket is the scale of the turn, not the zone). The m5
   composition warning still binds: bench OP5 and the hard-zone landing
   TOGETHER on redrock.
+
+## LAP INGEST (post-close, same session): six schema-2 recordings (Aug 7 evening)
+Copied to eval/rl/traj/ (corpus now 79 files) and run through _gw_ledger2.py
+the day they landed, per standing rule.
+- ⚡ THE REDROCK LAPS ARE ON THE NEW COURSE (marks match the redesign; 6
+  racing legs): 304.4 (a Talon tangle + penalties at ~93s) and 272.5 CLEAN.
+  First human data on the new red rock: bot first-look med 471/505 → the
+  new course opens at ~1.7x, and the bot's 30 bounds-contacts/boat class is
+  HUMAN-ZERO (no bounds events in either lap) — that class is pure AI
+  failure, first attribution target whenever the new course is taken up.
+- river: 172.1 (2 land touches at the 118s bank) — corpus n=2 (161.3 best).
+- arctic: 313.9 (2 fouls — an outlier lap) and 206.2 clean. seatrials:
+  193.8 (bot eval med 199.58 — within 6s; the bot's OCS 15.44% remains the
+  gap there).
+- _gw_ledger2 on all six (132 encounters): the underlay dossier REPRODUCES
+  on fresh data — rival deviation onset fires in 91-100% of encounters at
+  med ~565u (detection range), rivals deflect 35.5-59.9° med at CPA vs the
+  human's 12.6-23.4°, and 82-93% of encounters had unmodified CPA ≥ 80u.
+  The response class the UL1/OP5 work targets is confirmed current.
