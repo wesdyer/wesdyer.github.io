@@ -10531,3 +10531,19 @@ Nineteen builds. The day's verdict stands as written in the final ledger.
    push's candidate must be judged on LEG-1 approach rubs at dRM 900-1800u.
 2. OP5's pooled protocol: sets 9500-9900 grinding in the background — the
    shelved candidate gets its rule-20 verdict on idle machine time.
+
+## OP5, RE-OPENED BY THE POOLED PROTOCOL — THE GATE SLATE SO FAR
+The idle-machine pooled run overturned the morning's one-set shelving (rule 20
+in both directions: the +26 first set was noise, and so was the 3-set −13):
+  redrock 5 sets pooled (9400/9500/9600/9800/9900): paired med +7.0 /
+  mean −1.6 — CLOCK FLAT — with fins 329→332, boat −8%, mark −18%, land −8%,
+  pen −9%: EVERY dirt column better and more finishers. Set 9700 pending.
+  m3 stall gate: 13-14% → 9.1%. m5 (m4-index) gate, same seeds: HEAD 16/64 =
+  25% → OP5 5/56 = 8.9% — the scoped ease COMPOSES where OP1+BP1 flooded the
+  funnel (16→26%). OCEAN 8-seed: paired med −6.0 / mean −5.6 — the venue v1
+  taxed +18 now GAINS (the dG<250 gate unhooked the zone-1000 arming).
+  treeOP5H (the block on clean HEAD) verified byte-equal to the measured tree
+  on redrock (34 deltas exactly 0.0).
+Remaining: lake 20-seed (the +25% caution + the land watch item), set 9700,
+bay 4-seed byte. If clean: LAND per the bp2oc precedent (flat clock, dirt
+clearly better) — the day's first landing, and the m3/m5 stall classes with it.
