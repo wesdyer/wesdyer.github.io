@@ -10131,3 +10131,46 @@ against the p3v2arcA anchor:
 median +4, mean +27 over 6 of 16 seeds. Same signature as the solo set — it
 rescues the worst race and loses the tail elsewhere. NOT a gate result; the
 8-seed paired solo (median +54.5) is the verdict and it stands.
+
+# NEUTRAL-BOT MACHINERY (owner-directed, 2026-08-08)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner ruling after the roster-variance measurement: keep the stat fleet for
+benches, make the SOLO probes race a stat-neutral bot, and put the machinery in
+place for a bonus-free fleet later without running it yet.
+
+BUILT on the existing `window.__CHAR` harness switch (which already carried
+`traitsOff`), so the layers compose instead of forking:
+  traitsOff — the archetype/character behaviour persona
+  statsOff  — per-character stat blocks; every bot gets STAT_DEFAULTS
+  bonusOff  — the flat +4 AI_STAT_BONUS difficulty handicap
+  neutral   — shorthand for traitsOff + statsOff (identical boats, SHIPPED
+              difficulty — the bonus stays on)
+The bonus is deliberately its OWN knob: `statsOff` answers "is this result a
+roster draw?" (a question about VARIANCE between characters), `bonusOff` answers
+"how much of the human gap is decisions rather than the handicap?" (a question
+about the LEVEL). Independent questions, independent switches. `bonusOff` is
+built and UNRUN, per the owner.
+INERT VERIFIED, not assumed: nothing sets `__CHAR` in the shipping game — bay
+4-seed byte-identical (36 paired deltas all 0.0, dirt identical) and GOLDENS
+PASS 20/20, 0 behaviour changes.
+WIRED: `_arc_solo`, `_arc_why`, `_arc_churn`, `_arc_beat`, `_arc_clr`,
+`_tk_probe` now set `{neutral:1}`. These promote bots[0] to hero and bots[0] is
+a DIFFERENT CHARACTER PER SEED (9100 Fathom, 9101 Nimbus, 9102 Anvil), so their
+ABSOLUTE numbers were a mixed roster draw against her one unmodified boat.
+(The log still prints the character NAME — identity is unchanged; only the
+sailor's stats and persona are stripped.)
+
+## THE ARCTIC HEADLINE, RE-MEASURED ON A NEUTRAL BOAT — IT HOLDS
+                       stat-based (as reported)   NEUTRAL      human
+  solo fin med              382.2                   412.7       217.6
+  odometer med             40 438                  41 519      25 373
+  odo / her distance         1.59x                   1.64x       1.0
+  leg-1 tacks               21-23                   19-21        5 (med, 29 laps)
+  moving speed (u/s)        130.6                   127.1       124.2
+  floe contacts med           512                     209        ~1
+The re-attribution survives its own robustness check: the distance ratio is if
+anything slightly WORSE on a neutral boat (1.64x), and the tack gap — the class
+this session named — is unchanged at ~4x her median. The roster was not driving
+it. Floe contacts fall by more than half without the stat blocks, which is a
+character effect (handling/momentum) and not part of the tack-count claim.
+⇒ Every arctic conclusion in this session's record stands as written.

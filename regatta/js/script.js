@@ -6090,7 +6090,9 @@ class Boat {
         // Racing archetype persona (see ARCHETYPES). Player and unknown configs
         // get pure defaults = the baseline fleet behavior.
         this.archetype = (config && config.archetype) || null;
-        const traitsOff = typeof window !== 'undefined' && window.__CHAR && window.__CHAR.traitsOff;
+        // `neutral` implies traitsOff — see the stat site for the full switch set.
+        const traitsOff = typeof window !== 'undefined' && window.__CHAR
+            && (window.__CHAR.traitsOff || window.__CHAR.neutral);
         const archDef = !traitsOff && this.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[this.archetype] : null;
         // Per-character trait overrides layer on top of the archetype, so a character
         // can be a better reader than another of the same archetype — impossible
@@ -9144,8 +9146,30 @@ function applyBoatIdentity(boat, config, isPlayer) {
     // back to 0, so a character authored before a stat existed races exactly as it did.
     //
     // ⚠️ THE PLAYER TAKES NONE OF THEM. You get the boat, not the sailor.
-    boat.stats = Object.assign({}, STAT_DEFAULTS, (!isPlayer && config && config.stats) || {});
-    if (!isPlayer) {
+    //
+    // NEUTRAL-BOT MACHINERY (2026-08-08, owner-directed). `window.__CHAR` is the
+    // existing harness switch for character layers — it already carried
+    // `traitsOff` for the archetype persona; it now also carries the two stat
+    // layers, so a probe can strip exactly as much of "the sailor" as its
+    // question needs:
+    //   traitsOff — archetype/character BEHAVIOUR (see the traits site)
+    //   statsOff  — per-character stat blocks: every bot gets STAT_DEFAULTS
+    //   bonusOff  — the flat AI_STAT_BONUS difficulty handicap
+    //   neutral   — shorthand for traitsOff + statsOff: one identical boat for
+    //               every rival, at the SHIPPED difficulty (bonus still on)
+    // WHY THE BONUS IS A SEPARATE KNOB: `statsOff` answers "is this result a
+    // roster draw?", which is a question about VARIANCE between characters.
+    // `bonusOff` answers "how much of the human gap is decisions rather than the
+    // +4 handicap?", which is a question about the LEVEL. They are independent
+    // and the machinery keeps them independent.
+    // ⚠️ INERT BY DEFAULT: nothing sets `window.__CHAR` in the shipping game, so
+    // this reads exactly as it did — verified by goldens and a byte-identical
+    // bench, not assumed.
+    const CH = (typeof window !== 'undefined' && window.__CHAR) || null;
+    const statsOff = !!(CH && (CH.statsOff || CH.neutral));
+    boat.stats = Object.assign({}, STAT_DEFAULTS,
+        (!isPlayer && !statsOff && config && config.stats) || {});
+    if (!isPlayer && !(CH && CH.bonusOff)) {
         for (const k of BONUS_STATS) boat.stats[k] += AI_STAT_BONUS;
     }
 }

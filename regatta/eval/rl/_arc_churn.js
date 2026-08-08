@@ -25,6 +25,15 @@ const ROOT = path.join(__dirname, process.argv[4] || 'treeHD9');
     const page = await browser.newPage();
     page.on('pageerror', e => console.log('PAGE ERROR:', String(e).slice(0, 300)));
     await page.addInitScript(() => { localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'arctic' })); });
+    // NEUTRAL BOT (owner-directed 2026-08-08). This probe promotes bots[0] to
+    // hero, and bots[0] is a DIFFERENT CHARACTER per seed (9100 Fathom, 9101
+    // Nimbus, 9102 Anvil...). Paired deltas are unaffected — the pair shares the
+    // character — but every ABSOLUTE number this probe reports ("the solo bot
+    // sails 1.6-2.5x her rhumb", "leg-1 tacks 21-23 against her 5") was a mixed
+    // roster draw measured against her ONE unmodified boat. Strip the sailor:
+    // identical stats and no archetype persona for every rival, at the shipped
+    // difficulty (AI_STAT_BONUS still on — that is a separate knob, `bonusOff`).
+    await page.addInitScript(() => { window.__CHAR = { neutral: 1 }; });
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
     const races = [];
