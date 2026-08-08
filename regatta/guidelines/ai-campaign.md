@@ -10174,3 +10174,161 @@ this session named — is unchanged at ~4x her median. The roster was not drivin
 it. Floe contacts fall by more than half without the stat blocks, which is a
 character effect (handling/momentum) and not part of the tack-count claim.
 ⇒ Every arctic conclusion in this session's record stands as written.
+
+# THE GRANITE-ISLE ROUNDING (owner lead, 2026-08-08 afternoon)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner observation: his son's arctic race (the 313.9 outlier lap) — well back in
+the pack until the rounding, where he passed the entire AI fleet. Directive:
+compare human and bot trajectories at the rounding and distill the strategies.
+
+## THE SAME-RACE LEDGER (`_arc_round.py`, new, tracked)
+The schema-2 recordings carry all nine rivals at 10Hz with stable identity and
+per-rival leg, so each recording holds up to TEN roundings of the same mark in
+the same water — zero seed noise. Pooled, 7 human vs 17 bot roundings:
+                        HUMAN     BOT     (same races)
+  600u ring → leg flip   19.0 s   62.9 s
+  mean speed in ring    106.6     56.7  u/s
+  MIN speed in ring      84.9      3.6  u/s
+  seconds under 2.7 kt    0.0      6.6  (up to 17)
+  closest approach        314      308  u
+  ring odo / straight    1.40     1.18
+THE LINE IS THE SAME (dMin ~310u both, and the bots sail LESS distance in the
+ring). The difference is that the bots PARK on it and the human never drops
+below ~5.7 kt. The son's lap: RANK 9 → 1 → 1 across his own rounding — he
+passed eight boats in the last sixty seconds of the approach, exactly as the
+owner described. Live fleet re-measure (`_arc_roundlive.js`, new, tracked, 27
+ring passages): ring→flip med 75.7 s, vMin med 0 — ~57 s/boat/rounding against
+her 19 s, on a fleet whose whole gap to her is ~200 s.
+
+## THE STRATEGY, DISTILLED FROM HIS OWN TRACK (the recorder's ring scan)
+The recordings carry `ringSect16` — the AI's OWN 16-sector ring rating around
+the round mark (0 clear / 3 closing / 5 lead / 8 plug / 10 hard). At his pass,
+the ring read mostly 8s and 3s. He ENTERED THROUGH SECTOR 13 WHILE THE SCAN
+RATED IT 8 (PLUG) at 34→74→88 u/s, rounded at 331u, exited at 150-180 u/s. On
+clean laps the human spends 19-50% of zone time inside PLUG/HARD-rated sectors,
+never under 84 u/s. The distilled strategies:
+  HUMAN: the plugged ring is WATER — enter anywhere, carry speed, shave the
+         floes (her lifetime min-clearances are 15-30u), let the hull glance.
+  BOT:   the plugged ring is a WALL system — wait, dodge, re-route for a
+         clear sector; every layer (router ×2.5/×6 soft pricing, avoidance
+         6000/12000 soft cost, ring scans preferring clear sectors, give-way
+         among the queued fleet, the full 140u hard veto in floe water) points
+         the same way, and the boat arrives at 0 kt.
+## LIVE ATTRIBUTION of the parked seconds (fleet, 27 passages):
+  soft-grind 24% · traffic risk 23% · unexplained 19% · IN IRONS 18% · defl 16%
+  ease 0%, orbit 0% — the governors and orbit machinery are NOT involved.
+Parked head-to-wind at a mark whose zone is 851u (granite-isle — AUTHORED LAND,
+not ice) is the m5-box anatomy again, and the hard-zone speed scaling that
+cured it on redrock explicitly excluded floe venues (openWaterAv) — the fix
+never reached the one rounding where the fleet loses the most.
+
+## RD1 — THE GRANITE EXCEPTION (built, first evidence STRONG)
+Two lines: compute hPlanFF (the plan-heading reference) in floe venues too, and
+drop `openWaterAv` from the hard-zone scaling's own test — every other guard
+(fresh plan <200u cross-track, no-go, arc, ≥2kt current) stands. Sound because
+in floe water the non-soft wall this veto ever sees IS authored land: drifting
+ice takes the graded _soft grind cost before this branch is reached, so the
+"drifting ice does not keep clear" line the floe exclusion protected is already
+enforced one branch earlier, and the exclusion was only withholding the m5 cure
+from granite-isle. Open-water venues price bit-for-bit as before (openWaterAv
+was already true); river is excluded by the current guard.
+SOLO, paired on the measured seeds (ring→flip):
+  9100  47.7 → 53.7   (noise)
+  9101  24.8 → 14.4   (now FASTER than the human's 19s)
+  9102 406.7 → 184.8  (−222s on the disaster draw; in-ring 166.7→46.5)
+Blocker split during remaining slow frames: LAND 89s → 15s (the cured class),
+FLOE 20s (correctly still vetoed — ice keeps the wall). The mechanism does
+exactly what it was aimed at. Fleet 16-seed gate + non-floe byte-gates running.
+
+## RD1 FLEET VERDICT + THE v2 LADDER
+RD1 fleet 16-seed: paired med 0.0 / mean +3.9 — FLAT clock; boat rubs −18%,
+floe −9%, but LAND +34% (19.8→26.6/boat). The solo cure is real and the fleet
+spends it on the granite: RD1 extended BOTH the scaled veto (wanted) and the
+30000 far-blockage waiver, and at speed a plan-aligned candidate with no far
+tax aims at the isle's bend; traffic finishes the push. NOT landed.
+- RD2 (waiver reverted, veto kept): solo seed 9100 ring→flip 89.1s — WORSE
+  than HEAD (47.7). The waiver was load-bearing for the solo escape; the far
+  tax re-parks it ("other" 20.1s of wandering). Both directions now measured:
+  waiver-on cures solo and feeds the isle in traffic; waiver-off re-parks.
+  KILLED as a knob — the answer is not on this axis.
+- THE STRUCTURAL FIND BEHIND BOTH: `if (arcR && openWaterAv)` — the ARMED-
+  ROUNDING ARC ROLLOUT (the landed cove fix, "probe the water the boat will
+  sail") has been open-water-only all along. At granite-isle the boat sits
+  ARMED for 45-166 s probing an 851u-zone island with STRAIGHT 4-second rays;
+  every ray reads the isle as collision and the straight-ray dilemma (veto vs
+  far tax) is unresolvable because the probe's SHAPE is wrong. arcR's own
+  guards (≥2kt current kill, queued-rival kill from the redrock m5 wedge
+  lesson) carry over unchanged.
+- RD3 = arc-in-floe alone; RD4 = arc-in-floe + RD1. Benching separately and
+  together per the composition rule.
+LITERATURE (owner-directed): sailing practice — maintain momentum, wide-in
+tight-out, avoid the crowded side ("all the boats rounding a crowded gate will
+be going slower"); robotics — distributed avoidance deadlocks at shared
+waypoints, cures are stay-in-motion + locally-bounded coordination. Both match
+the measured anatomy: the human keeps way on through the plugged ring; the
+fleet's layered caution deadlocks it.
+
+## RD3 — THE ARC REACHES THE ICE (solo: the rounding class collapses)
+One condition: `if (arcR && openWaterAv)` → `if (arcR)`. The armed-rounding arc
+rollout (the landed cove fix) now runs in floe venues; arcR's own guards (≥2kt
+current kill, queued-rival kill) carry over unchanged; every non-floe venue is
+byte-identical by construction (openWaterAv was already true there).
+SOLO ring→flip, the full ladder on the same three seeds:
+  seed    HEAD    RD1     RD2     RD3(arc)   human
+  9100    47.7    53.7    89.1    24.1       ~19
+  9101    24.8    14.4     —      24.8
+  9102   406.7   184.8     —      55.8       (−351 s on the disaster draw)
+Attribution under RD3: irons 6% (was 17-22%), other 31% (was 37%), soft-grind
+47% of a much smaller total — the boat now sails the arc and glances the ice,
+which is the human profile from the recordings. RD4 (arc + RD1) is
+BYTE-IDENTICAL to RD3 on all three seeds: with the arc owning the rounding
+geometry, the veto/waiver axis has nothing left to fix — the straight-ray
+dilemma was the wrong axis, and the probe's SHAPE was the class.
+Fleet 16-seed gate running.
+
+## RD3 FLEET + OP5 FIRST GATES — AND RD5, THE QUEUE-WIDENED ARC
+RD3 fleet 16-seed: paired med +2.0 / mean +2.9 — FLAT, dirt mildly better
+across the board (boat 12.5→11.2, land 19.8→19.4, floe 32.1→31.1). The −222s
+solo cure does not reach the fleet clock: the arc's QUEUED-RIVAL DISABLE (the
+redrock m5 wedge lesson) switches the arc off exactly when the pile forms, and
+the pile is the fleet's rounding. NOT landed alone; dirt-favourable, kept as
+the base for the pair.
+OP5 first gates on set 9400: m3 stalls 55→5 passes = 9.1% (HEAD 13-14%, v1's
+full ease reached 4% — the dG<250 gate narrows the window); residual stalls
+have governor-fired 0/5 in the prior 20s (a different sub-class); clock +26.0
+paired med with boat rubs +19% on the one set. SHELVED again at the scope —
+one set cannot kill it (rule 20) but the mechanism's ceiling here (9% not 4%)
+plus the m5-composition history make the pooled protocol a poor spend next to
+the fleet-pile class. treeOP5 kept.
+RD5 (built): at zone ≥ 500 a queue WIDENS the arc (arcR = max(dM, queueR+120))
+instead of disabling it — small zones keep the m5 wedge lesson verbatim. The
+literature's wide-in-tight-out and the son's own pass (rank 9→1 around the
+OUTSIDE of the pile) both draw this shape. Fleet 16-seed running.
+
+- SG1 (commit-the-grind: half-price soft cells beyond the hard zone for the
+  plan-aligned straight candidate, on the RD3 base): BYTE-IDENTICAL to RD3 on
+  all three solo seeds — rule 17, pricing water no decision buys. With the arc
+  active, the aligned straight rung no longer meets the soft cells that
+  matter; the residual ring grind rides the ARC's own samples (deliberately
+  excluded — the arc's soft cost is what keeps its orbit honest about ice).
+  The class this targeted shrank to ~10-20s solo under RD3; the remaining
+  arctic rounding prize is the FLEET pile, which is RD5's question.
+
+## RD5 KILLED + THE ENTRY-SECTOR MEASUREMENT + WHERE THE RING CLASS STANDS
+RD5 fleet: paired med +15.0 / mean +14.8, finishers 143→140, pen 1.66→1.83,
+land 19.8→22.0 — arcing around the pile sweeps boats through more ice and
+traffic than waiting behind it. KILLED.
+Entry sectors at the ring (same-race recordings): bots 17/17 through three
+adjacent sectors (13-15); the human 5 distinct over 7 laps but ALSO mostly
+13-15 (5/7). Sector choice is NOT the separator — the separator is that she
+crosses the same band at 85+ u/s with 12-23° give-way deflections while the
+fleet's ring risk-slow is 23% of its parked time.
+THE RING CLASS AFTER SIX SHAPES: the solo geometry is FIXED (RD3: ring→flip
+med 24.8s, human 19; −351s on the worst draw) and the fleet is CONVERGENCE-
+BOUND — every single-boat cure is flat at the fleet clock (RD1/RD3) or worse
+(RD2/RD5). The remaining term is the give-way RESPONSE at the pile: the boats
+STOP to give way; she BENDS. That is the cross-venue response class (lake's
+GW/MEDIUM 47%, redrock's boat band, the underlay dossier's 35-60° vs her
+12-23°), and the next probe instruments the give-way argmin at the ring: when
+a bot goes risk-slow, was a speed-keeping DUCK (bear away astern) on the
+candidate menu, and what beat it?
