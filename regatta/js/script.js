@@ -3851,7 +3851,10 @@ function venueCard(key) {
 let DEFAULT_WATER_PALETTE = null;
 
 // Puff/lull tints follow the venue's water so cat's-paws read as pressure on
-// THIS water, not blue patches pasted on top. Bay keeps the original blues.
+// THIS water, not blue patches pasted on top. Authored `palette.gusts` wins; a
+// document that authors its water without authoring puffs gets them DERIVED from
+// that water (gustTintFrom below); only a venue with no palette at all falls back
+// here — and these ARE that venue's water, so bay keeps the original blues.
 const DEFAULT_GUST_COLORS = { gustDark: [9, 46, 130], gustMid: [11, 63, 176], lullBright: [150, 222, 255], lullMid: [120, 210, 255] };
 let activeGustColors = DEFAULT_GUST_COLORS;
 
@@ -3914,6 +3917,40 @@ function currentTintFrom(pal) {
     return hslToRgb(h, Math.min(1, s * CURRENT_S_GAIN), Math.max(CURRENT_L_FLOOR, l * CURRENT_L));
 }
 
+// Puff and lull tints for a venue that authored its WATER but not its puffs —
+// the same move as the current tint above, so the water and everything drawn as
+// "this water, differently" come from one authored pair. A gust is the deep water
+// pressed darker and a touch more saturated (a cat's-paw is dark rough water); a
+// lull is the base water lifted toward white (a hole is pale glassy water).
+//
+// The ratios are the medians of the seven venues that hand-authored both water and
+// puffs, so a derived venue sits in the same family as the tuned ones. The
+// lightness floors do for puffs what CURRENT_L_FLOOR does for the stream: on water
+// authored near black (Glowtide), pressing darker still has to leave something
+// visible, which is why that venue's hand-authored puffs are LIGHTER than its deep.
+const GUST_DARK_L = 0.62, GUST_MID_L = 0.85;         // x the deep water's lightness
+const GUST_DARK_L_FLOOR = 0.11, GUST_MID_L_FLOOR = 0.16;
+const GUST_S_GAIN = 1.2, GUST_MID_S_GAIN = 1.1;      // saturation pressed up with depth
+const LULL_BRIGHT_LIFT = 0.62, LULL_MID_LIFT = 0.52; // how far toward white the base lifts
+function gustTintFrom(pal) {
+    const rgb = (v) => {
+        const hex = String(v || '').replace('#', '');
+        if (hex.length !== 6) return null;
+        return [parseInt(hex.substring(0, 2), 16), parseInt(hex.substring(2, 4), 16),
+                parseInt(hex.substring(4, 6), 16)];
+    };
+    const base = rgb(pal && pal.baseColor), deep = rgb(pal && pal.deepColor);
+    if (!base || !deep) return DEFAULT_GUST_COLORS;
+    const [hB, sB, lB] = rgbToHsl(base[0], base[1], base[2]);
+    const [hD, sD, lD] = rgbToHsl(deep[0], deep[1], deep[2]);
+    return {
+        gustDark:   hslToRgb(hD, Math.min(1, sD * GUST_S_GAIN), Math.max(GUST_DARK_L_FLOOR, lD * GUST_DARK_L)),
+        gustMid:    hslToRgb(hD, Math.min(1, sD * GUST_MID_S_GAIN), Math.max(GUST_MID_L_FLOOR, lD * GUST_MID_L)),
+        lullBright: hslToRgb(hB, Math.min(1, sB * 0.9), lB + (1 - lB) * LULL_BRIGHT_LIFT),
+        lullMid:    hslToRgb(hB, Math.min(1, sB * 0.8), lB + (1 - lB) * LULL_MID_LIFT)
+    };
+}
+
 function applyVenuePalette(venueKey) {
     if (!window.WATER_CONFIG) return;
     if (!DEFAULT_WATER_PALETTE) {
@@ -3936,7 +3973,12 @@ function applyVenuePalette(venueKey) {
     // From the MERGED palette, so a document can author its puff colours. It used to read
     // `venuePal.gusts` alone, which meant `doc.palette.gusts` was silently ignored — the
     // one part of the water's look the editor could write and the game would not read.
-    activeGustColors = gusts || DEFAULT_GUST_COLORS;
+    // A document that authors WATER without authoring puffs gets them derived from that
+    // water: the editor writes only baseColor/deepColor, so before this, recolouring a
+    // venue's water left bay-blue puffs pasted on it — the exact mismatch the tints exist
+    // to prevent. No palette at all keeps the original blues: bay IS the default water.
+    activeGustColors = gusts
+        || ((docPal && (docPal.baseColor || docPal.deepColor)) ? gustTintFrom(pal) : DEFAULT_GUST_COLORS);
     // Derived from the MERGED palette, like the puffs — so a document that authors its own
     // water gets a stream in it without authoring a second colour that could disagree.
     activeCurrentColor = currentTintFrom(pal);
