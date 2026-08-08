@@ -10119,3 +10119,15 @@ problem the campaign has so far only met in the negative (SIPP), and it should
 be attacked as a measurement first — for each board the bot sails, did the gap
 it was aimed at still exist on arrival? The instrumentation for that is now
 in the tree (the lane router knows its own boards).
+
+## LANE2 arctic FLEET evidence — PARTIAL, and reported as partial
+The 16-seed fleet gate could not finish: the widened state space is ~8x the
+search and nine boats replanning on a 2 s cadence makes the bench impractically
+slow (a cost worth knowing on its own — any future lane router needs a bounded
+search, not just a correct one). Six seeds completed, fleet MEDIAN per seed
+against the p3v2arcA anchor:
+  9100 413→434 (+21)   9101 447→454 (+7)    9102 531→436 (−95)
+  9103 375→352 (−23)   9104 389→391 (+2)    9105 372→620 (+248)
+median +4, mean +27 over 6 of 16 seeds. Same signature as the solo set — it
+rescues the worst race and loses the tail elsewhere. NOT a gate result; the
+8-seed paired solo (median +54.5) is the verdict and it stands.
