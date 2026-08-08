@@ -2914,14 +2914,34 @@ class BotController {
                     // mark-5 thread queue into wedges (DNFs 3→11 at that mark,
                     // unarmed, 1.26 kt — four disjoint sets, −17..−24
                     // finishers pooled). Same parked test as the jam stamps.
+                    // A QUEUE DISABLES THE ARC ONLY WHEN IT SITS ON MY ORBIT
+                    // (RD6→RD7, 2026-08-08 — the queueing anatomy). The pile at
+                    // granite is SERVICE TIME (fleet arrives spread at 9.4s
+                    // median gaps; each transit takes 63-76s against her 19, so
+                    // occupancy accumulates at ρ≈7), and this flat 400u
+                    // any-parked-rival test re-disabled the arc for every boat
+                    // the moment the FIRST one parked — the old slow service
+                    // resurrected itself and the queue never drained. Keep the
+                    // wedge lesson this gate was earned on (redrock m5, zones
+                    // 165-189) exactly: at SMALL zones the flat disable stands
+                    // VERBATIM (byte-identical by construction — RD6 relaxed it
+                    // everywhere and redrock answered +75 paired med); only at
+                    // wide zones (≥500, water that admits parallel orbits) the
+                    // disable narrows to a rival parked within a hull-diameter
+                    // band of MY arc radius — one physically blocking my orbit.
+                    const myR = Math.max(70, dMA);
+                    const wideQ = (rmA.zone || 165) >= 500;
                     let queued = false;
                     for (const oQ of state.boats) {
                         if (oQ === boat || oQ.isPlayer || oQ.raceState.finished) continue;
                         if (oQ.speed * 4 >= 1.0) continue;
-                        if (Math.hypot(oQ.x - boat.x, oQ.y - boat.y) < 400) { queued = true; break; }
+                        if (Math.hypot(oQ.x - boat.x, oQ.y - boat.y) >= 400) continue;
+                        if (!wideQ) { queued = true; break; }
+                        const rQ = Math.hypot(oQ.x - rmA.x, oQ.y - rmA.y);
+                        if (Math.abs(rQ - myR) < 120) { queued = true; break; }
                     }
                     if (!queued) {
-                        arcR = Math.max(70, dMA);
+                        arcR = myR;
                         arcMx = rmA.x; arcMy = rmA.y;
                     }
                 }
@@ -3673,7 +3693,18 @@ class BotController {
                 // toward the mark's side of the heading. Straight ray
                 // otherwise — bit-for-bit the stock expressions.
                 let arcK = 0;
-                if (arcR && openWaterAv) {
+                // THE ARC REACHES THE ICE VENUES (2026-08-08, the granite
+                // rounding). arcR is computed under its own guards (current,
+                // queued rival) with no floe test — but this openWaterAv kept
+                // the rollout straight in floe water, so at granite-isle the
+                // boat sat ARMED for 45-166s probing an 851u-zone island with
+                // straight 4s rays that all read the isle as collision. The arc
+                // IS "probe the water the boat will sail" at a rounding — the
+                // landed cove fix — and the ice it may cross is priced by the
+                // same _soft grind costs on the arc samples. The queued-rival
+                // gate (the redrock m5 wedge lesson) still disables it in a
+                // parked crowd, and ≥2kt current still disables it entirely.
+                if (arcR) {
                     const brgM = Math.atan2(arcMx - boat.x, -(arcMy - boat.y));
                     arcK = (normalizeAngle(brgM - h) >= 0 ? 1 : -1) / arcR;
                 }

@@ -10594,3 +10594,42 @@ seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13, OCS 15.44% (byte-carried)
 river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B, byte-carried), fins 119/119
 ⚠️ LAKE LAND WATCH: now 6.45/6.09 (was 6.37/6.09; pre-hard-zone 5.33/5.58) —
 still open, still every lake-touching candidate's reported column.
+
+## THE RD11 LANDING — THE ARC REACHES THE ICE (Aug 8, evening; the day's second)
+The granite-rounding class (the biggest located class in the game, ~57s/boat/
+rounding of parking) came home. RD11 = RD7's two edits rebuilt on the OP5
+HEAD: (1) the arc rollout's openWaterAv gate removed — `if (arcR)` — so the
+armed-rounding arc finally works in floe water (solo worst-draw at granite:
+406.7 → 55.8s, the RD3 proof); (2) the queued-rival arc-disable narrowed AT
+WIDE ZONES ONLY (≥500): a rival parks my arc only when within 120u of MY
+orbit radius; small zones keep the flat 400u disable verbatim (the redrock
+m5 wedge lesson, byte-identical by construction).
+THE RE-ATTRIBUTION THAT UNBLOCKED IT: the set-B "+11% rubs" objection that
+shelved RD7 dissolved under matched-population probes. First catch (NEW
+STANDING RULE 18b): the original cross-tree probe compared neutral bots on
+treeRD7 against FULL-CHARACTER bots on treeHD9 — the __CHAR flag silently
+no-ops on trees that predate the machinery; the "start-scrum divergence at
+t=1" was two different bot populations, provably impossible as behavior (no
+boat arms before t=20). With matched bots (stat, the bench mirror): RD7
+HALVES contact episodes on the hostile seeds (107→58, ring band 22→0) and
+cuts contact FRAMES −31% (1476→1015); the only rising band is the outer
+approach (the queue moves upstream and shrinks).
+GATES: arctic 4-set grand pool (A 9100/B 9200 vs p3v2, C 9300/D 9400 vs
+fresh HD10 pairs; 64 seeds, 563 paired finishers): med +1 / mean −2.2 —
+FLAT — fins 567→570, boat 11.51→11.36, LAND 21.13→19.29 (−9%), floe
+30.09→29.91, pen 1.78→1.81. Set verdicts A/B/C/D: −1.0/+3.0/+2.0/−6.0 med,
+−1.7/+9.1/−7.8/−7.9 mean (both fresh sets mean-negative). OCEAN (the only
+other venue with a zone≥500 mark): paired med 0.0/mean +0.5, boat rubs
+2.07→1.50 (−28%). REDROCK/LAKE/BAY/RIVER/SEATRIALS: byte-inert verified
+(paired 0.0 across all five, 4-seed each vs anchors).
+LANDED: both edits into regatta/js/script.js (main byte-identical to
+treeRD11). Goldens full --update + verify.
+NEW ANCHORS: arctic fleet_leg2_rd11arc{A,B,C,D} (meds 426/447/427/446;
+HEAD evidence hd10arc{C,D} 428/442) — the p3v2arc pair retires; ocean
+ocean_bench_rd11oc (med 190, boat 1.50, paired 0.0 vs op5hoc). All other
+venue anchors carry byte-identical (rd11*id proofs on file).
+The fleet clock does NOT yet cash the 57s solo class — the jam physics
+(86% of give-way slow ticks have no sailable escape) still gates the ring.
+The arc-on-ice is the structural PREREQUISITE: the next arctic candidate
+(the arrival/laning layer, judged on leg-1 approach rubs at dRM 900-1800u,
+where RD11 moved the queue) now has something to compose with.
