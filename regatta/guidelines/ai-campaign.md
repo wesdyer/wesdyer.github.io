@@ -10449,3 +10449,46 @@ my arcR| < 120u); a rival parked inside or outside my circle no longer kills
 the arc. The m5 wedge lesson (165-189u zones, no room for two radii) behaves
 the same by construction; the change binds only where the water admits
 parallel orbits. Fleet 16-seed gate running — the day's last build.
+
+## RD6 SET A — THE DAY'S BEST FLEET RESULT
+Fleet 16@9100 (RD6 = RD3 + the narrowed queue-disable): paired med −1.0 /
+mean −1.7, ALL 144 FINISH (the anchor loses one), boat 12.52→11.42 (−9%),
+land 19.84→18.22 (−8%), floe 32.06→30.68 (−4%), pen 1.66→1.77; per-seed
+fleet-median deltas med −4.5. One bad seed (9105 +174 — parallel-orbit
+interaction under load) offset by 9109 −52, 9113 −34, 9115 −76. Strictly
+better than RD3-alone on every column. Set B (the set that killed RD3) and
+⚠️ redrock/bay 4-seed checks now decide — the "small zones behave identically"
+claim is an ASSUMPTION, not a construction: RD6's |rQ − myR| < 120 test can
+re-enable arcs at redrock's m5 where the wedge lesson was earned (a parked
+rival within 400u of me but at a different mark-radius no longer disables).
+If redrock is NOT byte-identical, the pooled protocol judges it there.
+
+## RD7 FINAL — THE DAY'S BEST CANDIDATE, AND STILL NOT A LANDING
+RD7 = RD3 (arc-in-floe) + the on-my-orbit queue test at zone ≥ 500.
+Byte-gates: redrock 4-seed EXACTLY 0.0 (the wide-zone gate is a construction —
+RD6's unscoped version had re-opened the m5 wedge at +75 paired med), bay
+4-seed exactly 0.0, river inert by double construction (zone < 500 AND the
+≥2kt current guard kills arcR there).
+Arctic: set A paired −1.0 / mean −1.7, ALL 144 finish, boat −9% land −8%
+floe −4%. Set B paired +3.0 / mean +9.1, boat +11% floe +7% (land better).
+POOLED A+B: ≈ +1 paired med / +3.7 mean — flat clock, dirt mixed. The B seed
+family punishes every variant of this family (RD3 alone: A flat, B +15) — a
+now-repeated pattern worth naming: THE 9200 FLOE DRAWS ARE HOSTILE TO
+ARC-BASED ROUNDING, and any future arctic candidate should treat A/B
+disagreement as expected and judge pooled.
+NOT LANDED (the dirt clause fails on B). RD7 (treeRD7, kept) is the
+recommended BASE for the next push's arrival-layer work: its solo geometry is
+right (406.7→55.8 on the worst draw), its fleet cost is bounded at flat, and
+the remaining fleet loss is the coordination class every measurement now
+points at.
+
+## THE DAY'S FINAL LEDGER
+18 builds (AC1, TK1-3, LANE1-2, CUR1/3, CST1, CC1, BH1, RD1-7, SG1, OP5, AR1),
+0 landings, and the campaign's map is qualitatively different than this
+morning: the arctic 2x is ATTRIBUTED (tack count → the rounding → service
+time at the pile), the granite ring is priced (57s/boat, ~40s/occupant), the
+fleet's arrival process is measured (already spread — service-bound), the
+solo rounding geometry is FIXED in a kept tree, and the next push's design is
+constrained by nine specific kills instead of open speculation. Behavior HEAD:
+a393d61, untouched; all anchors carry; goldens PASS 20/20 (verified twice);
+npm test: the one documented pre-existing river failure only.
