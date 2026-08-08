@@ -3638,6 +3638,33 @@ class BotController {
                     const brgM = Math.atan2(arcMx - boat.x, -(arcMy - boat.y));
                     arcK = (normalizeAngle(brgM - h) >= 0 ? 1 : -1) / arcR;
                 }
+                // THE HARD ZONE IS TURNING ROOM, AND TURNING ROOM IS TIME —
+                // BUT ONLY THE ROUTER'S OWN LINE EARNS THE TRUST (v2). The
+                // 140u veto is ~1.4s of travel at full speed; at 0.6 kt it is
+                // a minute and a half, and at the corridor's bend it vetoes
+                // the plan-aligned sailing candidate exactly when the boat
+                // most needs it — the parked boat then sits head-to-wind
+                // (offset-0 + a 500-point irons tax beats a wall veto), which
+                // is the m5 approach box in one sentence (1343 boat-s pooled,
+                // 97% on-plan, wind 11.5 kt, land <140u on the plan heading
+                // in 72% of parked samples). v1 scaled the veto for EVERY
+                // candidate and paid on lake both sets (+8s, land +40%: slow
+                // corridor boats freed toward any shore hug it and grind).
+                // The route only ever crosses water, so the candidate aligned
+                // with the plan (the far-field waiver's own 0.3-rad test and
+                // guards) gets the veto scaled to the boat's real time-to-
+                // wall — 1.4s, floored at 60u (3+ boat-lengths), capped at
+                // the stock 140. Every other heading keeps the full veto.
+                // Scopes on landed lines: floe water untouched (openWaterAv),
+                // never under the armed arc (arcK), never a no-go heading,
+                // never in a ≥2kt stream (time-to-wall is ground speed
+                // there).
+                const hardZ = (openWaterAv && !arcK && hPlanFF != null
+                    && Math.abs(normalizeAngle(h - hPlanFF)) <= 0.3
+                    && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
+                    && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
+                    ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
+                    : 140;
                 for (let sI = 1; sI <= stepsAv; sI++) {
                     const frac = sI / stepsAv;
                     let pxA, pyA;
@@ -3669,7 +3696,7 @@ class BotController {
                         // Hard zone is a fixed DISTANCE (a couple of boat-lengths of
                         // turning room), not a fraction: at speed, 40% of the probe
                         // was 190u and vetoed every thread the pack offered.
-                        if (frac * segLen <= 140) { staticCollision = true; cost += 500000; }
+                        if (frac * segLen <= hardZ) { staticCollision = true; cost += 500000; }
                         else if (hPlanFF == null || arcK
                             || Math.abs(normalizeAngle(h - hPlanFF)) > 0.3
                             || Math.abs(normalizeAngle(h - wdAv)) < 0.62) {

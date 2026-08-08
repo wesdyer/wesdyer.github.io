@@ -9287,3 +9287,182 @@ being drained by three composed landings on three physical lines.
   tight-water class (treeP4TIGHT, old base) re-ports after the underlay.
 - Session probe additions all tracked: _rr_m3replay(2), _rr_mstall (bins
   fixed), _rr_ringclear, _rr_dodge2, _run_stack.sh.
+
+
+# SESSION 2026-08-08 EARLY-MORNING PUSH (started 02:52 PDT, HEAD at open 7d47392)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner-directed continuation on the post-composition constraints: redrock leg 3
+(P0), the m3 orbit-phase design build (P1), river + the give-way underlay (P2).
+THE VENUE EVENT: the owner shipped a NEW red rock (full course redesign — 7
+marks, 5 roundings, 9 wind regions) plus "Gust fixes" (rendering-only script.js
+changes, ocean gust-1 region moved ~12000u INTO play, glowtide colors). Owner
+ruling: continue on the AI-saved old red rock or take up the new one — this
+push CONTINUES ON THE OLD RED ROCK (the entire P0/P1 attribution, all anchors,
+and the human refs live on its geometry; the new course has no human laps).
+
+## PHASE 0 — the venue-pinning build + full anchor verification
+- OLD red rock FROZEN as the benchmark venue: `eval/venues/redrock.venue.js`
+  (hash d30fe85fd2c1bbc6 == every ff2rr anchor stamp). Shipping redrock (the
+  new course) stays content until human laps exist. KEEP-BOTH per the frozen-
+  venue policy.
+- `mktree.sh` now builds per-file venue symlinks: a venue frozen in
+  eval/venues WINS over the shipping file — trees bench the venue the anchors
+  were made on even after a shipping redesign. Fingerprint stamping in
+  ocean_bench/fleet_leg2/bay_bench now reads the TREE's own venue file (was:
+  main-repo shipping — a latent wrong-stamp bug once the two diverge).
+- OCEAN PROMOTED: the owner's gust fix moved gust-1 into play — behavior
+  change. Re-frozen, ff2oc anchor RETIRED, re-baselined on treeHEAD8:
+  ocean_bench_hd8oc 20@9300 med 193 (was 192 old-venue), boat 2.61 (1.75),
+  mark 0.43 (0.20), pen 0.46, OCS 0 — the in-play gust region's dirt. Lake
+  frozen too (was never frozen). NEVER compare ocean across this cut either.
+- Anchor verification on HEAD (byte-identity, per standing rule 6): bay 4-seed
+  ✓, lake 4-seed ✓, river 4-seed ✓, redrock (old venue pinned) 4-seed ✓,
+  arctic 4-seed ✓, seatrials 100@100 whole-file byte-identical ✓. ALL ANCHORS
+  STAND. The owner's script.js changes were rendering-only (gust tint
+  derivation, minimap gradient cells) — verified inert on behavior.
+
+## P0 — THE m5 APPROACH BOX, RE-ATTRIBUTED THREE TIMES IN ONE NIGHT
+The plan's two named shapes both DIED at the measurement step (measure-first
+paying again):
+1. DISPLACEMENT IS DEAD: `_rr_mdisp.js` (new, tracked) — the box's parked
+   mass is 97% ON-plan (d0 med 64-71u to the boat's own gridPath), the FF
+   waiver was ACTIVE in 70-77% of parked episodes, cross-track guard binds on
+   only ~6%. The displacement-tolerant plan reference would have fixed ~6% of
+   nothing. (Also: deflection edges near m5 are 72% on-plan.)
+2. WIND IS FINE: `_rr_boxwhy.js` (new, tracked) — parked samples sit in 11.5-
+   15 kt (0% under 5 kt), blockAhead only 7-9%, spdLim 1.0 (no governor),
+   |defl| med 6°. But land sits INSIDE the 140u hard zone on the plan heading
+   for 63-72% of parked samples, TWA med 71-76°, in-irons 26%.
+3. THE MECHANISM, REPLAYED (`_rr_boxreplay.js`, new, tracked): the box mass is
+   HUNDREDS of 3-8s stutters (zero parks ≥10s). Trace anatomy: the corridor
+   BENDS at the box; the plan-aligned sailing candidate has wall <140u on its
+   straight ray → 500000 veto; staying head-to-wind is offset-0 + a 500-point
+   irons tax; the argmin parks the boat IN IRONS pointing at its own target
+   (Sable: 3s at TWA 10 with tg=8° dead upwind, then tg snaps to 99° and it
+   sails away at 2.4 kt). The hard zone is turning room, and at 0.6 kt 140u is
+   ~90 seconds of travel — the veto is priced for 7 kt.
+THE BUILD FAMILY (speed-scaled hard zone, hardZ = clamp(1.4s·v, 60, 140)):
+- BP1 (all candidates): box −40% (1394→835 boat-s @4 seeds), m3/m5 stalls
+  unchanged, redrock pooled −9.5 s/boat (3/6 neg), OCEAN −5.4 mean (a real
+  win), bay neutral, river/arctic BYTE-IDENTICAL (scopes verified) — but
+  LAKE FAILS BOTH SETS (+7.9/+8.7 mean, land +44%/+35%: slow corridor boats
+  freed toward any shore hug it and grind).
+- BP2 (plan-aligned candidate only — the FF waiver's own 0.3-rad test +
+  guards, extended to the near field): box −45%, lake mild (+2.6/+3.4 mean,
+  land +19%/+9%), redrock pooled −6.0 (3/6 neg).
+- BP3 (BP2 + wind ≥8 kt to power out): lake SILENT (deltas all-zero), but
+  redrock +5.7 pooled — the wind gate gives back the win (light-air bends
+  carry redrock weight too, or variant-to-variant reshuffle noise).
+- ✅ LANDED — BP2 AT 96-SEED RESOLUTION (the resolution move: the three
+  variants' pooled clocks at 48 seeds (−9.5/−6.0/+5.7) sat inside set-level
+  noise, so BP2 — the balanced variant — was judged on SIX FRESH disjoint
+  8-seed sets (8400-8900, paired vs same-seed HEAD runs) on top of the six
+  anchor sets: fresh sets NEGATIVE 6/6 (means −8.2..−63, meds −5..−89),
+  pooled over all 12 sets/96 seeds: −14.79 s/boat, negative 9/12. The
+  anchor-seed sets were the noisy draw. Pooled redrock med 517→499, fins
+  396 (flat), land/boat/mark/pen all flat-to-down.
+  GATES: bay DELTAS ALL-ZERO both 20-seed sets (the ~5-8s gap untouched);
+  ocean −2.5 mean with boat rubs 2.61→1.81 (−31%) — recovers the gust-fix
+  dirt; lake +2.6/+3.4 mean, land +19%/+9% (med 0 both) — THE RECORDED
+  TRADE, the one gate that pays; river byte-identical (4-seed verified,
+  ≥2kt scope); arctic byte-identical (4-seed verified, floe scope);
+  seatrials byte-identical (BP1's 100@100 whole-file diff — BP2's firing
+  set is a strict subset of BP1's).
+
+## P1 — THE ORBIT-PHASE EASE: THE STALL KILL IS REAL, THE SCOPE IS NOT
+v1 (OP1: armed, sweep>0.05, speed>1.2, orbitTightR-null, the landed
+0.55+0.15·deft floor, per-tick): m3 stalls 14%→4% — the residual class DIES,
+survivors' anatomy changes (defl 46° vs 0°). Redrock pooled −2.3 (flat), land
+down 5/6 sets, marks down; bay BYTE-IDENTICAL both 20-seed sets (orbitTightR
+non-null on every bay mark — by construction, verified); river BYTE-IDENTICAL
+(current scope); BUT:
+- LAKE set A land 5.33→12.13 (the ease holds slow boats on a lee shore
+  through whole passes at some corridor mark), and
+- OCEAN med 193→211 (+18!) — ocean HAS orbitTightR-null marks and the ease
+  taxes every rounding there. KILLED as landed.
+- v2 (wall-room speed threshold, no latch): the trigger TOGGLES mid-sweep
+  around the threshold speed — set 9400 fins 64→57. KILLED, mechanism named.
+- v3 (threshold + per-pass latch): the latch OVERHOLDS — stalls move to sweep
+  306° (the hairpin's exit) at dMark 121: the boat carries the 0.55 cap
+  through the whole 306° rotation and starves the exit. m3 41%. KILLED.
+- v4 (v1 + wall-room ≥175 scope): REDROCK BYTE-IDENTICAL TO v1 (4-seed
+  verified — canyon marks all have walls ≥200) but lake byte-equal to v1's
+  grind (the offending lake mark has room ≥175 too) and ocean still fires.
+  The wall-room axis does not separate the venues. SHELVED: the m3 kill
+  (14→4%) waits for a scope that names what separates canyon hairpins from
+  lake/ocean confined marks. ⚠️ The ENTRY-side governor family stays closed —
+  this is the ORBIT-phase family, distinct and now measured 4 variants deep.
+- COMPOSITION NOTE: OP1+BP1 (treeCX) is ANTI-COMPOSITIONAL: m5 stalls 16→26%
+  (the new stalls are UNARMED with rivals — 0-rival 79%→48% — the two
+  mechanisms flood the m5 funnel with more surviving traffic), redrock pooled
+  +1.1 (worse than either component). The m5 funnel's throughput is the
+  binding constraint under composition.
+
+## P2 — RIVER + THE UNDERLAY
+- THE RUB SIGN-SPLIT IS CLOSED AS SEED-SET VARIANCE: four disjoint 16-seed
+  sets on IDENTICAL behavior (ff2rivA/B + fresh hd8rivC/D) give boat-rubs
+  61.6 / 31.2 / 10.9 / 24.7 per boat — a 6x spread with meds stable at
+  264-271. River dirt at 16-seed resolution is noise-dominated; judge river
+  on pooled fins/med only. (The FF2 "A×2/B−33%" was two draws from this
+  distribution.)
+- UL1 (onset honesty at the MEDIUM rung: MEDIUM requires the threat to
+  converge on my PROPER course too — CPA on the strategy's heading, τ=6s,
+  bar 110u; HIGH/IMMINENT untouched, spin-hazard model still re-raises,
+  prestart + floe venues out of scope): mechanism PARTIALLY verified —
+  needless-MEDIUM collapses (river 42.1%→15.8%, redrock 51.3%→33.8%),
+  stand-on episodes −31%/−22%, river IMMINENT episodes −68% (173→55, fewer
+  emergencies). But river frame-share deflected went UP (23→36%), the HIGH
+  rung's needless share persists (50.7%→57.6% river, 66.4% redrock — the
+  current-heading HIGH test has the same honesty problem), and the ACTION
+  delta is nil: river fins 239 v 238 pooled, clock flat, dirt inside the
+  measured noise band. NOT LANDED (actions-not-prices: no measured action
+  win). The build + dossier hand to the next push with the HIGH-rung
+  question and lake/redrock/arctic gates unrun.
+- treeP4TIGHT stays shelved behind a landed response class, per plan.
+
+## Probes added (all tracked): _rr_mdisp.js, _rr_boxwhy.js, _rr_boxreplay.js.
+## Session evidence files: p0id*/hd8*/op1*/op2*/op3*/op4*/cx*/bp1*/bp2*/bp3*/
+## ul1* bench JSONs + logs in eval/rl.
+
+## The venue table (final HEAD = BP2 landed; benchmark venues incl. OLD red rock)
+venue     | human med/best      | pre-session bot (7b72372 anchors)         | post-session bot (final HEAD, hard-zone landing)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (ff2bayA/B), boat 1.39/2.11, mark 0.05/0.28, pen 0.28/0.40, OCS 0/0 | 231 / 234 (bp2bayA/B) — DELTAS ALL-ZERO both sets, gap ~5-8s protected
+ocean     | 182.5               | 192 (ff2oc, OLD ocean — RETIRED: owner gust fix moved gust-1 into play) → 193 hd8oc new-venue baseline, boat 2.61, mark 0.43 | 192 (bp2oc), boat 1.81 (−31%), mark 0.36, pen 0.35 — recovers the gust-fix dirt
+lake      | 223 / 209.6         | 274 / 273 (ff2lakeA/B), land 5.33/5.58    | 275 / 276 (bp2lakeA/B), land 6.37/6.09, boat 1.98/3.09, mark 0.43/0.32 — the landing's one paying gate (mean +2.6/+3.4, med 0/0), recorded
+redrock   | ~227 / 206.6 (s2: 214.7) — OLD red rock, the benchmark | 48-seed fins 396, per-set med 475/540/520/507/538/523, pooled med 517, land 143.1, boat 20.89, mark 1.16 | 48-seed FINS 396, med 481/510/497/542/564/469, POOLED MED 499, land 142.4, boat 19.97, mark 1.14; PAIRED −14.8 s/boat over 96 seeds (12 disjoint sets, 9 negative, fresh 6/6); m5 box −45%
+arctic    | 212.1 / 190.4 (s2: 215.0/194.7) | 413 / 450 (p3v2arcA/B), in-420 75/53 | UNCHANGED — BYTE-IDENTICAL (floe scope, 4-seed verified)
+seatrials | ~190 / 180.9        | 199.58 / 194.13, OCS 15.44%               | UNCHANGED — BYTE-IDENTICAL (whole-file diff via BP1 superset run)
+river     | 161.3 (1 lap)       | 264 / 271 (ff2rivA/B), fins 119/119 of 144 | UNCHANGED — BYTE-IDENTICAL (≥2kt scope, 4-seed verified); +2 fresh HEAD evidence sets hd8rivC/D med 266/263.5 (rub noise-band study)
+NEW ANCHORS (fingerprint-stamped on the frozen venues): redrock
+ocean_bench_bp2rr{9400..9900} (+ paired evidence hd8rr/bp2rr{8400..8900});
+lake bp2lakeA/B; bay bp2bayA/B (byte-equal ff2bay*); ocean bp2oc (vs hd8oc
+baseline — ff2oc RETIRED at the venue cut); river ff2rivA/B, arctic
+p3v2arcA/B, seatrials eval_results byte-carried. GOLDENS: 7 behaviour changes
+→ full --update re-record, verify PASS 20/20. npm test: the one documented
+pre-existing river sailable failure (exit2→pre3) only.
+
+## NEXT-PUSH POINTERS (ordered by tonight's measurements)
+- THE NEW RED ROCK needs human laps before it can become a target (owner:
+  recordings, ideally schema-2 for the ledgers). It races as content;
+  benchmark stays the frozen OLD red rock until then. When laps exist,
+  decide PROMOTE vs KEEP-BOTH per eval/venues/README.md.
+- ⚠️ FRESH LAPS wanted broadly: bay/lake/redrock changed again (hard-zone
+  landing); ocean's wind field changed (gust fix); river has ONE lap.
+- m3 ORBIT-PHASE EASE: the kill is real (14→4%) and shelved 4 variants deep
+  — the missing scope must separate canyon hairpins (wind 13-15kt, walls
+  200-275) from lake/ocean confined marks where the ease grinds or taxes.
+  Wind ≥8kt on redrock's box worked for the hard zone (BP3 lake-silent) but
+  gave back redrock clock — the light-air-bend interaction is unmeasured.
+- THE m5 FUNNEL'S THROUGHPUT is the composition constraint: OP1+BP1 flooded
+  it (m5 stalls 16→26%, unarmed, rival-present). Any future redrock landing
+  pair must be benched TOGETHER before landing separately.
+- UL1 (onset honesty): mechanism half-proven; the HIGH rung carries the same
+  needless share (50-66%) and is untouched — the design question is whether
+  HIGH deserves the same proper-course test or a milder alpha. Gates unrun.
+  River clock/action delta nil at current resolution; do not land without a
+  measured action win somewhere (rule: actions, not prices).
+- RIVER DIRT RULE (new): boat-rub counts at 16-seed resolution span 6x on
+  identical behavior (10.9-61.6/boat across 4 sets) — judge river on pooled
+  fins/med only, never on rubs, until a 32-seed+ protocol exists.
+- Lake's +19%/+9% land under the landing is the open watch item; L1/L2
+  classes unchanged otherwise.

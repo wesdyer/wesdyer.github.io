@@ -41,8 +41,13 @@ three options.** None of them is automatic:
 
 **4. The benchmark set is deliberately small.** Today: `bay` (technical, land,
 five roundings), `arctic` (open water, ice, one big rounding), `seatrials` (the
-clean windward-leeward control), `ocean` (the swell). Redrock is content until
-the AI can sail it.
+clean windward-leeward control), `ocean` (the swell), `river` (current), `lake`
+(corridors), and `redrock` (the canyon). ⚠️ The frozen `redrock` here is the
+OLD red rock (pre-2026-08-08 redesign) — the campaign's entire attribution,
+anchor family, and human recordings live on its geometry, so it stays the
+benchmark (KEEP BOTH) while the redesigned shipping course races as content
+until human laps exist for it. `mktree.sh` trees link every frozen venue in
+place of the shipping file, so candidate benches always run the benchmark cut.
 
 ## Refreezing
 

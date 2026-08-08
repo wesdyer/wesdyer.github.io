@@ -13,6 +13,24 @@ cp $SRC/regatta/index.html $DST/regatta/
 cp $SRC/regatta/editor.html $DST/regatta/ 2>/dev/null || true
 cp -R $SRC/regatta/js $DST/regatta/js
 cp -R $SRC/regatta/css $DST/regatta/css
-ln -s $SRC/regatta/assets $DST/regatta/assets
+# Assets: symlink every subdir EXCEPT venues/. Venues are linked per-file, and a
+# venue frozen in eval/venues (the benchmark copies — see eval/venues/README.md)
+# wins over the shipping file: a tree benches the venue the anchors were made on,
+# even after the shipping venue is redesigned (redrock, 2026-08-08).
+mkdir $DST/regatta/assets
+for d in $SRC/regatta/assets/*; do
+  b=$(basename $d)
+  [ "$b" = "venues" ] && continue
+  ln -s $d $DST/regatta/assets/$b
+done
+mkdir $DST/regatta/assets/venues
+for f in $SRC/regatta/assets/venues/*.venue.js; do
+  v=$(basename $f)
+  if [ -f $SRC/regatta/eval/venues/$v ]; then
+    ln -s $SRC/regatta/eval/venues/$v $DST/regatta/assets/venues/$v
+  else
+    ln -s $f $DST/regatta/assets/venues/$v
+  fi
+done
 cp $SRC/regatta/eval/eval_harness.js $DST/regatta/eval/
 echo "built $DST"
