@@ -10054,3 +10054,7 @@ candidate that touches lake must keep reporting this column.
    adverse-only pricing move the fleet into worse water. A third shape must
    answer what the bank grind costs, which no route term currently knows.
 5. OP5 is still build-ready and still un-benched.
+
+GOLDENS: PASS — 20 traces checked, 0 behaviour changes, 0 geometry-only, 0 new
+(4.5 min, run on the unchanged HEAD as the explicit check that the anchors carry
+rather than an assumption that they do).
