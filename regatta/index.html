@@ -631,7 +631,7 @@
                         <button class="ov-seg" data-mode="north">NORTH UP</button>
                     </div>
                 </div>
-                <div class="ov-setting" style="padding: 10px 0; border-bottom: none;">
+                <div class="ov-setting" style="padding: 10px 0;">
                     <span class="ov-setting-label">Telltale color</span>
                     <div class="flex items-center gap-2">
                         <button class="ov-swatch" data-color="#fbbf24" style="background: #fbbf24;" title="Gold"></button>
@@ -641,6 +641,20 @@
                         <button class="ov-swatch" id="telltale-custom" style="background: conic-gradient(#ec3013, #f2c14e, #34d399, #2f6bff, #a78bfa, #ec3013);" title="Custom"></button>
                         <input type="color" id="setting-color-telltale" class="sr-only" value="#fbbf24">
                     </div>
+                </div>
+
+                <div class="ov-sec" style="margin-top: 16px;">Graphics</div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Adaptive scaling</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-adaptive-scaling"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting" style="padding: 10px 0;">
+                    <span class="ov-setting-label">Water resolution</span>
+                    <input type="range" id="setting-water-resolution" min="0.25" max="1.0" step="0.25" style="width: 120px;" class="accent-sky-500">
+                </div>
+                <div class="ov-setting" style="border-bottom: none;">
+                    <span class="ov-setting-label">Wave breaking</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-wave-breaking"><span class="ov-track"></span></label>
                 </div>
 
                 <button id="save-settings" class="ov-row ov-primary" style="margin-top: 14px;">
