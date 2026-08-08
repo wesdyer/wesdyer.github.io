@@ -9485,3 +9485,16 @@ pre-existing river sailable failure (exit2→pre3) only.
   bin 14 boat-s, parked mass at race-minute 20-40s (post-start sort-out),
   nearest rival 183u, avoidance-active 56%, defl 11°, wind 6.2kt, n=50.
   No candidate named; the class is small on this base.
+- THE EASE-SCOPE HUNT CLOSED THE QUESTION (_op_scope_survey.js, new,
+  tracked — per-rounding-mark features across venues): ocean's toxic mark
+  is leg-1 mark-3 with ZONE 1000 (boats arm a kilometer out; the v1 ease
+  crawls the whole approach — the +18s explained) and wall-room 15u (the
+  mark sits ON its rock: the eased ~100u circle cannot fit anyway); lake's
+  grinder is leg-1 mark-3 at 5.7 kt (wall-room 180 — room enough, no wind
+  to power out; the other lake mark is already _gyOK-excluded); redrock's
+  winners are wall-room 120-150, wind 12.6-16 kt, stock zones. NEXT-PUSH
+  OP5 IS FULLY PARAMETERIZED: v1's per-tick form + wall-room ≥ 100 (the
+  eased circle must fit) + wind ≥ 8 kt at the boat (power to sail out) +
+  dG < 250 (the pocket is the scale of the turn, not the zone). The m5
+  composition warning still binds: bench OP5 and the hard-zone landing
+  TOGETHER on redrock.
