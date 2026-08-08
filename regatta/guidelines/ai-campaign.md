@@ -9220,3 +9220,43 @@ river     | 161.3 (1 lap)       | r0A/B med 272/273, in-360 80/77%         | UNC
   +2) — attribute before touching.
 - River tight-water + underlay: unchanged plan, behind the response class.
 - Ocean boat rubs 1.60→2.10 under the landing — watch it on the next pass.
+
+## ✅ SECOND LANDING, SAME PUSH — THE FAR FIELD BELONGS TO THE ROUTER (FF2)
+The waiver rejected three hours earlier as blocked-behind-m3, re-benched on
+the turn-direction base per its own dependency note — and the composition
+delivered. MECHANISM (one physical line): the route only ever crosses water,
+so land beyond the 140u turning zone ALONG THE PLAN is the plan's bend, not
+a blockage — waive the far-blockage tax (30000·(1−frac)) for the candidate
+aligned within 0.3 rad of the local gridPath direction (260u lookalong).
+The 140u hard zone stays for every candidate. Guards: fresh plan the boat is
+on (<200u cross-track), never a no-go heading (|h−wind| < 0.62 — the irons
+shaping is only 500 points and a beat's plan direction is dead upwind),
+never under the armed arc (arcK). Named by _rr_dodge2's decomposition
+(soft-only wide dodges: farland 62%, boatprox 0 of 1382).
+ANATOMY on the landed base (the dependency test): m3 stalls 13% — NO refeed
+(the pre-landing rejection was leg-2 odo +24% + m3 50→54%; with the face-pin
+class dead the corridor gains stand alone): vs the GY base at 4@9400 legs
+2/3/4 time −14/−39/−38%, odo −6/−18/−13%.
+REDROCK (pooled finishers, six disjoint 8-seed sets vs the gy4 anchors):
+fins 392→396; paired mean NEGATIVE IN ALL SIX SETS (−83/−24/−15/−13/−14/−60,
+pooled ≈ −34 s/boat); med negative 5/6; land −9% pooled (down 4/6); marks
+−18% further (8.44→6.94); pens down 5/6; boat −2%.
+GATES: BAY BIT-IDENTICAL both sets (no far land on open water — the waiver
+provably never fires; paired mean 0.00, stats byte-equal); OCEAN positive
+(mean −0.7, boat rubs 2.10→1.75 — recovers most of the turn landing's ocean
+trade, marks down); RIVER both sets faster (paired −10/−7 med, −17/−7 mean;
+fins 233→238 pooled; land −7/−14%; ⚠️ boat rubs DISAGREE in sign across
+sets: A 30→62, B 46→31 — unresolved at this resolution, recorded); LAKE
+within anchor noise (A mean +2.7 with land 4.49→5.33, B −1.0 flat — pooled
+land 10.9 vs the session-open anchor 10.7); arctic + seatrials
+BYTE-IDENTICAL (verified by diff).
+GOLDENS: 9 behaviour changes → full --update re-record + verify.
+NEW ANCHORS: redrock ocean_bench_ff2rr{9400..9900} (48-seed fins 396;
+per-set med 475/540/520/507/538/523); lake ff2lakeA/B 274/273; bay
+ff2bayA/B 231/234 (bit-identical to gy4bayA/B); ocean ff2oc 192; river
+ff2rivA/B med 264/271 (fins 119/119 of 144 — in-360 improved); arctic
+p3v2arcA/B + seatrials byte-carried.
+The redrock arc: session open 384 fins/48-seed (pre-cap) → cap 390 →
+turn-direction 392 → far-field 396, with per-set meds now 475-540 vs the
+session-open 527-620 — the deflected-distance class named two pushes ago is
+being drained by three composed landings on three physical lines.

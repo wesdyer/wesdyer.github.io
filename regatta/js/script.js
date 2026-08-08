@@ -3156,6 +3156,36 @@ class BotController {
             }
         }
 
+        // THE FAR FIELD BELONGS TO THE ROUTER. Post-cap dodge decomposition
+        // (_rr_dodge2, redrock/river): with no hard blocker on the small
+        // candidates, 62%/47% of wide dodges are bought by the far-blockage
+        // term alone — a straight 4s ray outliving the plan's bend and
+        // reporting the bend wall as a blockage, in water wide enough that
+        // the clearance cap never bites (rival terms: 0 of 1284 episodes).
+        // The route only ever crosses water, so land beyond the 140u turning
+        // zone ALONG THE PLAN is not a threat — waive the far tax for the
+        // plan-aligned candidate. The hard zone stays for every candidate.
+        // Guards: fresh plan the boat is actually on (<200u cross-track),
+        // never for a no-go heading (a beat's plan direction is dead upwind
+        // — waiving its tax against the 500-point irons shaping would dive
+        // the argmin into irons), and never while the armed arc probe owns
+        // the geometry.
+        let hPlanFF = null;
+        if (openWaterAv && racingLegF && this.gridPath && this.gridPath.length > 1) {
+            const p0FF = this.gridPath[0];
+            const dx0FF = p0FF.x - boat.x, dy0FF = p0FF.y - boat.y;
+            if (dx0FF * dx0FF + dy0FF * dy0FF < 200 * 200) {
+                const ptsFF = this.gridPath;
+                let jFF = 0, accFF = 0;
+                while (jFF < ptsFF.length - 1 && accFF < 260) {
+                    accFF += Math.hypot(ptsFF[jFF + 1].x - ptsFF[jFF].x, ptsFF[jFF + 1].y - ptsFF[jFF].y);
+                    jFF++;
+                }
+                const pFFF = ptsFF[jFF];
+                hPlanFF = Math.atan2(pFFF.x - boat.x, -(pFFF.y - boat.y));
+            }
+        }
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -3640,7 +3670,11 @@ class BotController {
                         // turning room), not a fraction: at speed, 40% of the probe
                         // was 190u and vetoed every thread the pack offered.
                         if (frac * segLen <= 140) { staticCollision = true; cost += 500000; }
-                        else { proximityCost += 30000 * (1 - frac); }
+                        else if (hPlanFF == null || arcK
+                            || Math.abs(normalizeAngle(h - hPlanFF)) > 0.3
+                            || Math.abs(normalizeAngle(h - wdAv)) < 0.62) {
+                            proximityCost += 30000 * (1 - frac);
+                        }
                         break;
                     }
                 }
