@@ -10807,3 +10807,28 @@ HUNT — ocean gates suspended until found). Constraints: closed families
 closed; actions-not-prices; arctic pooled 4-set vs fl1barc*; river pooled
 fins/med; 96-seed redrock; bench pairs together; goldens full --update;
 probe audits (18/18b/19b); close with the venue table.
+
+## SIZING WAVE RESULTS (Aug 8, late night — the fidelity push's opening numbers)
+A. ROLLOUT SPEED MODEL — THE CANDIDATE: 20-21% of all chosen-rollout steps
+   on arctic price the boat at >1.67x its polar (getTargetSpeed at the
+   step's TWA/wind vs the constant speedU). The rollout scores irons-
+   crossing candidates at full pace — the mechanical link to the standing
+   TACK-COUNT class (bots 21-23 tacks vs her 5: if turning through the wind
+   is free, the argmin over-tacks). Build design: per-step speed integration
+   v += clamp(polarTarget(TWA,wind) − v, accel limits) replacing constant
+   speedU; sample wind at 2-3 waypoints, not per step, if perf demands.
+   (polar/assumed MEAN is 1.16-1.22 — on average the boat could go FASTER
+   than assumed off the wind; the fiction cuts both ways: it also
+   underprices bearing-away escapes.)
+A-wind. Rollout wind-blindness: 1-2% of steps see >20% wind deficit vs
+   at-boat; |dDir| 0.02-0.03 rad — SMALL at the 9s rollout scale. The wind
+   field matters at router/strategic scale, not the dodger. Down-rank.
+C. DIRTY AIR / SHADOW TIME — MEASURED DEAD: time below 80% of own-lap
+   median wind, human vs bot: bay 8% vs 6%, arctic 21% vs 11% (the HUMAN
+   tolerates lulls MORE — route quality over clearance, again), lake 30%
+   vs 27% (same). Bot dirty-air ticks ~3-5%. The bots are NOT losing their
+   gap sitting in bad air. ⛔ Deprioritize C; do not build lane-planning on
+   this evidence.
+B. Router current: stands pre-sized (~46s river). D: unsized, next session.
+REVISED ORDER FOR THE PUSH: A speed model (arctic + everywhere the far
+field runs) → B current pricing (river) → D sizing → E carryovers.
