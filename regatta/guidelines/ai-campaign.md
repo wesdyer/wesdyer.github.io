@@ -12477,3 +12477,23 @@ infrastructure now — `_esc_log.js` shows every firing; lake B profited
 Gates: pooled 6-set vs b1rr* (redrock), b1lakeB for lake B, hz3b*/p0* for
 byte-venues; 96-seed protocol near threshold; goldens full --update at
 landings; the owner table with EVERY status update.
+
+## THE MARK-5 APPROACH DECOMPOSITION (_m5_approach.js, 8 races vs 3 laps)
+Owner asked where roundings/exits fail. Leg-3 band 4 (last 20% of DMC into
+mark-5) splits THREE ways:
+1. subs 15-19 (the rounding): bots on HER LINE (offset 19-33u), maneuvers
+   match (med 3 vs her 2-3) — but THROTTLED 29-69% (speedLimit<1 at 100%
+   armed; funnel/pack clamps) for ~10-20 u/s. Worth ~1-2 s/boat; re-pricing
+   a landed win — venue-class scoping + full gates if ever touched.
+2. subs 0-7 (the thread before the bend) — THE MONEY: bot 39-57 u/s vs her
+   78-90, OFF her line by 81-161u (p75 242), throttle 0%, armed 0%, avoid-
+   deviating 55%. Nothing commands the slowness: deflections push boats off
+   the thread line into bad water and nothing pushes BACK. Same execution-
+   under-jam family as river leg 3.
+3. Maneuver count exonerated (median parity; one 237-flip churner in the
+   tail).
+NEXT-PUSH CANDIDATE #1: "return-to-line pressure after deflection in narrow
+water" — the band-trust idea (trust the plan-aligned candidate) applied to
+POST-DEFLECTION RECOVERY. Mechanism gate box: leg-3 subs 0-7 thread
+(x~150-235, y~1006-1280), judged on bot spd + latOff vs this probe's
+baseline. Probe: _m5_approach.js (any venue/leg/band).
