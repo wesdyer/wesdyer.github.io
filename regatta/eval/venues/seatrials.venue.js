@@ -92,37 +92,30 @@ window.VENUE_DOC["seatrials"] = {
       {
         "kind": "line",
         "lineId": "sf",
-        "dir": 1,
-        "role": "start"
+        "dir": 1
       },
       {
         "kind": "gate",
         "lineId": "wg",
-        "dir": 1,
-        "role": "windward"
+        "dir": 1
       },
       {
         "kind": "gate",
         "lineId": "sf",
-        "dir": -1,
-        "role": "leeward"
+        "dir": -1
       },
       {
         "kind": "gate",
         "lineId": "wg",
-        "dir": 1,
-        "role": "windward"
+        "dir": 1
       },
       {
         "kind": "gate",
         "lineId": "sf",
-        "dir": -1,
-        "role": "leeward",
-        "finish": true
+        "dir": -1
       }
     ],
-    "cutoff": 360,
-    "startTime": 20
+    "cutoff": 360
   },
   "wind": {
     "regions": [

@@ -11426,3 +11426,159 @@ each against a same-HEAD baseline. Then P1 river bin7 (fix _riv_line's plan read
 first), P2 lake/lagoon subsection treatment, P3 squall sizing once a shipping-doc
 lagoon lap exists. Intake every new trajectory same-day: _traj_fp.js, corpus,
 _gw_ledger2.py, per-leg matrix. Close with the venue table.
+
+# NEXT-PUSH DIRECTIVE (authored 2026-08-09, after the eight-venue intake):
+# THE HUMAN-LEVEL PUSH — an overnight run, owner-directed, DO NOT STOP
+# ═══════════════════════════════════════════════════════════════════════════════
+Owner: "the goal is human level performance. Focus on the biggest gaps... venues
+where the gap is the largest. Then identify specific sections where the gap is
+most extreme. Then identify causes. Then proposed fixes and improve. Analyze,
+research, hypothesize, experiment, evaluate, iterate. DO NOT STOP."
+
+## WHAT THIS SESSION ESTABLISHED (the ground truth to work from)
+Eight venues now carry FRESH, FINGERPRINT-VERIFIED human references (3 laps each,
+intaken the day they were sailed), and five venues were promoted/frozen, so
+`freeze_venues --check` is clean for the first time in the campaign.
+
+| venue     | human med / best | bot | ratio | the section that owns the gap |
+|-----------|------------------|-----|-------|-------------------------------|
+| seatrials | 189.4 / 179.7    | 194.5 | 1.03x | at human — hold |
+| bay       | 219.0 / 211.0    | 232 | 1.06x | leg0 start 27% + leg1 beat 34% |
+| ocean     | 177.9 / 177.7    | 190 | 1.07x | leg1 is 99% of it |
+| lake      | 223.1 / 218.2    | 278 | 1.25x | leg2 57% + leg1 39% |
+| river     | 167.4 / 165.0    | 261 | 1.56x | leg3 is 72%; 4 pockets = 91% of its slow time |
+| lagoon    | 164.9 / 160.1    | 277 | 1.68x | spread: leg2 25%, leg4 21%, leg3 20% |
+| arctic    | 212.4 / 201.6    | 367 | 1.73x | leg1 subs 8-9 = 65% of the leg (MARK APPROACH) |
+| redrock   | 218.2 / 215.2    | 616 | 2.82x | venue-WIDE 1.77-2.78x; leg3 sub0 alone +103 s/boat |
+
+THE GAPS SORT INTO THREE MECHANISMS, and they want different fixes:
+ A. STALLING AGAINST LAND (river, redrock, part of lagoon). Discrete pockets where
+    the fleet sits at 10-16 u/s and she sails 83-127. landAhead 47-67%, wiggle
+    36-77%, **armed ~0** — unarmed mid-leg transit, NOT rounding. Odometer excess
+    is small (river L3 +11%) so it is not routing length. SIZED CAUSE IN HAND:
+    the grid's navigable bar `CLEARANCE = HULL_R + 14 = 44u` against a 30u hull
+    forbids 8.6% of the line she sails at 122-125 u/s with two contacts all lap
+    ([[regatta-river-leg3]]). Third member of the CP1/noSubsample family.
+ B. EXTRA DISTANCE ON THE BEAT (bay, lake, ocean — and it is their WHOLE gap).
+    The fleet sails 16-27% further than she does while being FASTER through the
+    water: bay L1 1.49x vs her 1.26x (+674u), lake L1 1.52x vs 1.29x (+1080u),
+    lake L2 1.26x vs her 0.99x ON ONE TACK (+1391u), ocean L1 1.62x vs 1.39x
+    (+1100u). Her tack counts are tiny (lake L2 1/1/1, ocean L1 4/5/2). CAUSE NOT
+    YET DECOMPOSED — that is P4's job and it is measurement-first.
+ C. MARK APPROACH (arctic L1 subs 8-9 = 65% of that leg, lake L2 sub9 = 77% of
+    its slow time). `armed` is 45-65% here, so it is the rounding machinery, not
+    transit. Distinct from A by that flag alone.
+ D. THE START, as a separate small class: bay leg0 is 7.69x (she crosses 0.5s
+    after the gun, the fleet 5.0s, and even the GOOD boats sit 128u behind the
+    line at the gun), river leg0 5.45x. ⛔ "start calibration" is a CLOSED family
+    — do not build without owner approval; measurement is free and the evidence
+    is now new (a verified human reference).
+
+## P0 — REBASELINE. DO THIS FIRST; NOTHING ELSE IS VALID UNTIL IT IS DONE.
+⚠️ The owner merged mid-session (`3594d11`/`a148db6`, script.js +487/-121) adding a
+WIND OSCILLATOR (`windOsc`, `computeWindPressureScaleRaw`, WIND_OSC_SUB), squall
+field changes and wind-streak rendering. A time-varying wind changes every race on
+every venue. Consequences:
+  1. Tonight's anchors were produced across THREE code cuts — treeNOW (pre-merge:
+     bay/lake/ocean/arctic/redrock), treeNOW2 and the repo (post-merge: lagoon,
+     seatrials via run_eval), treeRIVNEW (river). They are a SURVEY, not gates.
+  2. Pin HEAD, build ONE tree, and re-anchor ALL EIGHT venues on it:
+     bay 2x20@9100/9200 | lake 2x20@9100/9200 | river 2x16@9100/9200 |
+     ocean 16@9300 | lagoon 2x8@9100/9200 | redrock 6x8@9400..9900 |
+     arctic 4x16@9100..9400 (fleet_leg2) | seatrials run_eval 100 @100.
+     Record them in this file with the HEAD hash. ~90 min wall at 6-way parallel.
+  3. ⚠️⚠️ THE BLOCKER — BAY IS NONDETERMINISTIC ACROSS PROCESSES (post-merge only).
+     CHARACTERISED, NOT FIXED, and it blocks every landing gate:
+       - Three separate `run_traces.js --venue bay` runs gave THREE different
+         behaviorHashes (3f015185 / f5b2c25b / b4c4ec16) with penalties 4/3/7.
+       - The harness's own `--determinism` mode (same page, same seed, twice)
+         says DETERMINISTIC. So it is stable WITHIN a page and varies ACROSS
+         PROCESSES — a per-process entropy leak, NOT race-to-race state.
+       - It reaches the BENCH path too, so it is not a trace-harness artifact:
+         two identical `ocean_bench 4 7700 ... bay` runs on the POST-merge tree
+         are not byte-equal (fins 238,243,221... vs 262,236,227...), while the
+         PRE-merge tree reproduces byte-equal. The owner merge introduced it.
+     RULED OUT already (do not redo): the world clock does not free-run
+     (`state.time` advances ONLY on explicit update() calls — `_worldclock_audit.js`);
+     wind-region phases are identical across three processes and across resets
+     (`_wind_phase_audit.js`, seed 714421, phases 1.5331/2.167/2.6919/6.2117/6.2805);
+     `computeWindPressureScaleRaw` restores `state.time` before its early return.
+     PRIME SUSPECTS: an unseeded `Math.random()` consumed during course/wind setup
+     — `script.js:7814` (`phase: Math.random() * Math.PI * 2`) and the `rngW`
+     fallback at `script.js:19471` (`state.race.seed ? mulberry32(seed+29) :
+     Math.random`) which fires whenever `state.race.seed` is falsy at build time.
+     Pre-merge this was harmless because wind did not vary with time; the
+     oscillator made it behavioural. Bisect by stubbing `Math.random` to a
+     constant at page load and re-running the three-process test.
+  4. Re-check the whole human column with `_traj_fp.js` after the merge — a venue
+     doc may have moved again.
+
+## P1 — REDROCK, THE BIGGEST GAP (2.82x, 364/432 finishing, land 222/boat)
+Sections: leg3 sub0 at (-747,-1416) is +103.2 s/boat = 65% of that leg with the
+fleet at 16 u/s; leg5 subs 0-1 at (-1259,431) and 6-7 at (446,-275) = 83% of leg5.
+But EVERY leg is 1.77-2.78x, so expect the pockets to be the visible half of a
+venue-wide problem. Mechanism A.
+BUILD: the clearance-bar ladder, cheapest first, each a separate tree:
+  B1 CLEARANCE 38u | B2 34u | B3 30u (=HULL_R, the physics bar)
+  B4 if a global bar taxes open venues, scope on a MEASURED grid property
+     (navigable-clearance p50), the way noSubsample and the canyon law are scoped
+     — NEVER on venue name.
+⚠️ GLOBAL ROUTING CHANGE: every venue gates. redrock 6-set pooled (_pool_rr.js),
+river pooled fins/med, lake 2x20, arctic pooled 4-set (_pool_arc.js — ⚠️ OPPOSITE
+SIGN CONVENTION from _pool_rr, trap 21), bay 2x20, ocean 16 EXACT, lagoon 2x8,
+seatrials run_eval. Goldens full --update. Expect the bar to trade land contacts
+against clock — read both.
+
+## P2 — RIVER (1.56x): THE TRANSFER TEST
+leg3 = 72% of the venue gap; four pockets hold 91% of its slow time; same
+mechanism A signature. If the bar ladder is real it MUST move river too — that is
+rule 8 (transfer proves mechanism), and it is the cheapest confirmation available.
+If redrock moves and river does not, the bar is not the cause and the ladder dies.
+
+## P3 — ARCTIC (1.73x) AND LAKE L2: MECHANISM C, THE MARK APPROACH
+Arctic leg 1's last fifth carries 65% of that leg with armed 65%; lake L2's sub9
+holds 77% of its slow time with armed 45%. ⚠️ This RE-ADDRESSES arctic: the venue
+has been carried as a TACK-COUNT/beat class and eight shapes have died against
+that address (AC1, TK1, TK2, TK3, LANE1, LANE2, clearance-extension x2) — the
+subsection view says the beat's middle is at or near her pace and the time is at
+the rounding. Start with measurement: what is the armed machinery doing in subs
+8-9 that it is not doing elsewhere; compare her approach line and speed to the
+fleet's. Only then propose. ⛔ orbit-radius, entry-side governors, holds,
+station-keeping all stay closed.
+
+## P4 — THE BEAT-DISTANCE CLASS (bay/lake/ocean): MEASURE BEFORE BUILDING
+The excess is 16-27% and it IS the whole gap on three venues, but its cause is not
+decomposed. Split the excess into: (a) avoidance deviation (integrate
+|lastAvoidDeviation| along the leg), (b) router path length vs the straight line
+(sum the planned path), (c) tacking overhead (count tacks and the distance lost
+per tack vs her 1-7). Attribute the 16-27% across those three before proposing
+anything. ⛔ Laylines are CLOSED at 4 rejections; station-keeping 0-for-8. If the
+answer is "the router's own path is long", that is a NEW address and legitimate.
+
+## P5 — LAGOON (1.68x) — spread across legs, and the venue is still moving.
+Lowest priority of the gapped venues: leg2 25%, leg4 21%, leg3 20%, no single
+pocket. Squall-awareness remains unsized. Re-check its fingerprint before use.
+
+## METHOD (owner's words): analyze, research, hypothesize, experiment, evaluate,
+## iterate. DO NOT STOP — keep working until the owner stops you.
+Run at least 4 probes/benches in flight; never idle the machine. When a candidate
+dies, name the mechanism in this file and move to the next shape rather than
+stopping. When one lands, gate it fully, re-record goldens, re-anchor, and go on
+to the next venue in ratio order.
+
+## CONSTRAINTS CARRIED (all still binding)
+actions-not-prices (7-for-7); episodes-not-frames; benching resolution (redrock
+pooled 6-set minimum and the 96-seed protocol near threshold; arctic pooled 4-set;
+river pooled fins/med; bay >=4 disjoint sets under ~5s); zero-statistic = bug;
+gates sit on ONE physical line; probe audits (18/18b/19b/19c); bench pairs
+together; goldens FULL --update per landing; `freeze_venues --check` FROM THE REPO
+ROOT; check `date`; venue table at every close.
+⚠️ TRAPS EARNED THIS SESSION: 21 the two poolers use OPPOSITE sign conventions;
+22 judge inertness against a CURRENT-HEAD baseline, never an old anchor; 23 a
+human reference is only valid on the document it was sailed on (`_traj_fp.js`).
+⛔ CLOSED, do not reopen: RR1-4 (ladder closed at four shapes on 96 seeds), LANE1/
+LANE2 and tack-count-by-routing, curved-on-redrock, laylines x4, station-keeping/
+holds/commitment/reservation, SIPP/map-staleness, closing-lead pricing, occupancy
+stamps, current pricing x4, clearance-extension x2, rollout speed x2, point-boat,
+arctic radius selection, arctic wide-ride x2, start calibration (owner approval
+required to reopen).

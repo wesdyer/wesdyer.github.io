@@ -363,8 +363,7 @@ window.VENUE_DOC["ocean"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 360,
-    "startTime": 30
+    "cutoff": 360
   },
   "wind": {
     "regions": [

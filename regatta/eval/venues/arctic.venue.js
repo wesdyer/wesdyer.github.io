@@ -8268,26 +8268,21 @@ window.VENUE_DOC["arctic"] = {
       {
         "kind": "line",
         "dir": 1,
-        "role": "start",
         "lineId": "sf"
       },
       {
         "kind": "round",
         "side": "starboard",
         "zone": 850.5162035493507,
-        "role": "rounding",
         "markId": "round-1",
         "radius": 405.0077159758813
       },
       {
         "kind": "line",
         "dir": -1,
-        "role": "finish",
-        "finish": true,
         "lineId": "sf"
       }
     ],
-    "startTime": 20,
     "cutoff": 420
   },
   "wind": {
