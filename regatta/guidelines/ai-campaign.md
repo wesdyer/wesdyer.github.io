@@ -11133,3 +11133,67 @@ respond takes the foul). ROW deflection target = her 11-23° profile. A
 future push family; composes with the gw-underlay baselines. Squalls are
 LAGOON-UNIQUE (owner) — squall-awareness stays a lagoon-scoped capability
 gap (unsized; the router's wbin stamps squalls stale by construction).
+
+## NEXT-PUSH DIRECTIVE (authored Aug 8 lagoon-night close, owner-directed):
+## THE SECTION PUSH — biggest gains, biggest venues, shortest sections
+Owner: "big gains prioritized to the venues with the biggest gaps... pointed
+at the sections and parts of a course where the bots fall shortest." He
+records new trajectories while this runs.
+
+THE SECTION-GAP MATRIX (behavior HEAD b1347de, what is already known):
+| venue   | ratio | worst section, bot vs human                      | state |
+| redrock | 2.18x | LEG 3: 140.8 vs 51.3 (+89 s/boat, mark-5 canyon) | RR4 solo-cures −121; parked at 96-seed |
+| arctic  | 1.77x | LEG 1 (the beat): tacks 21-23 vs 5 (~150s class) | 3 shapes dead; LANE1 reopen queued |
+| river   | 1.66x | L2 65.5s bot; HUMAN DECOMPOSITION MISSING        | execution-near-banks named, unsized |
+| lagoon  | 1.35x | spread; L2 +59% (42.5 vs ~26.8)                  | squall-awareness unsized |
+| lake    | 1.26x | L2 114 / L3 88.5; human decomposition missing    | L1 lane + L2 shore unattributed |
+| bay/sea/ocean ~1.03-1.04 — at human, hold.
+
+P0 — REDROCK LEG 3: THE RR4 DECISION (the biggest located section class).
+  ⚠️ MERGE FIRST: the owner merge changed script.js; frozen redrock has no
+  props/squalls so the new code SHOULD be dormant there — VERIFY by running
+  one op5rr anchor seed on a merge-HEAD tree and byte-comparing. If inert:
+  re-apply the RR4 edit (the pure-pursuit farthest-visible-when-nosedIn
+  block; region untouched by the merge) onto b1347de, treeRR4b, and run the
+  6 fresh sets (8400..8900, 8 seeds) on BOTH merge-HEAD tree and treeRR4b;
+  pool ALL 12 (6 existing + 6 fresh) via _pool_rr.js. If NOT inert: rebuild
+  both sides' 12 sets on merge HEAD (a machine-evening; still worth it).
+  Landing bar and follow-ups per the parked note in regatta-redrock-canyon.
+P1 — ARCTIC LEG 1: LANE1 REBUILD (the tack-count class, ~150 s/boat).
+  Rebuild from this file's LANE1 section (~10068) onto b1347de. Gate: arctic
+  pooled 4-set vs fl1barc* + the TACK INSTRUMENT (_arc_dist — tacks must
+  move toward her 5). ⚠️ fl1barc anchors are pre-merge: arctic frozen venue
+  has no props/squalls — same dormancy check as P0 before trusting anchors;
+  if not byte-inert, re-anchor arctic on merge HEAD first (4×16 seeds).
+P2 — ARCTIC: THE FAN UNGATE (cheap re-verdict, same dormancy caveat).
+P3 — THE MEASUREMENT WAVE (fills bench downtime; NO builds without a named
+  class): (a) the full per-leg human-vs-bot matrix for river/lagoon/lake —
+  corpus leg decomposition vs bench legT (river human n=2 is thin; the
+  owner's new laps slot straight in); (b) in-section attribution at each
+  worst section — river L2 (execution-near-banks probe: her behavior at
+  displacement onset vs the response layer's), lake L2/L3 (the redrock
+  decomposition treatment: slow-time by site + why-slow controller states),
+  lagoon L2 (+ squall time-in-wake/front-riding, human vs bot — lagoon-
+  unique per owner); (c) gw-ledger + per-leg intake for every new recording
+  the day it lands.
+DEFERRED, EXPLICIT: the tactical doctrine family (regatta-tactical-doctrine)
+— a cross-venue quality family, not a section-gap one; it enters after the
+matrix names its cost on the clock. Squall-aware ROUTING waits for P3(b)'s
+sizing. Curved-on-redrock stays conditional on P0.
+TRAJECTORY REQUESTS (owner, in priority order): RIVER (n=2 — thinnest ref on
+a 1.66x venue), LAGOON (n=3, new), LAKE + OLD-REDROCK + BAY (stale refs),
+post-gust OCEAN (ratio genuinely unknown), NEW-REDROCK (promotion decision).
+CONSTRAINTS CARRIED: verbatim from the re-verdict directive (a197317) —
+resolution rules, bench pairs together, probe audits, actions-not-prices,
+goldens full --update per landing, venue table at close.
+
+## OPENING PROMPT (paste-ready)
+THE SECTION PUSH. Goal unchanged. Open with memory regatta-redrock-canyon +
+THE SECTION PUSH directive at the bottom of ai-campaign.md (supersedes
+a197317's ordering; P0-P2 carried from it). Behavior HEAD b1347de (CP1).
+FIRST: the merge-dormancy check (one anchor seed, byte-compare) on frozen
+redrock AND arctic — it decides whether old anchors carry. Then P0 (RR4
+12-set decision), P1 (LANE1 + tack instrument), P2 (fan ungate), P3
+(measurement wave: per-leg matrix river/lagoon/lake + in-section
+attribution + squall sizing). Intake every new owner trajectory same-day
+(corpus + gw-ledger + per-leg). Close with the venue table.
