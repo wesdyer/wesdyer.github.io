@@ -10832,3 +10832,72 @@ C. DIRTY AIR / SHADOW TIME — MEASURED DEAD: time below 80% of own-lap
 B. Router current: stands pre-sized (~46s river). D: unsized, next session.
 REVISED ORDER FOR THE PUSH: A speed model (arctic + everywhere the far
 field runs) → B current pricing (river) → D sizing → E carryovers.
+
+## SESSION 2026-08-08 NIGHT — THE FIDELITY PUSH: THREE FAMILIES CLOSED, THE OCEAN CLOCK CURED
+Behavior HEAD entering: b33d491. The sized order (A speed → B current → D point-boat → E carryovers) was worked in full; the landing came from E.
+
+### A. ROLLOUT SPEED FICTION — CLOSED at two shapes (rule 1 vindicated)
+SZ1 (per-step polar integration, physics constants 0.9970/0.9982 + irons brake,
+wind once at boat): arctic pooled 4-set vs fl1barc* paired med −9 / mean −9.3
+(sets −19/+2/−16/−6), fins 576→575, EVERY dirt column worse (boat +29%, floe
++7%, land +5%, pen +8%). Autopsy: the fictional constant speed was silently
+providing ANTICIPATION DISTANCE — honest time shrank the scanned water, the
+4.5s trigger fired later, the reactive layer inherited the trouble.
+SZ1b (honest speed, SPATIAL horizon: scan span/trigger/penalty ramps in
+distance matched to the stock 9s×max(70,v) water): pooled med −2 / mean −2.4,
+fins 576/576, dirt still slightly worse (boat +7%, pen +6%). NOT landed.
+Mechanism check: solo tacks (\_arc_dist 4 seeds) FL1B 14/30/47/26 → SZ1
+26/25/42/14 — mild reduction, heroes faster 3/4, but the fleet pays in
+contacts. The tack-count class does NOT live in the dodger's pricing: the
+rollout only steers near floes, and its surrounding constants (contactW, the
+4.5s trigger, speed discipline's \_trajRisk consumers) are all calibrated TO
+the fiction. Re-pricing without changing which actions exist lost again —
+seven-for-seven becomes nine-for-nine (SZ1, SZ1b). ⛔ Do not rebuild rollout
+speed honesty as pricing; if the tack-count class is ever re-attacked, it must
+change WHICH candidates exist at the strategic layer.
+
+### B. ROUTER CURRENT PRICING — CLOSED at shapes 3 & 4 (execution class, not map class)
+CUR1 (per-cell current stamp + ground-VMG on pathSailable's time cost,
+admissible heuristic): river A med −1 / B −7 BUT fins 238→233, land +10% — a
+digit-for-digit REPLICATION of the midday symmetric kill. CUR2 (the "bank
+grind" answer: current term × clamp(clear/PAD,0,1), banks price stock): WORSE
+— fins 238→226, set-A land mean +105. The lure is not the banks' current
+price: pricing the adverse mid-channel jet honestly makes bank water
+RELATIVELY cheap no matter how the banks are priced, and the boat cannot
+execute bank water (trap 17: route pricing cannot reach displacement-driven
+failures). ⛔ Router current pricing closed at four total shapes. The river's
+22% moving deficit is an EXECUTION-layer class (deflection + set near banks),
+not a routing class. Code reverted; probes _cur1_audit.js tracked.
+
+### D. POINT-BOAT — MEASURED, NO BUILD (the cheap close SIZE-FIRST exists for)
+Human min-pass-gap (schema-2 corpus, _d_passgap.py): arctic p10 62/p50 268,
+20% inside the 110u rule-19 gap, parked rivals passed at p50 189 (67% inside
+the 400u refusal); redrock p50 210, parked p50 122. BUT the bot mirror
+(_d_botgap.js, treeFL1B) shows the fleet's REALIZED gaps already match her:
+arctic p10 65/p50 246/<110u 22%; redrock p10 61/p50 224/<110u 28%. The scalar
+thresholds are not refusing passes the human takes. The dirt is contact POSE:
+3756 arctic contacts in 3 seeds at |relHdg| med 104°, 60% with both boats
+<1kt — the parked-raft ring jam, which belongs to the ARRIVAL/LANING thread.
+⛔ Do not build oriented-hull planning on this evidence.
+
+### E. THE LANDING — OCEAN-BENCH NONDETERMINISM FOUND AND CURED (swell.js TIME)
+The hunt (all probes tracked): same tree/seed diverges across fresh pages,
+sometimes byte-equal, usually not; initial post-reset state byte-identical;
+divergence born at FRAME 0, all boats at once, RNG cursor EQUAL (the leak is
+a field, not the stream); asset-decode wait no effect; islandWindDir cache
+bypass no effect; bay 600 frames byte-identical across pages (non-swell
+venues immune — why arctic's 0.0 stamps were always exact).
+ROOT CAUSE: swell.js module clock `let TIME = 0` was NEVER reset —
+configure() re-arms TRAINS/CFG/POWER/AMP_TOTAL but not TIME. It accrued
+across wall-clock-dependent menu frames before the harness hooks the loop and
+across every race in a page: the sea's phase at the gun was a function of
+page-load timing and trial history. THE FIX (one physical line): TIME = 0 in
+configure().
+GATES: two 16-seed ocean bench runs BYTE-EQUAL (reproducibility restored);
+clock flat-to-better vs same-day HEAD reference (fl1boc med 193/mean 200.0 →
+swtocA med 190/mean 191.6, 144/144 both, boat 1.99→1.76, mark 0.27→0.08, pen
+0.40→0.33); goldens PASS 20/20 with ZERO behaviour changes (trace harness
+races already ran at phase zero); non-swell venues byte-inert by construction
+(every TIME reader gated on TRAINS.length). OCEAN BYTE-GATES UN-SUSPENDED.
+New ocean anchor: ocean_bench_swtocA (16@9300, med 190, fins 144/144) — the
+rd11oc-era anchors predate deterministic seas; never compare across this cut.
