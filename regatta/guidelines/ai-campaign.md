@@ -10707,3 +10707,19 @@ The day's arc, in one line: the arc reaches the ice (RD11), the ice becomes
 its true shape (FL1), and the whole near field follows (FL1b).
 NEW ANCHORS: fleet_leg2_fl1barc{A,B,C,D} 379/386/371/367 (fl1arc* retire to
 paired evidence). Everything else carries.
+
+## FINAL VENUE TABLE (Aug 8 EOD; behavior HEAD `b33d491` = OP5 + RD11 + FL1 + FL1b)
+venue     | human med/best        | bot (current anchors)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (byte-carried through all four landings)
+ocean     | 182.5 (pre-gust-fix)  | 190 (rd11oc; ⚠️ ocean bench nondeterminism found — clock claims on ocean held loosely until fixed)
+lake      | 223 / 209.6           | 278 / 276 (byte-carried; land 6.45 watch)
+redrock   | ~227 / 206.6 (OLD)    | 6-set pooled med 494, fins 399/432 (byte-carried since OP5)
+arctic    | 212.1 / 190.4         | **379 / 386 / 371 / 367** (fl1barcA-D; was 413/450 at dawn — boat 5.06, land 12.73, floe 24.66, pen 1.14, ALL boats finish)
+seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13 (byte-carried)
+river     | 161.3 best, n=2       | 264 / 271 (byte-carried)
+The gap ranking after today: river 1.64x, arctic ~1.77x (was 2.0x), redrock
+~2.2x (OLD course), lake 1.25x, seatrials 1.05x, bay 1.02x, ocean ~1.04x.
+Next push (committed follow-ups): grid stale-spin stamping + rounding radius
+selection (arctic), router current pricing (river, owner-directed P1),
+floe-grind buffer calibration, ocean-bench nondeterminism hunt, FL1-class
+fidelity audit on wind/current fields.
