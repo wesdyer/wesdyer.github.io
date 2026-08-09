@@ -12186,3 +12186,61 @@ mechanism gate at the box BEFORE benching (this session's method — it killed
 CURRENT-HEAD baselines, goldens full --update, close with the owner table.
 Owner is recording MORE REDROCK LAPS — intake same-day (fp=9b7c82db:21417 is
 the current verified fingerprint; re-run _traj_fp.js on arrival).
+
+## THE PLAN (written at close for the fresh instance — execute top-down)
+
+**Phase 0 — orientation (15 min, no builds).** `date`; read memories
+regatta-redrock-push + standing-rules traps 21-25; `freeze_venues --check`
+from repo root; `_traj_fp.js redrock` (owner may have recorded new laps —
+if new fp-verified laps exist, re-verify the human med/best BEFORE anything);
+confirm HEAD `08f734a` and that hz3brr* baselines load. If an owner merge
+landed overnight: byte-check script.js vs 6485113, keep pre-merge anchors,
+re-baseline only what moved (rule 6).
+
+**Phase A — THE BOWL ARRIVAL: arc-vs-wedge (~35 s/boat address; expected
+pooled −15..−25 if it converts).**
+A1 measure (1 run, treePR4): at mark-6 armed choices, how often is the
+   queued-rival gate the ONLY reason arcK==0 (vs current/unarmed/no-arcR)?
+   Log the gate's own inputs. If <50%, re-size before building.
+A2 build (one line): allow the arc rollout under a parked-crowd queue when
+   the rounding is LAND-LOCKED — scope on a measured grid property of the
+   MARK (clearance at the mark's zone below a knee, the noSubsample shape),
+   so open-water queues (the m5 wedge lesson's home) keep the gate verbatim.
+A3 gates: mechanism gate at the bowl box FIRST (leg-2 armed transits must
+   speed up; boat rubs must not climb — the wedge lesson is a rubs failure),
+   then pooled 6-set vs hz3brr*, then full battery. Kill fast if rubs move.
+
+**Phase B — THE STUCK-STATE MANEUVER (the wedge slot; the DNF class; fins
+391→~415+ and the 750-820s tail; med read WITH fins — DNF converts enter as
+slow finishers).** This is the session's design task — budget it properly.
+B1 the state machine (new, small): enter ESCAPE when parked (<15 u/s) &&
+   nosedIn (hard) && the 24-heading rose finds NO hard-clear 220u heading
+   (the slot signature — measured, it separates the wedge from everything
+   else) && no rival within 150u (Freezing-Robot + W5's lesson) && leg>=1
+   && sustained 8s. Maneuver: BACK OUT ALONG OWN TRACK — keep a per-boat
+   breadcrumb ring buffer (pos every 1s, 60 deep, trivial memory); steer to
+   the breadcrumb 100-150u astern with wiggle-grade snap-turn authority and
+   speedRequest 1.0; pop breadcrumbs as reached. EXIT when un-nosed && speed
+   >40 u/s, or breadcrumbs exhausted, or 20s HARD CAP (the 30s
+   reversal-commitment disease is the constraint — never latch longer);
+   afterwards normal nav (the gridPath is correct — measured).
+B2 gates: mechanism gate at the box (the 750-820s transits MUST break — that
+   is the whole claim), then pooled 6-set + full battery. Floe venues: first
+   pass EXCLUDE them entirely (fixed-land signature only) — arctic byte-
+   identical by construction, verify per trap 22.
+B3 if the box gate fails, STOP the family for the session (8th shape) and
+   log; do not ladder.
+
+**Phase C — transfer + residuals.** After any landing: `_leg_where` legs 3+5
+on the new HEAD (does the leg-5 mark-7 exit inherit?); `_rr_dnf` (fins
+ceiling); re-anchor + table. If A+B land near expectation the pool sits
+~440-460: decide with fresh attribution whether the last −10..-25 comes from
+leg-1 (THE FLEET AVOIDANCE TAX — enter via the measured needless stand-on
+swings, actions not prices) or the leg-5 pockets, and take ONE more swing.
+
+**Standing method (non-negotiable):** mechanism gate at the box before any
+6-set; pooled 6-set minimum, trap 21 sign; 96-seed protocol near threshold;
+byte-inertness vs CURRENT-HEAD baselines; goldens full --update at landings
+only; the owner table with EVERY status update; new owner laps intaken
+same-day; ≥4 probes in flight; when a candidate dies, name the mechanism
+here and move on.
