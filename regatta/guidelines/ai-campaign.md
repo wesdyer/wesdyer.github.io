@@ -11919,8 +11919,13 @@ single-term removals re-rank; prefer shapes that change the boat's ACTIONS.
 **P2 — gates per landing**: redrock pooled 6-set minimum (_pool_rr, NEGATIVE =
 faster — trap 21), 96-seed protocol near threshold, full battery every venue
 (river/arctic may be byte-inert behind current/floe guards — verify byte-
-identity against CURRENT-HEAD baselines, trap 22), goldens full --update,
-close with the owner-format table.
+identity against CURRENT-HEAD baselines, trap 22), goldens full --update.
+**⚠️ OWNER REQUIREMENT (2026-08-09): EVERY STATUS UPDATE — not only the session
+close — presents THE TABLE in the decided format: one row per venue, SORTED BY
+RATIO, columns = venue | human med/best | pre-session bot med/best |
+post/current bot med/best | ratio | fins n/total (%). Update the bot column
+from the freshest anchors at the moment of the update; flag any venue whose
+number is stale or mid-bench.**
 **Constraints carried**: actions-not-prices; episodes-not-frames; probe audits
 (18/18b/19b/19c); one-physical-line gates; `_traj_fp.js` before quoting any
 human ref; owner asked for MORE REDROCK LAPS — intake same-day when they land.
