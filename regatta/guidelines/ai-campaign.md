@@ -10723,3 +10723,67 @@ Next push (committed follow-ups): grid stale-spin stamping + rounding radius
 selection (arctic), router current pricing (river, owner-directed P1),
 floe-grind buffer calibration, ocean-bench nondeterminism hunt, FL1-class
 fidelity audit on wind/current fields.
+
+## NEXT-PUSH DIRECTIVE (authored Aug 8 EOD, owner-directed): THE FIDELITY AUDIT
+## "What other approximations are causing inaccurate planning?"
+The method that produced today's arctic wins, made systematic: (1) find a
+site where the planner's model diverges from the physics; (2) SIZE it with
+an instrumented dual-count probe (the FL1 phantom-rate pattern) AND a
+human-vs-bot trajectory comparison; (3) build the true model at the same
+big-O; (4) gate pooled 4-set + byte-inertness. Fidelity fixes land on sane
+clock gates even with behavioral trades (the model-accuracy ruling).
+
+THE AUDITED INVENTORY (all verified in code tonight):
+
+A. THE ROLLOUT PRICES A FICTIONAL BOAT (far-field roll(); every tick, every
+   bot, every venue — the hottest planning path in the game):
+   - CONSTANT SPEED for all 13 candidate headings across all 12 steps
+     (speedU = max(70, current speed)): a candidate that turns through irons
+     is priced at full pace; acceleration invisible; polar invisible.
+   - NO WIND FIELD along the path: gust regions, lulls, island shadow
+     plumes (shadowAt — the physics wind field includes them), and rival
+     DIRTY AIR (450u boat shadows, width 20→100) are all invisible to the
+     candidate scorer.
+   - NO CURRENT displacement of own hull (floes get drift-projected; the
+     boat itself does not).
+   Sizing probes: (a) rollout-predicted vs realized position/speed at each
+   step (dual-count in a measurement tree); (b) corpus: human time-in-shadow
+   (shadowAt<1) and time-in-dirty-air per leg vs bot.
+
+B. THE ROUTER PRICES A GEOMETRIC WORLD (pathSailable: verified tonight —
+   distance + wall-clearance edge weights ONLY). No current (the standing
+   owner P1; river's 22% moving deficit ≈ 46s+), no wind-speed field, no
+   shadow plumes. Build: per-edge ground-VMG factor from the current vector
+   + wind-speed factor at the cell. ONE FIELD PER GATE, current first
+   (already sized), wind second.
+
+C. DIRTY AIR IS REACTIVE, NOT PLANNED: physics carves a 450u shadow behind
+   every boat; the bot's ONLY use of it is a tack-escape penalty once
+   already suffering (badAirIntensity > 0.15 → ±0.6 tack score). No lane
+   choice, no shadow avoidance in the rollout, no covering intent beyond
+   the leech heuristics. Her gw-ledger signature (rivals deflect 35-60° at
+   CPA where she does 13-23°) reads as planned clean lanes. Probe: fraction
+   of upwind time in another boat's shadow, human vs bot, all venues.
+
+D. THE BOAT IS A POINT WITH PADS: physics hull = oriented 30u-beam ×
+   55u-LOA polygon (HULL_LOCALS, SAT collision); planning uses center
+   distances against scalar thresholds (110u rule-19 gap, 400u parked-rival,
+   grid cells at res 50). Orientation matters exactly where the campaign
+   hurts: threading (bow-on needs 30u, beam-on 55u), wedges, mark-room.
+   Probes: human minimum-pass-gap distribution vs bot refusal threshold;
+   contact-pose audit (what orientation do boats hold at rub time?).
+
+E. CARRYOVERS (named, unsized or part-sized): grid stale-spin stamping
+   (rims sweep ~30 u/s between refreshes); rounding RADIUS SELECTION (her
+   bimodal 261-340/472-644 choice reads the exit route; bots take arrival
+   radius); floe-grind buffer calibration ON the true hull; ocean-bench
+   nondeterminism hunt (INFRASTRUCTURE — blocks ocean gates; suspect
+   cross-trial page state, the camera-RNG class).
+
+ORDER: probe wave first (A/C/D sizings + B is pre-sized), then build in
+measured-size order. Prior expectation from today: A and B are the
+arctic/river-scale candidates; C is the fleet-racing dark matter.
+CONSTRAINTS CARRIED: closed families stay closed (⛔ list); actions-not-
+prices; arctic judged pooled 4-set vs fl1barc*; river pooled fins/med;
+96-seed redrock protocol near threshold; bench pairs together; goldens
+full --update per landing; venue table at close.
