@@ -12333,3 +12333,21 @@ THE MANEUVER IS ~3 SECONDS, NOT 20: the boat was never physically trapped —
 it was command-trapped (the contact reflex ping-pong). One cell of correct
 aim ends it.
 Fleet verdict in flight: b1rr{9400..9900} vs hz3brr*, then full battery.
+## PHASE B v5 REDROCK POOLED 6-SET (b1rr* vs hz3brr*) — THE TAIL LANDS, THE MEDIAN PAYS COMPOSITION
+_pool_rr (finisher stats): cand med 508 vs base 490; paired (mutual
+finishers) med +3.0 / mean +13.4, n=390. Dirt: land −29%/boat
+(169.5→120.5), boat rubs FLAT (10.50→10.48), mark +17% (3.47→4.05), pen +5%.
+**fins 391→429 of 432 (+38): the DNF class is eliminated** (3 non-finishers
+remain in 48 races). best 274→294.
+HONEST COMPOSITE (DNF scored at cutoff 900 BOTH sides, per the plan's
+"med read WITH fins"): paired ALL-BOATS n=432 med 0.0 mean −19.4, ALL SIX
+SET MEANS NEGATIVE (−4/−41/−16/−26/−7/−23), negative 199/432. DNF-at-900
+med 501.5→509.5 (+8), mean 534.8→515.4 (−19.4).
+READ: the cure is tail-only, as a wedge cure must be — the typical boat is
+untouched (med ~0), every set's MEAN improves, 38 boats stop dying, land
+falls 29%, rubs (the W-family killer) are flat. The finisher-median rise
+(490→508) is composition: 38 ex-DNFs now finish at 700-850s and enter the
+median population. Mutual-finisher med +3 pooled = small traffic cost of 38
+extra boats racing legs 3-6. mark +17% = the same boats now rounding 4 more
+marks each (exposure, not behavior — verify at battery).
+Full battery in flight (lake/bay/ocean/river/lagoon/arctic).
