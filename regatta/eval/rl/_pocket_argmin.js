@@ -37,7 +37,7 @@ const ROOT = path.join(__dirname, 'treePR2');
         all.push(...rows);
     }
     await b.close();
-    const reasons = {}, chosen = {}, slow = {};
+    const reasons = {}, chosen = {}, slow = {}, slowScope = { n: 0 };
     let n = 0, nSlow = 0;
     for (const r of all) {
         const fan = r.fan; if (!fan || !fan.length) continue;
@@ -60,9 +60,18 @@ const ROOT = path.join(__dirname, 'treePR2');
         else why = 'OTHER_COST';
         reasons[why] = (reasons[why] || 0) + 1;
         if (r.spd < 40) { nSlow++; slow[why] = (slow[why] || 0) + 1; }
+        if (r.spd < 40 && (why === 'STATIC_VETO' || why === 'PROX_STATIC') && r.scope) {
+            slowScope.n++;
+            for (const k of Object.keys(r.scope)) slowScope[k] = (slowScope[k] || 0) + (r.scope[k] ? 1 : 0);
+        }
     }
     console.log(`\n=== ${VENUE} pocket [${BOX}] : ${n} choices ===`);
     console.log('why 0-rung lost:', JSON.stringify(reasons));
     console.log('winning rungs:', Object.entries(chosen).sort((a, c) => c[1] - a[1]).slice(0, 8).map(([k, v]) => `${k}:${v}`).join(' '));
     console.log(`SLOW subset (n=${nSlow}):`, JSON.stringify(slow));
+    if (slowScope.n) {
+        const pct = {};
+        for (const k of Object.keys(slowScope)) if (k !== 'n') pct[k] = Math.round(100 * slowScope[k] / slowScope.n) + '%';
+        console.log(`hard-zone scope at slow-static choices (n=${slowScope.n}, % TRUE):`, JSON.stringify(pct));
+    }
 })();

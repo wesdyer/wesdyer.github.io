@@ -11809,3 +11809,17 @@ measure WHICH scope condition fails in the pocket (suspects: the canyon's
 current regions tripping _avCurMax≥2, or the plan-alignment window while the
 boat is displaced off-plan). If the pocket choices sit just outside one scope,
 the candidate is that scope's honest widening — measured first, one line.
+
+## ADDENDUM 2 — the pocket's missing scope, measured (the next build, parameterized)
+Scope booleans at the pocket's slow-static choices (n=1933): ow 100% | ir 100%
+| cur 100% | arcR 3% | **hp 69% | al 28%**. The hard-zone speed-scaled veto
+(a393d61) misses the pocket ONLY on plan-alignment: 72% of parked-boat choices
+have desiredHeading off the far-field plan reference by >0.3 rad (31% have no
+reference at all) — the displaced boat trying to rejoin the plan is exactly the
+boat the fixed 140u veto pins, while the scaling's own formula would give it
+the 60u floor (time-to-wall at parked speed). CANDIDATE FOR NEXT SESSION (not
+built): widen the alignment scope for SLOW boats — a parked/slow boat's
+time-to-wall is long in every direction, so the speed term already bounds the
+risk; the alignment window exists to protect fast boats aiming off-plan. Judge
+on redrock pooled 6-set + river transfer + the full battery; same physical
+line as the hard-zone landing (an honest widening of its own scope).
