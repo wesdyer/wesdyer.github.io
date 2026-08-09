@@ -11854,3 +11854,14 @@ seatrials ~197.8).
 REMAINING on redrock at this cut: 572/218.2 = 2.62x — the pocket class is cut
 but not closed; river's twin pocket needs a current-honest variant (time-to-
 wall in the GROUND frame is the honest form there — future shape, NOT built).
+
+## THE VENUE TABLE, updated for the HZ2 landing (final HEAD `188cd74`)
+venue     | human med/best | bot (anchors)        | ratio | note
+seatrials | 189.4 / 179.7  | ~197.8 (p0, byte-eq) | 1.04  |
+bay       | 219.0 / 211.0  | 241/240 (p0A=hz2A, hz2B) | 1.10 | boat rubs −9% set B
+ocean     | 177.9 / 177.7  | 203 (p0, byte-eq)    | 1.14  |
+lake      | 223.1 / 218.2  | 262/262 (hz2)        | 1.18  | land A −18%
+river     | 167.4 / 165.0  | 269/269 (p0, byte-eq)| 1.61  | ground-frame variant future
+lagoon    | 164.9 / 160.1  | 270/273 (hz2)        | 1.65  | ⚠️ land +16% watch
+arctic    | 212.4 / 201.6  | 366 pooled (p0, byte-eq) | 1.72 |
+redrock   | 218.2 / 215.2  | 572 pooled (hz2)     | 2.62  | was 2.76 — the HZ2 cut
