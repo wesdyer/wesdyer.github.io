@@ -17,8 +17,8 @@
     "note": "PROMOTED: owner gust fix c7b3a17 moved gust-1 into play; ff2oc anchor retired, re-baselined this push"
   },
   "river": {
-    "hash": "2520b114cb5c0ab4",
-    "frozen": "2026-08-07"
+    "hash": "0cd21eb6c474a55a",
+    "frozen": "2026-08-09"
   },
   "redrock": {
     "hash": "d30fe85fd2c1bbc6",
