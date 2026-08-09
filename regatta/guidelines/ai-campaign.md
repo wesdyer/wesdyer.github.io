@@ -12244,3 +12244,20 @@ byte-inertness vs CURRENT-HEAD baselines; goldens full --update at landings
 only; the owner table with EVERY status update; new owner laps intaken
 same-day; ≥4 probes in flight; when a candidate dies, name the mechanism
 here and move on.
+
+================================================================================
+## 2026-08-09 ~14:45 (day-2 cont.) — PHASE A RE-SIZED at the measurement: the
+## arc-ungate build is NOT justified; the arrival crawl lives OUTSIDE arc range
+_arc_gate.js (treeA1, 4 races, mark-6 armed choices at 2 Hz): of SLOW (<40 u/s)
+armed samples, 85% sit at dM 280-360u — BEYOND the arc's existence range
+(zone*1.5 = 248u). The queue gate is the sole blocker in only ~11% of slow
+armed time (15% in-range × 72% queue-blocked) — under the 50% build bar set in
+the plan. The A2 shape (relax the queued-rival gate for land-locked roundings)
+would free the arc for water the crawl never occupies. Moving fast in-range
+choices see ARC ON 51% — the gate is not starving them either.
+THE RE-SIZE: the arrival crawl is a QUEUE CRAWL at 250-360u behind parked
+rivals (nPark p50 2, dPark p50 84u) — and the WEDGED DEPARTURE CLASS sits at
+(-1000,-1400), 256u from mark-6, directly beside the approach channel. The
+arrival queue is plausibly SEEDED by the wedge class. ORDER OF OPERATIONS
+FLIPPED: Phase B (stuck-state maneuver) first; re-measure the arrival with the
+wedge cured before any arrival build.
