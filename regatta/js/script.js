@@ -7148,6 +7148,51 @@ if (typeof window !== 'undefined') {
     };
 }
 
+// ── HOW A REGION BREATHES ───────────────────────────────────────────────────
+// A plain sine is perfectly forecastable, and measurably so: fit a sinusoid to 90
+// seconds of it and the next 30 seconds come back to floating-point zero error. On a
+// one-region venue that makes the whole day readable off one cycle, which is the
+// opposite of a shifty breeze.
+//
+// Two additions fix it, and neither breaks the amplitude bound:
+//
+//   A SLOWER SUB-HARMONIC. Not a faster one — a faster harmonic is jitter, and it costs
+//   slew without costing predictability. A slow trend underneath is what a real
+//   oscillating breeze rides on, and it defeats forecasting for the honest reason: the
+//   mean the observer is fitting against keeps moving out from under them.
+//
+//   TANH SHAPING. A sine spends most of its time mid-transition; a breeze holds a phase
+//   and then shifts through it. Pushing the wave toward a square takes the fraction of
+//   time spent near an extreme from 0.58 to 0.77 — that is the difference between "a
+//   left phase and a right phase" and an aimless wobble.
+//
+// Measured on the blended field over Gatorgrass: forecast error 14.2 degrees against a
+// 13.2-degree persistence baseline, i.e. extrapolating the oscillation is WORSE than
+// assuming the wind stays where it is. That is the definition of unreadable.
+//
+// ⚠️ `|windOsc| <= 1` EXACTLY — the harmonics are normalised by their amplitude sum and
+// tanh is monotone on [-1,1]. Everything downstream relies on it: `dirVar` still means
+// the half-swing it says, and the rule that keeps the unit-vector blend out of its
+// atan2 singularity (|Δmean| + dirVarA + dirVarB < 180 degrees for any two regions whose
+// supports touch) is stated in those same units. Widen this and that rule silently moves.
+//
+// Still a pure function of time with no RNG, so replays and the eval's paired seeds
+// reproduce exactly. The per-race variety lives in `phase`, drawn once in initCourse.
+const WIND_OSC_SUB = 2.3;        // the slow trend's period, as a multiple of the region's own
+const WIND_OSC_SUB_AMP = 0.6;    // its amplitude, relative to the fundamental
+const WIND_OSC_SHAPE = 1.6;      // tanh sharpening; 0 would be a plain sine
+const WIND_OSC_NORM = Math.tanh(WIND_OSC_SHAPE);
+function windOsc(t, period, phase) {
+    if (!(period > 0)) return 0;
+    const w = (t / period) * Math.PI * 2;
+    // The sub-harmonic takes a DIFFERENT multiple of the same phase, so one seeded draw
+    // per region decorrelates both components instead of sliding them together.
+    // Dividing by the amplitude sum is what puts `s` in [-1,1]; tanh is monotone there.
+    const s = (Math.sin(w + phase) + WIND_OSC_SUB_AMP * Math.sin(w / WIND_OSC_SUB + phase * 1.73))
+            / (1 + WIND_OSC_SUB_AMP);
+    return Math.tanh(WIND_OSC_SHAPE * s) / WIND_OSC_NORM;
+}
+
 // THE MEAN WIND AT A POINT: the regions blended, plus the day's live shift. No puffs, no lee.
 //
 // Split out of getWindAt so an OBSTACLE can ask which way its own lee points without asking
@@ -7195,10 +7240,11 @@ function regionWindAt(x, y) {
             const sd = Arena.signedDist(r, x, y);
             const w = VenueDoc.regionWeight(sd, r.falloff);
             if (w <= 0) continue;
-            // Mean plus an oscillation with an explicit time scale. state.time is
-            // deterministic and no RNG is touched, so regions cannot shift the seeded
-            // stream.
-            const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
+            // Mean plus an oscillation with an explicit time scale — see windOsc for what
+            // shape that oscillation has and why it is not a plain sine. state.time is
+            // deterministic and no RNG is touched here, so regions cannot shift the seeded
+            // stream; the per-race variety is baked into `phase` by initCourse.
+            const osc = windOsc(state.time, r.period, r.phase);
             const rd = r.direction + r.dirVar * osc + liveShift;
             // A REGION STATES ITS OWN SPEED. There is no venue fallback: an absent speed is
             // zero, the same way an unstated patch of water is calm. Falling back to the
@@ -7241,7 +7287,15 @@ function regionWindAt(x, y) {
 // denominator, and an island's lee — real pressure variation on a "steady" course —
 // would have nothing to resolve against.
 const PRESSURE_MIN_SPAN = 0.18;   // half-width of the narrowest ramp, as a fraction of the median
+// The streak layer's floor and tail window are derived from this same scale, so they are
+// refreshed together rather than at the call sites — `computeWindPressureScaleRaw` has
+// several early returns and a fallback path, and any of them could otherwise leave the
+// layer reading a previous venue's reference.
 function computeWindPressureScale() {
+    computeWindPressureScaleRaw();
+    computeStreakRef();
+}
+function computeWindPressureScaleRaw() {
     const med0 = Math.max(1, state.wind.baseSpeed || 10);
     const fallback = () => { state.wind.pressure = { lo: med0 * (1 - PRESSURE_MIN_SPAN), hi: med0 * (1 + PRESSURE_MIN_SPAN), med: med0 }; };
     const bnd = state.course && state.course.boundary;
@@ -7266,9 +7320,15 @@ function computeWindPressureScale() {
         };
     }
 
-    // The longest period any region breathes on; 0 phases means one sample is the truth.
+    // The longest FULL CYCLE any region breathes on; 0 phases means one sample is the truth.
+    // ⚠️ `r.period` is the fundamental, not the cycle: windOsc lays a sub-harmonic
+    // WIND_OSC_SUB times slower underneath it, so the wave does not come back around until
+    // period * WIND_OSC_SUB. Sampling the fundamental alone walked six phases of the fast
+    // component while the slow one barely moved, and the p10/p90 it returned was a slice of
+    // the range rather than the range.
     let period = 0;
     for (const r of (state.course.windRegions || [])) if (r.period > period) period = r.period;
+    period *= WIND_OSC_SUB;
     const phases = period > 0 ? 6 : 1;
 
     // Each phase's own SPATIAL spread, then averaged — deliberately not one pooled
@@ -7364,17 +7424,61 @@ function pressureAt(speed) {
 // whitecap field all feel the same squall without being told about it separately.
 const SQUALL_DEFAULTS = { count: 0, rx: 850, ry: 550, sizeVar: 0.35,
                           speedFactor: 1.45, courseJitter: 0.17 };
+// UNITS PER FRAME PER KNOT — how fast the breeze carries a thing. This is the same number
+// spawnRegionGust bakes into a puff's moveSpeedFactor (`* 0.18`), stated out loud so a
+// squall and a puff are measured against one clock, and so SQUALL_SPEED_FACTOR means what
+// its comment says: 1.45x the speed the breeze carries a puff, i.e. the cell visibly runs
+// its own puffs down.
+//
+// ⚠️ THIS EXISTS BECAUSE THE FIRST VERSION ADVANCED PER SECOND (`* dt`) WHERE EVERY OTHER
+// CELL IN THE FRAME PATH ADVANCES PER FRAME (`* dt * 60`), and read `local.speed` — knots —
+// as though it were already units. Measured on Pearl Lagoon before the fix: cells drifted
+// 24 u/s against an ordinary puff's 150 and a 5.4-knot boat's 81. A squall that a boat laps
+// cannot march down the trades, cannot leave its dead-air wake ACROSS anyone's path, and
+// cannot be ducked or ridden — over 12 seeds the fleet spent 6.5% of its racing time in
+// contact with one and SEVEN SEEDS SAW NONE AT ALL. Anything that moves on this map moves
+// in units per frame; a speed in knots has to be converted before it can be one.
+const SQUALL_DRIFT = 0.18;
 const SQUALL_FRONT = 0.75;    // leading-edge gain, fraction of the local mean
 const SQUALL_CORE = 0.4;      // under the rain
 const SQUALL_WAKE = 0.45;     // multiplier in the trailing hole: 55% off
 const SQUALL_VEER = 0.35;     // rad, max turn toward the cell's own course
 const SQUALL_FAN = 0.2;       // rad, outflow divergence across the flanks
 
+// WHERE THE CELLS LIVE: the RACECOURSE, not the arena. Cached on the course because the
+// marks do not move within a race, and both the spawner and the recycler need it.
+//
+// The arena is the water; the course is the part of it anyone sails. Pearl Lagoon's marks
+// span ~2000 units about their centroid inside an arena whose half-diagonal is 4245, so
+// laterals dealt across ±0.8 of the ARENA put most cells beside a course they never reach —
+// measured, 5 of 12 seeds had a cell within a boat's reach at any point in the race. A cell
+// is weather the fleet is supposed to MEET; deal it where the fleet is, and let its size
+// (rx/ry) decide how much of the course one covers.
+function squallField() {
+    const c = state.course;
+    if (c._squallField) return c._squallField;
+    const e = Arena.extent(c.boundary);
+    let f = { cx: (e.minX + e.maxX) / 2, cy: (e.minY + e.maxY) / 2,
+              R: Math.hypot(e.maxX - e.minX, e.maxY - e.minY) / 2 };
+    const mk = c.marks || [];
+    if (mk.length) {
+        let sx = 0, sy = 0;
+        for (const m of mk) { sx += m.x; sy += m.y; }
+        const cx = sx / mk.length, cy = sy / mk.length;
+        let R = 0;
+        for (const m of mk) R = Math.max(R, Math.hypot(m.x - cx, m.y - cy));
+        // A floor, so a tiny course does not collapse the field to a point, and never
+        // wider than the arena it sits in — the cells still march across real water.
+        f = { cx, cy, R: Math.min(f.R, Math.max(900, R)) };
+    }
+    c._squallField = f;
+    return f;
+}
+
 function spawnSquall(rng, cfg, initial) {
-    const b = state.course.boundary;
-    const e = Arena.extent(b);
-    const cx = (e.minX + e.maxX) / 2, cy = (e.minY + e.maxY) / 2;
-    const halfDiag = Math.hypot(e.maxX - e.minX, e.maxY - e.minY) / 2;
+    const fld = squallField();
+    const cx = fld.cx, cy = fld.cy;
+    const halfDiag = fld.R;
     const course = state.wind.baseDirection + (rng() * 2 - 1) * (cfg.courseJitter != null ? cfg.courseJitter : SQUALL_DEFAULTS.courseJitter);
     const ux = -Math.sin(course), uy = Math.cos(course);      // downwind: the march
     const k = 1 + (cfg.sizeVar != null ? cfg.sizeVar : SQUALL_DEFAULTS.sizeVar) * (rng() * 2 - 1);
@@ -7412,17 +7516,20 @@ function initSqualls() {
 function updateSqualls(dt) {
     if (!state.squalls || !state.squalls.length) return;
     const cfg = (state.course.doc && state.course.doc.squalls) || {};
-    const e = Arena.extent(state.course.boundary);
-    const cx = (e.minX + e.maxX) / 2, cy = (e.minY + e.maxY) / 2;
-    const halfDiag = Math.hypot(e.maxX - e.minX, e.maxY - e.minY) / 2;
+    const fld = squallField();
+    const cx = fld.cx, cy = fld.cy;
+    const halfDiag = fld.R;
+    const timeScale = dt * 60;
     for (let i = 0; i < state.squalls.length; i++) {
         const q = state.squalls[i];
         // Carried by the breeze where it is, like a puff — but on ITS OWN fixed course:
         // a squall is a synoptic feature, and its predictability is the mechanic.
+        // SQUALL_DRIFT converts the local mean from knots into the units-per-frame every
+        // other moving thing on this map is measured in; see its note.
         const local = regionWindAt(q.x, q.y);
-        const spd = (local.speed > 0.1 ? local.speed : state.wind.speed) * q.speedFactor;
-        q.x += -Math.sin(q.course) * spd * dt;
-        q.y += Math.cos(q.course) * spd * dt;
+        const spd = (local.speed > 0.1 ? local.speed : state.wind.speed) * SQUALL_DRIFT * q.speedFactor;
+        q.x += -Math.sin(q.course) * spd * timeScale;
+        q.y += Math.cos(q.course) * spd * timeScale;
         // Past the downwind rim (wake and all): recycle upwind at a fresh lateral.
         const along = (q.x - cx) * -Math.sin(q.course) + (q.y - cy) * Math.cos(q.course);
         if (along > halfDiag + q.ry * 2.8 + 250) {
@@ -12848,7 +12955,7 @@ function update(dt) {
         }
         if (!onWater) continue;
         const spd = getWindAt(sx, sy).speed;
-        const windiness = Math.max(0, Math.min(1, (spd - STREAK_MIN_WIND) / 9));
+        const windiness = Math.max(0, Math.min(1, (spd - _streakRef.floor) / _streakRef.span));
         if (windiness <= 0) continue;                       // glassy: the water is not marked
         const t = pressureAt(spd);
         // Squared, so the windy side is unmistakably denser rather than slightly denser.
@@ -13150,11 +13257,11 @@ function updateParticles(dt) {
              // point the wrong way, and its LENGTH reports wind speed for free — a fixed
              // window of time times the distance covered in it.
              p.trailT += dt;
-             if (p.trailT >= WIND_TAIL_STEP) {
+             if (p.trailT >= _streakRef.tailStep) {
                  // Carry the overshoot rather than zeroing it, so the window really is
-                 // WIND_TAIL_STEP and not "the next frame after it" — otherwise every tail
+                 // the tail step and not "the next frame after it" — otherwise every tail
                  // is a frame-time longer than the speed it claims to report.
-                 p.trailT -= WIND_TAIL_STEP;
+                 p.trailT -= _streakRef.tailStep;
                  p.trail.unshift({ x: p.x, y: p.y });
                  // ONE SPARE sample beyond the drawn window. The tail end is interpolated
                  // between the last two (see streakSpine), so dropping the oldest never
@@ -13281,6 +13388,73 @@ const WIND_TAIL_PTS = 5;          // history samples behind the live head
 const WIND_TAIL_STEP = 0.11;      // seconds between samples -> a 0.44-0.55s window of track
 const WIND_WATER_RECHECK = 0.12;  // seconds between "am I still over water" tests
 
+// ── THE LAYER'S REFERENCE IS THE COURSE, NOT A CONSTANT ─────────────────────
+// STREAK_MIN_WIND above is a fact about WATER. Held as an ABSOLUTE gate it is also a
+// decision that a venue whose whole range sits under it gets no wind layer at all — and
+// that is what it did. Measured over Gatorgrass (2.7-6.0 kt across the course, 3.7 mean):
+// 5.3% of the water cleared the gate and the live streak count on screen was ZERO, on the
+// one venue whose entire identity is reading a fickle breeze.
+//
+// THREE THINGS COMPOUNDED, which is why it was invisible rather than merely faint:
+//   density  the gate rejected ~95% of spawn attempts outright
+//   length   the tail is a fixed 0.55 s window, so at 3.7 kt it drew 4 world units of track
+//   width    `abs` pinned at zero held every survivor at the wLight floor, ~1.8 units across
+// A four-unit speck at half width that almost never spawns is not a faint layer, it is no
+// layer — and each of the three was individually defensible, which is how it got here.
+//
+// So the FLOOR the layer measures from drops to the course's own light end when the course
+// is lighter than the glassy threshold, and the tail WINDOW stretches so a slow parcel
+// still draws a readable mark. Both are per-course, computed once beside the pressure
+// scale — the same question that already lives there ("18 knots is a hole on Glacier Sound
+// and a squall on Gatorgrass"). STREAK_MIN_WIND was the last global that never got the
+// treatment; on every venue already above it, `Math.min` leaves all of this untouched.
+//
+// WHAT DOES NOT CHANGE is the encoding. Within a race the lightest water is still the bare
+// end of the ramp, the windiest still marks up, and length still reports the LOCAL wind —
+// a fast parcel still draws a longer streak than a slow one beside it. And `span` stays
+// absolute, so a 4-knot Gatorgrass streak is still finer and shorter than a 16-knot
+// Bluewater one. The layer stops being uniform-bare; it does not start lying about knots.
+const STREAK_REF_WIND = 9;        // knots the fixed tail window was tuned around
+const STREAK_TAIL_MAX = 2.5;      // most the window may stretch, so a lull cannot draw a comb
+const STREAK_FLOOR_FRAC = 0.6;    // floor, as a fraction of the course's own median
+let _streakRef = { floor: STREAK_MIN_WIND, span: 9, tailStep: WIND_TAIL_STEP, fadeIn: WIND_FADE_IN };
+function computeStreakRef() {
+    const P = state.wind.pressure;
+    const med = (P && P.med > 0) ? P.med : (state.wind.baseSpeed || STREAK_REF_WIND);
+    // FROM THE MEDIAN, NOT THE p10. Reading the floor off the course's light end collapses
+    // on any venue that authors genuinely glassy water: Stillwater's 2-knot shore patches
+    // put its p10 at 0.09, which drove the floor to 0.08 and marked up the very glass the
+    // layer exists to leave bare. The median asks the right question — "is this COURSE
+    // lighter than the threshold" — and leaves within-course lulls to the ramp.
+    // Never ABOVE the glassy threshold, so every venue already windier keeps the physical
+    // rule untouched.
+    const floor = Math.min(STREAK_MIN_WIND, med * STREAK_FLOOR_FRAC);
+    const stretch = Math.min(STREAK_TAIL_MAX, Math.max(1, STREAK_REF_WIND / Math.max(1, med)));
+    // DENSITY SPANS THE COURSE, WIDTH SPANS KNOTS. Population is what makes a gradient
+    // readable at all — you cannot see where the pressure is from nineteen marks — so the
+    // course's own windy end has to reach the same density as any other course's windy end.
+    // Measured against a fixed 9-knot span, Gatorgrass sat at 19 streaks against 30-85
+    // elsewhere: not a light-air LOOK, just a thin sample of one. Spanning the course fixes
+    // that without weakening the bare-lull encoding, because the ramp still starts at zero
+    // at the course's own light end.
+    // Width deliberately does NOT get this treatment (see `abs` in streakChannels): it
+    // keeps measuring real knots, which is what keeps a 4-knot mark fine and a 20-knot one
+    // broad instead of making every venue look like a fresh breeze.
+    // CAPPED AT THE ABSOLUTE SPAN, never widened past it. Spanning the course outright
+    // fixed Gatorgrass (19 -> 33 streaks) but compressed Glacier Sound, whose 27-knot range
+    // then had to reach further for the same density: it fell 38 -> 20. `min` takes the
+    // narrower of the two, so a course narrower than the absolute ramp gets to use all of
+    // its own range and a wider one is left exactly as it was.
+    const span = Math.max(2, Math.min(9, ((P && P.hi > floor) ? P.hi : med * 1.3) - floor));
+    _streakRef = {
+        floor, span,
+        tailStep: WIND_TAIL_STEP * stretch,
+        // The fade-in is documented as "exactly the tail window" so a newborn stub is never
+        // seen at full strength; it has to stretch with it or that stops being true.
+        fadeIn: WIND_FADE_IN * stretch
+    };
+}
+
 // ── THE STREAM ──────────────────────────────────────────────────────────────
 // A current streak is the SAME IDEA as a wind comet and is built from the same parts: the
 // mark is the parcel's own track, so it bends where the stream bends and its length is the
@@ -13347,29 +13521,94 @@ const WIND_BEACH_FADE = 0.35;     // seconds to fade out on reaching land — an
 // Deliberately NOT drawn from `palette.gusts`. Those tints are the venue's own WATER
 // showing through a cat's-paw (race-view.md §8); this is the course talking to the
 // player, and it stays one language across all ten venues so warm always means pressure.
-const STREAK_LUT = (() => {
-    // WARM, NOT ORANGE. The reference's hot end is a saturated orange, and at this
-    // palette that is exactly the hull colour of four boats and the fill of every
-    // inflatable mark — side by side, a streak and Cruz's topsides were the same swatch.
-    // Backing the top stop off to gold keeps the cool->warm polarity (which is what
-    // carries "more pressure") and separates from the fleet by SATURATION instead, which
-    // is the right hierarchy anyway: the foreground is chromatic, the field is not.
-    const stops = [
-        [0.00, [136, 190, 228]],
-        [0.45, [226, 240, 252]],
-        [0.78, [255, 228, 158]],
-        [1.00, [255, 198,  96]]
-    ];
-    const N = 48, lut = [];
+// ── COLOUR IS ABSOLUTE: KNOTS, NOT THE COURSE'S OWN RAMP ────────────────────
+// This reverses the anchoring rule in race-view.md 8.1, deliberately.
+//
+// The old ramp read off `pressureAt()`, i.e. p10-p90 of THIS course. That makes the hot
+// end always reachable and always used, which is good for showing where the pressure is —
+// but it means the same colour is 5 knots on Gatorgrass and 30 on Glacier Sound. A player
+// cannot learn "that shade means it is windy over there" if the shade is re-scaled every
+// time they change venue; they can only learn it within one race, and then it is wrong on
+// the next. Reading the wind is the primary skill this game asks for, so the reading has
+// to be transferable.
+//
+// The original argument for anchoring to the course was that nine of the ten venues state
+// ONE uniform wind region, so an absolute ramp would paint them a single flat colour with
+// no gradient to read. That is much less true now — Gatorgrass alone carries 27 regions —
+// and even where it holds, gusts, lulls and island lees all move the LOCAL speed, so an
+// absolute ramp still marks them. It marks them better, in fact, because it is not already
+// pinned at the top of a narrow course ramp.
+//
+// DENSITY AND WIDTH STAY ON THE COURSE RAMP. That is the division of labour: colour says
+// how much wind there is, density and width say which side of THIS course is the windy
+// one. They cannot contradict each other — within a race both rise together — and it keeps
+// the "windy side" reading alive on a venue whose absolute range is too narrow to shift
+// hue much. race-view.md 8.1 says all four channels read off `pressureAt` so they cannot
+// disagree; that invariant is now "three do, and colour answers a different question".
+// WHITE -> GREEN -> YELLOW -> AMBER -> CRIMSON, in knots. Two things shaped the stops
+// beyond the basic progression:
+//
+//   ORANGE IS THE FLEET. A saturated orange streak and a boat's topsides were once the
+//   same swatch, and every inflatable mark is that colour too. The hot end of an absolute
+//   scale lands only on the windiest venues — which is exactly where the fleet is packed
+//   and where a boat most needs to be findable — so the ramp passes THROUGH amber to a
+//   dark crimson rather than sitting on orange. Crimson still reads as the danger end and
+//   separates from the hulls by being darker and pinker.
+//
+//   GREEN IS THE WATER on two of the venues that need this layer most: Gatorgrass paints
+//   #606c38 olive and the river banks are grass. So the band Gatorgrass actually occupies
+//   (it tops out around 7 kt) is white through pale MINT, not grass green, and the green
+//   proper does not arrive until 12-16 kt where the water underneath is blue.
+//
+// STOPS ARE CLOSE TOGETHER ON PURPOSE. These are interpolated in RGB, which cuts the
+// chord between two colours rather than following hue — so a wide jump between distant
+// hues passes through grey. A first pass went teal at 14 straight to gold at 20 and drew
+// a dead olive at 17. Neighbouring stops here are always adjacent in hue, so the chord
+// stays on the ramp.
+const STREAK_KT_MAX = 35;         // top of the scale; above this the colour holds
+const STREAK_PALETTES = {
+    wind: [
+        [0,  [255, 255, 255]],    // glass: a cat's-paw is white water
+        [5,  [214, 244, 232]],    // pale mint — clears Gatorgrass olive
+        [10, [150, 226, 176]],    // mint green
+        [15, [186, 226, 110]],    // yellow-green
+        [20, [246, 224, 104]],    // gold
+        [26, [246, 182,  92]],    // amber, stopping short of the marks' orange
+        [32, [226,  96,  86]],    // warm red
+        [35, [198,  52,  78]]     // crimson
+    ],
+    // Kept for A/B only: the literal white->green->yellow->orange->red proposal, which
+    // sits on the fleet's orange at 26 and on olive water at 7-14. `window.__streakPalette`
+    // switches at runtime so the two can be compared inside one race.
+    heat: [
+        [0,  [255, 255, 255]],
+        [7,  [176, 232, 150]],
+        [14, [122, 214,  92]],
+        [20, [246, 232, 110]],
+        [26, [250, 176,  72]],
+        [35, [232,  72,  58]]
+    ]
+};
+const STREAK_PALETTE = 'wind';
+function buildStreakLut(name) {
+    const stops = STREAK_PALETTES[name] || STREAK_PALETTES.heat;
+    const N = 96, lut = [];
     for (let i = 0; i < N; i++) {
-        const t = (i + 0.5) / N;
+        const kt = ((i + 0.5) / N) * STREAK_KT_MAX;
         let a = stops[0], b = stops[stops.length - 1];
-        for (let s = 0; s < stops.length - 1; s++) if (t >= stops[s][0] && t <= stops[s + 1][0]) { a = stops[s]; b = stops[s + 1]; break; }
-        const f = b[0] === a[0] ? 0 : (t - a[0]) / (b[0] - a[0]);
+        for (let s = 0; s < stops.length - 1; s++) if (kt >= stops[s][0] && kt <= stops[s + 1][0]) { a = stops[s]; b = stops[s + 1]; break; }
+        const f = b[0] === a[0] ? 0 : (kt - a[0]) / (b[0] - a[0]);
         lut.push([0, 1, 2].map(k => Math.round(a[1][k] + (b[1][k] - a[1][k]) * f)));
     }
     return lut;
-})();
+}
+let STREAK_LUT = buildStreakLut(STREAK_PALETTE);
+// Switchable from the console for side-by-side comparison, like __COMET and __NAV.
+if (typeof window !== 'undefined') window.__streakPalette = (n) => { STREAK_LUT = buildStreakLut(n); };
+function streakColorFor(spd) {
+    const u = Math.max(0, Math.min(0.999, (spd || 0) / STREAK_KT_MAX));
+    return STREAK_LUT[(u * STREAK_LUT.length) | 0];
+}
 
 // The three per-streak channels, in ONE place. The diagnostics read pressure off the same
 // function the renderer draws with, so a probe can never quietly measure a formula the
@@ -13386,7 +13625,12 @@ const COMET = {
     // old width the streaks were competing with the boats for the eye rather than sitting
     // under them. STREAK_MAX_HALFWIDTH came down with them so the ceiling still bites.
     w0: 0.9,  w1: 1.05,              // half-width, same
-    wLight: 0.50,                    // width multiplier in the lightest air the layer draws
+    // ⚠️ 0.50 -> 0.40. Light air should be drawn as FINE white marks, not as pale fat ones:
+    // once the layer had a floor low enough to spawn on a 4-knot venue at all, the width it
+    // spawned at read as a fresh-breeze streak that had merely lost its colour. The lower
+    // floor is safe now for the same reason it was not before — density and length are no
+    // longer collapsing at the same time (see computeStreakRef).
+    wLight: 0.40,                    // width multiplier in the lightest air the layer draws
     taper: 0.45,                     // body profile: 1 = straight cone, lower = holds width
     dens0: 0.035, dens1: 0.21        // spawn chance floor and pressure-weighted span
 };
@@ -13410,7 +13654,7 @@ function streakChannels(t, jit, spd) {
     // half as long at the same width and read stubby. Scaling width with the breeze too
     // keeps a comet's SHAPE constant and lets its SIZE report the wind: fine, delicate
     // marks in light air, broad ones in a fresh breeze, which is how the water looks.
-    const abs = Math.max(0, Math.min(1, (spd - STREAK_MIN_WIND) / 9));
+    const abs = Math.max(0, Math.min(1, (spd - _streakRef.floor) / 9));
     // ── THE CEILING IS A CLAMP, NOT A TUNING VALUE ──────────────────────────────
     // This layer is INFORMATION. It has to stay under the boats, the marks and the labels
     // (race-view.md §2, §8) no matter what a venue authors, and the arithmetic could reach
@@ -13427,7 +13671,7 @@ function streakChannels(t, jit, spd) {
     const rawWidth = (c.w0 + c.w1 * t) * (c.wLight + (1 - c.wLight) * abs) * (0.80 + jit * 0.40);
     _streakCh.alpha = Math.min(STREAK_MAX_ALPHA, rawAlpha);
     _streakCh.halfWidth = Math.min(STREAK_MAX_HALFWIDTH, rawWidth);
-    _streakCh.color = STREAK_LUT[Math.min(STREAK_LUT.length - 1, (t * STREAK_LUT.length) | 0)];
+    _streakCh.color = streakColorFor(spd);
     return _streakCh;
 }
 
@@ -13451,7 +13695,7 @@ function streakChannels(t, jit, spd) {
 const _spine = [];
 for (let i = 0; i < Math.max(WIND_TAIL_PTS, CUR_TAIL_PTS) + 2; i++) _spine.push({ x: 0, y: 0, u: 0 });
 function streakSpine(p, step, pts) {
-    if (step === undefined) { step = WIND_TAIL_STEP; pts = WIND_TAIL_PTS; }
+    if (step === undefined) { step = _streakRef.tailStep; pts = WIND_TAIL_PTS; }
     const trail = p.trail, len = trail.length, frac = p.trailT;
     if (len < 2) return 0;
     const full = len > pts;
@@ -13601,7 +13845,7 @@ function drawParticles(ctx, layer) {
             // min(life, 1) on a life that STARTED above 1 — every streak snapped on at
             // full strength and only the death was animated.)
             const age = (1 - p.life) * WIND_LIFE, left = p.life * WIND_LIFE;
-            const env = Math.min(1, age / WIND_FADE_IN, left / WIND_FADE_OUT, p.beach);
+            const env = Math.min(1, age / _streakRef.fadeIn, left / WIND_FADE_OUT, p.beach);
             if (env <= 0.02) continue;
 
             const ch = streakChannels(t, p.jit || 0.5, p.spd || 0);
@@ -14267,79 +14511,111 @@ function isUpwindTo(boat, target) {
     return ((dx / l) * wx + (dy / l) * wy) > 0;   // pointing into the wind
 }
 
+// ONE LAYLINE PER END, running back from that end, down and away from the line.
+//
+// Each end is laid on ONE tack — the starboard end on starboard, the port end on port —
+// so each gets that tack's layline and no other. Written as the ray that leans AWAY from
+// the other end, which is the same statement without needing to work out which end is
+// which: the two close-hauled angles are 90 degrees apart, and the one pointing away from
+// your neighbour is the tack that fetches you.
+//
+// So the pair DIVERGES. Taking the ray that leans TOWARD the other end gives the opposite
+// tack at each end — two lines that cross below the middle of the line and read as a big X
+// over the fleet. Clipping that X at its crossing makes a tidy wedge and is still the wrong
+// two lines.
+//
+// ⚠️ THE PAIR IS GEOMETRIC, NOT AN INDEX PARITY. The windward-leeward path used to decide
+// which end got which tack from `idx % 2`, i.e. from the order the marks happen to sit in
+// the document. On Gatorgrass mark 0 is the EAST end, so parity handed each end the other's
+// tack and drew the X above. "Lean away from your neighbour" cannot be ordered wrongly.
+//
+// THE WIND IS SAMPLED AT EACH END, so a line lying across a gradient shows its skew. This
+// used to read the global `state.wind.direction` — the blend at the ROUTE CENTROID — which
+// on Gatorgrass is 39 degrees off the wind actually at the line. A layline drawn from a
+// wind measured two kilometres away is a decoration, not a nav aid.
+function drawEndLaylines(ctx, pts, inset) {
+    ctx.save(); ctx.lineWidth = 5.5;
+    ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`;
+    for (let k = 0; k < pts.length; k++) {
+        const m = pts[k], other = pts[k ^ 1];
+        if (!m || !other) continue;
+        const wHere = getWindAt(m.x, m.y).direction;
+        let tx = other.x - m.x, ty = other.y - m.y;
+        const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+        let best = null;
+        for (const s of [-1, 1]) {
+            const a = wHere + s * Math.PI / 4 + Math.PI;   // back down the close-hauled track
+            const dx = Math.sin(a), dy = -Math.cos(a);
+            const lean = dx * tx + dy * ty;
+            if (!best || lean < best.lean) best = { dx, dy, lean };
+        }
+        const sx = m.x + best.dx * (inset || 0), sy = m.y + best.dy * (inset || 0);
+        const t = Arena.rayHit(state.course.boundary, sx, sy, best.dx, best.dy);
+        if (t === null) continue;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + best.dx * t, sy + best.dy * t);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
 function drawLayLines(ctx) {
     if (!state.showNavAids || state.race.status === 'finished') return;
     const player = state.boats[0];
+    const leg = player.raceState.leg;
 
-    // Island course: lay lines onto the ROUNDING MARK while outbound, and onto
-    // the finish line coming home. There is no windward gate to index.
+    // Island course: the rounding is a single mark with a zone circle, and the finish is a
+    // line you simply cross — neither wants laylines. Only the start does.
     if (state.course.type === 'islandRound') {
-        // Laylines belong to the START only: they are the approach to the line
-        // before the gun. The rounding is a single mark with a zone circle, and
-        // the finish is a line you simply cross — neither wants laylines.
-        if (player.raceState.leg !== 0) return;
+        if (leg !== 0) return;
         const pts = startLinePts();
         if (!pts[0] || !pts[1]) return;
-
-        // ONE LAYLINE PER END, running back from that end, down and away from the line.
-        //
-        // Each end is laid on ONE tack — the starboard end on starboard, the port end on port
-        // — so each gets that tack's layline and no other. Written as the ray that leans AWAY
-        // from the other end, which is the same statement without needing to work out which
-        // end is which: the two close-hauled angles are 90 degrees apart, and the one pointing
-        // away from your neighbour is the tack that fetches you.
-        //
-        // So the pair DIVERGES. It used to take the ray leaning toward the other end, which is
-        // the opposite tack at each end — two lines that cross below the middle of the line and
-        // read as a big X over the fleet. Clipping that X at its crossing made a tidy wedge and
-        // was still the wrong two lines.
-        //
-        // The wind is sampled AT EACH END, so a line lying across a gradient shows its skew.
-        ctx.save(); ctx.lineWidth = 5.5;
-        ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`;
-        for (let k = 0; k < pts.length; k++) {
-            const m = pts[k], other = pts[k ^ 1];
-            const wHere = getWindAt(m.x, m.y).direction;
-            let tx = other.x - m.x, ty = other.y - m.y;
-            const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
-            let best = null;
-            for (const s of [-1, 1]) {
-                const a = wHere + s * Math.PI / 4 + Math.PI;   // back down the close-hauled track
-                const dx = Math.sin(a), dy = -Math.cos(a);
-                const lean = dx * tx + dy * ty;
-                if (!best || lean < best.lean) best = { dx, dy, lean };
-            }
-            const t = Arena.rayHit(state.course.boundary, m.x, m.y, best.dx, best.dy);
-            if (t === null) continue;
-            ctx.beginPath();
-            ctx.moveTo(m.x, m.y);
-            ctx.lineTo(m.x + best.dx * t, m.y + best.dy * t);
-            ctx.stroke();
-        }
-        ctx.restore();
-        return;
+        return drawEndLaylines(ctx, pts, 0);
     }
 
-    let targets = legMarks(player.raceState.leg) || [0, 1];
-    const isUpwind = legGoesUpwind(player.raceState.leg);
-    const zoneRadius = (player.raceState.leg === 0 || player.raceState.leg === state.race.totalLegs) ? 0 : 165;
+    // A FINISH IS CROSSED, NOT LAID. The same rule the island course has always followed,
+    // and it was the one thing the windward-leeward path did not: it drew laylines onto
+    // every leg's marks including the last, so Gatorgrass — whose windward gate IS the
+    // finish — carried laylines the whole race onto a line nobody lays. `routeLeg` is the
+    // authority on which leg finishes; `totalLegs` alone is not, because the route
+    // deliberately generates entries past it.
+    const rl = routeLeg(leg);
+    if (rl && rl.finish) return;
 
+    // Downwind gates keep their own treatment below; everything approached on a beat —
+    // the start line and every windward gate — is the same two-ended problem.
+    const targets = legMarks(leg);
+    if (!targets) return;
+    const isUpwind = legGoesUpwind(leg);
+    const zoneRadius = (leg === 0) ? 0 : 165;
+    const pts = targets.map(i => state.course.marks[i]);
+    if (!pts[0] || !pts[1]) return;
+    if (isUpwind) return drawEndLaylines(ctx, pts, zoneRadius);
+
+    // Running down to a leeward gate: the pair runs UPWIND from each mark, still leaning
+    // away from its neighbour so the two diverge rather than cross.
     ctx.save(); ctx.lineWidth = 5.5;
-    for (const idx of targets) {
-        const m = state.course.marks[idx];
-        const ang1 = state.wind.direction + Math.PI/4, ang2 = state.wind.direction - Math.PI/4;
-        const isLeft = (idx % 2 === 0);
-        const drawRay = (angle) => {
-            let da = angle + (isUpwind ? Math.PI : 0);
-            const dx = Math.sin(da), dy = -Math.cos(da);
-            const startX = m.x + dx*zoneRadius, startY = m.y + dy*zoneRadius;
-            const t = Arena.rayHit(state.course.boundary, startX, startY, dx, dy);
-            if (t !== null) {
-                ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`; ctx.beginPath(); ctx.moveTo(startX, startY); ctx.lineTo(startX+dx*t, startY+dy*t); ctx.stroke();
-            }
-        };
-        if (isUpwind) isLeft ? drawRay(ang1) : drawRay(ang2);
-        else isLeft ? drawRay(ang2) : drawRay(ang1);
+    ctx.strokeStyle = `rgba(${NAV_RGB}, 0.72)`;
+    for (let k = 0; k < pts.length; k++) {
+        const m = pts[k], other = pts[k ^ 1];
+        const wHere = getWindAt(m.x, m.y).direction;
+        let tx = other.x - m.x, ty = other.y - m.y;
+        const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+        let best = null;
+        for (const s of [-1, 1]) {
+            const a = wHere + s * Math.PI / 4;
+            const dx = Math.sin(a), dy = -Math.cos(a);
+            const lean = dx * tx + dy * ty;
+            if (!best || lean < best.lean) best = { dx, dy, lean };
+        }
+        const sx = m.x + best.dx * zoneRadius, sy = m.y + best.dy * zoneRadius;
+        const t = Arena.rayHit(state.course.boundary, sx, sy, best.dx, best.dy);
+        if (t === null) continue;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + best.dx * t, sy + best.dy * t);
+        ctx.stroke();
     }
     ctx.restore();
 }
@@ -14798,7 +15074,20 @@ function drawSurf(ctx) {
         // surf round every one of Glacier Sound's 112 floes is fussy detail that fights the
         // fleet for attention, and they move, so it never settles. Fixed ice IS a shoreline
         // and keeps its breakers.
-        if (isl.hidden || isl.isFloe || isl.awash || isl.reef || !isl.vertices || isl.vertices.length < 3) continue;
+        //
+        // ⚠️ REEFS DO BREAK, and they are the one awash-adjacent thing that should. The
+        // exclusion below is `awash`, not `reef`: a sandbar is skipped because drawing surf
+        // round it draws in the coastline the whole feature exists NOT to have (see the note
+        // in updateSurfFoam). A coral reef is the opposite case on both counts — it is a
+        // WALL, so a line that says "you cannot cross here" is the honest picture rather
+        // than a lie, and it is physically where an ocean swell trips and breaks. The white
+        // line on the weather side of the reef is the defining image of an atoll in the
+        // trades, and `face` below already restricts it to the arc that meets the seas, so
+        // the lagoon side stays glassy — which is the contrast the venue is about.
+        //
+        // The FOAM stays off them (updateSurfFoam still excludes reefs): foam is spawned to
+        // run up a beach and die at a waterline, and a reef has none. Crests, not litter.
+        if (isl.hidden || isl.isFloe || isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl);
@@ -19105,6 +19394,27 @@ function initCourse() {
         // Where SCENERY lives, as opposed to where boats may sail. Drifting ice is
         // placed and kept inside this, not inside the arena.
         state.course.scenery = c.scenery;
+        // WHERE IN ITS CYCLE THE DAY STARTS. The document's phase is a fixed offset per
+        // region (derived from the id, so regions never pulse in unison), and on its own it
+        // meant every race on a venue met the identical wind at the identical clock time.
+        //
+        // A RACE IS A DAY, so the phase is rolled per race. Measured on Gatorgrass: with a
+        // fixed phase, forty seeds sailed the same beat to the same second; seeded, the
+        // spread is ~90 s p5-p95 on one beat. That is the race-to-race variety, and it is
+        // REPEATABLE — same seed, same wind — so replays and the eval's paired seeds still
+        // reproduce exactly.
+        //
+        // ⚠️ A PRIVATE STREAM, not the shared one. Drawing from the seeded RNG here would
+        // shift every subsequent draw on every venue and retire the golden traces — the
+        // same reason the floes take `seed + 11` and the squalls `seed + 77`. Mutating
+        // `c.windRegions` in place is safe because compile() hands back a structuredClone.
+        //
+        // Period is left alone deliberately: it is the region's authored rhythm, and the
+        // 180-degree separation rule is checked against the authored numbers.
+        if (c.windRegions && c.windRegions.length) {
+            const rngW = state.race.seed ? mulberry32(state.race.seed + 29) : Math.random;
+            for (const r of c.windRegions) r.phase = (r.phase + rngW() * Math.PI * 2) % (Math.PI * 2);
+        }
         state.course.windRegions = c.windRegions;
         state.course.currentRegions = c.currentRegions;
         state.course.gustRegions = c.gustRegions;

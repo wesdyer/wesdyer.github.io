@@ -289,20 +289,52 @@ The pressure overlay §6.4 asked for. A streak is one parcel of air, drawn along
 own track** over the last `WIND_TAIL_PTS × WIND_TAIL_STEP` seconds — so its direction
 and its length are measurements, not formulas, and it curves where the breeze bends.
 
-Four channels, all read off `pressureAt()` so they cannot disagree:
+Four channels. **Three read off `pressureAt()`; colour reads absolute knots.** They answer
+two different questions and cannot contradict each other, because within a race both rise
+together:
 
 | channel | carries | why |
 |---|---|---|
-| **density** | pressure (strongest cue) | Real water is bare below ~6 kt and streaked in a fresh breeze. A lull is drawn as **absent streaks**, which is what a sailor sees and the only encoding that survives on a dark palette. |
+| **density** | pressure (strongest cue) | Real water is bare in light air and streaked in a fresh breeze. A lull is drawn as **absent streaks**, which is what a sailor sees and the only encoding that survives on a dark palette. |
 | **length** | wind speed, exactly | distance covered in a fixed window of time |
 | **width** | pressure **and absolute wind** | `t` alone made a 6.5 kt Gatorgrass streak as fat as a 16 kt Bluewater one at half the length — stubby. Scaling with the breeze too keeps a comet's *shape* constant and lets its *size* report the wind. Aspect ratio now sits at 12–17:1 on every venue. |
-| **colour** | pressure, cool → warm | after the LiveLine reference |
+| **colour** | **absolute knots, 0 → 35** | so a shade means the same wind on every venue |
 
-**The ramp is anchored to the course, not to absolute knots** (`computeWindPressureScale`):
-p10/p90 of the mean field sampled over sailable water **inside the mark box**, averaged
-across one oscillation period, widened to at least ±18% of the median. 18 knots is a hole
-on Glacier Sound and a squall on Gatorgrass; and nine of the ten venues state one uniform
-wind region, so without the widening `lo === hi` and the ramp has no denominator.
+**Density and width are anchored to the course** (`computeWindPressureScale`): p10/p90 of
+the mean field sampled over sailable water **inside the mark box**, averaged across one
+full oscillation cycle, widened to at least ±18% of the median. 18 knots is a hole on
+Glacier Sound and a squall on Gatorgrass, and several venues still state one uniform wind
+region, so without the widening `lo === hi` and the ramp has no denominator. This is what
+keeps *which side of this course is windy* readable even where the absolute range is too
+narrow to shift hue much.
+
+**Colour is anchored to knots, and that is deliberate** — it reverses the original rule,
+which anchored every channel to the course. Reading the wind is the primary skill the game
+asks for, and a course-relative shade is only learnable *within* one race: the same colour
+was 5 kt on Gatorgrass and 30 on Glacier Sound, so the reading was wrong the moment the
+player changed venue. The original argument for relative anchoring was that nine of ten
+venues stated one uniform region and an absolute ramp would paint them flat — much less
+true now (Gatorgrass alone carries 27 regions), and even where it holds, gusts, lulls and
+island lees all move the *local* speed, so an absolute ramp still marks them, and marks
+them better for not already being pinned at the top of a narrow course ramp.
+
+**The floor the layer measures from is per-course too** (`computeStreakRef`).
+`STREAK_MIN_WIND` (5.5 kt) is a fact about water — below it the surface is glass and
+carries no Langmuir streaks — but held as an absolute gate it also decided that a venue
+whose whole range sits underneath it got **no layer at all**. Measured on Gatorgrass
+(2.7–6.0 kt): 5.3% of the water cleared the gate and the live streak count was **zero**, on
+the venue whose entire identity is reading a fickle breeze. Three things compounded —
+density (the gate rejected ~95% of spawns), length (a fixed 0.55 s tail window is 4 world
+units of track at 3.7 kt) and width (`abs` pinned at zero held every survivor at the
+`wLight` floor). A four-unit speck at half width that almost never spawns is not a faint
+layer, it is no layer.
+
+So the floor drops to a fraction of the **course median** when the course is lighter than
+the glassy threshold, and the tail window stretches so a slow parcel still draws a readable
+mark. `Math.min` leaves every venue already above 5.5 kt untouched. **From the median, not
+the p10** — Stillwater authors genuinely glassy 2-knot shore patches, which put its p10 at
+0.09 and would have driven the floor to 0.08, marking up the very glass the layer exists to
+leave bare.
 
 **This layer is information, never the subject of the frame.** Thickness and density are the
 two channels that turn a reading into a curtain, so both have **hard ceilings that are clamps,
@@ -319,9 +351,26 @@ population moves 67 → 72 on screen. Alpha-weighted ink stays near **1% of the 
 
 Rules this layer must keep:
 
-- **Warm, not orange.** The reference's hot end is saturated orange — the hull colour of
-  four boats and the fill of every inflatable mark. Gold keeps the cool→warm polarity and
-  separates from the fleet by *saturation*, which is the right hierarchy anyway.
+- **Through amber, never sitting on orange.** Saturated orange is the hull colour of four
+  boats and the fill of every inflatable mark — side by side, a streak and Cruz's topsides
+  were the same swatch. An absolute ramp only reaches its hot end on the windiest venues,
+  which is exactly where the fleet is packed and where a boat most needs to be findable, so
+  the ramp passes *through* amber (26 kt) to a dark **crimson** (35 kt) rather than resting
+  on orange. Crimson still reads as the danger end and separates from the hulls by being
+  darker and pinker.
+- **Green arrives late, because green is the water.** Gatorgrass paints `#606c38` olive and
+  the river banks are grass, so a green streak in the 7–14 kt band is the lowest-contrast
+  pairing in the game. The band Gatorgrass actually occupies (it tops out near 7 kt) is
+  white through pale **mint**; green proper does not arrive until 12–16 kt, where the water
+  underneath is blue.
+- **Stops sit close together.** The LUT interpolates in RGB, which cuts the chord between
+  two colours instead of following hue — a wide jump between distant hues passes through
+  grey. A first pass went teal at 14 kt straight to gold at 20 and drew a dead olive at 17.
+  Neighbouring stops must always be adjacent in hue.
+- **Light air is drawn FINE, not pale-and-fat.** `wLight` is the width multiplier at the
+  bottom of the ramp; at 0.50 a 4-knot streak read as a fresh-breeze streak that had merely
+  lost its colour. It is 0.40, which is only safe because density and length no longer
+  collapse at the same time.
 - **A streak is a mark on WATER.** Culled to the arena and off land at spawn, rechecked
   every `WIND_WATER_RECHECK` seconds as it drifts.
 - **Nothing in this layer may disappear while visible.** Killing a beached streak outright
