@@ -3832,7 +3832,29 @@ class BotController {
                         : gAv.cell(landFX, landFY);
                     const idAv = ce[1] * gAv.n + ce[0];
                     const clr = gAv._clear[idAv];
-                    if (clr > 0 && clr < 3) {
+                    // HZ3B (2026-08-09, THE REDROCK PUSH): ONLY THE ROUTER'S OWN
+                    // LINE EARNS THE TRUST — and the clearance band was un-earning
+                    // it. In redrock's narrows the 0-rung loses to PROX_STATIC in
+                    // 34-62% of its defeats while PLAN-ALIGNED (leg4-sub5: 94%
+                    // aligned): the band's 10000-scale tax sits in the same order
+                    // as cost(0) (7500-15000) and flips the winner off the thread
+                    // the router deliberately priced, tick after tick. The
+                    // candidate that passes the hard zone's own trust test
+                    // (aligned 0.3 rad, open water, no arc, not irons, <2kt
+                    // stream) pays no clearance-band tax; every other heading
+                    // keeps the full lee-shore caution. Deliberately NOT extended
+                    // to the slow-boat waiver: freeing slow boats toward any
+                    // low-clearance shore is the v1 lake kill. GATED: redrock
+                    // pooled 6-set paired −85.0 med / −78.7 mean, ALL SIX SETS
+                    // NEGATIVE (−47..−121), med 572→490, fins 386→391, land −16%,
+                    // pen −6% (boat +4%); lake −5/−3 med both sets; lagoon flat,
+                    // land A −27%; bay A −0.6 mean, bay B + ocean + river 2x16 +
+                    // arctic 4x16 BYTE-IDENTICAL; seatrials ~197.8 equivalent.
+                    const bandTrusted = openWaterAv && !arcK && hPlanFF != null
+                        && Math.abs(normalizeAngle(h - hPlanFF)) <= 0.3
+                        && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
+                        && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                    if (!bandTrusted && clr > 0 && clr < 3) {
                         // FLOE-caused narrowness is grindable; LAND-caused is not.
                         // When the static (land-only) grid says this water is clear,
                         // the low clearance here comes from stamped ice — price it

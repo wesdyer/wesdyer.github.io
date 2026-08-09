@@ -11929,3 +11929,99 @@ number is stale or mid-bench.**
 **Constraints carried**: actions-not-prices; episodes-not-frames; probe audits
 (18/18b/19b/19c); one-physical-line gates; `_traj_fp.js` before quoting any
 human ref; owner asked for MORE REDROCK LAPS — intake same-day when they land.
+
+================================================================================
+# 2026-08-09 ~12:00 — THE REDROCK PUSH (goal: below 2x, pooled med < 436)
+
+## P0 ATTRIBUTION WAVE (all on HEAD `188cd74` / treeHZ2; fp-verified refs)
+THE FOUR POCKETS ≈ 225 s/boat of the 355 gap (_leg_where, verified laps only):
+  leg3-sub0 +114 s/boat (67% of leg3; bot 16 u/s vs her 83; 73% of leg slow
+  time) | leg5-sub0/1 +55 (mark-7 exit) | leg5-sub6/7 +30 | leg4-sub5 +25
+  (mid-leg narrows, her 116 u/s vs 79). Leg1 is diffuse traffic beat
+  (deflected 45%, no pocket — FLEET AVOIDANCE TAX flavor, 47 s/boat).
+THREE CLASSES UNIFIED: leg3-sub0 = the DNF class = the bounds class.
+  _rr_dnf: ALL 8 DNFs (1/race = bench 46/432 rate) die leg 3 nearest mark-6
+  (-883,-1628), med 321u out, 0.59kt, unarmed, liveness normal. _rr_bounds:
+  336 grind episodes cluster (-800,-1600)/(-800,-2000) = the same box; legs
+  3/5/2 own 83%. The pocket IS the mark-6 departure corridor.
+## ⛔ KILLED: the boundary-veto hypothesis (measured, not benched)
+The fan's arena check (fixed 80u veto at the speed-projected future point,
+no HZ scaling — script.js ~3612) looked like HZ2's missing sibling. treePR3
+(HEAD + PR2 instrumentation + source tag) says NO: BND_VETO = 1.4% of slow
+defeats; slow boats sit med 500u from the arena edge (within80: 0%) in every
+pocket. The bounds grinds are downstream symptom (~19 s/boat), not defeater.
+## ⛔ KILLED: tack hysteresis on redrock (the oscillator A/B verdict)
+8 solo neutral same-seed A/Bs (dirVar-only): removal deltas −11/+85/−10/−229/
++205/−55/+254/−93 — TWO-SIDED, net ≈ wash. Unlike arctic's one-sided tail,
+redrock seeds exploit the swings as often as they chase them. No build.
+## THE POCKET MECHANISM (argmin + anatomy, treePR3/treeHZ2)
+Slow-static defeats at leg3-sub0 with the HZ2 waiver ACTIVE (scope verified
+ow/ir/cur ~100%, arcR 2%): STATIC_VETO 52% (land inside the 60u FLOOR — the
+boat is AT the wall face) + PROX_STATIC 34% (the un-waived clearance band).
+FAN NOT CLOSED: allClosed 0%, bothOpen 64%, 9.3 open rungs/choice, reversals
+present 50% (nosedIn) — ADMISSION IS NOT THE PROBLEM. Anatomy (_pocket_anat):
+a park/unpark/re-nose LOOP — 467 short spells (~3.7s), heading churn 0.8 rad
+inside spells, drift 20u, nosedIn 60% of box time; worst transits 748-815s
+with 73-79 spells (the DNF boats). Each time the boat gains way, the nav
+demand re-noses it: the 420 upwind floor's carrot lands past the bend.
+leg4-sub5 is DIFFERENT: PROX_STATIC 62% at 94% PLAN-ALIGNED, mid-speed — the
+clearance band (10000-scale ≈ cost(0) 7500-15000) flips the winner off the
+router's own thread in the narrows. leg5-sub0/1 mixed (al 49%).
+## P1 BUILDS (one physical line each)
+RR5 (treeRR5): RR3's fetchable-carrot re-aim scoped nosedIn && <40 u/s — the
+  HZ2 knee separates the pocket class (slow pinned) from the traffic pin at
+  speed (m5 funnel) that killed RR3; RR4's solo-only scope excluded the
+  crowded pocket itself. A NEW rung, the one the RR close note asked for.
+HZ3B (treeHZ3B): the plan-aligned candidate that passes the hard zone's own
+  trust test pays NO clearance-band tax (aligned-only; the slow waiver stays
+  OUT — v1 lake shore-hug lesson). Targets leg4-sub5 + PROX_STATIC share.
+## ⛔ KILLED at the MECHANISM GATE: RR5 (fetchable carrot, nosedIn && <40 u/s)
+Fleet anatomy on treeRR5 is baseline-identical (box 6255s vs 6560s, parkT 1666
+vs 1732, the four 748-815s DNF transits unchanged, 69-79 spells each). At the
+wall face NO plan point around the bend is line-of-sight, so bestVis≈0 and the
+re-aim never produces a different carrot — the RR family's lever does not
+reach the NEW course's pocket. (Solo fins swung ±250 BOTH WAYS on this
+one-line change — solo cross-tree comparison is unusable on redrock; mechanism
+gates or pooled fleets only.) Tree deleted.
+## ⭐ THE BLIND WIGGLE IS THE LOOP'S ENGINE (measured, the sharpest number yet)
+applyAvoidance line ~2780: `if (this.wiggleActive) return desiredHeading` —
+wiggle steering BYPASSES the entire fan, land vetoes included. In the leg3
+pocket, wiggle owns 64% of slow time, and the commanded beam-reach heading
+(windDir ± 1.75, side chosen from boats/marks/random — land-blind) is
+HARD-BLOCKED within 150u for **88% of 5212 wiggle samples** (2295s of blind
+wall-aim in 4 races). The loop: nav re-noses → park → blind burst into the
+face → clamp/grind (land 199.9/boat!) → fail → flip every 2nd failure →
+repeat, up to 815s. leg4-sub5 correction: the anat box there holds only ~6
+s/boat (her-line box; bot stall is laterally displaced) — HZ3B's located
+target was over-sized; its pooled 6-set is running as the judge anyway.
+## HZ3B REDROCK POOLED 6-SET (treeHZ3B vs hz2rr* baselines) — THE BIG ONE
+paired med −85.0 / mean −78.7, n=356, negative 250/356, ALL SIX SETS NEGATIVE
+(−112/−61/−121/−100/−47/−83), med 572→490, fins 386→391, land 200.9→169.5
+(−16%), pen 2.88→2.71 (−6%), boat 10.08→10.50 (+4%), mark −7%. 2.62x→2.25x
+from one line. Full battery in flight (lake is the risk venue — v1 shore-hug;
+river/arctic expected byte-identical behind current/floe guards, judged vs
+CURRENT-HEAD baselines per trap 22).
+## W4 (treeW4) — THE AIMED BURST, mechanism gate PASSED (partial cure)
+The discriminator run: of blocked blind bursts, other beam side clear 12%,
+ANY sailable non-irons heading ≥220u hard-clear = 100%. Build: when hard land
+(not floe plug) blocks the commanded burst within 150u, aim the burst at the
+clear feasible heading nearest a beam reach; snap wiggleSide to the chosen
+side; leg 0 + floe blockage + clear bursts stock verbatim. Box gate vs HZ2:
+2 of 4 catastrophic transits GONE (repl. by 200-270s), slow 4082→3455s,
+nosedIn 3911→3174s, ws-flips in spells 165→84; TWO 800s loops survive (the
+nav re-nose class — the carrot demands wallward; next address if W4's pooled
+set lands). W4 redrock 6-set in flight vs hz2rr*.
+## ⛔ KILLED at the FLEET GATE: W4 (the aimed burst) — the wiggle layer CLOSES
+Pooled 6-set vs hz2rr*: +42 med / +50 mean, ALL SIX SETS WORSE (+4..+86),
+fins 386→366, boat rubs +53%, mark +51%, pen +24% — despite the box gate
+passing (2 of 4 catastrophic transits cured). MECHANISM: the burst bypasses
+avoidance ENTIRELY — including rivals. The stock blind beam-reach into a wall
+is at least stationary; an AIMED burst turns the grinding boat into a blind
+charge across traffic and marks. The burst's blindness to land is inseparable
+from its blindness to boats; giving it eyes for one without the other trades
+grind for collisions. With WIG2 (arctic, sighted side-pick) this closes the
+wiggle layer 2-for-2: ⛔ do not re-enter via the burst. Tree deleted.
+NEXT (in flight): RJ1 — the rejoin is a ROUTE, not a bearing: nosedIn+slow
+boats get a SailCheck.pathBetween micro-route to the plan point as their
+carrot (the demand itself moves into sailable water; every prior shape edited
+prices or LOOK on the same straight line). treeRJ1, box gate running.
