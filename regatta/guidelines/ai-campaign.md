@@ -11367,3 +11367,62 @@ full gate battery; it is the strongest candidate the measurement wave produced.
 | redrock   | 214.7 (n=1, FROZEN)| 499             | 499 (RR4 closed) | 2.32  |
 ⚠️ river 1.53x and redrock 2.32x REPLACE the quoted 1.66x/2.18x: same benches, the
 human denominator corrected to the lap actually sailed on the benched document.
+
+## NEXT-PUSH DIRECTIVE (authored 2026-08-09, section-push close): THE BAR PUSH
+Two of this session's three build slots closed families; the measurement wave paid
+for itself by producing a sized class and correcting the scoreboard. The queue now
+leads with the class, not with a leftover candidate.
+
+P0 — THE CLEARANCE BAR (the strongest sized candidate the campaign holds).
+  `CLEARANCE = HULL_R + 14 = 44u` (sailcheck.js ~18) against a 30u hull forbids
+  8.6% of the human's river leg-3 line — concentrated in the pocket that costs
+  +125 s/boat — and she transits those cells at 122-125 u/s with two contacts in a
+  whole lap. Third member of the CP1/noSubsample family; [[regatta-model-accuracy]]
+  applies. ⚠️ THIS IS A GLOBAL ROUTING CHANGE: it touches every venue, so it is NOT
+  a one-venue gate. Build the ladder in scope order, cheapest first:
+    B1 bar 38u everywhere (admits 5.2% -> 3.4% of her line's exclusions)
+    B2 bar 34u, B3 bar 30u (=physics) — expect a knee, find it
+    B4 if the global bar taxes open venues, scope on a MEASURED grid property the
+       way noSubsample and the canyon law are scoped (navigable-clearance p50), NOT
+       on venue name.
+  GATES (all of them, this is global): river pooled fins/med vs a same-night
+  current-HEAD baseline; redrock 6-set pooled via _pool_rr.js; lake 20@9100 vs
+  op5hlakeA; arctic pooled 4-set vs fan3arc*; bay 20-seed pair; ocean 16@9300 EXACT;
+  seatrials identity. Goldens full --update. ⚠️ Rule 22: baseline on the SAME HEAD.
+P1 — RIVER bin7 (a different mechanism from bin4, same leg): both sides use the same
+  mapped ribbon and she takes the west side while the bots take the east (+51.9
+  s/boat, 24% of the leg). Not a bar problem. Measure before building: is the
+  router's own path on her side and the boats displaced off it, or does the map
+  prefer the east? `_riv_line.js` reads the plan at a northing gate — but note its
+  bin4 read returned ZERO plans because a stalled boat's `gridPath` is built to its
+  current nav target, not the leg end. Fix that (walk the DMC route, not gridPath)
+  before trusting either verdict.
+P2 — LAKE idx1/idx2 (62%/38% of a 1.25x venue) and LAGOON idx1 (34%): give both the
+  subsection treatment `_riv_where.js` gave the river — bins, slow-time share,
+  why-slow controller states, and her line vs theirs. No builds without a class.
+P3 — SQUALL SIZING (lagoon-unique, still unsized): time-in-wake and front-riding,
+  human vs bot. Needs at least one lagoon lap on the SHIPPING document first — all
+  three in the corpus are on retired docs.
+TRAJECTORY REQUESTS (now urgent, and the audit says why — [[regatta-corpus-
+fingerprints]]): RIVER (n=1 on the benched doc), LAGOON (0 on shipping),
+OLD-REDROCK (n=1), then bay/lake/arctic re-stamps, post-gust OCEAN, NEW-REDROCK.
+STAYS CLOSED: everything on the standing list, plus RR1-4 (ladder closed at four
+shapes), LANE1/LANE2 and the whole tack-count-by-routing family (eight shapes),
+curved-on-redrock (was conditional on RR4).
+CONSTRAINTS CARRIED: actions-not-prices; arctic pooled 4-set vs fan3arc*; river
+pooled fins/med; 96-seed redrock protocol near threshold; bench pairs together;
+probe audits (18/18b/19b/19c); ⚠️ NEW traps 21 (pooler sign conventions), 22
+(inertness vs current HEAD, never an anchor), 23 (_traj_fp.js before quoting a human
+ref); freeze_venues --check from repo root; check date; goldens full --update per
+landing; swamp and glowtide are NOT gates (owner: not fully built).
+
+## OPENING PROMPT (paste-ready)
+THE BAR PUSH. Goal unchanged. Open with memory regatta-river-leg3 +
+regatta-corpus-fingerprints + THE BAR PUSH directive at the bottom of
+ai-campaign.md. Behavior HEAD 5e44b55 (the fan-ungate landing; arctic anchors
+fan3arc{A,B,C,D} med 366). P0 is the clearance-bar ladder (B1 38u -> B2 34u -> B3
+30u -> B4 measured-property scope) — a GLOBAL routing change, so every venue gates,
+each against a same-HEAD baseline. Then P1 river bin7 (fix _riv_line's plan read
+first), P2 lake/lagoon subsection treatment, P3 squall sizing once a shipping-doc
+lagoon lap exists. Intake every new trajectory same-day: _traj_fp.js, corpus,
+_gw_ledger2.py, per-leg matrix. Close with the venue table.
