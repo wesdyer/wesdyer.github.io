@@ -4251,6 +4251,9 @@ function applyVenuePalette(venueKey) {
     const docPal = (window.VenueDoc && window.VenueDoc.get(venueKey) || {}).palette;
     const pal = Object.assign({}, DEFAULT_WATER_PALETTE, docPal || {});
     const { gusts, ...waterPal } = pal;
+    // Underscore keys are designer annotations (e.g. lagoon's `_note` on how its water
+    // pair was picked) — they ride in the document, not in the live config.
+    for (const k in waterPal) if (k[0] === '_') delete waterPal[k];
     Object.assign(window.WATER_CONFIG, waterPal);
     // From the MERGED palette, so a document can author its puff colours. It used to read
     // `venuePal.gusts` alone, which meant `doc.palette.gusts` was silently ignored — the
@@ -5488,7 +5491,14 @@ const LAND_TEXTURES = {
     // on-screen surface contrast at 4.12, between the smooth-beach reference
     // (2.95) and the Varkala plate (8.33), which keeps the ground losing the
     // contrast fight with the boats as the texture class requires.
-    tropical: { src: 'assets/images/terrain/bay/bay-sand.png',   tile: 128, alpha: 0.7 }
+    tropical: { src: 'assets/images/terrain/bay/bay-sand.png',   tile: 128, alpha: 0.7 },
+    // The 2026-08-08 batch, each with ISLAND_STYLES body already reset to its tile's
+    // mean, so every alpha below is a pure contrast knob. The two swards start at 0.5
+    // (their mottle is busier than sand's); the rock at 0.35, the granite precedent.
+    coralsand:  { src: 'assets/images/terrain/lagoon/coralsand.png',  tile: 128, alpha: 0.7 },
+    grass:      { src: 'assets/images/terrain/grass.png',            tile: 128, alpha: 0.5 },
+    swampgrass: { src: 'assets/images/terrain/swamp/swampgrass.png', tile: 128, alpha: 0.5 },
+    redrock:    { src: 'assets/images/terrain/redrock/sandstone.png', tile: 256, alpha: 0.35 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];
@@ -5915,6 +5925,123 @@ for (const k in MARK_SPRITES) {
 // An unknown kind falls back to the inflatable rather than drawing nothing: a typo in
 // a document should look wrong, not make a course mark invisible.
 const markSprite = (kind) => MARK_SPRITES[kind] || MARK_SPRITES.inflatable;
+
+// PROP SPRITES, DERIVED — no second table. VenueDoc.PROP_KINDS is the one list (kinds,
+// labels, world sizes), and the src falls out of the ingest convention: a manifest key
+// '<venue>-<name>' stores its bake at assets/images/props/<venue>/<name>.png. Loaded
+// lazily on first draw, so a course with no props loads no images. Unlike marks there
+// is no fallback sprite: an unknown prop kind draws nothing, because the validator
+// already flags it and a wrong palm is harder to notice than a missing one.
+const PROP_SPRITES = {};
+function propSprite(kind) {
+    let s = PROP_SPRITES[kind];
+    if (!s) {
+        const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+        if (!reg[kind]) return null;
+        const i = kind.indexOf('-');
+        s = PROP_SPRITES[kind] = { img: new Image(), world: reg[kind].world || 40 };
+        s.img.src = `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
+    }
+    return s;
+}
+
+// Props draw in THREE PASSES, one per plane — the compiled trait says which stratum a
+// prop belongs to, and the pass is called from that stratum's place in drawScene:
+//   seabed   with the bottom (after the seagrass, before the swell) — everything at the
+//            surface runs over it, which is most of what sells "under water"; drawn at
+//            reduced alpha so the water above keeps a say in its colour.
+//   surface  over the land and the shore, under the fleet — a trunk, a beached log.
+//   canopy   over the boats — a crown a hull passes beneath.
+// `world` sizes the sprite frame exactly as MARK_SPRITES does; `heading` rotates about
+// the prop's own centre (sprite-up is zero, the engine convention).
+// Seabed translucency is doing REAL work at 0.72: the baked ripple lattice below shows
+// through the sprite, which puts the water's own texture ON the coral — the strongest
+// single "it is under there" cue this renderer has.
+const PROP_PLANE_ALPHA = { seabed: 0.72, surface: 1, canopy: 1 };
+
+// A SEABED sprite is seen THROUGH the water column: its colours washed toward the
+// venue's water (source-atop), softened by a whisper of blur (the refraction cue —
+// ~0.7px at display scale once the 4x bake lands on screen). The wash runs STRONGER
+// than SHOAL_IN_WATER on purpose — 0.38 is the flat sand's number and it left the
+// coral reading as a sticker; a discrete object only reads submerged when the water
+// clearly owns its colour, which by eye lands at ~0.52 against the reference plate.
+// (submergedTint's brightness-gain step needs per-pixel reads, which taint the canvas
+// under file:// — wash + blur + translucency carry the look.) Baked once per sprite
+// per water colour; a venue swap or palette edit rebakes.
+const SEABED_WASH = 0.52;
+const SEABED_BLUR = 3;         // px in the 4x bake
+function submergedSprite(s) {
+    const W = window.WATER_CONFIG || {};
+    const tint = W.heroColor || W.baseColor || '#0ea5e9';
+    if (s.sub && s.sub.tint === tint) return s.sub.canvas;
+    const c = document.createElement('canvas');
+    c.width = s.img.naturalWidth;
+    c.height = s.img.naturalHeight;
+    const g = c.getContext('2d');
+    g.filter = `blur(${SEABED_BLUR}px)`;
+    g.drawImage(s.img, 0, 0);
+    g.filter = 'none';
+    g.globalCompositeOperation = 'source-atop';
+    const hex = tint.replace('#', '');
+    g.fillStyle = `rgba(${parseInt(hex.substr(0, 2), 16)},${parseInt(hex.substr(2, 2), 16)},`
+                + `${parseInt(hex.substr(4, 2), 16)},${SEABED_WASH})`;
+    g.fillRect(0, 0, c.width, c.height);
+    s.sub = { canvas: c, tint };
+    return c;
+}
+function drawProps(ctx, plane) {
+    const props = state.course && state.course.props;
+    if (!props || !props.length) return;
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const camX = state.camera.x, camY = state.camera.y;
+    for (const p of props) {
+        if ((p.plane || 'surface') !== plane) continue;
+        const s = propSprite(p.kind);
+        if (!s || !s.img.complete || !s.img.naturalWidth) continue;
+        const w = s.world * (p.scale || 1);
+        const limit = viewRadius + w;
+        const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
+        if ((x - camX) ** 2 + (y - camY) ** 2 > limit ** 2) continue;
+        ctx.save();
+        ctx.globalAlpha = PROP_PLANE_ALPHA[plane] || 1;
+        ctx.translate(x, y);
+        if (p.heading) ctx.rotate(p.heading);
+        ctx.drawImage(plane === 'seabed' ? submergedSprite(s) : s.img, -w / 2, -w / 2, w, w);
+        ctx.restore();
+    }
+}
+
+// Drift, for props whose motion says so: they ride the same current the boats feel,
+// with a touch of windage, accumulated in `_dx/_dy` so the AUTHORED position stays
+// what the document says. Purely visual by construction — the traits force a drifting
+// prop's contact to none, so nothing physical ever reads the drifted position.
+let _propClock = 0;
+function updateDriftingProps(now) {
+    const props = state.course && state.course.props;
+    if (!props || !props.length) return;
+    const dt = _propClock ? Math.min(0.1, (now - _propClock) / 1000) : 0;
+    _propClock = now;
+    if (!dt) return;
+    for (const p of props) {
+        if (p.motion !== 'drift') continue;
+        const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
+        const cur = (typeof getCurrentAt === 'function') ? getCurrentAt(x, y) : null;
+        let vx = 0, vy = 0;
+        // (-sin, +cos) is DOWN-STREAM in this engine — the gust drift convention. The
+        // first version had the signs mirrored and flotsam crept upwind.
+        if (cur && cur.speed) {
+            vx += -Math.sin(cur.direction) * cur.speed;
+            vy += Math.cos(cur.direction) * cur.speed;
+        }
+        // ~3% windage: flotsam moves downwind even on slack water.
+        if (state.wind) {
+            vx += -Math.sin(state.wind.direction) * state.wind.speed * 0.03;
+            vy += Math.cos(state.wind.direction) * state.wind.speed * 0.03;
+        }
+        p._dx = (p._dx || 0) + vx * dt;
+        p._dy = (p._dy || 0) + vy * dt;
+    }
+}
 function getMarkImgGray(kind) {
     const s = markSprite(kind);
     if (s.gray || !s.img.complete || !s.img.naturalWidth) return s.gray;
@@ -6989,6 +7116,209 @@ function pressureAt(speed) {
     return t < 0 ? 0 : t > 1 ? 1 : t;
 }
 
+// ── SQUALLS ─────────────────────────────────────────────────────────────────
+//
+// The lagoon card's promised mechanic: "squalls marching down the trades. Duck the
+// rain or ride it." Design decisions, in order (owner-approved 2026-08-08):
+//
+//   MOVEMENT   Straight lines. Each cell fixes its course at spawn — the trades plus a
+//              small jitter — and marches at SQUALL_SPEED_FACTOR times the local mean:
+//              squalls OVERTAKE the breeze, which is what makes riding the front a
+//              maneuver and ducking a timing problem. Spawned beyond the upwind edge,
+//              recycled past the downwind one. FIXED POPULATION, race-rng seeded — the
+//              floe doctrine: the count is the designer's, the day's layout is the
+//              seed's. No spawner, no unbounded anything, replays exactly.
+//   SHAPE      An ellipse broader than deep (squall lines are wide and shallow), worn
+//              as a blob-stack of overlapping discs. NO CLOUD BODY over the racing —
+//              the SHADOW is drawn exactly on the physics ellipse and the rain falls
+//              inside it, so the edge you see darken is the edge where the wind
+//              changes. What you feel is what you see.
+//   WIND       Three zones, every edge smoothstepped: the leading third is the gust
+//              front (+SQUALL_FRONT of the local mean), the core holds +SQUALL_CORE,
+//              and a WAKE ellipse trailing behind is dead air at SQUALL_WAKE — the
+//              trap that completes the mechanic: chase the squall too eagerly and you
+//              park in the hole it leaves. Inside, the wind veers toward the cell's
+//              own course (capped at SQUALL_VEER) and fans outward across the flanks,
+//              so one edge lifts you and the other heads you.
+//
+// All of it enters the world through getWindAt below, so the boats, the AI and the
+// whitecap field all feel the same squall without being told about it separately.
+const SQUALL_DEFAULTS = { count: 0, rx: 850, ry: 550, sizeVar: 0.35,
+                          speedFactor: 1.45, courseJitter: 0.17 };
+const SQUALL_FRONT = 0.75;    // leading-edge gain, fraction of the local mean
+const SQUALL_CORE = 0.4;      // under the rain
+const SQUALL_WAKE = 0.45;     // multiplier in the trailing hole: 55% off
+const SQUALL_VEER = 0.35;     // rad, max turn toward the cell's own course
+const SQUALL_FAN = 0.2;       // rad, outflow divergence across the flanks
+
+function spawnSquall(rng, cfg, initial) {
+    const b = state.course.boundary;
+    const e = Arena.extent(b);
+    const cx = (e.minX + e.maxX) / 2, cy = (e.minY + e.maxY) / 2;
+    const halfDiag = Math.hypot(e.maxX - e.minX, e.maxY - e.minY) / 2;
+    const course = state.wind.baseDirection + (rng() * 2 - 1) * (cfg.courseJitter != null ? cfg.courseJitter : SQUALL_DEFAULTS.courseJitter);
+    const ux = -Math.sin(course), uy = Math.cos(course);      // downwind: the march
+    const k = 1 + (cfg.sizeVar != null ? cfg.sizeVar : SQUALL_DEFAULTS.sizeVar) * (rng() * 2 - 1);
+    const rx = (cfg.rx || SQUALL_DEFAULTS.rx) * k;
+    const ry = (cfg.ry || SQUALL_DEFAULTS.ry) * k;
+    const lateral = (rng() * 2 - 1) * halfDiag * 0.8;
+    // Mid-map when the race opens (a course that starts squall-less for two minutes is
+    // a card promise broken); beyond the upwind rim on every respawn after.
+    const along = initial ? (rng() * 2 - 1) * halfDiag : -(halfDiag + ry + 250);
+    const q = {
+        x: cx + ux * along + uy * lateral,
+        y: cy + uy * along - ux * lateral,
+        course, rx, ry,
+        speedFactor: cfg.speedFactor || SQUALL_DEFAULTS.speedFactor,
+        blobs: []
+    };
+    // The blob-stack silhouette and the rain field, dealt once per cell.
+    for (let i = 0; i < 7; i++) {
+        q.blobs.push({ ax: (rng() * 2 - 1) * rx * 0.72, ay: (rng() * 2 - 1) * ry * 0.62,
+                       r: (0.38 + rng() * 0.28) * Math.min(rx, ry) });
+    }
+    return q;
+}
+
+function initSqualls() {
+    state.squalls = [];
+    const cfg = state.course && state.course.doc && state.course.doc.squalls;
+    if (!cfg || !cfg.count || !state.course.boundary) return;
+    state.squallRng = state.race.seed ? mulberry32(state.race.seed + 77) : Math.random;
+    for (let i = 0; i < Math.min(6, cfg.count); i++) {
+        state.squalls.push(spawnSquall(state.squallRng, cfg, true));
+    }
+}
+
+function updateSqualls(dt) {
+    if (!state.squalls || !state.squalls.length) return;
+    const cfg = (state.course.doc && state.course.doc.squalls) || {};
+    const e = Arena.extent(state.course.boundary);
+    const cx = (e.minX + e.maxX) / 2, cy = (e.minY + e.maxY) / 2;
+    const halfDiag = Math.hypot(e.maxX - e.minX, e.maxY - e.minY) / 2;
+    for (let i = 0; i < state.squalls.length; i++) {
+        const q = state.squalls[i];
+        // Carried by the breeze where it is, like a puff — but on ITS OWN fixed course:
+        // a squall is a synoptic feature, and its predictability is the mechanic.
+        const local = regionWindAt(q.x, q.y);
+        const spd = (local.speed > 0.1 ? local.speed : state.wind.speed) * q.speedFactor;
+        q.x += -Math.sin(q.course) * spd * dt;
+        q.y += Math.cos(q.course) * spd * dt;
+        // Past the downwind rim (wake and all): recycle upwind at a fresh lateral.
+        const along = (q.x - cx) * -Math.sin(q.course) + (q.y - cy) * Math.cos(q.course);
+        if (along > halfDiag + q.ry * 2.8 + 250) {
+            state.squalls[i] = spawnSquall(state.squallRng || Math.random, cfg, false);
+        }
+    }
+}
+
+// The shadow: the physics ellipse wearing its blob-stack — BAKED once per cell with a
+// wide blur, because a cloud shadow has no edge: light wraps a cloud, and the hard
+// disc rims of the unbaked version read as a paper cutout on the water. The bake is
+// cheap (a shadow is ALL soft edges, so 3 units/px loses nothing) and the cell's
+// shape never changes, only its position.
+function squallShadowSprite(q) {
+    if (q._shadow) return q._shadow;
+    const UPP = 3;
+    const blurU = Math.min(q.rx, q.ry) * 0.18;          // the softness, in world units
+    let mx = 0, my = 0;
+    for (const b of q.blobs) {
+        mx = Math.max(mx, Math.abs(b.ax) + b.r);
+        my = Math.max(my, Math.abs(b.ay) + b.r);
+    }
+    const W = (mx + blurU * 2.5) * 2, H = (my + blurU * 2.5) * 2;
+    const cv = document.createElement('canvas');
+    cv.width = Math.max(8, Math.ceil(W / UPP));
+    cv.height = Math.max(8, Math.ceil(H / UPP));
+    const g = cv.getContext('2d');
+    const k = cv.width / W;
+    g.filter = `blur(${Math.max(1, blurU * k)}px)`;
+    g.fillStyle = 'rgb(13, 22, 38)';
+    g.beginPath();
+    for (const b of q.blobs) {
+        g.moveTo((b.ax + b.r) * k + cv.width / 2, b.ay * k + cv.height / 2);
+        g.arc(b.ax * k + cv.width / 2, b.ay * k + cv.height / 2, b.r * k, 0, Math.PI * 2);
+    }
+    g.fill();
+    q._shadow = { canvas: cv, w: W, h: H };
+    return q._shadow;
+}
+function drawSquallShadows(ctx) {
+    if (!state.squalls || !state.squalls.length) return;
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    for (const q of state.squalls) {
+        const limit = viewRadius + Math.max(q.rx, q.ry) * 1.8;
+        if ((q.x - state.camera.x) ** 2 + (q.y - state.camera.y) ** 2 > limit ** 2) continue;
+        const sh = squallShadowSprite(q);
+        ctx.save();
+        ctx.translate(q.x, q.y);
+        ctx.rotate(q.course);
+        ctx.globalAlpha = 0.30;
+        ctx.drawImage(sh.canvas, -sh.w / 2, -sh.h / 2, sh.w, sh.h);
+        ctx.restore();
+    }
+}
+
+// The rain: a SCREEN-SPACE downpour whose strength is where YOU are — the smoothstepped
+// squall field sampled at the camera, so sailing toward a cell's heart winds the rain up
+// from a few streaks to a hard grey sheet, and clearing the rim shuts it off. Hard rain
+// is long fast diagonal strokes plus a faint washing veil; every streak is deterministic
+// from its own index (render must not touch the eval RNG stream). Drawn over the whole
+// frame in screen space: rain falls past the CAMERA, not past any one patch of water.
+function squallRainAt(x, y) {
+    let best = 0;
+    if (!state.squalls) return 0;
+    for (const q of state.squalls) {
+        const dx = x - q.x, dy = y - q.y;
+        const ux = -Math.sin(q.course), uy = Math.cos(q.course);
+        const along = dx * ux + dy * uy;
+        const across = dx * uy - dy * ux;
+        // Slightly wider than the physics ellipse: the first drops land before the wind.
+        const d2 = (along * along) / (q.ry * q.ry * 1.32) + (across * across) / (q.rx * q.rx * 1.32);
+        if (d2 < 1) {
+            const t = 1 - Math.sqrt(d2);
+            const sF = t * t * (3 - 2 * t);
+            if (sF > best) best = sF;
+        }
+    }
+    return best;
+}
+function drawSquallRain(ctx) {
+    if (!state.squalls || !state.squalls.length) return;
+    const inten = squallRainAt(state.camera.x, state.camera.y);
+    if (inten <= 0.02) return;
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    // The veil: a downpour greys the world before any single drop reads.
+    ctx.fillStyle = `rgba(178, 198, 214, ${(0.10 * inten).toFixed(3)})`;
+    ctx.fillRect(0, 0, W, H);
+    // Streaks fall down-wind IN THE SCREEN FRAME, so they lean the way the water says.
+    const a = state.wind.direction - state.camera.rotation;
+    const dx = -Math.sin(a), dy = Math.cos(a);
+    const n = Math.round(40 + 180 * inten);
+    const len = 30 + 40 * inten;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    const wrapW = W + len * 2, wrapH = H + len * 2;
+    for (let i = 0; i < n; i++) {
+        const h1 = ((i * 73856093) % 100003) / 100003;
+        const h2 = ((i * 19349663) % 100019) / 100019;
+        const h3 = ((i * 83492791) % 100043) / 100043;
+        // Fast fall: each streak cycles the frame in well under a second at full rate.
+        const t = (state.time * (1.6 + h3 * 1.2) + h1 * 7.3) % 1;
+        const px = (((h1 * wrapW + dx * t * wrapH * 1.4) % wrapW) + wrapW) % wrapW - len;
+        const py = (((h2 * wrapH + dy * t * wrapH * 1.4) % wrapH) + wrapH) % wrapH - len;
+        const al = (0.10 + 0.26 * inten) * (0.6 + 0.4 * h3);
+        ctx.strokeStyle = `rgba(214, 232, 246, ${al.toFixed(3)})`;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + dx * len, py + dy * len);
+        ctx.stroke();
+    }
+    ctx.restore();
+}
+
 function getWindAt(x, y) {
     const mean = regionWindAt(x, y);
     const dir = mean.direction, spd = mean.speed;
@@ -7062,6 +7392,44 @@ function getWindAt(x, y) {
     }
     sumWx += puffWx;
     sumWy += puffWy;
+
+    // ── SQUALLS ── applied to the RESULTANT: front boost, core boost, trailing wake,
+    // and the veer-plus-fan turn — see the squall block above for the design.
+    if (state.squalls && state.squalls.length) {
+        for (const q of state.squalls) {
+            const qdx = x - q.x, qdy = y - q.y;
+            const ux = -Math.sin(q.course), uy = Math.cos(q.course);
+            const along = qdx * ux + qdy * uy;           // + is ahead: the leading side
+            const across = qdx * uy - qdy * ux;
+            let mul = 1, veerT = 0;
+            const d2 = (along * along) / (q.ry * q.ry) + (across * across) / (q.rx * q.rx);
+            if (d2 < 1) {
+                const t = 1 - Math.sqrt(d2), sMain = t * t * (3 - 2 * t);
+                const lead = along > 0 ? Math.min(1, along / q.ry) : 0;
+                mul += (SQUALL_CORE + (SQUALL_FRONT - SQUALL_CORE) * lead) * sMain;
+                veerT = sMain;
+            }
+            // The wake: dead air in an ellipse trailing the cell.
+            const wAlong = along + q.ry * 1.6;
+            const wd2 = (wAlong * wAlong) / (q.ry * q.ry * 1.69) + (across * across) / (q.rx * q.rx * 0.81);
+            if (wd2 < 1) {
+                const t = 1 - Math.sqrt(wd2), sWake = t * t * (3 - 2 * t);
+                mul *= 1 - (1 - SQUALL_WAKE) * sWake;
+            }
+            if (mul !== 1 || veerT > 0) {
+                let mag = Math.hypot(sumWx, sumWy);
+                let dirNow = Math.atan2(sumWx, -sumWy);
+                if (veerT > 0) {
+                    let dAng = q.course + (across / q.rx) * SQUALL_FAN - dirNow;
+                    dAng = ((dAng + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+                    dirNow += Math.max(-SQUALL_VEER, Math.min(SQUALL_VEER, dAng)) * veerT;
+                }
+                mag *= mul;
+                sumWx = Math.sin(dirNow) * mag;
+                sumWy = -Math.cos(dirNow) * mag;
+            }
+        }
+    }
 
     // The local mean, which gates whether a wake reached here — the lee's AIM still comes
     // from each obstacle's own wind.
@@ -8044,11 +8412,21 @@ function renderVenueDetail(key) {
 
     const pal = ((window.VenueDoc && window.VenueDoc.get(key)) || {}).palette || {};
     const deep = pal.deepColor || '#0e7490';
-    const base = pal.baseColor || '#0e6f84';
+    // `heroColor` is the venue's SIGNATURE water, when that differs from its open water.
+    // The lagoon is the case that created it: baseColor became the ocean OUTSIDE the reef
+    // (what you sail out on), but the colour the venue is famous for — the one the card
+    // art leads with — is the painted turquoise inside, which lives on no palette field
+    // the picker reads. Falls back to baseColor, so every other venue is unchanged.
+    const base = pal.heroColor || pal.baseColor || '#0e6f84';
     if (hero) {
         // Dark at the text end, the venue's own water at the art end. The mix toward the
         // page colour is what keeps 14px body type legible on a bright lagoon.
-        hero.style.background = `linear-gradient(115deg, ${mixHex(deep, '#0c1322', 0.55)} 0%, ${deep} 58%, ${base} 100%)`;
+        // ⚠️ THE HERO ELEMENT SPANS THE ART TOO — the square card sits over its right
+        // ~58% — so the gradient must ARRIVE at the water colour before the art begins,
+        // or the signature turquoise renders entirely underneath the picture and the
+        // visible briefing shows only the dark half (which is exactly how the lagoon's
+        // heroColor went unseen for a day).
+        hero.style.background = `linear-gradient(115deg, ${mixHex(deep, '#0c1322', 0.55)} 0%, ${deep} 30%, ${base} 62%)`;
     }
     if (art) {
         // A GENTLE seam, not a shadow: just enough of the panel colour bleeding onto the
@@ -8321,7 +8699,9 @@ function drawCourseMiniMap() {
     // this view exists to plan around — but they are drawn as a WASH with no outline. An
     // inked edge here is the difference between "you may cross this, slowly" and "sail
     // round it", and the second one is a lie the player would plan on.
-    const chartShoals = (state.course.islands || []).filter(l => l.awash && l.vertices && l.vertices.length >= 3);
+    // Not the paint zones: the chart is information, and a visual-only zone carries none —
+    // drawn in the shoal's warning sand it would read as a hazard that is not there.
+    const chartShoals = (state.course.islands || []).filter(l => l.awash && !l.paint && l.vertices && l.vertices.length >= 3);
     if (chartShoals.length) {
         ctx.beginPath();
         for (const isl of chartShoals) ringPath(isl.vertices);
@@ -11900,6 +12280,7 @@ function update(dt) {
 
     updateBaseWind(dt);
     updateGusts(dt);
+    updateSqualls(dt);
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
     // never reach for the RNG stream. No-op off the ocean.
@@ -13253,28 +13634,74 @@ function drawRulesOverlay(ctx) {
         ctx.restore();
     };
 
+    // HYSTERESIS, per pair. The raw tests are re-asked every frame and both sit on knife
+    // edges: isConflictSoon is a projection with a threshold, and getRightOfWay flips its
+    // winner where a rule boundary runs (the overlap line, windward/leeward nearly abeam,
+    // tack near head-to-wind). Drawn raw, a pair near either edge flickers at frame rate —
+    // green and red trading places is the worst case, because it reverses the instruction.
+    // So the display is a DEBOUNCED VIEW of the raw answer: a new verdict must hold for
+    // SWITCH_HOLD before the triangles change, and a vanished conflict lingers OFF_DELAY
+    // before they hide. The physics and penalties still read the raw answer every frame —
+    // this steadies the advice, never the rules.
+    const SWITCH_HOLD = 0.35, OFF_DELAY = 0.45;
+    const t = state.time;
+    if (!drawRulesOverlay._pairs) drawRulesOverlay._pairs = new Map();
+    const pairs = drawRulesOverlay._pairs;
+
     for (let i = 0; i < state.boats.length; i++) {
         const b1 = state.boats[i];
         for (let j = i + 1; j < state.boats.length; j++) {
             const b2 = state.boats[j];
             const distSq = (b1.x - b2.x)**2 + (b1.y - b2.y)**2;
 
+            let raw = null;
             if (distSq < checkDist * checkDist && isConflictSoon(b1, b2)) {
                 const res = getRightOfWay(b1, b2);
-                if (res.boat) {
-                    const winner = res.boat;
-                    const loser = (winner === b1) ? b2 : b1;
+                if (res.boat) raw = { wi: res.boat === b1 ? i : j, rule: res.rule };
+            }
 
-                    if (res.rule === 'Rule 21') {
-                        // Section D override — orange for OCS/penalty
-                        drawTriangle(winner, loser, '#f59e0b');
-                        drawTriangle(loser, winner, '#ef4444');
-                    } else {
-                        // Normal — green ROW, red give-way
-                        drawTriangle(winner, loser, '#4ade80');
-                        drawTriangle(loser, winner, '#ef4444');
-                    }
+            const key = i * 1000 + j;
+            let ps = pairs.get(key);
+            if (ps && ps.at > t) ps = null;                 // a new race rewound the clock
+            if (raw) {
+                if (!ps || !ps.show) {
+                    ps = { show: true, wi: raw.wi, rule: raw.rule, at: t, pend: null, offAt: null };
+                } else if (raw.wi === ps.wi && raw.rule === ps.rule) {
+                    ps.pend = null; ps.offAt = null;        // steady verdict — keep it
+                } else if (!ps.pend || ps.pend.wi !== raw.wi || ps.pend.rule !== raw.rule) {
+                    ps.pend = { wi: raw.wi, rule: raw.rule, at: t };   // new verdict: start the clock
+                    ps.offAt = null;
+                } else if (t - ps.pend.at >= SWITCH_HOLD) {
+                    ps.wi = ps.pend.wi; ps.rule = ps.pend.rule; ps.pend = null;
                 }
+            } else if (ps && ps.show) {
+                ps.pend = null;
+                if (ps.offAt == null) ps.offAt = t;
+                if (t - ps.offAt >= OFF_DELAY) ps.show = false;
+            }
+            if (!ps) continue;
+            pairs.set(key, ps);
+            if (!ps.show) continue;
+
+            const winner = ps.wi === i ? b1 : b2;
+            const loser  = ps.wi === i ? b2 : b1;
+            if (ps.pend) {
+                // CONTESTED: a new verdict is holding its SWITCH_HOLD clock, which means
+                // the law has flipped and the display is about to follow. Matched amber
+                // on BOTH boats says exactly that — the advice is damped and currently
+                // unstable — instead of letting the old green/red claim a certainty the
+                // law no longer has. Symmetric on purpose: Rule 21's orange/red pairing
+                // stays unambiguous because it is not.
+                drawTriangle(winner, loser, '#fbbf24');
+                drawTriangle(loser, winner, '#fbbf24');
+            } else if (ps.rule === 'Rule 21') {
+                // Section D override — orange for OCS/penalty
+                drawTriangle(winner, loser, '#f59e0b');
+                drawTriangle(loser, winner, '#ef4444');
+            } else {
+                // Normal — green ROW, red give-way
+                drawTriangle(winner, loser, '#4ade80');
+                drawTriangle(loser, winner, '#ef4444');
             }
         }
     }
@@ -14017,7 +14444,7 @@ function updateSurf(dt) {
         // would draw in the coastline the whole feature exists not to have. Breaking water
         // over a shoal is a different effect and wants building as one. (drawSurf skips
         // them on the same test, for the same reason.)
-        if (isl.hidden || isl.isFloe || isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
+        if (isl.hidden || isl.isFloe || isl.awash || isl.reef || !isl.vertices || isl.vertices.length < 3) continue;
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl), V = isl.vertices;
@@ -14085,7 +14512,7 @@ function drawSurf(ctx) {
         // surf round every one of Glacier Sound's 112 floes is fussy detail that fights the
         // fleet for attention, and they move, so it never settles. Fixed ice IS a shoreline
         // and keeps its breakers.
-        if (isl.hidden || isl.isFloe || isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
+        if (isl.hidden || isl.isFloe || isl.awash || isl.reef || !isl.vertices || isl.vertices.length < 3) continue;
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl);
@@ -14548,7 +14975,13 @@ function drawMinimap() {
     // the painted mask.
     if (state.course.doc) {
         // Follows the ARENA rather than MASK_WORLD, so it tracks a scaled map and a
-        // polygon boundary instead of a constant that no longer describes either.
+        // polygon boundary instead of a constant that no longer describes either. THE
+        // ARENA'S LONG AXIS JUST FITS: the chart is for racing, so the water you may
+        // sail claims the whole frame, and the scenery beyond the limit shows only as
+        // far as the frame's own margins let it (the whole-canvas water fill below is
+        // what keeps that cropped scenery sitting on sea rather than on glass). This
+        // deliberately reverts an experiment that grew the extent to take in all
+        // scenery — an atoll ring 3x the arena shrank the racing to a postage stamp.
         const e = Arena.extent(state.course.boundary);
         minX = e.minX; maxX = e.maxX; minY = e.minY; maxY = e.maxY;
     }
@@ -14565,6 +14998,44 @@ function drawMinimap() {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.setLineDash([5, 5]); ctx.beginPath(); ctx.arc(bp.x, bp.y, b.radius*scale, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
     }
 
+
+    // ── THE VENUE'S OWN WATER, AND WHAT LIES IN IT ──────────────────────────
+    // A doc venue's chart paints in the venue's real colours: the open water as a rect
+    // over the glass, the painted zones in the signature water, everything on the
+    // bottom in the same derived tints the course draws it with — so the minimap is a
+    // small true picture of the venue, not a diagram in chart-sand. Generated venues
+    // keep the bare glass: they have no authored geography to show.
+    const mmPoly = (verts) => {
+        ctx.beginPath();
+        if (verts.length) {
+            const p0 = t(verts[0].x, verts[0].y);
+            ctx.moveTo(p0.x, p0.y);
+            for (let i = 1; i < verts.length; i++) { const p = t(verts[i].x, verts[i].y); ctx.lineTo(p.x, p.y); }
+        }
+        ctx.closePath();
+    };
+    if (state.course.doc && window.WATER_CONFIG) {
+        const rgbOf = (h, fb) => {
+            const s = String(h || '').replace('#', '');
+            return /^[0-9a-f]{6}$/i.test(s) ? [0, 2, 4].map(i => parseInt(s.substr(i, 2), 16)) : fb;
+        };
+        const base = rgbOf(window.WATER_CONFIG.baseColor, [14, 79, 134]);
+        // The WHOLE canvas, not the extent rect: the frame's spare margins show cropped
+        // scenery from beyond the arena, and that scenery must sit on sea, not on glass.
+        ctx.fillStyle = `rgba(${base[0]},${base[1]},${base[2]},0.9)`;
+        ctx.fillRect(0, 0, width, height);
+        // Painted zones, in document order: shallows in the hero water, meadows in the
+        // same submerged olive the course bakes.
+        const hero = rgbOf(window.WATER_CONFIG.heroColor || window.WATER_CONFIG.baseColor, base);
+        for (const isl of state.course.islands || []) {
+            if (!isl.paint || isl.hidden || !isl.vertices) continue;
+            mmPoly(isl.vertices);
+            ctx.fillStyle = isl.kind === 'seagrass'
+                ? `rgba(${seagrassTone(SEAGRASS_TONES[0]).join(',')},0.55)`
+                : `rgba(${hero[0]},${hero[1]},${hero[2]},0.9)`;
+            ctx.fill('evenodd');
+        }
+    }
 
     // ── PUFFS: WATER, SO THEY GO UNDER THE LAND ─────────────────────────────
     // Drawn here rather than after the islands, which is where they used to be — a puff
@@ -14631,25 +15102,55 @@ function drawMinimap() {
         }
     }
 
+    // Squalls: the weather worth planning around, drawn as its shadow — a dark cell
+    // with a rim, heavier than a puff because it IS heavier than a puff.
+    if (state.squalls) {
+        for (const q of state.squalls) {
+            const pos = t(q.x, q.y);
+            const R = Math.max(q.rx, q.ry) * scale;
+            if (R < 2) continue;
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            ctx.rotate(q.course);
+            ctx.scale(q.rx / Math.max(q.rx, q.ry), q.ry / Math.max(q.rx, q.ry));
+            ctx.beginPath();
+            ctx.arc(0, 0, R, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(16, 26, 44, 0.45)';
+            ctx.fill();
+            ctx.lineWidth = 1.4;
+            ctx.strokeStyle = 'rgba(120, 150, 190, 0.6)';
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+
     // Islands (style-aware: ice reads as pale glacial blue, not land)
     const MINIMAP_ISLAND = {
         tropical: { body: '#fde6b1', top: '#84cc16' },
-        grass:    { body: '#8a9a5b', top: '#4d7c0f' },
+        grass:    { body: '#7aaa1d', top: '#4d7c0f' },
+        swampgrass: { body: '#a09453', top: '#4d7c0f' },
         ice:      { body: '#b8dcf5', top: '#f2f9ff' },
-        redrock:  { body: '#c2703e', top: '#d98e57' },
+        redrock:  { body: '#cc6533', top: '#d98e57' },
         granite:  { body: '#4b5563', top: '#374151' },
-        // Sand, washed toward the water it is under and half transparent. A chart says
-        // where the shallows are — leaving them off would hide the one hazard you are
-        // meant to plan around — but drawn at land's weight the minimap would read as a
-        // course with an island across it, and the whole point is that you may cross.
+        // Coral sand: the lagoon's beaches, kept sand-coloured in both slots — a mask
+        // isle full of cream sand IS its own cap.
+        coralsand: { body: '#efe4cf', top: '#efe4cf' },
+        // Fallback only. A bar's real chart colour is DERIVED per shape below
+        // (shoalTintFor), so a tan bar and a coral-white bar read differently here
+        // exactly as they do on the course.
         shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }
     };
     if (state.course.islands) {
         // Body first. Shoals draw their body and are then skipped by the cap pass below:
-        // the cap is vegetation or snow, and a bar under water has neither.
+        // the cap is vegetation or snow, and a bar under water has neither. Paint zones
+        // are not islands at all — they were drawn with the water above.
         for (const isl of state.course.islands) {
-            if (isl.isBank || isl.hidden) continue;
-            ctx.fillStyle = isl.fromMask
+            if (isl.isBank || isl.hidden || isl.paint) continue;
+            ctx.fillStyle = isl.reef
+                ? `rgba(${submergedTint(REEF_RUBBLE[1]).join(',')},0.6)`   // the band's own drowned khaki
+                : isl.awash
+                ? `rgba(${shoalTintFor(isl).join(',')},0.6)`
+                : isl.fromMask
                 ? (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.ice).top
                 : (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.tropical).body;
             ctx.beginPath();
@@ -16337,8 +16838,19 @@ function draw() {
 
     // SHOALS BEFORE THE SWELL — the only thing in the world that is genuinely BELOW the
     // surface, so it is the only thing the surface layers are allowed to run across. See
-    // drawShoals.
+    // drawShoals. Painted shallows go first of all: a shoal inside a lagoon is still a
+    // bar, so its sand draws over the zone's tint.
+    updateDriftingProps(performance.now());
+    drawShallows(ctx);
     drawShoals(ctx);
+    // Seagrass grows ON the bar, so it paints over the shoal sand — and still under
+    // every surface layer, like everything else on the bottom.
+    drawSeagrass(ctx);
+    // The reef mass sits over sand and weed, then seabed props (coral heads and their
+    // kin) close out the bottom — a head placed on a reef draws over it, and every
+    // layer of the moving surface runs across them all.
+    drawReefs(ctx);
+    drawProps(ctx, 'seabed');
 
     // SWELL FIRST, under everything else on the water. It is the shape of the sea itself —
     // the biggest, slowest structure there is — so the wakes, the cat's-paws and the
@@ -16388,6 +16900,8 @@ function draw() {
     drawIslands(ctx);
     // Surf sits ON the shore, so it goes over the land and under the air layer.
     drawSurf(ctx);
+    // Surface props: over the land they stand on, under everything that races.
+    drawProps(ctx, 'surface');
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
     drawRulesOverlay(ctx);
@@ -16413,6 +16927,18 @@ function draw() {
         drawBoat(ctx, boat);
         ctx.restore();
     }
+
+    // Canopy props: the crowns a hull sails beneath, so they go over the fleet — and
+    // under the air layer, because a wind comet passes over a treetop too.
+    drawProps(ctx, 'canopy');
+
+    // The cloud is ABOVE the world, so its shadow falls on everything under it — water,
+    // sand, palms, hulls alike. Drawing it at the surface layer left islands and props
+    // standing in sunlight inside a squall, which read as a hole in the weather. It is
+    // still the physics ellipse exactly: the darkened world is the changed wind.
+    drawSquallShadows(ctx);
+    // Rain falls past the camera: a boat in a squall is a boat seen through it.
+    drawSquallRain(ctx);
 
     // Wind comets are air, not water — they pass over hulls and sails, not under them.
     drawParticles(ctx, 'air');
@@ -17092,9 +17618,23 @@ const ISLAND_STYLES = {
     // colour, so the mean-luma shift the arctic textures have to warn about cannot
     // happen here.
     tropical: { body: '#ddc39a', stroke: '#b89b78', veg: '#84cc16', rock: '#9ca3af', trees: true },
-    grass:    { body: '#a89b6a', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },
+    // Caribbean coral sand — the `tropicsand` kind's look, markedly whiter and cooler
+    // than `tropical`'s tan. Body is the lagoon-coralsand texture's SPEC mean (#efe6d5);
+    // when that tile is delivered, reset it to the DELIVERED tile's own mean, the same
+    // base-equals-tile-mean move bay-sand made, so LAND_TEXTURES' alpha stays a pure
+    // contrast knob. Palms belong on it, hence trees: true.
+    // Colour-matched to the lagoon reference plate (2026-08-08): warm cream rather than
+    // the near-white first spec, and the stroke pulled CLOSE to the body on purpose —
+    // the reference beaches melt into their bars, so the coastline line stays quiet and
+    // the tone ladder (ocean -> lagoon -> bar -> sand) does the separating.
+    coralsand: { body: '#efe4cf', stroke: '#ddd0ad', veg: '#84cc16', rock: '#9ca3af', trees: true },   // body = coralsand tile mean
+    // Brightened 2026-08-08: `grass` is fresh MEADOW green now. The tan-olive it used
+    // to be moved wholesale to `swampgrass` below — the bayou keeps its sun-cured look
+    // (its docs were re-kinded), and everything else's grass isles read alive.
+    grass:    { body: '#7aaa1d', stroke: '#5c8438', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },   // body = grass tile mean
+    swampgrass: { body: '#a09453', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },   // body = swampgrass tile mean
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
-    redrock:  { body: '#c2703e', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },
+    redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
     granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
@@ -17106,7 +17646,11 @@ const ISLAND_STYLES = {
     //
     // No trees, no rocks and no stroke worth the name — the crisp shoreline is exactly the
     // cue that says "this is land", so a shoal must not have one. Its edge is a gradient.
-    shoal:    { body: '#ddc39a', stroke: '#c9ad84', veg: '#ddc39a', rock: '#c9ad84', trees: false }
+    shoal:    { body: '#ddc39a', stroke: '#c9ad84', veg: '#ddc39a', rock: '#c9ad84', trees: false },
+    // Coral-white shoal — THE SAME SAND as `coralsand`, exactly as `shoal` is the same
+    // sand as `tropical`: a bar is the beach continuing under the water, so each beach
+    // look has its bar look. shoalTintFor derives what the water does to it per shape.
+    coralshoal: { body: '#efe4cf', stroke: '#ddd0ad', veg: '#efe4cf', rock: '#ddd0ad', trees: false }   // same sand as coralsand, kept equal
 };
 
 // How a bar comes through the water. Two numbers, because a shoal has to answer two
@@ -17138,21 +17682,42 @@ const SHOAL_ALPHA_RIM  = 0.0;     // at the outline, where the water is deep and
 // palette a venue authored, automatically, on venues that do not exist yet.
 const SHOAL_IN_WATER = 0.38;      // how much of the column's own colour you see the sand through
 const SHOAL_REF_LUMA = 128;       // luma of the bright tropical water the sand was picked against
-function shoalTint() {
+// The derivation, factored out because it is true of ANYTHING on the bottom — the sand
+// bar and the seagrass meadow are the same physics under the same light, so they go
+// through the same two steps and can never disagree about what the water does to them.
+function submergedTint(bottom) {
     const W = window.WATER_CONFIG || {};
     const rgb = (h, fb) => {
         const s = String(h || '').replace('#', '');
         if (s.length !== 6) return fb;
         return [parseInt(s.substring(0, 2), 16), parseInt(s.substring(2, 4), 16), parseInt(s.substring(4, 6), 16)];
     };
-    const sand = rgb((ISLAND_STYLES.shoal || {}).body, [221, 195, 154]);
-    const water = rgb(W.baseColor, [14, 165, 233]);
+    // The water you SEE THE BOTTOM THROUGH. Where a venue authors a heroColor — its
+    // signature shallow water, the lagoon inside the reef — that is the column over
+    // every bar and meadow, and deriving from the open-ocean base instead made them
+    // impossibly dark (the lagoon split left baseColor at luma 67, gain 0.52: no body
+    // colour in gamut could reach the bright mint a Caribbean bar actually is). Venues
+    // without a heroColor are unchanged: one water, same answer as always.
+    const water = rgb(W.heroColor || W.baseColor, [14, 165, 233]);
     const luma = 0.299 * water[0] + 0.587 * water[1] + 0.114 * water[2];
     // Floored well above zero: a bar you cannot see is a bar you cannot decide about, and
     // Glowtide's night water would otherwise take it to nearly black. Capped just over 1 so
     // an unusually bright venue cannot blow the sand out past white.
     const gain = Math.max(0.42, Math.min(1.12, luma / SHOAL_REF_LUMA));
-    return sand.map((c, i) => Math.round((c * (1 - SHOAL_IN_WATER) + water[i] * SHOAL_IN_WATER) * gain));
+    return bottom.map((c, i) => Math.round((c * (1 - SHOAL_IN_WATER) + water[i] * SHOAL_IN_WATER) * gain));
+}
+// Per MATERIAL, not one global sand: a shoal's look names its ISLAND_STYLES entry
+// (`shoal` is the tan bar, `coralshoal` the coral-white one), and the body of that
+// entry is the bottom the light derivation starts from. One bar off a Cape-Cod beach
+// and one off a Tropic Sand beach are different sands under the same water.
+function shoalTintFor(isl) {
+    const rgb = (h, fb) => {
+        const s = String(h || '').replace('#', '');
+        if (s.length !== 6) return fb;
+        return [parseInt(s.substring(0, 2), 16), parseInt(s.substring(2, 4), 16), parseInt(s.substring(4, 6), 16)];
+    };
+    const st = (isl && ISLAND_STYLES[isl.style]) || ISLAND_STYLES.shoal || {};
+    return submergedTint(rgb(st.body, [221, 195, 154]));
 }
 
 // ── SHOALS ──────────────────────────────────────────────────────────────────
@@ -17180,7 +17745,7 @@ function bakeShoalSprite(isl) {
     const g = cv.getContext('2d');
     const img = g.createImageData(px, px);
     const d = img.data;
-    const [sr, sg, sb] = shoalTint();
+    const [sr, sg, sb] = shoalTintFor(isl);
     // The multiplier at the heart is what "fully shallow" means for THIS shoal, so a
     // gentler bar reads as a fainter one and a 0-drag shoal is invisible rather than
     // dividing by zero. That is the honest picture: no drag, nothing to warn about.
@@ -17204,6 +17769,386 @@ function bakeShoalSprite(isl) {
     isl._shoalSprite = { canvas: cv, r: R, tint: `${sr},${sg},${sb}` };
 }
 
+// ── PAINTED SHALLOWS ────────────────────────────────────────────────────────
+//
+// A `shallows` zone is a POLYGON WITH A SOFT EDGE, baked once like every other island
+// sprite. It is NOT a drag field — zero drag is the kind's whole point — so unlike a
+// shoal there is no number to rasterise: the fill is flat and the rim is a blur, sized
+// by the same feather the shoals use so the two transitions read as one water.
+//
+// The alpha is deliberately well under 1: the zone is a TINT OVER the venue's water,
+// not a replacement for it. The ripple lattice beneath still shows through, and the
+// swell, wakes, gusts and wind waves are all drawn after, so they run across the zone
+// unbroken — which is most of what keeps it reading as water rather than paint. The
+// venue palette authors the two colours as a pair: `baseColor` is the open water (for
+// a lagoon, the deep ocean outside the reef) and `shallowColor` is what this zone
+// lays over it, picked knowing the blend (final ≈ 0.72·shallow + 0.28·base).
+const SHALLOWS_ALPHA = 0.72;
+function bakeShallowsSprite(isl) {
+    const tint = (window.WATER_CONFIG && window.WATER_CONFIG.shallowColor) || '#38bdf8';
+    // The blur bleeds outward, so give the sprite room for it past the outline.
+    const margin = isl.shoalFeather + 20;
+    const R = isl.radius + margin;
+    const px = Math.max(32, Math.min(1024, Math.ceil((R * 2) / SHOAL_UNITS_PER_PX)));
+    const scale = px / (R * 2);
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = px;
+    const g = cv.getContext('2d');
+    // Geometry mapped to device pixels by hand rather than ctx.scale: canvas filter
+    // units interact with the current transform inconsistently across browsers, and a
+    // feather that renders at two different widths is exactly the seam this bake exists
+    // to avoid.
+    const pts = isl.vertices.map(v => ({
+        x: (v.x - isl.x + R) * scale,
+        y: (v.y - isl.y + R) * scale
+    }));
+    // Half the feather each side of the authored edge ≈ a transition the feather wide,
+    // matching the shoals' smoothstepped rim.
+    g.filter = `blur(${Math.max(1, (isl.shoalFeather / 2) * scale)}px)`;
+    g.globalAlpha = SHALLOWS_ALPHA;
+    g.fillStyle = tint;
+    traceRoundedPoly(g, pts);
+    g.fill();
+    isl._shallowsSprite = { canvas: cv, r: R, tint };
+}
+
+// UNDER THE SHOALS, AND UNDER EVERYTHING ON THE WATER. A zone says "the water here is
+// a different water"; a bar inside it is still a bar, so the shoal's sand paints over
+// the tint, and everything AT the surface paints over both.
+function drawShallows(ctx) {
+    if (!state.course || !state.course._hasShallows) return;
+    const tint = (window.WATER_CONFIG && window.WATER_CONFIG.shallowColor) || '#38bdf8';
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const camX = state.camera.x, camY = state.camera.y;
+    for (const isl of state.course.islands) {
+        // Seagrass is also `paint`, but it is drawSeagrass' layer — it goes OVER the
+        // shoal sand, and this pass runs under it.
+        if (!isl.paint || isl.hidden || isl.kind === 'seagrass') continue;
+        const limit = viewRadius + isl.radius;
+        if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
+        // Keyed on the tint like the shoal bake: a venue swap or a live palette edit
+        // rebakes rather than leaving last venue's water painted on this one.
+        if (!isl._shallowsSprite || isl._shallowsSprite.tint !== tint) bakeShallowsSprite(isl);
+        const s = isl._shallowsSprite;
+        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+    }
+}
+
+// ── SEAGRASS ────────────────────────────────────────────────────────────────
+//
+// A meadow is the second painted zone, and the opposite fill: where shallows is one flat
+// tint with a blurred rim, seagrass is HUNDREDS OF SMALL DARK CLUMPS and no tint at all —
+// because from this camera's altitude a bed is not a surface, it is patchy mass against
+// bright sand. The clumps are scattered in code from the shape's own seeded PRNG (never
+// Math.random — render must not touch the eval RNG stream, and a meadow that rearranged
+// itself every reload would read as a bug): arrangement is code's job, which is the
+// compose.py argument applied at runtime.
+//
+// The edge is DENSITY, not blur. A meadow peters out — clumps thin and shrink over the
+// same feather band the other zones use — so the rim stays crisp per-clump and soft as a
+// mass, which is exactly how the aerial references read. A few larger sandy holes are
+// carved the same way, so the interior is patchwork rather than carpet.
+//
+// The three green tones go through submergedTint like the shoal's sand: grass and bar
+// are the same bottom under the same light, so Pearl Lagoon shows bright olive through
+// turquoise and a night venue would show a dark smudge, automatically.
+const SEAGRASS_TONES = [[43, 74, 45], [58, 94, 52], [74, 112, 58]];   // dark / mid / light olive
+const SEAGRASS_ALPHA = 0.85;      // per-clump; overlap builds the darker heart of a patch
+// A meadow lies FLAT on the bottom — the deepest-reading thing in the water short of the
+// reef mass — so past submergedTint it takes a second pull toward the water, and the
+// whole layer draws translucent enough for the ripple lattice to read through it. Same
+// deepening the coral heads got, tuned a notch further because grass has no relief to
+// protect: it is a stain on the seabed, and a stain is mostly water.
+const SEAGRASS_EXTRA_WASH = 0.3;
+const SEAGRASS_LAYER_ALPHA = 0.66;
+function seagrassTone(base) {
+    const t = submergedTint(base);
+    const W = window.WATER_CONFIG || {};
+    const hex = String(W.heroColor || W.baseColor || '#0ea5e9').replace('#', '');
+    const w = [parseInt(hex.substr(0, 2), 16), parseInt(hex.substr(2, 2), 16), parseInt(hex.substr(4, 2), 16)];
+    return t.map((c, i) => Math.round(c * (1 - SEAGRASS_EXTRA_WASH) + w[i] * SEAGRASS_EXTRA_WASH));
+}
+const SEAGRASS_SPACING = 24;      // world units between scatter candidates (~2.6 m)
+function bakeSeagrassSprite(isl) {
+    const tones = SEAGRASS_TONES.map(t => seagrassTone(t));
+    const R = isl.radius + 10;
+    const px = Math.max(32, Math.min(1024, Math.ceil((R * 2) / SHOAL_UNITS_PER_PX)));
+    const scale = px / (R * 2);
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = px;
+    const g = cv.getContext('2d');
+
+    // Seeded from the shape's id, so the layout is the venue's, not the session's.
+    let seed = 2166136261;
+    for (const ch of String(isl.id || 'seagrass')) seed = ((seed ^ ch.charCodeAt(0)) * 16777619) >>> 0;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+
+    // The unkeyholed rings (outer + holes), same source of truth the shoal depth read
+    // uses — the keyholed trace's zero-width slit would put a false edge across the bed.
+    const rings = isl.shoalRings || [isl.vertices.map(v => [v.x, v.y])];
+    const inRing = (x, y, ring) => {
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [xi, yi] = ring[i], [xj, yj] = ring[j];
+            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+        }
+        return inside;
+    };
+    const edgeDist = (x, y) => {
+        let d2 = Infinity;
+        for (const ring of rings) {
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const [x1, y1] = ring[j], [x2, y2] = ring[i];
+                const dx = x2 - x1, dy = y2 - y1;
+                const L2 = dx * dx + dy * dy || 1;
+                const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
+                const px_ = x1 + t * dx - x, py_ = y1 + t * dy - y;
+                const dd = px_ * px_ + py_ * py_;
+                if (dd < d2) d2 = dd;
+            }
+        }
+        return Math.sqrt(d2);
+    };
+    const inside = (x, y) => {
+        if (!inRing(x, y, rings[0])) return false;
+        for (let h = 1; h < rings.length; h++) if (inRing(x, y, rings[h])) return false;
+        return true;
+    };
+
+    // Sandy holes: a handful of soft low-density ellipses, scaled to the bed. These are
+    // what keep a big meadow from reading as one stamped carpet.
+    const holeN = Math.max(2, Math.round(isl.radius / 150));
+    const holes = [];
+    for (let i = 0; i < holeN; i++) {
+        holes.push({ x: isl.x + (rand() * 2 - 1) * isl.radius * 0.7,
+                     y: isl.y + (rand() * 2 - 1) * isl.radius * 0.7,
+                     r: isl.radius * (0.12 + rand() * 0.14) });
+    }
+    const smooth = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+    const feather = isl.shoalFeather || 120;
+
+    // Jittered-grid scatter over the bbox: even coverage without Poisson bookkeeping.
+    const minX = isl.x - isl.radius, minY = isl.y - isl.radius;
+    const cells = Math.max(1, Math.ceil((isl.radius * 2) / SEAGRASS_SPACING));
+    for (let gy = 0; gy < cells; gy++) {
+        for (let gx = 0; gx < cells; gx++) {
+            const wx = minX + (gx + 0.15 + rand() * 0.7) * SEAGRASS_SPACING;
+            const wy = minY + (gy + 0.15 + rand() * 0.7) * SEAGRASS_SPACING;
+            if (!inside(wx, wy)) continue;
+            // Rim thinning: full density a feather in from the edge, none at the rim.
+            let p = smooth(edgeDist(wx, wy) / feather) * 0.9;
+            for (const h of holes) {
+                const hd = Math.hypot(wx - h.x, wy - h.y);
+                if (hd < h.r) p *= 0.12 + 0.88 * smooth(hd / h.r);
+            }
+            if (rand() >= p) continue;
+            // One clump: a few overlapped ellipses, mostly dark, the light tone rare —
+            // large clean value masses, not per-blade noise.
+            const cx = (wx - isl.x + R) * scale, cy = (wy - isl.y + R) * scale;
+            const cs = (7 + rand() * 9) * scale;
+            const n = 3 + Math.floor(rand() * 3);
+            for (let b = 0; b < n; b++) {
+                const t = rand();
+                const tone = tones[t < 0.55 ? 0 : t < 0.86 ? 1 : 2];
+                g.fillStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},${SEAGRASS_ALPHA})`;
+                g.beginPath();
+                g.ellipse(cx + (rand() - 0.5) * cs, cy + (rand() - 0.5) * cs,
+                          cs * (0.32 + rand() * 0.3), cs * (0.2 + rand() * 0.24),
+                          rand() * Math.PI, 0, Math.PI * 2);
+                g.fill();
+            }
+        }
+    }
+    isl._seagrassSprite = { canvas: cv, r: R, tint: tones[0].join(',') };
+}
+
+// ── CORAL REEF ──────────────────────────────────────────────────────────────
+//
+// The third painted bottom, and the first that is also a WALL (its collision comes from
+// the shape itself — soft by kind, so you grind along it rather than sticking to it).
+// The picture: a dark reef-rock mass with a tight feathered rim, worked over with a
+// DENSE field of touching coral clumps in the six pastel families the coral-head
+// sprites established, each clump sitting on its own relief shadow. Submersion comes
+// from ONE submergedTint wash plus the translucency that lets the ripple lattice read
+// through — the reef's own job is structure, and it must stay legible as the one
+// bottom you cannot sail into.
+// Palette and structure matched to the owner's reference plate (sampled 2026-08-08):
+// the reef BAND is olive-khaki RUBBLE — dark seams #4f6148, mid #747f63, pale #9da795
+// on screen — and the pinks/lavenders/purples arrive as clustered COLONIES inside it,
+// patches the size of a coral garden, never an even confetti. Occasional pale sand
+// pockets open inside the band. Bases below are pre-wash: submergedTint plus the 0.7
+// draw alpha green them toward the reference's own drowned reading.
+const REEF_RUBBLE = [
+    [110, 96, 48],     // dark seam khaki
+    [168, 146, 92],    // mid rubble
+    [204, 190, 146]    // pale worn rubble
+    // A notch warmer than the reference's own screen values on purpose: submergedTint
+    // pulls everything toward the turquoise hero, so the bases must overshoot brown to
+    // land on the plate's olive.
+];
+// Colony accents, tuned for what they become AFTER the wash — the hero water adds
+// roughly +119 green-over-red to everything, so a base keeps its identity only by
+// overshooting its own hue (a pink needs R-G >= ~110 at base to still read pink).
+// Post-wash these land as dusty rose, periwinkle, gold-green and bright mint: four
+// distinct gardens, every one of them pulled toward the green by the water itself,
+// which is what keeps the band reading as one reef rather than confetti.
+const REEF_ACCENTS = [
+    [245, 108, 124],   // -> dusty rose
+    [150, 125, 195],   // -> periwinkle
+    [225, 175, 85],    // -> gold-green
+    [140, 210, 170]    // -> bright mint
+];
+const REEF_SAND = [225, 214, 178];   // the pockets that open inside the band
+const REEF_DARK = [40, 44, 30];      // relief shadow under every clump
+const REEF_BASE = [70, 66, 44];      // the rock mass the rubble sits on
+const REEF_ALPHA = 0.7;
+const REEF_SPACING = 13;             // dense: the clumps have to TOUCH to read as rubble
+const REEF_PATCH = 90;               // world units — the size of a colony or a sand pocket
+const REEF_UNITS_PER_PX = 2.0;       // crisper than the drag-field bakes: this is texture, not gradient
+function bakeReefSprite(isl) {
+    const rubble = REEF_RUBBLE.map(t => submergedTint(t));
+    const accents = REEF_ACCENTS.map(t => submergedTint(t));
+    const sand = submergedTint(REEF_SAND);
+    const dark = submergedTint(REEF_DARK);
+    const ground = submergedTint(REEF_BASE);
+    const R = isl.radius + 80;
+    const px = Math.max(32, Math.min(1024, Math.ceil((R * 2) / REEF_UNITS_PER_PX)));
+    const scale = px / (R * 2);
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = px;
+    const g = cv.getContext('2d');
+
+    // The reef MASS: dark rock, a tight blurred rim — soft enough to sit in the water,
+    // firm enough to read as a thing with an edge.
+    const pts = isl.vertices.map(v => ({ x: (v.x - isl.x + R) * scale, y: (v.y - isl.y + R) * scale }));
+    const feather = Math.min(40, isl.radius * 0.3);
+    g.filter = `blur(${Math.max(1, (feather / 3) * scale)}px)`;
+    g.globalAlpha = 0.95;
+    g.fillStyle = `rgb(${ground[0]},${ground[1]},${ground[2]})`;
+    traceRoundedPoly(g, pts);
+    g.fill();
+    g.filter = 'none';
+    g.globalAlpha = 1;
+
+    // The rubble and its colonies: seeded, dense, chunky, every clump on its own shadow.
+    // COLOUR ARRIVES IN PATCHES — a coarse REEF_PATCH grid is hashed per cell, and a
+    // cell is either plain rubble, one accent colony (rose, lavender or purple —
+    // the whole cell leans that one way), or a pale sand pocket. That patching is the
+    // reference plate's structure: gardens inside a khaki band, never even confetti.
+    let seed = 2166136261;
+    for (const ch of String(isl.id || 'reef')) seed = ((seed ^ ch.charCodeAt(0)) * 16777619) >>> 0;
+    const seed0 = seed;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const cellHash = (cx2, cy2) => {
+        let h = (seed0 ^ Math.imul(cx2, 73856093) ^ Math.imul(cy2, 19349663)) >>> 0;
+        h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0;
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    };
+    const ring = isl.vertices.map(v => [v.x, v.y]);
+    const inRing = (x, y) => {
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [xi, yi] = ring[i], [xj, yj] = ring[j];
+            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+        }
+        return inside;
+    };
+    const edgeDist = (x, y) => {
+        let d2 = Infinity;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const [x1, y1] = ring[j], [x2, y2] = ring[i];
+            const dx = x2 - x1, dy = y2 - y1;
+            const L2 = dx * dx + dy * dy || 1;
+            const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
+            const qx = x1 + t * dx - x, qy = y1 + t * dy - y;
+            if (qx * qx + qy * qy < d2) d2 = qx * qx + qy * qy;
+        }
+        return Math.sqrt(d2);
+    };
+    const smooth = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+    const minX = isl.x - isl.radius, minY = isl.y - isl.radius;
+    const cells = Math.max(1, Math.ceil((isl.radius * 2) / REEF_SPACING));
+    for (let gy = 0; gy < cells; gy++) {
+        for (let gx = 0; gx < cells; gx++) {
+            const wx = minX + (gx + 0.15 + rand() * 0.7) * REEF_SPACING;
+            const wy = minY + (gy + 0.15 + rand() * 0.7) * REEF_SPACING;
+            if (!inRing(wx, wy)) continue;
+            if (rand() >= smooth(edgeDist(wx, wy) / feather) * 0.95) continue;
+            const pc = cellHash(Math.floor(wx / REEF_PATCH), Math.floor(wy / REEF_PATCH));
+            let tone;
+            const r0 = rand();
+            if (pc < 0.06) {
+                // Sand pocket: pale floor with worn rubble at its edges.
+                tone = r0 < 0.7 ? sand : rubble[2];
+            } else if (pc < 0.28) {
+                // Colony cell: the whole cell leans ONE accent, cut with mid rubble.
+                const acc = accents[Math.floor(pc * 997) % accents.length];
+                tone = r0 < 0.68 ? acc : rubble[1 + (r0 < 0.84 ? 0 : 1)];
+            } else {
+                // Plain band: dark seams, mid mass, pale wear.
+                tone = r0 < 0.25 ? rubble[0] : r0 < 0.7 ? rubble[1] : rubble[2];
+            }
+            const cx = (wx - isl.x + R) * scale, cy = (wy - isl.y + R) * scale;
+            const cs = (11 + rand() * 16) * scale;
+            const n = 2 + Math.floor(rand() * 3);
+            for (let b = 0; b < n; b++) {
+                const ex = cx + (rand() - 0.5) * cs, ey = cy + (rand() - 0.5) * cs;
+                const rx = cs * (0.3 + rand() * 0.3), ry = cs * (0.22 + rand() * 0.25);
+                const rot = rand() * Math.PI;
+                g.fillStyle = `rgba(${dark[0]},${dark[1]},${dark[2]},0.47)`;
+                g.beginPath();
+                g.ellipse(ex + 3.6 * scale, ey + 6 * scale, rx, ry, rot, 0, Math.PI * 2);
+                g.fill();
+                g.fillStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},0.92)`;
+                g.beginPath();
+                g.ellipse(ex, ey, rx, ry, rot, 0, Math.PI * 2);
+                g.fill();
+            }
+        }
+    }
+    isl._reefSprite = { canvas: cv, r: R, tint: ground.join(',') };
+}
+
+// With the bottom layers: over the sand and the weed, under the seabed props (a coral
+// HEAD placed on a reef draws over it) and under everything at the surface.
+function drawReefs(ctx) {
+    if (!state.course || !state.course._hasReefs) return;
+    const tintKey = submergedTint(REEF_BASE).join(',');
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const camX = state.camera.x, camY = state.camera.y;
+    for (const isl of state.course.islands) {
+        if (!isl.reef || isl.hidden) continue;
+        const limit = viewRadius + isl.radius;
+        if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
+        if (!isl._reefSprite || isl._reefSprite.tint !== tintKey) bakeReefSprite(isl);
+        const s = isl._reefSprite;
+        ctx.save();
+        ctx.globalAlpha = REEF_ALPHA;
+        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        ctx.restore();
+    }
+}
+
+// OVER THE SHOAL SAND — grass grows ON the bar — and under everything at the surface,
+// like the other bottom layers.
+function drawSeagrass(ctx) {
+    if (!state.course || !state.course._hasSeagrass) return;
+    const tintKey = seagrassTone(SEAGRASS_TONES[0]).join(',');
+    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const camX = state.camera.x, camY = state.camera.y;
+    for (const isl of state.course.islands) {
+        if (isl.kind !== 'seagrass' || isl.hidden) continue;
+        const limit = viewRadius + isl.radius;
+        if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
+        if (!isl._seagrassSprite || isl._seagrassSprite.tint !== tintKey) bakeSeagrassSprite(isl);
+        const s = isl._seagrassSprite;
+        ctx.save();
+        ctx.globalAlpha = SEAGRASS_LAYER_ALPHA;
+        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        ctx.restore();
+    }
+}
+
 // UNDER EVERYTHING ON THE WATER, and that is the whole statement the layer makes. The
 // swell, the wakes, the cat's-paws, the wind waves and the nav aids are all things
 // happening AT the surface; the bar is beneath it, so it is painted before all of them and
@@ -17213,11 +18158,13 @@ function drawShoals(ctx) {
     if (!state.course || !state.course._hasShoals) return;
     const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x, camY = state.camera.y;
-    const tint = shoalTint().join(',');
     for (const isl of state.course.islands) {
-        if (!isl.awash || isl.hidden) continue;
+        // Paint zones are drawShallows' business — a 0-drag bake here would be invisible.
+        if (!isl.awash || isl.hidden || isl.paint) continue;
         const limit = viewRadius + isl.radius;
         if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
+        // Per island, because the tint is per MATERIAL now (tan bar vs coral-white bar).
+        const tint = shoalTintFor(isl).join(',');
         if (!isl._shoalSprite || isl._shoalSprite.tint !== tint) bakeShoalSprite(isl);
         const s = isl._shoalSprite;
         ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
@@ -17442,8 +18389,10 @@ function drawIslands(ctx) {
     for (const isl of state.course.islands) {
         // Invisible colliders: the river banks draw as one continuous mass in
         // drawRiverShore instead. Awash shapes were already painted UNDER the water by
-        // drawShoals — this pass is the world standing above it.
-        if (isl.isBank || isl.hidden || isl.awash) continue;
+        // drawShoals — this pass is the world standing above it. A reef collides like
+        // land but LIVES on the bottom (drawReefs painted it with the water layers),
+        // so drawing it here would stand it up out of the sea as a sand island.
+        if (isl.isBank || isl.hidden || isl.awash || isl.reef) continue;
         const distSq = (isl.x - camX) ** 2 + (isl.y - camY) ** 2;
         const limit = viewRadius + isl.radius;
         if (distSq > limit ** 2) continue;
@@ -17852,6 +18801,7 @@ function initCourse() {
         state.race.totalLegs = c.legs;
         state.course.route = c.route;
         state.course.islands = c.islands;      // replaced below, once the floes exist
+        state.course.props = c.props || [];
         state.course.navIslands = c.islands;
         state.course.navVersion = 0;
         state.course.doc = doc;
@@ -17950,13 +18900,26 @@ function initCourse() {
         const b0 = state.course.boundary;
         state.course.navIslands = state.course.islands.filter(i =>
             !i.isBank && !i.awash && Arena.signedDist(b0, i.x, i.y) > -(i.radius + 120));
-        state.course._hasShoals = state.course.islands.some(i => i.awash);
+        // Awash WITH DRAG — a painted shallows zone is awash too, but it must not switch
+        // on the per-boat shoalField sampling (it can never change the answer).
+        state.course._hasShoals = state.course.islands.some(i => i.awash && i.shoalMul < 1);
+        state.course._hasShallows = state.course.islands.some(i => i.paint && i.kind !== 'seagrass');
+        state.course._hasSeagrass = state.course.islands.some(i => i.kind === 'seagrass');
+        state.course._hasReefs = state.course.islands.some(i => i.reef);
         orientCourseMarks();
         // Ice sits where it will actually be BEFORE anything is drawn. This has to be on the
         // DOCUMENT path, not merely at the end of initCourse: every venue is a document now,
         // so the tail below is the generated-course path and returns here without ever
         // reaching it.
         settleFloes();
+        // Squalls spawn HERE, on the document path — the one place that is always
+        // downstream of the wind this course actually races on (c.windBase, applied
+        // above), whichever door the caller came through. Both earlier homes read a
+        // wind that was later overwritten: resetGame's random roll, then resetGame
+        // after applyVenueConditions — and each time the cells froze a stale course
+        // and marched off the map. Their layout keys on the race seed, so restarting
+        // re-deals them; the trades they march are this course's own.
+        initSqualls();
         // Same reason, and the same trap: this is the path every venue takes. It samples
         // the mean wind over sailable WATER, so it needs the boundary and every land shape
         // — floes included — already settled.
@@ -18014,6 +18977,10 @@ function initCourse() {
     // written rather than left over from the last venue raced, or a document's bar would
     // keep taxing boats on a course that has none.
     state.course._hasShoals = false;
+    state.course._hasShallows = false;
+    state.course._hasSeagrass = false;
+    state.course._hasReefs = false;
+    state.course.props = [];   // generated courses author no scenery
     state.course.navVersion = 0; // bumped when floes drift, so the planner's inflated cache refreshes
     orientCourseMarks();
     // Ice sits where it will actually be BEFORE anything is drawn, so no berg is ever seen

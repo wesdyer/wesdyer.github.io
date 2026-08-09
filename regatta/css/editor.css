@@ -145,6 +145,49 @@ body {
 .ed-opt.on { background: var(--ed-accent); color: #fff; font-weight: 600; }
 .ed-opt-tick { width: 12px; flex: none; opacity: 0; }
 .ed-opt.on .ed-opt-tick { opacity: 1; }
+/* ── Prop picker modal ────────────────────────────────────────────────────
+   The prop library outgrew a dropdown: a popup anchored in the scrolling settings
+   column clips or flows off screen the moment the list is worth having. The modal
+   owns its space — thumbnail grid, filter, edges that cannot leave the window. */
+.ed-modal-back {
+  position: fixed; inset: 0; z-index: 90; background: rgba(6, 10, 18, 0.55);
+  display: flex; align-items: center; justify-content: center;
+}
+.ed-modal-back[hidden] { display: none; }
+.ed-modal {
+  width: min(560px, 92vw); max-height: 76vh; display: flex; flex-direction: column;
+  background: var(--ed-ink-2); border: 1px solid var(--ed-line);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+.ed-modal-head {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-bottom: 1px solid var(--ed-hair);
+}
+.ed-modal-x {
+  background: none; border: 0; color: var(--ed-dim); cursor: pointer;
+  font-size: 14px; padding: 4px 6px; flex: none;
+}
+.ed-modal-x:hover { color: var(--ed-fg); }
+.ed-find {
+  flex: 1; box-sizing: border-box; padding: 5px 8px; font-size: 13px;
+  border: 0; background: none;
+  color: var(--ed-fg); font-family: var(--font-body); outline: none;
+}
+.ed-find::placeholder { color: var(--ed-dimmer); }
+.ed-find-none { padding: 8px 12px; font-size: 12.5px; color: var(--ed-dim); }
+.ed-prop-grid {
+  overflow-y: auto; padding: 12px; display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px;
+}
+.ed-prop-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  padding: 10px 6px 8px; background: none; border: 1px solid transparent;
+  color: var(--ed-fg); cursor: pointer; font-size: 12px; font-family: var(--font-body);
+  text-align: center;
+}
+.ed-prop-card img { width: 64px; height: 64px; object-fit: contain; }
+.ed-prop-card:hover { border-color: var(--ed-line); background: rgba(255, 255, 255, 0.04); }
+.ed-prop-card.on { border-color: var(--ed-accent); background: var(--ed-accent-lo); }
 .ed-sep { width: 1px; height: 18px; background: var(--ed-line); margin: 0 4px; }
 .ed-saved { color: var(--ed-dim); font-size: 12px; white-space: nowrap; }
 .ed-saved.dirty { color: var(--ed-warn); }

@@ -84,7 +84,77 @@
       "world": 90,
       "anchor": "trunk-base",
       "status": "slot",
-      "subject": "bald cypress seen from directly above — spreading flat canopy of clustered needle-mass blobs, buttressed trunk just visible at center, a few strands of hanging moss breaking the canopy edge"
+      "subject": "bald cypress seen from directly above — spreading flat canopy of clustered needle-mass blobs, buttressed trunk just visible at center, a few strands of hanging moss breaking the canopy edge",
+      "note": "Combined one-sprite tree. The map-building work uses the split trunk/canopy pairs below instead (bayou-cypress-trunk + bayou-cypress-canopy), which separate collision from decoration; this slot stays for anywhere a single flat tree sprite is enough."
+    },
+    {
+      "key": "bayou-cypress-trunk",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "swamp",
+      "world": 26,
+      "anchor": "waterline",
+      "status": "slot",
+      "allowSymmetry": true,
+      "subject": "bald cypress trunk base standing in open water, seen from directly above with no canopy — a stout bark column at centre, its top a rounded grey-brown disc, with the flared buttress radiating out around it in six to nine chunky fluted ridges, each flute one crisp facet in two flat tones of grey-brown bark. The flutes are uneven in length, width and spacing so the flare reads as grown wood rather than a gear or a star. A dark wet stain rings the outer edge of the flare where the wood meets the water",
+      "note": "TRUNK HALF of the layered cypress: this is the collision object, drawn at water level under the hull layer; bayou-cypress-canopy draws above at the same point. allowSymmetry because a buttressed cypress base genuinely radiates — the subject's unevenness clauses keep it off the mandala attractor. waterline anchor: it stands IN the water, the swamp's defining hazard. world 26 ≈ 2.8m flare at 9.2 units/m, matching the composed knee cluster's scale."
+    },
+    {
+      "key": "bayou-cypress-canopy",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "swamp",
+      "world": 90,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "subject": "bald cypress canopy seen from directly above — a spreading, slightly flat-topped crown built from clustered feathery needle-mass blobs in olive and yellow-green, each blob one chunky two-tone tuft, never individual needles. The crown is irregularly lobed with one lobe reaching clearly further than the rest, and has a few ragged dark openings where the canopy thins. Several pale grey-green strands of hanging spanish moss break the outer edge, reading from above as soft pale streaks trailing off the crown",
+      "note": "CANOPY HALF of the layered cypress — no collision, drawn over the boat layer above bayou-cypress-trunk placed at the same point (trunk-base anchor = crown centre over the stem). Role ambient is doing real work here: the canopy must read soft and harmless because the danger is the trunk under it, and the hazard/ambient silhouette split IS the trunk/canopy split. No allowSymmetry — a lobed crown should be pushed away from rosettes by the arrangement negatives."
+    },
+    {
+      "key": "bayou-tupelo-trunk",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "swamp",
+      "world": 20,
+      "anchor": "waterline",
+      "status": "slot",
+      "allowSymmetry": true,
+      "subject": "water tupelo trunk base standing in open water, seen from directly above with no canopy — a smoothly swollen bottle-shaped base, its top a rounded bark disc in two flat tones of grey-brown, the swelling spreading outward in soft rounded bulges rather than sharp flutes, so the whole base reads as one heavy swollen column and clearly rounder and smoother than a fluted cypress base. The bulges sit slightly uneven so the swell reads grown, not turned on a lathe. A dark wet stain rings the outer edge where the swollen wood meets the water",
+      "note": "TRUNK HALF of the layered tupelo. The distinguishing read against bayou-cypress-trunk is smooth swollen bulges vs sharp radiating flutes — that difference must survive at 20px with colour removed, which is why both subjects state their base geometry as the first thing. waterline anchor, stands in the water like the cypress. world 20 ≈ 2.2m — tupelo bases run slightly slimmer than big cypress buttresses."
+    },
+    {
+      "key": "bayou-tupelo-canopy",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "swamp",
+      "world": 70,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "subject": "water tupelo canopy seen from directly above — a narrow irregular oval crown, smaller and denser than a cypress crown, built from rounded broadleaf-mass blobs in a deeper darker green over olive shadow, each blob one chunky two-tone mound, never individual leaves. The crown is closed and full with almost no gaps, its outline softly lobed with one end fuller than the other so the oval reads grown rather than drawn. No moss on this one — the clean dense crown is what separates it from its mossy neighbours",
+      "note": "CANOPY HALF of the layered tupelo, over bayou-tupelo-trunk. Deliberately the CLEAN crown of the three — darker, denser, no moss, no openings — so cypress (feathery olive + moss streaks), tupelo (dense dark oval) and oak (huge moss-draped sprawl) are three different canopies at a glance in greyscale. world 70 sits between cypress 90 and the understory scale."
+    },
+    {
+      "key": "bayou-oak-trunk",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "swamp",
+      "world": 30,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "allowSymmetry": true,
+      "subject": "southern live oak trunk base seen from directly above with no canopy — a massive gnarled bark column at centre, its top an uneven two-tone grey-brown disc, with thick heavy root flares radiating out around it, fewer and far chunkier than a cypress's thin flutes: four to six broad buckled ridges, each one crisp facet with a deep dark furrow beside it, one or two flares running clearly longer than the rest. The bark is deeply furrowed, drawn as a few bold dark grooves between chunky ridge facets, never as fine texture",
+      "note": "TRUNK HALF of the layered oak. trunk-base anchor rather than waterline: a live oak roots on high ground — levees, hummocks, shack yards — not in the water, so in the editor it sits on land while cypress and tupelo trunks sit in the channel. Still a hazard: it collides where land meets water. The read against the other two trunks: few massive buckled flares vs cypress's many thin flutes vs tupelo's smooth bulges. world 30 — the biggest base of the three."
+    },
+    {
+      "key": "bayou-oak-canopy",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "swamp",
+      "world": 110,
+      "anchor": "trunk-base",
+      "status": "slot",
+      "subject": "southern live oak canopy seen from directly above — a huge sprawling irregular crown, the widest tree in the swamp, built from big billowing broadleaf-mass blobs in mid and deep green, each blob one chunky two-tone mound. Broad reaching limb-lines show as darker seams between the blob clusters, and the outline makes deep bays and long lobes where individual limbs reach out, strongly asymmetric. The whole crown is heavily draped in pale grey-green spanish moss, reading from above as soft pale streaks and patches across the dark green, several strands trailing past the outer edge",
+      "note": "CANOPY HALF of the layered oak, over bayou-oak-trunk — the swamp's biggest canopy, for overhanging shorelines where the crown reaches out over the water while the trunk sits on land. The heavy moss drape is its identifier against the lightly-mossed cypress and the clean tupelo. world 110 ≈ 12m spread — live oaks grow wider than tall. At this size the 1024 master gives ~9.3px of art per world px at bake 4, still comfortably above the legibility floor."
     },
     {
       "key": "bayou-cypress-knee",
@@ -690,10 +760,14 @@
       "venue": "lagoon",
       "world": 70,
       "anchor": "trunk-base",
-      "status": "slot",
+      "status": "art",
       "allowSymmetry": true,
       "subject": "coconut palm seen from directly above — a single crown of long feathered fronds radiating from a central hub, each frond one chunky tapering blade of clustered leaflet-mass in two flat greens (a sunlit top tone and a deep shade tone), with soft rounded tips. The fronds sit at UNEVEN lengths and angles, one or two drooping shorter or crossing a neighbour, so the crown reads as a living tree rather than a geometric star. At the hub, a tight cluster of three or four brown coconuts and the pale grey-brown top of the trunk just visible between the frond bases",
-      "note": "First lagoon asset — Pearl Lagoon's island palm, the lagoon counterpart to bayou-cypress. allowSymmetry because a top-down palm crown is genuinely radial, same reasoning as the mark; the subject asks for uneven frond lengths and angles so the rosette still reads organic rather than mandala. anchor trunk-base assumes a vertical palm — a leaning palm from overhead offsets crown from base, so the subject keeps it straight (the leaning variant is lagoon-palm-leaning). world 70 ≈ 7.6m crown at 9.2 units/m, a full-grown coconut palm."
+      "note": "First lagoon asset — Pearl Lagoon's island palm, the lagoon counterpart to bayou-cypress. allowSymmetry because a top-down palm crown is genuinely radial, same reasoning as the mark; the subject asks for uneven frond lengths and angles so the rosette still reads organic rather than mandala. anchor trunk-base assumes a vertical palm — a leaning palm from overhead offsets crown from base, so the subject keeps it straight (the leaning variant is lagoon-palm-leaning). world 70 ≈ 7.6m crown at 9.2 units/m, a full-grown coconut palm.",
+      "anchorPx": [
+        0.4536,
+        0.5479
+      ]
     },
     {
       "key": "lagoon-palm-leaning",
@@ -702,9 +776,29 @@
       "venue": "lagoon",
       "world": 84,
       "anchor": "trunk-base",
-      "status": "slot",
+      "status": "art",
       "subject": "coconut palm leaning far out sideways, seen from directly above — only the TOP of the tree is visible, never its side. The slim ringed grey-brown trunk runs as one gently curved line from its base in the lower third of the frame up to the crown in the upper third, so trunk and crown together read as a lollipop on a bent stick. The crown is a loose spray of long feathered fronds fanning out around the hub, fuller on the far side of the lean and sparser back toward the trunk, each frond one chunky tapering blade of clustered leaflet-mass in two flat greens with soft rounded tips. A couple of coconuts at the hub. The trunk's own top surface shows as a narrow lit band along the curve with a darker edge — a line with thickness, not a wire",
-      "note": "The postcard beach palm — the one shape that says 'tropical island' at race scale, and deliberately NOT radial, so it does NOT take allowSymmetry: the arrangement negatives (rosette, radial symmetry) are doing useful work here, pushing the generator away from collapsing it back into a centred star. Lean direction is toward the TOP of the frame per the class rule (sprite-up = zero heading), so code can aim the lean — over the water, downwind, wherever. ⚠️ anchor trunk-base is OFF-CENTRE by construction (base in the lower third, crown above): check what ingest measures for anchorPx and hand-correct it to the trunk-ground contact point if it defaults to bbox centre — a leaning palm anchored mid-trunk would stand in the water. world 84 is the base-to-crown-edge span, ≈9m at 9.2 units/m."
+      "note": "The postcard beach palm — the one shape that says 'tropical island' at race scale, and deliberately NOT radial, so it does NOT take allowSymmetry: the arrangement negatives (rosette, radial symmetry) are doing useful work here, pushing the generator away from collapsing it back into a centred star. Lean direction is toward the TOP of the frame per the class rule (sprite-up = zero heading), so code can aim the lean — over the water, downwind, wherever. ⚠️ anchor trunk-base is OFF-CENTRE by construction (base in the lower third, crown above): check what ingest measures for anchorPx and hand-correct it to the trunk-ground contact point if it defaults to bbox centre — a leaning palm anchored mid-trunk would stand in the water. world 84 is the base-to-crown-edge span, ≈9m at 9.2 units/m.",
+      "anchorPx": [
+        0.4854,
+        0.4629
+      ]
+    },
+    {
+      "key": "lagoon-palm-dense",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 74,
+      "anchor": "trunk-base",
+      "status": "art",
+      "allowSymmetry": true,
+      "subject": "coconut palm seen from directly above — a full dense crown of feathered fronds radiating from the hub with no gaps, closed and lush, fronds at slightly uneven lengths and angles, two flat greens with soft rounded tips",
+      "note": "Fourth crown variant, owner-supplied art (2026-08-08): a dense closed crown that matched none of the three authored slots — not coconut-clustered (lagoon-palm), not leaning, not a trunkless tuft — so it got its own slot rather than being forced into the fan-palm slot, which stays open for a genuinely pleated-fan generation. The subject above is written to match the delivered art, not the other way round.",
+      "anchorPx": [
+        0.4971,
+        0.4722
+      ]
     },
     {
       "key": "lagoon-palm-fan",
@@ -725,10 +819,158 @@
       "venue": "lagoon",
       "world": 38,
       "anchor": "trunk-base",
-      "status": "slot",
+      "status": "art",
       "allowSymmetry": true,
       "subject": "young trunkless palm seen from directly above — a low dense tuft of short arching fronds erupting straight out of the sand from a single point, no trunk visible at all. The fronds are shorter, broader and more upswept than a grown palm's, so from overhead they foreshorten into a compact star-burst of stubby chunky blades, in a fresher yellow-shifted green than a mature crown, two flat tones with soft rounded tips. Frond count and spacing slightly uneven, one blade folded over another, so the tuft reads as a scruffy living plant rather than a geometric badge. A hint of the pale fibrous heart at the very centre",
-      "note": "The understory scale — scattered between the big palms it breaks up size monotony, and near beaches it reads as dune vegetation. Deliberately trunkless so it stays clearly a PLANT at 38px; a mini lollipop palm would just read as lagoon-palm placed wrong. allowSymmetry as with the other radial crowns. The yellow-shifted green is real (juvenile palms are paler) and doubles as the value separation from mature crowns when a young one sits under or beside a big one. world 38 ≈ 4m spread."
+      "note": "The understory scale — scattered between the big palms it breaks up size monotony, and near beaches it reads as dune vegetation. Deliberately trunkless so it stays clearly a PLANT at 38px; a mini lollipop palm would just read as lagoon-palm placed wrong. allowSymmetry as with the other radial crowns. The yellow-shifted green is real (juvenile palms are paler) and doubles as the value separation from mature crowns when a young one sits under or beside a big one. world 38 ≈ 4m spread.",
+      "anchorPx": [
+        0.498,
+        0.5034
+      ]
+    },
+    {
+      "key": "lagoon-coral-brain",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "lagoon",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "allowSymmetry": true,
+      "subject": "brain coral head seen from directly above — ONE massive rounded dome, its top covered in a dense meandering maze of ridges and valleys, drawn as bold wandering two-tone grooves that follow the curve of the dome, never as fine texture. Dusty rose-pink ridges over deeper mauve valleys — a soft chalky pastel pink, never hot and never saturated — with the crown of the dome washed to pale cream where it nears the surface: the pale heart is the warning. The outline is one heavy, slightly uneven circle: a boulder of coral, massive and immovable",
+      "note": "First of the five coral heads — the venue card's promised hazard, and the home of Pearl Lagoon's underwater accent. Destined for the props layer as a seabed-plane hard-contact prop (PROP_KINDS row: plane seabed, contact hard, contactR ~14) — ⚠️ add that row only AFTER ingest delivers the sprite, or its 404 trips test_editor's no-page-errors check, the LAND_TEXTURES lesson. allowSymmetry: a brain dome is genuinely round; the maze keeps it organic. THE FIVE ARE KEPT APART ON TWO AXES AT ONCE — silhouette AND hue, one family each, so no pair blurs at race scale in either colour or greyscale: dome+rose-pink (this) / spikes+lavender / plates+cream / mound-cluster+sage / columns+powder-blue / paddles+apricot — all of them SOFT CHALKY PASTELS, matched to the owner's reference plate, where the coral reads as dusty pink/lavender/cream/green/blue rubble, never jewel-saturated.",
+      "anchorPx": [
+        0.5015,
+        0.4961
+      ]
+    },
+    {
+      "key": "lagoon-coral-staghorn",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "lagoon",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "subject": "staghorn coral thicket seen from directly above — a bristling tangle of branching antler-like arms radiating outward, each branch a chunky tapering two-tone spike forking once or twice, the arms overlapping in an irregular spiky mass with deep dark water-shadow gaps between them. Dusty lavender branches, soft and chalky, with pale lilac growing tips — the pale tips are the highest points and the warning. The silhouette is ALL POINTS, unmistakably sharp, and clearly uneven: some arms long, some stubby, no two alike",
+      "note": "The spiky one — sharpest silhouette of the five, the hazard role's 'aggressive, spiky' read taken literally. No allowSymmetry: the arrangement negatives are load-bearing against a radial antler rosette. Same prop wiring plan and same 404 caution as lagoon-coral-brain.",
+      "anchorPx": [
+        0.498,
+        0.481
+      ]
+    },
+    {
+      "key": "lagoon-coral-table",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "lagoon",
+      "world": 48,
+      "anchor": "center",
+      "status": "art",
+      "subject": "table coral seen from directly above — three broad flat plates overlapping like shelves at slightly different heights, each plate an irregular rounded disc with a finely scalloped rim, drawn in two flat tones with a few bold concentric growth arcs, never fine texture. Warm CREAM plates edged in ivory with only the faintest blush undertone — the pale head of the five — the topmost plate palest and one lower plate carrying a clean bite-shaped notch in its rim. Deep shadow crescents where plate overhangs plate — the stacked-shelves read is the whole silhouette",
+      "note": "The flat one — plates against the brain's dome and the staghorn's spikes. The pink-tan family is the venue accent's warm half. Same prop wiring plan and 404 caution as lagoon-coral-brain.",
+      "anchorPx": [
+        0.5005,
+        0.4722
+      ]
+    },
+    {
+      "key": "lagoon-coral-bommie",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "lagoon",
+      "world": 56,
+      "anchor": "center",
+      "status": "art",
+      "subject": "coral bommie seen from directly above — one heavy central mound of lobed coral ringed by a clustered skirt of smaller knobs and stubby lobes, the cluster packed uneven with dark water-shadow seams between the members. Soft sage and sea-green lobes throughout — the GREEN head, a chalky pastel green, no red and no purple anywhere on it — with two or three small flecks of dusty pink at the crown and the highest central lobes washed pale. The biggest and most cluttered of the coral heads — a reef in miniature, its outline deeply lumpy but never spiky",
+      "note": "The big mound-cluster — the generic 'coral head' a course designer reaches for first. Olive is its whole hue family (the one green thing among the five; the pink flecks stay small enough not to blur it toward the table coral). Largest world of the five at 56 (~6m). No allowSymmetry: a skirt of knobs must not come back as a rosette. Same prop wiring plan and 404 caution as lagoon-coral-brain.",
+      "anchorPx": [
+        0.5029,
+        0.498
+      ]
+    },
+    {
+      "key": "lagoon-coral-pillar",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "lagoon",
+      "world": 40,
+      "anchor": "center",
+      "status": "art",
+      "subject": "pillar coral seen from directly above — a close cluster of five to seven stout columns rising toward the surface, each column reading as a rounded knobby disc top in two flat tones, the cluster packed unevenly with deep dark shadow gaps dropping away between the columns. Powder-blue columns — a soft chalky slate-blue, clearly COOLER than every other head — each crown paler than its flanks, the tallest crown near-white: a fistful of towers reaching up at the viewer. Column tops clearly different sizes, the arrangement loose and lopsided, never a ring",
+      "note": "The columns — reads as depth where the others read as spread. Powder-blue is the risky family (it borders the water it sits in), so the near-white crowns and the near-black shadow gaps carry the contrast, which is also exactly what the hazard clause demands over both pale turquoise and night water. Smallest of the five. No allowSymmetry: 'never a ring' in the subject plus the arrangement negatives hold the cluster irregular. Same prop wiring plan and 404 caution as lagoon-coral-brain.",
+      "anchorPx": [
+        0.502,
+        0.4922
+      ]
+    },
+    {
+      "key": "lagoon-coral-elkhorn",
+      "class": "world-prop",
+      "role": "hazard",
+      "venue": "lagoon",
+      "world": 50,
+      "anchor": "center",
+      "status": "art",
+      "subject": "elkhorn coral seen from directly above — three to five broad FLATTENED branches like a moose's antlers radiating from a central base, each branch a wide flat paddle with rounded lobed ends, drawn in two flat tones with a bold midrib shadow where the paddle dips, never fine texture. Dusty apricot ORANGE — a soft chalky pastel orange, the one warm head in the lagoon, never neon and never brown — with the paddle rims and highest surfaces washed pale peach: the pale edges are the warning. The paddles are clearly unequal in length and reach, with deep dark water-shadow gaps between them — a lopsided open hand, never a symmetric star",
+      "note": "The sixth head, and the warm one — the paddle silhouette is the family the first five do not cover (broad flat radiating arms, against thin sharp spikes / solid discs / dome / mound / columns), and apricot-orange is elkhorn's true colour, kept chalky to sit in the set's pastel register. No allowSymmetry: 'never a symmetric star' plus the arrangement negatives keep the hand lopsided. Same prop wiring plan (plane seabed, contact hard) and same add-PROP_KINDS-only-after-ingest caution as lagoon-coral-brain.",
+      "anchorPx": [
+        0.5127,
+        0.4893
+      ]
+    },
+    {
+      "key": "lagoon-coralsand",
+      "class": "texture",
+      "venue": "lagoon",
+      "status": "art",
+      "tileWorld": 128,
+      "subject": "Dry white Caribbean coral sand seen from directly overhead from about ten metres up, in flat even light — the pale near-white sand of a coral atoll beach, ground from coral and shell rather than rock. AT THIS HEIGHT SAND IS ALMOST FEATURELESS, and that is the subject: a quiet, near-uniform field whose only structure is broad, soft, irregular patches of very slightly different tone, each blending into its neighbours with no hard edge. A few of the patches carry the faintest warm blush of pink-cream, the ghost of ground coral, never a saturated pink. NO RIPPLES OF ANY KIND: no crests, no ridges, no parallel lines, no repeating waves, nothing lining up with anything else, no spacing that repeats. Scattered thinly through it, the only hard marks in the frame: a few tiny shell chips and coral fragments in off-white and the palest coral pink, each drawn as a small shaped mark, never as fine speckle or grain, plus the very occasional single dark fleck. The whole image holds a very narrow pale range from #e2d4b2 to #f5ecd8 around a mean of #ecdfc2 — a warm cream, clearly LIGHTER than ordinary tan beach sand, but never pure white and never grey. No water, no foam, no wet sand, no waterline, no vegetation, no seaweed, no driftwood, no dune, no rocks larger than a chip, no cast shadows, no footprints, no tracks, no raked pattern, no sand ripple",
+      "note": "Pearl Lagoon's own sand — a NEW look ('coralsand'), deliberately paler than the shared `tropical` bay-sand (#ddc39a mean) so lagoon beaches read as cream against every other venue's tan. RETARGETED 2026-08-08 to #ecdfc2 (warm cream, was near-white #efe6d5) when the venue's four-step colour ladder was matched to the owner's reference plate — the ISLAND_STYLES.coralsand body already sits at the new mean. Authored to the bay-sand v2 lessons wholesale: structure-at-altitude first (near-featureless, broad tonal drift, shaped marks only), tileWorld 128 so shell chips land at true size (~5cm median at 9.2 units/m), and WHEN WIRING set the new ISLAND_STYLES body to the DELIVERED TILE'S OWN MEAN, not to the #efe6d5 the subject asks for — with base equal to tile mean, alpha stays a pure contrast knob (the property that retired the arctic textures' luma-shift warning). The pink blush is held to the faintest cast on purpose: the venue clause excludes lagoon accents (coral pinks) from ground, and a pink beach would spend the accent that belongs to the underwater props. Value range is snow-tile territory — check contrast on the grid against ice, which is the nearest neighbour in value."
+    },
+    {
+      "key": "bayou-mud",
+      "class": "texture",
+      "venue": "swamp",
+      "status": "slot",
+      "tileWorld": 128,
+      "subject": "Wet bayou mud seen from directly overhead from about ten metres up, in flat even light — the dark olive-brown mud of a southern swamp bank, smooth and heavy. AT THIS HEIGHT MUD IS ALMOST FEATURELESS, and that is the subject: a quiet field whose only structure is broad, soft, irregular patches of slightly different tone — darker where the mud lies wetter, a shade lighter where it has begun to dry — each patch blending into its neighbours with no hard edge. EVERY SURFACE IS MATTE: wet mud here is dark, never shiny, with no sheen, no highlights and no reflections. NO CRACKS — this is soft wet swamp mud, not a dried lakebed, so no crack network, no polygonal plates, no curling edges. Scattered thinly through it, the only hard marks in the frame: a sparse fall of leaf litter — small dark dead leaves and a few short twig fragments in browns barely darker or lighter than the mud — each drawn as a small shaped mark, never as speckle. The whole image holds a narrow dark range from #4e4636 to #665c48 around a mean of #5a5140 — a heavy olive-brown, never orange, never grey, never black. No water, no puddles, no standing water, no reflections, no footprints, no animal tracks, no tire ruts, no vegetation growing, no grass, no roots, no rocks, no cast shadows",
+      "note": "Gatorgrass Bayou's bank and bar material — a new 'mud' look for the swamp's low ground, where the venue's islands stop being generic grass. Same altitude discipline as bay-sand v2: the honest answer for smooth mud at 10m is broad wet/dry tonal drift plus a thin scatter of shaped leaf litter, so that is all the subject asks for. NO CRACKS is stated twice over because generators equate mud with dried-earth crack networks, which are the wrong material (dry lakebed) AND a countable stamped feature at tile repeat. tileWorld 128 puts leaves at true size like the sand's shell chips. Wiring is the same recipe as the others: ISLAND_STYLES body = delivered tile's mean, LAND_TEXTURES entry keyed to the new style, alpha as pure contrast knob — start near sand's 0.7 and tune on looks; the mud's mottle is soft like sand v2, not busy like the arctic pair."
+    },
+    {
+      "key": "redrock-sandstone",
+      "class": "texture",
+      "venue": "redrock",
+      "status": "art",
+      "tileWorld": 256,
+      "subject": "Bare wind-worn sandstone seen from directly overhead from about ten metres up, in flat even light — the orange-rust stone of a desert canyon rim, smooth and dry. AT THIS HEIGHT THE STONE IS NEARLY FEATURELESS, and that is the subject: broad, soft, irregular drifts of slightly different tone where wind has polished and stained the rock, each blending into its neighbours with no hard edge. Through them run a few SHORT STRATA FRAGMENTS — gently curved bands of slightly darker and slightly lighter stone, each fading out within a third of the frame, at scattered angles, never straight, never crossing the whole image, never lining up with the frame edges or with each other — and two or three short hairline fractures drawn as shaped dark lines that also fade out. A thin scatter of small rounded stone chips, each a shaped mark, never speckle or photographic grit. The whole image holds a narrow warm range from #a85a30 to #d98a52 around a mean of #c2703e — saturated orange-rust, never brown-grey, never pink, never yellow. No vegetation, no sand, no dunes, no cracked-earth polygon network, no cast shadows, no full-width strata banding, no water staining",
+      "note": "Redrock Reservoir's ground — the canyon rim rock the venue is named for, targeting ISLAND_STYLES.redrock.body (#c2703e) exactly so wiring is the standard recipe (LAND_TEXTURES.redrock, body = delivered tile's mean, alpha from ~0.3 like the arctic pair — rock reads at lower contrast than sand). tileWorld 256, the granite precedent: the redrock shapes are canyon-wall scale, and 256 buys 4x supersample for the strata fragments. THE STRATA ARE FRAGMENTS ON PURPOSE: real strata run for kilometres, but a band crossing the whole tile repeats as the most countable feature a texture can have — the same reason bay-sand v1's ripples died. Short fading arcs carry the sedimentary read without the tiling tell."
+    },
+    {
+      "key": "grass",
+      "class": "texture",
+      "status": "art",
+      "tileWorld": 128,
+      "subject": "A closed sward of fresh meadow grass seen from directly overhead from about ten metres up, in flat even light — bright healthy green turf growing so dense that no ground shows anywhere. AT THIS HEIGHT INDIVIDUAL BLADES DO NOT RESOLVE, and that is the subject: the sward reads as a soft, even, clumpy mottle — rounded tussock crowns a shade lighter where the grass mounds up, narrow sinks a shade darker between them — every clump blending into its neighbours with no hard edge, at roughly the same density everywhere. The clumps LEAN NO PARTICULAR WAY: no combed direction, no mowing stripes, no swirls, no rows, nothing lining up with the frame or with itself, no spacing that repeats. A few broader drifts of slightly deeper and slightly fresher green move through at the largest scale, soft and wide. The whole image holds a narrow mid range from #74a03e to #97c261 around a mean of #84b14e — fresh and clearly GREEN, never olive, never yellow, never emerald-dark. No visible soil, no flowers, no clover patches, no individual drawn blades, no fine hairline strokes, no paths, no tracks, no footprints",
+      "note": "The bright meadow look ('grass' style) — VENUE-LESS on purpose, like the mark: this ground is shared by every venue with a grass isle (the strait's islets, the lake's banks, one day Duckling Pond's lawn), so a single venue's palette clause would mislead the generator. Same altitude discipline and tussock-mottle structure as bayou-swampgrass; the two swards differ ONLY in colour, which is exactly the grass/swampgrass style split (2026-08-08: grass brightened to #84b14e, the old tan-olive moved to the swampgrass style). Wiring recipe as always: LAND_TEXTURES.grass entry when the art lands, ISLAND_STYLES.grass.body reset to the delivered tile's mean, alpha as pure contrast knob starting near 0.7."
+    },
+    {
+      "key": "bayou-swampgrass",
+      "class": "texture",
+      "venue": "swamp",
+      "status": "art",
+      "tileWorld": 128,
+      "subject": "A closed sward of swamp sawgrass seen from directly overhead from about ten metres up, in flat even light — the olive and yellow-green grass the bayou is named for, growing so dense that no ground shows anywhere. AT THIS HEIGHT INDIVIDUAL BLADES DO NOT RESOLVE, and that is the subject: the sward reads as a soft, even, clumpy mottle — rounded tussock crowns a shade lighter where the grass mounds up, narrow sinks a shade darker between them — every clump blending into its neighbours with no hard edge, at roughly the same density everywhere. The clumps LEAN NO PARTICULAR WAY: no combed direction, no swirls, no parallel streaks, no rows, nothing lining up with the frame or with itself, no spacing that repeats. A few slightly yellower dried patches and a few deeper olive hollows drift through at the largest scale, soft and broad. The whole image holds a narrow mid range from #97895a to #b9ad7c around a mean of #a89b6a — dry sun-cured tan-olive, straw over green, never emerald, never lime, never brown enough to read as earth. No visible soil, no mud, no water, no standing water, no reeds, no cattail heads, no flowers, no individual drawn blades, no fine hairline strokes, no paths, no tracks, no footprints",
+      "note": "The swamp's VEGETATED ground — hummock and island tops, closing the set the swamp's low ground opened: swampgrass (closed sward) / marsh (broken) / mud (bare). Altitude discipline per bay-sand v2: blades do not resolve at 10m, so the honest structure is tussock mottle, and the subject bans directional combing for the same reason bay-sand v1's ripples died — one dominant direction repeats as banding at tile scale. RETARGETED 2026-08-08 to mean #a89b6a: the 'swampgrass' STYLE now exists (ISLAND_STYLES) and carries the tan-olive the global grass used to be — this tile is its texture, so it targets that style's body exactly; the note that once warned against wiring onto the global grass look is resolved by the split (grass went bright meadow green and has its own venue-less `grass` tile). Wire as LAND_TEXTURES.swampgrass, body = delivered tile's mean."
+    },
+    {
+      "key": "bayou-marsh",
+      "class": "texture",
+      "venue": "swamp",
+      "status": "slot",
+      "tileWorld": 128,
+      "subject": "Broken marsh ground seen from directly overhead from about ten metres up, in flat even light — the ragged edge where a swamp's grass gives out into mud: scattered rounded clumps of olive and yellow-green sedge sitting on dark wet olive-brown mud, roughly half and half, so neither material dominates. THE CLUMPS ARE THE ONLY STRUCTURE: each is a soft rounded tussock a shade lighter at its crown, with the bare mud showing as irregular dark channels and openings between them. Clump sizes vary and their spacing is uneven and unaligned — no rows, no rings, no even scatter, no spacing that repeats, nothing lining up with the frame. The mud between them is smooth and matte with only broad soft tonal drift, no shine and no reflections. Grass tones hold #97895a to #b9ad7c and mud tones hold #4e4636 to #665c48, so the image runs one straw-olive-over-mud family and the value step between clump and mud stays gentle. No open water, no puddles, no reflections, no cracks in the mud, no reeds standing tall, no cattail heads, no flowers, no individual drawn blades, no paths, no tracks, no footprints, no rocks",
+      "note": "The TRANSITION material — half swampgrass, half mud, for the wide soft margins where bayou islands meet the channels, so the game's three swamp grounds grade into each other instead of butting: swampgrass sward -> marsh -> bare mud -> water. Its two colour ranges are QUOTED FROM ITS NEIGHBOURS' subjects verbatim, which is what makes a three-tile gradient read as one place; if either neighbour's delivered mean drifts from its spec, re-anchor this tile to the delivered values before generating it (generate this one LAST). The even-scatter risk is highest here of the three — clumps-on-ground is exactly what diffusion models regularise into polka dots — hence the stacked unevenness clauses; check the repeat at 3x3 before accepting. Same wiring recipe, own style key (e.g. 'marsh')."
     },
     {
       "key": "mark",

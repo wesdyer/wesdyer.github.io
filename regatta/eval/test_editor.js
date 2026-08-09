@@ -866,7 +866,9 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     const pal = await page.evaluate(async () => {
         document.querySelector('#layer-list [data-layer="water"]').click();
         const cv = document.getElementById('pal-preview');
-        const swatches = [...document.querySelectorAll('#layer-settings .mode-panel[data-layer="water"] input[type=color]')]
+        // :not([hidden]) because "offers" means visible: the shallow swatch exists in the
+        // markup on every venue but is only OFFERED where the document has a shallows zone.
+        const swatches = [...document.querySelectorAll('#layer-settings .mode-panel[data-layer="water"] input[type=color]:not([hidden])')]
             .map(el => el.id);
         const shot = () => cv.toDataURL();
         const out = [];
@@ -892,6 +894,39 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
               'a swatch that moves nothing on screen must not be offered');
     check('the preview carries the game\'s wind ripples', pal.ripples > 0, `${pal.ripples} wave cells`);
     check('...drawn by the game\'s own water renderer', pal.usesGameRenderer === true);
+
+    // The shallow swatch is CONDITIONAL — shallowColor paints `shallows` zones and
+    // nothing else, so the arctic (no zones) must not offer it, and the moment the
+    // document holds a zone it must appear AND move the preview like the others. Both
+    // halves of the rule, exercised on the same document.
+    const shal = await page.evaluate(async () => {
+        const A = window.EditorApp;
+        const doc = A._state().doc;
+        const r = 400;
+        doc.shapes.push({ id: 'test-shallows', kind: 'shallows',
+                          outer: [[-r, -r], [r, -r], [r, r], [-r, r]], holes: [] });
+        A._afterEdit(true, 'test shallows zone');
+        const visible = [...document.querySelectorAll(
+            '#layer-settings .mode-panel[data-layer="water"] input[type=color]:not([hidden])')]
+            .map(el => el.id);
+        const cv = document.getElementById('pal-preview');
+        const el = document.getElementById('pal-shallow');
+        const before = cv.toDataURL();
+        el.value = '#ff00ff'; el.dispatchEvent(new Event('change'));
+        const after = cv.toDataURL();
+        // Both edits pushed history, so two undos put the arctic back untouched.
+        A._undo(); A._undo();
+        const restored = [...document.querySelectorAll(
+            '#layer-settings .mode-panel[data-layer="water"] input[type=color]:not([hidden])')]
+            .map(el => el.id);
+        return { visible, changed: before !== after, restored,
+                 shapeGone: !A._state().doc.shapes.some(s => s.id === 'test-shallows') };
+    });
+    check('a shallows zone brings the shallow swatch with it',
+          shal.visible.join(',') === 'pal-base,pal-deep,pal-shallow', shal.visible.join(','));
+    check('...and it moves the preview like the others', shal.changed === true);
+    check('...and leaves with the zone', shal.shapeGone && shal.restored.join(',') === 'pal-base,pal-deep',
+          `${shal.restored.join(',')}${shal.shapeGone ? '' : ' (shape survived undo)'}`);
 
     // ── Current regions ─────────────────────────────────────────────────────
     console.log('\ncurrent');
@@ -2292,10 +2327,17 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
             A._pickTool('select');
             A._setOsel([refA]);
             o.listLitForOne = document.querySelectorAll('#obj-list .ob.on').length === 1;
+            // The list grammar is the standard one now: Cmd/Ctrl+click toggles a single
+            // row into the selection; Shift+click selects the RANGE from the anchor.
+            document.querySelectorAll('#obj-list .ob')[2]
+                .dispatchEvent(new MouseEvent('click', { metaKey: true, bubbles: true }));
+            o.cmdClickListAdds = A._osel().length === 2;
+            o.listLitForTwo = document.querySelectorAll('#obj-list .ob.on').length === 2;
+            const rowEls = document.querySelectorAll('#obj-list .ob');
+            rowEls[0].dispatchEvent(new MouseEvent('click', { bubbles: true }));
             document.querySelectorAll('#obj-list .ob')[2]
                 .dispatchEvent(new MouseEvent('click', { shiftKey: true, bubbles: true }));
-            o.shiftClickListAdds = A._osel().length === 2;
-            o.listLitForTwo = document.querySelectorAll('#obj-list .ob.on').length === 2;
+            o.shiftClickListRange = A._osel().length === 3;
 
             A._setOsel([]);
             down(80, 80); move(cv.clientWidth - 40, cv.clientHeight - 40); up();
@@ -2814,7 +2856,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         return { names, course: topOf('course'), arena: topOf('arena'), water: topOf('water') };
     });
     check('the layers read in build order',
-          lay.names.join(',') === 'Course,Arena,Water,Objects,Wind,Gusts,Current,Marks,Route',
+          lay.names.join(',') === 'Course,Arena,Water,Objects,Props,Wind,Gusts,Current,Marks,Route',
           lay.names.join(','));
     check('a layer with no objects keeps its panel at the TOP of the column',
           lay.course < 40 && lay.arena < 40 && lay.water < 40,

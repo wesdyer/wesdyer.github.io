@@ -280,7 +280,7 @@ window.VENUE_DOC["swamp"] = {
   "shapes": [
     {
       "id": "isle-1",
-      "kind": "reed",
+      "kind": "swampgrass",
       "outer": [
         [
           -1520.1420360290126,
@@ -328,7 +328,7 @@ window.VENUE_DOC["swamp"] = {
     },
     {
       "id": "isle-2",
-      "kind": "reed",
+      "kind": "swampgrass",
       "outer": [
         [
           -2558.9125109034517,
@@ -380,7 +380,7 @@ window.VENUE_DOC["swamp"] = {
     },
     {
       "id": "isle-3",
-      "kind": "reed",
+      "kind": "swampgrass",
       "outer": [
         [
           -3060.681825720725,
@@ -440,7 +440,7 @@ window.VENUE_DOC["swamp"] = {
     },
     {
       "id": "isle-4",
-      "kind": "reed",
+      "kind": "swampgrass",
       "outer": [
         [
           -1743.1674920232902,
@@ -484,7 +484,7 @@ window.VENUE_DOC["swamp"] = {
     },
     {
       "id": "isle-5",
-      "kind": "reed",
+      "kind": "swampgrass",
       "outer": [
         [
           893.5287101628535,
@@ -528,7 +528,7 @@ window.VENUE_DOC["swamp"] = {
     },
     {
       "id": "isle-6",
-      "kind": "reed",
+      "kind": "swampgrass",
       "outer": [
         [
           -4046.7786389797043,
@@ -572,7 +572,7 @@ window.VENUE_DOC["swamp"] = {
     },
     {
       "id": "isle-7",
-      "kind": "reed",
+      "kind": "swampgrass",
       "outer": [
         [
           1088.5961957820248,

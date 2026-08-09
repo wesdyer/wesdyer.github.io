@@ -228,10 +228,20 @@ console.log('\nleg count does not leak between venues');
                         // (No backticks in here: this whole probe is a template literal.)
                         docLand: (() => {
                             const d = window.VenueDoc.get(v);
-                            return window.VenueDoc.shapes(d).filter(s => {
+                            const shapes = window.VenueDoc.shapes(d).filter(s => {
                                 const t = window.VenueDoc.traits(s);
                                 return t.motion === 'fixed' && !t.awash;
                             }).length;
+                            // A fixed CONTACT PROP compiles to exactly one hidden circle
+                            // collider — solid ground the document authored, just not as
+                            // a polygon. Counting them keeps this check meaning "nothing
+                            // solid is lost", instead of demanding the colliders' absence
+                            // the moment a venue plants its first coral head.
+                            const props = (d.props || []).filter(p => {
+                                const t = window.VenueDoc.propTraits(p);
+                                return t.motion === 'fixed' && t.contact !== 'none';
+                            }).length;
+                            return shapes + props;
                         })(),
                         // What the ROUTE asks for, so the check below can compare the
                         // reported type against the authored course instead of a list.

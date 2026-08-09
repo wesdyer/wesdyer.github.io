@@ -487,6 +487,40 @@ function runChecks(ctx) {
         }
     }
 
+    // 7b. GUST SOURCES ON THE WATER. A source is where pressure cells are BORN, and a
+    //     cell born outside the arena lives and dies where nobody sails — the field
+    //     looks authored, the venue plays becalmed, and nothing on the map says why.
+    //     Open Ocean shipped exactly this: its one belt sat almost entirely west of
+    //     the sailing limit, so the course never saw a puff and the minimap agreed.
+    //     Measured by area (a deterministic grid over the region), because a source is
+    //     allowed to overhang the edge a little the way wind regions do — the defect
+    //     is a source that is MOSTLY elsewhere.
+    const gregs = (doc.gusts && doc.gusts.regions) || [];
+    if (bnd) for (const r of gregs) {
+        if (!r.poly || r.poly.length < 3) continue;
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const p of r.poly) {
+            if (p[0] < x0) x0 = p[0]; if (p[1] < y0) y0 = p[1];
+            if (p[0] > x1) x1 = p[0]; if (p[1] > y1) y1 = p[1];
+        }
+        const N = 32;
+        let inRegion = 0, inArena = 0;
+        for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+            const x = x0 + (i + 0.5) * (x1 - x0) / N, y = y0 + (j + 0.5) * (y1 - y0) / N;
+            if (!pointInRing(x, y, r.poly)) continue;
+            inRegion++;
+            if (window.Arena.contains(bnd, x, y)) inArena++;
+        }
+        if (!inRegion) continue;
+        const pct = Math.round((inArena / inRegion) * 100);
+        if (pct < 50) {
+            add('warn', 'gust-arena', 'Gust source off the arena',
+                `Only ${pct}% of "${r.id || 'gust source'}" lies inside the sailing limit — `
+                + `cells born beyond it are pressure nobody can sail to. Move it over the course, `
+                + `or shrink it to the water it means to cover.`);
+        }
+    }
+
     // 8. RACE LENGTH. The target is a design decision, so this is a warning and not
     //    an error, but a course nobody wants to finish is still a broken course.
     // NO WIND IS UNSAILABLE. Outside every wind region the water is calm, so a course whose

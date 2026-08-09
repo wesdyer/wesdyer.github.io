@@ -102,6 +102,18 @@ const REGION = {
 // is right for it and wrong for them: an accessor that created `regions = []` on load
 // marked pristine documents unsaved, twice, and a dirty flag that can lie means nothing.
 const isRegionMode = (m) => !!REGION[m];
+// Props: point objects like marks, not polygons like everything above. Same read-only
+// rule as REGION's `list`: the array is created on the WRITE path (placing the first
+// prop), never here — an accessor that created `doc.props = []` on load would mark
+// pristine documents unsaved.
+let selProp = -1;
+let selProps = [];              // multi-select: row indices; selProp stays the primary
+const dprops = () => (doc && doc.props) || [];
+// One anchor/cursor pair serves every list: the ANCHOR is where a range grows from
+// (set by a plain click or a plain arrow move), the CURSOR is the row the last gesture
+// landed on. Both are DISPLAY-ORDER row indices for whatever list is active, and both
+// reset when the layer changes — a range must never span two different lists' numbering.
+let listAnchor = -1, listCursor = -1;
 const regsOf    = (k) => REGION[k].list();
 const regSel    = (k) => REGION[k].sel();
 const setRegSel = (k, v) => REGION[k].setSel(v);
@@ -202,14 +214,20 @@ const eachRing = (l) => [l.outer].concat(l.holes || []);
 // table this labels already carries the behaviour, so any grouping would be a second,
 // weaker statement of it.
 const LAND_TYPES = [
-    { kind: 'bank',    label: 'Bank',    swatch: '#6b7280' },
+    { kind: 'bank',      label: 'Bank',       swatch: '#6b7280' },
+    { kind: 'coralreef', label: 'Coral Reef', swatch: '#8a8468' },
     { kind: 'floe',    label: 'Floe',    swatch: '#7dd3fc' },
     { kind: 'granite', label: 'Granite', swatch: '#8d8d8d' },
-    { kind: 'reed',    label: 'Grass',   swatch: '#a89b6a' },
+    { kind: 'reed',    label: 'Grass',   swatch: '#7aaa1d' },
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
-    { kind: 'isle',    label: 'Sand',    swatch: '#e8dcb1' },
-    { kind: 'shoal',   label: 'Shoal',   swatch: '#cfc09a' }
+    { kind: 'isle',        label: 'Sand',             swatch: '#e8dcb1' },
+    { kind: 'shoal',       label: 'Sand Shoal',       swatch: '#cfc09a' },
+    { kind: 'swampgrass',  label: 'Swamp Grass',      swatch: '#a09453' },
+    { kind: 'seagrass',    label: 'Seagrass',         swatch: '#4a7148' },
+    { kind: 'shallows',    label: 'Shallows',         swatch: '#38bdf8' },
+    { kind: 'tropicsand',  label: 'Tropic Sand',      swatch: '#efe4cf' },
+    { kind: 'tropicshoal', label: 'Tropic Sand Shoal', swatch: '#8dd4c3' }
 ];
 // The fallback when nothing says otherwise. Named, not `LAND_TYPES[0]`: that used to be
 // ordinary land and is now Bank — a hidden collider — so an alphabetical sort would have
@@ -395,6 +413,60 @@ function afterEdit(pushSnapshot, label) {
 // VENUE_DOC anyway), and opening assets/venues/<key>.venue.js is how you edit one.
 let fileHandle = null;
 
+// ── Session restore ─────────────────────────────────────────────────────────
+// The last opened file's HANDLE, persisted in IndexedDB — the one browser store that can
+// hold a FileSystemFileHandle across restarts (localStorage can only hold strings, and a
+// path string is useless: the API refuses arbitrary paths by design). On boot the editor
+// tries to reopen it. Whether that needs a click is Chrome's call, not ours: if the read
+// permission survived (it usually does within a browsing session, and durably if the user
+// picked "Allow on every visit"), the file reopens silently; otherwise a permission prompt
+// requires a user gesture, so the empty state offers ⏎ instead of a canvas that plays dumb.
+let lastHandle = null;   // surfaced in the empty state until claimed or replaced
+function handleDB() {
+    return new Promise((res, rej) => {
+        const rq = indexedDB.open('regatta-editor', 1);
+        rq.onupgradeneeded = () => rq.result.createObjectStore('handles');
+        rq.onsuccess = () => res(rq.result);
+        rq.onerror = () => rej(rq.error);
+    });
+}
+async function rememberHandle(h) {
+    try {
+        const db = await handleDB();
+        await new Promise((res, rej) => {
+            const tx = db.transaction('handles', 'readwrite');
+            tx.objectStore('handles').put(h, 'last');
+            tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+        });
+    } catch (_) { /* remembering is best-effort; the editor works without it */ }
+}
+async function recallHandle() {
+    try {
+        const db = await handleDB();
+        return await new Promise((res, rej) => {
+            const rq = db.transaction('handles', 'readonly').objectStore('handles').get('last');
+            rq.onsuccess = () => res(rq.result || null);
+            rq.onerror = () => rej(rq.error);
+        });
+    } catch (_) { return null; }
+}
+async function reopenLast() {
+    const h = lastHandle;
+    if (!h || doc) return;
+    try {
+        if ((await h.queryPermission({ mode: 'read' })) !== 'granted'
+            && (await h.requestPermission({ mode: 'read' })) !== 'granted') return;
+        const f = await h.getFile();
+        if (!doc) { openDocText(await f.text(), h, f.name); lastHandle = null; }
+    } catch (err) {
+        // The file may have moved or been deleted since last session — say so and go
+        // back to the ordinary empty state rather than offering a reopen that cannot work.
+        toast(`Couldn't reopen ${h.name || 'last file'}: ${err && err.message}`, true);
+        lastHandle = null;
+        draw();
+    }
+}
+
 // The shared tail of every way a document arrives — bundled at boot, or opened from a
 // file. `src` is a MIGRATED document; `handle` is where Save writes without asking.
 function loadDoc(src, handle) {
@@ -416,6 +488,7 @@ function loadDoc(src, handle) {
     history = [{ doc: clone(doc), label: 'loaded' }];
     histIdx = 0;
     fileHandle = handle || null;
+    if (handle) { rememberHandle(handle); lastHandle = null; }
     clearRegSel(); selLine = -1; selRoute = -1;
     const label = $('venue-label');
     if (label) label.textContent = venueName(doc.venue);
@@ -568,10 +641,19 @@ async function openFile() {
     if (doc && isDirty() && !confirm('Discard unsaved changes?')) return;
     try {
         if (window.showOpenFilePicker) {
-            const [h] = await window.showOpenFilePicker({
+            // `id` gives open and save one shared remembered directory: Chrome reopens
+            // wherever a venue was last opened or saved under this id, which from first
+            // use on is assets/venues/. `startIn` covers the rest: a FILE handle means
+            // "start in that file's directory", so an editor already holding a venue
+            // points the picker at the right folder even before the id has history.
+            // (An arbitrary path is not an option — the API refuses them by design.)
+            const opts = {
+                id: 'venue-docs',
                 types: [{ description: 'Venue document',
                           accept: { 'text/javascript': ['.js'], 'application/json': ['.json'] } }]
-            });
+            };
+            if (fileHandle) opts.startIn = fileHandle;
+            const [h] = await window.showOpenFilePicker(opts);
             const file = await h.getFile();
             openDocText(await file.text(), h, file.name);
         } else {
@@ -603,13 +685,30 @@ async function save(saveAs) {
         if (window.showSaveFilePicker) {
             // Save As always asks; Save asks only when there is nowhere to write yet.
             if (saveAs || !fileHandle) {
-                fileHandle = await window.showSaveFilePicker({
+                // Same `id` as the open picker, so both dialogs share one remembered
+                // directory — see openFile.
+                const opts = {
+                    id: 'venue-docs',
                     suggestedName: name,
                     types: [{ description: 'Venue document', accept: { 'text/javascript': ['.js'] } }]
-                });
+                };
+                if (fileHandle) opts.startIn = fileHandle;
+                fileHandle = await window.showSaveFilePicker(opts);
             }
+            // createWritable takes an EXCLUSIVE OS LOCK on the file, released only by
+            // close() or abort(). A write that throws must abort, or the leaked stream
+            // keeps the lock for the tab's lifetime — the file then shows up greyed-out
+            // in every open dialog until some later GC lets it go, which reads as "the
+            // editor can't open some files until I load others". abort() rather than
+            // close(): close commits the swap file, and committing a HALF-WRITTEN venue
+            // over a good one is worse than the failed save it papers over.
             const w = await fileHandle.createWritable();
-            await w.write(text); await w.close();
+            try {
+                await w.write(text); await w.close();
+            } catch (e) {
+                try { await w.abort(); } catch (_) { /* already released */ }
+                throw e;
+            }
         } else {
             // Fallback for browsers without the File System Access API: download it
             // and let the user drop it into assets/venues/.
@@ -620,6 +719,7 @@ async function save(saveAs) {
         }
         savedJSON = JSON.stringify(doc);
         dirtyChanged();
+        if (fileHandle) rememberHandle(fileHandle);   // Save As acquires a handle loadDoc never saw
         toast(`Saved ${fileHandle && fileHandle.name ? fileHandle.name : name}`);
         refreshChrome();
     } catch (e) {
@@ -744,6 +844,100 @@ function enhanceSelect(sel) {
     label();
 }
 
+// The prop picker opens a MODAL, not a dropdown. The library is meant to grow to
+// dozens of sprites, and a dropdown anchored to a 230px settings column has nowhere to
+// put them — it clips against the scroller or flows off the window, and both were
+// happening. A centred dialog owns its space: big enough for a THUMBNAIL GRID (you pick
+// art by looking at it, not by remembering its name), a filter that stays put, and
+// edges that can never leave the screen. The hidden <select> stays the value holder,
+// exactly like every enhanced dropdown, so `sel.value` and `change` listeners are
+// untouched. Type-filter-Enter still works: Enter takes the first match, Escape closes.
+function enhancePropPicker(sel) {
+    if (!sel || sel.dataset.enhanced) return;
+    sel.dataset.enhanced = '1';
+
+    const wrap = document.createElement('span');
+    wrap.className = 'ed-sel' + (sel.classList.contains('in-wide') ? ' wide' : '');
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.style.display = 'none';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ed-sel-btn';
+    btn.setAttribute('aria-haspopup', 'dialog');
+    wrap.appendChild(btn);
+
+    const back = document.createElement('div');
+    back.className = 'ed-modal-back';
+    back.hidden = true;
+    back.innerHTML = `<div class="ed-modal" role="dialog" aria-label="Choose a prop">
+        <div class="ed-modal-head">
+          <span class="k" style="flex:none">Choose a prop</span>
+          <input class="ed-find" type="text" placeholder="Filter props…" autocomplete="off" spellcheck="false">
+          <button type="button" class="ed-modal-x" title="Close">\u2715</button>
+        </div>
+        <div class="ed-prop-grid"></div></div>`;
+    document.body.appendChild(back);
+    const find = back.querySelector('.ed-find');
+    const grid = back.querySelector('.ed-prop-grid');
+    const close = () => { back.hidden = true; };
+    back.addEventListener('mousedown', (e) => { if (e.target === back) close(); e.stopPropagation(); });
+    back.querySelector('.ed-modal-x').addEventListener('click', close);
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !back.hidden) close(); });
+
+    const label = () => {
+        const o = sel.options[sel.selectedIndex];
+        btn.innerHTML = `<span class="ed-sel-v">${o ? o.textContent : ''}</span>`
+            + '<svg class="ed-sel-c" width="10" height="7" viewBox="0 0 10 7" fill="none">'
+            + '<path d="M1 1.5L5 5.5L9 1.5" stroke="currentColor" stroke-width="1.4"'
+            + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    };
+    // Thumbnails come from the same src convention the game and the schematic derive.
+    const srcOf = (kind) => {
+        const i = kind.indexOf('-');
+        return `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
+    };
+    const pick = (i) => {
+        close();
+        if (i === sel.selectedIndex) return;
+        sel.selectedIndex = i;
+        label();
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    const build = () => {
+        const q = find.value.trim().toLowerCase();
+        const opts = [...sel.options].map((o, i) => ({ o, i }))
+            .filter(({ o }) => !q || o.textContent.toLowerCase().includes(q));
+        grid.innerHTML = opts.length ? opts.map(({ o, i }) =>
+            `<button type="button" class="ed-prop-card${i === sel.selectedIndex ? ' on' : ''}" data-i="${i}">`
+            + `<img src="${srcOf(o.value)}" alt="" draggable="false"><span>${o.textContent}</span></button>`).join('')
+            : '<div class="ed-find-none">No props match</div>';
+        grid.querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', () => pick(+el.dataset.i)));
+    };
+    find.addEventListener('input', build);
+    find.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const el = grid.querySelector('[data-i]');
+            if (el) pick(+el.dataset.i);
+            e.preventDefault();
+        }
+    });
+
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeSelMenu();
+        find.value = '';
+        build();
+        back.hidden = false;
+        const on = grid.querySelector('.ed-prop-card.on');
+        if (on) on.scrollIntoView({ block: 'center' });
+        find.focus();
+    });
+    sel.addEventListener('change', label);
+    label();
+}
+
 // Every select inside a container, after it has been rendered.
 function enhanceSelects(root) {
     (root || document).querySelectorAll('select:not([data-enhanced])').forEach(enhanceSelect);
@@ -773,6 +967,11 @@ const LAYERS = [
     // polygon verb and no way to say which sits in front of which.
     { id: 'land',     mode: 'shape',   name: 'Objects', icon: 'land',
       count: () => doc ? `${doc.shapes.length} · ${doc.shapes.reduce((a, l) => a + l.outer.length, 0)} pts` : null },
+    // Pictures with positions — scenery the game draws by kind. Between the solid
+    // objects and the weather, because that is its draw order too: over the land it
+    // stands on, under everything that races.
+    { id: 'props',    mode: 'props',   name: 'Props',  icon: 'palm',
+      count: () => dprops().length || null },
     { id: 'wind',     mode: 'wind',    name: 'Wind',   icon: 'wind',
       count: () => wregs().length || null },
     // Under Wind, because gusts ARE wind — they are just not MEAN wind. A wind region
@@ -813,6 +1012,8 @@ const LAYER_ICON = {
     // rather than an arrow describing it. Wind's glyph already owns the streaming-air read.
     gust:  '<ellipse cx="7" cy="7" rx="5.5" ry="3.2" transform="rotate(-20 7 7)" stroke="currentColor" stroke-width="1.2" fill="none"/><circle cx="5.2" cy="7.4" r=".9" fill="currentColor"/><circle cx="8.2" cy="6.2" r=".9" fill="currentColor"/>',
     mark:  '<circle cx="7" cy="7" r="2.2" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2" stroke="currentColor" stroke-width="1.2"/>',
+    // A palm from the side: trunk plus three fronds — the first prop, standing for all of them.
+    palm:  '<path d="M7 13V6" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M7 6C5.2 4.4 3.2 4.2 1.8 5.4M7 6c-.4-2.2.4-3.9 2-4.8M7 6c1.8-1.6 3.8-1.8 5.2-.6" stroke="currentColor" stroke-width="1.3" fill="none"/>',
     route: '<path d="M2 11c4 0 3-8 7-8" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="2" cy="11" r="1.4" fill="currentColor"/><circle cx="11.5" cy="3" r="1.4" fill="currentColor"/>',
     // A folded map: the course as a whole, as opposed to any one thing on it.
     map:   '<path d="M1.5 3.5l4-1.5 3 1.5 4-1.5v9l-4 1.5-3-1.5-4 1.5z" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5.5 2v9.5M8.5 3.5V13" stroke="currentColor" stroke-width="1.1"/>'
@@ -915,6 +1116,16 @@ const newKind = () => {
 };
 
 function buildKindPicker() {
+    // The prop picker rides along — same one-list rule, VenueDoc.PROP_KINDS is the
+    // source — but built for a LIBRARY, not a handful: options land ALPHABETIZED by
+    // label, and the dropdown is the searchable variant (enhancePropPicker).
+    const pk = $('prop-kind');
+    if (pk && !pk.options.length && window.VenueDoc && window.VenueDoc.PROP_KINDS) {
+        pk.innerHTML = Object.entries(window.VenueDoc.PROP_KINDS)
+            .sort((a, b) => a[1].label.localeCompare(b[1].label))
+            .map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
+        enhancePropPicker(pk);
+    }
     const el = $('new-kind');
     if (!el || el.options.length) return;
     el.innerHTML = LAND_TYPES.map(t => `<option value="${t.kind}">${t.label}</option>`).join('');
@@ -1226,14 +1437,29 @@ function drawDriftingFloes() {
 // Sand at a glance. The schematic still gives it a solid outline where the game gives it a
 // gradient: here you are dragging vertices and you have to be able to see where they are.
 const KIND_FILL = {
-    granite: '#8d8d8d', redrock: '#c2703e', reed: '#a89b6a',
+    granite: '#8d8d8d', redrock: '#c2703e', reed: '#7aaa1d', swampgrass: '#a09453',
     isle: '#e8dcb1', ice: '#e8edf5', bank: '#6b7280', floe: 'rgba(125,211,252,0.55)',
-    shoal: 'rgba(232,220,177,0.38)'
+    shoal: 'rgba(232,220,177,0.38)',
+    // The painted water zones are translucent like the shoal — you can see the water
+    // through everything that is not land — but in their own hues, because the ONE
+    // schematic question about a zone is which kind you are looking at. Before these
+    // rows they fell through to the isle fallback and drew as solid islands.
+    shallows: 'rgba(56,189,248,0.30)', seagrass: 'rgba(74,113,72,0.45)',
+    // The tropic bar's schematic hue is its ON-SCREEN mint (sand seen through lagoon
+    // water), not the raw sand — that is the colour that separates it from Sand Shoal
+    // at a glance, which is the schematic's one job.
+    tropicsand: '#efe4cf', tropicshoal: 'rgba(141,212,195,0.38)',
+    // Translucent like the other underwater kinds, in the band's own khaki — an
+    // impassable bottom must not read as either sand (crossable) or land (dry).
+    coralreef: 'rgba(138,132,104,0.38)'
 };
 const KIND_EDGE = {
-    granite: '#c9c9c9', redrock: '#8a4a26', reed: '#7d7048',
+    granite: '#c9c9c9', redrock: '#8a4a26', reed: '#5c8438', swampgrass: '#7d7048',
     isle: '#d4b483', ice: '#ffffff', bank: '#9ca3af', floe: 'rgba(224,242,254,0.7)',
-    shoal: 'rgba(232,220,177,0.75)'
+    shoal: 'rgba(232,220,177,0.75)',
+    shallows: 'rgba(56,189,248,0.8)', seagrass: 'rgba(122,160,120,0.9)',
+    tropicsand: '#d9cba9', tropicshoal: 'rgba(141,212,195,0.8)',
+    coralreef: 'rgba(138,132,104,0.85)'
 };
 
 function drawLandLayer() {
@@ -1655,6 +1881,8 @@ const LAYER_STEPS = [
     ['arena',   () => drawArenaLayer()],
     ['venue',   () => drawDriftingFloes()],
     ['land',    () => drawLandLayer()],
+    // Props between the land and the course furniture — the game's own draw order.
+    ['props',   () => { if (shown('props')) drawPropsLayer(); }],
     ['course',  () => drawCourseLayer()],
     ['venue',   () => drawPlacedIce()],   // the Place gesture only; shapes paint with 'land'
     ['wind',    () => { if (shown('wind')) drawWindRegions(); }],
@@ -1664,7 +1892,50 @@ const LAYER_STEPS = [
 // Marks and Route both draw the course furniture, so either one raises it.
 const ACTIVE_LAYER = { boundary: 'arena', shape: 'land',
                        marks: 'course', route: 'course', wind: 'wind', current: 'current',
-                       gust: 'gust' };
+                       gust: 'gust', props: 'props' };
+
+// The REAL sprites, not stand-in circles: a prop layer exists to judge placement, and
+// you cannot judge a palm's overhang from a dot. Same src derivation the game uses
+// (manifest key '<venue>-<name>' -> assets/images/props/<venue>/<name>.png); a sprite
+// still loading draws a soft disc so the object is never invisible or unclickable.
+const PROP_IMGS = {};
+function propEdImg(kind) {
+    let img = PROP_IMGS[kind];
+    if (!img) {
+        const i = kind.indexOf('-');
+        img = PROP_IMGS[kind] = new Image();
+        img.src = `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
+        img.addEventListener('load', () => draw());
+    }
+    return img;
+}
+function drawPropsLayer() {
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const ps = dprops();
+    for (let i = 0; i < ps.length; i++) {
+        const p = ps[i], k = reg[p.kind];
+        if (!k) continue;
+        const s = toS(p.x, p.y);
+        const w = Math.max(4, (k.world || 40) * (p.scale || 1) * view.scale);
+        const img = propEdImg(p.kind);
+        if (img.complete && img.naturalWidth) {
+            ctx.save();
+            ctx.translate(s.x, s.y);
+            if (p.heading) ctx.rotate(p.heading);
+            ctx.drawImage(img, -w / 2, -w / 2, w, w);
+            ctx.restore();
+        } else {
+            ctx.beginPath(); ctx.arc(s.x, s.y, w / 2, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(132,204,22,0.35)'; ctx.fill();
+        }
+        if (mode === 'props' && (i === selProp || selProps.includes(i))) {
+            ctx.beginPath(); ctx.arc(s.x, s.y, w / 2 + 4, 0, Math.PI * 2);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = i === selProp ? 2 : 1.2;   // the primary reads heavier
+            ctx.stroke();
+        }
+    }
+}
 
 function draw() {
     ctx.clearRect(0, 0, W(), H());
@@ -1681,6 +1952,11 @@ function draw() {
         ctx.font = '400 12.5px Archivo, system-ui, sans-serif';
         ctx.fillStyle = 'rgba(100,116,139,0.85)';
         ctx.fillText('Open… a .venue.js file to edit it  ·  ⌘O', W() / 2, H() / 2 + 12);
+        // A remembered file that could not reopen silently (permission needs a gesture).
+        if (lastHandle) {
+            ctx.fillStyle = 'rgba(148,163,184,0.85)';
+            ctx.fillText(`⏎  reopen ${lastHandle.name}`, W() / 2, H() / 2 + 36);
+        }
         ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
         return;
     }
@@ -2264,12 +2540,21 @@ function objRefresh() {
             return row({ i: row_i, on, glyph: on ? '◆' : '◇',
                          name: landLabel(l), count: l.outer.length, drag: true });
         }).join('') || '<div class="ob-empty">Nothing here yet — Draw (P) or Place (N) to make some.</div>';
-        wire(box, (row_i, add) => {
-            const ref = { kind: 'shape', id: zList[row_i].l.id };
-            if (add) osel = inOsel(ref) ? osel.filter(x => !sameObj(x, ref)) : osel.concat([ref]);
-            else osel = [ref];
+        wire(box, (row_i, _shift, ev) => {
+            const refAt = (r) => ({ kind: 'shape', id: zList[r].l.id });
+            // A selection made on the MAP has no list anchor yet — seed it from the
+            // selection itself, so "click the island, shift-click a row" ranges from
+            // the island rather than collapsing to a single pick.
+            if (listAnchor < 0) listAnchor = zList.findIndex(({ l }) => inOsel({ kind: 'shape', id: l.id }));
+            const rows = listPick(row_i, ev);
+            if (rows === null) {           // cmd/ctrl: toggle just this one
+                const ref = refAt(row_i);
+                osel = inOsel(ref) ? osel.filter(x => !sameObj(x, ref)) : osel.concat([ref]);
+            } else {
+                osel = rows.map(refAt);
+            }
             vsel = [];
-            syncSelFromOsel(); refreshChrome(); draw();
+            syncSelFromOsel(); objRefresh(); refreshChrome(); draw();
         });
         // Restacking. The list runs front-to-back and the array back-to-front, so a row
         // slot is mirrored onto an array index — dragging a shape UP the list moves it
@@ -2344,12 +2629,42 @@ function objRefresh() {
             : kind === 'current' ? 'No current. Water with no region over it simply does not flow.'
             : 'No gust sources — puffs are born evenly over the whole arena, as they are on a venue that says nothing. Draw one where the pressure should come from.'
         }</div>`;
-        wire(box, (i, add) => {
-            const ref = { kind, i };
-            if (add) osel = inOsel(ref) ? osel.filter(x => !sameObj(x, ref)) : osel.concat([ref]);
-            else osel = [ref];
+        wire(box, (i, _shift, ev) => {
+            if (listAnchor < 0) listAnchor = regSel(kind);   // seed from a map selection
+            const rows = listPick(i, ev);
+            if (rows === null) {
+                const ref = { kind, i };
+                osel = inOsel(ref) ? osel.filter(x => !sameObj(x, ref)) : osel.concat([ref]);
+            } else {
+                osel = rows.map(r => ({ kind, i: r }));
+            }
             vsel = [];
-            syncSelFromOsel(); refreshChrome(); draw();
+            syncSelFromOsel(); objRefresh(); refreshChrome(); draw();
+        });
+    } else if (mode === 'props') {
+        // A row carries the three answers about a prop that matter at a glance: which
+        // stratum it lives in (the glyph), what it is (the name), and whether it does
+        // anything (the count column — contact or drift, blank for pure scenery).
+        const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+        box.innerHTML = dprops().map((p, i) => {
+            const T = window.VenueDoc.propTraits(p);
+            const glyph = T.plane === 'seabed' ? '▽' : T.plane === 'canopy' ? '△' : '○';
+            const c = T.contact === 'hard' ? 'hard'
+                    : T.contact === 'soft' ? `${Math.round(T.drag * 100)}%`
+                    : T.motion === 'drift' ? 'adrift' : '';
+            return row({ i, on: selProp === i || selProps.includes(i), glyph,
+                         name: (reg[p.kind] || {}).label || p.kind, count: c });
+        }).join('') || '<div class="ob-empty">No props yet — click the map to place one.</div>';
+        wire(box, (i, _shift, ev) => {
+            if (listAnchor < 0 && selProp >= 0) listAnchor = selProp;   // seed from the map
+            const rows = listPick(i, ev);
+            if (rows === null) {
+                selProps = selProps.includes(i) ? selProps.filter(x => x !== i) : selProps.concat([i]);
+            } else {
+                selProps = rows;
+            }
+            selProp = i;                    // the primary: what the inspector shows
+            refreshInspector(); objRefresh(); refreshChrome(); draw();
         });
     } else {
         box.innerHTML = '<div class="ob-empty">Nothing to list for this tool.</div>';
@@ -2363,8 +2678,190 @@ function objRefresh() {
 function wire(box, fn) {
     box.querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', (ev) => {
         if (ev.target.tagName === 'B') return;
-        fn(+el.dataset.i, ev.shiftKey);
+        fn(+el.dataset.i, ev.shiftKey, ev);
     }));
+}
+
+// The standard multi-select grammar, shared by every list that has a multi-capable
+// selection: a plain click selects ONE and plants the anchor; Shift+click selects the
+// RANGE from the anchor; Cmd/Ctrl+click TOGGLES one row and moves the anchor to it.
+// Returns the selected row indices; the caller maps rows onto its own refs.
+function listPick(row_i, ev) {
+    if (ev && ev.shiftKey && listAnchor >= 0) {
+        listCursor = row_i;
+        const a = Math.min(listAnchor, row_i), b = Math.max(listAnchor, row_i);
+        const out = [];
+        for (let r = a; r <= b; r++) out.push(r);
+        return out;
+    }
+    if (ev && (ev.metaKey || ev.ctrlKey)) {
+        listAnchor = listCursor = row_i;
+        return null;                        // caller toggles this one row
+    }
+    listAnchor = listCursor = row_i;
+    return [row_i];
+}
+
+// ── Z cycles the stack ──────────────────────────────────────────────────────
+// Z moves the selection one step up its OVERLAP stack (Shift+Z one step down), wrapping
+// at the ends. The pivot is overlap, not list position: swapping places with an object
+// on the other side of the map changes nothing on screen, so every press here trades
+// places with the nearest overlapping neighbour instead — each press is a visible change.
+// Only Objects and Props have a draw order to cycle: the weather layers' fields are
+// order-independent blends, and the route's order IS the course — z on those would be a
+// control that changes the document and changes nothing (or far too much).
+function shapesOverlap(a, b) {
+    const bb = (l) => {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const q of l.outer) {
+            if (q[0] < x0) x0 = q[0]; if (q[1] < y0) y0 = q[1];
+            if (q[0] > x1) x1 = q[0]; if (q[1] > y1) y1 = q[1];
+        }
+        return { x0, y0, x1, y1 };
+    };
+    const A = bb(a), B = bb(b);
+    if (A.x1 < B.x0 || B.x1 < A.x0 || A.y1 < B.y0 || B.y1 < A.y0) return false;
+    try {
+        const r = window.polygonClipping.intersection([[...a.outer]], [[...b.outer]]);
+        return !!(r && r.length);
+    } catch (_) {
+        return true;   // bboxes overlap; a degenerate ring choking the lib must not hide a real stack
+    }
+}
+function propsOverlap(a, b) {
+    const K = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const T = window.VenueDoc.propTraits;
+    if (T(a).plane !== T(b).plane) return false;   // different strata never fight for paint
+    const rad = (p) => (((K[p.kind] || {}).world || 40) * (p.scale || 1)) / 2;
+    return Math.hypot(a.x - b.x, a.y - b.y) < rad(a) + rad(b);
+}
+function cycleZ(dir) {
+    if (!doc) return false;
+    let arr, selIdx, overlaps, commit;
+    if (mode === 'shape') {
+        arr = doc.shapes;
+        const ids = new Set(osel.filter(o => o.kind === 'shape').map(o => o.id));
+        selIdx = arr.map((l, i) => ids.has(l.id) ? i : -1).filter(i => i >= 0);
+        overlaps = shapesOverlap;
+        commit = () => afterEdit(true, 'restack');
+    } else if (mode === 'props') {
+        arr = dprops();
+        selIdx = (selProps.length ? selProps : selProp >= 0 ? [selProp] : []).slice().sort((a, b) => a - b);
+        overlaps = propsOverlap;
+        commit = () => afterEdit(true, 'restack props');
+    } else {
+        toast('Z-order applies on Objects and Props — this layer has no stacking', true);
+        return false;
+    }
+    if (!selIdx.length) { toast('Select something to restack', true); return false; }
+    const selSet = new Set(selIdx);
+    const peerItems = [];
+    for (let i = 0; i < arr.length; i++) {
+        if (!selSet.has(i) && selIdx.some(s => overlaps(arr[s], arr[i]))) peerItems.push({ i, item: arr[i] });
+    }
+    if (!peerItems.length) { toast('Nothing overlaps the selection — there is no stack to move in'); return false; }
+
+    // Pick the pivot peer and which side of it the block lands on; wrap at the ends.
+    const maxSel = selIdx[selIdx.length - 1], minSel = selIdx[0];
+    let pivot, after, wrapped = false;
+    if (dir > 0) {
+        const up = peerItems.filter(p => p.i > maxSel);
+        if (up.length) { pivot = up[0].i; after = true; }
+        else { pivot = peerItems[0].i; after = false; wrapped = true; }
+    } else {
+        const down = peerItems.filter(p => p.i < minSel);
+        if (down.length) { pivot = down[down.length - 1].i; after = false; }
+        else { pivot = peerItems[peerItems.length - 1].i; after = true; wrapped = true; }
+    }
+
+    // Move the block: extract (keeping its internal order), reinsert beside the pivot.
+    const primaryItem = mode === 'props' && selProp >= 0 ? arr[selProp] : null;
+    const items = selIdx.map(i => arr[i]);
+    for (let k = selIdx.length - 1; k >= 0; k--) arr.splice(selIdx[k], 1);
+    const adj = pivot - selIdx.filter(s => s < pivot).length;
+    const at = after ? adj + 1 : adj;
+    arr.splice(at, 0, ...items);
+
+    // Selections that are INDICES have to follow the move; id-based ones already did.
+    if (mode === 'props') {
+        selProps = items.map((_, k) => at + k);
+        selProp = primaryItem ? at + items.indexOf(primaryItem) : at;
+    }
+    listAnchor = listCursor = -1;          // the list order just changed under them
+
+    const below = peerItems.filter(p => arr.indexOf(p.item) < at).length;
+    commit();
+    toast(`Stacked ${below + 1} of ${peerItems.length + 1} in the overlap stack`
+          + (wrapped ? ' — wrapped' : ''));
+    return true;
+}
+
+// ── Arrow keys walk the list ────────────────────────────────────────────────
+// Up and Down move the selection through the ACTIVE layer's rows, exactly as a click on
+// the neighbouring row would — the same selection paths and the same refreshes, so the
+// map, the list highlight and the inspector all follow together. The order walked is
+// the order DISPLAYED: the shapes list runs front-first over a back-first array, and
+// the marks layer runs marks then gates, because that is what the eye reads.
+// With nothing selected, Down starts at the top and Up at the bottom.
+function moveListSel(dir, extend) {
+    if (!doc) return false;
+    // Walk the cursor one row; with `extend` (Shift), keep the anchor where it was and
+    // the selection becomes the anchor..cursor range — a plain move replants both.
+    const walk = (n, fallback) => {
+        if (!n) return null;
+        let cur = listCursor >= 0 ? listCursor : fallback;
+        cur = cur < 0 ? (dir > 0 ? -1 : n) : cur;
+        listCursor = Math.max(0, Math.min(n - 1, cur + dir));
+        if (!extend || listAnchor < 0) listAnchor = listCursor;
+        const a = Math.min(listAnchor, listCursor), b = Math.max(listAnchor, listCursor);
+        const rows = [];
+        for (let r = a; r <= b; r++) rows.push(r);
+        return rows;
+    };
+    if (mode === 'shape') {
+        const zList = doc.shapes.map((l, i) => ({ l, i })).reverse();
+        const rows = walk(zList.length, zList.findIndex(({ l }) => inOsel({ kind: 'shape', id: l.id })));
+        if (!rows) return false;
+        osel = rows.map(r => ({ kind: 'shape', id: zList[r].l.id }));
+        vsel = [];
+        syncSelFromOsel(); objRefresh(); refreshChrome(); draw();
+        return true;
+    }
+    if (mode === 'marks') {
+        // Single-select layer: every verb downstream acts on one mark or one gate, so
+        // Shift extends nothing here — the walk itself still works.
+        const nm = dmarksOf().length, nl = dlines().length;
+        if (!nm && !nl) return false;
+        const cur = sel.mark >= 0 ? sel.mark : selLine >= 0 ? nm + selLine : -1;
+        const next = Math.max(0, Math.min(nm + nl - 1, cur < 0 ? (dir > 0 ? 0 : nm + nl - 1) : cur + dir));
+        if (next < nm) selectMark(next); else selectLine(next - nm);
+        objRefresh();
+        return true;
+    }
+    if (mode === 'route') {
+        const n = routeOf().length;
+        if (!n) return false;
+        selRoute = Math.max(0, Math.min(n - 1, selRoute < 0 ? (dir > 0 ? 0 : n - 1) : selRoute + dir));
+        refreshInspector(); objRefresh(); refreshChrome(); draw();
+        return true;
+    }
+    if (isRegionMode(mode)) {
+        const rows = walk(regsOf(mode).length, regSel(mode));
+        if (!rows) return false;
+        osel = rows.map(r => ({ kind: mode, i: r }));
+        vsel = [];
+        syncSelFromOsel(); objRefresh(); refreshChrome(); draw();
+        return true;
+    }
+    if (mode === 'props') {
+        const rows = walk(dprops().length, selProp);
+        if (!rows) return false;
+        selProps = rows;
+        selProp = listCursor;
+        refreshInspector(); objRefresh(); refreshChrome(); draw();
+        return true;
+    }
+    return false;
 }
 
 // ── Inspector ───────────────────────────────────────────────────────────────
@@ -2425,6 +2922,12 @@ function inspectorRefresh() {
         k = 'Gate'; n = lineLabel(ln.id);
         m = ends ? `${fmtM(len)} · ${fmtBL(len)}` : '';
         html = inspGate(ln);
+    } else if (mode === 'props' && selProp >= 0 && dprops()[selProp]) {
+        const p = dprops()[selProp];
+        const reg = (window.VenueDoc.PROP_KINDS || {})[p.kind];
+        k = 'Prop'; n = (reg && reg.label) || p.kind;
+        m = `${Math.round(uToM(p.x))}, ${Math.round(uToM(p.y))} m`;
+        html = inspProp(p);
     } else if (mode === 'route' && selRoute >= 0 && routeOf()[selRoute]) {
         const e = routeOf()[selRoute];
         k = e === startEntry() ? 'Start' : e === finishEntry() ? 'Finish' : 'Leg';
@@ -2520,6 +3023,42 @@ function inspectorRefresh() {
         mk.kind = el.value;
         afterEdit(true, 'mark type');
     }));
+    // Prop controls. Axis selects write an OVERRIDE or delete it ("Kind default" is the
+    // empty value); afterEdit recompiles, so a contact change re-emits the hidden
+    // collider and the router reprices without anything else being told.
+    const selPropObj = () => dprops()[selProp];
+    obj.querySelectorAll('[data-propkind]').forEach(el => el.addEventListener('change', () => {
+        const p = selPropObj(); if (!p) return;
+        p.kind = el.value;
+        afterEdit(true, 'prop kind');
+    }));
+    const wirePropAxis = (dat, field, label2) => obj.querySelectorAll(`[${dat}]`).forEach(el =>
+        el.addEventListener('change', () => {
+            const p = selPropObj(); if (!p) return;
+            if (el.value) p[field] = el.value; else delete p[field];
+            afterEdit(true, label2);
+        }));
+    wirePropAxis('data-propplane', 'plane', 'prop plane');
+    wirePropAxis('data-propcontact', 'contact', 'prop contact');
+    wirePropAxis('data-propmotion', 'motion', 'prop motion');
+    const wirePropNum = (dat, fn, label2) => obj.querySelectorAll(`[${dat}]`).forEach(el =>
+        el.addEventListener('change', () => {
+            const p = selPropObj(); if (!p) return;
+            fn(p, el.value.trim());
+            afterEdit(true, label2);
+        }));
+    wirePropNum('data-propdrag', (p, v) => {
+        if (v === '') delete p.drag; else p.drag = Math.max(0, Math.min(0.9, (+v || 0) / 100));
+    }, 'prop drag');
+    wirePropNum('data-propradius', (p, v) => {
+        if (v === '') delete p.contactR; else p.contactR = Math.max(4, (+v || 0) * 5);
+    }, 'prop radius');
+    wirePropNum('data-propheading', (p, v) => {
+        p.heading = (((+v || 0) * Math.PI / 180) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    }, 'rotate prop');
+    wirePropNum('data-propscalev', (p, v) => {
+        p.scale = Math.max(0.25, Math.min(4, (+v || 100) / 100));
+    }, 'scale prop');
     // Material and softness are the shape's own properties, so they live in its inspector
     // rather than in a panel off to the side.
     const mat = obj.querySelector('#in-mat');
@@ -2985,6 +3524,56 @@ ${geom}${way}`;
 // A mark's own fields, in the panel that shows the selected object. Name follows the same
 // rule every other name field does: blank falls back to the derived label, which is shown as
 // the placeholder so the box explains itself.
+// A prop's inspector: three AXES (plane, contact, motion), each a preset on the kind
+// that one placement may override — so every select leads with "Kind default", and
+// choosing it deletes the override rather than writing the same value under a
+// different name. The conditional rows (drag when soft, radius whenever there is
+// contact) appear with the choice that makes them mean something.
+function inspProp(p) {
+    const K = window.VenueDoc.PROP_KINDS || {};
+    const T = window.VenueDoc.propTraits(p);
+    const kd = K[p.kind] || {};
+    const PLANES = { seabed: 'Underwater', surface: 'Surface — below boats', canopy: 'Canopy — above boats' };
+    const CONTACTS = { none: 'None — scenery', soft: 'Soft — slows', hard: 'Hard — stops' };
+    const MOTIONS = { fixed: 'Fixed', drift: 'Drifting (forces no contact)' };
+    const axis = (dat, preset, override, opts) => `<select class="in-wide" ${dat}>`
+        + `<option value=""${override == null ? ' selected' : ''}>Kind default — ${opts[preset]}</option>`
+        + Object.entries(opts).map(([v, l]) =>
+            `<option value="${v}"${override === v ? ' selected' : ''}>${l}</option>`).join('')
+        + '</select>';
+    const kindOpts = Object.entries(K)
+        .sort((a, b) => a[1].label.localeCompare(b[1].label))
+        .map(([key, v]) => `<option value="${key}"${key === p.kind ? ' selected' : ''}>${v.label}</option>`).join('');
+    const dragRow = T.contact === 'soft'
+        ? `<label class="k">drag %</label><input class="in-wide" data-propdrag
+             value="${p.drag != null ? Math.round(p.drag * 100) : ''}"
+             placeholder="${Math.round((kd.drag != null ? kd.drag : 0.5) * 100)}">` : '';
+    const radiusRow = T.contact !== 'none'
+        ? `<label class="k">radius m</label><input class="in-wide" data-propradius
+             value="${p.contactR != null ? Math.round(uToM(p.contactR)) : ''}"
+             placeholder="${Math.round(uToM(T.contactR))}">` : '';
+    return `
+<div class="in-sect"><span class="k">Prop</span>
+  <select class="in-wide" data-propkind>${kindOpts}</select>
+</div>
+<div class="in-sect"><span class="k">Plane</span>
+  ${axis('data-propplane', kd.plane || 'surface', p.plane, PLANES)}
+</div>
+<div class="in-sect"><span class="k">Contact</span>
+  ${axis('data-propcontact', kd.contact || 'none', p.contact, CONTACTS)}
+  ${dragRow || radiusRow ? `<div class="in-grid" style="margin-top:8px">${dragRow}${radiusRow}</div>` : ''}
+</div>
+<div class="in-sect"><span class="k">Motion</span>
+  ${axis('data-propmotion', kd.motion || 'fixed', p.motion, MOTIONS)}
+</div>
+<div class="in-sect"><span class="k">Transform</span>
+  <div class="in-grid">
+    <label class="k">heading °</label><input class="in-wide" data-propheading value="${Math.round((p.heading || 0) * 180 / Math.PI)}">
+    <label class="k">scale %</label><input class="in-wide" data-propscalev value="${Math.round((p.scale || 1) * 100)}">
+  </div>
+</div>`;
+}
+
 function inspMark(m, i) {
     const derived = markLabel(i);
     return `
@@ -4026,16 +4615,24 @@ function drawGustStipple(r, on, rgb, total) {
 // force — the document's colour if it has one, otherwise the venue's — so they never
 // present a colour the water is not actually using.
 //
-// Two of them, because two is what the renderer reads: baseColor at the centre of the depth
-// gradient and deepColor at its rim. `shallowColor` is copied into WATER_CONFIG and then read
-// by nothing, anywhere; `shorelineColor` drives the island glow, which only generated islands
-// take — a document venue's land comes from the vector mask and draws flat. Offering either as
-// a swatch meant offering a colour that changed nothing on screen. Both stay in the venue data
-// untouched; if the renderer ever grows a use for them, the swatch comes back with it.
-const PAL_KEYS = { 'pal-base': 'baseColor', 'pal-deep': 'deepColor' };
+// Three of them, because three is what the renderer reads: baseColor at the centre of the
+// depth gradient, deepColor at its rim, and shallowColor over every painted `shallows`
+// zone. The shallow swatch arrived WITH that renderer use — for years shallowColor was
+// copied into WATER_CONFIG and read by nothing, and the rule here is that a swatch which
+// changes nothing on screen is a lie. Still no swatch for `shorelineColor` (drives only
+// generated-island glow, which document venues never take) or for `heroColor`, which is
+// deliberately not hand-pickable: it is DERIVED — see deriveHeroColor.
+const PAL_KEYS = { 'pal-base': 'baseColor', 'pal-deep': 'deepColor', 'pal-shallow': 'shallowColor' };
 
 function paletteRefresh() {
     if (!$('pal-base')) return;
+    // The shallow swatch is CONDITIONAL: shallowColor paints `shallows` zones and nothing
+    // else, so on a document with none it is exactly the dead swatch the rule above
+    // forbids. It appears with the first zone and leaves with the last — paletteRefresh
+    // runs on every committed edit, so drawing one brings the swatch out by itself.
+    const hasShallows = !!(doc && doc.shapes && doc.shapes.some(s => s.kind === 'shallows'));
+    if ($('pal-shallow')) $('pal-shallow').hidden = !hasShallows;
+    if ($('pal-shallow-label')) $('pal-shallow-label').hidden = !hasShallows;
     const live = window.WATER_CONFIG || {};
     const dp = (doc && doc.palette) || {};
     for (const id in PAL_KEYS) {
@@ -4081,6 +4678,30 @@ function palettePreview() {
     try {
         const bctx = palBig.getContext('2d');
         window.WaterRenderer.draw(bctx, fake);
+        // The SECOND KIND OF WATER, when this venue has any: a shallows band across the
+        // bottom of the patch, laid on exactly as drawShallows lays it on — the same
+        // colour at the same alpha with a feathered rim, under the wind waves, which in
+        // play ride over both waters. The base/shallow pair is the actual authoring task
+        // on a venue like the lagoon, and it can only be tuned as a pair.
+        if ((doc && doc.shapes || []).some(s => s.kind === 'shallows')) {
+            const dp2 = (doc && doc.palette) || {};
+            const rgbS = (h) => {
+                const s = String(h || '').replace('#', '');
+                return /^[0-9a-f]{6}$/i.test(s) ? [0, 2, 4].map(i => parseInt(s.substring(i, i + 2), 16)) : null;
+            };
+            const sh = rgbS(dp2.shallowColor || (window.WATER_CONFIG || {}).shallowColor);
+            if (sh) {
+                const a = (typeof SHALLOWS_ALPHA !== 'undefined') ? SHALLOWS_ALPHA : 0.72;
+                const y0 = palBig.height * 0.62, f = 60;
+                const grd = bctx.createLinearGradient(0, y0 - f, 0, y0);
+                grd.addColorStop(0, `rgba(${sh[0]},${sh[1]},${sh[2]},0)`);
+                grd.addColorStop(1, `rgba(${sh[0]},${sh[1]},${sh[2]},${a})`);
+                bctx.fillStyle = grd;
+                bctx.fillRect(0, y0 - f, palBig.width, f);
+                bctx.fillStyle = `rgba(${sh[0]},${sh[1]},${sh[2]},${a})`;
+                bctx.fillRect(0, y0, palBig.width, palBig.height - y0);
+            }
+        }
         // The wind ripples are a SECOND layer in the game — white broken crests riding on the
         // water, sized and lit by the local wind and drifting downwind — and they are most of
         // what the water actually looks like. Drawn here by the game's own update and draw, in
@@ -5136,6 +5757,14 @@ function scaleMap(k) {
     // when the two arrays became one they both ran over it — scaling to 50% gave 25%.
     for (const l of doc.shapes) transformShape(l, (x, y) => ({ x: x*k, y: y*k }));
     for (const m of doc.course.marks) { m.x *= k; m.y *= k; }
+    // Props scale WITH the course: position, sprite size (via `scale`, which the traits
+    // also fold into the default collider) and any authored collider radius — a 60%
+    // course keeps palms that fit its beaches and coral heads that fit their colliders.
+    for (const p of (doc.props || [])) {
+        p.x *= k; p.y *= k;
+        p.scale = Math.max(0.25, Math.min(4, (p.scale || 1) * k));
+        if (p.contactR != null) p.contactR *= k;   // an authored radius is a length like any other
+    }
     for (const e of doc.course.route) {
         if (e.zone) e.zone *= k;
         if (e.radius) e.radius *= k;
@@ -5182,6 +5811,13 @@ function rotateMap(deg) {
 
     for (const l of doc.shapes) transformShape(l, rot);
     for (const m of doc.course.marks) { const q = rot(m.x, m.y); m.x = q.x; m.y = q.y; }
+    // Props turn with the map — position AND heading, the way a region's direction does.
+    // A leaning palm aimed over the water before the rotation leans over it after.
+    for (const p of (doc.props || [])) {
+        const q = rot(p.x, p.y);
+        p.x = q.x; p.y = q.y;
+        p.heading = normDir((p.heading || 0) + a);
+    }
     for (const r of wregs().concat(cregs(), gregs())) {
         r.poly = rotRing(r.poly);
         // The region's own heading, in the same convention everything else uses.
@@ -5357,6 +5993,54 @@ cv.addEventListener('mousedown', (e) => {
         } else {
             sel = Object.assign({}, NOHIT); selLine = -1;
             marksInspector();
+        }
+        draw(); return;
+    }
+    if (mode === 'props' && doc) {
+        // Click a prop: select it and start a move. Click open map: PLACE one of the
+        // panel's kind — placement is the whole workflow here (scattering thirty palms
+        // along a beach), so it costs one click, and a miss costs one Undo.
+        const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+        let hitI = -1, best = Infinity;
+        dprops().forEach((p, i) => {
+            const k = reg[p.kind];
+            if (!k) return;
+            const r = Math.max(8 / view.scale, (k.world || 40) * (p.scale || 1) / 2);
+            const d = Math.hypot(w.x - p.x, w.y - p.y);
+            if (d < r && d < best) { best = d; hitI = i; }
+        });
+        if (hitI >= 0) {
+            // Grabbing a prop already in a multi-selection keeps the group (so a plain
+            // drag moves all of it, same as shapes); grabbing an unselected one takes it
+            // alone. Shift toggles membership like the map does for shapes.
+            if (e.shiftKey) {
+                selProps = selProps.includes(hitI) ? selProps.filter(x => x !== hitI) : selProps.concat([hitI]);
+                selProp = hitI;
+                refreshInspector(); objRefresh(); draw();
+                return;
+            }
+            if (!selProps.includes(hitI)) selProps = [hitI];
+            selProp = hitI;
+            refreshInspector();
+            // The SAME modifiers as a polygon: plain drag moves (the whole selection),
+            // Cmd/Ctrl+drag rotates, Alt+drag scales — about the prop's own position,
+            // which is a point object's "shared centre". One grammar everywhere.
+            drag = (e.metaKey || e.ctrlKey)
+                 ? { kind: 'proprot',   i: hitI, last: w, moved: false }
+                 : e.altKey
+                 ? { kind: 'propscale', i: hitI, last: w, moved: false }
+                 : { kind: 'prop',      i: hitI, last: w, moved: false };
+        } else {
+            const kind = ($('prop-kind') || {}).value;
+            if (reg[kind]) {
+                const ps = doc.props || (doc.props = []);   // write path creates the array
+                let n = 1;
+                while (ps.some(p => p.id === 'prop-' + n)) n++;
+                ps.push({ id: 'prop-' + n, kind, x: w.x, y: w.y, heading: 0 });
+                selProp = ps.length - 1;
+                selProps = [selProp];
+                afterEdit(true, 'place prop');
+            }
         }
         draw(); return;
     }
@@ -5546,6 +6230,37 @@ window.addEventListener('mousemove', (e) => {
                 if (drag.vert < ring.length) { ring[drag.vert][0] = w.x; ring[drag.vert][1] = w.y; break; }
             }
             rebake(l); drag.moved = true; draw();
+        } else if (drag.kind === 'prop') {
+            // By DELTA, not snap-to-cursor, so a group keeps its arrangement while it moves.
+            const dx = w.x - drag.last.x, dy = w.y - drag.last.y;
+            const rows = selProps.includes(drag.i) ? selProps : [drag.i];
+            for (const r of rows) {
+                const p = dprops()[r];
+                if (p) { p.x += dx; p.y += dy; }
+            }
+            drag.last = w; drag.moved = true; draw();
+        } else if (drag.kind === 'proprot') {
+            // Same maths as 'orotate', with the prop's position as the centre: heading
+            // follows the pointer's angular sweep around the palm, so the frond you
+            // grabbed stays under the cursor.
+            const p = dprops()[drag.i];
+            if (p) {
+                const a0 = Math.atan2(drag.last.y - p.y, drag.last.x - p.x);
+                const a1 = Math.atan2(w.y - p.y, w.x - p.x);
+                p.heading = ((p.heading || 0) + (a1 - a0) + Math.PI * 2) % (Math.PI * 2);
+            }
+            drag.last = w; drag.moved = true; draw();
+        } else if (drag.kind === 'propscale') {
+            // Same maths as 'oscale'. Clamped like the polygon clamp, and floored well
+            // above zero — a prop scaled to nothing is invisible AND unclickable, which
+            // is a deletion you cannot see and cannot undo by eye.
+            const p = dprops()[drag.i];
+            if (p) {
+                const d0 = Math.hypot(drag.last.x - p.x, drag.last.y - p.y) || 1;
+                const d1 = Math.hypot(w.x - p.x, w.y - p.y) || 1;
+                p.scale = Math.max(0.25, Math.min(4, (p.scale || 1) * (d1 / d0)));
+            }
+            drag.last = w; drag.moved = true; draw();
         } else if (drag.kind === 'mark') {
             doc.course.marks[drag.i].x = w.x; doc.course.marks[drag.i].y = w.y;
             livePathRefresh();
@@ -5719,6 +6434,7 @@ cv.addEventListener('wheel', (e) => {
 // ── Keyboard ────────────────────────────────────────────────────────────────
 window.addEventListener('keydown', (e) => {
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+    if (e.key === 'Enter' && !doc && lastHandle) { reopenLast(); return; }
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
@@ -5734,6 +6450,33 @@ window.addEventListener('keydown', (e) => {
         const n = oselDuplicate();
         if (n) { afterEdit(true, n === 1 ? 'duplicate' : `duplicate ${n}`);
                  toast(`Duplicated ${n} — the ${n === 1 ? 'copy is' : 'copies are'} now selected`); }
+        return;
+    }
+    // Arrows walk the active layer's list; Shift+arrow EXTENDS the selection from its
+    // anchor, the way every list tool does it. The row scrolled into view is the row
+    // the cursor just landed on. Only when a layer HAS a list — on the others the keys
+    // fall through untouched.
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !mod && !e.altKey) {
+        if (moveListSel(e.key === 'ArrowDown' ? 1 : -1, e.shiftKey)) {
+            const on = $('obj-list') && $('obj-list').querySelector('.ob.on');
+            if (on) on.scrollIntoView({ block: 'nearest' });
+            e.preventDefault();
+            return;
+        }
+    }
+    // Z cycles the selection through its overlap stack; Shift+Z the other way.
+    if (e.key.toLowerCase() === 'z' && !mod) {
+        cycleZ(e.shiftKey ? -1 : 1);
+        return;
+    }
+    // R on a selected prop: rotate in 15° steps, Shift-R the other way. A drag handle for
+    // one angle on a mostly-radial sprite is more chrome than the gesture deserves.
+    if (e.key.toLowerCase() === 'r' && mode === 'props' && selProp >= 0 && !mod) {
+        const p = dprops()[selProp];
+        if (p) {
+            p.heading = ((p.heading || 0) + (e.shiftKey ? -1 : 1) * Math.PI / 12 + Math.PI * 2) % (Math.PI * 2);
+            afterEdit(true, 'rotate prop');
+        }
         return;
     }
     // B, while the ruler is up: a boat to scale, for judging whether a gap fits one. A key
@@ -5772,6 +6515,15 @@ window.addEventListener('keydown', (e) => {
             if (sel.mark >= 0) { deleteMark(sel.mark); return; }
             if (selLine >= 0) { deleteLine(selLine); return; }
         }
+        if (mode === 'props' && (selProps.length || selProp >= 0)) {
+            // Delete means the whole selection, exactly as it does for shapes.
+            const rows = (selProps.length ? selProps.slice() : [selProp]).sort((a, b) => b - a);
+            for (const r of rows) dprops().splice(r, 1);
+            const n = rows.length;
+            selProp = -1; selProps = []; listAnchor = listCursor = -1;
+            afterEdit(true, n === 1 ? 'delete prop' : `delete ${n} props`);
+            return;
+        }
         // Vertices first: if some are selected, THEY are what Delete means. Only with none
         // selected does Delete remove the whole object.
         // ⚠️ With VERTICES selected, Delete means vertices — and it stops there even when it
@@ -5802,8 +6554,9 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && sub === 'measure') { pickTool('select'); return; }
     // Escape clears whatever is selected, in any mode.
     if (e.key === 'Escape' && (sel.shape || sel.mark >= 0 || selLine >= 0 || selRoute >= 0
-                               || vsel.length || osel.length)) {
-        sel = Object.assign({}, NOHIT); selLine = -1; selRoute = -1;
+                               || selProp >= 0 || selProps.length || vsel.length || osel.length)) {
+        sel = Object.assign({}, NOHIT); selLine = -1; selRoute = -1; selProp = -1;
+        selProps = []; listAnchor = listCursor = -1;
         vsel = []; osel = [];
         refreshInspector(); marksInspector(); iceRefresh(); refreshChrome(); draw(); return;
     }
@@ -5849,6 +6602,8 @@ function setMode(next) {
     if (mode === 'marks' && next !== 'marks' && next !== 'route') {
         sel = Object.assign({}, NOHIT); selLine = -1; marksInspector();
     }
+    if (mode === 'props' && next !== 'props') { selProp = -1; selProps = []; }
+    listAnchor = listCursor = -1;   // row numbering belongs to one list at a time
     mode = next;
     // Asked AFTER the switch, because whether a brush still has anything to act on is a
     // question about the layer you have arrived at, not the one you left.
@@ -6068,11 +6823,33 @@ $('btn-use-est').addEventListener('click', () => {
 function addWholeCourseCurrent() { addWholeCourseRegion('current'); }
 
 // ── Water colour ───────────────────────────────────────────────────────────
+// heroColor is what the venue picker shows when a venue's signature water differs from
+// its open water (today: the lagoon). It is BY DEFINITION the on-screen blend of a
+// shallows zone — SHALLOWS_ALPHA of shallowColor over baseColor — so on documents that
+// carry it, the editor recomputes it whenever either parent moves rather than offering
+// it as a swatch: a hand-picked heroColor drifts from what the water actually looks
+// like, which is the one thing it exists to show. Documents without one keep not having
+// one — the field is a venue's deliberate opt-in, not a default.
+function deriveHeroColor() {
+    const p = doc && doc.palette;
+    if (!p || !p.heroColor) return;
+    const live = window.WATER_CONFIG || {};
+    const rgb = (h) => {
+        const s = String(h || '').replace('#', '');
+        return /^[0-9a-f]{6}$/i.test(s) ? [0, 2, 4].map(i => parseInt(s.substring(i, i + 2), 16)) : null;
+    };
+    const sh = rgb(p.shallowColor || live.shallowColor), ba = rgb(p.baseColor || live.baseColor);
+    if (!sh || !ba) return;
+    const a = (typeof SHALLOWS_ALPHA !== 'undefined') ? SHALLOWS_ALPHA : 0.72;
+    p.heroColor = '#' + sh.map((c, i) =>
+        Math.round(c * a + ba[i] * (1 - a)).toString(16).padStart(2, '0')).join('');
+}
 for (const id in PAL_KEYS) {
     $(id).addEventListener('change', () => {
         if (!doc) return;
         if (!doc.palette) doc.palette = {};
         doc.palette[PAL_KEYS[id]] = $(id).value;
+        deriveHeroColor();
         afterEdit(true, 'water colour');
     });
 }
@@ -6104,6 +6881,27 @@ setInterval(() => {
 
 window.addEventListener('resize', resize);
 window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+// Boot restore: pick up where the last session left off. Silent when Chrome kept the
+// read permission; otherwise the empty state grows a "⏎ reopen <name>" line and the
+// Enter press is the user gesture the permission prompt needs. Never fights a document
+// the user has already opened by the time the async work lands.
+(async () => {
+    const h = await recallHandle();
+    if (!h || doc) return;
+    lastHandle = h;
+    try {
+        if ((await h.queryPermission({ mode: 'read' })) === 'granted') {
+            const f = await h.getFile();
+            if (!doc) {
+                openDocText(await f.text(), h, f.name);
+                lastHandle = null;
+                return;
+            }
+        }
+    } catch (_) { /* fall through to the ⏎ offer; reopenLast reports real failures */ }
+    draw();   // repaint the empty state so the ⏎ line shows
+})();
 
 window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildKindPicker,
     // exposed for headless tests

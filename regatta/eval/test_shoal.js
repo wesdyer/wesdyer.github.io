@@ -60,7 +60,11 @@ console.log('\nwhat a shoal IS');
 const T = V.traits({ kind: 'shoal', outer: BAR });
 check('it is awash', T.awash === true);
 check('it does not ground you', T.hard === false);
-check('it takes half your speed at its heart', near(T.drag, 0.5));
+// Retuned 2026-08-08 (0.5 -> 0.65 -> 0.8): a bar crossing should be a decision, not a
+// nuisance, and the deep floor is what carries that now that the feather is long again.
+// Pinned exactly so a drive-by change gets caught; the field checks below read the
+// floor FROM the kind, so only this line states the number.
+check('it takes 80% of your speed at its heart', near(T.drag, 0.8));
 check('it stays in the A* graph — the router has to know it is there', T.nav === true);
 check('it does not drift', T.motion === 'fixed');
 // The one that would be easy to get wrong: an awash shape carrying a height from a kind
@@ -83,15 +87,15 @@ console.log('\nthe depth field');
 const c = V.compile(mkDoc({ kind: 'shoal' }));
 const bar = c.islands.find(i => i.id === 'bar');
 check('the compiled shape is awash', bar.awash === true);
-check('its multiplier at the heart is 0.5', near(bar.shoalMul, 0.5));
+check('its multiplier at the heart is the kind\'s floor', near(bar.shoalMul, 1 - T.drag));
 const at = (x, y) => V.shoalMul(bar, x, y);
 check('deep water outside it is untouched', near(at(1200, 0), 1) && near(at(0, -900), 1));
-check('the shallowest part is the floor', near(at(0, 0), 0.5));
+check('the shallowest part is the floor', near(at(0, 0), bar.shoalMul));
 // The seam that matters most: the picture fades to nothing exactly where the drag does, so
 // the edge you can see is the edge you can feel.
 check('the outline itself costs nothing — no step to hit', near(at(399.99, 0), 1, 2e-3), `${at(399.99, 0)}`);
-check('...and just inside it, it has begun', at(360, 0) < 1 && at(360, 0) > 0.5, `${at(360, 0)}`);
-check('full drag by one feather in', near(at(400 - bar.shoalFeather, 0), 0.5, 1e-6),
+check('...and just inside it, it has begun', at(390, 0) < 1 && at(390, 0) > bar.shoalMul, `${at(390, 0)}`);
+check('full drag by one feather in', near(at(400 - bar.shoalFeather, 0), bar.shoalMul, 1e-6),
       `${at(400 - bar.shoalFeather, 0)}`);
 let monotone = true, prev = 1;
 for (let d = 0; d <= 200; d += 2) {
@@ -102,14 +106,17 @@ for (let d = 0; d <= 200; d += 2) {
 check('it only ever gets slower on the way in', monotone);
 // Smoothstep, not a ramp: zero gradient where it meets deep water, so a boat sitting on the
 // rim does not have its speed oscillate with its own leeway.
-const g1 = at(400 - 2, 0) - at(400 - 0, 0), g2 = at(400 - 62, 0) - at(400 - 60, 0);
+// The mid sample sits at HALF the feather — the ramp's steepest point wherever the
+// feather ends up — not at a fixed depth that a shorter feather turns into flat floor.
+const fh = bar.shoalFeather / 2;
+const g1 = at(400 - 2, 0) - at(400 - 0, 0), g2 = at(400 - fh - 1, 0) - at(400 - fh + 1, 0);
 check('the ramp eases in rather than starting with a corner', Math.abs(g1) < Math.abs(g2) / 3,
       `edge ${g1.toFixed(5)} vs mid ${g2.toFixed(5)}`);
 
 console.log('\nthe feather never swallows a small bar');
 const small = V.compile(mkDoc({ kind: 'shoal', outer: [[-60, -60], [60, -60], [60, 60], [-60, 60]] }));
 const sBar = small.islands.find(i => i.id === 'bar');
-check('a small shoal shortens its own ramp', sBar.shoalFeather < 120, `${sBar.shoalFeather}`);
+check('a small shoal shortens its own ramp', sBar.shoalFeather < bar.shoalFeather, `${sBar.shoalFeather}`);
 check('...and still reaches full drag somewhere', near(V.shoalMul(sBar, 0, 0), sBar.shoalMul, 1e-6),
       `${V.shoalMul(sBar, 0, 0)}`);
 
@@ -129,8 +136,8 @@ const two = V.compile(mkShapes([
     { id: 'b', kind: 'shoal', drag: 0.3, outer: BAR.map(p => [p[0] + 200, p[1]]), holes: [] }
 ]));
 const both = V.shoalField(two.islands, 0, 0);
-check('the shallowest wins rather than the two multiplying', near(both, 0.5), `${both}`);
-check('...so no pair can invent water shallower than either', both >= 0.5 - 1e-9);
+check('the shallowest wins rather than the two multiplying', near(both, 1 - T.drag), `${both}`);
+check('...so no pair can invent water shallower than either', both >= 1 - T.drag - 1e-9);
 
 console.log('\nnothing is awash by accident');
 // This began as "no shipped venue names the kind", which was true on the day the kind

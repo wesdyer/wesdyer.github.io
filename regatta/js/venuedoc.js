@@ -339,6 +339,23 @@ function validateVenueDoc(doc) {
         if (ln.marks[0] === ln.marks[1]) err(`line "${ln.id}": both ends are the same mark`);
     }
 
+    const propIds = new Set();
+    for (const p of (doc.props || [])) {
+        if (!p.id) { err('prop with no id'); continue; }
+        if (propIds.has(p.id)) err(`duplicate prop id "${p.id}"`);
+        propIds.add(p.id);
+        if (!PROP_KINDS[p.kind]) err(`prop "${p.id}": unknown kind "${p.kind}"`);
+        if (!isFinite(p.x) || !isFinite(p.y)) err(`prop "${p.id}": needs finite x/y`);
+        if (p.plane != null && !PROP_PLANES.includes(p.plane))
+            err(`prop "${p.id}": unknown plane "${p.plane}" (seabed | surface | canopy)`);
+        if (p.contact != null && !PROP_CONTACTS.includes(p.contact))
+            err(`prop "${p.id}": unknown contact "${p.contact}" (none | soft | hard)`);
+        if (p.motion != null && p.motion !== 'fixed' && p.motion !== 'drift')
+            err(`prop "${p.id}": unknown motion "${p.motion}" (fixed | drift)`);
+        if (p.motion === 'drift' && p.contact != null && p.contact !== 'none')
+            warn(`prop "${p.id}": a drifting prop cannot carry contact — it will be scenery`);
+    }
+
     for (const entry of (course.route || [])) {
         if (entry.kind === 'round') {
             if (entry.landId != null) err('route: rounding still references a land shape — a rounding names a MARK');
@@ -600,6 +617,81 @@ const MARK_KINDS = {
     none:       { label: 'No buoy (position only)' }
 };
 
+// What a PROP can be. Same single-list rule as MARK_KINDS: the validator, the editor's
+// palette and script.js's sprite registry (PROP_SPRITES) all read this one table. A prop
+// is a PICTURE WITH A POSITION and nothing else — no collision, no lee, no router entry,
+// no effect on play — which is what separates it from every shape kind above. Keys are
+// the art manifest's asset keys, so each prop traces straight to the pipeline entry that
+// generated its sprite. `world` is the drawn size in world units (the camera is 1:1),
+// the same number the manifest declares.
+// A prop is a picture with a position — and, optionally, three more answers, each its
+// own axis exactly as a shape kind is a preset over the shape axes:
+//
+//   plane    seabed | surface | canopy   WHERE IT DRAWS. The world has three strata: the
+//                                        bottom (under everything on the water surface —
+//                                        a coral head), the surface (over land and water,
+//                                        under the boats — a trunk, a floating log), and
+//                                        the canopy (over the boats — a tree top an
+//                                        overhung hull passes beneath).
+//   contact  none | soft | hard          WHAT TOUCHING IT DOES. none is scenery; soft
+//                                        slows (drag, same 0..0.9 currency as a shoal);
+//                                        hard stops. contactR is the collider radius in
+//                                        world units.
+//   motion   fixed | drift               Fixed, or adrift on the day's water. DRIFT
+//                                        FORCES contact:none — a drifting collider would
+//                                        need the router re-priced every frame, so a
+//                                        drifting prop is scenery BY DEFINITION.
+//
+// CONTACT COSTS NO NEW PHYSICS: compile emits a small HIDDEN circular shape per
+// fixed contact prop — hard becomes a hidden hard isle (the bank precedent: hidden
+// colliders are long established), soft becomes a hidden shoal carrying the drag — so
+// collision, the drag field, router pricing and the chart all work unchanged. The kind
+// states the preset; any axis can be overridden on one placement without inventing a
+// kind for it (shapeTraits' rule, applied to props).
+const PROP_KINDS = {
+    'lagoon-palm':         { label: 'Palm',         world: 70, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lagoon-palm-dense':   { label: 'Dense palm',   world: 74, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    // The coral heads — the lagoon's teeth, and the venue card's promised hazard. All six
+    // preset seabed + hard: they draw under every surface layer (the water above is what
+    // sells the depth) and they STOP a boat, via the hidden collider compile emits. The
+    // collider is ~35% of the sprite frame — you hit the head, not its outermost frond.
+    // One placement can still soften any of them (contact soft + drag) or disarm one
+    // entirely (contact none) without a new kind.
+    'lagoon-coral-brain':    { label: 'Brain coral',    world: 44, plane: 'seabed', contact: 'hard', contactR: 15, motion: 'fixed' },
+    'lagoon-coral-staghorn': { label: 'Staghorn coral', world: 52, plane: 'seabed', contact: 'hard', contactR: 18, motion: 'fixed' },
+    'lagoon-coral-table':    { label: 'Table coral',    world: 48, plane: 'seabed', contact: 'hard', contactR: 17, motion: 'fixed' },
+    'lagoon-coral-bommie':   { label: 'Coral bommie',   world: 56, plane: 'seabed', contact: 'hard', contactR: 20, motion: 'fixed' },
+    'lagoon-coral-pillar':   { label: 'Pillar coral',   world: 40, plane: 'seabed', contact: 'hard', contactR: 14, motion: 'fixed' },
+    'lagoon-coral-elkhorn':  { label: 'Elkhorn coral',  world: 50, plane: 'seabed', contact: 'hard', contactR: 17, motion: 'fixed' }
+};
+
+// What a prop IS, after its kind's preset and its own overrides — one place, like
+// shapeTraits, so the compiler, the game and the editor's inspector can never disagree.
+const PROP_PLANES = ['seabed', 'surface', 'canopy'];
+const PROP_CONTACTS = ['none', 'soft', 'hard'];
+function propTraits(p) {
+    const k = PROP_KINDS[p.kind] || {};
+    const motion = (p.motion === 'drift' || p.motion === 'fixed') ? p.motion : (k.motion || 'fixed');
+    return {
+        plane:  PROP_PLANES.includes(p.plane) ? p.plane : (k.plane || 'surface'),
+        motion,
+        contact: motion === 'drift' ? 'none'
+               : PROP_CONTACTS.includes(p.contact) ? p.contact : (k.contact || 'none'),
+        // Same clamp as a shape's drag, for the same reason: nothing traps a boat dead
+        // in water it floats on.
+        drag: Math.max(0, Math.min(0.9, p.drag != null ? +p.drag : (k.drag != null ? +k.drag : 0.5))),
+        // The collider is smaller than the picture: you hit the trunk, not the crown.
+        // The KIND's radius is stated at scale 1, so a placement's `scale` resizes the
+        // collider with the picture; an AUTHORED per-placement radius is absolute (and
+        // the editor's whole-course scale multiplies it like any other length).
+        contactR: Math.max(4, p.contactR != null ? +p.contactR
+                             : (k.contactR != null ? +k.contactR : Math.round((k.world || 40) * 0.35))
+                               * (p.scale != null ? +p.scale : 1))
+    };
+}
+
 const SHAPE_KINDS = {
     // Sandy island — bay, lake, lagoon. HARD: generateIslands only ever marked grass and
     // redrock soft, so a tropical isle has always grounded you. Low, but it carries palms,
@@ -608,6 +700,10 @@ const SHAPE_KINDS = {
     // Grass island — the bayou's hummocks, the strait's islets. Barely stands out of the
     // water, and shadows accordingly: you do not get a lee from a marsh.
     reed:    { motion: 'fixed', hard: false, look: 'grass',    hidden: false, nav: true, height: 0 },   // ~4 m — you get no lee from a marsh
+    // The reed's twin in everything but colour: `grass` brightened to meadow green
+    // (2026-08-08), and the tan-olive it used to be lives here. The swamp's docs were
+    // re-kinded to this, so the bayou looks exactly as it always did.
+    swampgrass: { motion: 'fixed', hard: false, look: 'swampgrass', hidden: false, nav: true, height: 0 },
     // Canyon spires and walls. The tallest thing here, and the reason Redrock's card
     // promises wind shadows.
     redrock: { motion: 'fixed', hard: false, look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall
@@ -634,13 +730,76 @@ const SHAPE_KINDS = {
     // A shoal with a dry heart is two shapes, not a new kind: draw an `isle` inside it. That
     // composes, and it keeps "does this thing ground me" a single yes-or-no per shape.
     shoal:   { motion: 'fixed', hard: false, look: 'shoal',    hidden: false, nav: true, height: 0,    // awash: no lee, and none derivable
-               awash: true, drag: 0.5 }
+               // 0.8, raised from 0.5 via 0.65 (see SHOAL_FEATHER's note for the day's
+               // whole tuning story): a fifth of your speed over the shallowest sand.
+               // The long 120u feather keeps the onset gradual; the deep floor is what
+               // makes the crossing a decision. The router prices it identically, the
+               // 0.9 clamp still guarantees a way off, and per-shape `drag` tunes any
+               // one bar.
+               awash: true, drag: 0.8 },
+    // Painted shallows. A VISUAL depth statement and nothing else — the bright water
+    // inside a lagoon's reef, drawn as a tinted zone under everything on the surface.
+    // `drag: 0` is load-bearing: a boat sails it exactly as it sails open water, and
+    // zero drag is what keeps this kind out of every physics question `awash` already
+    // answers (no collision, no lee, no cost). `nav: false` keeps it out of the A*
+    // graph the way a bank stays out — there is nothing here for a router to know.
+    // `paint` is what the renderer keys on: a 0-drag SHOAL is deliberately invisible
+    // ("no drag, nothing to warn about"), so the honest picture needed a kind that
+    // says the tint IS the content. The colour comes from the venue palette's
+    // `shallowColor` — one field per venue, not per shape, because "what shallow
+    // water looks like here" is a property of the venue's light, exactly like
+    // shoalTint's derivation. See drawShallows in script.js.
+    shallows: { motion: 'fixed', hard: false, look: 'shoal',    hidden: false, nav: false, height: 0,
+               awash: true, drag: 0, paint: true },
+    // Seagrass meadow. The second painted zone, and the same physics silence as
+    // `shallows` — awash, dragless, unrouted. What differs is entirely how the renderer
+    // fills it: not a flat tint but a procedural clump mottle, because from this
+    // altitude a meadow is dark patchy MASS against bright sand, and arrangement is
+    // code's job, not a generator's (the compose.py argument, applied at runtime).
+    // If seagrass should ever cost speed, that decision is `drag` — the drag field,
+    // the router pricing and the warning render all already exist for awash shapes.
+    seagrass: { motion: 'fixed', hard: false, look: 'shoal',    hidden: false, nav: false, height: 0,
+               awash: true, drag: 0, paint: true },
+    // Tropic Sand — Caribbean coral-white sand, the lagoon's own beach. Behaves exactly
+    // as `isle` does (it grounds you, it carries palms); only the LOOK differs: the
+    // 'coralsand' style is markedly whiter and cooler than the tan `tropical` sand every
+    // other sandy venue shares. A separate kind rather than a look override because the
+    // editor authors kinds — one row in its list is the whole UI.
+    tropicsand: { motion: 'fixed', hard: true,  look: 'coralsand', hidden: false, nav: true, height: 0 },  // ~14 m with its palms
+    // Tropic Sand's own bar — identical behaviour to `shoal` (awash, same drag floor,
+    // priced by the router), differing only in material: the coral-white sand of a
+    // `tropicsand` beach continuing under the water. shoalTintFor (script.js) reads the
+    // look's body per shape, which is what lets two sands share one drag model.
+    tropicshoal: { motion: 'fixed', hard: false, look: 'coralshoal', hidden: false, nav: true, height: 0,
+               awash: true, drag: 0.8 },
+    // Coral reef. An AREA of living reef too shallow to sail — the third painted bottom
+    // (after shallows and seagrass) and the first that is also a WALL. `reef: true` is
+    // what the renderer keys on: drawIslands skips it and drawReefs paints it with the
+    // bottom layers, even more drowned than a coral head. It collides as a SOFT wall —
+    // impassable, but it shoves and costs speed rather than stopping dead — because a
+    // boundary you grind along is one you get off. A PROBABILISTIC boundary was
+    // considered and rejected: the router cannot price luck, the eval fleet must replay
+    // deterministically, and a boat that gambles and loses is stuck INSIDE the wall.
+    // Per-shape `hard: true` upgrades any one reef to stop-dead. height 0: a submerged
+    // reef shelters nothing, which the kind table's every-kind-is-0 rule gives for free.
+    coralreef: { motion: 'fixed', hard: false, look: 'coralshoal', hidden: false, nav: true, height: 0,
+               reef: true }
 };
 
 // How far in from a shoal's rim the water is still deep enough not to matter, in units.
 // 120u is 24 m — about two boat lengths, crossed in six seconds at hull speed, so the tax
-// arrives as a build rather than a wall you hit. Clamped to half the shape's own radius so
-// a small bar still reaches its full drag somewhere in the middle instead of being all rim.
+// arrives as a long build rather than a wall you hit. Clamped to half the shape's own
+// radius so a small bar still reaches its full drag somewhere in the middle instead of
+// being all rim.
+//
+// TUNED TWICE ON THE SAME DAY (2026-08-08), and the second pass is the lesson: when
+// shoals barely registered, halving the feather to 60 made them bite — but it bought the
+// bite by SHARPENING the rim, and the owner's verdict was that the gradient should be
+// long and soft. Bite and softness are different levers: the FEATHER is how gradually
+// the bottom comes up (back to 120, the two-boat-length build), and the DRAG FLOOR is
+// how much the shallowest water takes (0.8 on the kinds below — deep enough that even a
+// band whose interior never finishes the long ramp still taxes hard mid-crossing: 100u
+// in from the rim the multiplier is already ~0.25).
 const SHOAL_FEATHER = 120;
 
 // WHAT THE WATER OVER THIS SHOAL DOES TO YOUR SPEED, as a multiplier: 1 outside it, the
@@ -687,6 +846,9 @@ function shoalFieldAt(islands, x, y) {
     let mul = 1;
     for (const isl of (islands || [])) {
         if (!isl.awash) continue;
+        // A painted shallows zone (or any 0-drag shape) contributes nothing — skip the
+        // ring walk rather than computing a multiplier of 1.
+        if (isl.shoalMul >= 1) continue;
         const m = shoalMulAt(isl, x, y);
         if (m < mul) mul = m;
     }
@@ -706,6 +868,9 @@ function shapeTraits(s) {
         nav:    s.nav    !== undefined ? !!s.nav    : k.nav,
         height: s.height !== undefined ? +s.height  : k.height,
         awash:  s.awash  !== undefined ? !!s.awash  : !!k.awash,
+        // Not overridable per shape: paint IS the kind. A shape that wants drag is a shoal.
+        paint:  !!k.paint,
+        reef:   !!k.reef,
         // Clamped rather than trusted: `drag: 1` is a shape that stops a boat dead in water
         // it is floating over, with no collision to explain why, and every escape from it
         // is upwind of nothing. 0.9 leaves a knot to crawl out on.
@@ -766,7 +931,28 @@ function compileVenueDoc(doc) {
     // by which array a thing ended up in. Index 0 is painted FIRST, i.e. furthest back.
     const shapeOrder = [];
 
-    for (const l of migrateShapes(doc)) {
+    // CONTACT PROPS BECOME HIDDEN CIRCLE SHAPES, appended after the authored list so
+    // they compile through the exact same path as everything else — collision, the drag
+    // field, the router and the chart all meet them as ordinary shapes and need never
+    // know a prop exists. hard -> a hidden hard isle (the bank precedent); soft -> a
+    // hidden shoal carrying the prop's drag. Drift props emit nothing, by the traits'
+    // own rule.
+    const allShapes = migrateShapes(doc).slice();
+    for (const p of (doc.props || [])) {
+        if (!PROP_KINDS[p.kind]) continue;
+        const T = propTraits(p);
+        if (T.contact === 'none' || T.motion !== 'fixed') continue;
+        const r = T.contactR, ring = [];
+        for (let i = 0; i < 12; i++) {
+            const a = (i / 12) * Math.PI * 2;
+            ring.push([p.x + r * Math.sin(a), p.y - r * Math.cos(a)]);
+        }
+        allShapes.push(T.contact === 'hard'
+            ? { id: p.id + '.hit', kind: 'isle',  outer: ring, holes: [], hidden: true }
+            : { id: p.id + '.hit', kind: 'shoal', outer: ring, holes: [], hidden: true, drag: T.drag });
+    }
+
+    for (const l of allShapes) {
         const T = shapeTraits(l);
         if (T.motion === 'drift') { shapeOrder.push({ drift: true, i: -1 }); continue; }
         // KEYHOLED, so the runtime's single-ring render / collision / pathfinding all see the
@@ -807,6 +993,8 @@ function compileVenueDoc(doc) {
             // at its heart — the drag inverted once, here, so nothing downstream has to
             // remember which way round the number reads.
             awash: T.awash,
+            paint: T.paint,
+            reef: T.reef,
             shoalMul: T.awash ? 1 - T.drag : 1,
             shoalFeather: Math.min(SHOAL_FEATHER, radius * 0.5),
             // The rings UNKEYHOLED, for the graded depth read. `vertices` is the keyholed
@@ -1229,6 +1417,14 @@ function compileVenueDoc(doc) {
     return {
         islands,
         ice,
+        // Pictures with positions. Props affect NOTHING but pixels — no collision, no
+        // lee, no router entry — so compile normalizes and passes them through, and no
+        // physics consumer ever reads them.
+        props: (doc.props || []).filter(p => PROP_KINDS[p.kind]).map(p => Object.assign({
+            id: p.id, kind: p.kind, x: +p.x, y: +p.y,
+            heading: p.heading != null ? +p.heading : 0,
+            scale: p.scale != null ? +p.scale : 1
+        }, propTraits(p))),   // plane / motion / contact resolved once, here
         // Document order across BOTH, so the runtime can build one list that paints back to
         // front the way the designer stacked it. Without this, order came from which array
         // a shape happened to live in — all land, then all ice — and no floe could ever sit
@@ -1353,6 +1549,8 @@ window.VenueDoc = {
     // and the converter. A second copy anywhere is how "iceberg" comes to mean two things.
     KINDS: SHAPE_KINDS,
     MARK_KINDS: MARK_KINDS,
+    PROP_KINDS: PROP_KINDS,
+    propTraits: propTraits,
     // The depth read, on compiled islands. Shared so the boat, the router and the editor
     // price a shoal crossing identically — see shoalMulAt.
     shoalMul: shoalMulAt,

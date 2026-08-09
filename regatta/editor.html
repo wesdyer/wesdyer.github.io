@@ -149,8 +149,24 @@
                 <input id="pal-base" type="color" class="in-wide" style="padding:1px;height:26px">
                 <label class="k">deep</label>
                 <input id="pal-deep" type="color" class="in-wide" style="padding:1px;height:26px">
+                <label class="k" id="pal-shallow-label">shallow</label>
+                <input id="pal-shallow" type="color" class="in-wide" style="padding:1px;height:26px">
             </div>
             <button id="btn-pal-reset" class="btn btn-fill">Restore colours</button>
+        </div>
+
+        <!-- Props: pictures with positions. No collision, no lee, no routing — a prop is
+             scenery the game draws by kind, so the whole panel is "which kind". -->
+        <div class="mode-panel" hidden data-layer="props">
+            <div class="k" style="display:block;padding:12px 16px 8px;margin:0">Props</div>
+            <div class="in-grid" style="align-items:center;font-size:11.5px;">
+                <label class="k">kind</label>
+                <select id="prop-kind" class="in-wide"></select>
+            </div>
+            <div style="padding:8px 16px;font-size:11px;color:#94a3b8;line-height:1.5">
+                Click the map to place one · drag to move ·
+                ⌘ drag rotates · ⌥ drag scales ·
+                R / Shift-R nudges rotation · Delete removes</div>
         </div>
 
         <!-- layer: shape — no panel. Draw, Sculpt and Smooth are on the tool strip beside
