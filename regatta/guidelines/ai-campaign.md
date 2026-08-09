@@ -12437,3 +12437,43 @@ redrock   | 218.2 / 215.2  | 490 / 274       | 508* / 294       | 2.33* | 429/43
 (*finisher-med; the rise from 490 is POPULATION COMPOSITION — 38 ex-DNF boats
 now finish at 700-850s. DNF-at-900 med 501.5→509.5 (flat), mean 534.8→515.4
 (−19.4/boat, all sets). The fins column is the landing.)
+
+================================================================================
+# OPENING PROMPT — THE REDROCK PUSH, NEXT (paste to the next instance)
+
+THE REDROCK PUSH continues. Goal (owner): redrock below 2x vs her 218.2.
+⚠️ METRIC NOTE FIRST: on HEAD `458ec5a` the fins column changed population —
+99% finish (429/432) vs 91% before THE STUCK-STATE ESCAPE LANDING. Finisher-
+med 508 (2.33x) is NOT comparable to the old 490 (2.25x): DNF-at-900 med is
+FLAT (501.5→509.5) and mean is −19.4/boat. Decide the med target on the
+DNF-at-900 basis (goal <436 → currently 509.5 vs 501.5 base; −74 to go) and
+quote both columns to the owner. DO NOT STOP; ≥4 probes; check `date`;
+mechanism gate at the box BEFORE any 6-set; but remember the B2 lesson —
+the box CANNOT see fleet perturbation; only the pooled 6-set lands.
+
+Open with: memories regatta-redrock-push (both sessions), regatta-standing-
+rules (traps 21-25 + the command-trapped lesson), regatta-venue-table.
+
+Where the remaining ~74 lives (post-landing attribution, 4-race shape —
+re-run at 8 races before building):
+1. LEG-5 ~91/boat NET (but population changed — re-attribute first):
+   sub0 mark-7 exit +25.8 = DISTRIBUTED thread friction (no pocket; worst
+   transit 36.5s; family A: 59 vs her 72 u/s + wiggle-blind). subs 6-7 +36 =
+   medium solo stalls (60-115s, rivMed 170-621) BELOW the 25s ESCAPE
+   trigger. ⛔ threshold ladder dead — an entry-SHAPE change (e.g. futility
+   counted in WIGGLE FAILURES not seconds, or wiggle-fail count >= 3 &&
+   solo) is the unexplored shape.
+2. LEG-3 sub0 residual +35.7 (halved by the landing; now queue-flavored —
+   parked rivals near, ESCAPE correctly refuses; the fleet-avoidance family).
+3. LEG-2 arrival ~+19 (armed 49%, queue behind parked service — entry
+   governors ⛔, funnel metering already active; weigh before building).
+4. LEG-1 unmeasured this session (~43 at last measure — THE FLEET AVOIDANCE
+   TAX, AV1 inert/overdetermined).
+Also open: owner may deliver new redrock laps (fp=9b7c82db:21417 current;
+_traj_fp.js on arrival, intake same-day). The ESCAPE machinery is landed
+infrastructure now — `_esc_log.js` shows every firing; lake B profited
+(land −34%); if a future venue shows chronic solo wedges, ESCAPE's scope
+(fixed-land, no-floe, <2kt) is where to look first.
+Gates: pooled 6-set vs b1rr* (redrock), b1lakeB for lake B, hz3b*/p0* for
+byte-venues; 96-seed protocol near threshold; goldens full --update at
+landings; the owner table with EVERY status update.
