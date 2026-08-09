@@ -506,6 +506,16 @@ function regionWeight(sd, falloff) {
     return t * t * (3 - 2 * t);
 }
 
+// A STABLE 0..1 FROM A NAME. FNV-1a, the same hash the seagrass scatter uses, so a
+// value derived from an id is identical across sessions, machines and reorderings of
+// whatever list the thing happens to live in. Not for anything that must be
+// unpredictable — it is a spreader, not a generator.
+function hashUnit(s) {
+    let h = 2166136261;
+    for (const ch of String(s)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+    return h / 4294967296;
+}
+
 function representativeWind(windRegions, route, marks, doc) {
     if (!windRegions.length) {
         // Back-compat: a document that still authors a base direction keeps it.
@@ -1160,9 +1170,16 @@ function compileVenueDoc(doc) {
             speed: r.speed != null ? r.speed : null,
             speedVar: r.speedVar != null ? r.speedVar : 0,
             period: r.period != null ? r.period : 30,
-            // Fixed per-region phase so regions do not pulse in unison. Derived from
-            // the index, never from RNG — getWindAt must not touch the seeded stream.
-            phase: (i * 2.399963) % (Math.PI * 2)
+            // Fixed per-region phase so regions do not pulse in unison, and never from
+            // RNG — getWindAt must not touch the seeded stream. initCourse adds a
+            // per-race offset on top of this, from its own private stream.
+            //
+            // FROM THE ID, NOT THE INDEX. The index form meant dragging a region up the
+            // list in the editor silently re-rolled the phase of every region below it —
+            // a wind you had tuned by eye came back different because you reordered a
+            // list. The id is the thing the designer actually named, so the phase now
+            // travels with the region instead of with its position.
+            phase: hashUnit(r.id || `wind-${i}`) * Math.PI * 2
         };
     }).filter(r => r.poly.length >= 3);
 
