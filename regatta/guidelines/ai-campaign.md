@@ -11083,3 +11083,27 @@ on redrock post-P0). Reopen principle: stale evidence only (pre-FL1 model or
 sub-resolution benches); model-independent kills stay closed. Constraints:
 bench pairs together, actions-not-prices, probe audits, goldens full
 --update, venue table at close.
+
+## LAGOON ARRIVES (owner drop ae21f2e, Aug 8 ~22:00) — FIRST LOOK + FIRST LAPS
+The merge: lagoon venue (5 marks, 7 legs, 29 island shapes, 10 current
+regions) + SQUALLS (a new wind mechanic: seeded marching gust cells with a
++front, a core, a dead-air WAKE trap and veer, entering through getWindAt —
+"duck the rain or ride it") + seabed/drifting props + river/redrock/swamp
+venue edits. ⚠️ SHIPPING RIVER CHANGED (0cd21eb6 vs frozen 2520b114) — the
+frozen benchmark river stands per the freeze policy, same as redrock.
+HUMAN REFS (3 schema-2 laps, corpus + gw-ledger same-day): 154.0 best /
+160.6 med / 162.6. The give-way underlay reproduces on lagoon exactly (73
+encounters: rival onset ~557-579u in 91-97%, rivals 31-55° med at CPA vs her
+11-15° as give-way, ucpa≥80u in 94%) — seventh venue, same signature.
+BOT FIRST-LOOK (treeLAG on merge HEAD, 8 seeds, shipping venue): med 237 /
+mean 239.6, 71/72 finish — RATIO ~1.48x. Dirt: LAND 42.3/boat (the coral
+maze is the visible class; cf. lake 6.45, redrock 131), boat 4.19, pen 0.83.
+NEW CAPABILITY GAP (unsized): SQUALL-AWARENESS. The AI reads wind at-boat
+only; squalls are strategic-scale MOVING features, and the router's wbin
+field stamps them once at grid-build — a squall-stale routing field by
+construction. The human mechanic (duck/ride/avoid-the-wake) is planned
+interaction with a moving feature. Size before building: time-in-wake and
+front-riding, human vs bot, from the corpus + a live probe.
+DIRECTIVE ADDENDUM: P0-P4 stand (pre-merge trees stay internally valid for
+P0; any landing PORTS to merge HEAD). Lagoon enters the venue table; its
+push waits for the re-verdict queue unless the owner reprioritizes.
