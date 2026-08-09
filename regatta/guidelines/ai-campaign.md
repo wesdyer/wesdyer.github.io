@@ -10901,3 +10901,17 @@ races already ran at phase zero); non-swell venues byte-inert by construction
 (every TIME reader gated on TRAINS.length). OCEAN BYTE-GATES UN-SUSPENDED.
 New ocean anchor: ocean_bench_swtocA (16@9300, med 190, fins 144/144) — the
 rd11oc-era anchors predate deterministic seas; never compare across this cut.
+
+### CLOSING VENUE TABLE (final HEAD 016674e, frozen venues, med s/boat)
+| venue     | human (med/best) | pre-session bot (b33d491)      | post-session bot (016674e)                  |
+|-----------|------------------|--------------------------------|---------------------------------------------|
+| bay       | 226.2 / 217.8    | 231 / 234 (bp2bayA/B)          | byte-identical (no behavior change)          |
+| ocean     | 182.5 (pre-gust) | 190 (rd11oc, NONDETERMINISTIC) | **190 (swtocA, DETERMINISTIC — byte-equal reruns; 144/144, boat 1.76, mark 0.08, pen 0.33)** |
+| redrock   | ~227 / 206.6 (OLD)| pooled med 494, fins 399/432  | byte-identical                               |
+| lake      | 223 / 209.6      | 278 (op5hlakeA), land 6.45 watch| byte-identical                              |
+| arctic    | 212.1 / 190.4    | 379/386/371/367 (fl1barcA-D)   | byte-identical                               |
+| seatrials | ~190 / 180.9     | 199.58 / 194.13                | byte-identical                               |
+| river     | 161.3 (n=2)      | 264 / 271 (ff2rivA/B)          | byte-identical                               |
+The landing is infrastructure + ocean determinism: the only behavior delta is the
+ocean sea starting at phase zero (clock flat-to-better). All other venues carry
+b33d491 anchors verbatim — the swell fix is unreachable without trains.
