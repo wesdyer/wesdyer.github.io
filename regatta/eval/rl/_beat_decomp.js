@@ -36,8 +36,8 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
             // leg target: where the leg ends (next waypoint of boats on LEG)
             const acc = {};
             for (const bt of state.boats) if (!bt.isPlayer) acc[bt.id] = {
-                odo: 0, waste: { AVOID: 0, WIGGLE: 0, TACKWIN: 0, ARMED: 0, CLEAN: 0 },
-                time: { AVOID: 0, WIGGLE: 0, TACKWIN: 0, ARMED: 0, CLEAN: 0 },
+                odo: 0, waste: { AVOID_ROW: 0, AVOID_GW: 0, AVOID_NONE: 0, WIGGLE: 0, TACKWIN: 0, ARMED: 0, CLEAN: 0 },
+                time: { AVOID_ROW: 0, AVOID_GW: 0, AVOID_NONE: 0, WIGGLE: 0, TACKWIN: 0, ARMED: 0, CLEAN: 0 },
                 tacks: 0, lastSide: null, lastTackT: -99, sx: null, sy: null, ex: null, ey: null, frames: 0
             };
             const dmcLen = (state.course.dmc && state.course.dmc.legs && state.course.dmc.legs[LEG]
@@ -53,13 +53,14 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
                     if (a.sx === null) { a.sx = bt.x; a.sy = bt.y; }
                     a.ex = bt.x; a.ey = bt.y;
                     const wp = bt.raceState.nextWaypoint;
-                    const spd = bt.speed || 0;
+                    // ⚠️ UNITS (rule 18): boat.speed and velocity are PER-FRAME; ×60 = u/s.
+                    const spd = (bt.speed || 0) * 60;
                     a.odo += spd * dt;
                     // VMC toward the waypoint the engine says this leg ends at
                     let vmc = 0;
                     if (wp && typeof wp.x === 'number') {
                         const dx = wp.x - bt.x, dy = wp.y - bt.y, dd = Math.hypot(dx, dy) || 1;
-                        vmc = (bt.velocity.x * dx + bt.velocity.y * dy) / dd;
+                        vmc = 60 * (bt.velocity.x * dx + bt.velocity.y * dy) / dd;
                     }
                     const waste = Math.max(0, spd - vmc) * dt;
                     const c = bt.controller || {};
@@ -68,7 +69,10 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
                     a.lastSide = side;
                     const armed = !!(bt.raceState.roundArmed || c.dmcCarrotS != null && state.course.type === 'islandRound');
                     let bucket = 'CLEAN';
-                    if ((c.lastAvoidDeviation || 0) > 0.08) bucket = 'AVOID';
+                    if ((c.lastAvoidDeviation || 0) > 0.08) {
+                        bucket = c.avoidanceRole === 'STAND_ON' ? 'AVOID_ROW'
+                               : c.avoidanceRole === 'GIVE_WAY' ? 'AVOID_GW' : 'AVOID_NONE';
+                    }
                     else if (c.wiggleActive) bucket = 'WIGGLE';
                     else if (state.time - a.lastTackT < 4 * 0.24) bucket = 'TACKWIN';
                     else if (armed) bucket = 'ARMED';
@@ -97,7 +101,7 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
     const med = (arr) => { const s = [...arr].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
     console.log(`\n=== ${VENUE} leg ${LEG} decomposition (${rows.length} boat-legs, dmcLen ${meta.dmcLen}) ===`);
     console.log(`odo med ${med(rows.map(r => r.odo))}  straight med ${med(rows.map(r => r.straight))}  tacks med ${med(rows.map(r => r.tacks))}`);
-    for (const k of ['AVOID', 'WIGGLE', 'TACKWIN', 'ARMED', 'CLEAN']) {
+    for (const k of ['AVOID_ROW', 'AVOID_GW', 'AVOID_NONE', 'WIGGLE', 'TACKWIN', 'ARMED', 'CLEAN']) {
         console.log(`  waste ${k}: med ${med(rows.map(r => r.w[k]))}u  (time med ${med(rows.map(r => r.tm[k]))}s)`);
     }
 })();

@@ -11627,14 +11627,74 @@ CONSEQUENCE: the mean-field stamps change routing on EVERY venue whose regions
 oscillate (all of them) — P0b re-anchors all eight venues on treeP0 at this
 HEAD. Never compare any bench across this cut.
 
-## P0b REBASELINE — treeP0 anchors (this HEAD, frozen venues, fingerprints clean)
+## P0b REBASELINE COMPLETE — treeP0 anchors on HEAD `08310d7` (frozen venues)
 Human column re-verified post-merge with _traj_fp.js: all 8 venues' fresh laps
-match FROZEN, frozen == shipping everywhere. Anchors (filled as sets complete):
-  bay    p0bayA/B    20@9100/9200  med 241/241  fins 180+180/360  boat 2.17/1.58
-  lake   p0lakeA/B   20@9100/9200  med 264/261  fins 360/360  land 7.57/8.10
-  river  p0rivA      16@9100       med 269      fins 123/144  (rivB pending)
-  ocean  p0oc        16@9300       med 203      fins 144/144  (was swtocA 190 pre-merge — cut)
-  redrock p0rr9400..9900  6x8      [pending]
-  arctic  p0arc A..D 4x16@9100..9400  [pending]
-  lagoon  p0lagA/B   2x8@9100/9200    [pending]
-  seatrials run_eval 100@100         [pending]
+match FROZEN, frozen == shipping everywhere. ALL EIGHT VENUES ANCHORED:
+  bay      p0bayA/B   20@9100/9200  med 241/241  fins 360/360   ratio 1.10
+  lake     p0lakeA/B  20@9100/9200  med 264/261  fins 360/360   ratio 1.18  land 7.6/8.1
+  river    p0rivA/B   16@9100/9200  med 269/269  fins 263/288   ratio 1.61
+  ocean    p0oc       16@9300       med 203      fins 144/144   ratio 1.14
+  lagoon   p0lagA/B   8@9100/9200   med 277/280  fins 144/144   ratio 1.69
+  redrock  p0rr9400..9900  6x8  POOLED med 602  fins 376/432    ratio 2.76  (per-set 580-613)
+  arctic   p0arcA..D  4x16@9100..9400  POOLED med 366  fins 575/576  ratio 1.72  (per-set 383/392/350/354)
+  seatrials run_eval 100@100  boat means 196.2-198.9 (~197.8)   ratio 1.04
+The mean-field stamps moved venues in BOTH directions vs the survey (bay 232→241,
+ocean 190→203, lake 278→262, arctic 366→366 pooled-same): the old stamps were a
+random instant of the day per process; these are the mean-field truth. The gap
+ORDER is unchanged: redrock 2.76 >> arctic 1.72 ≈ lagoon 1.69 > river 1.61 >
+lake 1.18 > ocean 1.14 > bay 1.10 > seatrials 1.04.
+
+## P3 MEASUREMENT — THE ARMED APPROACH CRAWL, measured against her (treeP0)
+`_appr_matrix.js arctic 1` (both all-laps and fp=19b566b3:82810 verified-only —
+identical shape): binned by distance to the rounding mark, the human sails the
+ENTIRE approach at 100-117 u/s and never parks; the fleet crawls it:
+  150-300u: bot 3.7 u/s, armed 100%, park 64%, wiggle 19% (her: crosses at speed)
+  300-450u: 49.6 u/s, armed 100%, avoid 55%   450-600u: 76.1, armed 100%, avoid 68%
+  600-900u: 79.2, armed 98%, avoid 66%
+Bands 150-900u: her 32 s/lap, fleet 101 s/boat — **+69 s/boat in the armed
+approach alone**, avoid% 39-68 throughout. At 900-2700u the fleet is 83-98 u/s
+(near her pace — the tack-count/beat address is dead as measured); the far band
+2700+ carries +43 s/boat with avoid 41%. The crawl is fleet-vs-fleet avoidance
+inside the armed machinery (the ring jam quantified against the human), NOT the
+beat. ⛔ arrival/laning wide-ride, orbit-radius, holds all stay closed — the
+next shape must change WHICH avoidance actions exist inside the armed approach,
+not relocate the queue.
+
+## P4 MEASUREMENT — THE BEAT EXCESS DECOMPOSED (treeP0, units audited per rule 18)
+`_beat_decomp.js` — per-frame waste = (speed − VMC-to-waypoint), bucketed:
+  bay L1  (odo 4924 vs straight 2848, tacks 6): AVOID 1198u = 57% of waste,
+          CLEAN (pointing/route quality) 581u = 28%, TACKWIN 212u = 10%, ARMED 117u
+  lake L2 (tacks med 7 vs her 1): AVOID ≈49% of waste, CLEAN ≈24%, TACKWIN ≈24%
+Mechanism B's cause is NOT primarily router path length and NOT laylines: it is
+**avoidance deviation among the fleet itself on the beat** — the same give-way
+underlay the ledger measured (she deflects 0-5° as ROW; bots swing 10-64°).
+Ocean L1 run pending. CROSS-VENUE: one address now owns the bulk of bay L1,
+lake L2, arctic approach AND redrock/river's extra dirt — THE FLEET AVOIDANCE
+TAX. The tactical-doctrine ruling (ROW sails its course; give-way yields
+modestly, last-minute-but-sufficient) is the spec the deflection engine does
+not yet meet fleet-wide.
+Ocean L1 (odo 8105 vs straight 4412, dmcLen 4921, tacks 6): CLEAN 2011u = 38%,
+ARMED 1804u = 34% (!), AVOID 968u = 18%, TACKWIN 518u = 10%. Ocean's excess is
+ROUTE/POINTING + THE ARMED ROUNDING PATH, not fleet avoidance — a different
+mechanism from bay/lake (and ocean is only 1.14x; deprioritized). The
+fleet-avoidance-tax address owns bay L1 + lake L2 + the arctic approach.
+
+## ⛔ P1/P2 — THE CLEARANCE-BAR LADDER IS DEAD (killed by monotonic dose-response)
+Trees B1 38u / B3 30u, LAND bar only (ice + orbit floor stayed 44u; stamp
+equivalence preserved; centerOnly shapes keep CLEARANCE):
+  redrock B1 pooled 6-set (_pool_rr, sign checked): paired med +11 (SLOWER),
+    fins 376→359, land 200→222/boat.
+  river B1 2x16: med 269→272/273, leg idx3 UNMOVED (148/152 → 152/152).
+  river B3 (30u = the physics bar, her whole line admitted): med 269→287,
+    land 134→237 (+77%), fins 140→130, leg idx3 152→161 — WORSE.
+Dose-response 44→38→30u is monotonic in the WRONG direction on every metric.
+MECHANISM: the bar was never binding. The human sails 21u off the bank because
+she can EXECUTE there; the fleet's pocket stall is a RESPONSE/EXECUTION failure
+(landAhead 85%, wiggle 85% in the pockets — displaced arrivals that cannot get
+back up to speed near a bank). Admitting nearer-land cells just routes the
+fleet into more exposure. Same lesson as rule 17 (route pricing cannot reach
+displacement-driven failures) from the ADMISSION side. B2 skipped (bracketed);
+B4 scoping moot. ⛔ Do not reopen bar-lowering; the CP1/noSubsample family is
+about the grid LYING about hard geometry, not about margins on TRUE geometry.
+River leg3 re-address: the pocket class is execution-under-jam near banks —
+judge any candidate on the wiggle/landAhead pocket stats, not route admission.
