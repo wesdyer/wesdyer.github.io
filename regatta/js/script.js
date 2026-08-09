@@ -3762,8 +3762,25 @@ class BotController {
                 // never under the armed arc (arcK), never a no-go heading,
                 // never in a ≥2kt stream (time-to-wall is ground speed
                 // there).
-                const hardZ = (openWaterAv && !arcK && hPlanFF != null
-                    && Math.abs(normalizeAngle(h - hPlanFF)) <= 0.3
+                // HZ2 (2026-08-09): A SLOW BOAT'S TIME-TO-WALL BOUNDS ITS RISK IN
+                // EVERY DIRECTION. The plan-alignment window exists to keep a FAST
+                // boat from trusting an off-plan heading — and it is exactly the
+                // condition the redrock leg3 pocket fails (aligned 28%, plan ref
+                // present 69% at slow-static choices, n=1933, _pocket_argmin): the
+                // displaced boat trying to rejoin the plan kept the full 140u veto
+                // where this scaling's own formula floors it at 60u, and the pocket
+                // parked 94% static. Waive ALIGNMENT ONLY, for boats under 40 u/s;
+                // the irons, current and armed-arc guards stay. Gated: redrock
+                // pooled 6-set paired −34 med / −37 mean (ALL sets negative), fins
+                // 376→386, boat rubs −20%, penalties −11%; lake/bay/lagoon flat-to-
+                // better; ocean 16 EXACT + river + arctic + seatrials byte-identical
+                // (river/arctic sit behind the current/floe guards by construction).
+                const hzWaive = !arcK && boat.speed * 60 < 40
+                    && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
+                    && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                const hardZ = (openWaterAv && !arcK
+                    && (hzWaive || (hPlanFF != null
+                        && Math.abs(normalizeAngle(h - hPlanFF)) <= 0.3))
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
                     && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
@@ -3800,9 +3817,9 @@ class BotController {
                         // turning room), not a fraction: at speed, 40% of the probe
                         // was 190u and vetoed every thread the pack offered.
                         if (frac * segLen <= hardZ) { staticCollision = true; cost += 500000; }
-                        else if (hPlanFF == null || arcK
+                        else if (!hzWaive && (hPlanFF == null || arcK
                             || Math.abs(normalizeAngle(h - hPlanFF)) > 0.3
-                            || Math.abs(normalizeAngle(h - wdAv)) < 0.62) {
+                            || Math.abs(normalizeAngle(h - wdAv)) < 0.62)) {
                             proximityCost += 30000 * (1 - frac);
                         }
                         break;

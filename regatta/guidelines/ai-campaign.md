@@ -11823,3 +11823,34 @@ time-to-wall is long in every direction, so the speed term already bounds the
 risk; the alignment window exists to protect fast boats aiming off-plan. Judge
 on redrock pooled 6-set + river transfer + the full battery; same physical
 line as the hard-zone landing (an honest widening of its own scope).
+
+================================================================================
+## 2026-08-09 ~11:30 — THE SLOW-BOAT WAIVER LANDING (HZ2). Behavior HEAD moves.
+
+The pocket-argmin chain (static parking 94% → failing scope = plan-alignment)
+converted directly into the build: `hzWaive` (!arcK, speed < 40 u/s, irons +
+current guards kept) waives the hard-zone plan-alignment requirement for the
+veto scaling AND the 30000 far term. A slow boat's time-to-wall bounds its risk
+in every direction; the alignment window exists to protect FAST boats.
+
+GATES (treeHZ2 vs treeP0, all on `08310d7` baselines):
+  redrock pooled 6-set: paired med −34.0 / mean −37.2, ALL SIX SETS NEGATIVE
+    (−15/−39/−26/−89/−34/−48), fins 376→386, cand med 602→572, boat rubs
+    12.55→10.08 (−20%), penalties 3.22→2.88 (−11%), land flat (200→201).
+  lake 2x20: A 262 land −18%, B 262 land +2% — flat-to-better, all 360 finish.
+  bay 2x20: A BYTE-IDENTICAL, B 240 (−1) boat −9%.
+  lagoon 2x8: −7/−7 clock (277→270, 280→273), land A +46% / B −10% (pooled
+    +16% — THE WATCH COLUMN for lagoon).
+  ocean 16@9300 EXACT: byte-identical. river 2x16: byte-identical (current
+    guard scopes it out — its pocket sits in the ≥2kt set; NOT a transfer
+    failure, a scope fact). arctic 4x16: byte-identical (floe venue guards).
+  seatrials run_eval 100@100: byte-identical.
+GOLDENS: full --update then verify PASS 20/20.
+NEW ANCHORS on this HEAD: redrock hz2rr{9400..9900} pooled med 572 fins
+386/432 (ratio 2.62, was 2.76); lake hz2lakeA/B 262/262; bay hz2bayB 240
+(bayA = p0bayA byte-identical); lagoon hz2lagA/B 270/273; all byte-identical
+venues keep their p0 anchors (p0oc 203, p0riv 269/269, p0arc pooled 366,
+seatrials ~197.8).
+REMAINING on redrock at this cut: 572/218.2 = 2.62x — the pocket class is cut
+but not closed; river's twin pocket needs a current-honest variant (time-to-
+wall in the GROUND frame is the honest form there — future shape, NOT built).
