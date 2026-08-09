@@ -10992,3 +10992,94 @@ run. treeRR4 kept; working tree reverted; probes _rr_where2/_rr_why/_rr_trace
 tracked. If the protocol lands it, the follow-up is the traffic diagnosis
 (why freed boats pay in the crowd); if not, the ladder closes at four shapes
 with the mechanism named.
+
+## NEXT-PUSH DIRECTIVE (authored Aug 8 close, owner-approved): THE RE-VERDICT PUSH
+## "With better information, some discarded techniques may perform better."
+The reopen principle, applied to the full ⛔ list: a kill is reopenable ONLY
+when its evidence was produced by the false world model (pre-FL1/FL1b arctic
+= 53% phantom floe flags) or by a bench below today's resolution rules
+(8-seed arctic/redrock reads), AND the kill was not a model-independent
+mechanism (Freezing-Robot, route-length tax, trap-17 displacement, drift
+physics). Three candidates pass the filter; everything else stays closed —
+including everything killed THIS session on the accurate model.
+
+P0 — RR4, THE 96-SEED DECISION RUN (redrock mark-5 canyon; treeRR4 kept).
+  Existing evidence: 6 sets op5rr↔rr4rr (pooled med +7.0/mean +0.9 — inside
+  the ±8-10 noise band). Run the OTHER HALF of the protocol: 6 FRESH sets
+  (8400..8900, 8 seeds each) on BOTH trees — treeSWT (byte-matches behavior
+  HEAD 016674e) and treeRR4 — then pool ALL TWELVE sets with _pool_rr.js
+  (explicit set lists). Landing bar: pooled clearly negative with dirt clean;
+  near-threshold again → the ladder CLOSES at four shapes, mechanism named
+  (the canyon class survives as attribution for a future traffic-side shape).
+  If it lands: cross-venue gates (arctic pooled 4-set vs fl1barc*, lake
+  20@9100 vs op5hlakeA, bay 20-seed pair, river pooled fins/med vs ff2riv*,
+  ocean 16@9300 vs swtocA — EXACT gate now, seatrials id), goldens FULL
+  --update, session log, venue table.
+
+P1 — LANE1 REBUILD + RE-BENCH (the tack-cost router; the strongest reopen).
+  The only which-actions shape ever aimed at the ~150s/boat arctic TACK-COUNT
+  class, killed at 8 SEEDS (below rule-12 resolution) PRE-FL1 (phantom-flag
+  world) — both evidence legs stale. Rebuild from this file's "LANE1 — the
+  state is (cell, how you arrived)" section (~line 10068) onto current HEAD;
+  trees are gone, the design is documented. Scope as originally built; verify
+  byte-inertness on non-floe venues by construction + one bench. Gate: arctic
+  pooled 4-set vs fl1barc* WITH the tack instrument (_arc_dist 4-seed
+  alongside — the mechanism must move: tacks toward her 5, not just clock).
+  LANE2 (board-following steering) only if LANE1 alone is flat-with-mechanism.
+
+P2 — THE FAN UNGATE ON GLACIER SOUND (the cheapest re-verdict).
+  The densified avoidance fan is gated off floe venues by an EXPLICIT
+  conservatism, not a mechanism kill (script.js ~2831: "four 16-seed sets
+  could not tell it from zero... do not move a marginal venue") — and both
+  premises are gone: arctic finishes 576/576 (was ~8% DNF) and the candidate
+  scorer now tests true hulls. One-line ungate (extend the dense list where
+  floes exist; ⚠️ KEEP racingLegF — start tuning is sacred, the 4.4-point
+  OCS lesson). Gate: arctic pooled 4-set vs fl1barc*.
+  ⚠️ P1 and P2 both touch arctic: gate each SEPARATELY on its own tree; if
+  both pass, gate the COMPOSED tree before landing either (the OP1+BP1
+  anti-composition lesson).
+
+P3 — RIVER EXECUTION SIZING (probe-only, runs while benches grind).
+  Four dead current-pricing shapes narrowed the river's 22% moving deficit to
+  EXECUTION: boats displaced into bank water by deflection + 5kt set, where
+  route pricing provably cannot reach (trap 17). Probe the corpus (37 river
+  encounters + full laps): her behavior at displacement onset near banks —
+  crab angle vs track, bear-away timing, commitment distance — vs the bot
+  response layer's at the same geometry (live probe, displaced-episode
+  detection). NAME the behavioral difference; no build without a named class.
+
+P4 — CONDITIONAL: curved small candidates on redrock, ONLY after P0
+  resolves. Their redrock +35 kill was measured midday on a venue whose
+  dominant failure (the canyon carrot bug) corrupted exactly the pinned-state
+  steering a curved probe models. If RR4 lands, re-test curved on the
+  post-RR4 tree (river win −6 stands waiting).
+
+STAYS CLOSED (re-affirmed at this directive, model-independent): station-
+keeping/holds/commitment/reservation (Freezing-Robot); SIPP + map staleness
+(drift physics); closing-lead pricing, occupancy stamps, current pricing ×4
+(route-length tax + trap-17); clearance-extension ×2 (tack-count
+re-attribution supersedes); everything killed Aug 8 night on the accurate
+model (rollout speed ×2, point-boat, radius selection, wide-ride ×2).
+
+CONSTRAINTS CARRIED: closed families stay closed except the three named
+reopens; actions-not-prices; arctic pooled 4-set vs fl1barc*; river pooled
+fins/med; redrock 96-seed protocol for near-threshold; bench pairs together;
+probe audits (18/18b/19b/19c); freeze_venues --check from repo root; check
+date; goldens full --update per landing; close with the venue table.
+OWNER ASKS (standing): fresh laps bay/lake/OLD-redrock; post-gust-fix OCEAN
+lap (the 182.5 ref predates the fix — ocean's true ratio is unknown);
+NEW-redrock schema-2 laps for the promotion decision.
+
+## OPENING PROMPT (paste-ready)
+THE RE-VERDICT PUSH. Goal unchanged: human or superhuman on bay, ocean,
+redrock, lake, arctic, seatrials. Open with memory regatta-redrock-canyon +
+the RE-VERDICT DIRECTIVE at the bottom of ai-campaign.md. Behavior HEAD
+016674e (swell-clock); repo HEAD carries the directive. Work P0 (RR4 96-seed
+decision: 6 fresh sets 8400..8900 on treeSWT AND treeRR4, pool all 12),
+P1 (LANE1 rebuild from the documented design, arctic 4-set + tack
+instrument), P2 (fan ungate one-liner, arctic 4-set; compose-gate with P1 if
+both pass), P3 (river execution sizing, probe-only), P4 conditional (curved
+on redrock post-P0). Reopen principle: stale evidence only (pre-FL1 model or
+sub-resolution benches); model-independent kills stay closed. Constraints:
+bench pairs together, actions-not-prices, probe audits, goldens full
+--update, venue table at close.
