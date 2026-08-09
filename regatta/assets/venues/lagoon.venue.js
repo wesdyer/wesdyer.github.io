@@ -4139,7 +4139,7 @@ window.VENUE_DOC["lagoon"] = {
     ]
   },
   "squalls": {
-    "_note": "The card’s promised mechanic: cells march down the trades at ~1.45x the speed the breeze carries a puff, gust front on the leading edge, dead-air wake trailing. Count is the only required field; rx/ry/sizeVar/speedFactor/courseJitter override the engine defaults (SQUALL_DEFAULTS, script.js). COUNT IS 2, NOT 3, because the cells are now dealt across the RACECOURSE rather than the arena (squallField, script.js) and three of them left the fleet in cell-affected water 36% of the race — measured 8 seeds: count 1/2/3 gives 18/27/36% exposure and 6/9/12 encounters per boat. Two keeps clear water the baseline and the cell the event.",
+    "_note": "The card’s promised mechanic: cells march down the trades at 1.10x the speed the breeze carries a puff (speedFactor, lowered from 1.45 on 2026-08-09 — 25% slower buys dwell, not weather: same exposure, longer encounters; see SQUALL_DEFAULTS), gust front on the leading edge, dead-air wake trailing. Count is the only required field; rx/ry/sizeVar/speedFactor/courseJitter override the engine defaults (SQUALL_DEFAULTS, script.js). COUNT IS 2, NOT 3, because the cells are now dealt across the RACECOURSE rather than the arena (squallField, script.js) and three of them left the fleet in cell-affected water 36% of the race — measured 8 seeds: count 1/2/3 gives 18/27/36% exposure and 6/9/12 encounters per boat. Two keeps clear water the baseline and the cell the event.",
     "count": 2
   },
   "palette": {
