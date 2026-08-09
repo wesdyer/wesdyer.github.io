@@ -11869,3 +11869,58 @@ redrock   | 218.2 / 215.2  | 602 / 315        | 573 / 299         | 2.62  | 386/
 not single-race times). Pre-bot = P0 rebaseline anchors on `08310d7` (same-cut);
 post-bot = final anchors (hz2 where moved, p0 where byte-identical). Sorted by
 ratio; this is the standing close format (owner, 2026-08-09).
+
+================================================================================
+# OPENING PROMPT — THE REDROCK PUSH (paste this to the next instance)
+
+THE REDROCK PUSH. **Goal (owner): drive redrock below 2x** — pooled med < 436
+vs her 218.2 — from 573 today. That is a −137 s/boat campaign; expect 3-4
+landings of HZ2's size (−30 to −60 each). DO NOT STOP; analyze → hypothesize →
+experiment → evaluate → iterate; ≥4 probes/benches in flight; when a candidate
+dies, name the mechanism here and move on. Check `date` first.
+
+**Open with**: memories `regatta-humanlevel-push` (this session: TWO landings),
+`regatta-standing-rules` (traps 21-25), `regatta-venue-table`,
+`regatta-redrock-canyon`, and this directive.
+
+**Where things stand.** Behavior HEAD `188cd74` (after `08310d7` THE MEAN-FIELD
+BAKE — bay/ocean cross-process byte-equal, trap 25 — and `188cd74` THE
+SLOW-BOAT WAIVER — hard-zone plan-alignment waived under 40 u/s; redrock pooled
+−34 all-sets-negative). Anchors on this HEAD: redrock hz2rr{9400..9900} pooled
+572/299 fins 386/432 (2.62x), lake hz2lakeA/B 262/262, bay p0bayA+hz2bayB
+241/240, lagoon hz2lagA/B 270/273 (⚠️ land +16% watch), ocean p0oc 203 (16
+EXACT), river p0rivA/B 269/269, arctic p0arc pooled 366, seatrials ~197.8.
+Goldens PASS 20/20 on `188cd74`. freeze_venues --check CLEAN. Owner table
+format: ratio-sorted, med/best both bots, fins n/total (%).
+
+**P0 — finish the Phase-0 attribution wave (partly done):**
+- DONE: per-leg matrix, VERIFIED LAPS ONLY (`fp=9b7c82db:21417` — 8 of 11
+  redrock traj files are OLD-course, rule 23): legs 3+5 = 58% of the gap
+  (+84.8/+79.3 s/boat, 2.51x/2.45x), legs 1/4 = 26% (2.30x/2.34x), leg6 1.73x.
+- TO RUN: `_leg_where.js` subsections on legs 3 and 5 (hz2 anchors);
+  `_pocket_argmin.js` re-run on an hz2-code tree (what mid-speed stall remains
+  in the leg3 pocket after the waiver — build treePR3 from HEAD + the treePR2
+  instrumentation patch, see regatta-humanlevel-push); **the BOUNDS class**
+  (37 bounds-contacts/boat, HUMAN-ZERO, never attributed — where/which
+  legs/what state); **the DNF class** (46/432 — where do they die); solo
+  neutral + `_arc_oscab.js` A/B on redrock (9 oscillating regions, never
+  A/B'd here; ⚠️ dirVar-only form; river PROFITS from swings — any
+  anti-chasing shape must not blunt shift-play and gates everywhere).
+**P1 — build in size order from P0.** Shelf: HZ2 siblings (the 40 u/s knee,
+the far-term for displaced mid-speed boats), the bounds fix once attributed
+(human-zero classes convert cleanly), tack hysteresis if the redrock osc A/B
+is big (judge on the TAIL, pooled sets). ⛔ Closed on redrock: RR1-4 (96
+seeds), curved-on-redrock, canyon-law entries, occupancy stamps, ENTRY-side
+governors, orbit-radius knee; MEDIUM breach honesty (lake kill); UL1 incl.
+HIGH (static field owns the defeats, not risk prices); AV1 band removal
+(overdetermined); the clearance-bar ladder (dose-response, admission is not
+the block). The 0-rung's defeat in constrained water is OVERDETERMINED —
+single-term removals re-rank; prefer shapes that change the boat's ACTIONS.
+**P2 — gates per landing**: redrock pooled 6-set minimum (_pool_rr, NEGATIVE =
+faster — trap 21), 96-seed protocol near threshold, full battery every venue
+(river/arctic may be byte-inert behind current/floe guards — verify byte-
+identity against CURRENT-HEAD baselines, trap 22), goldens full --update,
+close with the owner-format table.
+**Constraints carried**: actions-not-prices; episodes-not-frames; probe audits
+(18/18b/19b/19c); one-physical-line gates; `_traj_fp.js` before quoting any
+human ref; owner asked for MORE REDROCK LAPS — intake same-day when they land.
