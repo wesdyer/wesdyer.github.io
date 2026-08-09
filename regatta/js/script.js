@@ -7200,6 +7200,14 @@ function windOsc(t, period, phase) {
 // stop short of the shadow or the two recurse forever. This is the field that gusts and
 // shadows are applied on top of, and it is the honest answer to "which way is the wind
 // blowing here" for anything that is not a boat.
+//
+// WIND_MEAN_FIELD: while set, the field answers with the DAY'S MEAN — oscillator at zero,
+// no live shift. The grid bake stamps a venue-cached grid from this field, and a one-time
+// static stamp must not capture whatever instant of the day the bake happened to run in:
+// the oscillator made the instantaneous field a function of `r.phase` and `state.time`,
+// neither of which is in the bake's cache key, so the first bake (page load, phases still
+// unseeded) was winning forever and every process baked a different router.
+let WIND_MEAN_FIELD = false;
 function regionWindAt(x, y) {
     const baseSpeed = state.wind.speed;
     const baseDir = state.wind.direction;
@@ -7230,7 +7238,7 @@ function regionWindAt(x, y) {
         // DAY, not of the patch of water, so it rides on top of every region's mean.
         // Without this a region would freeze the wind it covers, and a course fully
         // covered by regions would never see a shift at all.
-        const liveShift = baseDir - state.wind.baseDirection;
+        const liveShift = WIND_MEAN_FIELD ? 0 : (baseDir - state.wind.baseDirection);
         let wsum = 0, ux = 0, uy = 0, sacc = 0;
         for (const r of wregions) {
             // The edge ramp is centered on the outline (VenueDoc.regionWeight), so a
@@ -7244,7 +7252,7 @@ function regionWindAt(x, y) {
             // shape that oscillation has and why it is not a plain sine. state.time is
             // deterministic and no RNG is touched here, so regions cannot shift the seeded
             // stream; the per-race variety is baked into `phase` by initCourse.
-            const osc = windOsc(state.time, r.period, r.phase);
+            const osc = WIND_MEAN_FIELD ? 0 : windOsc(state.time, r.period, r.phase);
             const rd = r.direction + r.dirVar * osc + liveShift;
             // A REGION STATES ITS OWN SPEED. There is no venue fallback: an absent speed is
             // zero, the same way an unstated patch of water is calm. Falling back to the
@@ -19775,12 +19783,22 @@ function buildCoursePaths() {
             const wbin = new Uint8Array(N * N);
             const SPDS = [8, 12, 16, 20, 25, 30];
             const MARCH = 5, LEE_W = 2.5;
+            // THE DAY'S MEAN, not the bake instant. This stamp is cached on the grid and
+            // keyed by leeKey above, which carries neither `r.phase` nor `state.time` —
+            // and must not, because a static stamp that varied with the day's phase would
+            // be a different router every race. The oscillator made getWindAt a function
+            // of both (page-load bakes even ran on UNSEEDED phases, so every process
+            // shipped a different router — the bay golden-verify failures). regionWindAt
+            // under WIND_MEAN_FIELD is the field this comment always claimed: no gusts,
+            // no lee, no live shift, oscillator at zero.
+            WIND_MEAN_FIELD = true;
+            try {
             for (let j = 0; j < N; j++) {
                 for (let i = 0; i < N; i++) {
                     const id = j * N + i;
                     if (!grid.nav[id]) continue;
                     const [wx, wy] = grid.world(i, j);
-                    const w = getWindAt(wx, wy);
+                    const w = regionWindAt(wx, wy);
                     const wd = w.direction;
                     // Unit vector TOWARD the wind (the unsailable direction), per cell —
                     // the router prices beating with it, see pathSailable.
@@ -19803,6 +19821,7 @@ function buildCoursePaths() {
                     }
                 }
             }
+            } finally { WIND_MEAN_FIELD = false; }
             grid._leeW = lee;
             grid._wfx = wfx; grid._wfy = wfy;
             grid._wbin = wbin;

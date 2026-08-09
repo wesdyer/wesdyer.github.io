@@ -11582,3 +11582,59 @@ holds/commitment/reservation, SIPP/map-staleness, closing-lead pricing, occupanc
 stamps, current pricing x4, clearance-extension x2, rollout speed x2, point-boat,
 arctic radius selection, arctic wide-ride x2, start calibration (owner approval
 required to reopen).
+
+================================================================================
+## 2026-08-09 ~09:15 — THE MEAN-FIELD BAKE LANDING (P0a: the bay blocker CURED)
+
+ROOT CAUSE (proven): the bot grid's baked wind stamps — `_wfx/_wfy/_wbin/_leeW`,
+67,081 cells, cached on the venue-keyed grid — were baked from `getWindAt`,
+which the owner's wind-oscillator merge made a function of `r.phase` and
+`state.time`. Neither is in the bake's cache key (`leeKey`). The PAGE-LOAD bake
+runs before eval_harness stubs Math.random, so its phases are UNSEEDED; on
+authored-windBase venues (bay) leeKey never changes afterwards, so that first
+per-process bake won forever: every process shipped a DIFFERENT ROUTER. Within
+a page: stable (cache). Across processes: three behaviorHashes. Pre-merge:
+byte-equal (no time term in regionWindAt, so phases never entered the bake).
+
+THE HUNT (all probes tracked in eval/rl): `_bay_ndet.js` — two fresh browser
+processes, same seed: every one-time constant identical (phases, pressure, base
+wind, boats), wind field identical at fixed probes at every sample, BOATS
+diverge at frame ~2220. `_bay_ndet2.js` — boat 5 diverges at frame 2257 with
+the seeded RNG draw-count IDENTICAL (35501 = 35501): not a stream desync.
+`_bay_ndet3.js` — deep state diff: the four stamp arrays are the ONLY
+reset-state divergence; downstream, boat 5's legManeuvers read 1 vs 3 — router
+decisions, not physics. Wall-clock reads ruled out by grep (only audio/draw).
+
+THE FIX (one mechanism): `WIND_MEAN_FIELD` module flag in script.js; while set,
+`regionWindAt` answers the DAY'S MEAN (oscillator 0, liveShift 0). The bake
+samples `regionWindAt` under the flag (was `getWindAt`) — the field its own
+comment always claimed ("mean regional field, no gusts"). The bake is now a
+pure function of what leeKey already carries. Same disease class as the swell
+TIME clock; the model-accuracy ruling applied: a static stamp must be the day's
+mean, never a random instant of a time-varying day.
+
+VERIFIED: bay 90210, two fresh processes, 600 s sim — byte-identical, stamps
+byte-equal; ocean 9300, 300 s — clean. Goldens: full --update, then verify
+PASS 20/20 TWICE, the second in a fresh process — bay/90210+90211 now reproduce
+their own recordings (trap 24 closed). BYTE-GATES ARE TRUSTWORTHY AGAIN.
+
+NEW TRAP 25: a venue-cached bake must be a pure function of its cache key —
+when a merge makes a formerly-static input time-varying, audit every
+`_key`-guarded rebuild. The page-load bake runs BEFORE the harness Math.random
+stub, so any unseeded draw it captures is per-process entropy.
+
+CONSEQUENCE: the mean-field stamps change routing on EVERY venue whose regions
+oscillate (all of them) — P0b re-anchors all eight venues on treeP0 at this
+HEAD. Never compare any bench across this cut.
+
+## P0b REBASELINE — treeP0 anchors (this HEAD, frozen venues, fingerprints clean)
+Human column re-verified post-merge with _traj_fp.js: all 8 venues' fresh laps
+match FROZEN, frozen == shipping everywhere. Anchors (filled as sets complete):
+  bay    p0bayA/B    20@9100/9200  med 241/241  fins 180+180/360  boat 2.17/1.58
+  lake   p0lakeA/B   20@9100/9200  med 264/261  fins 360/360  land 7.57/8.10
+  river  p0rivA      16@9100       med 269      fins 123/144  (rivB pending)
+  ocean  p0oc        16@9300       med 203      fins 144/144  (was swtocA 190 pre-merge — cut)
+  redrock p0rr9400..9900  6x8      [pending]
+  arctic  p0arc A..D 4x16@9100..9400  [pending]
+  lagoon  p0lagA/B   2x8@9100/9200    [pending]
+  seatrials run_eval 100@100         [pending]
