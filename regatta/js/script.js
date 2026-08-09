@@ -2831,7 +2831,30 @@ class BotController {
         // penalties 0.57 -> 0.46. Glacier Sound is untouched by construction — floes make
         // `openWaterAv` false, so the ice list below is selected either way.
         const racingLegF = this.boat.raceState.leg >= 1;
-        const candidates = (openWaterAv && racingLegF) ? [
+        // FAN UNGATE (2026-08-09, the re-verdict): the `openWaterAv` half of this gate
+        // was never a mechanism — the comment above says so in its own words ("the gate
+        // is a conservatism"). BOTH of its premises have since expired. (1) The venue is
+        // no longer marginal: Glacier Sound DNF'd ~8% of the fleet at 900 s when those
+        // four sets were run and now finishes 576/576 (FL1b), so the threshold statistic
+        // that alternated sign is gone. (2) The four sets were measured in the PHANTOM
+        // world — 53% of the near-field circle flags were false (FL1/FL1b) — so the
+        // candidate scorer those 20 offsets fed was scoring dodges around ice that was
+        // not there, which is exactly the resolution the finer offsets exist to buy.
+        // RE-BENCHED on the accurate model, arctic pooled 4-set (576 pairs, fl1barc*):
+        //   paired med -7.0  mean -8.3 s/boat FASTER | finishers 576 -> 576
+        //   every percentile improved: p10 296->286  med 376->366  p90 485->481
+        //   sets agree in sign: -18 / -1 / -3 / -3 (the old spread was +4/-9/-13/+10)
+        // ⚠️ THE COST IS CONTACT, and it is not noise: boat 5.06 -> 5.66 per boat
+        // (+12%), mark +21%, land +5% — against floe -1% and bounds -48%, penalties
+        // IDENTICAL (657 -> 657), so the extra contact is rubs, not fouls. Landed as a
+        // clock change with that trade recorded; if arctic contact quality ever becomes
+        // the target, this gate is the first thing to re-price.
+        // ⚠️ racingLegF STAYS. It is not part of this ungate: the fan without a leg guard
+        // cost 4.4 points of Clubhouse OCS (d55eb97, bisected). Start tuning is sacred.
+        // Arctic is the ONLY floe venue, so every other venue is byte-identical by
+        // construction — verified empirically on bay (4 seeds) and ocean (16 @ 9300,
+        // the exact gate) before landing.
+        const candidates = racingLegF ? [
             0,
             0.1, -0.1,
             0.2, -0.2,

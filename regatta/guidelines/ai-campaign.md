@@ -11197,3 +11197,173 @@ redrock AND arctic — it decides whether old anchors carry. Then P0 (RR4
 (measurement wave: per-leg matrix river/lagoon/lake + in-section
 attribution + squall sizing). Intake every new owner trajectory same-day
 (corpus + gw-ledger + per-leg). Close with the venue table.
+
+# THE SECTION PUSH (2026-08-08 night → 08-09) — one landing, two kills, one new class
+# ═══════════════════════════════════════════════════════════════════════════════════
+## 0. THE MERGE-DORMANCY CHECK (it gated everything, and it passed)
+The ae21f2e merge put squalls + drifting props into script.js; frozen redrock and
+arctic author neither, so the new code should be dormant on the benched worlds.
+Ran one anchor seed per venue on treeCP1 (= behavior HEAD b1347de) and byte-compared:
+  redrock seed 9400 vs op5rr9400 — all 9 boats BYTE-EQUAL
+  arctic  seed 9100 vs fl1barcA  — all 9 boats BYTE-EQUAL
+⇒ every pre-merge anchor CARRIES. The RR4 port was then verified the same way:
+treeRR4b (RR4 re-applied to b1347de) reproduced rr4rr9400 BYTE-EQUAL, so both sides
+of the existing six sets are valid on merge HEAD and the protocol could be pooled
+across the cut rather than rebuilt.
+
+## 1. P0 — THE RR4 DECISION: THE LADDER CLOSES AT FOUR SHAPES
+The other half of the 96-seed protocol: 6 fresh sets (8400..8900, 8 seeds) on BOTH
+treeCP1 and treeRR4b, pooled with the six existing sets via the new _pool_rr12.js
+(explicit pairs — the halves have different label prefixes).
+  existing 6 (pre-merge)  paired med +7.0  mean +0.9   1/6 sets favour RR4
+  fresh 6    (merge HEAD) paired med +4.0  mean +9.2   2/6 sets favour RR4
+  POOLED 12, n=747 pairs  paired med +6.0  mean +5.0   3/12 sets, negative 48.1%
+  per-set medians: 1, 42, -10, 16, 2, 24, 17, 32, -21, -42, 40, 4  (spread -42..+42)
+  dirt base b/m/l 19.16/1.00/133.65 pen 3.63 | cand 19.77/1.00/132.65 pen 3.70
+  finishers 792/864 -> 799/864
+The bar was POOLED CLEARLY NEGATIVE WITH DIRT CLEAN. It is pooled slightly POSITIVE,
+and the two independently-run halves agree on that. RR4 does not land; the RR ladder
+CLOSES at four shapes. The mark-5 canyon class survives as ATTRIBUTION (solo cure
+-121 s/boat is still real) for a future traffic-side shape — the freed boat pays in
+the crowd, and no scope tried so far separates the two. P4 (curved-on-redrock) was
+conditional on this landing and stays closed with it.
+
+## 2. P1 — LANE1: THE REOPEN WAS RIGHT AND THE ANSWER IS STILL NO
+Rebuilt from this file's LANE1 section onto b1347de: pathSailable's state widened to
+(cell x incoming direction), 8x states, TACK_SEC*10 charged on a genuine upwind
+side-change, tack SIDE read off the measured loss table's bestDelta sign. Scoped to
+`_floeObjs` (the landed canyon law's test, NOT `grid._soft` — the bug LANE2's bay gate
+caught), so ST===1 reduces every index to stock arithmetic and non-floe venues are
+byte-identical BY CONSTRUCTION. Verified: bay 4 seeds BYTE-EQUAL.
+THE STALE EVIDENCE WAS GENUINELY STALE — the solo verdict FLIPPED on the accurate
+model. Pre-FL1 LANE1 lost solo (med 392.4 vs 382.2) with tacks UP; on b1347de:
+  seed  HEAD fin  LANE1 fin    HEAD tacks  LANE1 tacks   HEAD leg1 odo  LANE1
+  9100     380       331 (-49)     14          29           22920      24565
+  9101     468       438 (-30)     30          17           30885      25222
+  9102     517       331 (-186)    47          18           32648      23001
+  9103     399       411 (+12)     26          25           24644      22413
+  solo mean -63.25 s/boat, tack median 28 -> 21 (toward her 5), leg-1 odometer down 3/4
+AND THE FLEET STILL WILL NOT CASH IT. Arctic pooled 4-set vs fl1barc*:
+  paired med 1 s FASTER, mean 1.3 s SLOWER — flat. Sets +4/+2/+4/-6.
+  fleet medians 379->386, 388->393, 373->366, 367->374 (3 of 4 WORSE)
+  finishers 576->576 | floe 14206->15181 (+6.9%), boat 2912->3430 (+17.8%)
+NOT LANDED. This is the granite-arc signature for the third time: a solo cure the
+fleet refuses. The reopen principle held (the old evidence WAS produced by a false
+world model) and the verdict survived it anyway — which is the strongest form the
+tack-count class has been killed in. Eight shapes have now touched the arctic beat.
+
+## 3. P2 — THE FAN UNGATE: LANDED (arctic -8.3 s/boat, and it costs contact)
+One line: `(openWaterAv && racingLegF)` -> `racingLegF`, keeping racingLegF (the 4.4-
+point OCS lesson). Both premises of the old conservatism had expired: the venue is no
+longer marginal (576/576 finish, was ~8% DNF) and the four sets that "could not tell
+it from zero" were measured in the phantom-flag world the finer offsets exist to
+resolve. Arctic pooled 4-set vs fl1barc*:
+  paired med -7.0  mean -8.3 s/boat FASTER  | 306/576 boats faster (53.1%)
+  all four sets agree in sign: -18 / -1 / -3 / -3
+  EVERY percentile improved: p10 296->286  p25 331->321  med 376->366  p75 427->423
+                             p90 485->481  mean 386.7->378.3 | finishers 576->576
+  ⚠️ THE COST IS CONTACT: boat 5.06->5.66 per boat (+12%), mark +21%, land +5%,
+     against floe -1% and bounds -48%, PENALTIES IDENTICAL (657->657) — rubs, not
+     fouls. Landed as a clock change with the trade recorded in the code comment.
+GATES: arctic is the ONLY floe venue (asked the game, not the doc text: _floeObjs is
+112 on arctic and 0 on all nine others), so every other venue is byte-identical by
+construction — verified bay 4/4, ocean 16/16 @9300 (the EXACT gate), redrock 8/8,
+river 16/16. ⚠️ The river gate first read "MOVED" against ff2rivA, which is a STALE
+anchor (six landings old); against a true current-HEAD baseline it is 16/16 inert.
+Do not gate inertness against an anchor from an older behavior HEAD.
+GOLDENS: full --update. Only the two arctic traces moved by this change; swamp's two
+were ALREADY failing on the reverted HEAD (owner: swamp and glowtide are not fully
+built and are not gates). PASS 20/20 after re-record.
+NEW ARCTIC ANCHORS: fan3arc{A,B,C,D} (16 @ 9100/9200/9300/9400), fleet med 366.
+
+## 4. P3 — THE MEASUREMENT WAVE: A CORPUS AUDIT AND A NEW NAMED CLASS
+### 4a. THE HUMAN COLUMN HAS THE DISEASE THE BENCHES WERE CURED OF (_traj_fp.js)
+`freeze_venues --check` guards the BENCH side of venue drift by hashing the venue
+FILE; recordings stamp a djb2 hash of the venue DOC (script.js ~12901). The two
+schemes never met. Reproducing the recording-side hash offline (verified exactly
+against two stamped laps) and comparing every lap in the corpus:
+  RIVER   only the 172.1 lap is on the frozen river. THE QUOTED 161.3 "BEST" IS ON A
+          RETIRED DOCUMENT — the river reference on the benched venue is n=1, 172.1.
+  REDROCK only 214.7 is on the frozen doc; 226.2/227.1/206.6/231.6/140.3 are
+          unstamped schema-1, and BOTH new-redrock laps (272.5/304.4) are on a
+          document that is not the shipping new redrock either.
+  LAGOON  all three laps are on THREE DIFFERENT documents, none of them shipping.
+          Doc length ran 2927 -> 29540 -> 36572 -> 56936 (shipping): the 154.1 "best"
+          was sailed on a NEARLY EMPTY LAGOON, before the coral maze existed, and is
+          not a reference for a coral-maze bench. Marks and legLens are identical
+          across laps 2-3, so 160.7/162.8 remain usable with the caveat.
+  ARCTIC  the seven schema-2 laps are on 19adf972:82825; frozen==shipping is
+          f05d4732:82888. The 22 schema-1 laps are unstamped.
+  BAY/LAKE unstamped schema-1, but frozen==shipping today.
+⇒ Only TWO numbers in the whole human column are provably on the benched document
+(river 172.1, redrock 214.7). This is not a claim the others are wrong — it is that
+they are unverifiable, and river/redrock/lagoon prove the failure mode is real. It is
+also the strongest possible argument for the owner's re-recording queue.
+### 4b. THE PER-LEG MATRIX (_leg_matrix.js) — and the river target MOVES
+Campaign leg naming is L(n) = index n-1; lagoon and lake confirmed the directive's
+sections exactly, river did not.
+  RIVER  (human 172.1, frozen doc, n=1) idx0 +9.8 | idx1 +7.6 (1.13x) | idx2 -0.9
+         | idx3 80.4 vs 151.0 = +70.6 s/boat, 1.88x, 80% OF THE WHOLE GAP
+         The directive aimed at "L2 65.5s" — that is idx1, 9% of the gap. The human
+         decomposition (which the directive itself flagged as MISSING) moved the
+         target to the course's LONGEST leg (legLens 9782).
+  LAKE   (n=3) idx1 84.4 vs 114.0 (+29.6, 62%) | idx2 69.6 vs 88.0 (+18.4, 38%)
+         | idx3 the BOT IS FASTER, 57.0 vs 68.4 (0.83x). Total 1.25x.
+  LAGOON (n=2 comparable) idx1 25.4 vs 42.0 (+16.6, 34%) | idx4 +10.4 (21%)
+         | idx5 +9.0 (18%). Spread, as the directive said.
+### 4c. IN-SECTION ATTRIBUTION AT RIVER idx3 (_riv_where.js, 10 northing bins)
+TWO SUBSECTIONS OF TEN CARRY 90% OF THE LEG'S SLOW TIME:
+  bin4 y1722..3015: human 13.7s, bot 138.9 s/boat (+125.2) — 66% of slow time
+  bin7 y5599..6891: human  8.4s, bot  60.3 s/boat (+51.9) — 24%
+  every other bin is within 0-2 s of her. WHY-SLOW: nearBank 100%, landAhead 85%,
+  wiggle 85%, risk_IMMINENT 25%, irons 19%, armed ~0 (unarmed mid-leg transit — the
+  same shape as the redrock canyon class).
+  AND SHE IS NOT WHERE THEY ARE: bin4 she crosses at x=557 at 124 u/s while the
+  stalled bots sit at x=128; bin7 she is at x=-370 at 152 u/s and they are at x=402.
+  She crosses the river between the pockets; they do not.
+### 4d. THE CLASS: THE ROUTER'S NAVIGABLE BAR IS NARROWER THAN THE WATER SHE SAILS
+Overlaying her recorded track on the bot grid (_riv_grid.js): in bin4, 21% of her
+track samples sit in cells the grid calls HARD — and she is doing 122-125 u/s in
+them. Her ENTIRE lap contains exactly two contacts, both inside one 0.5 s bank scrape
+at (1173,2823). In bin7 the figure is 0%: there both use the same mapped ribbon and
+merely choose different sides, so the two pockets have DIFFERENT mechanisms.
+Sizing the bar (_riv_bar.js — distance from every leg-3 sample to the nearest land
+edge): med 154u, p10 47u, p5 37u, p1 22u; her FAST samples (n=737) run to a minimum
+of 21u with p1 32u and p5 42u.
+  bar 30u (= HULL_R, the physics bar):  2.1% of her line is inside it
+  bar 38u:                              5.2%
+  bar 44u (= shipping CLEARANCE):       8.6%  <= the router forbids this much of her
+                                              line, concentrated in the +125s pocket
+This is the third member of a family the campaign already knows: CP1 (the grid missed
+hard props the physics enforced) and the noSubsample fix, whose own comment records
+the identical disease — "redrock's north channel exit is 46u clear the whole way
+through and read as a wall, which is why the fleet's route ran the dead-upwind slot
+the human never sails". The model-accuracy ruling applies verbatim. NOT BUILT this
+session: lowering a global clearance bar touches every venue's routing and needs the
+full gate battery; it is the strongest candidate the measurement wave produced.
+
+## 5. NEW STANDING TRAPS EARNED
+21. **The two poolers use OPPOSITE sign conventions.** `_pool_rr.js` reports
+    cand-base (NEGATIVE = candidate faster); `_pool_arc.js` reports base-exp
+    (POSITIVE = candidate faster). Read the sign off the source before publishing a
+    verdict — this session nearly published the fan ungate as a loss when it is an
+    8 s/boat win, and it was caught only by recomputing the paired deltas by hand.
+22. **Inertness must be judged against a CURRENT-HEAD baseline, not an anchor.** The
+    river "MOVED 16/16" against ff2rivA (six landings old) and was 16/16 BYTE-EQUAL
+    against a baseline run the same night on the same HEAD.
+23. **A human reference is only a reference on the document it was sailed on.**
+    See 4a; `_traj_fp.js` is the check and belongs beside `freeze_venues --check`.
+
+## 6. VENUE TABLE ON FINAL HEAD (bot medians; ⚠️ = human ref unverifiable, see 4a)
+| venue     | human ref          | pre-session bot | post-session bot | ratio |
+|-----------|--------------------|-----------------|------------------|-------|
+| bay       | 226.2 ⚠️unstamped  | 232             | 232 (inert)      | 1.03  |
+| ocean     | 182.5 ⚠️pre-gust   | 190             | 190 (byte-equal) | 1.04  |
+| seatrials | ~190 ⚠️unstamped   | 195             | 195 (inert)      | 1.03  |
+| lake      | 223.0 ⚠️unstamped  | 278             | 278 (inert)      | 1.25  |
+| lagoon    | 160.7 (2 of 3 laps)| 216             | 216 (inert)      | 1.34  |
+| river     | 172.1 (n=1, FROZEN)| 263             | 263 (inert)      | 1.53  |
+| arctic    | 212.1 ⚠️unstamped  | 376             | **366** (P2)     | 1.73  |
+| redrock   | 214.7 (n=1, FROZEN)| 499             | 499 (RR4 closed) | 2.32  |
+⚠️ river 1.53x and redrock 2.32x REPLACE the quoted 1.66x/2.18x: same benches, the
+human denominator corrected to the lap actually sailed on the benched document.
