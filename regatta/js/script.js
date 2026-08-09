@@ -19244,6 +19244,30 @@ function buildCoursePaths() {
                 const t = window.VenueDoc.traits(sh);
                 return t.motion === 'fixed' && !t.awash;
             });
+            // CP1 (2026-08-08, lagoon night): HARD CONTACT PROPS ARE WALLS HERE
+            // TOO. The compile turns them into hidden collider shapes so that
+            // "collision, the drag field, the router and the chart all meet
+            // them as ordinary shapes" — but THIS grid builds from the raw
+            // document's shapes, not the compiled islands, and the promise
+            // broke: 32 of the lagoon's 37 coral heads blocked ZERO grid cells
+            // while physics stopped boats dead on them (owner-observed; the
+            // model-accuracy ruling applies). Same 12-gon at the same scaled
+            // contactR as compileVenueDoc emits. Soft props stay out of the
+            // walls by the same awash rule as any bar — they are priced by the
+            // shoal field below, which samples the COMPILED islands and
+            // already carries their hidden shoals. Venues with no props add
+            // nothing: byte-identical grids by construction.
+            for (const p of (doc.props || [])) {
+                if (!window.VenueDoc.PROP_KINDS[p.kind]) continue;
+                const T = window.VenueDoc.propTraits(p);
+                if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
+                const rC = T.contactR, ringC = [];
+                for (let i = 0; i < 12; i++) {
+                    const a = (i / 12) * Math.PI * 2;
+                    ringC.push([p.x + rC * Math.sin(a), p.y - rC * Math.cos(a)]);
+                }
+                fixed.push({ id: p.id + '.hit', kind: 'isle', outer: ringC, holes: [], hidden: true });
+            }
             // Icy venues keep centre-sampled land: sub-cell shore threads are a
             // trap under floe drift, and every arctic margin constant was priced
             // on this sampling. See buildGridRaw.

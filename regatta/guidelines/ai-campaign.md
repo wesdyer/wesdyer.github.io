@@ -11107,3 +11107,29 @@ front-riding, human vs bot, from the corpus + a live probe.
 DIRECTIVE ADDENDUM: P0-P4 stand (pre-merge trees stay internally valid for
 P0; any landing PORTS to merge HEAD). Lagoon enters the venue table; its
 push waits for the re-verdict queue unless the owner reprioritizes.
+
+## THE CP1 LANDING (Aug 8 lagoon night): THE GRID SEES THE CORAL TEETH
+Owner-observed: bots don't avoid coral heads. Audited all four new object
+types: coral reef = wall ✓, shoals = priced ✓, shallows/seagrass = free ✓ —
+but CORAL HEADS (hard contact props) were invisible to the bot grid: the
+compile emits hidden colliders into the COMPILED islands ("the router meets
+them as ordinary shapes"), while the grid builds from the RAW document's
+shapes — 32 of 37 corals blocked ZERO grid cells while physics stopped boats
+dead (probe _lag_corals.js). The model-accuracy ruling applies verbatim.
+THE FIX (CP1): the grid callsite appends hard fixed prop colliders — the
+same 12-gon at the same scaled contactR the compile emits. Soft props stay
+priced via the shoal field (compiled islands), by the awash rule.
+GATES: corals 32→0 zero-blocked; lagoon 8-seed paired vs same-day baseline:
+med −18 / mean −21.0, ALL 72 finish, LAND 42.28→3.78/boat (−91%), boat −26%,
+pen −23%, med 237→217 (human 160.6 → ratio 1.48x→1.35x in one fix); ocean
+16-seed BYTE-EQUAL through merge+CP1 (propless venues inert by construction,
+verified empirically); goldens: ONLY the two lagoon traces moved, full
+--update re-recorded.
+ALSO RECORDED: the owner's TACTICAL DOCTRINE (memory:
+regatta-tactical-doctrine) — ROW sails its course with last-minute-but-
+sufficient avoidance; give-way yields modestly; offensive rule-legal tactics
+WANTED (tack-to-cover onto starboard with RRS-16 room; a rival that fails to
+respond takes the foul). ROW deflection target = her 11-23° profile. A
+future push family; composes with the gw-underlay baselines. Squalls are
+LAGOON-UNIQUE (owner) — squall-awareness stays a lagoon-scoped capability
+gap (unsized; the router's wbin stamps squalls stale by construction).
