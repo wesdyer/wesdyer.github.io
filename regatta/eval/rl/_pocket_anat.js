@@ -74,8 +74,14 @@ const ROOT = path.join(__dirname, process.argv[9] || 'treeHZ2');
                             if (clearTo(hR, 220) === 999) { roseClr = 1; break; }
                         }
                     }
+                    let dRiv = 1e6;
+                    for (const oB of state.boats) {
+                        if (oB === bt || oB.isPlayer || oB.raceState.finished) continue;
+                        const dR2 = Math.hypot(oB.x - bt.x, oB.y - bt.y);
+                        if (dR2 < dRiv) dRiv = dR2;
+                    }
                     out.push({ id: bt.id, t: +state.race.timer.toFixed(1), x: +bt.x.toFixed(0), y: +bt.y.toFixed(0),
-                        spd: +((bt.speed || 0) * 60).toFixed(0), h: +bt.heading.toFixed(2),
+                        spd: +((bt.speed || 0) * 60).toFixed(0), h: +bt.heading.toFixed(2), dRiv: Math.round(dRiv),
                         wig: c.wiggleActive ? 1 : 0, ws: c.wiggleSide || 0, nosed, wigBlk, otherClr, roseClr, leg: bt.raceState.leg });
                 }
             }
@@ -127,9 +133,15 @@ const ROOT = path.join(__dirname, process.argv[9] || 'treeHZ2');
         }
         const kk = tr[0].seed + ':' + tr[0].id;
         reentry[kk] = (reentry[kk] || 0) + 1;
+        const spellRows = [].concat(...spells2.map(s => s.rows));
+        const rivMed = spellRows.length
+            ? spellRows.map(r => r.dRiv).sort((a, c) => a - c)[Math.floor(spellRows.length / 2)] : -1;
+        const rivNearPct = spellRows.length
+            ? Math.round(100 * spellRows.filter(r => r.dRiv < 150).length / spellRows.length) : -1;
         anat.push({ dur, slow, wig, nosed, nSpell: spells2.length, parkT,
             churnAvg: spells2.length ? +(churn / spells2.length).toFixed(2) : 0,
-            driftAvg: spells2.length ? Math.round(drift / spells2.length) : 0, wsFlips });
+            driftAvg: spells2.length ? Math.round(drift / spells2.length) : 0, wsFlips,
+            rivMed, rivNearPct });
     }
     anat.sort((a, c) => c.dur - a.dur);
     const tot = f => anat.reduce((s, a) => s + f(a), 0);

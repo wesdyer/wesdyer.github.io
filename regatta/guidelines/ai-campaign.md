@@ -12025,3 +12025,164 @@ NEXT (in flight): RJ1 — the rejoin is a ROUTE, not a bearing: nosedIn+slow
 boats get a SailCheck.pathBetween micro-route to the plan point as their
 carrot (the demand itself moves into sailable water; every prior shape edited
 prices or LOOK on the same straight line). treeRJ1, box gate running.
+
+================================================================================
+## 2026-08-09 ~15:30 — ⭐⭐ THE BAND-TRUST LANDING (HZ3B, `08f734a`). HEAD MOVES.
+
+One line: the candidate passing the hard zone's own trust test (plan-aligned
+0.3 rad, open water, !arcK, not irons, <2kt) pays NO clearance-band tax; all
+other headings keep full lee-shore caution. The slow-boat waiver deliberately
+NOT included (v1 lake shore-hug kill stays honored).
+GATES: redrock pooled 6-set paired −85.0 med / −78.7 mean, n=356, ALL SIX
+SETS NEGATIVE (−112/−61/−121/−100/−47/−83), med 572→490 (2.62x→2.25x), fins
+386→391, land 200.9→169.5 (−16%), pen −6%, boat +4%, mark −7%. Lake A/B
+−5/−3 paired med (land A −12%, B +19%); bay A −0.6 mean / B BYTE-IDENTICAL;
+ocean 16 EXACT; river 2x16 BYTE-IDENTICAL (current guard); arctic 4x16
+BYTE-IDENTICAL (openWaterAv guard, dirt identical to the count); lagoon flat
+(−1.4/+1.1 mean) with land A −27%; seatrials ~197.8-198.9 (anchor-equal).
+Goldens full --update then PASS 20/20. freeze_venues --check CLEAN.
+NEW ANCHORS on `08f734a`: redrock hz3brr{9400..9900} pooled 490/274 fins
+391/432 (2.25x); lake hz3blakeA/B 254/247 (pooled med 252/191 — 1.13x, was
+1.18); bay 240/205; lagoon hz3blagA/B 271/274 (pooled 273/215); ocean p0oc
+203/166 (byte-id); river p0riv 269/189 (byte-id); arctic p0arc 366 (byte-id);
+seatrials ~197.8.
+## RJ1 VERDICT: SUBSUMED (do not land; shape stays on the shelf)
+vs HZ2 alone: med −4.0 (3-3 sets) but fins 386→399 (+13, biggest fins move of
+the campaign), land −11%, mark −13%. ON TOP of HZ3B (treeCRJ1 vs hz3brr*):
+med +1.0 / mean +7.3, fins 391→394 — the band trust already un-parks the same
+boats (the aligned candidate wins and the boat follows the plan out); the
+rejoin route then only adds occasional detour carrots. If a future course has
+pockets the band cannot cure (no aligned candidate exists), RJ1 is the shelf
+shape — its solo evidence is the +13 fins.
+## POST-LANDING RE-ATTRIBUTION (treeH3, `08f734a`) — THE MARK-6 BOWL OWNS ~115 s/boat
+_rr_map: mark-6 sits in a NEARLY-CLOSED BOWL (x −1150..−750, y −1850..−1400),
+outlets = a 2-cell slit going N (x≈−880) and the SE channel the leg-3 plan
+threads; the whole bowl interior is LOW-CLEARANCE (clr<3). Two classes:
+  leg2-sub9 (ARRIVAL): +35.4 s/boat, 69% of leg 2's gap, armed 81% — the
+    rounding-approach crawl through the shared channel (fleet-avoidance-tax
+    flavor; entry governors ⛔ closed, funnel metering already active here).
+  leg3-sub0 (DEPARTURE): +80.6 s/boat (was 114 pre-HZ3B), 62% of leg 3,
+    landAhead 68%, armed 3% — 3 boats per 4 races still run the FULL 780-810s
+    loop; DNFs 6/8 races (was 8/8), all mark-6, now at 0.16 kt.
+Legs 1/6 diffuse (+43 traffic-beat / +7). Leg 5 softened everywhere (sub0
+37→20, sub1 18→13, sub6/7 ~26 — still the second address).
+DISCOVERY: a PER-BOAT sailable route already exists (gridPath = pathSailable
+from the boat, ≤12s stale, clearance-weighted) and the LOOK carrot rides IT —
+so the RJ1 shape duplicated existing machinery (why it subsumed). The
+survivors' question is WHICH piece goes stale: _rj_lifecycle.js on treePR4
+logs replan segNull/segLen + 1Hz carrot LOS/xtk/age for slow pocket boats.
+## THE CARROT-LOS CHAIN (post-landing): RR6 flat, W5R6 = 2 of 3 loops cured
+_rj_lifecycle (treePR4): the per-boat gridPath is HEALTHY (replans 100%, age
+med 6.2s, threads the bowl) but the straight boat→carrot line crosses hard
+land in 67% of slow pocket reads — 321/451 at ONE cluster (-1000,-1400), the
+slot between the bowl's interior ISLET and its wall. Builds:
+  RR6 (LOS-carrot shrink, slow-scoped — the rung RR1-5 never tried): box gate
+  FLAT on the 3 loop boats (818/800/789 persist). Alone: not enough.
+  W5 (the aimed burst, scoped nosedIn && <15 u/s && NO rival within 150u —
+  W4's kill mechanism excluded by construction) + RR6 (treeW5R6): box slow
+  3197→2799, spells 360→304, wsFlips collapse, LOOPS 3→2 (one DNF cured).
+THE RESIDUE NAMED: the last survivor is SOLO (rivMed 1549u, near% 2) and
+WEDGED in the ~100u islet-wall slot — every rose heading has hard land within
+the probe distances, so W5 and RR6 both fall through to stock; the escape is
+a multi-point turn (crawl-rotate-crawl) no current layer can express. ~1 boat
+per 2 races. W5R6 pooled 6-set in flight vs hz3brr* — the clock decides.
+## ⛔ RR6/RR6b DEAD at the box; the DEPARTURE LADDER CLOSES for this session
+RR6b (LOS carrot scoped SOLO — the queue exclusion): box shows FOUR full
+loops (818/800/789/756s) and ALL FOUR are SOLO (rivNearPct 0-6) — the solo
+scope was never the issue; from inside the islet-wall slot NO path point is
+LOS-visible, so RR6's re-aim falls through to stock for exactly the boats it
+was built for. SEVEN shapes have now failed on the wedged class (band trust,
+RJ1 route, RR5 raise, RR6/RR6b shrink, W4 unscoped burst, W5 scoped burst):
+the missing capability is a STUCK-STATE MANEUVER — a deliberate multi-point
+turn / back-out-along-own-track sequence, which no current layer (fan, carrot,
+burst) can express. That is a DESIGN task for a fresh session, with the
+reversal-commitment history (30s-commit disease, station-keeping 0-for-8) as
+its constraints. Trees deleted; the class is fully attributed and mapped
+(the bowl map, the slot at (-1000,-1400), _rj_lifecycle, _pocket_anat rivMed).
+## ALSO MEASURED (the arrival side): armed bowl arrivals are STATIC-defeated
+Armed subset of bowl choices (n=4019/10589): STATIC_VETO 44% + PROX_STATIC
+26% vs boats 25% — the queue's straight probes read the bowl walls as
+collision everywhere because the queued-rival gate (m5 wedge lesson) keeps
+the ARC off in parked crowds (arcR 0% at slow-static). If the arrival crawl
+is ever targeted, the shape is arc-vs-wedge in land-locked roundings — weigh
+against the wedge lesson before building.
+
+================================================================================
+## SESSION CLOSE 2026-08-09 (day 2) — THE REDROCK PUSH, ONE LANDING: 2.62x → 2.25x
+
+LANDED: ⭐⭐ THE BAND-TRUST LANDING (HZ3B, `08f734a`) — redrock pooled −85 med
+ALL SETS, 572→490, fins +5, land −16%; lake −5/−3 (252/247); goldens PASS
+20/20 ×1 after full --update; freeze CLEAN. The single biggest redrock move
+of the campaign (HZ2 was −34).
+KILLED with mechanisms (7): boundary-veto hypothesis (slow boats sit 500u
+from the arena edge); redrock tack-hysteresis (osc A/B two-sided at 8 seeds);
+RR5 (no LOS around the bend to raise toward); W4 aimed burst (blind to boats
+— rubs +53%); RJ1 rejoin route (SUBSUMED — per-boat gridPath already exists);
+W5R6 (queue disruption, mark +14%); RR6/RR6b (the wedged class has no
+LOS-visible path point — solo scope irrelevant).
+ATTRIBUTED to closure: the mark-6 BOWL owns ~115 s/boat (arrival leg2-sub9
++35 armed/static-defeated with the arc queue-gated OFF; departure leg3-sub0
++80 with the wedged islet-wall slot as the DNF residue, ~1 boat/2 races,
+needs a stuck-state maneuver that no current layer can express); leg5 pockets
+~45 (same family, lighter); leg1 diffuse traffic +43 (THE FLEET AVOIDANCE
+TAX); legs 4/6 small.
+
+## THE VENUE TABLE, final HEAD `08f734a` (owner format: ratio-sorted, med/best, fins %)
+venue     | human med/best | pre-session bot | post-session bot | ratio | fins (%)
+seatrials | 189.4 / 179.7  | 197.8 / 196.2   | 197.8 / 196.2    | 1.04  | 100% (DNS/DNF 0)
+bay       | 219.0 / 211.0  | 241 / 205       | 240 / 205        | 1.10  | 360/360 (100%)
+lake      | 223.1 / 218.2  | 262 / 190       | 252 / 191        | 1.13  | 360/360 (100%)
+ocean     | 177.9 / 177.7  | 203 / 166       | 203 / 166        | 1.14  | 144/144 (100%)
+river     | 167.4 / 165.0  | 269 / 189       | 269 / 189        | 1.61  | 263/288 (91%)
+lagoon    | 164.9 / 160.1  | 271 / 202       | 273 / 215        | 1.66  | 144/144 (100%)
+arctic    | 212.4 / 201.6  | 366 / 217       | 366 / 217        | 1.72  | 575/576 (100%)
+redrock   | 218.2 / 215.2  | 573 / 299       | 490 / 274        | 2.25  | 391/432 (91%)
+(byte-identical venues keep prior anchors; lagoon 273 vs 271 pre is pooled-
+median granularity on 144 boats, clock verdict flat with land −27% on set A.)
+
+================================================================================
+# OPENING PROMPT — THE REDROCK PUSH, CONTINUED (paste to the next instance)
+
+THE REDROCK PUSH continues. Goal (owner): redrock below 2x — pooled med < 436
+vs her 218.2 — from 490 today (2.25x, was 2.62 at session open). −54 to go:
+one HZ3B-half-sized landing. DO NOT STOP; ≥4 probes in flight; check `date`.
+
+Open with: memories regatta-redrock-push (this session), regatta-standing-
+rules (traps 21-25), regatta-venue-table, and this directive.
+
+Where things stand. Behavior HEAD `08f734a` (THE BAND-TRUST LANDING: trusted
+plan-aligned candidates pay no clearance-band tax; −85 pooled, all sets).
+Anchors on this HEAD: redrock hz3brr{9400..9900} pooled 490/274 fins 391/432;
+lake hz3blakeA/B 252/191; bay hz3bbay* 240/205; lagoon hz3blag* 273/215;
+ocean p0oc 203/166, river p0riv 269/189, arctic p0arc 366/217, seatrials
+~197.8 (all byte-identical this landing). Goldens PASS 20/20. freeze CLEAN.
+
+The remaining redrock gap (272 s/boat) in size order:
+1. THE MARK-6 BOWL ~115 s/boat, both faces measured to closure this session:
+   ARRIVAL (leg2-sub9, +35, armed): straight probes read the bowl walls as
+   collision because the queued-rival gate keeps the ARC off in parked crowds
+   (armed subset: static 70%, boats 25%). The shape is arc-vs-wedge in
+   land-locked roundings — weigh the m5 wedge lesson first.
+   DEPARTURE (leg3-sub0, +80): 2-4 solo boats/4 races wedge in the islet-wall
+   slot at (-1000,-1400) and loop 750-820s (= the DNF class, fins ceiling).
+   SEVEN shapes failed (list in the session log); the missing capability is a
+   STUCK-STATE MANEUVER (multi-point turn / back out along own track),
+   designed against the reversal-commitment + station-keeping constraints.
+   Constraint inventory: fan ±1.6 + reversals exist and are OPEN (9.3 rungs);
+   steerage ≈ 0 below a few u/s EXCEPT wiggle snap-turn; wiggle bursts bypass
+   ALL avoidance; gridPath is per-boat, fresh, and correct.
+2. LEG-5 pockets ~45 (mark-7 exit channel + subs 6-7) — same family, lighter
+   traffic; whatever cures the bowl, gate its transfer here.
+3. LEG-1 diffuse traffic beat ~43 — THE FLEET AVOIDANCE TAX (AV1 inert,
+   overdetermined; deflection ledgers in regatta-humanlevel-push).
+⛔ Closed THIS session on redrock: boundary-veto, tack-hysteresis (two-sided),
+RR5/RR6/RR6b (the full carrot ladder — six lifetime rungs), W4/W5 (the burst
+may not look — blind-to-boats, 2 kills), RJ1 (subsumed by gridPath).
+⛔ All prior closed families stand (RR1-4, curved, canyon-law entries, entry
+governors, occupancy stamps, UL1, AV1, clearance-bar ladder, orbit knee...).
+Gates: pooled 6-set (_pool_rr, NEGATIVE=faster), 96-seed near threshold,
+mechanism gate at the box BEFORE benching (this session's method — it killed
+3 of 5 builds for the cost of 4 races each), full battery + byte-inertness vs
+CURRENT-HEAD baselines, goldens full --update, close with the owner table.
+Owner is recording MORE REDROCK LAPS — intake same-day (fp=9b7c82db:21417 is
+the current verified fingerprint; re-run _traj_fp.js on arrival).

@@ -39,6 +39,7 @@ const ROOT = path.join(__dirname, process.argv[9] || 'treePR2');
     await b.close();
     const reasons = {}, chosen = {}, slow = {}, slowScope = { n: 0 };
     const vp = { n: 0, allClosed: 0, oneSide: 0, bothSides: 0, revPresent: 0, revOpen: 0, revWon: 0, openCount: 0 };
+    const arcWhy = {}; let arcN = 0, arcSlowN = 0;
     let n = 0, nSlow = 0, fullVeto = 0, fullBnd = 0, slowFullVeto = 0;
     const sdSlow = [];
     for (const r of all) {
@@ -63,6 +64,7 @@ const ROOT = path.join(__dirname, process.argv[9] || 'treePR2');
         else if (f0.bc && win.bc) why = 'BOTH_BOAT';
         else why = 'OTHER_COST';
         reasons[why] = (reasons[why] || 0) + 1;
+        if (r.arc || r.armed) { arcN++; arcWhy[why] = (arcWhy[why] || 0) + 1; if (r.spd < 40) arcSlowN++; }
         if (r.spd < 40) { nSlow++; slow[why] = (slow[why] || 0) + 1; }
         if (r.spd < 40 && (why === 'STATIC_VETO' || why === 'PROX_STATIC' || why === 'BND_VETO') && r.scope) {
             slowScope.n++;
@@ -91,6 +93,7 @@ const ROOT = path.join(__dirname, process.argv[9] || 'treePR2');
     }
     console.log('winning rungs:', Object.entries(chosen).sort((a, c) => c[1] - a[1]).slice(0, 8).map(([k, v]) => `${k}:${v}`).join(' '));
     console.log(`SLOW subset (n=${nSlow}):`, JSON.stringify(slow));
+    console.log(`ARC/ARMED subset (n=${arcN}, slow ${arcSlowN}):`, JSON.stringify(arcWhy));
     if (vp.n) {
         console.log(`fan profile at slow-static choices (n=${vp.n}): allClosed ${Math.round(100 * vp.allClosed / vp.n)}%  oneSideOpen ${Math.round(100 * vp.oneSide / vp.n)}%  bothOpen ${Math.round(100 * vp.bothSides / vp.n)}%  | open rungs/choice ${(vp.openCount / vp.n).toFixed(1)}  | reversals present ${Math.round(100 * vp.revPresent / vp.n)}% open ${Math.round(100 * vp.revOpen / vp.n)}% WON ${Math.round(100 * vp.revWon / vp.n)}%`);
     }
