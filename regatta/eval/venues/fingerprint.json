@@ -21,12 +21,15 @@
     "frozen": "2026-08-09"
   },
   "redrock": {
-    "hash": "d30fe85fd2c1bbc6",
-    "frozen": "2026-08-08",
-    "note": "OLD red rock (pre-redesign) — the campaign benchmark; shipping redrock is the NEW course, content until human laps exist"
+    "hash": "fcfb6518f1d66332",
+    "frozen": "2026-08-09"
   },
   "lake": {
     "hash": "6c90ec281e3f97d6",
     "frozen": "2026-08-08"
+  },
+  "lagoon": {
+    "hash": "ed57f667d16c4d96",
+    "frozen": "2026-08-09"
   }
 }
