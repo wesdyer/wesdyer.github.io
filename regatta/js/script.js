@@ -7416,26 +7416,38 @@ function updateSqualls(dt) {
 function squallShadowSprite(q) {
     if (q._shadow) return q._shadow;
     const UPP = 3;
-    const blurU = Math.min(q.rx, q.ry) * 0.18;          // the softness, in world units
+    // TWO PASSES, tuned so a squall cannot be mistaken for a big gust: a fairly tight
+    // rim blur (edge distinct, never paper-hard) and a second, smaller, softer fill
+    // stacked inside it, so the heart runs roughly twice as dark as the rim. A gust is
+    // an even wash; a squall has a body.
+    const rimBlur = Math.min(q.rx, q.ry) * 0.07;
+    const coreBlur = Math.min(q.rx, q.ry) * 0.16;
     let mx = 0, my = 0;
     for (const b of q.blobs) {
         mx = Math.max(mx, Math.abs(b.ax) + b.r);
         my = Math.max(my, Math.abs(b.ay) + b.r);
     }
-    const W = (mx + blurU * 2.5) * 2, H = (my + blurU * 2.5) * 2;
+    const W = (mx + coreBlur * 2.5) * 2, H = (my + coreBlur * 2.5) * 2;
     const cv = document.createElement('canvas');
     cv.width = Math.max(8, Math.ceil(W / UPP));
     cv.height = Math.max(8, Math.ceil(H / UPP));
     const g = cv.getContext('2d');
     const k = cv.width / W;
-    g.filter = `blur(${Math.max(1, blurU * k)}px)`;
     g.fillStyle = 'rgb(13, 22, 38)';
-    g.beginPath();
-    for (const b of q.blobs) {
-        g.moveTo((b.ax + b.r) * k + cv.width / 2, b.ay * k + cv.height / 2);
-        g.arc(b.ax * k + cv.width / 2, b.ay * k + cv.height / 2, b.r * k, 0, Math.PI * 2);
-    }
-    g.fill();
+    const blobs = (scale, blur) => {
+        g.filter = `blur(${Math.max(1, blur * k)}px)`;
+        g.beginPath();
+        for (const b of q.blobs) {
+            const ax = b.ax * scale * k + cv.width / 2, ay = b.ay * scale * k + cv.height / 2;
+            const r = b.r * (scale * 0.9 + 0.1) * k;
+            g.moveTo(ax + r, ay);
+            g.arc(ax, ay, r, 0, Math.PI * 2);
+        }
+        g.fill();
+    };
+    blobs(1, rimBlur);        // the outline: distinct
+    blobs(0.75, coreBlur);    // the heart: stacked darkness, softly placed
+    g.filter = 'none';
     q._shadow = { canvas: cv, w: W, h: H };
     return q._shadow;
 }
@@ -7449,7 +7461,9 @@ function drawSquallShadows(ctx) {
         ctx.save();
         ctx.translate(q.x, q.y);
         ctx.rotate(q.course);
-        ctx.globalAlpha = 0.30;
+        // The bake stacks two fills, so this is the RIM's opacity — the heart lands
+        // near twice it, which is the darkness that says squall rather than gust.
+        ctx.globalAlpha = 0.26;
         ctx.drawImage(sh.canvas, -sh.w / 2, -sh.h / 2, sh.w, sh.h);
         ctx.restore();
     }
@@ -8622,7 +8636,38 @@ function renderVenueDetail(key) {
         // or the signature turquoise renders entirely underneath the picture and the
         // visible briefing shows only the dark half (which is exactly how the lagoon's
         // heroColor went unseen for a day).
-        hero.style.background = `linear-gradient(115deg, ${mixHex(deep, '#0c1322', 0.55)} 0%, ${deep} 30%, ${base} 62%)`;
+        //
+        // THE ORIGINAL SUBTLE SHAPE — dark across the briefing, the venue's deep water
+        // through the middle, and the hero water arriving only at the far end, so the
+        // bright turquoise is a glow at the art seam rather than a flood (the flooded
+        // version was tried and rolled back by taste). What changed from the first
+        // cut is only smoothness: the two segments are smoothstepped and sampled into
+        // many stops, because straight ramps meeting at a stop make a Mach band the
+        // eye reads as a smudged seam — the bay and the lagoon both showed it.
+        //
+        // THE DARK END IS THE VENUE'S OWN WATER AT DEPTH, not a mix toward the page
+        // navy. Mixing every deep 55% into one fixed #0c1322 converged all ten panels
+        // onto the same muddy blue-slate — the venue's hue died exactly where the
+        // panel is largest, and a cross-fade between two different hues is how mud is
+        // made. Instead: keep the deep colour's hue and saturation, drop only its
+        // lightness — a monochrome depth ramp (abyss -> deep -> signature water) that
+        // stays dark enough for 14px type and stays THIS venue's water end to end.
+        // ⚠️ HEX, not rgb() — mixHex parses hex pairs, and an rgb() string fed to it
+        // parses "rg"/"b(" as colour and renders near-black garbage (shipped briefly).
+        const deepRgb = (() => { const s2 = deep.replace('#', '');
+            return [parseInt(s2.substr(0, 2), 16), parseInt(s2.substr(2, 2), 16), parseInt(s2.substr(4, 2), 16)]; })();
+        const [dh, ds, dl] = rgbToHsl(deepRgb[0], deepRgb[1], deepRgb[2]);
+        const dk = hslToRgb(dh, Math.min(1, ds * 1.05), Math.min(dl, 0.15));
+        const darkEnd = '#' + dk.map(v => v.toString(16).padStart(2, '0')).join('');
+        const smoothMix = (a, b, t) => mixHex(a, b, t * t * (3 - 2 * t));
+        const at = (t) => t <= 0.58 ? smoothMix(darkEnd, deep, t / 0.58)
+                                    : smoothMix(deep, base, (t - 0.58) / 0.42);
+        const stops = [];
+        for (let i = 0; i <= 16; i++) {
+            const t = i / 16;
+            stops.push(`${at(t)} ${(t * 100).toFixed(1)}%`);
+        }
+        hero.style.background = `linear-gradient(115deg, ${stops.join(', ')})`;
     }
     if (art) {
         // A GENTLE seam, not a shadow: just enough of the panel colour bleeding onto the
