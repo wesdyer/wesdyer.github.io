@@ -11,7 +11,7 @@ const crypto = require('crypto');
 // regatta/eval/venues/README.md for the policy.
 const venueFingerprint = (v) => {
     try {
-        const f = path.resolve(__dirname, '../../assets/venues/' + v + '.venue.js');
+        const f = path.resolve(ROOT, 'regatta/assets/venues/' + v + '.venue.js');
         return crypto.createHash('sha256').update(fs.readFileSync(f)).digest('hex').slice(0, 16);
     } catch (e) { return null; }
 };

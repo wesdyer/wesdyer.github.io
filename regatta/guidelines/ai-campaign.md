@@ -9287,3 +9287,1799 @@ being drained by three composed landings on three physical lines.
   tight-water class (treeP4TIGHT, old base) re-ports after the underlay.
 - Session probe additions all tracked: _rr_m3replay(2), _rr_mstall (bins
   fixed), _rr_ringclear, _rr_dodge2, _run_stack.sh.
+
+
+# SESSION 2026-08-08 EARLY-MORNING PUSH (started 02:52 PDT, HEAD at open 7d47392)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner-directed continuation on the post-composition constraints: redrock leg 3
+(P0), the m3 orbit-phase design build (P1), river + the give-way underlay (P2).
+THE VENUE EVENT: the owner shipped a NEW red rock (full course redesign — 7
+marks, 5 roundings, 9 wind regions) plus "Gust fixes" (rendering-only script.js
+changes, ocean gust-1 region moved ~12000u INTO play, glowtide colors). Owner
+ruling: continue on the AI-saved old red rock or take up the new one — this
+push CONTINUES ON THE OLD RED ROCK (the entire P0/P1 attribution, all anchors,
+and the human refs live on its geometry; the new course has no human laps).
+
+## PHASE 0 — the venue-pinning build + full anchor verification
+- OLD red rock FROZEN as the benchmark venue: `eval/venues/redrock.venue.js`
+  (hash d30fe85fd2c1bbc6 == every ff2rr anchor stamp). Shipping redrock (the
+  new course) stays content until human laps exist. KEEP-BOTH per the frozen-
+  venue policy.
+- `mktree.sh` now builds per-file venue symlinks: a venue frozen in
+  eval/venues WINS over the shipping file — trees bench the venue the anchors
+  were made on even after a shipping redesign. Fingerprint stamping in
+  ocean_bench/fleet_leg2/bay_bench now reads the TREE's own venue file (was:
+  main-repo shipping — a latent wrong-stamp bug once the two diverge).
+- OCEAN PROMOTED: the owner's gust fix moved gust-1 into play — behavior
+  change. Re-frozen, ff2oc anchor RETIRED, re-baselined on treeHEAD8:
+  ocean_bench_hd8oc 20@9300 med 193 (was 192 old-venue), boat 2.61 (1.75),
+  mark 0.43 (0.20), pen 0.46, OCS 0 — the in-play gust region's dirt. Lake
+  frozen too (was never frozen). NEVER compare ocean across this cut either.
+- Anchor verification on HEAD (byte-identity, per standing rule 6): bay 4-seed
+  ✓, lake 4-seed ✓, river 4-seed ✓, redrock (old venue pinned) 4-seed ✓,
+  arctic 4-seed ✓, seatrials 100@100 whole-file byte-identical ✓. ALL ANCHORS
+  STAND. The owner's script.js changes were rendering-only (gust tint
+  derivation, minimap gradient cells) — verified inert on behavior.
+
+## P0 — THE m5 APPROACH BOX, RE-ATTRIBUTED THREE TIMES IN ONE NIGHT
+The plan's two named shapes both DIED at the measurement step (measure-first
+paying again):
+1. DISPLACEMENT IS DEAD: `_rr_mdisp.js` (new, tracked) — the box's parked
+   mass is 97% ON-plan (d0 med 64-71u to the boat's own gridPath), the FF
+   waiver was ACTIVE in 70-77% of parked episodes, cross-track guard binds on
+   only ~6%. The displacement-tolerant plan reference would have fixed ~6% of
+   nothing. (Also: deflection edges near m5 are 72% on-plan.)
+2. WIND IS FINE: `_rr_boxwhy.js` (new, tracked) — parked samples sit in 11.5-
+   15 kt (0% under 5 kt), blockAhead only 7-9%, spdLim 1.0 (no governor),
+   |defl| med 6°. But land sits INSIDE the 140u hard zone on the plan heading
+   for 63-72% of parked samples, TWA med 71-76°, in-irons 26%.
+3. THE MECHANISM, REPLAYED (`_rr_boxreplay.js`, new, tracked): the box mass is
+   HUNDREDS of 3-8s stutters (zero parks ≥10s). Trace anatomy: the corridor
+   BENDS at the box; the plan-aligned sailing candidate has wall <140u on its
+   straight ray → 500000 veto; staying head-to-wind is offset-0 + a 500-point
+   irons tax; the argmin parks the boat IN IRONS pointing at its own target
+   (Sable: 3s at TWA 10 with tg=8° dead upwind, then tg snaps to 99° and it
+   sails away at 2.4 kt). The hard zone is turning room, and at 0.6 kt 140u is
+   ~90 seconds of travel — the veto is priced for 7 kt.
+THE BUILD FAMILY (speed-scaled hard zone, hardZ = clamp(1.4s·v, 60, 140)):
+- BP1 (all candidates): box −40% (1394→835 boat-s @4 seeds), m3/m5 stalls
+  unchanged, redrock pooled −9.5 s/boat (3/6 neg), OCEAN −5.4 mean (a real
+  win), bay neutral, river/arctic BYTE-IDENTICAL (scopes verified) — but
+  LAKE FAILS BOTH SETS (+7.9/+8.7 mean, land +44%/+35%: slow corridor boats
+  freed toward any shore hug it and grind).
+- BP2 (plan-aligned candidate only — the FF waiver's own 0.3-rad test +
+  guards, extended to the near field): box −45%, lake mild (+2.6/+3.4 mean,
+  land +19%/+9%), redrock pooled −6.0 (3/6 neg).
+- BP3 (BP2 + wind ≥8 kt to power out): lake SILENT (deltas all-zero), but
+  redrock +5.7 pooled — the wind gate gives back the win (light-air bends
+  carry redrock weight too, or variant-to-variant reshuffle noise).
+- ✅ LANDED — BP2 AT 96-SEED RESOLUTION (the resolution move: the three
+  variants' pooled clocks at 48 seeds (−9.5/−6.0/+5.7) sat inside set-level
+  noise, so BP2 — the balanced variant — was judged on SIX FRESH disjoint
+  8-seed sets (8400-8900, paired vs same-seed HEAD runs) on top of the six
+  anchor sets: fresh sets NEGATIVE 6/6 (means −8.2..−63, meds −5..−89),
+  pooled over all 12 sets/96 seeds: −14.79 s/boat, negative 9/12. The
+  anchor-seed sets were the noisy draw. Pooled redrock med 517→499, fins
+  396 (flat), land/boat/mark/pen all flat-to-down.
+  GATES: bay DELTAS ALL-ZERO both 20-seed sets (the ~5-8s gap untouched);
+  ocean −2.5 mean with boat rubs 2.61→1.81 (−31%) — recovers the gust-fix
+  dirt; lake +2.6/+3.4 mean, land +19%/+9% (med 0 both) — THE RECORDED
+  TRADE, the one gate that pays; river byte-identical (4-seed verified,
+  ≥2kt scope); arctic byte-identical (4-seed verified, floe scope);
+  seatrials byte-identical (BP1's 100@100 whole-file diff — BP2's firing
+  set is a strict subset of BP1's).
+
+## P1 — THE ORBIT-PHASE EASE: THE STALL KILL IS REAL, THE SCOPE IS NOT
+v1 (OP1: armed, sweep>0.05, speed>1.2, orbitTightR-null, the landed
+0.55+0.15·deft floor, per-tick): m3 stalls 14%→4% — the residual class DIES,
+survivors' anatomy changes (defl 46° vs 0°). Redrock pooled −2.3 (flat), land
+down 5/6 sets, marks down; bay BYTE-IDENTICAL both 20-seed sets (orbitTightR
+non-null on every bay mark — by construction, verified); river BYTE-IDENTICAL
+(current scope); BUT:
+- LAKE set A land 5.33→12.13 (the ease holds slow boats on a lee shore
+  through whole passes at some corridor mark), and
+- OCEAN med 193→211 (+18!) — ocean HAS orbitTightR-null marks and the ease
+  taxes every rounding there. KILLED as landed.
+- v2 (wall-room speed threshold, no latch): the trigger TOGGLES mid-sweep
+  around the threshold speed — set 9400 fins 64→57. KILLED, mechanism named.
+- v3 (threshold + per-pass latch): the latch OVERHOLDS — stalls move to sweep
+  306° (the hairpin's exit) at dMark 121: the boat carries the 0.55 cap
+  through the whole 306° rotation and starves the exit. m3 41%. KILLED.
+- v4 (v1 + wall-room ≥175 scope): REDROCK BYTE-IDENTICAL TO v1 (4-seed
+  verified — canyon marks all have walls ≥200) but lake byte-equal to v1's
+  grind (the offending lake mark has room ≥175 too) and ocean still fires.
+  The wall-room axis does not separate the venues. SHELVED: the m3 kill
+  (14→4%) waits for a scope that names what separates canyon hairpins from
+  lake/ocean confined marks. ⚠️ The ENTRY-side governor family stays closed —
+  this is the ORBIT-phase family, distinct and now measured 4 variants deep.
+- COMPOSITION NOTE: OP1+BP1 (treeCX) is ANTI-COMPOSITIONAL: m5 stalls 16→26%
+  (the new stalls are UNARMED with rivals — 0-rival 79%→48% — the two
+  mechanisms flood the m5 funnel with more surviving traffic), redrock pooled
+  +1.1 (worse than either component). The m5 funnel's throughput is the
+  binding constraint under composition.
+
+## P2 — RIVER + THE UNDERLAY
+- THE RUB SIGN-SPLIT IS CLOSED AS SEED-SET VARIANCE: four disjoint 16-seed
+  sets on IDENTICAL behavior (ff2rivA/B + fresh hd8rivC/D) give boat-rubs
+  61.6 / 31.2 / 10.9 / 24.7 per boat — a 6x spread with meds stable at
+  264-271. River dirt at 16-seed resolution is noise-dominated; judge river
+  on pooled fins/med only. (The FF2 "A×2/B−33%" was two draws from this
+  distribution.)
+- UL1 (onset honesty at the MEDIUM rung: MEDIUM requires the threat to
+  converge on my PROPER course too — CPA on the strategy's heading, τ=6s,
+  bar 110u; HIGH/IMMINENT untouched, spin-hazard model still re-raises,
+  prestart + floe venues out of scope): mechanism PARTIALLY verified —
+  needless-MEDIUM collapses (river 42.1%→15.8%, redrock 51.3%→33.8%),
+  stand-on episodes −31%/−22%, river IMMINENT episodes −68% (173→55, fewer
+  emergencies). But river frame-share deflected went UP (23→36%), the HIGH
+  rung's needless share persists (50.7%→57.6% river, 66.4% redrock — the
+  current-heading HIGH test has the same honesty problem), and the ACTION
+  delta is nil: river fins 239 v 238 pooled, clock flat, dirt inside the
+  measured noise band. NOT LANDED (actions-not-prices: no measured action
+  win). The build + dossier hand to the next push with the HIGH-rung
+  question and lake/redrock/arctic gates unrun.
+- treeP4TIGHT stays shelved behind a landed response class, per plan.
+
+## Probes added (all tracked): _rr_mdisp.js, _rr_boxwhy.js, _rr_boxreplay.js.
+## Session evidence files: p0id*/hd8*/op1*/op2*/op3*/op4*/cx*/bp1*/bp2*/bp3*/
+## ul1* bench JSONs + logs in eval/rl.
+
+## The venue table (final HEAD = BP2 landed; benchmark venues incl. OLD red rock)
+venue     | human med/best      | pre-session bot (7b72372 anchors)         | post-session bot (final HEAD, hard-zone landing)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (ff2bayA/B), boat 1.39/2.11, mark 0.05/0.28, pen 0.28/0.40, OCS 0/0 | 231 / 234 (bp2bayA/B) — DELTAS ALL-ZERO both sets, gap ~5-8s protected
+ocean     | 182.5               | 192 (ff2oc, OLD ocean — RETIRED: owner gust fix moved gust-1 into play) → 193 hd8oc new-venue baseline, boat 2.61, mark 0.43 | 192 (bp2oc), boat 1.81 (−31%), mark 0.36, pen 0.35 — recovers the gust-fix dirt
+lake      | 223 / 209.6         | 274 / 273 (ff2lakeA/B), land 5.33/5.58    | 275 / 276 (bp2lakeA/B), land 6.37/6.09, boat 1.98/3.09, mark 0.43/0.32 — the landing's one paying gate (mean +2.6/+3.4, med 0/0), recorded
+redrock   | ~227 / 206.6 (s2: 214.7) — OLD red rock, the benchmark | 48-seed fins 396, per-set med 475/540/520/507/538/523, pooled med 517, land 143.1, boat 20.89, mark 1.16 | 48-seed FINS 396, med 481/510/497/542/564/469, POOLED MED 499, land 142.4, boat 19.97, mark 1.14; PAIRED −14.8 s/boat over 96 seeds (12 disjoint sets, 9 negative, fresh 6/6); m5 box −45%
+arctic    | 212.1 / 190.4 (s2: 215.0/194.7) | 413 / 450 (p3v2arcA/B), in-420 75/53 | UNCHANGED — BYTE-IDENTICAL (floe scope, 4-seed verified)
+seatrials | ~190 / 180.9        | 199.58 / 194.13, OCS 15.44%               | UNCHANGED — BYTE-IDENTICAL (whole-file diff via BP1 superset run)
+river     | 161.3 (1 lap)       | 264 / 271 (ff2rivA/B), fins 119/119 of 144 | UNCHANGED — BYTE-IDENTICAL (≥2kt scope, 4-seed verified); +2 fresh HEAD evidence sets hd8rivC/D med 266/263.5 (rub noise-band study)
+NEW ANCHORS (fingerprint-stamped on the frozen venues): redrock
+ocean_bench_bp2rr{9400..9900} (+ paired evidence hd8rr/bp2rr{8400..8900});
+lake bp2lakeA/B; bay bp2bayA/B (byte-equal ff2bay*); ocean bp2oc (vs hd8oc
+baseline — ff2oc RETIRED at the venue cut); river ff2rivA/B, arctic
+p3v2arcA/B, seatrials eval_results byte-carried. GOLDENS: 7 behaviour changes
+→ full --update re-record, verify PASS 20/20. npm test: the one documented
+pre-existing river sailable failure (exit2→pre3) only.
+
+## NEXT-PUSH POINTERS (ordered by tonight's measurements)
+- THE NEW RED ROCK needs human laps before it can become a target (owner:
+  recordings, ideally schema-2 for the ledgers). It races as content;
+  benchmark stays the frozen OLD red rock until then. When laps exist,
+  decide PROMOTE vs KEEP-BOTH per eval/venues/README.md.
+- ⚠️ FRESH LAPS wanted broadly: bay/lake/redrock changed again (hard-zone
+  landing); ocean's wind field changed (gust fix); river has ONE lap.
+- m3 ORBIT-PHASE EASE: the kill is real (14→4%) and shelved 4 variants deep
+  — the missing scope must separate canyon hairpins (wind 13-15kt, walls
+  200-275) from lake/ocean confined marks where the ease grinds or taxes.
+  Wind ≥8kt on redrock's box worked for the hard zone (BP3 lake-silent) but
+  gave back redrock clock — the light-air-bend interaction is unmeasured.
+- THE m5 FUNNEL'S THROUGHPUT is the composition constraint: OP1+BP1 flooded
+  it (m5 stalls 16→26%, unarmed, rival-present). Any future redrock landing
+  pair must be benched TOGETHER before landing separately.
+- UL1 (onset honesty): mechanism half-proven; the HIGH rung carries the same
+  needless share (50-66%) and is untouched — the design question is whether
+  HIGH deserves the same proper-course test or a milder alpha. Gates unrun.
+  River clock/action delta nil at current resolution; do not land without a
+  measured action win somewhere (rule: actions, not prices).
+- RIVER DIRT RULE (new): boat-rub counts at 16-seed resolution span 6x on
+  identical behavior (10.9-61.6/boat across 4 sets) — judge river on pooled
+  fins/med only, never on rubs, until a 32-seed+ protocol exists.
+- Lake's +19%/+9% land under the landing is the open watch item; L1/L2
+  classes unchanged otherwise.
+
+## POST-LANDING ADDENDUM (final HEAD a393d61) — the close-out reads
+- LEG-3 UNDER THE LANDING, fresh-set contrast (occupancy 4@8600, HEAD vs
+  landed): leg-3 med 159.5→134.5 (−25s), leg-3 parked 51→30 s/boat-leg,
+  leg-2 101→86. (The 4@9400 probe seeds show leg-3 147→157.5 — set 9400 is
+  the landing's one positive-mean set; the 96-seed pooled clock is the
+  judge, and the fresh sets carry the mechanism's signature.) Leg 3 vs her
+  51.3s: ~2.6x, from 2.9x.
+- NEW RED ROCK FIRST-LOOK (landed AI, shipping course via treeNEWRR —
+  frozen-venue tree with the redrock symlink repointed at shipping):
+  nrr9400/nrr9500 8-seed: med 471/505, fins 67/69 of 72, land 108/101,
+  boat 8.2/8.0, mark 1.1/1.4, pen 1.6/2.0 — and ⚠️ BOUNDS 30.3/6.0
+  contacts/boat: the new course drives the fleet into the arena boundary
+  (a class the old course never had). First attribution target when the
+  new course gets human laps. No human ref exists yet.
+- LAKE L1 on the landed tree (_lake_l1 4@9100): mild + diffuse — max heat
+  bin 14 boat-s, parked mass at race-minute 20-40s (post-start sort-out),
+  nearest rival 183u, avoidance-active 56%, defl 11°, wind 6.2kt, n=50.
+  No candidate named; the class is small on this base.
+- THE EASE-SCOPE HUNT CLOSED THE QUESTION (_op_scope_survey.js, new,
+  tracked — per-rounding-mark features across venues): ocean's toxic mark
+  is leg-1 mark-3 with ZONE 1000 (boats arm a kilometer out; the v1 ease
+  crawls the whole approach — the +18s explained) and wall-room 15u (the
+  mark sits ON its rock: the eased ~100u circle cannot fit anyway); lake's
+  grinder is leg-1 mark-3 at 5.7 kt (wall-room 180 — room enough, no wind
+  to power out; the other lake mark is already _gyOK-excluded); redrock's
+  winners are wall-room 120-150, wind 12.6-16 kt, stock zones. NEXT-PUSH
+  OP5 IS FULLY PARAMETERIZED: v1's per-tick form + wall-room ≥ 100 (the
+  eased circle must fit) + wind ≥ 8 kt at the boat (power to sail out) +
+  dG < 250 (the pocket is the scale of the turn, not the zone). The m5
+  composition warning still binds: bench OP5 and the hard-zone landing
+  TOGETHER on redrock.
+
+## LAP INGEST (post-close, same session): six schema-2 recordings (Aug 7 evening)
+Copied to eval/rl/traj/ (corpus now 79 files) and run through _gw_ledger2.py
+the day they landed, per standing rule.
+- ⚡ THE REDROCK LAPS ARE ON THE NEW COURSE (marks match the redesign; 6
+  racing legs): 304.4 (a Talon tangle + penalties at ~93s) and 272.5 CLEAN.
+  First human data on the new red rock: bot first-look med 471/505 → the
+  new course opens at ~1.7x, and the bot's 30 bounds-contacts/boat class is
+  HUMAN-ZERO (no bounds events in either lap) — that class is pure AI
+  failure, first attribution target whenever the new course is taken up.
+- river: 172.1 (2 land touches at the 118s bank) — corpus n=2 (161.3 best).
+- arctic: 313.9 (2 fouls — an outlier lap) and 206.2 clean. seatrials:
+  193.8 (bot eval med 199.58 — within 6s; the bot's OCS 15.44% remains the
+  gap there).
+- _gw_ledger2 on all six (132 encounters): the underlay dossier REPRODUCES
+  on fresh data — rival deviation onset fires in 91-100% of encounters at
+  med ~565u (detection range), rivals deflect 35.5-59.9° med at CPA vs the
+  human's 12.6-23.4°, and 82-93% of encounters had unmodified CPA ≥ 80u.
+  The response class the UL1/OP5 work targets is confirmed current.
+
+# RESEARCH SESSION 2026-08-08 MORNING (post-push, owner directive: "uncover new
+# substantial gains") — three named build families, sized, none built
+# ═══════════════════════════════════════════════════════════════════════════
+Method: the schema-2 recordings carry all 9 rivals live at 10Hz — the human
+and fleet sailed the SAME races, so gaps decompose with zero seed noise
+(_gap_ledger.js, new, tracked). Then per-venue deep probes, ending with an
+INSTRUMENTED ARGMIN (treePROBE pattern: applyAvoidance logs every candidate's
+cost + collision flags at ≥25° choices; _av_fanlog.js reads it) — the ground
+truth that superseded three rounds of external cost-model reconstruction
+(_rr_smallwhy v1-v3: its "SMALL_WINS 55-66%" was model gaps — the island
+proximity band and heading-based breach projections were missing; the
+instrumented fan says no candidate ever wins for free).
+
+## FINDING 1 — ARCTIC IS A ROUTING-DISTANCE PROBLEM (the 2x names itself)
+- Human (26 recordings, _ice_exposure/_arc_dist): odometer ~25.0-25.4k vs
+  rhumb 23.7k — SHE SAILS THE FLOE FIELD AT 1.06x STRAIGHT-LINE. Median
+  clearance from floe edges 200u, only 6.2% of race under 50u, min 15-30u.
+  L1 (the beat) 14k units = 1.12x rhumb. Fin med 217.6, ~1 contact/run.
+- Solo bot (_arc_solo/_arc_dist, no traffic at all): fin med 465 (352-654),
+  odometer 38.7-59.8k = 1.6-2.5x rhumb, 444 floe contacts med — and MOVING
+  SPEED IS FINE (130.6 u/s vs her 124.2). deflOdo only 15-29%: the excess is
+  NOT avoidance weaving. legOdo L1 23.2-43.5k vs her 14k — the excess lives
+  in the ROUTE on the beat. sub1/sub4 32/81s vs her 2/10s.
+- THE MECHANISM CANDIDATE (measured-ready, not built): pathSailable's
+  wide-water preference (PAD 8 cells ≈ 400u desired clearance, EDGE_W 6 —
+  a 300u channel prices 4-5x) is scaled for boat-width corridors; in a floe
+  FIELD it turns the pack into a wall maze and buys 15-35k units of detour,
+  while the human's revealed clearance demand is ~200u (4 cells). Next-push
+  first step: clearance-demand histogram along her tracks vs the router's
+  chosen lines; then a floe-venue PAD/EDGE_W knee (⚠️ distinct from the
+  CLOSED closing-lead pricing and clearance-extension families — those
+  priced DYNAMIC lead changes; this is the static clearance demand scale).
+  Also: soft-cell "opening lead" ×2.5 bets on drift prediction that
+  [[map-staleness]] already declared unpredictable — the solo bot's 444
+  grinding contacts are those bets failing. SIZE: solo gap is 250s/boat;
+  the distance share ≈ 150-185s. The biggest single number in the campaign.
+
+## FINDING 2 — THE BIG-DODGE ANATOMY, FROM THE ARGMIN'S OWN LEDGER
+(_av_fanlog, 8000 choice snapshots per venue: why did the best ≤15°
+candidate lose to the chosen ≥25° dodge?)
+- redrock: proxCost 47% (med 3333 — the ISLAND/land proximity band + far
+  field, 56% with NO rival within 300u), boatCollision flag 27%, static 24%.
+- river:   STATIC 54% (cost gap med 19.5k — the small straight candidate
+  hits the BEND WALL the plan curves around; only 28% had a rival near),
+  boatCollision 24%, proxCost 17%.
+- lake:    boatCollision 47% (97% rival-near, roles dominated by
+  GIVE_WAY/MEDIUM 2423/3754), proxCost 28%, static 21%.
+TWO BUILD FAMILIES FALL OUT:
+- 2a. CURVED SMALL CANDIDATES (the dossier's "finer/curved low rungs",
+  now proven needed by the argmin's own flags): in constrained water the
+  ≤0.3-rad candidates are STRAIGHT 4s rays and read the corridor's bend as
+  static collision / land proximity — while the wide dodge sees open water.
+  Roll the small candidates along the PLAN's curvature (the arcK
+  constant-curvature machinery generalized from armed-rounding to
+  plan-following; same "router owns the bend" line as FF2 + the hard-zone
+  landing). SIZE: 54% of river big dodges + the redrock land-flavored 47%
+  + the wide rungs carry 17-23% of deflected time; redrock deflected-moving
+  alone was 194 s/boat pre-cap.
+- 2b. BREACH HONESTY AT MEDIUM (the give-way underlay, now aimed at the
+  right term): the 10000-point boatCollision BINARY on small candidates
+  fires from a 4s BOTH-BOATS-FROZEN projection; at GIVE_WAY/MEDIUM range
+  (the dominant class everywhere) the other boat will steer, and the human
+  accepts exactly these gaps (fresh 132-encounter ledger: her 12.6-23.4°
+  at CPA, 82-93% of encounters needed nothing). The VO-entry landing
+  taught this lesson to the GRADIENT in wide venues; the BINARY in
+  constrained venues never learned it. Shape: tCPA-scaled or VO-entered-
+  gated breach cost at MEDIUM only (HIGH/IMMINENT keep the binary).
+  SIZE: 24-47% of big dodges by venue; UL1's gates + the lake +25%
+  caution govern.
+
+## FINDING 3 — THE RIVER START (from the same-race ledger, then live)
+Her river race: fleet crossed the start med ~32s after the gun (she: 1s;
+5 of 9 rivals 300-550u behind the line at the gun at ~2kt). Live on the
+landed tree (_riv_start.js): med 10s, p90 22.6, tail to 36s (seatrials
+control: med 3s — its lateness is OCS instead, 4 of 18). MECHANISM: the
+staged start's crossing-run estimate (getApproachTime on boat speed+stats)
+has NO current term — in a 3-5kt set the run takes 2-3x the estimate.
+⚠️ Distinct from the CLOSED start-calibration family (that tuned constants
+on correct physics; here ground-speed physics is absent). Scope: fires only
+where _avCurMax ≥ 2 (river; bay/lake/ocean/arctic/seatrials byte-identical
+by construction). SIZE: ~7-10s med/boat on river + the tail.
+
+## Corroborations + smaller facts
+- The gap ledger's same-race rows: fleet <4kt time 45s vs her 10 (arctic),
+  105 vs 15 (new redrock), 45 vs 8 (river); moving-speed deficit only
+  0-6% on arctic/redrock/seatrials but 22% on river (current handling);
+  seatrials near-parity everywhere — the control venue behaves.
+- Her arctic: minFloeDist med 16u across 26 runs; the bot's berth demand
+  vs her 15-30u shaves is part of Finding 1's clearance-scale story.
+- New-course redrock (her 2 laps): fleet loses +37s by the FIRST mark —
+  early-leg class, noted for whenever the new course is taken up.
+- Probes added (tracked): _gap_ledger.js, _arc_solo.js, _arc_dist.js,
+  _riv_start.js, _av_fanlog.js (+ treePROBE instrumentation pattern),
+  _rr_smallwhy.js (superseded by fanlog; kept as the lesson).
+
+## NEXT-PUSH ORDER (by size × mechanism confidence)
+1. Arctic clearance-demand scale (Finding 1): ~150-185s/boat solo class.
+   First step: her-track clearance histogram vs router lines; then the
+   floe-venue PAD knee, judged on arctic 16x2 + all-venue gates.
+2. Curved small candidates (2a): composes with FF2/BP2; judge on redrock
+   pooled (96-seed protocol) + river + lake + bay byte-gates.
+3. Breach honesty at MEDIUM (2b): the underlay's correct target; UL1's
+   half-proof + these fan numbers parameterize it.
+4. River current-aware start (Finding 3): ~10s, small and clean.
+
+## OWNER CORRECTIONS + THE FIFTH CANDIDATE (same research session)
+- ⚠️ CORRECTION (owner): the human's arctic laps were NOT solo — verified:
+  all 9 rivals in her recordings sailed 18-22k units and progressed legs (a
+  full live fleet; her giveWay share 6-45% per lap). Her 217.6 med and the
+  1.06x-rhumb line were sailed WHILE DODGING NINE BOATS. The solo-bot
+  comparison (465s, 1.6-2.5x rhumb, zero traffic) is therefore CONSERVATIVE
+  — Finding 1 is stronger than written, not weaker.
+- FINDING 4 — THE ROUTER IS CURRENT-BLIND (owner directive: "make sure the
+  AI plans with current"). Verified layer by layer: physics applies drift ✓;
+  getStrategicHeading crab-compensates the aim locally ✓; tack choice has a
+  mild midstream-push bonus (helping×0.5) ✓; pathSailable prices edges by
+  distance/wind-polar/clearance with NO current term ✗ — a 5kt-favorable
+  chute and 5kt-adverse water of equal width price identically. This is the
+  ledger's river signature exactly: river is the ONLY venue with a large
+  moving-speed deficit vs the human (22%; everything else 0-6%) — the fleet
+  sails the wrong water at full water-speed while she plans her lines with
+  the set (her chute: 22.5s at 6kt over ground). SHAPE (measured-ready):
+  extend the _wbin per-cell wind pricing with a per-cell current projection
+  — step time = dist / (polarSpeed + current·cos(Δstep)) — so the router
+  buys favorable set and refuses adverse. ⚠️ Not blocked by closed
+  families: the river ground-frame kills were AVOIDANCE-layer probes; SIPP
+  died on drift PREDICTION — authored current regions are static. SIZE:
+  river's moving-speed share ≈ 46s/boat over her distance + line choice;
+  also swamp/lagoon (current venues, unbenched) and the river start's
+  cousin fix. Judge on river pooled fins/med (rub noise rule) + all-venue
+  byte-gates (current<2 venues untouched by construction).
+- Owner endorsement recorded: the object-avoidance direction (Findings 2a
+  curved candidates + 2b breach honesty) is confirmed as wanted.
+- NEXT-PUSH ORDER updated: 1. arctic clearance scale; 2. ROUTER CURRENT
+  PRICING (new #2 — owner-directed, mechanism verified, sized); 3. curved
+  small candidates; 4. breach honesty at MEDIUM; 5. river current-aware
+  start (folds into #2's bench wave).
+
+# NEXT-PUSH DIRECTIVE (drafted at close of Aug 8; HEAD at draft 6317d6e)
+# ═══════════════════════════════════════════════════════════════════════════
+Goal unchanged: human or superhuman on bay, ocean, redrock, lake, arctic,
+seatrials. This push works the five researched candidates in size order:
+arctic clearance scale (~150-185s/boat), router current pricing (~46s+
+river, owner-directed), then the response class (curved candidates + MEDIUM
+honesty), with OP5 and the current-aware start as the tail.
+
+⚠️ PHASE 0 GATE: HEAD at open should be 6317d6e or later. If owner commits
+moved BEHAVIOR past a393d61: freeze_venues --check first (frozen venues
+protect benches from venue edits now — only js/physics changes threaten
+anchors), then one 4-seed byte-identity per venue vs the bp2-family anchors;
+byte-identical ⇒ stands, else re-baseline (96-seed protocol if near
+threshold). Ingest any new laps day-one (_gw_ledger2 + traj_report + refs).
+Anchors on a393d61: redrock bp2rr{9400..9900} 48-seed fins 396 pooled med
+499 (+ hd8rr/bp2rr{8400..8900} evidence pairs); lake bp2lakeA/B 275/276
+(land 6.37/6.09 — WATCH); bay bp2bayA/B 231/234; ocean bp2oc 192 (hd8oc 193
+baseline, ff2oc retired at the venue cut); river ff2rivA/B 264/271
+byte-carried; arctic p3v2arcA/B 413/450 byte-carried; seatrials
+199.58/194.13 byte-carried.
+
+P0 — ARCTIC CLEARANCE SCALE (the ~150-185s/boat solo class; the biggest
+number in the campaign). Her 26 laps: 1.06x rhumb IN TRAFFIC, clearance med
+200u, 6.2% under 50u. Solo bot: 1.6-2.5x rhumb, 444 grinding contacts,
+moving speed FINE — the excess is the ROUTE (pathSailable PAD 8 ≈ 400u
+demanded clearance, EDGE_W 6: a 300u lead prices 4-5x; the pack becomes a
+wall maze). Measure FIRST (one physical line): clearance histogram along
+the ROUTER'S OWN CHOSEN LINES for her legs vs along her tracks — confirm
+the router refuses the 150-300u leads she sails. Then the build: floe-grid
+clearance-cost knee (PAD/EDGE_W scaled to her revealed ~200u on floe grids
+only; land grids keep the landed corridor pricing UNTOUCHED — lake/river/
+redrock byte-identical is the scope's own claim, verify not assume). Also
+measure (before touching): the soft-cell ×2.5 "opening lead" bet's success
+rate at arrival — [[map-staleness]] says drift is unpredictable; the 444
+grinds are the bets failing. ⚠️ Distinction to name in every candidate:
+STATIC clearance-demand scale ≠ the CLOSED closing-lead-pricing and
+clearance-extension families (both priced DYNAMIC lead changes). Gates:
+arctic 16×2 vs p3v2arcA/B + the solo probe (_arc_solo 465-med baseline,
+_arc_dist odometer 38-60k baseline) + 4-seed byte-identity on every
+non-floe venue + goldens. Success bar: solo odometer toward ≤30k, fleet
+413/450 down double digits with in-420 up; rule 16 stands (scenes cannot
+green-light — full races only).
+
+P1 — ROUTER CURRENT PRICING (owner directive: "make sure the AI plans with
+current"). Verified hole: physics/steering/tack know the water; pathSailable
+prices still water — favorable chute ≡ adverse eddy. Build: per-cell current
+projection in the step cost — time = dist/(polarSpeed + current·cosΔstep) —
+alongside the existing _wbin wind pricing; fires only where currentRegions
+exist (every current-free venue byte-identical BY CONSTRUCTION — verify
+4-seed anyway). Fold Finding 3 into the same wave as a SEPARATE line:
+current-aware start (getApproachTime with ground-speed closure; ~10s med +
+tail). ⚠️ Bench the pair TOGETHER AND separately (the OP1+BP1 m5-funnel
+anti-composition lesson is standing rule now). ⚠️ Distinctions: avoidance
+ground-frame probes are CLOSED (this is route pricing); SIPP is retired
+(drift PREDICTION — authored current is static); start CALIBRATION is
+closed (constants — this is missing physics). Gates: river pooled fins/med
+ONLY (rub noise rule — 16×2 minimum, 4 sets if near threshold), all-venue
+byte-gates, goldens. Success bar: river 264/271 → ≤240 med; her 161-172.
+treeP4TIGHT stays shelved behind the response class regardless.
+
+P2 — THE RESPONSE CLASS (as time allows; at minimum land the measurement):
+2a CURVED SMALL CANDIDATES: the ≤0.3-rad rungs rolled along the plan's
+curvature (generalize arcK from armed-rounding to plan-following — FF2/
+hard-zone's own line). The argmin's ledger says straight small candidates
+read the bend as collision: river static 54%, redrock land-band 47%.
+2b BREACH HONESTY AT MEDIUM: the 10000 boatCollision binary gated by
+VO-entry/tCPA at MEDIUM only (HIGH/IMMINENT untouched); lake GW/MEDIUM
+carries 2423/3754 of its big dodges; UL1's half-proof (needless-MEDIUM
+collapse, river IMMINENT −68%, HIGH untouched) parameterizes it.
+Order: 2a alone → 2b alone → COMPOSED, each on its OWN sets; redrock
+verdicts near threshold get the 96-seed protocol; lake 20×2 with the +25%
+caution; bay byte-protection; m3 (_rr_mstall 3) and m5 (_rr_mstall 4) stall
+gates; full goldens. Use treePROBE/_av_fanlog for any "why did it choose
+X" question — external cost models are a documented dead end.
+
+P3 — if time: OP5 (fully parameterized ease: v1 per-tick form + wall-room
+≥100 + wind ≥8kt + dG<250 — bench TOGETHER with the hard-zone base on
+redrock; m3 target 13-14%→~4%, ocean/lake byte-or-neutral gates); NEW red
+rock first attribution (the bounds-contact class, 30/boat, human-zero —
+treeNEWRR pattern) if the owner signals the new course is next.
+
+Standing constraints (additions from Aug 8 in caps): prime directive (≥4
+probes in flight, check date — read the clock, never infer); episodes not
+frames; actions not prices; one physical line per gate; measure first
+(three candidate shapes died at the measurement step today — the ledger is
+now 4-for-4 landings on anatomy-named builds); 96-SEED PROTOCOL for
+near-threshold redrock verdicts (48-seed pooled means carry ±8-10s); RIVER
+JUDGED ON POOLED FINS/MED ONLY (rubs span 6x on identical behavior); BENCH
+CANDIDATE PAIRS TOGETHER before landing either; INSTRUMENT THE ARGMIN for
+choice questions (treePROBE pattern); TWA convention (0 = head-to-wind);
+byte-perturbation reshuffle (judge candidates on their OWN sets);
+constrained-water damage is NONLOCAL; paired deltas are tail-dominated; all
+landed scopes live in any new candidate (floe venues, _avCurMax ≥ 2, _gyOK,
+250u funnel exemption, arcK, _voIn wide gate, hPlanFF alignment + the
+hard-zone's wind/no-go/arc guards); the lake land watch item (6.37/6.09 vs
+5.33/5.58) is P0-adjacent — any lake-touching candidate reports it.
+
+Closed families (do not reopen; additions in caps): ENTRY-side rounding
+governors (the ORBIT-phase distinction is mandatory and OP5 is its only
+open form); ORBIT-EASE v2 SPEED-THRESHOLD-WITHOUT-LATCH (toggles) and v3
+LATCH (overholds — stalls at sweep 306°); OP1+BP1 NAIVE COMPOSITION;
+cap-in-funnel; VO-exit latch; closing-lead route pricing ×2; tight-slot
+occupancy stamps; river ground-frame AVOIDANCE probes ×2; arctic
+clearance-extension ×2; lake armed-probe-cap + boat-clearance gate; RL on
+f0e290e ×2; mark-queue reservation; start calibration (CONSTANTS — the
+current-physics start is distinct and open); minimal-escape fan;
+hold/commitment; sighted wiggle; gap projection; SIPP; orbit radius below
+the 70u knee; metered lee-shore holds; 80u owed-gap knob; layline ×4;
+station-keeping among rivals (0-for-8 lifetime).
+
+Human refs: bay 226.2/217.8; ocean 182.5 (predates gust fix); lake
+223/209.6; OLD redrock ~227/206.6 (s2 214.7, legs 39.9/64.7/51.3/29.6/26.1);
+arctic 212.1/190.4 (fresh: 206.2 clean); seatrials ~190/180.9 (fresh:
+193.8); river 161.3 best n=2 (172.1). NEW redrock 272.5 clean / 304.4
+(n=2) — bot 1.7x, bounds class human-zero. ⚠️ ASK FOR FRESH LAPS: bay,
+lake, OLD redrock (hard-zone landing changed all three), post-gust-fix
+ocean; more new-course laps whenever it's next. P-continuous: ingest any
+schema-2 recording the day it lands.
+
+Close with the standing venue report — SEVEN rows, venue | human |
+pre-session bot | post-session bot, all venues benched on final HEAD, dirt
+columns included; the lake land watch item gets its own line.
+
+# SESSION 2026-08-08 MIDDAY PUSH (started 11:28 PDT, HEAD at open 9b5e983,
+# behavior HEAD a393d61) — THE ARCTIC RE-ATTRIBUTION
+# ═══════════════════════════════════════════════════════════════════════════
+Working the five researched candidates in the directive's size order. The
+headline is P0: the research session's Finding 1 ("arctic's 2x is ROUTING
+DISTANCE") does not survive its own first measurement, and four successive
+hypotheses died before the real class named itself.
+
+## PHASE 0 — the gate
+- `freeze_venues --check`: bay/arctic/seatrials/ocean/river/lake MATCH their
+  frozen copies; redrock differs (d30fe85f frozen vs e44ca786 shipping) — the
+  EXPECTED keep-both state, the benchmark is the frozen OLD red rock and the
+  shipping course is the redesign. ⚠️ The script resolves SRC/DST relative to
+  cwd: it must run from the repo root, not from eval/.
+- Owner commits since a393d61 (7655252, 4f44118, 2c77e59, a870bc7, 6317d6e,
+  9b5e983) touch ONLY eval probes, traj recordings and ai-campaign.md — zero
+  lines in js/. Behavior HEAD is a393d61 and every anchor stands unchanged; no
+  re-baseline needed.
+
+## P0 — ARCTIC: FOUR HYPOTHESES DIED, THE FIFTH IS THE CLASS
+Measure-first, per the directive. Probes added (all tracked): `_arc_clr.js`,
+`_arc_why.js`, `_arc_churn.js`, `_arc_beat.js`, `_tk_probe.js`.
+
+1. ✗ "THE ROUTER REFUSES THE LEADS SHE SAILS" — DEAD (`_arc_clr.js`, the
+   directive's own first step). The clearance gap is real: the router's OWN
+   chosen lines sit at med 328-407u against her 200u (26 laps). But it refuses
+   almost nothing — of 23-40 plans per race only 3-6 even HAD a straight
+   alternative with ≥150u of floe clearance, and only 1-3 were declined for a
+   ≥1.3x route. Its plans run just ~1.4x the straight line. And the soft-cell
+   ×2.5 "opening lead" bet, which the research memo guessed was failing (the
+   "444 grinding contacts"), NEVER FAILS: 6 win / 0 fail / 6 abandoned pooled.
+   ⚠️ Also a correction to the record: those 444 contacts are FRAMES. Deduped
+   at 0.5s (standing rule 2) a solo race has 20-33 contact EPISODES.
+2. ✗ THE PAD/EDGE_W KNEE ITSELF — BUILT, BENCHED, KILLED (treeAC1: clearance
+   demand 8→4 cells wherever the narrowness is DRIFTING ICE, land-only
+   clearance keeping full PAD). It fires exactly as designed — route clearance
+   med 373/407/353/328 → 302/315/344/308 — and it LOSES: solo fin med 494.5 vs
+   382.2, and the ODOMETER GOES UP, 51.1k vs 40.4k on the same 8 seeds. Arctic
+   fleet 16-seed set A confirms no gain. Cutting the standoff does not shorten
+   the sailed line; it buys gaps the drifting field then closes.
+3. ✗ "THE PLAN CHURNS" — DEAD (`_arc_churn.js`). Lateral churn med 30-136u,
+   flips ≤26% of replans. The plan is stable. ⚠️ TWO PROBE AUDITS (rule 18)
+   were needed to get there: measuring "400u ahead of me now" vs "400u ahead of
+   me then" scores a perfectly stable plan at ~250u because the boat ADVANCES
+   between replans, and near a mark the plan is shorter than the lookahead so
+   ptAt returns its endpoint. The first run's "churn 2095, flips 100%" was
+   entirely artifact.
+4. ✗ "THE BOT BEATS WATER SHE FETCHES" — DEAD (`_arc_beat.js`, 29 recordings vs
+   5 solo races). Her beat share 44% (leg-1 48%), |h−w| med 60°; the bot's 39%
+   (leg-1 45-50%), med 71°. Same point-of-sail mix. (⚠️ The recorder's heading
+   column is `hdg`, not `heading` — the first run printed "0 laps", rule 4.)
+
+✅ THE CLASS, NAMED: **TACK COUNT.** Her leg-1 median is 5 tacks across 29 laps
+(range 4-8). The solo bot sails 21-23. Same beat share, same wind angles, on a
+route whose FIRST plan for leg 1 (15.7-15.9k) already equals her sailed leg-1
+distance (15.1k med) — and the boat HOLDS that route (d0 med 44-52u; off-plan
+>100u only 25-30%). It then sails 23-32k. The excess is not the route, not the
+clearance demand, not churn and not the point of sail: it is the manoeuvre
+count converting the route into water.
+MECHANISM (`_tk_probe.js`): the tack is chosen by scoring starboard vs port
+VMG toward the STEERING CARROT — a point ~420u down the plan (measured carrot
+distance med 423u). In a floe field the router's upwind route is a staircase
+between floes, so that carrot alternates across the rhumb: far-vs-near bearing
+gap med 10°, p90 34°, exceeding 8.6° in 59% of ticks. The two tacks' scores
+swap with it and the boat tacks as fast as the 5 s cooldown allows.
+
+- ✗ TK1 (score the tack against a 1400u-down-plan reference, floe venues only,
+  steering carrot untouched): FIRES (the gap above) and LOSES — solo 9101
+  465→726, 9102 654→517, 9100 byte-identical. KILLED, and the kill teaches the
+  next shape: **the staircase is not noise, it is the route through the gaps.**
+  Committing to a long board across it crosses the floes the staircase threaded.
+  The human's 5 tacks are lane CHOICE, not lane averaging — the next candidate
+  must pick a lane the pack actually offers and hold it, which is a question
+  for the ROUTER (give the beat two boards) rather than for the tack scorer.
+
+  TK1 solo, 8 seeds paired vs HEAD: med 415.5 vs 382.2, moving speed 124.6 vs
+  130.6 u/s, odo med unchanged. Per-seed: 9100 =, 9101 +261, 9102 −137, 9103
+  +90, 9104 +12, 9105 =, 9107 −33. Not noise-limited — it is worse.
+
+## WHAT P0 LEAVES THE NEXT PUSH
+The arctic size estimate (~150-185 s/boat) STANDS; only its address moved. The
+target is the beat's MANOEUVRE COUNT (21-23 vs her 5), and the two shapes that
+touch the tack scorer are now both measured and dead (the clearance knee, the
+far reference). The remaining shape is the ROUTER's: pathSailable prices an
+upwind staircase and a two-board beat identically (each upwind step is charged
+its own VMG, so length decides and the staircase always wins on length). Give
+the beat a MANOEUVRE COST — a step that changes tack pays the measured tack
+seconds, the same TACK_SEC=1.0 the corridor-loss term already uses — and the
+A* will return long boards a boat can sail. ⚠️ This IS a re-pricing, so rule 1
+applies: compute the ratio first (a 21→5 tack change is 16 manoeuvres × ~1 s of
+polar speed plus the turn's distance — an order-of-magnitude structural gap,
+not a knob at its knee), and it must be judged on full races.
+
+- ✗ TK2 (the router's own manoeuvre cost: a step that CHANGES TACK on an upwind
+  bearing pays TACK_SEC·10 in the A*'s time units, floe grids only — the shape
+  the TK1 kill named): ALSO LOSES. Solo 9100 352→376.5 with floe contacts
+  444→1140, 9101 465→536 with 419→1480. The long boards the router now returns
+  cross the ice the staircase was threading.
+  ⇒ TWO independent attempts to straighten the beat (at the tack scorer, then
+  at the router) both make arctic worse in the same way: MORE ICE. The
+  staircase is load-bearing. Her 5 tacks are not a smoother version of the
+  bot's 21 — they are a different plan: she picks a LANE the pack offers and
+  holds it. Building that means choosing among candidate lanes (a route-level
+  decision over the pack's gaps), not smoothing a route computed without them.
+  That is the next push's shape, and it is now the only one left standing in
+  this class.
+
+## P1 — ROUTER CURRENT PRICING (owner-directed): BUILT, MEASURED, NOT LANDED
+Build (treeCUR1, two lines): a per-cell current VECTOR beside the existing
+_wbin wind field (sampled once at grid build — every authored current region on
+the benchmark venues has period 0, so the field is static and needs no re-key),
+and a step cost that divides by GROUND speed rather than water speed:
+v_ground = 10/base + cur·cosΔ, floored at 0.8 kt and capped at 30. The A*
+heuristic's admissibility floor is lowered by the map's strongest set, or a
+favorable chute would break it. Venues with no currentRegions have no field and
+price exactly as stock, by construction.
+RESULT — river, judged on pooled fins/med per the rub-noise rule:
+  set A (9100): med 264 → 265, paired med −1.0 / mean −0.7, finishers 119→115
+  set B (9200): med 271 → 262, paired med −7.0 / mean −11.0, finishers 119→117
+  land contacts 325→369 (A) and 322→348 (B); boat rubs down slightly in both.
+Sign-consistent on the clock but FAR from the ≤240 success bar, six finishers
+lost pooled, and the one dirt column the rub rule does not excuse (land) is up
+~10% on both sets. The physical reading is coherent: the router now buys
+favorable set, and the favorable set on this venue runs where the banks are.
+NOT LANDED. The next shape is asymmetric — price ADVERSE water honestly (that
+is real time the boat will lose) but do not let a favorable-set discount buy a
+bank-hugging line, because the grind the bank costs is not in this term.
+
+## P1b — THE CURRENT-AWARE START: SIZED OUT AT THE AUDIT
+Built (treeCST1: getApproachTime takes a `setAlong` term, the current's
+component along the crossing run in game units/sec; the loop bails at the cap
+when an adverse set exceeds boat speed). River set B benched EXACTLY
+byte-identical — all 119 paired deltas 0.0, identical dirt. Rule 17 says audit
+the scope before believing that, and the audit (`_riv_startcur.js`, new,
+tracked) settles it: the river's START LINE sits in 0.77-1.19 kt (venue max
+5.16 kt is downstream), so the ≥2 kt venue-class scope never fires.
+⚠️ AND THE SIZE DIES WITH IT, at any scope: the staged crossing run is
+STAGE/cos(0.7) ≈ 78 units, about ONE SECOND at 5 kt. A 1.1 kt set shifts that
+estimate by ~0.2 s. Finding 3's measured symptom is real (the fleet crosses med
+10 s after the gun) but its named mechanism cannot produce it — 0.2 s of
+estimate error is not 10 s of lateness. The river start's 10 s lives somewhere
+else, and finding where is a fresh measurement, not this build.
+
+## P2a — CURVED SMALL CANDIDATES: WINS RIVER, LOSES REDROCK, NOT LANDED
+Build (treeCC1): read a CURVATURE off the plan (a second sample at ~520u past
+the first, clamped to the measured 70u-knee radius) and roll the ≤0.3-rad rungs
+that are also within 0.3 rad of the plan heading on that arc, reusing the
+armed-rounding arcK rollout. ⚠️ Implementation note worth keeping: the rollout
+curvature had to be a SEPARATE variable from `arcK`, because arcK is also the
+guard that switches OFF the hard-zone scaling and the far-field waiver — reusing
+it would have silently un-landed the hard zone for the one candidate the hard
+zone exists to protect.
+  river set A: med 264 → 257, paired med −6.0 / mean −4.7, finishers 119→118,
+    land 325→332, pen 1.85→1.78 — a real if modest WIN, and river is exactly
+    where the argmin's ledger put the class (static 54% of big dodges).
+  redrock 9400: med 481 → 503, paired med +2.0 / MEAN +32.2, finishers 67→63,
+    land 130.8→149.0 (+14%), boat 14.9→18.2 (+22%), mark 1.03→1.39 (+35%).
+    Every dirt column worse; not a near-threshold call.
+THE MECHANISM OF THE SPLIT (the lesson to keep): a probe is honest only when the
+boat will actually sail the shape it probes. Under an ARMED rounding the boat IS
+steered along the arc, so the arc probe tells the truth. Following a plan, the
+boat sails the candidate HEADING until the next tick — so a curved probe clears
+water the boat will not reach and hides land it will. River's corridor bends
+gently enough that the arc is a good 4-second approximation; redrock's island
+band bends harder than the boat turns, and there the curve is a lie.
+⇒ A curved rung needs the boat's OWN achievable turn, not the plan's curvature.
+That is the shape for the next attempt; as built this cannot land globally, and
+a river-only scope would be venue-fitting, not a physical line.
+
+## P2b — BREACH HONESTY AT MEDIUM: KILLED ON ITS OWN NAMED VENUE
+Build (treeBH1): the flat 10000-point boatCollision term, at riskState MEDIUM
+only, scaled by when the projected breach actually arrives — full price inside
+2 s, floored at a third at the 4 s horizon (`bcT` = the earliest breaching
+sample over all pairs). HIGH and IMMINENT keep the binary; the 500000/(d²+10)
+weight, the rule-violation term and the stand-on Rule 16 penalty are untouched.
+LAKE 20 seeds (the venue the argmin ledger named: boatCollision buys 47% of its
+big dodges, GIVE_WAY/MEDIUM carrying 2423 of 3754): paired med +7.0, mean +4.9,
+and LAND CONTACTS 6.37 → 16.09 PER BOAT — two and a half times, on the very
+metric that is this campaign's open lake watch item. Boat rubs 1.98→2.87, pen
+0.54→0.63, one finisher lost.
+MECHANISM (and it is standing rule 11 again — constrained-water damage is
+nonlocal): the honest MEDIUM price is honest about the OTHER BOAT, who will
+indeed steer. It is not honest about the SHORE, which will not. In open water
+the accepted gap costs nothing; in lake's confined water the boat that used to
+buy its way out early now holds on, arrives at the squeeze committed, and takes
+the only remaining exit — the beach. KILLED.
+
+- ~ TK3 (raise the tack cooldown 5 s → 20 s on floe venues, racing legs — the
+  one shape that changes NEITHER the route nor the reference, only the minimum
+  board length; rule 1's order test: her ~40 s board against the bot's ~10 s is
+  8x): NEUTRAL. Solo med 405.5 vs HEAD 382.2 over the same 8 seeds, but FOUR of
+  the eight are byte-identical (9100, 9104, 9105, 9106) and the rest split
+  −142/+76/+35/. The cooldown is not what binds: the boat's tacks are being
+  re-authorised by the LAYLINE path (which sets its own 10 s cooldown and
+  returns early), not by the score-flip path this raises. No measured action
+  win ⇒ not landed, and the observation is the useful part — a future minimum-
+  board shape has to go through the layline return, not around it.
+
+## P2a REDROCK, POOLED — AND WHY THE FIRST TWO SETS BOTH LIED
+Standing rule 12 in one candidate. CC1's six anchor sets, paired med per set:
+  9400  +2.0     9500  −50.0     9600  +58.0     9700  +38.0
+Two 8-seed sets of the SAME tree disagreed by 108 seconds of paired median. Set
+9500 alone read like a landing (med −50, land −19%, boat −23%, finishers 66→69)
+and set 9400 alone read like a disaster (mean +32, every dirt column up). Neither
+was true. Pooled over the four, paired med +20.0 / mean +9.1, negative in 118 of
+247 boats — a coin flip, with dirt a shade worse.
+⇒ CC1 does not clear redrock. New probe `_pool_rr.js` (tracked) does the pooling
+and PRINTS THE PER-SET SPREAD beside the pooled figure, so the noise is visible
+instead of assumed — the next candidate should be read through it from the start.
+
+- ✗ CUR3, the asymmetric variant the CUR1 result pointed at (charge ADVERSE
+  water, take NO credit for favorable set — so no step is ever cheaper than
+  stock and the stock admissibility floor stands): WORSE than CUR1, not better.
+  River A paired med −1.0 / mean +1.9, SIX finishers lost (119→113), boat rubs
+  61.6→101.2 per boat (+64%), land 325→378 (+16%). Refusing adverse water
+  without buying fair water just squeezes the whole fleet into the same
+  remaining lanes — the fleet-level version of the same nonlocal lesson lake
+  taught P2b. The current-pricing family is two variants deep with no landing;
+  the owner's directive is satisfied at the MEASUREMENT level (the hole is real
+  and now instrumented), not at the landing level.
+FINAL (all six sets, 48 seeds): per-set paired med +2 / −50 / +58 / +38 / −4 /
++65; POOLED paired med +35.0, mean +12.9, negative in 166 of 365 boats; pooled
+med 498→507, fins 396→392; dirt boat 19.97→20.19, land 142.38→145.82, pen
+3.83→3.85. CC1 is a river-only effect that redrock rejects. NOT LANDED.
+
+## P3 — NOT REACHED
+OP5 and the new-red-rock bounds attribution were the tail of the directive and
+the session spent its machine time on the P0 re-attribution and five candidate
+verdicts instead. OP5 remains build-ready and unchanged (v1 per-tick form +
+wall-room ≥100 + wind ≥8 kt + dG<250, benched TOGETHER with the hard-zone base
+on redrock). No owner signal arrived on the new course, so it stays content.
+
+## SESSION VERDICT — NO LANDING, ONE RE-ATTRIBUTION, FIVE CANDIDATES CLOSED
+Behavior HEAD is UNCHANGED at a393d61: `git diff` over regatta/js and
+regatta/assets is empty, so every anchor carries to final HEAD by construction
+and no golden re-record was required (npm run trace untouched, no behaviour
+change to record). What the session produced is knowledge, not a diff:
+- THE ARCTIC RE-ATTRIBUTION (above): the 2x is manoeuvre count, not routing
+  distance. Four hypotheses and three builds died naming it. The size stands.
+- FIVE CANDIDATE FAMILIES CLOSED OR MEASURED with their mechanisms named:
+  the floe clearance knee (kill), the tack reference and the router's manoeuvre
+  cost (two kills, one shared lesson), MEDIUM breach honesty (kill on its own
+  named venue), router current pricing ×2 (not landed, owner's hole confirmed
+  and instrumented), the current-aware start (sized out by arithmetic), curved
+  small candidates (river win, redrock rejection, mechanism of the split named).
+- THREE STANDING RULES EARNED: lookahead probes need a fixed reference (two
+  artifacts in one probe); a path-shaping probe must model the path the boat
+  will SAIL; read redrock through pooled sets from the first verdict.
+
+## THE VENUE TABLE (final HEAD = a393d61 behavior, benchmark venues frozen)
+venue     | human med/best        | pre-session bot        | post-session bot (final HEAD)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (bp2bayA/B), boat 1.39/2.11, mark 0.05/0.28, pen 0.28/0.40, OCS 0 | UNCHANGED — no behavior diff this session
+ocean     | 182.5 (predates the gust fix) | 192 (bp2oc), boat 1.81, mark 0.36, pen 0.35 | UNCHANGED
+lake      | 223 / 209.6           | 275 / 276 (bp2lakeA/B), land 6.37/6.09, boat 1.98/3.09, mark 0.43/0.32 | UNCHANGED
+redrock   | ~227 / 206.6 (s2 214.7) — OLD red rock, the benchmark | 48-seed fins 396, pooled med 499 (per-set 481/510/497/542/564/469), land 142.4, boat 19.97, mark 1.14, pen 3.83 | UNCHANGED (re-measured this session as the CC1 baseline: pooled med 498, fins 396 — the same numbers)
+arctic    | 212.1 / 190.4 (fresh clean 206.2) | 413 / 450 (p3v2arcA/B), in-420 75/53 | UNCHANGED — and now ATTRIBUTED: solo fin med 382, odo 40.4k = 1.6x her 25.4k, leg-1 tacks 21-23 vs her 5
+seatrials | ~190 / 180.9 (fresh 193.8) | 199.58 / 194.13, OCS 15.44% | UNCHANGED
+river     | 161.3 best, n=2 (172.1) | 264 / 271 (ff2rivA/B), fins 119/119 of 144 | UNCHANGED
+⚠️ LAKE LAND WATCH ITEM: 6.37 / 6.09 per boat against the pre-hard-zone 5.33 /
+5.58 — still open, still unattributed, and it BIT this session: the MEDIUM
+breach-honesty candidate drove it to 16.09 (2.5x) and was killed for it. Any
+candidate that touches lake must keep reporting this column.
+
+## FOR THE NEXT PUSH
+1. ARCTIC LANE CHOICE (the only shape left in the biggest class): choose among
+   the lanes the pack actually offers and hold one. Not a smoothing of the
+   staircase — two smoothings are already dead.
+2. The response class survives as a target but needs the boat's ACHIEVABLE TURN
+   as the probe's ceiling (the curved-candidate lesson), not the plan's bend.
+3. The river start's 10 s is unexplained again — the current term cannot produce
+   it (0.2 s of a 1 s run). Measure where those seconds actually go.
+4. Current pricing: the hole is real and instrumented; both symmetric and
+   adverse-only pricing move the fleet into worse water. A third shape must
+   answer what the bank grind costs, which no route term currently knows.
+5. OP5 is still build-ready and still un-benched.
+
+GOLDENS: PASS — 20 traces checked, 0 behaviour changes, 0 geometry-only, 0 new
+(4.5 min, run on the unchanged HEAD as the explicit check that the anchors carry
+rather than an assumption that they do).
+
+# POST-CLOSE CONTINUATION — THE LANE ROUTER (the shape the P0 kills named)
+# ═══════════════════════════════════════════════════════════════════════════
+The session did not stop at the write-up: the kills had named one shape and it
+was cheap enough to test. Two more builds, and the class is now bounded from
+the inside as well as the outside.
+
+## LANE1 — the state is (cell, how you arrived)
+TK2 failed because a tack cost CANNOT be expressed over cells alone: it read the
+incoming direction off prev[] with a cell-keyed gScore, which is incoherent under
+re-expansion, and its "long boards" just aimed through the pack. LANE1 widens
+pathSailable's state to cell × incoming direction (8x), charges TACK_SEC·10 on a
+genuine upwind side-change, and keeps ice as ice.
+IT WORKS AS A ROUTER: solo floe contacts 512 → 116 per race (−77%), sub4 81→60 s,
+sub1 32→22 s. The router really does find clear lanes.
+AND IT LOSES ANYWAY: solo fin med 392.4 vs 382.2, leg-1 TACKS UP (39/24/37/13 vs
+21/23/91/17). The route is long boards; the STEERING still chases a fixed 420u
+carrot, which cuts the board into pieces and hands the tack scorer a swinging
+target. ⇒ THE STAIRCASE WAS STEERING THE BOAT. Removing it without replacing
+what it did costs more than it saves.
+
+## LANE2 — the joint form: steer to the END OF THE BOARD
+Carrot walks the plan to its next real corner (direction turn > 0.6 rad, ceiling
+2200u, never nearer than the existing LOOK floor), floe venues only.
+It does exactly what it was built to do, ON THE RACES THAT WERE BROKEN:
+  seed   leg-1 tacks (HEAD → LANE2)   odo/plan0        solo fin
+  9101        23 → 15                 2.01 → 1.39      465.4 → 371.7  (−94)
+  9102        91 → 49                 2.80 → 2.21      654.2 → 492.4  (−162)
+  9100        21 → 27                 1.47 → 1.71      352 → 433.6    (+82)
+  9103        17 → 20                 1.43 → 1.40      334.9 → 416.2  (+81)
+8-seed paired deltas: −162, −94, −82, +28, +81, +82, +100, +217 — MEDIAN +54.5,
+solo med 416.2 vs 382.2. It rescues the disasters and taxes the good races, and
+the tax is bigger. NOT LANDED.
+GATES RUN: bay 4-seed BYTE-IDENTICAL (36 deltas all 0.0, dirt identical).
+⚠️ AND THE BAY GATE EARNED ITS KEEP — it caught a SCOPE BUG on the first run
+(paired +4.0, dirt moved): `grid._soft` is NOT a floe test. stampFloes returns
+the base grid untouched when a venue has no floes and the caller attaches an
+all-zero `_soft` to it anyway, so a `_soft` scope fires on EVERY venue. The
+correct test is the one the landed canyon law already uses — does the course
+carry live `_floeObjs`. Re-run byte-identical after the fix.
+
+## WHAT SEVEN SHAPES HAVE ESTABLISHED
+Every mechanism that touches the beat has now been measured: the clearance
+demand (AC1), the tack scorer's reference (TK1), a cell-keyed manoeuvre cost
+(TK2), the manoeuvre cooldown (TK3), a correct direction-aware router (LANE1),
+and that router plus board-following steering (LANE2). The tack-count gap is
+REAL (21-23 vs her 5) and every one of these moves some intended statistic —
+LANE1 cuts ice contacts 77%, LANE2 halves the tacks on the worst races — while
+NONE improves the median clock.
+The pattern across all seven: HEAD's staircase-plus-near-carrot is a locally
+CONSISTENT system, and each single-sided change breaks the consistency somewhere
+else (TK1/TK2 into the ice, LANE1 into more tacks, LANE2 into the good races).
+Her five tacks are not a smoothed version of twenty-one; they are a different
+competence — judging which gaps will STILL BE THERE when she arrives, on a field
+whose drift [[map-staleness]] already showed is unpredictable past ~5 s.
+⇒ THE NEXT SHAPE MUST BE ABOUT WHEN TO COMMIT, NOT ABOUT THE LINE: a board is
+worth holding only as long as the gap it aims at survives. That is a prediction
+problem the campaign has so far only met in the negative (SIPP), and it should
+be attacked as a measurement first — for each board the bot sails, did the gap
+it was aimed at still exist on arrival? The instrumentation for that is now
+in the tree (the lane router knows its own boards).
+
+## LANE2 arctic FLEET evidence — PARTIAL, and reported as partial
+The 16-seed fleet gate could not finish: the widened state space is ~8x the
+search and nine boats replanning on a 2 s cadence makes the bench impractically
+slow (a cost worth knowing on its own — any future lane router needs a bounded
+search, not just a correct one). Six seeds completed, fleet MEDIAN per seed
+against the p3v2arcA anchor:
+  9100 413→434 (+21)   9101 447→454 (+7)    9102 531→436 (−95)
+  9103 375→352 (−23)   9104 389→391 (+2)    9105 372→620 (+248)
+median +4, mean +27 over 6 of 16 seeds. Same signature as the solo set — it
+rescues the worst race and loses the tail elsewhere. NOT a gate result; the
+8-seed paired solo (median +54.5) is the verdict and it stands.
+
+# NEUTRAL-BOT MACHINERY (owner-directed, 2026-08-08)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner ruling after the roster-variance measurement: keep the stat fleet for
+benches, make the SOLO probes race a stat-neutral bot, and put the machinery in
+place for a bonus-free fleet later without running it yet.
+
+BUILT on the existing `window.__CHAR` harness switch (which already carried
+`traitsOff`), so the layers compose instead of forking:
+  traitsOff — the archetype/character behaviour persona
+  statsOff  — per-character stat blocks; every bot gets STAT_DEFAULTS
+  bonusOff  — the flat +4 AI_STAT_BONUS difficulty handicap
+  neutral   — shorthand for traitsOff + statsOff (identical boats, SHIPPED
+              difficulty — the bonus stays on)
+The bonus is deliberately its OWN knob: `statsOff` answers "is this result a
+roster draw?" (a question about VARIANCE between characters), `bonusOff` answers
+"how much of the human gap is decisions rather than the handicap?" (a question
+about the LEVEL). Independent questions, independent switches. `bonusOff` is
+built and UNRUN, per the owner.
+INERT VERIFIED, not assumed: nothing sets `__CHAR` in the shipping game — bay
+4-seed byte-identical (36 paired deltas all 0.0, dirt identical) and GOLDENS
+PASS 20/20, 0 behaviour changes.
+WIRED: `_arc_solo`, `_arc_why`, `_arc_churn`, `_arc_beat`, `_arc_clr`,
+`_tk_probe` now set `{neutral:1}`. These promote bots[0] to hero and bots[0] is
+a DIFFERENT CHARACTER PER SEED (9100 Fathom, 9101 Nimbus, 9102 Anvil), so their
+ABSOLUTE numbers were a mixed roster draw against her one unmodified boat.
+(The log still prints the character NAME — identity is unchanged; only the
+sailor's stats and persona are stripped.)
+
+## THE ARCTIC HEADLINE, RE-MEASURED ON A NEUTRAL BOAT — IT HOLDS
+                       stat-based (as reported)   NEUTRAL      human
+  solo fin med              382.2                   412.7       217.6
+  odometer med             40 438                  41 519      25 373
+  odo / her distance         1.59x                   1.64x       1.0
+  leg-1 tacks               21-23                   19-21        5 (med, 29 laps)
+  moving speed (u/s)        130.6                   127.1       124.2
+  floe contacts med           512                     209        ~1
+The re-attribution survives its own robustness check: the distance ratio is if
+anything slightly WORSE on a neutral boat (1.64x), and the tack gap — the class
+this session named — is unchanged at ~4x her median. The roster was not driving
+it. Floe contacts fall by more than half without the stat blocks, which is a
+character effect (handling/momentum) and not part of the tack-count claim.
+⇒ Every arctic conclusion in this session's record stands as written.
+
+# THE GRANITE-ISLE ROUNDING (owner lead, 2026-08-08 afternoon)
+# ═══════════════════════════════════════════════════════════════════════════
+Owner observation: his son's arctic race (the 313.9 outlier lap) — well back in
+the pack until the rounding, where he passed the entire AI fleet. Directive:
+compare human and bot trajectories at the rounding and distill the strategies.
+
+## THE SAME-RACE LEDGER (`_arc_round.py`, new, tracked)
+The schema-2 recordings carry all nine rivals at 10Hz with stable identity and
+per-rival leg, so each recording holds up to TEN roundings of the same mark in
+the same water — zero seed noise. Pooled, 7 human vs 17 bot roundings:
+                        HUMAN     BOT     (same races)
+  600u ring → leg flip   19.0 s   62.9 s
+  mean speed in ring    106.6     56.7  u/s
+  MIN speed in ring      84.9      3.6  u/s
+  seconds under 2.7 kt    0.0      6.6  (up to 17)
+  closest approach        314      308  u
+  ring odo / straight    1.40     1.18
+THE LINE IS THE SAME (dMin ~310u both, and the bots sail LESS distance in the
+ring). The difference is that the bots PARK on it and the human never drops
+below ~5.7 kt. The son's lap: RANK 9 → 1 → 1 across his own rounding — he
+passed eight boats in the last sixty seconds of the approach, exactly as the
+owner described. Live fleet re-measure (`_arc_roundlive.js`, new, tracked, 27
+ring passages): ring→flip med 75.7 s, vMin med 0 — ~57 s/boat/rounding against
+her 19 s, on a fleet whose whole gap to her is ~200 s.
+
+## THE STRATEGY, DISTILLED FROM HIS OWN TRACK (the recorder's ring scan)
+The recordings carry `ringSect16` — the AI's OWN 16-sector ring rating around
+the round mark (0 clear / 3 closing / 5 lead / 8 plug / 10 hard). At his pass,
+the ring read mostly 8s and 3s. He ENTERED THROUGH SECTOR 13 WHILE THE SCAN
+RATED IT 8 (PLUG) at 34→74→88 u/s, rounded at 331u, exited at 150-180 u/s. On
+clean laps the human spends 19-50% of zone time inside PLUG/HARD-rated sectors,
+never under 84 u/s. The distilled strategies:
+  HUMAN: the plugged ring is WATER — enter anywhere, carry speed, shave the
+         floes (her lifetime min-clearances are 15-30u), let the hull glance.
+  BOT:   the plugged ring is a WALL system — wait, dodge, re-route for a
+         clear sector; every layer (router ×2.5/×6 soft pricing, avoidance
+         6000/12000 soft cost, ring scans preferring clear sectors, give-way
+         among the queued fleet, the full 140u hard veto in floe water) points
+         the same way, and the boat arrives at 0 kt.
+## LIVE ATTRIBUTION of the parked seconds (fleet, 27 passages):
+  soft-grind 24% · traffic risk 23% · unexplained 19% · IN IRONS 18% · defl 16%
+  ease 0%, orbit 0% — the governors and orbit machinery are NOT involved.
+Parked head-to-wind at a mark whose zone is 851u (granite-isle — AUTHORED LAND,
+not ice) is the m5-box anatomy again, and the hard-zone speed scaling that
+cured it on redrock explicitly excluded floe venues (openWaterAv) — the fix
+never reached the one rounding where the fleet loses the most.
+
+## RD1 — THE GRANITE EXCEPTION (built, first evidence STRONG)
+Two lines: compute hPlanFF (the plan-heading reference) in floe venues too, and
+drop `openWaterAv` from the hard-zone scaling's own test — every other guard
+(fresh plan <200u cross-track, no-go, arc, ≥2kt current) stands. Sound because
+in floe water the non-soft wall this veto ever sees IS authored land: drifting
+ice takes the graded _soft grind cost before this branch is reached, so the
+"drifting ice does not keep clear" line the floe exclusion protected is already
+enforced one branch earlier, and the exclusion was only withholding the m5 cure
+from granite-isle. Open-water venues price bit-for-bit as before (openWaterAv
+was already true); river is excluded by the current guard.
+SOLO, paired on the measured seeds (ring→flip):
+  9100  47.7 → 53.7   (noise)
+  9101  24.8 → 14.4   (now FASTER than the human's 19s)
+  9102 406.7 → 184.8  (−222s on the disaster draw; in-ring 166.7→46.5)
+Blocker split during remaining slow frames: LAND 89s → 15s (the cured class),
+FLOE 20s (correctly still vetoed — ice keeps the wall). The mechanism does
+exactly what it was aimed at. Fleet 16-seed gate + non-floe byte-gates running.
+
+## RD1 FLEET VERDICT + THE v2 LADDER
+RD1 fleet 16-seed: paired med 0.0 / mean +3.9 — FLAT clock; boat rubs −18%,
+floe −9%, but LAND +34% (19.8→26.6/boat). The solo cure is real and the fleet
+spends it on the granite: RD1 extended BOTH the scaled veto (wanted) and the
+30000 far-blockage waiver, and at speed a plan-aligned candidate with no far
+tax aims at the isle's bend; traffic finishes the push. NOT landed.
+- RD2 (waiver reverted, veto kept): solo seed 9100 ring→flip 89.1s — WORSE
+  than HEAD (47.7). The waiver was load-bearing for the solo escape; the far
+  tax re-parks it ("other" 20.1s of wandering). Both directions now measured:
+  waiver-on cures solo and feeds the isle in traffic; waiver-off re-parks.
+  KILLED as a knob — the answer is not on this axis.
+- THE STRUCTURAL FIND BEHIND BOTH: `if (arcR && openWaterAv)` — the ARMED-
+  ROUNDING ARC ROLLOUT (the landed cove fix, "probe the water the boat will
+  sail") has been open-water-only all along. At granite-isle the boat sits
+  ARMED for 45-166 s probing an 851u-zone island with STRAIGHT 4-second rays;
+  every ray reads the isle as collision and the straight-ray dilemma (veto vs
+  far tax) is unresolvable because the probe's SHAPE is wrong. arcR's own
+  guards (≥2kt current kill, queued-rival kill from the redrock m5 wedge
+  lesson) carry over unchanged.
+- RD3 = arc-in-floe alone; RD4 = arc-in-floe + RD1. Benching separately and
+  together per the composition rule.
+LITERATURE (owner-directed): sailing practice — maintain momentum, wide-in
+tight-out, avoid the crowded side ("all the boats rounding a crowded gate will
+be going slower"); robotics — distributed avoidance deadlocks at shared
+waypoints, cures are stay-in-motion + locally-bounded coordination. Both match
+the measured anatomy: the human keeps way on through the plugged ring; the
+fleet's layered caution deadlocks it.
+
+## RD3 — THE ARC REACHES THE ICE (solo: the rounding class collapses)
+One condition: `if (arcR && openWaterAv)` → `if (arcR)`. The armed-rounding arc
+rollout (the landed cove fix) now runs in floe venues; arcR's own guards (≥2kt
+current kill, queued-rival kill) carry over unchanged; every non-floe venue is
+byte-identical by construction (openWaterAv was already true there).
+SOLO ring→flip, the full ladder on the same three seeds:
+  seed    HEAD    RD1     RD2     RD3(arc)   human
+  9100    47.7    53.7    89.1    24.1       ~19
+  9101    24.8    14.4     —      24.8
+  9102   406.7   184.8     —      55.8       (−351 s on the disaster draw)
+Attribution under RD3: irons 6% (was 17-22%), other 31% (was 37%), soft-grind
+47% of a much smaller total — the boat now sails the arc and glances the ice,
+which is the human profile from the recordings. RD4 (arc + RD1) is
+BYTE-IDENTICAL to RD3 on all three seeds: with the arc owning the rounding
+geometry, the veto/waiver axis has nothing left to fix — the straight-ray
+dilemma was the wrong axis, and the probe's SHAPE was the class.
+Fleet 16-seed gate running.
+
+## RD3 FLEET + OP5 FIRST GATES — AND RD5, THE QUEUE-WIDENED ARC
+RD3 fleet 16-seed: paired med +2.0 / mean +2.9 — FLAT, dirt mildly better
+across the board (boat 12.5→11.2, land 19.8→19.4, floe 32.1→31.1). The −222s
+solo cure does not reach the fleet clock: the arc's QUEUED-RIVAL DISABLE (the
+redrock m5 wedge lesson) switches the arc off exactly when the pile forms, and
+the pile is the fleet's rounding. NOT landed alone; dirt-favourable, kept as
+the base for the pair.
+OP5 first gates on set 9400: m3 stalls 55→5 passes = 9.1% (HEAD 13-14%, v1's
+full ease reached 4% — the dG<250 gate narrows the window); residual stalls
+have governor-fired 0/5 in the prior 20s (a different sub-class); clock +26.0
+paired med with boat rubs +19% on the one set. SHELVED again at the scope —
+one set cannot kill it (rule 20) but the mechanism's ceiling here (9% not 4%)
+plus the m5-composition history make the pooled protocol a poor spend next to
+the fleet-pile class. treeOP5 kept.
+RD5 (built): at zone ≥ 500 a queue WIDENS the arc (arcR = max(dM, queueR+120))
+instead of disabling it — small zones keep the m5 wedge lesson verbatim. The
+literature's wide-in-tight-out and the son's own pass (rank 9→1 around the
+OUTSIDE of the pile) both draw this shape. Fleet 16-seed running.
+
+- SG1 (commit-the-grind: half-price soft cells beyond the hard zone for the
+  plan-aligned straight candidate, on the RD3 base): BYTE-IDENTICAL to RD3 on
+  all three solo seeds — rule 17, pricing water no decision buys. With the arc
+  active, the aligned straight rung no longer meets the soft cells that
+  matter; the residual ring grind rides the ARC's own samples (deliberately
+  excluded — the arc's soft cost is what keeps its orbit honest about ice).
+  The class this targeted shrank to ~10-20s solo under RD3; the remaining
+  arctic rounding prize is the FLEET pile, which is RD5's question.
+
+## RD5 KILLED + THE ENTRY-SECTOR MEASUREMENT + WHERE THE RING CLASS STANDS
+RD5 fleet: paired med +15.0 / mean +14.8, finishers 143→140, pen 1.66→1.83,
+land 19.8→22.0 — arcing around the pile sweeps boats through more ice and
+traffic than waiting behind it. KILLED.
+Entry sectors at the ring (same-race recordings): bots 17/17 through three
+adjacent sectors (13-15); the human 5 distinct over 7 laps but ALSO mostly
+13-15 (5/7). Sector choice is NOT the separator — the separator is that she
+crosses the same band at 85+ u/s with 12-23° give-way deflections while the
+fleet's ring risk-slow is 23% of its parked time.
+THE RING CLASS AFTER SIX SHAPES: the solo geometry is FIXED (RD3: ring→flip
+med 24.8s, human 19; −351s on the worst draw) and the fleet is CONVERGENCE-
+BOUND — every single-boat cure is flat at the fleet clock (RD1/RD3) or worse
+(RD2/RD5). The remaining term is the give-way RESPONSE at the pile: the boats
+STOP to give way; she BENDS. That is the cross-venue response class (lake's
+GW/MEDIUM 47%, redrock's boat band, the underlay dossier's 35-60° vs her
+12-23°), and the next probe instruments the give-way argmin at the ring: when
+a bot goes risk-slow, was a speed-keeping DUCK (bear away astern) on the
+candidate menu, and what beat it?
+
+## THE DUCK VERDICT (`_duck_fanlog.js` + treeDUCK, new, tracked) — THE RING
+## CLASS'S FINAL ANATOMY FOR TODAY
+1771 give-way/high-risk slow ticks inside the ring (fleet, instrumented argmin):
+  the chosen candidate is a stop/luff only 11%; a wide dodge 23%.
+  A CLEAN SAILABLE DUCK EXISTED IN ONLY 21% of ticks — and where it existed it
+  was chosen or effectively tied 34% of the time (beaten by proximity 12%, by
+  other costs 54%, by ruleViolation 0%).
+  ⇒ IN 86% OF TICKS, EVERY DUCK-SHAPED CANDIDATE CARRIES A COLLISION FLAG.
+The speed-keeping escape does not LOSE the argmin — it is NOT ON THE MENU,
+because the pile of parked boats plus ice genuinely blocks it. Unlike lake's
+MEDIUM case (BH1), these flags are mostly TRUE: a frozen projection of a parked
+rival is correct. The response layer cannot cure a jam that physically exists;
+the cure is UPSTREAM — not arriving into the jam. That is the deadlock-
+avoidance coordination class from the robotics literature (stay in motion +
+locally-bounded coordination when progress stalls), and it is a DESIGN for the
+next push, not a patch for this one. The son's pass is the human version of
+exactly that: he saw the pile forming and spent his approach wide of it.
+
+## RD3 SET B — THE LANDING DIES ON THE SECOND SET
+Set B (16@9200): paired med +15.0 / mean +20.8, boat rubs 9.70→11.63, pen
+1.76→1.85 (finishers 139→141, land/floe flat). Set A was flat-with-better-
+dirt; set B is worse-with-worse-dirt — the two arctic 16-seed sets disagree
+exactly as standing rule 3 says they can, and pooled the clock does not pay.
+RD3 IS NOT LANDED. It remains the proven COMPONENT (the solo rounding geometry
+is simply correct with the arc on: 406.7→55.8 on the worst draw) and the base
+on which the fleet-arrival design must be built — but on the fleet bar, today
+produced no landing.
+
+## THE DAY'S SHAPE, honestly
+Thirteen builds across two sessions (AC1, TK1-3, LANE1-2, CUR1/3, CST1, CC1,
+BH1, RD1-5, SG1, OP5) and every fleet verdict is flat-or-worse while nearly
+every intended micro-statistic moved. The through-line is now measured from
+three independent directions (the tack ledger, the lane router, the granite
+ring): HEAD's fleet behavior is a LOCALLY CONSISTENT EQUILIBRIUM — router,
+steering, tack scorer, avoidance flags and the queue's own physics lean on
+each other, and any single-sided change is absorbed or paid for elsewhere.
+The human's superiority at the same spots is not a smoother version of one
+layer; it is arrival-scale judgement (which gaps survive, where the pile will
+be) that no current layer represents.
+NEXT-PUSH DESIGN (both today's classes point at it): a FLEET-ARRIVAL layer —
+per-boat entry timing/laning at high-traffic zones (the granite ring, redrock
+m3/m5, gate approaches), built on RD3's corrected geometry, judged at full
+races. The robotics literature calls this locally-bounded coordination on
+progress-stall; the sailing literature calls it rounding the gate with less
+traffic; the recordings call it what his son did.
+
+## THE LEG-2 SURPRISE THAT COMPLETES THE PICTURE (same-race, old redrock)
+Rival leg-2 slow episodes (51 episodes, 247 s, the fleet's worst same-race leg
+at +39 s med vs her): only 7% of that time is within 600u of m3 — 74% IS
+≥1200u AWAY, clustered 300-500u AFTER m1. The fleet's biggest old-redrock leg
+loss is a PILE AT THE EXIT OF THE FIRST ROUNDING — the granite-ring class, on
+a land venue, at the mark the whole fleet rounds within seconds of each other.
+⚠️ Design constraint from the code's own history: per-boat ENTRY-SECTOR bias
+was tried and rejected 2026-08-03f ("rafted the fleet onto one slot") — the
+arrival layer must work on TIMING/SPACING of arrivals, not on biasing the
+shared sector score.
+
+# NEXT-PUSH DIRECTIVE (drafted at close of Aug 8 afternoon; behavior HEAD
+# still a393d61 — NOTHING LANDED today, and that is the finding)
+# ═══════════════════════════════════════════════════════════════════════════
+P0 — THE FLEET-ARRIVAL LAYER (the one class three independent measurements
+name): the pile at high-traffic zones — granite ring (57 s/boat/rounding, the
+son's rank-9→1 pass is the human answer), redrock post-m1 exit (74% of the
+fleet's worst-leg slow time), and by extension every mark the fleet reaches
+together. Facts the design must respect: the duck verdict (86% of give-way
+slow ticks have NO sailable escape — the jam is physical; cure is arrival,
+not response); the rejected entry-sector bias (do not touch the shared sector
+score); station-keeping 0-for-8 (no holds — spacing must come from SPEED
+SHAPING on approach or route-length diversity, flowing actions only); RD3 is
+the correct geometric base (land it WITH the arrival layer as a pair if the
+pair pays — its solo fix is real and its fleet cost is only the pile it
+currently feeds). Build on treeRD3. Measure first: arrival-time spread vs the
+human races' spread at each site (the recordings carry it).
+P1 — the shelved-but-alive tails, each behind its named blocker: OP5 (m3 9.1%,
+needs the pooled protocol + the m5 gate); the current-pricing third shape
+(needs a bank-grind term the route can see); the response class with the
+boat's ACHIEVABLE TURN as the probe ceiling (CC1's lesson).
+P-continuous: fresh laps (bay, lake, OLD redrock, post-gust-fix ocean); ingest
+day-one; the lake land watch item reports in any lake-touching candidate.
+
+## THE ARRIVAL-COST CURVES (`_arrival_cost.js`, new, tracked) — THE BUDGET
+First measurement of the next-push P0, done now. One passage per boat per
+rounding (⚠️ v1 counted rim oscillations as passages and flattened the curve —
+rule 18, fixed in-probe), first zone entry → leg flip, occupancy read at entry:
+  GRANITE RING (600u, 26 passages): 0-2 boats in → transit med 123-148s;
+    4 in → 179s; 5 in → 288s. ~40+ s per extra occupant at the tail.
+  REDROCK m1 (500u, 64 passages): 0 in → 12.0s; 1 → 18.7s; 3 → 20.3s;
+    4 → 41.1s. Same shape at land scale.
+The pile has a measurable price and spreading arrivals has a computable budget.
+AR1 (built on treeRD3): the LANDED funnel-metering's floe exclusion was earned
+on a base where the arc was disabled in floe water (metered boats sat in ice,
+12.1→13.5 contacts). On the RD3 base, retry it at WIDE-ZONE floe marks only
+(zone ≥ 500 = granite; small zones keep the exclusion verbatim), radii scaled
+to the zone (0.7z/1.4z/0.7z for inner/outer/jam) so the trigger can see a pile
+that forms 300-600u out; the mid-leg defile form stays open-water-only. Every
+non-floe venue is byte-identical by construction (their constants unchanged).
+Fleet 16-seed gate running.
+
+## THE QUEUEING ANATOMY — the measurement that inverts the arrival design
+Fleet first-arrivals at the granite ring, from the RECORDINGS (the rivals are
+the AI): median inter-arrival gap 9.4s, total spread ~97s over 6 races. THE
+FLEET ALREADY ARRIVES SPREAD. The pile is not an arrival problem — it is
+SERVICE TIME: each transit takes 63-76s against her 19, so occupancy grows at
+ρ ≈ 7 regardless of spacing, and no realizable arrival gap (~60s+) could drain
+it. AR1 (occupancy-keyed approach metering) was byte-inert on two fleet seeds
+— its guard is pre-empted by the pack-speed discipline near ice — and is
+KILLED on both counts: inert as built, and aimed at the wrong lever.
+⇒ THE ONLY FLEET LEVER IS KEEPING THE FAST SERVICE ALIVE IN THE CROWD. RD3's
+24.8s solo service dies in the fleet because the arc's queued-rival gate is a
+flat "any parked rival within 400u" — the FIRST boat to park re-disables every
+other boat's arc and the 63s service resurrects itself. RD6: the disable
+narrows to its earned scope — a parked rival ON MY ORBIT (|its mark-radius −
+my arcR| < 120u); a rival parked inside or outside my circle no longer kills
+the arc. The m5 wedge lesson (165-189u zones, no room for two radii) behaves
+the same by construction; the change binds only where the water admits
+parallel orbits. Fleet 16-seed gate running — the day's last build.
+
+## RD6 SET A — THE DAY'S BEST FLEET RESULT
+Fleet 16@9100 (RD6 = RD3 + the narrowed queue-disable): paired med −1.0 /
+mean −1.7, ALL 144 FINISH (the anchor loses one), boat 12.52→11.42 (−9%),
+land 19.84→18.22 (−8%), floe 32.06→30.68 (−4%), pen 1.66→1.77; per-seed
+fleet-median deltas med −4.5. One bad seed (9105 +174 — parallel-orbit
+interaction under load) offset by 9109 −52, 9113 −34, 9115 −76. Strictly
+better than RD3-alone on every column. Set B (the set that killed RD3) and
+⚠️ redrock/bay 4-seed checks now decide — the "small zones behave identically"
+claim is an ASSUMPTION, not a construction: RD6's |rQ − myR| < 120 test can
+re-enable arcs at redrock's m5 where the wedge lesson was earned (a parked
+rival within 400u of me but at a different mark-radius no longer disables).
+If redrock is NOT byte-identical, the pooled protocol judges it there.
+
+## RD7 FINAL — THE DAY'S BEST CANDIDATE, AND STILL NOT A LANDING
+RD7 = RD3 (arc-in-floe) + the on-my-orbit queue test at zone ≥ 500.
+Byte-gates: redrock 4-seed EXACTLY 0.0 (the wide-zone gate is a construction —
+RD6's unscoped version had re-opened the m5 wedge at +75 paired med), bay
+4-seed exactly 0.0, river inert by double construction (zone < 500 AND the
+≥2kt current guard kills arcR there).
+Arctic: set A paired −1.0 / mean −1.7, ALL 144 finish, boat −9% land −8%
+floe −4%. Set B paired +3.0 / mean +9.1, boat +11% floe +7% (land better).
+POOLED A+B: ≈ +1 paired med / +3.7 mean — flat clock, dirt mixed. The B seed
+family punishes every variant of this family (RD3 alone: A flat, B +15) — a
+now-repeated pattern worth naming: THE 9200 FLOE DRAWS ARE HOSTILE TO
+ARC-BASED ROUNDING, and any future arctic candidate should treat A/B
+disagreement as expected and judge pooled.
+NOT LANDED (the dirt clause fails on B). RD7 (treeRD7, kept) is the
+recommended BASE for the next push's arrival-layer work: its solo geometry is
+right (406.7→55.8 on the worst draw), its fleet cost is bounded at flat, and
+the remaining fleet loss is the coordination class every measurement now
+points at.
+
+## THE DAY'S FINAL LEDGER
+18 builds (AC1, TK1-3, LANE1-2, CUR1/3, CST1, CC1, BH1, RD1-7, SG1, OP5, AR1),
+0 landings, and the campaign's map is qualitatively different than this
+morning: the arctic 2x is ATTRIBUTED (tack count → the rounding → service
+time at the pile), the granite ring is priced (57s/boat, ~40s/occupant), the
+fleet's arrival process is measured (already spread — service-bound), the
+solo rounding geometry is FIXED in a kept tree, and the next push's design is
+constrained by nine specific kills instead of open speculation. Behavior HEAD:
+a393d61, untouched; all anchors carry; goldens PASS 20/20 (verified twice);
+npm test: the one documented pre-existing river failure only.
+
+## CLOSING VENUE TABLE (end of Aug 8 afternoon session; behavior HEAD a393d61,
+## unchanged all day — every anchor carries by check: goldens PASS 20/20 ×2,
+## npm test green except the documented river sailable case)
+venue     | human med/best        | bot (anchors, unchanged)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (bp2bayA/B), boat 1.39/2.11, mark 0.05/0.28, pen 0.28/0.40, OCS 0
+ocean     | 182.5 (pre-gust-fix)  | 192 (bp2oc), boat 1.81, mark 0.36, pen 0.35
+lake      | 223 / 209.6           | 275 / 276 (bp2lakeA/B), land 6.37/6.09, boat 1.98/3.09, mark 0.43/0.32
+redrock   | ~227 / 206.6 (OLD, the benchmark) | 48-seed fins 396, pooled med 499, land 142.4, boat 19.97, mark 1.14, pen 3.83
+arctic    | 212.1 / 190.4 (206.2 fresh clean) | 413 / 450 (p3v2arcA/B) — now FULLY ATTRIBUTED: rounding service time at granite (57s/boat), solo geometry FIXED in treeRD7 (406.7→55.8 worst draw), fleet flat pooled under RD7
+seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13, OCS 15.44%
+river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B), fins 119/119
+⚠️ LAKE LAND WATCH ITEM (its own line, standing): 6.37/6.09 vs pre-hard-zone
+5.33/5.58 — open, unattributed; it killed BH1 today (6.37→16.09 under the
+MEDIUM honesty candidate). Any lake-touching candidate reports this column.
+
+## RD8 — THE LAST BUILD OF THE DAY, KILLED
+Per-boat orbit-radius separation (boat.id-keyed ±40u at wide zones, aimed at
+RD7's set-B rub failure): set B paired med +24.0 / mean +16.2, boat rubs
+9.70→11.55 — UNCHANGED from RD7's failure mode. The separation did not touch
+the target statistic; the B-set rubs are not parallel-orbit contact (or not
+only), and the next diagnosis belongs to the arrival-layer push with proper
+instrumentation rather than a twentieth same-day shape. KILLED; treeRD8
+removed; RD7 remains the recommended base.
+Nineteen builds. The day's verdict stands as written in the final ledger.
+
+## TAIL-HOURS MEASUREMENT WAVE (machine idle after build 19; two directed
+## measurements, no builds)
+1. RD7's B-SET RUBS, LOCATED (`_rub_where.js`, new, tracked; hostile seeds
+   9201-9202): 199 episodes — 77% ON LEG 1 (the beat), dRM med 1325u (well
+   OUTSIDE the ring), 74% under 2.7kt at contact, 52% while armed (arming
+   reaches 1277u, so "armed" spans the outer approach). The rubs are SLOW-BOAT
+   TRAFFIC ON THE BEAT APPROACH, not the arc's rounding: the arc frees boats
+   through the ring and on hostile draws they pack tighter upstream. RD8's
+   orbit-separation was aimed at the wrong place — the arrival/laning class is
+   the binding constraint, and this is its instrumentation baseline: the next
+   push's candidate must be judged on LEG-1 approach rubs at dRM 900-1800u.
+2. OP5's pooled protocol: sets 9500-9900 grinding in the background — the
+   shelved candidate gets its rule-20 verdict on idle machine time.
+
+## OP5, RE-OPENED BY THE POOLED PROTOCOL — THE GATE SLATE SO FAR
+The idle-machine pooled run overturned the morning's one-set shelving (rule 20
+in both directions: the +26 first set was noise, and so was the 3-set −13):
+  redrock 5 sets pooled (9400/9500/9600/9800/9900): paired med +7.0 /
+  mean −1.6 — CLOCK FLAT — with fins 329→332, boat −8%, mark −18%, land −8%,
+  pen −9%: EVERY dirt column better and more finishers. Set 9700 pending.
+  m3 stall gate: 13-14% → 9.1%. m5 (m4-index) gate, same seeds: HEAD 16/64 =
+  25% → OP5 5/56 = 8.9% — the scoped ease COMPOSES where OP1+BP1 flooded the
+  funnel (16→26%). OCEAN 8-seed: paired med −6.0 / mean −5.6 — the venue v1
+  taxed +18 now GAINS (the dG<250 gate unhooked the zone-1000 arming).
+  treeOP5H (the block on clean HEAD) verified byte-equal to the measured tree
+  on redrock (34 deltas exactly 0.0).
+Remaining: lake 20-seed (the +25% caution + the land watch item), set 9700,
+bay 4-seed byte. If clean: LAND per the bp2oc precedent (flat clock, dirt
+clearly better) — the day's first landing, and the m3/m5 stall classes with it.
+
+## THE OP5 LANDING — THE DAY'S FIRST BEHAVIOR CHANGE (Aug 8, late afternoon)
+The twice-shelved orbit-phase ease LANDED once every gate closed green. The
+full slate, verbatim:
+  REDROCK 6 sets pooled (9400-9900, 376 paired finishers): base med 498 →
+  cand 494, paired med −1.0 / mean −4.7 (flat clock), fins 396→399, and
+  EVERY dirt column better: boat 19.97→18.32 (−8%), mark 1.14→0.99 (−13%),
+  land 142.38→130.98 (−8%), pen 3.83→3.47 (−9%).
+  m3 stall gate: 13-14% → 9.1%. m5 same-seed: 25% → 8.9% (the scoped ease
+  COMPOSES where OP1+BP1 flooded the funnel to 26%).
+  OCEAN 8-seed: paired −6.0 / −5.6 — the venue v1 taxed +18 now GAINS
+  (dG<250 unhooked the zone-1000 arming).
+  LAKE 20-seed (the +25% caution venue + the standing land watch): paired
+  med 0.0 / mean +1.7, p25=p75=0.0; land 6.37→6.45, boat 1.98→2.07 —
+  within-noise, nothing like BH1's 6.37→16.09. PASS.
+  BAY byte-identical (36 deltas 0.0). RIVER byte-identical vs ff2rivA
+  (119 pairs 0.0, columns equal). ARCTIC byte-identical vs p3v2arcA
+  (143 pairs 0.0). SEATRIALS byte-identical vs finseaid (36 pairs 0.0).
+  The ease simply never fires on those four — wall-room/wind/orbitTightR
+  gates hold, exactly as scoped.
+  treeOP5H ≡ treeOP5 on redrock (34 deltas 0.0) — the block is the whole
+  candidate.
+LANDED: the OP5 block into regatta/js/script.js at the zG anchor (main now
+byte-identical to treeOP5H's tree file). Goldens full --update then verify:
+PASS — 20 traces, 0 behaviour changes vs the fresh recording.
+NEW ANCHORS on this HEAD: redrock ocean_bench_op5rr{9400..9900} (pooled med
+494, fins 399/432); ocean ocean_bench_op5hoc (paired −6.0 vs bp2oc); lake
+ocean_bench_op5hlakeA (med 278, land 6.45 — the watch column moved +0.08,
+recorded); bay/river/arctic/seatrials anchors CARRY byte-identical
+(bp2bayA/B, ff2rivA/B + hd8rivC/D, p3v2arcA/B, eval_results 199.58/194.13).
+The m3/m5 stall classes close with this landing: the orbit-phase ease at the
+survey's scope (wall-room ≥100, wind ≥8kt, dG<250) was the missing shape,
+and rule 20 was the missing protocol — one set said +26, three said −13,
+six said flat-with-cleaner-dirt, and only the six-set read survived contact
+with every other venue.
+
+## CLOSING VENUE TABLE (Aug 8 EOD; behavior HEAD = the OP5 landing)
+venue     | human med/best        | bot (current anchors)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (bp2bayA/B, byte-carried), boat 1.39/2.11, pen 0.28/0.40, OCS 0
+ocean     | 182.5 (pre-gust-fix)  | 186 (op5hoc, paired −6.0 vs bp2oc 192), boat 1.66, mark 0.29
+lake      | 223 / 209.6           | 278 / 276 (op5hlakeA/bp2lakeB), land 6.45/6.09 (watch), boat 2.07/3.09
+redrock   | ~227 / 206.6 (OLD, the benchmark) | 6-set pooled med 494 fins 399/432 (op5rr*), boat 18.32, mark 0.99, land 130.98, pen 3.47
+arctic    | 212.1 / 190.4 (206.2 fresh clean) | 413 / 450 (p3v2arcA/B, byte-carried) — attributed: granite service time; treeRD7 holds the solo fix
+seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13, OCS 15.44% (byte-carried)
+river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B, byte-carried), fins 119/119
+⚠️ LAKE LAND WATCH: now 6.45/6.09 (was 6.37/6.09; pre-hard-zone 5.33/5.58) —
+still open, still every lake-touching candidate's reported column.
+
+## THE RD11 LANDING — THE ARC REACHES THE ICE (Aug 8, evening; the day's second)
+The granite-rounding class (the biggest located class in the game, ~57s/boat/
+rounding of parking) came home. RD11 = RD7's two edits rebuilt on the OP5
+HEAD: (1) the arc rollout's openWaterAv gate removed — `if (arcR)` — so the
+armed-rounding arc finally works in floe water (solo worst-draw at granite:
+406.7 → 55.8s, the RD3 proof); (2) the queued-rival arc-disable narrowed AT
+WIDE ZONES ONLY (≥500): a rival parks my arc only when within 120u of MY
+orbit radius; small zones keep the flat 400u disable verbatim (the redrock
+m5 wedge lesson, byte-identical by construction).
+THE RE-ATTRIBUTION THAT UNBLOCKED IT: the set-B "+11% rubs" objection that
+shelved RD7 dissolved under matched-population probes. First catch (NEW
+STANDING RULE 18b): the original cross-tree probe compared neutral bots on
+treeRD7 against FULL-CHARACTER bots on treeHD9 — the __CHAR flag silently
+no-ops on trees that predate the machinery; the "start-scrum divergence at
+t=1" was two different bot populations, provably impossible as behavior (no
+boat arms before t=20). With matched bots (stat, the bench mirror): RD7
+HALVES contact episodes on the hostile seeds (107→58, ring band 22→0) and
+cuts contact FRAMES −31% (1476→1015); the only rising band is the outer
+approach (the queue moves upstream and shrinks).
+GATES: arctic 4-set grand pool (A 9100/B 9200 vs p3v2, C 9300/D 9400 vs
+fresh HD10 pairs; 64 seeds, 563 paired finishers): med +1 / mean −2.2 —
+FLAT — fins 567→570, boat 11.51→11.36, LAND 21.13→19.29 (−9%), floe
+30.09→29.91, pen 1.78→1.81. Set verdicts A/B/C/D: −1.0/+3.0/+2.0/−6.0 med,
+−1.7/+9.1/−7.8/−7.9 mean (both fresh sets mean-negative). OCEAN (the only
+other venue with a zone≥500 mark): paired med 0.0/mean +0.5, boat rubs
+2.07→1.50 (−28%). REDROCK/LAKE/BAY/RIVER/SEATRIALS: byte-inert verified
+(paired 0.0 across all five, 4-seed each vs anchors).
+LANDED: both edits into regatta/js/script.js (main byte-identical to
+treeRD11). Goldens full --update + verify.
+NEW ANCHORS: arctic fleet_leg2_rd11arc{A,B,C,D} (meds 426/447/427/446;
+HEAD evidence hd10arc{C,D} 428/442) — the p3v2arc pair retires; ocean
+ocean_bench_rd11oc (med 190, boat 1.50, paired 0.0 vs op5hoc). All other
+venue anchors carry byte-identical (rd11*id proofs on file).
+The fleet clock does NOT yet cash the 57s solo class — the jam physics
+(86% of give-way slow ticks have no sailable escape) still gates the ring.
+The arc-on-ice is the structural PREREQUISITE: the next arctic candidate
+(the arrival/laning layer, judged on leg-1 approach rubs at dRM 900-1800u,
+where RD11 moved the queue) now has something to compose with.
+
+## FINAL VENUE TABLE (Aug 8 EOD; behavior HEAD `8146a8c` = OP5 + RD11)
+venue     | human med/best        | bot (current anchors)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (bp2bayA/B, byte-carried through both landings)
+ocean     | 182.5 (pre-gust-fix)  | 190 (rd11oc; boat rubs 1.50, flat clock vs op5hoc 186 med — same races, med shifts with the 9307 draw)
+lake      | 223 / 209.6           | 278 / 276 (op5hlakeA/bp2lakeB; land 6.45 watch)
+redrock   | ~227 / 206.6 (OLD)    | 6-set pooled med 494, fins 399/432 (op5rr*; boat 18.32, land 130.98)
+arctic    | 212.1 / 190.4         | 426 / 447 / 427 / 446 (rd11arcA-D; land −9% vs HEAD, fins 570/576; the ring jam is now the sole gate on the solo 57s class)
+seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13, OCS 15.44% (byte-carried)
+river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B, byte-carried)
+
+## THE FL1 LANDING — ICEBERGS ARE NOT CIRCLES (Aug 8, night; the day's third)
+Owner-directed, verbatim: "Icebergs ARE NOT CIRCLES. They are moving,
+rotating polygons with clear boundaries. My path planning as a human depends
+on it and I could not navigate the course without that." And the ruling that
+governs every future fidelity fix: an inaccurate understanding of reality is
+not acceptable; behavioral trades get fixed downstream ON the accurate model
+(recorded in memory: regatta-model-accuracy).
+THE SIZING: 53%/51% of the far-field roll()'s floe contact flags were
+PHANTOM (bounding circle hit, true rotated hull clear) — the bot dodged
+water more often than ice. Trajectory corpus: the human's exit clearances to
+the circle are routinely NEGATIVE (−24..−262u) while clean to the hull; her
+rounding radius is bimodal (20 tight 261-340u / 5 wide 472-644u) and the
+ring is usually ice-free — the choice reads the route through the field.
+THE BUILD: per-floe radial profile of the convex localHull (32 bins, cached;
+ray-cast per bin), point test rotates the query to the PREDICTED spin
+(spin + spinRate·t) — O(1), unit-tested (square hull: face 100/corner 141.4,
+rotation and spin-rate anticipation exact). The circle stays as broad phase;
++14 pad survives verbatim (it was always a HULL floor). One site this pass:
+the far-field roll(). (Near-field FL1b — predicted-spin polys + dropping the
+circle OR-fallbacks — and the grid's stale-spin stamping are the named
+follow-ups.)
+GATES: arctic 4-set pool vs the rd11 anchors (64 seeds, 567 pairs):
+med −16 / mean −13.8 — THE LARGEST ARCTIC CLOCK GAIN OF THE CAMPAIGN — sets
+A/B/C/D med +3/−9/−22/−41, fins 570→573, boat 11.36→8.47 (−25%), pen
+1.81→1.52 (−16%), land/mark flat, floe 29.91→33.36 (+12%, the recorded
+trade). Bay/redrock/lake/river/seatrials byte-inert verified (0.0).
+⚠️ NEW HARNESS TRAP, found at the ocean gate: ocean_bench is NOT
+run-reproducible on ocean — rd11oc vs rd11oc4 (SAME TREE, same seeds,
+4-trial rerun) paired med 0.0 but p25 −11/p75 +12. FL1's ocean "−6" sits
+inside that null band and FL1 is inert there by construction (zero floes;
+guarded path). Consequences: (1) ocean byte-gates cannot be run at byte
+resolution until the nondeterminism is found (goldens still pass — it is
+bench-page-specific, not sim-specific); (2) OP5's ocean −6.0 paired claim
+is SOFTER than recorded this morning — hold it loosely. Investigation
+queued.
+LANDED: main byte-identical to treeFL1; goldens full --update + PASS.
+NEW ANCHORS: arctic fleet_leg2_fl1arc{A,B,C,D} meds 429/448/408/402
+(rd11arc* retire to paired evidence). All other venues carry.
+
+## THE FL1b LANDING — THE NEAR FIELD SEES THE TRUE HULL (Aug 8, night; the
+## day's FOURTH landing, and the campaign's largest)
+FL1's sibling, one hour later: the near-field wall test's floe branches move
+to the same true-hull-at-predicted-spin model (floeSegNear: 9-sample segment
+test; floeHullClear: radial clearance for the proximity buffer — the band
+keeps its size, it starts at the REAL edge). The circle OR-fallbacks — which
+re-added the exact phantom band FL1 removed from the far field — are gone.
+Land branches byte-untouched.
+GATES (vs the hours-old fl1arc anchors, 64 seeds, 573 pairs):
+  A −47.0/−55.4, B −45.0/−61.4 (the HOSTILE family gains most, fins 141→144),
+  C −36.0/−33.0, D −32.0/−32.9 — GRAND POOL med −37 / mean −45.6, 68%
+  negative, fins 573→576 (ALL boats in ALL 64 races finish), boat 8.47→5.06
+  (−40%), land 19.16→12.73 (−34%), floe 33.36→24.66 (−26% — FL1's +12% trade
+  REVERSED and then some), pen 1.52→1.14 (−25%), mark flat.
+  Bay/redrock/river/lake/seatrials byte-inert verified (0.0 all five).
+  Ocean byte-gate remains suspended (the nondeterminism trap); FL1b is inert
+  there by the same construction as FL1 (zero floes, floe-branch-only edits).
+ARCTIC MEDS: 429/448/408/402 → 379/386/371/367. This morning the anchor pair
+was 413/450. Human med 212.1 — the ratio moved from ~2.0x to ~1.77x in one
+evening, all of it from making the planner see the world the physics runs.
+The day's arc, in one line: the arc reaches the ice (RD11), the ice becomes
+its true shape (FL1), and the whole near field follows (FL1b).
+NEW ANCHORS: fleet_leg2_fl1barc{A,B,C,D} 379/386/371/367 (fl1arc* retire to
+paired evidence). Everything else carries.
+
+## FINAL VENUE TABLE (Aug 8 EOD; behavior HEAD `b33d491` = OP5 + RD11 + FL1 + FL1b)
+venue     | human med/best        | bot (current anchors)
+bay       | 226.2 / 217.8, 0 impacts | 231 / 234 (byte-carried through all four landings)
+ocean     | 182.5 (pre-gust-fix)  | 190 (rd11oc; ⚠️ ocean bench nondeterminism found — clock claims on ocean held loosely until fixed)
+lake      | 223 / 209.6           | 278 / 276 (byte-carried; land 6.45 watch)
+redrock   | ~227 / 206.6 (OLD)    | 6-set pooled med 494, fins 399/432 (byte-carried since OP5)
+arctic    | 212.1 / 190.4         | **379 / 386 / 371 / 367** (fl1barcA-D; was 413/450 at dawn — boat 5.06, land 12.73, floe 24.66, pen 1.14, ALL boats finish)
+seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13 (byte-carried)
+river     | 161.3 best, n=2       | 264 / 271 (byte-carried)
+The gap ranking after today: river 1.64x, arctic ~1.77x (was 2.0x), redrock
+~2.2x (OLD course), lake 1.25x, seatrials 1.05x, bay 1.02x, ocean ~1.04x.
+Next push (committed follow-ups): grid stale-spin stamping + rounding radius
+selection (arctic), router current pricing (river, owner-directed P1),
+floe-grind buffer calibration, ocean-bench nondeterminism hunt, FL1-class
+fidelity audit on wind/current fields.
+
+## NEXT-PUSH DIRECTIVE (authored Aug 8 EOD, owner-directed): THE FIDELITY AUDIT
+## "What other approximations are causing inaccurate planning?"
+The method that produced today's arctic wins, made systematic: (1) find a
+site where the planner's model diverges from the physics; (2) SIZE it with
+an instrumented dual-count probe (the FL1 phantom-rate pattern) AND a
+human-vs-bot trajectory comparison; (3) build the true model at the same
+big-O; (4) gate pooled 4-set + byte-inertness. Fidelity fixes land on sane
+clock gates even with behavioral trades (the model-accuracy ruling).
+
+THE AUDITED INVENTORY (all verified in code tonight):
+
+A. THE ROLLOUT PRICES A FICTIONAL BOAT (far-field roll(); every tick, every
+   bot, every venue — the hottest planning path in the game):
+   - CONSTANT SPEED for all 13 candidate headings across all 12 steps
+     (speedU = max(70, current speed)): a candidate that turns through irons
+     is priced at full pace; acceleration invisible; polar invisible.
+   - NO WIND FIELD along the path: gust regions, lulls, island shadow
+     plumes (shadowAt — the physics wind field includes them), and rival
+     DIRTY AIR (450u boat shadows, width 20→100) are all invisible to the
+     candidate scorer.
+   - NO CURRENT displacement of own hull (floes get drift-projected; the
+     boat itself does not).
+   Sizing probes: (a) rollout-predicted vs realized position/speed at each
+   step (dual-count in a measurement tree); (b) corpus: human time-in-shadow
+   (shadowAt<1) and time-in-dirty-air per leg vs bot.
+
+B. THE ROUTER PRICES A GEOMETRIC WORLD (pathSailable: verified tonight —
+   distance + wall-clearance edge weights ONLY). No current (the standing
+   owner P1; river's 22% moving deficit ≈ 46s+), no wind-speed field, no
+   shadow plumes. Build: per-edge ground-VMG factor from the current vector
+   + wind-speed factor at the cell. ONE FIELD PER GATE, current first
+   (already sized), wind second.
+
+C. DIRTY AIR IS REACTIVE, NOT PLANNED: physics carves a 450u shadow behind
+   every boat; the bot's ONLY use of it is a tack-escape penalty once
+   already suffering (badAirIntensity > 0.15 → ±0.6 tack score). No lane
+   choice, no shadow avoidance in the rollout, no covering intent beyond
+   the leech heuristics. Her gw-ledger signature (rivals deflect 35-60° at
+   CPA where she does 13-23°) reads as planned clean lanes. Probe: fraction
+   of upwind time in another boat's shadow, human vs bot, all venues.
+
+D. THE BOAT IS A POINT WITH PADS: physics hull = oriented 30u-beam ×
+   55u-LOA polygon (HULL_LOCALS, SAT collision); planning uses center
+   distances against scalar thresholds (110u rule-19 gap, 400u parked-rival,
+   grid cells at res 50). Orientation matters exactly where the campaign
+   hurts: threading (bow-on needs 30u, beam-on 55u), wedges, mark-room.
+   Probes: human minimum-pass-gap distribution vs bot refusal threshold;
+   contact-pose audit (what orientation do boats hold at rub time?).
+
+E. CARRYOVERS (named, unsized or part-sized): grid stale-spin stamping
+   (rims sweep ~30 u/s between refreshes); rounding RADIUS SELECTION (her
+   bimodal 261-340/472-644 choice reads the exit route; bots take arrival
+   radius); floe-grind buffer calibration ON the true hull; ocean-bench
+   nondeterminism hunt (INFRASTRUCTURE — blocks ocean gates; suspect
+   cross-trial page state, the camera-RNG class).
+
+ORDER: probe wave first (A/C/D sizings + B is pre-sized), then build in
+measured-size order. Prior expectation from today: A and B are the
+arctic/river-scale candidates; C is the fleet-racing dark matter.
+CONSTRAINTS CARRIED: closed families stay closed (⛔ list); actions-not-
+prices; arctic judged pooled 4-set vs fl1barc*; river pooled fins/med;
+96-seed redrock protocol near threshold; bench pairs together; goldens
+full --update per landing; venue table at close.
+
+## OPENING PROMPT FOR THE NEXT SESSION (paste-ready, authored Aug 8 EOD)
+THE FIDELITY PUSH. Goal unchanged: human or superhuman on bay, ocean,
+redrock, lake, arctic, seatrials. Open with memory regatta-fidelity-audit +
+the NEXT-PUSH DIRECTIVE above; behavior HEAD b33d491 (OP5+RD11+FL1+FL1b;
+arctic anchors fl1barc{A-D} 379/386/371/367). Method: find planner-vs-
+physics divergence -> size it (dual-count probe + human-vs-bot corpus) ->
+build the true model at the same cost -> gate pooled. Model-accuracy ruling
+applies: fidelity fixes land on sane clock gates; trades become follow-up
+knobs ON the accurate model. Work A (rollout's fictional boat — treeSZA/
+_sza_run.js counters exist; extend to the near-field loop, the all-venue
+path), B (geometric router — current first, pre-sized ~46s river; wind
+second; one field per gate), C (dirty air reactive-only — human baselines
+_windtime.js/corpus: arctic 21%, bay 8%, lake 30% below 80% lap-median
+wind), D (point-boat vs oriented 30x55 hull — size pass-gaps first), E
+(stale spin, radius selection, grind buffer, OCEAN-BENCH NONDETERMINISM
+HUNT — ocean gates suspended until found). Constraints: closed families
+closed; actions-not-prices; arctic pooled 4-set vs fl1barc*; river pooled
+fins/med; 96-seed redrock; bench pairs together; goldens full --update;
+probe audits (18/18b/19b); close with the venue table.
+
+## SIZING WAVE RESULTS (Aug 8, late night — the fidelity push's opening numbers)
+A. ROLLOUT SPEED MODEL — THE CANDIDATE: 20-21% of all chosen-rollout steps
+   on arctic price the boat at >1.67x its polar (getTargetSpeed at the
+   step's TWA/wind vs the constant speedU). The rollout scores irons-
+   crossing candidates at full pace — the mechanical link to the standing
+   TACK-COUNT class (bots 21-23 tacks vs her 5: if turning through the wind
+   is free, the argmin over-tacks). Build design: per-step speed integration
+   v += clamp(polarTarget(TWA,wind) − v, accel limits) replacing constant
+   speedU; sample wind at 2-3 waypoints, not per step, if perf demands.
+   (polar/assumed MEAN is 1.16-1.22 — on average the boat could go FASTER
+   than assumed off the wind; the fiction cuts both ways: it also
+   underprices bearing-away escapes.)
+A-wind. Rollout wind-blindness: 1-2% of steps see >20% wind deficit vs
+   at-boat; |dDir| 0.02-0.03 rad — SMALL at the 9s rollout scale. The wind
+   field matters at router/strategic scale, not the dodger. Down-rank.
+C. DIRTY AIR / SHADOW TIME — MEASURED DEAD: time below 80% of own-lap
+   median wind, human vs bot: bay 8% vs 6%, arctic 21% vs 11% (the HUMAN
+   tolerates lulls MORE — route quality over clearance, again), lake 30%
+   vs 27% (same). Bot dirty-air ticks ~3-5%. The bots are NOT losing their
+   gap sitting in bad air. ⛔ Deprioritize C; do not build lane-planning on
+   this evidence.
+B. Router current: stands pre-sized (~46s river). D: unsized, next session.
+REVISED ORDER FOR THE PUSH: A speed model (arctic + everywhere the far
+field runs) → B current pricing (river) → D sizing → E carryovers.
+
+## SESSION 2026-08-08 NIGHT — THE FIDELITY PUSH: THREE FAMILIES CLOSED, THE OCEAN CLOCK CURED
+Behavior HEAD entering: b33d491. The sized order (A speed → B current → D point-boat → E carryovers) was worked in full; the landing came from E.
+
+### A. ROLLOUT SPEED FICTION — CLOSED at two shapes (rule 1 vindicated)
+SZ1 (per-step polar integration, physics constants 0.9970/0.9982 + irons brake,
+wind once at boat): arctic pooled 4-set vs fl1barc* paired med −9 / mean −9.3
+(sets −19/+2/−16/−6), fins 576→575, EVERY dirt column worse (boat +29%, floe
++7%, land +5%, pen +8%). Autopsy: the fictional constant speed was silently
+providing ANTICIPATION DISTANCE — honest time shrank the scanned water, the
+4.5s trigger fired later, the reactive layer inherited the trouble.
+SZ1b (honest speed, SPATIAL horizon: scan span/trigger/penalty ramps in
+distance matched to the stock 9s×max(70,v) water): pooled med −2 / mean −2.4,
+fins 576/576, dirt still slightly worse (boat +7%, pen +6%). NOT landed.
+Mechanism check: solo tacks (\_arc_dist 4 seeds) FL1B 14/30/47/26 → SZ1
+26/25/42/14 — mild reduction, heroes faster 3/4, but the fleet pays in
+contacts. The tack-count class does NOT live in the dodger's pricing: the
+rollout only steers near floes, and its surrounding constants (contactW, the
+4.5s trigger, speed discipline's \_trajRisk consumers) are all calibrated TO
+the fiction. Re-pricing without changing which actions exist lost again —
+seven-for-seven becomes nine-for-nine (SZ1, SZ1b). ⛔ Do not rebuild rollout
+speed honesty as pricing; if the tack-count class is ever re-attacked, it must
+change WHICH candidates exist at the strategic layer.
+
+### B. ROUTER CURRENT PRICING — CLOSED at shapes 3 & 4 (execution class, not map class)
+CUR1 (per-cell current stamp + ground-VMG on pathSailable's time cost,
+admissible heuristic): river A med −1 / B −7 BUT fins 238→233, land +10% — a
+digit-for-digit REPLICATION of the midday symmetric kill. CUR2 (the "bank
+grind" answer: current term × clamp(clear/PAD,0,1), banks price stock): WORSE
+— fins 238→226, set-A land mean +105. The lure is not the banks' current
+price: pricing the adverse mid-channel jet honestly makes bank water
+RELATIVELY cheap no matter how the banks are priced, and the boat cannot
+execute bank water (trap 17: route pricing cannot reach displacement-driven
+failures). ⛔ Router current pricing closed at four total shapes. The river's
+22% moving deficit is an EXECUTION-layer class (deflection + set near banks),
+not a routing class. Code reverted; probes _cur1_audit.js tracked.
+
+### D. POINT-BOAT — MEASURED, NO BUILD (the cheap close SIZE-FIRST exists for)
+Human min-pass-gap (schema-2 corpus, _d_passgap.py): arctic p10 62/p50 268,
+20% inside the 110u rule-19 gap, parked rivals passed at p50 189 (67% inside
+the 400u refusal); redrock p50 210, parked p50 122. BUT the bot mirror
+(_d_botgap.js, treeFL1B) shows the fleet's REALIZED gaps already match her:
+arctic p10 65/p50 246/<110u 22%; redrock p10 61/p50 224/<110u 28%. The scalar
+thresholds are not refusing passes the human takes. The dirt is contact POSE:
+3756 arctic contacts in 3 seeds at |relHdg| med 104°, 60% with both boats
+<1kt — the parked-raft ring jam, which belongs to the ARRIVAL/LANING thread.
+⛔ Do not build oriented-hull planning on this evidence.
+
+### E. THE LANDING — OCEAN-BENCH NONDETERMINISM FOUND AND CURED (swell.js TIME)
+The hunt (all probes tracked): same tree/seed diverges across fresh pages,
+sometimes byte-equal, usually not; initial post-reset state byte-identical;
+divergence born at FRAME 0, all boats at once, RNG cursor EQUAL (the leak is
+a field, not the stream); asset-decode wait no effect; islandWindDir cache
+bypass no effect; bay 600 frames byte-identical across pages (non-swell
+venues immune — why arctic's 0.0 stamps were always exact).
+ROOT CAUSE: swell.js module clock `let TIME = 0` was NEVER reset —
+configure() re-arms TRAINS/CFG/POWER/AMP_TOTAL but not TIME. It accrued
+across wall-clock-dependent menu frames before the harness hooks the loop and
+across every race in a page: the sea's phase at the gun was a function of
+page-load timing and trial history. THE FIX (one physical line): TIME = 0 in
+configure().
+GATES: two 16-seed ocean bench runs BYTE-EQUAL (reproducibility restored);
+clock flat-to-better vs same-day HEAD reference (fl1boc med 193/mean 200.0 →
+swtocA med 190/mean 191.6, 144/144 both, boat 1.99→1.76, mark 0.27→0.08, pen
+0.40→0.33); goldens PASS 20/20 with ZERO behaviour changes (trace harness
+races already ran at phase zero); non-swell venues byte-inert by construction
+(every TIME reader gated on TRAINS.length). OCEAN BYTE-GATES UN-SUSPENDED.
+New ocean anchor: ocean_bench_swtocA (16@9300, med 190, fins 144/144) — the
+rd11oc-era anchors predate deterministic seas; never compare across this cut.
+
+### CLOSING VENUE TABLE (final HEAD 016674e, frozen venues, med s/boat)
+| venue     | human (med/best) | pre-session bot (b33d491)      | post-session bot (016674e)                  |
+|-----------|------------------|--------------------------------|---------------------------------------------|
+| bay       | 226.2 / 217.8    | 231 / 234 (bp2bayA/B)          | byte-identical (no behavior change)          |
+| ocean     | 182.5 (pre-gust) | 190 (rd11oc, NONDETERMINISTIC) | **190 (swtocA, DETERMINISTIC — byte-equal reruns; 144/144, boat 1.76, mark 0.08, pen 0.33)** |
+| redrock   | ~227 / 206.6 (OLD)| pooled med 494, fins 399/432  | byte-identical                               |
+| lake      | 223 / 209.6      | 278 (op5hlakeA), land 6.45 watch| byte-identical                              |
+| arctic    | 212.1 / 190.4    | 379/386/371/367 (fl1barcA-D)   | byte-identical                               |
+| seatrials | ~190 / 180.9     | 199.58 / 194.13                | byte-identical                               |
+| river     | 161.3 (n=2)      | 264 / 271 (ff2rivA/B)          | byte-identical                               |
+The landing is infrastructure + ocean determinism: the only behavior delta is the
+ocean sea starting at phase zero (clock flat-to-better). All other venues carry
+b33d491 anchors verbatim — the swell fix is unreachable without trains.
+
+## SESSION 2026-08-08 LATE NIGHT — ARCTIC: TWO SIZINGS CLOSE TWO SHAPES, THE CONVEYOR NAMED
+### Radius selection — DEAD AT SIZING (_arc_radius.py, tracked)
+Human and bot rounding-radius distributions are IDENTICAL (med 301 vs 308,
+n=26/17, both with wide tails); no ice-in-band correlation in either mode; no
+radius→outcome correlation at a FIXED 1000u reference (tight 36.4s vs wide
+40.4s). The FL1 "bimodal 261-340/472-644" was substantially a 600u-window
+truncation artifact (rule 19b's third catch — two of the five wide events
+re-measure tight at the fixed ring). The bot's rounding loss is ~24s AT THE
+SAME RADIUS she sails (59.7 vs 36.4s tight-mode med) — service/jam time, not
+geometry. ⛔ Do not build radius selection.
+### The arrival/laning family — closed at two shapes, mechanism NAMED
+THE CONVEYOR: the entrance hunt sectors per boat, but every approaching boat
+rides the SAME ring (zone*1.35 = 1149u at granite) the same way round — the
+rub band (dRM med 1355u, 78% under 2.7kt, HEAD baseline 255 episodes/2 hostile
+seeds, 108 within 900u) sits exactly on it, and the human's band time is pure
+transit (15.4s med, 0.0s slow, 26 laps; bots 30.7s med, slow tails to 97s).
+AL1 (occupancy-keyed wide ride zone*1.7 past a parked plug, latched, wide
+zones only): ring rubs −59% (108→44), band emptied (dRM med 1355→5099), clock
+FLAT (pooled med 0/mean −4.0) — but bounds +103%, boat +12%: the wide water
+isn't free. AL2 (+sailable-water and 300u-arena-depth guards on the wide
+lane; caught a signedDist sign inversion pre-ship — POSITIVE INSIDE): damage
+halved (bounds +22%, boat +6%), mechanism holds (in-ring −44%), clock still
+flat (med 0/mean −1.6, 576/576) — dirt clause fails, NOT landed.
+THE ARITHMETIC THAT CLOSES IT: in-band slow time is only 4-8s/boat mean
+(_band_time.js, tracked) — the band is damage-dirt, not a clock reservoir;
+relocating the queue trades rubs ~1:1 into wide-water contacts. Ocean gate on
+AL1: the campaign's FIRST EXACT 0.00 ocean byte-gate (deterministic seas paying
+off same-day). Redrock byte-equal verified. treeAL2 kept.
+ARCTIC RESIDUAL now attributes to: the TACK-COUNT class (strategic layer,
+3 shapes dead, needs a which-actions shape) + physical jam (relocation
+doesn't pay). Next venue per owner order: REDROCK attribution.
+
+## REDROCK ATTRIBUTION + THE RR LADDER (2026-08-08, late night — the class FOUND)
+### The attribution chain (one evening, probes tracked)
+_rr_where2.js: slow time 176.5 s/boat of the 267 s/boat gap; L3:shore 68.7 +
+L3:m4 25.9 s/boat; leg-3 med 140.8s vs her 51.3; land episodes 721 shore/216
+m4. _redrock_solo on HEAD: solo blowups 537/516 on 2 of 4 draws, 269-339s on
+LEG 3 at (−300..0, 900..1200). _rr_why.js: 109.4 s/boat slow near mark-5,
+89% NE pocket, 72% LAND DEAD AHEAD, 49% inside WIGGLE, 21% irons, 20% penalty
+turns, **armed 0%** — unarmed mid-leg transit, NOT the OP5 orbit class. Human
+mirror: 20-28s through the same water, ZERO slow (8 laps) — HUMAN-ZERO class.
+_rr_trace.js (solo 9402): the router's L3 path is CLEAN (threads NW of the
+land finger, arcs the mark at ~90u); the boat arrives 150-200u EAST of the
+line, hits the finger face at full speed (111 u/s → 0 in 2s at (63,1097)),
+then churns 100+s in a 300u pocket: wiggle frees it, the strategic layer
+re-aims through the wall, avoidance re-sticks it.
+### ROOT CAUSE (in the pure-pursuit follower, script.js ~1866)
+The clearance-scaled lookahead exists because "a far carrot in a narrows cuts
+the corner into the ice" — but the UPWIND MINIMUM (LOOK=420, the tack-loop
+cure) OVERRIDES it unconditionally. Leg 3 is the upwind leg: in the canyon
+the floor wins, the carrot lands past the bend, and pure pursuit drives the
+straight line into the wall face. The two rules conflict exactly in an upwind
+narrows.
+### The ladder (treeRR1-4; solo seeds 9400-9403, HEAD 319/396/537/516 mean 442)
+- RR1 (420 floor only if straight LOS to the floor carrot): solo 378/353/382/
+  399 — 9402's pocket 339→68s, but 9400 +59 (walled carrot → tack-loop).
+- RR2 (farthest VISIBLE point along path, ≤420): solo 403/345/311/339 — cure
+  deepens (9402 −226, 9403 −177) but the clean draw pays (9400 319→403).
+- RR3 (RR2 scoped to nosedIn — the near-reversal fan's own gate): solo
+  280/338/328/339, EVERY seed better, mean −121 s/boat, L3 pocket ERASED.
+  Fleet 6-set pooled: med +14.0/mean +11.8, per-set +48..−22 — traffic pins
+  (nosedIn in crowds, the m5 funnel) inherit the shrunken carrot.
+- RR4 (RR3 + solo-pinned only: no rival within 300u): solo byte-identical to
+  RR3 (cure preserved by construction). Fleet 6-set pooled: med +7.0/mean
+  +0.9, fins 399→397, boat +8% — NEAR-THRESHOLD, not landable tonight.
+### Verdict + the parked candidate
+The class is FOUND, ATTRIBUTED, SOLO-CURED (−121 s/boat, the biggest solo
+delta since the granite arc). Four scopes have not made the fleet cash it —
+the granite-arc signature (RD3 solo 406→56, fleet flat, later landed as RD11
+flat-with-cleaner-dirt). RR4 sits at med +7 inside the ±8-10 pooled noise
+band: per the standing rule it gets the 96-SEED PROTOCOL (12 disjoint sets
+incl. 6 fresh-seed HEAD-vs-candidate pairs) as the NEXT SESSION'S opening
+run. treeRR4 kept; working tree reverted; probes _rr_where2/_rr_why/_rr_trace
+tracked. If the protocol lands it, the follow-up is the traffic diagnosis
+(why freed boats pay in the crowd); if not, the ladder closes at four shapes
+with the mechanism named.
+
+## NEXT-PUSH DIRECTIVE (authored Aug 8 close, owner-approved): THE RE-VERDICT PUSH
+## "With better information, some discarded techniques may perform better."
+The reopen principle, applied to the full ⛔ list: a kill is reopenable ONLY
+when its evidence was produced by the false world model (pre-FL1/FL1b arctic
+= 53% phantom floe flags) or by a bench below today's resolution rules
+(8-seed arctic/redrock reads), AND the kill was not a model-independent
+mechanism (Freezing-Robot, route-length tax, trap-17 displacement, drift
+physics). Three candidates pass the filter; everything else stays closed —
+including everything killed THIS session on the accurate model.
+
+P0 — RR4, THE 96-SEED DECISION RUN (redrock mark-5 canyon; treeRR4 kept).
+  Existing evidence: 6 sets op5rr↔rr4rr (pooled med +7.0/mean +0.9 — inside
+  the ±8-10 noise band). Run the OTHER HALF of the protocol: 6 FRESH sets
+  (8400..8900, 8 seeds each) on BOTH trees — treeSWT (byte-matches behavior
+  HEAD 016674e) and treeRR4 — then pool ALL TWELVE sets with _pool_rr.js
+  (explicit set lists). Landing bar: pooled clearly negative with dirt clean;
+  near-threshold again → the ladder CLOSES at four shapes, mechanism named
+  (the canyon class survives as attribution for a future traffic-side shape).
+  If it lands: cross-venue gates (arctic pooled 4-set vs fl1barc*, lake
+  20@9100 vs op5hlakeA, bay 20-seed pair, river pooled fins/med vs ff2riv*,
+  ocean 16@9300 vs swtocA — EXACT gate now, seatrials id), goldens FULL
+  --update, session log, venue table.
+
+P1 — LANE1 REBUILD + RE-BENCH (the tack-cost router; the strongest reopen).
+  The only which-actions shape ever aimed at the ~150s/boat arctic TACK-COUNT
+  class, killed at 8 SEEDS (below rule-12 resolution) PRE-FL1 (phantom-flag
+  world) — both evidence legs stale. Rebuild from this file's "LANE1 — the
+  state is (cell, how you arrived)" section (~line 10068) onto current HEAD;
+  trees are gone, the design is documented. Scope as originally built; verify
+  byte-inertness on non-floe venues by construction + one bench. Gate: arctic
+  pooled 4-set vs fl1barc* WITH the tack instrument (_arc_dist 4-seed
+  alongside — the mechanism must move: tacks toward her 5, not just clock).
+  LANE2 (board-following steering) only if LANE1 alone is flat-with-mechanism.
+
+P2 — THE FAN UNGATE ON GLACIER SOUND (the cheapest re-verdict).
+  The densified avoidance fan is gated off floe venues by an EXPLICIT
+  conservatism, not a mechanism kill (script.js ~2831: "four 16-seed sets
+  could not tell it from zero... do not move a marginal venue") — and both
+  premises are gone: arctic finishes 576/576 (was ~8% DNF) and the candidate
+  scorer now tests true hulls. One-line ungate (extend the dense list where
+  floes exist; ⚠️ KEEP racingLegF — start tuning is sacred, the 4.4-point
+  OCS lesson). Gate: arctic pooled 4-set vs fl1barc*.
+  ⚠️ P1 and P2 both touch arctic: gate each SEPARATELY on its own tree; if
+  both pass, gate the COMPOSED tree before landing either (the OP1+BP1
+  anti-composition lesson).
+
+P3 — RIVER EXECUTION SIZING (probe-only, runs while benches grind).
+  Four dead current-pricing shapes narrowed the river's 22% moving deficit to
+  EXECUTION: boats displaced into bank water by deflection + 5kt set, where
+  route pricing provably cannot reach (trap 17). Probe the corpus (37 river
+  encounters + full laps): her behavior at displacement onset near banks —
+  crab angle vs track, bear-away timing, commitment distance — vs the bot
+  response layer's at the same geometry (live probe, displaced-episode
+  detection). NAME the behavioral difference; no build without a named class.
+
+P4 — CONDITIONAL: curved small candidates on redrock, ONLY after P0
+  resolves. Their redrock +35 kill was measured midday on a venue whose
+  dominant failure (the canyon carrot bug) corrupted exactly the pinned-state
+  steering a curved probe models. If RR4 lands, re-test curved on the
+  post-RR4 tree (river win −6 stands waiting).
+
+STAYS CLOSED (re-affirmed at this directive, model-independent): station-
+keeping/holds/commitment/reservation (Freezing-Robot); SIPP + map staleness
+(drift physics); closing-lead pricing, occupancy stamps, current pricing ×4
+(route-length tax + trap-17); clearance-extension ×2 (tack-count
+re-attribution supersedes); everything killed Aug 8 night on the accurate
+model (rollout speed ×2, point-boat, radius selection, wide-ride ×2).
+
+CONSTRAINTS CARRIED: closed families stay closed except the three named
+reopens; actions-not-prices; arctic pooled 4-set vs fl1barc*; river pooled
+fins/med; redrock 96-seed protocol for near-threshold; bench pairs together;
+probe audits (18/18b/19b/19c); freeze_venues --check from repo root; check
+date; goldens full --update per landing; close with the venue table.
+OWNER ASKS (standing): fresh laps bay/lake/OLD-redrock; post-gust-fix OCEAN
+lap (the 182.5 ref predates the fix — ocean's true ratio is unknown);
+NEW-redrock schema-2 laps for the promotion decision.
+
+## OPENING PROMPT (paste-ready)
+THE RE-VERDICT PUSH. Goal unchanged: human or superhuman on bay, ocean,
+redrock, lake, arctic, seatrials. Open with memory regatta-redrock-canyon +
+the RE-VERDICT DIRECTIVE at the bottom of ai-campaign.md. Behavior HEAD
+016674e (swell-clock); repo HEAD carries the directive. Work P0 (RR4 96-seed
+decision: 6 fresh sets 8400..8900 on treeSWT AND treeRR4, pool all 12),
+P1 (LANE1 rebuild from the documented design, arctic 4-set + tack
+instrument), P2 (fan ungate one-liner, arctic 4-set; compose-gate with P1 if
+both pass), P3 (river execution sizing, probe-only), P4 conditional (curved
+on redrock post-P0). Reopen principle: stale evidence only (pre-FL1 model or
+sub-resolution benches); model-independent kills stay closed. Constraints:
+bench pairs together, actions-not-prices, probe audits, goldens full
+--update, venue table at close.

@@ -144,6 +144,16 @@ const norm = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI)
 // that matters here — a direction that moved would make the phase field discontinuous and
 // tear the crests apart on screen.
 function configure(doc, windFrom) {
+    // TIME is module state and this was the one field configure() did not
+    // reset (2026-08-08, the ocean-bench nondeterminism hunt). It accrued
+    // across menu frames — a WALL-CLOCK-dependent number of them before the
+    // eval harness hooks the loop — and across every race in a page, so the
+    // swell phase at the gun differed run to run: same tree, same seed, every
+    // boat's line diverging from frame 0 with the RNG stream untouched. That
+    // was the entire ocean-bench nondeterminism (bay/arctic, with no trains,
+    // never moved TIME and stayed byte-reproducible). A race's sea starts at
+    // its own phase zero.
+    TIME = 0;
     TRAINS = []; CFG = null; POWER = 0; AMP_TOTAL = 0;
     const S = doc && doc.swell;
     if (!S || !Array.isArray(S.trains) || !S.trains.length) return;

@@ -959,6 +959,45 @@ class BotController {
                 const dxG = rmG.x - this.boat.x, dyG = rmG.y - this.boat.y;
                 const dG = Math.hypot(dxG, dyG);
                 const zG = rmG.zone || 165;
+                // OP5 — THE ORBIT-PHASE EASE, AT THE SCOPE THE SURVEY NAMED.
+                // The m3 kill is real (v1: stalls 14→4%, the residual class
+                // dies) and v1 died twice on scope: ocean's leg-1 mark-3 has
+                // ZONE 1000 (boats arm a kilometre out and v1 crawled the whole
+                // approach, +18s) with wall-room 15 (the mark sits ON its rock —
+                // the eased circle cannot fit anyway), and lake's grinder sits
+                // in 5.7 kt air (no power to sail out of the ease). The survey's
+                // separators, verbatim (_op_scope_survey): WALL-ROOM ≥ 100 (the
+                // eased ~100u circle must fit — static land clearance at the
+                // MARK's own cell, ≥2 cells at res 50), WIND ≥ 8 kt at the boat
+                // (power to accelerate out), dG < 250 (the ease is the scale of
+                // the TURN, not of the zone — this alone unhooks ocean's km-out
+                // arming). Mechanism unchanged from v1: mid-sweep, on the
+                // pursuit circle, easing shrinks the circle the boat rides;
+                // orbitTightR-null marks only (open-water rings untouched);
+                // per-tick, no latch (v2's toggle and v3's overhold are closed).
+                // ⚠️ ENTRY-side governors remain a separately closed family —
+                // this fires only after the rotation has begun (sweep > 0.05).
+                if (this.boat.raceState.roundArmed
+                    && (this.boat.raceState.roundSweep || 0) > 0.05
+                    && this.boat.speed > 1.2
+                    && dG < 250
+                    && orbitTightR(rmG) === null) {
+                    if (rmG._op5Room === undefined) {
+                        rmG._op5Room = false;
+                        const gO5 = state.course._botGridStatic;
+                        if (gO5 && window.SailCheck && window.SailCheck.clearanceField) {
+                            if (!gO5._clear) gO5._clear = window.SailCheck.clearanceField(gO5);
+                            const ccO5 = gO5.cell(rmG.x, rmG.y);
+                            const idO5 = ccO5[1] * gO5.n + ccO5[0];
+                            if (ccO5[0] >= 0 && ccO5[1] >= 0 && ccO5[0] < gO5.n && ccO5[1] < gO5.n
+                                && gO5._clear[idO5] >= 2) rmG._op5Room = true;
+                        }
+                    }
+                    if (rmG._op5Room && getWindAt(this.boat.x, this.boat.y).speed >= 8) {
+                        const deftO = this.boat.stats ? Math.max(0, Math.min(1, this.boat.stats.handling / 10)) : 0.5;
+                        this.speedLimit = Math.min(this.speedLimit, 0.55 + 0.15 * deftO);
+                    }
+                }
                 // (A clearance scope was tried here — cl ≥ 4 to keep the loop
                 // out of the thread — and REMOVED: the m3 pocket and the m5
                 // zone are both cl 3 on a res-50 grid; the field cannot
@@ -2674,13 +2713,23 @@ class BotController {
                 }
                 for (const f of floes) {
                     const fx = f.x + (f.driftVx || 0) * t, fy = f.y + (f.driftVy || 0) * t;
-                // +45 -> +14 (human clearance floor is 14-19u to the HULL; this
-                // radius is on the fatter bounding circle, so 14 keeps real
-                // slack. +10 tested worse: rollouts stopped flagging contacts
-                // the boat could not actually dodge).
+                // FL1 (2026-08-08, owner-directed: "Icebergs ARE NOT CIRCLES.
+                // They are moving, rotating polygons with clear boundaries. My
+                // path planning as a human depends on it.") The physics
+                // collides on the rotating localHull, and rim rotation
+                // DOMINATES contact motion (median 28.6 u/s rotational vs 5
+                // drift — the clampSpin survey). This test priced the fatter
+                // bounding circle projected by drift alone: phantom clearance
+                // on every lobed floe (the human overlaps the circle on most
+                // recorded exits: clearance −24..−262u to the circle, clean to
+                // the hull), and blindness to the swinging rim. Keep the
+                // circle as BROAD PHASE only; the verdict is the radial
+                // profile of the true hull, rotated to its predicted spin at
+                // sample time. The +14 pad survives verbatim — it was tuned
+                // as a HULL floor (human clears 14-19u to the hull).
                 const rr = f.radius + 14;
                     if ((x - fx) * (x - fx) + (y - fy) * (y - fy) < rr * rr) {
-                        if (t < contactT) contactT = t;
+                        if (floeHullNear(f, x - fx, y - fy, t, 14) && t < contactT) contactT = t;
                     }
                 }
             }
@@ -2875,14 +2924,34 @@ class BotController {
                     // mark-5 thread queue into wedges (DNFs 3→11 at that mark,
                     // unarmed, 1.26 kt — four disjoint sets, −17..−24
                     // finishers pooled). Same parked test as the jam stamps.
+                    // A QUEUE DISABLES THE ARC ONLY WHEN IT SITS ON MY ORBIT
+                    // (RD6→RD7, 2026-08-08 — the queueing anatomy). The pile at
+                    // granite is SERVICE TIME (fleet arrives spread at 9.4s
+                    // median gaps; each transit takes 63-76s against her 19, so
+                    // occupancy accumulates at ρ≈7), and this flat 400u
+                    // any-parked-rival test re-disabled the arc for every boat
+                    // the moment the FIRST one parked — the old slow service
+                    // resurrected itself and the queue never drained. Keep the
+                    // wedge lesson this gate was earned on (redrock m5, zones
+                    // 165-189) exactly: at SMALL zones the flat disable stands
+                    // VERBATIM (byte-identical by construction — RD6 relaxed it
+                    // everywhere and redrock answered +75 paired med); only at
+                    // wide zones (≥500, water that admits parallel orbits) the
+                    // disable narrows to a rival parked within a hull-diameter
+                    // band of MY arc radius — one physically blocking my orbit.
+                    const myR = Math.max(70, dMA);
+                    const wideQ = (rmA.zone || 165) >= 500;
                     let queued = false;
                     for (const oQ of state.boats) {
                         if (oQ === boat || oQ.isPlayer || oQ.raceState.finished) continue;
                         if (oQ.speed * 4 >= 1.0) continue;
-                        if (Math.hypot(oQ.x - boat.x, oQ.y - boat.y) < 400) { queued = true; break; }
+                        if (Math.hypot(oQ.x - boat.x, oQ.y - boat.y) >= 400) continue;
+                        if (!wideQ) { queued = true; break; }
+                        const rQ = Math.hypot(oQ.x - rmA.x, oQ.y - rmA.y);
+                        if (Math.abs(rQ - myR) < 120) { queued = true; break; }
                     }
                     if (!queued) {
-                        arcR = Math.max(70, dMA);
+                        arcR = myR;
                         arcMx = rmA.x; arcMy = rmA.y;
                     }
                 }
@@ -3634,10 +3703,48 @@ class BotController {
                 // toward the mark's side of the heading. Straight ray
                 // otherwise — bit-for-bit the stock expressions.
                 let arcK = 0;
-                if (arcR && openWaterAv) {
+                // THE ARC REACHES THE ICE VENUES (2026-08-08, the granite
+                // rounding). arcR is computed under its own guards (current,
+                // queued rival) with no floe test — but this openWaterAv kept
+                // the rollout straight in floe water, so at granite-isle the
+                // boat sat ARMED for 45-166s probing an 851u-zone island with
+                // straight 4s rays that all read the isle as collision. The arc
+                // IS "probe the water the boat will sail" at a rounding — the
+                // landed cove fix — and the ice it may cross is priced by the
+                // same _soft grind costs on the arc samples. The queued-rival
+                // gate (the redrock m5 wedge lesson) still disables it in a
+                // parked crowd, and ≥2kt current still disables it entirely.
+                if (arcR) {
                     const brgM = Math.atan2(arcMx - boat.x, -(arcMy - boat.y));
                     arcK = (normalizeAngle(brgM - h) >= 0 ? 1 : -1) / arcR;
                 }
+                // THE HARD ZONE IS TURNING ROOM, AND TURNING ROOM IS TIME —
+                // BUT ONLY THE ROUTER'S OWN LINE EARNS THE TRUST (v2). The
+                // 140u veto is ~1.4s of travel at full speed; at 0.6 kt it is
+                // a minute and a half, and at the corridor's bend it vetoes
+                // the plan-aligned sailing candidate exactly when the boat
+                // most needs it — the parked boat then sits head-to-wind
+                // (offset-0 + a 500-point irons tax beats a wall veto), which
+                // is the m5 approach box in one sentence (1343 boat-s pooled,
+                // 97% on-plan, wind 11.5 kt, land <140u on the plan heading
+                // in 72% of parked samples). v1 scaled the veto for EVERY
+                // candidate and paid on lake both sets (+8s, land +40%: slow
+                // corridor boats freed toward any shore hug it and grind).
+                // The route only ever crosses water, so the candidate aligned
+                // with the plan (the far-field waiver's own 0.3-rad test and
+                // guards) gets the veto scaled to the boat's real time-to-
+                // wall — 1.4s, floored at 60u (3+ boat-lengths), capped at
+                // the stock 140. Every other heading keeps the full veto.
+                // Scopes on landed lines: floe water untouched (openWaterAv),
+                // never under the armed arc (arcK), never a no-go heading,
+                // never in a ≥2kt stream (time-to-wall is ground speed
+                // there).
+                const hardZ = (openWaterAv && !arcK && hPlanFF != null
+                    && Math.abs(normalizeAngle(h - hPlanFF)) <= 0.3
+                    && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
+                    && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
+                    ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
+                    : 140;
                 for (let sI = 1; sI <= stepsAv; sI++) {
                     const frac = sI / stepsAv;
                     let pxA, pyA;
@@ -3669,7 +3776,7 @@ class BotController {
                         // Hard zone is a fixed DISTANCE (a couple of boat-lengths of
                         // turning room), not a fraction: at speed, 40% of the probe
                         // was 190u and vetoed every thread the pack offered.
-                        if (frac * segLen <= 140) { staticCollision = true; cost += 500000; }
+                        if (frac * segLen <= hardZ) { staticCollision = true; cost += 500000; }
                         else if (hPlanFF == null || arcK
                             || Math.abs(normalizeAngle(h - hPlanFF)) > 0.3
                             || Math.abs(normalizeAngle(h - wdAv)) < 0.62) {
@@ -3742,10 +3849,20 @@ class BotController {
                         // 4s probe touches made the pack unthreadable, and this
                         // venue is DESIGNED so the fast line threads the pack.
                         const midS = { x: (startS.x + endS.x) / 2, y: (startS.y + endS.y) / 2 };
-                        const nearHit = Geom.segmentIntersectsPoly(startS, midS, isl.vertices)
-                            || (isl.isFloe && Geom.distToSegment({x: isl.x, y: isl.y}, startS, midS) < isl.radius + movePad * 0.6);
-                        const farHit = !nearHit && (Geom.segmentIntersectsPoly(midS, endS, isl.vertices)
-                            || (isl.isFloe && d < isl.radius + movePad * 0.6));
+                        // FL1b: floes use the TRUE hull at its PREDICTED spin
+                        // (the drift shift is already applied to the segment;
+                        // rotation was not — and the circle OR-fallbacks below
+                        // re-added the phantom band FL1 removed from the far
+                        // field). The sampled hull test subsumes both: a point
+                        // inside the hull is "near" at any pad, and the pad is
+                        // the same movePad*0.6 the OR-term carried. Land keeps
+                        // the exact current-pose polygon test.
+                        const nearHit = isl.isFloe
+                            ? floeSegNear(isl, startS.x, startS.y, midS.x, midS.y, tMid, movePad * 0.6)
+                            : Geom.segmentIntersectsPoly(startS, midS, isl.vertices);
+                        const farHit = !nearHit && (isl.isFloe
+                            ? floeSegNear(isl, midS.x, midS.y, endS.x, endS.y, tMid, movePad * 0.6)
+                            : Geom.segmentIntersectsPoly(midS, endS, isl.vertices));
                         if (nearHit) {
                             staticCollision = true;
                             cost += 500000; // HUGE penalty (Hard Constraint)
@@ -3772,10 +3889,19 @@ class BotController {
                             proximityCost += isl.isFloe ? 3500 : 25000;
                         } else {
                             // Proximity penalty (Buffer zone)
-                            // Use Circle approx for proximity cost
                             const band = 80 + movePad;
-                            if (d < isl.radius + band) {
-                                proximityCost += (isl.isFloe ? 1200 : 10000) * (1.0 - (d - isl.radius)/band);
+                            if (isl.isFloe) {
+                                // FL1b: buffer measured from the TRUE predicted
+                                // hull, not the bounding circle — the band keeps
+                                // its size, it just starts at the real edge.
+                                const mx2 = (startS.x + endS.x) / 2, my2 = (startS.y + endS.y) / 2;
+                                const clr = Math.min(
+                                    floeHullClear(isl, startS.x, startS.y, tMid),
+                                    floeHullClear(isl, mx2, my2, tMid),
+                                    floeHullClear(isl, endS.x, endS.y, tMid));
+                                if (clr < band) proximityCost += 1200 * (1.0 - Math.max(0, clr) / band);
+                            } else if (d < isl.radius + band) {
+                                proximityCost += 10000 * (1.0 - (d - isl.radius)/band);
                             }
                         }
                     }
@@ -5254,6 +5380,74 @@ function clampSpin(w, r) {
     return Math.max(-cap, Math.min(cap, w));
 }
 
+// FL1 — the floe as the planner sees it: a MOVING, ROTATING POLYGON with a
+// clear boundary (owner-directed). Per-floe radial profile of the convex
+// localHull, cached once (shape never changes): r(θ) in 32 bins from the
+// floe origin. A point test at lookahead t rotates the query into the local
+// frame at the PREDICTED spin (spin + spinRate·t) and compares |P| against
+// the interpolated profile + pad. O(1) per test — the same order as the
+// circle test it grades, so rollouts can afford the true shape.
+const FL1_BINS = 32;
+function floeRadialProfile(f) {
+    if (f._radProf) return f._radProf;
+    const H = f.localHull;
+    if (!H || H.length < 3) return null;
+    const prof = new Float32Array(FL1_BINS);
+    for (let b = 0; b < FL1_BINS; b++) {
+        const th = (b / FL1_BINS) * 2 * Math.PI;
+        const rx = Math.cos(th), ry = Math.sin(th);
+        let best = 0;
+        for (let i = 0; i < H.length; i++) {
+            const a = H[i], c = H[(i + 1) % H.length];
+            const ex = c.x - a.x, ey = c.y - a.y;
+            const den = rx * ey - ry * ex;
+            if (Math.abs(den) < 1e-9) continue;
+            const s = (a.x * ey - a.y * ex) / den;          // ray parameter
+            const u = (a.x * ry - a.y * rx) / den;           // edge parameter
+            if (s > 0 && u >= -1e-6 && u <= 1 + 1e-6 && s > best) best = s;
+        }
+        prof[b] = best || (f.radius || 0);
+    }
+    f._radProf = prof;
+    return prof;
+}
+// FL1b — segment and clearance forms of the same true-hull test, for the
+// near-field wall check (which was mixing current-spin polygons with circle
+// OR-fallbacks — the phantom re-entry FL1 removed from the far field).
+function floeSegNear(f, ax, ay, bx, by, t, pad) {
+    for (let i = 0; i <= 8; i++) {
+        const px = ax + (bx - ax) * i / 8, py = ay + (by - ay) * i / 8;
+        if (floeHullNear(f, px - f.x, py - f.y, t, pad)) return true;
+    }
+    return false;
+}
+// Radial clearance (u) from a world point to the floe's predicted hull.
+function floeHullClear(f, px, py, t) {
+    const prof = floeRadialProfile(f);
+    const dx = px - f.x, dy = py - f.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (!prof) return d - (f.radius || 0);
+    const sp = (f.spin || 0) + (f.spinRate || 0) * t;
+    const th = Math.atan2(dy, dx) - sp;
+    let bf = (th / (2 * Math.PI)) * FL1_BINS;
+    bf = ((bf % FL1_BINS) + FL1_BINS) % FL1_BINS;
+    const b0 = Math.floor(bf), b1 = (b0 + 1) % FL1_BINS, w = bf - b0;
+    return d - (prof[b0] * (1 - w) + prof[b1] * w);
+}
+// dx,dy: query point relative to the floe's (predicted) centre, world frame.
+function floeHullNear(f, dx, dy, t, pad) {
+    const prof = floeRadialProfile(f);
+    if (!prof) return true;                                  // no hull — keep the circle verdict
+    const sp = (f.spin || 0) + (f.spinRate || 0) * t;
+    const th = Math.atan2(dy, dx) - sp;                      // local-frame bearing
+    const d = Math.sqrt(dx * dx + dy * dy);
+    let bf = (th / (2 * Math.PI)) * FL1_BINS;
+    bf = ((bf % FL1_BINS) + FL1_BINS) % FL1_BINS;
+    const b0 = Math.floor(bf), b1 = (b0 + 1) % FL1_BINS, w = bf - b0;
+    const r = prof[b0] * (1 - w) + prof[b1] * w;
+    return d < r + pad;
+}
+
 // ---------------------------------------------------------------------------
 
 
@@ -6190,7 +6384,9 @@ class Boat {
         // Racing archetype persona (see ARCHETYPES). Player and unknown configs
         // get pure defaults = the baseline fleet behavior.
         this.archetype = (config && config.archetype) || null;
-        const traitsOff = typeof window !== 'undefined' && window.__CHAR && window.__CHAR.traitsOff;
+        // `neutral` implies traitsOff — see the stat site for the full switch set.
+        const traitsOff = typeof window !== 'undefined' && window.__CHAR
+            && (window.__CHAR.traitsOff || window.__CHAR.neutral);
         const archDef = !traitsOff && this.archetype && typeof ARCHETYPES !== 'undefined' ? ARCHETYPES[this.archetype] : null;
         // Per-character trait overrides layer on top of the archetype, so a character
         // can be a better reader than another of the same archetype — impossible
@@ -9497,8 +9693,30 @@ function applyBoatIdentity(boat, config, isPlayer) {
     // back to 0, so a character authored before a stat existed races exactly as it did.
     //
     // ⚠️ THE PLAYER TAKES NONE OF THEM. You get the boat, not the sailor.
-    boat.stats = Object.assign({}, STAT_DEFAULTS, (!isPlayer && config && config.stats) || {});
-    if (!isPlayer) {
+    //
+    // NEUTRAL-BOT MACHINERY (2026-08-08, owner-directed). `window.__CHAR` is the
+    // existing harness switch for character layers — it already carried
+    // `traitsOff` for the archetype persona; it now also carries the two stat
+    // layers, so a probe can strip exactly as much of "the sailor" as its
+    // question needs:
+    //   traitsOff — archetype/character BEHAVIOUR (see the traits site)
+    //   statsOff  — per-character stat blocks: every bot gets STAT_DEFAULTS
+    //   bonusOff  — the flat AI_STAT_BONUS difficulty handicap
+    //   neutral   — shorthand for traitsOff + statsOff: one identical boat for
+    //               every rival, at the SHIPPED difficulty (bonus still on)
+    // WHY THE BONUS IS A SEPARATE KNOB: `statsOff` answers "is this result a
+    // roster draw?", which is a question about VARIANCE between characters.
+    // `bonusOff` answers "how much of the human gap is decisions rather than the
+    // +4 handicap?", which is a question about the LEVEL. They are independent
+    // and the machinery keeps them independent.
+    // ⚠️ INERT BY DEFAULT: nothing sets `window.__CHAR` in the shipping game, so
+    // this reads exactly as it did — verified by goldens and a byte-identical
+    // bench, not assumed.
+    const CH = (typeof window !== 'undefined' && window.__CHAR) || null;
+    const statsOff = !!(CH && (CH.statsOff || CH.neutral));
+    boat.stats = Object.assign({}, STAT_DEFAULTS,
+        (!isPlayer && !statsOff && config && config.stats) || {});
+    if (!isPlayer && !(CH && CH.bonusOff)) {
         for (const k of BONUS_STATS) boat.stats[k] += AI_STAT_BONUS;
     }
 }

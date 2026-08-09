@@ -12,11 +12,21 @@
     "frozen": "2026-08-07"
   },
   "ocean": {
-    "hash": "4a64ff07746434a4",
-    "frozen": "2026-08-07"
+    "hash": "3134f1efd5e1a368",
+    "frozen": "2026-08-08",
+    "note": "PROMOTED: owner gust fix c7b3a17 moved gust-1 into play; ff2oc anchor retired, re-baselined this push"
   },
   "river": {
     "hash": "2520b114cb5c0ab4",
     "frozen": "2026-08-07"
+  },
+  "redrock": {
+    "hash": "d30fe85fd2c1bbc6",
+    "frozen": "2026-08-08",
+    "note": "OLD red rock (pre-redesign) — the campaign benchmark; shipping redrock is the NEW course, content until human laps exist"
+  },
+  "lake": {
+    "hash": "6c90ec281e3f97d6",
+    "frozen": "2026-08-08"
   }
 }
