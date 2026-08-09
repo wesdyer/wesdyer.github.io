@@ -12261,3 +12261,75 @@ rivals (nPark p50 2, dPark p50 84u) — and the WEDGED DEPARTURE CLASS sits at
 arrival queue is plausibly SEEDED by the wedge class. ORDER OF OPERATIONS
 FLIPPED: Phase B (stuck-state maneuver) first; re-measure the arrival with the
 wedge cured before any arrival build.
+
+## PHASE B (stuck-state maneuver, treeB1) — v1/v2 box verdicts, v3 in flight
+v1 (plan shape: rose-fully-blocked entry + sustained-8s park + breadcrumb
+retreat): NEVER FIRES — box byte-identical. TWO PREMISES FALSIFIED BY THE BOX:
+(a) the slot signature does not exist — 100% of blocked wiggle samples keep
+some non-irons 220u-hard-clear heading, INCLUDING the three loop boats (the
+pocket is not geometrically sealed; nothing ever aims at the opening);
+(b) sustained-parked (<15 u/s) never holds — the wiggle's own minSpeed
+escalation (18-30 u/s) interrupts any park-based sustain test.
+v2 (leaky futility accumulator: nosed && <40 u/s && no-rival-150, +TICK/-0.5,
+threshold 25s; crumbs recorded only >=40 u/s): TRIGGER IS RIGHT, MANEUVER IS
+WRONG. Fires on exactly the loop class (5 boats, 39 episodes, seeds 9400-03;
+the three 750-820s slot boats + a leg-5-area boat at (622,1442); zero rival
+aborts) but every episode caps at 20s with crumbs static at 48: the boat
+ENTERED the trap below the 40 u/s recording floor, so the last crumb predates
+the trap and the straight line to it crosses the islet — with avoidance
+bypassed the maneuver noses the wall toward an unreachable crumb. Loops
+persist (785/768/693). Lake (v2 trigger): 0 escapes in 2+ seeds — specificity
+confirmed off-venue.
+v3 (LAST SHAPE this session per plan B3): keep the proven trigger; replace the
+aim — MULTI-POINT TURN at the longest-hard-clear rose heading, re-evaluated
+every tick with hysteresis (30u/rad switch penalty). Rationale: the opening
+exists 100% of the time (measured); wiggle can't see it (fixed beam reach,
+88% blocked), the burst family looked once and blindly (killed); nothing
+re-aims while moving. Box gate + episode log in flight.
+## PHASE B v3 box verdict: FAIL — and the SUB-CELL BLINDNESS named
+v3 (rose re-aim w/ hysteresis): same three loops (785/768/693), all 39
+episodes cap at 20s, positions pinned ±30u, spd sawtooth 0→40→4-11 = the boat
+ACCELERATES INTO LAND THE ROSE CALLED CLEAR. Mechanism: the ray rose samples
+at 60/100/150/220u — nothing below 60u. Parked against a wall, the first
+obstruction sits at 20-40u on EVERY heading; "clear" headings abound at
+60u+ scale while the slot is sealed at hull scale. This rehabilitates the
+close's original claim (the slot IS sealed) and convicts the roseClr=100%
+stat of the same blindness (rule 18 flavor: audit the probe's RESOLUTION,
+not just its units). Trigger remains clean: same 5 boats, 0 false fires,
+lake 0-for-4-seeds.
+v4 (FINAL shape): the CLEARANCE-GRADIENT WALK — step to the sailable
+neighbor CELL (RES=50u) with max _clear (BFS distance-to-land, monotone
+uphill by construction), aim at its clearance-checked CENTER, corner-guarded
+diagonals, radius-2 fallback. The grid is the only honest sensor at hull
+scale. Box gate in flight; if it fails the family STOPS this session.
+## PHASE B v4 verdict + THE HELM-OWNERSHIP FIND (the real reason v2-v4 "failed")
+v4 (clearance-gradient cell walk) box: loops persist BYTE-NEAR-IDENTICAL to
+baseline (785.5/767/693.5) — and that identity across three DIFFERENT aims was
+the tell. Code audit found it: the ISLAND-CONTACT OVERRIDE runs after the
+ESCAPE branch and, while `iceEscapeTimer > 0`, unconditionally rewrites
+desiredHeading; a wedged boat is in near-constant land contact, so the timer
+re-arms every tick and the contact reflex (off-wind bounce off the contact
+normal) owns the helm PERMANENTLY — it IS the ping-pong loop between islet
+and wall. planFloeTrajectory can also override toward the stale wallward
+_lastNav. v2/v3/v4's commanded headings never reached the rudder: the box
+gates tested override precedence, not the aims. (Extends the one-line gate
+family: every stuck-boat mechanism — wiggle, clearanceTimer, iceEscape — has
+a precedence slot; a NEW mechanism must claim its slot in EVERY override that
+can outrank it, or it does not exist.)
+v5 = v4's cell walk + helm ownership (escActive suppresses the island reflex,
+its application, and planFloeTrajectory while active). Box gate in flight —
+this is the FIRST run in which the maneuver actually steers.
+## ⭐ PHASE B v5 BOX GATE: PASS — THE WEDGE LOOPS BREAK
+v5 = the futility trigger (25s leaky nosed+slow+solo) + the clearance-gradient
+cell walk + HELM OWNERSHIP (escActive outranks the island-contact reflex and
+planFloeTrajectory while active). Box (seeds 9400-03, slot-inclusive box):
+ALL THREE 750-820s loops GONE — worst transit 239s; box time 3594→1749s
+(−51%), slow 2486→731s (−70%), nosedIn 2427→671s (−73%), parked spells
+988→305s. Episode log: FIVE episodes total, each 1.1-3.1s (rotate to the
+uphill cell, 8→39 u/s, un-nosed, out — the 20s cap never hits), fins 9/9 on
+ALL FOUR seeds (baseline 8/9 on three), and the leg-5 boat at (622,1442)
+cured too (transfer visible at the box). Lake: 0 fires in 4 seeds.
+THE MANEUVER IS ~3 SECONDS, NOT 20: the boat was never physically trapped —
+it was command-trapped (the contact reflex ping-pong). One cell of correct
+aim ends it.
+Fleet verdict in flight: b1rr{9400..9900} vs hz3brr*, then full battery.
