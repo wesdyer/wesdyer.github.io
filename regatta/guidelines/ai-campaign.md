@@ -12497,3 +12497,18 @@ water" — the band-trust idea (trust the plan-aligned candidate) applied to
 POST-DEFLECTION RECOVERY. Mechanism gate box: leg-3 subs 0-7 thread
 (x~150-235, y~1006-1280), judged on bot spd + latOff vs this probe's
 baseline. Probe: _m5_approach.js (any venue/leg/band).
+
+## OWNER RULING (2026-08-09, line-holding — constrains candidate #1)
+Return-to-line must be ROLE-AWARE, per the rules:
+- STAND-ON + not imminent → MAINTAIN COURSE (the line pressure applies here,
+  hard). A planned tack that creates a collision is legal if the other boat
+  has RRS-16 time to respond — take it; bail only if they never react (they
+  take the foul).
+- GIVE-WAY → no reactive nibble-deflections; plan a DISCRETE evasive early
+  (clear slot, duck, or round after/wider) then re-commit to a line.
+- MARK-ZONE ENTRY: first-in on the same tack has rights — plan arrival
+  timing/tack to ENTER WITH RIGHTS and commit the aggressive clean line;
+  if rights are unavailable, choose the go-behind line EARLY. This addresses
+  the leg2-sub9 armed queue and leg3-band0 exit scrum as one decision made
+  too late, not two execution problems.
+Full verbatim + design constraints in memory regatta-tactical-doctrine.
