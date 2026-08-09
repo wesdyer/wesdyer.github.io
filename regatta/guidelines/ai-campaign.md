@@ -10787,3 +10787,23 @@ CONSTRAINTS CARRIED: closed families stay closed (⛔ list); actions-not-
 prices; arctic judged pooled 4-set vs fl1barc*; river pooled fins/med;
 96-seed redrock protocol near threshold; bench pairs together; goldens
 full --update per landing; venue table at close.
+
+## OPENING PROMPT FOR THE NEXT SESSION (paste-ready, authored Aug 8 EOD)
+THE FIDELITY PUSH. Goal unchanged: human or superhuman on bay, ocean,
+redrock, lake, arctic, seatrials. Open with memory regatta-fidelity-audit +
+the NEXT-PUSH DIRECTIVE above; behavior HEAD b33d491 (OP5+RD11+FL1+FL1b;
+arctic anchors fl1barc{A-D} 379/386/371/367). Method: find planner-vs-
+physics divergence -> size it (dual-count probe + human-vs-bot corpus) ->
+build the true model at the same cost -> gate pooled. Model-accuracy ruling
+applies: fidelity fixes land on sane clock gates; trades become follow-up
+knobs ON the accurate model. Work A (rollout's fictional boat — treeSZA/
+_sza_run.js counters exist; extend to the near-field loop, the all-venue
+path), B (geometric router — current first, pre-sized ~46s river; wind
+second; one field per gate), C (dirty air reactive-only — human baselines
+_windtime.js/corpus: arctic 21%, bay 8%, lake 30% below 80% lap-median
+wind), D (point-boat vs oriented 30x55 hull — size pass-gaps first), E
+(stale spin, radius selection, grind buffer, OCEAN-BENCH NONDETERMINISM
+HUNT — ocean gates suspended until found). Constraints: closed families
+closed; actions-not-prices; arctic pooled 4-set vs fl1barc*; river pooled
+fins/med; 96-seed redrock; bench pairs together; goldens full --update;
+probe audits (18/18b/19b); close with the venue table.
