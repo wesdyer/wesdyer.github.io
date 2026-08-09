@@ -12386,3 +12386,54 @@ population changed (99% finish vs 91%). On DNF-at-900 med the ratio is
 509.5/218.2 = 2.34 vs base 501.5/218.2 = 2.30 — call it FLAT on med, −19/boat
 on mean, +38 boats on fins. The med attack now goes through the ARRIVAL QUEUE
 (Phase A re-measure, no longer seeded by wedged boats) + leg-5 + leg-1.
+
+## ⛔ KILLED at the FLEET GATE: B2 (ESCAPE threshold 25s→12s)
+Won BOTH box gates (leg-5 subs 6-7 slow −18%, bowl slow −23%, the 239s
+residual→98s, lake still 0-for-4, episodes clean 2-3.5s exits reaching new
+pockets) and LOST the pooled 6-set vs b1rr*: paired med +7.0 / mean +9.7
+(DNF-at-900 med +7.0), 4 of 6 sets positive, boat rubs +10%
+(10.48→11.55/boat), fins flat 428/432. MECHANISM: at 12s the maneuver fires
+~5x more often; each firing is ~3s of avoidance-bypassed snap-turn steering
+plus a navigation interruption, spent mostly on boats that were about to
+recover anyway — and the fleet pays the perturbation in rubs. The 25s
+conservatism IS the clean battery; the threshold knee is real and 12s is on
+the wrong side. (Box gates cannot see fleet-wide perturbation cost — same
+lesson as rule 16's scene-vs-race.) Tree deleted. ⛔ Do not re-ladder the
+ESCAPE threshold; if the leg-5 medium stalls are ever re-addressed, the
+entry needs a SHAPE change (e.g. futility that counts wiggle-failures, not
+seconds), not a price change.
+
+================================================================================
+## SESSION CLOSE 2026-08-09 (day-2 continuation) — ⭐⭐ THE STUCK-STATE ESCAPE LANDING
+
+LANDED: `458ec5a` — ESCAPE (25s leaky futility: nosed+<40u/s+solo → helm
+ownership → clearance-gradient cell walk, ~3s/firing). Redrock fins 391→429
+of 432 (THE DNF CLASS ELIMINATED), land −29%, rubs flat, DNF-at-900 paired
+mean −19.4 ALL SIX SETS NEGATIVE, med composition-flat; lake B land −34%
+bonus; every other venue byte-identical; goldens full --update PASS 20/20;
+freeze CLEAN. Three prior "failures" of the same aim were override-precedence
+artifacts (the command-trapped lesson).
+RE-SIZED/AVERTED: Phase A arc-ungate (the arrival crawl lives at 280-360u,
+outside the arc's 248u range; queue-gate sole blocker in only ~11%).
+KILLED: B2 threshold ladder (above); the v1 rose-signature entry (no such
+signature exists — sub-60u blindness); the v2 breadcrumb aim (entry trail
+predates the trap below the recording floor).
+REMAINING REDROCK (finisher-med 508 vs goal 436): leg-5 ~91/boat net
+(sub0 exit friction 25.8 — DISTRIBUTED, no pocket to gate; subs 6-7 medium
+solo stalls — needs an entry-shape change, not a threshold); leg-3 sub0
+residual 35.7 (halved, now queue-flavored); leg-2 arrival ~19 (armed queue);
+leg-1 unmeasured today (~43 at last measure, THE FLEET AVOIDANCE TAX).
+
+## THE VENUE TABLE, final HEAD `458ec5a` (ratio-sorted, med/best, fins %)
+venue     | human med/best | pre-session bot | post-session bot | ratio | fins (%)
+seatrials | 189.4 / 179.7  | 197.8 / 196.2   | 197.8 / 196.2    | 1.04  | 100%
+bay       | 219.0 / 211.0  | 240 / 205       | 240 / 205        | 1.10  | 360/360 (100%)
+lake      | 223.1 / 218.2  | 252 / 191       | 252 / 191        | 1.13  | 360/360 (100%)
+ocean     | 177.9 / 177.7  | 203 / 166       | 203 / 166        | 1.14  | 144/144 (100%)
+river     | 167.4 / 165.0  | 269 / 189       | 269 / 189        | 1.61  | 263/288 (91%)
+lagoon    | 164.9 / 160.1  | 273 / 215       | 273 / 215        | 1.66  | 144/144 (100%)
+arctic    | 212.4 / 201.6  | 366 / 217       | 366 / 217        | 1.72  | 575/576 (100%)
+redrock   | 218.2 / 215.2  | 490 / 274       | 508* / 294       | 2.33* | 429/432 (99%, was 91%)
+(*finisher-med; the rise from 490 is POPULATION COMPOSITION — 38 ex-DNF boats
+now finish at 700-850s. DNF-at-900 med 501.5→509.5 (flat), mean 534.8→515.4
+(−19.4/boat, all sets). The fins column is the landing.)
