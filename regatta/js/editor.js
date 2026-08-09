@@ -222,7 +222,11 @@ const LAND_TYPES = [
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
     { kind: 'isle',        label: 'Sand',             swatch: '#e8dcb1' },
-    { kind: 'shoal',       label: 'Sand Shoal',       swatch: '#cfc09a' },
+    // Swatch tracks ISLAND_STYLES.shoal.body. These had drifted to three different answers
+    // — the renderer on the dry-beach tan, this chip on a third value, and neither on the
+    // wet sand a bar actually is. The chip is what a designer picks from, so it has to be
+    // the material, not a nearby guess at it.
+    { kind: 'shoal',       label: 'Sand Shoal',       swatch: '#d0ad74' },
     { kind: 'swampgrass',  label: 'Swamp Grass',      swatch: '#a09453' },
     { kind: 'seagrass',    label: 'Seagrass',         swatch: '#4a7148' },
     { kind: 'shallows',    label: 'Shallows',         swatch: '#38bdf8' },

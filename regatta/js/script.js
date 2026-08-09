@@ -7401,9 +7401,11 @@ function pressureAt(speed) {
 // rain or ride it." Design decisions, in order (owner-approved 2026-08-08):
 //
 //   MOVEMENT   Straight lines. Each cell fixes its course at spawn — the trades plus a
-//              small jitter — and marches at SQUALL_SPEED_FACTOR times the local mean:
-//              squalls OVERTAKE the breeze, which is what makes riding the front a
-//              maneuver and ducking a timing problem. Spawned beyond the upwind edge,
+//              small jitter — and marches at SQUALL_DEFAULTS.speedFactor times the speed
+//              the breeze carries a puff (SQUALL_DRIFT): squalls OVERTAKE the breeze, which
+//              is what makes riding the front a maneuver and ducking a timing problem.
+//              How FAR above 1.0 that factor sits is the whole feel of the mechanic — see
+//              its note for why 1.45 was correct and still wrong. Spawned beyond the upwind edge,
 //              recycled past the downwind one. FIXED POPULATION, race-rng seeded — the
 //              floe doctrine: the count is the designer's, the day's layout is the
 //              seed's. No spawner, no unbounded anything, replays exactly.
@@ -7422,13 +7424,23 @@ function pressureAt(speed) {
 //
 // All of it enters the world through getWindAt below, so the boats, the AI and the
 // whitecap field all feel the same squall without being told about it separately.
+// speedFactor 1.10, DOWN FROM 1.45 (owner's call, 2026-08-09): once the drift bug below
+// was fixed the cells were correct and too quick — 237 u/s against a boat's 150 meant a
+// front swept over you and was gone, so the front was an event you were hit by rather than
+// one you could set up for and ride. 1.10 puts the drift at 178 u/s: still faster than the
+// puffs it marches through (156), so it still runs its own breeze down and the wake still
+// arrives from behind, but the overtake is a lean the boat can work with. Paired A/B, same
+// 10 seeds, 1.45 -> 1.10: drift 236 -> 179 u/s, and what it buys is DWELL, not more weather
+// — exposure is unchanged at 29% and the wake at 13%, while encounters drop 12 -> 10 per
+// boat and lengthen, median 6.5s -> 7.4s and p90 9.0s -> 11.6s. Race times are flat
+// (280s -> 276s), so this is a feel change, not a balance one.
 const SQUALL_DEFAULTS = { count: 0, rx: 850, ry: 550, sizeVar: 0.35,
-                          speedFactor: 1.45, courseJitter: 0.17 };
+                          speedFactor: 1.10, courseJitter: 0.17 };
 // UNITS PER FRAME PER KNOT — how fast the breeze carries a thing. This is the same number
 // spawnRegionGust bakes into a puff's moveSpeedFactor (`* 0.18`), stated out loud so a
 // squall and a puff are measured against one clock, and so SQUALL_SPEED_FACTOR means what
-// its comment says: 1.45x the speed the breeze carries a puff, i.e. the cell visibly runs
-// its own puffs down.
+// its comment says: a multiple of the speed the breeze carries a puff, i.e. above 1.0 the
+// cell visibly runs its own puffs down.
 //
 // ⚠️ THIS EXISTS BECAUSE THE FIRST VERSION ADVANCED PER SECOND (`* dt`) WHERE EVERY OTHER
 // CELL IN THE FRAME PATH ADVANCES PER FRAME (`* dt * 60`), and read `local.speed` — knots —
@@ -18213,15 +18225,37 @@ const ISLAND_STYLES = {
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
     granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
-    // Sandy shoal. THE SAME SAND as `tropical` — a bar is the beach continuing under the
-    // water, and giving it its own hue would say it is a different material rather than
-    // the same one at a different depth. What makes it read as submerged is not the colour
-    // but where it is drawn (under the water's own surface layers, see drawShoals) and how
-    // much of it comes through: the alpha in drawShoals is the water above it.
+    // Sandy shoal — WET sand, deliberately darker than the dry beach above it.
+    //
+    // This used to be set equal to `tropical` on the principle that a bar is the beach
+    // continuing under the water, so giving it its own hue would claim a different material
+    // rather than the same one at a different depth. That principle is right about MATERIAL
+    // and wrong about VALUE: dry and wet sand are the same grains at different reflectance,
+    // and a wet bar is visibly darker before the water column over it is accounted for at
+    // all. Matching the dry-beach plate exactly made every bar read a shade too bright.
+    //
+    // ⚠️ THE BODY HAS LESS AUTHORITY HERE THAN IT LOOKS. `submergedTint` mixes SHOAL_IN_WATER
+    // (0.38) of the water's own colour into this and then applies a luma gain, so a change
+    // of 14 in the red channel moves the drawn bar by about 3 luma. This value is ~25 down
+    // from the dry-beach sand to land ~12 luma down on screen; do not read the hex as if it
+    // were the pixel. The editor's "Sand Shoal" swatch (#cfc09a) was a third, separate
+    // answer that had never been reconciled with either.
+    //
+    // ⚠️ NOT the same change as `coralshoal`, which stays keyed to `coralsand`: Tropic Sand
+    // bars are genuinely a paler, cooler sand, and that pairing is deliberate.
+    //
+    // ⚠️ THIS ENTRY IS THE SAND BAR ALONE, despite `shallows` and `seagrass` also naming
+    // `shoal` as their look. Neither reads a colour from here: both are `paint: true`, so
+    // drawShoals skips them, and both are `awash`, so drawIslands skips them too — the
+    // shallows take WATER_CONFIG.shallowColor and the meadows take SEAGRASS_TONES. Editing
+    // body/stroke/veg/rock here therefore moves sand bars and nothing else. Verified by
+    // flipping this value and re-reading every drawn shape on all ten venues: 9 `shoal`
+    // shapes moved, the 8 `tropicshoal` were byte-identical, nothing else was touched.
+    // If either of those two is ever rewired to read the style, that stops being true.
     //
     // No trees, no rocks and no stroke worth the name — the crisp shoreline is exactly the
     // cue that says "this is land", so a shoal must not have one. Its edge is a gradient.
-    shoal:    { body: '#ddc39a', stroke: '#c9ad84', veg: '#ddc39a', rock: '#c9ad84', trees: false },
+    shoal:    { body: '#d0ad74', stroke: '#bb9760', veg: '#d0ad74', rock: '#bb9760', trees: false },
     // Coral-white shoal — THE SAME SAND as `coralsand`, exactly as `shoal` is the same
     // sand as `tropical`: a bar is the beach continuing under the water, so each beach
     // look has its bar look. shoalTintFor derives what the water does to it per shape.
@@ -18257,10 +18291,28 @@ const SHOAL_ALPHA_RIM  = 0.0;     // at the outline, where the water is deep and
 // palette a venue authored, automatically, on venues that do not exist yet.
 const SHOAL_IN_WATER = 0.38;      // how much of the column's own colour you see the sand through
 const SHOAL_REF_LUMA = 128;       // luma of the bright tropical water the sand was picked against
+// ── A SAND BAR NEEDS TO READ AS SAND ────────────────────────────────────────
+// 0.38 was picked against BRIGHT TROPICAL water, where mixing in over a third of the column
+// still leaves a warm bar. Over Sockeye Run's dark teal (#3f6f5f) the same mix drags the
+// sand two-thirds of the way to the water and it comes out grey-olive: not a lighter sand,
+// a DESATURATED one, which reads as a smudge on the bottom rather than a bank.
+//
+// ⚠️ THE BODY COLOUR CANNOT FIX THIS, and trying is how this went wrong once already.
+// Darkening the sand makes a grey bar into a darker grey bar — value and saturation are
+// different axes, and it is saturation that was missing. Compare, on river water:
+//     mix 0.38, body #ddc39a -> #777961     grey-olive
+//     mix 0.38, body #b8a67e -> #666b55     darker grey-olive (worse)
+//     mix 0.16, body #d0ad74 -> #8b7a54     reads as sand
+//
+// SAND ONLY. Coral bars, reef rubble and the seagrass meadows keep SHOAL_IN_WATER: they sit
+// under bright lagoon water where 0.38 was right, and Tropic Sand Shoals are deliberately
+// out of scope here. Passing the mix per call rather than editing the shared constant is
+// what keeps it that way.
+const SHOAL_SAND_IN_WATER = 0.16;
 // The derivation, factored out because it is true of ANYTHING on the bottom — the sand
 // bar and the seagrass meadow are the same physics under the same light, so they go
 // through the same two steps and can never disagree about what the water does to them.
-function submergedTint(bottom) {
+function submergedTint(bottom, mix) {
     const W = window.WATER_CONFIG || {};
     const rgb = (h, fb) => {
         const s = String(h || '').replace('#', '');
@@ -18279,7 +18331,8 @@ function submergedTint(bottom) {
     // Glowtide's night water would otherwise take it to nearly black. Capped just over 1 so
     // an unusually bright venue cannot blow the sand out past white.
     const gain = Math.max(0.42, Math.min(1.12, luma / SHOAL_REF_LUMA));
-    return bottom.map((c, i) => Math.round((c * (1 - SHOAL_IN_WATER) + water[i] * SHOAL_IN_WATER) * gain));
+    const k = (mix != null) ? mix : SHOAL_IN_WATER;
+    return bottom.map((c, i) => Math.round((c * (1 - k) + water[i] * k) * gain));
 }
 // Per MATERIAL, not one global sand: a shoal's look names its ISLAND_STYLES entry
 // (`shoal` is the tan bar, `coralshoal` the coral-white one), and the body of that
@@ -18292,7 +18345,10 @@ function shoalTintFor(isl) {
         return [parseInt(s.substring(0, 2), 16), parseInt(s.substring(2, 4), 16), parseInt(s.substring(4, 6), 16)];
     };
     const st = (isl && ISLAND_STYLES[isl.style]) || ISLAND_STYLES.shoal || {};
-    return submergedTint(rgb(st.body, [221, 195, 154]));
+    // Sand bars see less of the column than the shared default assumes — see
+    // SHOAL_SAND_IN_WATER. Everything else on the bottom keeps the original mix.
+    const mix = (isl && isl.style === 'shoal') ? SHOAL_SAND_IN_WATER : undefined;
+    return submergedTint(rgb(st.body, [221, 195, 154]), mix);
 }
 
 // ── SHOALS ──────────────────────────────────────────────────────────────────
