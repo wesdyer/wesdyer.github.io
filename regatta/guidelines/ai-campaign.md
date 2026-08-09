@@ -10915,3 +10915,35 @@ rd11oc-era anchors predate deterministic seas; never compare across this cut.
 The landing is infrastructure + ocean determinism: the only behavior delta is the
 ocean sea starting at phase zero (clock flat-to-better). All other venues carry
 b33d491 anchors verbatim — the swell fix is unreachable without trains.
+
+## SESSION 2026-08-08 LATE NIGHT — ARCTIC: TWO SIZINGS CLOSE TWO SHAPES, THE CONVEYOR NAMED
+### Radius selection — DEAD AT SIZING (_arc_radius.py, tracked)
+Human and bot rounding-radius distributions are IDENTICAL (med 301 vs 308,
+n=26/17, both with wide tails); no ice-in-band correlation in either mode; no
+radius→outcome correlation at a FIXED 1000u reference (tight 36.4s vs wide
+40.4s). The FL1 "bimodal 261-340/472-644" was substantially a 600u-window
+truncation artifact (rule 19b's third catch — two of the five wide events
+re-measure tight at the fixed ring). The bot's rounding loss is ~24s AT THE
+SAME RADIUS she sails (59.7 vs 36.4s tight-mode med) — service/jam time, not
+geometry. ⛔ Do not build radius selection.
+### The arrival/laning family — closed at two shapes, mechanism NAMED
+THE CONVEYOR: the entrance hunt sectors per boat, but every approaching boat
+rides the SAME ring (zone*1.35 = 1149u at granite) the same way round — the
+rub band (dRM med 1355u, 78% under 2.7kt, HEAD baseline 255 episodes/2 hostile
+seeds, 108 within 900u) sits exactly on it, and the human's band time is pure
+transit (15.4s med, 0.0s slow, 26 laps; bots 30.7s med, slow tails to 97s).
+AL1 (occupancy-keyed wide ride zone*1.7 past a parked plug, latched, wide
+zones only): ring rubs −59% (108→44), band emptied (dRM med 1355→5099), clock
+FLAT (pooled med 0/mean −4.0) — but bounds +103%, boat +12%: the wide water
+isn't free. AL2 (+sailable-water and 300u-arena-depth guards on the wide
+lane; caught a signedDist sign inversion pre-ship — POSITIVE INSIDE): damage
+halved (bounds +22%, boat +6%), mechanism holds (in-ring −44%), clock still
+flat (med 0/mean −1.6, 576/576) — dirt clause fails, NOT landed.
+THE ARITHMETIC THAT CLOSES IT: in-band slow time is only 4-8s/boat mean
+(_band_time.js, tracked) — the band is damage-dirt, not a clock reservoir;
+relocating the queue trades rubs ~1:1 into wide-water contacts. Ocean gate on
+AL1: the campaign's FIRST EXACT 0.00 ocean byte-gate (deterministic seas paying
+off same-day). Redrock byte-equal verified. treeAL2 kept.
+ARCTIC RESIDUAL now attributes to: the TACK-COUNT class (strategic layer,
+3 shapes dead, needs a which-actions shape) + physical jam (relocation
+doesn't pay). Next venue per owner order: REDROCK attribution.
