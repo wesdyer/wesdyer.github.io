@@ -3849,10 +3849,20 @@ class BotController {
                         // 4s probe touches made the pack unthreadable, and this
                         // venue is DESIGNED so the fast line threads the pack.
                         const midS = { x: (startS.x + endS.x) / 2, y: (startS.y + endS.y) / 2 };
-                        const nearHit = Geom.segmentIntersectsPoly(startS, midS, isl.vertices)
-                            || (isl.isFloe && Geom.distToSegment({x: isl.x, y: isl.y}, startS, midS) < isl.radius + movePad * 0.6);
-                        const farHit = !nearHit && (Geom.segmentIntersectsPoly(midS, endS, isl.vertices)
-                            || (isl.isFloe && d < isl.radius + movePad * 0.6));
+                        // FL1b: floes use the TRUE hull at its PREDICTED spin
+                        // (the drift shift is already applied to the segment;
+                        // rotation was not — and the circle OR-fallbacks below
+                        // re-added the phantom band FL1 removed from the far
+                        // field). The sampled hull test subsumes both: a point
+                        // inside the hull is "near" at any pad, and the pad is
+                        // the same movePad*0.6 the OR-term carried. Land keeps
+                        // the exact current-pose polygon test.
+                        const nearHit = isl.isFloe
+                            ? floeSegNear(isl, startS.x, startS.y, midS.x, midS.y, tMid, movePad * 0.6)
+                            : Geom.segmentIntersectsPoly(startS, midS, isl.vertices);
+                        const farHit = !nearHit && (isl.isFloe
+                            ? floeSegNear(isl, midS.x, midS.y, endS.x, endS.y, tMid, movePad * 0.6)
+                            : Geom.segmentIntersectsPoly(midS, endS, isl.vertices));
                         if (nearHit) {
                             staticCollision = true;
                             cost += 500000; // HUGE penalty (Hard Constraint)
@@ -3879,10 +3889,19 @@ class BotController {
                             proximityCost += isl.isFloe ? 3500 : 25000;
                         } else {
                             // Proximity penalty (Buffer zone)
-                            // Use Circle approx for proximity cost
                             const band = 80 + movePad;
-                            if (d < isl.radius + band) {
-                                proximityCost += (isl.isFloe ? 1200 : 10000) * (1.0 - (d - isl.radius)/band);
+                            if (isl.isFloe) {
+                                // FL1b: buffer measured from the TRUE predicted
+                                // hull, not the bounding circle — the band keeps
+                                // its size, it just starts at the real edge.
+                                const mx2 = (startS.x + endS.x) / 2, my2 = (startS.y + endS.y) / 2;
+                                const clr = Math.min(
+                                    floeHullClear(isl, startS.x, startS.y, tMid),
+                                    floeHullClear(isl, mx2, my2, tMid),
+                                    floeHullClear(isl, endS.x, endS.y, tMid));
+                                if (clr < band) proximityCost += 1200 * (1.0 - Math.max(0, clr) / band);
+                            } else if (d < isl.radius + band) {
+                                proximityCost += 10000 * (1.0 - (d - isl.radius)/band);
                             }
                         }
                     }
@@ -5388,6 +5407,29 @@ function floeRadialProfile(f) {
     }
     f._radProf = prof;
     return prof;
+}
+// FL1b — segment and clearance forms of the same true-hull test, for the
+// near-field wall check (which was mixing current-spin polygons with circle
+// OR-fallbacks — the phantom re-entry FL1 removed from the far field).
+function floeSegNear(f, ax, ay, bx, by, t, pad) {
+    for (let i = 0; i <= 8; i++) {
+        const px = ax + (bx - ax) * i / 8, py = ay + (by - ay) * i / 8;
+        if (floeHullNear(f, px - f.x, py - f.y, t, pad)) return true;
+    }
+    return false;
+}
+// Radial clearance (u) from a world point to the floe's predicted hull.
+function floeHullClear(f, px, py, t) {
+    const prof = floeRadialProfile(f);
+    const dx = px - f.x, dy = py - f.y;
+    const d = Math.sqrt(dx * dx + dy * dy);
+    if (!prof) return d - (f.radius || 0);
+    const sp = (f.spin || 0) + (f.spinRate || 0) * t;
+    const th = Math.atan2(dy, dx) - sp;
+    let bf = (th / (2 * Math.PI)) * FL1_BINS;
+    bf = ((bf % FL1_BINS) + FL1_BINS) % FL1_BINS;
+    const b0 = Math.floor(bf), b1 = (b0 + 1) % FL1_BINS, w = bf - b0;
+    return d - (prof[b0] * (1 - w) + prof[b1] * w);
 }
 // dx,dy: query point relative to the floe's (predicted) centre, world frame.
 function floeHullNear(f, dx, dy, t, pad) {

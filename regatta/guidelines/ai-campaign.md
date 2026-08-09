@@ -10682,3 +10682,28 @@ queued.
 LANDED: main byte-identical to treeFL1; goldens full --update + PASS.
 NEW ANCHORS: arctic fleet_leg2_fl1arc{A,B,C,D} meds 429/448/408/402
 (rd11arc* retire to paired evidence). All other venues carry.
+
+## THE FL1b LANDING — THE NEAR FIELD SEES THE TRUE HULL (Aug 8, night; the
+## day's FOURTH landing, and the campaign's largest)
+FL1's sibling, one hour later: the near-field wall test's floe branches move
+to the same true-hull-at-predicted-spin model (floeSegNear: 9-sample segment
+test; floeHullClear: radial clearance for the proximity buffer — the band
+keeps its size, it starts at the REAL edge). The circle OR-fallbacks — which
+re-added the exact phantom band FL1 removed from the far field — are gone.
+Land branches byte-untouched.
+GATES (vs the hours-old fl1arc anchors, 64 seeds, 573 pairs):
+  A −47.0/−55.4, B −45.0/−61.4 (the HOSTILE family gains most, fins 141→144),
+  C −36.0/−33.0, D −32.0/−32.9 — GRAND POOL med −37 / mean −45.6, 68%
+  negative, fins 573→576 (ALL boats in ALL 64 races finish), boat 8.47→5.06
+  (−40%), land 19.16→12.73 (−34%), floe 33.36→24.66 (−26% — FL1's +12% trade
+  REVERSED and then some), pen 1.52→1.14 (−25%), mark flat.
+  Bay/redrock/river/lake/seatrials byte-inert verified (0.0 all five).
+  Ocean byte-gate remains suspended (the nondeterminism trap); FL1b is inert
+  there by the same construction as FL1 (zero floes, floe-branch-only edits).
+ARCTIC MEDS: 429/448/408/402 → 379/386/371/367. This morning the anchor pair
+was 413/450. Human med 212.1 — the ratio moved from ~2.0x to ~1.77x in one
+evening, all of it from making the planner see the world the physics runs.
+The day's arc, in one line: the arc reaches the ice (RD11), the ice becomes
+its true shape (FL1), and the whole near field follows (FL1b).
+NEW ANCHORS: fleet_leg2_fl1barc{A,B,C,D} 379/386/371/367 (fl1arc* retire to
+paired evidence). Everything else carries.
