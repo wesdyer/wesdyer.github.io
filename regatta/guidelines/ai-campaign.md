@@ -11791,3 +11791,21 @@ pattern on redrock's armed sections); 3. the give-way over-response on bay/lake
 (the 417u GW slice — response DURATION/SIZE, onset already honest); 4. lagoon
 leg2 variance tail (squall-awareness, unsized). Constraints all standing;
 anchors are treeP0 on `08310d7`; never compare across the mean-field cut.
+
+## POST-CLOSE ADDENDUM — the redrock leg3 pocket is STATIC-FIELD PARKING
+`_pocket_argmin.js redrock [-1350,-2000,-150,-800]` (the leg3-sub0 pocket,
+12,000 choices via treePR2's __avBox trigger): slow subset (<40 u/s, n=3051)
+= STATIC_VETO 57% + PROX_STATIC 37% — **94% static; boat terms 4%**. The
+"execution-under-JAM" framing from the ladder kill is also wrong: rivals are
+not the pocket's defeater. The land PROBES veto the 0-rung (500000 hard-zone
+veto + the 30000 far term + the clearance band), the argmin buys ±1.2/1.6
+swings, and she sails the same water at 83+ u/s. This composes with the B3
+result: admitting nearer-land NAV cells made leg3 worse because it added
+places to be probe-blocked — the response layer, not the map, owns the pocket.
+NEXT SESSION'S FIRST QUESTION: the hard-zone speed-scaled veto (a393d61) is
+built for exactly this (time-to-wall instead of fixed 140u) but is scoped
+openWaterAv && !arcK && plan-aligned(0.3rad) && not-in-irons && current<2kt —
+measure WHICH scope condition fails in the pocket (suspects: the canyon's
+current regions tripping _avCurMax≥2, or the plan-alignment window while the
+boat is displaced off-plan). If the pocket choices sit just outside one scope,
+the candidate is that scope's honest widening — measured first, one line.
