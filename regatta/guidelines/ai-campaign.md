@@ -10947,3 +10947,48 @@ off same-day). Redrock byte-equal verified. treeAL2 kept.
 ARCTIC RESIDUAL now attributes to: the TACK-COUNT class (strategic layer,
 3 shapes dead, needs a which-actions shape) + physical jam (relocation
 doesn't pay). Next venue per owner order: REDROCK attribution.
+
+## REDROCK ATTRIBUTION + THE RR LADDER (2026-08-08, late night — the class FOUND)
+### The attribution chain (one evening, probes tracked)
+_rr_where2.js: slow time 176.5 s/boat of the 267 s/boat gap; L3:shore 68.7 +
+L3:m4 25.9 s/boat; leg-3 med 140.8s vs her 51.3; land episodes 721 shore/216
+m4. _redrock_solo on HEAD: solo blowups 537/516 on 2 of 4 draws, 269-339s on
+LEG 3 at (−300..0, 900..1200). _rr_why.js: 109.4 s/boat slow near mark-5,
+89% NE pocket, 72% LAND DEAD AHEAD, 49% inside WIGGLE, 21% irons, 20% penalty
+turns, **armed 0%** — unarmed mid-leg transit, NOT the OP5 orbit class. Human
+mirror: 20-28s through the same water, ZERO slow (8 laps) — HUMAN-ZERO class.
+_rr_trace.js (solo 9402): the router's L3 path is CLEAN (threads NW of the
+land finger, arcs the mark at ~90u); the boat arrives 150-200u EAST of the
+line, hits the finger face at full speed (111 u/s → 0 in 2s at (63,1097)),
+then churns 100+s in a 300u pocket: wiggle frees it, the strategic layer
+re-aims through the wall, avoidance re-sticks it.
+### ROOT CAUSE (in the pure-pursuit follower, script.js ~1866)
+The clearance-scaled lookahead exists because "a far carrot in a narrows cuts
+the corner into the ice" — but the UPWIND MINIMUM (LOOK=420, the tack-loop
+cure) OVERRIDES it unconditionally. Leg 3 is the upwind leg: in the canyon
+the floor wins, the carrot lands past the bend, and pure pursuit drives the
+straight line into the wall face. The two rules conflict exactly in an upwind
+narrows.
+### The ladder (treeRR1-4; solo seeds 9400-9403, HEAD 319/396/537/516 mean 442)
+- RR1 (420 floor only if straight LOS to the floor carrot): solo 378/353/382/
+  399 — 9402's pocket 339→68s, but 9400 +59 (walled carrot → tack-loop).
+- RR2 (farthest VISIBLE point along path, ≤420): solo 403/345/311/339 — cure
+  deepens (9402 −226, 9403 −177) but the clean draw pays (9400 319→403).
+- RR3 (RR2 scoped to nosedIn — the near-reversal fan's own gate): solo
+  280/338/328/339, EVERY seed better, mean −121 s/boat, L3 pocket ERASED.
+  Fleet 6-set pooled: med +14.0/mean +11.8, per-set +48..−22 — traffic pins
+  (nosedIn in crowds, the m5 funnel) inherit the shrunken carrot.
+- RR4 (RR3 + solo-pinned only: no rival within 300u): solo byte-identical to
+  RR3 (cure preserved by construction). Fleet 6-set pooled: med +7.0/mean
+  +0.9, fins 399→397, boat +8% — NEAR-THRESHOLD, not landable tonight.
+### Verdict + the parked candidate
+The class is FOUND, ATTRIBUTED, SOLO-CURED (−121 s/boat, the biggest solo
+delta since the granite arc). Four scopes have not made the fleet cash it —
+the granite-arc signature (RD3 solo 406→56, fleet flat, later landed as RD11
+flat-with-cleaner-dirt). RR4 sits at med +7 inside the ±8-10 pooled noise
+band: per the standing rule it gets the 96-SEED PROTOCOL (12 disjoint sets
+incl. 6 fresh-seed HEAD-vs-candidate pairs) as the NEXT SESSION'S opening
+run. treeRR4 kept; working tree reverted; probes _rr_where2/_rr_why/_rr_trace
+tracked. If the protocol lands it, the follow-up is the traffic diagnosis
+(why freed boats pay in the crowd); if not, the ladder closes at four shapes
+with the mechanism named.
