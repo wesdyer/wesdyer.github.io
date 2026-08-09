@@ -10643,3 +10643,42 @@ redrock   | ~227 / 206.6 (OLD)    | 6-set pooled med 494, fins 399/432 (op5rr*; 
 arctic    | 212.1 / 190.4         | 426 / 447 / 427 / 446 (rd11arcA-D; land −9% vs HEAD, fins 570/576; the ring jam is now the sole gate on the solo 57s class)
 seatrials | ~190 / 180.9 (193.8)  | 199.58 / 194.13, OCS 15.44% (byte-carried)
 river     | 161.3 best, n=2       | 264 / 271 (ff2rivA/B, byte-carried)
+
+## THE FL1 LANDING — ICEBERGS ARE NOT CIRCLES (Aug 8, night; the day's third)
+Owner-directed, verbatim: "Icebergs ARE NOT CIRCLES. They are moving,
+rotating polygons with clear boundaries. My path planning as a human depends
+on it and I could not navigate the course without that." And the ruling that
+governs every future fidelity fix: an inaccurate understanding of reality is
+not acceptable; behavioral trades get fixed downstream ON the accurate model
+(recorded in memory: regatta-model-accuracy).
+THE SIZING: 53%/51% of the far-field roll()'s floe contact flags were
+PHANTOM (bounding circle hit, true rotated hull clear) — the bot dodged
+water more often than ice. Trajectory corpus: the human's exit clearances to
+the circle are routinely NEGATIVE (−24..−262u) while clean to the hull; her
+rounding radius is bimodal (20 tight 261-340u / 5 wide 472-644u) and the
+ring is usually ice-free — the choice reads the route through the field.
+THE BUILD: per-floe radial profile of the convex localHull (32 bins, cached;
+ray-cast per bin), point test rotates the query to the PREDICTED spin
+(spin + spinRate·t) — O(1), unit-tested (square hull: face 100/corner 141.4,
+rotation and spin-rate anticipation exact). The circle stays as broad phase;
++14 pad survives verbatim (it was always a HULL floor). One site this pass:
+the far-field roll(). (Near-field FL1b — predicted-spin polys + dropping the
+circle OR-fallbacks — and the grid's stale-spin stamping are the named
+follow-ups.)
+GATES: arctic 4-set pool vs the rd11 anchors (64 seeds, 567 pairs):
+med −16 / mean −13.8 — THE LARGEST ARCTIC CLOCK GAIN OF THE CAMPAIGN — sets
+A/B/C/D med +3/−9/−22/−41, fins 570→573, boat 11.36→8.47 (−25%), pen
+1.81→1.52 (−16%), land/mark flat, floe 29.91→33.36 (+12%, the recorded
+trade). Bay/redrock/lake/river/seatrials byte-inert verified (0.0).
+⚠️ NEW HARNESS TRAP, found at the ocean gate: ocean_bench is NOT
+run-reproducible on ocean — rd11oc vs rd11oc4 (SAME TREE, same seeds,
+4-trial rerun) paired med 0.0 but p25 −11/p75 +12. FL1's ocean "−6" sits
+inside that null band and FL1 is inert there by construction (zero floes;
+guarded path). Consequences: (1) ocean byte-gates cannot be run at byte
+resolution until the nondeterminism is found (goldens still pass — it is
+bench-page-specific, not sim-specific); (2) OP5's ocean −6.0 paired claim
+is SOFTER than recorded this morning — hold it loosely. Investigation
+queued.
+LANDED: main byte-identical to treeFL1; goldens full --update + PASS.
+NEW ANCHORS: arctic fleet_leg2_fl1arc{A,B,C,D} meds 429/448/408/402
+(rd11arc* retire to paired evidence). All other venues carry.

@@ -2713,13 +2713,23 @@ class BotController {
                 }
                 for (const f of floes) {
                     const fx = f.x + (f.driftVx || 0) * t, fy = f.y + (f.driftVy || 0) * t;
-                // +45 -> +14 (human clearance floor is 14-19u to the HULL; this
-                // radius is on the fatter bounding circle, so 14 keeps real
-                // slack. +10 tested worse: rollouts stopped flagging contacts
-                // the boat could not actually dodge).
+                // FL1 (2026-08-08, owner-directed: "Icebergs ARE NOT CIRCLES.
+                // They are moving, rotating polygons with clear boundaries. My
+                // path planning as a human depends on it.") The physics
+                // collides on the rotating localHull, and rim rotation
+                // DOMINATES contact motion (median 28.6 u/s rotational vs 5
+                // drift — the clampSpin survey). This test priced the fatter
+                // bounding circle projected by drift alone: phantom clearance
+                // on every lobed floe (the human overlaps the circle on most
+                // recorded exits: clearance −24..−262u to the circle, clean to
+                // the hull), and blindness to the swinging rim. Keep the
+                // circle as BROAD PHASE only; the verdict is the radial
+                // profile of the true hull, rotated to its predicted spin at
+                // sample time. The +14 pad survives verbatim — it was tuned
+                // as a HULL floor (human clears 14-19u to the hull).
                 const rr = f.radius + 14;
                     if ((x - fx) * (x - fx) + (y - fy) * (y - fy) < rr * rr) {
-                        if (t < contactT) contactT = t;
+                        if (floeHullNear(f, x - fx, y - fy, t, 14) && t < contactT) contactT = t;
                     }
                 }
             }
@@ -5346,6 +5356,51 @@ function settleFloes() {
 function clampSpin(w, r) {
     const cap = Math.min(0.75, 30 / Math.max(1, r));
     return Math.max(-cap, Math.min(cap, w));
+}
+
+// FL1 — the floe as the planner sees it: a MOVING, ROTATING POLYGON with a
+// clear boundary (owner-directed). Per-floe radial profile of the convex
+// localHull, cached once (shape never changes): r(θ) in 32 bins from the
+// floe origin. A point test at lookahead t rotates the query into the local
+// frame at the PREDICTED spin (spin + spinRate·t) and compares |P| against
+// the interpolated profile + pad. O(1) per test — the same order as the
+// circle test it grades, so rollouts can afford the true shape.
+const FL1_BINS = 32;
+function floeRadialProfile(f) {
+    if (f._radProf) return f._radProf;
+    const H = f.localHull;
+    if (!H || H.length < 3) return null;
+    const prof = new Float32Array(FL1_BINS);
+    for (let b = 0; b < FL1_BINS; b++) {
+        const th = (b / FL1_BINS) * 2 * Math.PI;
+        const rx = Math.cos(th), ry = Math.sin(th);
+        let best = 0;
+        for (let i = 0; i < H.length; i++) {
+            const a = H[i], c = H[(i + 1) % H.length];
+            const ex = c.x - a.x, ey = c.y - a.y;
+            const den = rx * ey - ry * ex;
+            if (Math.abs(den) < 1e-9) continue;
+            const s = (a.x * ey - a.y * ex) / den;          // ray parameter
+            const u = (a.x * ry - a.y * rx) / den;           // edge parameter
+            if (s > 0 && u >= -1e-6 && u <= 1 + 1e-6 && s > best) best = s;
+        }
+        prof[b] = best || (f.radius || 0);
+    }
+    f._radProf = prof;
+    return prof;
+}
+// dx,dy: query point relative to the floe's (predicted) centre, world frame.
+function floeHullNear(f, dx, dy, t, pad) {
+    const prof = floeRadialProfile(f);
+    if (!prof) return true;                                  // no hull — keep the circle verdict
+    const sp = (f.spin || 0) + (f.spinRate || 0) * t;
+    const th = Math.atan2(dy, dx) - sp;                      // local-frame bearing
+    const d = Math.sqrt(dx * dx + dy * dy);
+    let bf = (th / (2 * Math.PI)) * FL1_BINS;
+    bf = ((bf % FL1_BINS) + FL1_BINS) % FL1_BINS;
+    const b0 = Math.floor(bf), b1 = (b0 + 1) % FL1_BINS, w = bf - b0;
+    const r = prof[b0] * (1 - w) + prof[b1] * w;
+    return d < r + pad;
 }
 
 // ---------------------------------------------------------------------------
