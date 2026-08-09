@@ -66,7 +66,7 @@ const ROOT = path.join(__dirname, 'treePR2');
         else if (f0.bc && win.bc) why = 'BOTH_BOAT';
         else why = 'OTHER_COST';
         reasons[why] = (reasons[why] || 0) + 1;
-        if (r.spd < 40) slowRows.push({ why, off: win.off, risk: r.risk, role: r.role, dRM: r.dRM });
+        if (r.spd < 40) slowRows.push({ why, off: win.off, risk: r.risk, role: r.role, dRM: r.dRM, arc: r.arc });
     }
     console.log(`\n=== ${VENUE}: ${n} armed-approach choices (dev>=5.7deg, dRM<900) ===`);
     console.log('why the 0-rung lost:', JSON.stringify(reasons));
@@ -76,4 +76,6 @@ const ROOT = path.join(__dirname, 'treePR2');
     console.log(`SLOW (<40u/s, the parked/crawl subset, n=${slowRows.length}):`, JSON.stringify(sw));
     const roles = {}; for (const s of slowRows) roles[s.role + '/' + s.risk] = (roles[s.role + '/' + s.risk] || 0) + 1;
     console.log('slow subset role/risk:', JSON.stringify(roles));
+    const arcAll = all.filter(r => r.arc === 1).length, arcSlow = slowRows.filter(s => s.arc === 1).length;
+    console.log(`ARC ACTIVE: all ${arcAll}/${all.length} (${Math.round(100 * arcAll / Math.max(1, all.length))}%)  slow ${arcSlow}/${slowRows.length} (${Math.round(100 * arcSlow / Math.max(1, slowRows.length))}%)`);
 })();

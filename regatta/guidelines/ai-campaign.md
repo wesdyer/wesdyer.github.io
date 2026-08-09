@@ -11698,3 +11698,96 @@ B4 scoping moot. ⛔ Do not reopen bar-lowering; the CP1/noSubsample family is
 about the grid LYING about hard geometry, not about margins on TRUE geometry.
 River leg3 re-address: the pocket class is execution-under-jam near banks —
 judge any candidate on the wiggle/landAhead pocket stats, not route admission.
+
+## AV1 — arc-scoped lee-shore band removal: INERT POOLED (mechanism named)
+The crawl argmin ledger (treePR2, 11,419 armed-approach choices, dRM<900) said
+the static proximity band defeats the 0-rung in 50% of choices (PROX_RIVAL 2 vs
+PROX_STATIC 5752 — the rival nudge is NOT the tax; the ±1.2/1.6 rungs win).
+AV1 (treeAV1): under the armed arc (arcK) with LAND-caused low clearance, skip
+the 10000-scale endpoint band (ice grind kept — rule-5 line). Arctic pooled
+4-set vs p0arc*: paired med +3 / mean +4.2 (candidate faster), fins 575→576,
+boat rubs −3.5%, land +3.3% — sets split 2-2 (A +12, B +9, C −8, D −5), under
+arctic's resolution. NOT a landing. ⚠️ The queued-rival-gate hypothesis was
+REFUTED first (arc ACTIVE in 89% of choices, 79% of the slow subset — the RD7
+narrow disable is not the lock). MECHANISM: the 0-rung's defeat in the ring is
+OVERDETERMINED — the slow subset carries STATIC_VETO 19% + BOTH_BOAT 19%
+sufficient defeaters behind the band; removing the top term re-ranks the stack
+(the UL1 lesson at the action level). The crawl is not one term's fiction.
+NEXT ADDRESS: the HEAD-OF-QUEUE SERVICE TIME — solo granite transit is still
+55.8s vs her ~19 after RD11, and ρ≈7 queueing amplifies the residual into the
++69 s/boat. The solo residual is measurable without the jam (neutral solo).
+
+## P5 LAGOON re-attribution on treeP0 (`_leg_matrix.js lagoon p0lagA p0lagB`)
+Legs 2+3 own 54% of the gap: leg2 bot 48 vs her 19.5 (**2.46x, 29 s/boat**,
+bot p75 78 — huge variance, some boats 4x), leg3 44 vs 19.2-read (2.29x) —
+⚠️ but the two fastest human laps are RETIRED-doc; on the three verified laps
+leg3's human med is 26.8 (ratio ~1.64), while **leg2's 2.5x stands on verified
+laps** (her 17.8-24.0). Legs 4-6 are 1.25-1.37x. The lagoon target is LEG 2
+(and its variance tail) — squall-awareness and/or the coral section; unsized.
+
+## UL1-FOR-HIGH: SKIPPED ON EVIDENCE (not built)
+The open thread asked whether HIGH deserves UL1's onset-honesty test. Tonight's
+argmin ledger answers without a build: at HIGH (and every rung) the needless
+stand-on deflections are bought by the STATIC proximity field (PROX_STATIC
+5752 vs PROX_RIVAL 2 in the armed approach; the deflection dossier's redrock
+figure was proxCost 47% with 56% no-rival), not by the risk-state hold prices
+UL1 manipulates. Re-pricing the HIGH hold cannot reach a defeat the static
+field owns — same reason UL1-MEDIUM collapsed the label and moved no actions.
+Thread closed.
+
+================================================================================
+## SESSION CLOSE — 2026-08-09 THE HUMAN-LEVEL PUSH (day). Behavior HEAD `08310d7`.
+
+## THE OSCILLATION-CHASING MODE (found, sized, NOT a uniform tax — read carefully)
+Same-seed solo neutral A/B (`_arc_oscab.js`), oscillation removed in-page:
+  arctic FULL-zero (dirVar+speedVar): 9100 −31 | 9101 −264 | 9102 +66 | 9103 −21
+  arctic dirVar-ONLY:                 9100 flat | 9101 −161 (tacks 67→36)
+  river dirVar-only: bot FASTER WITH the oscillation on both seeds (−13/−27 to
+  remove it) — swings are exploitable there and the bot exploits them.
+VERDICT: a BIMODAL failure mode, tail-dominated — on some seed/phase draws the
+board selection tack-chases the direction oscillation (9101: 67 tacks vs her 5,
+recovering 161-264s when the swing is removed); on most seeds flat. This is
+plausibly a big slice of arctic's per-seed spread (solo fins 363-554, per-set
+meds 350-392). The router is EXONERATED: plan(first) 12.9-15.9k ≈ her sailed
+line; the excess is manoeuvre/execution. Candidate direction (NOT built): tack
+QUALITY against the oscillation — a persistence/hysteresis threshold (tack only
+when the observed shift exceeds the noise band windOsc's own unforecastability
+defines), judged on the TAIL (p75/p90, pooled sets), and it must NOT blunt
+genuine shift-playing (river profits from swings; the windward game is the
+skill being measured). ⚠️ Distinct from closed families: LANE1/2 priced the
+ROUTER's tacks; this is the strategic-layer board decision chasing a NEW signal
+that did not exist before the owner's merge.
+
+## THE VENUE TABLE (final HEAD `08310d7`, treeP0 anchors, frozen venues, verified refs)
+venue     | human med/best | pre-bot* | post-bot | ratio | dirt/boat b/m/l/f/bnd (pen) | fins
+seatrials | 189.4 / 179.7  | 194.5 | ~197.8 | 1.04 | —                            | run_eval 100
+bay       | 219.0 / 211.0  | 232   | 241    | 1.10 | 1.9/0.2/0.1/0/0 (0.42)      | 360/360
+ocean     | 177.9 / 177.7  | 190   | 203    | 1.14 | 1.4/0.2/0/0/0 (0.36)        | 144/144
+lake      | 223.1 / 218.2  | 278   | 262    | 1.18 | 3.4/0.5/7.8/0/0 (0.66)      | 360/360
+river     | 167.4 / 165.0  | 261   | 269    | 1.61 | 76.7/0.3/208.7/0/0 (2.28)   | 263/288
+lagoon    | 164.9 / 160.1  | 277   | 278    | 1.69 | 5.4/0.8/10.7/0/0 (1.03)     | 144/144
+arctic    | 212.4 / 201.6  | 367   | 366    | 1.72 | 7.0/0.4/13.2/26.3/0.2 (1.15)| 575/576
+redrock   | 218.2 / 215.2  | 616   | 602    | 2.76 | 12.6/3.8/199.9/0/37.3 (3.22)| 376/432
+*pre-session bots were sailed on per-process random-stamp routers across three
+code cuts (the survey) — directional context only, not a same-cut comparison.
+
+## WHAT LANDED / WHAT DIED / WHAT'S NEXT (one screen)
+LANDED: the mean-field bake (`08310d7`) — bay/ocean cross-process byte-equal,
+goldens PASS 20/20 twice, trap 25; P0b rebaseline (all 8 venues, table above).
+DIED: the clearance-bar ladder (monotonic dose-response, leg3 unmoved — river
+leg3 is EXECUTION-UNDER-JAM); AV1 arc-scoped band removal (inert pooled;
+0-rung defeat OVERDETERMINED); UL1-for-HIGH (skipped on ledger evidence);
+the queued-rival-gate hypothesis (arc active in 89% of crawl choices).
+MEASURED: the armed approach crawl (+69 s/boat arctic, her 100-117 u/s vs
+their 3.7-79); the beat decomposition (bay L1 avoid 57% GW-dominant, lake L2
+49%, ocean CLEAN+ARMED instead); stand-on needless ~50% at thVO 0 on
+redrock/arctic; lagoon leg2 2.46x (29 s/boat); solo arctic 420 vs fleet 366 vs
+her 215 (the gap persists without the jam); the oscillation-chasing mode.
+NEXT (size × confidence): 1. the oscillation-chasing tail (tack hysteresis,
+judged on p75/p90 + pooled sets; river must stay ≥ flat); 2. redrock 2.76x —
+the biggest gap got NO build tonight after the ladder died; re-attribute its
+pockets with the execution-under-jam lens (`_leg_where` + `_crawl_argmin`
+pattern on redrock's armed sections); 3. the give-way over-response on bay/lake
+(the 417u GW slice — response DURATION/SIZE, onset already honest); 4. lagoon
+leg2 variance tail (squall-awareness, unsized). Constraints all standing;
+anchors are treeP0 on `08310d7`; never compare across the mean-field cut.
