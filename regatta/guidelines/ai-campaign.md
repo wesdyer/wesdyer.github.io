@@ -12351,3 +12351,38 @@ median population. Mutual-finisher med +3 pooled = small traffic cost of 38
 extra boats racing legs 3-6. mark +17% = the same boats now rounding 4 more
 marks each (exposure, not behavior — verify at battery).
 Full battery in flight (lake/bay/ocean/river/lagoon/arctic).
+
+================================================================================
+## 2026-08-09 ~16:20 (day-2 cont.) — ⭐⭐ THE STUCK-STATE ESCAPE LANDING (B1v5). HEAD MOVES.
+
+One line: a boat that has been nosed-into-land + slow + SOLO for 25 leaky
+seconds enters ESCAPE — it OWNS THE HELM (outranks the island-contact reflex
+and planFloeTrajectory), walks the clearance gradient one grid cell at a time
+(the only hull-scale-honest sensor), with wiggle-grade snap turn + minSpeed,
+and exits un-nosed at speed (typ. ~3s), rival-guarded 150u-entry/120u-abort,
+20s hard cap, fixed-land venues only (floe + ≥2kt-current excluded verbatim).
+THE CAPABILITY THE SEVEN SHAPES MISSED, found by iterating the box gate:
+(1) no rose signature exists (the slot seals only BELOW 60u — every ray probe
+is blind there); (2) no park-based sustain survives the wiggle's own minSpeed
+bursts (use leaky futility); (3) the wedged boat was COMMAND-TRAPPED, not
+physically trapped — the island-contact reflex re-armed every tick and
+ping-ponged it between islet and wall for 750-820s. Helm ownership is the
+cure; the walk is ~3 seconds long.
+GATES: box — all three loop transits GONE (worst 239s; slow −70%, nosed −73%,
+fins 9/9 all four box seeds). Redrock pooled 6-set vs hz3brr*: **fins 391→429
+of 432 (the DNF class eliminated; 3 remain in 48 races)**, land −29%, boat
+rubs FLAT, mark +17% (exposure: 38 boats now sail legs 3-6), pen +5%;
+finisher-med 490→508 (COMPOSITION: ex-DNFs finish 700-850s); DNF-at-900
+paired ALL-BOATS mean −19.4 with ALL SIX SET MEANS NEGATIVE, med 0.0 (the
+cure is tail-only, the typical boat untouched). Lake B: land −34%, mean −1.8
+(a grinding boat cured); lake A, bay A/B, ocean, river A/B, lagoon A/B,
+arctic A/B/C/D, seatrials ALL byte-identical/anchor-equal. Goldens full
+--update then PASS 20/20. freeze CLEAN.
+NEW ANCHORS (this HEAD): redrock b1rr{9400..9900} pooled finisher-med 508 /
+best 294, fins 429/432 (DNF-at-900 med 509.5 mean 515.4); lake b1lakeA=hz3b
+(byte-id) b1lakeB 247 land 6.41; all other venues keep hz3b*/p0* anchors.
+OWNER-METRIC NOTE: ratio vs her 218.2 on finisher-med reads 2.33x — but the
+population changed (99% finish vs 91%). On DNF-at-900 med the ratio is
+509.5/218.2 = 2.34 vs base 501.5/218.2 = 2.30 — call it FLAT on med, −19/boat
+on mean, +38 boats on fins. The med attack now goes through the ARRIVAL QUEUE
+(Phase A re-measure, no longer seeded by wedged boats) + leg-5 + leg-1.

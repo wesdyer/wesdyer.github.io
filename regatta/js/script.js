@@ -260,6 +260,11 @@ class BotController {
         this.wiggleDuration = 0;
         this.clearanceTimer = 0;
         this.clearanceHeading = 0;
+        // Stuck-state maneuver (ESCAPE): back out along own breadcrumb track.
+        this.escActive = false;
+        this.escCrumbs = [];   // ring buffer of {x,y}, one per >=20u of travel
+        this.escSustain = 0;   // seconds the wedge signature has held
+        this.escTimer = 0;     // seconds in the active maneuver (20s hard cap)
 
         // Navigation
         this.tackCooldown = 0;
@@ -406,6 +411,146 @@ class BotController {
             }
         }
 
+        // THE STUCK-STATE MANEUVER (ESCAPE). The wedged class (redrock mark-6
+        // islet-wall slot): a parked, nosed-in boat whose whole 24-heading rose
+        // is hard-blocked within 220u. Seven shapes failed on it because no
+        // existing layer can express a multi-point retreat — the fan demands
+        // forward water, the carrot has no LOS, and the wiggle beam-reaches
+        // blind. The one guaranteed-sailable line is the boat's OWN WAKE, so
+        // the maneuver retraces breadcrumbs with wiggle-grade authority.
+        // Constraints honored: no rival within 150u to enter, abort at 120u
+        // (station-keeping/Freezing-Robot); 20s hard cap (never latch past the
+        // 30s reversal-commitment disease); fixed-land venues only, floe
+        // venues excluded verbatim (drifting ice is the other physical line).
+        // Crumbs record only while MAKING WAY: a boat that wanders a pocket at
+        // wiggle speeds for minutes would flush its own entry trail out of the
+        // ring; recording at >=40 u/s keeps the trail the last ~1200u of real
+        // sailing, which by construction ends where the boat entered the trap.
+        if (isRacing && !this.escActive && this.boat.raceState.leg >= 1
+            && !this.boat.raceState.finished && this.boat.speed * 60 >= 40) {
+            const cr = this.escCrumbs;
+            const lc = cr.length ? cr[cr.length - 1] : null;
+            if (!lc || Math.hypot(this.boat.x - lc.x, this.boat.y - lc.y) >= 20) {
+                cr.push({ x: this.boat.x, y: this.boat.y });
+                if (cr.length > 60) cr.shift();
+            }
+        }
+        const escVenueOK = state.course._gridFixed && state.course._gridFixed.length
+            && !(state.course._floeObjs && state.course._floeObjs.length)
+            // Not in strong current: the retreat line assumes the water stands
+            // still (same physical line as the arc rollout and the gybe-around).
+            && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+        if (isRacing && !this.escActive && !this.penaltySpin && escVenueOK
+            && this.boat.raceState.leg >= 1 && !this.boat.raceState.finished) {
+            // THE TRIGGER IS FUTILITY, NOT GEOMETRY. The measured loop class
+            // (redrock mark-6 slot, 750-820s transits): nosedIn 88% of the
+            // transit, slow throughout, SOLO (rivMed 1286-1660u) — but a rose
+            // test never goes fully blocked (100% of blocked wiggle samples
+            // still see some 220u-clear heading), and the wiggle's own minSpeed
+            // bursts (18+ u/s) break any sustained-parked test. So: a leaky
+            // accumulator of nosed+slow+solo seconds — the wiggle gets ~5
+            // failed bursts before ESCAPE takes over.
+            let stuck = false;
+            const g = state.course.botGrid;
+            if (g && this.boat.speed * 60 < 40) {
+                let nosed = false;
+                for (const dN of [90, 180]) {
+                    const cc = g.cell(this.boat.x + Math.sin(this.boat.heading) * dN,
+                                      this.boat.y - Math.cos(this.boat.heading) * dN);
+                    if (!g.at(cc[0], cc[1])) { nosed = true; break; }
+                }
+                if (nosed) {
+                    let rivNear = false;
+                    for (const oB of state.boats) {
+                        if (oB === this.boat || oB.raceState.finished) continue;
+                        if (Math.hypot(oB.x - this.boat.x, oB.y - this.boat.y) < 150) { rivNear = true; break; }
+                    }
+                    if (!rivNear) stuck = true;
+                }
+            }
+            if (stuck) this.escSustain += TICK;
+            else this.escSustain = Math.max(0, this.escSustain - 0.5 * TICK);
+            if (this.escSustain >= 25.0) {
+                this.escActive = true;
+                this.escTimer = 0;
+                this.escSustain = 0;
+                this.escCell = null;
+                this.wiggleActive = false;
+                this.wiggleDuration = 0;
+            }
+        }
+        if (this.escActive) {
+            this.escTimer += TICK;
+            let done = this.escTimer > 20.0;
+            if (!done) {
+                for (const oB of state.boats) {
+                    if (oB === this.boat || oB.raceState.finished) continue;
+                    if (Math.hypot(oB.x - this.boat.x, oB.y - this.boat.y) < 120) { done = true; break; }
+                }
+            }
+            if (!done && this.boat.speed * 60 > 40) {
+                const gA = state.course.botGrid;
+                let nosedA = false;
+                if (gA) for (const dN of [90, 180]) {
+                    const cc = gA.cell(this.boat.x + Math.sin(this.boat.heading) * dN,
+                                       this.boat.y - Math.cos(this.boat.heading) * dN);
+                    if (!gA.at(cc[0], cc[1])) { nosedA = true; break; }
+                }
+                if (!nosedA) done = true; // escaped: un-nosed and making way
+            }
+            if (done) {
+                this.escActive = false;
+            } else {
+                // THE CLEARANCE-GRADIENT WALK. Ray roses failed at hull scale:
+                // sampling at 60u+ calls headings clear whose first 30u holds
+                // land (v3: spd spikes 0→40→4, boat pinned in a ±30u slot).
+                // The honest sensor at this scale is the grid itself: step to
+                // the SAILABLE neighbor cell with the highest clearance value
+                // (BFS distance-to-land, monotone uphill to open water by
+                // construction), aim at its CENTER (clearance-checked at build
+                // time — hull-safe), recompute as cells are crossed. Diagonal
+                // steps require both orthogonal neighbors open (no corner
+                // threading); radius-2 fallback if the boat's ring is sealed.
+                const gE = state.course.botGrid;
+                if (gE) {
+                    if (!gE._clear && window.SailCheck && window.SailCheck.clearanceField)
+                        gE._clear = window.SailCheck.clearanceField(gE);
+                    const cB = gE.cell(this.boat.x, this.boat.y);
+                    let bi = -1, bj = -1, bScore = -1e9;
+                    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+                        if (!di && !dj) continue;
+                        const a = cB[0] + di, b = cB[1] + dj;
+                        if (!gE.at(a, b)) continue;
+                        if (di && dj && (!gE.at(cB[0] + di, cB[1]) || !gE.at(cB[0], cB[1] + dj))) continue;
+                        const clr = gE._clear ? gE._clear[b * gE.n + a] : 1;
+                        const cont = (this.escCell && a === this.escCell[0] && b === this.escCell[1]) ? 0.6 : 0;
+                        if (clr + cont > bScore) { bScore = clr + cont; bi = a; bj = b; }
+                    }
+                    if (bi < 0) {
+                        for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) {
+                            if (Math.max(Math.abs(di), Math.abs(dj)) !== 2) continue;
+                            const a = cB[0] + di, b = cB[1] + dj;
+                            if (!gE.at(a, b)) continue;
+                            const clr = gE._clear ? gE._clear[b * gE.n + a] : 1;
+                            if (clr > bScore) { bScore = clr; bi = a; bj = b; }
+                        }
+                    }
+                    if (bi >= 0) {
+                        this.escCell = [bi, bj];
+                        const wE = gE.world(bi, bj);
+                        desiredHeading = Math.atan2(wE[0] - this.boat.x, -(wE[1] - this.boat.y));
+                        speedRequest = 1.0;
+                    }
+                }
+                if (window.__escLog) window.__escLog.push({
+                    t: +state.race.timer.toFixed(1), id: this.boat.id,
+                    x: Math.round(this.boat.x), y: Math.round(this.boat.y),
+                    spd: +((this.boat.speed || 0) * 60).toFixed(0),
+                    nCr: this.escCrumbs.length
+                });
+            }
+        }
+
         // Wiggle / Unstick Logic (Overrides Strategy)
         // Eagerness is a fact about the VENUE. On land venues (Glacier Sound)
         // eager wiggles are what break up shore rafts — a 5s trigger was A/B'd
@@ -414,7 +559,7 @@ class BotController {
         // via the 6x-slow clock this replaced) is what the start pack is tuned
         // around — eager wiggles there cost Clubhouse +2s at the line.
         const wiggleAfter = (state.course._gridFixed && state.course._gridFixed.length) ? 3.0 : 18.0;
-        if (this.lowSpeedTimer > wiggleAfter && !this.wiggleActive) {
+        if (this.lowSpeedTimer > wiggleAfter && !this.wiggleActive && !this.escActive) {
             this.wiggleActive = true;
             // Land venues: quick 5s bursts (shore rafts need cadence). Open venues:
             // the tuned effective duration the 6x-slow clock actually shipped.
@@ -463,7 +608,10 @@ class BotController {
             }
         }
 
-        if (this.wiggleActive) {
+        if (this.escActive) {
+            // desiredHeading/speedRequest already set by the ESCAPE branch above;
+            // navigation and wiggle stand down while the maneuver runs.
+        } else if (this.wiggleActive) {
             this.wiggleDuration -= TICK;
 
             // LOCAL wind, not the course-centroid blend. On a venue whose regions
@@ -691,7 +839,8 @@ class BotController {
         // through the next nine seconds of moving pack. Escapes and wiggles keep
         // priority (they own genuinely stuck boats).
         this._trajFloe = false;
-        if (isRacing && !isPrestart && !this.wiggleActive && !(this.clearanceTimer > 0)
+        if (isRacing && !isPrestart && !this.wiggleActive && !this.escActive
+            && !(this.clearanceTimer > 0)
             && !(this.iceEscapeTimer > 0) && this._lastNav
             && state.course._gridFixed && state.course._gridFixed.length) {
             const tj = this.planFloeTrajectory(desiredHeading, this._lastNav);
@@ -704,7 +853,13 @@ class BotController {
         // purpose: in a raft-up the neighbours' collision costs veto every escape
         // heading and the whole raft freezes (measured: DNS tripled when this fed
         // through the cost function).
-        if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
+        // While the stuck-state maneuver is active it OWNS the helm: the
+        // contact reflex is the very ping-pong (bounce off each wall toward
+        // the other) that keeps the wedged boat looping — measured: with the
+        // reflex in charge, three different ESCAPE aims produced byte-equal
+        // 785/768/693s loops because this override discarded them every tick.
+        if (!this.escActive
+            && this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
              const col = this.boat.ai.collisionData;
              if (this.boat.speed < 1.0 || !this.iceEscapeTimer || this.iceEscapeTimer <= 0) {
                  let escH = Math.atan2(-col.normal.x, col.normal.y);
@@ -738,7 +893,7 @@ class BotController {
                  this.iceEscapeTimer = 2.0;
              }
         }
-        if (this.iceEscapeTimer > 0) {
+        if (this.iceEscapeTimer > 0 && !this.escActive) {
              this.iceEscapeTimer -= TICK;
              desiredHeading = this.iceEscapeHeading;
              speedRequest = 1.0;
@@ -2778,6 +2933,9 @@ class BotController {
         // If stuck (Wiggle Mode), ignore avoidance to force breakout
         this.lastAvoidDeviation = 0;
         if (this.wiggleActive) return desiredHeading;
+        // ESCAPE retraces the boat's own wake (sailable by construction); the
+        // 150u-entry / 120u-abort rival guards replace avoidance while it runs.
+        if (this.escActive) return desiredHeading;
 
         const boat = this.boat;
         const lookaheadFrames = 240; // 4 seconds lookahead
@@ -11023,7 +11181,9 @@ function updateAI(boat, dt) {
     aiTurnRate *= steerageFactor(boat);
 
     // Wiggle / Force Mode: Super Steering (overrides steerage to break free)
-    if (boat.controller && boat.controller.wiggleActive) {
+    // ESCAPE gets the same snap-turn authority: a wedged boat has no steerage
+    // and the multi-point retreat is impossible without it.
+    if (boat.controller && (boat.controller.wiggleActive || boat.controller.escActive)) {
         aiTurnRate = getTurnSpeed() * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
     }
 
@@ -11586,7 +11746,9 @@ function updateBoat(boat, dt) {
     if (swell) boat.speed = Math.max(0, boat.speed + (swell.surfKt * 0.25) * dt);
 
     // AI Boost: If wiggle is active, ensure minimum speed to slide off obstacles
-    if (!boat.isPlayer && boat.controller && boat.controller.wiggleActive) {
+    // (ESCAPE too — same escalation off lowSpeedTimer, which is still high
+    // when the maneuver starts from a long park.)
+    if (!boat.isPlayer && boat.controller && (boat.controller.wiggleActive || boat.controller.escActive)) {
         // Progressive Power: The longer we are stuck, the harder we push
         let minSpeed = 0.15; // 3.5kn
         const stuckTime = boat.controller.lowSpeedTimer;
