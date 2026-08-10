@@ -13022,3 +13022,34 @@ Goldens re-recorded, **PASS 30/30** — ⚠️ and note that the bare verify che
 `npm run trace` defaults to 2 seeds while the stored file holds 3 (10 venues × 3).
 Trap 24's seed-width lesson applies to the VERIFY side, not only to `--update`.
 Verify with `node regatta/eval/run_traces.js --seeds 3`. freeze CLEAN.
+
+## THE VENUE TABLE — final HEAD `3f26634` (anchors `a2*` → `s2*`/`cu2*`)
+Every row re-run on the final HEAD at the protocol its `a2*` anchor was recorded
+at. Paired medians are cand−base, so NEGATIVE = faster.
+
+| venue | human med | bot (a2, pre) | bot (post) | ratio | paired med | note |
+|---|---|---|---|---|---|---|
+| seatrials | 189.4 | 196 | 196 | 1.03x | 0.0 | inert (no land contacts) |
+| bay | 219.0 | 241 | 241 | 1.10x | 0.0 | inert (4/360 boats differ) |
+| lake | 223.1 | 246 | 246 | 1.10x | 0.0 | land contacts −50%; **rubs 2.47→3.03 ⚠️** |
+| ocean | 177.9 | 202 | 202 | 1.14x | 0.0 | inert |
+| lagoon | 164.9 | 267 | 272 | 1.65x | **+1.0** | ⚠️ gave back the snap turn's −6.0 |
+| river | 167.4 | 274 | 279 | 1.67x | **+2.0/+4.0** | ⚠️ the one venue that pays |
+| arctic | 212.4 | 374 | **358** | 1.69x | −14.0 | 72/72 finish both |
+| **redrock** | 218.2 | 459 | **386** | **1.77x** | **−60.0** | 6/6 sets, 432/432 fins, DNF 2→0 |
+
+Redrock **2.10x → 1.77x**, the goal was <436 and it landed at 386. Arctic gains
+16s unasked (the reflex it improves is the same one the granite isle needs).
+Bay/ocean/seatrials are inert exactly where predicted — they have no land
+contacts for the reflex to act on, which is the cleanest possible confirmation
+that the mechanism is the one named.
+
+**The two costs, stated plainly.** Lagoon and river both end slightly slower than
+the `a2*` anchors, and both are the ground-frame commit's doing, not the snap
+turn's: the snap turn alone had lagoon at −6.0 and river's finishers faster. The
+ground-frame escape traded that for river fleet completion (DNF-at-900 pooled
+over 162 boat-races: 13 base → 23 snap-only → 15 with the ground frame). Boats
+finishing at all was judged worth more than 6s of lagoon median, but it IS a
+trade and both should be re-examined; the sets are small (lagoon 2×8, river 6+12)
+and neither swing is resolved at these widths by the standing rules.
+Lake's boat rubs 2.47 → 3.03 is the third watch column.
