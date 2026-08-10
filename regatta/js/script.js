@@ -11216,7 +11216,23 @@ function updateAI(boat, dt) {
     // Wiggle / Force Mode: Super Steering (overrides steerage to break free)
     // ESCAPE gets the same snap-turn authority: a wedged boat has no steerage
     // and the multi-point retreat is impossible without it.
-    if (boat.controller && (boat.controller.wiggleActive || boat.controller.escActive)) {
+    // THE CONTACT REFLEX IS THE SAME CASE and was the one escape left out. A
+    // boat aground is a wedged boat by the definition this comment already uses:
+    // `collision_island` takes 60% of her speed EVERY FRAME of overlap, so she
+    // sits at a few u/s on the steerage floor of 0.6 — 0.015 * 0.6 * 60 ~= 31
+    // deg/s. Measured (`_spin_ground.js`): the commanded escape heading is stable
+    // (median 0.0 deg of change per frame, so the reflex is NOT chasing a
+    // jittering normal), the helm stands ~51 deg away from it, and the median
+    // grinding episode is 2.8s — the escape turn took as long as the grind it was
+    // meant to end. Same 5x the other two get; no new number.
+    // SCOPED OFF THE PENALTY SPIRAL, and that scoping is not cosmetic:
+    // `iceEscapeTimer` is decremented in exactly one place (below, inside
+    // applyAvoidance) and a penalised boat returns before it, so the latch
+    // FREEZES for the whole spin. Unscoped, this would hand 5x turn rate to the
+    // spiral — ~2s per 360 deg against a base spiral of ~10s — on the arbitrary
+    // subset of boats that happened to touch land in the previous 2s.
+    if (boat.controller && (boat.controller.wiggleActive || boat.controller.escActive
+        || (boat.controller.iceEscapeTimer > 0 && !boat.controller.penaltySpin))) {
         aiTurnRate = getTurnSpeed() * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
     }
 
