@@ -12812,3 +12812,31 @@ TAX (open thread) meeting the tack-count class, not a routing defect.
    her 2-4. Transfers to bay/lake/ocean (their whole gap). Measure before
    building; AV1 was already inert once, so the 0-rung defeat is overdetermined.
 5. **H2 THE 2.0s LATCH** — LAST, shape-only, never a threshold ladder.
+
+## ⏭ CARRY-FORWARD PROMPT FOR THE NEXT INSTANCE (verbatim, 2026-08-09 close)
+See the finalised plan above for the evidence; this is the paste-ready brief.
+State: HEAD d8389f3, redrock 2.10x (459 vs 218.2), goal <436. Anchors a2* (river
++ arctic keep r11, byte-identical). Baseline tree treeA2 (≡ HEAD, comment-only
+diff). Goldens 30/30, freeze CLEAN. Read [[regatta-grounding-tax]] first.
+RESEARCH IS DONE — do not re-derive: grounding 90-100 s/boat and it IS the tail
+(r² 0.87-0.90); penalties 13.3 s/boat of which 47% are Rule 19 manufactured BY
+the grounding; leg2-sub9 is a pocket (+21.7, 69% of the leg); leg 1 is avoidance
+(899u give-way) + 9 tacks vs her 2-4.
+A: H1 TANGENTIAL PEEL-OFF — the contact reflex steers straight out along the
+collision normal and latches 2.0s at full speed; in a canyon that aims at the
+opposite wall, and ESCAPE cannot reach it. Command the wall TANGENT toward
+course progress instead, when the boat has way on. Gate: _ground_tax leg 5 →
+leg 3 → _pen_tax (Rule-19 knock-on) → pooled 6-set vs a2rr* → battery. Watch
+boat rubs.
+B: RE-MEASURE before choosing #2 — tail, penalty mix and leg2-sub9 may move
+together.
+C: bowl arrival → zone-entry-rights design (NOT another local shape; arc-ungate
+is dead); leg-1 give-way waste → the fleet avoidance tax (AV1 already inert
+once, measure first).
+D: the 2.0s latch, LAST and shape-only, never a ladder (B2 died there).
+Guardrails: actions-not-prices; medians do not add (rule 26 — attribute on
+MEANS; _leg_matrix takes fp= FIRST); the penalty event re-fires every frame
+under grinding contact (count transitions); box gates cannot see fleet
+perturbation, only the pooled 6-set lands; DNF-at-900 beside finisher-med;
+npm run trace:update (3 seeds/30 traces) never a bare --update; watch lagoon
+rubs (+14% from A2) and bay rubs; close with the venue table on final HEAD.
