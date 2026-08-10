@@ -13275,3 +13275,97 @@ its "in contact vs SLOW BUT NOT TOUCHING" split is exactly that discriminator.
 Also run `_cur_rank.js` at once — if the bayou carries a stream it slots against
 river (1.38 kt) and lagoon (0.39), and the ground-frame escape already landed
 this session applies directly.
+
+---
+
+# ⏭ CARRY-FORWARD PROMPT (verbatim, 2026-08-09 close — SUPERSEDES the one at `736025a`)
+
+THE BOWL PUSH — start here.
+
+State: behaviour HEAD `3f26634`, last commit `5900fb1`. **Redrock is 1.77x median
+/ 1.81x mean (386 med, 394.0 mean vs her 218.2); remaining gap 176.4 s/boat.** The
+<436 goal was met last session, so redrock is no longer a ratio emergency — it is
+simply still the highest. Baseline tree `treeFIN` ≡ HEAD (verified). Anchors:
+`snap2rr9400..9900` (redrock 6-set), `cu2lagA/B`, `rivCUchk`/`rivCUx`, `fnlakeA`,
+`fnarcchk`/`fnarcob`; the `a2*` set is the pre-session baseline. Goldens PASS
+**30/30 verified at `--seeds 3`**, freeze CLEAN. ⚠️ Commits are LOCAL — push needs
+owner credentials.
+
+## 0. FIRST, INGEST GATORGRASS BAYOU — before building anything
+The owner is supplying the venue document plus **three human trajectories**. A new
+venue changes the golden trace count (30 → 33) and the candidate-tree symlinks,
+and both fail SILENTLY. Full checklist: [[regatta-venue-intake]].
+**Open question to ask, not assume: is it a new key, or a rework of the existing
+`swamp`?** (`swamp` is already in `VENUE_ORDER` with its own terrain, audio and
+character, and has never had recordings so has never been a gate.)
+⭐ Test this first: **`awash` shapes are NOT colliders** — `checkIslandCollisions`
+skips them, and a grass bed's whole cost is drag in `shoalFieldAt`. A grassy bayou
+can show a LARGE gap with near-zero land contacts, and every contact-system probe
+will read clean while the fleet crawls. `_pocket_split.js` is the discriminator.
+Run `_cur_rank.js` at once too: if it carries a stream it slots against river
+(1.38 kt) and lagoon (0.39), and the ground-frame escape is already in place.
+
+## THE RESEARCH IS DONE — read, do not re-derive
+[[regatta-bowl-pocket]] first, then [[regatta-grounding-tax]] and
+[[regatta-ground-frame]]. Summary of what is already measured on this HEAD:
+· **The sw-mark bowl is ONE place worth 47.7 s/boat = 27% of the remaining gap** —
+  leg2-sub9 (+21.0, armed 80%) approach and leg3-sub0 (+26.7, armed 7%, bot 35 u/s
+  vs her 83) exit, around mark 5 `sw` (-883,-1628). `_pocket_split` at
+  (-830,-1520) r=420: 63.9 s/boat inside at 51 u/s, and of the 23.9s under 40 u/s
+  only **3.5s is land contact (15%)** while **20.4s is slow-but-not-touching
+  (85%)**. Deflected 51%, landAhead 39%, armed 33%. **NOT a contact problem — it
+  is the fleet avoidance tax in constrained water.**
+· **Grounding is still the tail** (65.7 s/boat, r=0.95, r²=0.90, unchanged) **but
+  the escape is no longer the lever**: redrock's commanded escape is now
+  near-optimal AND sailable (track into rock 1.5%, 127.2 u/s vs 128.6 best).
+  Episodes/boat-race 16.4 → 14.8, tax per episode 5.5 → 4.4. The lever left is
+  ARRIVAL — why boats reach rock 14.8×/race against a human who grounds ~0.
+· **The penalty-spin hole tripled in relative size** (18.1% of land-contact time,
+  30.4% of grinding frames, 31% of episodes begin spinning) because the landing
+  fixed everything around it.
+· Family B context: AVOID_GW costs **520-899u on all four venues** (bay 641, lake
+  539, ocean 520, redrock 899) — the same term as the bowl. Arctic: leg 1 alone is
+  **84%** of its gap.
+
+## BUILD ORDER
+1. **THE BOWL / FLEET AVOIDANCE TAX IN CONSTRAINED WATER.** Biggest single place,
+   and the same term that is bay/lake/ocean's whole gap, so a win should transfer.
+   ⚠️ AV1 was inert once and its defeat is overdetermined — but AV1 had no
+   measured PLACE and no state mix; this has both. **Measure the ENCOUNTERS inside
+   the pocket first** (who deflects whom, at what range, in what role, and what
+   the unmodified CPA would have been) before proposing any shape.
+2. **`treeSPIN2` — ONE pooled 6-set bench.** Already built (= HEAD + the
+   penalty-spin reflex hole fix at ~766). It has now been AMBIGUOUS on box gates
+   twice: leg-3 tax worse (19.7 → 26.9), leg-5 flat, finish quartiles better
+   (Q2 380 → 368, Q4 509 → 498). Only the pooled bench will settle it. Do not
+   assume either way; do not re-tune it on box gates.
+3. **ARRIVAL-SIDE GROUNDING.** Escape quality is spent. Ask what puts boats on
+   rock. NOT route admission — the clearance bar is dead at a monotonic
+   dose-response.
+
+## GUARDRAILS (the ones that actually bit last session)
+· Actions-not-prices is 9-for-9 — both landings changed which actions EXIST.
+· **Rule 27**: override precedence is NOT source order; find the LAST writer.
+  **27b**: an early `return` deletes every layer below it (that is how a whole
+  reflex was dead code for penalised boats).
+· **Rule 28**: an episode's ENTRY statistic is not its typical FRAME statistic —
+  "72 u/s" was the entry; the median contact frame is ~1 u/s. H1 died on this.
+· **Rule 29**: a timer decremented in one place freezes wherever that place is
+  skipped — it nearly credited the whole win to the wrong mechanism.
+· `_leg_matrix` now prints a MEANS table — **apportion the gap with it**, quote
+  medians only for the whole-lap headline. Pass `fp=` FIRST (redrock
+  `9b7c82db:21417`, arctic `19b566b3:82810`, lake `5c9a1900:16777`, lagoon
+  `87f0eaa2:62285`, bay `a331fe02:13481`, ocean `46b32b59:6253`).
+· `npm run trace` verifies only 20 of 30 — use `run_traces.js --seeds 3` and read
+  the count. Re-record with `npm run trace:update`, never a bare `--update`.
+· Redrock lands only on the pooled 6-set; quote DNF-at-900 beside finisher-med.
+· **Non-universal wins are the norm now** ([[regatta-nonuniversal-wins]]): name
+  the losing venues, measure why, quote both sides at equal prominence, put the
+  call to the owner. Open watch columns: lake boat rubs 2.47 → 3.03, lagoon +1.0,
+  river +2/+4 (finishers 5-8s slower).
+· Close with the venue table on the final HEAD.
+
+⛔ DO NOT REBUILD: H1 tangential peel-off (leg-5 30.3 → 41.1; fires on 1.8% of
+contact frames); Phase D latch jitter (command is stable at 0.0°/frame); escape
+HEADING selection on redrock (already 1.5% from optimal — but lagoon is 29.8%
+unsailable, which is a live and separate candidate).
