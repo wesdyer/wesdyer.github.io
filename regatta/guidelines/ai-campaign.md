@@ -12614,3 +12614,81 @@ protocol near threshold. DNF-at-900 med/mean quoted BESIDE finisher-med
 (the ESCAPE landing changed the population). The owner table with every
 status update. New laps: _traj_fp.js, intake same-day. Rule-18 gaps
 (18.1(a)(3), 18.3, 18.4) are a separate rules push — do not mix into A/B.
+
+================================================================================
+## 2026-08-09 evening — PHASE 0 + ⭐⭐ THE TACK-AWARE PLAN REFERENCE LANDING (A2)
+Behavior HEAD `d8389f3`. Anchors: `a2*` everywhere (a2rr{9400..9900}, a2lakeA/B,
+a2bayA/B, a2lagA/B, a2oc, a2seaid; river/arctic keep r11 — byte-identical).
+
+### PHASE 0 — the re-baseline killed Phase A as written
+The owner's load-bearing question, answered: **4.0%** of thread deviation is a
+STAND-ON boat yielding water the rules let her hold (4.5% whole-leg-3, 5.1%
+leg-5, 2.6% river leg-3). It is structural, not marginal: **STAND_ON is 0.2% of
+ticks in the target box — 1 of 568** — because the rules deciding the pairings
+there are **13 (we are tacking) 54%** and **21 (we are on a penalty) 40%**. A
+boat mid-tack has no rights to hold; the thread is a queue, not a crossing.
+AUDIT (rule 18): pairwise rights over EVERY rival within 250u are 49.9%/50.1%,
+symmetric as the rules require; the 1:3 skew among ELECTED threats is explained
+— rule-13/21 states are give-way by the boat's own action and also raise
+closure risk. The old "55% avoid-deviating" was `lastAvoidDeviation != 0` =
+TOTAL deflection from every cause; it was never a traffic statistic.
+WHAT ACTUALLY DEFEATS THE LINE (share of deviation-radians): land 78.9% (L3) /
+84.3% (L5) / 91.7% (river); traffic-we-owe 8.8/6.3/2.3; traffic-we-hold 5.6/5.7/
+2.7. Hard vetoes are 74.5-100% the router's GRID HARD ZONE; the gradient margin
+is 64.6% (box 84.8%) the CLEARANCE BAND.
+
+### THE MECHANISM: the trust test cannot be reached on a beat
+`pathSailable` is an A* over a clearance-weighted grid with NO WIND TERM, so
+upwind the router's line runs straight up the corridor and `hPlanFF` points dead
+into the no-go. The HZ3B trust test then asks a sailing boat to be within 0.3
+rad of a heading no boat can sail — with the irons guard at 0.62 the minimum
+achievable on a beat is ~0.5. Measured in the thread box: 0-rung passes trust
+**3.9%**, 96.1% of failures are the ALIGNMENT clause alone at med **0.78 rad
+(45deg)**, and on **72% of ticks NO candidate in the fan earns the trust**.
+AND IT COSTS SPEED: 0-rung TWA 0.66 (38deg, sailing) vs winner 0.50 (29deg);
+**51.4% of chosen headings sit inside the no-go band against 0.0% of the plan
+rung** — the argmin's cheapest escape from an untrusted land term is to luff.
+
+### THE LANDING (A2, `d8389f3`)
+When the plan bearing is itself inside the no-go, measure alignment against the
+CLOSE-HAULED HEADING FOR THE TACK THE BOAT IS ON. Same 0.62 constant the irons
+guard already uses; no clause relaxed (irons/arc/open-water/current all still
+apply; other tack or bearing away still fails). Actions-not-prices: it changes
+which candidates are TRUSTED, not what anything costs.
+GATES: redrock pooled 6-set **-64.0 med / -59.9 mean, ALL SIX SETS NEGATIVE**
+(-41,-50,-58,-62,-74,-100), med **520->459 (2.38x -> 2.10x)**, fins 427->430/432,
+DNF-at-900 5->2, censored med -64.0, land -13%, mark -23%, boat -4%, pen -9% |
+lake -2.0/-8.0 med, land -12%/-24%, boat -16%/-11% (the v1-waiver kill venue
+moves the RIGHT way) | bay 0.0/0.0 med, rubs -18%/-4% | lagoon 0.0/-6.0 med,
+land +11%/-32%, **boat +16%/+13% = THE WATCH COLUMN** | ocean inert | river +
+arctic + seatrials BYTE-IDENTICAL vs same-session baselines | goldens full
+--update PASS **30/30** | freeze CLEAN.
+BOX GATE (_m5_approach leg-3 subs 0-7): bot 41-52 -> 72-78 u/s vs her 70-90,
+time in band -16%; instrumented box: trust pass 3.9%->38.9%, total deviation
+192.3 -> 44.7 rad (-77%). Lateral offset RISES in subs 1-5 (91->126, 170->204):
+the boats sail a proper beat instead of a pinched one and extend further before
+tacking — the fleet bench is what says that is worth it.
+
+### ⚠️ NEW TRAP (harness): `--update` AT THE WRONG SEED WIDTH SILENTLY NARROWS
+THE GOLDEN FILE. `node run_traces.js --update` defaults to 2 seeds; the stored
+goldens are 3 seeds (30 traces). A plain full `--update` rewrote 30 -> 20 and
+then PASSED 20/20 — a green gate on a third less coverage. Same destructive
+shape as the recorded `--venue X` trap, on the seed axis. ALWAYS use
+`npm run trace:update` (which passes --seeds 3) and check the trace COUNT in
+the PASS line against the file.
+
+### NEW TRACKED PROBES
+`_thread_role.js` — role/risk deviation ledger, 0-rung defeat attribution with
+PER-RIVAL role (role cached per tick; getRightOfWay reads current state, not the
+candidate heading), static/veto source buckets, band-trust clause breakdown,
+pinch test, pairwise-role audit. Needs an instrumented tree: treeP0R / treeP0S
+(source buckets + rule capture + trust flags + TWA), treeA2S (same on A2).
+`_pool_rr900.js` — pooled redrock CENSORED at the 900 cutoff; quote it beside
+the finisher median (the ESCAPE-landing composition trap).
+
+### NEXT
+Goal now 459 -> 436 for 2x. Phase B (zone-entry rights planning) is unchanged and
+untouched by this landing. The WIND-AGNOSTIC ROUTER is its own push, not Phase B:
+a planner-model change reshuffles every route on every venue and would confound
+A/B attribution — and it is now better posed, since the local layer treats a beat
+correctly. Lagoon boat rubs (+14% across both sets) is the open watch column.
