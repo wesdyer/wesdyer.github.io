@@ -12753,3 +12753,62 @@ transfer to the three venues now at 1.10-1.14x.
    past X°), never a threshold ladder (the B2 kill).
 Carried forward: lagoon boat rubs +14% (watch), Phase B zone-entry rights, and the
 WIND-AGNOSTIC ROUTER as its own push.
+
+## RESEARCH COMPLETED (2026-08-09 late evening) — the full inventory
+Four more probes closed the remaining unknowns. The gap is ONE dominant
+mechanism with a tributary, ONE pocket, and ONE distance class.
+
+### 1. GROUNDING — robust at 90-100 s/boat, and it IS the tail
+Cap sensitivity settled: RECOV 12s -> 90.8 s/boat (16.4 episodes/boat-race),
+RECOV 30s -> 100.0 s/boat (10.6 episodes, more merge into one). r stays
+0.93-0.95, r^2 0.87-0.90, slope 1.94-2.5s of finish per 1s of tax. The 12s cap
+was NOT badly truncating; the sizing is stable.
+
+### 2. PENALTIES — 13.3 s/boat, and HALF OF IT IS DOWNSTREAM OF GROUNDING
+`_pen_tax.js` (NEW): 3.07 penalties/boat (matches engine `totalPenalties`
+exactly), **94% of boats take >=1**, spin time 13.3 s/boat (med 9.9, p90 24.5),
+**0.00 turns unpaid at the finish** so no 15s adders. Rule mix: **Rule 19
+(room at an obstruction) 47%**, Rule 31 (mark touch) 20%, Rule 10 17%, Rule 13
+7%, Rule 11 6%. Rule 19 is MANUFACTURED BY THE GROUNDING — the collision
+handler penalises the outside boat when an overlapped boat hits land. Per-leg
+penalties track the grounding legs exactly (L3 0.98, L5 0.65, L2 0.59).
+⚠️ PROBE TRAP (rule 18): `onRaceEvent('penalty')` fires BEFORE `rs.penalty` is
+set and sustained grinding re-triggers it EVERY FRAME — the raw event count read
+304 penalties/boat against a true 3.07. Count the transition (`!rs.penalty` at
+event time) or read `totalPenalties`. The re-fire rate is itself a finding: 255
+per boat-race.
+
+### 3. LEG 2 IS A POCKET, NOT A TAIL — 69% of the leg in sub 9 alone
+`_leg_where` leg 2: sub9 human 3.0s vs bot 24.7s = **+21.7 s/boat, 69% of the
+leg's gap**; every other subsection is within 0.3-1.7s. That is the mark-6 bowl
+ARRIVAL (armed 69%, landAhead 50%, wiggle 42%), already known and already down
+from +35. ⚠️ Corrects the mid-session read that leg 2's 2.68x was diffuse/tail-
+driven: it is one place.
+
+### 4. LEG 1 IS AVOIDANCE + TACK COUNT, NOT ROUTING
+`_beat_decomp` leg 1: odometer 4140u vs a 1763u straight line, **tacks med 9
+against her 2-4**. Waste: AVOID_GW **899u (16s)**, AVOID_NONE 373u (10s),
+TACKWIN 349u (11s), CLEAN 263u (10s), ARMED 167u, AVOID_ROW 70u. So the 60%
+excess distance is give-way avoidance plus twice the tacks — THE FLEET AVOIDANCE
+TAX (open thread) meeting the tack-count class, not a routing defect.
+
+## THE FINALISED PLAN
+1. **H1 TANGENTIAL PEEL-OFF** — the contact reflex steers straight out along the
+   collision normal and latches 2.0s at full speed; in a canyon that aims at the
+   opposite wall. Replace with a heading along the wall tangent toward course
+   progress when the boat has way on and a sailable tangent exists. Expect it to
+   pay TWICE: the grounding tax AND the 47% of penalties that are Rule 19.
+   MECHANISM GATE: `_ground_tax` on leg 5 (47% of that leg), confirm leg 3, then
+   `_pen_tax` for the rule-19 knock-on, then pooled 6-set + battery. Watch
+   column: boat rubs (peeling keeps boats in the lane instead of bouncing out).
+2. **RE-MEASURE EVERYTHING AFTER H1** — the tail coupling, the penalty mix, and
+   leg 2's sub9. If the coupling is causal, several of these move together and
+   the next candidate should be chosen on fresh numbers, not these.
+3. **THE BOWL ARRIVAL (leg2-sub9, +21.7 s/boat)** — a known pocket; the previous
+   push re-sized the arc-ungate to death (crawl at 280-360u is outside arc
+   range) and named it a queue behind parked rivals. Needs the zone-entry-rights
+   design (Phase B), not another local shape.
+4. **LEG 1 / THE FLEET AVOIDANCE TAX** — 899u of give-way waste and 9 tacks vs
+   her 2-4. Transfers to bay/lake/ocean (their whole gap). Measure before
+   building; AV1 was already inert once, so the 0-rung defeat is overdetermined.
+5. **H2 THE 2.0s LATCH** — LAST, shape-only, never a threshold ladder.

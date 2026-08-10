@@ -25,7 +25,8 @@ const VENUE = process.argv[2] || 'redrock';
 const TRIALS = parseInt(process.argv[3]) || 4;
 const SEED0 = parseInt(process.argv[4]) || 9400;
 const ROOT = path.join(__dirname, process.argv[5] || 'treeA2');
-const LEG = process.argv[6] != null ? parseInt(process.argv[6]) : null;
+const LEG = process.argv[6] != null && process.argv[6] !== "-" ? parseInt(process.argv[6]) : null;
+const RECOVIN = process.argv[7];
 
 (async () => {
     const b = await chromium.launch(); const p = await b.newPage();
@@ -35,8 +36,8 @@ const LEG = process.argv[6] != null ? parseInt(process.argv[6]) : null;
     await p.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
     const all = []; const FINS = [];
     for (let t = 0; t < TRIALS; t++) {
-        const r = await p.evaluate(async ({ seed, LEG }) => {
-            const RECOV = 12;           // seconds to follow a hit before giving up
+        const r = await p.evaluate(async ({ seed, LEG, RECOVIN }) => {
+            const RECOV = parseFloat(RECOVIN) || 12;           // seconds to follow a hit before giving up
             const hist = {}, open = {}, done = [];
             const inner = window.onRaceEvent;
             window.onRaceEvent = (ty, d) => {
@@ -81,7 +82,7 @@ const LEG = process.argv[6] != null ? parseInt(process.argv[6]) : null;
             for (const [n, o] of Object.entries(open)) { o.dur = RECOV; done.push(o); }
             const fins = {}; for (const bo of state.boats) if (!bo.isPlayer) fins[bo.name] = bo.raceState.finished ? bo.raceState.finishTime : null;
             return { done, fins, nBoats: state.boats.filter(x => !x.isPlayer).length };
-        }, { seed: SEED0 + t, LEG });
+        }, { seed: SEED0 + t, LEG, RECOVIN });
         console.log(`seed ${SEED0 + t}: ${r.done.length} grounding episodes over ${r.nBoats} boats`);
         for (const e of r.done) { e.seed = SEED0 + t; all.push(e); }
         FINS.push({ seed: SEED0 + t, fins: r.fins });
