@@ -6495,10 +6495,18 @@ function drawProps(ctx, plane) {
         for (let cy = cy0; cy <= cy1; cy++)
             for (let cx = cx0; cx <= cx1; cx++) {
                 const a = grid.cells.get(`${cx},${cy}`);
-                if (a) for (let k = 0; k < a.length; k++) visit.push(props[a[k]]);
+                if (a) for (let k = 0; k < a.length; k++) visit.push(a[k]);
             }
+        // BACK TO DOCUMENT ORDER. The grid hands props back cell by cell, and painting in
+        // that order silently hands z-order to the spatial index: two overlapping props
+        // would swap which is on top depending on which bucket they fell in, and it would
+        // change as the camera moved across a cell boundary. Within a plane the stacking is
+        // the DESIGNER'S, in the order the document lists them — the same guarantee
+        // compileVenueDoc's shapeOrder makes for shapes. Sorting a few dozen indices a frame
+        // is nothing next to what the cull just saved.
+        visit.sort((a, b) => a - b);
     }
-    const list = grid ? visit : props;
+    const list = grid ? visit.map(i => props[i]) : props;
     for (const p of list) {
         const s = propSpriteFor(p, plane);
         if (!s || !s.img.complete || !s.img.naturalWidth) continue;

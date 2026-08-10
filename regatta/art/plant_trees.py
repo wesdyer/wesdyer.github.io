@@ -181,8 +181,16 @@ def build(doc):
     zone[(D >= SIDE_R) & weedy] = "backwater"
     zone[D < SIDE_R] = "side"
     zone[D < MAIN_R] = "main"
+    # SHALLOW = where a knee is exposed. Cypress knees are pneumatophores standing clear of
+    # the water, so they read on a mudflat or against a bank and disappear in deep channel.
+    shallow = kinds["mudflat"].copy()
+    for k in range(1, 5):
+        shallow |= np.roll(dry, k, 0) | np.roll(dry, -k, 0) | np.roll(dry, k, 1) | np.roll(dry, -k, 1)
+    shallow &= water
+
     return dict(X=X, Y=Y, inb=inb, dry=dry, marsh=marsh, weedy=weedy, awash=awash,
-                water=water, zone=zone, D=D, sf=sf, wg=wg, x0=x0, y0=y0, xs=xs, ys=ys)
+                water=water, zone=zone, D=D, sf=sf, wg=wg, x0=x0, y0=y0, xs=xs, ys=ys,
+                shallow=shallow)
 
 
 def cell_of(g, x, y):
@@ -207,7 +215,8 @@ def plant(doc, seed=7, dry_run=False):
     water_cells = {z: int((g["water"] & (g["zone"] == z)).sum()) for z in TARGET}
     need = {z: TARGET[z] * water_cells[z] for z in TARGET}
 
-    props = []
+    props = []      # trees, in the order they are planted
+    kneeprops = []  # kept separate so they can be emitted UNDER the trees
     trees = []
 
     def ok(x, y, species):
@@ -324,33 +333,95 @@ def plant(doc, seed=7, dry_run=False):
             place(x, y, "oak")
             got += 1
 
-    # ── knees: cypress roots, so they follow cypress that stand in reachable water ──
+    # ── knees ───────────────────────────────────────────────────────────────
+    # A bald cypress standing in water is ringed by its own pneumatophores, and that ring is
+    # the single most recognisable thing about the species. An earlier pass hung knees only
+    # off cypress inside the collide band and got 54 of them across 782 trees — one cluster
+    # per fifteen — which reads as a swamp that has never heard of cypress.
+    #
+    # They are cheap to have: the sprite is 21-46u, so fill is nothing, and the spatial grid
+    # makes the extra props free to walk. The only thing that costs is a COLLIDER, so that is
+    # the axis the count is split on rather than a single global density:
+    #
+    #   near the racing water   most cypress get a ring, and it is SOLID. This is where a
+    #                           knee earns its keep — a low spike you have to read off dark
+    #                           water, in the venue whose brief was "adding obstacles".
+    #   everywhere else         thinner, and `contact: none`. Out there a knee is texture at
+    #                           the foot of a tree nobody will sail within a hundred metres
+    #                           of, and paying the nav grid for it would be pure waste.
+    #
+    # SHALLOW WATER GETS MORE. Knees stand clear of the surface, so they read on a mudflat or
+    # against a bank and vanish in deep channel — the same reasoning that puts cypress on the
+    # margins in the first place.
+    #
+    # PLACED IN AN ARC, not a ring. Scattering uniformly around the trunk gives every tree a
+    # tidy halo, which is the rosette failure compose.py already learned about at a different
+    # scale. A partial arc with a random start angle reads as a stand of knees on one side of
+    # the tree, which is what a photograph shows.
     knees = 0
+
+    def put_knee(kx, ky, solid):
+        nonlocal knees
+        c = cell_of(g, kx, ky)
+        if c is None or not g["inb"][c] or g["dry"][c] or g["marsh"][c]:
+            return False
+        if float(seg_dist(np.array(kx), np.array(ky), *g["sf"], *g["wg"])) < LANE_CLEAR:
+            return False
+        knees += 1
+        p = {"id": f"knee-{knees}", "kind": KNEE["kind"],
+             "x": round(kx, 1), "y": round(ky, 1),
+             "heading": round(rng.uniform(0, 2 * math.pi), 3),
+             "scale": round(rng.uniform(*KNEE["scale"]), 3)}
+        if not solid:
+            p["contact"] = "none"
+        kneeprops.append(p)
+        return True
+
     for (x, y, r, sp, d) in list(trees):
-        if sp != "cypress" or d > COLLIDE_R:
+        if sp != "cypress":
             continue
-        if rng.random() > 0.42:
+        c = cell_of(g, x, y)
+        shallow = bool(c and g["shallow"][c])
+        near = d <= COLLIDE_R
+        chance = (0.80 if shallow else 0.62) if near else (0.42 if shallow else 0.26)
+        if rng.random() > chance:
             continue
+        n = rng.randint(2, 4) if near else rng.randint(1, 2)
+        base = rng.uniform(0, 2 * math.pi)
+        span = rng.uniform(0.7, 2.2)            # radians of arc the stand occupies
+        for _ in range(n):
+            a = base + rng.uniform(-span / 2, span / 2)
+            rr = rng.uniform(r * 0.50, r * 1.40)
+            put_knee(x + rr * math.cos(a), y + rr * math.sin(a), near)
+
+    # A few stands whose tree is gone: knees outlast the cypress that grew them, and an
+    # orphan cluster in open shallow water is a hazard with no landmark attached to it.
+    shal_idx = np.argwhere(g["shallow"])
+    orphans = 0
+    tries = 0
+    want_orphans = max(6, len(trees) // 60)
+    while orphans < want_orphans and tries < want_orphans * 60 and len(shal_idx):
+        tries += 1
+        i, j = shal_idx[nprng.randint(len(shal_idx))]
+        ox, oy = float(X[i, j]), float(Y[i, j])
+        od = float(seg_dist(np.array(ox), np.array(oy), *g["sf"], *g["wg"]))
+        got_any = False
         for _ in range(rng.randint(1, 3)):
-            a, rr = rng.uniform(0, 2 * math.pi), rng.uniform(r * 0.55, r * 1.15)
-            kx, ky = x + rr * math.cos(a), y + rr * math.sin(a)
-            c = cell_of(g, kx, ky)
-            if c is None or not g["inb"][c] or g["dry"][c] or g["marsh"][c]:
-                continue
-            if float(seg_dist(np.array(kx), np.array(ky), *g["sf"], *g["wg"])) < LANE_CLEAR:
-                continue
-            knees += 1
-            props.append({"id": f"knee-{knees}", "kind": KNEE["kind"],
-                          "x": round(kx, 1), "y": round(ky, 1),
-                          "heading": round(rng.uniform(0, 2 * math.pi), 3),
-                          "scale": round(rng.uniform(*KNEE["scale"]), 3)})
+            a, rr = rng.uniform(0, 2 * math.pi), rng.uniform(10, 70)
+            if put_knee(ox + rr * math.cos(a), oy + rr * math.sin(a), od <= COLLIDE_R):
+                got_any = True
+        if got_any:
+            orphans += 1
 
     # ── report ──────────────────────────────────────────────────────────────
     counts = {}
     for (_, _, _, sp, _) in trees:
         counts[sp] = counts.get(sp, 0) + 1
-    solid = sum(1 for p in props if p.get("contact") != "none")
+    solid = sum(1 for p in props + kneeprops if p.get("contact") != "none")
+    ksolid = sum(1 for x in props if x["kind"] == KNEE["kind"] and x.get("contact") != "none")
     print(f"seed {seed}: {len(trees)} trees + {knees} knees = {len(props)} props")
+    print(f"  knees    {ksolid} solid near the racing water, {knees - ksolid} decorative, "
+          f"{orphans} orphan stands; 1 per {len([t for t in trees if t[3]=='cypress'])/max(1,knees):.1f} cypress")
     print("  species  " + "  ".join(f"{k} {v}" for k, v in sorted(counts.items())))
     if counts.get("oak"):
         print(f"  ratio    {counts.get('cypress',0)/counts['oak']:.0f} cypress : "
@@ -363,12 +434,18 @@ def plant(doc, seed=7, dry_run=False):
     tot_w = int(g["water"].sum())
     tot_c = int((covered & g["water"]).sum())
     print(f"    {'OVERALL':10} {100*tot_c/max(1,tot_w):5.1f}%  [35-45%]")
-    print(f"  colliders {solid} of {len(props)} props   (Pearl Lagoon ships 37)")
+    print(f"  colliders {solid} of {len(props) + len(kneeprops)} props   (Pearl Lagoon ships 37)")
 
     if dry_run:
         print("  (dry run: nothing written)")
         return None
-    return props
+    # KNEES FIRST, so they paint UNDER every tree. Within a plane the runtime draws props in
+    # document order, and a knee is a root at the foot of a trunk: drawn on top it sits over
+    # the wood it grows out of, and a stand near a big cypress reads as debris floating on the
+    # tree rather than as its own roots. Emitting them ahead of the trees puts the whole layer
+    # underneath — not just the tree each one belongs to, which is what "below all trees" asks
+    # for and what document order gives for free.
+    return kneeprops + props
 
 
 def main():

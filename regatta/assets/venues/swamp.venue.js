@@ -12338,7 +12338,7 @@ window.VENUE_DOC["swamp"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 480
+    "cutoff": 300
   },
   "wind": {
     "regions": [
@@ -16048,10 +16048,4729 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "prop-1",
       "kind": "swamp-shack",
-      "x": -3012.0018079777283,
-      "y": 2769.5853485571292,
-      "heading": 3.6297261949764454,
-      "scale": 2.2332321923934293
+      "x": -3013.2648164979,
+      "y": 2762.007297436097,
+      "heading": 3.4400034131010564,
+      "scale": 1.2561750000130079
+    },
+    {
+      "id": "prop-2",
+      "kind": "swamp-shack-b",
+      "x": 377.94126996271314,
+      "y": 767.6316711251569,
+      "heading": 3.0373888226011676,
+      "scale": 1.9212654119619859
+    },
+    {
+      "id": "knee-1",
+      "kind": "swamp-cypress-knee",
+      "x": 1161.4,
+      "y": -1507.9,
+      "heading": 1.077,
+      "scale": 1.437
+    },
+    {
+      "id": "knee-2",
+      "kind": "swamp-cypress-knee",
+      "x": 1184.5,
+      "y": -1535.4,
+      "heading": 3.219,
+      "scale": 1.164
+    },
+    {
+      "id": "knee-3",
+      "kind": "swamp-cypress-knee",
+      "x": 1984.2,
+      "y": 2037.7,
+      "heading": 5.857,
+      "scale": 1.579,
+      "contact": "none"
+    },
+    {
+      "id": "knee-4",
+      "kind": "swamp-cypress-knee",
+      "x": 2069.8,
+      "y": 2008,
+      "heading": 5.24,
+      "scale": 1.606,
+      "contact": "none"
+    },
+    {
+      "id": "knee-5",
+      "kind": "swamp-cypress-knee",
+      "x": 1879.2,
+      "y": 1624.5,
+      "heading": 3.958,
+      "scale": 1.346,
+      "contact": "none"
+    },
+    {
+      "id": "knee-6",
+      "kind": "swamp-cypress-knee",
+      "x": 1843.1,
+      "y": 1664.1,
+      "heading": 5.71,
+      "scale": 1.021,
+      "contact": "none"
+    },
+    {
+      "id": "knee-7",
+      "kind": "swamp-cypress-knee",
+      "x": 1920.5,
+      "y": 1802.8,
+      "heading": 4.345,
+      "scale": 1.608,
+      "contact": "none"
+    },
+    {
+      "id": "knee-8",
+      "kind": "swamp-cypress-knee",
+      "x": 1899.5,
+      "y": 1867.4,
+      "heading": 5.919,
+      "scale": 1.252,
+      "contact": "none"
+    },
+    {
+      "id": "knee-9",
+      "kind": "swamp-cypress-knee",
+      "x": 3571.6,
+      "y": 537.6,
+      "heading": 4.653,
+      "scale": 1.482,
+      "contact": "none"
+    },
+    {
+      "id": "knee-10",
+      "kind": "swamp-cypress-knee",
+      "x": -19.2,
+      "y": 2985.5,
+      "heading": 3.71,
+      "scale": 1.367,
+      "contact": "none"
+    },
+    {
+      "id": "knee-11",
+      "kind": "swamp-cypress-knee",
+      "x": -51.8,
+      "y": 3040.4,
+      "heading": 5.019,
+      "scale": 1.618,
+      "contact": "none"
+    },
+    {
+      "id": "knee-12",
+      "kind": "swamp-cypress-knee",
+      "x": 2176.8,
+      "y": -1796.5,
+      "heading": 0.282,
+      "scale": 1.58,
+      "contact": "none"
+    },
+    {
+      "id": "knee-13",
+      "kind": "swamp-cypress-knee",
+      "x": 3961.1,
+      "y": 2517.9,
+      "heading": 5.468,
+      "scale": 1.175,
+      "contact": "none"
+    },
+    {
+      "id": "knee-14",
+      "kind": "swamp-cypress-knee",
+      "x": 3954.2,
+      "y": 2526.4,
+      "heading": 5.508,
+      "scale": 1.344,
+      "contact": "none"
+    },
+    {
+      "id": "knee-15",
+      "kind": "swamp-cypress-knee",
+      "x": 1218.7,
+      "y": 1817.6,
+      "heading": 1.186,
+      "scale": 1.684,
+      "contact": "none"
+    },
+    {
+      "id": "knee-16",
+      "kind": "swamp-cypress-knee",
+      "x": 219.5,
+      "y": 3716.8,
+      "heading": 4.098,
+      "scale": 1.383,
+      "contact": "none"
+    },
+    {
+      "id": "knee-17",
+      "kind": "swamp-cypress-knee",
+      "x": 194.9,
+      "y": 3761.5,
+      "heading": 1.123,
+      "scale": 1.031,
+      "contact": "none"
+    },
+    {
+      "id": "knee-18",
+      "kind": "swamp-cypress-knee",
+      "x": 3150.6,
+      "y": 4156.9,
+      "heading": 2.883,
+      "scale": 1.198,
+      "contact": "none"
+    },
+    {
+      "id": "knee-19",
+      "kind": "swamp-cypress-knee",
+      "x": 3219,
+      "y": 4192.8,
+      "heading": 2.968,
+      "scale": 1.44,
+      "contact": "none"
+    },
+    {
+      "id": "knee-20",
+      "kind": "swamp-cypress-knee",
+      "x": 3127.7,
+      "y": 261,
+      "heading": 0.546,
+      "scale": 1.415,
+      "contact": "none"
+    },
+    {
+      "id": "knee-21",
+      "kind": "swamp-cypress-knee",
+      "x": 3168.7,
+      "y": 257.7,
+      "heading": 2.818,
+      "scale": 1.727,
+      "contact": "none"
+    },
+    {
+      "id": "knee-22",
+      "kind": "swamp-cypress-knee",
+      "x": -4241.5,
+      "y": 1666.3,
+      "heading": 3.295,
+      "scale": 1.502,
+      "contact": "none"
+    },
+    {
+      "id": "knee-23",
+      "kind": "swamp-cypress-knee",
+      "x": -4231,
+      "y": 1708.6,
+      "heading": 4.208,
+      "scale": 1.222,
+      "contact": "none"
+    },
+    {
+      "id": "knee-24",
+      "kind": "swamp-cypress-knee",
+      "x": -4242.8,
+      "y": 1757.6,
+      "heading": 2.924,
+      "scale": 1.045,
+      "contact": "none"
+    },
+    {
+      "id": "knee-25",
+      "kind": "swamp-cypress-knee",
+      "x": -4065.9,
+      "y": 1703,
+      "heading": 0.826,
+      "scale": 1.534,
+      "contact": "none"
+    },
+    {
+      "id": "knee-26",
+      "kind": "swamp-cypress-knee",
+      "x": -4045.9,
+      "y": 1678.1,
+      "heading": 5.717,
+      "scale": 1.703,
+      "contact": "none"
+    },
+    {
+      "id": "knee-27",
+      "kind": "swamp-cypress-knee",
+      "x": -4307.8,
+      "y": 1752.9,
+      "heading": 2.471,
+      "scale": 1.097,
+      "contact": "none"
+    },
+    {
+      "id": "knee-28",
+      "kind": "swamp-cypress-knee",
+      "x": 3621.8,
+      "y": 2875.5,
+      "heading": 1.418,
+      "scale": 1.506,
+      "contact": "none"
+    },
+    {
+      "id": "knee-29",
+      "kind": "swamp-cypress-knee",
+      "x": 3618,
+      "y": 2982.9,
+      "heading": 1.967,
+      "scale": 1.027,
+      "contact": "none"
+    },
+    {
+      "id": "knee-30",
+      "kind": "swamp-cypress-knee",
+      "x": -3897.9,
+      "y": -1735.8,
+      "heading": 5.855,
+      "scale": 1.639,
+      "contact": "none"
+    },
+    {
+      "id": "knee-31",
+      "kind": "swamp-cypress-knee",
+      "x": -2583.5,
+      "y": -1924.7,
+      "heading": 0.38,
+      "scale": 0.864,
+      "contact": "none"
+    },
+    {
+      "id": "knee-32",
+      "kind": "swamp-cypress-knee",
+      "x": -2580.1,
+      "y": -1874.2,
+      "heading": 3.71,
+      "scale": 1.674,
+      "contact": "none"
+    },
+    {
+      "id": "knee-33",
+      "kind": "swamp-cypress-knee",
+      "x": -2243.5,
+      "y": -1884.8,
+      "heading": 4.948,
+      "scale": 1.024,
+      "contact": "none"
+    },
+    {
+      "id": "knee-34",
+      "kind": "swamp-cypress-knee",
+      "x": -2042.5,
+      "y": -1982.2,
+      "heading": 1.817,
+      "scale": 1.251,
+      "contact": "none"
+    },
+    {
+      "id": "knee-35",
+      "kind": "swamp-cypress-knee",
+      "x": -2002.6,
+      "y": -1962.3,
+      "heading": 2.419,
+      "scale": 1.466,
+      "contact": "none"
+    },
+    {
+      "id": "knee-36",
+      "kind": "swamp-cypress-knee",
+      "x": 3105.3,
+      "y": 1737.7,
+      "heading": 3.145,
+      "scale": 1.463,
+      "contact": "none"
+    },
+    {
+      "id": "knee-37",
+      "kind": "swamp-cypress-knee",
+      "x": 1818,
+      "y": 241.3,
+      "heading": 1.796,
+      "scale": 1.315,
+      "contact": "none"
+    },
+    {
+      "id": "knee-38",
+      "kind": "swamp-cypress-knee",
+      "x": 1743.8,
+      "y": 4641.8,
+      "heading": 3.25,
+      "scale": 0.805,
+      "contact": "none"
+    },
+    {
+      "id": "knee-39",
+      "kind": "swamp-cypress-knee",
+      "x": 3177.7,
+      "y": 4195.9,
+      "heading": 2.208,
+      "scale": 1.088,
+      "contact": "none"
+    },
+    {
+      "id": "knee-40",
+      "kind": "swamp-cypress-knee",
+      "x": 3096.1,
+      "y": 4329.1,
+      "heading": 3.118,
+      "scale": 1.11,
+      "contact": "none"
+    },
+    {
+      "id": "knee-41",
+      "kind": "swamp-cypress-knee",
+      "x": 3088.8,
+      "y": 4273.6,
+      "heading": 0.616,
+      "scale": 1.708,
+      "contact": "none"
+    },
+    {
+      "id": "knee-42",
+      "kind": "swamp-cypress-knee",
+      "x": 1277.3,
+      "y": -1355.1,
+      "heading": 2.141,
+      "scale": 1.608
+    },
+    {
+      "id": "knee-43",
+      "kind": "swamp-cypress-knee",
+      "x": 1258.2,
+      "y": -1347.1,
+      "heading": 1.077,
+      "scale": 1.701
+    },
+    {
+      "id": "knee-44",
+      "kind": "swamp-cypress-knee",
+      "x": 1254.9,
+      "y": -1327,
+      "heading": 4.43,
+      "scale": 1.388
+    },
+    {
+      "id": "knee-45",
+      "kind": "swamp-cypress-knee",
+      "x": 265.7,
+      "y": -3543.5,
+      "heading": 5.483,
+      "scale": 0.863,
+      "contact": "none"
+    },
+    {
+      "id": "knee-46",
+      "kind": "swamp-cypress-knee",
+      "x": -3253.3,
+      "y": -2762.1,
+      "heading": 1.42,
+      "scale": 1.054,
+      "contact": "none"
+    },
+    {
+      "id": "knee-47",
+      "kind": "swamp-cypress-knee",
+      "x": -3269.2,
+      "y": -2740.4,
+      "heading": 0.882,
+      "scale": 1.163,
+      "contact": "none"
+    },
+    {
+      "id": "knee-48",
+      "kind": "swamp-cypress-knee",
+      "x": -3194.4,
+      "y": -2817.8,
+      "heading": 3.644,
+      "scale": 1.047,
+      "contact": "none"
+    },
+    {
+      "id": "knee-49",
+      "kind": "swamp-cypress-knee",
+      "x": -3183,
+      "y": -2749.6,
+      "heading": 0.892,
+      "scale": 1.651,
+      "contact": "none"
+    },
+    {
+      "id": "knee-50",
+      "kind": "swamp-cypress-knee",
+      "x": -1720.8,
+      "y": 4016.7,
+      "heading": 4.595,
+      "scale": 1.033,
+      "contact": "none"
+    },
+    {
+      "id": "knee-51",
+      "kind": "swamp-cypress-knee",
+      "x": -1788.6,
+      "y": 4026.4,
+      "heading": 1.165,
+      "scale": 1.523,
+      "contact": "none"
+    },
+    {
+      "id": "knee-52",
+      "kind": "swamp-cypress-knee",
+      "x": 2072.1,
+      "y": 1756.3,
+      "heading": 6.243,
+      "scale": 1.766,
+      "contact": "none"
+    },
+    {
+      "id": "knee-53",
+      "kind": "swamp-cypress-knee",
+      "x": 2500.4,
+      "y": 1955.3,
+      "heading": 3.222,
+      "scale": 1.315,
+      "contact": "none"
+    },
+    {
+      "id": "knee-54",
+      "kind": "swamp-cypress-knee",
+      "x": -3028.9,
+      "y": 1197.4,
+      "heading": 1.914,
+      "scale": 1.275
+    },
+    {
+      "id": "knee-55",
+      "kind": "swamp-cypress-knee",
+      "x": -3079.2,
+      "y": 1336.7,
+      "heading": 5.32,
+      "scale": 0.92
+    },
+    {
+      "id": "knee-56",
+      "kind": "swamp-cypress-knee",
+      "x": -3056.4,
+      "y": 1220.8,
+      "heading": 3.957,
+      "scale": 1.631
+    },
+    {
+      "id": "knee-57",
+      "kind": "swamp-cypress-knee",
+      "x": -2867.8,
+      "y": 1396.8,
+      "heading": 3.078,
+      "scale": 1.195
+    },
+    {
+      "id": "knee-58",
+      "kind": "swamp-cypress-knee",
+      "x": -2946,
+      "y": 1346.1,
+      "heading": 1.548,
+      "scale": 1.235
+    },
+    {
+      "id": "knee-59",
+      "kind": "swamp-cypress-knee",
+      "x": -3090.7,
+      "y": 1415.6,
+      "heading": 4.403,
+      "scale": 1.054
+    },
+    {
+      "id": "knee-60",
+      "kind": "swamp-cypress-knee",
+      "x": -3041.4,
+      "y": 1459.4,
+      "heading": 3.893,
+      "scale": 1.163
+    },
+    {
+      "id": "knee-61",
+      "kind": "swamp-cypress-knee",
+      "x": 475.4,
+      "y": -2917.4,
+      "heading": 2.194,
+      "scale": 1.301,
+      "contact": "none"
+    },
+    {
+      "id": "knee-62",
+      "kind": "swamp-cypress-knee",
+      "x": 980.5,
+      "y": 2125.3,
+      "heading": 2.379,
+      "scale": 1.49,
+      "contact": "none"
+    },
+    {
+      "id": "knee-63",
+      "kind": "swamp-cypress-knee",
+      "x": 983.9,
+      "y": 2087.5,
+      "heading": 0.525,
+      "scale": 1.72,
+      "contact": "none"
+    },
+    {
+      "id": "knee-64",
+      "kind": "swamp-cypress-knee",
+      "x": 1578.2,
+      "y": -488.5,
+      "heading": 4.237,
+      "scale": 1.606
+    },
+    {
+      "id": "knee-65",
+      "kind": "swamp-cypress-knee",
+      "x": 1596.1,
+      "y": -441.7,
+      "heading": 2.094,
+      "scale": 1.619
+    },
+    {
+      "id": "knee-66",
+      "kind": "swamp-cypress-knee",
+      "x": 1590.7,
+      "y": -489.3,
+      "heading": 4.422,
+      "scale": 0.941
+    },
+    {
+      "id": "knee-67",
+      "kind": "swamp-cypress-knee",
+      "x": 414.5,
+      "y": 4507.7,
+      "heading": 0.373,
+      "scale": 1.747,
+      "contact": "none"
+    },
+    {
+      "id": "knee-68",
+      "kind": "swamp-cypress-knee",
+      "x": 354.7,
+      "y": 4553.9,
+      "heading": 2.461,
+      "scale": 0.953,
+      "contact": "none"
+    },
+    {
+      "id": "knee-69",
+      "kind": "swamp-cypress-knee",
+      "x": 698,
+      "y": 1436.6,
+      "heading": 4.467,
+      "scale": 1.38,
+      "contact": "none"
+    },
+    {
+      "id": "knee-70",
+      "kind": "swamp-cypress-knee",
+      "x": -1580.9,
+      "y": 2163.8,
+      "heading": 4.782,
+      "scale": 1.568
+    },
+    {
+      "id": "knee-71",
+      "kind": "swamp-cypress-knee",
+      "x": -1633.3,
+      "y": 2200.4,
+      "heading": 1.031,
+      "scale": 1.419
+    },
+    {
+      "id": "knee-72",
+      "kind": "swamp-cypress-knee",
+      "x": -1304.7,
+      "y": 2156.6,
+      "heading": 4.688,
+      "scale": 1.435
+    },
+    {
+      "id": "knee-73",
+      "kind": "swamp-cypress-knee",
+      "x": -1402.8,
+      "y": 2150.8,
+      "heading": 4.504,
+      "scale": 1.647
+    },
+    {
+      "id": "knee-74",
+      "kind": "swamp-cypress-knee",
+      "x": -1416.5,
+      "y": 2088.4,
+      "heading": 0.518,
+      "scale": 1.444
+    },
+    {
+      "id": "knee-75",
+      "kind": "swamp-cypress-knee",
+      "x": -1397.1,
+      "y": 2088.7,
+      "heading": 5.389,
+      "scale": 0.921
+    },
+    {
+      "id": "knee-76",
+      "kind": "swamp-cypress-knee",
+      "x": -1353.4,
+      "y": 2297,
+      "heading": 2.618,
+      "scale": 1.179
+    },
+    {
+      "id": "knee-77",
+      "kind": "swamp-cypress-knee",
+      "x": -1345.3,
+      "y": 2333.1,
+      "heading": 6.215,
+      "scale": 1.659
+    },
+    {
+      "id": "knee-78",
+      "kind": "swamp-cypress-knee",
+      "x": -1395.1,
+      "y": 2345.3,
+      "heading": 5.706,
+      "scale": 1.658
+    },
+    {
+      "id": "knee-79",
+      "kind": "swamp-cypress-knee",
+      "x": -1387.4,
+      "y": 2314.3,
+      "heading": 3.214,
+      "scale": 1.516
+    },
+    {
+      "id": "knee-80",
+      "kind": "swamp-cypress-knee",
+      "x": -487.6,
+      "y": -2687.8,
+      "heading": 2.459,
+      "scale": 1.377,
+      "contact": "none"
+    },
+    {
+      "id": "knee-81",
+      "kind": "swamp-cypress-knee",
+      "x": -3588.2,
+      "y": 1049.2,
+      "heading": 5.583,
+      "scale": 1.684,
+      "contact": "none"
+    },
+    {
+      "id": "knee-82",
+      "kind": "swamp-cypress-knee",
+      "x": -3503,
+      "y": 972.1,
+      "heading": 3.984,
+      "scale": 1.353,
+      "contact": "none"
+    },
+    {
+      "id": "knee-83",
+      "kind": "swamp-cypress-knee",
+      "x": -3415.4,
+      "y": 979.9,
+      "heading": 1.505,
+      "scale": 1.642,
+      "contact": "none"
+    },
+    {
+      "id": "knee-84",
+      "kind": "swamp-cypress-knee",
+      "x": -3365.1,
+      "y": 961.3,
+      "heading": 1.233,
+      "scale": 1.14,
+      "contact": "none"
+    },
+    {
+      "id": "knee-85",
+      "kind": "swamp-cypress-knee",
+      "x": -3546.4,
+      "y": 1180.9,
+      "heading": 5.879,
+      "scale": 1.729,
+      "contact": "none"
+    },
+    {
+      "id": "knee-86",
+      "kind": "swamp-cypress-knee",
+      "x": -3595.5,
+      "y": 1182.3,
+      "heading": 1.474,
+      "scale": 1.364,
+      "contact": "none"
+    },
+    {
+      "id": "knee-87",
+      "kind": "swamp-cypress-knee",
+      "x": -659.7,
+      "y": 3311.7,
+      "heading": 1.503,
+      "scale": 0.848,
+      "contact": "none"
+    },
+    {
+      "id": "knee-88",
+      "kind": "swamp-cypress-knee",
+      "x": -2655.5,
+      "y": 137.1,
+      "heading": 1.026,
+      "scale": 1.295,
+      "contact": "none"
+    },
+    {
+      "id": "knee-89",
+      "kind": "swamp-cypress-knee",
+      "x": -2646.7,
+      "y": 149.7,
+      "heading": 3.347,
+      "scale": 1.369,
+      "contact": "none"
+    },
+    {
+      "id": "knee-90",
+      "kind": "swamp-cypress-knee",
+      "x": -2848.1,
+      "y": 272,
+      "heading": 3.301,
+      "scale": 0.835,
+      "contact": "none"
+    },
+    {
+      "id": "knee-91",
+      "kind": "swamp-cypress-knee",
+      "x": -3001.2,
+      "y": 104.3,
+      "heading": 3.092,
+      "scale": 0.9,
+      "contact": "none"
+    },
+    {
+      "id": "knee-92",
+      "kind": "swamp-cypress-knee",
+      "x": -996.4,
+      "y": -3818.5,
+      "heading": 4.49,
+      "scale": 1.209,
+      "contact": "none"
+    },
+    {
+      "id": "knee-93",
+      "kind": "swamp-cypress-knee",
+      "x": -822.9,
+      "y": -1956.3,
+      "heading": 3.484,
+      "scale": 0.96,
+      "contact": "none"
+    },
+    {
+      "id": "knee-94",
+      "kind": "swamp-cypress-knee",
+      "x": 2497.4,
+      "y": -306.7,
+      "heading": 1.781,
+      "scale": 1.222,
+      "contact": "none"
+    },
+    {
+      "id": "knee-95",
+      "kind": "swamp-cypress-knee",
+      "x": -1875.3,
+      "y": -2443.6,
+      "heading": 5.39,
+      "scale": 0.892,
+      "contact": "none"
+    },
+    {
+      "id": "knee-96",
+      "kind": "swamp-cypress-knee",
+      "x": 1215.2,
+      "y": 5095,
+      "heading": 2.515,
+      "scale": 0.848,
+      "contact": "none"
+    },
+    {
+      "id": "knee-97",
+      "kind": "swamp-cypress-knee",
+      "x": 1231.8,
+      "y": 5105.8,
+      "heading": 5.168,
+      "scale": 1.48,
+      "contact": "none"
+    },
+    {
+      "id": "knee-98",
+      "kind": "swamp-cypress-knee",
+      "x": 697.5,
+      "y": 1757.5,
+      "heading": 6.224,
+      "scale": 1.231,
+      "contact": "none"
+    },
+    {
+      "id": "knee-99",
+      "kind": "swamp-cypress-knee",
+      "x": -283,
+      "y": 2756.8,
+      "heading": 0.048,
+      "scale": 0.826,
+      "contact": "none"
+    },
+    {
+      "id": "knee-100",
+      "kind": "swamp-cypress-knee",
+      "x": 203.4,
+      "y": 4807.9,
+      "heading": 1.345,
+      "scale": 0.89,
+      "contact": "none"
+    },
+    {
+      "id": "knee-101",
+      "kind": "swamp-cypress-knee",
+      "x": 498.6,
+      "y": 4937.5,
+      "heading": 1.403,
+      "scale": 1.325,
+      "contact": "none"
+    },
+    {
+      "id": "knee-102",
+      "kind": "swamp-cypress-knee",
+      "x": 583.4,
+      "y": 4912.4,
+      "heading": 3.153,
+      "scale": 1.064,
+      "contact": "none"
+    },
+    {
+      "id": "knee-103",
+      "kind": "swamp-cypress-knee",
+      "x": -676.2,
+      "y": 3933.1,
+      "heading": 5.663,
+      "scale": 1.531,
+      "contact": "none"
+    },
+    {
+      "id": "knee-104",
+      "kind": "swamp-cypress-knee",
+      "x": -635,
+      "y": 3854.7,
+      "heading": 3.185,
+      "scale": 1.054,
+      "contact": "none"
+    },
+    {
+      "id": "knee-105",
+      "kind": "swamp-cypress-knee",
+      "x": 1145.2,
+      "y": 3587.4,
+      "heading": 4.395,
+      "scale": 1.191,
+      "contact": "none"
+    },
+    {
+      "id": "knee-106",
+      "kind": "swamp-cypress-knee",
+      "x": 1191.8,
+      "y": 3692.3,
+      "heading": 5.983,
+      "scale": 0.973,
+      "contact": "none"
+    },
+    {
+      "id": "knee-107",
+      "kind": "swamp-cypress-knee",
+      "x": 729.5,
+      "y": 3977,
+      "heading": 5.171,
+      "scale": 1.376,
+      "contact": "none"
+    },
+    {
+      "id": "knee-108",
+      "kind": "swamp-cypress-knee",
+      "x": 799.8,
+      "y": 4030.9,
+      "heading": 1.893,
+      "scale": 0.861,
+      "contact": "none"
+    },
+    {
+      "id": "knee-109",
+      "kind": "swamp-cypress-knee",
+      "x": 348.7,
+      "y": -164.3,
+      "heading": 4.908,
+      "scale": 1.575
+    },
+    {
+      "id": "knee-110",
+      "kind": "swamp-cypress-knee",
+      "x": 303.9,
+      "y": -162.5,
+      "heading": 1.095,
+      "scale": 1.301
+    },
+    {
+      "id": "knee-111",
+      "kind": "swamp-cypress-knee",
+      "x": 287.4,
+      "y": -171.1,
+      "heading": 3.713,
+      "scale": 1.431
+    },
+    {
+      "id": "knee-112",
+      "kind": "swamp-cypress-knee",
+      "x": 357.4,
+      "y": -166.2,
+      "heading": 5.316,
+      "scale": 0.818
+    },
+    {
+      "id": "knee-113",
+      "kind": "swamp-cypress-knee",
+      "x": 3831.3,
+      "y": 1758,
+      "heading": 0.143,
+      "scale": 1.126,
+      "contact": "none"
+    },
+    {
+      "id": "knee-114",
+      "kind": "swamp-cypress-knee",
+      "x": 3882.8,
+      "y": 1770.3,
+      "heading": 0.598,
+      "scale": 0.814,
+      "contact": "none"
+    },
+    {
+      "id": "knee-115",
+      "kind": "swamp-cypress-knee",
+      "x": 3816.9,
+      "y": 1483.5,
+      "heading": 1.286,
+      "scale": 1.071,
+      "contact": "none"
+    },
+    {
+      "id": "knee-116",
+      "kind": "swamp-cypress-knee",
+      "x": 3221.3,
+      "y": 1648.7,
+      "heading": 0.827,
+      "scale": 1.315,
+      "contact": "none"
+    },
+    {
+      "id": "knee-117",
+      "kind": "swamp-cypress-knee",
+      "x": 3248,
+      "y": 1674.2,
+      "heading": 2.315,
+      "scale": 0.965,
+      "contact": "none"
+    },
+    {
+      "id": "knee-118",
+      "kind": "swamp-cypress-knee",
+      "x": -293.8,
+      "y": 3967.7,
+      "heading": 1.235,
+      "scale": 1.714,
+      "contact": "none"
+    },
+    {
+      "id": "knee-119",
+      "kind": "swamp-cypress-knee",
+      "x": -1509.8,
+      "y": 3886.5,
+      "heading": 4.477,
+      "scale": 0.804,
+      "contact": "none"
+    },
+    {
+      "id": "knee-120",
+      "kind": "swamp-cypress-knee",
+      "x": -1749,
+      "y": 3985.1,
+      "heading": 2.743,
+      "scale": 1.593,
+      "contact": "none"
+    },
+    {
+      "id": "knee-121",
+      "kind": "swamp-cypress-knee",
+      "x": -1761,
+      "y": 3924.1,
+      "heading": 5.62,
+      "scale": 1.437,
+      "contact": "none"
+    },
+    {
+      "id": "knee-122",
+      "kind": "swamp-cypress-knee",
+      "x": 3567.6,
+      "y": 2746,
+      "heading": 5.272,
+      "scale": 0.943,
+      "contact": "none"
+    },
+    {
+      "id": "knee-123",
+      "kind": "swamp-cypress-knee",
+      "x": 1505.3,
+      "y": -2738.7,
+      "heading": 0.222,
+      "scale": 1.142,
+      "contact": "none"
+    },
+    {
+      "id": "knee-124",
+      "kind": "swamp-cypress-knee",
+      "x": 1502.8,
+      "y": -2779.9,
+      "heading": 3.025,
+      "scale": 1.705,
+      "contact": "none"
+    },
+    {
+      "id": "knee-125",
+      "kind": "swamp-cypress-knee",
+      "x": 1961.2,
+      "y": 3997.6,
+      "heading": 2.842,
+      "scale": 1.482,
+      "contact": "none"
+    },
+    {
+      "id": "knee-126",
+      "kind": "swamp-cypress-knee",
+      "x": 1810.1,
+      "y": 3682.2,
+      "heading": 3.228,
+      "scale": 1.288,
+      "contact": "none"
+    },
+    {
+      "id": "knee-127",
+      "kind": "swamp-cypress-knee",
+      "x": -864.2,
+      "y": 3914.2,
+      "heading": 0.32,
+      "scale": 1.181,
+      "contact": "none"
+    },
+    {
+      "id": "knee-128",
+      "kind": "swamp-cypress-knee",
+      "x": -869.4,
+      "y": 3936.3,
+      "heading": 0.859,
+      "scale": 1.702,
+      "contact": "none"
+    },
+    {
+      "id": "knee-129",
+      "kind": "swamp-cypress-knee",
+      "x": -2766.3,
+      "y": -505,
+      "heading": 2.481,
+      "scale": 1.161,
+      "contact": "none"
+    },
+    {
+      "id": "knee-130",
+      "kind": "swamp-cypress-knee",
+      "x": -2150.8,
+      "y": -348.2,
+      "heading": 1.277,
+      "scale": 1.038,
+      "contact": "none"
+    },
+    {
+      "id": "knee-131",
+      "kind": "swamp-cypress-knee",
+      "x": -2464.5,
+      "y": -844.1,
+      "heading": 0.975,
+      "scale": 1.279,
+      "contact": "none"
+    },
+    {
+      "id": "knee-132",
+      "kind": "swamp-cypress-knee",
+      "x": -2358.9,
+      "y": -890.1,
+      "heading": 0.309,
+      "scale": 1.28,
+      "contact": "none"
+    },
+    {
+      "id": "knee-133",
+      "kind": "swamp-cypress-knee",
+      "x": -2390.8,
+      "y": -800.2,
+      "heading": 1.924,
+      "scale": 1.202,
+      "contact": "none"
+    },
+    {
+      "id": "knee-134",
+      "kind": "swamp-cypress-knee",
+      "x": -153.9,
+      "y": 4802.2,
+      "heading": 2.448,
+      "scale": 1.794,
+      "contact": "none"
+    },
+    {
+      "id": "knee-135",
+      "kind": "swamp-cypress-knee",
+      "x": 3240.8,
+      "y": 3835.7,
+      "heading": 4.112,
+      "scale": 1.08,
+      "contact": "none"
+    },
+    {
+      "id": "knee-136",
+      "kind": "swamp-cypress-knee",
+      "x": 3225.4,
+      "y": 3782.5,
+      "heading": 1.302,
+      "scale": 1.337,
+      "contact": "none"
+    },
+    {
+      "id": "knee-137",
+      "kind": "swamp-cypress-knee",
+      "x": 2741.8,
+      "y": 2942.9,
+      "heading": 1.541,
+      "scale": 1.542,
+      "contact": "none"
+    },
+    {
+      "id": "knee-138",
+      "kind": "swamp-cypress-knee",
+      "x": -3497.7,
+      "y": -2330.8,
+      "heading": 5.869,
+      "scale": 1.413,
+      "contact": "none"
+    },
+    {
+      "id": "knee-139",
+      "kind": "swamp-cypress-knee",
+      "x": -3487.8,
+      "y": -2278.5,
+      "heading": 3.187,
+      "scale": 1.717,
+      "contact": "none"
+    },
+    {
+      "id": "knee-140",
+      "kind": "swamp-cypress-knee",
+      "x": 926.5,
+      "y": -1595.2,
+      "heading": 1.577,
+      "scale": 1.509
+    },
+    {
+      "id": "knee-141",
+      "kind": "swamp-cypress-knee",
+      "x": 873,
+      "y": -1595,
+      "heading": 4.341,
+      "scale": 1.188
+    },
+    {
+      "id": "knee-142",
+      "kind": "swamp-cypress-knee",
+      "x": 963,
+      "y": -1575.8,
+      "heading": 1.725,
+      "scale": 1.342
+    },
+    {
+      "id": "knee-143",
+      "kind": "swamp-cypress-knee",
+      "x": -3772.7,
+      "y": 2656.9,
+      "heading": 2.789,
+      "scale": 1.689,
+      "contact": "none"
+    },
+    {
+      "id": "knee-144",
+      "kind": "swamp-cypress-knee",
+      "x": -3738,
+      "y": 2711.7,
+      "heading": 4.275,
+      "scale": 1.2,
+      "contact": "none"
+    },
+    {
+      "id": "knee-145",
+      "kind": "swamp-cypress-knee",
+      "x": 2167.5,
+      "y": 3644.9,
+      "heading": 1.189,
+      "scale": 1.187,
+      "contact": "none"
+    },
+    {
+      "id": "knee-146",
+      "kind": "swamp-cypress-knee",
+      "x": 2244.3,
+      "y": 3643.7,
+      "heading": 3.712,
+      "scale": 0.946,
+      "contact": "none"
+    },
+    {
+      "id": "knee-147",
+      "kind": "swamp-cypress-knee",
+      "x": 2568.6,
+      "y": 3585.6,
+      "heading": 4.236,
+      "scale": 1.646,
+      "contact": "none"
+    },
+    {
+      "id": "knee-148",
+      "kind": "swamp-cypress-knee",
+      "x": 2557.8,
+      "y": 3565.5,
+      "heading": 5.935,
+      "scale": 0.902,
+      "contact": "none"
+    },
+    {
+      "id": "knee-149",
+      "kind": "swamp-cypress-knee",
+      "x": 2314.8,
+      "y": 3432.8,
+      "heading": 4.932,
+      "scale": 0.985,
+      "contact": "none"
+    },
+    {
+      "id": "knee-150",
+      "kind": "swamp-cypress-knee",
+      "x": 2396.6,
+      "y": 3435.7,
+      "heading": 4.242,
+      "scale": 1.088,
+      "contact": "none"
+    },
+    {
+      "id": "knee-151",
+      "kind": "swamp-cypress-knee",
+      "x": 3362.6,
+      "y": 86.2,
+      "heading": 1.316,
+      "scale": 0.917,
+      "contact": "none"
+    },
+    {
+      "id": "knee-152",
+      "kind": "swamp-cypress-knee",
+      "x": 2138.1,
+      "y": 472.1,
+      "heading": 5.755,
+      "scale": 1.696,
+      "contact": "none"
+    },
+    {
+      "id": "knee-153",
+      "kind": "swamp-cypress-knee",
+      "x": 575.2,
+      "y": -2652.3,
+      "heading": 5.854,
+      "scale": 0.898,
+      "contact": "none"
+    },
+    {
+      "id": "knee-154",
+      "kind": "swamp-cypress-knee",
+      "x": 620.3,
+      "y": -2747.6,
+      "heading": 0.968,
+      "scale": 0.865,
+      "contact": "none"
+    },
+    {
+      "id": "knee-155",
+      "kind": "swamp-cypress-knee",
+      "x": 550.2,
+      "y": 1267,
+      "heading": 1.892,
+      "scale": 1.777,
+      "contact": "none"
+    },
+    {
+      "id": "knee-156",
+      "kind": "swamp-cypress-knee",
+      "x": 758.1,
+      "y": 1516.6,
+      "heading": 1.176,
+      "scale": 1.459,
+      "contact": "none"
+    },
+    {
+      "id": "knee-157",
+      "kind": "swamp-cypress-knee",
+      "x": 565,
+      "y": 1502.5,
+      "heading": 1.857,
+      "scale": 1.381,
+      "contact": "none"
+    },
+    {
+      "id": "knee-158",
+      "kind": "swamp-cypress-knee",
+      "x": 531.6,
+      "y": 1498,
+      "heading": 2.886,
+      "scale": 0.932,
+      "contact": "none"
+    },
+    {
+      "id": "knee-159",
+      "kind": "swamp-cypress-knee",
+      "x": -1374.7,
+      "y": -411.2,
+      "heading": 1.239,
+      "scale": 1.301
+    },
+    {
+      "id": "knee-160",
+      "kind": "swamp-cypress-knee",
+      "x": -1295.6,
+      "y": -407.6,
+      "heading": 6.221,
+      "scale": 0.826
+    },
+    {
+      "id": "knee-161",
+      "kind": "swamp-cypress-knee",
+      "x": -1332.4,
+      "y": -411.5,
+      "heading": 1.047,
+      "scale": 1.389
+    },
+    {
+      "id": "knee-162",
+      "kind": "swamp-cypress-knee",
+      "x": -1394.4,
+      "y": -392.3,
+      "heading": 3.509,
+      "scale": 1.499
+    },
+    {
+      "id": "knee-163",
+      "kind": "swamp-cypress-knee",
+      "x": 687.8,
+      "y": 702.7,
+      "heading": 3.181,
+      "scale": 0.901,
+      "contact": "none"
+    },
+    {
+      "id": "knee-164",
+      "kind": "swamp-cypress-knee",
+      "x": -908,
+      "y": -3275.1,
+      "heading": 2.699,
+      "scale": 1.379,
+      "contact": "none"
+    },
+    {
+      "id": "knee-165",
+      "kind": "swamp-cypress-knee",
+      "x": -1239.2,
+      "y": 3446.9,
+      "heading": 1.817,
+      "scale": 1.486,
+      "contact": "none"
+    },
+    {
+      "id": "knee-166",
+      "kind": "swamp-cypress-knee",
+      "x": -1279.8,
+      "y": 3521.6,
+      "heading": 4.665,
+      "scale": 1.508,
+      "contact": "none"
+    },
+    {
+      "id": "knee-167",
+      "kind": "swamp-cypress-knee",
+      "x": -2581.9,
+      "y": -351.3,
+      "heading": 5.645,
+      "scale": 1.691,
+      "contact": "none"
+    },
+    {
+      "id": "knee-168",
+      "kind": "swamp-cypress-knee",
+      "x": 670.2,
+      "y": -2562,
+      "heading": 5.356,
+      "scale": 1.011
+    },
+    {
+      "id": "knee-169",
+      "kind": "swamp-cypress-knee",
+      "x": 675.2,
+      "y": -2507.1,
+      "heading": 4.115,
+      "scale": 0.84
+    },
+    {
+      "id": "knee-170",
+      "kind": "swamp-cypress-knee",
+      "x": 2981,
+      "y": 3323.8,
+      "heading": 0.494,
+      "scale": 1.617,
+      "contact": "none"
+    },
+    {
+      "id": "knee-171",
+      "kind": "swamp-cypress-knee",
+      "x": 3235.6,
+      "y": 3170.5,
+      "heading": 5.111,
+      "scale": 1.556,
+      "contact": "none"
+    },
+    {
+      "id": "knee-172",
+      "kind": "swamp-cypress-knee",
+      "x": 2990.3,
+      "y": 3358.8,
+      "heading": 3.117,
+      "scale": 0.815,
+      "contact": "none"
+    },
+    {
+      "id": "knee-173",
+      "kind": "swamp-cypress-knee",
+      "x": 2789.7,
+      "y": 3724.6,
+      "heading": 4.926,
+      "scale": 1.082,
+      "contact": "none"
+    },
+    {
+      "id": "knee-174",
+      "kind": "swamp-cypress-knee",
+      "x": -237.6,
+      "y": 903.9,
+      "heading": 3.672,
+      "scale": 1.11
+    },
+    {
+      "id": "knee-175",
+      "kind": "swamp-cypress-knee",
+      "x": -239.4,
+      "y": 858.5,
+      "heading": 1.046,
+      "scale": 1.467
+    },
+    {
+      "id": "knee-176",
+      "kind": "swamp-cypress-knee",
+      "x": -509.8,
+      "y": 949.5,
+      "heading": 5.526,
+      "scale": 1.699
+    },
+    {
+      "id": "knee-177",
+      "kind": "swamp-cypress-knee",
+      "x": -513.3,
+      "y": 994.6,
+      "heading": 1.984,
+      "scale": 1.484
+    },
+    {
+      "id": "knee-178",
+      "kind": "swamp-cypress-knee",
+      "x": -488.2,
+      "y": 1000.4,
+      "heading": 1.888,
+      "scale": 1.795
+    },
+    {
+      "id": "knee-179",
+      "kind": "swamp-cypress-knee",
+      "x": -495.4,
+      "y": 947.2,
+      "heading": 6.044,
+      "scale": 0.916
+    },
+    {
+      "id": "knee-180",
+      "kind": "swamp-cypress-knee",
+      "x": 2847,
+      "y": 2094.8,
+      "heading": 0.789,
+      "scale": 1.666,
+      "contact": "none"
+    },
+    {
+      "id": "knee-181",
+      "kind": "swamp-cypress-knee",
+      "x": 2859.3,
+      "y": 2090.1,
+      "heading": 2.558,
+      "scale": 0.803,
+      "contact": "none"
+    },
+    {
+      "id": "knee-182",
+      "kind": "swamp-cypress-knee",
+      "x": 2826.1,
+      "y": 4895.4,
+      "heading": 0.891,
+      "scale": 1.006,
+      "contact": "none"
+    },
+    {
+      "id": "knee-183",
+      "kind": "swamp-cypress-knee",
+      "x": 2221.8,
+      "y": 1508.3,
+      "heading": 5.94,
+      "scale": 1.469,
+      "contact": "none"
+    },
+    {
+      "id": "knee-184",
+      "kind": "swamp-cypress-knee",
+      "x": 4183.5,
+      "y": 4160.4,
+      "heading": 5.884,
+      "scale": 0.984,
+      "contact": "none"
+    },
+    {
+      "id": "knee-185",
+      "kind": "swamp-cypress-knee",
+      "x": 4165.7,
+      "y": 4229.8,
+      "heading": 6.196,
+      "scale": 1.596,
+      "contact": "none"
+    },
+    {
+      "id": "knee-186",
+      "kind": "swamp-cypress-knee",
+      "x": 4155.9,
+      "y": 4211.3,
+      "heading": 5.92,
+      "scale": 0.97,
+      "contact": "none"
+    },
+    {
+      "id": "knee-187",
+      "kind": "swamp-cypress-knee",
+      "x": 4160.4,
+      "y": 4200.2,
+      "heading": 3.224,
+      "scale": 1.219,
+      "contact": "none"
+    },
+    {
+      "id": "knee-188",
+      "kind": "swamp-cypress-knee",
+      "x": -4104.4,
+      "y": 1451.3,
+      "heading": 3.411,
+      "scale": 0.994,
+      "contact": "none"
+    },
+    {
+      "id": "knee-189",
+      "kind": "swamp-cypress-knee",
+      "x": -4186.8,
+      "y": 1445.4,
+      "heading": 3.255,
+      "scale": 1.144,
+      "contact": "none"
+    },
+    {
+      "id": "knee-190",
+      "kind": "swamp-cypress-knee",
+      "x": -3981.2,
+      "y": 1439,
+      "heading": 4.969,
+      "scale": 1.449,
+      "contact": "none"
+    },
+    {
+      "id": "knee-191",
+      "kind": "swamp-cypress-knee",
+      "x": -4006,
+      "y": 1486.2,
+      "heading": 2.069,
+      "scale": 1.229,
+      "contact": "none"
+    },
+    {
+      "id": "knee-192",
+      "kind": "swamp-cypress-knee",
+      "x": 2245.9,
+      "y": -1526.8,
+      "heading": 1.609,
+      "scale": 1.722,
+      "contact": "none"
+    },
+    {
+      "id": "knee-193",
+      "kind": "swamp-cypress-knee",
+      "x": 2287,
+      "y": -1474.7,
+      "heading": 1.311,
+      "scale": 1.376,
+      "contact": "none"
+    },
+    {
+      "id": "knee-194",
+      "kind": "swamp-cypress-knee",
+      "x": 2529.4,
+      "y": -1522.1,
+      "heading": 3.748,
+      "scale": 0.952,
+      "contact": "none"
+    },
+    {
+      "id": "knee-195",
+      "kind": "swamp-cypress-knee",
+      "x": 2532.3,
+      "y": -1525.1,
+      "heading": 0.752,
+      "scale": 1.308,
+      "contact": "none"
+    },
+    {
+      "id": "knee-196",
+      "kind": "swamp-cypress-knee",
+      "x": 371.2,
+      "y": 4826.5,
+      "heading": 5.206,
+      "scale": 1.238,
+      "contact": "none"
+    },
+    {
+      "id": "knee-197",
+      "kind": "swamp-cypress-knee",
+      "x": 427.7,
+      "y": 4855.9,
+      "heading": 4.229,
+      "scale": 1.171,
+      "contact": "none"
+    },
+    {
+      "id": "knee-198",
+      "kind": "swamp-cypress-knee",
+      "x": 222.9,
+      "y": 4943.8,
+      "heading": 1.784,
+      "scale": 0.924,
+      "contact": "none"
+    },
+    {
+      "id": "knee-199",
+      "kind": "swamp-cypress-knee",
+      "x": 221.9,
+      "y": 1277.2,
+      "heading": 0.247,
+      "scale": 1.283
+    },
+    {
+      "id": "knee-200",
+      "kind": "swamp-cypress-knee",
+      "x": 153,
+      "y": 1303.5,
+      "heading": 5.496,
+      "scale": 1.4
+    },
+    {
+      "id": "knee-201",
+      "kind": "swamp-cypress-knee",
+      "x": 155.1,
+      "y": 1285,
+      "heading": 2.367,
+      "scale": 1.42
+    },
+    {
+      "id": "knee-202",
+      "kind": "swamp-cypress-knee",
+      "x": 176.2,
+      "y": 1235.3,
+      "heading": 4.938,
+      "scale": 1.17
+    },
+    {
+      "id": "knee-203",
+      "kind": "swamp-cypress-knee",
+      "x": -15,
+      "y": 1468.1,
+      "heading": 3.333,
+      "scale": 0.879
+    },
+    {
+      "id": "knee-204",
+      "kind": "swamp-cypress-knee",
+      "x": 26.9,
+      "y": 1456.9,
+      "heading": 0.951,
+      "scale": 1.323
+    },
+    {
+      "id": "knee-205",
+      "kind": "swamp-cypress-knee",
+      "x": 44,
+      "y": 1432.5,
+      "heading": 1.328,
+      "scale": 1.731
+    },
+    {
+      "id": "knee-206",
+      "kind": "swamp-cypress-knee",
+      "x": -12.9,
+      "y": 1542.7,
+      "heading": 1.774,
+      "scale": 1.482
+    },
+    {
+      "id": "knee-207",
+      "kind": "swamp-cypress-knee",
+      "x": 2459.2,
+      "y": -1511.6,
+      "heading": 5.889,
+      "scale": 1.589,
+      "contact": "none"
+    },
+    {
+      "id": "knee-208",
+      "kind": "swamp-cypress-knee",
+      "x": 2422.9,
+      "y": -1164.5,
+      "heading": 5.777,
+      "scale": 1.458,
+      "contact": "none"
+    },
+    {
+      "id": "knee-209",
+      "kind": "swamp-cypress-knee",
+      "x": 951.3,
+      "y": 2984.9,
+      "heading": 4.708,
+      "scale": 1.437,
+      "contact": "none"
+    },
+    {
+      "id": "knee-210",
+      "kind": "swamp-cypress-knee",
+      "x": 932.5,
+      "y": 3019.1,
+      "heading": 3.312,
+      "scale": 1.514,
+      "contact": "none"
+    },
+    {
+      "id": "knee-211",
+      "kind": "swamp-cypress-knee",
+      "x": -5043.2,
+      "y": -80.9,
+      "heading": 2.392,
+      "scale": 1.655,
+      "contact": "none"
+    },
+    {
+      "id": "knee-212",
+      "kind": "swamp-cypress-knee",
+      "x": 3165.2,
+      "y": 3473.4,
+      "heading": 4.793,
+      "scale": 1.776,
+      "contact": "none"
+    },
+    {
+      "id": "knee-213",
+      "kind": "swamp-cypress-knee",
+      "x": 3195.5,
+      "y": 3432,
+      "heading": 0.581,
+      "scale": 1.596,
+      "contact": "none"
+    },
+    {
+      "id": "knee-214",
+      "kind": "swamp-cypress-knee",
+      "x": -4329.6,
+      "y": 616.5,
+      "heading": 4.139,
+      "scale": 1.076,
+      "contact": "none"
+    },
+    {
+      "id": "knee-215",
+      "kind": "swamp-cypress-knee",
+      "x": -4325.4,
+      "y": 615.6,
+      "heading": 1.574,
+      "scale": 1.303,
+      "contact": "none"
+    },
+    {
+      "id": "knee-216",
+      "kind": "swamp-cypress-knee",
+      "x": -2643.2,
+      "y": 3721.6,
+      "heading": 5.785,
+      "scale": 1.09,
+      "contact": "none"
+    },
+    {
+      "id": "knee-217",
+      "kind": "swamp-cypress-knee",
+      "x": -2627,
+      "y": 3695.8,
+      "heading": 5.205,
+      "scale": 1.25,
+      "contact": "none"
+    },
+    {
+      "id": "knee-218",
+      "kind": "swamp-cypress-knee",
+      "x": -197.6,
+      "y": -3047.6,
+      "heading": 3.488,
+      "scale": 1.534,
+      "contact": "none"
+    },
+    {
+      "id": "knee-219",
+      "kind": "swamp-cypress-knee",
+      "x": -210.5,
+      "y": -3074.2,
+      "heading": 2.414,
+      "scale": 1.15,
+      "contact": "none"
+    },
+    {
+      "id": "knee-220",
+      "kind": "swamp-cypress-knee",
+      "x": 1310.8,
+      "y": -1575.9,
+      "heading": 2.313,
+      "scale": 1.174
+    },
+    {
+      "id": "knee-221",
+      "kind": "swamp-cypress-knee",
+      "x": 1345.2,
+      "y": -1588.3,
+      "heading": 4.281,
+      "scale": 1.461
+    },
+    {
+      "id": "knee-222",
+      "kind": "swamp-cypress-knee",
+      "x": 1309.8,
+      "y": -1591.1,
+      "heading": 1.253,
+      "scale": 1.78
+    },
+    {
+      "id": "knee-223",
+      "kind": "swamp-cypress-knee",
+      "x": 1027.9,
+      "y": -1708.4,
+      "heading": 0.058,
+      "scale": 1.294
+    },
+    {
+      "id": "knee-224",
+      "kind": "swamp-cypress-knee",
+      "x": 1043.8,
+      "y": -1728,
+      "heading": 5.708,
+      "scale": 1.553
+    },
+    {
+      "id": "knee-225",
+      "kind": "swamp-cypress-knee",
+      "x": 1033.8,
+      "y": -1714.3,
+      "heading": 1.458,
+      "scale": 1.699
+    },
+    {
+      "id": "knee-226",
+      "kind": "swamp-cypress-knee",
+      "x": 1222.2,
+      "y": -1385.9,
+      "heading": 0.848,
+      "scale": 1.776
+    },
+    {
+      "id": "knee-227",
+      "kind": "swamp-cypress-knee",
+      "x": 1181.3,
+      "y": -1388.2,
+      "heading": 0.684,
+      "scale": 1.776
+    },
+    {
+      "id": "knee-228",
+      "kind": "swamp-cypress-knee",
+      "x": -3305.6,
+      "y": 1928.9,
+      "heading": 1.5,
+      "scale": 1.681
+    },
+    {
+      "id": "knee-229",
+      "kind": "swamp-cypress-knee",
+      "x": -1231.6,
+      "y": -727,
+      "heading": 0.285,
+      "scale": 1.63
+    },
+    {
+      "id": "knee-230",
+      "kind": "swamp-cypress-knee",
+      "x": -1242,
+      "y": -719.3,
+      "heading": 4.906,
+      "scale": 1.597
+    },
+    {
+      "id": "knee-231",
+      "kind": "swamp-cypress-knee",
+      "x": -1218.1,
+      "y": -680.1,
+      "heading": 3.005,
+      "scale": 0.856
+    },
+    {
+      "id": "knee-232",
+      "kind": "swamp-cypress-knee",
+      "x": -1330.6,
+      "y": -760.9,
+      "heading": 3.442,
+      "scale": 1.799,
+      "contact": "none"
+    },
+    {
+      "id": "knee-233",
+      "kind": "swamp-cypress-knee",
+      "x": 1252.1,
+      "y": 1826.3,
+      "heading": 1.154,
+      "scale": 1.544,
+      "contact": "none"
+    },
+    {
+      "id": "knee-234",
+      "kind": "swamp-cypress-knee",
+      "x": 1198.9,
+      "y": 1891.6,
+      "heading": 4.471,
+      "scale": 1.262,
+      "contact": "none"
+    },
+    {
+      "id": "knee-235",
+      "kind": "swamp-cypress-knee",
+      "x": 1300.9,
+      "y": 2018.4,
+      "heading": 1.253,
+      "scale": 1.067,
+      "contact": "none"
+    },
+    {
+      "id": "knee-236",
+      "kind": "swamp-cypress-knee",
+      "x": 1403.3,
+      "y": 2117,
+      "heading": 3.67,
+      "scale": 1.737,
+      "contact": "none"
+    },
+    {
+      "id": "knee-237",
+      "kind": "swamp-cypress-knee",
+      "x": 154.3,
+      "y": 1495.7,
+      "heading": 3.749,
+      "scale": 0.895,
+      "contact": "none"
+    },
+    {
+      "id": "knee-238",
+      "kind": "swamp-cypress-knee",
+      "x": 2927.8,
+      "y": 2523.4,
+      "heading": 3.968,
+      "scale": 1.033,
+      "contact": "none"
+    },
+    {
+      "id": "knee-239",
+      "kind": "swamp-cypress-knee",
+      "x": -2616.4,
+      "y": 3577.6,
+      "heading": 2.089,
+      "scale": 1.269,
+      "contact": "none"
+    },
+    {
+      "id": "knee-240",
+      "kind": "swamp-cypress-knee",
+      "x": -2625.6,
+      "y": 3588,
+      "heading": 2.793,
+      "scale": 1.652,
+      "contact": "none"
+    },
+    {
+      "id": "knee-241",
+      "kind": "swamp-cypress-knee",
+      "x": 256.2,
+      "y": 2705.9,
+      "heading": 4.946,
+      "scale": 1.177,
+      "contact": "none"
+    },
+    {
+      "id": "knee-242",
+      "kind": "swamp-cypress-knee",
+      "x": 1599.3,
+      "y": 1507,
+      "heading": 3.266,
+      "scale": 1.242,
+      "contact": "none"
+    },
+    {
+      "id": "knee-243",
+      "kind": "swamp-cypress-knee",
+      "x": 1605.6,
+      "y": 1532.9,
+      "heading": 3.589,
+      "scale": 1.787,
+      "contact": "none"
+    },
+    {
+      "id": "knee-244",
+      "kind": "swamp-cypress-knee",
+      "x": 615.4,
+      "y": 4398.2,
+      "heading": 0.018,
+      "scale": 0.953,
+      "contact": "none"
+    },
+    {
+      "id": "knee-245",
+      "kind": "swamp-cypress-knee",
+      "x": 702,
+      "y": 4364.7,
+      "heading": 2.001,
+      "scale": 0.837,
+      "contact": "none"
+    },
+    {
+      "id": "knee-246",
+      "kind": "swamp-cypress-knee",
+      "x": 940.6,
+      "y": 4592.1,
+      "heading": 4.428,
+      "scale": 1.68,
+      "contact": "none"
+    },
+    {
+      "id": "knee-247",
+      "kind": "swamp-cypress-knee",
+      "x": 961.5,
+      "y": 4597.1,
+      "heading": 2.117,
+      "scale": 1.233,
+      "contact": "none"
+    },
+    {
+      "id": "knee-248",
+      "kind": "swamp-cypress-knee",
+      "x": -2459.3,
+      "y": -3079.3,
+      "heading": 0.971,
+      "scale": 1.046,
+      "contact": "none"
+    },
+    {
+      "id": "knee-249",
+      "kind": "swamp-cypress-knee",
+      "x": -2543.2,
+      "y": -3088.4,
+      "heading": 2.022,
+      "scale": 1.648,
+      "contact": "none"
+    },
+    {
+      "id": "knee-250",
+      "kind": "swamp-cypress-knee",
+      "x": -2319.7,
+      "y": -3037.9,
+      "heading": 1.949,
+      "scale": 1.212,
+      "contact": "none"
+    },
+    {
+      "id": "knee-251",
+      "kind": "swamp-cypress-knee",
+      "x": 1708.5,
+      "y": -307.8,
+      "heading": 5.946,
+      "scale": 0.976
+    },
+    {
+      "id": "knee-252",
+      "kind": "swamp-cypress-knee",
+      "x": 1646.6,
+      "y": -367.8,
+      "heading": 0.825,
+      "scale": 1.222
+    },
+    {
+      "id": "knee-253",
+      "kind": "swamp-cypress-knee",
+      "x": 1702.6,
+      "y": -243.8,
+      "heading": 4.639,
+      "scale": 1.351
+    },
+    {
+      "id": "knee-254",
+      "kind": "swamp-cypress-knee",
+      "x": 1697.1,
+      "y": -371.1,
+      "heading": 0.811,
+      "scale": 1.575
+    },
+    {
+      "id": "knee-255",
+      "kind": "swamp-cypress-knee",
+      "x": 3933.7,
+      "y": 1669.7,
+      "heading": 5.813,
+      "scale": 1.027,
+      "contact": "none"
+    },
+    {
+      "id": "knee-256",
+      "kind": "swamp-cypress-knee",
+      "x": 3862.4,
+      "y": 1738.4,
+      "heading": 5.083,
+      "scale": 1.051,
+      "contact": "none"
+    },
+    {
+      "id": "knee-257",
+      "kind": "swamp-cypress-knee",
+      "x": 1411.9,
+      "y": 2483.3,
+      "heading": 4.536,
+      "scale": 0.968,
+      "contact": "none"
+    },
+    {
+      "id": "knee-258",
+      "kind": "swamp-cypress-knee",
+      "x": 1400,
+      "y": 2492.1,
+      "heading": 0.614,
+      "scale": 0.869,
+      "contact": "none"
+    },
+    {
+      "id": "knee-259",
+      "kind": "swamp-cypress-knee",
+      "x": 2787.6,
+      "y": 4028.2,
+      "heading": 1.562,
+      "scale": 1.713,
+      "contact": "none"
+    },
+    {
+      "id": "knee-260",
+      "kind": "swamp-cypress-knee",
+      "x": 2903.3,
+      "y": 4119.6,
+      "heading": 4.49,
+      "scale": 1.155,
+      "contact": "none"
+    },
+    {
+      "id": "knee-261",
+      "kind": "swamp-cypress-knee",
+      "x": 2881.4,
+      "y": 4114.1,
+      "heading": 1.058,
+      "scale": 1.758,
+      "contact": "none"
+    },
+    {
+      "id": "knee-262",
+      "kind": "swamp-cypress-knee",
+      "x": -1719.1,
+      "y": 2242.6,
+      "heading": 3.231,
+      "scale": 0.816
+    },
+    {
+      "id": "knee-263",
+      "kind": "swamp-cypress-knee",
+      "x": -1685.6,
+      "y": 2323.5,
+      "heading": 0.949,
+      "scale": 1.29
+    },
+    {
+      "id": "knee-264",
+      "kind": "swamp-cypress-knee",
+      "x": -601,
+      "y": 3822.5,
+      "heading": 5.448,
+      "scale": 1.448,
+      "contact": "none"
+    },
+    {
+      "id": "knee-265",
+      "kind": "swamp-cypress-knee",
+      "x": -1594.9,
+      "y": -1158.1,
+      "heading": 1.697,
+      "scale": 1.198,
+      "contact": "none"
+    },
+    {
+      "id": "knee-266",
+      "kind": "swamp-cypress-knee",
+      "x": -1577.4,
+      "y": -1152.9,
+      "heading": 3.166,
+      "scale": 1.234,
+      "contact": "none"
+    },
+    {
+      "id": "knee-267",
+      "kind": "swamp-cypress-knee",
+      "x": -2289.6,
+      "y": -173.7,
+      "heading": 3.468,
+      "scale": 1.567,
+      "contact": "none"
+    },
+    {
+      "id": "knee-268",
+      "kind": "swamp-cypress-knee",
+      "x": 3797.5,
+      "y": 1362,
+      "heading": 1.267,
+      "scale": 1.338,
+      "contact": "none"
+    },
+    {
+      "id": "knee-269",
+      "kind": "swamp-cypress-knee",
+      "x": -1130.5,
+      "y": -3026.4,
+      "heading": 2.939,
+      "scale": 0.958,
+      "contact": "none"
+    },
+    {
+      "id": "knee-270",
+      "kind": "swamp-cypress-knee",
+      "x": -1142.5,
+      "y": -3010.5,
+      "heading": 3.068,
+      "scale": 0.852,
+      "contact": "none"
+    },
+    {
+      "id": "knee-271",
+      "kind": "swamp-cypress-knee",
+      "x": 3869.4,
+      "y": 1138.6,
+      "heading": 1.631,
+      "scale": 0.821,
+      "contact": "none"
+    },
+    {
+      "id": "knee-272",
+      "kind": "swamp-cypress-knee",
+      "x": 3905.3,
+      "y": 1067.4,
+      "heading": 5.977,
+      "scale": 0.925,
+      "contact": "none"
+    },
+    {
+      "id": "knee-273",
+      "kind": "swamp-cypress-knee",
+      "x": -1338.9,
+      "y": 2197.4,
+      "heading": 3.933,
+      "scale": 1.647
+    },
+    {
+      "id": "knee-274",
+      "kind": "swamp-cypress-knee",
+      "x": -1209.3,
+      "y": 2166.1,
+      "heading": 5.17,
+      "scale": 1.39
+    },
+    {
+      "id": "knee-275",
+      "kind": "swamp-cypress-knee",
+      "x": -1345.4,
+      "y": 2179.9,
+      "heading": 5.413,
+      "scale": 1.073
+    },
+    {
+      "id": "knee-276",
+      "kind": "swamp-cypress-knee",
+      "x": -1151,
+      "y": 2304.1,
+      "heading": 3.859,
+      "scale": 1.554
+    },
+    {
+      "id": "knee-277",
+      "kind": "swamp-cypress-knee",
+      "x": -1124,
+      "y": 2335.9,
+      "heading": 4.163,
+      "scale": 1.047
+    },
+    {
+      "id": "knee-278",
+      "kind": "swamp-cypress-knee",
+      "x": -1129.1,
+      "y": 2376.1,
+      "heading": 0.524,
+      "scale": 1.527
+    },
+    {
+      "id": "knee-279",
+      "kind": "swamp-cypress-knee",
+      "x": -1140.6,
+      "y": 2397.5,
+      "heading": 5.169,
+      "scale": 1.511
+    },
+    {
+      "id": "knee-280",
+      "kind": "swamp-cypress-knee",
+      "x": -1316.8,
+      "y": 2047.4,
+      "heading": 1.464,
+      "scale": 1.671
+    },
+    {
+      "id": "knee-281",
+      "kind": "swamp-cypress-knee",
+      "x": -1290.8,
+      "y": 1979.5,
+      "heading": 2.498,
+      "scale": 1.552
+    },
+    {
+      "id": "knee-282",
+      "kind": "swamp-cypress-knee",
+      "x": -1318.7,
+      "y": 2004.2,
+      "heading": 2.307,
+      "scale": 1.527
+    },
+    {
+      "id": "knee-283",
+      "kind": "swamp-cypress-knee",
+      "x": -1464.1,
+      "y": 2537.7,
+      "heading": 1.542,
+      "scale": 1.661
+    },
+    {
+      "id": "knee-284",
+      "kind": "swamp-cypress-knee",
+      "x": -1472.9,
+      "y": 2489.4,
+      "heading": 4.274,
+      "scale": 1.786
+    },
+    {
+      "id": "knee-285",
+      "kind": "swamp-cypress-knee",
+      "x": -1575.5,
+      "y": 2493.8,
+      "heading": 4.055,
+      "scale": 1.426
+    },
+    {
+      "id": "knee-286",
+      "kind": "swamp-cypress-knee",
+      "x": -1559.4,
+      "y": 2542.4,
+      "heading": 4.16,
+      "scale": 0.802
+    },
+    {
+      "id": "knee-287",
+      "kind": "swamp-cypress-knee",
+      "x": -2419.4,
+      "y": -317,
+      "heading": 0.256,
+      "scale": 1.163,
+      "contact": "none"
+    },
+    {
+      "id": "knee-288",
+      "kind": "swamp-cypress-knee",
+      "x": -2466,
+      "y": -256.6,
+      "heading": 4.789,
+      "scale": 1.514,
+      "contact": "none"
+    },
+    {
+      "id": "knee-289",
+      "kind": "swamp-cypress-knee",
+      "x": -1328.9,
+      "y": -2488.8,
+      "heading": 4.295,
+      "scale": 1.384,
+      "contact": "none"
+    },
+    {
+      "id": "knee-290",
+      "kind": "swamp-cypress-knee",
+      "x": -4226.1,
+      "y": -329.9,
+      "heading": 3.745,
+      "scale": 1.18,
+      "contact": "none"
+    },
+    {
+      "id": "knee-291",
+      "kind": "swamp-cypress-knee",
+      "x": -4236,
+      "y": -380.2,
+      "heading": 2.855,
+      "scale": 0.94,
+      "contact": "none"
+    },
+    {
+      "id": "knee-292",
+      "kind": "swamp-cypress-knee",
+      "x": -4492.1,
+      "y": -513.4,
+      "heading": 1.777,
+      "scale": 1.645,
+      "contact": "none"
+    },
+    {
+      "id": "knee-293",
+      "kind": "swamp-cypress-knee",
+      "x": 368.4,
+      "y": 4513.7,
+      "heading": 3.759,
+      "scale": 1.69,
+      "contact": "none"
+    },
+    {
+      "id": "knee-294",
+      "kind": "swamp-cypress-knee",
+      "x": 2291.3,
+      "y": 1667.6,
+      "heading": 6.043,
+      "scale": 1.737,
+      "contact": "none"
+    },
+    {
+      "id": "knee-295",
+      "kind": "swamp-cypress-knee",
+      "x": -2326.9,
+      "y": -790.3,
+      "heading": 5.157,
+      "scale": 1.016,
+      "contact": "none"
+    },
+    {
+      "id": "knee-296",
+      "kind": "swamp-cypress-knee",
+      "x": -2315.9,
+      "y": -729.6,
+      "heading": 3.121,
+      "scale": 1.438,
+      "contact": "none"
+    },
+    {
+      "id": "knee-297",
+      "kind": "swamp-cypress-knee",
+      "x": 1703.4,
+      "y": -2565,
+      "heading": 3.894,
+      "scale": 1.493,
+      "contact": "none"
+    },
+    {
+      "id": "knee-298",
+      "kind": "swamp-cypress-knee",
+      "x": -835.3,
+      "y": 2127.5,
+      "heading": 2.399,
+      "scale": 1.233
+    },
+    {
+      "id": "knee-299",
+      "kind": "swamp-cypress-knee",
+      "x": -783.9,
+      "y": 2127.5,
+      "heading": 1.569,
+      "scale": 1.279
+    },
+    {
+      "id": "knee-300",
+      "kind": "swamp-cypress-knee",
+      "x": -839.3,
+      "y": 2123.4,
+      "heading": 1.098,
+      "scale": 1.611
+    },
+    {
+      "id": "knee-301",
+      "kind": "swamp-cypress-knee",
+      "x": -624.5,
+      "y": 1783.5,
+      "heading": 3.055,
+      "scale": 1.667
+    },
+    {
+      "id": "knee-302",
+      "kind": "swamp-cypress-knee",
+      "x": -585.9,
+      "y": 1758.1,
+      "heading": 0.212,
+      "scale": 1.658
+    },
+    {
+      "id": "knee-303",
+      "kind": "swamp-cypress-knee",
+      "x": -654,
+      "y": 1709.3,
+      "heading": 2.92,
+      "scale": 1.77
+    },
+    {
+      "id": "knee-304",
+      "kind": "swamp-cypress-knee",
+      "x": -612.2,
+      "y": 1746.9,
+      "heading": 0.864,
+      "scale": 1.719
+    },
+    {
+      "id": "knee-305",
+      "kind": "swamp-cypress-knee",
+      "x": -808.1,
+      "y": 1646.7,
+      "heading": 5.873,
+      "scale": 0.849
+    },
+    {
+      "id": "knee-306",
+      "kind": "swamp-cypress-knee",
+      "x": -812.3,
+      "y": 1616.5,
+      "heading": 3.365,
+      "scale": 1.397
+    },
+    {
+      "id": "knee-307",
+      "kind": "swamp-cypress-knee",
+      "x": -807.5,
+      "y": 1660.9,
+      "heading": 2.695,
+      "scale": 1.589
+    },
+    {
+      "id": "knee-308",
+      "kind": "swamp-cypress-knee",
+      "x": -765.3,
+      "y": 1608,
+      "heading": 1.674,
+      "scale": 1.29
+    },
+    {
+      "id": "knee-309",
+      "kind": "swamp-cypress-knee",
+      "x": 1211,
+      "y": 597.6,
+      "heading": 3.808,
+      "scale": 1.352,
+      "contact": "none"
+    },
+    {
+      "id": "knee-310",
+      "kind": "swamp-cypress-knee",
+      "x": 3317.1,
+      "y": 3718.5,
+      "heading": 3.612,
+      "scale": 1.627,
+      "contact": "none"
+    },
+    {
+      "id": "knee-311",
+      "kind": "swamp-cypress-knee",
+      "x": 3405.3,
+      "y": 3543.4,
+      "heading": 5.258,
+      "scale": 1.766,
+      "contact": "none"
+    },
+    {
+      "id": "knee-312",
+      "kind": "swamp-cypress-knee",
+      "x": 3523.4,
+      "y": 3611.2,
+      "heading": 1.887,
+      "scale": 0.852,
+      "contact": "none"
+    },
+    {
+      "id": "knee-313",
+      "kind": "swamp-cypress-knee",
+      "x": 3491.4,
+      "y": 3657.3,
+      "heading": 1.879,
+      "scale": 1.643,
+      "contact": "none"
+    },
+    {
+      "id": "knee-314",
+      "kind": "swamp-cypress-knee",
+      "x": 3280,
+      "y": 3819.4,
+      "heading": 2.631,
+      "scale": 0.835,
+      "contact": "none"
+    },
+    {
+      "id": "knee-315",
+      "kind": "swamp-cypress-knee",
+      "x": -4054.7,
+      "y": 2552.5,
+      "heading": 0.105,
+      "scale": 0.993,
+      "contact": "none"
+    },
+    {
+      "id": "knee-316",
+      "kind": "swamp-cypress-knee",
+      "x": -3636,
+      "y": 2602.7,
+      "heading": 3.07,
+      "scale": 1.53,
+      "contact": "none"
+    },
+    {
+      "id": "knee-317",
+      "kind": "swamp-cypress-knee",
+      "x": 2035,
+      "y": 4132,
+      "heading": 4.405,
+      "scale": 1.057,
+      "contact": "none"
+    },
+    {
+      "id": "knee-318",
+      "kind": "swamp-cypress-knee",
+      "x": -382.5,
+      "y": 3987.4,
+      "heading": 4.364,
+      "scale": 1.245,
+      "contact": "none"
+    },
+    {
+      "id": "knee-319",
+      "kind": "swamp-cypress-knee",
+      "x": -304.4,
+      "y": 3970.4,
+      "heading": 2.845,
+      "scale": 1.507,
+      "contact": "none"
+    },
+    {
+      "id": "knee-320",
+      "kind": "swamp-cypress-knee",
+      "x": 2571.1,
+      "y": 2326.8,
+      "heading": 5.535,
+      "scale": 0.85,
+      "contact": "none"
+    },
+    {
+      "id": "knee-321",
+      "kind": "swamp-cypress-knee",
+      "x": -977.2,
+      "y": -1304.5,
+      "heading": 2.1,
+      "scale": 1.115,
+      "contact": "none"
+    },
+    {
+      "id": "knee-322",
+      "kind": "swamp-cypress-knee",
+      "x": 1021.5,
+      "y": 3777.7,
+      "heading": 2.778,
+      "scale": 1.738,
+      "contact": "none"
+    },
+    {
+      "id": "knee-323",
+      "kind": "swamp-cypress-knee",
+      "x": 1039.1,
+      "y": 3860,
+      "heading": 0.344,
+      "scale": 1.228,
+      "contact": "none"
+    },
+    {
+      "id": "knee-324",
+      "kind": "swamp-cypress-knee",
+      "x": -2414.5,
+      "y": 3313.1,
+      "heading": 2.484,
+      "scale": 1.096
+    },
+    {
+      "id": "knee-325",
+      "kind": "swamp-cypress-knee",
+      "x": -2460.6,
+      "y": 3365.3,
+      "heading": 0.421,
+      "scale": 1.397
+    },
+    {
+      "id": "knee-326",
+      "kind": "swamp-cypress-knee",
+      "x": -2487.8,
+      "y": 3358.1,
+      "heading": 6.188,
+      "scale": 1.033
+    },
+    {
+      "id": "knee-327",
+      "kind": "swamp-cypress-knee",
+      "x": -2431.8,
+      "y": 3316,
+      "heading": 1.473,
+      "scale": 0.96
+    },
+    {
+      "id": "knee-328",
+      "kind": "swamp-cypress-knee",
+      "x": -2531.2,
+      "y": 3216.6,
+      "heading": 2.013,
+      "scale": 1.675
+    },
+    {
+      "id": "knee-329",
+      "kind": "swamp-cypress-knee",
+      "x": -2511.4,
+      "y": 3207.1,
+      "heading": 6.159,
+      "scale": 1.696
+    },
+    {
+      "id": "knee-330",
+      "kind": "swamp-cypress-knee",
+      "x": -2526.9,
+      "y": 3193.2,
+      "heading": 1.195,
+      "scale": 1.225
+    },
+    {
+      "id": "knee-331",
+      "kind": "swamp-cypress-knee",
+      "x": -2548.3,
+      "y": 3220,
+      "heading": 5.089,
+      "scale": 1.732
+    },
+    {
+      "id": "knee-332",
+      "kind": "swamp-cypress-knee",
+      "x": 671,
+      "y": 4166.7,
+      "heading": 5.375,
+      "scale": 1.042,
+      "contact": "none"
+    },
+    {
+      "id": "knee-333",
+      "kind": "swamp-cypress-knee",
+      "x": 683.2,
+      "y": 4253.1,
+      "heading": 0.098,
+      "scale": 1.527,
+      "contact": "none"
+    },
+    {
+      "id": "knee-334",
+      "kind": "swamp-cypress-knee",
+      "x": 746,
+      "y": 4243.3,
+      "heading": 3.99,
+      "scale": 1.012,
+      "contact": "none"
+    },
+    {
+      "id": "knee-335",
+      "kind": "swamp-cypress-knee",
+      "x": 3646.9,
+      "y": 749.9,
+      "heading": 1.47,
+      "scale": 1.201,
+      "contact": "none"
+    },
+    {
+      "id": "knee-336",
+      "kind": "swamp-cypress-knee",
+      "x": -2432.2,
+      "y": 400.8,
+      "heading": 2.066,
+      "scale": 1.609,
+      "contact": "none"
+    },
+    {
+      "id": "knee-337",
+      "kind": "swamp-cypress-knee",
+      "x": 2464.2,
+      "y": 2569.5,
+      "heading": 4.356,
+      "scale": 1.003,
+      "contact": "none"
+    },
+    {
+      "id": "knee-338",
+      "kind": "swamp-cypress-knee",
+      "x": -2436.4,
+      "y": -289.3,
+      "heading": 5.551,
+      "scale": 1.561,
+      "contact": "none"
+    },
+    {
+      "id": "knee-339",
+      "kind": "swamp-cypress-knee",
+      "x": -2533.5,
+      "y": -303.5,
+      "heading": 3.786,
+      "scale": 1.41,
+      "contact": "none"
+    },
+    {
+      "id": "knee-340",
+      "kind": "swamp-cypress-knee",
+      "x": -2493.6,
+      "y": 29.3,
+      "heading": 1.109,
+      "scale": 1.168,
+      "contact": "none"
+    },
+    {
+      "id": "knee-341",
+      "kind": "swamp-cypress-knee",
+      "x": -225.1,
+      "y": -3868.3,
+      "heading": 0.794,
+      "scale": 1.259,
+      "contact": "none"
+    },
+    {
+      "id": "knee-342",
+      "kind": "swamp-cypress-knee",
+      "x": 3589.2,
+      "y": 1740.3,
+      "heading": 2.37,
+      "scale": 1.092,
+      "contact": "none"
+    },
+    {
+      "id": "knee-343",
+      "kind": "swamp-cypress-knee",
+      "x": 2403.9,
+      "y": -583.3,
+      "heading": 6.188,
+      "scale": 1.12,
+      "contact": "none"
+    },
+    {
+      "id": "knee-344",
+      "kind": "swamp-cypress-knee",
+      "x": 2392,
+      "y": -558.9,
+      "heading": 4.624,
+      "scale": 0.991,
+      "contact": "none"
+    },
+    {
+      "id": "knee-345",
+      "kind": "swamp-cypress-knee",
+      "x": 3127.3,
+      "y": 4441.4,
+      "heading": 2.011,
+      "scale": 0.862,
+      "contact": "none"
+    },
+    {
+      "id": "knee-346",
+      "kind": "swamp-cypress-knee",
+      "x": 3119.4,
+      "y": 4432.6,
+      "heading": 2.252,
+      "scale": 1.66,
+      "contact": "none"
+    },
+    {
+      "id": "knee-347",
+      "kind": "swamp-cypress-knee",
+      "x": 221.6,
+      "y": -3137.5,
+      "heading": 0.768,
+      "scale": 1.698,
+      "contact": "none"
+    },
+    {
+      "id": "knee-348",
+      "kind": "swamp-cypress-knee",
+      "x": -3516.8,
+      "y": -517.5,
+      "heading": 1.959,
+      "scale": 1.248,
+      "contact": "none"
+    },
+    {
+      "id": "knee-349",
+      "kind": "swamp-cypress-knee",
+      "x": -2132.4,
+      "y": 292.7,
+      "heading": 6.102,
+      "scale": 1.39
+    },
+    {
+      "id": "knee-350",
+      "kind": "swamp-cypress-knee",
+      "x": -2128.4,
+      "y": 305.9,
+      "heading": 3.665,
+      "scale": 1.311
+    },
+    {
+      "id": "knee-351",
+      "kind": "swamp-cypress-knee",
+      "x": 1128.7,
+      "y": -2775.9,
+      "heading": 3.953,
+      "scale": 1.485,
+      "contact": "none"
+    },
+    {
+      "id": "knee-352",
+      "kind": "swamp-cypress-knee",
+      "x": -3861.6,
+      "y": -1516.6,
+      "heading": 2.787,
+      "scale": 1.239,
+      "contact": "none"
+    },
+    {
+      "id": "knee-353",
+      "kind": "swamp-cypress-knee",
+      "x": -1870.6,
+      "y": 1097.2,
+      "heading": 5.949,
+      "scale": 1.029
+    },
+    {
+      "id": "knee-354",
+      "kind": "swamp-cypress-knee",
+      "x": -1832.8,
+      "y": 1082.8,
+      "heading": 3.706,
+      "scale": 1.719
+    },
+    {
+      "id": "knee-355",
+      "kind": "swamp-cypress-knee",
+      "x": -914.8,
+      "y": 3447.8,
+      "heading": 3.048,
+      "scale": 1.071,
+      "contact": "none"
+    },
+    {
+      "id": "knee-356",
+      "kind": "swamp-cypress-knee",
+      "x": -854.8,
+      "y": 3507.7,
+      "heading": 1.692,
+      "scale": 1.17,
+      "contact": "none"
+    },
+    {
+      "id": "knee-357",
+      "kind": "swamp-cypress-knee",
+      "x": -2297.3,
+      "y": -2496.4,
+      "heading": 2.134,
+      "scale": 1.275,
+      "contact": "none"
+    },
+    {
+      "id": "knee-358",
+      "kind": "swamp-cypress-knee",
+      "x": -2916.6,
+      "y": -2327.9,
+      "heading": 3.875,
+      "scale": 1.068,
+      "contact": "none"
+    },
+    {
+      "id": "knee-359",
+      "kind": "swamp-cypress-knee",
+      "x": -2416.7,
+      "y": -2435,
+      "heading": 4.591,
+      "scale": 1.385,
+      "contact": "none"
+    },
+    {
+      "id": "knee-360",
+      "kind": "swamp-cypress-knee",
+      "x": -2475.5,
+      "y": -2495.2,
+      "heading": 5.883,
+      "scale": 1.723,
+      "contact": "none"
+    },
+    {
+      "id": "knee-361",
+      "kind": "swamp-cypress-knee",
+      "x": -2728.8,
+      "y": -2349.5,
+      "heading": 5.002,
+      "scale": 1.023,
+      "contact": "none"
+    },
+    {
+      "id": "knee-362",
+      "kind": "swamp-cypress-knee",
+      "x": 1204.1,
+      "y": 2261.6,
+      "heading": 3.547,
+      "scale": 1.043,
+      "contact": "none"
+    },
+    {
+      "id": "knee-363",
+      "kind": "swamp-cypress-knee",
+      "x": 1437.3,
+      "y": 2370.2,
+      "heading": 2.745,
+      "scale": 1.341,
+      "contact": "none"
+    },
+    {
+      "id": "knee-364",
+      "kind": "swamp-cypress-knee",
+      "x": 1444.4,
+      "y": 2306.7,
+      "heading": 3.836,
+      "scale": 0.974,
+      "contact": "none"
+    },
+    {
+      "id": "knee-365",
+      "kind": "swamp-cypress-knee",
+      "x": 1062.5,
+      "y": 4483.1,
+      "heading": 1.142,
+      "scale": 1.168,
+      "contact": "none"
+    },
+    {
+      "id": "knee-366",
+      "kind": "swamp-cypress-knee",
+      "x": 770.7,
+      "y": 4338,
+      "heading": 3.957,
+      "scale": 1.421,
+      "contact": "none"
+    },
+    {
+      "id": "knee-367",
+      "kind": "swamp-cypress-knee",
+      "x": -747.6,
+      "y": -2090.7,
+      "heading": 2.718,
+      "scale": 0.861,
+      "contact": "none"
+    },
+    {
+      "id": "knee-368",
+      "kind": "swamp-cypress-knee",
+      "x": -696,
+      "y": -2119.9,
+      "heading": 2.203,
+      "scale": 1.118,
+      "contact": "none"
+    },
+    {
+      "id": "knee-369",
+      "kind": "swamp-cypress-knee",
+      "x": 2079.3,
+      "y": 4556.5,
+      "heading": 4.24,
+      "scale": 1.714,
+      "contact": "none"
+    },
+    {
+      "id": "knee-370",
+      "kind": "swamp-cypress-knee",
+      "x": 2060.8,
+      "y": 4262.4,
+      "heading": 4.067,
+      "scale": 1.416,
+      "contact": "none"
+    },
+    {
+      "id": "knee-371",
+      "kind": "swamp-cypress-knee",
+      "x": 2068.8,
+      "y": 4377,
+      "heading": 0.884,
+      "scale": 1.258,
+      "contact": "none"
+    },
+    {
+      "id": "knee-372",
+      "kind": "swamp-cypress-knee",
+      "x": 2095.5,
+      "y": 4295.5,
+      "heading": 3.724,
+      "scale": 1.294,
+      "contact": "none"
+    },
+    {
+      "id": "knee-373",
+      "kind": "swamp-cypress-knee",
+      "x": -2827.3,
+      "y": 1008.7,
+      "heading": 0.565,
+      "scale": 1.501,
+      "contact": "none"
+    },
+    {
+      "id": "knee-374",
+      "kind": "swamp-cypress-knee",
+      "x": -2810,
+      "y": 983.6,
+      "heading": 2.231,
+      "scale": 1.528,
+      "contact": "none"
+    },
+    {
+      "id": "knee-375",
+      "kind": "swamp-cypress-knee",
+      "x": -883.6,
+      "y": 3195.7,
+      "heading": 1.919,
+      "scale": 1.646,
+      "contact": "none"
+    },
+    {
+      "id": "knee-376",
+      "kind": "swamp-cypress-knee",
+      "x": -913.4,
+      "y": 3240.9,
+      "heading": 2.955,
+      "scale": 0.946,
+      "contact": "none"
+    },
+    {
+      "id": "knee-377",
+      "kind": "swamp-cypress-knee",
+      "x": 2859,
+      "y": 3647.8,
+      "heading": 0.184,
+      "scale": 1.193,
+      "contact": "none"
+    },
+    {
+      "id": "knee-378",
+      "kind": "swamp-cypress-knee",
+      "x": 2898.8,
+      "y": 3581.7,
+      "heading": 3.945,
+      "scale": 1.201,
+      "contact": "none"
+    },
+    {
+      "id": "knee-379",
+      "kind": "swamp-cypress-knee",
+      "x": 3188,
+      "y": 2113.5,
+      "heading": 4.362,
+      "scale": 1.55,
+      "contact": "none"
+    },
+    {
+      "id": "knee-380",
+      "kind": "swamp-cypress-knee",
+      "x": 3046.1,
+      "y": -1076.5,
+      "heading": 3.475,
+      "scale": 1.468,
+      "contact": "none"
+    },
+    {
+      "id": "knee-381",
+      "kind": "swamp-cypress-knee",
+      "x": -3819.4,
+      "y": 1000.2,
+      "heading": 5.168,
+      "scale": 1.234,
+      "contact": "none"
+    },
+    {
+      "id": "knee-382",
+      "kind": "swamp-cypress-knee",
+      "x": -767.8,
+      "y": -2929.2,
+      "heading": 4.378,
+      "scale": 1.062,
+      "contact": "none"
+    },
+    {
+      "id": "knee-383",
+      "kind": "swamp-cypress-knee",
+      "x": 3290.3,
+      "y": 2004.1,
+      "heading": 0.501,
+      "scale": 1.736,
+      "contact": "none"
+    },
+    {
+      "id": "knee-384",
+      "kind": "swamp-cypress-knee",
+      "x": 3191.5,
+      "y": 2044.7,
+      "heading": 1.368,
+      "scale": 1.473,
+      "contact": "none"
+    },
+    {
+      "id": "knee-385",
+      "kind": "swamp-cypress-knee",
+      "x": 3204.4,
+      "y": 2069.2,
+      "heading": 2.563,
+      "scale": 1.308,
+      "contact": "none"
+    },
+    {
+      "id": "knee-386",
+      "kind": "swamp-cypress-knee",
+      "x": 653.6,
+      "y": 3990.6,
+      "heading": 4.971,
+      "scale": 1.224,
+      "contact": "none"
+    },
+    {
+      "id": "knee-387",
+      "kind": "swamp-cypress-knee",
+      "x": 664,
+      "y": 4043.7,
+      "heading": 1.761,
+      "scale": 1.001,
+      "contact": "none"
+    },
+    {
+      "id": "knee-388",
+      "kind": "swamp-cypress-knee",
+      "x": 2531,
+      "y": 1936.8,
+      "heading": 2.166,
+      "scale": 1.194,
+      "contact": "none"
+    },
+    {
+      "id": "knee-389",
+      "kind": "swamp-cypress-knee",
+      "x": 2567.1,
+      "y": 1913.5,
+      "heading": 4.321,
+      "scale": 0.939,
+      "contact": "none"
+    },
+    {
+      "id": "knee-390",
+      "kind": "swamp-cypress-knee",
+      "x": -4030.6,
+      "y": -1243.2,
+      "heading": 3.435,
+      "scale": 1.501,
+      "contact": "none"
+    },
+    {
+      "id": "knee-391",
+      "kind": "swamp-cypress-knee",
+      "x": -4091.6,
+      "y": -1366.9,
+      "heading": 2.227,
+      "scale": 1.136,
+      "contact": "none"
+    },
+    {
+      "id": "knee-392",
+      "kind": "swamp-cypress-knee",
+      "x": -2358.4,
+      "y": -2760.5,
+      "heading": 1.049,
+      "scale": 1.761,
+      "contact": "none"
+    },
+    {
+      "id": "knee-393",
+      "kind": "swamp-cypress-knee",
+      "x": -2555.6,
+      "y": -2894.6,
+      "heading": 0.761,
+      "scale": 0.915,
+      "contact": "none"
+    },
+    {
+      "id": "knee-394",
+      "kind": "swamp-cypress-knee",
+      "x": -2517.1,
+      "y": -2902.3,
+      "heading": 5.134,
+      "scale": 1.211,
+      "contact": "none"
+    },
+    {
+      "id": "knee-395",
+      "kind": "swamp-cypress-knee",
+      "x": -1330.5,
+      "y": -739.4,
+      "heading": 4.488,
+      "scale": 0.886
+    },
+    {
+      "id": "knee-396",
+      "kind": "swamp-cypress-knee",
+      "x": -1237.9,
+      "y": -711.1,
+      "heading": 4.031,
+      "scale": 1.247
+    },
+    {
+      "id": "knee-397",
+      "kind": "swamp-cypress-knee",
+      "x": -1363.5,
+      "y": -707.3,
+      "heading": 4.175,
+      "scale": 1.797
+    },
+    {
+      "id": "knee-398",
+      "kind": "swamp-cypress-knee",
+      "x": -1377.9,
+      "y": -716.9,
+      "heading": 0.561,
+      "scale": 1.2
+    },
+    {
+      "id": "knee-399",
+      "kind": "swamp-cypress-knee",
+      "x": -1221.5,
+      "y": -604.1,
+      "heading": 3.381,
+      "scale": 1.171
+    },
+    {
+      "id": "knee-400",
+      "kind": "swamp-cypress-knee",
+      "x": -1188.3,
+      "y": -600.4,
+      "heading": 3.452,
+      "scale": 1.572
+    },
+    {
+      "id": "knee-401",
+      "kind": "swamp-cypress-knee",
+      "x": -1222.3,
+      "y": -644.4,
+      "heading": 5.105,
+      "scale": 1.277
+    },
+    {
+      "id": "knee-402",
+      "kind": "swamp-cypress-knee",
+      "x": -1206.8,
+      "y": -623.5,
+      "heading": 0.508,
+      "scale": 1.524
+    },
+    {
+      "id": "knee-403",
+      "kind": "swamp-cypress-knee",
+      "x": -1593.8,
+      "y": 2405,
+      "heading": 0.782,
+      "scale": 1.642
+    },
+    {
+      "id": "knee-404",
+      "kind": "swamp-cypress-knee",
+      "x": -1580.1,
+      "y": 2491.4,
+      "heading": 3.235,
+      "scale": 0.91
+    },
+    {
+      "id": "knee-405",
+      "kind": "swamp-cypress-knee",
+      "x": -1629.3,
+      "y": 2419,
+      "heading": 0.62,
+      "scale": 1.606
+    },
+    {
+      "id": "knee-406",
+      "kind": "swamp-cypress-knee",
+      "x": -1817.6,
+      "y": 2249.7,
+      "heading": 1.625,
+      "scale": 1.252
+    },
+    {
+      "id": "knee-407",
+      "kind": "swamp-cypress-knee",
+      "x": -1811.5,
+      "y": 2320.3,
+      "heading": 4.089,
+      "scale": 0.919
+    },
+    {
+      "id": "knee-408",
+      "kind": "swamp-cypress-knee",
+      "x": -1836.8,
+      "y": 2244,
+      "heading": 3.367,
+      "scale": 1.653
+    },
+    {
+      "id": "knee-409",
+      "kind": "swamp-cypress-knee",
+      "x": -1884.9,
+      "y": 2271.8,
+      "heading": 2.392,
+      "scale": 1.407
+    },
+    {
+      "id": "knee-410",
+      "kind": "swamp-cypress-knee",
+      "x": -1964.6,
+      "y": 2318.8,
+      "heading": 5.995,
+      "scale": 0.831
+    },
+    {
+      "id": "knee-411",
+      "kind": "swamp-cypress-knee",
+      "x": -1917.7,
+      "y": 2330,
+      "heading": 0.917,
+      "scale": 1.57
+    },
+    {
+      "id": "knee-412",
+      "kind": "swamp-cypress-knee",
+      "x": 3376.8,
+      "y": 1900.3,
+      "heading": 0.075,
+      "scale": 1.202,
+      "contact": "none"
+    },
+    {
+      "id": "knee-413",
+      "kind": "swamp-cypress-knee",
+      "x": -3368.6,
+      "y": -1063.2,
+      "heading": 1.229,
+      "scale": 1.18,
+      "contact": "none"
+    },
+    {
+      "id": "knee-414",
+      "kind": "swamp-cypress-knee",
+      "x": 4241.6,
+      "y": 3437.8,
+      "heading": 5.374,
+      "scale": 0.881,
+      "contact": "none"
+    },
+    {
+      "id": "knee-415",
+      "kind": "swamp-cypress-knee",
+      "x": -1786.7,
+      "y": -2519.3,
+      "heading": 3.284,
+      "scale": 1.649,
+      "contact": "none"
+    },
+    {
+      "id": "knee-416",
+      "kind": "swamp-cypress-knee",
+      "x": -1826.7,
+      "y": -2515.1,
+      "heading": 3.273,
+      "scale": 1.189,
+      "contact": "none"
+    },
+    {
+      "id": "knee-417",
+      "kind": "swamp-cypress-knee",
+      "x": 1042.2,
+      "y": 633.3,
+      "heading": 2.246,
+      "scale": 1.049,
+      "contact": "none"
+    },
+    {
+      "id": "knee-418",
+      "kind": "swamp-cypress-knee",
+      "x": -222.4,
+      "y": 756,
+      "heading": 1.035,
+      "scale": 1.126
+    },
+    {
+      "id": "knee-419",
+      "kind": "swamp-cypress-knee",
+      "x": -210.2,
+      "y": 769.9,
+      "heading": 1.463,
+      "scale": 1.539
+    },
+    {
+      "id": "knee-420",
+      "kind": "swamp-cypress-knee",
+      "x": -333.1,
+      "y": 794.1,
+      "heading": 1.721,
+      "scale": 1.55
+    },
+    {
+      "id": "knee-421",
+      "kind": "swamp-cypress-knee",
+      "x": -230,
+      "y": 793.1,
+      "heading": 0.755,
+      "scale": 1.491
+    },
+    {
+      "id": "knee-422",
+      "kind": "swamp-cypress-knee",
+      "x": -523.2,
+      "y": 814.3,
+      "heading": 3.577,
+      "scale": 1.238
+    },
+    {
+      "id": "knee-423",
+      "kind": "swamp-cypress-knee",
+      "x": -524.5,
+      "y": 828,
+      "heading": 2.004,
+      "scale": 1.562
+    },
+    {
+      "id": "knee-424",
+      "kind": "swamp-cypress-knee",
+      "x": -518.5,
+      "y": 828.3,
+      "heading": 4.488,
+      "scale": 1.062
+    },
+    {
+      "id": "knee-425",
+      "kind": "swamp-cypress-knee",
+      "x": -494.6,
+      "y": 822.1,
+      "heading": 2.16,
+      "scale": 1.219
+    },
+    {
+      "id": "knee-426",
+      "kind": "swamp-cypress-knee",
+      "x": -1309.7,
+      "y": -2498.7,
+      "heading": 2.167,
+      "scale": 1.014,
+      "contact": "none"
+    },
+    {
+      "id": "knee-427",
+      "kind": "swamp-cypress-knee",
+      "x": -1323.5,
+      "y": -2487.8,
+      "heading": 2.698,
+      "scale": 1.728,
+      "contact": "none"
+    },
+    {
+      "id": "knee-428",
+      "kind": "swamp-cypress-knee",
+      "x": -1640.5,
+      "y": -64.1,
+      "heading": 0.535,
+      "scale": 1.238
+    },
+    {
+      "id": "knee-429",
+      "kind": "swamp-cypress-knee",
+      "x": -1655.9,
+      "y": -126.1,
+      "heading": 3.478,
+      "scale": 1.45
+    },
+    {
+      "id": "knee-430",
+      "kind": "swamp-cypress-knee",
+      "x": -977.9,
+      "y": -2433.6,
+      "heading": 0.115,
+      "scale": 1.124,
+      "contact": "none"
+    },
+    {
+      "id": "knee-431",
+      "kind": "swamp-cypress-knee",
+      "x": 3343.4,
+      "y": 3469.7,
+      "heading": 1.474,
+      "scale": 1.145,
+      "contact": "none"
+    },
+    {
+      "id": "knee-432",
+      "kind": "swamp-cypress-knee",
+      "x": 3431.9,
+      "y": 3415.4,
+      "heading": 1.775,
+      "scale": 0.955,
+      "contact": "none"
+    },
+    {
+      "id": "knee-433",
+      "kind": "swamp-cypress-knee",
+      "x": 3441.5,
+      "y": 3505,
+      "heading": 0.016,
+      "scale": 1.133,
+      "contact": "none"
+    },
+    {
+      "id": "knee-434",
+      "kind": "swamp-cypress-knee",
+      "x": -203.8,
+      "y": 3115.6,
+      "heading": 3.34,
+      "scale": 1.44,
+      "contact": "none"
+    },
+    {
+      "id": "knee-435",
+      "kind": "swamp-cypress-knee",
+      "x": -184.8,
+      "y": 3155.1,
+      "heading": 4.908,
+      "scale": 1.526,
+      "contact": "none"
+    },
+    {
+      "id": "knee-436",
+      "kind": "swamp-cypress-knee",
+      "x": -1895.6,
+      "y": -3207,
+      "heading": 0.632,
+      "scale": 1.698,
+      "contact": "none"
+    },
+    {
+      "id": "knee-437",
+      "kind": "swamp-cypress-knee",
+      "x": -1777.6,
+      "y": -3120.1,
+      "heading": 5.478,
+      "scale": 1.288,
+      "contact": "none"
+    },
+    {
+      "id": "knee-438",
+      "kind": "swamp-cypress-knee",
+      "x": -1571.6,
+      "y": -3033.6,
+      "heading": 2.401,
+      "scale": 1.248,
+      "contact": "none"
+    },
+    {
+      "id": "knee-439",
+      "kind": "swamp-cypress-knee",
+      "x": -1584.8,
+      "y": -3020,
+      "heading": 1.437,
+      "scale": 1.628,
+      "contact": "none"
+    },
+    {
+      "id": "knee-440",
+      "kind": "swamp-cypress-knee",
+      "x": -3312,
+      "y": 606.4,
+      "heading": 3.206,
+      "scale": 1.338,
+      "contact": "none"
+    },
+    {
+      "id": "knee-441",
+      "kind": "swamp-cypress-knee",
+      "x": -273.4,
+      "y": 4440.1,
+      "heading": 1.26,
+      "scale": 0.927,
+      "contact": "none"
+    },
+    {
+      "id": "knee-442",
+      "kind": "swamp-cypress-knee",
+      "x": -336.2,
+      "y": 4420,
+      "heading": 0.93,
+      "scale": 1.088,
+      "contact": "none"
+    },
+    {
+      "id": "knee-443",
+      "kind": "swamp-cypress-knee",
+      "x": -63.3,
+      "y": 4555.2,
+      "heading": 6.245,
+      "scale": 1.163,
+      "contact": "none"
+    },
+    {
+      "id": "knee-444",
+      "kind": "swamp-cypress-knee",
+      "x": -65.6,
+      "y": 4530.7,
+      "heading": 3.247,
+      "scale": 1.411,
+      "contact": "none"
+    },
+    {
+      "id": "knee-445",
+      "kind": "swamp-cypress-knee",
+      "x": 329.6,
+      "y": 416.7,
+      "heading": 3.056,
+      "scale": 1.297
+    },
+    {
+      "id": "knee-446",
+      "kind": "swamp-cypress-knee",
+      "x": 242.5,
+      "y": 427.7,
+      "heading": 3.728,
+      "scale": 1.302
+    },
+    {
+      "id": "knee-447",
+      "kind": "swamp-cypress-knee",
+      "x": 257.2,
+      "y": 330.6,
+      "heading": 1.118,
+      "scale": 1.443
+    },
+    {
+      "id": "knee-448",
+      "kind": "swamp-cypress-knee",
+      "x": 217.5,
+      "y": 301.3,
+      "heading": 0.35,
+      "scale": 1.34
+    },
+    {
+      "id": "knee-449",
+      "kind": "swamp-cypress-knee",
+      "x": -2617.2,
+      "y": -2245.7,
+      "heading": 4.207,
+      "scale": 1.044,
+      "contact": "none"
+    },
+    {
+      "id": "knee-450",
+      "kind": "swamp-cypress-knee",
+      "x": -2304.9,
+      "y": -2471.6,
+      "heading": 4.874,
+      "scale": 1.174,
+      "contact": "none"
+    },
+    {
+      "id": "knee-451",
+      "kind": "swamp-cypress-knee",
+      "x": -2305.7,
+      "y": -2496,
+      "heading": 1.53,
+      "scale": 0.946,
+      "contact": "none"
+    },
+    {
+      "id": "knee-452",
+      "kind": "swamp-cypress-knee",
+      "x": -2441.4,
+      "y": -1789.8,
+      "heading": 1.874,
+      "scale": 1.164,
+      "contact": "none"
+    },
+    {
+      "id": "knee-453",
+      "kind": "swamp-cypress-knee",
+      "x": -2431.6,
+      "y": -1752.8,
+      "heading": 3.974,
+      "scale": 1.486,
+      "contact": "none"
+    },
+    {
+      "id": "knee-454",
+      "kind": "swamp-cypress-knee",
+      "x": -3681.2,
+      "y": -156.5,
+      "heading": 2.171,
+      "scale": 1.663,
+      "contact": "none"
+    },
+    {
+      "id": "knee-455",
+      "kind": "swamp-cypress-knee",
+      "x": 1779.7,
+      "y": 2519.9,
+      "heading": 2.293,
+      "scale": 1.31,
+      "contact": "none"
+    },
+    {
+      "id": "knee-456",
+      "kind": "swamp-cypress-knee",
+      "x": -2663.2,
+      "y": -1018.5,
+      "heading": 3.762,
+      "scale": 1.515,
+      "contact": "none"
+    },
+    {
+      "id": "knee-457",
+      "kind": "swamp-cypress-knee",
+      "x": -2690.8,
+      "y": -1012.8,
+      "heading": 3.599,
+      "scale": 1.611,
+      "contact": "none"
+    },
+    {
+      "id": "knee-458",
+      "kind": "swamp-cypress-knee",
+      "x": -2561.1,
+      "y": -1035.6,
+      "heading": 3.545,
+      "scale": 0.819,
+      "contact": "none"
+    },
+    {
+      "id": "knee-459",
+      "kind": "swamp-cypress-knee",
+      "x": -2498.4,
+      "y": -953.5,
+      "heading": 3.031,
+      "scale": 1.559,
+      "contact": "none"
+    },
+    {
+      "id": "knee-460",
+      "kind": "swamp-cypress-knee",
+      "x": -2167.8,
+      "y": -719.6,
+      "heading": 3.433,
+      "scale": 1.497,
+      "contact": "none"
+    },
+    {
+      "id": "knee-461",
+      "kind": "swamp-cypress-knee",
+      "x": -2182.3,
+      "y": -792.9,
+      "heading": 5.572,
+      "scale": 1.254,
+      "contact": "none"
+    },
+    {
+      "id": "knee-462",
+      "kind": "swamp-cypress-knee",
+      "x": -724.3,
+      "y": 2501.1,
+      "heading": 3.359,
+      "scale": 1.229
+    },
+    {
+      "id": "knee-463",
+      "kind": "swamp-cypress-knee",
+      "x": -760.5,
+      "y": 2365.1,
+      "heading": 4.983,
+      "scale": 1.522
+    },
+    {
+      "id": "knee-464",
+      "kind": "swamp-cypress-knee",
+      "x": -938.1,
+      "y": 2304.3,
+      "heading": 2.042,
+      "scale": 1.722
+    },
+    {
+      "id": "knee-465",
+      "kind": "swamp-cypress-knee",
+      "x": -960.3,
+      "y": 2322.4,
+      "heading": 0.571,
+      "scale": 1.107
+    },
+    {
+      "id": "knee-466",
+      "kind": "swamp-cypress-knee",
+      "x": -940.3,
+      "y": 2305.6,
+      "heading": 4.409,
+      "scale": 1.493
+    },
+    {
+      "id": "knee-467",
+      "kind": "swamp-cypress-knee",
+      "x": -981.3,
+      "y": 2365.4,
+      "heading": 0.262,
+      "scale": 1.042
+    },
+    {
+      "id": "knee-468",
+      "kind": "swamp-cypress-knee",
+      "x": -910.4,
+      "y": 2644,
+      "heading": 4.966,
+      "scale": 1.702
+    },
+    {
+      "id": "knee-469",
+      "kind": "swamp-cypress-knee",
+      "x": -880.3,
+      "y": 2582,
+      "heading": 5.463,
+      "scale": 1.345
+    },
+    {
+      "id": "knee-470",
+      "kind": "swamp-cypress-knee",
+      "x": -927,
+      "y": 2619.9,
+      "heading": 2.09,
+      "scale": 1.376
+    },
+    {
+      "id": "knee-471",
+      "kind": "swamp-cypress-knee",
+      "x": 2205.4,
+      "y": 3919.4,
+      "heading": 2.538,
+      "scale": 1.519,
+      "contact": "none"
+    },
+    {
+      "id": "knee-472",
+      "kind": "swamp-cypress-knee",
+      "x": 2241.6,
+      "y": 3846.9,
+      "heading": 2.662,
+      "scale": 1.442,
+      "contact": "none"
+    },
+    {
+      "id": "knee-473",
+      "kind": "swamp-cypress-knee",
+      "x": 2238.5,
+      "y": 3849.1,
+      "heading": 0.365,
+      "scale": 0.934,
+      "contact": "none"
+    },
+    {
+      "id": "knee-474",
+      "kind": "swamp-cypress-knee",
+      "x": 723.7,
+      "y": 2060.9,
+      "heading": 5.614,
+      "scale": 0.998,
+      "contact": "none"
+    },
+    {
+      "id": "knee-475",
+      "kind": "swamp-cypress-knee",
+      "x": 703.1,
+      "y": 2086.2,
+      "heading": 0.307,
+      "scale": 1.236,
+      "contact": "none"
+    },
+    {
+      "id": "knee-476",
+      "kind": "swamp-cypress-knee",
+      "x": 643.1,
+      "y": 1738.3,
+      "heading": 1.233,
+      "scale": 1.665,
+      "contact": "none"
+    },
+    {
+      "id": "knee-477",
+      "kind": "swamp-cypress-knee",
+      "x": 1647.2,
+      "y": -164.1,
+      "heading": 3.4,
+      "scale": 0.807,
+      "contact": "none"
+    },
+    {
+      "id": "knee-478",
+      "kind": "swamp-cypress-knee",
+      "x": 1666.7,
+      "y": -132.4,
+      "heading": 5.702,
+      "scale": 1.712,
+      "contact": "none"
+    },
+    {
+      "id": "knee-479",
+      "kind": "swamp-cypress-knee",
+      "x": 1343.7,
+      "y": -236.7,
+      "heading": 2.793,
+      "scale": 0.937
+    },
+    {
+      "id": "knee-480",
+      "kind": "swamp-cypress-knee",
+      "x": 1338.3,
+      "y": -274,
+      "heading": 2.787,
+      "scale": 1.404
+    },
+    {
+      "id": "knee-481",
+      "kind": "swamp-cypress-knee",
+      "x": 1345.3,
+      "y": -251.5,
+      "heading": 5.327,
+      "scale": 1.172
+    },
+    {
+      "id": "knee-482",
+      "kind": "swamp-cypress-knee",
+      "x": 1332.1,
+      "y": -197.7,
+      "heading": 3.91,
+      "scale": 1.161
+    },
+    {
+      "id": "knee-483",
+      "kind": "swamp-cypress-knee",
+      "x": 3741.8,
+      "y": 2767.1,
+      "heading": 0.605,
+      "scale": 1.187,
+      "contact": "none"
+    },
+    {
+      "id": "knee-484",
+      "kind": "swamp-cypress-knee",
+      "x": 3714.2,
+      "y": 2888.6,
+      "heading": 4.229,
+      "scale": 1.447,
+      "contact": "none"
+    },
+    {
+      "id": "knee-485",
+      "kind": "swamp-cypress-knee",
+      "x": 1864.3,
+      "y": 4092.5,
+      "heading": 2.719,
+      "scale": 0.937,
+      "contact": "none"
+    },
+    {
+      "id": "knee-486",
+      "kind": "swamp-cypress-knee",
+      "x": 1923,
+      "y": 4229.9,
+      "heading": 3.597,
+      "scale": 1.603,
+      "contact": "none"
+    },
+    {
+      "id": "knee-487",
+      "kind": "swamp-cypress-knee",
+      "x": 1870.4,
+      "y": 4220.4,
+      "heading": 6.085,
+      "scale": 1.577,
+      "contact": "none"
+    },
+    {
+      "id": "knee-488",
+      "kind": "swamp-cypress-knee",
+      "x": -2726.7,
+      "y": -2259.2,
+      "heading": 6.113,
+      "scale": 1.442,
+      "contact": "none"
+    },
+    {
+      "id": "knee-489",
+      "kind": "swamp-cypress-knee",
+      "x": -2685.3,
+      "y": -2242.6,
+      "heading": 4.77,
+      "scale": 1.41,
+      "contact": "none"
+    },
+    {
+      "id": "knee-490",
+      "kind": "swamp-cypress-knee",
+      "x": -2697.6,
+      "y": -2284.4,
+      "heading": 0.874,
+      "scale": 0.812,
+      "contact": "none"
+    },
+    {
+      "id": "knee-491",
+      "kind": "swamp-cypress-knee",
+      "x": 3788.7,
+      "y": 3953.3,
+      "heading": 0.446,
+      "scale": 0.896,
+      "contact": "none"
+    },
+    {
+      "id": "knee-492",
+      "kind": "swamp-cypress-knee",
+      "x": 3217.5,
+      "y": 2481,
+      "heading": 3.215,
+      "scale": 1.761,
+      "contact": "none"
+    },
+    {
+      "id": "knee-493",
+      "kind": "swamp-cypress-knee",
+      "x": 3208.7,
+      "y": 2594.1,
+      "heading": 1.009,
+      "scale": 1.576,
+      "contact": "none"
+    },
+    {
+      "id": "knee-494",
+      "kind": "swamp-cypress-knee",
+      "x": -4317.4,
+      "y": -541.6,
+      "heading": 2.783,
+      "scale": 1.797,
+      "contact": "none"
+    },
+    {
+      "id": "knee-495",
+      "kind": "swamp-cypress-knee",
+      "x": -4327.5,
+      "y": -605.1,
+      "heading": 2.242,
+      "scale": 1.735,
+      "contact": "none"
+    },
+    {
+      "id": "knee-496",
+      "kind": "swamp-cypress-knee",
+      "x": 452.9,
+      "y": 2666.5,
+      "heading": 2.57,
+      "scale": 1.746,
+      "contact": "none"
+    },
+    {
+      "id": "knee-497",
+      "kind": "swamp-cypress-knee",
+      "x": 418.5,
+      "y": 2614.7,
+      "heading": 0.276,
+      "scale": 1.344,
+      "contact": "none"
+    },
+    {
+      "id": "knee-498",
+      "kind": "swamp-cypress-knee",
+      "x": 442.4,
+      "y": 2586.7,
+      "heading": 4.779,
+      "scale": 0.851,
+      "contact": "none"
+    },
+    {
+      "id": "knee-499",
+      "kind": "swamp-cypress-knee",
+      "x": 3556.1,
+      "y": 2734.1,
+      "heading": 2.498,
+      "scale": 1.4,
+      "contact": "none"
+    },
+    {
+      "id": "knee-500",
+      "kind": "swamp-cypress-knee",
+      "x": 2021.3,
+      "y": 4550.6,
+      "heading": 4.065,
+      "scale": 0.918,
+      "contact": "none"
+    },
+    {
+      "id": "knee-501",
+      "kind": "swamp-cypress-knee",
+      "x": 2005.8,
+      "y": 4573.7,
+      "heading": 1.894,
+      "scale": 0.852,
+      "contact": "none"
+    },
+    {
+      "id": "knee-502",
+      "kind": "swamp-cypress-knee",
+      "x": 717.1,
+      "y": 2061.8,
+      "heading": 3.737,
+      "scale": 0.859,
+      "contact": "none"
+    },
+    {
+      "id": "knee-503",
+      "kind": "swamp-cypress-knee",
+      "x": 800.3,
+      "y": 2083.3,
+      "heading": 1.933,
+      "scale": 1.772,
+      "contact": "none"
+    },
+    {
+      "id": "knee-504",
+      "kind": "swamp-cypress-knee",
+      "x": 710.1,
+      "y": 2090.3,
+      "heading": 4.782,
+      "scale": 1.28,
+      "contact": "none"
+    },
+    {
+      "id": "knee-505",
+      "kind": "swamp-cypress-knee",
+      "x": -4407.1,
+      "y": -575.4,
+      "heading": 0.542,
+      "scale": 1.027,
+      "contact": "none"
+    },
+    {
+      "id": "knee-506",
+      "kind": "swamp-cypress-knee",
+      "x": -4367.8,
+      "y": -646.7,
+      "heading": 5.414,
+      "scale": 1.023,
+      "contact": "none"
+    },
+    {
+      "id": "knee-507",
+      "kind": "swamp-cypress-knee",
+      "x": 3769.5,
+      "y": 2394.3,
+      "heading": 3.61,
+      "scale": 1.358,
+      "contact": "none"
+    },
+    {
+      "id": "knee-508",
+      "kind": "swamp-cypress-knee",
+      "x": 3749.5,
+      "y": 2356.4,
+      "heading": 4.452,
+      "scale": 1.653,
+      "contact": "none"
+    },
+    {
+      "id": "knee-509",
+      "kind": "swamp-cypress-knee",
+      "x": 1601.9,
+      "y": -1629.8,
+      "heading": 3.44,
+      "scale": 1.098
+    },
+    {
+      "id": "knee-510",
+      "kind": "swamp-cypress-knee",
+      "x": 1641.5,
+      "y": -1544.7,
+      "heading": 1.34,
+      "scale": 0.993
+    },
+    {
+      "id": "knee-511",
+      "kind": "swamp-cypress-knee",
+      "x": 1617.4,
+      "y": -1619.1,
+      "heading": 4.746,
+      "scale": 1.3
+    },
+    {
+      "id": "knee-512",
+      "kind": "swamp-cypress-knee",
+      "x": 3199.7,
+      "y": -385.8,
+      "heading": 2.85,
+      "scale": 1.013,
+      "contact": "none"
+    },
+    {
+      "id": "knee-513",
+      "kind": "swamp-cypress-knee",
+      "x": 3249.9,
+      "y": -359.3,
+      "heading": 2.147,
+      "scale": 0.821,
+      "contact": "none"
+    },
+    {
+      "id": "knee-514",
+      "kind": "swamp-cypress-knee",
+      "x": -1941.8,
+      "y": -462.7,
+      "heading": 1.758,
+      "scale": 1.167,
+      "contact": "none"
+    },
+    {
+      "id": "knee-515",
+      "kind": "swamp-cypress-knee",
+      "x": -1949.9,
+      "y": -482.4,
+      "heading": 5.685,
+      "scale": 1.578,
+      "contact": "none"
+    },
+    {
+      "id": "knee-516",
+      "kind": "swamp-cypress-knee",
+      "x": -4132.4,
+      "y": -454.5,
+      "heading": 2.82,
+      "scale": 1.117,
+      "contact": "none"
+    },
+    {
+      "id": "knee-517",
+      "kind": "swamp-cypress-knee",
+      "x": -4143,
+      "y": -445.4,
+      "heading": 5.888,
+      "scale": 0.959,
+      "contact": "none"
+    },
+    {
+      "id": "knee-518",
+      "kind": "swamp-cypress-knee",
+      "x": -4186.1,
+      "y": -430.2,
+      "heading": 4.507,
+      "scale": 0.923,
+      "contact": "none"
+    },
+    {
+      "id": "knee-519",
+      "kind": "swamp-cypress-knee",
+      "x": -2059.2,
+      "y": 3095.1,
+      "heading": 1.683,
+      "scale": 0.885
+    },
+    {
+      "id": "knee-520",
+      "kind": "swamp-cypress-knee",
+      "x": -2082.4,
+      "y": 3100.6,
+      "heading": 1.257,
+      "scale": 1.12
+    },
+    {
+      "id": "knee-521",
+      "kind": "swamp-cypress-knee",
+      "x": -3826.8,
+      "y": 70.5,
+      "heading": 5.207,
+      "scale": 1.283,
+      "contact": "none"
+    },
+    {
+      "id": "knee-522",
+      "kind": "swamp-cypress-knee",
+      "x": -3826.1,
+      "y": 62.6,
+      "heading": 5.107,
+      "scale": 1.46,
+      "contact": "none"
+    },
+    {
+      "id": "knee-523",
+      "kind": "swamp-cypress-knee",
+      "x": -4206.3,
+      "y": 256.2,
+      "heading": 3.956,
+      "scale": 1.354,
+      "contact": "none"
+    },
+    {
+      "id": "knee-524",
+      "kind": "swamp-cypress-knee",
+      "x": -2864,
+      "y": -1888.8,
+      "heading": 0.657,
+      "scale": 0.807,
+      "contact": "none"
+    },
+    {
+      "id": "knee-525",
+      "kind": "swamp-cypress-knee",
+      "x": -2904.8,
+      "y": -1912.1,
+      "heading": 5.506,
+      "scale": 1.772,
+      "contact": "none"
+    },
+    {
+      "id": "knee-526",
+      "kind": "swamp-cypress-knee",
+      "x": -3872.7,
+      "y": 1913.8,
+      "heading": 5.561,
+      "scale": 1.585,
+      "contact": "none"
+    },
+    {
+      "id": "knee-527",
+      "kind": "swamp-cypress-knee",
+      "x": -3837.4,
+      "y": 1971.8,
+      "heading": 4.81,
+      "scale": 1.681,
+      "contact": "none"
+    },
+    {
+      "id": "knee-528",
+      "kind": "swamp-cypress-knee",
+      "x": -1959.7,
+      "y": 3114.3,
+      "heading": 5.231,
+      "scale": 1.346
+    },
+    {
+      "id": "knee-529",
+      "kind": "swamp-cypress-knee",
+      "x": -1936.8,
+      "y": 3107.9,
+      "heading": 4.576,
+      "scale": 1.117
+    },
+    {
+      "id": "knee-530",
+      "kind": "swamp-cypress-knee",
+      "x": 1158.3,
+      "y": -2001.8,
+      "heading": 0.406,
+      "scale": 1.414
+    },
+    {
+      "id": "knee-531",
+      "kind": "swamp-cypress-knee",
+      "x": 1153.4,
+      "y": -1933.2,
+      "heading": 5.828,
+      "scale": 1.602
+    },
+    {
+      "id": "knee-532",
+      "kind": "swamp-cypress-knee",
+      "x": 1158.5,
+      "y": -1973.9,
+      "heading": 2.439,
+      "scale": 1.544
+    },
+    {
+      "id": "knee-533",
+      "kind": "swamp-cypress-knee",
+      "x": -1568.6,
+      "y": -9.9,
+      "heading": 2.895,
+      "scale": 0.968
+    },
+    {
+      "id": "knee-534",
+      "kind": "swamp-cypress-knee",
+      "x": -1504.6,
+      "y": -25.6,
+      "heading": 1.969,
+      "scale": 1.085
+    },
+    {
+      "id": "knee-535",
+      "kind": "swamp-cypress-knee",
+      "x": -1529.1,
+      "y": -41.6,
+      "heading": 4.603,
+      "scale": 0.821
+    },
+    {
+      "id": "knee-536",
+      "kind": "swamp-cypress-knee",
+      "x": 4151,
+      "y": 2023.9,
+      "heading": 1.927,
+      "scale": 1.172,
+      "contact": "none"
+    },
+    {
+      "id": "knee-537",
+      "kind": "swamp-cypress-knee",
+      "x": 4172.6,
+      "y": 1977.9,
+      "heading": 3.085,
+      "scale": 1.426,
+      "contact": "none"
+    },
+    {
+      "id": "knee-538",
+      "kind": "swamp-cypress-knee",
+      "x": -232.4,
+      "y": 576.9,
+      "heading": 3.592,
+      "scale": 1.403
+    },
+    {
+      "id": "knee-539",
+      "kind": "swamp-cypress-knee",
+      "x": -259.9,
+      "y": 579.9,
+      "heading": 3.587,
+      "scale": 0.955
+    },
+    {
+      "id": "knee-540",
+      "kind": "swamp-cypress-knee",
+      "x": -190.6,
+      "y": 567.3,
+      "heading": 4.596,
+      "scale": 1.737
+    },
+    {
+      "id": "knee-541",
+      "kind": "swamp-cypress-knee",
+      "x": 384,
+      "y": 2442.7,
+      "heading": 0.156,
+      "scale": 1.019,
+      "contact": "none"
+    },
+    {
+      "id": "knee-542",
+      "kind": "swamp-cypress-knee",
+      "x": 331.6,
+      "y": 2356,
+      "heading": 0.468,
+      "scale": 0.824,
+      "contact": "none"
     },
     {
       "id": "tree-1",
@@ -16073,7 +20792,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-3",
       "kind": "swamp-cypress",
       "x": 2030.5,
-      "y": 1908.0,
+      "y": 1908,
       "heading": 3.654,
       "scale": 2.543,
       "contact": "none"
@@ -16081,7 +20800,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-4",
       "kind": "swamp-cypress",
-      "x": 1891.0,
+      "x": 1891,
       "y": 1737.5,
       "heading": 4.275,
       "scale": 2.924,
@@ -16190,7 +20909,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-16",
       "kind": "swamp-tupelo",
       "x": 2645.7,
-      "y": 3312.0,
+      "y": 3312,
       "heading": 2.137,
       "scale": 1.569,
       "contact": "none"
@@ -16252,7 +20971,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-23",
       "kind": "swamp-cypress",
-      "x": -174.0,
+      "x": -174,
       "y": 3627.4,
       "heading": 1.628,
       "scale": 2.968,
@@ -16288,7 +21007,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-27",
       "kind": "swamp-cypress",
-      "x": 2220.0,
+      "x": 2220,
       "y": -1640.8,
       "heading": 2.726,
       "scale": 1.679,
@@ -16316,7 +21035,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-30",
       "kind": "swamp-cypress",
       "x": 1372.5,
-      "y": 679.0,
+      "y": 679,
       "heading": 5.866,
       "scale": 2.31,
       "contact": "none"
@@ -16360,7 +21079,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-35",
       "kind": "swamp-cypress",
-      "x": 3922.0,
+      "x": 3922,
       "y": 2551.2,
       "heading": 2.841,
       "scale": 1.459,
@@ -16424,7 +21143,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-42",
       "kind": "swamp-tupelo",
       "x": 1125.8,
-      "y": 2166.0,
+      "y": 2166,
       "heading": 1.015,
       "scale": 2.474,
       "contact": "none"
@@ -16451,7 +21170,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-45",
       "kind": "swamp-tupelo",
       "x": 371.2,
-      "y": 3984.0,
+      "y": 3984,
       "heading": 1.709,
       "scale": 1.463,
       "contact": "none"
@@ -16505,7 +21224,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-51",
       "kind": "swamp-tupelo",
       "x": 3308.2,
-      "y": 4097.0,
+      "y": 4097,
       "heading": 1.268,
       "scale": 1.418,
       "contact": "none"
@@ -16523,7 +21242,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-53",
       "kind": "swamp-tupelo",
       "x": 3118.2,
-      "y": -61.0,
+      "y": -61,
       "heading": 3.231,
       "scale": 2.67,
       "contact": "none"
@@ -16532,7 +21251,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-54",
       "kind": "swamp-cypress",
       "x": 3069.4,
-      "y": 212.0,
+      "y": 212,
       "heading": 3.43,
       "scale": 2.31,
       "contact": "none"
@@ -16567,7 +21286,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-58",
       "kind": "swamp-cypress",
-      "x": 377.0,
+      "x": 377,
       "y": 5046.2,
       "heading": 6.043,
       "scale": 2.024,
@@ -16603,8 +21322,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-62",
       "kind": "swamp-tupelo",
-      "x": 741.0,
-      "y": 1864.0,
+      "x": 741,
+      "y": 1864,
       "heading": 3.105,
       "scale": 2.323,
       "contact": "none"
@@ -16639,7 +21358,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-66",
       "kind": "swamp-tupelo",
-      "x": -2037.0,
+      "x": -2037,
       "y": -2139.5,
       "heading": 3.976,
       "scale": 1.413,
@@ -16684,7 +21403,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-71",
       "kind": "swamp-tupelo",
-      "x": -2411.0,
+      "x": -2411,
       "y": -1719.9,
       "heading": 2.295,
       "scale": 1.502,
@@ -16712,7 +21431,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-74",
       "kind": "swamp-tupelo",
       "x": -1295.3,
-      "y": -3272.0,
+      "y": -3272,
       "heading": 2.266,
       "scale": 2.145,
       "contact": "none"
@@ -16766,7 +21485,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-80",
       "kind": "swamp-cypress",
       "x": -3958.3,
-      "y": 1486.0,
+      "y": 1486,
       "heading": 1.502,
       "scale": 1.879,
       "contact": "none"
@@ -16793,7 +21512,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-83",
       "kind": "swamp-cypress",
       "x": 2803.4,
-      "y": -573.0,
+      "y": -573,
       "heading": 5.635,
       "scale": 2.588,
       "contact": "none"
@@ -16820,7 +21539,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-86",
       "kind": "swamp-tupelo",
       "x": 3003.3,
-      "y": -463.0,
+      "y": -463,
       "heading": 5.832,
       "scale": 2.606,
       "contact": "none"
@@ -16829,7 +21548,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-87",
       "kind": "swamp-tupelo",
       "x": 2722.4,
-      "y": -459.0,
+      "y": -459,
       "heading": 1.406,
       "scale": 2.407,
       "contact": "none"
@@ -16874,7 +21593,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-92",
       "kind": "swamp-cypress",
       "x": -4108.8,
-      "y": 1746.0,
+      "y": 1746,
       "heading": 5.56,
       "scale": 1.477,
       "contact": "none"
@@ -16892,7 +21611,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-94",
       "kind": "swamp-tupelo",
       "x": 3652.6,
-      "y": 2697.0,
+      "y": 2697,
       "heading": 3.172,
       "scale": 2.348,
       "contact": "none"
@@ -16990,7 +21709,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-105",
       "kind": "swamp-tupelo",
-      "x": -3104.0,
+      "x": -3104,
       "y": 1484.7,
       "heading": 2.13,
       "scale": 2.563
@@ -17007,7 +21726,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-107",
       "kind": "swamp-tupelo",
       "x": -3214.1,
-      "y": 1606.0,
+      "y": 1606,
       "heading": 5.758,
       "scale": 2.37
     },
@@ -17031,7 +21750,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-110",
       "kind": "swamp-cypress",
-      "x": -3114.0,
+      "x": -3114,
       "y": 1494.3,
       "heading": 4.856,
       "scale": 2.434
@@ -17158,7 +21877,7 @@ window.VENUE_DOC["swamp"] = {
       "kind": "swamp-tupelo",
       "x": 1922.7,
       "y": 193.9,
-      "heading": 5.0,
+      "heading": 5,
       "scale": 1.901,
       "contact": "none"
     },
@@ -17282,7 +22001,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-138",
       "kind": "swamp-cypress",
-      "x": 3104.0,
+      "x": 3104,
       "y": 4234.9,
       "heading": 2.445,
       "scale": 1.831,
@@ -17292,7 +22011,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-139",
       "kind": "swamp-cypress",
       "x": 1193.8,
-      "y": -1323.0,
+      "y": -1323,
       "heading": 4.901,
       "scale": 1.729
     },
@@ -17431,7 +22150,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-155",
       "kind": "swamp-cypress",
-      "x": -3058.0,
+      "x": -3058,
       "y": -2789.6,
       "heading": 2.833,
       "scale": 2.522,
@@ -17494,7 +22213,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-162",
       "kind": "swamp-cypress",
-      "x": 2031.0,
+      "x": 2031,
       "y": 1856.7,
       "heading": 1.46,
       "scale": 1.716,
@@ -17504,7 +22223,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-163",
       "kind": "swamp-cypress",
       "x": 2415.7,
-      "y": 1844.0,
+      "y": 1844,
       "heading": 4.472,
       "scale": 2.373,
       "contact": "none"
@@ -17513,7 +22232,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-164",
       "kind": "swamp-tupelo",
       "x": -2906.4,
-      "y": 826.0,
+      "y": 826,
       "heading": 5.834,
       "scale": 1.749,
       "contact": "none"
@@ -17579,7 +22298,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-172",
       "kind": "swamp-cypress",
       "x": 1909.9,
-      "y": 4814.0,
+      "y": 4814,
       "heading": 4.173,
       "scale": 2.736,
       "contact": "none"
@@ -17587,7 +22306,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-173",
       "kind": "swamp-cypress",
-      "x": 599.0,
+      "x": 599,
       "y": -3145.7,
       "heading": 5.184,
       "scale": 2.537,
@@ -17614,7 +22333,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-176",
       "kind": "swamp-tupelo",
-      "x": 167.0,
+      "x": 167,
       "y": -3203.2,
       "heading": 2.594,
       "scale": 1.392,
@@ -17784,7 +22503,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-195",
       "kind": "swamp-tupelo",
-      "x": 926.0,
+      "x": 926,
       "y": 1529.2,
       "heading": 3.691,
       "scale": 2.297,
@@ -17846,7 +22565,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-202",
       "kind": "swamp-cypress",
-      "x": -1414.0,
+      "x": -1414,
       "y": 2196.1,
       "heading": 4.387,
       "scale": 1.986
@@ -17870,7 +22589,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-205",
       "kind": "swamp-cypress",
-      "x": -527.0,
+      "x": -527,
       "y": -2889.4,
       "heading": 5.219,
       "scale": 1.605,
@@ -17906,7 +22625,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-209",
       "kind": "swamp-cypress",
-      "x": -522.0,
+      "x": -522,
       "y": -2625.9,
       "heading": 0.537,
       "scale": 2.079,
@@ -17978,7 +22697,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-217",
       "kind": "swamp-tupelo",
-      "x": -3487.0,
+      "x": -3487,
       "y": 1232.3,
       "heading": 3.535,
       "scale": 1.982,
@@ -18021,7 +22740,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-222",
       "kind": "swamp-cypress",
-      "x": -798.0,
+      "x": -798,
       "y": 3293.7,
       "heading": 2.167,
       "scale": 2.778,
@@ -18039,7 +22758,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-224",
       "kind": "swamp-tupelo",
-      "x": -540.0,
+      "x": -540,
       "y": 3329.2,
       "heading": 2.506,
       "scale": 2.695,
@@ -18084,7 +22803,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-229",
       "kind": "swamp-tupelo",
-      "x": -763.0,
+      "x": -763,
       "y": 3200.2,
       "heading": 5.478,
       "scale": 1.368,
@@ -18129,7 +22848,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-234",
       "kind": "swamp-cypress",
-      "x": -2876.0,
+      "x": -2876,
       "y": 197.2,
       "heading": 6.072,
       "scale": 2.357,
@@ -18157,7 +22876,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-237",
       "kind": "swamp-cypress",
       "x": -2909.9,
-      "y": 76.0,
+      "y": 76,
       "heading": 5.858,
       "scale": 2.393,
       "contact": "none"
@@ -18220,7 +22939,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-244",
       "kind": "swamp-cypress",
       "x": -1184.3,
-      "y": -1904.0,
+      "y": -1904,
       "heading": 5.784,
       "scale": 1.775,
       "contact": "none"
@@ -18229,7 +22948,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-245",
       "kind": "swamp-tupelo",
       "x": -871.7,
-      "y": -2313.0,
+      "y": -2313,
       "heading": 5.596,
       "scale": 1.54,
       "contact": "none"
@@ -18237,7 +22956,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-246",
       "kind": "swamp-tupelo",
-      "x": -760.0,
+      "x": -760,
       "y": -2000.6,
       "heading": 3.442,
       "scale": 2.426,
@@ -18265,7 +22984,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-249",
       "kind": "swamp-tupelo",
       "x": 2278.9,
-      "y": -1442.0,
+      "y": -1442,
       "heading": 2.502,
       "scale": 1.435,
       "contact": "none"
@@ -18274,7 +22993,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-250",
       "kind": "swamp-cypress",
       "x": 2509.5,
-      "y": -392.0,
+      "y": -392,
       "heading": 1.135,
       "scale": 1.665,
       "contact": "none"
@@ -18310,7 +23029,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-254",
       "kind": "swamp-cypress",
       "x": 2853.9,
-      "y": -345.0,
+      "y": -345,
       "heading": 3.564,
       "scale": 2.613,
       "contact": "none"
@@ -18346,7 +23065,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-258",
       "kind": "swamp-tupelo",
       "x": -1979.4,
-      "y": -2573.0,
+      "y": -2573,
       "heading": 0.565,
       "scale": 2.304,
       "contact": "none"
@@ -18363,7 +23082,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-260",
       "kind": "swamp-tupelo",
-      "x": -2012.0,
+      "x": -2012,
       "y": -2242.5,
       "heading": 4.528,
       "scale": 1.667,
@@ -18408,7 +23127,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-265",
       "kind": "swamp-cypress",
-      "x": 3926.0,
+      "x": 3926,
       "y": 853.7,
       "heading": 1.386,
       "scale": 3.357,
@@ -18489,7 +23208,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-274",
       "kind": "swamp-cypress",
-      "x": 1166.0,
+      "x": 1166,
       "y": 5098.8,
       "heading": 1.236,
       "scale": 2.479,
@@ -18534,7 +23253,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-279",
       "kind": "swamp-cypress",
-      "x": 2978.0,
+      "x": 2978,
       "y": 4710.9,
       "heading": 2.241,
       "scale": 2.756,
@@ -18553,7 +23272,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-281",
       "kind": "swamp-cypress",
       "x": -3095.4,
-      "y": -2536.0,
+      "y": -2536,
       "heading": 1.96,
       "scale": 2.267,
       "contact": "none"
@@ -18633,7 +23352,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-290",
       "kind": "swamp-cypress",
-      "x": 620.0,
+      "x": 620,
       "y": 1909.6,
       "heading": 6.093,
       "scale": 2.884,
@@ -18687,7 +23406,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-296",
       "kind": "swamp-tupelo",
-      "x": -334.0,
+      "x": -334,
       "y": 3088.9,
       "heading": 1.811,
       "scale": 1.899,
@@ -18714,7 +23433,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-299",
       "kind": "swamp-tupelo",
-      "x": 355.0,
+      "x": 355,
       "y": 4957.4,
       "heading": 2.045,
       "scale": 1.787,
@@ -18742,7 +23461,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-302",
       "kind": "swamp-cypress",
       "x": 150.8,
-      "y": 4779.0,
+      "y": 4779,
       "heading": 1.272,
       "scale": 2.336,
       "contact": "none"
@@ -18769,7 +23488,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-305",
       "kind": "swamp-cypress",
       "x": -706.8,
-      "y": 3844.0,
+      "y": 3844,
       "heading": 4.073,
       "scale": 2.137,
       "contact": "none"
@@ -18805,7 +23524,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-309",
       "kind": "swamp-tupelo",
       "x": -338.7,
-      "y": 3589.0,
+      "y": 3589,
       "heading": 5.629,
       "scale": 1.696,
       "contact": "none"
@@ -18813,7 +23532,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-310",
       "kind": "swamp-cypress",
-      "x": -736.0,
+      "x": -736,
       "y": 3885.3,
       "heading": 5.188,
       "scale": 2.268,
@@ -18859,7 +23578,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-315",
       "kind": "swamp-cypress",
       "x": 656.3,
-      "y": 3743.0,
+      "y": 3743,
       "heading": 1.306,
       "scale": 2.134,
       "contact": "none"
@@ -18876,7 +23595,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-317",
       "kind": "swamp-cypress",
-      "x": 824.0,
+      "x": 824,
       "y": 3508.3,
       "heading": 3.474,
       "scale": 1.404,
@@ -18991,7 +23710,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-330",
       "kind": "swamp-cypress",
       "x": 3252.5,
-      "y": 1598.0,
+      "y": 1598,
       "heading": 1.754,
       "scale": 1.882,
       "contact": "none"
@@ -19036,7 +23755,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-335",
       "kind": "swamp-cypress",
       "x": -1550.9,
-      "y": 3924.0,
+      "y": 3924,
       "heading": 4.516,
       "scale": 2.462,
       "contact": "none"
@@ -19089,7 +23808,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-341",
       "kind": "swamp-cypress",
-      "x": -3508.0,
+      "x": -3508,
       "y": 500.8,
       "heading": 3.615,
       "scale": 2.696,
@@ -19126,7 +23845,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-345",
       "kind": "swamp-tupelo",
       "x": 3639.3,
-      "y": 2718.0,
+      "y": 2718,
       "heading": 5.845,
       "scale": 1.922,
       "contact": "none"
@@ -19135,7 +23854,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-346",
       "kind": "swamp-tupelo",
       "x": 3784.4,
-      "y": 2546.0,
+      "y": 2546,
       "heading": 4.415,
       "scale": 1.409,
       "contact": "none"
@@ -19215,7 +23934,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-355",
       "kind": "swamp-tupelo",
-      "x": 1757.0,
+      "x": 1757,
       "y": 4245.8,
       "heading": 4.05,
       "scale": 2.591,
@@ -19234,7 +23953,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-357",
       "kind": "swamp-cypress",
       "x": 1965.6,
-      "y": 4059.0,
+      "y": 4059,
       "heading": 4.009,
       "scale": 1.815,
       "contact": "none"
@@ -19341,7 +24060,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-369",
       "kind": "swamp-tupelo",
-      "x": -232.0,
+      "x": -232,
       "y": -2718.8,
       "heading": 0.175,
       "scale": 2.545,
@@ -19351,7 +24070,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-370",
       "kind": "swamp-cypress",
       "x": -50.5,
-      "y": -2377.0,
+      "y": -2377,
       "heading": 2.337,
       "scale": 1.519,
       "contact": "none"
@@ -19395,7 +24114,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-375",
       "kind": "swamp-cypress",
-      "x": -1664.0,
+      "x": -1664,
       "y": 4340.6,
       "heading": 5.957,
       "scale": 2.11,
@@ -19404,7 +24123,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-376",
       "kind": "swamp-cypress",
-      "x": 237.0,
+      "x": 237,
       "y": 3752.7,
       "heading": 1.885,
       "scale": 2.232,
@@ -19422,7 +24141,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-378",
       "kind": "swamp-cypress",
-      "x": 3255.0,
+      "x": 3255,
       "y": 1869.1,
       "heading": 1.214,
       "scale": 2.345,
@@ -19449,7 +24168,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-381",
       "kind": "swamp-tupelo",
-      "x": -2086.0,
+      "x": -2086,
       "y": -640.8,
       "heading": 0.156,
       "scale": 1.95,
@@ -19539,7 +24258,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-391",
       "kind": "swamp-tupelo",
-      "x": -798.0,
+      "x": -798,
       "y": 3662.4,
       "heading": 4.221,
       "scale": 2.301,
@@ -19566,7 +24285,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-394",
       "kind": "swamp-cypress",
-      "x": -987.0,
+      "x": -987,
       "y": 3825.8,
       "heading": 0.904,
       "scale": 2.701,
@@ -19584,7 +24303,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-396",
       "kind": "swamp-cypress",
-      "x": -832.0,
+      "x": -832,
       "y": 3798.7,
       "heading": 2.221,
       "scale": 2.219,
@@ -19602,7 +24321,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-398",
       "kind": "swamp-cypress",
-      "x": -4500.0,
+      "x": -4500,
       "y": -519.9,
       "heading": 1.372,
       "scale": 1.775,
@@ -19612,7 +24331,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-399",
       "kind": "swamp-tupelo",
       "x": 3291.7,
-      "y": 4012.0,
+      "y": 4012,
       "heading": 1.096,
       "scale": 2.431,
       "contact": "none"
@@ -19666,7 +24385,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-405",
       "kind": "swamp-cypress",
       "x": 2929.1,
-      "y": 3419.0,
+      "y": 3419,
       "heading": 4.854,
       "scale": 2.486,
       "contact": "none"
@@ -19711,7 +24430,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-410",
       "kind": "swamp-cypress",
       "x": -3539.4,
-      "y": -2269.0,
+      "y": -2269,
       "heading": 4.77,
       "scale": 1.724,
       "contact": "none"
@@ -19747,7 +24466,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-414",
       "kind": "swamp-tupelo",
       "x": 1819.1,
-      "y": 3944.0,
+      "y": 3944,
       "heading": 5.349,
       "scale": 2.406,
       "contact": "none"
@@ -19783,7 +24502,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-418",
       "kind": "swamp-tupelo",
       "x": 1082.4,
-      "y": -1856.0,
+      "y": -1856,
       "heading": 0.207,
       "scale": 2.673
     },
@@ -19824,7 +24543,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-423",
       "kind": "swamp-cypress",
       "x": -2202.1,
-      "y": -1920.0,
+      "y": -1920,
       "heading": 2.564,
       "scale": 1.46,
       "contact": "none"
@@ -19850,8 +24569,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-426",
       "kind": "swamp-cypress",
-      "x": -4068.0,
-      "y": 2384.0,
+      "x": -4068,
+      "y": 2384,
       "heading": 4.587,
       "scale": 2.784,
       "contact": "none"
@@ -20003,7 +24722,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-443",
       "kind": "swamp-cypress",
-      "x": 1475.0,
+      "x": 1475,
       "y": 1815.6,
       "heading": 6.093,
       "scale": 3.252,
@@ -20066,7 +24785,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-450",
       "kind": "swamp-tupelo",
-      "x": 471.0,
+      "x": 471,
       "y": 1334.8,
       "heading": 4.733,
       "scale": 1.469,
@@ -20075,7 +24794,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-451",
       "kind": "swamp-cypress",
-      "x": -1143.0,
+      "x": -1143,
       "y": -3304.1,
       "heading": 2.014,
       "scale": 3.176,
@@ -20148,7 +24867,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-459",
       "kind": "swamp-tupelo",
       "x": -3006.5,
-      "y": 79.0,
+      "y": 79,
       "heading": 5.039,
       "scale": 2.361,
       "contact": "none"
@@ -20157,7 +24876,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-460",
       "kind": "swamp-tupelo",
       "x": -4448.8,
-      "y": 1131.0,
+      "y": 1131,
       "heading": 5.455,
       "scale": 1.923,
       "contact": "none"
@@ -20175,7 +24894,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-462",
       "kind": "swamp-cypress",
       "x": 2522.7,
-      "y": 1782.0,
+      "y": 1782,
       "heading": 0.954,
       "scale": 1.854,
       "contact": "none"
@@ -20229,7 +24948,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-468",
       "kind": "swamp-cypress",
       "x": 1875.6,
-      "y": 248.0,
+      "y": 248,
       "heading": 1.884,
       "scale": 2.666,
       "contact": "none"
@@ -20273,8 +24992,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-473",
       "kind": "swamp-cypress",
-      "x": 479.0,
-      "y": -2779.0,
+      "x": 479,
+      "y": -2779,
       "heading": 4.572,
       "scale": 2.572,
       "contact": "none"
@@ -20328,7 +25047,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-479",
       "kind": "swamp-cypress",
       "x": 757.7,
-      "y": 3724.0,
+      "y": 3724,
       "heading": 0.759,
       "scale": 1.553,
       "contact": "none"
@@ -20336,7 +25055,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-480",
       "kind": "swamp-cypress",
-      "x": 433.0,
+      "x": 433,
       "y": 3710.2,
       "heading": 0.616,
       "scale": 1.502,
@@ -20354,7 +25073,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-482",
       "kind": "swamp-tupelo",
-      "x": 790.0,
+      "x": 790,
       "y": 3648.1,
       "heading": 0.93,
       "scale": 2.415,
@@ -20417,7 +25136,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-489",
       "kind": "swamp-cypress",
-      "x": 103.0,
+      "x": 103,
       "y": -3830.3,
       "heading": 3.613,
       "scale": 2.186,
@@ -20462,7 +25181,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-494",
       "kind": "swamp-tupelo",
       "x": -1455.8,
-      "y": -371.0,
+      "y": -371,
       "heading": 1.836,
       "scale": 2.186
     },
@@ -20501,7 +25220,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-499",
       "kind": "swamp-cypress",
-      "x": -1361.0,
+      "x": -1361,
       "y": -564.3,
       "heading": 0.002,
       "scale": 1.627
@@ -20663,7 +25382,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-517",
       "kind": "swamp-tupelo",
       "x": -2361.9,
-      "y": -421.0,
+      "y": -421,
       "heading": 4.664,
       "scale": 2.326,
       "contact": "none"
@@ -20707,7 +25426,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-522",
       "kind": "swamp-cypress",
-      "x": -2483.0,
+      "x": -2483,
       "y": -365.3,
       "heading": 5.359,
       "scale": 2.499,
@@ -20725,7 +25444,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-524",
       "kind": "swamp-tupelo",
-      "x": -2423.0,
+      "x": -2423,
       "y": -624.6,
       "heading": 0.423,
       "scale": 1.721,
@@ -20744,7 +25463,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-526",
       "kind": "swamp-tupelo",
       "x": -2250.8,
-      "y": -389.0,
+      "y": -389,
       "heading": 2.26,
       "scale": 2.433,
       "contact": "none"
@@ -20841,8 +25560,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-537",
       "kind": "swamp-tupelo",
-      "x": 3007.0,
-      "y": 3112.0,
+      "x": 3007,
+      "y": 3112,
       "heading": 5.265,
       "scale": 2.37,
       "contact": "none"
@@ -20859,7 +25578,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-539",
       "kind": "swamp-cypress",
-      "x": -213.0,
+      "x": -213,
       "y": 826.9,
       "heading": 1.028,
       "scale": 1.769
@@ -20925,7 +25644,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-547",
       "kind": "swamp-cypress",
-      "x": 2907.0,
+      "x": 2907,
       "y": 2050.6,
       "heading": 2.901,
       "scale": 1.874,
@@ -20934,7 +25653,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-548",
       "kind": "swamp-tupelo",
-      "x": 3263.0,
+      "x": 3263,
       "y": 1859.3,
       "heading": 2.228,
       "scale": 1.626,
@@ -21069,7 +25788,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-563",
       "kind": "swamp-tupelo",
-      "x": 4023.0,
+      "x": 4023,
       "y": 4251.2,
       "heading": 0.848,
       "scale": 2.255,
@@ -21088,7 +25807,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-565",
       "kind": "swamp-cypress",
       "x": 4107.5,
-      "y": 4256.0,
+      "y": 4256,
       "heading": 5.128,
       "scale": 2.162,
       "contact": "none"
@@ -21115,7 +25834,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-568",
       "kind": "swamp-cypress",
       "x": 1871.8,
-      "y": 4327.0,
+      "y": 4327,
       "heading": 3.968,
       "scale": 2.126,
       "contact": "none"
@@ -21123,7 +25842,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-569",
       "kind": "swamp-cypress",
-      "x": -4036.0,
+      "x": -4036,
       "y": 1390.7,
       "heading": 1.108,
       "scale": 2.402,
@@ -21178,7 +25897,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-575",
       "kind": "swamp-tupelo",
       "x": 2167.5,
-      "y": -1790.0,
+      "y": -1790,
       "heading": 5.412,
       "scale": 2.535,
       "contact": "none"
@@ -21204,7 +25923,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-578",
       "kind": "swamp-cypress",
-      "x": 2485.0,
+      "x": 2485,
       "y": -1556.7,
       "heading": 0.559,
       "scale": 1.48,
@@ -21241,7 +25960,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-582",
       "kind": "swamp-tupelo",
       "x": -320.4,
-      "y": 3155.0,
+      "y": 3155,
       "heading": 2.296,
       "scale": 1.869,
       "contact": "none"
@@ -21294,7 +26013,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-588",
       "kind": "swamp-cypress",
-      "x": 435.0,
+      "x": 435,
       "y": 4930.5,
       "heading": 0.615,
       "scale": 2.529,
@@ -21313,7 +26032,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-590",
       "kind": "swamp-cypress",
       "x": 389.3,
-      "y": 4888.0,
+      "y": 4888,
       "heading": 4.854,
       "scale": 1.445,
       "contact": "none"
@@ -21330,7 +26049,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-592",
       "kind": "swamp-cypress",
-      "x": 450.0,
+      "x": 450,
       "y": 5066.9,
       "heading": 0.098,
       "scale": 2.311,
@@ -21428,7 +26147,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-603",
       "kind": "swamp-cypress",
       "x": 917.5,
-      "y": 3104.0,
+      "y": 3104,
       "heading": 4.106,
       "scale": 2.588,
       "contact": "none"
@@ -21436,7 +26155,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-604",
       "kind": "swamp-cypress",
-      "x": -4954.0,
+      "x": -4954,
       "y": -9.2,
       "heading": 1.592,
       "scale": 2.01,
@@ -21482,7 +26201,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-609",
       "kind": "swamp-tupelo",
       "x": 2919.4,
-      "y": 3575.0,
+      "y": 3575,
       "heading": 1.461,
       "scale": 2.565,
       "contact": "none"
@@ -21500,7 +26219,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-611",
       "kind": "swamp-cypress",
       "x": -4428.9,
-      "y": 755.0,
+      "y": 755,
       "heading": 2.853,
       "scale": 2.305,
       "contact": "none"
@@ -21536,7 +26255,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-615",
       "kind": "swamp-tupelo",
       "x": -4245.3,
-      "y": 656.0,
+      "y": 656,
       "heading": 1.027,
       "scale": 2.226,
       "contact": "none"
@@ -21617,7 +26336,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-624",
       "kind": "swamp-tupelo",
       "x": -518.1,
-      "y": -3177.0,
+      "y": -3177,
       "heading": 2.841,
       "scale": 2.422,
       "contact": "none"
@@ -21634,7 +26353,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-626",
       "kind": "swamp-cypress",
-      "x": 4079.0,
+      "x": 4079,
       "y": 3993.7,
       "heading": 1.955,
       "scale": 2.663,
@@ -21662,7 +26381,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-629",
       "kind": "swamp-cypress",
       "x": 1252.8,
-      "y": -1583.0,
+      "y": -1583,
       "heading": 4.501,
       "scale": 2.13
     },
@@ -21734,7 +26453,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-638",
       "kind": "swamp-cypress",
-      "x": 3058.0,
+      "x": 3058,
       "y": -98.1,
       "heading": 4.947,
       "scale": 1.95,
@@ -21752,8 +26471,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-640",
       "kind": "swamp-tupelo",
-      "x": 2993.0,
-      "y": -308.0,
+      "x": 2993,
+      "y": -308,
       "heading": 4.369,
       "scale": 2.449,
       "contact": "none"
@@ -21780,7 +26499,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-643",
       "kind": "swamp-tupelo",
       "x": 2876.3,
-      "y": -117.0,
+      "y": -117,
       "heading": 0.236,
       "scale": 1.403,
       "contact": "none"
@@ -21815,7 +26534,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-647",
       "kind": "swamp-cypress",
-      "x": -1208.0,
+      "x": -1208,
       "y": -752.5,
       "heading": 1.085,
       "scale": 1.477
@@ -21886,7 +26605,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-655",
       "kind": "swamp-cypress",
-      "x": 1194.0,
+      "x": 1194,
       "y": 1814.3,
       "heading": 2.697,
       "scale": 2.005,
@@ -21904,7 +26623,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-657",
       "kind": "swamp-tupelo",
-      "x": 1132.0,
+      "x": 1132,
       "y": 1552.9,
       "heading": 6.236,
       "scale": 2.542,
@@ -21968,7 +26687,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-664",
       "kind": "swamp-cypress",
       "x": -1785.2,
-      "y": -2564.0,
+      "y": -2564,
       "heading": 1.458,
       "scale": 2.496,
       "contact": "none"
@@ -22074,7 +26793,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-676",
       "kind": "swamp-tupelo",
       "x": -2206.1,
-      "y": 3833.0,
+      "y": 3833,
       "heading": 4.938,
       "scale": 2.172,
       "contact": "none"
@@ -22091,7 +26810,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-678",
       "kind": "swamp-tupelo",
-      "x": -2186.0,
+      "x": -2186,
       "y": 3763.7,
       "heading": 1.007,
       "scale": 2.459,
@@ -22226,7 +26945,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-693",
       "kind": "swamp-tupelo",
-      "x": 257.0,
+      "x": 257,
       "y": 2419.9,
       "heading": 2.603,
       "scale": 1.462,
@@ -22236,7 +26955,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-694",
       "kind": "swamp-cypress",
       "x": 154.1,
-      "y": 2723.0,
+      "y": 2723,
       "heading": 0.839,
       "scale": 1.406,
       "contact": "none"
@@ -22262,7 +26981,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-697",
       "kind": "swamp-tupelo",
-      "x": 1003.0,
+      "x": 1003,
       "y": 4423.1,
       "heading": 5.08,
       "scale": 2.122,
@@ -22342,7 +27061,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-706",
       "kind": "swamp-cypress",
-      "x": -2374.0,
+      "x": -2374,
       "y": -3020.4,
       "heading": 3.133,
       "scale": 1.557,
@@ -22414,7 +27133,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-714",
       "kind": "swamp-tupelo",
-      "x": 1629.0,
+      "x": 1629,
       "y": -329.6,
       "heading": 5.694,
       "scale": 2.684
@@ -22529,7 +27248,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-727",
       "kind": "swamp-cypress",
       "x": -836.1,
-      "y": -3287.0,
+      "y": -3287,
       "heading": 5.144,
       "scale": 2.429,
       "contact": "none"
@@ -22591,7 +27310,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-734",
       "kind": "swamp-tupelo",
-      "x": 3154.0,
+      "x": 3154,
       "y": 4209.6,
       "heading": 0.399,
       "scale": 1.955,
@@ -22600,7 +27319,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-735",
       "kind": "swamp-cypress",
-      "x": 2805.0,
+      "x": 2805,
       "y": 3974.6,
       "heading": 4.147,
       "scale": 1.494,
@@ -22636,7 +27355,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-739",
       "kind": "swamp-tupelo",
-      "x": 2895.0,
+      "x": 2895,
       "y": 4121.3,
       "heading": 2.706,
       "scale": 2.084,
@@ -22653,7 +27372,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-741",
       "kind": "swamp-cypress",
-      "x": -387.0,
+      "x": -387,
       "y": 3811.6,
       "heading": 2.348,
       "scale": 2.076,
@@ -22743,7 +27462,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-751",
       "kind": "swamp-cypress",
-      "x": -1549.0,
+      "x": -1549,
       "y": -1115.1,
       "heading": 1.542,
       "scale": 1.485,
@@ -22780,7 +27499,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-755",
       "kind": "swamp-tupelo",
       "x": 3970.7,
-      "y": 2229.0,
+      "y": 2229,
       "heading": 5.374,
       "scale": 1.62,
       "contact": "none"
@@ -22861,7 +27580,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-764",
       "kind": "swamp-tupelo",
       "x": 4178.1,
-      "y": 1600.0,
+      "y": 1600,
       "heading": 3.514,
       "scale": 2.163,
       "contact": "none"
@@ -22869,7 +27588,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-765",
       "kind": "swamp-cypress",
-      "x": 4100.0,
+      "x": 4100,
       "y": 1679.7,
       "heading": 2.3,
       "scale": 2.403,
@@ -22942,7 +27661,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-773",
       "kind": "swamp-cypress",
       "x": 3776.4,
-      "y": 1129.0,
+      "y": 1129,
       "heading": 3.455,
       "scale": 2.594,
       "contact": "none"
@@ -23012,7 +27731,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-781",
       "kind": "swamp-cypress",
-      "x": -1207.0,
+      "x": -1207,
       "y": 2337.9,
       "heading": 2.865,
       "scale": 2.05
@@ -23037,7 +27756,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-784",
       "kind": "swamp-cypress",
       "x": -2684.4,
-      "y": -430.0,
+      "y": -430,
       "heading": 2.671,
       "scale": 1.619,
       "contact": "none"
@@ -23099,7 +27818,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-791",
       "kind": "swamp-tupelo",
-      "x": -1251.0,
+      "x": -1251,
       "y": -2378.9,
       "heading": 1.194,
       "scale": 2.13,
@@ -23135,8 +27854,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-795",
       "kind": "swamp-cypress",
-      "x": 695.0,
-      "y": -3755.0,
+      "x": 695,
+      "y": -3755,
       "heading": 5.271,
       "scale": 2.426,
       "contact": "none"
@@ -23144,7 +27863,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-796",
       "kind": "swamp-tupelo",
-      "x": -4430.0,
+      "x": -4430,
       "y": -174.6,
       "heading": 1.146,
       "scale": 1.705,
@@ -23171,7 +27890,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-799",
       "kind": "swamp-tupelo",
-      "x": -1689.0,
+      "x": -1689,
       "y": -3058.2,
       "heading": 3.352,
       "scale": 2.229,
@@ -23180,7 +27899,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-800",
       "kind": "swamp-tupelo",
-      "x": 457.0,
+      "x": 457,
       "y": 4566.4,
       "heading": 4.829,
       "scale": 1.94,
@@ -23216,7 +27935,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-804",
       "kind": "swamp-cypress",
-      "x": 361.0,
+      "x": 361,
       "y": 4602.9,
       "heading": 2.953,
       "scale": 2.285,
@@ -23226,7 +27945,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-805",
       "kind": "swamp-cypress",
       "x": 405.1,
-      "y": 4674.0,
+      "y": 4674,
       "heading": 4.038,
       "scale": 2.42,
       "contact": "none"
@@ -23243,7 +27962,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-807",
       "kind": "swamp-tupelo",
-      "x": 2644.0,
+      "x": 2644,
       "y": 1705.2,
       "heading": 4.998,
       "scale": 1.749,
@@ -23263,7 +27982,7 @@ window.VENUE_DOC["swamp"] = {
       "kind": "swamp-cypress",
       "x": 2519.3,
       "y": 1881.6,
-      "heading": 4.0,
+      "heading": 4,
       "scale": 2.387,
       "contact": "none"
     },
@@ -23343,7 +28062,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-818",
       "kind": "swamp-tupelo",
       "x": -2183.9,
-      "y": -627.0,
+      "y": -627,
       "heading": 0.569,
       "scale": 1.46,
       "contact": "none"
@@ -23395,7 +28114,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-824",
       "kind": "swamp-cypress",
       "x": -1259.8,
-      "y": 4560.0,
+      "y": 4560,
       "heading": 6.133,
       "scale": 2.333,
       "contact": "none"
@@ -23502,7 +28221,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-836",
       "kind": "swamp-cypress",
-      "x": 1740.0,
+      "x": 1740,
       "y": -2606.6,
       "heading": 1.202,
       "scale": 1.772,
@@ -23512,7 +28231,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-837",
       "kind": "swamp-tupelo",
       "x": -933.8,
-      "y": 2142.0,
+      "y": 2142,
       "heading": 3.185,
       "scale": 2.026
     },
@@ -23527,7 +28246,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-839",
       "kind": "swamp-cypress",
-      "x": -895.0,
+      "x": -895,
       "y": 2085.5,
       "heading": 3.56,
       "scale": 2.029
@@ -23560,7 +28279,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-843",
       "kind": "swamp-tupelo",
       "x": -1667.8,
-      "y": 3747.0,
+      "y": 3747,
       "heading": 2.599,
       "scale": 2.638,
       "contact": "none"
@@ -23631,7 +28350,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-851",
       "kind": "swamp-tupelo",
-      "x": 1381.0,
+      "x": 1381,
       "y": 998.5,
       "heading": 2.085,
       "scale": 2.182,
@@ -23749,7 +28468,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-864",
       "kind": "swamp-cypress",
       "x": 3279.8,
-      "y": 3643.0,
+      "y": 3643,
       "heading": 4.848,
       "scale": 1.537,
       "contact": "none"
@@ -23802,7 +28521,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-870",
       "kind": "swamp-tupelo",
-      "x": -3706.0,
+      "x": -3706,
       "y": 2837.6,
       "heading": 3.911,
       "scale": 1.76,
@@ -23831,7 +28550,7 @@ window.VENUE_DOC["swamp"] = {
       "kind": "swamp-cypress",
       "x": 2064.8,
       "y": 4184.9,
-      "heading": 4.0,
+      "heading": 4,
       "scale": 1.927,
       "contact": "none"
     },
@@ -23857,7 +28576,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-876",
       "kind": "swamp-cypress",
       "x": -421.9,
-      "y": 4026.0,
+      "y": 4026,
       "heading": 1.726,
       "scale": 2.393,
       "contact": "none"
@@ -23866,7 +28585,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-877",
       "kind": "swamp-tupelo",
       "x": -554.7,
-      "y": 3854.0,
+      "y": 3854,
       "heading": 2.683,
       "scale": 2.53,
       "contact": "none"
@@ -23921,7 +28640,7 @@ window.VENUE_DOC["swamp"] = {
       "kind": "swamp-tupelo",
       "x": -4561.3,
       "y": 966.7,
-      "heading": 1.0,
+      "heading": 1,
       "scale": 1.422,
       "contact": "none"
     },
@@ -23947,7 +28666,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-886",
       "kind": "swamp-tupelo",
       "x": 2827.6,
-      "y": 2412.0,
+      "y": 2412,
       "heading": 4.567,
       "scale": 1.894,
       "contact": "none"
@@ -23991,7 +28710,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-891",
       "kind": "swamp-tupelo",
-      "x": -1153.0,
+      "x": -1153,
       "y": -1225.6,
       "heading": 1.894,
       "scale": 2.32,
@@ -24154,7 +28873,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-909",
       "kind": "swamp-tupelo",
       "x": -3898.2,
-      "y": -1177.0,
+      "y": -1177,
       "heading": 0.605,
       "scale": 2.423,
       "contact": "none"
@@ -24171,8 +28890,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-911",
       "kind": "swamp-tupelo",
-      "x": 1111.0,
-      "y": 707.0,
+      "x": 1111,
+      "y": 707,
       "heading": 3.158,
       "scale": 1.619,
       "contact": "none"
@@ -24310,7 +29029,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-927",
       "kind": "swamp-cypress",
-      "x": -3658.0,
+      "x": -3658,
       "y": 628.1,
       "heading": 4.547,
       "scale": 1.694,
@@ -24320,7 +29039,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-928",
       "kind": "swamp-tupelo",
       "x": -3786.8,
-      "y": 674.0,
+      "y": 674,
       "heading": 3.533,
       "scale": 2.047,
       "contact": "none"
@@ -24383,7 +29102,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-935",
       "kind": "swamp-cypress",
       "x": 568.4,
-      "y": 4190.0,
+      "y": 4190,
       "heading": 2.792,
       "scale": 2.625,
       "contact": "none"
@@ -24480,7 +29199,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-946",
       "kind": "swamp-cypress",
       "x": -2080.4,
-      "y": 3368.0,
+      "y": 3368,
       "heading": 1.108,
       "scale": 2.557
     },
@@ -24594,7 +29313,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-959",
       "kind": "swamp-tupelo",
-      "x": 2399.0,
+      "x": 2399,
       "y": 2490.7,
       "heading": 3.23,
       "scale": 1.847,
@@ -24604,14 +29323,14 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-960",
       "kind": "swamp-cypress",
       "x": -1442.7,
-      "y": 2059.0,
+      "y": 2059,
       "heading": 1.849,
       "scale": 2.495
     },
     {
       "id": "tree-961",
       "kind": "swamp-cypress",
-      "x": -1342.0,
+      "x": -1342,
       "y": 1901.9,
       "heading": 2.567,
       "scale": 2.361
@@ -24628,7 +29347,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-963",
       "kind": "swamp-cypress",
       "x": -2456.8,
-      "y": -359.0,
+      "y": -359,
       "heading": 3.481,
       "scale": 1.533,
       "contact": "none"
@@ -24664,7 +29383,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-967",
       "kind": "swamp-cypress",
       "x": -450.7,
-      "y": -3880.0,
+      "y": -3880,
       "heading": 2.219,
       "scale": 2.444,
       "contact": "none"
@@ -24682,7 +29401,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-969",
       "kind": "swamp-cypress",
       "x": 2117.4,
-      "y": 3211.0,
+      "y": 3211,
       "heading": 5.74,
       "scale": 2.684,
       "contact": "none"
@@ -24700,7 +29419,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-971",
       "kind": "swamp-tupelo",
       "x": -399.6,
-      "y": 2014.0,
+      "y": 2014,
       "heading": 3.009,
       "scale": 1.887
     },
@@ -24735,7 +29454,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-975",
       "kind": "swamp-cypress",
       "x": -521.2,
-      "y": -2948.0,
+      "y": -2948,
       "heading": 4.486,
       "scale": 1.608,
       "contact": "none"
@@ -24752,8 +29471,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-977",
       "kind": "swamp-cypress",
-      "x": -3259.0,
-      "y": -1427.0,
+      "x": -3259,
+      "y": -1427,
       "heading": 3.387,
       "scale": 2.307,
       "contact": "none"
@@ -24761,8 +29480,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-978",
       "kind": "swamp-tupelo",
-      "x": -2971.0,
-      "y": -1761.0,
+      "x": -2971,
+      "y": -1761,
       "heading": 3.389,
       "scale": 2.066,
       "contact": "none"
@@ -24843,7 +29562,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-987",
       "kind": "swamp-cypress",
       "x": 2597.2,
-      "y": -1066.0,
+      "y": -1066,
       "heading": 5.402,
       "scale": 3.309,
       "contact": "none"
@@ -24897,7 +29616,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-993",
       "kind": "swamp-cypress",
       "x": -4266.7,
-      "y": 426.0,
+      "y": 426,
       "heading": 2.696,
       "scale": 1.976,
       "contact": "none"
@@ -24940,7 +29659,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-998",
       "kind": "swamp-cypress",
-      "x": 145.0,
+      "x": 145,
       "y": 1597.4,
       "heading": 2.959,
       "scale": 2.708,
@@ -24986,7 +29705,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1003",
       "kind": "swamp-cypress",
       "x": -3600.3,
-      "y": -82.0,
+      "y": -82,
       "heading": 2.994,
       "scale": 1.491,
       "contact": "none"
@@ -25002,7 +29721,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1005",
       "kind": "swamp-cypress",
-      "x": -1693.0,
+      "x": -1693,
       "y": 773.9,
       "heading": 5.672,
       "scale": 2.705
@@ -25027,7 +29746,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1008",
       "kind": "swamp-tupelo",
-      "x": -1733.0,
+      "x": -1733,
       "y": 3764.2,
       "heading": 3.294,
       "scale": 2.411,
@@ -25036,7 +29755,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1009",
       "kind": "swamp-cypress",
-      "x": -1714.0,
+      "x": -1714,
       "y": 3765.6,
       "heading": 5.514,
       "scale": 1.776,
@@ -25045,7 +29764,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1010",
       "kind": "swamp-cypress",
-      "x": -1859.0,
+      "x": -1859,
       "y": 3781.5,
       "heading": 4.312,
       "scale": 1.954,
@@ -25055,7 +29774,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1011",
       "kind": "swamp-tupelo",
       "x": -3956.7,
-      "y": -1575.0,
+      "y": -1575,
       "heading": 1.095,
       "scale": 1.664,
       "contact": "none"
@@ -25131,7 +29850,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1020",
       "kind": "swamp-cypress",
-      "x": -2239.0,
+      "x": -2239,
       "y": 4200.6,
       "heading": 1.654,
       "scale": 2.599,
@@ -25176,8 +29895,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1025",
       "kind": "swamp-tupelo",
-      "x": -948.0,
-      "y": 3448.0,
+      "x": -948,
+      "y": 3448,
       "heading": 0.855,
       "scale": 1.599,
       "contact": "none"
@@ -25203,7 +29922,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1028",
       "kind": "swamp-cypress",
-      "x": -2498.0,
+      "x": -2498,
       "y": -2413.7,
       "heading": 4.743,
       "scale": 2.204,
@@ -25240,7 +29959,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1032",
       "kind": "swamp-cypress",
       "x": 1233.8,
-      "y": 2130.0,
+      "y": 2130,
       "heading": 1.686,
       "scale": 2.501,
       "contact": "none"
@@ -25266,7 +29985,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1035",
       "kind": "swamp-tupelo",
-      "x": 1589.0,
+      "x": 1589,
       "y": 2297.4,
       "heading": 0.471,
       "scale": 2.011,
@@ -25330,7 +30049,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1042",
       "kind": "swamp-tupelo",
       "x": -603.5,
-      "y": 2909.0,
+      "y": 2909,
       "heading": 1.461,
       "scale": 2.047,
       "contact": "none"
@@ -25365,8 +30084,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1046",
       "kind": "swamp-tupelo",
-      "x": -1873.0,
-      "y": -2062.0,
+      "x": -1873,
+      "y": -2062,
       "heading": 3.83,
       "scale": 2.037,
       "contact": "none"
@@ -25402,7 +30121,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1050",
       "kind": "swamp-tupelo",
       "x": -4136.9,
-      "y": 1113.0,
+      "y": 1113,
       "heading": 1.598,
       "scale": 1.661,
       "contact": "none"
@@ -25528,7 +30247,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1064",
       "kind": "swamp-tupelo",
       "x": 4616.7,
-      "y": 3858.0,
+      "y": 3858,
       "heading": 6.203,
       "scale": 2.129,
       "contact": "none"
@@ -25564,7 +30283,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1068",
       "kind": "swamp-tupelo",
       "x": 2034.6,
-      "y": 4345.0,
+      "y": 4345,
       "heading": 1.443,
       "scale": 1.86,
       "contact": "none"
@@ -25573,7 +30292,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1069",
       "kind": "swamp-tupelo",
       "x": 2202.7,
-      "y": 4469.0,
+      "y": 4469,
       "heading": 3.243,
       "scale": 1.508,
       "contact": "none"
@@ -25590,7 +30309,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1071",
       "kind": "swamp-cypress",
-      "x": 2081.0,
+      "x": 2081,
       "y": 4416.8,
       "heading": 2.47,
       "scale": 3.368,
@@ -25662,7 +30381,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1079",
       "kind": "swamp-tupelo",
       "x": -2887.5,
-      "y": 989.0,
+      "y": 989,
       "heading": 2.379,
       "scale": 2.135,
       "contact": "none"
@@ -25814,7 +30533,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1096",
       "kind": "swamp-cypress",
-      "x": 3044.0,
+      "x": 3044,
       "y": 2390.9,
       "heading": 1.121,
       "scale": 2.281,
@@ -25860,7 +30579,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1101",
       "kind": "swamp-tupelo",
       "x": -3984.9,
-      "y": 1042.0,
+      "y": 1042,
       "heading": 5.988,
       "scale": 1.729,
       "contact": "none"
@@ -25877,7 +30596,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1103",
       "kind": "swamp-tupelo",
-      "x": -2673.0,
+      "x": -2673,
       "y": -423.4,
       "heading": 3.09,
       "scale": 2.559,
@@ -25896,7 +30615,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1105",
       "kind": "swamp-cypress",
       "x": -3038.3,
-      "y": -982.0,
+      "y": -982,
       "heading": 2.195,
       "scale": 1.814,
       "contact": "none"
@@ -25922,7 +30641,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1108",
       "kind": "swamp-cypress",
-      "x": -777.0,
+      "x": -777,
       "y": -2987.7,
       "heading": 5.333,
       "scale": 2.161,
@@ -25977,7 +30696,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1114",
       "kind": "swamp-cypress",
       "x": 2694.1,
-      "y": -1195.0,
+      "y": -1195,
       "heading": 2.046,
       "scale": 2.307,
       "contact": "none"
@@ -26109,8 +30828,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1129",
       "kind": "swamp-cypress",
-      "x": 3111.0,
-      "y": 2071.0,
+      "x": 3111,
+      "y": 2071,
       "heading": 5.447,
       "scale": 2.028,
       "contact": "none"
@@ -26217,8 +30936,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1141",
       "kind": "swamp-cypress",
-      "x": 2521.0,
-      "y": -1070.0,
+      "x": 2521,
+      "y": -1070,
       "heading": 2.175,
       "scale": 1.518,
       "contact": "none"
@@ -26235,7 +30954,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1143",
       "kind": "swamp-tupelo",
-      "x": 3108.0,
+      "x": 3108,
       "y": -503.6,
       "heading": 2.099,
       "scale": 2.323,
@@ -26308,7 +31027,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1151",
       "kind": "swamp-tupelo",
       "x": 2278.6,
-      "y": 1872.0,
+      "y": 1872,
       "heading": 6.024,
       "scale": 2.692,
       "contact": "none"
@@ -26335,7 +31054,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1154",
       "kind": "swamp-cypress",
       "x": 2334.8,
-      "y": 1790.0,
+      "y": 1790,
       "heading": 6.093,
       "scale": 1.41,
       "contact": "none"
@@ -26352,7 +31071,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1156",
       "kind": "swamp-tupelo",
-      "x": -4015.0,
+      "x": -4015,
       "y": -1308.2,
       "heading": 4.178,
       "scale": 2.065,
@@ -26398,7 +31117,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1161",
       "kind": "swamp-cypress",
       "x": -2459.3,
-      "y": -2685.0,
+      "y": -2685,
       "heading": 2.826,
       "scale": 2.827,
       "contact": "none"
@@ -26460,8 +31179,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1168",
       "kind": "swamp-tupelo",
-      "x": -2376.0,
-      "y": -2451.0,
+      "x": -2376,
+      "y": -2451,
       "heading": 5.337,
       "scale": 1.502,
       "contact": "none"
@@ -26583,7 +31302,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1182",
       "kind": "swamp-tupelo",
-      "x": -1458.0,
+      "x": -1458,
       "y": -768.2,
       "heading": 1.838,
       "scale": 2.39,
@@ -26592,8 +31311,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1183",
       "kind": "swamp-tupelo",
-      "x": -1404.0,
-      "y": -850.0,
+      "x": -1404,
+      "y": -850,
       "heading": 2.603,
       "scale": 2.377,
       "contact": "none"
@@ -26629,7 +31348,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1187",
       "kind": "swamp-cypress",
       "x": 1910.4,
-      "y": 3464.0,
+      "y": 3464,
       "heading": 0.92,
       "scale": 1.769,
       "contact": "none"
@@ -26656,7 +31375,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1190",
       "kind": "swamp-tupelo",
       "x": 1895.8,
-      "y": 3477.0,
+      "y": 3477,
       "heading": 1.516,
       "scale": 1.593,
       "contact": "none"
@@ -26688,7 +31407,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1194",
       "kind": "swamp-cypress",
-      "x": -1757.0,
+      "x": -1757,
       "y": 2260.6,
       "heading": 4.869,
       "scale": 1.56
@@ -26713,7 +31432,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1197",
       "kind": "swamp-tupelo",
       "x": 3649.9,
-      "y": 1816.0,
+      "y": 1816,
       "heading": 5.013,
       "scale": 2.509,
       "contact": "none"
@@ -26748,8 +31467,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1201",
       "kind": "swamp-tupelo",
-      "x": 3229.0,
-      "y": 1716.0,
+      "x": 3229,
+      "y": 1716,
       "heading": 6.26,
       "scale": 1.531,
       "contact": "none"
@@ -26776,7 +31495,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1204",
       "kind": "swamp-cypress",
       "x": 3291.6,
-      "y": 1881.0,
+      "y": 1881,
       "heading": 3.356,
       "scale": 1.419,
       "contact": "none"
@@ -26821,7 +31540,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1209",
       "kind": "swamp-tupelo",
       "x": -3959.4,
-      "y": 1046.0,
+      "y": 1046,
       "heading": 4.886,
       "scale": 2.647,
       "contact": "none"
@@ -26902,7 +31621,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1218",
       "kind": "swamp-cypress",
       "x": 1305.2,
-      "y": 806.0,
+      "y": 806,
       "heading": 3.916,
       "scale": 2.726,
       "contact": "none"
@@ -26956,7 +31675,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1224",
       "kind": "swamp-cypress",
       "x": 4312.2,
-      "y": 3452.0,
+      "y": 3452,
       "heading": 0.377,
       "scale": 1.589,
       "contact": "none"
@@ -26964,7 +31683,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1225",
       "kind": "swamp-cypress",
-      "x": 3989.0,
+      "x": 3989,
       "y": 2964.1,
       "heading": 0.086,
       "scale": 2.292,
@@ -27046,7 +31765,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1234",
       "kind": "swamp-tupelo",
       "x": -2914.3,
-      "y": -1763.0,
+      "y": -1763,
       "heading": 4.738,
       "scale": 2.6,
       "contact": "none"
@@ -27126,7 +31845,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1243",
       "kind": "swamp-tupelo",
-      "x": -386.0,
+      "x": -386,
       "y": -3121.1,
       "heading": 3.313,
       "scale": 2.064,
@@ -27135,7 +31854,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1244",
       "kind": "swamp-cypress",
-      "x": -242.0,
+      "x": -242,
       "y": -3112.1,
       "heading": 2.491,
       "scale": 2.405,
@@ -27198,8 +31917,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1251",
       "kind": "swamp-cypress",
-      "x": -4244.0,
-      "y": -84.0,
+      "x": -4244,
+      "y": -84,
       "heading": 4.01,
       "scale": 2.898,
       "contact": "none"
@@ -27260,7 +31979,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1258",
       "kind": "swamp-cypress",
       "x": -274.8,
-      "y": 638.0,
+      "y": 638,
       "heading": 2.803,
       "scale": 1.408
     },
@@ -27293,7 +32012,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1262",
       "kind": "swamp-tupelo",
-      "x": -1341.0,
+      "x": -1341,
       "y": -2507.2,
       "heading": 1.947,
       "scale": 1.501,
@@ -27348,7 +32067,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1268",
       "kind": "swamp-cypress",
       "x": -3764.5,
-      "y": -94.0,
+      "y": -94,
       "heading": 3.719,
       "scale": 1.679,
       "contact": "none"
@@ -27553,7 +32272,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1291",
       "kind": "swamp-cypress",
       "x": -207.8,
-      "y": 3203.0,
+      "y": 3203,
       "heading": 0.945,
       "scale": 1.895,
       "contact": "none"
@@ -27697,7 +32416,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1307",
       "kind": "swamp-tupelo",
       "x": -1686.6,
-      "y": -3038.0,
+      "y": -3038,
       "heading": 0.567,
       "scale": 2.449,
       "contact": "none"
@@ -27706,7 +32425,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1308",
       "kind": "swamp-tupelo",
       "x": -1601.9,
-      "y": -2739.0,
+      "y": -2739,
       "heading": 4.499,
       "scale": 1.639,
       "contact": "none"
@@ -27751,7 +32470,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1313",
       "kind": "swamp-cypress",
       "x": -1525.3,
-      "y": -2925.0,
+      "y": -2925,
       "heading": 5.257,
       "scale": 2.736,
       "contact": "none"
@@ -27813,7 +32532,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1320",
       "kind": "swamp-cypress",
-      "x": -355.0,
+      "x": -355,
       "y": 4387.5,
       "heading": 3.419,
       "scale": 1.533,
@@ -27823,7 +32542,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1321",
       "kind": "swamp-cypress",
       "x": -174.7,
-      "y": 4623.0,
+      "y": 4623,
       "heading": 2.691,
       "scale": 2.794,
       "contact": "none"
@@ -27831,7 +32550,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1322",
       "kind": "swamp-cypress",
-      "x": 146.0,
+      "x": 146,
       "y": 409.7,
       "heading": 4.319,
       "scale": 3.199
@@ -27840,7 +32559,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1323",
       "kind": "swamp-cypress",
       "x": -2689.5,
-      "y": -2230.0,
+      "y": -2230,
       "heading": 5.652,
       "scale": 2.607,
       "contact": "none"
@@ -27902,7 +32621,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1330",
       "kind": "swamp-tupelo",
-      "x": -2024.0,
+      "x": -2024,
       "y": -2617.7,
       "heading": 4.374,
       "scale": 2.617,
@@ -27948,7 +32667,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1335",
       "kind": "swamp-tupelo",
       "x": -1170.9,
-      "y": -2227.0,
+      "y": -2227,
       "heading": 6.215,
       "scale": 2.568,
       "contact": "none"
@@ -27957,7 +32676,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1336",
       "kind": "swamp-cypress",
       "x": -1113.8,
-      "y": -2161.0,
+      "y": -2161,
       "heading": 3.097,
       "scale": 2.399,
       "contact": "none"
@@ -27966,7 +32685,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1337",
       "kind": "swamp-tupelo",
       "x": -1274.3,
-      "y": -2169.0,
+      "y": -2169,
       "heading": 6.282,
       "scale": 1.819,
       "contact": "none"
@@ -28028,7 +32747,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1344",
       "kind": "swamp-cypress",
-      "x": -2365.0,
+      "x": -2365,
       "y": -1791.7,
       "heading": 3.541,
       "scale": 2.471,
@@ -28055,7 +32774,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1347",
       "kind": "swamp-cypress",
-      "x": -3258.0,
+      "x": -3258,
       "y": -404.9,
       "heading": 3.897,
       "scale": 3.142,
@@ -28112,7 +32831,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 696.9,
       "y": 1997.8,
       "heading": 0.342,
-      "scale": 2.0,
+      "scale": 2,
       "contact": "none"
     },
     {
@@ -28208,7 +32927,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1364",
       "kind": "swamp-tupelo",
       "x": -1602.6,
-      "y": 3924.0,
+      "y": 3924,
       "heading": 0.016,
       "scale": 2.677,
       "contact": "none"
@@ -28262,7 +32981,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1370",
       "kind": "swamp-cypress",
       "x": -2600.5,
-      "y": -846.0,
+      "y": -846,
       "heading": 0.645,
       "scale": 2.454,
       "contact": "none"
@@ -28343,7 +33062,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1379",
       "kind": "swamp-cypress",
       "x": -2077.5,
-      "y": -793.0,
+      "y": -793,
       "heading": 1.836,
       "scale": 2.068,
       "contact": "none"
@@ -28378,7 +33097,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1383",
       "kind": "swamp-tupelo",
-      "x": -4095.0,
+      "x": -4095,
       "y": 673.3,
       "heading": 2.051,
       "scale": 1.452,
@@ -28423,7 +33142,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1388",
       "kind": "swamp-cypress",
       "x": -846.1,
-      "y": 2379.0,
+      "y": 2379,
       "heading": 5.954,
       "scale": 2.378
     },
@@ -28448,7 +33167,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1391",
       "kind": "swamp-cypress",
       "x": -754.9,
-      "y": 2722.0,
+      "y": 2722,
       "heading": 0.296,
       "scale": 2.361,
       "contact": "none"
@@ -28466,7 +33185,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1393",
       "kind": "swamp-cypress",
       "x": 2505.2,
-      "y": 2404.0,
+      "y": 2404,
       "heading": 4.722,
       "scale": 2.035,
       "contact": "none"
@@ -28511,7 +33230,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1398",
       "kind": "swamp-cypress",
       "x": 2124.8,
-      "y": 3875.0,
+      "y": 3875,
       "heading": 5.663,
       "scale": 2.139,
       "contact": "none"
@@ -28600,7 +33319,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1408",
       "kind": "swamp-cypress",
       "x": -1115.4,
-      "y": 4555.0,
+      "y": 4555,
       "heading": 5.794,
       "scale": 2.761,
       "contact": "none"
@@ -28634,7 +33353,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1412",
       "kind": "swamp-tupelo",
-      "x": 1693.0,
+      "x": 1693,
       "y": -340.5,
       "heading": 2.587,
       "scale": 1.54,
@@ -28661,7 +33380,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1415",
       "kind": "swamp-cypress",
-      "x": 3630.0,
+      "x": 3630,
       "y": 2739.7,
       "heading": 0.185,
       "scale": 1.848,
@@ -28742,7 +33461,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1424",
       "kind": "swamp-cypress",
-      "x": 2769.0,
+      "x": 2769,
       "y": 3578.9,
       "heading": 3.678,
       "scale": 2.683,
@@ -28877,7 +33596,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1439",
       "kind": "swamp-oak",
       "x": 4236.2,
-      "y": 2014.0,
+      "y": 2014,
       "heading": 4.848,
       "scale": 2.549,
       "contact": "none"
@@ -28886,7 +33605,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1440",
       "kind": "swamp-oak",
       "x": -951.4,
-      "y": 2878.0,
+      "y": 2878,
       "heading": 5.766,
       "scale": 3.147,
       "contact": "none"
@@ -28912,7 +33631,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1443",
       "kind": "swamp-oak",
-      "x": -2739.0,
+      "x": -2739,
       "y": 3220.6,
       "heading": 1.76,
       "scale": 3.925
@@ -28920,7 +33639,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1444",
       "kind": "swamp-oak",
-      "x": -86.0,
+      "x": -86,
       "y": 198.4,
       "heading": 5.71,
       "scale": 2.736
@@ -28929,7 +33648,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1445",
       "kind": "swamp-oak",
       "x": -180.1,
-      "y": 307.0,
+      "y": 307,
       "heading": 0.673,
       "scale": 2.572
     },
@@ -29048,7 +33767,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1459",
       "kind": "swamp-oak",
-      "x": -4058.0,
+      "x": -4058,
       "y": 2179.4,
       "heading": 2.337,
       "scale": 2.595,
@@ -29153,7 +33872,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1471",
       "kind": "swamp-oak",
-      "x": 2516.0,
+      "x": 2516,
       "y": 4692.9,
       "heading": 1.684,
       "scale": 2.199,
@@ -29163,7 +33882,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1472",
       "kind": "swamp-oak",
       "x": -5051.7,
-      "y": 616.0,
+      "y": 616,
       "heading": 0.453,
       "scale": 2.799,
       "contact": "none"
@@ -29233,7 +33952,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1480",
       "kind": "swamp-oak",
       "x": -1321.9,
-      "y": -3473.0,
+      "y": -3473,
       "heading": 2.679,
       "scale": 2.832,
       "contact": "none"
@@ -29268,7 +33987,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1484",
       "kind": "swamp-oak",
-      "x": -3589.0,
+      "x": -3589,
       "y": 1456.3,
       "heading": 0.279,
       "scale": 3.21,
@@ -29277,7 +33996,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1485",
       "kind": "swamp-oak",
-      "x": -352.0,
+      "x": -352,
       "y": 1406.4,
       "heading": 4.436,
       "scale": 3.849
@@ -29320,8 +34039,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-1490",
       "kind": "swamp-oak",
-      "x": -1564.0,
-      "y": 2633.0,
+      "x": -1564,
+      "y": 2633,
       "heading": 0.159,
       "scale": 2.963
     },
@@ -29363,7 +34082,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1495",
       "kind": "swamp-oak",
       "x": -1762.6,
-      "y": -3398.0,
+      "y": -3398,
       "heading": 0.905,
       "scale": 3.745,
       "contact": "none"
@@ -29381,7 +34100,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "tree-1497",
       "kind": "swamp-oak",
       "x": -436.3,
-      "y": 4500.0,
+      "y": 4500,
       "heading": 6.247,
       "scale": 3.939,
       "contact": "none"
@@ -29412,436 +34131,60 @@ window.VENUE_DOC["swamp"] = {
       "scale": 2.328
     },
     {
-      "id": "knee-1",
-      "kind": "swamp-cypress-knee",
-      "x": 1164.1,
-      "y": -1502.3,
-      "heading": 3.222,
-      "scale": 1.119
+      "id": "prop-3",
+      "kind": "swamp-driftlog",
+      "x": -1886.1377600070448,
+      "y": 1804.3574100698513,
+      "heading": 4.096089286507368,
+      "scale": 0.943
     },
     {
-      "id": "knee-2",
-      "kind": "swamp-cypress-knee",
-      "x": 1081.7,
-      "y": -1534.0,
-      "heading": 3.27,
-      "scale": 0.928
+      "id": "prop-4",
+      "kind": "swamp-driftlog",
+      "x": -1358.4135,
+      "y": 2125.5909,
+      "heading": 1.631448,
+      "scale": 0.9829
     },
     {
-      "id": "knee-3",
-      "kind": "swamp-cypress-knee",
-      "x": 1131.5,
-      "y": -1321.1,
-      "heading": 2.243,
-      "scale": 1.459
+      "id": "prop-5",
+      "kind": "swamp-driftlog",
+      "x": -838.4135,
+      "y": 1345.5909,
+      "heading": 2.395305,
+      "scale": 0.8972
     },
     {
-      "id": "knee-4",
-      "kind": "swamp-cypress-knee",
-      "x": 1131.3,
-      "y": -1330.1,
-      "heading": 5.495,
-      "scale": 1.582
+      "id": "prop-6",
+      "kind": "swamp-driftlog",
+      "x": -1358.4135,
+      "y": 825.5909,
+      "heading": 4.711713,
+      "scale": 0.9274
     },
     {
-      "id": "knee-5",
-      "kind": "swamp-cypress-knee",
-      "x": 1234.3,
-      "y": -1351.8,
-      "heading": 0.393,
-      "scale": 1.772
+      "id": "prop-7",
+      "kind": "swamp-driftlog",
+      "x": -318.4135,
+      "y": 695.5909,
+      "heading": 1.482511,
+      "scale": 0.855
     },
     {
-      "id": "knee-6",
-      "kind": "swamp-cypress-knee",
-      "x": 1177.8,
-      "y": -1417.0,
-      "heading": 3.196,
-      "scale": 1.204
+      "id": "prop-8",
+      "kind": "swamp-driftlog",
+      "x": 201.5865,
+      "y": 175.5909,
+      "heading": 3.358184,
+      "scale": 0.8865
     },
     {
-      "id": "knee-7",
-      "kind": "swamp-cypress-knee",
-      "x": -3076.8,
-      "y": 1272.6,
-      "heading": 0.535,
-      "scale": 1.542
-    },
-    {
-      "id": "knee-8",
-      "kind": "swamp-cypress-knee",
-      "x": 1144.7,
-      "y": -1745.2,
-      "heading": 4.402,
-      "scale": 1.658
-    },
-    {
-      "id": "knee-9",
-      "kind": "swamp-cypress-knee",
-      "x": 1146.2,
-      "y": -1762.7,
-      "heading": 2.071,
-      "scale": 1.041
-    },
-    {
-      "id": "knee-10",
-      "kind": "swamp-cypress-knee",
-      "x": -1312.8,
-      "y": -450.3,
-      "heading": 5.039,
-      "scale": 1.404
-    },
-    {
-      "id": "knee-11",
-      "kind": "swamp-cypress-knee",
-      "x": -1298.0,
-      "y": -479.6,
-      "heading": 6.192,
-      "scale": 1.495
-    },
-    {
-      "id": "knee-12",
-      "kind": "swamp-cypress-knee",
-      "x": -403.2,
-      "y": 756.0,
-      "heading": 0.549,
-      "scale": 1.087
-    },
-    {
-      "id": "knee-13",
-      "kind": "swamp-cypress-knee",
-      "x": -452.6,
-      "y": 802.8,
-      "heading": 4.926,
-      "scale": 1.574
-    },
-    {
-      "id": "knee-14",
-      "kind": "swamp-cypress-knee",
-      "x": -188.3,
-      "y": 789.7,
-      "heading": 1.75,
-      "scale": 0.845
-    },
-    {
-      "id": "knee-15",
-      "kind": "swamp-cypress-knee",
-      "x": 82.4,
-      "y": 1344.4,
-      "heading": 0.117,
-      "scale": 0.895
-    },
-    {
-      "id": "knee-16",
-      "kind": "swamp-cypress-knee",
-      "x": -101.6,
-      "y": 1478.6,
-      "heading": 0.827,
-      "scale": 1.677
-    },
-    {
-      "id": "knee-17",
-      "kind": "swamp-cypress-knee",
-      "x": -144.9,
-      "y": 1417.3,
-      "heading": 2.942,
-      "scale": 1.008
-    },
-    {
-      "id": "knee-18",
-      "kind": "swamp-cypress-knee",
-      "x": -25.3,
-      "y": 1473.4,
-      "heading": 0.763,
-      "scale": 1.215
-    },
-    {
-      "id": "knee-19",
-      "kind": "swamp-cypress-knee",
-      "x": 1189.7,
-      "y": -1673.3,
-      "heading": 3.982,
-      "scale": 1.674
-    },
-    {
-      "id": "knee-20",
-      "kind": "swamp-cypress-knee",
-      "x": 1259.3,
-      "y": -1659.4,
-      "heading": 5.428,
-      "scale": 1.452
-    },
-    {
-      "id": "knee-21",
-      "kind": "swamp-cypress-knee",
-      "x": -3224.1,
-      "y": 1755.7,
-      "heading": 2.424,
-      "scale": 1.253
-    },
-    {
-      "id": "knee-22",
-      "kind": "swamp-cypress-knee",
-      "x": -1237.1,
-      "y": -797.9,
-      "heading": 2.132,
-      "scale": 1.679
-    },
-    {
-      "id": "knee-23",
-      "kind": "swamp-cypress-knee",
-      "x": -1197.1,
-      "y": -690.0,
-      "heading": 2.903,
-      "scale": 1.02
-    },
-    {
-      "id": "knee-24",
-      "kind": "swamp-cypress-knee",
-      "x": -1811.0,
-      "y": 2331.3,
-      "heading": 4.184,
-      "scale": 1.583
-    },
-    {
-      "id": "knee-25",
-      "kind": "swamp-cypress-knee",
-      "x": -1814.6,
-      "y": 2420.6,
-      "heading": 0.495,
-      "scale": 1.012
-    },
-    {
-      "id": "knee-26",
-      "kind": "swamp-cypress-knee",
-      "x": -1825.0,
-      "y": 2304.9,
-      "heading": 0.871,
-      "scale": 1.776
-    },
-    {
-      "id": "knee-27",
-      "kind": "swamp-cypress-knee",
-      "x": -1249.2,
-      "y": 2269.0,
-      "heading": 4.205,
-      "scale": 1.756
-    },
-    {
-      "id": "knee-28",
-      "kind": "swamp-cypress-knee",
-      "x": -1289.1,
-      "y": 2358.1,
-      "heading": 2.542,
-      "scale": 1.247
-    },
-    {
-      "id": "knee-29",
-      "kind": "swamp-cypress-knee",
-      "x": -1134.6,
-      "y": 2343.6,
-      "heading": 3.561,
-      "scale": 0.879
-    },
-    {
-      "id": "knee-30",
-      "kind": "swamp-cypress-knee",
-      "x": 797.8,
-      "y": 504.2,
-      "heading": 2.403,
-      "scale": 1.199
-    },
-    {
-      "id": "knee-31",
-      "kind": "swamp-cypress-knee",
-      "x": 830.4,
-      "y": 569.0,
-      "heading": 4.974,
-      "scale": 1.663
-    },
-    {
-      "id": "knee-32",
-      "kind": "swamp-cypress-knee",
-      "x": 844.9,
-      "y": 588.2,
-      "heading": 2.888,
-      "scale": 0.932
-    },
-    {
-      "id": "knee-33",
-      "kind": "swamp-cypress-knee",
-      "x": -1371.3,
-      "y": 1958.8,
-      "heading": 5.05,
-      "scale": 1.353
-    },
-    {
-      "id": "knee-34",
-      "kind": "swamp-cypress-knee",
-      "x": -1307.2,
-      "y": 2124.2,
-      "heading": 5.453,
-      "scale": 1.315
-    },
-    {
-      "id": "knee-35",
-      "kind": "swamp-cypress-knee",
-      "x": -1424.9,
-      "y": 2134.7,
-      "heading": 4.928,
-      "scale": 1.026
-    },
-    {
-      "id": "knee-36",
-      "kind": "swamp-cypress-knee",
-      "x": -1814.6,
-      "y": 757.9,
-      "heading": 2.315,
-      "scale": 1.15
-    },
-    {
-      "id": "knee-37",
-      "kind": "swamp-cypress-knee",
-      "x": -1612.1,
-      "y": 736.4,
-      "heading": 1.853,
-      "scale": 1.433
-    },
-    {
-      "id": "knee-38",
-      "kind": "swamp-cypress-knee",
-      "x": -1481.4,
-      "y": 429.5,
-      "heading": 3.272,
-      "scale": 1.421
-    },
-    {
-      "id": "knee-39",
-      "kind": "swamp-cypress-knee",
-      "x": -1481.3,
-      "y": 496.6,
-      "heading": 0.964,
-      "scale": 1.528
-    },
-    {
-      "id": "knee-40",
-      "kind": "swamp-cypress-knee",
-      "x": -1365.5,
-      "y": 478.6,
-      "heading": 0.906,
-      "scale": 1.476
-    },
-    {
-      "id": "knee-41",
-      "kind": "swamp-cypress-knee",
-      "x": -1844.2,
-      "y": 1020.9,
-      "heading": 5.704,
-      "scale": 0.802
-    },
-    {
-      "id": "knee-42",
-      "kind": "swamp-cypress-knee",
-      "x": -1167.6,
-      "y": -563.2,
-      "heading": 6.217,
-      "scale": 1.238
-    },
-    {
-      "id": "knee-43",
-      "kind": "swamp-cypress-knee",
-      "x": -1303.4,
-      "y": -535.1,
-      "heading": 3.623,
-      "scale": 1.766
-    },
-    {
-      "id": "knee-44",
-      "kind": "swamp-cypress-knee",
-      "x": -1699.2,
-      "y": 2514.2,
-      "heading": 1.734,
-      "scale": 1.089
-    },
-    {
-      "id": "knee-45",
-      "kind": "swamp-cypress-knee",
-      "x": -1743.1,
-      "y": 2465.1,
-      "heading": 5.085,
-      "scale": 1.185
-    },
-    {
-      "id": "knee-46",
-      "kind": "swamp-cypress-knee",
-      "x": -1692.0,
-      "y": 2409.1,
-      "heading": 0.408,
-      "scale": 1.172
-    },
-    {
-      "id": "knee-47",
-      "kind": "swamp-cypress-knee",
-      "x": -1823.5,
-      "y": 2260.4,
-      "heading": 1.791,
-      "scale": 0.969
-    },
-    {
-      "id": "knee-48",
-      "kind": "swamp-cypress-knee",
-      "x": -1886.2,
-      "y": 2295.4,
-      "heading": 1.825,
-      "scale": 1.617
-    },
-    {
-      "id": "knee-49",
-      "kind": "swamp-cypress-knee",
-      "x": -1852.7,
-      "y": 2383.0,
-      "heading": 2.663,
-      "scale": 1.698
-    },
-    {
-      "id": "knee-50",
-      "kind": "swamp-cypress-knee",
-      "x": -467.5,
-      "y": 829.0,
-      "heading": 1.662,
-      "scale": 1.441
-    },
-    {
-      "id": "knee-51",
-      "kind": "swamp-cypress-knee",
-      "x": -476.3,
-      "y": 689.9,
-      "heading": 6.121,
-      "scale": 1.255
-    },
-    {
-      "id": "knee-52",
-      "kind": "swamp-cypress-knee",
-      "x": 231.7,
-      "y": 333.1,
-      "heading": 5.903,
-      "scale": 1.316
-    },
-    {
-      "id": "knee-53",
-      "kind": "swamp-cypress-knee",
-      "x": -968.0,
-      "y": 2656.5,
-      "heading": 5.361,
-      "scale": 0.886
-    },
-    {
-      "id": "knee-54",
-      "kind": "swamp-cypress-knee",
-      "x": -965.1,
-      "y": 2666.2,
-      "heading": 5.841,
-      "scale": 0.854
+      "id": "prop-9",
+      "kind": "swamp-driftlog",
+      "x": 201.5865,
+      "y": -1384.4091,
+      "heading": 4.513183,
+      "scale": 1.0689
     }
   ]
 };
