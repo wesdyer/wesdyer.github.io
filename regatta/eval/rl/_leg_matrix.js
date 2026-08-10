@@ -117,3 +117,27 @@ console.log(`TOT  ${q(humanTot, 0.5).toFixed(1).padStart(9)}  ${Math.min(...huma
 console.log(`\n  ⚠️ leg-sum vs total: human ${all.reduce((a, l) => a + (q(humanLegs[l] || [], 0.5) || 0), 0).toFixed(1)}` +
     ` bot ${all.reduce((a, l) => a + (q(botLegs[l] || [], 0.5) || 0), 0).toFixed(1)}` +
     ` (medians do not add to the median lap; read the columns, not the sum)`);
+
+// ── THE SAME MATRIX ON MEANS, WHICH IS THE ONE THAT MAY BE APPORTIONED ──────────
+// Standing rule 26: medians do not add, so a share-of-gap column computed from
+// per-leg MEDIANS describes a boat that does not exist (redrock's median legs
+// summed to 383 against a 459 lap). Every leg is right-skewed and DIFFERENT boats
+// occupy the tail on DIFFERENT legs. Means DO add, so this is the table to
+// apportion a gap with; keep the median table for the whole-lap headline.
+// Published wrong once and caught by the owner — the fix belongs in the probe.
+console.log(`\n${VENUE.toUpperCase()} PER-LEG MATRIX ON MEANS  ⭐ apportion the gap with THIS table`);
+console.log(`leg   human mean    bot mean    DELTA mean   RATIO   share of gap`);
+const dMean = {};
+for (const lg of all) dMean[lg] = (mean(botLegs[lg] || []) - mean(humanLegs[lg] || [])) || 0;
+const gapMean = Object.values(dMean).reduce((a, b) => a + (b > 0 ? b : 0), 0);
+for (const lg of all) {
+    const hm = mean(humanLegs[lg] || []), bm = mean(botLegs[lg] || []), d = dMean[lg];
+    console.log(`${String(lg).padStart(3)}  ${hm.toFixed(1).padStart(10)}  ${bm.toFixed(1).padStart(10)}` +
+        `  ${d.toFixed(1).padStart(11)}  ${(bm / hm).toFixed(2).padStart(6)}  ${d > 0 ? (100 * d / gapMean).toFixed(0) + '%' : '-'}`);
+}
+const hTotM = mean(humanTot), bTotM = mean(botTot);
+console.log(`TOT  ${hTotM.toFixed(1).padStart(10)}  ${bTotM.toFixed(1).padStart(10)}` +
+    `  ${(bTotM - hTotM).toFixed(1).padStart(11)}  ${(bTotM / hTotM).toFixed(2).padStart(6)}`);
+console.log(`  leg-sum check (means SHOULD add): human ` +
+    `${all.reduce((a, l) => a + (mean(humanLegs[l] || []) || 0), 0).toFixed(1)} vs lap ${hTotM.toFixed(1)}` +
+    `   bot ${all.reduce((a, l) => a + (mean(botLegs[l] || []) || 0), 0).toFixed(1)} vs lap ${bTotM.toFixed(1)}`);

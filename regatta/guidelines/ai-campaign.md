@@ -13133,3 +13133,108 @@ outward track existed in ALL of them (best track median 114 u/s).
 NEXT CANDIDATE: pick the escape off the sailable fan by best outward track
 ALWAYS, not only under a stream. ⚠️ It stops being byte-inert on redrock (1.5% of
 contacts), so it needs its own gate against the `3ce099a` landing.
+
+---
+
+# RESEARCH FOR THE NEXT PUSH (2026-08-09 night, on HEAD `3f26634`)
+Owner's call: stay on redrock, it is still the highest ratio. Everything below is
+measured on the landed HEAD; `_leg_matrix.js` now prints a MEANS table beside the
+median one (rule 26 lived only in the memory before — the probe apportioned on
+medians, which is the error the owner caught last session).
+
+## REDROCK'S REMAINING 176.4 s/boat (mean), 1.81x
+| leg | human | bot | delta | ratio | share |
+|---|---|---|---|---|---|
+| 0 | 1.2 | 7.6 | 6.4 | 6.43x | 4% |
+| 1 | 29.1 | 56.2 | 27.1 | 1.93x | 15% |
+| 2 | 22.4 | 52.7 | 30.3 | **2.35x** | 17% |
+| 3 | 55.2 | 104.4 | **49.1** | 1.89x | **28%** |
+| 4 | 26.5 | 49.5 | 23.0 | 1.87x | 13% |
+| 5 | 54.5 | 84.9 | 30.4 | 1.56x | 17% |
+| 6 | 28.6 | 38.8 | 10.1 | 1.35x | 6% |
+| TOT | 217.4 | 394.0 | 176.4 | 1.81x | |
+The landing's −69.4s of mean matches the bench's −68.5 paired mean, and legs 3+5
+supplied 51.5s of it (74%) — the legs the grounding research named. Mechanism
+confirmed end to end.
+
+## ⭐⭐ FINDING 1 — THE SW-MARK BOWL IS ONE PLACE WORTH 47.7 s/boat (27% OF THE GAP)
+`_leg_where` on both legs, and the two pockets are ADJACENT:
+| pocket | delta | share of leg | human vs bot | state |
+|---|---|---|---|---|
+| leg2 sub9 (-920,-1621) | **+21.0** | 66% of leg 2 | 3.0s vs 24.0s | **armed 80%**, landAhead 54%, deflected 44% |
+| leg3 sub0 (-747,-1416) | **+26.7** | 54% of leg 3 | 3.8s vs 30.4s, 83 vs **35 u/s** | landAhead 54%, deflected 43%, wiggle 27%, **armed 7%** |
+These are the APPROACH and the EXIT of mark 5 `sw` (-883,-1628). The campaign has
+carried the bowl as an arrival problem; **the exit is the bigger half and is not a
+rounding problem at all.**
+
+`_pocket_split.js` (NEW) settles what kind of problem it is. Pocket (-830,-1520)
+r=420, 36 boat-visits: **63.9 s/boat spent inside a 420u circle at 51 u/s**;
+23.9 s/boat under 40 u/s, of which **IN LAND CONTACT only 3.5 (15%)** and **SLOW
+BUT NOT TOUCHING 20.4 (85%)**. State mix: **deflected 51%**, landAhead 39%,
+armed 33%, contact-reflex 25%, wiggle 11%, irons 10%, penalty-spin 3%.
+⇒ **THE BOWL IS NOT A CONTACT PROBLEM.** It is the FLEET AVOIDANCE TAX in
+constrained water — boats spend half their time in there deflected by rivals.
+Geometry note: a 76u rock at (-941,-1373) sits ~260u from the mark, in the exit
+corridor.
+
+## FINDING 2 — GROUNDING IS STILL THE TAIL, BUT THE ESCAPE IS NO LONGER THE LEVER
+Tax **65.7 s/boat** (was 90-100) and the coupling did NOT weaken: r = 0.95,
+**r² = 0.90**, slope 1.90 (quartiles by finish 316/31.4, 380/52.0, 406/65.4,
+509/111.4). Episodes/boat-race 16.4 → 14.8 (−10%); tax per episode 5.5 → 4.4
+(−20%). And `_esc_current` on redrock says the commanded escape is now
+near-optimal AND sailable: track into the rock **1.5%**, achieved 127.2 u/s
+against a best-possible 128.6. ⇒ **the remaining lever is ARRIVAL — why boats
+reach rock 14.8 times a race against a human who grounds ~0 — not escape quality.**
+
+## FINDING 3 — THE PENALTY-SPIN HOLE TRIPLED IN RELATIVE SIZE
+Because the landing fixed everything around it:
+| | pre | post |
+|---|---|---|
+| of land-contact time | 9.2% | **18.1%** |
+| of grinding-episode frames | 10.4% | **30.4%** |
+| episodes that BEGIN while spinning | 12% | **31%** |
+Spin-dominated episodes now last 2.3s against 1.4s for the rest.
+⚠️ BUT re-gating `treeSPIN2` (= HEAD + the fix) is AMBIGUOUS, exactly as it was
+last time: leg-3 tax 19.7 → 26.9 (worse), leg-5 18.9 → 19.8 (flat), while the
+same runs' finish quartiles improve (Q2 380 → 368, Q4 509 → 498). Settle it with
+ONE pooled 6-set bench; do not assume it either way.
+
+## FINDING 4 — THE GRIND ANATOMY AFTER THE LANDING
+| metric | pre | post |
+|---|---|---|
+| land-contact time | 29.5 s/boat | **11.5** |
+| episodes ≥1s | 435 | **112** |
+| median episode | 2.8s | **1.6s** |
+| duty cycle | 59% | **30%** |
+| "bouncing" (<40% duty) | 19% | **57%** |
+| helm tracking error | 51° | **21°** |
+
+## CONTEXT GATHERED BEFORE THE REDIRECT — FAMILY B, AND WHY IT MATTERS HERE
+`_beat_decomp` leg 1, 72 boat-legs each:
+| venue | odo | straight | tacks | AVOID_GW | AVOID_NONE | TACKWIN | CLEAN | ARMED |
+|---|---|---|---|---|---|---|---|---|
+| bay | 4942 | 2840 | 6 | **641u**/13s | 303u/8s | 221u/9s | 488u/20s | 123u/1s |
+| lake | 7324 | 4627 | **11** | **539u**/17s | 573u/19s | 278u/20s | 763u/36s | 230u/3s |
+| ocean | 8142 | 4400 | 6 | **520u**/8s | 367u/5s | 495u/15s | 2043u/35s | 1789u/14s |
+| redrock (pre) | 4140 | 1763 | 9 | **899u**/16s | 373u/10s | 349u/11s | 263u/10s | 167u |
+**Give-way avoidance costs 520-899u on ALL FOUR venues.** ⚠️ `CLEAN` is not
+waste on a beat (the straight line is unsailable upwind), so only the avoidance
+and tack buckets are interpretable. Arctic for reference: leg 1 alone is **84%**
+of its gap (139.9 s/boat, 2.19x).
+
+## THE RANKED PLAN
+1. **THE BOWL / FLEET AVOIDANCE TAX IN CONSTRAINED WATER** — the biggest single
+   place on the venue (47.7 s/boat, 27% of the gap), 85% of it NOT contact,
+   deflection-dominated. And it is the SAME term (AVOID_GW) that is bay/lake/
+   ocean's whole gap, so a win should transfer — the strongest reason to build
+   here. ⚠️ AV1 was already inert once and its defeat is overdetermined; this
+   time there is a measured PLACE and a measured state mix to aim at, which AV1
+   did not have. Measure the encounters inside the pocket before proposing a
+   shape.
+2. **`treeSPIN2`, one pooled 6-set bench.** Built, cheap, and its share tripled.
+   Ambiguous on box gates twice — the bench is the only thing that will settle it.
+3. **ARRIVAL-SIDE GROUNDING** — 14.8 arrivals per boat-race at 70+ u/s. Escape
+   quality is spent; ask what puts them there. NOT route admission (the clearance
+   bar is dead at a monotonic dose-response).
+⛔ Do NOT rebuild: H1 peel-off; Phase D latch jitter (command is stable at 0.0°/
+frame); escape heading selection on redrock (already 1.5% from optimal).
