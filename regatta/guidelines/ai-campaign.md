@@ -13238,3 +13238,40 @@ of its gap (139.9 s/boat, 2.19x).
    bar is dead at a monotonic dose-response).
 ⛔ Do NOT rebuild: H1 peel-off; Phase D latch jitter (command is stable at 0.0°/
 frame); escape heading selection on redrock (already 1.5% from optimal).
+
+## ⏭ INCOMING: GATORGRASS BAYOU (owner, 2026-08-09)
+A new venue plus **three human trajectories**, to be ingested when the next push
+starts — before any building, because a new venue changes the golden trace count
+and the candidate-tree symlinks, and both fail silently.
+
+**Settle first: new key, or a rework of `swamp`?** A `swamp` venue already exists
+in `VENUE_ORDER` with its own terrain, audio and character, and has never had
+recordings so has never been a gate. Ask rather than assume.
+
+Checklist (full version in the memory, `regatta-venue-intake`):
+1. document → `regatta/assets/venues/<key>.venue.js`
+2. **register the key in `VENUE_ORDER`** (~4538) — an unregistered key does not
+   error, it silently races `bay` (~8926)
+3. `npm run test:venue` / `check:venues` / `test:raceable`
+4. `freeze_venues.js --add <key>`, then `--check` CLEAN from the repo root
+5. laps → `regatta/eval/rl/traj/`, then **`_traj_fp.js` immediately** — all three
+   must stamp the FROZEN fingerprint (rule 23; 82 corpus laps are already
+   stranded on retired docs). Check whether they are schema-1 (no stamp at all).
+6. goldens 30 → **33**: `npm run trace:update`, verify with
+   `run_traces.js --seeds 3`, and READ THE COUNT
+7. rebuild candidate trees — `mktree.sh` symlinks frozen venues per file, so
+   existing trees do not have it
+8. `ocean_bench.js … <key>` then `_leg_matrix.js fp=<trajFp> <key> <label>`,
+   apportioned on the MEANS table
+9. classify into the capability families (A land-stall / B beat distance /
+   C mark approach / D start)
+
+⭐ **Prediction to test first: `awash` shapes are NOT colliders.**
+`checkIslandCollisions` skips `isl.awash` outright — a grass bed is under the
+boat, and its whole cost is drag in `shoalFieldAt`. So a grassy bayou can show a
+LARGE gap with **near-zero land contacts**, and every contact-system probe will
+read clean while the fleet crawls. `_pocket_split.js` is the right first tool:
+its "in contact vs SLOW BUT NOT TOUCHING" split is exactly that discriminator.
+Also run `_cur_rank.js` at once — if the bayou carries a stream it slots against
+river (1.38 kt) and lagoon (0.39), and the ground-frame escape already landed
+this session applies directly.
