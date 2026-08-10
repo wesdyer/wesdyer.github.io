@@ -4299,7 +4299,34 @@ class BotController {
             if (this._lastAvoidChoice != null && this.boat.speed > 1.0 &&
                 state.course._gridFixed && state.course._gridFixed.length &&
                 Math.abs(normalizeAngle(h - this._lastAvoidChoice)) < 0.12) {
-                cost -= 60;
+                // ⭐ COMMITMENT MAY BREAK TIES. IT MAY NOT BEAT SAILING STRAIGHT.
+                //
+                // This discount is the ONLY term in the whole cost function that can go
+                // NEGATIVE, so it is the only way a deflected candidate can beat a
+                // free-and-clear offset 0 (whose base cost is pow(0,3)*200 = 0 exactly).
+                // Measured on redrock with the offset-0 veto ledger (_avwhy, 48415
+                // deflections over 3 races, mean deflection 54.6 deg): **11.7% of all
+                // deflections happen with NOTHING vetoing the straight course** — no boat
+                // in the bubble, no static block, no rule, not even a soft proximity cost.
+                // Those can only be this line. The arithmetic agrees: a candidate needs
+                // pow(|off|,3)*200 < 60, i.e. |off| < 38 deg, which is exactly the band
+                // where cross-track error was measured DIVERGING at every scale.
+                //
+                // So it latches: once the boat has turned away, holding that turn scores
+                // -60 against a straight course at 0, and it keeps turning away from a
+                // route nothing is stopping it from sailing.
+                //
+                // ⚠️ THIS IS NOT THE CLOSED COMMITMENT FAMILY. That family is 0-for-7 and
+                // every one of those rejections ADDED commitment (side-locks, flip
+                // cooldowns, floe-identity locks); its dose-response control found holding
+                // to be monotonically bad — ONE second of hold already cost +25 s of
+                // transit. Nobody ever tested REMOVING the discount that ships. This moves
+                // in the direction that control points, not against it.
+                //
+                // The clamp keeps what the discount is FOR (the argmin saws the rudder at
+                // 10 Hz in cluttered water, and near-ties should stick) and removes only
+                // the case it was never meant to buy: preferring a dodge to a clear lane.
+                cost = Math.max(cost - 60, (this._costHold != null ? this._costHold : 0));
             }
             // A near-reversal is an emergency manoeuvre, not a preference. Its
             // pow(|offset|,1.5) base cost is pocket change next to collision terms,
@@ -4307,6 +4334,7 @@ class BotController {
             // boat with way on shouldn't throw it away; a stuck boat may need to.
             if (Math.abs(offset) > 1.8 && this.boat.speed > 1.0) cost += 250;
 
+            if (offset === 0) this._costHold = cost;
             if (cost < minCost) {
                 minCost = cost;
                 bestHeading = h;
