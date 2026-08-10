@@ -13104,3 +13104,32 @@ GUARDRAILS (the ones that actually bit this session):
 · `npm run trace` verifies only 20 of the 30 stored traces. Use
   `node regatta/eval/run_traces.js --seeds 3` and read the count in the PASS line.
 · Watch columns: lake boat rubs 2.47→3.03, lagoon, river.
+
+## POST-LANDING: WHY LAGOON, ACTUALLY (`_cur_rank.js`, `_esc_current.js`)
+The owner's read was that river and lagoon regressed because they are the two
+highest-current venues. The ranking confirms the premise and the site
+measurement refutes the conclusion for lagoon:
+
+| venue | mean kt | p50 | p90 | max | % cells >1kt | AT THE ROCKS BOATS HIT |
+|---|---|---|---|---|---|---|
+| river | 1.38 | 1.00 | 3.05 | 5.14 | 48% | **3.98** |
+| lagoon | 0.39 | 0.34 | 0.85 | 1.10 | 3% | **0.00** |
+| bay | 0.34 | 0.30 | 0.50 | 0.69 | 0% | — (no land contacts) |
+| redrock/lake/ocean/arctic/seatrials | 0.00 | — | — | — | 0% | 0.00 |
+
+Lagoon is second-highest overall and carries **no stream at its own grounding
+sites** — its current is not where its rocks are. The ground-frame escape
+therefore barely fires there, and lagoon's −6.0 → +1.0 is most likely fleet
+reshuffling off a handful of fired escapes rather than a systematic cost.
+Re-bench wider before treating it as a regression. **A venue-level property can
+be true and still not be the cause; check it at the SITES the mechanism acts on.**
+
+⭐ The same probe found lagoon's actual defect, and it is not current. With no
+stream, the outward-track figure reduces to the polar speed at the commanded
+heading — and it is ~0 on **29.8% of lagoon's land contacts**: the escape commands
+a heading inside the no-go, so the boat is told to sail straight out of the rock
+at an angle she cannot sail. Redrock is 1.5%. A sailable heading with a good
+outward track existed in ALL of them (best track median 114 u/s).
+NEXT CANDIDATE: pick the escape off the sailable fan by best outward track
+ALWAYS, not only under a stream. ⚠️ It stops being byte-inert on redrock (1.5% of
+contacts), so it needs its own gate against the `3ce099a` landing.
