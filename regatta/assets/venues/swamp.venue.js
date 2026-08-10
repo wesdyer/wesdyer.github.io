@@ -12338,7 +12338,7 @@ window.VENUE_DOC["swamp"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 300
+    "cutoff": 360
   },
   "wind": {
     "regions": [
@@ -16083,8 +16083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1984.2,
       "y": 2037.7,
       "heading": 5.857,
-      "scale": 1.579,
-      "contact": "none"
+      "scale": 1.579
     },
     {
       "id": "knee-4",
@@ -16092,8 +16091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2069.8,
       "y": 2008,
       "heading": 5.24,
-      "scale": 1.606,
-      "contact": "none"
+      "scale": 1.606
     },
     {
       "id": "knee-5",
@@ -16101,8 +16099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1879.2,
       "y": 1624.5,
       "heading": 3.958,
-      "scale": 1.346,
-      "contact": "none"
+      "scale": 1.346
     },
     {
       "id": "knee-6",
@@ -16110,8 +16107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1843.1,
       "y": 1664.1,
       "heading": 5.71,
-      "scale": 1.021,
-      "contact": "none"
+      "scale": 1.021
     },
     {
       "id": "knee-7",
@@ -16119,8 +16115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1920.5,
       "y": 1802.8,
       "heading": 4.345,
-      "scale": 1.608,
-      "contact": "none"
+      "scale": 1.608
     },
     {
       "id": "knee-8",
@@ -16128,8 +16123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1899.5,
       "y": 1867.4,
       "heading": 5.919,
-      "scale": 1.252,
-      "contact": "none"
+      "scale": 1.252
     },
     {
       "id": "knee-9",
@@ -16137,8 +16131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3571.6,
       "y": 537.6,
       "heading": 4.653,
-      "scale": 1.482,
-      "contact": "none"
+      "scale": 1.482
     },
     {
       "id": "knee-10",
@@ -16146,8 +16139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -19.2,
       "y": 2985.5,
       "heading": 3.71,
-      "scale": 1.367,
-      "contact": "none"
+      "scale": 1.367
     },
     {
       "id": "knee-11",
@@ -16155,8 +16147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -51.8,
       "y": 3040.4,
       "heading": 5.019,
-      "scale": 1.618,
-      "contact": "none"
+      "scale": 1.618
     },
     {
       "id": "knee-12",
@@ -16164,8 +16155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2176.8,
       "y": -1796.5,
       "heading": 0.282,
-      "scale": 1.58,
-      "contact": "none"
+      "scale": 1.58
     },
     {
       "id": "knee-13",
@@ -16173,8 +16163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3961.1,
       "y": 2517.9,
       "heading": 5.468,
-      "scale": 1.175,
-      "contact": "none"
+      "scale": 1.175
     },
     {
       "id": "knee-14",
@@ -16182,8 +16171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3954.2,
       "y": 2526.4,
       "heading": 5.508,
-      "scale": 1.344,
-      "contact": "none"
+      "scale": 1.344
     },
     {
       "id": "knee-15",
@@ -16191,8 +16179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1218.7,
       "y": 1817.6,
       "heading": 1.186,
-      "scale": 1.684,
-      "contact": "none"
+      "scale": 1.684
     },
     {
       "id": "knee-16",
@@ -16200,8 +16187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 219.5,
       "y": 3716.8,
       "heading": 4.098,
-      "scale": 1.383,
-      "contact": "none"
+      "scale": 1.383
     },
     {
       "id": "knee-17",
@@ -16209,8 +16195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 194.9,
       "y": 3761.5,
       "heading": 1.123,
-      "scale": 1.031,
-      "contact": "none"
+      "scale": 1.031
     },
     {
       "id": "knee-18",
@@ -16218,8 +16203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3150.6,
       "y": 4156.9,
       "heading": 2.883,
-      "scale": 1.198,
-      "contact": "none"
+      "scale": 1.198
     },
     {
       "id": "knee-19",
@@ -16227,8 +16211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3219,
       "y": 4192.8,
       "heading": 2.968,
-      "scale": 1.44,
-      "contact": "none"
+      "scale": 1.44
     },
     {
       "id": "knee-20",
@@ -16236,8 +16219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3127.7,
       "y": 261,
       "heading": 0.546,
-      "scale": 1.415,
-      "contact": "none"
+      "scale": 1.415
     },
     {
       "id": "knee-21",
@@ -16245,8 +16227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3168.7,
       "y": 257.7,
       "heading": 2.818,
-      "scale": 1.727,
-      "contact": "none"
+      "scale": 1.727
     },
     {
       "id": "knee-22",
@@ -16254,8 +16235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4241.5,
       "y": 1666.3,
       "heading": 3.295,
-      "scale": 1.502,
-      "contact": "none"
+      "scale": 1.502
     },
     {
       "id": "knee-23",
@@ -16263,8 +16243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4231,
       "y": 1708.6,
       "heading": 4.208,
-      "scale": 1.222,
-      "contact": "none"
+      "scale": 1.222
     },
     {
       "id": "knee-24",
@@ -16272,8 +16251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4242.8,
       "y": 1757.6,
       "heading": 2.924,
-      "scale": 1.045,
-      "contact": "none"
+      "scale": 1.045
     },
     {
       "id": "knee-25",
@@ -16281,8 +16259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4065.9,
       "y": 1703,
       "heading": 0.826,
-      "scale": 1.534,
-      "contact": "none"
+      "scale": 1.534
     },
     {
       "id": "knee-26",
@@ -16290,8 +16267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4045.9,
       "y": 1678.1,
       "heading": 5.717,
-      "scale": 1.703,
-      "contact": "none"
+      "scale": 1.703
     },
     {
       "id": "knee-27",
@@ -16299,8 +16275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4307.8,
       "y": 1752.9,
       "heading": 2.471,
-      "scale": 1.097,
-      "contact": "none"
+      "scale": 1.097
     },
     {
       "id": "knee-28",
@@ -16308,8 +16283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3621.8,
       "y": 2875.5,
       "heading": 1.418,
-      "scale": 1.506,
-      "contact": "none"
+      "scale": 1.506
     },
     {
       "id": "knee-29",
@@ -16317,8 +16291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3618,
       "y": 2982.9,
       "heading": 1.967,
-      "scale": 1.027,
-      "contact": "none"
+      "scale": 1.027
     },
     {
       "id": "knee-30",
@@ -16326,8 +16299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3897.9,
       "y": -1735.8,
       "heading": 5.855,
-      "scale": 1.639,
-      "contact": "none"
+      "scale": 1.639
     },
     {
       "id": "knee-31",
@@ -16335,8 +16307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2583.5,
       "y": -1924.7,
       "heading": 0.38,
-      "scale": 0.864,
-      "contact": "none"
+      "scale": 0.864
     },
     {
       "id": "knee-32",
@@ -16344,8 +16315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2580.1,
       "y": -1874.2,
       "heading": 3.71,
-      "scale": 1.674,
-      "contact": "none"
+      "scale": 1.674
     },
     {
       "id": "knee-33",
@@ -16353,8 +16323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2243.5,
       "y": -1884.8,
       "heading": 4.948,
-      "scale": 1.024,
-      "contact": "none"
+      "scale": 1.024
     },
     {
       "id": "knee-34",
@@ -16362,8 +16331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2042.5,
       "y": -1982.2,
       "heading": 1.817,
-      "scale": 1.251,
-      "contact": "none"
+      "scale": 1.251
     },
     {
       "id": "knee-35",
@@ -16371,8 +16339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2002.6,
       "y": -1962.3,
       "heading": 2.419,
-      "scale": 1.466,
-      "contact": "none"
+      "scale": 1.466
     },
     {
       "id": "knee-36",
@@ -16380,8 +16347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3105.3,
       "y": 1737.7,
       "heading": 3.145,
-      "scale": 1.463,
-      "contact": "none"
+      "scale": 1.463
     },
     {
       "id": "knee-37",
@@ -16389,8 +16355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1818,
       "y": 241.3,
       "heading": 1.796,
-      "scale": 1.315,
-      "contact": "none"
+      "scale": 1.315
     },
     {
       "id": "knee-38",
@@ -16398,8 +16363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1743.8,
       "y": 4641.8,
       "heading": 3.25,
-      "scale": 0.805,
-      "contact": "none"
+      "scale": 0.805
     },
     {
       "id": "knee-39",
@@ -16407,8 +16371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3177.7,
       "y": 4195.9,
       "heading": 2.208,
-      "scale": 1.088,
-      "contact": "none"
+      "scale": 1.088
     },
     {
       "id": "knee-40",
@@ -16416,8 +16379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3096.1,
       "y": 4329.1,
       "heading": 3.118,
-      "scale": 1.11,
-      "contact": "none"
+      "scale": 1.11
     },
     {
       "id": "knee-41",
@@ -16425,8 +16387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3088.8,
       "y": 4273.6,
       "heading": 0.616,
-      "scale": 1.708,
-      "contact": "none"
+      "scale": 1.708
     },
     {
       "id": "knee-42",
@@ -16458,8 +16419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 265.7,
       "y": -3543.5,
       "heading": 5.483,
-      "scale": 0.863,
-      "contact": "none"
+      "scale": 0.863
     },
     {
       "id": "knee-46",
@@ -16467,8 +16427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3253.3,
       "y": -2762.1,
       "heading": 1.42,
-      "scale": 1.054,
-      "contact": "none"
+      "scale": 1.054
     },
     {
       "id": "knee-47",
@@ -16476,8 +16435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3269.2,
       "y": -2740.4,
       "heading": 0.882,
-      "scale": 1.163,
-      "contact": "none"
+      "scale": 1.163
     },
     {
       "id": "knee-48",
@@ -16485,8 +16443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3194.4,
       "y": -2817.8,
       "heading": 3.644,
-      "scale": 1.047,
-      "contact": "none"
+      "scale": 1.047
     },
     {
       "id": "knee-49",
@@ -16494,8 +16451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3183,
       "y": -2749.6,
       "heading": 0.892,
-      "scale": 1.651,
-      "contact": "none"
+      "scale": 1.651
     },
     {
       "id": "knee-50",
@@ -16503,8 +16459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1720.8,
       "y": 4016.7,
       "heading": 4.595,
-      "scale": 1.033,
-      "contact": "none"
+      "scale": 1.033
     },
     {
       "id": "knee-51",
@@ -16512,8 +16467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1788.6,
       "y": 4026.4,
       "heading": 1.165,
-      "scale": 1.523,
-      "contact": "none"
+      "scale": 1.523
     },
     {
       "id": "knee-52",
@@ -16521,8 +16475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2072.1,
       "y": 1756.3,
       "heading": 6.243,
-      "scale": 1.766,
-      "contact": "none"
+      "scale": 1.766
     },
     {
       "id": "knee-53",
@@ -16530,8 +16483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2500.4,
       "y": 1955.3,
       "heading": 3.222,
-      "scale": 1.315,
-      "contact": "none"
+      "scale": 1.315
     },
     {
       "id": "knee-54",
@@ -16595,8 +16547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 475.4,
       "y": -2917.4,
       "heading": 2.194,
-      "scale": 1.301,
-      "contact": "none"
+      "scale": 1.301
     },
     {
       "id": "knee-62",
@@ -16604,8 +16555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 980.5,
       "y": 2125.3,
       "heading": 2.379,
-      "scale": 1.49,
-      "contact": "none"
+      "scale": 1.49
     },
     {
       "id": "knee-63",
@@ -16613,8 +16563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 983.9,
       "y": 2087.5,
       "heading": 0.525,
-      "scale": 1.72,
-      "contact": "none"
+      "scale": 1.72
     },
     {
       "id": "knee-64",
@@ -16646,8 +16595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 414.5,
       "y": 4507.7,
       "heading": 0.373,
-      "scale": 1.747,
-      "contact": "none"
+      "scale": 1.747
     },
     {
       "id": "knee-68",
@@ -16655,8 +16603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 354.7,
       "y": 4553.9,
       "heading": 2.461,
-      "scale": 0.953,
-      "contact": "none"
+      "scale": 0.953
     },
     {
       "id": "knee-69",
@@ -16664,8 +16611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 698,
       "y": 1436.6,
       "heading": 4.467,
-      "scale": 1.38,
-      "contact": "none"
+      "scale": 1.38
     },
     {
       "id": "knee-70",
@@ -16753,8 +16699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -487.6,
       "y": -2687.8,
       "heading": 2.459,
-      "scale": 1.377,
-      "contact": "none"
+      "scale": 1.377
     },
     {
       "id": "knee-81",
@@ -16762,8 +16707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3588.2,
       "y": 1049.2,
       "heading": 5.583,
-      "scale": 1.684,
-      "contact": "none"
+      "scale": 1.684
     },
     {
       "id": "knee-82",
@@ -16771,8 +16715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3503,
       "y": 972.1,
       "heading": 3.984,
-      "scale": 1.353,
-      "contact": "none"
+      "scale": 1.353
     },
     {
       "id": "knee-83",
@@ -16780,8 +16723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3415.4,
       "y": 979.9,
       "heading": 1.505,
-      "scale": 1.642,
-      "contact": "none"
+      "scale": 1.642
     },
     {
       "id": "knee-84",
@@ -16789,8 +16731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3365.1,
       "y": 961.3,
       "heading": 1.233,
-      "scale": 1.14,
-      "contact": "none"
+      "scale": 1.14
     },
     {
       "id": "knee-85",
@@ -16798,8 +16739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3546.4,
       "y": 1180.9,
       "heading": 5.879,
-      "scale": 1.729,
-      "contact": "none"
+      "scale": 1.729
     },
     {
       "id": "knee-86",
@@ -16807,8 +16747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3595.5,
       "y": 1182.3,
       "heading": 1.474,
-      "scale": 1.364,
-      "contact": "none"
+      "scale": 1.364
     },
     {
       "id": "knee-87",
@@ -16816,8 +16755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -659.7,
       "y": 3311.7,
       "heading": 1.503,
-      "scale": 0.848,
-      "contact": "none"
+      "scale": 0.848
     },
     {
       "id": "knee-88",
@@ -16825,8 +16763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2655.5,
       "y": 137.1,
       "heading": 1.026,
-      "scale": 1.295,
-      "contact": "none"
+      "scale": 1.295
     },
     {
       "id": "knee-89",
@@ -16834,8 +16771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2646.7,
       "y": 149.7,
       "heading": 3.347,
-      "scale": 1.369,
-      "contact": "none"
+      "scale": 1.369
     },
     {
       "id": "knee-90",
@@ -16843,8 +16779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2848.1,
       "y": 272,
       "heading": 3.301,
-      "scale": 0.835,
-      "contact": "none"
+      "scale": 0.835
     },
     {
       "id": "knee-91",
@@ -16852,8 +16787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3001.2,
       "y": 104.3,
       "heading": 3.092,
-      "scale": 0.9,
-      "contact": "none"
+      "scale": 0.9
     },
     {
       "id": "knee-92",
@@ -16861,8 +16795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -996.4,
       "y": -3818.5,
       "heading": 4.49,
-      "scale": 1.209,
-      "contact": "none"
+      "scale": 1.209
     },
     {
       "id": "knee-93",
@@ -16870,8 +16803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -822.9,
       "y": -1956.3,
       "heading": 3.484,
-      "scale": 0.96,
-      "contact": "none"
+      "scale": 0.96
     },
     {
       "id": "knee-94",
@@ -16879,8 +16811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2497.4,
       "y": -306.7,
       "heading": 1.781,
-      "scale": 1.222,
-      "contact": "none"
+      "scale": 1.222
     },
     {
       "id": "knee-95",
@@ -16888,8 +16819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1875.3,
       "y": -2443.6,
       "heading": 5.39,
-      "scale": 0.892,
-      "contact": "none"
+      "scale": 0.892
     },
     {
       "id": "knee-96",
@@ -16897,8 +16827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1215.2,
       "y": 5095,
       "heading": 2.515,
-      "scale": 0.848,
-      "contact": "none"
+      "scale": 0.848
     },
     {
       "id": "knee-97",
@@ -16906,8 +16835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1231.8,
       "y": 5105.8,
       "heading": 5.168,
-      "scale": 1.48,
-      "contact": "none"
+      "scale": 1.48
     },
     {
       "id": "knee-98",
@@ -16915,8 +16843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 697.5,
       "y": 1757.5,
       "heading": 6.224,
-      "scale": 1.231,
-      "contact": "none"
+      "scale": 1.231
     },
     {
       "id": "knee-99",
@@ -16924,8 +16851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -283,
       "y": 2756.8,
       "heading": 0.048,
-      "scale": 0.826,
-      "contact": "none"
+      "scale": 0.826
     },
     {
       "id": "knee-100",
@@ -16933,8 +16859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 203.4,
       "y": 4807.9,
       "heading": 1.345,
-      "scale": 0.89,
-      "contact": "none"
+      "scale": 0.89
     },
     {
       "id": "knee-101",
@@ -16942,8 +16867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 498.6,
       "y": 4937.5,
       "heading": 1.403,
-      "scale": 1.325,
-      "contact": "none"
+      "scale": 1.325
     },
     {
       "id": "knee-102",
@@ -16951,8 +16875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 583.4,
       "y": 4912.4,
       "heading": 3.153,
-      "scale": 1.064,
-      "contact": "none"
+      "scale": 1.064
     },
     {
       "id": "knee-103",
@@ -16960,8 +16883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -676.2,
       "y": 3933.1,
       "heading": 5.663,
-      "scale": 1.531,
-      "contact": "none"
+      "scale": 1.531
     },
     {
       "id": "knee-104",
@@ -16969,8 +16891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -635,
       "y": 3854.7,
       "heading": 3.185,
-      "scale": 1.054,
-      "contact": "none"
+      "scale": 1.054
     },
     {
       "id": "knee-105",
@@ -16978,8 +16899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1145.2,
       "y": 3587.4,
       "heading": 4.395,
-      "scale": 1.191,
-      "contact": "none"
+      "scale": 1.191
     },
     {
       "id": "knee-106",
@@ -16987,8 +16907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1191.8,
       "y": 3692.3,
       "heading": 5.983,
-      "scale": 0.973,
-      "contact": "none"
+      "scale": 0.973
     },
     {
       "id": "knee-107",
@@ -16996,8 +16915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 729.5,
       "y": 3977,
       "heading": 5.171,
-      "scale": 1.376,
-      "contact": "none"
+      "scale": 1.376
     },
     {
       "id": "knee-108",
@@ -17005,8 +16923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 799.8,
       "y": 4030.9,
       "heading": 1.893,
-      "scale": 0.861,
-      "contact": "none"
+      "scale": 0.861
     },
     {
       "id": "knee-109",
@@ -17046,8 +16963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3831.3,
       "y": 1758,
       "heading": 0.143,
-      "scale": 1.126,
-      "contact": "none"
+      "scale": 1.126
     },
     {
       "id": "knee-114",
@@ -17055,8 +16971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3882.8,
       "y": 1770.3,
       "heading": 0.598,
-      "scale": 0.814,
-      "contact": "none"
+      "scale": 0.814
     },
     {
       "id": "knee-115",
@@ -17064,8 +16979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3816.9,
       "y": 1483.5,
       "heading": 1.286,
-      "scale": 1.071,
-      "contact": "none"
+      "scale": 1.071
     },
     {
       "id": "knee-116",
@@ -17073,8 +16987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3221.3,
       "y": 1648.7,
       "heading": 0.827,
-      "scale": 1.315,
-      "contact": "none"
+      "scale": 1.315
     },
     {
       "id": "knee-117",
@@ -17082,8 +16995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3248,
       "y": 1674.2,
       "heading": 2.315,
-      "scale": 0.965,
-      "contact": "none"
+      "scale": 0.965
     },
     {
       "id": "knee-118",
@@ -17091,8 +17003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -293.8,
       "y": 3967.7,
       "heading": 1.235,
-      "scale": 1.714,
-      "contact": "none"
+      "scale": 1.714
     },
     {
       "id": "knee-119",
@@ -17100,8 +17011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1509.8,
       "y": 3886.5,
       "heading": 4.477,
-      "scale": 0.804,
-      "contact": "none"
+      "scale": 0.804
     },
     {
       "id": "knee-120",
@@ -17109,8 +17019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1749,
       "y": 3985.1,
       "heading": 2.743,
-      "scale": 1.593,
-      "contact": "none"
+      "scale": 1.593
     },
     {
       "id": "knee-121",
@@ -17118,8 +17027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1761,
       "y": 3924.1,
       "heading": 5.62,
-      "scale": 1.437,
-      "contact": "none"
+      "scale": 1.437
     },
     {
       "id": "knee-122",
@@ -17127,8 +17035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3567.6,
       "y": 2746,
       "heading": 5.272,
-      "scale": 0.943,
-      "contact": "none"
+      "scale": 0.943
     },
     {
       "id": "knee-123",
@@ -17136,8 +17043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1505.3,
       "y": -2738.7,
       "heading": 0.222,
-      "scale": 1.142,
-      "contact": "none"
+      "scale": 1.142
     },
     {
       "id": "knee-124",
@@ -17145,8 +17051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1502.8,
       "y": -2779.9,
       "heading": 3.025,
-      "scale": 1.705,
-      "contact": "none"
+      "scale": 1.705
     },
     {
       "id": "knee-125",
@@ -17154,8 +17059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1961.2,
       "y": 3997.6,
       "heading": 2.842,
-      "scale": 1.482,
-      "contact": "none"
+      "scale": 1.482
     },
     {
       "id": "knee-126",
@@ -17163,8 +17067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1810.1,
       "y": 3682.2,
       "heading": 3.228,
-      "scale": 1.288,
-      "contact": "none"
+      "scale": 1.288
     },
     {
       "id": "knee-127",
@@ -17172,8 +17075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -864.2,
       "y": 3914.2,
       "heading": 0.32,
-      "scale": 1.181,
-      "contact": "none"
+      "scale": 1.181
     },
     {
       "id": "knee-128",
@@ -17181,8 +17083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -869.4,
       "y": 3936.3,
       "heading": 0.859,
-      "scale": 1.702,
-      "contact": "none"
+      "scale": 1.702
     },
     {
       "id": "knee-129",
@@ -17190,8 +17091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2766.3,
       "y": -505,
       "heading": 2.481,
-      "scale": 1.161,
-      "contact": "none"
+      "scale": 1.161
     },
     {
       "id": "knee-130",
@@ -17199,8 +17099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2150.8,
       "y": -348.2,
       "heading": 1.277,
-      "scale": 1.038,
-      "contact": "none"
+      "scale": 1.038
     },
     {
       "id": "knee-131",
@@ -17208,8 +17107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2464.5,
       "y": -844.1,
       "heading": 0.975,
-      "scale": 1.279,
-      "contact": "none"
+      "scale": 1.279
     },
     {
       "id": "knee-132",
@@ -17217,8 +17115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2358.9,
       "y": -890.1,
       "heading": 0.309,
-      "scale": 1.28,
-      "contact": "none"
+      "scale": 1.28
     },
     {
       "id": "knee-133",
@@ -17226,8 +17123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2390.8,
       "y": -800.2,
       "heading": 1.924,
-      "scale": 1.202,
-      "contact": "none"
+      "scale": 1.202
     },
     {
       "id": "knee-134",
@@ -17235,8 +17131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -153.9,
       "y": 4802.2,
       "heading": 2.448,
-      "scale": 1.794,
-      "contact": "none"
+      "scale": 1.794
     },
     {
       "id": "knee-135",
@@ -17244,8 +17139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3240.8,
       "y": 3835.7,
       "heading": 4.112,
-      "scale": 1.08,
-      "contact": "none"
+      "scale": 1.08
     },
     {
       "id": "knee-136",
@@ -17253,8 +17147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3225.4,
       "y": 3782.5,
       "heading": 1.302,
-      "scale": 1.337,
-      "contact": "none"
+      "scale": 1.337
     },
     {
       "id": "knee-137",
@@ -17262,8 +17155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2741.8,
       "y": 2942.9,
       "heading": 1.541,
-      "scale": 1.542,
-      "contact": "none"
+      "scale": 1.542
     },
     {
       "id": "knee-138",
@@ -17271,8 +17163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3497.7,
       "y": -2330.8,
       "heading": 5.869,
-      "scale": 1.413,
-      "contact": "none"
+      "scale": 1.413
     },
     {
       "id": "knee-139",
@@ -17280,8 +17171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3487.8,
       "y": -2278.5,
       "heading": 3.187,
-      "scale": 1.717,
-      "contact": "none"
+      "scale": 1.717
     },
     {
       "id": "knee-140",
@@ -17313,8 +17203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3772.7,
       "y": 2656.9,
       "heading": 2.789,
-      "scale": 1.689,
-      "contact": "none"
+      "scale": 1.689
     },
     {
       "id": "knee-144",
@@ -17322,8 +17211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3738,
       "y": 2711.7,
       "heading": 4.275,
-      "scale": 1.2,
-      "contact": "none"
+      "scale": 1.2
     },
     {
       "id": "knee-145",
@@ -17331,8 +17219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2167.5,
       "y": 3644.9,
       "heading": 1.189,
-      "scale": 1.187,
-      "contact": "none"
+      "scale": 1.187
     },
     {
       "id": "knee-146",
@@ -17340,8 +17227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2244.3,
       "y": 3643.7,
       "heading": 3.712,
-      "scale": 0.946,
-      "contact": "none"
+      "scale": 0.946
     },
     {
       "id": "knee-147",
@@ -17349,8 +17235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2568.6,
       "y": 3585.6,
       "heading": 4.236,
-      "scale": 1.646,
-      "contact": "none"
+      "scale": 1.646
     },
     {
       "id": "knee-148",
@@ -17358,8 +17243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2557.8,
       "y": 3565.5,
       "heading": 5.935,
-      "scale": 0.902,
-      "contact": "none"
+      "scale": 0.902
     },
     {
       "id": "knee-149",
@@ -17367,8 +17251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2314.8,
       "y": 3432.8,
       "heading": 4.932,
-      "scale": 0.985,
-      "contact": "none"
+      "scale": 0.985
     },
     {
       "id": "knee-150",
@@ -17376,8 +17259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2396.6,
       "y": 3435.7,
       "heading": 4.242,
-      "scale": 1.088,
-      "contact": "none"
+      "scale": 1.088
     },
     {
       "id": "knee-151",
@@ -17385,8 +17267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3362.6,
       "y": 86.2,
       "heading": 1.316,
-      "scale": 0.917,
-      "contact": "none"
+      "scale": 0.917
     },
     {
       "id": "knee-152",
@@ -17394,8 +17275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2138.1,
       "y": 472.1,
       "heading": 5.755,
-      "scale": 1.696,
-      "contact": "none"
+      "scale": 1.696
     },
     {
       "id": "knee-153",
@@ -17403,8 +17283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 575.2,
       "y": -2652.3,
       "heading": 5.854,
-      "scale": 0.898,
-      "contact": "none"
+      "scale": 0.898
     },
     {
       "id": "knee-154",
@@ -17412,8 +17291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 620.3,
       "y": -2747.6,
       "heading": 0.968,
-      "scale": 0.865,
-      "contact": "none"
+      "scale": 0.865
     },
     {
       "id": "knee-155",
@@ -17421,8 +17299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 550.2,
       "y": 1267,
       "heading": 1.892,
-      "scale": 1.777,
-      "contact": "none"
+      "scale": 1.777
     },
     {
       "id": "knee-156",
@@ -17430,8 +17307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 758.1,
       "y": 1516.6,
       "heading": 1.176,
-      "scale": 1.459,
-      "contact": "none"
+      "scale": 1.459
     },
     {
       "id": "knee-157",
@@ -17439,8 +17315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 565,
       "y": 1502.5,
       "heading": 1.857,
-      "scale": 1.381,
-      "contact": "none"
+      "scale": 1.381
     },
     {
       "id": "knee-158",
@@ -17448,8 +17323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 531.6,
       "y": 1498,
       "heading": 2.886,
-      "scale": 0.932,
-      "contact": "none"
+      "scale": 0.932
     },
     {
       "id": "knee-159",
@@ -17489,8 +17363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 687.8,
       "y": 702.7,
       "heading": 3.181,
-      "scale": 0.901,
-      "contact": "none"
+      "scale": 0.901
     },
     {
       "id": "knee-164",
@@ -17498,8 +17371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -908,
       "y": -3275.1,
       "heading": 2.699,
-      "scale": 1.379,
-      "contact": "none"
+      "scale": 1.379
     },
     {
       "id": "knee-165",
@@ -17507,8 +17379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1239.2,
       "y": 3446.9,
       "heading": 1.817,
-      "scale": 1.486,
-      "contact": "none"
+      "scale": 1.486
     },
     {
       "id": "knee-166",
@@ -17516,8 +17387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1279.8,
       "y": 3521.6,
       "heading": 4.665,
-      "scale": 1.508,
-      "contact": "none"
+      "scale": 1.508
     },
     {
       "id": "knee-167",
@@ -17525,8 +17395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2581.9,
       "y": -351.3,
       "heading": 5.645,
-      "scale": 1.691,
-      "contact": "none"
+      "scale": 1.691
     },
     {
       "id": "knee-168",
@@ -17550,8 +17419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2981,
       "y": 3323.8,
       "heading": 0.494,
-      "scale": 1.617,
-      "contact": "none"
+      "scale": 1.617
     },
     {
       "id": "knee-171",
@@ -17559,8 +17427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3235.6,
       "y": 3170.5,
       "heading": 5.111,
-      "scale": 1.556,
-      "contact": "none"
+      "scale": 1.556
     },
     {
       "id": "knee-172",
@@ -17568,8 +17435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2990.3,
       "y": 3358.8,
       "heading": 3.117,
-      "scale": 0.815,
-      "contact": "none"
+      "scale": 0.815
     },
     {
       "id": "knee-173",
@@ -17577,8 +17443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2789.7,
       "y": 3724.6,
       "heading": 4.926,
-      "scale": 1.082,
-      "contact": "none"
+      "scale": 1.082
     },
     {
       "id": "knee-174",
@@ -17634,8 +17499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2847,
       "y": 2094.8,
       "heading": 0.789,
-      "scale": 1.666,
-      "contact": "none"
+      "scale": 1.666
     },
     {
       "id": "knee-181",
@@ -17643,8 +17507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2859.3,
       "y": 2090.1,
       "heading": 2.558,
-      "scale": 0.803,
-      "contact": "none"
+      "scale": 0.803
     },
     {
       "id": "knee-182",
@@ -17652,8 +17515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2826.1,
       "y": 4895.4,
       "heading": 0.891,
-      "scale": 1.006,
-      "contact": "none"
+      "scale": 1.006
     },
     {
       "id": "knee-183",
@@ -17661,8 +17523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2221.8,
       "y": 1508.3,
       "heading": 5.94,
-      "scale": 1.469,
-      "contact": "none"
+      "scale": 1.469
     },
     {
       "id": "knee-184",
@@ -17670,8 +17531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4183.5,
       "y": 4160.4,
       "heading": 5.884,
-      "scale": 0.984,
-      "contact": "none"
+      "scale": 0.984
     },
     {
       "id": "knee-185",
@@ -17679,8 +17539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4165.7,
       "y": 4229.8,
       "heading": 6.196,
-      "scale": 1.596,
-      "contact": "none"
+      "scale": 1.596
     },
     {
       "id": "knee-186",
@@ -17688,8 +17547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4155.9,
       "y": 4211.3,
       "heading": 5.92,
-      "scale": 0.97,
-      "contact": "none"
+      "scale": 0.97
     },
     {
       "id": "knee-187",
@@ -17697,8 +17555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4160.4,
       "y": 4200.2,
       "heading": 3.224,
-      "scale": 1.219,
-      "contact": "none"
+      "scale": 1.219
     },
     {
       "id": "knee-188",
@@ -17706,8 +17563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4104.4,
       "y": 1451.3,
       "heading": 3.411,
-      "scale": 0.994,
-      "contact": "none"
+      "scale": 0.994
     },
     {
       "id": "knee-189",
@@ -17715,8 +17571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4186.8,
       "y": 1445.4,
       "heading": 3.255,
-      "scale": 1.144,
-      "contact": "none"
+      "scale": 1.144
     },
     {
       "id": "knee-190",
@@ -17724,8 +17579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3981.2,
       "y": 1439,
       "heading": 4.969,
-      "scale": 1.449,
-      "contact": "none"
+      "scale": 1.449
     },
     {
       "id": "knee-191",
@@ -17733,8 +17587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4006,
       "y": 1486.2,
       "heading": 2.069,
-      "scale": 1.229,
-      "contact": "none"
+      "scale": 1.229
     },
     {
       "id": "knee-192",
@@ -17742,8 +17595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2245.9,
       "y": -1526.8,
       "heading": 1.609,
-      "scale": 1.722,
-      "contact": "none"
+      "scale": 1.722
     },
     {
       "id": "knee-193",
@@ -17751,8 +17603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2287,
       "y": -1474.7,
       "heading": 1.311,
-      "scale": 1.376,
-      "contact": "none"
+      "scale": 1.376
     },
     {
       "id": "knee-194",
@@ -17760,8 +17611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2529.4,
       "y": -1522.1,
       "heading": 3.748,
-      "scale": 0.952,
-      "contact": "none"
+      "scale": 0.952
     },
     {
       "id": "knee-195",
@@ -17769,8 +17619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2532.3,
       "y": -1525.1,
       "heading": 0.752,
-      "scale": 1.308,
-      "contact": "none"
+      "scale": 1.308
     },
     {
       "id": "knee-196",
@@ -17778,8 +17627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 371.2,
       "y": 4826.5,
       "heading": 5.206,
-      "scale": 1.238,
-      "contact": "none"
+      "scale": 1.238
     },
     {
       "id": "knee-197",
@@ -17787,8 +17635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 427.7,
       "y": 4855.9,
       "heading": 4.229,
-      "scale": 1.171,
-      "contact": "none"
+      "scale": 1.171
     },
     {
       "id": "knee-198",
@@ -17796,8 +17643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 222.9,
       "y": 4943.8,
       "heading": 1.784,
-      "scale": 0.924,
-      "contact": "none"
+      "scale": 0.924
     },
     {
       "id": "knee-199",
@@ -17869,8 +17715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2459.2,
       "y": -1511.6,
       "heading": 5.889,
-      "scale": 1.589,
-      "contact": "none"
+      "scale": 1.589
     },
     {
       "id": "knee-208",
@@ -17878,8 +17723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2422.9,
       "y": -1164.5,
       "heading": 5.777,
-      "scale": 1.458,
-      "contact": "none"
+      "scale": 1.458
     },
     {
       "id": "knee-209",
@@ -17887,8 +17731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 951.3,
       "y": 2984.9,
       "heading": 4.708,
-      "scale": 1.437,
-      "contact": "none"
+      "scale": 1.437
     },
     {
       "id": "knee-210",
@@ -17896,8 +17739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 932.5,
       "y": 3019.1,
       "heading": 3.312,
-      "scale": 1.514,
-      "contact": "none"
+      "scale": 1.514
     },
     {
       "id": "knee-211",
@@ -17905,8 +17747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -5043.2,
       "y": -80.9,
       "heading": 2.392,
-      "scale": 1.655,
-      "contact": "none"
+      "scale": 1.655
     },
     {
       "id": "knee-212",
@@ -17914,8 +17755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3165.2,
       "y": 3473.4,
       "heading": 4.793,
-      "scale": 1.776,
-      "contact": "none"
+      "scale": 1.776
     },
     {
       "id": "knee-213",
@@ -17923,8 +17763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3195.5,
       "y": 3432,
       "heading": 0.581,
-      "scale": 1.596,
-      "contact": "none"
+      "scale": 1.596
     },
     {
       "id": "knee-214",
@@ -17932,8 +17771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4329.6,
       "y": 616.5,
       "heading": 4.139,
-      "scale": 1.076,
-      "contact": "none"
+      "scale": 1.076
     },
     {
       "id": "knee-215",
@@ -17941,8 +17779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4325.4,
       "y": 615.6,
       "heading": 1.574,
-      "scale": 1.303,
-      "contact": "none"
+      "scale": 1.303
     },
     {
       "id": "knee-216",
@@ -17950,8 +17787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2643.2,
       "y": 3721.6,
       "heading": 5.785,
-      "scale": 1.09,
-      "contact": "none"
+      "scale": 1.09
     },
     {
       "id": "knee-217",
@@ -17959,8 +17795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2627,
       "y": 3695.8,
       "heading": 5.205,
-      "scale": 1.25,
-      "contact": "none"
+      "scale": 1.25
     },
     {
       "id": "knee-218",
@@ -17968,8 +17803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -197.6,
       "y": -3047.6,
       "heading": 3.488,
-      "scale": 1.534,
-      "contact": "none"
+      "scale": 1.534
     },
     {
       "id": "knee-219",
@@ -17977,8 +17811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -210.5,
       "y": -3074.2,
       "heading": 2.414,
-      "scale": 1.15,
-      "contact": "none"
+      "scale": 1.15
     },
     {
       "id": "knee-220",
@@ -18082,8 +17915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1330.6,
       "y": -760.9,
       "heading": 3.442,
-      "scale": 1.799,
-      "contact": "none"
+      "scale": 1.799
     },
     {
       "id": "knee-233",
@@ -18091,8 +17923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1252.1,
       "y": 1826.3,
       "heading": 1.154,
-      "scale": 1.544,
-      "contact": "none"
+      "scale": 1.544
     },
     {
       "id": "knee-234",
@@ -18100,8 +17931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1198.9,
       "y": 1891.6,
       "heading": 4.471,
-      "scale": 1.262,
-      "contact": "none"
+      "scale": 1.262
     },
     {
       "id": "knee-235",
@@ -18109,8 +17939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1300.9,
       "y": 2018.4,
       "heading": 1.253,
-      "scale": 1.067,
-      "contact": "none"
+      "scale": 1.067
     },
     {
       "id": "knee-236",
@@ -18118,8 +17947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1403.3,
       "y": 2117,
       "heading": 3.67,
-      "scale": 1.737,
-      "contact": "none"
+      "scale": 1.737
     },
     {
       "id": "knee-237",
@@ -18127,8 +17955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 154.3,
       "y": 1495.7,
       "heading": 3.749,
-      "scale": 0.895,
-      "contact": "none"
+      "scale": 0.895
     },
     {
       "id": "knee-238",
@@ -18136,8 +17963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2927.8,
       "y": 2523.4,
       "heading": 3.968,
-      "scale": 1.033,
-      "contact": "none"
+      "scale": 1.033
     },
     {
       "id": "knee-239",
@@ -18145,8 +17971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2616.4,
       "y": 3577.6,
       "heading": 2.089,
-      "scale": 1.269,
-      "contact": "none"
+      "scale": 1.269
     },
     {
       "id": "knee-240",
@@ -18154,8 +17979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2625.6,
       "y": 3588,
       "heading": 2.793,
-      "scale": 1.652,
-      "contact": "none"
+      "scale": 1.652
     },
     {
       "id": "knee-241",
@@ -18163,8 +17987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 256.2,
       "y": 2705.9,
       "heading": 4.946,
-      "scale": 1.177,
-      "contact": "none"
+      "scale": 1.177
     },
     {
       "id": "knee-242",
@@ -18172,8 +17995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1599.3,
       "y": 1507,
       "heading": 3.266,
-      "scale": 1.242,
-      "contact": "none"
+      "scale": 1.242
     },
     {
       "id": "knee-243",
@@ -18181,8 +18003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1605.6,
       "y": 1532.9,
       "heading": 3.589,
-      "scale": 1.787,
-      "contact": "none"
+      "scale": 1.787
     },
     {
       "id": "knee-244",
@@ -18190,8 +18011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 615.4,
       "y": 4398.2,
       "heading": 0.018,
-      "scale": 0.953,
-      "contact": "none"
+      "scale": 0.953
     },
     {
       "id": "knee-245",
@@ -18199,8 +18019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 702,
       "y": 4364.7,
       "heading": 2.001,
-      "scale": 0.837,
-      "contact": "none"
+      "scale": 0.837
     },
     {
       "id": "knee-246",
@@ -18208,8 +18027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 940.6,
       "y": 4592.1,
       "heading": 4.428,
-      "scale": 1.68,
-      "contact": "none"
+      "scale": 1.68
     },
     {
       "id": "knee-247",
@@ -18217,8 +18035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 961.5,
       "y": 4597.1,
       "heading": 2.117,
-      "scale": 1.233,
-      "contact": "none"
+      "scale": 1.233
     },
     {
       "id": "knee-248",
@@ -18226,8 +18043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2459.3,
       "y": -3079.3,
       "heading": 0.971,
-      "scale": 1.046,
-      "contact": "none"
+      "scale": 1.046
     },
     {
       "id": "knee-249",
@@ -18235,8 +18051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2543.2,
       "y": -3088.4,
       "heading": 2.022,
-      "scale": 1.648,
-      "contact": "none"
+      "scale": 1.648
     },
     {
       "id": "knee-250",
@@ -18244,8 +18059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2319.7,
       "y": -3037.9,
       "heading": 1.949,
-      "scale": 1.212,
-      "contact": "none"
+      "scale": 1.212
     },
     {
       "id": "knee-251",
@@ -18285,8 +18099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3933.7,
       "y": 1669.7,
       "heading": 5.813,
-      "scale": 1.027,
-      "contact": "none"
+      "scale": 1.027
     },
     {
       "id": "knee-256",
@@ -18294,8 +18107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3862.4,
       "y": 1738.4,
       "heading": 5.083,
-      "scale": 1.051,
-      "contact": "none"
+      "scale": 1.051
     },
     {
       "id": "knee-257",
@@ -18303,8 +18115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1411.9,
       "y": 2483.3,
       "heading": 4.536,
-      "scale": 0.968,
-      "contact": "none"
+      "scale": 0.968
     },
     {
       "id": "knee-258",
@@ -18312,8 +18123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1400,
       "y": 2492.1,
       "heading": 0.614,
-      "scale": 0.869,
-      "contact": "none"
+      "scale": 0.869
     },
     {
       "id": "knee-259",
@@ -18321,8 +18131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2787.6,
       "y": 4028.2,
       "heading": 1.562,
-      "scale": 1.713,
-      "contact": "none"
+      "scale": 1.713
     },
     {
       "id": "knee-260",
@@ -18330,8 +18139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2903.3,
       "y": 4119.6,
       "heading": 4.49,
-      "scale": 1.155,
-      "contact": "none"
+      "scale": 1.155
     },
     {
       "id": "knee-261",
@@ -18339,8 +18147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2881.4,
       "y": 4114.1,
       "heading": 1.058,
-      "scale": 1.758,
-      "contact": "none"
+      "scale": 1.758
     },
     {
       "id": "knee-262",
@@ -18364,8 +18171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -601,
       "y": 3822.5,
       "heading": 5.448,
-      "scale": 1.448,
-      "contact": "none"
+      "scale": 1.448
     },
     {
       "id": "knee-265",
@@ -18373,8 +18179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1594.9,
       "y": -1158.1,
       "heading": 1.697,
-      "scale": 1.198,
-      "contact": "none"
+      "scale": 1.198
     },
     {
       "id": "knee-266",
@@ -18382,8 +18187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1577.4,
       "y": -1152.9,
       "heading": 3.166,
-      "scale": 1.234,
-      "contact": "none"
+      "scale": 1.234
     },
     {
       "id": "knee-267",
@@ -18391,8 +18195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2289.6,
       "y": -173.7,
       "heading": 3.468,
-      "scale": 1.567,
-      "contact": "none"
+      "scale": 1.567
     },
     {
       "id": "knee-268",
@@ -18400,8 +18203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3797.5,
       "y": 1362,
       "heading": 1.267,
-      "scale": 1.338,
-      "contact": "none"
+      "scale": 1.338
     },
     {
       "id": "knee-269",
@@ -18409,8 +18211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1130.5,
       "y": -3026.4,
       "heading": 2.939,
-      "scale": 0.958,
-      "contact": "none"
+      "scale": 0.958
     },
     {
       "id": "knee-270",
@@ -18418,8 +18219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1142.5,
       "y": -3010.5,
       "heading": 3.068,
-      "scale": 0.852,
-      "contact": "none"
+      "scale": 0.852
     },
     {
       "id": "knee-271",
@@ -18427,8 +18227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3869.4,
       "y": 1138.6,
       "heading": 1.631,
-      "scale": 0.821,
-      "contact": "none"
+      "scale": 0.821
     },
     {
       "id": "knee-272",
@@ -18436,8 +18235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3905.3,
       "y": 1067.4,
       "heading": 5.977,
-      "scale": 0.925,
-      "contact": "none"
+      "scale": 0.925
     },
     {
       "id": "knee-273",
@@ -18557,8 +18355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2419.4,
       "y": -317,
       "heading": 0.256,
-      "scale": 1.163,
-      "contact": "none"
+      "scale": 1.163
     },
     {
       "id": "knee-288",
@@ -18566,8 +18363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2466,
       "y": -256.6,
       "heading": 4.789,
-      "scale": 1.514,
-      "contact": "none"
+      "scale": 1.514
     },
     {
       "id": "knee-289",
@@ -18575,8 +18371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1328.9,
       "y": -2488.8,
       "heading": 4.295,
-      "scale": 1.384,
-      "contact": "none"
+      "scale": 1.384
     },
     {
       "id": "knee-290",
@@ -18584,8 +18379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4226.1,
       "y": -329.9,
       "heading": 3.745,
-      "scale": 1.18,
-      "contact": "none"
+      "scale": 1.18
     },
     {
       "id": "knee-291",
@@ -18593,8 +18387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4236,
       "y": -380.2,
       "heading": 2.855,
-      "scale": 0.94,
-      "contact": "none"
+      "scale": 0.94
     },
     {
       "id": "knee-292",
@@ -18602,8 +18395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4492.1,
       "y": -513.4,
       "heading": 1.777,
-      "scale": 1.645,
-      "contact": "none"
+      "scale": 1.645
     },
     {
       "id": "knee-293",
@@ -18611,8 +18403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 368.4,
       "y": 4513.7,
       "heading": 3.759,
-      "scale": 1.69,
-      "contact": "none"
+      "scale": 1.69
     },
     {
       "id": "knee-294",
@@ -18620,8 +18411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2291.3,
       "y": 1667.6,
       "heading": 6.043,
-      "scale": 1.737,
-      "contact": "none"
+      "scale": 1.737
     },
     {
       "id": "knee-295",
@@ -18629,8 +18419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2326.9,
       "y": -790.3,
       "heading": 5.157,
-      "scale": 1.016,
-      "contact": "none"
+      "scale": 1.016
     },
     {
       "id": "knee-296",
@@ -18638,8 +18427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2315.9,
       "y": -729.6,
       "heading": 3.121,
-      "scale": 1.438,
-      "contact": "none"
+      "scale": 1.438
     },
     {
       "id": "knee-297",
@@ -18647,8 +18435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1703.4,
       "y": -2565,
       "heading": 3.894,
-      "scale": 1.493,
-      "contact": "none"
+      "scale": 1.493
     },
     {
       "id": "knee-298",
@@ -18744,8 +18531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1211,
       "y": 597.6,
       "heading": 3.808,
-      "scale": 1.352,
-      "contact": "none"
+      "scale": 1.352
     },
     {
       "id": "knee-310",
@@ -18753,8 +18539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3317.1,
       "y": 3718.5,
       "heading": 3.612,
-      "scale": 1.627,
-      "contact": "none"
+      "scale": 1.627
     },
     {
       "id": "knee-311",
@@ -18762,8 +18547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3405.3,
       "y": 3543.4,
       "heading": 5.258,
-      "scale": 1.766,
-      "contact": "none"
+      "scale": 1.766
     },
     {
       "id": "knee-312",
@@ -18771,8 +18555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3523.4,
       "y": 3611.2,
       "heading": 1.887,
-      "scale": 0.852,
-      "contact": "none"
+      "scale": 0.852
     },
     {
       "id": "knee-313",
@@ -18780,8 +18563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3491.4,
       "y": 3657.3,
       "heading": 1.879,
-      "scale": 1.643,
-      "contact": "none"
+      "scale": 1.643
     },
     {
       "id": "knee-314",
@@ -18789,8 +18571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3280,
       "y": 3819.4,
       "heading": 2.631,
-      "scale": 0.835,
-      "contact": "none"
+      "scale": 0.835
     },
     {
       "id": "knee-315",
@@ -18798,8 +18579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4054.7,
       "y": 2552.5,
       "heading": 0.105,
-      "scale": 0.993,
-      "contact": "none"
+      "scale": 0.993
     },
     {
       "id": "knee-316",
@@ -18807,8 +18587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3636,
       "y": 2602.7,
       "heading": 3.07,
-      "scale": 1.53,
-      "contact": "none"
+      "scale": 1.53
     },
     {
       "id": "knee-317",
@@ -18816,8 +18595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2035,
       "y": 4132,
       "heading": 4.405,
-      "scale": 1.057,
-      "contact": "none"
+      "scale": 1.057
     },
     {
       "id": "knee-318",
@@ -18825,8 +18603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -382.5,
       "y": 3987.4,
       "heading": 4.364,
-      "scale": 1.245,
-      "contact": "none"
+      "scale": 1.245
     },
     {
       "id": "knee-319",
@@ -18834,8 +18611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -304.4,
       "y": 3970.4,
       "heading": 2.845,
-      "scale": 1.507,
-      "contact": "none"
+      "scale": 1.507
     },
     {
       "id": "knee-320",
@@ -18843,8 +18619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2571.1,
       "y": 2326.8,
       "heading": 5.535,
-      "scale": 0.85,
-      "contact": "none"
+      "scale": 0.85
     },
     {
       "id": "knee-321",
@@ -18852,8 +18627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -977.2,
       "y": -1304.5,
       "heading": 2.1,
-      "scale": 1.115,
-      "contact": "none"
+      "scale": 1.115
     },
     {
       "id": "knee-322",
@@ -18861,8 +18635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1021.5,
       "y": 3777.7,
       "heading": 2.778,
-      "scale": 1.738,
-      "contact": "none"
+      "scale": 1.738
     },
     {
       "id": "knee-323",
@@ -18870,8 +18643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1039.1,
       "y": 3860,
       "heading": 0.344,
-      "scale": 1.228,
-      "contact": "none"
+      "scale": 1.228
     },
     {
       "id": "knee-324",
@@ -18943,8 +18715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 671,
       "y": 4166.7,
       "heading": 5.375,
-      "scale": 1.042,
-      "contact": "none"
+      "scale": 1.042
     },
     {
       "id": "knee-333",
@@ -18952,8 +18723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 683.2,
       "y": 4253.1,
       "heading": 0.098,
-      "scale": 1.527,
-      "contact": "none"
+      "scale": 1.527
     },
     {
       "id": "knee-334",
@@ -18961,8 +18731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 746,
       "y": 4243.3,
       "heading": 3.99,
-      "scale": 1.012,
-      "contact": "none"
+      "scale": 1.012
     },
     {
       "id": "knee-335",
@@ -18970,8 +18739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3646.9,
       "y": 749.9,
       "heading": 1.47,
-      "scale": 1.201,
-      "contact": "none"
+      "scale": 1.201
     },
     {
       "id": "knee-336",
@@ -18979,8 +18747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2432.2,
       "y": 400.8,
       "heading": 2.066,
-      "scale": 1.609,
-      "contact": "none"
+      "scale": 1.609
     },
     {
       "id": "knee-337",
@@ -18988,8 +18755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2464.2,
       "y": 2569.5,
       "heading": 4.356,
-      "scale": 1.003,
-      "contact": "none"
+      "scale": 1.003
     },
     {
       "id": "knee-338",
@@ -18997,8 +18763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2436.4,
       "y": -289.3,
       "heading": 5.551,
-      "scale": 1.561,
-      "contact": "none"
+      "scale": 1.561
     },
     {
       "id": "knee-339",
@@ -19006,8 +18771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2533.5,
       "y": -303.5,
       "heading": 3.786,
-      "scale": 1.41,
-      "contact": "none"
+      "scale": 1.41
     },
     {
       "id": "knee-340",
@@ -19015,8 +18779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2493.6,
       "y": 29.3,
       "heading": 1.109,
-      "scale": 1.168,
-      "contact": "none"
+      "scale": 1.168
     },
     {
       "id": "knee-341",
@@ -19024,8 +18787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -225.1,
       "y": -3868.3,
       "heading": 0.794,
-      "scale": 1.259,
-      "contact": "none"
+      "scale": 1.259
     },
     {
       "id": "knee-342",
@@ -19033,8 +18795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3589.2,
       "y": 1740.3,
       "heading": 2.37,
-      "scale": 1.092,
-      "contact": "none"
+      "scale": 1.092
     },
     {
       "id": "knee-343",
@@ -19042,8 +18803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2403.9,
       "y": -583.3,
       "heading": 6.188,
-      "scale": 1.12,
-      "contact": "none"
+      "scale": 1.12
     },
     {
       "id": "knee-344",
@@ -19051,8 +18811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2392,
       "y": -558.9,
       "heading": 4.624,
-      "scale": 0.991,
-      "contact": "none"
+      "scale": 0.991
     },
     {
       "id": "knee-345",
@@ -19060,8 +18819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3127.3,
       "y": 4441.4,
       "heading": 2.011,
-      "scale": 0.862,
-      "contact": "none"
+      "scale": 0.862
     },
     {
       "id": "knee-346",
@@ -19069,8 +18827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3119.4,
       "y": 4432.6,
       "heading": 2.252,
-      "scale": 1.66,
-      "contact": "none"
+      "scale": 1.66
     },
     {
       "id": "knee-347",
@@ -19078,8 +18835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 221.6,
       "y": -3137.5,
       "heading": 0.768,
-      "scale": 1.698,
-      "contact": "none"
+      "scale": 1.698
     },
     {
       "id": "knee-348",
@@ -19087,8 +18843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3516.8,
       "y": -517.5,
       "heading": 1.959,
-      "scale": 1.248,
-      "contact": "none"
+      "scale": 1.248
     },
     {
       "id": "knee-349",
@@ -19112,8 +18867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1128.7,
       "y": -2775.9,
       "heading": 3.953,
-      "scale": 1.485,
-      "contact": "none"
+      "scale": 1.485
     },
     {
       "id": "knee-352",
@@ -19121,8 +18875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3861.6,
       "y": -1516.6,
       "heading": 2.787,
-      "scale": 1.239,
-      "contact": "none"
+      "scale": 1.239
     },
     {
       "id": "knee-353",
@@ -19146,8 +18899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -914.8,
       "y": 3447.8,
       "heading": 3.048,
-      "scale": 1.071,
-      "contact": "none"
+      "scale": 1.071
     },
     {
       "id": "knee-356",
@@ -19155,8 +18907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -854.8,
       "y": 3507.7,
       "heading": 1.692,
-      "scale": 1.17,
-      "contact": "none"
+      "scale": 1.17
     },
     {
       "id": "knee-357",
@@ -19164,8 +18915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2297.3,
       "y": -2496.4,
       "heading": 2.134,
-      "scale": 1.275,
-      "contact": "none"
+      "scale": 1.275
     },
     {
       "id": "knee-358",
@@ -19173,8 +18923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2916.6,
       "y": -2327.9,
       "heading": 3.875,
-      "scale": 1.068,
-      "contact": "none"
+      "scale": 1.068
     },
     {
       "id": "knee-359",
@@ -19182,8 +18931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2416.7,
       "y": -2435,
       "heading": 4.591,
-      "scale": 1.385,
-      "contact": "none"
+      "scale": 1.385
     },
     {
       "id": "knee-360",
@@ -19191,8 +18939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2475.5,
       "y": -2495.2,
       "heading": 5.883,
-      "scale": 1.723,
-      "contact": "none"
+      "scale": 1.723
     },
     {
       "id": "knee-361",
@@ -19200,8 +18947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2728.8,
       "y": -2349.5,
       "heading": 5.002,
-      "scale": 1.023,
-      "contact": "none"
+      "scale": 1.023
     },
     {
       "id": "knee-362",
@@ -19209,8 +18955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1204.1,
       "y": 2261.6,
       "heading": 3.547,
-      "scale": 1.043,
-      "contact": "none"
+      "scale": 1.043
     },
     {
       "id": "knee-363",
@@ -19218,8 +18963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1437.3,
       "y": 2370.2,
       "heading": 2.745,
-      "scale": 1.341,
-      "contact": "none"
+      "scale": 1.341
     },
     {
       "id": "knee-364",
@@ -19227,8 +18971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1444.4,
       "y": 2306.7,
       "heading": 3.836,
-      "scale": 0.974,
-      "contact": "none"
+      "scale": 0.974
     },
     {
       "id": "knee-365",
@@ -19236,8 +18979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1062.5,
       "y": 4483.1,
       "heading": 1.142,
-      "scale": 1.168,
-      "contact": "none"
+      "scale": 1.168
     },
     {
       "id": "knee-366",
@@ -19245,8 +18987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 770.7,
       "y": 4338,
       "heading": 3.957,
-      "scale": 1.421,
-      "contact": "none"
+      "scale": 1.421
     },
     {
       "id": "knee-367",
@@ -19254,8 +18995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -747.6,
       "y": -2090.7,
       "heading": 2.718,
-      "scale": 0.861,
-      "contact": "none"
+      "scale": 0.861
     },
     {
       "id": "knee-368",
@@ -19263,8 +19003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -696,
       "y": -2119.9,
       "heading": 2.203,
-      "scale": 1.118,
-      "contact": "none"
+      "scale": 1.118
     },
     {
       "id": "knee-369",
@@ -19272,8 +19011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2079.3,
       "y": 4556.5,
       "heading": 4.24,
-      "scale": 1.714,
-      "contact": "none"
+      "scale": 1.714
     },
     {
       "id": "knee-370",
@@ -19281,8 +19019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2060.8,
       "y": 4262.4,
       "heading": 4.067,
-      "scale": 1.416,
-      "contact": "none"
+      "scale": 1.416
     },
     {
       "id": "knee-371",
@@ -19290,8 +19027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2068.8,
       "y": 4377,
       "heading": 0.884,
-      "scale": 1.258,
-      "contact": "none"
+      "scale": 1.258
     },
     {
       "id": "knee-372",
@@ -19299,8 +19035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2095.5,
       "y": 4295.5,
       "heading": 3.724,
-      "scale": 1.294,
-      "contact": "none"
+      "scale": 1.294
     },
     {
       "id": "knee-373",
@@ -19308,8 +19043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2827.3,
       "y": 1008.7,
       "heading": 0.565,
-      "scale": 1.501,
-      "contact": "none"
+      "scale": 1.501
     },
     {
       "id": "knee-374",
@@ -19317,8 +19051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2810,
       "y": 983.6,
       "heading": 2.231,
-      "scale": 1.528,
-      "contact": "none"
+      "scale": 1.528
     },
     {
       "id": "knee-375",
@@ -19326,8 +19059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -883.6,
       "y": 3195.7,
       "heading": 1.919,
-      "scale": 1.646,
-      "contact": "none"
+      "scale": 1.646
     },
     {
       "id": "knee-376",
@@ -19335,8 +19067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -913.4,
       "y": 3240.9,
       "heading": 2.955,
-      "scale": 0.946,
-      "contact": "none"
+      "scale": 0.946
     },
     {
       "id": "knee-377",
@@ -19344,8 +19075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2859,
       "y": 3647.8,
       "heading": 0.184,
-      "scale": 1.193,
-      "contact": "none"
+      "scale": 1.193
     },
     {
       "id": "knee-378",
@@ -19353,8 +19083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2898.8,
       "y": 3581.7,
       "heading": 3.945,
-      "scale": 1.201,
-      "contact": "none"
+      "scale": 1.201
     },
     {
       "id": "knee-379",
@@ -19362,8 +19091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3188,
       "y": 2113.5,
       "heading": 4.362,
-      "scale": 1.55,
-      "contact": "none"
+      "scale": 1.55
     },
     {
       "id": "knee-380",
@@ -19371,8 +19099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3046.1,
       "y": -1076.5,
       "heading": 3.475,
-      "scale": 1.468,
-      "contact": "none"
+      "scale": 1.468
     },
     {
       "id": "knee-381",
@@ -19380,8 +19107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3819.4,
       "y": 1000.2,
       "heading": 5.168,
-      "scale": 1.234,
-      "contact": "none"
+      "scale": 1.234
     },
     {
       "id": "knee-382",
@@ -19389,8 +19115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -767.8,
       "y": -2929.2,
       "heading": 4.378,
-      "scale": 1.062,
-      "contact": "none"
+      "scale": 1.062
     },
     {
       "id": "knee-383",
@@ -19398,8 +19123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3290.3,
       "y": 2004.1,
       "heading": 0.501,
-      "scale": 1.736,
-      "contact": "none"
+      "scale": 1.736
     },
     {
       "id": "knee-384",
@@ -19407,8 +19131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3191.5,
       "y": 2044.7,
       "heading": 1.368,
-      "scale": 1.473,
-      "contact": "none"
+      "scale": 1.473
     },
     {
       "id": "knee-385",
@@ -19416,8 +19139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3204.4,
       "y": 2069.2,
       "heading": 2.563,
-      "scale": 1.308,
-      "contact": "none"
+      "scale": 1.308
     },
     {
       "id": "knee-386",
@@ -19425,8 +19147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 653.6,
       "y": 3990.6,
       "heading": 4.971,
-      "scale": 1.224,
-      "contact": "none"
+      "scale": 1.224
     },
     {
       "id": "knee-387",
@@ -19434,8 +19155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 664,
       "y": 4043.7,
       "heading": 1.761,
-      "scale": 1.001,
-      "contact": "none"
+      "scale": 1.001
     },
     {
       "id": "knee-388",
@@ -19443,8 +19163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2531,
       "y": 1936.8,
       "heading": 2.166,
-      "scale": 1.194,
-      "contact": "none"
+      "scale": 1.194
     },
     {
       "id": "knee-389",
@@ -19452,8 +19171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2567.1,
       "y": 1913.5,
       "heading": 4.321,
-      "scale": 0.939,
-      "contact": "none"
+      "scale": 0.939
     },
     {
       "id": "knee-390",
@@ -19461,8 +19179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4030.6,
       "y": -1243.2,
       "heading": 3.435,
-      "scale": 1.501,
-      "contact": "none"
+      "scale": 1.501
     },
     {
       "id": "knee-391",
@@ -19470,8 +19187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4091.6,
       "y": -1366.9,
       "heading": 2.227,
-      "scale": 1.136,
-      "contact": "none"
+      "scale": 1.136
     },
     {
       "id": "knee-392",
@@ -19479,8 +19195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2358.4,
       "y": -2760.5,
       "heading": 1.049,
-      "scale": 1.761,
-      "contact": "none"
+      "scale": 1.761
     },
     {
       "id": "knee-393",
@@ -19488,8 +19203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2555.6,
       "y": -2894.6,
       "heading": 0.761,
-      "scale": 0.915,
-      "contact": "none"
+      "scale": 0.915
     },
     {
       "id": "knee-394",
@@ -19497,8 +19211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2517.1,
       "y": -2902.3,
       "heading": 5.134,
-      "scale": 1.211,
-      "contact": "none"
+      "scale": 1.211
     },
     {
       "id": "knee-395",
@@ -19642,8 +19355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3376.8,
       "y": 1900.3,
       "heading": 0.075,
-      "scale": 1.202,
-      "contact": "none"
+      "scale": 1.202
     },
     {
       "id": "knee-413",
@@ -19651,8 +19363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3368.6,
       "y": -1063.2,
       "heading": 1.229,
-      "scale": 1.18,
-      "contact": "none"
+      "scale": 1.18
     },
     {
       "id": "knee-414",
@@ -19660,8 +19371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4241.6,
       "y": 3437.8,
       "heading": 5.374,
-      "scale": 0.881,
-      "contact": "none"
+      "scale": 0.881
     },
     {
       "id": "knee-415",
@@ -19669,8 +19379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1786.7,
       "y": -2519.3,
       "heading": 3.284,
-      "scale": 1.649,
-      "contact": "none"
+      "scale": 1.649
     },
     {
       "id": "knee-416",
@@ -19678,8 +19387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1826.7,
       "y": -2515.1,
       "heading": 3.273,
-      "scale": 1.189,
-      "contact": "none"
+      "scale": 1.189
     },
     {
       "id": "knee-417",
@@ -19687,8 +19395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1042.2,
       "y": 633.3,
       "heading": 2.246,
-      "scale": 1.049,
-      "contact": "none"
+      "scale": 1.049
     },
     {
       "id": "knee-418",
@@ -19760,8 +19467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1309.7,
       "y": -2498.7,
       "heading": 2.167,
-      "scale": 1.014,
-      "contact": "none"
+      "scale": 1.014
     },
     {
       "id": "knee-427",
@@ -19769,8 +19475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1323.5,
       "y": -2487.8,
       "heading": 2.698,
-      "scale": 1.728,
-      "contact": "none"
+      "scale": 1.728
     },
     {
       "id": "knee-428",
@@ -19794,8 +19499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -977.9,
       "y": -2433.6,
       "heading": 0.115,
-      "scale": 1.124,
-      "contact": "none"
+      "scale": 1.124
     },
     {
       "id": "knee-431",
@@ -19803,8 +19507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3343.4,
       "y": 3469.7,
       "heading": 1.474,
-      "scale": 1.145,
-      "contact": "none"
+      "scale": 1.145
     },
     {
       "id": "knee-432",
@@ -19812,8 +19515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3431.9,
       "y": 3415.4,
       "heading": 1.775,
-      "scale": 0.955,
-      "contact": "none"
+      "scale": 0.955
     },
     {
       "id": "knee-433",
@@ -19821,8 +19523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3441.5,
       "y": 3505,
       "heading": 0.016,
-      "scale": 1.133,
-      "contact": "none"
+      "scale": 1.133
     },
     {
       "id": "knee-434",
@@ -19830,8 +19531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -203.8,
       "y": 3115.6,
       "heading": 3.34,
-      "scale": 1.44,
-      "contact": "none"
+      "scale": 1.44
     },
     {
       "id": "knee-435",
@@ -19839,8 +19539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -184.8,
       "y": 3155.1,
       "heading": 4.908,
-      "scale": 1.526,
-      "contact": "none"
+      "scale": 1.526
     },
     {
       "id": "knee-436",
@@ -19848,8 +19547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1895.6,
       "y": -3207,
       "heading": 0.632,
-      "scale": 1.698,
-      "contact": "none"
+      "scale": 1.698
     },
     {
       "id": "knee-437",
@@ -19857,8 +19555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1777.6,
       "y": -3120.1,
       "heading": 5.478,
-      "scale": 1.288,
-      "contact": "none"
+      "scale": 1.288
     },
     {
       "id": "knee-438",
@@ -19866,8 +19563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1571.6,
       "y": -3033.6,
       "heading": 2.401,
-      "scale": 1.248,
-      "contact": "none"
+      "scale": 1.248
     },
     {
       "id": "knee-439",
@@ -19875,8 +19571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1584.8,
       "y": -3020,
       "heading": 1.437,
-      "scale": 1.628,
-      "contact": "none"
+      "scale": 1.628
     },
     {
       "id": "knee-440",
@@ -19884,8 +19579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3312,
       "y": 606.4,
       "heading": 3.206,
-      "scale": 1.338,
-      "contact": "none"
+      "scale": 1.338
     },
     {
       "id": "knee-441",
@@ -19893,8 +19587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -273.4,
       "y": 4440.1,
       "heading": 1.26,
-      "scale": 0.927,
-      "contact": "none"
+      "scale": 0.927
     },
     {
       "id": "knee-442",
@@ -19902,8 +19595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -336.2,
       "y": 4420,
       "heading": 0.93,
-      "scale": 1.088,
-      "contact": "none"
+      "scale": 1.088
     },
     {
       "id": "knee-443",
@@ -19911,8 +19603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -63.3,
       "y": 4555.2,
       "heading": 6.245,
-      "scale": 1.163,
-      "contact": "none"
+      "scale": 1.163
     },
     {
       "id": "knee-444",
@@ -19920,8 +19611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -65.6,
       "y": 4530.7,
       "heading": 3.247,
-      "scale": 1.411,
-      "contact": "none"
+      "scale": 1.411
     },
     {
       "id": "knee-445",
@@ -19961,8 +19651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2617.2,
       "y": -2245.7,
       "heading": 4.207,
-      "scale": 1.044,
-      "contact": "none"
+      "scale": 1.044
     },
     {
       "id": "knee-450",
@@ -19970,8 +19659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2304.9,
       "y": -2471.6,
       "heading": 4.874,
-      "scale": 1.174,
-      "contact": "none"
+      "scale": 1.174
     },
     {
       "id": "knee-451",
@@ -19979,8 +19667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2305.7,
       "y": -2496,
       "heading": 1.53,
-      "scale": 0.946,
-      "contact": "none"
+      "scale": 0.946
     },
     {
       "id": "knee-452",
@@ -19988,8 +19675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2441.4,
       "y": -1789.8,
       "heading": 1.874,
-      "scale": 1.164,
-      "contact": "none"
+      "scale": 1.164
     },
     {
       "id": "knee-453",
@@ -19997,8 +19683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2431.6,
       "y": -1752.8,
       "heading": 3.974,
-      "scale": 1.486,
-      "contact": "none"
+      "scale": 1.486
     },
     {
       "id": "knee-454",
@@ -20006,8 +19691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3681.2,
       "y": -156.5,
       "heading": 2.171,
-      "scale": 1.663,
-      "contact": "none"
+      "scale": 1.663
     },
     {
       "id": "knee-455",
@@ -20015,8 +19699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1779.7,
       "y": 2519.9,
       "heading": 2.293,
-      "scale": 1.31,
-      "contact": "none"
+      "scale": 1.31
     },
     {
       "id": "knee-456",
@@ -20024,8 +19707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2663.2,
       "y": -1018.5,
       "heading": 3.762,
-      "scale": 1.515,
-      "contact": "none"
+      "scale": 1.515
     },
     {
       "id": "knee-457",
@@ -20033,8 +19715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2690.8,
       "y": -1012.8,
       "heading": 3.599,
-      "scale": 1.611,
-      "contact": "none"
+      "scale": 1.611
     },
     {
       "id": "knee-458",
@@ -20042,8 +19723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2561.1,
       "y": -1035.6,
       "heading": 3.545,
-      "scale": 0.819,
-      "contact": "none"
+      "scale": 0.819
     },
     {
       "id": "knee-459",
@@ -20051,8 +19731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2498.4,
       "y": -953.5,
       "heading": 3.031,
-      "scale": 1.559,
-      "contact": "none"
+      "scale": 1.559
     },
     {
       "id": "knee-460",
@@ -20060,8 +19739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2167.8,
       "y": -719.6,
       "heading": 3.433,
-      "scale": 1.497,
-      "contact": "none"
+      "scale": 1.497
     },
     {
       "id": "knee-461",
@@ -20069,8 +19747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2182.3,
       "y": -792.9,
       "heading": 5.572,
-      "scale": 1.254,
-      "contact": "none"
+      "scale": 1.254
     },
     {
       "id": "knee-462",
@@ -20150,8 +19827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2205.4,
       "y": 3919.4,
       "heading": 2.538,
-      "scale": 1.519,
-      "contact": "none"
+      "scale": 1.519
     },
     {
       "id": "knee-472",
@@ -20159,8 +19835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2241.6,
       "y": 3846.9,
       "heading": 2.662,
-      "scale": 1.442,
-      "contact": "none"
+      "scale": 1.442
     },
     {
       "id": "knee-473",
@@ -20168,8 +19843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2238.5,
       "y": 3849.1,
       "heading": 0.365,
-      "scale": 0.934,
-      "contact": "none"
+      "scale": 0.934
     },
     {
       "id": "knee-474",
@@ -20177,8 +19851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 723.7,
       "y": 2060.9,
       "heading": 5.614,
-      "scale": 0.998,
-      "contact": "none"
+      "scale": 0.998
     },
     {
       "id": "knee-475",
@@ -20186,8 +19859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 703.1,
       "y": 2086.2,
       "heading": 0.307,
-      "scale": 1.236,
-      "contact": "none"
+      "scale": 1.236
     },
     {
       "id": "knee-476",
@@ -20195,8 +19867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 643.1,
       "y": 1738.3,
       "heading": 1.233,
-      "scale": 1.665,
-      "contact": "none"
+      "scale": 1.665
     },
     {
       "id": "knee-477",
@@ -20204,8 +19875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1647.2,
       "y": -164.1,
       "heading": 3.4,
-      "scale": 0.807,
-      "contact": "none"
+      "scale": 0.807
     },
     {
       "id": "knee-478",
@@ -20213,8 +19883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1666.7,
       "y": -132.4,
       "heading": 5.702,
-      "scale": 1.712,
-      "contact": "none"
+      "scale": 1.712
     },
     {
       "id": "knee-479",
@@ -20254,8 +19923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3741.8,
       "y": 2767.1,
       "heading": 0.605,
-      "scale": 1.187,
-      "contact": "none"
+      "scale": 1.187
     },
     {
       "id": "knee-484",
@@ -20263,8 +19931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3714.2,
       "y": 2888.6,
       "heading": 4.229,
-      "scale": 1.447,
-      "contact": "none"
+      "scale": 1.447
     },
     {
       "id": "knee-485",
@@ -20272,8 +19939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1864.3,
       "y": 4092.5,
       "heading": 2.719,
-      "scale": 0.937,
-      "contact": "none"
+      "scale": 0.937
     },
     {
       "id": "knee-486",
@@ -20281,8 +19947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1923,
       "y": 4229.9,
       "heading": 3.597,
-      "scale": 1.603,
-      "contact": "none"
+      "scale": 1.603
     },
     {
       "id": "knee-487",
@@ -20290,8 +19955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1870.4,
       "y": 4220.4,
       "heading": 6.085,
-      "scale": 1.577,
-      "contact": "none"
+      "scale": 1.577
     },
     {
       "id": "knee-488",
@@ -20299,8 +19963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2726.7,
       "y": -2259.2,
       "heading": 6.113,
-      "scale": 1.442,
-      "contact": "none"
+      "scale": 1.442
     },
     {
       "id": "knee-489",
@@ -20308,8 +19971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2685.3,
       "y": -2242.6,
       "heading": 4.77,
-      "scale": 1.41,
-      "contact": "none"
+      "scale": 1.41
     },
     {
       "id": "knee-490",
@@ -20317,8 +19979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2697.6,
       "y": -2284.4,
       "heading": 0.874,
-      "scale": 0.812,
-      "contact": "none"
+      "scale": 0.812
     },
     {
       "id": "knee-491",
@@ -20326,8 +19987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3788.7,
       "y": 3953.3,
       "heading": 0.446,
-      "scale": 0.896,
-      "contact": "none"
+      "scale": 0.896
     },
     {
       "id": "knee-492",
@@ -20335,8 +19995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3217.5,
       "y": 2481,
       "heading": 3.215,
-      "scale": 1.761,
-      "contact": "none"
+      "scale": 1.761
     },
     {
       "id": "knee-493",
@@ -20344,8 +20003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3208.7,
       "y": 2594.1,
       "heading": 1.009,
-      "scale": 1.576,
-      "contact": "none"
+      "scale": 1.576
     },
     {
       "id": "knee-494",
@@ -20353,8 +20011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4317.4,
       "y": -541.6,
       "heading": 2.783,
-      "scale": 1.797,
-      "contact": "none"
+      "scale": 1.797
     },
     {
       "id": "knee-495",
@@ -20362,8 +20019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4327.5,
       "y": -605.1,
       "heading": 2.242,
-      "scale": 1.735,
-      "contact": "none"
+      "scale": 1.735
     },
     {
       "id": "knee-496",
@@ -20371,8 +20027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 452.9,
       "y": 2666.5,
       "heading": 2.57,
-      "scale": 1.746,
-      "contact": "none"
+      "scale": 1.746
     },
     {
       "id": "knee-497",
@@ -20380,8 +20035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 418.5,
       "y": 2614.7,
       "heading": 0.276,
-      "scale": 1.344,
-      "contact": "none"
+      "scale": 1.344
     },
     {
       "id": "knee-498",
@@ -20389,8 +20043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 442.4,
       "y": 2586.7,
       "heading": 4.779,
-      "scale": 0.851,
-      "contact": "none"
+      "scale": 0.851
     },
     {
       "id": "knee-499",
@@ -20398,8 +20051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3556.1,
       "y": 2734.1,
       "heading": 2.498,
-      "scale": 1.4,
-      "contact": "none"
+      "scale": 1.4
     },
     {
       "id": "knee-500",
@@ -20407,8 +20059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2021.3,
       "y": 4550.6,
       "heading": 4.065,
-      "scale": 0.918,
-      "contact": "none"
+      "scale": 0.918
     },
     {
       "id": "knee-501",
@@ -20416,8 +20067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2005.8,
       "y": 4573.7,
       "heading": 1.894,
-      "scale": 0.852,
-      "contact": "none"
+      "scale": 0.852
     },
     {
       "id": "knee-502",
@@ -20425,8 +20075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 717.1,
       "y": 2061.8,
       "heading": 3.737,
-      "scale": 0.859,
-      "contact": "none"
+      "scale": 0.859
     },
     {
       "id": "knee-503",
@@ -20434,8 +20083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 800.3,
       "y": 2083.3,
       "heading": 1.933,
-      "scale": 1.772,
-      "contact": "none"
+      "scale": 1.772
     },
     {
       "id": "knee-504",
@@ -20443,8 +20091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 710.1,
       "y": 2090.3,
       "heading": 4.782,
-      "scale": 1.28,
-      "contact": "none"
+      "scale": 1.28
     },
     {
       "id": "knee-505",
@@ -20452,8 +20099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4407.1,
       "y": -575.4,
       "heading": 0.542,
-      "scale": 1.027,
-      "contact": "none"
+      "scale": 1.027
     },
     {
       "id": "knee-506",
@@ -20461,8 +20107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4367.8,
       "y": -646.7,
       "heading": 5.414,
-      "scale": 1.023,
-      "contact": "none"
+      "scale": 1.023
     },
     {
       "id": "knee-507",
@@ -20470,8 +20115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3769.5,
       "y": 2394.3,
       "heading": 3.61,
-      "scale": 1.358,
-      "contact": "none"
+      "scale": 1.358
     },
     {
       "id": "knee-508",
@@ -20479,8 +20123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3749.5,
       "y": 2356.4,
       "heading": 4.452,
-      "scale": 1.653,
-      "contact": "none"
+      "scale": 1.653
     },
     {
       "id": "knee-509",
@@ -20512,8 +20155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3199.7,
       "y": -385.8,
       "heading": 2.85,
-      "scale": 1.013,
-      "contact": "none"
+      "scale": 1.013
     },
     {
       "id": "knee-513",
@@ -20521,8 +20163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3249.9,
       "y": -359.3,
       "heading": 2.147,
-      "scale": 0.821,
-      "contact": "none"
+      "scale": 0.821
     },
     {
       "id": "knee-514",
@@ -20530,8 +20171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1941.8,
       "y": -462.7,
       "heading": 1.758,
-      "scale": 1.167,
-      "contact": "none"
+      "scale": 1.167
     },
     {
       "id": "knee-515",
@@ -20539,8 +20179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1949.9,
       "y": -482.4,
       "heading": 5.685,
-      "scale": 1.578,
-      "contact": "none"
+      "scale": 1.578
     },
     {
       "id": "knee-516",
@@ -20548,8 +20187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4132.4,
       "y": -454.5,
       "heading": 2.82,
-      "scale": 1.117,
-      "contact": "none"
+      "scale": 1.117
     },
     {
       "id": "knee-517",
@@ -20557,8 +20195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4143,
       "y": -445.4,
       "heading": 5.888,
-      "scale": 0.959,
-      "contact": "none"
+      "scale": 0.959
     },
     {
       "id": "knee-518",
@@ -20566,8 +20203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4186.1,
       "y": -430.2,
       "heading": 4.507,
-      "scale": 0.923,
-      "contact": "none"
+      "scale": 0.923
     },
     {
       "id": "knee-519",
@@ -20591,8 +20227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3826.8,
       "y": 70.5,
       "heading": 5.207,
-      "scale": 1.283,
-      "contact": "none"
+      "scale": 1.283
     },
     {
       "id": "knee-522",
@@ -20600,8 +20235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3826.1,
       "y": 62.6,
       "heading": 5.107,
-      "scale": 1.46,
-      "contact": "none"
+      "scale": 1.46
     },
     {
       "id": "knee-523",
@@ -20609,8 +20243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4206.3,
       "y": 256.2,
       "heading": 3.956,
-      "scale": 1.354,
-      "contact": "none"
+      "scale": 1.354
     },
     {
       "id": "knee-524",
@@ -20618,8 +20251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2864,
       "y": -1888.8,
       "heading": 0.657,
-      "scale": 0.807,
-      "contact": "none"
+      "scale": 0.807
     },
     {
       "id": "knee-525",
@@ -20627,8 +20259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2904.8,
       "y": -1912.1,
       "heading": 5.506,
-      "scale": 1.772,
-      "contact": "none"
+      "scale": 1.772
     },
     {
       "id": "knee-526",
@@ -20636,8 +20267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3872.7,
       "y": 1913.8,
       "heading": 5.561,
-      "scale": 1.585,
-      "contact": "none"
+      "scale": 1.585
     },
     {
       "id": "knee-527",
@@ -20645,8 +20275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3837.4,
       "y": 1971.8,
       "heading": 4.81,
-      "scale": 1.681,
-      "contact": "none"
+      "scale": 1.681
     },
     {
       "id": "knee-528",
@@ -20718,8 +20347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4151,
       "y": 2023.9,
       "heading": 1.927,
-      "scale": 1.172,
-      "contact": "none"
+      "scale": 1.172
     },
     {
       "id": "knee-537",
@@ -20727,8 +20355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4172.6,
       "y": 1977.9,
       "heading": 3.085,
-      "scale": 1.426,
-      "contact": "none"
+      "scale": 1.426
     },
     {
       "id": "knee-538",
@@ -20760,8 +20387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 384,
       "y": 2442.7,
       "heading": 0.156,
-      "scale": 1.019,
-      "contact": "none"
+      "scale": 1.019
     },
     {
       "id": "knee-542",
@@ -20769,8 +20395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 331.6,
       "y": 2356,
       "heading": 0.468,
-      "scale": 0.824,
-      "contact": "none"
+      "scale": 0.824
     },
     {
       "id": "tree-1",
@@ -20794,8 +20419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2030.5,
       "y": 1908,
       "heading": 3.654,
-      "scale": 2.543,
-      "contact": "none"
+      "scale": 2.543
     },
     {
       "id": "tree-4",
@@ -20803,8 +20427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1891,
       "y": 1737.5,
       "heading": 4.275,
-      "scale": 2.924,
-      "contact": "none"
+      "scale": 2.924
     },
     {
       "id": "tree-5",
@@ -20812,8 +20435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1865.2,
       "y": 1902.5,
       "heading": 4.991,
-      "scale": 2.034,
-      "contact": "none"
+      "scale": 2.034
     },
     {
       "id": "tree-6",
@@ -20821,8 +20443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1945.6,
       "y": 1737.2,
       "heading": 4.583,
-      "scale": 2.135,
-      "contact": "none"
+      "scale": 2.135
     },
     {
       "id": "tree-7",
@@ -20830,8 +20451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3560.2,
       "y": 730.2,
       "heading": 4.38,
-      "scale": 1.531,
-      "contact": "none"
+      "scale": 1.531
     },
     {
       "id": "tree-8",
@@ -20839,8 +20459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3600.9,
       "y": 629.3,
       "heading": 2.18,
-      "scale": 2.403,
-      "contact": "none"
+      "scale": 2.403
     },
     {
       "id": "tree-9",
@@ -20848,8 +20467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3665.8,
       "y": 730.2,
       "heading": 5.761,
-      "scale": 2.434,
-      "contact": "none"
+      "scale": 2.434
     },
     {
       "id": "tree-10",
@@ -20857,8 +20475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3680.4,
       "y": 727.8,
       "heading": 2.705,
-      "scale": 1.789,
-      "contact": "none"
+      "scale": 1.789
     },
     {
       "id": "tree-11",
@@ -20866,8 +20483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3583.4,
       "y": 660.9,
       "heading": 2.39,
-      "scale": 2.272,
-      "contact": "none"
+      "scale": 2.272
     },
     {
       "id": "tree-12",
@@ -20875,8 +20491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3790.2,
       "y": 796.5,
       "heading": 1.146,
-      "scale": 3.299,
-      "contact": "none"
+      "scale": 3.299
     },
     {
       "id": "tree-13",
@@ -20884,8 +20499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2444.6,
       "y": 3432.9,
       "heading": 3.239,
-      "scale": 2.282,
-      "contact": "none"
+      "scale": 2.282
     },
     {
       "id": "tree-14",
@@ -20893,8 +20507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2419.1,
       "y": 3137.6,
       "heading": 5.495,
-      "scale": 2.659,
-      "contact": "none"
+      "scale": 2.659
     },
     {
       "id": "tree-15",
@@ -20902,8 +20515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2631.2,
       "y": 3125.7,
       "heading": 3.985,
-      "scale": 1.49,
-      "contact": "none"
+      "scale": 1.49
     },
     {
       "id": "tree-16",
@@ -20911,8 +20523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2645.7,
       "y": 3312,
       "heading": 2.137,
-      "scale": 1.569,
-      "contact": "none"
+      "scale": 1.569
     },
     {
       "id": "tree-17",
@@ -20920,8 +20531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3990.6,
       "y": 1964.5,
       "heading": 5.494,
-      "scale": 1.384,
-      "contact": "none"
+      "scale": 1.384
     },
     {
       "id": "tree-18",
@@ -20929,8 +20539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1261.5,
       "y": -2450.1,
       "heading": 0.906,
-      "scale": 1.771,
-      "contact": "none"
+      "scale": 1.771
     },
     {
       "id": "tree-19",
@@ -20938,8 +20547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1086.1,
       "y": -2489.6,
       "heading": 5.744,
-      "scale": 1.906,
-      "contact": "none"
+      "scale": 1.906
     },
     {
       "id": "tree-20",
@@ -20947,8 +20555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 12.7,
       "y": 3057.8,
       "heading": 4.85,
-      "scale": 1.913,
-      "contact": "none"
+      "scale": 1.913
     },
     {
       "id": "tree-21",
@@ -20956,8 +20563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -584.8,
       "y": 3249.5,
       "heading": 5.099,
-      "scale": 1.651,
-      "contact": "none"
+      "scale": 1.651
     },
     {
       "id": "tree-22",
@@ -20965,8 +20571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 171.3,
       "y": 3288.6,
       "heading": 4.649,
-      "scale": 2.455,
-      "contact": "none"
+      "scale": 2.455
     },
     {
       "id": "tree-23",
@@ -20974,8 +20579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -174,
       "y": 3627.4,
       "heading": 1.628,
-      "scale": 2.968,
-      "contact": "none"
+      "scale": 2.968
     },
     {
       "id": "tree-24",
@@ -20983,8 +20587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -364.9,
       "y": 2937.7,
       "heading": 6.208,
-      "scale": 2.615,
-      "contact": "none"
+      "scale": 2.615
     },
     {
       "id": "tree-25",
@@ -20992,8 +20595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2236.3,
       "y": -1643.6,
       "heading": 6.191,
-      "scale": 2.002,
-      "contact": "none"
+      "scale": 2.002
     },
     {
       "id": "tree-26",
@@ -21001,8 +20603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2135.8,
       "y": -1719.2,
       "heading": 5.244,
-      "scale": 1.882,
-      "contact": "none"
+      "scale": 1.882
     },
     {
       "id": "tree-27",
@@ -21010,8 +20611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2220,
       "y": -1640.8,
       "heading": 2.726,
-      "scale": 1.679,
-      "contact": "none"
+      "scale": 1.679
     },
     {
       "id": "tree-28",
@@ -21019,8 +20619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2108.2,
       "y": -1752.7,
       "heading": 4.671,
-      "scale": 2.411,
-      "contact": "none"
+      "scale": 2.411
     },
     {
       "id": "tree-29",
@@ -21028,8 +20627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2200.8,
       "y": -1679.4,
       "heading": 2.924,
-      "scale": 1.439,
-      "contact": "none"
+      "scale": 1.439
     },
     {
       "id": "tree-30",
@@ -21037,8 +20635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1372.5,
       "y": 679,
       "heading": 5.866,
-      "scale": 2.31,
-      "contact": "none"
+      "scale": 2.31
     },
     {
       "id": "tree-31",
@@ -21046,8 +20643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1015.8,
       "y": 789.5,
       "heading": 1.582,
-      "scale": 1.635,
-      "contact": "none"
+      "scale": 1.635
     },
     {
       "id": "tree-32",
@@ -21055,8 +20651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1291.7,
       "y": 825.9,
       "heading": 2.633,
-      "scale": 1.7,
-      "contact": "none"
+      "scale": 1.7
     },
     {
       "id": "tree-33",
@@ -21064,8 +20659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1588.9,
       "y": 912.5,
       "heading": 3.665,
-      "scale": 1.969,
-      "contact": "none"
+      "scale": 1.969
     },
     {
       "id": "tree-34",
@@ -21073,8 +20667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1071.1,
       "y": 590.8,
       "heading": 1.151,
-      "scale": 1.944,
-      "contact": "none"
+      "scale": 1.944
     },
     {
       "id": "tree-35",
@@ -21082,8 +20675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3922,
       "y": 2551.2,
       "heading": 2.841,
-      "scale": 1.459,
-      "contact": "none"
+      "scale": 1.459
     },
     {
       "id": "tree-36",
@@ -21091,8 +20683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4179.1,
       "y": 2661.8,
       "heading": 6.116,
-      "scale": 1.79,
-      "contact": "none"
+      "scale": 1.79
     },
     {
       "id": "tree-37",
@@ -21100,8 +20691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3741.9,
       "y": 2511.4,
       "heading": 3.19,
-      "scale": 2.111,
-      "contact": "none"
+      "scale": 2.111
     },
     {
       "id": "tree-38",
@@ -21109,8 +20699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3865.2,
       "y": 2852.3,
       "heading": 5.798,
-      "scale": 2.603,
-      "contact": "none"
+      "scale": 2.603
     },
     {
       "id": "tree-39",
@@ -21118,8 +20707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1429.1,
       "y": 2107.5,
       "heading": 1.512,
-      "scale": 1.448,
-      "contact": "none"
+      "scale": 1.448
     },
     {
       "id": "tree-40",
@@ -21127,8 +20715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1624.1,
       "y": 2145.4,
       "heading": 4.5,
-      "scale": 2.656,
-      "contact": "none"
+      "scale": 2.656
     },
     {
       "id": "tree-41",
@@ -21136,8 +20723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1263.7,
       "y": 1882.5,
       "heading": 5.985,
-      "scale": 2.755,
-      "contact": "none"
+      "scale": 2.755
     },
     {
       "id": "tree-42",
@@ -21145,8 +20731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1125.8,
       "y": 2166,
       "heading": 1.015,
-      "scale": 2.474,
-      "contact": "none"
+      "scale": 2.474
     },
     {
       "id": "tree-43",
@@ -21154,8 +20739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 123.3,
       "y": 4120.2,
       "heading": 2.882,
-      "scale": 1.912,
-      "contact": "none"
+      "scale": 1.912
     },
     {
       "id": "tree-44",
@@ -21163,8 +20747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 214.3,
       "y": 3889.5,
       "heading": 0.709,
-      "scale": 1.814,
-      "contact": "none"
+      "scale": 1.814
     },
     {
       "id": "tree-45",
@@ -21172,8 +20755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 371.2,
       "y": 3984,
       "heading": 1.709,
-      "scale": 1.463,
-      "contact": "none"
+      "scale": 1.463
     },
     {
       "id": "tree-46",
@@ -21181,8 +20763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 354.6,
       "y": 3983.1,
       "heading": 5.338,
-      "scale": 2.457,
-      "contact": "none"
+      "scale": 2.457
     },
     {
       "id": "tree-47",
@@ -21190,8 +20771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 146.8,
       "y": 3816.9,
       "heading": 3.108,
-      "scale": 2.151,
-      "contact": "none"
+      "scale": 2.151
     },
     {
       "id": "tree-48",
@@ -21199,8 +20779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 196.9,
       "y": 4168.6,
       "heading": 5.625,
-      "scale": 1.598,
-      "contact": "none"
+      "scale": 1.598
     },
     {
       "id": "tree-49",
@@ -21208,8 +20787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 257.5,
       "y": 4079.5,
       "heading": 1.397,
-      "scale": 1.765,
-      "contact": "none"
+      "scale": 1.765
     },
     {
       "id": "tree-50",
@@ -21217,8 +20795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3192.1,
       "y": 4180.1,
       "heading": 3.311,
-      "scale": 1.775,
-      "contact": "none"
+      "scale": 1.775
     },
     {
       "id": "tree-51",
@@ -21226,8 +20803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3308.2,
       "y": 4097,
       "heading": 1.268,
-      "scale": 1.418,
-      "contact": "none"
+      "scale": 1.418
     },
     {
       "id": "tree-52",
@@ -21235,8 +20811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3243.5,
       "y": 4147.1,
       "heading": 1.118,
-      "scale": 1.806,
-      "contact": "none"
+      "scale": 1.806
     },
     {
       "id": "tree-53",
@@ -21244,8 +20819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3118.2,
       "y": -61,
       "heading": 3.231,
-      "scale": 2.67,
-      "contact": "none"
+      "scale": 2.67
     },
     {
       "id": "tree-54",
@@ -21253,8 +20827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3069.4,
       "y": 212,
       "heading": 3.43,
-      "scale": 2.31,
-      "contact": "none"
+      "scale": 2.31
     },
     {
       "id": "tree-55",
@@ -21262,8 +20835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 523.8,
       "y": 4705.8,
       "heading": 0.342,
-      "scale": 1.967,
-      "contact": "none"
+      "scale": 1.967
     },
     {
       "id": "tree-56",
@@ -21271,8 +20843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 466.4,
       "y": 4933.2,
       "heading": 1.026,
-      "scale": 1.695,
-      "contact": "none"
+      "scale": 1.695
     },
     {
       "id": "tree-57",
@@ -21280,8 +20851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 616.1,
       "y": 4999.8,
       "heading": 1.522,
-      "scale": 2.339,
-      "contact": "none"
+      "scale": 2.339
     },
     {
       "id": "tree-58",
@@ -21289,8 +20859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 377,
       "y": 5046.2,
       "heading": 6.043,
-      "scale": 2.024,
-      "contact": "none"
+      "scale": 2.024
     },
     {
       "id": "tree-59",
@@ -21298,8 +20867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 922.3,
       "y": 2094.1,
       "heading": 0.527,
-      "scale": 1.656,
-      "contact": "none"
+      "scale": 1.656
     },
     {
       "id": "tree-60",
@@ -21307,8 +20875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 713.5,
       "y": 1974.1,
       "heading": 3.687,
-      "scale": 1.544,
-      "contact": "none"
+      "scale": 1.544
     },
     {
       "id": "tree-61",
@@ -21316,8 +20883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 904.6,
       "y": 2164.8,
       "heading": 5.61,
-      "scale": 1.56,
-      "contact": "none"
+      "scale": 1.56
     },
     {
       "id": "tree-62",
@@ -21325,8 +20891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 741,
       "y": 1864,
       "heading": 3.105,
-      "scale": 2.323,
-      "contact": "none"
+      "scale": 2.323
     },
     {
       "id": "tree-63",
@@ -21334,8 +20899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 180.8,
       "y": 3683.4,
       "heading": 5.192,
-      "scale": 2.436,
-      "contact": "none"
+      "scale": 2.436
     },
     {
       "id": "tree-64",
@@ -21343,8 +20907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 470.5,
       "y": 3795.6,
       "heading": 0.659,
-      "scale": 1.837,
-      "contact": "none"
+      "scale": 1.837
     },
     {
       "id": "tree-65",
@@ -21352,8 +20915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 775.6,
       "y": 3863.9,
       "heading": 1.669,
-      "scale": 1.451,
-      "contact": "none"
+      "scale": 1.451
     },
     {
       "id": "tree-66",
@@ -21361,8 +20923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2037,
       "y": -2139.5,
       "heading": 3.976,
-      "scale": 1.413,
-      "contact": "none"
+      "scale": 1.413
     },
     {
       "id": "tree-67",
@@ -21370,8 +20931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2165.4,
       "y": -2076.9,
       "heading": 4.354,
-      "scale": 2.23,
-      "contact": "none"
+      "scale": 2.23
     },
     {
       "id": "tree-68",
@@ -21379,8 +20939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2450.6,
       "y": -1601.3,
       "heading": 0.539,
-      "scale": 2.169,
-      "contact": "none"
+      "scale": 2.169
     },
     {
       "id": "tree-69",
@@ -21388,8 +20947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2392.7,
       "y": -1618.2,
       "heading": 6.249,
-      "scale": 2.034,
-      "contact": "none"
+      "scale": 2.034
     },
     {
       "id": "tree-70",
@@ -21397,8 +20955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2187.9,
       "y": -1638.6,
       "heading": 0.469,
-      "scale": 2.606,
-      "contact": "none"
+      "scale": 2.606
     },
     {
       "id": "tree-71",
@@ -21406,8 +20963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2411,
       "y": -1719.9,
       "heading": 2.295,
-      "scale": 1.502,
-      "contact": "none"
+      "scale": 1.502
     },
     {
       "id": "tree-72",
@@ -21415,8 +20971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2464.9,
       "y": -1632.2,
       "heading": 5.969,
-      "scale": 1.565,
-      "contact": "none"
+      "scale": 1.565
     },
     {
       "id": "tree-73",
@@ -21424,8 +20979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2345.6,
       "y": -1737.4,
       "heading": 0.76,
-      "scale": 1.983,
-      "contact": "none"
+      "scale": 1.983
     },
     {
       "id": "tree-74",
@@ -21433,8 +20987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1295.3,
       "y": -3272,
       "heading": 2.266,
-      "scale": 2.145,
-      "contact": "none"
+      "scale": 2.145
     },
     {
       "id": "tree-75",
@@ -21442,8 +20995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1308.4,
       "y": -3351.9,
       "heading": 1.795,
-      "scale": 1.542,
-      "contact": "none"
+      "scale": 1.542
     },
     {
       "id": "tree-76",
@@ -21451,8 +21003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 554.1,
       "y": 3971.7,
       "heading": 2.514,
-      "scale": 2.378,
-      "contact": "none"
+      "scale": 2.378
     },
     {
       "id": "tree-77",
@@ -21460,8 +21011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 695.4,
       "y": 4013.6,
       "heading": 5.865,
-      "scale": 1.459,
-      "contact": "none"
+      "scale": 1.459
     },
     {
       "id": "tree-78",
@@ -21469,8 +21019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 675.8,
       "y": 4018.9,
       "heading": 2.607,
-      "scale": 2.17,
-      "contact": "none"
+      "scale": 2.17
     },
     {
       "id": "tree-79",
@@ -21478,8 +21027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4142.1,
       "y": 1618.6,
       "heading": 1.306,
-      "scale": 1.634,
-      "contact": "none"
+      "scale": 1.634
     },
     {
       "id": "tree-80",
@@ -21487,8 +21035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3958.3,
       "y": 1486,
       "heading": 1.502,
-      "scale": 1.879,
-      "contact": "none"
+      "scale": 1.879
     },
     {
       "id": "tree-81",
@@ -21496,8 +21043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3052.8,
       "y": -410.2,
       "heading": 1.319,
-      "scale": 2.357,
-      "contact": "none"
+      "scale": 2.357
     },
     {
       "id": "tree-82",
@@ -21505,8 +21051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2838.9,
       "y": -256.7,
       "heading": 2.263,
-      "scale": 2.125,
-      "contact": "none"
+      "scale": 2.125
     },
     {
       "id": "tree-83",
@@ -21514,8 +21059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2803.4,
       "y": -573,
       "heading": 5.635,
-      "scale": 2.588,
-      "contact": "none"
+      "scale": 2.588
     },
     {
       "id": "tree-84",
@@ -21523,8 +21067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2737.4,
       "y": -324.3,
       "heading": 5.117,
-      "scale": 1.771,
-      "contact": "none"
+      "scale": 1.771
     },
     {
       "id": "tree-85",
@@ -21532,8 +21075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2933.8,
       "y": -449.1,
       "heading": 5.053,
-      "scale": 2.381,
-      "contact": "none"
+      "scale": 2.381
     },
     {
       "id": "tree-86",
@@ -21541,8 +21083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3003.3,
       "y": -463,
       "heading": 5.832,
-      "scale": 2.606,
-      "contact": "none"
+      "scale": 2.606
     },
     {
       "id": "tree-87",
@@ -21550,8 +21091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2722.4,
       "y": -459,
       "heading": 1.406,
-      "scale": 2.407,
-      "contact": "none"
+      "scale": 2.407
     },
     {
       "id": "tree-88",
@@ -21559,8 +21099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4217.3,
       "y": 1719.3,
       "heading": 6.047,
-      "scale": 3.229,
-      "contact": "none"
+      "scale": 3.229
     },
     {
       "id": "tree-89",
@@ -21568,8 +21107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4306.9,
       "y": 1635.4,
       "heading": 1.887,
-      "scale": 2.469,
-      "contact": "none"
+      "scale": 2.469
     },
     {
       "id": "tree-90",
@@ -21577,8 +21115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4147.1,
       "y": 1699.2,
       "heading": 6.26,
-      "scale": 3.122,
-      "contact": "none"
+      "scale": 3.122
     },
     {
       "id": "tree-91",
@@ -21586,8 +21123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4235.9,
       "y": 1821.8,
       "heading": 3.437,
-      "scale": 1.739,
-      "contact": "none"
+      "scale": 1.739
     },
     {
       "id": "tree-92",
@@ -21595,8 +21131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4108.8,
       "y": 1746,
       "heading": 5.56,
-      "scale": 1.477,
-      "contact": "none"
+      "scale": 1.477
     },
     {
       "id": "tree-93",
@@ -21604,8 +21139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4248.2,
       "y": 1686.1,
       "heading": 3.097,
-      "scale": 1.994,
-      "contact": "none"
+      "scale": 1.994
     },
     {
       "id": "tree-94",
@@ -21613,8 +21147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3652.6,
       "y": 2697,
       "heading": 3.172,
-      "scale": 2.348,
-      "contact": "none"
+      "scale": 2.348
     },
     {
       "id": "tree-95",
@@ -21622,8 +21155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3774.8,
       "y": 3058.9,
       "heading": 1.391,
-      "scale": 2.548,
-      "contact": "none"
+      "scale": 2.548
     },
     {
       "id": "tree-96",
@@ -21631,8 +21163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3711.1,
       "y": 2660.5,
       "heading": 1.177,
-      "scale": 2.019,
-      "contact": "none"
+      "scale": 2.019
     },
     {
       "id": "tree-97",
@@ -21640,8 +21171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3730.4,
       "y": 2976.1,
       "heading": 2.472,
-      "scale": 2.728,
-      "contact": "none"
+      "scale": 2.728
     },
     {
       "id": "tree-98",
@@ -21649,8 +21179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3762.6,
       "y": 3062.7,
       "heading": 2.471,
-      "scale": 1.473,
-      "contact": "none"
+      "scale": 1.473
     },
     {
       "id": "tree-99",
@@ -21658,8 +21187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3903.5,
       "y": 2655.3,
       "heading": 5.853,
-      "scale": 2.697,
-      "contact": "none"
+      "scale": 2.697
     },
     {
       "id": "tree-100",
@@ -21667,8 +21195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3646.5,
       "y": 2906.9,
       "heading": 0.2,
-      "scale": 2.358,
-      "contact": "none"
+      "scale": 2.358
     },
     {
       "id": "tree-101",
@@ -21676,8 +21203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3813.2,
       "y": -1690.2,
       "heading": 3.526,
-      "scale": 2.545,
-      "contact": "none"
+      "scale": 2.545
     },
     {
       "id": "tree-102",
@@ -21685,8 +21211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3852.3,
       "y": -1825.5,
       "heading": 0.551,
-      "scale": 1.832,
-      "contact": "none"
+      "scale": 1.832
     },
     {
       "id": "tree-103",
@@ -21694,8 +21219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3880.6,
       "y": -1791.1,
       "heading": 2.031,
-      "scale": 1.953,
-      "contact": "none"
+      "scale": 1.953
     },
     {
       "id": "tree-104",
@@ -21703,8 +21227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3868.3,
       "y": -1838.4,
       "heading": 2.543,
-      "scale": 1.747,
-      "contact": "none"
+      "scale": 1.747
     },
     {
       "id": "tree-105",
@@ -21736,8 +21259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3286.8,
       "y": 1404.2,
       "heading": 6.012,
-      "scale": 1.727,
-      "contact": "none"
+      "scale": 1.727
     },
     {
       "id": "tree-109",
@@ -21761,8 +21283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2594.3,
       "y": -1909.9,
       "heading": 1.005,
-      "scale": 2.117,
-      "contact": "none"
+      "scale": 2.117
     },
     {
       "id": "tree-112",
@@ -21770,8 +21291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2522.2,
       "y": -1821.8,
       "heading": 2.68,
-      "scale": 2.162,
-      "contact": "none"
+      "scale": 2.162
     },
     {
       "id": "tree-113",
@@ -21779,8 +21299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2175.5,
       "y": -1929.9,
       "heading": 6.211,
-      "scale": 1.692,
-      "contact": "none"
+      "scale": 1.692
     },
     {
       "id": "tree-114",
@@ -21788,8 +21307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2098.1,
       "y": -2022.8,
       "heading": 1.476,
-      "scale": 2.045,
-      "contact": "none"
+      "scale": 2.045
     },
     {
       "id": "tree-115",
@@ -21797,8 +21315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3052.1,
       "y": 1827.7,
       "heading": 1.542,
-      "scale": 1.679,
-      "contact": "none"
+      "scale": 1.679
     },
     {
       "id": "tree-116",
@@ -21806,8 +21323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3306.2,
       "y": 2064.9,
       "heading": 2.489,
-      "scale": 1.791,
-      "contact": "none"
+      "scale": 1.791
     },
     {
       "id": "tree-117",
@@ -21815,8 +21331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3346.8,
       "y": 1877.7,
       "heading": 4.105,
-      "scale": 2.441,
-      "contact": "none"
+      "scale": 2.441
     },
     {
       "id": "tree-118",
@@ -21824,8 +21339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3255.8,
       "y": 1881.4,
       "heading": 5.281,
-      "scale": 2.456,
-      "contact": "none"
+      "scale": 2.456
     },
     {
       "id": "tree-119",
@@ -21833,8 +21347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3221.7,
       "y": 1861.7,
       "heading": 1.191,
-      "scale": 1.511,
-      "contact": "none"
+      "scale": 1.511
     },
     {
       "id": "tree-120",
@@ -21842,8 +21355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1911.9,
       "y": 232.1,
       "heading": 4.869,
-      "scale": 2.164,
-      "contact": "none"
+      "scale": 2.164
     },
     {
       "id": "tree-121",
@@ -21851,8 +21363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1773.3,
       "y": 151.6,
       "heading": 0.235,
-      "scale": 2.394,
-      "contact": "none"
+      "scale": 2.394
     },
     {
       "id": "tree-122",
@@ -21860,8 +21371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1758.6,
       "y": 201.9,
       "heading": 5.743,
-      "scale": 1.454,
-      "contact": "none"
+      "scale": 1.454
     },
     {
       "id": "tree-123",
@@ -21869,8 +21379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1854.8,
       "y": -4.2,
       "heading": 0.49,
-      "scale": 1.921,
-      "contact": "none"
+      "scale": 1.921
     },
     {
       "id": "tree-124",
@@ -21878,8 +21387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1922.7,
       "y": 193.9,
       "heading": 5,
-      "scale": 1.901,
-      "contact": "none"
+      "scale": 1.901
     },
     {
       "id": "tree-125",
@@ -21887,8 +21395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1740.3,
       "y": 96.7,
       "heading": 1.704,
-      "scale": 2.314,
-      "contact": "none"
+      "scale": 2.314
     },
     {
       "id": "tree-126",
@@ -21896,8 +21403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1948.1,
       "y": 153.3,
       "heading": 4.683,
-      "scale": 1.419,
-      "contact": "none"
+      "scale": 1.419
     },
     {
       "id": "tree-127",
@@ -21905,8 +21411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2116.6,
       "y": 4405.1,
       "heading": 4.574,
-      "scale": 1.616,
-      "contact": "none"
+      "scale": 1.616
     },
     {
       "id": "tree-128",
@@ -21914,8 +21419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1947.5,
       "y": 4625.2,
       "heading": 5.155,
-      "scale": 1.922,
-      "contact": "none"
+      "scale": 1.922
     },
     {
       "id": "tree-129",
@@ -21923,8 +21427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1733.3,
       "y": 4744.8,
       "heading": 4.025,
-      "scale": 3.131,
-      "contact": "none"
+      "scale": 3.131
     },
     {
       "id": "tree-130",
@@ -21932,8 +21435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2008.7,
       "y": 4562.9,
       "heading": 0.917,
-      "scale": 1.919,
-      "contact": "none"
+      "scale": 1.919
     },
     {
       "id": "tree-131",
@@ -21941,8 +21443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1901.6,
       "y": 4793.9,
       "heading": 3.082,
-      "scale": 1.497,
-      "contact": "none"
+      "scale": 1.497
     },
     {
       "id": "tree-132",
@@ -21950,8 +21451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2030.1,
       "y": 4358.8,
       "heading": 5.926,
-      "scale": 1.521,
-      "contact": "none"
+      "scale": 1.521
     },
     {
       "id": "tree-133",
@@ -21959,8 +21459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2833.5,
       "y": 4286.7,
       "heading": 4.324,
-      "scale": 2.312,
-      "contact": "none"
+      "scale": 2.312
     },
     {
       "id": "tree-134",
@@ -21968,8 +21467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3129.2,
       "y": 4285.2,
       "heading": 1.232,
-      "scale": 2.269,
-      "contact": "none"
+      "scale": 2.269
     },
     {
       "id": "tree-135",
@@ -21977,8 +21475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2805.2,
       "y": 4435.9,
       "heading": 0.983,
-      "scale": 2.617,
-      "contact": "none"
+      "scale": 2.617
     },
     {
       "id": "tree-136",
@@ -21986,8 +21483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2923.3,
       "y": 4476.8,
       "heading": 5.553,
-      "scale": 2.542,
-      "contact": "none"
+      "scale": 2.542
     },
     {
       "id": "tree-137",
@@ -21995,8 +21491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3088.7,
       "y": 4242.4,
       "heading": 2.863,
-      "scale": 1.854,
-      "contact": "none"
+      "scale": 1.854
     },
     {
       "id": "tree-138",
@@ -22004,8 +21499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3104,
       "y": 4234.9,
       "heading": 2.445,
-      "scale": 1.831,
-      "contact": "none"
+      "scale": 1.831
     },
     {
       "id": "tree-139",
@@ -22045,8 +21539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 562.3,
       "y": -3458.1,
       "heading": 5.633,
-      "scale": 1.564,
-      "contact": "none"
+      "scale": 1.564
     },
     {
       "id": "tree-144",
@@ -22054,8 +21547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 284.2,
       "y": -3191.8,
       "heading": 5.78,
-      "scale": 2.028,
-      "contact": "none"
+      "scale": 2.028
     },
     {
       "id": "tree-145",
@@ -22063,8 +21555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 308.8,
       "y": -3483.6,
       "heading": 4.271,
-      "scale": 1.626,
-      "contact": "none"
+      "scale": 1.626
     },
     {
       "id": "tree-146",
@@ -22072,8 +21563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 473.8,
       "y": -3656.4,
       "heading": 3.335,
-      "scale": 1.505,
-      "contact": "none"
+      "scale": 1.505
     },
     {
       "id": "tree-147",
@@ -22081,8 +21571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 181.9,
       "y": -3738.6,
       "heading": 3.645,
-      "scale": 2.099,
-      "contact": "none"
+      "scale": 2.099
     },
     {
       "id": "tree-148",
@@ -22090,8 +21579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 438.8,
       "y": -3642.9,
       "heading": 2.477,
-      "scale": 2.2,
-      "contact": "none"
+      "scale": 2.2
     },
     {
       "id": "tree-149",
@@ -22099,8 +21587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 403.3,
       "y": -3754.3,
       "heading": 2.264,
-      "scale": 2.129,
-      "contact": "none"
+      "scale": 2.129
     },
     {
       "id": "tree-150",
@@ -22108,8 +21595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3255.5,
       "y": -2853.6,
       "heading": 6.069,
-      "scale": 2.123,
-      "contact": "none"
+      "scale": 2.123
     },
     {
       "id": "tree-151",
@@ -22117,8 +21603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2956.7,
       "y": -2864.8,
       "heading": 4.694,
-      "scale": 2.34,
-      "contact": "none"
+      "scale": 2.34
     },
     {
       "id": "tree-152",
@@ -22126,8 +21611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3077.9,
       "y": -2600.6,
       "heading": 0.3,
-      "scale": 1.985,
-      "contact": "none"
+      "scale": 1.985
     },
     {
       "id": "tree-153",
@@ -22135,8 +21619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3265.8,
       "y": -2702.2,
       "heading": 1.908,
-      "scale": 1.476,
-      "contact": "none"
+      "scale": 1.476
     },
     {
       "id": "tree-154",
@@ -22144,8 +21627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3253.5,
       "y": -2737.1,
       "heading": 2.301,
-      "scale": 1.822,
-      "contact": "none"
+      "scale": 1.822
     },
     {
       "id": "tree-155",
@@ -22153,8 +21635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3058,
       "y": -2789.6,
       "heading": 2.833,
-      "scale": 2.522,
-      "contact": "none"
+      "scale": 2.522
     },
     {
       "id": "tree-156",
@@ -22162,8 +21643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1828.5,
       "y": 3920.3,
       "heading": 5.609,
-      "scale": 3.293,
-      "contact": "none"
+      "scale": 3.293
     },
     {
       "id": "tree-157",
@@ -22171,8 +21651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2478.4,
       "y": 1715.2,
       "heading": 0.276,
-      "scale": 2.57,
-      "contact": "none"
+      "scale": 2.57
     },
     {
       "id": "tree-158",
@@ -22180,8 +21659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2090.3,
       "y": 1771.2,
       "heading": 0.078,
-      "scale": 1.482,
-      "contact": "none"
+      "scale": 1.482
     },
     {
       "id": "tree-159",
@@ -22189,8 +21667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2009.1,
       "y": 1721.9,
       "heading": 3.185,
-      "scale": 1.679,
-      "contact": "none"
+      "scale": 1.679
     },
     {
       "id": "tree-160",
@@ -22198,8 +21675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2105.8,
       "y": 1613.5,
       "heading": 0.305,
-      "scale": 1.833,
-      "contact": "none"
+      "scale": 1.833
     },
     {
       "id": "tree-161",
@@ -22207,8 +21683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2447.9,
       "y": 1650.1,
       "heading": 4.682,
-      "scale": 1.409,
-      "contact": "none"
+      "scale": 1.409
     },
     {
       "id": "tree-162",
@@ -22216,8 +21691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2031,
       "y": 1856.7,
       "heading": 1.46,
-      "scale": 1.716,
-      "contact": "none"
+      "scale": 1.716
     },
     {
       "id": "tree-163",
@@ -22225,8 +21699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2415.7,
       "y": 1844,
       "heading": 4.472,
-      "scale": 2.373,
-      "contact": "none"
+      "scale": 2.373
     },
     {
       "id": "tree-164",
@@ -22234,8 +21707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2906.4,
       "y": 826,
       "heading": 5.834,
-      "scale": 1.749,
-      "contact": "none"
+      "scale": 1.749
     },
     {
       "id": "tree-165",
@@ -22291,8 +21763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1121.1,
       "y": -2145.3,
       "heading": 0.268,
-      "scale": 2.219,
-      "contact": "none"
+      "scale": 2.219
     },
     {
       "id": "tree-172",
@@ -22300,8 +21771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1909.9,
       "y": 4814,
       "heading": 4.173,
-      "scale": 2.736,
-      "contact": "none"
+      "scale": 2.736
     },
     {
       "id": "tree-173",
@@ -22309,8 +21779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 599,
       "y": -3145.7,
       "heading": 5.184,
-      "scale": 2.537,
-      "contact": "none"
+      "scale": 2.537
     },
     {
       "id": "tree-174",
@@ -22318,8 +21787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 830.2,
       "y": -2990.6,
       "heading": 0.131,
-      "scale": 1.847,
-      "contact": "none"
+      "scale": 1.847
     },
     {
       "id": "tree-175",
@@ -22327,8 +21795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 532.5,
       "y": -2978.8,
       "heading": 6.057,
-      "scale": 1.915,
-      "contact": "none"
+      "scale": 1.915
     },
     {
       "id": "tree-176",
@@ -22336,8 +21803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 167,
       "y": -3203.2,
       "heading": 2.594,
-      "scale": 1.392,
-      "contact": "none"
+      "scale": 1.392
     },
     {
       "id": "tree-177",
@@ -22345,8 +21811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 212.7,
       "y": -3055.6,
       "heading": 3.38,
-      "scale": 2.301,
-      "contact": "none"
+      "scale": 2.301
     },
     {
       "id": "tree-178",
@@ -22354,8 +21819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 620.2,
       "y": -2825.7,
       "heading": 1.07,
-      "scale": 2.457,
-      "contact": "none"
+      "scale": 2.457
     },
     {
       "id": "tree-179",
@@ -22363,8 +21827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 724.1,
       "y": -3192.9,
       "heading": 0.027,
-      "scale": 2.67,
-      "contact": "none"
+      "scale": 2.67
     },
     {
       "id": "tree-180",
@@ -22372,8 +21835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1296.1,
       "y": 1863.9,
       "heading": 3.237,
-      "scale": 2.642,
-      "contact": "none"
+      "scale": 2.642
     },
     {
       "id": "tree-181",
@@ -22381,8 +21843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1020.4,
       "y": 2100.9,
       "heading": 1.455,
-      "scale": 2.617,
-      "contact": "none"
+      "scale": 2.617
     },
     {
       "id": "tree-182",
@@ -22390,8 +21851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1310.1,
       "y": 2453.9,
       "heading": 6.227,
-      "scale": 2.012,
-      "contact": "none"
+      "scale": 2.012
     },
     {
       "id": "tree-183",
@@ -22399,8 +21859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1038.3,
       "y": 2123.7,
       "heading": 5.604,
-      "scale": 1.533,
-      "contact": "none"
+      "scale": 1.533
     },
     {
       "id": "tree-184",
@@ -22408,8 +21867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1134.9,
       "y": 1941.8,
       "heading": 2.69,
-      "scale": 1.921,
-      "contact": "none"
+      "scale": 1.921
     },
     {
       "id": "tree-185",
@@ -22417,8 +21875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1004.7,
       "y": 2125.9,
       "heading": 5.931,
-      "scale": 2.202,
-      "contact": "none"
+      "scale": 2.202
     },
     {
       "id": "tree-186",
@@ -22434,8 +21891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 576.3,
       "y": 4852.9,
       "heading": 2.903,
-      "scale": 2.211,
-      "contact": "none"
+      "scale": 2.211
     },
     {
       "id": "tree-188",
@@ -22443,8 +21899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 592.6,
       "y": 4530.3,
       "heading": 4.418,
-      "scale": 1.757,
-      "contact": "none"
+      "scale": 1.757
     },
     {
       "id": "tree-189",
@@ -22452,8 +21907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 539.7,
       "y": 4528.6,
       "heading": 2.052,
-      "scale": 1.684,
-      "contact": "none"
+      "scale": 1.684
     },
     {
       "id": "tree-190",
@@ -22461,8 +21915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 319.5,
       "y": 4625.7,
       "heading": 6.127,
-      "scale": 1.606,
-      "contact": "none"
+      "scale": 1.606
     },
     {
       "id": "tree-191",
@@ -22470,8 +21923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 446.4,
       "y": 4532.5,
       "heading": 6.182,
-      "scale": 1.542,
-      "contact": "none"
+      "scale": 1.542
     },
     {
       "id": "tree-192",
@@ -22479,8 +21931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 546.8,
       "y": 4351.3,
       "heading": 4.009,
-      "scale": 1.615,
-      "contact": "none"
+      "scale": 1.615
     },
     {
       "id": "tree-193",
@@ -22488,8 +21939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 588.8,
       "y": 4746.7,
       "heading": 2.507,
-      "scale": 1.396,
-      "contact": "none"
+      "scale": 1.396
     },
     {
       "id": "tree-194",
@@ -22497,8 +21947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 936.3,
       "y": 1511.7,
       "heading": 4.639,
-      "scale": 1.697,
-      "contact": "none"
+      "scale": 1.697
     },
     {
       "id": "tree-195",
@@ -22506,8 +21955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 926,
       "y": 1529.2,
       "heading": 3.691,
-      "scale": 2.297,
-      "contact": "none"
+      "scale": 2.297
     },
     {
       "id": "tree-196",
@@ -22515,8 +21963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 704.1,
       "y": 1369.7,
       "heading": 4.032,
-      "scale": 2.313,
-      "contact": "none"
+      "scale": 2.313
     },
     {
       "id": "tree-197",
@@ -22524,8 +21971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 733.8,
       "y": 1474.6,
       "heading": 1.632,
-      "scale": 1.574,
-      "contact": "none"
+      "scale": 1.574
     },
     {
       "id": "tree-198",
@@ -22533,8 +21979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 676.5,
       "y": 1630.8,
       "heading": 0.124,
-      "scale": 2.589,
-      "contact": "none"
+      "scale": 2.589
     },
     {
       "id": "tree-199",
@@ -22542,8 +21987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 917.9,
       "y": 1406.9,
       "heading": 2.061,
-      "scale": 2.622,
-      "contact": "none"
+      "scale": 2.622
     },
     {
       "id": "tree-200",
@@ -22551,8 +21995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1014.8,
       "y": 1538.5,
       "heading": 1.578,
-      "scale": 1.494,
-      "contact": "none"
+      "scale": 1.494
     },
     {
       "id": "tree-201",
@@ -22592,8 +22035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -527,
       "y": -2889.4,
       "heading": 5.219,
-      "scale": 1.605,
-      "contact": "none"
+      "scale": 1.605
     },
     {
       "id": "tree-206",
@@ -22601,8 +22043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -381.6,
       "y": -2880.3,
       "heading": 4.9,
-      "scale": 2.464,
-      "contact": "none"
+      "scale": 2.464
     },
     {
       "id": "tree-207",
@@ -22610,8 +22051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -595.7,
       "y": -2719.9,
       "heading": 4.319,
-      "scale": 2.301,
-      "contact": "none"
+      "scale": 2.301
     },
     {
       "id": "tree-208",
@@ -22619,8 +22059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -251.2,
       "y": -2772.5,
       "heading": 5.02,
-      "scale": 2.437,
-      "contact": "none"
+      "scale": 2.437
     },
     {
       "id": "tree-209",
@@ -22628,8 +22067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -522,
       "y": -2625.9,
       "heading": 0.537,
-      "scale": 2.079,
-      "contact": "none"
+      "scale": 2.079
     },
     {
       "id": "tree-210",
@@ -22637,8 +22075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -354.8,
       "y": -2802.5,
       "heading": 0.536,
-      "scale": 1.87,
-      "contact": "none"
+      "scale": 1.87
     },
     {
       "id": "tree-211",
@@ -22646,8 +22083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -525.3,
       "y": -2800.3,
       "heading": 3.66,
-      "scale": 2.143,
-      "contact": "none"
+      "scale": 2.143
     },
     {
       "id": "tree-212",
@@ -22655,8 +22091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -469.8,
       "y": -2832.5,
       "heading": 3.821,
-      "scale": 1.746,
-      "contact": "none"
+      "scale": 1.746
     },
     {
       "id": "tree-213",
@@ -22664,8 +22099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3477.6,
       "y": 1120.5,
       "heading": 1.055,
-      "scale": 2.666,
-      "contact": "none"
+      "scale": 2.666
     },
     {
       "id": "tree-214",
@@ -22673,8 +22107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3368.2,
       "y": 1139.4,
       "heading": 5.617,
-      "scale": 2.252,
-      "contact": "none"
+      "scale": 2.252
     },
     {
       "id": "tree-215",
@@ -22682,8 +22115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3451.7,
       "y": 1053.9,
       "heading": 4.662,
-      "scale": 2.37,
-      "contact": "none"
+      "scale": 2.37
     },
     {
       "id": "tree-216",
@@ -22691,8 +22123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3507.9,
       "y": 1349.4,
       "heading": 0.907,
-      "scale": 3.08,
-      "contact": "none"
+      "scale": 3.08
     },
     {
       "id": "tree-217",
@@ -22700,8 +22131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3487,
       "y": 1232.3,
       "heading": 3.535,
-      "scale": 1.982,
-      "contact": "none"
+      "scale": 1.982
     },
     {
       "id": "tree-218",
@@ -22709,8 +22139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3598.6,
       "y": 1075.4,
       "heading": 0.474,
-      "scale": 1.986,
-      "contact": "none"
+      "scale": 1.986
     },
     {
       "id": "tree-219",
@@ -22718,8 +22147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3610.4,
       "y": 1115.3,
       "heading": 5.853,
-      "scale": 2.254,
-      "contact": "none"
+      "scale": 2.254
     },
     {
       "id": "tree-220",
@@ -22743,8 +22171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -798,
       "y": 3293.7,
       "heading": 2.167,
-      "scale": 2.778,
-      "contact": "none"
+      "scale": 2.778
     },
     {
       "id": "tree-223",
@@ -22752,8 +22179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -651.8,
       "y": 3320.8,
       "heading": 4.481,
-      "scale": 1.61,
-      "contact": "none"
+      "scale": 1.61
     },
     {
       "id": "tree-224",
@@ -22761,8 +22187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -540,
       "y": 3329.2,
       "heading": 2.506,
-      "scale": 2.695,
-      "contact": "none"
+      "scale": 2.695
     },
     {
       "id": "tree-225",
@@ -22770,8 +22195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -837.1,
       "y": 3116.4,
       "heading": 0.292,
-      "scale": 1.958,
-      "contact": "none"
+      "scale": 1.958
     },
     {
       "id": "tree-226",
@@ -22779,8 +22203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -628.9,
       "y": 3022.4,
       "heading": 3.416,
-      "scale": 1.484,
-      "contact": "none"
+      "scale": 1.484
     },
     {
       "id": "tree-227",
@@ -22788,8 +22211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -761.4,
       "y": 3227.8,
       "heading": 0.522,
-      "scale": 2.365,
-      "contact": "none"
+      "scale": 2.365
     },
     {
       "id": "tree-228",
@@ -22797,8 +22219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -520.2,
       "y": 3210.7,
       "heading": 5.461,
-      "scale": 1.643,
-      "contact": "none"
+      "scale": 1.643
     },
     {
       "id": "tree-229",
@@ -22806,8 +22227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -763,
       "y": 3200.2,
       "heading": 5.478,
-      "scale": 1.368,
-      "contact": "none"
+      "scale": 1.368
     },
     {
       "id": "tree-230",
@@ -22815,8 +22235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -615.7,
       "y": 3263.9,
       "heading": 0.215,
-      "scale": 2.607,
-      "contact": "none"
+      "scale": 2.607
     },
     {
       "id": "tree-231",
@@ -22824,8 +22243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2998.4,
       "y": -13.7,
       "heading": 5.182,
-      "scale": 2.055,
-      "contact": "none"
+      "scale": 2.055
     },
     {
       "id": "tree-232",
@@ -22833,8 +22251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2717.1,
       "y": 63.9,
       "heading": 5.892,
-      "scale": 1.942,
-      "contact": "none"
+      "scale": 1.942
     },
     {
       "id": "tree-233",
@@ -22842,8 +22259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2685.5,
       "y": 139.8,
       "heading": 1.334,
-      "scale": 1.543,
-      "contact": "none"
+      "scale": 1.543
     },
     {
       "id": "tree-234",
@@ -22851,8 +22267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2876,
       "y": 197.2,
       "heading": 6.072,
-      "scale": 2.357,
-      "contact": "none"
+      "scale": 2.357
     },
     {
       "id": "tree-235",
@@ -22860,8 +22275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2651.7,
       "y": 318.2,
       "heading": 1.522,
-      "scale": 1.425,
-      "contact": "none"
+      "scale": 1.425
     },
     {
       "id": "tree-236",
@@ -22869,8 +22283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2912.3,
       "y": 31.6,
       "heading": 5.375,
-      "scale": 2.484,
-      "contact": "none"
+      "scale": 2.484
     },
     {
       "id": "tree-237",
@@ -22878,8 +22291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2909.9,
       "y": 76,
       "heading": 5.858,
-      "scale": 2.393,
-      "contact": "none"
+      "scale": 2.393
     },
     {
       "id": "tree-238",
@@ -22887,8 +22299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -815.9,
       "y": -3831.4,
       "heading": 1.954,
-      "scale": 2.544,
-      "contact": "none"
+      "scale": 2.544
     },
     {
       "id": "tree-239",
@@ -22896,8 +22307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -943.9,
       "y": -3827.1,
       "heading": 4.253,
-      "scale": 2.205,
-      "contact": "none"
+      "scale": 2.205
     },
     {
       "id": "tree-240",
@@ -22905,8 +22315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3745.8,
       "y": 2512.6,
       "heading": 4.94,
-      "scale": 1.985,
-      "contact": "none"
+      "scale": 1.985
     },
     {
       "id": "tree-241",
@@ -22914,8 +22323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -994.6,
       "y": -1829.2,
       "heading": 3.769,
-      "scale": 2.311,
-      "contact": "none"
+      "scale": 2.311
     },
     {
       "id": "tree-242",
@@ -22923,8 +22331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -688.3,
       "y": -2219.4,
       "heading": 3.674,
-      "scale": 1.612,
-      "contact": "none"
+      "scale": 1.612
     },
     {
       "id": "tree-243",
@@ -22932,8 +22339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -721.1,
       "y": -2020.9,
       "heading": 1.472,
-      "scale": 1.927,
-      "contact": "none"
+      "scale": 1.927
     },
     {
       "id": "tree-244",
@@ -22941,8 +22347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1184.3,
       "y": -1904,
       "heading": 5.784,
-      "scale": 1.775,
-      "contact": "none"
+      "scale": 1.775
     },
     {
       "id": "tree-245",
@@ -22950,8 +22355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -871.7,
       "y": -2313,
       "heading": 5.596,
-      "scale": 1.54,
-      "contact": "none"
+      "scale": 1.54
     },
     {
       "id": "tree-246",
@@ -22959,8 +22363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -760,
       "y": -2000.6,
       "heading": 3.442,
-      "scale": 2.426,
-      "contact": "none"
+      "scale": 2.426
     },
     {
       "id": "tree-247",
@@ -22968,8 +22371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -855.2,
       "y": -2246.2,
       "heading": 3.046,
-      "scale": 2.079,
-      "contact": "none"
+      "scale": 2.079
     },
     {
       "id": "tree-248",
@@ -22977,8 +22379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -930.1,
       "y": -1913.7,
       "heading": 3.684,
-      "scale": 2.392,
-      "contact": "none"
+      "scale": 2.392
     },
     {
       "id": "tree-249",
@@ -22986,8 +22387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2278.9,
       "y": -1442,
       "heading": 2.502,
-      "scale": 1.435,
-      "contact": "none"
+      "scale": 1.435
     },
     {
       "id": "tree-250",
@@ -22995,8 +22395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2509.5,
       "y": -392,
       "heading": 1.135,
-      "scale": 1.665,
-      "contact": "none"
+      "scale": 1.665
     },
     {
       "id": "tree-251",
@@ -23004,8 +22403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2709.1,
       "y": -582.8,
       "heading": 3.25,
-      "scale": 1.893,
-      "contact": "none"
+      "scale": 1.893
     },
     {
       "id": "tree-252",
@@ -23013,8 +22411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2831.4,
       "y": -286.8,
       "heading": 3.976,
-      "scale": 1.924,
-      "contact": "none"
+      "scale": 1.924
     },
     {
       "id": "tree-253",
@@ -23022,8 +22419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2818.1,
       "y": -507.3,
       "heading": 3.264,
-      "scale": 1.816,
-      "contact": "none"
+      "scale": 1.816
     },
     {
       "id": "tree-254",
@@ -23031,8 +22427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2853.9,
       "y": -345,
       "heading": 3.564,
-      "scale": 2.613,
-      "contact": "none"
+      "scale": 2.613
     },
     {
       "id": "tree-255",
@@ -23040,8 +22435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1973.3,
       "y": -2346.9,
       "heading": 0.822,
-      "scale": 2.172,
-      "contact": "none"
+      "scale": 2.172
     },
     {
       "id": "tree-256",
@@ -23049,8 +22443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2024.6,
       "y": -2544.9,
       "heading": 0.173,
-      "scale": 1.861,
-      "contact": "none"
+      "scale": 1.861
     },
     {
       "id": "tree-257",
@@ -23058,8 +22451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1962.9,
       "y": -2404.3,
       "heading": 5.622,
-      "scale": 2.082,
-      "contact": "none"
+      "scale": 2.082
     },
     {
       "id": "tree-258",
@@ -23067,8 +22459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1979.4,
       "y": -2573,
       "heading": 0.565,
-      "scale": 2.304,
-      "contact": "none"
+      "scale": 2.304
     },
     {
       "id": "tree-259",
@@ -23076,8 +22467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2144.6,
       "y": -2334.3,
       "heading": 3.182,
-      "scale": 2.593,
-      "contact": "none"
+      "scale": 2.593
     },
     {
       "id": "tree-260",
@@ -23085,8 +22475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2012,
       "y": -2242.5,
       "heading": 4.528,
-      "scale": 1.667,
-      "contact": "none"
+      "scale": 1.667
     },
     {
       "id": "tree-261",
@@ -23094,8 +22483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1994.3,
       "y": -2238.8,
       "heading": 0.175,
-      "scale": 1.483,
-      "contact": "none"
+      "scale": 1.483
     },
     {
       "id": "tree-262",
@@ -23103,8 +22491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1997.1,
       "y": -2490.8,
       "heading": 4.786,
-      "scale": 2.348,
-      "contact": "none"
+      "scale": 2.348
     },
     {
       "id": "tree-263",
@@ -23112,8 +22499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2170.6,
       "y": -2426.9,
       "heading": 1.25,
-      "scale": 1.358,
-      "contact": "none"
+      "scale": 1.358
     },
     {
       "id": "tree-264",
@@ -23121,8 +22507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3936.7,
       "y": 996.7,
       "heading": 0.899,
-      "scale": 1.636,
-      "contact": "none"
+      "scale": 1.636
     },
     {
       "id": "tree-265",
@@ -23130,8 +22515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3926,
       "y": 853.7,
       "heading": 1.386,
-      "scale": 3.357,
-      "contact": "none"
+      "scale": 3.357
     },
     {
       "id": "tree-266",
@@ -23139,8 +22523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3765.8,
       "y": 939.9,
       "heading": 3.947,
-      "scale": 1.995,
-      "contact": "none"
+      "scale": 1.995
     },
     {
       "id": "tree-267",
@@ -23148,8 +22531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2389.5,
       "y": 2988.1,
       "heading": 1.674,
-      "scale": 1.603,
-      "contact": "none"
+      "scale": 1.603
     },
     {
       "id": "tree-268",
@@ -23157,8 +22539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3224.4,
       "y": 2048.7,
       "heading": 2.866,
-      "scale": 1.765,
-      "contact": "none"
+      "scale": 1.765
     },
     {
       "id": "tree-269",
@@ -23166,8 +22547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3240.4,
       "y": 2092.4,
       "heading": 4.949,
-      "scale": 2.202,
-      "contact": "none"
+      "scale": 2.202
     },
     {
       "id": "tree-270",
@@ -23175,8 +22555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3406.4,
       "y": 2032.4,
       "heading": 6.099,
-      "scale": 1.567,
-      "contact": "none"
+      "scale": 1.567
     },
     {
       "id": "tree-271",
@@ -23184,8 +22563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3228.4,
       "y": 2118.9,
       "heading": 2.451,
-      "scale": 1.671,
-      "contact": "none"
+      "scale": 1.671
     },
     {
       "id": "tree-272",
@@ -23193,8 +22571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1208.3,
       "y": 5036.6,
       "heading": 5.071,
-      "scale": 1.372,
-      "contact": "none"
+      "scale": 1.372
     },
     {
       "id": "tree-273",
@@ -23202,8 +22579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1281.1,
       "y": 5020.8,
       "heading": 1.371,
-      "scale": 2.009,
-      "contact": "none"
+      "scale": 2.009
     },
     {
       "id": "tree-274",
@@ -23211,8 +22587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1166,
       "y": 5098.8,
       "heading": 1.236,
-      "scale": 2.479,
-      "contact": "none"
+      "scale": 2.479
     },
     {
       "id": "tree-275",
@@ -23220,8 +22595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1833.8,
       "y": 4128.2,
       "heading": 3.848,
-      "scale": 1.628,
-      "contact": "none"
+      "scale": 1.628
     },
     {
       "id": "tree-276",
@@ -23229,8 +22603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2894.3,
       "y": 4824.7,
       "heading": 5.757,
-      "scale": 2.127,
-      "contact": "none"
+      "scale": 2.127
     },
     {
       "id": "tree-277",
@@ -23238,8 +22611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2782.2,
       "y": 4791.7,
       "heading": 5.942,
-      "scale": 2.213,
-      "contact": "none"
+      "scale": 2.213
     },
     {
       "id": "tree-278",
@@ -23247,8 +22619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2714.9,
       "y": 4727.4,
       "heading": 3.612,
-      "scale": 2.298,
-      "contact": "none"
+      "scale": 2.298
     },
     {
       "id": "tree-279",
@@ -23256,8 +22627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2978,
       "y": 4710.9,
       "heading": 2.241,
-      "scale": 2.756,
-      "contact": "none"
+      "scale": 2.756
     },
     {
       "id": "tree-280",
@@ -23265,8 +22635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2936.1,
       "y": 4618.9,
       "heading": 1.832,
-      "scale": 2.562,
-      "contact": "none"
+      "scale": 2.562
     },
     {
       "id": "tree-281",
@@ -23274,8 +22643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3095.4,
       "y": -2536,
       "heading": 1.96,
-      "scale": 2.267,
-      "contact": "none"
+      "scale": 2.267
     },
     {
       "id": "tree-282",
@@ -23283,8 +22651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3501.1,
       "y": 1265.9,
       "heading": 2.915,
-      "scale": 2.572,
-      "contact": "none"
+      "scale": 2.572
     },
     {
       "id": "tree-283",
@@ -23292,8 +22659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3389.2,
       "y": 1428.9,
       "heading": 1.715,
-      "scale": 1.531,
-      "contact": "none"
+      "scale": 1.531
     },
     {
       "id": "tree-284",
@@ -23301,8 +22667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3265.5,
       "y": 1351.7,
       "heading": 0.764,
-      "scale": 1.499,
-      "contact": "none"
+      "scale": 1.499
     },
     {
       "id": "tree-285",
@@ -23310,8 +22675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 779.4,
       "y": 1832.8,
       "heading": 5.19,
-      "scale": 2.445,
-      "contact": "none"
+      "scale": 2.445
     },
     {
       "id": "tree-286",
@@ -23319,8 +22683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 883.5,
       "y": 1850.4,
       "heading": 2.486,
-      "scale": 2.576,
-      "contact": "none"
+      "scale": 2.576
     },
     {
       "id": "tree-287",
@@ -23328,8 +22691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 961.1,
       "y": 1825.3,
       "heading": 2.737,
-      "scale": 1.737,
-      "contact": "none"
+      "scale": 1.737
     },
     {
       "id": "tree-288",
@@ -23337,8 +22699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 982.8,
       "y": 1892.3,
       "heading": 5.326,
-      "scale": 2.45,
-      "contact": "none"
+      "scale": 2.45
     },
     {
       "id": "tree-289",
@@ -23346,8 +22707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 915.9,
       "y": 2000.6,
       "heading": 1.566,
-      "scale": 2.611,
-      "contact": "none"
+      "scale": 2.611
     },
     {
       "id": "tree-290",
@@ -23355,8 +22715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 620,
       "y": 1909.6,
       "heading": 6.093,
-      "scale": 2.884,
-      "contact": "none"
+      "scale": 2.884
     },
     {
       "id": "tree-291",
@@ -23364,8 +22723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -306.4,
       "y": 2718.9,
       "heading": 1.67,
-      "scale": 1.448,
-      "contact": "none"
+      "scale": 1.448
     },
     {
       "id": "tree-292",
@@ -23373,8 +22731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -492.8,
       "y": 2851.5,
       "heading": 3.903,
-      "scale": 2.598,
-      "contact": "none"
+      "scale": 2.598
     },
     {
       "id": "tree-293",
@@ -23382,8 +22739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -419.3,
       "y": 3241.7,
       "heading": 1.807,
-      "scale": 2.634,
-      "contact": "none"
+      "scale": 2.634
     },
     {
       "id": "tree-294",
@@ -23391,8 +22747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -508.3,
       "y": 3253.2,
       "heading": 6.007,
-      "scale": 2.152,
-      "contact": "none"
+      "scale": 2.152
     },
     {
       "id": "tree-295",
@@ -23400,8 +22755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -587.3,
       "y": 2990.9,
       "heading": 0.932,
-      "scale": 2.071,
-      "contact": "none"
+      "scale": 2.071
     },
     {
       "id": "tree-296",
@@ -23409,8 +22763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -334,
       "y": 3088.9,
       "heading": 1.811,
-      "scale": 1.899,
-      "contact": "none"
+      "scale": 1.899
     },
     {
       "id": "tree-297",
@@ -23418,8 +22771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3045.9,
       "y": -320.2,
       "heading": 3.447,
-      "scale": 1.71,
-      "contact": "none"
+      "scale": 1.71
     },
     {
       "id": "tree-298",
@@ -23427,8 +22779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2875.6,
       "y": -303.9,
       "heading": 5.145,
-      "scale": 1.995,
-      "contact": "none"
+      "scale": 1.995
     },
     {
       "id": "tree-299",
@@ -23436,8 +22787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 355,
       "y": 4957.4,
       "heading": 2.045,
-      "scale": 1.787,
-      "contact": "none"
+      "scale": 1.787
     },
     {
       "id": "tree-300",
@@ -23445,8 +22795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 297.7,
       "y": 5019.1,
       "heading": 4.133,
-      "scale": 2.248,
-      "contact": "none"
+      "scale": 2.248
     },
     {
       "id": "tree-301",
@@ -23454,8 +22803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 24.5,
       "y": 4980.2,
       "heading": 6.216,
-      "scale": 2.468,
-      "contact": "none"
+      "scale": 2.468
     },
     {
       "id": "tree-302",
@@ -23463,8 +22811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 150.8,
       "y": 4779,
       "heading": 1.272,
-      "scale": 2.336,
-      "contact": "none"
+      "scale": 2.336
     },
     {
       "id": "tree-303",
@@ -23472,8 +22819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 156.2,
       "y": 4917.6,
       "heading": 5.38,
-      "scale": 1.478,
-      "contact": "none"
+      "scale": 1.478
     },
     {
       "id": "tree-304",
@@ -23481,8 +22827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 491.4,
       "y": 4883.1,
       "heading": 4.42,
-      "scale": 2.283,
-      "contact": "none"
+      "scale": 2.283
     },
     {
       "id": "tree-305",
@@ -23490,8 +22835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -706.8,
       "y": 3844,
       "heading": 4.073,
-      "scale": 2.137,
-      "contact": "none"
+      "scale": 2.137
     },
     {
       "id": "tree-306",
@@ -23499,8 +22843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -361.7,
       "y": 3658.2,
       "heading": 1.885,
-      "scale": 1.864,
-      "contact": "none"
+      "scale": 1.864
     },
     {
       "id": "tree-307",
@@ -23508,8 +22851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -958.4,
       "y": 3574.8,
       "heading": 1.457,
-      "scale": 1.859,
-      "contact": "none"
+      "scale": 1.859
     },
     {
       "id": "tree-308",
@@ -23517,8 +22859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -572.4,
       "y": 3467.7,
       "heading": 2.047,
-      "scale": 2.251,
-      "contact": "none"
+      "scale": 2.251
     },
     {
       "id": "tree-309",
@@ -23526,8 +22867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -338.7,
       "y": 3589,
       "heading": 5.629,
-      "scale": 1.696,
-      "contact": "none"
+      "scale": 1.696
     },
     {
       "id": "tree-310",
@@ -23535,8 +22875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -736,
       "y": 3885.3,
       "heading": 5.188,
-      "scale": 2.268,
-      "contact": "none"
+      "scale": 2.268
     },
     {
       "id": "tree-311",
@@ -23544,8 +22883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3423.5,
       "y": -1478.7,
       "heading": 4.25,
-      "scale": 2.63,
-      "contact": "none"
+      "scale": 2.63
     },
     {
       "id": "tree-312",
@@ -23553,8 +22891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3378.9,
       "y": -1647.3,
       "heading": 3.527,
-      "scale": 1.891,
-      "contact": "none"
+      "scale": 1.891
     },
     {
       "id": "tree-313",
@@ -23562,8 +22899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3146.7,
       "y": -1638.1,
       "heading": 1.073,
-      "scale": 2.451,
-      "contact": "none"
+      "scale": 2.451
     },
     {
       "id": "tree-314",
@@ -23571,8 +22907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3404.7,
       "y": -1401.2,
       "heading": 5.62,
-      "scale": 2.118,
-      "contact": "none"
+      "scale": 2.118
     },
     {
       "id": "tree-315",
@@ -23580,8 +22915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 656.3,
       "y": 3743,
       "heading": 1.306,
-      "scale": 2.134,
-      "contact": "none"
+      "scale": 2.134
     },
     {
       "id": "tree-316",
@@ -23589,8 +22923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1268.7,
       "y": 3601.1,
       "heading": 3.581,
-      "scale": 2.191,
-      "contact": "none"
+      "scale": 2.191
     },
     {
       "id": "tree-317",
@@ -23598,8 +22931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 824,
       "y": 3508.3,
       "heading": 3.474,
-      "scale": 1.404,
-      "contact": "none"
+      "scale": 1.404
     },
     {
       "id": "tree-318",
@@ -23607,8 +22939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1286.8,
       "y": 3636.2,
       "heading": 4.832,
-      "scale": 2.905,
-      "contact": "none"
+      "scale": 2.905
     },
     {
       "id": "tree-319",
@@ -23616,8 +22947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1175.2,
       "y": 3909.7,
       "heading": 3.201,
-      "scale": 1.603,
-      "contact": "none"
+      "scale": 1.603
     },
     {
       "id": "tree-320",
@@ -23625,8 +22955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1173.4,
       "y": 3786.2,
       "heading": 2.937,
-      "scale": 2.012,
-      "contact": "none"
+      "scale": 2.012
     },
     {
       "id": "tree-321",
@@ -23634,8 +22963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 727.6,
       "y": 3921.2,
       "heading": 0.904,
-      "scale": 2.358,
-      "contact": "none"
+      "scale": 2.358
     },
     {
       "id": "tree-322",
@@ -23643,8 +22971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1077.5,
       "y": 3981.2,
       "heading": 5.399,
-      "scale": 2.199,
-      "contact": "none"
+      "scale": 2.199
     },
     {
       "id": "tree-323",
@@ -23676,8 +23003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3819.8,
       "y": 1829.3,
       "heading": 2.504,
-      "scale": 2.219,
-      "contact": "none"
+      "scale": 2.219
     },
     {
       "id": "tree-327",
@@ -23685,8 +23011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3486.5,
       "y": 1623.9,
       "heading": 1.068,
-      "scale": 1.468,
-      "contact": "none"
+      "scale": 1.468
     },
     {
       "id": "tree-328",
@@ -23694,8 +23019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3474.7,
       "y": 1711.1,
       "heading": 2.105,
-      "scale": 1.954,
-      "contact": "none"
+      "scale": 1.954
     },
     {
       "id": "tree-329",
@@ -23703,8 +23027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3671.6,
       "y": 1507.9,
       "heading": 5.737,
-      "scale": 2.746,
-      "contact": "none"
+      "scale": 2.746
     },
     {
       "id": "tree-330",
@@ -23712,8 +23035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3252.5,
       "y": 1598,
       "heading": 1.754,
-      "scale": 1.882,
-      "contact": "none"
+      "scale": 1.882
     },
     {
       "id": "tree-331",
@@ -23721,8 +23043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3877.4,
       "y": 1745.8,
       "heading": 1.233,
-      "scale": 1.525,
-      "contact": "none"
+      "scale": 1.525
     },
     {
       "id": "tree-332",
@@ -23730,8 +23051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -252.6,
       "y": 4045.5,
       "heading": 4.439,
-      "scale": 2.034,
-      "contact": "none"
+      "scale": 2.034
     },
     {
       "id": "tree-333",
@@ -23739,8 +23059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -514.8,
       "y": 4074.4,
       "heading": 4.131,
-      "scale": 2.48,
-      "contact": "none"
+      "scale": 2.48
     },
     {
       "id": "tree-334",
@@ -23748,8 +23067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -472.8,
       "y": 4042.9,
       "heading": 5.347,
-      "scale": 1.52,
-      "contact": "none"
+      "scale": 1.52
     },
     {
       "id": "tree-335",
@@ -23757,8 +23075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1550.9,
       "y": 3924,
       "heading": 4.516,
-      "scale": 2.462,
-      "contact": "none"
+      "scale": 2.462
     },
     {
       "id": "tree-336",
@@ -23766,8 +23083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1715.7,
       "y": 3878.2,
       "heading": 5.305,
-      "scale": 1.959,
-      "contact": "none"
+      "scale": 1.959
     },
     {
       "id": "tree-337",
@@ -23775,8 +23091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2207.2,
       "y": 3835.7,
       "heading": 1.108,
-      "scale": 2.608,
-      "contact": "none"
+      "scale": 2.608
     },
     {
       "id": "tree-338",
@@ -23784,8 +23099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2137.3,
       "y": 4031.2,
       "heading": 2.906,
-      "scale": 3.222,
-      "contact": "none"
+      "scale": 3.222
     },
     {
       "id": "tree-339",
@@ -23793,8 +23107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1722.1,
       "y": 3889.9,
       "heading": 1.377,
-      "scale": 2.172,
-      "contact": "none"
+      "scale": 2.172
     },
     {
       "id": "tree-340",
@@ -23802,8 +23115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2213.6,
       "y": 3912.2,
       "heading": 3.47,
-      "scale": 2.347,
-      "contact": "none"
+      "scale": 2.347
     },
     {
       "id": "tree-341",
@@ -23811,8 +23123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3508,
       "y": 500.8,
       "heading": 3.615,
-      "scale": 2.696,
-      "contact": "none"
+      "scale": 2.696
     },
     {
       "id": "tree-342",
@@ -23820,8 +23131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3443.7,
       "y": 245.1,
       "heading": 5.662,
-      "scale": 2.235,
-      "contact": "none"
+      "scale": 2.235
     },
     {
       "id": "tree-343",
@@ -23829,8 +23139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3371.7,
       "y": 119.1,
       "heading": 0.233,
-      "scale": 2.764,
-      "contact": "none"
+      "scale": 2.764
     },
     {
       "id": "tree-344",
@@ -23838,8 +23147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3651.8,
       "y": 532.4,
       "heading": 4.674,
-      "scale": 2.679,
-      "contact": "none"
+      "scale": 2.679
     },
     {
       "id": "tree-345",
@@ -23847,8 +23155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3639.3,
       "y": 2718,
       "heading": 5.845,
-      "scale": 1.922,
-      "contact": "none"
+      "scale": 1.922
     },
     {
       "id": "tree-346",
@@ -23856,8 +23163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3784.4,
       "y": 2546,
       "heading": 4.415,
-      "scale": 1.409,
-      "contact": "none"
+      "scale": 1.409
     },
     {
       "id": "tree-347",
@@ -23865,8 +23171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3728.6,
       "y": 2422.2,
       "heading": 3.418,
-      "scale": 2.757,
-      "contact": "none"
+      "scale": 2.757
     },
     {
       "id": "tree-348",
@@ -23874,8 +23179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3661.8,
       "y": 2698.7,
       "heading": 1.951,
-      "scale": 1.976,
-      "contact": "none"
+      "scale": 1.976
     },
     {
       "id": "tree-349",
@@ -23883,8 +23187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1522.5,
       "y": -2835.5,
       "heading": 1.513,
-      "scale": 2.391,
-      "contact": "none"
+      "scale": 2.391
     },
     {
       "id": "tree-350",
@@ -23892,8 +23195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1577.4,
       "y": -2761.1,
       "heading": 0.973,
-      "scale": 2.718,
-      "contact": "none"
+      "scale": 2.718
     },
     {
       "id": "tree-351",
@@ -23901,8 +23203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1663.7,
       "y": -2564.7,
       "heading": 1.909,
-      "scale": 3.337,
-      "contact": "none"
+      "scale": 3.337
     },
     {
       "id": "tree-352",
@@ -23910,8 +23211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1701.5,
       "y": -2647.8,
       "heading": 2.796,
-      "scale": 1.568,
-      "contact": "none"
+      "scale": 1.568
     },
     {
       "id": "tree-353",
@@ -23919,8 +23219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1530.2,
       "y": -2756.8,
       "heading": 6.156,
-      "scale": 1.464,
-      "contact": "none"
+      "scale": 1.464
     },
     {
       "id": "tree-354",
@@ -23928,8 +23227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1922.9,
       "y": 3972.9,
       "heading": 2.728,
-      "scale": 2.01,
-      "contact": "none"
+      "scale": 2.01
     },
     {
       "id": "tree-355",
@@ -23937,8 +23235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1757,
       "y": 4245.8,
       "heading": 4.05,
-      "scale": 2.591,
-      "contact": "none"
+      "scale": 2.591
     },
     {
       "id": "tree-356",
@@ -23946,8 +23243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1425.9,
       "y": 3761.6,
       "heading": 0.871,
-      "scale": 1.752,
-      "contact": "none"
+      "scale": 1.752
     },
     {
       "id": "tree-357",
@@ -23955,8 +23251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1965.6,
       "y": 4059,
       "heading": 4.009,
-      "scale": 1.815,
-      "contact": "none"
+      "scale": 1.815
     },
     {
       "id": "tree-358",
@@ -23964,8 +23259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1852.7,
       "y": 3727.2,
       "heading": 4.664,
-      "scale": 2.498,
-      "contact": "none"
+      "scale": 2.498
     },
     {
       "id": "tree-359",
@@ -23973,8 +23267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1591.8,
       "y": 4139.1,
       "heading": 3.463,
-      "scale": 1.848,
-      "contact": "none"
+      "scale": 1.848
     },
     {
       "id": "tree-360",
@@ -23982,8 +23275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1443.7,
       "y": 4239.8,
       "heading": 3.947,
-      "scale": 1.458,
-      "contact": "none"
+      "scale": 1.458
     },
     {
       "id": "tree-361",
@@ -23991,8 +23283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1786.6,
       "y": 3738.8,
       "heading": 3.106,
-      "scale": 2.626,
-      "contact": "none"
+      "scale": 2.626
     },
     {
       "id": "tree-362",
@@ -24000,8 +23291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -769.7,
       "y": -3318.4,
       "heading": 0.869,
-      "scale": 1.657,
-      "contact": "none"
+      "scale": 1.657
     },
     {
       "id": "tree-363",
@@ -24009,8 +23299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -675.8,
       "y": -3320.1,
       "heading": 1.371,
-      "scale": 2.591,
-      "contact": "none"
+      "scale": 2.591
     },
     {
       "id": "tree-364",
@@ -24018,8 +23307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -551.8,
       "y": -3059.3,
       "heading": 3.213,
-      "scale": 2.475,
-      "contact": "none"
+      "scale": 2.475
     },
     {
       "id": "tree-365",
@@ -24027,8 +23315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -426.9,
       "y": -3024.3,
       "heading": 5.596,
-      "scale": 2.31,
-      "contact": "none"
+      "scale": 2.31
     },
     {
       "id": "tree-366",
@@ -24036,8 +23323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -887.5,
       "y": 4022.9,
       "heading": 2.893,
-      "scale": 1.519,
-      "contact": "none"
+      "scale": 1.519
     },
     {
       "id": "tree-367",
@@ -24045,8 +23331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -481.4,
       "y": 4038.7,
       "heading": 6.043,
-      "scale": 2.665,
-      "contact": "none"
+      "scale": 2.665
     },
     {
       "id": "tree-368",
@@ -24054,8 +23339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -918.5,
       "y": 3916.8,
       "heading": 1.866,
-      "scale": 2.347,
-      "contact": "none"
+      "scale": 2.347
     },
     {
       "id": "tree-369",
@@ -24063,8 +23347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -232,
       "y": -2718.8,
       "heading": 0.175,
-      "scale": 2.545,
-      "contact": "none"
+      "scale": 2.545
     },
     {
       "id": "tree-370",
@@ -24072,8 +23355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -50.5,
       "y": -2377,
       "heading": 2.337,
-      "scale": 1.519,
-      "contact": "none"
+      "scale": 1.519
     },
     {
       "id": "tree-371",
@@ -24081,8 +23363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -298.9,
       "y": -2683.7,
       "heading": 2.49,
-      "scale": 2.113,
-      "contact": "none"
+      "scale": 2.113
     },
     {
       "id": "tree-372",
@@ -24090,8 +23371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -47.3,
       "y": -2514.9,
       "heading": 0.705,
-      "scale": 2.09,
-      "contact": "none"
+      "scale": 2.09
     },
     {
       "id": "tree-373",
@@ -24099,8 +23379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -45.6,
       "y": -2703.6,
       "heading": 3.074,
-      "scale": 2.143,
-      "contact": "none"
+      "scale": 2.143
     },
     {
       "id": "tree-374",
@@ -24108,8 +23387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1783.4,
       "y": 4201.3,
       "heading": 4.269,
-      "scale": 2.194,
-      "contact": "none"
+      "scale": 2.194
     },
     {
       "id": "tree-375",
@@ -24117,8 +23395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1664,
       "y": 4340.6,
       "heading": 5.957,
-      "scale": 2.11,
-      "contact": "none"
+      "scale": 2.11
     },
     {
       "id": "tree-376",
@@ -24126,8 +23403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 237,
       "y": 3752.7,
       "heading": 1.885,
-      "scale": 2.232,
-      "contact": "none"
+      "scale": 2.232
     },
     {
       "id": "tree-377",
@@ -24135,8 +23411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3958.2,
       "y": 1718.6,
       "heading": 3.794,
-      "scale": 1.409,
-      "contact": "none"
+      "scale": 1.409
     },
     {
       "id": "tree-378",
@@ -24144,8 +23419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3255,
       "y": 1869.1,
       "heading": 1.214,
-      "scale": 2.345,
-      "contact": "none"
+      "scale": 2.345
     },
     {
       "id": "tree-379",
@@ -24153,8 +23427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2811.3,
       "y": -494.4,
       "heading": 0.944,
-      "scale": 1.503,
-      "contact": "none"
+      "scale": 1.503
     },
     {
       "id": "tree-380",
@@ -24162,8 +23435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2096.2,
       "y": -801.8,
       "heading": 1.572,
-      "scale": 2.571,
-      "contact": "none"
+      "scale": 2.571
     },
     {
       "id": "tree-381",
@@ -24171,8 +23443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2086,
       "y": -640.8,
       "heading": 0.156,
-      "scale": 1.95,
-      "contact": "none"
+      "scale": 1.95
     },
     {
       "id": "tree-382",
@@ -24180,8 +23451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2160.7,
       "y": -644.7,
       "heading": 5.26,
-      "scale": 1.393,
-      "contact": "none"
+      "scale": 1.393
     },
     {
       "id": "tree-383",
@@ -24189,8 +23459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2158.5,
       "y": -482.5,
       "heading": 6.079,
-      "scale": 2.24,
-      "contact": "none"
+      "scale": 2.24
     },
     {
       "id": "tree-384",
@@ -24198,8 +23467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2558.8,
       "y": -902.1,
       "heading": 2.268,
-      "scale": 2.741,
-      "contact": "none"
+      "scale": 2.741
     },
     {
       "id": "tree-385",
@@ -24207,8 +23475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2692.8,
       "y": -676.5,
       "heading": 5.147,
-      "scale": 2.274,
-      "contact": "none"
+      "scale": 2.274
     },
     {
       "id": "tree-386",
@@ -24216,8 +23483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2493.4,
       "y": -877.6,
       "heading": 2.108,
-      "scale": 2.712,
-      "contact": "none"
+      "scale": 2.712
     },
     {
       "id": "tree-387",
@@ -24225,8 +23491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2660.5,
       "y": -613.3,
       "heading": 3.964,
-      "scale": 2.627,
-      "contact": "none"
+      "scale": 2.627
     },
     {
       "id": "tree-388",
@@ -24234,8 +23499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -96.7,
       "y": 4723.5,
       "heading": 4.865,
-      "scale": 2.479,
-      "contact": "none"
+      "scale": 2.479
     },
     {
       "id": "tree-389",
@@ -24243,8 +23507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -259.3,
       "y": 4591.8,
       "heading": 5.484,
-      "scale": 1.794,
-      "contact": "none"
+      "scale": 1.794
     },
     {
       "id": "tree-390",
@@ -24252,8 +23515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -801.7,
       "y": 3742.7,
       "heading": 1.541,
-      "scale": 2.502,
-      "contact": "none"
+      "scale": 2.502
     },
     {
       "id": "tree-391",
@@ -24261,8 +23523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -798,
       "y": 3662.4,
       "heading": 4.221,
-      "scale": 2.301,
-      "contact": "none"
+      "scale": 2.301
     },
     {
       "id": "tree-392",
@@ -24270,8 +23531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -786.3,
       "y": 3665.1,
       "heading": 5.084,
-      "scale": 2.557,
-      "contact": "none"
+      "scale": 2.557
     },
     {
       "id": "tree-393",
@@ -24279,8 +23539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -832.3,
       "y": 3764.2,
       "heading": 4.219,
-      "scale": 2.55,
-      "contact": "none"
+      "scale": 2.55
     },
     {
       "id": "tree-394",
@@ -24288,8 +23547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -987,
       "y": 3825.8,
       "heading": 0.904,
-      "scale": 2.701,
-      "contact": "none"
+      "scale": 2.701
     },
     {
       "id": "tree-395",
@@ -24297,8 +23555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -914.5,
       "y": 3681.7,
       "heading": 6.068,
-      "scale": 2.239,
-      "contact": "none"
+      "scale": 2.239
     },
     {
       "id": "tree-396",
@@ -24306,8 +23563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -832,
       "y": 3798.7,
       "heading": 2.221,
-      "scale": 2.219,
-      "contact": "none"
+      "scale": 2.219
     },
     {
       "id": "tree-397",
@@ -24315,8 +23571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1062.7,
       "y": 3799.2,
       "heading": 5.269,
-      "scale": 2.41,
-      "contact": "none"
+      "scale": 2.41
     },
     {
       "id": "tree-398",
@@ -24324,8 +23579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4500,
       "y": -519.9,
       "heading": 1.372,
-      "scale": 1.775,
-      "contact": "none"
+      "scale": 1.775
     },
     {
       "id": "tree-399",
@@ -24333,8 +23587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3291.7,
       "y": 4012,
       "heading": 1.096,
-      "scale": 2.431,
-      "contact": "none"
+      "scale": 2.431
     },
     {
       "id": "tree-400",
@@ -24342,8 +23595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3250.7,
       "y": 3700.1,
       "heading": 6.207,
-      "scale": 2.258,
-      "contact": "none"
+      "scale": 2.258
     },
     {
       "id": "tree-401",
@@ -24351,8 +23603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2713.9,
       "y": 4190.4,
       "heading": 1.991,
-      "scale": 1.385,
-      "contact": "none"
+      "scale": 1.385
     },
     {
       "id": "tree-402",
@@ -24360,8 +23611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2896.9,
       "y": 3784.3,
       "heading": 0.984,
-      "scale": 2.394,
-      "contact": "none"
+      "scale": 2.394
     },
     {
       "id": "tree-403",
@@ -24369,8 +23619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3200.6,
       "y": 3986.6,
       "heading": 2.248,
-      "scale": 2.485,
-      "contact": "none"
+      "scale": 2.485
     },
     {
       "id": "tree-404",
@@ -24378,8 +23627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2751.2,
       "y": 3047.3,
       "heading": 4.656,
-      "scale": 2.242,
-      "contact": "none"
+      "scale": 2.242
     },
     {
       "id": "tree-405",
@@ -24387,8 +23635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2929.1,
       "y": 3419,
       "heading": 4.854,
-      "scale": 2.486,
-      "contact": "none"
+      "scale": 2.486
     },
     {
       "id": "tree-406",
@@ -24396,8 +23643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3142.1,
       "y": 3136.9,
       "heading": 0.829,
-      "scale": 2.133,
-      "contact": "none"
+      "scale": 2.133
     },
     {
       "id": "tree-407",
@@ -24405,8 +23651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3148.7,
       "y": 3177.4,
       "heading": 6.217,
-      "scale": 2.484,
-      "contact": "none"
+      "scale": 2.484
     },
     {
       "id": "tree-408",
@@ -24414,8 +23659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2977.4,
       "y": 3424.8,
       "heading": 0.843,
-      "scale": 1.388,
-      "contact": "none"
+      "scale": 1.388
     },
     {
       "id": "tree-409",
@@ -24423,8 +23667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -334.9,
       "y": 2563.4,
       "heading": 0.938,
-      "scale": 1.844,
-      "contact": "none"
+      "scale": 1.844
     },
     {
       "id": "tree-410",
@@ -24432,8 +23675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3539.4,
       "y": -2269,
       "heading": 4.77,
-      "scale": 1.724,
-      "contact": "none"
+      "scale": 1.724
     },
     {
       "id": "tree-411",
@@ -24441,8 +23683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3595.3,
       "y": -2425.6,
       "heading": 3.578,
-      "scale": 1.642,
-      "contact": "none"
+      "scale": 1.642
     },
     {
       "id": "tree-412",
@@ -24450,8 +23691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3452.7,
       "y": -2225.3,
       "heading": 4.722,
-      "scale": 1.711,
-      "contact": "none"
+      "scale": 1.711
     },
     {
       "id": "tree-413",
@@ -24459,8 +23699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1904.7,
       "y": 3969.6,
       "heading": 3.834,
-      "scale": 1.782,
-      "contact": "none"
+      "scale": 1.782
     },
     {
       "id": "tree-414",
@@ -24468,8 +23707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1819.1,
       "y": 3944,
       "heading": 5.349,
-      "scale": 2.406,
-      "contact": "none"
+      "scale": 2.406
     },
     {
       "id": "tree-415",
@@ -24477,8 +23715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1738.2,
       "y": 3928.2,
       "heading": 0.878,
-      "scale": 2.015,
-      "contact": "none"
+      "scale": 2.015
     },
     {
       "id": "tree-416",
@@ -24486,8 +23723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1874.8,
       "y": 3909.1,
       "heading": 0.838,
-      "scale": 1.613,
-      "contact": "none"
+      "scale": 1.613
     },
     {
       "id": "tree-417",
@@ -24495,8 +23731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1701.3,
       "y": 4082.8,
       "heading": 2.918,
-      "scale": 2.364,
-      "contact": "none"
+      "scale": 2.364
     },
     {
       "id": "tree-418",
@@ -24536,8 +23771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2205.4,
       "y": -1796.5,
       "heading": 1.715,
-      "scale": 2.337,
-      "contact": "none"
+      "scale": 2.337
     },
     {
       "id": "tree-423",
@@ -24545,8 +23779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2202.1,
       "y": -1920,
       "heading": 2.564,
-      "scale": 1.46,
-      "contact": "none"
+      "scale": 1.46
     },
     {
       "id": "tree-424",
@@ -24554,8 +23787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4010.4,
       "y": 2641.7,
       "heading": 1.688,
-      "scale": 2.791,
-      "contact": "none"
+      "scale": 2.791
     },
     {
       "id": "tree-425",
@@ -24563,8 +23795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3837.9,
       "y": 2682.2,
       "heading": 5.643,
-      "scale": 2.435,
-      "contact": "none"
+      "scale": 2.435
     },
     {
       "id": "tree-426",
@@ -24572,8 +23803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4068,
       "y": 2384,
       "heading": 4.587,
-      "scale": 2.784,
-      "contact": "none"
+      "scale": 2.784
     },
     {
       "id": "tree-427",
@@ -24581,8 +23811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3791.8,
       "y": 2598.8,
       "heading": 3.509,
-      "scale": 2.403,
-      "contact": "none"
+      "scale": 2.403
     },
     {
       "id": "tree-428",
@@ -24590,8 +23819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4051.8,
       "y": 2316.5,
       "heading": 2.975,
-      "scale": 2.038,
-      "contact": "none"
+      "scale": 2.038
     },
     {
       "id": "tree-429",
@@ -24599,8 +23827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4092.7,
       "y": 2333.7,
       "heading": 5.184,
-      "scale": 2.165,
-      "contact": "none"
+      "scale": 2.165
     },
     {
       "id": "tree-430",
@@ -24608,8 +23835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2303.8,
       "y": 3489.5,
       "heading": 2.024,
-      "scale": 2.258,
-      "contact": "none"
+      "scale": 2.258
     },
     {
       "id": "tree-431",
@@ -24617,8 +23843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2211.5,
       "y": 3508.9,
       "heading": 5.71,
-      "scale": 2.258,
-      "contact": "none"
+      "scale": 2.258
     },
     {
       "id": "tree-432",
@@ -24626,8 +23851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2127.1,
       "y": 3681.9,
       "heading": 0.893,
-      "scale": 2.067,
-      "contact": "none"
+      "scale": 2.067
     },
     {
       "id": "tree-433",
@@ -24635,8 +23859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2508.7,
       "y": 3563.5,
       "heading": 1.499,
-      "scale": 2.138,
-      "contact": "none"
+      "scale": 2.138
     },
     {
       "id": "tree-434",
@@ -24644,8 +23867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2450.4,
       "y": 3850.7,
       "heading": 5.199,
-      "scale": 2.215,
-      "contact": "none"
+      "scale": 2.215
     },
     {
       "id": "tree-435",
@@ -24653,8 +23875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2529.2,
       "y": 3498.2,
       "heading": 5.138,
-      "scale": 1.934,
-      "contact": "none"
+      "scale": 1.934
     },
     {
       "id": "tree-436",
@@ -24662,8 +23883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2413.5,
       "y": 3715.7,
       "heading": 2.241,
-      "scale": 1.489,
-      "contact": "none"
+      "scale": 1.489
     },
     {
       "id": "tree-437",
@@ -24671,8 +23891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2402.3,
       "y": 3470.9,
       "heading": 6.264,
-      "scale": 1.523,
-      "contact": "none"
+      "scale": 1.523
     },
     {
       "id": "tree-438",
@@ -24680,8 +23899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2283.5,
       "y": 3484.1,
       "heading": 0.942,
-      "scale": 2.518,
-      "contact": "none"
+      "scale": 2.518
     },
     {
       "id": "tree-439",
@@ -24689,8 +23907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1300.6,
       "y": 1894.3,
       "heading": 1.589,
-      "scale": 2.432,
-      "contact": "none"
+      "scale": 2.432
     },
     {
       "id": "tree-440",
@@ -24698,8 +23915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1413.9,
       "y": 2082.8,
       "heading": 1.926,
-      "scale": 2.147,
-      "contact": "none"
+      "scale": 2.147
     },
     {
       "id": "tree-441",
@@ -24707,8 +23923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1157.6,
       "y": 2009.5,
       "heading": 3.3,
-      "scale": 1.772,
-      "contact": "none"
+      "scale": 1.772
     },
     {
       "id": "tree-442",
@@ -24716,8 +23931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1336.2,
       "y": 2089.1,
       "heading": 1.825,
-      "scale": 2.644,
-      "contact": "none"
+      "scale": 2.644
     },
     {
       "id": "tree-443",
@@ -24725,8 +23939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1475,
       "y": 1815.6,
       "heading": 6.093,
-      "scale": 3.252,
-      "contact": "none"
+      "scale": 3.252
     },
     {
       "id": "tree-444",
@@ -24734,8 +23947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3234.9,
       "y": 392.5,
       "heading": 2.07,
-      "scale": 1.921,
-      "contact": "none"
+      "scale": 1.921
     },
     {
       "id": "tree-445",
@@ -24743,8 +23955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3397.5,
       "y": 186.6,
       "heading": 5.663,
-      "scale": 2.136,
-      "contact": "none"
+      "scale": 2.136
     },
     {
       "id": "tree-446",
@@ -24752,8 +23963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3104.3,
       "y": -14.7,
       "heading": 2.904,
-      "scale": 1.974,
-      "contact": "none"
+      "scale": 1.974
     },
     {
       "id": "tree-447",
@@ -24761,8 +23971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3231.2,
       "y": -159.8,
       "heading": 2.764,
-      "scale": 2.552,
-      "contact": "none"
+      "scale": 2.552
     },
     {
       "id": "tree-448",
@@ -24770,8 +23979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2832.3,
       "y": 60.4,
       "heading": 4.652,
-      "scale": 2.255,
-      "contact": "none"
+      "scale": 2.255
     },
     {
       "id": "tree-449",
@@ -24779,8 +23987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3039.7,
       "y": 89.6,
       "heading": 4.837,
-      "scale": 2.175,
-      "contact": "none"
+      "scale": 2.175
     },
     {
       "id": "tree-450",
@@ -24788,8 +23995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 471,
       "y": 1334.8,
       "heading": 4.733,
-      "scale": 1.469,
-      "contact": "none"
+      "scale": 1.469
     },
     {
       "id": "tree-451",
@@ -24797,8 +24003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1143,
       "y": -3304.1,
       "heading": 2.014,
-      "scale": 3.176,
-      "contact": "none"
+      "scale": 3.176
     },
     {
       "id": "tree-452",
@@ -24806,8 +24011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1000.1,
       "y": -2603.4,
       "heading": 3.267,
-      "scale": 2.077,
-      "contact": "none"
+      "scale": 2.077
     },
     {
       "id": "tree-453",
@@ -24815,8 +24019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1429.2,
       "y": 2124.9,
       "heading": 4.279,
-      "scale": 2.546,
-      "contact": "none"
+      "scale": 2.546
     },
     {
       "id": "tree-454",
@@ -24824,8 +24027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2031.8,
       "y": -2988.8,
       "heading": 3.072,
-      "scale": 1.923,
-      "contact": "none"
+      "scale": 1.923
     },
     {
       "id": "tree-455",
@@ -24833,8 +24035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1942.7,
       "y": -2716.1,
       "heading": 3.349,
-      "scale": 1.472,
-      "contact": "none"
+      "scale": 1.472
     },
     {
       "id": "tree-456",
@@ -24842,8 +24043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2924.4,
       "y": -35.2,
       "heading": 6.114,
-      "scale": 1.681,
-      "contact": "none"
+      "scale": 1.681
     },
     {
       "id": "tree-457",
@@ -24851,8 +24051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3051.6,
       "y": 80.2,
       "heading": 0.861,
-      "scale": 1.518,
-      "contact": "none"
+      "scale": 1.518
     },
     {
       "id": "tree-458",
@@ -24860,8 +24059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2848.2,
       "y": -309.6,
       "heading": 4.632,
-      "scale": 1.42,
-      "contact": "none"
+      "scale": 1.42
     },
     {
       "id": "tree-459",
@@ -24869,8 +24067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3006.5,
       "y": 79,
       "heading": 5.039,
-      "scale": 2.361,
-      "contact": "none"
+      "scale": 2.361
     },
     {
       "id": "tree-460",
@@ -24878,8 +24075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4448.8,
       "y": 1131,
       "heading": 5.455,
-      "scale": 1.923,
-      "contact": "none"
+      "scale": 1.923
     },
     {
       "id": "tree-461",
@@ -24887,8 +24083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2626.7,
       "y": 1730.5,
       "heading": 2.003,
-      "scale": 2.136,
-      "contact": "none"
+      "scale": 2.136
     },
     {
       "id": "tree-462",
@@ -24896,8 +24091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2522.7,
       "y": 1782,
       "heading": 0.954,
-      "scale": 1.854,
-      "contact": "none"
+      "scale": 1.854
     },
     {
       "id": "tree-463",
@@ -24905,8 +24099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2630.5,
       "y": 1653.2,
       "heading": 4.026,
-      "scale": 1.863,
-      "contact": "none"
+      "scale": 1.863
     },
     {
       "id": "tree-464",
@@ -24914,8 +24107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2601.5,
       "y": 1923.4,
       "heading": 4.576,
-      "scale": 1.977,
-      "contact": "none"
+      "scale": 1.977
     },
     {
       "id": "tree-465",
@@ -24923,8 +24115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2252.6,
       "y": 243.2,
       "heading": 3.294,
-      "scale": 1.695,
-      "contact": "none"
+      "scale": 1.695
     },
     {
       "id": "tree-466",
@@ -24932,8 +24123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2266.3,
       "y": 286.8,
       "heading": 5.736,
-      "scale": 2.494,
-      "contact": "none"
+      "scale": 2.494
     },
     {
       "id": "tree-467",
@@ -24941,8 +24131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2144.1,
       "y": 337.8,
       "heading": 1.265,
-      "scale": 2.217,
-      "contact": "none"
+      "scale": 2.217
     },
     {
       "id": "tree-468",
@@ -24950,8 +24139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1875.6,
       "y": 248,
       "heading": 1.884,
-      "scale": 2.666,
-      "contact": "none"
+      "scale": 2.666
     },
     {
       "id": "tree-469",
@@ -24959,8 +24147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2028.7,
       "y": 165.4,
       "heading": 0.956,
-      "scale": 1.612,
-      "contact": "none"
+      "scale": 1.612
     },
     {
       "id": "tree-470",
@@ -24968,8 +24155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2067.9,
       "y": 309.1,
       "heading": 2.071,
-      "scale": 1.999,
-      "contact": "none"
+      "scale": 1.999
     },
     {
       "id": "tree-471",
@@ -24977,8 +24163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2044.5,
       "y": 271.1,
       "heading": 2.859,
-      "scale": 2.533,
-      "contact": "none"
+      "scale": 2.533
     },
     {
       "id": "tree-472",
@@ -24986,8 +24171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2099.9,
       "y": 117.4,
       "heading": 0.226,
-      "scale": 1.881,
-      "contact": "none"
+      "scale": 1.881
     },
     {
       "id": "tree-473",
@@ -24995,8 +24179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 479,
       "y": -2779,
       "heading": 4.572,
-      "scale": 2.572,
-      "contact": "none"
+      "scale": 2.572
     },
     {
       "id": "tree-474",
@@ -25004,8 +24187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 687.7,
       "y": 1324.7,
       "heading": 0.936,
-      "scale": 2.623,
-      "contact": "none"
+      "scale": 2.623
     },
     {
       "id": "tree-475",
@@ -25013,8 +24195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 735.4,
       "y": 1468.7,
       "heading": 0.739,
-      "scale": 2.095,
-      "contact": "none"
+      "scale": 2.095
     },
     {
       "id": "tree-476",
@@ -25022,8 +24203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 503.2,
       "y": 1381.7,
       "heading": 2.305,
-      "scale": 2.034,
-      "contact": "none"
+      "scale": 2.034
     },
     {
       "id": "tree-477",
@@ -25031,8 +24211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 622.1,
       "y": 1484.4,
       "heading": 5.476,
-      "scale": 1.578,
-      "contact": "none"
+      "scale": 1.578
     },
     {
       "id": "tree-478",
@@ -25040,8 +24219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 395.2,
       "y": 1363.5,
       "heading": 3.069,
-      "scale": 2.623,
-      "contact": "none"
+      "scale": 2.623
     },
     {
       "id": "tree-479",
@@ -25049,8 +24227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 757.7,
       "y": 3724,
       "heading": 0.759,
-      "scale": 1.553,
-      "contact": "none"
+      "scale": 1.553
     },
     {
       "id": "tree-480",
@@ -25058,8 +24235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 433,
       "y": 3710.2,
       "heading": 0.616,
-      "scale": 1.502,
-      "contact": "none"
+      "scale": 1.502
     },
     {
       "id": "tree-481",
@@ -25067,8 +24243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 661.8,
       "y": 3904.9,
       "heading": 0.528,
-      "scale": 1.76,
-      "contact": "none"
+      "scale": 1.76
     },
     {
       "id": "tree-482",
@@ -25076,8 +24251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 790,
       "y": 3648.1,
       "heading": 0.93,
-      "scale": 2.415,
-      "contact": "none"
+      "scale": 2.415
     },
     {
       "id": "tree-483",
@@ -25085,8 +24259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1698.7,
       "y": 4345.4,
       "heading": 6.132,
-      "scale": 1.708,
-      "contact": "none"
+      "scale": 1.708
     },
     {
       "id": "tree-484",
@@ -25094,8 +24267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1487.3,
       "y": 4282.7,
       "heading": 4.896,
-      "scale": 2.021,
-      "contact": "none"
+      "scale": 2.021
     },
     {
       "id": "tree-485",
@@ -25103,8 +24275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1518.7,
       "y": 4194.6,
       "heading": 5.314,
-      "scale": 1.679,
-      "contact": "none"
+      "scale": 1.679
     },
     {
       "id": "tree-486",
@@ -25112,8 +24283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1645.1,
       "y": 4228.7,
       "heading": 6.068,
-      "scale": 1.889,
-      "contact": "none"
+      "scale": 1.889
     },
     {
       "id": "tree-487",
@@ -25121,8 +24291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 208.1,
       "y": -3650.2,
       "heading": 1.035,
-      "scale": 2.268,
-      "contact": "none"
+      "scale": 2.268
     },
     {
       "id": "tree-488",
@@ -25130,8 +24299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -227.5,
       "y": -3734.7,
       "heading": 0.427,
-      "scale": 2.317,
-      "contact": "none"
+      "scale": 2.317
     },
     {
       "id": "tree-489",
@@ -25139,8 +24307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 103,
       "y": -3830.3,
       "heading": 3.613,
-      "scale": 2.186,
-      "contact": "none"
+      "scale": 2.186
     },
     {
       "id": "tree-490",
@@ -25148,8 +24315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 270.5,
       "y": -3825.4,
       "heading": 3.938,
-      "scale": 2.329,
-      "contact": "none"
+      "scale": 2.329
     },
     {
       "id": "tree-491",
@@ -25157,8 +24323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 46.9,
       "y": -3881.6,
       "heading": 4.222,
-      "scale": 2.727,
-      "contact": "none"
+      "scale": 2.727
     },
     {
       "id": "tree-492",
@@ -25166,8 +24331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1352.9,
       "y": -795.9,
       "heading": 0.103,
-      "scale": 2.01,
-      "contact": "none"
+      "scale": 2.01
     },
     {
       "id": "tree-493",
@@ -25231,8 +24395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 783.7,
       "y": 750.6,
       "heading": 3.473,
-      "scale": 1.893,
-      "contact": "none"
+      "scale": 1.893
     },
     {
       "id": "tree-501",
@@ -25240,8 +24403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1785.3,
       "y": -2135.3,
       "heading": 3.231,
-      "scale": 1.912,
-      "contact": "none"
+      "scale": 1.912
     },
     {
       "id": "tree-502",
@@ -25249,8 +24411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2063.2,
       "y": -2202.8,
       "heading": 4.457,
-      "scale": 1.762,
-      "contact": "none"
+      "scale": 1.762
     },
     {
       "id": "tree-503",
@@ -25258,8 +24419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2105.4,
       "y": -2654.5,
       "heading": 4.113,
-      "scale": 1.431,
-      "contact": "none"
+      "scale": 1.431
     },
     {
       "id": "tree-504",
@@ -25267,8 +24427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1753.9,
       "y": -2578.3,
       "heading": 3.22,
-      "scale": 1.928,
-      "contact": "none"
+      "scale": 1.928
     },
     {
       "id": "tree-505",
@@ -25276,8 +24435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1827.4,
       "y": -2140.1,
       "heading": 3.031,
-      "scale": 2.63,
-      "contact": "none"
+      "scale": 2.63
     },
     {
       "id": "tree-506",
@@ -25285,8 +24443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1653.1,
       "y": -2339.9,
       "heading": 5.768,
-      "scale": 1.603,
-      "contact": "none"
+      "scale": 1.603
     },
     {
       "id": "tree-507",
@@ -25294,8 +24451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -824.9,
       "y": -3339.4,
       "heading": 0.162,
-      "scale": 1.738,
-      "contact": "none"
+      "scale": 1.738
     },
     {
       "id": "tree-508",
@@ -25303,8 +24459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -779.4,
       "y": -3272.2,
       "heading": 4.018,
-      "scale": 2.633,
-      "contact": "none"
+      "scale": 2.633
     },
     {
       "id": "tree-509",
@@ -25312,8 +24467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -854.3,
       "y": -3225.8,
       "heading": 2.037,
-      "scale": 2.569,
-      "contact": "none"
+      "scale": 2.569
     },
     {
       "id": "tree-510",
@@ -25321,8 +24475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -588.4,
       "y": -3355.4,
       "heading": 5.615,
-      "scale": 2.069,
-      "contact": "none"
+      "scale": 2.069
     },
     {
       "id": "tree-511",
@@ -25330,8 +24483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -604.1,
       "y": -3064.4,
       "heading": 3.27,
-      "scale": 1.766,
-      "contact": "none"
+      "scale": 1.766
     },
     {
       "id": "tree-512",
@@ -25339,8 +24491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -737.5,
       "y": -3406.3,
       "heading": 4.883,
-      "scale": 2.661,
-      "contact": "none"
+      "scale": 2.661
     },
     {
       "id": "tree-513",
@@ -25348,8 +24499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1276.6,
       "y": 3581.9,
       "heading": 5.26,
-      "scale": 2.672,
-      "contact": "none"
+      "scale": 2.672
     },
     {
       "id": "tree-514",
@@ -25357,8 +24507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1276.8,
       "y": 3749.4,
       "heading": 4.729,
-      "scale": 2.182,
-      "contact": "none"
+      "scale": 2.182
     },
     {
       "id": "tree-515",
@@ -25366,8 +24515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2543.9,
       "y": -420.1,
       "heading": 2.261,
-      "scale": 2.163,
-      "contact": "none"
+      "scale": 2.163
     },
     {
       "id": "tree-516",
@@ -25375,8 +24523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2320.6,
       "y": -326.6,
       "heading": 4.472,
-      "scale": 2.476,
-      "contact": "none"
+      "scale": 2.476
     },
     {
       "id": "tree-517",
@@ -25384,8 +24531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2361.9,
       "y": -421,
       "heading": 4.664,
-      "scale": 2.326,
-      "contact": "none"
+      "scale": 2.326
     },
     {
       "id": "tree-518",
@@ -25393,8 +24539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2346.5,
       "y": -328.7,
       "heading": 2.513,
-      "scale": 2.506,
-      "contact": "none"
+      "scale": 2.506
     },
     {
       "id": "tree-519",
@@ -25402,8 +24547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2507.4,
       "y": -394.3,
       "heading": 4.622,
-      "scale": 2.397,
-      "contact": "none"
+      "scale": 2.397
     },
     {
       "id": "tree-520",
@@ -25411,8 +24555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2544.8,
       "y": -318.2,
       "heading": 4.285,
-      "scale": 1.638,
-      "contact": "none"
+      "scale": 1.638
     },
     {
       "id": "tree-521",
@@ -25420,8 +24563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2383.2,
       "y": -412.5,
       "heading": 1.48,
-      "scale": 2.125,
-      "contact": "none"
+      "scale": 2.125
     },
     {
       "id": "tree-522",
@@ -25429,8 +24571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2483,
       "y": -365.3,
       "heading": 5.359,
-      "scale": 2.499,
-      "contact": "none"
+      "scale": 2.499
     },
     {
       "id": "tree-523",
@@ -25438,8 +24579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1117.6,
       "y": 4521.6,
       "heading": 5.845,
-      "scale": 3.382,
-      "contact": "none"
+      "scale": 3.382
     },
     {
       "id": "tree-524",
@@ -25447,8 +24587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2423,
       "y": -624.6,
       "heading": 0.423,
-      "scale": 1.721,
-      "contact": "none"
+      "scale": 1.721
     },
     {
       "id": "tree-525",
@@ -25456,8 +24595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2513.5,
       "y": -576.9,
       "heading": 1.407,
-      "scale": 1.638,
-      "contact": "none"
+      "scale": 1.638
     },
     {
       "id": "tree-526",
@@ -25465,8 +24603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2250.8,
       "y": -389,
       "heading": 2.26,
-      "scale": 2.433,
-      "contact": "none"
+      "scale": 2.433
     },
     {
       "id": "tree-527",
@@ -25474,8 +24611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2394.1,
       "y": -522.1,
       "heading": 0.872,
-      "scale": 3.178,
-      "contact": "none"
+      "scale": 3.178
     },
     {
       "id": "tree-528",
@@ -25483,8 +24619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2385.5,
       "y": -429.6,
       "heading": 5.073,
-      "scale": 2.099,
-      "contact": "none"
+      "scale": 2.099
     },
     {
       "id": "tree-529",
@@ -25500,8 +24635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2947.4,
       "y": 3812.9,
       "heading": 1.087,
-      "scale": 2.398,
-      "contact": "none"
+      "scale": 2.398
     },
     {
       "id": "tree-531",
@@ -25509,8 +24643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3094.9,
       "y": 3263.1,
       "heading": 1.72,
-      "scale": 2.639,
-      "contact": "none"
+      "scale": 2.639
     },
     {
       "id": "tree-532",
@@ -25518,8 +24651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3129.3,
       "y": 3513.5,
       "heading": 2.57,
-      "scale": 2.639,
-      "contact": "none"
+      "scale": 2.639
     },
     {
       "id": "tree-533",
@@ -25527,8 +24659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2843.4,
       "y": 3136.7,
       "heading": 3.34,
-      "scale": 1.851,
-      "contact": "none"
+      "scale": 1.851
     },
     {
       "id": "tree-534",
@@ -25536,8 +24667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2917.3,
       "y": 3286.1,
       "heading": 6.09,
-      "scale": 2.206,
-      "contact": "none"
+      "scale": 2.206
     },
     {
       "id": "tree-535",
@@ -25545,8 +24675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3239.6,
       "y": 3241.8,
       "heading": 1.04,
-      "scale": 2.262,
-      "contact": "none"
+      "scale": 2.262
     },
     {
       "id": "tree-536",
@@ -25554,8 +24683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3027.9,
       "y": 3340.8,
       "heading": 4.965,
-      "scale": 1.423,
-      "contact": "none"
+      "scale": 1.423
     },
     {
       "id": "tree-537",
@@ -25563,8 +24691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3007,
       "y": 3112,
       "heading": 5.265,
-      "scale": 2.37,
-      "contact": "none"
+      "scale": 2.37
     },
     {
       "id": "tree-538",
@@ -25572,8 +24699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2925.2,
       "y": 3768.2,
       "heading": 0.099,
-      "scale": 2.435,
-      "contact": "none"
+      "scale": 2.435
     },
     {
       "id": "tree-539",
@@ -25629,8 +24755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3199.2,
       "y": 2060.1,
       "heading": 0.698,
-      "scale": 2.011,
-      "contact": "none"
+      "scale": 2.011
     },
     {
       "id": "tree-546",
@@ -25638,8 +24763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3184.5,
       "y": 1940.8,
       "heading": 6.115,
-      "scale": 2.448,
-      "contact": "none"
+      "scale": 2.448
     },
     {
       "id": "tree-547",
@@ -25647,8 +24771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2907,
       "y": 2050.6,
       "heading": 2.901,
-      "scale": 1.874,
-      "contact": "none"
+      "scale": 1.874
     },
     {
       "id": "tree-548",
@@ -25656,8 +24779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3263,
       "y": 1859.3,
       "heading": 2.228,
-      "scale": 1.626,
-      "contact": "none"
+      "scale": 1.626
     },
     {
       "id": "tree-549",
@@ -25665,8 +24787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3305.6,
       "y": 2127.3,
       "heading": 3.594,
-      "scale": 2.723,
-      "contact": "none"
+      "scale": 2.723
     },
     {
       "id": "tree-550",
@@ -25674,8 +24795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2817.6,
       "y": 4799.1,
       "heading": 2.515,
-      "scale": 1.475,
-      "contact": "none"
+      "scale": 1.475
     },
     {
       "id": "tree-551",
@@ -25683,8 +24803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2764.7,
       "y": 4505.5,
       "heading": 4.348,
-      "scale": 2.227,
-      "contact": "none"
+      "scale": 2.227
     },
     {
       "id": "tree-552",
@@ -25692,8 +24811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2772.6,
       "y": 4788.8,
       "heading": 1.499,
-      "scale": 2.239,
-      "contact": "none"
+      "scale": 2.239
     },
     {
       "id": "tree-553",
@@ -25701,8 +24819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2976.4,
       "y": 4458.8,
       "heading": 6.133,
-      "scale": 2.856,
-      "contact": "none"
+      "scale": 2.856
     },
     {
       "id": "tree-554",
@@ -25710,8 +24827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2923.7,
       "y": 4701.4,
       "heading": 5.848,
-      "scale": 1.675,
-      "contact": "none"
+      "scale": 1.675
     },
     {
       "id": "tree-555",
@@ -25719,8 +24835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -176.2,
       "y": 2235.7,
       "heading": 1.175,
-      "scale": 2.308,
-      "contact": "none"
+      "scale": 2.308
     },
     {
       "id": "tree-556",
@@ -25728,8 +24843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1280.7,
       "y": -3148.1,
       "heading": 0.453,
-      "scale": 1.934,
-      "contact": "none"
+      "scale": 1.934
     },
     {
       "id": "tree-557",
@@ -25737,8 +24851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -923.3,
       "y": -3306.2,
       "heading": 3.85,
-      "scale": 2.108,
-      "contact": "none"
+      "scale": 2.108
     },
     {
       "id": "tree-558",
@@ -25746,8 +24859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2464.5,
       "y": 1414.8,
       "heading": 0.768,
-      "scale": 1.968,
-      "contact": "none"
+      "scale": 1.968
     },
     {
       "id": "tree-559",
@@ -25755,8 +24867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2045.7,
       "y": 1233.5,
       "heading": 6.135,
-      "scale": 1.499,
-      "contact": "none"
+      "scale": 1.499
     },
     {
       "id": "tree-560",
@@ -25764,8 +24875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2335.3,
       "y": 1098.1,
       "heading": 4.79,
-      "scale": 1.915,
-      "contact": "none"
+      "scale": 1.915
     },
     {
       "id": "tree-561",
@@ -25773,8 +24883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2308.8,
       "y": 1589.2,
       "heading": 0.044,
-      "scale": 2.388,
-      "contact": "none"
+      "scale": 2.388
     },
     {
       "id": "tree-562",
@@ -25782,8 +24891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2249.3,
       "y": 1420.5,
       "heading": 2.863,
-      "scale": 2.238,
-      "contact": "none"
+      "scale": 2.238
     },
     {
       "id": "tree-563",
@@ -25791,8 +24899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4023,
       "y": 4251.2,
       "heading": 0.848,
-      "scale": 2.255,
-      "contact": "none"
+      "scale": 2.255
     },
     {
       "id": "tree-564",
@@ -25800,8 +24907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4086.5,
       "y": 4264.5,
       "heading": 4.121,
-      "scale": 1.628,
-      "contact": "none"
+      "scale": 1.628
     },
     {
       "id": "tree-565",
@@ -25809,8 +24915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4107.5,
       "y": 4256,
       "heading": 5.128,
-      "scale": 2.162,
-      "contact": "none"
+      "scale": 2.162
     },
     {
       "id": "tree-566",
@@ -25818,8 +24923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4132.9,
       "y": 4247.2,
       "heading": 1.014,
-      "scale": 1.88,
-      "contact": "none"
+      "scale": 1.88
     },
     {
       "id": "tree-567",
@@ -25827,8 +24931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3940.7,
       "y": 3027.9,
       "heading": 1.329,
-      "scale": 1.571,
-      "contact": "none"
+      "scale": 1.571
     },
     {
       "id": "tree-568",
@@ -25836,8 +24939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1871.8,
       "y": 4327,
       "heading": 3.968,
-      "scale": 2.126,
-      "contact": "none"
+      "scale": 2.126
     },
     {
       "id": "tree-569",
@@ -25845,8 +24947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4036,
       "y": 1390.7,
       "heading": 1.108,
-      "scale": 2.402,
-      "contact": "none"
+      "scale": 2.402
     },
     {
       "id": "tree-570",
@@ -25854,8 +24955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4235.1,
       "y": 1478.1,
       "heading": 1.561,
-      "scale": 2.444,
-      "contact": "none"
+      "scale": 2.444
     },
     {
       "id": "tree-571",
@@ -25863,8 +24963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4060.1,
       "y": 1443.9,
       "heading": 6.059,
-      "scale": 1.693,
-      "contact": "none"
+      "scale": 1.693
     },
     {
       "id": "tree-572",
@@ -25872,8 +24971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4168.5,
       "y": 1266.8,
       "heading": 1.909,
-      "scale": 2.237,
-      "contact": "none"
+      "scale": 2.237
     },
     {
       "id": "tree-573",
@@ -25881,8 +24979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -477.4,
       "y": -3345.2,
       "heading": 3.102,
-      "scale": 1.502,
-      "contact": "none"
+      "scale": 1.502
     },
     {
       "id": "tree-574",
@@ -25890,8 +24987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2454.8,
       "y": -1761.3,
       "heading": 2.48,
-      "scale": 1.694,
-      "contact": "none"
+      "scale": 1.694
     },
     {
       "id": "tree-575",
@@ -25899,8 +24995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2167.5,
       "y": -1790,
       "heading": 5.412,
-      "scale": 2.535,
-      "contact": "none"
+      "scale": 2.535
     },
     {
       "id": "tree-576",
@@ -25908,8 +25003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2281.5,
       "y": -1407.8,
       "heading": 5.313,
-      "scale": 2.194,
-      "contact": "none"
+      "scale": 2.194
     },
     {
       "id": "tree-577",
@@ -25917,8 +25011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2327.9,
       "y": -1582.2,
       "heading": 1.653,
-      "scale": 2.326,
-      "contact": "none"
+      "scale": 2.326
     },
     {
       "id": "tree-578",
@@ -25926,8 +25019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2485,
       "y": -1556.7,
       "heading": 0.559,
-      "scale": 1.48,
-      "contact": "none"
+      "scale": 1.48
     },
     {
       "id": "tree-579",
@@ -25935,8 +25027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2136.3,
       "y": -1683.9,
       "heading": 5.848,
-      "scale": 1.712,
-      "contact": "none"
+      "scale": 1.712
     },
     {
       "id": "tree-580",
@@ -25944,8 +25035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -354.4,
       "y": 2953.3,
       "heading": 3.286,
-      "scale": 1.752,
-      "contact": "none"
+      "scale": 1.752
     },
     {
       "id": "tree-581",
@@ -25953,8 +25043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -242.5,
       "y": 3126.5,
       "heading": 4.805,
-      "scale": 1.799,
-      "contact": "none"
+      "scale": 1.799
     },
     {
       "id": "tree-582",
@@ -25962,8 +25051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -320.4,
       "y": 3155,
       "heading": 2.296,
-      "scale": 1.869,
-      "contact": "none"
+      "scale": 1.869
     },
     {
       "id": "tree-583",
@@ -25971,8 +25059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -447.5,
       "y": 2911.3,
       "heading": 5.255,
-      "scale": 1.471,
-      "contact": "none"
+      "scale": 1.471
     },
     {
       "id": "tree-584",
@@ -25980,8 +25067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -334.3,
       "y": 3088.6,
       "heading": 2.89,
-      "scale": 1.506,
-      "contact": "none"
+      "scale": 1.506
     },
     {
       "id": "tree-585",
@@ -25989,8 +25075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 969.7,
       "y": 5029.5,
       "heading": 1.199,
-      "scale": 1.996,
-      "contact": "none"
+      "scale": 1.996
     },
     {
       "id": "tree-586",
@@ -25998,8 +25083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1188.3,
       "y": 5059.1,
       "heading": 3.84,
-      "scale": 2.078,
-      "contact": "none"
+      "scale": 2.078
     },
     {
       "id": "tree-587",
@@ -26007,8 +25091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 377.6,
       "y": 5067.3,
       "heading": 1.987,
-      "scale": 2.13,
-      "contact": "none"
+      "scale": 2.13
     },
     {
       "id": "tree-588",
@@ -26016,8 +25099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 435,
       "y": 4930.5,
       "heading": 0.615,
-      "scale": 2.529,
-      "contact": "none"
+      "scale": 2.529
     },
     {
       "id": "tree-589",
@@ -26025,8 +25107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 170.9,
       "y": 4837.1,
       "heading": 5.099,
-      "scale": 2.113,
-      "contact": "none"
+      "scale": 2.113
     },
     {
       "id": "tree-590",
@@ -26034,8 +25115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 389.3,
       "y": 4888,
       "heading": 4.854,
-      "scale": 1.445,
-      "contact": "none"
+      "scale": 1.445
     },
     {
       "id": "tree-591",
@@ -26043,8 +25123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 172.8,
       "y": 4923.7,
       "heading": 2.023,
-      "scale": 1.942,
-      "contact": "none"
+      "scale": 1.942
     },
     {
       "id": "tree-592",
@@ -26052,8 +25131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 450,
       "y": 5066.9,
       "heading": 0.098,
-      "scale": 2.311,
-      "contact": "none"
+      "scale": 2.311
     },
     {
       "id": "tree-593",
@@ -26061,8 +25139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 137.4,
       "y": 1497.9,
       "heading": 5.903,
-      "scale": 2.137,
-      "contact": "none"
+      "scale": 2.137
     },
     {
       "id": "tree-594",
@@ -26078,8 +25155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 276.4,
       "y": 1394.6,
       "heading": 6.281,
-      "scale": 2.567,
-      "contact": "none"
+      "scale": 2.567
     },
     {
       "id": "tree-596",
@@ -26095,8 +25171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2400.5,
       "y": -1504.2,
       "heading": 3.812,
-      "scale": 1.617,
-      "contact": "none"
+      "scale": 1.617
     },
     {
       "id": "tree-598",
@@ -26104,8 +25179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2155.5,
       "y": -1318.7,
       "heading": 3.532,
-      "scale": 1.702,
-      "contact": "none"
+      "scale": 1.702
     },
     {
       "id": "tree-599",
@@ -26113,8 +25187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2351.8,
       "y": -1157.2,
       "heading": 2.018,
-      "scale": 2.798,
-      "contact": "none"
+      "scale": 2.798
     },
     {
       "id": "tree-600",
@@ -26122,8 +25195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 903.3,
       "y": 3348.9,
       "heading": 4.158,
-      "scale": 1.973,
-      "contact": "none"
+      "scale": 1.973
     },
     {
       "id": "tree-601",
@@ -26131,8 +25203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 956.3,
       "y": 3043.3,
       "heading": 0.324,
-      "scale": 2.719,
-      "contact": "none"
+      "scale": 2.719
     },
     {
       "id": "tree-602",
@@ -26140,8 +25211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 881.4,
       "y": 3170.1,
       "heading": 6.075,
-      "scale": 1.805,
-      "contact": "none"
+      "scale": 1.805
     },
     {
       "id": "tree-603",
@@ -26149,8 +25219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 917.5,
       "y": 3104,
       "heading": 4.106,
-      "scale": 2.588,
-      "contact": "none"
+      "scale": 2.588
     },
     {
       "id": "tree-604",
@@ -26158,8 +25227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4954,
       "y": -9.2,
       "heading": 1.592,
-      "scale": 2.01,
-      "contact": "none"
+      "scale": 2.01
     },
     {
       "id": "tree-605",
@@ -26167,8 +25235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -5006.4,
       "y": 17.7,
       "heading": 2.589,
-      "scale": 2.219,
-      "contact": "none"
+      "scale": 2.219
     },
     {
       "id": "tree-606",
@@ -26176,8 +25243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3123.5,
       "y": 3495.8,
       "heading": 5.024,
-      "scale": 2.06,
-      "contact": "none"
+      "scale": 2.06
     },
     {
       "id": "tree-607",
@@ -26185,8 +25251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3095.3,
       "y": 3379.7,
       "heading": 1.133,
-      "scale": 2.393,
-      "contact": "none"
+      "scale": 2.393
     },
     {
       "id": "tree-608",
@@ -26194,8 +25259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3152.5,
       "y": 3287.9,
       "heading": 6.019,
-      "scale": 1.931,
-      "contact": "none"
+      "scale": 1.931
     },
     {
       "id": "tree-609",
@@ -26203,8 +25267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2919.4,
       "y": 3575,
       "heading": 1.461,
-      "scale": 2.565,
-      "contact": "none"
+      "scale": 2.565
     },
     {
       "id": "tree-610",
@@ -26212,8 +25275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2842.8,
       "y": 3162.8,
       "heading": 1.398,
-      "scale": 2.474,
-      "contact": "none"
+      "scale": 2.474
     },
     {
       "id": "tree-611",
@@ -26221,8 +25283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4428.9,
       "y": 755,
       "heading": 2.853,
-      "scale": 2.305,
-      "contact": "none"
+      "scale": 2.305
     },
     {
       "id": "tree-612",
@@ -26230,8 +25291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4324.4,
       "y": 882.1,
       "heading": 1.976,
-      "scale": 2.374,
-      "contact": "none"
+      "scale": 2.374
     },
     {
       "id": "tree-613",
@@ -26239,8 +25299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4201.5,
       "y": 625.5,
       "heading": 0.736,
-      "scale": 2.493,
-      "contact": "none"
+      "scale": 2.493
     },
     {
       "id": "tree-614",
@@ -26248,8 +25307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4325.9,
       "y": 694.3,
       "heading": 3.721,
-      "scale": 1.686,
-      "contact": "none"
+      "scale": 1.686
     },
     {
       "id": "tree-615",
@@ -26257,8 +25315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4245.3,
       "y": 656,
       "heading": 1.027,
-      "scale": 2.226,
-      "contact": "none"
+      "scale": 2.226
     },
     {
       "id": "tree-616",
@@ -26266,8 +25323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2660.9,
       "y": 3795.8,
       "heading": 2.59,
-      "scale": 2.656,
-      "contact": "none"
+      "scale": 2.656
     },
     {
       "id": "tree-617",
@@ -26275,8 +25331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1587.9,
       "y": 4047.7,
       "heading": 1.666,
-      "scale": 1.406,
-      "contact": "none"
+      "scale": 1.406
     },
     {
       "id": "tree-618",
@@ -26284,8 +25339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1699.2,
       "y": 3882.1,
       "heading": 5.872,
-      "scale": 1.504,
-      "contact": "none"
+      "scale": 1.504
     },
     {
       "id": "tree-619",
@@ -26293,8 +25347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1594.2,
       "y": 4033.3,
       "heading": 2.012,
-      "scale": 2.055,
-      "contact": "none"
+      "scale": 2.055
     },
     {
       "id": "tree-620",
@@ -26302,8 +25355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -607.9,
       "y": -2864.7,
       "heading": 0.398,
-      "scale": 1.709,
-      "contact": "none"
+      "scale": 1.709
     },
     {
       "id": "tree-621",
@@ -26311,8 +25363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -49.6,
       "y": -3068.6,
       "heading": 3.153,
-      "scale": 2.615,
-      "contact": "none"
+      "scale": 2.615
     },
     {
       "id": "tree-622",
@@ -26320,8 +25371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -224.2,
       "y": -2956.4,
       "heading": 5.271,
-      "scale": 2.527,
-      "contact": "none"
+      "scale": 2.527
     },
     {
       "id": "tree-623",
@@ -26329,8 +25379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -608.2,
       "y": -3094.4,
       "heading": 0.453,
-      "scale": 1.77,
-      "contact": "none"
+      "scale": 1.77
     },
     {
       "id": "tree-624",
@@ -26338,8 +25387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -518.1,
       "y": -3177,
       "heading": 2.841,
-      "scale": 2.422,
-      "contact": "none"
+      "scale": 2.422
     },
     {
       "id": "tree-625",
@@ -26347,8 +25395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -767.9,
       "y": -3124.2,
       "heading": 2.736,
-      "scale": 2.555,
-      "contact": "none"
+      "scale": 2.555
     },
     {
       "id": "tree-626",
@@ -26356,8 +25403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4079,
       "y": 3993.7,
       "heading": 1.955,
-      "scale": 2.663,
-      "contact": "none"
+      "scale": 2.663
     },
     {
       "id": "tree-627",
@@ -26365,8 +25411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4166.3,
       "y": 3908.5,
       "heading": 1.982,
-      "scale": 1.768,
-      "contact": "none"
+      "scale": 1.768
     },
     {
       "id": "tree-628",
@@ -26374,8 +25419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4210.2,
       "y": 4103.3,
       "heading": 0.95,
-      "scale": 3.108,
-      "contact": "none"
+      "scale": 3.108
     },
     {
       "id": "tree-629",
@@ -26415,8 +25459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3795.3,
       "y": -1630.4,
       "heading": 4.298,
-      "scale": 1.435,
-      "contact": "none"
+      "scale": 1.435
     },
     {
       "id": "tree-634",
@@ -26456,8 +25499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3058,
       "y": -98.1,
       "heading": 4.947,
-      "scale": 1.95,
-      "contact": "none"
+      "scale": 1.95
     },
     {
       "id": "tree-639",
@@ -26465,8 +25507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2980.3,
       "y": -478.6,
       "heading": 3.224,
-      "scale": 2.521,
-      "contact": "none"
+      "scale": 2.521
     },
     {
       "id": "tree-640",
@@ -26474,8 +25515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2993,
       "y": -308,
       "heading": 4.369,
-      "scale": 2.449,
-      "contact": "none"
+      "scale": 2.449
     },
     {
       "id": "tree-641",
@@ -26483,8 +25523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3147.1,
       "y": -299.3,
       "heading": 5.332,
-      "scale": 2.335,
-      "contact": "none"
+      "scale": 2.335
     },
     {
       "id": "tree-642",
@@ -26492,8 +25531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2910.4,
       "y": -432.4,
       "heading": 1.456,
-      "scale": 1.35,
-      "contact": "none"
+      "scale": 1.35
     },
     {
       "id": "tree-643",
@@ -26501,8 +25539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2876.3,
       "y": -117,
       "heading": 0.236,
-      "scale": 1.403,
-      "contact": "none"
+      "scale": 1.403
     },
     {
       "id": "tree-644",
@@ -26510,8 +25547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4054.5,
       "y": -735.8,
       "heading": 2.377,
-      "scale": 1.925,
-      "contact": "none"
+      "scale": 1.925
     },
     {
       "id": "tree-645",
@@ -26519,8 +25555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4399.9,
       "y": -389.8,
       "heading": 1.535,
-      "scale": 2.37,
-      "contact": "none"
+      "scale": 2.37
     },
     {
       "id": "tree-646",
@@ -26528,8 +25563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1266.1,
       "y": -786.5,
       "heading": 1.93,
-      "scale": 1.94,
-      "contact": "none"
+      "scale": 1.94
     },
     {
       "id": "tree-647",
@@ -26545,8 +25579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1290.1,
       "y": -761.3,
       "heading": 3.409,
-      "scale": 2.737,
-      "contact": "none"
+      "scale": 2.737
     },
     {
       "id": "tree-649",
@@ -26554,8 +25587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1379.9,
       "y": -874.9,
       "heading": 0.402,
-      "scale": 2.421,
-      "contact": "none"
+      "scale": 2.421
     },
     {
       "id": "tree-650",
@@ -26563,8 +25595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1262.5,
       "y": -913.8,
       "heading": 2.995,
-      "scale": 2.296,
-      "contact": "none"
+      "scale": 2.296
     },
     {
       "id": "tree-651",
@@ -26572,8 +25603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1318.6,
       "y": 1707.8,
       "heading": 1.957,
-      "scale": 2.341,
-      "contact": "none"
+      "scale": 2.341
     },
     {
       "id": "tree-652",
@@ -26581,8 +25611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1315.5,
       "y": 1669.3,
       "heading": 3.258,
-      "scale": 2.222,
-      "contact": "none"
+      "scale": 2.222
     },
     {
       "id": "tree-653",
@@ -26590,8 +25619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 931.6,
       "y": 1866.7,
       "heading": 1.306,
-      "scale": 2.248,
-      "contact": "none"
+      "scale": 2.248
     },
     {
       "id": "tree-654",
@@ -26599,8 +25627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1013.7,
       "y": 1995.6,
       "heading": 0.785,
-      "scale": 2.289,
-      "contact": "none"
+      "scale": 2.289
     },
     {
       "id": "tree-655",
@@ -26608,8 +25635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1194,
       "y": 1814.3,
       "heading": 2.697,
-      "scale": 2.005,
-      "contact": "none"
+      "scale": 2.005
     },
     {
       "id": "tree-656",
@@ -26617,8 +25643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1339.5,
       "y": 1975.3,
       "heading": 1.397,
-      "scale": 2.504,
-      "contact": "none"
+      "scale": 2.504
     },
     {
       "id": "tree-657",
@@ -26626,8 +25651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1132,
       "y": 1552.9,
       "heading": 6.236,
-      "scale": 2.542,
-      "contact": "none"
+      "scale": 2.542
     },
     {
       "id": "tree-658",
@@ -26635,8 +25659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 957.2,
       "y": 1927.5,
       "heading": 1.896,
-      "scale": 2.702,
-      "contact": "none"
+      "scale": 2.702
     },
     {
       "id": "tree-659",
@@ -26644,8 +25667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 255.9,
       "y": 5065.7,
       "heading": 2.375,
-      "scale": 2.62,
-      "contact": "none"
+      "scale": 2.62
     },
     {
       "id": "tree-660",
@@ -26653,8 +25675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 818.3,
       "y": 4696.6,
       "heading": 4.079,
-      "scale": 1.374,
-      "contact": "none"
+      "scale": 1.374
     },
     {
       "id": "tree-661",
@@ -26662,8 +25683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 724.3,
       "y": 4947.8,
       "heading": 0.348,
-      "scale": 1.422,
-      "contact": "none"
+      "scale": 1.422
     },
     {
       "id": "tree-662",
@@ -26671,8 +25691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 220.8,
       "y": 5033.2,
       "heading": 4.477,
-      "scale": 2.314,
-      "contact": "none"
+      "scale": 2.314
     },
     {
       "id": "tree-663",
@@ -26680,8 +25699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 553.4,
       "y": 5073.4,
       "heading": 3.796,
-      "scale": 2.278,
-      "contact": "none"
+      "scale": 2.278
     },
     {
       "id": "tree-664",
@@ -26689,8 +25707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1785.2,
       "y": -2564,
       "heading": 1.458,
-      "scale": 2.496,
-      "contact": "none"
+      "scale": 2.496
     },
     {
       "id": "tree-665",
@@ -26698,8 +25715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 99.7,
       "y": 1524.4,
       "heading": 4.474,
-      "scale": 2.409,
-      "contact": "none"
+      "scale": 2.409
     },
     {
       "id": "tree-666",
@@ -26723,8 +25739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2829.5,
       "y": 2481.9,
       "heading": 2.739,
-      "scale": 1.831,
-      "contact": "none"
+      "scale": 1.831
     },
     {
       "id": "tree-669",
@@ -26732,8 +25747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2558.2,
       "y": 2746.4,
       "heading": 3.705,
-      "scale": 1.542,
-      "contact": "none"
+      "scale": 1.542
     },
     {
       "id": "tree-670",
@@ -26741,8 +25755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2826.9,
       "y": 2224.9,
       "heading": 3.258,
-      "scale": 2.062,
-      "contact": "none"
+      "scale": 2.062
     },
     {
       "id": "tree-671",
@@ -26750,8 +25763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2414.3,
       "y": 2529.8,
       "heading": 2.21,
-      "scale": 1.664,
-      "contact": "none"
+      "scale": 1.664
     },
     {
       "id": "tree-672",
@@ -26759,8 +25771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2592.5,
       "y": 2547.7,
       "heading": 2.108,
-      "scale": 2.341,
-      "contact": "none"
+      "scale": 2.341
     },
     {
       "id": "tree-673",
@@ -26768,8 +25779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2571.5,
       "y": 2175.7,
       "heading": 3.443,
-      "scale": 2.051,
-      "contact": "none"
+      "scale": 2.051
     },
     {
       "id": "tree-674",
@@ -26777,8 +25787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2962.8,
       "y": 2566.2,
       "heading": 4.262,
-      "scale": 2.112,
-      "contact": "none"
+      "scale": 2.112
     },
     {
       "id": "tree-675",
@@ -26786,8 +25795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2926.3,
       "y": 2403.4,
       "heading": 0.025,
-      "scale": 2.313,
-      "contact": "none"
+      "scale": 2.313
     },
     {
       "id": "tree-676",
@@ -26795,8 +25803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2206.1,
       "y": 3833,
       "heading": 4.938,
-      "scale": 2.172,
-      "contact": "none"
+      "scale": 2.172
     },
     {
       "id": "tree-677",
@@ -26804,8 +25811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2031.7,
       "y": 4005.4,
       "heading": 5.736,
-      "scale": 1.84,
-      "contact": "none"
+      "scale": 1.84
     },
     {
       "id": "tree-678",
@@ -26813,8 +25819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2186,
       "y": 3763.7,
       "heading": 1.007,
-      "scale": 2.459,
-      "contact": "none"
+      "scale": 2.459
     },
     {
       "id": "tree-679",
@@ -26822,8 +25827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2036.3,
       "y": 3760.5,
       "heading": 5.062,
-      "scale": 1.43,
-      "contact": "none"
+      "scale": 1.43
     },
     {
       "id": "tree-680",
@@ -26831,8 +25835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1923.6,
       "y": 3930.8,
       "heading": 4.608,
-      "scale": 1.706,
-      "contact": "none"
+      "scale": 1.706
     },
     {
       "id": "tree-681",
@@ -26840,8 +25843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3943.1,
       "y": -1699.1,
       "heading": 5.485,
-      "scale": 1.476,
-      "contact": "none"
+      "scale": 1.476
     },
     {
       "id": "tree-682",
@@ -26849,8 +25851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2675.6,
       "y": 3616.5,
       "heading": 4.363,
-      "scale": 1.455,
-      "contact": "none"
+      "scale": 1.455
     },
     {
       "id": "tree-683",
@@ -26858,8 +25859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2596.6,
       "y": 3675.6,
       "heading": 5.914,
-      "scale": 1.676,
-      "contact": "none"
+      "scale": 1.676
     },
     {
       "id": "tree-684",
@@ -26867,8 +25867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2637.7,
       "y": 3626.6,
       "heading": 2.57,
-      "scale": 1.789,
-      "contact": "none"
+      "scale": 1.789
     },
     {
       "id": "tree-685",
@@ -26876,8 +25875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2779.9,
       "y": 3608.4,
       "heading": 1.04,
-      "scale": 2.343,
-      "contact": "none"
+      "scale": 2.343
     },
     {
       "id": "tree-686",
@@ -26885,8 +25883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2448.5,
       "y": 3088.9,
       "heading": 3.524,
-      "scale": 2.585,
-      "contact": "none"
+      "scale": 2.585
     },
     {
       "id": "tree-687",
@@ -26894,8 +25891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2733.9,
       "y": 3015.8,
       "heading": 0.029,
-      "scale": 2.282,
-      "contact": "none"
+      "scale": 2.282
     },
     {
       "id": "tree-688",
@@ -26903,8 +25899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 180.1,
       "y": 2340.8,
       "heading": 3.013,
-      "scale": 2.328,
-      "contact": "none"
+      "scale": 2.328
     },
     {
       "id": "tree-689",
@@ -26912,8 +25907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -78.8,
       "y": 2320.3,
       "heading": 6.242,
-      "scale": 2.653,
-      "contact": "none"
+      "scale": 2.653
     },
     {
       "id": "tree-690",
@@ -26921,8 +25915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 290.2,
       "y": 2759.5,
       "heading": 2.05,
-      "scale": 1.406,
-      "contact": "none"
+      "scale": 1.406
     },
     {
       "id": "tree-691",
@@ -26930,8 +25923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 59.5,
       "y": 2283.3,
       "heading": 3.604,
-      "scale": 1.805,
-      "contact": "none"
+      "scale": 1.805
     },
     {
       "id": "tree-692",
@@ -26939,8 +25931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -102.4,
       "y": 2389.2,
       "heading": 3.092,
-      "scale": 2.685,
-      "contact": "none"
+      "scale": 2.685
     },
     {
       "id": "tree-693",
@@ -26948,8 +25939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 257,
       "y": 2419.9,
       "heading": 2.603,
-      "scale": 1.462,
-      "contact": "none"
+      "scale": 1.462
     },
     {
       "id": "tree-694",
@@ -26957,8 +25947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 154.1,
       "y": 2723,
       "heading": 0.839,
-      "scale": 1.406,
-      "contact": "none"
+      "scale": 1.406
     },
     {
       "id": "tree-695",
@@ -26966,8 +25955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -9.9,
       "y": 2712.9,
       "heading": 5.086,
-      "scale": 2.01,
-      "contact": "none"
+      "scale": 2.01
     },
     {
       "id": "tree-696",
@@ -26975,8 +25963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1506.3,
       "y": 1523.9,
       "heading": 1.622,
-      "scale": 1.819,
-      "contact": "none"
+      "scale": 1.819
     },
     {
       "id": "tree-697",
@@ -26984,8 +25971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1003,
       "y": 4423.1,
       "heading": 5.08,
-      "scale": 2.122,
-      "contact": "none"
+      "scale": 2.122
     },
     {
       "id": "tree-698",
@@ -26993,8 +25979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 636.3,
       "y": 4290.7,
       "heading": 2.971,
-      "scale": 1.962,
-      "contact": "none"
+      "scale": 1.962
     },
     {
       "id": "tree-699",
@@ -27002,8 +25987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 880.9,
       "y": 4804.8,
       "heading": 0.336,
-      "scale": 2.267,
-      "contact": "none"
+      "scale": 2.267
     },
     {
       "id": "tree-700",
@@ -27011,8 +25995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 920.5,
       "y": 4543.5,
       "heading": 2.366,
-      "scale": 1.584,
-      "contact": "none"
+      "scale": 1.584
     },
     {
       "id": "tree-701",
@@ -27028,8 +26011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2462.6,
       "y": -3002.4,
       "heading": 4.1,
-      "scale": 1.485,
-      "contact": "none"
+      "scale": 1.485
     },
     {
       "id": "tree-703",
@@ -27037,8 +26019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2489.8,
       "y": -3056.1,
       "heading": 0.752,
-      "scale": 1.762,
-      "contact": "none"
+      "scale": 1.762
     },
     {
       "id": "tree-704",
@@ -27046,8 +26027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2420.5,
       "y": -2894.8,
       "heading": 2.95,
-      "scale": 2.563,
-      "contact": "none"
+      "scale": 2.563
     },
     {
       "id": "tree-705",
@@ -27055,8 +26035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2194.9,
       "y": -3138.4,
       "heading": 2.064,
-      "scale": 2.096,
-      "contact": "none"
+      "scale": 2.096
     },
     {
       "id": "tree-706",
@@ -27064,8 +26043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2374,
       "y": -3020.4,
       "heading": 3.133,
-      "scale": 1.557,
-      "contact": "none"
+      "scale": 1.557
     },
     {
       "id": "tree-707",
@@ -27073,8 +26051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2362.9,
       "y": -2956.6,
       "heading": 1.997,
-      "scale": 1.649,
-      "contact": "none"
+      "scale": 1.649
     },
     {
       "id": "tree-708",
@@ -27082,8 +26059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2305.4,
       "y": 3864.5,
       "heading": 5.841,
-      "scale": 2.374,
-      "contact": "none"
+      "scale": 2.374
     },
     {
       "id": "tree-709",
@@ -27091,8 +26067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2050.9,
       "y": 3942.7,
       "heading": 1.196,
-      "scale": 1.645,
-      "contact": "none"
+      "scale": 1.645
     },
     {
       "id": "tree-710",
@@ -27100,8 +26075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2200.9,
       "y": 3910.8,
       "heading": 1.317,
-      "scale": 2.221,
-      "contact": "none"
+      "scale": 2.221
     },
     {
       "id": "tree-711",
@@ -27109,8 +26083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1958.7,
       "y": 3771.4,
       "heading": 0.693,
-      "scale": 2.454,
-      "contact": "none"
+      "scale": 2.454
     },
     {
       "id": "tree-712",
@@ -27118,8 +26091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2158.5,
       "y": 3771.3,
       "heading": 4.195,
-      "scale": 2.134,
-      "contact": "none"
+      "scale": 2.134
     },
     {
       "id": "tree-713",
@@ -27127,8 +26099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1670.1,
       "y": -152.3,
       "heading": 4.462,
-      "scale": 2.121,
-      "contact": "none"
+      "scale": 2.121
     },
     {
       "id": "tree-714",
@@ -27144,8 +26115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1714.5,
       "y": -235.4,
       "heading": 4.647,
-      "scale": 2.14,
-      "contact": "none"
+      "scale": 2.14
     },
     {
       "id": "tree-716",
@@ -27153,8 +26123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1839.6,
       "y": -353.2,
       "heading": 0.169,
-      "scale": 2.69,
-      "contact": "none"
+      "scale": 2.69
     },
     {
       "id": "tree-717",
@@ -27178,8 +26147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3919.9,
       "y": 1542.4,
       "heading": 0.89,
-      "scale": 2.66,
-      "contact": "none"
+      "scale": 2.66
     },
     {
       "id": "tree-720",
@@ -27187,8 +26155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3982.7,
       "y": 1748.8,
       "heading": 3.159,
-      "scale": 2.521,
-      "contact": "none"
+      "scale": 2.521
     },
     {
       "id": "tree-721",
@@ -27196,8 +26163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3811.2,
       "y": 1619.7,
       "heading": 2.656,
-      "scale": 2.835,
-      "contact": "none"
+      "scale": 2.835
     },
     {
       "id": "tree-722",
@@ -27205,8 +26171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3955.7,
       "y": 1854.7,
       "heading": 1.517,
-      "scale": 2.462,
-      "contact": "none"
+      "scale": 2.462
     },
     {
       "id": "tree-723",
@@ -27214,8 +26179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4054.2,
       "y": 1759.7,
       "heading": 1.397,
-      "scale": 1.87,
-      "contact": "none"
+      "scale": 1.87
     },
     {
       "id": "tree-724",
@@ -27223,8 +26187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3855.7,
       "y": 1529.4,
       "heading": 3.795,
-      "scale": 2.104,
-      "contact": "none"
+      "scale": 2.104
     },
     {
       "id": "tree-725",
@@ -27232,8 +26195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -333.6,
       "y": -3011.1,
       "heading": 1.081,
-      "scale": 2.276,
-      "contact": "none"
+      "scale": 2.276
     },
     {
       "id": "tree-726",
@@ -27241,8 +26203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -935.7,
       "y": -3009.8,
       "heading": 5.833,
-      "scale": 2.043,
-      "contact": "none"
+      "scale": 2.043
     },
     {
       "id": "tree-727",
@@ -27250,8 +26211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -836.1,
       "y": -3287,
       "heading": 5.144,
-      "scale": 2.429,
-      "contact": "none"
+      "scale": 2.429
     },
     {
       "id": "tree-728",
@@ -27259,8 +26219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -570.2,
       "y": -3341.1,
       "heading": 3.273,
-      "scale": 1.414,
-      "contact": "none"
+      "scale": 1.414
     },
     {
       "id": "tree-729",
@@ -27268,8 +26227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -620.3,
       "y": -3312.4,
       "heading": 1.316,
-      "scale": 1.659,
-      "contact": "none"
+      "scale": 1.659
     },
     {
       "id": "tree-730",
@@ -27277,8 +26235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -632.1,
       "y": -2911.4,
       "heading": 4.408,
-      "scale": 1.981,
-      "contact": "none"
+      "scale": 1.981
     },
     {
       "id": "tree-731",
@@ -27286,8 +26243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1646.7,
       "y": 2774.9,
       "heading": 1.673,
-      "scale": 1.802,
-      "contact": "none"
+      "scale": 1.802
     },
     {
       "id": "tree-732",
@@ -27295,8 +26251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1455.2,
       "y": 2600.4,
       "heading": 0.978,
-      "scale": 2.364,
-      "contact": "none"
+      "scale": 2.364
     },
     {
       "id": "tree-733",
@@ -27304,8 +26259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1638.5,
       "y": 2750.5,
       "heading": 0.628,
-      "scale": 2.592,
-      "contact": "none"
+      "scale": 2.592
     },
     {
       "id": "tree-734",
@@ -27313,8 +26267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3154,
       "y": 4209.6,
       "heading": 0.399,
-      "scale": 1.955,
-      "contact": "none"
+      "scale": 1.955
     },
     {
       "id": "tree-735",
@@ -27322,8 +26275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2805,
       "y": 3974.6,
       "heading": 4.147,
-      "scale": 1.494,
-      "contact": "none"
+      "scale": 1.494
     },
     {
       "id": "tree-736",
@@ -27331,8 +26283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3075.3,
       "y": 4100.5,
       "heading": 4.966,
-      "scale": 2.407,
-      "contact": "none"
+      "scale": 2.407
     },
     {
       "id": "tree-737",
@@ -27340,8 +26291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3157.8,
       "y": 4175.3,
       "heading": 5.959,
-      "scale": 1.648,
-      "contact": "none"
+      "scale": 1.648
     },
     {
       "id": "tree-738",
@@ -27349,8 +26299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2971.2,
       "y": 4176.2,
       "heading": 1.017,
-      "scale": 1.969,
-      "contact": "none"
+      "scale": 1.969
     },
     {
       "id": "tree-739",
@@ -27358,8 +26307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2895,
       "y": 4121.3,
       "heading": 2.706,
-      "scale": 2.084,
-      "contact": "none"
+      "scale": 2.084
     },
     {
       "id": "tree-740",
@@ -27375,8 +26323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -387,
       "y": 3811.6,
       "heading": 2.348,
-      "scale": 2.076,
-      "contact": "none"
+      "scale": 2.076
     },
     {
       "id": "tree-742",
@@ -27384,8 +26331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -536.3,
       "y": 3864.6,
       "heading": 3.166,
-      "scale": 1.788,
-      "contact": "none"
+      "scale": 1.788
     },
     {
       "id": "tree-743",
@@ -27393,8 +26339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -513.8,
       "y": 4050.9,
       "heading": 4.838,
-      "scale": 2.145,
-      "contact": "none"
+      "scale": 2.145
     },
     {
       "id": "tree-744",
@@ -27402,8 +26347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 46.6,
       "y": 3751.8,
       "heading": 4.453,
-      "scale": 1.807,
-      "contact": "none"
+      "scale": 1.807
     },
     {
       "id": "tree-745",
@@ -27411,8 +26355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -97.9,
       "y": 3623.4,
       "heading": 2.84,
-      "scale": 1.637,
-      "contact": "none"
+      "scale": 1.637
     },
     {
       "id": "tree-746",
@@ -27420,8 +26363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -362.7,
       "y": 4064.6,
       "heading": 1.303,
-      "scale": 2.457,
-      "contact": "none"
+      "scale": 2.457
     },
     {
       "id": "tree-747",
@@ -27429,8 +26371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2862.7,
       "y": 1855.3,
       "heading": 6.073,
-      "scale": 2.255,
-      "contact": "none"
+      "scale": 2.255
     },
     {
       "id": "tree-748",
@@ -27438,8 +26379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1623.4,
       "y": -918.3,
       "heading": 0.641,
-      "scale": 1.601,
-      "contact": "none"
+      "scale": 1.601
     },
     {
       "id": "tree-749",
@@ -27447,8 +26387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1342.5,
       "y": -734.9,
       "heading": 2.129,
-      "scale": 1.527,
-      "contact": "none"
+      "scale": 1.527
     },
     {
       "id": "tree-750",
@@ -27456,8 +26395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1628.9,
       "y": -838.9,
       "heading": 0.967,
-      "scale": 1.56,
-      "contact": "none"
+      "scale": 1.56
     },
     {
       "id": "tree-751",
@@ -27465,8 +26403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1549,
       "y": -1115.1,
       "heading": 1.542,
-      "scale": 1.485,
-      "contact": "none"
+      "scale": 1.485
     },
     {
       "id": "tree-752",
@@ -27474,8 +26411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3183.5,
       "y": 2128.5,
       "heading": 3.2,
-      "scale": 2.409,
-      "contact": "none"
+      "scale": 2.409
     },
     {
       "id": "tree-753",
@@ -27483,8 +26419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2363.4,
       "y": -129.3,
       "heading": 1.168,
-      "scale": 2.782,
-      "contact": "none"
+      "scale": 2.782
     },
     {
       "id": "tree-754",
@@ -27492,8 +26427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4071.9,
       "y": 2259.3,
       "heading": 0.128,
-      "scale": 2.274,
-      "contact": "none"
+      "scale": 2.274
     },
     {
       "id": "tree-755",
@@ -27501,8 +26435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3970.7,
       "y": 2229,
       "heading": 5.374,
-      "scale": 1.62,
-      "contact": "none"
+      "scale": 1.62
     },
     {
       "id": "tree-756",
@@ -27510,8 +26443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4164.9,
       "y": 2339.3,
       "heading": 2.023,
-      "scale": 2.126,
-      "contact": "none"
+      "scale": 2.126
     },
     {
       "id": "tree-757",
@@ -27519,8 +26451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4202.7,
       "y": 2438.4,
       "heading": 0.769,
-      "scale": 2.243,
-      "contact": "none"
+      "scale": 2.243
     },
     {
       "id": "tree-758",
@@ -27528,8 +26459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4094.4,
       "y": 2543.5,
       "heading": 5.669,
-      "scale": 1.84,
-      "contact": "none"
+      "scale": 1.84
     },
     {
       "id": "tree-759",
@@ -27537,8 +26467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4249.8,
       "y": 2573.7,
       "heading": 1.53,
-      "scale": 2.506,
-      "contact": "none"
+      "scale": 2.506
     },
     {
       "id": "tree-760",
@@ -27546,8 +26475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3928.4,
       "y": 2324.3,
       "heading": 5.092,
-      "scale": 2.425,
-      "contact": "none"
+      "scale": 2.425
     },
     {
       "id": "tree-761",
@@ -27555,8 +26483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4034.7,
       "y": 2627.8,
       "heading": 1.432,
-      "scale": 3.028,
-      "contact": "none"
+      "scale": 3.028
     },
     {
       "id": "tree-762",
@@ -27564,8 +26491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3836.5,
       "y": 1464.8,
       "heading": 4.767,
-      "scale": 2.739,
-      "contact": "none"
+      "scale": 2.739
     },
     {
       "id": "tree-763",
@@ -27573,8 +26499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4031.2,
       "y": 1680.9,
       "heading": 1.155,
-      "scale": 1.494,
-      "contact": "none"
+      "scale": 1.494
     },
     {
       "id": "tree-764",
@@ -27582,8 +26507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4178.1,
       "y": 1600,
       "heading": 3.514,
-      "scale": 2.163,
-      "contact": "none"
+      "scale": 2.163
     },
     {
       "id": "tree-765",
@@ -27591,8 +26515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4100,
       "y": 1679.7,
       "heading": 2.3,
-      "scale": 2.403,
-      "contact": "none"
+      "scale": 2.403
     },
     {
       "id": "tree-766",
@@ -27600,8 +26523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -958.5,
       "y": -3073.3,
       "heading": 4.162,
-      "scale": 1.569,
-      "contact": "none"
+      "scale": 1.569
     },
     {
       "id": "tree-767",
@@ -27609,8 +26531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1180.8,
       "y": -3173.3,
       "heading": 2.873,
-      "scale": 1.726,
-      "contact": "none"
+      "scale": 1.726
     },
     {
       "id": "tree-768",
@@ -27618,8 +26539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1025.6,
       "y": -3163.2,
       "heading": 1.38,
-      "scale": 1.389,
-      "contact": "none"
+      "scale": 1.389
     },
     {
       "id": "tree-769",
@@ -27627,8 +26547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -904.8,
       "y": -3083.3,
       "heading": 1.241,
-      "scale": 2.096,
-      "contact": "none"
+      "scale": 2.096
     },
     {
       "id": "tree-770",
@@ -27636,8 +26555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1153.3,
       "y": -3104.7,
       "heading": 1.973,
-      "scale": 1.64,
-      "contact": "none"
+      "scale": 1.64
     },
     {
       "id": "tree-771",
@@ -27645,8 +26563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1182.5,
       "y": -3062.1,
       "heading": 0.847,
-      "scale": 2.182,
-      "contact": "none"
+      "scale": 2.182
     },
     {
       "id": "tree-772",
@@ -27654,8 +26571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3962.1,
       "y": 1215.3,
       "heading": 4.221,
-      "scale": 2.475,
-      "contact": "none"
+      "scale": 2.475
     },
     {
       "id": "tree-773",
@@ -27663,8 +26579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3776.4,
       "y": 1129,
       "heading": 3.455,
-      "scale": 2.594,
-      "contact": "none"
+      "scale": 2.594
     },
     {
       "id": "tree-774",
@@ -27672,8 +26587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3807.4,
       "y": 1288.7,
       "heading": 3.925,
-      "scale": 1.459,
-      "contact": "none"
+      "scale": 1.459
     },
     {
       "id": "tree-775",
@@ -27681,8 +26595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3638.1,
       "y": 1152.1,
       "heading": 0.441,
-      "scale": 1.607,
-      "contact": "none"
+      "scale": 1.607
     },
     {
       "id": "tree-776",
@@ -27690,8 +26603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3948.4,
       "y": 1133.3,
       "heading": 0.546,
-      "scale": 2.266,
-      "contact": "none"
+      "scale": 2.266
     },
     {
       "id": "tree-777",
@@ -27699,8 +26611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3845.5,
       "y": 1122.2,
       "heading": 3.985,
-      "scale": 1.655,
-      "contact": "none"
+      "scale": 1.655
     },
     {
       "id": "tree-778",
@@ -27708,8 +26619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3721.9,
       "y": 1200.3,
       "heading": 0.318,
-      "scale": 3.232,
-      "contact": "none"
+      "scale": 3.232
     },
     {
       "id": "tree-779",
@@ -27717,8 +26627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3730.6,
       "y": 1084.4,
       "heading": 1.287,
-      "scale": 2.428,
-      "contact": "none"
+      "scale": 2.428
     },
     {
       "id": "tree-780",
@@ -27758,8 +26667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2684.4,
       "y": -430,
       "heading": 2.671,
-      "scale": 1.619,
-      "contact": "none"
+      "scale": 1.619
     },
     {
       "id": "tree-785",
@@ -27767,8 +26675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2421.7,
       "y": -258.5,
       "heading": 4.107,
-      "scale": 2.629,
-      "contact": "none"
+      "scale": 2.629
     },
     {
       "id": "tree-786",
@@ -27776,8 +26683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2497.2,
       "y": -287.2,
       "heading": 0.761,
-      "scale": 1.769,
-      "contact": "none"
+      "scale": 1.769
     },
     {
       "id": "tree-787",
@@ -27785,8 +26691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2528.3,
       "y": -287.4,
       "heading": 5.481,
-      "scale": 1.842,
-      "contact": "none"
+      "scale": 1.842
     },
     {
       "id": "tree-788",
@@ -27794,8 +26699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1419.4,
       "y": -2569.9,
       "heading": 1.835,
-      "scale": 1.576,
-      "contact": "none"
+      "scale": 1.576
     },
     {
       "id": "tree-789",
@@ -27803,8 +26707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1427.8,
       "y": -2352.8,
       "heading": 0.633,
-      "scale": 1.605,
-      "contact": "none"
+      "scale": 1.605
     },
     {
       "id": "tree-790",
@@ -27812,8 +26715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1370.8,
       "y": -2330.9,
       "heading": 5.445,
-      "scale": 1.649,
-      "contact": "none"
+      "scale": 1.649
     },
     {
       "id": "tree-791",
@@ -27821,8 +26723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1251,
       "y": -2378.9,
       "heading": 1.194,
-      "scale": 2.13,
-      "contact": "none"
+      "scale": 2.13
     },
     {
       "id": "tree-792",
@@ -27830,8 +26731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1415.5,
       "y": -2430.6,
       "heading": 0.105,
-      "scale": 2.105,
-      "contact": "none"
+      "scale": 2.105
     },
     {
       "id": "tree-793",
@@ -27839,8 +26739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -983.9,
       "y": -2547.2,
       "heading": 3.581,
-      "scale": 2.386,
-      "contact": "none"
+      "scale": 2.386
     },
     {
       "id": "tree-794",
@@ -27848,8 +26747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1311.9,
       "y": -2516.5,
       "heading": 1.434,
-      "scale": 1.829,
-      "contact": "none"
+      "scale": 1.829
     },
     {
       "id": "tree-795",
@@ -27857,8 +26755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 695,
       "y": -3755,
       "heading": 5.271,
-      "scale": 2.426,
-      "contact": "none"
+      "scale": 2.426
     },
     {
       "id": "tree-796",
@@ -27866,8 +26763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4430,
       "y": -174.6,
       "heading": 1.146,
-      "scale": 1.705,
-      "contact": "none"
+      "scale": 1.705
     },
     {
       "id": "tree-797",
@@ -27875,8 +26771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4261.7,
       "y": -274.2,
       "heading": 2.598,
-      "scale": 1.74,
-      "contact": "none"
+      "scale": 1.74
     },
     {
       "id": "tree-798",
@@ -27884,8 +26779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4453.2,
       "y": -465.1,
       "heading": 3.081,
-      "scale": 2.45,
-      "contact": "none"
+      "scale": 2.45
     },
     {
       "id": "tree-799",
@@ -27893,8 +26787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1689,
       "y": -3058.2,
       "heading": 3.352,
-      "scale": 2.229,
-      "contact": "none"
+      "scale": 2.229
     },
     {
       "id": "tree-800",
@@ -27902,8 +26795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 457,
       "y": 4566.4,
       "heading": 4.829,
-      "scale": 1.94,
-      "contact": "none"
+      "scale": 1.94
     },
     {
       "id": "tree-801",
@@ -27911,8 +26803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 398.7,
       "y": 4502.9,
       "heading": 5.6,
-      "scale": 1.899,
-      "contact": "none"
+      "scale": 1.899
     },
     {
       "id": "tree-802",
@@ -27920,8 +26811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 225.7,
       "y": 4681.5,
       "heading": 1.54,
-      "scale": 2.046,
-      "contact": "none"
+      "scale": 2.046
     },
     {
       "id": "tree-803",
@@ -27929,8 +26819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 193.4,
       "y": 4549.7,
       "heading": 5.533,
-      "scale": 1.848,
-      "contact": "none"
+      "scale": 1.848
     },
     {
       "id": "tree-804",
@@ -27938,8 +26827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 361,
       "y": 4602.9,
       "heading": 2.953,
-      "scale": 2.285,
-      "contact": "none"
+      "scale": 2.285
     },
     {
       "id": "tree-805",
@@ -27947,8 +26835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 405.1,
       "y": 4674,
       "heading": 4.038,
-      "scale": 2.42,
-      "contact": "none"
+      "scale": 2.42
     },
     {
       "id": "tree-806",
@@ -27956,8 +26843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2435.8,
       "y": 1819.2,
       "heading": 0.427,
-      "scale": 1.663,
-      "contact": "none"
+      "scale": 1.663
     },
     {
       "id": "tree-807",
@@ -27965,8 +26851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2644,
       "y": 1705.2,
       "heading": 4.998,
-      "scale": 1.749,
-      "contact": "none"
+      "scale": 1.749
     },
     {
       "id": "tree-808",
@@ -27974,8 +26859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2546.2,
       "y": 1598.7,
       "heading": 6.255,
-      "scale": 2.217,
-      "contact": "none"
+      "scale": 2.217
     },
     {
       "id": "tree-809",
@@ -27983,8 +26867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2519.3,
       "y": 1881.6,
       "heading": 4,
-      "scale": 2.387,
-      "contact": "none"
+      "scale": 2.387
     },
     {
       "id": "tree-810",
@@ -27992,8 +26875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2567.7,
       "y": 1465.6,
       "heading": 2.789,
-      "scale": 2.05,
-      "contact": "none"
+      "scale": 2.05
     },
     {
       "id": "tree-811",
@@ -28001,8 +26883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2757.2,
       "y": 1824.9,
       "heading": 3.017,
-      "scale": 1.62,
-      "contact": "none"
+      "scale": 1.62
     },
     {
       "id": "tree-812",
@@ -28010,8 +26891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2547.7,
       "y": 1546.3,
       "heading": 5.241,
-      "scale": 2.101,
-      "contact": "none"
+      "scale": 2.101
     },
     {
       "id": "tree-813",
@@ -28019,8 +26899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2420.5,
       "y": 1588.5,
       "heading": 2.449,
-      "scale": 2.694,
-      "contact": "none"
+      "scale": 2.694
     },
     {
       "id": "tree-814",
@@ -28028,8 +26907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2383.2,
       "y": -649.6,
       "heading": 3.524,
-      "scale": 2.656,
-      "contact": "none"
+      "scale": 2.656
     },
     {
       "id": "tree-815",
@@ -28037,8 +26915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2289.1,
       "y": -616.6,
       "heading": 1.902,
-      "scale": 2.586,
-      "contact": "none"
+      "scale": 2.586
     },
     {
       "id": "tree-816",
@@ -28046,8 +26923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2397.6,
       "y": -718.1,
       "heading": 1.895,
-      "scale": 2.694,
-      "contact": "none"
+      "scale": 2.694
     },
     {
       "id": "tree-817",
@@ -28055,8 +26931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2264.1,
       "y": -660.6,
       "heading": 2.974,
-      "scale": 1.521,
-      "contact": "none"
+      "scale": 1.521
     },
     {
       "id": "tree-818",
@@ -28064,8 +26939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2183.9,
       "y": -627,
       "heading": 0.569,
-      "scale": 1.46,
-      "contact": "none"
+      "scale": 1.46
     },
     {
       "id": "tree-819",
@@ -28089,8 +26963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -835.1,
       "y": 4573.3,
       "heading": 4.42,
-      "scale": 2.954,
-      "contact": "none"
+      "scale": 2.954
     },
     {
       "id": "tree-822",
@@ -28098,8 +26971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1217.2,
       "y": 4604.8,
       "heading": 1.093,
-      "scale": 1.889,
-      "contact": "none"
+      "scale": 1.889
     },
     {
       "id": "tree-823",
@@ -28107,8 +26979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -898.3,
       "y": 4640.5,
       "heading": 6.02,
-      "scale": 1.987,
-      "contact": "none"
+      "scale": 1.987
     },
     {
       "id": "tree-824",
@@ -28116,8 +26987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1259.8,
       "y": 4560,
       "heading": 6.133,
-      "scale": 2.333,
-      "contact": "none"
+      "scale": 2.333
     },
     {
       "id": "tree-825",
@@ -28125,8 +26995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1086.1,
       "y": 4661.8,
       "heading": 0.885,
-      "scale": 1.954,
-      "contact": "none"
+      "scale": 1.954
     },
     {
       "id": "tree-826",
@@ -28134,8 +27003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1235.3,
       "y": 4348.8,
       "heading": 4.292,
-      "scale": 1.451,
-      "contact": "none"
+      "scale": 1.451
     },
     {
       "id": "tree-827",
@@ -28143,8 +27011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4292.4,
       "y": 1447.9,
       "heading": 2.885,
-      "scale": 2.554,
-      "contact": "none"
+      "scale": 2.554
     },
     {
       "id": "tree-828",
@@ -28152,8 +27019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4508.1,
       "y": 824.1,
       "heading": 1.07,
-      "scale": 2.254,
-      "contact": "none"
+      "scale": 2.254
     },
     {
       "id": "tree-829",
@@ -28161,8 +27027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4471.8,
       "y": 1203.8,
       "heading": 0.644,
-      "scale": 1.804,
-      "contact": "none"
+      "scale": 1.804
     },
     {
       "id": "tree-830",
@@ -28170,8 +27035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4457.7,
       "y": 1222.7,
       "heading": 2.068,
-      "scale": 2.495,
-      "contact": "none"
+      "scale": 2.495
     },
     {
       "id": "tree-831",
@@ -28179,8 +27043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4497.4,
       "y": 932.3,
       "heading": 0.076,
-      "scale": 1.883,
-      "contact": "none"
+      "scale": 1.883
     },
     {
       "id": "tree-832",
@@ -28188,8 +27051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4721.8,
       "y": 1107.1,
       "heading": 2.357,
-      "scale": 2.513,
-      "contact": "none"
+      "scale": 2.513
     },
     {
       "id": "tree-833",
@@ -28197,8 +27059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4330.3,
       "y": 1046.3,
       "heading": 0.153,
-      "scale": 1.692,
-      "contact": "none"
+      "scale": 1.692
     },
     {
       "id": "tree-834",
@@ -28206,8 +27067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4405.5,
       "y": 1170.5,
       "heading": 1.547,
-      "scale": 2.03,
-      "contact": "none"
+      "scale": 2.03
     },
     {
       "id": "tree-835",
@@ -28215,8 +27075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1722.9,
       "y": -2544.5,
       "heading": 3.454,
-      "scale": 2.533,
-      "contact": "none"
+      "scale": 2.533
     },
     {
       "id": "tree-836",
@@ -28224,8 +27083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1740,
       "y": -2606.6,
       "heading": 1.202,
-      "scale": 1.772,
-      "contact": "none"
+      "scale": 1.772
     },
     {
       "id": "tree-837",
@@ -28281,8 +27139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1667.8,
       "y": 3747,
       "heading": 2.599,
-      "scale": 2.638,
-      "contact": "none"
+      "scale": 2.638
     },
     {
       "id": "tree-844",
@@ -28290,8 +27147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1846.7,
       "y": 3877.9,
       "heading": 4.056,
-      "scale": 1.883,
-      "contact": "none"
+      "scale": 1.883
     },
     {
       "id": "tree-845",
@@ -28299,8 +27155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3126.4,
       "y": 4103.2,
       "heading": 0.169,
-      "scale": 2.682,
-      "contact": "none"
+      "scale": 2.682
     },
     {
       "id": "tree-846",
@@ -28308,8 +27163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3182.8,
       "y": 4081.6,
       "heading": 2.348,
-      "scale": 2.086,
-      "contact": "none"
+      "scale": 2.086
     },
     {
       "id": "tree-847",
@@ -28317,8 +27171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3181.9,
       "y": 4262.9,
       "heading": 3.946,
-      "scale": 2.644,
-      "contact": "none"
+      "scale": 2.644
     },
     {
       "id": "tree-848",
@@ -28326,8 +27179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2969.3,
       "y": 4290.3,
       "heading": 0.651,
-      "scale": 2.061,
-      "contact": "none"
+      "scale": 2.061
     },
     {
       "id": "tree-849",
@@ -28335,8 +27187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3207.9,
       "y": 4280.8,
       "heading": 3.171,
-      "scale": 1.934,
-      "contact": "none"
+      "scale": 1.934
     },
     {
       "id": "tree-850",
@@ -28344,8 +27195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 556.5,
       "y": 3944.5,
       "heading": 2.647,
-      "scale": 1.826,
-      "contact": "none"
+      "scale": 1.826
     },
     {
       "id": "tree-851",
@@ -28353,8 +27203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1381,
       "y": 998.5,
       "heading": 2.085,
-      "scale": 2.182,
-      "contact": "none"
+      "scale": 2.182
     },
     {
       "id": "tree-852",
@@ -28362,8 +27211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1163.1,
       "y": 740.7,
       "heading": 3.557,
-      "scale": 2.583,
-      "contact": "none"
+      "scale": 2.583
     },
     {
       "id": "tree-853",
@@ -28371,8 +27219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1343.7,
       "y": 623.2,
       "heading": 5.506,
-      "scale": 2.992,
-      "contact": "none"
+      "scale": 2.992
     },
     {
       "id": "tree-854",
@@ -28380,8 +27227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3450.8,
       "y": 1034.2,
       "heading": 2.817,
-      "scale": 1.557,
-      "contact": "none"
+      "scale": 1.557
     },
     {
       "id": "tree-855",
@@ -28389,8 +27235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3609.6,
       "y": 1109.4,
       "heading": 0.768,
-      "scale": 1.421,
-      "contact": "none"
+      "scale": 1.421
     },
     {
       "id": "tree-856",
@@ -28398,8 +27243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3828.5,
       "y": 874.5,
       "heading": 4.694,
-      "scale": 2.27,
-      "contact": "none"
+      "scale": 2.27
     },
     {
       "id": "tree-857",
@@ -28407,8 +27251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3769.3,
       "y": 985.9,
       "heading": 0.254,
-      "scale": 2.703,
-      "contact": "none"
+      "scale": 2.703
     },
     {
       "id": "tree-858",
@@ -28416,8 +27259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3080.1,
       "y": 3959.1,
       "heading": 5.904,
-      "scale": 2.549,
-      "contact": "none"
+      "scale": 2.549
     },
     {
       "id": "tree-859",
@@ -28425,8 +27267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3287.9,
       "y": 3799.1,
       "heading": 0.613,
-      "scale": 2.614,
-      "contact": "none"
+      "scale": 2.614
     },
     {
       "id": "tree-860",
@@ -28434,8 +27275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3255.5,
       "y": 3638.1,
       "heading": 2.059,
-      "scale": 2.566,
-      "contact": "none"
+      "scale": 2.566
     },
     {
       "id": "tree-861",
@@ -28443,8 +27283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3402.4,
       "y": 3655.1,
       "heading": 5.333,
-      "scale": 2.357,
-      "contact": "none"
+      "scale": 2.357
     },
     {
       "id": "tree-862",
@@ -28452,8 +27291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3042.1,
       "y": 3885.4,
       "heading": 0.85,
-      "scale": 2.083,
-      "contact": "none"
+      "scale": 2.083
     },
     {
       "id": "tree-863",
@@ -28461,8 +27299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3445.9,
       "y": 3692.9,
       "heading": 0.766,
-      "scale": 2.376,
-      "contact": "none"
+      "scale": 2.376
     },
     {
       "id": "tree-864",
@@ -28470,8 +27307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3279.8,
       "y": 3643,
       "heading": 4.848,
-      "scale": 1.537,
-      "contact": "none"
+      "scale": 1.537
     },
     {
       "id": "tree-865",
@@ -28479,8 +27315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2890.9,
       "y": 4035.8,
       "heading": 2.193,
-      "scale": 1.494,
-      "contact": "none"
+      "scale": 1.494
     },
     {
       "id": "tree-866",
@@ -28488,8 +27323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3331.3,
       "y": 3862.4,
       "heading": 4.196,
-      "scale": 2.454,
-      "contact": "none"
+      "scale": 2.454
     },
     {
       "id": "tree-867",
@@ -28497,8 +27331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2404.2,
       "y": -369.8,
       "heading": 0.195,
-      "scale": 1.957,
-      "contact": "none"
+      "scale": 1.957
     },
     {
       "id": "tree-868",
@@ -28506,8 +27339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3988.7,
       "y": 2638.5,
       "heading": 5.508,
-      "scale": 1.907,
-      "contact": "none"
+      "scale": 1.907
     },
     {
       "id": "tree-869",
@@ -28515,8 +27347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3632.7,
       "y": 2648.8,
       "heading": 2.792,
-      "scale": 1.564,
-      "contact": "none"
+      "scale": 1.564
     },
     {
       "id": "tree-870",
@@ -28524,8 +27355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3706,
       "y": 2837.6,
       "heading": 3.911,
-      "scale": 1.76,
-      "contact": "none"
+      "scale": 1.76
     },
     {
       "id": "tree-871",
@@ -28533,8 +27363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3726.8,
       "y": 2623.4,
       "heading": 3.107,
-      "scale": 2.022,
-      "contact": "none"
+      "scale": 2.022
     },
     {
       "id": "tree-872",
@@ -28542,8 +27371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2274.9,
       "y": 3891.4,
       "heading": 3.023,
-      "scale": 2.687,
-      "contact": "none"
+      "scale": 2.687
     },
     {
       "id": "tree-873",
@@ -28551,8 +27379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2064.8,
       "y": 4184.9,
       "heading": 4,
-      "scale": 1.927,
-      "contact": "none"
+      "scale": 1.927
     },
     {
       "id": "tree-874",
@@ -28560,8 +27387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2244.8,
       "y": 3726.9,
       "heading": 1.808,
-      "scale": 1.831,
-      "contact": "none"
+      "scale": 1.831
     },
     {
       "id": "tree-875",
@@ -28569,8 +27395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2074.1,
       "y": 4071.8,
       "heading": 3.004,
-      "scale": 2.668,
-      "contact": "none"
+      "scale": 2.668
     },
     {
       "id": "tree-876",
@@ -28578,8 +27403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -421.9,
       "y": 4026,
       "heading": 1.726,
-      "scale": 2.393,
-      "contact": "none"
+      "scale": 2.393
     },
     {
       "id": "tree-877",
@@ -28587,8 +27411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -554.7,
       "y": 3854,
       "heading": 2.683,
-      "scale": 2.53,
-      "contact": "none"
+      "scale": 2.53
     },
     {
       "id": "tree-878",
@@ -28596,8 +27419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -221.9,
       "y": 3910.6,
       "heading": 4.287,
-      "scale": 2.292,
-      "contact": "none"
+      "scale": 2.292
     },
     {
       "id": "tree-879",
@@ -28605,8 +27427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -286.1,
       "y": 3972.8,
       "heading": 1.274,
-      "scale": 1.769,
-      "contact": "none"
+      "scale": 1.769
     },
     {
       "id": "tree-880",
@@ -28614,8 +27435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4559.4,
       "y": 898.2,
       "heading": 0.432,
-      "scale": 1.495,
-      "contact": "none"
+      "scale": 1.495
     },
     {
       "id": "tree-881",
@@ -28623,8 +27443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4603.2,
       "y": 977.3,
       "heading": 1.079,
-      "scale": 1.914,
-      "contact": "none"
+      "scale": 1.914
     },
     {
       "id": "tree-882",
@@ -28632,8 +27451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4573.6,
       "y": 891.1,
       "heading": 1.571,
-      "scale": 1.925,
-      "contact": "none"
+      "scale": 1.925
     },
     {
       "id": "tree-883",
@@ -28641,8 +27459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4561.3,
       "y": 966.7,
       "heading": 1,
-      "scale": 1.422,
-      "contact": "none"
+      "scale": 1.422
     },
     {
       "id": "tree-884",
@@ -28650,8 +27467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2733.5,
       "y": 2294.8,
       "heading": 3.315,
-      "scale": 1.529,
-      "contact": "none"
+      "scale": 1.529
     },
     {
       "id": "tree-885",
@@ -28659,8 +27475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2739.8,
       "y": 2262.5,
       "heading": 0.781,
-      "scale": 1.855,
-      "contact": "none"
+      "scale": 1.855
     },
     {
       "id": "tree-886",
@@ -28668,8 +27483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2827.6,
       "y": 2412,
       "heading": 4.567,
-      "scale": 1.894,
-      "contact": "none"
+      "scale": 1.894
     },
     {
       "id": "tree-887",
@@ -28677,8 +27491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2624.1,
       "y": 2488.6,
       "heading": 1.001,
-      "scale": 1.981,
-      "contact": "none"
+      "scale": 1.981
     },
     {
       "id": "tree-888",
@@ -28686,8 +27499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2754.8,
       "y": 2199.3,
       "heading": 0.843,
-      "scale": 2.375,
-      "contact": "none"
+      "scale": 2.375
     },
     {
       "id": "tree-889",
@@ -28695,8 +27507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2707.7,
       "y": 2214.8,
       "heading": 1.908,
-      "scale": 1.438,
-      "contact": "none"
+      "scale": 1.438
     },
     {
       "id": "tree-890",
@@ -28704,8 +27515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2683.3,
       "y": 2433.7,
       "heading": 2.412,
-      "scale": 2.533,
-      "contact": "none"
+      "scale": 2.533
     },
     {
       "id": "tree-891",
@@ -28713,8 +27523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1153,
       "y": -1225.6,
       "heading": 1.894,
-      "scale": 2.32,
-      "contact": "none"
+      "scale": 2.32
     },
     {
       "id": "tree-892",
@@ -28722,8 +27531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1004.1,
       "y": -1146.3,
       "heading": 4.779,
-      "scale": 2.412,
-      "contact": "none"
+      "scale": 2.412
     },
     {
       "id": "tree-893",
@@ -28731,8 +27539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1142.8,
       "y": -1335.8,
       "heading": 6.199,
-      "scale": 1.861,
-      "contact": "none"
+      "scale": 1.861
     },
     {
       "id": "tree-894",
@@ -28740,8 +27547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -874.8,
       "y": -1265.4,
       "heading": 4.837,
-      "scale": 2.163,
-      "contact": "none"
+      "scale": 2.163
     },
     {
       "id": "tree-895",
@@ -28749,8 +27555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1046.3,
       "y": -1210.1,
       "heading": 4.748,
-      "scale": 2.093,
-      "contact": "none"
+      "scale": 2.093
     },
     {
       "id": "tree-896",
@@ -28758,8 +27563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1144.7,
       "y": 3902.2,
       "heading": 1.836,
-      "scale": 2.288,
-      "contact": "none"
+      "scale": 2.288
     },
     {
       "id": "tree-897",
@@ -28767,8 +27571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 982.2,
       "y": 3909.2,
       "heading": 5.316,
-      "scale": 2.522,
-      "contact": "none"
+      "scale": 2.522
     },
     {
       "id": "tree-898",
@@ -28776,8 +27579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 978.5,
       "y": 4198.2,
       "heading": 6.207,
-      "scale": 2.576,
-      "contact": "none"
+      "scale": 2.576
     },
     {
       "id": "tree-899",
@@ -28785,8 +27587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2257.9,
       "y": 4057.6,
       "heading": 3.236,
-      "scale": 1.69,
-      "contact": "none"
+      "scale": 1.69
     },
     {
       "id": "tree-900",
@@ -28794,8 +27595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2332.8,
       "y": -164.8,
       "heading": 5.966,
-      "scale": 2.186,
-      "contact": "none"
+      "scale": 2.186
     },
     {
       "id": "tree-901",
@@ -28803,8 +27603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2212.9,
       "y": -527.2,
       "heading": 1.247,
-      "scale": 1.783,
-      "contact": "none"
+      "scale": 1.783
     },
     {
       "id": "tree-902",
@@ -28812,8 +27611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2612.6,
       "y": -348.4,
       "heading": 0.085,
-      "scale": 2.57,
-      "contact": "none"
+      "scale": 2.57
     },
     {
       "id": "tree-903",
@@ -28821,8 +27619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2084.4,
       "y": -641.4,
       "heading": 2.307,
-      "scale": 1.508,
-      "contact": "none"
+      "scale": 1.508
     },
     {
       "id": "tree-904",
@@ -28830,8 +27627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2501.4,
       "y": -644.7,
       "heading": 4.549,
-      "scale": 2.136,
-      "contact": "none"
+      "scale": 2.136
     },
     {
       "id": "tree-905",
@@ -28839,8 +27635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3825.7,
       "y": -1133.4,
       "heading": 5.815,
-      "scale": 1.483,
-      "contact": "none"
+      "scale": 1.483
     },
     {
       "id": "tree-906",
@@ -28848,8 +27643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4006.7,
       "y": -1438.8,
       "heading": 5.241,
-      "scale": 1.733,
-      "contact": "none"
+      "scale": 1.733
     },
     {
       "id": "tree-907",
@@ -28857,8 +27651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4213.3,
       "y": -1182.7,
       "heading": 2.672,
-      "scale": 1.669,
-      "contact": "none"
+      "scale": 1.669
     },
     {
       "id": "tree-908",
@@ -28866,8 +27659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3898.4,
       "y": -1412.1,
       "heading": 0.74,
-      "scale": 1.458,
-      "contact": "none"
+      "scale": 1.458
     },
     {
       "id": "tree-909",
@@ -28875,8 +27667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3898.2,
       "y": -1177,
       "heading": 0.605,
-      "scale": 2.423,
-      "contact": "none"
+      "scale": 2.423
     },
     {
       "id": "tree-910",
@@ -28884,8 +27675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1089.8,
       "y": 765.9,
       "heading": 4.859,
-      "scale": 1.63,
-      "contact": "none"
+      "scale": 1.63
     },
     {
       "id": "tree-911",
@@ -28893,8 +27683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1111,
       "y": 707,
       "heading": 3.158,
-      "scale": 1.619,
-      "contact": "none"
+      "scale": 1.619
     },
     {
       "id": "tree-912",
@@ -28902,8 +27691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1140.5,
       "y": 649.2,
       "heading": 1.409,
-      "scale": 2.654,
-      "contact": "none"
+      "scale": 2.654
     },
     {
       "id": "tree-913",
@@ -28911,8 +27699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 954.5,
       "y": 544.8,
       "heading": 3.51,
-      "scale": 1.607,
-      "contact": "none"
+      "scale": 1.607
     },
     {
       "id": "tree-914",
@@ -28928,8 +27715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 885.4,
       "y": 869.9,
       "heading": 1.698,
-      "scale": 1.975,
-      "contact": "none"
+      "scale": 1.975
     },
     {
       "id": "tree-916",
@@ -28937,8 +27723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 820.6,
       "y": 869.3,
       "heading": 1.116,
-      "scale": 1.603,
-      "contact": "none"
+      "scale": 1.603
     },
     {
       "id": "tree-917",
@@ -28946,8 +27731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 982.1,
       "y": 822.7,
       "heading": 0.399,
-      "scale": 1.663,
-      "contact": "none"
+      "scale": 1.663
     },
     {
       "id": "tree-918",
@@ -28963,8 +27747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2695.3,
       "y": 3246.1,
       "heading": 3.319,
-      "scale": 2.114,
-      "contact": "none"
+      "scale": 2.114
     },
     {
       "id": "tree-920",
@@ -28972,8 +27755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2671.9,
       "y": 3151.2,
       "heading": 1.528,
-      "scale": 2.514,
-      "contact": "none"
+      "scale": 2.514
     },
     {
       "id": "tree-921",
@@ -28981,8 +27763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2672.8,
       "y": 3157.5,
       "heading": 2.732,
-      "scale": 2.562,
-      "contact": "none"
+      "scale": 2.562
     },
     {
       "id": "tree-922",
@@ -28990,8 +27771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2445.5,
       "y": 2928.2,
       "heading": 0.855,
-      "scale": 2.622,
-      "contact": "none"
+      "scale": 2.622
     },
     {
       "id": "tree-923",
@@ -29023,8 +27803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4041.6,
       "y": 871.1,
       "heading": 5.179,
-      "scale": 1.635,
-      "contact": "none"
+      "scale": 1.635
     },
     {
       "id": "tree-927",
@@ -29032,8 +27811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3658,
       "y": 628.1,
       "heading": 4.547,
-      "scale": 1.694,
-      "contact": "none"
+      "scale": 1.694
     },
     {
       "id": "tree-928",
@@ -29041,8 +27819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3786.8,
       "y": 674,
       "heading": 3.533,
-      "scale": 2.047,
-      "contact": "none"
+      "scale": 2.047
     },
     {
       "id": "tree-929",
@@ -29050,8 +27827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 619.9,
       "y": 4299.4,
       "heading": 0.337,
-      "scale": 1.918,
-      "contact": "none"
+      "scale": 1.918
     },
     {
       "id": "tree-930",
@@ -29059,8 +27835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 559.5,
       "y": 4399.2,
       "heading": 3.263,
-      "scale": 1.674,
-      "contact": "none"
+      "scale": 1.674
     },
     {
       "id": "tree-931",
@@ -29068,8 +27843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 559.3,
       "y": 4278.8,
       "heading": 3.827,
-      "scale": 1.752,
-      "contact": "none"
+      "scale": 1.752
     },
     {
       "id": "tree-932",
@@ -29077,8 +27851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 535.1,
       "y": 4319.5,
       "heading": 1.1,
-      "scale": 2.019,
-      "contact": "none"
+      "scale": 2.019
     },
     {
       "id": "tree-933",
@@ -29086,8 +27859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 644.5,
       "y": 4307.1,
       "heading": 0.323,
-      "scale": 1.554,
-      "contact": "none"
+      "scale": 1.554
     },
     {
       "id": "tree-934",
@@ -29095,8 +27867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 583.5,
       "y": 4138.1,
       "heading": 1.478,
-      "scale": 2.674,
-      "contact": "none"
+      "scale": 2.674
     },
     {
       "id": "tree-935",
@@ -29104,8 +27875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 568.4,
       "y": 4190,
       "heading": 2.792,
-      "scale": 2.625,
-      "contact": "none"
+      "scale": 2.625
     },
     {
       "id": "tree-936",
@@ -29113,8 +27883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 673.9,
       "y": 4332.8,
       "heading": 2.196,
-      "scale": 2.505,
-      "contact": "none"
+      "scale": 2.505
     },
     {
       "id": "tree-937",
@@ -29122,8 +27891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3612.5,
       "y": 799.4,
       "heading": 5.083,
-      "scale": 2.425,
-      "contact": "none"
+      "scale": 2.425
     },
     {
       "id": "tree-938",
@@ -29131,8 +27899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3619.8,
       "y": 557.6,
       "heading": 3.874,
-      "scale": 2.609,
-      "contact": "none"
+      "scale": 2.609
     },
     {
       "id": "tree-939",
@@ -29140,8 +27907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3959.3,
       "y": 923.1,
       "heading": 4.588,
-      "scale": 1.749,
-      "contact": "none"
+      "scale": 1.749
     },
     {
       "id": "tree-940",
@@ -29149,8 +27915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3862.5,
       "y": 881.6,
       "heading": 2.762,
-      "scale": 2.202,
-      "contact": "none"
+      "scale": 2.202
     },
     {
       "id": "tree-941",
@@ -29158,8 +27923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3799.5,
       "y": 627.9,
       "heading": 5.935,
-      "scale": 1.796,
-      "contact": "none"
+      "scale": 1.796
     },
     {
       "id": "tree-942",
@@ -29167,8 +27931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3913.8,
       "y": 909.5,
       "heading": 0.213,
-      "scale": 2.293,
-      "contact": "none"
+      "scale": 2.293
     },
     {
       "id": "tree-943",
@@ -29176,8 +27939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3927.9,
       "y": 950.1,
       "heading": 5.659,
-      "scale": 1.829,
-      "contact": "none"
+      "scale": 1.829
     },
     {
       "id": "tree-944",
@@ -29217,8 +27979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2451.8,
       "y": 386.1,
       "heading": 2.113,
-      "scale": 1.69,
-      "contact": "none"
+      "scale": 1.69
     },
     {
       "id": "tree-949",
@@ -29226,8 +27987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2483.3,
       "y": 377.2,
       "heading": 0.433,
-      "scale": 2.395,
-      "contact": "none"
+      "scale": 2.395
     },
     {
       "id": "tree-950",
@@ -29235,8 +27995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2563.8,
       "y": 545.3,
       "heading": 2.176,
-      "scale": 1.808,
-      "contact": "none"
+      "scale": 1.808
     },
     {
       "id": "tree-951",
@@ -29244,8 +28003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2297.7,
       "y": 2441.4,
       "heading": 5.44,
-      "scale": 3.14,
-      "contact": "none"
+      "scale": 3.14
     },
     {
       "id": "tree-952",
@@ -29253,8 +28011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2417.2,
       "y": 2627.4,
       "heading": 3.42,
-      "scale": 1.67,
-      "contact": "none"
+      "scale": 1.67
     },
     {
       "id": "tree-953",
@@ -29262,8 +28019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2340.4,
       "y": 2461.2,
       "heading": 4.819,
-      "scale": 1.827,
-      "contact": "none"
+      "scale": 1.827
     },
     {
       "id": "tree-954",
@@ -29271,8 +28027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2184.8,
       "y": 2653.1,
       "heading": 4.69,
-      "scale": 2.174,
-      "contact": "none"
+      "scale": 2.174
     },
     {
       "id": "tree-955",
@@ -29280,8 +28035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2447.2,
       "y": 2520.3,
       "heading": 2.035,
-      "scale": 2.309,
-      "contact": "none"
+      "scale": 2.309
     },
     {
       "id": "tree-956",
@@ -29289,8 +28043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2282.1,
       "y": 2693.2,
       "heading": 0.533,
-      "scale": 2.401,
-      "contact": "none"
+      "scale": 2.401
     },
     {
       "id": "tree-957",
@@ -29298,8 +28051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2209.3,
       "y": 2650.2,
       "heading": 3.929,
-      "scale": 1.876,
-      "contact": "none"
+      "scale": 1.876
     },
     {
       "id": "tree-958",
@@ -29307,8 +28059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2409.1,
       "y": 2444.5,
       "heading": 3.627,
-      "scale": 1.749,
-      "contact": "none"
+      "scale": 1.749
     },
     {
       "id": "tree-959",
@@ -29316,8 +28067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2399,
       "y": 2490.7,
       "heading": 3.23,
-      "scale": 1.847,
-      "contact": "none"
+      "scale": 1.847
     },
     {
       "id": "tree-960",
@@ -29349,8 +28099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2456.8,
       "y": -359,
       "heading": 3.481,
-      "scale": 1.533,
-      "contact": "none"
+      "scale": 1.533
     },
     {
       "id": "tree-964",
@@ -29358,8 +28107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2491.5,
       "y": -434.1,
       "heading": 0.955,
-      "scale": 2.173,
-      "contact": "none"
+      "scale": 2.173
     },
     {
       "id": "tree-965",
@@ -29367,8 +28115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2429.4,
       "y": 9.9,
       "heading": 5.888,
-      "scale": 1.537,
-      "contact": "none"
+      "scale": 1.537
     },
     {
       "id": "tree-966",
@@ -29376,8 +28123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -251.1,
       "y": -3829.3,
       "heading": 0.965,
-      "scale": 1.92,
-      "contact": "none"
+      "scale": 1.92
     },
     {
       "id": "tree-967",
@@ -29385,8 +28131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -450.7,
       "y": -3880,
       "heading": 2.219,
-      "scale": 2.444,
-      "contact": "none"
+      "scale": 2.444
     },
     {
       "id": "tree-968",
@@ -29394,8 +28139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2100.5,
       "y": 3240.7,
       "heading": 2.705,
-      "scale": 2.371,
-      "contact": "none"
+      "scale": 2.371
     },
     {
       "id": "tree-969",
@@ -29403,8 +28147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2117.4,
       "y": 3211,
       "heading": 5.74,
-      "scale": 2.684,
-      "contact": "none"
+      "scale": 2.684
     },
     {
       "id": "tree-970",
@@ -29412,8 +28155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2061.7,
       "y": 3129.6,
       "heading": 1.416,
-      "scale": 2.943,
-      "contact": "none"
+      "scale": 2.943
     },
     {
       "id": "tree-971",
@@ -29429,8 +28171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -251.5,
       "y": 2232.6,
       "heading": 1.911,
-      "scale": 2.269,
-      "contact": "none"
+      "scale": 2.269
     },
     {
       "id": "tree-973",
@@ -29438,8 +28179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -233.8,
       "y": 1911.3,
       "heading": 5.539,
-      "scale": 1.841,
-      "contact": "none"
+      "scale": 1.841
     },
     {
       "id": "tree-974",
@@ -29447,8 +28187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -270.3,
       "y": 1926.3,
       "heading": 6.033,
-      "scale": 2.527,
-      "contact": "none"
+      "scale": 2.527
     },
     {
       "id": "tree-975",
@@ -29456,8 +28195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -521.2,
       "y": -2948,
       "heading": 4.486,
-      "scale": 1.608,
-      "contact": "none"
+      "scale": 1.608
     },
     {
       "id": "tree-976",
@@ -29465,8 +28203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2924.8,
       "y": -1477.1,
       "heading": 0.556,
-      "scale": 1.983,
-      "contact": "none"
+      "scale": 1.983
     },
     {
       "id": "tree-977",
@@ -29474,8 +28211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3259,
       "y": -1427,
       "heading": 3.387,
-      "scale": 2.307,
-      "contact": "none"
+      "scale": 2.307
     },
     {
       "id": "tree-978",
@@ -29483,8 +28219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2971,
       "y": -1761,
       "heading": 3.389,
-      "scale": 2.066,
-      "contact": "none"
+      "scale": 2.066
     },
     {
       "id": "tree-979",
@@ -29492,8 +28227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3421.7,
       "y": -1490.2,
       "heading": 2.597,
-      "scale": 1.704,
-      "contact": "none"
+      "scale": 1.704
     },
     {
       "id": "tree-980",
@@ -29501,8 +28235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3398.5,
       "y": -1530.3,
       "heading": 4.186,
-      "scale": 2.591,
-      "contact": "none"
+      "scale": 2.591
     },
     {
       "id": "tree-981",
@@ -29510,8 +28243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3587.3,
       "y": 1837.5,
       "heading": 3.318,
-      "scale": 1.426,
-      "contact": "none"
+      "scale": 1.426
     },
     {
       "id": "tree-982",
@@ -29519,8 +28251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3527.2,
       "y": 1970.9,
       "heading": 1.884,
-      "scale": 2.156,
-      "contact": "none"
+      "scale": 2.156
     },
     {
       "id": "tree-983",
@@ -29528,8 +28259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3564.8,
       "y": 1630.3,
       "heading": 1.797,
-      "scale": 2.06,
-      "contact": "none"
+      "scale": 2.06
     },
     {
       "id": "tree-984",
@@ -29537,8 +28267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3721.8,
       "y": 1841.7,
       "heading": 5.404,
-      "scale": 1.601,
-      "contact": "none"
+      "scale": 1.601
     },
     {
       "id": "tree-985",
@@ -29546,8 +28275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2474.1,
       "y": -552.7,
       "heading": 5.749,
-      "scale": 1.86,
-      "contact": "none"
+      "scale": 1.86
     },
     {
       "id": "tree-986",
@@ -29555,8 +28283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2429.5,
       "y": -555.9,
       "heading": 2.075,
-      "scale": 2.543,
-      "contact": "none"
+      "scale": 2.543
     },
     {
       "id": "tree-987",
@@ -29564,8 +28291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2597.2,
       "y": -1066,
       "heading": 5.402,
-      "scale": 3.309,
-      "contact": "none"
+      "scale": 3.309
     },
     {
       "id": "tree-988",
@@ -29573,8 +28299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2322.4,
       "y": -671.2,
       "heading": 3.153,
-      "scale": 1.647,
-      "contact": "none"
+      "scale": 1.647
     },
     {
       "id": "tree-989",
@@ -29582,8 +28307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2651.4,
       "y": -551.9,
       "heading": 3.351,
-      "scale": 1.451,
-      "contact": "none"
+      "scale": 1.451
     },
     {
       "id": "tree-990",
@@ -29591,8 +28315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2789.3,
       "y": 4652.2,
       "heading": 0.31,
-      "scale": 1.372,
-      "contact": "none"
+      "scale": 1.372
     },
     {
       "id": "tree-991",
@@ -29600,8 +28323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3122.7,
       "y": 4524.4,
       "heading": 1.484,
-      "scale": 2.587,
-      "contact": "none"
+      "scale": 2.587
     },
     {
       "id": "tree-992",
@@ -29609,8 +28331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2954.4,
       "y": 4881.6,
       "heading": 5.15,
-      "scale": 2.71,
-      "contact": "none"
+      "scale": 2.71
     },
     {
       "id": "tree-993",
@@ -29618,8 +28339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4266.7,
       "y": 426,
       "heading": 2.696,
-      "scale": 1.976,
-      "contact": "none"
+      "scale": 1.976
     },
     {
       "id": "tree-994",
@@ -29627,8 +28347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4320.4,
       "y": 486.7,
       "heading": 5.074,
-      "scale": 1.585,
-      "contact": "none"
+      "scale": 1.585
     },
     {
       "id": "tree-995",
@@ -29636,8 +28355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4262.7,
       "y": 348.6,
       "heading": 3.763,
-      "scale": 1.407,
-      "contact": "none"
+      "scale": 1.407
     },
     {
       "id": "tree-996",
@@ -29645,8 +28363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 54.7,
       "y": 1607.3,
       "heading": 5.856,
-      "scale": 1.959,
-      "contact": "none"
+      "scale": 1.959
     },
     {
       "id": "tree-997",
@@ -29662,8 +28379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 145,
       "y": 1597.4,
       "heading": 2.959,
-      "scale": 2.708,
-      "contact": "none"
+      "scale": 2.708
     },
     {
       "id": "tree-999",
@@ -29671,8 +28387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 243.9,
       "y": -3054.1,
       "heading": 3.104,
-      "scale": 1.535,
-      "contact": "none"
+      "scale": 1.535
     },
     {
       "id": "tree-1000",
@@ -29680,8 +28395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1881.4,
       "y": 3813.2,
       "heading": 2.59,
-      "scale": 2.263,
-      "contact": "none"
+      "scale": 2.263
     },
     {
       "id": "tree-1001",
@@ -29689,8 +28403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3403.4,
       "y": -282.7,
       "heading": 3.961,
-      "scale": 1.651,
-      "contact": "none"
+      "scale": 1.651
     },
     {
       "id": "tree-1002",
@@ -29698,8 +28411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3670.8,
       "y": -444.2,
       "heading": 5.899,
-      "scale": 2.799,
-      "contact": "none"
+      "scale": 2.799
     },
     {
       "id": "tree-1003",
@@ -29707,8 +28419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3600.3,
       "y": -82,
       "heading": 2.994,
-      "scale": 1.491,
-      "contact": "none"
+      "scale": 1.491
     },
     {
       "id": "tree-1004",
@@ -29740,8 +28451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1063.5,
       "y": -2832.9,
       "heading": 1.678,
-      "scale": 2.283,
-      "contact": "none"
+      "scale": 2.283
     },
     {
       "id": "tree-1008",
@@ -29749,8 +28459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1733,
       "y": 3764.2,
       "heading": 3.294,
-      "scale": 2.411,
-      "contact": "none"
+      "scale": 2.411
     },
     {
       "id": "tree-1009",
@@ -29758,8 +28467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1714,
       "y": 3765.6,
       "heading": 5.514,
-      "scale": 1.776,
-      "contact": "none"
+      "scale": 1.776
     },
     {
       "id": "tree-1010",
@@ -29767,8 +28475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1859,
       "y": 3781.5,
       "heading": 4.312,
-      "scale": 1.954,
-      "contact": "none"
+      "scale": 1.954
     },
     {
       "id": "tree-1011",
@@ -29776,8 +28483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3956.7,
       "y": -1575,
       "heading": 1.095,
-      "scale": 1.664,
-      "contact": "none"
+      "scale": 1.664
     },
     {
       "id": "tree-1012",
@@ -29785,8 +28491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4081.1,
       "y": -1346.7,
       "heading": 1.91,
-      "scale": 2.555,
-      "contact": "none"
+      "scale": 2.555
     },
     {
       "id": "tree-1013",
@@ -29794,8 +28499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3881.8,
       "y": -1354.9,
       "heading": 2.437,
-      "scale": 3.003,
-      "contact": "none"
+      "scale": 3.003
     },
     {
       "id": "tree-1014",
@@ -29803,8 +28507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3900.3,
       "y": -1258.5,
       "heading": 0.664,
-      "scale": 1.473,
-      "contact": "none"
+      "scale": 1.473
     },
     {
       "id": "tree-1015",
@@ -29812,8 +28515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2002.9,
       "y": 4476.9,
       "heading": 2.17,
-      "scale": 1.989,
-      "contact": "none"
+      "scale": 1.989
     },
     {
       "id": "tree-1016",
@@ -29853,8 +28555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2239,
       "y": 4200.6,
       "heading": 1.654,
-      "scale": 2.599,
-      "contact": "none"
+      "scale": 2.599
     },
     {
       "id": "tree-1021",
@@ -29862,8 +28563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1961.4,
       "y": 4078.5,
       "heading": 5.232,
-      "scale": 2.237,
-      "contact": "none"
+      "scale": 2.237
     },
     {
       "id": "tree-1022",
@@ -29871,8 +28571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -616.8,
       "y": 3090.9,
       "heading": 1.08,
-      "scale": 2.389,
-      "contact": "none"
+      "scale": 2.389
     },
     {
       "id": "tree-1023",
@@ -29880,8 +28579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -956.3,
       "y": 3507.2,
       "heading": 2.397,
-      "scale": 2.547,
-      "contact": "none"
+      "scale": 2.547
     },
     {
       "id": "tree-1024",
@@ -29889,8 +28587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -677.9,
       "y": 3288.9,
       "heading": 1.468,
-      "scale": 2.259,
-      "contact": "none"
+      "scale": 2.259
     },
     {
       "id": "tree-1025",
@@ -29898,8 +28595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -948,
       "y": 3448,
       "heading": 0.855,
-      "scale": 1.599,
-      "contact": "none"
+      "scale": 1.599
     },
     {
       "id": "tree-1026",
@@ -29907,8 +28603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2303.1,
       "y": -2406.1,
       "heading": 2.455,
-      "scale": 1.69,
-      "contact": "none"
+      "scale": 1.69
     },
     {
       "id": "tree-1027",
@@ -29916,8 +28611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2812.5,
       "y": -2340.3,
       "heading": 0.401,
-      "scale": 2.326,
-      "contact": "none"
+      "scale": 2.326
     },
     {
       "id": "tree-1028",
@@ -29925,8 +28619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2498,
       "y": -2413.7,
       "heading": 4.743,
-      "scale": 2.204,
-      "contact": "none"
+      "scale": 2.204
     },
     {
       "id": "tree-1029",
@@ -29934,8 +28627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2827.9,
       "y": -2237.8,
       "heading": 3.521,
-      "scale": 2.423,
-      "contact": "none"
+      "scale": 2.423
     },
     {
       "id": "tree-1030",
@@ -29943,8 +28635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2259.3,
       "y": -2398.9,
       "heading": 5.716,
-      "scale": 2.27,
-      "contact": "none"
+      "scale": 2.27
     },
     {
       "id": "tree-1031",
@@ -29952,8 +28643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2436.7,
       "y": -2700.7,
       "heading": 1.033,
-      "scale": 1.819,
-      "contact": "none"
+      "scale": 1.819
     },
     {
       "id": "tree-1032",
@@ -29961,8 +28651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1233.8,
       "y": 2130,
       "heading": 1.686,
-      "scale": 2.501,
-      "contact": "none"
+      "scale": 2.501
     },
     {
       "id": "tree-1033",
@@ -29970,8 +28659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1376.7,
       "y": 2338.1,
       "heading": 5.427,
-      "scale": 2.433,
-      "contact": "none"
+      "scale": 2.433
     },
     {
       "id": "tree-1034",
@@ -29979,8 +28667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1442.9,
       "y": 2032.6,
       "heading": 4.106,
-      "scale": 2.026,
-      "contact": "none"
+      "scale": 2.026
     },
     {
       "id": "tree-1035",
@@ -29988,8 +28675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1589,
       "y": 2297.4,
       "heading": 0.471,
-      "scale": 2.011,
-      "contact": "none"
+      "scale": 2.011
     },
     {
       "id": "tree-1036",
@@ -29997,8 +28683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 789.4,
       "y": 4603.8,
       "heading": 0.839,
-      "scale": 1.874,
-      "contact": "none"
+      "scale": 1.874
     },
     {
       "id": "tree-1037",
@@ -30006,8 +28691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1105.4,
       "y": 4469.3,
       "heading": 2.007,
-      "scale": 1.794,
-      "contact": "none"
+      "scale": 1.794
     },
     {
       "id": "tree-1038",
@@ -30015,8 +28699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 892.5,
       "y": 4253.2,
       "heading": 1.295,
-      "scale": 1.407,
-      "contact": "none"
+      "scale": 1.407
     },
     {
       "id": "tree-1039",
@@ -30024,8 +28707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 783.8,
       "y": 4572.8,
       "heading": 2.76,
-      "scale": 2.654,
-      "contact": "none"
+      "scale": 2.654
     },
     {
       "id": "tree-1040",
@@ -30033,8 +28715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 662.1,
       "y": 4322.5,
       "heading": 2.101,
-      "scale": 2.233,
-      "contact": "none"
+      "scale": 2.233
     },
     {
       "id": "tree-1041",
@@ -30042,8 +28723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1163.2,
       "y": 4505.8,
       "heading": 4.681,
-      "scale": 2.215,
-      "contact": "none"
+      "scale": 2.215
     },
     {
       "id": "tree-1042",
@@ -30051,8 +28731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -603.5,
       "y": 2909,
       "heading": 1.461,
-      "scale": 2.047,
-      "contact": "none"
+      "scale": 2.047
     },
     {
       "id": "tree-1043",
@@ -30060,8 +28739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -725.5,
       "y": 2683.2,
       "heading": 6.224,
-      "scale": 2.519,
-      "contact": "none"
+      "scale": 2.519
     },
     {
       "id": "tree-1044",
@@ -30069,8 +28747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -231.5,
       "y": 2873.8,
       "heading": 0.493,
-      "scale": 2.089,
-      "contact": "none"
+      "scale": 2.089
     },
     {
       "id": "tree-1045",
@@ -30078,8 +28755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -333.8,
       "y": 2643.7,
       "heading": 0.794,
-      "scale": 2.581,
-      "contact": "none"
+      "scale": 2.581
     },
     {
       "id": "tree-1046",
@@ -30087,8 +28763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1873,
       "y": -2062,
       "heading": 3.83,
-      "scale": 2.037,
-      "contact": "none"
+      "scale": 2.037
     },
     {
       "id": "tree-1047",
@@ -30096,8 +28771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1745.5,
       "y": -2369.4,
       "heading": 5.478,
-      "scale": 1.418,
-      "contact": "none"
+      "scale": 1.418
     },
     {
       "id": "tree-1048",
@@ -30105,8 +28779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1813.3,
       "y": -2158.5,
       "heading": 3.66,
-      "scale": 2.041,
-      "contact": "none"
+      "scale": 2.041
     },
     {
       "id": "tree-1049",
@@ -30114,8 +28787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4184.3,
       "y": 1216.7,
       "heading": 5.847,
-      "scale": 1.735,
-      "contact": "none"
+      "scale": 1.735
     },
     {
       "id": "tree-1050",
@@ -30123,8 +28795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4136.9,
       "y": 1113,
       "heading": 1.598,
-      "scale": 1.661,
-      "contact": "none"
+      "scale": 1.661
     },
     {
       "id": "tree-1051",
@@ -30132,8 +28803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4143.5,
       "y": 1197.6,
       "heading": 6.118,
-      "scale": 1.559,
-      "contact": "none"
+      "scale": 1.559
     },
     {
       "id": "tree-1052",
@@ -30141,8 +28811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4188.7,
       "y": 1224.9,
       "heading": 2.035,
-      "scale": 1.774,
-      "contact": "none"
+      "scale": 1.774
     },
     {
       "id": "tree-1053",
@@ -30150,8 +28819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4265.5,
       "y": 1130.5,
       "heading": 2.533,
-      "scale": 2.639,
-      "contact": "none"
+      "scale": 2.639
     },
     {
       "id": "tree-1054",
@@ -30159,8 +28827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4203.6,
       "y": 980.5,
       "heading": 6.255,
-      "scale": 1.462,
-      "contact": "none"
+      "scale": 1.462
     },
     {
       "id": "tree-1055",
@@ -30168,8 +28835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -641.1,
       "y": -2168.6,
       "heading": 6.062,
-      "scale": 2.314,
-      "contact": "none"
+      "scale": 2.314
     },
     {
       "id": "tree-1056",
@@ -30177,8 +28843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2387.6,
       "y": 3699.4,
       "heading": 3.643,
-      "scale": 1.482,
-      "contact": "none"
+      "scale": 1.482
     },
     {
       "id": "tree-1057",
@@ -30186,8 +28851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1952.3,
       "y": 3712.3,
       "heading": 0.756,
-      "scale": 2.283,
-      "contact": "none"
+      "scale": 2.283
     },
     {
       "id": "tree-1058",
@@ -30195,8 +28859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2204.7,
       "y": 3695.2,
       "heading": 6.085,
-      "scale": 2.209,
-      "contact": "none"
+      "scale": 2.209
     },
     {
       "id": "tree-1059",
@@ -30204,8 +28867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2739.8,
       "y": 4852.4,
       "heading": 4.35,
-      "scale": 1.639,
-      "contact": "none"
+      "scale": 1.639
     },
     {
       "id": "tree-1060",
@@ -30213,8 +28875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2712.7,
       "y": 4888.3,
       "heading": 0.486,
-      "scale": 2.366,
-      "contact": "none"
+      "scale": 2.366
     },
     {
       "id": "tree-1061",
@@ -30222,8 +28883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2687.7,
       "y": 4847.6,
       "heading": 6.167,
-      "scale": 1.673,
-      "contact": "none"
+      "scale": 1.673
     },
     {
       "id": "tree-1062",
@@ -30231,8 +28891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2671.9,
       "y": 4792.3,
       "heading": 3.186,
-      "scale": 1.919,
-      "contact": "none"
+      "scale": 1.919
     },
     {
       "id": "tree-1063",
@@ -30240,8 +28899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2698.6,
       "y": 4903.7,
       "heading": 4.653,
-      "scale": 1.417,
-      "contact": "none"
+      "scale": 1.417
     },
     {
       "id": "tree-1064",
@@ -30249,8 +28907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4616.7,
       "y": 3858,
       "heading": 6.203,
-      "scale": 2.129,
-      "contact": "none"
+      "scale": 2.129
     },
     {
       "id": "tree-1065",
@@ -30258,8 +28915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2149.5,
       "y": 4447.5,
       "heading": 5.11,
-      "scale": 2.614,
-      "contact": "none"
+      "scale": 2.614
     },
     {
       "id": "tree-1066",
@@ -30267,8 +28923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2108.1,
       "y": 4506.4,
       "heading": 2.333,
-      "scale": 1.821,
-      "contact": "none"
+      "scale": 1.821
     },
     {
       "id": "tree-1067",
@@ -30276,8 +28931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2052.5,
       "y": 4531.1,
       "heading": 1.884,
-      "scale": 1.437,
-      "contact": "none"
+      "scale": 1.437
     },
     {
       "id": "tree-1068",
@@ -30285,8 +28939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2034.6,
       "y": 4345,
       "heading": 1.443,
-      "scale": 1.86,
-      "contact": "none"
+      "scale": 1.86
     },
     {
       "id": "tree-1069",
@@ -30294,8 +28947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2202.7,
       "y": 4469,
       "heading": 3.243,
-      "scale": 1.508,
-      "contact": "none"
+      "scale": 1.508
     },
     {
       "id": "tree-1070",
@@ -30303,8 +28955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2162.5,
       "y": 4330.4,
       "heading": 4.407,
-      "scale": 2.085,
-      "contact": "none"
+      "scale": 2.085
     },
     {
       "id": "tree-1071",
@@ -30312,8 +28963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2081,
       "y": 4416.8,
       "heading": 2.47,
-      "scale": 3.368,
-      "contact": "none"
+      "scale": 3.368
     },
     {
       "id": "tree-1072",
@@ -30321,8 +28971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2026.5,
       "y": 4560.8,
       "heading": 2.247,
-      "scale": 1.427,
-      "contact": "none"
+      "scale": 1.427
     },
     {
       "id": "tree-1073",
@@ -30330,8 +28979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1635.1,
       "y": -2606.5,
       "heading": 3.144,
-      "scale": 2.231,
-      "contact": "none"
+      "scale": 2.231
     },
     {
       "id": "tree-1074",
@@ -30339,8 +28987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1664.1,
       "y": -2608.3,
       "heading": 5.684,
-      "scale": 2.875,
-      "contact": "none"
+      "scale": 2.875
     },
     {
       "id": "tree-1075",
@@ -30348,8 +28995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1846.4,
       "y": -2654.1,
       "heading": 4.055,
-      "scale": 2.695,
-      "contact": "none"
+      "scale": 2.695
     },
     {
       "id": "tree-1076",
@@ -30357,8 +29003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1760.3,
       "y": -2682.7,
       "heading": 0.904,
-      "scale": 2.534,
-      "contact": "none"
+      "scale": 2.534
     },
     {
       "id": "tree-1077",
@@ -30374,8 +29019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2756.5,
       "y": 854.2,
       "heading": 5.649,
-      "scale": 2.454,
-      "contact": "none"
+      "scale": 2.454
     },
     {
       "id": "tree-1079",
@@ -30383,8 +29027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2887.5,
       "y": 989,
       "heading": 2.379,
-      "scale": 2.135,
-      "contact": "none"
+      "scale": 2.135
     },
     {
       "id": "tree-1080",
@@ -30392,8 +29035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3097.3,
       "y": 1117.4,
       "heading": 5.24,
-      "scale": 2.669,
-      "contact": "none"
+      "scale": 2.669
     },
     {
       "id": "tree-1081",
@@ -30401,8 +29043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2950.1,
       "y": 831.5,
       "heading": 1.395,
-      "scale": 1.758,
-      "contact": "none"
+      "scale": 1.758
     },
     {
       "id": "tree-1082",
@@ -30410,8 +29051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2865.5,
       "y": 1040.9,
       "heading": 3.006,
-      "scale": 1.93,
-      "contact": "none"
+      "scale": 1.93
     },
     {
       "id": "tree-1083",
@@ -30419,8 +29059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -960.9,
       "y": 3225.9,
       "heading": 5.351,
-      "scale": 1.58,
-      "contact": "none"
+      "scale": 1.58
     },
     {
       "id": "tree-1084",
@@ -30428,8 +29067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -621.1,
       "y": 3273.4,
       "heading": 5.704,
-      "scale": 2.694,
-      "contact": "none"
+      "scale": 2.694
     },
     {
       "id": "tree-1085",
@@ -30437,8 +29075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -894.4,
       "y": 3135.6,
       "heading": 5.056,
-      "scale": 1.732,
-      "contact": "none"
+      "scale": 1.732
     },
     {
       "id": "tree-1086",
@@ -30446,8 +29083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -851.9,
       "y": 3550.8,
       "heading": 5.276,
-      "scale": 2.372,
-      "contact": "none"
+      "scale": 2.372
     },
     {
       "id": "tree-1087",
@@ -30455,8 +29091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -824.6,
       "y": 3460.9,
       "heading": 5.502,
-      "scale": 1.454,
-      "contact": "none"
+      "scale": 1.454
     },
     {
       "id": "tree-1088",
@@ -30464,8 +29099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3798.2,
       "y": 593.3,
       "heading": 5.044,
-      "scale": 2.339,
-      "contact": "none"
+      "scale": 2.339
     },
     {
       "id": "tree-1089",
@@ -30473,8 +29107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3764.6,
       "y": 574.9,
       "heading": 3.794,
-      "scale": 2.378,
-      "contact": "none"
+      "scale": 2.378
     },
     {
       "id": "tree-1090",
@@ -30482,8 +29115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3756.7,
       "y": 615.1,
       "heading": 2.913,
-      "scale": 2.157,
-      "contact": "none"
+      "scale": 2.157
     },
     {
       "id": "tree-1091",
@@ -30491,8 +29123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2952.2,
       "y": 3606.9,
       "heading": 1.95,
-      "scale": 1.699,
-      "contact": "none"
+      "scale": 1.699
     },
     {
       "id": "tree-1092",
@@ -30500,8 +29131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2705.5,
       "y": 3537.9,
       "heading": 1.328,
-      "scale": 2.086,
-      "contact": "none"
+      "scale": 2.086
     },
     {
       "id": "tree-1093",
@@ -30509,8 +29139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2703.2,
       "y": 3152.2,
       "heading": 3.144,
-      "scale": 2.322,
-      "contact": "none"
+      "scale": 2.322
     },
     {
       "id": "tree-1094",
@@ -30518,8 +29147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3188.1,
       "y": 2407.5,
       "heading": 0.989,
-      "scale": 2.347,
-      "contact": "none"
+      "scale": 2.347
     },
     {
       "id": "tree-1095",
@@ -30527,8 +29155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3233.9,
       "y": 2244.6,
       "heading": 4.503,
-      "scale": 2.507,
-      "contact": "none"
+      "scale": 2.507
     },
     {
       "id": "tree-1096",
@@ -30536,8 +29163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3044,
       "y": 2390.9,
       "heading": 1.121,
-      "scale": 2.281,
-      "contact": "none"
+      "scale": 2.281
     },
     {
       "id": "tree-1097",
@@ -30545,8 +29171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3135.8,
       "y": -1081.6,
       "heading": 4.578,
-      "scale": 3.078,
-      "contact": "none"
+      "scale": 3.078
     },
     {
       "id": "tree-1098",
@@ -30554,8 +29179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3036.6,
       "y": -1010.8,
       "heading": 0.435,
-      "scale": 1.843,
-      "contact": "none"
+      "scale": 1.843
     },
     {
       "id": "tree-1099",
@@ -30563,8 +29187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3861.1,
       "y": 963.2,
       "heading": 0.284,
-      "scale": 1.593,
-      "contact": "none"
+      "scale": 1.593
     },
     {
       "id": "tree-1100",
@@ -30572,8 +29195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3862.6,
       "y": 810.2,
       "heading": 2.734,
-      "scale": 1.99,
-      "contact": "none"
+      "scale": 1.99
     },
     {
       "id": "tree-1101",
@@ -30581,8 +29203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3984.9,
       "y": 1042,
       "heading": 5.988,
-      "scale": 1.729,
-      "contact": "none"
+      "scale": 1.729
     },
     {
       "id": "tree-1102",
@@ -30590,8 +29211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1515.8,
       "y": 4772.3,
       "heading": 4.251,
-      "scale": 1.403,
-      "contact": "none"
+      "scale": 1.403
     },
     {
       "id": "tree-1103",
@@ -30599,8 +29219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2673,
       "y": -423.4,
       "heading": 3.09,
-      "scale": 2.559,
-      "contact": "none"
+      "scale": 2.559
     },
     {
       "id": "tree-1104",
@@ -30608,8 +29227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2892.5,
       "y": -890.6,
       "heading": 2.224,
-      "scale": 2.138,
-      "contact": "none"
+      "scale": 2.138
     },
     {
       "id": "tree-1105",
@@ -30617,8 +29235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3038.3,
       "y": -982,
       "heading": 2.195,
-      "scale": 1.814,
-      "contact": "none"
+      "scale": 1.814
     },
     {
       "id": "tree-1106",
@@ -30626,8 +29243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3029.3,
       "y": -964.1,
       "heading": 5.288,
-      "scale": 1.666,
-      "contact": "none"
+      "scale": 1.666
     },
     {
       "id": "tree-1107",
@@ -30635,8 +29251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2624.1,
       "y": -1068.4,
       "heading": 4.749,
-      "scale": 2.381,
-      "contact": "none"
+      "scale": 2.381
     },
     {
       "id": "tree-1108",
@@ -30644,8 +29259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -777,
       "y": -2987.7,
       "heading": 5.333,
-      "scale": 2.161,
-      "contact": "none"
+      "scale": 2.161
     },
     {
       "id": "tree-1109",
@@ -30653,8 +29267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3315.2,
       "y": -742.5,
       "heading": 6.239,
-      "scale": 2.666,
-      "contact": "none"
+      "scale": 2.666
     },
     {
       "id": "tree-1110",
@@ -30662,8 +29275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3392.1,
       "y": -795.9,
       "heading": 5.553,
-      "scale": 1.437,
-      "contact": "none"
+      "scale": 1.437
     },
     {
       "id": "tree-1111",
@@ -30671,8 +29283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3409.8,
       "y": -682.9,
       "heading": 1.045,
-      "scale": 1.965,
-      "contact": "none"
+      "scale": 1.965
     },
     {
       "id": "tree-1112",
@@ -30680,8 +29291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3572.8,
       "y": -725.3,
       "heading": 1.69,
-      "scale": 1.925,
-      "contact": "none"
+      "scale": 1.925
     },
     {
       "id": "tree-1113",
@@ -30689,8 +29299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3444.8,
       "y": -731.9,
       "heading": 1.272,
-      "scale": 2.335,
-      "contact": "none"
+      "scale": 2.335
     },
     {
       "id": "tree-1114",
@@ -30698,8 +29307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2694.1,
       "y": -1195,
       "heading": 2.046,
-      "scale": 2.307,
-      "contact": "none"
+      "scale": 2.307
     },
     {
       "id": "tree-1115",
@@ -30707,8 +29315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2646.4,
       "y": -1212.6,
       "heading": 4.45,
-      "scale": 2.849,
-      "contact": "none"
+      "scale": 2.849
     },
     {
       "id": "tree-1116",
@@ -30716,8 +29323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2637.2,
       "y": -1472.4,
       "heading": 2.458,
-      "scale": 2.62,
-      "contact": "none"
+      "scale": 2.62
     },
     {
       "id": "tree-1117",
@@ -30733,8 +29339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1718.2,
       "y": -250.1,
       "heading": 2.682,
-      "scale": 1.462,
-      "contact": "none"
+      "scale": 1.462
     },
     {
       "id": "tree-1119",
@@ -30750,8 +29355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1848.8,
       "y": -310.6,
       "heading": 3.336,
-      "scale": 1.548,
-      "contact": "none"
+      "scale": 1.548
     },
     {
       "id": "tree-1121",
@@ -30759,8 +29363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2199.7,
       "y": -289.2,
       "heading": 1.832,
-      "scale": 2.217,
-      "contact": "none"
+      "scale": 2.217
     },
     {
       "id": "tree-1122",
@@ -30768,8 +29371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3259.2,
       "y": 1847.3,
       "heading": 0.611,
-      "scale": 1.977,
-      "contact": "none"
+      "scale": 1.977
     },
     {
       "id": "tree-1123",
@@ -30777,8 +29379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3270.5,
       "y": 1810.8,
       "heading": 4.736,
-      "scale": 1.715,
-      "contact": "none"
+      "scale": 1.715
     },
     {
       "id": "tree-1124",
@@ -30786,8 +29387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3136.9,
       "y": 1712.3,
       "heading": 3.189,
-      "scale": 2.174,
-      "contact": "none"
+      "scale": 2.174
     },
     {
       "id": "tree-1125",
@@ -30795,8 +29395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3023.2,
       "y": 1835.2,
       "heading": 0.701,
-      "scale": 2.282,
-      "contact": "none"
+      "scale": 2.282
     },
     {
       "id": "tree-1126",
@@ -30804,8 +29403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3118.7,
       "y": 1614.3,
       "heading": 2.221,
-      "scale": 2.083,
-      "contact": "none"
+      "scale": 2.083
     },
     {
       "id": "tree-1127",
@@ -30813,8 +29411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3296.4,
       "y": 1938.3,
       "heading": 5.442,
-      "scale": 2.538,
-      "contact": "none"
+      "scale": 2.538
     },
     {
       "id": "tree-1128",
@@ -30822,8 +29419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3327.6,
       "y": 2123.7,
       "heading": 1.173,
-      "scale": 2.072,
-      "contact": "none"
+      "scale": 2.072
     },
     {
       "id": "tree-1129",
@@ -30831,8 +29427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3111,
       "y": 2071,
       "heading": 5.447,
-      "scale": 2.028,
-      "contact": "none"
+      "scale": 2.028
     },
     {
       "id": "tree-1130",
@@ -30840,8 +29435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3069.8,
       "y": 2008.1,
       "heading": 4.437,
-      "scale": 2.002,
-      "contact": "none"
+      "scale": 2.002
     },
     {
       "id": "tree-1131",
@@ -30849,8 +29443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 706.1,
       "y": 3987.8,
       "heading": 5.818,
-      "scale": 1.529,
-      "contact": "none"
+      "scale": 1.529
     },
     {
       "id": "tree-1132",
@@ -30858,8 +29451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 856.5,
       "y": 3918.9,
       "heading": 4.173,
-      "scale": 2.685,
-      "contact": "none"
+      "scale": 2.685
     },
     {
       "id": "tree-1133",
@@ -30867,8 +29459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 877.9,
       "y": 4178.2,
       "heading": 0.695,
-      "scale": 2.477,
-      "contact": "none"
+      "scale": 2.477
     },
     {
       "id": "tree-1134",
@@ -30876,8 +29467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 722.3,
       "y": 3814.8,
       "heading": 2.798,
-      "scale": 2.436,
-      "contact": "none"
+      "scale": 2.436
     },
     {
       "id": "tree-1135",
@@ -30885,8 +29475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 418.5,
       "y": 3740.6,
       "heading": 2.588,
-      "scale": 2.488,
-      "contact": "none"
+      "scale": 2.488
     },
     {
       "id": "tree-1136",
@@ -30894,8 +29483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1008.4,
       "y": 4003.9,
       "heading": 0.238,
-      "scale": 2.065,
-      "contact": "none"
+      "scale": 2.065
     },
     {
       "id": "tree-1137",
@@ -30903,8 +29491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1053.4,
       "y": 3803.8,
       "heading": 0.43,
-      "scale": 3.117,
-      "contact": "none"
+      "scale": 3.117
     },
     {
       "id": "tree-1138",
@@ -30912,8 +29499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2194.9,
       "y": -1118.4,
       "heading": 1.967,
-      "scale": 2.574,
-      "contact": "none"
+      "scale": 2.574
     },
     {
       "id": "tree-1139",
@@ -30921,8 +29507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2585.5,
       "y": -1302.3,
       "heading": 0.235,
-      "scale": 2.635,
-      "contact": "none"
+      "scale": 2.635
     },
     {
       "id": "tree-1140",
@@ -30930,8 +29515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2543.4,
       "y": -1109.6,
       "heading": 4.726,
-      "scale": 2.467,
-      "contact": "none"
+      "scale": 2.467
     },
     {
       "id": "tree-1141",
@@ -30939,8 +29523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2521,
       "y": -1070,
       "heading": 2.175,
-      "scale": 1.518,
-      "contact": "none"
+      "scale": 1.518
     },
     {
       "id": "tree-1142",
@@ -30948,8 +29531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2407.3,
       "y": -1272.4,
       "heading": 5.764,
-      "scale": 2.581,
-      "contact": "none"
+      "scale": 2.581
     },
     {
       "id": "tree-1143",
@@ -30957,8 +29539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3108,
       "y": -503.6,
       "heading": 2.099,
-      "scale": 2.323,
-      "contact": "none"
+      "scale": 2.323
     },
     {
       "id": "tree-1144",
@@ -30966,8 +29547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3108.2,
       "y": -621.1,
       "heading": 2.263,
-      "scale": 2.711,
-      "contact": "none"
+      "scale": 2.711
     },
     {
       "id": "tree-1145",
@@ -30975,8 +29555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2976.5,
       "y": -439.8,
       "heading": 3.723,
-      "scale": 2.693,
-      "contact": "none"
+      "scale": 2.693
     },
     {
       "id": "tree-1146",
@@ -30984,8 +29563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3144.1,
       "y": -915.4,
       "heading": 0.518,
-      "scale": 2.541,
-      "contact": "none"
+      "scale": 2.541
     },
     {
       "id": "tree-1147",
@@ -30993,8 +29571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3071.6,
       "y": -966.3,
       "heading": 3.067,
-      "scale": 2.675,
-      "contact": "none"
+      "scale": 2.675
     },
     {
       "id": "tree-1148",
@@ -31002,8 +29579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 363.7,
       "y": -3799.3,
       "heading": 4.733,
-      "scale": 2.754,
-      "contact": "none"
+      "scale": 2.754
     },
     {
       "id": "tree-1149",
@@ -31011,8 +29587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2760.5,
       "y": 1958.5,
       "heading": 1.818,
-      "scale": 2.255,
-      "contact": "none"
+      "scale": 2.255
     },
     {
       "id": "tree-1150",
@@ -31020,8 +29595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2716.4,
       "y": 1686.1,
       "heading": 0.442,
-      "scale": 2.604,
-      "contact": "none"
+      "scale": 2.604
     },
     {
       "id": "tree-1151",
@@ -31029,8 +29603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2278.6,
       "y": 1872,
       "heading": 6.024,
-      "scale": 2.692,
-      "contact": "none"
+      "scale": 2.692
     },
     {
       "id": "tree-1152",
@@ -31038,8 +29611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2330.7,
       "y": 1681.2,
       "heading": 3.191,
-      "scale": 1.96,
-      "contact": "none"
+      "scale": 1.96
     },
     {
       "id": "tree-1153",
@@ -31047,8 +29619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2617.2,
       "y": 1968.6,
       "heading": 4.326,
-      "scale": 2.585,
-      "contact": "none"
+      "scale": 2.585
     },
     {
       "id": "tree-1154",
@@ -31056,8 +29627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2334.8,
       "y": 1790,
       "heading": 6.093,
-      "scale": 1.41,
-      "contact": "none"
+      "scale": 1.41
     },
     {
       "id": "tree-1155",
@@ -31065,8 +29635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4123.3,
       "y": -1284.5,
       "heading": 2.584,
-      "scale": 1.817,
-      "contact": "none"
+      "scale": 1.817
     },
     {
       "id": "tree-1156",
@@ -31074,8 +29643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4015,
       "y": -1308.2,
       "heading": 4.178,
-      "scale": 2.065,
-      "contact": "none"
+      "scale": 2.065
     },
     {
       "id": "tree-1157",
@@ -31083,8 +29651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4000.7,
       "y": -1405.4,
       "heading": 4.554,
-      "scale": 1.468,
-      "contact": "none"
+      "scale": 1.468
     },
     {
       "id": "tree-1158",
@@ -31092,8 +29659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4138.4,
       "y": -1370.2,
       "heading": 4.029,
-      "scale": 2.105,
-      "contact": "none"
+      "scale": 2.105
     },
     {
       "id": "tree-1159",
@@ -31101,8 +29667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4064.9,
       "y": -1535.6,
       "heading": 4.563,
-      "scale": 2.568,
-      "contact": "none"
+      "scale": 2.568
     },
     {
       "id": "tree-1160",
@@ -31110,8 +29675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4051.2,
       "y": -1381.8,
       "heading": 1.432,
-      "scale": 2.506,
-      "contact": "none"
+      "scale": 2.506
     },
     {
       "id": "tree-1161",
@@ -31119,8 +29683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2459.3,
       "y": -2685,
       "heading": 2.826,
-      "scale": 2.827,
-      "contact": "none"
+      "scale": 2.827
     },
     {
       "id": "tree-1162",
@@ -31128,8 +29691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2113.9,
       "y": -2383.4,
       "heading": 4.993,
-      "scale": 2.362,
-      "contact": "none"
+      "scale": 2.362
     },
     {
       "id": "tree-1163",
@@ -31137,8 +29699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2443.5,
       "y": -2393.4,
       "heading": 6.132,
-      "scale": 2.264,
-      "contact": "none"
+      "scale": 2.264
     },
     {
       "id": "tree-1164",
@@ -31146,8 +29707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2515.2,
       "y": -2539.4,
       "heading": 1.144,
-      "scale": 2.635,
-      "contact": "none"
+      "scale": 2.635
     },
     {
       "id": "tree-1165",
@@ -31155,8 +29715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2035.3,
       "y": -2652.9,
       "heading": 3.758,
-      "scale": 2.59,
-      "contact": "none"
+      "scale": 2.59
     },
     {
       "id": "tree-1166",
@@ -31164,8 +29723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2268.1,
       "y": -2941.2,
       "heading": 1.689,
-      "scale": 1.488,
-      "contact": "none"
+      "scale": 1.488
     },
     {
       "id": "tree-1167",
@@ -31173,8 +29731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2513.6,
       "y": -2775.6,
       "heading": 5.594,
-      "scale": 2.153,
-      "contact": "none"
+      "scale": 2.153
     },
     {
       "id": "tree-1168",
@@ -31182,8 +29739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2376,
       "y": -2451,
       "heading": 5.337,
-      "scale": 1.502,
-      "contact": "none"
+      "scale": 1.502
     },
     {
       "id": "tree-1169",
@@ -31191,8 +29747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3262.4,
       "y": 294.2,
       "heading": 6.205,
-      "scale": 2.582,
-      "contact": "none"
+      "scale": 2.582
     },
     {
       "id": "tree-1170",
@@ -31200,8 +29755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3084.8,
       "y": -62.6,
       "heading": 5.171,
-      "scale": 2.379,
-      "contact": "none"
+      "scale": 2.379
     },
     {
       "id": "tree-1171",
@@ -31209,8 +29763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3008.4,
       "y": 107.6,
       "heading": 5.475,
-      "scale": 2.294,
-      "contact": "none"
+      "scale": 2.294
     },
     {
       "id": "tree-1172",
@@ -31218,8 +29771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1071.5,
       "y": 945.5,
       "heading": 0.512,
-      "scale": 1.82,
-      "contact": "none"
+      "scale": 1.82
     },
     {
       "id": "tree-1173",
@@ -31227,8 +29779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1173.1,
       "y": 1131.2,
       "heading": 0.294,
-      "scale": 2.681,
-      "contact": "none"
+      "scale": 2.681
     },
     {
       "id": "tree-1174",
@@ -31236,8 +29787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1129.5,
       "y": 1158.4,
       "heading": 1.454,
-      "scale": 2.332,
-      "contact": "none"
+      "scale": 2.332
     },
     {
       "id": "tree-1175",
@@ -31245,8 +29795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 947.8,
       "y": 1096.5,
       "heading": 4.342,
-      "scale": 2.201,
-      "contact": "none"
+      "scale": 2.201
     },
     {
       "id": "tree-1176",
@@ -31254,8 +29803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 992.7,
       "y": 1057.9,
       "heading": 3.236,
-      "scale": 2.402,
-      "contact": "none"
+      "scale": 2.402
     },
     {
       "id": "tree-1177",
@@ -31263,8 +29811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 925.8,
       "y": 1024.4,
       "heading": 1.745,
-      "scale": 2.07,
-      "contact": "none"
+      "scale": 2.07
     },
     {
       "id": "tree-1178",
@@ -31272,8 +29819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 947.1,
       "y": 1077.9,
       "heading": 4.52,
-      "scale": 2.129,
-      "contact": "none"
+      "scale": 2.129
     },
     {
       "id": "tree-1179",
@@ -31305,8 +29851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1458,
       "y": -768.2,
       "heading": 1.838,
-      "scale": 2.39,
-      "contact": "none"
+      "scale": 2.39
     },
     {
       "id": "tree-1183",
@@ -31314,8 +29859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1404,
       "y": -850,
       "heading": 2.603,
-      "scale": 2.377,
-      "contact": "none"
+      "scale": 2.377
     },
     {
       "id": "tree-1184",
@@ -31323,8 +29867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2001.2,
       "y": 4003.5,
       "heading": 2.138,
-      "scale": 1.621,
-      "contact": "none"
+      "scale": 1.621
     },
     {
       "id": "tree-1185",
@@ -31332,8 +29875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2012.6,
       "y": 4031.3,
       "heading": 2.583,
-      "scale": 2.232,
-      "contact": "none"
+      "scale": 2.232
     },
     {
       "id": "tree-1186",
@@ -31341,8 +29883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1907.4,
       "y": 4107.5,
       "heading": 5.268,
-      "scale": 1.382,
-      "contact": "none"
+      "scale": 1.382
     },
     {
       "id": "tree-1187",
@@ -31350,8 +29891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1910.4,
       "y": 3464,
       "heading": 0.92,
-      "scale": 1.769,
-      "contact": "none"
+      "scale": 1.769
     },
     {
       "id": "tree-1188",
@@ -31359,8 +29899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2189.8,
       "y": 3744.2,
       "heading": 1.78,
-      "scale": 1.42,
-      "contact": "none"
+      "scale": 1.42
     },
     {
       "id": "tree-1189",
@@ -31368,8 +29907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1581.6,
       "y": 3972.8,
       "heading": 6.102,
-      "scale": 2.228,
-      "contact": "none"
+      "scale": 2.228
     },
     {
       "id": "tree-1190",
@@ -31377,8 +29915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1895.8,
       "y": 3477,
       "heading": 1.516,
-      "scale": 1.593,
-      "contact": "none"
+      "scale": 1.593
     },
     {
       "id": "tree-1191",
@@ -31434,8 +29971,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3649.9,
       "y": 1816,
       "heading": 5.013,
-      "scale": 2.509,
-      "contact": "none"
+      "scale": 2.509
     },
     {
       "id": "tree-1198",
@@ -31443,8 +29979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3277.2,
       "y": 1844.4,
       "heading": 4.908,
-      "scale": 2.355,
-      "contact": "none"
+      "scale": 2.355
     },
     {
       "id": "tree-1199",
@@ -31452,8 +29987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3135.1,
       "y": 1999.7,
       "heading": 2.174,
-      "scale": 2.253,
-      "contact": "none"
+      "scale": 2.253
     },
     {
       "id": "tree-1200",
@@ -31461,8 +29995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3380.6,
       "y": 2062.4,
       "heading": 4.167,
-      "scale": 2.552,
-      "contact": "none"
+      "scale": 2.552
     },
     {
       "id": "tree-1201",
@@ -31470,8 +30003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3229,
       "y": 1716,
       "heading": 6.26,
-      "scale": 1.531,
-      "contact": "none"
+      "scale": 1.531
     },
     {
       "id": "tree-1202",
@@ -31479,8 +30011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3033.9,
       "y": 1821.3,
       "heading": 4.431,
-      "scale": 1.473,
-      "contact": "none"
+      "scale": 1.473
     },
     {
       "id": "tree-1203",
@@ -31488,8 +30019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3187.9,
       "y": 1701.3,
       "heading": 4.025,
-      "scale": 2.082,
-      "contact": "none"
+      "scale": 2.082
     },
     {
       "id": "tree-1204",
@@ -31497,8 +30027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3291.6,
       "y": 1881,
       "heading": 3.356,
-      "scale": 1.419,
-      "contact": "none"
+      "scale": 1.419
     },
     {
       "id": "tree-1205",
@@ -31506,8 +30035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3382.3,
       "y": 2006.3,
       "heading": 3.202,
-      "scale": 2.614,
-      "contact": "none"
+      "scale": 2.614
     },
     {
       "id": "tree-1206",
@@ -31515,8 +30043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -650.7,
       "y": -3716.4,
       "heading": 5.487,
-      "scale": 2.527,
-      "contact": "none"
+      "scale": 2.527
     },
     {
       "id": "tree-1207",
@@ -31524,8 +30051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -537.3,
       "y": -3322.6,
       "heading": 4.622,
-      "scale": 1.654,
-      "contact": "none"
+      "scale": 1.654
     },
     {
       "id": "tree-1208",
@@ -31533,8 +30059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3379.9,
       "y": -1016.7,
       "heading": 3.267,
-      "scale": 1.853,
-      "contact": "none"
+      "scale": 1.853
     },
     {
       "id": "tree-1209",
@@ -31542,8 +30067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3959.4,
       "y": 1046,
       "heading": 4.886,
-      "scale": 2.647,
-      "contact": "none"
+      "scale": 2.647
     },
     {
       "id": "tree-1210",
@@ -31551,8 +30075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3886.9,
       "y": 1083.3,
       "heading": 4.442,
-      "scale": 2.669,
-      "contact": "none"
+      "scale": 2.669
     },
     {
       "id": "tree-1211",
@@ -31560,8 +30083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4044.1,
       "y": 955.2,
       "heading": 2.379,
-      "scale": 2.061,
-      "contact": "none"
+      "scale": 2.061
     },
     {
       "id": "tree-1212",
@@ -31569,8 +30091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4023.5,
       "y": 986.3,
       "heading": 2.508,
-      "scale": 2.682,
-      "contact": "none"
+      "scale": 2.682
     },
     {
       "id": "tree-1213",
@@ -31578,8 +30099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4120.2,
       "y": 1000.3,
       "heading": 4.472,
-      "scale": 2.431,
-      "contact": "none"
+      "scale": 2.431
     },
     {
       "id": "tree-1214",
@@ -31587,8 +30107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3938.5,
       "y": 1127.6,
       "heading": 2.212,
-      "scale": 1.67,
-      "contact": "none"
+      "scale": 1.67
     },
     {
       "id": "tree-1215",
@@ -31596,8 +30115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3980.2,
       "y": 982.1,
       "heading": 5.963,
-      "scale": 1.528,
-      "contact": "none"
+      "scale": 1.528
     },
     {
       "id": "tree-1216",
@@ -31605,8 +30123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4091.1,
       "y": 906.9,
       "heading": 0.219,
-      "scale": 2.027,
-      "contact": "none"
+      "scale": 2.027
     },
     {
       "id": "tree-1217",
@@ -31614,8 +30131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3953.1,
       "y": 876.5,
       "heading": 3.287,
-      "scale": 1.609,
-      "contact": "none"
+      "scale": 1.609
     },
     {
       "id": "tree-1218",
@@ -31623,8 +30139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1305.2,
       "y": 806,
       "heading": 3.916,
-      "scale": 2.726,
-      "contact": "none"
+      "scale": 2.726
     },
     {
       "id": "tree-1219",
@@ -31632,8 +30147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1441.4,
       "y": 806.2,
       "heading": 3.454,
-      "scale": 2.697,
-      "contact": "none"
+      "scale": 2.697
     },
     {
       "id": "tree-1220",
@@ -31641,8 +30155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1197.8,
       "y": 628.4,
       "heading": 3.095,
-      "scale": 2.676,
-      "contact": "none"
+      "scale": 2.676
     },
     {
       "id": "tree-1221",
@@ -31650,8 +30163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1209.7,
       "y": 757.1,
       "heading": 0.928,
-      "scale": 2.343,
-      "contact": "none"
+      "scale": 2.343
     },
     {
       "id": "tree-1222",
@@ -31659,8 +30171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1569.9,
       "y": 800.2,
       "heading": 4.917,
-      "scale": 2.634,
-      "contact": "none"
+      "scale": 2.634
     },
     {
       "id": "tree-1223",
@@ -31668,8 +30179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3898.8,
       "y": 2847.2,
       "heading": 0.392,
-      "scale": 1.583,
-      "contact": "none"
+      "scale": 1.583
     },
     {
       "id": "tree-1224",
@@ -31677,8 +30187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4312.2,
       "y": 3452,
       "heading": 0.377,
-      "scale": 1.589,
-      "contact": "none"
+      "scale": 1.589
     },
     {
       "id": "tree-1225",
@@ -31686,8 +30195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3989,
       "y": 2964.1,
       "heading": 0.086,
-      "scale": 2.292,
-      "contact": "none"
+      "scale": 2.292
     },
     {
       "id": "tree-1226",
@@ -31695,8 +30203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4073.7,
       "y": 2781.7,
       "heading": 3.288,
-      "scale": 3.011,
-      "contact": "none"
+      "scale": 3.011
     },
     {
       "id": "tree-1227",
@@ -31704,8 +30211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3933.5,
       "y": 3435.2,
       "heading": 4.992,
-      "scale": 2.584,
-      "contact": "none"
+      "scale": 2.584
     },
     {
       "id": "tree-1228",
@@ -31713,8 +30219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3853.5,
       "y": 3100.2,
       "heading": 1.412,
-      "scale": 1.509,
-      "contact": "none"
+      "scale": 1.509
     },
     {
       "id": "tree-1229",
@@ -31722,8 +30227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4009.4,
       "y": 3088.9,
       "heading": 1.054,
-      "scale": 2.051,
-      "contact": "none"
+      "scale": 2.051
     },
     {
       "id": "tree-1230",
@@ -31731,8 +30235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1842.3,
       "y": -2271.3,
       "heading": 4.907,
-      "scale": 2.418,
-      "contact": "none"
+      "scale": 2.418
     },
     {
       "id": "tree-1231",
@@ -31740,8 +30243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1903.6,
       "y": -2241.8,
       "heading": 0.552,
-      "scale": 2.679,
-      "contact": "none"
+      "scale": 2.679
     },
     {
       "id": "tree-1232",
@@ -31749,8 +30251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1885.6,
       "y": -2574.6,
       "heading": 1.549,
-      "scale": 2.201,
-      "contact": "none"
+      "scale": 2.201
     },
     {
       "id": "tree-1233",
@@ -31758,8 +30259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2998.7,
       "y": -1776.8,
       "heading": 3.613,
-      "scale": 2.342,
-      "contact": "none"
+      "scale": 2.342
     },
     {
       "id": "tree-1234",
@@ -31767,8 +30267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2914.3,
       "y": -1763,
       "heading": 4.738,
-      "scale": 2.6,
-      "contact": "none"
+      "scale": 2.6
     },
     {
       "id": "tree-1235",
@@ -31776,8 +30275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3293.9,
       "y": -1826.1,
       "heading": 1.202,
-      "scale": 1.689,
-      "contact": "none"
+      "scale": 1.689
     },
     {
       "id": "tree-1236",
@@ -31785,8 +30283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3124.6,
       "y": -1865.2,
       "heading": 4.207,
-      "scale": 2.004,
-      "contact": "none"
+      "scale": 2.004
     },
     {
       "id": "tree-1237",
@@ -31794,8 +30291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2766.1,
       "y": -1915.4,
       "heading": 5.79,
-      "scale": 1.49,
-      "contact": "none"
+      "scale": 1.49
     },
     {
       "id": "tree-1238",
@@ -31803,8 +30299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1074.8,
       "y": -2569.5,
       "heading": 3.744,
-      "scale": 2.25,
-      "contact": "none"
+      "scale": 2.25
     },
     {
       "id": "tree-1239",
@@ -31812,8 +30307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1009.2,
       "y": 650.3,
       "heading": 2.831,
-      "scale": 1.502,
-      "contact": "none"
+      "scale": 1.502
     },
     {
       "id": "tree-1240",
@@ -31821,8 +30315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 962.2,
       "y": 601.1,
       "heading": 1.599,
-      "scale": 2.456,
-      "contact": "none"
+      "scale": 2.456
     },
     {
       "id": "tree-1241",
@@ -31830,8 +30323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -211.7,
       "y": -3164.2,
       "heading": 6.252,
-      "scale": 2.487,
-      "contact": "none"
+      "scale": 2.487
     },
     {
       "id": "tree-1242",
@@ -31839,8 +30331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -256.6,
       "y": -3388.5,
       "heading": 5.729,
-      "scale": 2.581,
-      "contact": "none"
+      "scale": 2.581
     },
     {
       "id": "tree-1243",
@@ -31848,8 +30339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -386,
       "y": -3121.1,
       "heading": 3.313,
-      "scale": 2.064,
-      "contact": "none"
+      "scale": 2.064
     },
     {
       "id": "tree-1244",
@@ -31857,8 +30347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -242,
       "y": -3112.1,
       "heading": 2.491,
-      "scale": 2.405,
-      "contact": "none"
+      "scale": 2.405
     },
     {
       "id": "tree-1245",
@@ -31866,8 +30355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -189.6,
       "y": -3230.2,
       "heading": 3.484,
-      "scale": 1.375,
-      "contact": "none"
+      "scale": 1.375
     },
     {
       "id": "tree-1246",
@@ -31875,8 +30363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -383.2,
       "y": -3218.5,
       "heading": 0.227,
-      "scale": 1.355,
-      "contact": "none"
+      "scale": 1.355
     },
     {
       "id": "tree-1247",
@@ -31884,8 +30371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 101.1,
       "y": -3271.3,
       "heading": 3.193,
-      "scale": 2.235,
-      "contact": "none"
+      "scale": 2.235
     },
     {
       "id": "tree-1248",
@@ -31893,8 +30379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -529.3,
       "y": -3270.9,
       "heading": 5.75,
-      "scale": 2.717,
-      "contact": "none"
+      "scale": 2.717
     },
     {
       "id": "tree-1249",
@@ -31902,8 +30387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 17.2,
       "y": -2982.9,
       "heading": 6.072,
-      "scale": 2.689,
-      "contact": "none"
+      "scale": 2.689
     },
     {
       "id": "tree-1250",
@@ -31911,8 +30395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4195.2,
       "y": 135.2,
       "heading": 3.594,
-      "scale": 3.316,
-      "contact": "none"
+      "scale": 3.316
     },
     {
       "id": "tree-1251",
@@ -31920,8 +30403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4244,
       "y": -84,
       "heading": 4.01,
-      "scale": 2.898,
-      "contact": "none"
+      "scale": 2.898
     },
     {
       "id": "tree-1252",
@@ -31929,8 +30411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4325.3,
       "y": 103.9,
       "heading": 3.877,
-      "scale": 1.882,
-      "contact": "none"
+      "scale": 1.882
     },
     {
       "id": "tree-1253",
@@ -31938,8 +30419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4313.7,
       "y": 23.1,
       "heading": 5.908,
-      "scale": 1.532,
-      "contact": "none"
+      "scale": 1.532
     },
     {
       "id": "tree-1254",
@@ -31947,8 +30427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4232.5,
       "y": 136.8,
       "heading": 1.29,
-      "scale": 1.743,
-      "contact": "none"
+      "scale": 1.743
     },
     {
       "id": "tree-1255",
@@ -31956,8 +30435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4151.1,
       "y": -58.9,
       "heading": 0.931,
-      "scale": 2.363,
-      "contact": "none"
+      "scale": 2.363
     },
     {
       "id": "tree-1256",
@@ -31997,8 +30475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -509.3,
       "y": 3115.6,
       "heading": 2.342,
-      "scale": 2.13,
-      "contact": "none"
+      "scale": 2.13
     },
     {
       "id": "tree-1261",
@@ -32006,8 +30483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1366.3,
       "y": -2398.4,
       "heading": 4.237,
-      "scale": 1.733,
-      "contact": "none"
+      "scale": 1.733
     },
     {
       "id": "tree-1262",
@@ -32015,8 +30491,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1341,
       "y": -2507.2,
       "heading": 1.947,
-      "scale": 1.501,
-      "contact": "none"
+      "scale": 1.501
     },
     {
       "id": "tree-1263",
@@ -32024,8 +30499,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1296.9,
       "y": -2383.2,
       "heading": 6.076,
-      "scale": 2.332,
-      "contact": "none"
+      "scale": 2.332
     },
     {
       "id": "tree-1264",
@@ -32033,8 +30507,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1258.9,
       "y": -2491.4,
       "heading": 5.552,
-      "scale": 1.585,
-      "contact": "none"
+      "scale": 1.585
     },
     {
       "id": "tree-1265",
@@ -32042,8 +30515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1326.1,
       "y": -2520.5,
       "heading": 4.381,
-      "scale": 2.567,
-      "contact": "none"
+      "scale": 2.567
     },
     {
       "id": "tree-1266",
@@ -32051,8 +30523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1374.6,
       "y": -2522.6,
       "heading": 4.629,
-      "scale": 1.381,
-      "contact": "none"
+      "scale": 1.381
     },
     {
       "id": "tree-1267",
@@ -32060,8 +30531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3837.7,
       "y": 116.1,
       "heading": 1.398,
-      "scale": 1.814,
-      "contact": "none"
+      "scale": 1.814
     },
     {
       "id": "tree-1268",
@@ -32069,8 +30539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3764.5,
       "y": -94,
       "heading": 3.719,
-      "scale": 1.679,
-      "contact": "none"
+      "scale": 1.679
     },
     {
       "id": "tree-1269",
@@ -32078,8 +30547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3758.5,
       "y": -49.2,
       "heading": 4.523,
-      "scale": 1.705,
-      "contact": "none"
+      "scale": 1.705
     },
     {
       "id": "tree-1270",
@@ -32087,8 +30555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3743.4,
       "y": -76.5,
       "heading": 0.889,
-      "scale": 2.471,
-      "contact": "none"
+      "scale": 2.471
     },
     {
       "id": "tree-1271",
@@ -32112,8 +30579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -14.3,
       "y": -3565.7,
       "heading": 0.212,
-      "scale": 2.007,
-      "contact": "none"
+      "scale": 2.007
     },
     {
       "id": "tree-1274",
@@ -32121,8 +30587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -440.5,
       "y": -3426.4,
       "heading": 3.595,
-      "scale": 2.553,
-      "contact": "none"
+      "scale": 2.553
     },
     {
       "id": "tree-1275",
@@ -32130,8 +30595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 178.3,
       "y": -3620.6,
       "heading": 3.138,
-      "scale": 1.644,
-      "contact": "none"
+      "scale": 1.644
     },
     {
       "id": "tree-1276",
@@ -32139,8 +30603,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -306.7,
       "y": -3337.1,
       "heading": 6.161,
-      "scale": 1.968,
-      "contact": "none"
+      "scale": 1.968
     },
     {
       "id": "tree-1277",
@@ -32148,8 +30611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 101.4,
       "y": -2988.6,
       "heading": 4.648,
-      "scale": 2.236,
-      "contact": "none"
+      "scale": 2.236
     },
     {
       "id": "tree-1278",
@@ -32157,8 +30619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -960.5,
       "y": -2515.1,
       "heading": 0.66,
-      "scale": 2.354,
-      "contact": "none"
+      "scale": 2.354
     },
     {
       "id": "tree-1279",
@@ -32166,8 +30627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1044.1,
       "y": -2241.4,
       "heading": 1.403,
-      "scale": 1.453,
-      "contact": "none"
+      "scale": 1.453
     },
     {
       "id": "tree-1280",
@@ -32175,8 +30635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1040.8,
       "y": -2520.2,
       "heading": 2.808,
-      "scale": 1.877,
-      "contact": "none"
+      "scale": 1.877
     },
     {
       "id": "tree-1281",
@@ -32184,8 +30643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -964.3,
       "y": -2391.8,
       "heading": 0.966,
-      "scale": 1.804,
-      "contact": "none"
+      "scale": 1.804
     },
     {
       "id": "tree-1282",
@@ -32193,8 +30651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1011.4,
       "y": -2194.1,
       "heading": 4.981,
-      "scale": 1.458,
-      "contact": "none"
+      "scale": 1.458
     },
     {
       "id": "tree-1283",
@@ -32202,8 +30659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1210.7,
       "y": -2362.3,
       "heading": 5.675,
-      "scale": 1.589,
-      "contact": "none"
+      "scale": 1.589
     },
     {
       "id": "tree-1284",
@@ -32211,8 +30667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1016.4,
       "y": -2528.3,
       "heading": 3.146,
-      "scale": 2.066,
-      "contact": "none"
+      "scale": 2.066
     },
     {
       "id": "tree-1285",
@@ -32220,8 +30675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1077.1,
       "y": -2519.1,
       "heading": 1.765,
-      "scale": 2.46,
-      "contact": "none"
+      "scale": 2.46
     },
     {
       "id": "tree-1286",
@@ -32229,8 +30683,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3081.7,
       "y": -1359.9,
       "heading": 1.194,
-      "scale": 2.622,
-      "contact": "none"
+      "scale": 2.622
     },
     {
       "id": "tree-1287",
@@ -32238,8 +30691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3366.6,
       "y": 3347.1,
       "heading": 5.699,
-      "scale": 2.36,
-      "contact": "none"
+      "scale": 2.36
     },
     {
       "id": "tree-1288",
@@ -32247,8 +30699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3457.7,
       "y": 3454.2,
       "heading": 5.626,
-      "scale": 1.97,
-      "contact": "none"
+      "scale": 1.97
     },
     {
       "id": "tree-1289",
@@ -32256,8 +30707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3288.8,
       "y": 3436.7,
       "heading": 5.217,
-      "scale": 1.977,
-      "contact": "none"
+      "scale": 1.977
     },
     {
       "id": "tree-1290",
@@ -32265,8 +30715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3400.3,
       "y": 3553.1,
       "heading": 1.683,
-      "scale": 2.864,
-      "contact": "none"
+      "scale": 2.864
     },
     {
       "id": "tree-1291",
@@ -32274,8 +30723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -207.8,
       "y": 3203,
       "heading": 0.945,
-      "scale": 1.895,
-      "contact": "none"
+      "scale": 1.895
     },
     {
       "id": "tree-1292",
@@ -32283,8 +30731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -33.2,
       "y": 3126.6,
       "heading": 0.302,
-      "scale": 1.531,
-      "contact": "none"
+      "scale": 1.531
     },
     {
       "id": "tree-1293",
@@ -32292,8 +30739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -203.2,
       "y": 3041.3,
       "heading": 2.573,
-      "scale": 2.367,
-      "contact": "none"
+      "scale": 2.367
     },
     {
       "id": "tree-1294",
@@ -32301,8 +30747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -123.3,
       "y": 3105.7,
       "heading": 5.715,
-      "scale": 2.535,
-      "contact": "none"
+      "scale": 2.535
     },
     {
       "id": "tree-1295",
@@ -32310,8 +30755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -175.2,
       "y": 2927.4,
       "heading": 3.12,
-      "scale": 2.115,
-      "contact": "none"
+      "scale": 2.115
     },
     {
       "id": "tree-1296",
@@ -32319,8 +30763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -323.5,
       "y": 3194.2,
       "heading": 4.268,
-      "scale": 1.898,
-      "contact": "none"
+      "scale": 1.898
     },
     {
       "id": "tree-1297",
@@ -32328,8 +30771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -65.1,
       "y": 3059.5,
       "heading": 2.229,
-      "scale": 1.963,
-      "contact": "none"
+      "scale": 1.963
     },
     {
       "id": "tree-1298",
@@ -32337,8 +30779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -157.3,
       "y": 3002.4,
       "heading": 3.633,
-      "scale": 1.733,
-      "contact": "none"
+      "scale": 1.733
     },
     {
       "id": "tree-1299",
@@ -32346,8 +30787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 522.8,
       "y": -3038.7,
       "heading": 3.52,
-      "scale": 2.581,
-      "contact": "none"
+      "scale": 2.581
     },
     {
       "id": "tree-1300",
@@ -32355,8 +30795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 782.5,
       "y": -2973.7,
       "heading": 4.573,
-      "scale": 2.324,
-      "contact": "none"
+      "scale": 2.324
     },
     {
       "id": "tree-1301",
@@ -32364,8 +30803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1839.5,
       "y": -3226.6,
       "heading": 0.327,
-      "scale": 1.822,
-      "contact": "none"
+      "scale": 1.822
     },
     {
       "id": "tree-1302",
@@ -32373,8 +30811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1779.2,
       "y": -3138.7,
       "heading": 4.527,
-      "scale": 2.615,
-      "contact": "none"
+      "scale": 2.615
     },
     {
       "id": "tree-1303",
@@ -32382,8 +30819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1883.9,
       "y": -3270.1,
       "heading": 4.857,
-      "scale": 2.098,
-      "contact": "none"
+      "scale": 2.098
     },
     {
       "id": "tree-1304",
@@ -32391,8 +30827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1737.6,
       "y": -3237.2,
       "heading": 2.585,
-      "scale": 2.058,
-      "contact": "none"
+      "scale": 2.058
     },
     {
       "id": "tree-1305",
@@ -32400,8 +30835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1696.7,
       "y": -2628.2,
       "heading": 5.842,
-      "scale": 2.527,
-      "contact": "none"
+      "scale": 2.527
     },
     {
       "id": "tree-1306",
@@ -32409,8 +30843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1569.5,
       "y": -2759.4,
       "heading": 4.213,
-      "scale": 1.42,
-      "contact": "none"
+      "scale": 1.42
     },
     {
       "id": "tree-1307",
@@ -32418,8 +30851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1686.6,
       "y": -3038,
       "heading": 0.567,
-      "scale": 2.449,
-      "contact": "none"
+      "scale": 2.449
     },
     {
       "id": "tree-1308",
@@ -32427,8 +30859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1601.9,
       "y": -2739,
       "heading": 4.499,
-      "scale": 1.639,
-      "contact": "none"
+      "scale": 1.639
     },
     {
       "id": "tree-1309",
@@ -32436,8 +30867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1852.5,
       "y": -2962.9,
       "heading": 4.752,
-      "scale": 2.361,
-      "contact": "none"
+      "scale": 2.361
     },
     {
       "id": "tree-1310",
@@ -32445,8 +30875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1538.4,
       "y": -2739.4,
       "heading": 3.181,
-      "scale": 1.842,
-      "contact": "none"
+      "scale": 1.842
     },
     {
       "id": "tree-1311",
@@ -32454,8 +30883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1600.7,
       "y": -3129.4,
       "heading": 0.029,
-      "scale": 2.459,
-      "contact": "none"
+      "scale": 2.459
     },
     {
       "id": "tree-1312",
@@ -32463,8 +30891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1599.8,
       "y": -3171.7,
       "heading": 3.234,
-      "scale": 2.53,
-      "contact": "none"
+      "scale": 2.53
     },
     {
       "id": "tree-1313",
@@ -32472,8 +30899,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1525.3,
       "y": -2925,
       "heading": 5.257,
-      "scale": 2.736,
-      "contact": "none"
+      "scale": 2.736
     },
     {
       "id": "tree-1314",
@@ -32481,8 +30907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3440.6,
       "y": 449.8,
       "heading": 0.834,
-      "scale": 3.094,
-      "contact": "none"
+      "scale": 3.094
     },
     {
       "id": "tree-1315",
@@ -32490,8 +30915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3243.1,
       "y": 516.9,
       "heading": 1.064,
-      "scale": 2.119,
-      "contact": "none"
+      "scale": 2.119
     },
     {
       "id": "tree-1316",
@@ -32499,8 +30923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3273.5,
       "y": 735.2,
       "heading": 4.673,
-      "scale": 1.518,
-      "contact": "none"
+      "scale": 1.518
     },
     {
       "id": "tree-1317",
@@ -32508,8 +30931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3396.4,
       "y": 756.3,
       "heading": 3.746,
-      "scale": 2.69,
-      "contact": "none"
+      "scale": 2.69
     },
     {
       "id": "tree-1318",
@@ -32517,8 +30939,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -241.9,
       "y": 4428.9,
       "heading": 5.93,
-      "scale": 2.103,
-      "contact": "none"
+      "scale": 2.103
     },
     {
       "id": "tree-1319",
@@ -32526,8 +30947,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -203.4,
       "y": 4481.2,
       "heading": 0.146,
-      "scale": 2.419,
-      "contact": "none"
+      "scale": 2.419
     },
     {
       "id": "tree-1320",
@@ -32535,8 +30955,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -355,
       "y": 4387.5,
       "heading": 3.419,
-      "scale": 1.533,
-      "contact": "none"
+      "scale": 1.533
     },
     {
       "id": "tree-1321",
@@ -32544,8 +30963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -174.7,
       "y": 4623,
       "heading": 2.691,
-      "scale": 2.794,
-      "contact": "none"
+      "scale": 2.794
     },
     {
       "id": "tree-1322",
@@ -32561,8 +30979,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2689.5,
       "y": -2230,
       "heading": 5.652,
-      "scale": 2.607,
-      "contact": "none"
+      "scale": 2.607
     },
     {
       "id": "tree-1324",
@@ -32570,8 +30987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2671.3,
       "y": -1847.9,
       "heading": 3.004,
-      "scale": 2.517,
-      "contact": "none"
+      "scale": 2.517
     },
     {
       "id": "tree-1325",
@@ -32579,8 +30995,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2387.1,
       "y": -1995.8,
       "heading": 5.42,
-      "scale": 2.086,
-      "contact": "none"
+      "scale": 2.086
     },
     {
       "id": "tree-1326",
@@ -32588,8 +31003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2512.8,
       "y": -1909.3,
       "heading": 0.999,
-      "scale": 1.611,
-      "contact": "none"
+      "scale": 1.611
     },
     {
       "id": "tree-1327",
@@ -32597,8 +31011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2317.4,
       "y": -1853.4,
       "heading": 3.177,
-      "scale": 1.454,
-      "contact": "none"
+      "scale": 1.454
     },
     {
       "id": "tree-1328",
@@ -32606,8 +31019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2322.2,
       "y": -1646.5,
       "heading": 4.784,
-      "scale": 2.641,
-      "contact": "none"
+      "scale": 2.641
     },
     {
       "id": "tree-1329",
@@ -32615,8 +31027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1932.9,
       "y": -2113.4,
       "heading": 6.171,
-      "scale": 2.237,
-      "contact": "none"
+      "scale": 2.237
     },
     {
       "id": "tree-1330",
@@ -32624,8 +31035,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2024,
       "y": -2617.7,
       "heading": 4.374,
-      "scale": 2.617,
-      "contact": "none"
+      "scale": 2.617
     },
     {
       "id": "tree-1331",
@@ -32633,8 +31043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1917.7,
       "y": -2289.6,
       "heading": 2.867,
-      "scale": 1.912,
-      "contact": "none"
+      "scale": 1.912
     },
     {
       "id": "tree-1332",
@@ -32642,8 +31051,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1949.3,
       "y": -2211.8,
       "heading": 1.339,
-      "scale": 2.331,
-      "contact": "none"
+      "scale": 2.331
     },
     {
       "id": "tree-1333",
@@ -32651,8 +31059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1995.4,
       "y": -2438.4,
       "heading": 3.941,
-      "scale": 2.301,
-      "contact": "none"
+      "scale": 2.301
     },
     {
       "id": "tree-1334",
@@ -32660,8 +31067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2354.2,
       "y": -2476.1,
       "heading": 3.884,
-      "scale": 2.068,
-      "contact": "none"
+      "scale": 2.068
     },
     {
       "id": "tree-1335",
@@ -32669,8 +31075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1170.9,
       "y": -2227,
       "heading": 6.215,
-      "scale": 2.568,
-      "contact": "none"
+      "scale": 2.568
     },
     {
       "id": "tree-1336",
@@ -32678,8 +31083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1113.8,
       "y": -2161,
       "heading": 3.097,
-      "scale": 2.399,
-      "contact": "none"
+      "scale": 2.399
     },
     {
       "id": "tree-1337",
@@ -32687,8 +31091,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1274.3,
       "y": -2169,
       "heading": 6.282,
-      "scale": 1.819,
-      "contact": "none"
+      "scale": 1.819
     },
     {
       "id": "tree-1338",
@@ -32696,8 +31099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1411.4,
       "y": -2091.5,
       "heading": 3.707,
-      "scale": 2.409,
-      "contact": "none"
+      "scale": 2.409
     },
     {
       "id": "tree-1339",
@@ -32705,8 +31107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2303.4,
       "y": -1700.1,
       "heading": 2.555,
-      "scale": 2.694,
-      "contact": "none"
+      "scale": 2.694
     },
     {
       "id": "tree-1340",
@@ -32714,8 +31115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2473.9,
       "y": -1723.3,
       "heading": 4.636,
-      "scale": 1.87,
-      "contact": "none"
+      "scale": 1.87
     },
     {
       "id": "tree-1341",
@@ -32723,8 +31123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2307.1,
       "y": -1826.7,
       "heading": 1.096,
-      "scale": 2.046,
-      "contact": "none"
+      "scale": 2.046
     },
     {
       "id": "tree-1342",
@@ -32732,8 +31131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2423.6,
       "y": -1555.4,
       "heading": 3.323,
-      "scale": 2.368,
-      "contact": "none"
+      "scale": 2.368
     },
     {
       "id": "tree-1343",
@@ -32741,8 +31139,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2307.3,
       "y": -1723.1,
       "heading": 4.746,
-      "scale": 1.778,
-      "contact": "none"
+      "scale": 1.778
     },
     {
       "id": "tree-1344",
@@ -32750,8 +31147,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2365,
       "y": -1791.7,
       "heading": 3.541,
-      "scale": 2.471,
-      "contact": "none"
+      "scale": 2.471
     },
     {
       "id": "tree-1345",
@@ -32759,8 +31155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3678.1,
       "y": -264.4,
       "heading": 5.557,
-      "scale": 2.215,
-      "contact": "none"
+      "scale": 2.215
     },
     {
       "id": "tree-1346",
@@ -32768,8 +31163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3751.9,
       "y": -324.7,
       "heading": 5.058,
-      "scale": 2.143,
-      "contact": "none"
+      "scale": 2.143
     },
     {
       "id": "tree-1347",
@@ -32777,8 +31171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3258,
       "y": -404.9,
       "heading": 3.897,
-      "scale": 3.142,
-      "contact": "none"
+      "scale": 3.142
     },
     {
       "id": "tree-1348",
@@ -32786,8 +31179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3074.4,
       "y": -332.6,
       "heading": 5.34,
-      "scale": 1.566,
-      "contact": "none"
+      "scale": 1.566
     },
     {
       "id": "tree-1349",
@@ -32795,8 +31187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3071.2,
       "y": -272.1,
       "heading": 5.476,
-      "scale": 2.258,
-      "contact": "none"
+      "scale": 2.258
     },
     {
       "id": "tree-1350",
@@ -32804,8 +31195,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 819.5,
       "y": 2122.8,
       "heading": 5.599,
-      "scale": 2.584,
-      "contact": "none"
+      "scale": 2.584
     },
     {
       "id": "tree-1351",
@@ -32813,8 +31203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 706.3,
       "y": 1601.5,
       "heading": 4.497,
-      "scale": 1.934,
-      "contact": "none"
+      "scale": 1.934
     },
     {
       "id": "tree-1352",
@@ -32822,8 +31211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 910.8,
       "y": 1915.5,
       "heading": 5.115,
-      "scale": 1.611,
-      "contact": "none"
+      "scale": 1.611
     },
     {
       "id": "tree-1353",
@@ -32831,8 +31219,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 696.9,
       "y": 1997.8,
       "heading": 0.342,
-      "scale": 2,
-      "contact": "none"
+      "scale": 2
     },
     {
       "id": "tree-1354",
@@ -32840,8 +31227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1086.4,
       "y": 1901.8,
       "heading": 1.612,
-      "scale": 2.363,
-      "contact": "none"
+      "scale": 2.363
     },
     {
       "id": "tree-1355",
@@ -32849,8 +31235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1688.2,
       "y": 2595.8,
       "heading": 1.653,
-      "scale": 2.397,
-      "contact": "none"
+      "scale": 2.397
     },
     {
       "id": "tree-1356",
@@ -32858,8 +31243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1546.3,
       "y": 2235.6,
       "heading": 0.299,
-      "scale": 2.585,
-      "contact": "none"
+      "scale": 2.585
     },
     {
       "id": "tree-1357",
@@ -32867,8 +31251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1707.3,
       "y": 2190.4,
       "heading": 4.429,
-      "scale": 1.511,
-      "contact": "none"
+      "scale": 1.511
     },
     {
       "id": "tree-1358",
@@ -32876,8 +31259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1672.1,
       "y": 2500.4,
       "heading": 1.221,
-      "scale": 2.53,
-      "contact": "none"
+      "scale": 2.53
     },
     {
       "id": "tree-1359",
@@ -32885,8 +31267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1635.6,
       "y": 2234.9,
       "heading": 0.465,
-      "scale": 2.527,
-      "contact": "none"
+      "scale": 2.527
     },
     {
       "id": "tree-1360",
@@ -32894,8 +31275,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1836.8,
       "y": 2356.1,
       "heading": 3.55,
-      "scale": 1.976,
-      "contact": "none"
+      "scale": 1.976
     },
     {
       "id": "tree-1361",
@@ -32911,8 +31291,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1559.2,
       "y": 4181.1,
       "heading": 3.073,
-      "scale": 2.319,
-      "contact": "none"
+      "scale": 2.319
     },
     {
       "id": "tree-1363",
@@ -32920,8 +31299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1822.2,
       "y": 4101.6,
       "heading": 2.889,
-      "scale": 2.36,
-      "contact": "none"
+      "scale": 2.36
     },
     {
       "id": "tree-1364",
@@ -32929,8 +31307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1602.6,
       "y": 3924,
       "heading": 0.016,
-      "scale": 2.677,
-      "contact": "none"
+      "scale": 2.677
     },
     {
       "id": "tree-1365",
@@ -32938,8 +31315,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1936.2,
       "y": 4198.9,
       "heading": 0.941,
-      "scale": 2.526,
-      "contact": "none"
+      "scale": 2.526
     },
     {
       "id": "tree-1366",
@@ -32947,8 +31323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1899.6,
       "y": 4018.7,
       "heading": 1.819,
-      "scale": 1.978,
-      "contact": "none"
+      "scale": 1.978
     },
     {
       "id": "tree-1367",
@@ -32956,8 +31331,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1675.3,
       "y": 4276.7,
       "heading": 0.668,
-      "scale": 1.513,
-      "contact": "none"
+      "scale": 1.513
     },
     {
       "id": "tree-1368",
@@ -32965,8 +31339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2625.2,
       "y": -1057.6,
       "heading": 5.132,
-      "scale": 1.544,
-      "contact": "none"
+      "scale": 1.544
     },
     {
       "id": "tree-1369",
@@ -32974,8 +31347,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2656.3,
       "y": -924.5,
       "heading": 1.678,
-      "scale": 2.428,
-      "contact": "none"
+      "scale": 2.428
     },
     {
       "id": "tree-1370",
@@ -32983,8 +31355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2600.5,
       "y": -846,
       "heading": 0.645,
-      "scale": 2.454,
-      "contact": "none"
+      "scale": 2.454
     },
     {
       "id": "tree-1371",
@@ -32992,8 +31363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2593.1,
       "y": -962.1,
       "heading": 2.046,
-      "scale": 1.695,
-      "contact": "none"
+      "scale": 1.695
     },
     {
       "id": "tree-1372",
@@ -33001,8 +31371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2532.7,
       "y": -891.4,
       "heading": 1.475,
-      "scale": 1.974,
-      "contact": "none"
+      "scale": 1.974
     },
     {
       "id": "tree-1373",
@@ -33010,8 +31379,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1592.6,
       "y": 2738.4,
       "heading": 4.273,
-      "scale": 2.614,
-      "contact": "none"
+      "scale": 2.614
     },
     {
       "id": "tree-1374",
@@ -33019,8 +31387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1881.9,
       "y": 2769.2,
       "heading": 5.987,
-      "scale": 2.679,
-      "contact": "none"
+      "scale": 2.679
     },
     {
       "id": "tree-1375",
@@ -33028,8 +31395,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1512.4,
       "y": 2383.5,
       "heading": 4.357,
-      "scale": 2.607,
-      "contact": "none"
+      "scale": 2.607
     },
     {
       "id": "tree-1376",
@@ -33037,8 +31403,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1427.2,
       "y": 2763.9,
       "heading": 2.732,
-      "scale": 2.256,
-      "contact": "none"
+      "scale": 2.256
     },
     {
       "id": "tree-1377",
@@ -33046,8 +31411,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1649.8,
       "y": 2485.2,
       "heading": 2.928,
-      "scale": 2.563,
-      "contact": "none"
+      "scale": 2.563
     },
     {
       "id": "tree-1378",
@@ -33055,8 +31419,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1994.8,
       "y": -822.8,
       "heading": 2.537,
-      "scale": 1.815,
-      "contact": "none"
+      "scale": 1.815
     },
     {
       "id": "tree-1379",
@@ -33064,8 +31427,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2077.5,
       "y": -793,
       "heading": 1.836,
-      "scale": 2.068,
-      "contact": "none"
+      "scale": 2.068
     },
     {
       "id": "tree-1380",
@@ -33073,8 +31435,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1963.4,
       "y": -899.3,
       "heading": 4.417,
-      "scale": 2.461,
-      "contact": "none"
+      "scale": 2.461
     },
     {
       "id": "tree-1381",
@@ -33082,8 +31443,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4137.2,
       "y": 753.8,
       "heading": 6.267,
-      "scale": 2.345,
-      "contact": "none"
+      "scale": 2.345
     },
     {
       "id": "tree-1382",
@@ -33091,8 +31451,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4122.4,
       "y": 713.4,
       "heading": 5.89,
-      "scale": 3.078,
-      "contact": "none"
+      "scale": 3.078
     },
     {
       "id": "tree-1383",
@@ -33100,8 +31459,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4095,
       "y": 673.3,
       "heading": 2.051,
-      "scale": 1.452,
-      "contact": "none"
+      "scale": 1.452
     },
     {
       "id": "tree-1384",
@@ -33109,8 +31467,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3938.4,
       "y": 411.6,
       "heading": 2.938,
-      "scale": 1.463,
-      "contact": "none"
+      "scale": 1.463
     },
     {
       "id": "tree-1385",
@@ -33118,8 +31475,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3830.7,
       "y": 713.6,
       "heading": 2.9,
-      "scale": 2.048,
-      "contact": "none"
+      "scale": 2.048
     },
     {
       "id": "tree-1386",
@@ -33127,8 +31483,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -616.1,
       "y": 2547.3,
       "heading": 3.295,
-      "scale": 2.162,
-      "contact": "none"
+      "scale": 2.162
     },
     {
       "id": "tree-1387",
@@ -33160,8 +31515,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -748.2,
       "y": 2465.6,
       "heading": 2.764,
-      "scale": 2.227,
-      "contact": "none"
+      "scale": 2.227
     },
     {
       "id": "tree-1391",
@@ -33169,8 +31523,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -754.9,
       "y": 2722,
       "heading": 0.296,
-      "scale": 2.361,
-      "contact": "none"
+      "scale": 2.361
     },
     {
       "id": "tree-1392",
@@ -33178,8 +31531,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2408.3,
       "y": 2568.8,
       "heading": 5.899,
-      "scale": 1.87,
-      "contact": "none"
+      "scale": 1.87
     },
     {
       "id": "tree-1393",
@@ -33187,8 +31539,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2505.2,
       "y": 2404,
       "heading": 4.722,
-      "scale": 2.035,
-      "contact": "none"
+      "scale": 2.035
     },
     {
       "id": "tree-1394",
@@ -33196,8 +31547,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2396.2,
       "y": 2388.3,
       "heading": 0.282,
-      "scale": 2.658,
-      "contact": "none"
+      "scale": 2.658
     },
     {
       "id": "tree-1395",
@@ -33205,8 +31555,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2373.7,
       "y": 3808.6,
       "heading": 2.728,
-      "scale": 2.718,
-      "contact": "none"
+      "scale": 2.718
     },
     {
       "id": "tree-1396",
@@ -33214,8 +31563,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2588.9,
       "y": 3828.5,
       "heading": 5.837,
-      "scale": 2.277,
-      "contact": "none"
+      "scale": 2.277
     },
     {
       "id": "tree-1397",
@@ -33223,8 +31571,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2251.7,
       "y": 3915.3,
       "heading": 2.336,
-      "scale": 1.851,
-      "contact": "none"
+      "scale": 1.851
     },
     {
       "id": "tree-1398",
@@ -33232,8 +31579,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2124.8,
       "y": 3875,
       "heading": 5.663,
-      "scale": 2.139,
-      "contact": "none"
+      "scale": 2.139
     },
     {
       "id": "tree-1399",
@@ -33241,8 +31587,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2295.1,
       "y": 3883.6,
       "heading": 5.813,
-      "scale": 1.977,
-      "contact": "none"
+      "scale": 1.977
     },
     {
       "id": "tree-1400",
@@ -33250,8 +31595,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2701.6,
       "y": 3916.3,
       "heading": 3.8,
-      "scale": 2.681,
-      "contact": "none"
+      "scale": 2.681
     },
     {
       "id": "tree-1401",
@@ -33267,8 +31611,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 734.7,
       "y": 2122.6,
       "heading": 2.245,
-      "scale": 1.433,
-      "contact": "none"
+      "scale": 1.433
     },
     {
       "id": "tree-1403",
@@ -33276,8 +31619,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 620.3,
       "y": 1843.7,
       "heading": 5.544,
-      "scale": 2.263,
-      "contact": "none"
+      "scale": 2.263
     },
     {
       "id": "tree-1404",
@@ -33285,8 +31627,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 708.8,
       "y": 1867.8,
       "heading": 3.326,
-      "scale": 2.623,
-      "contact": "none"
+      "scale": 2.623
     },
     {
       "id": "tree-1405",
@@ -33294,8 +31635,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 702.9,
       "y": 1935.2,
       "heading": 5.173,
-      "scale": 2.239,
-      "contact": "none"
+      "scale": 2.239
     },
     {
       "id": "tree-1406",
@@ -33303,8 +31643,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 760.2,
       "y": 2097.4,
       "heading": 2.191,
-      "scale": 1.646,
-      "contact": "none"
+      "scale": 1.646
     },
     {
       "id": "tree-1407",
@@ -33312,8 +31651,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 795.2,
       "y": 2023.6,
       "heading": 1.157,
-      "scale": 2.28,
-      "contact": "none"
+      "scale": 2.28
     },
     {
       "id": "tree-1408",
@@ -33321,8 +31659,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1115.4,
       "y": 4555,
       "heading": 5.794,
-      "scale": 2.761,
-      "contact": "none"
+      "scale": 2.761
     },
     {
       "id": "tree-1409",
@@ -33330,8 +31667,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1590.1,
       "y": -149.3,
       "heading": 4.6,
-      "scale": 1.602,
-      "contact": "none"
+      "scale": 1.602
     },
     {
       "id": "tree-1410",
@@ -33339,8 +31675,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1752.6,
       "y": -249.6,
       "heading": 1.626,
-      "scale": 2.309,
-      "contact": "none"
+      "scale": 2.309
     },
     {
       "id": "tree-1411",
@@ -33356,8 +31691,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1693,
       "y": -340.5,
       "heading": 2.587,
-      "scale": 1.54,
-      "contact": "none"
+      "scale": 1.54
     },
     {
       "id": "tree-1413",
@@ -33365,8 +31699,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3603.3,
       "y": 2907.5,
       "heading": 1.424,
-      "scale": 2.066,
-      "contact": "none"
+      "scale": 2.066
     },
     {
       "id": "tree-1414",
@@ -33374,8 +31707,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3745.4,
       "y": 2793.8,
       "heading": 1.069,
-      "scale": 1.476,
-      "contact": "none"
+      "scale": 1.476
     },
     {
       "id": "tree-1415",
@@ -33383,8 +31715,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3630,
       "y": 2739.7,
       "heading": 0.185,
-      "scale": 1.848,
-      "contact": "none"
+      "scale": 1.848
     },
     {
       "id": "tree-1416",
@@ -33392,8 +31723,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3783.5,
       "y": 2821.4,
       "heading": 4.058,
-      "scale": 1.568,
-      "contact": "none"
+      "scale": 1.568
     },
     {
       "id": "tree-1417",
@@ -33401,8 +31731,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3785.2,
       "y": 2805.5,
       "heading": 2.936,
-      "scale": 1.744,
-      "contact": "none"
+      "scale": 1.744
     },
     {
       "id": "tree-1418",
@@ -33410,8 +31739,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3650.5,
       "y": 2835.1,
       "heading": 4.66,
-      "scale": 2.168,
-      "contact": "none"
+      "scale": 2.168
     },
     {
       "id": "tree-1419",
@@ -33419,8 +31747,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3535.3,
       "y": 2846.7,
       "heading": 0.377,
-      "scale": 1.702,
-      "contact": "none"
+      "scale": 1.702
     },
     {
       "id": "tree-1420",
@@ -33428,8 +31755,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2628.6,
       "y": 3566.2,
       "heading": 0.129,
-      "scale": 1.68,
-      "contact": "none"
+      "scale": 1.68
     },
     {
       "id": "tree-1421",
@@ -33437,8 +31763,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2644.2,
       "y": 3456.3,
       "heading": 3.977,
-      "scale": 1.7,
-      "contact": "none"
+      "scale": 1.7
     },
     {
       "id": "tree-1422",
@@ -33446,8 +31771,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2859.9,
       "y": 3634.1,
       "heading": 0.818,
-      "scale": 1.917,
-      "contact": "none"
+      "scale": 1.917
     },
     {
       "id": "tree-1423",
@@ -33455,8 +31779,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2688.7,
       "y": 3441.4,
       "heading": 3.514,
-      "scale": 2.308,
-      "contact": "none"
+      "scale": 2.308
     },
     {
       "id": "tree-1424",
@@ -33464,8 +31787,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2769,
       "y": 3578.9,
       "heading": 3.678,
-      "scale": 2.683,
-      "contact": "none"
+      "scale": 2.683
     },
     {
       "id": "tree-1425",
@@ -33473,8 +31795,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2805.2,
       "y": 3612.6,
       "heading": 3.405,
-      "scale": 1.827,
-      "contact": "none"
+      "scale": 1.827
     },
     {
       "id": "tree-1426",
@@ -33482,8 +31803,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2844.4,
       "y": 3503.2,
       "heading": 3.432,
-      "scale": 1.549,
-      "contact": "none"
+      "scale": 1.549
     },
     {
       "id": "tree-1427",
@@ -33491,8 +31811,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2656.8,
       "y": 3402.8,
       "heading": 0.725,
-      "scale": 2.252,
-      "contact": "none"
+      "scale": 2.252
     },
     {
       "id": "tree-1428",
@@ -33500,8 +31819,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1891.2,
       "y": 3878.8,
       "heading": 3.019,
-      "scale": 1.566,
-      "contact": "none"
+      "scale": 1.566
     },
     {
       "id": "tree-1429",
@@ -33509,8 +31827,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1717.4,
       "y": 3811.8,
       "heading": 5.937,
-      "scale": 2.049,
-      "contact": "none"
+      "scale": 2.049
     },
     {
       "id": "tree-1430",
@@ -33518,8 +31835,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1751.7,
       "y": 4116.7,
       "heading": 4.856,
-      "scale": 2.08,
-      "contact": "none"
+      "scale": 2.08
     },
     {
       "id": "tree-1431",
@@ -33527,8 +31843,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1786.8,
       "y": 4135.5,
       "heading": 3.557,
-      "scale": 1.668,
-      "contact": "none"
+      "scale": 1.668
     },
     {
       "id": "tree-1432",
@@ -33536,8 +31851,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1931.3,
       "y": 4257.2,
       "heading": 0.355,
-      "scale": 1.713,
-      "contact": "none"
+      "scale": 1.713
     },
     {
       "id": "tree-1433",
@@ -33545,8 +31859,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1926.4,
       "y": 4281.1,
       "heading": 1.265,
-      "scale": 2.243,
-      "contact": "none"
+      "scale": 2.243
     },
     {
       "id": "tree-1434",
@@ -33554,8 +31867,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2003.3,
       "y": 4151.6,
       "heading": 2.486,
-      "scale": 1.885,
-      "contact": "none"
+      "scale": 1.885
     },
     {
       "id": "tree-1435",
@@ -33563,8 +31875,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1902.5,
       "y": 4586.9,
       "heading": 2.955,
-      "scale": 2.012,
-      "contact": "none"
+      "scale": 2.012
     },
     {
       "id": "tree-1436",
@@ -33572,8 +31883,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1798.6,
       "y": 4637.4,
       "heading": 2.111,
-      "scale": 2.437,
-      "contact": "none"
+      "scale": 2.437
     },
     {
       "id": "tree-1437",
@@ -33581,8 +31891,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 45.9,
       "y": 1634.9,
       "heading": 0.358,
-      "scale": 2.572,
-      "contact": "none"
+      "scale": 2.572
     },
     {
       "id": "tree-1438",
@@ -33598,8 +31907,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4236.2,
       "y": 2014,
       "heading": 4.848,
-      "scale": 2.549,
-      "contact": "none"
+      "scale": 2.549
     },
     {
       "id": "tree-1440",
@@ -33607,8 +31915,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -951.4,
       "y": 2878,
       "heading": 5.766,
-      "scale": 3.147,
-      "contact": "none"
+      "scale": 3.147
     },
     {
       "id": "tree-1441",
@@ -33616,8 +31923,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 573.6,
       "y": -3240.6,
       "heading": 1.724,
-      "scale": 2.335,
-      "contact": "none"
+      "scale": 2.335
     },
     {
       "id": "tree-1442",
@@ -33625,8 +31931,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -650.9,
       "y": 4761.9,
       "heading": 1.896,
-      "scale": 3.141,
-      "contact": "none"
+      "scale": 3.141
     },
     {
       "id": "tree-1443",
@@ -33658,8 +31963,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3736.5,
       "y": 2297.2,
       "heading": 3.587,
-      "scale": 2.384,
-      "contact": "none"
+      "scale": 2.384
     },
     {
       "id": "tree-1447",
@@ -33683,8 +31987,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3186.4,
       "y": -668.5,
       "heading": 6.11,
-      "scale": 3.677,
-      "contact": "none"
+      "scale": 3.677
     },
     {
       "id": "tree-1450",
@@ -33700,8 +32003,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4226.8,
       "y": 1395.2,
       "heading": 1.056,
-      "scale": 3.573,
-      "contact": "none"
+      "scale": 3.573
     },
     {
       "id": "tree-1452",
@@ -33709,8 +32011,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -651.2,
       "y": 4359.7,
       "heading": 6.226,
-      "scale": 3.089,
-      "contact": "none"
+      "scale": 3.089
     },
     {
       "id": "tree-1453",
@@ -33718,8 +32019,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4241.9,
       "y": 2466.1,
       "heading": 5.509,
-      "scale": 2.776,
-      "contact": "none"
+      "scale": 2.776
     },
     {
       "id": "tree-1454",
@@ -33727,8 +32027,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3586.9,
       "y": -1592.2,
       "heading": 5.272,
-      "scale": 3.199,
-      "contact": "none"
+      "scale": 3.199
     },
     {
       "id": "tree-1455",
@@ -33744,8 +32043,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1149.4,
       "y": 5186.2,
       "heading": 4.589,
-      "scale": 3.3,
-      "contact": "none"
+      "scale": 3.3
     },
     {
       "id": "tree-1457",
@@ -33761,8 +32059,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3516.2,
       "y": -1706.5,
       "heading": 3.477,
-      "scale": 2.2,
-      "contact": "none"
+      "scale": 2.2
     },
     {
       "id": "tree-1459",
@@ -33770,8 +32067,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4058,
       "y": 2179.4,
       "heading": 2.337,
-      "scale": 2.595,
-      "contact": "none"
+      "scale": 2.595
     },
     {
       "id": "tree-1460",
@@ -33779,8 +32075,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 691.6,
       "y": 2382.6,
       "heading": 3.45,
-      "scale": 3.053,
-      "contact": "none"
+      "scale": 3.053
     },
     {
       "id": "tree-1461",
@@ -33788,8 +32083,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1790.4,
       "y": -3348.7,
       "heading": 3.284,
-      "scale": 3.628,
-      "contact": "none"
+      "scale": 3.628
     },
     {
       "id": "tree-1462",
@@ -33805,8 +32099,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2726.5,
       "y": -804.5,
       "heading": 0.72,
-      "scale": 3.146,
-      "contact": "none"
+      "scale": 3.146
     },
     {
       "id": "tree-1464",
@@ -33814,8 +32107,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3652.3,
       "y": 2399.8,
       "heading": 2.703,
-      "scale": 3.247,
-      "contact": "none"
+      "scale": 3.247
     },
     {
       "id": "tree-1465",
@@ -33823,8 +32115,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4536.9,
       "y": 2587.1,
       "heading": 3.448,
-      "scale": 2.242,
-      "contact": "none"
+      "scale": 2.242
     },
     {
       "id": "tree-1466",
@@ -33832,8 +32123,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 1153.4,
       "y": -3084.8,
       "heading": 1.408,
-      "scale": 2.741,
-      "contact": "none"
+      "scale": 2.741
     },
     {
       "id": "tree-1467",
@@ -33841,8 +32131,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -2874.4,
       "y": -1936.1,
       "heading": 1.58,
-      "scale": 2.238,
-      "contact": "none"
+      "scale": 2.238
     },
     {
       "id": "tree-1468",
@@ -33866,8 +32155,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 571.7,
       "y": 5131.4,
       "heading": 1.691,
-      "scale": 2.01,
-      "contact": "none"
+      "scale": 2.01
     },
     {
       "id": "tree-1471",
@@ -33875,8 +32163,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2516,
       "y": 4692.9,
       "heading": 1.684,
-      "scale": 2.199,
-      "contact": "none"
+      "scale": 2.199
     },
     {
       "id": "tree-1472",
@@ -33884,8 +32171,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -5051.7,
       "y": 616,
       "heading": 0.453,
-      "scale": 2.799,
-      "contact": "none"
+      "scale": 2.799
     },
     {
       "id": "tree-1473",
@@ -33893,8 +32179,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3928.3,
       "y": 451.7,
       "heading": 0.364,
-      "scale": 3.233,
-      "contact": "none"
+      "scale": 3.233
     },
     {
       "id": "tree-1474",
@@ -33902,8 +32187,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1338.1,
       "y": 4123.7,
       "heading": 1.806,
-      "scale": 2.005,
-      "contact": "none"
+      "scale": 2.005
     },
     {
       "id": "tree-1475",
@@ -33919,8 +32203,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 2253.7,
       "y": 5026.2,
       "heading": 2.888,
-      "scale": 3.253,
-      "contact": "none"
+      "scale": 3.253
     },
     {
       "id": "tree-1477",
@@ -33928,8 +32211,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -726.9,
       "y": 2929.1,
       "heading": 4.184,
-      "scale": 3.171,
-      "contact": "none"
+      "scale": 3.171
     },
     {
       "id": "tree-1478",
@@ -33945,8 +32227,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4899.1,
       "y": 622.5,
       "heading": 3.482,
-      "scale": 3.629,
-      "contact": "none"
+      "scale": 3.629
     },
     {
       "id": "tree-1480",
@@ -33954,8 +32235,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1321.9,
       "y": -3473,
       "heading": 2.679,
-      "scale": 2.832,
-      "contact": "none"
+      "scale": 2.832
     },
     {
       "id": "tree-1481",
@@ -33963,8 +32243,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3093.5,
       "y": 4656.3,
       "heading": 3.605,
-      "scale": 2.961,
-      "contact": "none"
+      "scale": 2.961
     },
     {
       "id": "tree-1482",
@@ -33972,8 +32251,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -586.2,
       "y": 4544.7,
       "heading": 1.227,
-      "scale": 3.42,
-      "contact": "none"
+      "scale": 3.42
     },
     {
       "id": "tree-1483",
@@ -33981,8 +32259,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3511.4,
       "y": 2390.2,
       "heading": 4.242,
-      "scale": 2.943,
-      "contact": "none"
+      "scale": 2.943
     },
     {
       "id": "tree-1484",
@@ -33990,8 +32267,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -3589,
       "y": 1456.3,
       "heading": 0.279,
-      "scale": 3.21,
-      "contact": "none"
+      "scale": 3.21
     },
     {
       "id": "tree-1485",
@@ -34007,8 +32283,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 695.1,
       "y": 1176.8,
       "heading": 4.06,
-      "scale": 2.264,
-      "contact": "none"
+      "scale": 2.264
     },
     {
       "id": "tree-1487",
@@ -34024,8 +32299,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -313.5,
       "y": 4998.1,
       "heading": 5.575,
-      "scale": 2.801,
-      "contact": "none"
+      "scale": 2.801
     },
     {
       "id": "tree-1489",
@@ -34033,8 +32307,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 3048.4,
       "y": -931.6,
       "heading": 5.593,
-      "scale": 2.409,
-      "contact": "none"
+      "scale": 2.409
     },
     {
       "id": "tree-1490",
@@ -34050,8 +32323,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 312.2,
       "y": 4249.3,
       "heading": 0.198,
-      "scale": 2.528,
-      "contact": "none"
+      "scale": 2.528
     },
     {
       "id": "tree-1492",
@@ -34067,8 +32339,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -4013.6,
       "y": -214.6,
       "heading": 1.954,
-      "scale": 2.114,
-      "contact": "none"
+      "scale": 2.114
     },
     {
       "id": "tree-1494",
@@ -34084,8 +32355,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1762.6,
       "y": -3398,
       "heading": 0.905,
-      "scale": 3.745,
-      "contact": "none"
+      "scale": 3.745
     },
     {
       "id": "tree-1496",
@@ -34093,8 +32363,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -1164.6,
       "y": -1128.5,
       "heading": 2.02,
-      "scale": 3.015,
-      "contact": "none"
+      "scale": 3.015
     },
     {
       "id": "tree-1497",
@@ -34102,8 +32371,7 @@ window.VENUE_DOC["swamp"] = {
       "x": -436.3,
       "y": 4500,
       "heading": 6.247,
-      "scale": 3.939,
-      "contact": "none"
+      "scale": 3.939
     },
     {
       "id": "tree-1498",
@@ -34119,8 +32387,7 @@ window.VENUE_DOC["swamp"] = {
       "x": 4413.3,
       "y": 2335.8,
       "heading": 1.784,
-      "scale": 3.595,
-      "contact": "none"
+      "scale": 3.595
     },
     {
       "id": "tree-1500",

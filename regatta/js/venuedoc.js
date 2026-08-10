@@ -1039,6 +1039,34 @@ const PROP_KINDS = {
     // tupelo -0.09) — the limbs never self-align. Do not run that test on the whole sprite: a
     // dense round crown self-correlates just by being a disc, and on that measure the tupelo,
     // visibly the least spoked, scores the WORST of the three.
+    // ── WHY THE TREES ARE SOFT AND NOT HARD ─────────────────────────────────
+    // A bayou tree has to STOP being sailed through — 1733 of the venue's placements carried an
+    // authored contact:"none" overriding these rows, so the compiler emitted 318 colliders where
+    // it should have emitted 2042, and a hull passed through every trunk in the swamp.
+    //
+    // Fixing that as `hard` worked and cost too much. Measured over 6 trials x 9 AI boats:
+    // finishers inside the authored 5:00 cutoff fell 41% -> 20%, and the sim step went 1.43ms ->
+    // 3.55ms (2.5x) with the frame up 22%. The venue is a FLOODED FOREST — 1948 of its 2042 trees
+    // stand in open water, only 94 sit on land where a shape already blocks — so there is no
+    // pruning available: every one of them is a real obstacle in sailable water, and turning them
+    // all into walls turns the course into a slalom.
+    //
+    // SOFT WAS TRIED AND REJECTED ON THE SCREEN, which is the evidence that outranks the rest of
+    // this note. As a drag shoal it measured beautifully — 81% finishers, penalties down two
+    // thirds, and a sim step (1.18ms) LIGHTER than the 318-collider baseline, because a soft
+    // contact compiles to a drag-field lookup while a hard one joins the collision set and the
+    // router's obstacle graph. It also did not read: a boat that mushes through a cypress and
+    // comes out the far side is not a boat that hit a tree, whatever the telemetry says.
+    //
+    // So HARD it is, and the cost is known and accepted rather than discovered later: the sim
+    // step is 2.5x the baseline and the frame is ~22% longer. The cutoff moved 300s -> 360s in
+    // the same change, which is what buys the finish rate back.
+    //
+    // ⚠️ IF THIS IS EVER REVISITED, the lever to reach for is contactR, not contact. These radii
+    // are stated at scale 1 and multiplied by each placement's scale, and they sit at about
+    // two thirds of the visible trunk: a cypress draws its trunk 0.231 of a 90u frame (r 10.4)
+    // against a contactR of 7. Raising it toward the drawn trunk makes contact look right and
+    // costs finish rate; lowering it does the reverse. That is the dial — soft/hard is not.
     'swamp-cypress':        { label: 'Cypress tree',   world:  90, plane: 'surface', contact: 'hard', contactR: 7, wash: 0.092, motion: 'fixed',
                               parts: { surface: 'swamp-cypress-trunk', canopy: 'swamp-cypress-canopy' } },
     'swamp-oak':            { label: 'Live oak tree',  world: 110, plane: 'surface', contact: 'hard', contactR: 9, motion: 'fixed',
