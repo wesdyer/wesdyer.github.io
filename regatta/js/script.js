@@ -3435,6 +3435,39 @@ class BotController {
                 hPlanFF = Math.atan2(pFFF.x - boat.x, -(pFFF.y - boat.y));
             }
         }
+        // A2 (2026-08-09, THE ROUNDING PUSH): THE TRUST TEST WAS UNREACHABLE ON
+        // A BEAT. `pathSailable` is an A* over a clearance-weighted grid with no
+        // wind term, so upwind the router's line runs straight up the corridor
+        // and hPlanFF points dead into the no-go. The trust test then asks a
+        // sailing boat to be within 0.3 rad of a heading no boat can sail: with
+        // the irons guard at 0.62 rad the smallest achievable |h - hPlanFF| on
+        // a beat is ~0.5 rad. Measured on redrock leg-3's thread box
+        // (_thread_role.js): the 0-rung fails the test on 96.1% of deviating
+        // ticks, ALL of them on the alignment clause, at a median 0.78 rad
+        // (45deg) — and on 72% of ticks NO candidate in the whole fan earns the
+        // trust. So the clearance band and the full 140u hard zone ran
+        // unmodified on every upwind leg, which is where the mark-5 thread
+        // lives; the argmin's cheapest escape from them is to luff, and 51.4%
+        // of chosen headings sat inside the no-go band against 0.0% of the
+        // plan rung (bot 41-52 u/s where the human sails 78-90).
+        // The route's line on a beat is not "point at the mark" — it is "stay
+        // close-hauled on this tack". When the plan bearing is itself inside
+        // the no-go, project it onto the close-hauled heading for the tack the
+        // boat is ON and measure alignment against that. Same 0.62 constant the
+        // irons guard already uses; no clause is relaxed — the irons, arc,
+        // open-water and current guards all still apply, and a candidate on the
+        // other tack or bearing away still fails. GATED: redrock pooled 6-set
+        // paired −64.0 med / −59.9 mean, ALL SIX SETS NEGATIVE (−41..−100), med
+        // 520→459 (2.38x→2.10x), fins 427→430/432, DNF-at-900 5→2, land −13%,
+        // mark −23%, pen −9%; lake −2/−8 med with land −12%/−24%; bay 0/0 med
+        // with rubs −18%/−4%; lagoon 0/−6 med (boat +16%/+13% — the watch
+        // column); ocean inert; river + seatrials BYTE-IDENTICAL (they sit
+        // behind the current guard and the floe gate by construction).
+        let hPlanRef = hPlanFF;
+        if (hPlanFF != null && Math.abs(normalizeAngle(hPlanFF - wdAv)) < 0.62) {
+            const sideRef = normalizeAngle(boat.heading - wdAv) >= 0 ? 1 : -1;
+            hPlanRef = normalizeAngle(wdAv + sideRef * 0.62);
+        }
 
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
@@ -3938,7 +3971,7 @@ class BotController {
                     && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
                 const hardZ = (openWaterAv && !arcK
                     && (hzWaive || (hPlanFF != null
-                        && Math.abs(normalizeAngle(h - hPlanFF)) <= 0.3))
+                        && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3))
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
                     && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
@@ -3976,7 +4009,7 @@ class BotController {
                         // was 190u and vetoed every thread the pack offered.
                         if (frac * segLen <= hardZ) { staticCollision = true; cost += 500000; }
                         else if (!hzWaive && (hPlanFF == null || arcK
-                            || Math.abs(normalizeAngle(h - hPlanFF)) > 0.3
+                            || Math.abs(normalizeAngle(h - hPlanRef)) > 0.3
                             || Math.abs(normalizeAngle(h - wdAv)) < 0.62)) {
                             proximityCost += 30000 * (1 - frac);
                         }
@@ -4009,7 +4042,7 @@ class BotController {
                     // land A −27%; bay A −0.6 mean, bay B + ocean + river 2x16 +
                     // arctic 4x16 BYTE-IDENTICAL; seatrials ~197.8 equivalent.
                     const bandTrusted = openWaterAv && !arcK && hPlanFF != null
-                        && Math.abs(normalizeAngle(h - hPlanFF)) <= 0.3
+                        && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3
                         && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
                         && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
                     if (!bandTrusted && clr > 0 && clr < 3) {
