@@ -12692,3 +12692,64 @@ untouched by this landing. The WIND-AGNOSTIC ROUTER is its own push, not Phase B
 a planner-model change reshuffles every route on every venue and would confound
 A/B attribution — and it is now better posed, since the local layer treats a beat
 correctly. Lagoon boat rubs (+14% across both sets) is the open watch column.
+
+================================================================================
+# NEXT-PUSH DIRECTIVE — THE GROUNDING PUSH (research pass, 2026-08-09 evening)
+Measured on `d8389f3` after the A2 landing. NOTHING BUILT — owner decision pending.
+
+## ⚠️ FIRST, A METHODOLOGY CORRECTION (standing rule 26)
+The redrock per-leg MEDIAN table reads sub-2x on every leg while the lap ratio is
+2.10x. Both are right: medians do not add. Sum of per-leg medians 383.0, sum of
+per-leg MEANS 463.4, mean lap 463.4, median lap 459.0. Each leg is right-skewed
+and DIFFERENT boats occupy the tail on DIFFERENT legs, so no boat sits at the
+median on all seven. **Attribute gap shares on MEANS.** Corrected: legs 1/2/3/5
+are 2.29/2.68/2.30/2.09x and **leg 2 is the worst real leg**, not the mildest.
+(Also: `_leg_matrix.js` takes `fp=` FIRST — omitting it pools retired-doc laps.)
+
+## THE REMAINING GAP, ATTRIBUTED (mean basis, +246.1 s/boat total)
+leg1 +37.6 (2.29x) | leg2 +37.5 (2.68x) | leg3 +71.6 (2.30x) | leg4 +22.7 (1.85x)
+| leg5 +59.5 (2.09x) | leg6 +11.1 (1.39x) | leg0 +6.1
+
+## ⭐ FINDING 1 — THE GROUNDING TAX IS THE TAIL (r² = 0.90)
+`collision_island` multiplies speed by 0.4 on the spot. The fleet takes **16.4
+grinding episodes per boat-race** (median 115 raw contacts each) **entered at 72
+u/s** — boats at speed hitting rock. **TAX 90.8 s/boat** (6 seeds, 883 episodes);
+legs 3+5 = 67% (30.7 + 30.3); share of each leg: L5 47%, L4 43%, L6 39%, L3 36%,
+L2 19%, L1 18%; 33% of the whole gap.
+Per-boat tax vs finish: **r = 0.95, r² = 0.90**. Q1 357/48.0s, Q2 432/76.1,
+Q3 494/100.0, Q4 581/136.7 (~2.5s of finish per 1s of tax → the integral
+UNDERSTATES). ⚠️ Association, not proof — but contacts PER SECOND rise 2.7x
+Q1→Q4, which is the argument against pure exposure, and even Q1 pays 48s.
+⚠️ Cap-sensitive: median episode 9.7s against a 12s follow cap. Order of
+magnitude, never a gate. Probe `_ground_tax.js` (NEW, tracked).
+MECHANISM (from the code): the contact reflex steers STRAIGHT OUT along the
+collision normal and latches 2.0s at full speed (~script.js:862). In a canyon
+that points at the opposite wall — `applyAvoidance`'s own comment calls it "the
+very ping-pong (bounce off each wall toward the other)". ESCAPE cannot catch it
+(25s futility, <40 u/s, no rival 150u vs ~10s episodes at 72 u/s entry). At 72
+u/s the 2.0s latch commits 144u to one frame's normal. Repeating sites: leg 3
+(-89,151) (-674,-1634) (-1074,-1356) (89,-326); leg 5 (-1557,645) (-1399,536).
+
+## FINDING 2 — EXTRA DISTANCE ON THE BEAT (legs 1-2, ~61s net of grounding)
+`_leg_odo`: leg 1 bot 4068u vs her 2540u on a 1970u straight line (60% further;
+her 1.29x, bot 2.06x); leg 2 3040 vs 2252 (35%). `_leg_where` leg 1: NO POCKET —
+slow time spreads 12/7/14/16/1/9/10/9/11/11% at near-parity speed. Not "slow
+somewhere": a longer path everywhere. Same family as bay/lake/ocean's WHOLE gap
+(never decomposed); redrock is where it is big enough to measure, so a win should
+transfer to the three venues now at 1.10-1.14x.
+
+## THE PLAN (ranked)
+1. **H1 TANGENTIAL PEEL-OFF** — replace the normal-out bounce with a heading along
+   the wall tangent toward course progress, when the boat has way on and a
+   sailable tangent exists. Action-shaped; precedent in the same function (the
+   mid-rounding branch already biases along a rotation tangent). MECHANISM GATE on
+   **leg 5** (47%, cleanest) via `_ground_tax`, confirm leg 3, then pooled 6-set +
+   battery. Watch column: boat rubs — peeling keeps boats in the lane.
+2. **RE-MEASURE THE TAIL AFTER H1** before building for leg 2: if the coupling is
+   causal, leg 2's 2.68x skew moves without its own candidate.
+3. **H3 BEAT DISTANCE** — measure bot tack count + cross-track spread vs her 2-4
+   tacks before proposing any shape.
+4. **H2 THE 2.0s LATCH** — LAST, shape-only (re-evaluate when the normal rotates
+   past X°), never a threshold ladder (the B2 kill).
+Carried forward: lagoon boat rubs +14% (watch), Phase B zone-entry rights, and the
+WIND-AGNOSTIC ROUTER as its own push.
