@@ -415,6 +415,12 @@ body {
 }
 /* Wide enough for the longest kind name plus the chevron, rather than a number's width. */
 .to-f .to-sel { width: auto; min-width: 88px; padding-right: 24px; }
+/* A checkbox is not a number field: the 46px width above would stretch the box into a
+   rectangle. Sized to itself, and tinted with the editor's accent so its on-state reads
+   the same as every other armed control in the strip. */
+.to-f input[type="checkbox"] {
+  width: auto; margin: 0; padding: 0; accent-color: var(--ed-accent); cursor: pointer;
+}
 .to-f input:focus-visible, .to-f .to-sel:focus-visible {
   outline: none; border-color: var(--ed-accent);
 }

@@ -521,6 +521,33 @@ function runChecks(ctx) {
         }
     }
 
+    // 7b. FLOATING PROPS ON LAND. The `float` plane draws BEFORE the land, which is how a
+    //     water object stops being painted on a bank — the land simply covers it. The cost
+    //     of that is a silent failure mode the other planes do not have: a pad cluster
+    //     dropped entirely inside a shape is not wrong-looking, it is INVISIBLE, and the
+    //     only symptom is scenery the author placed and cannot find. So it gets said here.
+    //
+    //     A warning, not an error: overlap is normal and wanted — a bed laps against a bank
+    //     and the coastline trims it, which is the whole point. Only a prop whose CENTRE is
+    //     on land is called out, matching the floe check's rule above rather than inventing
+    //     a coverage fraction that would fire on every well-placed bed at the shore.
+    const fprops = (doc.props || []).filter(p => {
+        const t = window.VenueDoc.propTraits ? window.VenueDoc.propTraits(p) : null;
+        const kind = (window.VenueDoc.PROP_KINDS || {})[p.kind] || {};
+        return (t ? t.plane : (p.plane || kind.plane)) === 'float';
+    });
+    if (fprops.length) {
+        const sunk = [];
+        for (const p of fprops) {
+            for (const l of land) if (pointOnLand(p.x, p.y, l)) { sunk.push(p); break; }
+        }
+        add(sunk.length ? 'warn' : 'ok', 'float-prop-land', 'Floating scenery on land',
+            sunk.length ? `${sunk.length} of ${fprops.length} floating props have their centre inside land`
+                        + ' — they draw under the land, so these are invisible. Move them to water.'
+                        : `all ${fprops.length} floating props sit on water`,
+            { points: sunk.map(p => ({ x: p.x, y: p.y })) });
+    }
+
     // 8. RACE LENGTH. The target is a design decision, so this is a warning and not
     //    an error, but a course nobody wants to finish is still a broken course.
     // NO WIND IS UNSAILABLE. Outside every wind region the water is calm, so a course whose

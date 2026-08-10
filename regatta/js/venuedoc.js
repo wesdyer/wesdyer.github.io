@@ -347,7 +347,7 @@ function validateVenueDoc(doc) {
         if (!PROP_KINDS[p.kind]) err(`prop "${p.id}": unknown kind "${p.kind}"`);
         if (!isFinite(p.x) || !isFinite(p.y)) err(`prop "${p.id}": needs finite x/y`);
         if (p.plane != null && !PROP_PLANES.includes(p.plane))
-            err(`prop "${p.id}": unknown plane "${p.plane}" (seabed | surface | canopy)`);
+            err(`prop "${p.id}": unknown plane "${p.plane}" (seabed | float | surface | canopy)`);
         if (p.contact != null && !PROP_CONTACTS.includes(p.contact))
             err(`prop "${p.id}": unknown contact "${p.contact}" (none | soft | hard)`);
         if (p.motion != null && p.motion !== 'fixed' && p.motion !== 'drift')
@@ -630,19 +630,36 @@ const MARK_KINDS = {
 // What a PROP can be. Same single-list rule as MARK_KINDS: the validator, the editor's
 // palette and script.js's sprite registry (PROP_SPRITES) all read this one table. A prop
 // is a PICTURE WITH A POSITION and nothing else — no collision, no lee, no router entry,
-// no effect on play — which is what separates it from every shape kind above. Keys are
-// the art manifest's asset keys, so each prop traces straight to the pipeline entry that
-// generated its sprite. `world` is the drawn size in world units (the camera is 1:1),
-// the same number the manifest declares.
+// no effect on play — which is what separates it from every shape kind above. A key is
+// '<venue>-<name>', which IS the bake path — assets/images/props/<venue>/<name>.png, the
+// convention the game, the editor palette and the schematic all derive their src from.
+// That is usually the art manifest's key verbatim, but not always: the manifest keys the
+// swamp's assets `bayou-*` while its bakes live under props/swamp/, so the kinds below
+// are `swamp-*`. Follow the BAKE, not the manifest — a `bayou-` kind loads nothing.
+// `world` is the drawn size in world units (the camera is 1:1), the same number the
+// manifest declares.
 // A prop is a picture with a position — and, optionally, three more answers, each its
 // own axis exactly as a shape kind is a preset over the shape axes:
 //
-//   plane    seabed | surface | canopy   WHERE IT DRAWS. The world has three strata: the
-//                                        bottom (under everything on the water surface —
-//                                        a coral head), the surface (over land and water,
-//                                        under the boats — a trunk, a floating log), and
-//                                        the canopy (over the boats — a tree top an
-//                                        overhung hull passes beneath).
+//   plane    seabed | float |            WHERE IT DRAWS. The world has four strata: the
+//            surface | canopy            bottom (under everything on the water surface — a
+//                                        coral head), the FLOAT plane (on the water and
+//                                        BEHIND the land — a lily pad, a raft of hyacinth),
+//                                        the surface (over land and water, under the boats
+//                                        — a trunk, a beached log), and the canopy (over the
+//                                        boats — a tree top an overhung hull passes beneath).
+//
+//                                        FLOAT IS THE ONE THAT ANSWERS "WATER OBJECT". It
+//                                        draws after every mark the water makes — swell,
+//                                        wakes, cat's-paws, wind waves — so nothing ripples
+//                                        across a pad that is floating on top of it, and
+//                                        BEFORE the land, so a bank simply covers whatever
+//                                        part of the prop lies on it. That is occlusion by
+//                                        draw order and costs nothing: no clip path, no
+//                                        per-prop land test, no new per-frame work.
+//                                        A water plant on `surface` is a bug — surface means
+//                                        "over the land it STANDS ON", which is a beached log
+//                                        and never a lily pad.
 //   contact  none | soft | hard          WHAT TOUCHING IT DOES. none is scenery; soft
 //                                        slows (drag, same 0..0.9 currency as a shoal);
 //                                        hard stops. contactR is the collider radius in
@@ -659,6 +676,61 @@ const MARK_KINDS = {
 // states the preset; any axis can be overridden on one placement without inventing a
 // kind for it (shapeTraits' rule, applied to props).
 const PROP_KINDS = {
+    // ── LIGHTHOUSE COVE'S WORKING HARBOUR ───────────────────────────────────
+    // The ids read awkwardly and are nonetheless the right ones. propSprite derives the sprite
+    // path from the kind as `<venue>-<name>` -> props/<venue>/<name>.png, and paths.py leaves
+    // the bay's keys unstripped because its assets share no common prefix (`bay-sand` beside
+    // `cove-*`), so the files sit at props/bay/cove-cargo-ship.png and the kind has to be
+    // `bay-cove-cargo-ship` to find them. Renaming the manifest keys to `bay-cargo-ship*` would
+    // buy a tidier id, and manifest keys are the one thing the pipeline promises never change.
+    //
+    // CONTACT none, ON THE MANIFEST'S OWN ARGUMENT — role is `traffic`, not `hazard`, because
+    // "the hazard is its air, not its hull". It is also the only defensible option today: the
+    // hidden collider compile emits is a CIRCLE, and these hulls are 4.3:1. Sized to the beam
+    // it leaves two thirds of the ship sailable-through; sized to the length it is an invisible
+    // wall standing 100+ units off both sides in open water, which is the exact unfairness the
+    // shoal note argues against ("you cannot decide to cross something you did not see"). A
+    // wrong collider is worse than none, so this ships as scenery until one of two things
+    // happens: a hull-shaped collider authored per placement (hidden hard shapes, available
+    // today and entirely a drawing job), or propTraits learning an oblong collider.
+    //
+    // MOTION fixed, and that is a statement of what exists rather than of what these are. The
+    // design calls for slow predictable traffic dragging a moving wind shadow; the engine has
+    // no 'underway' motion and no prop-borne wind shadow, so a placed ship stands still.
+    'bay-cove-cargo-ship':   { label: 'Cargo ship',       world: 720, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cargo-ship-b': { label: 'Cargo ship (rust)', world: 608, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cargo-ship-c': { label: 'Cargo ship (green)', world: 496, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The tug is the family's short-and-beamy one — 2.4:1 against the ships' 3.5:1, a proportion
+    // the manifest reserves for it exclusively because 'reads as a toy tug' was the cargo ships'
+    // worst round-1 failure. Its collider geometry is better than theirs and still not good:
+    // measured off the sprite, hull r90 is 30u against a half-beam of 15.6u, so a circle sized to
+    // the mass would stand a full beam-width off each side. contact none for now, matching the
+    // family's contract.
+    //
+    // IF IT SHOULD STOP A HULL, USE contactR 16, NOT 30. Under-covering is the safer error: a
+    // pass-through is a missed collision, while an oversized circle is an invisible wall in open
+    // water, and that is the unfairness the shoal note argues against — you cannot decide to
+    // avoid something you cannot see. 16 fits the beam exactly and covers the middle ~40% of the
+    // length.
+    'bay-cove-tugboat':      { label: 'Tugboat',           world:  76, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The biggest hull in the game at 820u — over the 720u lead cargo ship, under the 870/920u
+    // bridges it is meant to pass beneath. contact none for the family's reason and for the
+    // geometric one: at 4.69:1 a circle fits it no better than it fits the ships.
+    'bay-cove-cruise-ship':  { label: 'Cruise ship',       world: 820, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The cove's small craft, and the traffic contract's hardest case: at 48u against a 32u
+    // racing dinghy it is the only vessel here anywhere near a competitor's size, so it cannot
+    // win 'never confusable' on size and wins it on silhouette — no rig, an open cockpit full
+    // of seats, an outboard on the transom. contact none like the rest of the harbour; at 2.78:1
+    // and only 48u a circle would fit it better than any of them, so this is the one to revisit
+    // first if the family ever gets colliders (contactR 8, half the beam).
+    'bay-cove-motorboat':    { label: 'Motorboat',         world:  48, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The working boat between the tug and the freighters. NOTE THE TUG'S RESERVED SILHOUETTE
+    // SURVIVES ON SIZE AND CLUTTER, NOT ON PROPORTION: the delivered trawler measures 2.26:1
+    // against the tug's 2.45:1, so it is fractionally the stubbier of the two and the slot's own
+    // "ships are long, the tug is short" distinction does not hold here. It does not need to —
+    // 140u against 76u, teal against ochre, and a deck full of drum, gantry, booms and floats
+    // against a bare one. Told apart at a glance on three axes, just not that one.
+    'bay-cove-trawler':      { label: 'Fishing trawler',   world: 140, plane: 'surface', contact: 'none', motion: 'fixed' },
     'lagoon-palm':         { label: 'Palm',         world: 70, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },
@@ -674,12 +746,470 @@ const PROP_KINDS = {
     'lagoon-coral-table':    { label: 'Table coral',    world: 48, plane: 'seabed', contact: 'hard', contactR: 17, motion: 'fixed' },
     'lagoon-coral-bommie':   { label: 'Coral bommie',   world: 56, plane: 'seabed', contact: 'hard', contactR: 20, motion: 'fixed' },
     'lagoon-coral-pillar':   { label: 'Pillar coral',   world: 40, plane: 'seabed', contact: 'hard', contactR: 14, motion: 'fixed' },
-    'lagoon-coral-elkhorn':  { label: 'Elkhorn coral',  world: 50, plane: 'seabed', contact: 'hard', contactR: 17, motion: 'fixed' }
+    'lagoon-coral-elkhorn':  { label: 'Elkhorn coral',  world: 50, plane: 'seabed', contact: 'hard', contactR: 17, motion: 'fixed' },
+    // Gatorgrass Bayou. A scatter of pads as SCENERY, and every trait here is chosen to
+    // keep it that way — the mechanic lives in the `lilybed` SHAPE kind, which carries the
+    // drag and the zone the router prices. Two objects, one plant, and the split is
+    // deliberate: a bed you must sail around is a shape, a few pads drifted off its edge
+    // are a picture, and giving the picture teeth would double-charge the same weed.
+    //
+    //   float    pads float ON the water: after everything the water does, and BEHIND the
+    //            land, so a bank covers any part of a cluster that laps onto it. Not
+    //            `seabed` — that plane washes the sprite toward the water colour to sell
+    //            "under there", which is the one thing a floating leaf is not. And NOT
+    //            `surface`, which it shipped as for one day: surface means "over the land
+    //            it stands on" and drew pads on dry mud.
+    //   none     no contact. The pads tilt and slide aside as a hull goes over and spring
+    //            back, which is exactly the behaviour PROP_KINDS spells `contact: none`.
+    //   fixed    a lily is anchored to the mud by a rhizome. This is the rooted half of
+    //            the rooted/free split the four weed kinds are built on — hyacinth rides
+    //            the wind, a lily bed does not — and it is what lets a pad cluster be a
+    //            landmark you can navigate by lap after lap.
+    'swamp-lilypads': { label: 'Lily pads', world: 56, plane: 'float', contact: 'none', motion: 'fixed' },
+
+    // THE BAYOU'S TREES — three species, and now NINE kinds from THREE pieces of art. Each
+    // species is drawn once, as a whole tree; treesplit.py cuts that master into a trunk and a
+    // canopy, and all three kinds ship from the one delivery.
+    //
+    // The pair still exists for the same reason it always did: a prop draws in exactly ONE
+    // plane, so a single sprite either covers the boats — making the collider an invisible wall
+    // inside a tree top — or draws beneath them, and a hull sails over a canopy. Two props in
+    // two planes is the only way this renderer can say "you pass UNDER the crown and INTO the
+    // wood". What changed is where the two sprites come from. Drawing them as separate
+    // generations gave two different trees, and no prompt makes a canopy match a trunk it never
+    // grew on; cutting one accepted tree makes them the same tree by construction, and drops the
+    // art bill for a species from three masters to one. split.py already argues this for the
+    // orca's body and flukes — same reasoning, applied radially.
+    //
+    // USE THE WHOLE TREE ON LAND (`swamp-oak` and friends) and the PAIR IN THE WATER. On dry
+    // ground nothing passes underneath, so one sprite is the honest object and it keeps a single
+    // anchor; in the channel a hull needs to pass under the crown, which needs the two planes.
+    //
+    //   surface  the trunks. Over the land and the shore, under the fleet — the plane's
+    //            own worked example. It is what holds the object up that decides this: the
+    //            bottom holds a cypress, so `surface`, even standing in open water. (The
+    //            water-held plane is `float`, and it is the lily pads above.)
+    //   canopy   the crowns. Over the boats, no contact — the tree is dangerous at the
+    //            waterline and harmless overhead, and the hazard/ambient split IS the
+    //            trunk/canopy split. A crown reaching out over the channel is then free
+    //            scenery: the shade falls on the water, the wood stays on the bank.
+    //
+    // BOTH HALVES OF A PAIR NOW SHARE ONE `world`, and that is the change to understand here.
+    // The two sprites are no longer drawn separately: treesplit.py cuts them out of the ONE
+    // accepted whole-tree master, and each part keeps the full master frame. So the pair has a
+    // single frame, a single size and a single origin — drop them at one position and they
+    // reassemble into exactly the delivered tree (measured: mean alpha error 0.2–0.5 of 255
+    // against the master). The old pairs were world 30 against world 110 and registered only
+    // because a designer lined them up by hand. The trunk sprite being mostly empty frame is
+    // the price of that guarantee and it is worth paying.
+    //
+    // CONTACT RADII AND WASH WERE BOTH RESCALED, because both are read against `world` and
+    // `world` changed. This is the trap in the conversion: propTraits multiplies contactR by a
+    // placement's scale but takes it as absolute units, while drawPropWash multiplies `wash` by
+    // `world` — so leaving cypress at wash 0.26 when its frame went from 26 to 90 would have
+    // drawn a 23u ring of surf around a 9u stem. Every number below is re-measured off the
+    // DERIVED sprite: contactR is its r90, wash its r99, the same two readings as before.
+    //
+    // The radii came out SMALLER than the hand-drawn pair's (oak 12 -> 9) because the derived
+    // stem is the tree's own limb hub at 0.20 of the crown radius, not the separately drawn
+    // buttressed base the old art showed. That is the honest collider for this picture: the
+    // wood you can see is what stops you.
+    //
+    // ONLY THE TWO THAT STAND IN OPEN WATER GET A WASH: cypress and tupelo grow out of the
+    // channel and displace it, the live oak roots on high ground and would be wearing a puddle
+    // it has no business in. A prop earns a waterline by standing in water, not by being a tree.
+    // `srcBox` — WHICH PART OF THE FRAME THE ART ACTUALLY OCCUPIES, as [x, y, w, h] fractions,
+    // so the renderer can skip compositing the empty rest of the quad. Measured off the bake
+    // with a 1% margin for the antialiased rim, and it belongs here for the same reason
+    // contactR and wash do: it is a fact about the delivered sprite, and the runtime cannot
+    // recover it because reading pixels taints the canvas under file://.
+    //
+    // It matters most for the DERIVED TREE PARTS. A trunk keeps its parent's full frame so the
+    // pair stays in register, which means a 440x440 quad is composited to show a 93px stem —
+    // 4.5% ink, 95.5% wasted fill. On the planted bayou that was a large share of the 36 Mpx a
+    // frame props were filling against a 1.3 Mpx canvas. Anything whose art is a small or thin
+    // shape inside a square frame wants one; a canopy at 81% ink does not.
+    //
+    // RE-MEASURE IT WHEN THE ART CHANGES. A box that is too small clips the sprite, which is a
+    // visible bug rather than a slow frame, so the margin is deliberate.
+    'swamp-cypress-trunk':  { label: 'Cypress trunk',   world:  90, plane: 'surface', contact: 'hard', contactR:  7, wash: 0.092, srcBox: [0.384, 0.384, 0.231, 0.231], motion: 'fixed' },
+    'swamp-cypress-canopy': { label: 'Cypress canopy',  world:  90, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'swamp-tupelo-trunk':   { label: 'Tupelo trunk',    world:  70, plane: 'surface', contact: 'hard', contactR:  6, wash: 0.091, srcBox: [0.383, 0.383, 0.231, 0.234], motion: 'fixed' },
+    'swamp-tupelo-canopy':  { label: 'Tupelo canopy',   world:  70, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'swamp-oak-trunk':      { label: 'Live oak trunk',  world: 110, plane: 'surface', contact: 'hard', contactR:  9, srcBox: [0.383, 0.383, 0.231, 0.234], motion: 'fixed' },
+    'swamp-oak-canopy':     { label: 'Live oak canopy', world: 110, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+
+    // A DEADHEAD: the waterlogged log riding mostly under the surface. It is the counterpart
+    // to the three trunks and not another one of them — a trunk is a hazard you read from a
+    // hundred units off and route around, this is one you find. That is the whole reason it
+    // is worth its own kind, and it is why it is allowed to be small.
+    //
+    //   float    and this is the one line here that argues with the plane doc above, which
+    //            offers "a beached log" as its worked example of `surface`. The EXAMPLE is
+    //            about a beached log; the TEST is "what holds the object up", and what holds
+    //            this one up is water. So it takes the pad's plane, not the trunk's: it draws
+    //            after everything the water does — no wake ripples across a log floating on
+    //            top of them — and behind the land, so a bank covers one that laps onto it.
+    //            venuecheck's floating-prop check comes along for free and will flag a
+    //            deadhead someone has parked inside an island.
+    //   fixed    a real deadhead does drift, and `motion: 'drift'` is still the wrong answer:
+    //            the traits force a drifting prop's contact to none, so drift would cost this
+    //            one the only thing it is for. A placement can still override to drift where
+    //            harmless flotsam is what is wanted.
+    //   no wash  the two trunks earn a waterline by GROWING OUT of the channel and displacing
+    //            it. A deadhead rides with the water instead of standing in it, so there is
+    //            nothing for a standing pool to form against — and `wash` draws a radial
+    //            pool, which on a 1.5:1 log would ring it with surf it never made.
+    //
+    // contactR 10 IS FITTED TO THE BEAM, which is where the first OBLONG hazard parts company
+    // with the r90 rule the round ones share. The sprite is 18x28u, so r90 (12.5) is really
+    // reading the log's LENGTH: a circle that big stands 3u proud of the sides, and an
+    // invisible wall wider than the visible log is the failure a player notices. 10 covers the
+    // 9u half-beam with a touch to spare and gives up the tapered last third of each end,
+    // which is the failure nobody notices. A circle is always a compromise on an oblong
+    // object; this picks the side that lies less.
+    'swamp-deadhead':       { label: 'Deadhead',        world:  32, plane: 'float',   contact: 'hard', contactR: 10, motion: 'fixed' },
+
+    // THE STILT CAMP — the bayou's landmark: a hut on pilings with two short dock arms and a
+    // skiff moored alongside. Sized on that skiff, the one thing in the picture the game
+    // already knows a length for — 6.1 m against the player's 6.1 m hull at world 130, which
+    // puts the whole structure at 12.2 x 7.8 m.
+    //
+    // THIS ENTRY WAS contact:'none' UNTIL THE ART WAS REGENERATED, and the reversal is worth
+    // keeping because the reasoning was sound and the INPUT changed under it. Contact compiles
+    // to one circle centred on the prop's own x/y. The first delivery was a hut trailing a long
+    // boardwalk, and measured off that bake the hut's centre sat 63u from the anchor: every
+    // available circle was wrong, so solidity had to be authored as hidden `isle` shapes and
+    // the prop stayed a picture. The new art is compact and centred — the hut's centre is 8.5u
+    // from the anchor — so the circle that was unavailable then is available now.
+    //
+    // contactR 36 IS THE BEAM RULE APPLIED TO A BUILDING. The structure is 112 x 72u, so 36 is
+    // its short half-extent: the largest circle that never stands proud of the visible
+    // building, and it comes out 94% filled with solid structure. Bigger keeps paying less —
+    // r48 (the r90 the round props use) reaches 12u past the top and bottom edges into open
+    // channel for 10 points of fill. Same trade as the two logs, same answer: never lie
+    // outward. What it gives up is the far end of each dock arm and the moored skiff, which
+    // are thin planking and a boat, not the thing a hull is going to hit.
+    //
+    // surface, because the piles hold it up and it must draw over the bank it stands on. No
+    // `wash`: a building on open piles lets the water through rather than banking it up, and
+    // this is the one structure here whose footprint is square-ish rather than a stem.
+    //
+    // ROLE STAYS `landmark` IN THE MANIFEST even though the thing sits in the racing water,
+    // which art-pipeline §2 says landmarks do not. The role is a contract about what the ART
+    // must do — a landmark must never be MISTAKEN for an obstacle, and a red-roofed building
+    // never is — while whether a boat can pass through it is this table's business, settled
+    // above. Worth revisiting if a second venue wants a solid landmark.
+    //
+    // If a placement ever wants the dock arms solid too, the authored route still exists and is
+    // the compile's own idiom: `isle` shapes with `hidden: true` along them. NOT `bank`, which
+    // reads like the right kind and is not — it is `hard: false, nav: false`, so a boat would
+    // sail through the hut slowly and the router would never see it.
+    'swamp-shack':          { label: 'Fishing shack',   world: 189, plane: 'surface', contact: 'hard', contactR: 44, motion: 'fixed' },
+    // The second camp. Both radii are r50 of their own sprite, not a share of `world`, because
+    // these two are shaped differently — the big shack is a hut beside a long walkway, this is
+    // an L of building and deck — so one fraction cannot serve both. Both grew when the art was
+    // recalibrated on its boat; see the manifest notes for why the world sizes moved.
+    'swamp-shack-b':        { label: 'Crawfish camp',   world: 133, plane: 'surface', contact: 'hard', contactR: 28, motion: 'fixed' },
+
+    // THE DRIFT LOG — a whole fallen trunk, and the far end of the size ladder the deadhead
+    // starts: 0.91 m of wood over 7.6 m against the deadhead's 2 m over 3 m. Same plane and
+    // the same reason (`float`: water holds a log up, see the deadhead's note), and the same
+    // fixed-not-drift trade, which is the only way it keeps its teeth.
+    //
+    // contactR 5 IS THE BEAM AGAIN and this is where that rule visibly runs out of road. The
+    // trunk is 8.3:1 — 70u long, a median 8.4u wide — so a circle on the beam blocks about a
+    // seventh of it, and a boat crossing near either end sails straight through painted wood.
+    // The alternative is worse in the way that gets noticed: a circle that covers the LENGTH
+    // is r 35, an invisible wall seven times the log's width, stopping boats in open channel
+    // a full hull clear of anything visible. Between a hazard that under-collides and one that
+    // grabs at water you can see is empty, this venue has already chosen twice.
+    //
+    // SO THE LONG ONE IS THE SHACK'S PROBLEM, and it takes the shack's answer: for a driftlog
+    // that must block along its whole length, author `isle` shapes with `hidden: true` down
+    // the trunk — the compile's own idiom, and the only thing here that describes a line
+    // rather than a point. A placement can also just set its own `contactR` and accept the
+    // wide circle; that is a per-course judgement and not a default worth shipping.
+    'swamp-driftlog':       { label: 'Drift log',       world:  81, plane: 'float',   contact: 'hard', contactR:  5, srcBox: [0.354, 0.052, 0.292, 0.897], motion: 'fixed' },
+
+    // CATTAILS — five composed tufts of sedge, and the venue's one piece of pure decoration
+    // in the water. It is `ambient`, which here is a promise rather than a shrug: the role
+    // contract says an ambient must never be MISTAKEN for a hazard, and this one is safe on
+    // the strength of its silhouette, not its colour — a spiky radiating burst against three
+    // solid trunk discs and two blunt logs. That distinction is the thing that survives
+    // greyscale, which is the test the contract actually names.
+    //
+    //   surface  NOT `float`, and this is the one place the two logs above part company with
+    //            it. Water carries a deadhead; a cattail is ROOTED IN THE MUD and stands up
+    //            out of it, so the bottom holds it — the trunks' answer, for the trunks'
+    //            reason. It also has to draw OVER the bank it grows on, which `float` (behind
+    //            the land) would forbid, and cattails on a margin is most of where they go.
+    //   none     no contact. The mechanic for weed a hull has to push through is the `weedbed`
+    //            SHAPE kind, which carries the drag and the zone the router prices; this is
+    //            the picture at the edge of it. Same split as the lily pads, same reason —
+    //            giving the picture teeth would charge for the same reeds twice.
+    //   no wash  it stands in water and, unlike the trunks, displaces nothing worth drawing:
+    //            reeds part around a stem rather than banking up against it, and the pool is
+    //            radial where this footprint is five scattered points.
+    'swamp-cattails':       { label: 'Cattails',        world:  48, plane: 'surface', contact: 'none', motion: 'fixed' },
+
+    // CYPRESS KNEES — three composed root spikes, and the smallest hazard in the game: 26u
+    // for the cluster, about 9u per knee. Its whole design job is to be the one you DON'T see
+    // coming in a venue whose other hazards announce themselves from a hundred units off, and
+    // that is also why it is allowed to sit under the contrast floor (below).
+    //
+    //   surface  the same answer as the trunks and for the identical reason — a knee is the
+    //            cypress's own root, held up by the mud, not floating on the water. This is
+    //            the pair that makes the plane rule legible: the deadhead and the driftlog
+    //            are wood the water CARRIES (`float`); the knee is wood the bottom PUSHES UP.
+    //   hard     contactR 8 = the group's r90, the round-object rule the corals and trunks
+    //            share. It applies cleanly here where it did not for the two logs, because
+    //            three knees in a tight triangle really are a roughly circular mass — the
+    //            beam-fitting exception exists for oblong sprites and this is not one.
+    //   wash     0.35, AND IT IS THE RULE ABOVE THAT REQUIRES IT: "a prop earns a waterline by
+    //            standing in water, not by being a tree." A knee is the most literal object in
+    //            the venue for that test — a spike whose entire identity is breaking the
+    //            surface. Set from r99 (9.1u / 26 = 0.35) exactly as the trunks' were, and it
+    //            lands between cypress 0.26 and tupelo 0.39. Unlike the cattails and the shack
+    //            the radial pool genuinely fits, because the cluster is compact and round.
+    //
+    // IT MEASURES 2.9:1 AGAINST THE VENUE'S OWN WATER at composed scale, just under the 3:1 the
+    // hazard role asks for, and it ships anyway — recorded here rather than quietly passed
+    // over. Two reasons. The floor is written for a hazard the player is expected to READ AND
+    // AVOID at distance, and this is deliberately the opposite kind; the drag ladder and the
+    // trunks carry the venue's readable danger. And what carries the read at 9px is the dark
+    // rim against olive, so the number is a hair off on a sprite that is unmistakable in the
+    // contact sheet at every size. Revisit if it ever gets reused on a venue that is not olive.
+    'swamp-cypress-knee':   { label: 'Cypress knees',   world:  26, plane: 'surface', contact: 'hard', contactR:  8, wash: 0.35, motion: 'fixed' },
+
+    // DAY BEACONS — the bayou's lateral marks, and the FIXED half of the game's nav vocabulary.
+    // buoy-channel-red/green are floating drums with a white band and a lantern; these are
+    // boards bolted to a pile that does not move. Two objects doing one job, told apart by
+    // silhouette alone, which is the distinction a channel mark most needs to carry.
+    //
+    //   surface  a pile driven into the bottom. Same answer as the trunks and the knees, and
+    //            the same reason: the ground holds it up.
+    //   hard     contactR 10 IS THE PILE, NOT THE BOARD. Measured off the bake the pile is
+    //            2.25 m across (r90 = 10u) and the dayboard is 3.0 m, overhanging it at both
+    //            ends — but the board is up in the air and the pile is what is in the water,
+    //            so the collider is the thing a hull can actually reach. Exactly the rule the
+    //            trunk/canopy pair is built on, at one twentieth the size.
+    //   wash     0.31, from the PILE's r99 for the same reason the radius is. It stands in
+    //            open water, so the rule above ("a prop earns a waterline by standing in
+    //            water") applies, and the art's own subject asks for a ring ripple.
+    //
+    // THE PAIR DIFFERS ONLY IN BOARD COLOUR, which is a knowing divergence from real buoyage —
+    // IALA-B pairs a GREEN SQUARE with a RED TRIANGLE, and these are two rectangles. Left as
+    // is, because the game's own shipped lateral pair already made this choice (see
+    // buoy-channel-green's spec: "the IDENTICAL buoy to the red one in every respect except
+    // colour"), and one venue is the wrong place to break a convention the rest of the game
+    // keeps. Where it does better than the shipped pair is the axis that actually matters for
+    // a red-green pair: measured off the art, the two boards separate by 26 luma in greyscale
+    // against the floating buoys' 10, so a colour-blind player has a real brightness cue
+    // rather than a nominal one. If the triangle ever gets drawn, do BOTH pairs at once.
+    'swamp-daybeacon-green':{ label: 'Green daybeacon', world:  34, plane: 'surface', contact: 'hard', contactR: 10, wash: 0.31, motion: 'fixed' },
+    'swamp-daybeacon-red':  { label: 'Red daybeacon',   world:  34, plane: 'surface', contact: 'hard', contactR: 10, wash: 0.31, motion: 'fixed' },
+
+    // WHOLE TREES — the ONE ENTRY A DESIGNER SHOULD REACH FOR. Place it anywhere, on the bank
+    // or in the channel, and it behaves: the stem draws under the fleet and collides, the crown
+    // draws over the fleet and fades for the player's own hull. `parts` is what makes that work
+    // — the kind names its two halves and drawProps takes the right one for each pass, so a
+    // single placement paints in two planes. The halves are cut from one master by treesplit.py
+    // and keep a shared frame, so they register with no help from the designer.
+    //
+    // THIS ROW SHIPPED WRONG ONCE AND THE FAILURE IS WORTH KEEPING. It was `plane: 'surface',
+    // contact: 'none'`, which was right while these were land-only decoration and became a trap
+    // the moment the derived halves existed: drop one in the water and you got a crown painted
+    // UNDER the boats and a stem you sailed straight through. Nothing announced it, because both
+    // settings were individually defensible. The lesson is that the palette is the spec — an
+    // entry called "Live oak tree" has to be the whole tree, since that is what the name
+    // promises and the name is all a designer sees.
+    //
+    // contactR is the derived stem's own r90, the same measurement the standalone `-trunk`
+    // kinds carry, so the two routes collide identically. wash likewise: cypress and tupelo
+    // grow out of the channel and get one, the live oak roots on high ground and does not.
+    //
+    // THE STANDALONE HALVES STAY placeable for what the pair cannot express — a bare snag with
+    // no crown, or a crown reaching in from a tree rooted off the map — but they are the
+    // exception now, not the normal way to plant a tree.
+    //
+    // CHECKED AGAINST THE MANDALA ATTRACTOR before shipping, because a tree drawn from straight
+    // above with limbs radiating from a hub sits right next to it. Rotational self-similarity
+    // of the LIMB MASS at 4/5/6/8/10-fold is negative for all three (cypress -0.08, oak -0.28,
+    // tupelo -0.09) — the limbs never self-align. Do not run that test on the whole sprite: a
+    // dense round crown self-correlates just by being a disc, and on that measure the tupelo,
+    // visibly the least spoked, scores the WORST of the three.
+    // ── WHY THE TREES ARE SOFT AND NOT HARD ─────────────────────────────────
+    // A bayou tree has to STOP being sailed through — 1733 of the venue's placements carried an
+    // authored contact:"none" overriding these rows, so the compiler emitted 318 colliders where
+    // it should have emitted 2042, and a hull passed through every trunk in the swamp.
+    //
+    // Fixing that as `hard` worked and cost too much. Measured over 6 trials x 9 AI boats:
+    // finishers inside the authored 5:00 cutoff fell 41% -> 20%, and the sim step went 1.43ms ->
+    // 3.55ms (2.5x) with the frame up 22%. The venue is a FLOODED FOREST — 1948 of its 2042 trees
+    // stand in open water, only 94 sit on land where a shape already blocks — so there is no
+    // pruning available: every one of them is a real obstacle in sailable water, and turning them
+    // all into walls turns the course into a slalom.
+    //
+    // SOFT WAS TRIED AND REJECTED ON THE SCREEN, which is the evidence that outranks the rest of
+    // this note. As a drag shoal it measured beautifully — 81% finishers, penalties down two
+    // thirds, and a sim step (1.18ms) LIGHTER than the 318-collider baseline, because a soft
+    // contact compiles to a drag-field lookup while a hard one joins the collision set and the
+    // router's obstacle graph. It also did not read: a boat that mushes through a cypress and
+    // comes out the far side is not a boat that hit a tree, whatever the telemetry says.
+    //
+    // So HARD it is, and the cost is known and accepted rather than discovered later: the sim
+    // step is 2.5x the baseline and the frame is ~22% longer. The cutoff moved 300s -> 360s in
+    // the same change, which is what buys the finish rate back.
+    //
+    // ⚠️ IF THIS IS EVER REVISITED, the lever to reach for is contactR, not contact. These radii
+    // are stated at scale 1 and multiplied by each placement's scale, and they sit at about
+    // two thirds of the visible trunk: a cypress draws its trunk 0.231 of a 90u frame (r 10.4)
+    // against a contactR of 7. Raising it toward the drawn trunk makes contact look right and
+    // costs finish rate; lowering it does the reverse. That is the dial — soft/hard is not.
+    'swamp-cypress':        { label: 'Cypress tree',   world:  90, plane: 'surface', contact: 'hard', contactR: 7, wash: 0.092, motion: 'fixed',
+                              parts: { surface: 'swamp-cypress-trunk', canopy: 'swamp-cypress-canopy' } },
+    'swamp-oak':            { label: 'Live oak tree',  world: 110, plane: 'surface', contact: 'hard', contactR: 9, motion: 'fixed',
+                              parts: { surface: 'swamp-oak-trunk',     canopy: 'swamp-oak-canopy' } },
+    'swamp-tupelo':         { label: 'Tupelo tree',    world:  70, plane: 'surface', contact: 'hard', contactR: 6, wash: 0.091, motion: 'fixed',
+                              parts: { surface: 'swamp-tupelo-trunk',  canopy: 'swamp-tupelo-canopy' } },
+
+    // THE DOCK — a plank walkway on pilings, 10.1 m long: the piece a designer repeats along a
+    // bank, as against the shack, which is a whole homestead and reads as a copy of itself the
+    // second time it is placed. No boat is drawn on it on purpose, so bayou-pirogue can moor
+    // alongside one.
+    //
+    //   surface  pilings driven into the bottom, and it has to draw over the bank it lands on.
+    //            The daybeacon's answer, for the daybeacon's reason.
+    //   hard     contactR 9 IS THE WALKWAY'S HALF-BEAM, not the platform's. The deck runs a
+    //            median 17.5u wide with the shore platform swelling to 25.5u, and a circle
+    //            sized to the platform (13) would stand 4u proud of the walkway down its whole
+    //            length — an invisible wall half again as wide as the boards you can see. The
+    //            venue has chosen this way every time it has come up.
+    //   no wash  it stands in water, which by the rule above earns a waterline — but the pool
+    //            is radial and this footprint is 5.3:1, so it would draw a circle of surf
+    //            around the middle of a long thin object and nothing at either end. Open
+    //            pilings also let the stream through rather than banking it up.
+    //
+    // AND THE CIRCLE IS BADLY OUTMATCHED HERE, worse than on the driftlog: r9 against a 93u
+    // deck blocks about a tenth of it, so a boat crossing anywhere but the middle sails through
+    // planking. A dock meant to close a lane wants `isle` shapes with `hidden: true` laid along
+    // it — the compile's own idiom, and the third asset in this venue to need it (see the shack
+    // and the driftlog). That is now a pattern rather than a one-off: ANY prop past roughly 3:1
+    // is asking for a shape the single-circle contact model cannot describe, and the honest
+    // default is a circle that never lies outward plus a note pointing at the authored route.
+    'swamp-dock':           { label: 'Dock',           world: 108, plane: 'surface', contact: 'hard', contactR:  9, srcBox: [0.365, 0.052, 0.270, 0.893], motion: 'fixed' },
+
+    // THE GATOR — the animal the venue is named for, and pure decoration: role ambient, no
+    // contact, no drag, nothing to hit. It is here to make the water feel inhabited.
+    //
+    //   float    water carries a swimming animal, so it takes the logs' plane rather than the
+    //            trunks': it draws after everything the water does, and behind the land, which
+    //            is right for something cruising a channel and wrong only if someone hauls one
+    //            out onto a bank. `seabed` was the other candidate and is too far under — that
+    //            plane washes a sprite toward the water colour to sell depth, and the subject
+    //            asks for a snout BREAKING the surface.
+    //   none     ambient. The venue's danger is wood and weed; adding a biting collider to the
+    //            mascot would make every player treat it as a trap and sail wide of scenery.
+    //   fixed    'cruising' argues for drift, and drift is still wrong: it rides the current
+    //            with windage, which is flotsam's motion, not an animal's — a gator under power
+    //            would slide sideways down the stream. Until something animates it the honest
+    //            reading is a gator lying up and waiting, which is what a fixed sprite shows.
+    //            A placement can still set drift where a drifting log-that-is-not-a-log is the
+    //            joke intended.
+    //
+    // IT IS THE SAME SIZE AND ASPECT AS THE DRIFTLOG — 60u long at 3.5:1 against the log's 70u
+    // at 3.2:1 — and THAT RESEMBLANCE IS WANTED (designer, 2026-08-09). Do not "fix" it. An
+    // alligator lying awash is doing exactly this in nature, and a player who takes one for a
+    // log has been fooled the way the animal fools things for a living.
+    //
+    // It still has to satisfy §2, and it does, because the rule is not really about resemblance
+    // — it is about players learning to distrust the world. Two things carry it. First the
+    // silhouettes DO separate on inspection: in greyscale the gator is a smooth tapered body
+    // with a head, four leg bumps and a regular scute grid, the log a ragged asymmetric trunk
+    // with one stub branch. Crypsis that works at a glance and fails on a look is the honest
+    // version of this and is what shipped. Second the error is ASYMMETRIC: mistaking the gator
+    // for a log costs a dodge nobody needed, which is cheap and is the joke landing, while the
+    // expensive direction — reading a real hazard as harmless scenery — is the one the
+    // silhouette split guards. Keep that asymmetry if either sprite is ever redrawn.
+    'swamp-gator':          { label: 'Alligator',      world:  70, plane: 'float',   contact: 'none', motion: 'fixed' },
+
+    // THE PIROGUE — a working boat, and the venue's only `traffic` prop. Its binding contract is
+    // not about danger at all: a non-racing boat must never be mistaken for a competitor, which
+    // extends race-view 10.2 off the starting grid. Colour cannot carry that here — ten of the
+    // roster's ninety-six hull colours are golden or tan, so bare wood shares its hue with a
+    // tenth of the fleet — and it does not have to, because the silhouettes are not in the same
+    // family: 3.9:1 double-ender, pointed at both ends, OPEN and showing its thwarts, against a
+    // 1.8:1 teardrop with a blunt stern, a filled deck and a sail over it.
+    //
+    //   float    a boat floats. The logs' plane and the gator's, for the same reason.
+    //   soft     AND THIS IS THE FIRST SOFT CONTACT IN THE VENUE, chosen because it is what the
+    //            object actually does: 5.8 m of unballasted wood does not stop a racing hull, it
+    //            gets shoved aside and costs you the speed. `hard` would be a lie about mass.
+    //            It also degrades far better under the problem every long prop here has hit —
+    //            a soft prop compiles to a hidden SHOAL rather than a hidden isle, so a circle
+    //            that reaches past the object is a patch of slow water rather than an invisible
+    //            wall. That is a real difference in failure mode, not a preference.
+    //            drag is left at the trait default (0.5), which sits between the lilybed's 0.35
+    //            and the weedmat's 0.75 — about right for shouldering a small boat out of the
+    //            way. contactR 5 is the beam again (10.5u hull, half 5.2u).
+    //   fixed    these get placed moored, against a dock or a shack; nothing about a tied boat
+    //            drifts. A placement can set drift for one that has got loose.
+    'swamp-pirogue':        { label: 'Pirogue',        world:  62, plane: 'float',   contact: 'soft', contactR:  5, motion: 'fixed' },
+
+    // THE AIRBOAT — the venue's second traffic vessel, and the SILHOUETTE SPACE IS SPLIT with
+    // the pirogue deliberately, the way cove-tugboat splits it with the cargo ships: the pirogue
+    // owns narrow, double-ended and open (3.9:1, thwarts showing), this owns broad, blunt and
+    // machined (2.2:1) with a hard dark ring at the stern. Nothing else in the venue is a ring
+    // on a rectangle, so it reads at a glance against the pirogue, against the racing fleet, and
+    // against the round hazards — knees and deadhead are lumps, not rings.
+    //
+    //   float    a boat floats. The pirogue's plane and the gator's.
+    //   hard     AND HERE IT PARTS FROM THE PIROGUE, which is soft, because the difference is
+    //            mass and the two should not feel alike. A pirogue is 5.8 m of unballasted wood
+    //            and gets shouldered aside; an airboat is a welded aluminium hull carrying an
+    //            aero engine and a cage, comparable in weight to the racing boat hitting it, and
+    //            it does not move. Same venue, two working boats, two different answers, each
+    //            derived from what the thing is rather than from a house default.
+    //            contactR 11 is the beam again (22u hull, half 11u) — and at 2.2:1 the beam
+    //            circle finally covers a decent share of the object, 46% of its length, instead
+    //            of the tenth it managed on the dock. Short props are where this model works.
+    //   fixed    placed moored, like the pirogue. Drift is available per placement.
+    //
+    // NO WIND EFFECT, and it is worth writing down why, because the idea is the obvious one and
+    // it is not cheap: a fan boat in the DEAD-AIR venue ought to drag a wake of pressure behind
+    // it, the inverse of the cove cargo ship's moving wind shadow. The engine cannot do it
+    // today. Wind shadows are derived from SHAPES (isl.windShadow) and they are subtractive
+    // only; there is no wind SOURCE anywhere in the model, and props emit nothing. So this ships
+    // as scenery, and a blowing airboat is a feature to build on purpose or not at all.
+    'swamp-airboat':        { label: 'Airboat',        world:  56, plane: 'float',   contact: 'hard', contactR: 11, motion: 'fixed' },
+
+    // THE HERON — the last asset of the set, and the hardest one to have drawn, for a reason that
+    // is geometric rather than artistic: everything that says HERON to a person is vertical. The
+    // long neck, the long legs, the dagger beak all foreshorten to nothing from straight above,
+    // and what is left is a grey oval. The sprite carries its identity on the one feature that
+    // survives the camera — the folded S of the neck lying pale across the slate back.
+    //
+    //   surface  it is WADING. The bottom holds a standing bird up, so it takes the trunks' plane
+    //            and not the logs': this is the third answer to the same question and the venue is
+    //            now consistent on it — water carries (deadhead, driftlog, gator, boats), ground
+    //            pushes up (trunks, knees, daybeacon, dock, and this). It also has to draw over a
+    //            bank it is standing beside, which `float` would put it behind.
+    //   none     ambient, and the most obviously so of anything here: a bird leaves.
+    //   no wash  it stands in water, which by the rule above can earn a waterline — but the rule
+    //            is really about DISPLACEMENT, and two wet sticks displace nothing. The cattails
+    //            argument, one step further.
+    //
+    // AMBIENT/HAZARD SEPARATION is against the small end of the hazard set here, not the big one:
+    // at 38u visible it sits between the cypress knees at 26u and the deadhead at 32u, which are
+    // the venue's two dark lumps. Checked in greyscale — those two are squat, dark and blunt; the
+    // heron is tall, pale, tapered and topped by a bright spike. No overlap.
+    'swamp-heron':          { label: 'Heron',          world:  44, plane: 'surface', contact: 'none', motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
 // shapeTraits, so the compiler, the game and the editor's inspector can never disagree.
-const PROP_PLANES = ['seabed', 'surface', 'canopy'];
+const PROP_PLANES = ['seabed', 'float', 'surface', 'canopy'];
 const PROP_CONTACTS = ['none', 'soft', 'hard'];
 function propTraits(p) {
     const k = PROP_KINDS[p.kind] || {};
@@ -768,8 +1298,11 @@ const SHAPE_KINDS = {
     // code's job, not a generator's (the compose.py argument, applied at runtime).
     // If seagrass should ever cost speed, that decision is `drag` — the drag field,
     // the router pricing and the warning render all already exist for awash shapes.
+    // `veg` names its render spec (VEG_STYLES, script.js). It used to be the renderer
+    // that knew the string 'seagrass'; now the KIND says what it is growing, which is
+    // what let the bayou's four weeds arrive without four more special cases.
     seagrass: { motion: 'fixed', hard: false, look: 'shoal',    hidden: false, nav: false, height: 0,
-               awash: true, drag: 0, paint: true },
+               awash: true, drag: 0, paint: true, veg: 'seagrass' },
     // Tropic Sand — Caribbean coral-white sand, the lagoon's own beach. Behaves exactly
     // as `isle` does (it grounds you, it carries palms); only the LOOK differs: the
     // 'coralsand' style is markedly whiter and cooler than the tan `tropical` sand every
@@ -793,7 +1326,78 @@ const SHAPE_KINDS = {
     // Per-shape `hard: true` upgrades any one reef to stop-dead. height 0: a submerged
     // reef shelters nothing, which the kind table's every-kind-is-0 rule gives for free.
     coralreef: { motion: 'fixed', hard: false, look: 'coralshoal', hidden: false, nav: true, height: 0,
-               reef: true }
+               reef: true },
+
+    // ── GATORGRASS BAYOU: THE GROUND ────────────────────────────────────────
+    //
+    // Mud is NOT sand at a different colour, and the difference is a shape of edge
+    // rather than a hue. A sandbar SHELVES: you feel it come up over a couple of boat
+    // lengths, which is exactly what `shoal`'s long 120u feather is describing. A
+    // mudbank does not shelve — silt stands at a much steeper angle of repose, so a
+    // bayou bank is a defined lip with deep water right up against it. That is why
+    // `mudflat` carries its own SHORTER feather instead of borrowing the sand's, and
+    // it is the whole reason mud earns kinds rather than a palette swap: the material
+    // is a thing you feel through the tiller, not a thing you look at.
+    //
+    // The art already specced this family before the kinds existed — bayou-mud and
+    // bayou-marsh are declared textures, and their notes lay out the ladder the three
+    // kinds below reproduce: swampgrass sward -> marsh -> bare mud -> water.
+    mud:     { motion: 'fixed', hard: true,  look: 'mud',     hidden: false, nav: true, height: 0 },   // ~2 m of bank
+    // The transition, and it is soft where mud is hard: you can drive a hull into a
+    // sedge margin and back off it, which is not true of a bank. Half sward, half mud
+    // — the wide ragged edges where a bayou island gives out into the channel.
+    marsh:   { motion: 'fixed', hard: false, look: 'marsh',   hidden: false, nav: true, height: 0 },   // ~3 m of sedge
+    // The mud bar. The drag floor is the highest in the game — 0.9, the clamp itself —
+    // because that is the honest reading of the material: sand slows you and mud HOLDS
+    // you. It stays inside the clamp on purpose (the 0.9 note applies unchanged: a boat
+    // must always keep a knot to crawl off on), so this is the deepest a bar is allowed
+    // to bite rather than a new category of trap.
+    mudflat: { motion: 'fixed', hard: false, look: 'mudflat', hidden: false, nav: true, height: 0,
+               awash: true, drag: 0.9, feather: 60 },
+
+    // ── GATORGRASS BAYOU: THE WEED, IN FOUR LAYERS ──────────────────────────
+    //
+    // "Weed" is four different plants doing four different jobs, and collapsing them
+    // into one kind is how a venue built on weed ends up with one texture. What
+    // separates them is WHERE THE PLANT SITS IN THE WATER COLUMN — which is also what
+    // decides where it draws, what it does to a hull, and whether it stays put:
+    //
+    //   weedbed   rooted, grows UP from the bottom   hydrilla, coontail   fouls the keel
+    //   lilybed   rooted, leaf floats ON TOP         water lily, spatterdock  pads part, bed stays
+    //   weedmat   rooted to NOTHING, floats free     water hyacinth, salvinia  a raft you plough
+    //   duckweed  rooted to nothing, a green film    Lemna                free, and pure information
+    //
+    // THE ROOTED/FREE SPLIT IS THE LOAD-BEARING ONE and it is why lily pads are not the
+    // floating weed. A lily is anchored to the mud by a rhizome: the pads tilt and slide
+    // aside as a hull goes over and then spring back, but the BED does not move, which
+    // makes it a landmark you can navigate by lap after lap. Hyacinth is attached to
+    // nothing — it rides wherever the wind and the stream put it. Two plants, two
+    // behaviours, and one kind could only ever have told half of that.
+    //
+    // All four are awash: none of them is a wall, every one of them is a tax, and the
+    // ladder of taxes is the venue's whole argument about keeping her moving. They are
+    // `paint` because each draws its own picture — see the flag's note, which this batch
+    // is what generalised.
+    //
+    // NOT YET, and both are deliberate rather than forgotten. (1) `weedmat` is FIXED,
+    // though a real raft drifts: motion 'drift' compiles down the floe path, which is
+    // ice-specific end to end (makeFloe's cracks and facets, isFloe in the bot planner,
+    // the penguin colonies) and generalising it is its own change. (2) The drag here is
+    // speed-INDEPENDENT like every other awash shape, so hitting a mat with way on costs
+    // the same as drifting into it — which is the one place the venue card's promise of
+    // momentum-scaled weed is still ahead of the code.
+    weedbed:  { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: true, height: 0,
+               awash: true, drag: 0.6,  paint: true, veg: 'weedbed' },
+    lilybed:  { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: true, height: 0,
+               awash: true, drag: 0.35, paint: true, veg: 'lilybed' },
+    weedmat:  { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: true, height: 0,
+               awash: true, drag: 0.75, paint: true, veg: 'weedmat' },
+    // Zero drag, and that is the entire point: a film of Lemna does not slow a boat, it
+    // RECORDS her. The hull opens a lane of black water through the green and the lane
+    // stays open behind her, so this is the one shape in the game whose job is to show
+    // you where the fleet has been. Priced at nothing by the router, correctly.
+    duckweed: { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: false, height: 0,
+               awash: true, drag: 0,    paint: true, veg: 'duckweed' }
 };
 
 // How far in from a shoal's rim the water is still deep enough not to matter, in units.
@@ -878,9 +1482,27 @@ function shapeTraits(s) {
         nav:    s.nav    !== undefined ? !!s.nav    : k.nav,
         height: s.height !== undefined ? +s.height  : k.height,
         awash:  s.awash  !== undefined ? !!s.awash  : !!k.awash,
-        // Not overridable per shape: paint IS the kind. A shape that wants drag is a shoal.
+        // Not overridable per shape: paint IS the kind. What it means is "this kind
+        // draws its OWN picture — do not hand it the default sand bar", which is the
+        // one thing the tinted zone, the meadow and the bayou's four weeds share.
+        //
+        // It used to imply dragless as well, because the only two paint kinds were both
+        // visual-only and the distinction had never had to be made. The weeds are paint
+        // AND expensive, so the two questions are now genuinely separate: `paint` says
+        // who renders it, `drag` says what it costs, and neither reads the other.
         paint:  !!k.paint,
         reef:   !!k.reef,
+        // What this shape is GROWING — the name of its render spec (VEG_STYLES in
+        // script.js), or null for bare ground. Kind-level like `paint`, and for the same
+        // reason: a bed of hydrilla is a different plant from a bed of lilies, not the
+        // same plant with a knob turned.
+        veg:    k.veg || null,
+        // HOW GRADUALLY THE BOTTOM COMES UP, in units. Per KIND, because it is a
+        // property of the MATERIAL and not of the venue: sand shelves over a couple of
+        // boat lengths, silt stands up steep. Per-shape override for the one bar that
+        // wants to differ. See SHOAL_FEATHER for the day this number was tuned twice.
+        feather: Math.max(1, s.feather != null ? +s.feather
+                            : (k.feather != null ? +k.feather : SHOAL_FEATHER)),
         // Clamped rather than trusted: `drag: 1` is a shape that stops a boat dead in water
         // it is floating over, with no collision to explain why, and every escape from it
         // is upwind of nothing. 0.9 leaves a knot to crawl out on.
@@ -1005,8 +1627,15 @@ function compileVenueDoc(doc) {
             awash: T.awash,
             paint: T.paint,
             reef: T.reef,
+            // What is growing here, for the renderer. Null on bare ground, which is
+            // every shape that existed before the bayou.
+            veg: T.veg,
             shoalMul: T.awash ? 1 - T.drag : 1,
-            shoalFeather: Math.min(SHOAL_FEATHER, radius * 0.5),
+            // The kind's own feather now, not the global — mud shelves nothing like
+            // sand does. Still clamped to half the radius for the same reason as
+            // before: a small bar must reach its full drag somewhere in the middle
+            // instead of being all rim.
+            shoalFeather: Math.min(T.feather, radius * 0.5),
             // The rings UNKEYHOLED, for the graded depth read. `vertices` is the keyholed
             // trace, and the slit it cuts to reach a hole is a zero-width edge — measuring
             // distance-to-boundary against it would lay a false strip of deep water across
@@ -1383,7 +2012,22 @@ function compileVenueDoc(doc) {
             // handle a keyholed coastline and silently returns the straight line.
             let grid = null;
             if (window.SailCheck && boundary) {
-                const fixed = migrateShapes(doc).filter(sh => shapeTraits(sh).motion === 'fixed');
+                // ⚠️ AWASH SHAPES ARE NOT WALLS, and buildGrid cannot know that: it blocks
+                // every shape it is handed, because it takes DOCUMENT shapes (outer/holes) and
+                // a document does not carry the trait. So the filter has to answer it here.
+                //
+                // Left in, a bar or a weed bed closes the water it lies on and the ruler routes
+                // the long way round something a boat sails straight over. Gatorgrass Bayou is
+                // where this stopped being academic: 95 of its 140 shapes are awash, and the
+                // race-length check read 4.53 km / 14:03 for a course that measures 2.31 km and
+                // 3:54 once the beds are correctly treated as water.
+                //
+                // `!awash` and not `!reef`: a coral reef is a soft WALL and is deliberately NOT
+                // awash, so it stays in the grid and still closes the pass it is meant to close.
+                const fixed = migrateShapes(doc).filter(sh => {
+                    const t = shapeTraits(sh);
+                    return t.motion === 'fixed' && !t.awash;
+                });
                 // Same sampling rule as the game's grid (see buildCoursePaths):
                 // icy venues keep centre-sampled land.
                 const hasDrift = migrateShapes(doc).some(sh => shapeTraits(sh).motion !== 'fixed');

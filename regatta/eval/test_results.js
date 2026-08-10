@@ -56,6 +56,23 @@ const { chromium } = require('playwright'); const path=require('path');
       emptyBoxes: rows.filter(r => [...r.querySelectorAll('.w-12.h-12')].some(x => !x.children.length)).length,
       meRingColor: me[0] ? getComputedStyle(me[0].querySelector('.res-bar')).boxShadow : null,
       meNameColor: me[0] ? getComputedStyle(me[0].querySelector('.res-name')).color : null,
+      // A row that is NOT you, to compare against — the marker is only a marker if the
+      // other rows do not carry it.
+      otherRingColor: (() => {
+        const other = rows.find(r => !r.classList.contains('res-me'));
+        return other ? getComputedStyle(other.querySelector('.res-bar')).boxShadow : null;
+      })(),
+      otherNameColor: (() => {
+        const other = rows.find(r => !r.classList.contains('res-me'));
+        return other ? getComputedStyle(other.querySelector('.res-name')).color : null;
+      })(),
+      // The rule renderResultsRows states, asked of the same function it uses: your row
+      // glows in YOUR OWN hue. Computed rather than written down, so a livery change or a
+      // different character cannot make this assertion wrong.
+      wantGlow: (() => {
+        const p = state.boats.find(b => b.isPlayer);
+        return (p && typeof boatGlow === 'function') ? boatGlow(p, 0.30) : null;
+      })(),
       // --- "Finish Line": you are the headline, and a single race carries no series ---
       hero: document.getElementById('res-hero').innerText,
       splitTiles: document.getElementById('res-splits').children.length,
@@ -76,8 +93,25 @@ const { chromium } = require('playwright'); const path=require('path');
   ok('exactly one row is marked as the player', info.meRows === 1, `${info.meRows}`);
   ok('it is the player\'s row', info.meName === info.playerName, `${info.meName} vs ${info.playerName}`);
   ok('the player row is highlighted off the podium too', info.mePos > 2, `position index ${info.mePos}`);
-  ok('the highlight is the gold ring', /251, 191, 36/.test(info.meRingColor || ''), info.meRingColor);
-  ok('the player name is gold', /252, 211, 77/.test(info.meNameColor || ''), info.meNameColor);
+  // ⚠️ NOT GOLD, AND THAT IS THE POINT. These two asked for gold and had been failing
+  // unseen: renderResultsRows now paints your row in YOUR OWN hull colour, deliberately,
+  // "because gold is the colour of first place and cannot also be the colour of you"
+  // (index.html) — and the NAME "stays white like every other boat's ... a coloured name
+  // on top of a coloured row read as a different kind of row rather than as the same
+  // fleet" (script.js). Asserting the old design meant the suite could only ever be red.
+  //
+  // So state the rule that actually holds, and state it against the other rows: a marker
+  // nobody else carries, in the colour the renderer says it uses.
+  const glowRGB = (info.wantGlow || '').replace(/rgba?\(|\)/g, '').split(',').slice(0, 3).map(s => s.trim()).join(', ');
+  ok('your row is marked and the others are not',
+     !!info.meRingColor && info.meRingColor !== 'none' && info.otherRingColor === 'none',
+     `you ${info.meRingColor} · them ${info.otherRingColor}`);
+  ok('the marker is YOUR hull colour, not gold',
+     !!glowRGB && info.meRingColor.includes(glowRGB) && !/251, 191, 36/.test(info.meRingColor),
+     `${info.meRingColor} vs boatGlow ${info.wantGlow}`);
+  ok('your name is NOT specially coloured — same white as the rest of the fleet',
+     info.meNameColor === info.otherNameColor,
+     `you ${info.meNameColor} · them ${info.otherNameColor}`);
 
   console.log('\nyour finish is the headline');
   ok('the hero names your place', /\b6TH\b/.test(info.hero), info.hero.split('\n').slice(0, 3).join(' / '));

@@ -240,6 +240,26 @@
                         <input id="ice-vary" class="num" value="45" spellcheck="false"
                                title="% size spread between them"></label>
                 </span>
+                <!-- PROPS have no maker tool — a plain click on open water places one — so
+                     these ride with the LAYER rather than with an armed tool. They are read
+                     at the moment of the click and never stored, exactly like `kind`: moving
+                     the spread must not reach back and re-roll what is already on the map.
+                     A stand of cypress placed at one size and one heading reads as stamped,
+                     which is the whole reason compose.py exists for the sprite side. -->
+                <span id="prop-opts" style="display:none">
+                    <label class="to-f"><span>count</span>
+                        <input id="prop-count" class="num" value="1" spellcheck="false"
+                               title="how many one drag lays — drag out the circle to fill; a tap still places one"></label>
+                    <label class="to-f"><span>min %</span>
+                        <input id="prop-min" class="num" value="85" spellcheck="false"
+                               title="smallest size a placed prop takes, as a % of its natural size"></label>
+                    <label class="to-f"><span>max %</span>
+                        <input id="prop-max" class="num" value="115" spellcheck="false"
+                               title="largest size a placed prop takes, as a % of its natural size"></label>
+                    <label class="to-f"><span>spin</span>
+                        <input id="prop-spin" type="checkbox"
+                               title="give each placed prop a random heading — right for knees, cattails and pads; wrong for a shack or a day beacon, which have an up"></label>
+                </span>
             </div>
 
             <!-- Overlays, over the thing they overlay. -->
@@ -260,6 +280,7 @@
                 <button id="btn-sel-union" class="btn" title="Merge them into one">Union</button>
                 <button id="btn-sel-intersect" class="btn" title="Keep only what they all share">Intersect</button>
                 <button id="btn-sel-subtract" class="btn" title="Remove the others from the first one selected">Subtract</button>
+                <button id="btn-sel-exclude" class="btn" title="Cut the others out of the first one CLICKED, and keep them">Exclude</button>
                 <button id="btn-sel-symdiff" class="btn" title="Keep what only ONE of them covers — the overlap goes">Difference</button>
                 <button id="btn-sel-del" class="btn danger" title="Delete (Del)">Delete</button>
             </div>
