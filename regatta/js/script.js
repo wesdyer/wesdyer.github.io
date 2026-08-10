@@ -185,6 +185,12 @@ function getRiskMetrics(boat, other) {
     return { tCPA, distCPA, distCurrent: dist };
 }
 
+// The sailable fan the contact escape is chosen from when there is a stream
+// running. Every entry is a true wind angle outside the no-go band (the no-go
+// tax fires below 0.55 rad), both tacks, close-hauled through dead downwind.
+const ESC_TWAS = [0.65, -0.65, 0.85, -0.85, 1.05, -1.05, 1.3, -1.3, 1.55, -1.55,
+                  1.8, -1.8, 2.1, -2.1, 2.4, -2.4, 2.75, -2.75, 3.1, -3.1];
+
 // THE RADIUS IS THE GAP (rounding comparison, Aug 6): the fleet rounds at 117u
 // where the human rounds at 47u, with identical speed-carry, zone time, tack
 // count and turn rate — the whole 2.5x is the ring the carrot rides. The human
@@ -863,6 +869,37 @@ class BotController {
              const col = this.boat.ai.collisionData;
              if (this.boat.speed < 1.0 || !this.iceEscapeTimer || this.iceEscapeTimer <= 0) {
                  let escH = Math.atan2(-col.normal.x, col.normal.y);
+                 // ESCAPE IN THE GROUND FRAME, NOT THE BOAT FRAME. Straight out
+                 // along the normal is a HEADING, and a heading is not where the
+                 // boat goes: updateBoat adds the stream directly into the
+                 // velocity (~11859). Measured on the river (`_esc_current.js`,
+                 // 3 seeds, 487k contacts, median set 3.98 kt): the stream has a
+                 // component pushing her ONTO the bank on 56% of contacts, and
+                 // today's commanded heading produces a TRACK that goes into the
+                 // bank on 44% of them — in every one of which a sailable heading
+                 // with an outward track existed (the best averaged ~100 u/s, and
+                 // "no heading escapes" was 0.0%). She was steering out and being
+                 // set in. On redrock, where nothing flows, the same measurement
+                 // reads 1.5%, which is why this is gated on there being a stream
+                 // at all — and gated on the SAME `speed > 0.01` the physics uses
+                 // to decide whether to apply current, so it fires exactly where
+                 // the water actually moves her and nowhere else.
+                 const curE = getCurrentAt(this.boat.x, this.boat.y);
+                 if (curE && curE.speed > 0.01) {
+                     const outXc = -col.normal.x, outYc = -col.normal.y;
+                     const cU = (curE.speed / 4) * 60;
+                     const cvx = Math.sin(curE.direction) * cU;
+                     const cvy = -Math.cos(curE.direction) * cU;
+                     const lwC = getWindAt(this.boat.x, this.boat.y);
+                     let bestT = -Infinity;
+                     for (const off of ESC_TWAS) {
+                         const h = normalizeAngle(lwC.direction + off);
+                         const v = getTargetSpeed(Math.abs(off), false, lwC.speed) * 0.25 * 60;
+                         const tOut = (Math.sin(h) * v + cvx) * outXc
+                                    + (-Math.cos(h) * v + cvy) * outYc;
+                         if (tOut > bestT) { bestT = tOut; escH = h; }
+                     }
+                 }
                  // MID-ROUNDING, ESCAPE THE WAY ROUND. An escape that reverses the
                  // rotation refunds sweep the boat bled for (measured +0.6 -> -0.85).
                  // Near the zone, pick the sailable heading that is both outward and
@@ -11524,7 +11561,23 @@ function updateAI(boat, dt) {
     // Wiggle / Force Mode: Super Steering (overrides steerage to break free)
     // ESCAPE gets the same snap-turn authority: a wedged boat has no steerage
     // and the multi-point retreat is impossible without it.
-    if (boat.controller && (boat.controller.wiggleActive || boat.controller.escActive)) {
+    // THE CONTACT REFLEX IS THE SAME CASE and was the one escape left out. A
+    // boat aground is a wedged boat by the definition this comment already uses:
+    // `collision_island` takes 60% of her speed EVERY FRAME of overlap, so she
+    // sits at a few u/s on the steerage floor of 0.6 — 0.015 * 0.6 * 60 ~= 31
+    // deg/s. Measured (`_spin_ground.js`): the commanded escape heading is stable
+    // (median 0.0 deg of change per frame, so the reflex is NOT chasing a
+    // jittering normal), the helm stands ~51 deg away from it, and the median
+    // grinding episode is 2.8s — the escape turn took as long as the grind it was
+    // meant to end. Same 5x the other two get; no new number.
+    // SCOPED OFF THE PENALTY SPIRAL, and that scoping is not cosmetic:
+    // `iceEscapeTimer` is decremented in exactly one place (below, inside
+    // applyAvoidance) and a penalised boat returns before it, so the latch
+    // FREEZES for the whole spin. Unscoped, this would hand 5x turn rate to the
+    // spiral — ~2s per 360 deg against a base spiral of ~10s — on the arbitrary
+    // subset of boats that happened to touch land in the previous 2s.
+    if (boat.controller && (boat.controller.wiggleActive || boat.controller.escActive
+        || (boat.controller.iceEscapeTimer > 0 && !boat.controller.penaltySpin))) {
         aiTurnRate = getTurnSpeed() * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
     }
 

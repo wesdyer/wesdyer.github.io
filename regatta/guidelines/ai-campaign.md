@@ -12840,3 +12840,401 @@ under grinding contact (count transitions); box gates cannot see fleet
 perturbation, only the pooled 6-set lands; DNF-at-900 beside finisher-med;
 npm run trace:update (3 seeds/30 traces) never a bare --update; watch lagoon
 rubs (+14% from A2) and bay rubs; close with the venue table on final HEAD.
+
+---
+
+# THE GROUNDING PUSH — PHASE A (2026-08-09 night, from HEAD `d8389f3`)
+
+Baselines reproduced before anything was built: leg-5 grounding tax **30.3
+s/boat / 305 episodes**, leg-3 **30.7 s/boat**, penalty tax **3.07/boat, 13.3
+s/boat spin, Rule 19 47%** — all matching the research pass exactly.
+
+## ⛔ H1 TANGENTIAL PEEL-OFF: KILLED AT THE MECHANISM GATE (`treePEEL`)
+Built as specified — the wall tangent toward course progress, chosen off a
+20-candidate sailable fan (TWA 0.65-3.1 rad, both tacks), outward candidates
+only, scored `tangency + 0.35*outwardness`, gated on way-on + non-floe + not
+mid-rounding (the existing rotation-tangent branch keeps that case).
+
+**Leg-5 gate: 30.3 → 41.1 s/boat, episodes 305 → 412.** The probe's own finish
+quartiles rose at every quartile (Q2 432→468, Q3 494→539, Q4 581→604). Two
+independent reasons, both measured, neither visible in the research pass:
+
+1. **It is nearly unreachable.** `_peel_geom.js` (new; reads the contact normal
+   at `collision_island` time, so it needs no candidate tree) says the peel
+   fires on **1.8% of land-contact frames**; 98% are blocked by "no way on".
+   `boat.speed *= 0.4` compounds EVERY FRAME of overlap, so a boat that enters
+   at 72 u/s is under 10 u/s within about six frames. **The research's "entered
+   at 72 u/s" is the episode ENTRY speed, not the typical contact frame** —
+   median contact-frame speed is ~1 u/s. Rule 2 (episodes ≠ frames) one level
+   further down than we had applied it.
+2. **The direction was wrong anyway.** When one contact frame costs 60% of
+   speed, keeping the boat near the wall is not the prize. Peeling raised the
+   episode COUNT by a third.
+
+The ping-pong is real but it is not where the seconds are.
+
+## ⭐⭐ WHAT THE TRACE FOUND INSTEAD: the reflex is switched off by the penalty
+`_grind_trace.js` (new) dumps whole episodes frame by frame. It caught a boat at
+0.3 u/s taking a land contact on EVERY frame for 1.5s with `iceEscapeTimer` at
+zero and the helm owned by plain navigation. script.js ~766 says why:
+
+    if (this.penaltySpin && this.riskState !== 'IMMINENT') { ...; return; }
+
+That `return` is **before `applyAvoidance` (~788), and the island contact reflex
+lives inside applyAvoidance (~861/896)**. A boat taking her turns spins at FULL
+THROTTLE with no grounding reflex and no avoidance at all. It closes the loop the
+penalty research had already half-named: 47% of fouls are the Rule 19 the
+collision handler writes when an overlapped boat hits land, so **grounding
+manufactures the penalty and the penalty switches off the reflex that would end
+the grounding.**
+
+Sized (`_spin_ground.js`, new): spinning 12.3 s/boat, in land contact 29.5
+s/boat, **both 2.7 s/boat = 9.2% of all land-contact time**; **22% of
+penalty-spin time is spent in contact with land**; 10.4% of grinding-episode
+frames; 12% of episodes BEGIN under a spin.
+
+## GRIND ANATOMY (the picture the tax integral could not show)
+Episodes ≥1s: median 3.1s, **duty cycle median 58%** — only 5% exceed 80%
+("glued"), 19% are under 40% ("bouncing"). Grinding is repeated re-contact, not
+one long overlap. Path 39u, net displacement 30u, mean speed 5.3 u/s.
+Helm owner across grinding-episode frames: **contact-reflex 84.6%**,
+penalty-spin 10.4%, plain-nav 3.3%, clearance 1.1%, wiggle 0.5%.
+Command stability: the commanded escape heading changes by a **median 0.0°/frame**
+— the reflex is NOT chasing a jittering normal, which removes the motivation for
+Phase D as a jitter fix. But the helm sits a standing **51°** away from it, and
+at the steerage floor (0.6) the turn rate is `0.015 * 0.6 * 60 ≈ 31°/s`, so **a
+90° escape turn takes ~2.9s against a 2.8s median episode — the escape turn
+takes as long as the grind it is meant to end.**
+
+⚠️ PROBE TRAP (rule 18, self-caught mid-session): the first ownership table
+ranked WIGGLE above the reflex and under-read the reflex by 25 points.
+Precedence is NOT source order — update() sets desiredHeading from
+wiggle/clearance/nav first (~614/657), `penaltySpin` may return before avoidance
+(~766), then applyAvoidance OVERWRITES it (~896). True order: spin > escape >
+contact-reflex > mark-reflex > wiggle > clearance > nav.
+
+## THE TWO CANDIDATES THIS PRODUCED
+Both are reachability fixes, and neither introduces a number that did not
+already exist in the file.
+
+* **`treeSPIN` — a boat taking her turns still has to keep off the rocks.** The
+  `riskState !== 'IMMINENT'` exception already says the spiral yields to
+  something worse; being aground is something worse. Guard becomes
+  `&& !aground && !(this.iceEscapeTimer > 0)`; deferring to the EXISTING 2.0s
+  latch (rather than a new timer) stops the spiral's next hard turn putting her
+  straight back on the rock. Rotation credit decays at only ~7°/s (~12551), so
+  the interruption costs ~0.24 rad of a 2π turn.
+* **`treeSNAP` — the contact reflex gets the snap turn the other two escapes
+  already have.** ~11219 grants 5x turn authority to wiggle and escape with the
+  comment "a wedged boat has no steerage". A boat aground is a wedged boat by
+  that same definition, and it was the one escape left out. Same 5x, no new
+  number. `treeBOTH` = the pair (composition rule: bench redrock pairs together).
+
+## THE LEG-5 MECHANISM GATE, ALL FOUR TREES (6 seeds, 54 boat-races each)
+The finish quartiles are whole-race clocks over the same seeds, so they are the
+more trustworthy column — the tax integral is cap-sensitive by construction and
+the research already said never to gate on it alone.
+
+| tree | leg-5 tax s/boat | episodes | Q1 | Q2 | Q3 | Q4 |
+|---|---|---|---|---|---|---|
+| `treeA2` (base) | 30.3 | 305 | 357 | 432 | 494 | 581 |
+| `treePEEL` (H1) | **41.1** | 412 | 363 | 468 | 539 | 604 |
+| `treeSPIN` | 20.3 | 208 | 295 | 398 | 455 | 531 |
+| `treeSNAP` | **15.7** | — | 295 | 357 | 404 | 491 |
+| `treeBOTH` | 15.9 | — | 302 | 372 | 419 | 514 |
+
+**The snap turn alone is the strongest single change** — leg-5 tax halved and
+every quartile above Q1 improved by 75-90s. The pair is not better than the snap
+alone (15.9 vs 15.7, and worse at Q2-Q4), which is the composition rule showing
+up again: unscoped pairs go anti-compositional.
+
+⚠️ Six seeds is a box read (rule 20 — redrock is read through the pooled sets or
+not at all). These numbers chose which candidate to bench; they do not land it.
+
+### The Rule-19 knock-on is real (`treeSPIN`, `_pen_tax`)
+Penalties **3.07 → 2.13 per boat (−31%)**, boats with ≥1 **94% → 87%**, Rule 19
+share 47% → 42%, and the foul-detector re-fire rate (itself a grinding signal)
+255 → 149 per boat-race. Leg-3 penalties 0.98 → 0.80, leg-5 0.65 → 0.24.
+⚠️ WATCH COLUMN, and an honest caveat about its size: measured "spin time" rose
+13.3 → 42.8 s/boat, but `_pen_tax` defines that as *time with `penaltySpin`
+set*, and treeSPIN deliberately holds the flag while the escape is suspended —
+so most of the increase is time NOT spent spiralling. The cost that is
+unambiguous is small: unpaid turns at the finish 0.00 → 0.06/boat = 0.8 s/boat.
+
+### The leg-3 tax moves the OTHER way on treeSPIN (30.7 → 43.1)
+while the same runs' finish quartiles improve by 40-60s at every quartile. Two
+readings, and this session cannot separate them: either the tax integral is
+tracking composition (faster boats reach leg 3 in a different fleet
+configuration) or leg 3 genuinely trades against leg 5. It is the reason the
+verdict below rests on the pooled bench and not on the per-leg integral.
+
+## ⚠️ THE CONTROL THAT CHANGED WHICH TREE LANDS (`treeSNAP2`)
+Before believing the snap turn, audit what `iceEscapeTimer > 0` actually selects.
+**The timer is decremented in exactly ONE place — inside `applyAvoidance` (~897)
+— and a penalty-spinning boat returns before it (~766). So the latch FREEZES for
+the whole spin and the flag stays true.** Granting authority on that flag
+unscoped therefore hands 5x turn rate to the SPIRAL, for as long as the boat is
+flagged, decided by whether she happened to touch land in the previous 2 seconds.
+That would clear penalties far faster and masquerade as a grounding win.
+
+`treeSNAP2` is the control: the same grant, plus `&& !penaltySpin`.
+
+| leg-5 gate | tax s/boat | Q1 | Q2 | Q3 | Q4 |
+|---|---|---|---|---|---|
+| `treeA2` base | 30.3 | 357 | 432 | 494 | 581 |
+| `treeSNAP` unscoped | 15.7 | 295 | 357 | 404 | 491 |
+| `treeSNAP2` scoped | **18.9** | 316 | 380 | 406 | 509 |
+
+**The mechanism survives the control**: scoped, the escape turn still takes the
+tax from 30.3 to 18.9 (−38%) and improves every quartile by 40-72s. The gap to
+the unscoped tree is the spiral leak, and it is not something to ship — a 5x
+spiral is ~2s per 360°, against a base spiral of ~10s and a real sailor's 10-20s,
+and it fires on an arbitrary subset of penalised boats. **`treeSNAP2` is the
+tree that goes to the pooled bench**; the frozen latch is logged as a separate
+latent defect (it also disables the floe-trajectory refinement at ~844 and the
+pack-speed discipline at ~963 for the duration of any penalty).
+
+Corroborating evidence that the leak was never the main driver: spin time PER
+PENALTY is unchanged between base and unscoped snap (13.3/3.07 = 4.3s vs
+8.8/2.09 = 4.2s) — the spirals are not running faster, there are simply fewer.
+
+## ⭐⭐ THE SNAP-TURN LANDING `3ce099a` — redrock 2.10x → 1.77x
+Pooled 6-set vs the `a2rr*` anchors (48 seeds, 432 boats). Both trees were
+benched; the SCOPED one landed.
+
+| tree | pooled med | paired med | paired mean | sets negative | fins | DNF@900 |
+|---|---|---|---|---|---|---|
+| `a2rr*` base | 459.0 | — | — | — | 430/432 | 2 |
+| `treeSNAP` unscoped | 386.0 | −69.0 | −72.3 | 6/6 (−53..−96) | 431/432 | 1 |
+| **`treeSNAP2` scoped (LANDED)** | **386.0** | **−60.0** | −68.5 | **6/6 (−50..−77)** | **432/432** | **0** |
+
+Dirt per boat, base → landed: boat rubs 11.35 → 8.84 (−22%), mark 3.39 → 2.55
+(−25%), **land 110.39 → 47.72 (−57%)**, penalties 2.80 → 2.05 (−27%). 307 of 430
+paired boats faster. **386 against her 218.2 = 1.77x**, past the <436 goal for
+the first time.
+
+The scoped tree matches the unscoped tree's headline median while finishing the
+WHOLE fleet (432/432, zero cutoffs) — so the spiral leak bought a slightly larger
+paired median and cost a boat. That is the composition trap `_pool_rr900` exists
+to catch, and it argued the same way the mechanism argument did.
+
+Goldens re-recorded, **PASS 30/30** — ⚠️ and note that the bare verify checks 20:
+`npm run trace` defaults to 2 seeds while the stored file holds 3 (10 venues × 3).
+Trap 24's seed-width lesson applies to the VERIFY side, not only to `--update`.
+Verify with `node regatta/eval/run_traces.js --seeds 3`. freeze CLEAN.
+
+## THE VENUE TABLE — final HEAD `3f26634` (anchors `a2*` → `s2*`/`cu2*`)
+Every row re-run on the final HEAD at the protocol its `a2*` anchor was recorded
+at. Paired medians are cand−base, so NEGATIVE = faster.
+
+| venue | human med | bot (a2, pre) | bot (post) | ratio | paired med | note |
+|---|---|---|---|---|---|---|
+| seatrials | 189.4 | 196 | 196 | 1.03x | 0.0 | inert (no land contacts) |
+| bay | 219.0 | 241 | 241 | 1.10x | 0.0 | inert (4/360 boats differ) |
+| lake | 223.1 | 246 | 246 | 1.10x | 0.0 | land contacts −50%; **rubs 2.47→3.03 ⚠️** |
+| ocean | 177.9 | 202 | 202 | 1.14x | 0.0 | inert |
+| lagoon | 164.9 | 267 | 272 | 1.65x | **+1.0** | ⚠️ gave back the snap turn's −6.0 |
+| river | 167.4 | 274 | 279 | 1.67x | **+2.0/+4.0** | ⚠️ the one venue that pays |
+| arctic | 212.4 | 374 | **358** | 1.69x | −14.0 | 72/72 finish both |
+| **redrock** | 218.2 | 459 | **386** | **1.77x** | **−60.0** | 6/6 sets, 432/432 fins, DNF 2→0 |
+
+Redrock **2.10x → 1.77x**, the goal was <436 and it landed at 386. Arctic gains
+16s unasked (the reflex it improves is the same one the granite isle needs).
+Bay/ocean/seatrials are inert exactly where predicted — they have no land
+contacts for the reflex to act on, which is the cleanest possible confirmation
+that the mechanism is the one named.
+
+**The two costs, stated plainly.** Lagoon and river both end slightly slower than
+the `a2*` anchors, and both are the ground-frame commit's doing, not the snap
+turn's: the snap turn alone had lagoon at −6.0 and river's finishers faster. The
+ground-frame escape traded that for river fleet completion (DNF-at-900 pooled
+over 162 boat-races: 13 base → 23 snap-only → 15 with the ground frame). Boats
+finishing at all was judged worth more than 6s of lagoon median, but it IS a
+trade and both should be re-examined; the sets are small (lagoon 2×8, river 6+12)
+and neither swing is resolved at these widths by the standing rules.
+Lake's boat rubs 2.47 → 3.03 is the third watch column.
+
+## ⏭ CARRY-FORWARD PROMPT FOR THE NEXT INSTANCE (verbatim, 2026-08-09 night close)
+State: HEAD `c14e428`, behaviour HEAD `3f26634`. **Redrock 1.77x (386 vs 218.2)**
+— the <436 goal is met, so redrock is no longer the biggest venue gap. Anchors:
+`s2*` (snap turn) and `cu2lag*`/`rivCU*` (ground frame); the `a2*` set is the
+pre-session baseline. Baseline tree `treeFIN` (≡ HEAD, verified). Goldens PASS
+30/30 at `--seeds 3`, freeze CLEAN.
+
+READ [[regatta-grounding-tax]] FIRST — the mechanism story is complete and should
+not be re-derived. Two landings, both REACHABILITY fixes rather than new prices:
+the contact reflex got the 5x snap turn that wiggle/escape already had (its
+commanded escape took ~2.9s to reach against a 2.8s median grind), and the escape
+now chooses its heading in the GROUND frame instead of the boat frame.
+
+WHAT IS OPEN, IN THE ORDER THE EVIDENCE RANKS IT:
+1. **THE TWO COSTS.** Lagoon +1.0 (was −6.0 before the ground-frame commit) and
+   river +2/+4 with finishers 5-8s slower. Both are the ground-frame commit's
+   doing, both are small sets (lagoon 2×8, river 6+12), neither is resolved at
+   those widths. Re-bench WIDER before touching either — a 6s lagoon swing is
+   inside the noise the standing rules describe.
+2. **`treeSPIN` IS STILL UNFIXED AND IS A REAL BUG.** script.js ~766: a boat
+   serving her penalty turns `return`s before `applyAvoidance`, so she has NO
+   contact reflex and no avoidance at full throttle — 9.2% of all land-contact
+   time. It was the weaker candidate this session (leg 5 30.3→20.3 but leg 3
+   30.7→43.1) and it was measured against the OLD weak reflex. The reflex is now
+   much stronger, so re-test it on this HEAD; the tree still exists.
+   Related latent defect: `iceEscapeTimer` is decremented only inside
+   applyAvoidance, so it FREEZES for the whole of any penalty — which also
+   suspends the floe-trajectory refinement (~844) and the pack-speed discipline
+   (~963) for that duration.
+3. **FAMILY B IS NOW THE FRONTIER.** bay/lake/ocean are 1.10/1.10/1.14x and their
+   WHOLE gap is extra distance on the beat (16-27% further while sailing FASTER
+   through the water) — and all three are byte-inert to everything landed this
+   session. Never decomposed. Measure before proposing a shape.
+4. Redrock's own residue: leg2-sub9 (the mark-6 bowl, +21.7 s/boat) belongs to the
+   zone-entry-rights design, NOT another local shape; leg 1 is the fleet
+   avoidance tax (899u of give-way waste, 9 tacks vs her 2-4).
+⛔ DEAD, do not rebuild: **H1 TANGENTIAL PEEL-OFF** (leg-5 30.3→41.1; fires on
+1.8% of contact frames). Phase D's jitter motivation is also dead — the commanded
+escape heading is stable at a median 0.0°/frame.
+
+GUARDRAILS (the ones that actually bit this session):
+· Actions-not-prices is now 9-for-9 — both landings changed which actions EXIST.
+· An episode's ENTRY statistic is not its typical FRAME statistic (rule 28): "72
+  u/s" was the episode entry; the median contact frame is ~1 u/s.
+· Override precedence is not source order — find the LAST writer (rule 27).
+· A timer decremented in one place freezes wherever that place is skipped (rule
+  29) — it nearly attributed the whole win to the wrong mechanism.
+· `npm run trace` verifies only 20 of the 30 stored traces. Use
+  `node regatta/eval/run_traces.js --seeds 3` and read the count in the PASS line.
+· Watch columns: lake boat rubs 2.47→3.03, lagoon, river.
+
+## POST-LANDING: WHY LAGOON, ACTUALLY (`_cur_rank.js`, `_esc_current.js`)
+The owner's read was that river and lagoon regressed because they are the two
+highest-current venues. The ranking confirms the premise and the site
+measurement refutes the conclusion for lagoon:
+
+| venue | mean kt | p50 | p90 | max | % cells >1kt | AT THE ROCKS BOATS HIT |
+|---|---|---|---|---|---|---|
+| river | 1.38 | 1.00 | 3.05 | 5.14 | 48% | **3.98** |
+| lagoon | 0.39 | 0.34 | 0.85 | 1.10 | 3% | **0.00** |
+| bay | 0.34 | 0.30 | 0.50 | 0.69 | 0% | — (no land contacts) |
+| redrock/lake/ocean/arctic/seatrials | 0.00 | — | — | — | 0% | 0.00 |
+
+Lagoon is second-highest overall and carries **no stream at its own grounding
+sites** — its current is not where its rocks are. The ground-frame escape
+therefore barely fires there, and lagoon's −6.0 → +1.0 is most likely fleet
+reshuffling off a handful of fired escapes rather than a systematic cost.
+Re-bench wider before treating it as a regression. **A venue-level property can
+be true and still not be the cause; check it at the SITES the mechanism acts on.**
+
+⭐ The same probe found lagoon's actual defect, and it is not current. With no
+stream, the outward-track figure reduces to the polar speed at the commanded
+heading — and it is ~0 on **29.8% of lagoon's land contacts**: the escape commands
+a heading inside the no-go, so the boat is told to sail straight out of the rock
+at an angle she cannot sail. Redrock is 1.5%. A sailable heading with a good
+outward track existed in ALL of them (best track median 114 u/s).
+NEXT CANDIDATE: pick the escape off the sailable fan by best outward track
+ALWAYS, not only under a stream. ⚠️ It stops being byte-inert on redrock (1.5% of
+contacts), so it needs its own gate against the `3ce099a` landing.
+
+---
+
+# RESEARCH FOR THE NEXT PUSH (2026-08-09 night, on HEAD `3f26634`)
+Owner's call: stay on redrock, it is still the highest ratio. Everything below is
+measured on the landed HEAD; `_leg_matrix.js` now prints a MEANS table beside the
+median one (rule 26 lived only in the memory before — the probe apportioned on
+medians, which is the error the owner caught last session).
+
+## REDROCK'S REMAINING 176.4 s/boat (mean), 1.81x
+| leg | human | bot | delta | ratio | share |
+|---|---|---|---|---|---|
+| 0 | 1.2 | 7.6 | 6.4 | 6.43x | 4% |
+| 1 | 29.1 | 56.2 | 27.1 | 1.93x | 15% |
+| 2 | 22.4 | 52.7 | 30.3 | **2.35x** | 17% |
+| 3 | 55.2 | 104.4 | **49.1** | 1.89x | **28%** |
+| 4 | 26.5 | 49.5 | 23.0 | 1.87x | 13% |
+| 5 | 54.5 | 84.9 | 30.4 | 1.56x | 17% |
+| 6 | 28.6 | 38.8 | 10.1 | 1.35x | 6% |
+| TOT | 217.4 | 394.0 | 176.4 | 1.81x | |
+The landing's −69.4s of mean matches the bench's −68.5 paired mean, and legs 3+5
+supplied 51.5s of it (74%) — the legs the grounding research named. Mechanism
+confirmed end to end.
+
+## ⭐⭐ FINDING 1 — THE SW-MARK BOWL IS ONE PLACE WORTH 47.7 s/boat (27% OF THE GAP)
+`_leg_where` on both legs, and the two pockets are ADJACENT:
+| pocket | delta | share of leg | human vs bot | state |
+|---|---|---|---|---|
+| leg2 sub9 (-920,-1621) | **+21.0** | 66% of leg 2 | 3.0s vs 24.0s | **armed 80%**, landAhead 54%, deflected 44% |
+| leg3 sub0 (-747,-1416) | **+26.7** | 54% of leg 3 | 3.8s vs 30.4s, 83 vs **35 u/s** | landAhead 54%, deflected 43%, wiggle 27%, **armed 7%** |
+These are the APPROACH and the EXIT of mark 5 `sw` (-883,-1628). The campaign has
+carried the bowl as an arrival problem; **the exit is the bigger half and is not a
+rounding problem at all.**
+
+`_pocket_split.js` (NEW) settles what kind of problem it is. Pocket (-830,-1520)
+r=420, 36 boat-visits: **63.9 s/boat spent inside a 420u circle at 51 u/s**;
+23.9 s/boat under 40 u/s, of which **IN LAND CONTACT only 3.5 (15%)** and **SLOW
+BUT NOT TOUCHING 20.4 (85%)**. State mix: **deflected 51%**, landAhead 39%,
+armed 33%, contact-reflex 25%, wiggle 11%, irons 10%, penalty-spin 3%.
+⇒ **THE BOWL IS NOT A CONTACT PROBLEM.** It is the FLEET AVOIDANCE TAX in
+constrained water — boats spend half their time in there deflected by rivals.
+Geometry note: a 76u rock at (-941,-1373) sits ~260u from the mark, in the exit
+corridor.
+
+## FINDING 2 — GROUNDING IS STILL THE TAIL, BUT THE ESCAPE IS NO LONGER THE LEVER
+Tax **65.7 s/boat** (was 90-100) and the coupling did NOT weaken: r = 0.95,
+**r² = 0.90**, slope 1.90 (quartiles by finish 316/31.4, 380/52.0, 406/65.4,
+509/111.4). Episodes/boat-race 16.4 → 14.8 (−10%); tax per episode 5.5 → 4.4
+(−20%). And `_esc_current` on redrock says the commanded escape is now
+near-optimal AND sailable: track into the rock **1.5%**, achieved 127.2 u/s
+against a best-possible 128.6. ⇒ **the remaining lever is ARRIVAL — why boats
+reach rock 14.8 times a race against a human who grounds ~0 — not escape quality.**
+
+## FINDING 3 — THE PENALTY-SPIN HOLE TRIPLED IN RELATIVE SIZE
+Because the landing fixed everything around it:
+| | pre | post |
+|---|---|---|
+| of land-contact time | 9.2% | **18.1%** |
+| of grinding-episode frames | 10.4% | **30.4%** |
+| episodes that BEGIN while spinning | 12% | **31%** |
+Spin-dominated episodes now last 2.3s against 1.4s for the rest.
+⚠️ BUT re-gating `treeSPIN2` (= HEAD + the fix) is AMBIGUOUS, exactly as it was
+last time: leg-3 tax 19.7 → 26.9 (worse), leg-5 18.9 → 19.8 (flat), while the
+same runs' finish quartiles improve (Q2 380 → 368, Q4 509 → 498). Settle it with
+ONE pooled 6-set bench; do not assume it either way.
+
+## FINDING 4 — THE GRIND ANATOMY AFTER THE LANDING
+| metric | pre | post |
+|---|---|---|
+| land-contact time | 29.5 s/boat | **11.5** |
+| episodes ≥1s | 435 | **112** |
+| median episode | 2.8s | **1.6s** |
+| duty cycle | 59% | **30%** |
+| "bouncing" (<40% duty) | 19% | **57%** |
+| helm tracking error | 51° | **21°** |
+
+## CONTEXT GATHERED BEFORE THE REDIRECT — FAMILY B, AND WHY IT MATTERS HERE
+`_beat_decomp` leg 1, 72 boat-legs each:
+| venue | odo | straight | tacks | AVOID_GW | AVOID_NONE | TACKWIN | CLEAN | ARMED |
+|---|---|---|---|---|---|---|---|---|
+| bay | 4942 | 2840 | 6 | **641u**/13s | 303u/8s | 221u/9s | 488u/20s | 123u/1s |
+| lake | 7324 | 4627 | **11** | **539u**/17s | 573u/19s | 278u/20s | 763u/36s | 230u/3s |
+| ocean | 8142 | 4400 | 6 | **520u**/8s | 367u/5s | 495u/15s | 2043u/35s | 1789u/14s |
+| redrock (pre) | 4140 | 1763 | 9 | **899u**/16s | 373u/10s | 349u/11s | 263u/10s | 167u |
+**Give-way avoidance costs 520-899u on ALL FOUR venues.** ⚠️ `CLEAN` is not
+waste on a beat (the straight line is unsailable upwind), so only the avoidance
+and tack buckets are interpretable. Arctic for reference: leg 1 alone is **84%**
+of its gap (139.9 s/boat, 2.19x).
+
+## THE RANKED PLAN
+1. **THE BOWL / FLEET AVOIDANCE TAX IN CONSTRAINED WATER** — the biggest single
+   place on the venue (47.7 s/boat, 27% of the gap), 85% of it NOT contact,
+   deflection-dominated. And it is the SAME term (AVOID_GW) that is bay/lake/
+   ocean's whole gap, so a win should transfer — the strongest reason to build
+   here. ⚠️ AV1 was already inert once and its defeat is overdetermined; this
+   time there is a measured PLACE and a measured state mix to aim at, which AV1
+   did not have. Measure the encounters inside the pocket before proposing a
+   shape.
+2. **`treeSPIN2`, one pooled 6-set bench.** Built, cheap, and its share tripled.
+   Ambiguous on box gates twice — the bench is the only thing that will settle it.
+3. **ARRIVAL-SIDE GROUNDING** — 14.8 arrivals per boat-race at 70+ u/s. Escape
+   quality is spent; ask what puts them there. NOT route admission (the clearance
+   bar is dead at a monotonic dose-response).
+⛔ Do NOT rebuild: H1 peel-off; Phase D latch jitter (command is stable at 0.0°/
+frame); escape heading selection on redrock (already 1.5% from optimal).
