@@ -12547,3 +12547,70 @@ med, rubs −7%, one DNF (watch); seatrials byte-equal. Goldens full --update
 PASS 20/20. freeze CLEAN.
 NEW ANCHORS: r11rr* pooled 520/294-ish fins 427/432; r11lake* r11bay*
 r11lag* r11riv* r11oc r11arc{A..D} (arctic in-time 96/106/122/125).
+
+================================================================================
+# THE ROUNDING PUSH — directive (written 2026-08-09 evening, owner-aligned)
+
+GOAL: redrock < 2x vs her 218.2 (pooled < 436; at 520 finisher-med / ~510
+DNF-at-900 on HEAD `056dc2b`), by attacking what the mark-5 decomposition
+and the owner's doctrine identified: the water AROUND roundings — the
+approach thread, the zone entry, and the exit — under correct rules.
+Anchors: r11* everywhere. Baselines for role/deflection stats are STALE
+(pre-rule-11-fix); re-measure before designing against them.
+
+## Phase 0 — re-baseline the trajectory stats on the fixed rules (no builds)
+_m5_approach.js on HEAD + add avoidanceRole/threat logging: the key number
+is WHAT SHARE OF THREAD DEVIATION IS STAND-ON (under inverted rule 11 it was
+unattributed; the fix may have moved it). Also refresh _gw_ledger2 on a new
+schema-2 recording if the owner delivers laps. 1-2 runs, ~30 min.
+
+## Phase A — THE THREAD LINE (candidate #1, biggest + cleanest)
+Target: leg-3 subs 0-7 (bot 39-57 u/s vs her 78-90, 81-161u off her line,
+0% throttle/armed, 55% avoid-deviating pre-fix). Same family: river leg 3,
+leg-5 subs 6-7, leg-1 beat share.
+BUILD (role-aware, per the owner's line-holding ruling):
+  STAND-ON boats in narrow water (navigable-clearance venue-class test, the
+  noSubsample shape) suppress avoidance deviation from the PLAN-ALIGNED
+  heading until risk is genuinely IMMINENT — hold the line the rules let
+  them hold. Give-way boats: unchanged in v1 (discrete-resolution planning
+  is Phase B/C material). Precedent: THE BAND-TRUST LANDING (same "trust
+  the router's own line" shape, biggest win of the campaign).
+GATES: mechanism gate at the subs 0-7 box (bot spd + latOff vs the
+_m5_approach baseline) BEFORE any 6-set; then pooled 6-set vs r11rr*; full
+battery (bay rubs is the watch column — the underlay is re-tuning to the
+fixed rule 11); river 16x2 (transfer expected).
+
+## Phase B — ZONE-ENTRY RIGHTS PLANNING (the owner's unifier; design task)
+One decision at 400-700u out (exactly where A1 showed no machinery makes
+any decision): WILL I ENTER THE ZONE WITH RIGHTS?
+  - predict own zone-arrival vs nearby same-leg rivals (ETA + overlap
+    geometry at the zone boundary);
+  - CONTEST: arrive first / inside-overlapped (18.2(a) verified) → commit
+    the aggressive clean line early (the owner: commitment IS the clean
+    rounding);
+  - CONCEDE: choose the go-behind / wider entry NOW, not a reactive
+    deflection at the mouth.
+Addresses BOTH the leg-2 arrival crawl (~19 s/boat, armed queue at
+250-360u) and the leg-3 band-0 exit scrum (29.5s vs 10.8, med 8 wall
+contacts — scrums are made at entry). Constraints: Freezing-Robot
+(station-keeping dead — concede = a different LINE, never a hold);
+the m5 wedge lesson (watch rubs); funnel metering stays as the fallback.
+GATES: bowl box (leg2 subs7-9 + leg3 band0 TOGETHER — they are one queue),
+mark-5 entry box, then 6-set + battery.
+
+## Phase C — residuals (only after A/B verdicts)
+  C1 leg-5 subs 6-7 medium solo stalls: ONE ESCAPE entry-shape variant —
+     futility counted in WIGGLE FAILURES (>=3 failed bursts && solo), not
+     seconds (⛔ threshold ladder dead at the fleet gate). Box-gated, stop
+     at one shape.
+  C2 the armed-approach throttle (subs 15-19, 29-69% sl<1, worth ~1-2s):
+     LAST, only with a venue-class scoping story — it re-prices the landed
+     funnel metering (lake queues are its home turf).
+
+## Standing method (unchanged + additions)
+Mechanism gate at the box before any 6-set — but remember B2: the box
+cannot see fleet perturbation; only the pooled 6-set lands. 96-seed
+protocol near threshold. DNF-at-900 med/mean quoted BESIDE finisher-med
+(the ESCAPE landing changed the population). The owner table with every
+status update. New laps: _traj_fp.js, intake same-day. Rule-18 gaps
+(18.1(a)(3), 18.3, 18.4) are a separate rules push — do not mix into A/B.
