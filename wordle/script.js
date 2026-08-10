@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const grid = document.getElementById('grid');
     const keyboardContainer = document.getElementById('keyboard');
+    const toastContainer = document.getElementById('toast-container');
 
     let state = {
         secretWord: '',
@@ -37,6 +38,31 @@ document.addEventListener('DOMContentLoaded', () => {
         updateGrid();
         updateKeyboard();
         console.log("Secret word:", state.secretWord); // For debugging
+    }
+
+    function showToast(message, duration = 3000) {
+        console.log("Toast:", message);
+        const toast = document.createElement('div');
+        toast.textContent = message;
+        toast.className = 'bg-black text-white px-4 py-2 rounded font-bold shadow-lg uppercase text-sm';
+        toastContainer.appendChild(toast);
+        setTimeout(() => {
+            toast.remove();
+        }, duration);
+    }
+
+    function handleSkip() {
+        init(true);
+        showToast('Skipped to new word');
+    }
+
+    function handleReveal() {
+        if (state.gameStatus !== 'playing') return;
+
+        state.gameStatus = 'lost';
+        showToast(state.secretWord, 5000);
+        updateStats(false);
+        showNewGameButton();
     }
 
     function updateGrid() {
@@ -112,6 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add a shake animation for invalid words
             const row = grid.children[state.currentRow];
             row.classList.add('animate-shake');
+            showToast('Not in word list');
             setTimeout(() => {
                 row.classList.remove('animate-shake');
             }, 500);
@@ -162,10 +189,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (guess === state.secretWord) {
             state.gameStatus = 'won';
+            showToast('Splendid!'); // Or random compliment
             updateStats(true);
             showNewGameButton();
         } else if (state.currentRow === 5) {
             state.gameStatus = 'lost';
+            showToast(state.secretWord.toUpperCase(), 5000); // Show word on loss
             updateStats(false);
             showNewGameButton();
         } else {
@@ -318,12 +347,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    const statsBtn = document.querySelector('button .material-symbols-outlined');
+    document.getElementById('skip-btn').addEventListener('click', () => {
+        handleSkip();
+        // Remove focus from button so enter key doesn't trigger it again
+        document.getElementById('skip-btn').blur();
+    });
+
+    document.getElementById('reveal-btn').addEventListener('click', () => {
+        handleReveal();
+        document.getElementById('reveal-btn').blur();
+    });
+
+    const statsBtn = document.getElementById('stats-btn');
     const statsModal = document.getElementById('stats-modal');
     const closeStatsBtn = document.getElementById('close-stats');
     const statsContent = document.getElementById('stats-content');
 
-    statsBtn.parentElement.addEventListener('click', () => {
+    statsBtn.addEventListener('click', () => {
         statsModal.classList.remove('hidden');
         displayStats();
     });
@@ -382,6 +422,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function saveState() {
+        // Don't save if game is over to avoid loading a stuck state or weirdness
+        // Actually saving 'lost' state is fine.
         localStorage.setItem('wordleState', JSON.stringify(state));
     }
 
