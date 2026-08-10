@@ -5715,7 +5715,51 @@ const LAND_TEXTURES = {
     coralsand:  { src: 'assets/images/terrain/lagoon/coralsand.png',  tile: 128, alpha: 0.7 },
     grass:      { src: 'assets/images/terrain/grass.png',            tile: 128, alpha: 0.5 },
     swampgrass: { src: 'assets/images/terrain/swamp/swampgrass.png', tile: 128, alpha: 0.5 },
-    redrock:    { src: 'assets/images/terrain/redrock/sandstone.png', tile: 256, alpha: 0.35 }
+    redrock:    { src: 'assets/images/terrain/redrock/sandstone.png', tile: 256, alpha: 0.35 },
+    // Delivered 2026-08-09. Takes sand's 0.7 as pre-registered — its mottle is broad tonal
+    // drift, not busy — and ISLAND_STYLES.mud is reset to this tile's own mean (#524731),
+    // so the alpha stays a pure contrast knob.
+    //
+    // ⚠️ THIS IS THE QUIETEST TILE IN THE SET, by some way. Measured luma sd at tile scale
+    // is 2.20 against sand's 3.93 and the two swards' 10-13, so 0.7 lands on-screen sd at
+    // 1.54 — below coralsand (1.80) and only just above sandstone (1.38). That is the
+    // subject doing what it was asked ("AT THIS HEIGHT MUD IS ALMOST FEATURELESS"), not a
+    // fault, but it means this alpha has less room BELOW it than any other row: turning it
+    // down erases the leaf litter, which is the only structure the tile has. If the bank
+    // reads dead at race scale the move is UP (0.85 -> sd 1.87, 1.0 -> 2.20, still inside
+    // the accepted band), never down.
+    //
+    // tile 128 is the manifest's, and it is a READABILITY floor rather than a true-size
+    // pick — the one place this tile departs from the bay-sand recipe. Measured on the
+    // delivered art, the litter marks run 18px median / 48px p95 in the 1024 master, which
+    // at 128 puts them at 25cm median and 65cm p95: about 2x life size for a dead leaf.
+    // Halving to 64 would fix the size and destroy the asset — the marks are already 2.2px
+    // median ON SCREEN at 128, so at 64 every one of them dissolves into grey noise and the
+    // bank becomes a flat brown field. Oversized leaves that read beat true-size leaves
+    // that don't, so the scale error is taken deliberately. Do not "correct" it.
+    mud:        { src: 'assets/images/terrain/swamp/mud.png',        tile: 128, alpha: 0.7 },
+    // Delivered 2026-08-09, closing the bayou's ladder: sward -> marsh -> bare mud -> water.
+    //
+    // 0.4 IS A DEPARTURE FROM THE PRE-REGISTERED 0.5, and the reason is measured rather
+    // than aesthetic. 0.5 was picked to "put it with the two swards, whose clump structure
+    // it shares" — but that assumed it would arrive at their contrast, and it did not: sd
+    // at tile scale is 16.17 against swampgrass's 10.21, half again as busy, because this
+    // tile is a genuine TWO-material mix (light clump against dark mud) where a sward is
+    // one material mottled. At 0.5 it would land on-screen sd 8.09 — the loudest ground in
+    // the game, 20% past `grass` (6.74), which is backwards for the quiet middle term of a
+    // three-step ladder. 0.4 lands 6.47: between the two swards, just under the loudest
+    // accepted ground, with the clump structure fully intact. Same tile 128 as its two
+    // neighbours.
+    //
+    // Grain was CHECKED, not assumed, because the manifest flagged even-scatter as this
+    // tile's top risk. Component counting says the clumps are 2.4x swampgrass's, but that
+    // is an artifact of comparing discrete clumps to a connected sward — on the radially
+    // averaged power spectrum, which does not care about topology, marsh's dominant grain
+    // is 128px in the master against swampgrass's and mud's 171px and `grass`'s 146px. It
+    // is the FINEST-grained ground of the four, not the coarsest, so 128 is right and
+    // retiling it to 64 would have halved it out of family. Use the spectrum, not blob
+    // counts, if this is ever revisited.
+    marsh:      { src: 'assets/images/terrain/swamp/marsh.png',      tile: 128, alpha: 0.4 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];
@@ -6156,17 +6200,49 @@ function propSprite(kind) {
         const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
         if (!reg[kind]) return null;
         const i = kind.indexOf('-');
-        s = PROP_SPRITES[kind] = { img: new Image(), world: reg[kind].world || 40 };
+        s = PROP_SPRITES[kind] = { img: new Image(), world: reg[kind].world || 40,
+                                   box: reg[kind].srcBox || null };
         s.img.src = `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
     }
     return s;
 }
 
-// Props draw in THREE PASSES, one per plane — the compiled trait says which stratum a
+// DRAW ONLY THE INKED PART OF A SPRITE. `srcBox` is [x, y, w, h] as fractions of the frame,
+// naming the rectangle the art actually occupies; the rest of the quad is transparent and
+// costs real time to composite anyway. Measured on the bayou: props were filling 36 Mpx a
+// frame against a 1.3 Mpx canvas, and the worst offenders were the derived tree trunks at
+// 4.5% ink — a 440x440 quad drawn to show a 93px stem, because a derived part keeps the full
+// master frame so it stays in register with its canopy.
+//
+// This keeps that guarantee and skips the emptiness: the sub-rect maps to exactly the same
+// world position, since the full frame maps to (-w/2, -w/2, w, w) and a fraction of the
+// source maps to the same fraction of the destination. Nothing moves, 95% of the trunk fill
+// disappears.
+//
+// The box CANNOT be computed at runtime — reading pixels to find it taints the canvas under
+// file://, which is the same wall submergedTint hit. It is measured off the bake instead and
+// carried on the kind, like contactR and wash.
+function drawSpriteBoxed(ctx, img, s, w) {
+    const b = s.box;
+    if (!b) { ctx.drawImage(img, -w / 2, -w / 2, w, w); return; }
+    const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height;
+    ctx.drawImage(img, b[0] * iw, b[1] * ih, b[2] * iw, b[3] * ih,
+                  -w / 2 + b[0] * w, -w / 2 + b[1] * w, b[2] * w, b[3] * w);
+}
+
+// Props draw in FOUR PASSES, one per plane — the compiled trait says which stratum a
 // prop belongs to, and the pass is called from that stratum's place in drawScene:
 //   seabed   with the bottom (after the seagrass, before the swell) — everything at the
 //            surface runs over it, which is most of what sells "under water"; drawn at
 //            reduced alpha so the water above keeps a say in its colour.
+//   float    ON the water and UNDER the land — a lily pad, a raft of hyacinth. It runs
+//            after every mark the water makes (swell, wakes, cat's-paws, wind waves) so
+//            nothing ripples across something floating on top of them, and before
+//            drawIslands so the land covers whatever part of the prop lies on it.
+//            THAT ORDERING IS THE ENTIRE "water objects are not drawn on land" RULE: it
+//            is occlusion by draw order, so it costs no clip path, no per-prop land test
+//            and no per-frame work at all. Distinguish it from `surface` by asking what
+//            holds the object up — water floats a pad, ground holds up a log.
 //   surface  over the land and the shore, under the fleet — a trunk, a beached log.
 //   canopy   over the boats — a crown a hull passes beneath.
 // `world` sizes the sprite frame exactly as MARK_SPRITES does; `heading` rotates about
@@ -6174,7 +6250,7 @@ function propSprite(kind) {
 // Seabed translucency is doing REAL work at 0.72: the baked ripple lattice below shows
 // through the sprite, which puts the water's own texture ON the coral — the strongest
 // single "it is under there" cue this renderer has.
-const PROP_PLANE_ALPHA = { seabed: 0.72, surface: 1, canopy: 1 };
+const PROP_PLANE_ALPHA = { seabed: 0.72, float: 1, surface: 1, canopy: 1 };
 
 // A SEABED sprite is seen THROUGH the water column: its colours washed toward the
 // venue's water (source-atop), softened by a whisper of blur (the refraction cue —
@@ -6206,24 +6282,242 @@ function submergedSprite(s) {
     s.sub = { canvas: c, tint };
     return c;
 }
+// ── WATER AT THE FOOT OF A STANDING OBJECT ──────────────────────────────────
+// A cypress grows OUT OF the bayou, but a sprite pasted on the water is a sticker: nothing
+// says the wood displaces anything, so the trunk reads as hovering a few inches above the
+// surface. Two marks fix that, and both are about the water rather than the tree.
+//
+//   THE POOL   a soft darkening hugging the base. Wet wood is dark, the trunk shades the
+//              water it stands in, and a little depth gathers against anything vertical.
+//              This is what actually welds the sprite down; the foam alone reads as a ring
+//              drawn AROUND a floating object.
+//   THE LAP    two or three short arcs of pale water at the waterline, breathing in and out
+//              on a slow cycle. Deliberately BROKEN and never a closed ring — drawSurf's
+//              note is the lesson here ("foam that only pulses in place reads as a dashed
+//              BORDER however irregular you make it"), and a complete circle is that failure
+//              in its purest form. Arcs that come and go read as water moving; a ring reads
+//              as a decal.
+//
+// Biased into the wind, using the same field surf reads: the upwind side of a piling is
+// where the water piles up and whitens, and the lee stays quiet. That asymmetry is most of
+// what stops the effect looking stamped, and it costs one regionWindAt per prop.
+//
+// Alpha sits well under SURF_MAX_ALPHA (0.55). That layer is a sea breaking on a coast; this
+// is water lapping a post, and the brief was "gently".
+const WASH_ALPHA  = 0.26;   // peak whiteness of a lap
+const WASH_POOL   = 0.20;   // peak darkness of the pool at the base
+const WASH_PERIOD = 3.4;    // seconds per breath — slow enough never to read as a pulse
+function drawPropWash(ctx) {
+    const props = state.course && state.course.props;
+    if (!props || !props.length) return;
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewRadius = cullRadius(ctx);
+    const t = state.time;
+    // Stable per-object phase, so two trunks never breathe in step and no trunk crawls
+    // between sessions. Same trick drawSurf uses, and it touches no RNG stream.
+    const hash = (u, v) => { const h = Math.sin(u * 12.9898 + v * 78.233) * 43758.5453; return h - Math.floor(h); };
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (const p of props) {
+        const k = reg[p.kind];
+        if (!k || !k.wash) continue;
+        const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
+        const r = (k.world || 40) * (p.scale || 1) * k.wash;
+        if ((x - camX) ** 2 + (y - camY) ** 2 > (viewRadius + r * 3) ** 2) continue;
+
+        // The pool. Transparent at the very centre because the trunk covers that anyway,
+        // strongest just outside the wood, gone by 1.6r.
+        const pool = ctx.createRadialGradient(x, y, r * 0.35, x, y, r * 1.6);
+        pool.addColorStop(0, `rgba(18,26,12,${WASH_POOL})`);
+        pool.addColorStop(0.45, `rgba(18,26,12,${(WASH_POOL * 0.5).toFixed(3)})`);
+        pool.addColorStop(1, 'rgba(18,26,12,0)');
+        ctx.fillStyle = pool;
+        ctx.beginPath();
+        ctx.arc(x, y, r * 1.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        const w = regionWindAt(x, y);
+        // Where the water is being pushed FROM: the windward side, which is the side that laps.
+        const up = w.direction + Math.PI;
+        const seed = hash(x, y);
+        for (let i = 0; i < 3; i++) {
+            // Spread the arcs round the trunk, weighted toward windward rather than pinned
+            // to it — a piling laps all round, just harder on one side.
+            const spread = (i - 1) * 1.15 + (hash(x + i * 37, y - i * 19) - 0.5) * 0.7;
+            const mid = up + spread;
+            const lean = Math.cos(spread);                        // 1 windward, -1 lee
+            const phase = (t / WASH_PERIOD + seed + i * 0.37) % 1;
+            // In and out, never a hard on/off: sin gives the arc a swell and a retreat.
+            const breath = Math.sin(phase * Math.PI);
+            const a = WASH_ALPHA * breath * (0.35 + 0.65 * Math.max(0, lean))
+                    * Math.max(0.35, Math.min(1, w.speed / 8));
+            if (a <= 0.004) continue;
+            const rr = r * (1.02 + 0.05 * breath);                // the lap runs up and back
+            const half = 0.5 + 0.22 * breath;                     // and widens as it comes
+            ctx.strokeStyle = `rgba(255,255,255,${a.toFixed(3)})`;
+            ctx.lineWidth = Math.max(0.8, r * 0.13);
+            ctx.beginPath();
+            ctx.arc(x, y, rr, mid - half, mid + half);
+            ctx.stroke();
+        }
+    }
+    ctx.restore();
+}
+
+// ── A CROWN YOU CAN SEE YOUR BOAT THROUGH ───────────────────────────────────
+// The canopy plane is defined as the one drawn OVER the fleet, which is exactly what makes
+// it the one plane able to lose a boat. Measured on a cypress crown parked over the player:
+// 77% of the visible hull went, and the crowns are effectively solid discs (interior alpha
+// holes are 0.0%, 0.0% and 0.4% on the three bayou canopies), so "you can see a bit through
+// the leaves" was not true — nothing came through at all.
+//
+// So a crown fades while a hull is under it. This is the ordinary game answer to an
+// occluder and it is deliberately NOT tied to land or water: a boat vanishing is a
+// legibility problem wherever it happens, and the live oak roots on high ground overhanging
+// the exact corner a boat wants to cut. Tying opacity to the ground underneath would also
+// make a crown straddling a shoreline half-transparent along an arbitrary line.
+//
+// Driven by DISTANCE, so it eases in and out on its own with no timers and no popping, and
+// A STRAIGHT LINE IN BOAT LENGTHS, not a curve fitted to the crown (designer, 2026-08-09):
+// full opacity at TWENTY hull lengths out, fully clear with the hull dead under the stem,
+// linear between. Stated in boat lengths because that is the unit the player actually reads
+// distance in, and it makes the ramp identical for every tree — a tupelo and a live oak
+// clear at the same range even though one crown is half again the other's width.
+//
+// THE FLOOR IS ZERO, AND THE TRUNK IS WHY THAT IS HONEST. Earlier versions held the crown at
+// 34% and then 5%, on the argument that a hull sailing through empty air where a tree stands
+// trades one lie for another. But the tree does not vanish when the crown does: the stem
+// keeps drawing on the SURFACE plane at full opacity and keeps its collider, so what is left
+// under your boat is the wood you are about to hit with the leaves out of the way. That is a
+// truer picture than a ghost crown, not a compromise between two.
+//
+// TWENTY LENGTHS IS A LONG RAMP, and it is doing something broader than uncovering your hull:
+// at 1120u a tree ten lengths off still sits at 50%, so the whole neighbourhood thins around
+// the player and the wood closes back in behind. Nothing pops, nothing switches state, and
+// there is no edge anywhere at which a crown becomes solid. On a venue carrying 1500 trees
+// that means roughly ninety crowns are partly open at any moment — which is the look being
+// asked for, an opening that travels with the boat rather than a tree that blinks.
+const CANOPY_FADE_MIN = 0.0;     // crown left with the hull dead under the stem
+const BOAT_LEN = 56;             // hull in world units; the manifest's scale anchor
+const CANOPY_FADE_RANGE = 20 * BOAT_LEN;
+// THE PLAYER'S BOAT ONLY, and that asymmetry is the point rather than an oversight. The fade
+// exists to solve one problem — you must never lose your own hull under a tree — and every
+// crown it opens is a crown that stopped being scenery. Letting the whole fleet trigger it
+// costs twice: crowns flicker all race as the AI sails through them, and a dimming treetop
+// becomes a free radar pip announcing a rival you could not otherwise see. A competitor
+// disappearing under the leaves is the venue working correctly.
+function canopyAlpha(p) {
+    const boats = state.boats;
+    if (!boats || !boats.length) return 1;
+    const me = boats.find(b => b.isPlayer);
+    if (!me) return 1;
+    const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
+    const d = Math.hypot(me.x - x, me.y - y);
+    if (d >= CANOPY_FADE_RANGE) return 1;
+    return CANOPY_FADE_MIN + (1 - CANOPY_FADE_MIN) * (d / CANOPY_FADE_RANGE);
+}
+
+// WHICH SPRITE THIS PROP SHOWS IN THIS PLANE, which is not always its own.
+//
+// A TWO-PLANE KIND draws in both passes from ONE placement. A whole tree is the case: the
+// stem belongs under the fleet and the crown over it, so a designer who drops "Live oak
+// tree" in the channel should get a hull that passes beneath the leaves and stops on the
+// wood — without having to know the sprite is really two, or place them twice and trust
+// they line up. The kind names its halves in `parts` (VenueDoc.PROP_KINDS) and this returns
+// the half for the pass being drawn; the parts are cut from the same master by treesplit.py
+// and share a frame, so they register exactly.
+//
+// Everything else answers with its own sprite in its own plane, exactly as before. The
+// separate `-trunk` and `-canopy` kinds stay placeable for the cases the pair cannot cover:
+// a bare snag with no crown, or a crown reaching in from a tree rooted off the map.
+function propSpriteFor(p, plane) {
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const parts = (reg[p.kind] || {}).parts;
+    if (parts) return parts[plane] ? propSprite(parts[plane]) : null;
+    return (p.plane || 'surface') === plane ? propSprite(p.kind) : null;
+}
+
+// THE EXACT CULL RADIUS IS HALF THE DIAGONAL, not 0.6 of it. The camera rotates, so the
+// region a player can see is the canvas turned about its centre, and the circle that
+// contains it has radius diag/2 — that is the whole requirement. A sprite is visible when
+// its own half-width reaches that circle.
+//
+// The old test asked `0.6*diag + full width`, over-reaching by 0.1*diag plus another half
+// width. On the planted bayou, where a crown can be 440u across, that admitted a circle
+// 1.9x the area it needed to and about half of every prop drawn was off screen. Measured
+// after: 116 prop draw calls a frame fell to 63 with nothing changing on screen.
+//
+// Kept as a named helper because drawVegetation, drawShoals and drawPropWash all had the
+// same 0.6 in them, and a cull constant that drifts between layers is how one layer starts
+// popping in at the corner of the screen while its neighbour does not.
+function cullRadius(ctx) {
+    return Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.5;
+}
+
+// ── SPATIAL INDEX OVER THE PROPS ────────────────────────────────────────────
+// Walking every prop in every pass is fine for a venue with a dozen; the planted bayou has
+// 1555, and four passes over it is 6220 slots visited to find the ~56 that draw. That work
+// is invisible while a software rasteriser dominates the frame, and it is NOT invisible on a
+// GPU, where the fill collapses and whatever the CPU does per frame is what is left.
+//
+// So: bucket props into a coarse grid once, and visit only the buckets the view touches.
+// Rebuilt when the props array identity changes, which is once per course compile — props do
+// not move (the only motion is `drift`, and that is a visual offset well under one cell).
+const PROP_CELL = 600;
+function propGrid() {
+    const course = state.course;
+    if (!course || !course.props) return null;
+    if (course._propGrid && course._propGrid.src === course.props) return course._propGrid;
+    const cells = new Map();
+    course.props.forEach((p, i) => {
+        const key = `${Math.floor(p.x / PROP_CELL)},${Math.floor(p.y / PROP_CELL)}`;
+        let a = cells.get(key);
+        if (!a) cells.set(key, a = []);
+        a.push(i);
+    });
+    return (course._propGrid = { src: course.props, cells });
+}
+
 function drawProps(ctx, plane) {
     const props = state.course && state.course.props;
     if (!props || !props.length) return;
-    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const viewRadius = cullRadius(ctx);
     const camX = state.camera.x, camY = state.camera.y;
-    for (const p of props) {
-        if ((p.plane || 'surface') !== plane) continue;
-        const s = propSprite(p.kind);
+    // Reach one cell beyond the view so a big crown centred just outside still draws; the
+    // per-prop test below is what actually decides, this only narrows the search.
+    const grid = propGrid();
+    const pad = viewRadius + 460;
+    const visit = [];
+    if (grid) {
+        const cx0 = Math.floor((camX - pad) / PROP_CELL), cx1 = Math.floor((camX + pad) / PROP_CELL);
+        const cy0 = Math.floor((camY - pad) / PROP_CELL), cy1 = Math.floor((camY + pad) / PROP_CELL);
+        for (let cy = cy0; cy <= cy1; cy++)
+            for (let cx = cx0; cx <= cx1; cx++) {
+                const a = grid.cells.get(`${cx},${cy}`);
+                if (a) for (let k = 0; k < a.length; k++) visit.push(props[a[k]]);
+            }
+    }
+    const list = grid ? visit : props;
+    for (const p of list) {
+        const s = propSpriteFor(p, plane);
         if (!s || !s.img.complete || !s.img.naturalWidth) continue;
         const w = s.world * (p.scale || 1);
-        const limit = viewRadius + w;
+        const limit = viewRadius + w * 0.5;
         const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
         if ((x - camX) ** 2 + (y - camY) ** 2 > limit ** 2) continue;
+        // A crown the player is sitting under fades to nothing, and a fully transparent
+        // drawImage still costs the composite. Worth an explicit skip on a venue holding
+        // 1500 trees: the fade reaches twenty hull lengths, so the crowns nearest the
+        // camera — the big ones, the expensive ones — are exactly the ones at zero.
+        const alpha = (PROP_PLANE_ALPHA[plane] || 1)
+                    * (plane === 'canopy' ? canopyAlpha(p) : 1);
+        if (alpha <= 0.004) continue;
         ctx.save();
-        ctx.globalAlpha = PROP_PLANE_ALPHA[plane] || 1;
+        ctx.globalAlpha = alpha;
         ctx.translate(x, y);
         if (p.heading) ctx.rotate(p.heading);
-        ctx.drawImage(plane === 'seabed' ? submergedSprite(s) : s.img, -w / 2, -w / 2, w, w);
+        drawSpriteBoxed(ctx, plane === 'seabed' ? submergedSprite(s) : s.img, s, w);
         ctx.restore();
     }
 }
@@ -9082,9 +9376,15 @@ function drawCourseMiniMap() {
     // this view exists to plan around — but they are drawn as a WASH with no outline. An
     // inked edge here is the difference between "you may cross this, slowly" and "sail
     // round it", and the second one is a lie the player would plan on.
-    // Not the paint zones: the chart is information, and a visual-only zone carries none —
-    // drawn in the shoal's warning sand it would read as a hazard that is not there.
-    const chartShoals = (state.course.islands || []).filter(l => l.awash && !l.paint && l.vertices && l.vertices.length >= 3);
+    // KEYED ON DRAG, not on who renders it. The chart is information, and what makes a
+    // shape informative here is that crossing it costs something — a visual-only zone
+    // carries nothing, and drawn in the shoal's warning sand it would read as a hazard
+    // that is not there. This used to test `!l.paint`, which was the same answer back
+    // when every paint zone was dragless and the wrong one the moment the bayou's weed
+    // arrived: a 0.6-drag hyacinth mat is precisely what a sailor opens this view to plan
+    // around. `shoalMul < 1` is the same condition _hasShoals uses for the physics, so
+    // the chart now warns about exactly the set of things that can slow you down.
+    const chartShoals = (state.course.islands || []).filter(l => l.awash && l.shoalMul < 1 && l.vertices && l.vertices.length >= 3);
     if (chartShoals.length) {
         ctx.beginPath();
         for (const isl of chartShoals) ringPath(isl.vertices);
@@ -15541,6 +15841,68 @@ function drawBoundary(ctx) {
     ctx.restore();
 }
 
+// ── WHAT A MATERIAL READS AS ON THE CHART ───────────────────────────────────
+//
+// ⚠️ THESE ROWS ARE OVERRIDES, NOT THE REGISTRY. What a material looks like is
+// ISLAND_STYLES' answer, and a row here earns its place only where the CHART wants a
+// different one than the water does: ice pale enough to read as ice against dark glass,
+// coral sand kept sand-coloured in both slots. Everything else DERIVES, which is what
+// makes a new kind correct on the map the day it is added instead of the day somebody
+// remembers this table exists.
+//
+// It used to fall through to ICE, and that is precisely the failure a second colour table
+// produces. Gatorgrass Bayou's banks are `mud` and `marsh`, neither of which had a row, so
+// all 24 of them drew #f2f9ff — snow white — and the braided channels the whole venue is
+// built around read as a glacier on an olive chart.
+//
+// At module scope rather than inside drawMinimap, where it was rebuilt on every frame:
+// this is a lookup table and a pure function of a style name, so it is neither per-frame
+// state nor something a test should have to redraw a chart to ask about.
+const MINIMAP_ISLAND = {
+    tropical: { body: '#fde6b1', top: '#84cc16' },
+    grass:    { body: '#7aaa1d', top: '#4d7c0f' },
+    swampgrass: { body: '#a09453', top: '#4d7c0f' },
+    ice:      { body: '#b8dcf5', top: '#f2f9ff' },
+    redrock:  { body: '#cc6533', top: '#d98e57' },
+    granite:  { body: '#4b5563', top: '#374151' },
+    // Coral sand: the lagoon's beaches, kept sand-coloured in both slots — a mask
+    // isle full of cream sand IS its own cap.
+    coralsand: { body: '#efe4cf', top: '#efe4cf' },
+    // Gatorgrass Bayou's banks, and the clearest case yet for why this table exists: the
+    // CHART wants them darker than the water does.
+    //
+    // On the course, mud reads against textured olive water in daylight and its own material
+    // colour is right. The minimap paints water as a flat 0.9-alpha wash of the venue's base
+    // — no texture, no light — and against that the derived values arrived at only -27 luma
+    // for mud and -7 for marsh. Seven is nothing: the braided banks the whole venue is built
+    // around were dissolving into the channel at chart size, which is precisely the size at
+    // which you need to see where the maze is.
+    //
+    // Taken down to about -50 and -32 against the water, and kept inside the olive-brown
+    // family so they still read as the same two materials — and 18 luma apart from each
+    // other, so marsh still reads as the lighter margin between sward and bank.
+    mud:      { body: '#37301f', top: '#37301f' },
+    marsh:    { body: '#4b4228', top: '#4b4228' },
+    // Fallback only. A bar's real chart colour is DERIVED per shape (shoalTintFor), so a
+    // tan bar and a coral-white bar read differently here exactly as they do on the course.
+    shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }
+};
+// An explicit row wins; otherwise the material's own colours, so the map cannot disagree
+// with the water about what a thing is.
+//
+// `top` is the fill a DOC venue actually uses — compiled shapes are `fromMask`, which
+// takes the top slot and skips the cap pass entirely — so the choice between veg and body
+// is the whole picture, not a detail of the middle. A wooded island shows its CANOPY from
+// above; bare ground shows the GROUND. `trees` is the flag that already knows which is
+// which, so it decides here rather than a second list of exceptions.
+function minimapIsland(style) {
+    const row = MINIMAP_ISLAND[style];
+    if (row) return row;
+    const st = ISLAND_STYLES[style];
+    if (!st) return MINIMAP_ISLAND.ice;      // an unknown style keeps the old default
+    return { body: st.body, top: st.trees ? (st.veg || st.body) : st.body };
+}
+
 function drawMinimap() {
     if (!minimapCtx) { const c = document.getElementById('minimap'); if(c) minimapCtx = c.getContext('2d'); }
     const ctx = minimapCtx;
@@ -15617,8 +15979,12 @@ function drawMinimap() {
         for (const isl of state.course.islands || []) {
             if (!isl.paint || isl.hidden || !isl.vertices) continue;
             mmPoly(isl.vertices);
-            ctx.fillStyle = isl.kind === 'seagrass'
-                ? `rgba(${seagrassTone(SEAGRASS_TONES[0]).join(',')},0.55)`
+            // A vegetated zone shows in its own plant's darkest tone; a bare tint zone
+            // shows in the hero water. Reads the same VEG_STYLES row the bed itself
+            // bakes from, so the map and the world cannot drift apart.
+            const spec = isl.veg ? VEG_STYLES[isl.veg] : null;
+            ctx.fillStyle = spec
+                ? `rgba(${vegTone(spec.tones[0], spec).join(',')},0.55)`
                 : `rgba(${hero[0]},${hero[1]},${hero[2]},0.9)`;
             ctx.fill('evenodd');
         }
@@ -15711,22 +16077,6 @@ function drawMinimap() {
         }
     }
 
-    // Islands (style-aware: ice reads as pale glacial blue, not land)
-    const MINIMAP_ISLAND = {
-        tropical: { body: '#fde6b1', top: '#84cc16' },
-        grass:    { body: '#7aaa1d', top: '#4d7c0f' },
-        swampgrass: { body: '#a09453', top: '#4d7c0f' },
-        ice:      { body: '#b8dcf5', top: '#f2f9ff' },
-        redrock:  { body: '#cc6533', top: '#d98e57' },
-        granite:  { body: '#4b5563', top: '#374151' },
-        // Coral sand: the lagoon's beaches, kept sand-coloured in both slots — a mask
-        // isle full of cream sand IS its own cap.
-        coralsand: { body: '#efe4cf', top: '#efe4cf' },
-        // Fallback only. A bar's real chart colour is DERIVED per shape below
-        // (shoalTintFor), so a tan bar and a coral-white bar read differently here
-        // exactly as they do on the course.
-        shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }
-    };
     if (state.course.islands) {
         // Body first. Shoals draw their body and are then skipped by the cap pass below:
         // the cap is vegetation or snow, and a bar under water has neither. Paint zones
@@ -15738,8 +16088,8 @@ function drawMinimap() {
                 : isl.awash
                 ? `rgba(${shoalTintFor(isl).join(',')},0.6)`
                 : isl.fromMask
-                ? (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.ice).top
-                : (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.tropical).body;
+                ? minimapIsland(isl.style).top
+                : minimapIsland(isl.style).body;
             ctx.beginPath();
             if (isl.vertices.length > 0) {
                 const p0 = t(isl.vertices[0].x, isl.vertices[0].y);
@@ -15759,7 +16109,7 @@ function drawMinimap() {
             // Mask shapes are keyholed; an inset "cap" ring is meaningless and
             // paints blobs across the water.
             if (isl.fromMask) continue;
-            ctx.fillStyle = (MINIMAP_ISLAND[isl.style] || MINIMAP_ISLAND.tropical).top;
+            ctx.fillStyle = minimapIsland(isl.style).top;
             ctx.beginPath();
             if (isl.vegVertices.length > 0) {
                 const p0 = t(isl.vegVertices[0].x, isl.vegVertices[0].y);
@@ -17430,9 +17780,10 @@ function draw() {
     updateDriftingProps(performance.now());
     drawShallows(ctx);
     drawShoals(ctx);
-    // Seagrass grows ON the bar, so it paints over the shoal sand — and still under
-    // every surface layer, like everything else on the bottom.
-    drawSeagrass(ctx);
+    // Rooted bottom vegetation grows ON the bar, so it paints over the shoal sand — and
+    // still under every surface layer, like everything else down there. Floating weed is
+    // the same function on the other plane and is drawn much later; see below.
+    drawVegetation(ctx, 'bottom');
     // The reef mass sits over sand and weed, then seabed props (coral heads and their
     // kin) close out the bottom — a head placed on a reef draws over it, and every
     // layer of the moving surface runs across them all.
@@ -17453,18 +17804,8 @@ function draw() {
     // water, so they go over the crests the body sits beneath.
     // drawIslandShadows(ctx);
     drawParticles(ctx, 'current');
-    // Nav aids are paint ON THE WATER, so they must go UNDER the land — drawn
-    // after drawIslands they ran across the coastline and the rocky island.
-    // Gate line, ladder rungs and laylines are all derived from a windward GATE
-    // and mean nothing on an island rounding, so they are skipped there.
-    drawActiveGateLine(ctx);
-    // Ladder rungs measure progress up a windward leg and have no meaning on a
-    // single island rounding. The start/finish line and the laylines do, so they
-    // stay — skipping drawActiveGateLine took the start line with it.
-    if (state.course.type !== 'islandRound') drawLadderLines(ctx);
-    drawLayLines(ctx);
-    drawMarkZones(ctx);
-    drawRoundingArrows(ctx);
+    // The nav aids used to draw HERE, and they now draw over the floating stratum instead —
+    // see the block after drawPropWash for why.
     // ── Everything physical, in ONE pass, in document order ─────────────────
     // It used to be two passes with three layers wedged between them — all land, then
     // disturbed air, the boundary and brash, then all floes. That put every floe in front
@@ -17483,11 +17824,85 @@ function draw() {
     // branding running across a coastline is exactly what it used to look like.
     drawBoundary(ctx);
 
+    // FLOATING PROPS — on the water, behind the land. Placed here and nowhere else, and the
+    // two neighbours are both load-bearing:
+    //   after drawBoundary, because a pad is a thing floating IN the water rather than a mark
+    //   painted ON it, and the limit's own rule is that what stands in the water passes over
+    //   it (the wind shadow, the land, the marks and the fleet all do);
+    //   before drawIslands, which is what actually keeps water objects off the land — the
+    //   bank paints over whatever part of a cluster laps onto it, for free.
+    // Everything the water does (swell, wakes, gusts, wind waves) is already finished above,
+    // so nothing ripples across a pad that is floating on top of it.
+    //
+    // FLOATING WEED SHARES THIS SLOT, and that is the point of putting them together: a lily
+    // bed and a cluster of pad SPRITES are the same substance answering to the same rule, so
+    // they belong in one stratum rather than two. Everything the water does — the swell, the
+    // wakes, the cat's-paws, the wind waves — is finished above, so a wake never runs across a
+    // mat and say it was painted on the surface rather than floating on it. The bed draws
+    // first and the props over it, because a placed cluster sits on top of the bed it is part
+    // of.
+    //
+    // ⚠️ THE WEED USED TO DRAW AFTER THE LAND, ON PURPOSE, and this reverses it. The old
+    // reasoning was that weed piles up against a bank and laps onto the mud, so a hard
+    // coastline cutting a mat off is the wrong picture. That is true of the mat's EDGE and
+    // false of everything behind it: what it actually produced was lily pads floating in the
+    // middle of a dry mud bank, several pad-widths inland, which is a worse picture than a
+    // trimmed one and reads as a bug rather than as weed. A water plant is not on land, so
+    // the coastline trims it — the same rule the float props follow, by the same mechanism,
+    // costing nothing. If the hard trim ever needs softening, the fix is the mat's own edge
+    // ramp (bakeVegSprite already feathers on distance-to-edge), NOT drawing it over the land.
+    drawVegetation(ctx, 'surface');
+    drawProps(ctx, 'float');
+    // The lap at the foot of anything standing IN the water. Here rather than beside the
+    // trunk sprite for the same reason the float props are here: it is a mark on the WATER,
+    // so the land has to be able to cover it — a trunk set back on a bank gets no waterline,
+    // which is correct and free. The sprite it belongs to draws later, on `surface`, over it.
+    drawPropWash(ctx);
+
+    // ── THE COURSE'S OWN GEOMETRY, OVER EVERYTHING FLOATING ON THE WATER ────
+    // Start/finish line, ladder rungs, laylines, mark zones, rounding arrows.
+    //
+    // These are not scenery. They are the only thing on screen saying where the course IS,
+    // and a player who cannot see the start line cannot start. So they sit above every
+    // floating thing: a lily bed, a hyacinth mat, a raft of pad sprites.
+    //
+    // ⚠️ THEY MOVED DOWN FROM ABOVE drawBoundary, and what moved them is the floating
+    // stratum that now sits between. Weed and float props draw AFTER the limit — a pad is a
+    // thing in the water rather than a mark painted on it — so nav aids left in their old
+    // slot were painted over by every bed they crossed, and on Gatorgrass Bayou the start
+    // line disappeared under a raft.
+    //
+    // STILL UNDER THE LAND, which was the original reason they sat early: drawn after
+    // drawIslands they ran across the coastline, and a layline over a headland says you can
+    // sail there. Land is the one thing that must occlude them, and it still does — that is
+    // the whole distinction, and it is not arbitrary. Nav aids go OVER what you can sail
+    // through (weed, bars, painted zones) and UNDER what you cannot (land).
+    //
+    // WHAT THIS REVERSES, stated plainly: the limit's own rule that "everything painted on
+    // the surface — the gate line, the ladder rungs, the laylines — passes beneath it". They
+    // now pass OVER it. Deliberate, and the same trade as the weed: a start line erased by a
+    // band of club branding is no better than one erased by a lily pad, the limit is a
+    // static edge while these are what you steer by, and the overlap is peripheral anyway —
+    // the limit is at the arena rim and only a long layline ever reaches it.
+    //
+    // Gate line, ladder rungs and laylines are all derived from a windward GATE and mean
+    // nothing on an island rounding, so they are skipped there.
+    drawActiveGateLine(ctx);
+    // Ladder rungs measure progress up a windward leg and have no meaning on a
+    // single island rounding. The start/finish line and the laylines do, so they
+    // stay — skipping drawActiveGateLine took the start line with it.
+    if (state.course.type !== 'islandRound') drawLadderLines(ctx);
+    drawLayLines(ctx);
+    drawMarkZones(ctx);
+    drawRoundingArrows(ctx);
+
     drawDisturbedAir(ctx);
     drawIslands(ctx);
     // Surf sits ON the shore, so it goes over the land and under the air layer.
     drawSurf(ctx);
-    // Surface props: over the land they stand on, under everything that races.
+    // Surface props: over the land they stand on, under everything that races. This is the
+    // plane for a thing the GROUND holds up — a trunk, a beached log — as against `float`
+    // above, which is for a thing the WATER holds up and which the land therefore covers.
     drawProps(ctx, 'surface');
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
@@ -18244,14 +18659,15 @@ const ISLAND_STYLES = {
     // ⚠️ NOT the same change as `coralshoal`, which stays keyed to `coralsand`: Tropic Sand
     // bars are genuinely a paler, cooler sand, and that pairing is deliberate.
     //
-    // ⚠️ THIS ENTRY IS THE SAND BAR ALONE, despite `shallows` and `seagrass` also naming
-    // `shoal` as their look. Neither reads a colour from here: both are `paint: true`, so
-    // drawShoals skips them, and both are `awash`, so drawIslands skips them too — the
-    // shallows take WATER_CONFIG.shallowColor and the meadows take SEAGRASS_TONES. Editing
-    // body/stroke/veg/rock here therefore moves sand bars and nothing else. Verified by
-    // flipping this value and re-reading every drawn shape on all ten venues: 9 `shoal`
-    // shapes moved, the 8 `tropicshoal` were byte-identical, nothing else was touched.
-    // If either of those two is ever rewired to read the style, that stops being true.
+    // ⚠️ THIS ENTRY IS THE SAND BAR ALONE, despite `shallows`, `seagrass` and the bayou's
+    // four weeds all naming `shoal` as their look. None of them reads a colour from here:
+    // every one is `paint: true`, so drawShoals skips them, and every one is `awash`, so
+    // drawIslands skips them too — the shallows take WATER_CONFIG.shallowColor and the
+    // vegetated zones take their VEG_STYLES row's tones. Editing body/stroke/veg/rock here
+    // therefore moves sand bars and nothing else. Verified by flipping this value and
+    // re-reading every drawn shape on all ten venues: 9 `shoal` shapes moved, the 8
+    // `tropicshoal` were byte-identical, nothing else was touched. If any of those is ever
+    // rewired to read the style, that stops being true.
     //
     // No trees, no rocks and no stroke worth the name — the crisp shoreline is exactly the
     // cue that says "this is land", so a shoal must not have one. Its edge is a gradient.
@@ -18259,7 +18675,108 @@ const ISLAND_STYLES = {
     // Coral-white shoal — THE SAME SAND as `coralsand`, exactly as `shoal` is the same
     // sand as `tropical`: a bar is the beach continuing under the water, so each beach
     // look has its bar look. shoalTintFor derives what the water does to it per shape.
-    coralshoal: { body: '#efe4cf', stroke: '#ddd0ad', veg: '#efe4cf', rock: '#ddd0ad', trees: false }   // same sand as coralsand, kept equal
+    coralshoal: { body: '#efe4cf', stroke: '#ddd0ad', veg: '#efe4cf', rock: '#ddd0ad', trees: false },  // same sand as coralsand, kept equal
+    // ── THE BAYOU'S GROUND ──────────────────────────────────────────────────
+    // Bare swamp mud — body is the bayou-mud tile's DELIVERED mean (2026-08-09), which came
+    // in at #524731 against a spec of #5a5140: about 8 luma darker and appreciably warmer
+    // (the blue channel dropped 15 against the red's 8). The other three are the spec's own
+    // offsets from its body carried onto the new one rather than left where they were —
+    // stroke was 21/19/16 below the body and stays 21/19/16 below it, and likewise veg and
+    // rock above. Left unmoved, the stroke's blue channel would have landed within 1 of the
+    // body's and the coastline would have washed out. No trees: cypress stands in the water
+    // and on the hummocks, not out on a bare bank. `veg` and `rock` are drier mud rather
+    // than a green — the granite/redrock convention for a look that has no vegetation of
+    // its own, which is what keeps a mud bank from sprouting a meadow fringe it never had.
+    mud:      { body: '#524731', stroke: '#3d3421', veg: '#635741', rock: '#675d45', trees: false },
+    // The transition ground, and its body is literally the average of its two
+    // neighbours' means — which is what the marsh tile's own note asks for: the three
+    // grounds have to read as one place grading through itself rather than three
+    // materials butted together. This one DOES carry vegetation, so `veg` is the swamp's
+    // sedge green.
+    //
+    // SUPERSEDED 2026-08-09 by the delivered tile's own mean (#685c37), per the recipe —
+    // the average-of-neighbours rule above was only ever the stand-in for a tile that had
+    // not arrived, and once one has, base-equals-tile-mean is what keeps LAND_TEXTURES'
+    // alpha a pure contrast knob. stroke and rock carry their previous offsets from the
+    // body (-27/-25/-19 and -7/-5/+4); veg stays the swamp's absolute sedge green.
+    //
+    // ⚠️ THE LADDER IS LOPSIDED AND THE ART IS WHY, not this hex. Measured on the delivered
+    // tiles, the three grounds run swampgrass 145 -> marsh 92 -> mud 72 in luma, where an
+    // even grade would put the middle at 108: the marsh sits 17 luma low, so it reads much
+    // closer to the bank than to the sward. The cause is one phase, not the whole tile —
+    // split by luma, the marsh's MUD phase is #594f32 against the delivered bank's #524731
+    // (7 luma, an excellent match, the two genuinely read as one material continuing) while
+    // its SEDGE phase is #7e6f3d against the sward's #a09454, fully 35 luma dark. The
+    // clumps do not read as the same sawgrass thinning out; they read as a darker plant.
+    // Raising this hex would NOT fix that — it would lift the mud phase away from the bank
+    // it currently matches and lose the one thing the tile got right. The fix, if it is
+    // worth one, is a regenerated tile with the sedge range restated; the manifest note
+    // carries the numbers.
+    marsh:    { body: '#685c37', stroke: '#4d4324', veg: '#4d7c0f', rock: '#61573b', trees: false },
+    // The mud BAR — dark mud, like the bank it continues, and NOT the pale silt this
+    // entry painted from the venue's first build until 2026-08-09.
+    //
+    // ⚠️ JUDGE ANY CHANGE BY THE COMPOSITE, NOT BY WHETHER THE HEX LOOKS LIKE MUD. That
+    // warning is the one thing the old note got right and it is restated here unchanged:
+    // between this value and the pixel sit submergedTint's mix and luma gain (0.77 on this
+    // venue's water) and then SHOAL_ALPHA_CORE's 0.62 over the water itself. #6e6449
+    // arrives on screen at (88,89,55).
+    //
+    // ── WHY IT USED TO BE PALE, AND WHY THAT STOPPED BEING TRUE ─────────────
+    // The old argument ran: the bayou's water is dark olive, so a dark bar would be a
+    // 0.9-drag trap nobody can see, therefore paint the pale silt that settles on a flat.
+    // That was CORRECT ARITHMETIC ON A MIX THAT NO LONGER APPLIES. It was measured when
+    // every bar took SHOAL_IN_WATER (0.38), which drags a bottom two-thirds of the way to
+    // the water and eats its saturation — under that mix the original #6e6449 really did
+    // land ~9-14 luma off the channel, and pale really was the only way out. Bare sediment
+    // was later split onto SHOAL_SAND_IN_WATER (0.16) precisely because 0.38 was destroying
+    // these colours, and that fix silently inverted this entry's premise: at 0.16 the body
+    // survives the column, so dark now reads as dark. Nobody re-derived the hex afterwards.
+    //
+    // ── WHY THIS VALUE ──────────────────────────────────────────────────────
+    // The bar has TWO neighbours and a hex has to clear both. Against the WATER it must be
+    // visible; against the BANK it must not read as land, or a boat sails around a shape it
+    // was entitled to cross (the shoal contract's second half — "unmistakably there, and
+    // unmistakably NOT land"). Sweeping the bank's own hue ramp through the composite and
+    // scoring the WORST of the three separations picks this tone. Note the constraint that
+    // binds has flipped: pale bars lose the water, dark bars lose the bank, and the two
+    // failures are a few hex apart.
+    //     body      vs base   vs shallow   vs bank    worst
+    //     #c5b28f    +18.5       +0.6       +45.2       0.6   <- what used to ship
+    //     #6e6449    -13.5      -31.4       +13.2      13.2   <- this
+    //     #675d45    -16.2      -34.0       +10.5      10.5
+    //     #524731    -24.8      -42.6        +1.9       1.9   <- = the bank, reads as land
+    //
+    // ⚠️ THAT TABLE IS MODELLED, AND THE MODEL IS ONLY GOOD FOR RANKING. It composites
+    // against the WATER_CONFIG hexes, and the water actually drawn around this bar renders
+    // near luma 92 — well below shallowColor's 127 — because depth blending and the surface
+    // layers (swell, gusts, wind waves, rain) all sit over it. So do not read those margins
+    // as on-screen values. MEASURED on the real frame, camera parked on the bar and both
+    // variants shot against the same water:
+    //     #c5b28f  bar luma 98.5 vs water 92.8  ->  +5.7   low contrast, but NOT invisible
+    //     #6e6449  bar luma 83.4 vs water 92.0  ->  -8.6   half again the separation, dark
+    // The honest summary is that the pale bar was weak rather than broken, and this one is
+    // both stronger and the right material. An earlier draft of this note called the pale
+    // value invisible on the strength of the modelled +0.6; the render does not support that
+    // and it is corrected here.
+    //
+    // #6e6449 IS THE VALUE THIS ENTRY ORIGINALLY HELD, chosen as "mud, a bit lighter" and
+    // abandoned for a mix that has since been fixed. The editor's Mud Flat chip was never
+    // migrated to the pale value and so has been showing this one the whole time — the
+    // chip-vs-renderer drift closes itself here rather than needing a third answer.
+    //
+    // The crisp-shoreline cue still does the heavy lifting on the land question: a bar has
+    // no stroke worth the name and fades out at its rim, so the bank margin is a margin on
+    // top of a structural difference, not the only thing separating bar from bank.
+    //
+    // ⚠️ IF THIS BAR NEEDS TO READ HARDER, THE BODY HEX IS THE WRONG LEVER — it is worth
+    // about 14 luma of swing across its whole usable range, and both ends of that range hit
+    // a different neighbour. What actually caps the contrast is that only the bar's very
+    // centre reaches SHOAL_ALPHA_CORE: this shape is 183x169 units against a 60-unit
+    // feather, so the drag field it rasterises is mostly rim. Measured on the baked sprite,
+    // peak alpha is the full 0.62 but the MEAN over the covered area is 0.269. Widen the
+    // shape, shorten `feather`, or raise SHOAL_ALPHA_CORE — do not chase it with the hex.
+    mudflat:  { body: '#6e6449', stroke: '#5f563f', veg: '#6e6449', rock: '#5f563f', trees: false }
 };
 
 // How a bar comes through the water. Two numbers, because a shoal has to answer two
@@ -18304,11 +18821,22 @@ const SHOAL_REF_LUMA = 128;       // luma of the bright tropical water the sand 
 //     mix 0.38, body #b8a67e -> #666b55     darker grey-olive (worse)
 //     mix 0.16, body #d0ad74 -> #8b7a54     reads as sand
 //
-// SAND ONLY. Coral bars, reef rubble and the seagrass meadows keep SHOAL_IN_WATER: they sit
-// under bright lagoon water where 0.38 was right, and Tropic Sand Shoals are deliberately
-// out of scope here. Passing the mix per call rather than editing the shared constant is
-// what keeps it that way.
+// BARE SEDIMENT UNDER DARK WATER — sand bars, and now the bayou's mud flats. Coral bars,
+// reef rubble and the seagrass meadows keep SHOAL_IN_WATER: they sit under bright lagoon
+// water where 0.38 was right, and Tropic Sand Shoals are deliberately out of scope here.
+// Passing the mix per call rather than editing the shared constant is what keeps it that
+// way.
+//
+// The mud flat was added to this list AFTER FAILING EXACTLY THE FAILURE DESCRIBED ABOVE.
+// Rendered on Gatorgrass Bayou at 0.38 over olive water (luma 98) it composited to within
+// 9 luma of the water around it — a 0.9-drag bar, the most expensive object in the game,
+// effectively invisible. Same diagnosis as the river's sand: the mix had eaten the
+// saturation, and no body colour was going to buy it back.
 const SHOAL_SAND_IN_WATER = 0.16;
+// Which looks are bare bottom sediment rather than something living on it. A set, because
+// there are two of them now and there will be more the first time another venue authors a
+// bar of its own material.
+const BARE_SEDIMENT_LOOKS = { shoal: true, mudflat: true };
 // The derivation, factored out because it is true of ANYTHING on the bottom — the sand
 // bar and the seagrass meadow are the same physics under the same light, so they go
 // through the same two steps and can never disagree about what the water does to them.
@@ -18345,9 +18873,9 @@ function shoalTintFor(isl) {
         return [parseInt(s.substring(0, 2), 16), parseInt(s.substring(2, 4), 16), parseInt(s.substring(4, 6), 16)];
     };
     const st = (isl && ISLAND_STYLES[isl.style]) || ISLAND_STYLES.shoal || {};
-    // Sand bars see less of the column than the shared default assumes — see
+    // Bare sediment sees less of the column than the shared default assumes — see
     // SHOAL_SAND_IN_WATER. Everything else on the bottom keeps the original mix.
-    const mix = (isl && isl.style === 'shoal') ? SHOAL_SAND_IN_WATER : undefined;
+    const mix = (isl && BARE_SEDIMENT_LOOKS[isl.style]) ? SHOAL_SAND_IN_WATER : undefined;
     return submergedTint(rgb(st.body, [221, 195, 154]), mix);
 }
 
@@ -18452,9 +18980,11 @@ function drawShallows(ctx) {
     const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x, camY = state.camera.y;
     for (const isl of state.course.islands) {
-        // Seagrass is also `paint`, but it is drawSeagrass' layer — it goes OVER the
-        // shoal sand, and this pass runs under it.
-        if (!isl.paint || isl.hidden || isl.kind === 'seagrass') continue;
+        // A vegetated zone is also `paint`, but it is drawVegetation's layer — it goes
+        // OVER the shoal sand (or over the finished water, if it floats), and this pass
+        // runs under both. Keyed on `veg` rather than on the kind name, so a new plant
+        // does not have to be remembered here.
+        if (!isl.paint || isl.hidden || isl.veg) continue;
         const limit = viewRadius + isl.radius;
         if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
         // Keyed on the tint like the shoal bake: a venue swap or a live palette edit
@@ -18465,45 +18995,273 @@ function drawShallows(ctx) {
     }
 }
 
-// ── SEAGRASS ────────────────────────────────────────────────────────────────
+// ── VEGETATION ZONES ────────────────────────────────────────────────────────
 //
-// A meadow is the second painted zone, and the opposite fill: where shallows is one flat
-// tint with a blurred rim, seagrass is HUNDREDS OF SMALL DARK CLUMPS and no tint at all —
-// because from this camera's altitude a bed is not a surface, it is patchy mass against
-// bright sand. The clumps are scattered in code from the shape's own seeded PRNG (never
-// Math.random — render must not touch the eval RNG stream, and a meadow that rearranged
-// itself every reload would read as a bug): arrangement is code's job, which is the
-// compose.py argument applied at runtime.
+// A bed is the painted zone's opposite fill: where shallows is one flat tint with a
+// blurred rim, vegetation is HUNDREDS OF SMALL CLUMPS and no tint at all — because from
+// this camera's altitude a bed is not a surface, it is patchy mass. The clumps are
+// scattered in code from the shape's own seeded PRNG (never Math.random — render must not
+// touch the eval RNG stream, and a bed that rearranged itself every reload would read as
+// a bug): arrangement is code's job, which is the compose.py argument applied at runtime.
 //
-// The edge is DENSITY, not blur. A meadow peters out — clumps thin and shrink over the
-// same feather band the other zones use — so the rim stays crisp per-clump and soft as a
-// mass, which is exactly how the aerial references read. A few larger sandy holes are
-// carved the same way, so the interior is patchwork rather than carpet.
+// The edge is DENSITY, not blur. A bed peters out — clumps thin and shrink over the same
+// feather band the other zones use — so the rim stays crisp per-clump and soft as a mass,
+// which is exactly how the aerial references read. A few larger holes are carved the same
+// way, so the interior is patchwork rather than carpet.
 //
-// The three green tones go through submergedTint like the shoal's sand: grass and bar
-// are the same bottom under the same light, so Pearl Lagoon shows bright olive through
-// turquoise and a night venue would show a dark smudge, automatically.
-const SEAGRASS_TONES = [[43, 74, 45], [58, 94, 52], [74, 112, 58]];   // dark / mid / light olive
-const SEAGRASS_ALPHA = 0.85;      // per-clump; overlap builds the darker heart of a patch
-// A meadow lies FLAT on the bottom — the deepest-reading thing in the water short of the
-// reef mass — so past submergedTint it takes a second pull toward the water, and the
-// whole layer draws translucent enough for the ripple lattice to read through it. Same
-// deepening the coral heads got, tuned a notch further because grass has no relief to
-// protect: it is a stain on the seabed, and a stain is mostly water.
-const SEAGRASS_EXTRA_WASH = 0.3;
-const SEAGRASS_LAYER_ALPHA = 0.66;
-function seagrassTone(base) {
+// ONE BAKER, FIVE PLANTS. This was seagrass alone and the renderer keyed on the literal
+// string 'seagrass'. The bayou then wanted four more beds, every one needing the same
+// machinery — seeded scatter, density rim, carved holes — with a different plant stamped
+// into it. So the STRUCTURE lives here once and VEG_STYLES holds what differs, with
+// SHAPE_KINDS' `veg` naming the spec: the same one-list rule MARK_KINDS and PROP_KINDS
+// already follow. Adding a plant is a row, not a renderer.
+//
+// PLANE IS THE LOAD-BEARING AXIS, and it is physics rather than decoration:
+//
+//   'bottom'   the plant is UNDER the water. It takes submergedTint, it draws with the
+//              seabed layers, and every surface layer — wake, gust, wind wave, cat's-paw
+//              — runs across it, because all of those are happening above it.
+//   'surface'  the plant is ON the water. NO submergedTint, because nothing stands between
+//              it and the sun; and it draws AFTER the surface layers, because a wake does
+//              not run across a hyacinth raft — the raft is what the wake stops at.
+//              Getting that backwards is exactly what would make a floating mat read as a
+//              stain on the water instead of a thing lying on top of it.
+//
+// Every clump function owns its own drawing, because THE CLUMP IS THE PLANT: a seagrass
+// tussock, a lily pad and a fleck of duckweed are different objects, and one parameterised
+// ellipse could only ever have been one of them wearing the others' colours.
+
+// A tussock: a few overlapped ellipses, mostly dark, the light tone rare — large clean
+// value masses, not per-blade noise. UNCHANGED from the original seagrass bake, RNG draw
+// for RNG draw, so every existing meadow bakes byte-identically across this refactor.
+function clumpTussock(g, cx, cy, scale, rand, tones, alpha) {
+    const cs = (7 + rand() * 9) * scale;
+    const n = 3 + Math.floor(rand() * 3);
+    for (let b = 0; b < n; b++) {
+        const t = rand();
+        const tone = tones[t < 0.55 ? 0 : t < 0.86 ? 1 : 2];
+        g.fillStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},${alpha})`;
+        g.beginPath();
+        g.ellipse(cx + (rand() - 0.5) * cs, cy + (rand() - 0.5) * cs,
+                  cs * (0.32 + rand() * 0.3), cs * (0.2 + rand() * 0.24),
+                  rand() * Math.PI, 0, Math.PI * 2);
+        g.fill();
+    }
+}
+
+// Hydrilla and coontail — a submerged CANOPY, not a tussock. It grows up off the bottom
+// in fine whorled strands and from above reads as a soft dark cloud with no edge of its
+// own, so this is more ellipses, smaller, stretched every which way, and the light tone
+// nearly absent. What keeps it faint is the layer alpha and the wash, NOT the clump:
+// draw the clump pale and the bed disappears at the rim first, which is the wrong half to
+// lose — the rim is where a sailor decides whether to cross.
+function clumpCanopy(g, cx, cy, scale, rand, tones, alpha) {
+    const cs = (9 + rand() * 11) * scale;
+    const n = 4 + Math.floor(rand() * 4);
+    for (let b = 0; b < n; b++) {
+        const t = rand();
+        const tone = tones[t < 0.62 ? 0 : t < 0.92 ? 1 : 2];
+        g.fillStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},${alpha})`;
+        g.beginPath();
+        g.ellipse(cx + (rand() - 0.5) * cs * 1.3, cy + (rand() - 0.5) * cs * 1.3,
+                  cs * (0.2 + rand() * 0.26), cs * (0.14 + rand() * 0.2),
+                  rand() * Math.PI, 0, Math.PI * 2);
+        g.fill();
+    }
+}
+
+// A lily pad, and THE NOTCH IS THE WHOLE SILHOUETTE: Nymphaea and Nuphar both carry a
+// wedge cut from one side in to the centre, and at this size that single feature is what
+// separates a pad from a blob of algae. Drawn as an arc closed through its own centre — a
+// filled circle minus a wedge — at an arbitrary rotation, because a bed of pads all
+// notched the same way is the tell that they were stamped rather than grown.
+//
+// SIZE follows the art pipeline's own answer instead of a fresh guess: bayou-lilypad is
+// declared at world 18, so pads here run 11..19 across and the composed sprite and the
+// procedural bed agree about how big a lily pad is.
+//
+// One in sixteen is in flower. It is the venue's only bright accent, and it is worth
+// having: olive on olive on olive is what this place looks like, and a white star in it
+// is how you notice the bed at all.
+function clumpPad(g, cx, cy, scale, rand, tones, alpha) {
+    const n = 1 + (rand() < 0.55 ? 1 : 0);
+    for (let b = 0; b < n; b++) {
+        const r = (5.5 + rand() * 4) * scale;
+        const t = rand();
+        const tone = tones[t < 0.5 ? 0 : t < 0.85 ? 1 : 2];
+        const a0 = rand() * Math.PI * 2;
+        const notch = 0.28 + rand() * 0.2;          // radians of missing wedge
+        const px = cx + (rand() - 0.5) * r * 2.4, py = cy + (rand() - 0.5) * r * 2.4;
+        g.fillStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},${alpha})`;
+        g.beginPath();
+        g.moveTo(px, py);
+        g.arc(px, py, r, a0 + notch, a0 + Math.PI * 2 - notch);
+        g.closePath();
+        g.fill();
+        if (rand() < 0.0625) {
+            g.fillStyle = `rgba(238,236,220,${alpha})`;
+            g.beginPath();
+            g.arc(px, py, r * 0.3, 0, Math.PI * 2);
+            g.fill();
+        }
+    }
+}
+
+// Water hyacinth — a RAFT, so the read is coverage rather than clumps: the rosettes touch
+// each other and the mat carries a hard outer edge where wind has shoved it up against
+// something. Each rosette is a round leaf cluster with a lighter crown, and roughly one in
+// twenty carries the lavender flower spike that makes hyacinth unmistakable at any scale.
+function clumpRosette(g, cx, cy, scale, rand, tones, alpha) {
+    const cs = (6 + rand() * 6) * scale;
+    const n = 3 + Math.floor(rand() * 3);
+    for (let b = 0; b < n; b++) {
+        const t = rand();
+        const tone = tones[t < 0.45 ? 0 : t < 0.85 ? 1 : 2];
+        g.fillStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},${alpha})`;
+        g.beginPath();
+        g.ellipse(cx + (rand() - 0.5) * cs * 1.6, cy + (rand() - 0.5) * cs * 1.6,
+                  cs * (0.42 + rand() * 0.3), cs * (0.38 + rand() * 0.28),
+                  rand() * Math.PI, 0, Math.PI * 2);
+        g.fill();
+    }
+    if (rand() < 0.05) {
+        g.fillStyle = `rgba(178,158,214,${alpha})`;
+        g.beginPath();
+        g.ellipse(cx + (rand() - 0.5) * cs, cy + (rand() - 0.5) * cs,
+                  cs * 0.2, cs * 0.3, rand() * Math.PI, 0, Math.PI * 2);
+        g.fill();
+    }
+}
+
+// Lemna. An individual duckweed plant is about 3 mm across, so at this altitude it is not
+// objects at all — it is a FILM. Many tiny flecks at a tight spacing, near-uniform in
+// tone, which buys the one property this plant is here for: an unbroken green surface,
+// against which anything that opens a lane through it is instantly legible.
+function clumpFleck(g, cx, cy, scale, rand, tones, alpha) {
+    const cs = (3 + rand() * 3) * scale;
+    const n = 5 + Math.floor(rand() * 4);
+    for (let b = 0; b < n; b++) {
+        const t = rand();
+        const tone = tones[t < 0.5 ? 0 : t < 0.85 ? 1 : 2];
+        g.fillStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},${alpha})`;
+        g.beginPath();
+        g.ellipse(cx + (rand() - 0.5) * cs * 3, cy + (rand() - 0.5) * cs * 3,
+                  cs * 0.5, cs * 0.42, rand() * Math.PI, 0, Math.PI * 2);
+        g.fill();
+    }
+}
+
+// tones      dark / mid / light, PRE-submersion. A bottom plant's three greens go through
+//            submergedTint like the shoal's sand — grass and bar are the same bottom under
+//            the same light, so Pearl Lagoon shows bright olive through turquoise and a
+//            night venue shows a dark smudge, automatically. A surface plant's do not.
+// wash       bottom only: how far past submergedTint the tones are pulled toward the
+//            water. A bed is a stain on the seabed and a stain is mostly water.
+// layerAlpha the whole baked layer's opacity — the knob for how much this plant asserts.
+// clumpAlpha per-clump; overlap is what builds the darker heart of a patch.
+// spacing    world units between scatter candidates. Small = dense = a mat, not a bed.
+// cover      the density ceiling in the bed's own interior, before rim and holes thin it.
+// holeEvery  one carved hole per this many units of radius (min 2), so a big bed is
+//            patchwork rather than carpet.
+// mass       optional {tone, alpha}: a soft-edged fill of the whole shape laid down BEFORE
+//            the clumps. Absent for a BED, where the water between plants is the point —
+//            present for a SURFACE, where it is not.
+//
+//            This is the difference between a raft and a scatter, and scatter is what you
+//            get without it: the first hyacinth mat was clumps alone at cover 0.97, and it
+//            still read as confetti on open water, because however tight the spacing gets,
+//            round clumps on a transparent ground leave channels between them. A mat has
+//            no channels — that is what makes it a mat and what makes ploughing one cost
+//            three-quarters of your speed. Same device the reef mass uses, same reason.
+const VEG_STYLES = {
+    // Pearl Lagoon's meadow. Every number here is the one the seagrass bake shipped with.
+    seagrass: { plane: 'bottom', clump: clumpTussock,
+                tones: [[43, 74, 45], [58, 94, 52], [74, 112, 58]],
+                wash: 0.3, layerAlpha: 0.66, clumpAlpha: 0.85,
+                spacing: 24, cover: 0.9, holeEvery: 150 },
+
+    // ── THE BAYOU'S FOUR ────────────────────────────────────────────────────
+    // Submerged hydrilla — the keel-grabber, and the one you are meant to half-see. It is
+    // FAINT ON PURPOSE AND VISIBLE ON PURPOSE: a 0.6-drag bed you cannot see at all is
+    // the unfair trap the mudflat note argues against, and a bed as loud as a lily pad
+    // would stop being the thing you notice a beat too late. These two numbers are the
+    // whole dial — layerAlpha for how much of it survives, wash for how much water is
+    // mixed into it — and they are the first place to go if it reads wrong on screen.
+    weedbed:  { plane: 'bottom', clump: clumpCanopy,
+                tones: [[30, 52, 32], [42, 68, 40], [56, 86, 48]],
+                wash: 0.4, layerAlpha: 0.45, clumpAlpha: 0.8,
+                spacing: 20, cover: 0.95, holeEvery: 190 },
+    // Rooted lilies: pads ON the surface, bed FIXED to the bottom. NO mass — discrete
+    // objects with open water between them, so the spacing is loose and the cover never
+    // closes. Seeing the black channel between pads is what a lily bed looks like, and it
+    // is also the one thing keeping it from reading as a hyacinth mat.
+    //
+    // Tones were raised a full step after the first render: a pad in sunlight is
+    // distinctly brighter and yellower than the water it floats on, and picked at the
+    // water's own value the whole bed came out as a texture rather than as objects. What
+    // sells a floating leaf is that it is LIT and the water is not.
+    //
+    // unitsPerPx 1 — THE ONLY STYLE THAT ASKS FOR IT, and the reason is the pad itself. Every
+    // other row here is a texture, where the shared 2.5 costs nothing you can see. A pad is an
+    // OBJECT with a hard edge and a notch cut in it, and at 2.5 it was rasterised 6px across
+    // to be displayed at 15 — soft blobs with the notch smeared out, which is the one feature
+    // separating a lily bed from algae. See bakeVegSprite for the full argument; the cost is
+    // one 1786px canvas baked once per race.
+    lilybed:  { plane: 'surface', clump: clumpPad, unitsPerPx: 1,
+                tones: [[92, 124, 58], [122, 156, 74], [152, 186, 96]],
+                wash: 0, layerAlpha: 0.95, clumpAlpha: 0.95,
+                spacing: 26, cover: 0.82, holeEvery: 170 },
+    // The hyacinth raft: a MASS with rosettes worked over it, tightest spacing and highest
+    // cover in the table. Every one of those says the same thing — this is a surface you
+    // plough, not a garden you sail between. Few holes for the same reason.
+    weedmat:  { plane: 'surface', clump: clumpRosette,
+                tones: [[70, 104, 52], [100, 134, 68], [132, 166, 92]],
+                mass: { tone: [112, 148, 70], alpha: 0.88 },
+                wash: 0, layerAlpha: 0.96, clumpAlpha: 0.94,
+                spacing: 13, cover: 0.97, holeEvery: 220 },
+    // The film, and a film is nothing BUT mass — the flecks are the grain on top of it.
+    // Brightest tones in the table, because Lemna is a vivid yellow-green and is the
+    // lightest thing on this venue's water: its entire job is contrast against the
+    // tannin-dark channel it lies on, so that a lane opened through it is unmissable.
+    duckweed: { plane: 'surface', clump: clumpFleck,
+                tones: [[112, 146, 62], [132, 166, 76], [150, 182, 92]],
+                mass: { tone: [126, 160, 74], alpha: 0.8 },
+                wash: 0, layerAlpha: 0.82, clumpAlpha: 0.9,
+                spacing: 9, cover: 0.98, holeEvery: 260 }
+};
+
+function vegTone(base, spec) {
+    // ON the water: lit by the sky directly, so nothing is done to it. A floating mat put
+    // through submergedTint would be a mat painted the colour of the bottom.
+    if (spec.plane === 'surface') return base.slice();
     const t = submergedTint(base);
     const W = window.WATER_CONFIG || {};
     const hex = String(W.heroColor || W.baseColor || '#0ea5e9').replace('#', '');
     const w = [parseInt(hex.substr(0, 2), 16), parseInt(hex.substr(2, 2), 16), parseInt(hex.substr(4, 2), 16)];
-    return t.map((c, i) => Math.round(c * (1 - SEAGRASS_EXTRA_WASH) + w[i] * SEAGRASS_EXTRA_WASH));
+    return t.map((c, i) => Math.round(c * (1 - spec.wash) + w[i] * spec.wash));
 }
-const SEAGRASS_SPACING = 24;      // world units between scatter candidates (~2.6 m)
-function bakeSeagrassSprite(isl) {
-    const tones = SEAGRASS_TONES.map(t => seagrassTone(t));
+
+function bakeVegSprite(isl, spec) {
+    const tones = spec.tones.map(t => vegTone(t, spec));
     const R = isl.radius + 10;
-    const px = Math.max(32, Math.min(1024, Math.ceil((R * 2) / SHOAL_UNITS_PER_PX)));
+    // ── HOW FINE TO BAKE, AND WHY IT IS A PER-STYLE QUESTION ────────────────
+    // This used to borrow SHOAL_UNITS_PER_PX outright, and that constant carries its own
+    // justification: 2.5 is safe "because this is a smooth gradient with no detail to lose,
+    // and it upscales for free". That is TRUE OF A SHOAL and true of the mass below — and
+    // false of anything with an edge in it. A lily bed is discrete objects: at 2.5 a 15-unit
+    // pad was rasterised 6px across and then blown back up to 15 on screen, so every pad
+    // arrived as a soft blob and the notch that is supposed to say "lily pad rather than
+    // algae" was the first thing to dissolve.
+    //
+    // So the number belongs to the STYLE. Anything that reads as a texture keeps 2.5 and
+    // costs what it always did; a style made of objects asks for 1 and gets rasterised at
+    // the size it is drawn, with no upscale between the arc and the screen.
+    //
+    // The cap moves 1024 -> 2048 to let that happen: the biggest bed in the game needs
+    // 1786px at 1 unit/px. It is inert for every style still on 2.5 — the largest of those
+    // asks for 715px — so nothing that did not opt in changes size, cost or appearance.
+    const upp = spec.unitsPerPx || SHOAL_UNITS_PER_PX;
+    const px = Math.max(32, Math.min(2048, Math.ceil((R * 2) / upp)));
     const scale = px / (R * 2);
     const cv = document.createElement('canvas');
     cv.width = cv.height = px;
@@ -18546,9 +19304,9 @@ function bakeSeagrassSprite(isl) {
         return true;
     };
 
-    // Sandy holes: a handful of soft low-density ellipses, scaled to the bed. These are
-    // what keep a big meadow from reading as one stamped carpet.
-    const holeN = Math.max(2, Math.round(isl.radius / 150));
+    // Open-water holes: a handful of soft low-density ellipses, scaled to the bed. These
+    // are what keep a big bed from reading as one stamped carpet.
+    const holeN = Math.max(2, Math.round(isl.radius / spec.holeEvery));
     const holes = [];
     for (let i = 0; i < holeN; i++) {
         holes.push({ x: isl.x + (rand() * 2 - 1) * isl.radius * 0.7,
@@ -18558,39 +19316,63 @@ function bakeSeagrassSprite(isl) {
     const smooth = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
     const feather = isl.shoalFeather || 120;
 
+    // THE MASS, under the clumps, for the plants that are a surface rather than a bed.
+    //
+    // RASTERISED FROM THE SHAPE'S OWN EDGE RAMP, not blurred, and the difference is not
+    // cosmetic. A canvas blur is a fixed number of PIXELS while the ramp is a distance in
+    // the WORLD, so the two agree at exactly one sprite size and nowhere else — the first
+    // attempt asked for blur(feather/2.5 * scale) and got 15px of smear on a 160px sprite,
+    // which erased the mass it was meant to soften. Rasterising uses the same
+    // distance-to-edge the clump density uses, so the mat's opacity, its thinning rosettes
+    // and its drag all feather over one band: the edge you see is the edge you feel.
+    //
+    // Baked small and scaled up. A mass is a smooth gradient with no detail to lose, so the
+    // upscale is free and it keeps the per-pixel ring walk cheap.
+    if (spec.mass) {
+        const m = vegTone(spec.mass.tone, spec);
+        const mp = Math.max(24, Math.min(96, px));
+        const mc = document.createElement('canvas');
+        mc.width = mc.height = mp;
+        const mg = mc.getContext('2d');
+        const img = mg.createImageData(mp, mp);
+        const d = img.data;
+        const step = (R * 2) / mp;
+        for (let j = 0; j < mp; j++) {
+            const wy = isl.y - R + (j + 0.5) * step;
+            for (let i = 0; i < mp; i++) {
+                const wx = isl.x - R + (i + 0.5) * step;
+                const o = (j * mp + i) * 4;
+                d[o] = m[0]; d[o + 1] = m[1]; d[o + 2] = m[2];
+                d[o + 3] = inside(wx, wy)
+                    ? Math.round(255 * spec.mass.alpha * smooth(edgeDist(wx, wy) / feather))
+                    : 0;
+            }
+        }
+        mg.putImageData(img, 0, 0);
+        g.imageSmoothingQuality = 'high';
+        g.drawImage(mc, 0, 0, px, px);
+    }
+
     // Jittered-grid scatter over the bbox: even coverage without Poisson bookkeeping.
     const minX = isl.x - isl.radius, minY = isl.y - isl.radius;
-    const cells = Math.max(1, Math.ceil((isl.radius * 2) / SEAGRASS_SPACING));
+    const cells = Math.max(1, Math.ceil((isl.radius * 2) / spec.spacing));
     for (let gy = 0; gy < cells; gy++) {
         for (let gx = 0; gx < cells; gx++) {
-            const wx = minX + (gx + 0.15 + rand() * 0.7) * SEAGRASS_SPACING;
-            const wy = minY + (gy + 0.15 + rand() * 0.7) * SEAGRASS_SPACING;
+            const wx = minX + (gx + 0.15 + rand() * 0.7) * spec.spacing;
+            const wy = minY + (gy + 0.15 + rand() * 0.7) * spec.spacing;
             if (!inside(wx, wy)) continue;
             // Rim thinning: full density a feather in from the edge, none at the rim.
-            let p = smooth(edgeDist(wx, wy) / feather) * 0.9;
+            let p = smooth(edgeDist(wx, wy) / feather) * spec.cover;
             for (const h of holes) {
                 const hd = Math.hypot(wx - h.x, wy - h.y);
                 if (hd < h.r) p *= 0.12 + 0.88 * smooth(hd / h.r);
             }
             if (rand() >= p) continue;
-            // One clump: a few overlapped ellipses, mostly dark, the light tone rare —
-            // large clean value masses, not per-blade noise.
             const cx = (wx - isl.x + R) * scale, cy = (wy - isl.y + R) * scale;
-            const cs = (7 + rand() * 9) * scale;
-            const n = 3 + Math.floor(rand() * 3);
-            for (let b = 0; b < n; b++) {
-                const t = rand();
-                const tone = tones[t < 0.55 ? 0 : t < 0.86 ? 1 : 2];
-                g.fillStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},${SEAGRASS_ALPHA})`;
-                g.beginPath();
-                g.ellipse(cx + (rand() - 0.5) * cs, cy + (rand() - 0.5) * cs,
-                          cs * (0.32 + rand() * 0.3), cs * (0.2 + rand() * 0.24),
-                          rand() * Math.PI, 0, Math.PI * 2);
-                g.fill();
-            }
+            spec.clump(g, cx, cy, scale, rand, tones, spec.clumpAlpha);
         }
     }
-    isl._seagrassSprite = { canvas: cv, r: R, tint: tones[0].join(',') };
+    isl._vegSprite = { canvas: cv, r: R, tint: tones[0].join(',') };
 }
 
 // ── CORAL REEF ──────────────────────────────────────────────────────────────
@@ -18760,22 +19542,33 @@ function drawReefs(ctx) {
     }
 }
 
-// OVER THE SHOAL SAND — grass grows ON the bar — and under everything at the surface,
-// like the other bottom layers.
-function drawSeagrass(ctx) {
-    if (!state.course || !state.course._hasSeagrass) return;
-    const tintKey = seagrassTone(SEAGRASS_TONES[0]).join(',');
-    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+// Called twice per frame, once per plane, and the two calls sit in very different places
+// in the render order — see the VEG_STYLES header for why that is the whole point.
+//
+// 'bottom' runs OVER THE SHOAL SAND (grass grows on the bar) and under everything at the
+// surface, like the other seabed layers. 'surface' runs after the water is finished being
+// water: the mat is the last thing between the sea and the fleet.
+function drawVegetation(ctx, plane) {
+    if (!state.course || !state.course._hasVeg) return;
+    const viewRadius = cullRadius(ctx);
     const camX = state.camera.x, camY = state.camera.y;
+    const view = viewBoxWorld(ctx);
     for (const isl of state.course.islands) {
-        if (isl.kind !== 'seagrass' || isl.hidden) continue;
+        if (!isl.veg || isl.hidden) continue;
+        const spec = VEG_STYLES[isl.veg];
+        if (!spec || spec.plane !== plane) continue;
         const limit = viewRadius + isl.radius;
         if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
-        if (!isl._seagrassSprite || isl._seagrassSprite.tint !== tintKey) bakeSeagrassSprite(isl);
-        const s = isl._seagrassSprite;
+        // Keyed on the tint like the shoal bake: a venue swap or a live palette edit
+        // rebakes rather than leaving last venue's light on this one. A surface plant's
+        // tones do not depend on the water, so its key is constant and it never rebakes,
+        // which is correct — nothing about it changed.
+        const tintKey = vegTone(spec.tones[0], spec).join(',');
+        if (!isl._vegSprite || isl._vegSprite.tint !== tintKey) bakeVegSprite(isl, spec);
+        const s = isl._vegSprite;
         ctx.save();
-        ctx.globalAlpha = SEAGRASS_LAYER_ALPHA;
-        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        ctx.globalAlpha = spec.layerAlpha;
+        drawZoneSprite(ctx, s.canvas, isl.x, isl.y, s.r, view);
         ctx.restore();
     }
 }
@@ -18785,10 +19578,44 @@ function drawSeagrass(ctx) {
 // happening AT the surface; the bar is beneath it, so it is painted before all of them and
 // they run across it unbroken. Draw it with the land instead and it acquires a coastline
 // the moment a wake stops at its edge.
+// ── DRAW ONLY THE PART OF A BAKED SPRITE THAT IS ON SCREEN ──────────────────
+// A baked zone sprite covers a world square, and the biggest ones are enormous: a weed bed
+// bakes up to 1786px at one unit per pixel, so a bed whose corner clips the viewport still
+// costs a full 1786x1786 composite. Culling by radius only decides WHETHER to draw it; this
+// decides HOW MUCH.
+//
+// Measured on the planted bayou, the weed layers were 51% of the frame — drawVegetation 8.9 ms
+// and drawShoals 4.9 ms of a 27 ms frame — on a venue that is 106 weed shapes over 16 mudflats.
+// Most of those shapes are larger than the screen.
+//
+// The visible region is a ROTATED rectangle, because the race camera turns with the boat, so
+// the box below is its circumscribed AABB: conservative, cheap, and never clips something the
+// player can see. Sub-rect drawImage maps source to destination one-to-one, so nothing moves.
+function viewBoxWorld(ctx) {
+    const R = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.5 + 8;
+    return { x0: state.camera.x - R, y0: state.camera.y - R,
+             x1: state.camera.x + R, y1: state.camera.y + R };
+}
+
+function drawZoneSprite(ctx, canvas, cx, cy, r, view) {
+    const x0 = cx - r, y0 = cy - r, size = r * 2;
+    const ix0 = Math.max(x0, view.x0), iy0 = Math.max(y0, view.y0);
+    const ix1 = Math.min(x0 + size, view.x1), iy1 = Math.min(y0 + size, view.y1);
+    if (ix1 <= ix0 || iy1 <= iy0) return;
+    if (ix1 - ix0 >= size && iy1 - iy0 >= size) {   // fully visible: the plain path
+        ctx.drawImage(canvas, x0, y0, size, size);
+        return;
+    }
+    const k = canvas.width / size;
+    ctx.drawImage(canvas, (ix0 - x0) * k, (iy0 - y0) * k, (ix1 - ix0) * k, (iy1 - iy0) * k,
+                  ix0, iy0, ix1 - ix0, iy1 - iy0);
+}
+
 function drawShoals(ctx) {
     if (!state.course || !state.course._hasShoals) return;
-    const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const viewRadius = cullRadius(ctx);
     const camX = state.camera.x, camY = state.camera.y;
+    const view = viewBoxWorld(ctx);
     for (const isl of state.course.islands) {
         // Paint zones are drawShallows' business — a 0-drag bake here would be invisible.
         if (!isl.awash || isl.hidden || isl.paint) continue;
@@ -18798,7 +19625,7 @@ function drawShoals(ctx) {
         const tint = shoalTintFor(isl).join(',');
         if (!isl._shoalSprite || isl._shoalSprite.tint !== tint) bakeShoalSprite(isl);
         const s = isl._shoalSprite;
-        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        drawZoneSprite(ctx, s.canvas, isl.x, isl.y, s.r, view);
     }
 }
 
@@ -19555,8 +20382,8 @@ function initCourse() {
         // Awash WITH DRAG — a painted shallows zone is awash too, but it must not switch
         // on the per-boat shoalField sampling (it can never change the answer).
         state.course._hasShoals = state.course.islands.some(i => i.awash && i.shoalMul < 1);
-        state.course._hasShallows = state.course.islands.some(i => i.paint && i.kind !== 'seagrass');
-        state.course._hasSeagrass = state.course.islands.some(i => i.kind === 'seagrass');
+        state.course._hasShallows = state.course.islands.some(i => i.paint && !i.veg);
+        state.course._hasVeg = state.course.islands.some(i => i.veg);
         state.course._hasReefs = state.course.islands.some(i => i.reef);
         orientCourseMarks();
         // Ice sits where it will actually be BEFORE anything is drawn. This has to be on the
@@ -19630,7 +20457,7 @@ function initCourse() {
     // keep taxing boats on a course that has none.
     state.course._hasShoals = false;
     state.course._hasShallows = false;
-    state.course._hasSeagrass = false;
+    state.course._hasVeg = false;
     state.course._hasReefs = false;
     state.course.props = [];   // generated courses author no scenery
     state.course.navVersion = 0; // bumped when floes drift, so the planner's inflated cache refreshes

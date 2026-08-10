@@ -95,12 +95,47 @@ const pass = (m) => console.log(`  ok   ${m}`);
             (lab || el).click();
         }, id));
     }
-    await step('cameraMode', '#setting-camera-mode', () => p.selectOption('#setting-camera-mode', 'wind'));
-    await step('telltaleColor', '#setting-color-telltale', () => p.evaluate(() => {
-        const el = document.getElementById('setting-color-telltale');
-        el.value = '#ff00aa';
-        el.dispatchEvent(new Event('input', { bubbles: true }));
-    }));
+    // ── The last two controls are BUTTONS now, and that is the whole lesson here ──
+    //
+    // Both of these steps had rotted, and both rotted the same way: they named a specific
+    // thing in the DOM and the DOM moved underneath them.
+    //
+    //   cameraMode    drove `selectOption('#setting-camera-mode', 'wind')`. The August 2026
+    //                 camera cleanup deleted the Wind mode (loadSettings still carries the
+    //                 migration off it), and then the select itself was replaced by a
+    //                 segmented control and left in the page as a hidden source of truth.
+    //                 So the call waited on an option that would never exist, on an element
+    //                 that would never be visible, and timed out.
+    //   telltaleColor set `.value` on `#setting-color-telltale`, which does not exist at
+    //                 all any more — it is a row of swatch buttons.
+    //
+    // An unhandled throw in here is not one red line, it is the whole file; under the old
+    // `&&` chain it took every suite after it too. So: find the target BY ASKING THE PAGE
+    // what it offers, and click the real control. That is this suite's entire premise —
+    // the wiring between a control and saveSettings() is the thing that rots, and driving
+    // a hidden element tests none of it.
+    // ⚠️ Compare against the LIVE value, and reach it as a bare identifier. `settings` is a
+    // top-level `let` in a classic script, so it lives in the global lexical scope and is
+    // NOT a property of window — `window.settings` reads undefined, every candidate then
+    // "differs" from it, and the first button wins, which is the one already selected.
+    // That picks a no-op, and `step` correctly reports it as "the UI did not change it",
+    // which looks exactly like a broken control. It was a broken test.
+    const segTo = await p.evaluate(() => {
+        const cur = settings.cameraMode;
+        const other = [...document.querySelectorAll('#camera-segs .ov-seg')].find(b => b.dataset.mode !== cur);
+        return other ? other.dataset.mode : null;
+    });
+    if (!segTo) fail('cameraMode        #camera-segs offers no second mode to switch to');
+    else await step('cameraMode', '#camera-segs button', () => p.click(`#camera-segs .ov-seg[data-mode="${segTo}"]`));
+
+    const swTo = await p.evaluate(() => {
+        const cur = (settings.telltaleColor || '#fbbf24').toLowerCase();
+        const other = [...document.querySelectorAll('.ov-swatch[data-color]')]
+            .find(b => b.dataset.color.toLowerCase() !== cur);
+        return other ? other.dataset.color : null;
+    });
+    if (!swTo) fail('telltaleColor     no telltale swatch differs from the current colour');
+    else await step('telltaleColor', '.ov-swatch button', () => p.click(`.ov-swatch[data-color="${swTo}"]`));
 
     // --- reload ---------------------------------------------------------------
     console.log('\nand they come back');

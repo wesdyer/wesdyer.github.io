@@ -24,7 +24,10 @@ const check = (name, cond, detail) => {
 // when a nearby button is pressed. Anything not here needs a handler.
 // Fields a BUTTON reads at the moment it is pressed. They carry a value rather than
 // triggering anything, so having no listener is what they are, not a gap.
-const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', 'ice-vary']);
+// The prop spread and spin are read by the PLACE GESTURE — a click on the map — rather than
+// by a button, so they belong in the same category as the fields above.
+const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', 'ice-vary',
+                           'prop-count', 'prop-min', 'prop-max', 'prop-spin']);
 
 (async () => {
     const html = fs.readFileSync('regatta/editor.html', 'utf8');
@@ -165,6 +168,16 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
     // this section once swept zero elements and passed — a test that finds nothing to do and
     // says "ok" is worse than no test.
     console.log('\nclicking through every layer');
+    // ⚠️ FRESH PAGE FOR EVERYTHING BELOW. The venue sweep above loads every document, and any
+    // venue carrying a prop whose sprite loads draws a `file://` image into the schematic —
+    // which taints the canvas PERMANENTLY, for the life of that canvas. toDataURL then throws
+    // SecurityError, and this whole file crashed rather than failing a check the day
+    // Gatorgrass Bayou's shack got its art. Reloading gives the canvas-comparison section an
+    // untainted canvas and keeps the full-fidelity export, which reads the whole backing store
+    // — an element screenshot loses the 1.5px dashed arena outline and the small mark dots,
+    // and reported "nothing changed" for five of the seven layers.
+    await page.reload();
+    await page.waitForTimeout(1400);
     await page.evaluate(() => { window.EditorApp.loadVenue('arctic'); });
     const layers = await page.evaluate(() =>
         [...document.querySelectorAll('#layer-list [data-layer]')].map(b => b.dataset.layer));
@@ -218,17 +231,27 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
         const opened = !d.hidden;
         document.getElementById('btn-drawer').click();
         return { before, opened, closed: d.hidden,
-                 eyes: document.querySelectorAll('#layer-list [data-eye]').length,
+                 // Compared as SETS against the layer table itself, not counted against a
+                 // number written here. The count was 7 — Arena, Objects, Wind, Gusts,
+                 // Current, Marks, Route — and then the Props layer shipped and this
+                 // assertion started failing for a reason that was not a defect. A test
+                 // that hardcodes how many layers exist has to be edited every time one is
+                 // added, and it fails on the good change rather than the bad one.
+                 //
+                 // What is still worth asserting, and is: the eyes and the layer table
+                 // agree exactly. That catches an eye that failed to render, an eye for
+                 // something no longer in LAYERS, and a `noEye` layer that grew one —
+                 // which are the actual ways this can break.
+                 eyes: [...document.querySelectorAll('#layer-list [data-eye]')].map(e => e.dataset.eye).sort(),
+                 want: window.EditorApp._layers().filter(L => !L.noEye).map(L => L.id).sort(),
                  waterEye: !!document.querySelector('#layer-list [data-eye="water"]') };
     });
     check('the checks drawer opens and closes', misc.before && misc.opened && misc.closed);
     // Every layer that DRAWS something gets an eye. Water is the exception: it is the surface
     // the rest sits on, not an overlay, so there is nothing to turn off.
-    // Seven: Arena, Objects, Wind, Gusts, Current, Marks, Route. (Land and Venue became one
-    // Objects layer, so there is one eye for everything solid rather than one for coastlines
-    // and another for ice; Gusts arrived beside Wind.)
     check('every drawable layer has a visibility eye, and Water has none',
-          misc.eyes === 7 && misc.waterEye === false, `${misc.eyes} eyes · water eye ${misc.waterEye}`);
+          JSON.stringify(misc.eyes) === JSON.stringify(misc.want) && misc.waterEye === false,
+          `eyes [${misc.eyes}] vs layers [${misc.want}] · water eye ${misc.waterEye}`);
     check('no page errors from the drawer', errs.length === 0, errs.slice(0, 2).join(' | '));
 
     // ── The eyes must actually hide things ──────────────────────────────────
@@ -240,9 +263,15 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
         // Give every layer something to hide: this venue authors no current. And FIT the view
         // — an earlier section leaves it panned, and a layer that is off screen "hides" with
         // no visible change, which reads as a broken eye rather than a bad test.
-        document.querySelector('#layer-list [data-layer="current"]').click();
-        [...document.querySelectorAll('#objs-actions .btn')]
-            .find(b => /whole course/i.test(b.textContent)).click();
+        // Current AND gusts: this venue authors neither, and an eye over an empty layer
+        // hides nothing, which reads as a broken eye rather than an empty layer. Both
+        // offer the same whole-course action, so both are seeded the same way.
+        for (const layer of ['current', 'gust']) {
+            document.querySelector(`#layer-list [data-layer="${layer}"]`).click();
+            const btn = [...document.querySelectorAll('#objs-actions .btn')]
+                .find(b => /whole course/i.test(b.textContent));
+            if (btn) btn.click();
+        }
         document.getElementById('btn-field-wind').click();
         document.getElementById('btn-field-cur').click();
         window.EditorApp.fitView();
@@ -251,9 +280,17 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
     // Compare the rendered PNG itself. A hand-rolled pixel hash reported "no change" for the
     // arena — a 1.5px dashed outline under a translucent region fill — while the image plainly
     // differed. When the question is "did the canvas change", ask the canvas.
+    //
+    // Reads the whole backing store, which is what makes it sensitive enough for a dashed
+    // outline. Safe here because the reload above gave this section a clean canvas; if the
+    // venue this section runs on ever gains props of its own, that is the day this needs the
+    // slower element-screenshot path instead.
     const shot = () => page.evaluate(() => document.getElementById('schematic').toDataURL());
 
-    for (const L of ['current', 'land', 'arena', 'wind', 'marks', 'route']) {
+    // `props` is the one eye not exercised here: the test venue has nothing placed on that
+    // layer, and an eye over an empty layer hides nothing. Add it to this list once the venue
+    // this section runs on carries props of its own.
+    for (const L of ['current', 'gust', 'land', 'arena', 'wind', 'marks', 'route']) {
         const on = await shot();
         await page.evaluate((l) => document.querySelector(`#layer-list [data-eye="${l}"]`).click(), L);
         await page.waitForTimeout(200);

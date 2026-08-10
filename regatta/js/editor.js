@@ -209,10 +209,17 @@ const eachRing = (l) => [l.outer].concat(l.holes || []);
 // list rather than the order they happen to be declared: the ordinary land first, the odd
 // ones last. The behaviour is NOT restated here — it comes from the shared table, so this
 // is a label and a swatch and nothing that could disagree with the game.
-// ALPHABETICAL. Eight items is past the point where a reader scans for the one they want
-// rather than reading the list, and there is no other order here that means anything — the
-// table this labels already carries the behaviour, so any grouping would be a second,
-// weaker statement of it.
+// ALPHABETICAL, AND SORTED BELOW RATHER THAN BY HAND. Eight items was already past the
+// point where a reader scans for the one they want rather than reading the list; it is
+// twenty-one now, and there is no other order here that means anything — the table this
+// labels already carries the behaviour, so any grouping would be a second, weaker
+// statement of it.
+//
+// Hand-ordering did not survive contact with people adding rows, which is the whole
+// argument for deriving it: `Swamp Grass` had already slipped above `Seagrass` before the
+// bayou appended seven more materials to the end. So the literal below is written in
+// whatever order is convenient to add to, and the sort right after it is what the two
+// pickers actually see.
 const LAND_TYPES = [
     { kind: 'bank',      label: 'Bank',       swatch: '#6b7280' },
     { kind: 'coralreef', label: 'Coral Reef', swatch: '#8a8468' },
@@ -231,8 +238,32 @@ const LAND_TYPES = [
     { kind: 'seagrass',    label: 'Seagrass',         swatch: '#4a7148' },
     { kind: 'shallows',    label: 'Shallows',         swatch: '#38bdf8' },
     { kind: 'tropicsand',  label: 'Tropic Sand',      swatch: '#efe4cf' },
-    { kind: 'tropicshoal', label: 'Tropic Sand Shoal', swatch: '#8dd4c3' }
+    { kind: 'tropicshoal', label: 'Tropic Sand Shoal', swatch: '#8dd4c3' },
+    // Gatorgrass Bayou. Every swatch tracks its own source of truth so the chip a
+    // designer picks from is the material they get: the three grounds track
+    // ISLAND_STYLES.{mud,marsh,mudflat}.body, and the four weeds track their VEG_STYLES
+    // row's MID tone (the dark tone is the shadowed heart of a clump and reads as a
+    // different plant at chip size). Labelled by plant, not by mechanic — a designer
+    // placing weed is choosing lilies or hyacinth, and the drag follows from that.
+    { kind: 'mud',         label: 'Mud',              swatch: '#524731' },
+    { kind: 'marsh',       label: 'Marsh',            swatch: '#685c37' },
+    { kind: 'mudflat',     label: 'Mud Flat',         swatch: '#6e6449' },
+    { kind: 'weedbed',     label: 'Weed Bed',         swatch: '#2a4428' },
+    { kind: 'lilybed',     label: 'Lily Pads',        swatch: '#60803e' },
+    { kind: 'weedmat',     label: 'Hyacinth Mat',     swatch: '#5c7e40' },
+    { kind: 'duckweed',    label: 'Duckweed',         swatch: '#84a64c' }
 ];
+// The one place the order is decided, so both pickers inherit it and cannot disagree:
+// the toolbar's `new-kind` (what the next gesture makes) and the inspector's `in-mat`
+// (what the selected shape is).
+//
+// SAFE BECAUSE NOTHING PERSISTS A POSITION IN THIS ARRAY. The toolbar picker's option
+// value is the kind STRING; the inspector's is an index, but one recomputed from the
+// shape's own kind every time the panel renders, so it is only ever read in the same
+// tick it was written. And DEFAULT_KIND is a name rather than `LAND_TYPES[0]` — see its
+// note, which anticipated exactly this sort and the trap of letting "no kind given"
+// become whatever happens to sort first (today, Bank: a hidden collider).
+LAND_TYPES.sort((a, b) => a.label.localeCompare(b.label));
 // The fallback when nothing says otherwise. Named, not `LAND_TYPES[0]`: that used to be
 // ordinary land and is now Bank — a hidden collider — so an alphabetical sort would have
 // quietly made "no kind given" mean "invisible".
@@ -278,10 +309,36 @@ let iceCache = null, iceCacheSeed = null;
 // on commit rather than per frame: it builds a nav grid and runs a BFS per leg.
 let estimate = null;
 
+// POINT THE GAME AT THE VENUE BEING EDITED, AND CHANGE NOTHING ELSE.
+//
+// This used to be `setItem('regatta_settings', JSON.stringify({ venue }))` at both call
+// sites, which is not "set the venue" — it is "replace every setting with the venue".
+// The editor and the game are two pages on one origin sharing one localStorage, so that
+// write IS the player's saved settings: the other ten keys vanished, and the next load
+// merged what was left over DEFAULT_SETTINGS. Character went back to Finley and music
+// went back off on every venue switch and every commit, which on a normal editing session
+// is constantly. Measured before the fix: character, musicEnabled, soundEnabled,
+// cameraMode and navAids all reverted from one `loadVenue`.
+//
+// READ, MERGE, WRITE. Both failures degrade to what the old code did rather than to
+// something worse: an unreadable or corrupt store falls through with an empty base (so the
+// venue still lands, exactly as before), and a failed write is dropped (the venue is a
+// convenience, not state worth throwing over — the game's own saveSettings takes the same
+// view, and for the same reason).
+function rememberVenue(key) {
+    let cur = {};
+    try {
+        const raw = localStorage.getItem('regatta_settings');
+        if (raw) { const parsed = JSON.parse(raw); if (parsed && typeof parsed === 'object') cur = parsed; }
+    } catch (e) { /* unreadable or corrupt — start from empty, same as the old behaviour */ }
+    cur.venue = key;
+    try { localStorage.setItem('regatta_settings', JSON.stringify(cur)); } catch (e) { /* storage off */ }
+}
+
 function recompile(rerollIce) {
     const seed = previewSeed;
     window.VENUE_DOC[doc.venue] = doc;
-    localStorage.setItem('regatta_settings', JSON.stringify({ venue: doc.venue }));
+    rememberVenue(doc.venue);
     const real = Math.random;
     Math.random = mulberry32(seed);
     try { resetGame(); } finally { Math.random = real; }
@@ -313,7 +370,20 @@ function recomputeEstimate() {
     if (!doc || !course || !window.SailCheck) return;
     try {
         const t0 = (window.performance && performance.now) ? performance.now() : 0;
-        const grid = window.SailCheck.buildGrid(window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed'), course.boundary, null,
+        // ⚠️ AWASH SHAPES ARE NOT WALLS. buildGrid blocks every shape it is handed — it takes
+        // DOCUMENT shapes and a document carries no traits — so the filter has to say so here,
+        // exactly as compileVenueDoc's own estimate does. Left in, a bar or a weed bed closes
+        // the water it lies on and the ruler measures the long way round something a boat sails
+        // straight over: Gatorgrass Bayou read 4.53 km / 14:03 for a lap that is 2.31 km and
+        // under four minutes once its 95 beds are treated as the water they are.
+        //
+        // `!awash` rather than `!reef`: a coral reef is a soft WALL and is deliberately not
+        // awash, so it stays in the grid and still closes the pass it exists to close.
+        const solid = window.VenueDoc.shapes(doc).filter(sh => {
+            const t = window.VenueDoc.traits(sh);
+            return t.motion === 'fixed' && !t.awash;
+        });
+        const grid = window.SailCheck.buildGrid(solid, course.boundary, null,
             window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed') ? { noSubsample: true } : null);
         // Pass the real field, not one number: the wind varies across the course, and a
         // patch with no region over it has no wind at all.
@@ -535,7 +605,7 @@ function loadVenue(key) {
         doc = null; fileHandle = null; savedJSON = null;
         history = []; histIdx = -1;
         const seed = previewSeed;
-        localStorage.setItem('regatta_settings', JSON.stringify({ venue: key }));
+        rememberVenue(key);
         const real = Math.random; Math.random = mulberry32(seed);
         try { resetGame(); } finally { Math.random = real; }
         course = state.course;
@@ -1105,10 +1175,128 @@ function refreshChrome() {
 function toolOpts() {
     const box = $('tool-opts');
     if (!box) return;
-    const makes = tool === 'place' || tool === 'draw';
-    box.hidden = !makes;
+    const makes = sub === 'place' || drawing;   // `sub` is the live tool; `tool` is vestigial
+    // Props are the exception to "settings belong to the armed tool": there is no maker tool
+    // for them, because a plain click on open water places one. So their settings hang off the
+    // LAYER, and the strip stays up the whole time you are on it.
+    // Props settle it the same way shapes do: these decide what the next PLACE makes, so they
+    // ride with that tool and vanish with it rather than sitting on the layer being true of
+    // nothing while you are selecting.
+    const placing = sub === 'place';
+    const props = mode === 'props' && placing;
+    box.hidden = !makes && !props;
     const po = $('place-opts');
-    if (po) po.style.display = tool === 'place' ? 'flex' : 'none';
+    if (po) po.style.display = (mode === 'shape' && placing) ? 'flex' : 'none';
+    const pr = $('prop-opts');
+    if (pr) pr.style.display = props ? 'flex' : 'none';
+    // `kind` here picks a SHAPE kind for Draw and Place. On the props layer it would be
+    // answering a question nobody asked — the prop's own kind is the panel's picker.
+    //
+    // ⚠️ `.closest('.to-f')`, NOT parentElement: enhanceSelect wraps the select in its own
+    // container, so the select's parent is that wrapper and hiding it leaves the cell's
+    // "KIND" caption sitting there labelling nothing. The whole cell is what has to go.
+    const nk = $('new-kind');
+    const cell = nk && nk.closest ? nk.closest('.to-f') : null;
+    if (cell) cell.style.display = props ? 'none' : '';
+}
+
+// The size and heading the next click hands a prop. READ AT THE MOMENT OF PLACEMENT and
+// never stored on the document — the same rule `newKind` follows, and for the same reason:
+// widening the spread must not reach back and re-roll the thirty knees already down.
+//
+// ⚠️ Math.random here is deliberate and is NOT the rule this codebase bans. The prohibition
+// is on render and physics touching the RNG stream the eval harness replays; this runs on a
+// mouse click in an authoring tool and its result is written into the document as a literal
+// number. Nothing replays it, and re-opening the file gives back exactly what was placed.
+function propJitter() {
+    const num = (id, dflt) => {
+        const v = parseFloat(($(id) || {}).value);
+        return isFinite(v) ? v : dflt;
+    };
+    let lo = num('prop-min', 100), hi = num('prop-max', 100);
+    if (lo > hi) { const t = lo; lo = hi; hi = t; }     // a range typed backwards is still a range
+    // The same 0.25-4x clamp propTraits and the whole-course scale already enforce, applied
+    // here so a typo cannot author a prop the rest of the pipeline will silently clamp anyway.
+    const clamp = (v) => Math.max(25, Math.min(400, v));
+    lo = clamp(lo); hi = clamp(hi);
+    const scale = (lo + Math.random() * (hi - lo)) / 100;
+    const spin = !!($('prop-spin') || {}).checked;
+    const out = { heading: spin ? Math.random() * Math.PI * 2 : 0 };
+    // Only write `scale` when it says something. A prop at natural size carries no scale
+    // field today, and it should keep not carrying one — otherwise every placement adds a
+    // line to the diff that means "unchanged".
+    if (Math.abs(scale - 1) > 5e-4) out.scale = +scale.toFixed(3);
+    return out;
+}
+
+// ONE DRAG LAYS A STAND. `count` > 1 scatters that many inside the dragged circle, each with
+// its own size and heading from the fields beside it — which is the entire point of the row:
+// thirty cypress knees placed one click at a time all came out identical, and identical is
+// exactly what the compose.py pipeline exists to avoid on the sprite side.
+//
+// Mirrors addIce, deliberately: same gesture (drag sizes a circle), same rejection sampling,
+// same "place fewer rather than badly" rule when the circle runs out of room.
+function addProps(cx, cy, radius, countOverride) {
+    if (!doc) return 0;
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const kind = ($('prop-kind') || {}).value;
+    if (!reg[kind]) return 0;
+    // A TAP forces one. `count` says how many fill the circle you drag out, so a gesture that
+    // drags no circle is asking for exactly what it pointed at.
+    const n = countOverride != null ? countOverride
+            : Math.max(1, Math.min(80, parseInt(($('prop-count') || {}).value, 10) || 1));
+    const ps = doc.props || (doc.props = []);      // write path creates the array
+    const footprint = (k, s) => ((reg[k] || {}).world || 40) * (s || 1) / 2;
+    const made = [];
+    for (let k = 0; k < n; k++) {
+        const j = propJitter();
+        const rr = footprint(kind, j.scale);
+        let px = cx, py = cy;
+        // A count of one goes exactly where you pointed — a tap must not wander, and a drag
+        // asking for one thing is still asking for it at the origin.
+        if (n > 1) {
+            // Keep them off each other: two sprites on one spot read as a single bigger
+            // thing, so a scatter that overlaps is not the density it claims. 0.8 rather
+            // than 1.0 because vegetation SHOULD touch — a stand with visible gaps around
+            // every trunk is a car park.
+            let placed = false;
+            for (let t = 0; t < 20 && !placed; t++) {
+                const a = Math.random() * Math.PI * 2;
+                const d = Math.sqrt(Math.random()) * Math.max(0, radius - rr * 0.5);
+                px = cx + Math.cos(a) * d; py = cy + Math.sin(a) * d;
+                placed = !made.some(o =>
+                    Math.hypot(o.x - px, o.y - py) < (footprint(o.kind, o.scale) + rr) * 0.8);
+            }
+            if (!placed) continue;                 // no room left; fewer, not worse
+        }
+        let m = 1;
+        while (ps.some(p => p.id === 'prop-' + m)) m++;
+        const p = Object.assign({ id: 'prop-' + m, kind, x: px, y: py }, j);
+        ps.push(p);
+        made.push(p);
+    }
+    if (made.length) {
+        // The stand becomes the selection, as a duplicate does: you scatter in order to go
+        // on adjusting what you scattered.
+        selProp = ps.length - 1;
+        selProps = made.map(p => ps.indexOf(p));
+        listAnchor = listCursor = -1;
+    }
+    return made.length;
+}
+
+// The circle a prop scatter will fill, while the drag is live. Same dashed-preview idiom as
+// the ice placer, in the props layer's own accent so the two gestures are told apart.
+function drawPlacedProps() {
+    if (!(drag && drag.kind === 'propnew' && drag.r > 0)) return;
+    const c = toS(drag.origin.x, drag.origin.y);
+    const n = Math.max(1, Math.min(80, parseInt(($('prop-count') || {}).value, 10) || 1));
+    ctx.strokeStyle = 'rgba(134,239,172,0.9)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.arc(c.x, c.y, drag.r * view.scale, 0, Math.PI * 2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#bbf7d0'; ctx.font = '600 11px "IBM Plex Mono", monospace';
+    ctx.fillText(`${n} × ${($('prop-kind') || {}).value || 'prop'} · ${fmtM(drag.r * 2)} across`,
+                 c.x + 8, c.y - 8);
 }
 
 // What the next Draw or Place makes. Read at the moment of creation rather than stored, so
@@ -1169,6 +1357,7 @@ function selActs() {
     for (const [id, verb] of [['btn-sel-union', 'Merge them into one'],
                               ['btn-sel-intersect', 'Keep only what they all share'],
                               ['btn-sel-subtract', 'Remove the others from the first one selected'],
+                              ['btn-sel-exclude', 'Cut the others out of the first one CLICKED, and keep them'],
                               ['btn-sel-symdiff', 'Keep what only ONE of them covers — the overlap goes']]) {
         const b = $(id);
         if (!b) continue;
@@ -1211,7 +1400,11 @@ const TOOLS = [
     // point by point, this one drags a size and scatters to a density.
     { id: 'place', key: 'N', name: 'Place', icon: '<circle cx="8" cy="9" r="4" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M12.5 3.5v4M10.5 5.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>',
       on: () => sub === 'place',
-      enabled: () => mode === 'shape' && !!doc },
+      // PROPS JOINED FOR THE REASON THE COMMENT ABOVE DESCRIBES. Placing on the Select arrow
+      // cost props the same thing it once cost Venue: with a click on open water meaning
+      // "create", empty water was never free for a marquee, so props had no multi-select at
+      // all. Arming Place gives it back, and costs one key (N).
+      enabled: () => (mode === 'shape' || mode === 'props') && !!doc },
     { id: 'measure', key: 'M', name: 'Measure', icon: '<path d="M2.5 9.5l7-7 4 4-7 7z" stroke="currentColor" stroke-width="1.3" fill="none"/><path d="M5 7l1.5 1.5M7 5l1.5 1.5" stroke="currentColor" stroke-width="1.1"/>',
       on: () => sub === 'measure' }         // a gesture, not a place: no layer required
 ];
@@ -1263,8 +1456,14 @@ const MODS = {
              '⌘ drag rotate', '⌥ drag scale'],
     direct: ['click picks a vertex', '⇧ click adds', 'drag a box to select several',
              'double-click an edge inserts', '⌫ delete'],
-    place: ['drag out a floe — the drag sets its size', 'tap for a default one',
-            'scatter on the left drops several per drag'],
+    // A FUNCTION, not an array: Place means two different gestures depending on the layer,
+    // and this object is a top-level literal — a `mode === ...` written inline here would be
+    // evaluated once at load, when the mode is not yet the one being asked about.
+    place: () => mode === 'props'
+        ? ['tap to place one', 'drag a circle — the count on the left fills it',
+           'Select (V) to marquee what you placed']
+        : ['drag out a floe — the drag sets its size', 'tap for a default one',
+           'scatter on the left drops several per drag'],
     draw: ['click to drop points', '⏎ or double-click closes', 'click the first point to close',
            'esc cancels'],
     sculpt: ['drag to pull nearby vertices', '[ ] brush size'],
@@ -1294,9 +1493,11 @@ function hintBar() {
     // A MAKER says what it will make. Both read the same picker, so the hint is where the
     // answer to "granite or floe?" is visible without looking away from the map.
     const kindLabel = (LAND_TYPES.find(x => x.kind === newKind()) || {}).label;
-    name.textContent = (t.id === 'draw' || t.id === 'place') && kindLabel
-        ? `${t.name} — ${kindLabel}` : t.name;
-    const mods = MODS[t.id] || [];
+    const propKind = mode === 'props' ? ($('prop-kind') || {}).value : null;
+    name.textContent = (t.id === 'place' && propKind) ? `${t.name} — ${propKind}`
+        : ((t.id === 'draw' || t.id === 'place') && kindLabel ? `${t.name} — ${kindLabel}` : t.name);
+    const m0 = MODS[t.id];
+    const mods = (typeof m0 === 'function' ? m0() : m0) || [];
     $('hint-mods').innerHTML = mods.map(m => `<span class="mod">${m}</span>`).join('')
         || '<span class="mod">right- or middle-drag pans · wheel zooms</span>';
 }
@@ -1455,7 +1656,16 @@ const KIND_FILL = {
     tropicsand: '#efe4cf', tropicshoal: 'rgba(141,212,195,0.38)',
     // Translucent like the other underwater kinds, in the band's own khaki — an
     // impassable bottom must not read as either sand (crossable) or land (dry).
-    coralreef: 'rgba(138,132,104,0.38)'
+    coralreef: 'rgba(138,132,104,0.38)',
+    // The bayou. Its two DRY grounds are solid, like every other land kind; everything
+    // that is awash is translucent, which is the schematic's one consistent rule — you
+    // can see the water through anything you are allowed to sail over. The four weeds
+    // step up in opacity in the order they step up in coverage (bed < pads < mat <
+    // film), so density is legible at a glance without reading a label.
+    mud: '#524731', marsh: '#685c37',
+    mudflat: 'rgba(110,100,73,0.42)',
+    weedbed: 'rgba(42,68,40,0.38)', lilybed: 'rgba(96,128,62,0.46)',
+    weedmat: 'rgba(92,126,64,0.62)', duckweed: 'rgba(132,166,76,0.55)'
 };
 const KIND_EDGE = {
     granite: '#c9c9c9', redrock: '#8a4a26', reed: '#5c8438', swampgrass: '#7d7048',
@@ -1463,7 +1673,11 @@ const KIND_EDGE = {
     shoal: 'rgba(232,220,177,0.75)',
     shallows: 'rgba(56,189,248,0.8)', seagrass: 'rgba(122,160,120,0.9)',
     tropicsand: '#d9cba9', tropicshoal: 'rgba(141,212,195,0.8)',
-    coralreef: 'rgba(138,132,104,0.85)'
+    coralreef: 'rgba(138,132,104,0.85)',
+    mud: '#3d3421', marsh: '#4d4324',
+    mudflat: 'rgba(110,100,73,0.8)',
+    weedbed: 'rgba(74,112,74,0.85)', lilybed: 'rgba(140,176,100,0.9)',
+    weedmat: 'rgba(150,182,110,0.9)', duckweed: 'rgba(178,208,120,0.9)'
 };
 
 function drawLandLayer() {
@@ -1889,6 +2103,7 @@ const LAYER_STEPS = [
     ['props',   () => { if (shown('props')) drawPropsLayer(); }],
     ['course',  () => drawCourseLayer()],
     ['venue',   () => drawPlacedIce()],   // the Place gesture only; shapes paint with 'land'
+    ['props',   () => drawPlacedProps()], // the scatter circle, while the drag is live
     ['wind',    () => { if (shown('wind')) drawWindRegions(); }],
     ['gust',    () => { if (shown('gust')) drawGustRegions(); }],
     ['current', () => { if (shown('current')) drawCurrentRegions(); }]
@@ -2652,7 +2867,9 @@ function objRefresh() {
         const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
         box.innerHTML = dprops().map((p, i) => {
             const T = window.VenueDoc.propTraits(p);
-            const glyph = T.plane === 'seabed' ? '▽' : T.plane === 'canopy' ? '△' : '○';
+            // ▽ under the water · ≈ on it · ○ on the ground · △ over the fleet
+            const glyph = T.plane === 'seabed' ? '▽' : T.plane === 'float' ? '≈'
+                        : T.plane === 'canopy' ? '△' : '○';
             const c = T.contact === 'hard' ? 'hard'
                     : T.contact === 'soft' ? `${Math.round(T.drag * 100)}%`
                     : T.motion === 'drift' ? 'adrift' : '';
@@ -3139,10 +3356,16 @@ function curPh(l) {
 // that teach the wrong thing. Depth replaces it, and says the number in the terms the
 // designer is actually choosing: what a boat keeps, and how wide the ramp is.
 function shoalSays(T) {
-    if (!(T.drag > 0)) return 'no drag — sand you can see and nothing more';
+    // "Shallowest part" was right while every awash shape was a sandbar and wrong the
+    // moment one could be a weed mat, where the cost is thickness rather than depth.
+    // "Thickest" covers both, and the ramp is stated because it is now a real choice —
+    // sand shelves over two boat lengths, mud stands up steep, and the number is what
+    // says which of those a designer has just placed.
+    const ramp = `${Math.round(uToM(T.feather))} m ramp`;
+    if (!(T.drag > 0)) return `no drag — something to see and nothing more · ${ramp}`;
     const keep = Math.round((1 - T.drag) * 100);
-    return `keeps ${keep}% of her speed over the shallowest part, easing back to full`
-         + ` at the rim · no lee, above or below`;
+    return `keeps ${keep}% of her speed over the thickest part, easing back to full`
+         + ` at the rim over a ${ramp} · no lee, above or below`;
 }
 
 function leeSays(l) {
@@ -3218,6 +3441,7 @@ function inspLand(l) {
 ${T.awash ? `<div class="in-sect"><span class="k">Depth</span>
   <div class="in-grid">
     ${numF('Drag', 'shape.drag', f1(T.drag * 100), '%', false, '50')}
+    ${numF('Ramp', 'shape.fth', l.feather != null ? f1(uToM(l.feather)) : '', 'm', false, f1(uToM(T.feather)))}
   </div>
   <div class="in-sub">${shoalSays(T)}</div>
 </div>` : `<div class="in-sect"><span class="k">Lee</span>
@@ -3537,7 +3761,10 @@ function inspProp(p) {
     const K = window.VenueDoc.PROP_KINDS || {};
     const T = window.VenueDoc.propTraits(p);
     const kd = K[p.kind] || {};
-    const PLANES = { seabed: 'Underwater', surface: 'Surface — below boats', canopy: 'Canopy — above boats' };
+    // Keep in step with VenueDoc.PROP_PLANES — a plane missing here renders as an
+    // "undefined" option rather than failing loudly.
+    const PLANES = { seabed: 'Underwater', float: 'Floating — behind land',
+                     surface: 'Surface — below boats', canopy: 'Canopy — above boats' };
     const CONTACTS = { none: 'None — scenery', soft: 'Soft — slows', hard: 'Hard — stops' };
     const MOTIONS = { fixed: 'Fixed', drift: 'Drifting (forces no contact)' };
     const axis = (dat, preset, override, opts) => `<select class="in-wide" ${dat}>`
@@ -3734,6 +3961,27 @@ function numEdit(el) {
             l.drag = v / 100;
         }
         afterEdit(true, 'shoal drag');
+        return;
+    }
+
+    // THE RAMP, same empty-means-inherit rule as drag and height: blank is "whatever this
+    // material does" (sand shelves, mud does not), a typed number overrides that one shape.
+    // Metres in the box, world units in the file, like every other distance across the map.
+    // The floor is 1 m and not 0 — a zero-width ramp is a step, and a boat holding station
+    // on a step oscillates against its own leeway, which is the corner smoothstep exists to
+    // round off. The compiler still clamps to half the shape's radius on top of this.
+    if (what === 'shape' && key === 'fth') {
+        const l = shapeById(sel.shape); if (!l) return;
+        if (el.value.trim() === '') delete l.feather;
+        else {
+            const v = parseFloat(el.value);
+            if (!isFinite(v) || v < 1) {
+                toast('The ramp is at least 1 m — a bar with no ramp is a step, and a step reads as a wall', true);
+                inspectorRefresh(); return;
+            }
+            l.feather = mToU(v);
+        }
+        afterEdit(true, 'shoal ramp');
         return;
     }
 
@@ -5360,6 +5608,196 @@ function oselDuplicate() {
     syncSelFromOsel();
     return made.length;
 }
+// ── CUT / COPY / PASTE ──────────────────────────────────────────────────────
+//
+// ONE CLIPBOARD, IN MEMORY, holding whole objects and the layer they came from.
+//
+// In memory rather than the system clipboard, and that is a choice rather than a shortcut.
+// The system one would buy paste between two editor windows; it costs an async permission
+// prompt on every read, a `file://` origin whose trustworthiness the browser decides for
+// itself, and a silent refusal as its failure mode. Copying an island and pasting it in the
+// same breath must not be able to fail. The cross-window case is what Save As is for.
+//
+// THE LAYER TRAVELS WITH THE CONTENT, because a selection ref only means anything on the
+// layer it came from: `{kind:'shape', id}` on Objects, `{kind:'wind', i}` on Wind. An index
+// copied on one layer names a DIFFERENT object on another. So paste switches to the
+// clipboard's own layer rather than refusing — or, far worse, dropping a wind region into
+// doc.shapes.
+//
+// Marks, gates and route legs are deliberately not copyable. A mark is referenced by id from
+// lines and from the route, so a pasted one arrives referenced by nothing, and a pasted leg
+// refers to marks that may not be there at all. Duplicating course furniture is a different
+// verb from duplicating geometry, and it needs the reference graph thought about first.
+let clip = null;                  // { mode, items: [...], pastes, at }
+// A repeat step in SCREEN pixels, converted at paste time. World units would be a hair at
+// one zoom and half the map at another; what "far enough to see it is a second copy" means
+// is a fact about the screen.
+const PASTE_STEP_PX = 26;
+
+// The bounding box centre of everything on the clipboard.
+//
+// The BOX, not a centroid of points: a centroid is dragged toward whichever ring happens to
+// be most densely sampled, so a shape with one finely-traced edge would land visibly off
+// centre. What a designer means by "the middle of it" is the middle of what they can see.
+//
+// Across ALL items at once, so a multi-object paste centres the GROUP and keeps its
+// formation, rather than stacking every piece on the same spot.
+function clipCentre() {
+    if (!clip || !clip.items.length) return null;
+    if (clip.mode === 'props') {
+        const xs = clip.items.map(p => +p.x), ys = clip.items.map(p => +p.y);
+        return { cx: (Math.min(...xs) + Math.max(...xs)) / 2, cy: (Math.min(...ys) + Math.max(...ys)) / 2 };
+    }
+    const rings = [];
+    for (const it of clip.items) {
+        if (it.outer) { rings.push(it.outer); for (const h of (it.holes || [])) rings.push(h); }
+        else if (it.poly) rings.push(it.poly);
+    }
+    if (!rings.length) return null;
+    const b = ringBox(rings);
+    return { cx: b.cx, cy: b.cy };
+}
+
+// A free id, and one that does not GROW. `${id}-${n}` applied to an already-copied shape
+// gives `id-2-2` and then `id-2-2-2`; stripping a trailing -N first keeps the fourth paste
+// at `id-5`. (oselDuplicate still has the old behaviour — changing it is a separate call.)
+function freshId(base, taken) {
+    if (!taken.includes(base)) return base;
+    const stem = String(base).replace(/-\d+$/, '');
+    let n = 2;
+    while (taken.includes(`${stem}-${n}`)) n++;
+    return `${stem}-${n}`;
+}
+
+// What this layer has selected, deep-cloned. Returns how many, so the caller can say what
+// happened; 0 means there was nothing to take and no key should appear to have done anything.
+function clipCopy() {
+    if (!doc) return 0;
+    if (mode === 'props') {
+        const rows = selProps.length ? selProps.slice() : selProp >= 0 ? [selProp] : [];
+        if (!rows.length) return 0;
+        const items = rows.sort((a, b) => a - b).map(i => dprops()[i]).filter(Boolean).map(clone);
+        if (!items.length) return 0;
+        clip = { mode, items, pastes: 0 };
+        return items.length;
+    }
+    // The arena is excluded for the reason it cannot be duplicated either: there is exactly
+    // one, and a second would not mean anything to a course.
+    const objs = oselObjects().filter(o => o.ref.kind !== 'arena');
+    if (!objs.length) return 0;
+    clip = {
+        mode,
+        items: objs.map(o => clone(o.ref.kind === 'shape' ? o.land : regsOf(o.ref.kind)[o.ref.i])),
+        pastes: 0
+    };
+    return clip.items.length;
+}
+
+// Copy, then remove — via the SAME delete paths the Delete key uses, so cut and delete can
+// never disagree about what "the selection" means or what it leaves behind.
+// ⚠️ REPORTS WHAT IT REMOVED, not what it copied, and the two can differ. Undo restores the
+// document but leaves the selection pointing at whatever it was pointing at — so after
+// undoing a paste, `osel` names a shape that is no longer in doc.shapes. Copy then finds
+// nothing and returns 0, which is the honest answer; returning the COPY count here would
+// have had the caller push an undo step and toast "Cut 1" for a cut that removed nothing.
+// (Delete has the same dangling-selection behaviour and always has; this only makes sure cut
+// does not lie about it.)
+function clipCut() {
+    if (!clipCopy()) return 0;
+    if (mode === 'props') {
+        const rows = (selProps.length ? selProps.slice() : [selProp]).sort((a, b) => b - a);
+        let removed = 0;
+        for (const r of rows) if (dprops()[r]) { dprops().splice(r, 1); removed++; }
+        selProp = -1; selProps = []; listAnchor = listCursor = -1;
+        return removed;
+    }
+    return deleteOsel();            // clears osel/vsel and re-syncs the inspectors itself
+}
+
+// The copies become the selection, as in every vector editor: you paste in order to go on
+// working on what you pasted.
+function clipPaste() {
+    if (!doc || !clip || !clip.items.length) return 0;
+    // FIRST, because setMode clears `osel` — building the new selection before the switch
+    // would hand it straight back.
+    if (mode !== clip.mode) setMode(clip.mode);
+
+    // ── WHERE IT LANDS: THE MIDDLE OF WHAT YOU ARE LOOKING AT ───────────────
+    //
+    // `view.x, view.y` IS the world point at the centre of the canvas — read the transform:
+    // toS puts it at W()/2, H()/2. So the paste is one translation that carries the
+    // clipboard's own centre onto it.
+    //
+    // ONE translation for the whole clipboard, not one per object: pasting three islands has
+    // to keep their formation, and a per-object nudge (which is what duplicate does, scaled
+    // to each object's own size) shears the group apart.
+    //
+    // This replaced an offset from the ORIGINAL position, which had the failure the centre
+    // rule exists to avoid: copy something, scroll across the map, paste — and the copy
+    // appears back where you were, off screen, having apparently done nothing.
+    //
+    // REPEATS CASCADE RATHER THAN STACK. Dead centre every time would drop the second copy
+    // exactly on the first, where two objects read as one and the only clue is the object
+    // list's count. So the first paste into a given view lands dead centre and each further
+    // paste into the SAME view steps down-right from it; move the view and the count resets,
+    // because a new view is a new answer to "where am I looking".
+    const centre = { x: view.x, y: view.y };
+    if (!clip.at || Math.abs(clip.at.x - centre.x) > 1 || Math.abs(clip.at.y - centre.y) > 1) clip.pastes = 0;
+    clip.at = centre;
+    const step = (PASTE_STEP_PX / view.scale) * clip.pastes++;   // px -> world at this zoom
+    const c = clipCentre();
+    const dx = (centre.x + step) - (c ? c.cx : centre.x);
+    const dy = (centre.y + step) - (c ? c.cy : centre.y);
+    const shift = (ring) => ring.map(q => [q[0] + dx, q[1] + dy]);
+
+    if (clip.mode === 'props') {
+        const ps = doc.props || (doc.props = []);       // write path creates the array
+        const first = ps.length;
+        for (const src of clip.items) {
+            const p = clone(src);
+            p.id = freshId(p.id || 'prop-1', ps.map(x => x.id));
+            p.x += dx; p.y += dy;
+            ps.push(p);
+        }
+        selProps = clip.items.map((_, k) => first + k);
+        selProp = selProps[selProps.length - 1];
+        listAnchor = listCursor = -1;
+        return clip.items.length;
+    }
+
+    // The NAME is kept as it was. A duplicate is a second one of something and says so
+    // ("Bank 2"); a paste is the same thing put somewhere else, and renaming it would lose
+    // the only label the designer wrote. The id still has to be unique, so that is what moves.
+    const made = [];
+    if (clip.mode === 'shape') {
+        for (const src of clip.items) {
+            const l = clone(src);
+            l.id = freshId(l.id, doc.shapes.map(x => x.id));
+            l.outer = shift(l.outer);
+            l.holes = (l.holes || []).map(shift);
+            rebake(l);
+            doc.shapes.push(l);
+            made.push({ kind: 'shape', id: l.id });
+        }
+    } else if (isRegionMode(clip.mode)) {
+        // Same write-path rule addRegion follows: the container is created here, never by a
+        // read accessor, or loading a document with no gusts would mark it unsaved.
+        const owner = REGION[clip.mode].owner();
+        const list = owner.regions || (owner.regions = []);
+        for (const src of clip.items) {
+            const r = clone(src);
+            r.id = freshId(r.id, list.map(x => x.id));
+            r.poly = shift(r.poly);
+            list.push(r);
+            made.push({ kind: clip.mode, i: list.length - 1 });
+        }
+    }
+    if (!made.length) return 0;
+    osel = made; vsel = [];
+    syncSelFromOsel();
+    return made.length;
+}
+
 // ── Booleans ────────────────────────────────────────────────────────────────
 // Union / intersect / subtract over the object selection, via the vendored Martinez sweep
 // (polygon-clipping). Rolling our own was the alternative and it is a trap: the degenerate
@@ -5389,9 +5827,23 @@ const fromPCRing = (r) => {
 // what "Difference" means alongside a Subtract that already exists. Internally it is
 // `symdiff` so the two can never be read for each other.
 const BOOL_OPS = { union: 'union', intersect: 'intersection',
-                   subtract: 'difference', symdiff: 'xor' };
+                   subtract: 'difference', symdiff: 'xor', exclude: 'difference' };
 const BOOL_LABEL = { union: 'Union', intersect: 'Intersect',
-                     subtract: 'Subtract', symdiff: 'Difference' };
+                     subtract: 'Subtract', symdiff: 'Difference', exclude: 'Exclude' };
+// EXCLUDE IS SUBTRACT THAT KEEPS ITS CUTTERS. Same clip — the library's `difference`, primary
+// minus the rest — but only the primary is consumed; every secondary survives untouched, in
+// place, with its id, kind and z-order intact. That makes one shape usable as a stencil
+// against many: cut a channel through a bank with three weed beds and you still have three
+// weed beds, where Subtract would have eaten them and left you re-drawing.
+//
+// Two behaviours differ from the other four ops, both because the secondaries stay:
+//   · the primary is replaced IN PLACE rather than pushed to the end of the list, so it does
+//     not jump in front of the cutters it was just cut by. The other ops consume everything
+//     they touch, so their stacking order is nobody's business; this one's is.
+//   · an empty result is a legitimate answer meaning "the cutters covered the primary
+//     entirely" — it deletes the primary and keeps the cutters, which is what was asked for.
+//     For Subtract the same result would delete the whole selection, which is why it errors.
+const BOOL_KEEPS_SECONDARIES = { exclude: true };
 // `null` when it cannot run, so the caller can say WHY rather than doing nothing visibly.
 function oselBooleanWhy() {
     if (!doc) return 'no document';
@@ -5402,11 +5854,26 @@ function oselBooleanWhy() {
     if (kinds.has('arena')) return 'the arena is the course bounds, not a shape to combine';
     return null;
 }
+// osel is CLICK-ordered; oselObjects() re-sorts into DOCUMENT order. Any op that talks about
+// "the primary" has to resolve it here, or "the first one selected" silently means "whichever
+// of them the document happens to list first".
+function oselByClickOrder(objs) {
+    const out = [];
+    for (const ref of osel) {
+        const o = objs.find(x => sameObj(x.ref, ref));
+        if (o && out.indexOf(o) < 0) out.push(o);
+    }
+    for (const o of objs) if (out.indexOf(o) < 0) out.push(o);   // anything osel did not name
+    return out;
+}
 function oselBoolean(op) {
     if (oselBooleanWhy()) return null;
-    const objs = oselObjects();
-    // SUBTRACT takes the FIRST-selected as the base and removes the rest from it. Click order
-    // is what we have and what the user chose, which beats inferring from stacking order.
+    // EXCLUDE keeps its cutters, so which shape is primary is a decision the user makes by
+    // clicking rather than one the document makes by ordering — it takes click order. The
+    // other four consume everything they touch, where the base only decides the surviving
+    // id and z-slot, and they keep the document order they have always used.
+    const keepSecondaries = !!BOOL_KEEPS_SECONDARIES[op];
+    const objs = keepSecondaries ? oselByClickOrder(oselObjects()) : oselObjects();
     const geoms = objs.map(o => toPC(o.rings));
     let result;
     try {
@@ -5417,47 +5884,78 @@ function oselBoolean(op) {
     if (!result || !result.length) {
         // Intersecting two shapes that do not overlap is a legitimate question with an empty
         // answer. Deleting both of them is NOT the answer to it.
-        return { error: op === 'intersect' ? 'they do not overlap, so there is nothing in common'
-                      : op === 'symdiff'  ? 'they cover exactly the same water, so nothing is left'
-                                          : 'that would remove everything' };
+        //
+        // Exclude is the exception and is NOT an error: an empty result means the cutters
+        // covered the primary completely, and removing the primary while leaving the cutters
+        // standing is precisely what was asked for. Subtract cannot say that, because there
+        // the same result would take the whole selection with it.
+        if (!keepSecondaries) {
+            return { error: op === 'intersect' ? 'they do not overlap, so there is nothing in common'
+                          : op === 'symdiff'  ? 'they cover exactly the same water, so nothing is left'
+                                              : 'that would remove everything' };
+        }
+        result = [];
     }
     const base = objs[0];
     const made = [];
     if (base.ref.kind === 'shape') {
         const proto = base.land;
-        const keepIds = new Set(objs.map(o => o.ref.id));
-        doc.shapes = doc.shapes.filter(l => !keepIds.has(l.id));
-        result.forEach((poly, i) => {
+        const build = (poly, i) => {
             const l = clone(proto);
             l.id = i === 0 ? proto.id : uniqueLandId(`${proto.id}-${i + 1}`);
             if (proto.name && i > 0) l.name = `${proto.name} ${i + 1}`;
             l.outer = fromPCRing(poly[0]);
             l.holes = poly.slice(1).map(fromPCRing);
             rebake(l);
-            doc.shapes.push(l);
-            made.push({ kind: 'shape', id: l.id });
-        });
+            return l;
+        };
+        if (keepSecondaries) {
+            // In place, so the cut shape keeps the z-slot it had. Pushing it to the end would
+            // float it in front of the very shapes that just cut it.
+            const at = doc.shapes.findIndex(l => l.id === proto.id);
+            const pieces = result.map(build);
+            doc.shapes.splice(at, 1, ...pieces);
+            for (const l of pieces) made.push({ kind: 'shape', id: l.id });
+        } else {
+            const keepIds = new Set(objs.map(o => o.ref.id));
+            doc.shapes = doc.shapes.filter(l => !keepIds.has(l.id));
+            result.forEach((poly, i) => {
+                const l = build(poly, i);
+                doc.shapes.push(l);
+                made.push({ kind: 'shape', id: l.id });
+            });
+        }
         } else {
         const key = base.ref.kind;
         const list = regsOf(key);
         const proto = clone(list[base.ref.i]);
-        const drop = new Set(objs.map(o => o.ref.i));
-        const kept = list.filter((_, i) => !drop.has(i));
-        list.length = 0;
-        for (const r of kept) list.push(r);
-        result.forEach((poly, i) => {
+        const build = (poly, i) => {
             const r = clone(proto);
             r.id = i === 0 ? proto.id : `${proto.id}-${i + 1}`;
             r.poly = fromPCRing(poly[0]);
-            list.push(r);
-            made.push({ kind: key, i: list.length - 1 });
-        });
+            return r;
+        };
+        if (keepSecondaries) {
+            const at = base.ref.i;
+            const pieces = result.map(build);
+            list.splice(at, 1, ...pieces);
+            pieces.forEach((_, i) => made.push({ kind: key, i: at + i }));
+        } else {
+            const drop = new Set(objs.map(o => o.ref.i));
+            const kept = list.filter((_, i) => !drop.has(i));
+            list.length = 0;
+            for (const r of kept) list.push(r);
+            result.forEach((poly, i) => {
+                list.push(build(poly, i));
+                made.push({ kind: key, i: list.length - 1 });
+            });
+        }
     }
     osel = made; vsel = [];
     clearRegSel();
     syncSelFromOsel();
     const holes = result.reduce((a, poly) => a + poly.length - 1, 0);
-    return { pieces: made.length, holes };
+    return { pieces: made.length, holes, kept: keepSecondaries ? objs.length - 1 : 0 };
 }
 function uniqueLandId(want) {
     let id = want, n = 2;
@@ -5759,7 +6257,15 @@ function scaleMap(k) {
     //
     // ONE loop over the shapes. There used to be two, one for land and one for ice, and
     // when the two arrays became one they both ran over it — scaling to 50% gave 25%.
-    for (const l of doc.shapes) transformShape(l, (x, y) => ({ x: x*k, y: y*k }));
+    for (const l of doc.shapes) {
+        transformShape(l, (x, y) => ({ x: x*k, y: y*k }));
+        // An AUTHORED ramp is a length across the map, like a prop's collider radius and a
+        // region's falloff, so it scales with everything else — a bar on a 60% course wants
+        // a 60% approach or its rim stops matching its size. An inherited one needs nothing:
+        // it comes from the kind at compile time, and the compiler's own clamp to half the
+        // radius shrinks it for free.
+        if (l.feather != null) l.feather *= k;
+    }
     for (const m of doc.course.marks) { m.x *= k; m.y *= k; }
     // Props scale WITH the course: position, sprite size (via `scale`, which the traits
     // also fold into the default collider) and any authored collider radius — a 60%
@@ -6034,17 +6540,17 @@ cv.addEventListener('mousedown', (e) => {
                  : e.altKey
                  ? { kind: 'propscale', i: hitI, last: w, moved: false }
                  : { kind: 'prop',      i: hitI, last: w, moved: false };
+        } else if (sub === 'place' && reg[($('prop-kind') || {}).value]) {
+            // PLACE ARMED: a tap puts one here, a drag sizes the circle a stand fills. Deferred
+            // to pointer-up, because which of the two it is only becomes known when the gesture
+            // ends.
+            drag = { kind: 'propnew', origin: w, r: 0 };
         } else {
-            const kind = ($('prop-kind') || {}).value;
-            if (reg[kind]) {
-                const ps = doc.props || (doc.props = []);   // write path creates the array
-                let n = 1;
-                while (ps.some(p => p.id === 'prop-' + n)) n++;
-                ps.push({ id: 'prop-' + n, kind, x: w.x, y: w.y, heading: 0 });
-                selProp = ps.length - 1;
-                selProps = [selProp];
-                afterEdit(true, 'place prop');
-            }
+            // SELECT: empty water is marquee territory, the same as on every other layer. This
+            // is what placing-on-click used to cost — with creation bound to the arrow there
+            // was nowhere left for a box, so props had no multi-select at all.
+            marquee = { a: w, b: w, add: e.shiftKey, level: 'props' };
+            drag = { kind: 'marquee', add: e.shiftKey };
         }
         draw(); return;
     }
@@ -6150,7 +6656,7 @@ window.addEventListener('mousemove', (e) => {
             const a1 = Math.atan2(w.x - boatProbe.x, -(w.y - boatProbe.y));
             boatProbe.heading = drag.start + (a1 - a0);
             boatInfo(); draw();
-        } else if (drag.kind === 'icenew') {
+        } else if (drag.kind === 'icenew' || drag.kind === 'propnew') {
             drag.r = Math.hypot(w.x - drag.origin.x, w.y - drag.origin.y);
             draw();
         } else if (drag.kind === 'measure') {
@@ -6381,6 +6887,23 @@ window.addEventListener('mouseup', () => {
             osel = marquee.add ? osel.concat(refs.filter(rf => !inOsel(rf))) : refs;
             vsel = [];
             syncSelFromOsel();
+        } else if (level === 'props') {
+            // A prop is a POINT, so "in the box" is its position. Its sprite may overhang and
+            // that is right: you are picking the thing, not its picture.
+            const idx = [];
+            dprops().forEach((p, i) => {
+                if (p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1) idx.push(i);
+            });
+            const add = marquee.add;
+            marquee = null;
+            // A CLICK on empty water clears the selection, which is what it means everywhere
+            // else in the editor. Creation lives on Place now, so this is free to mean it.
+            selProps = tiny && !add ? []
+                     : add ? selProps.concat(idx.filter(i => !selProps.includes(i))) : idx;
+            selProp = selProps.length ? selProps[selProps.length - 1] : -1;
+            listAnchor = listCursor = -1;
+            refreshInspector(); objRefresh(); refreshChrome(); draw();
+            return;
         } else {
             hits = modeVertexRefs().filter(v => v.x >= x0 && v.x <= x1 && v.y >= y0 && v.y <= y1)
                                    .map(({ kind, id, ring, i, r }) => ({ kind, id, ring, i, r }));
@@ -6394,6 +6917,14 @@ window.addEventListener('mouseup', () => {
             if (mode === 'shape') { sel = Object.assign({}, NOHIT); osel = []; refreshInspector(); info(); }
         }
         refreshChrome(); draw();
+        return;
+    }
+    if (d.kind === 'propnew') {
+        const tap = d.r * view.scale < 4;
+        const n = addProps(d.origin.x, d.origin.y, d.r, tap ? 1 : null);
+        if (!n) return;
+        afterEdit(true, n === 1 ? 'place prop' : `place ${n} props`);
+        if (n > 1) toast(`${n} props placed · ${fmtM(d.r * 2)} across`);
         return;
     }
     if (d.kind === 'icenew') {
@@ -6456,6 +6987,44 @@ window.addEventListener('keydown', (e) => {
                  toast(`Duplicated ${n} — the ${n === 1 ? 'copy is' : 'copies are'} now selected`); }
         return;
     }
+    // ── Cut / Copy / Paste ──────────────────────────────────────────────────
+    // These MUST come before the bare-letter keys at the bottom of this handler, which bind
+    // C to the current field and V and N to tools without testing for a modifier. They each
+    // return, so the fall-through cannot fire both.
+    //
+    // A thing worth saying out loud: copy does NOT go through afterEdit, because copying
+    // changes nothing. Cut and paste do, so both are one undo away.
+    if (mod && e.key.toLowerCase() === 'c') {
+        e.preventDefault();
+        const n = clipCopy();
+        toast(n ? `Copied ${n}` : 'Nothing selected to copy', !n);
+        return;
+    }
+    if (mod && e.key.toLowerCase() === 'x') {
+        e.preventDefault();
+        const n = clipCut();
+        if (n) { afterEdit(true, n === 1 ? 'cut' : `cut ${n}`); toast(`Cut ${n}`); }
+        else toast('Nothing selected to cut', true);
+        return;
+    }
+    if (mod && e.key.toLowerCase() === 'v') {
+        e.preventDefault();
+        if (!clip || !clip.items.length) { toast('Nothing on the clipboard', true); return; }
+        // Named by layer, because paste may have just switched layers to land the content
+        // where it belongs — being told which one is the difference between a helpful jump
+        // and things appearing somewhere you were not looking.
+        const where = (LAYERS.find(L => L.mode === clip.mode) || {}).name || clip.mode;
+        const n = clipPaste();
+        if (n) { afterEdit(true, n === 1 ? 'paste' : `paste ${n}`);
+                 toast(`Pasted ${n} into ${where} — ${n === 1 ? 'it is' : 'they are'} now selected`); }
+        return;
+    }
+    // ⚠️ NEW IS BEST-EFFORT AND THE BUTTON IS THE RELIABLE PATH. Chrome and Firefox reserve
+    // Cmd/Ctrl+N for a new browser window and never deliver it to the page, so this fires
+    // only where the browser has let go of it (a standalone/installed window, some Linux
+    // builds). It is wired anyway because it costs one line and does the right thing wherever
+    // it does arrive — but it must not be the only way to reach New, and it isn't.
+    if (mod && e.key.toLowerCase() === 'n') { e.preventDefault(); newDoc(); return; }
     // Arrows walk the active layer's list; Shift+arrow EXTENDS the selection from its
     // anchor, the way every list tool does it. The row scrolled into view is the row
     // the cursor just landed on. Only when a layer HAS a list — on the others the keys
@@ -6652,7 +7221,8 @@ $('btn-sel-resample').addEventListener('click', () => {
 // be chained. Each says what it produced, because "3 shapes -> 2 shapes with a hole" is not
 // something you can read off the map at a glance.
 for (const [id, op] of [['btn-sel-union', 'union'], ['btn-sel-intersect', 'intersect'],
-                        ['btn-sel-subtract', 'subtract'], ['btn-sel-symdiff', 'symdiff']]) {
+                        ['btn-sel-subtract', 'subtract'], ['btn-sel-exclude', 'exclude'],
+                        ['btn-sel-symdiff', 'symdiff']]) {
     $(id).addEventListener('click', () => {
         const why = oselBooleanWhy();
         if (why) { toast(why, true); return; }
@@ -6661,9 +7231,17 @@ for (const [id, op] of [['btn-sel-union', 'union'], ['btn-sel-intersect', 'inter
         if (!r) return;
         if (r.error) { toast(r.error, true); draw(); return; }
         afterEdit(true, op);
-        const piece = `${r.pieces} ${r.pieces === 1 ? 'shape' : 'shapes'}`;
-        toast(`${BOOL_LABEL[op]}: ${n} → ${piece}`
-              + (r.holes ? ` with ${r.holes} hole${r.holes === 1 ? '' : 's'}` : ''));
+        // Exclude reports on the PRIMARY alone — "4 → 2 shapes" would be a lie about an op
+        // that only ever touches one of them — and names the survivors so it is obvious at a
+        // glance that this was not Subtract.
+        const holes = r.holes ? ` with ${r.holes} hole${r.holes === 1 ? '' : 's'}` : '';
+        if (r.kept) {
+            const cut = r.pieces === 0 ? 'primary fully covered, removed'
+                                       : `primary → ${r.pieces} ${r.pieces === 1 ? 'shape' : 'shapes'}${holes}`;
+            toast(`${BOOL_LABEL[op]}: ${cut}; ${r.kept} kept as ${r.kept === 1 ? 'it was' : 'they were'}`);
+        } else {
+            toast(`${BOOL_LABEL[op]}: ${n} → ${r.pieces} ${r.pieces === 1 ? 'shape' : 'shapes'}${holes}`);
+        }
     });
 }
 $('btn-sel-del').addEventListener('click', () => {
@@ -6910,6 +7488,23 @@ window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefau
 window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildKindPicker,
     // exposed for headless tests
     _state: () => ({ doc, findings, history: history.length, histIdx, dirty: isDirty(), tool, sel }),
+    // The layer table, for test_controls: it asserts the visibility eyes and this list
+    // agree as SETS. It used to assert a hardcoded count of seven, which meant shipping
+    // the Props layer broke a test that had found nothing wrong — the failure landed on
+    // the good change instead of the bad one.
+    _layers: () => LAYERS.map(L => ({ id: L.id, noEye: !!L.noEye })),
+    // The clipboard verbs, for test_controls' shortcut coverage. Exposed as the FUNCTIONS
+    // the keys call rather than as a synthetic key event, so a test can assert what they do
+    // without depending on the browser delivering a chord it may reserve for itself.
+    _clipCopy: clipCopy, _clipCut: clipCut, _clipPaste: clipPaste,
+    // The prop selection, for test_props: the marquee is the thing that placing-on-click used
+    // to make impossible, so it is the thing worth asserting.
+    _selProps: () => selProps.slice(),
+    // For asserting WHERE a paste landed, not merely that it happened. `_view`/`_setView`
+    // already existed further down this object — a second pair here would have lost the
+    // literal-key race to them and silently changed their signature.
+    _ringBox: (rings) => ringBox(rings),
+    _clip: () => clip && { mode: clip.mode, n: clip.items.length, pastes: clip.pastes },
     _setTool: (t) => { tool = t; refreshChrome(); },
     _sculpt: sculpt, _roughen: roughen, _simplify: simplify, _brushRings: brushRings,
     _setMode: (m) => setMode(m),

@@ -19,7 +19,8 @@ import json
 import pathlib
 import sys
 
-from PIL import Image
+import numpy as np
+from PIL import Image, ImageFilter
 
 import paths
 
@@ -132,6 +133,51 @@ def wrap_resize(img, m):
     return big.resize((m * 3, m * 3), Image.LANCZOS).crop((m, m, m * 2, m * 2))
 
 
+def hole_fraction(img, bbox):
+    """Enclosed transparency as a fraction of crown area — the see-through a canopy actually has."""
+    from PIL import ImageDraw
+    probe = img.getchannel("A").point(lambda v: 255 if v > 128 else 0)
+    ImageDraw.floodfill(probe, (0, 0), 128)              # corners are already checked clear
+    a = np.asarray(probe)[bbox[1]:bbox[3], bbox[0]:bbox[2]]
+    crown = int(((a == 255) | (a == 0)).sum())
+    return int((a == 0).sum()) / max(1, crown)
+
+
+def punch_holes(img, luma_max, open_px, feather=1.0):
+    """Move the canopy's painted openings out of RGB and into alpha.
+
+    Two rounds of prompting could not get a generator to cut holes through a crown — 0.0%,
+    2.5% and 1.1% see-through against a 6% target — and the reason is the same prior that
+    fights the camera: aerial photographs of woodland show shadowed depth between crowns,
+    essentially never sky. "Cut through to the background" is not a thing the training data
+    has much of.
+
+    It does not need to. The openings ARE in the delivered art, painted near-black: inside a
+    crown the darkest few percent sit at luma 5-16 against a median of 100-125, which is a
+    cleanly separable phase. So this moves information that is already on disk from one
+    channel to another, rather than asking for it again.
+
+    KEYED AS BLOBS, NOT PIXELS. A plain luma threshold turns every dark line between two
+    leaves into a pinhole and the crown comes out as lace. A morphological OPEN — erode, then
+    dilate — drops anything thinner than the kernel and keeps only openings with real area,
+    which is what the subject asks for: "six to ten small ragged openings", not a mesh.
+
+    The MASTER IS ARCHIVED BEFORE THIS RUNS, so masters/ keeps exactly what was delivered and
+    this is always one manifest key away from being undone.
+    """
+    a = np.asarray(img.convert("RGBA")).astype(np.float64)
+    rgb, al = a[..., :3], a[..., 3]
+    lum = 0.299 * rgb[..., 0] + 0.587 * rgb[..., 1] + 0.114 * rgb[..., 2]
+    dark = (((lum < luma_max) & (al > 128)).astype(np.uint8)) * 255
+    m = Image.fromarray(dark, "L")
+    k = open_px * 2 + 1
+    m = m.filter(ImageFilter.MinFilter(k)).filter(ImageFilter.MaxFilter(k))
+    if feather:
+        m = m.filter(ImageFilter.GaussianBlur(feather))
+    hole = np.asarray(m).astype(np.float64) / 255.0
+    return Image.fromarray(np.dstack([rgb, al * (1 - hole)]).astype(np.uint8), "RGBA")
+
+
 def ingest(asset, profiles, check_only=False):
     key = asset["key"]
     prof = profiles[asset["class"]]
@@ -144,6 +190,57 @@ def ingest(asset, profiles, check_only=False):
     bbox, notes = check_master(img, prof, key, m)
     if size_note:
         notes.insert(0, size_note)
+
+    # ── IS IT ACTUALLY ORTHOGRAPHIC? ────────────────────────────────────────
+    # The one failure this library cannot talk a generator out of. Straight-down imagery is
+    # thin on the ground in training data, so the default is a three-quarter hero shot, and
+    # a prompt saying "strict top-down orthographic, no side visible" gets ignored politely
+    # — the 2026-08-09 tree batch came back at 17-56 degrees off vertical against exactly
+    # that wording.
+    #
+    # It is, however, MEASURABLE, and that is what this does. A round subject photographed
+    # from straight above is round; tilt the camera by t and its outline squashes to cos(t)
+    # in one axis. So for any asset that declares itself round in plan, the content bbox
+    # ratio reports the camera angle directly and the reviewer stops having to judge it by
+    # eye. Opt-in via `planRound`, because plenty of props are honestly elongated (a leaning
+    # palm, a cargo ship) and a blanket check would be pure noise.
+    if bbox and asset.get("planRound"):
+        bw, bh = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        ratio = max(bw, bh) / max(1, min(bw, bh))
+        if ratio > 1.12:
+            import math
+            tilt = math.degrees(math.acos(min(1.0, 1.0 / ratio)))
+            notes.append(
+                f"NOT ORTHOGRAPHIC: content is {ratio:.2f}x longer on one axis ({bw}x{bh}). "
+                f"A subject that is round in plan implies the camera sat ~{tilt:.0f} degrees "
+                f"off vertical. Usable, but regenerate when you can")
+
+    # ── DID THE OPENINGS COME BACK AS HOLES? ────────────────────────────────
+    # A canopy is asked for with "ragged openings where the canopy thins", and the 2026-08-09
+    # batch delivered them as DARK GREEN PATCHES — interior alpha holes measured 0.0%, 0.0%
+    # and 0.4% across the three crowns. They look like gaps and occlude like a solid disc,
+    # which is the whole difference: the engine draws these over the fleet, so a painted gap
+    # hides a boat exactly as well as a painted leaf does.
+    #
+    # Cheap to check and impossible to eyeball, so the manifest states the floor and this
+    # measures it. Interior holes only — flood the transparent region inward from the border
+    # and whatever transparency survives is enclosed by the crown.
+    #
+    # MEASURED ON WHAT SHIPS, NOT ON WHAT ARRIVED. When `punchHoles` is set the delivered
+    # file legitimately has none — the openings are painted and get keyed out below — so
+    # checking the master would report a failure on an asset that ships correct, and train
+    # the reader to ignore the one warning that matters.
+    if bbox and asset.get("minHoles"):
+        ph0 = asset.get("punchHoles")
+        probe_img = (punch_holes(img, ph0.get("luma", 32), ph0.get("open", 5),
+                                 ph0.get("feather", 1.0)) if ph0 else img)
+        frac = hole_fraction(probe_img, bbox)
+        if frac < asset["minHoles"]:
+            notes.append(
+                f"NO REAL OPENINGS: {frac:.1%} of the crown is see-through, asked for "
+                f"{asset['minHoles']:.0%}. The gaps were painted as dark patches rather than "
+                f"cut through the alpha, so this occludes like a solid disc"
+                + (" — and punchHoles could not recover them either" if ph0 else ""))
 
     for n in notes:
         print(f"    warn: {n}")
@@ -162,6 +259,12 @@ def ingest(asset, profiles, check_only=False):
 
     MASTERS.mkdir(exist_ok=True)
     img.save(paths.store(MASTERS, asset, PREFIXES))
+
+    # After the archive, before the bake: masters/ keeps the delivered file untouched.
+    ph = asset.get("punchHoles")
+    if ph:
+        img = punch_holes(img, ph.get("luma", 32), ph.get("open", 5), ph.get("feather", 1.0))
+        print(f"    punched openings: luma<{ph.get('luma', 32)}, open {ph.get('open', 5)}px")
 
     outdir = REPO / prof["out"]
     dest = paths.store(outdir, asset, PREFIXES)

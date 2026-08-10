@@ -107,10 +107,83 @@ BASE = (
     "consistent directional lighting; minimal microtexture; no text; no UI; no photorealism."
 )
 
+# ── ASKING FOR A VIEW THE TRAINING DATA BARELY CONTAINS ─────────────────────
+# Every generator defaults to the three-quarter hero shot, and no amount of insisting on
+# "top-down orthographic" reliably beats that, because the phrase names a CAMERA the model
+# has almost no examples of. Measured on the 2026-08-09 tree batch, which was generated
+# against a clause that already said "Strict TOP-DOWN ORTHOGRAPHIC ... no side of the object
+# visible": the three canopies came back 1.44, 1.46 and 1.77 times wider than tall, i.e.
+# shot from 46, 47 and 56 degrees off vertical. The instruction was ignored, politely.
+#
+# So this clause stops naming the camera and does three other things instead.
+#
+# 1. IT NAMES A GENRE THE DATA ACTUALLY HAS. Straight-down imagery exists in bulk — drone
+#    survey, orthophoto, satellite tile — just not filed under "orthographic". Asking for
+#    that picture gives the model a real distribution to sample instead of a view it has to
+#    infer.
+# 2. IT GIVES AN ACCEPTANCE TEST ON THE PICTURE, NOT THE CAMERA. "Directly above" is
+#    unfalsifiable to a generator; "as tall as it is wide" is not. A round thing shot from
+#    straight above is round, and the instant the camera tips it flattens into an oval — so
+#    the outline is the one property that cannot be faked, and it is the same number ingest
+#    measures on delivery.
+# 3. IT NAMES THE DEFAULT AS THE FAILURE, in the negatives, so "three-quarter view" is a
+#    thing being refused rather than a thing left unmentioned.
+#
+# ── AND THE GENERATOR IS ITSELF A VARIABLE ──────────────────────────────────
+# Worth knowing before blaming a prompt: the models differ markedly on this one axis, and on
+# the evidence so far Gemini holds the nadir view best. The cove cargo family was generated
+# twice against the same manifest subject, and the tell is what happened to the parts that
+# stand UP off the deck — round 1 returned the funnel as a cylinder with a visible side and
+# the deckhouse as a block with its front face showing, while round 2 returned both as flat
+# plan shapes, a circle and a rectangle, seen square from above. Same words, different model.
+#
+# So a returned three-quarter view is not automatically a prompt defect. If the wording
+# already carries this clause and the result is still tilted, changing generator is the
+# cheaper experiment than rewriting the subject again — and the ingest checks (`planRound`
+# for anything round in plan) will tell you which of the two you got, in a number, before you
+# have to decide by eye.
+ORTHO_BASE = (
+    "AN AERIAL SURVEY PHOTOGRAPH: a drone hovering directly over the subject, camera pointing "
+    "straight down at the ground. That is the picture — the geometry of an orthophoto or a "
+    "satellite tile, not a 'top-down look' applied as a style. "
+    "NOTHING OF ANY SIDE MAY APPEAR: no length of trunk, no bark surface running away from "
+    "you, no face, no chest, no flank of a hull. You see the top surface and the ground "
+    "immediately around it, and nothing else. A head seen from above is the back of a skull, "
+    "with the nose or beak foreshortened and pointing away, never a face looking at the "
+    "viewer. Every part of the subject is the SAME distance from the camera, so nothing is "
+    "larger for being nearer and no edge converges. "
+)
+# ⚠️ THE ROUNDNESS TEST IS NOT UNIVERSAL, and asserting it as though it were was a real bug:
+# for one afternoon every world-prop and element carried "the silhouette must be AS TALL AS IT
+# IS WIDE" and a matching "wider than tall" negative. That is the correct test for a tree crown
+# and flat nonsense for a cargo ship at 4:1 or a bridge at 10:1 — it instructs the generator to
+# square up a subject that is honestly long, which is a worse defect than the tilt it was
+# written to catch.
+#
+# So it is gated on the SAME `planRound` flag ingest measures against, and there is no third
+# state: an asset either claims to be round in plan, and gets the outline test in the prompt
+# and the ratio check on delivery, or it does not and gets the test that IS true of a long
+# subject — parallel sides and no convergence, which is exactly how a tilt shows up on a hull
+# or a deck.
+ORTHO_ROUND = (
+    "THE ACCEPTANCE TEST IS THE OUTLINE, because it is the one thing a tilted camera cannot "
+    "fake: a roughly round subject seen from straight above is ROUND, and the moment the "
+    "camera tips it flattens into an oval. The subject's silhouette must therefore be AS TALL "
+    "AS IT IS WIDE. If it comes back wider than it is tall, the camera was tilted and the "
+    "image is wrong however good it looks. "
+)
+ORTHO_LONG = (
+    "THE ACCEPTANCE TEST IS THE SIDES, because that is where a tilt shows on a long subject: "
+    "this one is much longer than it is wide, and its two long edges must run PARALLEL for its "
+    "whole length. The far end is exactly as wide as the near end, nothing tapers, narrows or "
+    "converges, and no end face is visible. If one end is smaller than the other the camera was "
+    "tilted and the image is wrong however good it looks. "
+)
+ROUND_NEGATIVE = ", oval silhouette, elliptical crown, squashed circle, flattened disc, wider than tall"
+
 CLASS_ADDON = {
     "world-prop": (
-        "Strict TOP-DOWN ORTHOGRAPHIC game sprite viewed from directly overhead — no "
-        "perspective, no horizon, no side of the object visible. THE TEST: only the TOP surface of the subject may appear. If any part of its front, face or side shows — a creature's eyes, its chest, the side of a hull — the camera angle is wrong. A head seen from above is the back of a skull, with the nose or beak foreshortened and pointing away, never a face looking at the viewer. {bg} "
+        "{ortho}{bg} "
         "The object alone: no water, no ground, no cast scenery, no baked drop shadow. "
         "Anything with a front faces the TOP of the frame — the engine rotates these and "
         "treats sprite-up as zero heading. Leave a clear margin of at least 8% of the "
@@ -120,12 +193,7 @@ CLASS_ADDON = {
         "{display}px."
     ),
     "element": (
-        "Strict TOP-DOWN ORTHOGRAPHIC sprite viewed from directly overhead — no "
-        "perspective, no horizon, no side of the subject visible. THE TEST: only the TOP "
-        "surface may appear. If any part of the subject's front, face or side shows — a "
-        "creature's eyes, its chest — the camera angle is wrong. A head seen from above is "
-        "the back of a skull, with the nose or beak foreshortened and pointing away, never "
-        "a face looking at the viewer. {bg} "
+        "{ortho}{bg} "
         "EXACTLY ONE subject, alone, centred, filling most of the frame, facing the TOP. "
         "No second copy, no group, no companion, no reflection. Nothing else in frame: no "
         "ground, no scenery, no cast shadow. This art gets scaled down and scattered into "
@@ -400,7 +468,14 @@ NEGATIVE = (
     "photorealistic, cinematic realism, 3D render, heavy painterly brushwork, watercolor "
     "wash, gritty, horror, military, generic vector clip art, excessive texture, excessive "
     "bloom, thin fragile details, cluttered background, drop shadow, ground plane, "
-    "perspective view, isometric, text, logo, watermark"
+    "perspective view, isometric, text, logo, watermark, "
+    # THE DEFAULT, NAMED. "isometric" and "perspective view" were already here and the tree
+    # batch still came back at 46-56 degrees, because the thing it actually produced has its
+    # own vocabulary and none of these words were in it. A model refuses what it can name.
+    "three-quarter view, 3/4 view, 45 degree angle, oblique view, tilted camera, angled "
+    "camera, hero angle, hero shot, product shot, eye level, low angle, dutch angle, "
+    # the measurable symptom for a ROUND subject moves to ROUND_NEGATIVE, added per asset
+    "depth, receding ground, vanishing point, foreshortening"
 )
 
 # Arrangement negatives, added after two penguin huddles came back as rosettes. They are
@@ -478,8 +553,13 @@ def build(asset, profiles, bg="transparent"):
     # A feature has to survive the master -> screen reduction; 4 screen px is the floor
     # the reduction ladder shows detail dying below.
     minfeature = max(4, round(4 * prof["master"] / tile))
+    # The camera clause, plus WHICHEVER acceptance test is true of this subject — see the
+    # ORTHO_ROUND / ORTHO_LONG note. Same `planRound` flag ingest measures against, so the
+    # prompt and the delivery check can never disagree about what shape this thing is.
+    ortho = ORTHO_BASE + (ORTHO_ROUND if asset.get("planRound") else ORTHO_LONG)
     parts = [base, CLASS_ADDON[asset["class"]].format(
-        display=display, bg=BACKGROUNDS[bg], tileworld=tile, minfeature=minfeature)]
+        display=display, bg=BACKGROUNDS[bg], tileworld=tile, minfeature=minfeature,
+        ortho=ortho)]
 
     if asset.get("role"):
         parts.append(ROLE_ADDON[asset["role"]])
@@ -568,6 +648,9 @@ def emit(asset, profiles, bg="transparent"):
         neg = NEGATIVE.replace("ground plane, ", "") + TEXTURE_NEGATIVE
     else:
         neg = NEGATIVE if asset.get("allowSymmetry") else NEGATIVE + ARRANGEMENT_NEGATIVE
+        # Only a subject that claims to be round in plan can be faulted for not being round.
+        if asset.get("planRound"):
+            neg += ROUND_NEGATIVE
     print("\nNEGATIVE: " + neg)
     if asset.get("rework"):
         # AFTER the prompt, never inside it: this is a note to whoever is running the queue,
