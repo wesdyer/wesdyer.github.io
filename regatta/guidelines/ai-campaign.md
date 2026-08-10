@@ -13053,3 +13053,54 @@ finishing at all was judged worth more than 6s of lagoon median, but it IS a
 trade and both should be re-examined; the sets are small (lagoon 2×8, river 6+12)
 and neither swing is resolved at these widths by the standing rules.
 Lake's boat rubs 2.47 → 3.03 is the third watch column.
+
+## ⏭ CARRY-FORWARD PROMPT FOR THE NEXT INSTANCE (verbatim, 2026-08-09 night close)
+State: HEAD `c14e428`, behaviour HEAD `3f26634`. **Redrock 1.77x (386 vs 218.2)**
+— the <436 goal is met, so redrock is no longer the biggest venue gap. Anchors:
+`s2*` (snap turn) and `cu2lag*`/`rivCU*` (ground frame); the `a2*` set is the
+pre-session baseline. Baseline tree `treeFIN` (≡ HEAD, verified). Goldens PASS
+30/30 at `--seeds 3`, freeze CLEAN.
+
+READ [[regatta-grounding-tax]] FIRST — the mechanism story is complete and should
+not be re-derived. Two landings, both REACHABILITY fixes rather than new prices:
+the contact reflex got the 5x snap turn that wiggle/escape already had (its
+commanded escape took ~2.9s to reach against a 2.8s median grind), and the escape
+now chooses its heading in the GROUND frame instead of the boat frame.
+
+WHAT IS OPEN, IN THE ORDER THE EVIDENCE RANKS IT:
+1. **THE TWO COSTS.** Lagoon +1.0 (was −6.0 before the ground-frame commit) and
+   river +2/+4 with finishers 5-8s slower. Both are the ground-frame commit's
+   doing, both are small sets (lagoon 2×8, river 6+12), neither is resolved at
+   those widths. Re-bench WIDER before touching either — a 6s lagoon swing is
+   inside the noise the standing rules describe.
+2. **`treeSPIN` IS STILL UNFIXED AND IS A REAL BUG.** script.js ~766: a boat
+   serving her penalty turns `return`s before `applyAvoidance`, so she has NO
+   contact reflex and no avoidance at full throttle — 9.2% of all land-contact
+   time. It was the weaker candidate this session (leg 5 30.3→20.3 but leg 3
+   30.7→43.1) and it was measured against the OLD weak reflex. The reflex is now
+   much stronger, so re-test it on this HEAD; the tree still exists.
+   Related latent defect: `iceEscapeTimer` is decremented only inside
+   applyAvoidance, so it FREEZES for the whole of any penalty — which also
+   suspends the floe-trajectory refinement (~844) and the pack-speed discipline
+   (~963) for that duration.
+3. **FAMILY B IS NOW THE FRONTIER.** bay/lake/ocean are 1.10/1.10/1.14x and their
+   WHOLE gap is extra distance on the beat (16-27% further while sailing FASTER
+   through the water) — and all three are byte-inert to everything landed this
+   session. Never decomposed. Measure before proposing a shape.
+4. Redrock's own residue: leg2-sub9 (the mark-6 bowl, +21.7 s/boat) belongs to the
+   zone-entry-rights design, NOT another local shape; leg 1 is the fleet
+   avoidance tax (899u of give-way waste, 9 tacks vs her 2-4).
+⛔ DEAD, do not rebuild: **H1 TANGENTIAL PEEL-OFF** (leg-5 30.3→41.1; fires on
+1.8% of contact frames). Phase D's jitter motivation is also dead — the commanded
+escape heading is stable at a median 0.0°/frame.
+
+GUARDRAILS (the ones that actually bit this session):
+· Actions-not-prices is now 9-for-9 — both landings changed which actions EXIST.
+· An episode's ENTRY statistic is not its typical FRAME statistic (rule 28): "72
+  u/s" was the episode entry; the median contact frame is ~1 u/s.
+· Override precedence is not source order — find the LAST writer (rule 27).
+· A timer decremented in one place freezes wherever that place is skipped (rule
+  29) — it nearly attributed the whole win to the wrong mechanism.
+· `npm run trace` verifies only 20 of the 30 stored traces. Use
+  `node regatta/eval/run_traces.js --seeds 3` and read the count in the PASS line.
+· Watch columns: lake boat rubs 2.47→3.03, lagoon, river.
