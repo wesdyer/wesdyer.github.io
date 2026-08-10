@@ -342,10 +342,70 @@ class BotController {
             const timeSinceStart = state.race.timer;
 
             // Velocity Check (Hysteresis)
-            if (this.boat.speed * 4 < 1.0) {
+            //
+            // ⭐ THE RESET BAR IS SCALED BY THE DAY, NOT BY THE FRAME. 2.5 kt is right
+            // where the fleet cruises at 5.7-8.5 kt. Gatorgrass Bayou blows 0.9-4.8 kt
+            // and its fleet MEANS 2.07 kt — below the reset — so a boat that once dipped
+            // into weed can never clear the timer by sailing normally. It ratchets to 3 s
+            // and wiggles, and wiggle beam-reaches 100 deg off the wind with avoidance
+            // switched off. Measured: 25% of racing time, odometer 1.95x vs her 1.06x.
+            //
+            // ⚠️ IT MUST NOT BE THE BOAT'S OWN INSTANTANEOUS TARGET. That was tried
+            // (treeSTK2/STK3) and river lost 16 of 108 finishers, because the test goes
+            // CIRCULAR: a boat pinned against a bank sits in that bank's wind shadow, so
+            // its local target collapses, and "you are making 60% of what is available"
+            // declares a trapped boat healthy. Being somewhere hopeless must not excuse
+            // you from being stuck.
+            //
+            // The day's MEDIAN wind over the racecourse (state.wind.spread.med, the mean
+            // field p50 — no gusts, no oscillator) is a RACE CONSTANT and cannot be
+            // lowered by the boat sailing somewhere bad. Where the day supports the old
+            // bar this is byte-identical by construction, so every 11-16 kt venue is
+            // untouched; only a genuinely light-air DAY moves. Venue-class scoping on a
+            // measured physical property, which is the shape standing rule 11 asks for.
+            const wMed = (state.wind && state.wind.spread && state.wind.spread.med > 0)
+                ? state.wind.spread.med : null;
+            if (wMed !== null && state.course._stuckBarKey !== wMed) {
+                state.course._stuckBarKey = wMed;
+                const nom = (typeof getTargetSpeed === 'function')
+                    ? getTargetSpeed(0.7, false, wMed) * 0.25 : 0;
+                state.course._stuckResetBar = nom > 0 ? Math.min(0.625, nom * 0.60) : 0.625;
+                // ⭐ BOTH bars ride the DAY, for the same reason and with the same min().
+                // Lowering the accumulate bar per-FRAME is what broke river (a boat in a
+                // bank's shadow excused itself); lowering it per-RACE cannot, because the
+                // day median is not something a trapped boat can move. On any 8+ kt day
+                // this is exactly 0.25 and the venue is byte-identical.
+                state.course._stuckAccelBar = nom > 0 ? Math.min(0.25, nom * 0.25) : 0.25;
+            }
+            const resetBar = (wMed !== null && state.course._stuckResetBar != null)
+                ? state.course._stuckResetBar : 0.625;
+            const accelBar = (wMed !== null && state.course._stuckAccelBar != null)
+                ? state.course._stuckAccelBar : 0.25;
+            if (this.boat.speed < accelBar) {
                 this.lowSpeedTimer += TICK;
-            } else if (this.boat.speed * 4 > 2.5) { // Only reset if truly moving fast
+            } else if (this.boat.speed > resetBar) { // Only reset if truly moving fast
                 this.lowSpeedTimer = 0;
+            } else if (resetBar < 0.625) {
+                // ⭐ THE DEAD BAND BLEEDS — ON A LIGHT-AIR DAY ONLY. Between the two bars
+                // this hysteresis FREEZES whatever stuck-time was banked, because it was
+                // written for a bimodal world: a boat is either stopped or cruising. On an
+                // 11-16 kt venue that middle is a sliver nobody occupies (redrock wiggles
+                // 3.2% of the time). On Gatorgrass boats LIVE there — 34.8% of racing time
+                // sits between the bars, and 320 of 454 wiggle entries (70%) begin from
+                // inside it, off a timer banked during some earlier dip. A boat making
+                // 1.5 kt of an available 2.2 kt is SAILING and should be shedding
+                // stuck-time, not keeping it.
+                //
+                // ⚠️ SCOPED, BECAUSE UNSCOPED IT IS NOT HARMLESS. Bleeding on every venue
+                // moved river, redrock and lake: river paid +55% boat contacts and +36 s of
+                // mean for a flat paired median, and redrock paid +7.0 paired median with
+                // penalties 2.03 -> 2.27. The test resetBar < 0.625 is true only where the
+                // day-scaled bar actually bit — a genuinely light-air DAY — so every 8+ kt
+                // venue keeps today frozen dead band and is byte-identical by construction.
+                //
+                // Half rate, so a genuinely pinned boat still accumulates NET: she sits
+                // BELOW accelBar, where the timer climbs at full rate.
+                this.lowSpeedTimer = Math.max(0, this.lowSpeedTimer - TICK * 0.5);
             }
 
             const prevState = this.livenessState;
