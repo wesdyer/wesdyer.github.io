@@ -254,41 +254,41 @@
         /**
          * RRS Definition — Leeward / Windward
          *
-         * "A boat's leeward side is the side that is or, when she is
-         * head to wind, was away from the wind. The other boat is the
-         * windward boat."
+         * "A boat's leeward side is the side that is or, when she is head to
+         * wind, was away from the wind. However, when sailing by the lee or
+         * directly downwind, her leeward side is the side on which her
+         * mainsail lies. The other side is her windward side. When two boats
+         * on the same tack overlap, the boat on the leeward side of the other
+         * is the leeward boat."
          *
-         * Implementation: Projects the vector between boats onto the
-         * wind-perpendicular axis to determine which is further downwind
-         * (leeward) vs upwind (windward). Tack-aware for correct sign.
+         * THE DEFINITION IS HULL-FRAME, NOT WIND-FRAME (2026-08-09, owner
+         * report: "I sometimes see a windward boat getting rights over a
+         * leeward boat"). The old implementation projected the separation
+         * onto the fixed wind-PERPENDICULAR axis with a tack-based sign.
+         * That axis agrees with the hull's leeward side only ABOVE a beam
+         * reach: the leeward side of the hull rotates with heading, and its
+         * wind-perpendicular component flips sign at the beam. Verified by
+         * test_rule11.js: the projection picked the WINDWARD boat as
+         * "leeward" on every broad reach and run, both tacks — 7 of 12
+         * point-of-sail cases inverted. Every downwind Rule 11 decision in
+         * the game was backwards.
+         *
+         * Implementation: project the separation onto the boats' own
+         * leeward-side direction (port side for a starboard-tack boat and
+         * vice versa — getTack already handles the by-the-lee boom case),
+         * averaged over the pair since rule 11 only applies on the same
+         * tack and overlapped (near-parallel headings).
          */
         getLeewardBoat: function(b1, b2) {
-            const state = window.state;
-            // ⚠️ `state.wind.direction` is the COURSE-CENTROID BLEND. Root cause #2
-            // of this whole campaign was that it runs ~110 degrees adrift of the
-            // real wind on a multi-region venue; the AI was moved to getWindAt and
-            // the RULES ENGINE never was. Rule 11 is decided here, and measured on
-            // close pairs the blend picks the WRONG leeward boat 10.3% of the time
-            // on bay and 51.7% of the time on arctic, where the local-vs-global
-            // angle has a median of 83 degrees. Ask the water between the boats.
-            const wd = (typeof getWindAt === 'function')
-                ? getWindAt((b1.x + b2.x) / 2, (b1.y + b2.y) / 2).direction
-                : state.wind.direction;
             const t1 = this.getTack(b1);
-            const dx = b2.x - b1.x;
-            const dy = b2.y - b1.y;
-            const wx = Math.sin(wd);
-            const wy = -Math.cos(wd);
-            // Wind-perpendicular (right of wind direction)
-            const rx = -wy;
-            const ry = wx;
-            const dot = dx * rx + dy * ry;
-
-            if (t1 === STARBOARD) {
-                return (dot > 0) ? b1 : b2; // dot>0 → b2 windward, b1 leeward
-            } else {
-                return (dot > 0) ? b2 : b1; // PORT: dot>0 → b2 leeward
+            const s = (t1 === STARBOARD) ? -1 : 1; // leeward side: port(stbd tack) / stbd(port tack)
+            let lx = s * (Math.cos(b1.heading) + Math.cos(b2.heading)) / 2;
+            let ly = s * (Math.sin(b1.heading) + Math.sin(b2.heading)) / 2;
+            if (lx * lx + ly * ly < 1e-6) { // anti-parallel headings (pathological): use b1's own side
+                lx = s * Math.cos(b1.heading); ly = s * Math.sin(b1.heading);
             }
+            const dot = (b2.x - b1.x) * lx + (b2.y - b1.y) * ly;
+            return (dot > 0) ? b2 : b1; // b2 off b1's leeward side → b2 is the leeward boat
         },
 
         // ═══════════════════════════════════════════════════════════

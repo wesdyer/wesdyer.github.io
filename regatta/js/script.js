@@ -260,6 +260,11 @@ class BotController {
         this.wiggleDuration = 0;
         this.clearanceTimer = 0;
         this.clearanceHeading = 0;
+        // Stuck-state maneuver (ESCAPE): back out along own breadcrumb track.
+        this.escActive = false;
+        this.escCrumbs = [];   // ring buffer of {x,y}, one per >=20u of travel
+        this.escSustain = 0;   // seconds the wedge signature has held
+        this.escTimer = 0;     // seconds in the active maneuver (20s hard cap)
 
         // Navigation
         this.tackCooldown = 0;
@@ -406,6 +411,146 @@ class BotController {
             }
         }
 
+        // THE STUCK-STATE MANEUVER (ESCAPE). The wedged class (redrock mark-6
+        // islet-wall slot): a parked, nosed-in boat whose whole 24-heading rose
+        // is hard-blocked within 220u. Seven shapes failed on it because no
+        // existing layer can express a multi-point retreat — the fan demands
+        // forward water, the carrot has no LOS, and the wiggle beam-reaches
+        // blind. The one guaranteed-sailable line is the boat's OWN WAKE, so
+        // the maneuver retraces breadcrumbs with wiggle-grade authority.
+        // Constraints honored: no rival within 150u to enter, abort at 120u
+        // (station-keeping/Freezing-Robot); 20s hard cap (never latch past the
+        // 30s reversal-commitment disease); fixed-land venues only, floe
+        // venues excluded verbatim (drifting ice is the other physical line).
+        // Crumbs record only while MAKING WAY: a boat that wanders a pocket at
+        // wiggle speeds for minutes would flush its own entry trail out of the
+        // ring; recording at >=40 u/s keeps the trail the last ~1200u of real
+        // sailing, which by construction ends where the boat entered the trap.
+        if (isRacing && !this.escActive && this.boat.raceState.leg >= 1
+            && !this.boat.raceState.finished && this.boat.speed * 60 >= 40) {
+            const cr = this.escCrumbs;
+            const lc = cr.length ? cr[cr.length - 1] : null;
+            if (!lc || Math.hypot(this.boat.x - lc.x, this.boat.y - lc.y) >= 20) {
+                cr.push({ x: this.boat.x, y: this.boat.y });
+                if (cr.length > 60) cr.shift();
+            }
+        }
+        const escVenueOK = state.course._gridFixed && state.course._gridFixed.length
+            && !(state.course._floeObjs && state.course._floeObjs.length)
+            // Not in strong current: the retreat line assumes the water stands
+            // still (same physical line as the arc rollout and the gybe-around).
+            && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+        if (isRacing && !this.escActive && !this.penaltySpin && escVenueOK
+            && this.boat.raceState.leg >= 1 && !this.boat.raceState.finished) {
+            // THE TRIGGER IS FUTILITY, NOT GEOMETRY. The measured loop class
+            // (redrock mark-6 slot, 750-820s transits): nosedIn 88% of the
+            // transit, slow throughout, SOLO (rivMed 1286-1660u) — but a rose
+            // test never goes fully blocked (100% of blocked wiggle samples
+            // still see some 220u-clear heading), and the wiggle's own minSpeed
+            // bursts (18+ u/s) break any sustained-parked test. So: a leaky
+            // accumulator of nosed+slow+solo seconds — the wiggle gets ~5
+            // failed bursts before ESCAPE takes over.
+            let stuck = false;
+            const g = state.course.botGrid;
+            if (g && this.boat.speed * 60 < 40) {
+                let nosed = false;
+                for (const dN of [90, 180]) {
+                    const cc = g.cell(this.boat.x + Math.sin(this.boat.heading) * dN,
+                                      this.boat.y - Math.cos(this.boat.heading) * dN);
+                    if (!g.at(cc[0], cc[1])) { nosed = true; break; }
+                }
+                if (nosed) {
+                    let rivNear = false;
+                    for (const oB of state.boats) {
+                        if (oB === this.boat || oB.raceState.finished) continue;
+                        if (Math.hypot(oB.x - this.boat.x, oB.y - this.boat.y) < 150) { rivNear = true; break; }
+                    }
+                    if (!rivNear) stuck = true;
+                }
+            }
+            if (stuck) this.escSustain += TICK;
+            else this.escSustain = Math.max(0, this.escSustain - 0.5 * TICK);
+            if (this.escSustain >= 25.0) {
+                this.escActive = true;
+                this.escTimer = 0;
+                this.escSustain = 0;
+                this.escCell = null;
+                this.wiggleActive = false;
+                this.wiggleDuration = 0;
+            }
+        }
+        if (this.escActive) {
+            this.escTimer += TICK;
+            let done = this.escTimer > 20.0;
+            if (!done) {
+                for (const oB of state.boats) {
+                    if (oB === this.boat || oB.raceState.finished) continue;
+                    if (Math.hypot(oB.x - this.boat.x, oB.y - this.boat.y) < 120) { done = true; break; }
+                }
+            }
+            if (!done && this.boat.speed * 60 > 40) {
+                const gA = state.course.botGrid;
+                let nosedA = false;
+                if (gA) for (const dN of [90, 180]) {
+                    const cc = gA.cell(this.boat.x + Math.sin(this.boat.heading) * dN,
+                                       this.boat.y - Math.cos(this.boat.heading) * dN);
+                    if (!gA.at(cc[0], cc[1])) { nosedA = true; break; }
+                }
+                if (!nosedA) done = true; // escaped: un-nosed and making way
+            }
+            if (done) {
+                this.escActive = false;
+            } else {
+                // THE CLEARANCE-GRADIENT WALK. Ray roses failed at hull scale:
+                // sampling at 60u+ calls headings clear whose first 30u holds
+                // land (v3: spd spikes 0→40→4, boat pinned in a ±30u slot).
+                // The honest sensor at this scale is the grid itself: step to
+                // the SAILABLE neighbor cell with the highest clearance value
+                // (BFS distance-to-land, monotone uphill to open water by
+                // construction), aim at its CENTER (clearance-checked at build
+                // time — hull-safe), recompute as cells are crossed. Diagonal
+                // steps require both orthogonal neighbors open (no corner
+                // threading); radius-2 fallback if the boat's ring is sealed.
+                const gE = state.course.botGrid;
+                if (gE) {
+                    if (!gE._clear && window.SailCheck && window.SailCheck.clearanceField)
+                        gE._clear = window.SailCheck.clearanceField(gE);
+                    const cB = gE.cell(this.boat.x, this.boat.y);
+                    let bi = -1, bj = -1, bScore = -1e9;
+                    for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+                        if (!di && !dj) continue;
+                        const a = cB[0] + di, b = cB[1] + dj;
+                        if (!gE.at(a, b)) continue;
+                        if (di && dj && (!gE.at(cB[0] + di, cB[1]) || !gE.at(cB[0], cB[1] + dj))) continue;
+                        const clr = gE._clear ? gE._clear[b * gE.n + a] : 1;
+                        const cont = (this.escCell && a === this.escCell[0] && b === this.escCell[1]) ? 0.6 : 0;
+                        if (clr + cont > bScore) { bScore = clr + cont; bi = a; bj = b; }
+                    }
+                    if (bi < 0) {
+                        for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) {
+                            if (Math.max(Math.abs(di), Math.abs(dj)) !== 2) continue;
+                            const a = cB[0] + di, b = cB[1] + dj;
+                            if (!gE.at(a, b)) continue;
+                            const clr = gE._clear ? gE._clear[b * gE.n + a] : 1;
+                            if (clr > bScore) { bScore = clr; bi = a; bj = b; }
+                        }
+                    }
+                    if (bi >= 0) {
+                        this.escCell = [bi, bj];
+                        const wE = gE.world(bi, bj);
+                        desiredHeading = Math.atan2(wE[0] - this.boat.x, -(wE[1] - this.boat.y));
+                        speedRequest = 1.0;
+                    }
+                }
+                if (window.__escLog) window.__escLog.push({
+                    t: +state.race.timer.toFixed(1), id: this.boat.id,
+                    x: Math.round(this.boat.x), y: Math.round(this.boat.y),
+                    spd: +((this.boat.speed || 0) * 60).toFixed(0),
+                    nCr: this.escCrumbs.length
+                });
+            }
+        }
+
         // Wiggle / Unstick Logic (Overrides Strategy)
         // Eagerness is a fact about the VENUE. On land venues (Glacier Sound)
         // eager wiggles are what break up shore rafts — a 5s trigger was A/B'd
@@ -414,7 +559,7 @@ class BotController {
         // via the 6x-slow clock this replaced) is what the start pack is tuned
         // around — eager wiggles there cost Clubhouse +2s at the line.
         const wiggleAfter = (state.course._gridFixed && state.course._gridFixed.length) ? 3.0 : 18.0;
-        if (this.lowSpeedTimer > wiggleAfter && !this.wiggleActive) {
+        if (this.lowSpeedTimer > wiggleAfter && !this.wiggleActive && !this.escActive) {
             this.wiggleActive = true;
             // Land venues: quick 5s bursts (shore rafts need cadence). Open venues:
             // the tuned effective duration the 6x-slow clock actually shipped.
@@ -463,7 +608,10 @@ class BotController {
             }
         }
 
-        if (this.wiggleActive) {
+        if (this.escActive) {
+            // desiredHeading/speedRequest already set by the ESCAPE branch above;
+            // navigation and wiggle stand down while the maneuver runs.
+        } else if (this.wiggleActive) {
             this.wiggleDuration -= TICK;
 
             // LOCAL wind, not the course-centroid blend. On a venue whose regions
@@ -691,7 +839,8 @@ class BotController {
         // through the next nine seconds of moving pack. Escapes and wiggles keep
         // priority (they own genuinely stuck boats).
         this._trajFloe = false;
-        if (isRacing && !isPrestart && !this.wiggleActive && !(this.clearanceTimer > 0)
+        if (isRacing && !isPrestart && !this.wiggleActive && !this.escActive
+            && !(this.clearanceTimer > 0)
             && !(this.iceEscapeTimer > 0) && this._lastNav
             && state.course._gridFixed && state.course._gridFixed.length) {
             const tj = this.planFloeTrajectory(desiredHeading, this._lastNav);
@@ -704,7 +853,13 @@ class BotController {
         // purpose: in a raft-up the neighbours' collision costs veto every escape
         // heading and the whole raft freezes (measured: DNS tripled when this fed
         // through the cost function).
-        if (this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
+        // While the stuck-state maneuver is active it OWNS the helm: the
+        // contact reflex is the very ping-pong (bounce off each wall toward
+        // the other) that keeps the wedged boat looping — measured: with the
+        // reflex in charge, three different ESCAPE aims produced byte-equal
+        // 785/768/693s loops because this override discarded them every tick.
+        if (!this.escActive
+            && this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
              const col = this.boat.ai.collisionData;
              if (this.boat.speed < 1.0 || !this.iceEscapeTimer || this.iceEscapeTimer <= 0) {
                  let escH = Math.atan2(-col.normal.x, col.normal.y);
@@ -738,7 +893,7 @@ class BotController {
                  this.iceEscapeTimer = 2.0;
              }
         }
-        if (this.iceEscapeTimer > 0) {
+        if (this.iceEscapeTimer > 0 && !this.escActive) {
              this.iceEscapeTimer -= TICK;
              desiredHeading = this.iceEscapeHeading;
              speedRequest = 1.0;
@@ -2778,6 +2933,9 @@ class BotController {
         // If stuck (Wiggle Mode), ignore avoidance to force breakout
         this.lastAvoidDeviation = 0;
         if (this.wiggleActive) return desiredHeading;
+        // ESCAPE retraces the boat's own wake (sailable by construction); the
+        // 150u-entry / 120u-abort rival guards replace avoidance while it runs.
+        if (this.escActive) return desiredHeading;
 
         const boat = this.boat;
         const lookaheadFrames = 240; // 4 seconds lookahead
@@ -3277,6 +3435,39 @@ class BotController {
                 hPlanFF = Math.atan2(pFFF.x - boat.x, -(pFFF.y - boat.y));
             }
         }
+        // A2 (2026-08-09, THE ROUNDING PUSH): THE TRUST TEST WAS UNREACHABLE ON
+        // A BEAT. `pathSailable` is an A* over a clearance-weighted grid with no
+        // wind term, so upwind the router's line runs straight up the corridor
+        // and hPlanFF points dead into the no-go. The trust test then asks a
+        // sailing boat to be within 0.3 rad of a heading no boat can sail: with
+        // the irons guard at 0.62 rad the smallest achievable |h - hPlanFF| on
+        // a beat is ~0.5 rad. Measured on redrock leg-3's thread box
+        // (_thread_role.js): the 0-rung fails the test on 96.1% of deviating
+        // ticks, ALL of them on the alignment clause, at a median 0.78 rad
+        // (45deg) — and on 72% of ticks NO candidate in the whole fan earns the
+        // trust. So the clearance band and the full 140u hard zone ran
+        // unmodified on every upwind leg, which is where the mark-5 thread
+        // lives; the argmin's cheapest escape from them is to luff, and 51.4%
+        // of chosen headings sat inside the no-go band against 0.0% of the
+        // plan rung (bot 41-52 u/s where the human sails 78-90).
+        // The route's line on a beat is not "point at the mark" — it is "stay
+        // close-hauled on this tack". When the plan bearing is itself inside
+        // the no-go, project it onto the close-hauled heading for the tack the
+        // boat is ON and measure alignment against that. Same 0.62 constant the
+        // irons guard already uses; no clause is relaxed — the irons, arc,
+        // open-water and current guards all still apply, and a candidate on the
+        // other tack or bearing away still fails. GATED: redrock pooled 6-set
+        // paired −64.0 med / −59.9 mean, ALL SIX SETS NEGATIVE (−41..−100), med
+        // 520→459 (2.38x→2.10x), fins 427→430/432, DNF-at-900 5→2, land −13%,
+        // mark −23%, pen −9%; lake −2/−8 med with land −12%/−24%; bay 0/0 med
+        // with rubs −18%/−4%; lagoon 0/−6 med (boat +16%/+13% — the watch
+        // column); ocean inert; river + seatrials BYTE-IDENTICAL (they sit
+        // behind the current guard and the floe gate by construction).
+        let hPlanRef = hPlanFF;
+        if (hPlanFF != null && Math.abs(normalizeAngle(hPlanFF - wdAv)) < 0.62) {
+            const sideRef = normalizeAngle(boat.heading - wdAv) >= 0 ? 1 : -1;
+            hPlanRef = normalizeAngle(wdAv + sideRef * 0.62);
+        }
 
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
@@ -3762,8 +3953,25 @@ class BotController {
                 // never under the armed arc (arcK), never a no-go heading,
                 // never in a ≥2kt stream (time-to-wall is ground speed
                 // there).
-                const hardZ = (openWaterAv && !arcK && hPlanFF != null
-                    && Math.abs(normalizeAngle(h - hPlanFF)) <= 0.3
+                // HZ2 (2026-08-09): A SLOW BOAT'S TIME-TO-WALL BOUNDS ITS RISK IN
+                // EVERY DIRECTION. The plan-alignment window exists to keep a FAST
+                // boat from trusting an off-plan heading — and it is exactly the
+                // condition the redrock leg3 pocket fails (aligned 28%, plan ref
+                // present 69% at slow-static choices, n=1933, _pocket_argmin): the
+                // displaced boat trying to rejoin the plan kept the full 140u veto
+                // where this scaling's own formula floors it at 60u, and the pocket
+                // parked 94% static. Waive ALIGNMENT ONLY, for boats under 40 u/s;
+                // the irons, current and armed-arc guards stay. Gated: redrock
+                // pooled 6-set paired −34 med / −37 mean (ALL sets negative), fins
+                // 376→386, boat rubs −20%, penalties −11%; lake/bay/lagoon flat-to-
+                // better; ocean 16 EXACT + river + arctic + seatrials byte-identical
+                // (river/arctic sit behind the current/floe guards by construction).
+                const hzWaive = !arcK && boat.speed * 60 < 40
+                    && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
+                    && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                const hardZ = (openWaterAv && !arcK
+                    && (hzWaive || (hPlanFF != null
+                        && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3))
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
                     && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
@@ -3800,9 +4008,9 @@ class BotController {
                         // turning room), not a fraction: at speed, 40% of the probe
                         // was 190u and vetoed every thread the pack offered.
                         if (frac * segLen <= hardZ) { staticCollision = true; cost += 500000; }
-                        else if (hPlanFF == null || arcK
-                            || Math.abs(normalizeAngle(h - hPlanFF)) > 0.3
-                            || Math.abs(normalizeAngle(h - wdAv)) < 0.62) {
+                        else if (!hzWaive && (hPlanFF == null || arcK
+                            || Math.abs(normalizeAngle(h - hPlanRef)) > 0.3
+                            || Math.abs(normalizeAngle(h - wdAv)) < 0.62)) {
                             proximityCost += 30000 * (1 - frac);
                         }
                         break;
@@ -3815,7 +4023,29 @@ class BotController {
                         : gAv.cell(landFX, landFY);
                     const idAv = ce[1] * gAv.n + ce[0];
                     const clr = gAv._clear[idAv];
-                    if (clr > 0 && clr < 3) {
+                    // HZ3B (2026-08-09, THE REDROCK PUSH): ONLY THE ROUTER'S OWN
+                    // LINE EARNS THE TRUST — and the clearance band was un-earning
+                    // it. In redrock's narrows the 0-rung loses to PROX_STATIC in
+                    // 34-62% of its defeats while PLAN-ALIGNED (leg4-sub5: 94%
+                    // aligned): the band's 10000-scale tax sits in the same order
+                    // as cost(0) (7500-15000) and flips the winner off the thread
+                    // the router deliberately priced, tick after tick. The
+                    // candidate that passes the hard zone's own trust test
+                    // (aligned 0.3 rad, open water, no arc, not irons, <2kt
+                    // stream) pays no clearance-band tax; every other heading
+                    // keeps the full lee-shore caution. Deliberately NOT extended
+                    // to the slow-boat waiver: freeing slow boats toward any
+                    // low-clearance shore is the v1 lake kill. GATED: redrock
+                    // pooled 6-set paired −85.0 med / −78.7 mean, ALL SIX SETS
+                    // NEGATIVE (−47..−121), med 572→490, fins 386→391, land −16%,
+                    // pen −6% (boat +4%); lake −5/−3 med both sets; lagoon flat,
+                    // land A −27%; bay A −0.6 mean, bay B + ocean + river 2x16 +
+                    // arctic 4x16 BYTE-IDENTICAL; seatrials ~197.8 equivalent.
+                    const bandTrusted = openWaterAv && !arcK && hPlanFF != null
+                        && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3
+                        && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
+                        && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                    if (!bandTrusted && clr > 0 && clr < 3) {
                         // FLOE-caused narrowness is grindable; LAND-caused is not.
                         // When the static (land-only) grid says this water is clear,
                         // the low clearance here comes from stamped ice — price it
@@ -7502,6 +7732,14 @@ function windOsc(t, period, phase) {
 // stop short of the shadow or the two recurse forever. This is the field that gusts and
 // shadows are applied on top of, and it is the honest answer to "which way is the wind
 // blowing here" for anything that is not a boat.
+//
+// WIND_MEAN_FIELD: while set, the field answers with the DAY'S MEAN — oscillator at zero,
+// no live shift. The grid bake stamps a venue-cached grid from this field, and a one-time
+// static stamp must not capture whatever instant of the day the bake happened to run in:
+// the oscillator made the instantaneous field a function of `r.phase` and `state.time`,
+// neither of which is in the bake's cache key, so the first bake (page load, phases still
+// unseeded) was winning forever and every process baked a different router.
+let WIND_MEAN_FIELD = false;
 function regionWindAt(x, y) {
     const baseSpeed = state.wind.speed;
     const baseDir = state.wind.direction;
@@ -7532,7 +7770,7 @@ function regionWindAt(x, y) {
         // DAY, not of the patch of water, so it rides on top of every region's mean.
         // Without this a region would freeze the wind it covers, and a course fully
         // covered by regions would never see a shift at all.
-        const liveShift = baseDir - state.wind.baseDirection;
+        const liveShift = WIND_MEAN_FIELD ? 0 : (baseDir - state.wind.baseDirection);
         let wsum = 0, ux = 0, uy = 0, sacc = 0;
         for (const r of wregions) {
             // The edge ramp is centered on the outline (VenueDoc.regionWeight), so a
@@ -7546,7 +7784,7 @@ function regionWindAt(x, y) {
             // shape that oscillation has and why it is not a plain sine. state.time is
             // deterministic and no RNG is touched here, so regions cannot shift the seeded
             // stream; the per-race variety is baked into `phase` by initCourse.
-            const osc = windOsc(state.time, r.period, r.phase);
+            const osc = WIND_MEAN_FIELD ? 0 : windOsc(state.time, r.period, r.phase);
             const rd = r.direction + r.dirVar * osc + liveShift;
             // A REGION STATES ITS OWN SPEED. There is no venue fallback: an absent speed is
             // zero, the same way an unstated patch of water is calm. Falling back to the
@@ -11284,7 +11522,9 @@ function updateAI(boat, dt) {
     aiTurnRate *= steerageFactor(boat);
 
     // Wiggle / Force Mode: Super Steering (overrides steerage to break free)
-    if (boat.controller && boat.controller.wiggleActive) {
+    // ESCAPE gets the same snap-turn authority: a wedged boat has no steerage
+    // and the multi-point retreat is impossible without it.
+    if (boat.controller && (boat.controller.wiggleActive || boat.controller.escActive)) {
         aiTurnRate = getTurnSpeed() * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
     }
 
@@ -11847,7 +12087,9 @@ function updateBoat(boat, dt) {
     if (swell) boat.speed = Math.max(0, boat.speed + (swell.surfKt * 0.25) * dt);
 
     // AI Boost: If wiggle is active, ensure minimum speed to slide off obstacles
-    if (!boat.isPlayer && boat.controller && boat.controller.wiggleActive) {
+    // (ESCAPE too — same escalation off lowSpeedTimer, which is still high
+    // when the maneuver starts from a long park.)
+    if (!boat.isPlayer && boat.controller && (boat.controller.wiggleActive || boat.controller.escActive)) {
         // Progressive Power: The longer we are stuck, the harder we push
         let minSpeed = 0.15; // 3.5kn
         const stuckTime = boat.controller.lowSpeedTimer;
@@ -20610,12 +20852,22 @@ function buildCoursePaths() {
             const wbin = new Uint8Array(N * N);
             const SPDS = [8, 12, 16, 20, 25, 30];
             const MARCH = 5, LEE_W = 2.5;
+            // THE DAY'S MEAN, not the bake instant. This stamp is cached on the grid and
+            // keyed by leeKey above, which carries neither `r.phase` nor `state.time` —
+            // and must not, because a static stamp that varied with the day's phase would
+            // be a different router every race. The oscillator made getWindAt a function
+            // of both (page-load bakes even ran on UNSEEDED phases, so every process
+            // shipped a different router — the bay golden-verify failures). regionWindAt
+            // under WIND_MEAN_FIELD is the field this comment always claimed: no gusts,
+            // no lee, no live shift, oscillator at zero.
+            WIND_MEAN_FIELD = true;
+            try {
             for (let j = 0; j < N; j++) {
                 for (let i = 0; i < N; i++) {
                     const id = j * N + i;
                     if (!grid.nav[id]) continue;
                     const [wx, wy] = grid.world(i, j);
-                    const w = getWindAt(wx, wy);
+                    const w = regionWindAt(wx, wy);
                     const wd = w.direction;
                     // Unit vector TOWARD the wind (the unsailable direction), per cell —
                     // the router prices beating with it, see pathSailable.
@@ -20638,6 +20890,7 @@ function buildCoursePaths() {
                     }
                 }
             }
+            } finally { WIND_MEAN_FIELD = false; }
             grid._leeW = lee;
             grid._wfx = wfx; grid._wfy = wfy;
             grid._wbin = wbin;

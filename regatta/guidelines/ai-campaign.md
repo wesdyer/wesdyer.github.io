@@ -11426,3 +11426,1417 @@ each against a same-HEAD baseline. Then P1 river bin7 (fix _riv_line's plan read
 first), P2 lake/lagoon subsection treatment, P3 squall sizing once a shipping-doc
 lagoon lap exists. Intake every new trajectory same-day: _traj_fp.js, corpus,
 _gw_ledger2.py, per-leg matrix. Close with the venue table.
+
+# NEXT-PUSH DIRECTIVE (authored 2026-08-09, after the eight-venue intake):
+# THE HUMAN-LEVEL PUSH — an overnight run, owner-directed, DO NOT STOP
+# ═══════════════════════════════════════════════════════════════════════════════
+Owner: "the goal is human level performance. Focus on the biggest gaps... venues
+where the gap is the largest. Then identify specific sections where the gap is
+most extreme. Then identify causes. Then proposed fixes and improve. Analyze,
+research, hypothesize, experiment, evaluate, iterate. DO NOT STOP."
+
+## WHAT THIS SESSION ESTABLISHED (the ground truth to work from)
+Eight venues now carry FRESH, FINGERPRINT-VERIFIED human references (3 laps each,
+intaken the day they were sailed), and five venues were promoted/frozen, so
+`freeze_venues --check` is clean for the first time in the campaign.
+
+| venue     | human med / best | bot | ratio | the section that owns the gap |
+|-----------|------------------|-----|-------|-------------------------------|
+| seatrials | 189.4 / 179.7    | 194.5 | 1.03x | at human — hold |
+| bay       | 219.0 / 211.0    | 232 | 1.06x | leg0 start 27% + leg1 beat 34% |
+| ocean     | 177.9 / 177.7    | 190 | 1.07x | leg1 is 99% of it |
+| lake      | 223.1 / 218.2    | 278 | 1.25x | leg2 57% + leg1 39% |
+| river     | 167.4 / 165.0    | 261 | 1.56x | leg3 is 72%; 4 pockets = 91% of its slow time |
+| lagoon    | 164.9 / 160.1    | 277 | 1.68x | spread: leg2 25%, leg4 21%, leg3 20% |
+| arctic    | 212.4 / 201.6    | 367 | 1.73x | leg1 subs 8-9 = 65% of the leg (MARK APPROACH) |
+| redrock   | 218.2 / 215.2    | 616 | 2.82x | venue-WIDE 1.77-2.78x; leg3 sub0 alone +103 s/boat |
+
+THE GAPS SORT INTO THREE MECHANISMS, and they want different fixes:
+ A. STALLING AGAINST LAND (river, redrock, part of lagoon). Discrete pockets where
+    the fleet sits at 10-16 u/s and she sails 83-127. landAhead 47-67%, wiggle
+    36-77%, **armed ~0** — unarmed mid-leg transit, NOT rounding. Odometer excess
+    is small (river L3 +11%) so it is not routing length. SIZED CAUSE IN HAND:
+    the grid's navigable bar `CLEARANCE = HULL_R + 14 = 44u` against a 30u hull
+    forbids 8.6% of the line she sails at 122-125 u/s with two contacts all lap
+    ([[regatta-river-leg3]]). Third member of the CP1/noSubsample family.
+ B. EXTRA DISTANCE ON THE BEAT (bay, lake, ocean — and it is their WHOLE gap).
+    The fleet sails 16-27% further than she does while being FASTER through the
+    water: bay L1 1.49x vs her 1.26x (+674u), lake L1 1.52x vs 1.29x (+1080u),
+    lake L2 1.26x vs her 0.99x ON ONE TACK (+1391u), ocean L1 1.62x vs 1.39x
+    (+1100u). Her tack counts are tiny (lake L2 1/1/1, ocean L1 4/5/2). CAUSE NOT
+    YET DECOMPOSED — that is P4's job and it is measurement-first.
+ C. MARK APPROACH (arctic L1 subs 8-9 = 65% of that leg, lake L2 sub9 = 77% of
+    its slow time). `armed` is 45-65% here, so it is the rounding machinery, not
+    transit. Distinct from A by that flag alone.
+ D. THE START, as a separate small class: bay leg0 is 7.69x (she crosses 0.5s
+    after the gun, the fleet 5.0s, and even the GOOD boats sit 128u behind the
+    line at the gun), river leg0 5.45x. ⛔ "start calibration" is a CLOSED family
+    — do not build without owner approval; measurement is free and the evidence
+    is now new (a verified human reference).
+
+## P0 — REBASELINE. DO THIS FIRST; NOTHING ELSE IS VALID UNTIL IT IS DONE.
+⚠️ The owner merged mid-session (`3594d11`/`a148db6`, script.js +487/-121) adding a
+WIND OSCILLATOR (`windOsc`, `computeWindPressureScaleRaw`, WIND_OSC_SUB), squall
+field changes and wind-streak rendering. A time-varying wind changes every race on
+every venue. Consequences:
+  1. Tonight's anchors were produced across THREE code cuts — treeNOW (pre-merge:
+     bay/lake/ocean/arctic/redrock), treeNOW2 and the repo (post-merge: lagoon,
+     seatrials via run_eval), treeRIVNEW (river). They are a SURVEY, not gates.
+  2. Pin HEAD, build ONE tree, and re-anchor ALL EIGHT venues on it:
+     bay 2x20@9100/9200 | lake 2x20@9100/9200 | river 2x16@9100/9200 |
+     ocean 16@9300 | lagoon 2x8@9100/9200 | redrock 6x8@9400..9900 |
+     arctic 4x16@9100..9400 (fleet_leg2) | seatrials run_eval 100 @100.
+     Record them in this file with the HEAD hash. ~90 min wall at 6-way parallel.
+  3. ⚠️⚠️ THE BLOCKER — BAY IS NONDETERMINISTIC ACROSS PROCESSES (post-merge only).
+     CHARACTERISED, NOT FIXED, and it blocks every landing gate:
+       - Three separate `run_traces.js --venue bay` runs gave THREE different
+         behaviorHashes (3f015185 / f5b2c25b / b4c4ec16) with penalties 4/3/7.
+       - The harness's own `--determinism` mode (same page, same seed, twice)
+         says DETERMINISTIC. So it is stable WITHIN a page and varies ACROSS
+         PROCESSES — a per-process entropy leak, NOT race-to-race state.
+       - It reaches the BENCH path too, so it is not a trace-harness artifact:
+         two identical `ocean_bench 4 7700 ... bay` runs on the POST-merge tree
+         are not byte-equal (fins 238,243,221... vs 262,236,227...), while the
+         PRE-merge tree reproduces byte-equal. The owner merge introduced it.
+     RULED OUT already (do not redo): the world clock does not free-run
+     (`state.time` advances ONLY on explicit update() calls — `_worldclock_audit.js`);
+     wind-region phases are identical across three processes and across resets
+     (`_wind_phase_audit.js`, seed 714421, phases 1.5331/2.167/2.6919/6.2117/6.2805);
+     `computeWindPressureScaleRaw` restores `state.time` before its early return.
+     PRIME SUSPECTS: an unseeded `Math.random()` consumed during course/wind setup
+     — `script.js:7814` (`phase: Math.random() * Math.PI * 2`) and the `rngW`
+     fallback at `script.js:19471` (`state.race.seed ? mulberry32(seed+29) :
+     Math.random`) which fires whenever `state.race.seed` is falsy at build time.
+     Pre-merge this was harmless because wind did not vary with time; the
+     oscillator made it behavioural. Bisect by stubbing `Math.random` to a
+     constant at page load and re-running the three-process test.
+  4. Re-check the whole human column with `_traj_fp.js` after the merge — a venue
+     doc may have moved again.
+
+## P1 — REDROCK, THE BIGGEST GAP (2.82x, 364/432 finishing, land 222/boat)
+Sections: leg3 sub0 at (-747,-1416) is +103.2 s/boat = 65% of that leg with the
+fleet at 16 u/s; leg5 subs 0-1 at (-1259,431) and 6-7 at (446,-275) = 83% of leg5.
+But EVERY leg is 1.77-2.78x, so expect the pockets to be the visible half of a
+venue-wide problem. Mechanism A.
+BUILD: the clearance-bar ladder, cheapest first, each a separate tree:
+  B1 CLEARANCE 38u | B2 34u | B3 30u (=HULL_R, the physics bar)
+  B4 if a global bar taxes open venues, scope on a MEASURED grid property
+     (navigable-clearance p50), the way noSubsample and the canyon law are scoped
+     — NEVER on venue name.
+⚠️ GLOBAL ROUTING CHANGE: every venue gates. redrock 6-set pooled (_pool_rr.js),
+river pooled fins/med, lake 2x20, arctic pooled 4-set (_pool_arc.js — ⚠️ OPPOSITE
+SIGN CONVENTION from _pool_rr, trap 21), bay 2x20, ocean 16 EXACT, lagoon 2x8,
+seatrials run_eval. Goldens full --update. Expect the bar to trade land contacts
+against clock — read both.
+
+## P2 — RIVER (1.56x): THE TRANSFER TEST
+leg3 = 72% of the venue gap; four pockets hold 91% of its slow time; same
+mechanism A signature. If the bar ladder is real it MUST move river too — that is
+rule 8 (transfer proves mechanism), and it is the cheapest confirmation available.
+If redrock moves and river does not, the bar is not the cause and the ladder dies.
+
+## P3 — ARCTIC (1.73x) AND LAKE L2: MECHANISM C, THE MARK APPROACH
+Arctic leg 1's last fifth carries 65% of that leg with armed 65%; lake L2's sub9
+holds 77% of its slow time with armed 45%. ⚠️ This RE-ADDRESSES arctic: the venue
+has been carried as a TACK-COUNT/beat class and eight shapes have died against
+that address (AC1, TK1, TK2, TK3, LANE1, LANE2, clearance-extension x2) — the
+subsection view says the beat's middle is at or near her pace and the time is at
+the rounding. Start with measurement: what is the armed machinery doing in subs
+8-9 that it is not doing elsewhere; compare her approach line and speed to the
+fleet's. Only then propose. ⛔ orbit-radius, entry-side governors, holds,
+station-keeping all stay closed.
+
+## P4 — THE BEAT-DISTANCE CLASS (bay/lake/ocean): MEASURE BEFORE BUILDING
+The excess is 16-27% and it IS the whole gap on three venues, but its cause is not
+decomposed. Split the excess into: (a) avoidance deviation (integrate
+|lastAvoidDeviation| along the leg), (b) router path length vs the straight line
+(sum the planned path), (c) tacking overhead (count tacks and the distance lost
+per tack vs her 1-7). Attribute the 16-27% across those three before proposing
+anything. ⛔ Laylines are CLOSED at 4 rejections; station-keeping 0-for-8. If the
+answer is "the router's own path is long", that is a NEW address and legitimate.
+
+## P5 — LAGOON (1.68x) — spread across legs, and the venue is still moving.
+Lowest priority of the gapped venues: leg2 25%, leg4 21%, leg3 20%, no single
+pocket. Squall-awareness remains unsized. Re-check its fingerprint before use.
+
+## METHOD (owner's words): analyze, research, hypothesize, experiment, evaluate,
+## iterate. DO NOT STOP — keep working until the owner stops you.
+Run at least 4 probes/benches in flight; never idle the machine. When a candidate
+dies, name the mechanism in this file and move to the next shape rather than
+stopping. When one lands, gate it fully, re-record goldens, re-anchor, and go on
+to the next venue in ratio order.
+
+## CONSTRAINTS CARRIED (all still binding)
+actions-not-prices (7-for-7); episodes-not-frames; benching resolution (redrock
+pooled 6-set minimum and the 96-seed protocol near threshold; arctic pooled 4-set;
+river pooled fins/med; bay >=4 disjoint sets under ~5s); zero-statistic = bug;
+gates sit on ONE physical line; probe audits (18/18b/19b/19c); bench pairs
+together; goldens FULL --update per landing; `freeze_venues --check` FROM THE REPO
+ROOT; check `date`; venue table at every close.
+⚠️ TRAPS EARNED THIS SESSION: 21 the two poolers use OPPOSITE sign conventions;
+22 judge inertness against a CURRENT-HEAD baseline, never an old anchor; 23 a
+human reference is only valid on the document it was sailed on (`_traj_fp.js`).
+⛔ CLOSED, do not reopen: RR1-4 (ladder closed at four shapes on 96 seeds), LANE1/
+LANE2 and tack-count-by-routing, curved-on-redrock, laylines x4, station-keeping/
+holds/commitment/reservation, SIPP/map-staleness, closing-lead pricing, occupancy
+stamps, current pricing x4, clearance-extension x2, rollout speed x2, point-boat,
+arctic radius selection, arctic wide-ride x2, start calibration (owner approval
+required to reopen).
+
+================================================================================
+## 2026-08-09 ~09:15 — THE MEAN-FIELD BAKE LANDING (P0a: the bay blocker CURED)
+
+ROOT CAUSE (proven): the bot grid's baked wind stamps — `_wfx/_wfy/_wbin/_leeW`,
+67,081 cells, cached on the venue-keyed grid — were baked from `getWindAt`,
+which the owner's wind-oscillator merge made a function of `r.phase` and
+`state.time`. Neither is in the bake's cache key (`leeKey`). The PAGE-LOAD bake
+runs before eval_harness stubs Math.random, so its phases are UNSEEDED; on
+authored-windBase venues (bay) leeKey never changes afterwards, so that first
+per-process bake won forever: every process shipped a DIFFERENT ROUTER. Within
+a page: stable (cache). Across processes: three behaviorHashes. Pre-merge:
+byte-equal (no time term in regionWindAt, so phases never entered the bake).
+
+THE HUNT (all probes tracked in eval/rl): `_bay_ndet.js` — two fresh browser
+processes, same seed: every one-time constant identical (phases, pressure, base
+wind, boats), wind field identical at fixed probes at every sample, BOATS
+diverge at frame ~2220. `_bay_ndet2.js` — boat 5 diverges at frame 2257 with
+the seeded RNG draw-count IDENTICAL (35501 = 35501): not a stream desync.
+`_bay_ndet3.js` — deep state diff: the four stamp arrays are the ONLY
+reset-state divergence; downstream, boat 5's legManeuvers read 1 vs 3 — router
+decisions, not physics. Wall-clock reads ruled out by grep (only audio/draw).
+
+THE FIX (one mechanism): `WIND_MEAN_FIELD` module flag in script.js; while set,
+`regionWindAt` answers the DAY'S MEAN (oscillator 0, liveShift 0). The bake
+samples `regionWindAt` under the flag (was `getWindAt`) — the field its own
+comment always claimed ("mean regional field, no gusts"). The bake is now a
+pure function of what leeKey already carries. Same disease class as the swell
+TIME clock; the model-accuracy ruling applied: a static stamp must be the day's
+mean, never a random instant of a time-varying day.
+
+VERIFIED: bay 90210, two fresh processes, 600 s sim — byte-identical, stamps
+byte-equal; ocean 9300, 300 s — clean. Goldens: full --update, then verify
+PASS 20/20 TWICE, the second in a fresh process — bay/90210+90211 now reproduce
+their own recordings (trap 24 closed). BYTE-GATES ARE TRUSTWORTHY AGAIN.
+
+NEW TRAP 25: a venue-cached bake must be a pure function of its cache key —
+when a merge makes a formerly-static input time-varying, audit every
+`_key`-guarded rebuild. The page-load bake runs BEFORE the harness Math.random
+stub, so any unseeded draw it captures is per-process entropy.
+
+CONSEQUENCE: the mean-field stamps change routing on EVERY venue whose regions
+oscillate (all of them) — P0b re-anchors all eight venues on treeP0 at this
+HEAD. Never compare any bench across this cut.
+
+## P0b REBASELINE COMPLETE — treeP0 anchors on HEAD `08310d7` (frozen venues)
+Human column re-verified post-merge with _traj_fp.js: all 8 venues' fresh laps
+match FROZEN, frozen == shipping everywhere. ALL EIGHT VENUES ANCHORED:
+  bay      p0bayA/B   20@9100/9200  med 241/241  fins 360/360   ratio 1.10
+  lake     p0lakeA/B  20@9100/9200  med 264/261  fins 360/360   ratio 1.18  land 7.6/8.1
+  river    p0rivA/B   16@9100/9200  med 269/269  fins 263/288   ratio 1.61
+  ocean    p0oc       16@9300       med 203      fins 144/144   ratio 1.14
+  lagoon   p0lagA/B   8@9100/9200   med 277/280  fins 144/144   ratio 1.69
+  redrock  p0rr9400..9900  6x8  POOLED med 602  fins 376/432    ratio 2.76  (per-set 580-613)
+  arctic   p0arcA..D  4x16@9100..9400  POOLED med 366  fins 575/576  ratio 1.72  (per-set 383/392/350/354)
+  seatrials run_eval 100@100  boat means 196.2-198.9 (~197.8)   ratio 1.04
+The mean-field stamps moved venues in BOTH directions vs the survey (bay 232→241,
+ocean 190→203, lake 278→262, arctic 366→366 pooled-same): the old stamps were a
+random instant of the day per process; these are the mean-field truth. The gap
+ORDER is unchanged: redrock 2.76 >> arctic 1.72 ≈ lagoon 1.69 > river 1.61 >
+lake 1.18 > ocean 1.14 > bay 1.10 > seatrials 1.04.
+
+## P3 MEASUREMENT — THE ARMED APPROACH CRAWL, measured against her (treeP0)
+`_appr_matrix.js arctic 1` (both all-laps and fp=19b566b3:82810 verified-only —
+identical shape): binned by distance to the rounding mark, the human sails the
+ENTIRE approach at 100-117 u/s and never parks; the fleet crawls it:
+  150-300u: bot 3.7 u/s, armed 100%, park 64%, wiggle 19% (her: crosses at speed)
+  300-450u: 49.6 u/s, armed 100%, avoid 55%   450-600u: 76.1, armed 100%, avoid 68%
+  600-900u: 79.2, armed 98%, avoid 66%
+Bands 150-900u: her 32 s/lap, fleet 101 s/boat — **+69 s/boat in the armed
+approach alone**, avoid% 39-68 throughout. At 900-2700u the fleet is 83-98 u/s
+(near her pace — the tack-count/beat address is dead as measured); the far band
+2700+ carries +43 s/boat with avoid 41%. The crawl is fleet-vs-fleet avoidance
+inside the armed machinery (the ring jam quantified against the human), NOT the
+beat. ⛔ arrival/laning wide-ride, orbit-radius, holds all stay closed — the
+next shape must change WHICH avoidance actions exist inside the armed approach,
+not relocate the queue.
+
+## P4 MEASUREMENT — THE BEAT EXCESS DECOMPOSED (treeP0, units audited per rule 18)
+`_beat_decomp.js` — per-frame waste = (speed − VMC-to-waypoint), bucketed:
+  bay L1  (odo 4924 vs straight 2848, tacks 6): AVOID 1198u = 57% of waste,
+          CLEAN (pointing/route quality) 581u = 28%, TACKWIN 212u = 10%, ARMED 117u
+  lake L2 (tacks med 7 vs her 1): AVOID ≈49% of waste, CLEAN ≈24%, TACKWIN ≈24%
+Mechanism B's cause is NOT primarily router path length and NOT laylines: it is
+**avoidance deviation among the fleet itself on the beat** — the same give-way
+underlay the ledger measured (she deflects 0-5° as ROW; bots swing 10-64°).
+Ocean L1 run pending. CROSS-VENUE: one address now owns the bulk of bay L1,
+lake L2, arctic approach AND redrock/river's extra dirt — THE FLEET AVOIDANCE
+TAX. The tactical-doctrine ruling (ROW sails its course; give-way yields
+modestly, last-minute-but-sufficient) is the spec the deflection engine does
+not yet meet fleet-wide.
+Ocean L1 (odo 8105 vs straight 4412, dmcLen 4921, tacks 6): CLEAN 2011u = 38%,
+ARMED 1804u = 34% (!), AVOID 968u = 18%, TACKWIN 518u = 10%. Ocean's excess is
+ROUTE/POINTING + THE ARMED ROUNDING PATH, not fleet avoidance — a different
+mechanism from bay/lake (and ocean is only 1.14x; deprioritized). The
+fleet-avoidance-tax address owns bay L1 + lake L2 + the arctic approach.
+
+## ⛔ P1/P2 — THE CLEARANCE-BAR LADDER IS DEAD (killed by monotonic dose-response)
+Trees B1 38u / B3 30u, LAND bar only (ice + orbit floor stayed 44u; stamp
+equivalence preserved; centerOnly shapes keep CLEARANCE):
+  redrock B1 pooled 6-set (_pool_rr, sign checked): paired med +11 (SLOWER),
+    fins 376→359, land 200→222/boat.
+  river B1 2x16: med 269→272/273, leg idx3 UNMOVED (148/152 → 152/152).
+  river B3 (30u = the physics bar, her whole line admitted): med 269→287,
+    land 134→237 (+77%), fins 140→130, leg idx3 152→161 — WORSE.
+Dose-response 44→38→30u is monotonic in the WRONG direction on every metric.
+MECHANISM: the bar was never binding. The human sails 21u off the bank because
+she can EXECUTE there; the fleet's pocket stall is a RESPONSE/EXECUTION failure
+(landAhead 85%, wiggle 85% in the pockets — displaced arrivals that cannot get
+back up to speed near a bank). Admitting nearer-land cells just routes the
+fleet into more exposure. Same lesson as rule 17 (route pricing cannot reach
+displacement-driven failures) from the ADMISSION side. B2 skipped (bracketed);
+B4 scoping moot. ⛔ Do not reopen bar-lowering; the CP1/noSubsample family is
+about the grid LYING about hard geometry, not about margins on TRUE geometry.
+River leg3 re-address: the pocket class is execution-under-jam near banks —
+judge any candidate on the wiggle/landAhead pocket stats, not route admission.
+
+## AV1 — arc-scoped lee-shore band removal: INERT POOLED (mechanism named)
+The crawl argmin ledger (treePR2, 11,419 armed-approach choices, dRM<900) said
+the static proximity band defeats the 0-rung in 50% of choices (PROX_RIVAL 2 vs
+PROX_STATIC 5752 — the rival nudge is NOT the tax; the ±1.2/1.6 rungs win).
+AV1 (treeAV1): under the armed arc (arcK) with LAND-caused low clearance, skip
+the 10000-scale endpoint band (ice grind kept — rule-5 line). Arctic pooled
+4-set vs p0arc*: paired med +3 / mean +4.2 (candidate faster), fins 575→576,
+boat rubs −3.5%, land +3.3% — sets split 2-2 (A +12, B +9, C −8, D −5), under
+arctic's resolution. NOT a landing. ⚠️ The queued-rival-gate hypothesis was
+REFUTED first (arc ACTIVE in 89% of choices, 79% of the slow subset — the RD7
+narrow disable is not the lock). MECHANISM: the 0-rung's defeat in the ring is
+OVERDETERMINED — the slow subset carries STATIC_VETO 19% + BOTH_BOAT 19%
+sufficient defeaters behind the band; removing the top term re-ranks the stack
+(the UL1 lesson at the action level). The crawl is not one term's fiction.
+NEXT ADDRESS: the HEAD-OF-QUEUE SERVICE TIME — solo granite transit is still
+55.8s vs her ~19 after RD11, and ρ≈7 queueing amplifies the residual into the
++69 s/boat. The solo residual is measurable without the jam (neutral solo).
+
+## P5 LAGOON re-attribution on treeP0 (`_leg_matrix.js lagoon p0lagA p0lagB`)
+Legs 2+3 own 54% of the gap: leg2 bot 48 vs her 19.5 (**2.46x, 29 s/boat**,
+bot p75 78 — huge variance, some boats 4x), leg3 44 vs 19.2-read (2.29x) —
+⚠️ but the two fastest human laps are RETIRED-doc; on the three verified laps
+leg3's human med is 26.8 (ratio ~1.64), while **leg2's 2.5x stands on verified
+laps** (her 17.8-24.0). Legs 4-6 are 1.25-1.37x. The lagoon target is LEG 2
+(and its variance tail) — squall-awareness and/or the coral section; unsized.
+
+## UL1-FOR-HIGH: SKIPPED ON EVIDENCE (not built)
+The open thread asked whether HIGH deserves UL1's onset-honesty test. Tonight's
+argmin ledger answers without a build: at HIGH (and every rung) the needless
+stand-on deflections are bought by the STATIC proximity field (PROX_STATIC
+5752 vs PROX_RIVAL 2 in the armed approach; the deflection dossier's redrock
+figure was proxCost 47% with 56% no-rival), not by the risk-state hold prices
+UL1 manipulates. Re-pricing the HIGH hold cannot reach a defeat the static
+field owns — same reason UL1-MEDIUM collapsed the label and moved no actions.
+Thread closed.
+
+================================================================================
+## SESSION CLOSE — 2026-08-09 THE HUMAN-LEVEL PUSH (day). Behavior HEAD `08310d7`.
+
+## THE OSCILLATION-CHASING MODE (found, sized, NOT a uniform tax — read carefully)
+Same-seed solo neutral A/B (`_arc_oscab.js`), oscillation removed in-page:
+  arctic FULL-zero (dirVar+speedVar): 9100 −31 | 9101 −264 | 9102 +66 | 9103 −21
+  arctic dirVar-ONLY:                 9100 flat | 9101 −161 (tacks 67→36)
+  river dirVar-only: bot FASTER WITH the oscillation on both seeds (−13/−27 to
+  remove it) — swings are exploitable there and the bot exploits them.
+VERDICT: a BIMODAL failure mode, tail-dominated — on some seed/phase draws the
+board selection tack-chases the direction oscillation (9101: 67 tacks vs her 5,
+recovering 161-264s when the swing is removed); on most seeds flat. This is
+plausibly a big slice of arctic's per-seed spread (solo fins 363-554, per-set
+meds 350-392). The router is EXONERATED: plan(first) 12.9-15.9k ≈ her sailed
+line; the excess is manoeuvre/execution. Candidate direction (NOT built): tack
+QUALITY against the oscillation — a persistence/hysteresis threshold (tack only
+when the observed shift exceeds the noise band windOsc's own unforecastability
+defines), judged on the TAIL (p75/p90, pooled sets), and it must NOT blunt
+genuine shift-playing (river profits from swings; the windward game is the
+skill being measured). ⚠️ Distinct from closed families: LANE1/2 priced the
+ROUTER's tacks; this is the strategic-layer board decision chasing a NEW signal
+that did not exist before the owner's merge.
+
+## THE VENUE TABLE (final HEAD `08310d7`, treeP0 anchors, frozen venues, verified refs)
+venue     | human med/best | pre-bot* | post-bot | ratio | dirt/boat b/m/l/f/bnd (pen) | fins
+seatrials | 189.4 / 179.7  | 194.5 | ~197.8 | 1.04 | —                            | run_eval 100
+bay       | 219.0 / 211.0  | 232   | 241    | 1.10 | 1.9/0.2/0.1/0/0 (0.42)      | 360/360
+ocean     | 177.9 / 177.7  | 190   | 203    | 1.14 | 1.4/0.2/0/0/0 (0.36)        | 144/144
+lake      | 223.1 / 218.2  | 278   | 262    | 1.18 | 3.4/0.5/7.8/0/0 (0.66)      | 360/360
+river     | 167.4 / 165.0  | 261   | 269    | 1.61 | 76.7/0.3/208.7/0/0 (2.28)   | 263/288
+lagoon    | 164.9 / 160.1  | 277   | 278    | 1.69 | 5.4/0.8/10.7/0/0 (1.03)     | 144/144
+arctic    | 212.4 / 201.6  | 367   | 366    | 1.72 | 7.0/0.4/13.2/26.3/0.2 (1.15)| 575/576
+redrock   | 218.2 / 215.2  | 616   | 602    | 2.76 | 12.6/3.8/199.9/0/37.3 (3.22)| 376/432
+*pre-session bots were sailed on per-process random-stamp routers across three
+code cuts (the survey) — directional context only, not a same-cut comparison.
+
+## WHAT LANDED / WHAT DIED / WHAT'S NEXT (one screen)
+LANDED: the mean-field bake (`08310d7`) — bay/ocean cross-process byte-equal,
+goldens PASS 20/20 twice, trap 25; P0b rebaseline (all 8 venues, table above).
+DIED: the clearance-bar ladder (monotonic dose-response, leg3 unmoved — river
+leg3 is EXECUTION-UNDER-JAM); AV1 arc-scoped band removal (inert pooled;
+0-rung defeat OVERDETERMINED); UL1-for-HIGH (skipped on ledger evidence);
+the queued-rival-gate hypothesis (arc active in 89% of crawl choices).
+MEASURED: the armed approach crawl (+69 s/boat arctic, her 100-117 u/s vs
+their 3.7-79); the beat decomposition (bay L1 avoid 57% GW-dominant, lake L2
+49%, ocean CLEAN+ARMED instead); stand-on needless ~50% at thVO 0 on
+redrock/arctic; lagoon leg2 2.46x (29 s/boat); solo arctic 420 vs fleet 366 vs
+her 215 (the gap persists without the jam); the oscillation-chasing mode.
+NEXT (size × confidence): 1. the oscillation-chasing tail (tack hysteresis,
+judged on p75/p90 + pooled sets; river must stay ≥ flat); 2. redrock 2.76x —
+the biggest gap got NO build tonight after the ladder died; re-attribute its
+pockets with the execution-under-jam lens (`_leg_where` + `_crawl_argmin`
+pattern on redrock's armed sections); 3. the give-way over-response on bay/lake
+(the 417u GW slice — response DURATION/SIZE, onset already honest); 4. lagoon
+leg2 variance tail (squall-awareness, unsized). Constraints all standing;
+anchors are treeP0 on `08310d7`; never compare across the mean-field cut.
+
+## POST-CLOSE ADDENDUM — the redrock leg3 pocket is STATIC-FIELD PARKING
+`_pocket_argmin.js redrock [-1350,-2000,-150,-800]` (the leg3-sub0 pocket,
+12,000 choices via treePR2's __avBox trigger): slow subset (<40 u/s, n=3051)
+= STATIC_VETO 57% + PROX_STATIC 37% — **94% static; boat terms 4%**. The
+"execution-under-JAM" framing from the ladder kill is also wrong: rivals are
+not the pocket's defeater. The land PROBES veto the 0-rung (500000 hard-zone
+veto + the 30000 far term + the clearance band), the argmin buys ±1.2/1.6
+swings, and she sails the same water at 83+ u/s. This composes with the B3
+result: admitting nearer-land NAV cells made leg3 worse because it added
+places to be probe-blocked — the response layer, not the map, owns the pocket.
+NEXT SESSION'S FIRST QUESTION: the hard-zone speed-scaled veto (a393d61) is
+built for exactly this (time-to-wall instead of fixed 140u) but is scoped
+openWaterAv && !arcK && plan-aligned(0.3rad) && not-in-irons && current<2kt —
+measure WHICH scope condition fails in the pocket (suspects: the canyon's
+current regions tripping _avCurMax≥2, or the plan-alignment window while the
+boat is displaced off-plan). If the pocket choices sit just outside one scope,
+the candidate is that scope's honest widening — measured first, one line.
+
+## ADDENDUM 2 — the pocket's missing scope, measured (the next build, parameterized)
+Scope booleans at the pocket's slow-static choices (n=1933): ow 100% | ir 100%
+| cur 100% | arcR 3% | **hp 69% | al 28%**. The hard-zone speed-scaled veto
+(a393d61) misses the pocket ONLY on plan-alignment: 72% of parked-boat choices
+have desiredHeading off the far-field plan reference by >0.3 rad (31% have no
+reference at all) — the displaced boat trying to rejoin the plan is exactly the
+boat the fixed 140u veto pins, while the scaling's own formula would give it
+the 60u floor (time-to-wall at parked speed). CANDIDATE FOR NEXT SESSION (not
+built): widen the alignment scope for SLOW boats — a parked/slow boat's
+time-to-wall is long in every direction, so the speed term already bounds the
+risk; the alignment window exists to protect fast boats aiming off-plan. Judge
+on redrock pooled 6-set + river transfer + the full battery; same physical
+line as the hard-zone landing (an honest widening of its own scope).
+
+================================================================================
+## 2026-08-09 ~11:30 — THE SLOW-BOAT WAIVER LANDING (HZ2). Behavior HEAD moves.
+
+The pocket-argmin chain (static parking 94% → failing scope = plan-alignment)
+converted directly into the build: `hzWaive` (!arcK, speed < 40 u/s, irons +
+current guards kept) waives the hard-zone plan-alignment requirement for the
+veto scaling AND the 30000 far term. A slow boat's time-to-wall bounds its risk
+in every direction; the alignment window exists to protect FAST boats.
+
+GATES (treeHZ2 vs treeP0, all on `08310d7` baselines):
+  redrock pooled 6-set: paired med −34.0 / mean −37.2, ALL SIX SETS NEGATIVE
+    (−15/−39/−26/−89/−34/−48), fins 376→386, cand med 602→572, boat rubs
+    12.55→10.08 (−20%), penalties 3.22→2.88 (−11%), land flat (200→201).
+  lake 2x20: A 262 land −18%, B 262 land +2% — flat-to-better, all 360 finish.
+  bay 2x20: A BYTE-IDENTICAL, B 240 (−1) boat −9%.
+  lagoon 2x8: −7/−7 clock (277→270, 280→273), land A +46% / B −10% (pooled
+    +16% — THE WATCH COLUMN for lagoon).
+  ocean 16@9300 EXACT: byte-identical. river 2x16: byte-identical (current
+    guard scopes it out — its pocket sits in the ≥2kt set; NOT a transfer
+    failure, a scope fact). arctic 4x16: byte-identical (floe venue guards).
+  seatrials run_eval 100@100: byte-identical.
+GOLDENS: full --update then verify PASS 20/20.
+NEW ANCHORS on this HEAD: redrock hz2rr{9400..9900} pooled med 572 fins
+386/432 (ratio 2.62, was 2.76); lake hz2lakeA/B 262/262; bay hz2bayB 240
+(bayA = p0bayA byte-identical); lagoon hz2lagA/B 270/273; all byte-identical
+venues keep their p0 anchors (p0oc 203, p0riv 269/269, p0arc pooled 366,
+seatrials ~197.8).
+REMAINING on redrock at this cut: 572/218.2 = 2.62x — the pocket class is cut
+but not closed; river's twin pocket needs a current-honest variant (time-to-
+wall in the GROUND frame is the honest form there — future shape, NOT built).
+
+## THE VENUE TABLE, final HEAD `188cd74` (owner format: med/best both bots, fins %)
+venue     | human med/best | pre-bot med/best | post-bot med/best | ratio | fins (%)
+seatrials | 189.4 / 179.7  | 197.8 / 196.2†   | 197.8 / 196.2†    | 1.04  | 100% (DNS/DNF 0)
+bay       | 219.0 / 211.0  | 241 / 205        | 241 / 205         | 1.10  | 360/360 (100%)
+ocean     | 177.9 / 177.7  | 203 / 166        | 203 / 166         | 1.14  | 144/144 (100%)
+lake      | 223.1 / 218.2  | 262 / 189        | 262 / 190         | 1.18  | 360/360 (100%)
+river     | 167.4 / 165.0  | 269 / 189        | 269 / 189         | 1.61  | 263/288 (91%)
+lagoon    | 164.9 / 160.1  | 278 / 195        | 271 / 202         | 1.64  | 144/144 (100%)
+arctic    | 212.4 / 201.6  | 366 / 217        | 366 / 217         | 1.72  | 575/576 (100%)
+redrock   | 218.2 / 215.2  | 602 / 315        | 573 / 299         | 2.62  | 386/432 (89%, was 87%)
+† seatrials via run_eval reports per-boat MEANS over 100 trials (means-of-boats,
+not single-race times). Pre-bot = P0 rebaseline anchors on `08310d7` (same-cut);
+post-bot = final anchors (hz2 where moved, p0 where byte-identical). Sorted by
+ratio; this is the standing close format (owner, 2026-08-09).
+
+================================================================================
+# OPENING PROMPT — THE REDROCK PUSH (paste this to the next instance)
+
+THE REDROCK PUSH. **Goal (owner): drive redrock below 2x** — pooled med < 436
+vs her 218.2 — from 573 today. That is a −137 s/boat campaign; expect 3-4
+landings of HZ2's size (−30 to −60 each). DO NOT STOP; analyze → hypothesize →
+experiment → evaluate → iterate; ≥4 probes/benches in flight; when a candidate
+dies, name the mechanism here and move on. Check `date` first.
+
+**Open with**: memories `regatta-humanlevel-push` (this session: TWO landings),
+`regatta-standing-rules` (traps 21-25), `regatta-venue-table`,
+`regatta-redrock-canyon`, and this directive.
+
+**Where things stand.** Behavior HEAD `188cd74` (after `08310d7` THE MEAN-FIELD
+BAKE — bay/ocean cross-process byte-equal, trap 25 — and `188cd74` THE
+SLOW-BOAT WAIVER — hard-zone plan-alignment waived under 40 u/s; redrock pooled
+−34 all-sets-negative). Anchors on this HEAD: redrock hz2rr{9400..9900} pooled
+572/299 fins 386/432 (2.62x), lake hz2lakeA/B 262/262, bay p0bayA+hz2bayB
+241/240, lagoon hz2lagA/B 270/273 (⚠️ land +16% watch), ocean p0oc 203 (16
+EXACT), river p0rivA/B 269/269, arctic p0arc pooled 366, seatrials ~197.8.
+Goldens PASS 20/20 on `188cd74`. freeze_venues --check CLEAN. Owner table
+format: ratio-sorted, med/best both bots, fins n/total (%).
+
+**P0 — finish the Phase-0 attribution wave (partly done):**
+- DONE: per-leg matrix, VERIFIED LAPS ONLY (`fp=9b7c82db:21417` — 8 of 11
+  redrock traj files are OLD-course, rule 23): legs 3+5 = 58% of the gap
+  (+84.8/+79.3 s/boat, 2.51x/2.45x), legs 1/4 = 26% (2.30x/2.34x), leg6 1.73x.
+- TO RUN: `_leg_where.js` subsections on legs 3 and 5 (hz2 anchors);
+  `_pocket_argmin.js` re-run on an hz2-code tree (what mid-speed stall remains
+  in the leg3 pocket after the waiver — build treePR3 from HEAD + the treePR2
+  instrumentation patch, see regatta-humanlevel-push); **the BOUNDS class**
+  (37 bounds-contacts/boat, HUMAN-ZERO, never attributed — where/which
+  legs/what state); **the DNF class** (46/432 — where do they die); solo
+  neutral + `_arc_oscab.js` A/B on redrock (9 oscillating regions, never
+  A/B'd here; ⚠️ dirVar-only form; river PROFITS from swings — any
+  anti-chasing shape must not blunt shift-play and gates everywhere).
+**P1 — build in size order from P0.** Shelf: HZ2 siblings (the 40 u/s knee,
+the far-term for displaced mid-speed boats), the bounds fix once attributed
+(human-zero classes convert cleanly), tack hysteresis if the redrock osc A/B
+is big (judge on the TAIL, pooled sets). ⛔ Closed on redrock: RR1-4 (96
+seeds), curved-on-redrock, canyon-law entries, occupancy stamps, ENTRY-side
+governors, orbit-radius knee; MEDIUM breach honesty (lake kill); UL1 incl.
+HIGH (static field owns the defeats, not risk prices); AV1 band removal
+(overdetermined); the clearance-bar ladder (dose-response, admission is not
+the block). The 0-rung's defeat in constrained water is OVERDETERMINED —
+single-term removals re-rank; prefer shapes that change the boat's ACTIONS.
+**P2 — gates per landing**: redrock pooled 6-set minimum (_pool_rr, NEGATIVE =
+faster — trap 21), 96-seed protocol near threshold, full battery every venue
+(river/arctic may be byte-inert behind current/floe guards — verify byte-
+identity against CURRENT-HEAD baselines, trap 22), goldens full --update.
+**⚠️ OWNER REQUIREMENT (2026-08-09): EVERY STATUS UPDATE — not only the session
+close — presents THE TABLE in the decided format: one row per venue, SORTED BY
+RATIO, columns = venue | human med/best | pre-session bot med/best |
+post/current bot med/best | ratio | fins n/total (%). Update the bot column
+from the freshest anchors at the moment of the update; flag any venue whose
+number is stale or mid-bench.**
+**Constraints carried**: actions-not-prices; episodes-not-frames; probe audits
+(18/18b/19b/19c); one-physical-line gates; `_traj_fp.js` before quoting any
+human ref; owner asked for MORE REDROCK LAPS — intake same-day when they land.
+
+================================================================================
+# 2026-08-09 ~12:00 — THE REDROCK PUSH (goal: below 2x, pooled med < 436)
+
+## P0 ATTRIBUTION WAVE (all on HEAD `188cd74` / treeHZ2; fp-verified refs)
+THE FOUR POCKETS ≈ 225 s/boat of the 355 gap (_leg_where, verified laps only):
+  leg3-sub0 +114 s/boat (67% of leg3; bot 16 u/s vs her 83; 73% of leg slow
+  time) | leg5-sub0/1 +55 (mark-7 exit) | leg5-sub6/7 +30 | leg4-sub5 +25
+  (mid-leg narrows, her 116 u/s vs 79). Leg1 is diffuse traffic beat
+  (deflected 45%, no pocket — FLEET AVOIDANCE TAX flavor, 47 s/boat).
+THREE CLASSES UNIFIED: leg3-sub0 = the DNF class = the bounds class.
+  _rr_dnf: ALL 8 DNFs (1/race = bench 46/432 rate) die leg 3 nearest mark-6
+  (-883,-1628), med 321u out, 0.59kt, unarmed, liveness normal. _rr_bounds:
+  336 grind episodes cluster (-800,-1600)/(-800,-2000) = the same box; legs
+  3/5/2 own 83%. The pocket IS the mark-6 departure corridor.
+## ⛔ KILLED: the boundary-veto hypothesis (measured, not benched)
+The fan's arena check (fixed 80u veto at the speed-projected future point,
+no HZ scaling — script.js ~3612) looked like HZ2's missing sibling. treePR3
+(HEAD + PR2 instrumentation + source tag) says NO: BND_VETO = 1.4% of slow
+defeats; slow boats sit med 500u from the arena edge (within80: 0%) in every
+pocket. The bounds grinds are downstream symptom (~19 s/boat), not defeater.
+## ⛔ KILLED: tack hysteresis on redrock (the oscillator A/B verdict)
+8 solo neutral same-seed A/Bs (dirVar-only): removal deltas −11/+85/−10/−229/
++205/−55/+254/−93 — TWO-SIDED, net ≈ wash. Unlike arctic's one-sided tail,
+redrock seeds exploit the swings as often as they chase them. No build.
+## THE POCKET MECHANISM (argmin + anatomy, treePR3/treeHZ2)
+Slow-static defeats at leg3-sub0 with the HZ2 waiver ACTIVE (scope verified
+ow/ir/cur ~100%, arcR 2%): STATIC_VETO 52% (land inside the 60u FLOOR — the
+boat is AT the wall face) + PROX_STATIC 34% (the un-waived clearance band).
+FAN NOT CLOSED: allClosed 0%, bothOpen 64%, 9.3 open rungs/choice, reversals
+present 50% (nosedIn) — ADMISSION IS NOT THE PROBLEM. Anatomy (_pocket_anat):
+a park/unpark/re-nose LOOP — 467 short spells (~3.7s), heading churn 0.8 rad
+inside spells, drift 20u, nosedIn 60% of box time; worst transits 748-815s
+with 73-79 spells (the DNF boats). Each time the boat gains way, the nav
+demand re-noses it: the 420 upwind floor's carrot lands past the bend.
+leg4-sub5 is DIFFERENT: PROX_STATIC 62% at 94% PLAN-ALIGNED, mid-speed — the
+clearance band (10000-scale ≈ cost(0) 7500-15000) flips the winner off the
+router's own thread in the narrows. leg5-sub0/1 mixed (al 49%).
+## P1 BUILDS (one physical line each)
+RR5 (treeRR5): RR3's fetchable-carrot re-aim scoped nosedIn && <40 u/s — the
+  HZ2 knee separates the pocket class (slow pinned) from the traffic pin at
+  speed (m5 funnel) that killed RR3; RR4's solo-only scope excluded the
+  crowded pocket itself. A NEW rung, the one the RR close note asked for.
+HZ3B (treeHZ3B): the plan-aligned candidate that passes the hard zone's own
+  trust test pays NO clearance-band tax (aligned-only; the slow waiver stays
+  OUT — v1 lake shore-hug lesson). Targets leg4-sub5 + PROX_STATIC share.
+## ⛔ KILLED at the MECHANISM GATE: RR5 (fetchable carrot, nosedIn && <40 u/s)
+Fleet anatomy on treeRR5 is baseline-identical (box 6255s vs 6560s, parkT 1666
+vs 1732, the four 748-815s DNF transits unchanged, 69-79 spells each). At the
+wall face NO plan point around the bend is line-of-sight, so bestVis≈0 and the
+re-aim never produces a different carrot — the RR family's lever does not
+reach the NEW course's pocket. (Solo fins swung ±250 BOTH WAYS on this
+one-line change — solo cross-tree comparison is unusable on redrock; mechanism
+gates or pooled fleets only.) Tree deleted.
+## ⭐ THE BLIND WIGGLE IS THE LOOP'S ENGINE (measured, the sharpest number yet)
+applyAvoidance line ~2780: `if (this.wiggleActive) return desiredHeading` —
+wiggle steering BYPASSES the entire fan, land vetoes included. In the leg3
+pocket, wiggle owns 64% of slow time, and the commanded beam-reach heading
+(windDir ± 1.75, side chosen from boats/marks/random — land-blind) is
+HARD-BLOCKED within 150u for **88% of 5212 wiggle samples** (2295s of blind
+wall-aim in 4 races). The loop: nav re-noses → park → blind burst into the
+face → clamp/grind (land 199.9/boat!) → fail → flip every 2nd failure →
+repeat, up to 815s. leg4-sub5 correction: the anat box there holds only ~6
+s/boat (her-line box; bot stall is laterally displaced) — HZ3B's located
+target was over-sized; its pooled 6-set is running as the judge anyway.
+## HZ3B REDROCK POOLED 6-SET (treeHZ3B vs hz2rr* baselines) — THE BIG ONE
+paired med −85.0 / mean −78.7, n=356, negative 250/356, ALL SIX SETS NEGATIVE
+(−112/−61/−121/−100/−47/−83), med 572→490, fins 386→391, land 200.9→169.5
+(−16%), pen 2.88→2.71 (−6%), boat 10.08→10.50 (+4%), mark −7%. 2.62x→2.25x
+from one line. Full battery in flight (lake is the risk venue — v1 shore-hug;
+river/arctic expected byte-identical behind current/floe guards, judged vs
+CURRENT-HEAD baselines per trap 22).
+## W4 (treeW4) — THE AIMED BURST, mechanism gate PASSED (partial cure)
+The discriminator run: of blocked blind bursts, other beam side clear 12%,
+ANY sailable non-irons heading ≥220u hard-clear = 100%. Build: when hard land
+(not floe plug) blocks the commanded burst within 150u, aim the burst at the
+clear feasible heading nearest a beam reach; snap wiggleSide to the chosen
+side; leg 0 + floe blockage + clear bursts stock verbatim. Box gate vs HZ2:
+2 of 4 catastrophic transits GONE (repl. by 200-270s), slow 4082→3455s,
+nosedIn 3911→3174s, ws-flips in spells 165→84; TWO 800s loops survive (the
+nav re-nose class — the carrot demands wallward; next address if W4's pooled
+set lands). W4 redrock 6-set in flight vs hz2rr*.
+## ⛔ KILLED at the FLEET GATE: W4 (the aimed burst) — the wiggle layer CLOSES
+Pooled 6-set vs hz2rr*: +42 med / +50 mean, ALL SIX SETS WORSE (+4..+86),
+fins 386→366, boat rubs +53%, mark +51%, pen +24% — despite the box gate
+passing (2 of 4 catastrophic transits cured). MECHANISM: the burst bypasses
+avoidance ENTIRELY — including rivals. The stock blind beam-reach into a wall
+is at least stationary; an AIMED burst turns the grinding boat into a blind
+charge across traffic and marks. The burst's blindness to land is inseparable
+from its blindness to boats; giving it eyes for one without the other trades
+grind for collisions. With WIG2 (arctic, sighted side-pick) this closes the
+wiggle layer 2-for-2: ⛔ do not re-enter via the burst. Tree deleted.
+NEXT (in flight): RJ1 — the rejoin is a ROUTE, not a bearing: nosedIn+slow
+boats get a SailCheck.pathBetween micro-route to the plan point as their
+carrot (the demand itself moves into sailable water; every prior shape edited
+prices or LOOK on the same straight line). treeRJ1, box gate running.
+
+================================================================================
+## 2026-08-09 ~15:30 — ⭐⭐ THE BAND-TRUST LANDING (HZ3B, `08f734a`). HEAD MOVES.
+
+One line: the candidate passing the hard zone's own trust test (plan-aligned
+0.3 rad, open water, !arcK, not irons, <2kt) pays NO clearance-band tax; all
+other headings keep full lee-shore caution. The slow-boat waiver deliberately
+NOT included (v1 lake shore-hug kill stays honored).
+GATES: redrock pooled 6-set paired −85.0 med / −78.7 mean, n=356, ALL SIX
+SETS NEGATIVE (−112/−61/−121/−100/−47/−83), med 572→490 (2.62x→2.25x), fins
+386→391, land 200.9→169.5 (−16%), pen −6%, boat +4%, mark −7%. Lake A/B
+−5/−3 paired med (land A −12%, B +19%); bay A −0.6 mean / B BYTE-IDENTICAL;
+ocean 16 EXACT; river 2x16 BYTE-IDENTICAL (current guard); arctic 4x16
+BYTE-IDENTICAL (openWaterAv guard, dirt identical to the count); lagoon flat
+(−1.4/+1.1 mean) with land A −27%; seatrials ~197.8-198.9 (anchor-equal).
+Goldens full --update then PASS 20/20. freeze_venues --check CLEAN.
+NEW ANCHORS on `08f734a`: redrock hz3brr{9400..9900} pooled 490/274 fins
+391/432 (2.25x); lake hz3blakeA/B 254/247 (pooled med 252/191 — 1.13x, was
+1.18); bay 240/205; lagoon hz3blagA/B 271/274 (pooled 273/215); ocean p0oc
+203/166 (byte-id); river p0riv 269/189 (byte-id); arctic p0arc 366 (byte-id);
+seatrials ~197.8.
+## RJ1 VERDICT: SUBSUMED (do not land; shape stays on the shelf)
+vs HZ2 alone: med −4.0 (3-3 sets) but fins 386→399 (+13, biggest fins move of
+the campaign), land −11%, mark −13%. ON TOP of HZ3B (treeCRJ1 vs hz3brr*):
+med +1.0 / mean +7.3, fins 391→394 — the band trust already un-parks the same
+boats (the aligned candidate wins and the boat follows the plan out); the
+rejoin route then only adds occasional detour carrots. If a future course has
+pockets the band cannot cure (no aligned candidate exists), RJ1 is the shelf
+shape — its solo evidence is the +13 fins.
+## POST-LANDING RE-ATTRIBUTION (treeH3, `08f734a`) — THE MARK-6 BOWL OWNS ~115 s/boat
+_rr_map: mark-6 sits in a NEARLY-CLOSED BOWL (x −1150..−750, y −1850..−1400),
+outlets = a 2-cell slit going N (x≈−880) and the SE channel the leg-3 plan
+threads; the whole bowl interior is LOW-CLEARANCE (clr<3). Two classes:
+  leg2-sub9 (ARRIVAL): +35.4 s/boat, 69% of leg 2's gap, armed 81% — the
+    rounding-approach crawl through the shared channel (fleet-avoidance-tax
+    flavor; entry governors ⛔ closed, funnel metering already active here).
+  leg3-sub0 (DEPARTURE): +80.6 s/boat (was 114 pre-HZ3B), 62% of leg 3,
+    landAhead 68%, armed 3% — 3 boats per 4 races still run the FULL 780-810s
+    loop; DNFs 6/8 races (was 8/8), all mark-6, now at 0.16 kt.
+Legs 1/6 diffuse (+43 traffic-beat / +7). Leg 5 softened everywhere (sub0
+37→20, sub1 18→13, sub6/7 ~26 — still the second address).
+DISCOVERY: a PER-BOAT sailable route already exists (gridPath = pathSailable
+from the boat, ≤12s stale, clearance-weighted) and the LOOK carrot rides IT —
+so the RJ1 shape duplicated existing machinery (why it subsumed). The
+survivors' question is WHICH piece goes stale: _rj_lifecycle.js on treePR4
+logs replan segNull/segLen + 1Hz carrot LOS/xtk/age for slow pocket boats.
+## THE CARROT-LOS CHAIN (post-landing): RR6 flat, W5R6 = 2 of 3 loops cured
+_rj_lifecycle (treePR4): the per-boat gridPath is HEALTHY (replans 100%, age
+med 6.2s, threads the bowl) but the straight boat→carrot line crosses hard
+land in 67% of slow pocket reads — 321/451 at ONE cluster (-1000,-1400), the
+slot between the bowl's interior ISLET and its wall. Builds:
+  RR6 (LOS-carrot shrink, slow-scoped — the rung RR1-5 never tried): box gate
+  FLAT on the 3 loop boats (818/800/789 persist). Alone: not enough.
+  W5 (the aimed burst, scoped nosedIn && <15 u/s && NO rival within 150u —
+  W4's kill mechanism excluded by construction) + RR6 (treeW5R6): box slow
+  3197→2799, spells 360→304, wsFlips collapse, LOOPS 3→2 (one DNF cured).
+THE RESIDUE NAMED: the last survivor is SOLO (rivMed 1549u, near% 2) and
+WEDGED in the ~100u islet-wall slot — every rose heading has hard land within
+the probe distances, so W5 and RR6 both fall through to stock; the escape is
+a multi-point turn (crawl-rotate-crawl) no current layer can express. ~1 boat
+per 2 races. W5R6 pooled 6-set in flight vs hz3brr* — the clock decides.
+## ⛔ RR6/RR6b DEAD at the box; the DEPARTURE LADDER CLOSES for this session
+RR6b (LOS carrot scoped SOLO — the queue exclusion): box shows FOUR full
+loops (818/800/789/756s) and ALL FOUR are SOLO (rivNearPct 0-6) — the solo
+scope was never the issue; from inside the islet-wall slot NO path point is
+LOS-visible, so RR6's re-aim falls through to stock for exactly the boats it
+was built for. SEVEN shapes have now failed on the wedged class (band trust,
+RJ1 route, RR5 raise, RR6/RR6b shrink, W4 unscoped burst, W5 scoped burst):
+the missing capability is a STUCK-STATE MANEUVER — a deliberate multi-point
+turn / back-out-along-own-track sequence, which no current layer (fan, carrot,
+burst) can express. That is a DESIGN task for a fresh session, with the
+reversal-commitment history (30s-commit disease, station-keeping 0-for-8) as
+its constraints. Trees deleted; the class is fully attributed and mapped
+(the bowl map, the slot at (-1000,-1400), _rj_lifecycle, _pocket_anat rivMed).
+## ALSO MEASURED (the arrival side): armed bowl arrivals are STATIC-defeated
+Armed subset of bowl choices (n=4019/10589): STATIC_VETO 44% + PROX_STATIC
+26% vs boats 25% — the queue's straight probes read the bowl walls as
+collision everywhere because the queued-rival gate (m5 wedge lesson) keeps
+the ARC off in parked crowds (arcR 0% at slow-static). If the arrival crawl
+is ever targeted, the shape is arc-vs-wedge in land-locked roundings — weigh
+against the wedge lesson before building.
+
+================================================================================
+## SESSION CLOSE 2026-08-09 (day 2) — THE REDROCK PUSH, ONE LANDING: 2.62x → 2.25x
+
+LANDED: ⭐⭐ THE BAND-TRUST LANDING (HZ3B, `08f734a`) — redrock pooled −85 med
+ALL SETS, 572→490, fins +5, land −16%; lake −5/−3 (252/247); goldens PASS
+20/20 ×1 after full --update; freeze CLEAN. The single biggest redrock move
+of the campaign (HZ2 was −34).
+KILLED with mechanisms (7): boundary-veto hypothesis (slow boats sit 500u
+from the arena edge); redrock tack-hysteresis (osc A/B two-sided at 8 seeds);
+RR5 (no LOS around the bend to raise toward); W4 aimed burst (blind to boats
+— rubs +53%); RJ1 rejoin route (SUBSUMED — per-boat gridPath already exists);
+W5R6 (queue disruption, mark +14%); RR6/RR6b (the wedged class has no
+LOS-visible path point — solo scope irrelevant).
+ATTRIBUTED to closure: the mark-6 BOWL owns ~115 s/boat (arrival leg2-sub9
++35 armed/static-defeated with the arc queue-gated OFF; departure leg3-sub0
++80 with the wedged islet-wall slot as the DNF residue, ~1 boat/2 races,
+needs a stuck-state maneuver that no current layer can express); leg5 pockets
+~45 (same family, lighter); leg1 diffuse traffic +43 (THE FLEET AVOIDANCE
+TAX); legs 4/6 small.
+
+## THE VENUE TABLE, final HEAD `08f734a` (owner format: ratio-sorted, med/best, fins %)
+venue     | human med/best | pre-session bot | post-session bot | ratio | fins (%)
+seatrials | 189.4 / 179.7  | 197.8 / 196.2   | 197.8 / 196.2    | 1.04  | 100% (DNS/DNF 0)
+bay       | 219.0 / 211.0  | 241 / 205       | 240 / 205        | 1.10  | 360/360 (100%)
+lake      | 223.1 / 218.2  | 262 / 190       | 252 / 191        | 1.13  | 360/360 (100%)
+ocean     | 177.9 / 177.7  | 203 / 166       | 203 / 166        | 1.14  | 144/144 (100%)
+river     | 167.4 / 165.0  | 269 / 189       | 269 / 189        | 1.61  | 263/288 (91%)
+lagoon    | 164.9 / 160.1  | 271 / 202       | 273 / 215        | 1.66  | 144/144 (100%)
+arctic    | 212.4 / 201.6  | 366 / 217       | 366 / 217        | 1.72  | 575/576 (100%)
+redrock   | 218.2 / 215.2  | 573 / 299       | 490 / 274        | 2.25  | 391/432 (91%)
+(byte-identical venues keep prior anchors; lagoon 273 vs 271 pre is pooled-
+median granularity on 144 boats, clock verdict flat with land −27% on set A.)
+
+================================================================================
+# OPENING PROMPT — THE REDROCK PUSH, CONTINUED (paste to the next instance)
+
+THE REDROCK PUSH continues. Goal (owner): redrock below 2x — pooled med < 436
+vs her 218.2 — from 490 today (2.25x, was 2.62 at session open). −54 to go:
+one HZ3B-half-sized landing. DO NOT STOP; ≥4 probes in flight; check `date`.
+
+Open with: memories regatta-redrock-push (this session), regatta-standing-
+rules (traps 21-25), regatta-venue-table, and this directive.
+
+Where things stand. Behavior HEAD `08f734a` (THE BAND-TRUST LANDING: trusted
+plan-aligned candidates pay no clearance-band tax; −85 pooled, all sets).
+Anchors on this HEAD: redrock hz3brr{9400..9900} pooled 490/274 fins 391/432;
+lake hz3blakeA/B 252/191; bay hz3bbay* 240/205; lagoon hz3blag* 273/215;
+ocean p0oc 203/166, river p0riv 269/189, arctic p0arc 366/217, seatrials
+~197.8 (all byte-identical this landing). Goldens PASS 20/20. freeze CLEAN.
+
+The remaining redrock gap (272 s/boat) in size order:
+1. THE MARK-6 BOWL ~115 s/boat, both faces measured to closure this session:
+   ARRIVAL (leg2-sub9, +35, armed): straight probes read the bowl walls as
+   collision because the queued-rival gate keeps the ARC off in parked crowds
+   (armed subset: static 70%, boats 25%). The shape is arc-vs-wedge in
+   land-locked roundings — weigh the m5 wedge lesson first.
+   DEPARTURE (leg3-sub0, +80): 2-4 solo boats/4 races wedge in the islet-wall
+   slot at (-1000,-1400) and loop 750-820s (= the DNF class, fins ceiling).
+   SEVEN shapes failed (list in the session log); the missing capability is a
+   STUCK-STATE MANEUVER (multi-point turn / back out along own track),
+   designed against the reversal-commitment + station-keeping constraints.
+   Constraint inventory: fan ±1.6 + reversals exist and are OPEN (9.3 rungs);
+   steerage ≈ 0 below a few u/s EXCEPT wiggle snap-turn; wiggle bursts bypass
+   ALL avoidance; gridPath is per-boat, fresh, and correct.
+2. LEG-5 pockets ~45 (mark-7 exit channel + subs 6-7) — same family, lighter
+   traffic; whatever cures the bowl, gate its transfer here.
+3. LEG-1 diffuse traffic beat ~43 — THE FLEET AVOIDANCE TAX (AV1 inert,
+   overdetermined; deflection ledgers in regatta-humanlevel-push).
+⛔ Closed THIS session on redrock: boundary-veto, tack-hysteresis (two-sided),
+RR5/RR6/RR6b (the full carrot ladder — six lifetime rungs), W4/W5 (the burst
+may not look — blind-to-boats, 2 kills), RJ1 (subsumed by gridPath).
+⛔ All prior closed families stand (RR1-4, curved, canyon-law entries, entry
+governors, occupancy stamps, UL1, AV1, clearance-bar ladder, orbit knee...).
+Gates: pooled 6-set (_pool_rr, NEGATIVE=faster), 96-seed near threshold,
+mechanism gate at the box BEFORE benching (this session's method — it killed
+3 of 5 builds for the cost of 4 races each), full battery + byte-inertness vs
+CURRENT-HEAD baselines, goldens full --update, close with the owner table.
+Owner is recording MORE REDROCK LAPS — intake same-day (fp=9b7c82db:21417 is
+the current verified fingerprint; re-run _traj_fp.js on arrival).
+
+## THE PLAN (written at close for the fresh instance — execute top-down)
+
+**Phase 0 — orientation (15 min, no builds).** `date`; read memories
+regatta-redrock-push + standing-rules traps 21-25; `freeze_venues --check`
+from repo root; `_traj_fp.js redrock` (owner may have recorded new laps —
+if new fp-verified laps exist, re-verify the human med/best BEFORE anything);
+confirm HEAD `08f734a` and that hz3brr* baselines load. If an owner merge
+landed overnight: byte-check script.js vs 6485113, keep pre-merge anchors,
+re-baseline only what moved (rule 6).
+
+**Phase A — THE BOWL ARRIVAL: arc-vs-wedge (~35 s/boat address; expected
+pooled −15..−25 if it converts).**
+A1 measure (1 run, treePR4): at mark-6 armed choices, how often is the
+   queued-rival gate the ONLY reason arcK==0 (vs current/unarmed/no-arcR)?
+   Log the gate's own inputs. If <50%, re-size before building.
+A2 build (one line): allow the arc rollout under a parked-crowd queue when
+   the rounding is LAND-LOCKED — scope on a measured grid property of the
+   MARK (clearance at the mark's zone below a knee, the noSubsample shape),
+   so open-water queues (the m5 wedge lesson's home) keep the gate verbatim.
+A3 gates: mechanism gate at the bowl box FIRST (leg-2 armed transits must
+   speed up; boat rubs must not climb — the wedge lesson is a rubs failure),
+   then pooled 6-set vs hz3brr*, then full battery. Kill fast if rubs move.
+
+**Phase B — THE STUCK-STATE MANEUVER (the wedge slot; the DNF class; fins
+391→~415+ and the 750-820s tail; med read WITH fins — DNF converts enter as
+slow finishers).** This is the session's design task — budget it properly.
+B1 the state machine (new, small): enter ESCAPE when parked (<15 u/s) &&
+   nosedIn (hard) && the 24-heading rose finds NO hard-clear 220u heading
+   (the slot signature — measured, it separates the wedge from everything
+   else) && no rival within 150u (Freezing-Robot + W5's lesson) && leg>=1
+   && sustained 8s. Maneuver: BACK OUT ALONG OWN TRACK — keep a per-boat
+   breadcrumb ring buffer (pos every 1s, 60 deep, trivial memory); steer to
+   the breadcrumb 100-150u astern with wiggle-grade snap-turn authority and
+   speedRequest 1.0; pop breadcrumbs as reached. EXIT when un-nosed && speed
+   >40 u/s, or breadcrumbs exhausted, or 20s HARD CAP (the 30s
+   reversal-commitment disease is the constraint — never latch longer);
+   afterwards normal nav (the gridPath is correct — measured).
+B2 gates: mechanism gate at the box (the 750-820s transits MUST break — that
+   is the whole claim), then pooled 6-set + full battery. Floe venues: first
+   pass EXCLUDE them entirely (fixed-land signature only) — arctic byte-
+   identical by construction, verify per trap 22.
+B3 if the box gate fails, STOP the family for the session (8th shape) and
+   log; do not ladder.
+
+**Phase C — transfer + residuals.** After any landing: `_leg_where` legs 3+5
+on the new HEAD (does the leg-5 mark-7 exit inherit?); `_rr_dnf` (fins
+ceiling); re-anchor + table. If A+B land near expectation the pool sits
+~440-460: decide with fresh attribution whether the last −10..-25 comes from
+leg-1 (THE FLEET AVOIDANCE TAX — enter via the measured needless stand-on
+swings, actions not prices) or the leg-5 pockets, and take ONE more swing.
+
+**Standing method (non-negotiable):** mechanism gate at the box before any
+6-set; pooled 6-set minimum, trap 21 sign; 96-seed protocol near threshold;
+byte-inertness vs CURRENT-HEAD baselines; goldens full --update at landings
+only; the owner table with EVERY status update; new owner laps intaken
+same-day; ≥4 probes in flight; when a candidate dies, name the mechanism
+here and move on.
+
+================================================================================
+## 2026-08-09 ~14:45 (day-2 cont.) — PHASE A RE-SIZED at the measurement: the
+## arc-ungate build is NOT justified; the arrival crawl lives OUTSIDE arc range
+_arc_gate.js (treeA1, 4 races, mark-6 armed choices at 2 Hz): of SLOW (<40 u/s)
+armed samples, 85% sit at dM 280-360u — BEYOND the arc's existence range
+(zone*1.5 = 248u). The queue gate is the sole blocker in only ~11% of slow
+armed time (15% in-range × 72% queue-blocked) — under the 50% build bar set in
+the plan. The A2 shape (relax the queued-rival gate for land-locked roundings)
+would free the arc for water the crawl never occupies. Moving fast in-range
+choices see ARC ON 51% — the gate is not starving them either.
+THE RE-SIZE: the arrival crawl is a QUEUE CRAWL at 250-360u behind parked
+rivals (nPark p50 2, dPark p50 84u) — and the WEDGED DEPARTURE CLASS sits at
+(-1000,-1400), 256u from mark-6, directly beside the approach channel. The
+arrival queue is plausibly SEEDED by the wedge class. ORDER OF OPERATIONS
+FLIPPED: Phase B (stuck-state maneuver) first; re-measure the arrival with the
+wedge cured before any arrival build.
+
+## PHASE B (stuck-state maneuver, treeB1) — v1/v2 box verdicts, v3 in flight
+v1 (plan shape: rose-fully-blocked entry + sustained-8s park + breadcrumb
+retreat): NEVER FIRES — box byte-identical. TWO PREMISES FALSIFIED BY THE BOX:
+(a) the slot signature does not exist — 100% of blocked wiggle samples keep
+some non-irons 220u-hard-clear heading, INCLUDING the three loop boats (the
+pocket is not geometrically sealed; nothing ever aims at the opening);
+(b) sustained-parked (<15 u/s) never holds — the wiggle's own minSpeed
+escalation (18-30 u/s) interrupts any park-based sustain test.
+v2 (leaky futility accumulator: nosed && <40 u/s && no-rival-150, +TICK/-0.5,
+threshold 25s; crumbs recorded only >=40 u/s): TRIGGER IS RIGHT, MANEUVER IS
+WRONG. Fires on exactly the loop class (5 boats, 39 episodes, seeds 9400-03;
+the three 750-820s slot boats + a leg-5-area boat at (622,1442); zero rival
+aborts) but every episode caps at 20s with crumbs static at 48: the boat
+ENTERED the trap below the 40 u/s recording floor, so the last crumb predates
+the trap and the straight line to it crosses the islet — with avoidance
+bypassed the maneuver noses the wall toward an unreachable crumb. Loops
+persist (785/768/693). Lake (v2 trigger): 0 escapes in 2+ seeds — specificity
+confirmed off-venue.
+v3 (LAST SHAPE this session per plan B3): keep the proven trigger; replace the
+aim — MULTI-POINT TURN at the longest-hard-clear rose heading, re-evaluated
+every tick with hysteresis (30u/rad switch penalty). Rationale: the opening
+exists 100% of the time (measured); wiggle can't see it (fixed beam reach,
+88% blocked), the burst family looked once and blindly (killed); nothing
+re-aims while moving. Box gate + episode log in flight.
+## PHASE B v3 box verdict: FAIL — and the SUB-CELL BLINDNESS named
+v3 (rose re-aim w/ hysteresis): same three loops (785/768/693), all 39
+episodes cap at 20s, positions pinned ±30u, spd sawtooth 0→40→4-11 = the boat
+ACCELERATES INTO LAND THE ROSE CALLED CLEAR. Mechanism: the ray rose samples
+at 60/100/150/220u — nothing below 60u. Parked against a wall, the first
+obstruction sits at 20-40u on EVERY heading; "clear" headings abound at
+60u+ scale while the slot is sealed at hull scale. This rehabilitates the
+close's original claim (the slot IS sealed) and convicts the roseClr=100%
+stat of the same blindness (rule 18 flavor: audit the probe's RESOLUTION,
+not just its units). Trigger remains clean: same 5 boats, 0 false fires,
+lake 0-for-4-seeds.
+v4 (FINAL shape): the CLEARANCE-GRADIENT WALK — step to the sailable
+neighbor CELL (RES=50u) with max _clear (BFS distance-to-land, monotone
+uphill by construction), aim at its clearance-checked CENTER, corner-guarded
+diagonals, radius-2 fallback. The grid is the only honest sensor at hull
+scale. Box gate in flight; if it fails the family STOPS this session.
+## PHASE B v4 verdict + THE HELM-OWNERSHIP FIND (the real reason v2-v4 "failed")
+v4 (clearance-gradient cell walk) box: loops persist BYTE-NEAR-IDENTICAL to
+baseline (785.5/767/693.5) — and that identity across three DIFFERENT aims was
+the tell. Code audit found it: the ISLAND-CONTACT OVERRIDE runs after the
+ESCAPE branch and, while `iceEscapeTimer > 0`, unconditionally rewrites
+desiredHeading; a wedged boat is in near-constant land contact, so the timer
+re-arms every tick and the contact reflex (off-wind bounce off the contact
+normal) owns the helm PERMANENTLY — it IS the ping-pong loop between islet
+and wall. planFloeTrajectory can also override toward the stale wallward
+_lastNav. v2/v3/v4's commanded headings never reached the rudder: the box
+gates tested override precedence, not the aims. (Extends the one-line gate
+family: every stuck-boat mechanism — wiggle, clearanceTimer, iceEscape — has
+a precedence slot; a NEW mechanism must claim its slot in EVERY override that
+can outrank it, or it does not exist.)
+v5 = v4's cell walk + helm ownership (escActive suppresses the island reflex,
+its application, and planFloeTrajectory while active). Box gate in flight —
+this is the FIRST run in which the maneuver actually steers.
+## ⭐ PHASE B v5 BOX GATE: PASS — THE WEDGE LOOPS BREAK
+v5 = the futility trigger (25s leaky nosed+slow+solo) + the clearance-gradient
+cell walk + HELM OWNERSHIP (escActive outranks the island-contact reflex and
+planFloeTrajectory while active). Box (seeds 9400-03, slot-inclusive box):
+ALL THREE 750-820s loops GONE — worst transit 239s; box time 3594→1749s
+(−51%), slow 2486→731s (−70%), nosedIn 2427→671s (−73%), parked spells
+988→305s. Episode log: FIVE episodes total, each 1.1-3.1s (rotate to the
+uphill cell, 8→39 u/s, un-nosed, out — the 20s cap never hits), fins 9/9 on
+ALL FOUR seeds (baseline 8/9 on three), and the leg-5 boat at (622,1442)
+cured too (transfer visible at the box). Lake: 0 fires in 4 seeds.
+THE MANEUVER IS ~3 SECONDS, NOT 20: the boat was never physically trapped —
+it was command-trapped (the contact reflex ping-pong). One cell of correct
+aim ends it.
+Fleet verdict in flight: b1rr{9400..9900} vs hz3brr*, then full battery.
+## PHASE B v5 REDROCK POOLED 6-SET (b1rr* vs hz3brr*) — THE TAIL LANDS, THE MEDIAN PAYS COMPOSITION
+_pool_rr (finisher stats): cand med 508 vs base 490; paired (mutual
+finishers) med +3.0 / mean +13.4, n=390. Dirt: land −29%/boat
+(169.5→120.5), boat rubs FLAT (10.50→10.48), mark +17% (3.47→4.05), pen +5%.
+**fins 391→429 of 432 (+38): the DNF class is eliminated** (3 non-finishers
+remain in 48 races). best 274→294.
+HONEST COMPOSITE (DNF scored at cutoff 900 BOTH sides, per the plan's
+"med read WITH fins"): paired ALL-BOATS n=432 med 0.0 mean −19.4, ALL SIX
+SET MEANS NEGATIVE (−4/−41/−16/−26/−7/−23), negative 199/432. DNF-at-900
+med 501.5→509.5 (+8), mean 534.8→515.4 (−19.4).
+READ: the cure is tail-only, as a wedge cure must be — the typical boat is
+untouched (med ~0), every set's MEAN improves, 38 boats stop dying, land
+falls 29%, rubs (the W-family killer) are flat. The finisher-median rise
+(490→508) is composition: 38 ex-DNFs now finish at 700-850s and enter the
+median population. Mutual-finisher med +3 pooled = small traffic cost of 38
+extra boats racing legs 3-6. mark +17% = the same boats now rounding 4 more
+marks each (exposure, not behavior — verify at battery).
+Full battery in flight (lake/bay/ocean/river/lagoon/arctic).
+
+================================================================================
+## 2026-08-09 ~16:20 (day-2 cont.) — ⭐⭐ THE STUCK-STATE ESCAPE LANDING (B1v5). HEAD MOVES.
+
+One line: a boat that has been nosed-into-land + slow + SOLO for 25 leaky
+seconds enters ESCAPE — it OWNS THE HELM (outranks the island-contact reflex
+and planFloeTrajectory), walks the clearance gradient one grid cell at a time
+(the only hull-scale-honest sensor), with wiggle-grade snap turn + minSpeed,
+and exits un-nosed at speed (typ. ~3s), rival-guarded 150u-entry/120u-abort,
+20s hard cap, fixed-land venues only (floe + ≥2kt-current excluded verbatim).
+THE CAPABILITY THE SEVEN SHAPES MISSED, found by iterating the box gate:
+(1) no rose signature exists (the slot seals only BELOW 60u — every ray probe
+is blind there); (2) no park-based sustain survives the wiggle's own minSpeed
+bursts (use leaky futility); (3) the wedged boat was COMMAND-TRAPPED, not
+physically trapped — the island-contact reflex re-armed every tick and
+ping-ponged it between islet and wall for 750-820s. Helm ownership is the
+cure; the walk is ~3 seconds long.
+GATES: box — all three loop transits GONE (worst 239s; slow −70%, nosed −73%,
+fins 9/9 all four box seeds). Redrock pooled 6-set vs hz3brr*: **fins 391→429
+of 432 (the DNF class eliminated; 3 remain in 48 races)**, land −29%, boat
+rubs FLAT, mark +17% (exposure: 38 boats now sail legs 3-6), pen +5%;
+finisher-med 490→508 (COMPOSITION: ex-DNFs finish 700-850s); DNF-at-900
+paired ALL-BOATS mean −19.4 with ALL SIX SET MEANS NEGATIVE, med 0.0 (the
+cure is tail-only, the typical boat untouched). Lake B: land −34%, mean −1.8
+(a grinding boat cured); lake A, bay A/B, ocean, river A/B, lagoon A/B,
+arctic A/B/C/D, seatrials ALL byte-identical/anchor-equal. Goldens full
+--update then PASS 20/20. freeze CLEAN.
+NEW ANCHORS (this HEAD): redrock b1rr{9400..9900} pooled finisher-med 508 /
+best 294, fins 429/432 (DNF-at-900 med 509.5 mean 515.4); lake b1lakeA=hz3b
+(byte-id) b1lakeB 247 land 6.41; all other venues keep hz3b*/p0* anchors.
+OWNER-METRIC NOTE: ratio vs her 218.2 on finisher-med reads 2.33x — but the
+population changed (99% finish vs 91%). On DNF-at-900 med the ratio is
+509.5/218.2 = 2.34 vs base 501.5/218.2 = 2.30 — call it FLAT on med, −19/boat
+on mean, +38 boats on fins. The med attack now goes through the ARRIVAL QUEUE
+(Phase A re-measure, no longer seeded by wedged boats) + leg-5 + leg-1.
+
+## ⛔ KILLED at the FLEET GATE: B2 (ESCAPE threshold 25s→12s)
+Won BOTH box gates (leg-5 subs 6-7 slow −18%, bowl slow −23%, the 239s
+residual→98s, lake still 0-for-4, episodes clean 2-3.5s exits reaching new
+pockets) and LOST the pooled 6-set vs b1rr*: paired med +7.0 / mean +9.7
+(DNF-at-900 med +7.0), 4 of 6 sets positive, boat rubs +10%
+(10.48→11.55/boat), fins flat 428/432. MECHANISM: at 12s the maneuver fires
+~5x more often; each firing is ~3s of avoidance-bypassed snap-turn steering
+plus a navigation interruption, spent mostly on boats that were about to
+recover anyway — and the fleet pays the perturbation in rubs. The 25s
+conservatism IS the clean battery; the threshold knee is real and 12s is on
+the wrong side. (Box gates cannot see fleet-wide perturbation cost — same
+lesson as rule 16's scene-vs-race.) Tree deleted. ⛔ Do not re-ladder the
+ESCAPE threshold; if the leg-5 medium stalls are ever re-addressed, the
+entry needs a SHAPE change (e.g. futility that counts wiggle-failures, not
+seconds), not a price change.
+
+================================================================================
+## SESSION CLOSE 2026-08-09 (day-2 continuation) — ⭐⭐ THE STUCK-STATE ESCAPE LANDING
+
+LANDED: `458ec5a` — ESCAPE (25s leaky futility: nosed+<40u/s+solo → helm
+ownership → clearance-gradient cell walk, ~3s/firing). Redrock fins 391→429
+of 432 (THE DNF CLASS ELIMINATED), land −29%, rubs flat, DNF-at-900 paired
+mean −19.4 ALL SIX SETS NEGATIVE, med composition-flat; lake B land −34%
+bonus; every other venue byte-identical; goldens full --update PASS 20/20;
+freeze CLEAN. Three prior "failures" of the same aim were override-precedence
+artifacts (the command-trapped lesson).
+RE-SIZED/AVERTED: Phase A arc-ungate (the arrival crawl lives at 280-360u,
+outside the arc's 248u range; queue-gate sole blocker in only ~11%).
+KILLED: B2 threshold ladder (above); the v1 rose-signature entry (no such
+signature exists — sub-60u blindness); the v2 breadcrumb aim (entry trail
+predates the trap below the recording floor).
+REMAINING REDROCK (finisher-med 508 vs goal 436): leg-5 ~91/boat net
+(sub0 exit friction 25.8 — DISTRIBUTED, no pocket to gate; subs 6-7 medium
+solo stalls — needs an entry-shape change, not a threshold); leg-3 sub0
+residual 35.7 (halved, now queue-flavored); leg-2 arrival ~19 (armed queue);
+leg-1 unmeasured today (~43 at last measure, THE FLEET AVOIDANCE TAX).
+
+## THE VENUE TABLE, final HEAD `458ec5a` (ratio-sorted, med/best, fins %)
+venue     | human med/best | pre-session bot | post-session bot | ratio | fins (%)
+seatrials | 189.4 / 179.7  | 197.8 / 196.2   | 197.8 / 196.2    | 1.04  | 100%
+bay       | 219.0 / 211.0  | 240 / 205       | 240 / 205        | 1.10  | 360/360 (100%)
+lake      | 223.1 / 218.2  | 252 / 191       | 252 / 191        | 1.13  | 360/360 (100%)
+ocean     | 177.9 / 177.7  | 203 / 166       | 203 / 166        | 1.14  | 144/144 (100%)
+river     | 167.4 / 165.0  | 269 / 189       | 269 / 189        | 1.61  | 263/288 (91%)
+lagoon    | 164.9 / 160.1  | 273 / 215       | 273 / 215        | 1.66  | 144/144 (100%)
+arctic    | 212.4 / 201.6  | 366 / 217       | 366 / 217        | 1.72  | 575/576 (100%)
+redrock   | 218.2 / 215.2  | 490 / 274       | 508* / 294       | 2.33* | 429/432 (99%, was 91%)
+(*finisher-med; the rise from 490 is POPULATION COMPOSITION — 38 ex-DNF boats
+now finish at 700-850s. DNF-at-900 med 501.5→509.5 (flat), mean 534.8→515.4
+(−19.4/boat, all sets). The fins column is the landing.)
+
+================================================================================
+# OPENING PROMPT — THE REDROCK PUSH, NEXT (paste to the next instance)
+
+THE REDROCK PUSH continues. Goal (owner): redrock below 2x vs her 218.2.
+⚠️ METRIC NOTE FIRST: on HEAD `458ec5a` the fins column changed population —
+99% finish (429/432) vs 91% before THE STUCK-STATE ESCAPE LANDING. Finisher-
+med 508 (2.33x) is NOT comparable to the old 490 (2.25x): DNF-at-900 med is
+FLAT (501.5→509.5) and mean is −19.4/boat. Decide the med target on the
+DNF-at-900 basis (goal <436 → currently 509.5 vs 501.5 base; −74 to go) and
+quote both columns to the owner. DO NOT STOP; ≥4 probes; check `date`;
+mechanism gate at the box BEFORE any 6-set; but remember the B2 lesson —
+the box CANNOT see fleet perturbation; only the pooled 6-set lands.
+
+Open with: memories regatta-redrock-push (both sessions), regatta-standing-
+rules (traps 21-25 + the command-trapped lesson), regatta-venue-table.
+
+Where the remaining ~74 lives (post-landing attribution, 4-race shape —
+re-run at 8 races before building):
+1. LEG-5 ~91/boat NET (but population changed — re-attribute first):
+   sub0 mark-7 exit +25.8 = DISTRIBUTED thread friction (no pocket; worst
+   transit 36.5s; family A: 59 vs her 72 u/s + wiggle-blind). subs 6-7 +36 =
+   medium solo stalls (60-115s, rivMed 170-621) BELOW the 25s ESCAPE
+   trigger. ⛔ threshold ladder dead — an entry-SHAPE change (e.g. futility
+   counted in WIGGLE FAILURES not seconds, or wiggle-fail count >= 3 &&
+   solo) is the unexplored shape.
+2. LEG-3 sub0 residual +35.7 (halved by the landing; now queue-flavored —
+   parked rivals near, ESCAPE correctly refuses; the fleet-avoidance family).
+3. LEG-2 arrival ~+19 (armed 49%, queue behind parked service — entry
+   governors ⛔, funnel metering already active; weigh before building).
+4. LEG-1 unmeasured this session (~43 at last measure — THE FLEET AVOIDANCE
+   TAX, AV1 inert/overdetermined).
+Also open: owner may deliver new redrock laps (fp=9b7c82db:21417 current;
+_traj_fp.js on arrival, intake same-day). The ESCAPE machinery is landed
+infrastructure now — `_esc_log.js` shows every firing; lake B profited
+(land −34%); if a future venue shows chronic solo wedges, ESCAPE's scope
+(fixed-land, no-floe, <2kt) is where to look first.
+Gates: pooled 6-set vs b1rr* (redrock), b1lakeB for lake B, hz3b*/p0* for
+byte-venues; 96-seed protocol near threshold; goldens full --update at
+landings; the owner table with EVERY status update.
+
+## THE MARK-5 APPROACH DECOMPOSITION (_m5_approach.js, 8 races vs 3 laps)
+Owner asked where roundings/exits fail. Leg-3 band 4 (last 20% of DMC into
+mark-5) splits THREE ways:
+1. subs 15-19 (the rounding): bots on HER LINE (offset 19-33u), maneuvers
+   match (med 3 vs her 2-3) — but THROTTLED 29-69% (speedLimit<1 at 100%
+   armed; funnel/pack clamps) for ~10-20 u/s. Worth ~1-2 s/boat; re-pricing
+   a landed win — venue-class scoping + full gates if ever touched.
+2. subs 0-7 (the thread before the bend) — THE MONEY: bot 39-57 u/s vs her
+   78-90, OFF her line by 81-161u (p75 242), throttle 0%, armed 0%, avoid-
+   deviating 55%. Nothing commands the slowness: deflections push boats off
+   the thread line into bad water and nothing pushes BACK. Same execution-
+   under-jam family as river leg 3.
+3. Maneuver count exonerated (median parity; one 237-flip churner in the
+   tail).
+NEXT-PUSH CANDIDATE #1: "return-to-line pressure after deflection in narrow
+water" — the band-trust idea (trust the plan-aligned candidate) applied to
+POST-DEFLECTION RECOVERY. Mechanism gate box: leg-3 subs 0-7 thread
+(x~150-235, y~1006-1280), judged on bot spd + latOff vs this probe's
+baseline. Probe: _m5_approach.js (any venue/leg/band).
+
+## OWNER RULING (2026-08-09, line-holding — constrains candidate #1)
+Return-to-line must be ROLE-AWARE, per the rules:
+- STAND-ON + not imminent → MAINTAIN COURSE (the line pressure applies here,
+  hard). A planned tack that creates a collision is legal if the other boat
+  has RRS-16 time to respond — take it; bail only if they never react (they
+  take the foul).
+- GIVE-WAY → no reactive nibble-deflections; plan a DISCRETE evasive early
+  (clear slot, duck, or round after/wider) then re-commit to a line.
+- MARK-ZONE ENTRY: first-in on the same tack has rights — plan arrival
+  timing/tack to ENTER WITH RIGHTS and commit the aggressive clean line;
+  if rights are unavailable, choose the go-behind line EARLY. This addresses
+  the leg2-sub9 armed queue and leg3-band0 exit scrum as one decision made
+  too late, not two execution problems.
+Full verbatim + design constraints in memory regatta-tactical-doctrine.
+
+================================================================================
+## 2026-08-09 evening — ⭐ THE RULE-11 INVERSION FIX (owner-reported). HEAD MOVES.
+
+Owner: "I sometimes see a windward boat getting rights over a leeward boat."
+CONFIRMED AS A REAL ENGINE BUG: getLeewardBoat projected the pair separation
+onto the fixed wind-PERPENDICULAR axis with a tack-based sign. The RRS
+definition is HULL-FRAME ("the boat on the leeward side of the other"; on a
+run, "the side on which her mainsail lies") — and the hull's leeward side
+crosses the wind-perpendicular at a beam reach. Result: RULE 11 WAS INVERTED
+ON EVERY BROAD REACH AND RUN, BOTH TACKS, since the engine was written.
+test_rule11.js (NEW, 12-case point-of-sail matrix): old engine 7/12 FAIL,
+fixed engine 12/12 PASS; test_markroom.js still PASS. Fix: project onto the
+pair-averaged hull leeward-side direction (getTack already owns the
+by-the-lee boom case).
+AUDIT ALSO VERIFIED (same owner request): rule 13 no-sail-zone handling is
+CORRECT (physics-level head-to-wind crossing sets isTacking for ANY boat,
+incl. drift-through-irons; clears at close-hauled; luff-to-HTW keeps
+rights); rule 18 zone entitlement matches RRS 2025-2028 18.2(a)(1)/(2)
+(inside-if-overlapped, else first-to-zone) with 18.2(b) exits; STILL MISSING
+from rule 18: 18.1(a)(3) approaching-vs-leaving, 18.3, 18.4. Doctrine nit:
+tack-to-cover is RRS 13+15, not 16 (memory corrected).
+GATES (correctness fix — the model-accuracy ruling applies; benches measure
+transitional cost, they do not gate the rule being right): redrock pooled
++3.0 med / +9.8 mean (per-set med −27..+28 — a full interaction reshuffle),
+fins 427/432; lake −3.0/+1.0 mean; bay +2.7/+1.6 mean (within the 4-set
+band) with rubs +33-35% both sets (the deflection underlay was TUNED AGAINST
+THE INVERTED RULE — re-baseline the gw-ledger on the true model); lagoon
+−3.3/+6.4; river pooled fins 263→262, med +1..+5 (rub columns 6x-noise,
+ignored per rule); **ARCTIC WINS: med −9/−15/+7(mean −3.9)/−8, in-time +32
+over 576** — correct downwind roles resolve floe traffic better; ocean −1
+med, rubs −7%, one DNF (watch); seatrials byte-equal. Goldens full --update
+PASS 20/20. freeze CLEAN.
+NEW ANCHORS: r11rr* pooled 520/294-ish fins 427/432; r11lake* r11bay*
+r11lag* r11riv* r11oc r11arc{A..D} (arctic in-time 96/106/122/125).
+
+================================================================================
+# THE ROUNDING PUSH — directive (written 2026-08-09 evening, owner-aligned)
+
+GOAL: redrock < 2x vs her 218.2 (pooled < 436; at 520 finisher-med / ~510
+DNF-at-900 on HEAD `056dc2b`), by attacking what the mark-5 decomposition
+and the owner's doctrine identified: the water AROUND roundings — the
+approach thread, the zone entry, and the exit — under correct rules.
+Anchors: r11* everywhere. Baselines for role/deflection stats are STALE
+(pre-rule-11-fix); re-measure before designing against them.
+
+## Phase 0 — re-baseline the trajectory stats on the fixed rules (no builds)
+_m5_approach.js on HEAD + add avoidanceRole/threat logging: the key number
+is WHAT SHARE OF THREAD DEVIATION IS STAND-ON (under inverted rule 11 it was
+unattributed; the fix may have moved it). Also refresh _gw_ledger2 on a new
+schema-2 recording if the owner delivers laps. 1-2 runs, ~30 min.
+
+## Phase A — THE THREAD LINE (candidate #1, biggest + cleanest)
+Target: leg-3 subs 0-7 (bot 39-57 u/s vs her 78-90, 81-161u off her line,
+0% throttle/armed, 55% avoid-deviating pre-fix). Same family: river leg 3,
+leg-5 subs 6-7, leg-1 beat share.
+BUILD (role-aware, per the owner's line-holding ruling):
+  STAND-ON boats in narrow water (navigable-clearance venue-class test, the
+  noSubsample shape) suppress avoidance deviation from the PLAN-ALIGNED
+  heading until risk is genuinely IMMINENT — hold the line the rules let
+  them hold. Give-way boats: unchanged in v1 (discrete-resolution planning
+  is Phase B/C material). Precedent: THE BAND-TRUST LANDING (same "trust
+  the router's own line" shape, biggest win of the campaign).
+GATES: mechanism gate at the subs 0-7 box (bot spd + latOff vs the
+_m5_approach baseline) BEFORE any 6-set; then pooled 6-set vs r11rr*; full
+battery (bay rubs is the watch column — the underlay is re-tuning to the
+fixed rule 11); river 16x2 (transfer expected).
+
+## Phase B — ZONE-ENTRY RIGHTS PLANNING (the owner's unifier; design task)
+One decision at 400-700u out (exactly where A1 showed no machinery makes
+any decision): WILL I ENTER THE ZONE WITH RIGHTS?
+  - predict own zone-arrival vs nearby same-leg rivals (ETA + overlap
+    geometry at the zone boundary);
+  - CONTEST: arrive first / inside-overlapped (18.2(a) verified) → commit
+    the aggressive clean line early (the owner: commitment IS the clean
+    rounding);
+  - CONCEDE: choose the go-behind / wider entry NOW, not a reactive
+    deflection at the mouth.
+Addresses BOTH the leg-2 arrival crawl (~19 s/boat, armed queue at
+250-360u) and the leg-3 band-0 exit scrum (29.5s vs 10.8, med 8 wall
+contacts — scrums are made at entry). Constraints: Freezing-Robot
+(station-keeping dead — concede = a different LINE, never a hold);
+the m5 wedge lesson (watch rubs); funnel metering stays as the fallback.
+GATES: bowl box (leg2 subs7-9 + leg3 band0 TOGETHER — they are one queue),
+mark-5 entry box, then 6-set + battery.
+
+## Phase C — residuals (only after A/B verdicts)
+  C1 leg-5 subs 6-7 medium solo stalls: ONE ESCAPE entry-shape variant —
+     futility counted in WIGGLE FAILURES (>=3 failed bursts && solo), not
+     seconds (⛔ threshold ladder dead at the fleet gate). Box-gated, stop
+     at one shape.
+  C2 the armed-approach throttle (subs 15-19, 29-69% sl<1, worth ~1-2s):
+     LAST, only with a venue-class scoping story — it re-prices the landed
+     funnel metering (lake queues are its home turf).
+
+## Standing method (unchanged + additions)
+Mechanism gate at the box before any 6-set — but remember B2: the box
+cannot see fleet perturbation; only the pooled 6-set lands. 96-seed
+protocol near threshold. DNF-at-900 med/mean quoted BESIDE finisher-med
+(the ESCAPE landing changed the population). The owner table with every
+status update. New laps: _traj_fp.js, intake same-day. Rule-18 gaps
+(18.1(a)(3), 18.3, 18.4) are a separate rules push — do not mix into A/B.
+
+================================================================================
+## 2026-08-09 evening — PHASE 0 + ⭐⭐ THE TACK-AWARE PLAN REFERENCE LANDING (A2)
+Behavior HEAD `d8389f3`. Anchors: `a2*` everywhere (a2rr{9400..9900}, a2lakeA/B,
+a2bayA/B, a2lagA/B, a2oc, a2seaid; river/arctic keep r11 — byte-identical).
+
+### PHASE 0 — the re-baseline killed Phase A as written
+The owner's load-bearing question, answered: **4.0%** of thread deviation is a
+STAND-ON boat yielding water the rules let her hold (4.5% whole-leg-3, 5.1%
+leg-5, 2.6% river leg-3). It is structural, not marginal: **STAND_ON is 0.2% of
+ticks in the target box — 1 of 568** — because the rules deciding the pairings
+there are **13 (we are tacking) 54%** and **21 (we are on a penalty) 40%**. A
+boat mid-tack has no rights to hold; the thread is a queue, not a crossing.
+AUDIT (rule 18): pairwise rights over EVERY rival within 250u are 49.9%/50.1%,
+symmetric as the rules require; the 1:3 skew among ELECTED threats is explained
+— rule-13/21 states are give-way by the boat's own action and also raise
+closure risk. The old "55% avoid-deviating" was `lastAvoidDeviation != 0` =
+TOTAL deflection from every cause; it was never a traffic statistic.
+WHAT ACTUALLY DEFEATS THE LINE (share of deviation-radians): land 78.9% (L3) /
+84.3% (L5) / 91.7% (river); traffic-we-owe 8.8/6.3/2.3; traffic-we-hold 5.6/5.7/
+2.7. Hard vetoes are 74.5-100% the router's GRID HARD ZONE; the gradient margin
+is 64.6% (box 84.8%) the CLEARANCE BAND.
+
+### THE MECHANISM: the trust test cannot be reached on a beat
+`pathSailable` is an A* over a clearance-weighted grid with NO WIND TERM, so
+upwind the router's line runs straight up the corridor and `hPlanFF` points dead
+into the no-go. The HZ3B trust test then asks a sailing boat to be within 0.3
+rad of a heading no boat can sail — with the irons guard at 0.62 the minimum
+achievable on a beat is ~0.5. Measured in the thread box: 0-rung passes trust
+**3.9%**, 96.1% of failures are the ALIGNMENT clause alone at med **0.78 rad
+(45deg)**, and on **72% of ticks NO candidate in the fan earns the trust**.
+AND IT COSTS SPEED: 0-rung TWA 0.66 (38deg, sailing) vs winner 0.50 (29deg);
+**51.4% of chosen headings sit inside the no-go band against 0.0% of the plan
+rung** — the argmin's cheapest escape from an untrusted land term is to luff.
+
+### THE LANDING (A2, `d8389f3`)
+When the plan bearing is itself inside the no-go, measure alignment against the
+CLOSE-HAULED HEADING FOR THE TACK THE BOAT IS ON. Same 0.62 constant the irons
+guard already uses; no clause relaxed (irons/arc/open-water/current all still
+apply; other tack or bearing away still fails). Actions-not-prices: it changes
+which candidates are TRUSTED, not what anything costs.
+GATES: redrock pooled 6-set **-64.0 med / -59.9 mean, ALL SIX SETS NEGATIVE**
+(-41,-50,-58,-62,-74,-100), med **520->459 (2.38x -> 2.10x)**, fins 427->430/432,
+DNF-at-900 5->2, censored med -64.0, land -13%, mark -23%, boat -4%, pen -9% |
+lake -2.0/-8.0 med, land -12%/-24%, boat -16%/-11% (the v1-waiver kill venue
+moves the RIGHT way) | bay 0.0/0.0 med, rubs -18%/-4% | lagoon 0.0/-6.0 med,
+land +11%/-32%, **boat +16%/+13% = THE WATCH COLUMN** | ocean inert | river +
+arctic + seatrials BYTE-IDENTICAL vs same-session baselines | goldens full
+--update PASS **30/30** | freeze CLEAN.
+BOX GATE (_m5_approach leg-3 subs 0-7): bot 41-52 -> 72-78 u/s vs her 70-90,
+time in band -16%; instrumented box: trust pass 3.9%->38.9%, total deviation
+192.3 -> 44.7 rad (-77%). Lateral offset RISES in subs 1-5 (91->126, 170->204):
+the boats sail a proper beat instead of a pinched one and extend further before
+tacking — the fleet bench is what says that is worth it.
+
+### ⚠️ NEW TRAP (harness): `--update` AT THE WRONG SEED WIDTH SILENTLY NARROWS
+THE GOLDEN FILE. `node run_traces.js --update` defaults to 2 seeds; the stored
+goldens are 3 seeds (30 traces). A plain full `--update` rewrote 30 -> 20 and
+then PASSED 20/20 — a green gate on a third less coverage. Same destructive
+shape as the recorded `--venue X` trap, on the seed axis. ALWAYS use
+`npm run trace:update` (which passes --seeds 3) and check the trace COUNT in
+the PASS line against the file.
+
+### NEW TRACKED PROBES
+`_thread_role.js` — role/risk deviation ledger, 0-rung defeat attribution with
+PER-RIVAL role (role cached per tick; getRightOfWay reads current state, not the
+candidate heading), static/veto source buckets, band-trust clause breakdown,
+pinch test, pairwise-role audit. Needs an instrumented tree: treeP0R / treeP0S
+(source buckets + rule capture + trust flags + TWA), treeA2S (same on A2).
+`_pool_rr900.js` — pooled redrock CENSORED at the 900 cutoff; quote it beside
+the finisher median (the ESCAPE-landing composition trap).
+
+### NEXT
+Goal now 459 -> 436 for 2x. Phase B (zone-entry rights planning) is unchanged and
+untouched by this landing. The WIND-AGNOSTIC ROUTER is its own push, not Phase B:
+a planner-model change reshuffles every route on every venue and would confound
+A/B attribution — and it is now better posed, since the local layer treats a beat
+correctly. Lagoon boat rubs (+14% across both sets) is the open watch column.
+
+================================================================================
+# NEXT-PUSH DIRECTIVE — THE GROUNDING PUSH (research pass, 2026-08-09 evening)
+Measured on `d8389f3` after the A2 landing. NOTHING BUILT — owner decision pending.
+
+## ⚠️ FIRST, A METHODOLOGY CORRECTION (standing rule 26)
+The redrock per-leg MEDIAN table reads sub-2x on every leg while the lap ratio is
+2.10x. Both are right: medians do not add. Sum of per-leg medians 383.0, sum of
+per-leg MEANS 463.4, mean lap 463.4, median lap 459.0. Each leg is right-skewed
+and DIFFERENT boats occupy the tail on DIFFERENT legs, so no boat sits at the
+median on all seven. **Attribute gap shares on MEANS.** Corrected: legs 1/2/3/5
+are 2.29/2.68/2.30/2.09x and **leg 2 is the worst real leg**, not the mildest.
+(Also: `_leg_matrix.js` takes `fp=` FIRST — omitting it pools retired-doc laps.)
+
+## THE REMAINING GAP, ATTRIBUTED (mean basis, +246.1 s/boat total)
+leg1 +37.6 (2.29x) | leg2 +37.5 (2.68x) | leg3 +71.6 (2.30x) | leg4 +22.7 (1.85x)
+| leg5 +59.5 (2.09x) | leg6 +11.1 (1.39x) | leg0 +6.1
+
+## ⭐ FINDING 1 — THE GROUNDING TAX IS THE TAIL (r² = 0.90)
+`collision_island` multiplies speed by 0.4 on the spot. The fleet takes **16.4
+grinding episodes per boat-race** (median 115 raw contacts each) **entered at 72
+u/s** — boats at speed hitting rock. **TAX 90.8 s/boat** (6 seeds, 883 episodes);
+legs 3+5 = 67% (30.7 + 30.3); share of each leg: L5 47%, L4 43%, L6 39%, L3 36%,
+L2 19%, L1 18%; 33% of the whole gap.
+Per-boat tax vs finish: **r = 0.95, r² = 0.90**. Q1 357/48.0s, Q2 432/76.1,
+Q3 494/100.0, Q4 581/136.7 (~2.5s of finish per 1s of tax → the integral
+UNDERSTATES). ⚠️ Association, not proof — but contacts PER SECOND rise 2.7x
+Q1→Q4, which is the argument against pure exposure, and even Q1 pays 48s.
+⚠️ Cap-sensitive: median episode 9.7s against a 12s follow cap. Order of
+magnitude, never a gate. Probe `_ground_tax.js` (NEW, tracked).
+MECHANISM (from the code): the contact reflex steers STRAIGHT OUT along the
+collision normal and latches 2.0s at full speed (~script.js:862). In a canyon
+that points at the opposite wall — `applyAvoidance`'s own comment calls it "the
+very ping-pong (bounce off each wall toward the other)". ESCAPE cannot catch it
+(25s futility, <40 u/s, no rival 150u vs ~10s episodes at 72 u/s entry). At 72
+u/s the 2.0s latch commits 144u to one frame's normal. Repeating sites: leg 3
+(-89,151) (-674,-1634) (-1074,-1356) (89,-326); leg 5 (-1557,645) (-1399,536).
+
+## FINDING 2 — EXTRA DISTANCE ON THE BEAT (legs 1-2, ~61s net of grounding)
+`_leg_odo`: leg 1 bot 4068u vs her 2540u on a 1970u straight line (60% further;
+her 1.29x, bot 2.06x); leg 2 3040 vs 2252 (35%). `_leg_where` leg 1: NO POCKET —
+slow time spreads 12/7/14/16/1/9/10/9/11/11% at near-parity speed. Not "slow
+somewhere": a longer path everywhere. Same family as bay/lake/ocean's WHOLE gap
+(never decomposed); redrock is where it is big enough to measure, so a win should
+transfer to the three venues now at 1.10-1.14x.
+
+## THE PLAN (ranked)
+1. **H1 TANGENTIAL PEEL-OFF** — replace the normal-out bounce with a heading along
+   the wall tangent toward course progress, when the boat has way on and a
+   sailable tangent exists. Action-shaped; precedent in the same function (the
+   mid-rounding branch already biases along a rotation tangent). MECHANISM GATE on
+   **leg 5** (47%, cleanest) via `_ground_tax`, confirm leg 3, then pooled 6-set +
+   battery. Watch column: boat rubs — peeling keeps boats in the lane.
+2. **RE-MEASURE THE TAIL AFTER H1** before building for leg 2: if the coupling is
+   causal, leg 2's 2.68x skew moves without its own candidate.
+3. **H3 BEAT DISTANCE** — measure bot tack count + cross-track spread vs her 2-4
+   tacks before proposing any shape.
+4. **H2 THE 2.0s LATCH** — LAST, shape-only (re-evaluate when the normal rotates
+   past X°), never a threshold ladder (the B2 kill).
+Carried forward: lagoon boat rubs +14% (watch), Phase B zone-entry rights, and the
+WIND-AGNOSTIC ROUTER as its own push.
+
+## RESEARCH COMPLETED (2026-08-09 late evening) — the full inventory
+Four more probes closed the remaining unknowns. The gap is ONE dominant
+mechanism with a tributary, ONE pocket, and ONE distance class.
+
+### 1. GROUNDING — robust at 90-100 s/boat, and it IS the tail
+Cap sensitivity settled: RECOV 12s -> 90.8 s/boat (16.4 episodes/boat-race),
+RECOV 30s -> 100.0 s/boat (10.6 episodes, more merge into one). r stays
+0.93-0.95, r^2 0.87-0.90, slope 1.94-2.5s of finish per 1s of tax. The 12s cap
+was NOT badly truncating; the sizing is stable.
+
+### 2. PENALTIES — 13.3 s/boat, and HALF OF IT IS DOWNSTREAM OF GROUNDING
+`_pen_tax.js` (NEW): 3.07 penalties/boat (matches engine `totalPenalties`
+exactly), **94% of boats take >=1**, spin time 13.3 s/boat (med 9.9, p90 24.5),
+**0.00 turns unpaid at the finish** so no 15s adders. Rule mix: **Rule 19
+(room at an obstruction) 47%**, Rule 31 (mark touch) 20%, Rule 10 17%, Rule 13
+7%, Rule 11 6%. Rule 19 is MANUFACTURED BY THE GROUNDING — the collision
+handler penalises the outside boat when an overlapped boat hits land. Per-leg
+penalties track the grounding legs exactly (L3 0.98, L5 0.65, L2 0.59).
+⚠️ PROBE TRAP (rule 18): `onRaceEvent('penalty')` fires BEFORE `rs.penalty` is
+set and sustained grinding re-triggers it EVERY FRAME — the raw event count read
+304 penalties/boat against a true 3.07. Count the transition (`!rs.penalty` at
+event time) or read `totalPenalties`. The re-fire rate is itself a finding: 255
+per boat-race.
+
+### 3. LEG 2 IS A POCKET, NOT A TAIL — 69% of the leg in sub 9 alone
+`_leg_where` leg 2: sub9 human 3.0s vs bot 24.7s = **+21.7 s/boat, 69% of the
+leg's gap**; every other subsection is within 0.3-1.7s. That is the mark-6 bowl
+ARRIVAL (armed 69%, landAhead 50%, wiggle 42%), already known and already down
+from +35. ⚠️ Corrects the mid-session read that leg 2's 2.68x was diffuse/tail-
+driven: it is one place.
+
+### 4. LEG 1 IS AVOIDANCE + TACK COUNT, NOT ROUTING
+`_beat_decomp` leg 1: odometer 4140u vs a 1763u straight line, **tacks med 9
+against her 2-4**. Waste: AVOID_GW **899u (16s)**, AVOID_NONE 373u (10s),
+TACKWIN 349u (11s), CLEAN 263u (10s), ARMED 167u, AVOID_ROW 70u. So the 60%
+excess distance is give-way avoidance plus twice the tacks — THE FLEET AVOIDANCE
+TAX (open thread) meeting the tack-count class, not a routing defect.
+
+## THE FINALISED PLAN
+1. **H1 TANGENTIAL PEEL-OFF** — the contact reflex steers straight out along the
+   collision normal and latches 2.0s at full speed; in a canyon that aims at the
+   opposite wall. Replace with a heading along the wall tangent toward course
+   progress when the boat has way on and a sailable tangent exists. Expect it to
+   pay TWICE: the grounding tax AND the 47% of penalties that are Rule 19.
+   MECHANISM GATE: `_ground_tax` on leg 5 (47% of that leg), confirm leg 3, then
+   `_pen_tax` for the rule-19 knock-on, then pooled 6-set + battery. Watch
+   column: boat rubs (peeling keeps boats in the lane instead of bouncing out).
+2. **RE-MEASURE EVERYTHING AFTER H1** — the tail coupling, the penalty mix, and
+   leg 2's sub9. If the coupling is causal, several of these move together and
+   the next candidate should be chosen on fresh numbers, not these.
+3. **THE BOWL ARRIVAL (leg2-sub9, +21.7 s/boat)** — a known pocket; the previous
+   push re-sized the arc-ungate to death (crawl at 280-360u is outside arc
+   range) and named it a queue behind parked rivals. Needs the zone-entry-rights
+   design (Phase B), not another local shape.
+4. **LEG 1 / THE FLEET AVOIDANCE TAX** — 899u of give-way waste and 9 tacks vs
+   her 2-4. Transfers to bay/lake/ocean (their whole gap). Measure before
+   building; AV1 was already inert once, so the 0-rung defeat is overdetermined.
+5. **H2 THE 2.0s LATCH** — LAST, shape-only, never a threshold ladder.
+
+## ⏭ CARRY-FORWARD PROMPT FOR THE NEXT INSTANCE (verbatim, 2026-08-09 close)
+See the finalised plan above for the evidence; this is the paste-ready brief.
+State: HEAD d8389f3, redrock 2.10x (459 vs 218.2), goal <436. Anchors a2* (river
++ arctic keep r11, byte-identical). Baseline tree treeA2 (≡ HEAD, comment-only
+diff). Goldens 30/30, freeze CLEAN. Read [[regatta-grounding-tax]] first.
+RESEARCH IS DONE — do not re-derive: grounding 90-100 s/boat and it IS the tail
+(r² 0.87-0.90); penalties 13.3 s/boat of which 47% are Rule 19 manufactured BY
+the grounding; leg2-sub9 is a pocket (+21.7, 69% of the leg); leg 1 is avoidance
+(899u give-way) + 9 tacks vs her 2-4.
+A: H1 TANGENTIAL PEEL-OFF — the contact reflex steers straight out along the
+collision normal and latches 2.0s at full speed; in a canyon that aims at the
+opposite wall, and ESCAPE cannot reach it. Command the wall TANGENT toward
+course progress instead, when the boat has way on. Gate: _ground_tax leg 5 →
+leg 3 → _pen_tax (Rule-19 knock-on) → pooled 6-set vs a2rr* → battery. Watch
+boat rubs.
+B: RE-MEASURE before choosing #2 — tail, penalty mix and leg2-sub9 may move
+together.
+C: bowl arrival → zone-entry-rights design (NOT another local shape; arc-ungate
+is dead); leg-1 give-way waste → the fleet avoidance tax (AV1 already inert
+once, measure first).
+D: the 2.0s latch, LAST and shape-only, never a ladder (B2 died there).
+Guardrails: actions-not-prices; medians do not add (rule 26 — attribute on
+MEANS; _leg_matrix takes fp= FIRST); the penalty event re-fires every frame
+under grinding contact (count transitions); box gates cannot see fleet
+perturbation, only the pooled 6-set lands; DNF-at-900 beside finisher-med;
+npm run trace:update (3 seeds/30 traces) never a bare --update; watch lagoon
+rubs (+14% from A2) and bay rubs; close with the venue table on final HEAD.
