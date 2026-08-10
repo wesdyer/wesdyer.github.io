@@ -12512,3 +12512,38 @@ Return-to-line must be ROLE-AWARE, per the rules:
   the leg2-sub9 armed queue and leg3-band0 exit scrum as one decision made
   too late, not two execution problems.
 Full verbatim + design constraints in memory regatta-tactical-doctrine.
+
+================================================================================
+## 2026-08-09 evening — ⭐ THE RULE-11 INVERSION FIX (owner-reported). HEAD MOVES.
+
+Owner: "I sometimes see a windward boat getting rights over a leeward boat."
+CONFIRMED AS A REAL ENGINE BUG: getLeewardBoat projected the pair separation
+onto the fixed wind-PERPENDICULAR axis with a tack-based sign. The RRS
+definition is HULL-FRAME ("the boat on the leeward side of the other"; on a
+run, "the side on which her mainsail lies") — and the hull's leeward side
+crosses the wind-perpendicular at a beam reach. Result: RULE 11 WAS INVERTED
+ON EVERY BROAD REACH AND RUN, BOTH TACKS, since the engine was written.
+test_rule11.js (NEW, 12-case point-of-sail matrix): old engine 7/12 FAIL,
+fixed engine 12/12 PASS; test_markroom.js still PASS. Fix: project onto the
+pair-averaged hull leeward-side direction (getTack already owns the
+by-the-lee boom case).
+AUDIT ALSO VERIFIED (same owner request): rule 13 no-sail-zone handling is
+CORRECT (physics-level head-to-wind crossing sets isTacking for ANY boat,
+incl. drift-through-irons; clears at close-hauled; luff-to-HTW keeps
+rights); rule 18 zone entitlement matches RRS 2025-2028 18.2(a)(1)/(2)
+(inside-if-overlapped, else first-to-zone) with 18.2(b) exits; STILL MISSING
+from rule 18: 18.1(a)(3) approaching-vs-leaving, 18.3, 18.4. Doctrine nit:
+tack-to-cover is RRS 13+15, not 16 (memory corrected).
+GATES (correctness fix — the model-accuracy ruling applies; benches measure
+transitional cost, they do not gate the rule being right): redrock pooled
++3.0 med / +9.8 mean (per-set med −27..+28 — a full interaction reshuffle),
+fins 427/432; lake −3.0/+1.0 mean; bay +2.7/+1.6 mean (within the 4-set
+band) with rubs +33-35% both sets (the deflection underlay was TUNED AGAINST
+THE INVERTED RULE — re-baseline the gw-ledger on the true model); lagoon
+−3.3/+6.4; river pooled fins 263→262, med +1..+5 (rub columns 6x-noise,
+ignored per rule); **ARCTIC WINS: med −9/−15/+7(mean −3.9)/−8, in-time +32
+over 576** — correct downwind roles resolve floe traffic better; ocean −1
+med, rubs −7%, one DNF (watch); seatrials byte-equal. Goldens full --update
+PASS 20/20. freeze CLEAN.
+NEW ANCHORS: r11rr* pooled 520/294-ish fins 427/432; r11lake* r11bay*
+r11lag* r11riv* r11oc r11arc{A..D} (arctic in-time 96/106/122/125).
