@@ -12997,3 +12997,28 @@ pack-speed discipline at ~963 for the duration of any penalty).
 Corroborating evidence that the leak was never the main driver: spin time PER
 PENALTY is unchanged between base and unscoped snap (13.3/3.07 = 4.3s vs
 8.8/2.09 = 4.2s) — the spirals are not running faster, there are simply fewer.
+
+## ⭐⭐ THE SNAP-TURN LANDING `3ce099a` — redrock 2.10x → 1.77x
+Pooled 6-set vs the `a2rr*` anchors (48 seeds, 432 boats). Both trees were
+benched; the SCOPED one landed.
+
+| tree | pooled med | paired med | paired mean | sets negative | fins | DNF@900 |
+|---|---|---|---|---|---|---|
+| `a2rr*` base | 459.0 | — | — | — | 430/432 | 2 |
+| `treeSNAP` unscoped | 386.0 | −69.0 | −72.3 | 6/6 (−53..−96) | 431/432 | 1 |
+| **`treeSNAP2` scoped (LANDED)** | **386.0** | **−60.0** | −68.5 | **6/6 (−50..−77)** | **432/432** | **0** |
+
+Dirt per boat, base → landed: boat rubs 11.35 → 8.84 (−22%), mark 3.39 → 2.55
+(−25%), **land 110.39 → 47.72 (−57%)**, penalties 2.80 → 2.05 (−27%). 307 of 430
+paired boats faster. **386 against her 218.2 = 1.77x**, past the <436 goal for
+the first time.
+
+The scoped tree matches the unscoped tree's headline median while finishing the
+WHOLE fleet (432/432, zero cutoffs) — so the spiral leak bought a slightly larger
+paired median and cost a boat. That is the composition trap `_pool_rr900` exists
+to catch, and it argued the same way the mechanism argument did.
+
+Goldens re-recorded, **PASS 30/30** — ⚠️ and note that the bare verify checks 20:
+`npm run trace` defaults to 2 seeds while the stored file holds 3 (10 venues × 3).
+Trap 24's seed-width lesson applies to the VERIFY side, not only to `--update`.
+Verify with `node regatta/eval/run_traces.js --seeds 3`. freeze CLEAN.
