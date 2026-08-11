@@ -288,6 +288,36 @@ board* is also out of the prop subject at 2px, but **stays in the card subject**
 the buoys are drawn at illustration scale — the same object gets a different parts list
 at different sizes, which is why props and cards keep separate subjects.
 
+**They are props, not mark kinds — place the buoy, then put a `none` mark on it.** A mark
+is a station on a race *course*; a channel buoy is a thing that exists in the harbour
+whether the course visits it or not. Making it a mark kind welds those together, so you
+could never have a buoy that is only scenery. Instead: line the channel with buoy props
+freely, and where the course really should round one, drop a **`none`** mark ("No buoy —
+position only") on top of it. Art and race function stack independently, one buoy is
+furniture while its neighbour is a gate mark, and the course document never has to know
+what a buoy looks like. That composition is why `MARK_KINDS` carries `none` at all.
+
+**They collide — `hard`, `contactR: 13`, `wash: 0.48`.** This is the one place in the
+harbour where the collider genuinely fits. Every vessel here is `contact: none` for a
+*geometric* reason, not a design one: the hidden collider is a circle, and a 4.3:1 cargo
+hull sized to its beam leaves two thirds of the ship sailable-through, sized to its length
+it becomes an invisible wall. **A buoy is a disc** — the circle isn't an approximation of
+it, it *is* the shape — so what you see is exactly what stops you. `contactR` is r90 off
+the bake (12.6u red, 12.7u green), inside the drum's true 13.6u edge; compile inscribes a
+12-gon in it, so the effective radius is ~12.6–13. `wash` is r99 ÷ world, by the cypress
+knee's rule that "a prop earns a waterline by standing in water."
+
+⚠️ **That makes the harbour gate a real narrow.** Two 13u colliders eat 26u of it before
+any hull does, and threading it three-abreast — the venue's signature moment — can now be
+*lost* rather than merely tightened. Check the gate width when the course is laid.
+
+⚠️ **These are the first props whose art carries no venue**, so they name their own `src`.
+`propSprite`'s `<venue>/<name>` split can't reach a bake that sits flat in `props/`, which
+had quietly locked all six venue-neutral world-props (`mark`, `mark-can-yellow`, both
+buoys, `committee-boat`, `zodiac`) out of being props at all. The path is built in **three**
+places — the game, the editor's palette thumbnail, and the editor's canvas layer — and all
+three now honour `src`. Patch one and the kind is pickable with a broken thumbnail.
+
 ⚠️ **`planRound` could not catch the failure that actually shipped.** The first green
 lattice came back as a bare square cage with no float — circularity **0.634**, the exact
 value of a square, against the accepted red's 0.974. Both passed the aspect gate (1.047

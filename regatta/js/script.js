@@ -6637,6 +6637,15 @@ const markSprite = (kind) => MARK_SPRITES[kind] || MARK_SPRITES.inflatable;
 // lazily on first draw, so a course with no props loads no images. Unlike marks there
 // is no fallback sprite: an unknown prop kind draws nothing, because the validator
 // already flags it and a wrong palm is harder to notice than a missing one.
+//
+// ⚠️ THE DERIVATION CANNOT REACH VENUE-NEUTRAL ART, which is why `src` exists as an opt-out.
+// Splitting the kind at the first hyphen assumes every bake sits under a venue directory, and
+// six shipped world-props carry no venue at all — mark, mark-can-yellow, buoy-channel-red,
+// buoy-channel-green, committee-boat, zodiac — because they are shared across venues rather
+// than belonging to one. paths.py stores those FLAT at props/<key>.png, so the derivation
+// would go looking for props/buoy/channel-red.png and load nothing. Before this escape hatch
+// none of the six could be a prop at all, whatever the table said. A kind may therefore name
+// its own `src`; the derivation stays the default and stays the rule for venue art.
 const PROP_SPRITES = {};
 function propSprite(kind) {
     let s = PROP_SPRITES[kind];
@@ -6646,7 +6655,8 @@ function propSprite(kind) {
         const i = kind.indexOf('-');
         s = PROP_SPRITES[kind] = { img: new Image(), world: reg[kind].world || 40,
                                    box: reg[kind].srcBox || null };
-        s.img.src = `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
+        s.img.src = reg[kind].src
+            || `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
     }
     return s;
 }
@@ -13906,17 +13916,30 @@ function update(dt) {
         }
 
         // Mark Wakes
+        // ── AND CHANNEL BUOYS MAKE THEM TOO ─────────────────────────────────
+        // A moored buoy standing in a two-knot stream throws exactly the same wash as a
+        // race mark does — it is the same situation, a fixed object in moving water — and
+        // on a tidal venue that wash is a CUE: it shows which way the stream is setting and
+        // roughly how hard, at a glance, from across the channel. Only marks got one, so
+        // Glowtide's eighteen buoys sat in a 2.5 kt tide with dead-flat water round them.
+        const wakeSource = (ox, oy, radius) => {
+            const mc = getCurrentAt(ox, oy);
+            if (!(mc && mc.speed > 0.15) || fxRand() >= 0.3 * (mc.speed / 3.0)) return;
+            // Wake forms DOWNSTREAM of the obstacle.
+            const wx = Math.sin(mc.direction) * radius;
+            const wy = -Math.cos(mc.direction) * radius;
+            createParticle(ox + wx + (fxRand() - 0.5) * 10, oy + wy + (fxRand() - 0.5) * 10,
+                'mark-wake', { life: 1.5, alpha: 0.5 * (mc.speed / 3.0), scale: 0.8 });
+        };
         if (state.course.marks) {
-            for (const m of state.course.marks) {
-                const mc = getCurrentAt(m.x, m.y);
-                if (mc && mc.speed > 0.15 && fxRand() < 0.3 * (mc.speed / 3.0)) {
-                     // Mark is obstacle. Wake forms downstream.
-                     const flowDir = mc.direction;
-                     const offset = 12; // Radius
-                     const wx = Math.sin(flowDir) * offset;
-                     const wy = -Math.cos(flowDir) * offset;
-                     createParticle(m.x + wx + (fxRand()-0.5)*10, m.y + wy + (fxRand()-0.5)*10, 'mark-wake', { life: 1.5, alpha: 0.5 * (mc.speed/3.0), scale: 0.8 });
-                }
+            for (const m of state.course.marks) wakeSource(m.x, m.y, 12);
+        }
+        if (state.course.props) {
+            const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+            for (const pr of state.course.props) {
+                if (pr.kind !== 'buoy-channel-red' && pr.kind !== 'buoy-channel-green') continue;
+                const kw = (reg[pr.kind] && reg[pr.kind].world) || 28;
+                wakeSource(pr.x, pr.y, kw * (pr.scale || 1) * 0.45);
             }
         }
     }
@@ -15039,7 +15062,12 @@ function drawParticles(ctx, layer) {
         }
         ctx.globalAlpha = 1.0;
     } else if (layer === 'surface') {
-        ctx.fillStyle = '#ffffff';
+        // WHITE FOAM BY DAY, BIOLUMINESCENCE BY NIGHT. The wash off a mark or a buoy is
+        // disturbed water like any other, so on a venue that authors `palette.night` it
+        // fires cells rather than showing white — the same electric blue as the hulls'
+        // trails, since it is the same phenomenon at a smaller scale.
+        const nite = nightAmt();
+        ctx.fillStyle = nite > 0 ? BIO_COLOR : '#ffffff';
         for (const p of state.particles) {
             if (p.type === 'wake' || p.type === 'wake-wave' || p.type === 'mark-wake') {
                 if (!onScreen(p)) continue;
@@ -16061,8 +16089,36 @@ const BIO_CORE = '#cfe9ff';          // the pale blue-white centre, never pure w
 const BIO_TRAIL_LIFE = 9;
 const BIO_CHURN_LIFE = 1.6;          // the bright, over-threshold stretch at the stern
 
-const MOON_COLOR = '#f6edd2';        // warm cream, off the venue card — a cool blue-white
-                                     // moon path disappears into blue water
+// ⚠️ COOL WHITE, NOT CREAM. This was warm (#f6edd2), taken off the venue card, on the
+// theory that a blue-white path disappears into blue water. The art references say
+// otherwise: every one of them puts a near-white, faintly blue column on blue water and it
+// reads perfectly, because what separates it is BRIGHTNESS, not hue. Warm cream on this
+// palette read as lamplight rather than moonlight.
+const MOON_COLOR = '#e6f0ff';
+
+// ⚠️ RADIAL GRADIENTS ARE NOT FREE. The surf is painted as a field of soft blobs stepped
+// along the coast, and building a fresh createRadialGradient for each one cost 4.7 ms a
+// frame near shore — 28% of a 60 fps budget for one decorative layer. A gradient cannot be
+// repositioned, but a SPRITE can: the blob is rendered once into an offscreen canvas and
+// then stamped with drawImage, which is a blit rather than a shader setup. Same picture,
+// a fraction of the cost, and it scales to whatever radius the surge wants.
+const _glowSprites = {};
+function glowSprite(rgb) {
+    let s = _glowSprites[rgb];
+    if (s) return s;
+    const R = 64;
+    s = document.createElement('canvas');
+    s.width = s.height = R * 2;
+    const g2 = s.getContext('2d');
+    const grad = g2.createRadialGradient(R, R, 0, R, R, R);
+    grad.addColorStop(0, `rgba(${rgb},1)`);
+    grad.addColorStop(0.45, `rgba(${rgb},0.45)`);
+    grad.addColorStop(1, `rgba(${rgb},0)`);
+    g2.fillStyle = grad;
+    g2.fillRect(0, 0, R * 2, R * 2);
+    _glowSprites[rgb] = s;
+    return s;
+}
 
 function nightAmt() {
     const n = window.WATER_CONFIG && window.WATER_CONFIG.night;
@@ -16092,19 +16148,32 @@ function drawNightWater(ctx) {
     const mx = Math.sin(mb), my = -Math.cos(mb);
     const px = -my, py = mx;
     const reach = Math.max(halfW, halfH) * 1.5;
-    const band = 140;
+    const band = 165;
     const mAng = Math.atan2(my, mx);
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     ctx.translate(cam.x, cam.y);
     ctx.rotate(mAng);
+    // ⚠️ THE WATER IN THE PATH IS LIT, and that is what a chain of dashes alone could not
+    // say. An early attempt at a soft band read as FOG and was cut — but that one lived in
+    // the EMISSIVE pass at full brightness, floating above the scene. Down here it is part
+    // of the surface and the ambient wash knocks it back with the rest of the water, so it
+    // reads as sea catching the moon rather than haze lying on it. Kept faint: the glints
+    // are still the effect, this only gives them water to sit on.
+    const glow = ctx.createLinearGradient(0, -band, 0, band);
+    glow.addColorStop(0, 'rgba(214,230,255,0)');
+    glow.addColorStop(0.5, `rgba(214,230,255,${(0.15 * n).toFixed(3)})`);
+    glow.addColorStop(1, 'rgba(214,230,255,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(-reach, -band, reach * 2, band * 2);
+
     ctx.fillStyle = MOON_COLOR;
     // ⚠️ DASHES ACROSS THE PATH, IN A NARROW COLUMN — taken off the venue card rather than
     // invented. Two earlier cuts got this wrong in instructive ways. A soft gradient band
     // read as FOG, because a moon path has no haze in it. Then streaks elongated TOWARD the
     // moon read as RAIN, because Glowtide already draws pale diagonal wind streaks and a
     // second diagonal field just joined them.
-    for (let i = 0; i < 240; i++) {
+    for (let i = 0; i < 700; i++) {
         const u = ((i * 97.13) % 1000) / 1000;
         const vr = ((i * 43.71) % 1000) / 1000 - 0.5;
         // ⚠️ NORMALISE THE CURVE, or the crowding silently narrows the path: with vr in
@@ -16118,12 +16187,38 @@ function drawNightWater(ctx) {
         if (!inView(x, y)) continue;
         const s0 = Math.sin(t * (3.1 + (i % 7) * 0.9) + i * 2.399) * 0.5 + 0.5;
         const tw = 0.4 + 0.6 * s0 * s0;
+        // Cubed falloff: the column has a defined, dense spine and thins out fast, which
+        // is what makes it a reflection rather than a scatter. PLAYABILITY LIVES HERE —
+        // peak alpha stays moderate on purpose and the read comes from density, so the
+        // path never competes with a hull, a mark or a nav light for attention.
+        // Squared, not cubed: cubing collapsed the column to a hair-thin spine that barely
+        // read at all. Squared keeps a defined dense centre with the edges thinning out —
+        // a reflection rather than a scatter — while still leaving the path present.
         const fade = 1 - Math.min(1, Math.abs(across) / band);
-        const a = 0.78 * n * tw * fade * fade;
+        const a = 0.92 * n * tw * fade * fade;
         if (a < 0.03) continue;
-        const len = 10 + tw * (13 + (i % 5) * 4);
+        // ⚠️ VARY EVERYTHING, OR IT IS A LADDER. Bars of one width and near-one length,
+        // evenly spaced down a straight column, read as rungs — a drawn object rather than
+        // light on water. Two independent hashes per flash spread the length over an order
+        // of magnitude, thicken some and thin others, and tilt each one off square; the
+        // column survives because the POSITIONS still crowd the axis, but nothing in it
+        // repeats.
+        const h1 = ((i * 0.618034) % 1);
+        const h2 = ((i * 0.381966) % 1);
+        // RIPPLE LOZENGES, DENSELY STACKED — the shape the references actually show. Hard
+        // rectangles read as debris; an ellipse lying across the path reads as a wave face
+        // catching light. Length varies over an order of magnitude so nothing repeats.
+        const len = 5 + tw * (6 + h1 * h1 * 52);
+        const wide = 1.6 + h2 * 2.4;
+        const tilt = (h1 - 0.5) * 0.42;
         ctx.globalAlpha = Math.min(1, a);
-        ctx.fillRect(along - 1.6, across - len * 0.5, 3.2, len);
+        ctx.save();
+        ctx.translate(along, across);
+        ctx.rotate(tilt);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, wide * 0.5, len * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
     }
     ctx.restore();
 }
@@ -16172,6 +16267,20 @@ function drawNightGlow(ctx) {
         for (let k = 1; k < poly.length; k++) hullMask.lineTo(poly[k].x, poly[k].y);
         hullMask.closePath();
     }
+    // BUOYS ARE HOLES IN IT TOO. They are solid objects floating ON the water and they draw
+    // before this pass, so without a hole a passing boat's trail glows straight through the
+    // buoy and it stops reading as an object at all.
+    const _props = state.course && state.course.props;
+    if (_props) {
+        const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+        for (const pr of _props) {
+            if (pr.kind !== 'buoy-channel-red' && pr.kind !== 'buoy-channel-green') continue;
+            if (!inView(pr.x, pr.y)) continue;
+            const rr = ((reg[pr.kind] && reg[pr.kind].world) || 28) * (pr.scale || 1) * 0.42;
+            hullMask.moveTo(pr.x + rr, pr.y);
+            hullMask.arc(pr.x, pr.y, rr, 0, Math.PI * 2);
+        }
+    }
     ctx.clip(hullMask, 'evenodd');
     for (const boat of state.boats) {
         if (boat.opacity !== undefined && boat.opacity <= 0.1) continue;
@@ -16207,36 +16316,54 @@ function drawNightGlow(ctx) {
             const a = 0.85 * n * life * Math.min(1, s.str || 0);
             if (a < 0.02) continue;
             const r = 9 + (1 - life) * 14;
-            const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
-            g.addColorStop(0, BIO_CORE);
-            g.addColorStop(0.3, BIO_COLOR);
-            g.addColorStop(1, 'rgba(43,157,255,0)');
             ctx.globalAlpha = Math.min(1, a);
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.drawImage(glowSprite('43,157,255'), s.x - r, s.y - r, r * 2, r * 2);
+            ctx.globalAlpha = Math.min(1, a * 0.7);
+            const cr = r * 0.45;
+            ctx.drawImage(glowSprite('207,233,255'), s.x - cr, s.y - cr, cr * 2, cr * 2);
         }
     }
     ctx.globalAlpha = 1;
     ctx.restore();                      // hulls stop masking here
 
-    // ── THE WIND WAVES CATCH IT TOO ─────────────────────────────────────────
-    // Not as bright as a wake — a cat's paw stirs the surface, it does not churn it — but
-    // enough that pressure on the water reads as light, which is the venue's whole promise:
-    // "the dark hides the breeze, the glow gives it away".
+    // ── THE WIND WAVES ONLY LIGHT UP WHERE THEY BREAK ───────────────────────
+    // ⚠️ THE FIRST VERSION LIT EVERY CAT'S PAW, and that is physically backwards. The
+    // shear threshold for a dinoflagellate is 0.02-0.3 N/m^2 by species, and the review
+    // literature is blunt about what that means: with the exception of BREAKING waves,
+    // those thresholds are "several orders of magnitude larger than typical oceanic ambient
+    // flows". The orbital motion under an unbroken ripple does not come close. A uniform
+    // glow on every wind wave was inventing light the sea does not make.
+    //
+    // What rescues the venue's own promise — "the dark hides the breeze, the glow gives it
+    // away" — is WHITECAPS. Whitecapping sets in around 3-3.5 m/s (6-7 kt) and is what
+    // actually breaks a crest offshore, so above that threshold the tops genuinely do fire
+    // cells. That makes the glow a PRESSURE cue rather than a wind cue: it marks the strong
+    // patches specifically, which is better information than lighting everything.
+    //
+    // And it is SPARSE. Turbulence is intermittent, and the modelling result is that those
+    // intermittent bursts of extreme strain give flashes that are brighter but rarer than
+    // steady straining would. So a few crests wink hard rather than all of them glowing
+    // faintly — which is both the physics and the better picture.
+    const WHITECAP_KT = 7;
     for (const wave of state.waveStates.values()) {
-        if (wave.windSpeed < 2) continue;
+        if (wave.windSpeed < WHITECAP_KT) continue;
         const dx = Math.sin(wave.angle) * wave.dist, dy = -Math.cos(wave.angle) * wave.dist;
         const x = wave.x + dx, y = wave.y + dy;
         if (!inView(x, y)) continue;
-        const cyc = Math.sin((wave.dist / 150) * Math.PI);
-        const a = 0.30 * n * Math.max(0, cyc) * Math.min(1, (wave.windSpeed - 2) / 18);
-        if (a < 0.015) continue;
-        const w = Math.max(26, Math.min(84, wave.windSpeed * 4.5));
-        ctx.globalAlpha = a;
+        // Steep ramp above onset: at 7 kt the odd crest tips over, by 14 it is general.
+        const cap = Math.min(1, (wave.windSpeed - WHITECAP_KT) / 7);
+        // A stable per-wave phase off its origin, so a given crest keeps its own rhythm.
+        const h = Math.abs(Math.sin(wave.x * 12.9898 + wave.y * 78.233)) * 43758.5453 % 1;
+        const wink = Math.sin(t * (2.6 + h * 2.2) + h * 31.4) * 0.5 + 0.5;
+        // Cubed: mostly dark, occasionally bright — the intermittency, not a dimmer switch.
+        const burst = wink * wink * wink;
+        const cyc = Math.max(0, Math.sin((wave.dist / 150) * Math.PI));
+        const a = 0.95 * n * cap * burst * cyc;
+        if (a < 0.02) continue;
+        const w = Math.max(20, Math.min(70, wave.windSpeed * 3.6)) * (0.5 + 0.5 * burst);
+        ctx.globalAlpha = Math.min(1, a);
         ctx.strokeStyle = BIO_COLOR;
-        ctx.lineWidth = 1.8;
+        ctx.lineWidth = 2.4;
         ctx.lineCap = 'round';
         ctx.save();
         ctx.translate(x, y);
@@ -16245,6 +16372,13 @@ function drawNightGlow(ctx) {
         ctx.moveTo(-w * 0.5, 0);
         ctx.lineTo(w * 0.5, 0);
         ctx.stroke();
+        // The hottest winks show a pale core, like a breaking crest does.
+        if (burst > 0.55) {
+            ctx.globalAlpha = Math.min(1, a * 0.8);
+            ctx.strokeStyle = BIO_CORE;
+            ctx.lineWidth = 1.1;
+            ctx.stroke();
+        }
         ctx.restore();
     }
     ctx.globalAlpha = 1;
@@ -16253,37 +16387,125 @@ function drawNightGlow(ctx) {
     // Breaking water is where bioluminescence is most spectacular in life, so the coast
     // gets a pulsing rim rather than a static outline. The pulse runs along the shore
     // rather than blinking the whole island at once, which is what a set of waves does.
+    // ── SURF ALONG THE SHORE ────────────────────────────────────────────────
+    // ⚠️ NOT A STROKE ON THE COASTLINE. Stroking the island polygon drew a hard neon
+    // OUTLINE — straight runs, sharp corners, even brightness — and it read as a CAD
+    // wireframe or a selection highlight, not as water breaking. Three things were wrong
+    // with it: surf is a BAND with width, it sits just OFFSHORE rather than on the land
+    // edge, and it has no hard edges anywhere.
+    //
+    // So it is painted as a field instead: soft radial blobs stepped along the coast and
+    // pushed seaward, overlapping into a continuous wash with no corners in it. A narrow
+    // core rides the same path for the breaking line the photographs show, but its alpha
+    // swings hard with the passing sets, so it breaks into surges instead of closing up
+    // into an outline again.
     const isls = state.course.islands || [];
     for (const isl of isls) {
         if (isl.isFloe || isl.awash) continue;
         const v = isl.vertices;
         if (!v || v.length < 3) continue;
         if (Math.abs(isl.x - cam.x) > halfW + isl.radius || Math.abs(isl.y - cam.y) > halfH + isl.radius) continue;
-        ctx.lineCap = 'round';
+        // Walked by ARC LENGTH in short chunks, so the pulse runs ALONG the coast at a
+        // steady speed and each chunk is small enough that its midpoint is an honest cull.
+        // Culling whole EDGES by their midpoint went dark exactly when you sailed up to a
+        // shore: this landmass is 33 vertices across the whole map, so one edge can be
+        // thousands of units long and its midpoint far off-screen.
+        // ⚠️ SPACING MUST BE UNDER THE CORE DIAMETER OR THE BRIGHT LINE BEADS. At 46u with
+        // 9-16u cores the surges came out as a string of evenly spaced pearls — the wash
+        // overlapped fine (it is 68-120u wide) but the cores never touched. 24u is inside
+        // the core diameter, so a surge reads as a continuous run of light.
+        const CHUNK = 24;
+        let run = 0;
         for (let i = 0; i < v.length; i++) {
             const a0 = v[i], a1 = v[(i + 1) % v.length];
-            const mxp = (a0.x + a1.x) * 0.5, myp = (a0.y + a1.y) * 0.5;
-            if (!inView(mxp, myp)) continue;
-            // Phase by position along the coast, so the light travels.
-            const ph = Math.sin(t * 1.15 - (i * 0.55)) * 0.5 + 0.5;
-            const a = 0.16 * n + 0.42 * n * ph * ph;
-            // Two strokes: a wide electric-blue body and a narrow pale core where the
-            // water is breaking hardest, which is what the reference photographs show —
-            // a blue mass with a white-blue seam running through its brightest edge.
-            ctx.globalAlpha = a;
-            ctx.strokeStyle = BIO_COLOR;
-            ctx.lineWidth = 2.6 + 4.2 * ph;
-            ctx.beginPath();
-            ctx.moveTo(a0.x, a0.y);
-            ctx.lineTo(a1.x, a1.y);
-            ctx.stroke();
-            ctx.globalAlpha = a * 0.75 * ph;
-            ctx.strokeStyle = BIO_CORE;
-            ctx.lineWidth = 1.3;
-            ctx.stroke();
+            const ex = a1.x - a0.x, ey = a1.y - a0.y;
+            const elen = Math.hypot(ex, ey);
+            if (elen < 1) continue;
+            const steps = Math.max(1, Math.round(elen / CHUNK));
+            for (let k = 0; k < steps; k++) {
+                const f = (k + 0.5) / steps;
+                let x = a0.x + ex * f, y = a0.y + ey * f;
+                const s = run + elen * f;
+                if (!inView(x, y)) continue;
+                // Seaward, along the outward normal from the island's own centre — surf
+                // breaks OFF the beach, and an on-the-boundary glow reads as a rim on the
+                // land instead of water in front of it.
+                const ox = x - isl.x, oy = y - isl.y;
+                const ol = Math.hypot(ox, oy) || 1;
+                // Jittered per chunk, so the band is not a perfect offset curve of the
+                // polygon — a shoreline's break line wanders.
+                const jit = 10 + 14 * (Math.abs(Math.sin(s * 0.021)) );
+                x += (ox / ol) * jit; y += (oy / ol) * jit;
+                // Sets, not a uniform blink: a slow pulse travelling down the shore, with a
+                // second slower beat over it so successive surges differ in size.
+                const ph = Math.sin(t * 1.35 - s / 190) * 0.5 + 0.5;
+                const set = 0.65 + 0.35 * (Math.sin(t * 0.5 - s / 640) * 0.5 + 0.5);
+                const str = ph * ph * set;
+                // THE WASH — wide, soft, always present. Breaking waves are the one natural
+                // flow that clears the dinoflagellate shear threshold by a wide margin, so
+                // this is the brightest thing in the venue, over the churn behind a hull.
+                const R = 34 + 26 * str;
+                const a = (0.18 + 0.62 * str) * n;
+                ctx.globalAlpha = Math.min(1, a);
+                ctx.drawImage(glowSprite('43,157,255'), x - R, y - R, R * 2, R * 2);
+                // THE BREAKING LINE — only where a set is actually up, so it appears as
+                // surges along the beach rather than a continuous edge.
+                if (str > 0.42) {
+                    const cR = 14 + 9 * str;      // >= CHUNK, so surges join up
+                    ctx.globalAlpha = Math.min(1, (str - 0.42) * 1.5 * n);
+                    ctx.drawImage(glowSprite('207,233,255'), x - cR, y - cR, cR * 2, cR * 2);
+                }
+            }
+            run += elen;
         }
     }
     ctx.globalAlpha = 1;
+
+    // ── LIT CHANNEL BUOYS ───────────────────────────────────────────────────
+    // A lateral mark carries a light of its own colour — red on a red buoy, green on a
+    // green one — and the venue card promises "rocky shores & LIT MARKS". Glowtide already
+    // lines its channel with 18 of them, so this is the piece of the night that does the
+    // most navigational work: in the dark the buoys are the channel.
+    //
+    // THEY FLASH, and that is not decoration. A real lateral mark shows a rhythmic flash
+    // rather than a steady light, and here the rhythm also solves a playability problem:
+    // eighteen steady lamps would be eighteen competing highlights on a dark map. A flash
+    // draws the eye once and then gets out of the way.
+    //
+    // But a flash that goes fully dark takes the buoy with it, and a channel you can only
+    // see for a fifth of each cycle is worse than useless when you are threading it at
+    // speed. So each carries a dim EMBER that never goes out — locatable at all times —
+    // with the flash on top. Phase comes from the buoy's own position, so a line of them
+    // twinkles down the channel instead of blinking in unison like a string of fairy
+    // lights, which is also what a real channel looks like.
+    const props = state.course && state.course.props;
+    if (props && props.length) {
+        for (const pr of props) {
+            const red = pr.kind === 'buoy-channel-red';
+            if (!red && pr.kind !== 'buoy-channel-green') continue;
+            if (!inView(pr.x, pr.y)) continue;
+            // QUICK-FLASHING. A 4 s rhythm was too languid to read as a working light — at
+            // racing speed you pass a buoy before it has flashed twice. 1.6 s is close to
+            // the "Q" (quick) character real marks use, so the channel visibly ticks.
+            const ph = (Math.abs(Math.sin(pr.x * 0.0173 + pr.y * 0.0291)) * 1.6);
+            const cyc = (t + ph) % 1.6;
+            const flash = cyc < 0.5 ? Math.sin((cyc / 0.5) * Math.PI) : 0;
+            const amp = 0.22 + 0.85 * flash;                  // ember, plus the flash over it
+            const glow = red ? '255,30,30' : '0,255,110';
+            const core = red ? '255,205,205' : '205,255,220';
+            // ⚠️ THE HALO HAS TO REACH PAST THE BUOY. At radius 9-18 it sat INSIDE the 28u
+            // body and the thing read as a glowing buoy rather than a buoy with a light on
+            // it. A lamp throws light onto the water around it, so the halo now clears the
+            // hull and the tight core stays the lamp itself.
+            const gr = 21 + 17 * flash;
+            ctx.globalAlpha = Math.min(1, amp * n);
+            ctx.drawImage(glowSprite(glow), pr.x - gr, pr.y - gr, gr * 2, gr * 2);
+            const cR = 2.4 + 1.8 * flash;
+            ctx.globalAlpha = Math.min(1, (0.35 + 0.6 * flash) * n);
+            ctx.drawImage(glowSprite(core), pr.x - cR, pr.y - cR, cR * 2, cR * 2);
+        }
+        ctx.globalAlpha = 1;
+    }
 
     // ── NAV LIGHTS ──────────────────────────────────────────────────────────
     // RRS aside, this is COLREGs: sidelights are red to port and green to starboard, each

@@ -718,6 +718,17 @@ const FACET_LIGHT = { x: -0.55, y: -0.83 };
 // script.js's sprite registry — a second copy is how a kind comes to mean two things.
 // `vessel` is the one that is not course furniture: it carries a heading and a hull, so
 // it is oriented and collided differently (see orientCourseMarks in script.js).
+// ⚠️ THE LATERAL BUOYS ARE DELIBERATELY NOT IN HERE, and the reasoning is worth keeping
+// because the obvious move is wrong. They were briefly added as `channel-red`/`channel-green`
+// mark kinds and backed out: a MARK is a station on a race course, and a channel buoy is a
+// thing that EXISTS IN THE HARBOUR whether or not the course visits it. Making it a mark kind
+// forces those two facts together, so you could not have a buoy that is only scenery.
+//
+// The composition that keeps them separate is better and needs no new kind: place the buoy as
+// a PROP wherever the harbour wants one, and when the course should round it, drop a `none`
+// mark — 'No buoy (position only)', already in this table — on top of it. Art and race
+// function stack independently, one buoy can be furniture and its neighbour a gate mark, and
+// nothing about the course document has to know what a buoy looks like.
 const MARK_KINDS = {
     inflatable: { label: 'Orange inflatable buoy' },
     can:        { label: 'Yellow can buoy' },
@@ -918,6 +929,48 @@ const PROP_KINDS = {
     // foliage with no trunk at all. Anyone who ever re-planes these to `canopy` has to restore
     // the manifest's punchHoles/minHoles first: see-through is worthless on `surface` and
     // mandatory over the fleet, where a painted gap hides a boat as well as a leaf does.
+    // ── THE COVE'S TOWN ─────────────────────────────────────────────────────
+    // Buildings, all `surface` / `contact: none` like the shore trees: they stand on land the
+    // fleet cannot reach, so a collider here would never be tested. The church is a LANDMARK
+    // in art-pipeline 2's sense — venue identity — and the rest are ambient.
+    //
+    // ⚠️ EVERY ONE OF THESE IS DIRECTIONAL, WHICH NOTHING ELSE IN THIS VENUE IS. A tree or a
+    // shrub has no front and can be placed at any heading; a building has a ridge, and a town
+    // whose ridges point every which way reads as wreckage. Place these with the editor's
+    // `prop-spin` checkbox OFF and set `heading °` per placement from the prop inspector.
+    // cove-boatshed, when it lands, is the one whose heading is not merely tidy but MEANS
+    // something: its door canopy faces the water.
+    'bay-cove-church':       { label: 'Church',              world: 184, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-house-captains': { label: "Captain's house",   world: 129, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cottage-ell':  { label: 'Cottage with ell',    world: 118, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cottage':      { label: 'Cape cottage',        world:  80, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The waterfront's smallest building and the only one with no ridge — a single shed slope.
+    // Its stove pipe is a CIRCLE where every other chimney in the town is a rectangle, which is
+    // correct rather than decorative: a metal flue is round and a brick stack is not.
+    'bay-cove-shanty':       { label: 'Fish shanty',         world:  55, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cottage-dormer': { label: 'Dormered cottage',  world: 100, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ⚠️ THE ONE BUILDING WHOSE HEADING MEANS SOMETHING RATHER THAN MERELY LOOKING TIDY: the
+    // boat shed's door canopy projects from one gable end, and that end faces the WATER. Point
+    // it inland and the building is backwards. Everything else in this town only needs its
+    // ridges to agree with its neighbours.
+    'bay-cove-boatshed':     { label: 'Boat shed',           world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── THE COVE'S SHOPS AND ITS MARINA ─────────────────────────────────────
+    // The two shops are ordinary town buildings and take the town's traits. The MARINA is the
+    // odd one and needs its two departures stated.
+    //
+    // `float`, not `surface`: it is a floating dock system, so it draws AFTER every mark the
+    // water makes — no wake or cat's-paw ripples across something floating on top of them —
+    // and BEHIND the land, so a bank covers whatever part of it laps ashore.
+    //
+    // ⚠️ `contact: none` UNLIKE THE REST OF THE WATERFRONT, and it is the cargo ship's
+    // argument in a worse form. compile emits a CIRCLE per contact prop, and a circle fits a
+    // six-slot comb worse than it fits anything else in the game: sized to the outline it
+    // seals six slips of open water a boat can legitimately enter, sized smaller it stops
+    // nothing. A wrong collider is worse than none. If a placement ever needs teeth, lay
+    // hidden hard shapes down the fingers — the river's 82-bank precedent.
+    'bay-cove-marina':       { label: 'Marina',              world: 240, plane: 'float',   contact: 'none', motion: 'fixed' },
+    'bay-cove-shop-row':     { label: 'Shop row',            world: 200, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-store-general': { label: 'General store',      world: 124, plane: 'surface', contact: 'none', motion: 'fixed' },
     // ── THE VENUE'S NAMESAKE ────────────────────────────────────────────────
     // `surface` and `contact: none`, like the shore trees and for the same reason: it stands
     // on a headland, the fleet cannot reach it, and a collider that is never tested is a
@@ -946,6 +999,44 @@ const PROP_KINDS = {
     'bay-cove-plum-beach':   { label: 'Beach plum',          world:  22, plane: 'surface', contact: 'none', motion: 'fixed' },
     'bay-cove-hydrangea-blue': { label: 'Blue hydrangea',    world:  18, plane: 'surface', contact: 'none', motion: 'fixed' },
     'bay-cove-hydrangea-pink': { label: 'Pink hydrangea',    world:  18, plane: 'surface', contact: 'none', motion: 'fixed' },
+
+    // THE LATERAL BUOYS — scenery, and a channel that reads as a channel. These are the only
+    // props here that name their own `src`, because their art carries no venue: a channel buoy
+    // is shared harbour furniture, so paths.py stores the bakes FLAT at props/buoy-channel-*.png
+    // and propSprite's '<venue>/<name>' derivation cannot reach them. See the note on
+    // propSprite in script.js; `src` is the documented opt-out, not a special case for these.
+    //
+    // NOT MARK KINDS, deliberately, and this is the design decision to keep: a mark is a station
+    // on a RACE COURSE, and a buoy is a thing that exists in the harbour whether the course
+    // visits it or not. Keeping them apart means you can line the channel with buoys as pure
+    // scenery, and then — where the course really should round one — drop a `none` mark ('No
+    // buoy (position only)') on top of that buoy. Art and race function stack independently,
+    // one buoy is furniture and its neighbour is a gate mark, and the course document never has
+    // to know what a buoy looks like. That composition is why MARK_KINDS carries `none` at all.
+    //
+    // CONTACT hard, AND THIS IS THE ONE PLACE IN THE HARBOUR WHERE THE COLLIDER ACTUALLY FITS.
+    // Every vessel above ships `contact: 'none'` for a geometric reason and not a design one —
+    // the hidden collider compile emits is a CIRCLE, and a 4.3:1 cargo hull sized to its beam
+    // leaves two thirds of the ship sailable-through while sized to its length it becomes an
+    // invisible wall in open water. A buoy is a DISC. The circle is not an approximation of it,
+    // it is the shape, so none of that argument transfers and there is no unfairness to trade
+    // against: what you see is exactly what stops you.
+    //
+    //   contactR 13  r90 measured off the bake — 12.6u red, 12.7u green — the same reading the
+    //                trunks and the daybeacons use, and it errs inside the drum's true 13.6u
+    //                edge. Under-covering stays the safer error: a hull that clips the rim
+    //                sails on, where an oversized circle stops it in clear water.
+    //   wash 0.48    r99 / world (13.3u / 28), by the rule the cypress knee's note states — "a
+    //                prop earns a waterline by standing in water, not by being a tree". A moored
+    //                steel drum is the most literal object in the game for that test.
+    //
+    // ⚠️ IT MAKES THE HARBOUR GATE A REAL NARROW, which is the intended consequence and worth
+    // stating: venues.md 1 calls threading it three-abreast the venue's signature moment, and
+    // with both buoys solid that moment can now be lost rather than merely tightened. Watch the
+    // gate width when the course is laid — two 13u colliders eat 26u of it before any hull does.
+    'buoy-channel-red':    { label: 'Red channel buoy',   world: 28, plane: 'surface', contact: 'hard', contactR: 13, wash: 0.48, motion: 'fixed', src: 'assets/images/props/buoy-channel-red.png' },
+    'buoy-channel-green':  { label: 'Green channel buoy', world: 28, plane: 'surface', contact: 'hard', contactR: 13, wash: 0.48, motion: 'fixed', src: 'assets/images/props/buoy-channel-green.png' },
+
     'lagoon-palm':         { label: 'Palm',         world: 70, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },

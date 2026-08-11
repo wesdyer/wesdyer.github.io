@@ -40,6 +40,20 @@ VENUES = {
 BASE_PROP_SHADING = "hard two-tone shading and no soft gradients; "
 BASE_PORTRAIT_SHADING = "soft controlled shading modelled inside large clean value masses; "
 
+# ── A MASTER THE ENGINE COLOURS, NOT THE GENERATOR ──────────────────────────
+# Same shape of problem as the portrait and texture substitutions above, and the same fix.
+# An asset flagged `tintedMaster` is authored WHITE so the game can tint it per instance
+# (the multiply-and-cache path `getTintedBoatPart` uses for hulls) — one master supplying
+# every hue instead of one master per colour. But the unmodified base demands "vivid
+# saturated jewel-toned color" and the venue paragraph closes with "render it in its own
+# correct local colour", so the prompt would carry an instruction and its exact opposite.
+# This library has already paid for that once: the portrait note records that a prompt
+# arguing with itself gets resolved by the generator ignoring one half AT RANDOM.
+#
+# So the contradiction is removed at the source rather than argued down in the subject.
+BASE_TINTED_COLOR = ("painted in WHITE and pale neutral grey only, with the form carried "
+                     "entirely by value and no hue anywhere")
+
 # Same reasoning for a TILING TEXTURE, which contradicts the base on three counts. A tile
 # has no silhouette (it is a surface, not an object); a baked light direction repeats as
 # visible banding every tile width; and jewel-toned saturation is wrong for the thing every
@@ -549,6 +563,8 @@ def build(asset, profiles, bg="transparent"):
     elif asset["class"] == "texture":
         for old, new in BASE_TEXTURE_SUBS:
             base = base.replace(old, new)
+    if asset.get("tintedMaster"):
+        base = base.replace("vivid saturated jewel-toned color", BASE_TINTED_COLOR)
     tile = tile_world(asset, prof)
     # A feature has to survive the master -> screen reduction; 4 screen px is the floor
     # the reduction ladder shows detail dying below.
@@ -594,6 +610,20 @@ def build(asset, profiles, bg="transparent"):
                 f"not from the venue. The venue's accents ({accent}) belong to the objects "
                 "placed on this ground and appear NOWHERE in it — an accent repeated across "
                 "the whole landmass stops identifying anything."
+            )
+        elif asset.get("tintedMaster"):
+            # The venue clause below ends with "render it in its own correct local colour",
+            # which is exactly what a tinted master must NOT do. It still gets the venue's
+            # world for context — the ANIMAL has to belong to this water — but the colour
+            # instruction is replaced rather than contradicted.
+            parts.append(
+                f"VENUE CONTEXT, AND THIS ONE IS COLOURED BY THE GAME: it will be seen "
+                f"against {dominant}, with {accent} as the venue's accents, and it has to "
+                "belong in that world in FORM. Its COLOUR is not decided here — the engine "
+                "tints this sprite per instance, so the master is painted white and pale "
+                "neutral grey and nothing else. Do not choose a local colour for it, do not "
+                "tint it toward the venue, and do not add a colour cast of any kind: any hue "
+                "baked in multiplies against the tint and comes out muddy."
             )
         else:
             # A prop is an OBJECT IN a venue, not a picture OF one. Telling it to

@@ -1066,8 +1066,13 @@ function enhancePropPicker(sel) {
             + '<path d="M1 1.5L5 5.5L9 1.5" stroke="currentColor" stroke-width="1.4"'
             + ' stroke-linecap="round" stroke-linejoin="round"/></svg>';
     };
-    // Thumbnails come from the same src convention the game and the schematic derive.
+    // Thumbnails come from the same src convention the game and the schematic derive —
+    // including its opt-out: a venue-neutral prop names its own `src`, because its bake sits
+    // flat in props/ and the '<venue>/<name>' split cannot reach it. See propSprite in
+    // script.js. Miss this and the kind is pickable but its thumbnail is a broken image.
     const srcOf = (kind) => {
+        const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+        if (reg[kind] && reg[kind].src) return reg[kind].src;
         const i = kind.indexOf('-');
         return `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
     };
@@ -2255,9 +2260,12 @@ const PROP_IMGS = {};
 function propEdImg(kind) {
     let img = PROP_IMGS[kind];
     if (!img) {
+        const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
         const i = kind.indexOf('-');
         img = PROP_IMGS[kind] = new Image();
-        img.src = `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
+        // `src` opt-out, as in propSprite: a venue-neutral bake sits flat in props/.
+        img.src = (reg[kind] && reg[kind].src)
+            || `assets/images/props/${kind.slice(0, i)}/${kind.slice(i + 1)}.png`;
         img.addEventListener('load', () => draw());
     }
     return img;
