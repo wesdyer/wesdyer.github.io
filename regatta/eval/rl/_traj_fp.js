@@ -23,6 +23,27 @@ const docFp = (p, v) => {
     const doc = sandbox.window.VENUE_DOC && sandbox.window.VENUE_DOC[v];
     return doc ? djb(JSON.stringify(doc)) : null;
 };
+// ── ADJUDICATED RETIRED STAMPS ──────────────────────────────────────────────
+// The stamp is a hash of the WHOLE document, so ANY edit retires every lap — even
+// an edit to water the sailor never touches. That is the right default (it is a
+// conservative proxy), but it is a proxy, and a blanket ⛔ has already come close
+// to throwing away a valid human column once. Where the campaign has ADJUDICATED
+// a retired stamp — diffed the docs BY KEY and re-tested the tracks against the
+// new geometry — record it here so the next session inherits the ruling instead
+// of the alarm. An entry is a claim that the COURSE SHE SAILED did not move.
+//
+// bay a331fe02:13481 (owner ruling, 2026-08-10): the shipping bay's boundary went
+// from a 4-gon to a 12-gon and bay was re-frozen onto it. Only `world` differs —
+// course (marks/lines/route), shapes, wind and current are byte-identical — and
+// all 16 bay laps lie entirely inside the new arena with 1540-1670u of clearance
+// to its edge (0 samples outside). So the RACE COURSE is unchanged and these laps
+// remain valid human references. See regatta-corpus-fingerprints / regatta-venuedoc-cut.
+// ⚠️ This adjudicates the HUMAN column only. Bay's BOT anchors on that cut ARE
+// retired, because the boundary is an input to buildGrid and the goldens moved.
+const ADJUDICATED = {
+    bay: { stamps: ['a331fe02:13481'], why: 'boundary-only change, tracks re-verified inside the new arena' },
+};
+
 const TD = path.join(__dirname, 'traj');
 const byVenue = {};
 for (const f of fs.readdirSync(TD).filter(f => f.startsWith('traj_'))) {
@@ -38,11 +59,13 @@ for (const v of want) {
     for (const f of (byVenue[v] || []).sort()) {
         const j = JSON.parse(fs.readFileSync(path.join(TD, f), 'utf8'));
         const fp = j.venueFingerprint;
+        const adj = ADJUDICATED[v] && ADJUDICATED[v].stamps.includes(fp) ? ADJUDICATED[v] : null;
         const tag = fp == null ? 'NO STAMP (schema-1)'
             : fp === froz ? 'matches FROZEN  ✓ comparable to benches'
                 : fp === ship ? (froz && froz !== ship ? 'matches SHIPPING only  ⚠️ not the benched venue' : 'matches shipping ✓')
-                    : 'matches NEITHER  ⛔ retired document';
-        if (fp !== froz && !(froz === null && fp === ship)) mismatched++;
+                    : adj ? `retired stamp — ✓ ADJUDICATED VALID (${adj.why})`
+                        : 'matches NEITHER  ⛔ retired document';
+        if (fp !== froz && !(froz === null && fp === ship) && !adj) mismatched++;
         console.log(`   ${(j.finishTime != null ? j.finishTime.toFixed(1) : '   -').padStart(7)}s  ${String(fp).padEnd(18)} ${tag}   ${f}`);
     }
 }

@@ -342,10 +342,70 @@ class BotController {
             const timeSinceStart = state.race.timer;
 
             // Velocity Check (Hysteresis)
-            if (this.boat.speed * 4 < 1.0) {
+            //
+            // ⭐ THE RESET BAR IS SCALED BY THE DAY, NOT BY THE FRAME. 2.5 kt is right
+            // where the fleet cruises at 5.7-8.5 kt. Gatorgrass Bayou blows 0.9-4.8 kt
+            // and its fleet MEANS 2.07 kt — below the reset — so a boat that once dipped
+            // into weed can never clear the timer by sailing normally. It ratchets to 3 s
+            // and wiggles, and wiggle beam-reaches 100 deg off the wind with avoidance
+            // switched off. Measured: 25% of racing time, odometer 1.95x vs her 1.06x.
+            //
+            // ⚠️ IT MUST NOT BE THE BOAT'S OWN INSTANTANEOUS TARGET. That was tried
+            // (treeSTK2/STK3) and river lost 16 of 108 finishers, because the test goes
+            // CIRCULAR: a boat pinned against a bank sits in that bank's wind shadow, so
+            // its local target collapses, and "you are making 60% of what is available"
+            // declares a trapped boat healthy. Being somewhere hopeless must not excuse
+            // you from being stuck.
+            //
+            // The day's MEDIAN wind over the racecourse (state.wind.spread.med, the mean
+            // field p50 — no gusts, no oscillator) is a RACE CONSTANT and cannot be
+            // lowered by the boat sailing somewhere bad. Where the day supports the old
+            // bar this is byte-identical by construction, so every 11-16 kt venue is
+            // untouched; only a genuinely light-air DAY moves. Venue-class scoping on a
+            // measured physical property, which is the shape standing rule 11 asks for.
+            const wMed = (state.wind && state.wind.spread && state.wind.spread.med > 0)
+                ? state.wind.spread.med : null;
+            if (wMed !== null && state.course._stuckBarKey !== wMed) {
+                state.course._stuckBarKey = wMed;
+                const nom = (typeof getTargetSpeed === 'function')
+                    ? getTargetSpeed(0.7, false, wMed) * 0.25 : 0;
+                state.course._stuckResetBar = nom > 0 ? Math.min(0.625, nom * 0.60) : 0.625;
+                // ⭐ BOTH bars ride the DAY, for the same reason and with the same min().
+                // Lowering the accumulate bar per-FRAME is what broke river (a boat in a
+                // bank's shadow excused itself); lowering it per-RACE cannot, because the
+                // day median is not something a trapped boat can move. On any 8+ kt day
+                // this is exactly 0.25 and the venue is byte-identical.
+                state.course._stuckAccelBar = nom > 0 ? Math.min(0.25, nom * 0.25) : 0.25;
+            }
+            const resetBar = (wMed !== null && state.course._stuckResetBar != null)
+                ? state.course._stuckResetBar : 0.625;
+            const accelBar = (wMed !== null && state.course._stuckAccelBar != null)
+                ? state.course._stuckAccelBar : 0.25;
+            if (this.boat.speed < accelBar) {
                 this.lowSpeedTimer += TICK;
-            } else if (this.boat.speed * 4 > 2.5) { // Only reset if truly moving fast
+            } else if (this.boat.speed > resetBar) { // Only reset if truly moving fast
                 this.lowSpeedTimer = 0;
+            } else if (resetBar < 0.625) {
+                // ⭐ THE DEAD BAND BLEEDS — ON A LIGHT-AIR DAY ONLY. Between the two bars
+                // this hysteresis FREEZES whatever stuck-time was banked, because it was
+                // written for a bimodal world: a boat is either stopped or cruising. On an
+                // 11-16 kt venue that middle is a sliver nobody occupies (redrock wiggles
+                // 3.2% of the time). On Gatorgrass boats LIVE there — 34.8% of racing time
+                // sits between the bars, and 320 of 454 wiggle entries (70%) begin from
+                // inside it, off a timer banked during some earlier dip. A boat making
+                // 1.5 kt of an available 2.2 kt is SAILING and should be shedding
+                // stuck-time, not keeping it.
+                //
+                // ⚠️ SCOPED, BECAUSE UNSCOPED IT IS NOT HARMLESS. Bleeding on every venue
+                // moved river, redrock and lake: river paid +55% boat contacts and +36 s of
+                // mean for a flat paired median, and redrock paid +7.0 paired median with
+                // penalties 2.03 -> 2.27. The test resetBar < 0.625 is true only where the
+                // day-scaled bar actually bit — a genuinely light-air DAY — so every 8+ kt
+                // venue keeps today frozen dead band and is byte-identical by construction.
+                //
+                // Half rate, so a genuinely pinned boat still accumulates NET: she sits
+                // BELOW accelBar, where the timer climbs at full rate.
+                this.lowSpeedTimer = Math.max(0, this.lowSpeedTimer - TICK * 0.5);
             }
 
             const prevState = this.livenessState;
@@ -894,7 +954,22 @@ class BotController {
                      let bestT = -Infinity;
                      for (const off of ESC_TWAS) {
                          const h = normalizeAngle(lwC.direction + off);
-                         const v = getTargetSpeed(Math.abs(off), false, lwC.speed) * 0.25 * 60;
+                         // PLAN ON THE BOAT SHE HAS, NOT THE ONE THE POLAR DESCRIBES.
+                         // This ranks candidate TRACKS, and a track is speed times
+                         // heading plus the stream — so the speed term decides how
+                         // much the heading matters at all. The polar value here is
+                         // ~99 u/s; measured at the instant of contact on river
+                         // (`_ground_drive.js`, 344k contacts) the boat has 7.2 u/s
+                         // against a 52 u/s stream, and 0.3 u/s when this reflex is
+                         // driving alone. At the assumed speed every candidate looks
+                         // like it escapes (the model's own no-escape rate is 0.0%);
+                         // at the real one, 63.7% of contacts have NO escaping
+                         // heading and the argmax is ranking fiction. Cap the polar
+                         // at what the boat is actually doing so the ranking reflects
+                         // the true track, and where nothing escapes it picks the
+                         // least-bad instead of a confident wrong answer.
+                         const pol = getTargetSpeed(Math.abs(off), false, lwC.speed) * 0.25 * 60;
+                         const v = Math.min(pol, (this.boat.speed || 0) * 60);
                          const tOut = (Math.sin(h) * v + cvx) * outXc
                                     + (-Math.cos(h) * v + cvy) * outYc;
                          if (tOut > bestT) { bestT = tOut; escH = h; }
@@ -3506,6 +3581,39 @@ class BotController {
             hPlanRef = normalizeAngle(wdAv + sideRef * 0.62);
         }
 
+        // THE FAN GRADES TRACKS, NOT HEADINGS, WHEREVER THE WATER MOVES.
+        // Every candidate below is projected as heading x speed and then judged
+        // on where that lands — against boats, marks, the arena and the land
+        // grid. But `updateBoat` (~12296) adds the stream straight into the
+        // velocity, so on a venue with a real current the projected position is
+        // not where the boat goes. On river's banks the stream is 3.5 kt = 52
+        // u/s, which over this function's own 4-second lookahead is ~208 units
+        // of displacement the probe never sees — comparable to the whole probe
+        // length. The fan is choosing between fictions.
+        //
+        // This is the ground-frame lesson one layer above where it was learned.
+        // The contact reflex got it (~947) and that fixed RECOVERY; measured
+        // here (`_riv_entry.js`, 4 seeds, 313 grounding episodes) the CAUSE is
+        // this layer: 45.7% of episodes begin while she is sailing at speed
+        // (>60 u/s a second earlier) and those own 66.1% of all grounded time,
+        // navigation is the modal helm owner at entry (49.8%, owning 67.7%),
+        // avoidance is actively deflecting her in 67.1% of the preceding
+        // seconds, and her own land ray was ALREADY showing blockage in 93.6%
+        // of them. She is being dodged into a bank she can see, and river is
+        // where that is unrecoverable rather than merely slow: the stream at
+        // the entry point is 3.53 kt against a grounded boat's 7 u/s, so 64% of
+        // contacts have no escaping heading at all (`_ground_drive.js`).
+        //
+        // Gated on the physics' OWN test for whether current applies at all
+        // (`speed > 0.01`, the same one at ~12292 and the same one the escape
+        // uses), so it is byte-inert on still water and cannot touch a venue
+        // whose water does not move. Computed once — it does not vary with the
+        // candidate.
+        const curAv = getCurrentAt(boat.x, boat.y);
+        const curAvOn = !!(curAv && curAv.speed > 0.01);
+        const curAvVx = curAvOn ? Math.sin(curAv.direction) * (curAv.speed / 4) * 60 : 0;
+        const curAvVy = curAvOn ? -Math.cos(curAv.direction) * (curAv.speed / 4) * 60 : 0;
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -3596,9 +3704,9 @@ class BotController {
                 }
             }
 
-            // Project position at t=lookahead
-            const vx = Math.sin(h) * speed;
-            const vy = -Math.cos(h) * speed;
+            // Project position at t=lookahead — over the ground (see curAv above).
+            const vx = Math.sin(h) * speed + curAvVx;
+            const vy = -Math.cos(h) * speed + curAvVy;
             const futureX = boat.x + vx * (lookaheadFrames / 60);
             const futureY = boat.y + vy * (lookaheadFrames / 60);
 
@@ -3943,9 +4051,22 @@ class BotController {
                         }
                     }
                 }
+                // The land ray keeps its LENGTH (a clearance distance) but is
+                // aimed down the track, for the same reason as the projection
+                // above: a ray along the heading grades water the stream will
+                // not take her through. Still water leaves the unit vector
+                // exactly Math.sin(h)/-Math.cos(h), so this is byte-inert there.
+                // ...and the still-water branch keeps the ORIGINAL expression
+                // rather than the algebraically-equal normalized one: vx/hypot
+                // is sin(h) in exact arithmetic but not always to the last bit,
+                // and a 1-ulp move is enough to flip a golden behaviour hash.
+                // Inert here has to mean identical, not equivalent.
                 const landLen = openWaterAv ? landLenStock : 0;
-                const landFX = openWaterAv ? boat.x + Math.sin(h) * landLen : futureX;
-                const landFY = openWaterAv ? boat.y - Math.cos(h) * landLen : futureY;
+                const trkL = curAvOn ? (Math.hypot(vx, vy) || 1) : 1;
+                const landFX = openWaterAv
+                    ? boat.x + (curAvOn ? (vx / trkL) : Math.sin(h)) * landLen : futureX;
+                const landFY = openWaterAv
+                    ? boat.y + (curAvOn ? (vy / trkL) : -Math.cos(h)) * landLen : futureY;
                 const segLen = openWaterAv
                     ? landLen : Math.hypot(futureX - boat.x, futureY - boat.y);
                 const stepsAv = Math.max(2, Math.min(8, Math.ceil(segLen / (gAv.res * 0.6))));
@@ -4239,7 +4360,34 @@ class BotController {
             if (this._lastAvoidChoice != null && this.boat.speed > 1.0 &&
                 state.course._gridFixed && state.course._gridFixed.length &&
                 Math.abs(normalizeAngle(h - this._lastAvoidChoice)) < 0.12) {
-                cost -= 60;
+                // ⭐ COMMITMENT MAY BREAK TIES. IT MAY NOT BEAT SAILING STRAIGHT.
+                //
+                // This discount is the ONLY term in the whole cost function that can go
+                // NEGATIVE, so it is the only way a deflected candidate can beat a
+                // free-and-clear offset 0 (whose base cost is pow(0,3)*200 = 0 exactly).
+                // Measured on redrock with the offset-0 veto ledger (_avwhy, 48415
+                // deflections over 3 races, mean deflection 54.6 deg): **11.7% of all
+                // deflections happen with NOTHING vetoing the straight course** — no boat
+                // in the bubble, no static block, no rule, not even a soft proximity cost.
+                // Those can only be this line. The arithmetic agrees: a candidate needs
+                // pow(|off|,3)*200 < 60, i.e. |off| < 38 deg, which is exactly the band
+                // where cross-track error was measured DIVERGING at every scale.
+                //
+                // So it latches: once the boat has turned away, holding that turn scores
+                // -60 against a straight course at 0, and it keeps turning away from a
+                // route nothing is stopping it from sailing.
+                //
+                // ⚠️ THIS IS NOT THE CLOSED COMMITMENT FAMILY. That family is 0-for-7 and
+                // every one of those rejections ADDED commitment (side-locks, flip
+                // cooldowns, floe-identity locks); its dose-response control found holding
+                // to be monotonically bad — ONE second of hold already cost +25 s of
+                // transit. Nobody ever tested REMOVING the discount that ships. This moves
+                // in the direction that control points, not against it.
+                //
+                // The clamp keeps what the discount is FOR (the argmin saws the rudder at
+                // 10 Hz in cluttered water, and near-ties should stick) and removes only
+                // the case it was never meant to buy: preferring a dodge to a clear lane.
+                cost = Math.max(cost - 60, (this._costHold != null ? this._costHold : 0));
             }
             // A near-reversal is an emergency manoeuvre, not a preference. Its
             // pow(|offset|,1.5) base cost is pocket change next to collision terms,
@@ -4247,6 +4395,7 @@ class BotController {
             // boat with way on shouldn't throw it away; a stuck boat may need to.
             if (Math.abs(offset) > 1.8 && this.boat.speed > 1.0) cost += 250;
 
+            if (offset === 0) this._costHold = cost;
             if (cost < minCost) {
                 minCost = cost;
                 bestHeading = h;
