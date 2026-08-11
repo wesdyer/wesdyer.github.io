@@ -954,6 +954,11 @@ const PROP_KINDS = {
     // it inland and the building is backwards. Everything else in this town only needs its
     // ridges to agree with its neighbours.
     'bay-cove-boatshed':     { label: 'Boat shed',           world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The cove's waterfront begins here. A single sawn pile top — place these with the
+    // editor's `prop-spin` ON and a `count`, because addProps' "ONE DRAG LAYS A STAND" is
+    // what a row of pilings actually is; a baked cluster would stamp one arrangement and
+    // could never make a line along a wharf face.
+    'bay-cove-piling':       { label: 'Piling',              world:  14, plane: 'surface', contact: 'hard', contactR: 5, motion: 'fixed' },
     // ── THE COVE'S SHOPS AND ITS MARINA ─────────────────────────────────────
     // The two shops are ordinary town buildings and take the town's traits. The MARINA is the
     // odd one and needs its two departures stated.
