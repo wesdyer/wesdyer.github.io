@@ -3566,6 +3566,39 @@ class BotController {
             hPlanRef = normalizeAngle(wdAv + sideRef * 0.62);
         }
 
+        // THE FAN GRADES TRACKS, NOT HEADINGS, WHEREVER THE WATER MOVES.
+        // Every candidate below is projected as heading x speed and then judged
+        // on where that lands — against boats, marks, the arena and the land
+        // grid. But `updateBoat` (~12296) adds the stream straight into the
+        // velocity, so on a venue with a real current the projected position is
+        // not where the boat goes. On river's banks the stream is 3.5 kt = 52
+        // u/s, which over this function's own 4-second lookahead is ~208 units
+        // of displacement the probe never sees — comparable to the whole probe
+        // length. The fan is choosing between fictions.
+        //
+        // This is the ground-frame lesson one layer above where it was learned.
+        // The contact reflex got it (~947) and that fixed RECOVERY; measured
+        // here (`_riv_entry.js`, 4 seeds, 313 grounding episodes) the CAUSE is
+        // this layer: 45.7% of episodes begin while she is sailing at speed
+        // (>60 u/s a second earlier) and those own 66.1% of all grounded time,
+        // navigation is the modal helm owner at entry (49.8%, owning 67.7%),
+        // avoidance is actively deflecting her in 67.1% of the preceding
+        // seconds, and her own land ray was ALREADY showing blockage in 93.6%
+        // of them. She is being dodged into a bank she can see, and river is
+        // where that is unrecoverable rather than merely slow: the stream at
+        // the entry point is 3.53 kt against a grounded boat's 7 u/s, so 64% of
+        // contacts have no escaping heading at all (`_ground_drive.js`).
+        //
+        // Gated on the physics' OWN test for whether current applies at all
+        // (`speed > 0.01`, the same one at ~12292 and the same one the escape
+        // uses), so it is byte-inert on still water and cannot touch a venue
+        // whose water does not move. Computed once — it does not vary with the
+        // candidate.
+        const curAv = getCurrentAt(boat.x, boat.y);
+        const curAvOn = !!(curAv && curAv.speed > 0.01);
+        const curAvVx = curAvOn ? Math.sin(curAv.direction) * (curAv.speed / 4) * 60 : 0;
+        const curAvVy = curAvOn ? -Math.cos(curAv.direction) * (curAv.speed / 4) * 60 : 0;
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -3656,9 +3689,9 @@ class BotController {
                 }
             }
 
-            // Project position at t=lookahead
-            const vx = Math.sin(h) * speed;
-            const vy = -Math.cos(h) * speed;
+            // Project position at t=lookahead — over the ground (see curAv above).
+            const vx = Math.sin(h) * speed + curAvVx;
+            const vy = -Math.cos(h) * speed + curAvVy;
             const futureX = boat.x + vx * (lookaheadFrames / 60);
             const futureY = boat.y + vy * (lookaheadFrames / 60);
 
@@ -4003,9 +4036,22 @@ class BotController {
                         }
                     }
                 }
+                // The land ray keeps its LENGTH (a clearance distance) but is
+                // aimed down the track, for the same reason as the projection
+                // above: a ray along the heading grades water the stream will
+                // not take her through. Still water leaves the unit vector
+                // exactly Math.sin(h)/-Math.cos(h), so this is byte-inert there.
+                // ...and the still-water branch keeps the ORIGINAL expression
+                // rather than the algebraically-equal normalized one: vx/hypot
+                // is sin(h) in exact arithmetic but not always to the last bit,
+                // and a 1-ulp move is enough to flip a golden behaviour hash.
+                // Inert here has to mean identical, not equivalent.
                 const landLen = openWaterAv ? landLenStock : 0;
-                const landFX = openWaterAv ? boat.x + Math.sin(h) * landLen : futureX;
-                const landFY = openWaterAv ? boat.y - Math.cos(h) * landLen : futureY;
+                const trkL = curAvOn ? (Math.hypot(vx, vy) || 1) : 1;
+                const landFX = openWaterAv
+                    ? boat.x + (curAvOn ? (vx / trkL) : Math.sin(h)) * landLen : futureX;
+                const landFY = openWaterAv
+                    ? boat.y + (curAvOn ? (vy / trkL) : -Math.cos(h)) * landLen : futureY;
                 const segLen = openWaterAv
                     ? landLen : Math.hypot(futureX - boat.x, futureY - boat.y);
                 const stepsAv = Math.max(2, Math.min(8, Math.ceil(segLen / (gAv.res * 0.6))));
