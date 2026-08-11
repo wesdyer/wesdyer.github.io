@@ -1049,6 +1049,7 @@ class BotController {
                      if (sc > bestM) { bestM = sc; escM = h; }
                  }
                  this.markEscapeHeading = escM;
+                 this._markEscFrom = { x: col.normal.x, y: col.normal.y };
                  // "2s" shipped on the 6x-slow clock — the tuned reality was a 12s
                  // commit, and the fleet's mark behavior is calibrated to it.
                  this.markContactTimer = 12.0;
@@ -1057,6 +1058,50 @@ class BotController {
 
         if (this.markContactTimer > 0) {
              this.markContactTimer -= TICK;
+             // ⭐ RE-AIM THE COMMITMENT, DO NOT RELEASE IT.
+             // markEscapeHeading is computed ONCE, at the instant of contact
+             // (~1051), and then sailed for twelve seconds. At that instant the
+             // boat is beside the mark and the rock she ends up grinding is still
+             // 100-300u away, which is why giving the four-candidate argmax a land
+             // term at latch time benched INERT (treeMRK2: 427 of 432 boats
+             // byte-identical). She meets the land LATER, inside the commitment,
+             // and nothing re-checks — the island reflex that would is written
+             // above this block and overwritten by it.
+             //
+             // ⛔ Handing the helm to that reflex instead was tried and LOST
+             // (treeMRK: pooled mean +4.9, land contacts 27.0 -> 31.2): the
+             // commitment to leave the mark is doing real work. So keep the
+             // commitment and re-check only its AIM, and only when the held
+             // heading is provably into rock inside 140u — a boat sailing a clear
+             // escape is byte-unaffected, and among blocked options the geometry
+             // still orders them (least-bad, the 2cbf847 shape).
+             const gR = state.course.botGrid;
+             if (gR && this._markEscFrom) {
+                 let blkR = 0;
+                 for (let iR = 1; iR <= 4; iR++) {
+                     const dR = iR * 35;
+                     const ccR = gR.cell(this.boat.x + Math.sin(this.markEscapeHeading) * dR,
+                                         this.boat.y - Math.cos(this.markEscapeHeading) * dR);
+                     if (!gR.at(ccR[0], ccR[1])) { blkR = iR; break; }
+                 }
+                 if (blkR) {
+                     const awX = -this._markEscFrom.x, awY = -this._markEscFrom.y;
+                     const lwR = getWindAt(this.boat.x, this.boat.y).direction;
+                     let bestR = -Infinity, escR = this.markEscapeHeading;
+                     for (const off of [1.05, -1.05, 1.75, -1.75]) {
+                         const h = normalizeAngle(lwR + off);
+                         let sc = Math.sin(h) * awX - Math.cos(h) * awY;
+                         for (let iR = 1; iR <= 4; iR++) {
+                             const dR = iR * 35;
+                             const ccR = gR.cell(this.boat.x + Math.sin(h) * dR,
+                                                 this.boat.y - Math.cos(h) * dR);
+                             if (!gR.at(ccR[0], ccR[1])) { sc -= 4.0 / iR; break; }
+                         }
+                         if (sc > bestR) { bestR = sc; escR = h; }
+                     }
+                     this.markEscapeHeading = escR;
+                 }
+             }
              desiredHeading = this.markEscapeHeading;
              speedRequest = 1.0;
         }
