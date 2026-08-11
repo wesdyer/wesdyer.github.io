@@ -954,7 +954,22 @@ class BotController {
                      let bestT = -Infinity;
                      for (const off of ESC_TWAS) {
                          const h = normalizeAngle(lwC.direction + off);
-                         const v = getTargetSpeed(Math.abs(off), false, lwC.speed) * 0.25 * 60;
+                         // PLAN ON THE BOAT SHE HAS, NOT THE ONE THE POLAR DESCRIBES.
+                         // This ranks candidate TRACKS, and a track is speed times
+                         // heading plus the stream — so the speed term decides how
+                         // much the heading matters at all. The polar value here is
+                         // ~99 u/s; measured at the instant of contact on river
+                         // (`_ground_drive.js`, 344k contacts) the boat has 7.2 u/s
+                         // against a 52 u/s stream, and 0.3 u/s when this reflex is
+                         // driving alone. At the assumed speed every candidate looks
+                         // like it escapes (the model's own no-escape rate is 0.0%);
+                         // at the real one, 63.7% of contacts have NO escaping
+                         // heading and the argmax is ranking fiction. Cap the polar
+                         // at what the boat is actually doing so the ranking reflects
+                         // the true track, and where nothing escapes it picks the
+                         // least-bad instead of a confident wrong answer.
+                         const pol = getTargetSpeed(Math.abs(off), false, lwC.speed) * 0.25 * 60;
+                         const v = Math.min(pol, (this.boat.speed || 0) * 60);
                          const tOut = (Math.sin(h) * v + cvx) * outXc
                                     + (-Math.cos(h) * v + cvy) * outYc;
                          if (tOut > bestT) { bestT = tOut; escH = h; }
