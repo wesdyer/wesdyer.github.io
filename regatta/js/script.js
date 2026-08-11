@@ -6816,6 +6816,18 @@ function drawPropWash(ctx) {
 // asked for, an opening that travels with the boat rather than a tree that blinks.
 const CANOPY_FADE_MIN = 0.0;     // crown left with the hull dead under the stem
 const BOAT_LEN = 56;             // hull in world units; the manifest's scale anchor
+
+// HOW FAST THE BOAT'S SPEED CHASES ITS TARGET, per frame at 60fps. These were
+// literals inside updateBoat; they are named here because the ROUTER now has to
+// price what they imply, and a copied constant that drifts out of sync is the
+// exact bug the shoal pricing exists to fix (see the grid's shoal cost). One
+// source, two readers: the speed integrator and the router's shoal cost.
+//   tau = -1 / (60 * ln DECAY)  =>  UP ~5.5s (accelerating), DOWN ~9.25s.
+// Change either number, or make it shoal-specific, and the router's price
+// follows automatically — that is the whole point of naming them.
+const SPEED_DECAY_UP = 0.9970;    // accelerating, ~5.5s
+const SPEED_DECAY_DOWN = 0.9982;  // decelerating, ~9.25s — carries its way
+const SPEED_TAU_DOWN = -1 / (60 * Math.log(SPEED_DECAY_DOWN));
 const CANOPY_FADE_RANGE = 20 * BOAT_LEN;
 // THE PLAYER'S BOAT ONLY, and that asymmetry is the point rather than an oversight. The fade
 // exists to solve one problem — you must never lose your own hull under a tree — and every
@@ -12264,7 +12276,7 @@ function updateBoat(boat, dt) {
     // accel ~5.5s (0.9970), decel ~9s (0.9982): asymmetric so the boat carries its way
     // when depowered/head-to-wind — the heavy-keelboat momentum that makes timing a
     // shoot-to-the-line or a coast into a mark feel real. (Stat mods on top.)
-    let speedAlpha = 1 - Math.pow(accelerating ? 0.9970 : 0.9982, timeScale);
+    let speedAlpha = 1 - Math.pow(accelerating ? SPEED_DECAY_UP : SPEED_DECAY_DOWN, timeScale);
 
     // Apply Acceleration / Momentum Stats
     if (accelerating) {
@@ -21011,12 +21023,137 @@ function buildCoursePaths() {
                     if (!shoals.length) {
                         grid._shoal = null;
                     } else {
+                        // ── PRICE THE TRANSIT, NOT THE EQUILIBRIUM ──────────
+                        // `1/shoalMul` is the STEADY-STATE cost: what a cell costs a
+                        // boat that has been on the bar long enough to settle. The
+                        // physics does not settle on contact — shoalMul multiplies the
+                        // TARGET (~12219) and boat.speed chases it through
+                        // SPEED_DECAY_DOWN, a ~9.25s constant. A boat crossing a bar in
+                        // 1.5s moves ~15% of the way there and pays almost nothing.
+                        //
+                        // Measured against the owner's three fingerprint-verified lagoon
+                        // laps (`_shoal_model.js`, 11 crossings, his RECORDED speed as
+                        // ground truth): the steady-state price is wrong by a mean 83%
+                        // and up to 237% — it charges 4.13x for a crossing that truly
+                        // costs 1.26x — and it is wrong in one direction, always
+                        // overcharging. That phantom is what makes the router pay ~1329u
+                        // of detour on lagoon leg 2 to avoid a bar he sails straight over
+                        // in 20.3s against the detour's ~27s.
+                        //
+                        // Solving the lag for a boat entering at open-water speed V and
+                        // running s units into the bar:
+                        //     u(s) = m + (1 - m) * exp(-s / (V * tau))
+                        // and the cell's honest cost is 1/u. Same probe: mean |error|
+                        // 2%, mean error -0% — unbiased, with NO fitted parameter. tau
+                        // comes from SPEED_DECAY_DOWN and m from the field, so this
+                        // tracks the physics rather than approximating it, and a change
+                        // to either flows through here automatically.
+                        //
+                        // ⭐ IT IS ALSO SELF-SCOPING, which is why it is safe on swamp.
+                        // The crossover length is V*tau, so it discounts only crossings
+                        // short against the boat's own reach. Lagoon at ~100 u/s has a
+                        // ~1200u scale and its 1-2.5s bars go nearly free; SWAMP at ~35
+                        // u/s has a ~320u scale and its crossings are a median 13.0s with
+                        // 64% running longer than tau (`_shoal_exposure.js`) — already at
+                        // equilibrium, so it keeps the full price it has today. The
+                        // venues that need opposite answers get them from one formula.
                         const N = grid.n, sc = new Float32Array(N * N);
+                        const mm = new Float32Array(N * N);
+                        // distance INTO the shoal, in cells: 0 outside, then a two-pass
+                        // chamfer from the rim. Cheap, and exact enough at res-scale
+                        // beside a crossover length of hundreds of units.
+                        const dist = new Float32Array(N * N).fill(Infinity);
                         for (let j = 0; j < N; j++) {
                             for (let i = 0; i < N; i++) {
                                 const [wx, wy] = grid.world(i, j);
-                                sc[j * N + i] = 1 / window.VenueDoc.shoalField(shoals, wx, wy);
+                                const m = window.VenueDoc.shoalField(shoals, wx, wy);
+                                mm[j * N + i] = m;
+                                if (m >= 0.999) dist[j * N + i] = 0;   // open water = the rim
                             }
+                        }
+                        const D1 = 1, D2 = Math.SQRT2;
+                        for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+                            const id = j * N + i; let d = dist[id];
+                            if (i > 0) d = Math.min(d, dist[id - 1] + D1);
+                            if (j > 0) d = Math.min(d, dist[id - N] + D1);
+                            if (i > 0 && j > 0) d = Math.min(d, dist[id - N - 1] + D2);
+                            if (i < N - 1 && j > 0) d = Math.min(d, dist[id - N + 1] + D2);
+                            dist[id] = d;
+                        }
+                        for (let j = N - 1; j >= 0; j--) for (let i = N - 1; i >= 0; i--) {
+                            const id = j * N + i; let d = dist[id];
+                            if (i < N - 1) d = Math.min(d, dist[id + 1] + D1);
+                            if (j < N - 1) d = Math.min(d, dist[id + N] + D1);
+                            if (i < N - 1 && j < N - 1) d = Math.min(d, dist[id + N + 1] + D2);
+                            if (i > 0 && j < N - 1) d = Math.min(d, dist[id + N - 1] + D2);
+                            dist[id] = d;
+                        }
+                        // V: the boat's own nominal reaching speed in THIS venue's air,
+                        // from the same polar the physics uses — so light-air venues get
+                        // a short crossover and fast ones a long one, with no venue test.
+                        const wKt = (state.wind && state.wind.spread && state.wind.spread.med > 0)
+                            ? state.wind.spread.med : (state.wind ? state.wind.speed : 10);
+                        const vNom = Math.max(1, getTargetSpeed(1.57, false, wKt) * 0.25 * 60);
+                        const scale = Math.max(1, vNom * SPEED_TAU_DOWN);
+                        // ⚠️ THE DECAY IS IN TIME, AND THIS FIELD IS INDEXED BY
+                        // DISTANCE. Substituting t = s/V into the time solution
+                        // (u = m + (1-m)e^{-t/tau}) assumes the boat holds V all
+                        // the way across, but it is SLOWING — so it covers less
+                        // distance per second than that, and the true decay in
+                        // DISTANCE is faster. The error grows as m shrinks, and
+                        // it is not academic: the exponential-in-distance version
+                        // under-priced swamp's bars (m down to 0.1) badly enough
+                        // to send boats into them — swamp med +6.0, mean +21.5,
+                        // land contacts +58%, while lagoon (m 0.2, but crossed in
+                        // 1-2s) was -43.0.
+                        //
+                        // Do it exactly instead. With u = v/V and x = s/(V*tau),
+                        //     du/dx = (m - u)/u
+                        // separates and integrates to the closed form
+                        //     x = (1 - u) - m * ln((u - m)/(1 - m))
+                        // which is monotone in u, so invert by bisection per cell.
+                        // Verified against direct integration of the ODE to 5
+                        // decimal places for m in {0.1,0.2,0.31,0.5}, and against
+                        // the owner's own longest lagoon crossing: at x=0.62 this
+                        // gives u=0.624 where the exponential said 0.68 and his
+                        // measured exit speed was 0.64.
+                        const invU = (x, m) => {
+                            if (!(x > 0)) return 1;
+                            let lo = m + 1e-6, hi = 1;
+                            for (let it = 0; it < 40; it++) {
+                                const mid = (lo + hi) * 0.5;
+                                // x is DECREASING in u: deeper in => slower
+                                const xm = (1 - mid) - m * Math.log((mid - m) / (1 - m));
+                                if (xm > x) lo = mid; else hi = mid;
+                            }
+                            return (lo + hi) * 0.5;
+                        };
+                        for (let k = 0; k < N * N; k++) {
+                            const m = mm[k];
+                            if (m >= 0.999) { sc[k] = 1; continue; }
+                            // ⚠️ TWICE the rim distance, and this is exact rather
+                            // than cautious. The state variable in the solution
+                            // above is distance TRAVELLED inside the bar; this
+                            // field is indexed by distance to the nearest RIM.
+                            // They agree while the boat sails IN and diverge on
+                            // the way OUT — indexed by rim distance the boat
+                            // "un-slows" as it approaches the far edge, which it
+                            // does not do; it stays slow until it exits. That
+                            // under-prices every bar, worst where boats linger.
+                            //
+                            // A straight chord through a bar of local half-width W
+                            // visits each depth d TWICE: at travelled distance d
+                            // going in, and 2W-d coming out. So
+                            //     grid total = int_0^{2W} f(depth(s)) ds
+                            //                = 2 * int_0^W f(d) dd
+                            // and choosing f(d) = 1/u(2d) gives, with sigma = 2d,
+                            //     = int_0^{2W} dsigma / u(sigma)
+                            // which is exactly the true cost of the crossing. The
+                            // factor is a consequence of the geometry, not a knob,
+                            // and it needs no knowledge of W.
+                            const s = 2 * (dist[k] === Infinity ? 0 : dist[k]) * grid.res;
+                            const u = invU(s / scale, m);
+                            sc[k] = 1 / Math.max(m, Math.min(1, u));
                         }
                         grid._shoal = sc;
                     }
