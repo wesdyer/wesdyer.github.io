@@ -3704,11 +3704,38 @@ class BotController {
                 }
             }
 
-            // Project position at t=lookahead — over the ground (see curAv above).
-            const vx = Math.sin(h) * speed + curAvVx;
-            const vy = -Math.cos(h) * speed + curAvVy;
-            const futureX = boat.x + vx * (lookaheadFrames / 60);
-            const futureY = boat.y + vy * (lookaheadFrames / 60);
+            // Project position at t=lookahead — over the ground (see curAv above),
+            // AND OVER THE RUDDER SHE ACTUALLY HAS (v2, 2026-08-11).
+            // The land probe below now rolls the boat's own achievable turn, and
+            // the redrock 6-set that landed it moved land contacts 39.2 -> 30.3
+            // while boat contacts went 9.3 -> 11.6 and lake did the same thing in
+            // both sets (+25%, +32%). That asymmetry is the fix applied to half a
+            // function: land is graded on the arc the boat will sail, rivals are
+            // still graded on a straight line from a heading she is not yet on, so
+            // the argmin can pick a candidate whose LAND track is honest and whose
+            // RIVAL track is fiction. Same slew (~11712), same reason, same shape.
+            // Averaged back into a velocity so every CPA, overlap and tie-break
+            // term below keeps its own arithmetic and only the endpoint moves.
+            let vx = Math.sin(h) * speed + curAvVx;
+            let vy = -Math.cos(h) * speed + curAvVy;
+            let futureX = boat.x + vx * (lookaheadFrames / 60);
+            let futureY = boat.y + vy * (lookaheadFrames / 60);
+            if (openWaterAv) {
+                const snapP = (this.iceEscapeTimer > 0 && !this.penaltySpin);
+                const omP = getTurnSpeed() * 60 * (1.0 + boat.stats.handling * 0.03)
+                    * (snapP ? 5.0 : steerageFactor(boat));
+                const TP = lookaheadFrames / 60;
+                const NP = 8, dtP = TP / NP;
+                let hp = boat.heading, xp = boat.x, yp = boat.y;
+                for (let iP = 0; iP < NP; iP++) {
+                    const dhP = normalizeAngle(h - hp);
+                    hp = normalizeAngle(hp + Math.sign(dhP) * Math.min(Math.abs(dhP), omP * dtP));
+                    xp += (Math.sin(hp) * speed + curAvVx) * dtP;
+                    yp += (-Math.cos(hp) * speed + curAvVy) * dtP;
+                }
+                futureX = xp; futureY = yp;
+                vx = (futureX - boat.x) / TP; vy = (futureY - boat.y) / TP;
+            }
 
             let boatCollision = false;
             let staticCollision = false; // Marks/Boundary
@@ -4134,6 +4161,54 @@ class BotController {
                     && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
                     : 140;
+                // ⭐ THE PROBE ROLLS THE BOAT'S OWN TURN. A COMMANDED HEADING IS
+                // NOT A TRACK, AND THE RUDDER IS NOT INSTANTANEOUS.
+                // The ray above starts at the boat and runs along the CANDIDATE
+                // heading, as if she were already on it. She is not:
+                // `updateBoat` (~11712) slews `heading` toward the command at
+                // getTurnSpeed()*60*(1+handling*0.03)*steerageFactor — 0.9 rad/s
+                // at full authority, which at 100 u/s is a 111-unit turn radius,
+                // wider than redrock's channels. Until the slew finishes she is
+                // sailing an arc, and the wider the dodge the less the graded ray
+                // has to do with where she goes.
+                //
+                // Measured on redrock (`_track_vs_ray.js`, 4 seeds, 3221 followed
+                // decisions): the realized track strays a median 62u / p90 186u
+                // from the ray it was graded on — the grid's own cell is 50u — and
+                // 16.3% of decisions whose chosen ray reads CLEAR run the boat into
+                // land inside that ray's own length (47.8% inside the sw-inlet
+                // pocket). The failure rate is monotone in the turn asked for:
+                // 4.6% / 9.8% / 16.8% / 25.3% / 42.8% across 0.15/0.35/0.70/1.20/
+                // 1.20+ rad.
+                //
+                // ⚠️ That is a correlation with an obvious confounder — big turns
+                // are asked for in dangerous water. `_arc_predict.js` settles it by
+                // scoring both probes against the outcome: ray-clear AND arc-clear
+                // grounds 6.4% of the time, ray-clear but ARC-BLOCKED grounds
+                // 34.5% — a 5.39x lift, and 63.6% vs 28.6% inside the pocket. The
+                // arc predicts what the ray misses, so the ray is the wrong shape
+                // rather than danger being self-reporting. A candidate clear on
+                // BOTH verdicts existed on 76.7% of those ticks, so there is
+                // somewhere better to go.
+                //
+                // This is rule 19c's own prescription — "curvature in a probe needs
+                // the boat's own achievable turn as its ceiling". What 19c killed
+                // was the PLAN's curvature, which clears water the boat will not
+                // reach; the boat's own slew rate is the opposite quantity.
+                // Same family as `fbb1c27` (grade tracks, not headings) and
+                // `2cbf847` (rank for the boat she is): a layer optimizing against
+                // a model the physics does not honour.
+                //
+                // Gated on `openWaterAv` — the same drifting-ice line the land
+                // probe's floor, its ray direction and its far-blockage waiver all
+                // sit on (rule 5) — so floe water is byte-identical by construction
+                // and the armed-rounding arc keeps its own geometry.
+                const snapAv = (this.iceEscapeTimer > 0 && !this.penaltySpin);
+                const omAv = getTurnSpeed() * 60 * (1.0 + boat.stats.handling * 0.03)
+                    * (snapAv ? 5.0 : steerageFactor(boat));
+                const perUA = (openWaterAv && !arcK) ? omAv / speed : 0;
+                const dsA = segLen / stepsAv;
+                let rhA = boat.heading, rxA = boat.x, ryA = boat.y;
                 for (let sI = 1; sI <= stepsAv; sI++) {
                     const frac = sI / stepsAv;
                     let pxA, pyA;
@@ -4141,6 +4216,18 @@ class BotController {
                         const sA = frac * segLen;
                         pxA = boat.x + (Math.cos(h) - Math.cos(h + arcK * sA)) / arcK;
                         pyA = boat.y - (Math.sin(h + arcK * sA) - Math.sin(h)) / arcK;
+                    } else if (perUA > 0) {
+                        const dhA = normalizeAngle(h - rhA);
+                        rhA = normalizeAngle(rhA + Math.sign(dhA) * Math.min(Math.abs(dhA), perUA * dsA));
+                        if (curAvOn) {
+                            const sxA = Math.sin(rhA) * speed + curAvVx;
+                            const syA = -Math.cos(rhA) * speed + curAvVy;
+                            const nlA = Math.hypot(sxA, syA) || 1;
+                            rxA += (sxA / nlA) * dsA; ryA += (syA / nlA) * dsA;
+                        } else {
+                            rxA += Math.sin(rhA) * dsA; ryA += -Math.cos(rhA) * dsA;
+                        }
+                        pxA = rxA; pyA = ryA;
                     } else {
                         pxA = boat.x + (landFX - boat.x) * frac;
                         pyA = boat.y + (landFY - boat.y) * frac;
