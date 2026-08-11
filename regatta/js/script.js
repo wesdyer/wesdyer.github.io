@@ -4656,7 +4656,12 @@ function applyVenuePalette(venueKey) {
             baseColor: window.WATER_CONFIG.baseColor,
             deepColor: window.WATER_CONFIG.deepColor,
             shallowColor: window.WATER_CONFIG.shallowColor,
-            shorelineColor: window.WATER_CONFIG.shorelineColor
+            shorelineColor: window.WATER_CONFIG.shorelineColor,
+            // Defaulted here, not just read where used: applyVenuePalette Object.assigns the
+            // merged palette onto WATER_CONFIG, so a key the NEXT venue omits would keep the
+            // last one's value and Lighthouse Cove would inherit Glowtide's midnight.
+            night: window.WATER_CONFIG.night || 0,
+            moonDir: window.WATER_CONFIG.moonDir != null ? window.WATER_CONFIG.moonDir : 25
         };
     }
     // A venue DOCUMENT may override the water colours. Water is not an editable object —
@@ -6026,7 +6031,30 @@ const LAND_TEXTURES = {
     // is the FINEST-grained ground of the four, not the coarsest, so 128 is right and
     // retiling it to 64 would have halved it out of family. Use the spectrum, not blob
     // counts, if this is ever revisited.
-    marsh:      { src: 'assets/images/terrain/swamp/marsh.png',      tile: 128, alpha: 0.4 }
+    marsh:      { src: 'assets/images/terrain/swamp/marsh.png',      tile: 128, alpha: 0.4 },
+    // ── LIGHTHOUSE COVE'S TWO GROUNDS ───────────────────────────────────────
+    // Both delivered 2026-08-10, so both alphas below are now MEASURED and both bodies are
+    // their delivered tile's own mean — with base equal to tile mean the blend cannot move
+    // the colour, only the spread around it, so each alpha is a pure contrast knob.
+    //
+    // ⚠️ THE SCRUB CAME OFF ITS PRE-REGISTERED 0.5, and it is the marsh's argument again. Its
+    // delivered mottle is much busier than the two swards it was sized against — luma sd 14.30
+    // at tile 128, against swampgrass's 10.20 — so 0.5 would land on-screen sd 7.15, the
+    // LOUDEST ground in the game and past `grass` (6.75). That is backwards for the material
+    // most of Lighthouse Cove's land is made of, and for the class rule that a ground must
+    // lose the contrast fight with the boats and props drawn on it. 0.40 lands 5.72, between
+    // swampgrass (5.10) and grass (6.75), with the tussock and scrub structure fully intact.
+    //
+    // The rock kept 0.35: sd 8.10 at 256 puts it at 2.83, between the two shipped rocks
+    // (sandstone 1.38, granite 4.91), so the pre-registered value was already right.
+    //
+    // TILE SIZE FOLLOWS THE MATERIAL, NOT THE VENUE, which is why these two differ. Grass
+    // tussocks are centimetre-scale and land at true size at 128, with the cove's sand; a
+    // rounded whaleback is metre-scale, and 256 spans 27.8 world metres, putting a hump at
+    // 3-6 m across. That is a boulder, which is what it should be. Halving the rock to 128
+    // would make it a cobble field.
+    coastalscrub: { src: 'assets/images/terrain/bay/bay-scrub.png', tile: 128, alpha: 0.4 },
+    coastalrock:  { src: 'assets/images/terrain/bay/bay-rock.png',  tile: 256, alpha: 0.35 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];
@@ -6828,6 +6856,362 @@ function updateDriftingProps(now) {
         p._dy = (p._dy || 0) + vy * dt;
     }
 }
+
+// ── TRAFFIC: VESSELS ON RAILS ────────────────────────────────────────────────────────
+// The cove's promised mechanic — "slow, utterly predictable" shipping the player has to
+// time. The path maths lives in js/traffic.js; this is the lifecycle and the draw.
+//
+// EVERY VESSEL IS A PURE FUNCTION OF THE RACE CLOCK. There is no integrator here and no
+// accumulated position: given t, the compiled tables say where the hull is, which way it
+// points and how fast it is going. That is what makes it predictable in the sense the
+// design means — the same seed puts the ship in the same place at the same second, and it
+// is in that place whether the frame rate was 30 or 144. It also makes restarts, pauses
+// and the prestart free: nothing to reset, because nothing was ever accumulated.
+function trafficClock() {
+    const r = state.race;
+    if (!r) return -Infinity;
+    // The timer counts DOWN to the gun and UP after it, so seconds-from-the-gun is one
+    // sign flip. Authoring against the GUN rather than against load is what makes a spawn
+    // time mean the same thing however long the player sits around before starting.
+    return (r.status === 'racing' || r.status === 'finished') ? r.timer : -r.timer;
+}
+
+function initTraffic() {
+    state.traffic = [];
+    const list = state.course && state.course.doc && state.course.doc.traffic;
+    if (!list || !list.length || !window.Traffic) return;
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    for (const e of list) {
+        const path = window.Traffic.compilePath(e);
+        if (!path || !(path.duration > 0)) continue;
+        const kind = reg[e.kind] || {};
+        const scale = e.scale || 1;
+        const w = (kind.world || 40) * scale;
+        // The oblong the hull really is, off the kind's measured `hull` — the entry may
+        // override it, and a kind without one falls back to a slim default rather than
+        // pretending the sprite's square frame is the boat.
+        // THE WAKE COMES FROM THE KIND. A hull throws what its shape throws, wherever it is
+        // sailing and whatever the schedule says — the same contract `hull` and `srcBox`
+        // carry. Nothing in the document overrides it.
+        const wk = kind.wake || {};
+        const wake = {
+            style: wk.kind || 'kelvin',
+            hulls: Array.isArray(wk.hulls) && wk.hulls.length ? wk.hulls : [0],
+            symmetric: !!wk.symmetric,
+            beamFrac: wk.beam != null ? wk.beam : null
+        };
+        const hull = e.hull || kind.hull || [0.9, 0.3];
+        const hullLen = (hull.along != null ? hull.along : hull[0]) * w;
+        const hullBeam = (hull.beam != null ? hull.beam : hull[1]) * w;
+        // HOW FAR THE LEE REACHES. Authored in units, or derived through the SAME rule
+        // islands use — ten times the height of the thing casting it — rather than a second
+        // invented one. A vessel authors no height, so the default takes its beam as a
+        // stand-in for the stack it carries: a 720u container ship is 38 m across the deck
+        // and stands roughly that much above the water, which is the figure the rule wants.
+        const heightM = e.height != null ? e.height : (hullBeam / M_TO_U);
+        const shadowLen = e.windShadow != null ? e.windShadow
+                                               : heightM * SHADOW_HEIGHTS * M_TO_U;
+        state.traffic.push({
+            id: e.id, kind: e.kind, path, doc: e,
+            scale,
+            hullLen, hullBeam, shadowLen, windDir: 0, wake,
+            // Each wake's own offset from the centreline and its own width, in units.
+            wakeHulls: wake.hulls.map(o => o * w),
+            wakeBeam: (wake.beamFrac != null ? wake.beamFrac * w : hullBeam),
+            end: e.end || 'despawn',
+            firstSpawn: isFinite(e.firstSpawn) ? e.firstSpawn : 0,
+            respawn: !!e.respawn,
+            respawnDelay: isFinite(e.respawnDelay) ? e.respawnDelay : 60,
+            active: false, x: 0, y: 0, heading: 0, speed: 0, knots: 0, t: 0
+        });
+    }
+}
+
+function updateTraffic() {
+    const list = state.traffic;
+    if (!list || !list.length) return;
+    const now = trafficClock();
+    for (const v of list) {
+        // ONE COPY OF THE RULE, in js/traffic.js, because the editor's scrubber has to answer
+        // the same question — and a preview that disagreed with the race about when a ship is
+        // on the water would be worse than no preview at all.
+        const at = window.Traffic.localTime(v.doc, v.path, now);
+        if (!at) { v.active = false; v.speed = 0; v.knots = 0; continue; }
+        const local = at.t, reverse = at.reverse;
+        const p = v.path.at(local);
+        v.active = true;
+        v.x = p.x; v.y = p.y;
+        v.heading = reverse ? p.heading + Math.PI : p.heading;
+        v.speed = p.speed; v.knots = p.knots; v.t = local; v.s = p.s; v.reverse = reverse;
+        v.astern = !!p.astern;
+        // THE WIND AT THE VESSEL, sampled ONCE a frame. shadowAt needs it to gate the lee
+        // against the local breeze, and shadowAt is called for every boat and every sample
+        // of the wind overlay — sampling the field in there would multiply one lookup by
+        // hundreds. An island answers this from a cache keyed on its centroid because it
+        // never moves; a ship has to be told each frame, and this is the frame.
+        v.windDir = (typeof regionWindAt === 'function') ? regionWindAt(p.x, p.y).direction
+                                                        : (state.wind ? state.wind.direction : 0);
+    }
+}
+
+// ── THE KELVIN WAKE ──────────────────────────────────────────────────────────────────
+// A cargo ship is thirteen hull lengths of the boat the wake code was written for, and
+// scaling that ribbon up by thirteen does not give you a ship — from directly above, the
+// only way this game is ever seen, it gives you a very large dinghy. What says tonnage
+// from above is the SHAPE: the divergent arms standing off at a fixed angle either side of
+// the track, with the churned water running down the middle.
+//
+// THE ANGLE IS NOT A TUNING KNOB. Kelvin's result is that a displacement hull's wake sits
+// in a wedge of half-angle arcsin(1/3) = 19.47 degrees REGARDLESS OF SPEED — a slow ship
+// and a fast one differ in how bright the arms are, never in how wide they stand. Getting
+// that wrong is one of the few things about water a viewer can feel without knowing why.
+const KELVIN_TAN = 1 / (2 * Math.SQRT2);   // tan(19.47 deg), exactly
+const WAKE_SPAN = 2.2;        // ship-lengths of track the wake covers — length scales with
+                              // the hull, so the same constant suits a tug and a cruise ship
+const WAKE_STEPS = 26;        // quads per arm
+const WAKE_FULL_KT = 3.0;     // knots at which the wake reaches full strength
+// The other wake a vessel can wear: the fleet's own. drawWakes calls it a ribbon — "tapered
+// two-tone ribbons along each boat's recent stern track" — so this does too rather than
+// inventing a second word for a thing that already has one.
+//
+// WHICH ONE IS RIGHT IS A QUESTION ABOUT THE HULL, not a preference. The Kelvin wedge is
+// what a DISPLACEMENT hull throws: slow, heavy, pushing water aside. A small craft up on the
+// plane leaves a narrow churned trail instead, and the wedge drawn behind a motorboat claims
+// a tonnage it does not have.
+const RIBBON_SPAN = 1.8;      // hull-lengths of track the ribbon covers
+
+// NO HISTORY BUFFER. The boats keep a wakeTrail because nothing else knows where they have
+// been; a vessel on rails has its whole past in the path it is sailing, so the wake is read
+// straight off it with atArc(). That also means the wake is exactly as curved as the track
+// really was, and costs nothing to carry between frames.
+function drawTrafficWakes(ctx) {
+    const list = state.traffic;
+    if (!list || !list.length) return;
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewR = cullRadius(ctx);
+    ctx.save();
+    for (const v of list) {
+        if (!v.active) continue;
+        // A STATIONARY VESSEL HAS NO WAKE, and the berthing case falls out of it: a hull
+        // authored to stop sheds its wake as it slows, so it comes alongside clean with no
+        // special case anywhere.
+        // NOTHING WHILE GOING ASTERN. A hull backing down does churn water in life, but it
+        // is a slow, close, propeller-driven mess and nothing like the Kelvin wedge a bow
+        // throws — drawing the wedge behind a ship moving the other way would read as the
+        // hull travelling in the direction it is pointing, which is the one thing the
+        // manoeuvre exists to contradict.
+        const style = v.wake.style;
+        if (style === 'none') continue;
+        // A HULL WITH TWO BOWS IS NOT BACKING DOWN. Everything else suppresses its wake
+        // astern — a ship going backwards churns with its propeller rather than throwing a
+        // bow wave — but a double-ender running the other way is simply under way, and makes
+        // its wake from the end that is now leading. Which end that is needs no special case
+        // at all: the wake trails DOWN the track behind the direction of travel, and the
+        // direction of travel is a fact about arc length, not about which way the bow points.
+        if (v.astern && !v.wake.symmetric) continue;
+        const str = Math.min(1, v.knots / WAKE_FULL_KT);
+        if (str <= 0.02) continue;
+        const spr = propSprite(v.kind);
+        if (!spr) continue;
+        const w = spr.world * v.scale;
+        const halfHull = v.hullLen * 0.5;
+        // A pingpong vessel on its return leg is sailing the path BACKWARDS, so its wake
+        // trails toward increasing arc length. One sign carries that everywhere below;
+        // without it the return leg draws its wake out in front of the bow.
+        const dir = v.reverse ? -1 : 1;
+        const bowS = v.s + dir * halfHull;
+        // Never longer than the water actually sailed — a vessel that just spawned trails a
+        // short wake that grows, rather than arriving with a mile of history behind it.
+        // A LOOPING VESSEL HAS ALWAYS BEEN SAILING. Bounding the wake by "how far along the
+        // path am I" is right for a one-shot passage and wrong for a lap: it would trim the
+        // wake back to nothing every time the arc length wrapped, announcing exactly where
+        // the seam is on a curve built specifically not to have one.
+        const sailed = v.path.closed ? Infinity
+                     : (v.reverse ? v.path.length - v.s : v.s);
+        const span = Math.min(sailed + halfHull, WAKE_SPAN * v.hullLen);
+        if (span < v.hullLen * 0.2) continue;
+        if ((v.x - camX) ** 2 + (v.y - camY) ** 2 > (viewR + w + span) ** 2) continue;
+
+        const beam = v.hullBeam;
+
+        // ── THE FLEET'S RIBBON ───────────────────────────────────────────────────────
+        // The same two-pass taper drawWakes gives a boat — outer band, then a brighter core
+        // — but read off the PATH rather than a remembered trail, and sized from the hull
+        // instead of the 56-unit dinghy those constants were tuned against.
+        if (style === 'ribbon') {
+            const rSpan = Math.min(sailed - halfHull, RIBBON_SPAN * v.hullLen);
+            if (rSpan <= v.hullLen * 0.1) continue;
+            const sternR = v.s - dir * halfHull;
+            const rp = [];
+            for (let k = 0; k <= WAKE_STEPS; k++) {
+                const d = rSpan * k / WAKE_STEPS;
+                const q = v.path.atArc(sternR - dir * d);
+                rp.push({ x: q.x, y: q.y, px: Math.cos(q.heading), py: Math.sin(q.heading), d });
+            }
+            // ONE TRAIL PER HULL. A catamaran is not a wide monohull: it leaves two narrow
+            // wakes with clear water between them, and drawing one broad band across the
+            // whole beam claims a displacement hull that is not there. The offsets are
+            // applied per SAMPLE, along each sample's own perpendicular, so the pair follows
+            // the track round a turn instead of sliding across it.
+            const rw = v.wakeBeam * 0.42;
+            for (const off of v.wakeHulls) {
+                for (let pass = 0; pass < 2; pass++) {
+                    const wS = pass === 0 ? 1 : 0.42, aS = pass === 0 ? 0.35 : 0.50;
+                    for (let k = 0; k < WAKE_STEPS; k++) {
+                        const a = rp[k], b = rp[k + 1];
+                        const alpha = Math.pow(1 - a.d / rSpan, 1.25) * aS * str;
+                        if (alpha <= 0.01) continue;
+                        const wa = (rw + a.d * 0.055) * wS, wb = (rw + b.d * 0.055) * wS;
+                        const ax = a.x + a.px * off, ay = a.y + a.py * off;
+                        const bx = b.x + b.px * off, by = b.y + b.py * off;
+                        ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+                        ctx.beginPath();
+                        ctx.moveTo(ax + a.px * wa, ay + a.py * wa);
+                        ctx.lineTo(bx + b.px * wb, by + b.py * wb);
+                        ctx.lineTo(bx - b.px * wb, by - b.py * wb);
+                        ctx.lineTo(ax - a.px * wa, ay - a.py * wa);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+                }
+            }
+            continue;
+        }
+
+        const pts = [];
+        for (let k = 0; k <= WAKE_STEPS; k++) {
+            const d = span * k / WAKE_STEPS;
+            const p = v.path.atArc(bowS - dir * d);
+            pts.push({ x: p.x, y: p.y, px: Math.cos(p.heading), py: Math.sin(p.heading), d });
+        }
+
+        const fade = (d) => Math.pow(1 - d / span, 1.5) * str;
+
+        // 1. THE SCAR — churned water, and it starts at the TRANSOM, not the stem. Run from
+        // the bow and the ship gets a white stripe painted down its own deck.
+        const sternS = v.s - dir * halfHull;
+        const scarSpan = Math.min(sailed - halfHull, v.hullLen * 1.5);
+        if (scarSpan > v.hullLen * 0.1) {
+            const sc = [];
+            for (let k = 0; k <= WAKE_STEPS; k++) {
+                const d = scarSpan * k / WAKE_STEPS;
+                const p = v.path.atArc(sternS - dir * d);
+                sc.push({ x: p.x, y: p.y, px: Math.cos(p.heading), py: Math.sin(p.heading), d });
+            }
+            for (let pass = 0; pass < 2; pass++) {
+                const wS = pass === 0 ? 1 : 0.45, aS = pass === 0 ? 0.10 : 0.13;
+                for (let k = 0; k < WAKE_STEPS; k++) {
+                    const a = sc[k], b = sc[k + 1];
+                    const alpha = Math.pow(1 - a.d / scarSpan, 1.4) * str * aS;
+                    if (alpha <= 0.008) continue;
+                    const wa = (beam * 0.5 + a.d * 0.05) * wS, wb = (beam * 0.5 + b.d * 0.05) * wS;
+                    ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+                    ctx.beginPath();
+                    ctx.moveTo(a.x + a.px * wa, a.y + a.py * wa);
+                    ctx.lineTo(b.x + b.px * wb, b.y + b.py * wb);
+                    ctx.lineTo(b.x - b.px * wb, b.y - b.py * wb);
+                    ctx.lineTo(a.x - a.px * wa, a.y - a.py * wa);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+        }
+
+        // 2. THE DIVERGENT ARMS — the wedge. Lateral offset grows as d * tan(19.47), which
+        // on a straight track is the Kelvin wedge exactly and through a turn bends with the
+        // hull, because every sample carries the heading the ship actually had there.
+        //
+        // THIN. The wedge is genuinely this wide — 560 units off the track by the tail on a
+        // 720-unit hull — so anything but a fine crest line fills a third of the screen with
+        // flat white and reads as fog rather than water. The width is physics; the weight of
+        // the line is what keeps it legible.
+        const armW = v.hullLen * 0.014;
+        for (const side of [1, -1]) {
+            for (let k = 0; k < WAKE_STEPS; k++) {
+                const a = pts[k], b = pts[k + 1];
+                const alpha = fade(a.d) * 0.30;
+                if (alpha <= 0.008) continue;
+                const oa = a.d * KELVIN_TAN * side, ob = b.d * KELVIN_TAN * side;   // side-symmetric, so no dir here
+                const ax = a.x + a.px * oa, ay = a.y + a.py * oa;
+                const bx = b.x + b.px * ob, by = b.y + b.py * ob;
+                // Thicken astern: a crest that has run further has spread further.
+                const ta = armW * (0.6 + 0.7 * a.d / span), tb = armW * (0.6 + 0.7 * b.d / span);
+                const sdx = bx - ax, sdy = by - ay;
+                const sl = Math.hypot(sdx, sdy) || 1;
+                const nx = -sdy / sl, ny = sdx / sl;
+                ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
+                ctx.beginPath();
+                ctx.moveTo(ax + nx * ta, ay + ny * ta);
+                ctx.lineTo(bx + nx * tb, by + ny * tb);
+                ctx.lineTo(bx - nx * tb, by - ny * tb);
+                ctx.lineTo(ax - nx * ta, ay - ny * ta);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // 3. THE BOW WAVE — the manifest is explicit that the sprite carries no baked
+        // disturbance, so the water piling up at the stem has to be drawn or it is absent.
+        //
+        // ⚠️ ONE FRAME, AND IT IS THE HULL'S. This mixed two: the lateral axis came from the
+        // path tangent at `atArc(bowS)` while the longitudinal came from `v.heading` at the
+        // ship's centre. On a straight lane they agree and it looked right. In a turn they
+        // do not — measured on the cove's lane, up to 23.8 degrees apart — so the two axes
+        // stopped being perpendicular and the crescent SKEWED, bulging on one bow while it
+        // tightened on the other. The anchor was wrong too: `atArc` walks half a hull along
+        // the CURVE, which in a turn lands up to 75 units (43% of the beam) off the stem the
+        // sprite is actually drawn with.
+        //
+        // The hull is drawn at (v.x, v.y) rotated by v.heading and nothing else, so the wave
+        // that belongs to it must be built from exactly that and nothing else.
+        // ⚠️ THE LEADING END, WHICH IS NOT ALWAYS THE BOW. A double-ender running astern
+        // travels the way her stern points, and the water piles up at the end going first.
+        // `lead` is the only place that distinction is needed — everything else about the
+        // wake is measured along the track, which already knows which way she is going.
+        const lead = v.astern ? -1 : 1;
+        const fx = Math.sin(v.heading) * lead, fy = -Math.cos(v.heading) * lead;
+        const rx = Math.cos(v.heading), ry = Math.sin(v.heading);    // abeam, square to it
+        const bx = v.x + fx * halfHull, by = v.y + fy * halfHull;    // the end going first
+        ctx.fillStyle = `rgba(255,255,255,${(0.5 * str).toFixed(3)})`;
+        for (const side of [1, -1]) {
+            const o = (lat, lon) => [bx + rx * side * beam * lat - fx * v.hullLen * lon,
+                                     by + ry * side * beam * lat - fy * v.hullLen * lon];
+            const c1 = o(0.46, -0.01), p1 = o(0.60, 0.20), c2 = o(0.30, 0.06);
+            ctx.beginPath();
+            ctx.moveTo(bx, by);
+            ctx.quadraticCurveTo(c1[0], c1[1], p1[0], p1[1]);
+            ctx.quadraticCurveTo(c2[0], c2[1], bx, by);
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+    ctx.restore();
+}
+
+// Drawn with the surface props, under the marks and the fleet. The sprite's own bow points
+// -y in its frame — the game's heading convention exactly — so the tangent goes straight
+// into rotate() with no offset. (Measured on all three cove hulls: the stern is the wider
+// end, and it is at +y on every one.)
+function drawTraffic(ctx) {
+    const list = state.traffic;
+    if (!list || !list.length) return;
+    const viewRadius = cullRadius(ctx);
+    const camX = state.camera.x, camY = state.camera.y;
+    for (const v of list) {
+        if (!v.active) continue;
+        const s = propSprite(v.kind);
+        if (!s || !s.img.complete || !s.img.naturalWidth) continue;
+        const w = s.world * v.scale;
+        const limit = viewRadius + w * 0.5;
+        if ((v.x - camX) ** 2 + (v.y - camY) ** 2 > limit ** 2) continue;
+        ctx.save();
+        ctx.translate(v.x, v.y);
+        ctx.rotate(v.heading);
+        drawSpriteBoxed(ctx, s.img, s, w);
+        ctx.restore();
+    }
+}
+
 function getMarkImgGray(kind) {
     const s = markSprite(kind);
     if (s.gray || !s.img.complete || !s.img.naturalWidth) return s.gray;
@@ -7577,7 +7961,15 @@ const SHADOW_BEND = Math.PI / 2;         // 90 degrees: none of it got here
 // local one decides whether the wake got here.
 function shadowAt(x, y, dir, kind) {
     const list = state.course.navIslands || state.course.islands;
-    if (!list || !list.length) return 1;
+    // TRAFFIC CASTS HERE TOO, and this is the one place it should. A vessel's lee is the
+    // cove's whole promised mechanic — "the real hazard is its air, not its hull" — and the
+    // temptation is to give it what islands have by pushing it into the islands array. That
+    // would also hand it to the ROUTER, the nav grid and every sailability check, none of
+    // which can cope with a caster that moves. A second pass at the bottom of this function
+    // gets the wind exactly right and leaves routing untouched.
+    const fleet = state.traffic;
+    const hasFleet = !!(fleet && fleet.length);
+    if ((!list || !list.length) && !hasFleet) return 1;
     const isWind = kind === 'wind';
     // getWindAt has already blended the field and hands its answer in, so the gate below is
     // free on the hot path. A caller that passes null for wind gets it sampled lazily, and only
@@ -7590,7 +7982,7 @@ function shadowAt(x, y, dir, kind) {
     const cFlowY = isWind ? 0 : -Math.cos(dir);
     const cKey = isWind ? '' : 'c' + Math.round(dir / SHADOW_QUANTUM);
     let factor = 1;
-    for (const isl of list) {
+    for (const isl of (list || [])) {
         // LENGTH FIRST. It reads an authored number or a height and needs neither geometry nor
         // wind, and it is zero for almost everything — 114 of Glacier Sound's 123 shapes author
         // no height at all — so asking it before the direction lookup and the silhouette keeps
@@ -7655,6 +8047,50 @@ function shadowAt(x, y, dir, kind) {
         // Deepest shadow wins rather than shadows stacking: two islands in line should not
         // multiply into a dead calm neither of them could produce alone.
         factor = Math.min(factor, 1 - lat * lon * bend * SHADOW_MAX);
+    }
+
+    // ── THE SECOND PASS: VESSELS ────────────────────────────────────────────────────
+    // WIND ONLY. shadowLen's own argument decides this: a current wake is about whether
+    // the thing blocks the WATER COLUMN, and `motion` carries the answer — grounded blocks
+    // it, floating does not, "which is exactly why a floe DRIFTS WITH the current instead
+    // of disturbing it". A ship floats. It blocks air, not stream.
+    if (hasFleet && isWind) {
+        const ss2 = (t) => t * t * (3 - 2 * t);
+        for (const v of fleet) {
+            if (!v.active || !(v.shadowLen > 0)) continue;
+            // Same three numbers shadowSil produces for an island, off the hull's own
+            // oriented box: how far downwind its trailing edge reaches, where the plume is
+            // centred across the flow, and how wide it starts. Recomputed rather than
+            // cached because the caster MOVES — an island's silhouette is keyed on wind
+            // direction alone precisely because it never does.
+            const fx = Math.sin(v.heading), fy = -Math.cos(v.heading);
+            const px = Math.cos(v.heading), py = Math.sin(v.heading);
+            const hl = v.hullLen * 0.5, hb = v.hullBeam * 0.5;
+            const flowX = -Math.sin(v.windDir), flowY = Math.cos(v.windDir);
+            let alongMax = -Infinity, cMin = Infinity, cMax = -Infinity;
+            for (let i = 0; i < 4; i++) {
+                const sa = (i & 1) ? hl : -hl, sb = (i & 2) ? hb : -hb;
+                const cx = v.x + fx * sa + px * sb, cy = v.y + fy * sa + py * sb;
+                const a = cx * flowX + cy * flowY;
+                if (a > alongMax) alongMax = a;
+                const c = cx * (-flowY) + cy * flowX;
+                if (c < cMin) cMin = c;
+                if (c > cMax) cMax = c;
+            }
+            const along = (x * flowX + y * flowY) - alongMax;
+            if (along <= 0 || along >= v.shadowLen) continue;
+            const cross = Math.abs((x * (-flowY) + y * flowX) - (cMin + cMax) * 0.5);
+            const halfW = (cMax - cMin) * 0.5 * (1 + SHADOW_SPREAD * (along / v.shadowLen));
+            if (cross >= halfW) continue;
+            if (localDir === null) localDir = regionWindAt(x, y).direction;
+            const off = Math.abs(normalizeAngle(localDir - v.windDir));
+            if (off >= SHADOW_BEND) continue;
+            const bend2 = off > SHADOW_BEND_FREE
+                ? ss2(1 - (off - SHADOW_BEND_FREE) / (SHADOW_BEND - SHADOW_BEND_FREE)) : 1;
+            const lat2 = ss2(1 - cross / halfW);
+            const lon2 = ss2(1 - along / v.shadowLen);
+            factor = Math.min(factor, 1 - lat2 * lon2 * bend2 * SHADOW_MAX);
+        }
     }
     return factor;
 }
@@ -13289,6 +13725,9 @@ function update(dt) {
     updateBaseWind(dt);
     updateGusts(dt);
     updateSqualls(dt);
+    // No dt: every vessel is evaluated straight from the race clock, so it cannot drift
+    // with the frame rate the way an integrated position would.
+    updateTraffic();
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
     // never reach for the RNG stream. No-op off the ocean.
@@ -13444,6 +13883,11 @@ function update(dt) {
     // Collisions
     checkBoatCollisions(dt);
     checkMarkCollisions(dt);
+    // BEFORE the land pass, so the coastline still gets the last word. settleFloes states
+    // the rule for ice — "shore pass, last, so the coastline always wins" — and it holds
+    // here for a stronger reason: a bow can shove a boat clean into a beach, and if land
+    // resolved first that boat would spend a frame inside the shore.
+    checkTrafficCollisions(dt);
     checkIslandCollisions(dt);
     checkNearMisses(dt);
 
@@ -13500,6 +13944,22 @@ function update(dt) {
             for (const s2 of boat.wakeTrail) s2.age += dt;
             while (boat.wakeTrail.length && boat.wakeTrail[boat.wakeTrail.length - 1].age > 2.25) boat.wakeTrail.pop();
 
+            // ── THE BIOLUMINESCENT TRAIL IS ITS OWN, LONGER BUFFER ──────────────
+            // The ribbon above is deliberately short (2.25 s, ~4 boat lengths) because it
+            // draws FOAM, and foam collapses. Bioluminescence is a different quantity and
+            // outlives it, so it gets its own trail rather than borrowing this one — the
+            // alternative was lengthening `wakeTrail`, which would have stretched the
+            // daylight foam on all nine other venues to fix a night effect on one.
+            // Sampled at half the rate: the light is a smooth band, not beads, and 0.16 s
+            // at racing speed is ~17 units, far finer than the stroke width.
+            if (nightAmt() > 0) {
+                if (!boat.bioTrail) { boat.bioTrail = []; boat.bioSampleT = 0; }
+                for (const s2 of boat.bioTrail) s2.age += dt;
+                while (boat.bioTrail.length && boat.bioTrail[boat.bioTrail.length - 1].age > BIO_TRAIL_LIFE) boat.bioTrail.pop();
+            } else if (boat.bioTrail && boat.bioTrail.length) {
+                boat.bioTrail.length = 0;
+            }
+
             if (boat.speed > 0.08 && !boat.raceState.finished) {
                 const boatDX = Math.sin(boat.heading);
                 const boatDY = -Math.cos(boat.heading);
@@ -13515,6 +13975,18 @@ function update(dt) {
                     boat.wakeSampleT = 0.08;
                     boat.wakeTrail.unshift({ x: sternX, y: sternY, age: 0, str: Math.max(0, Math.min(1, (boat.speed - 0.05) / 1.45)) * (planing ? 1.3 : 1) });
                     if (boat.wakeTrail.length > 34) boat.wakeTrail.pop();
+                }
+                if (boat.bioTrail) {
+                    boat.bioSampleT -= dt;
+                    if (boat.bioSampleT <= 0) {
+                        boat.bioSampleT = 0.16;
+                        // `str` is SHEAR, which is what actually triggers a cell — so it is
+                        // taken from speed, and a planing hull tearing the surface lights
+                        // more water than one ghosting along at two knots.
+                        boat.bioTrail.unshift({ x: sternX, y: sternY, age: 0,
+                            str: Math.max(0, Math.min(1, (boat.speed - 0.04) / 1.3)) * (planing ? 1.25 : 1) });
+                        if (boat.bioTrail.length > 80) boat.bioTrail.pop();
+                    }
                 }
 
                 // Occasional foam blobs scattered ALONG the wake band (real
@@ -15392,6 +15864,337 @@ function updateWindWaves(dt) {
             state.waveStates.delete(key);
         }
     }
+}
+
+// ── NIGHT: AMBIENT WASH, MOONLIGHT AND BIOLUMINESCENCE ──────────────────────
+// Glowtide Strait is sailed by moonlight, and until now "night" was only a dark PALETTE:
+// the water was navy and everything floating on it was still lit for a summer afternoon.
+// This is the light model that was missing. Three passes, and the order between them is
+// the whole idea:
+//
+//   drawNightWater  the moonlight, drawn WITH the surface — under the waves, the wakes and
+//                   the fleet, and before the wash, so the ambient dims it like real water.
+//   drawNightWash   MULTIPLY, over every physical layer — the ambient comes down on land,
+//                   props, hulls, sails and marks alike, so nothing looks pasted on.
+//   drawNightGlow   ADDITIVE, after the wash — only what makes its own light, which is
+//                   exactly what the wash must not touch: bioluminescence and nav lights.
+//
+// THE STRENGTH IS THE VENUE'S, not a global. `palette.night` (0..1) rides in the document
+// with the water colours and reaches WATER_CONFIG through applyVenuePalette like any other
+// key, so a venue that authors none is untouched and the other nine keep their daylight.
+const NIGHT_TINT = '#4a5aa0';        // what the ambient multiplies TOWARD: cool moonlight,
+                                     // not grey — a neutral wash reads as underexposure
+const BIO_COLOR = '#2b9dff';         // ELECTRIC BLUE, off the reference photographs and the
+                                     // venue card. An early cut was a pale cyan (#8ffbff)
+                                     // and it read as mint: real dinoflagellate bloom is a
+                                     // saturated blue with only its hottest cores going pale.
+const BIO_CORE = '#cfe9ff';          // the pale blue-white centre, never pure white
+
+// ── HOW LONG A BIOLUMINESCENT TRAIL LIVES ───────────────────────────────────
+// Researched rather than picked, and the research changed the shape of the effect.
+//
+// A dinoflagellate flash is SHORT: rise 10-50 ms, decay ~200 ms, the whole thing about a
+// tenth of a second, and a spent cell does not immediately re-fire. So the light in a wake
+// is NOT one glow persisting — it is a moving front of fresh cells being triggered as the
+// boat reaches them. What you see behind a hull is therefore a map of where the water is
+// STILL shearing hard enough to fire cells, and the trail ends where that shear drops below
+// threshold (~0.04-0.32 N/m^2 by species), not where the light "fades out".
+//
+// That gives the effect its two-part shape, which is what is drawn: a short BRIGHT stretch
+// of churn right behind the transom where shear is well over threshold, and a long dimmer
+// band behind it where the disturbed water is still just tripping cells.
+//
+// 9 s is a GAME number on top of that physics. At racing speed (~7 kt = 105 u/s) it draws
+// about 950 units, ~17 boat lengths — long enough to read the fleet's recent history across
+// a screen, which is the tactical gift of a night venue, and short enough not to smear the
+// whole strait. The foam ribbon stays 2.25 s; these are different quantities, and only the
+// light outlives the foam.
+const BIO_TRAIL_LIFE = 9;
+const BIO_CHURN_LIFE = 1.6;          // the bright, over-threshold stretch at the stern
+
+const MOON_COLOR = '#f6edd2';        // warm cream, off the venue card — a cool blue-white
+                                     // moon path disappears into blue water
+
+function nightAmt() {
+    const n = window.WATER_CONFIG && window.WATER_CONFIG.night;
+    return (typeof n === 'number' && n > 0) ? Math.min(1, n) : 0;
+}
+// Where the moon stands, as a compass bearing the glitter path runs along. Authored beside
+// `night`; the default puts it off the starboard bow of a boat beating north.
+function moonBearing() {
+    const m = window.WATER_CONFIG && window.WATER_CONFIG.moonDir;
+    return ((typeof m === 'number') ? m : 25) * Math.PI / 180;
+}
+
+// MOONLIGHT BELONGS TO THE WATER, so it is drawn with the surface — before the wakes, the
+// wind waves and the fleet, and BEFORE the ambient wash, which then knocks it back like
+// everything else. It lived in the emissive pass at first and that was wrong twice over: it
+// floated on top of the boats, and it kept full brightness while the world around it dimmed,
+// which is exactly what made it feel pasted on rather than lying on the sea.
+//
+// No water test is needed here: the land is drawn later and simply covers it.
+function drawNightWater(ctx) {
+    const n = nightAmt();
+    if (n <= 0) return;
+    const cam = state.camera, t = state.time;
+    const halfW = ctx.canvas.width * 0.5 + 120, halfH = ctx.canvas.height * 0.5 + 120;
+    const inView = (x, y) => Math.abs(x - cam.x) < halfW && Math.abs(y - cam.y) < halfH;
+    const mb = moonBearing();
+    const mx = Math.sin(mb), my = -Math.cos(mb);
+    const px = -my, py = mx;
+    const reach = Math.max(halfW, halfH) * 1.5;
+    const band = 140;
+    const mAng = Math.atan2(my, mx);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.translate(cam.x, cam.y);
+    ctx.rotate(mAng);
+    ctx.fillStyle = MOON_COLOR;
+    // ⚠️ DASHES ACROSS THE PATH, IN A NARROW COLUMN — taken off the venue card rather than
+    // invented. Two earlier cuts got this wrong in instructive ways. A soft gradient band
+    // read as FOG, because a moon path has no haze in it. Then streaks elongated TOWARD the
+    // moon read as RAIN, because Glowtide already draws pale diagonal wind streaks and a
+    // second diagonal field just joined them.
+    for (let i = 0; i < 240; i++) {
+        const u = ((i * 97.13) % 1000) / 1000;
+        const vr = ((i * 43.71) % 1000) / 1000 - 0.5;
+        // ⚠️ NORMALISE THE CURVE, or the crowding silently narrows the path: with vr in
+        // [-0.5, 0.5], `vr*|vr|*2*band` peaks at a QUARTER of band, so an earlier cut spread
+        // its flashes over a 210u thread nobody could see.
+        const across = (vr < 0 ? -1 : 1) * (vr * vr * 4) * band;
+        const drift = (t * (9 + (i % 11) * 2.4)) % (reach * 2);
+        const along = -reach + ((u * reach * 2) + drift) % (reach * 2);
+        const x = cam.x + mx * along + px * across;
+        const y = cam.y + my * along + py * across;
+        if (!inView(x, y)) continue;
+        const s0 = Math.sin(t * (3.1 + (i % 7) * 0.9) + i * 2.399) * 0.5 + 0.5;
+        const tw = 0.4 + 0.6 * s0 * s0;
+        const fade = 1 - Math.min(1, Math.abs(across) / band);
+        const a = 0.78 * n * tw * fade * fade;
+        if (a < 0.03) continue;
+        const len = 10 + tw * (13 + (i % 5) * 4);
+        ctx.globalAlpha = Math.min(1, a);
+        ctx.fillRect(along - 1.6, across - len * 0.5, 3.2, len);
+    }
+    ctx.restore();
+}
+
+function drawNightWash(ctx) {
+    const n = nightAmt();
+    if (n <= 0) return;
+    const cam = state.camera;
+    const r = Math.hypot(ctx.canvas.width, ctx.canvas.height) * 0.5 + 240;
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.globalAlpha = n;
+    ctx.fillStyle = NIGHT_TINT;
+    ctx.fillRect(cam.x - r, cam.y - r, r * 2, r * 2);
+    ctx.restore();
+}
+
+function drawNightGlow(ctx) {
+    const n = nightAmt();
+    if (n <= 0) return;
+    const cam = state.camera, t = state.time;
+    const halfW = ctx.canvas.width * 0.5 + 120, halfH = ctx.canvas.height * 0.5 + 120;
+    const inView = (x, y) => Math.abs(x - cam.x) < halfW && Math.abs(y - cam.y) < halfH;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+
+    // ── BIOLUMINESCENT WAKES ────────────────────────────────────────────────
+    // Two parts, for the reason in BIO_TRAIL_LIFE: a bright churn where the shear is well
+    // over threshold, and a long dim band where it is only just tripping cells.
+    //
+    // ⚠️ AND IT MUST NOT SHINE THROUGH THE HULL. This pass runs after the fleet is drawn, so
+    // an additive blob centred a few units aft of the transom bleeds straight over the boat
+    // above it — the glow appeared to be INSIDE the hull. Skipping samples whose centre is
+    // on the boat does not fix it either, because the blobs are wider than that and the
+    // bleed comes from their edges. So the hulls are punched OUT of the clip region: one
+    // path of the view rect plus every visible hull, filled even-odd, which makes each hull
+    // a hole. Exact, and one clip for the whole fleet.
+    ctx.save();
+    const hullMask = new Path2D();
+    hullMask.rect(cam.x - halfW - 300, cam.y - halfH - 300, (halfW + 300) * 2, (halfH + 300) * 2);
+    for (const boat of state.boats) {
+        if (boat.opacity !== undefined && boat.opacity <= 0.1) continue;
+        if (!inView(boat.x, boat.y)) continue;
+        const poly = getHullPolygon(boat);
+        hullMask.moveTo(poly[0].x, poly[0].y);
+        for (let k = 1; k < poly.length; k++) hullMask.lineTo(poly[k].x, poly[k].y);
+        hullMask.closePath();
+    }
+    ctx.clip(hullMask, 'evenodd');
+    for (const boat of state.boats) {
+        if (boat.opacity !== undefined && boat.opacity <= 0.1) continue;
+        const bio = boat.bioTrail;
+        if (!bio || bio.length < 2) continue;
+
+        // THE LONG BAND, as one tapering stroke rather than a bead per sample. Eighty
+        // radial gradients a boat was both slower and worse-looking — a chain of blobs
+        // instead of a band of light.
+        for (let i = 1; i < bio.length; i++) {
+            const a0 = bio[i - 1], a1 = bio[i];
+            if (!inView(a0.x, a0.y) && !inView(a1.x, a1.y)) continue;
+            const life = 1 - Math.min(1, a1.age / BIO_TRAIL_LIFE);
+            // Squared, so the band thins away rather than ending on a visible stub.
+            const a = 0.40 * n * life * life * Math.min(1, a1.str || 0);
+            if (a < 0.012) continue;
+            ctx.globalAlpha = Math.min(1, a);
+            ctx.strokeStyle = BIO_COLOR;
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 5 + (1 - life) * 26;      // spreads as it ages, like a real wake
+            ctx.beginPath();
+            ctx.moveTo(a0.x, a0.y);
+            ctx.lineTo(a1.x, a1.y);
+            ctx.stroke();
+        }
+        // THE CHURN: the first second and a half, where the shear is well over threshold.
+        // This is the part that is genuinely bright, and it carries the pale core.
+        for (let i = 0; i < bio.length; i++) {
+            const s = bio[i];
+            if (s.age > BIO_CHURN_LIFE) break;
+            if (!inView(s.x, s.y)) continue;
+            const life = 1 - s.age / BIO_CHURN_LIFE;
+            const a = 0.85 * n * life * Math.min(1, s.str || 0);
+            if (a < 0.02) continue;
+            const r = 9 + (1 - life) * 14;
+            const g = ctx.createRadialGradient(s.x, s.y, 0, s.x, s.y, r);
+            g.addColorStop(0, BIO_CORE);
+            g.addColorStop(0.3, BIO_COLOR);
+            g.addColorStop(1, 'rgba(43,157,255,0)');
+            ctx.globalAlpha = Math.min(1, a);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();                      // hulls stop masking here
+
+    // ── THE WIND WAVES CATCH IT TOO ─────────────────────────────────────────
+    // Not as bright as a wake — a cat's paw stirs the surface, it does not churn it — but
+    // enough that pressure on the water reads as light, which is the venue's whole promise:
+    // "the dark hides the breeze, the glow gives it away".
+    for (const wave of state.waveStates.values()) {
+        if (wave.windSpeed < 2) continue;
+        const dx = Math.sin(wave.angle) * wave.dist, dy = -Math.cos(wave.angle) * wave.dist;
+        const x = wave.x + dx, y = wave.y + dy;
+        if (!inView(x, y)) continue;
+        const cyc = Math.sin((wave.dist / 150) * Math.PI);
+        const a = 0.30 * n * Math.max(0, cyc) * Math.min(1, (wave.windSpeed - 2) / 18);
+        if (a < 0.015) continue;
+        const w = Math.max(26, Math.min(84, wave.windSpeed * 4.5));
+        ctx.globalAlpha = a;
+        ctx.strokeStyle = BIO_COLOR;
+        ctx.lineWidth = 1.8;
+        ctx.lineCap = 'round';
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(wave.angle + (wave.tilt || 0));
+        ctx.beginPath();
+        ctx.moveTo(-w * 0.5, 0);
+        ctx.lineTo(w * 0.5, 0);
+        ctx.stroke();
+        ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+
+    // ── SURF ALONG THE SHORE ────────────────────────────────────────────────
+    // Breaking water is where bioluminescence is most spectacular in life, so the coast
+    // gets a pulsing rim rather than a static outline. The pulse runs along the shore
+    // rather than blinking the whole island at once, which is what a set of waves does.
+    const isls = state.course.islands || [];
+    for (const isl of isls) {
+        if (isl.isFloe || isl.awash) continue;
+        const v = isl.vertices;
+        if (!v || v.length < 3) continue;
+        if (Math.abs(isl.x - cam.x) > halfW + isl.radius || Math.abs(isl.y - cam.y) > halfH + isl.radius) continue;
+        ctx.lineCap = 'round';
+        for (let i = 0; i < v.length; i++) {
+            const a0 = v[i], a1 = v[(i + 1) % v.length];
+            const mxp = (a0.x + a1.x) * 0.5, myp = (a0.y + a1.y) * 0.5;
+            if (!inView(mxp, myp)) continue;
+            // Phase by position along the coast, so the light travels.
+            const ph = Math.sin(t * 1.15 - (i * 0.55)) * 0.5 + 0.5;
+            const a = 0.16 * n + 0.42 * n * ph * ph;
+            // Two strokes: a wide electric-blue body and a narrow pale core where the
+            // water is breaking hardest, which is what the reference photographs show —
+            // a blue mass with a white-blue seam running through its brightest edge.
+            ctx.globalAlpha = a;
+            ctx.strokeStyle = BIO_COLOR;
+            ctx.lineWidth = 2.6 + 4.2 * ph;
+            ctx.beginPath();
+            ctx.moveTo(a0.x, a0.y);
+            ctx.lineTo(a1.x, a1.y);
+            ctx.stroke();
+            ctx.globalAlpha = a * 0.75 * ph;
+            ctx.strokeStyle = BIO_CORE;
+            ctx.lineWidth = 1.3;
+            ctx.stroke();
+        }
+    }
+    ctx.globalAlpha = 1;
+
+    // ── NAV LIGHTS ──────────────────────────────────────────────────────────
+    // RRS aside, this is COLREGs: sidelights are red to port and green to starboard, each
+    // showing from dead ahead round to abaft the beam. From directly overhead both are
+    // visible on every boat, which is exactly what makes them useful here — at a glance you
+    // can tell which way a rival is pointing in the dark, and that is information the day
+    // venues give you from the sail. A dim white sternlight closes the picture.
+    for (const boat of state.boats) {
+        if (boat.opacity !== undefined && boat.opacity <= 0.1) continue;
+        if (!inView(boat.x, boat.y)) continue;
+        const s = Math.sin(boat.heading), c = Math.cos(boat.heading);
+        // A POINT LIGHT, NOT A DISC OF COLOUR. Two draws, and the split is the whole
+        // difference: a LAMP is a tiny over-exposed core with a coloured halo bleeding out
+        // of it, so the core is drawn near-white and the glow carries the colour. Earlier
+        // cuts held the saturated colour flat out to a third of the radius, which on a 55u
+        // hull is a painted dot — bright, but obviously paint rather than a light. Drawn
+        // additively, the core blows out through the halo on its own.
+        // ⚠️ THE SAME TRANSFORM hullPolygonAt USES, and it has to be, or the lights are not
+        // on the boat. A first cut wrote `+ ly*(sin, -cos)`, which negates the aft axis: the
+        // sidelights came out amidships and the stern light landed on the STEM. HULL_LOCALS
+        // puts the bow at y = -25 and the transom at y = +30, so local +y is aft and this is
+        // the plain rotation that goes with it.
+        const lamp = (lx, ly, core, glow, gr, amp) => {
+            const x = boat.x + (lx * c - ly * s);    // local +x starboard, +y aft
+            const y = boat.y + (lx * s + ly * c);
+            const g = ctx.createRadialGradient(x, y, 0, x, y, gr);
+            g.addColorStop(0, glow);
+            g.addColorStop(0.28, glow);
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            // ⚠️ THE GLOW CARRIES THE COLOUR, THE CORE ONLY BRIGHTENS IT. First attempt had
+            // a near-white core at high additive alpha over a thin halo, and the hue washed
+            // straight out — ten boats with white dots on the bow, which loses the one thing
+            // sidelights are for. So the halo is the strong, saturated element and the core
+            // is small and only lightly tinted toward white.
+            ctx.globalAlpha = Math.min(1, amp * n);
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(x, y, gr, 0, Math.PI * 2);
+            ctx.fill();
+            // The filament: small and hard, just enough to read as a lamp rather than a dot.
+            const k = ctx.createRadialGradient(x, y, 0, x, y, 2.1);
+            k.addColorStop(0, core);
+            k.addColorStop(0.5, core);
+            k.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.globalAlpha = Math.min(1, amp * 0.8 * n);
+            ctx.fillStyle = k;
+            ctx.beginPath();
+            ctx.arc(x, y, 2.1, 0, Math.PI * 2);
+            ctx.fill();
+        };
+        // SIDELIGHTS ONLY — red to port, green to starboard, both on the bow. No stern
+        // light, no steaming light, no anchor light: a boat racing under sail carries the
+        // pair and nothing else here, and three lamps on a 55u hull was clutter that made
+        // the one thing they are for — which way is he pointing — harder to read, not easier.
+        // Bow is local y = -25 (HULL_LOCALS), so these sit just abaft the stem.
+        lamp(-5, -20, 'rgba(255,190,190,1)', 'rgba(255,26,26,1)', 11, 0.95);    // port, red
+        lamp(5, -20, 'rgba(198,255,214,1)', 'rgba(0,255,106,1)', 11, 0.95);     // starboard
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
 }
 
 function drawWindWaves(ctx) {
@@ -18081,6 +18884,8 @@ function draw() {
     // drawShoals. Painted shallows go first of all: a shoal inside a lagoon is still a
     // bar, so its sand draws over the zone's tint.
     updateDriftingProps(performance.now());
+    // Moonlight lies ON the water, under the waves, the wakes and the fleet.
+    drawNightWater(ctx);
     drawShallows(ctx);
     drawShoals(ctx);
     // Rooted bottom vegetation grows ON the bar, so it paints over the shoal sand — and
@@ -18099,6 +18904,10 @@ function draw() {
     if (window.Swell) window.Swell.draw(ctx, state);
 
     drawWakes(ctx);
+    // On the water with the fleet's wakes and under everything else, which is where a wake
+    // belongs. Separate from drawWakes because it shares none of its machinery: no trail,
+    // no per-frame sampling, and a shape the boat ribbon does not have.
+    drawTrafficWakes(ctx);
     drawParticles(ctx, 'surface');
     drawGusts(ctx);
     drawWindWaves(ctx);
@@ -18207,6 +19016,7 @@ function draw() {
     // plane for a thing the GROUND holds up — a trunk, a beached log — as against `float`
     // above, which is for a thing the WATER holds up and which the land therefore covers.
     drawProps(ctx, 'surface');
+    drawTraffic(ctx);
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
     drawRulesOverlay(ctx);
@@ -18247,6 +19057,13 @@ function draw() {
 
     // Wind comets are air, not water — they pass over hulls and sails, not under them.
     drawParticles(ctx, 'air');
+
+    // ── THE LIGHT COMES DOWN, THEN WHAT MAKES ITS OWN GOES BACK UP ──────────
+    // Placed here, after the last PHYSICAL layer and before the indicators: everything in
+    // the world dims together, and the HUD-ish overlays that follow stay legible. No-op on
+    // every venue that authors no `palette.night`.
+    drawNightWash(ctx);
+    drawNightGlow(ctx);
 
     // Draw Indicators
     for (const boat of state.boats) {
@@ -18812,6 +19629,104 @@ function hullPolyCollide(boat, verts) {
     return worst;
 }
 
+// ── A HULL THAT PUSHES ───────────────────────────────────────────────────────────────
+// The ship stops a boat, and a boat caught ahead of the bow is carried along.
+//
+// THIS IS PHYSICS, NOT ROUTING, and that distinction is what makes it buildable. The vessel
+// never enters state.course.islands, never becomes a hidden collider, never touches the nav
+// grid. Contact is resolved right here against the fleet, the same frame the hull moved.
+//
+// THE SHAPE IS A CAPSULE, because the manifest already worked out why a circle cannot do
+// this job: "the hidden collider compile emits is a CIRCLE, and these hulls are 4.3:1.
+// Sized to the beam it leaves two thirds of the ship sailable-through; sized to the length
+// it is an invisible wall standing 100+ units off both sides in open water." A spine
+// segment with a radius is the shape that fits, rotates with the heading for free, and
+// hands back the push normal as the perpendicular from the spine.
+const TRAFFIC_PUSH_RATE = 260;      // units/sec of positional correction — see the cap below
+const TRAFFIC_GRIND = 0.55;         // speed kept after being struck
+
+function checkTrafficCollisions(dt) {
+    const fleet = state.traffic;
+    if (!fleet || !fleet.length) return;
+    for (const v of fleet) {
+        if (!v.active) continue;
+        // Spine: the hull's centreline minus a beam's worth at each end, so the capsule's
+        // round caps land at the stem and the transom instead of standing off them.
+        const r = v.hullBeam * 0.5;
+        const half = Math.max(1, v.hullLen * 0.5 - r);
+        const fx = Math.sin(v.heading), fy = -Math.cos(v.heading);
+        const ax = v.x - fx * half, ay = v.y - fy * half;
+        const reach = v.hullLen * 0.5 + 60;
+        // The ship's own velocity, in units per FRAME, matching everything else here.
+        const svx = fx * v.speed / 60, svy = fy * v.speed / 60;
+
+        for (const boat of state.boats) {
+            if (boat.raceState.finished && boat.fadeTimer <= 0) continue;
+            const bdx = boat.x - v.x, bdy = boat.y - v.y;
+            if (bdx * bdx + bdy * bdy > (reach + 60) ** 2) continue;
+
+            // ⚠️ THE NORMAL COMES FROM THE BOAT'S CENTRE, NOT FROM ITS NEAREST CORNER.
+            // Cornerwise looks more precise and oscillates: a hull straddling the
+            // centreline has corners on BOTH sides, the nearest one flips the moment the
+            // boat is nudged, and the push reverses every frame. Measured before the fix —
+            // a boat amidships bounced +4.33u, -4.33u, +4.33u forever and never came out.
+            // The centre moves monotonically outward, so the direction it picks is stable.
+            const poly = getHullPolygon(boat);
+            const wx = boat.x - ax, wy = boat.y - ay;
+            const t = Math.max(0, Math.min(1, (wx * fx + wy * fy) / (2 * half))) * 2 * half;
+            const cx = ax + fx * t, cy = ay + fy * t;
+            let bnx = boat.x - cx, bny = boat.y - cy;
+            let dc = Math.hypot(bnx, bny);
+            if (dc < 1e-3) {
+                // Dead on the spine, where "outward" is undefined. Any consistent side
+                // resolves; prefer whichever way the boat is already sliding.
+                const lat = boat.velocity.x * -fy + boat.velocity.y * fx;
+                const sgn = lat >= 0 ? 1 : -1;
+                bnx = -fy * sgn; bny = fx * sgn; dc = 0;
+            } else { bnx /= dc; bny /= dc; }
+
+            // How far the hull itself reaches along that normal — the convex support
+            // function, exact and cheap. Without it the boat's CENTRE would have to clear
+            // the capsule, so half a hull would be buried in the ship's side.
+            let reachB = 0;
+            for (const p of poly) {
+                const e = (p.x - boat.x) * bnx + (p.y - boat.y) * bny;
+                if (e > reachB) reachB = e;
+            }
+            const overlap = (r + reachB) - dc;
+            if (overlap <= 0) continue;
+            // CAPPED, exactly as the floe pass caps its own: "no floe is ever moved faster
+            // than it can be seen to move". A boat overtaken by a bow at four knots can be
+            // deeply inside the capsule in one frame, and teleporting it clear would read
+            // worse than the overlap does. A rate rather than a per-frame constant, so it
+            // looks the same at 30fps as at 144.
+            const corr = Math.min(overlap, Math.max(2, TRAFFIC_PUSH_RATE * dt));
+            // The ship is effectively infinite mass, so the boat takes the whole correction.
+            boat.x += bnx * corr;
+            boat.y += bny * corr;
+
+            // Kill the component sailing INTO the hull, then add the ship's own motion along
+            // the normal. "Pushed if in front" needs no special case: a boat under the bow is
+            // simply carried at ship speed for as long as it stays in contact.
+            const vn = boat.velocity.x * bnx + boat.velocity.y * bny;
+            if (vn < 0) { boat.velocity.x -= vn * bnx; boat.velocity.y -= vn * bny; }
+            const sn = svx * bnx + svy * bny;
+            if (sn > 0) { boat.x += bnx * sn * dt * 60; boat.y += bny * sn * dt * 60; }
+
+            boat.speed *= TRAFFIC_GRIND;
+
+            // NOTHING IS TOLD ABOUT THIS. No collisionData, so the planner is untouched —
+            // bots cannot see the vessel and will sail into it, which is accepted (a moving
+            // caster is planner work, and the planner is being changed elsewhere). It is
+            // survivable precisely BECAUSE it pushes: a static wall would trap a fleet that
+            // does not know to avoid it, while a body that shoves and moves on cannot.
+            if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
+                window.onRaceEvent('collision_traffic', { boat, id: v.id });
+            }
+        }
+    }
+}
+
 function checkIslandCollisions(dt) {
     if (!state.course || !state.course.islands) return;
 
@@ -18938,11 +19853,87 @@ const ISLAND_STYLES = {
     // (its docs were re-kinded), and everything else's grass isles read alive.
     grass:    { body: '#7aaa1d', stroke: '#5c8438', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },   // body = grass tile mean
     swampgrass: { body: '#a09453', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },   // body = swampgrass tile mean
+    // ── LIGHTHOUSE COVE'S TWO GROUNDS ───────────────────────────────────────
+    // Coastal scrub upland. Body is the bay-scrub tile's SPEC mean; reset it to the DELIVERED
+    // tile's own mean on ingest, per coralsand.
+    //
+    // DELIBERATELY NOT THE VENUE CARD'S TURF, and that is the decision worth recording.
+    // Measured off bay.png across three separate headlands, the card's sunlit turf runs hue
+    // 73-75 deg at saturation 0.92-0.99 — almost fully saturated yellow-green. Correct for a
+    // 1254px illustration, wrong for a ground: this is the surface every boat, mark and prop
+    // draws on top of, and the texture class exists to make it LOSE that contrast fight. So
+    // the hue family is the card's (71 deg) and the value is lifted instead.
+    //
+    // ⚠️ CORRECTED 2026-08-10, AND THE FIRST ANSWER IS THE LESSON. It was #8ca24a: same hue,
+    // saturation cut nearly in half to 0.54 to buy "sun-faded". That lands with `swampgrass`
+    // (0.48), which is a CURED DEAD sward, and next to the card it read army-olive. Every
+    // shipped land body that is meant to be alive holds its chroma — grass 0.83, redrock 0.75
+    // — so cutting saturation is how a ground leaves the family, not how it gets weathered.
+    // Sun-bleached grass is LIGHTER and YELLOWER, not greyer: this holds saturation at 0.62
+    // and lifts L* from 63 to 71. Same mistake, same session, as the cedar's "grey-green",
+    // and the cedar's note already states the rule — when a colour should read muted, move
+    // along hue or value and say which way, because chroma is the one axis that kills it.
+    //
+    // A THIRD ANSWER, NOT A NUDGE OF EITHER EXISTING SWARD: dE 22.9 from `grass` (bright
+    // meadow) and 18.2 from `swampgrass` (cured tan-olive). Against what it actually touches
+    // in the cove it is far clearer — 35.1 from the sand, 40.6 from the rock below.
+    //
+    // `rock` is the cove's OWN rock colour rather than the generic #8a8a7a the other swards
+    // use, so a scrub isle's rock dabs are made of the same stone as the headland next door.
+    coastalscrub: { body: '#a3a745', stroke: '#7d7e3c', veg: '#5b693a', rock: '#a19481', trees: true },  // body = bay-scrub DELIVERED tile mean
+    // Weathered coastal rock — rounded, salt-worn, grey-tan glacial stone.
+    //
+    // ⚠️ THE CARD MEAN WAS THE WRONG NUMBER, which is the transferable finding. Sampling the
+    // card's three rock areas with water, foam and foliage masked gives #7d6f56 — and that
+    // collides at dE 5.3 with the bayou's `mudflat` and 11.0 with `marsh`, two rows a
+    // designer picks from the same list. The card mean is dragged dark and warm by the
+    // shadow CREVICES between boulders, which are not what the material looks like; the
+    // stone reads at the lit end. The spec was #9d9080; the tile landed at #a19481, 5.8 RGB
+    // units warmer and lighter, and the BODY IS NOW THAT DELIVERED MEAN — with base equal to
+    // tile mean the blend cannot move the colour, only the spread around it, so alpha is a
+    // pure contrast knob and the mean-luma-shift the arctic textures warn about cannot
+    // happen. The other three tones are the SPEC's own offsets carried onto the new body
+    // rather than left where they were (the bayou-mud precedent), so the stroke keeps its
+    // 50/47/43 drop and the coastline does not wash out.
+    //
+    // ALPHA 0.35 KEPT, and now measured rather than pre-registered: the delivered tile has
+    // luma sd 8.10 at 256, so 0.35 lands on-screen sd 2.83 — between the two shipped rocks
+    // (sandstone 1.38, granite 4.91) and inside the whole set's 1.38-6.75 band.
+    //
+    // SEPARATION WAS SCORED IN TWO TIERS AND THE DISTINCTION IS REUSABLE. In-venue separation
+    // is what matters in play, because sand and rock share a shoreline and the player has to
+    // read them apart at race scale: 23.9 from the cove's sand, 52.0 from the scrub above.
+    // Cross-venue separation is only a picker-swatch concern — mudflat and this can never be
+    // in the same race — so 19.2 there is fine where 5.3 was not.
+    //
+    // veg is a paler DRY STONE, not a green: the granite/redrock/mud convention for a look
+    // with no vegetation on it. No trees — bare rock.
+    coastalrock:  { body: '#a19481', stroke: '#6f6556', veg: '#b4a997', rock: '#817766', trees: false },  // body = bay-rock DELIVERED tile mean
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
     granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
+    // Dark karst limestone — Glowtide Strait's rock.
+    //
+    // NEUTRAL-COOL, AND THAT WAS MEASURED RATHER THAN PICKED. The first pick was a warm
+    // buff (#646057) on the reasoning that limestone is warm and a warm rock separates
+    // from cool water. Rendered against the strait's three water bands it read as MUD —
+    // simultaneous contrast against #1a2560 pushes any warm grey olive, so the material
+    // that is supposed to be stone came out as an earth bank. Neutral survives the same
+    // surround and still reads as rock, so the warm cast is gone and the separation from
+    // granite is carried by value and saturation instead: this is lighter (luma 97 vs 84)
+    // and far less blue than granite's #4b5563.
+    //
+    // "DARK" IS RELATIVE TO LIMESTONE, WHICH IS NEAR-WHITE. It cannot also be dark against
+    // the water: base #1a2560 is luma 39, deep #0a0f30 is 16, and a hazard below those
+    // disappears on the one venue that most needs its rocks seen. The tightest case is the
+    // SHALLOW band (#27407e, luma 63) — the water rocks actually sit in — and this holds
+    // ~1.5x there, which the darker candidates did not.
+    //
+    // No LAND_TEXTURES row, so it fills flat with lit facets over it. Fine at race scale,
+    // and where granite started; add a tile at the venue's art pass.
+    karst:    { body: '#5d6068', stroke: '#24262b', veg: '#414a44', rock: '#7d8087', trees: false },
     // Sandy shoal — WET sand, deliberately darker than the dry beach above it.
     //
     // This used to be set equal to `tropical` on the principle that a bar is the beach
@@ -19978,7 +20969,10 @@ function bakeIslandSprite(isl) {
     const VERTS = isFloe ? isl.localArt : isl.vertices;
     const VEG = isFloe ? isl.localVeg : isl.vegVertices;
     const ox = isFloe ? 0 : isl.x, oy = isFloe ? 0 : isl.y;
-    const trace = (isl.style === 'ice' || isl.style === 'granite') ? traceAngularPoly : traceRoundedPoly;
+    // Karst joins ice and granite on the angular tracer: limestone weathers into fissures
+    // and sharp ribs, and the rounded tracer would draw it as a sandbank.
+    const trace = (isl.style === 'ice' || isl.style === 'granite' || isl.style === 'karst')
+        ? traceAngularPoly : traceRoundedPoly;
 
     let maxR = isl.radius;
     for (const v of VERTS) {
@@ -20042,7 +21036,7 @@ function bakeIslandSprite(isl) {
     // Granite: a full fan of flat-shaded faces from the summit to every edge,
     // so the mountain reads as low-poly relief rather than a grey blob. Four
     // flat tones, hard edges, no gradients — the reference art's language.
-    if (isl.style === 'granite' && isl.facets && isl.facets.length) {
+    if ((isl.style === 'granite' || isl.style === 'karst') && isl.facets && isl.facets.length) {
         const GREY = ['#2a323d', '#39424f', '#4b5563', '#5d6775'];
         for (const f of isl.facets) {
             const v1 = VERTS[f.i % VERTS.length];
@@ -20702,6 +21696,11 @@ function initCourse() {
         // and marched off the map. Their layout keys on the race seed, so restarting
         // re-deals them; the trades they march are this course's own.
         initSqualls();
+        // Traffic, on the same path and for a simpler reason: it needs state.course.doc,
+        // and every door into a race passes through here. Its vessels are pure functions
+        // of the race clock, so this only compiles the path tables — there is no live
+        // position to reset and restarting re-runs the same schedule identically.
+        initTraffic();
         // Same reason, and the same trap: this is the path every venue takes. It samples
         // the mean wind over sailable WATER, so it needs the boundary and every land shape
         // — floes included — already settled.

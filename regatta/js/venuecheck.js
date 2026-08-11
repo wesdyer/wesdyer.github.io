@@ -57,6 +57,16 @@ const eachEdge = function* (shape) {
 
 // Closest approach between two land shapes, with the witness segment so the
 // editor can draw the gap it is complaining about.
+// The two marks that ARE the start line. The route's first entry names them; falling
+// back to the first two marks is what the checks used to do unconditionally, and it is
+// only correct for a generated windward-leeward where the line happens to be listed
+// first. Kept as the fallback for a document with no route at all.
+function startLineMarks(marks, route) {
+    const startEntry = (route || [])[0];
+    const lm = (startEntry && startEntry.marks) || [0, 1];
+    return [marks[lm[0]] || marks[0], marks[lm[1]] || marks[1]];
+}
+
 function shapeGap(a, b) {
     let best = Infinity, wa = null, wb = null;
     for (const ea of eachEdge(a)) {
@@ -242,8 +252,23 @@ function runChecks(ctx) {
     // 4. START LINE. Both ends have to be usable: with ten boats on an 1100-unit
     //    line, an end tight against the beach makes that end unsailable and the
     //    whole fleet funnels to the other one.
+    //
+    // ⚠️ THE START LINE IS THE ROUTE'S START GATE, NOT THE FIRST TWO MARKS. These checks
+    // used `marks[0]`/`marks[1]` directly, which is the same line only by luck: a course
+    // GENERATED as a windward-leeward lists the start pin and committee boat first, so
+    // every venue that came out of the generator passed and the assumption was never
+    // tested. Author a course in the editor and the marks array is in creation order —
+    // Glowtide Strait lists its windward can first, so all three start checks were
+    // measuring a 1.4 km diagonal from the windward mark to a gate mark, and reporting
+    // it as a start line touching land with its midpoint ashore and the whole fleet on
+    // the wrong side. Three false errors on a start that is fine.
+    //
+    // The route already says which marks the line is, and the orientation check below
+    // was already reading it correctly — this is that same lookup, hoisted so every
+    // check shares one answer.
     if (marks.length >= 2) {
-        const p = [marks[0].x, marks[0].y], q = [marks[1].x, marks[1].y];
+        const [sp, sq] = startLineMarks(marks, compiled.route);
+        const p = [sp.x, sp.y], q = [sq.x, sq.y];
         const lineLen = Math.hypot(q[0] - p[0], q[1] - p[1]);
         let nearest = { dist: Infinity, id: null, at: null };
         for (const l of land) {
@@ -273,8 +298,7 @@ function runChecks(ctx) {
         const nextEntry = (compiled.route || [])[1];
         const islandLoop = nextEntry && nextEntry.mark && nextEntry.mark.radius >= 100;
         if (startEntry && nextEntry && !islandLoop) {
-            const lm = startEntry.marks || [0, 1];
-            const P = marks[lm[0]] || marks[0], Q = marks[lm[1]] || marks[1];
+            const [P, Q] = startLineMarks(marks, compiled.route);
             let target = null;
             if (nextEntry.mark) target = { x: nextEntry.mark.x, y: nextEntry.mark.y };
             else if (nextEntry.marks && marks[nextEntry.marks[0]] && marks[nextEntry.marks[1]]) {
@@ -326,7 +350,11 @@ function runChecks(ctx) {
             }
         }
         const cellOf = (wx, wy) => [Math.floor((wx - x0) / res), Math.floor((wy - y0) / res)];
-        const seed = cellOf((marks[0].x + marks[1].x) / 2, (marks[0].y + marks[1].y) / 2);
+        // Seeded on the START LINE's own midpoint — see the note at check 4. Seeded from
+        // marks[0]/marks[1] this reported an authored course's midpoint as 'not in water',
+        // because the point it tested was nowhere near the line.
+        const [np_, nq_] = startLineMarks(marks, compiled.route);
+        const seed = cellOf((np_.x + nq_.x) / 2, (np_.y + nq_.y) / 2);
         const seen = new Uint8Array(n * n);
         if (water[idx(seed[0], seed[1])]) {
             const stack = [seed];
@@ -375,36 +403,54 @@ function runChecks(ctx) {
             // can exceed the square, so sample rather than do arithmetic that only
             // holds for the inscribed case (an earlier version reported "-57% out of
             // bounds", which is not a quantity).
-            const size = (doc.world && doc.world.size) || Math.max(ex.maxX - ex.minX, ex.maxY - ex.minY);
-            const half = size / 2;
-            let inMap = 0, inArena = 0, inBoth = 0;
+            // ⚠️ MEASURED AGAINST THE AUTHORED GEOMETRY, NOT `world.size`. This used to
+            // sample a square of `doc.world.size` centred on the origin and call anything
+            // outside it "unpainted water the mask never described". That sentence is only
+            // true of a MASK venue, and arctic is the only one left — and even it bakes its
+            // mask to polygons at import, so what actually gets drawn anywhere is the shape
+            // list. On a venue authored in the editor `world.size` is inherited metadata
+            // describing a square nothing renders: Glowtide Strait carries 3656 from its
+            // freeze while its arena spans 8300 x 10200, so the check called 78% of a
+            // perfectly good arena unpainted and asked the designer to fix the one thing
+            // that was right — land drawn well past the limit, on purpose, so that a boat
+            // at the edge has a horizon.
+            //
+            // The real question is whether the authored world runs out before the arena
+            // does, and the extent of the land shapes answers it. This is deliberately the
+            // weaker half of a pair: check 2 above ("Scenery beyond the arena") owns the
+            // same concern and states it better, so this one reports and warns only when
+            // the geometry genuinely falls well short.
+            let lx0 = Infinity, ly0 = Infinity, lx1 = -Infinity, ly1 = -Infinity;
+            for (const l of land) for (const pt of l.outer) {
+                if (pt[0] < lx0) lx0 = pt[0];
+                if (pt[1] < ly0) ly0 = pt[1];
+                if (pt[0] > lx1) lx1 = pt[0];
+                if (pt[1] > ly1) ly1 = pt[1];
+            }
+            const ae2 = window.Arena.extent(bnd);
+            const havePainted = isFinite(lx0);
+            let inArena = 0, inBoth = 0;
             const N = 160;
-            // Sample over the union's bounding box so both fractions are valid. The box
-            // is loop-invariant — it was being recomputed for all 25,600 samples.
-            const ae = window.Arena.extent(bnd);
-            const ext = Math.max(half, (ae.maxX - ae.minX) / 2, (ae.maxY - ae.minY) / 2) * 1.02;
-            for (let j = 0; j < N; j++) {
-                for (let i = 0; i < N; i++) {
-                    const wx = (ae.minX + ae.maxX) / 2 - ext + (2 * ext) * (i + 0.5) / N;
-                    const wy = (ae.minY + ae.maxY) / 2 - ext + (2 * ext) * (j + 0.5) / N;
-                    const m = Math.abs(wx) <= half && Math.abs(wy) <= half;
-                    const ar = window.Arena.contains(bnd, wx, wy);
-                    if (m) inMap++;
-                    if (ar) inArena++;
-                    if (m && ar) inBoth++;
+            if (havePainted) {
+                for (let j = 0; j < N; j++) {
+                    for (let i = 0; i < N; i++) {
+                        const wx = ae2.minX + (ae2.maxX - ae2.minX) * (i + 0.5) / N;
+                        const wy = ae2.minY + (ae2.maxY - ae2.minY) * (j + 0.5) / N;
+                        if (!window.Arena.contains(bnd, wx, wy)) continue;
+                        inArena++;
+                        if (wx >= lx0 && wx <= lx1 && wy >= ly0 && wy <= ly1) inBoth++;
+                    }
                 }
             }
-            const mapCovered = inMap ? 100 * inBoth / inMap : 0;
             const arenaUnpainted = inArena ? 100 * (1 - inBoth / inArena) : 0;
-            // Only ONE of these is a defect. Painted map OUTSIDE the arena is scenery
-            // — deliberately so, since the arena bounds boats and the map bounds what
-            // there is to look at. Arena INSIDE no painted map is the problem: water a
-            // boat may sail into that the mask never described.
-            add(arenaUnpainted > 5 ? 'warn' : 'ok', 'arena-coverage', 'Arena vs map',
-                `${bnd.poly ? `${bnd.poly.length}-gon arena` : `Arena r=${M(bnd.radius)}`}`
-                + ` on a ${M(size)} square map: `
-                + `${arenaUnpainted.toFixed(0)}% of the arena is unpainted water`
-                + ` (${(100 - mapCovered).toFixed(0)}% of the map lies outside the arena, as scenery)`);
+            add(arenaUnpainted > 25 ? 'warn' : 'ok', 'arena-coverage', 'Arena vs map',
+                havePainted
+                    ? `${bnd.poly ? `${bnd.poly.length}-gon arena` : `Arena r=${M(bnd.radius)}`}`
+                      + ` against authored geometry spanning ${M(lx1 - lx0)} x ${M(ly1 - ly0)}: `
+                      + (arenaUnpainted > 25
+                          ? `${arenaUnpainted.toFixed(0)}% of the arena lies beyond any authored shape`
+                          : 'the authored world reaches the whole sailing limit')
+                    : 'No land shapes authored — nothing to compare the arena against');
         } else {
             add('error', 'navigable', 'Navigability', 'The start line midpoint is not in water');
         }
@@ -414,7 +460,10 @@ function runChecks(ctx) {
     //    than from a reimplementation of repositionBoats. Catches a fleet spawned
     //    on land, straddling its own line, or stacked in one column.
     if (boats && boats.length && marks.length >= 2) {
-        const p = [marks[0].x, marks[0].y], q = [marks[1].x, marks[1].y];
+        // The real line again — with the wrong one, 'wrong side' is measured against a
+        // normal belonging to a line the fleet was never on, and reports all ten boats.
+        const [fp, fq] = startLineMarks(marks, compiled.route);
+        const p = [fp.x, fp.y], q = [fq.x, fq.y];
         const nx = q[1] - p[1], ny = -(q[0] - p[0]);
         const dir = ((compiled.route || [])[0] || {}).dir || 1;
         const onLand = [], wrongSide = [];

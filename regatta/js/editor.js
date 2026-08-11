@@ -32,7 +32,7 @@ let selFinding = -1;
 // MODE is what you are editing; only that type is interactive, so a click can never
 // grab the wrong kind of thing. `tool` is derived from it so the render code keeps its
 // existing vocabulary.
-let mode = 'map';             // map (the Course) | shape | marks | route | boundary | wind | gust | current | venue
+let mode = 'map';             // map (the Course) | shape | marks | route | boundary | wind | gust | current | traffic | venue
 let sub = 'drag';             // the active TOOL: drag | direct | place | sculpt | smooth | roughen | simplify | measure
 let drawing = false;          // shape mode, mid-draw
 let tool = 'select';
@@ -109,6 +109,92 @@ const isRegionMode = (m) => !!REGION[m];
 let selProp = -1;
 let selProps = [];              // multi-select: row indices; selProp stays the primary
 const dprops = () => (doc && doc.props) || [];
+// Traffic: vessels on rails. Like props, these are discrete objects with their own
+// inspector rather than polygons, so they carry their own selection instead of joining
+// `osel` — but unlike a prop a vessel owns a PATH, so a second index says which of its
+// points is in hand. Same read-only rule again: `doc.traffic` is created on the write path.
+let selTraf = -1;               // which vessel
+let selTV = -1;                 // which of its path points, -1 for none
+// The kind the NEXT lane gets, carried from the last one whose kind was set. Drawing three
+// motorboat routes should not mean picking "motorboat" three times.
+let trafficKind = 'bay-cove-cargo-ship';
+// Set while Draw is EXTENDING an existing lane rather than starting a new one: which
+// vessel, and which end is growing. `pending` holds only the new points either way.
+let extendLane = null;
+// Where the scrubber is, in seconds from the START GUN — negative during the prestart, the
+// same clock `firstSpawn` is authored against. Null means "not scrubbing", which is how the
+// layer looks before the slider is touched.
+let trafficT = null;
+const dtraffic = () => (doc && doc.traffic) || [];
+// One place a vessel is born, so the list button and the Draw tool cannot drift apart on
+// what a new one carries.
+function newTrafficEntry(path) {
+    const kinds = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    // The same gate the inspector applies: a vessel needs a measured hull.
+    const vessels = Object.keys(kinds).filter(k => Array.isArray(kinds[k].hull));
+    const kind = vessels.includes(trafficKind) ? trafficKind
+               : (vessels.find(k => /cargo-ship$/.test(k)) || vessels[0] || Object.keys(kinds)[0]);
+    const arr = dtrafficW();
+    let n = 1;
+    while (arr.some(x => x.id === `ship-${n}`)) n++;
+    // THE SPEED LIVES ON THE FIRST WAYPOINT, not on the entry. Every point inherits the last
+    // one named before it, so one speed on point 0 carries the whole lane — and the entry
+    // needs no speed field of its own competing to say the same thing.
+    if (path.length && !isFinite(tpSpeed(path[0]))) {
+        if (Array.isArray(path[0])) path[0][2] = 4; else path[0].speed = 4;
+    }
+    return { id: `ship-${n}`, kind, path, firstSpawn: 0, end: 'despawn' };
+}
+
+// What the CURVE would point the hull at this waypoint, so the heading field can show it as
+// a placeholder — the field then reads as an override of something visible rather than as a
+// blank that might mean north.
+function trafficHeadingAt(v, k) {
+    const c = trafficCurve(v);
+    if (!c || !c.knotS || c.knotS[k] == null) return 0;
+    // Against a copy with the authored headings stripped, or the placeholder would just
+    // echo whatever is already typed in the box.
+    const bare = window.Traffic.compilePath({
+        speed: v.speed,
+        path: v.path.map(p => Array.isArray(p) ? p.slice(0, 3)
+                                              : { x: p.x, y: p.y, speed: p.speed, dwell: p.dwell })
+    });
+    return bare ? bare.atArc(bare.knotS[k]).heading : 0;
+}
+
+// The window a race actually occupies: the prestart the document authors (or the game's own
+// 30 s default) through to the limit it will be sailed under. Scrubbing outside that answers
+// a question nobody is asking.
+function raceWindow() {
+    const c = (doc && doc.course) || {};
+    const start = c.startTime != null ? c.startTime : 30;
+    let limit = c.cutoff;
+    if (limit == null) { try { limit = window.VenueDoc.compile(doc).cutoffAuto; } catch (e) { limit = 0; } }
+    return { from: -start, to: Math.max(60, limit || 300) };
+}
+const mmssSigned = (sec) => {
+    const n = Math.abs(Math.round(sec));
+    return `${sec < 0 ? '−' : ''}${String(Math.floor(n / 60)).padStart(2, '0')}:${String(n % 60).padStart(2, '0')}`;
+};
+
+// A NAME is a label, never the id. Renaming must not be able to break a reference, which is
+// the same reason every other object here carries `name` beside an untouched `id`.
+const trafficLabel = (v) => (v && (v.name || v.id)) || 'vessel';
+const dtrafficW = () => { if (!doc.traffic) doc.traffic = []; return doc.traffic; };
+// A path point is [x, y] or {x, y, speed}. Both spellings are legal in the document — one
+// speed throughout should not have to be written as objects — so every reader goes through
+// these rather than assuming a shape.
+const tpx = (p) => (Array.isArray(p) ? p[0] : p.x);
+const tpy = (p) => (Array.isArray(p) ? p[1] : p.y);
+const tpSpeed = (p) => (Array.isArray(p) ? p[2] : p.speed);
+const tpSet = (p, x, y) => { if (Array.isArray(p)) { p[0] = x; p[1] = y; } else { p.x = x; p.y = y; } };
+// The speed IN FORCE at point i: its own if it names one, else the last named before it,
+// else the entry's. This is the rule compilePath applies, restated here so the editor
+// shows what the game will actually sail rather than a blank.
+function tpSpeedAt(v, i) {
+    for (let k = i; k >= 0; k--) { const s = tpSpeed(v.path[k]); if (isFinite(s)) return s; }
+    return isFinite(v.speed) ? v.speed : 4;
+}
 // One anchor/cursor pair serves every list: the ANCHOR is where a range grows from
 // (set by a plain click or a plain arrow move), the CURSOR is the row the last gesture
 // landed on. Both are DISPLAY-ORDER row indices for whatever list is active, and both
@@ -223,12 +309,25 @@ const eachRing = (l) => [l.outer].concat(l.holes || []);
 const LAND_TYPES = [
     { kind: 'bank',      label: 'Bank',       swatch: '#6b7280' },
     { kind: 'coralreef', label: 'Coral Reef', swatch: '#8a8468' },
+    // Lighthouse Cove's two grounds. Both swatches track ISLAND_STYLES.<kind>.body, so the
+    // chip is the material — and both bodies are still their tile's SPEC mean, so these move
+    // when the art is ingested and the body is reset to the delivered mean.
+    { kind: 'coastalrock',  label: 'Coastal Rock',  swatch: '#a19481' },
+    { kind: 'coastalscrub', label: 'Coastal Scrub', swatch: '#a3a745' },
     { kind: 'floe',    label: 'Floe',    swatch: '#7dd3fc' },
     { kind: 'granite', label: 'Granite', swatch: '#8d8d8d' },
+    // Swatch tracks ISLAND_STYLES.karst.body, so the chip is the material.
+    { kind: 'karst',   label: 'Dark Karst Limestone', swatch: '#5d6068' },
     { kind: 'reed',    label: 'Grass',   swatch: '#7aaa1d' },
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
-    { kind: 'isle',        label: 'Sand',             swatch: '#e8dcb1' },
+    // LABEL ONLY — the kind stays `isle`, which every venue doc on disk already names.
+    // Renamed from plain "Sand" because the cove's other two grounds are Coastal Rock and
+    // Coastal Scrub, and the sort below is by LABEL, so this now files with them instead of
+    // eight rows away under S. Worth knowing it is not bay-only: `isle` is the shared beach
+    // for bay, lake and lagoon (see LAND_TEXTURES.tropical), so the name has to stay true
+    // for all three — "Coastal" is, where "Cape" would not have been.
+    { kind: 'isle',        label: 'Coastal Sand',     swatch: '#e8dcb1' },
     // Swatch tracks ISLAND_STYLES.shoal.body. These had drifted to three different answers
     // — the renderer on the dry-beach tan, this chip on a third value, and neither on the
     // wet sand a bar actually is. The chip is what a designer picks from, so it has to be
@@ -1046,6 +1145,11 @@ const LAYERS = [
     // stands on, under everything that races.
     { id: 'props',    mode: 'props',   name: 'Props',  icon: 'palm',
       count: () => dprops().length || null },
+    // Vessels on rails. Beside Props because the art is the same registry and the same
+    // sprites — but a traffic entry owns a path, a schedule and a lee, none of which a prop
+    // has any business carrying, so it is its own layer and its own document section.
+    { id: 'traffic',  mode: 'traffic', name: 'Traffic', icon: 'ship',
+      count: () => dtraffic().length || null },
     { id: 'wind',     mode: 'wind',    name: 'Wind',   icon: 'wind',
       count: () => wregs().length || null },
     // Under Wind, because gusts ARE wind — they are just not MEAN wind. A wind region
@@ -1073,6 +1177,8 @@ const hidden = new Set();
 const shown = (id) => !hidden.has(id);
 
 const LAYER_ICON = {
+    ship: '<path d="M2 9.5h10l-1.2 3.2H3.4z" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>'
+        + '<path d="M4 9.5V6h5l1.6 3.5M6.5 6V3.6h1.4" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>',
     // A single swell with a crest — the surface itself. The two-line glyph it used to carry
     // reads as flow, which is the current's job now.
     wave:  '<path d="M1 6.6c1.5-1.8 3-1.8 4.5 0s3 1.8 4.5 0 2-1.2 3 0V12H1z" fill="currentColor" opacity=".85"/>',
@@ -1382,7 +1488,7 @@ const TOOLS = [
     { id: 'direct', key: 'A', name: 'Direct', icon: '<path d="M4 3l9 6.5-4 .6L7.6 14z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>',
       on: () => sub === 'direct', enabled: () => modeObjects().length > 0 },
     { id: 'draw', key: 'P', name: 'Draw', icon: '<path d="M8 2.5l5 4-2 6H5l-2-6z" stroke="currentColor" stroke-width="1.3" fill="none"/>',
-      on: () => drawing, enabled: () => mode === 'shape' || isRegionMode(mode) },
+      on: () => drawing, enabled: () => mode === 'shape' || mode === 'traffic' || isRegionMode(mode) },
     // The brushes act on whatever outline falls under the disc, so they are enabled wherever
     // this layer HAS outlines — land, ice, the arena, a wind or current region.
     { id: 'sculpt', key: 'S', name: 'Sculpt', icon: '<circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.3" fill="none"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/>',
@@ -1435,10 +1541,10 @@ function pickTool(id) {
         // Only jump to Land from a layer that cannot draw at all. Forcing the layer switch
         // unconditionally meant arming Draw on Wind silently took you somewhere else.
         if (mode !== 'shape' && !isRegionMode(mode)) setMode('shape');
-        drawing = !drawing; if (!drawing) pending = null;
+        drawing = !drawing; if (!drawing) { pending = null; extendLane = null; }
         sub = 'drag';
     } else {
-        drawing = false; pending = null;
+        drawing = false; pending = null; extendLane = null;
         sub = (id === 'select') ? 'drag' : id;
         if (sub !== 'measure') boatProbe = null;   // the boat is part of the ruler
     }
@@ -1452,8 +1558,11 @@ const MODS = {
     // GESTURES only. Duplicate and Delete are buttons on the selection bar with their keys
     // in the tooltip, so repeating them here just crowded the row until it truncated —
     // the hint bar is for the things that have no visible affordance.
-    select: ['click picks a whole shape', '⇧ click adds', 'drag a box to select several',
-             '⌘ drag rotate', '⌥ drag scale'],
+    select: () => mode === 'traffic'
+        ? ['click a lane to select it', 'drag a waypoint to move it', 'drag the lane to slide it all',
+           'double-click the lane adds a waypoint', '⌫ deletes the waypoint, or the vessel']
+        : ['click picks a whole shape', '⇧ click adds', 'drag a box to select several',
+           '⌘ drag rotate', '⌥ drag scale'],
     direct: ['click picks a vertex', '⇧ click adds', 'drag a box to select several',
              'double-click an edge inserts', '⌫ delete'],
     // A FUNCTION, not an array: Place means two different gestures depending on the layer,
@@ -1464,7 +1573,13 @@ const MODS = {
            'Select (V) to marquee what you placed']
         : ['drag out a floe — the drag sets its size', 'tap for a default one',
            'scatter on the left drops several per drag'],
-    draw: ['click to drop points', '⏎ or double-click closes', 'click the first point to close',
+    // A FUNCTION for the same reason `place` is one: Draw means an OPEN lane on Traffic and a
+    // closed ring everywhere else, and the two end differently — a lane has no first point to
+    // click back to.
+    draw: () => mode === 'traffic'
+        ? ['click to drop waypoints', '⏎ or double-click ends the lane',
+           'click an end of the selected lane to extend it', 'esc cancels']
+        : ['click to drop points', '⏎ or double-click closes', 'click the first point to close',
            'esc cancels'],
     sculpt: ['drag to pull nearby vertices', '[ ] brush size'],
     smooth: ['drag to relax wobble', '[ ] brush size'],
@@ -1642,7 +1757,7 @@ function drawDriftingFloes() {
 // Sand at a glance. The schematic still gives it a solid outline where the game gives it a
 // gradient: here you are dragging vertices and you have to be able to see where they are.
 const KIND_FILL = {
-    granite: '#8d8d8d', redrock: '#c2703e', reed: '#7aaa1d', swampgrass: '#a09453',
+    granite: '#8d8d8d', karst: '#5d6068', redrock: '#c2703e', reed: '#7aaa1d', swampgrass: '#a09453',
     isle: '#e8dcb1', ice: '#e8edf5', bank: '#6b7280', floe: 'rgba(125,211,252,0.55)',
     shoal: 'rgba(232,220,177,0.38)',
     // The painted water zones are translucent like the shoal — you can see the water
@@ -1665,10 +1780,21 @@ const KIND_FILL = {
     mud: '#524731', marsh: '#685c37',
     mudflat: 'rgba(110,100,73,0.42)',
     weedbed: 'rgba(42,68,40,0.38)', lilybed: 'rgba(96,128,62,0.46)',
-    weedmat: 'rgba(92,126,64,0.62)', duckweed: 'rgba(132,166,76,0.55)'
+    weedmat: 'rgba(92,126,64,0.62)', duckweed: 'rgba(132,166,76,0.55)',
+    // ⚠️ LIGHTHOUSE COVE'S TWO GROUNDS, AND THE REASON THIS TABLE IS EASY TO FORGET.
+    // A new land kind needs FIVE rows — SHAPE_KINDS, ISLAND_STYLES, LAND_TEXTURES,
+    // LAND_TYPES and this — and only the miss here is silent. The fill lookup below is
+    // `KIND_FILL[kind] || KIND_FILL.isle`, so a kind with no row does not draw wrong in an
+    // obvious way or throw: it draws as SAND, which is a real material and looks deliberate.
+    // Coastal Rock and Coastal Scrub both shipped like that for exactly one session, and
+    // they were indistinguishable from Coastal Sand in the schematic while the game itself
+    // rendered them correctly — the worst possible split, because the editor is where you
+    // would look. Both grounds are dry land, so both are solid, per this table's rule that
+    // only what you may sail over is translucent.
+    coastalrock: '#a19481', coastalscrub: '#a3a745'
 };
 const KIND_EDGE = {
-    granite: '#c9c9c9', redrock: '#8a4a26', reed: '#5c8438', swampgrass: '#7d7048',
+    granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', swampgrass: '#7d7048',
     isle: '#d4b483', ice: '#ffffff', bank: '#9ca3af', floe: 'rgba(224,242,254,0.7)',
     shoal: 'rgba(232,220,177,0.75)',
     shallows: 'rgba(56,189,248,0.8)', seagrass: 'rgba(122,160,120,0.9)',
@@ -1677,7 +1803,12 @@ const KIND_EDGE = {
     mud: '#3d3421', marsh: '#4d4324',
     mudflat: 'rgba(110,100,73,0.8)',
     weedbed: 'rgba(74,112,74,0.85)', lilybed: 'rgba(140,176,100,0.9)',
-    weedmat: 'rgba(150,182,110,0.9)', duckweed: 'rgba(178,208,120,0.9)'
+    weedmat: 'rgba(150,182,110,0.9)', duckweed: 'rgba(178,208,120,0.9)',
+    // Each is its own ISLAND_STYLES stroke, so the schematic outline is the same colour the
+    // game draws the coastline in. Darker than the fill, with the earth and vegetation kinds
+    // above rather than lighter with granite and karst: these two are neither bright enough
+    // to need a light edge nor dark enough to lose a dark one.
+    coastalrock: '#6f6556', coastalscrub: '#7d7e3c'
 };
 
 function drawLandLayer() {
@@ -2101,6 +2232,9 @@ const LAYER_STEPS = [
     ['land',    () => drawLandLayer()],
     // Props between the land and the course furniture — the game's own draw order.
     ['props',   () => { if (shown('props')) drawPropsLayer(); }],
+    // Over the props, under the course furniture — the game's own order, where traffic
+    // draws with the surface props and below the marks.
+    ['traffic', () => { if (shown('traffic')) drawTrafficLayer(); }],
     ['course',  () => drawCourseLayer()],
     ['venue',   () => drawPlacedIce()],   // the Place gesture only; shapes paint with 'land'
     ['props',   () => drawPlacedProps()], // the scatter circle, while the drag is live
@@ -2111,7 +2245,7 @@ const LAYER_STEPS = [
 // Marks and Route both draw the course furniture, so either one raises it.
 const ACTIVE_LAYER = { boundary: 'arena', shape: 'land',
                        marks: 'course', route: 'course', wind: 'wind', current: 'current',
-                       gust: 'gust', props: 'props' };
+                       gust: 'gust', props: 'props', traffic: 'traffic' };
 
 // The REAL sprites, not stand-in circles: a prop layer exists to judge placement, and
 // you cannot judge a palm's overhang from a dot. Same src derivation the game uses
@@ -2156,6 +2290,304 @@ function drawPropsLayer() {
     }
 }
 
+// ── TRAFFIC ─────────────────────────────────────────────────────────────────
+// THE EDITOR DRAWS THE CURVE THE GAME SAILS, by compiling the path with the game's own
+// js/traffic.js rather than drawing the authored polyline and hoping. A hand-drawn preview
+// would be a second implementation of the smoothing, and the first thing it would do is
+// disagree with the real one on exactly the tight corners where it matters.
+// Compiling a lane walks 64 samples per leg, and drawTrafficLayer asks for every lane on
+// every frame — including every frame of a waypoint drag. Cached on the entry's own JSON, so
+// an edit invalidates exactly the lane that changed and nothing else.
+const _curveCache = new Map();
+function trafficCurve(v) {
+    if (!window.Traffic || !v || !v.path || v.path.length < 2) return null;
+    let key;
+    try { key = JSON.stringify(v); } catch (e) { key = null; }
+    if (key && _curveCache.has(key)) return _curveCache.get(key);
+    let c = null;
+    try { c = window.Traffic.compilePath(v); } catch (err) { c = null; }
+    if (key) {
+        if (_curveCache.size > 64) _curveCache.clear();   // a scratch cache, not a store
+        _curveCache.set(key, c);
+    }
+    return c;
+}
+
+// ── CLASHES: TWO HULLS IN THE SAME WATER AT THE SAME SECOND ──────────────────────────
+// Lanes that cross are fine — lanes that cross AT THE SAME TIME are not, and nothing about
+// looking at two curves tells you which you have. This is the whole reason the clock exists,
+// answered once for the entire window instead of by dragging the slider and hoping.
+//
+// The hull model is the game's: a capsule, spine plus radius, off the kind's measured `hull`.
+// Anything else would flag clashes the race would not have, or miss ones it would.
+function segSegDist(a1, a2, b1, b2) {
+    const ux = a2.x - a1.x, uy = a2.y - a1.y;
+    const vx = b2.x - b1.x, vy = b2.y - b1.y;
+    const wx = a1.x - b1.x, wy = a1.y - b1.y;
+    const a = ux * ux + uy * uy, b = ux * vx + uy * vy, c = vx * vx + vy * vy;
+    const d = ux * wx + uy * wy, e = vx * wx + vy * wy;
+    const D = a * c - b * b;
+    let sc, tc;
+    if (D < 1e-9) { sc = 0; tc = c > 1e-9 ? e / c : 0; }
+    else { sc = (b * e - c * d) / D; tc = (a * e - b * d) / D; }
+    sc = Math.max(0, Math.min(1, sc)); tc = Math.max(0, Math.min(1, tc));
+    // One clamp each is enough for the tolerance this needs; the capsule radii dwarf the
+    // error a second refinement pass would remove.
+    const px = a1.x + ux * sc - (b1.x + vx * tc);
+    const py = a1.y + uy * sc - (b1.y + vy * tc);
+    return Math.hypot(px, py);
+}
+
+function hullOf(v) {
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const kd = reg[v.kind] || {};
+    const hull = v.hull || kd.hull || [0.9, 0.3];
+    const w = (kd.world || 40) * (v.scale || 1);
+    const len = (hull.along != null ? hull.along : hull[0]) * w;
+    const beam = (hull.beam != null ? hull.beam : hull[1]) * w;
+    return { r: beam * 0.5, half: Math.max(1, len * 0.5 - beam * 0.5) };
+}
+
+let _clashCache = { key: null, val: null };
+function trafficClashes() {
+    const list = dtraffic();
+    const win = raceWindow();
+    let key;
+    try { key = JSON.stringify(list) + '|' + win.from + '|' + win.to; } catch (e) { key = null; }
+    if (key && _clashCache.key === key) return _clashCache.val;
+
+    const out = { hit: new Set(), points: [], coarsened: false };
+    const ships = list.map(v => ({ v, c: trafficCurve(v), h: hullOf(v) })).filter(x => x.c);
+    if (ships.length >= 2) {
+        // STEP FROM THE GEOMETRY, not a round number. A sample coarser than the hulls lets a
+        // fast pair pass through each other between samples, and the step that is right for
+        // two cargo ships is far too coarse for two motorboats.
+        const minExt = Math.min(...ships.map(s => s.h.r));
+        const maxSpd = Math.max(15, ...ships.map(s => {
+            let m = 0;
+            for (const p of s.c.points) m = Math.max(m, Math.abs(p.speed) * window.Traffic.KT_TO_U_PER_S);
+            return m;
+        }));
+        let step = Math.max(0.05, Math.min(1, 0.25 * minExt / maxSpd));
+        const span = win.to - win.from;
+        if (span / step > 20000) { step = span / 20000; out.coarsened = true; }
+        // Whatever the step, a hull may have moved half a step's worth since it was last
+        // looked at, so the radius carries that. The error is toward OVER-reporting, which
+        // for a warning is the safe direction.
+        const pad = maxSpd * step * 0.5;
+
+        for (let t = win.from; t <= win.to; t += step) {
+            const now = [];
+            for (const s of ships) {
+                const l = window.Traffic.localTime(s.v, s.c, t);
+                if (!l) { now.push(null); continue; }
+                const q = s.c.at(l.t);
+                const hd = l.reverse ? q.heading + Math.PI : q.heading;
+                const fx = Math.sin(hd) * s.h.half, fy = -Math.cos(hd) * s.h.half;
+                now.push({ a: { x: q.x - fx, y: q.y - fy }, b: { x: q.x + fx, y: q.y + fy },
+                           r: s.h.r, x: q.x, y: q.y });
+            }
+            for (let i = 0; i < now.length; i++) {
+                for (let j = i + 1; j < now.length; j++) {
+                    const A = now[i], B = now[j];
+                    if (!A || !B) continue;
+                    if (segSegDist(A.a, A.b, B.a, B.b) >= A.r + B.r + pad) continue;
+                    out.hit.add(i); out.hit.add(j);
+                    // One marker per encounter, not one per sample: a slow overlap lasts many
+                    // seconds and would otherwise stamp a bead of identical rings.
+                    const last = out.points[out.points.length - 1];
+                    if (!last || last.i !== i || last.j !== j || t - last.t > 8) {
+                        out.points.push({ i, j, t, x: (A.x + B.x) / 2, y: (A.y + B.y) / 2 });
+                    } else { last.t = t; }
+                }
+            }
+        }
+    }
+    if (key) _clashCache = { key, val: out };
+    return out;
+}
+function drawTrafficLayer() {
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const list = dtraffic();
+    const clash = mode === 'traffic' ? trafficClashes() : { hit: new Set(), points: [] };
+    for (let i = 0; i < list.length; i++) {
+        const v = list[i];
+        if (!v.path || v.path.length < 2) continue;
+        const on = mode === 'traffic' && i === selTraf;
+        const bad = clash.hit.has(i);
+        const curve = trafficCurve(v);
+
+        // The lane itself. Sampled off the compiled arc-length table, so what you see is
+        // where the hull will be.
+        ctx.beginPath();
+        if (curve) {
+            const N = Math.max(24, Math.min(240, Math.round(curve.length / 40)));
+            for (let k = 0; k <= N; k++) {
+                const q = curve.atArc(curve.length * k / N);
+                const s = toS(q.x, q.y);
+                if (k === 0) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+            }
+        } else {
+            v.path.forEach((p, k) => {
+                const s = toS(tpx(p), tpy(p));
+                if (k === 0) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+            });
+        }
+        // RED MEANS THIS LANE PUTS ITS HULL IN THE SAME WATER AS ANOTHER AT THE SAME
+        // SECOND. Not that the lanes cross — crossing lanes are the whole point of traffic.
+        ctx.strokeStyle = bad ? (on ? '#f87171' : 'rgba(248,113,113,0.6)')
+                              : (on ? '#38bdf8' : 'rgba(56,189,248,0.45)');
+        ctx.lineWidth = bad ? (on ? 2.4 : 1.8) : (on ? 2 : 1.4);
+        ctx.setLineDash([]);
+        ctx.stroke();
+
+        // Which way it goes, and where the hull actually is at any moment — a lane with no
+        // arrows is a line, and half the authoring question is "does it cross the beat
+        // before or after the fleet gets there".
+        if (curve) {
+            const step = Math.max(300, curve.length / 14);
+            for (let d = step * 0.5; d < curve.length; d += step) {
+                const q = curve.atArc(d);
+                const s = toS(q.x, q.y);
+                const a = q.heading;
+                const ux = Math.sin(a), uy = -Math.cos(a);
+                const L = on ? 9 : 7;
+                ctx.beginPath();
+                ctx.moveTo(s.x + ux * L, s.y + uy * L);
+                ctx.lineTo(s.x - uy * L * 0.55 - ux * L * 0.35, s.y + ux * L * 0.55 - uy * L * 0.35);
+                ctx.lineTo(s.x + uy * L * 0.55 - ux * L * 0.35, s.y - ux * L * 0.55 - uy * L * 0.35);
+                ctx.closePath();
+                ctx.fillStyle = bad ? (on ? 'rgba(248,113,113,0.9)' : 'rgba(248,113,113,0.45)')
+                                    : (on ? 'rgba(56,189,248,0.9)' : 'rgba(56,189,248,0.4)');
+                ctx.fill();
+            }
+        }
+
+        // A ghost of the hull, at its real size. The whole reason to author a path on a map
+        // is to see whether a 720-unit ship fits through the gap you have drawn it through,
+        // and a line cannot answer that.
+        //
+        // WITH THE CLOCK RUNNING it sits where the vessel actually is at that second, and a
+        // vessel not yet spawned or already gone draws NOTHING — which is the honest answer
+        // and the one worth seeing. Idle, it sits at the head of the lane.
+        const kd = reg[v.kind];
+        const live = curve && trafficT != null ? window.Traffic.localTime(v, curve, trafficT) : null;
+        if (kd && curve && !(trafficT != null && !live)) {
+            const q = live ? curve.at(live.t) : curve.atArc(0);
+            if (live && live.reverse) q.heading += Math.PI;
+            const s = toS(q.x, q.y);
+            const w = Math.max(4, (kd.world || 40) * (v.scale || 1) * view.scale);
+            const img = propEdImg(v.kind);
+            ctx.save();
+            // Solid while scrubbing: at a given second this is not a hint about where the
+            // lane starts, it is where the ship IS.
+            ctx.globalAlpha = live ? 1 : (on ? 0.85 : 0.45);
+            ctx.translate(s.x, s.y);
+            ctx.rotate(q.heading);
+            if (img.complete && img.naturalWidth) ctx.drawImage(img, -w / 2, -w / 2, w, w);
+            else { ctx.beginPath(); ctx.arc(0, 0, w / 2, 0, Math.PI * 2); ctx.fillStyle = 'rgba(56,189,248,0.3)'; ctx.fill(); }
+            ctx.restore();
+            // A stopped vessel is worth calling out — at a dwell, or berthed by `end: stay`,
+            // it looks identical to one under way and is behaving completely differently.
+            if (live && q.stopped) {
+                const sc = toS(q.x, q.y);
+                ctx.font = '600 10px Archivo, system-ui, sans-serif';
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'rgba(226,232,240,0.95)';
+                ctx.fillText('waiting', sc.x, sc.y - w / 2 - 8);
+            }
+        }
+
+        // Handles, only on the selected vessel — every path showing its points at once is
+        // a field of dots nobody can aim at.
+        if (on) {
+            for (let k = 0; k < v.path.length; k++) {
+                const s = toS(tpx(v.path[k]), tpy(v.path[k]));
+                const own = isFinite(tpSpeed(v.path[k]));
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, k === selTV ? 6 : 4.5, 0, Math.PI * 2);
+                // A point that NAMES a speed is filled; one that inherits is hollow. That is
+                // the single most useful thing to see at a glance on a lane being tuned.
+                ctx.fillStyle = own ? '#38bdf8' : '#0b1220';
+                ctx.fill();
+                ctx.strokeStyle = k === selTV ? '#fff' : '#38bdf8';
+                ctx.lineWidth = k === selTV ? 2 : 1.3;
+                ctx.stroke();
+                if (own) {
+                    ctx.font = '600 10px Archivo, system-ui, sans-serif';
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+                    ctx.fillStyle = 'rgba(226,232,240,0.95)';
+                    ctx.fillText(`${tpSpeed(v.path[k])}kt`, s.x + 9, s.y - 8);
+                }
+            }
+        }
+    }
+    // WHERE and WHEN, because "one of these two lanes is wrong" is not yet an actionable
+    // answer. Drawn after every lane so a marker is never buried under a later one.
+    for (const c of clash.points) {
+        const sc = toS(c.x, c.y);
+        ctx.beginPath();
+        ctx.arc(sc.x, sc.y, 9, 0, Math.PI * 2);
+        ctx.strokeStyle = '#f87171'; ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(sc.x, sc.y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#f87171'; ctx.fill();
+        ctx.font = '600 10px Archivo, system-ui, sans-serif';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        const label = mmssSigned(c.t);
+        const wLbl = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(8,15,30,0.85)';
+        ctx.fillRect(sc.x + 12, sc.y - 8, wLbl + 8, 16);
+        ctx.fillStyle = '#fca5a5';
+        ctx.fillText(label, sc.x + 16, sc.y);
+    }
+
+    // The lane being drawn right now.
+    if (mode === 'traffic' && drawing && pending) {
+        // When EXTENDING, the run starts at the lane's existing end — without it the first
+        // new leg appears to begin in open water, unattached to the lane it is growing.
+        const anchor = [];
+        if (extendLane) {
+            const v = dtraffic()[extendLane.i];
+            if (v && v.path.length) {
+                const q = extendLane.atStart ? v.path[0] : v.path[v.path.length - 1];
+                anchor.push([tpx(q), tpy(q)]);
+            }
+        }
+        const run = anchor.concat(pending);
+        if (!run.length) return;
+        ctx.beginPath();
+        run.forEach((p, k) => {
+            const s = toS(p[0], p[1]);
+            if (k === 0) ctx.moveTo(s.x, s.y); else ctx.lineTo(s.x, s.y);
+        });
+        const last = toS(run[run.length - 1][0], run[run.length - 1][1]);
+        const cur = lastMouse ? { x: lastMouse.sx, y: lastMouse.sy } : last;
+        ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 1.8; ctx.setLineDash([]);
+        ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(cur.x, cur.y);
+        ctx.strokeStyle = 'rgba(56,189,248,0.7)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+        ctx.stroke(); ctx.setLineDash([]);
+        for (const p of run) {
+            const s = toS(p[0], p[1]);
+            ctx.beginPath(); ctx.arc(s.x, s.y, 4.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#38bdf8'; ctx.fill();
+        }
+        ctx.font = '600 11px ' + (getComputedStyle(document.body).getPropertyValue('--ed-mono') || 'monospace');
+        const label = extendLane
+            ? `+${pending.length} · ⏎ ends the lane`
+            : `${pending.length} pt${pending.length === 1 ? '' : 's'}`
+              + (pending.length >= 2 ? ' · ⏎ ends the lane' : ' · click the next waypoint');
+        const tw = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(8,15,30,0.85)';
+        ctx.fillRect(cur.x + 12, cur.y - 9, tw + 10, 18);
+        ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(label, cur.x + 17, cur.y + 1);
+    }
+}
+
 function draw() {
     ctx.clearRect(0, 0, W(), H());
     ctx.fillStyle = '#0b1220'; ctx.fillRect(0, 0, W(), H());
@@ -2195,7 +2627,10 @@ function draw() {
     // did not change, so the only feedback that a click had registered was the shape
     // appearing whole when you closed it. Everything here is drawn in screen space so the
     // handles stay the same size however far you are zoomed out.
-    if (drawing && pending && pending.length) {
+    // TRAFFIC DRAWS ITS OWN, in drawTrafficLayer. Everything below closes the ring and
+    // fills it, which is right for an outline and wrong for a lane: a path is open, and a
+    // preview that joins the last point back to the first says it is not.
+    if (drawing && pending && pending.length && mode !== 'traffic') {
         const pts = pending.map(q => toS(q[0], q[1]));
         const cur = lastMouse ? { x: lastMouse.sx, y: lastMouse.sy } : pts[pts.length - 1];
         // Close-snap: within grabbing distance of the first point, closing is what a click
@@ -2785,6 +3220,79 @@ function objRefresh() {
             arr.splice(to, 0, arr.splice(from, 1)[0]);
             afterEdit(true, 'restack');
         });
+    } else if (mode === 'traffic') {
+        // A lane ACROSS THE VIEW, so the thing you just made is on screen and grabbable.
+        // Drawing one is still the better gesture for a real route; this is for starting
+        // from something rather than from nothing.
+        act('+ Traffic', () => {
+            const halfL = Math.max(400, 0.3 * W() / view.scale);
+            const arr = dtrafficW();
+            const v = newTrafficEntry([{ x: view.x - halfL, y: view.y }, { x: view.x + halfL, y: view.y }]);
+            arr.push(v);
+            selTraf = arr.length - 1; selTV = -1;
+            afterEdit(true, 'add vessel');
+            toast(`Added ${v.id} — drag its ends, or double-click the lane to add a waypoint`);
+        });
+        // ── THE CLOCK ────────────────────────────────────────────────────────
+        // Every vessel at one instant, which is the question authoring traffic actually
+        // asks: not "where does this lane go" but "where is everything WHEN THE FLEET IS
+        // HERE". Three ships with the same path and different spawn times are three
+        // completely different races, and no amount of looking at the lanes shows it.
+        //
+        // Rendered inside the list box, above the rows, because it belongs to the whole
+        // layer rather than to the selected vessel. Its own `oninput` deliberately does NOT
+        // call objRefresh — that would rebuild this element mid-drag and drop the pointer.
+        const win = raceWindow();
+        const at = trafficT == null ? 0 : trafficT;
+        const clash = trafficClashes();
+        const rows = dtraffic().map((v, i) => {
+            const c = trafficCurve(v);
+            const live = c && trafficT != null && window.Traffic.localTime(v, c, trafficT);
+            const bad = clash.hit.has(i);
+            return row({ i, on: i === selTraf, glyph: bad ? '⊘' : (i === selTraf ? '▶' : '▷'),
+                         name: bad ? `<span style="color:#f87171">${trafficLabel(v)}</span>` : trafficLabel(v),
+                         // While scrubbing, the count says whether this one is even out
+                         // there — an empty lane at t is the thing you are looking for.
+                         count: trafficT == null ? (c ? `${c.duration.toFixed(0)}s` : `${(v.path || []).length} pts`)
+                              : (live ? `${mmssSigned(live.t)}` : '—') });
+        }).join('') || '<div class="ob-empty">No traffic yet — Draw (P) to lay a lane.</div>';
+        box.innerHTML =
+            `<div class="tr-clock" style="padding:6px 8px 8px;border-bottom:1px solid var(--ed-line,#1e293b)">
+               <div style="display:flex;justify-content:space-between;font-size:10px;opacity:.7;margin-bottom:3px">
+                 <span>${mmssSigned(win.from)}</span>
+                 <span id="tr-now" style="font-variant-numeric:tabular-nums;opacity:${trafficT == null ? '.45' : '1'}">${trafficT == null ? 'gun' : mmssSigned(at)}</span>
+                 <span>${mmssSigned(win.to)}</span>
+               </div>
+               <input id="tr-scrub" type="range" style="width:100%;display:block"
+                      min="${win.from}" max="${win.to}" step="1" value="${at}">
+             </div>` + rows;
+        const scrub = box.querySelector('#tr-scrub');
+        if (scrub) {
+            const paint = () => {
+                trafficT = +scrub.value;
+                const lbl = box.querySelector('#tr-now');
+                if (lbl) { lbl.textContent = mmssSigned(trafficT); lbl.style.opacity = '1'; }
+                // The ROWS carry each vessel's own clock, and they have to keep up during the
+                // drag — a rebuild would take the slider out from under the pointer, so the
+                // cells are written directly instead.
+                const cells = box.querySelectorAll('.ob .ob-c');
+                dtraffic().forEach((v, k) => {
+                    if (!cells[k]) return;
+                    const c = trafficCurve(v);
+                    const l = c && window.Traffic.localTime(v, c, trafficT);
+                    cells[k].textContent = l ? mmssSigned(l.t) : '—';
+                    cells[k].style.opacity = l ? '1' : '0.4';
+                });
+                draw();
+            };
+            scrub.addEventListener('input', paint);
+            if (trafficT != null) paint();
+        }
+        wire(box, (row_i) => {
+            if (row_i !== selTraf) selTV = -1;
+            selTraf = row_i;
+            inspectorRefresh(); objRefresh(); refreshChrome(); draw();
+        });
     } else if (mode === 'marks') {
         // Two kinds of thing on one layer, so the column carries its own second heading —
         // ruled off, in the same kicker as the column's own title, with the verb that makes
@@ -3129,6 +3637,11 @@ function inspectorRefresh() {
         if (l) { k = 'Shape'; n = landLabel(l);
             m = `${l.outer.length} pts · ${(l.holes || []).length ? (l.holes.length + ' holes') : 'closed'}`;
             html = inspLand(l); }
+    } else if (mode === 'traffic' && selTraf >= 0 && dtraffic()[selTraf]) {
+        const v = dtraffic()[selTraf];
+        k = 'Traffic'; n = trafficLabel(v);
+        m = `${v.path.length} pts · ${(v.end || 'despawn')}`;
+        html = inspTraffic(v);
     } else if (mode === 'marks' && sel.mark >= 0) {
         const mk = dmarksOf()[sel.mark];
         k = 'Mark'; n = markLabel(sel.mark);
@@ -3280,6 +3793,63 @@ function inspectorRefresh() {
     wirePropNum('data-propscalev', (p, v) => {
         p.scale = Math.max(0.25, Math.min(4, (+v || 100) / 100));
     }, 'scale prop');
+    // Traffic controls. A blank numeric field DELETES the key rather than writing 0 — the
+    // placeholder in each says what the blank means, and "auto" and "zero" are different
+    // answers everywhere in this document.
+    const selTrafObj = () => dtraffic()[selTraf];
+    obj.querySelectorAll('[data-trkind]').forEach(el => el.addEventListener('change', () => {
+        const v = selTrafObj(); if (!v) return;
+        v.kind = trafficKind = el.value;
+        afterEdit(true, 'vessel kind');
+    }));
+    obj.querySelectorAll('[data-trend]').forEach(el => el.addEventListener('change', () => {
+        const v = selTrafObj(); if (!v) return;
+        if (el.value === 'despawn') delete v.end; else v.end = el.value;
+        // respawn only means anything for a vessel that despawns; carrying it on one that
+        // never does is a field that silently does nothing.
+        if (v.end && v.end !== 'despawn') delete v.respawn;
+        afterEdit(true, 'lane end');
+    }));
+    obj.querySelectorAll('[data-trrespawn]').forEach(el => el.addEventListener('change', () => {
+        const v = selTrafObj(); if (!v) return;
+        if (el.value) v.respawn = true; else delete v.respawn;
+        afterEdit(true, 'respawn');
+    }));
+    const wireTrafNum = (dat, fn, label2) => obj.querySelectorAll(`[${dat}]`).forEach(el =>
+        el.addEventListener('change', () => {
+            const v = selTrafObj(); if (!v) return;
+            fn(v, el.value.trim());
+            afterEdit(true, label2);
+        }));
+    wireTrafNum('data-trfirst', (v, x) => { if (x === '') delete v.firstSpawn; else v.firstSpawn = +x || 0; }, 'first spawn');
+    wireTrafNum('data-trdelay', (v, x) => { if (x === '') delete v.respawnDelay; else v.respawnDelay = Math.max(0, +x || 0); }, 'respawn gap');
+    wireTrafNum('data-trheight', (v, x) => { if (x === '') delete v.height; else v.height = Math.max(0, +x || 0); }, 'vessel height');
+    wireTrafNum('data-trshadow', (v, x) => { if (x === '') delete v.windShadow; else v.windShadow = Math.max(0, +x || 0); }, 'wind shadow');
+    wireTrafNum('data-trscale', (v, x) => { if (x === '') delete v.scale; else v.scale = Math.max(0.25, Math.min(4, (+x || 100) / 100)); }, 'vessel scale');
+    wireTrafNum('data-trvdwell', (v, x) => {
+        const q2 = v.path[selTV]; if (!q2 || Array.isArray(q2)) return;
+        if (x === '') delete q2.dwell; else q2.dwell = Math.max(0, +x || 0);
+    }, 'waypoint wait');
+    wireTrafNum('data-trvhdg', (v, x) => {
+        let q2 = v.path[selTV]; if (!q2) return;
+        // An [x, y, speed] triple cannot hold a heading; promote it to an object rather than
+        // silently dropping what was typed.
+        if (Array.isArray(q2)) {
+            q2 = { x: q2[0], y: q2[1] };
+            if (isFinite(v.path[selTV][2])) q2.speed = v.path[selTV][2];
+            v.path[selTV] = q2;
+        }
+        if (x === '') delete q2.heading;
+        else q2.heading = ((+x || 0) % 360 + 360) % 360;
+    }, 'waypoint heading');
+    wireTrafNum('data-trvspeed', (v, x) => {
+        const q = v.path[selTV]; if (!q) return;
+        if (x === '') { if (Array.isArray(q)) q.length = 2; else delete q.speed; return; }
+        // NOT clamped at zero: a negative speed is astern, and clamping it would silently
+        // turn a berthing manoeuvre into a vessel driving through the dock.
+        const val = +x || 0;
+        if (Array.isArray(q)) q[2] = val; else q.speed = val;
+    }, 'waypoint speed');
     // Material and softness are the shape's own properties, so they live in its inspector
     // rather than in a panel off to the side.
     const mat = obj.querySelector('#in-mat');
@@ -3757,6 +4327,115 @@ ${geom}${way}`;
 // choosing it deletes the override rather than writing the same value under a
 // different name. The conditional rows (drag when soft, radius whenever there is
 // contact) appear with the choice that makes them mean something.
+// The vessel panel. Everything an entry can carry, in the order it is decided: what it is,
+// how fast, when, and what happens at the end of the lane.
+function inspTraffic(v) {
+    const K = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    // ── ONLY THINGS THAT COULD ACTUALLY BE TRAFFIC ───────────────────────────────────
+    // Gated on a measured `hull`, which is not a stand-in for "is a boat" but the thing
+    // traffic genuinely REQUIRES: the capsule that stops a hull and the silhouette that
+    // casts the lee are both built from it, and a kind without one falls back to a guessed
+    // oblong. So the rule is "we have measured this hull", which stays true as vessels are
+    // added and cannot drift the way a hand-kept list of names would.
+    //
+    // The vessel's OWN kind is always offered even if it fails the gate, so an older
+    // document shows what it actually holds instead of silently reading as something else.
+    const kindOpts = Object.entries(K)
+        .filter(([key, val]) => Array.isArray(val.hull) || key === v.kind)
+        .sort((a, b) => a[1].label.localeCompare(b[1].label))
+        .map(([key, val]) => `<option value="${key}"${key === v.kind ? ' selected' : ''}>${val.label}</option>`).join('');
+    const ENDS = { despawn: 'Despawn — gone at the end',
+                   stay: 'Stay — remains where it stopped',
+                   wrap: 'Loop — round and round, no seam',
+                   pingpong: 'Ping-pong — back the way it came' };
+    // SHOWN, NOT CHOSEN. The wake belongs to the hull — a cargo ship throws a wedge wherever
+    // she sails — so it is read off the kind and stated here rather than offered as a
+    // decision the same vessel could answer differently on two lanes.
+    const wkSpec = (K[v.kind] || {}).wake || { kind: 'kelvin' };
+    const nHulls = Array.isArray(wkSpec.hulls) && wkSpec.hulls.length ? wkSpec.hulls.length : 1;
+    const wakeText = wkSpec.kind === 'none' ? 'none'
+        : (wkSpec.kind === 'kelvin' ? 'Kelvin wedge' : (nHulls > 1 ? `${nHulls} ribbons` : 'ribbon'))
+          + (wkSpec.symmetric ? ', either end leading' : '');
+    const endOpts = Object.entries(ENDS).map(([k, l]) =>
+        `<option value="${k}"${(v.end || 'despawn') === k ? ' selected' : ''}>${l}</option>`).join('');
+
+    const respawnRow = (v.end || 'despawn') === 'despawn' ? `
+    <label class="k">respawn</label>
+    <select class="in-wide" data-trrespawn>
+      <option value=""${!v.respawn ? ' selected' : ''}>No — one passage</option>
+      <option value="1"${v.respawn ? ' selected' : ''}>Yes — comes round again</option>
+    </select>
+    <label class="k">gap</label><input class="in-wide" data-trdelay value="${v.respawnDelay != null ? v.respawnDelay : ''}" placeholder="60">` : '';
+
+    // HEIGHT drives the lee through the SAME rule islands use — ten times the height of the
+    // thing casting it — so the length below shows what the height works out to as its
+    // placeholder, and typing a length overrides it.
+    const kd = K[v.kind] || {};
+    const hull = kd.hull || [0.9, 0.3];
+    const beamU = hull[1] * (kd.world || 40) * (v.scale || 1);
+    const autoH = Math.round(uToM(beamU));
+    const usedH = v.height != null ? v.height : autoH;
+    const autoLen = Math.round(mToU(usedH) * 10);
+
+    // THE PASSAGE, in the units a designer thinks in. Units and raw seconds were what the
+    // maths happened to produce; "how far is it and how long does it take" is the question
+    // being asked of a schedule, and it is asked in kilometres and minutes.
+    const c = trafficCurve(v);
+    const mmss = (sec) => `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(Math.round(sec % 60)).padStart(2, '0')}`;
+    const passage = c ? `${(uToM(c.length) / 1000).toFixed(2)} km · ${mmss(c.duration)}`
+                      : 'path incomplete';
+
+    // DWELL ONLY WHERE THE VESSEL HAS STOPPED. A wait at any other speed would be an
+    // instantaneous halt and restart, which is the one thing the speed ramp exists to
+    // prevent — so the field appears when the speed is 0 and not before. That also makes the
+    // rule discoverable without a line of prose: type 0, and somewhere to put the wait shows
+    // up beneath it.
+    const q = selTV >= 0 ? v.path[selTV] : null;
+    const stopped = q && tpSpeedAt(v, selTV) === 0;
+    const dwellRow = stopped ? `
+    <label class="k">wait s</label>
+    <input class="in-wide" data-trvdwell value="${q.dwell != null ? q.dwell : ''}" placeholder="0">` : '';
+    const vertRow = q ? `
+<div class="in-sect"><span class="k">Waypoint ${selTV + 1} of ${v.path.length}</span>
+  <div class="in-grid">
+    <label class="k">speed</label>
+    <input class="in-wide" data-trvspeed value="${isFinite(tpSpeed(q)) ? tpSpeed(q) : ''}"
+           placeholder="${tpSpeedAt(v, selTV)}">
+    ${dwellRow}
+    <label class="k">heading °</label>
+    <input class="in-wide" data-trvhdg value="${q.heading != null ? q.heading : ''}"
+           placeholder="${Math.round(trafficHeadingAt(v, selTV) * 180 / Math.PI)}">
+  </div>
+</div>` : '';
+
+    return `
+<div class="in-sect"><span class="k">Name</span>
+  <input class="in-wide" data-rename="traffic" value="${attr(v.name || '')}" placeholder="${attr(v.id)}">
+</div>
+<div class="in-sect"><span class="k">Vessel</span>
+  <select class="in-wide" data-trkind>${kindOpts}</select>
+  <div class="in-grid" style="margin-top:8px">
+    <label class="k">scale %</label><input class="in-wide" data-trscale value="${v.scale != null ? Math.round(v.scale * 100) : ''}" placeholder="100">
+    <label class="k">wake</label><span class="in-wide" style="opacity:.7;align-self:center">${wakeText}</span>
+  </div>
+</div>
+<div class="in-sect"><span class="k">Wind shadow</span>
+  <div class="in-grid">
+    <label class="k">height m</label><input class="in-wide" data-trheight value="${v.height != null ? v.height : ''}" placeholder="${autoH}">
+    <label class="k">length u</label><input class="in-wide" data-trshadow value="${v.windShadow != null ? v.windShadow : ''}" placeholder="${autoLen}">
+  </div>
+</div>
+<div class="in-sect"><span class="k">Schedule</span>
+  <div class="in-grid">
+    <label class="k">first spawn</label><input class="in-wide" data-trfirst value="${v.firstSpawn != null ? v.firstSpawn : ''}" placeholder="0">
+    <label class="k">end</label><select class="in-wide" data-trend>${endOpts}</select>
+    ${respawnRow}
+  </div>
+  <div class="in-note">${passage}</div>
+</div>
+${vertRow}`;
+}
+
 function inspProp(p) {
     const K = window.VenueDoc.PROP_KINDS || {};
     const T = window.VenueDoc.propTraits(p);
@@ -4158,6 +4837,10 @@ function renameSel(el) {
         const ln = dlines()[selLine]; if (!ln) return;
         if (v) ln.name = v; else delete ln.name;
         afterEdit(true, 'gate name');
+    } else if (el.dataset.rename === 'traffic') {
+        const t = dtraffic()[selTraf]; if (!t) return;
+        if (v) t.name = v; else delete t.name;
+        afterEdit(true, 'vessel name');
     } else if (el.dataset.rename === 'leg') {
         const e = routeOf()[selRoute]; if (!e) return;
         if (v) e.name = v; else delete e.name;
@@ -5168,6 +5851,34 @@ let pending = null;
 // needed their own "+ Region" buttons to exist at all — two more ways to make a polygon,
 // beside a tool whose whole job is making polygons.
 function commitPending() {
+    // A LANE NEEDS TWO POINTS, not three: a shape must enclose water, a path only has to go
+    // somewhere. Handled before the ring guard below, which would throw a two-point lane away.
+    if (mode === 'traffic' && extendLane) {
+        const v = dtraffic()[extendLane.i];
+        const pts = (pending || []).map(q => ({ x: q[0], y: q[1] }));
+        const atStart = extendLane.atStart;
+        extendLane = null; pending = null;
+        if (!v || !pts.length) { draw(); return; }
+        // Prepending REVERSES what was clicked: you drew away from the old start, so the
+        // last thing you clicked is the lane's new beginning.
+        if (atStart) v.path.unshift(...pts.reverse()); else v.path.push(...pts);
+        selTV = atStart ? 0 : v.path.length - 1;
+        afterEdit(true, 'extend lane');
+        toast(`${v.id} now ${v.path.length} points`);
+        return;
+    }
+    if (mode === 'traffic') {
+        const pts = pending || [];
+        if (pts.length < 2) { pending = null; draw(); toast('A lane needs at least two points'); return; }
+        pending = null;
+        const arr = dtrafficW();
+        const v = newTrafficEntry(pts.map(q => ({ x: q[0], y: q[1] })));
+        arr.push(v);
+        selTraf = arr.length - 1; selTV = -1;
+        afterEdit(true, 'draw lane');
+        toast(`Added ${v.id} — set its speed and schedule on the right`);
+        return;
+    }
     if (!pending || pending.length < 3) { pending = null; draw(); return; }
     const ring = pending.map(p => [p[0], p[1]]);
     pending = null;
@@ -6112,6 +6823,54 @@ function modeRings() {
     return [];
 }
 
+// The same verb for a LANE. It cannot share insertVertexNear: that one walks closed rings
+// (its last segment joins back to index 0) and works on `modeRings`, which knows nothing
+// about traffic. A path has no closing segment, and inserting one would be a wrong answer
+// rather than an off-by-one.
+// The lane branch of the mousedown handler, factored out so the test harness can drive the
+// same rules the mouse does rather than a parallel copy of them.
+function _laneClick(wx, wy) {
+    if (!pending) {
+        const v = dtraffic()[selTraf];
+        if (v && v.path.length) {
+            const grab = 16 / view.scale, n = v.path.length;
+            const dLast = Math.hypot(wx - tpx(v.path[n - 1]), wy - tpy(v.path[n - 1]));
+            const dFirst = Math.hypot(wx - tpx(v.path[0]), wy - tpy(v.path[0]));
+            if (Math.min(dLast, dFirst) < grab) {
+                extendLane = { i: selTraf, atStart: dFirst < dLast };
+                pending = [];
+                return;
+            }
+        }
+        pending = [];
+    }
+    pending.push([wx, wy]);
+}
+
+function insertTrafficPointNear(wx, wy) {
+    const v = dtraffic()[selTraf];
+    if (!v || v.path.length < 2) return false;
+    let best = null;
+    for (let i = 0; i < v.path.length - 1; i++) {       // no wrap: a lane is open
+        const ax = tpx(v.path[i]), ay = tpy(v.path[i]);
+        const bx = tpx(v.path[i + 1]), by = tpy(v.path[i + 1]);
+        const dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+        let t = l2 ? ((wx - ax) * dx + (wy - ay) * dy) / l2 : 0;
+        t = Math.max(0, Math.min(1, t));
+        const px = ax + t * dx, py = ay + t * dy;
+        const d = Math.hypot(wx - px, wy - py);
+        if (!best || d < best.d) best = { d, i, px, py };
+    }
+    // Generous, because the CURVE bows away from the straight leg the maths measures
+    // against — on a tight corner the line you are aiming at is not the line being tested.
+    if (!best || best.d > 40 / view.scale) return false;
+    // No speed on the new point: it INHERITS, which is what "add a point here" should mean.
+    // Writing the interpolated speed would silently pin the ramp at a value nobody typed.
+    v.path.splice(best.i + 1, 0, { x: best.px, y: best.py });
+    selTV = best.i + 1;
+    return true;
+}
+
 function insertVertexNear(wx, wy) {
     let best = null;
     for (const { ring, land } of modeRings()) {
@@ -6366,6 +7125,20 @@ cv.addEventListener('mousedown', (e) => {
     }
     if (e.button !== 0) return;
 
+    // A LANE IS OPEN, so there is no closing click — Enter or double-click ends it. Falling
+    // through to the ring branch below would let a click near the first point close a path
+    // into a loop, which for a shipping lane is not a shortcut, it is a wrong answer.
+    if (mode === 'traffic' && drawing && doc) {
+        // FIRST CLICK ON AN END OF THE SELECTED LANE RESUMES IT, the way a pen tool picks up
+        // an open path rather than starting a second one beside it. Anywhere else, this is a
+        // new lane. Only on the first click: once points are down, the gesture is committed.
+        const was = extendLane;
+        _laneClick(w.x, w.y);
+        if (extendLane && !was) toast(extendLane.atStart ? 'Extending the start of the lane'
+                                                        : 'Extending the end of the lane');
+        draw();
+        return;
+    }
     if ((mode === 'shape' || isRegionMode(mode)) && drawing && doc) {
         if (!pending) pending = [];
         // Clicking the first point closes the shape — the gesture people reach for before
@@ -6505,6 +7278,43 @@ cv.addEventListener('mousedown', (e) => {
             marksInspector();
         }
         draw(); return;
+    }
+    if (mode === 'traffic' && doc) {
+        const grab = 10 / view.scale;
+        // A HANDLE FIRST, then the lane. The points sit ON the line they define, so testing
+        // the line first would make a waypoint ungrabbable.
+        if (selTraf >= 0 && dtraffic()[selTraf]) {
+            const v = dtraffic()[selTraf];
+            for (let k = 0; k < v.path.length; k++) {
+                if (Math.hypot(w.x - tpx(v.path[k]), w.y - tpy(v.path[k])) < grab) {
+                    selTV = k;
+                    drag = { kind: 'tvert', last: w, moved: false, origin: w };
+                    inspectorRefresh(); objRefresh(); refreshChrome(); draw();
+                    return;
+                }
+            }
+        }
+        // Then the lanes themselves, nearest first.
+        let hitI = -1, hitBest = Infinity;
+        dtraffic().forEach((v, i) => {
+            if (!v.path || v.path.length < 2) return;
+            const c = trafficCurve(v);
+            const N = c ? Math.max(24, Math.min(300, Math.round(c.length / 30))) : 0;
+            for (let k = 0; k <= N; k++) {
+                const q = c.atArc(c.length * k / N);
+                const d = Math.hypot(w.x - q.x, w.y - q.y);
+                if (d < hitBest && d < 14 / view.scale) { hitBest = d; hitI = i; }
+            }
+        });
+        if (hitI >= 0) {
+            if (hitI !== selTraf) selTV = -1;
+            selTraf = hitI;
+            drag = { kind: 'tmove', last: w, moved: false, origin: w };
+        } else {
+            selTraf = -1; selTV = -1;
+        }
+        inspectorRefresh(); objRefresh(); refreshChrome(); draw();
+        return;
     }
     if (mode === 'props' && doc) {
         // Click a prop: select it and start a move. Click open map: PLACE one of the
@@ -6682,6 +7492,18 @@ window.addEventListener('mousemove', (e) => {
                 if (p) { p[0] += dx; p[1] += dy; }
             }
             rebakeTouched();
+            drag.last = w; drag.moved = true; draw();
+        } else if (drag.kind === 'tvert') {
+            const v = dtraffic()[selTraf];
+            if (v && v.path[selTV]) tpSet(v.path[selTV], w.x, w.y);
+            drag.last = w; drag.moved = true; draw();
+        } else if (drag.kind === 'tmove') {
+            // The whole lane, keeping its shape. Repositioning a shipping lane bodily is
+            // the common edit once its shape is right — "same route, 400 units further off
+            // the mark" — and dragging seven waypoints one at a time is not that edit.
+            const v = dtraffic()[selTraf];
+            const dx = w.x - drag.last.x, dy = w.y - drag.last.y;
+            if (v) for (const q of v.path) tpSet(q, tpx(q) + dx, tpy(q) + dy);
             drag.last = w; drag.moved = true; draw();
         } else if (drag.kind === 'rcentre') {
             // Moves the MARK, and only the mark. It used to move the land shape when the
@@ -6872,6 +7694,10 @@ window.addEventListener('mouseup', () => {
     snapGuide = null;
     if (!drag) return;
     const d = drag; drag = null;
+    if ((d.kind === 'tvert' || d.kind === 'tmove')) {
+        if (d.moved) afterEdit(true, d.kind === 'tvert' ? 'move waypoint' : 'move lane');
+        return;
+    }
     if (d.kind === 'marquee' && marquee) {
         const x0 = Math.min(marquee.a.x, marquee.b.x), x1 = Math.max(marquee.a.x, marquee.b.x);
         const y0 = Math.min(marquee.a.y, marquee.b.y), y1 = Math.max(marquee.a.y, marquee.b.y);
@@ -6950,9 +7776,20 @@ cv.addEventListener('dblclick', (e) => {
     // Direct were split apart — so afterwards it fired under the object arrow on land and
     // never fired under the vertex one. No mode list here: modeRings() already returns
     // nothing for a layer with no selected outline, so it gates itself.
-    if (sub !== 'direct') return;
     const r = cv.getBoundingClientRect();
     const w = toW(e.clientX - r.left, e.clientY - r.top);
+    // A LANE TAKES THE GESTURE UNDER EITHER ARROW. On the shape layers Direct is what
+    // separates "the polygon" from "its vertices", so the gesture has to be told which you
+    // mean. Traffic has no such split — a lane is only ever edited as a lane — so demanding
+    // the Direct arrow first would be a rule with nothing behind it.
+    if (mode === 'traffic') {
+        if (insertTrafficPointNear(w.x, w.y)) {
+            afterEdit(true, 'insert waypoint');
+            toast('Waypoint added — it inherits its speed until you give it one');
+        }
+        return;
+    }
+    if (sub !== 'direct') return;
     if (insertVertexNear(w.x, w.y)) afterEdit(true, 'insert vertex');
 });
 
@@ -7088,6 +7925,36 @@ window.addEventListener('keydown', (e) => {
             if (sel.mark >= 0) { deleteMark(sel.mark); return; }
             if (selLine >= 0) { deleteLine(selLine); return; }
         }
+        // A WAYPOINT FIRST, if one is in hand — the same "vertices before the object" rule
+        // the shape layer follows below. Only with no point selected does Delete take the
+        // whole vessel.
+        if (mode === 'traffic' && selTraf >= 0) {
+            const v = dtraffic()[selTraf];
+            if (v && selTV >= 0) {
+                if (v.path.length <= 2) { toast('A lane needs at least two points', true); return; }
+                // ⚠️ CARRY THE SPEED FORWARD. Points inherit the last speed named before
+                // them, so removing one that NAMED a speed silently changes the speed of
+                // every point after it — and removing point 0, which is where a new lane's
+                // only speed lives, left a document with no speed anywhere and no visible
+                // reason why. Pin the next point to what was in force, and the profile is
+                // exactly what it was minus one corner.
+                const eff = tpSpeedAt(v, selTV);
+                const next = v.path[selTV + 1];
+                if (next && !isFinite(tpSpeed(next))) {
+                    if (Array.isArray(next)) next[2] = eff; else next.speed = eff;
+                }
+                v.path.splice(selTV, 1);
+                selTV = Math.min(selTV, v.path.length - 1);
+                afterEdit(true, 'delete waypoint');
+                return;
+            }
+            if (v) {
+                dtraffic().splice(selTraf, 1);
+                selTraf = -1; selTV = -1;
+                afterEdit(true, 'delete vessel');
+                return;
+            }
+        }
         if (mode === 'props' && (selProps.length || selProp >= 0)) {
             // Delete means the whole selection, exactly as it does for shapes.
             const rows = (selProps.length ? selProps.slice() : [selProp]).sort((a, b) => b - a);
@@ -7140,6 +8007,9 @@ window.addEventListener('keydown', (e) => {
                     '5': 'wind', '6': 'current', '7': 'venue', '8': 'map', '9': 'water',
                     '0': 'gust' };
     if (modes[e.key]) { setMode(modes[e.key]); return; }
+    // T for Traffic. The digits are full and renumbering them to seat one arrival is the
+    // worse trade — the same argument the block above makes for gusts taking 0.
+    if (e.key === 't' || e.key === 'T') { setMode('traffic'); return; }
     // Tool keys, routed through pickTool and gated by the SAME `enabled` predicate the strip
     // uses — so a key can never arm a tool the button next to it shows as unavailable. This
     // also wires V, P and M, which the strip has been advertising in its tooltips all along.
@@ -7176,6 +8046,7 @@ function setMode(next) {
         sel = Object.assign({}, NOHIT); selLine = -1; marksInspector();
     }
     if (mode === 'props' && next !== 'props') { selProp = -1; selProps = []; }
+    if (mode === 'traffic' && next !== 'traffic') { selTraf = -1; selTV = -1; }
     listAnchor = listCursor = -1;   // row numbering belongs to one list at a time
     mode = next;
     // Asked AFTER the switch, because whether a brush still has anything to act on is a
@@ -7183,7 +8054,7 @@ function setMode(next) {
     if (isBrush(sub) && !brushRings().length) sub = 'drag';
     if (sub === 'direct' && !modeObjects().length) sub = 'drag';
     if (sub === 'place' && next !== 'venue') sub = 'drag';
-    drawing = false; pending = null; vsel = []; osel = []; marquee = null;
+    drawing = false; pending = null; extendLane = null; vsel = []; osel = []; marquee = null;
     refreshChrome(); fieldProbe(); draw();
 }
 document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
@@ -7487,7 +8358,7 @@ window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefau
 
 window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildKindPicker,
     // exposed for headless tests
-    _state: () => ({ doc, findings, history: history.length, histIdx, dirty: isDirty(), tool, sel }),
+    _state: () => ({ doc, findings, history: history.length, histIdx, dirty: isDirty(), tool, sel, mode }),
     // The layer table, for test_controls: it asserts the visibility eyes and this list
     // agree as SETS. It used to assert a hardcoded count of seven, which meant shipping
     // the Props layer broke a test that had found nothing wrong — the failure landed on
@@ -7537,6 +8408,43 @@ window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildK
     _pickTool: (t) => pickTool(t),
     // Close a ring the way the Draw tool does, without synthesising the clicks.
     _drawRing: (ring) => { pending = ring.map(p => [p[0], p[1]]); commitPending(); },
+    // The same door for an OPEN lane, so the traffic tool is drivable without a mouse.
+    _drawLane: (pts) => { setMode('traffic'); pending = pts.map(p => [p[0], p[1]]); commitPending(); return selTraf; },
+    _selTraffic: (i, k) => { setMode('traffic'); selTraf = i == null ? -1 : i; selTV = k == null ? -1 : k;
+        inspectorRefresh(); objRefresh(); draw(); return { selTraf, selTV }; },
+    _traffic: () => ({ i: selTraf, v: selTV, list: dtraffic() }),
+    _insertLanePoint: (x, y) => { const okk = insertTrafficPointNear(x, y); if (okk) afterEdit(true, 'insert waypoint'); return okk; },
+    _extendLane: (i, atStart, pts) => {
+        setMode('traffic'); selTraf = i; drawing = true; extendLane = null; pending = null;
+        const v = dtraffic()[i];
+        const q = atStart ? v.path[0] : v.path[v.path.length - 1];
+        // Enter through the same door the mouse does: a click ON the end point arms the
+        // extend, so the test exercises the arming rule and not just the append.
+        _laneClick(tpx(q), tpy(q));
+        for (const pt of pts) _laneClick(pt[0], pt[1]);
+        commitPending();
+        return dtraffic()[i].path.length;
+    },
+    _scrub: (t) => {
+        setMode('traffic');
+        const el = document.getElementById('tr-scrub');
+        if (!el) return null;
+        el.value = String(t); el.dispatchEvent(new Event('input'));
+        return { t: trafficT, min: +el.min, max: +el.max };
+    },
+    // Where the editor believes each vessel is at the scrubbed second — the same question
+    // the game answers from the same shared rule.
+    _trafficAt: (t) => dtraffic().map(v => {
+        const c = trafficCurve(v);
+        const l = c && window.Traffic.localTime(v, c, t);
+        if (!l) return null;
+        const q = c.at(l.t);
+        return { id: v.id, x: q.x, y: q.y, heading: q.heading, knots: q.knots, stopped: !!q.stopped };
+    }),
+    _clashes: () => { const c = trafficClashes();
+        return { hit: Array.from(c.hit), points: c.points.map(x => ({ i: x.i, j: x.j, t: x.t })), coarsened: c.coarsened }; },
+    _trafficCurve: (i) => { const v = dtraffic()[i]; const c = v && trafficCurve(v);
+        return c ? { length: c.length, duration: c.duration } : null; },
     // File lifecycle, drivable without a picker: tests hand text straight in.
     _openDocText: (text, name) => openDocText(text, null, name),
     _venueLabel: () => $('venue-label').textContent,
