@@ -5664,6 +5664,254 @@ window.VENUE_DOC["glowtide"] = {
       "y": -28.097614862873513,
       "heading": 0,
       "scale": 1.113
+    },
+    {
+      "id": "prop-19",
+      "kind": "glowtide-jelly",
+      "x": 1733.2721121415268,
+      "y": 3929.03456529017,
+      "heading": 0,
+      "scale": 1.098
+    },
+    {
+      "id": "prop-20",
+      "kind": "glowtide-jelly",
+      "x": -918.0675983321179,
+      "y": 3975.413227434101,
+      "heading": 0,
+      "scale": 0.985
+    },
+    {
+      "id": "prop-21",
+      "kind": "glowtide-jelly",
+      "x": 1280.705348575009,
+      "y": 3096.6782644976256,
+      "heading": 0,
+      "scale": 0.994
+    },
+    {
+      "id": "prop-22",
+      "kind": "glowtide-jelly",
+      "x": -176.75594457733825,
+      "y": 2246.976395050241,
+      "heading": 0,
+      "scale": 0.992
+    },
+    {
+      "id": "prop-23",
+      "kind": "glowtide-jelly",
+      "x": 369.06621301756473,
+      "y": 1329.5306407949788,
+      "heading": 0,
+      "scale": 1.09
+    },
+    {
+      "id": "prop-24",
+      "kind": "glowtide-jelly",
+      "x": 761.9807449032573,
+      "y": 1480.5027269382497,
+      "heading": 0,
+      "scale": 0.959
+    },
+    {
+      "id": "prop-25",
+      "kind": "glowtide-jelly",
+      "x": 680.6880831338037,
+      "y": 1807.6089135820037,
+      "heading": 0,
+      "scale": 0.974
+    },
+    {
+      "id": "prop-26",
+      "kind": "glowtide-jelly",
+      "x": -1032.264432722541,
+      "y": 851.4523680079539,
+      "heading": 0,
+      "scale": 1.082
+    },
+    {
+      "id": "prop-27",
+      "kind": "glowtide-jelly",
+      "x": -1332.2730654431437,
+      "y": -356.32432113821443,
+      "heading": 0,
+      "scale": 0.889
+    },
+    {
+      "id": "prop-28",
+      "kind": "glowtide-jelly",
+      "x": -1690.3478851419275,
+      "y": -410.5194289845169,
+      "heading": 0,
+      "scale": 0.93
+    },
+    {
+      "id": "prop-29",
+      "kind": "glowtide-jelly",
+      "x": -778.7087495844833,
+      "y": -1041.5053274807522,
+      "heading": 0,
+      "scale": 1.085
+    },
+    {
+      "id": "prop-30",
+      "kind": "glowtide-jelly",
+      "x": -1179.3654397339333,
+      "y": -1366.6759745585668,
+      "heading": 0,
+      "scale": 0.91
+    },
+    {
+      "id": "prop-31",
+      "kind": "glowtide-jelly",
+      "x": 82.6063572585374,
+      "y": -1864.1096430049854,
+      "heading": 0,
+      "scale": 0.986
+    },
+    {
+      "id": "prop-32",
+      "kind": "glowtide-jelly",
+      "x": 311.00002603938333,
+      "y": -2204.7646066103152,
+      "heading": 0,
+      "scale": 1.135
+    },
+    {
+      "id": "prop-33",
+      "kind": "glowtide-jelly",
+      "x": 750.3675075076209,
+      "y": -1970.5643191316508,
+      "heading": 0,
+      "scale": 0.961
+    },
+    {
+      "id": "prop-34",
+      "kind": "glowtide-jelly",
+      "x": -1018.7156557609654,
+      "y": -1893.142736494076,
+      "heading": 0,
+      "scale": 0.982
+    },
+    {
+      "id": "prop-35",
+      "kind": "glowtide-jelly",
+      "x": -676.1251525896965,
+      "y": -962.1482052772379,
+      "heading": 0,
+      "scale": 1.031
+    },
+    {
+      "id": "prop-36",
+      "kind": "glowtide-jelly",
+      "x": 1476.1948447348855,
+      "y": 2968.9326531456272,
+      "heading": 0,
+      "scale": 0.872
+    },
+    {
+      "id": "prop-37",
+      "kind": "glowtide-jelly",
+      "x": 767.7873636010753,
+      "y": 4443.813802391429,
+      "heading": 0,
+      "scale": 1.127
+    },
+    {
+      "id": "prop-38",
+      "kind": "glowtide-jelly",
+      "x": 1296.189665102524,
+      "y": 4614.141284194094,
+      "heading": 0,
+      "scale": 0.947
+    },
+    {
+      "id": "prop-39",
+      "kind": "glowtide-jelly",
+      "x": 1127.7977228657985,
+      "y": 4310.261572341612,
+      "heading": 0,
+      "scale": 1.098
+    },
+    {
+      "id": "prop-40",
+      "kind": "glowtide-jelly",
+      "x": -403.21407379224485,
+      "y": 3853.47423477992,
+      "heading": 0,
+      "scale": 1.041
+    },
+    {
+      "id": "prop-41",
+      "kind": "glowtide-jelly",
+      "x": -1738.7363742904117,
+      "y": 4559.946176347791,
+      "heading": 0,
+      "scale": 0.925
+    },
+    {
+      "id": "prop-42",
+      "kind": "glowtide-jelly",
+      "x": 1600.0693769550053,
+      "y": 6222.574663489712,
+      "heading": 0,
+      "scale": 1.013
+    },
+    {
+      "id": "prop-43",
+      "kind": "glowtide-jelly",
+      "x": 1499.0719787405747,
+      "y": -2593.5374724503063,
+      "heading": 0,
+      "scale": 1.118
+    },
+    {
+      "id": "prop-44",
+      "kind": "glowtide-jelly",
+      "x": -80.24094357663733,
+      "y": -2634.692206582351,
+      "heading": 0,
+      "scale": 0.999
+    },
+    {
+      "id": "prop-45",
+      "kind": "glowtide-jelly",
+      "x": -2328.318295539574,
+      "y": -2763.30075074499,
+      "heading": 0,
+      "scale": 1.049
+    },
+    {
+      "id": "prop-46",
+      "kind": "glowtide-jelly",
+      "x": -2472.35986500173,
+      "y": -2552.3827383182615,
+      "heading": 0,
+      "scale": 1.047
+    },
+    {
+      "id": "prop-47",
+      "kind": "glowtide-jelly",
+      "x": -2261.4418525750016,
+      "y": -2367.186434724061,
+      "heading": 0,
+      "scale": 0.915
+    },
+    {
+      "id": "prop-48",
+      "kind": "glowtide-jelly",
+      "x": -850.7772122019825,
+      "y": -785.2188798287641,
+      "heading": 0,
+      "scale": 1.11
+    },
+    {
+      "id": "prop-49",
+      "kind": "glowtide-jelly",
+      "x": 452.58553282253774,
+      "y": 1557.9874039981298,
+      "heading": 0,
+      "scale": 0.888
     }
   ]
 };

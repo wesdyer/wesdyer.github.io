@@ -954,11 +954,28 @@ const PROP_KINDS = {
     // it inland and the building is backwards. Everything else in this town only needs its
     // ridges to agree with its neighbours.
     'bay-cove-boatshed':     { label: 'Boat shed',           world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // THE FLEET'S HOME, and the only object in the game that carries the SaltyCritter Yacht
+    // Club's own burgee — painted flat on the seaward roof slope, which is why it survives a
+    // camera that deletes anything vertical. LANDMARK: venue identity, on land, never an
+    // obstacle in the water. Place it facing the water with cove-marina in front of it.
+    'bay-cove-yacht-club':   { label: 'Yacht club',          world: 168, plane: 'surface', contact: 'none', motion: 'fixed' },
     // The cove's waterfront begins here. A single sawn pile top — place these with the
     // editor's `prop-spin` ON and a `count`, because addProps' "ONE DRAG LAYS A STAND" is
     // what a row of pilings actually is; a baked cluster would stamp one arrangement and
     // could never make a line along a wharf face.
     'bay-cove-piling':       { label: 'Piling',              world:  14, plane: 'surface', contact: 'hard', contactR: 5, motion: 'fixed' },
+    // The two repeatable edges. Both are `hazard` on bayou-dock's argument — a landmark never
+    // reads as an obstacle in the water, and a structure reaching into the channel is the whole
+    // reason to place one — and both carry a contactR that is honest about its own limits.
+    //
+    // ⚠️ A CIRCLE CANNOT FIT EITHER OF THESE. The pier is 2.6:1 and the quay 2.1:1, so the
+    // collider compile emits covers the middle and leaves the ends sailable-through. That is
+    // the safer error (a pass-through is a missed collision; an oversized circle is an
+    // invisible wall in open water). For a run of several sections, do what the river does:
+    // lay ONE HIDDEN HARD SHAPE along the whole face and override these to contact none.
+    'bay-cove-pier':         { label: 'Pier',                world: 150, plane: 'surface', contact: 'hard', contactR: 12, motion: 'fixed' },
+    // The quay TILES: sections butt end to end, so its two short ends are plain by design.
+    'bay-cove-quay':         { label: 'Quay section',        world: 200, plane: 'surface', contact: 'hard', contactR: 16, motion: 'fixed' },
     // ── THE COVE'S SHOPS AND ITS MARINA ─────────────────────────────────────
     // The two shops are ordinary town buildings and take the town's traits. The MARINA is the
     // odd one and needs its two departures stated.
@@ -1042,6 +1059,26 @@ const PROP_KINDS = {
     'buoy-channel-red':    { label: 'Red channel buoy',   world: 28, plane: 'surface', contact: 'hard', contactR: 13, wash: 0.48, motion: 'fixed', src: 'assets/images/props/buoy-channel-red.png' },
     'buoy-channel-green':  { label: 'Green channel buoy', world: 28, plane: 'surface', contact: 'hard', contactR: 13, wash: 0.48, motion: 'fixed', src: 'assets/images/props/buoy-channel-green.png' },
 
+    // ── GLOWTIDE'S JELLYFISH ────────────────────────────────────────────────
+    // `scatter` is a trait no other prop carries: it tells the renderer that ONE placement
+    // is a DRIFT of several animals, not a single sprite, and that drawProps must therefore
+    // not draw the bell at the placement point — drawJellyDrifts does the whole group.
+    //
+    // Scattered at RUNTIME rather than composed into one baked image, which is the same call
+    // the arctic's `ships: true` elements record: "a baked group is one image and can never
+    // animate a member". Every jelly here rises and falls on its own phase, so a baked bloom
+    // would heave as one slab.
+    //
+    // MOTION drift: they ride the real current, which is free tidal movement and, on the one
+    // venue built around reading the stream, turns a bloom into a current telltale. The trait
+    // forces contact to none, which is right — a jellyfish is scenery, and the roles table
+    // bars ambient art from being confusable with a hazard.
+    //
+    // PLANE seabed so the water draws OVER them: per the coral note, "the water above is what
+    // sells the depth", and depth is the whole animation here. Their LIGHT is emissive and
+    // added after the ambient wash, in drawNightGlow — the same split as the nav lights.
+    'glowtide-jelly':       { label: 'Jellyfish drift',  world: 64, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
+    'glowtide-jelly-bloom': { label: 'Jellyfish (small)', world: 40, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
     'lagoon-palm':         { label: 'Palm',         world: 70, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },

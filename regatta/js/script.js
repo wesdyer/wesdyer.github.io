@@ -6936,6 +6936,7 @@ function propGrid() {
 function drawProps(ctx, plane) {
     const props = state.course && state.course.props;
     if (!props || !props.length) return;
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
     const viewRadius = cullRadius(ctx);
     const camX = state.camera.x, camY = state.camera.y;
     // Reach one cell beyond the view so a big crown centred just outside still draws; the
@@ -6962,6 +6963,10 @@ function drawProps(ctx, plane) {
     }
     const list = grid ? visit.map(i => props[i]) : props;
     for (const p of list) {
+        // A `scatter` kind is a GROUP, not a sprite: one placement stands for a drift of
+        // several animals that its own renderer draws and animates. Drawing the bell here
+        // as well would put a motionless extra one at the placement point.
+        if ((reg[p.kind] || {}).scatter) continue;
         const s = propSpriteFor(p, plane);
         if (!s || !s.img.complete || !s.img.naturalWidth) continue;
         const w = s.world * (p.scale || 1);
@@ -16223,6 +16228,363 @@ function drawNightWater(ctx) {
     ctx.restore();
 }
 
+// ── JELLYFISH DRIFTS ────────────────────────────────────────────────────────
+// One placement is a DRIFT of several animals. The members are DERIVED from the placement
+// rather than stored: a hash of the prop's own position seeds count, offsets, sizes, tints
+// and phases, so the same bloom comes back identical every session and the document stays
+// one line per drift instead of one line per jellyfish.
+//
+// Two passes, for the same reason everything else here has two. The BELLS are physical —
+// drawn on the seabed plane with the water over them, and dimmed by the ambient wash like
+// any other object. The LIGHT is emissive and goes on after the wash, along with the
+// trailing arms, which are drawn rather than baked so they can stream with the current.
+const JELLY_TINTS = ['#5aa9ff', '#a879ff', '#ff9247', '#ff62a8'];   // blue, purple, orange, pink
+const JELLY_PERIOD = 10.5;        // seconds for a full rise and fall
+const JELLY_SPREAD = 190;         // how far members scatter from the placement
+
+function jellyHash(a, b) {
+    const h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
+    return h - Math.floor(h);
+}
+function jellyMembers(p) {
+    if (p._jelly) return p._jelly;
+    const n = 3 + Math.floor(jellyHash(p.x, p.y) * 5);        // 3..7 animals
+    const out = [];
+    for (let i = 0; i < n; i++) {
+        const h1 = jellyHash(p.x + i * 13.7, p.y - i * 7.3);
+        const h2 = jellyHash(p.y + i * 29.1, p.x + i * 5.9);
+        const h3 = jellyHash(p.x * 0.7 + i * 3.1, p.y * 1.3 - i * 11.7);
+        const ang = h1 * Math.PI * 2, rad = (0.2 + 0.8 * h2) * JELLY_SPREAD;
+        out.push({
+            ox: Math.cos(ang) * rad, oy: Math.sin(ang) * rad,
+            // Mostly the big moon jelly, a few small blooms filling in — a real
+            // aggregation is mixed, and it buys silhouette variety for nothing.
+            small: h3 > 0.62,
+            scale: 0.72 + h1 * 0.55,
+            tint: JELLY_TINTS[Math.floor(h2 * 997) % JELLY_TINTS.length],
+            phase: h3 * Math.PI * 2,
+            spin: (h1 - 0.5) * 1.2,
+            // A moon jelly pulses roughly every couple of seconds; spread it so a drift
+            // never beats in unison, which is the tell of a repeated sprite.
+            pulse: 1.7 + h2 * 1.3,
+            beat: h1,
+            head: h1 * Math.PI * 2,     // which way it is swimming
+            v: 0, sx: 0, sy: 0, _sq: 0, // speed and accumulated swim offset
+            // ⚠️ CALIBRATED, NOT GUESSED. The first figure swam 12 u/s — 26x a real Aurelia's
+            // few cm/s, faster than a drifting boat, and it emptied the bloom across the map
+            // in a minute. This lands near 1.5 u/s average: visible movement over a race
+            // (a few boat lengths) with the drift still a drift at the finish.
+            push: 4.5 + h2 * 3,         // thrust per unit of squeeze
+        });
+    }
+    p._jelly = out;
+    return out;
+}
+// 0 = deep and dim, 1 = just under the surface. Drives scale, alpha AND glow together,
+// because depth in water changes all three at once — a jelly does not merely get smaller.
+function jellyDepth(m, t) {
+    return 0.5 + 0.5 * Math.sin((t / JELLY_PERIOD) * Math.PI * 2 + m.phase);
+}
+
+// ── HOW A JELLYFISH ACTUALLY MOVES ──────────────────────────────────────────
+// Researched, and the research threw away the first two attempts.
+//
+// It is BURST AND COAST, in three phases, not a bell that breathes:
+//   CONTRACT  the power stroke. The bell closes fast, ejects a vortex ring, and the animal
+//             ACCELERATES. This is the short phase.
+//   RELAX     the recovery stroke, and it is PASSIVE — elastic energy stored in the bell
+//             during the squeeze reopens it. Peak drag lives here, so the animal is
+//             DECELERATING even though the bell is still moving.
+//   COAST     the interpulse. Nothing moves and it still travels: 32% of the distance
+//             covered per pulse happens here, after all kinematic motion has ceased.
+//
+// That third phase is what the earlier versions were missing entirely. A waveform that
+// relaxes straight into the next contraction has no rest in it, and a creature with no rest
+// in it reads as a pumping machine. The pause is the animal.
+//
+// The bell also moves less than you would guess: exumbrellar area grows about 1.3x from full
+// contraction, which is only ~14% on the DIAMETER — the earlier 20% was a squeeze-box.
+const JELLY_CONTRACT = 0.22;      // fraction of the cycle in the power stroke
+const JELLY_RELAX = 0.38;         // then the passive reopening
+                                  // and the rest is coast: bell still, animal still gliding
+const JELLY_SQUEEZE = 0.14;       // diameter change, from the 1.3x area figure
+const JELLY_ARM_LAG = 0.16;       // seconds the arms answer the bell late
+
+// Where in its own cycle a member is, 0..1.
+function jellyCycle(m, t) {
+    let u = ((t / m.pulse) + m.beat) % 1;
+    return u < 0 ? u + 1 : u;
+}
+// Squeeze 0..1 (1 = fully contracted), with a real flat COAST at the end of the cycle.
+function jellySqueezeAt(m, t) {
+    const u = jellyCycle(m, t);
+    if (u < JELLY_CONTRACT) return Math.sin((u / JELLY_CONTRACT) * Math.PI / 2);
+    if (u < JELLY_CONTRACT + JELLY_RELAX)
+        return Math.cos(((u - JELLY_CONTRACT) / JELLY_RELAX) * Math.PI / 2);
+    return 0;                                             // coasting, bell fully open
+}
+function jellySqueeze(m, t) {
+    return { sq: jellySqueezeAt(m, t), lag: jellySqueezeAt(m, t - JELLY_ARM_LAG) };
+}
+
+// 0 = deep and dim, 1 = just under the surface. Drives scale, alpha AND glow together,
+// because depth in water changes all three at once — a jelly does not merely get smaller.
+function jellyDepth(m, t) {
+    return 0.5 + 0.5 * Math.sin((t / JELLY_PERIOD) * Math.PI * 2 + m.phase);
+}
+
+// ── SWIMMING, INTEGRATED ONCE A FRAME ───────────────────────────────────────
+// ⚠️ NOT in a draw function. Both passes draw every member, so integrating there would
+// advance each animal twice per frame and tie its speed to the frame rate.
+//
+// A previous version dodged that by making the position two slow sines — bounded, cheap, and
+// wrong: it slides continuously, which is the one thing burst-and-coast is not. Real thrust
+// integrates fine here because the animals are SLOW. An Aurelia does a few cm/s; over a
+// three-minute race that is metres, tens of units, so a drift stays a drift instead of
+// swimming off the map. The worry that sent me to sines was unfounded.
+// Clocked like updateDriftingProps, its neighbour in the same call: this runs from draw(),
+// where there is no ambient dt to borrow, and owning the clock keeps the integration honest
+// whatever the frame rate does.
+let _jellyClock = 0;
+function updateJellyDrifts(now) {
+    const dt = _jellyClock ? Math.min(0.1, (now - _jellyClock) / 1000) : 0;
+    _jellyClock = now;
+    if (!(dt > 0)) return;
+    const props = state.course && state.course.props;
+    if (!props || !props.length) return;
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const t = state.time;
+    for (const p of props) {
+        const k = reg[p.kind];
+        if (!k || k.scatter !== 'jelly') continue;
+        for (const m of jellyMembers(p)) {
+            // They turn slowly and never hold a straight line for long.
+            m.head += (Math.sin(t * 0.19 + m.beat * 6.28) * 0.5 + Math.sin(t * 0.07 + m.phase) * 0.3) * dt;
+            const sq = jellySqueezeAt(m, t);
+            // THRUST ONLY WHILE CLOSING. The reopening is passive and draggy, so nothing is
+            // added there — the glide that follows is the coast, and it is most of the trip.
+            const closing = sq > (m._sq || 0);
+            if (closing) m.v += (sq - (m._sq || 0)) * m.push;
+            m._sq = sq;
+            // Drag: gentle, or the coast would not exist. This is the phase that carries a
+            // third of the distance.
+            m.v *= Math.pow(0.62, dt);
+            m.sx += Math.sin(m.head) * m.v * dt;
+            m.sy += -Math.cos(m.head) * m.v * dt;
+        }
+    }
+}
+
+// The bells are authored WHITE precisely so they can be coloured here. Same multiply-then-
+// destination-in bake `getTintedBoatPart` uses for hulls, cached per sprite and colour, so
+// four hues cost four bakes once rather than a composite every frame.
+const _jellyTintCache = new Map();
+function jellyTinted(img, color) {
+    const key = img.src + '|' + color;
+    let c = _jellyTintCache.get(key);
+    if (c) return c;
+    const size = img.naturalWidth;
+    if (!size) return null;
+    c = document.createElement('canvas');
+    c.width = c.height = size;
+    const g = c.getContext('2d');
+    g.drawImage(img, 0, 0);
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = color;
+    g.fillRect(0, 0, size, size);
+    g.globalCompositeOperation = 'destination-in';   // multiply paints transparent pixels too
+    g.drawImage(img, 0, 0);
+    _jellyTintCache.set(key, c);
+    return c;
+}
+
+function eachJelly(fn) {
+    const props = state.course && state.course.props;
+    if (!props || !props.length) return;
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    const t = state.time, cam = state.camera;
+    const halfW = canvas.width * 0.5 + 260, halfH = canvas.height * 0.5 + 260;
+    for (const p of props) {
+        const k = reg[p.kind];
+        if (!k || k.scatter !== 'jelly') continue;
+        const px = p.x + (p._dx || 0), py = p.y + (p._dy || 0);      // drifted position
+        if (Math.abs(px - cam.x) > halfW + JELLY_SPREAD || Math.abs(py - cam.y) > halfH + JELLY_SPREAD) continue;
+        for (const m of jellyMembers(p)) {
+            const x = px + m.ox + m.sx, y = py + m.oy + m.sy;
+            if (Math.abs(x - cam.x) > halfW || Math.abs(y - cam.y) > halfH) continue;
+            fn(m, x, y, jellyDepth(m, t), t, jellySqueeze(m, t));
+        }
+    }
+}
+
+// PASS 1 — the bodies, with the water. Called from the seabed plane.
+function drawJellyDrifts(ctx) {
+    eachJelly((m, x, y, d, t, pz) => {
+        const kind = m.small ? 'glowtide-jelly-bloom' : 'glowtide-jelly';
+        const s = propSprite(kind);
+        if (!s || !s.img.complete || !s.img.naturalWidth) return;
+        const img = jellyTinted(s.img, m.tint) || s.img;
+        // Nearer the surface is bigger, brighter and sharper; deeper is smaller and fainter,
+        // and the bell squeezes about a fifth of its width on every contraction.
+        const w = s.world * m.scale * (0.82 + 0.3 * d) * (1 - JELLY_SQUEEZE * pz.sq);
+        ctx.save();
+        ctx.globalAlpha = 0.30 + 0.45 * d;
+        ctx.translate(x, y);
+        ctx.rotate(m.spin);
+        ctx.drawImage(img, -w / 2, -w / 2, w, w);
+        ctx.restore();
+    });
+}
+
+// PASS 2 — the light and the arms, after the ambient wash so neither is dimmed.
+// Everything floating ON the surface, as holes to punch out of what is drawn UNDER it.
+//
+// ⚠️ WOUND FOR 'nonzero', NOT 'evenodd'. The bio-wake mask gets away with even-odd because
+// hulls rarely overlap, but a boat needs TWO shapes here — the waterline hull and a disc for
+// the rig, which sweeps well outside it — and under even-odd their overlap would cancel and
+// punch a hole in the hole. With every occluder wound opposite to the frame and 'nonzero',
+// shapes may overlap as much as they like and still subtract.
+function surfaceOccluders(cam, halfW, halfH) {
+    const mask = new Path2D();
+    mask.rect(cam.x - halfW - 300, cam.y - halfH - 300, (halfW + 300) * 2, (halfH + 300) * 2);
+    const near = (x, y, pad) => Math.abs(x - cam.x) < halfW + pad && Math.abs(y - cam.y) < halfH + pad;
+    const hole = (x, y, r) => { mask.moveTo(x + r, y); mask.arc(x, y, r, 0, Math.PI * 2, true); };
+    for (const b of state.boats) {
+        if (b.opacity !== undefined && b.opacity <= 0.1) continue;
+        if (!near(b.x, b.y, 90)) continue;
+        // The hull, exactly — reversed, so it winds against the frame.
+        const poly = getHullPolygon(b);
+        mask.moveTo(poly[poly.length - 1].x, poly[poly.length - 1].y);
+        for (let k = poly.length - 2; k >= 0; k--) mask.lineTo(poly[k].x, poly[k].y);
+        mask.closePath();
+        // The RIG. A sail is canvas over the water and hides what is beneath it just as the
+        // hull does, but it swings out past the gunwale and is not the hull's shape, so it
+        // gets its own disc rather than a bigger hull.
+        hole(b.x, b.y, 34);
+    }
+    const props = state.course && state.course.props;
+    if (props) {
+        const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+        for (const pr of props) {
+            const k = reg[pr.kind];
+            if (!k || k.plane !== 'surface' || k.scatter) continue;
+            const x = pr.x + (pr._dx || 0), y = pr.y + (pr._dy || 0);
+            if (!near(x, y, 80)) continue;
+            hole(x, y, (k.world || 40) * (pr.scale || 1) * 0.42);
+        }
+    }
+    for (const mk of (state.course.marks || [])) {
+        if (!near(mk.x, mk.y, 60)) continue;
+        hole(mk.x, mk.y, Math.max(14, (mk.radius || 12) * 1.1));
+    }
+    return mask;
+}
+
+function drawJellyGlow(ctx) {
+    const n = nightAmt();
+    if (n <= 0) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // ⚠️ A JELLY IS UNDER THE WATER, so nothing of it shows through a boat, a sail, a buoy or
+    // a mark floating over it. This pass runs after the fleet is drawn, so without the mask
+    // an additive bell painted straight over a hull and the animal appeared to be INSIDE the
+    // boat. The bodies are fine — they draw on the seabed plane and the fleet covers them —
+    // it is only the light that had to be told.
+    const _cam = state.camera;
+    ctx.clip(surfaceOccluders(_cam, ctx.canvas.width * 0.5 + 120, ctx.canvas.height * 0.5 + 120), 'nonzero');
+    eachJelly((m, x, y, d, t, pz) => {
+        const kind = m.small ? 'glowtide-jelly-bloom' : 'glowtide-jelly';
+        const s = propSprite(kind);
+        const world = (s ? s.world : 48) * m.scale;
+        const rgb = m.tint;
+        // THE HALO. Sized off the bell and the depth together, so a jelly rising toward the
+        // surface swells and brightens at once.
+        // THE LIGHT ANSWERS THE MUSCLE. A bioluminescent jelly brightens as it contracts,
+        // so the halo tightens and flares on the squeeze instead of pulsing independently
+        // of the body — which is what ties the glow to the animal rather than laying it on.
+        const R = world * (0.55 + 0.42 * d) * (1 - JELLY_SQUEEZE * 0.8 * pz.sq);
+        const flare = 1 + 0.5 * pz.sq;
+        const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+        g.addColorStop(0, rgb);
+        g.addColorStop(0.4, rgb);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.globalAlpha = Math.min(1, (0.07 + 0.24 * d) * flare * n);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, R, 0, Math.PI * 2);
+        ctx.fill();
+        // ── THE ARMS ────────────────────────────────────────────────────────
+        // ⚠️ DRAWN BEFORE THE BELL, so the bell covers their roots and they read as hanging
+        // UNDER the animal. On top they looked stuck to its back.
+        //
+        // ⚠️ AND THEY UNDULATE ALONG THEIR LENGTH. A quadratic curve swinging about its root
+        // is a rigid whisker being waved; a real oral arm carries a wave DOWN it, so each
+        // arm is walked in segments with a travelling sine whose amplitude grows toward the
+        // tip — the root barely moves, the end whips. That, and the lag behind the bell's
+        // squeeze, is the whole difference between seaweed and an animal.
+        //
+        // Trailing downstream is why these are drawn and not baked: a sprite locks one
+        // direction (props rotate by a static authored heading) and these have to stream
+        // with whatever the tide is doing, which on this venue reverses in the eddies.
+        // ⚠️ THEY TRAIL BEHIND THE ANIMAL, NOT DOWN THE TIDE. Earlier they streamed with
+        // getCurrentAt, which is wrong for something that DRIFTS: a jelly carried by the
+        // stream has no water moving past it, so there is nothing to stream in. What the
+        // arms lag behind is the creature's own swimming — so they trail opposite its
+        // heading, and stretch with how hard it is going.
+        const flow = m.head + Math.PI;
+        const pull = Math.min(1, m.v / 6);
+        const len = world * (0.62 + 0.5 * d) * (0.8 + 0.45 * pull) * (1 + 0.28 * pz.lag);
+        const arms = m.small ? 5 : 4;
+        const fx = Math.sin(flow), fy = -Math.cos(flow);          // downstream
+        const px = Math.cos(flow), py = Math.sin(flow);           // across the flow
+        const SEG = 7;
+        ctx.globalAlpha = Math.min(1, (0.07 + 0.20 * d) * n);
+        ctx.strokeStyle = rgb;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = m.small ? 1.2 : 1.8;
+        for (let a = 0; a < arms; a++) {
+            const u = arms > 1 ? (a / (arms - 1) - 0.5) : 0;      // -0.5..0.5 across the bell
+            // Roots sit UNDER the bell, well inside its rim.
+            const rx = x + px * u * world * 0.2;
+            const ry = y + py * u * world * 0.2;
+            ctx.beginPath();
+            ctx.moveTo(rx, ry);
+            for (let k = 1; k <= SEG; k++) {
+                const f = k / SEG;                                 // 0 at the root, 1 at the tip
+                // The wave travels outward; amplitude grows with the cube of the distance
+                // along, so the root is nearly still and only the last third really moves.
+                const wave = Math.sin(f * 4.2 - t * 3.1 + m.beat * 6.28 + a * 1.5);
+                const amp = world * 0.16 * f * f * (0.6 + 0.6 * pz.lag);
+                // Arms gather together as the bell fires and spread as it opens.
+                const spread = u * (0.5 - 0.28 * pz.lag) * world * 0.5 * f;
+                const dx = fx * len * f + px * (spread + wave * amp);
+                const dy = fy * len * f + py * (spread + wave * amp);
+                ctx.lineTo(rx + dx, ry + dy);
+            }
+            ctx.stroke();
+        }
+        // ⚠️ THE BELL IS ALSO A LIGHT, and leaving it out of this pass was the whole reason
+        // a drift read as coloured BLOBS. The body alone is dimmed twice — once for being
+        // under water on the seabed plane, again by the ambient wash — so all that survived
+        // was the halo, and a halo without structure is a firework. Drawing the tinted bell
+        // additively here puts the clover and the corona back into the light, which is what
+        // makes it a glowing jellyfish rather than a glowing dot.
+        const sp = propSprite(kind);
+        if (sp && sp.img.complete && sp.img.naturalWidth) {
+            const img = jellyTinted(sp.img, rgb) || sp.img;
+            const w = world * (0.82 + 0.3 * d) * (1 - JELLY_SQUEEZE * pz.sq);
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, (0.16 + 0.5 * d) * flare * n);
+            ctx.translate(x, y);
+            ctx.rotate(m.spin);
+            ctx.drawImage(img, -w / 2, -w / 2, w, w);
+            ctx.restore();
+        }
+    });
+    ctx.restore();
+}
+
 function drawNightWash(ctx) {
     const n = nightAmt();
     if (n <= 0) return;
@@ -16402,6 +16764,15 @@ function drawNightGlow(ctx) {
     const isls = state.course.islands || [];
     for (const isl of isls) {
         if (isl.isFloe || isl.awash) continue;
+        // ⚠️ A HIDDEN ISLAND IS NOT A COAST. `compileVenueDoc` turns every hard fixed prop
+        // into a hidden 12-gon collider so physics, the router and the chart all meet it as
+        // an ordinary shape — the doc calls them "a collider behind something that draws the
+        // coast". They have vertices like any island, so this loop happily broke surf on all
+        // eighteen channel buoys: a 12-gon at contactR 13 is twelve edges of 6.7 u, each one
+        // chunk, so each buoy got a ring of twelve 34-60 u blue blobs. Additively that came to
+        // roughly twice the alpha of the buoy's own lamp, which is how a RED light ended up
+        // reading as a blue ball. Anything hidden draws no coastline, so it breaks no water.
+        if (isl.hidden) continue;
         const v = isl.vertices;
         if (!v || v.length < 3) continue;
         if (Math.abs(isl.x - cam.x) > halfW + isl.radius || Math.abs(isl.y - cam.y) > halfH + isl.radius) continue;
@@ -19255,6 +19626,7 @@ function draw() {
     // drawShoals. Painted shallows go first of all: a shoal inside a lagoon is still a
     // bar, so its sand draws over the zone's tint.
     updateDriftingProps(performance.now());
+    updateJellyDrifts(performance.now());
     // Moonlight lies ON the water, under the waves, the wakes and the fleet.
     drawNightWater(ctx);
     drawShallows(ctx);
@@ -19268,6 +19640,9 @@ function draw() {
     // layer of the moving surface runs across them all.
     drawReefs(ctx);
     drawProps(ctx, 'seabed');
+    // Jellyfish bodies ride with the seabed layer so the water draws over them — that is
+    // what sells the depth they are rising and falling through. Their light comes later.
+    drawJellyDrifts(ctx);
 
     // SWELL FIRST, under everything else on the water. It is the shape of the sea itself —
     // the biggest, slowest structure there is — so the wakes, the cat's-paws and the
@@ -19434,6 +19809,7 @@ function draw() {
     // the world dims together, and the HUD-ish overlays that follow stay legible. No-op on
     // every venue that authors no `palette.night`.
     drawNightWash(ctx);
+    drawJellyGlow(ctx);
     drawNightGlow(ctx);
 
     // Draw Indicators

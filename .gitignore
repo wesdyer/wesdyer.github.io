@@ -14,6 +14,11 @@ clear-for-action/.DS_Store
 regatta/art/batch_input.jsonl
 regatta/art/.batch_state.json
 
+# plant_cove.py's working directory: the cached distance-transform geometry (~1.4 MB,
+# rebuilt in 9s whenever the coastline changes) and the field/zone diagnostic PNGs it
+# writes under --maps. All regenerable, none of it input.
+regatta/art/_cove_fields/
+
 # Credentials — never commit. The OpenAI key belongs in the shell profile or in
 # ~/.config/openai/regatta-key (outside the repo), never in a tracked file.
 .env
