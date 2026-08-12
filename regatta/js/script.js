@@ -3047,7 +3047,7 @@ class BotController {
             }
             if (contactT < Infinity) score -= contactW * Math.max(0, 1 - contactT / T);
             score += (x - boat.x) * ux + (y - boat.y) * uy;
-            return { score, contactT };
+            return { score, contactT, x, y };
         };
 
         const base = roll(0);
@@ -3056,9 +3056,30 @@ class BotController {
         // dodges around 6-9s-away floes made the track a permanent zigzag (made-good
         // ratio ~0.3 at full boat speed).
         if (base.contactT > 4.5) return null;
+        // THE SAME BLINDNESS, ONE LAYER DOWN (2026-08-11, follow-up to b382aab).
+        //
+        // The retrograde filter that landed on `applyAvoidance` (arctic 1.66x ->
+        // 1.55x) came from `_ring_motion`: inside the armed granite-isle rounding
+        // 46.7% of all motion is RADIAL and 1 701 u/boat is RETROGRADE. The
+        // avoidance argmin produced 975 u of that retrograde — and THIS layer
+        // produced 294 u more, over 19.5% of the armed ticks, for exactly the same
+        // reason: nothing here knows the boat is committed to a sweep.
+        //
+        // Same argument, same shape: a dodge that carries her backwards round the
+        // mark unwinds sweep she has already earned. It is graded on the ROLLED
+        // TRACK, not the heading, because the roll already models her turn. If no
+        // prograde candidate improves on holding, the function returns null exactly
+        // as today. Armed rounding leg only, and floe venues by construction.
+        const rmFT = state.course.roundMark && legRoundMark(boat.raceState.leg);
+        const armFT = !!(rmFT && boat.raceState.roundArmed && boat.raceState.leg >= 1
+                         && !this._outbound);
+        const brgFT = armFT ? Math.atan2(boat.y - rmFT.y, boat.x - rmFT.x) : 0;
+        const sgnFT = (rmFT && rmFT.side === 'port') ? -1 : 1;
+        const utxFT = -Math.sin(brgFT) * sgnFT, utyFT = Math.cos(brgFT) * sgnFT;
         let bestOff = 0, bestScore = base.score + 50;
         for (const off of [0.15, -0.15, 0.35, -0.35, 0.6, -0.6, 0.9, -0.9, 1.3, -1.3, 1.7, -1.7]) {
             const r = roll(off);
+            if (armFT && ((r.x - boat.x) * utxFT + (r.y - boat.y) * utyFT) < 0) continue;
             if (r.score > bestScore) { bestScore = r.score; bestOff = off; }
         }
         if (bestOff === 0) return null;
