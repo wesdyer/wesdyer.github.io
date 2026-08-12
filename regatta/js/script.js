@@ -6203,7 +6203,27 @@ const LAND_TEXTURES = {
     // 3-6 m across. That is a boulder, which is what it should be. Halving the rock to 128
     // would make it a cobble field.
     coastalscrub: { src: 'assets/images/terrain/bay/bay-scrub.png', tile: 128, alpha: 0.4 },
-    coastalrock:  { src: 'assets/images/terrain/bay/bay-rock.png',  tile: 256, alpha: 0.35 }
+    // Alpha MEASURED on the delivered tile, not pre-registered: sd 7.28 at tile 128, so 0.7
+    // would land on-screen sd 5.10 — near the loud end of the 1.38-6.75 set, and wrong for a
+    // narrow strip that must not pull the eye off the water. 0.5 lands 3.64, between sand
+    // (2.80) and the scrub it is drawn across (5.72), with the shell chips fully intact.
+    lane:         { src: 'assets/images/terrain/bay/bay-lane.png',  tile: 128, alpha: 0.5 },
+    coastalrock:  { src: 'assets/images/terrain/bay/bay-rock.png',  tile: 256, alpha: 0.35 },
+    // ── THE SAME GRANITE, SEEN THROUGH WATER ────────────────────────────────
+    // Its own row rather than borrowing `granite` outright, because both numbers want to
+    // change and neither may move on the arctic's mountains. It is the identical image file
+    // — this is one stone, not two — with the tile HALVED and the alpha well under half.
+    //
+    // 128, so the fracture pattern is twice as fine. At 256 a drowned head is barely one
+    // tile across and you read the individual cobbles as boulders the size of a boat, which
+    // is the same "photograph zoomed too far in" failure the beach sand note describes. The
+    // rock wants texture, not features.
+    //
+    // 0.13 because water KILLS CONTRAST, and drawing detail at full strength under it is
+    // how a submerged thing stops looking submerged. Granite in air carries 0.3; this is
+    // roughly what that survives as once the column is over it, put in deliberately rather
+    // than arrived at by accident.
+    sunkenrock:   { src: 'assets/images/terrain/arctic/granite.png', tile: 128, alpha: 0.13 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];
@@ -16495,7 +16515,7 @@ function drawJellyGlow(ctx) {
     eachJelly((m, x, y, d, t, pz) => {
         const kind = m.small ? 'glowtide-jelly-bloom' : 'glowtide-jelly';
         const s = propSprite(kind);
-        const world = (s ? s.world : 48) * m.scale;
+        const world = (s ? s.world : 24) * m.scale;
         const rgb = m.tint;
         // THE HALO. Sized off the bell and the depth together, so a jelly rising toward the
         // surface swells and brightens at once.
@@ -16763,7 +16783,12 @@ function drawNightGlow(ctx) {
     // into an outline again.
     const isls = state.course.islands || [];
     for (const isl of isls) {
-        if (isl.isFloe || isl.awash) continue;
+        // ⚠️ NOTHING SUBMERGED BREAKS WATER. Same three exclusions the DAYTIME surf makes
+        // (updateSurf, and surfDryEdges' probe) — a bar, a coral reef and a sunken rock all
+        // lie under the surface, so there is no coastline for a wave to break on. Glowtide's
+        // `sunkenrock` is the kind that made this bite: it is the hazard you are NOT warned
+        // about, and a ring of bioluminescent surf would have advertised it perfectly.
+        if (isl.isFloe || isl.awash || isl.reef) continue;
         // ⚠️ A HIDDEN ISLAND IS NOT A COAST. `compileVenueDoc` turns every hard fixed prop
         // into a hidden 12-gon collider so physics, the router and the chart all meet it as
         // an ordinary shape — the doc calls them "a collider behind something that draws the
@@ -17133,6 +17158,63 @@ function surfOutwardSign(isl) {
     return sign;
 }
 
+// How far outboard to ask "is there water here?". Small, because the question is only
+// whether the NEXT shape starts immediately outside this edge — a longer reach would step
+// across a narrow channel and call a real shore dry.
+const SURF_DRY_PROBE = 14;
+
+// Which of this shape's edges are NOT against water — cached per island, like _outSign.
+//
+// ⚠️ A SHAPE IS NOT A COASTLINE. drawSurf used to ring every island's whole perimeter,
+// which is right only when a shape's outline IS its waterline. Lighthouse Cove is built the
+// other way: a big sand isle with a `coastalscrub` cap drawn ON TOP of it and rock outcrops
+// on top of that, so most of those shapes' edges are inland boundaries between two kinds of
+// ground. Every one of them got a full ring of breakers, painted over the land, because
+// drawSurf runs after drawIslands — surf breaking on a rock in the middle of a meadow.
+//
+// The test is the one surfOutwardSign already uses: step off the edge along the outward
+// normal and ASK. If that point is inside another solid shape, this edge faces ground, not
+// sea. A rock outcrop half on the shore keeps surf on its seaward edges and loses it on the
+// inland ones, which is what a photograph shows and what a per-shape flag could not express.
+//
+// Cached because the geometry is fixed — surf already skips drifting floes, so nothing that
+// moves reaches this. One pass per island per race, not per edge per frame.
+function surfDryEdges(isl) {
+    if (isl._surfDry) return isl._surfDry;
+    const v = isl.vertices, sgn = surfOutwardSign(isl);
+    const dry = new Array(v.length).fill(false);
+    // ⚠️ DRAWN GROUND ONLY — `hidden` shapes are excluded, and that is a correctness point
+    // rather than an optimisation. compile emits a hidden circle for every `contact: hard`
+    // prop, and the channel buoys' colliders sit in open WATER; counting them as ground
+    // would silence the surf on any real shore a buoy happens to be moored off. The river's
+    // 82 hidden banks are the mirror case — they lie behind one continuous drawn shore, so
+    // excluding them changes nothing there. The question this asks is what the PLAYER sees
+    // outside the edge, so only shapes that draw get a vote.
+    // `reef` is excluded for a second reason: a coral reef is SUBMERGED. It draws, so it
+    // passes the hidden test, but a beach facing one across a lagoon still meets water and
+    // still breaks. No shipped venue exercises this today (measured: lagoon's inland edges
+    // all probe into coralsand, not reef) — it is here so the first venue that puts a beach
+    // inside a reef ring does not silently lose its surf.
+    const others = (state.course.islands || []).filter(o =>
+        o !== isl && !o.hidden && !o.isFloe && !o.awash && !o.reef &&
+        o.vertices && o.vertices.length >= 3);
+    for (let i = 0, j = v.length - 1; i < v.length; j = i++) {
+        const a = v[j], b = v[i];
+        const ex = b.x - a.x, ey = b.y - a.y;
+        const len = Math.hypot(ex, ey);
+        if (len < 4) continue;
+        const px = (a.x + b.x) / 2 + (ey / len) * sgn * SURF_DRY_PROBE;
+        const py = (a.y + b.y) / 2 + (-ex / len) * sgn * SURF_DRY_PROBE;
+        for (const o of others) {
+            const dx = px - o.x, dy = py - o.y;
+            if (dx * dx + dy * dy > o.radius * o.radius) continue;   // bounding reject first
+            if (pointInPoly(px, py, o.vertices)) { dry[i] = true; break; }
+        }
+    }
+    isl._surfDry = dry;
+    return dry;
+}
+
 // ── FOAM LEFT BEHIND WHERE A CREST BREAKS ───────────────────────────────────
 //
 // ⚠️ THIS LIVES IN UPDATE, NOT IN drawSurf, and that is not a style preference. Spawning
@@ -17170,9 +17252,11 @@ function updateSurf(dt) {
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl), V = isl.vertices;
+        const dry = surfDryEdges(isl);
 
         for (let i = 0, j = V.length - 1; i < V.length; j = i++) {
             if (budget <= 0) break;
+            if (dry[i]) continue;                        // no foam thrown onto inland ground
             const a = V[j], b = V[i];
             const ex = b.x - a.x, ey = b.y - a.y;
             const len = Math.hypot(ex, ey);
@@ -17252,8 +17336,10 @@ function drawSurf(ctx) {
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl);
         const v = isl.vertices;
+        const dry = surfDryEdges(isl);
 
         for (let i = 0, j = v.length - 1; i < v.length; j = i++) {
+            if (dry[i]) continue;                        // this edge faces ground, not sea
             const a = v[j], b = v[i];
             const ex = b.x - a.x, ey = b.y - a.y;
             const len = Math.hypot(ex, ey);
@@ -20656,6 +20742,11 @@ const ISLAND_STYLES = {
     // veg is a paler DRY STONE, not a green: the granite/redrock/mud convention for a look
     // with no vegetation on it. No trees — bare rock.
     coastalrock:  { body: '#a19481', stroke: '#6f6556', veg: '#b4a997', rock: '#817766', trees: false },  // body = bay-rock DELIVERED tile mean
+    // The village lane. body = the DELIVERED tile's own mean, so alpha stays a pure contrast
+    // knob; the other three are the spec's offsets carried onto it (the bayou-mud precedent).
+    // veg and rock are drier and paler shell rather than a green — the granite/redrock/mud
+    // convention for a look that has no vegetation on it. No trees on a road.
+    lane:     { body: '#cac2ad', stroke: '#afa898', veg: '#e0dbcc', rock: '#a29a8d', trees: false },  // body = bay-lane DELIVERED tile mean
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
@@ -20681,6 +20772,12 @@ const ISLAND_STYLES = {
     // No LAND_TEXTURES row, so it fills flat with lit facets over it. Fine at race scale,
     // and where granite started; add a tile at the venue's art pass.
     karst:    { body: '#5d6068', stroke: '#24262b', veg: '#414a44', rock: '#7d8087', trees: false },
+    // The same limestone, drowned, and DARK — a rock you have to look for. These are IN-AIR
+    // colours like every other style; submergedTint puts the water column over them at bake
+    // time (see sunkenGround), so the body arrives on screen a good deal closer to the water
+    // than it looks here. This row is the single source for the material: the bake, the
+    // minimap and the editor chip all read it, so darkening the rock is this one hex.
+    sunkenrock: { body: '#565f6f', stroke: '#1a1d23', veg: '#3a423d', rock: '#6d7078', trees: false },
     // Sandy shoal — WET sand, deliberately darker than the dry beach above it.
     //
     // This used to be set equal to `tropical` on the principle that a bar is the beach
@@ -21456,15 +21553,81 @@ const REEF_SAND = [225, 214, 178];   // the pockets that open inside the band
 const REEF_DARK = [40, 44, 30];      // relief shadow under every clump
 const REEF_BASE = [70, 66, 44];      // the rock mass the rubble sits on
 const REEF_ALPHA = 0.7;
+// ── THE SAME BAKE, IN STONE ─────────────────────────────────────────────────
+// A `sunkenrock` is a reef in every structural sense — a submerged solid drawn on the
+// bottom — so it shares the geometry (blurred mass, feathered rim, clump field) and
+// differs only in palette and in how colour is DISTRIBUTED. A coral reef is a garden:
+// colour arrives in patches, because colonies and sand pockets are separate organisms
+// and separate ground. A drowned rock is ONE material, so the patch grid is bypassed
+// entirely and the clumps just read as boulders and shadow. Patching stone would look
+// like lichen, which is the one thing a thing underwater cannot have.
+//
+// Bases overshoot COOL here where the coral bases overshoot warm, and for the mirror
+// reason: these sit under Glowtide's indigo, not a turquoise lagoon, and karst is a
+// neutral-cool grey that goes olive the moment anything warm is left in it. Same
+// simultaneous-contrast trap the karst body colour hit in air (see ISLAND_STYLES.karst).
+// ⚠️ THE FOUR PLANES ARE GRANITE'S OWN, BRIGHTENED — not a stone-coloured clump field. A
+// drowned rock got the reef's rubble treatment first and read exactly like a reef, because
+// rubble is what that field draws. What makes granite read as granite is bakeIslandSprite's
+// FACET FAN: flat-shaded triangles from the summit to every edge, four greys, hard edges,
+// no gradient anywhere. So this is that same fan, and the only thing the water changes is
+// the palette it is painted in.
+//
+// The values overshoot bright for the same reason the coral bases overshoot warm: they are
+// read through submergedTint, which on Glowtide multiplies the spread by ~0.28 and drags
+// everything toward a near-black indigo. Granite's literal greys land at luma 19-33 there,
+// i.e. a black hole with a slightly less black hole in it. These are pitched so the band
+// STRADDLES the water's own ~40: shadowed faces come out near 27, the lit crown near 54.
+// That is what makes it a lit stone mass rather than a silhouette.
+// ONE SOURCE FOR WHAT THIS ROCK IS MADE OF: ISLAND_STYLES.sunkenrock. The bake used to
+// carry its own base colour beside the style's, which meant the minimap, the editor chip
+// and the rock itself could drift to three answers about the same stone — the exact split
+// the shoal swatch note in editor.js was written about. The style row is the material; this
+// is only the water going over it.
+//
+// ⚠️ THE STYLE BODY IS THE ROCK IN AIR, so it is read UNSUBMERGED and tinted here. Three
+// multipliers stand between it and the screen — submergedTint compresses the range to ~0.28
+// of itself, the draw alpha takes a cut, and the night wash roughly halves what is left —
+// which is why a body that looks like ordinary dark slate in the picker arrives as something
+// a good deal closer to the water.
+function hexToRgb(h, fb) {
+    const s = String(h || '').replace('#', '');
+    return s.length === 6
+        ? [parseInt(s.slice(0, 2), 16), parseInt(s.slice(2, 4), 16), parseInt(s.slice(4, 6), 16)]
+        : fb;
+}
+// ⚠️ THE WINDOW IS NARROW, AND BOTH ENDS OF IT WERE FOUND THE HARD WAY. The body hex is a
+// far weaker knob than it looks, because submergedTint LERPS TOWARD THE WATER: past a point,
+// a darker body just buys more water colour. Swept on Glowtide, re-baking between each and
+// measuring the MEDIAN over the rock (point samples are useless here — they land on moon
+// glitter and wind streaks and swing 20 luma frame to frame):
+//
+//     bodyLuma  62 -> 22.6      100 -> 27.1      142 -> 31.7
+//     fit: on-screen luma = 0.118 * bodyLuma + 15.2, against water at ~24
+//
+// Owner-judged, and this is the part no measurement gives you: bodyLuma 124 read as TOO
+// LIGHT (a rock brighter than the sea it is under) and bodyLuma 24 as TOO DARK (a hole, not
+// a stone). The value below is the midpoint of that bracket. Anything under ~26 on screen is
+// wasted effort in any case: the rock is UNDER the surface, so the moon wash, the glitter
+// and the wind waves paint over it afterwards, and past that point you are looking at the
+// water and not at the rock.
+function sunkenGround() {
+    return submergedTint(hexToRgb((ISLAND_STYLES.sunkenrock || {}).body, [86, 95, 111]));
+}
+// ⚠️ NOT REEF_ALPHA. 0.7 is right for coral — a garden is a thing you see INTO, and the
+// lost 30% is water over the top of it. A rock is opaque, and at 0.7 nearly a third of the
+// facet contrast that survives submergedTint is thrown away again on the way to the screen.
+const SUNKEN_ALPHA = 0.95;
 const REEF_SPACING = 13;             // dense: the clumps have to TOUCH to read as rubble
 const REEF_PATCH = 90;               // world units — the size of a colony or a sand pocket
 const REEF_UNITS_PER_PX = 2.0;       // crisper than the drag-field bakes: this is texture, not gradient
 function bakeReefSprite(isl) {
+    const stone = isl.style === 'sunkenrock';
     const rubble = REEF_RUBBLE.map(t => submergedTint(t));
     const accents = REEF_ACCENTS.map(t => submergedTint(t));
     const sand = submergedTint(REEF_SAND);
     const dark = submergedTint(REEF_DARK);
-    const ground = submergedTint(REEF_BASE);
+    const ground = stone ? sunkenGround() : submergedTint(REEF_BASE);
     const R = isl.radius + 80;
     const px = Math.max(32, Math.min(1024, Math.ceil((R * 2) / REEF_UNITS_PER_PX)));
     const scale = px / (R * 2);
@@ -21476,9 +21639,76 @@ function bakeReefSprite(isl) {
     // firm enough to read as a thing with an edge.
     const pts = isl.vertices.map(v => ({ x: (v.x - isl.x + R) * scale, y: (v.y - isl.y + R) * scale }));
     const feather = Math.min(40, isl.radius * 0.3);
+    const css = (c, a) => a == null ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`;
+
+    // ── STONE: A FLAT DARK ROCK IN THE GRANITE TEXTURE ──────────────────────
+    // Everything below this block is the coral bake — a clump field, which is the correct
+    // drawing of rubble and the wrong drawing of a rock. A drowned head is much simpler than
+    // either that or the island bake's lit plane fan: one flat dark body, the granite tile
+    // over it, and nothing else. It got the plane fan first and that was over-rendered — a
+    // fan is a MOUNTAIN cue, the summit-to-edge shading of something standing up in the air,
+    // and there is no summit here to catch light.
+    //
+    // The granite tile is shared with the arctic's rock rather than reproduced, so the two
+    // are literally the same stone; only the base colour under it differs, which is what
+    // getLandPattern's per-base cache is for. No coastline STROKE — an outline is the single
+    // strongest "this is land" cue, and drawing one would undo the whole object.
+    if (stone) {
+        const base = css(ground);
+        // ⚠️ WORLD SPACE FROM HERE, not sprite pixels, and the reason is the TEXTURE. A
+        // pattern tiles in the space it is filled in, so filling in sprite pixels would size
+        // the 256px granite tile by the sprite's own scale — coarser on a big rock, finer on
+        // a small one, and never matching a granite island. Under this transform the tile is
+        // 256 WORLD units wide on every rock, exactly as it is on land.
+        g.save();
+        g.scale(scale, scale);
+        g.translate(R - isl.x, R - isl.y);
+        const bx = isl.x - R, by = isl.y - R, bw = R * 2;
+
+        // A soft rim, so the silhouette is a mass in the water rather than a shoreline. It
+        // is the one soft thing here; the body inside it is flat.
+        g.filter = `blur(${Math.max(1.5, (feather / 1.8) * scale)}px)`;
+        g.fillStyle = base;
+        traceAngularPoly(g, isl.vertices);
+        g.fill();
+        g.filter = 'none';
+
+        g.save();
+        traceAngularPoly(g, isl.vertices);
+        g.clip();
+        g.fillStyle = base;
+        g.fillRect(bx, by, bw, bw);
+        const pat = getLandPattern(g, 'sunkenrock', base);
+        if (pat) { g.fillStyle = pat; g.fillRect(bx, by, bw, bw); }
+        g.restore();
+
+        // THE EDGE. Stroked AFTER the clip is released, so the outer half of the line is not
+        // shaved off — clipping to the outline and stroking it inside that clip is how you
+        // get a line that looks half its width and reads soft.
+        //
+        // The same dark-stroke idiom as every land kind, taken from the style table so the
+        // two follow each other, and submerged like everything else here. It works for the
+        // opposite reason it does on land: there a dark line separates a LIGHT body from
+        // darker water, here the body and the water are close in value (41 against 36) and
+        // the line is darker than both, so it is the edge that carries the shape.
+        const stEdge = (ISLAND_STYLES[isl.style] || {}).stroke;
+        g.strokeStyle = css(submergedTint(hexToRgb(stEdge, [22, 24, 28])));
+        g.lineWidth = 2.5;
+        g.lineJoin = 'round';
+        traceAngularPoly(g, isl.vertices);
+        g.stroke();
+        g.restore();
+        // ⚠️ DO NOT CACHE AN UNTEXTURED BAKE. The tile arrives asynchronously, and a sprite
+        // baked before it lands would keep its flat fill for the whole race — the sprite is
+        // only rebuilt when the key changes. A key that cannot match forces one more attempt
+        // next frame, and it stops as soon as the image is in.
+        isl._reefSprite = { canvas: cv, r: R, tint: pat ? ground.join(',') : '__untextured' };
+        return;
+    }
+
     g.filter = `blur(${Math.max(1, (feather / 3) * scale)}px)`;
     g.globalAlpha = 0.95;
-    g.fillStyle = `rgb(${ground[0]},${ground[1]},${ground[2]})`;
+    g.fillStyle = css(ground);
     traceRoundedPoly(g, pts);
     g.fill();
     g.filter = 'none';
@@ -21567,17 +21797,25 @@ function bakeReefSprite(isl) {
 // HEAD placed on a reef draws over it) and under everything at the surface.
 function drawReefs(ctx) {
     if (!state.course || !state.course._hasReefs) return;
+    // ⚠️ THE KEY IS PER MATERIAL. The bake stamps the sprite with the tint of the ground it
+    // used, and this test re-bakes when the water has moved under it. A stone reef bakes
+    // from the sunkenrock style, so checking every shape against the coral key would find a
+    // permanent mismatch and re-bake a full sprite EVERY FRAME — invisible on screen and
+    // ruinous off it.
     const tintKey = submergedTint(REEF_BASE).join(',');
+    const stoneKey = sunkenGround().join(',');
     const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x, camY = state.camera.y;
     for (const isl of state.course.islands) {
         if (!isl.reef || isl.hidden) continue;
         const limit = viewRadius + isl.radius;
         if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
-        if (!isl._reefSprite || isl._reefSprite.tint !== tintKey) bakeReefSprite(isl);
+        const isStone = isl.style === 'sunkenrock';
+        const want = isStone ? stoneKey : tintKey;
+        if (!isl._reefSprite || isl._reefSprite.tint !== want) bakeReefSprite(isl);
         const s = isl._reefSprite;
         ctx.save();
-        ctx.globalAlpha = REEF_ALPHA;
+        ctx.globalAlpha = isStone ? SUNKEN_ALPHA : REEF_ALPHA;
         ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
         ctx.restore();
     }

@@ -232,14 +232,28 @@ console.log('\nleg count does not leak between venues');
                                 const t = window.VenueDoc.traits(s);
                                 return t.motion === 'fixed' && !t.awash;
                             }).length;
-                            // A fixed CONTACT PROP compiles to exactly one hidden circle
+                            // A fixed HARD-contact prop compiles to exactly one hidden circle
                             // collider — solid ground the document authored, just not as
                             // a polygon. Counting them keeps this check meaning "nothing
                             // solid is lost", instead of demanding the colliders' absence
                             // the moment a venue plants its first coral head.
+                            //
+                            // ⚠️ HARD ONLY, and this counted "contact !== none" until
+                            // Lighthouse Cove's harbour placed the first SOFT-contact props.
+                            // compile emits a hidden isle for hard contact but a hidden
+                            // SHOAL for soft — and a shoal is awash, so it is correctly
+                            // absent from landShapes. Counting soft props here demanded land
+                            // the engine is right not to make: one float and four dinghies
+                            // took bay to "doc 81 -> runtime 76" and turned this gate red on
+                            // a venue with nothing wrong with it. The shapes filter above
+                            // already excludes awash for exactly this reason; the prop
+                            // branch simply never honoured it.
+                            //
+                            // (No backticks in here: this whole block is inside an
+                            // execFileSync template literal, so one would end the string.)
                             const props = (d.props || []).filter(p => {
                                 const t = window.VenueDoc.propTraits(p);
-                                return t.motion === 'fixed' && t.contact !== 'none';
+                                return t.motion === 'fixed' && t.contact === 'hard';
                             }).length;
                             return shapes + props;
                         })(),

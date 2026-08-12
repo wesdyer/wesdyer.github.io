@@ -954,6 +954,26 @@ const PROP_KINDS = {
     // it inland and the building is backwards. Everything else in this town only needs its
     // ridges to agree with its neighbours.
     'bay-cove-boatshed':     { label: 'Boat shed',           world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── THE COVE'S CROSSINGS ────────────────────────────────────────────────
+    // ⚠️ `canopy`, AND IT IS THE ONLY THING IN THIS VENUE THAT BELONGS THERE. Everything else
+    // the cove owns stands on land or floats; a bridge deck is 30m up and the fleet sails
+    // UNDERNEATH it — which is the literal definition the plane comment gives ("over the
+    // boats — a tree top an overhung hull passes beneath"). On `surface` a bridge would draw
+    // under the boats, so a cargo ship would slide over the top of a span it is supposed to
+    // pass below. canopyAlpha also fades it as the camera goes under, which is right here for
+    // the same reason it is right for a crown: you must still see your own boat.
+    //
+    // contact none: you sail under it, not into it. If a pier ever needs to stop a hull, that
+    // is a hidden hard shape at the pier's footprint, not a collider on the span.
+    //
+    // ⚠️ THE DOUBLED `bay-bay-` IN THE ID IS CORRECT AND IS NOT A TYPO. propSprite derives the
+    // sprite path by splitting the kind at its FIRST hyphen — `<venue>-<name>` ->
+    // props/<venue>/<name>.png — and paths.py leaves the bay's keys unstripped because its
+    // assets share no common prefix. So the manifest key `bay-cove-bridge-truss` ships to
+    // props/bay/bay-cove-bridge-truss.png, and only the id `bay-bay-cove-bridge-truss` finds
+    // it. This is the exact case the harbour block's note predicted for any bay key that
+    // already begins with `bay-`; every other cove asset is keyed `cove-*` to avoid it.
+    'bay-bay-cove-bridge-truss': { label: 'Truss bridge',   world: 870, plane: 'canopy', contact: 'none', motion: 'fixed' },
     // THE FLEET'S HOME, and the only object in the game that carries the SaltyCritter Yacht
     // Club's own burgee — painted flat on the seaward roof slope, which is why it survives a
     // camera that deletes anything vertical. LANDMARK: venue identity, on land, never an
@@ -964,6 +984,17 @@ const PROP_KINDS = {
     // what a row of pilings actually is; a baked cluster would stamp one arrangement and
     // could never make a line along a wharf face.
     'bay-cove-piling':       { label: 'Piling',              world:  14, plane: 'surface', contact: 'hard', contactR: 5, motion: 'fixed' },
+    // ⚠️ A TILING PROP: sections butt end to end to make a wall of any length, and turn a
+    // corner simply by butting at an angle. TWO THINGS MAKE THAT WORK AND BOTH ARE EASY TO
+    // UNDO. Its sprite has NO outline on the two ends (the stone run is cut mid-stone), and
+    // its manifest fillTo is 1.0 rather than the usual 0.86 — fillTo insets content inside
+    // the frame, but drawProps draws the sprite at `world` px, so at 0.86 a section would
+    // span only 129 of its 150 units and every join would gap by 14%.
+    //
+    // ⚠️ SPACING: place sections exactly `world` apart (150). The same arithmetic applies to
+    // bay-cove-quay, which ships at fillTo 0.86 — its deck spans 172 of its 200 units, so
+    // quay sections butt at 172, not 200.
+    'bay-cove-wall-stone':   { label: 'Stone wall',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
     // The two repeatable edges. Both are `hazard` on bayou-dock's argument — a landmark never
     // reads as an obstacle in the water, and a structure reaching into the channel is the whole
     // reason to place one — and both carry a contactR that is honest about its own limits.
@@ -976,6 +1007,23 @@ const PROP_KINDS = {
     'bay-cove-pier':         { label: 'Pier',                world: 150, plane: 'surface', contact: 'hard', contactR: 12, motion: 'fixed' },
     // The quay TILES: sections butt end to end, so its two short ends are plain by design.
     'bay-cove-quay':         { label: 'Quay section',        world: 200, plane: 'surface', contact: 'hard', contactR: 16, motion: 'fixed' },
+    // A block of sixteen 20ft boxes standing on the quay. `ambient` and contact none — it is
+    // cargo on land, not an obstacle in the water — and the one asset here whose colour is
+    // the point: the freight shore is otherwise concrete and rusted steel.
+    'bay-cove-containers':   { label: 'Containers',          world: 225, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The ferry berth, and the biggest structure on the waterfront. Its transfer ramp
+    // projects from ONE end and that end faces the water — like the boat shed's canopy, this
+    // is a heading that MEANS something rather than merely looking tidy.
+    'bay-cove-pier-ferry':   { label: 'Ferry terminal',      world: 320, plane: 'surface', contact: 'hard', contactR: 24, motion: 'fixed' },
+    // A floating dinghy landing, chained rather than piled — so `float`, the plane that draws
+    // AFTER every mark the water makes (no wake ripples across something floating on top of
+    // them) and BEHIND the land. `soft`: a float gives when you nudge it.
+    'bay-cove-float':        { label: 'Dinghy float',        world:  70, plane: 'float',   contact: 'soft', contactR: 9, motion: 'fixed' },
+    // The venue's smallest hull, below the 48-unit motorboat that was previously its floor.
+    // ROLE ambient rather than traffic: art-pipeline 2's `traffic` contract is about never
+    // being confusable with a competitor, which matters for a vessel UNDERWAY. This one is
+    // furniture at a mooring or hauled up a beach.
+    'bay-cove-dinghy':       { label: 'Dinghy',              world:  30, plane: 'float',   contact: 'soft', contactR: 5, motion: 'fixed' },
     // ── THE COVE'S SHOPS AND ITS MARINA ─────────────────────────────────────
     // The two shops are ordinary town buildings and take the town's traits. The MARINA is the
     // odd one and needs its two departures stated.
@@ -993,6 +1041,11 @@ const PROP_KINDS = {
     'bay-cove-marina':       { label: 'Marina',              world: 240, plane: 'float',   contact: 'none', motion: 'fixed' },
     'bay-cove-shop-row':     { label: 'Shop row',            world: 200, plane: 'surface', contact: 'none', motion: 'fixed' },
     'bay-cove-store-general': { label: 'General store',      world: 124, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cafe':         { label: 'Cafe',                world:  88, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The town's one CIRCLE. Place it with prop-spin ON — a parasol has no front, and rotating
+    // the green/cream wedges is free variety that stops a terrace of four reading as one stamp.
+    // It is the only cove building-set prop that wants spin on.
+    'bay-cove-parasol':      { label: 'Parasol',             world:  24, plane: 'surface', contact: 'none', motion: 'fixed' },
     // ── THE VENUE'S NAMESAKE ────────────────────────────────────────────────
     // `surface` and `contact: none`, like the shore trees and for the same reason: it stands
     // on a headland, the fleet cannot reach it, and a collider that is never tested is a
@@ -1077,8 +1130,8 @@ const PROP_KINDS = {
     // PLANE seabed so the water draws OVER them: per the coral note, "the water above is what
     // sells the depth", and depth is the whole animation here. Their LIGHT is emissive and
     // added after the ambient wash, in drawNightGlow — the same split as the nav lights.
-    'glowtide-jelly':       { label: 'Jellyfish drift',  world: 64, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
-    'glowtide-jelly-bloom': { label: 'Jellyfish (small)', world: 40, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
+    'glowtide-jelly':       { label: 'Jellyfish drift',  world: 32, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
+    'glowtide-jelly-bloom': { label: 'Jellyfish (small)', world: 20, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
     'lagoon-palm':         { label: 'Palm',         world: 70, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },
@@ -1614,6 +1667,18 @@ const SHAPE_KINDS = {
     // value, different silhouette language — see the ISLAND_STYLES pair and the manifest
     // note on why the angular prior is this asset's main risk.
     coastalrock:  { motion: 'fixed', hard: true,  look: 'coastalrock',  hidden: false, nav: true, height: 0 },  // ~8 m of rounded outcrop
+    // A VILLAGE LANE — crushed shell and packed sand, and the cove's only ground that is not
+    // a coastline. It is a SHAPE rather than a prop because a lane is a SURFACE: a prop is a
+    // fixed-size sprite, so a village lane would be a dozen placements with a seam at every
+    // join, where a polygon takes any length, width or curve for free. drawIslands walks the
+    // islands in DOCUMENT ORDER (compileVenueDoc's shapeOrder is the designer's stacking), so
+    // a thin lane listed AFTER a scrub island simply paints over it.
+    //
+    // hard FALSE and nav FALSE. It is inland scenery the fleet can never reach, so a collider
+    // would never be tested, and feeding an unreachable polygon to the visibility graph is
+    // exactly what cost the river multi-hundred-ms replan spikes — see `bank`. It still DRAWS
+    // (hidden stays false); it is only kept out of the router.
+    lane:    { motion: 'fixed', hard: false, look: 'lane',     hidden: false, nav: false, height: 0 },
     // Canyon spires and walls. The tallest thing here, and the reason Redrock's card
     // promises wind shadows.
     redrock: { motion: 'fixed', hard: false, look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall
@@ -1632,6 +1697,28 @@ const SHAPE_KINDS = {
     // sits ABOVE the water in value and earns its "dark" from hue and saturation instead.
     // See ISLAND_STYLES.karst in script.js for the measured numbers.
     karst:   { motion: 'fixed', hard: true,  look: 'karst',    hidden: false, nav: true, height: 0 },   // ~35 m of fissured limestone
+    // Submerged rock — the karst that never made it to the surface. A drowned head standing
+    // in the fairway: you cannot see a coastline, there is no foam to warn you, and it stops
+    // you dead. The strait's nastiest hazard, and the one a local knows and a visitor does not.
+    //
+    // `reef: true` IS THE SUBMERGED-BUT-SOLID FLAG, despite the coral name. It is the one
+    // combination `awash` cannot express: awash means "no collision, no lee, priced as a
+    // cost" — a bar you sail over — while reef means "drawn on the bottom, under the water,
+    // and still a wall". drawIslands skips it, drawReefs paints it with the seabed layers,
+    // and because it is NOT awash it stays in the router's grid and closes the gap it is
+    // meant to close. See the compiled island's `awash` note for the four readers involved.
+    //
+    // `hard: true` upgrades the coral's soft grind to stop-dead, which is the difference
+    // between a reef you scrape over and a rock you hit. It is the kind's own value rather
+    // than a per-shape override precisely because that is what this object IS.
+    //
+    // NO SURF, and it comes for free rather than as a flag: every surf pass — the daytime
+    // foam in updateSurf, its dry-edge probe, and the night bioluminescent shore — already
+    // excludes `reef`, on the reasoning that a submerged shape has no coastline for water to
+    // break on. height 0 for the same reason it is 0 on a reef: nothing above the water
+    // shelters anything.
+    sunkenrock: { motion: 'fixed', hard: true, look: 'sunkenrock', hidden: false, nav: true, height: 0,
+               reef: true },
     // Ice that does NOT move: shelf, shore, the sound's coastline. Soft, because RRS 31
     // penalizes touching MARKS, not obstructions — hitting ice costs speed, not a 360.
     ice:     { motion: 'fixed', hard: false, look: 'ice',      hidden: false, nav: true, height: 0 },   // ~20 m of shelf and shore
@@ -1989,6 +2076,11 @@ function compileVenueDoc(doc) {
         // vegetation inset, the `isRock` tag and the lit-facet build — and all three are
         // really asking "is this bare broken rock?". Karst is the second answer to that,
         // so the test became the class rather than gaining a second copy of each branch.
+        // ⚠️ `sunkenrock` is deliberately NOT here, though it is bare rock by any plain
+        // reading of the name. All three things this flag switches on — the vegetation
+        // inset, the isRock tag and the lit-facet build — are for a mass standing in the
+        // air. A drowned head grows nothing, and its bake is a flat body in the granite
+        // tile with no plane fan, so facets here would be data nothing reads.
         const isBareRock = T.kind === 'granite' || T.kind === 'karst';
         const inset = isBareRock ? VEG_INSET.granite : VEG_INSET.other;
         const isl = {

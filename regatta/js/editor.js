@@ -313,11 +313,16 @@ const LAND_TYPES = [
     // chip is the material — and both bodies are still their tile's SPEC mean, so these move
     // when the art is ingested and the body is reset to the delivered mean.
     { kind: 'coastalrock',  label: 'Coastal Rock',  swatch: '#a19481' },
+    { kind: 'lane',         label: 'Lane',          swatch: '#cac2ad' },
     { kind: 'coastalscrub', label: 'Coastal Scrub', swatch: '#a3a745' },
     { kind: 'floe',    label: 'Floe',    swatch: '#7dd3fc' },
     { kind: 'granite', label: 'Granite', swatch: '#8d8d8d' },
     // Swatch tracks ISLAND_STYLES.karst.body, so the chip is the material.
     { kind: 'karst',   label: 'Dark Karst Limestone', swatch: '#5d6068' },
+    // The same limestone, drowned — a hard shape with no coastline and no surf. Swatch is
+    // ISLAND_STYLES.sunkenrock.body, i.e. the rock IN AIR, matching every other chip here;
+    // the game shows it through the water column, so it draws darker than the chip.
+    { kind: 'sunkenrock', label: 'Submerged Rock', swatch: '#565f6f' },
     { kind: 'reed',    label: 'Grass',   swatch: '#7aaa1d' },
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
@@ -1796,7 +1801,15 @@ const KIND_FILL = {
     // rendered them correctly — the worst possible split, because the editor is where you
     // would look. Both grounds are dry land, so both are solid, per this table's rule that
     // only what you may sail over is translucent.
-    coastalrock: '#a19481', coastalscrub: '#a3a745'
+    coastalrock: '#a19481', coastalscrub: '#a3a745', lane: '#cac2ad',
+    // Submerged Rock — underwater, so translucent by this table's rule, but the MOST opaque
+    // of the translucent kinds on purpose. It is the one shape here that is both under the
+    // water and a wall, and the schematic's job is to keep those two facts from cancelling:
+    // at the shoal's 0.38 it would read as something you may sail over, which is exactly the
+    // mistake this object exists to punish. Coral Reef is the same category and sits at 0.38
+    // because a lagoon is otherwise all bright sand; against Glowtide's dark rock the stone
+    // grey needs the weight instead.
+    sunkenrock: 'rgba(86,95,111,0.66)'
 };
 const KIND_EDGE = {
     granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', swampgrass: '#7d7048',
@@ -1813,7 +1826,10 @@ const KIND_EDGE = {
     // game draws the coastline in. Darker than the fill, with the earth and vegetation kinds
     // above rather than lighter with granite and karst: these two are neither bright enough
     // to need a light edge nor dark enough to lose a dark one.
-    coastalrock: '#6f6556', coastalscrub: '#7d7e3c'
+    coastalrock: '#6f6556', coastalscrub: '#7d7e3c', lane: '#afa898',
+    // Bright against its own fill rather than darker, the way granite and karst are: this is
+    // the outline you drag vertices on, and it sits on near-black water.
+    sunkenrock: 'rgba(154,160,172,0.9)'
 };
 
 function drawLandLayer() {
