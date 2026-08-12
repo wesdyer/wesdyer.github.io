@@ -1049,6 +1049,7 @@ class BotController {
                      if (sc > bestM) { bestM = sc; escM = h; }
                  }
                  this.markEscapeHeading = escM;
+                 this._markEscFrom = { x: col.normal.x, y: col.normal.y };
                  // "2s" shipped on the 6x-slow clock — the tuned reality was a 12s
                  // commit, and the fleet's mark behavior is calibrated to it.
                  this.markContactTimer = 12.0;
@@ -1057,6 +1058,50 @@ class BotController {
 
         if (this.markContactTimer > 0) {
              this.markContactTimer -= TICK;
+             // ⭐ RE-AIM THE COMMITMENT, DO NOT RELEASE IT.
+             // markEscapeHeading is computed ONCE, at the instant of contact
+             // (~1051), and then sailed for twelve seconds. At that instant the
+             // boat is beside the mark and the rock she ends up grinding is still
+             // 100-300u away, which is why giving the four-candidate argmax a land
+             // term at latch time benched INERT (treeMRK2: 427 of 432 boats
+             // byte-identical). She meets the land LATER, inside the commitment,
+             // and nothing re-checks — the island reflex that would is written
+             // above this block and overwritten by it.
+             //
+             // ⛔ Handing the helm to that reflex instead was tried and LOST
+             // (treeMRK: pooled mean +4.9, land contacts 27.0 -> 31.2): the
+             // commitment to leave the mark is doing real work. So keep the
+             // commitment and re-check only its AIM, and only when the held
+             // heading is provably into rock inside 140u — a boat sailing a clear
+             // escape is byte-unaffected, and among blocked options the geometry
+             // still orders them (least-bad, the 2cbf847 shape).
+             const gR = state.course.botGrid;
+             if (gR && this._markEscFrom) {
+                 let blkR = 0;
+                 for (let iR = 1; iR <= 4; iR++) {
+                     const dR = iR * 35;
+                     const ccR = gR.cell(this.boat.x + Math.sin(this.markEscapeHeading) * dR,
+                                         this.boat.y - Math.cos(this.markEscapeHeading) * dR);
+                     if (!gR.at(ccR[0], ccR[1])) { blkR = iR; break; }
+                 }
+                 if (blkR) {
+                     const awX = -this._markEscFrom.x, awY = -this._markEscFrom.y;
+                     const lwR = getWindAt(this.boat.x, this.boat.y).direction;
+                     let bestR = -Infinity, escR = this.markEscapeHeading;
+                     for (const off of [1.05, -1.05, 1.75, -1.75]) {
+                         const h = normalizeAngle(lwR + off);
+                         let sc = Math.sin(h) * awX - Math.cos(h) * awY;
+                         for (let iR = 1; iR <= 4; iR++) {
+                             const dR = iR * 35;
+                             const ccR = gR.cell(this.boat.x + Math.sin(h) * dR,
+                                                 this.boat.y - Math.cos(h) * dR);
+                             if (!gR.at(ccR[0], ccR[1])) { sc -= 4.0 / iR; break; }
+                         }
+                         if (sc > bestR) { bestR = sc; escR = h; }
+                     }
+                     this.markEscapeHeading = escR;
+                 }
+             }
              desiredHeading = this.markEscapeHeading;
              speedRequest = 1.0;
         }
@@ -3002,7 +3047,7 @@ class BotController {
             }
             if (contactT < Infinity) score -= contactW * Math.max(0, 1 - contactT / T);
             score += (x - boat.x) * ux + (y - boat.y) * uy;
-            return { score, contactT };
+            return { score, contactT, x, y };
         };
 
         const base = roll(0);
@@ -3011,9 +3056,30 @@ class BotController {
         // dodges around 6-9s-away floes made the track a permanent zigzag (made-good
         // ratio ~0.3 at full boat speed).
         if (base.contactT > 4.5) return null;
+        // THE SAME BLINDNESS, ONE LAYER DOWN (2026-08-11, follow-up to b382aab).
+        //
+        // The retrograde filter that landed on `applyAvoidance` (arctic 1.66x ->
+        // 1.55x) came from `_ring_motion`: inside the armed granite-isle rounding
+        // 46.7% of all motion is RADIAL and 1 701 u/boat is RETROGRADE. The
+        // avoidance argmin produced 975 u of that retrograde — and THIS layer
+        // produced 294 u more, over 19.5% of the armed ticks, for exactly the same
+        // reason: nothing here knows the boat is committed to a sweep.
+        //
+        // Same argument, same shape: a dodge that carries her backwards round the
+        // mark unwinds sweep she has already earned. It is graded on the ROLLED
+        // TRACK, not the heading, because the roll already models her turn. If no
+        // prograde candidate improves on holding, the function returns null exactly
+        // as today. Armed rounding leg only, and floe venues by construction.
+        const rmFT = state.course.roundMark && legRoundMark(boat.raceState.leg);
+        const armFT = !!(rmFT && boat.raceState.roundArmed && boat.raceState.leg >= 1
+                         && !this._outbound);
+        const brgFT = armFT ? Math.atan2(boat.y - rmFT.y, boat.x - rmFT.x) : 0;
+        const sgnFT = (rmFT && rmFT.side === 'port') ? -1 : 1;
+        const utxFT = -Math.sin(brgFT) * sgnFT, utyFT = Math.cos(brgFT) * sgnFT;
         let bestOff = 0, bestScore = base.score + 50;
         for (const off of [0.15, -0.15, 0.35, -0.35, 0.6, -0.6, 0.9, -0.9, 1.3, -1.3, 1.7, -1.7]) {
             const r = roll(off);
+            if (armFT && ((r.x - boat.x) * utxFT + (r.y - boat.y) * utyFT) < 0) continue;
             if (r.score > bestScore) { bestScore = r.score; bestOff = off; }
         }
         if (bestOff === 0) return null;
@@ -3614,6 +3680,17 @@ class BotController {
         const curAvVx = curAvOn ? Math.sin(curAv.direction) * (curAv.speed / 4) * 60 : 0;
         const curAvVy = curAvOn ? -Math.cos(curAv.direction) * (curAv.speed / 4) * 60 : 0;
 
+        // Retrograde context for the rounding filter below. Floe venues only, so
+        // every other venue is byte-identical by construction, and only while the
+        // boat is ARMED on the rounding leg — the one state in which "the wrong way
+        // round" is even defined.
+        const rmRetro = state.course.roundMark && legRoundMark(this.boat.raceState.leg);
+        const retroOn = !!(rmRetro && this.boat.raceState.roundArmed && !openWaterAv
+                           && this.boat.raceState.leg >= 1 && !this._outbound);
+        const brgRetro = retroOn ? Math.atan2(this.boat.y - rmRetro.y, this.boat.x - rmRetro.x) : 0;
+        const sgnRetro = (rmRetro && rmRetro.side === 'port') ? -1 : 1;
+        let proCost = Infinity, proHeading = null, bestRetro = false, retroSet = false;
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -3704,11 +3781,38 @@ class BotController {
                 }
             }
 
-            // Project position at t=lookahead — over the ground (see curAv above).
-            const vx = Math.sin(h) * speed + curAvVx;
-            const vy = -Math.cos(h) * speed + curAvVy;
-            const futureX = boat.x + vx * (lookaheadFrames / 60);
-            const futureY = boat.y + vy * (lookaheadFrames / 60);
+            // Project position at t=lookahead — over the ground (see curAv above),
+            // AND OVER THE RUDDER SHE ACTUALLY HAS (v2, 2026-08-11).
+            // The land probe below now rolls the boat's own achievable turn, and
+            // the redrock 6-set that landed it moved land contacts 39.2 -> 30.3
+            // while boat contacts went 9.3 -> 11.6 and lake did the same thing in
+            // both sets (+25%, +32%). That asymmetry is the fix applied to half a
+            // function: land is graded on the arc the boat will sail, rivals are
+            // still graded on a straight line from a heading she is not yet on, so
+            // the argmin can pick a candidate whose LAND track is honest and whose
+            // RIVAL track is fiction. Same slew (~11712), same reason, same shape.
+            // Averaged back into a velocity so every CPA, overlap and tie-break
+            // term below keeps its own arithmetic and only the endpoint moves.
+            let vx = Math.sin(h) * speed + curAvVx;
+            let vy = -Math.cos(h) * speed + curAvVy;
+            let futureX = boat.x + vx * (lookaheadFrames / 60);
+            let futureY = boat.y + vy * (lookaheadFrames / 60);
+            if (openWaterAv) {
+                const snapP = (this.iceEscapeTimer > 0 && !this.penaltySpin);
+                const omP = getTurnSpeed() * 60 * (1.0 + boat.stats.handling * 0.03)
+                    * (snapP ? 5.0 : steerageFactor(boat));
+                const TP = lookaheadFrames / 60;
+                const NP = 8, dtP = TP / NP;
+                let hp = boat.heading, xp = boat.x, yp = boat.y;
+                for (let iP = 0; iP < NP; iP++) {
+                    const dhP = normalizeAngle(h - hp);
+                    hp = normalizeAngle(hp + Math.sign(dhP) * Math.min(Math.abs(dhP), omP * dtP));
+                    xp += (Math.sin(hp) * speed + curAvVx) * dtP;
+                    yp += (-Math.cos(hp) * speed + curAvVy) * dtP;
+                }
+                futureX = xp; futureY = yp;
+                vx = (futureX - boat.x) / TP; vy = (futureY - boat.y) / TP;
+            }
 
             let boatCollision = false;
             let staticCollision = false; // Marks/Boundary
@@ -4134,6 +4238,54 @@ class BotController {
                     && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
                     : 140;
+                // ⭐ THE PROBE ROLLS THE BOAT'S OWN TURN. A COMMANDED HEADING IS
+                // NOT A TRACK, AND THE RUDDER IS NOT INSTANTANEOUS.
+                // The ray above starts at the boat and runs along the CANDIDATE
+                // heading, as if she were already on it. She is not:
+                // `updateBoat` (~11712) slews `heading` toward the command at
+                // getTurnSpeed()*60*(1+handling*0.03)*steerageFactor — 0.9 rad/s
+                // at full authority, which at 100 u/s is a 111-unit turn radius,
+                // wider than redrock's channels. Until the slew finishes she is
+                // sailing an arc, and the wider the dodge the less the graded ray
+                // has to do with where she goes.
+                //
+                // Measured on redrock (`_track_vs_ray.js`, 4 seeds, 3221 followed
+                // decisions): the realized track strays a median 62u / p90 186u
+                // from the ray it was graded on — the grid's own cell is 50u — and
+                // 16.3% of decisions whose chosen ray reads CLEAR run the boat into
+                // land inside that ray's own length (47.8% inside the sw-inlet
+                // pocket). The failure rate is monotone in the turn asked for:
+                // 4.6% / 9.8% / 16.8% / 25.3% / 42.8% across 0.15/0.35/0.70/1.20/
+                // 1.20+ rad.
+                //
+                // ⚠️ That is a correlation with an obvious confounder — big turns
+                // are asked for in dangerous water. `_arc_predict.js` settles it by
+                // scoring both probes against the outcome: ray-clear AND arc-clear
+                // grounds 6.4% of the time, ray-clear but ARC-BLOCKED grounds
+                // 34.5% — a 5.39x lift, and 63.6% vs 28.6% inside the pocket. The
+                // arc predicts what the ray misses, so the ray is the wrong shape
+                // rather than danger being self-reporting. A candidate clear on
+                // BOTH verdicts existed on 76.7% of those ticks, so there is
+                // somewhere better to go.
+                //
+                // This is rule 19c's own prescription — "curvature in a probe needs
+                // the boat's own achievable turn as its ceiling". What 19c killed
+                // was the PLAN's curvature, which clears water the boat will not
+                // reach; the boat's own slew rate is the opposite quantity.
+                // Same family as `fbb1c27` (grade tracks, not headings) and
+                // `2cbf847` (rank for the boat she is): a layer optimizing against
+                // a model the physics does not honour.
+                //
+                // Gated on `openWaterAv` — the same drifting-ice line the land
+                // probe's floor, its ray direction and its far-blockage waiver all
+                // sit on (rule 5) — so floe water is byte-identical by construction
+                // and the armed-rounding arc keeps its own geometry.
+                const snapAv = (this.iceEscapeTimer > 0 && !this.penaltySpin);
+                const omAv = getTurnSpeed() * 60 * (1.0 + boat.stats.handling * 0.03)
+                    * (snapAv ? 5.0 : steerageFactor(boat));
+                const perUA = (openWaterAv && !arcK) ? omAv / speed : 0;
+                const dsA = segLen / stepsAv;
+                let rhA = boat.heading, rxA = boat.x, ryA = boat.y;
                 for (let sI = 1; sI <= stepsAv; sI++) {
                     const frac = sI / stepsAv;
                     let pxA, pyA;
@@ -4141,6 +4293,18 @@ class BotController {
                         const sA = frac * segLen;
                         pxA = boat.x + (Math.cos(h) - Math.cos(h + arcK * sA)) / arcK;
                         pyA = boat.y - (Math.sin(h + arcK * sA) - Math.sin(h)) / arcK;
+                    } else if (perUA > 0) {
+                        const dhA = normalizeAngle(h - rhA);
+                        rhA = normalizeAngle(rhA + Math.sign(dhA) * Math.min(Math.abs(dhA), perUA * dsA));
+                        if (curAvOn) {
+                            const sxA = Math.sin(rhA) * speed + curAvVx;
+                            const syA = -Math.cos(rhA) * speed + curAvVy;
+                            const nlA = Math.hypot(sxA, syA) || 1;
+                            rxA += (sxA / nlA) * dsA; ryA += (syA / nlA) * dsA;
+                        } else {
+                            rxA += Math.sin(rhA) * dsA; ryA += -Math.cos(rhA) * dsA;
+                        }
+                        pxA = rxA; pyA = ryA;
                     } else {
                         pxA = boat.x + (landFX - boat.x) * frac;
                         pyA = boat.y + (landFY - boat.y) * frac;
@@ -4396,11 +4560,45 @@ class BotController {
             if (Math.abs(offset) > 1.8 && this.boat.speed > 1.0) cost += 250;
 
             if (offset === 0) this._costHold = cost;
+            // THE FAN HAS NO IDEA IT IS IN A ROUNDING (2026-08-11).
+            //
+            // A rounding is a fixed amount of TURNING about a mark, and the engine
+            // banks sweep for it. The avoidance argmin knows nothing about that: a
+            // candidate that carries the boat BACKWARDS around the mark unwinds
+            // sweep she has already earned and costs the fan exactly nothing.
+            //
+            // Measured (`_ring_motion`, NEW): inside arctic's armed granite-isle
+            // rounding — 81.6 s/boat, 59% of the venue's whole 137.7 s/lap gap —
+            // 46.7% of all motion is RADIAL rather than around, and 1 701 u/boat is
+            // RETROGRADE against 2 832 u/boat of net progress the required way. The
+            // avoidance argmin owns 53.8 of the 112.9 armed seconds and produces
+            // 2 848 u of the radial motion (52%) and 975 u of the retrograde (57%).
+            // He banks MORE sweep than they do (5.63 rad vs 4.88) in 31.3 s.
+            //
+            // So: while a SAFE prograde candidate exists — one the fan itself scores
+            // as hitting nothing and breaking no rule — a retrograde one is not an
+            // action she has. This adds no cost and changes no weight; it removes a
+            // choice that unwinds the manoeuvre she is committed to. The emergency
+            // path is untouched: if every prograde candidate collides or fouls, the
+            // argmin's own answer stands exactly as today.
+            if (retroOn) {
+                const utx = -Math.sin(brgRetro) * sgnRetro, uty = Math.cos(brgRetro) * sgnRetro;
+                const tanC = Math.sin(h) * utx - Math.cos(h) * uty;
+                if (tanC > 0 && !boatCollision && !staticCollision && !ruleViolation && cost < proCost) {
+                    proCost = cost; proHeading = h;
+                }
+                if (tanC < 0) retroSet = true;
+            }
             if (cost < minCost) {
                 minCost = cost;
                 bestHeading = h;
+                bestRetro = retroOn
+                    ? ((Math.sin(h) * (-Math.sin(brgRetro) * sgnRetro) - Math.cos(h) * (Math.cos(brgRetro) * sgnRetro)) < 0)
+                    : false;
             }
         }
+        if (retroOn && bestRetro && proHeading != null) bestHeading = proHeading;
+        void retroSet;
         this._lastAvoidChoice = bestHeading;
 
         // Expose how far avoidance pushed us off our intended course — the
@@ -6881,6 +7079,18 @@ function drawPropWash(ctx) {
 // asked for, an opening that travels with the boat rather than a tree that blinks.
 const CANOPY_FADE_MIN = 0.0;     // crown left with the hull dead under the stem
 const BOAT_LEN = 56;             // hull in world units; the manifest's scale anchor
+
+// HOW FAST THE BOAT'S SPEED CHASES ITS TARGET, per frame at 60fps. These were
+// literals inside updateBoat; they are named here because the ROUTER now has to
+// price what they imply, and a copied constant that drifts out of sync is the
+// exact bug the shoal pricing exists to fix (see the grid's shoal cost). One
+// source, two readers: the speed integrator and the router's shoal cost.
+//   tau = -1 / (60 * ln DECAY)  =>  UP ~5.5s (accelerating), DOWN ~9.25s.
+// Change either number, or make it shoal-specific, and the router's price
+// follows automatically — that is the whole point of naming them.
+const SPEED_DECAY_UP = 0.9970;    // accelerating, ~5.5s
+const SPEED_DECAY_DOWN = 0.9982;  // decelerating, ~9.25s — carries its way
+const SPEED_TAU_DOWN = -1 / (60 * Math.log(SPEED_DECAY_DOWN));
 const CANOPY_FADE_RANGE = 20 * BOAT_LEN;
 // THE PLAYER'S BOAT ONLY, and that asymmetry is the point rather than an oversight. The fade
 // exists to solve one problem — you must never lose your own hull under a tree — and every
@@ -12759,7 +12969,7 @@ function updateBoat(boat, dt) {
     // accel ~5.5s (0.9970), decel ~9s (0.9982): asymmetric so the boat carries its way
     // when depowered/head-to-wind — the heavy-keelboat momentum that makes timing a
     // shoot-to-the-line or a coast into a mark feel real. (Stat mods on top.)
-    let speedAlpha = 1 - Math.pow(accelerating ? 0.9970 : 0.9982, timeScale);
+    let speedAlpha = 1 - Math.pow(accelerating ? SPEED_DECAY_UP : SPEED_DECAY_DOWN, timeScale);
 
     // Apply Acceleration / Momentum Stats
     if (accelerating) {
@@ -22968,12 +23178,137 @@ function buildCoursePaths() {
                     if (!shoals.length) {
                         grid._shoal = null;
                     } else {
+                        // ── PRICE THE TRANSIT, NOT THE EQUILIBRIUM ──────────
+                        // `1/shoalMul` is the STEADY-STATE cost: what a cell costs a
+                        // boat that has been on the bar long enough to settle. The
+                        // physics does not settle on contact — shoalMul multiplies the
+                        // TARGET (~12219) and boat.speed chases it through
+                        // SPEED_DECAY_DOWN, a ~9.25s constant. A boat crossing a bar in
+                        // 1.5s moves ~15% of the way there and pays almost nothing.
+                        //
+                        // Measured against the owner's three fingerprint-verified lagoon
+                        // laps (`_shoal_model.js`, 11 crossings, his RECORDED speed as
+                        // ground truth): the steady-state price is wrong by a mean 83%
+                        // and up to 237% — it charges 4.13x for a crossing that truly
+                        // costs 1.26x — and it is wrong in one direction, always
+                        // overcharging. That phantom is what makes the router pay ~1329u
+                        // of detour on lagoon leg 2 to avoid a bar he sails straight over
+                        // in 20.3s against the detour's ~27s.
+                        //
+                        // Solving the lag for a boat entering at open-water speed V and
+                        // running s units into the bar:
+                        //     u(s) = m + (1 - m) * exp(-s / (V * tau))
+                        // and the cell's honest cost is 1/u. Same probe: mean |error|
+                        // 2%, mean error -0% — unbiased, with NO fitted parameter. tau
+                        // comes from SPEED_DECAY_DOWN and m from the field, so this
+                        // tracks the physics rather than approximating it, and a change
+                        // to either flows through here automatically.
+                        //
+                        // ⭐ IT IS ALSO SELF-SCOPING, which is why it is safe on swamp.
+                        // The crossover length is V*tau, so it discounts only crossings
+                        // short against the boat's own reach. Lagoon at ~100 u/s has a
+                        // ~1200u scale and its 1-2.5s bars go nearly free; SWAMP at ~35
+                        // u/s has a ~320u scale and its crossings are a median 13.0s with
+                        // 64% running longer than tau (`_shoal_exposure.js`) — already at
+                        // equilibrium, so it keeps the full price it has today. The
+                        // venues that need opposite answers get them from one formula.
                         const N = grid.n, sc = new Float32Array(N * N);
+                        const mm = new Float32Array(N * N);
+                        // distance INTO the shoal, in cells: 0 outside, then a two-pass
+                        // chamfer from the rim. Cheap, and exact enough at res-scale
+                        // beside a crossover length of hundreds of units.
+                        const dist = new Float32Array(N * N).fill(Infinity);
                         for (let j = 0; j < N; j++) {
                             for (let i = 0; i < N; i++) {
                                 const [wx, wy] = grid.world(i, j);
-                                sc[j * N + i] = 1 / window.VenueDoc.shoalField(shoals, wx, wy);
+                                const m = window.VenueDoc.shoalField(shoals, wx, wy);
+                                mm[j * N + i] = m;
+                                if (m >= 0.999) dist[j * N + i] = 0;   // open water = the rim
                             }
+                        }
+                        const D1 = 1, D2 = Math.SQRT2;
+                        for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+                            const id = j * N + i; let d = dist[id];
+                            if (i > 0) d = Math.min(d, dist[id - 1] + D1);
+                            if (j > 0) d = Math.min(d, dist[id - N] + D1);
+                            if (i > 0 && j > 0) d = Math.min(d, dist[id - N - 1] + D2);
+                            if (i < N - 1 && j > 0) d = Math.min(d, dist[id - N + 1] + D2);
+                            dist[id] = d;
+                        }
+                        for (let j = N - 1; j >= 0; j--) for (let i = N - 1; i >= 0; i--) {
+                            const id = j * N + i; let d = dist[id];
+                            if (i < N - 1) d = Math.min(d, dist[id + 1] + D1);
+                            if (j < N - 1) d = Math.min(d, dist[id + N] + D1);
+                            if (i < N - 1 && j < N - 1) d = Math.min(d, dist[id + N + 1] + D2);
+                            if (i > 0 && j < N - 1) d = Math.min(d, dist[id + N - 1] + D2);
+                            dist[id] = d;
+                        }
+                        // V: the boat's own nominal reaching speed in THIS venue's air,
+                        // from the same polar the physics uses — so light-air venues get
+                        // a short crossover and fast ones a long one, with no venue test.
+                        const wKt = (state.wind && state.wind.spread && state.wind.spread.med > 0)
+                            ? state.wind.spread.med : (state.wind ? state.wind.speed : 10);
+                        const vNom = Math.max(1, getTargetSpeed(1.57, false, wKt) * 0.25 * 60);
+                        const scale = Math.max(1, vNom * SPEED_TAU_DOWN);
+                        // ⚠️ THE DECAY IS IN TIME, AND THIS FIELD IS INDEXED BY
+                        // DISTANCE. Substituting t = s/V into the time solution
+                        // (u = m + (1-m)e^{-t/tau}) assumes the boat holds V all
+                        // the way across, but it is SLOWING — so it covers less
+                        // distance per second than that, and the true decay in
+                        // DISTANCE is faster. The error grows as m shrinks, and
+                        // it is not academic: the exponential-in-distance version
+                        // under-priced swamp's bars (m down to 0.1) badly enough
+                        // to send boats into them — swamp med +6.0, mean +21.5,
+                        // land contacts +58%, while lagoon (m 0.2, but crossed in
+                        // 1-2s) was -43.0.
+                        //
+                        // Do it exactly instead. With u = v/V and x = s/(V*tau),
+                        //     du/dx = (m - u)/u
+                        // separates and integrates to the closed form
+                        //     x = (1 - u) - m * ln((u - m)/(1 - m))
+                        // which is monotone in u, so invert by bisection per cell.
+                        // Verified against direct integration of the ODE to 5
+                        // decimal places for m in {0.1,0.2,0.31,0.5}, and against
+                        // the owner's own longest lagoon crossing: at x=0.62 this
+                        // gives u=0.624 where the exponential said 0.68 and his
+                        // measured exit speed was 0.64.
+                        const invU = (x, m) => {
+                            if (!(x > 0)) return 1;
+                            let lo = m + 1e-6, hi = 1;
+                            for (let it = 0; it < 40; it++) {
+                                const mid = (lo + hi) * 0.5;
+                                // x is DECREASING in u: deeper in => slower
+                                const xm = (1 - mid) - m * Math.log((mid - m) / (1 - m));
+                                if (xm > x) lo = mid; else hi = mid;
+                            }
+                            return (lo + hi) * 0.5;
+                        };
+                        for (let k = 0; k < N * N; k++) {
+                            const m = mm[k];
+                            if (m >= 0.999) { sc[k] = 1; continue; }
+                            // ⚠️ TWICE the rim distance, and this is exact rather
+                            // than cautious. The state variable in the solution
+                            // above is distance TRAVELLED inside the bar; this
+                            // field is indexed by distance to the nearest RIM.
+                            // They agree while the boat sails IN and diverge on
+                            // the way OUT — indexed by rim distance the boat
+                            // "un-slows" as it approaches the far edge, which it
+                            // does not do; it stays slow until it exits. That
+                            // under-prices every bar, worst where boats linger.
+                            //
+                            // A straight chord through a bar of local half-width W
+                            // visits each depth d TWICE: at travelled distance d
+                            // going in, and 2W-d coming out. So
+                            //     grid total = int_0^{2W} f(depth(s)) ds
+                            //                = 2 * int_0^W f(d) dd
+                            // and choosing f(d) = 1/u(2d) gives, with sigma = 2d,
+                            //     = int_0^{2W} dsigma / u(sigma)
+                            // which is exactly the true cost of the crossing. The
+                            // factor is a consequence of the geometry, not a knob,
+                            // and it needs no knowledge of W.
+                            const s = 2 * (dist[k] === Infinity ? 0 : dist[k]) * grid.res;
+                            const u = invU(s / scale, m);
+                            sc[k] = 1 / Math.max(m, Math.min(1, u));
                         }
                         grid._shoal = sc;
                     }
