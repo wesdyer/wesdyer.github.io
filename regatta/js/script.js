@@ -3659,6 +3659,17 @@ class BotController {
         const curAvVx = curAvOn ? Math.sin(curAv.direction) * (curAv.speed / 4) * 60 : 0;
         const curAvVy = curAvOn ? -Math.cos(curAv.direction) * (curAv.speed / 4) * 60 : 0;
 
+        // Retrograde context for the rounding filter below. Floe venues only, so
+        // every other venue is byte-identical by construction, and only while the
+        // boat is ARMED on the rounding leg — the one state in which "the wrong way
+        // round" is even defined.
+        const rmRetro = state.course.roundMark && legRoundMark(this.boat.raceState.leg);
+        const retroOn = !!(rmRetro && this.boat.raceState.roundArmed && !openWaterAv
+                           && this.boat.raceState.leg >= 1 && !this._outbound);
+        const brgRetro = retroOn ? Math.atan2(this.boat.y - rmRetro.y, this.boat.x - rmRetro.x) : 0;
+        const sgnRetro = (rmRetro && rmRetro.side === 'port') ? -1 : 1;
+        let proCost = Infinity, proHeading = null, bestRetro = false, retroSet = false;
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -4528,11 +4539,45 @@ class BotController {
             if (Math.abs(offset) > 1.8 && this.boat.speed > 1.0) cost += 250;
 
             if (offset === 0) this._costHold = cost;
+            // THE FAN HAS NO IDEA IT IS IN A ROUNDING (2026-08-11).
+            //
+            // A rounding is a fixed amount of TURNING about a mark, and the engine
+            // banks sweep for it. The avoidance argmin knows nothing about that: a
+            // candidate that carries the boat BACKWARDS around the mark unwinds
+            // sweep she has already earned and costs the fan exactly nothing.
+            //
+            // Measured (`_ring_motion`, NEW): inside arctic's armed granite-isle
+            // rounding — 81.6 s/boat, 59% of the venue's whole 137.7 s/lap gap —
+            // 46.7% of all motion is RADIAL rather than around, and 1 701 u/boat is
+            // RETROGRADE against 2 832 u/boat of net progress the required way. The
+            // avoidance argmin owns 53.8 of the 112.9 armed seconds and produces
+            // 2 848 u of the radial motion (52%) and 975 u of the retrograde (57%).
+            // He banks MORE sweep than they do (5.63 rad vs 4.88) in 31.3 s.
+            //
+            // So: while a SAFE prograde candidate exists — one the fan itself scores
+            // as hitting nothing and breaking no rule — a retrograde one is not an
+            // action she has. This adds no cost and changes no weight; it removes a
+            // choice that unwinds the manoeuvre she is committed to. The emergency
+            // path is untouched: if every prograde candidate collides or fouls, the
+            // argmin's own answer stands exactly as today.
+            if (retroOn) {
+                const utx = -Math.sin(brgRetro) * sgnRetro, uty = Math.cos(brgRetro) * sgnRetro;
+                const tanC = Math.sin(h) * utx - Math.cos(h) * uty;
+                if (tanC > 0 && !boatCollision && !staticCollision && !ruleViolation && cost < proCost) {
+                    proCost = cost; proHeading = h;
+                }
+                if (tanC < 0) retroSet = true;
+            }
             if (cost < minCost) {
                 minCost = cost;
                 bestHeading = h;
+                bestRetro = retroOn
+                    ? ((Math.sin(h) * (-Math.sin(brgRetro) * sgnRetro) - Math.cos(h) * (Math.cos(brgRetro) * sgnRetro)) < 0)
+                    : false;
             }
         }
+        if (retroOn && bestRetro && proHeading != null) bestHeading = proHeading;
+        void retroSet;
         this._lastAvoidChoice = bestHeading;
 
         // Expose how far avoidance pushed us off our intended course — the
