@@ -1,8 +1,12 @@
 # Cove Traffic — moving vessels on an authored path
 
-*Plan, not yet built. Written 2026-08-09 from a design conversation; every decision below
-was taken deliberately and the reasoning is kept so it can be re-argued rather than
-re-discovered.*
+*Written 2026-08-09 from a design conversation; every decision below was taken deliberately
+and the reasoning is kept so it can be re-argued rather than re-discovered.*
+
+**STATUS: built and under test** (`eval/test_traffic.js`, 65 checks). Path maths in
+`js/traffic.js`; lifecycle, wake, shadow and collision in `js/script.js`; validation and
+measured hulls in `js/venuedoc.js`; the Traffic layer in `js/editor.js`; one authored vessel
+in `bay.venue.js`.
 
 Companion to [venues.md](venues.md) (which specifies the mechanic) and
 [editor-plan.md](editor-plan.md) (which owns authoring).
@@ -96,7 +100,19 @@ answers and a flag only holds two:
   furniture. Pair it with a final point at 0 knots and you have authored a berthing: the
   ship decelerates down the last leg, comes alongside, and stays there blanketing the
   harbour for the rest of the race.
-* `wrap` — jump to `s = 0`. Seamless only if the path is closed (last point ≈ first).
+* `wrap` — **a loop, compiled as a CLOSED CURVE.** Not a jump back to `s = 0`: the segment
+  from the last point to the first is an ordinary segment, its Catmull-Rom control points
+  wrap around, and position, heading and speed are all continuous through the join. A figure
+  eight is then just a path that crosses itself. Needs 3 points — two closed is a line, which
+  is what `pingpong` is for.
+
+  The test that pins this is not "does the seam look smooth" but **rotation invariance**:
+  compile the same loop starting from a different vertex and the curve must be the same
+  shape, because a kink at the join would travel with the join. Measured 0.0000u and
+  0.0000 degrees apart. Two consequences elsewhere — `atArc` wraps, so a wake trails round
+  the lap instead of stopping dead at the join; and the wake's "how far have I sailed" bound
+  is lifted for a loop, or it would trim itself back to nothing once a lap and announce
+  exactly where the seam was.
 * `pingpong` — reverse along the same path. Right for a motorboat working a shoreline.
 
 Only `despawn` is needed on day one; the other three are a few lines each at the path end
@@ -137,6 +153,52 @@ ship and a 4-knot boat cover ground at the same rate.
 *"Anything that moves on this map moves in units per frame; a speed in knots has to be
 converted before it can be one."*
 
+### Astern: a negative speed — **Rule**
+
+A negative speed does **not** rewind the path. It means the hull covers the next stretch
+STERN FIRST — the arc length still advances, so the time table stays monotonic and a vessel
+can be authored to back into a berth that lies further along its route than the point it
+stopped at. Rewinding would put the ship somewhere it had already been, which is not what
+backing into a dock is.
+
+* A leg's direction comes from whichever end names a non-zero speed.
+* **A ship cannot swap ends at speed**, so a sign change is only legal across a point that
+  names 0 knots — which is also the point a `dwell` can hold it at while it turns. The first
+  point may not be negative: nothing precedes it to have stopped at.
+* **Magnitudes drive the clock.** How fast a hull is going and which way it points are
+  separate questions and only the first belongs in a time table. Getting this wrong is
+  subtle: taking `max(0, speed)` in the position lookup while building the table from
+  magnitudes zeroed every astern leg's entry speed but kept its deceleration, so the arc
+  length ran BACKWARDS down the curve at a reported 0 knots.
+* **No wake astern.** A hull backing down does churn water, but it is a slow propeller-driven
+  mess and nothing like the wedge a bow throws; drawing the wedge behind a ship moving the
+  other way reads as the hull travelling the way it is pointing, which is what the manoeuvre
+  exists to contradict.
+
+### ⚠️ A reversal is a CUSP, not a corner — **Observed**
+
+The point where a vessel changes between ahead and astern is a POINT in the track: it stops
+and goes back the way it came. Smoothed like any other vertex — which is what centripetal
+Catmull-Rom does to everything — the spline rounds it into a small U-turn, and a ship meant
+to be backing into a berth instead **drives forward around a loop**. The manoeuvre inverts.
+
+So the curve is broken at those knots: each side takes a reflected phantom rather than seeing
+across, exactly as the two ends of an open path do. Two consequences:
+
+* **A cusp needs two tangents**, one per side, and an array indexed by sample holds one. With
+  a single value the approach interpolates toward the DEPARTING tangent and the hull spins
+  180 degrees through its final sample interval — while decelerating, so slowly and in full
+  view. `hs` holds the outgoing tangent, `hsIn` the arriving one at those samples.
+* **The held heading is the arriving one.** Once the astern flip is applied that is the same
+  angle the departing leg uses, so nothing turns when the wait ends — a stopped hull does not
+  swing round.
+
+Hand-drawn legs are never exactly opposed, so a few degrees remain between the attitude a
+vessel arrives in and the one it leaves in. A `dwell` spreads that across the wait; without
+one there is no time and it lands in a single frame. Measured on a cruise ship berthing:
+**17.94 degrees in one frame with no dwell, 0.06 with eight seconds of one.** The validator
+warns rather than refuses — it is a look, not a fault.
+
 ### Varying speed forces a second table — **Rule**
 
 With one constant speed, position is `lookup(speed * t)` and nothing else is needed. With
@@ -172,8 +234,34 @@ comes out simpler than the version it replaces. Per segment of length `L` from `
 degenerate case is two consecutive zeros, where `T` diverges honestly; reject it in
 validation.
 
+**Built as described.** `eval/test_traffic.js` guards the zero case explicitly, because
+nothing else would: every path that does not end stopped behaves identically under either
+ramp, so the divergent version passes every other test in the file.
+
 Precedent for arc-length work along a polyline already exists in the leg-attribution code;
 `traceRoundedPoly` is precedent for smoothing an authored outline.
+
+### ⚠️ The heading must be interpolated, not looked up — **Observed**
+
+The position comes off the flattened table and looks smooth, so it is easy to take the
+HEADING off the same table the obvious way — a finite difference between two nearby
+samples. That answer is piecewise CONSTANT: both samples land inside the same flat segment,
+so the hull is handed that segment's direction and holds it until the next one.
+
+Measured on the cove's lane when it was written that way: **97.2% of frames turned by
+exactly zero degrees**, and the remainder jumped, worst case 6.9 degrees in a single frame.
+A ship does not pivot, and it read as one.
+
+Two things fix it and BOTH are needed:
+
+* store the tangent per sample (central difference, so each accounts for the curve either
+  side of it) and **interpolate between them** with a shortest-arc lerp — this is what makes
+  the heading continuous at all;
+* raise the sampling density, since finer steps are still steps. `FLATTEN` went 24 → 64.
+
+After: worst 0.20 degrees a frame, and no frozen frames at all. `eval/test_traffic.js`
+guards continuity rather than resolution — it asserts the share of zero-turn frames stays
+near nil, which is the property that actually broke.
 
 **ZERO IS LEGAL ONLY AS A DESTINATION.** A `speed: 0` at the LAST point means the vessel
 comes to a stop there, and is well defined because no leg leaves it. Mid-path it would mean
@@ -224,6 +312,24 @@ Model it on the floe-on-floe bounce, which already solves this shape of problem:
   with no special case: a boat ahead of the bow is simply carried at ship speed while it
   stays in contact.
 
+### ⚠️ The normal comes from the boat's centre — **Observed**
+
+Not from its nearest hull corner. Cornerwise looks more precise and **oscillates**: a hull
+straddling the capsule's centreline has corners on BOTH sides, so the nearest one flips the
+instant the boat is nudged and the push reverses every frame. Measured before the fix, a
+boat amidships bounced +4.33u, -4.33u, +4.33u forever and never came out. The centre moves
+monotonically outward, so the side it picks is stable; the hull's own extent along that
+normal comes back as a support function, which is exact for a convex polygon and cheap.
+
+Where the centre sits exactly on the spine there is no outward direction at all — pick the
+side the boat is already sliding toward, and the push carries it out from there.
+
+### Ordering: traffic resolves BEFORE land — **Rule**
+
+`settleFloes` states the rule for ice — *"shore pass, last, so the coastline always wins"* —
+and it holds here for a stronger reason. A bow can shove a boat clean into a beach; if land
+resolved first, that boat would spend a frame inside the shore.
+
 ### Why push is also the safe choice while the AI is frozen
 
 Bots cannot see this vessel — it is not in the nav grid, and the planner is off limits. They
@@ -255,6 +361,24 @@ The silhouette is the capsule from section 5. Unlike an island the caster MOVES,
 per-caster silhouette cache must key on position, or simply recompute — there are single
 digits of these on a map.
 
+**Built as described**, with three details settled in the doing:
+
+* **The lee length reuses the island rule** rather than inventing a second one — ten times
+  the height of the thing casting it. A vessel authors no height, so the default takes its
+  beam as a stand-in for the stack it carries: a 720u container ship is 38 m across the deck
+  and stands roughly that much above the water, which is the figure the rule wants. Gives
+  1728u, overridable per entry with `windShadow` or `height`.
+* **Wind only, not current.** `shadowLen`'s own argument decides it: a current wake is about
+  whether the thing blocks the WATER COLUMN, and `motion` carries the answer — *"which is
+  exactly why a floe DRIFTS WITH the current instead of disturbing it"*. A ship floats.
+* **The wind at the vessel is sampled once a frame**, in `updateTraffic`, not inside
+  `shadowAt`. An island answers this from a cache keyed on its centroid because it never
+  moves; sampling the field per query would multiply one lookup by every boat and every
+  sample of the wind overlay.
+
+Measured on the cove: 13.6kt of clear air falls to 4.3kt 500u astern (32%), recovers to 48%
+by 900u, and is bit-identical to no-ship beyond the lee.
+
 ## 7. Wake — Kelvin, both ends
 
 Wakes today are per-boat: a `wakeTrail` of `{x, y, age, str}` sampled every 0.08 s twelve
@@ -271,6 +395,45 @@ turbulent band down the centreline. That V is what says "tonnage" from above.
 
 * **Bow wave as well as stern wake.** The manifest is explicit that the sprite carries no
   baked disturbance, so everything visible here is engine-drawn.
+
+### Two wakes, chosen per vessel — **Rule**
+
+`wake: 'kelvin' | 'ribbon' | 'none'`, defaulting to `kelvin` so nothing authored before this
+changes. **Which is right is a question about the hull, not a preference.** The Kelvin wedge
+is what a DISPLACEMENT hull throws — slow, heavy, pushing water aside. A small craft up on
+the plane leaves a narrow churned trail, and the wedge drawn behind a motorboat claims a
+tonnage it does not have.
+
+`ribbon` is `drawWakes`' own word for the fleet's wake — *"tapered two-tone ribbons along
+each boat's recent stern track"* — so the editor uses it rather than inventing a second name
+for something already named. It is the same two-pass taper the boats get, read off the PATH
+rather than a remembered trail and sized from the hull instead of the 56-unit dinghy those
+constants were tuned against.
+
+Choosing Kelvin in the editor DELETES the key rather than writing it: a document should not
+carry a field to say it wants what it would get anyway.
+
+### ⚠️ One frame per piece of the wake — **Observed**
+
+There are two frames available at any moment and they are not the same thing:
+
+* the **hull's** — `(v.x, v.y)` rotated by `v.heading`, which is what the sprite is drawn
+  with, and
+* the **path's** — position and tangent from `atArc(s)`, which is where the ship has been.
+
+The scar and the divergent arms belong to the path: they trace water already sailed, so
+they follow the curve. The **bow wave belongs to the hull**, because it is drawn against the
+stem the player can see.
+
+Mixing them is invisible on a straight lane and wrong the moment the lane bends. The first
+version took the bow wave's lateral axis from the path tangent at `atArc(bowS)` and its
+longitudinal axis from `v.heading` — measured on the cove's lane, up to **23.8 degrees
+apart**, so the two axes stopped being perpendicular and the crescent skewed, bulging on one
+bow while it tightened on the other. It was also anchored to a point half a hull along the
+CURVE, which in a turn sits up to **75 units** — 43% of the beam — off the drawn stem.
+
+No automated check guards this one: it is a fact about drawing, and the pieces are local to
+`drawTrafficWakes`. What guards it is picking one frame per piece and saying which.
 * **Scale with the vessel**, not with a global constant — width, arm length and trail life
   all come off `world`.
 * **Trail life is not just a multiply.** These vessels are slow, so a 2.25 s history leaves
@@ -287,14 +450,36 @@ turbulent band down the centreline. That V is what says "tonnage" from above.
   second lifetime to manage and a second thing to draw for something the player is not
   looking at. Revisit only if a despawn ever has to happen in view.
 
-## 8. Editor
+## 8. Editor — **Built**
 
-Path authoring is an open-polyline tool. The editor already draws closed outlines for shapes
-and the boundary, so the interaction — click to drop points, drag to adjust, direct-select
-for vertices — exists and wants adapting rather than inventing.
+Its own layer (**T**), beside Props because the art comes from the same registry — but a
+traffic entry owns a path, a schedule and a lee, none of which a prop has any business
+carrying. Draw (**P**) clicks out the lane; Enter or double-click ends it.
 
-The schedule is ordinary inspector fields: `speed`, `firstSpawn`, `respawn`, `respawnDelay`,
-`loop`, `windShadow`. Same numeric-input pattern the props inspector already uses.
+**THE EDITOR COMPILES THE PATH WITH THE GAME'S OWN `js/traffic.js`** rather than drawing the
+authored polyline. Anything else is a second implementation of the smoothing, and the first
+thing it would do is disagree with the real one on exactly the tight corners where the
+difference matters. What is on the map is where the hull will be.
+
+Details that earned their place:
+
+* **A lane needs TWO points, not three.** `commitPending`'s ring guard throws away anything
+  shorter than a triangle, which is right for a shape that must enclose water and wrong for
+  a path that only has to go somewhere. Traffic is handled before that guard.
+* **No closing click.** For an outline, clicking the first point closes it. A lane that
+  quietly became a loop would be a wrong answer rather than a shortcut, so the lane branch
+  never reaches that test — and it draws its own open preview, since the shared one fills
+  the ring.
+* **A filled handle names its own speed; a hollow one inherits.** The single most useful
+  thing to see at a glance on a lane being tuned, and the waypoint field shows the
+  *inherited* value as its placeholder so it reads as an override rather than a blank.
+* **Respawn disappears when `end` is not `despawn`.** A field that silently does nothing is
+  worse than no field.
+* **The ghost hull draws at the head of the lane, at its real size.** The whole reason to
+  author a path on a map is to see whether a 720-unit ship fits through the gap you drew it
+  through, and a line cannot answer that.
+* **A blank numeric field deletes the key rather than writing 0** — "auto" and "zero" are
+  different answers everywhere in this document, and the placeholders say which is which.
 
 ## 9. Build order — **Intent**
 
@@ -323,6 +508,9 @@ Each step independently verifiable, so a failure is attributable.
 
 ## 11. Open
 
+* **`end: 'stay'`, `wrap` and `pingpong` are implemented but unexercised** — no venue
+  authors them yet. The wake handles a reversed pingpong leg (its track runs toward
+  increasing arc length), which is the only part that needed thought.
 * **Does `speed` vary per spawn?** One authored constant per entry today. A seeded sequence
   could vary successive ships without breaking determinism, but it argues against
   "utterly predictable". Unresolved.

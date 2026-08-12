@@ -25,12 +25,12 @@ const path = require('path');
 const SUITES = [
     'test_arena.js', 'test_venuedoc.js', 'test_shoal.js', 'test_course_model.js',
     'test_route.js', 'test_gates.js', 'test_marks.js', 'test_wind.js', 'test_gusts.js',
-    'test_sailable.js', 'test_start_crossing.js',
+    'test_sailable.js', 'test_path_estimate.js', 'test_start_crossing.js',
     'test_rounding_nibble.js bay', 'test_rounding_nibble.js redrock',
     'test_editor.js', 'test_controls.js', 'test_clipboard.js', 'test_props.js', 'test_fit.js', 'test_start_line.js',
     'test_character_swap.js', 'test_results.js', 'test_persistence.js', 'test_render.js',
     'test_boundary_race.js', 'test_livery.js', 'test_audio.js', 'test_contact.js',
-    'test_dmc.js', 'test_rounding.js', 'test_apparent.js', 'check_venues.js'
+    'test_dmc.js', 'test_rounding.js', 'test_apparent.js', 'test_traffic.js', 'check_venues.js'
 ];
 
 const filters = process.argv.slice(2);

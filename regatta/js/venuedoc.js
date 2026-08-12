@@ -356,6 +356,104 @@ function validateVenueDoc(doc) {
             warn(`prop "${p.id}": a drifting prop cannot carry contact — it will be scenery`);
     }
 
+    // ── TRAFFIC ──────────────────────────────────────────────────────────────
+    // Vessels on rails: an authored path, an authored schedule, no RNG. The rules that
+    // matter are the ones a bad document could turn into a NaN position or a vessel that
+    // never arrives — see guidelines/cove-traffic-plan.md.
+    const trafficIds = new Set();
+    for (const v of (doc.traffic || [])) {
+        const who = `traffic "${v.id || '(no id)'}"`;
+        if (!v.id) { err('traffic entry with no id'); continue; }
+        if (trafficIds.has(v.id)) err(`duplicate traffic id "${v.id}"`);
+        trafficIds.add(v.id);
+        if (!PROP_KINDS[v.kind]) err(`${who}: unknown kind "${v.kind}"`);
+        const pts = Array.isArray(v.path) ? v.path : [];
+        if (pts.length < 2) { err(`${who}: path needs >= 2 points`); continue; }
+        const sp = [];
+        let carried = isFinite(v.speed) ? v.speed : null;
+        for (let i = 0; i < pts.length; i++) {
+            const p = pts[i];
+            const x = Array.isArray(p) ? p[0] : p && p.x, y = Array.isArray(p) ? p[1] : p && p.y;
+            if (!isFinite(x) || !isFinite(y)) { err(`${who}: path point ${i} needs finite x/y`); sp.push(carried); continue; }
+            let s = Array.isArray(p) ? p[2] : p && p.speed;
+            // NEGATIVE IS LEGAL and means astern — the hull covers the next stretch stern
+            // first. See the sign-change rule below for what it may not do.
+            if (s != null && !isFinite(s)) err(`${who}: path point ${i} speed "${s}" must be a number`);
+            if (isFinite(s)) carried = s;
+            sp.push(carried);
+            if (!Array.isArray(p) && p) {
+                if (p.heading != null && !isFinite(p.heading))
+                    err(`${who}: path point ${i} heading must be a number in degrees`);
+                if (p.dwell != null) {
+                    if (!isFinite(p.dwell) || p.dwell < 0)
+                        err(`${who}: path point ${i} dwell must be a number >= 0`);
+                    // A DWELL MEANS THE VESSEL IS STOPPED THERE, so the point has to say so.
+                    // Held at any other speed it would be an instantaneous halt and restart —
+                    // the hull would stop dead, sit, and jump back to speed, which is the one
+                    // thing the whole constant-acceleration ramp exists to avoid.
+                    else if (p.dwell > 0 && carried !== 0)
+                        err(`${who}: path point ${i} has a dwell but its speed is ${carried}kt — a vessel can only wait where it has stopped, so set its speed to 0`);
+                }
+            }
+        }
+        // THE FIRST POINT IS WHERE A SPEED BELONGS. Every later point inherits the last one
+        // named before it, so one number carries a whole lane; `entry.speed` still works and
+        // is still read, but the editor no longer offers it — two fields competing to say
+        // the same thing is how a lane ends up with a speed nobody can find.
+        if (carried == null) err(`${who}: no speed anywhere — give the first path point one`);
+        // ZERO IS LEGAL ONLY AS A DESTINATION. At the last point it means "comes to a stop
+        // here" and is well defined, because no leg leaves it. Anywhere else it is a vessel
+        // that never reaches its next point — the segment time is 2L/(v0+v1), which for two
+        // consecutive zeros is a division by zero and for one zero is still finite only
+        // because the OTHER end is moving.
+        for (let i = 0; i < sp.length - 1; i++) {
+            if (sp[i] === 0 && sp[i + 1] === 0)
+                err(`${who}: points ${i}-${i + 1} are both 0 knots — the vessel would never leave point ${i}`);
+            // ⚠️ A SHIP CANNOT SWAP ENDS AT SPEED. Going from ahead to astern means stopping
+            // first, so a sign change is only legal across a point that names 0 — which is
+            // also the point where a `dwell` can hold it while it does.
+            // A reversal turns the hull between the two legs' bearings. With a `dwell` at
+            // the stop that turn is spread across the wait; without one there is no time for
+            // it and it happens in a single frame.
+            if (i > 0 && sp[i] === 0 && Math.sign(sp[i - 1]) !== Math.sign(sp[i + 1])
+                && sp[i - 1] !== 0 && sp[i + 1] !== 0) {
+                const q = pts[i];
+                if (Array.isArray(q) || !(q.dwell > 0))
+                    warn(`${who}: point ${i} reverses ahead/astern with no dwell — the hull swings between the two legs' bearings in one frame; give it a few seconds to turn in`);
+            }
+            if (sp[i] > 0 && sp[i + 1] < 0 || sp[i] < 0 && sp[i + 1] > 0)
+                err(`${who}: points ${i}-${i + 1} go from ${sp[i]}kt to ${sp[i + 1]}kt — a vessel must come to 0 before it reverses, so put a 0-knot point between them`);
+        }
+        // Nothing precedes the first point, so there is no stop for it to have reversed at.
+        if (sp.length && sp[0] < 0)
+            err(`${who}: the first point is ${sp[0]}kt — a vessel can only go astern after it has stopped, and nothing comes before the start`);
+        if (sp.length && sp[0] === 0 && sp.length > 1 && sp[1] === 0)
+            err(`${who}: starts stopped and stays stopped`);
+        // THE WAKE MOVED TO THE KIND. A traffic entry that still carries one is not wrong so
+        // much as ignored, and a field that quietly does nothing is worse than one that
+        // errors — so say so rather than letting a designer keep setting it.
+        if (v.wake != null)
+            warn(`${who}: "wake" is no longer set per lane — it belongs to the vessel and comes from its kind, so this is ignored`);
+        const END = ['despawn', 'stay', 'wrap', 'pingpong'];
+        if (v.end != null && !END.includes(v.end)) err(`${who}: unknown end "${v.end}" (${END.join(' | ')})`);
+        // A LOOP IS COMPILED AS A CLOSED CURVE, so the ends no longer have to meet — the
+        // segment from the last point back to the first is an ordinary segment and the join
+        // is continuous in position, heading and speed. What it does need is enough vertices
+        // to BE a loop: two points closed is a line sailed up and back, which is `pingpong`.
+        if (v.end === 'wrap' && pts.length < 3)
+            err(`${who}: a loop needs at least 3 points — with 2 it is a line, which is what "pingpong" is for`);
+        // On a closed path the last point's speed ramps into the first's, so those two are
+        // adjacent and a pair of zeros there strands the vessel exactly as it would mid-path.
+        if (v.end === 'wrap' && sp.length >= 3 && sp[sp.length - 1] === 0 && sp[0] === 0)
+            err(`${who}: the loop closes from 0 knots to 0 knots — it would never come round`);
+        if (v.respawn && v.end && v.end !== 'despawn')
+            warn(`${who}: respawn is ignored unless end is "despawn" — it never despawns`);
+        for (const [k, lo] of [['firstSpawn', -Infinity], ['respawnDelay', 0], ['scale', 0.01],
+                               ['height', 0], ['windShadow', 0]]) {
+            if (v[k] != null && (!isFinite(v[k]) || v[k] < lo)) err(`${who}: ${k} must be a number >= ${lo}`);
+        }
+    }
+
     for (const entry of (course.route || [])) {
         if (entry.kind === 'round') {
             if (entry.landId != null) err('route: rounding still references a land shape — a rounding names a MARK');
@@ -676,6 +774,33 @@ const MARK_KINDS = {
 // states the preset; any axis can be overridden on one placement without inventing a
 // kind for it (shapeTraits' rule, applied to props).
 const PROP_KINDS = {
+    // ── WAKE: A FACT ABOUT THE HULL, NOT ABOUT A SCHEDULE ───────────────────
+    // It used to live on the traffic entry, which meant the same cargo ship could be given a
+    // planing craft's trail on one lane and the right one on the next, and every venue that
+    // ever used her had to know. It belongs here with `hull`, `srcBox` and `contactR`:
+    // measured once off the art, true wherever she sails.
+    //
+    //   kind       'kelvin' | 'ribbon' | 'none'
+    //              KELVIN is what a DISPLACEMENT hull throws — the wedge at arcsin(1/3),
+    //              regardless of speed. RIBBON is the fleet's own tapered trail, right for a
+    //              craft that planes rather than pushing water aside.
+    //   hulls      centreline offsets, as fractions of the frame like `hull`. One entry per
+    //              wake. Omitted means [0]: a single hull down the middle.
+    //   beam       each hull's OWN width when there is more than one, since a catamaran's
+    //              demihull is nothing like its overall beam. Omitted means the kind's.
+    //   symmetric  true for a hull with two bows. Everything else suppresses its wake when
+    //              running astern, because a ship backing down churns rather than throwing a
+    //              bow wave; a double-ender astern is not backing down at all, it is simply
+    //              going the other way, and it makes its wake from the other end.
+    // ── HULL: THE OBLONG THE KIND REALLY IS ─────────────────────────────────
+    // [along, across] as fractions of the frame, measured off the bake — the same contract
+    // srcBox, contactR and wash carry, and for the same reason: the runtime cannot read the
+    // pixels back (getImageData taints the canvas under file://), so a number measured once
+    // at bake time is the only honest source. Multiply by `world` for units.
+    //
+    // This is what the note below asks for when it says a circle cannot fit these. Traffic
+    // uses it for the wind-shadow silhouette and for the capsule that stops a boat; a
+    // placed, motionless prop still uses none of it and is still scenery.
     // ── LIGHTHOUSE COVE'S WORKING HARBOUR ───────────────────────────────────
     // The ids read awkwardly and are nonetheless the right ones. propSprite derives the sprite
     // path from the kind as `<venue>-<name>` -> props/<venue>/<name>.png, and paths.py leaves
@@ -697,9 +822,9 @@ const PROP_KINDS = {
     // MOTION fixed, and that is a statement of what exists rather than of what these are. The
     // design calls for slow predictable traffic dragging a moving wind shadow; the engine has
     // no 'underway' motion and no prop-borne wind shadow, so a placed ship stands still.
-    'bay-cove-cargo-ship':   { label: 'Cargo ship',       world: 720, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-cargo-ship-b': { label: 'Cargo ship (rust)', world: 608, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-cargo-ship-c': { label: 'Cargo ship (green)', world: 496, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cargo-ship':   { label: 'Cargo ship',       world: 720, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.24], wake: { kind: 'kelvin' } },
+    'bay-cove-cargo-ship-b': { label: 'Cargo ship (rust)', world: 608, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.24], wake: { kind: 'kelvin' } },
+    'bay-cove-cargo-ship-c': { label: 'Cargo ship (green)', world: 496, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.262], wake: { kind: 'kelvin' } },
     // The tug is the family's short-and-beamy one — 2.4:1 against the ships' 3.5:1, a proportion
     // the manifest reserves for it exclusively because 'reads as a toy tug' was the cargo ships'
     // worst round-1 failure. Its collider geometry is better than theirs and still not good:
@@ -712,25 +837,115 @@ const PROP_KINDS = {
     // water, and that is the unfairness the shoal note argues against — you cannot decide to
     // avoid something you cannot see. 16 fits the beam exactly and covers the middle ~40% of the
     // length.
-    'bay-cove-tugboat':      { label: 'Tugboat',           world:  76, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-tugboat':      { label: 'Tugboat',           world:  76, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.375], wake: { kind: 'kelvin' } },
     // The biggest hull in the game at 820u — over the 720u lead cargo ship, under the 870/920u
     // bridges it is meant to pass beneath. contact none for the family's reason and for the
     // geometric one: at 4.69:1 a circle fits it no better than it fits the ships.
-    'bay-cove-cruise-ship':  { label: 'Cruise ship',       world: 820, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cruise-ship':  { label: 'Cruise ship',       world: 820, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.92, 0.192], wake: { kind: 'kelvin' } },
     // The cove's small craft, and the traffic contract's hardest case: at 48u against a 32u
     // racing dinghy it is the only vessel here anywhere near a competitor's size, so it cannot
     // win 'never confusable' on size and wins it on silhouette — no rig, an open cockpit full
     // of seats, an outboard on the transom. contact none like the rest of the harbour; at 2.78:1
     // and only 48u a circle would fit it better than any of them, so this is the one to revisit
     // first if the family ever gets colliders (contactR 8, half the beam).
-    'bay-cove-motorboat':    { label: 'Motorboat',         world:  48, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-motorboat':    { label: 'Motorboat',         world:  48, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.927, 0.333], wake: { kind: 'ribbon' } },
     // The working boat between the tug and the freighters. NOTE THE TUG'S RESERVED SILHOUETTE
     // SURVIVES ON SIZE AND CLUTTER, NOT ON PROPORTION: the delivered trawler measures 2.26:1
     // against the tug's 2.45:1, so it is fractionally the stubbier of the two and the slot's own
     // "ships are long, the tug is short" distinction does not hold here. It does not need to —
     // 140u against 76u, teal against ochre, and a deck full of drum, gantry, booms and floats
     // against a bare one. Told apart at a glance on three axes, just not that one.
-    'bay-cove-trawler':      { label: 'Fishing trawler',   world: 140, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-trawler':      { label: 'Fishing trawler',   world: 140, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.359], wake: { kind: 'kelvin' } },
+    // ── THE TWO FERRIES: THE FIRST KINDS DRAWN FOR THE TRAFFIC ENGINE ───────
+    // Every vessel above predates it and was adapted; these two were specified against it,
+    // and the two entries below are all it takes to make them authorable — the editor gates
+    // its vessel list on `Array.isArray(hull)` rather than on a hand-kept list of names, so
+    // a measured hull IS the registration.
+    //
+    // CONTACT none, and here that word is narrower than it looks. It governs the hidden
+    // collider compile emits for a PLACED prop, which is a circle and fits a 3.3:1 ferry no
+    // better than it fits the freighters — sized to the beam it leaves two thirds sailable
+    // through, sized to the length it is an invisible wall. As TRAFFIC neither of them is
+    // scenery: cove-traffic-plan 5 builds a capsule from `hull` and it stops a boat and
+    // pushes it, whatever `contact` says. So these are solid when they are underway and
+    // sailable-through when they are parked furniture, which is backwards from how it
+    // reads and is exactly what the two systems mean.
+    //
+    // MOTION fixed is likewise a statement about a PLACED prop. The trait only has
+    // fixed | drift and neither means 'underway'; the cargo family's note that the engine
+    // has no such motion is now out of date — the motion lives in `doc.traffic`, not here.
+    'bay-cove-ferry':        { label: 'Ferry',              world: 300, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.920, 0.279], wake: { kind: 'kelvin', symmetric: true } },
+    // THE CAPSULE SPANS THE TUNNEL, DELIBERATELY. This is the only hull in the game that is
+    // not one oblong, and its tunnel measures 39u at the widest — wider than the 32u racing
+    // dinghy, so "too narrow to enter" is NOT the argument (the manifest slot claimed it was
+    // and the delivered art disproved it). It is open on 18% of the length, at the bow notch
+    // and the stern gap only, because the bridging deck closes it amidships: there is no
+    // through-passage to sail, so one capsule over the whole footprint is honest.
+    'bay-cove-fast-ferry':   { label: 'Fast ferry',         world: 200, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.310], wake: { kind: 'ribbon', hulls: [-0.102, 0.102], beam: 0.0925 } },
+    // ── THE COVE'S SHORE TREES ──────────────────────────────────────────────
+    // Black oak, pitch pine and eastern red cedar — the real coastal-plain association of
+    // Nantucket, the Vineyard and the outer Cape, and the cheapest way to make "green
+    // headlands" read as a PLACE rather than as green. They are pure scenery and every trait
+    // here says so.
+    //
+    // THE SET IS TOLD APART ON SILHOUETTE AND SIZE, NOT ON COLOUR, and that is measured rather
+    // than hoped for. 96 / 72 / 42 world units is a 1.33x and 1.71x ladder; the shapes are a
+    // broad closed dome, a bristled tuft-cluster with a notched rim, and a small tight rosette.
+    // Colour does LESS work than the manifest subjects claim: in CIELAB the oak sits at b* 41
+    // and the two conifers at b* 18.5 and 20.1, so the honest split is broadleaf-vs-conifer,
+    // not the three-step warm-to-cool ladder the cedar's subject asks for. Its "plainly bluer
+    // than the pitch pine" is 1.7 b* in the wrong direction — below a just-noticeable
+    // difference, and irrelevant because the cedar is separated by being half the size, a
+    // closed rosette, 4 L* lighter, and the only one carrying pale blue berries.
+    //
+    // `surface`, NOT `canopy`, AND THAT IS THE ONE CHOICE WORTH ARGUING. The lagoon palms
+    // directly below are `canopy` because a palm leans off a sand spit and a hull genuinely
+    // passes under its crown. Nothing sails under a headland. On `canopy` these would draw
+    // OVER the fleet, so an inland oak would paint itself across a boat racing past the
+    // shore — occlusion with no object doing the occluding, which is the exact bug the
+    // plane comment calls out for a lily pad on `surface`. Read the plane as a question
+    // about what is physically above what, never as a question about what kind of thing it is.
+    //
+    // `contact: none` — decided, not deferred. These stand on land the fleet cannot reach, so
+    // the collider would never be tested; art-pipeline's `ambient` role also forbids them from
+    // reading as something to avoid. Nothing to revisit here, unlike the harbour vessels above,
+    // whose `none` is a stand-in for a hull-shaped collider the engine cannot yet express.
+    //
+    // NO SPLIT PAIR, so no trunk half and no canopy half. The bayou's nine tree kinds exist
+    // because a swamp tree is sailed BETWEEN — trunk on `surface` to stop a hull, crown on
+    // `canopy` to pass beneath — and the visible limb hub is what makes that split legible.
+    // With nothing to sail under, one sprite says everything, and the art is drawn as closed
+    // foliage with no trunk at all. Anyone who ever re-planes these to `canopy` has to restore
+    // the manifest's punchHoles/minHoles first: see-through is worthless on `surface` and
+    // mandatory over the fleet, where a painted gap hides a boat as well as a leaf does.
+    // ── THE VENUE'S NAMESAKE ────────────────────────────────────────────────
+    // `surface` and `contact: none`, like the shore trees and for the same reason: it stands
+    // on a headland, the fleet cannot reach it, and a collider that is never tested is a
+    // collider that should not exist. It is a LANDMARK in the art manifest's sense — venue
+    // identity, never an obstacle — and venues.md also lists the light as a MARK, but that is
+    // the separate MARK_KINDS system and nothing here.
+    //
+    // ⚠️ IT IS NARROWER THAN THE OAK, AND THAT IS CORRECT. 84 against the black oak's 96: a
+    // mature oak crown really is wider in plan than a light tower's base, and an aerial photo
+    // of a headland shows exactly that. If the namesake needs more presence, place it alone on
+    // a point — do not inflate it, or it stops agreeing with every other measured thing here.
+    'bay-cove-lighthouse':   { label: 'Lighthouse',          world:  84, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-oak-black':    { label: 'Black oak',           world:  96, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-pine-pitch':   { label: 'Pitch pine',          world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-cedar-red':    { label: 'Red cedar',           world:  42, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // THE SHRUB LAYER UNDER THOSE THREE — same plane and the same reasoning, one band lower.
+    // The whole set sits BELOW the cedar's 42 on purpose: a shrub the size of a tree makes the
+    // headland one undifferentiated size. Size cannot separate them from each other, though —
+    // honest spreads for these species all fall between 1.8m and 4.0m — so they are told apart
+    // on rim texture and colour instead, which is why the labels name the plant and not a size.
+    // The two hydrangeas are one species in two soils and are meant to be planted ALTERNATELY;
+    // they are also the only cultivated plants here, so they belong by the houses and the
+    // harbour, in ones and short rows, never scattered over a wild bluff.
+    'bay-cove-oak-scrub':    { label: 'Scrub oak',           world:  36, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-bayberry-northern': { label: 'Northern bayberry', world: 28, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-plum-beach':   { label: 'Beach plum',          world:  22, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-hydrangea-blue': { label: 'Blue hydrangea',    world:  18, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-hydrangea-pink': { label: 'Pink hydrangea',    world:  18, plane: 'surface', contact: 'none', motion: 'fixed' },
     'lagoon-palm':         { label: 'Palm',         world: 70, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },
@@ -1244,11 +1459,46 @@ const SHAPE_KINDS = {
     // (2026-08-08), and the tan-olive it used to be lives here. The swamp's docs were
     // re-kinded to this, so the bayou looks exactly as it always did.
     swampgrass: { motion: 'fixed', hard: false, look: 'swampgrass', hidden: false, nav: true, height: 0 },
+    // ── LIGHTHOUSE COVE'S TWO GROUNDS ───────────────────────────────────────
+    // Coastal scrub upland: the cove's ordinary land, and the material most of the venue is
+    // made of — lawns, headlands, bluff tops, light scrub. It is what the shore trees stand
+    // on, so `look` carries trees: true.
+    //
+    // HARD, unlike `reed`, and the split is worth stating because both are "grass". A reed
+    // isle is a marsh hummock barely clear of the water, which is why it is soft and casts
+    // no lee. This is a BLUFF TOP: real land, several metres of it, with houses on it. You
+    // ground on a headland. Suggested height ~10 m when a designer wants the lee; the lee is
+    // the thing this venue's sea breeze is most sensitive to, so it is worth typing.
+    coastalscrub: { motion: 'fixed', hard: true,  look: 'coastalscrub', hidden: false, nav: true, height: 0 },  // ~10 m of bluff
+    // Weathered coastal rock: the cove's hard shoreline — points, islets, harbour edges,
+    // rocky coves, bridge abutments. HARD, with granite and karst, and for karst's reason
+    // rather than granite's: the venue's identity is threading a working harbour, and a
+    // shore that only slows you does not price that mistake.
+    //
+    // NOT `granite`, which it would be easy to reach for. Granite is dark cold blue-grey
+    // FRACTURED rock at 55 m of Glacier Sound mountainside; this is rounded, salt-worn,
+    // grey-tan glacial stone a few metres proud of the water. Different material, different
+    // value, different silhouette language — see the ISLAND_STYLES pair and the manifest
+    // note on why the angular prior is this asset's main risk.
+    coastalrock:  { motion: 'fixed', hard: true,  look: 'coastalrock',  hidden: false, nav: true, height: 0 },  // ~8 m of rounded outcrop
     // Canyon spires and walls. The tallest thing here, and the reason Redrock's card
     // promises wind shadows.
     redrock: { motion: 'fixed', hard: false, look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall
     // Bare rock. The only thing on Glacier Sound that grounds you, and the course rounds it.
     granite: { motion: 'fixed', hard: true,  look: 'granite',  hidden: false, nav: true, height: 0 },   // ~55 m of bare rock
+    // Dark karst limestone — Glowtide Strait's rock, and the basic material of its shores.
+    //
+    // HARD, like granite and unlike every soft kind above it. The strait's whole tension is
+    // threading a gap with two knots setting you sideways, and a shore that only slows you
+    // does not price that mistake; the card promises rocky shores and this is them.
+    //
+    // "DARK" IS RELATIVE TO LIMESTONE, NOT TO THE WATER, and the distinction is load-bearing
+    // on a night venue. Limestone is normally near-white; this is the weathered, algae-stained
+    // rock of a tide line. But Glowtide's water is near-black indigo (#1a2560, luma 39), and a
+    // hazard darker than that is a hazard nobody sees until they are on it — so the drawn body
+    // sits ABOVE the water in value and earns its "dark" from hue and saturation instead.
+    // See ISLAND_STYLES.karst in script.js for the measured numbers.
+    karst:   { motion: 'fixed', hard: true,  look: 'karst',    hidden: false, nav: true, height: 0 },   // ~35 m of fissured limestone
     // Ice that does NOT move: shelf, shore, the sound's coastline. Soft, because RRS 31
     // penalizes touching MARKS, not obstructions — hitting ice costs speed, not a 360.
     ice:     { motion: 'fixed', hard: false, look: 'ice',      hidden: false, nav: true, height: 0 },   // ~20 m of shelf and shore
@@ -1602,8 +1852,12 @@ function compileVenueDoc(doc) {
             cy = verts.reduce((a, v) => a + v.y, 0) / verts.length;
             radius = Math.max.apply(null, verts.map(v => Math.hypot(v.x - cx, v.y - cy)));
         }
-        const isGranite = T.kind === 'granite';
-        const inset = isGranite ? VEG_INSET.granite : VEG_INSET.other;
+        // BARE ROCK, not one kind of it. Three things keyed off `granite` by name — the
+        // vegetation inset, the `isRock` tag and the lit-facet build — and all three are
+        // really asking "is this bare broken rock?". Karst is the second answer to that,
+        // so the test became the class rather than gaining a second copy of each branch.
+        const isBareRock = T.kind === 'granite' || T.kind === 'karst';
+        const inset = isBareRock ? VEG_INSET.granite : VEG_INSET.other;
         const isl = {
             id: l.id,
             kind: T.kind,
@@ -1616,7 +1870,7 @@ function compileVenueDoc(doc) {
             // scenery costs speed rather than a 360.
             soft: !T.hard,
             fromMask: true,
-            isRock: isGranite,
+            isRock: isBareRock,
             hidden: T.hidden,
             isBank: !T.nav,
             // SUBMERGED. Read by the collision pass (skips it), the renderer (paints it
@@ -1655,7 +1909,7 @@ function compileVenueDoc(doc) {
             currentShadow: T.awash ? 0 : (l.currentShadow != null ? l.currentShadow : null),
             holes: (l.holes || []).map(h => h.map(p => ({ x: p[0], y: p[1] })))
         };
-        if (isGranite) {
+        if (isBareRock) {
             isl.facets = verts.map((v1, j) => {
                 const v2 = verts[(j + 1) % verts.length];
                 const mx = (v1.x + v2.x) / 2 - cx, my = (v1.y + v2.y) / 2 - cy;

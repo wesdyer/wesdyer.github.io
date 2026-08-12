@@ -168,6 +168,134 @@ foiler** (traffic, fast and erratic) · anchored spectator launch (traffic) ·
 (ambient, on the pilings and diving) · **seals** (ambient, hauled out on the islet
 and swimming) · **great white shark** (ambient) · rocky islet (hazard).
 
+**The headlands are New England, and three trees say so.** The wooded islet and
+the shore are planted from black oak, pitch pine and eastern red cedar — the real
+coastal-plain association of Nantucket, Martha's Vineyard and the outer Cape, and
+the cheapest way to make "green headlands" read as a *place* rather than as green.
+They are `ambient`, on land, and never in the racing water. The three are told
+apart by silhouette before colour, as art-pipeline §2 requires: a broad closed
+dome with a salt-sheared flat top, a loose cluster of bristled needle tufts with a
+deeply notched rim, and a small tight rosette, at 96 / 72 / 42 world units. Slots
+ship from the art manifest as `cove-oak-black`, `cove-pine-pitch` and
+`cove-cedar-red`, placeable as the prop kinds `bay-cove-oak-black`,
+`bay-cove-pine-pitch` and `bay-cove-cedar-red`.
+
+⚠️ **They are `surface`, not `canopy` — unlike the lagoon palms.** A palm leans
+off a sand spit and a hull really does pass under its crown; nothing sails under
+a headland. On `canopy` an inland oak would paint itself across a boat racing
+past the shore. Read the plane as a question about what is physically above
+what, never about what kind of object it is.
+
+**They are drawn as foliage only, and the green is measured off the card.** No
+trunk, no limb, no hub — that apparatus belongs to the Bayou, where a tree is split
+into a `surface` trunk and a `canopy` crown so a boat can sail between them, and the
+visible limb structure is what makes the split legible. Nothing sails under a
+headland, so here it costs a clean silhouette at 96px and buys nothing. On colour:
+the first pass came back Gatorgrass olive — measured hue 50–67° at saturation
+0.27–0.41, against this venue card's own foliage at hue 95° (band 72–144°) and
+saturation 0.82 (band 0.62–0.99). ⚠️ **The error was chroma before hue**, and the
+cause was the prompt, which had asked for "olive", "dull", "dusty" and
+"grey-green" — the Bayou's registered palette, word for word. A subject that wants
+a muted colour must name the direction it is muted *toward*, or a generator simply
+desaturates.
+
+**Under the three trees, four shrubs.** Scrub oak, northern bayberry, beach plum
+and blue hydrangea — the real sandplain shrub layer of those islands, plus the one
+plant they are actually famous for. They fill the ground the trees stand in, and
+between them the headland stops being a lawn with trees on it. They ship as
+`cove-oak-scrub`, `cove-bayberry-northern`, `cove-plum-beach` and the hydrangea in
+both of its colours, `cove-hydrangea-blue` and `cove-hydrangea-pink`, placeable as
+the prop kinds `bay-cove-*` at 36 / 28 / 22 / 18 / 18 world units — a band
+deliberately *below* the cedar's 42, because a shrub layer that overlapped the
+trees would make the whole shore one size.
+
+**The beach plum took two rounds, and the reason is worth keeping.** Round 1 came
+back at aspect 1.577 — a camera ~51° off vertical, against 1.010–1.021 for the
+other four — and as a wide row of six bushes filling 0.536 of its enclosing circle.
+The prompt caused it: the subject asks for "five or six leaf clumps … pushed up
+against each other", which reads as an instruction to draw five or six bushes in a
+row, and the compactness invariant stated right after it lost. ⚠️ **A constraint
+does not survive a construction that contradicts it** — the construction tells the
+generator what to draw, the constraint only tells it what to check.
+
+Round 2 fixed the shape (aspect 1.026, fill 0.755) and moved the defect somewhere
+else: making the plant compact gave it a centre and a ring, so its arrangement
+score went *backwards*, 32.6% → 45.6%. ⚠️ That is the third confirmation of the
+pattern the pitch pine documented — **each round fails on a different axis, and the
+new failure is caused by the fix for the old one.** Don't chase one number in
+isolation; a reroll aimed only at the ring risks bringing the sprawl straight back.
+Its foliage is also still under the card's chroma floor (0.571 against 0.62), and
+the likely culprit is a single word — "matte" — left in the leaf clause.
+
+⚠️ **Size cannot be the separator in that band, so rim texture is.** The trees are
+96 / 72 / 42, far enough apart to be told apart by size before any colour arrives;
+four shrubs cannot be, because honest spreads for these species all fall between
+1.8 m and 4.0 m and any four points in that range land 1.2–1.3× apart. So each is
+written around its own outline instead — the scrub oak widest and most bitten, the
+bayberry the smoothest closed cushion, the beach plum the loosest, the hydrangea
+scalloped by big single leaves — and all four still pass art-pipeline §2's
+colour-removed test. Colour is the second cue, not the first.
+
+**Nothing under about half a metre resolves down here, which decides how fruit is
+drawn.** At 36 / 28 / 22 / 18 px the 4-screen-pixel floor lands at ~0.43 m on all
+four, so an acorn, a bayberry and a beach plum are individually invisible at race
+scale and enlarging them to be countable would put half-metre acorns on a
+four-metre bush. The acorns are cut; the berries and plums are drawn as **dense
+clusters that merge into one patch of colour**. Cluster what is too small to see,
+never enlarge it. The hydrangea is the exception that proves it: its flower heads
+are below the floor too, but they cover a third to a half of the crown, so they
+read as *mass* — which is why the smallest prop in the library is also the most
+legible. Colour survives reduction better than shape.
+
+**The hydrangea is cultivated, and that is a placement rule.** The other three go
+anywhere on a wild bluff; this one belongs against the harbourmaster's house, along
+the village shore and by the keeper's garden, in ones and short rows. Scattered
+across an open headland it reads as a mistake to anyone who knows the islands.
+**It ships blue *and* pink** — the same species goes blue in acid soil and pink
+where shell and lime got into the ground, and a real dooryard has both — so the two
+are meant to be planted alternately. ⚠️ That makes them the one pair in the venue
+that must not share a silhouette: the leaf rim, palette and flower coverage are
+identical by design, and everything else (head count, head size, cushion symmetry,
+grouping) is deliberately different, because a repeated outline planted in a row
+reads as a stamp. Check the two masters side by side before accepting either. Pink
+also never generates on the magenta chroma key — `BACKGROUNDS['magenta']` ends with
+*"no part of the subject may be magenta or pink"*, which would tell the model to
+refuse the subject's own identity.
+
+**The channel buoys are being retyped, and the card follows them.** `buoy-channel-red`
+and `buoy-channel-green` were written as tapered **cone pillar buoys** with a white
+band, faithfully matching the buoys on the shipped venue card. They are now **steel
+lattice buoys** — heavy round drum, open square welded cage, blank white number
+board, small lantern — after a reference pass. The props are what a player stares at
+for a whole race and the card is what they see once in the picker, so the props won
+and `bay.png` is slotted for a reroll to match. ⚠️ **Until that card lands the venue
+holds two buoy types.** That is accepted and temporary; don't "fix" it by reverting
+the prop subjects.
+
+⚠️ **The lattice only exists because the exaggeration is declared.** At `world: 28` a
+real buoy's cage members are ~10cm = **0.9px** — drawn true, the identity would not
+exist. So the cage goes to three-fifths of the drum (against a true 39%) and its
+members to ~3px, leaving the four openings at ~3.9px, exactly on the 4px floor. That
+is why the subject demands a **two-by-two** grid and calls any finer mesh a mistake:
+a 3×3 would put the openings at 2.3px and dissolve into grey.
+
+**Settled on the contact sheet: no white drum band.** The reference buoy has none, so
+the rewrite dropped it and handed findability to the four dark lattice openings
+against the bright deck — a value cue rather than a hue cue. At 28px over both extreme
+waters that reads cleanly as a nav aid: a coloured disc with a dark cross and a bright
+centre. So no band on the props, and none on the card reroll either. The white *number
+board* is also out of the prop subject at 2px, but **stays in the card subject**, where
+the buoys are drawn at illustration scale — the same object gets a different parts list
+at different sizes, which is why props and cards keep separate subjects.
+
+⚠️ **`planRound` could not catch the failure that actually shipped.** The first green
+lattice came back as a bare square cage with no float — circularity **0.634**, the exact
+value of a square, against the accepted red's 0.974. Both passed the aspect gate (1.047
+and 1.026), because **a square is also as tall as it is wide.** Ratio catches a tilted
+camera and is blind to a subject that came back the wrong *shape*. For anything whose
+silhouette should be a disc, measure **circularity** — filled area ÷ smallest-enclosing-
+circle area — and treat under 0.90 as a reject.
+
 **The shark is atmosphere, not an obstacle.** It cannot slow a keelboat, and a
 collision penalty would be the first rule in the game its own fiction doesn't
 support. A fin crossing your line that costs you nothing is worth more than a rule

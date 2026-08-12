@@ -246,6 +246,52 @@ function nearestNav(grid, wx, wy, maxR) {
     return null;
 }
 
+// ── STAIR-STEPPING IS NOT A DETOUR ──────────────────────────────────────────
+// An 8-connected BFS can only turn in 45-degree steps, so a clear run comes back up to
+// ~8% longer than the straight line it ought to be. That overstatement is real and has to
+// be corrected, but the correction used to be a THRESHOLD — take the straight line
+// whenever the routed path is within 8% of it — and a threshold cannot tell grid noise
+// from a genuine short way round.
+//
+// Measured on Glowtide Strait: the `pre4` hop found an honest 1823u path around a
+// headland, and because that is 1.065x the straight line the estimate discarded it and
+// priced 1711u of line that is 40% LAND. Lake had the same failure at 10%. A SHORT detour
+// is exactly the case the threshold gets wrong, and because a dragged mark moves a hop
+// across 1.08 in either direction, the reported distance also jumps as the route is
+// edited instead of tracking it.
+//
+// String-pulling answers it exactly and needs no magic number. Walk the path, skipping to
+// the furthest later point still in clear line of sight; what is left is the taut path a
+// boat would actually sail. Stair-stepping disappears because the two ends of a zigzag can
+// see each other — on open water the whole path collapses to a single segment and the
+// length becomes the straight line EXACTLY, which is what the threshold was reaching for.
+// A detour survives untouched, because the headland is what blocks the shortcut.
+function losClear(grid, ax, ay, bx, by) {
+    // Half a cell, so the walk cannot step over a one-cell neck of land.
+    const steps = Math.max(2, Math.ceil(Math.hypot(bx - ax, by - ay) / (grid.res * 0.5)));
+    for (let k = 0; k <= steps; k++) {
+        const c = grid.cell(ax + (bx - ax) * k / steps, ay + (by - ay) * k / steps);
+        if (!grid.at(c[0], c[1])) return false;
+    }
+    return true;
+}
+
+// Forward-greedy, so each point is visited once and the cost stays linear in the path —
+// this runs per hop on every editor commit, and the from-the-far-end variant is cubic.
+function smoothPath(grid, pts) {
+    if (!pts || pts.length < 3) return pts || [];
+    const out = [pts[0]];
+    let i = 0;
+    while (i < pts.length - 1) {
+        let j = i + 1;
+        while (j + 1 < pts.length
+               && losClear(grid, pts[i][0], pts[i][1], pts[j + 1][0], pts[j + 1][1])) j++;
+        out.push(pts[j]);
+        i = j;
+    }
+    return out;
+}
+
 // Shortest hull-width path between two world points, as world waypoints.
 function pathBetween(grid, from, to) {
     const s = nearestNav(grid, from[0], from[1]);
@@ -495,35 +541,54 @@ function routeEstimate(grid, marks, route, windDir, windSpeed, windAt) {
     for (const wp of wps) {
         if (prev) {
             const straight = Math.hypot(wp.x - prev.x, wp.y - prev.y);
-            let d = straight;
+            // THE PATH A BOAT SAILS, as a point list. A clear hop is the straight line;
+            // anything longer is routed at hull width and pulled taut.
+            let pts = [[prev.x, prev.y], [wp.x, wp.y]];
             if (straight > DIRECT) {
                 const seg = pathBetween(grid, [prev.x, prev.y], [wp.x, wp.y]);
-                if (seg) {
-                    let L = 0;
-                    for (let i = 1; i < seg.length; i++) L += Math.hypot(seg[i][0] - seg[i-1][0], seg[i][1] - seg[i-1][1]);
-                    // A grid path is never shorter than the straight line, and its
-                    // stair-stepping overstates a clear run — so take the straight line
-                    // when the detour it found is negligible.
-                    d = (L > straight * 1.08) ? L : straight;
+                if (seg && seg.length) {
+                    // THE TRUE ENDPOINTS, not the snapped cell centres BFS started and
+                    // finished on. Without this the taut length carries up to a cell of
+                    // snapping error at each end, which on a clear hop shows up as the
+                    // measured path being fractionally SHORTER than the straight line.
+                    seg[0] = [prev.x, prev.y];
+                    seg[seg.length - 1] = [wp.x, wp.y];
+                    pts = smoothPath(grid, seg);
                 }
             }
-            const bearing = Math.atan2(wp.x - prev.x, -(wp.y - prev.y));
-            // The wind WHERE THE BOAT IS, sampled at the middle of the hop. A course whose
-            // wind varies across it cannot be priced with one number, and a hop through a
-            // patch nobody put a region over cannot be sailed at all.
-            const local = windAt
-                ? windAt((prev.x + wp.x) / 2, (prev.y + wp.y) / 2)
-                : { direction: windDir, speed: windSpeed };
-            if (!local || local.speed < 0.5) { calm += d; prev = wp; continue; }
-            const v = legVMG(bearing, local.direction, local.speed);
-            const secs = (v && v.vmg > 0.2)
-                ? d / (v.vmg * U_PER_S_PER_KNOT)
-                : d / (REF > 0 ? REF * U_PER_S_PER_KNOT : 30);
-            // Sailing TOWARD a waypoint is the work of the leg that waypoint belongs to.
+            // ⚠️ PRICED ALONG THAT PATH, SEGMENT BY SEGMENT — not at the rhumb midpoint.
+            // The length was already taut; the WIND was still being read once, halfway
+            // along the straight line between waypoints, and that point is not on the
+            // course whenever the hop routes around anything. On Glowtide Strait the
+            // midpoint of the hop past the eastern headland lands ON the headland, where
+            // no wind region reaches, so a whole hop was booked as becalmed and the venue
+            // reported "525 m of the sailable path has no wind" for water no boat sails.
+            // Measured along the taut path instead: zero.
+            //
+            // Per-segment bearings matter for the same reason the per-hop comment below
+            // gives. A detour around a headland is two different points of sail, and
+            // pricing both at the rhumb bearing charges a beat for a reach.
             const li = legOf(wp.tag);
             const e = per[li] || (per[li] = { dist: 0, secs: 0, twaSum: 0 });
-            e.dist += d; e.secs += secs;
-            if (v) e.twaSum += v.twaCourse * d;          // distance-weighted, for reporting
+            for (let i = 1; i < pts.length; i++) {
+                const ax = pts[i-1][0], ay = pts[i-1][1], bx = pts[i][0], by = pts[i][1];
+                const segLen = Math.hypot(bx - ax, by - ay);
+                if (!(segLen > 0)) continue;
+                const bearing = Math.atan2(bx - ax, -(by - ay));
+                const local = windAt
+                    ? windAt((ax + bx) / 2, (ay + by) / 2)
+                    : { direction: windDir, speed: windSpeed };
+                // Calm is accumulated by the length that is ACTUALLY becalmed, not by the
+                // whole hop on the strength of one sample.
+                if (!local || local.speed < 0.5) { calm += segLen; continue; }
+                const v = legVMG(bearing, local.direction, local.speed);
+                const secs = (v && v.vmg > 0.2)
+                    ? segLen / (v.vmg * U_PER_S_PER_KNOT)
+                    : segLen / (REF > 0 ? REF * U_PER_S_PER_KNOT : 30);
+                // Sailing TOWARD a waypoint is the work of the leg that waypoint belongs to.
+                e.dist += segLen; e.secs += secs;
+                if (v) e.twaSum += v.twaCourse * segLen;   // distance-weighted, for reporting
+            }
         }
         prev = wp;
     }
@@ -826,7 +891,7 @@ function pathSailable(grid, from, to) {
 
 window.SailCheck = {
     HULL_R, CLEARANCE, RES,
-    buildGrid, stampFloes, pathBetween, nearestNav, roundingArc, routeWaypoints,
+    buildGrid, stampFloes, pathBetween, smoothPath, losClear, nearestNav, roundingArc, routeWaypoints,
     legVMG, routeEstimate, pathSailable, clearanceField
 };
 })();

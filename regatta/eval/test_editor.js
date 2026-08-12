@@ -2856,7 +2856,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         return { names, course: topOf('course'), arena: topOf('arena'), water: topOf('water') };
     });
     check('the layers read in build order',
-          lay.names.join(',') === 'Course,Arena,Water,Objects,Props,Wind,Gusts,Current,Marks,Route',
+          lay.names.join(',') === 'Course,Arena,Water,Objects,Props,Traffic,Wind,Gusts,Current,Marks,Route',
           lay.names.join(','));
     check('a layer with no objects keeps its panel at the TOP of the column',
           lay.course < 40 && lay.arena < 40 && lay.water < 40,
