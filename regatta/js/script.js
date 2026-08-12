@@ -4040,6 +4040,69 @@ class BotController {
                 }
             }
 
+            // 2b. TRAFFIC — THE SOLID MOVING BODY NOBODY TOLD THE PLANNER ABOUT
+            // (2026-08-12).
+            //
+            // `checkTrafficCollisions` says it in its own words: "NOTHING IS TOLD
+            // ABOUT THIS. No collisionData, so the planner is untouched — bots
+            // cannot see the vessel and will sail into it, which is accepted (a
+            // moving caster is planner work, and the planner is being changed
+            // elsewhere)." This is that planner work.
+            //
+            // Measured on the reworked bay (`_bay_traffic`, NEW): **2.04 contacts
+            // per boat, median 5.70 s each, 12.9 s/boat** — the boat goes from a
+            // settled 114 u/s to **1 u/s** at the bottom of one — against a venue
+            // gap of 37 s. **35% of bay's entire gap is being run over by ships the
+            // fleet cannot see.**
+            //
+            // This is not a re-pricing of a trade-off (rule 1): the fan currently
+            // scores a candidate that sails through a 700-unit ship as if the water
+            // were empty, so a solid object is simply MISSING FROM THE MODEL. It is
+            // classified as `staticCollision` — the existing term for an obstacle
+            // that pins and does not keep clear — and no new weight is invented.
+            //
+            // ⭐ AND THE FORECAST IS EXACT. A floe drifts unpredictably past ~5 s
+            // ([[regatta-map-staleness]]); a vessel is ON RAILS at a known speed, so
+            // projecting it forward over the lookahead is not a guess. Both the boat
+            // and the ship are advanced to the SAME sample times and tested there,
+            // which is the whole point — a ship that will have gone by is not an
+            // obstacle, and one that will arrive is, and only a time-aware test can
+            // tell those apart.
+            //
+            // The shape is the capsule the physics itself collides against (spine
+            // segment + beam radius), so the planner and the collider agree.
+            // Byte-inert on every venue with no authored traffic by construction.
+            if (state.traffic && state.traffic.length) {
+                const TLK = lookaheadFrames / 60;
+                for (const v of state.traffic) {
+                    if (!v.active) continue;
+                    const rV = v.hullBeam * 0.5, halfV = Math.max(1, v.hullLen * 0.5 - rV);
+                    const fxV = Math.sin(v.heading), fyV = -Math.cos(v.heading);
+                    const svx = fxV * v.speed, svy = fyV * v.speed;
+                    // broad phase: could these two possibly meet inside the lookahead?
+                    const dx0 = v.x - boat.x, dy0 = v.y - boat.y;
+                    const closeMax = (speed + Math.abs(v.speed)) * TLK + v.hullLen * 0.5 + 120;
+                    if (dx0 * dx0 + dy0 * dy0 > closeMax * closeMax) continue;
+                    const NS = 6;
+                    for (let iS = 1; iS <= NS; iS++) {
+                        const tS = TLK * iS / NS;
+                        const bx = boat.x + (futureX - boat.x) * (iS / NS);
+                        const by = boat.y + (futureY - boat.y) * (iS / NS);
+                        const vx0 = v.x + svx * tS, vy0 = v.y + svy * tS;
+                        const ax2 = vx0 - fxV * halfV, ay2 = vy0 - fyV * halfV;
+                        const wxV = bx - ax2, wyV = by - ay2;
+                        const tt = Math.max(0, Math.min(1, (wxV * fxV + wyV * fyV) / (2 * halfV)));
+                        const cxV = ax2 + fxV * tt * 2 * halfV, cyV = ay2 + fyV * tt * 2 * halfV;
+                        const dV = Math.hypot(bx - cxV, by - cyV);
+                        // HULL_R for the boat, the beam radius for the ship, and the same
+                        // ~25u margin the mark test uses.
+                        const hardV = rV + 25 + 38;
+                        if (dV < hardV) { staticCollision = true; cost += 200000 / (dV * dV + 1); break; }
+                        if (dV < hardV + 90 && this.livenessState === 'normal') { proximityCost += 18000 / (dV * dV + 100); }
+                    }
+                }
+            }
+
             // 3. Boundary - Segment Check
             if (state.course.boundary) {
                 const b = state.course.boundary;
