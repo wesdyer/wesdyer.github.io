@@ -4659,6 +4659,13 @@ const DEFAULT_SETTINGS = {
     penaltiesEnabled: true,
     surf: true,               // breaking seas on the windward shore — see drawSurf
     cameraMode: 'heading',
+    // WHICH FACE THE INSTRUMENTS WEAR: 'boat' | 'rose' | 'both' | 'off'.
+    // Defaults to the boat panel — TWA alone, unlabelled, next to the thing it describes
+    // rather than 900 px away in a corner. 'rose' is the original dial and carries the full set (TWS,
+    // VMG, the heading pip, the waypoint arrow, PLANING/SURFING). 'both' runs them together,
+    // which is not redundant: the panel is what you sail by and the rose is what you consult,
+    // and the two answer at different rates. 'off' shows neither.
+    hudMode: 'boat',
     // WHO YOU SAIL AS. The custom hull/sail/cockpit/spinnaker/pattern settings are gone:
     // you pick a character from the fleet and get their boat, their name and their face.
     // One way to say it instead of two — a recoloured Finley was not Finley, and the
@@ -9758,19 +9765,11 @@ const ctx = canvas.getContext('2d');
 
 // UI Elements Cache
 const UI = {
-    compassRose: document.getElementById('hud-compass-rose'),
-    windArrow: document.getElementById('hud-wind-arrow'),
-    headingArrow: document.getElementById('hud-heading-arrow'),
-    speed: document.getElementById('hud-speed'),
-    windSpeed: document.getElementById('hud-wind-speed'),
-    windAngle: document.getElementById('hud-wind-angle'),
-    vmg: document.getElementById('hud-vmg'),
     timer: document.getElementById('hud-timer'),
     startTime: document.getElementById('hud-start-time'),
     message: document.getElementById('hud-message'),
     legInfo: document.getElementById('hud-leg-info'),
     legTimes: document.getElementById('hud-leg-times'),
-    waypointArrow: document.getElementById('hud-waypoint-arrow'),
     pauseScreen: document.getElementById('pause-screen'),
     helpScreen: document.getElementById('help-screen'),
     settingsScreen: document.getElementById('settings-screen'),
@@ -9796,12 +9795,23 @@ const UI = {
     settingNavAids: document.getElementById('setting-navaids'),
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
+    settingHudMode: document.getElementById('setting-hud-mode'),
     settingTelltaleColor: document.getElementById('setting-color-telltale'),
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
     lbPips: document.getElementById('lb-pips'),
     characterPicker: document.getElementById('character-picker'),
+    hudRose: document.getElementById('hud-rose'),
+    minimapWrap: document.getElementById('hud-minimap-wrap'),
+    compassRose: document.getElementById('hud-compass-rose'),
+    windArrow: document.getElementById('hud-wind-arrow'),
+    headingArrow: document.getElementById('hud-heading-arrow'),
+    waypointArrow: document.getElementById('hud-waypoint-arrow'),
+    speed: document.getElementById('hud-speed'),
+    windSpeed: document.getElementById('hud-wind-speed'),
+    windAngle: document.getElementById('hud-wind-angle'),
+    vmg: document.getElementById('hud-vmg'),
     overpoweredBadge: document.getElementById('hud-overpowered'),
     ocsBanner: document.getElementById('hud-ocs'),
     ocsArrow: document.getElementById('hud-ocs-arrow'),
@@ -11494,6 +11504,8 @@ function applySettings() {
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingTrim) UI.settingTrim.checked = settings.autoTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
+    if (UI.settingHudMode) UI.settingHudMode.value = settings.hudMode || 'boat';
+    applyHudMode();
     if (UI.settingTelltaleColor) UI.settingTelltaleColor.value = settings.telltaleColor || '#fbbf24';
     // Boat colors have two editors now (this modal and the pre-race player
     // panel); both write here, so this is where they re-sync.
@@ -11582,6 +11594,9 @@ function paintSettingsControls() {
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     const mode = UI.settingCameraMode ? UI.settingCameraMode.value : settings.cameraMode;
     document.querySelectorAll('#camera-segs .ov-seg').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    if (UI.settingHudMode) UI.settingHudMode.value = settings.hudMode || 'boat';
+    const hm = UI.settingHudMode ? UI.settingHudMode.value : (settings.hudMode || 'boat');
+    document.querySelectorAll('#hud-mode-segs .ov-seg').forEach(b => b.classList.toggle('active', b.dataset.hud === hm));
     const color = ((UI.settingTelltaleColor && UI.settingTelltaleColor.value) || settings.telltaleColor || '#fbbf24').toLowerCase();
     let matched = false;
     document.querySelectorAll('.ov-swatch[data-color]').forEach(b => {
@@ -11636,6 +11651,14 @@ document.querySelectorAll('#camera-segs .ov-seg').forEach(b => b.addEventListene
     UI.settingCameraMode.dispatchEvent(new Event('change'));
     paintSettingsControls();
 }));
+document.querySelectorAll('#hud-mode-segs .ov-seg').forEach(b => b.addEventListener('click', () => {
+    if (!UI.settingHudMode) return;
+    UI.settingHudMode.value = b.dataset.hud;
+    settings.hudMode = b.dataset.hud;      // live, so you can see the face you are picking
+    applyHudMode();
+    UI.settingHudMode.dispatchEvent(new Event('change'));
+    paintSettingsControls();
+}));
 document.querySelectorAll('.ov-swatch[data-color]').forEach(b => b.addEventListener('click', () => {
     if (!UI.settingTelltaleColor) return;
     UI.settingTelltaleColor.value = b.dataset.color;
@@ -11669,6 +11692,7 @@ if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => {
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.autoTrim = e.target.checked; saveSettings(); });
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
+if (UI.settingHudMode) UI.settingHudMode.addEventListener('change', (e) => { settings.hudMode = e.target.value; applyHudMode(); saveSettings(); });
 if (UI.settingTelltaleColor) UI.settingTelltaleColor.addEventListener('input', (e) => { settings.telltaleColor = e.target.value; saveSettings(); });
 
 // Pre-race config listeners: the venue customization panel is gone. A course's wind,
@@ -15695,9 +15719,23 @@ function drawActiveGateLine(ctx) {
     drawLine(indices, true, color, label, dir);
 }
 
+// ⚠️ THE TRAINING AIDS BELONG TO ONE VENUE, AND IT IS A DESIGN LINE RATHER THAN A TOGGLE.
+// Ladder lines and laylines are a COACHING overlay: they hand you the answer to "can I lay
+// it yet" and "am I gaining on that boat", which are two of the things learning to race
+// consists of working out from the water. Sea Trials is the practice course — that is what
+// it is for — so it keeps them, and everywhere else you read the shifts and the angles.
+//
+// Venue KEY rather than a doc field on purpose. This is a property of one named course in
+// the game's progression, not a knob a venue author should be reaching for; keys are
+// identity here (see VENUE_ORDER's note), so the test is stable.
+function trainingAidsOn() {
+    return (state.race.venue || settings.venue) === 'seatrials';
+}
+
 function drawLadderLines(ctx) {
     const player = state.boats[0];
     if (!state.showNavAids || state.race.status === 'prestart' || state.race.status === 'finished' || player.raceState.finished) return;
+    if (!trainingAidsOn()) return;
 
     const _ax = courseAxis();
     if (!_ax) return;
@@ -15851,6 +15889,7 @@ function drawEndLaylines(ctx, pts, inset) {
 
 function drawLayLines(ctx) {
     if (!state.showNavAids || state.race.status === 'finished') return;
+    if (!trainingAidsOn()) return;
     const player = state.boats[0];
     const leg = player.raceState.leg;
 
@@ -15863,21 +15902,35 @@ function drawLayLines(ctx) {
         return drawEndLaylines(ctx, pts, 0);
     }
 
-    // A FINISH IS CROSSED, NOT LAID. The same rule the island course has always followed,
-    // and it was the one thing the windward-leeward path did not: it drew laylines onto
-    // every leg's marks including the last, so Gatorgrass — whose windward gate IS the
-    // finish — carried laylines the whole race onto a line nobody lays. `routeLeg` is the
-    // authority on which leg finishes; `totalLegs` alone is not, because the route
-    // deliberately generates entries past it.
+    // A FINISH *LINE* IS CROSSED, NOT LAID — but a finish GATE is still a gate.
+    //
+    // ⚠️ THIS USED TO SUPPRESS EVERY FINISH, and that was too broad by exactly one case. The
+    // rule was written for Gatorgrass, where the windward gate IS the finish, on the argument
+    // that you do not lay a line you merely cross. True of a LINE. False of a gate at the end
+    // of an ordinary leg: Sea Trials runs down to its leeward gate four times and gets gybe
+    // laylines every lap, then crosses the same gate on the fifth and got nothing — the same
+    // water, the same decision about which end to take, and the aid silently gone at the one
+    // moment it decides the race. That inconsistency is what a player reads as a bug.
+    //
+    // So the LEG's geometry decides, not the finish flag, and `kind` is what separates them.
+    // Only windward-leeward courses reach this line at all — every islandRound venue has
+    // already returned above, since it draws laylines for the start and nothing else.
+    // `routeLeg` is the authority on which leg finishes; `totalLegs` alone is not, because
+    // the route deliberately generates entries past it.
     const rl = routeLeg(leg);
-    if (rl && rl.finish) return;
+    if (rl && rl.finish && rl.kind === 'line') return;
 
     // Downwind gates keep their own treatment below; everything approached on a beat —
     // the start line and every windward gate — is the same two-ended problem.
     const targets = legMarks(leg);
     if (!targets) return;
     const isUpwind = legGoesUpwind(leg);
-    const zoneRadius = (leg === 0) ? 0 : 165;
+    // ⚠️ A FINISH HAS NO ZONE, SO ITS LAYLINES RUN ALL THE WAY IN. The 165 inset exists to
+    // keep a layline from cutting across the rounding circle drawn around a mark you have to
+    // go round. There is no circle at a finish and nothing to round — you cross — so the
+    // inset only opened a gap between the line and the mark you are aiming at, in the one
+    // place the aid has to be exact. Same reason the start line is already 0.
+    const zoneRadius = (leg === 0 || (rl && rl.finish)) ? 0 : 165;
     const pts = targets.map(i => state.course.marks[i]);
     if (!pts[0] || !pts[1]) return;
     if (isUpwind) return drawEndLaylines(ctx, pts, zoneRadius);
@@ -19628,6 +19681,182 @@ function drawNpcEdgeIndicator(ctx, x, y, boat) {
     ctx.restore();
 }
 
+// ── THE INSTRUMENTS THAT LIVE ON THE BOAT ───────────────────────────────────
+//
+// SOG, TWS and TWA in a small panel under the player's own hull, instead of in a dial in
+// the far corner of the screen. The three numbers a sailor reads constantly were 900 px
+// from the thing they describe: you cannot watch your boat and your speed at once, so you
+// alternate, and every glance at the corner is a glance away from the water you are
+// sailing into. Anchored to the hull they are read with the same fixation as the boat.
+//
+// DRAWN ON THE CANVAS RATHER THAN AS DOM, like the competitor tags and the edge indicators
+// it sits beside — a DOM node chasing a moving world point lags the canvas by a frame and
+// shears visibly whenever the camera rotates.
+//
+// SCREEN SPACE, NOT WORLD SPACE. The panel tracks the hull's position but never its
+// rotation: text that rolls over with the camera is unreadable exactly when you are busiest.
+// A single unlabelled number, so the box is only as big as it. 34 keeps it clear of the
+// transom and its wake without drifting off into water the eye is not already on.
+const BI_W = 52, BI_H = 24, BI_DROP = 34;
+// Panel colours track the HUD's own (slate-900/60 body, slate-400/30 rim) so this reads as
+// the same instrument family as the panels it was moved out of.
+const BI_BG = 'rgba(15,23,42,0.62)';
+const BI_RIM = 'rgba(148,163,184,0.30)';
+
+// Everything the panel shows, in one place, because two of these numbers are not the raw
+// quantity they look like.
+function boatInstrumentData(player) {
+    const w = getWindAt(player.x, player.y);
+    // ⚠️ SOG, NOT BOAT SPEED, and on a tidal venue they are different numbers. `boat.speed`
+    // is speed through the WATER — what a log reads — and it says nothing about whether the
+    // stream is carrying you or holding you. `boat.velocity` is already the ground vector:
+    // the physics adds the current and the swell drift into it and deliberately keeps them
+    // out of `boat.speed` (see the note there — "the log reads the same while the sea
+    // carries you sideways"). So the honest speed over ground is just its magnitude, and it
+    // picks up every set and drift for free rather than re-deriving them here.
+    const v = player.velocity || { x: 0, y: 0 };
+    const sog = Math.hypot(v.x, v.y) * 4;
+    const twa = Math.round(Math.abs(normalizeAngle(player.heading - w.direction)) * (180 / Math.PI));
+    // TWS colour, carried over from the retired rose: MORE OR LESS PRESSURE THAN NORMAL FOR
+    // THIS COURSE, against the course's own p10/p90 rather than a single centroid sample.
+    // Dirty air outranks the field — the number is down because of the boat in front, which
+    // is a thing to sail out of rather than a patch of water to look for.
+    const P = state.wind.pressure;
+    const refMed = P ? P.med : state.wind.speed;
+    const refLo = P ? P.lo : refMed - 0.1;
+    const refHi = P ? P.hi : refMed + 0.1;
+    const badAir = player.badAirIntensity > 0.05;
+    const eff = w.speed * (1.0 - player.badAirIntensity);
+    let twsCol = '#ffffff';
+    if (badAir) twsCol = '#fda4af';
+    else if (eff > refHi) twsCol = '#6ee7b7';
+    else if (eff < refLo) twsCol = '#fda4af';
+    let sogCol = '#ffffff';
+    if (player.raceState.penalty || badAir) sogCol = '#f87171';
+    else if (player.raceState.isPlaning) sogCol = '#67e8f9';
+    const surf = window.Swell && window.Swell.active() ? window.Swell.hud(player) : null;
+    // VMG off the GROUND vector too, not through the water — otherwise the rose would show
+    // an SOG that includes the tide beside a VMG that ignores it, which is the disagreement
+    // this whole refactor exists to prevent. Projected on the wind axis, same convention the
+    // physics uses (heading and wind both point the way they are going).
+    const vmg = Math.abs(v.x * Math.sin(w.direction) - v.y * Math.cos(w.direction)) * 4;
+    return {
+        sog, vmg, tws: w.speed, twa, twsCol, sogCol, badAir,
+        planing: !!player.raceState.isPlaning,
+        surfing: !!(surf && surf.surfing)
+    };
+}
+
+// ── THE ROSE, WHEN IT IS THE CHOSEN FACE ────────────────────────────────────
+// The corner dial, driven from boatInstrumentData — the SAME function the boat panel reads.
+// The two faces show one set of numbers computed once, so they cannot drift apart, and it is
+// how the rose's speed became SOG without a second definition of SOG existing anywhere.
+//
+// Transforms run every frame (they track the camera and would judder at 6 Hz); the text runs
+// at 6 Hz, as it always did, because a digit flickering at 60 Hz is unreadable.
+function roseCue(id, cls, text, on) {
+    let el = document.getElementById(id);
+    if (!el && UI.speed && UI.speed.parentElement) {
+        el = document.createElement('div');
+        el.id = id;
+        el.className = cls;
+        el.textContent = text;
+        UI.speed.parentElement.style.position = 'relative';
+        UI.speed.parentElement.appendChild(el);
+    }
+    if (el) el.classList.toggle('hidden', !on);
+}
+
+function updateRoseHud(player, localWind) {
+    if (UI.compassRose) UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
+    if (UI.windArrow) UI.windArrow.style.transform = `rotate(${localWind.direction}rad)`;
+    if (UI.waypointArrow) UI.waypointArrow.style.transform = `rotate(${player.raceState.nextWaypoint.angle}rad)`;
+    if (UI.headingArrow) UI.headingArrow.style.transform = `rotate(${player.heading - state.camera.rotation}rad)`;
+    if (frameCount % 10 !== 0) return;
+    const d = boatInstruments(player);
+    // style.color rather than swapping Tailwind classes: the colour is already decided as a
+    // hex by boatInstrumentData, and a class list that has to be scrubbed before every write
+    // is how the old block grew a six-name remove() call.
+    if (UI.speed) { UI.speed.textContent = d.sog.toFixed(1); UI.speed.style.color = d.sogCol; }
+    if (UI.vmg) UI.vmg.textContent = d.vmg.toFixed(1);
+    if (UI.windSpeed) { UI.windSpeed.textContent = d.tws.toFixed(1) + (d.badAir ? ' \u2193' : ''); UI.windSpeed.style.color = d.twsCol; }
+    if (UI.windAngle) UI.windAngle.textContent = `${d.twa}\u00b0`;
+    roseCue('hud-planing-label', 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden', 'PLANING', d.planing);
+    roseCue('hud-surfing-label', 'absolute -top-9 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-amber-300 hidden', 'SURFING', d.surfing);
+}
+
+// Show the chosen face and hide the others. The chart moves rather than being toggled: it is
+// the one panel you look AT rather than through, so it takes the corner whenever the rose is
+// not there and drops below it when it is.
+function hudShowsBoat() { const m = settings.hudMode || 'boat'; return m === 'boat' || m === 'both'; }
+function hudShowsRose() { const m = settings.hudMode || 'boat'; return m === 'rose' || m === 'both'; }
+
+function applyHudMode() {
+    const m = settings.hudMode || 'boat';
+    if (UI.hudRose) UI.hudRose.classList.toggle('hidden', !hudShowsRose());
+    if (UI.minimapWrap) UI.minimapWrap.classList.toggle('mt-4', hudShowsRose());
+}
+
+// ⚠️ ONE SAMPLE, SHARED BY BOTH FACES, AT SIX HZ. Two things forced this. In 'both' mode
+// the panel and the rose are on screen together, and they were reading the same quantity at
+// different instants — 1.7 under the boat beside 1.9 in the corner, which looks exactly like
+// a bug in one of them. And a speed digit recomputed at 60 Hz churns its tenths continuously;
+// the rose has always written text at 6 Hz for that reason, so this is the panel adopting the
+// rose's cadence rather than the rose being dragged up to the panel's.
+//
+// Only the NUMBERS are held. The panel's position still tracks the hull every frame — that
+// has to be smooth, and it is not what the eye is trying to read.
+let _biCache = null, _biBucket = -1, _biWho = null;
+function boatInstruments(player) {
+    const bucket = Math.floor(frameCount / 10);
+    if (_biCache && _biBucket === bucket && _biWho === player) return _biCache;
+    _biBucket = bucket; _biWho = player;
+    _biCache = boatInstrumentData(player);
+    return _biCache;
+}
+
+function drawBoatInstruments(ctx, player) {
+    if (!hudShowsBoat()) return;
+    if (!player || !player.raceState) return;
+    if (player.raceState.finished) return;              // nothing left to sail by
+    const rot = -state.camera.rotation;
+    const dx = player.x - state.camera.x, dy = player.y - state.camera.y;
+    const sx = canvas.width / 2 + dx * Math.cos(rot) - dy * Math.sin(rot);
+    const sy = canvas.height / 2 + dx * Math.sin(rot) + dy * Math.cos(rot);
+    const top = sy + BI_DROP;
+    const left = sx - BI_W / 2;
+    const d = boatInstruments(player);
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(left, top, BI_W, BI_H, 7);
+    ctx.fillStyle = BI_BG;
+    ctx.fill();
+    ctx.strokeStyle = BI_RIM;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // ⚠️ ONE NUMBER, AND NO LABEL. This panel sits ON the boat, in the water you are looking
+    // at, so every glyph is bought with attention and with pixels of the racecourse. TWA is
+    // the one that steers the boat continuously — it is what you trim and what you tack on —
+    // and it is the reading that has to be there in peripheral vision. SOG and TWS are
+    // consulted rather than watched, and they live on the rose for players who want them.
+    //
+    // A label would say what a single number already says by being the only one, and it cost
+    // as much height again as the number. Same for the dirty-air arrow (an annotation on TWS,
+    // meaningless beside a heading angle) and for PLANING and SURFING: those are LATCHED
+    // states, so as text they sat lit for seconds at a time, and a caption that is often on
+    // stops being read at all.
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 4;
+    ctx.font = FONT.mono(15);
+    ctx.fillStyle = '#bfdbfe';
+    ctx.fillText(d.twa + '°', sx, top + BI_H / 2 + 0.5);
+    ctx.restore();
+}
+
 // Screen-space snowfall (Arctic): soft flakes drifting down with a light wind
 // slant and a per-flake flutter. Own seeded PRNG (`snowRand`) — never
 // Math.random (would desync the eval RNG stream). Draw-side only: nothing in
@@ -20003,16 +20232,15 @@ function draw() {
         }
     }
 
+    drawBoatInstruments(ctx, player);
     drawMinimap();
     drawWindDebug(ctx);
 
     // UI Updates (Player Data)
     const localWind = getWindAt(player.x, player.y);
 
-    if (UI.compassRose) UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
-    if (UI.windArrow) UI.windArrow.style.transform = `rotate(${localWind.direction}rad)`;
-    if (UI.waypointArrow) UI.waypointArrow.style.transform = `rotate(${player.raceState.nextWaypoint.angle}rad)`;
-    if (UI.headingArrow) UI.headingArrow.style.transform = `rotate(${player.heading - state.camera.rotation}rad)`;
+    if (hudShowsRose()) updateRoseHud(player, localWind);
+
 
     // OCS banner: persistent while the flag is up (the transient race message is
     // easy to miss, and a correct OCS hold then reads as a missed crossing). The
@@ -20051,118 +20279,12 @@ function draw() {
             UI.overpoweredBadge.classList.toggle('hidden', !op);
         }
 
-        if (UI.speed) {
-            UI.speed.textContent = (player.speed*4).toFixed(1);
-
-            // Remove all potential color classes first
-            UI.speed.classList.remove('text-red-400', 'text-green-400', 'text-cyan-400', 'text-white');
-
-            if (player.raceState.penalty || player.badAirIntensity > 0.05) {
-                UI.speed.classList.add('text-red-400');
-            } else if (player.raceState.isPlaning) {
-                // Planing Indicator
-                UI.speed.classList.add('text-cyan-400');
-                if (!UI.speed.textContent.includes('PLANE')) {
-                     // Hacky way to add indicator near speed if layout allows?
-                     // Or just rely on color.
-                     // The requirement said: "Add a “PLANING” indicator in the sailing HUD"
-                }
-            } else {
-                UI.speed.classList.add('text-white');
-            }
-
-            // Explicit PLANING label injection if not present
-            let planingLabel = document.getElementById('hud-planing-label');
-            if (!planingLabel && UI.speed.parentElement) {
-                 planingLabel = document.createElement('div');
-                 planingLabel.id = 'hud-planing-label';
-                 planingLabel.className = 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden';
-                 planingLabel.textContent = 'PLANING';
-                 UI.speed.parentElement.style.position = 'relative';
-                 UI.speed.parentElement.appendChild(planingLabel);
-            }
-
-            if (planingLabel) {
-                if (player.raceState.isPlaning) planingLabel.classList.remove('hidden');
-                else planingLabel.classList.add('hidden');
-            }
-
-            // ── SURFING, the sibling cue ────────────────────────────────────
-            // PLANING says the hull has climbed onto its own bow wave; SURFING says the sea
-            // is carrying you, which is a different thing you did and worth its own word.
-            // They stack — a good ride down a face is what trips the plane — so the surf
-            // label sits above the planing one rather than replacing it.
-            //
-            // Latched in Swell.hud, not sampled: a crest passes every three seconds and a
-            // label blinking at that rate beside the speedo is noise, not information.
-            const surf = window.Swell && window.Swell.active() ? window.Swell.hud(player) : null;
-            let surfLabel = document.getElementById('hud-surfing-label');
-            if (!surfLabel && UI.speed.parentElement) {
-                surfLabel = document.createElement('div');
-                surfLabel.id = 'hud-surfing-label';
-                surfLabel.className = 'absolute -top-9 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-amber-300 hidden';
-                surfLabel.textContent = 'SURFING';
-                UI.speed.parentElement.style.position = 'relative';
-                UI.speed.parentElement.appendChild(surfLabel);
-            }
-            if (surfLabel) {
-                if (surf && surf.surfing) surfLabel.classList.remove('hidden');
-                else surfLabel.classList.add('hidden');
-            }
-        }
-        if (UI.windSpeed) {
-             UI.windSpeed.textContent = localWind.speed.toFixed(1);
-
-             // Remove all potential color classes
-             UI.windSpeed.classList.remove('text-rose-300', 'text-emerald-300', 'text-red-400', 'text-green-400', 'text-orange-400', 'text-white');
-
-             // ── MORE OR LESS PRESSURE THAN NORMAL *FOR THIS COURSE* ─────────────
-             // This used to compare against `state.wind.speed` — the region blend at ONE
-             // POINT, the route centroid — with a 0.1 kt deadband. That is fine on the nine
-             // venues that state a single uniform wind region and meaningless on the one
-             // that does not: on Glacier Sound the centroid sits in the katabatic tongue at
-             // 20 kt while the racing corridor runs 12-18, so "below average" was true on
-             // 100% of frames and the readout was permanently red. It was reporting where
-             // the centroid is, not what the sailor is in.
-             //
-             // The course's own p10/p90 (`computeWindPressureScale`, over sailable water
-             // inside the mark box, averaged across the oscillation and widened to at least
-             // +/-18% of the median) is the honest reference, and it is already computed —
-             // it is what the wind comets are drawn from. Sharing it means the number turns
-             // gold exactly when the comets around the boat do, instead of the HUD and the
-             // water disagreeing about the same breeze.
-             //
-             // `hi` also carries headroom for half the largest authored gust, so on a venue
-             // with puffs green means A PUFF rather than "slightly windier over here".
-             const P = state.wind.pressure;
-             const refMed = P ? P.med : state.wind.speed;
-             const refLo = P ? P.lo : refMed - 0.1;
-             const refHi = P ? P.hi : refMed + 0.1;
-             const effectiveSpeed = localWind.speed * (1.0 - player.badAirIntensity);
-
-             if (player.badAirIntensity > 0.05) {
-                 // Dirty air is its own answer and outranks the field: the number is down
-                 // because of the boat in front, which is a thing to sail out of rather
-                 // than a patch of water to look for.
-                 UI.windSpeed.classList.add('text-rose-300');
-             } else if (effectiveSpeed > refHi) {
-                 UI.windSpeed.classList.add('text-emerald-300');
-             } else if (effectiveSpeed < refLo) {
-                 UI.windSpeed.classList.add('text-rose-300');
-             } else {
-                 UI.windSpeed.classList.add('text-white');
-             }
-
-             if (player.badAirIntensity > 0.05) {
-                 if (!UI.windSpeed.textContent.includes('↓')) UI.windSpeed.textContent += ' ↓';
-             }
-        }
-        if (UI.windAngle) {
-            const twa = Math.round(Math.abs(normalizeAngle(player.heading - localWind.direction))*(180/Math.PI));
-            UI.windAngle.textContent = `${twa}°`;
-        }
-        if (UI.vmg) UI.vmg.textContent = Math.abs((player.speed*4)*Math.cos(normalizeAngle(player.heading - localWind.direction))).toFixed(1);
-
+        // The speed / VMG / TWS / TWA readouts and their PLANING and SURFING labels used to
+        // be written into the wind rose here. The rose is gone and all of it now draws on the
+        // canvas under the player's boat — see drawBoatInstruments. The logic went with it
+        // rather than being dropped: SOG's planing and penalty colours, the TWS pressure
+        // comparison against the course's own p10/p90, and the dirty-air arrow are all in
+        // boatInstrumentData. VMG is the one number that did not survive the move.
         if (UI.timer) {
             let displayTime = state.race.timer;
             let timerClass = 'text-white';

@@ -631,6 +631,28 @@
                         <button class="ov-seg" data-mode="north">NORTH UP</button>
                     </div>
                 </div>
+                <div class="ov-setting" style="padding: 10px 0;">
+                    <span class="ov-setting-label">Instruments</span>
+                    <!-- Same idiom as Camera mode: the select is the source of truth and the
+                         segments are its face. BOAT is the default — just TWA, unlabelled,
+                         under your own hull, read with the same glance as the boat. ROSE is
+                         the corner dial with the full set (SOG, TWS, VMG, the heading pip,
+                         the waypoint arrow).
+                         BOTH runs them together: the panel is what you sail by, the rose is
+                         what you consult. OFF is water and nothing else. -->
+                    <select id="setting-hud-mode" class="hidden">
+                        <option value="boat">Boat</option>
+                        <option value="rose">Rose</option>
+                        <option value="both">Both</option>
+                        <option value="off">Off</option>
+                    </select>
+                    <div id="hud-mode-segs" class="ov-segs">
+                        <button class="ov-seg" data-hud="boat">BOAT</button>
+                        <button class="ov-seg" data-hud="rose">ROSE</button>
+                        <button class="ov-seg" data-hud="both">BOTH</button>
+                        <button class="ov-seg" data-hud="off">OFF</button>
+                    </div>
+                </div>
                 <div class="ov-setting" style="padding: 10px 0; border-bottom: none;">
                     <span class="ov-setting-label">Telltale color</span>
                     <div class="flex items-center gap-2">
@@ -817,7 +839,19 @@
              indicators pass under it and stay readable through it. -->
         <div id="hud-instruments" class="absolute top-4 right-4 flex flex-col items-center pointer-events-none">
 
-            <div class="relative w-40 h-40">
+            <!-- ── INSTRUMENT MODE: ROSE ──────────────────────────────────────────
+                 One of three faces for the same numbers, chosen in Settings and applied by
+                 applyHudMode() in script.js. This dial is the original: complete, but about
+                 900 px from the boat it describes, so reading it means looking away from the
+                 water. "Boat" puts SOG/TWS/TWA under the hull instead (drawBoatInstruments)
+                 and "Off" shows neither. Only the container is toggled; everything inside is
+                 untouched, and it keeps the heading pip and the waypoint arrow that the boat
+                 panel has no room for.
+
+                 Its readouts come from boatInstrumentData() — the SAME source the boat panel
+                 uses — so the two faces can never disagree. That is also how the speed here
+                 became SOG: one definition, both modes. -->
+            <div id="hud-rose" class="relative w-40 h-40">
                 <!-- Main Background -->
                 <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm rounded-full border-2 border-slate-400/30 shadow-2xl"></div>
 
@@ -884,7 +918,9 @@
                             <div class="t-mono text-xl text-white leading-none drop-shadow-md">
                                 <span id="hud-speed">0.0</span>
                             </div>
-                            <div class="t-label t-label-xs t-label-bright">KTS</div>
+                            <!-- SOG, not KTS. KTS names the unit; the question is WHICH speed,
+                                 and this one is over the ground — it carries the tide. -->
+                            <div class="t-label t-label-xs t-label-bright">SOG</div>
                         </div>
                         <div class="flex flex-col items-center">
                             <div class="t-mono text-xl text-green-400 leading-none drop-shadow-md">
@@ -910,7 +946,7 @@
             </div>
 
             <!-- Minimap -->
-            <div class="mt-4 relative w-40 h-40 bg-slate-900/60 backdrop-blur-sm rounded-lg border-2 border-slate-400/30 shadow-2xl overflow-hidden">
+            <div id="hud-minimap-wrap" class="relative w-40 h-40 bg-slate-900/60 backdrop-blur-sm rounded-lg border-2 border-slate-400/30 shadow-2xl overflow-hidden">
                 <canvas id="minimap" width="160" height="160" class="w-full h-full"></canvas>
             </div>
 
