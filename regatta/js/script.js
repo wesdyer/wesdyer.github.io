@@ -3664,15 +3664,7 @@ class BotController {
         // boat is ARMED on the rounding leg — the one state in which "the wrong way
         // round" is even defined.
         const rmRetro = state.course.roundMark && legRoundMark(this.boat.raceState.leg);
-        // NOT SCOPED TO ICE, because the mechanism has nothing to do with ice.
-        // The narrow floe gate this landed with was there to bound the blast
-        // radius; the full battery then said the fix TRANSFERS (rule 8), with no
-        // loser on any venue — lake −1.7/−4.7 mean over two 20-seed sets, river
-        // finishers 128 → 132, lagoon −0.9, swamp −6.9, ocean −0.7, seatrials
-        // byte-identical (no rounding to be armed on), redrock pooled 6-set flat
-        // at +2.0 med / −0.3 mean with finishers 431 → 432 and every contact class
-        // down. A fan that unwinds a sweep it is committed to is wrong everywhere.
-        const retroOn = !!(rmRetro && this.boat.raceState.roundArmed
+        const retroOn = !!(rmRetro && this.boat.raceState.roundArmed && !openWaterAv
                            && this.boat.raceState.leg >= 1 && !this._outbound);
         const brgRetro = retroOn ? Math.atan2(this.boat.y - rmRetro.y, this.boat.x - rmRetro.x) : 0;
         const sgnRetro = (rmRetro && rmRetro.side === 'port') ? -1 : 1;
