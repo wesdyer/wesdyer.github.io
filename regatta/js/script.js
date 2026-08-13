@@ -18281,8 +18281,12 @@ function drawMinimap() {
         // Body first. Shoals draw their body and are then skipped by the cap pass below:
         // the cap is vegetation or snow, and a bar under water has neither. Paint zones
         // are not islands at all — they were drawn with the water above.
+        //
+        // ⚠️ `hidden`, NOT `isBank` — see the note in drawIslands. isBank is "out of the
+        // router", which is a different question from "do not draw", and the chart has to
+        // agree with the water about what is there.
         for (const isl of state.course.islands) {
-            if (isl.isBank || isl.hidden || isl.paint) continue;
+            if (isl.hidden || isl.paint) continue;
             ctx.fillStyle = isl.reef
                 ? `rgba(${submergedTint(REEF_RUBBLE[1]).join(',')},0.6)`   // the band's own drowned khaki
                 : isl.awash
@@ -18305,7 +18309,7 @@ function drawMinimap() {
         }
         // Center cap (vegetation on land, snow on ice)
         for (const isl of state.course.islands) {
-            if (isl.isBank || isl.hidden || isl.awash) continue;
+            if (isl.hidden || isl.awash) continue;
             // Mask shapes are keyholed; an inset "cap" ring is meaningless and
             // paints blobs across the water.
             if (isl.fromMask) continue;
@@ -22505,7 +22509,17 @@ function drawIslands(ctx) {
         // drawShoals — this pass is the world standing above it. A reef collides like
         // land but LIVES on the bottom (drawReefs painted it with the water layers),
         // so drawing it here would stand it up out of the sea as a sand island.
-        if (isl.isBank || isl.hidden || isl.awash || isl.reef) continue;
+        //
+        // ⚠️ THE TEST IS `hidden`, AND IT USED TO BE `isBank`. Those are two different
+        // questions and the flag names only one of them: isBank is `!nav` — "keep this
+        // out of the visibility graph" — while `hidden` is "do not draw". They agreed
+        // for as long as `bank` was the only unrouted DRAWN kind (it is hidden too, so
+        // banks are still skipped here), and stopped agreeing the moment the cove got
+        // its lane: inland scenery no boat can reach, deliberately unrouted, and
+        // deliberately visible. Asking isBank made all three of Lighthouse Cove's
+        // village lanes invisible. Anything unrouted that should stay off the screen
+        // says so with `hidden`.
+        if (isl.hidden || isl.awash || isl.reef) continue;
         const distSq = (isl.x - camX) ** 2 + (isl.y - camY) ** 2;
         const limit = viewRadius + isl.radius;
         if (distSq > limit ** 2) continue;
