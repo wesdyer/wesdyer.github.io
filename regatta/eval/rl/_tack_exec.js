@@ -58,9 +58,19 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeTW');
     }
     await br.close();
 
-    // columns: 0 name 1 t 2 stratSide 3 stratKind 4 finalSide 5 hullSide 6 twa 7 spd 8 cd 9 owner 10 seed
+    // columns: 0 name 1 t 2 stratSide 3 stratKind 4 finalSide 5 hullSide 6 twa 7 spd 8 cd
+    //          9 owner 10 armed 11 navSrc/leg — and the SEED is appended LAST by the loop.
+    // ⚠️ FIXED 2026-08-14. This read `r[10]` as the seed, per the stale comment above.
+    // The emitter pushes TWELVE fields (0..11), so the seed lands at index 12 and index
+    // 10 is `roundArmed ? 1 : 0`. The grouping key was therefore `armed:name`: every
+    // boat's rows from EVERY seed collapsed into (at most) two groups, sorted by `t`,
+    // interleaving three separate races into one timeline — and hull side-changes were
+    // then counted across that interleaving, which manufactures crossings at each
+    // seed-to-seed jump. The 2026-08-11 arctic ownership table (20.0% nav / 47.2%
+    // avoidance) came out of this and is RETIRED; see [[regatta-tack-ownership]].
+    // Group by the last element, which is the seed regardless of emitter width.
     const byBoat = {};
-    for (const r of ROWS) (byBoat[r[10] + ':' + r[0]] = byBoat[r[10] + ':' + r[0]] || []).push(r);
+    for (const r of ROWS) { const k = r[r.length - 1] + ':' + r[0]; (byBoat[k] = byBoat[k] || []).push(r); }
     for (const k in byBoat) byBoat[k].sort((a, b) => a[1] - b[1]);
 
     const own = {}, ownTacks = {};
