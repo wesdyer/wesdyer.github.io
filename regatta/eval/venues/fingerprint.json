@@ -1,19 +1,19 @@
 {
   "bay": {
-    "hash": "fb26ddc7a0a4d1b3",
-    "frozen": "2026-08-10"
+    "hash": "1987aa116bf24f3f",
+    "frozen": "2026-08-12"
   },
   "arctic": {
     "hash": "f1117544f264dea1",
-    "frozen": "2026-08-09"
+    "frozen": "2026-08-12"
   },
   "seatrials": {
     "hash": "3ed01bfea3320ee7",
-    "frozen": "2026-08-09"
+    "frozen": "2026-08-12"
   },
   "ocean": {
     "hash": "99124fe8c136cfc5",
-    "frozen": "2026-08-09"
+    "frozen": "2026-08-12"
   },
   "river": {
     "hash": "0cd21eb6c474a55a",
@@ -24,8 +24,8 @@
     "frozen": "2026-08-09"
   },
   "lake": {
-    "hash": "6c90ec281e3f97d6",
-    "frozen": "2026-08-08"
+    "hash": "c9764f3a06fe278c",
+    "frozen": "2026-08-12"
   },
   "lagoon": {
     "hash": "ed57f667d16c4d96",
@@ -34,5 +34,9 @@
   "swamp": {
     "hash": "1765db68520e6362",
     "frozen": "2026-08-10"
+  },
+  "glowtide": {
+    "hash": "4820671ea2c3a103",
+    "frozen": "2026-08-12"
   }
 }
