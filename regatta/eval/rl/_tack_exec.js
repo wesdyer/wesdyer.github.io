@@ -71,6 +71,24 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeTW');
     // Group by the last element, which is the seed regardless of emitter width.
     const byBoat = {};
     for (const r of ROWS) { const k = r[r.length - 1] + ':' + r[0]; (byBoat[k] = byBoat[k] || []).push(r); }
+    // Rule 33: assert, do not assume. A wrong key is silent — the code runs and the
+    // totals look plausible. Group count must be seeds x boats, and each group's time
+    // must be monotone and inside ONE race.
+    // ⚠️ The two checks that DON'T work, so nobody re-adds them:
+    //   * `groups === boats x seeds` — arctic's roster differs per seed (25 distinct
+    //     names over 3 races of ~9), so the product over-counts and fires on good data.
+    //   * monotone `t` — the sort above orders by `t`, so interleaving is monotone BY
+    //     CONSTRUCTION. The sort destroys the evidence.
+    // What does discriminate: a group holding N races has each timestamp N times.
+    // On the arctic rows: 0 duplicates under the correct key, 2745 under the buggy one.
+    {
+        let dupT = 0;
+        for (const k in byBoat) { const H = byBoat[k]; for (let i = 1; i < H.length; i++) if (H[i][1] === H[i - 1][1]) dupT++; }
+        const seeds = new Set(ROWS.map(r => r[r.length - 1])).size;
+        console.log(`grouping check: ${Object.keys(byBoat).length} groups over ${seeds} seed(s), duplicate timestamps within a group: ${dupT}`);
+        if (dupT) console.log(`  ⚠️⚠️ RACES ARE INTERLEAVED — the grouping key is wrong. DO NOT READ THE SIDE-CHANGE TABLE.`);
+        else console.log(`  ✓ no duplicate timestamps — one race per group`);
+    }
     for (const k in byBoat) byBoat[k].sort((a, b) => a[1] - b[1]);
 
     const own = {}, ownTacks = {};
