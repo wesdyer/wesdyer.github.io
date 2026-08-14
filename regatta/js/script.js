@@ -2067,17 +2067,63 @@ class BotController {
                 // compute 0 here without touching getCurrentAt (no regions).
                 if (state.course._avCurMax === undefined) {
                     let mCJ = 0;
+                    const sCJ = [];
                     const gCJ = state.course.botGrid;
                     if (gCJ && (state.course.currentRegions || []).length) {
                         for (let yCJ = 0; yCJ < gCJ.n; yCJ += 4) for (let xCJ = 0; xCJ < gCJ.n; xCJ += 4) {
                             if (!gCJ.at(xCJ, yCJ)) continue;
                             const cwJ = getCurrentAt(gCJ.x0 + (xCJ + 0.5) * gCJ.res, gCJ.y0 + (yCJ + 0.5) * gCJ.res);
-                            if (cwJ && cwJ.speed > mCJ) mCJ = cwJ.speed;
+                            const sJ = cwJ ? cwJ.speed : 0;
+                            if (sJ > mCJ) mCJ = sJ;
+                            sCJ.push(sJ);
                         }
                     }
                     state.course._avCurMax = mCJ;
+                    // ⭐⭐ A MAXIMUM IS NOT A VENUE-CLASS STATISTIC (2026-08-13, THE
+                    // GLOWTIDE PUSH). Seven gates read this scalar at a 2.0 kt knee,
+                    // and they ask two DIFFERENT questions:
+                    //
+                    //  LOCAL MANOEUVRE — will this boat's real path follow the rollout
+                    //    I am grading? (the stuck-state retreat line ~508, the
+                    //    gybe-around ~1244, the armed rounding arc ~3274.) A rollout is
+                    //    arc + set in ANY stream, so this asks about the water she is
+                    //    actually in.
+                    //  VENUE CLASS — is this a stream venue, whose water moves the
+                    //    router's own line out from under it? (the jam stamps below,
+                    //    the probe cap ~4205, the plan-aligned short probe ~4296/4301,
+                    //    and `bandTrusted` ~4432 — the HZ3B clearance-staircase waiver
+                    //    landed in 08f734a.)
+                    //
+                    // A MAX over ~900 sampled cells answers the second one dishonestly:
+                    // one hot cell speaks for a whole map. Measured (`_curmax.js`,
+                    // `_curhot.js`, `_curphase.js` — the authored regions are static,
+                    // `period` and `speedVar` are 0, so this is a venue property and not
+                    // a tidal snapshot):
+                    //
+                    //   glowtide   max 2.31   p90 1.79   p99 1.90    5 of 877 cells >= 2.0
+                    //   river      max 4.96   p90 2.90   p99 4.28    113 of 477  (23.7%)
+                    //   bay 1.84/0.50, lagoon 1.09/0.41, the five still venues 0
+                    //
+                    // Glowtide is a 1-1.8 kt tide with one 2.3 kt corner and it was
+                    // paying river's entire scoping bill. The p90 leaves river OFF and
+                    // every other venue exactly where it was, so the other NINE VENUES
+                    // ARE BYTE-IDENTICAL BY CONSTRUCTION (redrock and lake benched
+                    // `cmp`-identical). Nor is it a tuned number: glowtide is under the
+                    // knee at every percentile through p99 and river is over it from
+                    // p76.3, so ANY percentile in [p77, p99] gives the same ten-venue
+                    // partition. Only the raw maximum separates them.
+                    //
+                    // ⚠️ THE MAX IS KEPT FOR THE THREE LOCAL GATES, AND THAT IS
+                    // MEASURED. Moving those three to the p90 as well LOSES on glowtide:
+                    // 16 seeds, med 297 -> 366, mean 324.0 -> 384.6, land contacts
+                    // 22.3 -> 38.5 (+72%), a finisher lost, 1 of 8 seeds faster. They
+                    // are off here for a good reason; only the venue-class four were
+                    // wrong.
+                    sCJ.sort((a, b) => a - b);
+                    state.course._avCurP90 = sCJ.length
+                        ? sCJ[Math.min(sCJ.length - 1, Math.floor(0.90 * sCJ.length))] : 0;
                 }
-                if (this.boat.raceState.leg >= 1 && state.course._avCurMax < 2.0) {
+                if (this.boat.raceState.leg >= 1 && state.course._avCurP90 < 2.0) {
                     for (const oJ of state.boats) {
                         if (oJ === boat || oJ.isPlayer || oJ.raceState.finished) continue;
                         if (oJ.raceState.leg < 1 || oJ.speed * 4 >= 1.0) continue;
@@ -4202,7 +4248,7 @@ class BotController {
                 //    the cove fix (v2 mark contacts stayed +52% with only the
                 //    250u funnel excluded; arcs arm out to zone*1.5).
                 const capOK = openWaterAv && gAv._clear && !arcR &&
-                    (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                    (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0);
                 if (capOK) {
                     const ccB = gAv.cell(boat.x, boat.y);
                     const idB = ccB[1] * gAv.n + ccB[0];
@@ -4293,12 +4339,12 @@ class BotController {
                 // (river/arctic sit behind the current/floe guards by construction).
                 const hzWaive = !arcK && boat.speed * 60 < 40
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
-                    && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                    && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0);
                 const hardZ = (openWaterAv && !arcK
                     && (hzWaive || (hPlanFF != null
                         && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3))
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
-                    && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
+                    && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
                     : 140;
                 // ⭐ THE PROBE ROLLS THE BOAT'S OWN TURN. A COMMANDED HEADING IS
@@ -4429,7 +4475,7 @@ class BotController {
                     const bandTrusted = openWaterAv && !arcK && hPlanFF != null
                         && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3
                         && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
-                        && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                        && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0);
                     if (!bandTrusted && clr > 0 && clr < 3) {
                         // FLOE-caused narrowness is grindable; LAND-caused is not.
                         // When the static (land-only) grid says this water is clear,

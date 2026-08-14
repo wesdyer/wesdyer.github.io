@@ -27,11 +27,30 @@ const VENUE = process.argv[6] || 'ocean';
     const browser = await chromium.launch();
     const page = await browser.newPage();
     page.on('pageerror', e => console.log('PAGE ERROR:', String(e).slice(0, 300)));
-    await page.addInitScript((v) => {
-        localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
-    }, VENUE);
+    // ⚠️⚠️ CROSS-PROCESS REPRODUCIBILITY (2026-08-13). Selecting the venue with
+    // `addInitScript` makes the PAGE LOAD on the target venue, and something created
+    // during that load — before `eval_harness` replaces Math.random — survives
+    // `resetGame` and carries PER-PROCESS entropy into the race. Measured with
+    // `_riv_diverge.js`: two processes, same tree, same seed, DIVERGE on river
+    // (t=20.5 s, reproducibly, into one of two outcomes), lagoon (t=96 s) and swamp
+    // (t=1 s), while glowtide, redrock, lake, bay, ocean, arctic and seatrials are
+    // identical over 300-900 one-second checkpoints. `run_traces.js` is immune
+    // because it writes localStorage AFTER goto, so the page boots on the DEFAULT
+    // venue; under that pattern river is identical across SEVEN processes.
+    //
+    // OPT-IN ONLY. Switching the default would invalidate every existing
+    // ocean_bench baseline JSON at once, which is an owner call. Set
+    // OCEAN_BENCH_LATE_VENUE=1 to bench river / lagoon / swamp reproducibly, and
+    // remember that those runs are NOT comparable to anchors taken the old way.
+    const LATE_VENUE = process.env.OCEAN_BENCH_LATE_VENUE === '1';
+    if (!LATE_VENUE) {
+        await page.addInitScript((v) => {
+            localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
+        }, VENUE);
+    }
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
+    if (LATE_VENUE) await page.evaluate((v) => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), VENUE);
     await page.evaluate(() => {
         const inner = window.onRaceEvent;
         window.__cc = {}; window.__ccT = {};
