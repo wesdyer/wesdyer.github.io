@@ -6487,11 +6487,14 @@ const LAND_TEXTURES = {
     // is the same "photograph zoomed too far in" failure the beach sand note describes. The
     // rock wants texture, not features.
     //
-    // 0.13 because water KILLS CONTRAST, and drawing detail at full strength under it is
-    // how a submerged thing stops looking submerged. Granite in air carries 0.3; this is
-    // roughly what that survives as once the column is over it, put in deliberately rather
-    // than arrived at by accident.
-    sunkenrock:   { src: 'assets/images/terrain/arctic/granite.png', tile: 128, alpha: 0.13 }
+    // Alpha stays at granite's own 0.3 rather than being cut for the water, because the
+    // WATER IS NOT WHAT DIMS THIS TILE — SUNKEN_DEPTH is, and it scales the pattern and the
+    // base together after the fact. Cutting both is how the rock ended up with neither
+    // darkness nor texture. Measured at matched darkness (-7 luma against the water), 0.13
+    // gives an in-slab texture sd of 0.86 and 0.30 gives 1.17: the tile is barely legible
+    // either way once the rock is properly dark, which is the honest look of a dark thing
+    // under water at night, so this takes the version with more of it.
+    sunkenrock:   { src: 'assets/images/terrain/arctic/granite.png', tile: 128, alpha: 0.30 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];
@@ -18341,8 +18344,12 @@ function drawMinimap() {
         // Body first. Shoals draw their body and are then skipped by the cap pass below:
         // the cap is vegetation or snow, and a bar under water has neither. Paint zones
         // are not islands at all — they were drawn with the water above.
+        //
+        // ⚠️ `hidden`, NOT `isBank` — see the note in drawIslands. isBank is "out of the
+        // router", which is a different question from "do not draw", and the chart has to
+        // agree with the water about what is there.
         for (const isl of state.course.islands) {
-            if (isl.isBank || isl.hidden || isl.paint) continue;
+            if (isl.hidden || isl.paint) continue;
             ctx.fillStyle = isl.reef
                 ? `rgba(${submergedTint(REEF_RUBBLE[1]).join(',')},0.6)`   // the band's own drowned khaki
                 : isl.awash
@@ -18365,7 +18372,7 @@ function drawMinimap() {
         }
         // Center cap (vegetation on land, snow on ice)
         for (const isl of state.course.islands) {
-            if (isl.isBank || isl.hidden || isl.awash) continue;
+            if (isl.hidden || isl.awash) continue;
             // Mask shapes are keyholed; an inset "cap" ring is meaningless and
             // paints blobs across the water.
             if (isl.fromMask) continue;
@@ -22006,6 +22013,26 @@ function hexToRgb(h, fb) {
 // wasted effort in any case: the rock is UNDER the surface, so the moon wash, the glitter
 // and the wind waves paint over it afterwards, and past that point you are looking at the
 // water and not at the rock.
+// ⚠️ HOW DARK THE ROCK READS, and it is the ONLY knob that really moves it. Applied as a
+// multiplier on the finished sprite — see the note at the fill site for why the body colour
+// cannot do this job.
+//
+// ⚠️ MEASURE AGAINST *LOCAL* WATER. The first sweep of this compared the slab to a wide ring
+// around it, which on this venue catches the karst islands' bio-surf glow and reads ~6 luma
+// bright — so every figure came out flattering and two rounds of "too dark" followed a table
+// that said the rock was nearly neutral. The numbers below use a ring just outside the slab
+// on its open-water side, which is what the eye actually compares it with:
+//
+//     depth 0.42 -> -8.7   owner: "still too dark"
+//     depth 0.60 -> -3.5   <- here: plainly darker than the water, granite still legible
+//     depth 0.75 -> +0.9
+//     depth 0.88 -> +5.9
+//     depth 1.00 -> ~+9    owner: "don't appear dark" (the original bug)
+//
+// ⚠️ THE CURVE ALSO MOVES WITH THE TILE ALPHA, so re-sweep if that changes: getLandPattern
+// draws the granite RAW over the base, and a lighter tile has to be paid for with more
+// depth. These are at alpha 0.30.
+let SUNKEN_DEPTH = 0.60;
 function sunkenGround() {
     return submergedTint(hexToRgb((ISLAND_STYLES.sunkenrock || {}).body, [86, 95, 111]));
 }
@@ -22076,6 +22103,24 @@ function bakeReefSprite(isl) {
         const pat = getLandPattern(g, 'sunkenrock', base);
         if (pat) { g.fillStyle = pat; g.fillRect(bx, by, bw, bw); }
         g.restore();
+
+        // ⚠️ DEPTH, AND IT HAS TO BE APPLIED HERE RATHER THAN IN THE BASE COLOUR. Darkening
+        // the body hex barely moves the rock, for two compounding reasons: submergedTint
+        // LERPS TOWARD THE WATER, so past a point a darker body just buys more water colour,
+        // and getLandPattern draws the granite tile RAW over the base — the tile is a light
+        // grey, so it adds a fixed lift that no base colour can take back. Measured, the body
+        // hex only buys 0.118 luma of screen per luma of body.
+        //
+        // A source-atop black scales every pixel already laid down — rim, base and tile
+        // together — so the texture keeps its RELATIVE contrast while the whole thing sinks.
+        // source-atop and not a plain fill because it must leave the transparent margin alone;
+        // a normal fill would paint a black square over the water.
+        if (SUNKEN_DEPTH < 1) {
+            g.globalCompositeOperation = 'source-atop';
+            g.fillStyle = `rgba(0,0,0,${(1 - SUNKEN_DEPTH).toFixed(3)})`;
+            g.fillRect(bx - R, by - R, bw * 2, bw * 2);
+            g.globalCompositeOperation = 'source-over';
+        }
 
         // THE EDGE. Stroked AFTER the clip is released, so the outer half of the line is not
         // shaved off — clipping to the outline and stroking it inside that clip is how you
@@ -22527,7 +22572,17 @@ function drawIslands(ctx) {
         // drawShoals — this pass is the world standing above it. A reef collides like
         // land but LIVES on the bottom (drawReefs painted it with the water layers),
         // so drawing it here would stand it up out of the sea as a sand island.
-        if (isl.isBank || isl.hidden || isl.awash || isl.reef) continue;
+        //
+        // ⚠️ THE TEST IS `hidden`, AND IT USED TO BE `isBank`. Those are two different
+        // questions and the flag names only one of them: isBank is `!nav` — "keep this
+        // out of the visibility graph" — while `hidden` is "do not draw". They agreed
+        // for as long as `bank` was the only unrouted DRAWN kind (it is hidden too, so
+        // banks are still skipped here), and stopped agreeing the moment the cove got
+        // its lane: inland scenery no boat can reach, deliberately unrouted, and
+        // deliberately visible. Asking isBank made all three of Lighthouse Cove's
+        // village lanes invisible. Anything unrouted that should stay off the screen
+        // says so with `hidden`.
+        if (isl.hidden || isl.awash || isl.reef) continue;
         const distSq = (isl.x - camX) ** 2 + (isl.y - camY) ** 2;
         const limit = viewRadius + isl.radius;
         if (distSq > limit ** 2) continue;

@@ -2097,6 +2097,10 @@ function compileVenueDoc(doc) {
             fromMask: true,
             isRock: isBareRock,
             hidden: T.hidden,
+            // ROUTER ONLY — "keep this shape out of the visibility graph", nothing more.
+            // The name predates every unrouted kind that is not a river bank, and reading
+            // it as "invisible" is what hid the cove's lanes for a release: unrouted and
+            // undrawn are separate facts, and `hidden` above is the one the renderer asks.
             isBank: !T.nav,
             // SUBMERGED. Read by the collision pass (skips it), the renderer (paints it
             // under the water instead of over it), the nav-island filter (it is no
