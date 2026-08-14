@@ -544,13 +544,27 @@ with a shell.
 
 ## 10. Validation — **Rule**
 
-No stat is considered real until it has been priced. After implementation, measure
-with `tier_eval.js` and confirm each new stat's payoff moved the way the design
-intends, **before** authoring 82 values against it. A stat that prices at 0.05 s/pt
-is decorative, and we know from `reach` how long that can go unnoticed.
+No stat is considered real until it has been priced. After implementation, measure and
+confirm each new stat's payoff moved the way the design intends, **before** authoring 82
+values against it. A stat that prices at 0.05 s/pt is decorative, and we know from
+`reach` how long that can go unnoticed.
 
 Expect `memory` to price at ≈0 until a multi-region course exists (§4.3). That is a
 gating fact, not a failed stat.
+
+**Price with the re-rating campaign, not `tier_eval.js`** — see
+[../eval/RATING.md](../eval/RATING.md). `tier_eval.js` had the right metric but scored
+every DNF as a finisher whose time was exactly the course cutoff, which is 33% of the
+fleet at Redrock, 39% at Glowtide and 74% at Swamp, and reported `dnfPct 0.0` throughout.
+It also never once raced Finley. Two results already overturn statements above:
+
+- **`reach` is not decorative.** −0.631 s/pt on seatrials against the −0.180 recorded in
+  §0, 3.5× larger and six standard errors from zero — measured on a course with no
+  reaching leg at all. Six of the ten venues now have real ones.
+- **The conditions stats are venue-gated exactly as §1.4 intends.** `lightAir`,
+  `heavyAir` and `pressure` all price at zero on seatrials, which runs a fixed 13 kn with
+  no variance and no gusts — inside the dead band, so they *must*. Price them where the
+  wind is: swamp ~4 kn, lake ~9, ocean ~20, arctic 15–25.
 
 ---
 
