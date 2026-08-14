@@ -22,6 +22,31 @@
 // ⚠️ EPISODES, NOT FRAMES (rule 2): a crossing is ONE event. Attribution samples a
 // window around it, because the flag that caused the tack may clear during the turn.
 //
+// ══ RESULT, glowtide treeFINAL, 1644 crossings over 4 seeds x 9 boats ═══════
+//   avoidance, role NONE        33.9%      wiggle                8.1%
+//   avoidance, role GIVE_WAY    29.2%      armed for a rounding  1.8%
+//   avoidance, role STAND_ON     7.4%      NAV (the tactician)  19.5%
+//
+//   per leg    NAV    avoidance          (leg 1 carries the 19.6 s distance term)
+//    leg 1    28.2%     60.0%   + wiggle 11.6%
+//    leg 2    11.2%     74.6%   + armed 7.0%
+//    leg 3     9.2%     86.7%   (role NONE alone 49.8%)
+//    leg 4    19.9%     73.2%   (role NONE alone 52.5%)
+//
+// Arctic read 20.0% NAV / 47.2% avoidance by the last-writer tag. Glowtide reads
+// 19.5% / 70.6%: the same disease, worse. ⇒ DO NOT AIM A GLOWTIDE CANDIDATE AT
+// THE TACTICIAN — it produces one manoeuvre in five here too.
+//
+// The largest single owner is avoidance holding NO rights role. The vocabulary is
+// exactly NONE | STAND_ON | GIVE_WAY (script.js:281), so this is the boat swerving
+// hard enough to cross the wind while no rights encounter has been adjudicated at
+// all — a third of every tack on the venue, over half of them on legs 3 and 4.
+// That joins the tack-count thread to the role thread; they are one thread.
+//
+// NOT claimed: that fixing it wins time. The 0-rung's defeat is already recorded as
+// overdetermined (AV1 inert pooled) and "actions not prices" says a re-pricing here
+// loses. Nothing built, nothing benched.
+//
 //   node _glow_tackown.js <venue> <trials> <seed0> <tree>
 const { chromium } = require('playwright');
 const fs = require('fs'), path = require('path');
