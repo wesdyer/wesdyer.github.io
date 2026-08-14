@@ -52,14 +52,16 @@ const BOX = { x0: -750, x1: 0, y0: -1750, y1: -500 };   // the leg-1 rock box
                     }
                 return 8 * R;
             };
-            // ⚠️ the engine's polar entry point is `getTargetSpeed(twa, spinnaker, windSpeed)`
-            // — there is no `getPolarSpeed` in scope outside its own closure — and the
-            // TWA convention is 0 = HEAD TO WIND (standing rule 19).
+            // ⚠️⚠️ TWO UNIT TRAPS, BOTH PAID FOR (2026-08-13). `getTargetSpeed` returns
+            // KNOTS; `boat.speed * 60` is UNITS/SECOND; and the game's one conversion is
+            // `units/second = knots * 15` (script.js ~14874). Multiplying the polar by 60
+            // instead of 15 inflates the target 4x. The TWA convention is 0 = HEAD TO WIND
+            // (standing rule 19).
             const polarTarget = (b) => {
                 try {
                     const w = getWindAt(b.x, b.y);
-                    let twa = Math.abs(normalizeAngle(b.heading - w.direction));
-                    return getTargetSpeed(twa, !!b.spinnakerUp, w.speed) * 60;
+                    const twa = Math.abs(normalizeAngle(b.heading - w.direction));
+                    return getTargetSpeed(twa, !!b.spinnakerUp, w.speed) * 15;
                 } catch (e) { return null; }
             };
             const hist = {}, open = {}, out = [];
@@ -83,6 +85,12 @@ const BOX = { x0: -750, x1: 0, y0: -1750, y1: -500 };   // the leg-1 rock box
                             t0: state.race.timer, x0: b.x, y0: b.y, clr0: clr(b.x, b.y),
                             spdBefore: h20 ? Math.round(h20.spd) : null,
                             spd2sBefore: h40 ? Math.round(h40.spd) : null,
+                            // ⚠️ `collisionData` is TRANSIENT — it is overwritten every frame
+                            // and cleared, so sampling it at three lookback points misses most
+                            // groundings. The durable signals are the boat's own CLEARANCE at
+                            // the trigger (0 means she is standing in a blocked cell) and the
+                            // speed collapse (`boat.speed *= 0.4` per contact frame flattens her
+                            // inside ~6 frames — standing rule 28).
                             aground2s: (h40 && h40.agr) || (h20 && h20.agr) || (h10 && h10.agr) ? 1 : 0,
                             dev2s: h20 ? +(h20.dev).toFixed(2) : null,
                             lost: 0, n: 0, minSpd: 1e9
@@ -90,7 +98,11 @@ const BOX = { x0: -750, x1: 0, y0: -1750, y1: -500 };   // the leg-1 rock box
                     }
                     if (o) {
                         const tgt = polarTarget(b), sp = b.speed * 60;
-                        if (tgt && tgt > 1) { o.lost += Math.max(0, tgt - sp) / 60; o.n++; }
+                        // ⚠️ AND THE DEFICIT IS A TIME, NOT A SPEED. Summing (tgt - sp)/60
+                        // sums SPEEDS and reads 1094 s lost inside a 3.6 s episode. The
+                        // honest quantity is the FRACTION of each frame's time thrown
+                        // away: (1 - sp/tgt) * dt.
+                        if (tgt && tgt > 1) { o.lost += (1 - Math.min(1, sp / tgt)) / 60; o.n++; }
                         o.minSpd = Math.min(o.minSpd, sp);
                         if (!esc) {
                             o.dur = +(state.race.timer - o.t0).toFixed(2);
@@ -132,9 +144,11 @@ const BOX = { x0: -750, x1: 0, y0: -1750, y1: -500 };   // the leg-1 rock box
     const better = EP.filter(e => e.clr1 > e.clr0).length, same = EP.filter(e => e.clr1 === e.clr0).length;
     console.log(`  clearance IMPROVED ${pct(better, EP.length)} · unchanged ${pct(same, EP.length)} · WORSENED ${pct(EP.length - better - same, EP.length)}`);
     console.log(`\n  WHAT CAME FIRST (the 2 s before the rising edge)`);
-    console.log(`   already AGROUND                 ${pct(EP.filter(e => e.aground2s).length, EP.length)}   ⬅ the escape is a RESPONSE`);
-    console.log(`   already slow (<40 u/s 1 s before) ${pct(EP.filter(e => e.spdBefore != null && e.spdBefore < 40).length, EP.length)}   ⬅ SYMPTOM of something upstream`);
-    console.log(`   at speed (>60 u/s) and not aground ${pct(EP.filter(e => !e.aground2s && e.spdBefore > 60).length, EP.length)}   ⬅ the escape is the CAUSE`);
+    console.log(`   IN A BLOCKED CELL at the trigger (clr 0) ${pct(EP.filter(e => e.clr0 === 0).length, EP.length)}   ⬅ she is already ON the rock`);
+    console.log(`   collisionData said 'island' (transient, undercounts) ${pct(EP.filter(e => e.aground2s).length, EP.length)}`);
+    console.log(`   already slow (<40 u/s 1 s before)        ${pct(EP.filter(e => e.spdBefore != null && e.spdBefore < 40).length, EP.length)}   ⬅ SYMPTOM of something upstream`);
+    console.log(`   at speed (>60 u/s) 1 s before AND clear at the trigger ${pct(EP.filter(e => e.clr0 > 0 && e.spdBefore > 60).length, EP.length)}   ⬅ only THESE are the escape as CAUSE`);
+    console.log(`   at speed 1 s before but ON the rock now  ${pct(EP.filter(e => e.clr0 === 0 && e.spdBefore > 60).length, EP.length)}   ⬅ a grounding COLLAPSE inside one second`);
     console.log(`   avoidance was deflecting >0.35 rad ${pct(EP.filter(e => e.dev2s > 0.35).length, EP.length)}`);
     const tot = col('lost').reduce((a, b) => a + b, 0);
     console.log(`\n  TOTAL CLOCK IN THESE EPISODES: ${tot.toFixed(0)} s over ${TRIALS} seeds` +
