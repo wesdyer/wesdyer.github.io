@@ -80,11 +80,18 @@ const VENUE = process.argv[6] || 'redrock';
                     const w = getWindAt(b.x, b.y);
                     const own = c.penaltySpin ? 1 : c.escActive ? 2 : (c.iceEscapeTimer > 0) ? 3
                         : c.wiggleActive ? 4 : 5; // 5 = clearance/nav ("steering layer")
+                    let rivD = 1e9;
+                    for (const o of bots) {
+                        if (o === b || o.raceState.finished) continue;
+                        const dd = Math.hypot(o.x - b.x, o.y - b.y);
+                        if (dd < rivD) rivD = dd;
+                    }
                     samples.push([b.name, +t.toFixed(2), Math.round(b.x), Math.round(b.y),
                         +b.heading.toFixed(3), +(c.targetHeading || 0).toFixed(3),
                         +w.direction.toFixed(3), Math.round(b.speed * 60), own,
                         +(c.speedLimit != null ? c.speedLimit : 1).toFixed(2),
-                        +(c.iceEscapeHeading || 0).toFixed(3), b.raceState.roundArmed ? 1 : 0]);
+                        +(c.iceEscapeHeading || 0).toFixed(3), b.raceState.roundArmed ? 1 : 0,
+                        Math.round(Math.min(rivD, 9999))]);
                 }
             }
             const fins = bots.filter(b => b.raceState.finished).length;

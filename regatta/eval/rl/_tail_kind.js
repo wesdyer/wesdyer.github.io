@@ -27,6 +27,7 @@ const SEED0 = parseInt(process.argv[3]) || 9400;
 const LABEL = process.argv[4] || 'x';
 const ROOT = path.join(__dirname, process.argv[5] || 'treeTAIL');
 const VENUE = process.argv[6] || 'glowtide';
+const INCFLOE = process.argv[7] === 'floe'; // count floe contacts too (arctic) — episodes tagged fl:1
 (async () => {
     const browser = await chromium.launch();
     const page = await browser.newPage();
@@ -35,13 +36,13 @@ const VENUE = process.argv[6] || 'glowtide';
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
     // Late venue write — the reproducible path (standing rule 30, default since 91003e9).
     await page.evaluate((v) => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), VENUE);
-    await page.evaluate(() => {
+    await page.evaluate((INCFLOE) => {
         const inner = window.onRaceEvent;
         window.__ep = null; window.__pv = {};
         window.onRaceEvent = (ty, d) => {
             try {
                 if (window.__ep && d && d.boat && !d.boat.isPlayer && !d.boat.raceState.finished
-                    && ty === 'collision_island' && !d.isFloe && state.race.status === 'racing') {
+                    && ty === 'collision_island' && (INCFLOE || !d.isFloe) && state.race.status === 'racing') {
                     const b = d.boat, t = state.race.timer;
                     const rec = window.__ep[b.name] = window.__ep[b.name] || { eps: [], last: -9 };
                     let ep = rec.eps[rec.eps.length - 1];
@@ -57,7 +58,7 @@ const VENUE = process.argv[6] || 'glowtide';
                         }
                         ep = { t0: t, t1: t, fr: 0, isl: bi, leg: b.raceState.leg,
                                x: Math.round(b.x), y: Math.round(b.y),
-                               v0: Math.round((window.__pv[b.name] || 0) * 60) };
+                               v0: Math.round((window.__pv[b.name] || 0) * 60), fl: d.isFloe ? 1 : 0 };
                         rec.eps.push(ep);
                     }
                     ep.t1 = t; ep.fr++; rec.last = t;
@@ -65,7 +66,7 @@ const VENUE = process.argv[6] || 'glowtide';
             } catch (e) {}
             return inner && inner(ty, d);
         };
-    });
+    }, INCFLOE);
     const out = [];
     for (let i = 0; i < TRIALS; i++) {
         const seed = SEED0 + i;
