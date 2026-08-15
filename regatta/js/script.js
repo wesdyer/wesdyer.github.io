@@ -6321,8 +6321,14 @@ function isVeryDark(color) {
 const state = {
     boats: [], // Array of Boat instances. boats[0] is Player.
     camera: {
+        // The VIEW CENTRE. Derived each frame from the follow point below plus the
+        // look-ahead offset — not lerped directly, see the camera block in update().
         x: 0,
         y: 0,
+        // The smoothed FOLLOW point: where the boat is, with the lag. Kept apart from the
+        // view centre so the look-ahead can be rigid while the follow stays soft.
+        fx: undefined,
+        fy: undefined,
         rotation: 0,
         target: 'boat',
         mode: 'heading',
@@ -14267,6 +14273,17 @@ function checkNearMisses(dt) {
 // against. Anything that wants SECONDS must scale by this, never read it raw —
 // see refreshBotGrid for what reading it raw cost.
 const WORLD_CLOCK = 0.24;
+
+// HOW FAR THE CAMERA LOOKS PAST THE BOW, as a fraction of the frame's height. 0.25 puts the
+// boat three quarters of the way down the screen and gives the water ahead three quarters of
+// the frame instead of half. Read only in heading mode — see the note at the camera follow.
+//
+// ⚠️ THE BOAT MUST KEEP ROOM BELOW IT. drawBoatInstruments hangs its panel BI_DROP + BI_H
+// under the hull and projects it through the real transform, so it follows the boat down;
+// at 0.25 there is a quarter of the frame beneath and it clears comfortably. Push this much
+// past 0.3 and that panel starts running off the bottom edge.
+const CAM_LOOK_AHEAD = 0.25;
+
 function update(dt) {
     state.time += WORLD_CLOCK * dt;
     const timeScale = dt * 60;
@@ -14475,8 +14492,38 @@ function update(dt) {
              state.camera.target = 'finish';
              showResults();
         } else {
-            state.camera.x += (player.x - state.camera.x) * 0.1;
-            state.camera.y += (player.y - state.camera.y) * 0.1;
+            // ── THE BOAT SITS LOW, SO THE WATER AHEAD IS ON SCREEN ──────────────
+            // Centred, half the frame is spent on where you have already been. What a
+            // sailor is actually reading is in front: the next mark, the pressure coming
+            // down, the crest about to lift the stern. So the camera aims at a point AHEAD
+            // of the boat and the boat falls back down the frame.
+            //
+            // ⚠️ HEADING MODE ONLY, and that is not a scoping shortcut. The offset is what
+            // puts the boat at a fixed spot on screen, and that only works because heading
+            // mode guarantees the bow points up the frame. In `north` the same offset would
+            // slide the boat to a different edge every time you changed course, which is
+            // worse than centred rather than better.
+            //
+            // ⚠️ THE OFFSET IS APPLIED AFTER THE SMOOTHING, NOT CHASED BY IT. The first cut
+            // lerped the view centre toward `boat + offset`, and it ROCKED through every
+            // turn: as the camera rotates, that target swings through an arc of radius
+            // `look` — a quarter of the screen — and a 10%-per-frame lerp cannot keep up, so
+            // the boat slid up the frame during the turn and drifted back afterwards.
+            //
+            // So the smoothing follows the BOAT (`fx, fy`, the same lerp as before) and the
+            // look-ahead is added on top as a rigid offset. The boat's place on screen is
+            // then fixed by construction, and turning pivots the world about the hull —
+            // which is what a camera locked to a boat should do anyway.
+            //
+            // ⚠️ ALONG camera.rotation, NOT player.heading. The two differ mid-turn, and
+            // offsetting along the heading would walk the boat sideways across the frame
+            // instead. Along the camera's own up-axis it stays put.
+            if (state.camera.fx === undefined) { state.camera.fx = state.camera.x; state.camera.fy = state.camera.y; }
+            state.camera.fx += (player.x - state.camera.fx) * 0.1;
+            state.camera.fy += (player.y - state.camera.fy) * 0.1;
+            const look = state.camera.mode === 'heading' ? canvas.height * CAM_LOOK_AHEAD : 0;
+            state.camera.x = state.camera.fx + Math.sin(state.camera.rotation) * look;
+            state.camera.y = state.camera.fy - Math.cos(state.camera.rotation) * look;
         }
     } else if (state.camera.target === 'finish') {
         // Focus on Finish Line center
@@ -24169,9 +24216,16 @@ function snapCameraToStart() {
     const p = state.boats[0];
     if (!p) return;
     state.camera.target = 'boat';
-    state.camera.x = p.x;
-    state.camera.y = p.y;
+    // `fx, fy` is the smoothed FOLLOW point the look-ahead is measured from; the view centre
+    // is derived from it every frame. Snapping one without the other would leave the follow
+    // point wherever the last race ended and the camera would travel back to the start line
+    // over the first second — the exact travel this function exists to avoid.
+    state.camera.fx = p.x;
+    state.camera.fy = p.y;
     state.camera.rotation = state.camera.mode === 'north' ? 0 : p.heading;
+    const look = state.camera.mode === 'heading' ? canvas.height * CAM_LOOK_AHEAD : 0;
+    state.camera.x = p.x + Math.sin(state.camera.rotation) * look;
+    state.camera.y = p.y - Math.cos(state.camera.rotation) * look;
 }
 
 function restartRace() { resetGame(); togglePause(false); }

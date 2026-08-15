@@ -50,6 +50,22 @@ Reference: `references/topdown-world-reference.png`.
 ## 1. Camera and projection — **Rule**
 
 - **Top-down orthographic.**
+- **In heading mode the boat sits three quarters of the way down the frame**
+  (`CAM_LOOK_AHEAD`), not centred: what a sailor reads is ahead of the bow — the next mark,
+  the pressure coming down, the crest about to lift the stern — and a centred camera spends
+  half the frame on water already sailed. The trade is that a boat on your transom is more
+  often off screen; the edge indicators cover it.
+  - ⚠️ **Heading mode only.** The offset works because that mode guarantees the bow points up
+    the frame. In `north` the same offset would put the boat at a different edge every time
+    you changed course.
+  - ⚠️ **Applied after the follow smoothing, not chased by it.** Lerping the view centre
+    toward `boat + offset` makes the boat ROCK through every turn: rotating the camera swings
+    that target through an arc a quarter of the screen in radius and a 10%-per-frame follow
+    cannot keep up. `camera.fx/fy` is the soft follow point; the look-ahead is rigid on top,
+    so turning pivots the world about the hull. Measured on one trajectory with both rules
+    running: excursion 13 px → 5 px on a 1000 px frame (`eval/_camturn.js`).
+- Anything projecting world→screen must go through `camera.x/y` and `camera.rotation`
+  (`drawBoatInstruments`, the edge indicators) — never assume the player is at frame centre.
 - Boat heading unambiguous at a glance.
 - No perspective distortion that conflicts with navigation.
 - Decorative objects may carry slight stylized dimensionality; their footprint and

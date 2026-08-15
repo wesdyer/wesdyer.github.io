@@ -43,8 +43,16 @@ async function trace(page, root, venue) {
       const wet = surfDryEdges(isl).filter(d => !d).length;
       if (!best || wet > best.wet) best = { x: isl.x, y: isl.y, wet };
     }
-    if (best) { state.camera.x = best.x; state.camera.y = best.y; }
-    state.camera.rotation = 0;
+    // ⚠️ RE-PARKED BEFORE EVERY DRAW, not once at the top. The loop below advances the
+    // world between traces, and update() moves the camera — so a camera set once drifts back
+    // onto the player after the first drawSurf and the remaining traces are taken from
+    // somewhere else entirely. That is what made this report six false regressions the day
+    // the follow camera changed: drawSurf was identical, the VIEW was not.
+    const park = () => {
+      if (best) { state.camera.x = best.x; state.camera.y = best.y; }
+      state.camera.rotation = 0;
+    };
+    park();
 
     // Record every path primitive drawSurf issues, at four points in the wave cycle so the
     // whole animation is covered rather than one instant of it.
@@ -59,7 +67,7 @@ async function trace(page, root, venue) {
     const lw = Object.getOwnPropertyDescriptor(CanvasRenderingContext2D.prototype, 'lineWidth');
     Object.defineProperty(ctx, 'strokeStyle', { set(x) { log.push('S' + x); sd.set.call(ctx, x); }, get() { return sd.get.call(ctx); } });
     Object.defineProperty(ctx, 'lineWidth', { set(x) { log.push('W' + (+x).toFixed(3)); lw.set.call(ctx, x); }, get() { return lw.get.call(ctx); } });
-    for (let k = 0; k < 4; k++) { drawSurf(ctx); for (let i = 0; i < 20; i++) update(1 / 60); }
+    for (let k = 0; k < 4; k++) { park(); drawSurf(ctx); for (let i = 0; i < 20; i++) update(1 / 60); }
     for (const m of Object.keys(keep)) ctx[m] = keep[m];
     return log.join(';');
   }, venue);
