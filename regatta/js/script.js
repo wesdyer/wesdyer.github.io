@@ -21008,8 +21008,64 @@ function checkTrafficCollisions(dt) {
     }
 }
 
+// ⭐ THE RULE 19 OBLIGATION LEDGER (2026-08-13, the penalty-conservatism ruling).
+//
+// The Rule 19 foul below fires the instant a boat touches land, against any
+// overlapped boat sitting outboard of her. It is purely geometric and purely
+// INSTANTANEOUS: nothing requires the obligation to have existed long enough for
+// the accused to act on it. The stand-on forced-avoidance detector (~890) already
+// requires exactly that — a leaky accumulator that must reach HOLD before it will
+// claim — because a boat that has just become obligated is owed room to respond
+// (RRS 15). This gives the Rule 19 path the same requirement, using the same
+// constant, and nothing else.
+//
+// The ledger is the pre-contact record the trigger cannot build for itself: the
+// trigger only runs while a hull is already inside a rock, so by then the history
+// is gone. Stamped every frame, for close pairs only (the island scan runs only
+// for a boat that has another boat within 130u, so a 2218-island venue costs
+// nothing on the frames where no pair is close).
+function updateRule19Ledger() {
+    if (!state.course || !state.course.islands || state.race.status !== 'racing') return;
+    const now = state.race.timer;
+    const B = state.boats;
+    for (const b of B) {
+        if (b.raceState.finished) continue;
+        let anyClose = false;
+        for (const o of B) {
+            if (o === b || o.raceState.finished) continue;
+            const dx = o.x - b.x, dy = o.y - b.y;
+            if (dx * dx + dy * dy < 130 * 130) { anyClose = true; break; }
+        }
+        if (!anyClose) { if (b._r19Since) b._r19Since = null; continue; }
+        // nearest island by EDGE gap — the one she would ground on
+        let isl = null, best = 1e18;
+        for (const I of state.course.islands) {
+            if (I.awash) continue;
+            const dx = b.x - I.x, dy = b.y - I.y;
+            const d2 = dx * dx + dy * dy;
+            const lim = I.radius + 120;
+            if (d2 > lim * lim) continue;
+            if (d2 < best) { best = d2; isl = I; }
+        }
+        if (!isl) { if (b._r19Since) b._r19Since = null; continue; }
+        const bx = b.x - isl.x, by = b.y - isl.y;
+        const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
+        const ax = bx / bl, ay = by / bl;
+        const led = b._r19Since || (b._r19Since = {});
+        for (const o of B) {
+            if (o === b || o.raceState.finished) continue;
+            const dx = o.x - b.x, dy = o.y - b.y;
+            if (dx * dx + dy * dy > 130 * 130) { delete led[o.id]; continue; }
+            if (dx * ax + dy * ay < 45) { delete led[o.id]; continue; }
+            if (!(window.Rules && window.Rules.isOverlapped && window.Rules.isOverlapped(b, o))) { delete led[o.id]; continue; }
+            if (led[o.id] == null) led[o.id] = now;
+        }
+    }
+}
+
 function checkIslandCollisions(dt) {
     if (!state.course || !state.course.islands) return;
+    updateRule19Ledger();
 
     for (const boat of state.boats) {
         if (boat.raceState.finished && boat.fadeTimer <= 0) continue;
@@ -21074,6 +21130,27 @@ function checkIslandCollisions(dt) {
                      const bx = boat.x - isl.x, by = boat.y - isl.y;
                      const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
                      const ax = bx / bl, ay = by / bl; // escape direction: island -> boat
+                     // ── THE TWO GUARDS (2026-08-13, landed 2026-08-14) ──────
+                     // OWNER: "penalties are sometimes erroneously assigned when
+                     // collisions don't happen... we should be conservative here."
+                     // 90% of no-contact fouls come from this line, on an
+                     // obligation held a median of 0.00 s. Neither test below
+                     // invents a number: HOLD is the stand-on detector's own
+                     // constant, and room can only be given by a boat that has
+                     // some. (A third guard — "the claim direction must have
+                     // water in it" — was drafted but never wired in; every
+                     // bench measured these two, so only these two land.)
+                     const R19HOLD = (typeof window !== 'undefined' && window.__RULES && window.__RULES.hold != null)
+                         ? window.__RULES.hold : 0.8;
+                     const gR19 = state.course.botGrid;
+                     const freeRun19 = (x, y, dxu, dyu, cap) => {
+                         if (!gR19) return cap;
+                         for (let d = 25; d <= cap; d += 25) {
+                             const c = gR19.cell(x + dxu * d, y + dyu * d);
+                             if (!gR19.at(c[0], c[1])) return d;
+                         }
+                         return cap;
+                     };
                      for (const o of state.boats) {
                          if (o === boat || o.raceState.finished) continue;
                          const dx2 = o.x - boat.x, dy2 = o.y - boat.y;
@@ -21084,6 +21161,23 @@ function checkIslandCollisions(dt) {
                          if (dx2 * dx2 + dy2 * dy2 > 130 * 130) continue;
                          if (dx2 * ax + dy2 * ay < 45) continue;        // not clearly outside us
                          if (!window.Rules.isOverlapped(boat, o)) continue;
+                         // GUARD 1 (persistence, RRS 15): the obligation must have
+                         // existed long enough for her to act on it. One frame of
+                         // overlap at the instant of a grounding is not a foul.
+                         const since = boat._r19Since && boat._r19Since[o.id];
+                         if (since == null || state.race.timer - since < R19HOLD) continue;
+                         // GUARD 2 (she had room to give): a boat pinned against
+                         // land herself, or with a third boat outboard of her,
+                         // cannot make room and is not the cause.
+                         if (freeRun19(o.x, o.y, ax, ay, 100) < 100) continue;
+                         let pinned = false;
+                         for (const p of state.boats) {
+                             if (p === o || p === boat || p.raceState.finished) continue;
+                             const px = p.x - o.x, py = p.y - o.y;
+                             if (px * px + py * py > 130 * 130) continue;
+                             if (px * ax + py * ay >= 45) { pinned = true; break; }
+                         }
+                         if (pinned) continue;
                          squeezer = o;
                          break;
                      }
