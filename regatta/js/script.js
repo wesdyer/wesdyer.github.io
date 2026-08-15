@@ -13448,21 +13448,80 @@ function hullCrossedLine(boat, ax, ay, bx, by) {
     // driving updateBoatRaceState directly carried a stale one; that silently mis-rotated the
     // previous hull and lost the second crossing of a reused gate.
     const rs = boat.raceState;
-    const prev = hullPolygonAt(rs.lastPos.x, rs.lastPos.y, boat.heading);
     const cur = hullPolygonAt(boat.x, boat.y, boat.heading);
     const ex = bx - ax, ey = by - ay;
-    let minP = Infinity, maxP = -Infinity, minC = Infinity, maxC = -Infinity;
-    for (let i = 0; i < prev.length; i++) {
-        const sp = (prev[i].x - ax) * ey - (prev[i].y - ay) * ex;
-        if (sp < minP) minP = sp;
-        if (sp > maxP) maxP = sp;
-        const sc = (cur[i].x - ax) * ey - (cur[i].y - ay) * ex;
-        if (sc < minC) minC = sc;
-        if (sc > maxC) maxC = sc;
-    }
-    if (!((maxP <= 0 && maxC > 0) || (minP >= 0 && minC < 0))) return false;
+    let minC = Infinity, maxC = -Infinity, iMin = 0, iMax = 0;
     for (let i = 0; i < cur.length; i++) {
-        if (checkLineIntersection(prev[i].x, prev[i].y, cur[i].x, cur[i].y, ax, ay, bx, by)) return true;
+        const sc = (cur[i].x - ax) * ey - (cur[i].y - ay) * ex;
+        if (sc < minC) { minC = sc; iMin = i; }
+        if (sc > maxC) { maxC = sc; iMax = i; }
+    }
+    // ⚠️ EXACT HANDOFF: the previous frame's extremes are CACHED, not reconstructed.
+    // The old form rebuilt the previous hull as "current hull translated to lastPos"
+    // — same heading — and the comment above argued a boat turns too little per frame
+    // for that to matter. Measured on river seed 9402 ('Petal', the zero-contact DNF):
+    // it matters exactly once per race, at the only moment that counts. Crossing the
+    // start line at a shallow angle WHILE TURNING, the hull gains ~1.2u of signed
+    // offset per frame while the rotation shifts the reconstructed boundary by
+    // ~0.2-0.3u per frame — so at the first frame the true minimum went negative, the
+    // reconstructed previous minimum read -0.2 instead of +0.04, both sides of the
+    // leading-edge test were already negative, and the crossing fell into the crack.
+    // After that the hull straddles the line and the test can never fire for the rest
+    // of the passage: she sailed the whole race on leg 0, orbiting her aim point.
+    // Caching last frame's extremes per line makes yesterday's `cur` literally
+    // today's `prev` — a sign transition cannot be missed by construction.
+    // The cache lives on raceState (rebuilt every reset) keyed by the line's
+    // endpoints, so a moved mark starts a fresh entry rather than inheriting one.
+    // ⚠️ Stamped with the world clock and honoured only when CONTINUOUS: a leg
+    // change stops this line being tested, and an entry left over from the last
+    // visit would compare today's position against a week-old hull and fire a
+    // phantom crossing the moment a reused gate comes back into play. An entry
+    // older than ~2 frames means the watch lapsed — reconstruct, as on first sight.
+    const key = (ax | 0) + ':' + (ay | 0) + ':' + (bx | 0) + ':' + (by | 0);
+    if (!rs._lineExtremes) rs._lineExtremes = {};
+    const prevE = rs._lineExtremes[key];
+    const contiguous = prevE && (state.time - prevE.t) < (WORLD_CLOCK / 60) * 2.5;
+    rs._lineExtremes[key] = { min: minC, max: maxC, t: state.time };
+    let minP, maxP;
+    let prevHull = null;
+    if (contiguous) {
+        minP = prevE.min; maxP = prevE.max;
+    } else {
+        // First sight of this line: reconstruct, as before.
+        prevHull = hullPolygonAt(rs.lastPos.x, rs.lastPos.y, boat.heading);
+        minP = Infinity; maxP = -Infinity;
+        for (let i = 0; i < prevHull.length; i++) {
+            const sp = (prevHull[i].x - ax) * ey - (prevHull[i].y - ay) * ex;
+            if (sp < minP) minP = sp;
+            if (sp > maxP) maxP = sp;
+        }
+    }
+    const upFire = maxP <= 0 && maxC > 0;
+    const downFire = minP >= 0 && minC < 0;
+    if (!(upFire || downFire)) return false;
+    // BETWEEN THE MARKS, not around an end — same distinction as before, but read
+    // off the LEADING VERTEX itself rather than by sweeping the reconstructed
+    // previous hull. At the transition frame the reconstruction can already sit
+    // on the far side (that is the crack fixed above), so its vertex sweeps do
+    // not intersect the line and the old confirmation vetoed the very crossing
+    // the leading-edge test had just found. The leading vertex is ON the line to
+    // within a frame of travel at the moment this fires, so its along-line
+    // parameter IS where the hull is crossing; a small margin covers the frame
+    // of travel past an end.
+    // Any vertex ON THE NEW SIDE this frame confirms if it projects into the
+    // segment — at the transition frame the far-side vertices sit within one
+    // frame of travel of the line, so where they project is where the hull is
+    // crossing. Testing all of them (not only the extreme) keeps the crossing
+    // right at a pin end, where the leading corner can hang just outside the
+    // mark while the rest of the bow crosses inside it.
+    const len2 = ex * ex + ey * ey;
+    if (len2 < 1e-9) return false;
+    for (let i = 0; i < cur.length; i++) {
+        const sc = (cur[i].x - ax) * ey - (cur[i].y - ay) * ex;
+        if (downFire ? sc < 0 : sc > 0) {
+            const u = ((cur[i].x - ax) * ex + (cur[i].y - ay) * ey) / len2;
+            if (u >= -0.02 && u <= 1.02) return true;
+        }
     }
     return false;
 }
