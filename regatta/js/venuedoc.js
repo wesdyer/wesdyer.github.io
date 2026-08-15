@@ -1188,6 +1188,41 @@ const PROP_KINDS = {
     // display size composited over the scrub it stands on, it reads dE 27.1 from the ground,
     // against the naupaka's 27.3. It works, and it works for a different reason than
     // everything else on this list, so do not "correct" it toward green.
+    // ── STILLWATER LAKE'S NORTH WOODS ───────────────────────────────────────
+    // Delivered and registered 2026-08-15. Five of the venue's eight plants; red pine, bracken
+    // fern and lowbush blueberry are still slots. All `surface` / `contact: none` — nothing on
+    // a lake sails under a tree, so there is no canopy case to make and no see-through
+    // requirement to buy. The ocean's palm and pandanus were briefly `canopy` and had to be
+    // moved back; this venue starts where that ended up.
+    //
+    // ⚠️ THE LADDER IS FIVE DEEP AND COMPRESSED — 110 / 88 / 80 / 68 / 55 once the red pine
+    // lands, ratios 1.25 / 1.10 / 1.18 / 1.24, well under the 1.33x the cove family holds.
+    // It only works because every ADJACENT pair is separated on another axis, and two pairs
+    // carry the whole design:
+    //
+    //   pine vs fir     dE 8.7 apart in colour — near-identical teal conifers, which is
+    //                   honest, and separated 2x on size and on construction (an open crown
+    //                   of tufted rafts against a small closed rosette).
+    //   birch vs aspen  the venue's real risk: adjacent in size, both round pale-barked
+    //                   broadleaves, both in the same wood. Separated on DENSITY, inverted
+    //                   on purpose — the birch ships 44% circle fill with its white limbs
+    //                   showing through the gaps, the aspen 83% with a closed canopy and no
+    //                   bark visible anywhere. That is the one axis that survives with colour
+    //                   removed, which is what art-pipeline 2 actually asks for; colour adds
+    //                   dE 16.1 on top.
+    //
+    // Anyone adding a sixth tree checks BOTH axes against its neighbours, because size alone
+    // can no longer carry one.
+    'lake-pine-white':       { label: 'Eastern white pine', world: 110, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-birch-paper':      { label: 'Paper birch',        world:  80, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-aspen-quaking':    { label: 'Quaking aspen',      world:  68, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-fir-balsam':       { label: 'Balsam fir',         world:  55, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-alder-speckled':   { label: 'Speckled alder',     world:  48, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The ground layer. Bracken is what the open floor of a northern pine wood is actually
+    // made of and will be placed most; the blueberry is for thin ground between the pines and
+    // for the cracks in a [[lake-gneiss]] shelf, which is where lowbush blueberry really grows.
+    'lake-fern-bracken':     { label: 'Bracken fern',       world:  34, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-blueberry-lowbush':{ label: 'Lowbush blueberry',  world:  22, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-morning-glory':   { label: 'Beach morning glory', world: 30, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-grass-coastal':   { label: 'Coastal grass',     world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
@@ -1734,6 +1769,37 @@ const SHAPE_KINDS = {
     // exactly what cost the river multi-hundred-ms replan spikes — see `bank`. It still DRAWS
     // (hidden stays false); it is only kept out of the router.
     lane:    { motion: 'fixed', hard: false, look: 'lane',     hidden: false, nav: false, height: 0 },
+    // ── STILLWATER LAKE'S THREE GROUNDS ─────────────────────────────────────
+    // The venue authored all eight of its islands as `isle`, the shared beach sand, which is
+    // the right default and says nothing about WHERE it is. These three say Minnesota: a
+    // woodland floor under the pines, a coarse glacial beach, and the rounded grey rock that
+    // makes a northern lake look northern.
+    //
+    // Forest floor: dry soil, decomposed leaf, needle litter and moss. The default land
+    // material for most of the course — under the forest, between the cabins, around the
+    // trails. HARD, like every other real land kind: you ground on a shore.
+    // Suggested height ~18 m with its pines when a designer wants the lee; the lake's whole
+    // card is "the breeze only whispers", so a lee here is worth typing.
+    forestfloor: { motion: 'fixed', hard: true,  look: 'forestfloor', hidden: false, nav: true, height: 0 },  // ~18 m with its pines
+    // Lake sand and fine gravel — swimming beaches, canoe launches, camp waterfronts. NOT
+    // `isle`, and the distinction is the point: `isle` is a warm tan ocean beach shared by
+    // three venues, and a Minnesota lake shore is coarser, greyer and glacial, with rounded
+    // pebbles through it. Behaves exactly as `isle` does.
+    lakesand:    { motion: 'fixed', hard: true,  look: 'lakesand',    hidden: false, nav: true, height: 0 },
+    // Glacial granite / gneiss — rocky points, tiny islands, shoreline shelves, boulders in
+    // the forest.
+    //
+    // ⚠️ NOT `granite`, WHICH IS THE ONE MISTAKE THIS KIND EXISTS TO PREVENT. That is
+    // Glacier Sound's rock: dark cold blue-grey, FRACTURED, drawn with the angular tracer
+    // and a low-poly facet fan, at 55 m of mountainside. This is the opposite geology — ice
+    // did not break it, ice SMOOTHED it, so it is rounded shelves and worn slabs a couple of
+    // metres proud of the water, in a cooler medium grey with pink and rust mineral planes.
+    // It therefore stays on the ROUNDED tracer with the sandbanks, deliberately, where
+    // granite and karst are angular. Anyone adding it to that list has made it scree.
+    //
+    // HARD, with granite and karst: the card's hazards line already promises islands and
+    // shoals, and a rocky point that only slowed you would not price a mistake.
+    gneiss:      { motion: 'fixed', hard: true,  look: 'gneiss',      hidden: false, nav: true, height: 0 },   // ~6 m of worn slab
     // Canyon spires and walls. The tallest thing here, and the reason Redrock's card
     // promises wind shadows.
     redrock: { motion: 'fixed', hard: false, look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall

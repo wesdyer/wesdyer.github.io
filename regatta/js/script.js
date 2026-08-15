@@ -6490,6 +6490,33 @@ const LAND_TEXTURES = {
     // rounded whaleback is metre-scale, and 256 spans 27.8 world metres, putting a hump at
     // 3-6 m across. That is a boulder, which is what it should be. Halving the rock to 128
     // would make it a cobble field.
+    // ── STILLWATER LAKE'S THREE GROUNDS ─────────────────────────────────────
+    // All three delivered 2026-08-14 and all three alphas MEASURED. Notably this is the
+    // first batch where no alpha had to come down hard: the masters arrived at luma sd 6.97,
+    // 9.32 and 6.74, against the ocean pair's 21.79 and 19.17, so there was room to spend.
+    //
+    // ⚠️ TWO RATIO METRICS FLAGGED THESE AND BOTH WERE WRONG, which is the transferable part.
+    // On the radially averaged power spectrum lake-sand scores peak/mean 21.4 and lake-gneiss
+    // 35.2 — far past the shipped range of 8.65-12.18 and enough to look like rejects. In
+    // ABSOLUTE terms, which is what a player sees, their dominant-band amplitude is 1.75 and
+    // 0.90 against grass's 3.34 and bay-scrub's 3.72: quieter than every shipped ground. The
+    // gneiss's wrap ratio told the same lie — 1.50x the interior difference, against
+    // ocean-coralrock's 1.47x which needed alpha held down to hide it — but 1.50x of a very
+    // smooth tile is 0.81 LUMA UNITS, invisible at any alpha. A RATIO IS NORMALISED BY THE
+    // BROADBAND FLOOR, so on a quiet tile it inflates without anything actually being wrong.
+    // Judge periodicity and seams on ABSOLUTE amplitude; the ratio misleads in both
+    // directions and has now done so four times on this venue pair.
+    forestfloor:  { src: 'assets/images/terrain/lake/forestfloor.png', tile: 128, alpha: 0.45 },
+    // 0.45 rather than the sands' usual 0.70, because this tile carries real litter where a
+    // beach carries almost nothing: it lands on-screen sd 4.19, between bay-lane (3.63) and
+    // arctic granite (4.89). THE PEBBLES ARE WHY IT SITS THAT HIGH — they are what makes this
+    // a glacial shore rather than a tinted beach, and at 0.30 they fade to a mottle.
+    lakesand:     { src: 'assets/images/terrain/lake/sand.png',        tile: 128, alpha: 0.45 },
+    // 0.40, up from the pre-registered 0.30, and the first alpha on this venue to be measured
+    // UP rather than down. The delivered slab is smooth (sd 6.74 at tile 256) and its mineral
+    // banding is the entire reason the kind exists, so it lands on-screen sd 2.70 — level with
+    // bay-rock's 2.85 — where 0.30 left it at 2.02 and the pink and rust barely read.
+    gneiss:       { src: 'assets/images/terrain/lake/gneiss.png',      tile: 256, alpha: 0.40 },
     // ── BLUEWATER BONANZA'S TWO GROUNDS ─────────────────────────────────────
     // Both delivered 2026-08-14. Both bodies in ISLAND_STYLES are their delivered tile's own
     // mean, so both alphas below are pure contrast knobs, and BOTH ARE MEASURED — these are
@@ -21623,6 +21650,44 @@ const ISLAND_STYLES = {
     // veg and rock are drier and paler shell rather than a green — the granite/redrock/mud
     // convention for a look that has no vegetation on it. No trees on a road.
     lane:     { body: '#cac2ad', stroke: '#afa898', veg: '#e0dbcc', rock: '#a29a8d', trees: false },  // body = bay-lane DELIVERED tile mean
+    // ── STILLWATER LAKE'S THREE GROUNDS ─────────────────────────────────────
+    // ALL THREE DELIVERED 2026-08-14, so every body below is its DELIVERED tile's own mean
+    // and every LAND_TEXTURES alpha is measured. With base equal to tile mean the blend
+    // cannot move the colour, only the spread around it. The other three tones on each row
+    // are the spec's own offsets carried onto the delivered body, the bayou-mud precedent.
+    //
+    // THE IN-VENUE TRIANGLE IS WHAT THESE WERE PICKED FOR, because all three share a
+    // shoreline and the player reads them apart at speed: floor-to-sand 22.9, floor-to-rock
+    // 28.9, sand-to-rock 22.7, against the cove's accepted sand-vs-rock 23.9.
+    //
+    // ⚠️ THE FLOOR IS LIGHTER THAN A NORTHWOODS TREE AND THAT IS DELIBERATE. At L* 50.9 it
+    // sits +22 above a white pine crown and +29 above a balsam fir, inside the cove's
+    // accepted +26/+37 band, so dark conifers read against it. It also sits 13-19 L* BELOW a
+    // paper birch or aspen crown, which is the same relationship the other way — this is the
+    // first ground in the game with light trees AND dark trees on it, and a medium value is
+    // what lets both read. Do not darken it toward the swamp's browns to look richer.
+    // `mud` is dE 21 away and `marsh` 12; both are cross-venue, so picker-only.
+    // ⚠️ THE DELIVERY IS 7.5 L* DARKER THAN SPEC AND THE TREE MARGINS TIGHTENED WITH IT.
+    // Spec was #8A7752 at L* 50.9, picked so a dark conifer would read against it; delivered
+    // is #7C633D at L* 43.4, so the white pine's margin fell from +22.1 to +14.7 and the
+    // balsam fir's from +28.1 to +20.8. Accepted, and the numbers are recorded so nobody
+    // re-derives them: both still clear on dE (33.8 and 37.3), and the darker floor IMPROVED
+    // the half of the problem that was always harder — the light half. Paper birch went from
+    // -9.2 to -16.5 and bracken fern from -2.4 to -9.8, so this venue's light trees now stand
+    // out where they were marginal. A floor carrying both light and dark canopy is a
+    // compromise by construction; this delivery moved the compromise toward the weaker side.
+    forestfloor: { body: '#7C633D', stroke: '#543F21', veg: '#40571F', rock: '#7E746B', trees: true },   // body = lake-forestfloor DELIVERED tile mean
+    // Coarse glacial beach. GREYER AND COOLER THAN `isle`, the shared ocean-beach tan it
+    // replaces here — dE 13.5 apart, against the 16.8 that separates `coralsand` from the
+    // same `isle`, so this is the same size of statement the lagoon's white sand already
+    // makes. Its nearest neighbour is bay's `lane` at 7.4, which is honest: crushed shell and
+    // glacial gravel are both pale mixed aggregate, and they can never share a race.
+    lakesand:    { body: '#B7A487', stroke: '#958469', veg: '#698A23', rock: '#958C7E', trees: true },   // body = lake-sand DELIVERED tile mean
+    // Ice-worn gneiss. veg is a paler DRY STONE and rock a darker one — the
+    // granite/redrock/coastalrock convention for a look with nothing growing on it, and the
+    // stroke carries coastalrock's own offsets onto this body (an 18.7 L* drop against its
+    // 18.6), so the coastline holds the same weight. No trees: bare rock.
+    gneiss:      { body: '#807A7F', stroke: '#4E4B54', veg: '#938F95', rock: '#605D64', trees: false },  // body = lake-gneiss DELIVERED tile mean
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the

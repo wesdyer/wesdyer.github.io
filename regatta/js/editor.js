@@ -326,6 +326,14 @@ const LAND_TYPES = [
     { kind: 'reed',    label: 'Grass',   swatch: '#7aaa1d' },
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
+    // Stillwater Lake's three grounds. Swatches track ISLAND_STYLES.<kind>.body and are still
+    // the tile SPEC means, so they move when the art is ingested and the bodies are reset.
+    // ⚠️ "Glacial Granite" is NOT "Granite" — one is ice-SMOOTHED northern shelf rock, the
+    // other Glacier Sound's fractured mountainside. They sort adjacent in this list, so the
+    // labels are the only thing keeping them apart for a designer.
+    { kind: 'forestfloor', label: 'Forest Floor',    swatch: '#7C633D' },
+    { kind: 'lakesand',    label: 'Lake Sand',       swatch: '#B7A487' },
+    { kind: 'gneiss',      label: 'Glacial Granite', swatch: '#807A7F' },
     // LABEL ONLY — the kind stays `isle`, which every venue doc on disk already names.
     // Renamed from plain "Sand" because the cove's other two grounds are Coastal Rock and
     // Coastal Scrub, and the sort below is by LABEL, so this now files with them instead of
@@ -1798,6 +1806,8 @@ const KIND_FILL = {
     // table's rule that only what you may sail over is translucent — which is also the one
     // thing that tells Coral Limestone from the translucent Coral Reef directly above it.
     coralrock: '#A7A193', tropicscrub: '#A9AF2A',
+    // Stillwater Lake. All three are dry land, so all three are solid.
+    forestfloor: '#7C633D', lakesand: '#B7A487', gneiss: '#807A7F',
     // The bayou. Its two DRY grounds are solid, like every other land kind; everything
     // that is awash is translucent, which is the schematic's one consistent rule — you
     // can see the water through anything you are allowed to sail over. The four weeds
@@ -1837,6 +1847,7 @@ const KIND_EDGE = {
     // Each is its own ISLAND_STYLES stroke, so the schematic outline is the colour the game
     // draws that coastline in — the coastalrock/coastalscrub rule.
     coralrock: '#757268', tropicscrub: '#838621',
+    forestfloor: '#543F21', lakesand: '#958469', gneiss: '#4E4B54',
     mud: '#3d3421', marsh: '#4d4324',
     mudflat: 'rgba(110,100,73,0.8)',
     weedbed: 'rgba(74,112,74,0.85)', lilybed: 'rgba(140,176,100,0.9)',
