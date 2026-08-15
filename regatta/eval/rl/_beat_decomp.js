@@ -36,7 +36,8 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
             // leg target: where the leg ends (next waypoint of boats on LEG)
             const acc = {};
             for (const bt of state.boats) if (!bt.isPlayer) acc[bt.id] = {
-                odo: 0, waste: { AVOID_ROW: 0, AVOID_GW: 0, AVOID_NONE: 0, WIGGLE: 0, TACKWIN: 0, ARMED: 0, CLEAN: 0 },
+                odo: 0, godo: 0, px: null, py: null, secs: 0,
+                waste: { AVOID_ROW: 0, AVOID_GW: 0, AVOID_NONE: 0, WIGGLE: 0, TACKWIN: 0, ARMED: 0, CLEAN: 0 },
                 time: { AVOID_ROW: 0, AVOID_GW: 0, AVOID_NONE: 0, WIGGLE: 0, TACKWIN: 0, ARMED: 0, CLEAN: 0 },
                 tacks: 0, lastSide: null, lastTackT: -99, sx: null, sy: null, ex: null, ey: null, frames: 0
             };
@@ -55,7 +56,14 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
                     const wp = bt.raceState.nextWaypoint;
                     // ⚠️ UNITS (rule 18): boat.speed and velocity are PER-FRAME; ×60 = u/s.
                     const spd = (bt.speed || 0) * 60;
-                    a.odo += spd * dt;
+                    a.odo += spd * dt;                      // HULL frame: what speed says
+                    // GROUND frame: what the boat actually travelled. On glowtide these
+                    // disagree by 21% with zero current, so both are carried and the
+                    // ratio is printed — never quote one against a human lap measured in
+                    // the other (see _frame_odo.js).
+                    if (a.px !== null) { const gd = Math.hypot(bt.x - a.px, bt.y - a.py); if (gd < 50) a.godo += gd; }
+                    a.px = bt.x; a.py = bt.y;
+                    a.secs += dt;
                     // VMC toward the waypoint the engine says this leg ends at
                     let vmc = 0;
                     if (wp && typeof wp.x === 'number') {
@@ -85,7 +93,7 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
                 const a = acc[bt.id];
                 if (!a.frames || a.sx === null) continue;
                 const straight = Math.hypot(a.ex - a.sx, a.ey - a.sy);
-                out.push({ n: bt.name, odo: Math.round(a.odo), straight: Math.round(straight),
+                out.push({ n: bt.name, odo: Math.round(a.odo), godo: Math.round(a.godo), secs: +a.secs.toFixed(1), straight: Math.round(straight),
                     tacks: a.tacks, fin: bt.raceState.finishTime || null,
                     w: Object.fromEntries(Object.entries(a.waste).map(([k, v]) => [k, Math.round(v)])),
                     tm: Object.fromEntries(Object.entries(a.time).map(([k, v]) => [k, Math.round(v)])) });
@@ -100,7 +108,8 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
 
     const med = (arr) => { const s = [...arr].sort((a, b) => a - b); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
     console.log(`\n=== ${VENUE} leg ${LEG} decomposition (${rows.length} boat-legs, dmcLen ${meta.dmcLen}) ===`);
-    console.log(`odo med ${med(rows.map(r => r.odo))}  straight med ${med(rows.map(r => r.straight))}  tacks med ${med(rows.map(r => r.tacks))}`);
+    console.log(`GROUND odo med ${med(rows.map(r => r.godo))}  hull odo med ${med(rows.map(r => r.odo))}  (g/h ${(med(rows.map(r => r.godo)) / med(rows.map(r => r.odo))).toFixed(3)})`);
+    console.log(`straight med ${med(rows.map(r => r.straight))}  tacks med ${med(rows.map(r => r.tacks))}  secs med ${med(rows.map(r => r.secs))}  ground speed med ${(med(rows.map(r => r.godo)) / med(rows.map(r => r.secs))).toFixed(1)} u/s`);
     for (const k of ['AVOID_ROW', 'AVOID_GW', 'AVOID_NONE', 'WIGGLE', 'TACKWIN', 'ARMED', 'CLEAN']) {
         console.log(`  waste ${k}: med ${med(rows.map(r => r.w[k]))}u  (time med ${med(rows.map(r => r.tm[k]))}s)`);
     }

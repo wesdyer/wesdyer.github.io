@@ -545,6 +545,42 @@ class BotController {
                 this.wiggleDuration = 0;
             }
         }
+        // THE PIN TRIGGER (2026-08-14 night, the tail push). `escVenueOK`'s
+        // current gate (< 2.0 kt) disables the whole escape system venue-wide on
+        // the river (`_avCurMax` blends to 4.96 kt against 0.5-1.2 authored) —
+        // and river is exactly where boats pin: 7/144 boats spend 740-780 s in
+        // CONTINUOUS bank contact, SOLO (nearest rival 3200u+), nosed-into-land
+        // 99%, escSustain a literal 0 all race (`_pin_gate.js`). The wiggle's 5 s
+        // beam-reach bursts own their helm and never free them. The gate was
+        // written for a retreat line that dead-reckons still water; the
+        // clearance-gradient WALK below has no such assumption — it re-reads the
+        // boat's actual cell every step, so displacement by the stream is
+        // self-correcting. So: a boat in SUSTAINED land contact that has not
+        // displaced 150u in 20 s hands the helm to the walk regardless of the
+        // venue's current. The displacement floor is the scope: redrock's
+        // wall-crawls drift ~27 u/s and reset it, so only true pins qualify.
+        if (isRacing && !this.escActive && !this.penaltySpin
+            && state.course._gridFixed && state.course._gridFixed.length
+            && !(state.course._floeObjs && state.course._floeObjs.length)
+            && this.boat.raceState.leg >= 1 && !this.boat.raceState.finished) {
+            if (this.iceEscapeTimer > 0 && this.boat.speed * 60 < 40) {
+                if (this._pinX == null) { this._pinT = 0; this._pinX = this.boat.x; this._pinY = this.boat.y; }
+                this._pinT += TICK;
+                if (Math.hypot(this.boat.x - this._pinX, this.boat.y - this._pinY) > 150) {
+                    this._pinT = 0; this._pinX = this.boat.x; this._pinY = this.boat.y;
+                } else if (this._pinT > 20.0) {
+                    this.escActive = true;
+                    this.escTimer = 0;
+                    this.escSustain = 0;
+                    this.escCell = null;
+                    this.wiggleActive = false;
+                    this.wiggleDuration = 0;
+                    this._pinT = 0; this._pinX = null;
+                }
+            } else {
+                this._pinT = 0; this._pinX = null;
+            }
+        }
         if (this.escActive) {
             this.escTimer += TICK;
             let done = this.escTimer > 20.0;
@@ -928,7 +964,68 @@ class BotController {
             && this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
              const col = this.boat.ai.collisionData;
              if (this.boat.speed < 1.0 || !this.iceEscapeTimer || this.iceEscapeTimer <= 0) {
-                 let escH = Math.atan2(-col.normal.x, col.normal.y);
+                 // A RE-HIT MEANS THE FACET ANSWER ALREADY FAILED (2026-08-14, the
+                 // tail push). Mask walls are rough: a hull sliding along one hits
+                 // the SIDE faces of its bumps, and each bump's minimal push axis is
+                 // PARALLEL to the macroscopic wall (measured: |axis . wall-tangent|
+                 // median 1.00 over 240 chain intervals). Latching the escape to it
+                 // commands the boat ALONG the face at ~3u standoff; she re-grounds
+                 // every ~63u at a 2.3 s period against a ~5.5 s knockdown-recovery
+                 // constant — the slow tail's cascade (re-hit share 10% fast
+                 // quartile vs 64% slow; ALL 843 slow-tail episodes on one wall).
+                 // The unconditional macro-outward (treeCHAIN) halved land contact
+                 // and cut p95 by 35 s but taxed the MEDIAN +7: isolated brushes
+                 // paid a perpendicular detour they never needed. So the gate is
+                 // the cascade's own definition: only a SECOND hit within the
+                 // measured chain window gets the macro "out" — the clearance-field
+                 // gradient, the same BFS distance-to-land the stuck-escape's
+                 // gradient walk already trusts. First touches keep today's facet
+                 // reflex. Floes keep it always (drifting-ice line, and floe venues
+                 // never build _clear); moving water keeps it always (the landed
+                 // ground-frame ranking owns that regime).
+                 // Episode granularity (the measurement's own 1 s merge): the
+                 // reflex re-arms every frame of a sustained overlap, so a raw
+                 // "<6 s since last arm" would grade frame 2 of a FIRST brush as
+                 // a re-hit. A new EPISODE begins after >1 s clear; it is a
+                 // re-hit iff the previous episode ended less than 6 s ago, and
+                 // the choice is latched for the whole episode.
+                 const nowH = state.race.timer;
+                 const gapH = this._lastReflexT == null ? Infinity : nowH - this._lastReflexT;
+                 this._lastReflexT = nowH;
+                 if (gapH > 1.0) this._reflexReHit = (gapH < 6.0);
+                 const reHit = !!this._reflexReHit;
+                 let outVX = -col.normal.x, outVY = -col.normal.y;
+                 const gW = state.course.botGrid;
+                 if (reHit && !col.isFloe
+                     && gW && window.SailCheck && window.SailCheck.clearanceField) {
+                     if (!gW._clear) gW._clear = window.SailCheck.clearanceField(gW);
+                     const cB = gW.cell(this.boat.x, this.boat.y);
+                     let bi = -1, bj = -1, bScore = -1e9;
+                     for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+                         if (!di && !dj) continue;
+                         const a = cB[0] + di, b2 = cB[1] + dj;
+                         if (!gW.at(a, b2)) continue;
+                         if (di && dj && (!gW.at(cB[0] + di, cB[1]) || !gW.at(cB[0], cB[1] + dj))) continue;
+                         const clr = gW._clear[b2 * gW.n + a];
+                         if (clr > bScore) { bScore = clr; bi = a; bj = b2; }
+                     }
+                     if (bi < 0) {
+                         for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) {
+                             if (Math.max(Math.abs(di), Math.abs(dj)) !== 2) continue;
+                             const a = cB[0] + di, b2 = cB[1] + dj;
+                             if (!gW.at(a, b2)) continue;
+                             const clr = gW._clear[b2 * gW.n + a];
+                             if (clr > bScore) { bScore = clr; bi = a; bj = b2; }
+                         }
+                     }
+                     if (bi >= 0) {
+                         const wpt = gW.world(bi, bj);
+                         const dxO = wpt[0] - this.boat.x, dyO = wpt[1] - this.boat.y;
+                         const LO = Math.hypot(dxO, dyO);
+                         if (LO > 1) { outVX = dxO / LO; outVY = dyO / LO; }
+                     }
+                 }
+                 let escH = Math.atan2(outVX, -outVY);
                  // ESCAPE IN THE GROUND FRAME, NOT THE BOAT FRAME. Straight out
                  // along the normal is a HEADING, and a heading is not where the
                  // boat goes: updateBoat adds the stream directly into the
@@ -946,7 +1043,7 @@ class BotController {
                  // the water actually moves her and nowhere else.
                  const curE = getCurrentAt(this.boat.x, this.boat.y);
                  if (curE && curE.speed > 0.01) {
-                     const outXc = -col.normal.x, outYc = -col.normal.y;
+                     const outXc = outVX, outYc = outVY; // facet unless a re-hit gradient replaced it
                      const cU = (curE.speed / 4) * 60;
                      const cvx = Math.sin(curE.direction) * cU;
                      const cvy = -Math.cos(curE.direction) * cU;
@@ -983,7 +1080,7 @@ class BotController {
                  const rmE = legRoundMark(rsE.leg) || state.course.roundMark;
                  if (rmE && rsE.roundArmed && !rsE.finished
                      && Math.hypot(this.boat.x - rmE.x, this.boat.y - rmE.y) < rmE.zone * 1.5) {
-                     const outX = -col.normal.x, outY = -col.normal.y;
+                     const outX = outVX, outY = outVY; // facet unless a re-hit gradient replaced it
                      const sgnE = rmE.side === 'port' ? -1 : 1;
                      const brgE = Math.atan2(this.boat.y - rmE.y, this.boat.x - rmE.x);
                      // Sweeping: bias along the rotation tangent. OUTBOUND (sweep
@@ -2067,17 +2164,63 @@ class BotController {
                 // compute 0 here without touching getCurrentAt (no regions).
                 if (state.course._avCurMax === undefined) {
                     let mCJ = 0;
+                    const sCJ = [];
                     const gCJ = state.course.botGrid;
                     if (gCJ && (state.course.currentRegions || []).length) {
                         for (let yCJ = 0; yCJ < gCJ.n; yCJ += 4) for (let xCJ = 0; xCJ < gCJ.n; xCJ += 4) {
                             if (!gCJ.at(xCJ, yCJ)) continue;
                             const cwJ = getCurrentAt(gCJ.x0 + (xCJ + 0.5) * gCJ.res, gCJ.y0 + (yCJ + 0.5) * gCJ.res);
-                            if (cwJ && cwJ.speed > mCJ) mCJ = cwJ.speed;
+                            const sJ = cwJ ? cwJ.speed : 0;
+                            if (sJ > mCJ) mCJ = sJ;
+                            sCJ.push(sJ);
                         }
                     }
                     state.course._avCurMax = mCJ;
+                    // ⭐⭐ A MAXIMUM IS NOT A VENUE-CLASS STATISTIC (2026-08-13, THE
+                    // GLOWTIDE PUSH). Seven gates read this scalar at a 2.0 kt knee,
+                    // and they ask two DIFFERENT questions:
+                    //
+                    //  LOCAL MANOEUVRE — will this boat's real path follow the rollout
+                    //    I am grading? (the stuck-state retreat line ~508, the
+                    //    gybe-around ~1244, the armed rounding arc ~3274.) A rollout is
+                    //    arc + set in ANY stream, so this asks about the water she is
+                    //    actually in.
+                    //  VENUE CLASS — is this a stream venue, whose water moves the
+                    //    router's own line out from under it? (the jam stamps below,
+                    //    the probe cap ~4205, the plan-aligned short probe ~4296/4301,
+                    //    and `bandTrusted` ~4432 — the HZ3B clearance-staircase waiver
+                    //    landed in 08f734a.)
+                    //
+                    // A MAX over ~900 sampled cells answers the second one dishonestly:
+                    // one hot cell speaks for a whole map. Measured (`_curmax.js`,
+                    // `_curhot.js`, `_curphase.js` — the authored regions are static,
+                    // `period` and `speedVar` are 0, so this is a venue property and not
+                    // a tidal snapshot):
+                    //
+                    //   glowtide   max 2.31   p90 1.79   p99 1.90    5 of 877 cells >= 2.0
+                    //   river      max 4.96   p90 2.90   p99 4.28    113 of 477  (23.7%)
+                    //   bay 1.84/0.50, lagoon 1.09/0.41, the five still venues 0
+                    //
+                    // Glowtide is a 1-1.8 kt tide with one 2.3 kt corner and it was
+                    // paying river's entire scoping bill. The p90 leaves river OFF and
+                    // every other venue exactly where it was, so the other NINE VENUES
+                    // ARE BYTE-IDENTICAL BY CONSTRUCTION (redrock and lake benched
+                    // `cmp`-identical). Nor is it a tuned number: glowtide is under the
+                    // knee at every percentile through p99 and river is over it from
+                    // p76.3, so ANY percentile in [p77, p99] gives the same ten-venue
+                    // partition. Only the raw maximum separates them.
+                    //
+                    // ⚠️ THE MAX IS KEPT FOR THE THREE LOCAL GATES, AND THAT IS
+                    // MEASURED. Moving those three to the p90 as well LOSES on glowtide:
+                    // 16 seeds, med 297 -> 366, mean 324.0 -> 384.6, land contacts
+                    // 22.3 -> 38.5 (+72%), a finisher lost, 1 of 8 seeds faster. They
+                    // are off here for a good reason; only the venue-class four were
+                    // wrong.
+                    sCJ.sort((a, b) => a - b);
+                    state.course._avCurP90 = sCJ.length
+                        ? sCJ[Math.min(sCJ.length - 1, Math.floor(0.90 * sCJ.length))] : 0;
                 }
-                if (this.boat.raceState.leg >= 1 && state.course._avCurMax < 2.0) {
+                if (this.boat.raceState.leg >= 1 && state.course._avCurP90 < 2.0) {
                     for (const oJ of state.boats) {
                         if (oJ === boat || oJ.isPlayer || oJ.raceState.finished) continue;
                         if (oJ.raceState.leg < 1 || oJ.speed * 4 >= 1.0) continue;
@@ -4202,7 +4345,7 @@ class BotController {
                 //    the cove fix (v2 mark contacts stayed +52% with only the
                 //    250u funnel excluded; arcs arm out to zone*1.5).
                 const capOK = openWaterAv && gAv._clear && !arcR &&
-                    (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                    (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0);
                 if (capOK) {
                     const ccB = gAv.cell(boat.x, boat.y);
                     const idB = ccB[1] * gAv.n + ccB[0];
@@ -4293,12 +4436,12 @@ class BotController {
                 // (river/arctic sit behind the current/floe guards by construction).
                 const hzWaive = !arcK && boat.speed * 60 < 40
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
-                    && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                    && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0);
                 const hardZ = (openWaterAv && !arcK
                     && (hzWaive || (hPlanFF != null
                         && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3))
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
-                    && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0))
+                    && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
                     : 140;
                 // ⭐ THE PROBE ROLLS THE BOAT'S OWN TURN. A COMMANDED HEADING IS
@@ -4429,7 +4572,7 @@ class BotController {
                     const bandTrusted = openWaterAv && !arcK && hPlanFF != null
                         && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3
                         && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
-                        && (state.course._avCurMax === undefined || state.course._avCurMax < 2.0);
+                        && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0);
                     if (!bandTrusted && clr > 0 && clr < 3) {
                         // FLOE-caused narrowness is grindable; LAND-caused is not.
                         // When the static (land-only) grid says this water is clear,
@@ -21380,8 +21523,64 @@ function checkTrafficCollisions(dt) {
     }
 }
 
+// ⭐ THE RULE 19 OBLIGATION LEDGER (2026-08-13, the penalty-conservatism ruling).
+//
+// The Rule 19 foul below fires the instant a boat touches land, against any
+// overlapped boat sitting outboard of her. It is purely geometric and purely
+// INSTANTANEOUS: nothing requires the obligation to have existed long enough for
+// the accused to act on it. The stand-on forced-avoidance detector (~890) already
+// requires exactly that — a leaky accumulator that must reach HOLD before it will
+// claim — because a boat that has just become obligated is owed room to respond
+// (RRS 15). This gives the Rule 19 path the same requirement, using the same
+// constant, and nothing else.
+//
+// The ledger is the pre-contact record the trigger cannot build for itself: the
+// trigger only runs while a hull is already inside a rock, so by then the history
+// is gone. Stamped every frame, for close pairs only (the island scan runs only
+// for a boat that has another boat within 130u, so a 2218-island venue costs
+// nothing on the frames where no pair is close).
+function updateRule19Ledger() {
+    if (!state.course || !state.course.islands || state.race.status !== 'racing') return;
+    const now = state.race.timer;
+    const B = state.boats;
+    for (const b of B) {
+        if (b.raceState.finished) continue;
+        let anyClose = false;
+        for (const o of B) {
+            if (o === b || o.raceState.finished) continue;
+            const dx = o.x - b.x, dy = o.y - b.y;
+            if (dx * dx + dy * dy < 130 * 130) { anyClose = true; break; }
+        }
+        if (!anyClose) { if (b._r19Since) b._r19Since = null; continue; }
+        // nearest island by EDGE gap — the one she would ground on
+        let isl = null, best = 1e18;
+        for (const I of state.course.islands) {
+            if (I.awash) continue;
+            const dx = b.x - I.x, dy = b.y - I.y;
+            const d2 = dx * dx + dy * dy;
+            const lim = I.radius + 120;
+            if (d2 > lim * lim) continue;
+            if (d2 < best) { best = d2; isl = I; }
+        }
+        if (!isl) { if (b._r19Since) b._r19Since = null; continue; }
+        const bx = b.x - isl.x, by = b.y - isl.y;
+        const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
+        const ax = bx / bl, ay = by / bl;
+        const led = b._r19Since || (b._r19Since = {});
+        for (const o of B) {
+            if (o === b || o.raceState.finished) continue;
+            const dx = o.x - b.x, dy = o.y - b.y;
+            if (dx * dx + dy * dy > 130 * 130) { delete led[o.id]; continue; }
+            if (dx * ax + dy * ay < 45) { delete led[o.id]; continue; }
+            if (!(window.Rules && window.Rules.isOverlapped && window.Rules.isOverlapped(b, o))) { delete led[o.id]; continue; }
+            if (led[o.id] == null) led[o.id] = now;
+        }
+    }
+}
+
 function checkIslandCollisions(dt) {
     if (!state.course || !state.course.islands) return;
+    updateRule19Ledger();
 
     for (const boat of state.boats) {
         if (boat.raceState.finished && boat.fadeTimer <= 0) continue;
@@ -21446,6 +21645,27 @@ function checkIslandCollisions(dt) {
                      const bx = boat.x - isl.x, by = boat.y - isl.y;
                      const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
                      const ax = bx / bl, ay = by / bl; // escape direction: island -> boat
+                     // ── THE TWO GUARDS (2026-08-13, landed 2026-08-14) ──────
+                     // OWNER: "penalties are sometimes erroneously assigned when
+                     // collisions don't happen... we should be conservative here."
+                     // 90% of no-contact fouls come from this line, on an
+                     // obligation held a median of 0.00 s. Neither test below
+                     // invents a number: HOLD is the stand-on detector's own
+                     // constant, and room can only be given by a boat that has
+                     // some. (A third guard — "the claim direction must have
+                     // water in it" — was drafted but never wired in; every
+                     // bench measured these two, so only these two land.)
+                     const R19HOLD = (typeof window !== 'undefined' && window.__RULES && window.__RULES.hold != null)
+                         ? window.__RULES.hold : 0.8;
+                     const gR19 = state.course.botGrid;
+                     const freeRun19 = (x, y, dxu, dyu, cap) => {
+                         if (!gR19) return cap;
+                         for (let d = 25; d <= cap; d += 25) {
+                             const c = gR19.cell(x + dxu * d, y + dyu * d);
+                             if (!gR19.at(c[0], c[1])) return d;
+                         }
+                         return cap;
+                     };
                      for (const o of state.boats) {
                          if (o === boat || o.raceState.finished) continue;
                          const dx2 = o.x - boat.x, dy2 = o.y - boat.y;
@@ -21456,6 +21676,23 @@ function checkIslandCollisions(dt) {
                          if (dx2 * dx2 + dy2 * dy2 > 130 * 130) continue;
                          if (dx2 * ax + dy2 * ay < 45) continue;        // not clearly outside us
                          if (!window.Rules.isOverlapped(boat, o)) continue;
+                         // GUARD 1 (persistence, RRS 15): the obligation must have
+                         // existed long enough for her to act on it. One frame of
+                         // overlap at the instant of a grounding is not a foul.
+                         const since = boat._r19Since && boat._r19Since[o.id];
+                         if (since == null || state.race.timer - since < R19HOLD) continue;
+                         // GUARD 2 (she had room to give): a boat pinned against
+                         // land herself, or with a third boat outboard of her,
+                         // cannot make room and is not the cause.
+                         if (freeRun19(o.x, o.y, ax, ay, 100) < 100) continue;
+                         let pinned = false;
+                         for (const p of state.boats) {
+                             if (p === o || p === boat || p.raceState.finished) continue;
+                             const px = p.x - o.x, py = p.y - o.y;
+                             if (px * px + py * py > 130 * 130) continue;
+                             if (px * ax + py * ay >= 45) { pinned = true; break; }
+                         }
+                         if (pinned) continue;
                          squeezer = o;
                          break;
                      }
