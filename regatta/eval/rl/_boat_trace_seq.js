@@ -103,10 +103,17 @@ const VENUE = process.argv[6] || 'river';
             if (rs.leg !== lastLeg) { legLog.push(`t${t.toFixed(1)} -> leg ${rs.leg}`); lastLeg = rs.leg; }
             if (it % 120 === 0) {
                 const c = b.controller;
+                const w = (typeof getWindAt === 'function') ? getWindAt(b.x, b.y) : null;
+                const twa = w ? Math.abs(normalizeAngle(b.heading - w.direction)).toFixed(2) : '-';
+                const cur = (typeof getCurrentAt === 'function') ? getCurrentAt(b.x, b.y) : null;
                 out.push([+t.toFixed(0), Math.round(b.x), Math.round(b.y), rs.leg,
                     Math.round(b.speed * 60), rs.roundArmed ? 1 : 0,
                     rs.totalPenalties || 0, rs.penalty ? 1 : 0, rs.ocs ? 1 : 0,
-                    c ? (c.avoidanceRole || '-')[0] : '-']);
+                    c ? (c.avoidanceRole || '-')[0] : '-',
+                    c ? (c.escActive ? 'ESC' + c.escTimer.toFixed(0) : (c.iceEscapeTimer > 0 ? 'latch' : '-')) : '-',
+                    twa,
+                    cur ? (cur.speed || 0).toFixed(1) : '-',
+                    c && c.wiggleActive ? 'W' : '-']);
             }
         }
         const fins = state.boats.filter(x => !x.isPlayer && x.raceState.finished).length;
@@ -121,6 +128,6 @@ const VENUE = process.argv[6] || 'river';
     for (const x of r.xLog) console.log('  ' + x);
     console.log(`hullCrossedLine HITS for this boat (${(r.hLog || []).length}):`);
     for (const x of r.hLog || []) console.log('  ' + x);
-    for (const row of r.rows) console.log('t' + String(row[0]).padStart(3), `(${row[1]},${row[2]})`, 'leg', row[3], String(row[4]).padStart(3) + 'u/s', row[5] ? 'ARM' : '   ', 'pen', row[6], row[7] ? 'PENALTY' : '', row[8] ? 'OCS' : '', row[9]);
+    for (const row of r.rows) console.log('t' + String(row[0]).padStart(3), `(${row[1]},${row[2]})`, 'leg', row[3], String(row[4]).padStart(3) + 'u/s', row[5] ? 'ARM' : '   ', 'pen', row[6], row[7] ? 'PENALTY' : '', row[8] ? 'OCS' : '', row[9], row[10] || '', 'twa' + (row[11] || '-'), 'cur' + (row[12] || '-'), row[13] || '');
     await browser.close();
 })();
