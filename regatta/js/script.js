@@ -928,7 +928,68 @@ class BotController {
             && this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
              const col = this.boat.ai.collisionData;
              if (this.boat.speed < 1.0 || !this.iceEscapeTimer || this.iceEscapeTimer <= 0) {
-                 let escH = Math.atan2(-col.normal.x, col.normal.y);
+                 // A RE-HIT MEANS THE FACET ANSWER ALREADY FAILED (2026-08-14, the
+                 // tail push). Mask walls are rough: a hull sliding along one hits
+                 // the SIDE faces of its bumps, and each bump's minimal push axis is
+                 // PARALLEL to the macroscopic wall (measured: |axis . wall-tangent|
+                 // median 1.00 over 240 chain intervals). Latching the escape to it
+                 // commands the boat ALONG the face at ~3u standoff; she re-grounds
+                 // every ~63u at a 2.3 s period against a ~5.5 s knockdown-recovery
+                 // constant — the slow tail's cascade (re-hit share 10% fast
+                 // quartile vs 64% slow; ALL 843 slow-tail episodes on one wall).
+                 // The unconditional macro-outward (treeCHAIN) halved land contact
+                 // and cut p95 by 35 s but taxed the MEDIAN +7: isolated brushes
+                 // paid a perpendicular detour they never needed. So the gate is
+                 // the cascade's own definition: only a SECOND hit within the
+                 // measured chain window gets the macro "out" — the clearance-field
+                 // gradient, the same BFS distance-to-land the stuck-escape's
+                 // gradient walk already trusts. First touches keep today's facet
+                 // reflex. Floes keep it always (drifting-ice line, and floe venues
+                 // never build _clear); moving water keeps it always (the landed
+                 // ground-frame ranking owns that regime).
+                 // Episode granularity (the measurement's own 1 s merge): the
+                 // reflex re-arms every frame of a sustained overlap, so a raw
+                 // "<6 s since last arm" would grade frame 2 of a FIRST brush as
+                 // a re-hit. A new EPISODE begins after >1 s clear; it is a
+                 // re-hit iff the previous episode ended less than 6 s ago, and
+                 // the choice is latched for the whole episode.
+                 const nowH = state.race.timer;
+                 const gapH = this._lastReflexT == null ? Infinity : nowH - this._lastReflexT;
+                 this._lastReflexT = nowH;
+                 if (gapH > 1.0) this._reflexReHit = (gapH < 6.0);
+                 const reHit = !!this._reflexReHit;
+                 let outVX = -col.normal.x, outVY = -col.normal.y;
+                 const gW = state.course.botGrid;
+                 if (reHit && !col.isFloe
+                     && gW && window.SailCheck && window.SailCheck.clearanceField) {
+                     if (!gW._clear) gW._clear = window.SailCheck.clearanceField(gW);
+                     const cB = gW.cell(this.boat.x, this.boat.y);
+                     let bi = -1, bj = -1, bScore = -1e9;
+                     for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+                         if (!di && !dj) continue;
+                         const a = cB[0] + di, b2 = cB[1] + dj;
+                         if (!gW.at(a, b2)) continue;
+                         if (di && dj && (!gW.at(cB[0] + di, cB[1]) || !gW.at(cB[0], cB[1] + dj))) continue;
+                         const clr = gW._clear[b2 * gW.n + a];
+                         if (clr > bScore) { bScore = clr; bi = a; bj = b2; }
+                     }
+                     if (bi < 0) {
+                         for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) {
+                             if (Math.max(Math.abs(di), Math.abs(dj)) !== 2) continue;
+                             const a = cB[0] + di, b2 = cB[1] + dj;
+                             if (!gW.at(a, b2)) continue;
+                             const clr = gW._clear[b2 * gW.n + a];
+                             if (clr > bScore) { bScore = clr; bi = a; bj = b2; }
+                         }
+                     }
+                     if (bi >= 0) {
+                         const wpt = gW.world(bi, bj);
+                         const dxO = wpt[0] - this.boat.x, dyO = wpt[1] - this.boat.y;
+                         const LO = Math.hypot(dxO, dyO);
+                         if (LO > 1) { outVX = dxO / LO; outVY = dyO / LO; }
+                     }
+                 }
+                 let escH = Math.atan2(outVX, -outVY);
                  // ESCAPE IN THE GROUND FRAME, NOT THE BOAT FRAME. Straight out
                  // along the normal is a HEADING, and a heading is not where the
                  // boat goes: updateBoat adds the stream directly into the
@@ -946,7 +1007,7 @@ class BotController {
                  // the water actually moves her and nowhere else.
                  const curE = getCurrentAt(this.boat.x, this.boat.y);
                  if (curE && curE.speed > 0.01) {
-                     const outXc = -col.normal.x, outYc = -col.normal.y;
+                     const outXc = outVX, outYc = outVY; // facet unless a re-hit gradient replaced it
                      const cU = (curE.speed / 4) * 60;
                      const cvx = Math.sin(curE.direction) * cU;
                      const cvy = -Math.cos(curE.direction) * cU;
@@ -983,7 +1044,7 @@ class BotController {
                  const rmE = legRoundMark(rsE.leg) || state.course.roundMark;
                  if (rmE && rsE.roundArmed && !rsE.finished
                      && Math.hypot(this.boat.x - rmE.x, this.boat.y - rmE.y) < rmE.zone * 1.5) {
-                     const outX = -col.normal.x, outY = -col.normal.y;
+                     const outX = outVX, outY = outVY; // facet unless a re-hit gradient replaced it
                      const sgnE = rmE.side === 'port' ? -1 : 1;
                      const brgE = Math.atan2(this.boat.y - rmE.y, this.boat.x - rmE.x);
                      // Sweeping: bias along the rotation tangent. OUTBOUND (sweep
