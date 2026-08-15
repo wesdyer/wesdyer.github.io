@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<!-- SEA EFFECTS BENCH — swell.js + seafx.js on a stub world, so the three effects can be
+     judged without racing three minutes to reach the moment they fire.
+
+     One boat, held under the camera, driven on a fixed point of sail. The wave field and
+     the boat's velocity are real, so the encounter rate — which is what decides every
+     upwind impact — is the same number the game computes. Mode via ?m=surf|upwind|reach|sea.
+
+     ⚠️ It stubs getWindAt/inMaskWater/nightAmt, which is the whole reason it is fast, and
+     also the reason a look that passes here still has to be checked in the real race view
+     (eval/_seafx_probe.js): the bench has no gusts, no wakes and no wind comets under it. -->
+<html><head><meta charset="utf-8"><style>
+  html,body{margin:0;background:#0b1220;overflow:hidden}
+  canvas{display:block}
+</style></head><body>
+<canvas id="c" width="1200" height="820"></canvas>
+
+<script src="../js/swell.js"></script>
+<script src="../js/seafx.js"></script>
+<script src="../assets/venues/ocean.venue.js"></script>
+<script>
+const P = new URLSearchParams(location.search);
+const MODE = P.get('m') || 'surf';
+const WIND_KT = +(P.get('wind') || 18);
+const WIND_FROM = 0.6;                       // radians the wind blows FROM
+const FORCE = P.has('surf') ? +P.get('surf') : null;
+
+// ── STUBS the effects layer reaches for ────────────────────────────────────
+window.getWindAt = (x, y) => ({
+  // A single soft pressure band across the bench, so the whitecap density gradient the
+  // cube law produces is visible in one frame instead of needing two races to compare.
+  speed: WIND_KT * (1 + 0.34 * Math.sin(x / 900) * Math.cos(y / 1100)),
+  direction: WIND_FROM
+});
+window.inMaskWater = () => true;
+window.nightAmt = () => 0;
+window.WATER_CONFIG = { deepColor: '#0b3a6f', shallowColor: '#2f8fd6' };
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+
+const MODES = {
+  surf:   { twa: 150, kt: 15.5 },
+  upwind: { twa: 40,  kt: 7.4 },
+  reach:  { twa: 95,  kt: 11.0 },
+  sea:    { twa: 150, kt: 0.0 }
+};
+const M = MODES[MODE] || MODES.surf;
+
+const boat = {
+  x: 0, y: 0, heading: WIND_FROM + M.twa * Math.PI / 180,
+  speed: M.kt / 4, velocity: { x: 0, y: 0 },
+  opacity: 1, raceState: { finished: false, isPlaning: M.kt > 12 }, swell: null
+};
+const state = {
+  camera: { x: 0, y: 0 },
+  boats: [boat],
+  race: { status: 'racing' }
+};
+
+window.Swell.configure(window.VENUE_DOC.ocean, WIND_FROM);
+window.SeaFX.reset();
+
+const HULL = [[0,-25],[15,-5],[15,20],[12,30],[-12,30],[-15,20],[-15,-5]];
+function drawHull() {
+  ctx.save();
+  ctx.translate(boat.x, boat.y);
+  ctx.rotate(boat.heading);
+  ctx.beginPath();
+  HULL.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y));
+  ctx.closePath();
+  ctx.fillStyle = '#1d6fa8'; ctx.fill();
+  ctx.strokeStyle = '#0a2740'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+}
+
+let T = 0, frames = 0;
+function step(dt) {
+  // Real motion, so the encounter rate is honest — then the camera rides with the boat so
+  // the same hull stays under the lens.
+  const ups = boat.speed * 60;
+  boat.velocity.x = Math.sin(boat.heading) * ups / 60;
+  boat.velocity.y = -Math.cos(boat.heading) * ups / 60;
+  boat.x += boat.velocity.x * dt * 60;
+  boat.y += boat.velocity.y * dt * 60;
+  state.camera.x = boat.x; state.camera.y = boat.y;
+
+  window.Swell.update(dt);
+  window.Swell.trim(boat, WIND_FROM);
+  // ?surf=<0..1> pins the ride. A boat running at the wave's own celerity sits at a FIXED
+  // phase — Bluewater's train is authored at 15.5 kt precisely so it can be caught — so a
+  // real ride cycles once every ~45 s and a contact sheet of it is six identical frames.
+  // Pinning is for judging the SHEET's shape only; whether the ride happens is the probe's
+  // question, not the bench's.
+  if (FORCE != null && boat.swell) { boat.swell.surf01 = FORCE; boat.swell.cosPsi = 0.9; }
+  window.SeaFX.update(dt, state);
+  T += dt; frames++;
+}
+
+function render() {
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#12558f';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.save();
+  ctx.translate(canvas.width / 2 - state.camera.x, canvas.height / 2 - state.camera.y);
+  window.Swell.draw(ctx, state);
+  window.SeaFX.draw(ctx, state);
+  if (MODE !== 'sea') drawHull();
+  ctx.restore();
+}
+
+// Fixed step, driven by the harness rather than rAF, so a contact sheet is reproducible.
+window.__advance = (secs) => { const dt = 1 / 60; for (let i = 0; i < Math.round(secs * 60); i++) step(dt); render(); };
+window.__stats = () => Object.assign({ mode: MODE, t: +T.toFixed(2),
+  kt: +(boat.speed * 4).toFixed(1),
+  surf01: boat.swell ? +boat.swell.surf01.toFixed(3) : null,
+  cosPsi: boat.swell ? +boat.swell.cosPsi.toFixed(3) : null }, window.SeaFX.debug());
+
+window.__advance(6);   // settle: a sea with no whitecaps in it yet is not a sea
+</script>
+</body></html>

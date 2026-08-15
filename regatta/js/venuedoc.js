@@ -1136,6 +1136,61 @@ const PROP_KINDS = {
     'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-dense':   { label: 'Dense palm',   world: 74, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    // ── BLUEWATER BONANZA'S THREE TREES ─────────────────────────────────────
+    // Delivered and registered 2026-08-14. What plants the ocean's new sand cays, and the
+    // set is told apart on SILHOUETTE FIRST per art-pipeline 2's colour-removed test: ONE
+    // ROSETTE OF FEATHERED BLADES, SEVERAL SPIKY STRAP-ROSETTES CLUSTERED, and a BROAD
+    // TIERED DOME. Size ladder 110 / 70 / 52, 1.57x and 1.35x apart, so they separate by
+    // size before any shape arrives. All three `ambient`, all three `contact: none`: they
+    // stand on tropicsand and tropicscrub, both of which are already `hard`, so the land
+    // grounds a hull well before the tree would and a collider here would never be tested.
+    //
+    // ⚠️ ALL THREE ARE `surface`, AND PALM AND PANDANUS WERE BRIEFLY `canopy` — the change
+    // is worth recording because the argument for canopy was reasonable and the planted
+    // venue disproved it. The case was that a palm leans off a beach crest and a hull passes
+    // under its crown, which is true of a lone palm on a 225x398u sand spit. What the
+    // planting actually produced is 5,500 plants standing on island interiors, and on the
+    // canopy plane every one of them drew OVER the fleet and fed canopyAlpha — so sailing
+    // past a shore dimmed a wedge of forest around the boat, several hundred units across,
+    // for a hull that was never underneath any of it. A fade with no object doing the
+    // occluding, which is the exact bug the plane comment calls out for a lily pad on
+    // `surface`, in the other direction.
+    //
+    // The rule the plane comment states still decides it: read the plane as a question
+    // about what is physically above what. Nothing on this venue sails under a tree,
+    // because the trees are inland and the fleet is on the water.
+    //
+    // ONE THING FALLS OUT OF THIS AND IS WORTH KEEPING: see-through no longer matters here.
+    // The openings floor exists because a canopy sprite hides a boat with a painted gap as
+    // well as with a painted leaf; on `surface` nothing draws over a boat at all. The
+    // pandanus's measured 3.9% interior alpha holes — the best of any tree in the game —
+    // is now a free bonus rather than a requirement. Anyone re-planing any of these to
+    // `canopy` has to restore the openings requirement first.
+    'ocean-palm-coconut':    { label: 'Coconut palm',   world:  70, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'ocean-pandanus':        { label: 'Pandanus',       world:  52, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'ocean-almond-tropical': { label: 'Tropical almond', world: 110, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── AND ITS THREE UNDERBRUSH PLANTS ─────────────────────────────────────
+    // Delivered and registered 2026-08-14. What goes UNDER the trees: the default coastal
+    // bush, the groundcover that softens bare sand, and the filler that breaks up an open
+    // interior. Ladder 40 / 30 / 20, continuing the trees' 110 / 70 / 52 down, and separated
+    // on silhouette first: a DENSE CLOSED MOUND, an OPEN SPRAWL OF RUNNERS, a SOFT FEATHERED
+    // TUFT.
+    //
+    // ALL THREE `surface`, WHICH IS THE EASY HALF OF THE PLANE QUESTION AND WORTH STATING
+    // ANYWAY: nothing sails under a knee-high bush. The trees above split because a palm
+    // leaning off a beach crest genuinely overhangs water a hull reaches; no part of any of
+    // these is ever above a boat. contact none for the family's reason — they stand on
+    // tropicsand and tropicscrub, both `hard`, so the land grounds a hull first.
+    //
+    // ⚠️ THE GRASS IS THE ONLY PLANTING IN THE VENUE THAT DOES NOT READ DARK. Every other
+    // plant here is a dark mass on a lighter ground; a sun-cured grass genuinely is not, so
+    // it separates on HUE instead — straw gold against yellow-green. Measured at its own 20px
+    // display size composited over the scrub it stands on, it reads dE 27.1 from the ground,
+    // against the naupaka's 27.3. It works, and it works for a different reason than
+    // everything else on this list, so do not "correct" it toward green.
+    'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'ocean-morning-glory':   { label: 'Beach morning glory', world: 30, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'ocean-grass-coastal':   { label: 'Coastal grass',     world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
     // The coral heads — the lagoon's teeth, and the venue card's promised hazard. All six
     // preset seabed + hard: they draw under every surface layer (the water above is what
     // sells the depth) and they STOP a boat, via the hidden collider compile emits. The
@@ -1797,6 +1852,51 @@ const SHAPE_KINDS = {
     // reef shelters nothing, which the kind table's every-kind-is-0 rule gives for free.
     coralreef: { motion: 'fixed', hard: false, look: 'coralshoal', hidden: false, nav: true, height: 0,
                reef: true },
+    // ── BLUEWATER BONANZA'S TWO NEW GROUNDS ─────────────────────────────────
+    // The ocean grew an archipelago, and `tropicsand` alone cannot build one: a cay made of
+    // nothing but beach is a beach, not an island. These are the hard rim and the green
+    // middle that turn it into one. Both are TROPICAL MATERIALS rather than ocean-only ones,
+    // which is why neither is keyed to the venue — `tropicsand` is shared with the lagoon
+    // already, and a reef island is a reef island wherever it is.
+    //
+    // Coral limestone — uplifted reef rock, the makatea of Niue, Nauru and the Tuamotus:
+    // old reef lifted clear of the sea and weathered into pinnacles and solution pits. It
+    // is the venue's answer to basalt, and it says REEF ISLAND where basalt would say
+    // volcano. Shoreline shelves, rocky island rims, reef outcrops, little points.
+    //
+    // HARD, with granite and karst, and for karst's reason rather than granite's: this is a
+    // rim you thread, and a shore that only slows you does not price that mistake. It is
+    // also the honest physical answer — makatea is notoriously sharp, and a hull that
+    // touches it is not carrying on.
+    //
+    // ⚠️ NOT `coralreef`, though the names sit one word apart in this very table. That one
+    // is an AREA OF LIVING REEF under the water, drawn on the bottom by drawReefs and
+    // sailed into; this is DEAD reef standing in the air, drawn as land, walked on by
+    // crabs. Same rock, opposite side of the waterline, and the two must never be
+    // reached for interchangeably. The labels a designer sees keep them apart: "Coral
+    // Limestone" against "Coral Reef".
+    //
+    // NOT `karst` either, which it would be easy to reach for — both are limestone and both
+    // are fissured. Karst is Glowtide's DARK algae-stained rock at 35 m of cliff on a
+    // near-black night venue, drawn dark on purpose so it stays visible against the water.
+    // This is sun-bleached pale grey a few metres proud of a turquoise lagoon. Different
+    // value, different light, different island.
+    coralrock: { motion: 'fixed', hard: true,  look: 'coralrock',  hidden: false, nav: true, height: 0 },  // ~6 m of reef shelf
+    // Tropic Scrub — the sun-dried grass and low scrub of a small island's interior, and
+    // the venue's plain landmass fill. Small offshore islands, headlands, and the ground
+    // behind a beach. It exists so a cay can have a middle that is neither bare sand nor
+    // solid forest, which is the gap `tropicsand` + trees leaves.
+    //
+    // HARD, on `coastalscrub`'s argument rather than `reed`'s: this is real land several
+    // metres proud of the water with trees standing on it, not a marsh hummock awash. You
+    // ground on it. Suggested height ~8 m when a designer wants the lee — worth typing on
+    // this venue in particular, whose whole question is where the pressure is.
+    //
+    // `look` carries trees: true, and that is load-bearing rather than decorative: this is
+    // what ocean-palm-coconut, ocean-pandanus and ocean-almond-tropical stand on, and the
+    // style's body was chosen LIGHTER than every one of their crown tones so the trees read
+    // dark against the ground. See ISLAND_STYLES.tropicscrub for the measured numbers.
+    tropicscrub: { motion: 'fixed', hard: true,  look: 'tropicscrub', hidden: false, nav: true, height: 0 },  // ~8 m of island interior
 
     // ── GATORGRASS BAYOU: THE GROUND ────────────────────────────────────────
     //
