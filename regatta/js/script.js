@@ -587,7 +587,21 @@ class BotController {
             if (!done) {
                 for (const oB of state.boats) {
                     if (oB === this.boat || oB.raceState.finished) continue;
-                    if (Math.hypot(oB.x - this.boat.x, oB.y - this.boat.y) < 120) { done = true; break; }
+                    if (Math.hypot(oB.x - this.boat.x, oB.y - this.boat.y) < 120) {
+                        // ⚠️ A PINNED NEIGHBOUR DOES NOT VETO THE WALK. This abort
+                        // exists because gradient-walking blind past a boat under way
+                        // is the Freezing-Robot hazard — but river 9502 showed two
+                        // boats grinding the same bank AND each other (749 boat
+                        // contacts each), where this line locked BOTH walks forever:
+                        // each boat was the other's <120u rival, so each pin trigger
+                        // fired and instantly self-cancelled, 770 s at 6-18 u/s. A
+                        // rival that is itself quasi-stationary in sustained contact
+                        // (latched, under 40 u/s) is part of the pin, not traffic;
+                        // walking clear of it is the only move either boat has.
+                        const oC = oB.controller;
+                        const oPinned = oC && (oC.iceEscapeTimer || 0) > 0 && oB.speed * 60 < 40;
+                        if (!oPinned) { done = true; break; }
+                    }
                 }
             }
             if (!done && this.boat.speed * 60 > 40) {
