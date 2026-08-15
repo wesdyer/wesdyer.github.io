@@ -545,6 +545,42 @@ class BotController {
                 this.wiggleDuration = 0;
             }
         }
+        // THE PIN TRIGGER (2026-08-14 night, the tail push). `escVenueOK`'s
+        // current gate (< 2.0 kt) disables the whole escape system venue-wide on
+        // the river (`_avCurMax` blends to 4.96 kt against 0.5-1.2 authored) —
+        // and river is exactly where boats pin: 7/144 boats spend 740-780 s in
+        // CONTINUOUS bank contact, SOLO (nearest rival 3200u+), nosed-into-land
+        // 99%, escSustain a literal 0 all race (`_pin_gate.js`). The wiggle's 5 s
+        // beam-reach bursts own their helm and never free them. The gate was
+        // written for a retreat line that dead-reckons still water; the
+        // clearance-gradient WALK below has no such assumption — it re-reads the
+        // boat's actual cell every step, so displacement by the stream is
+        // self-correcting. So: a boat in SUSTAINED land contact that has not
+        // displaced 150u in 20 s hands the helm to the walk regardless of the
+        // venue's current. The displacement floor is the scope: redrock's
+        // wall-crawls drift ~27 u/s and reset it, so only true pins qualify.
+        if (isRacing && !this.escActive && !this.penaltySpin
+            && state.course._gridFixed && state.course._gridFixed.length
+            && !(state.course._floeObjs && state.course._floeObjs.length)
+            && this.boat.raceState.leg >= 1 && !this.boat.raceState.finished) {
+            if (this.iceEscapeTimer > 0 && this.boat.speed * 60 < 40) {
+                if (this._pinX == null) { this._pinT = 0; this._pinX = this.boat.x; this._pinY = this.boat.y; }
+                this._pinT += TICK;
+                if (Math.hypot(this.boat.x - this._pinX, this.boat.y - this._pinY) > 150) {
+                    this._pinT = 0; this._pinX = this.boat.x; this._pinY = this.boat.y;
+                } else if (this._pinT > 20.0) {
+                    this.escActive = true;
+                    this.escTimer = 0;
+                    this.escSustain = 0;
+                    this.escCell = null;
+                    this.wiggleActive = false;
+                    this.wiggleDuration = 0;
+                    this._pinT = 0; this._pinX = null;
+                }
+            } else {
+                this._pinT = 0; this._pinX = null;
+            }
+        }
         if (this.escActive) {
             this.escTimer += TICK;
             let done = this.escTimer > 20.0;
