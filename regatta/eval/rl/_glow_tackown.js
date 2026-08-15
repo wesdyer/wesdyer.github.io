@@ -1,5 +1,16 @@
 // WHO ORDERS GLOWTIDE'S EXTRA TACKS? (2026-08-14)
 //
+// ⛔⛔ SUPERSEDED THE SAME DAY — PREFER `_tack_exec.js` ON `treeEX`. ⛔⛔
+// This probe's headline (19.5% NAV / 70.6% avoidance) is ~8 points LOW on nav and
+// ~11 points HIGH on avoidance. It tags a crossing by controller FLAGS anywhere in
+// the 30 frames before it, which over-claims for whatever was briefly active. The
+// compiled LAST-WRITER tag, attributing to whoever held the helm for the PLURALITY
+// of the 1.0 s leading into the crossing, gives 27.2% / 59.6% on the same venue and
+// 26.0% / 39.2% on arctic. Those are the quotable numbers.
+// Kept because the ROLE breakdown below (role `NONE` = 33.9% of crossings) is not
+// available from _tack_exec, and that finding stands. Read the roles here; read the
+// ownership shares there.
+//
 // Leg 1 is 19.6 s of pure distance — the biggest single term left on the venue —
 // and _glow_beatangle just KILLED the pointing hypothesis: in clean air she holds a
 // median TWA of 38 deg against his 40 and spends MORE of her distance close-hauled
