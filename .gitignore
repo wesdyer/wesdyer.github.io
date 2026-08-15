@@ -63,3 +63,11 @@ regatta/eval/rl/tree[A-Z]?*/
 # committed baselines and attributions are unaffected; this only stops the next
 # session's hundred bench JSONs from showing up as untracked noise.
 regatta/eval/rl/*.json
+
+# Character re-rating campaign (regatta/eval/RATING.md). The race rows are large and
+# fully reproducible — seeds are a pure function of (venue, shard) and the RNG is
+# seeded per trial — so the tooling and the small metadata are tracked and the bulk
+# output is not. rating-preAI/ IS tracked: it is the pre-merge AI at the same seeds,
+# a paired experiment that cannot be regenerated without checking out the old tree.
+regatta/eval/rating/*.jsonl
+regatta/eval/rating/*.part

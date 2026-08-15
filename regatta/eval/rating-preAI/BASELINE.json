@@ -1,0 +1,14 @@
+{
+  "codeHash": "bfa5aae9efa2bdcd",
+  "note": "AI code the campaign is being raced against. Shards written before codeHash was added carry no hash of their own; they were raced under THIS code. If the sailing code changes, every venue must be re-raced — see rate_lib.js loadVenue.",
+  "files": [
+    "js/script.js",
+    "js/rules.js",
+    "js/planner.js",
+    "js/traffic.js",
+    "js/venuedoc.js",
+    "js/swell.js",
+    "js/water.js"
+  ],
+  "when": "2026-08-13"
+}

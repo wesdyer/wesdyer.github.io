@@ -19,7 +19,7 @@ const FNS = [
   'drawActiveGateLine', 'drawLadderLines', 'drawLayLines', 'drawMarkZones',
   'drawRoundingArrows', 'drawDisturbedAir', 'drawIslands', 'drawMarkShadows',
   'drawMarkBodies', 'drawRulesOverlay', 'drawBoat', 'drawBoatIndicator',
-  'drawMinimap', 'updateLeaderboard', 'WaterRenderer.draw'
+  'drawMinimap', 'updateLeaderboard', 'WaterRenderer.draw', 'Swell.draw', 'SeaFX.draw'
 ];
 
 const VENUE = process.env.PERF_VENUE || 'seatrials';
@@ -67,12 +67,16 @@ const measure = (page) => page.evaluate((secs) => {
   return ms;
 }, SECS);
 
+// `Obj.method` as well as a bare global: the water renderer, the swell and the sea effects
+// are all modules that hang a draw call off their own object, and a list that can only reach
+// globals silently skips exactly the layers most worth attributing.
 const ablate = (page, fn) => page.evaluate((f) => {
-  // The water renderer is a module, not a global — reached through its own object.
-  if (f === 'WaterRenderer.draw') {
-    if (!window.WaterRenderer) return false;
-    window.__origs[f] = window.WaterRenderer.draw;
-    window.WaterRenderer.draw = () => {};
+  const dot = f.indexOf('.');
+  if (dot > 0) {
+    const obj = window[f.slice(0, dot)], key = f.slice(dot + 1);
+    if (!obj || typeof obj[key] !== 'function') return false;
+    window.__origs[f] = obj[key];
+    obj[key] = () => {};
     return true;
   }
   if (typeof window[f] !== 'function') return false;
@@ -82,7 +86,8 @@ const ablate = (page, fn) => page.evaluate((f) => {
 }, fn);
 const restore = (page, fn) => page.evaluate((f) => {
   if (!window.__origs[f]) return;
-  if (f === 'WaterRenderer.draw') window.WaterRenderer.draw = window.__origs[f];
+  const dot = f.indexOf('.');
+  if (dot > 0) window[f.slice(0, dot)][f.slice(dot + 1)] = window.__origs[f];
   else window[f] = window.__origs[f];
   delete window.__origs[f];
 }, fn);

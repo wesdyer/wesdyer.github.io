@@ -601,9 +601,16 @@ def build(asset, profiles, bg="transparent"):
             # identifies nothing. (Re-running the arctic-snow prompt through this is safe —
             # its subject already names its own colours in three places, so the old commit
             # clause was never doing the work there.)
+            #
+            # ⚠️ "nothing neon or tropical" WAS THE EXCLUSION HERE AND IT HAD THE SAME DEFECT
+            # the prop branch's "tropical green" had: it names a real material family as the
+            # thing to avoid, in a library whose tropical venues are half the roster. It went
+            # out with lagoon-coralsand, and it would go out with Bluewater Bonanza's reef
+            # limestone and island scrub — grounds that ARE tropical and are supposed to be.
+            # The exclusion only ever meant "no synthetic pigment", so it now says that.
             parts.append(
                 f"VENUE CONTEXT, NOT A COLOUR INSTRUCTION: this ground is seen against "
-                f"{dominant} and has to belong in that world — nothing neon or tropical. "
+                f"{dominant} and has to belong in that world — nothing neon or fluorescent. "
                 "But a ground is a MATERIAL, and the material's own true colour is always "
                 "right, even when it looks nothing like the venue's dominant hue: bare rock "
                 "is rock-coloured next to blue ice. Take the colour from the subject below, "
@@ -630,11 +637,22 @@ def build(asset, profiles, bg="transparent"):
             # commit to the venue's dominant hue makes it out of the venue's colour,
             # which is how three orcas came back navy instead of black and a snow
             # petrel came back with navy wings.
+            #
+            # ⚠️ THE ALIEN-HUE EXAMPLES MUST BE HUES NOTHING IN THE LIBRARY IS HONESTLY
+            # MADE OF, and "tropical green" was not one. It sat here as an example for
+            # every venue, which put it in the prompt for Pearl Lagoon's palms, the
+            # bayou's whole canopy and Bluewater Bonanza's three cay trees — every one
+            # of which is correctly made of exactly that hue. A prompt carrying an
+            # instruction and its opposite gets resolved by the generator dropping one
+            # half AT RANDOM (the portrait note records the same failure), so a bad
+            # example here is not a harmless one. The replacements are all synthetic
+            # pigments: no plant, animal, rock or working boat in this game is any of
+            # them, in any venue, so the clause can never argue with a subject.
             parts.append(
                 f"VENUE CONTEXT, NOT A COLOUR INSTRUCTION: this will be seen against "
                 f"{dominant}, and the venue's signature accents are {accent}. That is "
                 "the world it has to belong to — avoid hues that would look alien in "
-                "it, like neon, hot pink or tropical green. But the subject is NOT "
+                "it, like neon, hot pink or fluorescent orange. But the subject is NOT "
                 "made of the venue's colours and must NOT be tinted toward them. "
                 "Render it in its own correct local colour. Any colour that carries "
                 "real information — a species' true plumage or hide, a beak, a "

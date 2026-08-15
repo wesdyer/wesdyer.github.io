@@ -343,6 +343,18 @@ const LAND_TYPES = [
     { kind: 'shallows',    label: 'Shallows',         swatch: '#38bdf8' },
     { kind: 'tropicsand',  label: 'Tropic Sand',      swatch: '#efe4cf' },
     { kind: 'tropicshoal', label: 'Tropic Sand Shoal', swatch: '#8dd4c3' },
+    // Bluewater Bonanza's two new grounds. Both swatches track ISLAND_STYLES.<kind>.body, so
+    // the chip is the material — and both bodies are still their tile's SPEC mean, so these
+    // move when ocean-coralrock and ocean-scrub are ingested and the bodies are reset to the
+    // delivered means. Same state Coastal Rock and Coastal Scrub shipped in.
+    //
+    // ⚠️ "Coral Limestone" IS NOT "Coral Reef", and the two now sit adjacent in this sorted
+    // list. Coral Reef is living reef UNDER the water that you sail into; this is dead reef
+    // standing in the air that you run aground on. Same rock, opposite side of the
+    // waterline. The labels are the only thing keeping a designer from picking the wrong
+    // one, which is why neither is shortened to "Coral".
+    { kind: 'coralrock',   label: 'Coral Limestone',  swatch: '#A7A193' },
+    { kind: 'tropicscrub', label: 'Tropic Scrub',     swatch: '#A9AF2A' },
     // Gatorgrass Bayou. Every swatch tracks its own source of truth so the chip a
     // designer picks from is the material they get: the three grounds track
     // ISLAND_STYLES.{mud,marsh,mudflat}.body, and the four weeds track their VEG_STYLES
@@ -1782,6 +1794,10 @@ const KIND_FILL = {
     // Translucent like the other underwater kinds, in the band's own khaki — an
     // impassable bottom must not read as either sand (crossable) or land (dry).
     coralreef: 'rgba(138,132,104,0.38)',
+    // Bluewater Bonanza's two new grounds. Both are DRY LAND, so both are solid, per this
+    // table's rule that only what you may sail over is translucent — which is also the one
+    // thing that tells Coral Limestone from the translucent Coral Reef directly above it.
+    coralrock: '#A7A193', tropicscrub: '#A9AF2A',
     // The bayou. Its two DRY grounds are solid, like every other land kind; everything
     // that is awash is translucent, which is the schematic's one consistent rule — you
     // can see the water through anything you are allowed to sail over. The four weeds
@@ -1818,6 +1834,9 @@ const KIND_EDGE = {
     shallows: 'rgba(56,189,248,0.8)', seagrass: 'rgba(122,160,120,0.9)',
     tropicsand: '#d9cba9', tropicshoal: 'rgba(141,212,195,0.8)',
     coralreef: 'rgba(138,132,104,0.85)',
+    // Each is its own ISLAND_STYLES stroke, so the schematic outline is the colour the game
+    // draws that coastline in — the coastalrock/coastalscrub rule.
+    coralrock: '#757268', tropicscrub: '#838621',
     mud: '#3d3421', marsh: '#4d4324',
     mudflat: 'rgba(110,100,73,0.8)',
     weedbed: 'rgba(74,112,74,0.85)', lilybed: 'rgba(140,176,100,0.9)',

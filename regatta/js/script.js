@@ -5221,7 +5221,21 @@ function applyVenuePalette(venueKey) {
             // merged palette onto WATER_CONFIG, so a key the NEXT venue omits would keep the
             // last one's value and Lighthouse Cove would inherit Glowtide's midnight.
             night: window.WATER_CONFIG.night || 0,
-            moonDir: window.WATER_CONFIG.moonDir != null ? window.WATER_CONFIG.moonDir : 25
+            moonDir: window.WATER_CONFIG.moonDir != null ? window.WATER_CONFIG.moonDir : 25,
+            // ⚠️ heroColor BELONGS ON THIS LIST AND WAS MISSING, which is the same bug the
+            // three lines above were written to fix, one key later. It is authored by only
+            // some documents (the lagoon's bright water inside the reef), it is never in the
+            // base WATER_CONFIG, and Object.assign below only overwrites keys the NEXT
+            // document actually names — so once you sailed Pearl Lagoon, its hero water rode
+            // along into every venue you visited afterwards for the rest of the session.
+            //
+            // THE SYMPTOM WAS NOT SUBTLE AND WAS EASY TO MISREAD AS AN ART PROBLEM.
+            // submergedTint derives every bar and meadow from this colour, so Bluewater
+            // Bonanza's coral bars painted #bff9ef (bright mint) if you had been to the
+            // lagoon and #5e7378 (dark grey-teal) if you had not — the same venue, two
+            // completely different sea beds, decided by where you sailed previously. Any
+            // venue without its own heroColor was affected: lake, bay and ocean.
+            heroColor: window.WATER_CONFIG.heroColor || null
         };
     }
     // A venue DOCUMENT may override the water colours. Water is not an editable object —
@@ -6450,8 +6464,14 @@ function isVeryDark(color) {
 const state = {
     boats: [], // Array of Boat instances. boats[0] is Player.
     camera: {
+        // The VIEW CENTRE. Derived each frame from the follow point below plus the
+        // look-ahead offset — not lerped directly, see the camera block in update().
         x: 0,
         y: 0,
+        // The smoothed FOLLOW point: where the boat is, with the lag. Kept apart from the
+        // view centre so the look-ahead can be rigid while the follow stays soft.
+        fx: undefined,
+        fy: undefined,
         rotation: 0,
         target: 'boat',
         mode: 'heading',
@@ -6613,6 +6633,43 @@ const LAND_TEXTURES = {
     // rounded whaleback is metre-scale, and 256 spans 27.8 world metres, putting a hump at
     // 3-6 m across. That is a boulder, which is what it should be. Halving the rock to 128
     // would make it a cobble field.
+    // ── BLUEWATER BONANZA'S TWO GROUNDS ─────────────────────────────────────
+    // Both delivered 2026-08-14. Both bodies in ISLAND_STYLES are their delivered tile's own
+    // mean, so both alphas below are pure contrast knobs, and BOTH ARE MEASURED — these are
+    // the two loudest masters the game has ever taken in, at luma sd 21.79 and 19.17 against
+    // a previous worst of marsh's 16.39, so neither pre-registered value survived contact.
+    //
+    // THE ROCK CAME OFF 0.35 HARDER THAN ANYTHING BEFORE IT — 0.35 would land on-screen sd
+    // 7.63, past every accepted ground including `grass` (6.66), on a material that is
+    // supposed to be a quiet rock. 0.20 lands 4.36: between the two shipped hard rocks
+    // (bay-rock 2.85, arctic granite 4.89), with the solution pitting still legible. Going
+    // further down to bay-rock's own 2.85 was tried and rejected by eye — at 0.13 the tile
+    // is a flat field and the pitting, which is this material's entire identity, is gone.
+    //
+    // ⚠️ THIS ALPHA IS ALSO WHAT FIXES THE ROCK'S SEAM, which is the non-obvious part. The
+    // master does NOT wrap cleanly: at the 128px it draws at, its edge-to-edge difference is
+    // 1.47x (horizontal) and 1.32x (vertical) the interior neighbour difference, where a
+    // seamless tile sits at ~1.0 and the scrub below measures 1.11 / 0.87. A seam is a
+    // CONTRAST artefact, so the same knob that quiets the tile quiets the seam: at 0.20 the
+    // mismatch is under 4 luma units and invisible in a 3x3 tiling. Raise this alpha and the
+    // seam comes back before the loudness does — that is the binding constraint here, not
+    // the contrast band.
+    coralrock:    { src: 'assets/images/terrain/ocean/coralrock.png', tile: 128, alpha: 0.20 },
+    // 0.30, one step under the sward family's usual 0.40-0.50, because this master is the
+    // busiest sward ever delivered (sd 19.17 against bay-scrub's 14.21). It lands on-screen
+    // sd 5.75, effectively on top of bay-scrub's 5.68, between swampgrass (5.07) and grass
+    // (6.66).
+    //
+    // ⚠️ PERIODICITY WAS MEASURED TWO WAYS AND ONLY THE SECOND ONE MEANS ANYTHING. On the
+    // radially averaged power spectrum this tile scores peak/mean 20.34 at 4 cycles, by far
+    // the worst in the set (shipped range 8.65-12.18) and enough to look like a reject. It
+    // is not: peak/mean is normalised by the BROADBAND FLOOR, and this art has an unusually
+    // smooth one, so the ratio inflates without the repeat actually being stronger. In
+    // absolute on-screen terms — the sd carried by the dominant band, times alpha — it is
+    // 3.48 at 0.30, BELOW bay-scrub's 3.72 and marsh's 3.68, both shipped and accepted. Use
+    // the absolute amplitude when judging a repeat; the ratio will lie to you in both
+    // directions.
+    tropicscrub:  { src: 'assets/images/terrain/ocean/scrub.png',     tile: 128, alpha: 0.30 },
     coastalscrub: { src: 'assets/images/terrain/bay/bay-scrub.png', tile: 128, alpha: 0.4 },
     // Alpha MEASURED on the delivered tile, not pre-registered: sd 7.28 at tile 128, so 0.7
     // would land on-screen sd 5.10 — near the loud end of the 1.38-6.75 set, and wrong for a
@@ -9453,12 +9510,28 @@ function updateTurbulence(boat, dt) {
     }
 }
 
+// ⚠️ THE PLUME REACHES 450 UNITS DOWNWIND OF ITS BOAT, which is the whole cull radius —
+// there is no per-particle test below, because the particles of one plume are never more
+// than that from the hull they left.
+const DIRTYAIR_REACH = 450;
+
 function drawDisturbedAir(ctx) {
     ctx.save();
     ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
 
+    // ⚠️ CULLED, which it was not. This is the most expensive call in the frame — measured at
+    // ~1,550 canvas operations, an arc and a fill per particle, ~44% of everything a frame
+    // issues (eval/_frame_attrib.js) — and it was paying that for all ten boats however far
+    // off screen they were. On a 13 km course most of the fleet is not in view most of the
+    // time. Nothing about the output changes: a plume that cannot reach the viewport cannot
+    // put a pixel in it.
+    const camX = state.camera.x, camY = state.camera.y;
+    const cullR2 = (Math.hypot(ctx.canvas.width, ctx.canvas.height) * 0.5 + DIRTYAIR_REACH + 40) ** 2;
+
     for (const boat of state.boats) {
         if (boat.raceState.finished || !boat.turbulence) continue;
+        const bdx = boat.x - camX, bdy = boat.y - camY;
+        if (bdx * bdx + bdy * bdy > cullR2) continue;
 
         // THE WIND THIS BOAT IS IN, not the venue mean. The bad-air cone that actually slows
         // the boat behind you is already built from `localWind.direction` in updateBoatPhysics
@@ -14343,6 +14416,17 @@ function checkNearMisses(dt) {
 // against. Anything that wants SECONDS must scale by this, never read it raw —
 // see refreshBotGrid for what reading it raw cost.
 const WORLD_CLOCK = 0.24;
+
+// HOW FAR THE CAMERA LOOKS PAST THE BOW, as a fraction of the frame's height. 0.25 puts the
+// boat three quarters of the way down the screen and gives the water ahead three quarters of
+// the frame instead of half. Read only in heading mode — see the note at the camera follow.
+//
+// ⚠️ THE BOAT MUST KEEP ROOM BELOW IT. drawBoatInstruments hangs its panel BI_DROP + BI_H
+// under the hull and projects it through the real transform, so it follows the boat down;
+// at 0.25 there is a quarter of the frame beneath and it clears comfortably. Push this much
+// past 0.3 and that panel starts running off the bottom edge.
+const CAM_LOOK_AHEAD = 0.25;
+
 function update(dt) {
     state.time += WORLD_CLOCK * dt;
     const timeScale = dt * 60;
@@ -14551,8 +14635,38 @@ function update(dt) {
              state.camera.target = 'finish';
              showResults();
         } else {
-            state.camera.x += (player.x - state.camera.x) * 0.1;
-            state.camera.y += (player.y - state.camera.y) * 0.1;
+            // ── THE BOAT SITS LOW, SO THE WATER AHEAD IS ON SCREEN ──────────────
+            // Centred, half the frame is spent on where you have already been. What a
+            // sailor is actually reading is in front: the next mark, the pressure coming
+            // down, the crest about to lift the stern. So the camera aims at a point AHEAD
+            // of the boat and the boat falls back down the frame.
+            //
+            // ⚠️ HEADING MODE ONLY, and that is not a scoping shortcut. The offset is what
+            // puts the boat at a fixed spot on screen, and that only works because heading
+            // mode guarantees the bow points up the frame. In `north` the same offset would
+            // slide the boat to a different edge every time you changed course, which is
+            // worse than centred rather than better.
+            //
+            // ⚠️ THE OFFSET IS APPLIED AFTER THE SMOOTHING, NOT CHASED BY IT. The first cut
+            // lerped the view centre toward `boat + offset`, and it ROCKED through every
+            // turn: as the camera rotates, that target swings through an arc of radius
+            // `look` — a quarter of the screen — and a 10%-per-frame lerp cannot keep up, so
+            // the boat slid up the frame during the turn and drifted back afterwards.
+            //
+            // So the smoothing follows the BOAT (`fx, fy`, the same lerp as before) and the
+            // look-ahead is added on top as a rigid offset. The boat's place on screen is
+            // then fixed by construction, and turning pivots the world about the hull —
+            // which is what a camera locked to a boat should do anyway.
+            //
+            // ⚠️ ALONG camera.rotation, NOT player.heading. The two differ mid-turn, and
+            // offsetting along the heading would walk the boat sideways across the frame
+            // instead. Along the camera's own up-axis it stays put.
+            if (state.camera.fx === undefined) { state.camera.fx = state.camera.x; state.camera.fy = state.camera.y; }
+            state.camera.fx += (player.x - state.camera.fx) * 0.1;
+            state.camera.fy += (player.y - state.camera.fy) * 0.1;
+            const look = state.camera.mode === 'heading' ? canvas.height * CAM_LOOK_AHEAD : 0;
+            state.camera.x = state.camera.fx + Math.sin(state.camera.rotation) * look;
+            state.camera.y = state.camera.fy - Math.cos(state.camera.rotation) * look;
         }
     } else if (state.camera.target === 'finish') {
         // Focus on Finish Line center
@@ -14716,6 +14830,10 @@ function update(dt) {
     updateParticles(dt);
     updateWindWaves(dt);
     updateSurf(dt);
+    // WHITECAPS, SURF SPRAY AND THE BOW UPWIND. After the boats, because two of the three
+    // read `boat.swell` and it is written in updateBoat. Its own particle arrays and its
+    // own PRNG, so it can neither be seen by the sim nor perturb it. No-op off the ocean.
+    if (window.SeaFX) window.SeaFX.update(dt, state);
 
     recordTrajectory(dt);
 }
@@ -17470,13 +17588,35 @@ function drawWindWaves(ctx) {
         const w = Math.max(26, Math.min(84, size));
         const pts = wave.pts, gaps = wave.gaps;
         if (pts) {
+            // ⚠️ ONE STROKE PER CREST, NOT ONE PER SEGMENT. Every segment used to be its own
+            // beginPath/stroke pair, and this layer is the single most expensive thing in the
+            // frame because of it: measured at 1,900 stroke calls per frame on every venue,
+            // ~38% of the ~5,000 canvas operations a frame issues (eval/_frame_attrib.js).
+            // The segments of one crest all share a style, so they are subpaths of ONE path
+            // and cost one submission — same geometry, same width, same alpha, same round
+            // caps, because a moveTo starts a fresh subpath and each subpath keeps its caps.
+            //
+            // ⚠️ IT IS NOT PIXEL-FOR-PIXEL, and the difference is worth knowing. Where two
+            // adjacent segments both survive the gap test they share an endpoint, and the
+            // round caps there overlap: stroked separately that overlap composites TWICE and
+            // leaves a brighter bead at every joint, stroked as one path it composites once.
+            // So the crests lose a faint dotted quality along their length.
+            //
+            // MEASURED rather than asserted (eval/_windwave_pixels.js renders the layer alone
+            // on a black field, both trees, and diffs): 2.98% of the pixels the layer touches
+            // change at all, 1.37% by more than 8/255, and the layer's MEAN INK is unchanged
+            // to one decimal (49.8 both). Every changed pixel is a joint. The direction is
+            // toward what a stroke of this width and alpha is supposed to look like rather
+            // than away from it, which is why this was taken rather than kept bit-exact.
+            ctx.beginPath();
+            let drew = false;
             for (let p = 0; p < gaps.length; p++) {
                 if (!gaps[p]) continue;
-                ctx.beginPath();
                 ctx.moveTo((pts[p].t - 0.5) * w, pts[p].y);
                 ctx.lineTo((pts[p + 1].t - 0.5) * w, pts[p + 1].y);
-                ctx.stroke();
+                drew = true;
             }
+            if (drew) ctx.stroke();
             if (wave.echo) {
                 ctx.globalAlpha *= 0.45;
                 ctx.lineWidth *= 0.8;
@@ -17600,6 +17740,180 @@ const SURF_STEP = 110;            // foam breaks at its own scale, not the coast
                                   // long enough that a crest is a WAVE and not a tick mark
 const SURF_BREAK = 0.88;          // where in the run-in the crest breaks: peak, then gone
 const SURF_FOAM_BUDGET = 14;      // foam blobs per frame — a long coast must not flood
+
+// ── WHERE A SWELL VENUE'S SURF COMES FROM INSTEAD ───────────────────────────
+//
+// On a venue with a `swell` block the breakers are the SWELL arriving, not the local breeze
+// kicking up a chop, and every one of the four things surf needs changes hands:
+//
+//   WHICH WAY  the primary train's travel direction, not the wind's. They usually agree on
+//              the ocean (the swell is laid out downwind of the mean breeze) but they are
+//              not the same thing and only one of them is what breaks on a beach.
+//   WHEN       the train's OWN PHASE at that stretch of coast. This is the whole effect:
+//              every shore on the venue breaks in step with the wave that is under your
+//              boat, and because phase varies along a coast the break RUNS ALONG IT like a
+//              zipper wherever the crests meet the shore at an angle. A per-stretch random
+//              offset — which is what the wind path uses, correctly, for chop — destroys it.
+//   HOW HARD   the swell's height, and then two coastal terms the wind path never had:
+//              refraction round headlands and the focus/shelter of the shoreline's own
+//              shape. See SURF_REFRACT_FLOOR and surfFocus.
+//   HOW FAR    the stand-off scales with height. A big swell trips further out and its
+//              white water is wider, which is the most legible statement of size there is
+//              from above.
+//
+// One crest per period, not the wind path's two: the run-in is a wavelength of a real train
+// now, and putting two crests in it would break the beach at twice the swell frequency.
+const SURF_SWELL_REF_M = 2.6;     // metres of swell at which the coast breaks at full power
+const SURF_SWELL_REACH = 2.4;     // most the stand-off may stretch, at a big sea
+// REFRACTION. Waves bend into shallow water, so a shore at right angles to the swell still
+// gets some of it — the classic aerial of a swell wrapping round a headland into the bay
+// behind. Held low: the exposed side has to stay unmistakable, and race-view.md §9's rule
+// against an identical white ribbon round every shoreline is about a ribbon that says
+// NOTHING. A graded one that still points at the weather is the picture, not the failure.
+const SURF_REFRACT_FLOOR = 0.16;
+// FOCUS. Refraction concentrates energy on headlands and spreads it in bays — the reason a
+// point breaks when the cove beside it is glassy. Measured off the shoreline's own turning
+// over SURF_FOCUS_ARC of coast, so it needs no authoring and no per-shape flag.
+const SURF_FOCUS_GAIN = 0.55;     // headland x1.55, bay x0.45
+const SURF_FOCUS_ARC = 320;       // world units of coast the turn is measured over
+const SURF_FOCUS_R = 420;         // radius of curvature at which a point is a full headland
+const SURF_PHASE_JITTER = 0.16;   // cycles of scatter left between neighbouring stretches
+
+// WHAT SEA IS ARRIVING AT THIS PIECE OF COAST. Both surf passes come through here, so they
+// cannot disagree about which way the water is running or when it breaks — the bug that
+// would show up as foam thrown onto a beach a beat before or after the crest that threw it.
+//
+// Returns null when nothing is breaking here, which is the single early-out both callers use.
+function surfSeaAt(x, y) {
+    const sw = window.Swell && window.Swell.active() ? window.Swell.primary() : null;
+    if (sw) {
+        // Travel direction and phase straight off the train the physics is using. No second
+        // copy of the wave field to drift out of step with the one the boats are sailing.
+        const ph = window.Swell.phaseAt(sw, x, y);
+        // 0 at the crest and rising with time: phase runs DOWN as the wave comes on
+        // (φ = k·s - ωt), so the cycle position is its negative, wrapped.
+        let u = (-ph / (Math.PI * 2)) % 1;
+        if (u < 0) u += 1;
+        const hM = sw.heightM || 0;
+        // ⚠️ THE CREST GROWS WITH THE STAND-OFF, and leaving it behind is what made the
+        // first cut look like scribble. `bow` and the per-node jitter are fractions of the
+        // reach, so scaling the reach alone gave a 40-unit crest 30 units of arc and 16 of
+        // wobble — a hairpin, not a wave. The shape terms are pinned to the base constant on
+        // every venue (see drawSurf) and what stretches here instead is how much COAST one
+        // crest covers: a big swell breaks in long lines, a small one in short ones.
+        const stretch = Math.min(SURF_SWELL_REACH, 0.75 + hM / SURF_SWELL_REF_M);
+        return {
+            tx: sw.sx, ty: sw.sy,
+            power: Math.max(0, Math.min(1.35, hM / SURF_SWELL_REF_M)),
+            reach: SURF_REACH * stretch,
+            step: SURF_STEP * stretch,
+            // ── AND ITS OWN CREST WEIGHT ────────────────────────────────────
+            // The drawing was tuned for wind CHOP, which is thin, sparse and broken, and it
+            // is right for that. A 3.9 m ocean swell landing on a beach is not thin, sparse
+            // or broken — it is a band of white water along the whole exposed shore — and
+            // parameterising one set of numbers to cover both would have meant retuning nine
+            // venues to fix one. So the style travels with the sea, exactly as the timing
+            // and the exposure already do, and the wind branch below still hands back what
+            // the layer has always used.
+            gap: 0.12,          // bare stretches between breaks: a swell leaves few
+            skip: 0.08,         // segments dropped from a crest: a swell breaks continuous
+            weight: 1.35,       // line width against the wind crest's
+            maxAlpha: 0.78,     // ...and it is allowed to read as WHITE at the break
+            // How fast a crest brightens on its way in. The wind value (0.75) keeps chop
+            // faint until it lands; a swell is visible the whole way, which is the half of
+            // "you see it coming" that a build curve controls.
+            build: 0.5,
+            foam: 3,            // blobs left at each break — the band along the waterline
+            foamScale: 1.8,
+            standoffPow: 0.55,
+            cycle: u, rate: sw.w / (Math.PI * 2), crests: 1, floor: SURF_REFRACT_FLOOR
+        };
+    }
+    // ── EVERY OTHER VENUE, UNCHANGED ───────────────────────────────────────
+    // The wind path is the original one and stays exact: same field, same ramp, same hard
+    // cutoff at the lee shore, same two crests, same `state.time` clock. Nine venues have
+    // to come out of this edit byte-identical, and this is the branch that guarantees it.
+    const w = regionWindAt(x, y);
+    if (w.speed < SURF_MIN_WIND) return null;
+    return {
+        tx: -Math.sin(w.direction), ty: Math.cos(w.direction),
+        power: Math.max(0, Math.min(1, (w.speed - SURF_MIN_WIND) / 12)),
+        reach: SURF_REACH, step: SURF_STEP, gap: 0.28, skip: 0.22, weight: 1,
+        maxAlpha: SURF_MAX_ALPHA, build: 0.75, foam: 1, foamScale: 1, standoffPow: 0,
+        cycle: null, rate: 0, crests: 2, floor: 0
+    };
+}
+
+// HEADLAND OR BAY, measured rather than authored: the shoreline's own signed turning over
+// SURF_FOCUS_ARC of coast either side of each edge. A point turns the coast outward through
+// a large angle in a short distance; the inside of a bay turns it the other way.
+//
+// Cached per island beside `_surfDry` and `_outSign` — the geometry is fixed, surf already
+// skips anything that drifts, and this is a windowed walk of the whole ring.
+function surfFocus(isl) {
+    if (isl._surfFocus) return isl._surfFocus;
+    const v = isl.vertices, n = v.length, sgn = surfOutwardSign(isl);
+    // Edge headings and lengths first, so the windowed sum below is a walk and not a
+    // repeated re-derivation.
+    const ang = new Array(n), len = new Array(n);
+    for (let i = 0, j = n - 1; i < n; j = i++) {
+        const ex = v[i].x - v[j].x, ey = v[i].y - v[j].y;
+        ang[i] = Math.atan2(ey, ex);
+        len[i] = Math.hypot(ex, ey);
+    }
+    const norm1 = (a) => { a = (a + Math.PI) % (Math.PI * 2); if (a < 0) a += Math.PI * 2; return a - Math.PI; };
+    // ⚠️ SIGNED CURVATURE AGAINST A FIXED FEATURE SIZE, and both of the obvious alternatives
+    // are wrong in a way that took a measurement to see:
+    //
+    //   "turns more than half a right angle over the window" — every shape on the ocean
+    //   floored at the BAY end, because a small island's whole ring turns 360°, so any
+    //   window worth measuring saturates and a rock reads as one continuous cove. A rock in
+    //   a swell is the opposite: it is all headland.
+    //
+    //   "turns faster than this shape does on average" — scale-free, and it makes a circle
+    //   correctly neutral, but it also makes a STRAIGHT coast read as sheltered, because
+    //   straight is below any closed shape's average. Straight coast has to be neutral.
+    //
+    // So: neutral at zero curvature, saturating at a radius of curvature of SURF_FOCUS_R.
+    // That is the size of feature the camera can actually see, and it is a fact about the
+    // VIEW rather than about any one shape — which is why a 200-unit rock comes out fully
+    // focused all round (it is smaller than a headland) and a 3 km coast's gentle bend comes
+    // out nearly flat (you cannot see that it is bending at all).
+    //
+    // The window widens on a coarse polygon: turning lives at the vertices, so on a coast
+    // with 500-unit edges a fixed 320-unit window straddles one vertex or none and the
+    // result alternates between saturated and zero.
+    const perim = len.reduce((a, b) => a + b, 0);
+    const win = Math.max(SURF_FOCUS_ARC, 2.5 * perim / n);
+    const out = new Array(n);
+    for (let i = 0; i < n; i++) {
+        // Walk out both ways to win/2 and accumulate the signed turn between consecutive
+        // edges. `sgn` puts "outward" on the right side of zero whichever way this
+        // particular ring is wound.
+        let turn = 0, arc = 0;
+        for (let s = 1; s < n && arc < win * 0.5; s++) {
+            const k = (i - s + n) % n, k1 = (k + 1) % n;
+            turn += norm1(ang[k1] - ang[k]);
+            arc += len[k];
+        }
+        for (let s = 0; s < n && arc < win; s++) {
+            const k = (i + s) % n, k1 = (k + 1) % n;
+            turn += norm1(ang[k1] - ang[k]);
+            arc += len[k];
+        }
+        if (arc < 1) { out[i] = 1; continue; }
+        // ⚠️ `turn * sgn`, NOT `-sgn`. Worked through on a unit square both ways round: a
+        // ring whose outward normal is the edge turned -90° (sgn +1) accumulates a POSITIVE
+        // total turn, and flipping the winding flips both together — so the two cancel and
+        // convex is positive in either. Getting it backwards is not subtle in the numbers
+        // but is easy to miss in a screenshot: it made every small island, which should be
+        // headland all the way round, come out as one continuous cove.
+        const f = Math.max(-1, Math.min(1, (turn * sgn / arc) * SURF_FOCUS_R));
+        out[i] = 1 + SURF_FOCUS_GAIN * f;
+    }
+    isl._surfFocus = out;
+    return out;
+}
 
 // Which way is OUT of this polygon? Winding is consistent around a ring, so this is one
 // test per shape, cached — not one per edge per frame.
@@ -17725,6 +18039,7 @@ function updateSurf(dt) {
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl), V = isl.vertices;
         const dry = surfDryEdges(isl);
+        const focus = surfFocus(isl);
 
         for (let i = 0, j = V.length - 1; i < V.length; j = i++) {
             if (budget <= 0) break;
@@ -17737,35 +18052,59 @@ function updateSurf(dt) {
             if ((mx - camX) ** 2 + (my - camY) ** 2 > viewR2) continue;
 
             const nx = (ey / len) * sgn, ny = (-ex / len) * sgn;
-            const w = regionWindAt(mx, my);
-            if (w.speed < SURF_MIN_WIND) continue;
-            const face = -(nx * -Math.sin(w.direction) + ny * Math.cos(w.direction));
-            if (face <= 0.02) continue;
-            const power = face * face * Math.max(0, Math.min(1, (w.speed - SURF_MIN_WIND) / 12));
+            // The same one call drawSurf makes, at the same point — see surfSeaAt. Foam
+            // thrown a beat off the crest that threw it is the whole failure this avoids.
+            const sea = surfSeaAt(mx, my);
+            if (!sea) continue;
+            const face = -(nx * sea.tx + ny * sea.ty);
+            if (face <= 0.02 && sea.floor <= 0) continue;
+            const expo = sea.floor + (1 - sea.floor) * Math.max(0, face) * Math.max(0, face);
+            const power = Math.min(1, expo * sea.power * (sea.floor > 0 ? focus[i] : 1));
             if (power < 0.25) continue;                 // a gentle shore does not throw foam
 
             const hash = (u, w2) => { const h = Math.sin(u * 12.9898 + w2 * 78.233) * 43758.5453; return h - Math.floor(h); };
-            const n = Math.max(1, Math.round(len / SURF_STEP));
+            const n = Math.max(1, Math.round(len / sea.step));
             for (let k = 0; k < n && budget > 0; k++) {
                 const u0 = k / n;
                 const cx0 = a.x + ex * u0, cy0 = a.y + ey * u0;
                 const r1 = hash(cx0, cy0), r2 = hash(cy0, cx0);
-                if (r2 < 0.28) continue;
+                if (r2 < sea.gap) continue;
                 const speed = 0.85 + power * 0.75;
-                for (let c = 0; c < 2 && budget > 0; c++) {
-                    const p = (t * speed + r1 + c * 0.5) % 1;
-                    const step = speed * dt;
+                for (let c = 0; c < sea.crests && budget > 0; c++) {
+                    // ⚠️ THE CYCLE RATE HAS TO MATCH THE ONE drawSurf ANIMATES, or the
+                    // window below tests the wrong slice and the foam fires at the wrong
+                    // moment — or, if the rate is far off, never at all. The wind path
+                    // advances `p` on the WORLD_CLOCK-scaled `t`, so its step is
+                    // `speed * dt`; the swell path advances on the train's own frequency
+                    // against Swell's clock, which runs in real seconds, so its step is
+                    // `(ω/2π) * dt`. Two clocks, and each window has to use its own.
+                    let p, step;
+                    if (sea.cycle === null) {
+                        p = (t * speed + r1 + c * 0.5) % 1;
+                        step = speed * dt;
+                    } else {
+                        p = (sea.cycle + SURF_BREAK + (r1 - 0.5) * SURF_PHASE_JITTER + c * 0.5) % 1;
+                        if (p < 0) p += 1;
+                        step = sea.rate * dt;
+                    }
                     // Did this crest cross the break within the last frame?
                     if (p < SURF_BREAK || p >= SURF_BREAK + step) continue;
                     // Foam lands ON the beach, scattered along the crest it came off.
                     const along = 0.2 + fxRand() * 0.6;
-                    const bx = a.x + ex * (u0 + along / n) + nx * SURF_REACH * 0.12;
-                    const by = a.y + ey * (u0 + along / n) + ny * SURF_REACH * 0.12;
-                    const blobs = 1 + (power > 0.6 ? 1 : 0);
+                    const bx = a.x + ex * (u0 + along / n) + nx * sea.reach * 0.12;
+                    const by = a.y + ey * (u0 + along / n) + ny * sea.reach * 0.12;
+                    // ⚠️ THE FOAM IS WHAT MAKES THE WATERLINE A BAND. A crest is only bright
+                    // at the instant it breaks, and with the breaks phase-locked to a real
+                    // train only a stretch or two along a shore is at that instant at any
+                    // one time — which is correct, and on its own it left the beach nearly
+                    // bare between waves. What fills it in at a real shore is the white
+                    // water the last wave left, so a swell leaves several times what chop
+                    // does, and leaves it bigger.
+                    const blobs = sea.foam + (power > 0.6 ? 1 : 0);
                     for (let q = 0; q < blobs; q++) {
-                        const sp = (fxRand() - 0.5) * SURF_STEP * 0.5;
+                        const sp = (fxRand() - 0.5) * sea.step * 0.5;
                         createParticle(bx + (ex / len) * sp, by + (ey / len) * sp, 'wake',
-                                       { scale: 0.8 + fxRand() * 1.5 * power });
+                                       { scale: (0.8 + fxRand() * 1.5 * power) * sea.foamScale });
                         budget--;
                     }
                 }
@@ -17809,6 +18148,7 @@ function drawSurf(ctx) {
         const sgn = surfOutwardSign(isl);
         const v = isl.vertices;
         const dry = surfDryEdges(isl);
+        const focus = surfFocus(isl);
 
         for (let i = 0, j = v.length - 1; i < v.length; j = i++) {
             if (dry[i]) continue;                        // this edge faces ground, not sea
@@ -17821,19 +18161,21 @@ function drawSurf(ctx) {
 
             // Outward normal of this edge.
             const nx = (ey / len) * sgn, ny = (-ex / len) * sgn;
-            // The mean field, not getWindAt: surf is a large-scale feature and this runs per
-            // edge — the puff loop and the lee recursion are not worth it here.
-            const w = regionWindAt(mx, my);
-            if (w.speed < SURF_MIN_WIND) continue;
-            // Waves run with the wind: toward (-sin, +cos).
-            const tx = -Math.sin(w.direction), ty = Math.cos(w.direction);
+            // The mean field on a wind venue, the swell train on a swell one — one call, so
+            // this pass and updateSurf cannot disagree. (Deliberately not getWindAt: surf is
+            // a large-scale feature and this runs per edge, so the puff loop and the lee
+            // recursion are not worth it here.)
+            const sea = surfSeaAt(mx, my);
+            if (!sea) continue;
             // Facing the seas means the outward normal opposes their travel.
-            const face = -(nx * tx + ny * ty);
-            if (face <= 0.02) continue;
+            const face = -(nx * sea.tx + ny * sea.ty);
+            if (face <= 0.02 && sea.floor <= 0) continue;
 
             // Squared, so the exposed shore is unmistakable and the shoulders fade out
-            // instead of stopping dead at a corner.
-            const power = face * face * Math.max(0, Math.min(1, (w.speed - SURF_MIN_WIND) / 12));
+            // instead of stopping dead at a corner — then lifted onto the refraction floor,
+            // which is 0 on a wind venue and leaves that shape exactly as it was.
+            const expo = sea.floor + (1 - sea.floor) * Math.max(0, face) * Math.max(0, face);
+            const power = Math.min(1, expo * sea.power * (sea.floor > 0 ? focus[i] : 1));
             // ⚠️ SUBDIVIDED, not one dash per authored edge. Glacier Sound's coast is 88
             // vertices over 13 km — edges average 500 units, so a dash per edge put ONE
             // stroke on screen. Foam breaks at its own scale, not the coastline's.
@@ -17852,18 +18194,21 @@ function drawSurf(ctx) {
                 const h = Math.sin(u * 12.9898 + w2 * 78.233) * 43758.5453;
                 return h - Math.floor(h);
             };
-            const n = Math.max(1, Math.round(len / SURF_STEP));
+            const n = Math.max(1, Math.round(len / sea.step));
             for (let k = 0; k < n; k++) {
                 const u0 = k / n;
                 const cx0 = a.x + ex * u0, cy0 = a.y + ey * u0;
                 const r1 = hash(cx0, cy0), r2 = hash(cy0, cx0);
                 // Bare stretches between the breaks. Without them the coast is a continuous
                 // train of crests, which is the dashed-border read again at a larger size.
-                if (r2 < 0.28) continue;
+                // A real swell leaves far fewer of them than chop does — see `gap`.
+                if (r2 < sea.gap) continue;
 
-                // TWO crests in the water at once, half a cycle apart, so a set is arriving
-                // while the last one is still washing up.
-                for (let c = 0; c < 2; c++) {
+                // TWO crests in the water at once on a wind venue, half a cycle apart, so a
+                // set is arriving while the last one is still washing up. ONE on a swell
+                // venue: the cycle is a real wavelength there, and a second crest inside it
+                // would break the beach at twice the swell's frequency.
+                for (let c = 0; c < sea.crests; c++) {
                     // p: 0 just formed, well offshore — 1 broken on the beach.
                     //
                     // ⚠️ FAST. A crest crossing its run-in in three or four seconds does not
@@ -17872,7 +18217,18 @@ function drawSurf(ctx) {
                     // it gets there. At ~1 cycle a second a crest covers its stand-off in
                     // about the time it takes to say so, which is what sells it.
                     const speed = 0.85 + power * 0.75;
-                    let p = (t * speed + r1 + c * 0.5) % 1;
+                    // ⚠️ ON A SWELL VENUE THE CLOCK IS THE WAVE, and the position hash is
+                    // nearly gone with it. `r1` exists to stop a wind coast reading as one
+                    // marching border, and for chop that is right — but a real swell IS in
+                    // step, everywhere at once, and scattering the phase throws away the
+                    // whole effect: the set arriving together, and the break running along
+                    // a beach it meets at an angle because the crest gets there sooner at
+                    // one end. Only enough jitter survives (SURF_PHASE_JITTER) to keep
+                    // neighbours from looking machined.
+                    let p = sea.cycle === null
+                        ? (t * speed + r1 + c * 0.5) % 1
+                        : (sea.cycle + SURF_BREAK + (r1 - 0.5) * SURF_PHASE_JITTER + c * 0.5) % 1;
+                    if (p < 0) p += 1;
                     // ⚠️ POSITION AND SHAPE ARE SEPARATE THINGS, and conflating them made a
                     // crest FADE IN WHERE IT SITS. Stand-off was `1 - p²`, which barely moves
                     // for the first third of the run — so the wave brightened from nothing
@@ -17884,7 +18240,14 @@ function drawSurf(ctx) {
                     // gathered and steep it LOOKS — keeps its own curve.
                     const travel = Math.pow(1 - p, 1.15);
                     const shoal = p * p;
-                    const off = SURF_REACH * travel * (0.9 + 0.5 * r2);
+                    // ⚠️ A WEAK WAVE BREAKS CLOSER IN. Holding the stand-off at full reach
+                    // regardless of power put a lone pale crest 90 units off the LEE shore,
+                    // where nothing else was happening — a mark floating in open water with
+                    // no shore behaviour around it to explain it. Smaller waves genuinely
+                    // trip in shallower water, so the sheltered side's surf hugs the beach.
+                    // `standoffPow` is 0 on a wind venue, where this is exactly reach.
+                    const stand = 1 - sea.standoffPow + sea.standoffPow * power;
+                    const off = sea.reach * stand * travel * (0.9 + 0.5 * r2);
                     // ⚠️ THE ARC OF A WAVE: appear, BUILD, crash, gone. A symmetric hump
                     // peaks halfway through the run-in and is already fading by the time it
                     // reaches the beach — which is backwards, and reads as a mark brightening
@@ -17892,9 +18255,9 @@ function drawSurf(ctx) {
                     // forms offshore, strongest at the instant it breaks, and then simply is
                     // not there any more.
                     const life = p < SURF_BREAK
-                        ? Math.pow(p / SURF_BREAK, 0.75)                 // building as it comes in
+                        ? Math.pow(p / SURF_BREAK, sea.build)            // building as it comes in
                         : Math.pow(1 - (p - SURF_BREAK) / (1 - SURF_BREAK), 1.6);   // crashed, gone
-                    const alpha = Math.min(SURF_MAX_ALPHA, power * life * 0.95);
+                    const alpha = Math.min(sea.maxAlpha, power * life * 0.95);
                     if (alpha <= 0.02) continue;
 
                     // Long, with a clear gap to its neighbour: 55-85% of its stretch, so the
@@ -17915,9 +18278,12 @@ function drawSurf(ctx) {
                     // Bowed seaward across the crest, jittered from a position hash so the
                     // raggedness is stable rather than boiling frame to frame.
                     const bow = SURF_REACH * 0.35 * (0.4 + 0.6 * r1) * (1 - shoal * 0.5);
-                    const SEG = 5;
+                    // Nodes scale with the crest so a long one is not drawn from the same
+                    // five points as a short one. Pinned at 5 below the length any wind
+                    // crest reaches, which is what keeps the other nine venues identical.
+                    const SEG = Math.max(5, Math.round(Math.hypot(p1x - p0x, p1y - p0y) / 26));
                     ctx.strokeStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
-                    const lw = 1.4 + power * 3.2 * (0.4 + shoal);
+                    const lw = (1.4 + power * 3.2 * (0.4 + shoal)) * sea.weight;
                     ctx.lineWidth = lw;
                     let px = 0, py = 0;
                     for (let q = 0; q <= SEG; q++) {
@@ -17926,7 +18292,7 @@ function drawSurf(ctx) {
                         const arch = Math.sin(f * Math.PI) * bow;
                         const qx = p0x + (p1x - p0x) * f + nx * (arch + jit);
                         const qy = p0y + (p1y - p0y) * f + ny * (arch + jit);
-                        if (q > 0 && hash(cx0 + q * 2.3, cy0 + q * 5.9) > 0.22) {
+                        if (q > 0 && hash(cx0 + q * 2.3, cy0 + q * 5.9) > sea.skip) {
                             ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(qx, qy); ctx.stroke();
                         }
                         px = qx; py = qy;
@@ -20395,6 +20761,10 @@ function draw() {
     drawParticles(ctx, 'surface');
     drawGusts(ctx);
     drawWindWaves(ctx);
+    // OVER the wind-wave crests, because a whitecap is one of those crests breaking, and
+    // over the cat's-paw tints, because foam floats on whatever colour the water is. Still
+    // UNDER the fleet: the hull silhouette stays clean (race-view.md §7).
+    if (window.SeaFX) window.SeaFX.draw(ctx, state);
 
     // ...but a fin cutting the surface and the bubbles behind it are ON the
     // water, so they go over the crests the body sits beneath.
@@ -20795,8 +21165,29 @@ function loop(timestamp) {
         }
 
         const step = Math.min(dt, 0.1) * (state.gameSpeed || 1.0);
-        for (let i = 0; i < iterations; i++) {
-            update(step);
+        // ⚠️ A SLOW FRAME IS SUB-STEPPED, NOT SWALLOWED WHOLE. This used to hand the entire
+        // catch-up to one update() call, so a 100 ms hitch integrated 100 ms of physics in a
+        // single step: at 15 knots that is 22 units of travel applied at once, which reads as
+        // the boat TELEPORTING rather than as a dropped frame, and it is why a render stall
+        // was reported as "the game jumps" rather than "the game stutters". Every rate in the
+        // sim — turn authority, acceleration, the swell's forcing, collision separation — is
+        // integrated once per call, so one huge call is also less accurate than several small
+        // ones covering the same span.
+        //
+        // Capped at SUB_MAX so a hitch cannot multiply itself into a death spiral: past that
+        // the world runs slightly slow for a frame instead of trying to catch up, which is
+        // the better failure. update() measures ~1 ms (eval/_ocean_perf.js: p50 0.9, max 4.5),
+        // so four of them is affordable where the alternative is a visible jump.
+        //
+        // ⚠️ NO-OP AT A HEALTHY FRAME RATE, and that is load-bearing: at dt = 1/60 the ceil
+        // gives exactly one sub-step of exactly `step`, so this is bit-identical to what it
+        // replaced. The eval harness drives update(1/60) directly and never reaches this
+        // function at all, so no recorded race moves.
+        const SUB_DT = 1 / 60, SUB_MAX = 4;
+        const subs = Math.min(SUB_MAX, Math.max(1, Math.ceil(step / SUB_DT)));
+        const sub = step / subs;
+        for (let i = 0; i < iterations * subs; i++) {
+            update(sub);
         }
         draw();
     }
@@ -21320,6 +21711,89 @@ const ISLAND_STYLES = {
     // the reference beaches melt into their bars, so the coastline line stays quiet and
     // the tone ladder (ocean -> lagoon -> bar -> sand) does the separating.
     coralsand: { body: '#efe4cf', stroke: '#ddd0ad', veg: '#84cc16', rock: '#9ca3af', trees: true },   // body = coralsand tile mean
+    // ── BLUEWATER BONANZA'S TWO NEW GROUNDS ─────────────────────────────────
+    // Coral limestone — uplifted reef rock (makatea), the hard rim of a reef island. BOTH
+    // TILES DELIVERED 2026-08-14, so both bodies below are now their DELIVERED tile's own
+    // mean (the coralsand / bay-rock move) and both LAND_TEXTURES alphas are MEASURED. With
+    // base equal to tile mean the blend cannot move the colour, only the spread around it,
+    // so each alpha is a pure contrast knob. The other three tones on each row are the
+    // spec's own offsets carried onto the delivered body, the bayou-mud precedent.
+    //
+    // THE ROCK'S BODY IS SQUEEZED BETWEEN TWO NEIGHBOURS AND THE IN-VENUE ONE WINS. It has
+    // to separate from `coralsand` at race scale, because sand and reef rock share every
+    // shoreline on this venue and the player reads them apart at speed: measured dE 22.4,
+    // against the cove's accepted sand-vs-rock 23.9. Its nearest cross-venue neighbours are
+    // `coastalrock` at 9.0 and `lane` at 10.4, and that is accepted on coastalrock's own
+    // two-tier rule — cross-venue separation is a picker-swatch concern only, since neither
+    // can ever be in the same race, and 19.2 was called fine there where 5.3 was not. The
+    // `lane` collision is the most honest of the three: a crushed-shell village road IS
+    // pulverised coral limestone, so the two materials genuinely are near neighbours.
+    //
+    // COOLER AND GREYER THAN coastalrock ON PURPOSE (hue 53 / sat 0.09 against 44 / 0.19).
+    // Calcium carbonate is a neutral stone; the Cape's glacial rock is a warm grey-tan. That
+    // is the axis the two are told apart on where they cannot be told apart by value.
+    //
+    // veg is a paler DRY STONE, not a green, and rock a darker dab of the same — the
+    // granite/redrock/coastalrock convention for a look with nothing growing on it. No
+    // trees: bare rock. The stroke carries coastalrock's own offsets onto this body (the
+    // bayou-mud precedent), which lands an 18.2 L* drop against coastalrock's 18.6, so the
+    // coastline holds the same weight and does not wash out.
+    //
+    // ⚠️ THE DELIVERY CAME BACK WARMER THAN SPECCED AND THE PICKER PAID FOR IT. Spec was a
+    // NEUTRAL #ABA99B at hue 53; delivered is #A7A193 at hue 41.7, which is coastalrock's
+    // own hue (44). In-venue that cost nothing and in fact GAINED — dE from `coralsand`, the
+    // sand it shares every shoreline with, went 22.4 -> 24.8, now past the cove's accepted
+    // sand-vs-rock 23.9. Cross-venue it went the other way: dE from `coastalrock` fell 9.0 ->
+    // 6.1, close to the 5.3 that note calls a genuine collision. Accepted, because the two
+    // can never be in the same race (bay vs ocean) so it is a picker-swatch concern only,
+    // and because base-equals-delivered-mean is worth more than a tidier chip. The LABELS
+    // now do all the work: 'Coral Limestone' against 'Coastal Rock'.
+    //
+    // THE DELIVERY CHECK THAT MISSED IT WAS WATCHING THE WRONG AXIS, and that is the
+    // transferable bit. The manifest note said to reject if saturation went over ~0.14,
+    // because that is how a neutral stone turns into a warm tan — delivered saturation is
+    // 0.12 and sailed through, while the drift happened on HUE. Check both, or check hue.
+    coralrock: { body: '#A7A193', stroke: '#757268', veg: '#BAB6A9', rock: '#878478', trees: false },  // body = ocean-coralrock DELIVERED tile mean
+    // Tropic Scrub — the sun-dried sward of a small island's interior.
+    //
+    // ⚠️ THE BODY IS LIGHTER THAN EVERY CROWN TONE THE VENUE'S TREES ARE MADE OF, and that
+    // is the constraint that picked it rather than any of the separations below. This is
+    // what ocean-palm-coconut, ocean-pandanus and ocean-almond-tropical stand on, and a
+    // ground sitting inside the crowns' value range makes three trees dissolve into their
+    // own lawn. Measured: this body is L* 73.0 against the trees' lit tones at 74.3 / 66.0 /
+    // 59.3 and their mid tones at 61.9 / 48.1 / 42.7, so every crown reads DARK against it.
+    // Lighthouse Cove works the same way and is the precedent — ground L* 66.4 under crowns
+    // at 59.7 and 46.1. Anyone darkening this row has to re-check it against those seven
+    // numbers first; the obvious "lusher tropical green" is L* 56 and it fails.
+    //
+    // A FOURTH SWARD, AND IT IS THE LIGHTEST AND YELLOWEST OF THEM. dE 18.8 from
+    // `coastalscrub`, 14.8 from `grass`, 36.2 from `swampgrass` — all cross-venue and so
+    // picker-only, per coastalrock's two-tier rule. In-venue, which is what the player
+    // actually reads, it is 60.5 from the sand it sits behind and 60.8 from the rock it
+    // sits against.
+    //
+    // SUN-BLEACHED IS LIGHTER AND YELLOWER, NEVER GREYER, which is the cove's hardest-won
+    // colour lesson applied ahead of time: coastalscrub's first answer cut saturation to
+    // 0.54 to buy "sun-faded", landed with the CURED DEAD sward `swampgrass` (0.48) and read
+    // army-olive. This holds chroma at 0.74 — above coastalscrub (0.62), below `grass`
+    // (0.83) — and buys the fading with value instead. The olive the brief asks for lives in
+    // the TILE's darker phase, not in the mean.
+    //
+    // `rock` is the venue's OWN stone rather than the generic #8a8a7a, so a scrub isle's
+    // rock dabs are made of the same limestone as the shelf next door — coastalscrub's move,
+    // and the same reason.
+    //
+    // DELIVERED #A9AF2A against a spec of #AABD31 — 4 L* darker and a little less yellow.
+    // ⚠️ THE CROWN CONSTRAINT SURVIVES, AND CHECKING IT PROPERLY IS THE LESSON. Against the
+    // spec HEX LIST the delivery looks like a failure: at L* 68.9 the ground is 5.3 DARKER
+    // than the palm's lit frond tone (#94C701, L* 74.3), which the paragraph above forbids.
+    // It is not a failure, because a lit tone is a HIGHLIGHT on a minority of a crown's
+    // pixels and never what the crown reads as. Measured on the real sprites instead: the
+    // shipped lagoon palms average L* 47.8 and 46.8, so this ground sits +21.2 above them —
+    // in family with the cove, where bay-scrub at L* 66.3 sits +26.0 / +37.2 / +32.2 above
+    // its own three trees. Compare crown MEANS to ground MEANS; a spec hex ladder is for
+    // writing a prompt, not for judging one.
+    tropicscrub: { body: '#A9AF2A', stroke: '#838621', veg: '#61711F', rock: '#A7A193', trees: true },  // body = ocean-scrub DELIVERED tile mean
     // Brightened 2026-08-08: `grass` is fresh MEADOW green now. The tan-olive it used
     // to be moved wholesale to `swampgrass` below — the bayou keeps its sun-cured look
     // (its docs were re-kinded), and everything else's grass isles read alive.
@@ -21613,7 +22087,23 @@ const SHOAL_SAND_IN_WATER = 0.16;
 // Which looks are bare bottom sediment rather than something living on it. A set, because
 // there are two of them now and there will be more the first time another venue authors a
 // bar of its own material.
-const BARE_SEDIMENT_LOOKS = { shoal: true, mudflat: true };
+//
+// ⚠️ `coralshoal` JOINED 2026-08-14, AND THE CLAUSE ABOVE THAT EXCLUDED IT HAS BEEN LEFT
+// STANDING BECAUSE IT EXPLAINS WHY. It reads "Coral bars ... keep SHOAL_IN_WATER: they sit
+// under BRIGHT LAGOON WATER where 0.38 was right, and Tropic Sand Shoals are deliberately
+// out of scope here." Every word of that was true when Pearl Lagoon was the only venue with
+// coral bars. Bluewater Bonanza then grew six tropicshoal shapes under deep open-ocean
+// cobalt, and the premise expired: 0.38 over water at luma 81 dragged the coral-white bar to
+// #5E7378, a dark slate that read as mud beside its own #efe4cf beach. That is the exact
+// failure the sand-bar note above describes — the mix ate the saturation, and no body colour
+// buys it back — so this is the same fix applied to the same defect, not a new policy.
+//
+// CORAL SAND IS BARE SEDIMENT BY ANY PLAIN READING, which is what makes this the right list
+// rather than a special case: it is ground shell and coral rubble lying on the bottom, the
+// same category as the tan sand it sits next to and the mud flat below it. What genuinely
+// still belongs at 0.38 is what LIVES on the bottom — the seagrass meadows and the reef —
+// because a plant or a coral head really is seen through more column than flat sediment is.
+const BARE_SEDIMENT_LOOKS = { shoal: true, mudflat: true, coralshoal: true };
 // The derivation, factored out because it is true of ANYTHING on the bottom — the sand
 // bar and the seagrass meadow are the same physics under the same light, so they go
 // through the same two steps and can never disagree about what the water does to them.
@@ -21630,7 +22120,26 @@ function submergedTint(bottom, mix) {
     // impossibly dark (the lagoon split left baseColor at luma 67, gain 0.52: no body
     // colour in gamut could reach the bright mint a Caribbean bar actually is). Venues
     // without a heroColor are unchanged: one water, same answer as always.
-    const water = rgb(W.heroColor || W.baseColor, [14, 165, 233]);
+    //
+    // ⚠️ shallowColor IS NOW THE MIDDLE TERM, AND IT CLOSES THE CASE THE NOTE ABOVE OPENED.
+    // That note diagnosed the defect exactly — deriving a bar from the open-ocean base makes
+    // it impossibly dark — and then fixed it for ONE venue by having the lagoon author a
+    // heroColor, leaving every other venue on the broken derivation ("Venues without a
+    // heroColor are unchanged: one water, same answer as always"). Bluewater Bonanza is what
+    // showed that was a deferral rather than a decision: its coral bars painted #5E7378, a
+    // dark slate, next to their own #efe4cf beach.
+    //
+    // A BAR IS SHALLOW WATER BY DEFINITION, so the column over it is the venue's SHALLOW
+    // water, not its deep base — and every venue already authors shallowColor, so this asks
+    // for nothing new from a document. heroColor still wins where a venue has one, because
+    // that is a deliberate statement about signature water; baseColor survives as the last
+    // resort for a palette with no shallowColor at all.
+    //
+    // MEASURED ACROSS THE ROSTER, this only ever moves a bar LIGHTER, which is the direction
+    // the original diagnosis says is correct: ocean shoal #6F664E -> #B0AB86, bay #938969 ->
+    // #ABA07A, swamp #927D52 -> #C2A66D, river #897953 -> #BAA573, glowtide #4B402F ->
+    // #5A4D3A. Pearl Lagoon is untouched by this line — it has a heroColor.
+    const water = rgb(W.heroColor || W.shallowColor || W.baseColor, [14, 165, 233]);
     const luma = 0.299 * water[0] + 0.587 * water[1] + 0.114 * water[2];
     // Floored well above zero: a bar you cannot see is a bar you cannot decide about, and
     // Glowtide's night water would otherwise take it to nearly black. Capped just over 1 so
@@ -22633,7 +23142,18 @@ function bakeIslandSprite(isl) {
     const ox = isFloe ? 0 : isl.x, oy = isFloe ? 0 : isl.y;
     // Karst joins ice and granite on the angular tracer: limestone weathers into fissures
     // and sharp ribs, and the rounded tracer would draw it as a sandbank.
-    const trace = (isl.style === 'ice' || isl.style === 'granite' || isl.style === 'karst')
+    //
+    // Coral limestone joins them on the same argument, one island over: makatea is old reef
+    // lifted into the air and etched by rain into pinnacles and knife-edged pits, and it is
+    // the sharpest natural rock in the game. It also has the most to lose from the rounded
+    // tracer of anything here — it shares every shoreline with `coralsand`, so a rounded
+    // reef shelf reads as one more sandbar and the venue's hard rim disappears into its own
+    // beach. Note this is the ONLY tropical kind on the angular list: `coralsand` and
+    // `tropicshoal` stay rounded, which is what makes the rim legible.
+    //
+    // `coastalscrub`, `tropicscrub` and every other sward stay rounded too — a sward drapes.
+    const trace = (isl.style === 'ice' || isl.style === 'granite' || isl.style === 'karst'
+                   || isl.style === 'coralrock')
         ? traceAngularPoly : traceRoundedPoly;
 
     let maxR = isl.radius;
@@ -23383,6 +23903,8 @@ function initCourse() {
         // cannot be laid out before the breeze is known. A document with no `swell` block
         // gets none, which is every venue but Bluewater Bonanza.
         if (window.Swell) window.Swell.configure(doc, state.wind.baseDirection);
+        // Whatever the last race left in the air is not this race's weather.
+        if (window.SeaFX) window.SeaFX.reset();
         buildCoursePaths();
         return;
     }
@@ -23446,6 +23968,7 @@ function initCourse() {
     // No document, so no sea state — and clear whatever the last venue laid out, so a
     // generated course can never inherit the ocean's swell.
     if (window.Swell) window.Swell.configure(null, 0);
+    if (window.SeaFX) window.SeaFX.reset();
     buildCoursePaths();
 }
 
@@ -23930,9 +24453,16 @@ function snapCameraToStart() {
     const p = state.boats[0];
     if (!p) return;
     state.camera.target = 'boat';
-    state.camera.x = p.x;
-    state.camera.y = p.y;
+    // `fx, fy` is the smoothed FOLLOW point the look-ahead is measured from; the view centre
+    // is derived from it every frame. Snapping one without the other would leave the follow
+    // point wherever the last race ended and the camera would travel back to the start line
+    // over the first second — the exact travel this function exists to avoid.
+    state.camera.fx = p.x;
+    state.camera.fy = p.y;
     state.camera.rotation = state.camera.mode === 'north' ? 0 : p.heading;
+    const look = state.camera.mode === 'heading' ? canvas.height * CAM_LOOK_AHEAD : 0;
+    state.camera.x = p.x + Math.sin(state.camera.rotation) * look;
+    state.camera.y = p.y - Math.cos(state.camera.rotation) * look;
 }
 
 function restartRace() { resetGame(); togglePause(false); }

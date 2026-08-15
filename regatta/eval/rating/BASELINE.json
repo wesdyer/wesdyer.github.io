@@ -1,0 +1,30 @@
+{
+  "codeHash": "4f6bd728bd731167",
+  "note": "Post-merge AI. Campaign raced against this. rating-preAI/ holds the pre-merge run (bfa5aae9efa2bdcd) on the SAME SEEDS for seatrials — a 6,667-race paired measurement of what the 63-line merge did.",
+  "cutoffPolicy": {
+    "default": 2,
+    "river": 1
+  },
+  "order": [
+    "seatrials",
+    "ocean",
+    "lake",
+    "lagoon",
+    "redrock",
+    "river",
+    "arctic",
+    "bay",
+    "glowtide",
+    "swamp"
+  ],
+  "files": [
+    "js/script.js",
+    "js/rules.js",
+    "js/planner.js",
+    "js/traffic.js",
+    "js/venuedoc.js",
+    "js/swell.js",
+    "js/water.js"
+  ],
+  "when": "2026-08-13"
+}

@@ -1,0 +1,594 @@
+{
+  "redrock": {
+    "totalLegs": 6,
+    "windDir": 2.094395102393195,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 10,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 2,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 150,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 3,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 38,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 4,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 172,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 5,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 60,
+        "pointOfSail": "reach"
+      },
+      {
+        "leg": 6,
+        "upwind": false,
+        "role": "leeward",
+        "kind": "gate",
+        "twaDeg": 149,
+        "pointOfSail": "run"
+      }
+    ],
+    "marks": [
+      [
+        -1422,
+        -1139
+      ],
+      [
+        -1798,
+        -106
+      ],
+      [
+        29,
+        -24
+      ],
+      [
+        1212,
+        -673
+      ],
+      [
+        366,
+        1480
+      ],
+      [
+        -883,
+        -1628
+      ],
+      [
+        -1356,
+        780
+      ]
+    ]
+  },
+  "river": {
+    "totalLegs": 3,
+    "windDir": -2.7052603405912095,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 24,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 2,
+        "upwind": false,
+        "role": "leeward",
+        "kind": "gate",
+        "twaDeg": 156,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 3,
+        "upwind": false,
+        "role": "leeward",
+        "kind": "gate",
+        "twaDeg": 165,
+        "pointOfSail": "run"
+      }
+    ],
+    "marks": [
+      [
+        -402,
+        -11
+      ],
+      [
+        310,
+        688
+      ],
+      [
+        -2444,
+        2431
+      ],
+      [
+        6480,
+        -6920
+      ],
+      [
+        6056,
+        -7345
+      ]
+    ]
+  },
+  "arctic": {
+    "totalLegs": 2,
+    "windDir": -2.617993877991494,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 120,
+        "pointOfSail": "reach"
+      },
+      {
+        "leg": 2,
+        "upwind": true,
+        "role": null,
+        "kind": "line",
+        "twaDeg": 60,
+        "pointOfSail": "reach"
+      }
+    ],
+    "marks": [
+      [
+        3305,
+        1929
+      ],
+      [
+        2352,
+        1379
+      ],
+      [
+        138,
+        -3095
+      ]
+    ]
+  },
+  "bay": {
+    "totalLegs": 6,
+    "windDir": 0.16205766185365733,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 23,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 2,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 100,
+        "pointOfSail": "reach"
+      },
+      {
+        "leg": 3,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 180,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 4,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 0,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 5,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 180,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 6,
+        "upwind": false,
+        "role": "leeward",
+        "kind": "gate",
+        "twaDeg": 92,
+        "pointOfSail": "reach"
+      }
+    ],
+    "marks": [
+      [
+        2080,
+        808
+      ],
+      [
+        3051,
+        570
+      ],
+      [
+        2037,
+        -1558
+      ],
+      [
+        -629,
+        -1505
+      ],
+      [
+        -1150,
+        1822
+      ],
+      [
+        5263,
+        2923
+      ],
+      [
+        5155,
+        3356
+      ]
+    ]
+  },
+  "swamp": {
+    "totalLegs": 1,
+    "windDir": -0.11555475383101622,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": "windward",
+        "kind": "gate",
+        "twaDeg": 48,
+        "pointOfSail": "beat"
+      }
+    ],
+    "marks": [
+      [
+        -1901,
+        2622
+      ],
+      [
+        -2759,
+        2107
+      ],
+      [
+        1071,
+        -1050
+      ],
+      [
+        740,
+        -1679
+      ]
+    ]
+  },
+  "glowtide": {
+    "totalLegs": 4,
+    "windDir": -0.2793252230406961,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 21,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 2,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 170,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 3,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 124,
+        "pointOfSail": "reach"
+      },
+      {
+        "leg": 4,
+        "upwind": true,
+        "role": "windward",
+        "kind": "gate",
+        "twaDeg": 43,
+        "pointOfSail": "beat"
+      }
+    ],
+    "marks": [
+      [
+        738,
+        -1526
+      ],
+      [
+        -347,
+        4899
+      ],
+      [
+        647,
+        5001
+      ],
+      [
+        -2328,
+        1279
+      ],
+      [
+        -2178,
+        802
+      ],
+      [
+        882,
+        -146
+      ],
+      [
+        -819,
+        1896
+      ]
+    ]
+  },
+  "seatrials": {
+    "totalLegs": 4,
+    "windDir": 0,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": "windward",
+        "kind": "gate",
+        "twaDeg": 0,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 2,
+        "upwind": false,
+        "role": "leeward",
+        "kind": "gate",
+        "twaDeg": 180,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 3,
+        "upwind": true,
+        "role": "windward",
+        "kind": "gate",
+        "twaDeg": 0,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 4,
+        "upwind": false,
+        "role": "leeward",
+        "kind": "gate",
+        "twaDeg": 180,
+        "pointOfSail": "run"
+      }
+    ],
+    "marks": [
+      [
+        -550,
+        0
+      ],
+      [
+        550,
+        0
+      ],
+      [
+        -550,
+        -4000
+      ],
+      [
+        550,
+        -4000
+      ]
+    ]
+  },
+  "ocean": {
+    "totalLegs": 3,
+    "windDir": -1.6580627893946132,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 6,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 2,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 74,
+        "pointOfSail": "reach"
+      },
+      {
+        "leg": 3,
+        "upwind": false,
+        "role": "leeward",
+        "kind": "gate",
+        "twaDeg": 180,
+        "pointOfSail": "run"
+      }
+    ],
+    "marks": [
+      [
+        164,
+        -6744
+      ],
+      [
+        251,
+        -5748
+      ],
+      [
+        -3561,
+        -5520
+      ],
+      [
+        -4433,
+        -1129
+      ],
+      [
+        12345,
+        -2200
+      ],
+      [
+        12293,
+        -2798
+      ]
+    ]
+  },
+  "lake": {
+    "totalLegs": 3,
+    "windDir": -0.45378530717958643,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 14,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 2,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 122,
+        "pointOfSail": "reach"
+      },
+      {
+        "leg": 3,
+        "upwind": false,
+        "role": "leeward",
+        "kind": "gate",
+        "twaDeg": 126,
+        "pointOfSail": "reach"
+      }
+    ],
+    "marks": [
+      [
+        459,
+        2506
+      ],
+      [
+        1217,
+        1855
+      ],
+      [
+        2459,
+        -867
+      ],
+      [
+        -2152,
+        -1340
+      ]
+    ]
+  },
+  "lagoon": {
+    "totalLegs": 6,
+    "windDir": 1.3962634015954638,
+    "legs": [
+      {
+        "leg": 1,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 2,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 2,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 109,
+        "pointOfSail": "reach"
+      },
+      {
+        "leg": 3,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 143,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 4,
+        "upwind": true,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 1,
+        "pointOfSail": "beat"
+      },
+      {
+        "leg": 5,
+        "upwind": false,
+        "role": null,
+        "kind": "round",
+        "twaDeg": 179,
+        "pointOfSail": "run"
+      },
+      {
+        "leg": 6,
+        "upwind": true,
+        "role": "windward",
+        "kind": "gate",
+        "twaDeg": 2,
+        "pointOfSail": "beat"
+      }
+    ],
+    "marks": [
+      [
+        -96,
+        -22
+      ],
+      [
+        78,
+        963
+      ],
+      [
+        1759,
+        85
+      ],
+      [
+        764,
+        -1711
+      ],
+      [
+        -1471,
+        686
+      ]
+    ]
+  }
+}
