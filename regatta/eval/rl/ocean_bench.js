@@ -38,11 +38,21 @@ const VENUE = process.argv[6] || 'ocean';
     // because it writes localStorage AFTER goto, so the page boots on the DEFAULT
     // venue; under that pattern river is identical across SEVEN processes.
     //
-    // OPT-IN ONLY. Switching the default would invalidate every existing
-    // ocean_bench baseline JSON at once, which is an owner call. Set
-    // OCEAN_BENCH_LATE_VENUE=1 to bench river / lagoon / swamp reproducibly, and
-    // remember that those runs are NOT comparable to anchors taken the old way.
-    const LATE_VENUE = process.env.OCEAN_BENCH_LATE_VENUE === '1';
+    // ⭐ OWNER RULING 2026-08-14: FLIPPED. The late write is now the DEFAULT, and
+    // ⛔ EVERY ocean_bench BASELINE JSON TAKEN BEFORE THIS DATE IS RETIRED ON
+    // RIVER, LAGOON AND SWAMP — those anchors were measured the old way and are not
+    // comparable to anything produced now. (The other seven venues are identical
+    // under both patterns, so their anchors survive; verified by a full 16-seed
+    // glowtide anchor reproducing to the second across three processes.)
+    //
+    // The ruling was forced by a landing decision: the Rule 19 penalty guards cost
+    // river five finishers under the old default, and nothing could distinguish that
+    // from the harness moving five finishers. A venue that cannot be measured cannot
+    // be improved, and river is 1.49x with 65 s to find.
+    //
+    // OCEAN_BENCH_EARLY_VENUE=1 restores the old page-loads-on-target-venue path,
+    // for reproducing a pre-2026-08-14 number ONLY. Do not bench a candidate on it.
+    const LATE_VENUE = process.env.OCEAN_BENCH_EARLY_VENUE !== '1';
     if (!LATE_VENUE) {
         await page.addInitScript((v) => {
             localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
