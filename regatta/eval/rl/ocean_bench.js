@@ -108,7 +108,13 @@ const VENUE = process.argv[6] || 'ocean';
                 if (t > 900) break;
                 for (let k = 0; k < bots.length; k++) {
                     const b = bots[k], f = info[k];
-                    if (b.raceState.finished) { if (f.fin == null) { f.fin = Math.round(t); f.pen = b.raceState.totalPenalties || 0; f.ocs = b.raceState.wasOCS ? 1 : 0; } continue; }
+                    if (b.raceState.finished) { if (f.fin == null) { f.fin = Math.round(t); f.pen = b.raceState.totalPenalties || 0; } continue; }
+                    // ⚠️ SAMPLED PER FRAME, because `raceState.wasOCS` DOES NOT EXIST —
+                    // the old read made this column structurally zero for the bench's whole
+                    // life (rule 35; found 2026-08-15 when OCS read 0 on every venue while
+                    // the start research records 22-56% at the gun). `rs.ocs` is transient
+                    // (cleared on return), so the durable bench fact is "was ever OCS".
+                    if (b.raceState.ocs) f.ocs = 1;
                     const lg = b.raceState.leg;
                     if (f.legT[lg] == null) f.legT[lg] = Math.round(t);
                     const twa = Math.abs(norm(b.heading - wd[k])) * 180 / Math.PI;
@@ -130,7 +136,7 @@ const VENUE = process.argv[6] || 'ocean';
                 if (info.every(f => f.fin != null)) break;
             }
             for (const [k, b] of bots.entries()) {
-                if (info[k].fin == null) { info[k].pen = b.raceState.totalPenalties || 0; info[k].ocs = b.raceState.wasOCS ? 1 : 0; }
+                if (info[k].fin == null) { info[k].pen = b.raceState.totalPenalties || 0; }
                 info[k].col = window.__cc[b.name] || {};
             }
             return { nLegs, info };
