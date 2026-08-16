@@ -14431,7 +14431,37 @@ function checkBoatCollisions(dt) {
                     // mark does not lapse because its ower is newly ROW.
                     const r15 = !res.markRoom && res.constraints
                         && res.constraints.indexOf("Rule 15") !== -1;
-                    if (r15 && effectiveRow) {
+                    // RRS 43.1(a) + 19.2(b): if the boat this contact would
+                    // penalize was, at the moment of contact, being denied room
+                    // at an obstruction BY the right-of-way boat — the rule-19
+                    // obligation ledger has held against that boat for the
+                    // stand-on detector's own HOLD, and there is land hard on
+                    // her far side right now — her breach was compelled. The
+                    // foul is the denier's (19.2(b)); the pinned boat is
+                    // exonerated. Same conservatism guards as the grounding
+                    // path: a persistent obligation and real land, never bare
+                    // geometry at the instant of contact.
+                    let r19Flip = false;
+                    const loser19 = (effectiveRow === b1) ? b2 : (effectiveRow === b2) ? b1 : null;
+                    if (loser19 && !res.markRoom) {
+                        const sin19 = loser19._r19Since && loser19._r19Since[effectiveRow.id];
+                        const HOLD19 = (window.__RULES && window.__RULES.hold != null) ? window.__RULES.hold : 0.8;
+                        if (sin19 != null && state.race.timer - sin19 >= HOLD19) {
+                            const g19 = state.course.botGrid;
+                            if (g19) {
+                                const dxF = loser19.x - effectiveRow.x, dyF = loser19.y - effectiveRow.y;
+                                const lF = Math.hypot(dxF, dyF) || 1;
+                                const uxF = dxF / lF, uyF = dyF / lF;
+                                for (let dF = 25; dF <= 75; dF += 25) {
+                                    const cF = g19.cell(loser19.x + uxF * dF, loser19.y + uyF * dF);
+                                    if (!g19.at(cF[0], cF[1])) { r19Flip = true; break; }
+                                }
+                            }
+                        }
+                    }
+                    if (r19Flip) {
+                        triggerPenalty(effectiveRow, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'contact' });
+                    } else if (r15 && effectiveRow) {
                         triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact' });
                     } else if (effectiveRow === b1) triggerPenalty(b2, pInfo);
                     else if (effectiveRow === b2) triggerPenalty(b1, pInfo);
@@ -14494,7 +14524,30 @@ function checkMarkCollisions(dt) {
 
                 boat.speed *= (friction - (friction - impactFactor) * impact);
 
-                if (state.race.status === 'racing') triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact' });
+                // RRS 43.1(b): a boat sailing within MARK-ROOM she is entitled
+                // to is exonerated for breaking rule 31 in an incident with the
+                // boat required to give that room. The entitlement is the rules
+                // engine's own zone snapshot for THIS mark; the incident is that
+                // ower close aboard (2 hull lengths) on her outside at the
+                // moment of the touch. A lone boat hitting the buoy is still
+                // her own foul — exoneration needs the squeeze.
+                let exon31 = false;
+                if (state.race.status === 'racing' && window.Rules && window.Rules.interactions) {
+                    const mIdx31 = state.course.marks.indexOf(mark);
+                    const dSelf31 = Math.hypot(boat.x - mark.x, boat.y - mark.y);
+                    for (const o31 of state.boats) {
+                        if (o31 === boat || o31.raceState.finished) continue;
+                        const dxM = o31.x - boat.x, dyM = o31.y - boat.y;
+                        if (dxM * dxM + dyM * dyM > 110 * 110) continue;
+                        const k31 = [boat.id, o31.id].sort((a, b) => a - b).join('-');
+                        const dat31 = window.Rules.interactions[k31];
+                        const snap31 = dat31 && dat31.zoneSnapshot;
+                        if (!snap31 || snap31.markIndex !== mIdx31 || snap31.entitled !== boat.id) continue;
+                        if (Math.hypot(o31.x - mark.x, o31.y - mark.y) <= dSelf31) continue;
+                        exon31 = true; break;
+                    }
+                }
+                if (state.race.status === 'racing' && !exon31) triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact' });
                 // One response per MARK, not per circle: hitting a committee boat is
                 // one Rule 31 touch, however many circles of its capsule you are in.
                 break;
@@ -21672,7 +21725,14 @@ function updateRule19Ledger() {
             if (o === b || o.raceState.finished) continue;
             const dx = o.x - b.x, dy = o.y - b.y;
             if (dx * dx + dy * dy > 130 * 130) { delete led[o.id]; continue; }
-            if (dx * ax + dy * ay < 45) { delete led[o.id]; continue; }
+            // Hysteresis on the outside test (RRS 43 wiring): an entry is
+            // CREATED only when the other boat sits clearly outside (45u along
+            // the escape axis), but once held it survives the gap COLLAPSING —
+            // the collapse is the squeeze itself, and the contact umpire reads
+            // this ledger at the moment the hulls meet, when the along-axis
+            // distance is hull-to-hull. Without this the obligation record
+            // deletes itself one frame before the only event that needs it.
+            if (dx * ax + dy * ay < (led[o.id] != null ? 10 : 45)) { delete led[o.id]; continue; }
             if (!(window.Rules && window.Rules.isOverlapped && window.Rules.isOverlapped(b, o))) { delete led[o.id]; continue; }
             if (led[o.id] == null) led[o.id] = now;
         }

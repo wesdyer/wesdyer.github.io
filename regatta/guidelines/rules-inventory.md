@@ -101,7 +101,7 @@ first.
 | 29.1 (OCS) | **PARTIAL / HOUSE** | OCS flag on pre-gun crossing, clear by re-crossing or position (anti-deadlock plane at −40u). No recall flags. |
 | 30 (I/Z/U/black) | **ABSENT / HOUSE** | No starting penalties beyond OCS. |
 | 31 (touching a mark) | **ENCODED** | Penalty on contact. |
-| 43 (exoneration) | **ABSENT** (see structural finding 2) | Partial stand-ins only. |
+| 43 (exoneration) | **ENCODED (the owner's two cases), 2026-08-16** | 43.1(b) mark-room: contact immunity (pre-existing `effectiveRow`) + rule-31 exoneration when the zone-snapshot-entitled boat touches THIS mark with the room-ower within 110u on her outside (a lone touch still fouls). 43.1(a)+19.2(b) obstruction room: the contact umpire flips the penalty to the DENIER when the would-be-penalized boat holds a rule-19 ledger entry (≥HOLD 0.8 s) against the ROW boat and land sits within 75u on her far side; the ledger got HYSTERESIS (created ≥45u outside, survives to <10u — the gap collapsing IS the squeeze, and without it the record deleted one frame before the contact that needs it). Tests: `test_exoneration.js` (6 cases + controls), scenarios in the battery. General 43.1(a) (arbitrary compelled breaches) remains ABSENT — only the obstruction-room instance is modeled. |
 | 44 (penalty turns) | **HOUSE** | One 360° net-rotation turn per breach (RRS wants two turns incl. tack+gybe for Part 2, one for rule 31); untaken turns → +15 s each at finish. Deliberate design. |
 
 ## ⚠️ Late finding: windward ROLES exist only on gate-terminated legs
@@ -124,8 +124,10 @@ against 177 real tacks.
    legal pair; worth one scenario.
 2. **No-contact foul** (~905): stand-on forced >0.35 rad at HIGH+ for 0.8 s,
    with needed-gap, role-stability, rule-16-grace and mark-room guards.
-3. **Rule 19 squeeze** (~21747), **Rule 31 mark touch** (~14442).
-4. Nothing for: 16.2, 17, 18.3, 20, 23, exoneration reversals.
+3. **Rule 19 squeeze** (~21747), **Rule 31 mark touch** (~14442, now with the
+   43.1(b) mark-room exoneration), **rule-19 contact flip** (43.1(a), in the
+   contact umpire).
+4. Nothing for: 16.2, 17, 18.3, 20, 23.
 
 ## Existing test nucleus (the battery generalizes these)
 
@@ -134,6 +136,24 @@ assert its own preconditions**; two versions passed on a broken engine because
 the setup wasn't what it claimed), `test_rule11.js` (leeward definition),
 `test_start_crossing.js` / `test_start_line.js` / `test_gates.js` (scoring
 layer), `test_rounding*.js` (course side).
+
+## The battery (2026-08-16 — BUILT)
+
+Scenarios are DATA: `js/rule_scenarios.js` (schema documented in-file —
+anchors, phased placement, and THREE assertion layers: `pre` / `oracle` /
+`behavior`, so a failure names its layer). Consumers:
+- `eval/test_scenarios.js` — the runner (node, per-venue pages, spot search
+  with precondition-driven retry; `retryScope:'any-layer'` for umpire rules
+  whose conservative guards are geometry-sensitive).
+- `rules.html` + `js/rules_viewer.js` — the visual page: the real game
+  renders one scenario looping (boats pinned to the scripted geometry while
+  the live engine runs, so the umpire genuinely fires), rule text and a live
+  oracle/umpire readout underneath, prev/next navigation. `rules.html` is
+  `index.html` plus two script tags — regenerate when the shell changes.
+Seeded with: rules 10–13 core, the rule-13 close-hauled exit (62dfb25),
+rule 15 oracle (acquisition/exception/expiry) AND umpire (contact in the
+grace window), 18.2 (first-to-zone, inside-overlapped, survives-overlap-
+break), 43 (both owner cases + controls), 19.2(b) grounding attribution.
 
 ## Battery priorities that fall out of this
 
