@@ -3062,6 +3062,12 @@ class BotController {
                 } catch(e) { }
 
                 const myRole = (rowBoat === this.boat) ? 'STAND_ON' : 'GIVE_WAY';
+                // (Rule 15's behavioral demotion was tried here and removed: the
+                // rule obliges the acquirer to GIVE ROOM, not to become give-way,
+                // and the full role demotion cost redrock/swamp in thread traffic.
+                // The obligation flows through the umpire instead — contact inside
+                // the acquirer's window penalizes HER — and the graduated stand-on
+                // hold already accepts evasion at HIGH risk.)
 
                 // Prioritize highest risk
                 const riskLevel = { 'LOW':0, 'MEDIUM':1, 'HIGH':2, 'IMMINENT':3 };
@@ -14398,7 +14404,19 @@ function checkBoatCollisions(dt) {
                     }
 
                     const pInfo = { rule: res.rule, reason: res.reason, kind: 'contact' };
-                    if (effectiveRow === b1) triggerPenalty(b2, pInfo);
+                    // RRS 15: a boat that has JUST acquired right of way owes the
+                    // other boat room to keep clear, initially. Contact inside that
+                    // window (2 s, and only when the acquisition was NOT caused by
+                    // the other boat's own actions — the oracle encodes the
+                    // exception) is the acquirer failing to give that room, so the
+                    // penalty goes to HER, not to the boat that had no room to
+                    // respond. Mark-room entitlement is untouched: room owed at a
+                    // mark does not lapse because its ower is newly ROW.
+                    const r15 = !res.markRoom && res.constraints
+                        && res.constraints.indexOf("Rule 15") !== -1;
+                    if (r15 && effectiveRow) {
+                        triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact' });
+                    } else if (effectiveRow === b1) triggerPenalty(b2, pInfo);
                     else if (effectiveRow === b2) triggerPenalty(b1, pInfo);
                     else {
                         triggerPenalty(b1, pInfo);

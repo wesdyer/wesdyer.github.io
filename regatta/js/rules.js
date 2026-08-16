@@ -96,6 +96,10 @@
         init: function() {
             this.interactions = {};
             this.lastUpdate = 0;
+            // Rule 15's exception needs to know WHOSE action caused a ROW change:
+            // per-boat time of the last tack flip, maintained in update().
+            this._lastTack = {};
+            this._tackFlipT = {};
         },
 
         reset: function() {
@@ -310,6 +314,20 @@
             if (!state || !state.boats) return;
             const now = state.time;
 
+            // Per-boat tack-flip clock (Rule 15 exception input). Tracked here,
+            // once per frame per boat, so evaluate() can ask "did the boat that
+            // LOST right of way change tack just before the flip" — that is the
+            // "unless she acquires right of way because of the other boat's
+            // actions" case, and it removes the grace.
+            if (!this._lastTack) { this._lastTack = {}; this._tackFlipT = {}; }
+            for (const bT of state.boats) {
+                if (bT.raceState.finished) continue;
+                const tk = this.getTack(bT);
+                if (this._lastTack[bT.id] !== undefined && this._lastTack[bT.id] !== tk)
+                    this._tackFlipT[bT.id] = now;
+                this._lastTack[bT.id] = tk;
+            }
+
             for (let i = 0; i < state.boats.length; i++) {
                 const b1 = state.boats[i];
                 if (b1.raceState.finished) continue;
@@ -484,7 +502,62 @@
         // evaluate() — Determine ROW for a pair of boats
         // ═══════════════════════════════════════════════════════════
 
+        // ⚠️ RULE 15 IS APPLIED IN evaluate(), OVER EVERY PATH OF THE CORE.
+        // It used to live at the tail of the same-tack branch — BELOW the
+        // rule-10 branch's early return — so a ROW change between opposite-tack
+        // boats, which is exactly what completing a tack produces, never got
+        // rule-15 tracking at all. The owner's tack-exit case (acquire ROW on
+        // reaching close-hauled, other boat must get room to respond) is an
+        // opposite-tack flip: the one acquisition the old placement
+        // structurally missed.
         evaluate: function(b1, b2) {
+            const result = this._evaluateCore(b1, b2);
+            const state = window.state;
+            const now = state.time;
+            const key = [b1.id, b2.id].sort((a, b) => a - b).join('-');
+            const data = this.interactions[key];
+            // RRS 15: "When a boat acquires right of way, she shall initially
+            // give the other boat room to keep clear, unless she acquires
+            // right of way because of the other boat's actions."
+            // Rule 21's keep-clear is skipped: ROW gained over an OCS/penalty
+            // boat IS "because of the other boat's actions" by definition.
+            if (data && result.rowBoat && result.rule !== "Rule 21") {
+                if (data.rowOwner !== result.rowBoat.id) {
+                    // A real ACQUISITION only if this pair already had a known
+                    // owner — the first evaluation of a pair is a meeting, not
+                    // a change, and flagging it would flip the umpire's call on
+                    // every first contact.
+                    const isAcquisition = data.rowOwner !== null && data.rowOwner !== undefined;
+                    const loser = (result.rowBoat === b1) ? b2 : b1;
+                    // ⚠️ THE GRACE REQUIRES THE ACQUIRER'S OWN MANEUVER AS THE
+                    // CAUSE. The first cut armed it on ANY owner change, and in
+                    // raft/thread traffic ROW FLAPS constantly with nobody
+                    // maneuvering — every flap re-armed a 2 s give-room window
+                    // on the current ROW boat, both boats of a grinding pair
+                    // acted give-way at once, and the two tight venues paid for
+                    // it (redrock pooled +6.3 mean, swamp +23 mean). RRS 15
+                    // protects a boat that lost her rights to someone ELSE's
+                    // maneuver; a passive flap is nobody's acquisition. So:
+                    // grace only when the NEW ROW boat's own tack flipped just
+                    // before the change (the owner's tack-onto-starboard case),
+                    // and never when the LOSER's tack handed it over ("because
+                    // of the other boat's actions").
+                    const flips = this._tackFlipT || {};
+                    const winFlip = flips[result.rowBoat.id];
+                    const byMyAction = winFlip !== undefined && (now - winFlip) < 1.5;
+                    const loserFlip = flips[loser.id];
+                    const byOthersActions = loserFlip !== undefined && (now - loserFlip) < 1.0;
+                    data.rowOwner = result.rowBoat.id;
+                    data.rowChangeTime = (isAcquisition && byMyAction && !byOthersActions) ? now : -1e9;
+                }
+                if (now - data.rowChangeTime < 2.0) {
+                    result.constraints.push("Rule 15");
+                }
+            }
+            return result;
+        },
+
+        _evaluateCore: function(b1, b2) {
             const state = window.state;
             const key = [b1.id, b2.id].sort((a,b) => a-b).join('-');
             const data = this.interactions[key];
@@ -664,36 +737,24 @@
                 result.rule = "Rule 12";
             }
 
-            // ─── Rule 15 (Acquiring ROW) ─────────────────────────
-            // RRS 15: "When a boat acquires right of way, she shall
-            // initially give the other boat room to keep clear, unless
-            // she acquires right of way because of the other boat's
-            // actions."
-            //
-            // Implementation: 2-second grace period after ROW changes
-            // hands. During this window, "Rule 15" is flagged as a
-            // constraint on the new ROW boat.
-            if (data) {
-                if (result.rowBoat && data.rowOwner !== result.rowBoat.id) {
-                    data.rowOwner = result.rowBoat.id;
-                    data.rowChangeTime = now;
-                }
-                if (now - data.rowChangeTime < 2.0) {
-                    result.constraints.push("Rule 15");
-                }
-            }
-
+            // (Rule 15 moved to evaluate() — it must cover the opposite-tack
+            // and tacking branches above, whose early returns skipped it.)
             return result;
         },
 
-        // Wrapper for compatibility with existing script.js
+        // Wrapper for compatibility with existing script.js.
+        // ⚠️ constraints is part of the contract now — the umpire and the AI
+        // consume Rule 15 through it. It was silently dropped here for the
+        // engine's whole life, which made every limitation rule dead output
+        // (the rules-inventory's first structural finding).
         getRightOfWay: function(b1, b2) {
             const res = this.evaluate(b1, b2);
             return {
                 boat: res.rowBoat,
                 rule: res.rule,
                 reason: res.reason,
-                markRoom: res.markRoom
+                markRoom: res.markRoom,
+                constraints: res.constraints
             };
         },
 
