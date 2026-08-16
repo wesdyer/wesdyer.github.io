@@ -4463,7 +4463,24 @@ class BotController {
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
                     && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
-                    : 140;
+                    // ⚠️ THE HARD ZONE IS TURNING ROOM, AND TURNING ROOM IS TIME.
+                    // 140u is "a couple of boat-lengths" — at 148 u/s it is 0.95
+                    // seconds, and at 0.9 rad/s of rudder that is not a dodge, it
+                    // is the moment before the grounding. Measured (island 8's
+                    // notch, river 9501 t171-173.5): a give-way boat held 1.6 rad
+                    // straight into the face at 143-148 u/s for 12 seconds — the
+                    // graded far-land term (30000·(1−frac)) is the same order as
+                    // the rival-proximity terms it was traded against, and the
+                    // fixed wall only vetoed inside 140u, where no candidate
+                    // could turn her in time. 1.5 s of way is the wall now, so a
+                    // fast approach meets the veto while the rudder still has
+                    // authority to matter. Slow boats (<93 u/s) are unchanged
+                    // (max(140, ...) reduces to 140 exactly), so the swamp fleet
+                    // (mean 31 u/s) is byte-identical; floe venues keep the fixed
+                    // wall (drifting-ice threads are the other side of rule 5's
+                    // line — arctic is untouched by construction via openWaterAv);
+                    // rounding arcs (arcK) keep their own geometry.
+                    : ((openWaterAv && !arcK) ? Math.max(140, boat.speed * 60 * 1.5) : 140);
                 // ⭐ THE PROBE ROLLS THE BOAT'S OWN TURN. A COMMANDED HEADING IS
                 // NOT A TRACK, AND THE RUDDER IS NOT INSTANTANEOUS.
                 // The ray above starts at the boat and runs along the CANDIDATE
