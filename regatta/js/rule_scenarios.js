@@ -431,6 +431,35 @@
         ],
     });
 
+    // ═══════════════ Known gaps — encoded as scenarios, flagged ══════════
+    // `knownGap: true` = the RIGHT answer per the RRS, asserted against an
+    // engine that does not encode it yet. The runner reports GAP (not FAIL)
+    // while the assertion misses, and flags the scenario loudly the day the
+    // engine starts passing it (time to drop the flag). The visual page shows
+    // the live (wrong) oracle output under the rule text — which is the point.
+
+    S.push({
+        id: 'r18-approach-vs-leave',
+        rule: 'Rule 18.1(a)(3)',
+        title: 'No mark-room between a boat approaching the mark and one leaving it',
+        ruleText: 'Rule 18 ... does not apply between a boat approaching a mark and one leaving it.',
+        knownGap: true, // zone snapshot has no approach-vs-leave test; leg-awareness only partially masks it
+        venue: 'bay', anchor: 'roundMark',
+        boats: [
+            // A has rounded and is LEAVING (sailing away from the mark, on the
+            // next leg's side); B approaches. Both inside the zone, overlapped
+            // by the lateral-distance-blind overlap definition.
+            { name: 'A', dx: 0.55, dy: -0.35, heading: 3.14159 },
+            { name: 'B', dx: -0.75, dy: 0.30, heading: 1.5707963 },
+        ],
+        phases: [{
+            step: 'rules', frames: 5,
+            pre: { dToMark: { boat: 'B', ltZone: 1.0, other: 'A', gtZone: 0.0 } },
+            oracle: { markRoom: null }, // 18 must not apply between them at all
+        }],
+        note: 'A heads south (away, leaving), B heads east (approaching). If a snapshot latches for either boat, 18.1(a)(3) is unencoded.',
+    });
+
     const API = { scenarios: S };
     if (typeof module !== 'undefined' && module.exports) module.exports = API;
     if (root) root.RuleScenarios = API;

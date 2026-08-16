@@ -19,7 +19,7 @@ const ROOT = TREE ? path.join(__dirname, 'rl', TREE, 'regatta') : path.resolve(_
 const DATA = TREE ? path.join(ROOT, 'js', 'rule_scenarios.js') : path.resolve(__dirname, '../js/rule_scenarios.js');
 const SCN = require(DATA).scenarios;
 
-let fails = 0, ran = 0;
+let fails = 0, ran = 0, gaps = 0;
 const check = (label, ok, detail) => {
     console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${label}${ok || !detail ? '' : ' — ' + detail}`);
     if (!ok) fails++;
@@ -307,6 +307,18 @@ const check = (label, ok, detail) => {
                 if (!out.fixtureMiss) break;
             }
             if (out.fixtureMiss) { check(`[fixture] ${s.id}`, false, out.fixtureMiss + ' (all anchor candidates tried)'); continue; }
+            if (s.knownGap) {
+                // xfail: the scenario asserts the RRS-correct answer against an
+                // engine known not to encode it. A miss is reported as GAP (not
+                // counted); a PASS is flagged loudly — the gap closed, drop the flag.
+                if (out.fails.length) {
+                    gaps++;
+                    console.log(`  GAP   ${s.id} — known unencoded (${out.fails[0].msg})`);
+                } else {
+                    check(`${s.id}: KNOWN GAP NOW PASSES — remove knownGap flag`, false, 'the engine now encodes this; promote the scenario');
+                }
+                continue;
+            }
             if (!out.fails.length) check(`${s.id}: all layers`, true);
             else for (const f of out.fails) check(`${s.id} [${f.layer}]`, false, f.msg);
         }
@@ -314,6 +326,6 @@ const check = (label, ok, detail) => {
     }
 
     await browser.close();
-    console.log(`\n${ran} scenarios, ${fails ? fails + ' FAILURES' : 'ALL OK'}`);
+    console.log(`\n${ran} scenarios, ${gaps} known gap(s), ${fails ? fails + ' FAILURES' : 'ALL OK'}`);
     process.exit(fails ? 1 : 0);
 })();
