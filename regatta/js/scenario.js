@@ -1,4 +1,4 @@
-// THE SCENARIO LAB (lab.html) — a mini scenario constructor for testing the
+// THE SCENARIO CONSTRUCTOR (scenario.html) — for building scenarios that test the
 // umpire and the AI: who has rights, and will they duck?
 //
 // Owner's spec (2026-08-16): no loading screen; just open water; add simple
