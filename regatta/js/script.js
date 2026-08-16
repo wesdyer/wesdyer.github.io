@@ -12971,10 +12971,30 @@ function updateBoat(boat, dt) {
         boat.lastLocalWindSide = currentSide;
     }
 
-    // Clear Tacking state when close-hauled
+    // Clear Tacking state when close-hauled.
+    //
+    // ⚠️ "CLOSE-HAULED" IS WHAT THE FLEET ACTUALLY SAILS, NOT 45°. RRS 13 ends
+    // "when she is on a close-hauled course" — and this game's close-hauled is
+    // TWA ~38° (polar beat angle 42°, sailed TWA 38-39, no-go boundary 31.5°).
+    // With the exit at 45°, a boat that completes her tack directly onto her
+    // real close-hauled angle NEVER satisfies the test: the flag only cleared
+    // during the acceleration bear-away past 45°, which a well-sailed boat
+    // holding a tight lane never does. Measured (bay, full race): 4.2% of all
+    // racing time flagged, median TWA while flagged 37.96° — boats sailing
+    // their normal beat, not boats mid-tack; episodes to 16.4 s. The owner's
+    // report is the player-facing symptom: on starboard at 38-39° TWA, rule 13
+    // said HE keeps clear, so an approaching port-tacker was given rights over
+    // him.
+    //
+    // ⚠️ AND THE THRESHOLD MUST SIT BELOW WHAT A WIND SHIFT CAN REACH (owner,
+    // on reviewing a 35° draft): this test reads INSTANTANEOUS TWA in an
+    // oscillating breeze, so a header can hold the flag on a boat whose COURSE
+    // is already close-hauled — with regions swinging ±5-8°, a 35° exit leaves
+    // a 38°-course boat flagged through every header. 0.40 rad ≈ 23° (owner's
+    // 20-25° range): past head to wind by that much the swing is unambiguous
+    // under any shift, and the flag describes the tack, not the weather.
     if (boat.raceState.isTacking) {
-        // Close-hauled is ~45 deg (PI/4).
-        if (angleToWind >= Math.PI / 4.0) {
+        if (angleToWind >= 0.40) {
              boat.raceState.isTacking = false;
         }
     }
