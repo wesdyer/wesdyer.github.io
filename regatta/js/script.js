@@ -6649,17 +6649,43 @@ const LAND_TEXTURES = {
     // BROADBAND FLOOR, so on a quiet tile it inflates without anything actually being wrong.
     // Judge periodicity and seams on ABSOLUTE amplitude; the ratio misleads in both
     // directions and has now done so four times on this venue pair.
-    forestfloor:  { src: 'assets/images/terrain/lake/forestfloor.png', tile: 128, alpha: 0.45 },
+    // ⚠️ RAISED 0.45 -> 0.70 ON 2026-08-15, and the reason is worth keeping. The lake's ground
+    // was reading as flat plowed dirt beside the new forest, and the first guess was that the
+    // TILE was wrong — too orange, too saturated. It is not: at sat 0.51 it sits mid-pack among
+    // shipped grounds (grass 0.83, ocean-scrub 0.76, redrock-sandstone 0.75, bay-scrub 0.59).
+    // What was actually wrong is that NONE OF ITS LITTER REACHED THE SCREEN. getLandPattern
+    // squashes the WHOLE master into a tile x tile canvas, so a 1024px photograph of needles
+    // and pebbles becomes 128px, and 0.45 of that landed at on-screen sd 3.14 — the quietest
+    // ground on the lake, below its own sand at 4.21. At 0.70 it lands 4.89, beside bay-lane's
+    // 5.08, and the needles read as needles. The mean does not move, because body IS the tile
+    // mean; alpha here is contrast and nothing else.
+    // A REPLACEMENT TILE WAS OFFERED AND DECLINED. It measured #83633D/sat 0.53 against this
+    // one's #7B623C/sat 0.51 — the same colour — and the same on-screen sd at the same alpha,
+    // so it did not address the complaint. It also carried a horizontal wrap seam of +1.81 luma
+    // where this tile carries +0.47 at MORE texture. The alpha was the whole fix.
+    forestfloor:  { src: 'assets/images/terrain/lake/forestfloor.png', tile: 128, alpha: 0.70 },
     // 0.45 rather than the sands' usual 0.70, because this tile carries real litter where a
     // beach carries almost nothing: it lands on-screen sd 4.19, between bay-lane (3.63) and
     // arctic granite (4.89). THE PEBBLES ARE WHY IT SITS THAT HIGH — they are what makes this
     // a glacial shore rather than a tinted beach, and at 0.30 they fade to a mottle.
     lakesand:     { src: 'assets/images/terrain/lake/sand.png',        tile: 128, alpha: 0.45 },
-    // 0.40, up from the pre-registered 0.30, and the first alpha on this venue to be measured
-    // UP rather than down. The delivered slab is smooth (sd 6.74 at tile 256) and its mineral
-    // banding is the entire reason the kind exists, so it lands on-screen sd 2.70 — level with
-    // bay-rock's 2.85 — where 0.30 left it at 2.02 and the pink and rust barely read.
-    gneiss:       { src: 'assets/images/terrain/lake/gneiss.png',      tile: 256, alpha: 0.40 },
+    // ⚠️ SECOND SLAB, 2026-08-15, AND THIS ONE IS THE CASE WHERE ALPHA COULD NOT HAVE SAVED IT.
+    // Worth keeping next to the forest floor's note directly above, which is the opposite case.
+    // The first slab was smooth to the point of being featureless: soft lavender blobs, full-res
+    // sd 7.22, landing on-screen sd 2.70 — the quietest surface in the venue. Raising its alpha
+    // to 1.00 would have taken it to 6.80, so CONTRAST was recoverable. What was not recoverable
+    // is CONTENT: no fracture lines, no lichen, no whaleback edges. Turning the gain up on soft
+    // blobs gives you louder soft blobs. The new slab carries the rock's actual structure, so
+    // the redraw was the right call here and the alpha was the right call there — the test is
+    // whether the thing you want is IN the tile and merely faint, or absent.
+    // 0.55 measured: on-screen sd 5.55, between lake sand's 4.21 and the 6.66 ceiling. Higher
+    // reads better on a single slab and worse across several, because this tile's structure is
+    // strong enough that the 256-unit repeat becomes legible as wallpaper once it is loud.
+    // ⚠️ tile STAYS 256. It is tempting to raise it to cut the repeat over a 700-unit slab, but
+    // tile is in WORLD UNITS: 256 puts a whaleback lobe at about 28 m, which is what an ice-
+    // scoured outcrop actually measures. 512 would halve the repetition and give 56 m lobes,
+    // which is no longer granite, it is scenery.
+    gneiss:       { src: 'assets/images/terrain/lake/gneiss.png',      tile: 256, alpha: 0.55 },
     // ── BLUEWATER BONANZA'S TWO GROUNDS ─────────────────────────────────────
     // Both delivered 2026-08-14. Both bodies in ISLAND_STYLES are their delivered tile's own
     // mean, so both alphas below are pure contrast knobs, and BOTH ARE MEASURED — these are
@@ -7402,6 +7428,79 @@ function canopyAlpha(p) {
     return CANOPY_FADE_MIN + (1 - CANOPY_FADE_MIN) * (d / CANOPY_FADE_RANGE);
 }
 
+// ── WHICH CROWNS ARE ALLOWED TO FADE ────────────────────────────────────────
+// A crown fades for exactly one reason: it can hide the player's hull. A hull is only ever
+// on WATER, so a tree whose crown lies entirely over land can never hide one — and fading it
+// costs the venue a tree for nothing. Every crown that opens is a crown that stopped being
+// scenery, so the fade is spent only where it buys something.
+//
+// That makes the test a plain boolean rather than a proportion, and the reasoning is worth
+// keeping: it is tempting to fade in proportion to how much of the crown overhangs water, so
+// neighbouring trees do not fade by different amounts. But a crown that is one tenth over
+// water can still have the boat under that tenth, and a tenth of a fade would not clear it.
+// Any overhang at all is enough to hide a hull, so any overhang at all earns the full rule.
+//
+// ⚠️ ISLAND RINGS ARE {x, y} OBJECTS, NOT [x, y] PAIRS. VenueDoc.pointInRing reads ring[i][0]
+// and is for the DOCUMENT's rings; the compiled course carries vertices the other way round.
+// Handing island vertices to pointInRing returns false for every point in silence, which
+// reads as "all water" and fades the whole wood. Hence the local test below.
+function pointInVerts(x, y, verts) {
+    let inside = false;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+        const xi = verts[i].x, yi = verts[i].y, xj = verts[j].x, yj = verts[j].y;
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+}
+
+// AWASH SHAPES ARE WATER. A shoal, a lily bed, a weed bed is something you sail over, so a
+// crown reaching across one is still reaching over water and still has to get out of the way.
+function pointOnLand(x, y) {
+    const islands = (state.course && state.course.islands) || [];
+    for (const isl of islands) {
+        if (isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
+        const dx = x - isl.x, dy = y - isl.y;
+        if (dx * dx + dy * dy > isl.radius * isl.radius) continue;   // bounding circle first
+        if (!pointInVerts(x, y, isl.vertices)) continue;
+        let inHole = false;
+        for (const h of (isl.holes || [])) {
+            if (h && h.length >= 3 && pointInVerts(x, y, h)) { inHole = true; break; }
+        }
+        if (!inHole) return true;
+    }
+    return false;
+}
+
+// The stem, sixteen points round the rim, and eight at two thirds out. The rim is where the
+// answer usually lives — a tree rooted well inland whose crown still reaches past the shore is
+// exactly the case this must catch, and its stem sample says "land". The inner ring is for the
+// other shape of the same question: a crown big enough to cover a whole pond or a narrow
+// channel, where the rim is on land all the way round and the water is underneath the middle.
+//
+// ⚠️ THE SAMPLE COUNT IS CHOSEN BY WHICH WAY IT FAILS, not by cost. A false "over water" costs
+// one tree a little transparency near the player. A false "on land" leaves a SOLID crown over
+// open water, which can swallow the hull — the one thing the whole fade exists to prevent. So
+// this errs toward detecting overlap: at sixteen points a 198u white pine samples its rim every
+// 39u, finer than the 56u hull that has to stay visible under it.
+const CANOPY_RIM_SAMPLES = 16;
+const CANOPY_INNER_SAMPLES = 8;
+function crownOverWater(p, worldW) {
+    if (p._overWater !== undefined) return p._overWater;
+    const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
+    const r = worldW * 0.5;
+    let over = !pointOnLand(x, y);
+    for (let k = 0; !over && k < CANOPY_RIM_SAMPLES; k++) {
+        const a = (k / CANOPY_RIM_SAMPLES) * Math.PI * 2;
+        if (!pointOnLand(x + r * Math.cos(a), y + r * Math.sin(a))) over = true;
+    }
+    for (let k = 0; !over && k < CANOPY_INNER_SAMPLES; k++) {
+        const a = (k + 0.5) / CANOPY_INNER_SAMPLES * Math.PI * 2;   // offset off the rim spokes
+        if (!pointOnLand(x + r * 0.66 * Math.cos(a), y + r * 0.66 * Math.sin(a))) over = true;
+    }
+    if (p.motion !== 'drift') p._overWater = over;   // a drifter's answer moves with it
+    return over;
+}
+
 // WHICH SPRITE THIS PROP SHOWS IN THIS PLANE, which is not always its own.
 //
 // A TWO-PLANE KIND draws in both passes from ONE placement. A whole tree is the case: the
@@ -7507,8 +7606,10 @@ function drawProps(ctx, plane) {
         // drawImage still costs the composite. Worth an explicit skip on a venue holding
         // 1500 trees: the fade reaches twenty hull lengths, so the crowns nearest the
         // camera — the big ones, the expensive ones — are exactly the ones at zero.
+        // ...and only a crown that OVERHANGS WATER fades at all: one standing wholly on land
+        // cannot hide a hull, so it stays a solid tree. See crownOverWater.
         const alpha = (PROP_PLANE_ALPHA[plane] || 1)
-                    * (plane === 'canopy' ? canopyAlpha(p) : 1);
+                    * (plane === 'canopy' && crownOverWater(p, w) ? canopyAlpha(p) : 1);
         if (alpha <= 0.004) continue;
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -22051,7 +22152,7 @@ const ISLAND_STYLES = {
     // granite/redrock/coastalrock convention for a look with nothing growing on it, and the
     // stroke carries coastalrock's own offsets onto this body (an 18.7 L* drop against its
     // 18.6), so the coastline holds the same weight. No trees: bare rock.
-    gneiss:      { body: '#807A7F', stroke: '#4E4B54', veg: '#938F95', rock: '#605D64', trees: false },  // body = lake-gneiss DELIVERED tile mean
+    gneiss:      { body: '#847F81', stroke: '#4E4B54', veg: '#938F95', rock: '#605D64', trees: false },  // body = lake-gneiss DELIVERED tile mean (2nd slab, 2026-08-15; was #807A7F)
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the

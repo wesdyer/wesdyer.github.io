@@ -729,3 +729,21 @@ select {
    exceptions was fragile; giving everything the gutter and exempting the sections is not. */
 .mode-panel > *:not(.in-sect):not(.k) { margin-left: 16px; margin-right: 16px; }
 .mode-panel > .k { padding-left: 16px; padding-right: 16px; }
+
+/* ── Gated fields ────────────────────────────────────────────────────────
+   MOONLIGHT IS ONE SETTING WEARING TWO FIELDS, and both are meaningless while `night` is
+   0 — a bearing for a moon that is not up steers nothing. So the night toggle owns them:
+   they grey out and stop taking input rather than sitting there accepting numbers that
+   change nothing on screen, which is the same rule the water swatches are held to.
+   Greyed rather than hidden, because unlike a swatch these two are a MODE the author is
+   choosing not to be in, and a mode you cannot see is a mode you never turn on. */
+.in-grid input:disabled { opacity: 0.38; cursor: not-allowed; }
+.k.is-off { opacity: 0.38; }
+
+/* A checkbox in the two-column input grid. Sized to itself rather than stretched to the
+   column like `.in-wide`, and tinted with the editor's accent so its on-state matches every
+   other armed control. */
+.in-check {
+  justify-self: start; width: 15px; height: 15px; margin: 0;
+  accent-color: var(--ed-accent); cursor: pointer;
+}

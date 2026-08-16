@@ -1213,16 +1213,17 @@ const PROP_KINDS = {
     //
     // Anyone adding a sixth tree checks BOTH axes against its neighbours, because size alone
     // can no longer carry one.
-    'lake-pine-white':       { label: 'Eastern white pine', world: 110, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'lake-birch-paper':      { label: 'Paper birch',        world:  80, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'lake-aspen-quaking':    { label: 'Quaking aspen',      world:  68, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'lake-fir-balsam':       { label: 'Balsam fir',         world:  55, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'lake-alder-speckled':   { label: 'Speckled alder',     world:  48, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-pine-white':       { label: 'Eastern white pine', world: 110, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-pine-red':         { label: 'Red pine',           world:  88, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-birch-paper':      { label: 'Paper birch',        world:  80, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-aspen-quaking':    { label: 'Quaking aspen',      world:  68, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-fir-balsam':       { label: 'Balsam fir',         world:  55, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-alder-speckled':   { label: 'Speckled alder',     world:  48, plane: 'canopy', contact: 'none', motion: 'fixed' },
     // The ground layer. Bracken is what the open floor of a northern pine wood is actually
     // made of and will be placed most; the blueberry is for thin ground between the pines and
     // for the cracks in a [[lake-gneiss]] shelf, which is where lowbush blueberry really grows.
-    'lake-fern-bracken':     { label: 'Bracken fern',       world:  34, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'lake-blueberry-lowbush':{ label: 'Lowbush blueberry',  world:  22, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-fern-bracken':     { label: 'Bracken fern',       world:  34, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-blueberry-lowbush':{ label: 'Lowbush blueberry',  world:  22, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-morning-glory':   { label: 'Beach morning glory', world: 30, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-grass-coastal':   { label: 'Coastal grass',     world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },

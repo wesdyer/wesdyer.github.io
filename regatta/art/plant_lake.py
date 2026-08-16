@@ -51,9 +51,10 @@ itself, so 1.8x is 3.24x fewer props than life size for the same canopy. Every r
 the art was measured against survives — the ladder holds (pine > aspen > birch > fir >
 alder > bracken > blueberry) and each species keeps its own size spread.
 
-⚠️ RED PINE IS MISSING ON PURPOSE. lake-pine-red is still a slot; when it lands it takes a
-share of white pine's role on the drained shores and this file needs a new SPECIES row, a
-suitability function and a re-run of --calibrate.
+RED PINE LANDED 2026-08-15 and took its share out of white pine's rather than adding to it.
+The two pines are the venue's one real ecological pair: white pine on the drained points and
+thin soil over granite, red pine further back on the dry sandy ground where white pine will
+not go. See suitability() for the two terms that keep them from being the same tree twice.
 """
 import argparse
 import json
@@ -87,6 +88,10 @@ SPECIES = {
         kind="lake-pine-white", world=110, height=32.0,
         bands=[((9, 11), 0.25), ((11, 13), 0.50), ((13, 16), 0.25)],
         cluster=(2, 7), spread=(180, 480), layer="tree"),
+    "redpine": dict(
+        kind="lake-pine-red", world=88, height=27.0,
+        bands=[((8, 9.5), 0.28), ((9.5, 11), 0.47), ((11, 13), 0.25)],
+        cluster=(4, 12), spread=(160, 420), layer="tree"),
     "aspen": dict(
         kind="lake-aspen-quaking", world=68, height=19.0,
         bands=[((6, 7.2), 0.30), ((7.2, 8.6), 0.45), ((8.6, 10), 0.25)],
@@ -137,7 +142,12 @@ SHORE_BAND = 200.0               # how far inland the shore zones reach
 COVE = 0.50                      # enclosure above this is a damp cove
 
 # The brief's canopy split, and the shrub emphasis. GAIN is solved against these.
-SHARE_TREE = {"pine": 0.40, "aspen": 0.30, "birch": 0.175, "fir": 0.125}
+# ⚠️ THE PINE SHARE IS SPLIT, NOT ADDED TO. The brief's 35-45% pine is a statement about how
+# much of this wood is pine, so red pine takes its share OUT of white pine's rather than
+# arriving on top of it: 0.22 + 0.18 is the same 0.40 the file has always solved against, and
+# aspen, birch and fir are untouched. Red pine gets the slightly smaller half because white
+# pine is the bigger tree and still the structural one.
+SHARE_TREE = {"pine": 0.22, "redpine": 0.18, "aspen": 0.30, "birch": 0.175, "fir": 0.125}
 SHARE_SHRUB = {"alder": 0.18, "bracken": 0.42, "blueberry": 0.40}
 
 # ── SPECIES GAINS ───────────────────────────────────────────────────────────
@@ -159,8 +169,8 @@ SHARE_SHRUB = {"alder": 0.18, "bracken": 0.42, "blueberry": 0.40}
 # Re-solved 2026-08-15 after B and C were cut and EXAGGERATE dropped to 1.8. Both moves
 # change WHERE plants land, and the gains are what convert a suitability field into the
 # brief's species split, so they cannot survive a target change unexamined.
-GAIN = {"pine": 0.2133, "aspen": 0.0192, "birch": 0.1012, "fir": 0.013,
-        "alder": 1.0, "bracken": 0.023, "blueberry": 0.0369}
+GAIN = {"pine": 0.0985, "redpine": 0.5664, "aspen": 0.018, "birch": 0.0896, "fir": 0.0122,
+        "alder": 1.0, "bracken": 0.0209, "blueberry": 0.0313}
 
 
 def _fft_disc(radius_cells):
@@ -298,6 +308,21 @@ def suitability(g):
     w *= np.where(sand, 0.03, 1.0)
     w *= 0.55 + 0.45 * np.clip(d_water / 500.0, 0, 1)      # a little back from the water
     W["pine"] = w * land
+
+    # RED PINE — the DRY-SITE pine, and the counterpart to white pine rather than a second
+    # copy of it. Red pine takes the poorest, most drained ground on a Minnesota lake: sandy
+    # and gravelly outwash, rock ridges, the backs of points — and it takes it in nearly pure
+    # even-aged stands, which is why its cluster count is high and its spread wide.
+    # ⚠️ TWO THINGS SEPARATE ITS FIELD FROM WHITE PINE'S, and without them this is just a
+    # recolour. It stands FURTHER BACK from the water, and IT DOES NOT REFUSE SAND — white
+    # pine multiplies sand by 0.03, this leaves it near 1 — so the thin ground behind a beach
+    # is exactly where the two species part company and the eye can see them do it.
+    w = np.exp(-np.maximum(enc - 0.22, 0) / 0.28)
+    w *= np.where(rock, 1.30, 1.0)
+    w *= np.where(sand, 0.85, 1.0)
+    w *= np.clip((d_water - 120) / 520.0, 0, 1) ** 0.5
+    w *= 0.40 + 0.60 * light                                # the open dry stands, not deep shade
+    W["redpine"] = w * land
 
     # QUAKING ASPEN — the interior fill, in colonies. Behind the shoreline, in regrowth and
     # clearing edges. Not on bare rock, not on the wet margin.

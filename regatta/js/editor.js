@@ -5606,28 +5606,98 @@ function drawGustStipple(r, on, rgb, total) {
 //
 // Three of them, because three is what the renderer reads: baseColor at the centre of the
 // depth gradient, deepColor at its rim, and shallowColor over every painted `shallows`
-// zone. The shallow swatch arrived WITH that renderer use — for years shallowColor was
-// copied into WATER_CONFIG and read by nothing, and the rule here is that a swatch which
-// changes nothing on screen is a lie. Still no swatch for `shorelineColor` (drives only
-// generated-island glow, which document venues never take) or for `heroColor`, which is
-// deliberately not hand-pickable: it is DERIVED — see deriveHeroColor.
+// zone.
+//
+// ⚠️ THE SHALLOW SWATCH USED TO HIDE ITSELF on a document with no `shallows` zone, on the
+// grounds that a swatch changing nothing on screen is a lie. That rule is still right about
+// `shorelineColor` and is why there is no swatch for it (it drives only generated-island
+// glow, which document venues never take), but it was wrong here, for two reasons that only
+// became visible once "Derive from surface" existed. The button WRITES shallowColor, so
+// hiding the swatch meant seeding a colour the author could neither see nor tune — the seed
+// is supposed to land in the ballpark so it can be nudged, and that one nudge was
+// impossible. And a hidden shallowColor is how a stale value survives: five venues
+// (arctic, lake, redrock, river, swamp) carry `#22d3ee`-family water inherited from the
+// tropical default in water.js, painting nothing, waiting to ambush the first shallows zone
+// anybody draws. A colour that is inert TODAY but authoritative the moment a zone appears is
+// not a dead control, it is a deferred one, and the honest thing is to show it.
+//
+// Still no swatch for `heroColor`, which is deliberately not hand-pickable: it is DERIVED —
+// see deriveHeroColor.
 const PAL_KEYS = { 'pal-base': 'baseColor', 'pal-deep': 'deepColor', 'pal-shallow': 'shallowColor' };
+
+// The puff/lull tints, which live one level down in `palette.gusts` and as [r,g,b] rather
+// than hex. They get swatches for the same reason the shallow one does — they are live,
+// seven venues author them, and they are the one part of the water's look the editor could
+// previously strand: the game prefers an AUTHORED `gusts` block over deriving from the
+// water, so recolouring a venue used to leave the old venue's cat's-paws pasted on the new
+// water. Ordered dark-to-bright so the four read as the ramp they are.
+const GUST_KEYS = {
+    'pal-gust-dark': 'gustDark', 'pal-gust-mid': 'gustMid',
+    'pal-lull-mid': 'lullMid', 'pal-lull-bright': 'lullBright'
+};
+
+// The moonlight amount to restore when the night toggle goes back on, so switching it off to
+// see the water in daylight does not cost the value you had tuned. Declared HERE rather than
+// beside its handler because paletteRefresh reads it, and paletteRefresh runs during boot —
+// a `let` further down the file would still be in its temporal dead zone at that point.
+// Starts at Glowtide's 0.62, the library's one worked night.
+let lastNight = 0.62;
+
+const palRGB = (h) => {
+    const s = String(h || '').replace('#', '');
+    return /^[0-9a-f]{6}$/i.test(s) ? [0, 2, 4].map(i => parseInt(s.substring(i, i + 2), 16)) : null;
+};
+const palHEX = (a) => Array.isArray(a) && a.length >= 3
+    ? '#' + a.slice(0, 3).map(c => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0')).join('')
+    : null;
+
+// WHAT THE GAME WILL ACTUALLY USE for the puffs, mirroring applyVenuePalette's own
+// precedence exactly — authored block, else derived from this document's water, else the
+// bay blues. Mirrored rather than approximated because a swatch that shows a colour the
+// water is not using is the lie the shallow swatch's rule already forbids. In particular a
+// document that overrides NO water colour gets DEFAULT_GUST_COLORS and not a derivation,
+// which is why the `baseColor || deepColor` test is here too.
+function effectiveGusts() {
+    const dp = (doc && doc.palette) || {};
+    if (dp.gusts) return dp.gusts;
+    const live = window.WATER_CONFIG || {};
+    if (dp.baseColor || dp.deepColor) {
+        return gustTintFrom({
+            baseColor: dp.baseColor || live.baseColor,
+            deepColor: dp.deepColor || live.deepColor
+        });
+    }
+    return (typeof DEFAULT_GUST_COLORS !== 'undefined') ? DEFAULT_GUST_COLORS : null;
+}
 
 function paletteRefresh() {
     if (!$('pal-base')) return;
-    // The shallow swatch is CONDITIONAL: shallowColor paints `shallows` zones and nothing
-    // else, so on a document with none it is exactly the dead swatch the rule above
-    // forbids. It appears with the first zone and leaves with the last — paletteRefresh
-    // runs on every committed edit, so drawing one brings the swatch out by itself.
-    const hasShallows = !!(doc && doc.shapes && doc.shapes.some(s => s.kind === 'shallows'));
-    if ($('pal-shallow')) $('pal-shallow').hidden = !hasShallows;
-    if ($('pal-shallow-label')) $('pal-shallow-label').hidden = !hasShallows;
     const live = window.WATER_CONFIG || {};
     const dp = (doc && doc.palette) || {};
     for (const id in PAL_KEYS) {
         const k = PAL_KEYS[id];
         const v = dp[k] || live[k] || '#0e7490';
         $(id).value = /^#[0-9a-f]{6}$/i.test(v) ? v : '#0e7490';
+    }
+    // Shown whether authored or derived, so the four swatches always report the puffs the
+    // water is actually wearing. Editing one is what turns it into an override.
+    const g = effectiveGusts() || {};
+    for (const id in GUST_KEYS) {
+        if (!$(id)) continue;
+        $(id).value = palHEX(g[GUST_KEYS[id]]) || '#0e7490';
+    }
+    const night = (dp.night != null ? dp.night : (live.night || 0));
+    if (night > 0) lastNight = night;          // so the toggle can put it back
+    if ($('pal-night')) $('pal-night').value = night;
+    if ($('pal-moondir')) $('pal-moondir').value = (dp.moonDir != null ? dp.moonDir
+        : (live.moonDir != null ? live.moonDir : 25));
+    // The toggle is a VIEW of `night > 0`, not a second field. There is no boolean in the
+    // document and there should not be: the renderer reads an amount, nightAmt() treats
+    // anything <= 0 as day, and a separate flag could disagree with the number it gates.
+    if ($('pal-night-on')) $('pal-night-on').checked = night > 0;
+    for (const [inp, lab] of [['pal-night', 'pal-night-label'], ['pal-moondir', 'pal-moondir-label']]) {
+        if ($(inp)) $(inp).disabled = !(night > 0);
+        if ($(lab)) $(lab).classList.toggle('is-off', !(night > 0));
     }
     palettePreview();
 }
@@ -8351,15 +8421,147 @@ function deriveHeroColor() {
     p.heroColor = '#' + sh.map((c, i) =>
         Math.round(c * a + ba[i] * (1 - a)).toString(16).padStart(2, '0')).join('');
 }
+// Were the puff tints DERIVED from the water they are sitting on, or hand-picked? The
+// difference decides whether moving the water is allowed to take them with it. Measured
+// rather than flagged, because the document records no such flag: recompute what this
+// document's CURRENT water would derive and compare. Equal means the block is a frozen
+// derivation and is stale the moment the water moves; different means somebody tuned it and
+// it is not the editor's to throw away — hit "Derive from surface" to reset those on purpose.
+function gustsAreDerived() {
+    const dp = (doc && doc.palette) || {};
+    if (!dp.gusts || !(dp.baseColor || dp.deepColor)) return false;
+    const live = window.WATER_CONFIG || {};
+    const d = gustTintFrom({
+        baseColor: dp.baseColor || live.baseColor,
+        deepColor: dp.deepColor || live.deepColor
+    });
+    if (!d) return false;
+    return Object.values(GUST_KEYS).every(k => {
+        const a = dp.gusts[k], b = d[k];
+        return Array.isArray(a) && Array.isArray(b) &&
+            a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+    });
+}
+
 for (const id in PAL_KEYS) {
     $(id).addEventListener('change', () => {
         if (!doc) return;
         if (!doc.palette) doc.palette = {};
+        // Checked BEFORE the write, against the water the tints were derived from.
+        const drop = (PAL_KEYS[id] === 'baseColor' || PAL_KEYS[id] === 'deepColor') && gustsAreDerived();
         doc.palette[PAL_KEYS[id]] = $(id).value;
+        if (drop) delete doc.palette.gusts;
         deriveHeroColor();
         afterEdit(true, 'water colour');
     });
 }
+
+for (const id in GUST_KEYS) {
+    if (!$(id)) continue;
+    $(id).addEventListener('change', () => {
+        if (!doc) return;
+        if (!doc.palette) doc.palette = {};
+        // AUTHORING ONE PINS ALL FOUR, because applyVenuePalette takes the block whole —
+        // `activeGustColors = gusts || ...` — so a partial block would leave the other three
+        // undefined rather than falling back to the derivation they are currently showing.
+        // Seeded from what is in force, so pinning changes nothing except the one swatch moved.
+        const cur = effectiveGusts() || {};
+        const g = {};
+        for (const k of Object.values(GUST_KEYS)) {
+            const v = cur[k];
+            if (Array.isArray(v)) g[k] = v.slice(0, 3);
+        }
+        const picked = palRGB($(id).value);
+        if (picked) g[GUST_KEYS[id]] = picked;
+        doc.palette.gusts = g;
+        afterEdit(true, 'puff tints');
+    });
+}
+
+// Turning night OFF DELETES the key rather than writing `night: 0`, because 0 is what the
+// merged palette already supplies and nine of ten venues author no `night` at all — a
+// document should not grow a line meaning "unchanged". The amount is remembered in
+// `lastNight` — declared up with the palette keys, because paletteRefresh reads it and runs
+// long before this line — so flicking the toggle off and back on returns the water you had.
+if ($('pal-night-on')) $('pal-night-on').addEventListener('change', () => {
+    if (!doc) return;
+    if (!doc.palette) doc.palette = {};
+    if ($('pal-night-on').checked) {
+        doc.palette.night = lastNight > 0 ? lastNight : 0.62;
+    } else {
+        const n = doc.palette.night;
+        if (n > 0) lastNight = n;
+        delete doc.palette.night;   // moonDir is left alone: it is inert without night,
+                                    // and keeping it preserves the bearing across a toggle
+    }
+    afterEdit(true, $('pal-night-on').checked ? 'night on' : 'night off');
+});
+if ($('pal-night')) $('pal-night').addEventListener('change', () => {
+    if (!doc) return;
+    if (!doc.palette) doc.palette = {};
+    const v = Math.max(0, Math.min(1, parseFloat($('pal-night').value) || 0));
+    // Typing 0 into the amount is the same statement as clearing the toggle, and has to
+    // leave the document in the same state — otherwise "off" would mean two different things
+    // depending on which control said it.
+    if (v > 0) { doc.palette.night = v; lastNight = v; } else { delete doc.palette.night; }
+    afterEdit(true, 'moonlight');
+});
+if ($('pal-moondir')) $('pal-moondir').addEventListener('change', () => {
+    if (!doc) return;
+    if (!doc.palette) doc.palette = {};
+    doc.palette.moonDir = (((parseFloat($('pal-moondir').value) || 0) % 360) + 360) % 360;
+    afterEdit(true, 'moon bearing');
+});
+
+// ── Derive from surface ────────────────────────────────────────────────────
+// A STARTING POINT, not a binding: pick the surface carefully, press this, then nudge
+// whatever does not look right. Nothing re-derives afterwards, so a hand-tuned deep stays
+// hand-tuned.
+//
+// THE RATIOS ARE THE LIBRARY'S OWN, not invented. Measured across the nine authored venue
+// waters, base -> deep runs a median of hue +1.9deg, L x0.65, S x1.08, and base -> shallow
+// hue -4.8deg, L x1.40, S x0.90 — deep water is the same hue darker and a little more
+// saturated, shallow is lighter and a little greener. Checked against every venue, the rule
+// lands within dE 8.4 of the hand-picked deep on 8 of 9 (median 3.9) and within dE 8.3 of
+// the hand-picked shallow on 6 of 9 (median 7.2), which is what "right ballpark" has to mean.
+//
+// THE TWO IT MISSES ARE THE ARGUMENT FOR THE ADJUST STEP, not against the button. Bluewater's
+// deep (#1e3a8a, dE 27.6) swings 23deg toward violet at the SAME lightness as its surface, and
+// Pearl Lagoon's shallow (#4df5f0, dE 37.4) is a bright mint nothing derives. Those are the
+// two venues whose identity IS their water, and a rule that reproduced them would be a rule
+// that had no house style to reproduce.
+const SEED_RATIO = {
+    deepColor:    { hue:  1.9 / 360, l: 0.65, s: 1.08 },
+    shallowColor: { hue: -4.8 / 360, l: 1.40, s: 0.90 }
+};
+function seedFromSurface(hex, r) {
+    const c = palRGB(hex);
+    if (!c) return null;
+    const [h, s, l] = rgbToHsl(c[0], c[1], c[2]);
+    const clamp = (v) => Math.max(0, Math.min(1, v));
+    return palHEX(hslToRgb((h + r.hue + 1) % 1, clamp(s * r.s), clamp(l * r.l)));
+}
+$('btn-pal-seed').addEventListener('click', () => {
+    if (!doc) return;
+    const live = window.WATER_CONFIG || {};
+    const base = (doc.palette && doc.palette.baseColor) || live.baseColor;
+    const deep = seedFromSurface(base, SEED_RATIO.deepColor);
+    const shallow = seedFromSurface(base, SEED_RATIO.shallowColor);
+    if (!deep || !shallow) { toast('Pick a surface colour first'); return; }
+    if (!doc.palette) doc.palette = {};
+    // The surface is PINNED even when it came from the venue rather than the document.
+    // Without it the document would carry a deep and a shallow derived from a colour it does
+    // not state, and they would silently disagree the next time the venue's own water moved.
+    doc.palette.baseColor = base;
+    doc.palette.deepColor = deep;
+    doc.palette.shallowColor = shallow;
+    // Puffs and hero go back to derived rather than being written: they already have
+    // derivations the game trusts, and an authored copy is just a value that can drift.
+    delete doc.palette.gusts;
+    deriveHeroColor();
+    afterEdit(true, 'derive water colours');
+    toast('Deep, shallow and tints derived from the surface');
+});
 // Back to the colours this course was SAVED with — not to the venue's built-in ones. Picking
 // four colours is a matter of nudging them and looking, and the thing you want on the way back
 // is where you started this session, which is what the save holds. (A course that has never
