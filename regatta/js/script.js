@@ -587,7 +587,21 @@ class BotController {
             if (!done) {
                 for (const oB of state.boats) {
                     if (oB === this.boat || oB.raceState.finished) continue;
-                    if (Math.hypot(oB.x - this.boat.x, oB.y - this.boat.y) < 120) { done = true; break; }
+                    if (Math.hypot(oB.x - this.boat.x, oB.y - this.boat.y) < 120) {
+                        // ⚠️ A PINNED NEIGHBOUR DOES NOT VETO THE WALK. This abort
+                        // exists because gradient-walking blind past a boat under way
+                        // is the Freezing-Robot hazard — but river 9502 showed two
+                        // boats grinding the same bank AND each other (749 boat
+                        // contacts each), where this line locked BOTH walks forever:
+                        // each boat was the other's <120u rival, so each pin trigger
+                        // fired and instantly self-cancelled, 770 s at 6-18 u/s. A
+                        // rival that is itself quasi-stationary in sustained contact
+                        // (latched, under 40 u/s) is part of the pin, not traffic;
+                        // walking clear of it is the only move either boat has.
+                        const oC = oB.controller;
+                        const oPinned = oC && (oC.iceEscapeTimer || 0) > 0 && oB.speed * 60 < 40;
+                        if (!oPinned) { done = true; break; }
+                    }
                 }
             }
             if (!done && this.boat.speed * 60 > 40) {
@@ -3048,6 +3062,12 @@ class BotController {
                 } catch(e) { }
 
                 const myRole = (rowBoat === this.boat) ? 'STAND_ON' : 'GIVE_WAY';
+                // (Rule 15's behavioral demotion was tried here and removed: the
+                // rule obliges the acquirer to GIVE ROOM, not to become give-way,
+                // and the full role demotion cost redrock/swamp in thread traffic.
+                // The obligation flows through the umpire instead — contact inside
+                // the acquirer's window penalizes HER — and the graduated stand-on
+                // hold already accepts evasion at HIGH risk.)
 
                 // Prioritize highest risk
                 const riskLevel = { 'LOW':0, 'MEDIUM':1, 'HIGH':2, 'IMMINENT':3 };
@@ -4443,7 +4463,24 @@ class BotController {
                     && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
                     && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0))
                     ? Math.max(60, Math.min(140, boat.speed * 60 * 1.4))
-                    : 140;
+                    // ⚠️ THE HARD ZONE IS TURNING ROOM, AND TURNING ROOM IS TIME.
+                    // 140u is "a couple of boat-lengths" — at 148 u/s it is 0.95
+                    // seconds, and at 0.9 rad/s of rudder that is not a dodge, it
+                    // is the moment before the grounding. Measured (island 8's
+                    // notch, river 9501 t171-173.5): a give-way boat held 1.6 rad
+                    // straight into the face at 143-148 u/s for 12 seconds — the
+                    // graded far-land term (30000·(1−frac)) is the same order as
+                    // the rival-proximity terms it was traded against, and the
+                    // fixed wall only vetoed inside 140u, where no candidate
+                    // could turn her in time. 1.5 s of way is the wall now, so a
+                    // fast approach meets the veto while the rudder still has
+                    // authority to matter. Slow boats (<93 u/s) are unchanged
+                    // (max(140, ...) reduces to 140 exactly), so the swamp fleet
+                    // (mean 31 u/s) is byte-identical; floe venues keep the fixed
+                    // wall (drifting-ice threads are the other side of rule 5's
+                    // line — arctic is untouched by construction via openWaterAv);
+                    // rounding arcs (arcK) keep their own geometry.
+                    : ((openWaterAv && !arcK) ? Math.max(140, boat.speed * 60 * 1.5) : 140);
                 // ⭐ THE PROBE ROLLS THE BOAT'S OWN TURN. A COMMANDED HEADING IS
                 // NOT A TRACK, AND THE RUDDER IS NOT INSTANTANEOUS.
                 // The ray above starts at the boat and runs along the CANDIDATE
@@ -13085,10 +13122,30 @@ function updateBoat(boat, dt) {
         boat.lastLocalWindSide = currentSide;
     }
 
-    // Clear Tacking state when close-hauled
+    // Clear Tacking state when close-hauled.
+    //
+    // ⚠️ "CLOSE-HAULED" IS WHAT THE FLEET ACTUALLY SAILS, NOT 45°. RRS 13 ends
+    // "when she is on a close-hauled course" — and this game's close-hauled is
+    // TWA ~38° (polar beat angle 42°, sailed TWA 38-39, no-go boundary 31.5°).
+    // With the exit at 45°, a boat that completes her tack directly onto her
+    // real close-hauled angle NEVER satisfies the test: the flag only cleared
+    // during the acceleration bear-away past 45°, which a well-sailed boat
+    // holding a tight lane never does. Measured (bay, full race): 4.2% of all
+    // racing time flagged, median TWA while flagged 37.96° — boats sailing
+    // their normal beat, not boats mid-tack; episodes to 16.4 s. The owner's
+    // report is the player-facing symptom: on starboard at 38-39° TWA, rule 13
+    // said HE keeps clear, so an approaching port-tacker was given rights over
+    // him.
+    //
+    // ⚠️ AND THE THRESHOLD MUST SIT BELOW WHAT A WIND SHIFT CAN REACH (owner,
+    // on reviewing a 35° draft): this test reads INSTANTANEOUS TWA in an
+    // oscillating breeze, so a header can hold the flag on a boat whose COURSE
+    // is already close-hauled — with regions swinging ±5-8°, a 35° exit leaves
+    // a 38°-course boat flagged through every header. 0.40 rad ≈ 23° (owner's
+    // 20-25° range): past head to wind by that much the swing is unambiguous
+    // under any shift, and the flag describes the tack, not the weather.
     if (boat.raceState.isTacking) {
-        // Close-hauled is ~45 deg (PI/4).
-        if (angleToWind >= Math.PI / 4.0) {
+        if (angleToWind >= 0.40) {
              boat.raceState.isTacking = false;
         }
     }
@@ -13576,21 +13633,80 @@ function hullCrossedLine(boat, ax, ay, bx, by) {
     // driving updateBoatRaceState directly carried a stale one; that silently mis-rotated the
     // previous hull and lost the second crossing of a reused gate.
     const rs = boat.raceState;
-    const prev = hullPolygonAt(rs.lastPos.x, rs.lastPos.y, boat.heading);
     const cur = hullPolygonAt(boat.x, boat.y, boat.heading);
     const ex = bx - ax, ey = by - ay;
-    let minP = Infinity, maxP = -Infinity, minC = Infinity, maxC = -Infinity;
-    for (let i = 0; i < prev.length; i++) {
-        const sp = (prev[i].x - ax) * ey - (prev[i].y - ay) * ex;
-        if (sp < minP) minP = sp;
-        if (sp > maxP) maxP = sp;
-        const sc = (cur[i].x - ax) * ey - (cur[i].y - ay) * ex;
-        if (sc < minC) minC = sc;
-        if (sc > maxC) maxC = sc;
-    }
-    if (!((maxP <= 0 && maxC > 0) || (minP >= 0 && minC < 0))) return false;
+    let minC = Infinity, maxC = -Infinity, iMin = 0, iMax = 0;
     for (let i = 0; i < cur.length; i++) {
-        if (checkLineIntersection(prev[i].x, prev[i].y, cur[i].x, cur[i].y, ax, ay, bx, by)) return true;
+        const sc = (cur[i].x - ax) * ey - (cur[i].y - ay) * ex;
+        if (sc < minC) { minC = sc; iMin = i; }
+        if (sc > maxC) { maxC = sc; iMax = i; }
+    }
+    // ⚠️ EXACT HANDOFF: the previous frame's extremes are CACHED, not reconstructed.
+    // The old form rebuilt the previous hull as "current hull translated to lastPos"
+    // — same heading — and the comment above argued a boat turns too little per frame
+    // for that to matter. Measured on river seed 9402 ('Petal', the zero-contact DNF):
+    // it matters exactly once per race, at the only moment that counts. Crossing the
+    // start line at a shallow angle WHILE TURNING, the hull gains ~1.2u of signed
+    // offset per frame while the rotation shifts the reconstructed boundary by
+    // ~0.2-0.3u per frame — so at the first frame the true minimum went negative, the
+    // reconstructed previous minimum read -0.2 instead of +0.04, both sides of the
+    // leading-edge test were already negative, and the crossing fell into the crack.
+    // After that the hull straddles the line and the test can never fire for the rest
+    // of the passage: she sailed the whole race on leg 0, orbiting her aim point.
+    // Caching last frame's extremes per line makes yesterday's `cur` literally
+    // today's `prev` — a sign transition cannot be missed by construction.
+    // The cache lives on raceState (rebuilt every reset) keyed by the line's
+    // endpoints, so a moved mark starts a fresh entry rather than inheriting one.
+    // ⚠️ Stamped with the world clock and honoured only when CONTINUOUS: a leg
+    // change stops this line being tested, and an entry left over from the last
+    // visit would compare today's position against a week-old hull and fire a
+    // phantom crossing the moment a reused gate comes back into play. An entry
+    // older than ~2 frames means the watch lapsed — reconstruct, as on first sight.
+    const key = (ax | 0) + ':' + (ay | 0) + ':' + (bx | 0) + ':' + (by | 0);
+    if (!rs._lineExtremes) rs._lineExtremes = {};
+    const prevE = rs._lineExtremes[key];
+    const contiguous = prevE && (state.time - prevE.t) < (WORLD_CLOCK / 60) * 2.5;
+    rs._lineExtremes[key] = { min: minC, max: maxC, t: state.time };
+    let minP, maxP;
+    let prevHull = null;
+    if (contiguous) {
+        minP = prevE.min; maxP = prevE.max;
+    } else {
+        // First sight of this line: reconstruct, as before.
+        prevHull = hullPolygonAt(rs.lastPos.x, rs.lastPos.y, boat.heading);
+        minP = Infinity; maxP = -Infinity;
+        for (let i = 0; i < prevHull.length; i++) {
+            const sp = (prevHull[i].x - ax) * ey - (prevHull[i].y - ay) * ex;
+            if (sp < minP) minP = sp;
+            if (sp > maxP) maxP = sp;
+        }
+    }
+    const upFire = maxP <= 0 && maxC > 0;
+    const downFire = minP >= 0 && minC < 0;
+    if (!(upFire || downFire)) return false;
+    // BETWEEN THE MARKS, not around an end — same distinction as before, but read
+    // off the LEADING VERTEX itself rather than by sweeping the reconstructed
+    // previous hull. At the transition frame the reconstruction can already sit
+    // on the far side (that is the crack fixed above), so its vertex sweeps do
+    // not intersect the line and the old confirmation vetoed the very crossing
+    // the leading-edge test had just found. The leading vertex is ON the line to
+    // within a frame of travel at the moment this fires, so its along-line
+    // parameter IS where the hull is crossing; a small margin covers the frame
+    // of travel past an end.
+    // Any vertex ON THE NEW SIDE this frame confirms if it projects into the
+    // segment — at the transition frame the far-side vertices sit within one
+    // frame of travel of the line, so where they project is where the hull is
+    // crossing. Testing all of them (not only the extreme) keeps the crossing
+    // right at a pin end, where the leading corner can hang just outside the
+    // mark while the rest of the bow crosses inside it.
+    const len2 = ex * ex + ey * ey;
+    if (len2 < 1e-9) return false;
+    for (let i = 0; i < cur.length; i++) {
+        const sc = (cur[i].x - ax) * ey - (cur[i].y - ay) * ex;
+        if (downFire ? sc < 0 : sc > 0) {
+            const u = ((cur[i].x - ax) * ex + (cur[i].y - ay) * ey) / len2;
+            if (u >= -0.02 && u <= 1.02) return true;
+        }
     }
     return false;
 }
@@ -14433,7 +14549,49 @@ function checkBoatCollisions(dt) {
                     }
 
                     const pInfo = { rule: res.rule, reason: res.reason, kind: 'contact' };
-                    if (effectiveRow === b1) triggerPenalty(b2, pInfo);
+                    // RRS 15: a boat that has JUST acquired right of way owes the
+                    // other boat room to keep clear, initially. Contact inside that
+                    // window (2 s, and only when the acquisition was NOT caused by
+                    // the other boat's own actions — the oracle encodes the
+                    // exception) is the acquirer failing to give that room, so the
+                    // penalty goes to HER, not to the boat that had no room to
+                    // respond. Mark-room entitlement is untouched: room owed at a
+                    // mark does not lapse because its ower is newly ROW.
+                    const r15 = !res.markRoom && res.constraints
+                        && res.constraints.indexOf("Rule 15") !== -1;
+                    // RRS 43.1(a) + 19.2(b): if the boat this contact would
+                    // penalize was, at the moment of contact, being denied room
+                    // at an obstruction BY the right-of-way boat — the rule-19
+                    // obligation ledger has held against that boat for the
+                    // stand-on detector's own HOLD, and there is land hard on
+                    // her far side right now — her breach was compelled. The
+                    // foul is the denier's (19.2(b)); the pinned boat is
+                    // exonerated. Same conservatism guards as the grounding
+                    // path: a persistent obligation and real land, never bare
+                    // geometry at the instant of contact.
+                    let r19Flip = false;
+                    const loser19 = (effectiveRow === b1) ? b2 : (effectiveRow === b2) ? b1 : null;
+                    if (loser19 && !res.markRoom) {
+                        const sin19 = loser19._r19Since && loser19._r19Since[effectiveRow.id];
+                        const HOLD19 = (window.__RULES && window.__RULES.hold != null) ? window.__RULES.hold : 0.8;
+                        if (sin19 != null && state.race.timer - sin19 >= HOLD19) {
+                            const g19 = state.course.botGrid;
+                            if (g19) {
+                                const dxF = loser19.x - effectiveRow.x, dyF = loser19.y - effectiveRow.y;
+                                const lF = Math.hypot(dxF, dyF) || 1;
+                                const uxF = dxF / lF, uyF = dyF / lF;
+                                for (let dF = 25; dF <= 75; dF += 25) {
+                                    const cF = g19.cell(loser19.x + uxF * dF, loser19.y + uyF * dF);
+                                    if (!g19.at(cF[0], cF[1])) { r19Flip = true; break; }
+                                }
+                            }
+                        }
+                    }
+                    if (r19Flip) {
+                        triggerPenalty(effectiveRow, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'contact' });
+                    } else if (r15 && effectiveRow) {
+                        triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact' });
+                    } else if (effectiveRow === b1) triggerPenalty(b2, pInfo);
                     else if (effectiveRow === b2) triggerPenalty(b1, pInfo);
                     else {
                         triggerPenalty(b1, pInfo);
@@ -14494,7 +14652,30 @@ function checkMarkCollisions(dt) {
 
                 boat.speed *= (friction - (friction - impactFactor) * impact);
 
-                if (state.race.status === 'racing') triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact' });
+                // RRS 43.1(b): a boat sailing within MARK-ROOM she is entitled
+                // to is exonerated for breaking rule 31 in an incident with the
+                // boat required to give that room. The entitlement is the rules
+                // engine's own zone snapshot for THIS mark; the incident is that
+                // ower close aboard (2 hull lengths) on her outside at the
+                // moment of the touch. A lone boat hitting the buoy is still
+                // her own foul — exoneration needs the squeeze.
+                let exon31 = false;
+                if (state.race.status === 'racing' && window.Rules && window.Rules.interactions) {
+                    const mIdx31 = state.course.marks.indexOf(mark);
+                    const dSelf31 = Math.hypot(boat.x - mark.x, boat.y - mark.y);
+                    for (const o31 of state.boats) {
+                        if (o31 === boat || o31.raceState.finished) continue;
+                        const dxM = o31.x - boat.x, dyM = o31.y - boat.y;
+                        if (dxM * dxM + dyM * dyM > 110 * 110) continue;
+                        const k31 = [boat.id, o31.id].sort((a, b) => a - b).join('-');
+                        const dat31 = window.Rules.interactions[k31];
+                        const snap31 = dat31 && dat31.zoneSnapshot;
+                        if (!snap31 || snap31.markIndex !== mIdx31 || snap31.entitled !== boat.id) continue;
+                        if (Math.hypot(o31.x - mark.x, o31.y - mark.y) <= dSelf31) continue;
+                        exon31 = true; break;
+                    }
+                }
+                if (state.race.status === 'racing' && !exon31) triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact' });
                 // One response per MARK, not per circle: hitting a committee boat is
                 // one Rule 31 touch, however many circles of its capsule you are in.
                 break;
@@ -21799,7 +21980,14 @@ function updateRule19Ledger() {
             if (o === b || o.raceState.finished) continue;
             const dx = o.x - b.x, dy = o.y - b.y;
             if (dx * dx + dy * dy > 130 * 130) { delete led[o.id]; continue; }
-            if (dx * ax + dy * ay < 45) { delete led[o.id]; continue; }
+            // Hysteresis on the outside test (RRS 43 wiring): an entry is
+            // CREATED only when the other boat sits clearly outside (45u along
+            // the escape axis), but once held it survives the gap COLLAPSING —
+            // the collapse is the squeeze itself, and the contact umpire reads
+            // this ledger at the moment the hulls meet, when the along-axis
+            // distance is hull-to-hull. Without this the obligation record
+            // deletes itself one frame before the only event that needs it.
+            if (dx * ax + dy * ay < (led[o.id] != null ? 10 : 45)) { delete led[o.id]; continue; }
             if (!(window.Rules && window.Rules.isOverlapped && window.Rules.isOverlapped(b, o))) { delete led[o.id]; continue; }
             if (led[o.id] == null) led[o.id] = now;
         }
