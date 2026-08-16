@@ -453,11 +453,29 @@ CLASS_ADDON = {
     ),
 }
 
+# ⚠️ THE HAZARD CLAUSE USED TO MANDATE A SPIKY SILHOUETTE AND THAT WAS ONE VENUE'S ANSWER
+# MISTAKEN FOR THE RULE. It read "it needs an aggressive, spiky or heavy silhouette", which is
+# a fair description of a coral head or a reef and flatly contradicts several honest hazards:
+# a glacial boulder is ice-SMOOTHED by definition, and a swim raft is a square wooden
+# platform. Stillwater Lake declared both and the assembled prompt then argued with its own
+# subject — the same defect this file has now been bitten by three times (see the venue-colour
+# clauses above), and the portrait note records what a generator does with a contradiction: it
+# resolves it by dropping one half AT RANDOM.
+#
+# What art-pipeline 2 actually requires is narrower than spikiness: an `ambient` prop must
+# never be confusable with a `hazard`, and the distinction has to survive with COLOUR REMOVED
+# — different silhouette FAMILIES, not different hues. Spikiness is one way to be a different
+# family. Being dense and hard-edged where the vegetation is ragged and textured is another,
+# and it is the one a boulder uses. So the clause now states the requirement and lets the
+# subject choose how to meet it.
 ROLE_ADDON = {
     "hazard": (
-        "This is a HAZARD the player must avoid: it needs an aggressive, spiky or heavy "
-        "silhouette that telegraphs danger at a glance, and must hold strong contrast "
-        "against both pale turquoise and near-black water."
+        "This is a HAZARD the player must avoid. It must telegraph that before contact and "
+        "hold strong contrast against both pale turquoise and near-black water. Its "
+        "silhouette must belong to a plainly different FAMILY from the soft ragged "
+        "vegetation around it — heavy, dense and hard-edged, whether that hardness comes "
+        "from spikes, from angular planes or from one smooth solid mass. The distinction "
+        "has to survive with the colour removed."
     ),
     "ambient": (
         "This is AMBIENT decoration with no collision. Its silhouette must be soft, "

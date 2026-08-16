@@ -5262,7 +5262,7 @@ function applyVenuePalette(venueKey) {
     // Derived from the MERGED palette, like the puffs — so a document that authors its own
     // water gets a stream in it without authoring a second colour that could disagree.
     activeCurrentColor = currentTintFrom(pal);
-    GUST_SPRITES = null; // rebake puff/lull sprites in the new tint
+    _puffCal = null;     // re-solve the puff tone alphas against the new water
 }
 
 // Apply a venue's condition ranges on top of resetGame's randomized defaults.
@@ -14444,15 +14444,20 @@ function checkNearMisses(dt) {
 // see refreshBotGrid for what reading it raw cost.
 const WORLD_CLOCK = 0.24;
 
-// HOW FAR THE CAMERA LOOKS PAST THE BOW, as a fraction of the frame's height. 0.25 puts the
-// boat three quarters of the way down the screen and gives the water ahead three quarters of
-// the frame instead of half. Read only in heading mode — see the note at the camera follow.
+// HOW FAR THE CAMERA LOOKS PAST THE BOW, as a fraction of the frame's height. The boat ends
+// up at `0.5 + this` down the screen, so 1/6 puts it two thirds of the way down and splits
+// the frame two-to-one in favour of the water ahead. Read only in heading mode — see the
+// note at the camera follow.
 //
-// ⚠️ THE BOAT MUST KEEP ROOM BELOW IT. drawBoatInstruments hangs its panel BI_DROP + BI_H
-// under the hull and projects it through the real transform, so it follows the boat down;
-// at 0.25 there is a quarter of the frame beneath and it clears comfortably. Push this much
-// past 0.3 and that panel starts running off the bottom edge.
-const CAM_LOOK_AHEAD = 0.25;
+// ⚠️ IT IS A TRADE, NOT A FREE WIN, and that is why it is not larger. Everything the offset
+// buys ahead of the bow it takes from ASTERN, where the boat on your transom is. At 1/4 that
+// was a third of the rearward view gone; 1/6 keeps more of it while still giving the forward
+// half of the frame most of the picture.
+//
+// ⚠️ THE BOAT MUST ALSO KEEP ROOM BELOW IT. drawBoatInstruments hangs its panel BI_DROP +
+// BI_H under the hull and projects it through the real transform, so it follows the boat
+// down. Past about 0.3 that panel starts running off the bottom edge.
+const CAM_LOOK_AHEAD = 1 / 6;
 
 function update(dt) {
     state.time += WORLD_CLOCK * dt;
@@ -14835,7 +14840,11 @@ function update(dt) {
         // pressure cue AND the one that most easily becomes a curtain. The gradient below
         // the ceiling is what carries the reading; the ceiling is what keeps it readable.
         const _c = cometCfg();
-        const chance = Math.min(STREAK_MAX_SPAWN, _c.dens0 + _c.dens1 * windiness * (0.3 + 0.7 * t * t));
+        // ⚠️ THE PRESSURE WEIGHT IS THE CONTRAST. The constant term is density you get for
+        // being on windy water at all; the t² term is density you get for being on the WINDY
+        // SIDE of this course. Measured puff:clear was 1.5-1.7 against the 2.5 this layer's
+        // own note claims to deliver, so the constant came down and the weighted term went up.
+        const chance = Math.min(STREAK_MAX_SPAWN, _c.dens0 + _c.dens1 * windiness * (0.18 + 0.82 * t * t));
         if (fxRand() >= chance) continue;
         createParticle(sx, sy, 'wind', {
             life: 1.0,
@@ -15286,9 +15295,23 @@ const WIND_WATER_RECHECK = 0.12;  // seconds between "am I still over water" tes
 // a fast parcel still draws a longer streak than a slow one beside it. And `span` stays
 // absolute, so a 4-knot Gatorgrass streak is still finer and shorter than a 16-knot
 // Bluewater one. The layer stops being uniform-bare; it does not start lying about knots.
-const STREAK_REF_WIND = 9;        // knots the fixed tail window was tuned around
+// ⚠️ 9 -> 12. This is the wind the fixed tail window was tuned around, and a course whose
+// median sits below it gets the window stretched so a slow parcel still draws a readable
+// mark. At 9 it barely engaged on Stillwater (median 7.5 -> a 1.2x stretch, leaving 6-knot
+// streaks 31 units long — shorter than a boat). At 12 that course gets 1.6x. A course
+// already at or above 12 knots gets `max(1, ...)` = exactly 1, so every fresh-breeze venue
+// keeps the window it has.
+const STREAK_REF_WIND = 12;       // knots the fixed tail window was tuned around
 const STREAK_TAIL_MAX = 2.5;      // most the window may stretch, so a lull cannot draw a comb
-const STREAK_FLOOR_FRAC = 0.6;    // floor, as a fraction of the course's own median
+// ⚠️ 0.6 -> 0.42. The floor is what `windiness` measures up from, and on a light course it
+// was sitting so close to the median that the whole light HALF of the water came out near
+// zero: Stillwater's 6-knot water scored 0.31 and drew 5 comets on screen. Six knots of
+// breeze puts real cat's-paws on real water — that is a patch a sailor reads, not a hole.
+//
+// ⚠️ IT CANNOT AFFECT A WINDY VENUE. The floor is `min(STREAK_MIN_WIND, med * this)`, so on
+// any course whose median is above ~13 knots the absolute 5.5 cap decides it and this value
+// is never consulted. Bluewater, Glacier Sound and Redrock are untouched.
+const STREAK_FLOOR_FRAC = 0.42;   // floor, as a fraction of the course's own median
 let _streakRef = { floor: STREAK_MIN_WIND, span: 9, tailStep: WIND_TAIL_STEP, fadeIn: WIND_FADE_IN };
 function computeStreakRef() {
     const P = state.wind.pressure;
@@ -15379,7 +15402,17 @@ const CUR_HALO_A = 0.55;          // halo alpha, x the core
 // see the note in streakChannels for why they are clamps rather than coefficients.
 const STREAK_MAX_ALPHA = 0.55;      // never opaque: boats, marks and labels stay on top
 const STREAK_MAX_HALFWIDTH = 2.3;   // world units, so ~4.6 px across the head at 1:1
-const STREAK_MAX_SPAWN = 0.20;      // per attempt, 2 attempts a frame — the density ceiling
+// ⚠️ THE CEILING WAS THE BINDING CONSTRAINT, not the ramp. At 0.20 per attempt with two
+// attempts a frame the layer tops out at ~24 spawns a second, which over a 4.5 s life is
+// ~108 alive and — since the spawn box is 1.35x the screen on each axis and only about a
+// third of it lands in view — barely 38 comets on screen AT MAXIMUM PRESSURE. Measured, the
+// actual population was 5 on Stillwater and 16 on Redrock (eval/_puff_read.js): far under
+// even that ceiling, on the two venues whose whole point is reading a patchy breeze.
+//
+// A player cannot read a gradient off five marks. Raised so the windy end can reach a
+// readable population; the floor and the ramp below decide where it actually sits, and the
+// lull still goes bare because `windiness` gates it, not this.
+const STREAK_MAX_SPAWN = 0.50;      // per attempt, 2 attempts a frame — the density ceiling
 const WIND_BEACH_FADE = 0.35;     // seconds to fade out on reaching land — and the
                                   // look-ahead, so the fade finishes AT the shore
 
@@ -15497,14 +15530,24 @@ const COMET = {
     // old width the streaks were competing with the boats for the eye rather than sitting
     // under them. STREAK_MAX_HALFWIDTH came down with them so the ceiling still bites.
     w0: 0.9,  w1: 1.05,              // half-width, same
-    // ⚠️ 0.50 -> 0.40. Light air should be drawn as FINE white marks, not as pale fat ones:
-    // once the layer had a floor low enough to spawn on a 4-knot venue at all, the width it
-    // spawned at read as a fresh-breeze streak that had merely lost its colour. The lower
-    // floor is safe now for the same reason it was not before — density and length are no
-    // longer collapsing at the same time (see computeStreakRef).
-    wLight: 0.40,                    // width multiplier in the lightest air the layer draws
+    // ⚠️ 0.40 -> 0.62, and the reason the 0.40 was wrong is that the premise behind it was
+    // not true yet. It was set on the argument that density and length no longer collapse
+    // with width — but measured per wind band (eval/_comet_lowend.js), on Stillwater, where
+    // 72% of the water sits under 8 knots, all THREE still did: 31-43 units long, 0.39-0.56
+    // half-width, 5-14 comets on screen, against 100u / 1.2 / 36 in the 15-20 band. Three
+    // collapsing channels is the compounding failure computeStreakRef was written to stop,
+    // one rung further down the ramp than it was tuned for.
+    //
+    // ⚠️ THE TOP IS UNTOUCHED BY CONSTRUCTION, which is why this is the safe lever: the
+    // multiplier is `wLight + (1 - wLight) * abs`, and `abs` reaches 1 in a fresh breeze, so
+    // the value here cancels out entirely there. It moves the light end and nothing else.
+    wLight: 0.62,                    // width multiplier in the lightest air the layer draws
     taper: 0.45,                     // body profile: 1 = straight cone, lower = holds width
-    dens0: 0.035, dens1: 0.21        // spawn chance floor and pressure-weighted span
+    // ⚠️ DENSITY IS THE PRESSURE CUE, and it was too thin to be one. `dens1` carries the
+    // spread and it was set when the ceiling above clipped everything anyway. The floor
+    // stays low on purpose: it is what keeps a lull sparse rather than merely dimmer, which
+    // is both what a sailor sees and the only encoding that survives on a dark palette.
+    dens0: 0.05, dens1: 0.55         // spawn chance floor and pressure-weighted span
 };
 const cometCfg = () => (typeof window !== 'undefined' && window.__COMET) ? Object.assign({}, COMET, window.__COMET) : COMET;
 
@@ -17666,58 +17709,120 @@ function drawWater(ctx) {
     }
 }
 
-// Puff/lull sprites: the radial gradient is baked ONCE per venue palette to an
-// offscreen canvas, then each gust is a single drawImage. Building 25 fresh
-// gradients + huge ellipse fills per frame was one of the biggest paint costs.
-let GUST_SPRITES = null;
 // ── A PUFF IS A PATCH OF DIFFERENT-COLOURED WATER, AND NOTHING ELSE ─────────
 //
-// A cat's-paw is the water going dark and rough; a hole is the water going glassy and
-// pale. That is the whole visual. It does NOT get its own wind graphic — the wind it
-// carries is already in the field, so the comet layer draws it: inside a puff the streaks
-// run longer, wider, denser and warmer, because `getWindAt` says the wind there is
-// stronger. Two layers drawing "wind" is two layers to reconcile, and they never agreed.
+// A cat's-paw is the water going dark and rough; a hole is the water going glassy and pale.
+// That is the whole visual. It does NOT get its own wind graphic — the wind it carries is
+// already in the field, so the comet layer draws it: inside a puff the streaks run longer,
+// wider, denser and warmer, because `getWindAt` says the wind there is stronger. Two layers
+// drawing "wind" is two layers to reconcile, and they never agreed.
 //
-// Glacier Sound's puffs used to bake white flurry streaks along their own axis
-// (`palette.gusts.snow`). They read as a second wind direction laid over the first, at a
-// different angle from the comets, and they are gone. The field is the single source.
-function bakeGustSprites() {
+// ── WHY IT IS A FACETED PATCH AND NOT A SOFT GRADIENT ──────────────────────
+//
+// It was a baked radial-gradient sprite, and three things were wrong with it, all measured
+// (eval/_puff_tone.js, eval/_puff_read.js):
+//
+//   TOO STRONG      the core ran to 13-18% of full scale on Stillwater. The guide for a
+//                   "just perceptible" step on a flat field is 1-2%; 5% already reads as an
+//                   overlay laid on the picture rather than as the water being different.
+//   INCONSISTENT    the same code gave 4.4% on Bluewater, 0.0% on Redrock and 17.7% on
+//                   Stillwater, because the delta was an authored COLOUR at a fixed alpha
+//                   over ten different waters. Whether you could see a puff at all depended
+//                   on the venue's palette.
+//   WRONG IDIOM     a smooth radial falloff has no edge, and the edge is the thing. What a
+//                   sailor actually looks for is the boundary — "you can see the breeze on
+//                   the water AND its edges" — because that is what tells you when it
+//                   arrives. It is also the one gradient left in a style guide whose third
+//                   pillar is that this game never blurs.
+//
+// So: two flat tonal bands on the cell's own intensity contours, with torn edges, at an
+// alpha CALIBRATED per venue to land on a fixed perceptual step. The tone is now a
+// supporting cue — the comet density is the primary one, which is the honest ordering,
+// because density is what survives a cell bigger than the screen.
+//
+// ⚠️ THE MINIMAP IS A SEPARATE DRAW and keeps its gradient. Two different jobs: the chart is
+// read as a weather map, where a soft blob is the right idiom and there is no water for it
+// to be a property of. Nothing here touches it.
+//
+// ⚠️ OVERLAPPING CELLS COMPOUND HERE AND ARE CLAMPED IN THE PHYSICS, and that is a known,
+// bounded divergence rather than an oversight. getWindAt limits stacked same-sign puffs to
+// the strongest single cell's worth ("two patches of the same descended air overlapping is
+// still that air, not twice it"); these are independent polygon fills, so where cells
+// overlap their alphas composite. Measured on flat water with all fourteen of Stillwater's
+// cells in frame: p1 -3.1% of full scale, p99 +1.6%, worst pixel 5.1% against the 2.2%
+// target, and 5.4% of pixels past 2.5%. Matching the clamp exactly needs the layer rendered
+// through an offscreen max-composited mask — a full-screen clear and composite every frame
+// to correct a 5% worst case on a small fraction of pixels. Not worth the frame for that;
+// revisit if cell counts per venue go up.
+const PUFF_TONE_CORE = 0.022;   // core delta as a fraction of full scale — "just perceptible"
+const PUFF_TONE_BANDS = [       // [intensity contour, share of the core delta]
+    [0.12, 0.45],
+    [0.55, 0.55]
+];
+const PUFF_TONE_TEAR = 0.07;    // ragged edge, as a fraction of the cell radius
+const PUFF_TONE_NODES = 18;     // polygon nodes per contour
+const PUFF_TONE_MAX_A = 0.30;   // alpha ceiling, for a venue whose tint sits near its water
+const PUFF_TONE_SEP = 0.22;     // lightness the tint is pushed from the water, in HSL
+
+// t such that smoothstep(t) = v. Closed form, exact at both ends — the contour radius for a
+// given intensity is 1 - this, because intensity = smoothstep(1 - sqrt(distSq)).
+const puffInvSmooth = (v) => 0.5 - Math.sin(Math.asin(1 - 2 * Math.max(0, Math.min(1, v))) / 3);
+
+// ⚠️ CALIBRATED, NOT AUTHORED. The alpha that produces a given luma step depends on how far
+// the tint is from the water it is drawn over, and that is a different distance on every
+// venue. Solving for it here is what makes "just perceptible" a property of the code rather
+// than of ten hand-tuned palettes — and it is why Redrock stopped being invisible and
+// Stillwater stopped being a wash.
+let _puffCal = null;
+function puffToneCal() {
     const gc = activeGustColors;
-    const make = (stops) => {
-        const c = document.createElement('canvas');
-        c.width = c.height = 256;
-        const g2 = c.getContext('2d');
-        const grad = g2.createRadialGradient(128, 128, 0, 128, 128, 128);
-        for (const [pos, color] of stops) grad.addColorStop(pos, color);
-        g2.fillStyle = grad;
-        g2.fillRect(0, 0, 256, 256);
-        return c;
+    const wc = window.WATER_CONFIG || {};
+    const key = JSON.stringify([gc.gustDark, gc.lullBright, wc.baseColor]);
+    if (_puffCal && _puffCal.key === key) return _puffCal;
+    const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const hex = String(wc.baseColor || '#0ea5e9').replace('#', '');
+    const wRGB = [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+    const water = luma(wRGB);
+    const [, , lW] = rgbToHsl(wRGB[0], wRGB[1], wRGB[2]);
+
+    // ⚠️ THE DIRECTION IS FORCED, NOT INHERITED. Calibrating only the MAGNITUDE against the
+    // authored tint left two venues broken, and both failures were silent:
+    //   Glacier Sound  gust tint sat within a luma step of its own water, so no alpha could
+    //                  move it — the layer measured 0.0% and the puffs were invisible.
+    //   Pearl Lagoon   its authored `lullBright` is DARKER than its water, so holes came out
+    //                  darker than clear air — the same direction as a gust, which is worse
+    //                  than showing nothing because it says the opposite of the truth.
+    // A cat's-paw is dark rough water and a hole is pale glassy water; that is physics, not a
+    // palette choice. So the venue keeps its HUE and SATURATION — its colour identity — and
+    // the LIGHTNESS is taken away from the water in the guaranteed direction.
+    //
+    // Floored and ceilinged rather than assumed: on water authored near black (Glowtide,
+    // lightness 0.24) there is not a full step of darkness available, so the gust takes what
+    // there is and `solve` raises the alpha to still land on the target luma step.
+    const push = (rgb, dir) => {
+        const [h, sat] = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+        const l = Math.max(0.04, Math.min(0.94, lW + dir * PUFF_TONE_SEP));
+        return hslToRgb(h, sat, l);
     };
-    GUST_SPRITES = {
-        // Relative alpha profile is baked in; per-gust intensity is applied
-        // via globalAlpha at draw time.
-        gust: make([
-            [0, `rgba(${gc.gustDark[0]}, ${gc.gustDark[1]}, ${gc.gustDark[2]}, 1)`],
-            [0.55, `rgba(${gc.gustMid[0]}, ${gc.gustMid[1]}, ${gc.gustMid[2]}, 0.45)`],
-            [1, `rgba(${gc.gustMid[0]}, ${gc.gustMid[1]}, ${gc.gustMid[2]}, 0)`]
-        ]),
-        lull: make([
-            [0, `rgba(${gc.lullBright[0]}, ${gc.lullBright[1]}, ${gc.lullBright[2]}, 0.9)`],
-            [0.55, `rgba(${gc.lullMid[0]}, ${gc.lullMid[1]}, ${gc.lullMid[2]}, 0.4)`],
-            [1, `rgba(${gc.lullMid[0]}, ${gc.lullMid[1]}, ${gc.lullMid[2]}, 0)`]
-        ])
-    };
+    const gustC = push(gc.gustDark, -1);
+    const lullC = push(gc.lullBright, +1);
+    // |Lt - Lw| is how much one unit of alpha moves the water. A tint left close to the water
+    // needs a lot of alpha to shift it, and the ceiling stops that running away.
+    const solve = (tint) => Math.min(PUFF_TONE_MAX_A, (PUFF_TONE_CORE * 255) / Math.max(6, Math.abs(luma(tint) - water)));
+    _puffCal = { key, gust: solve(gustC), lull: solve(lullC), gustC, lullC, water };
+    return _puffCal;
 }
 
 function drawGusts(ctx) {
-    if (!GUST_SPRITES) bakeGustSprites();
-
+    const cal = puffToneCal();
+    const gc = activeGustColors;
     // Viewport cull: gusts live across the whole arena; most are off-screen.
     const camX = state.camera.x, camY = state.camera.y;
     const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const T = state.time;
 
     for (const g of state.gusts) {
-        const rmax = Math.max(g.radiusX, g.radiusY);
+        const rmax = Math.max(g.radiusX, g.radiusY) * 1.4;
         const dx = g.x - camX, dy = g.y - camY;
         if (dx * dx + dy * dy > (viewR + rmax) ** 2) continue;
 
@@ -17727,22 +17832,44 @@ function drawGusts(ctx) {
         // barely visible in a fresh breeze, so cat's-paws read strongest when it's
         // light and wash out as it builds (real water cue; matches eSail/AC sailing).
         const airCue = 1.0 + Math.max(0, (14 - state.wind.baseSpeed) / 14) * 0.9; // ~1.0 heavy -> ~1.9 light
-        const alpha = Math.min(0.85, strength * 0.6 * airCue);
-        if (alpha <= 0.01) continue;
+        const isGust = g.type === 'gust';
+        const base = (isGust ? cal.gust : cal.lull) * strength * airCue;
+        if (base <= 0.002) continue;
+        const tint = isGust ? cal.gustC : cal.lullC;
+        // The cell's own ragged-edge seed, taken from fields it already carries. ⚠️ NOT a
+        // fresh Math.random(): the spawner draws from the SIMULATION stream, so one more
+        // call there would move every seeded race.
+        const seed = Math.abs(g.dirDelta * 941 + g.moveSpeedFactor * 7717);
 
         ctx.save();
         ctx.translate(g.x, g.y);
         ctx.rotate(g.rotation);
-        ctx.globalAlpha = alpha;
-        // Shifted UPWIND by the same amount the field is skewed. After the rotate, local +x
-        // is the along-wind axis the sampler calls rx, and the skewed cell's extent is
-        // centred at -PUFF_SKEW * radiusX on it. Drawing the sprite on the nominal centre
-        // instead would put the cat's-paw off the water the puff is felt on — and a puff you
-        // can see but not feel where you see it is worse than no puff at all.
-        ctx.drawImage(GUST_SPRITES[g.type === 'gust' ? 'gust' : 'lull'],
-                      -g.radiusX - PUFF_SKEW * g.radiusX, -g.radiusY, g.radiusX * 2, g.radiusY * 2);
+        ctx.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`;
+        for (const [level, share] of PUFF_TONE_BANDS) {
+            ctx.globalAlpha = Math.min(1, base * share);
+            // The contour of constant intensity, mapped back through the nose/tail skew so
+            // the drawn edge is exactly where the FELT edge is — a puff you can see but not
+            // feel where you see it is worse than no puff at all.
+            const R = 1 - puffInvSmooth(level);
+            ctx.beginPath();
+            for (let i = 0; i <= PUFF_TONE_NODES; i++) {
+                const a = (i / PUFF_TONE_NODES) * Math.PI * 2;
+                // Torn, and slowly churning: capillary ripple has a ragged boundary that
+                // works, and a perfectly smooth ellipse is the shape nothing on water has.
+                const tear = 1 + PUFF_TONE_TEAR * (Math.sin(a * 3 + seed + T * 1.7)
+                                                 + 0.6 * Math.sin(a * 7 - seed * 1.7 + T * 2.3));
+                const rr = R * tear;
+                const rx = Math.cos(a) * rr * g.radiusX;
+                const ry = Math.sin(a) * rr * g.radiusY;
+                const px = rx >= 0 ? rx * PUFF_NOSE : rx * PUFF_TAIL;
+                if (i === 0) ctx.moveTo(px, ry); else ctx.lineTo(px, ry);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
         ctx.restore();
     }
+    ctx.globalAlpha = 1;
 }
 
 // ── SURF: the sea breaking on the shore it is running at ────────────────────
