@@ -104,6 +104,19 @@ first.
 | 43 (exoneration) | **ABSENT** (see structural finding 2) | Partial stand-ins only. |
 | 44 (penalty turns) | **HOUSE** | One 360° net-rotation turn per breach (RRS wants two turns incl. tack+gybe for Part 2, one for rule 31); untaken turns → +15 s each at finish. Deliberate design. |
 
+## ⚠️ Late finding: windward ROLES exist only on gate-terminated legs
+
+`venuedoc.js` derives `role: 'windward'/'leeward'` **only for `kind === 'gate'`
+route entries** — a beat leg that ends at a ROUNDING mark never gets a role, so
+`legTargetsWindward()` is false there. Everything keyed on it is silently off
+on those legs: leech cover (`traits.cover`), the 16.2 constraint's precondition,
+and rule 18's leg-awareness filter in the zone-snapshot search (which then
+falls back to "any mark in the zone", opening the door to zone snapshots at
+marks neither boat is rounding). Most venue-doc courses (bay included) use
+roundings mid-course, so this is the common case, not the corner. Found
+2026-08-15 when two behavior probes gated on the helper measured zero events
+against 177 real tacks.
+
 ## The umpire (who actually gets penalized)
 
 1. **Contact** (~14355): give-way boat (with mark-room immunity). If ROW is
