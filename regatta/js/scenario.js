@@ -92,7 +92,6 @@
         <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
           <label style="width:64px">Wind</label><input id="lab-wind" type="text" inputmode="decimal" style="width:56px" value="12"> kt
         </div>
-        <div style="opacity:0.65;font-size:12px;margin-bottom:10px">wind is from the top &#8595;<br>&#8984;-drag rotate boat · &#8997;-drag resize</div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
           <button id="lab-new">New</button><button id="lab-open">Open&hellip;</button>
         </div>
