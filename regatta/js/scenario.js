@@ -266,7 +266,8 @@
         window.drawBoatIndicator = function (ctx, boat) {
             if (boat.isPlayer) return;
             if (boat.opacity !== undefined && boat.opacity <= 0) return;
-            if (!LAB.boats.some(lb => lb.bot === boat)) return;
+            const lb = LAB.boats.find(l => l.bot === boat);
+            if (!lb) return;
             ctx.save();
             ctx.translate(boat.x, boat.y);
             ctx.translate(0, 36);
@@ -274,7 +275,10 @@
             const w = ctx.measureText(boat.name).width + 16;
             ctx.fillStyle = 'rgba(15,23,42,0.6)';
             ctx.beginPath(); ctx.roundRect(-w / 2, 0, w, 20, 6); ctx.fill();
-            ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            // WHITE name = scripted helm, GREEN name = the AI's — and a boat
+            // that hands off mid-scenario changes colour at that frame
+            ctx.fillStyle = lb._dispMode === 'S' ? '#ffffff' : '#7de28f';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             ctx.fillText(boat.name, 0, 10);
             ctx.restore();
         };
@@ -1228,6 +1232,8 @@
         }
         if (LAB.mode === 'edit') {
             applyInitialFrame();
+            // name colour previews the opening helm: white = scripted, green = AI
+            for (const lb of LAB.boats) lb._dispMode = (lb.plan && lb.plan.length && lb.aiAtS !== 0) ? 'S' : 'AI';
             renderRights(pairRights(), null);
             timeEl.textContent = '';
         } else if (LAB.rec) {
@@ -1245,6 +1251,7 @@
                 // pin the recorded kite state so scrubbing replays the hoist
                 // (the live per-frame AWA rule would otherwise repaint it)
                 bt.spinnaker = fb.sp; bt.spinnakerDeployProgress = fb.spp;
+                LAB.boats[i]._dispMode = fb.mode;   // tag colour tracks the recorded helm
             }
             pbSlider.value = LAB.frame;
             const t = LAB.frame / 60;
