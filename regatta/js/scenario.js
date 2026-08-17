@@ -123,14 +123,10 @@
           <div id="lab-plan"></div>
           <button id="lab-planadd" style="margin-top:4px">+ step</button>
         </div>
-        <div id="lab-pathrow" style="margin-top:6px;display:none">
-          <div><span id="lab-pathinfo" style="opacity:0.8"></span> <button id="lab-pathclr" style="padding:0 6px">clear</button></div>
-        </div>
         <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
           <label title="blank = scripted to the end">AI at</label>
           <input id="lab-aiat" type="number" min="0" step="0.5" style="width:52px" placeholder="never"> s
         </div>
-        <div style="margin-top:6px"><button id="lab-pathbtn">&#9998; Draw path</button></div>
       </div>
       <div id="det-mark" style="display:none">
         <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
@@ -351,7 +347,7 @@
         // targets nothing, so zone snapshots latch on plain geometry.
         bot.raceState.isTacking = false; bot.raceState.leg = 2;
         bot.fadeTimer = 999; bot.opacity = 1;
-        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, path: null, plan: [], aiAtS: null };
+        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, plan: [], aiAtS: null };
         LAB.boats.push(lb);
         applyLabIdentity(lb, LAB.boats.length - 1);
         select({ kind: 'boat', ref: lb });
@@ -516,23 +512,10 @@
     }
     sidePortB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'port'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     sideStbdB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'starboard'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
-    const pathRow = ui.querySelector('#lab-pathrow');
-    const pathInfo = ui.querySelector('#lab-pathinfo');
     const aiAtIn = ui.querySelector('#lab-aiat');
-    const pathBtn = ui.querySelector('#lab-pathbtn');
     function refreshPathRow(lb) {
-        const has = lb.path && lb.path.length >= 2;
-        pathRow.style.display = has ? 'block' : 'none';
-        pathBtn.innerHTML = (LAB.armed === 'path' ? '&#9998; drawing&hellip; (drag from the boat)' : (has ? '&#9998; Redraw path' : '&#9998; Draw path'));
-        if (has) {
-            const len = Math.round(pathLen(lb.path));
-            pathInfo.textContent = `scripted path · ${len}u`;
-            aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
-        }
+        aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
     }
-    pathBtn.onclick = () => {
-        if (LAB.sel && LAB.sel.kind === 'boat') { setArmed('path'); refreshPathRow(LAB.sel.ref); }
-    };
 
     // ── THE PLAN: helm orders on a clock. The initial condition is the
     // boat's heading + speed; each step says "at t seconds, steer to this
@@ -540,7 +523,8 @@
     // speed follows the polar for wherever she points) with an optional
     // spinnaker order — the engine's own 5-second hoist/douse plays out
     // whenever the order changes the kite. A plan takes precedence over a
-    // drawn path. ─────────────────────────────────────────────────────────
+    // (the plan is the only scripting mode — the freehand drawn path retired
+    // in its favour) ─────────────────────────────────────────────────────
     const planDiv = ui.querySelector('#lab-plan');
     function renderPlan(lb) {
         planDiv.innerHTML = '';
@@ -589,14 +573,6 @@
         lb.plan.push({ t: last ? last.t + 5 : 5, headingDeg: Math.round(lb.heading * DEG), spin: 'auto' });
         renderPlan(lb);
         invalidate();
-    };
-    function pathLen(p) {
-        let L = 0;
-        for (let i = 1; i < p.length; i++) L += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
-        return L;
-    }
-    ui.querySelector('#lab-pathclr').onclick = () => {
-        if (LAB.sel && LAB.sel.kind === 'boat') { LAB.sel.ref.path = null; LAB.sel.ref.aiAtS = null; refreshPathRow(LAB.sel.ref); invalidate(); }
     };
     aiAtIn.addEventListener('input', () => {
         if (LAB.sel && LAB.sel.kind === 'boat') {
@@ -662,29 +638,6 @@
             pairs: pairRights(),
         };
     }
-    // A SCRIPTED boat is the same hull under the same physics with a different
-    // helmsman: her controller's update is replaced by pure pursuit of the
-    // drawn path (targetHeading toward a lookahead point, full power), so turn
-    // rate, polar speed and the no-go all still apply — the realized track is
-    // what the engine allows, not what was drawn. Rules and the umpire keep
-    // judging her (forcing a foul is the point); she just doesn't REACT.
-    // Handoff to the AI is ONE-WAY (owner ruling): at `aiAtS` seconds, or when
-    // the path runs out, the override is deleted (the prototype AI resumes)
-    // and her course becomes a far goal along her heading at that moment.
-    function scriptedUpdate(lb) {
-        return function () {
-            const bt = this.boat;
-            while (lb._pi < lb.path.length - 1
-                && Math.hypot(bt.x - lb.path[lb._pi].x, bt.y - lb.path[lb._pi].y) < 70) lb._pi++;
-            let t = lb._pi;
-            while (t < lb.path.length - 1
-                && Math.hypot(bt.x - lb.path[t].x, bt.y - lb.path[t].y) < 90) t++;
-            const p = lb.path[t];
-            this.targetHeading = Math.atan2(p.x - bt.x, -(p.y - bt.y));
-            this.speedLimit = 1.0;
-            lb._done = (t === lb.path.length - 1 && Math.hypot(bt.x - p.x, bt.y - p.y) < 60);
-        };
-    }
     // PLAN mode: helm orders on the sim clock. The physics turns the boat
     // toward targetHeading the SHORT way at her real rate, and speed follows
     // the polar for the point of sail she passes through; the kite order is
@@ -725,11 +678,10 @@
         applyInitial();
         for (const lb of LAB.boats) {
             const bt = lb.bot, c = bt.controller;
-            const hasPlan = lb.plan && lb.plan.length > 0;
-            const scripted = (hasPlan || (lb.path && lb.path.length >= 2)) && lb.aiAtS !== 0;
+            const scripted = lb.plan && lb.plan.length > 0 && lb.aiAtS !== 0;
             if (scripted) {
-                lb._mode = 'S'; lb._pi = 0; lb._done = false; lb._spinForce = null;
-                if (c) c.update = hasPlan ? planUpdate(lb) : scriptedUpdate(lb);
+                lb._mode = 'S'; lb._spinForce = null;
+                if (c) c.update = planUpdate(lb);
             } else {
                 // AI from the start: sail the SET heading as the course —
                 // strategy, avoidance, rules and the umpire all live
@@ -761,7 +713,7 @@
                 for (const lb of LAB.boats) {
                     if (lb._mode !== 'S') continue;
                     const due = lb.aiAtS != null && f >= Math.round(lb.aiAtS * 60);
-                    if (due || lb._done) handoffToAI(lb);
+                    if (due) handoffToAI(lb);
                 }
                 _update(1 / 60);
                 frames.push(snapshot());
@@ -869,7 +821,6 @@
         return {
             v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
-                path: lb.path ? lb.path.map(p => ({ x: Math.round(p.x - S.x), y: Math.round(p.y - S.y) })) : undefined,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg, spin: en.spin || 'auto' })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS })),
             marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165) })),
@@ -887,7 +838,6 @@
             if (lb) {
                 lb.heading = (bs.headingDeg || 0) / DEG;
                 lb.speedKt = bs.speedKt != null ? bs.speedKt : 6;
-                lb.path = bs.path ? bs.path.map(p => ({ x: S.x + p.x, y: S.y + p.y })) : null;
                 lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg, spin: en.spin || 'auto' })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
             }
@@ -1169,20 +1119,6 @@
         e.stopPropagation();   // the game's window-level mouse handlers stay out
         if (!LAB.ready) return;
         const [wx, wy] = s2w(e.clientX, e.clientY);
-        if (LAB.armed === 'path') {
-            // draw a scripted track: start on (or near) a boat; the first point
-            // snaps to her bow so pursuit begins where she begins
-            let lb = null;
-            for (const cand of LAB.boats) if (Math.hypot(wx - cand.x, wy - cand.y) < 70) { lb = cand; break; }
-            if (!lb && LAB.sel && LAB.sel.kind === 'boat') lb = LAB.sel.ref;
-            if (lb) {
-                select({ kind: 'boat', ref: lb });
-                lb.path = [{ x: lb.x, y: lb.y }];
-                LAB.drag = { pathFor: lb };
-                invalidate();
-            }
-            return;
-        }
         const hit = pick(wx, wy);
         if (!hit && LAB.armed) {
             // an armed layer "+": place that kind here, stay armed for more
@@ -1198,13 +1134,6 @@
     });
     ov.addEventListener('mousemove', e => {
         if (!LAB.drag) return;
-        if (LAB.drag.pathFor) {
-            const [wx, wy] = s2w(e.clientX, e.clientY);
-            const p = LAB.drag.pathFor.path;
-            const last = p[p.length - 1];
-            if (Math.hypot(wx - last.x, wy - last.y) >= 25) p.push({ x: wx, y: wy });
-            return;
-        }
         if (LAB.drag.pan) {
             LAB.cam.x = LAB.drag.cx - (e.clientX - LAB.drag.sx);
             LAB.cam.y = LAB.drag.cy - (e.clientY - LAB.drag.sy);
@@ -1240,13 +1169,6 @@
         invalidate();
     });
     window.addEventListener('mouseup', () => {
-        if (LAB.drag && LAB.drag.pathFor) {
-            const lb = LAB.drag.pathFor;
-            if (!lb.path || lb.path.length < 2) { lb.path = null; lb.aiAtS = null; }
-            LAB.armed = null;          // one path per arming
-            renderLayers();
-            if (LAB.sel && LAB.sel.ref === lb) refreshPathRow(lb);
-        }
         LAB.drag = null;
     });
 
@@ -1385,23 +1307,10 @@
             octx.strokeStyle = 'rgba(255,255,255,0.85)'; octx.lineWidth = 3; octx.setLineDash([10, 8]); octx.stroke(); octx.setLineDash([]);
             for (const [px, py] of [[x1, y1], [x2, y2]]) { octx.beginPath(); octx.arc(px, py, 6, 0, 7); octx.fillStyle = '#fff'; octx.fill(); }
         }
-        // scripted paths: the DRAWN line dotted in the boat's colour; during
-        // playback the REALIZED track solid beneath it — the gap between the
-        // two is the physics (turn rate, polar, no-go) doing its job
+        // realized tracks during playback — the sailed line in the hull colour
         for (let i = 0; i < LAB.boats.length; i++) {
             const lb = LAB.boats[i];
             const col = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
-            if (lb.path && lb.path.length >= 2) {
-                octx.beginPath();
-                const [px0, py0] = w2s(lb.path[0].x, lb.path[0].y);
-                octx.moveTo(px0, py0);
-                for (let k = 1; k < lb.path.length; k++) { const [px, py] = w2s(lb.path[k].x, lb.path[k].y); octx.lineTo(px, py); }
-                octx.strokeStyle = col; octx.globalAlpha = 0.85; octx.lineWidth = 2.5;
-                octx.setLineDash([7, 7]); octx.stroke(); octx.setLineDash([]); octx.globalAlpha = 1;
-                const end = lb.path[lb.path.length - 1];
-                const [ex, ey] = w2s(end.x, end.y);
-                octx.beginPath(); octx.arc(ex, ey, 5, 0, 7); octx.fillStyle = col; octx.fill();
-            }
             if (LAB.mode === 'play' && LAB.rec && LAB.frame > 1) {
                 octx.beginPath();
                 let started = false;
