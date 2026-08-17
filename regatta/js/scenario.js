@@ -85,22 +85,32 @@
       <div style="font-weight:700;font-size:11px;letter-spacing:0.1em;color:#7fa8c9;margin-bottom:6px">DETAILS</div>
       <div style="font-weight:600;margin-bottom:4px" id="lab-selname"></div>
       <div id="det-scenario" style="display:none">
-        <div style="margin-bottom:6px"><input id="lab-name" type="text" placeholder="scenario name" style="width:100%"></div>
-        <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">
-          <span><label>wind </label><input id="lab-wind" type="number" min="2" max="30" step="1" style="width:44px" value="12"> kt</span>
-          <span><label>length </label><input id="lab-dur" type="number" min="2" max="120" step="1" style="width:44px" value="10"> s</span>
+        <div style="margin-bottom:8px"><input id="lab-name" type="text" placeholder="Scenario Name" style="width:100%"></div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
+          <label style="width:64px">Duration</label><input id="lab-dur" type="text" inputmode="decimal" style="width:56px" value="10"> s
         </div>
-        <div style="opacity:0.65;font-size:12px;margin-bottom:8px">wind is from the top &#8595;<br>&#8984;-drag rotate boat · &#8997;-drag resize</div>
+        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
+          <label style="width:64px">Wind</label><input id="lab-wind" type="text" inputmode="decimal" style="width:56px" value="12"> kt
+        </div>
+        <div style="opacity:0.65;font-size:12px;margin-bottom:10px">wind is from the top &#8595;<br>&#8984;-drag rotate boat · &#8997;-drag resize</div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
-          <select id="lab-list" style="flex:1;min-width:0;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px"></select>
+          <button id="lab-new">New</button><button id="lab-open">Open&hellip;</button>
         </div>
-        <div style="display:flex;gap:6px;margin-bottom:6px">
-          <button id="lab-save">Save</button><button id="lab-load">Load</button><button id="lab-delsc">&#10005;</button>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button id="lab-save">Save</button><button id="lab-saveas">Save As&hellip;</button>
         </div>
-        <div style="display:flex;gap:6px">
-          <button id="lab-clear">Clear scene</button>
-          <button id="lab-json">Copy JSON</button>
+        <div style="border-top:1px solid #345;padding-top:6px">
+          <div style="opacity:0.65;font-size:12px;margin-bottom:4px">library file: <span id="lab-libname">(in-browser)</span></div>
+          <div style="display:flex;gap:6px">
+            <button id="lab-libopen" title="load the scenarios file (all saves go to it)">File&hellip;</button>
+            <button id="lab-clear">Clear scene</button>
+          </div>
         </div>
+      </div>
+      <div id="det-play" style="display:none">
+        <div style="font-weight:600;margin-bottom:3px">RIGHTS &amp; UMPIRE <span id="lab-time" style="opacity:0.7;font-weight:400"></span></div>
+        <div id="lab-rights" style="font:12px/1.5 ui-monospace,monospace;color:#bfe3c0;min-height:40px">&mdash;</div>
+        <div style="opacity:0.6;font-size:12px;margin-top:6px">scrub or step on the transport below · space pauses</div>
       </div>
       <div id="det-boat" style="display:none">
         <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
@@ -132,11 +142,7 @@
       <div id="det-line" style="display:none">
         <div style="opacity:0.6;font-size:12px;margin-top:2px">a line on the water · drag the end handles · &#8997;-drag stretches</div>
       </div>
-      <div id="lab-delrow" style="display:none;margin-top:8px"><button id="lab-del">Delete</button></div>
-      <div style="border-top:1px solid #345;padding-top:6px;margin-top:10px">
-        <div style="font-weight:600;margin-bottom:3px">RIGHTS &amp; UMPIRE <span id="lab-time" style="opacity:0.7;font-weight:400"></span></div>
-        <div id="lab-rights" style="font:12px/1.5 ui-monospace,monospace;color:#bfe3c0;min-height:40px">&mdash;</div>
-      </div>`;
+      <div id="lab-delrow" style="display:none;margin-top:8px"><button id="lab-del">Delete</button></div>`;
     document.body.appendChild(right);
     const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s),
                  querySelectorAll: (s) => [...left.querySelectorAll(s), ...right.querySelectorAll(s)] };
@@ -272,7 +278,6 @@
             ctx.fillText(boat.name, 0, 10);
             ctx.restore();
         };
-        refreshList();
         select({ kind: 'scenario' });
         LAB.ready = true;
         // restore the working draft, if one survived a reload
@@ -451,17 +456,21 @@
 
     const selName = ui.querySelector('#lab-selname');
     const hdgIn = ui.querySelector('#lab-hdg'), spdIn = ui.querySelector('#lab-spd');
-    const detSections = { scenario: '#det-scenario', boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line' };
+    const detSections = { scenario: '#det-scenario', boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line', play: '#det-play' };
     function select(s) {
         // no selection = the Scenario layer (the editor convention: the
-        // inspector shows the layer itself when nothing is selected)
+        // inspector shows the layer itself when nothing is selected).
+        // During PLAY nothing else is selectable: the inspector is the
+        // rights & umpire readout, full stop.
+        if (LAB.mode === 'play') s = { kind: 'play' };
         if (!s) s = { kind: 'scenario' };
         LAB.sel = s;
         for (const k of Object.keys(detSections)) {
             right.querySelector(detSections[k]).style.display = k === s.kind ? 'block' : 'none';
         }
-        right.querySelector('#lab-delrow').style.display = s.kind === 'scenario' ? 'none' : 'block';
-        if (s.kind === 'scenario') selName.textContent = 'Scenario';
+        right.querySelector('#lab-delrow').style.display = (s.kind === 'scenario' || s.kind === 'play') ? 'none' : 'block';
+        if (s.kind === 'scenario') selName.textContent = '';
+        else if (s.kind === 'play') selName.textContent = '';
         else if (s.kind === 'boat') selName.textContent = 'Boat ' + s.ref.bot.name;
         else if (s.kind === 'mark') selName.textContent = 'mark ' + (LAB.marks.indexOf(s.ref) + 1);
         else if (s.kind === 'sand') selName.textContent = 'sand ' + (LAB.sands.indexOf(s.ref) + 1);
@@ -684,6 +693,7 @@
         pbPlay.innerHTML = '&#10074;&#10074;';
         bar.style.display = 'flex';
         refreshModeBtns();
+        select(null);   // play mode: the inspector is Rights & Umpire, nothing else
     }
     function pause() { LAB.playing = false; pbPlay.innerHTML = '&#9654;'; }
     function enterEdit() {
@@ -691,6 +701,7 @@
         LAB.mode = 'edit'; LAB.frame = 0;
         bar.style.display = 'none';
         refreshModeBtns();
+        select({ kind: 'scenario' });
     }
     runBtn.onclick = () => { if (LAB.mode !== 'play') play(); };
     pbPlay.onclick = () => { if (LAB.playing) pause(); else { if (LAB.frame >= LAB.rec.nF) LAB.frame = 0; LAB.playing = true; pbPlay.innerHTML = '&#10074;&#10074;'; } };
@@ -713,6 +724,8 @@
             return; // let the field have its keys; game handlers ignore focused inputs at their peril, but they never see ESC
         }
         if (e.type === 'keydown') {
+            if (e.key === 'Escape' && LAB.modal) { LAB.modal.close(); e.preventDefault(); e.stopImmediatePropagation(); return; }
+            if (LAB.modal) { return; } // a dialog is up: keys are its own
             if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
             else if (e.key === 'Escape') { if (LAB.armed) setArmed(LAB.armed); else select(null); }
             else if (LAB.rec && LAB.mode === 'play') {
@@ -766,34 +779,195 @@
         select(null);
         invalidate();
     }
-    const listSel = ui.querySelector('#lab-list');
     const nameIn = ui.querySelector('#lab-name');
     nameIn.addEventListener('input', () => saveDraft());
-    function refreshList() {
-        const names = Object.keys(store()).sort();
-        listSel.innerHTML = names.map(n => `<option>${n}</option>`).join('') || '<option value="">(none saved)</option>';
+
+    // ── THE LIBRARY: one file for every scenario (owner ruling — unlike the
+    // editor's file-per-venue, a scenario is small; the whole collection is
+    // a single scenarios.js, always loaded and saved). The library also
+    // mirrors to localStorage so the page works before a file is chosen;
+    // when a file handle is attached, every Save/Delete rewrites it. ─────
+    function store() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { return {}; } }
+    function persistLib(lib) {
+        localStorage.setItem(STORE_KEY, JSON.stringify(lib));
+        if (LAB.libHandle) writeLibFile(lib);
     }
-    ui.querySelector('#lab-save').onclick = () => {
+    async function writeLibFile(lib) {
+        const text = '// The SCYC scenario library — one file, every scenario.\n'
+            + '// Written by scenario.html; JS not JSON so it loads over file://.\n'
+            + 'window.SCENARIO_DOC = ' + JSON.stringify(lib, null, 2) + ';\n';
+        try {
+            const w = await LAB.libHandle.createWritable();
+            try { await w.write(text); await w.close(); }
+            catch (e) { try { await w.abort(); } catch (_) { } throw e; }
+        } catch (e) { console.error('library write failed', e); }
+    }
+    async function chooseLibFile() {
+        try {
+            if (window.showOpenFilePicker) {
+                const [h] = await window.showOpenFilePicker({
+                    id: 'scenario-lib',
+                    types: [{ description: 'Scenario library', accept: { 'text/javascript': ['.js'], 'application/json': ['.json'] } }],
+                });
+                const file = await h.getFile();
+                const text = await file.text();
+                let lib = null;
+                try { lib = JSON.parse(text); } catch (_) {
+                    const m = /window\.SCENARIO_DOC\s*=\s*(\{[\s\S]*\});?\s*$/.exec(text.trim());
+                    if (m) lib = JSON.parse(m[1]);
+                }
+                if (lib && typeof lib === 'object') {
+                    LAB.libHandle = h;
+                    ui.querySelector('#lab-libname').textContent = file.name;
+                    persistLib(lib);
+                } else {
+                    // an empty/new file: adopt it and write the current library out
+                    LAB.libHandle = h;
+                    ui.querySelector('#lab-libname').textContent = file.name;
+                    writeLibFile(store());
+                }
+            } else {
+                // no File System Access API: export as a download instead
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(new Blob([
+                    'window.SCENARIO_DOC = ' + JSON.stringify(store(), null, 2) + ';\n'
+                ], { type: 'text/javascript' }));
+                a.download = 'scenarios.js'; a.click();
+                URL.revokeObjectURL(a.href);
+            }
+        } catch (e) { if (!e || e.name !== 'AbortError') console.error('library open failed', e); }
+    }
+
+    // ── in-window dialogs (no browser confirm/prompt on this page) ─────
+    function dialog(title, bodyEl, buttons) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:fixed;inset:0;z-index:95;background:rgba(4,8,14,0.55);display:flex;align-items:center;justify-content:center';
+        const box = document.createElement('div');
+        box.style.cssText = 'min-width:280px;max-width:400px;max-height:70vh;display:flex;flex-direction:column;background:rgba(10,18,28,0.98);border:1px solid rgba(120,180,220,0.4);border-radius:10px;padding:14px 16px;color:#dbe7f3;font:13px/1.5 system-ui';
+        const h = document.createElement('div');
+        h.textContent = title;
+        h.style.cssText = 'font-weight:700;color:#8fd0ff;margin-bottom:8px';
+        box.appendChild(h);
+        if (bodyEl) { bodyEl.style.overflowY = 'auto'; box.appendChild(bodyEl); }
+        const row = document.createElement('div');
+        row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:12px';
+        const close = () => { wrap.remove(); LAB.modal = null; };
+        for (const b of buttons) {
+            const btn = document.createElement('button');
+            btn.textContent = b.label;
+            btn.style.cssText = 'border:1px solid #467;color:#cde;padding:3px 12px;border-radius:6px;cursor:pointer;background:' + (b.primary ? '#2a5a8a' : '#123');
+            btn.onclick = () => { close(); if (b.onClick) b.onClick(); };
+            row.appendChild(btn);
+        }
+        box.appendChild(row);
+        wrap.appendChild(box);
+        wrap.addEventListener('mousedown', e => { if (e.target === wrap) close(); e.stopPropagation(); });
+        document.body.appendChild(wrap);
+        LAB.modal = { close };
+        return { close };
+    }
+    function confirmDialog(title, text, onYes, yesLabel) {
+        const p = document.createElement('div');
+        p.textContent = text;
+        dialog(title, p, [{ label: 'Cancel' }, { label: yesLabel || 'OK', primary: true, onClick: onYes }]);
+    }
+
+    // ── dirty tracking + New / Open / Save / Save As ───────────────────
+    function currentDoc() { return JSON.stringify({ name: (nameIn.value || '').trim(), ...sceneObj() }); }
+    function markSaved() { LAB.savedJSON = currentDoc(); }
+    function isDirty() {
+        const empty = !LAB.boats.length && !LAB.marks.length && !LAB.sands.length && !LAB.lines.length;
+        if (LAB.savedJSON == null) return !empty;
+        return currentDoc() !== LAB.savedJSON;
+    }
+    function ifClean(action, then) {
+        if (!isDirty()) return then();
+        confirmDialog(action, 'There are unsaved changes. Discard them?', then, 'Discard');
+    }
+    function newScenario() {
+        ifClean('New scenario', () => {
+            clearScene();
+            nameIn.value = '';
+            LAB.durationS = 10; ui.querySelector('#lab-dur').value = 10;
+            LAB.windKt = 12; ui.querySelector('#lab-wind').value = 12;
+            markSaved();
+            select({ kind: 'scenario' });
+        });
+    }
+    function saveScenario(asNew) {
+        const doIt = (name) => {
+            const lib = store();
+            lib[name] = sceneObj();
+            persistLib(lib);
+            nameIn.value = name;
+            markSaved();
+        };
         const name = (nameIn.value || '').trim();
-        if (!name) { nameIn.focus(); return; }
-        const s = store(); s[name] = sceneObj();
-        localStorage.setItem(STORE_KEY, JSON.stringify(s));
-        refreshList(); listSel.value = name;
-    };
-    ui.querySelector('#lab-load').onclick = () => {
-        const s = store(); const sc = s[listSel.value];
-        if (sc) { nameIn.value = listSel.value; loadScene(sc); }
-    };
-    ui.querySelector('#lab-delsc').onclick = () => {
-        const s = store(); delete s[listSel.value];
-        localStorage.setItem(STORE_KEY, JSON.stringify(s));
-        refreshList();
-    };
-    ui.querySelector('#lab-json').onclick = () => {
-        const txt = JSON.stringify({ name: (nameIn.value || '').trim() || undefined, ...sceneObj() }, null, 1);
-        if (navigator.clipboard) navigator.clipboard.writeText(txt);
-        console.log(txt);
-    };
+        if (asNew || !name) {
+            const body = document.createElement('div');
+            const inp = document.createElement('input');
+            inp.type = 'text'; inp.placeholder = 'Scenario Name';
+            inp.value = name ? name + ' copy' : '';
+            inp.style.cssText = 'width:100%;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:3px 6px';
+            body.appendChild(inp);
+            dialog(asNew ? 'Save As' : 'Save', body, [
+                { label: 'Cancel' },
+                { label: 'Save', primary: true, onClick: () => { const n = (inp.value || '').trim(); if (n) doIt(n); } },
+            ]);
+            setTimeout(() => inp.focus(), 50);
+        } else doIt(name);
+    }
+    function openScenario() {
+        const lib = store();
+        const names = Object.keys(lib).sort((a, b) => a.localeCompare(b));
+        const body = document.createElement('div');
+        if (!names.length) {
+            const p = document.createElement('div');
+            p.style.opacity = '0.7';
+            p.textContent = 'No saved scenarios yet.';
+            body.appendChild(p);
+        }
+        for (const n of names) {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 6px;border-radius:6px;cursor:pointer';
+            row.onmouseenter = () => row.style.background = '#1a3550';
+            row.onmouseleave = () => row.style.background = '';
+            const label = document.createElement('span');
+            label.textContent = n;
+            label.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+            label.onclick = () => {
+                dlg.close();
+                ifClean('Open scenario', () => {
+                    LAB._loading = true;
+                    loadScene(lib[n]);
+                    nameIn.value = n;
+                    LAB._loading = false;
+                    markSaved();
+                    select({ kind: 'scenario' });
+                });
+            };
+            const del = document.createElement('span');
+            del.innerHTML = '&#10005;';
+            del.title = 'delete';
+            del.style.cssText = 'cursor:pointer;opacity:0.6;padding:0 4px';
+            del.onclick = (e) => {
+                e.stopPropagation();
+                dlg.close();
+                confirmDialog('Delete scenario', `Delete “${n}”? This cannot be undone.`, () => {
+                    const l2 = store(); delete l2[n]; persistLib(l2);
+                    openScenario();
+                }, 'Delete');
+            };
+            row.append(label, del);
+            body.appendChild(row);
+        }
+        const dlg = dialog('Open scenario', body, [{ label: 'Close' }]);
+    }
+    ui.querySelector('#lab-new').onclick = newScenario;
+    ui.querySelector('#lab-open').onclick = openScenario;
+    ui.querySelector('#lab-save').onclick = () => saveScenario(false);
+    ui.querySelector('#lab-saveas').onclick = () => saveScenario(true);
+    ui.querySelector('#lab-libopen').onclick = chooseLibFile;
 
     // ── pointer input ──────────────────────────────────────────────────
     ov.addEventListener('mousedown', e => {
