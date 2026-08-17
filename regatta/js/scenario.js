@@ -122,7 +122,6 @@
       .sl-tbtn:hover{background:rgba(255,255,255,.15)}
       .sl-tbtn-pri{background:#2f6bff}
       .sl-tbtn-pri:hover{background:#4a80ff}
-      .sl-kite{appearance:none;-webkit-appearance:none;background:rgba(127,240,212,.1);color:#8fd8d0;border:none;border-radius:5px;font:800 10px Archivo,system-ui,sans-serif;letter-spacing:.06em;padding:3px 6px;cursor:pointer;text-align:center}
       #pb-slider{-webkit-appearance:none;appearance:none;display:block;width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.14);outline:none;margin:0}
       #pb-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}
       #pb-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}`;
@@ -678,9 +677,10 @@
     // ── THE PLAN: helm orders on a clock. The initial condition is the
     // boat's heading + speed; each step says "at t seconds, steer to this
     // heading" (the boat turns the SHORT way at her real turn rate, and her
-    // speed follows the polar for wherever she points) with an optional
-    // spinnaker order — the engine's own 5-second hoist/douse plays out
-    // whenever the order changes the kite. A plan takes precedence over a
+    // speed follows the polar for wherever she points). The spinnaker is
+    // NEVER scripted (owner ruling 2026-08-17): the engine's own AWA rule
+    // hoists and douses it for scripted boats exactly as it does for AI,
+    // with the 5-second crossfade playing out on every change.
     // (the plan is the only scripting mode — the freehand drawn path retired
     // in its favour) ─────────────────────────────────────────────────────
     const planDiv = ui.querySelector('#lab-plan');
@@ -708,21 +708,13 @@
             hIn.title = 'new heading (°)';
             hIn.addEventListener('change', () => { en.headingDeg = parseFloat(hIn.value) || 0; invalidate(); });
             const dLab = document.createElement('span'); dLab.className = 'sl-hint'; dLab.innerHTML = '&deg;';
-            const sSel = document.createElement('select');
-            sSel.className = 'sl-kite';
-            sSel.style.marginLeft = 'auto';
-            for (const [v, lbl] of [['auto', 'AUTO'], ['up', 'KITE UP'], ['down', 'KITE DOWN']]) {
-                const o = document.createElement('option'); o.value = v; o.textContent = lbl; sSel.appendChild(o);
-            }
-            sSel.value = en.spin || 'auto';
-            sSel.addEventListener('change', () => { en.spin = sSel.value; invalidate(); });
             const del = document.createElement('span');
             del.innerHTML = '&#10005;';
-            del.style.cssText = 'cursor:pointer;color:#66748c;font-size:11px;padding:0 2px';
+            del.style.cssText = 'cursor:pointer;color:#66748c;font-size:11px;padding:0 2px;margin-left:auto';
             del.onmouseenter = () => del.style.color = '#ff8a75';
             del.onmouseleave = () => del.style.color = '#66748c';
             del.onclick = () => { plan.splice(plan.indexOf(en), 1); renderPlan(lb); invalidate(); };
-            row.append(nB, tIn, sLab, dotSep, hIn, dLab, sSel, del);
+            row.append(nB, tIn, sLab, dotSep, hIn, dLab, del);
             planDiv.appendChild(row);
         });
         if (!plan.length) {
@@ -736,7 +728,7 @@
         if (!LAB.sel || LAB.sel.kind !== 'boat') return;
         const lb = LAB.sel.ref;
         const last = lb.plan.length ? lb.plan[lb.plan.length - 1] : null;
-        lb.plan.push({ t: last ? last.t + 5 : 5, headingDeg: Math.round(lb.heading * DEG), spin: 'auto' });
+        lb.plan.push({ t: last ? last.t + 5 : 5, headingDeg: Math.round(lb.heading * DEG) });
         renderPlan(lb);
         invalidate();
     };
@@ -810,39 +802,27 @@
     }
     // PLAN mode: helm orders on the sim clock. The physics turns the boat
     // toward targetHeading the SHORT way at her real rate, and speed follows
-    // the polar for the point of sail she passes through; the kite order is
-    // applied after updateAI's own call (see the wrapper below), so the
-    // engine's 5-second hoist/douse crossfade plays out on every change.
+    // the polar for the point of sail she passes through. The kite is not
+    // the plan's to give: updateAI's AWA rule (which runs every frame for
+    // every boat, scripted or not) hoists and douses it automatically.
     function planUpdate(lb) {
         return function () {
-            let hdg = lb.heading, spin = 'auto';
+            let hdg = lb.heading;
             for (const en of lb.plan) {
-                if (LAB.simT >= en.t) { hdg = (en.headingDeg || 0) / DEG; spin = en.spin || 'auto'; }
+                if (LAB.simT >= en.t) hdg = (en.headingDeg || 0) / DEG;
                 else break;
             }
             this.targetHeading = hdg;
             this.speedLimit = 1.0;
-            lb._spinForce = spin === 'auto' ? null : (spin === 'up');
         };
     }
-    // the kite order must land AFTER updateAI writes boat.spinnaker (its AWA
-    // rule runs every frame) and BEFORE updateBoat integrates the hoist
-    const _updateAI = window.updateAI;
-    window.updateAI = function (boat, dt) {
-        _updateAI(boat, dt);
-        if (LAB.recording) {
-            for (const lb of LAB.boats) {
-                if (lb.bot === boat && lb._mode === 'S' && lb._spinForce != null) { boat.spinnaker = lb._spinForce; break; }
-            }
-        }
-    };
     function handoffToAI(lb) {
         const bt = lb.bot, c = bt.controller;
         if (c && Object.prototype.hasOwnProperty.call(c, 'update')) delete c.update;
         const gx = bt.x + Math.sin(bt.heading) * 8000;
         const gy = bt.y - Math.cos(bt.heading) * 8000;
         if (c) c.getNavigationTarget = () => ({ x: gx, y: gy });
-        lb._mode = 'AI'; lb._spinForce = null;
+        lb._mode = 'AI';
     }
     function simulate() {
         applyInitial();
@@ -850,7 +830,7 @@
             const bt = lb.bot, c = bt.controller;
             const scripted = lb.plan && lb.plan.length > 0 && lb.aiAtS !== 0;
             if (scripted) {
-                lb._mode = 'S'; lb._spinForce = null;
+                lb._mode = 'S';
                 if (c) c.update = planUpdate(lb);
             } else {
                 // AI from the start: sail the SET heading as the course —
@@ -991,7 +971,7 @@
         return {
             v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
-                plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg, spin: en.spin || 'auto' })) : undefined,
+                plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS })),
             marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165) })),
             sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r })),
@@ -1008,7 +988,9 @@
             if (lb) {
                 lb.heading = (bs.headingDeg || 0) / DEG;
                 lb.speedKt = bs.speedKt != null ? bs.speedKt : 6;
-                lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg, spin: en.spin || 'auto' })).sort((a, b) => a.t - b.t) : [];
+                // (older docs carried a per-step `spin` order — dropped on load;
+                // the kite is auto-only now)
+                lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
             }
         }
