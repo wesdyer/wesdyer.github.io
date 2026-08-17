@@ -73,7 +73,7 @@
     left.innerHTML = `
       <div style="font-weight:700;font-size:15px;color:#8fd0ff;margin-bottom:6px">SCENARIO</div>
       <div style="display:flex;gap:6px;margin-bottom:10px">
-        <button id="lab-run">&#9654; Play</button><button id="lab-reset">Edit</button>
+        <button id="lab-reset" style="flex:1">Edit</button><button id="lab-run" style="flex:1">&#9654; Play</button>
       </div>
       <div style="font-weight:700;font-size:11px;letter-spacing:0.1em;color:#7fa8c9;margin-bottom:4px">LAYERS</div>
       <div id="lab-layers"></div>`;
@@ -276,6 +276,7 @@
         if (LAB.mode !== 'edit') LAB.mode = 'edit';
         bar.style.display = 'none';
         pbPlay.innerHTML = '&#9654;';
+        if (typeof refreshModeBtns === 'function') refreshModeBtns();
     }
     function addBoat(wx, wy) {
         const bot = LAB.pool.shift();
@@ -615,20 +616,38 @@
         if (!LAB.rec) return;
         LAB.frame = Math.max(0, Math.min(LAB.rec.nF, Math.round(f)));
     }
+    // Edit and Play are MUTUALLY EXCLUSIVE MODES (owner ruling): the page
+    // starts in Edit; Play enters playback (simulating if needed) and the
+    // transport appears; Edit returns to initial conditions and hides it.
+    // Pause lives on the transport, not on the mode buttons.
     const runBtn = ui.querySelector('#lab-run');
+    const editBtn = ui.querySelector('#lab-reset');
+    function refreshModeBtns() {
+        runBtn.style.background = LAB.mode === 'play' ? '#2a5a8a' : '#123';
+        editBtn.style.background = LAB.mode === 'edit' ? '#2a5a8a' : '#123';
+    }
     function play() {
         if (!LAB.rec) simulate();
         if (LAB.frame >= LAB.rec.nF) LAB.frame = 0;
         LAB.mode = 'play'; LAB.playing = true;
         pbPlay.innerHTML = '&#10074;&#10074;';
+        bar.style.display = 'flex';
+        refreshModeBtns();
     }
     function pause() { LAB.playing = false; pbPlay.innerHTML = '&#9654;'; }
-    runBtn.onclick = () => { if (LAB.mode === 'play' && LAB.playing) pause(); else play(); };
-    pbPlay.onclick = runBtn.onclick;
+    function enterEdit() {
+        pause();
+        LAB.mode = 'edit'; LAB.frame = 0;
+        bar.style.display = 'none';
+        refreshModeBtns();
+    }
+    runBtn.onclick = () => { if (LAB.mode !== 'play') play(); };
+    pbPlay.onclick = () => { if (LAB.playing) pause(); else { if (LAB.frame >= LAB.rec.nF) LAB.frame = 0; LAB.playing = true; pbPlay.innerHTML = '&#10074;&#10074;'; } };
     bar.querySelector('#pb-back').onclick = () => { pause(); setFrame(LAB.frame - 30); };
-    bar.querySelector('#pb-fwd').onclick = () => { if (LAB.mode !== 'play') play(); pause(); setFrame(LAB.frame + 30); };
-    pbSlider.addEventListener('input', () => { if (LAB.mode !== 'play' && LAB.rec) LAB.mode = 'play'; pause(); setFrame(+pbSlider.value); });
-    ui.querySelector('#lab-reset').onclick = () => { pause(); LAB.mode = 'edit'; LAB.frame = 0; };
+    bar.querySelector('#pb-fwd').onclick = () => { pause(); setFrame(LAB.frame + 30); };
+    pbSlider.addEventListener('input', () => { pause(); setFrame(+pbSlider.value); });
+    editBtn.onclick = enterEdit;
+    refreshModeBtns();
     ui.querySelector('#lab-clear').onclick = clearScene;
     window.addEventListener('keydown', e => {
         if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
@@ -636,7 +655,7 @@
         if (LAB.rec && LAB.mode === 'play') {
             if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); e.preventDefault(); }
             if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); e.preventDefault(); }
-            if (e.key === ' ') { runBtn.onclick(); e.preventDefault(); }
+            if (e.key === ' ') { pbPlay.onclick(); e.preventDefault(); }
         }
     });
 
