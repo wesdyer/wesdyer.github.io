@@ -95,6 +95,14 @@
           </div>
           <div id="lab-pathhint" style="opacity:0.6;margin-top:3px;font-size:12px">&#9998; Path tool: drag from this boat to script her track</div>
         </div>
+        <div id="lab-markfields" style="display:none">
+          <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+            <label>rounding</label>
+            <button id="lab-side-port">&#8634; Port</button>
+            <button id="lab-side-stbd">&#8635; Stbd</button>
+          </div>
+          <div style="opacity:0.6;margin-top:3px;font-size:12px">zone = 3 boat lengths · &#8997;-drag resizes</div>
+        </div>
         <button id="lab-del" style="margin-top:6px">Delete</button>
       </div>
       <div style="border-top:1px solid #345;padding-top:6px;margin-bottom:8px">
@@ -224,7 +232,11 @@
         if (!bot) return;
         bot.raceState.finished = false; bot.raceState.ocs = false;
         bot.raceState.penalty = false; bot.raceState.totalPenalties = 0;
-        bot.raceState.isTacking = false; bot.raceState.leg = 1;
+        // leg 2, deliberately: on Sea Trials leg 1 TARGETS WINDWARD, and the
+        // rules engine's zone-latch leg filter skips non-windward marks for a
+        // windward-bound pair — rule 18 would never arm at a lab mark. Leg 2
+        // targets nothing, so zone snapshots latch on plain geometry.
+        bot.raceState.isTacking = false; bot.raceState.leg = 2;
         bot.fadeTimer = 999; bot.opacity = 1;
         const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, path: null, aiAtS: null };
         bot.name = String.fromCharCode(65 + LAB.boats.length);
@@ -238,6 +250,10 @@
         const m = JSON.parse(JSON.stringify(proto));
         m.x = wx; m.y = wy;
         if (m.body) { const dx = wx - (proto.x || 0), dy = wy - (proto.y || 0); for (const c of m.body) { c.x += dx; c.y += dy; } }
+        // the RRS zone: three hull lengths (3 × 55 = 165 — the engine's own
+        // floor). Real rule-18 zone snapshots latch on it. ⌥-drag resizes.
+        m.zone = 165;
+        m.side = 'port';
         window.state.course.marks.push(m);
         LAB.marks.push(m);
         select({ kind: 'mark', ref: m });
@@ -357,13 +373,24 @@
         selPanel.style.display = s ? 'block' : 'none';
         if (!s) return;
         boatFields.style.display = s.kind === 'boat' ? 'block' : 'none';
+        markFields.style.display = s.kind === 'mark' ? 'block' : 'none';
         selName.textContent = s.kind === 'boat' ? ('Boat ' + s.ref.bot.name) : s.kind;
         if (s.kind === 'boat') {
             hdgIn.value = Math.round(((s.ref.heading * DEG) % 360 + 360) % 360);
             spdIn.value = s.ref.speedKt;
             refreshPathRow(s.ref);
         }
+        if (s.kind === 'mark') refreshSideBtns(s.ref);
     }
+    const markFields = ui.querySelector('#lab-markfields');
+    const sidePortB = ui.querySelector('#lab-side-port');
+    const sideStbdB = ui.querySelector('#lab-side-stbd');
+    function refreshSideBtns(m) {
+        sidePortB.style.background = m.side === 'port' ? '#2a5a8a' : '#123';
+        sideStbdB.style.background = m.side === 'starboard' ? '#2a5a8a' : '#123';
+    }
+    sidePortB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'port'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
+    sideStbdB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'starboard'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     const pathRow = ui.querySelector('#lab-pathrow');
     const pathInfo = ui.querySelector('#lab-pathinfo');
     const pathHint = ui.querySelector('#lab-pathhint');
@@ -563,7 +590,7 @@
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
                 path: lb.path ? lb.path.map(p => ({ x: Math.round(p.x - S.x), y: Math.round(p.y - S.y) })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS })),
-            marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y) })),
+            marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165) })),
             sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r })),
             lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y) })),
         };
@@ -582,7 +609,11 @@
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
             }
         }
-        for (const ms of (sc.marks || [])) addMark(S.x + ms.x, S.y + ms.y);
+        for (const ms of (sc.marks || [])) {
+            const m = addMark(S.x + ms.x, S.y + ms.y);
+            if (ms.side) m.side = ms.side;
+            if (ms.zone) m.zone = ms.zone;
+        }
         for (const ss of (sc.sands || [])) addSand(S.x + ss.x, S.y + ss.y, ss.r);
         for (const ls of (sc.lines || [])) { const ln = addLine(S.x + (ls.x1 + ls.x2) / 2, S.y + (ls.y1 + ls.y2) / 2); ln.x1 = S.x + ls.x1; ln.y1 = S.y + ls.y1; ln.x2 = S.x + ls.x2; ln.y2 = S.y + ls.y2; }
         select(null);
@@ -672,6 +703,10 @@
         if (e.altKey) {
             // ⌥-drag: resize
             if (s.kind === 'sand') { resizeSand(s.ref, Math.hypot(wx - s.ref.x, wy - s.ref.y)); invalidate(); return; }
+            if (s.kind === 'mark') {
+                s.ref.zone = Math.max(60, Math.min(400, Math.hypot(wx - s.ref.x, wy - s.ref.y)));
+                invalidate(); return;
+            }
             if (s.kind === 'line') {
                 const cx = (s.ref.x1 + s.ref.x2) / 2, cy = (s.ref.y1 + s.ref.y2) / 2;
                 let dx = s.ref.x2 - cx, dy = s.ref.y2 - cy;
@@ -791,6 +826,26 @@
         }
         for (const m of LAB.marks) {
             const [px, py] = w2s(m.x, m.y);
+            const Z = m.zone || 165;
+            // the zone ring, and the way round: port rounding keeps the mark to
+            // port = counterclockwise on screen; starboard = clockwise. Arc +
+            // arrowhead, echoing the game's own rounding-circle language.
+            const ccw = m.side !== 'starboard';
+            octx.beginPath(); octx.arc(px, py, Z, 0, Math.PI * 2);
+            octx.strokeStyle = 'rgba(94,234,212,0.55)'; octx.lineWidth = 2;
+            octx.setLineDash([9, 9]); octx.stroke(); octx.setLineDash([]);
+            const a0 = -Math.PI / 2 + (ccw ? 0.5 : -0.5);
+            const a1 = a0 + (ccw ? -1.6 : 1.6);
+            octx.beginPath(); octx.arc(px, py, Z * 0.62, a0, a1, ccw);
+            octx.strokeStyle = 'rgba(94,234,212,0.9)'; octx.lineWidth = 3.5; octx.lineCap = 'round';
+            octx.stroke();
+            const hx = px + Math.cos(a1) * Z * 0.62, hy = py + Math.sin(a1) * Z * 0.62;
+            const tang = a1 + (ccw ? -Math.PI / 2 : Math.PI / 2);
+            octx.save();
+            octx.translate(hx, hy); octx.rotate(tang);
+            octx.beginPath(); octx.moveTo(-9, -6); octx.lineTo(4, 0); octx.lineTo(-9, 6); octx.closePath();
+            octx.fillStyle = 'rgba(94,234,212,0.9)'; octx.fill();
+            octx.restore();
             octx.beginPath(); octx.arc(px, py, 12, 0, 7);
             octx.fillStyle = '#f0a02a'; octx.fill();
             octx.strokeStyle = '#fff'; octx.lineWidth = 2.5; octx.stroke();
