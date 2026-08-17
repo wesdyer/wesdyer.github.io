@@ -62,6 +62,7 @@
         frame: 0, playing: false,
         recording: false,
         goalArm: false,      // "+ ADD GOAL" armed: next click appends a goal
+        zoom: 1,             // 1 = 100%; the game canvas renders at viewport/zoom
     };
     // debug/test seam: lets the console (and the Playwright checks) see the
     // lab's state without threading it through the page
@@ -347,8 +348,63 @@
     const octx = ov.getContext('2d');
     function sizeOv() { ov.width = window.innerWidth; ov.height = window.innerHeight; }
     sizeOv(); window.addEventListener('resize', sizeOv);
-    const w2s = (wx, wy) => [wx - LAB.cam.x + ov.width / 2, wy - LAB.cam.y + ov.height / 2];
-    const s2w = (sx, sy) => [sx - ov.width / 2 + LAB.cam.x, sy - ov.height / 2 + LAB.cam.y];
+    const w2s = (wx, wy) => [(wx - LAB.cam.x) * LAB.zoom + ov.width / 2, (wy - LAB.cam.y) * LAB.zoom + ov.height / 2];
+    const s2w = (sx, sy) => [(sx - ov.width / 2) / LAB.zoom + LAB.cam.x, (sy - ov.height / 2) / LAB.zoom + LAB.cam.y];
+
+    // ── ZOOM. The game camera is translate-only, so zoom is a RESOLUTION
+    // trick: the world canvas renders at viewport/zoom logical pixels and CSS
+    // stretches it to the viewport — zoomed OUT renders more world (crisp),
+    // zoomed IN renders less (a little soft). frame() enforces the size each
+    // frame, which also undoes the game's own window-resize handler. ───────
+    const ZMIN = 0.25, ZMAX = 2.5;
+    const zbar = document.createElement('div');
+    zbar.className = 'sl-panel';
+    zbar.style.cssText = 'top:auto;left:auto;right:20px;bottom:20px;display:flex;align-items:center;gap:6px;padding:8px 10px;overflow:visible';
+    zbar.innerHTML = `
+      <button id="zm-out" class="sl-tbtn" title="zoom out (&minus;)">&minus;</button>
+      <button id="zm-pct" class="sl-tbtn" style="width:auto;padding:0 10px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.04em;font-variant-numeric:tabular-nums" title="reset to 100% (0)">100%</button>
+      <button id="zm-in" class="sl-tbtn" title="zoom in (+)">+</button>
+      <button id="zm-fit" class="sl-tbtn" style="width:auto;padding:0 10px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.08em" title="fit everything (F)">FIT</button>`;
+    document.body.appendChild(zbar);
+    function setZoom(z, sx, sy) {
+        z = Math.max(ZMIN, Math.min(ZMAX, z));
+        if (sx == null) { sx = ov.width / 2; sy = ov.height / 2; }
+        const [wx, wy] = s2w(sx, sy);   // world point under the anchor…
+        LAB.zoom = z;
+        LAB.cam.x = wx - (sx - ov.width / 2) / z;   // …stays under it
+        LAB.cam.y = wy - (sy - ov.height / 2) / z;
+        zbar.querySelector('#zm-pct').textContent = Math.round(z * 100) + '%';
+    }
+    function zoomFit() {
+        const xs = [], ys = [];
+        const add = (x, y, r) => { xs.push(x - r, x + r); ys.push(y - r, y + r); };
+        for (const lb of LAB.boats) {
+            add(lb.x, lb.y, 90);
+            for (const g of (lb.goals || [])) { const [gx, gy] = goalPoint(g); add(gx, gy, 40); }
+        }
+        for (const m of LAB.marks) add(m.x, m.y, (m.zone || 165) + 30);
+        for (const s of LAB.sands) add(s.x, s.y, s.r + 30);
+        for (const ln of LAB.lines) { add(ln.x1, ln.y1, 30); add(ln.x2, ln.y2, 30); }
+        if (!xs.length) {   // empty scene: home to the stage at 100%
+            if (LAB.stage) { LAB.cam.x = LAB.stage.x; LAB.cam.y = LAB.stage.y; }
+            setZoom(1);
+            return;
+        }
+        const x0 = Math.min(...xs), x1 = Math.max(...xs);
+        const y0 = Math.min(...ys), y1 = Math.max(...ys);
+        LAB.cam.x = (x0 + x1) / 2; LAB.cam.y = (y0 + y1) / 2;
+        const z = Math.min(ov.width / Math.max(200, (x1 - x0) * 1.15),
+                           ov.height / Math.max(200, (y1 - y0) * 1.15));
+        setZoom(Math.min(1.5, z));   // fit frames the scene, never magnifies past 150%
+    }
+    zbar.querySelector('#zm-in').onclick = () => setZoom(LAB.zoom * 1.25);
+    zbar.querySelector('#zm-out').onclick = () => setZoom(LAB.zoom / 1.25);
+    zbar.querySelector('#zm-pct').onclick = () => setZoom(1);
+    zbar.querySelector('#zm-fit').onclick = zoomFit;
+    ov.addEventListener('wheel', e => {
+        e.preventDefault();
+        setZoom(LAB.zoom * Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
+    }, { passive: false });
 
     // ── boot ───────────────────────────────────────────────────────────
     let _update = null;
@@ -395,6 +451,8 @@
             if (!lb) return;
             ctx.save();
             ctx.translate(boat.x, boat.y);
+            // counter-scale: the pill keeps its SCREEN size at any zoom
+            ctx.scale(1 / LAB.zoom, 1 / LAB.zoom);
             ctx.translate(0, 36);
             ctx.font = '800 13px Archivo,system-ui';
             const w = ctx.measureText(boat.name).width + 16;
@@ -1159,6 +1217,10 @@
                     else if (LAB.armed) setArmed(LAB.armed);
                     else select(null);
                 }
+                else if (e.key === '+' || e.key === '=') setZoom(LAB.zoom * 1.25);
+                else if (e.key === '-' || e.key === '_') setZoom(LAB.zoom / 1.25);
+                else if (e.key === '0') setZoom(1);
+                else if (e.key === 'f' || e.key === 'F') zoomFit();
                 else if (LAB.rec && LAB.mode === 'play') {
                     if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
                     else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
@@ -1531,8 +1593,8 @@
     ov.addEventListener('mousemove', e => {
         if (!LAB.drag) return;
         if (LAB.drag.pan) {
-            LAB.cam.x = LAB.drag.cx - (e.clientX - LAB.drag.sx);
-            LAB.cam.y = LAB.drag.cy - (e.clientY - LAB.drag.sy);
+            LAB.cam.x = LAB.drag.cx - (e.clientX - LAB.drag.sx) / LAB.zoom;
+            LAB.cam.y = LAB.drag.cy - (e.clientY - LAB.drag.sy) / LAB.zoom;
             return;
         }
         const [wx, wy] = s2w(e.clientX, e.clientY);
@@ -1689,6 +1751,16 @@
         st.camera.x = LAB.cam.x; st.camera.y = LAB.cam.y;
         st.camera.fx = LAB.cam.x; st.camera.fy = LAB.cam.y;
         st.camera.target = 'boat';
+        // zoom enforcement: the world canvas renders at viewport/zoom and CSS
+        // stretches it back — re-asserted every frame, which also undoes the
+        // game's own window-resize handler setting it back to 1:1
+        const gc = document.getElementById('gameCanvas');
+        if (gc) {
+            const lw = Math.max(64, Math.round(window.innerWidth / LAB.zoom));
+            const lh = Math.max(64, Math.round(window.innerHeight / LAB.zoom));
+            if (gc.width !== lw || gc.height !== lh) { gc.width = lw; gc.height = lh; }
+            if (gc.style.width !== '100vw') { gc.style.width = '100vw'; gc.style.height = '100vh'; }
+        }
         drawOverlay();
     }
     function applyInitialFrame() {
@@ -1716,7 +1788,7 @@
         }
         for (const m of LAB.marks) {
             const [px, py] = w2s(m.x, m.y);
-            const Z = m.zone || 165;
+            const Z = (m.zone || 165) * LAB.zoom;   // world radius on a zoomed screen
             // the zone ring, and the way round: port rounding keeps the mark to
             // port = counterclockwise on screen; starboard = clockwise. Arc +
             // arrowhead, echoing the game's own rounding-circle language.
@@ -1736,7 +1808,7 @@
             octx.beginPath(); octx.moveTo(-9, -6); octx.lineTo(4, 0); octx.lineTo(-9, 6); octx.closePath();
             octx.fillStyle = 'rgba(94,234,212,0.9)'; octx.fill();
             octx.restore();
-            octx.beginPath(); octx.arc(px, py, 12, 0, 7);
+            octx.beginPath(); octx.arc(px, py, Math.max(6, 12 * LAB.zoom), 0, 7);
             octx.fillStyle = '#f0a02a'; octx.fill();
             octx.strokeStyle = '#fff'; octx.lineWidth = 2.5; octx.stroke();
         }
@@ -1795,7 +1867,7 @@
             else if (s.kind === 'sand') { cx = s.ref.x; cy = s.ref.y; r = s.ref.r + 14; }
             else { cx = (s.ref.x1 + s.ref.x2) / 2; cy = (s.ref.y1 + s.ref.y2) / 2; r = 30; }
             const [px, py] = w2s(cx, cy);
-            octx.beginPath(); octx.arc(px, py, r, 0, 7);
+            octx.beginPath(); octx.arc(px, py, Math.max(14, r * LAB.zoom), 0, 7);
             octx.strokeStyle = 'rgba(143,208,255,0.9)'; octx.lineWidth = 2; octx.setLineDash([6, 6]); octx.stroke(); octx.setLineDash([]);
         }
         // (no wind arrow: the wind comets on the water already show direction
