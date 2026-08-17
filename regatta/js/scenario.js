@@ -118,12 +118,17 @@
         <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
           <label>speed</label><input id="lab-spd" type="number" min="0" max="10" step="0.5" style="width:58px"> kt
         </div>
-        <div id="lab-pathrow" style="margin-top:4px;display:none">
+        <div style="border-top:1px solid #345;margin-top:8px;padding-top:6px">
+          <div style="font-weight:600;margin-bottom:2px">Plan</div>
+          <div id="lab-plan"></div>
+          <button id="lab-planadd" style="margin-top:4px">+ step</button>
+        </div>
+        <div id="lab-pathrow" style="margin-top:6px;display:none">
           <div><span id="lab-pathinfo" style="opacity:0.8"></span> <button id="lab-pathclr" style="padding:0 6px">clear</button></div>
-          <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-            <label title="blank = AI takes over when the path ends">AI at</label>
-            <input id="lab-aiat" type="number" min="0" step="0.5" style="width:52px" placeholder="end"> s
-          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
+          <label title="blank = scripted to the end">AI at</label>
+          <input id="lab-aiat" type="number" min="0" step="0.5" style="width:52px" placeholder="never"> s
         </div>
         <div style="margin-top:6px"><button id="lab-pathbtn">&#9998; Draw path</button></div>
       </div>
@@ -346,7 +351,7 @@
         // targets nothing, so zone snapshots latch on plain geometry.
         bot.raceState.isTacking = false; bot.raceState.leg = 2;
         bot.fadeTimer = 999; bot.opacity = 1;
-        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, path: null, aiAtS: null };
+        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, path: null, plan: [], aiAtS: null };
         LAB.boats.push(lb);
         applyLabIdentity(lb, LAB.boats.length - 1);
         select({ kind: 'boat', ref: lb });
@@ -498,6 +503,7 @@
             hdgIn.value = Math.round(((s.ref.heading * DEG) % 360 + 360) % 360);
             spdIn.value = s.ref.speedKt;
             refreshPathRow(s.ref);
+            renderPlan(s.ref);
         }
         if (s.kind === 'mark') refreshSideBtns(s.ref);
         renderLayers();
@@ -526,6 +532,63 @@
     }
     pathBtn.onclick = () => {
         if (LAB.sel && LAB.sel.kind === 'boat') { setArmed('path'); refreshPathRow(LAB.sel.ref); }
+    };
+
+    // ── THE PLAN: helm orders on a clock. The initial condition is the
+    // boat's heading + speed; each step says "at t seconds, steer to this
+    // heading" (the boat turns the SHORT way at her real turn rate, and her
+    // speed follows the polar for wherever she points) with an optional
+    // spinnaker order — the engine's own 5-second hoist/douse plays out
+    // whenever the order changes the kite. A plan takes precedence over a
+    // drawn path. ─────────────────────────────────────────────────────────
+    const planDiv = ui.querySelector('#lab-plan');
+    function renderPlan(lb) {
+        planDiv.innerHTML = '';
+        const plan = lb.plan || (lb.plan = []);
+        plan.sort((a, b) => a.t - b.t);
+        for (const en of plan) {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;gap:4px;align-items:center;margin-top:3px;font-size:12px';
+            const tIn = document.createElement('input');
+            tIn.type = 'text'; tIn.inputMode = 'decimal'; tIn.value = en.t;
+            tIn.style.cssText = 'width:38px;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:1px 3px';
+            tIn.title = 'time (s)';
+            tIn.addEventListener('change', () => { en.t = Math.max(0, parseFloat(tIn.value) || 0); renderPlan(lb); invalidate(); });
+            const hIn = document.createElement('input');
+            hIn.type = 'text'; hIn.inputMode = 'decimal'; hIn.value = en.headingDeg;
+            hIn.style.cssText = 'width:38px;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:1px 3px';
+            hIn.title = 'new heading (°)';
+            hIn.addEventListener('change', () => { en.headingDeg = parseFloat(hIn.value) || 0; invalidate(); });
+            const sSel = document.createElement('select');
+            sSel.style.cssText = 'background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;font-size:12px';
+            for (const [v, lbl] of [['auto', 'kite auto'], ['up', 'kite up'], ['down', 'kite down']]) {
+                const o = document.createElement('option'); o.value = v; o.textContent = lbl; sSel.appendChild(o);
+            }
+            sSel.value = en.spin || 'auto';
+            sSel.addEventListener('change', () => { en.spin = sSel.value; invalidate(); });
+            const del = document.createElement('span');
+            del.innerHTML = '&#10005;';
+            del.style.cssText = 'cursor:pointer;opacity:0.6;padding:0 3px';
+            del.onclick = () => { plan.splice(plan.indexOf(en), 1); renderPlan(lb); invalidate(); };
+            const sLab = document.createElement('span'); sLab.textContent = 's'; sLab.style.opacity = '0.6';
+            const dLab = document.createElement('span'); dLab.innerHTML = '&deg;'; dLab.style.opacity = '0.6';
+            row.append(tIn, sLab, hIn, dLab, sSel, del);
+            planDiv.appendChild(row);
+        }
+        if (!plan.length) {
+            const p = document.createElement('div');
+            p.style.cssText = 'opacity:0.55;font-size:12px';
+            p.textContent = 'initial heading + speed, then steps';
+            planDiv.appendChild(p);
+        }
+    }
+    ui.querySelector('#lab-planadd').onclick = () => {
+        if (!LAB.sel || LAB.sel.kind !== 'boat') return;
+        const lb = LAB.sel.ref;
+        const last = lb.plan.length ? lb.plan[lb.plan.length - 1] : null;
+        lb.plan.push({ t: last ? last.t + 5 : 5, headingDeg: Math.round(lb.heading * DEG), spin: 'auto' });
+        renderPlan(lb);
+        invalidate();
     };
     function pathLen(p) {
         let L = 0;
@@ -558,6 +621,9 @@
             bt.raceState.isTacking = false; bt.raceState.ocs = false;
             bt.raceState.penalty = false; bt.raceState.totalPenalties = 0;
             bt.raceState.penaltyTurnsOwed = 0;
+            // kite starts stowed — a pool recruit otherwise carries whatever
+            // hoist state its parked racing life left behind
+            bt.spinnaker = false; bt.spinnakerDeployProgress = 0;
             const c = bt.controller;
             if (c) { c.lowSpeedTimer = 0; c.wiggleActive = false; c.escActive = false; c.iceEscapeTimer = 0; }
         }
@@ -586,6 +652,7 @@
                 const bt = lb.bot, c = bt.controller;
                 return { x: bt.x, y: bt.y, h: bt.heading, s: bt.speed,
                     tk: bt.raceState.isTacking, pen: bt.raceState.penalty,
+                    sp: !!bt.spinnaker, spp: +(bt.spinnakerDeployProgress || 0).toFixed(3),
                     penN: bt.raceState.totalPenalties || 0,
                     mode: lb._mode || 'AI',
                     role: c ? (c.avoidanceRole || '-') : '-',
@@ -618,22 +685,51 @@
             lb._done = (t === lb.path.length - 1 && Math.hypot(bt.x - p.x, bt.y - p.y) < 60);
         };
     }
+    // PLAN mode: helm orders on the sim clock. The physics turns the boat
+    // toward targetHeading the SHORT way at her real rate, and speed follows
+    // the polar for the point of sail she passes through; the kite order is
+    // applied after updateAI's own call (see the wrapper below), so the
+    // engine's 5-second hoist/douse crossfade plays out on every change.
+    function planUpdate(lb) {
+        return function () {
+            let hdg = lb.heading, spin = 'auto';
+            for (const en of lb.plan) {
+                if (LAB.simT >= en.t) { hdg = (en.headingDeg || 0) / DEG; spin = en.spin || 'auto'; }
+                else break;
+            }
+            this.targetHeading = hdg;
+            this.speedLimit = 1.0;
+            lb._spinForce = spin === 'auto' ? null : (spin === 'up');
+        };
+    }
+    // the kite order must land AFTER updateAI writes boat.spinnaker (its AWA
+    // rule runs every frame) and BEFORE updateBoat integrates the hoist
+    const _updateAI = window.updateAI;
+    window.updateAI = function (boat, dt) {
+        _updateAI(boat, dt);
+        if (LAB.recording) {
+            for (const lb of LAB.boats) {
+                if (lb.bot === boat && lb._mode === 'S' && lb._spinForce != null) { boat.spinnaker = lb._spinForce; break; }
+            }
+        }
+    };
     function handoffToAI(lb) {
         const bt = lb.bot, c = bt.controller;
         if (c && Object.prototype.hasOwnProperty.call(c, 'update')) delete c.update;
         const gx = bt.x + Math.sin(bt.heading) * 8000;
         const gy = bt.y - Math.cos(bt.heading) * 8000;
         if (c) c.getNavigationTarget = () => ({ x: gx, y: gy });
-        lb._mode = 'AI';
+        lb._mode = 'AI'; lb._spinForce = null;
     }
     function simulate() {
         applyInitial();
         for (const lb of LAB.boats) {
             const bt = lb.bot, c = bt.controller;
-            const scripted = lb.path && lb.path.length >= 2 && lb.aiAtS !== 0;
+            const hasPlan = lb.plan && lb.plan.length > 0;
+            const scripted = (hasPlan || (lb.path && lb.path.length >= 2)) && lb.aiAtS !== 0;
             if (scripted) {
-                lb._mode = 'S'; lb._pi = 0; lb._done = false;
-                if (c) c.update = scriptedUpdate(lb);
+                lb._mode = 'S'; lb._pi = 0; lb._done = false; lb._spinForce = null;
+                if (c) c.update = hasPlan ? planUpdate(lb) : scriptedUpdate(lb);
             } else {
                 // AI from the start: sail the SET heading as the course —
                 // strategy, avoidance, rules and the umpire all live
@@ -661,6 +757,7 @@
         };
         try {
             for (let f = 1; f <= nF; f++) {
+                LAB.simT = f / 60;   // the plan's clock
                 for (const lb of LAB.boats) {
                     if (lb._mode !== 'S') continue;
                     const due = lb.aiAtS != null && f >= Math.round(lb.aiAtS * 60);
@@ -773,6 +870,7 @@
             v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
                 path: lb.path ? lb.path.map(p => ({ x: Math.round(p.x - S.x), y: Math.round(p.y - S.y) })) : undefined,
+                plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg, spin: en.spin || 'auto' })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS })),
             marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165) })),
             sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r })),
@@ -790,6 +888,7 @@
                 lb.heading = (bs.headingDeg || 0) / DEG;
                 lb.speedKt = bs.speedKt != null ? bs.speedKt : 6;
                 lb.path = bs.path ? bs.path.map(p => ({ x: S.x + p.x, y: S.y + p.y })) : null;
+                lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg, spin: en.spin || 'auto' })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
             }
         }
@@ -1214,6 +1313,9 @@
                 bt.velocity = { x: Math.sin(fb.h) * fb.s, y: -Math.cos(fb.h) * fb.s };
                 bt.raceState.isTacking = fb.tk;
                 bt.raceState.penalty = fb.pen;
+                // pin the recorded kite state so scrubbing replays the hoist
+                // (the live per-frame AWA rule would otherwise repaint it)
+                bt.spinnaker = fb.sp; bt.spinnakerDeployProgress = fb.spp;
             }
             pbSlider.value = LAB.frame;
             const t = LAB.frame / 60;
