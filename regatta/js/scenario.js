@@ -99,9 +99,9 @@
           <button id="lab-save">Save</button><button id="lab-saveas">Save As&hellip;</button>
         </div>
         <div style="border-top:1px solid #345;padding-top:6px">
-          <div style="opacity:0.65;font-size:12px;margin-bottom:4px">library file: <span id="lab-libname">(in-browser)</span></div>
+          <div style="opacity:0.65;font-size:12px;margin-bottom:4px">library: <span id="lab-libname">assets/scenarios.js — File&hellip; to attach for writing</span></div>
           <div style="display:flex;gap:6px">
-            <button id="lab-libopen" title="load the scenarios file (all saves go to it)">File&hellip;</button>
+            <button id="lab-libopen" title="attach assets/scenarios.js so saves write to it">File&hellip;</button>
             <button id="lab-clear">Clear scene</button>
           </div>
         </div>
@@ -787,7 +787,18 @@
     // a single scenarios.js, always loaded and saved). The library also
     // mirrors to localStorage so the page works before a file is chosen;
     // when a file handle is attached, every Save/Delete rewrites it. ─────
-    function store() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { return {}; } }
+    // The library's WELL-KNOWN HOME is assets/scenarios.js (committed, loaded
+    // by this page at boot — the venue-document convention, but one file for
+    // everything). The localStorage mirror layers on top: at boot the shipped
+    // file seeds the library and local saves win on name conflicts, so work
+    // saved before the file was attached never vanishes. Attaching the file
+    // via File… makes every save/delete write assets/scenarios.js itself.
+    function store() {
+        let local = {};
+        try { local = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { }
+        const shipped = (window.SCENARIO_DOC && typeof window.SCENARIO_DOC === 'object') ? window.SCENARIO_DOC : {};
+        return { ...shipped, ...local };
+    }
     function persistLib(lib) {
         localStorage.setItem(STORE_KEY, JSON.stringify(lib));
         if (LAB.libHandle) writeLibFile(lib);
