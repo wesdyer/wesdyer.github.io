@@ -19,7 +19,22 @@
 (function () {
     'use strict';
 
-    // ── force the open-water venue ─────────────────────────────────────
+    // ── loading cover: the page boots a real race under the hood (reset,
+    // start, fast-forward to racing) and that setup must never be seen —
+    // the cover goes up before the first painted frame and comes down when
+    // the stage is ready ──────────────────────────────────────────────────
+    const cover = document.createElement('div');
+    cover.style.cssText = 'position:fixed;inset:0;z-index:100;background:#0a121c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#dbe7f3;font:14px system-ui;transition:opacity 0.35s ease';
+    cover.innerHTML = '<div style="font:800 26px system-ui;letter-spacing:0.12em;color:#8fd0ff">SCENARIO</div>' +
+        '<div id="cover-msg" style="opacity:0.7">setting up open water&hellip;</div>';
+    (document.body ? Promise.resolve() : new Promise(r => window.addEventListener('DOMContentLoaded', r)))
+        .then(() => document.body.appendChild(cover));
+    function dismissCover() {
+        cover.style.opacity = '0';
+        setTimeout(() => cover.remove(), 400);
+    }
+
+    // ── force the open-water venue (cover stays up through the reload) ──
     let savedSettings = {};
     try { savedSettings = JSON.parse(localStorage.getItem('regatta_settings') || '{}'); } catch (e) { }
     if (savedSettings.venue !== 'seatrials') {
@@ -155,7 +170,12 @@
         try {
             window.resetGame(); window.startRace();
             for (let i = 0; i < 60 * 120 && st.race.status !== 'racing'; i++) window.update(1 / 60);
-        } catch (e) { console.error('scenario boot', e); return; }
+        } catch (e) {
+            console.error('scenario boot', e);
+            const msg = cover.querySelector('#cover-msg');
+            if (msg) { msg.textContent = 'boot failed — see console'; msg.style.color = '#ff9b8f'; }
+            return;
+        }
         window.getWindAt = () => ({ speed: LAB.windKt, direction: 0 });
         st.showNavAids = false;
         const b = st.course.boundary || { x: 0, y: 0 };
@@ -189,6 +209,7 @@
         };
         refreshList();
         LAB.ready = true;
+        dismissCover();
     }
 
     // ── objects ────────────────────────────────────────────────────────
