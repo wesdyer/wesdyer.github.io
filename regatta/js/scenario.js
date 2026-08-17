@@ -607,6 +607,10 @@
             const c = bt.controller;
             if (c) { c.lowSpeedTimer = 0; c.wiggleActive = false; c.escActive = false; c.iceEscapeTimer = 0; }
         }
+        // every simulation runs over the same clock window (determinism, and
+        // the burst can never reach the venue's time limit)
+        window.state.race.timer = 100;
+        window.state.race.status = 'racing';
         window.Rules.interactions = {};
     }
     function pairRights() {
@@ -1223,6 +1227,18 @@
         if (typeof settings !== 'undefined') {
             settings.soundEnabled = false; settings.bgSoundEnabled = false; settings.musicEnabled = false;
         }
+        // THE RACE NEVER ENDS HERE. Outside the simulation burst the clock is
+        // pinned, so the venue's time limit can never fire — which is what
+        // used to finish the underlying Sea Trials race after a few minutes
+        // of editing: the trajectory-save path ran, the (hidden) results
+        // overlay went up, and the loop's results catch-up (iterations=10)
+        // sent the whole world — wind comets included — into fast-forward.
+        st.race.timer = 100;
+        if (st.race.status !== 'racing') st.race.status = 'racing';
+        // belt-and-braces: the results catch-up reads the overlay's CLASS, and
+        // our CSS hide doesn't touch classList — keep 'hidden' on it always
+        const ro = document.getElementById('results-overlay');
+        if (ro && !ro.classList.contains('hidden')) ro.classList.add('hidden');
         st.wind.direction = 0; st.wind.baseDirection = 0;
         st.wind.speed = LAB.windKt; st.wind.baseSpeed = LAB.windKt;
         const b0 = LAB.stage || { x: 0, y: 0 };
