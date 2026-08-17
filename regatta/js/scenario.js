@@ -712,34 +712,39 @@
     refreshModeBtns();
     ui.querySelector('#lab-clear').onclick = clearScene;
     // THE KEYBOARD IS OURS, NOT THE GAME'S. This is a constructor, not a race:
-    // no ESC pause menu, no steering keys, no camera modes. A capture-phase
-    // interceptor runs the page's own keys and stops the event dead before any
-    // of the game's window handlers (all bubble-phase, so ours fires first).
-    // Typing in inputs passes through untouched, except ESC which just blurs.
+    // no ESC pause menu, no steering keys, no camera modes. Every game key
+    // handler lives on WINDOW (verified — none on document), so a DOCUMENT-
+    // level bubble interceptor sits exactly between the two worlds: the
+    // focused input has already received the trusted key (target phase runs
+    // first), and stopping propagation here starves every window handler.
+    // The earlier window-capture design leaked in two ways — keys typed into
+    // fields continued to the game ('c' in a scenario name flipped the
+    // camera), and keys with a dialog open fell through.
     function swallowKeys(e) {
         const t = e.target;
         const typing = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
-        if (typing) {
-            if (e.key === 'Escape') { t.blur(); e.preventDefault(); e.stopImmediatePropagation(); }
-            return; // let the field have its keys; game handlers ignore focused inputs at their peril, but they never see ESC
-        }
         if (e.type === 'keydown') {
-            if (e.key === 'Escape' && LAB.modal) { LAB.modal.close(); e.preventDefault(); e.stopImmediatePropagation(); return; }
-            if (LAB.modal) { return; } // a dialog is up: keys are its own
-            if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
-            else if (e.key === 'Escape') { if (LAB.armed) setArmed(LAB.armed); else select(null); }
-            else if (LAB.rec && LAB.mode === 'play') {
-                if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
-                else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
-                else if (e.key === ' ') pbPlay.onclick();
+            if (typing) {
+                if (e.key === 'Escape') { t.blur(); e.preventDefault(); }
+            } else if (LAB.modal) {
+                if (e.key === 'Escape') { LAB.modal.close(); e.preventDefault(); }
+                // any other key while a dialog is up: dead air
+            } else {
+                if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
+                else if (e.key === 'Escape') { if (LAB.armed) setArmed(LAB.armed); else select(null); }
+                else if (LAB.rec && LAB.mode === 'play') {
+                    if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
+                    else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
+                    else if (e.key === ' ') pbPlay.onclick();
+                }
+                e.preventDefault();   // no space-scroll, no browser shortcuts on the stage
             }
         }
-        e.preventDefault();
-        e.stopImmediatePropagation();
+        e.stopPropagation();          // the game's window handlers never hear a key
     }
-    window.addEventListener('keydown', swallowKeys, true);
-    window.addEventListener('keyup', swallowKeys, true);
-    window.addEventListener('keypress', swallowKeys, true);
+    document.addEventListener('keydown', swallowKeys, false);
+    document.addEventListener('keyup', swallowKeys, false);
+    document.addEventListener('keypress', swallowKeys, false);
 
     // ── save / load ────────────────────────────────────────────────────
     function store() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { return {}; } }
