@@ -63,83 +63,132 @@
         recording: false,
     };
 
-    // ── UI panel ───────────────────────────────────────────────────────
-    const ui = document.createElement('div');
-    ui.style.cssText = 'position:fixed;top:12px;right:12px;z-index:70;width:238px;background:rgba(10,18,28,0.92);color:#dbe7f3;font:13px/1.5 system-ui,sans-serif;padding:12px 14px;border:1px solid rgba(120,180,220,0.35);border-radius:10px;max-height:calc(100vh - 40px);overflow-y:auto';
-    ui.innerHTML = `
-      <div style="font-weight:700;font-size:15px;color:#8fd0ff;margin-bottom:4px">SCENARIO</div>
-      <div style="opacity:0.7;margin-bottom:8px;font-size:12px">wind from the top &#8595; · click water to place<br>&#8984;-drag rotate boat · &#8997;-drag resize</div>
-      <div id="lab-tools" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
-      <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">
-        <span><label>wind </label><input id="lab-wind" type="number" min="2" max="30" step="1" style="width:44px" value="12"> kt</span>
-        <span><label>length </label><input id="lab-dur" type="number" min="2" max="120" step="1" style="width:44px" value="10"> s</span>
+    // ── UI: the editor convention — LAYERS on the left (the list is the
+    // mode switch; “＋” on a layer arms placement), DETAILS on the right
+    // (the selected object, or the Scenario layer itself). The play
+    // transport stays on the bottom when in use. ───────────────────────
+    const panelCss = 'position:fixed;top:12px;z-index:70;background:rgba(10,18,28,0.92);color:#dbe7f3;font:13px/1.5 system-ui,sans-serif;padding:12px 14px;border:1px solid rgba(120,180,220,0.35);border-radius:10px;max-height:calc(100vh - 40px);overflow-y:auto';
+    const left = document.createElement('div');
+    left.style.cssText = panelCss + ';left:12px;width:172px';
+    left.innerHTML = `
+      <div style="font-weight:700;font-size:15px;color:#8fd0ff;margin-bottom:6px">SCENARIO</div>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button id="lab-run">&#9654; Play</button><button id="lab-reset">Edit</button>
       </div>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
-        <button id="lab-run">&#9654; Play</button><button id="lab-reset">Edit</button><button id="lab-clear">Clear</button>
-      </div>
-      <div id="lab-selpanel" style="border-top:1px solid #345;padding-top:6px;margin-bottom:6px;display:none">
-        <div style="font-weight:600" id="lab-selname"></div>
-        <div id="lab-boatfields" style="display:none">
-          <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
-            <label>heading</label><input id="lab-hdg" type="number" step="5" style="width:58px"> &deg;
-          </div>
-          <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
-            <label>speed</label><input id="lab-spd" type="number" min="0" max="10" step="0.5" style="width:58px"> kt
-          </div>
-          <div id="lab-pathrow" style="margin-top:4px;display:none">
-            <div><span id="lab-pathinfo" style="opacity:0.8"></span> <button id="lab-pathclr" style="padding:0 6px">clear</button></div>
-            <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
-              <label title="blank = AI takes over when the path ends">AI at</label>
-              <input id="lab-aiat" type="number" min="0" step="0.5" style="width:52px" placeholder="end"> s
-            </div>
-          </div>
-          <div id="lab-pathhint" style="opacity:0.6;margin-top:3px;font-size:12px">&#9998; Path tool: drag from this boat to script her track</div>
+      <div style="font-weight:700;font-size:11px;letter-spacing:0.1em;color:#7fa8c9;margin-bottom:4px">LAYERS</div>
+      <div id="lab-layers"></div>`;
+    document.body.appendChild(left);
+
+    const right = document.createElement('div');
+    right.style.cssText = panelCss + ';right:12px;width:232px';
+    right.innerHTML = `
+      <div style="font-weight:700;font-size:11px;letter-spacing:0.1em;color:#7fa8c9;margin-bottom:6px">DETAILS</div>
+      <div style="font-weight:600;margin-bottom:4px" id="lab-selname"></div>
+      <div id="det-scenario" style="display:none">
+        <div style="margin-bottom:6px"><input id="lab-name" type="text" placeholder="scenario name" style="width:100%"></div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:6px">
+          <span><label>wind </label><input id="lab-wind" type="number" min="2" max="30" step="1" style="width:44px" value="12"> kt</span>
+          <span><label>length </label><input id="lab-dur" type="number" min="2" max="120" step="1" style="width:44px" value="10"> s</span>
         </div>
-        <div id="lab-markfields" style="display:none">
-          <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
-            <label>rounding</label>
-            <button id="lab-side-port">&#8634; Port</button>
-            <button id="lab-side-stbd">&#8635; Stbd</button>
-          </div>
-          <div style="opacity:0.6;margin-top:3px;font-size:12px">zone = 3 boat lengths · &#8997;-drag resizes</div>
-        </div>
-        <button id="lab-del" style="margin-top:6px">Delete</button>
-      </div>
-      <div style="border-top:1px solid #345;padding-top:6px;margin-bottom:8px">
-        <div style="font-weight:600;margin-bottom:3px">RIGHTS &amp; UMPIRE <span id="lab-time" style="opacity:0.7;font-weight:400"></span></div>
-        <div id="lab-rights" style="font:12px/1.5 ui-monospace,monospace;color:#bfe3c0;min-height:40px">&mdash;</div>
-      </div>
-      <div style="border-top:1px solid #345;padding-top:6px">
+        <div style="opacity:0.65;font-size:12px;margin-bottom:8px">wind is from the top &#8595;<br>&#8984;-drag rotate boat · &#8997;-drag resize</div>
         <div style="display:flex;gap:6px;margin-bottom:6px">
-          <input id="lab-name" type="text" placeholder="scenario name" style="flex:1;min-width:0">
-          <button id="lab-save">Save</button>
+          <select id="lab-list" style="flex:1;min-width:0;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px"></select>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button id="lab-save">Save</button><button id="lab-load">Load</button><button id="lab-delsc">&#10005;</button>
         </div>
         <div style="display:flex;gap:6px">
-          <select id="lab-list" style="flex:1;min-width:0;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px"></select>
-          <button id="lab-load">Load</button><button id="lab-delsc">&#10005;</button>
+          <button id="lab-clear">Clear scene</button>
+          <button id="lab-json">Copy JSON</button>
         </div>
       </div>
-      <button id="lab-json" style="margin-top:8px">Copy scene JSON</button>`;
-    document.body.appendChild(ui);
+      <div id="det-boat" style="display:none">
+        <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
+          <label>heading</label><input id="lab-hdg" type="number" step="5" style="width:58px"> &deg;
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
+          <label>speed</label><input id="lab-spd" type="number" min="0" max="10" step="0.5" style="width:58px"> kt
+        </div>
+        <div id="lab-pathrow" style="margin-top:4px;display:none">
+          <div><span id="lab-pathinfo" style="opacity:0.8"></span> <button id="lab-pathclr" style="padding:0 6px">clear</button></div>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+            <label title="blank = AI takes over when the path ends">AI at</label>
+            <input id="lab-aiat" type="number" min="0" step="0.5" style="width:52px" placeholder="end"> s
+          </div>
+        </div>
+        <div style="margin-top:6px"><button id="lab-pathbtn">&#9998; Draw path</button></div>
+      </div>
+      <div id="det-mark" style="display:none">
+        <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
+          <label>rounding</label>
+          <button id="lab-side-port">&#8634; Port</button>
+          <button id="lab-side-stbd">&#8635; Stbd</button>
+        </div>
+        <div style="opacity:0.6;margin-top:3px;font-size:12px">zone = 3 boat lengths · &#8997;-drag resizes</div>
+      </div>
+      <div id="det-sand" style="display:none">
+        <div style="opacity:0.6;font-size:12px;margin-top:2px">solid sand · &#8997;-drag resizes · boats ground on it</div>
+      </div>
+      <div id="det-line" style="display:none">
+        <div style="opacity:0.6;font-size:12px;margin-top:2px">a line on the water · drag the end handles · &#8997;-drag stretches</div>
+      </div>
+      <div id="lab-delrow" style="display:none;margin-top:8px"><button id="lab-del">Delete</button></div>
+      <div style="border-top:1px solid #345;padding-top:6px;margin-top:10px">
+        <div style="font-weight:600;margin-bottom:3px">RIGHTS &amp; UMPIRE <span id="lab-time" style="opacity:0.7;font-weight:400"></span></div>
+        <div id="lab-rights" style="font:12px/1.5 ui-monospace,monospace;color:#bfe3c0;min-height:40px">&mdash;</div>
+      </div>`;
+    document.body.appendChild(right);
+    const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s),
+                 querySelectorAll: (s) => [...left.querySelectorAll(s), ...right.querySelectorAll(s)] };
     for (const b of ui.querySelectorAll('button')) b.style.cssText += 'background:#123;border:1px solid #467;color:#cde;padding:2px 10px;border-radius:6px;cursor:pointer';
     for (const i of ui.querySelectorAll('input')) i.style.cssText += 'background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:1px 4px';
 
-    const TOOLS = [['select', 'Select'], ['boat', '+ Boat'], ['mark', '+ Mark'], ['sand', '+ Sand'], ['line', '+ Line'], ['path', '&#9998; Path']];
-    const toolBtns = {};
-    const toolsDiv = ui.querySelector('#lab-tools');
-    for (const [id, label] of TOOLS) {
-        const b = document.createElement('button');
-        b.innerHTML = label;
-        b.style.cssText = 'background:#123;border:1px solid #467;color:#cde;padding:2px 8px;border-radius:6px;cursor:pointer';
-        b.onclick = () => setTool(id);
-        toolsDiv.appendChild(b);
-        toolBtns[id] = b;
+    // the layer list: Scenario, then the object layers with “＋” adders.
+    // An armed “＋” means the next click on open water places that kind.
+    const LAYERS = [
+        ['scenario', 'Scenario', null],
+        ['boat', 'Boats', () => LAB.boats.map((lb) => ({ label: 'Boat ' + lb.bot.name, sel: { kind: 'boat', ref: lb } }))],
+        ['sand', 'Objects', () => LAB.sands.map((s, i) => ({ label: 'sand ' + (i + 1), sel: { kind: 'sand', ref: s } }))],
+        ['mark', 'Marks', () => LAB.marks.map((m, i) => ({ label: 'mark ' + (i + 1), sel: { kind: 'mark', ref: m } }))],
+        ['line', 'Lines', () => LAB.lines.map((l, i) => ({ label: 'line ' + (i + 1), sel: { kind: 'line', ref: l, part: 0 } }))],
+    ];
+    const layersDiv = left.querySelector('#lab-layers');
+    function setArmed(kind) {
+        LAB.armed = LAB.armed === kind ? null : kind;
+        renderLayers();
     }
-    function setTool(id) {
-        LAB.tool = id;
-        for (const k of Object.keys(toolBtns)) toolBtns[k].style.background = k === id ? '#2a5a8a' : '#123';
+    function renderLayers() {
+        layersDiv.innerHTML = '';
+        for (const [kind, label, items] of LAYERS) {
+            const head = document.createElement('div');
+            head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:2px 6px;border-radius:6px;cursor:pointer;margin-top:2px'
+                + (LAB.sel && LAB.sel.kind === 'scenario' && kind === 'scenario' ? ';background:#2a5a8a' : '');
+            const name = document.createElement('span');
+            name.textContent = label;
+            name.style.fontWeight = '600';
+            head.appendChild(name);
+            if (items) {
+                const add = document.createElement('span');
+                add.innerHTML = '&#65291;';
+                add.title = 'add, then click the water';
+                add.style.cssText = 'cursor:pointer;padding:0 6px;border-radius:5px;border:1px solid #467'
+                    + (LAB.armed === kind ? ';background:#2a5a8a' : ';background:#123');
+                add.onclick = (e) => { e.stopPropagation(); setArmed(kind); };
+                head.appendChild(add);
+            }
+            head.onclick = () => { if (kind === 'scenario') select({ kind: 'scenario' }); };
+            layersDiv.appendChild(head);
+            if (items) for (const it of items()) {
+                const row = document.createElement('div');
+                row.textContent = it.label;
+                const isSel = LAB.sel && LAB.sel.ref === it.sel.ref;
+                row.style.cssText = 'padding:1px 6px 1px 16px;border-radius:6px;cursor:pointer;opacity:0.9'
+                    + (isSel ? ';background:#2a5a8a' : '');
+                row.onclick = () => select(it.sel);
+                layersDiv.appendChild(row);
+            }
+        }
     }
-    setTool('boat');
 
     // ── playback bar ───────────────────────────────────────────────────
     const bar = document.createElement('div');
@@ -216,6 +265,7 @@
             ctx.restore();
         };
         refreshList();
+        select({ kind: 'scenario' });
         LAB.ready = true;
         dismissCover();
     }
@@ -364,25 +414,31 @@
         return null;
     }
 
-    const selPanel = ui.querySelector('#lab-selpanel');
     const selName = ui.querySelector('#lab-selname');
-    const boatFields = ui.querySelector('#lab-boatfields');
     const hdgIn = ui.querySelector('#lab-hdg'), spdIn = ui.querySelector('#lab-spd');
+    const detSections = { scenario: '#det-scenario', boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line' };
     function select(s) {
+        // no selection = the Scenario layer (the editor convention: the
+        // inspector shows the layer itself when nothing is selected)
+        if (!s) s = { kind: 'scenario' };
         LAB.sel = s;
-        selPanel.style.display = s ? 'block' : 'none';
-        if (!s) return;
-        boatFields.style.display = s.kind === 'boat' ? 'block' : 'none';
-        markFields.style.display = s.kind === 'mark' ? 'block' : 'none';
-        selName.textContent = s.kind === 'boat' ? ('Boat ' + s.ref.bot.name) : s.kind;
+        for (const k of Object.keys(detSections)) {
+            right.querySelector(detSections[k]).style.display = k === s.kind ? 'block' : 'none';
+        }
+        right.querySelector('#lab-delrow').style.display = s.kind === 'scenario' ? 'none' : 'block';
+        if (s.kind === 'scenario') selName.textContent = 'Scenario';
+        else if (s.kind === 'boat') selName.textContent = 'Boat ' + s.ref.bot.name;
+        else if (s.kind === 'mark') selName.textContent = 'mark ' + (LAB.marks.indexOf(s.ref) + 1);
+        else if (s.kind === 'sand') selName.textContent = 'sand ' + (LAB.sands.indexOf(s.ref) + 1);
+        else if (s.kind === 'line') selName.textContent = 'line ' + (LAB.lines.indexOf(s.ref) + 1);
         if (s.kind === 'boat') {
             hdgIn.value = Math.round(((s.ref.heading * DEG) % 360 + 360) % 360);
             spdIn.value = s.ref.speedKt;
             refreshPathRow(s.ref);
         }
         if (s.kind === 'mark') refreshSideBtns(s.ref);
+        renderLayers();
     }
-    const markFields = ui.querySelector('#lab-markfields');
     const sidePortB = ui.querySelector('#lab-side-port');
     const sideStbdB = ui.querySelector('#lab-side-stbd');
     function refreshSideBtns(m) {
@@ -393,18 +449,21 @@
     sideStbdB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'starboard'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     const pathRow = ui.querySelector('#lab-pathrow');
     const pathInfo = ui.querySelector('#lab-pathinfo');
-    const pathHint = ui.querySelector('#lab-pathhint');
     const aiAtIn = ui.querySelector('#lab-aiat');
+    const pathBtn = ui.querySelector('#lab-pathbtn');
     function refreshPathRow(lb) {
         const has = lb.path && lb.path.length >= 2;
         pathRow.style.display = has ? 'block' : 'none';
-        pathHint.style.display = has ? 'none' : 'block';
+        pathBtn.innerHTML = (LAB.armed === 'path' ? '&#9998; drawing&hellip; (drag from the boat)' : (has ? '&#9998; Redraw path' : '&#9998; Draw path'));
         if (has) {
             const len = Math.round(pathLen(lb.path));
             pathInfo.textContent = `scripted path · ${len}u`;
             aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
         }
     }
+    pathBtn.onclick = () => {
+        if (LAB.sel && LAB.sel.kind === 'boat') { setArmed('path'); refreshPathRow(LAB.sel.ref); }
+    };
     function pathLen(p) {
         let L = 0;
         for (let i = 1; i < p.length; i++) L += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
@@ -651,7 +710,7 @@
     ov.addEventListener('mousedown', e => {
         if (!LAB.ready) return;
         const [wx, wy] = s2w(e.clientX, e.clientY);
-        if (LAB.tool === 'path') {
+        if (LAB.armed === 'path') {
             // draw a scripted track: start on (or near) a boat; the first point
             // snaps to her bow so pursuit begins where she begins
             let lb = null;
@@ -666,11 +725,12 @@
             return;
         }
         const hit = pick(wx, wy);
-        if (!hit && LAB.tool !== 'select') {
-            if (LAB.tool === 'boat') addBoat(wx, wy);
-            else if (LAB.tool === 'mark') addMark(wx, wy);
-            else if (LAB.tool === 'sand') addSand(wx, wy);
-            else if (LAB.tool === 'line') addLine(wx, wy);
+        if (!hit && LAB.armed) {
+            // an armed layer "+": place that kind here, stay armed for more
+            if (LAB.armed === 'boat') addBoat(wx, wy);
+            else if (LAB.armed === 'mark') addMark(wx, wy);
+            else if (LAB.armed === 'sand') addSand(wx, wy);
+            else if (LAB.armed === 'line') addLine(wx, wy);
             LAB.drag = { sel: LAB.sel };
             return;
         }
@@ -724,6 +784,8 @@
         if (LAB.drag && LAB.drag.pathFor) {
             const lb = LAB.drag.pathFor;
             if (!lb.path || lb.path.length < 2) { lb.path = null; lb.aiAtS = null; }
+            LAB.armed = null;          // one path per arming
+            renderLayers();
             if (LAB.sel && LAB.sel.ref === lb) refreshPathRow(lb);
         }
         LAB.drag = null;
@@ -886,7 +948,7 @@
                 octx.stroke(); octx.globalAlpha = 1;
             }
         }
-        if (LAB.sel && LAB.mode === 'edit') {
+        if (LAB.sel && LAB.sel.kind !== 'scenario' && LAB.mode === 'edit') {
             let cx, cy, r = 40;
             const s = LAB.sel;
             if (s.kind === 'boat') { cx = s.ref.bot.x; cy = s.ref.bot.y; r = 48; }
