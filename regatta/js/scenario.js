@@ -9,7 +9,7 @@
 // step forward/back while reading what the AI did, which rules applied and
 // what penalties were given.
 //
-// How it works: the real game boots on Sea Trials (open water), the stock
+// How it works: the real game boots on the lab venue (open water), the stock
 // fleet parks far offshore, and getWindAt is pinned to a uniform breeze from
 // the top. EDIT mode freezes placed boats at their initial conditions.
 // PLAY first SIMULATES the whole scenario in one fast burst — every frame of
@@ -34,11 +34,15 @@
         setTimeout(() => cover.remove(), 400);
     }
 
-    // ── force the open-water venue (cover stays up through the reload) ──
+    // ── force the lab venue (cover stays up through the reload). 'lab' is
+    // the Scenario Lab's own stage: Sea Trials water, a big circular arena,
+    // nothing else — assets/venues/lab.venue.js, loaded by scenario.html
+    // only, absent from VENUE_ORDER so the game's picker never offers it
+    // (and the game itself falls back to bay if this setting leaks over) ──
     let savedSettings = {};
     try { savedSettings = JSON.parse(localStorage.getItem('regatta_settings') || '{}'); } catch (e) { }
-    if (savedSettings.venue !== 'seatrials') {
-        savedSettings.venue = 'seatrials';
+    if (savedSettings.venue !== 'lab') {
+        savedSettings.venue = 'lab';
         localStorage.setItem('regatta_settings', JSON.stringify(savedSettings));
         location.reload();
         return;
@@ -436,6 +440,12 @@
         LAB.markProto = (st.course.marks || [])[0] ? JSON.parse(JSON.stringify(st.course.marks[0])) : null;
         for (const m of (st.course.marks || [])) {
             m.x += 1e6; m.y += 1e6;
+            // drawX/drawY: orientCourseMarks' sprite anchor — drawMarkBodies
+            // prefers it over x/y, so an unshifted one leaves a ghost can
+            // floating at the original line position (invisible on seatrials
+            // only because its stage centre sat 2100u from the line)
+            if (m.drawX != null) m.drawX += 1e6;
+            if (m.drawY != null) m.drawY += 1e6;
             if (m.body) for (const c of m.body) { c.x += 1e6; c.y += 1e6; }
         }
         for (const o of st.boats) {
@@ -550,7 +560,7 @@
         if (!bot) return;
         bot.raceState.finished = false; bot.raceState.ocs = false;
         bot.raceState.penalty = false; bot.raceState.totalPenalties = 0;
-        // leg 2, deliberately: on Sea Trials leg 1 TARGETS WINDWARD, and the
+        // leg 2, deliberately: on the lab course leg 1 TARGETS WINDWARD, and the
         // rules engine's zone-latch leg filter skips non-windward marks for a
         // windward-bound pair — rule 18 would never arm at a lab mark. Leg 2
         // targets nothing, so zone snapshots latch on plain geometry.
@@ -567,6 +577,9 @@
         const proto = LAB.markProto || {};
         const m = JSON.parse(JSON.stringify(proto));
         m.x = wx; m.y = wy;
+        // the clone must not inherit the proto's sprite anchor or vessel
+        // heading — with these gone the engine draws its can ON the mark
+        delete m.drawX; delete m.drawY; delete m.heading;
         if (m.body) { const dx = wx - (proto.x || 0), dy = wy - (proto.y || 0); for (const c of m.body) { c.x += dx; c.y += dy; } }
         // the RRS zone: three hull lengths (3 × 55 = 165 — the engine's own
         // floor). Real rule-18 zone snapshots latch on it. ⌥-drag resizes.
@@ -1699,7 +1712,7 @@
         }
         // THE RACE NEVER ENDS HERE. Outside the simulation burst the clock is
         // pinned, so the venue's time limit can never fire — which is what
-        // used to finish the underlying Sea Trials race after a few minutes
+        // used to finish the underlying stage race after a few minutes
         // of editing: the trajectory-save path ran, the (hidden) results
         // overlay went up, and the loop's results catch-up (iterations=10)
         // sent the whole world — wind comets included — into fast-forward.
