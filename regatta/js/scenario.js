@@ -267,6 +267,18 @@
         refreshList();
         select({ kind: 'scenario' });
         LAB.ready = true;
+        // restore the working draft, if one survived a reload
+        try {
+            const d = JSON.parse(localStorage.getItem(STORE_KEY + '_draft') || 'null');
+            if (d && ((d.boats && d.boats.length) || (d.marks && d.marks.length)
+                   || (d.sands && d.sands.length) || (d.lines && d.lines.length))) {
+                LAB._loading = true;
+                loadScene(d);
+                if (d.name) ui.querySelector('#lab-name').value = d.name;
+                LAB._loading = false;
+                select({ kind: 'scenario' });
+            }
+        } catch (e) { LAB._loading = false; }
         dismissCover();
     }
 
@@ -277,6 +289,20 @@
         bar.style.display = 'none';
         pbPlay.innerHTML = '&#9654;';
         if (typeof refreshModeBtns === 'function') refreshModeBtns();
+        saveDraft();
+    }
+    // the working scene survives a reload: every edit stores a draft, boot
+    // restores it. Debounced a beat so drag storms don't hammer storage.
+    let _draftT = null;
+    function saveDraft() {
+        if (!LAB.ready || LAB._loading) return;
+        clearTimeout(_draftT);
+        _draftT = setTimeout(() => {
+            try {
+                localStorage.setItem(STORE_KEY + '_draft', JSON.stringify({
+                    name: (ui.querySelector('#lab-name').value || '').trim(), ...sceneObj() }));
+            } catch (e) { }
+        }, 400);
     }
     function addBoat(wx, wy) {
         const bot = LAB.pool.shift();
@@ -584,14 +610,31 @@
         const nF = Math.round(LAB.durationS * 60);
         const frames = [snapshot()];
         LAB.recording = true;
-        for (let f = 1; f <= nF; f++) {
-            for (const lb of LAB.boats) {
-                if (lb._mode !== 'S') continue;
-                const due = lb.aiAtS != null && f >= Math.round(lb.aiAtS * 60);
-                if (due || lb._done) handoffToAI(lb);
+        // DETERMINISM: a testing tool must give the same verdict for the same
+        // scenario. The AI rolls Math.random (wiggle sides, tie-breaks), so the
+        // burst runs under a seeded PRNG (mulberry32) and the real one comes
+        // back afterwards — playback is scrubbing a recording, so nothing
+        // visual depends on this.
+        const realRandom = Math.random;
+        let rngState = 0x9e3779b9;
+        Math.random = function () {
+            rngState |= 0; rngState = (rngState + 0x6D2B79F5) | 0;
+            let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        try {
+            for (let f = 1; f <= nF; f++) {
+                for (const lb of LAB.boats) {
+                    if (lb._mode !== 'S') continue;
+                    const due = lb.aiAtS != null && f >= Math.round(lb.aiAtS * 60);
+                    if (due || lb._done) handoffToAI(lb);
+                }
+                _update(1 / 60);
+                frames.push(snapshot());
             }
-            _update(1 / 60);
-            frames.push(snapshot());
+        } finally {
+            Math.random = realRandom;
         }
         LAB.recording = false;
         // leave no scripted overrides behind
@@ -699,6 +742,7 @@
     }
     const listSel = ui.querySelector('#lab-list');
     const nameIn = ui.querySelector('#lab-name');
+    nameIn.addEventListener('input', () => saveDraft());
     function refreshList() {
         const names = Object.keys(store()).sort();
         listSel.innerHTML = names.map(n => `<option>${n}</option>`).join('') || '<option value="">(none saved)</option>';
