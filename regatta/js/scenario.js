@@ -152,7 +152,7 @@
     // An armed “＋” means the next click on open water places that kind.
     const LAYERS = [
         ['scenario', 'Scenario', null],
-        ['boat', 'Boats', () => LAB.boats.map((lb) => ({ label: 'Boat ' + lb.bot.name, sel: { kind: 'boat', ref: lb } }))],
+        ['boat', 'Boats', () => LAB.boats.map((lb) => ({ label: lb.bot.name, sel: { kind: 'boat', ref: lb } }))],
         ['sand', 'Objects', () => LAB.sands.map((s, i) => ({ label: 'sand ' + (i + 1), sel: { kind: 'sand', ref: s } }))],
         ['mark', 'Marks', () => LAB.marks.map((m, i) => ({ label: 'mark ' + (i + 1), sel: { kind: 'mark', ref: m } }))],
         ['line', 'Lines', () => LAB.lines.map((l, i) => ({ label: 'line ' + (i + 1), sel: { kind: 'line', ref: l, part: 0 } }))],
@@ -317,6 +317,24 @@
             } catch (e) { }
         }, 400);
     }
+    // THE CAST, alphabetical by character name, optimized for colour clarity:
+    // brute-forced over every per-letter roster combination for the maximum
+    // minimum pairwise Lab distance, with the water colour included as a
+    // fixed swatch so no hull can vanish into the blue (which is why Bixby's
+    // royal blue lost his slot). Winner at min-ΔLab 43.7: sage, ink navy,
+    // pink, tan, terracotta, purple, ice white, violet, orange. Hug and
+    // Jester are forced (the only H and J names); the roster has no 'I', so
+    // the ninth boat jumps to J — and nine is the most the parked pool can
+    // supply anyway. Fixed identities also make a saved scenario look and
+    // sail the same on every load (a pool recruit used to keep whichever
+    // random character boot dealt it).
+    const LAB_CHARS = ['Anchor', 'Bramble', 'Cheer', 'Dozer', 'Etienne', 'Flare', 'Glide', 'Hug', 'Jester'];
+    function applyLabIdentity(lb, i) {
+        const want = LAB_CHARS[i] || String.fromCharCode(65 + i);
+        const cfg = (typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.find(c => c.name === want) : null;
+        if (cfg && typeof applyBoatIdentity === 'function') applyBoatIdentity(lb.bot, cfg, false);
+        else lb.bot.name = want;
+    }
     function addBoat(wx, wy) {
         const bot = LAB.pool.shift();
         if (!bot) return;
@@ -329,8 +347,8 @@
         bot.raceState.isTacking = false; bot.raceState.leg = 2;
         bot.fadeTimer = 999; bot.opacity = 1;
         const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, path: null, aiAtS: null };
-        bot.name = String.fromCharCode(65 + LAB.boats.length);
         LAB.boats.push(lb);
+        applyLabIdentity(lb, LAB.boats.length - 1);
         select({ kind: 'boat', ref: lb });
         invalidate();
         return lb;
@@ -415,7 +433,8 @@
             s.ref.bot.raceState.finished = true; s.ref.bot.fadeTimer = 0;
             s.ref.bot.x = -1e6; s.ref.bot.y = -1e6;
             LAB.pool.unshift(s.ref.bot);
-            LAB.boats.forEach((lb, k) => lb.bot.name = String.fromCharCode(65 + k));
+            // keep the alphabet contiguous: later boats take over the freed identities
+            LAB.boats.forEach((lb, k) => applyLabIdentity(lb, k));
         } else if (s.kind === 'mark') {
             const ms = window.state.course.marks;
             const i = ms.indexOf(s.ref); if (i >= 0) ms.splice(i, 1);
@@ -471,7 +490,7 @@
         right.querySelector('#lab-delrow').style.display = (s.kind === 'scenario' || s.kind === 'play') ? 'none' : 'block';
         if (s.kind === 'scenario') selName.textContent = '';
         else if (s.kind === 'play') selName.textContent = '';
-        else if (s.kind === 'boat') selName.textContent = 'Boat ' + s.ref.bot.name;
+        else if (s.kind === 'boat') selName.textContent = s.ref.bot.name;
         else if (s.kind === 'mark') selName.textContent = 'mark ' + (LAB.marks.indexOf(s.ref) + 1);
         else if (s.kind === 'sand') selName.textContent = 'sand ' + (LAB.sands.indexOf(s.ref) + 1);
         else if (s.kind === 'line') selName.textContent = 'line ' + (LAB.lines.indexOf(s.ref) + 1);
