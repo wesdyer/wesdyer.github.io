@@ -897,15 +897,8 @@
             octx.beginPath(); octx.arc(px, py, r, 0, 7);
             octx.strokeStyle = 'rgba(143,208,255,0.9)'; octx.lineWidth = 2; octx.setLineDash([6, 6]); octx.stroke(); octx.setLineDash([]);
         }
-        // wind arrow, top centre
-        octx.save();
-        octx.translate(ov.width / 2, 46);
-        octx.strokeStyle = 'rgba(255,255,255,0.9)'; octx.fillStyle = 'rgba(255,255,255,0.9)'; octx.lineWidth = 3;
-        octx.beginPath(); octx.moveTo(0, -16); octx.lineTo(0, 14); octx.stroke();
-        octx.beginPath(); octx.moveTo(-7, 6); octx.lineTo(0, 18); octx.lineTo(7, 6); octx.closePath(); octx.fill();
-        octx.font = '12px ui-monospace'; octx.textAlign = 'center';
-        octx.fillText(LAB.windKt + ' kt', 0, -24);
-        octx.restore();
+        // (no wind arrow: the wind comets on the water already show direction
+        // and strength, and the knots value is editable in the panel)
     }
 
     _update = window.update;
