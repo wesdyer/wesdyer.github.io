@@ -25,7 +25,7 @@
     // the stage is ready ──────────────────────────────────────────────────
     const cover = document.createElement('div');
     cover.style.cssText = 'position:fixed;inset:0;z-index:100;background:#0a121c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#dbe7f3;font:14px system-ui;transition:opacity 0.35s ease';
-    cover.innerHTML = '<div style="font:800 26px system-ui;letter-spacing:0.12em;color:#8fd0ff">SCENARIO LAB</div>' +
+    cover.innerHTML = '<div style="font:italic 900 26px Archivo,system-ui;letter-spacing:0.06em;color:#eef3fb">SCENARIO LAB</div>' +
         '<div id="cover-msg" style="opacity:0.7">setting up open water&hellip;</div>';
     (document.body ? Promise.resolve() : new Promise(r => window.addEventListener('DOMContentLoaded', r)))
         .then(() => document.body.appendChild(cover));
@@ -67,87 +67,181 @@
     // mode switch; “＋” on a layer arms placement), DETAILS on the right
     // (the selected object, or the Scenario layer itself). The play
     // transport stays on the bottom when in use. ───────────────────────
-    const panelCss = 'position:fixed;top:12px;z-index:70;background:rgba(10,18,28,0.92);color:#dbe7f3;font:13px/1.5 system-ui,sans-serif;padding:12px 14px;border:1px solid rgba(120,180,220,0.35);border-radius:10px;max-height:calc(100vh - 40px);overflow-y:auto';
+    // one type system, one panel material — the design-doc glass language
+    // (t11): Archivo, dark glass panels, blue primary, teal "scripted" accents,
+    // amber for right-of-way, red only for penalties and deletion.
+    const style = document.createElement('style');
+    style.textContent = `
+      .sl-panel{position:fixed;top:20px;z-index:70;background:rgba(7,19,34,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 10px 34px rgba(4,16,28,.4);color:#eef3fb;font:13px/1.4 Archivo,system-ui,sans-serif;overflow-x:hidden;overflow-y:auto;max-height:calc(100vh - 40px)}
+      .sl-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+      .sl-title{flex:1;font-size:15px;font-weight:900;font-style:italic;letter-spacing:.04em}
+      .sl-chip{font-size:9px;font-weight:800;letter-spacing:.12em;color:#8fa3bd;background:rgba(255,255,255,.07);border-radius:5px;padding:3px 8px;white-space:nowrap}
+      .sl-chip-teal{color:#8fd8d0;background:rgba(127,240,212,.12);border:1px solid rgba(127,240,212,.35);padding:2px 7px}
+      .sl-sect{padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08)}
+      .sl-sectlabel{font-size:9px;letter-spacing:.2em;font-weight:800;color:#66748c;margin-bottom:8px}
+      .sl-lab{font-size:10px;font-weight:700;color:#8fa3bd;margin-bottom:4px}
+      .sl-hint{font-size:10px;font-weight:700;color:#66748c}
+      .sl-grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+      .sl-inp{display:flex;align-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:0 10px}
+      .sl-inp:focus-within{border-color:#2f6bff}
+      .sl-inp input{flex:1;width:100%;min-width:0;background:none;border:none;outline:none;color:#eef3fb;font:800 13px Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;padding:7px 0}
+      .sl-inp input::placeholder{color:#66748c;font-weight:700}
+      .sl-unit{font-size:11px;color:#66748c;font-weight:700;margin-left:6px}
+      .sl-btn{appearance:none;flex:1;text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 0;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.08em;color:#c4d2e6;cursor:pointer}
+      .sl-btn:hover{background:rgba(255,255,255,.12)}
+      .sl-btn-pri{background:#2f6bff;border-color:#2f6bff;color:#fff;font-weight:900}
+      .sl-btn-pri:hover{background:#4a80ff}
+      .sl-btn-danger{appearance:none;flex:none;background:none;border:1px solid rgba(236,48,19,.4);color:#ff8a75;padding:7px 14px;border-radius:8px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}
+      .sl-btn-danger:hover{background:rgba(236,48,19,.15)}
+      .sl-mode{appearance:none;flex:1;text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 0;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.1em;color:#8fa3bd;cursor:pointer}
+      .sl-mode:hover{background:rgba(255,255,255,.12)}
+      .sl-mode.on{background:#2f6bff;border-color:#2f6bff;color:#fff;font-weight:900}
+      .sl-lrow{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;border:1px solid transparent;cursor:pointer;font-size:12.5px;font-weight:600;letter-spacing:.03em}
+      .sl-lrow:hover{background:rgba(255,255,255,.07)}
+      .sl-lrow.on{background:rgba(47,107,255,.22);border-color:rgba(47,107,255,.5)}
+      .sl-lchild{padding-left:26px}
+      .sl-dot{width:8px;height:8px;border-radius:50%;flex:none}
+      .sl-count{font-size:10px;font-weight:700;color:#66748c;font-variant-numeric:tabular-nums}
+      .sl-add{width:18px;height:18px;border-radius:5px;background:rgba(255,255,255,.08);display:grid;place-items:center;font-size:12px;font-weight:800;color:#8fa3bd;cursor:pointer;flex:none}
+      .sl-add:hover,.sl-add.on{background:#2f6bff;color:#fff}
+      .sl-link{font-size:10px;font-weight:800;color:#5aa7ff;cursor:pointer;letter-spacing:.04em}
+      .sl-link:hover{color:#8fc2ff}
+      .sl-step{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:7px 8px;margin-bottom:6px}
+      .sl-stepn{width:16px;height:16px;border-radius:5px;background:rgba(47,107,255,.3);display:grid;place-items:center;font-size:9px;font-weight:900;color:#8fc2ff;flex:none}
+      .sl-bare{background:none;border:none;outline:none;color:#eef3fb;font:800 12px Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;text-align:right;padding:0}
+      .sl-card{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 12px}
+      .sl-rowcard{background:rgba(242,193,78,.1);border:1px solid rgba(242,193,78,.4);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+      .sl-rulelabel{font-size:9px;letter-spacing:.18em;font-weight:900;color:#f2c14e}
+      .sl-bname{font-size:12px;font-weight:900;font-style:italic;letter-spacing:.03em}
+      .sl-schip{font-size:10px;font-weight:800;letter-spacing:.06em;border-radius:5px;padding:3px 7px;white-space:nowrap}
+      .sl-schip-teal{color:#8fd8d0;background:rgba(127,240,212,.1)}
+      .sl-schip-amber{color:#f2c14e;background:rgba(242,193,78,.1)}
+      .sl-schip-red{color:#ff8a75;background:rgba(236,48,19,.14)}
+      .sl-schip-mute{color:#8fa3bd;background:rgba(255,255,255,.07)}
+      .sl-tbtn{appearance:none;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.07);border:none;display:grid;place-items:center;font-size:12px;color:#eef3fb;cursor:pointer;padding:0}
+      .sl-tbtn:hover{background:rgba(255,255,255,.15)}
+      .sl-tbtn-pri{background:#2f6bff}
+      .sl-tbtn-pri:hover{background:#4a80ff}
+      .sl-kite{appearance:none;-webkit-appearance:none;background:rgba(127,240,212,.1);color:#8fd8d0;border:none;border-radius:5px;font:800 10px Archivo,system-ui,sans-serif;letter-spacing:.06em;padding:3px 6px;cursor:pointer;text-align:center}
+      #pb-slider{-webkit-appearance:none;appearance:none;display:block;width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.14);outline:none;margin:0}
+      #pb-slider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}
+      #pb-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}`;
+    document.head.appendChild(style);
+
     const left = document.createElement('div');
-    left.style.cssText = panelCss + ';left:12px;width:172px';
+    left.className = 'sl-panel';
+    left.style.cssText = 'left:20px;width:250px';
     left.innerHTML = `
-      <div style="font-weight:700;font-size:15px;color:#8fd0ff;margin-bottom:6px">SCENARIO LAB</div>
-      <div style="display:flex;gap:6px;margin-bottom:10px">
-        <button id="lab-reset" style="flex:1">Edit</button><button id="lab-run" style="flex:1">&#9654; Play</button>
+      <div class="sl-head" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+          <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" style="width:22px;height:auto">
+          <span style="font-size:13px;font-weight:900;font-style:italic;letter-spacing:.04em">SCENARIO LAB</span>
+        </div>
+        <span class="sl-chip sl-chip-teal">DEV</span>
       </div>
-      <div style="font-weight:700;font-size:11px;letter-spacing:0.1em;color:#7fa8c9;margin-bottom:4px">LAYERS</div>
-      <div id="lab-layers"></div>`;
+      <div style="display:flex;padding:10px 12px;gap:6px;border-bottom:1px solid rgba(255,255,255,.08)">
+        <button id="lab-reset" class="sl-mode">EDIT</button>
+        <button id="lab-run" class="sl-mode">&#9654; PLAY</button>
+      </div>
+      <div style="padding:8px 8px 10px">
+        <div class="sl-sectlabel" style="padding:4px 8px 6px;margin:0">LAYERS</div>
+        <div id="lab-layers"></div>
+      </div>`;
     document.body.appendChild(left);
 
     const right = document.createElement('div');
-    right.style.cssText = panelCss + ';right:12px;width:232px';
+    right.className = 'sl-panel';
+    right.style.cssText = 'right:20px;width:300px';
     right.innerHTML = `
-      <div style="font-weight:700;font-size:11px;letter-spacing:0.1em;color:#7fa8c9;margin-bottom:6px">DETAILS</div>
-      <div style="font-weight:600;margin-bottom:4px" id="lab-selname"></div>
+      <div class="sl-head">
+        <span id="lab-seldot" style="width:12px;height:12px;border-radius:50%;flex:none;display:none"></span>
+        <span id="lab-selname" class="sl-title"></span>
+        <span id="lab-kindchip" class="sl-chip"></span>
+        <span id="lab-time" style="display:none;font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
+      </div>
       <div id="det-scenario" style="display:none">
-        <div style="margin-bottom:8px"><input id="lab-name" type="text" placeholder="Scenario Name" style="width:100%"></div>
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">
-          <label style="width:64px">Duration</label><input id="lab-dur" type="text" inputmode="decimal" style="width:56px" value="10"> s
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">
-          <label style="width:64px">Wind</label><input id="lab-wind" type="text" inputmode="decimal" style="width:56px" value="12"> kt
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:6px">
-          <button id="lab-new">New</button><button id="lab-open">Open&hellip;</button>
-        </div>
-        <div style="display:flex;gap:6px;margin-bottom:8px">
-          <button id="lab-save">Save</button><button id="lab-saveas">Save As&hellip;</button>
-        </div>
-        <div style="border-top:1px solid #345;padding-top:6px">
-          <div style="opacity:0.65;font-size:12px;margin-bottom:4px">library: <span id="lab-libname">assets/scenarios.js — File&hellip; to attach for writing</span></div>
-          <div style="display:flex;gap:6px">
-            <button id="lab-libopen" title="attach assets/scenarios.js so saves write to it">File&hellip;</button>
-            <button id="lab-clear">Clear scene</button>
+        <div class="sl-sect">
+          <div class="sl-lab">Name</div>
+          <div class="sl-inp"><input id="lab-name" type="text" placeholder="Scenario Name"></div>
+          <div class="sl-grid2" style="margin-top:10px">
+            <div>
+              <div class="sl-lab">Duration</div>
+              <div class="sl-inp"><input id="lab-dur" type="text" inputmode="decimal" value="10"><span class="sl-unit">s</span></div>
+            </div>
+            <div>
+              <div class="sl-lab">Wind</div>
+              <div class="sl-inp"><input id="lab-wind" type="text" inputmode="decimal" value="12"><span class="sl-unit">kt</span></div>
+            </div>
           </div>
+        </div>
+        <div class="sl-sect" style="padding:12px 16px">
+          <div style="display:flex;gap:6px">
+            <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
+            <button id="lab-saveas" class="sl-btn">SAVE AS&hellip;</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button id="lab-new" class="sl-btn">NEW</button>
+            <button id="lab-open" class="sl-btn">OPEN&hellip;</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 16px">
+          <span class="sl-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></span>
+          <span id="lab-clear" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer;white-space:nowrap">CLEAR SCENE</span>
         </div>
       </div>
       <div id="det-play" style="display:none">
-        <div style="font-weight:600;margin-bottom:3px">RIGHTS &amp; UMPIRE <span id="lab-time" style="opacity:0.7;font-weight:400"></span></div>
-        <div id="lab-rights" style="font:12px/1.5 ui-monospace,monospace;color:#bfe3c0;min-height:40px">&mdash;</div>
-        <div style="opacity:0.6;font-size:12px;margin-top:6px">scrub or step on the transport below · space pauses</div>
+        <div id="lab-rights" style="padding:12px 16px 8px"></div>
+        <div class="sl-hint" style="padding:0 18px 12px">Scrub or step the transport &middot; SPACE pauses</div>
       </div>
       <div id="det-boat" style="display:none">
-        <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
-          <label>heading</label><input id="lab-hdg" type="number" step="5" style="width:58px"> &deg;
+        <div class="sl-sect">
+          <div class="sl-sectlabel">START STATE</div>
+          <div class="sl-grid2">
+            <div>
+              <div class="sl-lab">Heading</div>
+              <div class="sl-inp"><input id="lab-hdg" type="text" inputmode="decimal"><span class="sl-unit">&deg;</span></div>
+            </div>
+            <div>
+              <div class="sl-lab">Speed</div>
+              <div class="sl-inp"><input id="lab-spd" type="text" inputmode="decimal"><span class="sl-unit">kt</span></div>
+            </div>
+          </div>
         </div>
-        <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
-          <label>speed</label><input id="lab-spd" type="number" min="0" max="10" step="0.5" style="width:58px"> kt
-        </div>
-        <div style="border-top:1px solid #345;margin-top:8px;padding-top:6px">
-          <div style="font-weight:600;margin-bottom:2px">Plan</div>
+        <div class="sl-sect">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+            <span class="sl-sectlabel" style="margin:0">PLAN</span>
+            <span id="lab-planadd" class="sl-link">+ ADD STEP</span>
+          </div>
           <div id="lab-plan"></div>
-          <button id="lab-planadd" style="margin-top:4px">+ step</button>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center;margin-top:6px">
-          <label title="blank = scripted to the end">AI at</label>
-          <input id="lab-aiat" type="number" min="0" step="0.5" style="width:52px" placeholder="never"> s
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+            <span class="sl-lab" style="margin:0" title="blank = scripted to the end">Hand to AI at</span>
+            <div class="sl-inp" style="flex:1"><input id="lab-aiat" type="text" inputmode="decimal" placeholder="never"></div>
+            <span class="sl-hint">s</span>
+          </div>
         </div>
       </div>
       <div id="det-mark" style="display:none">
-        <div style="display:flex;gap:6px;align-items:center;margin-top:2px">
-          <label>rounding</label>
-          <button id="lab-side-port">&#8634; Port</button>
-          <button id="lab-side-stbd">&#8635; Stbd</button>
+        <div class="sl-sect">
+          <div class="sl-sectlabel">ROUNDING</div>
+          <div style="display:flex;gap:6px">
+            <button id="lab-side-port" class="sl-btn">&#8634; PORT</button>
+            <button id="lab-side-stbd" class="sl-btn">&#8635; STBD</button>
+          </div>
+          <div class="sl-hint" style="margin-top:8px">zone = 3 boat lengths &middot; &#8997;-drag resizes</div>
         </div>
-        <div style="opacity:0.6;margin-top:3px;font-size:12px">zone = 3 boat lengths · &#8997;-drag resizes</div>
       </div>
       <div id="det-sand" style="display:none">
-        <div style="opacity:0.6;font-size:12px;margin-top:2px">solid sand · &#8997;-drag resizes · boats ground on it</div>
+        <div class="sl-sect"><div class="sl-hint">solid sand &middot; &#8997;-drag resizes &middot; boats ground on it</div></div>
       </div>
       <div id="det-line" style="display:none">
-        <div style="opacity:0.6;font-size:12px;margin-top:2px">a line on the water · drag the end handles · &#8997;-drag stretches</div>
+        <div class="sl-sect"><div class="sl-hint">a line on the water &middot; drag the end handles &middot; &#8997;-drag stretches</div></div>
       </div>
-      <div id="lab-delrow" style="display:none;margin-top:8px"><button id="lab-del">Delete</button></div>`;
+      <div id="lab-delrow" style="display:none;justify-content:flex-end;padding:12px 16px">
+        <button id="lab-del" class="sl-btn-danger">DELETE</button>
+      </div>`;
     document.body.appendChild(right);
     const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s),
                  querySelectorAll: (s) => [...left.querySelectorAll(s), ...right.querySelectorAll(s)] };
-    for (const b of ui.querySelectorAll('button')) b.style.cssText += 'background:#123;border:1px solid #467;color:#cde;padding:2px 10px;border-radius:6px;cursor:pointer';
-    for (const i of ui.querySelectorAll('input')) i.style.cssText += 'background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:1px 4px';
 
     // the layer list: Scenario, then the object layers with “＋” adders.
     // An armed “＋” means the next click on open water places that kind.
@@ -163,33 +257,47 @@
         LAB.armed = LAB.armed === kind ? null : kind;
         renderLayers();
     }
+    const KIND_DOT = { scenario: '#8fd8d0', boat: null, sand: '#e0c99b', mark: '#f0a02a', line: '#ffffff' };
     function renderLayers() {
         layersDiv.innerHTML = '';
         for (const [kind, label, items] of LAYERS) {
+            const list = items ? items() : null;
             const head = document.createElement('div');
-            head.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:2px 6px;border-radius:6px;cursor:pointer;margin-top:2px'
-                + (LAB.sel && LAB.sel.kind === 'scenario' && kind === 'scenario' ? ';background:#2a5a8a' : '');
+            head.className = 'sl-lrow' + (LAB.sel && LAB.sel.kind === 'scenario' && kind === 'scenario' ? ' on' : '');
+            const dot = document.createElement('span');
+            dot.className = 'sl-dot';
+            dot.style.background = kind === 'scenario' ? KIND_DOT.scenario : '#66748c';
             const name = document.createElement('span');
             name.textContent = label;
-            name.style.fontWeight = '600';
-            head.appendChild(name);
-            if (items) {
+            name.style.cssText = 'flex:1;font-weight:800';
+            head.append(dot, name);
+            if (list) {
+                const cnt = document.createElement('span');
+                cnt.className = 'sl-count';
+                cnt.textContent = list.length || '';
+                head.appendChild(cnt);
                 const add = document.createElement('span');
-                add.innerHTML = '&#65291;';
+                add.className = 'sl-add' + (LAB.armed === kind ? ' on' : '');
+                add.textContent = '+';
                 add.title = 'add, then click the water';
-                add.style.cssText = 'cursor:pointer;padding:0 6px;border-radius:5px;border:1px solid #467'
-                    + (LAB.armed === kind ? ';background:#2a5a8a' : ';background:#123');
                 add.onclick = (e) => { e.stopPropagation(); setArmed(kind); };
                 head.appendChild(add);
             }
             head.onclick = () => { if (kind === 'scenario') select({ kind: 'scenario' }); };
             layersDiv.appendChild(head);
-            if (items) for (const it of items()) {
+            if (list) for (const it of list) {
                 const row = document.createElement('div');
-                row.textContent = it.label;
-                const isSel = LAB.sel && LAB.sel.ref === it.sel.ref;
-                row.style.cssText = 'padding:1px 6px 1px 16px;border-radius:6px;cursor:pointer;opacity:0.9'
-                    + (isSel ? ';background:#2a5a8a' : '');
+                row.className = 'sl-lrow sl-lchild' + (LAB.sel && LAB.sel.ref === it.sel.ref ? ' on' : '');
+                const d = document.createElement('span');
+                d.className = 'sl-dot';
+                d.style.background = kind === 'boat'
+                    ? ((it.sel.ref.bot.colors && it.sel.ref.bot.colors.hull) || '#8fd0ff')
+                    : KIND_DOT[kind];
+                d.style.border = '1px solid rgba(255,255,255,.3)';   // dark hulls stay visible
+                const nm = document.createElement('span');
+                nm.textContent = it.label;
+                nm.style.flex = '1';
+                row.append(d, nm);
                 row.onclick = () => select(it.sel);
                 layersDiv.appendChild(row);
             }
@@ -198,19 +306,26 @@
 
     // ── playback bar ───────────────────────────────────────────────────
     const bar = document.createElement('div');
-    bar.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:70;display:none;align-items:center;gap:8px;background:rgba(10,18,28,0.92);border:1px solid rgba(120,180,220,0.35);border-radius:10px;padding:8px 14px;color:#dbe7f3;font:13px system-ui';
+    bar.className = 'sl-panel';
+    bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:none;align-items:center;gap:14px;padding:12px 18px;width:min(620px,calc(100vw - 80px));overflow:visible';
     bar.innerHTML = `
-      <button id="pb-back">&#9194;</button>
-      <button id="pb-play" style="width:40px">&#9654;</button>
-      <button id="pb-fwd">&#9193;</button>
-      <span style="position:relative;display:inline-block">
-        <input id="pb-slider" type="range" min="0" max="600" value="0" style="width:360px;vertical-align:middle">
-        <span id="pb-ticks" style="position:absolute;left:0;right:0;top:26px;height:8px;pointer-events:none"></span>
+      <div style="display:flex;gap:6px">
+        <button id="pb-back" class="sl-tbtn" title="step back 0.5s">&#9194;</button>
+        <button id="pb-play" class="sl-tbtn sl-tbtn-pri">&#9654;</button>
+        <button id="pb-fwd" class="sl-tbtn" title="step forward 0.5s">&#9193;</button>
+      </div>
+      <span style="flex:1;position:relative;display:block">
+        <input id="pb-slider" type="range" min="0" max="600" value="0">
+        <span id="pb-ticks" style="position:absolute;left:0;right:0;top:-11px;height:8px;pointer-events:none"></span>
       </span>
-      <span id="pb-time" style="font-family:ui-monospace;min-width:88px;text-align:right">0.0 / 10.0s</span>`;
+      <span id="pb-time" style="font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#c4d2e6;min-width:84px;text-align:right">0.0 / 10.0s</span>`;
     document.body.appendChild(bar);
-    for (const b of bar.querySelectorAll('button')) b.style.cssText += 'background:#123;border:1px solid #467;color:#cde;padding:2px 8px;border-radius:6px;cursor:pointer';
     const pbSlider = bar.querySelector('#pb-slider');
+    // the filled-track look: blue up to the playhead, glass beyond it
+    function pbFill() {
+        const pct = 100 * (+pbSlider.value) / Math.max(1, +pbSlider.max);
+        pbSlider.style.background = `linear-gradient(to right,#2f6bff ${pct}%,rgba(255,255,255,.14) ${pct}%)`;
+    }
     const pbPlay = bar.querySelector('#pb-play');
     const pbTime = bar.querySelector('#pb-time');
     const pbTicks = bar.querySelector('#pb-ticks');
@@ -271,7 +386,7 @@
             ctx.save();
             ctx.translate(boat.x, boat.y);
             ctx.translate(0, 36);
-            ctx.font = 'bold 13px system-ui';
+            ctx.font = '800 13px Archivo,system-ui';
             const w = ctx.measureText(boat.name).width + 16;
             ctx.fillStyle = 'rgba(15,23,42,0.6)';
             ctx.beginPath(); ctx.roundRect(-w / 2, 0, w, 20, 6); ctx.fill();
@@ -492,13 +607,30 @@
         for (const k of Object.keys(detSections)) {
             right.querySelector(detSections[k]).style.display = k === s.kind ? 'block' : 'none';
         }
-        right.querySelector('#lab-delrow').style.display = (s.kind === 'scenario' || s.kind === 'play') ? 'none' : 'block';
-        if (s.kind === 'scenario') selName.textContent = '';
-        else if (s.kind === 'play') selName.textContent = '';
-        else if (s.kind === 'boat') selName.textContent = s.ref.bot.name;
-        else if (s.kind === 'mark') selName.textContent = 'mark ' + (LAB.marks.indexOf(s.ref) + 1);
-        else if (s.kind === 'sand') selName.textContent = 'sand ' + (LAB.sands.indexOf(s.ref) + 1);
-        else if (s.kind === 'line') selName.textContent = 'line ' + (LAB.lines.indexOf(s.ref) + 1);
+        const delRow = right.querySelector('#lab-delrow');
+        const showDel = !(s.kind === 'scenario' || s.kind === 'play');
+        delRow.style.display = showDel ? 'flex' : 'none';
+        if (showDel) right.querySelector('#lab-del').textContent = 'DELETE ' + s.kind.toUpperCase();
+        // the inspector header: dot + title + kind chip (t = clock in play)
+        const selDot = right.querySelector('#lab-seldot');
+        const kindChip = right.querySelector('#lab-kindchip');
+        const timeChip = right.querySelector('#lab-time');
+        const header = { dot: null, title: '', chip: '' };
+        if (s.kind === 'scenario') { header.title = 'SCENARIO'; header.chip = 'ROOT'; }
+        else if (s.kind === 'play') { header.title = 'RIGHTS & UMPIRE'; }
+        else if (s.kind === 'boat') {
+            header.title = s.ref.bot.name.toUpperCase(); header.chip = 'BOAT';
+            header.dot = (s.ref.bot.colors && s.ref.bot.colors.hull) || '#8fd0ff';
+        }
+        else if (s.kind === 'mark') { header.title = 'MARK ' + (LAB.marks.indexOf(s.ref) + 1); header.chip = 'MARK'; header.dot = KIND_DOT.mark; }
+        else if (s.kind === 'sand') { header.title = 'SAND ' + (LAB.sands.indexOf(s.ref) + 1); header.chip = 'OBJECT'; header.dot = KIND_DOT.sand; }
+        else if (s.kind === 'line') { header.title = 'LINE ' + (LAB.lines.indexOf(s.ref) + 1); header.chip = 'LINE'; header.dot = KIND_DOT.line; }
+        selName.textContent = header.title;
+        selDot.style.display = header.dot ? 'inline-block' : 'none';
+        if (header.dot) { selDot.style.background = header.dot; selDot.style.border = '1px solid rgba(255,255,255,.3)'; }
+        kindChip.style.display = header.chip ? 'inline-block' : 'none';
+        kindChip.textContent = header.chip;
+        timeChip.style.display = s.kind === 'play' ? 'inline-block' : 'none';
         if (s.kind === 'boat') {
             hdgIn.value = Math.round(((s.ref.heading * DEG) % 360 + 360) % 360);
             spdIn.value = s.ref.speedKt;
@@ -511,8 +643,8 @@
     const sidePortB = ui.querySelector('#lab-side-port');
     const sideStbdB = ui.querySelector('#lab-side-stbd');
     function refreshSideBtns(m) {
-        sidePortB.style.background = m.side === 'port' ? '#2a5a8a' : '#123';
-        sideStbdB.style.background = m.side === 'starboard' ? '#2a5a8a' : '#123';
+        sidePortB.classList.toggle('sl-btn-pri', m.side === 'port');
+        sideStbdB.classList.toggle('sl-btn-pri', m.side === 'starboard');
     }
     sidePortB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'port'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     sideStbdB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'starboard'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
@@ -534,38 +666,46 @@
         planDiv.innerHTML = '';
         const plan = lb.plan || (lb.plan = []);
         plan.sort((a, b) => a.t - b.t);
-        for (const en of plan) {
+        plan.forEach((en, k) => {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex;gap:4px;align-items:center;margin-top:3px;font-size:12px';
+            row.className = 'sl-step';
+            const nB = document.createElement('span');
+            nB.className = 'sl-stepn';
+            nB.textContent = k + 1;
             const tIn = document.createElement('input');
             tIn.type = 'text'; tIn.inputMode = 'decimal'; tIn.value = en.t;
-            tIn.style.cssText = 'width:38px;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:1px 3px';
+            tIn.className = 'sl-bare'; tIn.style.width = '30px';
             tIn.title = 'time (s)';
             tIn.addEventListener('change', () => { en.t = Math.max(0, parseFloat(tIn.value) || 0); renderPlan(lb); invalidate(); });
+            const sLab = document.createElement('span'); sLab.className = 'sl-hint'; sLab.textContent = 's';
+            const dotSep = document.createElement('span');
+            dotSep.textContent = '·'; dotSep.style.cssText = 'color:#4a5a72;font-size:10px';
             const hIn = document.createElement('input');
             hIn.type = 'text'; hIn.inputMode = 'decimal'; hIn.value = en.headingDeg;
-            hIn.style.cssText = 'width:38px;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:1px 3px';
+            hIn.className = 'sl-bare'; hIn.style.width = '30px';
             hIn.title = 'new heading (°)';
             hIn.addEventListener('change', () => { en.headingDeg = parseFloat(hIn.value) || 0; invalidate(); });
+            const dLab = document.createElement('span'); dLab.className = 'sl-hint'; dLab.innerHTML = '&deg;';
             const sSel = document.createElement('select');
-            sSel.style.cssText = 'background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;font-size:12px';
-            for (const [v, lbl] of [['auto', 'kite auto'], ['up', 'kite up'], ['down', 'kite down']]) {
+            sSel.className = 'sl-kite';
+            sSel.style.marginLeft = 'auto';
+            for (const [v, lbl] of [['auto', 'AUTO'], ['up', 'KITE UP'], ['down', 'KITE DOWN']]) {
                 const o = document.createElement('option'); o.value = v; o.textContent = lbl; sSel.appendChild(o);
             }
             sSel.value = en.spin || 'auto';
             sSel.addEventListener('change', () => { en.spin = sSel.value; invalidate(); });
             const del = document.createElement('span');
             del.innerHTML = '&#10005;';
-            del.style.cssText = 'cursor:pointer;opacity:0.6;padding:0 3px';
+            del.style.cssText = 'cursor:pointer;color:#66748c;font-size:11px;padding:0 2px';
+            del.onmouseenter = () => del.style.color = '#ff8a75';
+            del.onmouseleave = () => del.style.color = '#66748c';
             del.onclick = () => { plan.splice(plan.indexOf(en), 1); renderPlan(lb); invalidate(); };
-            const sLab = document.createElement('span'); sLab.textContent = 's'; sLab.style.opacity = '0.6';
-            const dLab = document.createElement('span'); dLab.innerHTML = '&deg;'; dLab.style.opacity = '0.6';
-            row.append(tIn, sLab, hIn, dLab, sSel, del);
+            row.append(nB, tIn, sLab, dotSep, hIn, dLab, sSel, del);
             planDiv.appendChild(row);
-        }
+        });
         if (!plan.length) {
             const p = document.createElement('div');
-            p.style.cssText = 'opacity:0.55;font-size:12px';
+            p.className = 'sl-hint';
             p.textContent = 'initial heading + speed, then steps';
             planDiv.appendChild(p);
         }
@@ -745,7 +885,7 @@
         LAB.frame = 0;
         pbSlider.max = nF;
         pbTicks.innerHTML = ticks.map(f =>
-            `<span style="position:absolute;left:${(100 * f / nF).toFixed(1)}%;top:0;color:#ff9b8f;font-size:9px">&#9650;</span>`).join('');
+            `<span style="position:absolute;left:${(100 * f / nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
         bar.style.display = 'flex';
     }
     function setFrame(f) {
@@ -759,8 +899,8 @@
     const runBtn = ui.querySelector('#lab-run');
     const editBtn = ui.querySelector('#lab-reset');
     function refreshModeBtns() {
-        runBtn.style.background = LAB.mode === 'play' ? '#2a5a8a' : '#123';
-        editBtn.style.background = LAB.mode === 'edit' ? '#2a5a8a' : '#123';
+        runBtn.classList.toggle('on', LAB.mode === 'play');
+        editBtn.classList.toggle('on', LAB.mode === 'edit');
     }
     function play() {
         if (!LAB.rec) simulate();
@@ -941,7 +1081,7 @@
             } else {
                 // permission lapsed: surface the name; File… (a gesture) reclaims it
                 LAB.pendingHandle = h;
-                ui.querySelector('#lab-libname').textContent = (h.name || 'library') + ' — click File… to reattach';
+                ui.querySelector('#lab-libname').textContent = (h.name || 'library') + ' — click change to reattach';
             }
         } catch (e) {
             // moved or deleted since last session — fall back to the picker path
@@ -996,19 +1136,20 @@
         const wrap = document.createElement('div');
         wrap.style.cssText = 'position:fixed;inset:0;z-index:95;background:rgba(4,8,14,0.55);display:flex;align-items:center;justify-content:center';
         const box = document.createElement('div');
-        box.style.cssText = 'min-width:280px;max-width:400px;max-height:70vh;display:flex;flex-direction:column;background:rgba(10,18,28,0.98);border:1px solid rgba(120,180,220,0.4);border-radius:10px;padding:14px 16px;color:#dbe7f3;font:13px/1.5 system-ui';
+        box.style.cssText = 'min-width:300px;max-width:420px;max-height:70vh;display:flex;flex-direction:column;background:rgba(7,19,34,.96);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 10px 34px rgba(4,16,28,.5);padding:16px 18px;color:#eef3fb;font:13px/1.4 Archivo,system-ui,sans-serif';
         const h = document.createElement('div');
-        h.textContent = title;
-        h.style.cssText = 'font-weight:700;color:#8fd0ff;margin-bottom:8px';
+        h.textContent = title.toUpperCase();
+        h.style.cssText = 'font-size:13px;font-weight:900;font-style:italic;letter-spacing:.04em;margin-bottom:10px';
         box.appendChild(h);
         if (bodyEl) { bodyEl.style.overflowY = 'auto'; box.appendChild(bodyEl); }
         const row = document.createElement('div');
-        row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:12px';
+        row.style.cssText = 'display:flex;gap:8px;justify-content:flex-end;margin-top:14px';
         const close = () => { wrap.remove(); LAB.modal = null; };
         for (const b of buttons) {
             const btn = document.createElement('button');
-            btn.textContent = b.label;
-            btn.style.cssText = 'border:1px solid #467;color:#cde;padding:3px 12px;border-radius:6px;cursor:pointer;background:' + (b.primary ? '#2a5a8a' : '#123');
+            btn.textContent = b.label.toUpperCase();
+            btn.className = 'sl-btn' + (b.primary ? ' sl-btn-pri' : '');
+            btn.style.cssText = 'flex:none;padding:8px 16px';
             btn.onclick = () => { close(); if (b.onClick) b.onClick(); };
             row.appendChild(btn);
         }
@@ -1061,7 +1202,7 @@
             const inp = document.createElement('input');
             inp.type = 'text'; inp.placeholder = 'Scenario Name';
             inp.value = name ? name + ' copy' : '';
-            inp.style.cssText = 'width:100%;background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:3px 6px';
+            inp.style.cssText = 'width:100%;box-sizing:border-box;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:8px 10px;color:#eef3fb;font:800 13px Archivo,system-ui,sans-serif;outline:none';
             body.appendChild(inp);
             dialog(asNew ? 'Save As' : 'Save', body, [
                 { label: 'Cancel' },
@@ -1082,8 +1223,8 @@
         }
         for (const n of names) {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:3px 6px;border-radius:6px;cursor:pointer';
-            row.onmouseenter = () => row.style.background = '#1a3550';
+            row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:700';
+            row.onmouseenter = () => row.style.background = 'rgba(255,255,255,.07)';
             row.onmouseleave = () => row.style.background = '';
             const label = document.createElement('span');
             label.textContent = n;
@@ -1102,7 +1243,9 @@
             const del = document.createElement('span');
             del.innerHTML = '&#10005;';
             del.title = 'delete';
-            del.style.cssText = 'cursor:pointer;opacity:0.6;padding:0 4px';
+            del.style.cssText = 'cursor:pointer;color:#66748c;padding:0 4px;font-size:11px';
+            del.onmouseenter = () => del.style.color = '#ff8a75';
+            del.onmouseleave = () => del.style.color = '#66748c';
             del.onclick = (e) => {
                 e.stopPropagation();
                 dlg.close();
@@ -1191,33 +1334,58 @@
     const rightsEl = ui.querySelector('#lab-rights');
     const timeEl = ui.querySelector('#lab-time');
     function renderRights(pairs, boats) {
-        const rows = [];
+        const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        const hull = {};
+        for (const lb of LAB.boats) hull[lb.bot.name] = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
+        const dot = (nm, sz) => `<span style="width:${sz || 10}px;height:${sz || 10}px;border-radius:50%;background:${hull[nm] || '#8fd0ff'};border:1px solid rgba(255,255,255,.3);flex:none"></span>`;
+        const html = [];
+        // right-of-way, one amber card per engaged pair
         for (const p of pairs) {
-            rows.push(`${p.a}·${p.b}: row <b>${p.row || '—'}</b> (${p.rule || '—'})` + (p.mk ? ` mk-room <b>${p.mk}</b>` : ''));
+            if (p.row) {
+                const other = p.row === p.a ? p.b : p.a;
+                const ruleTxt = p.rule ? String(p.rule).replace(/^rule\s*/i, '').toUpperCase() : '';
+                html.push(`<div class="sl-rowcard">
+                    <div class="sl-rulelabel">RIGHT OF WAY${ruleTxt ? ' · RULE ' + esc(ruleTxt) : ''}</div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                      ${dot(p.row)}<span style="font-size:13px;font-weight:900;font-style:italic">${esc(p.row.toUpperCase())}</span>
+                      <span style="font-size:11px;font-weight:700;color:#9fb2cc">holds right of way over ${esc(other)}</span>
+                    </div>` +
+                    (p.mk ? `<div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+                      ${dot(p.mk)}<span style="font-size:11px;font-weight:700;color:#9fb2cc"><b style="color:#eef3fb">${esc(p.mk)}</b> is owed mark-room</span>
+                    </div>` : '') + `</div>`);
+            } else {
+                html.push(`<div class="sl-card" style="margin-bottom:6px">
+                    <span style="font-size:11px;font-weight:700;color:#9fb2cc">${esc(p.a)} · ${esc(p.b)} — no right of way determined</span></div>`);
+            }
         }
+        // one status card per boat: helm + what the AI is doing about it
         for (let i = 0; i < LAB.boats.length; i++) {
             const nm = LAB.boats[i].bot.name;
             const bi = boats ? boats[i] : null;
+            const chips = [];
             if (bi) {
-                const bits = [];
                 if (bi.mode === 'S') {
                     // a scripted boat doesn't react, so her controller's
                     // role/risk/deflection are stale — show only the mode
-                    bits.push('<span style="color:#ffc46b">scripted</span>');
+                    chips.push(['teal', 'SCRIPTED']);
                 } else {
-                    if (bi.role && bi.role !== 'NONE' && bi.role !== '-') bits.push(bi.role === 'GIVE_WAY' ? 'give-way' : 'stand-on');
-                    if (bi.risk && bi.risk !== 'LOW' && bi.risk !== '-') bits.push('risk ' + bi.risk);
-                    if (Math.abs(bi.dev) > 0.05) bits.push('deflecting ' + Math.round(Math.abs(bi.dev) * DEG) + '°');
+                    if (bi.role && bi.role !== 'NONE' && bi.role !== '-') chips.push([bi.role === 'GIVE_WAY' ? 'amber' : 'teal', bi.role === 'GIVE_WAY' ? 'GIVE-WAY' : 'STAND-ON']);
+                    if (bi.risk && bi.risk !== 'LOW' && bi.risk !== '-') chips.push(['amber', 'RISK ' + esc(bi.risk)]);
+                    if (Math.abs(bi.dev) > 0.05) chips.push(['amber', 'DEFLECTING ' + Math.round(Math.abs(bi.dev) * DEG) + '°']);
                 }
-                if (bi.tk) bits.push('tacking');
-                if (bi.pen) bits.push('<span style="color:#ff9b8f">PENALTY</span>');
-                if (bi.penN) bits.push(`<span style="color:#ff9b8f">${bi.penN} pen</span>`);
-                if (bits.length) rows.push(`${nm}: ${bits.join(' · ')}`);
+                if (bi.tk) chips.push(['mute', 'TACKING']);
+                if (bi.pen) chips.push(['red', 'PENALTY']);
+                if (bi.penN) chips.push(['red', bi.penN + ' PEN']);
             } else if (LAB.boats[i].bot.raceState.penalty) {
-                rows.push(`<span style="color:#ff9b8f">${nm}: PENALTY</span>`);
+                chips.push(['red', 'PENALTY']);
             }
+            if (!chips.length) continue;
+            html.push(`<div class="sl-card" style="margin-bottom:6px;flex-wrap:wrap">
+                ${dot(nm)}<span class="sl-bname" style="min-width:64px">${esc(nm.toUpperCase())}</span>
+                ${chips.map(([c, t]) => `<span class="sl-schip sl-schip-${c}">${t}</span>`).join('')}</div>`);
         }
-        rightsEl.innerHTML = rows.length ? rows.join('<br>') : '—';
+        rightsEl.innerHTML = html.length ? html.join('')
+            : '<div class="sl-hint" style="padding:2px 2px 4px">no boats within hailing distance</div>';
     }
     function frame() {
         if (!LAB.ready || LAB.recording) return;
@@ -1270,9 +1438,10 @@
                 LAB.boats[i]._dispMode = fb.mode;   // tag colour tracks the recorded helm
             }
             pbSlider.value = LAB.frame;
+            pbFill();
             const t = LAB.frame / 60;
             pbTime.textContent = `${t.toFixed(1)} / ${LAB.durationS.toFixed(1)}s`;
-            timeEl.textContent = `t=${t.toFixed(1)}s`;
+            timeEl.textContent = `t = ${t.toFixed(1)}s`;
             renderRights(fr.pairs, fr.boats);
         }
         // camera: ours, north-up
