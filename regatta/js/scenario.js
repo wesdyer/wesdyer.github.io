@@ -71,6 +71,14 @@
           <div style="display:flex;gap:6px;align-items:center;margin-top:4px">
             <label>speed</label><input id="lab-spd" type="number" min="0" max="10" step="0.5" style="width:58px"> kt
           </div>
+          <div id="lab-pathrow" style="margin-top:4px;display:none">
+            <div><span id="lab-pathinfo" style="opacity:0.8"></span> <button id="lab-pathclr" style="padding:0 6px">clear</button></div>
+            <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+              <label title="blank = AI takes over when the path ends">AI at</label>
+              <input id="lab-aiat" type="number" min="0" step="0.5" style="width:52px" placeholder="end"> s
+            </div>
+          </div>
+          <div id="lab-pathhint" style="opacity:0.6;margin-top:3px;font-size:12px">&#9998; Path tool: drag from this boat to script her track</div>
         </div>
         <button id="lab-del" style="margin-top:6px">Delete</button>
       </div>
@@ -93,12 +101,12 @@
     for (const b of ui.querySelectorAll('button')) b.style.cssText += 'background:#123;border:1px solid #467;color:#cde;padding:2px 10px;border-radius:6px;cursor:pointer';
     for (const i of ui.querySelectorAll('input')) i.style.cssText += 'background:#0a141c;border:1px solid #345;color:#dbe7f3;border-radius:4px;padding:1px 4px';
 
-    const TOOLS = [['select', 'Select'], ['boat', '+ Boat'], ['mark', '+ Mark'], ['sand', '+ Sand'], ['line', '+ Line']];
+    const TOOLS = [['select', 'Select'], ['boat', '+ Boat'], ['mark', '+ Mark'], ['sand', '+ Sand'], ['line', '+ Line'], ['path', '&#9998; Path']];
     const toolBtns = {};
     const toolsDiv = ui.querySelector('#lab-tools');
     for (const [id, label] of TOOLS) {
         const b = document.createElement('button');
-        b.textContent = label;
+        b.innerHTML = label;
         b.style.cssText = 'background:#123;border:1px solid #467;color:#cde;padding:2px 8px;border-radius:6px;cursor:pointer';
         b.onclick = () => setTool(id);
         toolsDiv.appendChild(b);
@@ -197,7 +205,7 @@
         bot.raceState.penalty = false; bot.raceState.totalPenalties = 0;
         bot.raceState.isTacking = false; bot.raceState.leg = 1;
         bot.fadeTimer = 999; bot.opacity = 1;
-        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6 };
+        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, path: null, aiAtS: null };
         bot.name = String.fromCharCode(65 + LAB.boats.length);
         LAB.boats.push(lb);
         select({ kind: 'boat', ref: lb });
@@ -332,8 +340,38 @@
         if (s.kind === 'boat') {
             hdgIn.value = Math.round(((s.ref.heading * DEG) % 360 + 360) % 360);
             spdIn.value = s.ref.speedKt;
+            refreshPathRow(s.ref);
         }
     }
+    const pathRow = ui.querySelector('#lab-pathrow');
+    const pathInfo = ui.querySelector('#lab-pathinfo');
+    const pathHint = ui.querySelector('#lab-pathhint');
+    const aiAtIn = ui.querySelector('#lab-aiat');
+    function refreshPathRow(lb) {
+        const has = lb.path && lb.path.length >= 2;
+        pathRow.style.display = has ? 'block' : 'none';
+        pathHint.style.display = has ? 'none' : 'block';
+        if (has) {
+            const len = Math.round(pathLen(lb.path));
+            pathInfo.textContent = `scripted path · ${len}u`;
+            aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
+        }
+    }
+    function pathLen(p) {
+        let L = 0;
+        for (let i = 1; i < p.length; i++) L += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
+        return L;
+    }
+    ui.querySelector('#lab-pathclr').onclick = () => {
+        if (LAB.sel && LAB.sel.kind === 'boat') { LAB.sel.ref.path = null; LAB.sel.ref.aiAtS = null; refreshPathRow(LAB.sel.ref); invalidate(); }
+    };
+    aiAtIn.addEventListener('input', () => {
+        if (LAB.sel && LAB.sel.kind === 'boat') {
+            const v = aiAtIn.value.trim();
+            LAB.sel.ref.aiAtS = v === '' ? null : Math.max(0, parseFloat(v) || 0);
+            invalidate();
+        }
+    });
     hdgIn.addEventListener('input', () => { if (LAB.sel && LAB.sel.kind === 'boat') { LAB.sel.ref.heading = (parseFloat(hdgIn.value) || 0) / DEG; invalidate(); } });
     spdIn.addEventListener('input', () => { if (LAB.sel && LAB.sel.kind === 'boat') { LAB.sel.ref.speedKt = Math.max(0, parseFloat(spdIn.value) || 0); invalidate(); } });
     ui.querySelector('#lab-del').onclick = deleteSel;
@@ -379,6 +417,7 @@
                 return { x: bt.x, y: bt.y, h: bt.heading, s: bt.speed,
                     tk: bt.raceState.isTacking, pen: bt.raceState.penalty,
                     penN: bt.raceState.totalPenalties || 0,
+                    mode: lb._mode || 'AI',
                     role: c ? (c.avoidanceRole || '-') : '-',
                     risk: c ? (c.riskState || '-') : '-',
                     dev: c ? +((c.lastAvoidDeviation || 0)).toFixed(2) : 0 };
@@ -386,25 +425,72 @@
             pairs: pairRights(),
         };
     }
+    // A SCRIPTED boat is the same hull under the same physics with a different
+    // helmsman: her controller's update is replaced by pure pursuit of the
+    // drawn path (targetHeading toward a lookahead point, full power), so turn
+    // rate, polar speed and the no-go all still apply — the realized track is
+    // what the engine allows, not what was drawn. Rules and the umpire keep
+    // judging her (forcing a foul is the point); she just doesn't REACT.
+    // Handoff to the AI is ONE-WAY (owner ruling): at `aiAtS` seconds, or when
+    // the path runs out, the override is deleted (the prototype AI resumes)
+    // and her course becomes a far goal along her heading at that moment.
+    function scriptedUpdate(lb) {
+        return function () {
+            const bt = this.boat;
+            while (lb._pi < lb.path.length - 1
+                && Math.hypot(bt.x - lb.path[lb._pi].x, bt.y - lb.path[lb._pi].y) < 70) lb._pi++;
+            let t = lb._pi;
+            while (t < lb.path.length - 1
+                && Math.hypot(bt.x - lb.path[t].x, bt.y - lb.path[t].y) < 90) t++;
+            const p = lb.path[t];
+            this.targetHeading = Math.atan2(p.x - bt.x, -(p.y - bt.y));
+            this.speedLimit = 1.0;
+            lb._done = (t === lb.path.length - 1 && Math.hypot(bt.x - p.x, bt.y - p.y) < 60);
+        };
+    }
+    function handoffToAI(lb) {
+        const bt = lb.bot, c = bt.controller;
+        if (c && Object.prototype.hasOwnProperty.call(c, 'update')) delete c.update;
+        const gx = bt.x + Math.sin(bt.heading) * 8000;
+        const gy = bt.y - Math.cos(bt.heading) * 8000;
+        if (c) c.getNavigationTarget = () => ({ x: gx, y: gy });
+        lb._mode = 'AI';
+    }
     function simulate() {
         applyInitial();
         for (const lb of LAB.boats) {
-            const bt = lb.bot;
-            // sail your course: navigation is a far point along the SET heading;
-            // strategy (tacks toward it), avoidance, rules and the umpire all
-            // run live — the question this page exists to answer
-            const gx = bt.x + Math.sin(lb.heading) * 8000;
-            const gy = bt.y - Math.cos(lb.heading) * 8000;
-            if (bt.controller) bt.controller.getNavigationTarget = () => ({ x: gx, y: gy });
+            const bt = lb.bot, c = bt.controller;
+            const scripted = lb.path && lb.path.length >= 2 && lb.aiAtS !== 0;
+            if (scripted) {
+                lb._mode = 'S'; lb._pi = 0; lb._done = false;
+                if (c) c.update = scriptedUpdate(lb);
+            } else {
+                // AI from the start: sail the SET heading as the course —
+                // strategy, avoidance, rules and the umpire all live
+                lb._mode = 'AI';
+                const gx = bt.x + Math.sin(lb.heading) * 8000;
+                const gy = bt.y - Math.cos(lb.heading) * 8000;
+                if (c) c.getNavigationTarget = () => ({ x: gx, y: gy });
+            }
         }
         const nF = Math.round(LAB.durationS * 60);
         const frames = [snapshot()];
         LAB.recording = true;
         for (let f = 1; f <= nF; f++) {
+            for (const lb of LAB.boats) {
+                if (lb._mode !== 'S') continue;
+                const due = lb.aiAtS != null && f >= Math.round(lb.aiAtS * 60);
+                if (due || lb._done) handoffToAI(lb);
+            }
             _update(1 / 60);
             frames.push(snapshot());
         }
         LAB.recording = false;
+        // leave no scripted overrides behind
+        for (const lb of LAB.boats) {
+            const c = lb.bot.controller;
+            if (c && Object.prototype.hasOwnProperty.call(c, 'update')) delete c.update;
+        }
         const ticks = [];
         for (let f = 1; f < frames.length; f++) {
             for (let bi = 0; bi < frames[f].boats.length; bi++) {
@@ -453,7 +539,9 @@
         const S = LAB.stage;
         return {
             v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
-            boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt })),
+            boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
+                path: lb.path ? lb.path.map(p => ({ x: Math.round(p.x - S.x), y: Math.round(p.y - S.y) })) : undefined,
+                aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS })),
             marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y) })),
             sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r })),
             lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y) })),
@@ -466,7 +554,12 @@
         LAB.windKt = sc.windKt || 12; ui.querySelector('#lab-wind').value = LAB.windKt;
         for (const bs of (sc.boats || [])) {
             const lb = addBoat(S.x + bs.x, S.y + bs.y);
-            if (lb) { lb.heading = (bs.headingDeg || 0) / DEG; lb.speedKt = bs.speedKt != null ? bs.speedKt : 6; }
+            if (lb) {
+                lb.heading = (bs.headingDeg || 0) / DEG;
+                lb.speedKt = bs.speedKt != null ? bs.speedKt : 6;
+                lb.path = bs.path ? bs.path.map(p => ({ x: S.x + p.x, y: S.y + p.y })) : null;
+                lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
+            }
         }
         for (const ms of (sc.marks || [])) addMark(S.x + ms.x, S.y + ms.y);
         for (const ss of (sc.sands || [])) addSand(S.x + ss.x, S.y + ss.y, ss.r);
@@ -506,6 +599,20 @@
     ov.addEventListener('mousedown', e => {
         if (!LAB.ready) return;
         const [wx, wy] = s2w(e.clientX, e.clientY);
+        if (LAB.tool === 'path') {
+            // draw a scripted track: start on (or near) a boat; the first point
+            // snaps to her bow so pursuit begins where she begins
+            let lb = null;
+            for (const cand of LAB.boats) if (Math.hypot(wx - cand.x, wy - cand.y) < 70) { lb = cand; break; }
+            if (!lb && LAB.sel && LAB.sel.kind === 'boat') lb = LAB.sel.ref;
+            if (lb) {
+                select({ kind: 'boat', ref: lb });
+                lb.path = [{ x: lb.x, y: lb.y }];
+                LAB.drag = { pathFor: lb };
+                invalidate();
+            }
+            return;
+        }
         const hit = pick(wx, wy);
         if (!hit && LAB.tool !== 'select') {
             if (LAB.tool === 'boat') addBoat(wx, wy);
@@ -520,6 +627,13 @@
     });
     ov.addEventListener('mousemove', e => {
         if (!LAB.drag) return;
+        if (LAB.drag.pathFor) {
+            const [wx, wy] = s2w(e.clientX, e.clientY);
+            const p = LAB.drag.pathFor.path;
+            const last = p[p.length - 1];
+            if (Math.hypot(wx - last.x, wy - last.y) >= 25) p.push({ x: wx, y: wy });
+            return;
+        }
         if (LAB.drag.pan) {
             LAB.cam.x = LAB.drag.cx - (e.clientX - LAB.drag.sx);
             LAB.cam.y = LAB.drag.cy - (e.clientY - LAB.drag.sy);
@@ -550,7 +664,14 @@
         moveObj(s, wx, wy);
         invalidate();
     });
-    window.addEventListener('mouseup', () => { LAB.drag = null; });
+    window.addEventListener('mouseup', () => {
+        if (LAB.drag && LAB.drag.pathFor) {
+            const lb = LAB.drag.pathFor;
+            if (!lb.path || lb.path.length < 2) { lb.path = null; lb.aiAtS = null; }
+            if (LAB.sel && LAB.sel.ref === lb) refreshPathRow(lb);
+        }
+        LAB.drag = null;
+    });
 
     // ── per-frame ──────────────────────────────────────────────────────
     const rightsEl = ui.querySelector('#lab-rights');
@@ -565,9 +686,15 @@
             const bi = boats ? boats[i] : null;
             if (bi) {
                 const bits = [];
-                if (bi.role && bi.role !== 'NONE' && bi.role !== '-') bits.push(bi.role === 'GIVE_WAY' ? 'give-way' : 'stand-on');
-                if (bi.risk && bi.risk !== 'LOW' && bi.risk !== '-') bits.push('risk ' + bi.risk);
-                if (Math.abs(bi.dev) > 0.05) bits.push('deflecting ' + Math.round(Math.abs(bi.dev) * DEG) + '°');
+                if (bi.mode === 'S') {
+                    // a scripted boat doesn't react, so her controller's
+                    // role/risk/deflection are stale — show only the mode
+                    bits.push('<span style="color:#ffc46b">scripted</span>');
+                } else {
+                    if (bi.role && bi.role !== 'NONE' && bi.role !== '-') bits.push(bi.role === 'GIVE_WAY' ? 'give-way' : 'stand-on');
+                    if (bi.risk && bi.risk !== 'LOW' && bi.risk !== '-') bits.push('risk ' + bi.risk);
+                    if (Math.abs(bi.dev) > 0.05) bits.push('deflecting ' + Math.round(Math.abs(bi.dev) * DEG) + '°');
+                }
                 if (bi.tk) bits.push('tacking');
                 if (bi.pen) bits.push('<span style="color:#ff9b8f">PENALTY</span>');
                 if (bi.penN) bits.push(`<span style="color:#ff9b8f">${bi.penN} pen</span>`);
@@ -652,6 +779,36 @@
             octx.beginPath(); octx.moveTo(x1, y1); octx.lineTo(x2, y2);
             octx.strokeStyle = 'rgba(255,255,255,0.85)'; octx.lineWidth = 3; octx.setLineDash([10, 8]); octx.stroke(); octx.setLineDash([]);
             for (const [px, py] of [[x1, y1], [x2, y2]]) { octx.beginPath(); octx.arc(px, py, 6, 0, 7); octx.fillStyle = '#fff'; octx.fill(); }
+        }
+        // scripted paths: the DRAWN line dotted in the boat's colour; during
+        // playback the REALIZED track solid beneath it — the gap between the
+        // two is the physics (turn rate, polar, no-go) doing its job
+        for (let i = 0; i < LAB.boats.length; i++) {
+            const lb = LAB.boats[i];
+            const col = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
+            if (lb.path && lb.path.length >= 2) {
+                octx.beginPath();
+                const [px0, py0] = w2s(lb.path[0].x, lb.path[0].y);
+                octx.moveTo(px0, py0);
+                for (let k = 1; k < lb.path.length; k++) { const [px, py] = w2s(lb.path[k].x, lb.path[k].y); octx.lineTo(px, py); }
+                octx.strokeStyle = col; octx.globalAlpha = 0.85; octx.lineWidth = 2.5;
+                octx.setLineDash([7, 7]); octx.stroke(); octx.setLineDash([]); octx.globalAlpha = 1;
+                const end = lb.path[lb.path.length - 1];
+                const [ex, ey] = w2s(end.x, end.y);
+                octx.beginPath(); octx.arc(ex, ey, 5, 0, 7); octx.fillStyle = col; octx.fill();
+            }
+            if (LAB.mode === 'play' && LAB.rec && LAB.frame > 1) {
+                octx.beginPath();
+                let started = false;
+                for (let f = 0; f <= LAB.frame; f += 4) {
+                    const fb = LAB.rec.frames[f].boats[i];
+                    if (!fb) break;
+                    const [px, py] = w2s(fb.x, fb.y);
+                    if (!started) { octx.moveTo(px, py); started = true; } else octx.lineTo(px, py);
+                }
+                octx.strokeStyle = col; octx.globalAlpha = 0.5; octx.lineWidth = 3;
+                octx.stroke(); octx.globalAlpha = 1;
+            }
         }
         if (LAB.sel && LAB.mode === 'edit') {
             let cx, cy, r = 40;
