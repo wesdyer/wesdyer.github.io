@@ -1115,9 +1115,16 @@
     ui.querySelector('#lab-libopen').onclick = chooseLibFile;
 
     // ── pointer input ──────────────────────────────────────────────────
+    ov.addEventListener('contextmenu', e => e.preventDefault());
     ov.addEventListener('mousedown', e => {
         e.stopPropagation();   // the game's window-level mouse handlers stay out
         if (!LAB.ready) return;
+        // right-drag pans the map from anywhere — over objects, tools armed,
+        // playing — without touching the selection
+        if (e.button === 2) {
+            LAB.drag = { pan: true, sx: e.clientX, sy: e.clientY, cx: LAB.cam.x, cy: LAB.cam.y };
+            return;
+        }
         const [wx, wy] = s2w(e.clientX, e.clientY);
         const hit = pick(wx, wy);
         if (!hit && LAB.armed) {
