@@ -576,7 +576,22 @@
             }
         }
     }
+    // deletion always confirms in-window (owner ruling) — deleteSel is the
+    // confirming entry point (button + Delete key); deleteSelNow is the raw
+    // remover that clearScene's sweep and the confirm itself go through
+    function selDesc(s) {
+        if (s.kind === 'boat') return 'boat ' + s.ref.bot.name;
+        if (s.kind === 'mark') return 'mark ' + (LAB.marks.indexOf(s.ref) + 1);
+        if (s.kind === 'sand') return 'object ' + (LAB.sands.indexOf(s.ref) + 1);
+        return 'line ' + (LAB.lines.indexOf(s.ref) + 1);
+    }
     function deleteSel() {
+        const s = LAB.sel;
+        if (!s || s.kind === 'scenario' || s.kind === 'play') return;
+        confirmDialog('Delete ' + (s.kind === 'sand' ? 'object' : s.kind),
+            `Delete ${selDesc(s)}?`, deleteSelNow, 'Delete');
+    }
+    function deleteSelNow() {
         const s = LAB.sel;
         if (!s) return;
         if (s.kind === 'boat') {
@@ -609,11 +624,14 @@
         select(null);
         invalidate();
     }
+    // raw sweep — no per-object confirms; callers that need one (the CLEAR
+    // SCENE control) confirm once up front, and New/Open go through their own
+    // unsaved-changes gate instead
     function clearScene() {
-        while (LAB.boats.length) { select({ kind: 'boat', ref: LAB.boats[0] }); deleteSel(); }
-        while (LAB.marks.length) { select({ kind: 'mark', ref: LAB.marks[0] }); deleteSel(); }
-        while (LAB.sands.length) { select({ kind: 'sand', ref: LAB.sands[0] }); deleteSel(); }
-        while (LAB.lines.length) { select({ kind: 'line', ref: LAB.lines[0], part: 0 }); deleteSel(); }
+        while (LAB.boats.length) { select({ kind: 'boat', ref: LAB.boats[0] }); deleteSelNow(); }
+        while (LAB.marks.length) { select({ kind: 'mark', ref: LAB.marks[0] }); deleteSelNow(); }
+        while (LAB.sands.length) { select({ kind: 'sand', ref: LAB.sands[0] }); deleteSelNow(); }
+        while (LAB.lines.length) { select({ kind: 'line', ref: LAB.lines[0], part: 0 }); deleteSelNow(); }
         select(null);
         invalidate();
     }
@@ -650,7 +668,7 @@
         const delRow = right.querySelector('#lab-delrow');
         const showDel = !(s.kind === 'scenario' || s.kind === 'play');
         delRow.style.display = showDel ? 'flex' : 'none';
-        if (showDel) right.querySelector('#lab-del').textContent = 'DELETE ' + s.kind.toUpperCase();
+        if (showDel) right.querySelector('#lab-del').textContent = 'DELETE ' + (s.kind === 'sand' ? 'OBJECT' : s.kind.toUpperCase());
         // the inspector header: dot + title + kind chip (t = clock in play)
         const selDot = right.querySelector('#lab-seldot');
         const kindChip = right.querySelector('#lab-kindchip');
@@ -1112,7 +1130,10 @@
     pbSlider.addEventListener('input', () => { pause(); setFrame(+pbSlider.value); });
     editBtn.onclick = enterEdit;
     refreshModeBtns();
-    ui.querySelector('#lab-clear').onclick = clearScene;
+    ui.querySelector('#lab-clear').onclick = () => {
+        if (!LAB.boats.length && !LAB.marks.length && !LAB.sands.length && !LAB.lines.length) return;
+        confirmDialog('Clear scene', 'Remove every boat, object, mark and line from the scene?', clearScene, 'Clear');
+    };
     // THE KEYBOARD IS OURS, NOT THE GAME'S. This is a constructor, not a race:
     // no ESC pause menu, no steering keys, no camera modes. Every game key
     // handler lives on WINDOW (verified — none on document), so a DOCUMENT-
