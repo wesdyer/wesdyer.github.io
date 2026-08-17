@@ -61,7 +61,11 @@
         rec: null,           // {frames:[...], ticks:[frameIdx], nF}
         frame: 0, playing: false,
         recording: false,
+        goalArm: false,      // "+ ADD GOAL" armed: next click appends a goal
     };
+    // debug/test seam: lets the console (and the Playwright checks) see the
+    // lab's state without threading it through the page
+    window.__LAB = LAB;
 
     // ── UI: the editor convention — LAYERS on the left (the list is the
     // mode switch; “＋” on a layer arms placement), DETAILS on the right
@@ -217,6 +221,13 @@
             <div class="sl-inp" style="flex:1"><input id="lab-aiat" type="text" inputmode="decimal" placeholder="never"></div>
             <span class="sl-hint">s</span>
           </div>
+        </div>
+        <div class="sl-sect">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+            <span class="sl-sectlabel" style="margin:0" title="the AI sails these in order">GOALS</span>
+            <span id="lab-goaladd" class="sl-link">+ ADD GOAL</span>
+          </div>
+          <div id="lab-goals"></div>
         </div>
       </div>
       <div id="det-mark" style="display:none">
@@ -487,7 +498,7 @@
         // targets nothing, so zone snapshots latch on plain geometry.
         bot.raceState.isTacking = false; bot.raceState.leg = 2;
         bot.fadeTimer = 999; bot.opacity = 1;
-        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, plan: [], aiAtS: null };
+        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, plan: [], aiAtS: null, goals: [] };
         LAB.boats.push(lb);
         applyLabIdentity(lb, LAB.boats.length - 1);
         select({ kind: 'boat', ref: lb });
@@ -573,6 +584,12 @@
             if (i >= 0) LAB.boats.splice(i, 1);
             s.ref.bot.raceState.finished = true; s.ref.bot.fadeTimer = 0;
             s.ref.bot.x = -1e6; s.ref.bot.y = -1e6;
+            // a pooled bot must carry no lab overrides into its next recruit
+            const c = s.ref.bot.controller;
+            if (c) {
+                if (Object.prototype.hasOwnProperty.call(c, 'update')) delete c.update;
+                if (Object.prototype.hasOwnProperty.call(c, 'getNavigationTarget')) delete c.getNavigationTarget;
+            }
             LAB.pool.unshift(s.ref.bot);
             // keep the alphabet contiguous: later boats take over the freed identities
             LAB.boats.forEach((lb, k) => applyLabIdentity(lb, k));
@@ -580,12 +597,14 @@
             const ms = window.state.course.marks;
             const i = ms.indexOf(s.ref); if (i >= 0) ms.splice(i, 1);
             const j = LAB.marks.indexOf(s.ref); if (j >= 0) LAB.marks.splice(j, 1);
+            for (const lb of LAB.boats) lb.goals = lb.goals.filter(g => g.ref !== s.ref);
         } else if (s.kind === 'sand') {
             const is = window.state.course.islands;
             const i = is.indexOf(s.ref.isl); if (i >= 0) is.splice(i, 1);
             const j = LAB.sands.indexOf(s.ref); if (j >= 0) LAB.sands.splice(j, 1);
         } else if (s.kind === 'line') {
             const i = LAB.lines.indexOf(s.ref); if (i >= 0) LAB.lines.splice(i, 1);
+            for (const lb of LAB.boats) lb.goals = lb.goals.filter(g => g.ref !== s.ref);
         }
         select(null);
         invalidate();
@@ -652,11 +671,13 @@
         kindChip.style.display = header.chip ? 'inline-block' : 'none';
         kindChip.textContent = header.chip;
         timeChip.style.display = s.kind === 'play' ? 'inline-block' : 'none';
+        setGoalArm(false);   // goal placement never survives a selection change
         if (s.kind === 'boat') {
             hdgIn.value = Math.round(((s.ref.heading * DEG) % 360 + 360) % 360);
             spdIn.value = s.ref.speedKt;
             refreshPathRow(s.ref);
             renderPlan(s.ref);
+            renderGoals(s.ref);
         }
         if (s.kind === 'mark') refreshSideBtns(s.ref);
         renderLayers();
@@ -732,6 +753,63 @@
         renderPlan(lb);
         invalidate();
     };
+
+    // ── GOALS: the AI's intentions, sailed in order. Three kinds — a point
+    // (pass within ~2 boat lengths, cookie-crumb style), a mark (round it on
+    // its set side, completion by the winding sweep), a line-as-gate (cross
+    // the segment, either direction). Only the DESTINATION comes from here:
+    // strategy, tacking, avoidance, rules and the umpire are the shipping
+    // AI's own. After the last goal the boat holds her final bearing. ─────
+    const goalsDiv = ui.querySelector('#lab-goals');
+    const goalAddLink = ui.querySelector('#lab-goaladd');
+    function goalPoint(g) {
+        if (g.type === 'point') return [g.x, g.y];
+        if (g.type === 'mark') return [g.ref.x, g.ref.y];
+        return [(g.ref.x1 + g.ref.x2) / 2, (g.ref.y1 + g.ref.y2) / 2];
+    }
+    function goalLabel(g) {
+        if (g.type === 'mark') return 'Mark ' + (LAB.marks.indexOf(g.ref) + 1) + ' · ' + (g.ref.side === 'starboard' ? 'stbd' : 'port');
+        if (g.type === 'gate') return 'Line ' + (LAB.lines.indexOf(g.ref) + 1) + ' · through';
+        const S = LAB.stage || { x: 0, y: 0 };
+        return 'waypoint ' + Math.round(g.x - S.x) + ', ' + Math.round(g.y - S.y);
+    }
+    function setGoalArm(on) {
+        LAB.goalArm = on;
+        goalAddLink.textContent = on ? 'CLICK THE WATER · ESC ENDS' : '+ ADD GOAL';
+        goalAddLink.style.color = on ? '#8fd8d0' : '';
+    }
+    function renderGoals(lb) {
+        goalsDiv.innerHTML = '';
+        const goals = lb.goals || (lb.goals = []);
+        goals.forEach((g, k) => {
+            const row = document.createElement('div');
+            row.className = 'sl-step';
+            const nB = document.createElement('span');
+            nB.className = 'sl-stepn';
+            nB.textContent = k + 1;
+            const lab = document.createElement('span');
+            lab.textContent = goalLabel(g);
+            lab.style.cssText = 'flex:1;font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+            const del = document.createElement('span');
+            del.innerHTML = '&#10005;';
+            del.style.cssText = 'cursor:pointer;color:#66748c;font-size:11px;padding:0 2px';
+            del.onmouseenter = () => del.style.color = '#ff8a75';
+            del.onmouseleave = () => del.style.color = '#66748c';
+            del.onclick = () => { goals.splice(k, 1); renderGoals(lb); invalidate(); };
+            row.append(nB, lab, del);
+            goalsDiv.appendChild(row);
+        });
+        if (!goals.length) {
+            const p = document.createElement('div');
+            p.className = 'sl-hint';
+            p.textContent = 'the AI sails these in order · click water, a mark, or a line';
+            goalsDiv.appendChild(p);
+        }
+    }
+    goalAddLink.onclick = () => {
+        if (!LAB.sel || LAB.sel.kind !== 'boat') return;
+        setGoalArm(!LAB.goalArm);
+    };
     aiAtIn.addEventListener('input', () => {
         if (LAB.sel && LAB.sel.kind === 'boat') {
             const v = aiAtIn.value.trim();
@@ -792,6 +870,7 @@
                     tk: bt.raceState.isTacking, pen: bt.raceState.penalty,
                     sp: !!bt.spinnaker, spp: +(bt.spinnakerDeployProgress || 0).toFixed(3),
                     penN: bt.raceState.totalPenalties || 0,
+                    gi: lb._goalIdx || 0,
                     mode: lb._mode || 'AI',
                     role: c ? (c.avoidanceRole || '-') : '-',
                     risk: c ? (c.riskState || '-') : '-',
@@ -816,29 +895,134 @@
             this.speedLimit = 1.0;
         };
     }
+    // ── THE GOAL NAVIGATOR. Replaces only the DESTINATION layer of the AI
+    // (which for standard courses is just "aim near the gate end / centre /
+    // nearest segment point"); getStrategicHeading still turns the target
+    // into a sailable heading, applyAvoidance still deflects, the rules and
+    // umpire still judge. The native single-mark rounding orbit is welded to
+    // the islandRound course type + global DMC paths, so the mark goal reuses
+    // its DESTINATION MATH (the armed-orbit carrot: bearing + sgn·0.85 at
+    // 0.85×zone, the engine's own constants) rather than the machinery.
+    function goalNav(lb) {
+        const normA = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+        return function () {
+            const boat = lb.bot;
+            const goals = lb.goals || [];
+            let g = goals[lb._goalIdx];
+            // completion tests advance the queue — only while the burst
+            // records, so playback scrubbing can never corrupt the sequence
+            while (g && LAB.recording) {
+                let done = false;
+                if (g.type === 'point') {
+                    done = Math.hypot(boat.x - g.x, boat.y - g.y) < 110;   // ~2 hulls: pass through, never park
+                } else if (g.type === 'gate') {
+                    // crossed the segment (either direction) = through the gate
+                    const ln = g.ref;
+                    const dx = ln.x2 - ln.x1, dy = ln.y2 - ln.y1;
+                    const L2 = dx * dx + dy * dy || 1;
+                    const t = ((boat.x - ln.x1) * dx + (boat.y - ln.y1) * dy) / L2;
+                    const side = Math.sign((boat.x - ln.x1) * dy - (boat.y - ln.y1) * dx) || 1;
+                    if (lb._gSide != null && side !== lb._gSide && t > -0.05 && t < 1.05) done = true;
+                    lb._gSide = side;
+                } else if (g.type === 'mark') {
+                    // rounded = the winding sweep from zone entry reaches the
+                    // turn the next goal requires (the course-string rule in
+                    // miniature; half a turn when there is no next goal)
+                    const m = g.ref, Z = m.zone || 165;
+                    const sgn = m.side === 'port' ? -1 : 1;   // the engine's own sign
+                    const d = Math.hypot(boat.x - m.x, boat.y - m.y);
+                    const brg = Math.atan2(boat.y - m.y, boat.x - m.x);
+                    if (d < Z * 3) {
+                        if (lb._sweep == null) {
+                            lb._sweep = 0; lb._prevBrg = brg;
+                            const nxt = goals[lb._goalIdx + 1];
+                            let need = Math.PI;
+                            if (nxt) {
+                                const [ex, ey] = goalPoint(nxt);
+                                need = sgn * normA(Math.atan2(ey - m.y, ex - m.x) - brg);
+                                if (need <= 0) need += Math.PI * 2;
+                            }
+                            lb._need = Math.max(Math.PI / 3, Math.min(Math.PI * 1.9, need));
+                        } else {
+                            lb._sweep += sgn * normA(brg - lb._prevBrg);
+                            lb._prevBrg = brg;
+                            if (lb._sweep >= lb._need) done = true;
+                        }
+                    } else if (lb._sweep != null) {
+                        lb._prevBrg = brg;                    // no credit while outside
+                        if (d > Z * 3.5) lb._sweep = null;    // blown out: restart
+                    }
+                }
+                if (!done) break;
+                lb._goalIdx++;
+                lb._sweep = null; lb._gSide = null;
+                g = goals[lb._goalIdx];
+            }
+            if (!g) {
+                // past the last goal: hold the bearing she finished on
+                if (!lb._goalOut) lb._goalOut = {
+                    x: boat.x + Math.sin(boat.heading) * 8000,
+                    y: boat.y - Math.cos(boat.heading) * 8000,
+                };
+                return lb._goalOut;
+            }
+            if (g.type === 'point') return { x: g.x, y: g.y };
+            if (g.type === 'gate') {
+                // the finish-line policy: nearest point on the segment
+                // (clamped 0.08–0.92, verbatim), nudged 90u past the line so
+                // momentum completes the crossing
+                const ln = g.ref;
+                const dx = ln.x2 - ln.x1, dy = ln.y2 - ln.y1;
+                const L2 = dx * dx + dy * dy || 1;
+                let t = ((boat.x - ln.x1) * dx + (boat.y - ln.y1) * dy) / L2;
+                t = Math.max(0.08, Math.min(0.92, t));
+                const px = ln.x1 + dx * t, py = ln.y1 + dy * t;
+                const L = Math.sqrt(L2);
+                const side = Math.sign((boat.x - ln.x1) * dy - (boat.y - ln.y1) * dx) || 1;
+                return { x: px - (dy / L) * side * 90, y: py + (dx / L) * side * 90 };
+            }
+            // mark: the armed-orbit carrot — lead the bearing the required way
+            // round; the radius formula closes from any distance to the ring
+            const m = g.ref, Z = m.zone || 165;
+            const sgn = m.side === 'port' ? -1 : 1;
+            const d = Math.hypot(boat.x - m.x, boat.y - m.y);
+            const brg = Math.atan2(boat.y - m.y, boat.x - m.x);
+            const a = brg + sgn * 0.85;
+            const R = Math.min(Z * 1.6, Math.max(Z * 0.85, d - 80));
+            return { x: m.x + Math.cos(a) * R, y: m.y + Math.sin(a) * R };
+        };
+    }
+    function aiNavFor(lb, heading) {
+        const c = lb.bot.controller;
+        if (!c) return;
+        if (lb.goals && lb.goals.length) { c.getNavigationTarget = goalNav(lb); return; }
+        // no goals: sail the given bearing as the course (the old behavior)
+        const gx = lb.bot.x + Math.sin(heading) * 8000;
+        const gy = lb.bot.y - Math.cos(heading) * 8000;
+        c.getNavigationTarget = () => ({ x: gx, y: gy });
+    }
     function handoffToAI(lb) {
         const bt = lb.bot, c = bt.controller;
         if (c && Object.prototype.hasOwnProperty.call(c, 'update')) delete c.update;
-        const gx = bt.x + Math.sin(bt.heading) * 8000;
-        const gy = bt.y - Math.cos(bt.heading) * 8000;
-        if (c) c.getNavigationTarget = () => ({ x: gx, y: gy });
+        aiNavFor(lb, bt.heading);
         lb._mode = 'AI';
     }
     function simulate() {
         applyInitial();
         for (const lb of LAB.boats) {
-            const bt = lb.bot, c = bt.controller;
+            const c = lb.bot.controller;
+            // per-run goal state: fresh queue every simulation
+            lb._goalIdx = 0; lb._sweep = null; lb._gSide = null; lb._goalOut = null;
             const scripted = lb.plan && lb.plan.length > 0 && lb.aiAtS !== 0;
             if (scripted) {
                 lb._mode = 'S';
                 if (c) c.update = planUpdate(lb);
             } else {
-                // AI from the start: sail the SET heading as the course —
-                // strategy, avoidance, rules and the umpire all live
+                // AI from the start: sail the goals in order (or the SET
+                // heading if there are none) — strategy, avoidance, rules
+                // and the umpire all live
                 lb._mode = 'AI';
-                const gx = bt.x + Math.sin(lb.heading) * 8000;
-                const gy = bt.y - Math.cos(lb.heading) * 8000;
-                if (c) c.getNavigationTarget = () => ({ x: gx, y: gy });
+                aiNavFor(lb, lb.heading);
             }
         }
         const nF = Math.round(LAB.durationS * 60);
@@ -949,7 +1133,11 @@
                 // any other key while a dialog is up: dead air
             } else {
                 if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
-                else if (e.key === 'Escape') { if (LAB.armed) setArmed(LAB.armed); else select(null); }
+                else if (e.key === 'Escape') {
+                    if (LAB.goalArm) setGoalArm(false);
+                    else if (LAB.armed) setArmed(LAB.armed);
+                    else select(null);
+                }
                 else if (LAB.rec && LAB.mode === 'play') {
                     if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
                     else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
@@ -972,7 +1160,11 @@
             v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
-                aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS })),
+                aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS,
+                goals: (lb.goals && lb.goals.length) ? lb.goals.map(g =>
+                    g.type === 'point' ? { k: 'p', x: Math.round(g.x - S.x), y: Math.round(g.y - S.y) }
+                    : g.type === 'mark' ? { k: 'm', i: LAB.marks.indexOf(g.ref) }
+                    : { k: 'g', i: LAB.lines.indexOf(g.ref) }).filter(g => g.k === 'p' || g.i >= 0) : undefined })),
             marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165) })),
             sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r })),
             lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y) })),
@@ -983,6 +1175,7 @@
         const S = LAB.stage;
         LAB.durationS = sc.durationS || 10; ui.querySelector('#lab-dur').value = LAB.durationS;
         LAB.windKt = sc.windKt || 12; ui.querySelector('#lab-wind').value = LAB.windKt;
+        const pendingGoals = [];   // goals reference marks/lines added below
         for (const bs of (sc.boats || [])) {
             const lb = addBoat(S.x + bs.x, S.y + bs.y);
             if (lb) {
@@ -992,6 +1185,7 @@
                 // the kite is auto-only now)
                 lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
+                if (bs.goals && bs.goals.length) pendingGoals.push([lb, bs.goals]);
             }
         }
         for (const ms of (sc.marks || [])) {
@@ -1001,6 +1195,12 @@
         }
         for (const ss of (sc.sands || [])) addSand(S.x + ss.x, S.y + ss.y, ss.r);
         for (const ls of (sc.lines || [])) { const ln = addLine(S.x + (ls.x1 + ls.x2) / 2, S.y + (ls.y1 + ls.y2) / 2); ln.x1 = S.x + ls.x1; ln.y1 = S.y + ls.y1; ln.x2 = S.x + ls.x2; ln.y2 = S.y + ls.y2; }
+        for (const [lb, gs] of pendingGoals) {
+            lb.goals = gs.map(g =>
+                g.k === 'p' ? { type: 'point', x: S.x + g.x, y: S.y + g.y }
+                : g.k === 'm' ? (LAB.marks[g.i] && { type: 'mark', ref: LAB.marks[g.i] })
+                : (LAB.lines[g.i] && { type: 'gate', ref: LAB.lines[g.i] })).filter(Boolean);
+        }
         select(null);
         invalidate();
     }
@@ -1282,6 +1482,19 @@
         }
         const [wx, wy] = s2w(e.clientX, e.clientY);
         const hit = pick(wx, wy);
+        // goal placement: a click while armed APPENDS a goal for the selected
+        // boat and never disturbs the selection — a mark means round it, a
+        // line means go through it, open water means a waypoint
+        if (LAB.goalArm && LAB.sel && LAB.sel.kind === 'boat' && LAB.mode === 'edit') {
+            const lb = LAB.sel.ref;
+            if (hit && hit.kind === 'mark') lb.goals.push({ type: 'mark', ref: hit.ref });
+            else if (hit && hit.kind === 'line') lb.goals.push({ type: 'gate', ref: hit.ref });
+            else if (!hit || hit.kind === 'sand') lb.goals.push({ type: 'point', x: wx, y: wy });
+            else return;   // a click on a boat places nothing
+            renderGoals(lb);
+            invalidate();
+            return;
+        }
         if (!hit && LAB.armed) {
             // an armed layer "+": place that kind here, stay armed for more
             if (LAB.armed === 'boat') addBoat(wx, wy);
@@ -1376,6 +1589,8 @@
                     if (bi.role && bi.role !== 'NONE' && bi.role !== '-') chips.push([bi.role === 'GIVE_WAY' ? 'amber' : 'teal', bi.role === 'GIVE_WAY' ? 'GIVE-WAY' : 'STAND-ON']);
                     if (bi.risk && bi.risk !== 'LOW' && bi.risk !== '-') chips.push(['amber', 'RISK ' + esc(bi.risk)]);
                     if (Math.abs(bi.dev) > 0.05) chips.push(['amber', 'DEFLECTING ' + Math.round(Math.abs(bi.dev) * DEG) + '°']);
+                    const nG = LAB.boats[i].goals ? LAB.boats[i].goals.length : 0;
+                    if (nG) chips.push(bi.gi >= nG ? ['teal', 'GOALS DONE'] : ['mute', 'GOAL ' + (bi.gi + 1) + '/' + nG]);
                 }
                 if (bi.tk) chips.push(['mute', 'TACKING']);
                 if (bi.pen) chips.push(['red', 'PENALTY']);
@@ -1526,6 +1741,30 @@
                 octx.strokeStyle = col; octx.globalAlpha = 0.5; octx.lineWidth = 3;
                 octx.stroke(); octx.globalAlpha = 1;
             }
+        }
+        // the goal route: boat → 1 → 2 → … dotted in the hull colour, with
+        // numbered pips matching the inspector's step badges (edit mode,
+        // selected boat only — the water stays quiet otherwise)
+        if (LAB.mode === 'edit' && LAB.sel && LAB.sel.kind === 'boat'
+            && LAB.sel.ref.goals && LAB.sel.ref.goals.length) {
+            const lb = LAB.sel.ref;
+            const col = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
+            octx.beginPath();
+            const [bx, by] = w2s(lb.x, lb.y);
+            octx.moveTo(bx, by);
+            for (const g of lb.goals) { const [gx, gy] = goalPoint(g); const [sx, sy] = w2s(gx, gy); octx.lineTo(sx, sy); }
+            octx.strokeStyle = col; octx.globalAlpha = 0.75; octx.lineWidth = 2.5;
+            octx.setLineDash([4, 7]); octx.stroke(); octx.setLineDash([]); octx.globalAlpha = 1;
+            lb.goals.forEach((g, k) => {
+                const [gx, gy] = goalPoint(g);
+                const [sx, sy] = w2s(gx, gy);
+                octx.beginPath(); octx.arc(sx, sy, 11, 0, 7);
+                octx.fillStyle = 'rgba(7,19,34,0.85)'; octx.fill();
+                octx.strokeStyle = col; octx.lineWidth = 2; octx.stroke();
+                octx.fillStyle = '#eef3fb'; octx.font = '800 11px Archivo,system-ui';
+                octx.textAlign = 'center'; octx.textBaseline = 'middle';
+                octx.fillText(String(k + 1), sx, sy);
+            });
         }
         if (LAB.sel && LAB.sel.kind !== 'scenario' && LAB.mode === 'edit') {
             let cx, cy, r = 40;
