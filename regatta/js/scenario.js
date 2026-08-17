@@ -291,6 +291,7 @@
                 select({ kind: 'scenario' });
             }
         } catch (e) { LAB._loading = false; }
+        restoreLibHandle();
         dismissCover();
     }
 
@@ -791,6 +792,70 @@
         localStorage.setItem(STORE_KEY, JSON.stringify(lib));
         if (LAB.libHandle) writeLibFile(lib);
     }
+    // ── remember the library file across reloads (the editor's pattern:
+    // the handle lives in IndexedDB; permission needs a user gesture, so a
+    // remembered file reattaches silently only when Chrome still grants it,
+    // and otherwise waits for the File… click to claim it) ───────────────
+    function handleDB() {
+        return new Promise((res, rej) => {
+            const rq = indexedDB.open('regatta-scenario', 1);
+            rq.onupgradeneeded = () => rq.result.createObjectStore('handles');
+            rq.onsuccess = () => res(rq.result);
+            rq.onerror = () => rej(rq.error);
+        });
+    }
+    async function rememberLibHandle(h) {
+        try {
+            const db = await handleDB();
+            await new Promise((res, rej) => {
+                const tx = db.transaction('handles', 'readwrite');
+                tx.objectStore('handles').put(h, 'lib');
+                tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+            });
+        } catch (_) { /* best-effort; the page works without it */ }
+    }
+    async function recallLibHandle() {
+        try {
+            const db = await handleDB();
+            return await new Promise((res, rej) => {
+                const rq = db.transaction('handles', 'readonly').objectStore('handles').get('lib');
+                rq.onsuccess = () => res(rq.result || null);
+                rq.onerror = () => rej(rq.error);
+            });
+        } catch (_) { return null; }
+    }
+    function parseLibText(text) {
+        try { return JSON.parse(text); } catch (_) {
+            const m = /window\.SCENARIO_DOC\s*=\s*(\{[\s\S]*\});?\s*$/.exec(text.trim());
+            if (m) { try { return JSON.parse(m[1]); } catch (_) { } }
+        }
+        return null;
+    }
+    async function attachLibHandle(h) {
+        const file = await h.getFile();
+        const lib = parseLibText(await file.text());
+        LAB.libHandle = h;
+        ui.querySelector('#lab-libname').textContent = file.name;
+        if (lib && typeof lib === 'object') persistLib(lib);
+        else writeLibFile(store());   // empty/new file: adopt it, write the library out
+        rememberLibHandle(h);
+    }
+    async function restoreLibHandle() {
+        const h = await recallLibHandle();
+        if (!h) return;
+        try {
+            if ((await h.queryPermission({ mode: 'readwrite' })) === 'granted') {
+                await attachLibHandle(h);
+            } else {
+                // permission lapsed: surface the name; File… (a gesture) reclaims it
+                LAB.pendingHandle = h;
+                ui.querySelector('#lab-libname').textContent = (h.name || 'library') + ' — click File… to reattach';
+            }
+        } catch (e) {
+            // moved or deleted since last session — fall back to the picker path
+            LAB.pendingHandle = null;
+        }
+    }
     async function writeLibFile(lib) {
         const text = '// The SCYC scenario library — one file, every scenario.\n'
             + '// Written by scenario.html; JS not JSON so it loads over file://.\n'
@@ -803,28 +868,25 @@
     }
     async function chooseLibFile() {
         try {
+            // a remembered handle whose permission lapsed: this click is the
+            // gesture that reclaims it — no picker needed
+            if (LAB.pendingHandle) {
+                const h = LAB.pendingHandle;
+                try {
+                    if ((await h.requestPermission({ mode: 'readwrite' })) === 'granted') {
+                        LAB.pendingHandle = null;
+                        await attachLibHandle(h);
+                        return;
+                    }
+                } catch (_) { /* fall through to the picker */ }
+                LAB.pendingHandle = null;
+            }
             if (window.showOpenFilePicker) {
                 const [h] = await window.showOpenFilePicker({
                     id: 'scenario-lib',
                     types: [{ description: 'Scenario library', accept: { 'text/javascript': ['.js'], 'application/json': ['.json'] } }],
                 });
-                const file = await h.getFile();
-                const text = await file.text();
-                let lib = null;
-                try { lib = JSON.parse(text); } catch (_) {
-                    const m = /window\.SCENARIO_DOC\s*=\s*(\{[\s\S]*\});?\s*$/.exec(text.trim());
-                    if (m) lib = JSON.parse(m[1]);
-                }
-                if (lib && typeof lib === 'object') {
-                    LAB.libHandle = h;
-                    ui.querySelector('#lab-libname').textContent = file.name;
-                    persistLib(lib);
-                } else {
-                    // an empty/new file: adopt it and write the current library out
-                    LAB.libHandle = h;
-                    ui.querySelector('#lab-libname').textContent = file.name;
-                    writeLibFile(store());
-                }
+                await attachLibHandle(h);
             } else {
                 // no File System Access API: export as a download instead
                 const a = document.createElement('a');
