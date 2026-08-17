@@ -25,7 +25,7 @@
     // the stage is ready ──────────────────────────────────────────────────
     const cover = document.createElement('div');
     cover.style.cssText = 'position:fixed;inset:0;z-index:100;background:#0a121c;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#dbe7f3;font:14px system-ui;transition:opacity 0.35s ease';
-    cover.innerHTML = '<div style="font:800 26px system-ui;letter-spacing:0.12em;color:#8fd0ff">SCENARIO</div>' +
+    cover.innerHTML = '<div style="font:800 26px system-ui;letter-spacing:0.12em;color:#8fd0ff">SCENARIO LAB</div>' +
         '<div id="cover-msg" style="opacity:0.7">setting up open water&hellip;</div>';
     (document.body ? Promise.resolve() : new Promise(r => window.addEventListener('DOMContentLoaded', r)))
         .then(() => document.body.appendChild(cover));
@@ -71,7 +71,7 @@
     const left = document.createElement('div');
     left.style.cssText = panelCss + ';left:12px;width:172px';
     left.innerHTML = `
-      <div style="font-weight:700;font-size:15px;color:#8fd0ff;margin-bottom:6px">SCENARIO</div>
+      <div style="font-weight:700;font-size:15px;color:#8fd0ff;margin-bottom:6px">SCENARIO LAB</div>
       <div style="display:flex;gap:6px;margin-bottom:10px">
         <button id="lab-reset" style="flex:1">Edit</button><button id="lab-run" style="flex:1">&#9654; Play</button>
       </div>
