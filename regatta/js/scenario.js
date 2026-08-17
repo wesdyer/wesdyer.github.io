@@ -437,23 +437,45 @@
             } catch (e) { }
         }, 400);
     }
-    // THE CAST, alphabetical by character name, optimized for colour clarity:
-    // brute-forced over every per-letter roster combination for the maximum
-    // minimum pairwise Lab distance, with the water colour included as a
-    // fixed swatch so no hull can vanish into the blue (which is why Bixby's
-    // royal blue lost his slot). Winner at min-ΔLab 43.7: sage, ink navy,
-    // pink, tan, terracotta, purple, ice white, violet, orange. Hug and
-    // Jester are forced (the only H and J names); the roster has no 'I', so
-    // the ninth boat jumps to J — and nine is the most the parked pool can
-    // supply anyway. Fixed identities also make a saved scenario look and
-    // sail the same on every load (a pool recruit used to keep whichever
-    // random character boot dealt it).
-    const LAB_CHARS = ['Anchor', 'Bramble', 'Cheer', 'Dozer', 'Etienne', 'Flare', 'Glide', 'Hug', 'Jester'];
+    // NEUTRAL BOATS, NOT CHARACTERS (owner ruling 2026-08-17): a scenario is a
+    // statement about the ENGINE — who has rights and will they duck — and a
+    // named character carries per-character stats and a controller persona
+    // that would make the answer depend on who drew which slot. Boats are
+    // A, B, C, … in his color order; every hull gets white sails and a solid
+    // spinnaker in the hull color.
+    const LAB_HULLS = [
+        '#1e56d6',   // Blue (deep, so it reads against the water)
+        '#d92e2e',   // Red
+        '#1fa03c',   // Green
+        '#f28218',   // Orange
+        '#7d3bd4',   // Purple
+        '#f2d024',   // Yellow
+        '#f06ab4',   // Pink
+        '#f4f6f8',   // White
+        '#16181d',   // Black
+        '#7a4a26',   // Brown
+    ];
     function applyLabIdentity(lb, i) {
-        const want = LAB_CHARS[i] || String.fromCharCode(65 + i);
-        const cfg = (typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.find(c => c.name === want) : null;
-        if (cfg && typeof applyBoatIdentity === 'function') applyBoatIdentity(lb.bot, cfg, false);
-        else lb.bot.name = want;
+        const cfg = {
+            name: String.fromCharCode(65 + i),
+            hull: LAB_HULLS[i % LAB_HULLS.length],
+            sail: '#ffffff',
+            cockpit: '#c9cdd2',
+            spinnaker: LAB_HULLS[i % LAB_HULLS.length],
+            spinPattern: 'solid',
+            // no `stats` key: applyBoatIdentity falls back to STAT_DEFAULTS
+            // (+ the flat difficulty bonus, identical for every lab boat)
+        };
+        if (typeof applyBoatIdentity === 'function') applyBoatIdentity(lb.bot, cfg, false);
+        else { lb.bot.name = cfg.name; lb.bot.colors = { hull: cfg.hull, sail: cfg.sail, cockpit: cfg.cockpit, spinnaker: cfg.spinnaker }; }
+        // neutral HELM too: the controller was constructed at boot with a
+        // roster character's archetype + traits, and applyBoatIdentity never
+        // resets those — clear them or every lab boat sails a hidden persona
+        const c = lb.bot.controller;
+        if (c) {
+            c.archetype = null;
+            if (typeof DEFAULT_TRAITS !== 'undefined') c.traits = Object.assign({}, DEFAULT_TRAITS);
+        }
     }
     function addBoat(wx, wy) {
         const bot = LAB.pool.shift();
