@@ -224,6 +224,14 @@
     function boot() {
         const st = window.state;
         if (!st || !st.course || typeof window.resetGame !== 'function') return void setTimeout(boot, 250);
+        // a constructor is silent: no effects, no music (in-memory only — the
+        // shared settings blob is never written from this page, so the game's
+        // own sound preferences are untouched)
+        if (typeof settings !== 'undefined') {
+            settings.soundEnabled = false;
+            settings.bgSoundEnabled = false;
+            settings.musicEnabled = false;
+        }
         try {
             window.resetGame(); window.startRace();
             for (let i = 0; i < 60 * 120 && st.race.status !== 'racing'; i++) window.update(1 / 60);
@@ -692,15 +700,33 @@
     editBtn.onclick = enterEdit;
     refreshModeBtns();
     ui.querySelector('#lab-clear').onclick = clearScene;
-    window.addEventListener('keydown', e => {
-        if (document.activeElement && document.activeElement.tagName === 'INPUT') return;
-        if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
-        if (LAB.rec && LAB.mode === 'play') {
-            if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); e.preventDefault(); }
-            if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); e.preventDefault(); }
-            if (e.key === ' ') { pbPlay.onclick(); e.preventDefault(); }
+    // THE KEYBOARD IS OURS, NOT THE GAME'S. This is a constructor, not a race:
+    // no ESC pause menu, no steering keys, no camera modes. A capture-phase
+    // interceptor runs the page's own keys and stops the event dead before any
+    // of the game's window handlers (all bubble-phase, so ours fires first).
+    // Typing in inputs passes through untouched, except ESC which just blurs.
+    function swallowKeys(e) {
+        const t = e.target;
+        const typing = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
+        if (typing) {
+            if (e.key === 'Escape') { t.blur(); e.preventDefault(); e.stopImmediatePropagation(); }
+            return; // let the field have its keys; game handlers ignore focused inputs at their peril, but they never see ESC
         }
-    });
+        if (e.type === 'keydown') {
+            if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
+            else if (e.key === 'Escape') { if (LAB.armed) setArmed(LAB.armed); else select(null); }
+            else if (LAB.rec && LAB.mode === 'play') {
+                if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
+                else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
+                else if (e.key === ' ') pbPlay.onclick();
+            }
+        }
+        e.preventDefault();
+        e.stopImmediatePropagation();
+    }
+    window.addEventListener('keydown', swallowKeys, true);
+    window.addEventListener('keyup', swallowKeys, true);
+    window.addEventListener('keypress', swallowKeys, true);
 
     // ── save / load ────────────────────────────────────────────────────
     function store() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { return {}; } }
@@ -771,6 +797,7 @@
 
     // ── pointer input ──────────────────────────────────────────────────
     ov.addEventListener('mousedown', e => {
+        e.stopPropagation();   // the game's window-level mouse handlers stay out
         if (!LAB.ready) return;
         const [wx, wy] = s2w(e.clientX, e.clientY);
         if (LAB.armed === 'path') {
@@ -889,6 +916,11 @@
     function frame() {
         if (!LAB.ready || LAB.recording) return;
         const st = window.state;
+        // silence, enforced: reset/start re-apply stored settings, so the mute
+        // is re-asserted per frame (in memory only — never written back)
+        if (typeof settings !== 'undefined') {
+            settings.soundEnabled = false; settings.bgSoundEnabled = false; settings.musicEnabled = false;
+        }
         st.wind.direction = 0; st.wind.baseDirection = 0;
         st.wind.speed = LAB.windKt; st.wind.baseSpeed = LAB.windKt;
         const b0 = LAB.stage || { x: 0, y: 0 };
