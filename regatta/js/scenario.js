@@ -1277,7 +1277,8 @@
             } else if (a.kind === 'proper') {
                 row.appendChild(boatSel(a.who, v => a.who = v));
                 row.appendChild(hintSpan('holds proper \u00b1'));
-                row.appendChild(bareIn(a.tol != null ? a.tol : 10, 26, 'max deviation from her proper course (m)', v => a.tol = Math.max(0, parseFloat(v) || 10)));
+                row.appendChild(bareIn(a.tol != null ? a.tol : 10, 26, 'max deviation from her proper course (m) — 0 = exact match',
+                    v => { const p = parseFloat(v); a.tol = Number.isFinite(p) && p >= 0 ? p : 10; }));
                 row.appendChild(hintSpan('m'));
             } else if (a.kind === 'nocollide') {
                 row.appendChild(hintSpan('no collisions \u2014 hulls never touch'));
@@ -1354,14 +1355,14 @@
         const list = document.createElement('div');
         list.style.cssText = 'overflow-y:auto;max-height:52vh;min-height:40px';
         body.appendChild(list);
-        const KINDS = [
-            ['penalty', 'PENALTY', 'a boat is (or nobody is) penalized, optionally under a rule'],
-            ['row', 'RIGHTS', 'at a time, one boat holds right of way over another'],
-            ['clear', 'NEVER TOUCH', 'two boats stay at least a distance apart, the whole run'],
-            ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
-            ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
-            ['proper', 'HOLDS PROPER COURSE', 'a boat never strays from her proper-course line beyond a tolerance'],
+        const KINDS = [   // owner's order
             ['nocollide', 'NO COLLISION', "the hulls never actually touch \u2014 the engine's own contact test, not a distance"],
+            ['penalty', 'PENALTY', 'a boat is (or nobody is) penalized, optionally under a rule'],
+            ['proper', 'HOLDS PROPER COURSE', 'a boat never strays from her proper-course line beyond a tolerance \u2014 0 m = exact match'],
+            ['row', 'RIGHTS', 'at a time, one boat holds right of way over another'],
+            ['clear', 'NEVER CLOSE', 'two boats never get closer than a distance, the whole run'],
+            ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
+            ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
         ];
         const addBox = document.createElement('div');
         addBox.style.cssText = 'display:none;flex-direction:column;gap:6px';
