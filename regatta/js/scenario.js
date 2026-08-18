@@ -579,21 +579,26 @@
                 LAB._loading = true;
                 loadScene(d);
                 if (d.name) ui.querySelector('#lab-name').value = d.name;
-                // restore the dirty association: if the draft was saved state,
-                // SAVE comes back disabled; if it had edits, it stays lit
-                LAB.savedJSON = d._saved || null;
-                // pre-_saved drafts (and any missed association): if the
-                // restored scene matches its own library entry, it IS saved
-                if (LAB.savedJSON == null) {
-                    const nm = (d.name || '').trim();
-                    const lib = store();
-                    if (nm && lib[nm]) {
-                        const cur = JSON.parse(JSON.stringify({ name: nm, ...sceneObj() }));
-                        const sav = { name: nm, ...lib[nm] };
-                        if (JSON.stringify(canonDoc(cur)) === JSON.stringify(canonDoc(sav))) {
-                            LAB.savedJSON = JSON.stringify({ name: nm, ...sceneObj() });
-                        }
+                // the dirty association at boot is decided SEMANTICALLY, not
+                // by a stored string: earlier builds persisted the serialized
+                // saved-state in the draft (_saved), but the doc format keeps
+                // evolving — any snapshot from an older build could never
+                // byte-match a freshly generated currentDoc, so SAVE lit on
+                // every open. Truth: clean iff the restored scene matches its
+                // own library entry (sorted keys, legacy fields normalized);
+                // the snapshot is regenerated in the CURRENT format.
+                LAB.savedJSON = null;
+                const nm = (d.name || '').trim();
+                const lib = store();
+                if (nm && lib[nm]) {
+                    const cur = JSON.parse(JSON.stringify({ name: nm, ...sceneObj() }));
+                    if (JSON.stringify(canonDoc(cur)) === JSON.stringify(canonDoc({ name: nm, ...lib[nm] }))) {
+                        LAB.savedJSON = JSON.stringify({ name: nm, ...sceneObj() });
+                    } else {
+                        console.info(`[lab] SAVE lit on open: the restored draft differs from the saved “${nm}” — DISCARD restores the saved version.`);
                     }
+                } else if (nm) {
+                    console.info(`[lab] SAVE lit on open: “${nm}” is not in the library (never saved under this name).`);
                 }
                 LAB._loading = false;
                 select(null);
@@ -627,11 +632,6 @@
             try {
                 localStorage.setItem(STORE_KEY + '_draft', JSON.stringify({
                     name: (ui.querySelector('#lab-name').value || '').trim(),
-                    // the dirty state must survive a reload too: without this,
-                    // a freshly-saved scene came back as "unsaved changes"
-                    // (SAVE lit on open) because the restore lost the
-                    // association with what saved looks like
-                    _saved: LAB.savedJSON || undefined,
                     ...sceneObj() }));
             } catch (e) { }
         }, 400);
