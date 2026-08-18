@@ -487,6 +487,10 @@
         }
         window.getWindAt = () => ({ speed: LAB.windKt, direction: 0 });
         st.showNavAids = false;
+        // no wakes in the lab (owner ruling): pinned boats "sail in place"
+        // during edit, so their trails just smear the stage — and in playback
+        // the hull-colour track lines already tell the story better
+        window.drawWakes = () => { };
         const b = st.course.boundary || { x: 0, y: 0 };
         LAB.cam.x = b.x; LAB.cam.y = b.y;
         LAB.stage = { x: b.x, y: b.y };
