@@ -1026,12 +1026,7 @@
     const aiAtIn = ui.querySelector('#lab-aiat');
     function refreshPathRow(lb) {
         aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
-        // hand-to-AI only means something for a boat WITH a plan — a
-        // plan-less boat is AI from the start (nothing to hand over)
-        const scripted = lb.plan && lb.plan.length > 0;
-        aiAtIn.disabled = !scripted;
-        aiAtIn.parentElement.style.opacity = scripted ? '1' : '.35';
-        aiAtIn.title = scripted ? 'blank = scripted to the end' : 'no plan — she is AI already';
+        aiAtIn.title = 'blank = scripted to the end · 0 = AI from the start';
     }
 
     // ── THE PLAN: helm orders on a clock. The initial condition is the
@@ -1080,7 +1075,7 @@
         if (!plan.length) {
             const p = document.createElement('div');
             p.className = 'sl-hint';
-            p.textContent = 'no plan — the AI helms from the start (sails the set heading as her course; avoidance and rules live). + ADD STEP to script her instead';
+            p.textContent = 'no steps — she holds her set heading, scripted. + ADD STEP for helm orders; set Hand to AI (0 = from the start) for the AI';
             planDiv.appendChild(p);
         }
         refreshPathRow(lb);   // hand-to-AI enablement tracks the plan
@@ -1144,6 +1139,13 @@
             p.className = 'sl-hint';
             p.textContent = 'the AI sails these in order · click water, a mark, or a line';
             goalsDiv.appendChild(p);
+        } else if (lb.aiAtS == null) {
+            // goals are the AI's — a boat never handed over won't sail them
+            const w = document.createElement('div');
+            w.className = 'sl-hint';
+            w.style.color = '#f2c14e';
+            w.textContent = 'inert: she is never handed to the AI — set Hand to AI (0 = from the start)';
+            goalsDiv.appendChild(w);
         }
     }
     goalAddLink.onclick = () => {
@@ -1894,7 +1896,12 @@
             const c = bt.controller;
             // per-run goal state: fresh queue every simulation
             lb._goalIdx = 0; lb._sweep = null; lb._gSide = null; lb._goalOut = null;
-            const scripted = lb.plan && lb.plan.length > 0 && lb.aiAtS !== 0;
+            // DEFAULT = SCRIPTED (owner ruling): every boat holds her set
+            // heading and course unless handed to the AI. `Hand to AI at`
+            // is the one switch — blank/never = scripted the whole run,
+            // 0 = AI from the very start, t = handoff mid-run. Plan steps
+            // just refine the scripted phase (empty plan = hold course).
+            const scripted = lb.aiAtS !== 0;
             if (scripted) {
                 lb._mode = 'S';
                 if (c) c.update = planUpdate(lb);
@@ -2864,7 +2871,7 @@
         if (LAB.mode === 'edit') {
             applyInitialFrame();
             // name colour previews the opening helm: white = scripted, green = AI
-            for (const lb of LAB.boats) lb._dispMode = (lb.plan && lb.plan.length && lb.aiAtS !== 0) ? 'S' : 'AI';
+            for (const lb of LAB.boats) lb._dispMode = lb.aiAtS !== 0 ? 'S' : 'AI';
             renderRights(pairRights(), null);
             timeEl.textContent = 't = 0.0s';
             // the always-on transport reads true while editing: rewound, armed
